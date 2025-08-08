@@ -31,7 +31,7 @@ void GlPlatformObject::makeCurrent() {
   _current = this;
   if (_ctxbase) {
     auto window = _ctxbase->_glfwWindow;
-    // printf( "_glfwWindow<%p> made current\n", (void*) window );
+    //printf( "_glfwWindow<%p> made current\n", (void*) window );
     glfwMakeContextCurrent(window);
   } else {
     OrkAssert(false);

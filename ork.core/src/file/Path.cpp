@@ -583,6 +583,9 @@ void Path::computeMarkers(char pathsep) {
   if (pmark && lsmark && pmark < lsmark) {
     pmark = nullptr;
   }
+  if (pmark && *(pmark - 1) == '.') {
+    pmark = nullptr; 
+  }
 
   // Initialize all markers
   _markers.mExtensionLen   = 0;

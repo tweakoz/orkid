@@ -54,6 +54,58 @@ f@a += simplexnoise(vec3f@pos_d)*0.125;
 cdata = ork_vdb.ax.CustomData()
 ve = ork_vdb.ax.VolumeExecutable.compile(voxel_shader,cdata)
 
+SHADERTEXT = """
+////////////////////////////////////////
+fxconfig fxcfg_default { glsl_version = "330"; }
+////////////////////////////////////////
+uniform_set ublock_vtx {
+  mat4 mvp;
+  float pointsize;
+}
+////////////////////////////////////////
+uniform_set ublock_frg {
+  vec4 modcolor;
+}
+////////////////////////////////////////
+vertex_interface vif_x : ublock_vtx {
+  inputs {
+    vec4 pos : POSITION;
+  }
+  outputs {
+    vec3 frg_col;
+  }
+}
+////////////////////////////////////////
+fragment_interface fif_x : ublock_frg {
+  inputs {
+    vec3 frg_col;
+  }
+  outputs { layout(location = 0) vec4 out_clr; }
+}
+////////////////////////////////////////
+vertex_shader vs_x : vif_x {
+  
+  frg_col = normalize(pos.xyz);
+  gl_Position = mvp * vec4(pos.x,pos.y,pos.z,1);
+  gl_PointSize = pointsize;
+}
+////////////////////////////////////////
+fragment_shader fs_x : fif_x {
+  vec3 X = dFdx(frg_col);  
+  vec3 Y = dFdy(frg_col);
+  vec3 normal=vec3(0.5)+normalize(cross(X,Y))*0.5; 
+  out_clr = vec4(normal.xyz, 1);
+}
+////////////////////////////////////////
+technique tek_x {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_x;
+    fragment_shader = fs_x;
+    state_block     = default;
+  }
+}
+"""
 ################################################################################
 
 class PointsPrimApp(object):
@@ -150,7 +202,12 @@ class PointsPrimApp(object):
     # create mesh primitive 
     ###################################
 
-    self.mesh_pipe = createPipeline( app = self, ctx=ctx, rendermodel = "ForwardPBR", techname="std_mono_forward_lit" )
+    self.mesh_pipe = createPipeline( app = self, 
+                                    ctx=ctx, 
+                                    rendermodel = "ForwardPBR", 
+                                    shadertext=SHADERTEXT,
+                                    techname = "tek_x",
+                                    )
     #self.mesh_pipe = pseudowire_pipeline( app = self, ctx=ctx )
     self.mesh_prim = RigidPrimitive()
     self.mesh_node = self.mesh_prim.createNode("mesh-node",self.layer1, self.mesh_pipe)

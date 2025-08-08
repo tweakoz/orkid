@@ -91,23 +91,33 @@ class WaterApp(object):
     self.fwd_layers = [self.layer_fwd,self.layer_donly]
 
     lite_model = lev2.XgmModel("data://tests/pbr_calib.glb")
-    cookie = MyCookie("src://effect_textures/knob2.png")
     shadow_size = 2048
     shadow_bias = -1e-4
-    self.spotlight1 = MySpotLight( index=0,
-                                  app=self,
-                                  model=lite_model,
-                                  frq=0.177,
-                                  color=vec3(1,1,.7)*9.5e5,
-                                  cookie=cookie,
-                                  fovbase=70.0,
-                                  fovamp=20.0,
-                                  voffset=1500,
-                                  vscale=1300,
-                                  bias=shadow_bias,
-                                  dim=shadow_size,
-                                  radius=700,
-                                  range=4000)
+
+    lmgr = self.scene.lightingmanager
+    color_cookies = lmgr.spot_cookies_color
+    depth_cookies = lmgr.spot_cookies_depth
+    color_cookies.needsIrradianceCache = True
+    color_cookies.resize(1024,1024,1,tokens.RGB8,True)
+    depth_cookies.resize(1024,1024,1,tokens.Z32F,True)
+
+    cookie = color_cookies.load("src://effect_textures/knob2.png")
+
+    self.spotlight1 = MySpotLight( app=self,
+                                   index=0,
+                                   model=lite_model,
+                                   frq=0.177,
+                                   color=vec3(1,1,.7)*9.5e5,
+                                   cookie=cookie,
+                                   depth_cookie=depth_cookies.slice(0),
+                                   fovbase=70.0,
+                                   fovamp=20.0,
+                                   voffset=1500,
+                                   vscale=1300,
+                                   bias=shadow_bias,
+                                   dim=shadow_size,
+                                   radius=700,
+                                   range=4000)
 
     ###################################
     # create particle drawable 

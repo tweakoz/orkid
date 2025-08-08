@@ -281,11 +281,29 @@ void ContextGL::initializeLoaderContext() {
 /////////////////////////////////////////////////////////////////////////
 
 void ContextGL::makeCurrentContext( void ){
-  auto plato = _impl.getShared<GlPlatformObject>();
-  OrkAssert(plato);
-  if (plato) {
-    plato->makeCurrent();
-    plato->_bindop();
+  auto glplato = _impl.getShared<GlPlatformObject>();
+  OrkAssert(glplato);
+  if (glplato) {
+    glplato->makeCurrent();
+    glplato->_bindop();
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+void ContextGL::_doBindPlatformHandle(ctx_platform_handle_t h) {
+  auto glplato = _impl.getShared<GlPlatformObject>();
+  OrkAssert(glplato);
+  if (glplato) {
+    auto macplato = std::dynamic_pointer_cast<GlOsxPlatformObject>(glplato);
+    OrkAssert(macplato);
+    if (macplato) {
+      macplato->_context = h.getShared<GlOsxPlatformObject>()->_context;
+      macplato->_ctxbase = h.getShared<GlOsxPlatformObject>()->_ctxbase;
+      macplato->_needsInit = false;
+      macplato->makeCurrent();
+      macplato->_bindop();
+    }
   }
 }
 
@@ -297,7 +315,7 @@ ctx_platform_handle_t ContextGL::_doClonePlatformHandle() const {
 
   ctx_platform_handle_t rval;
   auto new_plato = rval.makeShared<GlOsxPlatformObject>();
-  new_plato->_ctxbase = nullptr; //plato->_ctxbase;
+  new_plato->_ctxbase = glplato->_ctxbase;
   new_plato->_context = macplato->_context;
   new_plato->_needsInit   = false;
   // TODO : https://github.com/tweakoz/orkid/issues/139

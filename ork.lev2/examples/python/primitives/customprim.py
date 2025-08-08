@@ -10,9 +10,9 @@
 
 import numpy, time, os, sys
 import ork.path
-from orkengine.core import *
-from orkengine.lev2 import *
-from ork.command import run
+from orkengine.core import vec3, vec4, mtx4
+from orkengine import lev2
+from obt.command import run
 from PIL import Image
 #########################################
 # Our intention is not to 'install' anything just for running the examples
@@ -37,14 +37,14 @@ AAHEIGHT = HEIGHT*ANTIALIASDIM
 ###################################
 # setup context, shaders
 ###################################
-lev2appinit()
-gfxenv = GfxEnv.ref
+lev2.lev2appinit()
+gfxenv = lev2.GfxEnv.ref
 ctx = gfxenv.loadingContext()
-FBI = ctx.FBI()
-GBI = ctx.GBI()
+FBI = ctx.FBI
+GBI = ctx.GBI
 print(ctx)
 ctx.makeCurrent()
-FontManager.gpuInit(ctx)
+lev2.FontManager.gpuInit(ctx)
 sh = Shader(ctx)
 ###################################
 # get submesh
@@ -55,7 +55,7 @@ inp_submesh = FrustumQuads()
 ###################################
 tsubmesh = inp_submesh.triangulate()
 tsubmesh.writeWavefrontObj("customprim.obj")
-prim = RigidPrimitive(tsubmesh,ctx)
+prim = lev2.RigidPrimitive(tsubmesh,ctx)
 ###################################
 # rtg setup
 ###################################
@@ -66,7 +66,7 @@ capbuf = CaptureBuffer()
 
 texture = Texture.load("lev2://textures/voltex_pn3")
 print(texture)
-lev2apppoll() # process opq
+lev2.lev2apppoll() # process opq
 ###################################
 # setup camera
 ###################################
@@ -77,7 +77,7 @@ vmatrix = ctx.lookAt(vec3(-5,3,1),
 rotmatrix = vmatrix.toRotMatrix3()
 mvp_matrix = vmatrix*pmatrix
 ###################################
-vtx_t = VtxV12N12B12T8C4
+vtx_t = lev2.VtxV12N12B12T8C4
 vbuf = vtx_t.staticBuffer(2)
 vw = GBI.lock(vbuf,2)
 vw.add(vtx_t(vec3(-.7,.78,0.5),vec3(),vec3(),vec2(),0xffffffff))
@@ -91,7 +91,7 @@ FBI.rtGroupPush(rtg)
 FBI.clear(vec4(0.6,0.6,0.7,1),1.0)
 ctx.debugMarker("yo")
 
-RCFD = RenderContextFrameData(ctx)
+RCFD = lev2.RenderContextFrameData(ctx)
 
 # TODO : rework using pipeline
 #sh._mtl.bindTechnique(sh._tek_frustum)
@@ -109,9 +109,9 @@ RCFD = RenderContextFrameData(ctx)
 #GBI.drawLines(vw)
 #sh.end(RCFD)
 
-FontManager.beginTextBlock(ctx,"i32",vec4(0,0,.1,1),WIDTH,HEIGHT,100)
-FontManager.draw(ctx,0,0,"!!! YO !!!\nThis is a textured Frustum.")
-FontManager.endTextBlock(ctx)
+lev2.FontManager.beginTextBlock(ctx,"i32",vec4(0,0,.1,1),WIDTH,HEIGHT,100)
+lev2.FontManager.draw(ctx,0,0,"!!! YO !!!\nThis is a textured Frustum.")
+lev2.FontManager.endTextBlock(ctx)
 FBI.rtGroupPop()
 ctx.endFrame()
 ###################################

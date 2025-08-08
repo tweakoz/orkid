@@ -718,7 +718,18 @@ bool _checkTexture(GLuint texID, const std::string& name) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlTextureInterface::initTextureFromImage(Texture* ptex, image_ptr_t img) {
-}
+TextureInitData tid;
+    tid._w = img->_width;
+    tid._h = img->_height;
+    tid._d = img->_depth;
+    tid._src_format = img->_format;
+    tid._dst_format = img->_format; // No conversion needed
+    tid._data = img->_data->data();
+    tid._autogenmips = true; // Or based on texture settings
+    tid._samplingMode = ptex->TexSamplingMode();
+
+    initTextureFromData(ptex, tid);
+  }
 
 ///////////////////////////////////////////////////////////////////////////////
 

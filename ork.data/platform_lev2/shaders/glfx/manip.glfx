@@ -18,12 +18,12 @@ uniform_set ub_vtx_manip
 	vec4        modcolor;
 
 }
-vertex_interface iface_v_mono
+vertex_interface vif_pcuu
 	: ub_vtx_manip
 {
     inputs {
 	    vec4 position : POSITION;
-        vec4 vtxcolor : COLOR0;
+      vec4 vtxcolor : COLOR0;
 	    vec2 uv0 : TEXCOORD0;
 	    vec2 uv1 : TEXCOORD1;
 	}
@@ -32,7 +32,7 @@ vertex_interface iface_v_mono
 	    vec2 frg_uv;
 	}
 }
-vertex_interface iface_v_stereo : iface_v_mono {
+vertex_interface iface_v_stereo : vif_pcuu {
   outputs {
     layout(secondary_view_offset=1) int gl_Layer;
   }
@@ -62,7 +62,7 @@ state_block sb_default_manip : default
 // shaders
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_vtxcolor_mono
-	: iface_v_mono
+	: vif_pcuu
 {
 	gl_Position = mvp*position;
 	frg_clr = vtxcolor;
@@ -104,9 +104,9 @@ fragment_shader ps_vtxcolor
 }
 fragment_shader ps_forward_fragclr
   : iface_fmt 
-	: ub_frg_fwd {
+	: uset_frg_fwd {
   vec2 screen_uv = gl_FragCoord.xy * InvViewportSize;
-  float ambocc = texture(SSAOMap, screen_uv).x;
+  float ambocc = 1.0;//texture(SSAOMap, screen_uv).x;
   out_clr = frg_clr*ambocc;
 }
 

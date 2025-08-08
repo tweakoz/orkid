@@ -307,6 +307,10 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipeline(const FxPipelinePermutation& per
 
       pipeline->bindParam(mtl->_parMetallicFactor, mtl->_metallicFactor);
       pipeline->bindParam(mtl->_parRoughnessFactor, mtl->_roughnessFactor);
+      /*printf("PBRMaterial<%p> _parMetallicFactor<%f> _parRoughnessFactor<%f>\n",
+             mtl,
+             mtl->_metallicFactor,
+             mtl->_roughnessFactor);*/
     }
 
     pipeline->_parInstanceMatrixMap = mtl->_paramInstanceMatrixMap;

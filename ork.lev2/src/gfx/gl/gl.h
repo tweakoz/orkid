@@ -528,6 +528,7 @@ public:
   void _doBeginFrame() final;
   void _doEndFrame() final;
   ctx_platform_handle_t _doClonePlatformHandle() const final;
+  void _doBindPlatformHandle(ctx_platform_handle_t h) final;
   load_token_t _doBeginLoad() final;
   void _doEndLoad(load_token_t ploadtok) final; // virtual
 

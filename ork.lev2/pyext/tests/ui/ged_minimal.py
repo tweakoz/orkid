@@ -11,8 +11,8 @@ import sys, math, random, numpy, obt.path
 from orkengine.core import *
 from orkengine.lev2 import *
 ################################################################################
-sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
-from _boilerplate import *
+#sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
+#from _boilerplate import *
 ################################################################################
 
 class UiGedTestApp(object):
@@ -53,7 +53,7 @@ class UiGedTestApp(object):
     globs = ps1.create("GLOB",particles.Globals)
     gravity = ps1.create("GRAV",particles.Gravity)
     self.objmodel.attach(self.test_object,True)
-    print(self.test_object.clazz.name)
+    #print(self.test_object.clazz)
 
     #root_layout.dump()
     #assert(False)

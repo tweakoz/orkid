@@ -473,6 +473,7 @@ bool OrkEzApp::shouldUpdateThrottleOnGPU(){
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::_audioInit(){
+  logchan_ezapp->log("OrkEzApp::_audioInit");
   _audiodevice = AudioDevice::createInstance(_initdata);
   _initdata->_miscvars["audiodevice"].set<audiodevice_ptr_t>(_audiodevice);
   if(_initdata->_enable_audio_synth){
@@ -618,6 +619,8 @@ int OrkEzApp::mainThreadLoop() {
   ///////////////////////////////
 
   glfw_ctx->_onGpuInit = [this, update_thread_impl](lev2::Context* context) {
+
+    logchan_ezapp->log("_initdata->_enable_audio<%d>", (int) _initdata->_enable_audio);
 
     if( _ginitdata->_disableMouseCursor ){
       auto ctxbase = context->GetCtxBase();

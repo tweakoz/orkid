@@ -43,6 +43,8 @@ class SingulTestApp(object):
                                  height=720,
                                  width=1280,
                                  enable_audio_synth=True,
+                                 enable_audio = True,
+                                 enable_audio_output = True,
                                  enable_audio_input = enable_input)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()
@@ -78,6 +80,11 @@ class SingulTestApp(object):
       self.ezapp.signalExit()
 
     signal.signal(signal.SIGINT, onCtrlC)
+
+  ##############################################
+
+  def onAudioInit(self,synth):
+    pass
 
   ##############################################
 
@@ -136,17 +143,13 @@ class SingulTestApp(object):
         ord("'"): 17,
     }
     self.voices = dict()
-
+    
   ##############################################
 
   def onGpuInit(self,ctx):
     self.context = ctx
-
     lg_group = self.ezapp.topLayoutGroup
-
-
     self.rec_trackclips = {}
-
     ######################### 
     # create an profiler view
     #  replace the 2nd griditem with it

@@ -155,7 +155,7 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
 
   FBI->setViewport(0,0,_currentWidth, _currentHeight);
   FBI->setScissor(0,0,_currentWidth, _currentHeight);
-  FBI->rtGroupClear(rtg_out.get()); // creates and clears...
+  FBI->rtGroupClear(rtg_out.get()); // TODO: vulkan 
 
   ///////////////////////////////////////////////////////////////////////////
   // Render Skybox first so MSAA can blend with it

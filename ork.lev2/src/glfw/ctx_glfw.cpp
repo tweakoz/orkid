@@ -1214,10 +1214,11 @@ struct PopupImpl {
 
     _terminate = false;
 
+
     if (_uicontext->_top) {
       _uicontext->_top->gpuInit(_parent_context);
       _uicontext->_top->SetRect(0, 0, _w, _h);
-      OrkAssert(false);
+      //OrkAssert(false);
     }
 
     ork::Timer timer;
@@ -1235,15 +1236,16 @@ struct PopupImpl {
 
       glfwPollEvents();
 
+      auto plato_saved = _parent_context->_impl;
+      _parent_context->_impl = _cloned_plato;
+      //_parent_context->bindPlatformHandle(_cloned_plato);
       _rtgroup->_clearColor = fvec4(0, 0, 0, 0);
 
       _parent_context->FBI()->pushViewport(0, 0, _w, _h);
       _parent_context->FBI()->pushScissor(0, 0, _w, _h);
       _parent_context->FBI()->PushRtGroup(_rtgroup.get());
 
-      auto plato_saved = _parent_context->_impl;
 
-      _parent_context->_impl = _cloned_plato;
 
       _uicontext->tick(updata);
 
@@ -1253,6 +1255,7 @@ struct PopupImpl {
       }
 
       _parent_context->_impl = plato_saved;
+      //_parent_context->bindPlatformHandle(plato_saved);
 
       _parent_context->FBI()->PopRtGroup();
       _parent_context->FBI()->popScissor();

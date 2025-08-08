@@ -574,10 +574,11 @@ state_block sb_forward : default {
   // BlendMode = ALPHA;
   // DepthTest = LEQUALS;
   // DepthMask = true;
-  // CullTest  = OFF;
+  CullTest  = OFF;
 }
 state_block sb_forward_blend : default {
   BlendMode = ADDITIVE;
+  CullTest  = OFF;
 }
 technique FWD_UNLIT_NI_MO {
   fxconfig = fxcfg_default;

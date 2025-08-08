@@ -5,6 +5,7 @@ import "orkshader://envtools.i";
 import "orkshader://brdftools.i";
 import "orkshader://deftools.i";
 import "orkshader://gbuftools.i";
+import "orkshader://misctools.i";
 }
 ///////////////////////////////////////////////////////////////
 uniform_set ub_vtx {
@@ -67,7 +68,7 @@ fragment_interface iface_f2uv {
 }
 ///////////////////////////////////////////////////////////////
 libblock lib_deferred //
-  : ub_light // 
+  : uset_std_lighting // 
   : ub_frg // 
   : lib_math // 
   : lib_envmapping // 

@@ -19,8 +19,8 @@ from string import Template
 ################################################################################
 from imgui_bundle import imgui, hello_imgui, imgui_md
 from imgui_bundle import imgui_color_text_edit as ed
-from imgui_bundle import imgui_fig
-from matplotlib import pyplot as plt, use as plt_use
+#from imgui_bundle import imgui_fig
+#from matplotlib import pyplot as plt, use as plt_use
 import numpy as np
 from OpenGL.GL import *
 ################################################################################
@@ -92,11 +92,11 @@ class UiTestApp(object):
     self.current_preset = "none"
     self.item_current_idx = 0
 
-    plt_use('Agg')
-    fig, ax = plt.subplots()
-    ax.plot([1, 2, 3], [4, 5, 6])
-    self.ax = ax
-    self.fig = fig
+    #plt_use('Agg')
+    #fig, ax = plt.subplots()
+    #ax.plot([1, 2, 3], [4, 5, 6])
+    #self.ax = ax
+    #self.fig = fig
 
   ##############################################
 
@@ -221,7 +221,7 @@ class UiTestApp(object):
     #################################
 
     if imgui.begin("Graph Window"):
-        imgui_fig.fig("x", figure=self.fig)
+        #imgui_fig.fig("x", figure=self.fig)
         imgui.end()
             
     #################################

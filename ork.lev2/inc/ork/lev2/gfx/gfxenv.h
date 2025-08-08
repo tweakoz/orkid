@@ -332,6 +332,11 @@ public:
   virtual ctx_platform_handle_t _doClonePlatformHandle() const {
     return nullptr;
   }
+  void bindPlatformHandle(ctx_platform_handle_t phandle) {
+    _doBindPlatformHandle(phandle);
+  }
+  virtual void _doBindPlatformHandle(ctx_platform_handle_t phandle) {
+  }
 
   virtual void TakeThreadOwnership() {
   }

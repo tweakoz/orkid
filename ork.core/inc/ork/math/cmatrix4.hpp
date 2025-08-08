@@ -1074,7 +1074,9 @@ template <typename T> void Matrix44<T>::frustum(T left, T right, T top, T bottom
 
 template <typename T> //
 void Matrix44<T>::perspective(T fovy, T aspect, T fnear, T ffar) { //
-  OrkAssert(fnear >= 0.0f);
+  if(fnear<0.001f) {
+    fnear = 0.001f; // prevent division by zero
+  }
   OrkAssert(ffar > fnear);
 
   Matrix44<T> out;

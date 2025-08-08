@@ -269,6 +269,13 @@ void pyinit_gfx(py::module& module_lev2) {
             return the_txi->createColorTexture(color, w, h); //
           })
       .def(
+          "updateTexture",           //
+          [](const txi_t& the_txi,             //
+             texture_ptr_t tex, //
+             image_ptr_t img) {                //
+            the_txi->initTextureFromImage(tex.get(), img);
+          })
+      .def(
           "updateTextureArraySlice",           //
           [](const txi_t& the_txi,             //
              texturearraysliceref_ptr_t slice, //

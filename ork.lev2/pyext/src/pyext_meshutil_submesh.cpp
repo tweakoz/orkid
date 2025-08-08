@@ -507,6 +507,11 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                     vin->mCol[0] = py::cast<fvec4>(item.second);
                   } else if (key == "uvc0") {
                     vin->mUV[0] = py::cast<uvmapcoord>(item.second);
+                  } else if (key == "uv0") {
+                    uvmapcoord uvc;
+                    auto as_duv = py::cast<dvec2>(item.second);
+                    uvc.mMapTexCoord = fvec2(as_duv.x, as_duv.y);
+                    vin->mUV[0] = uvc;
                   } else {
                     OrkAssert(false);
                   }

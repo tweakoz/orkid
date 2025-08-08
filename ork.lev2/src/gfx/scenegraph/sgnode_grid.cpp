@@ -136,9 +136,12 @@ void GridDrawableImpl::_render(const RenderContextInstData& RCID) {
         RCID, _paramAuxA, fvec4(_griddata->_intensityA, _griddata->_intensityB, _griddata->_intensityC, _griddata->_intensityD));
     pipeline->_set_typed_param(RCID, _paramAuxB, fvec4(_griddata->_lineWidth, 0, 0, 0));
 
+    _pbrmaterial->_rasterstate->setCullTest(ECullTest::OFF);
     if (_griddata->_shader_suffix == "_V3") {
       // set additive
       _pbrmaterial->_rasterstate->setBlendingMacro(BlendingMacro::ALPHA);
+      _pbrmaterial->_rasterstate->setDepthTest(EDepthTest::LEQUALS);
+      _pbrmaterial->_rasterstate->setWriteMaskZ(true);
       //context->RSI()->BindRasterState(_pbrmaterial->_rasterstate, true);
     }
     gbi->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES, 6);

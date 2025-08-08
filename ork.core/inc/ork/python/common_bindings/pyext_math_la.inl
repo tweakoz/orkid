@@ -383,6 +383,7 @@ void pyinit_math_la_t_quat(
           .def("fromMatrix4", &quat_t::fromMatrix)
           .def("toAxisAngle", &quat_t::toAxisAngle)
           .def("conjugate", &quat_t::conjugate)
+          .def("inverse", &quat_t::inverse)
           .def("square", &quat_t::square)
           .def("negate", &quat_t::negate)
           .def("normalize", &quat_t::normalizeInPlace)

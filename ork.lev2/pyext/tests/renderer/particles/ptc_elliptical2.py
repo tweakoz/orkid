@@ -40,7 +40,7 @@ class EllipticalParticleSystem(object):
 
     self.streaks       = self.graphdata.create("STRK",particles.StreakRenderer)
 
-    self.ptc_pool.pool_size = 15000 # max number of particles in pool
+    self.ptc_pool.pool_size = 60000 # max number of particles in pool
 
     # connect modules in a chain configuration
 
@@ -50,7 +50,7 @@ class EllipticalParticleSystem(object):
     self.graphdata.connect( self.streaks.inputs.pool,    self.gravity.outputs.pool )
     
     self.emitter.inputs.LifeSpan = 1
-    self.emitter.inputs.EmissionRate = 250
+    self.emitter.inputs.EmissionRate = 500
     self.emitter.inputs.EmissionVelocity = 0.1
     self.emitter.inputs.MinU = 0
     self.emitter.inputs.MaxU = 1
@@ -108,7 +108,7 @@ class EllipticalParticleSystem(object):
       EMI.P2 = vec3(0,-f,0)
       EMI.EmissionVelocity = -3
       EMI.DispersionAngle = 0
-      EMI.LifeSpan = 0.3
+      EMI.LifeSpan = 0.4
       EMI.EmissionRate = 5000
       EMI.Scalar = 2
       
@@ -158,7 +158,7 @@ class ParticlesApp(object):
   ################################################
 
   def onUpdate(self,updinfo):
-    self.ptc.lerp = smooth_step(0.45,0.55,math.sin(updinfo.absolutetime*1)*0.5+0.5)
+    #self.ptc.lerp = smooth_step(0.45,0.55,math.sin(updinfo.absolutetime*1)*0.5+0.5)
     self.ptc.onUpdate(updinfo)
     self.scene.updateScene(self.cameralut) 
     

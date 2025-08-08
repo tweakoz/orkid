@@ -44,9 +44,6 @@ class StereoApp1(object):
     self.ezapp = lev2.OrkEzApp.create(self,ssaa=2)
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.cameralut = lev2.CameraDataLut()
-    self.vrcamera = lev2.CameraData()
-    self.cameralut.addCamera("vrcam",self.vrcamera)
-    self.xf_hmd = Transform()
 
     if mono:
       setupUiCamera(app=self,eye=vec3(0,1,1)*25,tgt=vec3(0,10,0))
@@ -62,9 +59,6 @@ class StereoApp1(object):
   def onGpuInit(self,ctx):
 
     self.frame_index = 0
-
-    self.vrdev = lev2.orkidvr.novr_device()
-    self.vrdev.camera = "vrcam"
 
     ###################################
     # create scenegraph
@@ -139,29 +133,44 @@ class StereoApp1(object):
     self.grid_node.sortkey = 1
 
     self.ball_model = lev2.XgmModel("data://tests/pbr_calib.glb")
-    self.cookie1 = MyCookie("src://effect_textures/knob2.png")
+
+    lmgr = self.scene.lightingmanager
+    color_cookies = lmgr.spot_cookies_color
+    depth_cookies = lmgr.spot_cookies_depth
+    color_cookies.needsIrradianceCache = True
+    color_cookies.resize(1024,1024,3,tokens.RGB8,True)
+    depth_cookies.resize(1024,1024,3,tokens.Z32F,True)
+
+    self.cookie1 = color_cookies.load("src://effect_textures/knob2.png")
+    depth_cookie0 = depth_cookies.slice(0)
+    depth_cookie1 = depth_cookies.slice(1)
+    depth_cookie2 = depth_cookies.slice(2)
+
 
     shadow_size = 4096
     shadow_bias = 1e-3
     intens = 100
-    self.spotlight1 = MySpotLight(app=self,
-                                 model=self.ball_model,
-                                 frq=0.3,
-                                 color=vec3(intens,0,0),
-                                 cookie=self.cookie1,
-                                 radius=12,
-                                 bias=shadow_bias,
-                                 dim=shadow_size,
-                                 fovamp=0,
-                                 fovbase=45,
-                                 voffset=16,
-                                 vscale=12)
+    self.spotlight1 = MySpotLight( index=0,
+                                   app=self,
+                                   model=self.ball_model,
+                                   frq=0.3,
+                                   color=vec3(intens,0,0),
+                                   cookie=self.cookie1,
+                                   depth_cookie=depth_cookie0,
+                                   radius=12,
+                                   bias=shadow_bias,
+                                   dim=shadow_size,
+                                   fovamp=0,
+                                   fovbase=45,
+                                   voffset=16,
+                                   vscale=12)
 
     self.spotlight2 = MySpotLight(app=self,
                                  model=self.ball_model,
                                  frq=0.7,
                                  color=vec3(0,intens,0),
                                  cookie=self.cookie1,
+                                 depth_cookie=depth_cookie1,
                                  radius=16,
                                  bias=shadow_bias,
                                  dim=shadow_size,
@@ -175,6 +184,7 @@ class StereoApp1(object):
                                  frq=0.9,
                                  color=vec3(0,0,intens),
                                  cookie=self.cookie1,
+                                 depth_cookie=depth_cookie2,
                                  radius=19,
                                  bias=shadow_bias,
                                  dim=shadow_size,
@@ -195,25 +205,6 @@ class StereoApp1(object):
 
   def onUpdate(self,updinfo):
     self.lighttime = updinfo.absolutetime
-
-    ########################################
-    # stereo viewing setup  
-    ########################################
-
-    self.vrdev.FOV = 90
-    self.vrdev.IPD = 0.065
-    self.vrdev.near = 0.1
-    self.vrdev.far = 1e5
-    
-    #self.vrcamera.perspective(.1,1e5,90)
-    #self.vrcamera.lookAt( 
-    #  vec3(0,10,-1), # eye 
-    #  vec3(0,10,0), # tgt
-    #  vec3(0,1,0) # up
-    #)
-    mtx_hmd = mtx4()
-    mtx_hmd.setColumn(3,vec4(0,5,10,1))
-    self.vrdev.setPoseMatrix("hmd",mtx_hmd.inverse)
     
     ########################################
 
