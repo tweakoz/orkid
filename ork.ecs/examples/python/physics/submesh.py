@@ -229,7 +229,7 @@ class ECS_MINIMAL(object):
 
 
 
-    submesh=fullBoxQuads(40,20)
+    submesh=fullBoxQuads(30,30)
     tmesh = clean_mesh(submeshToTrimesh(submesh,vec3(0),quat(),vec3(1)))
 
     boolean_out = tmesh.difference(tmeshx)

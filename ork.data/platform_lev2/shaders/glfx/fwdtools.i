@@ -313,7 +313,7 @@ libblock lib_fwd_impl
       vec3 diffuse  = pbd._albedo * diffuse_lighttex * NdotL; // * plc._F0;// * pl_c;// * (1.0 - spec_mix);
       vec3 lighttex = diffuse;
       lighttex += F0 * pbd._albedo * specular_lighttex * NdotL * specular_mask * spec_mix;
-      spot_lighting += lightcol * lighttex / pow(Ldist, 2) * float(mask) * shadow_factor;
+      spot_lighting += (lightcol * lighttex / pow(Ldist, 2)) * float(mask) * shadow_factor;
       //spot_lighting += diffuse;// / pow(Ldist, 2);
 
     } // for (int i = 0; i < spot_light_count; i++) {

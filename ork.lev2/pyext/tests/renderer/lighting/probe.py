@@ -70,7 +70,7 @@ class LIGHTING_APP(object):
     sceneparams.SkyboxIntensity = float(1)
     sceneparams.SpecularIntensity = float(1)
     sceneparams.DiffuseIntensity = float(1)
-    sceneparams.AmbientLight = vec3(0.07)
+    sceneparams.AmbientLight = vec3(0.01)
     sceneparams.DepthFogDistance = float(10000)
     sceneparams.supersample = 1
 
@@ -146,12 +146,12 @@ class LIGHTING_APP(object):
         subinst.overrideMaterial(mtl_cloned)
 
 
-    self.node_px = Node(self,vec3(5,2,0),vec3(2,0,0),ALL_LAYERS,1,0)
-    self.node_nx = Node(self,vec3(-5,2,0),vec3(0,2,0),ALL_LAYERS,1,0)
-    self.node_pz = Node(self,vec3(0,2,5),vec3(0,0,2),ALL_LAYERS,1,0)
-    self.node_nz = Node(self,vec3(0,2,-5),vec3(2),ALL_LAYERS,0,1)
+    self.node_px = Node(self,vec3(5,2,0),vec3(1,0,0),ALL_LAYERS,0,1)
+    self.node_nx = Node(self,vec3(-5,2,0),vec3(0,1,0),ALL_LAYERS,0,1)
+    self.node_pz = Node(self,vec3(0,2,5),vec3(0,0,1),ALL_LAYERS,0,1)
+    self.node_nz = Node(self,vec3(0,2,-5),vec3(1),ALL_LAYERS,0,1)
 
-    self.node_ctr = Node(self,vec3(0,2,0),vec3(1),DEPTH_LAYERS+[self.layer_fwd],mtl=0,ruf=0)
+    self.node_ctr = Node(self,vec3(0,2,0),vec3(1),DEPTH_LAYERS+[self.layer_fwd],mtl=1,ruf=0)
 
     ###################################
 
