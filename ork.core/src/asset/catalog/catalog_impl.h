@@ -127,6 +127,14 @@ struct CatalogImpl {
   datablock_ptr_t downloadChunkedData(const AssetLocation& location);
   datablock_ptr_t downloadSingleData(const AssetLocation& location);
   
+  // Cache helpers
+  file::Path getCachePathForAsset(const AssetLocation& location) const;
+  file::Path getCachePathForChunk(const AssetLocation& location, size_t chunk_index) const;
+  bool verifyCachedFileHash(const file::Path& cache_path, const std::string& expected_hash) const;
+  bool verifyCachedChunkHash(const file::Path& cache_path, chunk_hash_t expected_hash) const;
+  datablock_ptr_t readCachedFile(const file::Path& cache_path) const;
+  bool saveToCacheFile(const datablock_ptr_t& data, const file::Path& cache_path) const;
+  
   // Processing phases
   datablock_ptr_t processAssetData(
     datablock_ptr_t data,

@@ -57,9 +57,9 @@ AssetConfig::~AssetConfig() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-std::string LocationInfo::getEffectiveApiKey(const std::string& location_name) const {
+std::string LocationInfo::getEffectiveReadApiKey(const std::string& location_name) const {
   // Transform location name to uppercase and replace non-alphanumeric with underscore
-  std::string env_var_name = "ORKID_ASSET_API_KEY_";
+  std::string env_var_name = "ORKID_ASSET_API_KEY_READ_";
   for (char c : location_name) {
     if (std::isalnum(c)) {
       env_var_name += std::toupper(c);
@@ -74,13 +74,29 @@ std::string LocationInfo::getEffectiveApiKey(const std::string& location_name) c
     return env_value;
   }
   
-  // Check for global fallback
-  if (genviron.get("ORKID_ASSET_API_KEY_DEFAULT", env_value) && !env_value.empty()) {
+  // Fall back to configured value
+  return _api_key_read.value_or("");
+}
+
+std::string LocationInfo::getEffectiveWriteApiKey(const std::string& location_name) const {
+  // Transform location name to uppercase and replace non-alphanumeric with underscore
+  std::string env_var_name = "ORKID_ASSET_API_KEY_WRITE_";
+  for (char c : location_name) {
+    if (std::isalnum(c)) {
+      env_var_name += std::toupper(c);
+    } else {
+      env_var_name += '_';
+    }
+  }
+  
+  // Check environment variable first
+  std::string env_value;
+  if (genviron.get(env_var_name, env_value) && !env_value.empty()) {
     return env_value;
   }
   
   // Fall back to configured value
-  return _api_key.value_or("");
+  return _api_key_write.value_or("");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -158,7 +174,8 @@ void AssetConfig::merge(const AssetConfig& other) {
       auto new_loc = std::make_shared<LocationInfo>();
       new_loc->_download_url = value->_download_url;
       new_loc->_upload_url = value->_upload_url;
-      new_loc->_api_key = value->_api_key;
+      new_loc->_api_key_read = value->_api_key_read;
+      new_loc->_api_key_write = value->_api_key_write;
       new_loc->_disable_cert_check = value->_disable_cert_check;
       new_loc->_scp_destination = value->_scp_destination;
       _remote_locations[key] = new_loc;
@@ -308,21 +325,41 @@ void ConfigImpl::parseFromJsonInternal(const std::string& json_str) {
           }
         }
         
-        if (it->value.HasMember("api_key") && it->value["api_key"].IsString()) {
-          std::string api_key_str = it->value["api_key"].GetString();
+        // Parse api_key_read
+        if (it->value.HasMember("api_key_read") && it->value["api_key_read"].IsString()) {
+          std::string api_key_str = it->value["api_key_read"].GetString();
           
           // Check for environment variable pattern ${VAR_NAME}
           if (api_key_str.size() > 3 && api_key_str[0] == '$' && api_key_str[1] == '{' && api_key_str.back() == '}') {
             std::string var_name = api_key_str.substr(2, api_key_str.size() - 3);
             const char* env_value = std::getenv(var_name.c_str());
             if (env_value) {
-              loc_info->_api_key = env_value;
+              loc_info->_api_key_read = env_value;
             } else {
-              logchan_catalog->log("WARNING: Environment variable %s not found for api_key", var_name.c_str());
-              loc_info->_api_key = ""; // Clear value if env var not found
+              logchan_catalog->log("WARNING: Environment variable %s not found for api_key_read", var_name.c_str());
+              loc_info->_api_key_read = ""; // Clear value if env var not found
             }
           } else {
-            loc_info->_api_key = api_key_str;
+            loc_info->_api_key_read = api_key_str;
+          }
+        }
+        
+        // Parse api_key_write  
+        if (it->value.HasMember("api_key_write") && it->value["api_key_write"].IsString()) {
+          std::string api_key_str = it->value["api_key_write"].GetString();
+          
+          // Check for environment variable pattern ${VAR_NAME}
+          if (api_key_str.size() > 3 && api_key_str[0] == '$' && api_key_str[1] == '{' && api_key_str.back() == '}') {
+            std::string var_name = api_key_str.substr(2, api_key_str.size() - 3);
+            const char* env_value = std::getenv(var_name.c_str());
+            if (env_value) {
+              loc_info->_api_key_write = env_value;
+            } else {
+              logchan_catalog->log("WARNING: Environment variable %s not found for api_key_write", var_name.c_str());
+              loc_info->_api_key_write = ""; // Clear value if env var not found
+            }
+          } else {
+            loc_info->_api_key_write = api_key_str;
           }
         }
         
@@ -443,7 +480,8 @@ locationinfo_ptr_t AssetConfig::resolveRemoteLocation(const std::string& locatio
       if (template_it != _remote_locations.end()) {
         // Create a new LocationInfo with resolved URL
         auto resolved = std::make_shared<LocationInfo>();
-        resolved->_api_key = template_it->second->_api_key;
+        resolved->_api_key_read = template_it->second->_api_key_read;
+        resolved->_api_key_write = template_it->second->_api_key_write;
         resolved->_disable_cert_check = template_it->second->_disable_cert_check;
         resolved->_scp_destination = template_it->second->_scp_destination;  // Copy scp_destination too
         

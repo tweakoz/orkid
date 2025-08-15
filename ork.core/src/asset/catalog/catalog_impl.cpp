@@ -7,6 +7,8 @@
 #include <ork/util/crypt.h>
 #include <ork/util/tar.h>
 #include <ork/util/logger.h>
+#include <ork/util/md5.h>
+#include <ork/util/xxhash.inl>
 #include <boost/filesystem.hpp>
 #include <regex>
 #include <thread>
@@ -169,8 +171,8 @@ datablock_ptr_t CatalogImpl::downloadFile(const std::string& url, const location
       
       // Configure API key and TLS settings from location
       if (location_info) {
-        if (location_info->_api_key.has_value()) {
-          dl->setHeader("X-API-Key", location_info->_api_key.value());
+        if (location_info->_api_key_read.has_value() && !location_info->_api_key_read.value().empty()) {
+          dl->setHeader("X-API-Key", location_info->_api_key_read.value());
         }
         dl->_ignore_tls_errors = location_info->_disable_cert_check;
       } else {
@@ -249,6 +251,148 @@ datablock_ptr_t CatalogImpl::downloadFile(const std::string& url, const location
   }
 }
 
+////////////////////////////////////////////////////////////////
+// Cache Helper Functions
+////////////////////////////////////////////////////////////////
+
+file::Path CatalogImpl::getCachePathForAsset(const AssetLocation& location) const {
+  // Build cache path: {cache_dir}/enc/{storage_hash}.enc
+  // Single location for all .enc files regardless of namespace
+  file::Path cache_path = _catalog->_cache_dir / "enc";
+  
+  // Extract storage hash from relative path (it's the filename without .enc)
+  std::string storage_hash = location._relative_path;
+  if (storage_hash.size() > 4 && storage_hash.substr(storage_hash.size() - 4) == ".enc") {
+    storage_hash = storage_hash.substr(0, storage_hash.size() - 4);
+  }
+  
+  return cache_path / (storage_hash + ".enc");
+}
+
+file::Path CatalogImpl::getCachePathForChunk(const AssetLocation& location, size_t chunk_index) const {
+  // Build cache path: {cache_dir}/enc/chunks/{storage_hash}.enc.chunk.{index:04d}
+  // Single location for all chunk files regardless of namespace
+  file::Path cache_path = _catalog->_cache_dir / "enc" / "chunks";
+  
+  // Extract storage hash from relative path
+  std::string storage_hash = location._relative_path;
+  if (storage_hash.size() > 4 && storage_hash.substr(storage_hash.size() - 4) == ".enc") {
+    storage_hash = storage_hash.substr(0, storage_hash.size() - 4);
+  }
+  
+  std::string chunk_filename = FormatString("%s.enc.chunk.%04zu", storage_hash.c_str(), chunk_index);
+  return cache_path / chunk_filename;
+}
+
+bool CatalogImpl::verifyCachedFileHash(const file::Path& cache_path, const std::string& expected_hash) const {
+  // Read file and compute MD5 hash
+  if (!cache_path.doesPathExist()) {
+    return false;
+  }
+  
+  try {
+    File file(cache_path, EFM_READ);
+    size_t file_size = 0;
+    file.GetLength(file_size);
+    
+    std::vector<uint8_t> data;
+    data.resize(file_size);
+    file.Read(data.data(), file_size);
+    file.Close();
+    
+    // Compute MD5 hash
+    CMD5 hasher;
+    hasher.update(data.data(), data.size());
+    hasher.finalize();
+    std::string computed_hash = hasher.Result().hex_digest();
+    
+    bool matches = (computed_hash == expected_hash);
+    if (!matches) {
+      logchan_catalog->log("Cache hash mismatch for %s: expected %s, got %s", 
+                           cache_path.c_str(), expected_hash.c_str(), computed_hash.c_str());
+    }
+    return matches;
+  } catch (...) {
+    return false;
+  }
+}
+
+bool CatalogImpl::verifyCachedChunkHash(const file::Path& cache_path, chunk_hash_t expected_hash) const {
+  // Read file and compute XXHash64
+  if (!cache_path.doesPathExist()) {
+    return false;
+  }
+  
+  try {
+    File file(cache_path, EFM_READ);
+    size_t file_size = 0;
+    file.GetLength(file_size);
+    
+    std::vector<uint8_t> data;
+    data.resize(file_size);
+    file.Read(data.data(), file_size);
+    file.Close();
+    
+    // Compute XXHash64
+    auto xxhasher = std::make_shared<XXH64HASH>();
+    xxhasher->init();
+    xxhasher->accumulate(data.data(), data.size());
+    xxhasher->finish();
+    chunk_hash_t computed_hash = xxhasher->result();
+    
+    bool matches = (computed_hash == expected_hash);
+    if (!matches) {
+      logchan_catalog->log("Chunk hash mismatch for %s: expected %016llx, got %016llx", 
+                           cache_path.c_str(), 
+                           (unsigned long long)expected_hash, 
+                           (unsigned long long)computed_hash);
+    }
+    return matches;
+  } catch (...) {
+    return false;
+  }
+}
+
+datablock_ptr_t CatalogImpl::readCachedFile(const file::Path& cache_path) const {
+  try {
+    File file(cache_path, EFM_READ);
+    size_t file_size = 0;
+    file.GetLength(file_size);
+    
+    auto data = std::make_shared<DataBlock>();
+    data->reserve(file_size);
+    data->_storage.resize(file_size);
+    
+    file.Read(const_cast<uint8_t*>(data->data()), file_size);
+    file.Close();
+    
+    return data;
+  } catch (const std::exception& e) {
+    logchan_catalog->log("ERROR: Failed to read cached file %s: %s", cache_path.c_str(), e.what());
+    return nullptr;
+  }
+}
+
+bool CatalogImpl::saveToCacheFile(const datablock_ptr_t& data, const file::Path& cache_path) const {
+  try {
+    // Ensure cache directory exists
+    file::Path cache_dir = cache_path;
+    cache_dir.setFile("");  // Remove filename to get directory
+    cache_dir.ensureDirectoryExists();
+    
+    // Write data to cache file
+    File file(cache_path, EFM_WRITE);
+    file.Write(data->data(), data->length());
+    file.Close();
+    
+    logchan_catalog->log("Cached file saved: %s (%zu bytes)", cache_path.c_str(), data->length());
+    return true;
+  } catch (const std::exception& e) {
+    logchan_catalog->log("ERROR: Failed to save cache file %s: %s", cache_path.c_str(), e.what());
+    return false;
+  }
+}
+
 // New refactored methods
 
 assetresult_ptr_t CatalogImpl::getAsset(
@@ -320,17 +464,125 @@ datablock_ptr_t CatalogImpl::downloadAssetData(const AssetLocation& location) {
 }
 
 datablock_ptr_t CatalogImpl::downloadSingleData(const AssetLocation& location) {
+  // Get cache path for this asset
+  file::Path cache_path = getCachePathForAsset(location);
+  
+  // Extract storage hash from relative path for verification
+  std::string storage_hash = location._relative_path;
+  if (storage_hash.size() > 4 && storage_hash.substr(storage_hash.size() - 4) == ".enc") {
+    storage_hash = storage_hash.substr(0, storage_hash.size() - 4);
+  }
+  
+  // Check if cached file exists and is valid
+  if (cache_path.doesPathExist()) {
+    if (verifyCachedFileHash(cache_path, storage_hash)) {
+      // Cache hit with valid hash
+      logchan_catalog->log("Cache hit (verified): %s", storage_hash.c_str());
+      auto cached_data = readCachedFile(cache_path);
+      if (cached_data) {
+        // Update statistics for cache hit
+        _stats.atomicOp([&](Stats& stats) {
+          stats.cache_hits++;
+          stats.bytes_served_from_cache += cached_data->length();
+        });
+        return cached_data;
+      }
+    } else {
+      // Corrupted cache - delete it
+      logchan_catalog->log("Cache corrupted, removing: %s", cache_path.c_str());
+      std::remove(cache_path.c_str());
+    }
+  }
+  
+  // Cache miss - download from remote
   std::string url = location._base_url;
   if (!url.empty() && url.back() != '/') {
     url += "/";
   }
   url += location._relative_path;
   
-  return downloadFile(url, location._location_info);
+  auto data = downloadFile(url, location._location_info);
+  
+  if (data) {
+    // Verify downloaded data before caching
+    CMD5 hasher;
+    hasher.update(data->data(), data->length());
+    hasher.finalize();
+    std::string computed_hash = hasher.Result().hex_digest();
+    
+    if (computed_hash != storage_hash) {
+      logchan_catalog->log("ERROR: Downloaded file hash mismatch! Expected %s, got %s", 
+                           storage_hash.c_str(), computed_hash.c_str());
+      return nullptr;  // Don't cache or use corrupt data
+    }
+    
+    // Save verified data to cache
+    if (saveToCacheFile(data, cache_path)) {
+      logchan_catalog->log("Cached asset: %s", storage_hash.c_str());
+    }
+  }
+  
+  return data;
 }
 
 datablock_ptr_t CatalogImpl::downloadChunkedData(const AssetLocation& location) {
+  if (!location._chunk_manifest) {
+    logchan_catalog->log("ERROR: No chunk manifest for chunked download");
+    return nullptr;
+  }
+  
+  // Check if all chunks are cached and valid
   std::vector<datablock_ptr_t> chunks;
+  bool all_chunks_cached = true;
+  size_t total_cached_bytes = 0;
+  
+  for (size_t i = 0; i < location._chunk_manifest->_chunks.size(); ++i) {
+    file::Path chunk_cache_path = getCachePathForChunk(location, i);
+    
+    if (chunk_cache_path.doesPathExist() && 
+        verifyCachedChunkHash(chunk_cache_path, location._chunk_manifest->_chunks[i]._hash)) {
+      // Chunk is cached and valid
+      auto cached_chunk = readCachedFile(chunk_cache_path);
+      if (cached_chunk) {
+        chunks.push_back(cached_chunk);
+        total_cached_bytes += cached_chunk->length();
+        continue;
+      }
+    }
+    
+    // Chunk missing or corrupted - need to download all
+    all_chunks_cached = false;
+    break;
+  }
+  
+  if (all_chunks_cached) {
+    // All chunks were cached and valid
+    logchan_catalog->log("Cache hit for all %zu chunks", chunks.size());
+    
+    // Update statistics
+    _stats.atomicOp([&](Stats& stats) {
+      stats.cache_hits++;
+      stats.bytes_served_from_cache += total_cached_bytes;
+    });
+    
+    // Assemble chunks
+    ChunkAssembler::Config assembler_config;
+    ChunkAssembler assembler(location._chunk_manifest, nullptr, assembler_config);
+    auto result = assembler.assembleFromChunks(chunks);
+    
+    if (!result->success) {
+      logchan_catalog->log("ERROR: Chunk assembly failed: %s", result->error_message.c_str());
+      return nullptr;
+    }
+    
+    return result->assembled_data;
+  }
+  
+  // Need to download all chunks (all-or-nothing approach)
+  logchan_catalog->log("Cache miss or partial cache - downloading all %zu chunks", 
+                       location._chunk_manifest->_chunks.size());
+  
+  chunks.clear();
   std::string base_url = location._base_url;
   if (!base_url.empty() && base_url.back() != '/') {
     base_url += "/";
@@ -342,18 +594,38 @@ datablock_ptr_t CatalogImpl::downloadChunkedData(const AssetLocation& location) 
     
     auto chunk = downloadFile(chunk_url, location._location_info);
     if (!chunk) {
-      printf("[ERROR] Failed to download chunk %zu\n", i);
+      logchan_catalog->log("ERROR: Failed to download chunk %zu", i);
       return nullptr;
     }
+    
+    // Verify chunk hash before caching
+    auto xxhasher = std::make_shared<XXH64HASH>();
+    xxhasher->init();
+    xxhasher->accumulate(chunk->data(), chunk->length());
+    xxhasher->finish();
+    chunk_hash_t computed_hash = xxhasher->result();
+    
+    if (computed_hash != location._chunk_manifest->_chunks[i]._hash) {
+      logchan_catalog->log("ERROR: Downloaded chunk %zu hash mismatch", i);
+      return nullptr;
+    }
+    
+    // Save verified chunk to cache
+    file::Path chunk_cache_path = getCachePathForChunk(location, i);
+    if (saveToCacheFile(chunk, chunk_cache_path)) {
+      logchan_catalog->log("Cached chunk %zu", i);
+    }
+    
     chunks.push_back(chunk);
   }
   
+  // Assemble chunks
   ChunkAssembler::Config assembler_config;
   ChunkAssembler assembler(location._chunk_manifest, nullptr, assembler_config);
   auto result = assembler.assembleFromChunks(chunks);
   
   if (!result->success) {
-    printf("[ERROR] Chunk assembly failed: %s\n", result->error_message.c_str());
+    logchan_catalog->log("ERROR: Chunk assembly failed: %s", result->error_message.c_str());
     return nullptr;
   }
   

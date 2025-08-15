@@ -32,7 +32,8 @@ void pyinit_asset_config(py::module& module_core) {
               [](const LocationInfo& loc) -> py::object {
                   return py::cast(loc._upload_url);
               })
-          .def_readonly("api_key", &LocationInfo::_api_key)
+          .def_readonly("api_key_read", &LocationInfo::_api_key_read)
+          .def_readonly("api_key_write", &LocationInfo::_api_key_write)
           .def_readwrite("disable_cert_check", &LocationInfo::_disable_cert_check)
           .def_property_readonly(
               "scp_destination",
@@ -42,7 +43,8 @@ void pyinit_asset_config(py::module& module_core) {
                 }
                 return py::none();
               })
-          .def("get_effective_api_key", &LocationInfo::getEffectiveApiKey)
+          .def("get_effective_read_api_key", &LocationInfo::getEffectiveReadApiKey)
+          .def("get_effective_write_api_key", &LocationInfo::getEffectiveWriteApiKey)
           .def("__repr__", [](locationinfo_ptr_t loc) -> std::string {
             std::string scp_dest = loc->_scp_destination.has_value() ? loc->_scp_destination.value() : "None";
             auto dl_url = loc->_download_url.toString();

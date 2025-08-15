@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/asset/catalog/uploader.h>
+#include <ork/asset/catalog/catalog.h>
 #include <ork/file/file.h>
 #include <ork/kernel/string/deco.inl>
 #include <ork/kernel/timer.h>
@@ -586,11 +587,19 @@ bool AssetUploaderAdapter::uploadAssetFile(
   }
   auto entry = it->second;
   
-  // Construct source file path - use storage_hash.enc as the filename
-  auto source_file = source_dir / (entry->_storage_hash + ".enc");
+  // Get the catalog to find the cache directory
+  auto catalog = manifest->getParentCatalog();
+  if (!catalog) {
+    logchan_catalog->log("ERROR: No catalog available to find encrypted files");
+    return false;
+  }
+  
+  // Construct source file path from cache/enc directory
+  auto enc_dir = catalog->getEncryptedDir();
+  auto source_file = enc_dir / (entry->_storage_hash + ".enc");
   
   if (!source_file.doesPathExist()) {
-    logchan_catalog->log("ERROR: Source file doesn't exist: '%s'", source_file.c_str());
+    logchan_catalog->log("ERROR: Source file doesn't exist in cache: '%s'", source_file.c_str());
     return false; // Source file doesn't exist
   }
   
@@ -625,11 +634,12 @@ bool AssetUploaderAdapter::uploadAssetFile(
                                                entry->_storage_hash.c_str(), 
                                                chunk_idx);
       
-      // Construct source path for chunk
-      file::Path chunk_source = source_dir / chunk_filename;
+      // Construct source path for chunk from cache/enc/chunks directory
+      auto chunks_dir = catalog->getChunksDir();
+      file::Path chunk_source = chunks_dir / chunk_filename;
       
       if (!chunk_source.doesPathExist()) {
-        logchan_catalog->log("ERROR: Chunk file doesn't exist: '%s'", chunk_source.c_str());
+        logchan_catalog->log("ERROR: Chunk file doesn't exist in cache: '%s'", chunk_source.c_str());
         all_chunks_uploaded = false;
         break;
       }

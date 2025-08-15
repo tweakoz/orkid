@@ -26,12 +26,14 @@ namespace ork::asset::catalog {
 struct LocationInfo {
   URL _download_url;
   URL _upload_url;  
-  std::optional<std::string> _api_key;
+  std::optional<std::string> _api_key_read;   // API key for read operations (downloads)
+  std::optional<std::string> _api_key_write;  // API key for write operations (uploads)
   bool _disable_cert_check = false;  // For self-signed certificates
   std::optional<std::string> _scp_destination;  // For SCP upload in format hostname:dest_dir
   
-  // Get effective API key (env var takes precedence)
-  std::string getEffectiveApiKey(const std::string& location_name) const;
+  // Get effective API keys (env var takes precedence)
+  std::string getEffectiveReadApiKey(const std::string& location_name) const;
+  std::string getEffectiveWriteApiKey(const std::string& location_name) const;
 };
 
 // locationinfo_ptr_t defined in types.h

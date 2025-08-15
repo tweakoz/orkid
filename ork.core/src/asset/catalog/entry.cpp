@@ -629,9 +629,10 @@ void AssetEntry::repackage() {
       chunk._hash = chunk_hasher.result();
       
       // Write chunk file to <stage>/assetcache/enc/chunks/
+      // Format: {storage_hash}.enc.chunk.{index:04d}
       char chunk_filename[64];
-      snprintf(chunk_filename, sizeof(chunk_filename), "%s.chunk.%04zu%s", 
-               _storage_hash.c_str(), i, codec ? ".enc" : "");
+      snprintf(chunk_filename, sizeof(chunk_filename), "%s.enc.chunk.%04zu", 
+               _storage_hash.c_str(), i);
       file::Path chunk_path = chunks_dir / chunk_filename;
       
       std::ofstream chunk_file(chunk_path.c_str(), std::ios::binary);
@@ -754,10 +755,10 @@ uploadreceipt_ptr_t AssetEntry::upload(
   // Resolving remote destination
   
   // Get API key from namespace encryption key if not set in location
-  if (!location_info->_api_key.has_value()) {
+  if (!location_info->_api_key_write.has_value()) {
     std::string encryption_key = config.getEncryptionKeyForNamespace(_namespace);
     if (!encryption_key.empty()) {
-      location_info->_api_key = encryption_key;
+      location_info->_api_key_write = encryption_key;
       // Using namespace key as API key
     }
   }
@@ -794,7 +795,7 @@ uploadreceipt_ptr_t AssetEntry::upload(
     manifest_upload->_source_path = manifest_path;
     manifest_upload->_destination_url = location_info->_upload_url / _namespace / "enc" / 
                                        (_storage_hash + ".chunkmanifest.enc");
-    manifest_upload->_api_key = location_info->_api_key;
+    manifest_upload->_api_key = location_info->_api_key_write;
     manifest_upload->_ignore_tls_errors = location_info->_disable_cert_check;
     
     if (!manifest_upload->execute()) {
@@ -823,7 +824,7 @@ uploadreceipt_ptr_t AssetEntry::upload(
       chunk_upload->_source_path = chunk_path;
       chunk_upload->_destination_url = location_info->_upload_url / _namespace / "enc/chunks" / 
                                       chunk_path.getName();
-      chunk_upload->_api_key = location_info->_api_key;
+      chunk_upload->_api_key = location_info->_api_key_write;
       chunk_upload->_ignore_tls_errors = location_info->_disable_cert_check;
       
       if (!chunk_upload->execute()) {
@@ -882,7 +883,7 @@ uploadreceipt_ptr_t AssetEntry::upload(
     
     // Upload configuration set
     
-    file_upload->_api_key = location_info->_api_key;
+    file_upload->_api_key = location_info->_api_key_write;
     file_upload->_ignore_tls_errors = location_info->_disable_cert_check;
     
     // API key and TLS settings configured

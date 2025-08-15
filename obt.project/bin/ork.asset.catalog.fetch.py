@@ -3,65 +3,195 @@
 ################################################################################
 
 import sys, argparse, os
+import concurrent.futures
+from threading import Lock
 from orkengine import core
 
-core.coreappinit()
+################################################################################
+# Parallel fetcher class
+################################################################################
 
-parser = argparse.ArgumentParser(description='assetpak fetcher')
-parser.add_argument("-p", '--pack', type=str, help='asset ID as namespace|asset_id (e.g., singularity|std)', required=True)
-parser.add_argument("-f", '--force', action='store_true', help='Force download even if cached')
-args = vars(parser.parse_args())
-
-pack = args['pack']
-
-if pack is None:
-  print("must supply pack")
-  sys.exit(0)
-
-# Create config space and catalog
-cfgspc = core.AssetConfigSpace.loadGlobalConfigs()
-catalog = core.AssetCatalog(space=cfgspc)
-
-# Load from global manifests
-core.AssetCatalog.loadFromGlobalManifests(catalog)
-
-# Extract namespace from pack identifier
-namespace = pack.split('|')[0] if '|' in pack else pack
-
-# Fetch the asset
-try:
-    # Debug: check if asset exists
-    if catalog.has_asset(pack):
-        print(f"Found asset: {pack}")
-        asset_info = catalog.get_asset_info(pack)
-        if asset_info:
-            print(f"Asset info: {asset_info}")
-    else:
-        print(f"Asset not found: {pack}")
-        print(f"Available assets: {catalog.list_assets(namespace + '|*')}")
+class ParallelFetcher:
+    def __init__(self, catalog, max_workers=4):
+        self.catalog = catalog
+        self.max_workers = max_workers
+        self.completed = 0
+        self.total = 0
+        self.lock = Lock()
+        self.failed_assets = []
+        
+    def fetch_single(self, asset_id):
+        """Fetch a single asset (runs in thread)"""
+        try:
+            result = self.catalog.get(asset_id, decrypt=True)
+            
+            with self.lock:
+                self.completed += 1
+                current = self.completed
+                
+            if result and result.is_success():
+                print(f"  [{current}/{self.total}] ✓ {asset_id} ({result.bytes_downloaded} bytes)")
+                return (asset_id, True, result)
+            else:
+                error = result.error_detail if result else "Unknown error"
+                print(f"  [{current}/{self.total}] ✗ {asset_id}: {error}")
+                return (asset_id, False, error)
+                
+        except Exception as e:
+            with self.lock:
+                self.completed += 1
+                current = self.completed
+            print(f"  [{current}/{self.total}] ✗ {asset_id}: {str(e)}")
+            return (asset_id, False, str(e))
     
-    result = catalog.get(pack, decrypt=True)
+    def fetch_batch(self, asset_ids):
+        """Fetch multiple assets in parallel"""
+        self.total = len(asset_ids)
+        self.completed = 0
+        results = []
+        
+        print(f"\nFetching {self.total} assets with {self.max_workers} workers...")
+        print("-" * 50)
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            # Submit all tasks
+            futures = {executor.submit(self.fetch_single, asset_id): asset_id 
+                      for asset_id in asset_ids}
+            
+            # Process results as they complete
+            for future in concurrent.futures.as_completed(futures):
+                asset_id, success, data = future.result()
+                results.append((asset_id, success, data))
+                if not success:
+                    self.failed_assets.append(asset_id)
+        
+        return results
+
+################################################################################
+# Helper functions
+################################################################################
+
+def resolve_assets_to_fetch(catalog, patterns, namespaces):
+    """Resolve patterns and namespaces to concrete asset IDs"""
+    assets_to_fetch = set()
     
-    if result and result.is_success():
-        print(f"✓ Successfully fetched {pack}")
-        print(f"  Downloaded: {result.bytes_downloaded} bytes")
-        print(f"  Download time: {result.download_time:.2f}s")
-        print(f"  Processing time: {result.processing_time:.2f}s")
-        fetch_count = 1
+    # Handle namespace requests (fetch all in namespace)
+    if namespaces:
+        for ns in namespaces:
+            # Get all assets in this namespace
+            ns_assets = catalog.list_assets(f"{ns}|*")
+            assets_to_fetch.update(ns_assets)
+            print(f"Found {len(ns_assets)} assets in namespace '{ns}'")
+    
+    # Handle pattern requests
+    if patterns:
+        for pattern in patterns:
+            # Direct pattern matching using catalog's built-in support
+            matching = catalog.list_assets(pattern)
+            assets_to_fetch.update(matching)
+            print(f"Pattern '{pattern}' matched {len(matching)} assets")
+    
+    # Must specify something
+    if not patterns and not namespaces:
+        print("Error: Must specify -p patterns or -n namespaces")
+        sys.exit(1)
+    
+    return sorted(list(assets_to_fetch))
+
+def fetch_assets_sequential(catalog, asset_ids, force=False):
+    """Fetch multiple assets sequentially with simple progress"""
+    total = len(asset_ids)
+    success_count = 0
+    failed_assets = []
+    
+    print(f"\nFetching {total} assets...")
+    print("-" * 50)
+    
+    for i, asset_id in enumerate(asset_ids, 1):
+        print(f"[{i}/{total}] {asset_id}")
+        
+        try:
+            result = catalog.get(asset_id, decrypt=True)
+            
+            if result and result.is_success():
+                print(f"  ✓ Success ({result.bytes_downloaded} bytes)")
+                success_count += 1
+            else:
+                error = result.error_detail if result else "Unknown error"
+                print(f"  ✗ Failed: {error}")
+                failed_assets.append(asset_id)
+                
+        except Exception as e:
+            print(f"  ✗ Error: {e}")
+            failed_assets.append(asset_id)
+    
+    # Summary
+    print("-" * 50)
+    print(f"\nCompleted: {success_count}/{total} successful")
+    
+    if failed_assets:
+        print(f"\nFailed assets ({len(failed_assets)}):")
+        for asset in failed_assets:
+            print(f"  - {asset}")
+        return False
+    
+    return True
+
+def fetch_assets_parallel(catalog, asset_ids, num_workers=4):
+    """Fetch assets with parallel downloads"""
+    fetcher = ParallelFetcher(catalog, max_workers=num_workers)
+    results = fetcher.fetch_batch(asset_ids)
+    
+    # Summary
+    success_count = sum(1 for _, success, _ in results if success)
+    print("-" * 50)
+    print(f"\nCompleted: {success_count}/{len(asset_ids)} successful")
+    
+    if fetcher.failed_assets:
+        print(f"\nFailed assets ({len(fetcher.failed_assets)}):")
+        for asset in fetcher.failed_assets:
+            print(f"  - {asset}")
+        return False
+    
+    return True
+
+################################################################################
+# Main
+################################################################################
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Fetch assets from catalog')
+    parser.add_argument("-p", '--pattern', action='append', dest='patterns',
+                       help='Asset pattern(s) to fetch (can specify multiple)')
+    parser.add_argument("-n", '--namespace', action='append', dest='namespaces', 
+                       help='Fetch all assets from namespace(s)')
+    parser.add_argument("-f", '--force', action='store_true',
+                       help='Force download even if cached')
+    parser.add_argument("--parallel", type=int, default=1,
+                       help='Number of parallel downloads (default: 1)')
+
+    args = parser.parse_args()
+
+    # Initialize
+    core.coreappinit()
+    cfgspc = core.AssetConfigSpace.loadGlobalConfigs()
+    catalog = core.AssetCatalog(space=cfgspc)
+    
+    # Load from global manifests
+    core.AssetCatalog.loadFromGlobalManifests(catalog)
+
+    # Resolve what to fetch
+    assets = resolve_assets_to_fetch(catalog, args.patterns, args.namespaces)
+
+    if not assets:
+        print("No assets matched the specified patterns/namespaces")
+        sys.exit(1)
+
+    # Fetch them
+    if args.parallel > 1:
+        success = fetch_assets_parallel(catalog, assets, args.parallel)
     else:
-        print(f"✗ Failed to fetch {pack}")
-        if result:
-            print(f"  Error: {result.error_detail}")
-            print(f"  Status: {result.status}")
-        fetch_count = 0
-except Exception as e:
-    print(f"✗ Error fetching {pack}: {e}")
-    import traceback
-    traceback.print_exc()
-    fetch_count = 0
+        success = fetch_assets_sequential(catalog, assets, args.force)
 
-# Exit with error if nothing was fetched
-if fetch_count == 0:
-    sys.exit(1)
-
-core.coreappexit()
+    core.coreappexit()
+    sys.exit(0 if success else 1)
