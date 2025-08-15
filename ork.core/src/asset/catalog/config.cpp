@@ -22,6 +22,7 @@
 #include <ork/application/application.h>
 #include <algorithm>
 #include <cctype>
+#include <cstdlib>
 
 namespace ork::asset::catalog {
 
@@ -204,7 +205,21 @@ void ConfigImpl::parseFromJsonInternal(const std::string& json_str) {
         
         // Parse encryption_key
         if (ns_obj.HasMember("encryption_key") && ns_obj["encryption_key"].IsString()) {
-          ns_config.encryption_key = ns_obj["encryption_key"].GetString();
+          std::string key_value = ns_obj["encryption_key"].GetString();
+          
+          // Check for environment variable pattern ${VAR_NAME}
+          if (key_value.size() > 3 && key_value[0] == '$' && key_value[1] == '{' && key_value.back() == '}') {
+            std::string var_name = key_value.substr(2, key_value.size() - 3);
+            const char* env_value = std::getenv(var_name.c_str());
+            if (env_value) {
+              ns_config.encryption_key = env_value;
+            } else {
+              logchan_catalog->log("WARNING: Environment variable %s not found for encryption_key", var_name.c_str());
+              ns_config.encryption_key = ""; // Clear value if env var not found
+            }
+          } else {
+            ns_config.encryption_key = key_value;
+          }
         }
         
         // Parse upload_location
@@ -240,9 +255,21 @@ void ConfigImpl::parseFromJsonInternal(const std::string& json_str) {
         }
         
         if (it->value.HasMember("api_key") && it->value["api_key"].IsString()) {
-          auto api_key_str = it->value["api_key"].GetString();
-          // API key parsing logged at higher level if needed
-          loc_info->api_key = api_key_str;
+          std::string api_key_str = it->value["api_key"].GetString();
+          
+          // Check for environment variable pattern ${VAR_NAME}
+          if (api_key_str.size() > 3 && api_key_str[0] == '$' && api_key_str[1] == '{' && api_key_str.back() == '}') {
+            std::string var_name = api_key_str.substr(2, api_key_str.size() - 3);
+            const char* env_value = std::getenv(var_name.c_str());
+            if (env_value) {
+              loc_info->api_key = env_value;
+            } else {
+              logchan_catalog->log("WARNING: Environment variable %s not found for api_key", var_name.c_str());
+              loc_info->api_key = ""; // Clear value if env var not found
+            }
+          } else {
+            loc_info->api_key = api_key_str;
+          }
         }
         
         if (it->value.HasMember("disable_cert_check") && it->value["disable_cert_check"].IsBool()) {
