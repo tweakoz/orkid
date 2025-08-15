@@ -41,7 +41,7 @@ try:
             "namespaces": {
                 "testns": {
                     "encryption_key": "test_key_123",
-                    "upload_location": "test_remote"
+                    "remote_location": "test_remote"
                 }
             },
             "locations": {

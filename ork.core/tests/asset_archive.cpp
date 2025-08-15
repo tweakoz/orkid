@@ -305,10 +305,10 @@ TEST(AssetChunking) {
     auto chunks_dir = catalog->getChunksDir();
     
     // Should have 3 chunks (12MB / 4MB = 3)
-    CHECK(asset->_chunk_manifest->chunks.size() == 3);
+    CHECK(asset->_chunk_manifest->_chunks.size() == 3);
     
     // Verify each chunk file exists
-    for (size_t i = 0; i < asset->_chunk_manifest->chunks.size(); ++i) {
+    for (size_t i = 0; i < asset->_chunk_manifest->_chunks.size(); ++i) {
         auto chunk_filename = FormatString("%s.chunk.%04zu.enc", 
                                          asset->_storage_hash.c_str(), i);
         auto chunk_path = chunks_dir / chunk_filename;

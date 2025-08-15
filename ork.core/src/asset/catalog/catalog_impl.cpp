@@ -12,6 +12,8 @@
 #include <thread>
 #include <chrono>
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include "catalog_impl.h"
 
 ////////////////////////////////////////////////////////////////
@@ -32,14 +34,14 @@ assetlocation_ptr_t CatalogImpl::locateAsset(const assetid_t& fq_asset_id) const
     auto it = state._entries_by_assetid.find(fq_asset_id);
     if (it != state._entries_by_assetid.end()) {
       result = std::make_shared<AssetLocation>();
-      result->namespace_id = it->second.namespace_id;
-      result->relative_path = it->second.asset_path;
-      result->source_manifest = it->second.manifest;
+      result->_namespace_id = it->second.namespace_id;
+      result->_relative_path = it->second.asset_path;
+      result->_source_manifest = it->second.manifest;
       // All CDN content is encrypted (system invariant)
-      result->is_encrypted = true;
-      result->is_compressed = it->second.entry->_is_compressed;
-      result->compression_type = it->second.entry->_compression_type;
-      result->chunk_manifest = it->second.entry->_chunk_manifest;
+      result->_is_encrypted = true;
+      result->_is_compressed = it->second.entry->_is_compressed;
+      result->_compression_type = it->second.entry->_compression_type;
+      result->_chunk_manifest = it->second.entry->_chunk_manifest;
       
       // Build location info directly from entry data
       std::string remote_loc = it->second.entry->_remote_loc;
@@ -48,6 +50,28 @@ assetlocation_ptr_t CatalogImpl::locateAsset(const assetid_t& fq_asset_id) const
       if (!remote_loc.empty() && !storage_hash.empty()) {
         // Set base_url to the remote location (which may be a template like <unidevcdn>)
         std::string base_url = remote_loc;
+        
+        // Check for environment variable pattern ${VAR_NAME}
+        if (base_url.find("${") != std::string::npos) {
+          // Find and expand all environment variables in the URL
+          size_t pos = 0;
+          while ((pos = base_url.find("${", pos)) != std::string::npos) {
+            size_t end_pos = base_url.find("}", pos);
+            if (end_pos != std::string::npos) {
+              std::string var_name = base_url.substr(pos + 2, end_pos - pos - 2);
+              const char* env_value = std::getenv(var_name.c_str());
+              if (env_value) {
+                base_url.replace(pos, end_pos - pos + 1, env_value);
+                pos += strlen(env_value);
+              } else {
+                logchan_catalog->log("WARNING: Environment variable %s not found in remote_loc", var_name.c_str());
+                pos = end_pos + 1;
+              }
+            } else {
+              break;
+            }
+          }
+        }
         
         // Resolve location template if present (e.g., <unidevcdn> -> https://localhost:8443)
         if (base_url.find("<") == 0 && base_url.find(">") != std::string::npos) {
@@ -62,7 +86,7 @@ assetlocation_ptr_t CatalogImpl::locateAsset(const assetid_t& fq_asset_id) const
             for (const auto& [config_id, config] : configs) {
               auto location_info = config->resolveRemoteLocation(location_key);
               if (location_info) {
-                std::string resolved_url = location_info->url.toString();
+                std::string resolved_url = location_info->_download_url.toString();
                 
                 // Check if URL was actually resolved (not still a template)
                 if ((resolved_url.find("<") == 0 && resolved_url.find(">") != std::string::npos) ||
@@ -73,7 +97,7 @@ assetlocation_ptr_t CatalogImpl::locateAsset(const assetid_t& fq_asset_id) const
                 
                 // Location found logged at higher level if needed
                 base_url = resolved_url;
-                result->location_info = location_info;  // Store the location_info
+                result->_location_info = location_info;  // Store the location_info
                 break;
               } else {
                 printf("[DEBUG] Config %s has no location for %s\n", config_id.c_str(), location_key.c_str());
@@ -82,11 +106,11 @@ assetlocation_ptr_t CatalogImpl::locateAsset(const assetid_t& fq_asset_id) const
           }
         }
         
-        result->base_url = base_url;
-        result->relative_path = storage_hash + ".enc";
+        result->_base_url = base_url;
+        result->_relative_path = storage_hash + ".enc";
       } else if (!it->second.entry->_local_loc.empty()) {
         // Fallback to local location if remote location is empty
-        result->base_url = it->second.entry->_local_loc;
+        result->_base_url = it->second.entry->_local_loc;
       }
     }
   });
@@ -115,12 +139,12 @@ datablock_ptr_t CatalogImpl::downloadFile(const std::string& url, const location
     size_t file_size = 0;
     file.GetLength(file_size);
     
-    auto data = std::make_shared<DataBlock>();
-    data->reserve(file_size);
-    data->_storage.resize(file_size);
+    auto _data = std::make_shared<DataBlock>();
+    _data->reserve(file_size);
+    _data->_storage.resize(file_size);
     
     size_t bytes_read = 0;
-    file.Read(const_cast<uint8_t*>(data->data()), file_size);
+    file.Read(const_cast<uint8_t*>(_data->data()), file_size);
     bytes_read = file_size; // Assume success for now
     
     if (bytes_read != file_size) {
@@ -128,7 +152,7 @@ datablock_ptr_t CatalogImpl::downloadFile(const std::string& url, const location
       return nullptr;
     }
     
-    return data;
+    return _data;
     
   } else if (url.find("http://") == 0 || url.find("https://") == 0) {
     // HTTP(S) URL scheme detected
@@ -145,10 +169,10 @@ datablock_ptr_t CatalogImpl::downloadFile(const std::string& url, const location
       
       // Configure API key and TLS settings from location
       if (location_info) {
-        if (location_info->api_key.has_value()) {
-          dl->setHeader("X-API-Key", location_info->api_key.value());
+        if (location_info->_api_key.has_value()) {
+          dl->setHeader("X-API-Key", location_info->_api_key.value());
         }
-        dl->_ignore_tls_errors = location_info->disable_cert_check;
+        dl->_ignore_tls_errors = location_info->_disable_cert_check;
       } else {
         printf("[DEBUG] No location_info available, using defaults\n");
       }
@@ -234,24 +258,24 @@ assetresult_ptr_t CatalogImpl::getAsset(
     bool decrypt) {
   
   auto result = std::make_shared<AssetResult>();
-  result->location = location;
+  result->_location = location;
   Timer overall_timer;
   overall_timer.Start();
   
   // 1. Download phase
-  Timer download_timer;
-  download_timer.Start();
+  Timer _download_timer;
+  _download_timer.Start();
   
   auto raw_data = downloadAssetData(location);
   if (!raw_data) {
     printf("[DEBUG CatalogImpl] Download phase FAILED\n");
-    result->status = AssetStatus::DOWNLOAD_FAILED;
-    result->error_detail = "Failed to download asset data";
+    result->_status = AssetStatus::DOWNLOAD_FAILED;
+    result->_error_detail = "Failed to download asset _data";
     return result;
   }
   
-  result->download_time = download_timer.SecsSinceStart();
-  result->bytes_downloaded = raw_data->length();
+  result->_download_time = _download_timer.SecsSinceStart();
+  result->_bytes_downloaded = raw_data->length();
   
   // 2. Process phase
   Timer process_timer;
@@ -260,18 +284,18 @@ assetresult_ptr_t CatalogImpl::getAsset(
   auto processed_data = processAssetData(raw_data, location, decrypt);
   if (!processed_data) {
     printf("[DEBUG CatalogImpl] Process phase FAILED\n");
-    // processAssetData doesn't set status, so set it here
-    if (decrypt && location.is_encrypted) {
-      result->status = AssetStatus::DECRYPT_FAILED;
-      result->error_detail = "Failed to decrypt asset";
-    } else if (location.is_compressed) {
-      result->status = AssetStatus::DECOMPRESS_FAILED;
-      result->error_detail = "Failed to decompress asset";
+    // processAssetData doesn't set _status, so set it here
+    if (decrypt && location._is_encrypted) {
+      result->_status = AssetStatus::DECRYPT_FAILED;
+      result->_error_detail = "Failed to decrypt asset";
+    } else if (location._is_compressed) {
+      result->_status = AssetStatus::DECOMPRESS_FAILED;
+      result->_error_detail = "Failed to decompress asset";
     }
     return result;
   }
   
-  result->processing_time = process_timer.SecsSinceStart();
+  result->_processing_time = process_timer.SecsSinceStart();
   
   // 3. Handle by type
   if (asset_info->_type == "asset_pak") {
@@ -288,7 +312,7 @@ assetresult_ptr_t CatalogImpl::getAsset(
 }
 
 datablock_ptr_t CatalogImpl::downloadAssetData(const AssetLocation& location) {
-  if (location.chunk_manifest) {
+  if (location._chunk_manifest) {
     return downloadChunkedData(location);
   } else {
     return downloadSingleData(location);
@@ -296,27 +320,27 @@ datablock_ptr_t CatalogImpl::downloadAssetData(const AssetLocation& location) {
 }
 
 datablock_ptr_t CatalogImpl::downloadSingleData(const AssetLocation& location) {
-  std::string url = location.base_url;
+  std::string url = location._base_url;
   if (!url.empty() && url.back() != '/') {
     url += "/";
   }
-  url += location.relative_path;
+  url += location._relative_path;
   
-  return downloadFile(url, location.location_info);
+  return downloadFile(url, location._location_info);
 }
 
 datablock_ptr_t CatalogImpl::downloadChunkedData(const AssetLocation& location) {
   std::vector<datablock_ptr_t> chunks;
-  std::string base_url = location.base_url;
+  std::string base_url = location._base_url;
   if (!base_url.empty() && base_url.back() != '/') {
     base_url += "/";
   }
   
-  for (size_t i = 0; i < location.chunk_manifest->chunks.size(); ++i) {
+  for (size_t i = 0; i < location._chunk_manifest->_chunks.size(); ++i) {
     std::string chunk_url = base_url + FormatString("%s.chunk.%04zu", 
-                                                    location.relative_path.c_str(), i);
+                                                    location._relative_path.c_str(), i);
     
-    auto chunk = downloadFile(chunk_url, location.location_info);
+    auto chunk = downloadFile(chunk_url, location._location_info);
     if (!chunk) {
       printf("[ERROR] Failed to download chunk %zu\n", i);
       return nullptr;
@@ -325,7 +349,7 @@ datablock_ptr_t CatalogImpl::downloadChunkedData(const AssetLocation& location) 
   }
   
   ChunkAssembler::Config assembler_config;
-  ChunkAssembler assembler(location.chunk_manifest, nullptr, assembler_config);
+  ChunkAssembler assembler(location._chunk_manifest, nullptr, assembler_config);
   auto result = assembler.assembleFromChunks(chunks);
   
   if (!result->success) {
@@ -337,15 +361,15 @@ datablock_ptr_t CatalogImpl::downloadChunkedData(const AssetLocation& location) 
 }
 
 datablock_ptr_t CatalogImpl::processAssetData(
-    datablock_ptr_t data,
+    datablock_ptr_t _data,
     const AssetLocation& location,
     bool decrypt) {
   
-  auto result = data;
+  auto result = _data;
   
   // Decrypt if needed
-  if (decrypt && location.is_encrypted) {
-    result = decryptData(result, location.namespace_id);
+  if (decrypt && location._is_encrypted) {
+    result = decryptData(result, location._namespace_id);
     if (!result) {
       printf("[ERROR] Decryption failed\n");
       return nullptr;
@@ -353,8 +377,8 @@ datablock_ptr_t CatalogImpl::processAssetData(
   }
   
   // Decompress if needed
-  if (location.is_compressed) {
-    result = decompressData(result, location.compression_type);
+  if (location._is_compressed) {
+    result = decompressData(result, location._compression_type);
     if (!result) {
       printf("[ERROR] Decompression failed\n");
       return nullptr;
@@ -365,7 +389,7 @@ datablock_ptr_t CatalogImpl::processAssetData(
 }
 
 datablock_ptr_t CatalogImpl::decryptData(
-    datablock_ptr_t data,
+    datablock_ptr_t _data,
     const namespaceid_t& namespace_id) {
   
   auto codec = _catalog->codecForNamespace(namespace_id);
@@ -375,7 +399,7 @@ datablock_ptr_t CatalogImpl::decryptData(
     return nullptr;
   }
   
-  auto result = codec->decrypt(data.get());
+  auto result = codec->decrypt(_data.get());
   if (!result) {
     printf("[ERROR] Decryption failed for namespace: %s\n", namespace_id.c_str());
   }
@@ -383,20 +407,20 @@ datablock_ptr_t CatalogImpl::decryptData(
 }
 
 datablock_ptr_t CatalogImpl::decompressData(
-    datablock_ptr_t data,
+    datablock_ptr_t _data,
     CompressionType compression_type) {
   
-  return data->decompressed();
+  return _data->decompressed();
 }
 
-void CatalogImpl::handleAssetPak(datablock_ptr_t data, AssetResult& result) {
+void CatalogImpl::handleAssetPak(datablock_ptr_t _data, AssetResult& result) {
   
   // Extract tar contents
-  auto archive = util::TarArchive::loadFromMemory(data);
+  auto archive = util::TarArchive::loadFromMemory(_data);
   if (!archive || !archive->isValid()) {
     printf("[ERROR] Failed to parse tar archive\n");
-    result.status = AssetStatus::DECOMPRESS_FAILED;
-    result.error_detail = "Failed to parse tar archive";
+    result._status = AssetStatus::DECOMPRESS_FAILED;
+    result._error_detail = "Failed to parse tar archive";
     return;
   }
   
@@ -405,27 +429,27 @@ void CatalogImpl::handleAssetPak(datablock_ptr_t data, AssetResult& result) {
   auto extracted_entries = archive->extractToMemory(extract_options);
   if (extracted_entries.empty()) {
     printf("[ERROR] No entries found in tar archive\n");
-    result.status = AssetStatus::DECOMPRESS_FAILED;
-    result.error_detail = "No entries found in tar archive";
+    result._status = AssetStatus::DECOMPRESS_FAILED;
+    result._error_detail = "No entries found in tar archive";
     return;
   }
   
   // Convert tar entries to AssetResult format
   for (const auto& [filename, entry] : extracted_entries) {
     if (entry && entry->data) {
-      result.pak_contents[filename] = entry->data;
+      result._pak_contents[filename] = entry->data;
       printf("[DEBUG] Extracted: %s (%zu bytes)\n", filename.c_str(), entry->data->length());
     }
   }
   
-  result.status = AssetStatus::OK;
-  printf("[DEBUG] Asset pak extraction complete: %zu files\n", result.pak_contents.size());
+  result._status = AssetStatus::OK;
+  printf("[DEBUG] Asset pak extraction complete: %zu files\n", result._pak_contents.size());
 }
 
-void CatalogImpl::handleRegularAsset(datablock_ptr_t data, AssetResult& result) {
-  result.data = data;
-  result.status = AssetStatus::OK;
-  result.bytes_downloaded = data->length();
+void CatalogImpl::handleRegularAsset(datablock_ptr_t _data, AssetResult& result) {
+  result._data = _data;
+  result._status = AssetStatus::OK;
+  result._bytes_downloaded = _data->length();
 }
 
 void CatalogImpl::writeAssetPakToLocal(const assetentry_ptr_t& asset_info, AssetResult& result) {
@@ -451,12 +475,12 @@ void CatalogImpl::writeAssetPakToLocal(const assetentry_ptr_t& asset_info, Asset
   // Ensure directory exists
   extract_dir.ensureDirectoryExists();
   
-  // Write each file from pak_contents
-  for (const auto& [filename, data] : result.pak_contents) {
-    if (!data) continue;
+  // Write each file from _pak_contents
+  for (const auto& [filename, _data] : result._pak_contents) {
+    if (!_data) continue;
     
     file::Path file_path = extract_dir / filename;
-    printf("[DEBUG] Writing file: %s (%zu bytes)\n", file_path.c_str(), data->length());
+    printf("[DEBUG] Writing file: %s (%zu bytes)\n", file_path.c_str(), _data->length());
     
     // Ensure parent directory exists
     namespace fs = boost::filesystem;
@@ -466,9 +490,9 @@ void CatalogImpl::writeAssetPakToLocal(const assetentry_ptr_t& asset_info, Asset
     // Write file using stdio
     FILE* fp = fopen(file_path.c_str(), "wb");
     if (fp) {
-      size_t written = fwrite(data->data(), 1, data->length(), fp);
+      size_t written = fwrite(_data->data(), 1, _data->length(), fp);
       fclose(fp);
-      if (written != data->length()) {
+      if (written != _data->length()) {
         printf("[ERROR] Failed to write complete file: %s\n", file_path.c_str());
       }
     } else {
@@ -506,7 +530,7 @@ void CatalogImpl::processDownloadTask(const DownloadTask& task) {
 }
 
 void CatalogImpl::updateDownloadProgress(
-    const assetid_t& asset_id,
+    const assetid_t& _asset_id,
     size_t current,
     size_t total) {
   // TODO: Implement

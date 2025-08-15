@@ -35,23 +35,23 @@ assetresult_ptr_t AssetCatalog::unpackToLocal(const assetid_t& fq_pak_asset_id) 
   // 1. Get pak asset info
   assetentry_ptr_t asset_info = getAssetInfo(fq_pak_asset_id);
   if (!asset_info) {
-    result->status       = AssetStatus::NOT_FOUND;
-    result->error_detail = FormatString("Asset not found: %s", fq_pak_asset_id.c_str());
+    result->_status       = AssetStatus::NOT_FOUND;
+    result->_error_detail = FormatString("Asset not found: %s", fq_pak_asset_id.c_str());
     return result;
   }
 
   // 2. Verify it's an asset_pak
   if (asset_info->_type != "asset_pak") {
-    result->status       = AssetStatus::UNSUPPORTED;
-    result->error_detail = FormatString("Asset is not asset_pak type: %s", asset_info->_type.c_str());
+    result->_status       = AssetStatus::UNSUPPORTED;
+    result->_error_detail = FormatString("Asset is not asset_pak type: %s", asset_info->_type.c_str());
     return result;
   }
 
   // 3. Get pak contents using regular get() - this handles download/decryption/decompression
   auto pak_result = get(fq_pak_asset_id, true);
   if (!pak_result || !pak_result->isSuccess() || !pak_result->isPak()) {
-    result->status       = pak_result ? pak_result->status : AssetStatus::DOWNLOAD_FAILED;
-    result->error_detail = pak_result ? pak_result->error_detail : "Failed to retrieve pak";
+    result->_status       = pak_result ? pak_result->_status : AssetStatus::DOWNLOAD_FAILED;
+    result->_error_detail = pak_result ? pak_result->_error_detail : "Failed to retrieve pak";
     return result;
   }
 
@@ -66,16 +66,16 @@ assetresult_ptr_t AssetCatalog::unpackToLocal(const assetid_t& fq_pak_asset_id) 
       extract_path = file::Path(local_url);
     }
   } else {
-    result->status       = AssetStatus::UNSUPPORTED;
-    result->error_detail = "No local location specified for pak asset";
+    result->_status       = AssetStatus::UNSUPPORTED;
+    result->_error_detail = "No local location specified for pak asset";
     return result;
   }
 
   // 5. Extract pak contents to individual files
   extract_path.ensureDirectoryExists();
 
-  for (const auto& [filename, data] : pak_result->pak_contents) {
-    if (!data)
+  for (const auto& [filename, _data] : pak_result->_pak_contents) {
+    if (!_data)
       continue;
 
     auto output_file = extract_path / filename;
@@ -86,19 +86,19 @@ assetresult_ptr_t AssetCatalog::unpackToLocal(const assetid_t& fq_pak_asset_id) 
 
     // Write file data
     bool write_success =
-        File::writeBinary(output_file, std::vector<uint8_t>((uint8_t*)data->data(), (uint8_t*)data->data() + data->length()));
+        File::writeBinary(output_file, std::vector<uint8_t>((uint8_t*)_data->data(), (uint8_t*)_data->data() + _data->length()));
 
     if (!write_success) {
-      result->status       = AssetStatus::DECOMPRESS_FAILED;
-      result->error_detail = FormatString("Failed to write extracted file: %s", output_file.c_str());
+      result->_status       = AssetStatus::DECOMPRESS_FAILED;
+      result->_error_detail = FormatString("Failed to write extracted file: %s", output_file.c_str());
       return result;
     }
   }
 
   // Extraction was successful if we got here
 
-  result->status          = AssetStatus::OK;
-  result->processing_time = timer.SecsSinceStart();
+  result->_status          = AssetStatus::OK;
+  result->_processing_time = timer.SecsSinceStart();
 
   return result;
 }
@@ -113,8 +113,8 @@ assetresult_ptr_t AssetCatalog::packFromLocal(const assetid_t& fq_pak_asset_id) 
   // 1. Get pak asset info
   assetentry_ptr_t asset_info = getAssetInfo(fq_pak_asset_id);
   if (!asset_info) {
-    result->status       = AssetStatus::NOT_FOUND;
-    result->error_detail = FormatString("Asset not found: %s", fq_pak_asset_id.c_str());
+    result->_status       = AssetStatus::NOT_FOUND;
+    result->_error_detail = FormatString("Asset not found: %s", fq_pak_asset_id.c_str());
     return result;
   }
 
@@ -123,8 +123,8 @@ assetresult_ptr_t AssetCatalog::packFromLocal(const assetid_t& fq_pak_asset_id) 
 
   // 2. Verify it's an asset_pak
   if (asset_info->_type != "asset_pak") {
-    result->status       = AssetStatus::UNSUPPORTED;
-    result->error_detail = FormatString("Asset is not asset_pak type: %s", asset_info->_type.c_str());
+    result->_status       = AssetStatus::UNSUPPORTED;
+    result->_error_detail = FormatString("Asset is not asset_pak type: %s", asset_info->_type.c_str());
     return result;
   }
 
@@ -152,8 +152,8 @@ assetresult_ptr_t AssetCatalog::packFromLocal(const assetid_t& fq_pak_asset_id) 
       pak_local_path = file::Path(resolved_local);
     }
   } else {
-    result->status       = AssetStatus::UNSUPPORTED;
-    result->error_detail = "No local location specified for pak asset";
+    result->_status       = AssetStatus::UNSUPPORTED;
+    result->_error_detail = "No local location specified for pak asset";
     return result;
   }
 
@@ -170,8 +170,8 @@ assetresult_ptr_t AssetCatalog::packFromLocal(const assetid_t& fq_pak_asset_id) 
                        source_dir.c_str(), pak_local_path.c_str(), dir_name.c_str());
   
   if (!source_dir.doesPathExist()) {
-    result->status       = AssetStatus::NOT_FOUND;
-    result->error_detail = FormatString("Source directory not found: %s (pak_local_path=%s, dir_name=%s)", 
+    result->_status       = AssetStatus::NOT_FOUND;
+    result->_error_detail = FormatString("Source directory not found: %s (pak_local_path=%s, dir_name=%s)", 
                                        source_dir.c_str(), pak_local_path.c_str(), dir_name.c_str());
     return result;
   }
@@ -182,21 +182,21 @@ assetresult_ptr_t AssetCatalog::packFromLocal(const assetid_t& fq_pak_asset_id) 
 
   auto archive = util::TarArchive::createFromDirectory(source_dir, create_options);
   if (!archive || !archive->isValid()) {
-    result->status       = AssetStatus::DOWNLOAD_FAILED;
-    result->error_detail = FormatString("Failed to create tar archive from directory: %s", source_dir.c_str());
+    result->_status       = AssetStatus::DOWNLOAD_FAILED;
+    result->_error_detail = FormatString("Failed to create tar archive from directory: %s", source_dir.c_str());
     return result;
   }
 
   // 6. Get pak data
-  result->data = archive->getArchiveData();
-  if (!result->data) {
-    result->status       = AssetStatus::DOWNLOAD_FAILED;
-    result->error_detail = "Failed to get archive data";
+  result->_data = archive->getArchiveData();
+  if (!result->_data) {
+    result->_status       = AssetStatus::DOWNLOAD_FAILED;
+    result->_error_detail = "Failed to get archive _data";
     return result;
   }
 
-  result->status          = AssetStatus::OK;
-  result->processing_time = timer.SecsSinceStart();
+  result->_status          = AssetStatus::OK;
+  result->_processing_time = timer.SecsSinceStart();
 
   return result;
 }
@@ -210,8 +210,8 @@ assetresult_ptr_t AssetCatalog::packFromLocal(assetentry_ptr_t asset_info) {
 
   // 1. Verify we have asset info
   if (!asset_info) {
-    result->status       = AssetStatus::NOT_FOUND;
-    result->error_detail = "No asset info provided";
+    result->_status       = AssetStatus::NOT_FOUND;
+    result->_error_detail = "No asset info provided";
     return result;
   }
 
@@ -220,8 +220,8 @@ assetresult_ptr_t AssetCatalog::packFromLocal(assetentry_ptr_t asset_info) {
 
   // 2. Verify it's an asset_pak
   if (asset_info->_type != "asset_pak") {
-    result->status       = AssetStatus::UNSUPPORTED;
-    result->error_detail = FormatString("Asset is not asset_pak type: %s", asset_info->_type.c_str());
+    result->_status       = AssetStatus::UNSUPPORTED;
+    result->_error_detail = FormatString("Asset is not asset_pak type: %s", asset_info->_type.c_str());
     return result;
   }
 
@@ -249,8 +249,8 @@ assetresult_ptr_t AssetCatalog::packFromLocal(assetentry_ptr_t asset_info) {
       pak_local_path = file::Path(resolved_local);
     }
   } else {
-    result->status       = AssetStatus::UNSUPPORTED;
-    result->error_detail = "No local location specified for pak asset";
+    result->_status       = AssetStatus::UNSUPPORTED;
+    result->_error_detail = "No local location specified for pak asset";
     return result;
   }
 
@@ -267,8 +267,8 @@ assetresult_ptr_t AssetCatalog::packFromLocal(assetentry_ptr_t asset_info) {
                        source_dir.c_str(), pak_local_path.c_str(), dir_name.c_str());
   
   if (!source_dir.doesPathExist()) {
-    result->status       = AssetStatus::NOT_FOUND;
-    result->error_detail = FormatString("Source directory not found: %s (pak_local_path=%s, dir_name=%s)", 
+    result->_status       = AssetStatus::NOT_FOUND;
+    result->_error_detail = FormatString("Source directory not found: %s (pak_local_path=%s, dir_name=%s)", 
                                        source_dir.c_str(), pak_local_path.c_str(), dir_name.c_str());
     return result;
   }
@@ -279,21 +279,21 @@ assetresult_ptr_t AssetCatalog::packFromLocal(assetentry_ptr_t asset_info) {
 
   auto archive = util::TarArchive::createFromDirectory(source_dir, create_options);
   if (!archive || !archive->isValid()) {
-    result->status       = AssetStatus::DOWNLOAD_FAILED;
-    result->error_detail = FormatString("Failed to create tar archive from directory: %s", source_dir.c_str());
+    result->_status       = AssetStatus::DOWNLOAD_FAILED;
+    result->_error_detail = FormatString("Failed to create tar archive from directory: %s", source_dir.c_str());
     return result;
   }
 
   // 7. Get pak data
-  result->data = archive->getArchiveData();
-  if (!result->data) {
-    result->status       = AssetStatus::DOWNLOAD_FAILED;
-    result->error_detail = "Failed to get archive data";
+  result->_data = archive->getArchiveData();
+  if (!result->_data) {
+    result->_status       = AssetStatus::DOWNLOAD_FAILED;
+    result->_error_detail = "Failed to get archive _data";
     return result;
   }
 
-  result->status          = AssetStatus::OK;
-  result->processing_time = timer.SecsSinceStart();
+  result->_status          = AssetStatus::OK;
+  result->_processing_time = timer.SecsSinceStart();
 
   return result;
 }

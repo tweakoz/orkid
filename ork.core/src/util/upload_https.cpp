@@ -9,7 +9,6 @@
 #include <ork/file/file.h>
 #include <ork/kernel/string/deco.inl>
 #include <ork/kernel/timer.h>
-#include <ork/util/logger.h>
 #include <curl/curl.h>
 #include <rapidjson/document.h>
 #include <fstream>
@@ -92,6 +91,7 @@ struct HttpsUploader::Impl {
 HttpsUploader::HttpsUploader(httpsuploaderconfig_ptr_t config)
     : _config(config) {
   _impl = std::make_unique<Impl>();
+  _log_channel = logger()->configureChannel("HTTPSUPLOAD",fvec3(1,.7,1),true);
 }
 
 HttpsUploader::~HttpsUploader() = default;
@@ -114,13 +114,13 @@ bool HttpsUploader::uploadFile(
   
   
   if (_cancelled) {
-    printf("[HTTPS_ERROR] Upload cancelled\n");
+    _log_channel->log("[ERROR] Upload cancelled");
     return false;
   }
   
   // Check if file exists
   if (!local_file.doesPathExist()) {
-    printf("[HTTPS_ERROR] Local file doesn't exist: '%s'\n", local_file.c_str());
+    _log_channel->log("[ERROR] Local file doesn't exist: '%s'", local_file.c_str());
     return false;
   }
   
@@ -236,10 +236,7 @@ bool HttpsUploader::uploadFile(
   }
   
   // Log upload start
-  auto logchan = logger()->getChannel("UPLOAD");
-  if (logchan) {
-    logchan->log("Uploading %s to %s", local_file.c_str(), full_url.c_str());
-  }
+  _log_channel->log("Uploading %s to %s", local_file.c_str(), full_url.c_str());
   
   // Perform the upload
   CURLcode res = curl_easy_perform(curl);
@@ -260,22 +257,16 @@ bool HttpsUploader::uploadFile(
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
     
     if (response_code >= 200 && response_code < 300) {
-      if (logchan) {
-        logchan->log("Upload successful: HTTP %ld", response_code);
-      }
+        _log_channel->log("Upload successful: HTTP %ld", response_code);
       success = true;
     } else {
       if(response_code!=429){
-        printf("[HTTPS_ERROR] Upload failed with HTTP %ld\n", response_code);
+        _log_channel->log("[ERROR] Upload failed with HTTP %ld", response_code);
       }
-      if (logchan) {
-        logchan->log("Upload failed: HTTP %ld", response_code);
-      }
+        _log_channel->log("Upload failed: HTTP %ld", response_code);
     }
   } else {
-    if (logchan) {
-      logchan->log("Upload failed: %s", curl_easy_strerror(res));
-    }
+      _log_channel->log("Upload failed: %s", curl_easy_strerror(res));
   }
   
   // Clean up the fresh CURL handle
@@ -497,12 +488,13 @@ void HttpsUploader::handleUploadProgress(size_t uploaded, size_t total) {
     if (elapsed > 4.0) {
       size_t bytes_delta = uploaded - _impl->_last_uploaded_bytes;
       _impl->_last_upload_rate = bytes_delta / elapsed;
-      printf("[HTTPS] Upload rate: %.2f bytes/sec\n", _impl->_last_upload_rate);
-      printf("[HTTPS] Upload progress: %zu/%zu bytes (%.2f%%)\n",
-        uploaded, total, (total > 0 ? (static_cast<double>(uploaded) / total) * 100.0 : 0.0));
+      _log_channel->log("Upload rate: %.2f MiB/sec progress: %zu/%zu bytes (%.2f%%)", // 
+             double(_impl->_last_upload_rate) / (1024.0 * 1024.0), //
+             uploaded, total, //
+             (total > 0 ? (static_cast<double>(uploaded) / total) * 100.0 : 0.0));
       _impl->_upload_timer.Start();
+      _impl->_last_uploaded_bytes = uploaded;
     }
-    _impl->_last_uploaded_bytes = uploaded;
   }
   
   // Call the progress callback

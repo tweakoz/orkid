@@ -80,7 +80,7 @@ std::string LocationInfo::getEffectiveApiKey(const std::string& location_name) c
   }
   
   // Fall back to configured value
-  return api_key.value_or("");
+  return _api_key.value_or("");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -156,10 +156,11 @@ void AssetConfig::merge(const AssetConfig& other) {
         OrkAssert(false);
       }
       auto new_loc = std::make_shared<LocationInfo>();
-      new_loc->url = value->url;
-      new_loc->api_key = value->api_key;
-      new_loc->disable_cert_check = value->disable_cert_check;
-      new_loc->scp_destination = value->scp_destination;
+      new_loc->_download_url = value->_download_url;
+      new_loc->_upload_url = value->_upload_url;
+      new_loc->_api_key = value->_api_key;
+      new_loc->_disable_cert_check = value->_disable_cert_check;
+      new_loc->_scp_destination = value->_scp_destination;
       _remote_locations[key] = new_loc;
     }
   }
@@ -212,19 +213,19 @@ void ConfigImpl::parseFromJsonInternal(const std::string& json_str) {
             std::string var_name = key_value.substr(2, key_value.size() - 3);
             const char* env_value = std::getenv(var_name.c_str());
             if (env_value) {
-              ns_config.encryption_key = env_value;
+              ns_config._encryption_key = env_value;
             } else {
               logchan_catalog->log("WARNING: Environment variable %s not found for encryption_key", var_name.c_str());
-              ns_config.encryption_key = ""; // Clear value if env var not found
+              ns_config._encryption_key = ""; // Clear value if env var not found
             }
           } else {
-            ns_config.encryption_key = key_value;
+            ns_config._encryption_key = key_value;
           }
         }
         
-        // Parse upload_location
-        if (ns_obj.HasMember("upload_location") && ns_obj["upload_location"].IsString()) {
-          ns_config.upload_location = ns_obj["upload_location"].GetString();
+        // Parse remote_location
+        if (ns_obj.HasMember("remote_location") && ns_obj["remote_location"].IsString()) {
+          ns_config._remote_location = ns_obj["remote_location"].GetString();
         }
         
         // Namespace config addition logged at higher level if needed
@@ -246,11 +247,64 @@ void ConfigImpl::parseFromJsonInternal(const std::string& json_str) {
         // New format: {"url": "...", "api_key": "..."}
         if (it->value.HasMember("url") && it->value["url"].IsString()) {
           std::string url_str = it->value["url"].GetString();
-          if (url_str.substr(0, 4) == "http") {
-            // URL parsing logged at higher level if needed
-            loc_info->url = URL(url_str);
-          } else {
-            loc_info->url = URL("file://" + url_str);
+          
+          // Check for environment variable pattern ${VAR_NAME} - expand all occurrences
+          size_t pos = 0;
+          while ((pos = url_str.find("${", pos)) != std::string::npos) {
+            size_t end_pos = url_str.find("}", pos);
+            if (end_pos != std::string::npos) {
+              std::string var_name = url_str.substr(pos + 2, end_pos - pos - 2);
+              const char* env_value = std::getenv(var_name.c_str());
+              if (env_value) {
+                url_str.replace(pos, end_pos - pos + 1, env_value);
+                pos += strlen(env_value);
+              } else {
+                logchan_catalog->log("WARNING: Environment variable %s not found for url", var_name.c_str());
+                pos = end_pos + 1;
+              }
+            } else {
+              break;
+            }
+          }
+          
+          if (!url_str.empty()) {
+            if (url_str.substr(0, 4) == "http") {
+              loc_info->_download_url = URL(url_str);
+            } else {
+              loc_info->_download_url = URL("file://" + url_str);
+            }
+          }
+        }
+        
+        // Parse upload_url (optional)
+        if (it->value.HasMember("upload_url") && it->value["upload_url"].IsString()) {
+          std::string upload_url_str = it->value["upload_url"].GetString();
+          
+          // Check for environment variable pattern ${VAR_NAME} - expand all occurrences
+          size_t pos = 0;
+          while ((pos = upload_url_str.find("${", pos)) != std::string::npos) {
+            size_t end_pos = upload_url_str.find("}", pos);
+            if (end_pos != std::string::npos) {
+              std::string var_name = upload_url_str.substr(pos + 2, end_pos - pos - 2);
+              const char* env_value = std::getenv(var_name.c_str());
+              if (env_value) {
+                upload_url_str.replace(pos, end_pos - pos + 1, env_value);
+                pos += strlen(env_value);
+              } else {
+                logchan_catalog->log("WARNING: Environment variable %s not found for upload_url", var_name.c_str());
+                pos = end_pos + 1;
+              }
+            } else {
+              break;
+            }
+          }
+          
+          if (!upload_url_str.empty()) {
+            if (upload_url_str.substr(0, 4) == "http") {
+              loc_info->_upload_url = URL(upload_url_str);
+            } else {
+              loc_info->_upload_url = URL("file://" + upload_url_str);
+            }
           }
         }
         
@@ -262,22 +316,22 @@ void ConfigImpl::parseFromJsonInternal(const std::string& json_str) {
             std::string var_name = api_key_str.substr(2, api_key_str.size() - 3);
             const char* env_value = std::getenv(var_name.c_str());
             if (env_value) {
-              loc_info->api_key = env_value;
+              loc_info->_api_key = env_value;
             } else {
               logchan_catalog->log("WARNING: Environment variable %s not found for api_key", var_name.c_str());
-              loc_info->api_key = ""; // Clear value if env var not found
+              loc_info->_api_key = ""; // Clear value if env var not found
             }
           } else {
-            loc_info->api_key = api_key_str;
+            loc_info->_api_key = api_key_str;
           }
         }
         
         if (it->value.HasMember("disable_cert_check") && it->value["disable_cert_check"].IsBool()) {
-          loc_info->disable_cert_check = it->value["disable_cert_check"].GetBool();
+          loc_info->_disable_cert_check = it->value["disable_cert_check"].GetBool();
         }
         
         if (it->value.HasMember("scp_destination") && it->value["scp_destination"].IsString()) {
-          loc_info->scp_destination = it->value["scp_destination"].GetString();
+          loc_info->_scp_destination = it->value["scp_destination"].GetString();
         }
         
         _config->_remote_locations[it->name.GetString()] = loc_info;
@@ -285,9 +339,9 @@ void ConfigImpl::parseFromJsonInternal(const std::string& json_str) {
         // Backward compatibility: string format
         std::string value = it->value.GetString();
         if (value.substr(0, 4) == "http") {
-          loc_info->url = URL(value);
+          loc_info->_download_url = URL(value);
         } else {
-          loc_info->url = URL("file://" + value);
+          loc_info->_download_url = URL("file://" + value);
         }
         _config->_remote_locations[it->name.GetString()] = loc_info;
       }
@@ -389,19 +443,24 @@ locationinfo_ptr_t AssetConfig::resolveRemoteLocation(const std::string& locatio
       if (template_it != _remote_locations.end()) {
         // Create a new LocationInfo with resolved URL
         auto resolved = std::make_shared<LocationInfo>();
-        resolved->api_key = template_it->second->api_key;
-        resolved->disable_cert_check = template_it->second->disable_cert_check;
+        resolved->_api_key = template_it->second->_api_key;
+        resolved->_disable_cert_check = template_it->second->_disable_cert_check;
+        resolved->_scp_destination = template_it->second->_scp_destination;  // Copy scp_destination too
         
         // If there's a path after the location key, append it
         if (end_pos + 1 < location_ref.length()) {
           std::string path_suffix = location_ref.substr(end_pos + 1);
           if (path_suffix[0] == '/') {
-            resolved->url = template_it->second->url / path_suffix.substr(1);
+            resolved->_download_url = template_it->second->_download_url / path_suffix.substr(1);
+            resolved->_upload_url = template_it->second->_upload_url / path_suffix.substr(1);
           } else {
-            resolved->url = template_it->second->url / path_suffix;
+            resolved->_download_url = template_it->second->_download_url / path_suffix;
+          resolved->_upload_url = template_it->second->_upload_url / path_suffix;
           }
         } else {
-          resolved->url = template_it->second->url;
+          resolved->_download_url = template_it->second->_download_url;
+          resolved->_upload_url = template_it->second->_upload_url; 
+          
         }
         
         return resolved;
@@ -411,7 +470,7 @@ locationinfo_ptr_t AssetConfig::resolveRemoteLocation(const std::string& locatio
   
   // Not a template, just return a LocationInfo with the URL
   auto result = std::make_shared<LocationInfo>();
-  result->url = URL(location_ref);
+  result->_download_url = URL(location_ref);
   return result;
 }
 
@@ -422,20 +481,20 @@ locationinfo_ptr_t AssetConfig::resolveRemoteLocation(const std::string& locatio
 std::string AssetConfig::getEncryptionKeyForNamespace(const std::string& namespace_id) const {
   auto ns_it = _namespaces.find(namespace_id);
   if (ns_it != _namespaces.end()) {
-    return ns_it->second.encryption_key;
+    return ns_it->second._encryption_key;
   }
   
   return ""; // No key found
 }
 
-locationinfo_ptr_t AssetConfig::getUploadLocationForNamespace(const std::string& namespace_id) const {
-  // Check _namespaces map for upload location reference
+locationinfo_ptr_t AssetConfig::getRemoteLocationForNamespace(const std::string& namespace_id) const {
+  // Check _namespaces map for remote location reference
   auto ns_it = _namespaces.find(namespace_id);
-  if (ns_it != _namespaces.end() && !ns_it->second.upload_location.empty()) {
-    return resolveRemoteLocation(ns_it->second.upload_location);
+  if (ns_it != _namespaces.end() && !ns_it->second._remote_location.empty()) {
+    return resolveRemoteLocation(ns_it->second._remote_location);
   }
   
-  return nullptr; // No upload location configured for this namespace
+  return nullptr; // No remote location configured for this namespace
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -443,14 +502,14 @@ locationinfo_ptr_t AssetConfig::getUploadLocationForNamespace(const std::string&
 ////////////////////////////////////////////////////////////////////////////////
 
 
-void AssetConfig::addNamespace(const std::string& namespace_id, const std::string& encryption_key, const std::string& upload_location) {
-  NamespaceConfig ns_config(encryption_key, upload_location);
+void AssetConfig::addNamespace(const std::string& namespace_id, const std::string& encryption_key, const std::string& remote_location) {
+  NamespaceConfig ns_config(encryption_key, remote_location);
   _namespaces[namespace_id] = ns_config;
 }
 
 void AssetConfig::addRemoteLocation(const std::string& id, const std::string& loc) {
   auto location_info = std::make_shared<LocationInfo>();
-  location_info->url = URL(loc);
+  location_info->_download_url = URL(loc);
   _remote_locations[id] = location_info;
 }
 
@@ -469,10 +528,10 @@ std::string AssetConfig::toJson() const {
     rapidjson::Value ns_obj(rapidjson::kObjectType);
     
     ns_obj.AddMember("encryption_key", 
-                     rapidjson::Value(ns_config.encryption_key.c_str(), allocator), 
+                     rapidjson::Value(ns_config._encryption_key.c_str(), allocator), 
                      allocator);
-    ns_obj.AddMember("upload_location", 
-                     rapidjson::Value(ns_config.upload_location.c_str(), allocator), 
+    ns_obj.AddMember("remote_location", 
+                     rapidjson::Value(ns_config._remote_location.c_str(), allocator), 
                      allocator);
     
     namespaces.AddMember(rapidjson::Value(key.c_str(), allocator), ns_obj, allocator);
@@ -485,7 +544,7 @@ std::string AssetConfig::toJson() const {
     if (value) {
       locations.AddMember(
         rapidjson::Value(key.c_str(), allocator),
-        rapidjson::Value(value->url.toString().c_str(), allocator),
+        rapidjson::Value(value->_download_url.toString().c_str(), allocator),
         allocator
       );
     }

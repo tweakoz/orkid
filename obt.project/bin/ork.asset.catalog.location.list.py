@@ -122,7 +122,7 @@ if all_locations:
                         config_data = json.load(f)
                     if 'namespaces' in config_data:
                         for ns_id, ns_config in config_data['namespaces'].items():
-                            if 'upload_location' in ns_config and ns_config['upload_location'] == loc_id:
+                            if 'remote_location' in ns_config and ns_config['remote_location'] == loc_id:
                                 using_namespaces.append(ns_id)
                 except:
                     pass

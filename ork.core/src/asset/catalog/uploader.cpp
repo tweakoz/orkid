@@ -91,13 +91,13 @@ double UploadProgress::getTransferRate() const {
 }
 
 std::string UploadProgress::getRateString() const {
-  double rate = getTransferRate();
-  if (rate < 1024) {
-    return FormatString("%.0f B/s", rate);
-  } else if (rate < 1024 * 1024) {
-    return FormatString("%.1f KB/s", rate / 1024.0);
+  double _rate = getTransferRate();
+  if (_rate < 1024) {
+    return FormatString("%.0f B/s", _rate);
+  } else if (_rate < 1024 * 1024) {
+    return FormatString("%.1f KB/s", _rate / 1024.0);
   } else {
-    return FormatString("%.1f MB/s", rate / (1024.0 * 1024.0));
+    return FormatString("%.1f MB/s", _rate / (1024.0 * 1024.0));
   }
 }
 
@@ -360,10 +360,10 @@ uploadreceipt_ptr_t AssetUploaderAdapter::uploadManifest(
   size_t failed_uploads = 0;
   size_t bytes_uploaded = 0;
   
-  for (const auto& [asset_id, entry] : assets) {
+  for (const auto& [_asset_id, entry] : assets) {
     // Skip assets that don't support current platform
     if (!entry->supportsCurrentPlatform()) {
-      receipt->warnings.push_back(FormatString("Skipping %s - platform not supported", asset_id.c_str()));
+      receipt->warnings.push_back(FormatString("Skipping %s - platform not supported", _asset_id.c_str()));
       continue;
     }
     
@@ -371,7 +371,7 @@ uploadreceipt_ptr_t AssetUploaderAdapter::uploadManifest(
     file_entry.relative_path = entry->_relative_path;
     
     try {
-      if (uploadAssetFile(asset_id, manifest, source_dir)) {
+      if (uploadAssetFile(_asset_id, manifest, source_dir)) {
         successful_uploads++;
         bytes_uploaded += entry->_size;
         file_entry.success = true;
@@ -388,13 +388,13 @@ uploadreceipt_ptr_t AssetUploaderAdapter::uploadManifest(
         failed_uploads++;
         file_entry.success = false;
         file_entry.error_message = "Upload failed";
-        receipt->errors.push_back(FormatString("Failed to upload %s", asset_id.c_str()));
+        receipt->errors.push_back(FormatString("Failed to upload %s", _asset_id.c_str()));
       }
     } catch (const std::exception& e) {
       failed_uploads++;
       file_entry.success = false;
       file_entry.error_message = e.what();
-      receipt->errors.push_back(FormatString("Exception uploading %s: %s", asset_id.c_str(), e.what()));
+      receipt->errors.push_back(FormatString("Exception uploading %s: %s", _asset_id.c_str(), e.what()));
     }
     
     receipt->files.push_back(file_entry);
@@ -402,7 +402,7 @@ uploadreceipt_ptr_t AssetUploaderAdapter::uploadManifest(
     // Call progress callback
     if (impl->_progress_callback._item) {
       UploadProgress progress;
-      progress.current_file = asset_id;
+      progress.current_file = _asset_id;
       progress.files_completed = successful_uploads;
       progress.total_files = receipt->total_files;
       progress.bytes_uploaded = bytes_uploaded;
@@ -441,7 +441,7 @@ uploadreceipt_ptr_t AssetUploaderAdapter::uploadManifest(
 }
 
 uploadreceipt_ptr_t AssetUploaderAdapter::uploadAssetFiles(
-    const upload_file_list_t& asset_ids,
+    const upload_file_list_t& _asset_ids,
     assetmanifest_ptr_t manifest,
     const file::Path& source_dir) {
   auto impl = _impl.getShared<AssetUploaderAdapterImpl>();
@@ -452,7 +452,7 @@ uploadreceipt_ptr_t AssetUploaderAdapter::uploadAssetFiles(
   receipt->manifest_id = manifest->getManifestId();
   receipt->destination = impl->_config->remote_base_path;
   receipt->timestamp = time(nullptr);
-  receipt->total_files = asset_ids.size();
+  receipt->total_files = _asset_ids.size();
   
   // Start timer
   Timer upload_timer;
@@ -466,11 +466,11 @@ uploadreceipt_ptr_t AssetUploaderAdapter::uploadAssetFiles(
   size_t failed_uploads = 0;
   size_t bytes_uploaded = 0;
   
-  for (const auto& asset_id : asset_ids) {
+  for (const auto& _asset_id : _asset_ids) {
     // Find asset in manifest
-    auto it = assets.find(asset_id);
+    auto it = assets.find(_asset_id);
     if (it == assets.end()) {
-      receipt->errors.push_back(FormatString("Asset not found in manifest: %s", asset_id.c_str()));
+      receipt->errors.push_back(FormatString("Asset not found in manifest: %s", _asset_id.c_str()));
       failed_uploads++;
       continue;
     }
@@ -479,7 +479,7 @@ uploadreceipt_ptr_t AssetUploaderAdapter::uploadAssetFiles(
     
     // Skip assets that don't support current platform
     if (!entry->supportsCurrentPlatform()) {
-      receipt->warnings.push_back(FormatString("Skipping %s - platform not supported", asset_id.c_str()));
+      receipt->warnings.push_back(FormatString("Skipping %s - platform not supported", _asset_id.c_str()));
       continue;
     }
     
@@ -487,7 +487,7 @@ uploadreceipt_ptr_t AssetUploaderAdapter::uploadAssetFiles(
     file_entry.relative_path = entry->_relative_path;
     
     try {
-      if (uploadAssetFile(asset_id, manifest, source_dir)) {
+      if (uploadAssetFile(_asset_id, manifest, source_dir)) {
         successful_uploads++;
         bytes_uploaded += entry->_size;
         file_entry.success = true;
@@ -504,13 +504,13 @@ uploadreceipt_ptr_t AssetUploaderAdapter::uploadAssetFiles(
         failed_uploads++;
         file_entry.success = false;
         file_entry.error_message = "Upload failed";
-        receipt->errors.push_back(FormatString("Failed to upload %s", asset_id.c_str()));
+        receipt->errors.push_back(FormatString("Failed to upload %s", _asset_id.c_str()));
       }
     } catch (const std::exception& e) {
       failed_uploads++;
       file_entry.success = false;
       file_entry.error_message = e.what();
-      receipt->errors.push_back(FormatString("Exception uploading %s: %s", asset_id.c_str(), e.what()));
+      receipt->errors.push_back(FormatString("Exception uploading %s: %s", _asset_id.c_str(), e.what()));
     }
     
     receipt->files.push_back(file_entry);
@@ -518,13 +518,13 @@ uploadreceipt_ptr_t AssetUploaderAdapter::uploadAssetFiles(
     // Call progress callback
     if (impl->_progress_callback._item) {
       UploadProgress progress;
-      progress.current_file = asset_id;
+      progress.current_file = _asset_id;
       progress.files_completed = successful_uploads;
       progress.total_files = receipt->total_files;
       progress.bytes_uploaded = bytes_uploaded;
       // Calculate total bytes for just requested files
       size_t total_requested_bytes = 0;
-      for (const auto& id : asset_ids) {
+      for (const auto& id : _asset_ids) {
         auto asset_it = assets.find(id);
         if (asset_it != assets.end()) {
           total_requested_bytes += asset_it->second->_size;
@@ -565,7 +565,7 @@ uploadreceipt_ptr_t AssetUploaderAdapter::uploadAssetFiles(
 }
 
 bool AssetUploaderAdapter::uploadAssetFile(
-    const std::string& asset_id,
+    const std::string& _asset_id,
     assetmanifest_ptr_t manifest,
     const file::Path& source_dir) {
   auto impl = _impl.getShared<AssetUploaderAdapterImpl>();
@@ -579,9 +579,9 @@ bool AssetUploaderAdapter::uploadAssetFile(
   // Find the asset entry in the manifest
   const auto& assets = manifest->getAssets();
   
-  auto it = assets.find(asset_id);
+  auto it = assets.find(_asset_id);
   if (it == assets.end()) {
-    logchan_catalog->log("ERROR: Asset '%s' not found in manifest", asset_id.c_str());
+    logchan_catalog->log("ERROR: Asset '%s' not found in manifest", _asset_id.c_str());
     return false; // Asset not found in manifest
   }
   auto entry = it->second;
@@ -619,7 +619,7 @@ bool AssetUploaderAdapter::uploadAssetFile(
     // Format: {storage_hash}.enc.chunk.{index:04d}
     bool all_chunks_uploaded = true;
     
-    for (size_t chunk_idx = 0; chunk_idx < chunk_manifest->chunks.size(); ++chunk_idx) {
+    for (size_t chunk_idx = 0; chunk_idx < chunk_manifest->_chunks.size(); ++chunk_idx) {
       // Construct chunk filename
       std::string chunk_filename = FormatString("%s.enc.chunk.%04zu", 
                                                entry->_storage_hash.c_str(), 
@@ -637,7 +637,7 @@ bool AssetUploaderAdapter::uploadAssetFile(
       // Upload the chunk
       try {
         if (!impl->_uploader->uploadFile(chunk_source, chunk_filename)) {
-          logchan_catalog->log("ERROR: Failed to upload chunk %zu of asset '%s'", chunk_idx, asset_id.c_str());
+          logchan_catalog->log("ERROR: Failed to upload chunk %zu of asset '%s'", chunk_idx, _asset_id.c_str());
           all_chunks_uploaded = false;
           break;
         }

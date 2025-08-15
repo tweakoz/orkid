@@ -133,16 +133,16 @@ void pyinit_asset_catalog(py::module& module_core) {
   // AssetResult
   /////////////////////////////////////////////////////////////////////////////////
   auto result_type = py::class_<AssetResult, assetresult_ptr_t>(module_core, "AssetResult")
-                         .def_readonly("data", &AssetResult::data)
-                         .def_readonly("status", &AssetResult::status)
-                         .def_readonly("error_detail", &AssetResult::error_detail)
-                         .def_readonly("download_time", &AssetResult::download_time)
-                         .def_readonly("processing_time", &AssetResult::processing_time)
-                         .def_readonly("bytes_downloaded", &AssetResult::bytes_downloaded)
+                         .def_readonly("data", &AssetResult::_data)
+                         .def_readonly("status", &AssetResult::_status)
+                         .def_readonly("error_detail", &AssetResult::_error_detail)
+                         .def_readonly("download_time", &AssetResult::_download_time)
+                         .def_readonly("processing_time", &AssetResult::_processing_time)
+                         .def_readonly("bytes_downloaded", &AssetResult::_bytes_downloaded)
                          .def("is_success", &AssetResult::isSuccess)
                          .def("__bool__", &AssetResult::operator bool)
                          .def("__repr__", [](assetresult_ptr_t result) -> std::string {
-                           return FormatString("AssetResult(status=%d, bytes=%zu)", (int)result->status, result->bytes_downloaded);
+                           return FormatString("AssetResult(status=%d, bytes=%zu)", (int)result->_status, result->_bytes_downloaded);
                          });
   type_codec->registerStdCodec<assetresult_ptr_t>(result_type);
 
@@ -151,10 +151,10 @@ void pyinit_asset_catalog(py::module& module_core) {
   /////////////////////////////////////////////////////////////////////////////////
   auto chunk_meta_type = py::class_<ChunkMeta>(module_core, "ChunkMeta")
                              .def(py::init<>())
-                             .def_readonly("offset", &ChunkMeta::offset)
-                             .def_readonly("size", &ChunkMeta::size)
-                             .def_readonly("compressed_size", &ChunkMeta::compressed_size)
-                             .def_readonly("hash", &ChunkMeta::hash);
+                             .def_readonly("offset", &ChunkMeta::_offset)
+                             .def_readonly("size", &ChunkMeta::_size)
+                             .def_readonly("compressed_size", &ChunkMeta::_compressed_size)
+                             .def_readonly("hash", &ChunkMeta::_hash);
   type_codec->registerStdCodec<ChunkMeta>(chunk_meta_type);
 
   /////////////////////////////////////////////////////////////////////////////////
@@ -164,11 +164,11 @@ void pyinit_asset_catalog(py::module& module_core) {
                                  .def(py::init<>())
                                  .def_readonly_static("chunk_size", &ChunkManifest::chunk_size)
                                  .def_readonly_static("chunk_threshold", &ChunkManifest::chunk_threshold)
-                                 .def_readonly("total_size", &ChunkManifest::total_size)
-                                 .def_readonly("file_hash", &ChunkManifest::file_hash)
-                                 .def_readonly("chunks", &ChunkManifest::chunks)
-                                 .def_readonly("compression", &ChunkManifest::compression)
-                                 .def_readonly("is_encrypted", &ChunkManifest::is_encrypted);
+                                 .def_readonly("total_size", &ChunkManifest::_total_size)
+                                 .def_readonly("file_hash", &ChunkManifest::_file_hash)
+                                 .def_readonly("chunks", &ChunkManifest::_chunks)
+                                 .def_readonly("compression", &ChunkManifest::_compression)
+                                 .def_readonly("is_encrypted", &ChunkManifest::_is_encrypted);
   type_codec->registerStdCodec<chunkmanifest_ptr_t>(chunk_manifest_type);
 
   /////////////////////////////////////////////////////////////////////////////////

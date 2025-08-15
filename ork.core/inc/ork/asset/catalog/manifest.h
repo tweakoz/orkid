@@ -134,7 +134,7 @@ struct AssetManifest {
   AssetManifest(assetcatalog_wkptr_t parent_catalog);
   ~AssetManifest();
   
-    assetcatalog_wkptr_t _parent_catalog;
+  assetcatalog_wkptr_t _parent_catalog;
 
   //////////////////////////////////////////////////////////////////////////////
   // Methods

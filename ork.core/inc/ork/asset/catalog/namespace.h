@@ -41,11 +41,11 @@ struct AssetNamespace {
   ////////////////////////////////////////////////////////////////////////////////
 
   namespaceid_t _id;                    // Unique identifier (e.g., "game::textures")
-  namespaceid_t full_path;              // Full hierarchical path (e.g., "game|textures")
+  namespaceid_t _full_path;             // Full hierarchical path (e.g., "game|textures")
   
   // Tree structure
-  std::weak_ptr<AssetNamespace> parent;
-  std::map<std::string, std::shared_ptr<AssetNamespace>> children;
+  std::weak_ptr<AssetNamespace> _parent;
+  std::map<std::string, std::shared_ptr<AssetNamespace>> _children;
   
   ////////////////////////////////////////////////////////////////////////////////
   // Container vs Data Node

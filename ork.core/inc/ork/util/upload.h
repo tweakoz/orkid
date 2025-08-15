@@ -13,6 +13,7 @@
 #include <ork/util/URL.h>
 #include <ork/file/path.h>
 #include <ork/asset/catalog/types.h>
+#include <ork/util/logger.h>
 #include <functional>
 #include <memory>
 #include <atomic>
@@ -351,7 +352,6 @@ struct HttpsUploaderConfig : public UploadConfig {
   int port = 443;
   bool verify_ssl = true;
   std::map<std::string, std::string> custom_headers;
-  
   bool useTLS() const {
     // TODO FIXME
     return ((port%1000) == 443); // Common HTTPS ports
@@ -416,6 +416,7 @@ private:
   struct Impl;
   std::unique_ptr<Impl> _impl;
   httpsuploaderconfig_ptr_t _config;
+  logchannel_ptr_t _log_channel; 
 };
 
 ////////////////////////////////////////////////////////////////////////////////

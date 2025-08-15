@@ -43,7 +43,9 @@ def print_asset_info(cfgspc, catalog, fqid):
     if hasattr(asset_info, 'remote_loc') and asset_info.remote_loc:
         print(f"  {deco.key('Remote location:')} {deco.val(asset_info.remote_loc)}")
         resolved_path = merged_cfg.resolveRemoteLocation(asset_info.remote_loc)
-        print(f"  {deco.orange('Resolved Remote:')} {deco.val(resolved_path.url)}")
+        print(f"  {deco.orange('Resolved Download:')} {deco.val(resolved_path.url)}")
+        upload_url = resolved_path.get_effective_upload_url()
+        print(f"  {deco.orange('Resolved Upload:')} {deco.val(upload_url)}")
     if hasattr(asset_info, 'filename') and asset_info.filename:
         print(f"  {deco.key('Filename:')} {deco.val(asset_info.filename)}")
     

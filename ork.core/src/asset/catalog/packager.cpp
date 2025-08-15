@@ -59,8 +59,8 @@ struct AssetPackagerImpl {
     ChunkMeta& chunk_meta
   );
   
-  datablock_ptr_t compressData(const datablock_ptr_t& data);
-  datablock_ptr_t encryptData(const datablock_ptr_t& data);
+  datablock_ptr_t compressData(const datablock_ptr_t& _data);
+  datablock_ptr_t encryptData(const datablock_ptr_t& _data);
 };
 
 ////////////////////////////////////////////////////////////////
@@ -228,7 +228,7 @@ AssetPackageResult AssetPackagerImpl::processFile(
   
   try {
     // 1. Read file
-    auto data = std::make_shared<DataBlock>();
+    auto _data = std::make_shared<DataBlock>();
     if (!FileEnv::GetRef().DoesFileExist(input_file)) {
       result.success = false;
       result.error_message = FormatString("File does not exist: %s", input_file.c_str());
@@ -244,12 +244,12 @@ AssetPackageResult AssetPackagerImpl::processFile(
     result.original_size = fileSize;
     
     if (fileSize > 0) {
-      data->reserve(fileSize);
-      data->_storage.resize(fileSize);
-      inputFile.Read(const_cast<uint8_t*>(data->data()), fileSize);
+      _data->reserve(fileSize);
+      _data->_storage.resize(fileSize);
+      inputFile.Read(const_cast<uint8_t*>(_data->data()), fileSize);
       
       // Calculate MD5 hash of the raw file data
-      file_hasher.update(data->data(), fileSize);
+      file_hasher.update(_data->data(), fileSize);
       file_hasher.finalize();
     }
     
@@ -261,7 +261,7 @@ AssetPackageResult AssetPackagerImpl::processFile(
     }
     
     // 3. Compress
-    auto compressed = compressData(data);
+    auto compressed = compressData(_data);
     result.compressed_size = compressed->length();
     result.compression_ratio = calculateCompressionRatio(result.original_size, result.compressed_size);
     
@@ -273,7 +273,7 @@ AssetPackageResult AssetPackagerImpl::processFile(
     Md5Sum content_md5_result = file_hasher.Result();
     result.content_hash = content_md5_result.hex_digest();
     
-    // Storage hash - MD5 of the encrypted data (for CAFS naming)
+    // Storage hash - MD5 of the encrypted _data (for CAFS naming)
     CMD5 storage_hasher;
     storage_hasher.update(encrypted->data(), encrypted->length());
     storage_hasher.finalize();
@@ -343,11 +343,11 @@ AssetPackageResult AssetPackagerImpl::processChunkedFile(
     
     constexpr size_t chunk_size = ChunkManifest::chunk_size; 
     // Initialize chunk manifest
-    chunk_manifest->total_size = fileSize;
-    chunk_manifest->file_hash = 0; // Will be calculated at the end
-    chunk_manifest->compression = _config->compression_type;
-    chunk_manifest->is_encrypted = _config->enable_encryption && _codec;
-    size_t total_chunks = (fileSize + chunk_size - 1) / chunk_size;
+    chunk_manifest->_total_size = fileSize;
+    chunk_manifest->_file_hash = 0; // Will be calculated at the end
+    chunk_manifest->_compression = _config->compression_type;
+    chunk_manifest->_is_encrypted = _config->enable_encryption && _codec;
+    size_t _total_chunks = (fileSize + chunk_size - 1) / chunk_size;
     
     // Initialize streaming MD5 hash for the entire file
     CMD5 file_hasher;
@@ -376,17 +376,17 @@ AssetPackageResult AssetPackagerImpl::processChunkedFile(
       // Update the streaming hash with raw file data
       file_hasher.update(chunk_data->data(), chunk_data_size);
       
-      // Update XXHash with raw chunk data for chunk manifest
+      // Update XXHash with raw chunk _data for chunk manifest
       file_xxhasher->accumulate(chunk_data->data(), chunk_data_size);
       
       // Process chunk (compress, encrypt, write)
       ChunkMeta chunk_meta;
-      chunk_meta.offset = bytes_processed;
-      chunk_meta.size = chunk_data_size;
+      chunk_meta._offset = bytes_processed;
+      chunk_meta._size = chunk_data_size;
       
       // Compress chunk
       auto compressed = compressData(chunk_data);
-      chunk_meta.compressed_size = compressed->length();
+      chunk_meta._compressed_size = compressed->length();
       
       // Encrypt chunk if enabled
       auto encrypted = encryptData(compressed);
@@ -396,7 +396,7 @@ AssetPackageResult AssetPackagerImpl::processChunkedFile(
       xxhasher->init();
       xxhasher->accumulate(encrypted->data(), encrypted->length());
       xxhasher->finish();
-      chunk_meta.hash = xxhasher->result();
+      chunk_meta._hash = xxhasher->result();
       
       // Update storage hash with encrypted chunk data
       storage_hasher.update(encrypted->data(), encrypted->length());
@@ -434,18 +434,18 @@ AssetPackageResult AssetPackagerImpl::processChunkedFile(
       // ChunkMeta doesn't store path - it's derived from hash
       
       // Add to manifest
-      chunk_manifest->chunks.push_back(chunk_meta);
+      chunk_manifest->_chunks.push_back(chunk_meta);
       
       // Update progress
       bytes_processed += chunk_data_size;
-      total_compressed_size += chunk_meta.compressed_size;
+      total_compressed_size += chunk_meta._compressed_size;
       chunk_index++;
       
       // Report progress
       if (_progress_callback._item) {
         std::string progress_msg = FormatString("Processing chunk %zu/%zu for %s", 
           chunk_index, 
-          total_chunks, 
+          _total_chunks, 
           input_file.c_str());
         float progress = float(bytes_processed) / float(fileSize);
         _progress_callback._item(progress_msg, progress);
@@ -471,7 +471,7 @@ AssetPackageResult AssetPackagerImpl::processChunkedFile(
     
     // Finalize XXHash to get the file hash for chunk manifest
     file_xxhasher->finish();
-    chunk_manifest->file_hash = file_xxhasher->result();
+    chunk_manifest->_file_hash = file_xxhasher->result();
     
     result.success = true;
     result.compressed_size = total_compressed_size;
@@ -499,17 +499,17 @@ bool AssetPackagerImpl::processChunk(
     // handles chunk processing inline. This is kept for potential
     // future refactoring where chunk processing might be parallelized.
     
-    chunk_meta.size = chunk_data->length();
+    chunk_meta._size = chunk_data->length();
     
     // Compress chunk
     auto compressed = compressData(chunk_data);
-    chunk_meta.compressed_size = compressed->length();
+    chunk_meta._compressed_size = compressed->length();
     
     // Encrypt chunk if enabled
     auto encrypted = encryptData(compressed);
     
     // Calculate chunk hash
-    chunk_meta.hash = encrypted->hash();
+    chunk_meta._hash = encrypted->hash();
     
     // Ensure output directory exists
     file::Path parent_dir = output_path;
@@ -530,9 +530,9 @@ bool AssetPackagerImpl::processChunk(
   }
 }
 
-datablock_ptr_t AssetPackagerImpl::compressData(const datablock_ptr_t& data) {
-  if (!data || data->length() == 0) {
-    return data;
+datablock_ptr_t AssetPackagerImpl::compressData(const datablock_ptr_t& _data) {
+  if (!_data || _data->length() == 0) {
+    return _data;
   }
   
   // Use compression level from config
@@ -540,7 +540,7 @@ datablock_ptr_t AssetPackagerImpl::compressData(const datablock_ptr_t& data) {
   
   switch (_config->compression_type) {
     case CompressionType::NONE:
-      return data;
+      return _data;
       
     case CompressionType::LZ4:
     case CompressionType::LZ4HC:
@@ -548,28 +548,28 @@ datablock_ptr_t AssetPackagerImpl::compressData(const datablock_ptr_t& data) {
       if (_config->compression_type == CompressionType::LZ4HC && level == 0) {
         level = 1;
       }
-      return data->compressed(level);
+      return _data->compressed(level);
       
     default:
       // Unknown compression type, return uncompressed
-      logchan_catalog->log("WARNING: Unknown compression type, returning uncompressed data");
-      return data;
+      logchan_catalog->log("WARNING: Unknown compression type, returning uncompressed _data");
+      return _data;
   }
 }
 
-datablock_ptr_t AssetPackagerImpl::encryptData(const datablock_ptr_t& data) {
+datablock_ptr_t AssetPackagerImpl::encryptData(const datablock_ptr_t& _data) {
   if (!_codec || !_config->enable_encryption) {
-    return data;
+    return _data;
   }
   
-  // Encrypt the data using the codec
+  // Encrypt the _data using the codec
   auto encrypted = std::make_shared<DataBlock>();
   
   // Call the codec's encrypt method
-  auto encrypted_data = _codec->encrypt(data.get());
+  auto encrypted_data = _codec->encrypt(_data.get());
   if (!encrypted_data) {
     logchan_catalog->log("ERROR: Encryption failed");
-    return data; // Return original data on failure
+    return _data; // Return original _data on failure
   }
   
   // Return the encrypted data

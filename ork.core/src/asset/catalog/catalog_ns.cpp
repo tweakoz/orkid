@@ -35,7 +35,7 @@ void AssetCatalog::registerNamespace(const namespaceid_t& path, assetnamespace_p
 
   impl->_state.atomicOp([&](CatalogImpl::CatalogState& state) {
     // Store namespace directly (no more wrapper node)
-    ns->full_path = path;
+    ns->_full_path = path;
 
     // Add to nodes map
     state._nodes_by_namespace[path] = ns;

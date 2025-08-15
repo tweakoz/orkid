@@ -22,21 +22,32 @@ void pyinit_asset_config(py::module& module_core) {
   auto location_type =
       py::class_<LocationInfo, locationinfo_ptr_t>(module_core, "LocationInfo")
           .def(py::init<>())
-          .def_readonly("url", &LocationInfo::url)
-          .def_readonly("api_key", &LocationInfo::api_key)
-          .def_readwrite("disable_cert_check", &LocationInfo::disable_cert_check)
+          .def_property_readonly(
+              "download_url",
+              [](const LocationInfo& loc) -> py::object {
+                return py::cast(loc._download_url);
+              })
+          .def_property_readonly(
+              "upload_url",
+              [](const LocationInfo& loc) -> py::object {
+                  return py::cast(loc._upload_url);
+              })
+          .def_readonly("api_key", &LocationInfo::_api_key)
+          .def_readwrite("disable_cert_check", &LocationInfo::_disable_cert_check)
           .def_property_readonly(
               "scp_destination",
               [](const LocationInfo& loc) -> py::object {
-                if (loc.scp_destination.has_value()) {
-                  return py::str(loc.scp_destination.value());
+                if (loc._scp_destination.has_value()) {
+                  return py::str(loc._scp_destination.value());
                 }
                 return py::none();
               })
           .def("get_effective_api_key", &LocationInfo::getEffectiveApiKey)
           .def("__repr__", [](locationinfo_ptr_t loc) -> std::string {
-            std::string scp_dest = loc->scp_destination.has_value() ? loc->scp_destination.value() : "None";
-            return FormatString("LocationInfo(url='%s', scp_destination='%s')", loc->url.toString().c_str(), scp_dest.c_str());
+            std::string scp_dest = loc->_scp_destination.has_value() ? loc->_scp_destination.value() : "None";
+            auto dl_url = loc->_download_url.toString();
+            auto ul_url = loc->_upload_url.toString();
+            return FormatString("LocationInfo(dl_url='%s', ul_url='%s', scp_destination='%s')", dl_url.c_str(), ul_url.c_str(), scp_dest.c_str());
           });
   type_codec->registerStdCodec<locationinfo_ptr_t>(location_type);
 
@@ -59,13 +70,13 @@ void pyinit_asset_config(py::module& module_core) {
                              },
                              py::arg("location"))
                          .def("getEncryptionKeyForNamespace", &AssetConfig::getEncryptionKeyForNamespace, py::arg("namespace_id"))
-                         .def("getUploadLocationForNamespace", &AssetConfig::getUploadLocationForNamespace, py::arg("namespace_id"))
+                         .def("getRemoteLocationForNamespace", &AssetConfig::getRemoteLocationForNamespace, py::arg("namespace_id"))
                          .def(
                              "addNamespace",
                              &AssetConfig::addNamespace,
                              py::arg("namespace_id"),
                              py::arg("encryption_key"),
-                             py::arg("upload_location"))
+                             py::arg("remote_location"))
                          .def("addRemoteLocation", &AssetConfig::addRemoteLocation, py::arg("id"), py::arg("loc"))
                          .def("addLocalLocation", &AssetConfig::addLocalLocation, py::arg("id"), py::arg("loc"))
                          .def_property_readonly(

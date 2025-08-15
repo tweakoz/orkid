@@ -41,7 +41,7 @@ static logchannel_ptr_t logchan_catalog = logger()->getChannel("CATALOG");
 ////////////////////////////////////////////////////////////////
 
 bool AssetResult::isSuccess() const {
-  return status == AssetStatus::OK;
+  return _status == AssetStatus::OK;
 }
 
 AssetResult::operator bool() const {
@@ -118,7 +118,7 @@ assetid_list_t AssetCatalog::listAssets(const std::string& pattern) const {
   assetid_list_t result;
 
   impl->_state.atomicOp([&](const CatalogImpl::CatalogState& state) {
-    for (const auto& [asset_id, entry] : state._entries_by_assetid) {
+    for (const auto& [_asset_id, entry] : state._entries_by_assetid) {
       bool matches = false;
 
       if (pattern.empty() || pattern == "*") {
@@ -129,18 +129,18 @@ assetid_list_t AssetCatalog::listAssets(const std::string& pattern) const {
         if (pattern.back() == '*') {
           // Pattern ends with wildcard - prefix match
           std::string prefix = pattern.substr(0, pattern.length() - 1);
-          matches            = asset_id.find(prefix) == 0;
+          matches            = _asset_id.find(prefix) == 0;
         } else {
           // TODO: Handle more complex wildcard patterns
           matches = false;
         }
       } else {
-        // No wildcards - check if pattern is contained in asset_id
-        matches = asset_id.find(pattern) != std::string::npos;
+        // No wildcards - check if pattern is contained in _asset_id
+        matches = _asset_id.find(pattern) != std::string::npos;
       }
 
       if (matches) {
-        result.push_back(asset_id);
+        result.push_back(_asset_id);
       }
     }
   });
@@ -155,9 +155,9 @@ assetid_list_t AssetCatalog::listAssetsInNamespace(const namespaceid_t& namespac
   assetid_list_t result;
 
   impl->_state.atomicOp([&](const CatalogImpl::CatalogState& state) {
-    for (const auto& [asset_id, entry] : state._entries_by_assetid) {
+    for (const auto& [_asset_id, entry] : state._entries_by_assetid) {
       if (entry.namespace_id == namespace_id) {
-        result.push_back(asset_id);
+        result.push_back(_asset_id);
       }
     }
   });
@@ -191,7 +191,7 @@ std::string AssetCatalog::dumpAllAssetFQIDs() const {
       
       // Recursively process children (sort for consistent output)
       std::vector<std::pair<std::string, assetnamespace_ptr_t>> sorted_children;
-      for (const auto& [name, child] : ns->children) {
+      for (const auto& [name, child] : ns->_children) {
         sorted_children.emplace_back(name, child);
       }
       std::sort(sorted_children.begin(), sorted_children.end());
@@ -227,7 +227,7 @@ assetmanifest_ptr_t AssetCatalog::createManifest(
   manifest->setNamespace(namespace_id);
   manifest->setVersion(version);
   
-  // UUID is automatically generated in AssetManifest constructor
+  // UUID is automatically gene_rated in AssetManifest constructor
   
   // Register namespace if it doesn't exist
   auto ns = catalog->mergeNamespace(namespace_id);
@@ -264,7 +264,7 @@ void AssetCatalog::setDownloadManager(downloadmanager_ptr_t mgr) {
 ////////////////////////////////////////////////////////////////
 
 std::pair<std::string, std::string> CatalogImpl::parseAssetId(const assetid_t& fq_asset_id) const {
-  // Find the last occurrence of :: to separate namespace path from asset path
+  // Find the last occurrence of :: to sepa_rate namespace path from asset path
   size_t last_sep = fq_asset_id.rfind("|");
   if (last_sep != std::string::npos) {
     // Everything before last :: is the namespace path
@@ -320,20 +320,20 @@ file::Path AssetCatalog::getTempDir() const {
 // Asset Request State Management (Flyweight)
 ////////////////////////////////////////////////////////////////
 
-assetreq_ptr_t AssetCatalog::mergeAssetReq(const assetid_t& asset_id) {
+assetreq_ptr_t AssetCatalog::mergeAssetReq(const assetid_t& _asset_id) {
   auto impl = _impl.getShared<CatalogImpl>();
   assetreq_ptr_t request;
 
   impl->_active_requests.atomicOp([&](std::map<assetid_t, assetreq_ptr_t>& requests) {
-    auto it = requests.find(asset_id);
+    auto it = requests.find(_asset_id);
     if (it != requests.end()) {
       // Return existing request (flyweight pattern)
       request = it->second;
     } else {
       // Create new request
       request            = std::make_shared<AssetRequest>();
-      request->_asset_id = asset_id;
-      requests[asset_id] = request;
+      request->_asset_id = _asset_id;
+      requests[_asset_id] = request;
     }
     // Increment refcount for this access
     request->_refcount.fetch_add(1);
@@ -394,8 +394,8 @@ assetnamespace_ptr_t AssetCatalog::mergeNamespace(const namespaceid_t& namespace
       } else {
         // Create new namespace for this level
         auto new_ns = std::make_shared<AssetNamespace>(component);
-        new_ns->full_path = current_path;
-        new_ns->parent = current;
+        new_ns->_full_path = current_path;
+        new_ns->_parent = current;
         
         // Mark intermediate levels as container-only (except the final one)
         if (i < components.size() - 1) {
@@ -403,7 +403,7 @@ assetnamespace_ptr_t AssetCatalog::mergeNamespace(const namespaceid_t& namespace
         }
         
         // Add to parent's children
-        current->children[component] = new_ns;
+        current->_children[component] = new_ns;
         
         // Store in flyweight map
         state._nodes_by_namespace[current_path] = new_ns;
@@ -425,7 +425,7 @@ std::vector<assetreq_ptr_t> AssetCatalog::getRequestsInState(AssetState state) c
   std::vector<assetreq_ptr_t> result;
 
   impl->_active_requests.atomicOp([&](const std::map<assetid_t, assetreq_ptr_t>& requests) {
-    for (const auto& [asset_id, request] : requests) {
+    for (const auto& [_asset_id, request] : requests) {
       if (request && request->_state == state) {
         result.push_back(request);
       }
@@ -437,11 +437,11 @@ std::vector<assetreq_ptr_t> AssetCatalog::getRequestsInState(AssetState state) c
 
 ////////////////////////////////////////////////////////////////
 
-int AssetCatalog::getRequestCount(const assetid_t& asset_id) const {
+int AssetCatalog::getRequestCount(const assetid_t& _asset_id) const {
   auto impl = _impl.getShared<CatalogImpl>();
   int count = 0;
   impl->_active_requests.atomicOp([&](const std::map<assetid_t, assetreq_ptr_t>& requests) {
-    auto it = requests.find(asset_id);
+    auto it = requests.find(_asset_id);
     if (it != requests.end()) {
       count = 1; // Request exists
     }
@@ -460,7 +460,7 @@ std::string AssetCatalog::toJson() const {
   
   // Get all manifests and convert to JSON
   impl->_state.atomicOp([&](const CatalogImpl::CatalogState& state) {
-    // Iterate through all manifests by namespace
+    // Ite_rate through all manifests by namespace
     for (const auto& [namespace_id, manifest_list] : state._manifests_by_namespace) {
       // For each manifest in this namespace
       for (const auto& manifest : manifest_list) {
@@ -549,8 +549,8 @@ uploadreceipt_ptr_t AssetCatalog::upload(const namespaceid_t& namespace_id) {
     return nullptr;
   }
   
-  // Check if namespace has upload location configured
-  auto upload_location = config->getUploadLocationForNamespace(namespace_id);
+  // Check if namespace has remote location configured
+  auto upload_location = config->getRemoteLocationForNamespace(namespace_id);
   if (!upload_location) {
     logchan_catalog->log("ERROR: No upload location configured for namespace: %s", namespace_id.c_str());
     return nullptr;
@@ -682,20 +682,20 @@ upload_result_map_t AssetCatalog::uploadAllNamespaces() {
   size_t successful = 0;
   size_t failed = 0;
   size_t total_files = 0;
-  size_t total_bytes = 0;
+  size_t _total_bytes = 0;
   
   for (const auto& [namespace_id, receipt] : results) {
     if (receipt && receipt->success) {
       successful++;
       total_files += receipt->total_files;
-      total_bytes += receipt->bytes_uploaded;
+      _total_bytes += receipt->bytes_uploaded;
     } else {
       failed++;
     }
   }
   
   logchan_catalog->log("Upload all namespaces summary - total: %zu, successful: %zu, failed: %zu, files: %zu, bytes: %zu",
-                       namespace_ids.size(), successful, failed, total_files, total_bytes);
+                       namespace_ids.size(), successful, failed, total_files, _total_bytes);
   
   logchan_catalog->log("Completed upload for all namespaces");
   return results;

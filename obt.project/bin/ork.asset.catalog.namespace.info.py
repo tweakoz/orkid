@@ -49,9 +49,9 @@ def print_namespace_info(catalog, namespace_id, config_space):
         if encryption_key:
             print(f"  Has config: Yes")
             print(f"    Encryption key: {'*' * 8} (hidden)")
-            upload_location = merged_config.getUploadLocationForNamespace(namespace_id)
-            if upload_location:
-                print(f"    Upload location: {upload_location}")
+            remote_location = merged_config.getRemoteLocationForNamespace(namespace_id)
+            if remote_location:
+                print(f"    Remote location: {remote_location}")
         else:
             print(f"  Has config: No")
     
@@ -98,9 +98,9 @@ def print_json_info(catalog, namespace_id, config_space):
                 "exists": True,
                 "has_encryption_key": True
             }
-            upload_location = merged_config.getUploadLocationForNamespace(namespace_id)
-            if upload_location:
-                info["config"]["upload_location"] = upload_location
+            remote_location = merged_config.getRemoteLocationForNamespace(namespace_id)
+            if remote_location:
+                info["config"]["remote_location"] = remote_location
         else:
             info["config"] = {"exists": False}
     

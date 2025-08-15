@@ -26,10 +26,10 @@ namespace ork::asset::catalog {
 ////////////////////////////////////////////////////////////////////////////////
 
 struct ChunkMeta {
-  chunk_offset_t offset = 0;    // Offset of this chunk in the original file
-  chunk_size_t size = 0;        // Size of this chunk (uncompressed)
-  chunk_size_t compressed_size = 0;  // Size after compression (if applicable)
-  chunk_hash_t hash = 0;        // Hash of the chunk data (for verification)
+  chunk_offset_t _offset = 0;    // Offset of this chunk in the original file
+  chunk_size_t _size = 0;        // Size of this chunk (uncompressed)
+  chunk_size_t _compressed_size = 0;  // Size after compression (if applicable)
+  chunk_hash_t _hash = 0;        // Hash of the chunk data (for verification)
   
 };
 
@@ -43,12 +43,12 @@ struct ChunkManifest {
   static constexpr chunk_size_t chunk_size = 4 * 1024 * 1024;                    // Default 4MB chunks
   static constexpr chunk_size_t chunk_threshold = 10 * 1024 * 1024; // 10MB
 
-  chunk_size_t total_size = 0;                // Total size of original file
-  chunk_hash_t file_hash = 0;                 // Hash of complete file (used for filename)
-  CompressionType compression = CompressionType::NONE;
-  bool is_encrypted = false;
+  chunk_size_t _total_size = 0;                // Total size of original file
+  chunk_hash_t _file_hash = 0;                 // Hash of complete file (used for filename)
+  CompressionType _compression = CompressionType::NONE;
+  bool _is_encrypted = false;
   
-  chunk_meta_list_t chunks;                   // Metadata for each chunk
+  chunk_meta_list_t _chunks;                   // Metadata for each chunk
   
   ////////////////////////////////////////////////////////////////////////////////
   // Calculate optimal chunk size based on file size

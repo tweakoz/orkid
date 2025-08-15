@@ -46,7 +46,7 @@ struct ChunkAssemblerImpl {
   datablock_list_t processChunksParallel(const datablock_list_t& input_chunks);
   datablock_ptr_t assembleProcessedChunks(const datablock_list_t& processed_chunks);
   bool verifyFileHash(const datablock_ptr_t& assembled_data);
-  bool writeChunkToStream(chunk_index_t chunk_index, const datablock_ptr_t& data);
+  bool writeChunkToStream(chunk_index_t chunk_index, const datablock_ptr_t& _data);
   bool flushStreamBuffer();
 };
 
@@ -119,10 +119,10 @@ chunkassemblyresult_ptr_t ChunkAssembler::assembleFromChunks(
       return result;
     }
     
-    if (chunks.size() != _chunk_manifest->chunks.size()) {
+    if (chunks.size() != _chunk_manifest->_chunks.size()) {
       result->success = false;
       result->error_message = FormatString("Chunk count mismatch: expected %zu, got %zu",
-                                          _chunk_manifest->chunks.size(), chunks.size());
+                                          _chunk_manifest->_chunks.size(), chunks.size());
       return result;
     }
     
@@ -181,9 +181,9 @@ chunkassemblyresult_ptr_t ChunkAssembler::assembleFromChunkMap(
   
   // Convert map to ordered list
   datablock_list_t ordered_chunks;
-  ordered_chunks.reserve(_chunk_manifest->chunks.size());
+  ordered_chunks.reserve(_chunk_manifest->_chunks.size());
   
-  for (size_t i = 0; i < _chunk_manifest->chunks.size(); ++i) {
+  for (size_t i = 0; i < _chunk_manifest->_chunks.size(); ++i) {
     auto it = chunk_map.find(i);
     if (it == chunk_map.end()) {
       result->success = false;
@@ -213,10 +213,10 @@ chunkassemblyresult_ptr_t ChunkAssembler::assembleFromFiles(
       return result;
     }
     
-    if (chunk_files.size() != _chunk_manifest->chunks.size()) {
+    if (chunk_files.size() != _chunk_manifest->_chunks.size()) {
       result->success = false;
       result->error_message = FormatString("File count mismatch: expected %zu, got %zu",
-                                          _chunk_manifest->chunks.size(), chunk_files.size());
+                                          _chunk_manifest->_chunks.size(), chunk_files.size());
       return result;
     }
     
@@ -281,15 +281,15 @@ chunkassemblyresult_ptr_t ChunkAssembler::assembleFromDirectory(
     
     // Build list of chunk files based on manifest
     std::vector<file::Path> chunk_files;
-    chunk_files.reserve(_chunk_manifest->chunks.size());
+    chunk_files.reserve(_chunk_manifest->_chunks.size());
     
-    for (size_t i = 0; i < _chunk_manifest->chunks.size(); ++i) {
+    for (size_t i = 0; i < _chunk_manifest->_chunks.size(); ++i) {
       // Determine chunk filename
       // Format: chunk_{index:04d}_{hash:016x}.enc (if encrypted) or without .enc
       std::string chunk_filename = FormatString("chunk_%04zu_%016lx%s",
                                                i,
-                                               _chunk_manifest->chunks[i].hash,
-                                               _chunk_manifest->is_encrypted ? ".enc" : "");
+                                               _chunk_manifest->_chunks[i]._hash,
+                                               _chunk_manifest->_is_encrypted ? ".enc" : "");
       
       file::Path chunk_path = chunk_dir / base_filename / chunk_filename;
       chunk_files.push_back(chunk_path);
@@ -427,7 +427,7 @@ chunkassemblyresult_ptr_t ChunkAssembler::completeStreamingAssembly() {
   
   try {
     // Check if we have all chunks
-    size_t expected_chunks = _chunk_manifest ? _chunk_manifest->chunks.size() : 0;
+    size_t expected_chunks = _chunk_manifest ? _chunk_manifest->_chunks.size() : 0;
     size_t processed_chunks = _chunks_processed.load();
     
     if (processed_chunks != expected_chunks) {
@@ -468,10 +468,10 @@ chunkassemblyresult_ptr_t ChunkAssembler::completeStreamingAssembly() {
     
     size_t fileSize = st.st_size;
     
-    if (fileSize != _chunk_manifest->total_size) {
+    if (fileSize != _chunk_manifest->_total_size) {
       result->success = false;
       result->error_message = FormatString("File size mismatch: expected %zu, got %zu",
-                                          _chunk_manifest->total_size, fileSize);
+                                          _chunk_manifest->_total_size, fileSize);
       impl->_streaming_state.reset();
       return result;
     }
@@ -520,10 +520,10 @@ void ChunkAssembler::abortStreamingAssembly() {
 ////////////////////////////////////////////////////////////////
 
 float ChunkAssembler::getProgress() const {
-  if (!_chunk_manifest || _chunk_manifest->chunks.empty()) {
+  if (!_chunk_manifest || _chunk_manifest->_chunks.empty()) {
     return 0.0f;
   }
-  return (float)_chunks_processed.load() / (float)_chunk_manifest->chunks.size();
+  return (float)_chunks_processed.load() / (float)_chunk_manifest->_chunks.size();
 }
 
 ////////////////////////////////////////////////////////////////
@@ -538,15 +538,15 @@ datablock_ptr_t ChunkAssembler::processChunk(
   }
   
   // Get chunk metadata
-  if (!_chunk_manifest || chunk_index >= _chunk_manifest->chunks.size()) {
+  if (!_chunk_manifest || chunk_index >= _chunk_manifest->_chunks.size()) {
     return nullptr;
   }
   
-  const auto& chunk_meta = _chunk_manifest->chunks[chunk_index];
+  const auto& chunk_meta = _chunk_manifest->_chunks[chunk_index];
   
   // Decrypt if needed
   datablock_ptr_t decrypted = chunk_data;
-  if (_chunk_manifest->is_encrypted && _codec) {
+  if (_chunk_manifest->_is_encrypted && _codec) {
     decrypted = _codec->decrypt(chunk_data.get());
     if (!decrypted) {
       logchan_catalog->log("ERROR: Failed to decrypt chunk %zu", chunk_index);
@@ -556,7 +556,7 @@ datablock_ptr_t ChunkAssembler::processChunk(
   
   // Decompress if needed
   datablock_ptr_t decompressed = decrypted;
-  if (_chunk_manifest->compression != CompressionType::NONE) {
+  if (_chunk_manifest->_compression != CompressionType::NONE) {
     decompressed = decrypted->decompressed();
     if (!decompressed) {
       logchan_catalog->log("ERROR: Failed to decompress chunk %zu", chunk_index);
@@ -565,9 +565,9 @@ datablock_ptr_t ChunkAssembler::processChunk(
   }
   
   // Verify size matches expected
-  if (decompressed->length() != chunk_meta.size) {
+  if (decompressed->length() != chunk_meta._size) {
     logchan_catalog->log("ERROR: Chunk %zu size mismatch: expected %zu, got %zu",
-                         chunk_index, chunk_meta.size, decompressed->length());
+                         chunk_index, chunk_meta._size, decompressed->length());
     return nullptr;
   }
   
@@ -577,19 +577,19 @@ datablock_ptr_t ChunkAssembler::processChunk(
 bool ChunkAssembler::verifyChunk(
     const datablock_ptr_t& chunk_data,
     chunk_index_t chunk_index) {
-  if (!_chunk_manifest || chunk_index >= _chunk_manifest->chunks.size()) {
+  if (!_chunk_manifest || chunk_index >= _chunk_manifest->_chunks.size()) {
     return false;
   }
   
-  const auto& chunk_meta = _chunk_manifest->chunks[chunk_index];
+  const auto& chunk_meta = _chunk_manifest->_chunks[chunk_index];
   
   // Calculate hash of chunk data
   chunk_hash_t calculated_hash = chunk_data->hash();
   
   // Compare with expected hash
-  if (calculated_hash != chunk_meta.hash) {
+  if (calculated_hash != chunk_meta._hash) {
     logchan_catalog->log("ERROR: Chunk %zu hash mismatch: expected %016llx, got %016llx",
-                         chunk_index, (unsigned long long)chunk_meta.hash, (unsigned long long)calculated_hash);
+                         chunk_index, (unsigned long long)chunk_meta._hash, (unsigned long long)calculated_hash);
     return false;
   }
   
@@ -601,7 +601,7 @@ bool ChunkAssembler::verifyChunk(
 ////////////////////////////////////////////////////////////////
 
 size_t ChunkAssembler::calculateAssembledSize() const {
-  return _chunk_manifest ? _chunk_manifest->total_size : 0;
+  return _chunk_manifest ? _chunk_manifest->_total_size : 0;
 }
 
 bool ChunkAssembler::requiresStreamingAssembly() const {
@@ -676,7 +676,7 @@ bool ChunkAssemblerImpl::verifyFileHash(const datablock_ptr_t& assembled_data) {
     return false;
   }
   
-  // Calculate XXHash64 of assembled data (same as packager)
+  // Calculate XXHash64 of assembled _data (same as packager)
   auto xxhasher = std::make_shared<XXH64HASH>();
   xxhasher->init();
   xxhasher->accumulate(assembled_data->data(), assembled_data->length());
@@ -684,23 +684,23 @@ bool ChunkAssemblerImpl::verifyFileHash(const datablock_ptr_t& assembled_data) {
   chunk_hash_t calculated_hash = xxhasher->result();
   
   // Compare with expected file hash
-  if (calculated_hash != _assembler->_chunk_manifest->file_hash) {
+  if (calculated_hash != _assembler->_chunk_manifest->_file_hash) {
     logchan_catalog->log("ERROR: File hash mismatch: expected %016llx, got %016llx",
-                         (unsigned long long)_assembler->_chunk_manifest->file_hash, (unsigned long long)calculated_hash);
+                         (unsigned long long)_assembler->_chunk_manifest->_file_hash, (unsigned long long)calculated_hash);
     return false;
   }
   
   return true;
 }
 
-bool ChunkAssemblerImpl::writeChunkToStream(chunk_index_t chunk_index, const datablock_ptr_t& data) {
-  if (!_streaming_state || _streaming_state->output_fd < 0 || !data) {
+bool ChunkAssemblerImpl::writeChunkToStream(chunk_index_t chunk_index, const datablock_ptr_t& _data) {
+  if (!_streaming_state || _streaming_state->output_fd < 0 || !_data) {
     return false;
   }
   
-  // Write chunk data using POSIX write
-  const uint8_t* buffer = data->data();
-  size_t bytes_to_write = data->length();
+  // Write chunk _data using POSIX write
+  const uint8_t* buffer = _data->data();
+  size_t bytes_to_write = _data->length();
   size_t bytes_written = 0;
   
   while (bytes_written < bytes_to_write) {
@@ -732,7 +732,7 @@ bool ChunkAssemblerImpl::flushStreamBuffer() {
 ////////////////////////////////////////////////////////////////
 
 ChunkDisassembler::DisassemblyResult ChunkDisassembler::disassemble(
-    const datablock_ptr_t& data,
+    const datablock_ptr_t& _data,
     size_t chunk_size,
     encryptioncodec_ptr_t codec,
     CompressionType compression) {
@@ -778,7 +778,7 @@ bool validateChunkInfo(const ChunkManifest& info) {
 
 size_t estimateAssemblyMemoryUsage(const ChunkManifest& info) {
   // TODO: Implement memory estimation
-  return info.total_size;
+  return info._total_size;
 }
 
 } // namespace ork::asset::catalog

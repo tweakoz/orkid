@@ -97,30 +97,30 @@ void AssetNamespace::setContainerOnly(bool container) {
 ////////////////////////////////////////////////////////////////
 
 std::string AssetNamespace::buildFullPath() const {
-  // full_path is already maintained, just return it
-  return full_path;
+  // _full_path is already maintained, just return it
+  return _full_path;
 }
 
 ////////////////////////////////////////////////////////////////
 
 std::shared_ptr<AssetNamespace> AssetNamespace::findChild(const std::string& path) const {
-  auto it = children.find(path);
-  return (it != children.end()) ? it->second : nullptr;
+  auto it = _children.find(path);
+  return (it != _children.end()) ? it->second : nullptr;
 }
 
 ////////////////////////////////////////////////////////////////
 
 std::shared_ptr<AssetNamespace> AssetNamespace::getOrCreateChild(std::shared_ptr<AssetNamespace> parent, const std::string& id) {
-  auto it = parent->children.find(id);
-  if (it != parent->children.end()) {
+  auto it = parent->_children.find(id);
+  if (it != parent->_children.end()) {
     return it->second;
   }
   
   // Create new child
   auto child = std::make_shared<AssetNamespace>(id);
-  child->parent = parent;
-  child->full_path = parent->full_path.empty() ? id : parent->full_path + "|" + id;
-  parent->children[id] = child;
+  child->_parent = parent;
+  child->_full_path = parent->_full_path.empty() ? id : parent->_full_path + "|" + id;
+  parent->_children[id] = child;
   return child;
 }
 
@@ -132,7 +132,7 @@ void AssetNamespace::printTree(int indent) const {
   printf("%s%s%s\n", spaces.c_str(), _id.c_str(), 
          isContainerOnly() ? " [container]" : " [namespace]");
   
-  for (const auto& [name, child] : children) {
+  for (const auto& [name, child] : _children) {
     child->printTree(indent + 1);
   }
 }
@@ -141,7 +141,7 @@ void AssetNamespace::printTree(int indent) const {
 
 size_t AssetNamespace::countNodes() const {
   size_t count = 1;
-  for (const auto& [name, child] : children) {
+  for (const auto& [name, child] : _children) {
     count += child->countNodes();
   }
   return count;
@@ -151,7 +151,7 @@ size_t AssetNamespace::countNodes() const {
 
 size_t AssetNamespace::maxDepth() const {
   size_t max_depth = 0;
-  for (const auto& [name, child] : children) {
+  for (const auto& [name, child] : _children) {
     max_depth = std::max(max_depth, child->maxDepth());
   }
   return max_depth + 1;

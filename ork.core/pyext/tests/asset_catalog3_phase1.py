@@ -80,9 +80,9 @@ try:
     # Verify namespace structure
     cdntest_ns = parsed["namespaces"]["cdntest"]
     assert "encryption_key" in cdntest_ns, "Missing encryption_key in namespace"
-    assert "upload_location" in cdntest_ns, "Missing upload_location in namespace"
+    assert "remote_location" in cdntest_ns, "Missing remote_location in namespace"
     assert cdntest_ns["encryption_key"] == "api_key", "Wrong encryption_key value"
-    assert cdntest_ns["upload_location"] == "cdntest_remote", "Wrong upload_location value"
+    assert cdntest_ns["remote_location"] == "cdntest_remote", "Wrong remote_location value"
     
     # Verify that URLs have trailing slash (per session notes)
     for loc_key, loc_value in parsed["locations"].items():
@@ -101,7 +101,7 @@ try:
     assert "cdntest" in parsed1["namespaces"], "Missing added 'cdntest' namespace"
     cdntest_ns1 = parsed1["namespaces"]["cdntest"]
     assert cdntest_ns1["encryption_key"] == "api_key", "Wrong encryption_key for cdntest"
-    assert cdntest_ns1["upload_location"] == "cdntest_remote", "Wrong upload_location for cdntest"
+    assert cdntest_ns1["remote_location"] == "cdntest_remote", "Wrong remote_location for cdntest"
     assert "cdntest_remote" in parsed1["locations"], "Missing added remote location"
     assert parsed1["locations"]["cdntest_remote"] == "https://localhost:8443/", "Wrong remote location URL"
     assert "stage" in parsed1["destinations"], "Missing added 'stage' destination"

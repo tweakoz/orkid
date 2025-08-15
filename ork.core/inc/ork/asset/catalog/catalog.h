@@ -38,19 +38,19 @@ namespace ork::asset::catalog {
 ////////////////////////////////////////////////////////////////////////////////
 
 struct AssetLocation {
-  std::string base_url;               // CDN or file:// URL
-  std::string relative_path;          // Content-addressable: {hash}.enc or {hash}
-  chunkmanifest_ptr_t chunk_manifest; // If chunked: {hash}.chunk.{index}
-  bool is_encrypted = false;
-  bool is_compressed = false;
-  CompressionType compression_type = CompressionType::NONE;
+  std::string _base_url;               // CDN or file:// URL
+  std::string _relative_path;          // Content-addressable: {hash}.enc or {hash}
+  chunkmanifest_ptr_t _chunk_manifest; // If chunked: {hash}.chunk.{index}
+  bool _is_encrypted = false;
+  bool _is_compressed = false;
+  CompressionType _compression_type = CompressionType::NONE;
   
   // Source tracking
-  std::string namespace_id;           // Which namespace owns this asset
-  assetmanifest_ptr_t source_manifest; // Which manifest it came from
+  std::string _namespace_id;           // Which namespace owns this asset
+  assetmanifest_ptr_t _source_manifest; // Which manifest it came from
   
   // Location configuration (API key, TLS settings, etc.)
-  locationinfo_ptr_t location_info;   // Configuration for this location
+  locationinfo_ptr_t _location_info;   // Configuration for this location
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -58,26 +58,26 @@ struct AssetLocation {
 ////////////////////////////////////////////////////////////////////////////////
 
 struct AssetResult {
-  datablock_ptr_t data;               // The actual asset data (if successful)
-                                      // For asset_pak: nullptr (use pak_contents instead)
-  AssetLocation location;             // Where the asset came from
-  AssetStatus status = AssetStatus::OK;  // Using CrcEnum for Python compatibility
-  std::string error_detail;           // Additional context for debugging
+  datablock_ptr_t _data;               // The actual asset data (if successful)
+                                      // For asset_pak: nullptr (use _pak_contents instead)
+  AssetLocation _location;             // Where the asset came from
+  AssetStatus _status = AssetStatus::OK;  // Using CrcEnum for Python compatibility
+  std::string _error_detail;           // Additional context for debugging
   
   // For asset_pak types: map of extracted files
   // Key: relative path within the tar (e.g., "models/character.obj")
   // Value: datablock containing the file contents
-  std::map<std::string, datablock_ptr_t> pak_contents;
+  std::map<std::string, datablock_ptr_t> _pak_contents;
   
   // Performance metrics
-  double download_time = 0.0;         // Time spent downloading
-  double processing_time = 0.0;       // Time spent decrypting/decompressing
-  size_t bytes_downloaded = 0;        // Total bytes downloaded (may be less than data size if compressed)
+  double _download_time = 0.0;         // Time spent downloading
+  double _processing_time = 0.0;       // Time spent decrypting/decompressing
+  size_t _bytes_downloaded = 0;        // Total bytes downloaded (may be less than data size if compressed)
   
   // Helpers
   bool isSuccess() const;
   operator bool() const;  // Allow if(result) syntax
-  bool isPak() const { return !pak_contents.empty(); }  // Check if this is a pak result
+  bool isPak() const { return !_pak_contents.empty(); }  // Check if this is a pak result
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -85,13 +85,13 @@ struct AssetResult {
 ////////////////////////////////////////////////////////////////////////////////
 
 struct DownloadProgress {
-  assetid_t asset_id;
-  size_t bytes_downloaded = 0;
-  size_t total_bytes = 0;
-  double start_time = 0;
-  double rate = 0;                    // bytes/sec
-  int chunks_completed = 0;
-  int total_chunks = 0;
+  assetid_t _asset_id;
+  size_t _bytes_downloaded = 0;
+  size_t _total_bytes = 0;
+  double _start_time = 0;
+  double _rate = 0;                    // bytes/sec
+  int _chunks_completed = 0;
+  int _total_chunks = 0;
   
   // Calculate progress percentage
   float getProgressPercent() const;

@@ -182,19 +182,19 @@ std::string AssetEntry::toJson() const {
     
     // Add chunk manifest fields
     chunks_obj.AddMember("chunk_size", static_cast<uint64_t>(_chunk_manifest->chunk_size), allocator);
-    chunks_obj.AddMember("total_size", static_cast<uint64_t>(_chunk_manifest->total_size), allocator);
-    chunks_obj.AddMember("file_hash", static_cast<uint64_t>(_chunk_manifest->file_hash), allocator);
-    chunks_obj.AddMember("compression", rapidjson::Value(compressionTypeToString(_chunk_manifest->compression), allocator), allocator);
-    chunks_obj.AddMember("is_encrypted", _chunk_manifest->is_encrypted, allocator);
+    chunks_obj.AddMember("total_size", static_cast<uint64_t>(_chunk_manifest->_total_size), allocator);
+    chunks_obj.AddMember("file_hash", static_cast<uint64_t>(_chunk_manifest->_file_hash), allocator);
+    chunks_obj.AddMember("compression", rapidjson::Value(compressionTypeToString(_chunk_manifest->_compression), allocator), allocator);
+    chunks_obj.AddMember("is_encrypted", _chunk_manifest->_is_encrypted, allocator);
     
     // Add chunks array
     rapidjson::Value chunks_array(rapidjson::kArrayType);
-    for (const auto& chunk : _chunk_manifest->chunks) {
+    for (const auto& chunk : _chunk_manifest->_chunks) {
       rapidjson::Value chunk_obj(rapidjson::kObjectType);
-      chunk_obj.AddMember("offset", static_cast<uint64_t>(chunk.offset), allocator);
-      chunk_obj.AddMember("size", static_cast<uint64_t>(chunk.size), allocator);
-      chunk_obj.AddMember("compressed_size", static_cast<uint64_t>(chunk.compressed_size), allocator);
-      chunk_obj.AddMember("hash", static_cast<uint64_t>(chunk.hash), allocator);
+      chunk_obj.AddMember("offset", static_cast<uint64_t>(chunk._offset), allocator);
+      chunk_obj.AddMember("size", static_cast<uint64_t>(chunk._size), allocator);
+      chunk_obj.AddMember("compressed_size", static_cast<uint64_t>(chunk._compressed_size), allocator);
+      chunk_obj.AddMember("hash", static_cast<uint64_t>(chunk._hash), allocator);
       chunks_array.PushBack(chunk_obj, allocator);
     }
     chunks_obj.AddMember("chunks", chunks_array, allocator);
@@ -305,19 +305,19 @@ assetentry_ptr_t AssetEntry::fromJson(const std::string& json_str) {
     auto chunk_manifest = std::make_shared<ChunkManifest>();
         
     if (chunks_obj.HasMember("total_size") && chunks_obj["total_size"].IsUint64()) {
-      chunk_manifest->total_size = chunks_obj["total_size"].GetUint64();
+      chunk_manifest->_total_size = chunks_obj["total_size"].GetUint64();
     }
     
     if (chunks_obj.HasMember("file_hash") && chunks_obj["file_hash"].IsUint64()) {
-      chunk_manifest->file_hash = chunks_obj["file_hash"].GetUint64();
+      chunk_manifest->_file_hash = chunks_obj["file_hash"].GetUint64();
     }
     
     if (chunks_obj.HasMember("compression") && chunks_obj["compression"].IsString()) {
-      chunk_manifest->compression = compressionTypeFromString(chunks_obj["compression"].GetString());
+      chunk_manifest->_compression = compressionTypeFromString(chunks_obj["compression"].GetString());
     }
     
     if (chunks_obj.HasMember("is_encrypted") && chunks_obj["is_encrypted"].IsBool()) {
-      chunk_manifest->is_encrypted = chunks_obj["is_encrypted"].GetBool();
+      chunk_manifest->_is_encrypted = chunks_obj["is_encrypted"].GetBool();
     }
     
     // Parse chunk list
@@ -329,22 +329,22 @@ assetentry_ptr_t AssetEntry::fromJson(const std::string& json_str) {
           ChunkMeta chunk_meta;
           
           if (chunk_obj.HasMember("offset") && chunk_obj["offset"].IsUint64()) {
-            chunk_meta.offset = chunk_obj["offset"].GetUint64();
+            chunk_meta._offset = chunk_obj["offset"].GetUint64();
           }
           
           if (chunk_obj.HasMember("size") && chunk_obj["size"].IsUint64()) {
-            chunk_meta.size = chunk_obj["size"].GetUint64();
+            chunk_meta._size = chunk_obj["size"].GetUint64();
           }
           
           if (chunk_obj.HasMember("compressed_size") && chunk_obj["compressed_size"].IsUint64()) {
-            chunk_meta.compressed_size = chunk_obj["compressed_size"].GetUint64();
+            chunk_meta._compressed_size = chunk_obj["compressed_size"].GetUint64();
           }
           
           if (chunk_obj.HasMember("hash") && chunk_obj["hash"].IsUint64()) {
-            chunk_meta.hash = chunk_obj["hash"].GetUint64();
+            chunk_meta._hash = chunk_obj["hash"].GetUint64();
           }
           
-          chunk_manifest->chunks.push_back(chunk_meta);
+          chunk_manifest->_chunks.push_back(chunk_meta);
         }
       }
     }
@@ -394,9 +394,9 @@ void AssetEntry::repackage() {
       // Pass 'this' directly to avoid lookup issues during creation
       auto self = std::make_shared<AssetEntry>(*this);
       auto pak_result = catalog->packFromLocal(self);
-      if (pak_result && pak_result->isSuccess() && pak_result->data) {
-        // Store TAR data for encryption later
-        tar_data = pak_result->data;
+      if (pak_result && pak_result->isSuccess() && pak_result->_data) {
+        // Store TAR _data for encryption later
+        tar_data = pak_result->_data;
         
         // Update size from packed data
         _size = tar_data->length();
@@ -408,7 +408,7 @@ void AssetEntry::repackage() {
         Md5Sum content_md5_result = content_hasher.Result();
         _content_hash = content_md5_result.hex_digest();
         
-        // Store the TAR data in a member variable so we don't have to recreate it
+        // Store the TAR _data in a member variable so we don't have to recreate it
         _temp_tar_data = tar_data;
       } else {
         logchan_catalog->log("ERROR: Failed to pack asset_pak from directory: %s", source_dir.c_str());
@@ -437,7 +437,7 @@ void AssetEntry::repackage() {
       _modification_time = file_stat.st_mtime;
     }
     
-    // Compute content hash (raw file data)
+    // Compute content hash (raw file _data)
     if (_hash_algorithm.empty()) {
       _hash_algorithm = "xxhash64";
     }
@@ -482,19 +482,19 @@ void AssetEntry::repackage() {
   
   if (codec) {
     printf("[DEBUG REPACKAGE] Using codec to encrypt asset: %s\n", _id.c_str());
-    // Get the data to encrypt
+    // Get the _data to encrypt
     std::vector<uint8_t> file_content;
     
     if (_type == "asset_pak") {
-      // For asset_pak, use the TAR data we already created
+      // For asset_pak, use the TAR _data we already created
       if (_temp_tar_data) {
         file_content.resize(_temp_tar_data->length());
         memcpy(file_content.data(), _temp_tar_data->data(), _temp_tar_data->length());
         
-        // Clear the temporary data after use
+        // Clear the temporary _data after use
         _temp_tar_data.reset();
       } else {
-        logchan_catalog->log("ERROR: No TAR data available for asset_pak encryption");
+        logchan_catalog->log("ERROR: No TAR _data available for asset_pak encryption");
         return;
       }
     } else {
@@ -559,9 +559,9 @@ void AssetEntry::repackage() {
   if (_size > ChunkManifest::chunk_threshold) {
     // Create chunk manifest
     _chunk_manifest = std::make_shared<ChunkManifest>();
-    _chunk_manifest->total_size = _size;
-    _chunk_manifest->compression = CompressionType::LZ4;
-    _chunk_manifest->is_encrypted = codec != nullptr;
+    _chunk_manifest->_total_size = _size;
+    _chunk_manifest->_compression = CompressionType::LZ4;
+    _chunk_manifest->_is_encrypted = codec != nullptr;
     
     // Get chunks directory from catalog
     file::Path chunks_dir;
@@ -576,12 +576,12 @@ void AssetEntry::repackage() {
     
     // Calculate chunks and write chunk files
     size_t num_chunks = (_size + _chunk_manifest->chunk_size - 1) / _chunk_manifest->chunk_size;
-    _chunk_manifest->chunks.reserve(num_chunks);
+    _chunk_manifest->_chunks.reserve(num_chunks);
     
     // For asset_pak, we need to handle chunking differently
     if (_type == "asset_pak") {
       // For now, asset_pak chunking is not implemented
-      // TODO: Implement chunking for asset_pak by reading TAR data from memory
+      // TODO: Implement chunking for asset_pak by reading TAR _data from memory
       logchan_catalog->log("WARNING: Chunking not yet implemented for asset_pak");
       _chunk_manifest.reset();
       return;
@@ -601,15 +601,15 @@ void AssetEntry::repackage() {
     size_t offset = 0;
     for (size_t i = 0; i < num_chunks; ++i) {
       ChunkMeta chunk;
-      chunk.offset = offset;
-      chunk.size = std::min(_chunk_manifest->chunk_size, _size - offset);
+      chunk._offset = offset;
+      chunk._size = std::min(_chunk_manifest->chunk_size, _size - offset);
       
-      // Read chunk data from file
-      std::vector<uint8_t> chunk_data(chunk.size);
+      // Read chunk _data from file
+      std::vector<uint8_t> chunk_data(chunk._size);
       file.seekg(offset);
-      file.read(reinterpret_cast<char*>(chunk_data.data()), chunk.size);
+      file.read(reinterpret_cast<char*>(chunk_data.data()), chunk._size);
       
-      // Process chunk data (encrypt if codec available)
+      // Process chunk _data (encrypt if codec available)
       std::vector<uint8_t> processed_data = chunk_data;
       if (codec) {
         auto input_block = std::make_shared<DataBlock>(chunk_data.data(), chunk_data.size());
@@ -619,14 +619,14 @@ void AssetEntry::repackage() {
         }
       }
       
-      chunk.compressed_size = processed_data.size(); // No compression for now
+      chunk._compressed_size = processed_data.size(); // No compression for now
       
       // Calculate chunk hash using XXHash64 of processed data
       XXH64HASH chunk_hasher;
       chunk_hasher.init();
       chunk_hasher.accumulate(processed_data.data(), processed_data.size());
       chunk_hasher.finish();
-      chunk.hash = chunk_hasher.result();
+      chunk._hash = chunk_hasher.result();
       
       // Write chunk file to <stage>/assetcache/enc/chunks/
       char chunk_filename[64];
@@ -643,8 +643,8 @@ void AssetEntry::repackage() {
         logchan_catalog->log("ERROR: Cannot write chunk file: %s", chunk_path.c_str());
       }
       
-      _chunk_manifest->chunks.push_back(chunk);
-      offset += chunk.size;
+      _chunk_manifest->_chunks.push_back(chunk);
+      offset += chunk._size;
     }
     
     file.close();
@@ -654,7 +654,7 @@ void AssetEntry::repackage() {
     file_hasher.init();
     file_hasher.accumulateString(_content_hash);
     file_hasher.finish();
-    _chunk_manifest->file_hash = file_hasher.result();
+    _chunk_manifest->_file_hash = file_hasher.result();
   } else {
     // Small file - no chunking needed
     _chunk_manifest.reset();
@@ -754,10 +754,10 @@ uploadreceipt_ptr_t AssetEntry::upload(
   // Resolving remote destination
   
   // Get API key from namespace encryption key if not set in location
-  if (!location_info->api_key.has_value()) {
+  if (!location_info->_api_key.has_value()) {
     std::string encryption_key = config.getEncryptionKeyForNamespace(_namespace);
     if (!encryption_key.empty()) {
-      location_info->api_key = encryption_key;
+      location_info->_api_key = encryption_key;
       // Using namespace key as API key
     }
   }
@@ -767,7 +767,7 @@ uploadreceipt_ptr_t AssetEntry::upload(
   auto receipt = std::make_shared<UploadReceipt>();
   receipt->upload_id = _id;  // Use asset id as upload id
   receipt->namespace_id = _namespace;
-  receipt->destination = location_info->url.toString();
+  receipt->destination = location_info->_upload_url.toString();
   receipt->timestamp = time(nullptr);
   // Upload receipt created
   
@@ -792,10 +792,10 @@ uploadreceipt_ptr_t AssetEntry::upload(
     auto manifest_path = getLocalEncryptedPath();
     auto manifest_upload = std::make_shared<Upload>();
     manifest_upload->_source_path = manifest_path;
-    manifest_upload->_destination_url = location_info->url / _namespace / "enc" / 
+    manifest_upload->_destination_url = location_info->_upload_url / _namespace / "enc" / 
                                        (_storage_hash + ".chunkmanifest.enc");
-    manifest_upload->_api_key = location_info->api_key;
-    manifest_upload->_ignore_tls_errors = location_info->disable_cert_check;
+    manifest_upload->_api_key = location_info->_api_key;
+    manifest_upload->_ignore_tls_errors = location_info->_disable_cert_check;
     
     if (!manifest_upload->execute()) {
       receipt->success = false;
@@ -814,23 +814,23 @@ uploadreceipt_ptr_t AssetEntry::upload(
     receipt->bytes_uploaded += manifest_upload->_total_bytes;
     
     // 2. Upload each chunk
-    for (size_t chunk_idx = 0; chunk_idx < _chunk_manifest->chunks.size(); ++chunk_idx) {
-      const auto& chunk = _chunk_manifest->chunks[chunk_idx];
+    for (size_t chunk_idx = 0; chunk_idx < _chunk_manifest->_chunks.size(); ++chunk_idx) {
+      const auto& chunk = _chunk_manifest->_chunks[chunk_idx];
       auto chunk_path = catalog->getChunksDir() / 
-                       (std::to_string(chunk.hash) + ".chunk." + formatChunkIndex(chunk_idx));
+                       (std::to_string(chunk._hash) + ".chunk." + formatChunkIndex(chunk_idx));
       
       auto chunk_upload = std::make_shared<Upload>();
       chunk_upload->_source_path = chunk_path;
-      chunk_upload->_destination_url = location_info->url / _namespace / "enc/chunks" / 
+      chunk_upload->_destination_url = location_info->_upload_url / _namespace / "enc/chunks" / 
                                       chunk_path.getName();
-      chunk_upload->_api_key = location_info->api_key;
-      chunk_upload->_ignore_tls_errors = location_info->disable_cert_check;
+      chunk_upload->_api_key = location_info->_api_key;
+      chunk_upload->_ignore_tls_errors = location_info->_disable_cert_check;
       
       if (!chunk_upload->execute()) {
         UploadFileEntry chunk_entry;
         chunk_entry.relative_path = chunk_path.getName();
         chunk_entry.remote_path = chunk_upload->_destination_url.toString();
-        chunk_entry.size = chunk.size;
+        chunk_entry.size = chunk._size;
         chunk_entry.success = false;
         chunk_entry.error_message = chunk_upload->_error_message;
         receipt->files.push_back(chunk_entry);
@@ -847,7 +847,7 @@ uploadreceipt_ptr_t AssetEntry::upload(
       chunk_entry.relative_path = chunk_path.getName();
       chunk_entry.remote_path = chunk_upload->_destination_url.toString();
       chunk_entry.size = chunk_upload->_total_bytes;
-      chunk_entry.hash = std::to_string(chunk.hash);
+      chunk_entry.hash = std::to_string(chunk._hash);
       chunk_entry.success = true;
       receipt->files.push_back(chunk_entry);
       receipt->bytes_uploaded += chunk_upload->_total_bytes;
@@ -874,26 +874,16 @@ uploadreceipt_ptr_t AssetEntry::upload(
     auto file_upload = std::make_shared<Upload>();
     file_upload->_source_path = enc_path;
     
-    // Build destination URL
-    auto dest_url = location_info->url / (_storage_hash + ".enc");
+    // Build destination URL using effective upload URL
+    auto dest_url = location_info->_upload_url / (_storage_hash + ".enc");
     printf("dest_url: %s\n", dest_url.toString().c_str());
-    
-    // TODO: Remove this hack - properly configure separate upload/download URLs in config
-    // HACK: Convert download URL to upload URL for uniserve
-    std::string url_str = dest_url.toString();
-    size_t download_pos = url_str.find("/download");
-    if (download_pos != std::string::npos) {
-        url_str.replace(download_pos, 9, "/upload");  // 9 is length of "/download"
-        dest_url = url_str;
-        printf("Converted download URL to upload URL: %s\n", dest_url.toString().c_str());
-    }
     
     file_upload->_destination_url = dest_url;
     
     // Upload configuration set
     
-    file_upload->_api_key = location_info->api_key;
-    file_upload->_ignore_tls_errors = location_info->disable_cert_check;
+    file_upload->_api_key = location_info->_api_key;
+    file_upload->_ignore_tls_errors = location_info->_disable_cert_check;
     
     // API key and TLS settings configured
     

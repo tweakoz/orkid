@@ -40,8 +40,8 @@ assetresult_ptr_t AssetCatalog::get(const assetid_t& fq_asset_id, bool decrypt) 
   if (!asset_info) {
     printf("[DEBUG] Asset not found in catalog\n");
     auto result = std::make_shared<AssetResult>();
-    result->status = AssetStatus::NOT_FOUND;
-    result->error_detail = FormatString("Asset not found: %s", fq_asset_id.c_str());
+    result->_status = AssetStatus::NOT_FOUND;
+    result->_error_detail = FormatString("Asset not found: %s", fq_asset_id.c_str());
     request->_state = AssetState::FAILED;
     return result;
   }
@@ -51,8 +51,8 @@ assetresult_ptr_t AssetCatalog::get(const assetid_t& fq_asset_id, bool decrypt) 
   if (!location) {
     printf("[DEBUG] Failed to locate asset\n");
     auto result = std::make_shared<AssetResult>();
-    result->status = AssetStatus::NOT_FOUND;
-    result->error_detail = "Failed to locate asset";
+    result->_status = AssetStatus::NOT_FOUND;
+    result->_error_detail = "Failed to locate asset";
     return result;
   }
   
@@ -60,7 +60,7 @@ assetresult_ptr_t AssetCatalog::get(const assetid_t& fq_asset_id, bool decrypt) 
   auto result = impl->getAsset(fq_asset_id, *location, asset_info, decrypt);
   
   // 5. Handle result and update state
-  if (result->status == AssetStatus::OK) {
+  if (result->_status == AssetStatus::OK) {
     request->_state = AssetState::CACHED_MEMORY;
   } else {
     request->_state = AssetState::FAILED;
@@ -68,11 +68,11 @@ assetresult_ptr_t AssetCatalog::get(const assetid_t& fq_asset_id, bool decrypt) 
   
   // 6. Update statistics
   impl->_stats.atomicOp([&](CatalogImpl::Stats& stats) {
-    if (result->status == AssetStatus::OK) {
+    if (result->_status == AssetStatus::OK) {
       stats.cache_misses++;
-      stats.bytes_downloaded += result->bytes_downloaded;
-      stats.total_download_time += result->download_time;
-      stats.total_processing_time += result->processing_time;
+      stats.bytes_downloaded += result->_bytes_downloaded;
+      stats.total_download_time += result->_download_time;
+      stats.total_processing_time += result->_processing_time;
     }
   });
   
@@ -120,26 +120,26 @@ void AssetCatalog::cancelAllDownloads() {
 ////////////////////////////////////////////////////////////////
 
 float DownloadProgress::getProgressPercent() const {
-  if (total_bytes == 0) return 0.0f;
-  return (float)bytes_downloaded / (float)total_bytes * 100.0f;
+  if (_total_bytes == 0) return 0.0f;
+  return (float)_bytes_downloaded / (float)_total_bytes * 100.0f;
 }
 
 std::string DownloadProgress::getRateString() const {
-  if (rate < 1024) {
-    return FormatString("%.0f B/s", rate);
-  } else if (rate < 1024 * 1024) {
-    return FormatString("%.1f KB/s", rate / 1024.0);
+  if (_rate < 1024) {
+    return FormatString("%.0f B/s", _rate);
+  } else if (_rate < 1024 * 1024) {
+    return FormatString("%.1f KB/s", _rate / 1024.0);
   } else {
-    return FormatString("%.1f MB/s", rate / (1024.0 * 1024.0));
+    return FormatString("%.1f MB/s", _rate / (1024.0 * 1024.0));
   }
 }
 
 double DownloadProgress::getEstimatedTimeRemaining() const {
-  if (rate <= 0 || bytes_downloaded >= total_bytes) {
+  if (_rate <= 0 || _bytes_downloaded >= _total_bytes) {
     return 0;
   }
-  size_t remaining = total_bytes - bytes_downloaded;
-  return remaining / rate;
+  size_t remaining = _total_bytes - _bytes_downloaded;
+  return remaining / _rate;
 }
 
 } //namespace ork::asset::catalog {

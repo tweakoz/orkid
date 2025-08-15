@@ -195,7 +195,7 @@ void AssetCatalog::loadFromGlobalManifests(assetcatalog_ptr_t self) {
       
       if (needs_registration) {
         // Get encryption key for namespace
-        std::string encryption_key = namespace_info.encryption_key;
+        std::string encryption_key = namespace_info._encryption_key;
         
         if (!encryption_key.empty()) {
           // Use the public API to register codec
@@ -226,21 +226,21 @@ void AssetCatalog::addManifest(assetmanifest_ptr_t manifest) {
     // Manifest pointer logging not needed
     // Add all assets to index
     const auto& assets = manifest->getAssets();
-    for (const auto& [asset_id, entry] : assets) {
+    for (const auto& [_asset_id, entry] : assets) {
       // Populate AssetEntry fields
-      entry->_id = asset_id;                    // Set the asset ID
+      entry->_id = _asset_id;                    // Set the asset ID
       entry->_namespace = namespace_id;         // Set namespace string
       entry->_namespace_ptr = ns;               // Set namespace weak pointer
       
       
       CatalogImpl::AssetIndexEntry index_entry;
       index_entry.namespace_id = namespace_id;
-      index_entry.asset_path   = asset_id;
+      index_entry.asset_path   = _asset_id;
       index_entry.manifest     = manifest;
       index_entry.entry        = entry;
 
       // Store with fully qualified ID
-      std::string fq_asset_id                = buildAssetId(namespace_id, asset_id);
+      std::string fq_asset_id                = buildAssetId(namespace_id, _asset_id);
       state._entries_by_assetid[fq_asset_id] = index_entry;
       // Asset entry addition logged at higher level
     }

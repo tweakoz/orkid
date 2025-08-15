@@ -119,8 +119,8 @@ def upload_single_asset(catalog, asset_id, dry_run=False):
             print(f"✗ No configuration available")
             return False
         
-        # Get the upload destination for this namespace
-        destination_id = config.getUploadLocationForNamespace(namespace_id)
+        # Get the remote destination for this namespace
+        destination_id = config.getRemoteLocationForNamespace(namespace_id)
         if not destination_id:
             print(f"✗ No upload destination configured for namespace: {namespace_id}")
             return False

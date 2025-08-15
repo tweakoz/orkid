@@ -50,7 +50,7 @@ struct AssetManifestImpl {
   std::string _description;
   time_t _creation_time = 0;
   std::string _creator;             // Tool/person that created this manifest
-  asset_metadata_map_t _metadata;  // Custom metadata
+  asset_metadata_map_t _meta_data;  // Custom metadata
   
   // Parent catalog reference (for accessing ConfigSpace)
 };
@@ -87,12 +87,12 @@ uploadreceipt_ptr_t AssetManifest::upload(
     locationinfo_ptr_t location_info) const {
   
   logchan_catalog->log("Starting manifest upload - ID: %s, namespace: %s, destination: %s, assets: %zu",
-                       getManifestId().c_str(), getNamespace().c_str(), location_info->url.toString().c_str(), getAssets().size());
+                       getManifestId().c_str(), getNamespace().c_str(), location_info->_upload_url.toString().c_str(), getAssets().size());
   
   // Create a combined receipt for all assets
   auto manifest_receipt = std::make_shared<UploadReceipt>();
   manifest_receipt->upload_id = getManifestId() + "_manifest";
-  manifest_receipt->destination = location_info->url.toString();
+  manifest_receipt->destination = location_info->_download_url.toString();
   manifest_receipt->timestamp = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
   manifest_receipt->success = true;  // Start optimistic
   manifest_receipt->total_files = 0;
@@ -102,26 +102,26 @@ uploadreceipt_ptr_t AssetManifest::upload(
   std::vector<std::string> successful_assets;
   
   // Upload each asset in the manifest
-  for (const auto& [asset_id, asset_entry] : getAssets()) {
-    logchan_catalog->log("Uploading asset: %s", asset_id.c_str());
+  for (const auto& [_asset_id, asset_entry] : getAssets()) {
+    logchan_catalog->log("Uploading asset: %s", _asset_id.c_str());
     
     try {
       auto asset_receipt = asset_entry->upload(config, location_info);
       
       if (asset_receipt && asset_receipt->success) {
         // Asset upload successful
-        successful_assets.push_back(asset_id);
+        successful_assets.push_back(_asset_id);
         manifest_receipt->total_files += asset_receipt->total_files;
         manifest_receipt->bytes_uploaded += asset_receipt->bytes_uploaded;
       } else {
-        logchan_catalog->log("ERROR: Asset upload failed: %s%s", asset_id.c_str(),
+        logchan_catalog->log("ERROR: Asset upload failed: %s%s", _asset_id.c_str(),
                              asset_receipt ? (" - " + asset_receipt->status_message).c_str() : "");
-        failed_assets.push_back(asset_id);
+        failed_assets.push_back(_asset_id);
         manifest_receipt->success = false;
       }
     } catch (const std::exception& e) {
-      logchan_catalog->log("ERROR: Asset upload exception: %s - %s", asset_id.c_str(), e.what());
-      failed_assets.push_back(asset_id);
+      logchan_catalog->log("ERROR: Asset upload exception: %s - %s", _asset_id.c_str(), e.what());
+      failed_assets.push_back(_asset_id);
       manifest_receipt->success = false;
     }
   }
@@ -181,7 +181,7 @@ const asset_entry_map_t& AssetManifest::getAssets() const {
 
 const asset_metadata_map_t& AssetManifest::getMetadata() const {
   auto impl = _impl.getShared<AssetManifestImpl>();
-  return impl->_metadata;
+  return impl->_meta_data;
 }
 
 void AssetManifest::setNamespace(const namespaceid_t& ns) {
@@ -328,8 +328,8 @@ assetentry_ptr_t AssetManifest::createAsset(
       // Compute MD5 content hash of the original file
       File file(source_file, EFM_READ);
       std::vector<uint8_t> file_data;
-      auto status = file.Load(file_data);
-      if (status == EFEC_FILE_OK && !file_data.empty()) {
+      auto _status = file.Load(file_data);
+      if (_status == EFEC_FILE_OK && !file_data.empty()) {
         CMD5 content_hasher;
         content_hasher.update(file_data.data(), file_data.size());
         content_hasher.finalize();
@@ -413,7 +413,7 @@ void AssetManifest::parseFromJsonInternal(const std::string& json_str, const fil
     // New format
     impl->_namespace = doc["namespace"].GetString();
     
-    // Parse manifest_id if present, otherwise keep the generated one
+    // Parse manifest_id if present, otherwise keep the gene_rated one
     if (doc.HasMember("manifest_id") && doc["manifest_id"].IsString()) {
       impl->_manifest_id = doc["manifest_id"].GetString();
     }
@@ -426,13 +426,13 @@ void AssetManifest::parseFromJsonInternal(const std::string& json_str, const fil
       const auto& assets = doc["assets"];
       
       for (auto it = assets.MemberBegin(); it != assets.MemberEnd(); ++it) {
-        std::string asset_id = it->name.GetString();
+        std::string _asset_id = it->name.GetString();
         const auto& asset_data = it->value;
         
         if (!asset_data.IsObject()) continue;
         
         AssetEntry entry;
-        entry._id = asset_id;                        // Set the asset ID
+        entry._id = _asset_id;                        // Set the asset ID
         entry._namespace = impl->_namespace;
         entry._manifest_source = source_file.c_str();
 
@@ -502,7 +502,7 @@ void AssetManifest::parseFromJsonInternal(const std::string& json_str, const fil
           }
         }
         
-        impl->_assets[asset_id] = std::make_shared<AssetEntry>(entry);
+        impl->_assets[_asset_id] = std::make_shared<AssetEntry>(entry);
       }
     }
   } else {
@@ -514,13 +514,13 @@ void AssetManifest::parseFromJsonInternal(const std::string& json_str, const fil
     
     // Each top-level key is an asset
     for (auto it = doc.MemberBegin(); it != doc.MemberEnd(); ++it) {
-      std::string asset_id = it->name.GetString();
+      std::string _asset_id = it->name.GetString();
       const auto& asset_data = it->value;
       
       if (!asset_data.IsObject()) continue;
       
       AssetEntry entry;
-      entry._id = asset_id;                        // Set the asset ID
+      entry._id = _asset_id;                        // Set the asset ID
       entry._namespace = impl->_namespace;
       entry._manifest_source = source_file.c_str();
       entry._priority = 100;  // Default priority
@@ -565,7 +565,7 @@ void AssetManifest::parseFromJsonInternal(const std::string& json_str, const fil
         OrkAssert(entry._hash_algorithm == "md5" && "Only MD5 hash algorithm is currently supported");
       }
       
-      impl->_assets[asset_id] = std::make_shared<AssetEntry>(entry);
+      impl->_assets[_asset_id] = std::make_shared<AssetEntry>(entry);
     }
   }
 }
@@ -579,9 +579,9 @@ AssetRequest::AssetRequest(const std::string& ns)
   : _namespace(ns) {
 }
 
-AssetRequest::AssetRequest(const std::string& ns, const std::string& asset_id)
+AssetRequest::AssetRequest(const std::string& ns, const std::string& _asset_id)
   : _namespace(ns)
-  , _asset_id(asset_id) {
+  , _asset_id(_asset_id) {
 }
 
 bool AssetRequest::isValid() const {
@@ -614,22 +614,22 @@ void AssetManifest::merge(const AssetManifest& other) {
   auto other_impl = other._impl.getShared<AssetManifestImpl>();
   
   // Merge assets with priority resolution
-  for (const auto& [asset_id, asset_entry] : other_impl->_assets) {
-    auto it = impl->_assets.find(asset_id);
+  for (const auto& [_asset_id, asset_entry] : other_impl->_assets) {
+    auto it = impl->_assets.find(_asset_id);
     if (it != impl->_assets.end()) {
       // Asset exists - check priority
       if (asset_entry->_priority < it->second->_priority) {
-        impl->_assets[asset_id] = asset_entry;
+        impl->_assets[_asset_id] = asset_entry;
       }
     } else {
       // New asset
-      impl->_assets[asset_id] = asset_entry;
+      impl->_assets[_asset_id] = asset_entry;
     }
   }
   
   // Merge metadata
-  for (const auto& [key, value] : other_impl->_metadata) {
-    impl->_metadata[key] = value;
+  for (const auto& [key, value] : other_impl->_meta_data) {
+    impl->_meta_data[key] = value;
   }
 }
 
@@ -744,7 +744,7 @@ assetmanifest_ptr_t AssetManifest::fromJson(const std::string& json_str) {
     const auto& assets_obj = doc["assets"];
     
     for (auto it = assets_obj.MemberBegin(); it != assets_obj.MemberEnd(); ++it) {
-      std::string asset_id = it->name.GetString();
+      std::string _asset_id = it->name.GetString();
       const auto& asset_data = it->value;
       
       if (!asset_data.IsObject()) continue;
@@ -753,7 +753,7 @@ assetmanifest_ptr_t AssetManifest::fromJson(const std::string& json_str) {
       rapidjson::StringBuffer buffer;
       rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
       
-      // Create a new document with the asset data plus the ID
+      // Create a new document with the asset _data plus the ID
       rapidjson::Document asset_doc;
       asset_doc.SetObject();
       auto& asset_allocator = asset_doc.GetAllocator();
@@ -766,7 +766,7 @@ assetmanifest_ptr_t AssetManifest::fromJson(const std::string& json_str) {
       }
       
       // Add the ID field
-      asset_doc.AddMember("id", rapidjson::Value(asset_id.c_str(), asset_allocator), asset_allocator);
+      asset_doc.AddMember("id", rapidjson::Value(_asset_id.c_str(), asset_allocator), asset_allocator);
       
       // Convert to string
       rapidjson::StringBuffer asset_buffer;
@@ -780,7 +780,7 @@ assetmanifest_ptr_t AssetManifest::fromJson(const std::string& json_str) {
         if (entry->_namespace.empty()) {
           entry->_namespace = impl->_namespace;
         }
-        impl->_assets[asset_id] = entry;
+        impl->_assets[_asset_id] = entry;
       }
     }
   }
@@ -812,7 +812,7 @@ std::string AssetManifest::toJson() const {
   // Add assets object
   rapidjson::Value assets_obj(rapidjson::kObjectType);
   
-  for (const auto& [asset_id, entry] : impl->_assets) {
+  for (const auto& [_asset_id, entry] : impl->_assets) {
     rapidjson::Value asset_obj(rapidjson::kObjectType);
     
     // Basic fields
@@ -854,7 +854,7 @@ std::string AssetManifest::toJson() const {
       asset_obj.AddMember("chunks", chunks_obj, allocator);
     }
     
-    assets_obj.AddMember(rapidjson::Value(asset_id.c_str(), allocator), asset_obj, allocator);
+    assets_obj.AddMember(rapidjson::Value(_asset_id.c_str(), allocator), asset_obj, allocator);
   }
   
   doc.AddMember("assets", assets_obj, allocator);
@@ -890,9 +890,9 @@ void AssetManifest::repackage() {
   logchan_catalog->log("Repackaging manifest '%s' with %zu assets...", 
                        impl->_manifest_id.c_str(), impl->_assets.size());
   
-  // Iterate through all assets and repackage each one
-  for (auto& [asset_id, entry] : impl->_assets) {
-    logchan_catalog->log("  Repackaging asset: %s", asset_id.c_str());
+  // Ite_rate through all assets and repackage each one
+  for (auto& [_asset_id, entry] : impl->_assets) {
+    logchan_catalog->log("  Repackaging asset: %s", _asset_id.c_str());
     
     // Call repackage on the individual asset
     if (entry) {

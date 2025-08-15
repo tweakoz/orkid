@@ -51,7 +51,7 @@ def print_config_info(catalog, namespace_id, config_space):
     
     print(f"  {deco.key('Encryption key:')} {deco.red('*' * 8 + ' (hidden)')}")
     
-    upload_location = merged_config.getUploadLocationForNamespace(namespace_id)
+    upload_location = merged_config.getRemoteLocationForNamespace(namespace_id)
     if upload_location:
         print(f"  {deco.key('Upload location:')} {deco.val(upload_location)}")
     
@@ -87,7 +87,7 @@ def print_json_info(catalog, namespace_id, config_space):
     if config_file:
         info["source_file"] = config_file
     
-    upload_location = merged_config.getUploadLocationForNamespace(namespace_id)
+    upload_location = merged_config.getRemoteLocationForNamespace(namespace_id)
     if upload_location:
         info["upload_location"] = upload_location
     

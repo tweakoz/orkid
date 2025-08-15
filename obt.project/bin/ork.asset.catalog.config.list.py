@@ -52,8 +52,8 @@ if manifest_dirs_env:
                         print(deco.cyan(f"    {ns_id}:"))
                         if 'encryption_key' in ns_config:
                             print(deco.key(f"      encryption_key: ") + deco.red(f"{'*' * 8} (hidden)"))
-                        if 'upload_location' in ns_config:
-                            print(deco.key(f"      upload_location: ") + deco.val(ns_config['upload_location']))
+                        if 'remote_location' in ns_config:
+                            print(deco.key(f"      remote_location: ") + deco.val(ns_config['remote_location']))
                 
                 # Show namespace_keys (alternate format)
                 if 'namespace_keys' in config_data:

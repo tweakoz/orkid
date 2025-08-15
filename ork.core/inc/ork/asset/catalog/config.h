@@ -24,10 +24,11 @@ namespace ork::asset::catalog {
 ////////////////////////////////////////////////////////////////////////////////
 
 struct LocationInfo {
-  URL url;
-  std::optional<std::string> api_key;
-  bool disable_cert_check = false;  // For self-signed certificates
-  std::optional<std::string> scp_destination;  // For SCP upload in format hostname:dest_dir
+  URL _download_url;
+  URL _upload_url;  
+  std::optional<std::string> _api_key;
+  bool _disable_cert_check = false;  // For self-signed certificates
+  std::optional<std::string> _scp_destination;  // For SCP upload in format hostname:dest_dir
   
   // Get effective API key (env var takes precedence)
   std::string getEffectiveApiKey(const std::string& location_name) const;
@@ -38,12 +39,12 @@ struct LocationInfo {
 ////////////////////////////////////////////////////////////////////////////////
 
 struct NamespaceConfig {
-  std::string encryption_key;        // Key for encrypting/decrypting assets in this namespace
-  std::string upload_location;       // Reference to location in remote_location_map_t
+  std::string _encryption_key;        // Key for encrypting/decrypting assets in this namespace
+  std::string _remote_location;       // Reference to location in remote_location_map_t
   
   NamespaceConfig() = default;
-  NamespaceConfig(const std::string& key, const std::string& upload_loc) 
-    : encryption_key(key), upload_location(upload_loc) {}
+  NamespaceConfig(const std::string& key, const std::string& remote_loc) 
+    : _encryption_key(key), _remote_location(remote_loc) {}
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -78,10 +79,10 @@ struct AssetConfig {
   
   // Namespace configuration helpers
   std::string getEncryptionKeyForNamespace(const std::string& namespace_id) const;
-  locationinfo_ptr_t getUploadLocationForNamespace(const std::string& namespace_id) const;
+  locationinfo_ptr_t getRemoteLocationForNamespace(const std::string& namespace_id) const;
   
   // Mutation methods for building configs programmatically
-  void addNamespace(const std::string& namespace_id, const std::string& encryption_key, const std::string& upload_location);
+  void addNamespace(const std::string& namespace_id, const std::string& encryption_key, const std::string& remote_location);
   void addRemoteLocation(const std::string& id, const std::string& loc);
   void addLocalLocation(const std::string& id, const std::string& loc);
   

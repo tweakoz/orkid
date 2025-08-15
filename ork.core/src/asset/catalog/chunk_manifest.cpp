@@ -28,19 +28,19 @@ namespace ork::asset::catalog {
 // ChunkManifest constructor/destructor - using default
 
 bool ChunkManifest::isValid() const {
-  if (chunks.empty()) return false;
-  if (chunks.size() == 0) return false;
-  if (total_size == 0) return false;
-  if (file_hash == 0) return false;
+  if (_chunks.empty()) return false;
+  if (_chunks.size() == 0) return false;
+  if (_total_size == 0) return false;
+  if (_file_hash == 0) return false;
   
   // Verify chunks are contiguous and sized correctly
   chunk_offset_t expected_offset = 0;
-  for (const auto& chunk : chunks) {
-    if (chunk.offset != expected_offset) return false;
-    expected_offset += chunk.size;
+  for (const auto& chunk : _chunks) {
+    if (chunk._offset != expected_offset) return false;
+    expected_offset += chunk._size;
   }
   
-  return expected_offset == total_size;
+  return expected_offset == _total_size;
 }
 
 // getChunk methods not in header

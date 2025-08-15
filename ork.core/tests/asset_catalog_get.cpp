@@ -64,7 +64,7 @@ TEST(AssetCatalog_Get_BasicSync) {
     auto result = catalog->get("test::test.txt", false);
     CHECK(result != nullptr);
     CHECK(!result->isSuccess());
-    CHECK(result->status == AssetStatus::NOT_FOUND);
+    CHECK(result->_status == AssetStatus::NOT_FOUND);
 }
 
 TEST(AssetCatalog_Get_NotFound) {
@@ -75,9 +75,9 @@ TEST(AssetCatalog_Get_NotFound) {
     auto result = catalog->get("test::nonexistent.txt", false);
     CHECK(result != nullptr);
     CHECK(!result->isSuccess());
-    //CHECK_EQUAL(AssetStatus::NOT_FOUND, result->status);
-    CHECK(result->data == nullptr);
-    CHECK(!result->error_detail.empty());
+    //CHECK_EQUAL(AssetStatus::NOT_FOUND, result->_status);
+    CHECK(result->_data == nullptr);
+    CHECK(!result->_error_detail.empty());
 }
 
 TEST(AssetCatalog_Get_CacheHit) {

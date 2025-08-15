@@ -60,7 +60,7 @@ struct CatalogImpl {
     
     // Initialize root namespace
     _root_namespace = std::make_shared<AssetNamespace>("");
-    _root_namespace->full_path = "";
+    _root_namespace->_full_path = "";
         
     // Initialize download manager with default concurrent queue
     _download_manager = std::make_shared<DownloadManager>(opq::concurrentQueue());
@@ -220,7 +220,7 @@ chunkdownloadcoordinator_ptr_t downloadNonChunkedAsset(
                            const AssetLocation& loc,
                            chunkmanifest_ptr_t manifest)
       : asset_id(id), location(loc), chunk_manifest(manifest), 
-        total_chunks(manifest ? manifest->chunks.size() : 0) {
+        total_chunks(manifest ? manifest->_chunks.size() : 0) {
     // Initialize chunk paths vector
     chunk_paths.atomicOp([this](path_vect_t& paths) {
       paths.resize(total_chunks);
