@@ -103,9 +103,32 @@ def upload_single_asset(catalog, asset_id, dry_run=False):
    
     try:
         print(f"\nUploading asset '{asset_id}'...")
-        receipt = catalog.upload(asset_id)
+        
+        # Get the specific asset entry
+        entry = catalog.get_asset_info(asset_id)
+        if not entry:
+            print(f"✗ Asset not found: {asset_id}")
+            return False
+        
+        # Get the namespace from the asset_id to determine destination
+        namespace_id = asset_id.split('|')[0]
+        
+        # Get the merged config from the catalog
+        config = catalog.merged_config
+        if not config:
+            print(f"✗ No configuration available")
+            return False
+        
+        # Get the upload destination for this namespace
+        destination_id = config.getUploadLocationForNamespace(namespace_id)
+        if not destination_id:
+            print(f"✗ No upload destination configured for namespace: {namespace_id}")
+            return False
+        
+        # Upload the individual asset using AssetEntry's upload method
+        receipt = entry.upload(config, destination_id)
         print_upload_receipt(receipt, "  ")
-        return receipt.success
+        return receipt.success if receipt else False
             
     except Exception as e:
         print(f"✗ Upload error: {e}")
