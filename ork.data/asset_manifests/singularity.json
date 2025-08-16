@@ -1,0 +1,98 @@
+{
+  "id": "singularity",
+  "uuid": "5fc6761e-e103-4aac-894d-67d950f20e43",
+  "namespace": "singularity",
+  "version": "1.0.0",
+  "assets": {
+    "casiocz": {
+      "type": "asset_pak",
+      "priority": 0,
+      "remote_loc": "<orkid_std>",
+      "local_loc": "<stage>/share",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "fae52e8489d36418615b2192eef7376a",
+      "storage_hash": "943ec64a7791aacbd03a1b1c6599692d",
+      "hash_algorithm": "md5",
+      "native_size": 35118592
+    },
+    "irs": {
+      "type": "asset_pak",
+      "priority": 0,
+      "remote_loc": "<orkid_std>",
+      "local_loc": "<stage>/share",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "910bbea86fb3e70e0fb36db8bfacff06",
+      "storage_hash": "0c7e7c70fd422300a68517ea8b0a40c5",
+      "hash_algorithm": "md5",
+      "native_size": 42170368
+    },
+    "kurzweil": {
+      "type": "asset_pak",
+      "priority": 0,
+      "remote_loc": "<orkid_std>",
+      "local_loc": "<stage>/share",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "879d713bb26ffcfce2df6714f16487cb",
+      "storage_hash": "ab8262c69353a0fb47ec1e53022d06e6",
+      "hash_algorithm": "md5",
+      "native_size": 27340800
+    },
+    "midifiles": {
+      "type": "asset_pak",
+      "priority": 0,
+      "remote_loc": "<orkid_std>",
+      "local_loc": "<stage>/share",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "c4b7c5f566762aab3064da360d0aeccc",
+      "storage_hash": "80b5bfc86aaa8299eaf791581f19805f",
+      "hash_algorithm": "md5",
+      "native_size": 25600
+    },
+    "tx81z": {
+      "type": "asset_pak",
+      "priority": 0,
+      "remote_loc": "<orkid_std>",
+      "local_loc": "<stage>/share",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "aa1ed8f1c1d741f88e3cbe7021f4325a",
+      "storage_hash": "0e102d8a1a2f40385de1f68dbf592f36",
+      "hash_algorithm": "md5",
+      "native_size": 5209600
+    },
+    "wavs": {
+      "type": "asset_pak",
+      "priority": 0,
+      "remote_loc": "<orkid_std>",
+      "local_loc": "<stage>/share",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "af492135f578c1151777587c2004a9c6",
+      "storage_hash": "af1893a45db462116b12a90fd6bfff5e",
+      "hash_algorithm": "md5",
+      "native_size": 10742784
+    }
+  }
+}

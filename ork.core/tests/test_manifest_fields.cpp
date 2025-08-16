@@ -16,13 +16,11 @@ TEST(AssetManifest_FieldRenaming) {
     entry->_type = "asset";
     entry->_local_loc = "/cache/test_asset";
     entry->_remote_loc = "https://cdn.example.com/assets";
-    entry->_filename = "test.dat";
     entry->_storage_hash = "abc123";
     
     CHECK_EQUAL("asset", entry->_type);
     CHECK_EQUAL("/cache/test_asset", entry->_local_loc);
     CHECK_EQUAL("https://cdn.example.com/assets", entry->_remote_loc);
-    CHECK_EQUAL("test.dat", entry->_filename);
     CHECK_EQUAL("abc123", entry->_storage_hash);
 }
 
@@ -36,7 +34,6 @@ TEST(AssetManifest_JSONSerialization) {
     entry->_type = "asset";
     entry->_local_loc = "/local/path";
     entry->_remote_loc = "/remote/path";
-    entry->_filename = "file.dat";
     entry->_storage_hash = "12345";
     
     manifest->addAsset("test_asset", entry);
@@ -83,7 +80,6 @@ TEST(AssetManifest_JSONParsing) {
     auto& entry = it->second;
     CHECK_EQUAL("/local/asset1", entry->_local_loc);
     CHECK_EQUAL("/remote/asset1", entry->_remote_loc);
-    CHECK_EQUAL("asset1.dat", entry->_filename);
     CHECK_EQUAL("hash123", entry->_storage_hash);
 }
 
@@ -92,7 +88,6 @@ TEST(AssetManifest_AssetPakType) {
     entry->_type = "asset_pak";
     entry->_local_loc = "/cache/models";  // Where to extract
     entry->_remote_loc = "https://cdn/paks";  // Where to download from
-    entry->_filename = "models.tar.lz4.enc";
     entry->_storage_hash = "abcdef";
     
     CHECK_EQUAL("asset_pak", entry->_type);

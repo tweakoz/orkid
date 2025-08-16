@@ -34,19 +34,21 @@ void pyinit_asset_catalog(py::module& module_core) {
                  const std::string& type,
                  const std::string& remote,
                  const std::string& local,
-                 const std::string& filename,
                  const platform_list_t& platforms,
-                 const assetid_list_t& dependencies) -> assetentry_ptr_t {
-                return AssetManifest::createAsset(self, id, priority, type, remote, local, filename, platforms, dependencies);
+                 const assetid_list_t& dependencies,
+                 const std::string& tar_root,
+                 const std::vector<std::string>& filters) -> assetentry_ptr_t {
+                return AssetManifest::createAsset(self, id, priority, type, remote, local, platforms, dependencies, tar_root, filters);
               },
               py::arg("id"),
               py::arg("priority"),
               py::arg("type"),
               py::arg("remote"),
               py::arg("local"),
-              py::arg("filename"),
               py::arg("platforms"),
-              py::arg("dependencies"))
+              py::arg("dependencies"),
+              py::arg("tar_root") = "",
+              py::arg("filters") = std::vector<std::string>{})
           .def("toJson", &AssetManifest::toJson)
           .def_static("fromJson", &AssetManifest::fromJson)
           .def("getCodec", &AssetManifest::getCodec)
@@ -187,8 +189,8 @@ void pyinit_asset_catalog(py::module& module_core) {
                               .def_readonly("merge", &AssetEntry::_merge)
                               .def_readonly("local_loc", &AssetEntry::_local_loc)
                               .def_readonly("remote_loc", &AssetEntry::_remote_loc)
-                              .def_readonly("filename", &AssetEntry::_filename)
                               .def_readonly("relative_path", &AssetEntry::_relative_path)
+                              .def_readwrite("_tar_root", &AssetEntry::_tar_root)
                               .def_readonly("size", &AssetEntry::_size)
                               .def_readonly("storage_hash", &AssetEntry::_storage_hash)
                               .def_readonly("content_hash", &AssetEntry::_content_hash)
@@ -230,7 +232,7 @@ void pyinit_asset_catalog(py::module& module_core) {
                                    py::arg("config"), 
                                    py::arg("destination_id"))
                               .def("__repr__", [](assetentry_ptr_t entry) -> std::string {
-                                return FormatString("AssetEntry(filename='%s', size=%zu)", entry->_filename.c_str(), entry->_size);
+                                return FormatString("AssetEntry(id='%s', size=%zu)", entry->_id.c_str(), entry->_size);
                               });
   type_codec->registerStdCodec<assetentry_ptr_t>(asset_entry_type);
 

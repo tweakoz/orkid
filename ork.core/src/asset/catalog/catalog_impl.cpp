@@ -734,13 +734,8 @@ void CatalogImpl::writeAssetPakToLocal(const assetentry_ptr_t& asset_info, Asset
     return;
   }
   
-  // For asset_pak, we need to extract the TAR contents
-  // The directory name is the filename without .tar extension
-  std::string dir_name = asset_info->_filename;
-  if (dir_name.size() > 4 && dir_name.substr(dir_name.size() - 4) == ".tar") {
-    dir_name = dir_name.substr(0, dir_name.size() - 4);
-  }
-  
+  // For asset_pak, extract directly to local_path
+  // tar_root specifies the source directory structure within the TAR
   file::Path extract_dir = local_path;
   printf("[DEBUG] Extracting to directory: %s\n", extract_dir.c_str());
   

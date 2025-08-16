@@ -40,8 +40,9 @@ struct AssetEntry {
                                          // For paks: extraction destination
                                          // For assets: file location
   std::string _remote_loc;               // Remote location - where to download from
-  std::string _filename;                 // Just the filename
   std::string _relative_path;            // Full relative path within namespace
+  std::string _tar_root;                 // Root directory in TAR for asset_pak (can be empty)
+  std::vector<std::string> _filters;     // File patterns to include in TAR (empty = include all)
   
   // Extended metadata
   size_t _size = 0;                      // File size in bytes
@@ -204,9 +205,10 @@ struct AssetManifest {
     const std::string& type,
     const std::string& remote,
     const std::string& local,
-    const std::string& filename,
     const platform_list_t& platforms,
-    const assetid_list_t& dependencies);
+    const assetid_list_t& dependencies,
+    const std::string& tar_root = "",
+    const std::vector<std::string>& filters = {});
   
   // Repackage all assets in manifest
   void repackage();

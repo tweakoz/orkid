@@ -110,14 +110,13 @@ TEST(AssetArchivePakCreation) {
         "asset_pak",
         "<test_remote>/paks",
         pak_parent_dir.c_str(),  // Pass parent directory containing test_pak/
-        "test_pak.tar",           // TAR filename that will be created
         platforms,
-        dependencies
+        dependencies,
+        "test_pak"  // tar_root
     );
     
     // Verify asset was created properly
     CHECK(asset != nullptr);
-    CHECK(asset->_filename == "test_pak.tar");
     CHECK(asset->_type == "asset_pak");
     
     // Repackage to compute hashes and encrypt
@@ -205,7 +204,6 @@ TEST(AssetManifestSerialization) {
         "text",
         "<test_remote>/data",
         "<cache>/data",
-        "test1.txt",
         platforms,
         dependencies
     );
@@ -217,7 +215,6 @@ TEST(AssetManifestSerialization) {
         "binary",
         "<test_remote>/data",
         "<cache>/data",
-        "test2.bin",
         platforms,
         dependencies
     );
@@ -289,7 +286,6 @@ TEST(AssetChunking) {
         "binary",
         "<test_remote>/data",
         test_dir.toStdString(),
-        "large_test.bin",
         platforms,
         dependencies
     );
@@ -364,7 +360,6 @@ TEST(AssetCatalogToJson) {
         "text",
         "<test_remote>/data",
         "<cache>/data",
-        "file1.txt",
         platforms,
         dependencies
     );
@@ -376,7 +371,6 @@ TEST(AssetCatalogToJson) {
         "binary",
         "<test_remote>/data",
         "<cache>/data",
-        "file2.bin",
         platforms,
         dependencies
     );

@@ -17,7 +17,7 @@ from obt import crypt, path as obt_path
 from orkengine import core
 
 
-# Module-level catalog cache to share state across package_asset calls
+# Module-level catalog cache to share state across build_assetpak calls
 _catalog_cache = {}
 
 
@@ -32,71 +32,63 @@ def get_current_platform():
         raise ValueError(f"Unsupported platform: {system}")
 
 
-def package_asset(
+def build_assetpak(
     namespace,
     output,
     asset_id,
+    source_dir=None,
+    filters=None,
     priority=100,
     remote_loc=None,
     local_loc=None,
     version='1.0.0',
     catalog_file=None,
-    asset_pak=None,
-    asset=None,
     cache_dir=None,
-    merge=None,
-    dependencies=None,
     key=None,
-    filename=None,
-    strip_leading=False,
-    filter=None,
+    strip_prefix=None,
     platforms=None,
     config_path=None,
-    write_manifest=False
+    write_manifest=False,
+    tar_root=None
 ):
-    # TODO: Currently each package_asset call creates its own catalog instance,
-    # which means when packaging multiple assets that share a manifest, each call
-    # only updates its own asset's data. This requires write_manifest=True for
-    # each call to persist changes. A better approach would be to support batch
-    # operations or share catalog state across calls.
     """
-    Package assets (encrypt/compress) and add them to Orkid catalog manifests
+    Build asset_pak (tar archive) from directory using filters and add to Orkid catalog manifest
     
     Args:
         namespace: Asset namespace
         output: Output manifest file
         asset_id: Asset identifier
+        source_dir: Archive root directory (required)
+        filters: List of patterns to include relative to source_dir (required)
         priority: Priority (lower wins)
         remote_loc: Remote location template (e.g., <orkid_cdn>)
-        local_loc: Local location template
+        local_loc: Local location template where TAR files are stored (required)
         version: Manifest version
         catalog_file: Catalog JSON file to load/update
-        asset_pak: Create asset_pak from directory (mutually exclusive with asset)
-        asset: Create asset from file (mutually exclusive with asset_pak)
         cache_dir: Cache directory for generated assets
-        merge: For asset_pak: merge with existing
-        dependencies: Dependencies (namespace|asset_id)
         key: Encryption key (alternative to environment variable)
-        filename: Override filename in manifest
-        strip_leading: Strip base directory from tar archive paths
-        filter: Wildcard pattern to filter files (only for asset_pak)
+        strip_prefix: Prefix to strip from paths in TAR archive
         platforms: Target platforms (default: current platform)
+        config_path: Additional config file to load
         write_manifest: Write updated manifest with new hashes to output file
+        tar_root: Root directory in TAR for asset_pak (can be empty)
         
     Returns:
-        dict with keys: asset_path, manifest_path
+        dict with keys: asset_path, manifest_path, storage_hash, content_hash
     """
-    # Validate inputs
+    # Validate required inputs
+    if not source_dir:
+        raise ValueError("source_dir is required")
+    if not filters:
+        raise ValueError("filters is required (list of patterns)")
     if not remote_loc:
         raise ValueError("remote_loc is required")
     if not local_loc:
         raise ValueError("local_loc is required")
     
-    # Validate mutually exclusive options
-    if asset_pak and asset:
-        raise ValueError("Cannot specify both --asset-pak and --asset")
-    if not asset_pak and not asset:
-        raise ValueError("Must specify either --asset-pak or --asset")
+    # Ensure filters is a list
+    if isinstance(filters, str):
+        filters = [filters]
     
     # Set default platforms if not specified
     if not platforms:
@@ -116,11 +108,7 @@ def package_asset(
         cfgspc = core.AssetConfigSpace.loadGlobalConfigs()
         catalog = core.AssetCatalog(space=cfgspc)
         
-        # Phase 1: Config Space Identity Check
-        print(f"DEBUG: cfgspc object id: {id(cfgspc)}")
-        print(f"DEBUG: catalog object id: {id(catalog)}")
-        
-        # Load from global manifests (this populates the "default" catalog)
+        # Load from global manifests (this populates the catalog and registers codecs)
         core.AssetCatalog.loadFromGlobalManifests(catalog)
         
         # Cache the catalog and config space
@@ -131,31 +119,11 @@ def package_asset(
     
     # If config_path is provided, load additional config
     if config_path:
-        # Use the static method which automatically merges into the config space
         newcfg = core.AssetConfigSpace.loadConfigFromDisk(cfgspc, config_path)
-        print(f"DEBUG: Config loaded from {config_path}")
-        
-        # Test config loaded
-        
-        # Test configuration loaded successfully
-        
+        print(f"Loaded additional config from {config_path}")
+    
     # Get config from catalog after loading additional configs
     config = catalog.merged_config
-    
-    # Debug: Use API to inspect what's actually in the merged config
-    if config_path:
-        print(f"DEBUG: Merged config destinations: {config.destinations}")
-        print(f"DEBUG: Merged config JSON:\n{config.toJson()}")
-        
-        # Test template resolution
-        test_resolution = config.resolveLocalPath("<test_stage>/levels")
-        print(f"DEBUG: Template '<test_stage>/levels' resolves to: '{test_resolution}'")
-        
-        # Try to resolve the path here before it gets to createAsset
-        print(f"DEBUG: About to call resolveLocalPath with local_loc='{local_loc}'")
-        actual_resolved = config.resolveLocalPath(local_loc)
-        print(f"DEBUG: Resolved path: '{actual_resolved}'") 
-    # TODO! assert namespace exists in catalog
     
     # Register codec if key provided
     if key:
@@ -167,122 +135,26 @@ def package_asset(
         if env_password:
             catalog.registerCodecWithPassword(namespace, env_password)
     
-    # For now, we cannot resolve location templates through the catalog API
-    # The catalog needs a method like resolveLocalLocation(template_str) -> Path
-    # Until that API exists, we must require resolved paths
-    resolved_local = config.resolveLocalPath(local_loc)
+    # Resolve local location for manifest
+    resolved_local = config.resolveLocalPath(str(local_loc))
     local_dir = Path(resolved_local)
-    assert( local_dir.exists() ), f"Local location '{local_dir}' does not exist"
-        
-    # Determine type and prepare the unencrypted asset
-    if asset_pak:
-
-        print("############################################")
-        print(f"## COPYING ASSET_PAK: {local_dir}")
-        print("############################################")
-
-        asset_type = 'asset_pak'
-        # Resolve template path first before checking if it's a directory
-        resolved_asset_pak = config.resolveLocalPath(asset_pak)
-        source_dir = Path(resolved_asset_pak)
-        if not source_dir.is_dir():
-            raise ValueError(f"asset_pak source must be a directory: {source_dir}")
-        
-        # For asset_pak, the C++ API expects a directory at local_loc
-        # The C++ packFromLocal will create TAR from this directory
-        if filename:
-            # Use the provided filename (should be like "test.tar")
-            final_filename = filename
-        else:
-            final_filename = f"{namespace}_{asset_id}.tar"
-        
-        # Extract directory name from tar filename for copying source
-        pak_dirname = final_filename
-        if pak_dirname.endswith('.tar'):
-            pak_dirname = pak_dirname[:-4]
-        
-        # Check if source and dest are the same to avoid recursive copying
-        dest_dir = local_dir / pak_dirname
-        needs_cleanup = False
-        
-        if source_dir == local_dir:
-            # Source and dest in same location - need to handle carefully
-            print(f"## Source in local_loc, creating temporary subdirectory")
-            needs_cleanup = True
-            
-            # Remove existing subdirectory if it exists (from previous run)
-            if dest_dir.exists():
-                import shutil
-                shutil.rmtree(dest_dir)
-        else:
-            # Normal case - copy from different location
-            if dest_dir.exists():
-                import shutil
-                shutil.rmtree(dest_dir)
-            
-            print(f"## Copying directory to -> {dest_dir}")
-        
-        # If filter is specified, copy only matching files
-        if filter:
-            dest_dir.mkdir(parents=True, exist_ok=True)
-            copied_count = 0
-            
-            # When source == dest, we need to skip subdirectories to avoid recursion
-            for file in os.listdir(source_dir):
-                file_path = source_dir / file
-                if file_path.is_file() and fnmatch.fnmatch(file, filter):
-                    import shutil
-                    shutil.copy2(str(file_path), str(dest_dir / file))
-                    copied_count += 1
-            
-            print(f"✓ Copied directory ({copied_count} files matching '{filter}')")
-        else:
-            import shutil
-            if source_dir == local_dir:
-                # Special case: copy only files, not subdirectories
-                dest_dir.mkdir(parents=True, exist_ok=True)
-                for item in os.listdir(source_dir):
-                    item_path = source_dir / item
-                    if item_path.is_file():
-                        shutil.copy2(str(item_path), str(dest_dir / item))
-            else:
-                shutil.copytree(str(source_dir), str(dest_dir))
-            print(f"✓ Copied directory ({len(list(dest_dir.glob('*')))} files)")
-        
-        # The C++ API will create {local_loc}/{filename} TAR from {local_loc}/{pak_dirname} directory
-        
-    else:
-
-        print("############################################")
-        print(f"## DOING SINGLE ASSET: {asset}")
-        print("############################################")
-
-        asset_type = 'asset'
-        source_file = Path(asset)
-        if not source_file.is_file():
-            raise ValueError(f"asset source must be a file: {source_file}")
-        
-        # Determine filename
-        if filename:
-            final_filename = filename
-            # Remove .enc extension if present since we need unencrypted name
-            if final_filename.endswith('.enc'):
-                final_filename = final_filename[:-4]
-        else:
-            # Keep original extension for single files
-            orig_ext = source_file.suffix
-            final_filename = f"{namespace}_{asset_id}{orig_ext}"
-        
-        # Copy file to expected location
-        dest_path = local_dir / final_filename
-        print(f"Copying file to: {dest_path}")
-        
-        import shutil
-        shutil.copy2(str(source_file), str(dest_path))
-        print(f"✓ Copied file: {dest_path} ({dest_path.stat().st_size} bytes)")
-
+    local_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Resolve source directory
+    resolved_source = config.resolveLocalPath(str(source_dir))
+    source_path = Path(resolved_source)
+    if not source_path.exists():
+        raise ValueError(f"Source directory does not exist: {source_path}")
+    
+    print("############################################")
+    print(f"## BUILDING ASSET_PAK: {asset_id}")
+    print(f"## Source: {source_path}")
+    print(f"## Filters: {filters}")
+    if tar_root:
+        print(f"## TAR Root: {tar_root}")
+    print("############################################")
+    
     # Get or create the manifest
-    # Check if we have a cached manifest for this namespace
     if cache_key in _catalog_cache and 'manifest' in _catalog_cache[cache_key]:
         manifest = _catalog_cache[cache_key]['manifest']
         print(f"Using cached manifest for namespace '{namespace}'")
@@ -290,13 +162,12 @@ def package_asset(
         manifest = catalog.get_manifest(namespace)
         
         if manifest:
-            # Use existing manifest
             print(f"Using existing manifest for namespace '{namespace}'")
         else:
             # Create new manifest using the catalog
             manifest = core.AssetCatalog.createManifest(
                 catalog,
-                f"{namespace}_manifest",  # manifest ID
+                f"{namespace}_manifest",
                 version,
                 namespace,
                 output
@@ -306,38 +177,27 @@ def package_asset(
         # Cache the manifest
         _catalog_cache[cache_key]['manifest'] = manifest
     
-    # Format dependencies for new API (as lists, not dicts)
-    if not dependencies:
-        dependencies = []
-    
     print("############################################")
     print(f"## PACKAGING")
     print("############################################")
+    
     # Create asset using builder pattern - this will call repackage() internally
+    # Pass tar_root (empty string if None) and filters to createAsset
     asset_obj = core.AssetManifest.createAsset(
         manifest,
         asset_id,
         priority,
-        asset_type,
+        'asset_pak',  # Always asset_pak for this function
         remote_loc,
-        local_loc,
-        final_filename,
+        str(local_loc),
         platforms,
-        dependencies
+        [],  # No dependencies
+        tar_root if tar_root is not None else "",  # Pass tar_root
+        filters if filters else []  # Pass filters
     )
     
-    # If merge is specified for asset_pak
-    if asset_type == "asset_pak" and merge is not None:
-        asset_obj._merge = merge
-    
-    # Clean up temporary directory if we created one for asset_pak
-    if asset_type == "asset_pak" and 'needs_cleanup' in locals() and needs_cleanup:
-        # We created a temporary subdirectory for filtering, clean it up
-        temp_dir = local_dir / pak_dirname
-        if temp_dir.exists():
-            import shutil
-            shutil.rmtree(temp_dir)
-            print(f"✓ Cleaned up temporary directory: {temp_dir}")
+    # The asset should now be packaged (TAR created, encrypted, hashed)
+    # The C++ code handles the actual packaging when createAsset is called
     
     # Set output path (always needed for return value)
     output_path = Path(output)
@@ -353,7 +213,6 @@ def package_asset(
     
     print(f"✓ Created asset: {asset_obj}")
     print(f"  Type: {asset_obj.type}")
-    print(f"  Filename: {asset_obj.filename}")
     print(f"  Content hash: {asset_obj.content_hash}")
     print(f"  Storage hash: {asset_obj.storage_hash}")
     print(f"  Size: {asset_obj.size}")
@@ -364,20 +223,12 @@ def package_asset(
     enc_path = obt_path.stage() / "assetcache" / "enc" / f"{asset_obj.storage_hash}.enc"
     if enc_path.exists():
         print(f"✓ Encrypted file created: {enc_path}")
+    else:
+        print(f"⚠ Encrypted file not found at: {enc_path}")
     
     print(f"\nTo upload this asset, use: ork.asset.catalog.upload.py --namespace {namespace}")
     
-    # Don't call coreappexit if we're using cached catalogs
-    # Let the process cleanup handle it
-    
-    # For asset_pak, the asset_path is the directory, not the TAR file
-    if asset_type == 'asset_pak':
-        asset_path = str(local_dir / pak_dirname)
-    else:
-        asset_path = str(local_dir / final_filename)
-    
     return {
-        'asset_path': asset_path,
         'manifest_path': str(output_path),
         'storage_hash': asset_obj.storage_hash,
         'content_hash': asset_obj.content_hash

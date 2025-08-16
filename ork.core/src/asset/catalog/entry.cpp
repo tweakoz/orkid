@@ -61,11 +61,6 @@ bool AssetEntry::isValid() const {
     return false;
   }
   
-  // Must have filename
-  if (_filename.empty()) {
-    return false;
-  }
-  
   // Must have hash
   if (_storage_hash.empty()) {
     return false;
@@ -85,10 +80,6 @@ bool AssetEntry::isValid() const {
 std::string AssetEntry::getValidationError() const {
   if (_type.empty()) {
     return "Asset type is empty";
-  }
-  
-  if (_filename.empty()) {
-    return "Filename is required";
   }
   
   if (_storage_hash.empty()) {
@@ -149,7 +140,11 @@ std::string AssetEntry::toJson() const {
   doc.AddMember("priority", _priority, allocator);
   doc.AddMember("remote", rapidjson::Value(_remote_loc.c_str(), allocator), allocator);
   doc.AddMember("local", rapidjson::Value(_local_loc.c_str(), allocator), allocator);
-  doc.AddMember("filename", rapidjson::Value(_filename.c_str(), allocator), allocator);
+  // filename field no longer used
+  
+  if (!_tar_root.empty()) {
+    doc.AddMember("tar_root", rapidjson::Value(_tar_root.c_str(), allocator), allocator);
+  }
   
   // Platforms
   rapidjson::Value platforms_array(rapidjson::kArrayType);
@@ -248,8 +243,10 @@ assetentry_ptr_t AssetEntry::fromJson(const std::string& json_str) {
     entry->_local_loc = doc["local"].GetString();
   }
   
-  if (doc.HasMember("filename") && doc["filename"].IsString()) {
-    entry->_filename = doc["filename"].GetString();
+  // filename field no longer used
+  
+  if (doc.HasMember("tar_root") && doc["tar_root"].IsString()) {
+    entry->_tar_root = doc["tar_root"].GetString();
   }
   
   // Platforms
@@ -360,7 +357,7 @@ assetentry_ptr_t AssetEntry::fromJson(const std::string& json_str) {
 ////////////////////////////////////////////////////////////////////////////////
 void AssetEntry::repackage() {
   // Check if we have valid file information
-  if (_filename.empty() || _local_loc.empty()) {
+  if (_local_loc.empty()) {
     return;
   }
   
@@ -370,105 +367,59 @@ void AssetEntry::repackage() {
     return;
   }
   
-  // For asset_pak, we need to handle differently
-  if (_type == "asset_pak") {
-    // Get directory name by removing .tar extension
-    std::string dir_name = _filename;
-    if (dir_name.size() > 4 && dir_name.substr(dir_name.size() - 4) == ".tar") {
-      dir_name = dir_name.substr(0, dir_name.size() - 4);
-    }
-    
-    file::Path source_dir = base_path / dir_name;
-    
-    // Check if directory exists
-    if (!source_dir.doesPathExist()) {
-      logchan_catalog->log("ERROR: Asset pak directory does not exist: %s", source_dir.c_str());
-      OrkAssert(false);
-    }
-    
-    // Create TAR from directory and store it for later use
-    auto catalog = getCatalog();
-    datablock_ptr_t tar_data;
-    
-    if (catalog) {
-      // Pass 'this' directly to avoid lookup issues during creation
-      auto self = std::make_shared<AssetEntry>(*this);
-      auto pak_result = catalog->packFromLocal(self);
-      if (pak_result && pak_result->isSuccess() && pak_result->_data) {
-        // Store TAR _data for encryption later
-        tar_data = pak_result->_data;
-        
-        // Update size from packed data
-        _size = tar_data->length();
-        
-        // Compute content hash from TAR data
-        CMD5 content_hasher;
-        content_hasher.update(tar_data->data(), tar_data->length());
-        content_hasher.finalize();
-        Md5Sum content_md5_result = content_hasher.Result();
-        _content_hash = content_md5_result.hex_digest();
-        
-        // Store the TAR _data in a member variable so we don't have to recreate it
-        _temp_tar_data = tar_data;
-      } else {
-        logchan_catalog->log("ERROR: Failed to pack asset_pak from directory: %s", source_dir.c_str());
-        OrkAssert(false);
-      }
+  // Only asset_pak supported
+  if (_type != "asset_pak") {
+    logchan_catalog->log("ERROR: Only asset_pak type is supported. Asset type: %s", _type.c_str());
+    OrkAssert(false);
+  }
+  
+  // Determine source directory using tar_root field
+  file::Path source_dir;
+  if (_tar_root.empty()) {
+    // No tar_root specified - use base_path directly
+    source_dir = base_path;
+  } else {
+    // Use tar_root to find the source directory
+    source_dir = base_path / _tar_root;
+  }
+  
+  // Check if directory exists
+  if (!source_dir.doesPathExist()) {
+    logchan_catalog->log("ERROR: Asset pak directory does not exist: %s", source_dir.c_str());
+    OrkAssert(false);
+  }
+  
+  // Create TAR from directory and store it for later use
+  auto catalog = getCatalog();
+  datablock_ptr_t tar_data;
+  
+  if (catalog) {
+    // Pass 'this' directly to avoid lookup issues during creation
+    auto self = std::make_shared<AssetEntry>(*this);
+    auto pak_result = catalog->packFromLocal(self);
+    if (pak_result && pak_result->isSuccess() && pak_result->_data) {
+      // Store TAR _data for encryption later
+      tar_data = pak_result->_data;
+      
+      // Update size from packed data
+      _size = tar_data->length();
+      
+      // Compute content hash from TAR data
+      CMD5 content_hasher;
+      content_hasher.update(tar_data->data(), tar_data->length());
+      content_hasher.finalize();
+      Md5Sum content_md5_result = content_hasher.Result();
+      _content_hash = content_md5_result.hex_digest();
+      
+      // Store the TAR _data in a member variable so we don't have to recreate it
+      _temp_tar_data = tar_data;
     } else {
-      logchan_catalog->log("ERROR: No catalog available for asset_pak packing");
+      logchan_catalog->log("ERROR: Failed to pack asset_pak from directory: %s", source_dir.c_str());
       OrkAssert(false);
     }
   } else {
-    // Regular asset - check if file exists
-    file::Path local_path = base_path / _filename;
-    
-    // Check if file exists
-    if (!local_path.doesPathExist()) {
-      // File doesn't exist - this is an error
-      logchan_catalog->log("ERROR: File does not exist: %s (_local_loc: %s, _filename: %s)", 
-                           local_path.c_str(), _local_loc.c_str(), _filename.c_str());
-      OrkAssert(false);
-    }
-    
-    // Get file size
-    struct stat file_stat;
-    if (stat(local_path.c_str(), &file_stat) == 0) {
-      _size = file_stat.st_size;
-      _modification_time = file_stat.st_mtime;
-    }
-    
-    // Compute content hash (raw file _data)
-    if (_hash_algorithm.empty()) {
-      _hash_algorithm = "xxhash64";
-    }
-    
-    if (_hash_algorithm == "xxhash64") {
-      // Read file and compute xxhash64
-      std::ifstream file(local_path.c_str(), std::ios::binary);
-      if (file.is_open()) {
-        // Read file in chunks
-        const size_t chunk_size = 64 * 1024; // 64KB chunks
-        std::vector<char> buffer(chunk_size);
-        
-        XXH64HASH hasher;
-        hasher.init();
-        
-        while (file.read(buffer.data(), chunk_size) || file.gcount() > 0) {
-          hasher.accumulate(buffer.data(), file.gcount());
-        }
-        
-        hasher.finish();
-        uint64_t hash = hasher.result();
-        
-        // Convert to hex string
-        char hash_str[17];
-        snprintf(hash_str, sizeof(hash_str), "%016llx", (unsigned long long)hash);
-        _content_hash = hash_str;
-        
-        file.close();
-      }
-    }
-    // TODO: Add support for other hash algorithms (md5, sha256)
+    logchan_catalog->log("ERROR: No catalog available for asset_pak packing");
+    OrkAssert(false);
   }
   
   // Package the file (encrypt)
@@ -482,31 +433,19 @@ void AssetEntry::repackage() {
   
   if (codec) {
     printf("[DEBUG REPACKAGE] Using codec to encrypt asset: %s\n", _id.c_str());
-    // Get the _data to encrypt
+    // Get the TAR data to encrypt
     std::vector<uint8_t> file_content;
     
-    if (_type == "asset_pak") {
-      // For asset_pak, use the TAR _data we already created
-      if (_temp_tar_data) {
-        file_content.resize(_temp_tar_data->length());
-        memcpy(file_content.data(), _temp_tar_data->data(), _temp_tar_data->length());
-        
-        // Clear the temporary _data after use
-        _temp_tar_data.reset();
-      } else {
-        logchan_catalog->log("ERROR: No TAR _data available for asset_pak encryption");
-        return;
-      }
-    } else {
-      // Regular file - read from disk
-      file::Path local_path = base_path / _filename;
-      file_content.resize(_size);
+    // For asset_pak, use the TAR data we already created
+    if (_temp_tar_data) {
+      file_content.resize(_temp_tar_data->length());
+      memcpy(file_content.data(), _temp_tar_data->data(), _temp_tar_data->length());
       
-      std::ifstream file(local_path.c_str(), std::ios::binary);
-      if (file.is_open()) {
-        file.read(reinterpret_cast<char*>(file_content.data()), _size);
-        file.close();
-      }
+      // Clear the temporary data after use
+      _temp_tar_data.reset();
+    } else {
+      logchan_catalog->log("ERROR: No TAR data available for asset_pak encryption");
+      return;
     }
     
     if (!file_content.empty()) {
@@ -587,75 +526,9 @@ void AssetEntry::repackage() {
       return;
     }
     
-    // Regular file chunking
-    file::Path local_path = base_path / _filename;
-    
-    // Open the source file for reading chunks
-    std::ifstream file(local_path.c_str(), std::ios::binary);
-    if (!file.is_open()) {
-      logchan_catalog->log("ERROR: Cannot open file for chunking: %s", local_path.c_str());
-      _chunk_manifest.reset();
-      return;
-    }
-    
-    size_t offset = 0;
-    for (size_t i = 0; i < num_chunks; ++i) {
-      ChunkMeta chunk;
-      chunk._offset = offset;
-      chunk._size = std::min(_chunk_manifest->chunk_size, _size - offset);
-      
-      // Read chunk _data from file
-      std::vector<uint8_t> chunk_data(chunk._size);
-      file.seekg(offset);
-      file.read(reinterpret_cast<char*>(chunk_data.data()), chunk._size);
-      
-      // Process chunk _data (encrypt if codec available)
-      std::vector<uint8_t> processed_data = chunk_data;
-      if (codec) {
-        auto input_block = std::make_shared<DataBlock>(chunk_data.data(), chunk_data.size());
-        auto encrypted_block = codec->encrypt(input_block.get());
-        if (encrypted_block) {
-          processed_data.assign(encrypted_block->data(), encrypted_block->data() + encrypted_block->length());
-        }
-      }
-      
-      chunk._compressed_size = processed_data.size(); // No compression for now
-      
-      // Calculate chunk hash using XXHash64 of processed data
-      XXH64HASH chunk_hasher;
-      chunk_hasher.init();
-      chunk_hasher.accumulate(processed_data.data(), processed_data.size());
-      chunk_hasher.finish();
-      chunk._hash = chunk_hasher.result();
-      
-      // Write chunk file to <stage>/assetcache/enc/chunks/
-      // Format: {storage_hash}.enc.chunk.{index:04d}
-      char chunk_filename[64];
-      snprintf(chunk_filename, sizeof(chunk_filename), "%s.enc.chunk.%04zu", 
-               _storage_hash.c_str(), i);
-      file::Path chunk_path = chunks_dir / chunk_filename;
-      
-      std::ofstream chunk_file(chunk_path.c_str(), std::ios::binary);
-      if (chunk_file.is_open()) {
-        chunk_file.write(reinterpret_cast<const char*>(processed_data.data()), processed_data.size());
-        chunk_file.close();
-        // Chunk file write logged at higher level if needed
-      } else {
-        logchan_catalog->log("ERROR: Cannot write chunk file: %s", chunk_path.c_str());
-      }
-      
-      _chunk_manifest->_chunks.push_back(chunk);
-      offset += chunk._size;
-    }
-    
-    file.close();
-    
-    // Compute file hash for chunk manifest
-    XXH64HASH file_hasher;
-    file_hasher.init();
-    file_hasher.accumulateString(_content_hash);
-    file_hasher.finish();
-    _chunk_manifest->_file_hash = file_hasher.result();
+    // Non-pak chunking not supported
+    logchan_catalog->log("ERROR: Chunking only supported for asset_pak type");
+    _chunk_manifest.reset();
   } else {
     // Small file - no chunking needed
     _chunk_manifest.reset();

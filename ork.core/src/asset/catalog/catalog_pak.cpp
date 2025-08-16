@@ -7,6 +7,7 @@
 
 #include <ork/asset/catalog/catalog.h>
 #include <ork/asset/catalog/chunk_assembler.h>
+#include <ork/asset/catalog/manifest.h>
 #include <ork/file/file.h>
 #include <ork/kernel/string/deco.inl>
 #include <ork/util/crypt.h>
@@ -118,8 +119,8 @@ assetresult_ptr_t AssetCatalog::packFromLocal(const assetid_t& fq_pak_asset_id) 
     return result;
   }
 
-  logchan_catalog->log("packFromLocal: Asset ID=%s, local_loc=%s, filename=%s", 
-                       fq_pak_asset_id.c_str(), asset_info->_local_loc.c_str(), asset_info->_filename.c_str());
+  logchan_catalog->log("packFromLocal: Asset ID=%s, local_loc=%s", 
+                       fq_pak_asset_id.c_str(), asset_info->_local_loc.c_str());
 
   // 2. Verify it's an asset_pak
   if (asset_info->_type != "asset_pak") {
@@ -157,28 +158,82 @@ assetresult_ptr_t AssetCatalog::packFromLocal(const assetid_t& fq_pak_asset_id) 
     return result;
   }
 
-  // 4. Get directory name by removing .tar extension from filename
-  std::string dir_name = asset_info->_filename;
-  if (dir_name.size() > 4 && dir_name.substr(dir_name.size() - 4) == ".tar") {
-    dir_name = dir_name.substr(0, dir_name.size() - 4);
+  // 4. Determine source directory using tar_root field
+  file::Path source_dir;
+  if (asset_info->_tar_root.empty()) {
+    // No tar_root specified - use pak_local_path directly
+    source_dir = pak_local_path;
+  } else {
+    // Use tar_root to find the source directory
+    source_dir = pak_local_path / asset_info->_tar_root;
   }
   
-  // 5. Look for the source directory
-  file::Path source_dir = pak_local_path / dir_name;
-  
-  logchan_catalog->log("packFromLocal: Looking for directory: %s (pak_local_path=%s, dir_name=%s)", 
-                       source_dir.c_str(), pak_local_path.c_str(), dir_name.c_str());
+  logchan_catalog->log("packFromLocal: Looking for directory: %s (pak_local_path=%s, tar_root=%s)", 
+                       source_dir.c_str(), pak_local_path.c_str(), asset_info->_tar_root.c_str());
   
   if (!source_dir.doesPathExist()) {
     result->_status       = AssetStatus::NOT_FOUND;
-    result->_error_detail = FormatString("Source directory not found: %s (pak_local_path=%s, dir_name=%s)", 
-                                       source_dir.c_str(), pak_local_path.c_str(), dir_name.c_str());
+    result->_error_detail = FormatString("Source directory not found: %s (pak_local_path=%s, tar_root=%s)", 
+                                       source_dir.c_str(), pak_local_path.c_str(), asset_info->_tar_root.c_str());
     return result;
   }
 
   // 6. Create TAR from directory contents
   util::TarCreateOptions create_options;
   create_options.base_path = source_dir.c_str();
+  
+  // Apply filters if specified
+  if (!asset_info->_filters.empty()) {
+    logchan_catalog->log("Applying %zu filters to TAR creation", asset_info->_filters.size());
+    for (const auto& filter : asset_info->_filters) {
+      logchan_catalog->log("  Filter: %s", filter.c_str());
+    }
+    // Convert string filters to include filter function
+    create_options.include_filter = [asset_info, source_dir](const std::string& path) -> bool {
+      // Get relative path from source_dir
+      std::string relative_path = path;
+      std::string source_dir_str = source_dir.toStdString();
+      if (path.find(source_dir_str) == 0) {
+        relative_path = path.substr(source_dir_str.length());
+        // Remove leading slash if present
+        if (!relative_path.empty() && relative_path[0] == '/') {
+          relative_path = relative_path.substr(1);
+        }
+      }
+      
+      logchan_catalog->log("  Checking file: %s (relative: %s)", path.c_str(), relative_path.c_str());
+      
+      // Check if any filter matches this path
+      for (const std::string& filter : asset_info->_filters) {
+        // Simple glob matching - convert * to regex .*
+        std::string regex_pattern = filter;
+        
+        // Escape special regex characters except *
+        size_t pos = 0;
+        while ((pos = regex_pattern.find(".", pos)) != std::string::npos) {
+          regex_pattern.replace(pos, 1, "\\.");
+          pos += 2;
+        }
+        
+        // Convert * to .*
+        pos = 0;
+        while ((pos = regex_pattern.find("*", pos)) != std::string::npos) {
+          regex_pattern.replace(pos, 1, ".*");
+          pos += 2;
+        }
+        
+        // Match the pattern
+        std::regex pattern(regex_pattern);
+        if (std::regex_match(relative_path, pattern)) {
+          return true;  // Include this file
+        }
+      }
+      
+      // If no filter matched, exclude the file
+      return false;
+    };
+  }
+  // If no filters specified, include everything (default behavior)
 
   auto archive = util::TarArchive::createFromDirectory(source_dir, create_options);
   if (!archive || !archive->isValid()) {
@@ -215,8 +270,8 @@ assetresult_ptr_t AssetCatalog::packFromLocal(assetentry_ptr_t asset_info) {
     return result;
   }
 
-  logchan_catalog->log("packFromLocal(direct): local_loc=%s, filename=%s", 
-                       asset_info->_local_loc.c_str(), asset_info->_filename.c_str());
+  logchan_catalog->log("packFromLocal(direct): local_loc=%s", 
+                       asset_info->_local_loc.c_str());
 
   // 2. Verify it's an asset_pak
   if (asset_info->_type != "asset_pak") {
@@ -254,28 +309,82 @@ assetresult_ptr_t AssetCatalog::packFromLocal(assetentry_ptr_t asset_info) {
     return result;
   }
 
-  // 4. Get directory name by removing .tar extension from filename
-  std::string dir_name = asset_info->_filename;
-  if (dir_name.size() > 4 && dir_name.substr(dir_name.size() - 4) == ".tar") {
-    dir_name = dir_name.substr(0, dir_name.size() - 4);
+  // 4. Determine source directory using tar_root field
+  file::Path source_dir;
+  if (asset_info->_tar_root.empty()) {
+    // No tar_root specified - use pak_local_path directly
+    source_dir = pak_local_path;
+  } else {
+    // Use tar_root to find the source directory
+    source_dir = pak_local_path / asset_info->_tar_root;
   }
   
-  // 5. Look for the source directory
-  file::Path source_dir = pak_local_path / dir_name;
-  
-  logchan_catalog->log("packFromLocal: Looking for directory: %s (pak_local_path=%s, dir_name=%s)", 
-                       source_dir.c_str(), pak_local_path.c_str(), dir_name.c_str());
+  logchan_catalog->log("packFromLocal: Looking for directory: %s (pak_local_path=%s, tar_root=%s)", 
+                       source_dir.c_str(), pak_local_path.c_str(), asset_info->_tar_root.c_str());
   
   if (!source_dir.doesPathExist()) {
     result->_status       = AssetStatus::NOT_FOUND;
-    result->_error_detail = FormatString("Source directory not found: %s (pak_local_path=%s, dir_name=%s)", 
-                                       source_dir.c_str(), pak_local_path.c_str(), dir_name.c_str());
+    result->_error_detail = FormatString("Source directory not found: %s (pak_local_path=%s, tar_root=%s)", 
+                                       source_dir.c_str(), pak_local_path.c_str(), asset_info->_tar_root.c_str());
     return result;
   }
 
   // 6. Create TAR from directory contents
   util::TarCreateOptions create_options;
   create_options.base_path = source_dir.c_str();
+  
+  // Apply filters if specified
+  if (!asset_info->_filters.empty()) {
+    logchan_catalog->log("Applying %zu filters to TAR creation", asset_info->_filters.size());
+    for (const auto& filter : asset_info->_filters) {
+      logchan_catalog->log("  Filter: %s", filter.c_str());
+    }
+    // Convert string filters to include filter function
+    create_options.include_filter = [asset_info, source_dir](const std::string& path) -> bool {
+      // Get relative path from source_dir
+      std::string relative_path = path;
+      std::string source_dir_str = source_dir.toStdString();
+      if (path.find(source_dir_str) == 0) {
+        relative_path = path.substr(source_dir_str.length());
+        // Remove leading slash if present
+        if (!relative_path.empty() && relative_path[0] == '/') {
+          relative_path = relative_path.substr(1);
+        }
+      }
+      
+      logchan_catalog->log("  Checking file: %s (relative: %s)", path.c_str(), relative_path.c_str());
+      
+      // Check if any filter matches this path
+      for (const std::string& filter : asset_info->_filters) {
+        // Simple glob matching - convert * to regex .*
+        std::string regex_pattern = filter;
+        
+        // Escape special regex characters except *
+        size_t pos = 0;
+        while ((pos = regex_pattern.find(".", pos)) != std::string::npos) {
+          regex_pattern.replace(pos, 1, "\\.");
+          pos += 2;
+        }
+        
+        // Convert * to .*
+        pos = 0;
+        while ((pos = regex_pattern.find("*", pos)) != std::string::npos) {
+          regex_pattern.replace(pos, 1, ".*");
+          pos += 2;
+        }
+        
+        // Match the pattern
+        std::regex pattern(regex_pattern);
+        if (std::regex_match(relative_path, pattern)) {
+          return true;  // Include this file
+        }
+      }
+      
+      // If no filter matched, exclude the file
+      return false;
+    };
+  }
+  // If no filters specified, include everything (default behavior)
 
   auto archive = util::TarArchive::createFromDirectory(source_dir, create_options);
   if (!archive || !archive->isValid()) {

@@ -241,9 +241,10 @@ assetentry_ptr_t AssetManifest::createAsset(
     const std::string& type,
     const std::string& remote,
     const std::string& local,
-    const std::string& filename,
     const platform_list_t& platforms,
-    const assetid_list_t& dependencies) {
+    const assetid_list_t& dependencies,
+    const std::string& tar_root,
+    const std::vector<std::string>& filters) {
   
   auto impl = self->_impl.getShared<AssetManifestImpl>();
   
@@ -257,7 +258,8 @@ assetentry_ptr_t AssetManifest::createAsset(
   entry->_type = type;
   entry->_remote_loc = remote;
   entry->_local_loc = local;
-  entry->_filename = filename;
+  entry->_tar_root = tar_root;  // Set tar_root from parameter
+  entry->_filters = filters;     // Set filters from parameter
   entry->_platforms = platforms;
   // Convert dependency list to map format
   // Store each dependency with itself as the key for now
@@ -298,62 +300,34 @@ assetentry_ptr_t AssetManifest::createAsset(
   
   file::Path local_dir(resolved_local);
   
-  // For asset_pak, check if directory exists instead of TAR file
-  if (type == "asset_pak") {
-    // Remove .tar extension from filename to get directory name
-    std::string dir_name = filename;
-    if (dir_name.size() > 4 && dir_name.substr(dir_name.size() - 4) == ".tar") {
-      dir_name = dir_name.substr(0, dir_name.size() - 4);
-    }
-    
-    file::Path source_dir = local_dir / dir_name;
-    if (source_dir.doesPathExist()) {
-      // Directory exists - the TAR will be created during repackage
-      entry->_hash_algorithm = "md5";
-      entry->_size = 0; // Will be updated after TAR creation
-      
-      // Call repackage which will create the TAR and compute hashes
-      entry->repackage();
-    } else {
-      // Directory doesn't exist - this is an error
-      logchan_catalog->log("ERROR: Asset pak directory does not exist! Looking for: %s (local_dir: %s, dir_name: %s, filename: %s)",
-                           source_dir.c_str(), local_dir.c_str(), dir_name.c_str(), filename.c_str());
-      OrkAssert(false);
-    }
+  // Only asset_pak type is supported
+  if (type != "asset_pak") {
+    logchan_catalog->log("ERROR: Only asset_pak type is supported. Asset type: %s", type.c_str());
+    OrkAssert(false);
+  }
+  
+  // Determine source directory using tar_root field
+  file::Path source_dir;
+  if (tar_root.empty()) {
+    // No tar_root - use local_dir directly
+    source_dir = local_dir;
   } else {
-    // Regular asset - check if file exists
-    file::Path source_file = local_dir / filename;
+    // Use explicit tar_root
+    source_dir = local_dir / tar_root;
+  }
+  
+  if (source_dir.doesPathExist()) {
+    // Directory exists - the TAR will be created during repackage
+    entry->_hash_algorithm = "md5";
+    entry->_size = 0; // Will be updated after TAR creation
     
-    if (source_file.doesPathExist()) {
-      // Compute MD5 content hash of the original file
-      File file(source_file, EFM_READ);
-      std::vector<uint8_t> file_data;
-      auto _status = file.Load(file_data);
-      if (_status == EFEC_FILE_OK && !file_data.empty()) {
-        CMD5 content_hasher;
-        content_hasher.update(file_data.data(), file_data.size());
-        content_hasher.finalize();
-        Md5Sum content_md5_result = content_hasher.Result();
-        entry->_content_hash = content_md5_result.hex_digest();
-      }
-      entry->_hash_algorithm = "md5";
-      
-      // Get file size using stat
-      struct stat file_stat;
-      if (stat(source_file.c_str(), &file_stat) == 0) {
-        entry->_size = file_stat.st_size;
-      } else {
-        entry->_size = 0;
-      }
-      
-      // Call repackage to compute storage hash with actual packaging
-      entry->repackage();
-    } else {
-      // File doesn't exist - this is an error
-      logchan_catalog->log("ERROR: Asset file does not exist! Looking for: %s (local_dir: %s, filename: %s, local_template: %s, resolved_local: %s)",
-                           source_file.c_str(), local_dir.c_str(), filename.c_str(), local.c_str(), resolved_local.c_str());
-      OrkAssert(false);
-    }
+    // Call repackage which will create the TAR and compute hashes
+    entry->repackage();
+  } else {
+    // Directory doesn't exist - this is an error
+    logchan_catalog->log("ERROR: Asset pak directory does not exist! Looking for: %s (local_dir: %s, tar_root: %s)",
+                         source_dir.c_str(), local_dir.c_str(), tar_root.c_str());
+    OrkAssert(false);
   }
   
   // Add to manifest
@@ -459,8 +433,10 @@ void AssetManifest::parseFromJsonInternal(const std::string& json_str, const fil
           entry._remote_loc = asset_data["remote_loc"].GetString();
         }
         
-        if (asset_data.HasMember("filename") && asset_data["filename"].IsString()) {
-          entry._filename = asset_data["filename"].GetString();
+        // filename field no longer used
+        
+        if (asset_data.HasMember("tar_root") && asset_data["tar_root"].IsString()) {
+          entry._tar_root = asset_data["tar_root"].GetString();
         }
         
         // Handle both "storage_hash" and legacy "md5" fields
@@ -540,8 +516,10 @@ void AssetManifest::parseFromJsonInternal(const std::string& json_str, const fil
         entry._remote_loc = asset_data["remote_loc"].GetString();
       }
       
-      if (asset_data.HasMember("filename") && asset_data["filename"].IsString()) {
-        entry._filename = asset_data["filename"].GetString();
+      // filename field no longer used
+      
+      if (asset_data.HasMember("tar_root") && asset_data["tar_root"].IsString()) {
+        entry._tar_root = asset_data["tar_root"].GetString();
       }
       
       // Handle storage hash - both new "storage_hash" and legacy "hash"/"md5" fields
@@ -820,7 +798,12 @@ std::string AssetManifest::toJson() const {
     asset_obj.AddMember("priority", entry->_priority, allocator);
     asset_obj.AddMember("remote_loc", rapidjson::Value(entry->_remote_loc.c_str(), allocator), allocator);
     asset_obj.AddMember("local_loc", rapidjson::Value(entry->_local_loc.c_str(), allocator), allocator);
-    asset_obj.AddMember("filename", rapidjson::Value(entry->_filename.c_str(), allocator), allocator);
+    // filename field no longer written
+    
+    // Add tar_root if not empty (for asset_pak)
+    if (!entry->_tar_root.empty()) {
+      asset_obj.AddMember("tar_root", rapidjson::Value(entry->_tar_root.c_str(), allocator), allocator);
+    }
     
     // Platforms
     rapidjson::Value platforms_array(rapidjson::kArrayType);

@@ -69,7 +69,6 @@ TEST(AssetManifest_JsonCreation) {
     // Add an asset
     auto entry = std::make_shared<AssetEntry>();
     entry->_type = "asset";
-    entry->_filename = "test.dat";
     entry->_size = 1024;
     entry->_storage_hash = "abc123";
     manifest->addAsset("test_asset", entry);
@@ -118,11 +117,9 @@ TEST(AssetManifest_Merge) {
     manifest1->setNamespace("base");
     
     auto entry1 = std::make_shared<AssetEntry>();
-    entry1->_filename = "asset1.dat";
     manifest1->addAsset("asset1", entry1);
     
     auto entry2 = std::make_shared<AssetEntry>();
-    entry2->_filename = "asset2.dat";
     manifest1->addAsset("asset2", entry2);
     
     // Create second manifest
@@ -130,7 +127,6 @@ TEST(AssetManifest_Merge) {
     manifest2->setNamespace("addon");
     
     auto entry3 = std::make_shared<AssetEntry>();
-    entry3->_filename = "asset3.dat";
     manifest2->addAsset("asset3", entry3);
     
     // Merge

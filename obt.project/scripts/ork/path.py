@@ -30,4 +30,6 @@ def __getattr__(name):
   	return obt_path.stage()/"assetcache"
   elif name == "cdntest":
   	return obt_path.stage()/"cdntest"
+  elif name == "singularity_data":
+  	return obt_path.stage()/"share"/"singularity"
   return None

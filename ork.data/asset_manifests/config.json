@@ -2,11 +2,17 @@
   "namespaces": {
     "singularity": {
       "encryption_key": "singularity_rulez",
-      "upload_location": "orkid_std"
+      "remote_location": "orkid_std"
     }
   },
   "locations": {
-    "orkid_std": "https://www.tweakoz.com/resources"
+    "orkid_std": {
+      "url": "https://www.tweakoz.com:9443/download",
+      "upload_url": "https://www.tweakoz.com:9443/upload",
+      "api_key_read": "",
+      "api_key_write": "${ORK_DEVCDN_API_KEY}",
+      "disable_cert_check": true
+    }
   },
   "destinations": {}
 }

@@ -233,7 +233,7 @@ assetentry_ptr_t ManifestBuilderImpl::processFile(
   auto entry = std::make_shared<AssetEntry>();
   
   // Basic info
-  entry->_filename = file_path.getName();
+  // filename field no longer used
   // TODO: Implement relative path calculation
   entry->_relative_path = file_path.c_str(); // Temporary
   entry->_namespace = _config->namespace_id;
