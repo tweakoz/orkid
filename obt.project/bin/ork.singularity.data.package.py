@@ -56,3 +56,30 @@ print("\nPackaging complete!")
 print(f"Manifest saved to: {manifest_file}")
 print(f"TAR files will be created from: {source_dir}")
 print(f"Encrypted files are in: {obt_path.stage()}/assetcache/enc")
+
+# if singularity/kurzweil/*.bin exists, package it as well to singularity_ext namespace
+
+bin_assets = (source_dir / "singularity" / "kurzweil").glob("*.bin")
+do_bin_assets_exist = len(list(bin_assets)) > 0
+if do_bin_assets_exist:
+  manifest_file = ork_path.data / "asset_manifests" / "singularity_ext.json"
+  manifest_file.parent.mkdir(parents=True, exist_ok=True)
+  result = assets.build_assetpak(
+    namespace="singularity_ext",
+    output=str(manifest_file),
+    asset_id="bin_assets",
+    source_dir=str(source_dir),  # Same as resolved local_loc
+    filters=["singularity/kurzweil/*.bin"],   # Use tar_root in filter
+    priority=0,
+    remote_loc="<orkid_ext>",
+    local_loc=local_loc,
+    key="singularity_rulez",
+    platforms=["mac","linux"],
+    write_manifest=True
+  )
+  print(f"  BIN: Storage hash: {result['storage_hash']}")
+  print("\nBIN: Packaging complete!")
+  print(f"BIN: Manifest saved to: {manifest_file}")
+  print(f"BIN: TAR files will be created from: {source_dir}")
+  print(f"BIN: Encrypted files are in: {obt_path.stage()}/assetcache/enc")
+  

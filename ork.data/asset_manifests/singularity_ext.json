@@ -1,0 +1,44 @@
+{
+  "id": "singularity_ext",
+  "uuid": "edc14300-5ba3-4094-bd0d-89f4d84747f5",
+  "namespace": "singularity_ext",
+  "version": "1.0.0",
+  "assets": {
+    "bin_assets": {
+      "type": "asset_pak",
+      "priority": 0,
+      "remote_loc": "<orkid_ext>",
+      "local_loc": "<stage>/share",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "64e1ea3e04dc1859338143f91edd2fd6",
+      "storage_hash": "5198d7831975daec2267d9194d98cf37",
+      "hash_algorithm": "md5",
+      "native_size": 26479104,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 26479132,
+        "file_hash": 18030588057918937565,
+        "compression": "none",
+        "is_encrypted": false,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 8979968853485016689
+          },
+          {
+            "offset": 16777216,
+            "size": 9701916,
+            "compressed_size": 9701916,
+            "hash": 314768703405574090
+          }
+        ]
+      }
+    }
+  }
+}

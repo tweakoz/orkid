@@ -9,6 +9,7 @@
 #include <ork/util/logger.h>
 #include <ork/util/md5.h>
 #include <ork/util/xxhash.inl>
+#include <ork/util/password_provider.h>
 #include <boost/filesystem.hpp>
 #include <regex>
 #include <thread>
@@ -170,7 +171,26 @@ datablock_ptr_t CatalogImpl::downloadFile(const URL& url, const locationinfo_ptr
       // Configure API key and TLS settings from location
       if (location_info) {
         if (location_info->_api_key_read.has_value() && !location_info->_api_key_read.value().empty()) {
-          dl->setHeader("X-API-Key", location_info->_api_key_read.value());
+          std::string api_key = location_info->_api_key_read.value();
+          
+          // Check if password authentication is required
+          if (PasswordProvider::requiresPasswordAuth(api_key)) {
+            // Prompt for password
+            std::string host = location_info->_download_url._host;
+            std::string prompt = FormatString("Password for %s: ", host.c_str());
+            auto password = PasswordProvider::getPassword(prompt, true); // Allow caching
+            
+            if (password.has_value()) {
+              dl->setHeader("X-API-Key", password.value());
+              logchan_catalog->log("Using password authentication for %s", host.c_str());
+            } else {
+              logchan_catalog->log("ERROR: Password authentication required but not provided");
+              return nullptr;
+            }
+          } else {
+            // Use regular API key
+            dl->setHeader("X-API-Key", api_key);
+          }
         }
         dl->_ignore_tls_errors = location_info->_disable_cert_check;
       } else {

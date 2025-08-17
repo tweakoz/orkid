@@ -3,14 +3,25 @@
     "singularity": {
       "encryption_key": "singularity_rulez",
       "remote_location": "orkid_std"
+    },
+    "singularity_ext": {
+      "encryption_key": "singularity_rulez",
+      "remote_location": "orkid_ext"
     }
   },
   "locations": {
     "orkid_std": {
-      "url": "https://www.tweakoz.com:9443/download",
-      "upload_url": "https://www.tweakoz.com:9443/upload",
+      "url": "https://www.tweakoz.com:9443/std/download",
+      "upload_url": "https://www.tweakoz.com:9443/std/upload",
       "api_key_read": "",
       "api_key_write": "${ORK_DEVCDN_API_KEY}",
+      "disable_cert_check": true
+    },
+    "orkid_ext": {
+      "url": "https://www.tweakoz.com:9443/ext/download",
+      "upload_url": "https://www.tweakoz.com:9443/ext/upload",
+      "api_key_read": "<PasswordAuthentication>",
+      "api_key_write": "<PasswordAuthentication>",
       "disable_cert_check": true
     }
   },

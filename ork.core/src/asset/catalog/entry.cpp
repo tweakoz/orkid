@@ -19,6 +19,7 @@
 #include <ork/util/xxhash.inl>
 #include <ork/util/upload.h>
 #include <ork/util/logger.h>
+#include <ork/util/password_provider.h>
 #include <rapidjson/document.h>
 #include <rapidjson/error/en.h>
 #include <rapidjson/writer.h>
@@ -722,6 +723,27 @@ uploadreceipt_ptr_t AssetEntry::upload(
     if (!encryption_key.empty()) {
       location_info->_api_key_write = encryption_key;
       // Using namespace key as API key
+    }
+  }
+  
+  // Check if password authentication is required for uploads
+  if (location_info->_api_key_write.has_value()) {
+    std::string api_key = location_info->_api_key_write.value();
+    if (PasswordProvider::requiresPasswordAuth(api_key)) {
+      std::string host = location_info->_upload_url._host;
+      std::string prompt = FormatString("Upload password for %s: ", host.c_str());
+      auto password = PasswordProvider::getPassword(prompt, true); // Allow caching
+      
+      if (password.has_value()) {
+        location_info->_api_key_write = password.value();
+        logchan_catalog->log("Using password authentication for upload to: %s", host.c_str());
+      } else {
+        logchan_catalog->log("ERROR: Password authentication required but not provided for upload");
+        auto receipt = std::make_shared<UploadReceipt>();
+        receipt->success = false;
+        receipt->status_message = "Password authentication required but not provided";
+        return receipt;
+      }
     }
   }
   

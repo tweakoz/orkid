@@ -201,7 +201,7 @@ assetresult_ptr_t AssetCatalog::packFromLocal(const assetid_t& fq_pak_asset_id) 
         }
       }
       
-      logchan_catalog->log("  Checking file: %s (relative: %s)", path.c_str(), relative_path.c_str());
+      //logchan_catalog->log("  Checking file: %s (relative: %s)", path.c_str(), relative_path.c_str());
       
       // Check if any filter matches this path
       for (const std::string& filter : asset_info->_filters) {
@@ -225,6 +225,7 @@ assetresult_ptr_t AssetCatalog::packFromLocal(const assetid_t& fq_pak_asset_id) 
         // Match the pattern
         std::regex pattern(regex_pattern);
         if (std::regex_match(relative_path, pattern)) {
+          logchan_catalog->log(" FilterPassed file: %s (relative: %s)", path.c_str(), relative_path.c_str());
           return true;  // Include this file
         }
       }
@@ -352,7 +353,7 @@ assetresult_ptr_t AssetCatalog::packFromLocal(assetentry_ptr_t asset_info) {
         }
       }
       
-      logchan_catalog->log("  Checking file: %s (relative: %s)", path.c_str(), relative_path.c_str());
+      //logchan_catalog->log("  Checking file: %s (relative: %s)", path.c_str(), relative_path.c_str());
       
       // Check if any filter matches this path
       for (const std::string& filter : asset_info->_filters) {
@@ -376,6 +377,7 @@ assetresult_ptr_t AssetCatalog::packFromLocal(assetentry_ptr_t asset_info) {
         // Match the pattern
         std::regex pattern(regex_pattern);
         if (std::regex_match(relative_path, pattern)) {
+          logchan_catalog->log(" FilterPassed file: %s (relative: %s)", path.c_str(), relative_path.c_str());
           return true;  // Include this file
         }
       }
