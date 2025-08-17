@@ -206,40 +206,10 @@ struct ChunkDisassembler {
   ////////////////////////////////////////////////////////////////////////////////
   static DisassemblyResult disassemble(
     const datablock_ptr_t& data,
-    size_t chunk_size = 0,              // 0 = auto-calculate
     encryptioncodec_ptr_t codec = nullptr,
     CompressionType compression = CompressionType::NONE
-  );
-  
-  // Disassemble from file
-  static DisassemblyResult disassembleFile(
-    const file::Path& input_file,
-    size_t chunk_size = 0,
-    encryptioncodec_ptr_t codec = nullptr,
-    CompressionType compression = CompressionType::NONE
-  );
-  
-  ////////////////////////////////////////////////////////////////////////////////
-  // Write chunks to disk
-  ////////////////////////////////////////////////////////////////////////////////
-  static bool writeChunksToDisk(
-    const DisassemblyResult& result,
-    const file::Path& output_dir,
-    const std::string& base_filename
   );
 };
 
-////////////////////////////////////////////////////////////////////////////////
-// Utility functions
-////////////////////////////////////////////////////////////////////////////////
-
-// Validate chunk info structure
-bool validateChunkInfo(const ChunkManifest& info);
-
-// Calculate optimal chunk size for parallel processing
-size_t calculateOptimalChunkSize(size_t file_size, size_t available_memory);
-
-// Estimate memory usage for assembly
-size_t estimateAssemblyMemoryUsage(const ChunkManifest& info);
 
 } // namespace ork::asset::catalog

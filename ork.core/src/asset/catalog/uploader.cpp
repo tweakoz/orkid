@@ -7,6 +7,7 @@
 
 #include <ork/asset/catalog/uploader.h>
 #include <ork/asset/catalog/catalog.h>
+#include "catalog_impl.h"
 #include <ork/file/file.h>
 #include <ork/kernel/string/deco.inl>
 #include <ork/kernel/timer.h>
@@ -16,6 +17,9 @@
 #include <rapidjson/prettywriter.h>
 #include <rapidjson/stringbuffer.h>
 #include <boost/filesystem.hpp>
+#include <thread>
+#include <chrono>
+#include <future>
 
 namespace ork::asset::catalog {
 
@@ -617,16 +621,20 @@ bool AssetUploaderAdapter::uploadAssetFile(
   
   // Check if this is a chunked asset
   if (entry->isChunked()) {
-    // Upload chunked asset
+    // Upload chunked asset using CURL multi interface
     auto chunk_manifest = entry->_chunk_manifest;
     if (!chunk_manifest) {
       logchan_catalog->log("ERROR: Asset marked as chunked but no chunk manifest found");
       return false;
     }
     
-    // Upload each chunk with index-based naming convention
-    // Format: {storage_hash}.enc.chunk.{index:04d}
-    bool all_chunks_uploaded = true;
+    logchan_catalog->log("Starting concurrent upload of %zu chunks for asset '%s'", 
+                         chunk_manifest->_chunks.size(), _asset_id.c_str());
+    
+    // Prepare chunk file paths and remote paths
+    std::vector<file::Path> chunk_files;
+    std::vector<std::string> chunk_remote_paths;
+    auto chunks_dir = catalog->getChunksDir();
     
     for (size_t chunk_idx = 0; chunk_idx < chunk_manifest->_chunks.size(); ++chunk_idx) {
       // Construct chunk filename
@@ -634,31 +642,29 @@ bool AssetUploaderAdapter::uploadAssetFile(
                                                entry->_storage_hash.c_str(), 
                                                chunk_idx);
       
-      // Construct source path for chunk from cache/enc/chunks directory
-      auto chunks_dir = catalog->getChunksDir();
+      // Construct source path for chunk
       file::Path chunk_source = chunks_dir / chunk_filename;
       
       if (!chunk_source.doesPathExist()) {
         logchan_catalog->log("ERROR: Chunk file doesn't exist in cache: '%s'", chunk_source.c_str());
-        all_chunks_uploaded = false;
-        break;
+        return false;
       }
       
-      // Upload the chunk
-      try {
-        if (!impl->_uploader->uploadFile(chunk_source, chunk_filename)) {
-          logchan_catalog->log("ERROR: Failed to upload chunk %zu of asset '%s'", chunk_idx, _asset_id.c_str());
-          all_chunks_uploaded = false;
-          break;
-        }
-      } catch (const std::exception& e) {
-        logchan_catalog->log("ERROR: Exception uploading chunk %zu: %s", chunk_idx, e.what());
-        all_chunks_uploaded = false;
-        break;
-      }
+      chunk_files.push_back(chunk_source);
+      chunk_remote_paths.push_back(chunk_filename);
     }
     
-    return all_chunks_uploaded;
+    // Use HttpsUploader's uploadFiles with CURL multi interface for true concurrency
+    bool success = impl->_uploader->uploadFiles(chunk_files, chunk_remote_paths);
+    
+    if (success) {
+      logchan_catalog->log("Successfully uploaded all %zu chunks for '%s'", 
+                          chunk_manifest->_chunks.size(), _asset_id.c_str());
+    } else {
+      logchan_catalog->log("Failed to upload some chunks for '%s'", _asset_id.c_str());
+    }
+    
+    return success;
   }
   
   // For now, extract just the filename for the uploader
@@ -798,22 +804,7 @@ assetuploaderadapter_ptr_t createAssetUploader(
     }
     base_uploader = std::make_shared<HttpsUploader>(https_config);
   }
-  else if (type == "scp" || type == "ssh") {
-    // Config should already be ScpUploaderConfig
-    auto scp_config = std::dynamic_pointer_cast<ScpUploaderConfig>(config);
-    if (!scp_config) {
-      return nullptr; // Wrong config type
-    }
-    base_uploader = std::make_shared<ScpUploader>(scp_config);
-  }
-  else if (type == "s3") {
-    // Config should already be S3UploaderConfig
-    auto s3_config = std::dynamic_pointer_cast<S3UploaderConfig>(config);
-    if (!s3_config) {
-      return nullptr; // Wrong config type
-    }
-    base_uploader = std::make_shared<S3Uploader>(s3_config);
-  }
+  // TODO: Add SCP and S3 support when implemented
   
   if (base_uploader) {
     return std::make_shared<AssetUploaderAdapter>(base_uploader, config);
@@ -883,33 +874,7 @@ uploadconfig_ptr_t parseUploadUrl(const URL& url) {
     https_config->timeout_seconds = 300;
     config = https_config;
   }
-  else if (url._scheme == "scp" || url._scheme == "ssh") {
-    auto scp_config = std::make_shared<ScpUploaderConfig>();
-    scp_config->host = url._host;
-    scp_config->port = url._port > 0 ? url._port : 22;
-    
-    // Parse username from userinfo if present
-    if (!url._userinfo.empty()) {
-      auto colon_pos = url._userinfo.find(':');
-      if (colon_pos != std::string::npos) {
-        scp_config->username = url._userinfo.substr(0, colon_pos);
-        scp_config->password = url._userinfo.substr(colon_pos + 1);
-      } else {
-        scp_config->username = url._userinfo;
-      }
-    }
-    
-    scp_config->remote_base_path = url._path;
-    scp_config->timeout_seconds = 300;
-    config = scp_config;
-  }
-  else if (url._scheme == "s3") {
-    auto s3_config = std::make_shared<S3UploaderConfig>();
-    s3_config->bucket = url._host;  // S3 uses host as bucket name
-    s3_config->remote_base_path = url._path;
-    s3_config->timeout_seconds = 300;
-    config = s3_config;
-  }
+  // TODO: Add SCP and S3 support when implemented
   else {
     // Fallback to base config for unknown schemes
     config = std::make_shared<UploadConfig>();

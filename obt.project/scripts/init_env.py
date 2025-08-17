@@ -73,6 +73,7 @@ def setup():
 def extend_bashrc():
   return ["ork.goto.orkid() { cd ${ORKID_WORKSPACE_DIR}; };\n"] \
        + ["ork.goto.data_root() { cd ${ORKID_WORKSPACE_DIR}/ork.data; };\n"] \
+       + ["ork.goto.asset_cache() { cd ${OBT_STAGE}/assetcache; };\n"] \
        + ["ork.goto.data_src() { cd ${ORKID_WORKSPACE_DIR}/ork.data/src; };\n"] \
        + ["ork.goto.data_test() { cd ${ORKID_WORKSPACE_DIR}/ork.data/src; };\n"] \
        + ["ork.goto.data_lev2() { cd ${ORKID_WORKSPACE_DIR}/ork.data/platform_lev2; };\n"]

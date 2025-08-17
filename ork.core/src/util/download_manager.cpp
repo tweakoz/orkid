@@ -83,7 +83,7 @@ struct DownloadManager::Impl {
       size_t pending_bytes = calculatePendingBytes();
 
       _logchan_download->log(
-          "totMiB<%g> PendingMiB<%g> MiBPS<%g> Active<%d> Enqueued<%d> Completed<%d>", //
+          "totMiB<%g> PendingMiB<%g> MiB/sec<%g> Active<%d> Enqueued<%d> Completed<%d>", //
           float(_total_bytes_downloaded / 1048576),                                    //
           float(pending_bytes / 1048576),
           float(bytes_per_sec / 1048576), //

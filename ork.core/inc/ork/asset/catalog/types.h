@@ -23,15 +23,11 @@ namespace ork::file {
 
 namespace ork {
   struct UploadConfig;
-  struct ScpUploaderConfig;
   struct HttpsUploaderConfig;
-  struct S3UploaderConfig;
   
   // Pointer type aliases
   using uploadconfig_ptr_t = std::shared_ptr<UploadConfig>;
-  using scpuploaderconfig_ptr_t = std::shared_ptr<ScpUploaderConfig>;
   using httpsuploaderconfig_ptr_t = std::shared_ptr<HttpsUploaderConfig>;
-  using s3uploaderconfig_ptr_t = std::shared_ptr<S3UploaderConfig>;
 }
 
 namespace ork::asset::catalog {
@@ -54,8 +50,6 @@ struct DownloadProgress;           // Progress tracking for asset downloads
 struct AssetConfigSpace;           // Container for multiple configurations
 
 // Manifest and packaging
-struct ManifestBuilder;            // Builds asset manifests by scanning directories
-struct ManifestBuildConfig;        // Configuration for manifest building process
 // ManifestEntry merged into AssetEntry
 struct AssetPackager;              // Compresses and encrypts assets for distribution
 struct PackageConfig;              // Configuration for asset packaging (compression, chunking)
@@ -68,6 +62,7 @@ struct ChunkMeta;                  // Metadata for a single chunk (size, hash, o
 struct ChunkAssembler;             // Reassembles chunks back into original file
 struct ChunkAssemblyResult;        // Result of chunk assembly operation
 struct ChunkDownloadCoordinator;   // Manages parallel download of file chunks
+struct ChunkUploadCoordinator;     // Manages parallel upload of file chunks
 
 // Fetching
 struct AssetFetcher;               // Downloads assets from remote locations with retry logic
@@ -97,8 +92,6 @@ using assetresult_ptr_t = std::shared_ptr<AssetResult>;
 using assetlocation_ptr_t = std::shared_ptr<AssetLocation>;
 using assetconfigspace_ptr_t = std::shared_ptr<AssetConfigSpace>;
 
-using manifestbuilder_ptr_t = std::shared_ptr<ManifestBuilder>;
-using manifestbuildconfig_ptr_t = std::shared_ptr<ManifestBuildConfig>;
 // manifestentry_ptr_t removed - use assetentry_ptr_t instead
 using assetpackager_ptr_t = std::shared_ptr<AssetPackager>;
 using packageconfig_ptr_t = std::shared_ptr<PackageConfig>;
@@ -108,6 +101,7 @@ using chunkmanifest_ptr_t = std::shared_ptr<ChunkManifest>;
 using chunkassembler_ptr_t = std::shared_ptr<ChunkAssembler>;
 using chunkassemblyresult_ptr_t = std::shared_ptr<ChunkAssemblyResult>;
 using chunkdownloadcoordinator_ptr_t = std::shared_ptr<ChunkDownloadCoordinator>;
+using chunkuploadcoordinator_ptr_t = std::shared_ptr<ChunkUploadCoordinator>;
 
 using assetfetcher_ptr_t = std::shared_ptr<AssetFetcher>;
 using locationinfo_ptr_t = std::shared_ptr<LocationInfo>;

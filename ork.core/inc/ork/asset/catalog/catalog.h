@@ -16,7 +16,6 @@
 #include <ork/asset/catalog/types.h>
 #include <ork/asset/catalog/manifest.h>
 #include <ork/asset/catalog/namespace.h>
-#include <ork/asset/catalog/manifest_builder.h>
 #include <ork/kernel/concurrent_queue.h>
 #include <ork/kernel/timer.h>
 #include <ork/kernel/mutex.h>
@@ -93,14 +92,8 @@ struct DownloadProgress {
   int _chunks_completed = 0;
   int _total_chunks = 0;
   
-  // Calculate progress percentage
-  float getProgressPercent() const;
-  
   // Get human-readable rate string (e.g., "1.5 MB/s")
   std::string getRateString() const;
-  
-  // Estimate time remaining
-  double getEstimatedTimeRemaining() const;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -267,15 +260,11 @@ struct AssetCatalog {
   // Dump all asset FQIDs via recursive descent of namespace tree (root at top, 1 per line)
   std::string dumpAllAssetFQIDs() const;
     
-  // Get list of active downloads
-  std::vector<downloadprogress_ptr_t> activeDownloads() const;
     
   // Cancel specific download
   // Takes a download coordinator that represents the entire asset download operation
   void cancelDownload(chunkdownloadcoordinator_ptr_t coordinator);
   
-  // Cancel all downloads
-  void cancelAllDownloads();
   
   ////////////////////////////////////////////////////////////////////////////////
   // === Configuration ===
@@ -289,6 +278,21 @@ struct AssetCatalog {
   
   // Set download manager
   void setDownloadManager(downloadmanager_ptr_t mgr);
+  
+  ////////////////////////////////////////////////////////////////////////////////
+  // === URL Generation (Single Source of Truth) ===
+  ////////////////////////////////////////////////////////////////////////////////
+  
+  // Upload URLs
+  URL getAssetUploadURL(const AssetEntry* entry, locationinfo_ptr_t location) const;
+  URL getChunkManifestUploadURL(const AssetEntry* entry, locationinfo_ptr_t location) const;
+  URL getChunkUploadURL(const AssetEntry* entry, size_t chunk_index, 
+                        chunk_hash_t chunk_hash, locationinfo_ptr_t location) const;
+  
+  // Download URLs
+  URL getAssetDownloadURL(const AssetEntry* entry, locationinfo_ptr_t location) const;
+  URL getChunkDownloadURL(const AssetEntry* entry, size_t chunk_index, 
+                          locationinfo_ptr_t location) const;
   
   ////////////////////////////////////////////////////////////////////////////////
   // === Serialization ===

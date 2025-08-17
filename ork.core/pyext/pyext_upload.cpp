@@ -24,7 +24,6 @@ void pyinit_upload(py::module& module_core) {
     .def(py::init<>())
     .def(py::init<opq::opq_ptr_t>(), py::arg("queue") = nullptr)
     .def("upload", &UploadManager::upload, py::arg("source_path"), py::arg("dest_url"))
-    .def("setMaxConcurrentUploads", &UploadManager::setMaxConcurrentUploads)
     .def("shutdown", &UploadManager::shutdown)
     .def("isActive", &UploadManager::isActive)
     .def("activeUploadCount", &UploadManager::activeUploadCount)
@@ -61,7 +60,6 @@ void pyinit_upload(py::module& module_core) {
     .def("execute", &Upload::execute)
     .def("cancel", &Upload::cancel)
     .def("getProgress", &Upload::getProgress)
-    .def("getUploadRate", &Upload::getUploadRate)
     .def("shouldRetry", &Upload::shouldRetry)
     .def("getNextRetryDelay", &Upload::getNextRetryDelay)
     .def("__repr__", [](upload_ptr_t ul) -> std::string {

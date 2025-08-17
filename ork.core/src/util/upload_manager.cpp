@@ -40,14 +40,6 @@ upload_ptr_t UploadManager::upload(const file::Path& source_path, const URL& des
   return ul;
 }
 
-void UploadManager::uploadGroup(upload_group_ptr_t group) {
-  // TODO: Implement group upload
-}
-
-void UploadManager::setMaxConcurrentUploads(size_t max) {
-  _max_concurrent_uploads = max;
-}
-
 void UploadManager::shutdown() {
   _impl->_shutdown = true;
   // TODO: Wait for active uploads to complete
@@ -70,18 +62,12 @@ void UploadManager::processUpload(upload_ptr_t ul) {
   // Handle retry logic if failed
   if (!success && ul->shouldRetry()) {
     ul->_retry_count++;
-    scheduleRetry(ul);
+    // TODO: Implement retry logic
   }
   
   _impl->_active_uploads--;
 }
 
-void UploadManager::scheduleRetry(upload_ptr_t ul) {
-  // TODO: Implement retry scheduling
-}
 
-void UploadManager::updateActiveUploads() {
-  // TODO: Implement active upload tracking
-}
 
 } // namespace ork

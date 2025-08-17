@@ -52,12 +52,6 @@ struct AssetPackagerImpl {
     chunkmanifest_ptr_t chunk_manifest
   );
   
-  bool processChunk(
-    const datablock_ptr_t& chunk_data,
-    size_t chunk_index,
-    const file::Path& output_path,
-    ChunkMeta& chunk_meta
-  );
   
   datablock_ptr_t compressData(const datablock_ptr_t& _data);
   datablock_ptr_t encryptData(const datablock_ptr_t& _data);
@@ -185,21 +179,6 @@ void AssetPackager::setProgressCallback(pysafe_packager_progress_t callback) {
   impl->_progress_callback = callback;
 }
 
-packageresult_ptr_t AssetPackager::packageDirectory(
-    const file::Path& source_dir,
-    const pattern_list_t& file_patterns) {
-  auto impl = _impl.getShared<AssetPackagerImpl>();
-  
-  auto result = std::make_shared<PackageResult>();
-  
-  // TODO: Implement directory scanning and packaging
-  // 1. Scan directory for files matching patterns
-  // 2. Queue each file for processing
-  // 3. Process files in parallel using work_queue
-  // 4. Generate manifest if requested
-  
-  return result;
-}
 
 AssetPackageResult AssetPackager::packageFile(
     const file::Path& source_file,
@@ -488,47 +467,6 @@ AssetPackageResult AssetPackagerImpl::processChunkedFile(
   return result;
 }
 
-bool AssetPackagerImpl::processChunk(
-    const datablock_ptr_t& chunk_data,
-    size_t chunk_index,
-    const file::Path& output_path,
-    ChunkMeta& chunk_meta) {
-  
-  try {
-    // Note: This method is currently not used since processChunkedFile
-    // handles chunk processing inline. This is kept for potential
-    // future refactoring where chunk processing might be parallelized.
-    
-    chunk_meta._size = chunk_data->length();
-    
-    // Compress chunk
-    auto compressed = compressData(chunk_data);
-    chunk_meta._compressed_size = compressed->length();
-    
-    // Encrypt chunk if enabled
-    auto encrypted = encryptData(compressed);
-    
-    // Calculate chunk hash
-    chunk_meta._hash = encrypted->hash();
-    
-    // Ensure output directory exists
-    file::Path parent_dir = output_path;
-    parent_dir.setFile("");
-    parent_dir.ensureDirectoryExists();
-    
-    // Write chunk to disk
-    File outputFile(output_path, EFM_WRITE);
-    outputFile.Write(encrypted->data(), encrypted->length());
-    
-    // ChunkMeta doesn't store path - it's derived from hash
-    
-    return true;
-    
-  } catch (const std::exception& e) {
-    logchan_catalog->log("ERROR: Failed to process chunk %zu: %s", chunk_index, e.what());
-    return false;
-  }
-}
 
 datablock_ptr_t AssetPackagerImpl::compressData(const datablock_ptr_t& _data) {
   if (!_data || _data->length() == 0) {
@@ -596,36 +534,5 @@ float calculateCompressionRatio(size_t original, size_t compressed) {
   return float(compressed) / float(original);
 }
 
-////////////////////////////////////////////////////////////////
-// Legacy utility functions
-////////////////////////////////////////////////////////////////
-
-CompressionType getOptimalCompressionType(const file::Path& file_path) {
-  // TODO: Determine optimal compression based on file type
-  std::string ext = file_path.getExtension();
-  
-  // Images are often already compressed
-  if (ext == ".jpg" || ext == ".jpeg" || ext == ".png") {
-    return CompressionType::NONE;
-  }
-  
-  // Audio files are often already compressed
-  if (ext == ".mp3" || ext == ".ogg" || ext == ".m4a") {
-    return CompressionType::NONE;
-  }
-  
-  // Use LZ4 for most other files
-  return CompressionType::LZ4;
-}
-
-pattern_list_t getDefaultPackageFilters() {
-  return {
-    "*.png", "*.jpg", "*.jpeg", "*.tga", "*.bmp",  // Images
-    "*.wav", "*.mp3", "*.ogg", "*.flac",           // Audio
-    "*.obj", "*.fbx", "*.dae", "*.gltf",           // Models
-    "*.txt", "*.json", "*.xml", "*.yaml",          // Data
-    "*.glsl", "*.hlsl", "*.fx"                     // Shaders
-  };
-}
 
 } // namespace ork::asset::catalog

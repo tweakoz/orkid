@@ -84,7 +84,7 @@ AssetCatalog::AssetCatalog(assetconfigspace_ptr_t space) {
 AssetCatalog::~AssetCatalog() {
   auto impl       = _impl.getShared<CatalogImpl>();
   impl->_shutdown = true;
-  cancelAllDownloads();
+  // TODO: Cancel all downloads if needed
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -314,6 +314,52 @@ file::Path AssetCatalog::getReceiptsDir() const {
 
 file::Path AssetCatalog::getTempDir() const {
   return _cache_dir / "temp";
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// URL Generation Methods - Single Source of Truth
+////////////////////////////////////////////////////////////////////////////////
+
+URL AssetCatalog::getAssetUploadURL(const AssetEntry* entry, locationinfo_ptr_t location) const {
+  if (!entry || !location) return URL();
+  
+  // Non-chunked asset: {upload_url}/{storage_hash}.enc
+  return location->_upload_url / (entry->_storage_hash + ".enc");
+}
+
+URL AssetCatalog::getChunkManifestUploadURL(const AssetEntry* entry, locationinfo_ptr_t location) const {
+  if (!entry || !location) return URL();
+  
+  // Chunk manifest: {upload_url}/{namespace}/enc/{storage_hash}.chunkmanifest
+  return location->_upload_url / entry->_namespace / "enc" / 
+         (entry->_storage_hash + ".chunkmanifest");
+}
+
+URL AssetCatalog::getChunkUploadURL(const AssetEntry* entry, size_t chunk_index, 
+                                    chunk_hash_t chunk_hash, locationinfo_ptr_t location) const {
+  if (!entry || !location) return URL();
+  
+  // Individual chunk: {upload_url}/{namespace}/enc/chunks/{storage_hash}.chunk.{index:04d}
+  // Using storage_hash for consistency with download
+  std::string chunk_filename = FormatString("%s.chunk.%04zu", entry->_storage_hash.c_str(), chunk_index);
+  return location->_upload_url / entry->_namespace / "enc/chunks" / chunk_filename;
+}
+
+URL AssetCatalog::getAssetDownloadURL(const AssetEntry* entry, locationinfo_ptr_t location) const {
+  if (!entry || !location) return URL();
+  
+  // Non-chunked asset: {download_url}/{storage_hash}.enc
+  return location->_download_url / (entry->_storage_hash + ".enc");
+}
+
+URL AssetCatalog::getChunkDownloadURL(const AssetEntry* entry, size_t chunk_index, 
+                                      locationinfo_ptr_t location) const {
+  if (!entry || !location) return URL();
+  
+  // Individual chunk: {download_url}/{namespace}/enc/chunks/{storage_hash}.chunk.{index:04zu}
+  // Must match upload URL structure
+  std::string chunk_filename = FormatString("%s.chunk.%04zu", entry->_storage_hash.c_str(), chunk_index);
+  return location->_download_url / entry->_namespace / "enc/chunks" / chunk_filename;
 }
 
 ////////////////////////////////////////////////////////////////

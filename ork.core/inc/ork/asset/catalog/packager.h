@@ -137,16 +137,6 @@ struct AssetPackager {
   
   ~AssetPackager();
   
-  ////////////////////////////////////////////////////////////////////////////////
-  // Package a directory of assets
-  // - Scans directory recursively
-  // - Applies compression/encryption based on config
-  // - Generates manifest if requested
-  ////////////////////////////////////////////////////////////////////////////////
-  packageresult_ptr_t packageDirectory(
-    const file::Path& source_dir,
-    const pattern_list_t& file_patterns = {"*"}  // Glob patterns
-  );
   
   ////////////////////////////////////////////////////////////////////////////////
   // Package a single file
@@ -157,20 +147,6 @@ struct AssetPackager {
     const file::Path& relative_path  // Path within the asset namespace
   );
   
-  ////////////////////////////////////////////////////////////////////////////////
-  // Package a directory as an asset_pak (tar archive)
-  // - Creates tar from source_dir
-  // - Applies compression (LZ4) to entire tar
-  // - Encrypts the compressed tar
-  // - Output: {hash}.tar.lz4.enc
-  // - Local storage: {_local_loc}/{filename}
-  // - Remote storage: {_remote_loc}/{hash}.enc
-  ////////////////////////////////////////////////////////////////////////////////
-  AssetPackageResult packageDirectoryAsPak(
-    const file::Path& source_dir,
-    const std::string& pak_name,  // Used for local filename
-    const pattern_list_t& file_patterns = {"*"}  // Glob patterns for files to include
-  );
   
   ////////////////////////////////////////////////////////////////////////////////
   // Progress callback
@@ -209,8 +185,5 @@ bool shouldChunkFile(const file::Path& path, const PackageConfig& config);
 // Calculate compression ratio percentage
 float calculateCompressionRatio(size_t original, size_t compressed);
 
-// Legacy utility functions
-CompressionType getOptimalCompressionType(const file::Path& file_path);
-pattern_list_t getDefaultPackageFilters();
 
 } // namespace ork::asset::catalog

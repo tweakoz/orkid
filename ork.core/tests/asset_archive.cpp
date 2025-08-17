@@ -8,11 +8,16 @@
 #include <ork/asset/catalog/catalog.h>
 #include <ork/asset/catalog/manifest.h>
 #include <ork/asset/catalog/config.h>
+#include <ork/asset/catalog/chunk_manifest.h>
+#include <ork/asset/catalog/chunk_assembler.h>
 #include <ork/util/tar.h>
 #include <ork/file/file.h>
 #include <ork/util/crypt.h>
+#include <ork/kernel/datablock.h>
 #include <utpp/UnitTest++.h>
 #include <boost/filesystem.hpp>
+#include <sys/stat.h>
+#include <fstream>
 
 using namespace ork;
 using namespace ork::asset::catalog;
@@ -341,39 +346,58 @@ TEST(AssetCatalogToJson) {
         temp_dir / "manifest2.json"
     );
     
-    // Create test files
-    auto cache_dir = catalog->getCacheDir();
-    auto data_dir = cache_dir / "data";
-    data_dir.ensureDirectoryExists();
+    // Create test directories for asset_pak in a temp location
+    auto test_base = file::Path::temp_dir() / FormatString("test_paks_%d", rand());
+    test_base.ensureDirectoryExists();
+    auto pak1_dir = test_base / "pak1";
+    auto pak2_dir = test_base / "pak2";
+    pak1_dir.ensureDirectoryExists();
+    pak2_dir.ensureDirectoryExists();
     
-    File::writeString(data_dir / "file1.txt", "Content 1");
-    File::writeString(data_dir / "file2.bin", "Binary content 2");
+    // Create files inside pak directories
+    // pak1: Small files (non-chunked)
+    File::writeString(pak1_dir / "file1.txt", "Small content 1");
+    File::writeString(pak1_dir / "file2.bin", "Small binary content");
+    
+    // pak2: Large file (>ChunkManifest::chunk_threshold to trigger chunking)
+    std::string large_content;
+    size_t target_size = ChunkManifest::chunk_threshold + (1024 * 1024); // threshold + 1MB
+    large_content.reserve(target_size);
+    while (large_content.size() < target_size) {
+      // Add 1KB of data at a time
+      for (int j = 0; j < 1024; ++j) {
+        large_content += char('A' + ((large_content.size() / 1024) % 26));
+      }
+    }
+    File::writeString(pak2_dir / "large_file.bin", large_content);
     
     // Add some assets to each manifest
     platform_list_t platforms = {"mac", "linux"};
     assetid_list_t dependencies;
     
-    AssetManifest::createAsset(
+    auto asset1 = AssetManifest::createAsset(
         manifest1,
         "asset1",
         100,
-        "text",
+        "asset_pak",
         "<test_remote>/data",
-        "<cache>/data",
+        test_base.c_str(),  // Use temp directory as local path
         platforms,
         dependencies
     );
+    asset1->_tar_root = "pak1";  // Set tar_root to the pak1 directory
     
-    AssetManifest::createAsset(
+    auto asset2 = AssetManifest::createAsset(
         manifest2,
         "asset2",
         200,
-        "binary",
+        "asset_pak",
         "<test_remote>/data",
-        "<cache>/data",
+        test_base.c_str(),  // Use temp directory as local path
         platforms,
         dependencies
     );
+    asset2->_tar_root = "pak2";  // Set tar_root to the pak2 directory
     
     // Test catalog JSON export
     auto catalog_json = catalog->toJson();
@@ -390,6 +414,152 @@ TEST(AssetCatalogToJson) {
     CHECK(catalog_json.find("namespace2") != std::string::npos);
 }
 
+}
+
+TEST(AssetCatalogChunking) {
+    // Test comprehensive chunking functionality
+    auto cfgspc = createTestConfigSpace();
+    auto catalog = std::make_shared<AssetCatalog>(cfgspc);
+    catalog->registerCodecWithPassword("test_ns", "test_password");
+    
+    // Set cache directory to avoid default
+    auto cache_dir = file::Path::temp_dir() / FormatString("test_cache_%d", rand());
+    catalog->setCacheDir(cache_dir);
+    
+    // Create temp directory for test assets
+    auto test_dir = file::Path::temp_dir() / FormatString("test_chunking_%d", rand());
+    test_dir.ensureDirectoryExists();
+    auto pak_dir = test_dir / "test_pak";
+    pak_dir.ensureDirectoryExists();
+    
+    // Create manifest
+    auto manifest = AssetCatalog::createManifest(
+        catalog,
+        "chunk_test",
+        "1.0",
+        "test_ns",
+        test_dir / "chunk_manifest.json"
+    );
+    
+    // Create large file that will trigger chunking
+    std::string large_data;
+    size_t data_size = ChunkManifest::chunk_threshold + (2 * 1024 * 1024); // threshold + 2MB
+    large_data.reserve(data_size);
+    for (size_t i = 0; i < data_size; ++i) {
+        large_data += char('A' + (i % 26));
+    }
+    File::writeString(pak_dir / "large.dat", large_data);
+    
+    // Create asset with tar_root
+    platform_list_t platforms = {"darwin"};
+    assetid_list_t deps;
+    auto asset = AssetManifest::createAsset(
+        manifest,
+        "chunked_asset",
+        100,
+        "asset_pak",
+        "<remote>",
+        test_dir.c_str(),
+        platforms,
+        deps,
+        "test_pak"  // tar_root passed as 9th parameter
+    );
+    
+    // Verify chunk manifest was created
+    CHECK(asset->_chunk_manifest != nullptr);
+    CHECK(asset->_chunk_manifest->_total_size > ChunkManifest::chunk_threshold);
+    // Should be 4 chunks for 12MB+ (TAR adds overhead)
+    CHECK(asset->_chunk_manifest->_chunks.size() >= 3);
+    
+    // Verify chunk metadata
+    size_t total_chunk_size = 0;
+    for (size_t i = 0; i < asset->_chunk_manifest->_chunks.size(); ++i) {
+        const auto& chunk = asset->_chunk_manifest->_chunks[i];
+        
+        // Check chunk offset is correct
+        CHECK(chunk._offset == i * ChunkManifest::chunk_size);
+        
+        // Check chunk size (last chunk may be smaller)
+        if (i < asset->_chunk_manifest->_chunks.size() - 1) {
+            CHECK(chunk._size == ChunkManifest::chunk_size);
+        } else {
+            CHECK(chunk._size > 0);
+            CHECK(chunk._size <= ChunkManifest::chunk_size);
+        }
+        
+        // Verify hash is set
+        CHECK(chunk._hash != 0);
+        
+        total_chunk_size += chunk._size;
+    }
+    
+    // Verify total size matches
+    CHECK(total_chunk_size == asset->_chunk_manifest->_total_size);
+    
+    // Verify chunk files exist
+    auto chunks_dir = catalog->getChunksDir();
+    for (size_t i = 0; i < asset->_chunk_manifest->_chunks.size(); ++i) {
+        const auto& chunk = asset->_chunk_manifest->_chunks[i];
+        auto chunk_path = chunks_dir / FormatString("%llu.chunk.%04zu", chunk._hash, i);
+        CHECK(chunk_path.doesPathExist());
+        
+        // Verify chunk file size
+        struct stat st;
+        stat(chunk_path.c_str(), &st);
+        CHECK(st.st_size == chunk._compressed_size);
+    }
+    
+    // Test chunk manifest serialization
+    auto manifest_path = catalog->getEncryptedDir() / (asset->_storage_hash + ".chunkmanifest");
+    CHECK(manifest_path.doesPathExist());
+    
+    // Read and parse manifest JSON
+    std::ifstream manifest_file(manifest_path.c_str());
+    std::string manifest_json((std::istreambuf_iterator<char>(manifest_file)),
+                              std::istreambuf_iterator<char>());
+    CHECK(!manifest_json.empty());
+    
+    // Verify JSON contains expected fields
+    CHECK(manifest_json.find("total_size") != std::string::npos);
+    CHECK(manifest_json.find("file_hash") != std::string::npos);
+    CHECK(manifest_json.find("chunks") != std::string::npos);
+    CHECK(manifest_json.find("is_encrypted") != std::string::npos);
+    
+    // Test chunk assembly
+    datablock_list_t chunk_data_blocks;
+    for (size_t i = 0; i < asset->_chunk_manifest->_chunks.size(); ++i) {
+        const auto& chunk = asset->_chunk_manifest->_chunks[i];
+        auto chunk_path = chunks_dir / FormatString("%llu.chunk.%04zu", chunk._hash, i);
+        
+        // Read chunk data
+        File chunk_file(chunk_path, EFM_READ);
+        size_t chunk_size = 0;
+        chunk_file.GetLength(chunk_size);
+        
+        auto chunk_block = std::make_shared<DataBlock>();
+        chunk_block->reserve(chunk_size);
+        chunk_block->_storage.resize(chunk_size);
+        chunk_file.Read(const_cast<uint8_t*>(chunk_block->data()), chunk_size);
+        
+        chunk_data_blocks.push_back(chunk_block);
+    }
+    
+    // Assemble chunks
+    ChunkAssembler::Config config;
+    ChunkAssembler assembler(asset->_chunk_manifest, config);
+    auto assembly_result = assembler.assembleFromChunks(chunk_data_blocks);
+    
+    CHECK(assembly_result->success);
+    CHECK(assembly_result->assembled_data != nullptr);
+    CHECK(assembly_result->assembled_data->length() == asset->_chunk_manifest->_total_size);
+    
+    // Verify assembled data hash matches
+    auto xxhasher = std::make_shared<XXH64HASH>();
+    xxhasher->init();
+    xxhasher->accumulate(assembly_result->assembled_data->data(), 
+                        assembly_result->assembled_data->length());
+    xxhasher->finish();
+    CHECK(xxhasher->result() == asset->_chunk_manifest->_file_hash);
 }
 
 TEST(AssetConfigSpaceOperations) {

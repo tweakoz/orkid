@@ -83,16 +83,6 @@ assetresult_ptr_t AssetCatalog::get(const assetid_t& fq_asset_id, bool decrypt) 
 // Download Management
 ////////////////////////////////////////////////////////////////
 
-std::vector<downloadprogress_ptr_t> AssetCatalog::activeDownloads() const {
-  auto impl = _impl.getShared<CatalogImpl>();
-  std::vector<downloadprogress_ptr_t> result;
-  impl->_downloads_by_assetid.atomicOp([&result](const CatalogImpl::download_progress_map_t& map) {
-    for (const auto& [key, progress] : map) {
-      result.push_back(std::make_shared<DownloadProgress>(progress));
-    }
-  });
-  return result;
-}
 
 void AssetCatalog::cancelDownload(chunkdownloadcoordinator_ptr_t coordinator) {
   if (!coordinator)
@@ -111,18 +101,11 @@ void AssetCatalog::cancelDownload(chunkdownloadcoordinator_ptr_t coordinator) {
   });
 }
 
-void AssetCatalog::cancelAllDownloads() {
-  // TODO: Implement
-}
 
 ////////////////////////////////////////////////////////////////
 // DownloadProgress
 ////////////////////////////////////////////////////////////////
 
-float DownloadProgress::getProgressPercent() const {
-  if (_total_bytes == 0) return 0.0f;
-  return (float)_bytes_downloaded / (float)_total_bytes * 100.0f;
-}
 
 std::string DownloadProgress::getRateString() const {
   if (_rate < 1024) {
@@ -134,12 +117,5 @@ std::string DownloadProgress::getRateString() const {
   }
 }
 
-double DownloadProgress::getEstimatedTimeRemaining() const {
-  if (_rate <= 0 || _bytes_downloaded >= _total_bytes) {
-    return 0;
-  }
-  size_t remaining = _total_bytes - _bytes_downloaded;
-  return remaining / _rate;
-}
 
 } //namespace ork::asset::catalog {

@@ -47,7 +47,6 @@ struct ChunkAssemblerImpl {
   datablock_ptr_t assembleProcessedChunks(const datablock_list_t& processed_chunks);
   bool verifyFileHash(const datablock_ptr_t& assembled_data);
   bool writeChunkToStream(chunk_index_t chunk_index, const datablock_ptr_t& _data);
-  bool flushStreamBuffer();
 };
 
 
@@ -583,8 +582,12 @@ bool ChunkAssembler::verifyChunk(
   
   const auto& chunk_meta = _chunk_manifest->_chunks[chunk_index];
   
-  // Calculate hash of chunk data
-  chunk_hash_t calculated_hash = chunk_data->hash();
+  // Calculate hash of chunk data using XXH64 (same as in disassembler)
+  auto xxhasher = std::make_shared<XXH64HASH>();
+  xxhasher->init();
+  xxhasher->accumulate(chunk_data->data(), chunk_data->length());
+  xxhasher->finish();
+  chunk_hash_t calculated_hash = xxhasher->result();
   
   // Compare with expected hash
   if (calculated_hash != chunk_meta._hash) {
@@ -722,63 +725,99 @@ bool ChunkAssemblerImpl::writeChunkToStream(chunk_index_t chunk_index, const dat
   return true;
 }
 
-bool ChunkAssemblerImpl::flushStreamBuffer() {
-  // TODO: Implement
-  return false;
-}
 
 ////////////////////////////////////////////////////////////////
 // ChunkDisassembler
 ////////////////////////////////////////////////////////////////
 
 ChunkDisassembler::DisassemblyResult ChunkDisassembler::disassemble(
-    const datablock_ptr_t& _data,
-    size_t chunk_size,
+    const datablock_ptr_t& data,
     encryptioncodec_ptr_t codec,
     CompressionType compression) {
   DisassemblyResult result;
+  Timer timer;
+  timer.Start();
   
-  // TODO: Implement
-  result.success = false;
-  result.error_message = "Not implemented";
+  if (!data || data->length() == 0) {
+    result.success = false;
+    result.error_message = "No data to disassemble";
+    return result;
+  }
+  
+  // Create chunk manifest
+  result.chunk_manifest = std::make_shared<ChunkManifest>();
+  result.chunk_manifest->_total_size = data->length();
+  result.chunk_manifest->_compression = compression;
+  result.chunk_manifest->_is_encrypted = (codec != nullptr);
+  
+  // Calculate file hash for the complete data
+  auto file_xxhasher = std::make_shared<XXH64HASH>();
+  file_xxhasher->init();
+  file_xxhasher->accumulate(data->data(), data->length());
+  file_xxhasher->finish();
+  result.chunk_manifest->_file_hash = file_xxhasher->result();
+  
+  // Split data into chunks using the constant chunk size
+  constexpr size_t chunk_size = ChunkManifest::chunk_size;
+  size_t offset = 0;
+  while (offset < data->length()) {
+    size_t current_chunk_size = std::min(chunk_size, data->length() - offset);
+    
+    // Create chunk data block
+    auto chunk_data = std::make_shared<DataBlock>();
+    chunk_data->reserve(current_chunk_size);
+    chunk_data->addData(data->data() + offset, current_chunk_size);
+    
+    // Apply compression if requested
+    datablock_ptr_t processed_chunk = chunk_data;
+    if (compression != CompressionType::NONE) {
+      processed_chunk = chunk_data->compressed();
+      if (!processed_chunk) {
+        result.success = false;
+        result.error_message = "Failed to compress chunk";
+        return result;
+      }
+    }
+    
+    // Apply encryption if codec provided
+    if (codec) {
+      processed_chunk = codec->encrypt(processed_chunk.get());
+      if (!processed_chunk) {
+        result.success = false;
+        result.error_message = "Failed to encrypt chunk";
+        return result;
+      }
+    }
+    
+    // Calculate chunk hash (on the final processed data)
+    auto xxhasher = std::make_shared<XXH64HASH>();
+    xxhasher->init();
+    xxhasher->accumulate(processed_chunk->data(), processed_chunk->length());
+    xxhasher->finish();
+    
+    // Create chunk metadata
+    ChunkMeta chunk_meta;
+    chunk_meta._offset = offset;
+    chunk_meta._size = current_chunk_size;
+    chunk_meta._compressed_size = processed_chunk->length();
+    chunk_meta._hash = xxhasher->result();
+    
+    // Add to results
+    result.chunks.push_back(processed_chunk);
+    result.chunk_manifest->_chunks.push_back(chunk_meta);
+    
+    offset += current_chunk_size;
+  }
+  
+  result.success = true;
+  result.processing_time = timer.SecsSinceStart();
+  
+  logchan_catalog->log("Disassembled %zu bytes into %zu chunks (chunk_size=%zu)",
+                      data->length(), result.chunks.size(), chunk_size);
   
   return result;
 }
 
-ChunkDisassembler::DisassemblyResult ChunkDisassembler::disassembleFile(
-    const file::Path& input_file,
-    size_t chunk_size,
-    encryptioncodec_ptr_t codec,
-    CompressionType compression) {
-  DisassemblyResult result;
-  
-  // TODO: Implement
-  result.success = false;
-  result.error_message = "Not implemented";
-  
-  return result;
-}
 
-bool ChunkDisassembler::writeChunksToDisk(
-    const DisassemblyResult& result,
-    const file::Path& output_dir,
-    const std::string& base_filename) {
-  // TODO: Implement
-  return false;
-}
-
-////////////////////////////////////////////////////////////////
-// Utility functions
-////////////////////////////////////////////////////////////////
-
-bool validateChunkInfo(const ChunkManifest& info) {
-  // TODO: Implement validation
-  return true;
-}
-
-size_t estimateAssemblyMemoryUsage(const ChunkManifest& info) {
-  // TODO: Implement memory estimation
-  return info._total_size;
-}
 
 } // namespace ork::asset::catalog

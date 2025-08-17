@@ -111,11 +111,7 @@ class TestUploadManager:
             # Create upload manager
             upload_manager = ork.UploadManager()
             print("✓ Created UploadManager")
-            
-            # Test configuration
-            upload_manager.setMaxConcurrentUploads(2)
-            print("✓ Set max concurrent uploads")
-            
+                        
             # Test status queries
             active_count = upload_manager.activeUploadCount()
             is_active = upload_manager.isActive()

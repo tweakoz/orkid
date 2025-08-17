@@ -87,6 +87,9 @@ struct UploadReceipt {
   upload_warning_list_t warnings;
   upload_error_list_t errors;
   
+  // Chunk manifest for chunked uploads
+  chunkmanifest_ptr_t _chunk_manifest;  // nullptr for non-chunked assets
+  
   ////////////////////////////////////////////////////////////////////////////////
   // Serialization
   ////////////////////////////////////////////////////////////////////////////////

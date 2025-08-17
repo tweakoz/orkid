@@ -40,8 +40,8 @@ struct ChunkMeta {
 ////////////////////////////////////////////////////////////////////////////////
 
 struct ChunkManifest {
-  static constexpr chunk_size_t chunk_size = 4 * 1024 * 1024;                    // Default 4MB chunks
-  static constexpr chunk_size_t chunk_threshold = 10 * 1024 * 1024; // 10MB
+  static constexpr chunk_size_t chunk_size = 16<<20;      // 16MiB chunks
+  static constexpr chunk_size_t chunk_threshold = 16<<20; // 10MB
 
   chunk_size_t _total_size = 0;                // Total size of original file
   chunk_hash_t _file_hash = 0;                 // Hash of complete file (used for filename)
@@ -50,23 +50,6 @@ struct ChunkManifest {
   
   chunk_meta_list_t _chunks;                   // Metadata for each chunk
   
-  ////////////////////////////////////////////////////////////////////////////////
-  // Calculate optimal chunk size based on file size
-  // - Small files: single chunk
-  // - Medium files: 4MB chunks
-  // - Large files: up to 16MB chunks
-  ////////////////////////////////////////////////////////////////////////////////
-  static chunk_size_t calculateOptimalChunkSize(chunk_size_t file_size);
-  
-  ////////////////////////////////////////////////////////////////////////////////
-  // Generate chunk metadata for a file
-  // - Calculates chunk boundaries
-  // - Does NOT compute hashes (done during packaging)
-  ////////////////////////////////////////////////////////////////////////////////
-  static chunkmanifest_ptr_t generateForFile(
-    const file::Path& path, 
-    chunk_size_t chunk_size = 0  // 0 = auto-calculate
-  );
   
   ////////////////////////////////////////////////////////////////////////////////
   // Validation
@@ -74,11 +57,10 @@ struct ChunkManifest {
   bool isValid() const;
   
   ////////////////////////////////////////////////////////////////////////////////
-  // Get chunk filename for a given index
-  // Format: {file_hash}.chunk.{index}
-  // Where file_hash is the hash of the complete file
+  // Serialization/Deserialization using rapidjson (forward declared)
   ////////////////////////////////////////////////////////////////////////////////
-  std::string getChunkFilename(const std::string& base_name, chunk_index_t chunk_index) const;
+  void toJson(void* value, void* allocator) const;  // rapidjson::Value&, rapidjson::Document::AllocatorType&
+  void fromJson(const void* value);                 // const rapidjson::Value&
   
 };
 

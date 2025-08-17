@@ -270,9 +270,6 @@ assetentry_ptr_t AssetManifest::createAsset(
   // Set namespace from manifest
   entry->_namespace = impl->_namespace;
   
-  // Set parent manifest weak pointer
-  entry->_parent_manifest = self;
-  
   // Generate UUID
   boost::uuids::uuid uuid = object::ObjectClass::genUUID();
   // TODO: Add UUID field to AssetEntry if needed
@@ -476,6 +473,14 @@ void AssetManifest::parseFromJsonInternal(const std::string& json_str, const fil
               entry._dependencies[dep_it->name.GetString()] = dep_it->value.GetString();
             }
           }
+        }
+        
+        ///////////////////////////////////////////////////////////
+        // Parse chunk manifest if present
+        ///////////////////////////////////////////////////////////
+        if (asset_data.HasMember("chunks") && asset_data["chunks"].IsObject()) {
+          entry._chunk_manifest = std::make_shared<ChunkManifest>();
+          entry._chunk_manifest->fromJson(&asset_data["chunks"]);
         }
         
         impl->_assets[_asset_id] = std::make_shared<AssetEntry>(entry);
@@ -830,10 +835,10 @@ std::string AssetManifest::toJson() const {
       asset_obj.AddMember("compressed_size", static_cast<uint64_t>(entry->_compressed_size), allocator);
     }
     
-    // Chunk info if present
+    // Chunk info if present - use ChunkManifest's own serialization
     if (entry->_chunk_manifest) {
       rapidjson::Value chunks_obj(rapidjson::kObjectType);
-      // TODO: Add chunk manifest serialization when ChunkManifest::toJson() is implemented
+      entry->_chunk_manifest->toJson(&chunks_obj, &allocator);
       asset_obj.AddMember("chunks", chunks_obj, allocator);
     }
     

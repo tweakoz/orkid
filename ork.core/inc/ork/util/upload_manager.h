@@ -27,7 +27,6 @@ struct UploadManager {
   // Public members
   //////////////////////////////////////////////////////////////////////////////
   opq::opq_ptr_t _work_queue;
-  size_t _max_concurrent_uploads = 4;
   
   //////////////////////////////////////////////////////////////////////////////
   // Constructor/Destructor
@@ -40,15 +39,10 @@ struct UploadManager {
   //////////////////////////////////////////////////////////////////////////////
   upload_ptr_t upload(const file::Path& source_path, const URL& dest_url);
   
-  //////////////////////////////////////////////////////////////////////////////
-  // Upload group support
-  //////////////////////////////////////////////////////////////////////////////
-  void uploadGroup(upload_group_ptr_t group);
   
   //////////////////////////////////////////////////////////////////////////////
   // Control methods
   //////////////////////////////////////////////////////////////////////////////
-  void setMaxConcurrentUploads(size_t max);
   void shutdown();
   bool isActive() const;
   size_t activeUploadCount() const;
@@ -78,11 +72,6 @@ private:
   // - Calls failure callback only after all retries exhausted
   void processUpload(upload_ptr_t ul);
   
-  // Schedule a retry for failed upload
-  // Uses OPQ to schedule with delay
-  void scheduleRetry(upload_ptr_t ul);
-  
-  void updateActiveUploads();
 };
 
 } // namespace ork

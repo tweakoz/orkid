@@ -23,11 +23,8 @@
 ////////////////////////////////////////////////////////////////
 namespace ork::asset::catalog {
 
-static logchannel_ptr_t logchan_catalog = logger()->getChannel("CATALOG");
+static logchannel_ptr_t logchan_catalog = logger()->configureChannel("CATALOG",fvec3(1,1,0),true);
 
-void CatalogImpl::rebuildAssetIndex() {
-  // TODO: Implement
-}
 
 assetlocation_ptr_t CatalogImpl::locateAsset(const assetid_t& fq_asset_id) const {
   assetlocation_ptr_t result;
@@ -120,14 +117,15 @@ assetlocation_ptr_t CatalogImpl::locateAsset(const assetid_t& fq_asset_id) const
   return result;
 }
 
-datablock_ptr_t CatalogImpl::downloadFile(const std::string& url, const locationinfo_ptr_t& location_info) {
+datablock_ptr_t CatalogImpl::downloadFile(const URL& url, const locationinfo_ptr_t& location_info) {
   // Atomic file download
   
   // Handle different URL schemes
-  if (url.find("file://") == 0) {
+  std::string url_str = url.toString();
+  if (url_str.find("file://") == 0) {
     // File URL scheme detected
     // Local file URL
-    std::string file_path = url.substr(7); // Remove "file://" prefix
+    std::string file_path = url_str.substr(7); // Remove "file://" prefix
     // File path extracted
     
     // Check if file exists
@@ -156,18 +154,18 @@ datablock_ptr_t CatalogImpl::downloadFile(const std::string& url, const location
     
     return _data;
     
-  } else if (url.find("http://") == 0 || url.find("https://") == 0) {
+  } else if (url_str.find("http://") == 0 || url_str.find("https://") == 0) {
     // HTTP(S) URL scheme detected
     // HTTP(S) download
     if (_download_manager) {
       // Using download manager
       // Create a temporary file path for the download
       auto temp_dir = file::Path::temp_dir();
-      auto filename = FormatString("asset_download_%zu.tmp", std::hash<std::string>{}(url));
+      auto filename = FormatString("asset_download_%zu.tmp", std::hash<std::string>{}(url_str));
       auto temp_path = temp_dir / filename;
       
       // Create download object
-      auto dl = std::make_shared<Download>(URL(url), temp_path);
+      auto dl = std::make_shared<Download>(url, temp_path);
       
       // Configure API key and TLS settings from location
       if (location_info) {
@@ -241,12 +239,12 @@ datablock_ptr_t CatalogImpl::downloadFile(const std::string& url, const location
       
       return result_data;
     } else {
-      logchan_catalog->log("ERROR: No download manager configured for HTTP: %s", url.c_str());
+      logchan_catalog->log("ERROR: No download manager configured for HTTP: %s", url_str.c_str());
       return nullptr;
     }
   } else {
     // Unknown URL scheme
-    logchan_catalog->log("ERROR: Unknown URL scheme: %s", url.c_str());
+    logchan_catalog->log("ERROR: Unknown URL scheme: %s", url_str.c_str());
     return nullptr;
   }
 }
@@ -457,8 +455,10 @@ assetresult_ptr_t CatalogImpl::getAsset(
 
 datablock_ptr_t CatalogImpl::downloadAssetData(const AssetLocation& location) {
   if (location._chunk_manifest) {
+    logchan_catalog->log("DEBUG: Using downloadChunkedData for %s", location._relative_path.c_str());
     return downloadChunkedData(location);
   } else {
+    logchan_catalog->log("DEBUG: Using downloadSingleData for %s", location._relative_path.c_str());
     return downloadSingleData(location);
   }
 }
@@ -495,11 +495,12 @@ datablock_ptr_t CatalogImpl::downloadSingleData(const AssetLocation& location) {
   }
   
   // Cache miss - download from remote
-  std::string url = location._base_url;
-  if (!url.empty() && url.back() != '/') {
-    url += "/";
-  }
-  url += location._relative_path;
+  // Create a temporary AssetEntry for URL generation
+  AssetEntry temp_entry;
+  temp_entry._storage_hash = storage_hash;
+  temp_entry._namespace = location._namespace_id;
+  
+  URL url = _catalog->getAssetDownloadURL(&temp_entry, location._location_info);
   
   auto data = downloadFile(url, location._location_info);
   
@@ -583,14 +584,20 @@ datablock_ptr_t CatalogImpl::downloadChunkedData(const AssetLocation& location) 
                        location._chunk_manifest->_chunks.size());
   
   chunks.clear();
-  std::string base_url = location._base_url;
-  if (!base_url.empty() && base_url.back() != '/') {
-    base_url += "/";
+  
+  // Create a temporary AssetEntry for URL generation
+  AssetEntry temp_entry;
+  // Extract storage hash from relative_path (format: {storage_hash}.enc)
+  std::string storage_hash = location._relative_path;
+  if (storage_hash.ends_with(".enc")) {
+    storage_hash = storage_hash.substr(0, storage_hash.length() - 4);
   }
+  temp_entry._storage_hash = storage_hash;
+  temp_entry._namespace = location._namespace_id;
   
   for (size_t i = 0; i < location._chunk_manifest->_chunks.size(); ++i) {
-    std::string chunk_url = base_url + FormatString("%s.chunk.%04zu", 
-                                                    location._relative_path.c_str(), i);
+    URL chunk_url = _catalog->getChunkDownloadURL(&temp_entry, i, location._location_info);
+    logchan_catalog->log("DEBUG: Chunk download URL: %s", chunk_url.toString().c_str());
     
     auto chunk = downloadFile(chunk_url, location._location_info);
     if (!chunk) {
@@ -770,38 +777,7 @@ void CatalogImpl::writeAssetPakToLocal(const assetentry_ptr_t& asset_info, Asset
   printf("[DEBUG] Asset pak extraction to local complete\n");
 }
 
-chunkdownloadcoordinator_ptr_t CatalogImpl::downloadChunkedAsset(
-    const assetid_t& fq_asset_id,
-    const AssetLocation& location,
-    const pysafe_completion_callback_t& on_complete,
-    const pysafe_error_callback_t& on_error) {
-  // TODO: Implement async version
-  return nullptr;
-}
-chunkdownloadcoordinator_ptr_t CatalogImpl::downloadNonChunkedAsset(
-    const assetid_t& fq_asset_id,
-    const AssetLocation& location,
-    const pysafe_completion_callback_t& on_complete,
-    const pysafe_error_callback_t& on_error) {
-  // TODO: Implement
-  return nullptr;
-}
 
-void CatalogImpl::processDownloadTask(const DownloadTask& task) {
-  if (_download_manager && _download_manager->_work_queue) {
-    // Queue the task on the download manager's work queue
-    _download_manager->_work_queue->enqueue(task.task);
-  } else {
-    logchan_catalog->log("ERROR: No download manager or work queue available for task");
-  }
-}
-
-void CatalogImpl::updateDownloadProgress(
-    const assetid_t& _asset_id,
-    size_t current,
-    size_t total) {
-  // TODO: Implement
-}
 
 std::regex CatalogImpl::wildcardToRegex(const std::string& pattern) {
   std::string regex_str;

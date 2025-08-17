@@ -1,3 +1,5 @@
+#include <ork/asset/catalog/uploader.h>
+
 namespace ork::asset::catalog {
 
 ////////////////////////////////////////////////////////////////
@@ -12,6 +14,7 @@ struct CatalogImpl {
   // Type aliases for LockedResource usage
   using download_progress_map_t = std::map<assetid_t, DownloadProgress>;
   using chunk_coordinator_map_t = std::map<assetid_t, chunkdownloadcoordinator_ptr_t>;
+  using chunk_upload_coordinator_map_t = std::map<assetid_t, chunkuploadcoordinator_ptr_t>;
   
   // Asset index entry
   struct AssetIndexEntry {
@@ -21,12 +24,6 @@ struct CatalogImpl {
     assetentry_ptr_t entry;
   };
   
-  // Download task
-  struct DownloadTask {
-    task_fn_t task;
-    std::string asset_id;
-    int priority;
-  };
   
   // Statistics struct
   struct Stats {
@@ -64,6 +61,9 @@ struct CatalogImpl {
         
     // Initialize download manager with default concurrent queue
     _download_manager = std::make_shared<DownloadManager>(opq::concurrentQueue());
+    
+    // Initialize upload manager with default concurrent queue
+    _upload_manager = std::make_shared<UploadManager>(opq::concurrentQueue());
   }
   
   AssetCatalog* _catalog;
@@ -95,7 +95,7 @@ struct CatalogImpl {
   // Progress tracking - thread-safe via LockedResource
   LockedResource<download_progress_map_t> _downloads_by_assetid;
   LockedResource<chunk_coordinator_map_t> _coordinators_by_assetid;
-  LockedResource<pysafe_download_progress_callback_t> _global_progress_callback;  // Python-bindable
+  LockedResource<chunk_upload_coordinator_map_t> _upload_coordinators_by_assetid;
   
   // Statistics - thread-safe via LockedResource
   mutable LockedResource<Stats> _stats;
@@ -105,14 +105,12 @@ struct CatalogImpl {
   // Internal Methods moved from header
   ////////////////////////////////////////////////////////////////////////////////
   
-  // Build global asset index from loaded manifests
-  void rebuildAssetIndex();
   
   // Locate asset in manifests
   assetlocation_ptr_t locateAsset(const std::string& fq_asset_id) const;
   
   // Atomic file download - just gets bytes from a URL
-  datablock_ptr_t downloadFile(const std::string& url, const locationinfo_ptr_t& location_info = nullptr);
+  datablock_ptr_t downloadFile(const URL& url, const locationinfo_ptr_t& location_info = nullptr);
   
   // High-level asset retrieval (new refactored method)
   assetresult_ptr_t getAsset(
@@ -155,15 +153,6 @@ struct CatalogImpl {
   void handleRegularAsset(datablock_ptr_t data, AssetResult& result);
   void writeAssetPakToLocal(const assetentry_ptr_t& asset_info, AssetResult& result);
     
-  // Process download task (called by DownloadManager)
-  void processDownloadTask(const DownloadTask& task);
-  
-  // Update download progress
-  void updateDownloadProgress(
-    const std::string& asset_id,
-    size_t current,
-    size_t total
-  );
   
   // Parse fully qualified asset ID into namespace and asset path
   std::pair<std::string, std::string> parseAssetId(const std::string& fq_asset_id) const;
@@ -171,16 +160,6 @@ struct CatalogImpl {
   // Convert wildcard pattern to regex
   static std::regex wildcardToRegex(const std::string& pattern);
 
-chunkdownloadcoordinator_ptr_t downloadChunkedAsset(
-    const assetid_t& fq_asset_id,
-    const AssetLocation& location,
-    const pysafe_completion_callback_t& on_complete,
-    const pysafe_error_callback_t& on_error);
-chunkdownloadcoordinator_ptr_t downloadNonChunkedAsset(
-    const assetid_t& fq_asset_id,
-    const AssetLocation& location,
-    const pysafe_completion_callback_t& on_complete,
-    const pysafe_error_callback_t& on_error);
 
 };
 
@@ -235,26 +214,6 @@ chunkdownloadcoordinator_ptr_t downloadNonChunkedAsset(
     });
   }
   
-  ////////////////////////////////////////////////////////////////////////////////
-  // Called by download completion callback for each chunk
-  ////////////////////////////////////////////////////////////////////////////////
-  void onChunkDownloaded(int chunk_index, const file::Path& chunk_path) {
-    // TODO: Implement
-  }
-  
-  ////////////////////////////////////////////////////////////////////////////////
-  // Called when a chunk fails to download
-  ////////////////////////////////////////////////////////////////////////////////
-  void onChunkFailed(int chunk_index, const std::string& error) {
-    // TODO: Implement
-  }
-  
-  ////////////////////////////////////////////////////////////////////////////////
-  // Assembly coordination
-  ////////////////////////////////////////////////////////////////////////////////
-  void triggerAssembly() {
-    // TODO: Implement
-  }
   
   ////////////////////////////////////////////////////////////////////////////////
   // Cancel the download
@@ -280,7 +239,121 @@ chunkdownloadcoordinator_ptr_t downloadNonChunkedAsset(
   }
 };
 
+////////////////////////////////////////////////////////////////
+// ChunkUploadCoordinator - Manages parallel upload of file chunks
+////////////////////////////////////////////////////////////////
 
-
+struct ChunkUploadCoordinator {
+  // Type aliases
+  using upload_list_t = std::vector<upload_ptr_t>;
+  
+  // Identity
+  std::string asset_id;
+  std::string storage_hash;
+  chunkmanifest_ptr_t chunk_manifest;
+  
+  // Progress tracking
+  std::atomic<int> chunks_uploaded{0};     // Incremented atomically as chunks complete
+  std::atomic<int> chunks_failed{0};         // Track failed chunks for retry
+  const int total_chunks;                    // Total expected (from chunk_manifest)
+  
+  // State management
+  std::atomic<bool> completed{false};        // Ensure completion happens once
+  std::atomic<bool> all_success{true};       // Track if all uploads succeeded
+  
+  // Storage
+  file::Path chunks_directory;               // Where chunks are stored locally
+  LockedResource<upload_list_t> active_uploads;  // Track active upload objects
+  
+  // Configuration
+  uploadconfig_ptr_t upload_config;           // Upload configuration
+  uploader_ptr_t uploader;                    // The uploader to use
+  
+  // Callbacks - using pysafe types for Python GIL compatibility
+  pysafe_upload_progress_callback_t on_progress;
+  pysafe_completion_callback_t on_complete;
+  pysafe_error_callback_t on_error;
+  
+  ////////////////////////////////////////////////////////////////////////////////
+  // Constructor
+  ////////////////////////////////////////////////////////////////////////////////
+  ChunkUploadCoordinator(
+      const std::string& id, 
+      const std::string& hash,
+      chunkmanifest_ptr_t manifest,
+      const file::Path& chunks_dir,
+      uploadconfig_ptr_t config,
+      uploader_ptr_t upload_impl)
+      : asset_id(id), 
+        storage_hash(hash), 
+        chunk_manifest(manifest), 
+        total_chunks(manifest ? manifest->_chunks.size() : 0),
+        chunks_directory(chunks_dir),
+        upload_config(config),
+        uploader(upload_impl) {
+    // Initialize uploads vector
+    active_uploads.atomicOp([this](upload_list_t& uploads) {
+      uploads.reserve(total_chunks);
+    });
+  }
+  
+  ////////////////////////////////////////////////////////////////////////////////
+  // Progress calculation
+  ////////////////////////////////////////////////////////////////////////////////
+  float getOverallProgress() const {
+    if (total_chunks == 0) return 0.0f;
+    return static_cast<float>(chunks_uploaded.load()) / total_chunks;
+  }
+  
+  bool isComplete() const {
+    return chunks_uploaded.load() + chunks_failed.load() >= total_chunks;
+  }
+  
+  bool hasSucceeded() const {
+    return chunks_uploaded.load() == total_chunks;
+  }
+  
+  bool hasFailed() const {
+    return chunks_failed.load() > 0;
+  }
+  
+  ////////////////////////////////////////////////////////////////////////////////
+  // Check if upload is complete and trigger callbacks
+  ////////////////////////////////////////////////////////////////////////////////
+  void checkCompletion() {
+    if (isComplete() && !completed.exchange(true)) {
+      // First time reaching completion
+      if (hasSucceeded()) {
+        if (on_complete._item) {
+          // For chunk uploads, we don't have assembled data, just signal success
+          on_complete._item(nullptr); 
+        }
+      } else {
+        if (on_error._item) {
+          std::string error_msg = FormatString(
+            "Upload failed: %d/%d chunks failed", 
+            chunks_failed.load(), 
+            total_chunks
+          );
+          on_error._item(error_msg);
+        }
+      }
+    }
+  }
+  
+  ////////////////////////////////////////////////////////////////////////////////
+  // Report aggregate progress
+  ////////////////////////////////////////////////////////////////////////////////
+  void reportProgress() {
+    if (on_progress._item) {
+      UploadProgress progress;
+      progress.current_file = asset_id;
+      progress.files_completed = chunks_uploaded.load();
+      progress.total_files = total_chunks;
+      // Note: Individual chunk bytes tracking would require more state
+      on_progress._item(progress);
+    }
+  }
+};
 
 } //namespace ork::asset::catalog {

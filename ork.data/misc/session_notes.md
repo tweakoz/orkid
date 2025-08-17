@@ -164,6 +164,17 @@ ork.build.py
 - Build artifacts go to `<stage>/builds/orkid/.build`
 - Installs to `<stage>` , aka ${OBT_STAGE}
 
+# OBT (Orkid Build Tools) 
+- base layer for orkid build system (and other projects as well)
+- is pip installed into base level venv via pip3 install ork.build # its on pypi 
+- has base level commands like obt.dep.build.py obt.dep.list.py 
+- has obt python modules with helpers for path anchoring, manipulation
+- has build system abstraction layer for cmake, GNU automake, configure, meson build, boost jam etc..
+- has 'depper modules' which build software packages, typically from source on github
+- has 'docker modules' for building, managing docker containers, composed containers with automatic environment variable manipulation, etc..
+- can be extended with plugin system from projects (triggered when a project repo has an obt.project folder). orkid is one of those projects.
+- uses 'reverse dns' like notation for commands in path. allows user to do filtered search using base.tabtab completion. obt uses obt. prefix. orkid uses ork. prefix.
+
 ### Testing
 
 #### C++ Tests

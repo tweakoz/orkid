@@ -52,10 +52,7 @@ bool Upload::execute() {
   
   if (_destination_url._scheme == "http" || _destination_url._scheme == "https") {
     success = executeHTTP();
-  } else if (_destination_url._scheme == "scp") {
-    success = executeSCP();
-  } else if (_destination_url._scheme == "s3") {
-    success = executeS3();
+  // TODO: Add SCP and S3 support when implemented
   } else {
     _state = UploadState::FAILED;
     _error_message = "Unsupported protocol: " + _destination_url._scheme;
@@ -88,10 +85,6 @@ float Upload::getProgress() const {
 
 ////////////////////////////////////////////////////////////////
 
-double Upload::getUploadRate() const {
-  // TODO: Implement upload rate calculation
-  return 0.0;
-}
 
 ////////////////////////////////////////////////////////////////
 
@@ -188,19 +181,9 @@ bool Upload::executeHTTP() {
 
 ////////////////////////////////////////////////////////////////
 
-bool Upload::executeSCP() {
-  // TODO: Implement SCP upload
-  _error_message = "SCP upload not implemented";
-  return false;
-}
 
 ////////////////////////////////////////////////////////////////
 
-bool Upload::executeS3() {
-  // TODO: Implement S3 upload
-  _error_message = "S3 upload not implemented";
-  return false;
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Uploader base class
@@ -208,25 +191,5 @@ bool Upload::executeS3() {
 
 // Destructor is already defined as default in the header
 
-//////////////////////////////////////////////////////////////////////////////
-// Helper function to create an SCP uploader with ControlMaster support
-//////////////////////////////////////////////////////////////////////////////
-
-uploader_ptr_t createScpUploaderWithControlMaster(
-  const std::string& host,
-  const std::string& username,
-  const std::string& remote_base_path,
-  int port
-) {
-  auto config = std::make_shared<ScpUploaderConfig>();
-  config->host = host;
-  config->username = username;
-  config->port = port;
-  config->remote_base_path = remote_base_path;
-  config->use_control_master = true;
-  // Auto-generate control path if not specified
-  // This will use ~/.ssh/cm-<host>-<port>-<user>
-  return std::make_shared<ScpUploader>(config);
-}
 
 } // namespace ork

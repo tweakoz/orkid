@@ -8,7 +8,6 @@
 #include <utpp/UnitTest++.h>
 #include <ork/asset/catalog/catalog.h>
 #include <ork/asset/catalog/manifest.h>
-#include <ork/asset/catalog/manifest_builder.h>
 #include <ork/asset/catalog/config.h>
 #include <ork/asset/catalog/types.h>
 #include <ork/file/path.h>
