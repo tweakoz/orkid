@@ -122,6 +122,9 @@ struct AssetConfigSpace {
   // Mark merged config as dirty (for external modifications)
   void markDirty();
   
+  // Get remote location for a namespace
+  std::string getNamespaceRemoteLocation(const std::string& namespace_id) const;
+  
   
   // Map of config ID to config object
   std::map<std::string, assetconfig_ptr_t> _configs;

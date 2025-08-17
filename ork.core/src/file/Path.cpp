@@ -24,6 +24,8 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
+#include <ork/kernel/environment.h>
+#include <unordered_set>
 
 template class ork::fixedvector<ork::file::Path, 8>;
 bool gbas1 = true;
@@ -977,6 +979,133 @@ Path Path::share_dir() {
 }
 Path Path::temp_dir() {
   return (stage_dir() / "tempdir");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Path sanitization
+///////////////////////////////////////////////////////////////////////////////
+
+Path Path::sanitize(pathsanitizeoptions_ptr_t opts) const {
+  // Use default options if none provided
+  if (!opts) {
+    opts = std::make_shared<PathSanitizeOptions>();
+  }
+  
+  std::string full_path = toAbsolute().toStdString();
+  
+  if (opts->use_env_vars) {
+    // Priority order for environment variable matching
+    // These are checked first and in order
+    static const std::vector<std::string> priority_vars = {
+      "ORKID_WORKSPACE_DIR",
+      "OBT_STAGE",
+      "OBT_PYPKG", 
+      "OBT_DATA",
+      "OBT_ROOT",
+    };
+    
+    // Check priority vars first for longest match
+    std::string best_match;
+    std::string best_var;
+    size_t best_length = 0;
+    
+    for (const auto& var : priority_vars) {
+      std::string value;
+      if (genviron.get(var, value) && !value.empty()) {
+        // Check if this path starts with the env var value
+        if (full_path.find(value) == 0) {
+          // Keep the longest matching prefix
+          if (value.length() > best_length) {
+            best_length = value.length();
+            best_var = var;
+            best_match = value;
+          }
+        }
+      }
+    }
+    
+    // If we found a priority match, use it
+    if (!best_var.empty()) {
+      if (full_path == best_match) {
+        return Path("$" + best_var);
+      } else {
+        std::string remainder = full_path.substr(best_match.length());
+        // Ensure we don't double up slashes
+        if (!remainder.empty() && remainder[0] != '/') {
+          remainder = "/" + remainder;
+        }
+        return Path("$" + best_var + remainder);
+      }
+    }
+    
+    // Check all other env vars (excluding system ones)
+    static const std::unordered_set<std::string> excluded = {
+      "PWD", "PATH", "HOME", "USER", "SHELL", "TERM", "_",
+      "OLDPWD", "SHLVL", "LOGNAME", "DISPLAY", "LANG",
+      "LC_ALL", "LC_CTYPE", "PS1", "PS2", "EDITOR", "VISUAL"
+    };
+    
+    // Look for exact matches or prefix matches in non-priority vars
+    best_match.clear();
+    best_var.clear();
+    best_length = 0;
+    
+    for (const auto& [key, value] : genviron.RefMap()) {
+      // Skip excluded vars and empty values
+      if (excluded.find(key) != excluded.end() || value.empty()) {
+        continue;
+      }
+      
+      // Skip priority vars (already checked)
+      if (std::find(priority_vars.begin(), priority_vars.end(), key) != priority_vars.end()) {
+        continue;
+      }
+      
+      // Check for exact match or prefix match
+      if (full_path == value) {
+        return Path("$" + key);
+      }
+      
+      // Check if path starts with this env var value
+      if (full_path.find(value) == 0 && value.length() > best_length) {
+        // Make sure it's a directory boundary (ends with / or is the whole path)
+        if (full_path.length() == value.length() || full_path[value.length()] == '/') {
+          best_length = value.length();
+          best_var = key;
+          best_match = value;
+        }
+      }
+    }
+    
+    // Use the best non-priority match if found
+    if (!best_var.empty()) {
+      if (full_path == best_match) {
+        return Path("$" + best_var);
+      } else {
+        std::string remainder = full_path.substr(best_match.length());
+        if (!remainder.empty() && remainder[0] != '/') {
+          remainder = "/" + remainder;
+        }
+        return Path("$" + best_var + remainder);
+      }
+    }
+  }
+  
+  // Handle home directory abbreviation
+  if (opts->abbreviate_home) {
+    std::string home;
+    if (genviron.get("HOME", home) && !home.empty()) {
+      if (full_path == home) {
+        return Path("~");
+      }
+      if (full_path.find(home + "/") == 0) {
+        return Path("~" + full_path.substr(home.length()));
+      }
+    }
+  }
+  
+  // No sanitization applied, return original path
+  return Path(full_path);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -219,7 +219,7 @@ void ConfigImpl::parseFromJsonInternal(const std::string& json_str) {
     for (auto it = namespaces.MemberBegin(); it != namespaces.MemberEnd(); ++it) {
       if (it->value.IsObject()) {
         const auto& ns_obj = it->value;
-        NamespaceConfig ns_config;
+        auto ns_config = std::make_shared<NamespaceConfig>();
         
         // Parse encryption_key
         if (ns_obj.HasMember("encryption_key") && ns_obj["encryption_key"].IsString()) {
@@ -230,19 +230,19 @@ void ConfigImpl::parseFromJsonInternal(const std::string& json_str) {
             std::string var_name = key_value.substr(2, key_value.size() - 3);
             const char* env_value = std::getenv(var_name.c_str());
             if (env_value) {
-              ns_config._encryption_key = env_value;
+              ns_config->_encryption_key = env_value;
             } else {
               logchan_catalog->log("WARNING: Environment variable %s not found for encryption_key", var_name.c_str());
-              ns_config._encryption_key = ""; // Clear value if env var not found
+              ns_config->_encryption_key = ""; // Clear value if env var not found
             }
           } else {
-            ns_config._encryption_key = key_value;
+            ns_config->_encryption_key = key_value;
           }
         }
         
         // Parse remote_location
         if (ns_obj.HasMember("remote_location") && ns_obj["remote_location"].IsString()) {
-          ns_config._remote_location = ns_obj["remote_location"].GetString();
+          ns_config->_remote_location = ns_obj["remote_location"].GetString();
         }
         
         // Namespace config addition logged at higher level if needed
@@ -519,7 +519,7 @@ locationinfo_ptr_t AssetConfig::resolveRemoteLocation(const std::string& locatio
 std::string AssetConfig::getEncryptionKeyForNamespace(const std::string& namespace_id) const {
   auto ns_it = _namespaces.find(namespace_id);
   if (ns_it != _namespaces.end()) {
-    return ns_it->second._encryption_key;
+    return ns_it->second->_encryption_key;
   }
   
   return ""; // No key found
@@ -528,8 +528,8 @@ std::string AssetConfig::getEncryptionKeyForNamespace(const std::string& namespa
 locationinfo_ptr_t AssetConfig::getRemoteLocationForNamespace(const std::string& namespace_id) const {
   // Check _namespaces map for remote location reference
   auto ns_it = _namespaces.find(namespace_id);
-  if (ns_it != _namespaces.end() && !ns_it->second._remote_location.empty()) {
-    return resolveRemoteLocation(ns_it->second._remote_location);
+  if (ns_it != _namespaces.end() && !ns_it->second->_remote_location.empty()) {
+    return resolveRemoteLocation(ns_it->second->_remote_location);
   }
   
   return nullptr; // No remote location configured for this namespace
@@ -541,7 +541,7 @@ locationinfo_ptr_t AssetConfig::getRemoteLocationForNamespace(const std::string&
 
 
 void AssetConfig::addNamespace(const std::string& namespace_id, const std::string& encryption_key, const std::string& remote_location) {
-  NamespaceConfig ns_config(encryption_key, remote_location);
+  auto ns_config = std::make_shared<NamespaceConfig>(encryption_key, remote_location);
   _namespaces[namespace_id] = ns_config;
 }
 
@@ -566,10 +566,10 @@ std::string AssetConfig::toJson() const {
     rapidjson::Value ns_obj(rapidjson::kObjectType);
     
     ns_obj.AddMember("encryption_key", 
-                     rapidjson::Value(ns_config._encryption_key.c_str(), allocator), 
+                     rapidjson::Value(ns_config->_encryption_key.c_str(), allocator), 
                      allocator);
     ns_obj.AddMember("remote_location", 
-                     rapidjson::Value(ns_config._remote_location.c_str(), allocator), 
+                     rapidjson::Value(ns_config->_remote_location.c_str(), allocator), 
                      allocator);
     
     namespaces.AddMember(rapidjson::Value(key.c_str(), allocator), ns_obj, allocator);
@@ -607,6 +607,19 @@ std::string AssetConfig::toJson() const {
   doc.Accept(writer);
   
   return buffer.GetString();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+std::string AssetConfigSpace::getNamespaceRemoteLocation(const std::string& namespace_id) const {
+  // Search through all configs to find the namespace
+  for (const auto& [config_id, config] : _configs) {
+    auto it = config->_namespaces.find(namespace_id);
+    if (it != config->_namespaces.end()) {
+      return it->second->_remote_location;
+    }
+  }
+  return ""; // Namespace not found
 }
 
 ////////////////////////////////////////////////////////////////////////////////

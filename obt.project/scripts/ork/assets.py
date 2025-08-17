@@ -39,7 +39,6 @@ def build_assetpak(
     source_dir=None,
     filters=None,
     priority=100,
-    remote_loc=None,
     local_loc=None,
     version='1.0.0',
     catalog_file=None,
@@ -61,7 +60,6 @@ def build_assetpak(
         source_dir: Archive root directory (required)
         filters: List of patterns to include relative to source_dir (required)
         priority: Priority (lower wins)
-        remote_loc: Remote location template (e.g., <orkid_cdn>)
         local_loc: Local location template where TAR files are stored (required)
         version: Manifest version
         catalog_file: Catalog JSON file to load/update
@@ -81,8 +79,6 @@ def build_assetpak(
         raise ValueError("source_dir is required")
     if not filters:
         raise ValueError("filters is required (list of patterns)")
-    if not remote_loc:
-        raise ValueError("remote_loc is required")
     if not local_loc:
         raise ValueError("local_loc is required")
     
@@ -183,12 +179,12 @@ def build_assetpak(
     
     # Create asset using builder pattern - this will call repackage() internally
     # Pass tar_root (empty string if None) and filters to createAsset
+    # Note: remote_loc removed - assets inherit from namespace
     asset_obj = core.AssetManifest.createAsset(
         manifest,
         asset_id,
         priority,
         'asset_pak',  # Always asset_pak for this function
-        remote_loc,
         str(local_loc),
         platforms,
         [],  # No dependencies

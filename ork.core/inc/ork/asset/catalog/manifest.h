@@ -39,7 +39,6 @@ struct AssetEntry {
   std::string _local_loc;                // Local location - where to extract/find files
                                          // For paks: extraction destination
                                          // For assets: file location
-  std::string _remote_loc;               // Remote location - where to download from
   std::string _relative_path;            // Full relative path within namespace
   std::string _tar_root;                 // Root directory in TAR for asset_pak (can be empty)
   std::vector<std::string> _filters;     // File patterns to include in TAR (empty = include all)
@@ -203,7 +202,6 @@ struct AssetManifest {
     const assetid_t& id,
     int priority,
     const std::string& type,
-    const std::string& remote,
     const std::string& local,
     const platform_list_t& platforms,
     const assetid_list_t& dependencies,

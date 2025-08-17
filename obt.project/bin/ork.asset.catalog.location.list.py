@@ -110,7 +110,10 @@ if all_locations:
             loc_type = "Unknown"
         
         print(f"    {deco.key('Type:')} {deco.val(loc_type)}")
-        print(f"    {deco.key('Source:')} {deco.val(config_sources[loc_id])}")
+        # Sanitize source path
+        source_path = core.Path(config_sources[loc_id])
+        sanitized_source = source_path.sanitized.toStdString()
+        print(f"    {deco.key('Source:')} {deco.val(sanitized_source)}")
         
         # Check which namespaces use this location
         using_namespaces = []
@@ -152,7 +155,10 @@ if all_destinations:
             resolved_path = resolved_path.replace("<assetcache>", cache_dir)
         
         resolved_path = os.path.expanduser(resolved_path)
-        print(f"    {deco.key('Resolves to:')} {deco.val(resolved_path)}")
+        # Sanitize resolved path
+        resolved_path_obj = core.Path(resolved_path)
+        sanitized_resolved = resolved_path_obj.sanitized.toStdString()
+        print(f"    {deco.key('Resolves to:')} {deco.val(sanitized_resolved)}")
         
         # Check if path exists
         if os.path.exists(resolved_path):
@@ -166,7 +172,10 @@ if all_destinations:
         else:
             print(f"    {deco.key('Exists:')} {deco.red('No')}")
         
-        print(f"    {deco.key('Source:')} {deco.val(config_sources[f'dest_{dest_id}'])}")
+        # Sanitize source path
+        dest_source_path = core.Path(config_sources[f'dest_{dest_id}'])
+        sanitized_dest_source = dest_source_path.sanitized.toStdString()
+        print(f"    {deco.key('Source:')} {deco.val(sanitized_dest_source)}")
         print()
 
 # Summary

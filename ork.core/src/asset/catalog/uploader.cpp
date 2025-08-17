@@ -608,8 +608,15 @@ bool AssetUploaderAdapter::uploadAssetFile(
   }
   
   // Build full remote URL for content addressable filesystem
-  if (entry->_remote_loc.empty() || entry->_storage_hash.empty()) {
-    logchan_catalog->log("ERROR: Failed to build remote URL (missing remote_loc or hash)");
+  if (entry->_storage_hash.empty()) {
+    logchan_catalog->log("ERROR: Failed to build remote URL (missing hash)");
+    return false;
+  }
+  
+  // Get namespace remote location from config
+  std::string namespace_id = entry->_namespace;
+  if (namespace_id.empty()) {
+    logchan_catalog->log("ERROR: Asset has no namespace");
     return false;
   }
   

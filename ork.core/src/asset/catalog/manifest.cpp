@@ -239,7 +239,6 @@ assetentry_ptr_t AssetManifest::createAsset(
     const assetid_t& id,
     int priority,
     const std::string& type,
-    const std::string& remote,
     const std::string& local,
     const platform_list_t& platforms,
     const assetid_list_t& dependencies,
@@ -256,7 +255,6 @@ assetentry_ptr_t AssetManifest::createAsset(
   entry->_id = id;
   entry->_priority = priority;
   entry->_type = type;
-  entry->_remote_loc = remote;
   entry->_local_loc = local;
   entry->_tar_root = tar_root;  // Set tar_root from parameter
   entry->_filters = filters;     // Set filters from parameter
@@ -426,9 +424,6 @@ void AssetManifest::parseFromJsonInternal(const std::string& json_str, const fil
           entry._local_loc = asset_data["local_loc"].GetString();
         }
         
-        if (asset_data.HasMember("remote_loc") && asset_data["remote_loc"].IsString()) {
-          entry._remote_loc = asset_data["remote_loc"].GetString();
-        }
         
         // filename field no longer used
         
@@ -449,6 +444,19 @@ void AssetManifest::parseFromJsonInternal(const std::string& json_str, const fil
         } else if (asset_data.HasMember("md5") && asset_data["md5"].IsString()) {
           entry._storage_hash = asset_data["md5"].GetString();
           entry._hash_algorithm = "md5";
+        }
+        
+        // Parse native_size (original uncompressed size)
+        if (asset_data.HasMember("native_size")) {
+          if (asset_data["native_size"].IsUint64()) {
+            entry._size = asset_data["native_size"].GetUint64();
+          } else if (asset_data["native_size"].IsUint()) {
+            entry._size = asset_data["native_size"].GetUint();
+          } else if (asset_data["native_size"].IsInt64()) {
+            entry._size = asset_data["native_size"].GetInt64();
+          } else if (asset_data["native_size"].IsInt()) {
+            entry._size = asset_data["native_size"].GetInt();
+          }
         }
         
         ///////////////////////////////////////////////////////////
@@ -517,9 +525,6 @@ void AssetManifest::parseFromJsonInternal(const std::string& json_str, const fil
         entry._local_loc = asset_data["local_loc"].GetString();
       }
       
-      if (asset_data.HasMember("remote_loc") && asset_data["remote_loc"].IsString()) {
-        entry._remote_loc = asset_data["remote_loc"].GetString();
-      }
       
       // filename field no longer used
       
@@ -546,6 +551,19 @@ void AssetManifest::parseFromJsonInternal(const std::string& json_str, const fil
         entry._hash_algorithm = asset_data["hash_algorithm"].GetString();
         // Validate hash algorithm - only MD5 supported for now
         OrkAssert(entry._hash_algorithm == "md5" && "Only MD5 hash algorithm is currently supported");
+      }
+      
+      // Parse native_size (original uncompressed size)
+      if (asset_data.HasMember("native_size")) {
+        if (asset_data["native_size"].IsUint64()) {
+          entry._size = asset_data["native_size"].GetUint64();
+        } else if (asset_data["native_size"].IsUint()) {
+          entry._size = asset_data["native_size"].GetUint();
+        } else if (asset_data["native_size"].IsInt64()) {
+          entry._size = asset_data["native_size"].GetInt64();
+        } else if (asset_data["native_size"].IsInt()) {
+          entry._size = asset_data["native_size"].GetInt();
+        }
       }
       
       impl->_assets[_asset_id] = std::make_shared<AssetEntry>(entry);
@@ -801,7 +819,6 @@ std::string AssetManifest::toJson() const {
     // Basic fields
     asset_obj.AddMember("type", rapidjson::Value(entry->_type.c_str(), allocator), allocator);
     asset_obj.AddMember("priority", entry->_priority, allocator);
-    asset_obj.AddMember("remote_loc", rapidjson::Value(entry->_remote_loc.c_str(), allocator), allocator);
     asset_obj.AddMember("local_loc", rapidjson::Value(entry->_local_loc.c_str(), allocator), allocator);
     // filename field no longer written
     

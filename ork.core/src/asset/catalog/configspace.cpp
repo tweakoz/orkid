@@ -45,7 +45,7 @@ AssetConfigSpace::~AssetConfigSpace() {
   ////////////////////////////////////////////////////////////////////////////////
 
   assetconfigspace_ptr_t AssetConfigSpace::loadGlobalConfigs() {
-    logchan_cfgspc->log("Loading global asset configs into AssetConfigSpace");
+    //logchan_cfgspc->log("Loading global asset configs into AssetConfigSpace");
 
     auto space = std::make_shared<AssetConfigSpace>();
     // Get ORKID_ASSET_MANIFEST_DIRS environment variable
@@ -54,7 +54,7 @@ AssetConfigSpace::~AssetConfigSpace() {
       logchan_cfgspc->log("ORKID_ASSET_MANIFEST_DIRS not set");
       return space;
     }
-    logchan_cfgspc->log("ORKID_ASSET_MANIFEST_DIRS: %s", manifest_dirs_env);    
+    //logchan_cfgspc->log("ORKID_ASSET_MANIFEST_DIRS: %s", manifest_dirs_env);    
     std::string manifest_dirs_str(manifest_dirs_env);
     std::vector<std::string> manifest_dirs;
     
@@ -192,7 +192,7 @@ assetconfig_ptr_t AssetConfigSpace::loadConfigFromDisk(assetconfigspace_ptr_t sp
 
   // Generate ID from path filename
   std::string filename = path.toStdString();
-  logchan_cfgspc->log("space<%p> Loading config from: %s ID<%s>", (void*) space.get(), path.c_str(), filename.c_str());
+  //logchan_cfgspc->log("space<%p> Loading config from: %s ID<%s>", (void*) space.get(), path.c_str(), filename.c_str());
   
   // Add to configs and mark dirty
   space->_configs[filename] = result;

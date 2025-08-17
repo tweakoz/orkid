@@ -133,6 +133,7 @@ void pyinit_asset_config(py::module& module_core) {
               py::arg("file"))
           .def("getConfig", &AssetConfigSpace::getConfig, py::arg("id"))
           .def_property_readonly("merged_config", [](assetconfigspace_ptr_t self) -> assetconfig_ptr_t { return self->merged(); })
+          .def("getNamespaceRemoteLocation", &AssetConfigSpace::getNamespaceRemoteLocation, py::arg("namespace_id"))
           .def("writeToDisk", &AssetConfigSpace::writeToDisk)
           .def(
               "loadConfigFromDisk",

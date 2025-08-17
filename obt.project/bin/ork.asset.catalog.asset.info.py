@@ -40,12 +40,16 @@ def print_asset_info(cfgspc, catalog, fqid):
                   md5.update(chunk)
             md5 = md5.hexdigest()
             print(f"  {deco.key('MD5 checksum:')} {deco.val(md5)}")
-    if hasattr(asset_info, 'remote_loc') and asset_info.remote_loc:
-        print(f"  {deco.key('Remote location:')} {deco.val(asset_info.remote_loc)}")
-        resolved_path = merged_cfg.resolveRemoteLocation(asset_info.remote_loc)
-        print(f"  {deco.orange('Resolved Download:')} {deco.val(resolved_path.url)}")
-        upload_url = resolved_path.get_effective_upload_url()
-        print(f"  {deco.orange('Resolved Upload:')} {deco.val(upload_url)}")
+    
+    # Get remote location from namespace
+    namespace_id = fqid.split('|')[0]
+    remote_loc = cfgspc.getNamespaceRemoteLocation(namespace_id)
+    if remote_loc:
+        print(f"  {deco.key('Remote location (from namespace):')} {deco.val(remote_loc)}")
+        resolved_location = merged_cfg.resolveRemoteLocation(remote_loc)
+        if resolved_location:
+            print(f"  {deco.orange('Resolved Download URL:')} {deco.val(resolved_location.download_url)}")
+            print(f"  {deco.orange('Resolved Upload URL:')} {deco.val(resolved_location.upload_url)}")
     if hasattr(asset_info, 'filename') and asset_info.filename:
         print(f"  {deco.key('Filename:')} {deco.val(asset_info.filename)}")
     
@@ -82,11 +86,51 @@ def print_asset_info(cfgspc, catalog, fqid):
     
     # Check if asset is chunked
     if hasattr(asset_info, 'chunk_manifest') and asset_info.chunk_manifest:
+        chunk_manifest = asset_info.chunk_manifest
         print(f"  {deco.key('Chunked:')} {deco.val('Yes')}")
-        if hasattr(asset_info.chunk_manifest, 'chunk_size'):
-            print(f"    {deco.key('Chunk size:')} {deco.val(f'{asset_info.chunk_manifest.chunk_size:,} bytes')}")
-        if hasattr(asset_info.chunk_manifest, 'total_chunks'):
-            print(f"    {deco.key('Total chunks:')} {deco.val(str(asset_info.chunk_manifest.total_chunks))}")
+        if hasattr(chunk_manifest, 'chunk_size'):
+            print(f"    {deco.key('Chunk size:')} {deco.val(f'{chunk_manifest.chunk_size:,} bytes')}")
+        if hasattr(chunk_manifest, 'chunks'):
+            num_chunks = len(chunk_manifest.chunks)
+            print(f"    {deco.key('Total chunks:')} {deco.val(str(num_chunks))}")
+            if hasattr(chunk_manifest, 'total_size'):
+                print(f"    {deco.key('Total size:')} {deco.val(f'{chunk_manifest.total_size:,} bytes')}")
+            if hasattr(chunk_manifest, 'file_hash'):
+                print(f"    {deco.key('File hash:')} {deco.val(str(chunk_manifest.file_hash))}")
+            if hasattr(chunk_manifest, 'compression'):
+                compression = chunk_manifest.compression
+                # Handle CompressionType enum
+                if hasattr(compression, 'name'):
+                    compression_str = compression.name
+                else:
+                    compression_str = str(compression)
+                print(f"    {deco.key('Compression:')} {deco.val(compression_str)}")
+            if hasattr(chunk_manifest, 'is_encrypted'):
+                print(f"    {deco.key('Encrypted:')} {deco.val('Yes' if chunk_manifest.is_encrypted else 'No')}")
+            
+            # Show first few and last chunk details
+            if num_chunks > 0:
+                print(f"    {deco.key('Chunk details:')}")
+                chunks_to_show = min(3, num_chunks)  # Show first 3 chunks
+                for i in range(chunks_to_show):
+                    chunk = chunk_manifest.chunks[i]
+                    print(f"      {deco.cyan(f'Chunk {i}:')}")
+                    print(f"        {deco.key('Offset:')} {deco.val(f'{chunk.offset:,} bytes')}")
+                    print(f"        {deco.key('Size:')} {deco.val(f'{chunk.size:,} bytes')}")
+                    if hasattr(chunk, 'compressed_size'):
+                        print(f"        {deco.key('Compressed size:')} {deco.val(f'{chunk.compressed_size:,} bytes')}")
+                    print(f"        {deco.key('Hash:')} {deco.val(str(chunk.hash))}")
+                
+                if num_chunks > chunks_to_show:
+                    print(f"      {deco.magenta(f'... and {num_chunks - chunks_to_show} more chunks')}")
+                    # Show last chunk
+                    last_chunk = chunk_manifest.chunks[-1]
+                    print(f"      {deco.cyan(f'Chunk {num_chunks-1} (last):')}")
+                    print(f"        {deco.key('Offset:')} {deco.val(f'{last_chunk.offset:,} bytes')}")
+                    print(f"        {deco.key('Size:')} {deco.val(f'{last_chunk.size:,} bytes')}")
+                    if hasattr(last_chunk, 'compressed_size'):
+                        print(f"        {deco.key('Compressed size:')} {deco.val(f'{last_chunk.compressed_size:,} bytes')}")
+                    print(f"        {deco.key('Hash:')} {deco.val(str(last_chunk.hash))}")
     
     # Check cache status
     if hasattr(asset_info, 'is_cached') and asset_info.is_cached:

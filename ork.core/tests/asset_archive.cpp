@@ -113,7 +113,6 @@ TEST(AssetArchivePakCreation) {
         "test_pak",
         100,
         "asset_pak",
-        "<test_remote>/paks",
         pak_parent_dir.c_str(),  // Pass parent directory containing test_pak/
         platforms,
         dependencies,
@@ -207,7 +206,6 @@ TEST(AssetManifestSerialization) {
         "asset1",
         100,
         "text",
-        "<test_remote>/data",
         "<cache>/data",
         platforms,
         dependencies
@@ -218,7 +216,6 @@ TEST(AssetManifestSerialization) {
         "asset2",
         200,
         "binary",
-        "<test_remote>/data",
         "<cache>/data",
         platforms,
         dependencies
@@ -289,7 +286,6 @@ TEST(AssetChunking) {
         "large_asset",
         100,
         "binary",
-        "<test_remote>/data",
         test_dir.toStdString(),
         platforms,
         dependencies
@@ -380,7 +376,6 @@ TEST(AssetCatalogToJson) {
         "asset1",
         100,
         "asset_pak",
-        "<test_remote>/data",
         test_base.c_str(),  // Use temp directory as local path
         platforms,
         dependencies
@@ -392,7 +387,6 @@ TEST(AssetCatalogToJson) {
         "asset2",
         200,
         "asset_pak",
-        "<test_remote>/data",
         test_base.c_str(),  // Use temp directory as local path
         platforms,
         dependencies
@@ -458,11 +452,10 @@ TEST(AssetCatalogChunking) {
         "chunked_asset",
         100,
         "asset_pak",
-        "<remote>",
         test_dir.c_str(),
         platforms,
         deps,
-        "test_pak"  // tar_root passed as 9th parameter
+        "test_pak"  // tar_root
     );
     
     // Verify chunk manifest was created

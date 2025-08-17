@@ -33,7 +33,10 @@ if manifest_dirs_env:
                     manifest_files.append(file)
             
             if manifest_files:
-                print(deco.magenta(f"{manifest_dir}/"))
+                # Sanitize manifest directory path
+                manifest_dir_path = core.Path(manifest_dir)
+                sanitized_dir = manifest_dir_path.sanitized.toStdString()
+                print(deco.magenta(f"{sanitized_dir}/"))
                 for manifest_file in sorted(manifest_files):
                     print(deco.white(f"  └── ") + deco.cyan(manifest_file.name))
                     manifest_count += 1

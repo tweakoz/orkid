@@ -147,10 +147,7 @@ struct AssetCatalog {
   
   // Load manifests from specific directory
   void loadManifestsFromPath(const file::Path& path);
-  
-  // Load single manifest from JSON file path
-  static void loadManifestFromPath( assetcatalog_ptr_t catalog, const std::string& single_json_path);
-  
+    
   // Add a single manifest
   // Typically called when manifest JSON arrives via network request
   // Increments generation and creates new versioned state
@@ -178,7 +175,6 @@ struct AssetCatalog {
   // 3. Loads all non-config JSON files as manifests
   // 4. Registers codecs for all namespaces found in configs
   static void loadFromGlobalManifests(assetcatalog_ptr_t self);
-  static void _loadGlobalManifests(assetcatalog_ptr_t self);
   
   ////////////////////////////////////////////////////////////////////////////////
   // === Codec Management ===

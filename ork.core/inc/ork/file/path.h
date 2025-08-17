@@ -70,6 +70,17 @@ struct DecomposedPath {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct PathSanitizeOptions {
+  bool use_env_vars = true;      // Replace paths with env var names
+  bool hide_secrets = true;      // Hide paths containing sensitive info
+  bool use_project_dirs = true;  // Replace project paths with project env vars
+  bool abbreviate_home = true;   // Replace home dir with ~
+};
+
+using pathsanitizeoptions_ptr_t = std::shared_ptr<PathSanitizeOptions>;
+
+///////////////////////////////////////////////////////////////////////////////
+
 class Path {
 public:
   typedef U32 HashType;
@@ -194,6 +205,14 @@ public:
   static Path share_dir();
   static Path temp_dir();
   static Path data_dir();
+  
+  //////////////////////////////////////
+  // Path sanitization
+  //////////////////////////////////////
+  
+  // Sanitize path for display/logging by replacing with env vars where possible
+  // Returns sanitized path (e.g., with env var substitutions)
+  Path sanitize(pathsanitizeoptions_ptr_t opts = nullptr) const;
   
   //////////////////////////////////////
   // Temporary file/directory creation

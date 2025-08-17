@@ -149,7 +149,8 @@ using chunk_meta_list_t = std::vector<ChunkMeta>;
 
 // Config type aliases
 using namespace_key_map_t = std::map<std::string, std::string>;
-using namespaceconfig_map_t = std::map<std::string, NamespaceConfig>;
+using namespaceconfig_ptr_t = std::shared_ptr<NamespaceConfig>;
+using namespaceconfig_map_t = std::map<std::string, namespaceconfig_ptr_t>;
 using remote_location_map_t = std::map<std::string, locationinfo_ptr_t>;
 using local_location_map_t = std::map<std::string, file::Path>;
 

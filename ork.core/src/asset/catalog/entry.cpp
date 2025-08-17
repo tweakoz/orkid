@@ -181,7 +181,6 @@ std::string AssetEntry::toJson() const {
   doc.AddMember("namespace", rapidjson::Value(_namespace.c_str(), allocator), allocator);
   doc.AddMember("type", rapidjson::Value(_type.c_str(), allocator), allocator);
   doc.AddMember("priority", _priority, allocator);
-  doc.AddMember("remote", rapidjson::Value(_remote_loc.c_str(), allocator), allocator);
   doc.AddMember("local", rapidjson::Value(_local_loc.c_str(), allocator), allocator);
   // filename field no longer used
   
@@ -261,9 +260,6 @@ assetentry_ptr_t AssetEntry::fromJson(const std::string& json_str) {
     entry->_priority = doc["priority"].GetInt();
   }
   
-  if (doc.HasMember("remote") && doc["remote"].IsString()) {
-    entry->_remote_loc = doc["remote"].GetString();
-  }
   
   if (doc.HasMember("local") && doc["local"].IsString()) {
     entry->_local_loc = doc["local"].GetString();

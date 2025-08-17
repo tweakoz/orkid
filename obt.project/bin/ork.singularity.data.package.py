@@ -43,7 +43,6 @@ for src_name, asset_id, filter in subdirs:
         source_dir=str(source_dir),  # Same as resolved local_loc
         filters=[filter],   # Use tar_root in filter
         priority=0,
-        remote_loc="<orkid_std>",
         local_loc=local_loc,
         key="singularity_rulez",
         platforms=["mac","linux"],
@@ -71,7 +70,6 @@ if do_bin_assets_exist:
     source_dir=str(source_dir),  # Same as resolved local_loc
     filters=["singularity/kurzweil/*.bin"],   # Use tar_root in filter
     priority=0,
-    remote_loc="<orkid_ext>",
     local_loc=local_loc,
     key="singularity_rulez",
     platforms=["mac","linux"],

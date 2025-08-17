@@ -44,8 +44,12 @@ assetlocation_ptr_t CatalogImpl::locateAsset(const assetid_t& fq_asset_id) const
       result->_compression_type = it->second.entry->_compression_type;
       result->_chunk_manifest   = it->second.entry->_chunk_manifest;
 
-      // Build location info directly from entry data
-      std::string remote_loc   = it->second.entry->_remote_loc;
+      // Build location info from namespace configuration
+      std::string namespace_id = it->second.namespace_id;
+      std::string remote_loc = "";
+      if (_config_space) {
+        remote_loc = _config_space->getNamespaceRemoteLocation(namespace_id);
+      }
       std::string storage_hash = it->second.entry->_storage_hash;
 
       if (!remote_loc.empty() && !storage_hash.empty()) {

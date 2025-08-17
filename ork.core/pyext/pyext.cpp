@@ -58,8 +58,16 @@ namespace util::crypt {
 }
 
 appinitdata_ptr_t gappinitdata = nullptr;
+static bool _core_initialized = false;
 
 static void _coreappinit() {
+  // Check if already initialized
+  if (_core_initialized) {
+    printf("WARNING: coreappinit() called multiple times - ignoring\n");
+    return;
+  }
+  _core_initialized = true;
+  
   SetCurrentThreadName("main");
   ork::genviron.init_from_global_env();
 
@@ -103,8 +111,13 @@ static void _coreappinit() {
   ork::initModule(gappinitdata);
 }
 static void _coreappexit() {
+  if (!_core_initialized) {
+    printf("WARNING: coreappexit() called without initialization - ignoring\n");
+    return;
+  }
   ork::exitModule(gappinitdata);
   gappinitdata = nullptr;
+  _core_initialized = false;
 }
 
 static file::Path _thispath() {
@@ -215,8 +228,12 @@ PYBIND11_MODULE(_core, module_core) {
             return b;
           })
       .def_property_readonly("as_string", [](const file::Path& a) -> std::string { return a.c_str(); })
+      .def_property_readonly("sanitized", [](const file::Path& a) -> file::Path { 
+        return a.sanitize(); 
+      })
       .def("isAbsolute", &file::Path::isAbsolute)
       .def("IsRelative", &file::Path::isRelative)
+      .def("toStdString", &file::Path::toStdString)
       .def("addToSysPath", [](const file::Path& self) {
         auto syspath = py::module::import("sys").attr("path");
         auto str     = self.c_str();

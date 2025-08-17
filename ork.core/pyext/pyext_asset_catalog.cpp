@@ -32,18 +32,16 @@ void pyinit_asset_catalog(py::module& module_core) {
                  const assetid_t& id,
                  int priority,
                  const std::string& type,
-                 const std::string& remote,
                  const std::string& local,
                  const platform_list_t& platforms,
                  const assetid_list_t& dependencies,
                  const std::string& tar_root,
                  const std::vector<std::string>& filters) -> assetentry_ptr_t {
-                return AssetManifest::createAsset(self, id, priority, type, remote, local, platforms, dependencies, tar_root, filters);
+                return AssetManifest::createAsset(self, id, priority, type, local, platforms, dependencies, tar_root, filters);
               },
               py::arg("id"),
               py::arg("priority"),
               py::arg("type"),
-              py::arg("remote"),
               py::arg("local"),
               py::arg("platforms"),
               py::arg("dependencies"),
@@ -132,6 +130,15 @@ void pyinit_asset_catalog(py::module& module_core) {
       .export_values();
 
   /////////////////////////////////////////////////////////////////////////////////
+  // CompressionType enum
+  /////////////////////////////////////////////////////////////////////////////////
+  py::enum_<CompressionType>(module_core, "CompressionType")
+      .value("NONE", CompressionType::NONE)
+      .value("LZ4", CompressionType::LZ4)
+      .value("LZ4HC", CompressionType::LZ4HC)
+      .export_values();
+
+  /////////////////////////////////////////////////////////////////////////////////
   // AssetResult
   /////////////////////////////////////////////////////////////////////////////////
   auto result_type = py::class_<AssetResult, assetresult_ptr_t>(module_core, "AssetResult")
@@ -188,7 +195,6 @@ void pyinit_asset_catalog(py::module& module_core) {
                               .def_readonly("priority", &AssetEntry::_priority)
                               .def_readonly("merge", &AssetEntry::_merge)
                               .def_readonly("local_loc", &AssetEntry::_local_loc)
-                              .def_readonly("remote_loc", &AssetEntry::_remote_loc)
                               .def_readonly("relative_path", &AssetEntry::_relative_path)
                               .def_readwrite("_tar_root", &AssetEntry::_tar_root)
                               .def_readonly("size", &AssetEntry::_size)
@@ -258,13 +264,6 @@ void pyinit_asset_catalog(py::module& module_core) {
                 auto as_pystr = py::cast<py::str>(path);
                 auto as_str   = as_pystr.cast<std::string>();
                 self->loadManifestsFromPath(as_str);
-              })
-          .def(
-              "load_manifest",
-              [](assetcatalog_ptr_t self, py::object path) {
-                auto as_pystr = py::cast<py::str>(path);
-                auto as_str   = as_pystr.cast<std::string>();
-                AssetCatalog::loadManifestFromPath(self,as_str);
               })
           .def("add_manifest", &AssetCatalog::addManifest)
           .def("get_manifest", &AssetCatalog::getManifest)

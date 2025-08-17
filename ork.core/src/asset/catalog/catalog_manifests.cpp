@@ -74,36 +74,6 @@ void AssetCatalog::loadManifestsFromPath(const file::Path& path) {
 
 /////////////////////////////////////////////////////////////////////////////////
 
-void AssetCatalog::loadManifestFromPath(assetcatalog_ptr_t catalog, const std::string& single_json_path) {
-  file::Path manifest_path(single_json_path);
-
-  if (!manifest_path.doesPathExist()) {
-    logchan_catalog->log("WARNING: Manifest file does not exist: %s", single_json_path.c_str());
-    return;
-  }
-  // Load manifest from JSON file
-  auto manifest = AssetManifest::loadFromFile(manifest_path);
-  if (manifest) {
-    catalog->addManifest(manifest);
-    auto nsid = manifest->getNamespace();
-    for( auto e : manifest->getAssets() ) {
-      // Asset loading logged at higher level
-      manifest->_parent_catalog = catalog; // Set parent catalog for manifest
-    }
-    logchan_catalog->log("Loaded manifest: %s", single_json_path.c_str());
-  } else {
-    logchan_catalog->log("WARNING: Failed to load manifest: %s", single_json_path.c_str());
-  }
-}
-
-  /////////////////////////////////////////////////////////////////////////////////
-
-  void AssetCatalog::_loadGlobalManifests(assetcatalog_ptr_t self){
-
-  }
-
-  /////////////////////////////////////////////////////////////////////////////////
-
 void AssetCatalog::loadFromGlobalManifests(assetcatalog_ptr_t self) {
   // Get ORKID_ASSET_MANIFEST_DIRS environment variable
   const char* manifest_dirs_env = getenv("ORKID_ASSET_MANIFEST_DIRS");
@@ -111,22 +81,22 @@ void AssetCatalog::loadFromGlobalManifests(assetcatalog_ptr_t self) {
     logchan_catalog->log("ORKID_ASSET_MANIFEST_DIRS not set");
     return;
   }
-  
+
   logchan_catalog->log("building catalog from $ORKID_ASSET_MANIFEST_DIRS ...");
 
   std::string manifest_dirs_str(manifest_dirs_env);
   std::vector<std::string> manifest_dirs;
-  
+
   // Split by colon (Unix path separator)
   size_t start = 0;
-  size_t end = manifest_dirs_str.find(':');
+  size_t end   = manifest_dirs_str.find(':');
   while (end != std::string::npos) {
     std::string dir = manifest_dirs_str.substr(start, end - start);
     if (!dir.empty()) {
       manifest_dirs.push_back(dir);
     }
     start = end + 1;
-    end = manifest_dirs_str.find(':', start);
+    end   = manifest_dirs_str.find(':', start);
   }
   // Add the last directory
   std::string last_dir = manifest_dirs_str.substr(start);
@@ -137,52 +107,68 @@ void AssetCatalog::loadFromGlobalManifests(assetcatalog_ptr_t self) {
   // Loading logged below
 
   auto impl = self->_impl.getShared<CatalogImpl>();
+  
+  // Group manifests by directory for organized output
+  std::map<std::string, std::vector<file::Path>> manifests_by_dir;
 
-  // Load all manifest JSON files (except config.json)
+  // First pass: collect all manifest files grouped by directory
   for (const auto& manifest_dir : manifest_dirs) {
     file::Path dir_path(manifest_dir);
-    
+
     if (!dir_path.doesPathExist()) {
-      logchan_catalog->log("WARNING: Manifest directory does not exist: %s", manifest_dir.c_str());
+      logchan_catalog->log("WARNING: Manifest directory does not exist: %s", dir_path.sanitize().c_str());
       continue;
     }
 
-    namespace fs = boost::filesystem;
+    namespace fs       = boost::filesystem;
     fs::path boost_dir = dir_path.toBFS();
     
+    // Use sanitized path as key for grouping
+    std::string sanitized_dir = dir_path.sanitize().toStdString();
+
     try {
       for (fs::directory_iterator it(boost_dir), end; it != end; ++it) {
         if (fs::is_regular_file(it->status()) && it->path().extension() == ".json") {
           std::string filename = it->path().filename().string();
-          
+
           // Skip config.json files
           if (filename == "config.json") {
             continue;
           }
-          
+
           file::Path manifest_file;
           manifest_file.fromBFS(it->path());
-          
-          auto manifest = AssetManifest::loadFromFile(manifest_file);
-          if (manifest) {
-            self->addManifest(manifest);
-            manifest->_parent_catalog = self; // Set parent catalog for manifest
-            logchan_catalog->log("Loaded manifest: %s", manifest_file.c_str());
-          } else {
-            logchan_catalog->log("WARNING: Failed to load manifest: %s", manifest_file.c_str());
-          }
+          manifests_by_dir[sanitized_dir].push_back(manifest_file);
         }
       }
     } catch (const fs::filesystem_error& e) {
       logchan_catalog->log("ERROR: Filesystem error loading manifests from %s: %s", 
-                           manifest_dir.c_str(), e.what());
+                          dir_path.sanitize().c_str(), e.what());
+    }
+  }
+  
+  // Second pass: load manifests grouped by directory
+  for (const auto& [dir, files] : manifests_by_dir) {
+    if (!files.empty()) {
+      logchan_catalog->log("Loading manifests from %s:", dir.c_str());
+      for (const auto& manifest_file : files) {
+        logchan_catalog->log("  - %s", manifest_file.getName().c_str());
+        
+        auto manifest = AssetManifest::loadFromFile(manifest_file);
+        if (manifest) {
+          self->addManifest(manifest);
+          manifest->_parent_catalog = self; // Set parent catalog for manifest
+        } else {
+          logchan_catalog->log("    WARNING: Failed to load");
+        }
+      }
     }
   }
 
   // Register codecs for all namespaces found in configs
   if (impl->_config_space) {
     auto merged_config = impl->_config_space->merged();
-    
+
     // Get all namespaces from merged config
     for (const auto& [namespace_id, namespace_info] : merged_config->_namespaces) {
       // Check if codec already registered
@@ -192,11 +178,11 @@ void AssetCatalog::loadFromGlobalManifests(assetcatalog_ptr_t self) {
           needs_registration = true;
         }
       });
-      
+
       if (needs_registration) {
         // Get encryption key for namespace
-        std::string encryption_key = namespace_info._encryption_key;
-        
+        std::string encryption_key = namespace_info->_encryption_key;
+
         if (!encryption_key.empty()) {
           // Use the public API to register codec
           self->registerCodecWithPassword(namespace_id, encryption_key);
@@ -216,10 +202,10 @@ void AssetCatalog::addManifest(assetmanifest_ptr_t manifest) {
   auto impl               = _impl.getShared<CatalogImpl>();
   const auto namespace_id = manifest->getNamespace();
   // Manifest addition logged at higher level
-  
+
   // Get or create flyweight namespace
   auto ns = mergeNamespace(namespace_id);
-    
+
   impl->_state.atomicOp([&](CatalogImpl::CatalogState& state) {
     // Add manifest to namespace's manifest list
     state._manifests_by_namespace[namespace_id].push_back(manifest);
@@ -228,11 +214,10 @@ void AssetCatalog::addManifest(assetmanifest_ptr_t manifest) {
     const auto& assets = manifest->getAssets();
     for (const auto& [_asset_id, entry] : assets) {
       // Populate AssetEntry fields
-      entry->_id = _asset_id;                    // Set the asset ID
-      entry->_namespace = namespace_id;         // Set namespace string
-      entry->_namespace_ptr = ns;               // Set namespace weak pointer
-      
-      
+      entry->_id            = _asset_id;    // Set the asset ID
+      entry->_namespace     = namespace_id; // Set namespace string
+      entry->_namespace_ptr = ns;           // Set namespace weak pointer
+
       CatalogImpl::AssetIndexEntry index_entry;
       index_entry.namespace_id = namespace_id;
       index_entry.asset_path   = _asset_id;
@@ -264,4 +249,4 @@ assetmanifest_ptr_t AssetCatalog::getManifest(const namespaceid_t& namespace_id)
   return result;
 }
 
-} // namespace ork::asset::catalog {
+} // namespace ork::asset::catalog
