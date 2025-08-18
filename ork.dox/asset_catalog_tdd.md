@@ -154,7 +154,7 @@ The Orkid Build Tool (OBT) discovers and composes multiple projects into a unifi
 
 ### Configuration Loading Process
 
-1. **Project Discovery pt1**: OBT launch uses --project arg to add project to environment. 
+1. **Project Discovery pt1**: OBT launch uses --project arg to compose project into environment. 
 2. **Project Discovery pt2**: for each --project PROJECTDIR dir OBT will scan for PROJECTDIR/obt.project/obt.manifest and parse it. this typically leads to init_env.py
 3. **Project Discovery pt3**: Each project's `init_env.py` script runs, appending to `ORKID_ASSET_MANIFEST_DIRS`
 4. **Config Loading**: AssetConfig::loadGlobalConfigs() finds all `config.json`'s in the ORKID_ASSET_MANIFEST_DIRS list
