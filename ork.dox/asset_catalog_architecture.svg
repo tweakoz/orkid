@@ -1,0 +1,180 @@
+<svg width="1200" height="800" viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1200" height="800" fill="#3a3a3a"/>
+  
+  <!-- Title -->
+  <text x="600" y="30" font-family="Arial, sans-serif" font-size="18" fill="white" text-anchor="middle" font-weight="bold">Asset Catalog Architecture</text>
+  
+  <!-- Main AssetCatalog Container -->
+  <g id="asset-catalog">
+    <rect x="50" y="50" width="1100" height="450" rx="8" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+    <text x="600" y="75" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">AssetCatalog</text>
+    
+    <!-- ConfigSpace -->
+    <g id="config-space">
+      <rect x="80" y="100" width="240" height="180" rx="6" fill="#5a4a3a" stroke="#8a6a4a" stroke-width="1"/>
+      <text x="200" y="125" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle">ConfigSpace</text>
+      
+      <rect x="95" y="140" width="210" height="35" rx="4" fill="#4a3a2a" stroke="#7a5a3a" stroke-width="1"/>
+      <text x="200" y="162" font-family="Arial, sans-serif" font-size="11" fill="#ddd" text-anchor="middle">Config 1</text>
+      
+      <rect x="95" y="185" width="210" height="35" rx="4" fill="#4a3a2a" stroke="#7a5a3a" stroke-width="1"/>
+      <text x="200" y="207" font-family="Arial, sans-serif" font-size="11" fill="#ddd" text-anchor="middle">Config 2</text>
+      
+      <rect x="95" y="230" width="210" height="35" rx="4" fill="#4a3a2a" stroke="#7a5a3a" stroke-width="1"/>
+      <text x="200" y="252" font-family="Arial, sans-serif" font-size="11" fill="#ddd" text-anchor="middle">Merged Config</text>
+    </g>
+    
+    <!-- Manifests -->
+    <g id="manifests">
+      <rect x="340" y="100" width="240" height="180" rx="6" fill="#3a4a5a" stroke="#5a6a8a" stroke-width="1"/>
+      <text x="460" y="125" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle">Manifests</text>
+      
+      <rect x="355" y="140" width="210" height="35" rx="4" fill="#2a3a4a" stroke="#4a5a6a" stroke-width="1"/>
+      <text x="460" y="162" font-family="Arial, sans-serif" font-size="11" fill="#ddd" text-anchor="middle">Manifest 1</text>
+      
+      <rect x="355" y="185" width="210" height="35" rx="4" fill="#2a3a4a" stroke="#4a5a6a" stroke-width="1"/>
+      <text x="460" y="207" font-family="Arial, sans-serif" font-size="11" fill="#ddd" text-anchor="middle">Manifest 2</text>
+      
+      <rect x="355" y="230" width="210" height="35" rx="4" fill="#2a3a4a" stroke="#4a5a6a" stroke-width="1"/>
+      <text x="460" y="252" font-family="Arial, sans-serif" font-size="11" fill="#ddd" text-anchor="middle">Manifest N</text>
+    </g>
+    
+    <!-- AssetRequests -->
+    <g id="asset-requests">
+      <rect x="600" y="100" width="240" height="180" rx="6" fill="#4a3a5a" stroke="#6a5a7a" stroke-width="1"/>
+      <text x="720" y="125" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle">AssetRequests (Flyweight)</text>
+      
+      <rect x="615" y="140" width="210" height="55" rx="4" fill="#3a2a4a" stroke="#5a4a6a" stroke-width="1"/>
+      <text x="720" y="162" font-family="Arial, sans-serif" font-size="11" fill="#ddd" text-anchor="middle">Request Pool</text>
+      <text x="720" y="180" font-family="Arial, sans-serif" font-size="10" fill="#aaa" text-anchor="middle">Shared State</text>
+      
+      <rect x="615" y="205" width="210" height="60" rx="4" fill="#3a2a4a" stroke="#5a4a6a" stroke-width="1"/>
+      <text x="720" y="227" font-family="Arial, sans-serif" font-size="11" fill="#ddd" text-anchor="middle">State Tracking</text>
+      <text x="720" y="245" font-family="Arial, sans-serif" font-size="10" fill="#aaa" text-anchor="middle">• Reference Counting</text>
+      <text x="720" y="260" font-family="Arial, sans-serif" font-size="10" fill="#aaa" text-anchor="middle">• Atomic Operations</text>
+    </g>
+    
+    <!-- CatalogImpl -->
+    <g id="catalog-impl">
+      <rect x="860" y="100" width="270" height="180" rx="6" fill="#5a5a3a" stroke="#7a7a5a" stroke-width="1"/>
+      <text x="995" y="125" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle">CatalogImpl (Pimpl)</text>
+      
+      <rect x="875" y="140" width="115" height="50" rx="4" fill="#4a4a2a" stroke="#6a6a4a" stroke-width="1"/>
+      <text x="932" y="158" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">DownloadManager</text>
+      <text x="932" y="173" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">• Parallel</text>
+      <text x="932" y="185" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">• Max 4</text>
+      
+      <rect x="1000" y="140" width="115" height="50" rx="4" fill="#4a4a2a" stroke="#6a6a4a" stroke-width="1"/>
+      <text x="1057" y="158" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">UploadManager</text>
+      <text x="1057" y="173" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">• Chunked</text>
+      <text x="1057" y="185" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">• Receipts</text>
+      
+      <rect x="875" y="200" width="240" height="65" rx="4" fill="#4a4a2a" stroke="#6a6a4a" stroke-width="1"/>
+      <text x="995" y="218" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">FetchRequest</text>
+      <text x="995" y="233" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">• asset_id • location</text>
+      <text x="995" y="246" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">• decrypt • disable_cache</text>
+      <text x="995" y="259" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">• asset_info</text>
+    </g>
+    
+    <!-- Cache System -->
+    <g id="cache-system">
+      <rect x="80" y="300" width="1050" height="180" rx="6" fill="#3a5a5a" stroke="#5a7a7a" stroke-width="1"/>
+      <text x="605" y="325" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle">Cache System</text>
+      
+      <!-- Encrypted Directory -->
+      <rect x="110" y="340" width="240" height="120" rx="4" fill="#2a4a4a" stroke="#4a6a6a" stroke-width="1"/>
+      <text x="230" y="360" font-family="Arial, sans-serif" font-size="11" fill="#ddd" text-anchor="middle">Encrypted Directory</text>
+      <text x="230" y="380" font-family="Arial, sans-serif" font-size="10" fill="#aaa" text-anchor="middle">{hash}.enc</text>
+      
+      <rect x="125" y="395" width="210" height="25" rx="3" fill="#1a3a3a"/>
+      <text x="230" y="410" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">a1b2c3d4.enc</text>
+      
+      <rect x="125" y="425" width="210" height="25" rx="3" fill="#1a3a3a"/>
+      <text x="230" y="440" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">e5f6g7h8.enc</text>
+      
+      <!-- Chunks Directory -->
+      <rect x="370" y="340" width="240" height="120" rx="4" fill="#2a4a4a" stroke="#4a6a6a" stroke-width="1"/>
+      <text x="490" y="360" font-family="Arial, sans-serif" font-size="11" fill="#ddd" text-anchor="middle">Chunks Directory</text>
+      <text x="490" y="380" font-family="Arial, sans-serif" font-size="10" fill="#aaa" text-anchor="middle">{hash}.chunk.{n}</text>
+      
+      <rect x="385" y="395" width="210" height="25" rx="3" fill="#1a3a3a"/>
+      <text x="490" y="410" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">a1b2c3d4.chunk.0</text>
+      
+      <rect x="385" y="425" width="210" height="25" rx="3" fill="#1a3a3a"/>
+      <text x="490" y="440" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">a1b2c3d4.chunk.1</text>
+      
+      <!-- Receipts Directory -->
+      <rect x="630" y="340" width="240" height="120" rx="4" fill="#2a4a4a" stroke="#4a6a6a" stroke-width="1"/>
+      <text x="750" y="360" font-family="Arial, sans-serif" font-size="11" fill="#ddd" text-anchor="middle">Receipts Directory</text>
+      <text x="750" y="380" font-family="Arial, sans-serif" font-size="10" fill="#aaa" text-anchor="middle">Upload receipts</text>
+      
+      <rect x="645" y="395" width="210" height="25" rx="3" fill="#1a3a3a"/>
+      <text x="750" y="410" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">game_2024-01-15.json</text>
+      
+      <rect x="645" y="425" width="210" height="25" rx="3" fill="#1a3a3a"/>
+      <text x="750" y="440" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">audio_2024-01-14.json</text>
+      
+      <!-- Temp Directory -->
+      <rect x="890" y="340" width="220" height="120" rx="4" fill="#2a4a4a" stroke="#4a6a6a" stroke-width="1"/>
+      <text x="1000" y="360" font-family="Arial, sans-serif" font-size="11" fill="#ddd" text-anchor="middle">Temp Directory</text>
+      <text x="1000" y="380" font-family="Arial, sans-serif" font-size="10" fill="#aaa" text-anchor="middle">Downloads in progress</text>
+      
+      <rect x="905" y="395" width="190" height="25" rx="3" fill="#1a3a3a"/>
+      <text x="1000" y="410" font-family="Arial, sans-serif" font-size="9" fill="#ff8" text-anchor="middle">downloading.tmp</text>
+    </g>
+  </g>
+  
+  <!-- Download/Upload Infrastructure -->
+  <g id="infrastructure">
+    <rect x="50" y="530" width="1100" height="230" rx="8" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+    <text x="600" y="555" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">Download/Upload Infrastructure</text>
+    
+    <!-- DownloadGroup -->
+    <rect x="80" y="580" width="250" height="150" rx="6" fill="#4a5a6a" stroke="#6a7a8a" stroke-width="1"/>
+    <text x="205" y="605" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle">DownloadGroup</text>
+    <rect x="95" y="620" width="220" height="45" rx="4" fill="#3a4a5a"/>
+    <text x="205" y="638" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• Parallel Downloads</text>
+    <text x="205" y="653" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• Progress Tracking</text>
+    
+    <rect x="95" y="675" width="220" height="45" rx="4" fill="#3a4a5a"/>
+    <text x="205" y="693" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• Atomic Success/Failure</text>
+    <text x="205" y="708" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• Chunk Coordination</text>
+    
+    <!-- ChunkAssembler -->
+    <rect x="350" y="580" width="250" height="150" rx="6" fill="#5a6a4a" stroke="#7a8a6a" stroke-width="1"/>
+    <text x="475" y="605" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle">ChunkAssembler</text>
+    <rect x="365" y="620" width="220" height="45" rx="4" fill="#4a5a3a"/>
+    <text x="475" y="638" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• Hash Verification</text>
+    <text x="475" y="653" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• Chunk Assembly</text>
+    
+    <rect x="365" y="675" width="220" height="45" rx="4" fill="#4a5a3a"/>
+    <text x="475" y="693" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• XXHash Validation</text>
+    <text x="475" y="708" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• Order Reconstruction</text>
+    
+    <!-- PasswordProvider -->
+    <rect x="620" y="580" width="250" height="150" rx="6" fill="#6a4a6a" stroke="#8a6a8a" stroke-width="1"/>
+    <text x="745" y="605" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle">PasswordProvider</text>
+    <rect x="635" y="620" width="220" height="45" rx="4" fill="#5a3a5a"/>
+    <text x="745" y="638" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• Main Thread Prompts</text>
+    <text x="745" y="653" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• Session Caching</text>
+    
+    <rect x="635" y="675" width="220" height="45" rx="4" fill="#5a3a5a"/>
+    <text x="745" y="693" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• Protected Namespaces</text>
+    <text x="745" y="708" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• API Key Integration</text>
+    
+    <!-- AssetFuture -->
+    <rect x="890" y="580" width="240" height="150" rx="6" fill="#6a5a4a" stroke="#8a7a6a" stroke-width="1"/>
+    <text x="1010" y="605" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle">AssetFuture</text>
+    <rect x="905" y="620" width="210" height="45" rx="4" fill="#5a4a3a"/>
+    <text x="1010" y="638" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• Async Operations</text>
+    <text x="1010" y="653" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• wait() / poll()</text>
+    
+    <rect x="905" y="675" width="210" height="45" rx="4" fill="#5a4a3a"/>
+    <text x="1010" y="693" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• No shared_from_this</text>
+    <text x="1010" y="708" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• Thread-safe</text>
+  </g>
+  
+  <!-- Bottom text -->
+  <text x="1100" y="785" font-family="Arial, sans-serif" font-size="11" fill="#888" text-anchor="end">Orkid Asset Catalog System</text>
+</svg>
