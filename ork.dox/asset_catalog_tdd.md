@@ -2,24 +2,50 @@
 
 ---
 
-## Summary
+## Overview
 
-The Asset Catalog provides a unified, thread-safe system for managing downloadable content with sophisticated caching, encryption, and state management. It serves dual purposes with symmetric operations:
+The Asset Catalog is a comprehensive content management system designed for the Orkid game engine. It handles both build-time asset packaging and runtime asset delivery with a focus on security, performance, and reliability.
 
-1. **Build-time**: Packages, encrypts, and uploads assets to CDN
-2. **Runtime**: Downloads, decrypts, unpackage, verifies, caches, and serves assets to applications
+### What It Does
 
-The system maintains perfect symmetry:
-- **Build**: File → Package → Encrypt → Upload to CDN
-- **Runtime**: Download from CDN → Decrypt → Unpackage - Verify → Serve to App
+- **Build Time**: Packages game assets, encrypts them, and uploads to CDN servers
+- **Runtime**: Downloads assets on-demand, verifies integrity, and delivers to the game
+- **Caching**: Maintains local cache to minimize redundant downloads
+- **Security**: Encrypts assets with per-namespace keys and dual-hash verification
 
-This symmetry ensures that what goes up comes down intact, with end-to-end verification. Built around a flyweight pattern for efficient memory usage and atomic operations for thread safety.
+### Key Benefits
+
+- **Symmetric Design**: What goes up (build) comes down (runtime) intact
+- **Thread-Safe**: All operations safe for concurrent access
+- **Memory Efficient**: Flyweight pattern minimizes memory overhead
+- **Scalable**: Supports parallel downloads and chunked transfers
 
 ---
 
-## Features
+## Basic Concepts
 
-### Core Capabilities
+### Namespaces
+Assets are organized into namespaces (e.g., "game", "shared", "tools"). Each namespace has:
+- Its own encryption key
+- Associated CDN location
+- Independent configuration
+
+### Asset IDs
+Assets are identified by fully-qualified IDs: `namespace|category|name`
+- Example: `game|models|player`
+- Example: `shared|audio|music`
+
+### Content-Addressable Storage
+Assets stored using their hash as filename:
+- Enables deduplication
+- Provides built-in integrity checking
+- Example: `a1b2c3d4e5f6.enc`
+
+---
+
+## Core Features
+
+### Essential Capabilities
 
 - **Unified Asset Management**
   - Single interface for all asset operations across namespaces
@@ -54,9 +80,15 @@ This symmetry ensures that what goes up comes down intact, with end-to-end verif
 
 ---
 
-## Architecture
+## High-Level Architecture
 
 ![Asset Catalog Architecture](asset_catalog_architecture.svg)
+
+The architecture consists of four main layers:
+1. **Configuration Layer**: Manages namespaces and locations
+2. **Request Layer**: Handles asset requests with flyweight pattern
+3. **Implementation Layer**: Core download/upload managers
+4. **Cache Layer**: Local storage for encrypted and decrypted assets
 
 ---
 
@@ -109,6 +141,159 @@ The Asset Catalog system manages the complete lifecycle of assets from developme
 - **Cache Optimization**: Content-addressable storage enables efficient caching and deduplication
 - **Async Operations**: Non-blocking asset fetching with AssetFuture allows concurrent loading
 - **Symmetric Operations**: What goes up (build/encrypt/upload) comes down (download/decrypt/verify) intact
+
+---
+
+## Configuration Management
+
+### OBT Project Composition
+
+The Orkid Build Tool (OBT) discovers and composes multiple projects into a unified build environment:
+
+![OBT Configuration Merging](config_merging_obt.svg)
+
+### Configuration Loading Process
+
+1. **Project Discovery pt1**: OBT launch uses --project arg to add project to environment. 
+2. **Project Discovery pt2**: for each --project PROJECTDIR dir OBT will scan for PROJECTDIR/obt.project/obt.manifest and parse it. this typically leads to init_env.py
+3. **Project Discovery pt3**: Each project's `init_env.py` script runs, appending to `ORKID_ASSET_MANIFEST_DIRS`
+4. **Config Loading**: AssetConfig::loadGlobalConfigs() finds all `config.json`'s in the ORKID_ASSET_MANIFEST_DIRS list
+5. **Config Merging**: Each project's configs merged sequentially into ConfigSpace
+6. **Conflict Detection**: Namespace/location conflicts cause assertions (fail-fast)
+7. **Manifest Loading**: AssetCatalog::loadFromGlobalManifests() reads all directories in `ORKID_ASSET_MANIFEST_DIRS`
+8. **Template Processing**: `<stage>`, `<temp>`, and `${VAR}` expansion
+9. **Final ConfigSpace**: Unified configuration with all manifests ready for use
+
+### Merge Rules
+
+- **Namespaces must be unique**: No two projects can define the same namespace
+- **Locations must be unique**: Each CDN location ID must be distinct
+- **Assets can cross-reference**: Assets can depend on any loaded namespace
+- **Environment variables expanded**: All `${VAR_NAME}` patterns resolved
+
+### Example Project Structure
+
+```
+assuming environment launch script does:
+obt.env.launch.py --numcores 16 --stagedir ~/.staging --project ~/projects/orkid --project ~/projects/shared --project ~/projects/gameproj 
+
+  orkid/
+    obt.project/
+      obt.manifest            # sets autoexec to scripts/init_env.py
+      scripts/init_env.py     # Appends orkid/ork.data/asset_manifests to ORKID_ASSET_MANIFEST_DIRS
+    ork.data/
+      asset_manifests/
+        config.json           # Base framework config
+        singularity.json      # Singularity assets
+  shared/
+    obt.project/
+      obt.manifest            # sets autoexec to scripts/init_env.py
+      scripts/init_env.py     # Appends shared/manifests to ORKID_ASSET_MANIFEST_DIRS
+      asset_manifests/
+        config.json           # Shared-specific config
+        game_manifest.json    # Shared assets
+  gameproj/
+    obt.project/
+      obt.manifest            # sets autoexec to scripts/init_env.py
+      scripts/init_env.py     # Appends gameproj/assets/manifests to ORKID_ASSET_MANIFEST_DIRS
+      asset_manifests/
+        config.json           # Game-specific config
+        game_manifest.json    # Game assets
+```
+
+---
+
+## Authentication and Environment Variables
+
+### Protected Namespaces
+Namespaces reference locations and have encryption keys that support environment variable expansion:
+
+```json
+{
+  "namespaces": {
+    "game": {
+      "encryption_key": "${GAME_ENCRYPTION_KEY}",
+      "remote_location": "game_cdn"
+    }
+  }
+}
+```
+
+### Location Authentication
+Locations can require authentication with environment variable support:
+- Separate API keys for read and write operations
+- API keys can reference environment variables: `"api_key_read": "${PRJ_DEVCDN_API_KEY}"`
+- Special value `<PasswordAuthentication>` triggers interactive password prompts
+- PasswordProvider prompts on main thread for `<PasswordAuthentication>` case
+- Passwords cached for session duration
+
+### Environment Variable Best Practices
+
+#### Setting Environment Variables
+```bash
+# Development environment (.env.development)
+export GAME_ENCRYPTION_KEY="dev-key-unsafe-for-testing"
+export PRJ_DEVCDN_API_KEY="dev-api-key"
+
+# Staging environment (.env.staging)
+export GAME_ENCRYPTION_KEY="staging-key-semi-secure"
+export PRJ_DEVCDN_API_KEY="staging-api-key"
+
+# Production environment (injected by CI/CD)
+# Never commit production keys to source control
+# Use secure secret management (Vault, AWS Secrets Manager, etc.)
+```
+
+#### Security Best Practices
+1. **Never commit real keys** to source control
+2. **Use different keys** for dev/staging/production
+3. **Namespace-specific keys**: `ORKID_ASSET_KEY_<namespace>` pattern
+4. **CI/CD integration**: Inject secrets at build/deploy time
+5. **Development**: Inject secrets at dev environment startup time
+
+#### Configuration Example
+```json
+{
+  "namespaces": {
+    "public_assets": {
+      "encryption_key": "public-key-123",  // Literal key (less secure)
+      "remote_location": "public_cdn"
+    },
+    "secure_assets": {
+      "encryption_key": "${SECURE_ASSET_KEY}",  // Env var (recommended)
+      "remote_location": "secure_cdn"
+    }
+  },
+  "locations": {
+    "secure_cdn": {
+      "url": "${CDN_BASE_URL}/secure",
+      "api_key_read": "${CDN_READ_KEY}",
+      "api_key_write": "${CDN_WRITE_KEY}"
+    }
+  }
+}
+```
+
+---
+
+## Cache Management
+
+### Cache Structure
+```
+${OBT_STAGE}/assetcache/
+  enc/              # Encrypted assets
+    {hash}.enc      # Single file assets
+    chunks/         # Chunked assets
+      {hash}.chunk.0
+      {hash}.chunk.manifest
+  receipts/         # Upload receipts
+  temp/             # Temporary downloads
+```
+
+### Cache Control
+- `disable_cache` parameter bypasses cache entirely
+- Cache verification via hash checking
+- Automatic cleanup of corrupted entries
 
 ---
 
@@ -241,97 +426,30 @@ cache/enc/chunks/
 
 ---
 
-## Authentication and Environment Variables
+## Security Considerations
 
-### Protected Namespaces
-Namespaces reference locations and have encryption keys that support environment variable expansion:
+### Encryption
+- Per-namespace libsodium encryption
+- Environment variable support for keys (`${VAR_NAME}` syntax)
+- Password-protected namespaces with interactive prompts
+- Secure key storage via environment variables (never in source control)
 
-```json
-{
-  "namespaces": {
-    "game": {
-      "encryption_key": "${GAME_ENCRYPTION_KEY}",
-      "remote_location": "game_cdn"
-    }
-  }
-}
-```
+### Integrity
 
-### Location Authentication
-Locations can require authentication with environment variable support:
-- Separate API keys for read and write operations
-- API keys can reference environment variables: `"api_key_read": "${PRJ_DEVCDN_API_KEY}"`
-- Special value `<PasswordAuthentication>` triggers interactive password prompts
-- PasswordProvider prompts on main thread for `<PasswordAuthentication>` case
-- Passwords cached for session duration
+The Asset Catalog employs a **dual-hash verification system** that exponentially improves collision resistance:
 
-### Environment Variable Best Practices
+- **Content Hash**: MD5/SHA256 of original unencrypted data
+- **Storage Hash**: MD5 of encrypted data on CDN-CAFS
+- **Combined Effect**: P(collision) = P(content) × P(storage)
 
-#### Setting Environment Variables
-```bash
-# Development environment (.env.development)
-export GAME_ENCRYPTION_KEY="dev-key-unsafe-for-testing"
-export PRJ_DEVCDN_API_KEY="dev-api-key"
+This means finding a collision requires matching both the original AND encrypted forms simultaneously, transforming even MD5+MD5 (2^128 operations) to be as strong as single SHA256. With SHA256+MD5, the attack complexity reaches 2^192 operations - computationally infeasible even with quantum computers.
 
-# Staging environment (.env.staging)
-export GAME_ENCRYPTION_KEY="staging-key-semi-secure"
-export PRJ_DEVCDN_API_KEY="staging-api-key"
+Additional benefits include cache validation without decryption, tamper evidence at two points, and cryptographic proof of content integrity from CDN to application.
 
-# Production environment (injected by CI/CD)
-# Never commit production keys to source control
-# Use secure secret management (Vault, AWS Secrets Manager, etc.)
-```
-
-#### Security Best Practices
-1. **Never commit real keys** to source control
-2. **Use different keys** for dev/staging/production
-3. **Namespace-specific keys**: `ORKID_ASSET_KEY_<namespace>` pattern
-4. **CI/CD integration**: Inject secrets at build/deploy time
-5. **Development**: Inject secrets at dev environment startup time
-
-#### Configuration Example
-```json
-{
-  "namespaces": {
-    "public_assets": {
-      "encryption_key": "public-key-123",  // Literal key (less secure)
-      "remote_location": "public_cdn"
-    },
-    "secure_assets": {
-      "encryption_key": "${SECURE_ASSET_KEY}",  // Env var (recommended)
-      "remote_location": "secure_cdn"
-    }
-  },
-  "locations": {
-    "secure_cdn": {
-      "url": "${CDN_BASE_URL}/secure",
-      "api_key_read": "${CDN_READ_KEY}",
-      "api_key_write": "${CDN_WRITE_KEY}"
-    }
-  }
-}
-```
-
----
-
-## Cache Management
-
-### Cache Structure
-```
-${OBT_STAGE}/assetcache/
-  enc/              # Encrypted assets
-    {hash}.enc      # Single file assets
-    chunks/         # Chunked assets
-      {hash}.chunk.0
-      {hash}.chunk.manifest
-  receipts/         # Upload receipts
-  temp/             # Temporary downloads
-```
-
-### Cache Control
-- `disable_cache` parameter bypasses cache entirely
-- Cache verification via hash checking
-- Automatic cleanup of corrupted entries
+### Access Control
+- API key authentication
+- Password caching with session scope
+- TLS certificate validation (configurable)
 
 ---
 
@@ -365,33 +483,6 @@ ${OBT_STAGE}/assetcache/
 - Real-time bandwidth calculation
 - Per-chunk and overall progress
 - Pending bytes tracking at enqueue time
-
----
-
-## Security Considerations
-
-### Encryption
-- Per-namespace libsodium encryption
-- Environment variable support for keys (`${VAR_NAME}` syntax)
-- Password-protected namespaces with interactive prompts
-- Secure key storage via environment variables (never in source control)
-
-### Integrity
-
-The Asset Catalog employs a **dual-hash verification system** that exponentially improves collision resistance:
-
-- **Content Hash**: MD5/SHA256 of original unencrypted data
-- **Storage Hash**: MD5 of encrypted data on CDN-CAFS
-- **Combined Effect**: P(collision) = P(content) × P(storage)
-
-This means finding a collision requires matching both the original AND encrypted forms simultaneously, transforming even MD5+MD5 (2^128 operations) to be as strong as single SHA256. With SHA256+MD5, the attack complexity reaches 2^192 operations - computationally infeasible even with quantum computers.
-
-Additional benefits include cache validation without decryption, tamper evidence at two points, and cryptographic proof of content integrity from CDN to application.
-
-### Access Control
-- API key authentication
-- Password caching with session scope
-- TLS certificate validation (configurable)
 
 ---
 
