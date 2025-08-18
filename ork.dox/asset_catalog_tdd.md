@@ -72,7 +72,7 @@ The Asset Catalog system manages the complete lifecycle of assets from developme
 
 2. **Package**: Assets are bundled into TAR archives (for asset_pak types), compressed with LZ4, and a content hash is computed from the original data.
 
-3. **Encrypt**: Using namespace-specific libsodium keys, assets are encrypted and a storage hash is generated from the encrypted form, creating content-addressable filenames.
+3. **Encrypt**: Using namespace-specific libsodium keys (which can reference environment variables like `${GAME_ENCRYPTION_KEY}`), assets are encrypted and a storage hash is generated from the encrypted form, creating content-addressable filenames.
 
 4. **Chunk**: Large files (>16MB) are automatically split into 16MB chunks, each encrypted independently with XXHash verification per chunk.
 
@@ -241,14 +241,76 @@ cache/enc/chunks/
 
 ---
 
-### Protected Namespaces
-Namespaces reference locations and have encryption_key's
+## Authentication and Environment Variables
 
-###Locations can require authentication:
-- separate api keys for read and write
-- API key typically contains reference to env var ${PRJ_DEVCDN_API_KEY}, or <PasswordAuthentication> to use passwords (from terminal) 
-- PasswordProvider prompts on main thread for <PasswordAuthentication> case.
+### Protected Namespaces
+Namespaces reference locations and have encryption keys that support environment variable expansion:
+
+```json
+{
+  "namespaces": {
+    "game": {
+      "encryption_key": "${GAME_ENCRYPTION_KEY}",
+      "remote_location": "game_cdn"
+    }
+  }
+}
+```
+
+### Location Authentication
+Locations can require authentication with environment variable support:
+- Separate API keys for read and write operations
+- API keys can reference environment variables: `"api_key_read": "${PRJ_DEVCDN_API_KEY}"`
+- Special value `<PasswordAuthentication>` triggers interactive password prompts
+- PasswordProvider prompts on main thread for `<PasswordAuthentication>` case
 - Passwords cached for session duration
+
+### Environment Variable Best Practices
+
+#### Setting Environment Variables
+```bash
+# Development environment (.env.development)
+export GAME_ENCRYPTION_KEY="dev-key-unsafe-for-testing"
+export PRJ_DEVCDN_API_KEY="dev-api-key"
+
+# Staging environment (.env.staging)
+export GAME_ENCRYPTION_KEY="staging-key-semi-secure"
+export PRJ_DEVCDN_API_KEY="staging-api-key"
+
+# Production environment (injected by CI/CD)
+# Never commit production keys to source control
+# Use secure secret management (Vault, AWS Secrets Manager, etc.)
+```
+
+#### Security Best Practices
+1. **Never commit real keys** to source control
+2. **Use different keys** for dev/staging/production
+3. **Namespace-specific keys**: `ORKID_ASSET_KEY_<namespace>` pattern
+4. **CI/CD integration**: Inject secrets at build/deploy time
+5. **Development**: Inject secrets at dev environment startup time
+
+#### Configuration Example
+```json
+{
+  "namespaces": {
+    "public_assets": {
+      "encryption_key": "public-key-123",  // Literal key (less secure)
+      "remote_location": "public_cdn"
+    },
+    "secure_assets": {
+      "encryption_key": "${SECURE_ASSET_KEY}",  // Env var (recommended)
+      "remote_location": "secure_cdn"
+    }
+  },
+  "locations": {
+    "secure_cdn": {
+      "url": "${CDN_BASE_URL}/secure",
+      "api_key_read": "${CDN_READ_KEY}",
+      "api_key_write": "${CDN_WRITE_KEY}"
+    }
+  }
+}
+```
 
 ---
 
@@ -310,8 +372,9 @@ ${OBT_STAGE}/assetcache/
 
 ### Encryption
 - Per-namespace libsodium encryption
-- Password-protected namespaces
-- Secure key storage in config
+- Environment variable support for keys (`${VAR_NAME}` syntax)
+- Password-protected namespaces with interactive prompts
+- Secure key storage via environment variables (never in source control)
 
 ### Integrity
 
