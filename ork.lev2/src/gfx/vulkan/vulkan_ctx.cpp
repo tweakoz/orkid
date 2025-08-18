@@ -5,22 +5,20 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-#include "vulkan_ctx.h"
+#include "headers/vulkan_ctx.h"
 
 ImplementReflectionX(ork::lev2::vulkan::VkContext, "VkContext");
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
-
-rtgroup_ptr_t VkSwapChain::currentRTG(){
-  return _rtgs[_curSwapWriteImage];
-}
+static logchannel_ptr_t logchan_vkctx = logger()->configureChannel("VKCTX", fvec3(1,1,.9));
 
 void VkContext::describeX(class_t* clazz) {
 
   clazz->annotateTyped<context_factory_t>("context_factory", []() { //
-    return std::make_shared<VkContext>(); });
+    return std::make_shared<VkContext>();
+  });
 }
 
 ///////////////////////////////////////////////////////
@@ -29,20 +27,8 @@ bool VkContext::HaveExtension(const std::string& extname) {
   return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////
-
-/*
-vkcontext_ptr_t VkContext::makeShared() {
-  struct VkContextX : public VkContext {
-    VkContextX()
-        : VkContext() {
-    }
-  };
-  auto ctx = std::make_shared<VkContextX>();
-  return ctx;
-}*/
-
 ///////////////////////////////////////////////////////////////////////////////
+
 void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
   _vkphysicaldevice = vk_devinfo->_phydev;
   _vkdeviceinfo     = vk_devinfo;
@@ -102,7 +88,8 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
   if (_GVI->_debugEnabled) {
     _device_extensions.push_back("VK_EXT_debug_marker");
   }
-
+  _device_extensions.push_back("VK_KHR_portability_subset");
+  _device_extensions.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
   //_device_extensions.push_back("VK_EXT_debug_utils");
 
   VkDeviceCreateInfo DCI = {};
@@ -111,6 +98,23 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
   DCI.pQueueCreateInfos       = _DQCIs.data();
   DCI.enabledExtensionCount   = _device_extensions.size();
   DCI.ppEnabledExtensionNames = _device_extensions.data();
+
+  // add features (not extensions)
+
+  VkPhysicalDeviceTimelineSemaphoreFeatures timelineFeatures{};
+  VkPhysicalDeviceDynamicRenderingFeatures dynrenderfeat{};
+
+  initializeVkStruct(timelineFeatures, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES);
+  initializeVkStruct(dynrenderfeat, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES);
+
+  timelineFeatures.timelineSemaphore = VK_TRUE;
+  dynrenderfeat.dynamicRendering = VK_TRUE;
+
+  DCI.pNext = (void*) & timelineFeatures;
+  timelineFeatures.pNext = (void*) & dynrenderfeat;
+  dynrenderfeat.pNext = (void*) nullptr;
+
+
   vkCreateDevice(_vkphysicaldevice, &DCI, nullptr, &_vkdevice);
 
   vkGetDeviceQueue(
@@ -137,6 +141,11 @@ void VkContext::_initVulkanForWindow(VkSurfaceKHR surface) {
     _fetchDeviceProcAddr(_vkCmdDebugMarkerEndEXT, "vkCmdDebugMarkerEndEXT");
     _fetchDeviceProcAddr(_vkCmdDebugMarkerInsertEXT, "vkCmdDebugMarkerInsertEXT");
   }
+
+  _fetchDeviceProcAddr( _vkCmdBeginRenderingKHR,"vkCmdBeginRenderingKHR");
+  _fetchDeviceProcAddr( _vkCmdEndRenderingKHR,"vkCmdEndRenderingKHR");
+   OrkAssertI(_vkCmdBeginRenderingKHR != nullptr, "_vkCmdBeginRenderingKHR function pointer is null!");
+   OrkAssertI(_vkCmdEndRenderingKHR != nullptr, "_vkCmdEndRenderingKHR function pointer is null!");
 
   // UGLY!!!
 
@@ -193,22 +202,12 @@ void VkContext::_initVulkanCommon() {
   // create primary command buffer impls
   ////////////////////////////
 
-  size_t count = _cmdbuf_pool.capacity();
+  size_t count = _pri_cmdbuf_pool.capacity();
 
   for (size_t i = 0; i < count; i++) {
-    auto ork_cb                          = _cmdbuf_pool.direct_access(i);
-    ork_cb->_is_primary = true;
-    auto vk_impl = _createVkCommandBuffer(ork_cb.get());
+    auto ork_cb         = _pri_cmdbuf_pool.direct_access(i);
+    auto vk_impl        = _createPrimaryVkCommandBuffer(ork_cb.get());
   }
-
-  VkSemaphoreCreateInfo SCI{};
-  initializeVkStruct(SCI, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
-  OK = vkCreateSemaphore(_vkdevice, &SCI, nullptr, &_fbi->_swapChainImageAcquiredSemaphore);
-  OrkAssert(OK == VK_SUCCESS);
-
-  initializeVkStruct(SCI, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
-  OK = vkCreateSemaphore(_vkdevice, &SCI, nullptr, &_renderingCompleteSemaphore);
-  OrkAssert(OK == VK_SUCCESS);
 
   auto vksci_base = makeVKSCI();
   _sampler_base   = std::make_shared<VulkanSamplerObject>(this, vksci_base);
@@ -253,12 +252,161 @@ void VkContext::_initVulkanCommon() {
 
   OK = vkCreateDescriptorPool(_vkdevice, &poolInfo, nullptr, &_vkDescriptorPool);
   OrkAssert(OK == VK_SUCCESS);
+  
+  ////////////////////////////
+  // create default texture implementations
+  ////////////////////////////
+  
+  _initDefaultTextures();
+}
+
+  void VkContext::_beginAssetProcessing() {
+    beginFrame();
+  }
+  void VkContext::_endAssetProcessing(){
+    endFrame();
+  }
+
+  ///////////////////////////////////////////////////////////////////////////////
+
+void VkContext::_initDefaultTextures() {
+  // Create black default textures for each type
+  auto create_default_texture = [this](ETextureType tex_type, int width, int height, int depth = 1, int num_layers = 1) -> vktexobj_ptr_t {
+    auto tex_obj = std::make_shared<VulkanTextureObject>(_txi.get());
+    
+    // Calculate mip levels based on dimensions
+    int num_mips = 1;
+    if (tex_type == ETEXTYPE_3D) {
+      num_mips = 1 + static_cast<int>(std::floor(std::log2(std::min({width, height, depth}))));
+    } else {
+      num_mips = 1 + static_cast<int>(std::floor(std::log2(std::min(width, height))));
+    }
+    
+    // Create image create info
+    auto imageInfo = std::make_shared<VkImageCreateInfo>();
+    initializeVkStruct(*imageInfo, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
+    imageInfo->format = VK_FORMAT_R8G8B8A8_UNORM;
+    imageInfo->extent.width = width;
+    imageInfo->extent.height = height;
+    imageInfo->extent.depth = depth;
+    imageInfo->mipLevels = num_mips;
+    imageInfo->arrayLayers = num_layers;
+    imageInfo->samples = VK_SAMPLE_COUNT_1_BIT;
+    imageInfo->tiling = VK_IMAGE_TILING_OPTIMAL;
+    imageInfo->usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    imageInfo->sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    imageInfo->initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    
+    switch (tex_type) {
+      case ETEXTYPE_2D:
+        imageInfo->imageType = VK_IMAGE_TYPE_2D;
+        break;
+      case ETEXTYPE_CUBE:
+        imageInfo->imageType = VK_IMAGE_TYPE_2D;
+        imageInfo->flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+        imageInfo->arrayLayers = 6;
+        break;
+      case ETEXTYPE_2D_ARRAY:
+        imageInfo->imageType = VK_IMAGE_TYPE_2D;
+        imageInfo->arrayLayers = num_layers;
+        break;
+      case ETEXTYPE_3D:
+        imageInfo->imageType = VK_IMAGE_TYPE_3D;
+        break;
+      default:
+        OrkAssert(false);
+    }
+    
+    // Create the image object
+    tex_obj->_imgobj = std::make_shared<VulkanImageObject>(this, imageInfo, "default_texture");
+    
+    // Create image view
+    VkImageViewCreateInfo viewInfo = {};
+    initializeVkStruct(viewInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
+    viewInfo.image = tex_obj->_imgobj->_vkimage;
+    viewInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+    viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    viewInfo.subresourceRange.baseMipLevel = 0;
+    viewInfo.subresourceRange.levelCount = num_mips;
+    viewInfo.subresourceRange.baseArrayLayer = 0;
+    
+    // Set view type and layer count based on texture type
+    switch (tex_type) {
+      case ETEXTYPE_2D:
+        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        viewInfo.subresourceRange.layerCount = 1;
+        break;
+      case ETEXTYPE_CUBE:
+        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+        viewInfo.subresourceRange.layerCount = 6;
+        break;
+      case ETEXTYPE_2D_ARRAY:
+        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+        viewInfo.subresourceRange.layerCount = num_layers;
+        break;
+      case ETEXTYPE_3D:
+        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_3D;
+        viewInfo.subresourceRange.layerCount = 1;
+        break;
+      default:
+        OrkAssert(false);
+    }
+    
+    VkResult ok = vkCreateImageView(_vkdevice, &viewInfo, nullptr, &tex_obj->_imgobj->_vkimageview);
+    OrkAssert(VK_SUCCESS == ok);
+    
+    // Initialize with black data (we'll need to transition and fill the texture)
+    // For now, just transition to shader read optimal
+    auto cmdbuf = _beginRecordCommandBuffer("init_default_texture", nullptr);
+    auto cmdbuf_impl = cmdbuf->_impl.getShared<VkSecondaryCommandBufferImpl>();
+    
+    VkImageMemoryBarrier barrier = {};
+    initializeVkStruct(barrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+    barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.image = tex_obj->_imgobj->_vkimage;
+    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    barrier.subresourceRange.baseMipLevel = 0;
+    barrier.subresourceRange.levelCount = num_mips;
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount = (tex_type == ETEXTYPE_CUBE) ? 6 : num_layers;
+    barrier.srcAccessMask = 0;
+    barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    
+    vkCmdPipelineBarrier(
+        cmdbuf_impl->_vkcmdbuf,
+        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+        0,
+        0, nullptr,
+        0, nullptr,
+        1, &barrier);
+    
+    _endRecordCommandBuffer(cmdbuf);
+    enqueueDeferredOneShotCommand(cmdbuf);
+    
+    // Set up descriptor info
+    tex_obj->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    tex_obj->_vkdescriptor_info.imageView = tex_obj->_imgobj->_vkimageview;
+    tex_obj->_vkdescriptor_info.sampler = _sampler_base->_vksampler;
+    
+    return tex_obj;
+  };
+  
+  // Create default textures with agreed-upon sizes
+  _defaultTexImpl2D = create_default_texture(ETEXTYPE_2D, 64, 64);
+  _defaultTexImplCube = create_default_texture(ETEXTYPE_CUBE, 64, 64);
+  _defaultTexImpl2DArray = create_default_texture(ETEXTYPE_2D_ARRAY, 64, 64, 1, 4); // 4 layers
+  _defaultTexImpl3D = create_default_texture(ETEXTYPE_3D, 16, 16, 16);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 VkContext::VkContext() {
-
+  _present_timer.Start();
+  _prev_time = 0.0f;
   _GVI->_contexts.insert(this);
 
   ////////////////////////////
@@ -273,7 +421,7 @@ VkContext::VkContext() {
   _gbi = std::make_shared<VkGeometryBufferInterface>(this);
   _txi = std::make_shared<VkTextureInterface>(this);
   _fxi = std::make_shared<VkFxInterface>(this);
-  _ci = std::make_shared<VkComputeInterface>(this);
+  _ci  = std::make_shared<VkComputeInterface>(this);
 }
 
 ///////////////////////////////////////////////////////
@@ -380,55 +528,28 @@ void VkContext::makeCurrentContext() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkContext::_doBeginFrame() {
-
-  _renderpass_index = -1;
-
-  makeCurrentContext();
-
-  if (_fbi->_main_rtg) {
-    miW = _fbi->_main_rtg->miW;
-    miH = _fbi->_main_rtg->miH;
-  }
-
-  auto mainrect = mainSurfaceRectAtOrigin();
-
-  _fbi->setViewport(mainrect);
-  _fbi->setScissor(mainrect);
-
-  _fbi->BeginFrame();
-  _gbi->BeginFrame();
-  _fxi->BeginFrame();
-
-  PushModColor(fcolor4::White());
-  _msi->PushMMatrix(fmtx4::Identity());
-  _msi->PushVMatrix(fmtx4::Identity());
-  _msi->PushPMatrix(fmtx4::Identity());
+void VkContext::_doPreBeginFrame() {
+  //logchan_vkctx->log("VkContext<%p> _doPreBeginFrame", (void*)this );
 
   mpCurrentObject        = 0;
   mRenderContextInstData = 0;
 
   ////////////////////////
-
-  if (not _first_frame) {
-    if(_is_visual_frame){
-      auto swapchain = _fbi->_swapchain;
-      auto fence     = swapchain->_fence;
-      fence->wait();
-    }
-  }
-
-  ////////////////////////
-  // clean up renderpasses
+  // Check if command buffer pool is healthy
   ////////////////////////
 
-  _renderpasses.clear();
+  // logchan_vkctx->log("  Allocating command buffer from pool (available: %zu)\n", _pri_cmdbuf_pool.available());
+  _defaultCommandBuffer = _pri_cmdbuf_pool.allocate();
 
   ////////////////////////
-  _defaultCommandBuffer   = _cmdbuf_pool.allocate();
-  _cmdbufcurframe_gfx_pri = _defaultCommandBuffer->_impl.getShared<VkCommandBufferImpl>();
-  _cmdbufcur_gfx          = _cmdbufcurframe_gfx_pri;
+  _defaultCommandBufferImpl = _defaultCommandBuffer->_impl.getShared<VkPrimaryCommandBufferImpl>();
+  _cmdbufcurpri_gfx         = _defaultCommandBufferImpl;
   ////////////////////////
+
+  logchan_vkctx->log("CMDBUF: _doPreBeginFrame: setting primary CB to %p", _cmdbufcurpri_gfx ? (void*)_cmdbufcurpri_gfx->_vkcmdbuf : nullptr);
+
+  //logchan_vkctx->log("VkContext<%p> begin primaryCB", (void*)this );
+
   VkCommandBufferBeginInfo CBBI_GFX = {};
   initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
   CBBI_GFX.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
@@ -436,51 +557,65 @@ void VkContext::_doBeginFrame() {
   vkBeginCommandBuffer(primary_cb()->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
 
   /////////////////////////////////////////
-  for (auto one_shot : _pendingOneShotCommands) {
-    enqueueSecondaryCommandBuffer(one_shot);
-  }
-  _pendingOneShotCommands.clear();
+  _pendingOneShotCommands.atomicOp([&](vkseccmdbufarray_t& unlocked) {
+    for (auto one_shot : unlocked) {
+      enqueueSecondaryCommandBuffer(one_shot);
+    }  
+    unlocked.clear();
+  });
   /////////////////////////////////////////
 
-  if(_is_visual_frame)
-    _fbi->PushRtGroup(_fbi->_main_rtg.get());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-vkcmdbufimpl_ptr_t VkContext::primary_cb() {
-  // OrkAssert(_current_subpass == nullptr);
-  return _cmdbufcurframe_gfx_pri;
+void VkContext::_doBeginFrame() {
+  //logchan_vkctx->log("VkContext<%p> _doBeginFrame w<%d> h<%d>", (void*)this, miW, miH);
+  if (_fbi->_main_rtg) {
+    miW = _fbi->_main_rtg->miW;
+    miH = _fbi->_main_rtg->miH;
+  }
+  // Poll timeline semaphores
+  _pendingOneShotSemas.atomicOp([&](vkcompsema_set_t& unlocked) {
+    for (auto semaphore : unlocked) {
+      if(semaphore->isSignalled()){
+        // If the semaphore is signalled, execute its completion callback      
+        if(semaphore->_onComplete!=nullptr){
+          // If the semaphore has a completion callback, execute it
+          semaphore->_onComplete();
+          semaphore->_onComplete = nullptr; // Clear the callback after execution
+        }
+      }
+    }
+    std::erase_if(          //
+      unlocked, //
+      [](auto sema) { //
+        return sema->_onComplete==nullptr; //
+    });
+  });
+  
+  // Clean up completed semaphores
+  _txi->_beginFrame();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+vkpricmdbufimpl_ptr_t VkContext::primary_cb() {
+  return _cmdbufcurpri_gfx;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::_doEndFrame() {
-
-  GBI()->EndFrame();
-  MTXI()->PopMMatrix();
-  MTXI()->PopVMatrix();
-  MTXI()->PopPMatrix();
-  FBI()->EndFrame();
-
-  // FBI()->popMainSurface();
-
-  PopModColor();
-  mbPostInitializeContext = false;
-
-  ////////////////////////
-  // end main renderpass (and pop main rtg)
-  ////////////////////////
-
-  if(_is_visual_frame)
-    _fbi->PopRtGroup(false);
-
+  
   ////////////////////////
   // main_rtg -> presentation layout
   ////////////////////////
 
-  if(_is_visual_frame)
-    _fbi->_enq_transitionMainRtgToPresent();
+  auto main_rtb  = _fbi->_main_rtg->buffer(0);
+  auto main_rtbi = main_rtb->_impl.getShared<VklRtBufferImpl>();
+
+  main_rtbi->_transitionToPresent(primary_cb());
 
   ////////////////////////
   // done with primary command buffer for this frame
@@ -491,80 +626,50 @@ void VkContext::_doEndFrame() {
 
   ////////////////////////
 
-  //printf( "num renderpasses<%zu>\n", _renderpasses.size() );
+  // logchan_vkctx->log( "num renderpasses<%zu>\n", _renderpasses.size() );
 
   ///////////////////////////////////////////////////////
   // submit primary command buffer for this frame
   ///////////////////////////////////////////////////////
 
-  std::vector<VkSemaphore> waitStartRenderSemaphores;
-  std::vector<VkPipelineStageFlags> waitStages;
-  
-  if(_is_visual_frame){
-    waitStartRenderSemaphores.push_back({_fbi->_swapChainImageAcquiredSemaphore});
-    waitStages.push_back({VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT});
-  }
-
-  VkSubmitInfo SI = {};
-  initializeVkStruct(SI, VK_STRUCTURE_TYPE_SUBMIT_INFO);
-  SI.waitSemaphoreCount   = waitStartRenderSemaphores.size();
-  SI.pWaitSemaphores      = waitStartRenderSemaphores.data();
-  SI.pWaitDstStageMask    = waitStages.data();
-  SI.commandBufferCount   = 1;
-  SI.pCommandBuffers      = &primary_cb()->_vkcmdbuf;
-  SI.signalSemaphoreCount = 1;
-  SI.pSignalSemaphores    = &_renderingCompleteSemaphore;
   auto swapchain = _fbi->_swapchain;
-  auto fence     = swapchain->_fence;
-  fence->reset();
-  vkQueueSubmit(_vkqueue_graphics, 1, &SI, fence->_vkfence);
-
-  primary_cb()->_secondary_cmdbuffers.clear();
-
+  bool semas_empty = false;
+  _pendingOneShotSemas.atomicOp([&](vkcompsema_set_t& unlocked) {
+    semas_empty = unlocked.empty();
+  });
+  
+  if ( not semas_empty) {
+    // Submit with timeline semaphores
+    swapchain->_submitFrameWithSemaphores(this);
+  } else {
+    // Normal submission
+    swapchain->enqueueFrame(this);
+  }
+  
   ///////////////////////////////////////////////////////
   // Present !
   ///////////////////////////////////////////////////////
 
-  if(_is_visual_frame){
-    std::vector<VkSemaphore> waitPresentSemaphores = {_renderingCompleteSemaphore};
-
-    VkPresentInfoKHR PRESI{};
-    initializeVkStruct(PRESI, VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);
-    PRESI.waitSemaphoreCount = waitPresentSemaphores.size();
-    PRESI.pWaitSemaphores    = waitPresentSemaphores.data();
-    PRESI.swapchainCount     = 1;
-    PRESI.pSwapchains        = &swapchain->_vkSwapChain;
-    PRESI.pImageIndices      = &swapchain->_curSwapWriteImage;
-
-    auto status = vkQueuePresentKHR(_vkqueue_graphics, &PRESI); // Non-Blocking
-    switch (status) {
-      case VK_SUCCESS:
-        break;
-      case VK_SUBOPTIMAL_KHR:
-      case VK_ERROR_OUT_OF_DATE_KHR: {
-        // OrkAssert(false);
-        //  need to recreate swap chain
-        break;
-      }
-      default:
-        OrkAssert(false);
-        break;
-    }
-  }
+  swapchain->enqueuePresentFrame(this);
+  swapchain->waitPresentFrame(this);
 
   ///////////////////////////////////////////////////////
 
-  _cmdbufcurframe_gfx_pri = nullptr;
-  _first_frame            = false;
+  logchan_vkctx->log("CMDBUF: _doEndFrame: clearing primary CB (was %p)", _cmdbufcurpri_gfx ? (void*)_cmdbufcurpri_gfx->_vkcmdbuf : nullptr);
 
-  ///////////////////////////////////////////////////////
+  _pri_cmdbuf_pool.deallocate(_defaultCommandBuffer);
+  _cmdbufcurpri_gfx->_secondary_cmdbuffers.clear();
 
-  _cmdbuf_pool.deallocate(_defaultCommandBuffer);
-  _defaultCommandBuffer = nullptr;
   ////////////////////////
 
-  miTargetFrame++;
-  _renderpass_index = -1;
+
+  ///////////////////////////////////////////////////////
+  //logchan_vkctx->log("VkContext<%p> clear renderpasses", (void*)this );
+
+  _defaultCommandBuffer = nullptr;
+  _cmdbufcurpri_gfx = nullptr;
+  _first_frame            = false;
+
 }
 
 ///////////////////////////////////////////////////////
@@ -591,6 +696,18 @@ void VkContext::initializeWindowContext(
   ///////////////////////
   platoMakeCurrent(plato);
   _fbi->SetThisBuffer(pWin);
+
+  uint32_t count;
+  const char** extensions = glfwGetRequiredInstanceExtensions(&count);
+  logchan_vkctx->log("GLFW requires %u extensions for surface:", count);
+  for (uint32_t i = 0; i < count; i++) {
+    logchan_vkctx->log("  - %s", extensions[i]);
+  }
+
+  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+
+  //logchan_vkctx->log("createWindowSurface with instance<%p>", (void*)&_GVI->_instance);
+
   VkResult OK = glfwCreateWindowSurface(_GVI->_instance, glfw_window, nullptr, &_vkpresentationsurface);
   OrkAssert(OK == VK_SUCCESS);
 
@@ -599,7 +716,7 @@ void VkContext::initializeWindowContext(
   for (uint32_t i = 0; i < _num_queue_types; i++) {
     VkBool32 presentSupport = VK_FALSE;
     vkGetPhysicalDeviceSurfaceSupportKHR(_vkphysicaldevice, i, _vkpresentationsurface, &presentSupport);
-    printf("Qfamily<%u> on surface supports presentation<%d>\n", i, int(presentSupport));
+    logchan_vkctx->log("Qfamily<%u> on surface supports presentation<%d>", i, int(presentSupport));
   }
 
   _vkpresentation_caps = _swapChainCapsForSurface(_vkpresentationsurface);
@@ -610,7 +727,7 @@ void VkContext::initializeWindowContext(
   //  OrkAssert( _vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR) );
   //  OrkAssert( _vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR) );
 
-  _fbi->_initSwapChain();
+  _fbi->_swapchain = std::make_shared<VkSwapChain>(this);
 
 } // make a window
 
@@ -668,7 +785,7 @@ void VkContext::initializeLoaderContext() {
     if (this->mTargetDrawableSizeDirty) {
       int w = mainSurfaceWidth();
       int h = mainSurfaceHeight();
-      // printf("resizing defaultRTG<%p>\n", _defaultRTG);
+      // logchan_vkctx->log("resizing defaultRTG<%p>\n", _defaultRTG);
       _defaultRTG->Resize(w, h);
       mTargetDrawableSizeDirty = false;
     }
@@ -686,7 +803,7 @@ void VkContext::debugPushGroup(const std::string str, const fvec4& color) {
     markerInfo.color[2]    = color.z; // B
     markerInfo.color[3]    = color.w; // A
     markerInfo.pMarkerName = str.c_str();
-    _vkCmdDebugMarkerBeginEXT(_cmdbufcur_gfx->_vkcmdbuf, &markerInfo);
+    _vkCmdDebugMarkerBeginEXT(_cmdbufcurpri_gfx->_vkcmdbuf, &markerInfo);
   }
 }
 
@@ -694,12 +811,12 @@ void VkContext::debugPushGroup(const std::string str, const fvec4& color) {
 
 void VkContext::debugPopGroup() {
   if (_vkCmdDebugMarkerEndEXT) {
-    _vkCmdDebugMarkerEndEXT(_cmdbufcur_gfx->_vkcmdbuf);
+    _vkCmdDebugMarkerEndEXT(_cmdbufcurpri_gfx->_vkcmdbuf);
   }
 }
 ///////////////////////////////////////////////////////
 
-void VkContext::debugPushGroup(commandbuffer_ptr_t cb, const std::string str, const fvec4& color) {
+void VkContext::debugPushGroup(secondary_commandbuffer_ptr_t cb, const std::string str, const fvec4& color) {
   if (_vkCmdDebugMarkerBeginEXT) {
     VkDebugMarkerMarkerInfoEXT markerInfo = {};
     initializeVkStruct(markerInfo, VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT);
@@ -709,7 +826,7 @@ void VkContext::debugPushGroup(commandbuffer_ptr_t cb, const std::string str, co
     markerInfo.color[3]    = color.w; // A
     markerInfo.pMarkerName = str.c_str();
 
-    auto cbimpl = cb->_impl.getShared<VkCommandBufferImpl>();
+    auto cbimpl = cb->_impl.getShared<VkSecondaryCommandBufferImpl>();
 
     _vkCmdDebugMarkerBeginEXT(cbimpl->_vkcmdbuf, &markerInfo);
   }
@@ -717,9 +834,9 @@ void VkContext::debugPushGroup(commandbuffer_ptr_t cb, const std::string str, co
 
 ///////////////////////////////////////////////////////
 
-void VkContext::debugPopGroup(commandbuffer_ptr_t cb) {
+void VkContext::debugPopGroup(secondary_commandbuffer_ptr_t cb) {
   if (_vkCmdDebugMarkerEndEXT) {
-    auto cbimpl = cb->_impl.getShared<VkCommandBufferImpl>();
+    auto cbimpl = cb->_impl.getShared<VkSecondaryCommandBufferImpl>();
     _vkCmdDebugMarkerEndEXT(cbimpl->_vkcmdbuf);
   }
 }
@@ -735,7 +852,7 @@ void VkContext::debugMarker(const std::string named, const fvec4& color) {
     markerInfo.color[2]    = color.z; // B
     markerInfo.color[3]    = color.w; // A
     markerInfo.pMarkerName = named.c_str();
-    _vkCmdDebugMarkerInsertEXT(_cmdbufcur_gfx->_vkcmdbuf, &markerInfo);
+    _vkCmdDebugMarkerInsertEXT(_cmdbufcurpri_gfx->_vkcmdbuf, &markerInfo);
   }
 }
 
@@ -803,7 +920,7 @@ vkswapchaincaps_ptr_t VkContext::_swapChainCapsForSurface(VkSurfaceKHR surface) 
       &presentModeCount, //
       nullptr);
 
-  printf("presentModeCount<%d>\n", presentModeCount);
+  logchan_vkctx->log("presentModeCount<%d>", presentModeCount);
   if (presentModeCount != 0) {
     std::vector<VkPresentModeKHR> presentModes;
     presentModes.resize(presentModeCount);
@@ -826,13 +943,13 @@ vkswapchaincaps_ptr_t VkContext::_swapChainCapsForSurface(VkSurfaceKHR surface) 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::_doResizeMainSurface(int iw, int ih) {
-  scheduleOnBeginFrame([this, iw, ih]() { 
-    if(_fbi->_main_rtg){
+  scheduleOnBeginFrame([this, iw, ih]() {
+    logchan_vkctx->log("VkContext<%p> _doResizeMainSurface w<%d> h<%d>", (void*)this, iw, ih);
+    if (_fbi->_main_rtg) {
       _fbi->_main_rtg->Resize(iw, ih);
     }
   });
 }
-
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::vulkan

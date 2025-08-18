@@ -5,7 +5,7 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-#include "vulkan_ctx.h"
+#include "headers/vulkan_ctx.h"
 #include "vulkan_ub_layout.inl"
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/util/hexdump.inl>
@@ -32,7 +32,6 @@ VkRasterState::VkRasterState(rasterstate_ptr_t rstate){
   _VKRSCI.depthBiasConstantFactor = 0.0f; // Optional
   _VKRSCI.depthBiasClamp = 0.0f;          // Optional
   _VKRSCI.depthBiasSlopeFactor = 0.0f;    // Optional
-
   hasher.accumulateItem(rstate->_depthtest);
   switch( rstate->_depthtest ){
     case EDepthTest::OFF: {

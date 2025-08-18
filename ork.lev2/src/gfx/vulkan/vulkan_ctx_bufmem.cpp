@@ -5,12 +5,14 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-#include "vulkan_ctx.h"
+#include "headers/vulkan_ctx.h"
+#include <ork/util/crc64.h>
+#include <ork/kernel/memcpy.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
-
+static auto logchan_vkbufmem = logger()->configureChannel("VKBUFMEM", fvec3(0.5, 0.5, 0.5), true);
 uint32_t VkContext::_findMemoryType(    //
     uint32_t typeFilter,                //
     VkMemoryPropertyFlags properties) { //
@@ -27,6 +29,12 @@ uint32_t VkContext::_findMemoryType(    //
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+
+std::atomic<int> VulkanMemoryForImage::_imgmemcount(0);
+std::atomic<size_t> VulkanMemoryForImage::_imgmembytes(0);
+std::atomic<size_t> VulkanMemoryForImage::_imgmemSN(0);
 
 VulkanMemoryForImage::VulkanMemoryForImage(vkcontext_rawptr_t ctxVK, VkImage image, VkMemoryPropertyFlags memprops)
     : _ctxVK(ctxVK)
@@ -49,10 +57,19 @@ VulkanMemoryForImage::VulkanMemoryForImage(vkcontext_rawptr_t ctxVK, VkImage ima
 
   OK = vkBindImageMemory(_ctxVK->_vkdevice, _vkimage, *_vkmem, 0);
   OrkAssert(OK == VK_SUCCESS);
+
+  int SN       = _imgmemSN.fetch_add(1);
+  int count    = _imgmemcount.fetch_add(1);
+  size_t bytes = _imgmembytes.fetch_add(_memreq->size);
+  if((SN&0xff)==0){
+    logchan_vkbufmem->log("VulkanMemoryForImage<%p> SN<%d> numalive<%d> bytes<%zu>", (void*)this, SN, count, bytes);
+  }
 }
 
 VulkanMemoryForImage::~VulkanMemoryForImage() {
   vkFreeMemory(_ctxVK->_vkdevice, *_vkmem, nullptr);
+  int count    = _imgmemcount.fetch_sub(1);
+  size_t bytes = _imgmembytes.fetch_sub(_memreq->size);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -106,6 +123,51 @@ vkivci_ptr_t createImageViewInfo2D(
 
 ///////////////////////////////////////////////////////////////////////////////
 
+uint64_t hashImageCreationParams(
+    int w,                             //
+    int h,                             //
+    int d,                             //
+    EBufferFormat fmt,                 //
+    int nummips,
+    uint64_t usage ) {                     //
+    boost::Crc64 crc;
+    crc.init();
+  crc.accumulateItem(w);
+  crc.accumulateItem(h);
+  crc.accumulateItem(d);
+  crc.accumulateItem(fmt);
+  crc.accumulateItem(nummips);
+  crc.accumulateItem(usage);
+  crc.finish();
+  return crc.result();
+}
+///////////////////////////////////////////////////////////////////////////////
+
+vkimagecreateinfo_ptr_t makeVKICI(
+    int w,
+    int h,
+    int d, //
+    VkFormat fmt,
+    int nummips) { //
+  auto VKICI = std::make_shared<VkImageCreateInfo>();
+  initializeVkStruct(*VKICI, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
+  VKICI->imageType     = VK_IMAGE_TYPE_2D;
+  VKICI->format        = fmt;
+  VKICI->extent.width  = w;
+  VKICI->extent.height = h;
+  VKICI->extent.depth  = d;
+  VKICI->mipLevels     = nummips;
+  VKICI->arrayLayers   = 1;
+  VKICI->samples       = VK_SAMPLE_COUNT_1_BIT;
+  VKICI->tiling        = VK_IMAGE_TILING_OPTIMAL;
+  VKICI->sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
+  VKICI->initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  VKICI->usage         = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+  return VKICI;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 vkimagecreateinfo_ptr_t makeVKICI(
     int w,
     int h,
@@ -125,7 +187,7 @@ vkimagecreateinfo_ptr_t makeVKICI(
   VKICI->tiling        = VK_IMAGE_TILING_OPTIMAL;
   VKICI->sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
   VKICI->initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  // VKICI->usage         = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+  VKICI->usage         = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
   return VKICI;
 }
 
@@ -139,7 +201,7 @@ vksamplercreateinfo_ptr_t makeVKSCI() { //
   ret->addressModeU            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
   ret->addressModeV            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
   ret->addressModeW            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-  ret->anisotropyEnable        = VK_TRUE;
+  ret->anisotropyEnable        = VK_FALSE;
   ret->maxAnisotropy           = 16;
   ret->borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
   ret->unnormalizedCoordinates = VK_FALSE;
@@ -153,33 +215,67 @@ vksamplercreateinfo_ptr_t makeVKSCI() { //
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
+std::atomic<int> VulkanImageObject::_imgobjcount = 0;
+std::atomic<size_t> VulkanImageObject::_imgobjSN = 0;
+///////////////////////////////////////////////////////////////////////////////
 VulkanImageObject::VulkanImageObject(vkcontext_rawptr_t ctx, vkimagecreateinfo_ptr_t cinfo, std::string name)
     : _ctx(ctx)
     , _cinfo(cinfo) {
 
   initializeVkStruct(_vkimage);
+  initializeVkStruct(_vkimageview);
   VkResult ok = vkCreateImage(_ctx->_vkdevice, cinfo.get(), nullptr, &_vkimage);
   OrkAssert(VK_SUCCESS == ok);
   _imgmem = std::make_shared<VulkanMemoryForImage>(_ctx, _vkimage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-  if(name!=""){
+  if (name != "") {
     _ctx->_setObjectDebugName(*(_imgmem->_vkmem), VK_OBJECT_TYPE_DEVICE_MEMORY, name.c_str());
   }
+  _format = cinfo->format;
+  int SN    = _imgobjSN.fetch_add(1);
+  int count = _imgobjcount.fetch_add(1);
+  if((SN&0xff)==0){
+    logchan_vkbufmem->log("VulkanImageObject<%p> SN<%d> numalive<%d>", (void*)this, SN, count );
+  }
 }
-VulkanImageObject::~VulkanImageObject() {
-
+VulkanImageObject::VulkanImageObject(vkcontext_rawptr_t ctx, VkImage img, VkImageView vkimgview, VkFormat fmt)
+    : _ctx(ctx)
+    , _vkimage(img)
+    , _vkimageview(vkimgview)
+    , _format(fmt) {
+  int SN    = _imgobjSN.fetch_add(1);
+  int count = _imgobjcount.fetch_add(1);
+  if((SN&0xff)==0){
+    logchan_vkbufmem->log("VulkanImageObject<%p> SN<%d> numalive<%d>", (void*)this, SN, count );
+  }
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-VulkanBuffer::VulkanBuffer(vkcontext_rawptr_t ctxVK, size_t length, VkBufferUsageFlags usage,std::string name)
+VulkanImageObject::~VulkanImageObject() {
+  _imgobjcount.fetch_sub(1);
+  if (_delete_imageview and (_vkimageview != VK_NULL_HANDLE)) {
+    vkDestroyImageView(_ctx->_vkdevice, _vkimageview, nullptr);
+  }
+  if (_delete_image and (_vkimage != VK_NULL_HANDLE)) {
+    vkDestroyImage(_ctx->_vkdevice, _vkimage, nullptr);
+  }
+  _imgmem = nullptr;
+}
+///////////////////////////////////////////////////////////////////////////////
+
+std::atomic<int> VulkanBuffer::_buffercount    = 0;
+std::atomic<size_t> VulkanBuffer::_bufferbytes = 0;
+std::atomic<size_t> VulkanBuffer::_bufferSN = 0;
+
+VulkanBuffer::VulkanBuffer(vkcontext_rawptr_t ctxVK, size_t length, VkBufferUsageFlags usage, std::string name)
     : _ctxVK(ctxVK)
     , _length(length)
     , _usage(usage) {
-  OrkAssert(_length > 0);
-  if(_length<1){
-    _length=1;
+  
+  // Debug logging to diagnose zero-length buffer creation
+  if (length == 0) {
+    logchan_vkbufmem->log("ERROR: VulkanBuffer constructor called with length=0, usage=0x%x, name='%s'", usage, name.c_str());
   }
+  
+  OrkAssert(_length > 0);
 
   VkBufferCreateInfo BUFINFO;
   initializeVkStruct(_cinfo, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
@@ -191,18 +287,28 @@ VulkanBuffer::VulkanBuffer(vkcontext_rawptr_t ctxVK, size_t length, VkBufferUsag
   VkResult ok = vkCreateBuffer(ctxVK->_vkdevice, &_cinfo, nullptr, &_vkbuffer);
   OrkAssert(VK_SUCCESS == ok);
 
-  if(name!=""){
+  if (name != "") {
     _ctxVK->_setObjectDebugName(_vkbuffer, VK_OBJECT_TYPE_BUFFER, name.c_str());
   }
-
 
   _memory = std::make_shared<VulkanMemoryForBuffer>(
       ctxVK, _vkbuffer, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
   vkBindBufferMemory(ctxVK->_vkdevice, _vkbuffer, *_memory->_vkmem, 0);
+
+  int SN = _bufferSN.fetch_add(1);
+  int count = _buffercount.fetch_add(1);
+  _bufferbytes.fetch_add(_length);
+  if((SN&0xff)==0){
+    logchan_vkbufmem->log("VulkanBuffer<%p> SN<%d> numalive<%d> bytes<%zu>", (void*)this, SN, count, size_t(_bufferbytes));
+  }
 }
 //////////////////////////////////////
 VulkanBuffer::~VulkanBuffer() {
-  vkDestroyBuffer(_ctxVK->_vkdevice, _vkbuffer, nullptr);
+  if(_vkbuffer != VK_NULL_HANDLE) {
+    vkDestroyBuffer(_ctxVK->_vkdevice, _vkbuffer, nullptr);
+  }
+  _buffercount.fetch_sub(1);
+  _bufferbytes.fetch_sub(_length);
   _memory = nullptr;
 }
 //////////////////////////////////////
@@ -210,7 +316,14 @@ void VulkanBuffer::copyFromHost(const void* src, size_t length) {
   OrkAssert(length <= _length);
   void* dst = nullptr;
   vkMapMemory(_ctxVK->_vkdevice, *_memory->_vkmem, 0, _length, 0, &dst);
-  memcpy(dst, src, _length);
+  static size_t _numcopied = 0;
+  static size_t _prvnumcopied = 0;
+  _numcopied += length;
+  if((_numcopied - _prvnumcopied) > (1<<30) ) {
+    //logchan_vkbufmem->log("VulkanBuffer copyFromHost copied<%zu> total<%zu>", length, _numcopied);
+    _prvnumcopied = _numcopied;
+  }
+  memcpy_fast(dst, src, _length);
   vkUnmapMemory(_ctxVK->_vkdevice, *_memory->_vkmem);
 }
 //////////////////////////////////////
@@ -218,12 +331,12 @@ void VulkanBuffer::copyToHost(void* dst, size_t length) {
   OrkAssert(length <= _length);
   void* src = nullptr;
   vkMapMemory(_ctxVK->_vkdevice, *_memory->_vkmem, 0, length, 0, &src);
-  memcpy(dst, src, length);
+  memcpy_fast(dst, src, length);
   vkUnmapMemory(_ctxVK->_vkdevice, *_memory->_vkmem);
 }
 //////////////////////////////////////
 void* VulkanBuffer::map(size_t offset, size_t length, VkMemoryMapFlags flags) {
-  if(length<1)
+  if (length < 1)
     length = 1;
   void* dst = nullptr;
   vkMapMemory(_ctxVK->_vkdevice, *_memory->_vkmem, offset, length, flags, &dst);
@@ -235,5 +348,5 @@ void VulkanBuffer::unmap() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} //namespace ork::lev2::vulkan {
+} // namespace ork::lev2::vulkan
 ///////////////////////////////////////////////////////////////////////////////

@@ -10,6 +10,9 @@
 #include <ork/file/file.h>
 
 #if defined(USE_ORKSL_LANG)
+
+#include "shadlang_common.h"
+
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::shadlang {
 
@@ -114,6 +117,10 @@ SHAST::translationunit_ptr_t parseFromString(slpcache_ptr_t slp, const std::stri
 SHAST::translationunit_ptr_t parseFromFile(slpcache_ptr_t slp, file::Path shader_path);
 std::string toGLFX1(SHAST::astnode_ptr_t top);
 std::string toDotFile(SHAST::translationunit_ptr_t top);
+
+// Enhanced DOT functionality declarations
+std::unordered_map<std::string, MergedShaderResources> createMergedResourceData(SHAST::translationunit_ptr_t transunit);
+std::string toEnhancedDotFile(SHAST::translationunit_ptr_t top, const merged_resources_map_t& merged_resources);
 
 } // namespace ork::lev2::shadlang
 ///////////////////////////////////////////////////////////////////////////////

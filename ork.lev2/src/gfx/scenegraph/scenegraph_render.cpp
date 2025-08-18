@@ -199,7 +199,6 @@ void Scene::_renderIMPL(Context* context, rcfd_ptr_t RCFD) {
 
     EASY_BLOCK("sg::Scene::_renderIMPL::draw", profiler::colors::Red);
 
-    context->beginFrame();
     CompositorDrawData drawdata(RCFD);
     drawdata._properties["primarycamindex"_crcu].set<int>(0);
     drawdata._properties["cullcamindex"_crcu].set<int>(0);
@@ -303,7 +302,6 @@ void Scene::_renderIMPL(Context* context, rcfd_ptr_t RCFD) {
 
     } // if (_enable_pick_hud) {
 
-    context->endFrame();
     _dbufcontext_SG->releaseFromReadLocked(DB);
     RCFD->popCompositor();
   

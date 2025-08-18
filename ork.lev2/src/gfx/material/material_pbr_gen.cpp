@@ -236,7 +236,7 @@ texture_ptr_t PBRMaterial::brdfIntegrationMap(Context* targ,std::string type) {
 /////////////////////////////////////////////////////////////////////////
 
 static file::Path filterenv_shader_path() {
-  return file::Path("orkshader://pbr_filterenv.glfx");
+  return file::Path("orkshader://pbr_filterenv.fxv2");
 }
 static uint32_t shader_hash() {
   return filterenv_shader_path().hashFileContents();
@@ -344,7 +344,8 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
 
       auto outgroup = std::make_shared<RtGroup>(targ, w, h, MsaaSamples::MSAA_1X);
       auto outbuffr = outgroup->createRenderTarget(EBufferFormat::RGBA32F);
-
+        static std::set<rtgroup_ptr_t> grps;
+        grps.insert(outgroup);
       outgroup->_autoclear = true;
       filtex->_rtgroup     = outgroup;
       filtex->_rtbuffer    = outbuffr;

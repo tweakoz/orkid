@@ -59,6 +59,7 @@ struct SCRIMPL {
       _msaadownsamplebuffer = std::make_shared<RtGroup>(ctx, 8, 8, MsaaSamples::MSAA_1X);
       auto dsbuf            = _msaadownsamplebuffer->createRenderTarget(_node->_format);
       dsbuf->_debugName     = "MsaaDownsampleBuffer";
+
     }
   }
   ///////////////////////////////////////
@@ -105,6 +106,7 @@ struct SCRIMPL {
     CIMPL->pushCPD(_CPD);
   }
   void endAssemble(CompositorDrawData& drawdata) {
+    Context* targ = drawdata.context();
     auto CIMPL = drawdata._cimpl;
     CIMPL->popCPD();
   }
@@ -160,6 +162,7 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
   /////////////////////////////////////////////////////////////////////////////
   Context* context = drawdata.context();
   auto fbi         = context->FBI();
+  auto dwi         = context->DWI();
   if (auto try_final = drawdata._properties["final_out"_crcu].tryAs<RtBuffer*>()) {
     auto buffer = try_final.value();
     if (buffer) {
@@ -228,10 +231,10 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
           }
           else{
             if(_flipY){
-              this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
+              dwi->quad2DEML2(fvec4(-1, -1, 2, 2), fvec4(0, 1, 1, -1), fvec4(0, 0, 1, 1));
             }
             else{
-              this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 1, 1, -1), fvec4(0, 1, 1, -1));            
+              dwi->quad2DEML2(fvec4(-1, -1, 2, 2), fvec4(0, 1, 1, -1), fvec4(0, 1, 1, -1));            
             }
           }
           //this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));

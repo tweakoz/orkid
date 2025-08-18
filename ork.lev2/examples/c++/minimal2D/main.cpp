@@ -39,18 +39,21 @@ struct Resources {
 using resources_ptr_t = std::shared_ptr<Resources>;
 
 int main(int argc, char** argv,char** envp) {
+  deco::printf(fvec3::Cyan(), "[minimal2D] Program start\n");
   auto init_data = std::make_shared<ork::AppInitData>(argc,argv,envp);
   auto ezapp  = OrkEzApp::create(init_data);
   auto ezwin  = ezapp->_mainWindow;
   auto appwin = ezwin->_appwin;
   //////////////////////////////////////////////////////////
   resources_ptr_t resources;
+  static int frame_counter = 0;
   //////////////////////////////////////////////////////////
   ezapp->onGpuInit([&](Context* ctx) {
     resources = std::make_shared<Resources>(ctx);
   });
   //////////////////////////////////////////////////////////
   ezapp->onDraw([&](ui::drawevent_constptr_t drwev) {
+    deco::printf(fvec3::Green(), "[minimal2D] onDraw ENTER frame %d\n", frame_counter);
     auto context        = drwev->GetTarget();
     auto fbi            = context->FBI(); // FrameBufferInterface
     auto fxi            = context->FXI(); // FX Interface
@@ -62,14 +65,16 @@ int main(int argc, char** argv,char** envp) {
     const SRect tgtrect = SRect(0, 0, TARGW, TARGH);
 
     fbi->SetClearColor(fvec4(r, g, b, 1));
-    context->beginFrame();
+    // context->beginFrame(); // REMOVED - top widget manages frame lifecycle
     auto RCFD = std::make_shared<RenderContextFrameData>(context);
     resources->_material->begin(resources->_fxtechnique, RCFD);
     resources->_material->bindParamMatrix(resources->_fxparameterMVP, fmtx4::Identity());
     resources->_material->bindParamVec4(resources->_fxparameterMODC, fvec4::Red());
     appwin->Render2dQuadEML(fvec4(-0.5, -0.5, 1, 1), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
     resources->_material->end(RCFD);
-    context->endFrame();
+    // context->endFrame(); // REMOVED - top widget manages frame lifecycle
+    frame_counter++;
+    deco::printf(fvec3::Green(), "[minimal2D] onDraw EXIT frame %d\n", frame_counter-1);
   });
   //////////////////////////////////////////////////////////
   ezapp->onResize([&](int w, int h) { printf("GOTRESIZE<%d %d>\n", w, h); });

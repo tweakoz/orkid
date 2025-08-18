@@ -5,11 +5,12 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-#include "vulkan_ctx.h"
+#include "headers/vulkan_ctx.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
+static logchannel_ptr_t logchan_fbi = logger()->configureChannel("VKFBI", fvec3(0.8, 0.2, 0.5), true);
 
 
 VkMsaaState::VkMsaaState(){
@@ -59,18 +60,16 @@ void VkFrameBufferInterface::_setScissor(int iX, int iY, int iW, int iH) {
 
 ///////////////////////////////////////////////////////
 void VkFrameBufferInterface::_doBeginFrame() {
-  if(_contextVK->_is_visual_frame){
-    _acquireSwapChainForFrame();
-    _active_rtgroup = _main_rtg.get();
-  }
-  else{
-    _active_rtgroup = nullptr;
-  }
+  //logchan_fbi->log("_doBeginFrame()");
+  OrkAssert(_contextVK->_is_visual_frame);
+  _swapchain->_update();
+  _active_rtgroup = _main_rtg.get();
 }
 
 ///////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::_doEndFrame() {
+  //logchan_fbi->log("_doEndFrame()");
 }
 
 ///////////////////////////////////////////////////////

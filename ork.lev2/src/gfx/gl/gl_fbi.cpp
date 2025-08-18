@@ -39,7 +39,6 @@ GlFrameBufferInterface::GlFrameBufferInterface(ContextGL& target)
     : FrameBufferInterface(target)
     , mTargetGL(target) {
 
-
 }
 
 GlFrameBufferInterface::~GlFrameBufferInterface() {
@@ -659,7 +658,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& pfc) 
 
               auto rtbuffer = pfc._rtgroup->buffer(MrtIndex);
 
-              OrkAssert(MrtIndex < pfc._rtgroup->GetNumTargets());
+              OrkAssert(MrtIndex < pfc._rtgroup->numImageBuffers());
 
               //GL_ERRORCHECK();
               //glDepthMask(GL_TRUE);

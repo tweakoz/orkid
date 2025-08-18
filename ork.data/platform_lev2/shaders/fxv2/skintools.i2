@@ -1,6 +1,6 @@
 //
 
-uniform_block ub_vtx_boneblock {
+uniform_block ub_vtx_boneblock(descriptor_set 0) {
   mat4 _bone_matrices[1024];
 }
 
@@ -11,7 +11,15 @@ vertex_interface iface_skintools : ub_vtx_boneblock {
   }
 }
 
-libblock lib_skin_tools {
+typeblock types_skin_tools {
+  struct SkinOut {
+    vec3 skn_pos;
+    vec3 skn_col;
+  };
+
+}
+
+libblock lib_skin_tools : types_skin_tools {
   vec3 SkinPosition(vec3 objpos) {
     ivec4 idcsi = ivec4(boneindices);
     vec4 pos4   = vec4(objpos, 1.0);
@@ -33,10 +41,6 @@ libblock lib_skin_tools {
     return normalize(WeightedNormal);
   }
 
-  struct SkinOut {
-    vec3 skn_pos;
-    vec3 skn_col;
-  };
 
   SkinOut LitSkinned(vec3 objpos) {
 		SkinOut rval;

@@ -1,10 +1,10 @@
-
 #pragma once
 
 #include <ork/kernel/string/deco.inl>
 #include <ork/kernel/mutex.h>
 #include <ork/file/file.h>
 #include <thread>
+#include <functional>
 
 namespace ork {
 
@@ -92,6 +92,11 @@ namespace ork {
   logger_ptr_t logger();
   logchannel_ptr_t logchannel(const std::string& named);
   logchannel_ptr_t logerrchannel();
+
+  // Global log file manager functions
+  void setGlobalLogFile(const std::string& path);
+  void writeToGlobalLog(const std::string& channel, const std::string& message);
+  bool isGlobalLogEnabled();
 
   /////////////////////////////////////////////////////////////////////
 }

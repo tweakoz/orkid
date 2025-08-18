@@ -14,6 +14,8 @@ SamplerType <|[
   sel{ KW_SAMP1D  KW_SAMP2D  KW_SAMP3D
        KW_USAMP1D KW_USAMP2D KW_USAMP3D
        KW_ISAMP1D KW_ISAMP2D KW_ISAMP3D
+       KW_SAMP1DARRAY KW_SAMP2DARRAY KW_SAMP3DARRAY
+       KW_SAMPCUBE
   }
 ]|>
 
@@ -410,6 +412,7 @@ ComputeShader <|[
 UniformSet <|[
   KW_UNISET
   [ IDENTIFIER ] : "uniset_name"
+  zom{ InheritListItem } : "uset_dependencies"
   L_CURLY
   DataDeclarations : "uniset_decls"
   R_CURLY
@@ -422,10 +425,16 @@ DescriptorSetId <|[
   R_PAREN 
 ]|>
 
+DescriptorSetInhItem <|[
+  sel{
+    DescriptorSetId InheritListItem
+  }
+]|>
+
 SamplerSet <|[
   KW_SMPSET
   [ IDENTIFIER ] : "smpset_name"
-  DescriptorSetId
+  DescriptorSetInhItem
   L_CURLY
   SamplerDeclarations : "smpset_decls"
   R_CURLY
@@ -434,7 +443,7 @@ SamplerSet <|[
 UniformBlk <|[
   KW_UNIBLK
   [ IDENTIFIER ] : "uniblk_name"
-  DescriptorSetId
+  DescriptorSetInhItem
   L_CURLY
   DataDeclarations : "uniblk_decls"
   R_CURLY

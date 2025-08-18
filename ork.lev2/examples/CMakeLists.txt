@@ -1,5 +1,7 @@
 add_subdirectory (c++/bufperftest)
 add_subdirectory (c++/cputexstream)
+add_subdirectory (c++/rtgtest)
+add_subdirectory (c++/arraytex)
 add_subdirectory (c++/minimal2D)
 add_subdirectory (c++/minimal3D)
 add_subdirectory (c++/model3Dpbr)

@@ -304,7 +304,7 @@ public:
   void __setRtGroup(RtGroup* Base);
 
   void _pushRtGroup(RtGroup* Base) final;
-  void _popRtGroup(bool continue_render) final;
+  void _popRtGroup() final;
 
   //void Clear(const fcolor4& rCol, float fdepth) final;
   //void clearDepth(float fdepth) final;
@@ -426,7 +426,6 @@ struct GlTextureInterface : public TextureInterface {
 
   void bindTextureToUnit(const Texture* tex, int loc, GLenum tex_target, int tex_unit);
 
-  void TexManInit() final;
   bool destroyTexture(texture_ptr_t ptex) final;
   void generateMipMaps(Texture* ptex) final;
   void _createFromLoadReq(texloadreq_ptr_t tlr) final;
@@ -599,8 +598,8 @@ public:
 
   void debugPushGroup(const std::string str, const fvec4& color) final;
   void debugPopGroup() final;
-  void debugPushGroup(commandbuffer_ptr_t cb, const std::string str, const fvec4& color) final {}
-  void debugPopGroup(commandbuffer_ptr_t cb) final {}
+  void debugPushGroup(secondary_commandbuffer_ptr_t cb, const std::string str, const fvec4& color) final {}
+  void debugPopGroup(secondary_commandbuffer_ptr_t cb) final {}
   void debugMarker(const std::string str,const fvec4& color) final;
 
   void TakeThreadOwnership() final;

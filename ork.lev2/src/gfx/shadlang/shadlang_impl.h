@@ -96,6 +96,8 @@ struct ShadLangParser : public Parser {
 
   }
   ////////////////////////////////////////////
+  void processTranslationUnit(SHAST::translationunit_ptr_t tu);
+  ////////////////////////////////////////////
   matcher_ptr_t _tu_matcher;
   std::vector<SHAST::astnode_ptr_t> _astnodestack;
   std::unordered_map<match_ptr_t, SHAST::astnode_ptr_t> _match2astnode;
@@ -116,6 +118,8 @@ struct ShadLangParser : public Parser {
   file::Path _shader_path;
   slpcache_ptr_t _slp_cache;
 
+  scannerlightview_ptr_t _top_slv;
+  scannerview_ptr_t _top_view;
 }; // struct ShadLangParser
 
 void implStackDump(slpcache_ptr_t cache);

@@ -1,7 +1,10 @@
 ///////////////////////////////////////////////////////////////
 // FxConfigs
 ///////////////////////////////////////////////////////////////
-fxconfig fxcfg_default { glsl_version = "330"; }
+fxconfig fxcfg_default {
+  glsl_version = "330";
+  import "orkshader://stdtools.i2";
+}
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
@@ -21,9 +24,11 @@ uniform_set ublock_frg {
   vec4 modcolor;
   int downsampledim;
   float downsampleamp;
+}
+sampler_set samplers(descriptor_set 0) {
   sampler2D ColorMap;
-  sampler2D ColorMap2;
-  sampler2D ColorMap3;
+  // sampler2D ColorMap2;
+  // sampler2D ColorMap3;
 }
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_vdefault {
@@ -40,21 +45,24 @@ vertex_interface iface_vdefault {
 }
 vertex_interface iface_vdefault_stereo : iface_vdefault {
   outputs {
-    layout(secondary_view_offset=1) int gl_Layer;
+    layout(secondary_view_offset = 1) int gl_Layer;
   }
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_fdefault : ublock_frg {
+fragment_interface iface_fdefault : iface_vdefault : ublock_frg : samplers {
+  outputs {
+    layout(location = 0) vec4 out_clr;
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_interface iface_fmt : ublock_frg : samplers {
   inputs {
     vec4 frg_clr;
     vec2 frg_uv0;
   }
-  outputs { layout(location = 0) vec4 out_clr; }
-}
-///////////////////////////////////////////////////////////////
-fragment_interface iface_fmt : ublock_frg {
-  inputs { vec2 frg_uv0; }
-  outputs { layout(location = 0) vec4 out_clr; }
+  outputs {
+    layout(location = 0) vec4 out_clr;
+  }
 }
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_vpick : ublock_vtx {
@@ -90,151 +98,166 @@ state_block sb_default : default {
   DepthMask = ON;
 }
 ///////////////////////////////////////////////////////////////
-state_block sb_lerpblend : sb_default { BlendMode = ALPHA; }
+state_block sb_lerpblend : sb_default {
+  BlendMode = ALPHA;
+}
 ///////////////////////////////////////////////////////////////
-state_block sb_additive : sb_default { BlendMode = ADDITIVE; }
+state_block sb_additive : sb_default {
+  BlendMode = ADDITIVE;
+}
 ///////////////////////////////////////////////////////////////
 // shaders
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_texcolor : iface_fmt {
+fragment_shader ps_texcolor : fif_min_T : samplers {
   vec4 texc = texture(ColorMap, frg_uv0);
   out_clr   = vec4(texc.xyz, 1);
 }
-fragment_shader ps_texcolor4 : iface_fmt {
+fragment_shader ps_texcolor4 : fif_min_T : samplers {
   vec4 texc = texture(ColorMap, frg_uv0);
   out_clr   = texc;
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_blit : iface_fmt {
+fragment_shader ps_blit : fif_min_T : samplers {
   vec3 texc = texture(ColorMap, frg_uv0.xy).xyz;
-  out_clr = vec4(texc,1);
+  out_clr   = vec4(texc, 1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_downsample2x2 : iface_fmt {
-  const float kscale = 1.0/4.0;
-  vec2 uvb = gl_FragCoord.xy*2-vec2(0.5,0.5);
-  vec3 outc = vec3(0);
-  for(int iy=0; iy<2; iy++){
-    for(int ix=0; ix<2; ix++){
-    vec2 uvx = uvb+vec2(ix,iy);
-    vec3 texc = texelFetch(ColorMap, ivec2(uvx), 0).xyz;
-    outc += texc;
+fragment_shader ps_downsample2x2 : iface_fmt : samplers {
+  const float kscale = 1.0 / 4.0;
+  vec2 uvb           = gl_FragCoord.xy * 2 - vec2(0.5, 0.5);
+  vec3 outc          = vec3(0);
+  for (int iy = 0; iy < 2; iy++) {
+    for (int ix = 0; ix < 2; ix++) {
+      vec2 uvx  = uvb + vec2(ix, iy);
+      vec3 texc = texelFetch(ColorMap, ivec2(uvx), 0).xyz;
+      outc += texc;
     }
   }
-  out_clr = vec4(outc*kscale,1);
+  out_clr = vec4(outc * kscale, 1);
 }
-fragment_shader ps_downsample3x3 : iface_fmt {
-  const float kscale = 1.0/9.0;
-  vec2 uvb = gl_FragCoord.xy*3-vec2(0.5,0.5);
-  vec3 outc = vec3(0);
-  for(int iy=0; iy<3; iy++){
-    for(int ix=0; ix<3; ix++){
-    vec2 uvx = uvb+vec2(ix,iy);
-    vec3 texc = texelFetch(ColorMap, ivec2(uvx), 0).xyz;
-    outc += texc;
+fragment_shader ps_downsample3x3 : iface_fmt : samplers {
+  const float kscale = 1.0 / 9.0;
+  vec2 uvb           = gl_FragCoord.xy * 3 - vec2(0.5, 0.5);
+  vec3 outc          = vec3(0);
+  for (int iy = 0; iy < 3; iy++) {
+    for (int ix = 0; ix < 3; ix++) {
+      vec2 uvx  = uvb + vec2(ix, iy);
+      vec3 texc = texelFetch(ColorMap, ivec2(uvx), 0).xyz;
+      outc += texc;
     }
   }
-  out_clr = vec4(outc*kscale,1);
+  out_clr = vec4(outc * kscale, 1);
 }
-fragment_shader ps_downsample4x4 : iface_fmt {
-  const float kscale = 1.0/16.0;
-  vec2 uvb = gl_FragCoord.xy*4-vec2(0.5,0.5);
-  vec3 outc = vec3(0);
-  for(int iy=0; iy<4; iy++){
-    for(int ix=0; ix<4; ix++){
-    vec2 uvx = uvb+vec2(ix,iy);
-    vec3 texc = texelFetch(ColorMap, ivec2(uvx), 0).xyz;
-    outc += texc;
+fragment_shader ps_downsample4x4 : iface_fmt : samplers {
+  const float kscale = 1.0 / 16.0;
+  vec2 uvb           = gl_FragCoord.xy * 4 - vec2(0.5, 0.5);
+  vec3 outc          = vec3(0);
+  for (int iy = 0; iy < 4; iy++) {
+    for (int ix = 0; ix < 4; ix++) {
+      vec2 uvx  = uvb + vec2(ix, iy);
+      vec3 texc = texelFetch(ColorMap, ivec2(uvx), 0).xyz;
+      outc += texc;
     }
   }
-  out_clr = vec4(outc*kscale,1);
+  out_clr = vec4(outc * kscale, 1);
 }
-fragment_shader ps_downsample5x5 : iface_fmt {
-  const float kscale = 1.0/25.0;
-  vec2 uvb = gl_FragCoord.xy*5+vec2(2,2);
-  vec3 outc = vec3(0);
+fragment_shader ps_downsample5x5 : iface_fmt : samplers {
+  const float kscale = 1.0 / 25.0;
+  vec2 uvb           = gl_FragCoord.xy * 5 + vec2(2, 2);
+  vec3 outc          = vec3(0);
+  float tot_w        = 0.0;
+  for (int iy = -2; iy <= 2; iy++) {
+    for (int ix = -2; ix <= 2; ix++) {
+      vec2 uvx  = uvb + vec2(ix, iy);
+      float w_x = abs(ix);
+      float w_y = abs(iy);
+      float w   = 1; // w_x*w_y;
+      tot_w += w;
+      vec3 texc = texelFetch(ColorMap, ivec2(uvx), 0).xyz * w;
+      outc += texc;
+    }
+  }
+  out_clr = vec4(outc / tot_w, 1);
+}
+fragment_shader ps_downsample6x6 : iface_fmt : samplers {
+  const float kscale = 1.0 / 36.0;
+  vec2 uvb           = gl_FragCoord.xy * 6 - vec2(0.5, 0.5);
+  vec3 outc          = vec3(0);
+  for (int iy = 0; iy < 6; iy++) {
+    for (int ix = 0; ix < 6; ix++) {
+      vec2 uvx  = uvb + vec2(ix, iy);
+      vec3 texc = texelFetch(ColorMap, ivec2(uvx), 0).xyz;
+      outc += texc;
+    }
+  }
+  out_clr = vec4(outc * kscale, 1);
+}
+fragment_shader ps_downsample7x7 : iface_fmt : samplers {
+  vec2 uvb    = gl_FragCoord.xy * 7 + vec2(3, 3);
+  vec3 outc   = vec3(0);
   float tot_w = 0.0;
-  for(int iy=-2; iy<=2; iy++){
-    for(int ix=-2; ix<=2; ix++){
-    vec2 uvx = uvb+vec2(ix,iy);
-    float w_x = abs(ix);
-    float w_y = abs(iy);
-    float w = 1; //w_x*w_y;
-    tot_w += w;
-    vec3 texc = texelFetch(ColorMap, ivec2(uvx), 0).xyz*w;
-    outc += texc;
+  for (int iy = -3; iy <= 3; iy++) {
+    for (int ix = -3; ix <= 3; ix++) {
+      vec2 uvx  = uvb + vec2(ix, iy);
+      float w_x = abs(ix);
+      float w_y = abs(iy);
+      float w   = 1; // w_x*w_y;
+      tot_w += w;
+      vec3 texc = texelFetch(ColorMap, ivec2(uvx), 0).xyz * w;
+      outc += texc;
     }
   }
-  out_clr = vec4(outc/tot_w,1);
-}
-fragment_shader ps_downsample6x6 : iface_fmt {
-  const float kscale = 1.0/36.0;
-  vec2 uvb = gl_FragCoord.xy*6-vec2(0.5,0.5);
-  vec3 outc = vec3(0);
-  for(int iy=0; iy<6; iy++){
-    for(int ix=0; ix<6; ix++){
-    vec2 uvx = uvb+vec2(ix,iy);
-    vec3 texc = texelFetch(ColorMap, ivec2(uvx), 0).xyz;
-    outc += texc;
-    }
-  }
-  out_clr = vec4(outc*kscale,1);
-}
-fragment_shader ps_downsample7x7 : iface_fmt {
-  vec2 uvb = gl_FragCoord.xy*7+vec2(3,3);
-  vec3 outc = vec3(0);
-  float tot_w = 0.0;
-  for(int iy=-3; iy<=3; iy++){
-    for(int ix=-3; ix<=3; ix++){
-    vec2 uvx = uvb+vec2(ix,iy);
-    float w_x = abs(ix);
-    float w_y = abs(iy);
-    float w = 1; //w_x*w_y;
-    tot_w += w;
-    vec3 texc = texelFetch(ColorMap, ivec2(uvx), 0).xyz*w;
-    outc += texc;
-    }
-  }
-  out_clr = vec4(outc/tot_w,1);
+  out_clr = vec4(outc / tot_w, 1);
 }
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_vtxcolor : iface_vdefault : ublock_vtx {
-  gl_Position = MatMVP * vec4(position,1);
+vertex_shader vs_texcolor : vif_PT : ublock_vtx {
+  gl_Position = MatMVP * position;
+  frg_uv0     = uv0;
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_vtxcolor : vif_PC : ublock_vtx {
+  gl_Position = MatMVP * position;
   frg_clr     = vtxcolor;
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_debuguv : vif_PT : ublock_vtx {
+  gl_Position = MatMVP * position;
   frg_uv0     = uv0;
 }
-vertex_shader vs_debuguv : iface_vdefault : ublock_vtx {
-  gl_Position = MatMVP * vec4(position,1);
-  frg_clr     = vec4(uv0,0,1);
-  frg_uv0     = uv0;
+fragment_shader fs_debuguv : fif_min_T {
+  out_clr = vec4(frg_uv0, 0.0, 1.0);
 }
 vertex_shader vs_wldnormal : iface_vdefault : ublock_vtx {
-  gl_Position = MatMVP * vec4(position,1);
-  vec3 n = vtxnormal + vec3(1,1,1);
-  frg_clr     = vec4(n*0.5,1);
+  gl_Position = MatMVP * vec4(position, 1);
+  vec3 n      = vtxnormal + vec3(1, 1, 1);
+  frg_clr     = vec4(n * 0.5, 1);
   frg_uv0     = uv0;
 }
 vertex_shader vs_objnormal : iface_vdefault : ublock_vtx {
-  gl_Position = MatMVP * vec4(position,1);
+  gl_Position = MatMVP * vec4(position, 1);
 
-  vec3 n = vtxnormal + vec3(1,1,1);
-  frg_clr     = vec4(n*0.5,1);
-  frg_uv0     = uv0;
+  vec3 n  = vtxnormal + vec3(1, 1, 1);
+  frg_clr = vec4(n * 0.5, 1);
+  frg_uv0 = uv0;
 }
 
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_vtxcolor_stereo
-  : extension(GL_NV_stereo_view_rendering)
-  : extension(GL_NV_viewport_array2)
-  : iface_vdefault_stereo
-  : ublock_vtx_stereo {
-  gl_Position = MatMVPL * vec4(position,1);
-  gl_SecondaryPositionNV = MatMVPR * vec4(position,1);
-  gl_Layer = 0;
-  gl_ViewportMask[0] = 1;
+vertex_shader vs_vtxcolor_stereo : extension(GL_NV_stereo_view_rendering)
+    : extension(GL_NV_viewport_array2)
+    : iface_vdefault_stereo : ublock_vtx_stereo {
+  gl_Position                   = MatMVPL * vec4(position, 1);
+  gl_SecondaryPositionNV        = MatMVPR * vec4(position, 1);
+  gl_Layer                      = 0;
+  gl_ViewportMask[0]            = 1;
   gl_SecondaryViewportMaskNV[0] = 2;
-  frg_clr     = vtxcolor;
-  frg_uv0     = uv0;
+  frg_clr                       = vtxcolor;
+  frg_uv0                       = uv0;
+}
+///////////////////////////////////////////////////////////////
+libblock Lib1 {
+  vec4 X(){
+    return vec4(1, 0, 1, 1);
+  }
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_texvtxcolor : iface_fdefault {
@@ -258,11 +281,17 @@ fragment_shader ps_feedbackatten : iface_fdefault {
   out_clr   = vec4(0, 0, 0, frg_clr.w);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_fragclr : iface_fdefault {
+fragment_shader ps_fragclr : fif_PC {
   out_clr = frg_clr;
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_modclr : iface_fmt { out_clr = modcolor; }
+fragment_shader fs_lib1x : fif_PC : Lib1 {
+  out_clr = X();
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_modclr : iface_fmt {
+  out_clr = modcolor;
+}
 ///////////////////////////////////////////////////////////////
 // pick
 ///////////////////////////////////////////////////////////////
@@ -279,6 +308,12 @@ fragment_shader ps_pick : iface_fpick {
   out_nrmd = frg_nrmd;
 }
 ///////////////////////////////////////////////////////////////
+state_block sb_xxx : default {
+  DepthTest = OFF;
+  CullTest  = OFF;
+  DepthMask = ON;
+}
+///////////////////////////////////////////////////////////////
 technique vtxcolor {
   fxconfig = fxcfg_default;
   pass p0 {
@@ -291,7 +326,15 @@ technique debuguv {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader   = vs_debuguv;
-    fragment_shader = ps_fragclr;
+    fragment_shader = fs_debuguv;
+    state_block     = sb_default;
+  }
+}
+technique testlib1x {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_debuguv;
+    fragment_shader = fs_lib1x;
     state_block     = sb_default;
   }
 }
@@ -303,10 +346,30 @@ technique vtxmodcolor {
     state_block     = sb_default;
   }
 }
+///////////////////////////////////////////////////////////////
+// Minimal interface for 2D UI (no normals)
+vertex_interface iface_minimal2D {
+  inputs {
+    vec4 position : POSITION;
+    vec4 vtxcolor : COLOR0;
+    vec2 uv0 : TEXCOORD0;
+  }
+  outputs {
+    vec4 frg_clr;
+    vec2 frg_uv0;
+  }
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_minimal2D : iface_minimal2D : ublock_vtx {
+  gl_Position = MatMVP * vec4(position.xyz, 1);
+  frg_clr     = vtxcolor;
+  frg_uv0     = uv0;
+}
+///////////////////////////////////////////////////////////////
 technique mmodcolor {
   fxconfig = fxcfg_default;
   pass p0 {
-    vertex_shader   = vs_vtxcolor;
+    vertex_shader   = vs_minimal2D;
     fragment_shader = ps_modclr;
     state_block     = sb_default;
   }
@@ -314,9 +377,9 @@ technique mmodcolor {
 technique texcolor {
   fxconfig = fxcfg_default;
   pass p0 {
-    vertex_shader   = vs_vtxcolor;
+    vertex_shader   = vs_texcolor;
     fragment_shader = ps_texcolor;
-    state_block     = sb_default;
+    state_block     = sb_xxx;
   }
 }
 technique tek_objnormal {
@@ -448,10 +511,22 @@ technique texvtxcolor_noalpha {
     state_block     = sb_default;
   }
 }
-technique texcolorwrap {}
-technique texcolorralp {}
-technique knob {}
-technique texmodcolor {}
-technique textexmodcolor {}
-technique texmodcolorFB {}
+technique texcolorwrap {
+}
+technique texcolorralp {
+}
+technique knob {
+}
+technique texmodcolor {
+}
+technique textexmodcolor {
+}
+technique texmodcolorFB {
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_vtxcolor_uv : iface_vdefault : ublock_vtx {
+  gl_Position = MatMVP * vec4(position, 1);
+  frg_clr     = vtxcolor;
+  frg_uv0     = uv0;
+}
 ///////////////////////////////////////////////////////////////

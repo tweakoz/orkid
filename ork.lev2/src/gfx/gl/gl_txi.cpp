@@ -321,11 +321,6 @@ bool GlTextureInterface::destroyTexture(texture_ptr_t tex) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlTextureInterface::TexManInit(void) {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 PboSet::PboSet(size_t size)
     : _size(size) {
   // printf( "New PboSet size<%zu>\n", size );

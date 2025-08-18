@@ -1,0 +1,579 @@
+///////////////////////////////////////////////////////////////
+// FxConfigs
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default {
+  glsl_version = "150";
+  import "orkshader://stdtools.i2";
+  import "orkshader://ssaotools.i2";
+}
+///////////////////////////////////////////////////////////////
+// Interfaces
+///////////////////////////////////////////////////////////////
+uniform_block ub_vtx_ffx : ublk_std_matrices {
+  vec4 modcolor;
+  float time;
+}
+vertex_interface iface_vdefault : ub_vtx_ffx {
+  inputs {
+    vec4 position : POSITION;
+    vec4 vtxcolor : COLOR0;
+    vec2 uv0 : TEXCOORD0;
+    vec2 uv1 : TEXCOORD1;
+  }
+  outputs {
+    vec4 frg_clr;
+    vec2 frg_uv;
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_interface iface_fdefault {
+  inputs {
+    vec4 frg_clr;
+    vec2 frg_uv;
+  }
+  //
+  outputs { vec4 out_clr; }
+}
+///////////////////////////////////////////////////////////////
+uniform_set ub_frg_ffx {
+  vec4 ModColor;
+  float time;
+  float BlurFactor;
+  int BlurFactorI;
+  float MaskThreshold;
+  int image_width;
+  int image_height;
+  float EffectAmount;
+
+  float Hue;
+  float Saturation;
+  float Value;
+  float Gamma;
+}
+///////////////////////////////////////////////////////////////
+sampler_set samplers_all(descriptor_set 0) {
+  sampler2D MrtMap0;
+  sampler2D MrtMap1;
+  sampler2D MrtMap2;
+  sampler2D MrtMap3;
+  sampler2D AuxMap0;
+  sampler2D AuxMap1;
+  sampler2D NoiseMap;
+}
+///////////////////////////////////////////////////////////////
+fragment_interface iface_fmt : ub_frg_ffx {
+  inputs { vec2 frg_uv; }
+  //
+  outputs { vec4 out_clr; }
+}
+///////////////////////////////////////////////////////////////
+fragment_interface iface_fmt_greyscale {
+  inputs { vec2 frg_uv; }
+  //
+  outputs { float out_value; }
+}
+///////////////////////////////////////////////////////////////
+// StateBlocks
+///////////////////////////////////////////////////////////////
+state_block sb_default_ffx : default {
+  BlendMode = OFF;
+  DepthTest = OFF;
+  CullTest  = OFF;
+}
+///////////////////////////////////////////////////////////////
+state_block sb_lerpblend : sb_default_ffx {
+  BlendMode = ALPHA;
+  CullTest  = OFF;
+}
+///////////////////////////////////////////////////////////////
+state_block sb_additive : sb_default_ffx {
+  BlendMode = ADDITIVE;
+  CullTest  = OFF;
+}
+///////////////////////////////////////////////////////////////
+// shaders
+///////////////////////////////////////////////////////////////
+vertex_shader vs_uitext : iface_vdefault {
+  gl_Position = mvp * position;
+  frg_clr     = vtxcolor;
+  frg_uv      = uv0;
+}
+///////////////////////////////////////////////////////////////
+libblock color_tools {
+  vec3 hsv2rgb(vec3 hsv) {
+
+    vec3 rgb;
+    if (hsv.y == 0.0) {
+      // Grayscale
+      rgb.r = rgb.g = rgb.b = hsv.z;
+    } else {
+      if (1.0 <= hsv.x)
+        hsv.x -= 1.0;
+      hsv.x *= 6.0;
+      float i  = floor(hsv.x);
+      float f  = hsv.x - i;
+      float aa = hsv.z * (1 - hsv.y);
+      float bb = hsv.z * (1 - (hsv.y * f));
+      float cc = hsv.z * (1 - (hsv.y * (1 - f)));
+      if (i < 1) {
+        rgb.r = hsv.z;
+        rgb.g = cc;
+        rgb.b = aa;
+      } else if (i < 2) {
+        rgb.r = bb;
+        rgb.g = hsv.z;
+        rgb.b = aa;
+      } else if (i < 3) {
+        rgb.r = aa;
+        rgb.g = hsv.z;
+        rgb.b = cc;
+      } else if (i < 4) {
+        rgb.r = aa;
+        rgb.g = bb;
+        rgb.b = hsv.z;
+      } else if (i < 5) {
+        rgb.r = cc;
+        rgb.g = aa;
+        rgb.b = hsv.z;
+      } else {
+        rgb.r = hsv.z;
+        rgb.g = aa;
+        rgb.b = bb;
+      }
+    }
+
+    return rgb;
+  }
+
+  vec3 rgb2hsv(vec3 rgb) {
+    vec4 ret = vec4(0.0, 0.0, 0.0, 0.0); // vec4)0;
+    vec3 hsv;
+
+    // RGB 2 HSV
+    float mmax  = max(rgb.r, max(rgb.g, rgb.b));
+    float mmin  = min(rgb.r, min(rgb.g, rgb.b));
+    float delta = mmax - mmin;
+
+    hsv.z = mmax; // v
+    if (mmax != 0.0) {
+      hsv.y = delta / mmax; // s
+    } else {
+      hsv.y = 0.0; // s
+    }
+
+    if (rgb.r == mmax) {
+      hsv.x = (rgb.g - rgb.b) / delta; // h
+    } else if (rgb.g == mmax) {
+      hsv.x = 2 + (rgb.b - rgb.r) / delta; // h
+    } else {
+      hsv.x = 4 + (rgb.r - rgb.g) / delta; // h
+    }
+    hsv.x /= 6.0;
+    if (hsv.x < 0)
+      hsv.x += 1.0;
+
+    // hsv.x += fShift;                                // F'Š•â³
+    // if (1.0 <= hsv.x) hsv.x -= 1.0;
+
+    return hsv;
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////
+
+  vec3 quantize(vec3 rgbin, float fnumsteps) {
+    float i = 1.0 / fnumsteps;
+    float r = round(rgbin.r * fnumsteps) * i;
+    float g = round(rgbin.g * fnumsteps) * i;
+    float b = round(rgbin.b * fnumsteps) * i;
+    return vec3(r, g, b);
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////
+
+  vec3 quantizeHSV(vec3 hsvin, float fnumsteps) {
+    float i = 1.0 / fnumsteps;
+    float h = round(hsvin.x * fnumsteps * 3.0) * (i / 3.0);
+    float s = round(hsvin.y * fnumsteps) * i;
+    float v = round(hsvin.z * fnumsteps) * i;
+    return vec3(h, s, v);
+  }
+}
+///////////////////////////////////////////////////////////////
+libblock lib_cmn_funs {
+  float fgr2(float fin) { return 0.0; }
+  float fgr3(float fin) { return 1.0; }
+
+  vec4 pointsampletex2d(sampler2D s, vec2 uv) {
+    ivec2 ts = textureSize(s, 0);
+    vec2 fts = vec2(float(ts.x) * uv.x, float(ts.y) * uv.y);
+    ts.x     = int(fts.x);
+    ts.y     = int(fts.y);
+    vec4 r   = texelFetch(s, ts, 0);
+    return r;
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_uitext : iface_fmt : samplers_all {
+  vec4 texc = texture(MrtMap0, frg_uv);
+  if (texc.r == 0.0)
+    discard;
+  out_clr = vec4(texc.xyz * ModColor.xyz, texc.r);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_uitextured : iface_fmt : samplers_all {
+  vec4 texc = texture(MrtMap0, frg_uv);
+  out_clr   = vec4(texc.xyz, texc.w);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_standard : iface_fmt : samplers_all {
+  vec4 texc = texture(MrtMap0, frg_uv);
+  out_clr   = vec4(texc.xyz, texc.w);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_maskbright : iface_fmt : lib_cmn_funs : samplers_all {
+  vec3 texc = texture(MrtMap0, frg_uv).xyz;
+  if(texc.x>MaskThreshold || texc.x>MaskThreshold || texc.x>MaskThreshold){
+
+  }
+  else{
+    texc = vec3(0,0,0);
+  }
+  out_clr = vec4(texc,1);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_blurx : iface_fmt : lib_cmn_funs : samplers_all {
+  float stepval = (1.0 / image_width);
+  vec3 PixOut   = vec3(0,0,0);
+
+  for (int i = -BlurFactorI; i <=BlurFactorI; i++) {
+    vec2 UvOffset = vec2(stepval*i, 0.0);
+    vec3 inpix = texture(MrtMap0, frg_uv + UvOffset).xyz;
+    float scale =  (BlurFactorI+1) - abs(i); 
+    scale = scale / BlurFactorI;
+    scale = pow(scale,0.5);
+    PixOut += inpix * scale;
+  }
+  PixOut *= BlurFactor;
+  out_clr = vec4(PixOut,1);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_blury : iface_fmt : lib_cmn_funs : samplers_all {
+  float stepval = (1.0 / image_height);
+  vec3 PixOut   = vec3(0,0,0);
+
+  for (int i = -BlurFactorI; i <=BlurFactorI; i++) {
+    vec2 UvOffset = vec2(0.0,stepval*i);
+    vec3 inpix = texture(MrtMap0, frg_uv + UvOffset).xyz;
+    float scale =  (BlurFactorI+1) - abs(i); 
+    scale = scale / BlurFactorI;
+    scale = pow(scale,0.5);
+    PixOut += inpix * scale;
+  }
+  PixOut *= BlurFactor;
+  out_clr = vec4(PixOut,1);
+
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_hdr_join : iface_fmt : samplers_all {
+  vec4 glow = texture(MrtMap0, frg_uv);
+  vec4 base = texture(MrtMap1, frg_uv);
+  //vec3 full = mix(base.xyz, glow.xyz, EffectAmount).xyz;
+  vec3 full = base.xyz+glow.xyz*EffectAmount;
+  out_clr   = vec4(full.xyz, 1.0);
+  //out_clr = vec4(glow.xyz,1);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_hsvg : iface_fmt : color_tools : samplers_all {
+  vec4 inprgb = texture(MrtMap0, frg_uv);
+  vec3 hsv   = rgb2hsv(inprgb.xyz);
+  hsv.x      = mod(hsv.x + Hue + 1.0, 1.0);
+  hsv.y      = clamp(hsv.y * Saturation,0,1);
+  hsv.z      = clamp(hsv.z * Value,0,1);
+  vec3 rgb   = hsv2rgb(hsv);
+  float inv_gamma = 1.0/Gamma;
+  float r = pow(rgb.r, inv_gamma);
+  float g = pow(rgb.g, inv_gamma);
+  float b = pow(rgb.b, inv_gamma);
+  out_clr   = vec4(r,g,b, 1.0);
+}
+///////////////////////////////////////////////////////////////
+sampler_set sset_frg_ssao_impl(descriptor_set 0) {
+  sampler2D MapDepth;
+  sampler2D MapLinearDepth;
+  sampler2D SSAOPREV;
+}
+///////////////////////////////////////////////////////////////
+uniform_set uset_frg_ssao_impl {
+  vec2 texelSize;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_ssao_prepass //
+  : iface_fmt_greyscale //
+  : ublk_std_matrices
+  : uset_std_viewport
+  : uset_frg_ssao_impl //
+  : lib_ssao
+  : sset_frg_ssao_impl { 
+  vec2 uv = gl_FragCoord.xy*InvViewportSize;
+  float cur_ssao = ssao_nonlinear(uv);
+  float prv_ssao = texture(SSAOPREV,uv).r;
+  out_value = mix(prv_ssao,cur_ssao,SSAOFeedback); // Strong temporal filtering to reduce noise
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_linearize_depth //
+  : iface_fmt_greyscale //
+  : ublk_std_matrices
+  : uset_std_viewport
+  : uset_frg_ssao_impl //
+  : uset_std_depth
+  : lib_ssao
+  : sset_frg_ssao_impl 
+  : ublk_std_depth { 
+  vec2 uv = gl_FragCoord.xy*InvViewportSize;
+  float depthtex = texture(MapDepth,uv).r;
+  float ndc = depthtex * 2.0 - 1.0; // Convert to NDC space [-1, 1]
+  float near = Zndc2eye.x;
+  float far = Zndc2eye.y;
+  float linz = (1.0*near*far) / (far+near-ndc*(far-near));
+  out_value   = 0.0;//linz; // linearize
+}
+///////////////////////////////////////////////////////////////
+sampler_set sset_ghost(descriptor_set 0) {
+  sampler2D MrtMap0; // Base color map
+  sampler2D AuxMap1; // Glow map
+}
+uniform_set ub_ghost {
+  float EffectAmount;
+}
+fragment_interface iface_hdr_join_ghost : ub_ghost : sset_ghost {
+  outputs { vec4 out_clr; }
+  //
+  inputs { vec2 frg_uv; }
+}
+fragment_shader ps_hdr_join_ghost 
+  : iface_fmt 
+  : lib_cmn_funs 
+  : samplers_all {
+  vec3 base  = pointsampletex2d(MrtMap0, frg_uv.xy).xyz;
+  vec3 glow  = pointsampletex2d(AuxMap1, frg_uv.xy).xyz;
+  float diff = distance(glow, base);
+  float dist = pow(clamp(diff, 0.0, 1.0), 1.2);
+
+  vec3 black = vec3(0.0, 0.0, 0.0);
+  vec3 blue  = vec3(0.0, 0.0, 1.0);
+  vec3 white = vec3(1.0, 1.0, 1.0);
+
+  vec3 outc3 = mix(black, blue, dist);
+  outc3      = mix(outc3, white, dist);
+
+  outc3 = mix(base, outc3, EffectAmount);
+
+  out_clr = vec4(outc3, 1.0);
+}
+////////////////////////////////////////////////////////////////////////////////
+
+fragment_shader ps_comic 
+  : iface_fmt 
+  : color_tools
+  : samplers_all {
+  const float kdx          = 1.007 / 1024.0;
+  const float kdy          = 1.007 / 768.0;
+  const float kf           = 0.01;
+  const float knumsteps    = 6.0;
+  const float knumstepsHSV = 5.0;
+  float fphase             = 6.283 * kf * time;
+
+  /////////////////////////////////////////////////////////
+  const float kaadim = 2.0;
+  const float ksc    = (1.0 / (kaadim * kaadim)); // 9 16 25 49
+  const float kfb    = -1.5;
+  const float kfe    = -kfb;
+  const float kfed   = (kfe - kfb) / kaadim;
+  /////////////////////////////////////////////////////////
+  vec2 Uv0    = vec2(frg_uv.x, frg_uv.y);
+  vec3 PixOri = texture(MrtMap0, Uv0).rgb;
+  vec3 HsvOri = rgb2hsv(PixOri);
+  vec3 PixCtr = quantize(PixOri, knumsteps);
+  vec3 HsvCtr = HsvOri;
+  float fwt   = 0.0;
+  float dist  = 0.0;
+  /////////////////////////////////////////////////////////
+  for (float fy = 0.0; fy < kaadim; fy += 1.0) {
+    float fya = kfb + (fy * kfed);
+
+    for (float fx = 0.0; fx < kaadim; fx += 1.0) {
+      float fxa = kfb + (fx * kfed);
+      fwt += 1.0;
+      vec2 Uv      = Uv0 + vec2(kdx * fxa, kdy * fya);
+      vec3 ThisRgb = texture(MrtMap0, Uv).rgb;
+      vec3 ThisPix = quantize(ThisRgb, knumsteps);
+      dist += distance(ThisPix, PixCtr);
+    }
+  }
+  /////////////////////////////////////////////////////////
+  float idist = 1.0 - clamp(dist, 0.0, 1.0);
+  idist       = clamp(pow(idist, 2.0), 0.0, 1.0);
+  /////////////////////////////////////////////////////////
+  vec3 HsvOut = HsvOri;
+  HsvOut.z    = HsvOri.z * idist;
+  /////////////////////////////////////////////////////////
+  HsvOut = quantizeHSV(HsvOut, knumstepsHSV);
+  HsvOut = mix(HsvOri, HsvOut, EffectAmount);
+  /////////////////////////////////////////////////////////
+  out_clr = vec4(hsv2rgb(HsvOut), 1.0);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_fbout : iface_fmt : samplers_all { out_clr = texture(MrtMap0, frg_uv); }
+///////////////////////////////////////////////////////////////
+fragment_shader ps_fbin : iface_fmt : samplers_all { out_clr = texture(MrtMap0, frg_uv) * 0.1; }
+///////////////////////////////////////////////////////////////
+vertex_shader vs_vtxcolor : iface_vdefault {
+  gl_Position = mvp * position;
+  frg_clr     = vtxcolor;
+  frg_uv      = uv0;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_fragclr : iface_fdefault {
+  out_clr = frg_clr;
+  // out_clr = vec4(1.0,0.0,1.0,1.0);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_modclr : iface_fmt { out_clr = ModColor; }
+///////////////////////////////////////////////////////////////
+technique frameeffect_standard {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_standard;
+    state_block     = sb_default_ffx;
+  }
+}
+technique frameeffect_fbout {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_fbout;
+    state_block     = sb_default_ffx;
+  }
+}
+technique frameeffect_fbin {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_fbin;
+    state_block     = sb_default_ffx;
+  }
+}
+technique framefx_glow_maskbright {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_maskbright;
+    state_block     = sb_default_ffx;
+  }
+}
+technique framefx_glow_blurx {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_blurx;
+    state_block     = sb_default_ffx;
+  }
+}
+technique framefx_glow_blury {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_blury;
+    state_block     = sb_default_ffx;
+  }
+}
+technique frameeffect_radialblur {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_uitextured;
+    state_block     = sb_default_ffx;
+  }
+}
+technique frameeffect_comic {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_comic;
+    state_block     = sb_default_ffx;
+  }
+}
+technique framefx_glow_join {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_hdr_join;
+    state_block     = sb_default_ffx;
+  }
+}
+technique framefx_hsvg {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_hsvg;
+    state_block     = sb_default_ffx;
+  }
+}
+technique framefx_ssao_prepass {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_ssao_prepass;
+    state_block     = sb_default_ffx;
+  }
+}
+technique framefx_linearize_depth {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_linearize_depth;
+    state_block     = sb_default_ffx;
+  }
+}
+technique frameeffect_ghost_join {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_hdr_join_ghost;
+    state_block     = sb_default_ffx;
+  }
+}
+technique frameeffect_afterlife_join {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_uitextured;
+    state_block     = sb_default_ffx;
+  }
+}
+technique frameeffect_dof_join {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_uitextured;
+    state_block     = sb_default_ffx;
+  }
+}
+technique frameeffect_debugdepth {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_uitextured;
+    state_block     = sb_default_ffx;
+  }
+}
+technique frameeffect_debugnormals {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_uitextured;
+    state_block     = sb_default_ffx;
+  }
+}
+

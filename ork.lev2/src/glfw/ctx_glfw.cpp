@@ -12,20 +12,20 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/camera/uicam.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
-#include <ork/lev2/glfw/ctx_glfw.h>
-#include <GLFW/glfw3native.h>
 #include <ork/lev2/ui/viewport.h>
 #include <ork/lev2/ui/context.h>
-#include <ork/lev2/imgui/imgui_impl_glfw.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/kernel/msgrouter.inl>
 #include <ork/math/basicfilters.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/util/logger.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include "../gfx/vulkan/vulkan_ctx.h"
+#include "../gfx/vulkan/headers/vulkan_ctx.h"
 ///////////////////////////////////////////////////////////////////////////////
 #if defined(ENABLE_GLFW)
+#include <ork/lev2/glfw/ctx_glfw.h>
+#include <GLFW/glfw3native.h>
+#include <ork/lev2/imgui/imgui_impl_glfw.h>
 namespace ork::lev2 {
 int _g_post_swap_wait_time = 0;
 extern int GLFW_MODIFIER_OSCTRL;
@@ -35,6 +35,7 @@ extern appinitdata_ptr_t _ginitdata;
 static logchannel_ptr_t logchan_glfw = logger()->configureChannel("GLFW", fvec3(0.8, 0.2, 0.6), true);
 void setAlwaysOnTop(GLFWwindow* window);
 void recomputeHIDPI(GLFWwindow* window);
+void windowToFront(GLFWwindow *window);
 ///////////////////////////////////////////////////////////////////////////////
 static CtxGLFW* _gctx = nullptr;
 ///////////////////////////////////////////////////////////////////////////////
@@ -565,6 +566,9 @@ void CtxGLFW::Show() {
     setAlwaysOnTop(_glfwWindow);
   }
 
+  #ifdef __APPLE__
+    windowToFront(_glfwWindow);
+#endif
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::Hide() {
@@ -843,7 +847,8 @@ GLFWwindow* CtxGLFW::_apiInitGL() {
 
 GLFWwindow* CtxGLFW::_apiInitVK() {
   OrkAssert(glfwVulkanSupported());
-  OrkAssert(vulkan::_GVI);
+  //OrkAssert(vulkan::_GVI);
+  //OrkAssert(vulkan::_GVI->_instance);
   auto ctx_vars = std::make_shared<varmap::VarMap>();
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   GLFWwindow* offscreen_window = glfwCreateWindow(
@@ -853,6 +858,9 @@ GLFWwindow* CtxGLFW::_apiInitVK() {
       nullptr, //
       nullptr);
   logchan_glfw->log("VK: offscreen_window<%p>", offscreen_window);
+  glfwWindowHint(GLFW_FOCUSED, GLFW_TRUE);
+  glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
+  glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
   return offscreen_window;
 }
 
@@ -864,6 +872,8 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
     glfwSetErrorCallback(error_callback);
 
     _gctx = new CtxGLFW(nullptr);
+
+    printf( "<<<glfwInit>>> HERE!!!\n");
 
     bool ok = glfwInit();
     assert(ok);
@@ -1188,7 +1198,7 @@ struct PopupImpl {
     glfwShowWindow(_glfwPopupWindow);
 
     _rtgroup             = std::make_shared<lev2::RtGroup>(_parent_context, _w, _h);
-    _rtgroup->_pseudoRTG = true;
+    _rtgroup->_usage = "popup"_crcu;
     _rtgroup->mNumMrts   = 1;
     _rtgroup->_autoclear = false;
 

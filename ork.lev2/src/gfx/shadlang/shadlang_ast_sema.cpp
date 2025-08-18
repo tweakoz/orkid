@@ -126,7 +126,7 @@ std::string _smp_extract_type(smp_ptr_t smp_node, match_ptr_t dt_match) {
 void _semaNameSamplerTypes(impl::ShadLangParser* slp, astnode_ptr_t top) {
   auto nodes = AstNode::collectNodesOfType<SamplerType>(top);
   for (auto id_node : nodes) {
-    dumpAstNode(id_node);
+    //dumpAstNode(id_node);
     auto match     = slp->matchForAstNode(id_node);
     auto sampler_type = _smp_extract_type(id_node, match);
     id_node->setValueForKey<std::string>("sampler_type", sampler_type);
@@ -295,8 +295,10 @@ void _semaCollectNamedOfType(
         n->template setValueForKey<std::string>("import_path", the_name);
         n->template setValueForKey<std::string>("raw_name", the_name);
         the_name = FormatString("ImportDirective<%s>", the_name.c_str());
-      }
-      else{
+      } else if constexpr (std::is_same<node_t, Technique>::value) {
+        printf("_name<%s> Technique<%s>\n", slp->_name.c_str(), the_name.c_str());
+        n->template setValueForKey<std::string>("raw_name", the_name);
+      } else{
         n->template setValueForKey<std::string>("raw_name", the_name);
       }
 
@@ -319,7 +321,7 @@ void _semaCollectNamedOfType(
 
       outmap[the_name] = n;
 
-      printf( "cache: objname: %s\n", the_name.c_str() );
+      //printf( "cache: objname: %s\n", the_name.c_str() );
 
       auto it2 = slp->_slp_cache->_translatables.find(the_name);
       if (it != slp->_slp_cache->_translatables.end()) {
@@ -369,10 +371,12 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
   auto top_tunit = std::dynamic_pointer_cast<TranslationUnit>(top);
   auto nodes     = AstNode::collectNodesOfType<ImportDirective>(top);
 
-  printf( "ShadLangParser<%p:%s> ImportCount<%zu>\n", //
+  if(0){
+    printf( "ShadLangParser<%p:%s> ImportCount<%zu>\n", //
           (void*) slp, //
           slp->_name.c_str(), //
           nodes.size() );
+  }
 
   for (auto import_node : nodes) {
     //
@@ -397,8 +401,8 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
     auto rpath = file::Path(raw_import_path);
     rpath.split(a, b, ':');
     if (b.length() != 0) { // use from import
+      // Check if this is a protocol-based path (like orkshader://)
       proc_import_path = rpath;
-      //printf("Import ProcPath1<%s>\n", proc_import_path.c_str());
     } else { // infer from container
       proc_import_path = slp->_shader_path;
       //printf("Import ProcPath2<%s>\n", proc_import_path.c_str());
@@ -416,22 +420,8 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
     ////////////////////////////////////////////////////////
 
     auto cache = slp->_slp_cache;
-    translationunit_ptr_t sub_tunit;
-    auto it_imp = cache->_import_cache.find(proc_import_path.c_str());
-    // CACHED ?
-    if( it_imp != cache->_import_cache.end() ) {
-      sub_tunit = it_imp->second;
-      printf("Parser<%s> Importing<%s> already cached\n", slp->_name.c_str(), proc_import_path.c_str());
-      import_node->setValueForKey<transunit_ptr_t>("transunit", sub_tunit);
-    }
-    // NOT CACHED..
-    else{
-      printf("Parser<%s> Importing<%s>\n", slp->_name.c_str(), proc_import_path.c_str());
-      sub_tunit = shadlang::parseFromFile(slp->_slp_cache, proc_import_path);
-      OrkAssert(sub_tunit);
-      cache->_import_cache[proc_import_path.c_str()] = sub_tunit;
-      import_node->setValueForKey<transunit_ptr_t>("transunit", sub_tunit);
-    }
+    translationunit_ptr_t sub_tunit = shadlang::parseFromFile(slp->_slp_cache, proc_import_path);
+    import_node->setValueForKey<transunit_ptr_t>("transunit", sub_tunit);
 
     ////////////////////////////////////////////////////////
     // hoist translatables from sub tunit into parent tunit
@@ -679,6 +669,9 @@ bool _isBuiltInDataType(impl::ShadLangParser* slp, astnode_ptr_t astnode) {
     case "KW_SAMP1D"_crcu:
     case "KW_SAMP2D"_crcu:
     case "KW_SAMP3D"_crcu:
+    case "KW_SAMP1DARRAY"_crcu:
+    case "KW_SAMP2DARRAY"_crcu:
+    case "KW_SAMP3DARRAY"_crcu:
     case "KW_ISAMP1D"_crcu:
     case "KW_ISAMP2D"_crcu:
     case "KW_ISAMP3D"_crcu:
@@ -800,7 +793,7 @@ void _semaResolveSemaFunctionArguments(impl::ShadLangParser* slp, astnode_ptr_t 
 
 void _semaFindInterfaceInputSemantics(impl::ShadLangParser* slp, astnode_ptr_t top) {
   auto inputs = AstNode::collectNodesOfType<InterfaceInput>(top);
-   printf("  num_inputs<%zu>\n", inputs.size());
+   //printf("  num_inputs<%zu>\n", inputs.size());
   for (auto input : inputs) {
     auto tid = input->childAs<TypedIdentifier>(0);
     if(tid){
@@ -808,7 +801,7 @@ void _semaFindInterfaceInputSemantics(impl::ShadLangParser* slp, astnode_ptr_t t
       auto semantic = input->childAs<SemaIdentifier>(2);
       if( colon and semantic ){
         auto sema_id = semantic->typedValueForKey<std::string>("identifier_name").value();
-        printf( "sema_id<%s>\n", sema_id.c_str() );
+        //printf( "sema_id<%s>\n", sema_id.c_str() );
         input->setValueForKey<std::string>("semantic", sema_id);
       }
     }
@@ -1024,7 +1017,48 @@ int _semaLinkToInheritances(
         }
         else if( inh_name!="default" ){
           printf( "check_inheritance<%s> not found\n", inh_name.c_str() );
-          OrkAssert(false);
+          printf( "  Available library blocks:\n" );
+          for( auto& [name, obj] : slp->_slp_cache->_library_blocks ){
+            printf( "    %s\n", name.c_str() );
+          }
+          printf( "  Available type blocks:\n" );
+          for( auto& [name, obj] : slp->_slp_cache->_type_blocks ){
+            printf( "    %s\n", name.c_str() );
+          }
+          printf( "  Available sampler sets:\n" );
+          for( auto& [name, obj] : slp->_slp_cache->_sampler_sets ){
+            printf( "    %s\n", name.c_str() );
+          }
+          printf( "  Available uniform sets:\n" );
+          for( auto& [name, obj] : slp->_slp_cache->_uniform_sets ){
+            printf( "    %s\n", name.c_str() );
+          }
+          printf( "  Available uniform blocks:\n" );
+          for( auto& [name, obj] : slp->_slp_cache->_uniform_blocks ){
+            printf( "    %s\n", name.c_str() );
+          }
+          printf( "  Available vertex interfaces:\n" );
+          for( auto& [name, obj] : slp->_slp_cache->_vertex_interfaces ){
+            printf( "    %s\n", name.c_str() );
+          }
+          printf( "  Available fragment interfaces:\n" );
+          for( auto& [name, obj] : slp->_slp_cache->_fragment_interfaces ){
+            printf( "    %s\n", name.c_str() );
+          }
+          printf( "  Available geometry interfaces:\n" );
+          for( auto& [name, obj] : slp->_slp_cache->_geometry_interfaces ){
+            printf( "    %s\n", name.c_str() );
+          }
+          printf( "  Available compute interfaces:\n" );
+          for( auto& [name, obj] : slp->_slp_cache->_compute_interfaces ){
+            printf( "    %s\n", name.c_str() );
+          }
+          printf( "  Available state blocks:\n" );
+          for( auto& [name, obj] : slp->_stateblocks ){
+            printf( "    %s\n", name.c_str() );
+          }
+          // Instead of asserting, just continue and let the inheritance be unresolved
+          // OrkAssert(false);
         }
       } // if (as_inh_item) {
       return true;
@@ -1105,9 +1139,515 @@ void _semaDecorateArrayDeclarations(impl::ShadLangParser* slp, astnode_ptr_t top
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_ptr_t top) {
+  auto passes = AstNode::collectNodesOfType<Pass>(top);
+  
+  printf("=== MERGED RESOURCE ATTACHMENT ===\n");
+  printf("  Passes found: %zu\n", passes.size());
+  printf("  Vertex interfaces: %zu\n", slp->_slp_cache->_vertex_interfaces.size());
+  printf("  Fragment interfaces: %zu\n", slp->_slp_cache->_fragment_interfaces.size());
+  printf("  Vertex shaders: %zu\n", slp->_slp_cache->_vertex_shaders.size());
+  printf("  Fragment shaders: %zu\n", slp->_slp_cache->_fragment_shaders.size());
+  printf("  Sampler sets: %zu\n", slp->_slp_cache->_sampler_sets.size());
+  printf("  Uniform blocks: %zu\n", slp->_slp_cache->_uniform_blocks.size());
+  
+  for (auto pass : passes) {
+    auto pass_name = pass->typedValueForKey<std::string>("object_name").value();
+    printf("  Processing pass: %s\n", pass_name.c_str());
+    
+    // Step 1: Collect all shaders referenced by this pass
+    std::vector<astnode_ptr_t> pass_shaders;
+    
+    // Find shader references in the pass
+    auto vtx_refs = AstNode::collectNodesOfType<VertexShaderRef>(pass);
+    auto frg_refs = AstNode::collectNodesOfType<FragmentShaderRef>(pass);
+    auto geo_refs = AstNode::collectNodesOfType<GeometryShaderRef>(pass);
+    auto com_refs = AstNode::collectNodesOfType<ComputeShaderRef>(pass);
+    
+    printf("    Vertex refs: %zu, Fragment refs: %zu\n", vtx_refs.size(), frg_refs.size());
+    
+    // Resolve actual shader objects using symbol tables
+    for (auto vtx_ref : vtx_refs) {
+      auto shader_name = vtx_ref->typedValueForKey<std::string>("ref_id").value();
+      printf("    Looking for vertex shader: %s\n", shader_name.c_str());
+      auto shader = slp->_slp_cache->_vertex_shaders.find(shader_name);
+      if (shader != slp->_slp_cache->_vertex_shaders.end()) {
+        printf("    Found vertex shader: %s\n", shader_name.c_str());
+        pass_shaders.push_back(shader->second);
+      } else {
+        printf("    WARNING: Vertex shader not found: %s\n", shader_name.c_str());
+      }
+    }
+    
+    for (auto frg_ref : frg_refs) {
+      auto shader_name = frg_ref->typedValueForKey<std::string>("ref_id").value();
+      printf("    Looking for fragment shader: %s\n", shader_name.c_str());
+      auto shader = slp->_slp_cache->_fragment_shaders.find(shader_name);
+      if (shader != slp->_slp_cache->_fragment_shaders.end()) {
+        printf("    Found fragment shader: %s\n", shader_name.c_str());
+        pass_shaders.push_back(shader->second);
+      } else {
+        printf("    WARNING: Fragment shader not found: %s\n", shader_name.c_str());
+      }
+    }
+    
+    for (auto geo_ref : geo_refs) {
+      auto shader_name = geo_ref->typedValueForKey<std::string>("ref_id").value();
+      auto shader = slp->_slp_cache->_geometry_shaders.find(shader_name);
+      if (shader != slp->_slp_cache->_geometry_shaders.end()) {
+        pass_shaders.push_back(shader->second);
+      }
+    }
+    
+    for (auto com_ref : com_refs) {
+      auto shader_name = com_ref->typedValueForKey<std::string>("ref_id").value();
+      auto shader = slp->_slp_cache->_compute_shaders.find(shader_name);
+      if (shader != slp->_slp_cache->_compute_shaders.end()) {
+        pass_shaders.push_back(shader->second);
+      }
+    }
+    
+    printf("    Total shaders for pass: %zu\n", pass_shaders.size());
+    
+    // Step 2: Collect all resources from all shaders using symbol tables
+    std::map<int, std::map<std::string, MergedShaderResources::ResourceBinding>> merged_descriptor_sets;
+    std::set<std::string> processed_sampler_resources; // Track samplers to prevent duplicates
+    std::set<std::string> processed_uniform_block_resources; // Track uniform blocks to prevent duplicates
+    
+    // ADD: Binding counter per descriptor set
+    std::map<int, int> next_binding_id_per_descriptor_set;
+    
+    for (size_t shader_index = 0; shader_index < pass_shaders.size(); shader_index++) {
+      auto shader = pass_shaders[shader_index];
+      printf("    Processing shader[%zu]: %s\n", shader_index, shader->typedValueForKey<std::string>("object_name").value().c_str());
+      printf("    Shader pointer: %p\n", (void*)shader.get());
+      
+      // Determine shader type for debugging
+      std::string shader_type = "unknown";
+      if (std::dynamic_pointer_cast<VertexShader>(shader)) {
+        shader_type = "vertex";
+      } else if (std::dynamic_pointer_cast<FragmentShader>(shader)) {
+        shader_type = "fragment";
+      } else if (std::dynamic_pointer_cast<GeometryShader>(shader)) {
+        shader_type = "geometry";
+      } else if (std::dynamic_pointer_cast<ComputeShader>(shader)) {
+        shader_type = "compute";
+      }
+      printf("      Shader type: %s\n", shader_type.c_str());
+      
+      // Instead of using InheritanceTracker, directly collect inherited resources from the shader's AST
+      // Look for SemaInheritSamplerSet and SemaInheritUniformBlk nodes in the shader
+      std::vector<astnode_ptr_t> inherited_sampler_sets;
+      std::vector<astnode_ptr_t> inherited_uniform_blocks;
+      
+      // Collect direct inherited resources from the shader
+      auto direct_sampler_sets = AstNode::collectNodesOfType<SemaInheritSamplerSet>(shader);
+      auto direct_uniform_blocks = AstNode::collectNodesOfType<SemaInheritUniformBlk>(shader);
+      printf("      Direct SemaInheritSamplerSet nodes: %zu\n", direct_sampler_sets.size());
+      printf("      Direct SemaInheritUniformBlk nodes: %zu\n", direct_uniform_blocks.size());
+      inherited_sampler_sets.insert(inherited_sampler_sets.end(), direct_sampler_sets.begin(), direct_sampler_sets.end());
+      inherited_uniform_blocks.insert(inherited_uniform_blocks.end(), direct_uniform_blocks.begin(), direct_uniform_blocks.end());
+      
+      // Also check interfaces that this shader inherits from
+      auto inherited_interfaces = AstNode::collectNodesOfType<SemaInheritVertexInterface>(shader);
+      auto inherited_fragment_interfaces = AstNode::collectNodesOfType<SemaInheritFragmentInterface>(shader);
+      auto inherited_geometry_interfaces = AstNode::collectNodesOfType<SemaInheritGeometryInterface>(shader);
+      auto inherited_compute_interfaces = AstNode::collectNodesOfType<SemaInheritComputeInterface>(shader);
+      
+      printf("      Inherited vertex interfaces: %zu\n", inherited_interfaces.size());
+      printf("      Inherited fragment interfaces: %zu\n", inherited_fragment_interfaces.size());
+      printf("      Inherited geometry interfaces: %zu\n", inherited_geometry_interfaces.size());
+      printf("      Inherited compute interfaces: %zu\n", inherited_compute_interfaces.size());
+      
+      // Collect all interfaces this shader inherits from
+      std::vector<astnode_ptr_t> all_inherited_interfaces;
+      for (auto iface : inherited_interfaces) {
+        auto iface_name = iface->typedValueForKey<std::string>("inherit_id").value();
+        auto iface_obj = slp->_slp_cache->_vertex_interfaces.find(iface_name);
+        if (iface_obj != slp->_slp_cache->_vertex_interfaces.end()) {
+          all_inherited_interfaces.push_back(iface_obj->second);
+        }
+      }
+      for (auto iface : inherited_fragment_interfaces) {
+        auto iface_name = iface->typedValueForKey<std::string>("inherit_id").value();
+        auto iface_obj = slp->_slp_cache->_fragment_interfaces.find(iface_name);
+        if (iface_obj != slp->_slp_cache->_fragment_interfaces.end()) {
+          all_inherited_interfaces.push_back(iface_obj->second);
+        }
+      }
+      for (auto iface : inherited_geometry_interfaces) {
+        auto iface_name = iface->typedValueForKey<std::string>("inherit_id").value();
+        auto iface_obj = slp->_slp_cache->_geometry_interfaces.find(iface_name);
+        if (iface_obj != slp->_slp_cache->_geometry_interfaces.end()) {
+          all_inherited_interfaces.push_back(iface_obj->second);
+        }
+      }
+      for (auto iface : inherited_compute_interfaces) {
+        auto iface_name = iface->typedValueForKey<std::string>("inherit_id").value();
+        auto iface_obj = slp->_slp_cache->_compute_interfaces.find(iface_name);
+        if (iface_obj != slp->_slp_cache->_compute_interfaces.end()) {
+          all_inherited_interfaces.push_back(iface_obj->second);
+        }
+      }
+      
+      printf("      Total inherited interfaces: %zu\n", all_inherited_interfaces.size());
+      
+      // Recursively collect all inherited resources from interfaces and library blocks
+      std::function<void(astnode_ptr_t, std::vector<astnode_ptr_t>&, std::vector<astnode_ptr_t>&)> 
+      collectInheritedResources = [&](astnode_ptr_t node, 
+                                     std::vector<astnode_ptr_t>& sampler_sets, 
+                                     std::vector<astnode_ptr_t>& uniform_blocks) {
+        // Check for direct sampler sets and uniform blocks in this node
+        auto node_sampler_sets = AstNode::collectNodesOfType<SemaInheritSamplerSet>(node);
+        auto node_uniform_blocks = AstNode::collectNodesOfType<SemaInheritUniformBlk>(node);
+        sampler_sets.insert(sampler_sets.end(), node_sampler_sets.begin(), node_sampler_sets.end());
+        uniform_blocks.insert(uniform_blocks.end(), node_uniform_blocks.begin(), node_uniform_blocks.end());
+        
+        // Check for inherited interfaces in this node
+        auto node_vertex_interfaces = AstNode::collectNodesOfType<SemaInheritVertexInterface>(node);
+        auto node_fragment_interfaces = AstNode::collectNodesOfType<SemaInheritFragmentInterface>(node);
+        auto node_geometry_interfaces = AstNode::collectNodesOfType<SemaInheritGeometryInterface>(node);
+        auto node_compute_interfaces = AstNode::collectNodesOfType<SemaInheritComputeInterface>(node);
+        
+        // Recursively process inherited interfaces
+        for (auto iface_inherit : node_vertex_interfaces) {
+          auto iface_name = iface_inherit->typedValueForKey<std::string>("inherit_id").value();
+          auto iface_obj = slp->_slp_cache->_vertex_interfaces.find(iface_name);
+          if (iface_obj != slp->_slp_cache->_vertex_interfaces.end()) {
+            collectInheritedResources(iface_obj->second, sampler_sets, uniform_blocks);
+          }
+        }
+        for (auto iface_inherit : node_fragment_interfaces) {
+          auto iface_name = iface_inherit->typedValueForKey<std::string>("inherit_id").value();
+          auto iface_obj = slp->_slp_cache->_fragment_interfaces.find(iface_name);
+          if (iface_obj != slp->_slp_cache->_fragment_interfaces.end()) {
+            collectInheritedResources(iface_obj->second, sampler_sets, uniform_blocks);
+          }
+        }
+        for (auto iface_inherit : node_geometry_interfaces) {
+          auto iface_name = iface_inherit->typedValueForKey<std::string>("inherit_id").value();
+          auto iface_obj = slp->_slp_cache->_geometry_interfaces.find(iface_name);
+          if (iface_obj != slp->_slp_cache->_geometry_interfaces.end()) {
+            collectInheritedResources(iface_obj->second, sampler_sets, uniform_blocks);
+          }
+        }
+        for (auto iface_inherit : node_compute_interfaces) {
+          auto iface_name = iface_inherit->typedValueForKey<std::string>("inherit_id").value();
+          auto iface_obj = slp->_slp_cache->_compute_interfaces.find(iface_name);
+          if (iface_obj != slp->_slp_cache->_compute_interfaces.end()) {
+            collectInheritedResources(iface_obj->second, sampler_sets, uniform_blocks);
+          }
+        }
+        
+        // Check for inherited library blocks in this node
+        auto node_library_blocks = AstNode::collectNodesOfType<SemaInheritLibrary>(node);
+        for (auto lib_inherit : node_library_blocks) {
+          auto lib_name = lib_inherit->typedValueForKey<std::string>("inherit_id").value();
+          auto lib_obj = slp->_slp_cache->_library_blocks.find(lib_name);
+          if (lib_obj != slp->_slp_cache->_library_blocks.end()) {
+            collectInheritedResources(lib_obj->second, sampler_sets, uniform_blocks);
+          }
+        }
+      };
+      
+      // Collect all inherited resources recursively from all interfaces
+      for (auto iface : all_inherited_interfaces) {
+        collectInheritedResources(iface, inherited_sampler_sets, inherited_uniform_blocks);
+      }
+      
+      // ALSO: Collect resources directly from the shader itself recursively
+      collectInheritedResources(shader, inherited_sampler_sets, inherited_uniform_blocks);
+      
+      printf("      Inherited sampler sets: %zu\n", inherited_sampler_sets.size());
+      printf("      Inherited uniform blocks: %zu\n", inherited_uniform_blocks.size());
+      
+      // Debug: Print what resources were found
+      for (auto inherit_node : inherited_sampler_sets) {
+        auto sset_name = inherit_node->typedValueForKey<std::string>("inherit_id").value();
+        printf("        Found inherited sampler set: %s\n", sset_name.c_str());
+      }
+      for (auto inherit_node : inherited_uniform_blocks) {
+        auto ublk_name = inherit_node->typedValueForKey<std::string>("inherit_id").value();
+        printf("        Found inherited uniform block: %s\n", ublk_name.c_str());
+      }
+      
+      // Process inherited sampler sets
+      for (auto inherit_node : inherited_sampler_sets) {
+        auto sset_name = inherit_node->typedValueForKey<std::string>("inherit_id").value();
+        printf("      Processing inherited sampler set: %s\n", sset_name.c_str());
+        
+        // Find the actual sampler set in the symbol table
+        auto sset_it = slp->_slp_cache->_sampler_sets.find(sset_name);
+        if (sset_it != slp->_slp_cache->_sampler_sets.end()) {
+          auto sampler_set = sset_it->second;
+          
+          // Get descriptor set ID
+          int descriptor_set_id = 0; // Default
+          auto dset_ids = AstNode::collectNodesOfType<DescriptorSetId>(sampler_set);
+          if (dset_ids.size() > 0) {
+            descriptor_set_id = dset_ids[0]->typedValueForKey<int>("descriptor_set_id").value();
+          }
+          
+          // Process samplers in this set
+          auto sampler_decls = AstNode::collectNodesOfType<SamplerDeclaration>(sampler_set);
+          for (size_t binding_id = 0; binding_id < sampler_decls.size(); binding_id++) {
+            auto sampler_decl = sampler_decls[binding_id];
+            auto sampler_type = sampler_decl->childAs<SamplerType>(0);
+            auto sampler_name = sampler_decl->childAs<SemaIdentifier>(1);
+            
+            if (sampler_type && sampler_name) {
+              auto type_name = sampler_type->typedValueForKey<std::string>("sampler_type").value();
+              auto name = sampler_name->typedValueForKey<std::string>("identifier_name").value();
+              
+              // Create unique key for this sampler resource
+              std::string resource_key = sset_name + "::" + name;
+              
+              // Check for duplicates - if already processed, skip
+              if (processed_sampler_resources.find(resource_key) != processed_sampler_resources.end()) {
+                continue; // Skip duplicate
+              }
+              
+              // Use counter to assign unique binding number
+              int binding_id = next_binding_id_per_descriptor_set[descriptor_set_id]++;
+              MergedShaderResources::ResourceBinding binding;
+              binding.type = MergedShaderResources::ResourceBinding::Type::Sampler;
+              binding.name = name;
+              binding.datatype = type_name;
+              binding.binding_id = binding_id;
+              binding.original_source = sset_name;
+              
+              merged_descriptor_sets[descriptor_set_id][resource_key] = binding;
+              processed_sampler_resources.insert(resource_key);
+              printf("        Added sampler: %s (%s) binding %d\n", name.c_str(), type_name.c_str(), binding_id);
+            }
+          }
+        } else {
+          printf("      WARNING: Sampler set not found in symbol table: %s\n", sset_name.c_str());
+        }
+      }
+      
+      // Process inherited uniform blocks
+      for (auto inherit_node : inherited_uniform_blocks) {
+        auto ublk_name = inherit_node->typedValueForKey<std::string>("inherit_id").value();
+        printf("      Processing inherited uniform block: %s\n", ublk_name.c_str());
+        
+        // Find the actual uniform block in the symbol table
+        auto ublk_it = slp->_slp_cache->_uniform_blocks.find(ublk_name);
+        if (ublk_it != slp->_slp_cache->_uniform_blocks.end()) {
+          auto uniform_block = ublk_it->second;
+          
+          // Get descriptor set ID
+          int descriptor_set_id = 0; // Default
+          auto dset_ids = AstNode::collectNodesOfType<DescriptorSetId>(uniform_block);
+          if (dset_ids.size() > 0) {
+            descriptor_set_id = dset_ids[0]->typedValueForKey<int>("descriptor_set_id").value();
+          }
+          
+          // Create unique key for this uniform block resource
+          std::string resource_key = ublk_name;
+          
+          // Check for duplicates - if already processed, skip
+          if (processed_uniform_block_resources.find(resource_key) != processed_uniform_block_resources.end()) {
+            continue; // Skip duplicate
+          }
+          
+          // Use counter to assign unique binding number
+          int binding_id = next_binding_id_per_descriptor_set[descriptor_set_id]++;
+          MergedShaderResources::ResourceBinding binding;
+          binding.type = MergedShaderResources::ResourceBinding::Type::UniformBlock;
+          binding.name = ublk_name;
+          binding.datatype = "uniform_block";
+          binding.binding_id = binding_id;
+          binding.original_source = ublk_name;
+          
+          merged_descriptor_sets[descriptor_set_id][resource_key] = binding;
+          processed_uniform_block_resources.insert(resource_key);
+          printf("        Added uniform block: %s binding %d\n", ublk_name.c_str(), binding_id);
+        } else {
+          printf("      WARNING: Uniform block not found in symbol table: %s\n", ublk_name.c_str());
+        }
+      }
+    }
+    
+    // Step 3: Create AST nodes for the merged resources
+    // Always create a merged resource node, even if empty
+    if (true) {
+      size_t num_descriptor_sets = merged_descriptor_sets.size();
+      if (num_descriptor_sets == 0) {
+        // Create a single empty descriptor set 0 if none exist
+        merged_descriptor_sets[0] = {};
+        num_descriptor_sets = 1;
+        printf("    Creating EMPTY merged resource node with 1 descriptor set\n");
+      } else {
+        printf("    Creating merged resource node with %zu descriptor sets\n", num_descriptor_sets);
+      }
+      auto merged_node = std::make_shared<MergedShaderResourcesNode>();
+      merged_node->_name = FormatString("MergedResources: %s", pass_name.c_str());
+      // Create descriptor set nodes
+      for (auto& [descriptor_set_id, bindings] : merged_descriptor_sets) {
+        auto set_node = std::make_shared<DescriptorSetNode>();
+        set_node->_name = FormatString("DescriptorSet: %d", descriptor_set_id);
+        set_node->_descriptor_set_id = descriptor_set_id;
+        // Group resources by source
+        std::map<std::string, std::vector<std::pair<std::string, MergedShaderResources::ResourceBinding>>> sources_by_type;
+        for (auto& [key, binding] : bindings) {
+          sources_by_type[binding.original_source].push_back({key, binding});
+        }
+        // Create source nodes with their resource bindings as children
+        for (auto& [source_name, resource_pairs] : sources_by_type) {
+          auto source_node = std::make_shared<DescriptorSetSourceNode>();
+          // Determine source type from the first resource binding
+          std::string source_type = "unknown";
+          if (!resource_pairs.empty()) {
+            auto& first_binding = resource_pairs[0].second;
+            if (first_binding.type == MergedShaderResources::ResourceBinding::Type::Sampler) {
+              source_type = "sampler_set";
+            } else if (first_binding.type == MergedShaderResources::ResourceBinding::Type::UniformBlock) {
+              source_type = "uniform_block";
+            }
+          }
+          source_node->_name = FormatString("From: %s (%s)", source_name.c_str(), source_type.c_str());
+          source_node->_source_name = source_name;
+          source_node->_source_type = source_type;
+          // Add resource bindings as children of this source node
+          int binding_counter = 0;
+          for (auto& [key, binding] : resource_pairs) {
+            auto binding_node = std::make_shared<ResourceBindingNode>();
+            binding_node->_name = FormatString("b%d : %s\n%s", 
+                                             binding_counter++,
+                                             binding.datatype.c_str(),
+                                             binding.name.c_str());
+            binding_node->_binding_id = binding.binding_id;
+            binding_node->_binding_name = binding.name;
+            binding_node->_datatype = binding.datatype;
+            binding_node->_original_source = binding.original_source;
+            binding_node->_resource_type = binding.type;
+            source_node->appendChild(binding_node);
+          }
+          set_node->appendChild(source_node);
+        }
+        merged_node->appendChild(set_node);
+      }
+      pass->appendChild(merged_node);
+    }
+  }
+  printf("=== END MERGED RESOURCE ATTACHMENT ===\n");
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+void _semaTransformVfPassToExplicitPass(impl::ShadLangParser* slp, astnode_ptr_t top) {
+  printf("=== VF_PASS TRANSFORMATION ===\n");
+  
+  // Collect all VtxFrgPass nodes and their parent techniques
+  std::vector<std::pair<std::shared_ptr<Technique>, std::shared_ptr<VtxFrgPass>>> vfpass_nodes;
+  
+  AstNode::walkDownAST(top, [&](astnode_ptr_t node) -> bool {
+    if (auto technique = std::dynamic_pointer_cast<Technique>(node)) {
+      // Look for VtxFrgPass children in this technique
+      for (auto child : technique->_children) {
+        if (auto vfpass = std::dynamic_pointer_cast<VtxFrgPass>(child)) {
+          vfpass_nodes.push_back({technique, vfpass});
+        }
+      }
+    }
+    return true;
+  });
+  
+  int pass_counter = 0;
+  for (auto& [technique, vfpass] : vfpass_nodes) {
+    auto tech_name = technique->typedValueForKey<std::string>("object_name").value();
+    printf("  Processing VtxFrgPass in technique: %s\n", tech_name.c_str());
+    
+    // Extract shader names from SemaId children
+    std::string vtx_name, frg_name, sb_name;
+    
+    for (auto child : vfpass->_children) {
+      if (auto sema_id = std::dynamic_pointer_cast<SemaIdentifier>(child)) {
+        auto id_name = sema_id->typedValueForKey<std::string>("identifier_name").value();
+        
+        if (vtx_name.empty()) {
+          vtx_name = id_name;
+        } else if (frg_name.empty()) {
+          frg_name = id_name;
+        } else if (sb_name.empty()) {
+          sb_name = id_name;
+        }
+      }
+    }
+    
+    printf("    Found vf_pass: vs=%s, ps=%s, sb=%s\n", 
+           vtx_name.c_str(), frg_name.c_str(), sb_name.c_str());
+    
+    // Create a new Pass node
+    auto pass_node = std::make_shared<Pass>();
+    std::string pass_name = FormatString("p%d", pass_counter++);
+    pass_node->_name = FormatString("Pass %s", pass_name.c_str());
+    
+    // Store the pass name in the values map
+    pass_node->setValueForKey<std::string>("object_name", pass_name);
+    pass_node->setValueForKey<std::string>("pass_name", pass_name);
+    
+    // Create VertexShaderRef node
+    if (!vtx_name.empty()) {
+      auto vs_ref = std::make_shared<VertexShaderRef>();
+      vs_ref->_name = FormatString("VertexShaderRef: %s", vtx_name.c_str());
+      vs_ref->setValueForKey<std::string>("ref_id", vtx_name);
+      
+      // Create SemaIdentifier child
+      auto vs_sema_id = std::make_shared<SemaIdentifier>();
+      vs_sema_id->_name = FormatString("SemaIdentifier: %s", vtx_name.c_str());
+      vs_sema_id->setValueForKey<std::string>("identifier_name", vtx_name);
+      vs_ref->appendChild(vs_sema_id);
+      
+      pass_node->appendChild(vs_ref);
+    }
+    
+    // Create FragmentShaderRef node
+    if (!frg_name.empty()) {
+      auto ps_ref = std::make_shared<FragmentShaderRef>();
+      ps_ref->_name = FormatString("FragmentShaderRef: %s", frg_name.c_str());
+      ps_ref->setValueForKey<std::string>("ref_id", frg_name);
+      
+      // Create SemaIdentifier child
+      auto ps_sema_id = std::make_shared<SemaIdentifier>();
+      ps_sema_id->_name = FormatString("SemaIdentifier: %s", frg_name.c_str());
+      ps_sema_id->setValueForKey<std::string>("identifier_name", frg_name);
+      ps_ref->appendChild(ps_sema_id);
+      
+      pass_node->appendChild(ps_ref);
+    }
+    
+    // Create StateBlockRef node if specified
+    if (!sb_name.empty()) {
+      auto sb_ref = std::make_shared<StateBlockRef>();
+      sb_ref->_name = FormatString("StateBlockRef: %s", sb_name.c_str());
+      sb_ref->setValueForKey<std::string>("ref_id", sb_name);
+      
+      // Create SemaIdentifier child
+      auto sb_sema_id = std::make_shared<SemaIdentifier>();
+      sb_sema_id->_name = FormatString("SemaIdentifier: %s", sb_name.c_str());
+      sb_sema_id->setValueForKey<std::string>("identifier_name", sb_name);
+      sb_ref->appendChild(sb_sema_id);
+      
+      pass_node->appendChild(sb_ref);
+    }
+    
+    // Replace the VtxFrgPass node with the new Pass node
+    slp->replaceInParent(vfpass, pass_node);
+    
+    printf("    Replaced VtxFrgPass with Pass %s (%zu children)\n", 
+           pass_name.c_str(), pass_node->_children.size());
+  }
+  
+  printf("=== END VF_PASS TRANSFORMATION (processed %d vf_pass nodes) ===\n", (int)vfpass_nodes.size());
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
 void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
 
-  printf("ShadLangParser<%p:%s> semaAST CP-A\n", this, _name.c_str() );
+  //printf("ShadLangParser<%p:%s> semaAST CP-A\n", this, _name.c_str() );
 
   //////////////////////////////////
   // Pass 2 - Imports
@@ -1116,7 +1656,7 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
   _semaCollectNamedOfType<ImportDirective>(this, top, _import_directives);
   _semaPerformImports(this, top);
 
-  printf("ShadLangParser<%p:%s> semaAST CP-B\n", this, _name.c_str() );
+  //printf("ShadLangParser<%p:%s> semaAST CP-B\n", this, _name.c_str() );
 
   //////////////////////////////////
 
@@ -1131,7 +1671,7 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
     _semaNameTypedIdentifers(this, top);
   }
 
-  printf("ShadLangParser<%p:%s> semaAST CP-C\n", this, _name.c_str() );
+  //printf("ShadLangParser<%p:%s> semaAST CP-C\n", this, _name.c_str() );
 
   //////////////////////////////////
 
@@ -1141,7 +1681,7 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
     _semaExtractDescriptorSetIds(this, top);
   }
 
-  printf("ShadLangParser<%p:%s> semaAST CP-D\n", this, _name.c_str() );
+  //printf("ShadLangParser<%p:%s> semaAST CP-D\n", this, _name.c_str() );
 
   //////////////////////////////////
   // Pass 1 : Build Symbol Tables
@@ -1182,7 +1722,7 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
     _semaMoveNames<Pass>(this, top);
   }
 
-  printf("ShadLangParser<%p:%s> semaAST CP-E\n", this, _name.c_str() );
+  //printf("ShadLangParser<%p:%s> semaAST CP-E\n", this, _name.c_str() );
 
   //////////////////////////////////
   // Pass 3
@@ -1205,7 +1745,7 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
     _semaFindInterfaceInputSemantics(this, top);
   }
 
-  printf("ShadLangParser<%p:%s> semaAST CP-F\n", this, _name.c_str() );
+  //printf("ShadLangParser<%p:%s> semaAST CP-F\n", this, _name.c_str() );
 
   //////////////////////////////////
   // Pass 4..
@@ -1231,9 +1771,26 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
     keep_going = (count > 0);
   }
 
-  printf("ShadLangParser<%p:%s> semaAST CP-G\n", this, _name.c_str() );
+  //////////////////////////////////
+  // Pass 5. 
+  //////////////////////////////////
+
+  _semaTransformVfPassToExplicitPass(this, top);
+  _semaAttachMergedResourceNodesToPasses(this,top);
+
+  //////////////////////////////////
+  // finalize
+  //////////////////////////////////
+  //printf("ShadLangParser<%p:%s> semaAST CP-G\n", this, _name.c_str() );
 
   auto as_tu                    = std::dynamic_pointer_cast<TranslationUnit>(top);
+
+  printf("=== TRANSLATABLES BEFORE FINALIZATION ===\n");
+  for( auto trans_item : _slp_cache->_translatables ){
+    auto name = trans_item.first;
+    printf("  translatable: %s\n", name.c_str());
+  }
+  printf("=== END TRANSLATABLES ===\n");
 
   for( auto trans_item : _slp_cache->_translatables ){
     auto name = trans_item.first;

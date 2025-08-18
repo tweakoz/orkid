@@ -27,7 +27,7 @@ namespace ork { namespace lev2 {
 struct RtBuffer final {
   enum EMipGen { EMG_NONE, EMG_AUTOCOMPUTE, EMG_USER };
 
-  RtBuffer(const RtGroup* rtg, int slot, EBufferFormat efmt, int iW, int iH, uint64_t usage = 0);
+  RtBuffer(const RtGroup* rtg, int slot, EBufferFormat efmt, int iW, int iH, uint64_t usage = 0, bool with_texture = true);
 
   Texture* texture() const {
     return _texture.get();
@@ -52,12 +52,15 @@ struct RtBuffer final {
   uint64_t _usage = 0;
   std::string _debugName;
   texturearraysliceref_ptr_t _ta_slice;
+  fvec4 _clearColor = fvec4::Black();
+  float _clearDepth = 1.0f;
+  bool _autoclear = true;
 };
 
 struct RtGroup final {
 
   /////////////////////////////////////////
-  RtGroup(Context* partarg, int iW, int iH, MsaaSamples msaa_samples = MsaaSamples::MSAA_1X,bool needs_depth = true);
+  RtGroup(Context* partarg, int iW, int iH, MsaaSamples msaa_samples = MsaaSamples::MSAA_1X,uint64_t usage="user"_crcu);
   ~RtGroup();
   /////////////////////////////////////////
   rtgroup_ptr_t clone() const;
@@ -66,10 +69,11 @@ struct RtGroup final {
   texture_ptr_t texture(int idx) const;
   texture_ptr_t depthTexture() const;
   /////////////////////////////////////////
-  rtbuffer_ptr_t createRenderTarget(EBufferFormat efmt, uint64_t usage = 0);
+  rtbuffer_ptr_t createRenderTarget(EBufferFormat efmt, uint64_t usage = 0, bool with_texture = true);
+  rtbuffer_ptr_t createDepthBuffer(EBufferFormat efmt, bool with_texture = true);
   /////////////////////////////////////////
   void SetMrt(int idx, rtbuffer_ptr_t buffer);
-  int GetNumTargets(void) const;
+  int numImageBuffers(void) const; // number of non-depth image buffers
   void Resize(int iw, int ih);
   void SetSizeDirty(bool bv);
   bool IsSizeDirty() const;
@@ -100,14 +104,14 @@ struct RtGroup final {
   bool _clearMaskColor = true;
   bool _clearMaskDepth = true;
   std::string _name;
-  bool _pseudoRTG = false;
+  uint64_t _usage = "user"_crcu; 
   rendertarget_rtgroup_ptr_t _rendertarget;
   TextureArraySliceRef* _slice = nullptr;
 };
 
 struct RtgSet {
   
-  RtgSet(Context* ctx, MsaaSamples s, std::string name, bool do_rendertarget=false);
+  RtgSet(Context* ctx, MsaaSamples s, std::string name, uint64_t usage = "color"_crcu, bool do_rendertarget=false);
   rtgroup_ptr_t fetch(uint64_t key);
   void addBuffer(std::string name, EBufferFormat fmt);
 
@@ -123,6 +127,7 @@ struct RtgSet {
   bool _do_rendertarget;
   bool _autoclear = true;
   std::string _name;
+  uint64_t _usage = "color"_crcu;
 
 };
 

@@ -1,10 +1,12 @@
-
-libblock lib_mmnoise {
-
+typeblock typ_mmnoise {
   struct TEST{
     vec3 _yo;
     int _what_up;
   };
+
+}
+libblock lib_mmnoise : typ_mmnoise{
+
 
   float octavenoise(sampler3D krntex,vec3 pos,vec3 d, float time, int numoct){
     float val = 0;

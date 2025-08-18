@@ -16,7 +16,7 @@
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-RtBuffer::RtBuffer(const RtGroup* rtg, int slot, EBufferFormat efmt, int iW, int iH, uint64_t usage)
+RtBuffer::RtBuffer(const RtGroup* rtg, int slot, EBufferFormat efmt, int iW, int iH, uint64_t usage, bool with_texture)
     : _rtgroup(rtg)
     , _width(iW)
     , _height(iH)
@@ -26,29 +26,52 @@ RtBuffer::RtBuffer(const RtGroup* rtg, int slot, EBufferFormat efmt, int iW, int
     , _usage(usage) {
 
   switch(usage){
+    case "swapchain"_crcu:
+      _mipgen = EMG_NONE;
+      // no texture
+      break;
     case "texarray"_crcu:
       _mipgen = EMG_AUTOCOMPUTE;
       break;
     default:
-      _texture = std::make_shared<Texture>();
-      _texture->_texFormat = efmt;
-      _texture->_width     = iW;
-      _texture->_height    = iH;
-      _texture->_debugName = FormatString("rtg%d", slot);
       break;
+  }
+
+  if(with_texture){
+    _texture = std::make_shared<Texture>();
+    _texture->_texFormat = efmt;
+    _texture->_width     = iW;
+    _texture->_height    = iH;
+    _texture->_debugName = FormatString("rtg%d", slot);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-RtGroup::RtGroup(Context* ptgt, int iW, int iH, MsaaSamples msaa_samples, bool needs_depth)
+RtGroup::RtGroup(Context* ptgt, int iW, int iH, MsaaSamples msaa_samples, uint64_t usage)
     : _parentTarget(ptgt)
     , mNumMrts(0)
     , miW(iW)
     , miH(iH)
     , _msaa_samples(msaa_samples)
     , mbSizeDirty(true)
-    , _needsDepth(needs_depth) {
+    , _usage(usage) {
+
+
+   switch(usage){
+     case "user"_crcu:
+       _needsDepth = true;
+       _autoclear = true;
+       break;
+     case "swapchain"_crcu:
+       _needsDepth = true;
+       _autoclear = true;
+       break;
+     default:
+       _autoclear = true;
+       _rendertarget = nullptr;
+       break;
+   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -75,7 +98,7 @@ texture_ptr_t RtGroup::depthTexture() const {
   return _depthBuffer ? _depthBuffer->_texture : nullptr;
 }
 
-int RtGroup::GetNumTargets(void) const {
+int RtGroup::numImageBuffers(void) const {
   return mNumMrts;
 }
 void RtGroup::SetSizeDirty(bool bv) {
@@ -86,6 +109,11 @@ bool RtGroup::IsSizeDirty() const {
 }
 Context* RtGroup::ParentTarget() const {
   return _parentTarget;
+}
+/////////////////////////////////////////
+rtbuffer_ptr_t RtGroup::createDepthBuffer(EBufferFormat efmt, bool with_texture) {
+  _depthBuffer = std::make_shared<RtBuffer>(this, -1, efmt, 8, 8, "depth"_crcu, with_texture);
+  return _depthBuffer;
 }
 /////////////////////////////////////////
 int RtGroup::width() const {
@@ -117,11 +145,10 @@ rtgroup_ptr_t RtGroup::clone() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-rtbuffer_ptr_t RtGroup::createRenderTarget(EBufferFormat efmt, uint64_t usage) {
-
+rtbuffer_ptr_t RtGroup::createRenderTarget(EBufferFormat efmt, uint64_t usage, bool with_texture) {
   int islot = mNumMrts++;
-
-  rtbuffer_ptr_t rtb = std::make_shared<RtBuffer>(this, islot, efmt, miW, miH, usage);
+  printf("RtGroup::createRenderTarget usage=0x%zx (%zu) efmt=%d with_texture=%d\n", usage, usage, int(efmt), with_texture);
+  rtbuffer_ptr_t rtb = std::make_shared<RtBuffer>(this, islot, efmt, miW, miH, usage, with_texture);
   OrkAssert(islot < kmaxmrts);
   mMrt[islot] = rtb;
   return rtb;
@@ -161,11 +188,12 @@ void RtGroup::Resize(int iw, int ih) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-RtgSet::RtgSet(Context* ctx, MsaaSamples s, std::string name, bool do_rendertarget)
+RtgSet::RtgSet(Context* ctx, MsaaSamples s, std::string name, uint64_t usage, bool do_rendertarget)
     : _context(ctx)
     , _msaasamples(s)
     , _do_rendertarget(do_rendertarget)
-    , _name(name) {
+    , _name(name)
+    , _usage(usage) {
 }
 
 rtgroup_ptr_t RtgSet::fetch(uint64_t key) {
@@ -175,11 +203,14 @@ rtgroup_ptr_t RtgSet::fetch(uint64_t key) {
     rval = std::make_shared<RtGroup>(_context, 8, 8, _msaasamples);
     rval->_name = _name + FormatString(".%zx", key);
     rval->_autoclear = _autoclear;
+
+    rval->createDepthBuffer(EBufferFormat::Z32F, true);
+
     if(_do_rendertarget){
       rval->_rendertarget = std::make_shared<RtGroupRenderTarget>(rval.get());
     }
     for (auto item : _bufrecs) {
-      auto buffer        = rval->createRenderTarget(item._format);
+      auto buffer        = rval->createRenderTarget(item._format, _usage);
       buffer->_debugName = item._name;
     }
     _rtgs[key] = rval;

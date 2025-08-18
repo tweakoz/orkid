@@ -244,6 +244,7 @@ DECLARE_STD_AST_CLASS(LanguageElement,ArgumentDeclaration);
 
 //
 DECLARE_STD_AST_CLASS(LanguageElement,DescriptorSetId);
+DECLARE_STD_AST_CLASS(LanguageElement,DescriptorSetInhItem);
 DECLARE_STD_AST_CLASS(LanguageElement,DataDeclarationBase);
 DECLARE_STD_AST_CLASS(DataDeclarationBase,DataDeclaration);
 DECLARE_STD_AST_CLASS(DataDeclarationBase,ArrayDeclaration);
@@ -361,6 +362,7 @@ DECLARE_STD_AST_CLASS_WPTR(Translatable,SamplerSet,samplerset_ptr_t);
 DECLARE_STD_AST_CLASS(Translatable,UniformBlk);
 //
 DECLARE_STD_AST_CLASS(AstNode,Pass);
+DECLARE_STD_AST_CLASS(AstNode,VtxFrgPass);
 DECLARE_STD_AST_CLASS(AstNode,FxConfigRef);
 //
 DECLARE_STD_AST_CLASS(Shader,VertexShader);
@@ -371,6 +373,7 @@ DECLARE_STD_AST_CLASS(Shader,ComputeShader);
 DECLARE_STD_AST_CLASS(AstNode,VertexShaderRef);
 DECLARE_STD_AST_CLASS(AstNode,FragmentShaderRef);
 DECLARE_STD_AST_CLASS(AstNode,GeometryShaderRef);
+DECLARE_STD_AST_CLASS(AstNode,ComputeShaderRef);
 DECLARE_STD_AST_CLASS(AstNode,StateBlockRef);
 //
 DECLARE_STD_AST_CLASS(PipelineInterface,VertexInterface);
@@ -382,6 +385,52 @@ DECLARE_STD_AST_CLASS(PipelineInterface,ComputeInterface);
 
 DECLARE_STD_AST_CLASS(SemaExpression,SemaFloatLiteral);
 DECLARE_STD_AST_CLASS(SemaExpression,SemaIntegerLiteral);
+
+///////////////////////////////////////////////////////////
+
+// Merged resource visualization nodes
+DECLARE_STD_AST_CLASS(AstNode,MergedShaderResourcesNode);
+
+struct DescriptorSetNode : public AstNode {
+  static constexpr const char* _static_type_name = "DescriptorSetNode";
+  inline DescriptorSetNode() {
+    _name = _static_type_name;
+    _type_name = _static_type_name;
+  }
+  
+  // Data members for Vulkan DB serialization
+  int _descriptor_set_id = 0;
+};
+using descriptorsetnode_ptr_t = std::shared_ptr<DescriptorSetNode>;
+
+struct DescriptorSetSourceNode : public AstNode {
+  static constexpr const char* _static_type_name = "DescriptorSetSourceNode";
+  inline DescriptorSetSourceNode() {
+    _name = _static_type_name;
+    _type_name = _static_type_name;
+  }
+  
+  // Data members for Vulkan DB serialization
+  std::string _source_name;
+  std::string _source_type; // "sampler_set", "uniform_block", etc.
+};
+using descriptorsetsourcenode_ptr_t = std::shared_ptr<DescriptorSetSourceNode>;
+
+struct ResourceBindingNode : public AstNode {
+  static constexpr const char* _static_type_name = "ResourceBindingNode";
+  inline ResourceBindingNode() {
+    _name = _static_type_name;
+    _type_name = _static_type_name;
+  }
+  
+  // Data members for Vulkan DB serialization
+  int _binding_id = 0;
+  std::string _binding_name; // logical name
+  std::string _datatype;
+  std::string _original_source;
+  MergedShaderResources::ResourceBinding::Type _resource_type = MergedShaderResources::ResourceBinding::Type::Sampler;
+};
+using resourcebindingnode_ptr_t = std::shared_ptr<ResourceBindingNode>;
 
 ///////////////////////////////////////////////////////////
 

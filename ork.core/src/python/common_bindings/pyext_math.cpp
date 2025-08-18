@@ -80,6 +80,9 @@ void init_math(py::module& module_core,python::pb11_typecodec_ptr_t type_codec) 
                 if (key == "DTOR") {
                   value.set<float>(DTOR);
                 }
+                else if (key == "PI2") {
+                  value.set<float>(PI2);
+                }
                 return type_codec->encode(value);
               });
   type_codec->registerStdCodec<mathconstantsproxy_ptr_t>(mathconstantsproxy_type);

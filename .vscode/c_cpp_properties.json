@@ -28,6 +28,7 @@
               "ENABLE_ISPC",
               "ENABLE_OPENVR",
               "ENABLE_VULKAN",
+              "ENABLE_CORE_AUDIO",
               "RENDERDOC_API_ENABLED"
             ],
             "compilerPath": "/usr/bin/clang",

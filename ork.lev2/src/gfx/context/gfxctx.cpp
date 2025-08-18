@@ -43,7 +43,11 @@ ViewportRect Context::mainSurfaceRectAtOrigin() const {
   return ViewportRect(0, 0, mainSurfaceWidth(), mainSurfaceHeight());
 }
 void Context::resizeMainSurface(int iw, int ih) {
-  _doResizeMainSurface(iw, ih);
+  if((iw!=miW) or (ih!=miH)) {
+    _doResizeMainSurface(iw, ih);
+    miW = iw;
+    miH = ih;
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -87,35 +91,25 @@ void Context::triggerFrameDebugCapture() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Context::beginFrame(bool visual) {
-
-  _is_visual_frame = visual;
-
-  makeCurrentContext();
-
-  /////////////////////////////////////
-  // sticky callbacks
-  //  (they stay at the front until they return true)
-  /////////////////////////////////////
-
+void Context::_processBeginFrameBlockers() {
   bool keep_going = true;
   while (keep_going) {
     keep_going = false;
-    auto it    = _stickyCallbacks.begin();
-    if (it != _stickyCallbacks.end()) {
+    auto it    = _beginFrameBlockers.begin();
+    if (it != _beginFrameBlockers.end()) {
       auto cb        = *it;
       bool processed = cb();
       if (processed) {
-        _stickyCallbacks.erase(it);
+        _beginFrameBlockers.erase(it);
         keep_going = true;
       }
     }
   }
+}
 
-  /////////////////////////////////////
-  // loading phase based operations
-  /////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
+void Context::_loadingPhaseOperations() {
   loadingphase_ptr_t phase = nullptr;
   _loadingPhases.atomicOp([&phase](loadingphase_list_t& unlocked) {
     if (unlocked.size()) {
@@ -135,6 +129,22 @@ void Context::beginFrame(bool visual) {
     }
     ops.clear();
   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Context::beginFrame(bool visual) {
+
+  OrkAssert(_currentPhase == 0); 
+  _currentPhase = "INFRAME"_crcu;
+
+  _is_visual_frame = visual;
+
+  makeCurrentContext();
+  _doPreBeginFrame();
+
+  _processBeginFrameBlockers();
+  _loadingPhaseOperations();
 
   /////////////////////////////////////
 
@@ -151,11 +161,10 @@ void Context::beginFrame(bool visual) {
   MTXI()->PushVMatrix(fmtx4::Identity());
   MTXI()->PushPMatrix(fmtx4::Identity());
 
-  mpCurrentObject = 0;
 
   mRenderContextInstData = 0;
-
   _doBeginFrame();
+  FBI()->PushRtGroup(FBI()->_main_rtg.get()); // implicit renderpass api
 
   /////////////////////////////////////
   // call onBeginFrame callbacks
@@ -163,6 +172,8 @@ void Context::beginFrame(bool visual) {
 
   for (auto l : _onBeginFrameCallbacks)
     l();
+
+  _onBeginFrameCallbacks.clear();
 
   /////////////////////////////////////
 
@@ -186,6 +197,9 @@ void Context::beginFrame(bool visual) {
 
 void Context::endFrame(void) {
 
+
+  FBI()->PopRtGroup(); // pop main rtg
+
   for (auto l : _onEndFrameCallbacks)
     l();
 
@@ -207,72 +221,32 @@ void Context::endFrame(void) {
 
   miTargetFrame++;
   _isFrameDebugCapture = false;
+
+  OrkAssert(_currentPhase == "INFRAME"_crcu); 
+  _currentPhase = 0;
+
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-commandbuffer_ptr_t Context::beginRecordCommandBuffer(renderpass_ptr_t rpass,std::string named) {
-  return _beginRecordCommandBuffer(rpass,named);
+secondary_commandbuffer_ptr_t Context::beginRecordCommandBuffer(std::string named, rtgroup_rawptr_t rtg) {
+  return _beginRecordCommandBuffer(named,rtg);
 }
-void Context::endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf) {
+void Context::endRecordCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf) {
   _endRecordCommandBuffer(cmdbuf);
 }
 
-void Context::beginRenderPass(renderpass_ptr_t pass) {
-  _beginRenderPass(pass);
-}
-void Context::endRenderPass(renderpass_ptr_t pass) {
-  _endRenderPass(pass);
-}
-void Context::beginSubPass(rendersubpass_ptr_t pass) {
-  _beginSubPass(pass);
-}
-void Context::endSubPass(rendersubpass_ptr_t pass) {
-  _endSubPass(pass);
-}
-
-RenderSubPass::RenderSubPass() {
-  _commandbuffer = std::make_shared<CommandBuffer>();
-}
-
-void Context::pushCommandBuffer(commandbuffer_ptr_t cmdbuf, rtgroup_ptr_t rtg) {
-  _cmdbuf_stack.push(cmdbuf);
-  _current_cmdbuf = cmdbuf;
-  _doPushCommandBuffer(cmdbuf, rtg);
-}
-commandbuffer_ptr_t Context::popCommandBuffer() {
-  _doPopCommandBuffer();
-  _cmdbuf_stack.pop();
-  commandbuffer_ptr_t next = nullptr;
-  if (not _cmdbuf_stack.empty()) {
-    next = _cmdbuf_stack.top();
-  }
-  _current_cmdbuf = next;
-  return next;
-}
-void Context::enqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf) {
+void Context::enqueueSecondaryCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf) {
   _doEnqueueSecondaryCommandBuffer(cmdbuf);
 }
 
-commandbuffer_ptr_t Context::_beginRecordCommandBuffer(renderpass_ptr_t rpass, std::string named) {
+secondary_commandbuffer_ptr_t Context::_beginRecordCommandBuffer(std::string named,rtgroup_rawptr_t rtg) {
   return nullptr;
 }
-void Context::_endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf) {
-}
-void Context::_beginRenderPass(renderpass_ptr_t) {
-}
-void Context::_endRenderPass(renderpass_ptr_t) {
-}
-void Context::_beginSubPass(rendersubpass_ptr_t) {
-}
-void Context::_endSubPass(rendersubpass_ptr_t) {
+void Context::_endRecordCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf) {
 }
 
-void Context::_doPushCommandBuffer(commandbuffer_ptr_t cmdbuf, rtgroup_ptr_t rtg) {
-}
-void Context::_doPopCommandBuffer() {
-}
-void Context::_doEnqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf) {
+void Context::_doEnqueueSecondaryCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf) {
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -293,6 +267,9 @@ Context::Context()
   RCFD->pushCompositor(_gimpl);
   _defaultrcfd = RCFD;
   pushRenderContextFrameData(RCFD);
+
+    mpCurrentObject = nullptr;
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -319,10 +296,11 @@ void Context::endLoad(load_token_t ploadtok) {
   _doEndLoad(ploadtok);
 }
 
-DebugGroup::DebugGroup(Context* ctx) : _context(ctx) {
+DebugGroup::DebugGroup(Context* ctx)
+    : _context(ctx) {
 }
-DebugGroup::~DebugGroup(){
-  if(_context){
+DebugGroup::~DebugGroup() {
+  if (_context) {
     _context->debugPopGroup();
   }
 }
@@ -334,11 +312,9 @@ DebugGroup Context::debugPushGroupAutoRelease(const std::string str) {
 void Context::debugPushGroup(const std::string str) {
   debugPushGroup(str, fvec4::Red());
 }
-void Context::debugMarker(const std::string str){
+void Context::debugMarker(const std::string str) {
   debugMarker(str, fvec4::Red());
 }
-
-
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

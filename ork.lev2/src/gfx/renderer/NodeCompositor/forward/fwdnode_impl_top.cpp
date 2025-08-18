@@ -52,7 +52,7 @@ void ForwardPbrNodeImpl::init(lev2::Context* context, int iw, int ih) {
     }
 
     auto e_msaa = intToMsaaEnum(_ginitdata->_msaa_samples);
-    _rtgs_primary  = std::make_shared<RtgSet>(context, e_msaa, "rtgs-main");
+    _rtgs_primary  = std::make_shared<RtgSet>(context, e_msaa, "rtgs-main", "color"_crcu);
     _rtgs_primary->addBuffer("ForwardRt0", efmt);
 
     auto rtb1 = _rtg_ambocc_accum->createRenderTarget(EBufferFormat::R32F);
@@ -70,6 +70,12 @@ void ForwardPbrNodeImpl::init(lev2::Context* context, int iw, int ih) {
     _skybox_material->_variant = "skybox.forward"_crcu;
     _skybox_fxcache            = _skybox_material->pipelineCache();
     _enumeratedLights          = std::make_shared<EnumeratedLights>();
+
+    _par_ublk_std_matrices = _skybox_material->_as_freestyle->uniformBlock("ublk_std_matrices");
+    _ubuf_std_matrices = context->FXI()->createUniformBuffer(1024);
+    auto mapped  = context->FXI()->mapUniformBuffer(_ubuf_std_matrices);
+    //memclr(mapped->data(), mapped->size());
+    mapped->unmap();
 
     /////////////////
     // SSAO

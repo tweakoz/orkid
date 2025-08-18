@@ -90,6 +90,7 @@ compressedmipchain_ptr_t Image::uncompressedMipChain() const {
   hasher->accumulateItem(_numcomponents);
   hasher->accumulateItem(_bytesPerChannel);
   hasher->accumulate(_data->data(), _data->length());
+  hasher->finish();
   auto hash = hasher->result();
   if( hash == _contentHash )
     return _cmipchain;
@@ -118,6 +119,22 @@ compressedmipchain_ptr_t Image::uncompressedMipChain() const {
   _cmipchain = rval;
   return rval;
 }
+
+compressedmipchain_ptr_t Image::uncompressedSingleMipChain() const {
+  compressedmipchain_ptr_t rval = std::make_shared<CompressedImageMipChain>();
+  rval->_width           = _width;
+  rval->_height          = _height;
+  rval->_format          = _format;
+  rval->_numcomponents   = _numcomponents;
+  rval->_bytesPerChannel = _bytesPerChannel;
+
+  CompressedImage cimg;
+  this->uncompressed(cimg);
+  rval->_levels.push_back(cimg);
+
+  return rval;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 

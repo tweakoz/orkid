@@ -355,9 +355,9 @@ void pyinit_gfx(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto rtg_t = py::class_<RtGroup, rtgroup_ptr_t>(module_lev2, "RtGroup")
                    .def(py::init([](ctx_t& ctx, int w, int h) -> rtgroup_ptr_t {
-                     bool needs_depth         = true;
+                     uint64_t usage = "user"_crcu;
                      MsaaSamples msaa_samples = MsaaSamples::MSAA_1X;
-                     auto rtg                 = std::make_shared<RtGroup>(ctx.get(), w, h, msaa_samples, needs_depth);
+                     auto rtg                 = std::make_shared<RtGroup>(ctx.get(), w, h, msaa_samples, usage);
                      return rtg;
                    }))
                    .def("resize", [](rtgroup_ptr_t rtg, int w, int h) { rtg.get()->Resize(w, h); })
@@ -382,7 +382,7 @@ void pyinit_gfx(py::module& module_lev2) {
                          fxs.format("RtGroup(%p)", rtg.get());
                          return fxs.c_str();
                        })
-                   .def_property_readonly("numBuffers", [](rtgroup_ptr_t rtg) -> int { return rtg->GetNumTargets(); })
+                   .def_property_readonly("numBuffers", [](rtgroup_ptr_t rtg) -> int { return rtg->numImageBuffers(); })
                    .def_property_readonly("depth_buffer", [](rtgroup_ptr_t rtg) -> rtbuffer_ptr_t { return rtg->_depthBuffer; })
                    .def("buffer", [](rtgroup_ptr_t rtg, int irtb) -> rtbuffer_ptr_t { return rtg->buffer(irtb); })
                    .def("texture", [](rtgroup_ptr_t rtg, int irtb) -> texture_ptr_t { return rtg->texture(irtb); });

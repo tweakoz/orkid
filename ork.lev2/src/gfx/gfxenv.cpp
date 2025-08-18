@@ -202,6 +202,9 @@ std::string EBufferFormatToName(EBufferFormat fmt){
     case EBufferFormat::S3TC_DXT5:
       rval = "S3TC_DXT5";
       break;
+      case EBufferFormat::SRGB_BGRA8:
+        rval = "SRGB_BGRA8";
+        break;
     default:
       printf( "invalid buffer format<%0zx>\n", size_t(fmt) );
       OrkAssert(false);
@@ -421,9 +424,9 @@ void GfxEnv::initializeWithContext(context_ptr_t target){
       //target->beginFrame();
       #endif
       /////////////////////////////////////
-      target->debugPushGroup("GfxEnv.Lateinit");
+      //target->debugPushGroup("GfxEnv.Lateinit");
       ork::lev2::GfxPrimitives::Init(target.get());
-      target->debugPopGroup();
+      //target->debugPopGroup();
       /////////////////////////////////////
       #if !defined(__APPLE__)
       //target->endFrame();

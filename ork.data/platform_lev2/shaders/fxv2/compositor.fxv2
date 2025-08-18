@@ -35,7 +35,26 @@ uniform_set ub_frg {
   vec4 LevelB;
   vec4 LevelC;
   vec4 ModColor;
-  sampler2D ColorMap;
+}
+///////////////////////////////////////////////////////////////
+sampler_set one_samplerA(descriptor_set 0) {
+  sampler2D MapA;
+}
+///////////////////////////////////////////////////////////////
+sampler_set one_samplerB(descriptor_set 0) {
+  sampler2D MapB;
+}
+///////////////////////////////////////////////////////////////
+sampler_set one_samplerC(descriptor_set 0) {
+  sampler2D MapC;
+}
+///////////////////////////////////////////////////////////////
+sampler_set two_samplers(descriptor_set 0) {
+  sampler2D MapA;
+  sampler2D MapB;
+}
+///////////////////////////////////////////////////////////////
+sampler_set three_samplers(descriptor_set 0) {
   sampler2D MapA;
   sampler2D MapB;
   sampler2D MapC;
@@ -71,15 +90,15 @@ vertex_shader vs_uitext : iface_vdefault {
   frg_uv      = uv0;
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_uitext : iface_fmt {
-  vec4 texc = texture(ColorMap, frg_uv);
+fragment_shader ps_uitext : iface_fmt : one_samplerA {
+  vec4 texc = texture(MapA, frg_uv);
   //if (texc.r == 0.0)
     //discard;
   out_clr = vec4(texc.xyz * ModColor.xyz, texc.r);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_uitextured : iface_fmt {
-  vec4 texc = texture(ColorMap, frg_uv);
+fragment_shader ps_uitextured : iface_fmt : one_samplerA {
+  vec4 texc = texture(MapA, frg_uv);
   out_clr   = vec4(texc.xyz, texc.w);
 }
 ///////////////////////////////////////////////////////////////
@@ -87,20 +106,20 @@ libblock comp_tools {
   float max4(vec4 inp) { return max(inp.w, max(inp.z, max(inp.x, inp.y))); }
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_aplusbplusc : iface_fmt {
+fragment_shader ps_aplusbplusc : iface_fmt : three_samplers {
   vec4 texa = texture(MapA, frg_uv);
   vec4 texb = texture(MapB, frg_uv);
   vec4 texc = texture(MapC, frg_uv);
   out_clr   = (BiasA + texa * LevelA) + (BiasB + texb * LevelB) + (BiasC + texc * LevelC);
 }
-fragment_shader ps_boveraplusc : iface_fmt : comp_tools {
+fragment_shader ps_boveraplusc : iface_fmt : comp_tools : three_samplers {
   vec4 texa = texture(MapA, frg_uv);
   vec4 texb = texture(MapB, frg_uv);
   vec4 texc = texture(MapC, frg_uv);
   float fl  = max4(texb);
   out_clr   = mix(texa, texb, fl) + texc;
 }
-fragment_shader ps_alerpbwithc : iface_fmt : comp_tools {
+fragment_shader ps_alerpbwithc : iface_fmt : comp_tools : three_samplers {
   vec4 texa = texture(MapA, frg_uv);
   vec4 texb = texture(MapB, frg_uv);
   vec4 texc = texture(MapC, frg_uv);
@@ -108,28 +127,28 @@ fragment_shader ps_alerpbwithc : iface_fmt : comp_tools {
   out_clr   = mix(texa, texb, texc);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_soloa : iface_fmt {
+fragment_shader ps_soloa : iface_fmt : one_samplerA {
   vec4 texc = texture(MapA, frg_uv);
   out_clr   = BiasA + LevelA * vec4(texc.xyz, texc.w);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_solob : iface_fmt {
+fragment_shader ps_solob : iface_fmt : one_samplerB  {
   vec4 texc = texture(MapB, frg_uv);
   out_clr   = BiasB + LevelB * vec4(texc.xyz, texc.w);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_soloc : iface_fmt {
+fragment_shader ps_soloc : iface_fmt : one_samplerC {
   vec4 texc = texture(MapC, frg_uv);
   out_clr   = vec4(texc.xyz, texc.w);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_op2amulb : iface_fmt {
+fragment_shader ps_op2amulb : iface_fmt : two_samplers {
   vec4 texa = texture(MapA, frg_uv);
   vec4 texb = texture(MapB, frg_uv);
   out_clr   = (BiasA + LevelA * texa) * (BiasB + LevelB * texb);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_op2adivb : iface_fmt {
+fragment_shader ps_op2adivb : iface_fmt : two_samplers{
   vec4 texa = texture(MapA, frg_uv);
   vec4 texb = texture(MapB, frg_uv);
   out_clr   = (BiasA + LevelA * texa) / (BiasB + LevelB * texb);
@@ -239,7 +258,7 @@ vertex_shader vs_onrtgd : iface_v_onrtgd {
   gl_Position = MatMVP * position;
   frg_uv0     = uv0;
 }
-fragment_shader ps_onrtgd : iface_f_onrtgd {
+fragment_shader ps_onrtgd : iface_f_onrtgd : two_samplers{
   out_clr   = texture(MapA, frg_uv0);
   out_nrmd   = texture(MapB, frg_uv0);
 }

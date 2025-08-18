@@ -18,7 +18,7 @@
 #include <CoreAudio/CoreAudio.h>
 #include <AudioToolbox/AudioToolbox.h>
 #include <AudioUnit/AudioUnit.h>
-#include <ork/kernel/orkpool.h>
+#include <ork/kernel/orkpool.inl>
 
 namespace ork::lev2::ca {
 

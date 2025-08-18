@@ -113,13 +113,28 @@ bool TextureInterface::_loadImageTexture(texture_ptr_t ptex, datablock_ptr_t src
       auto fmt_str   = EBufferFormatToName(image_fmt);
       img._debugName = ptex->_debugName;
       xtx_datablock  = std::make_shared<DataBlock>();
+      ////////////////////////////
+      #if defined(__APPLE__)
+      switch(image_fmt){
+        case EBufferFormat::BGR8:
+          // force to BGRA8 because metal does not support BGR8
+          forced_format = EBufferFormat::BGRA8; 
+          break;
+        case EBufferFormat::RGB8:
+          forced_format = EBufferFormat::RGBA8; 
+          // force to RGBA8 because metal does not support RGB8
+          break;
+        default:
+      }
+      #endif
+      ////////////////////////////
       switch (forced_format) {
         //////////////////////////////
         // no requested format
         //  use default logic
         //////////////////////////////
         case EBufferFormat::NONE: {
-          //printf("writing xtx datablock default fmt<%s>\n", fmt_str.c_str());
+          printf("writing xtx datablock default fmt<%s>\n", fmt_str.c_str());
           auto cmipchain = img.compressedMipChainDefault();
           cmipchain->writeXTX(xtx_datablock);
           break;
@@ -137,14 +152,32 @@ bool TextureInterface::_loadImageTexture(texture_ptr_t ptex, datablock_ptr_t src
           break;
         }
 #endif
-        case EBufferFormat::RGB8:
-        case EBufferFormat::BGR8:
+        case EBufferFormat::RGB8:{
+          auto orig_fmt_str = EBufferFormatToName(img._format);
+          auto forc_fmt_str = EBufferFormatToName(forced_format);
+          printf("writing xtx : forcing format orig<%s> newfmt<%s>\n", orig_fmt_str.c_str(), forc_fmt_str.c_str());
+          auto converted_img = img.convertToFormat(forced_format);
+          converted_img._format = forced_format;
+          auto cmipchain = converted_img.uncompressedMipChain();
+          cmipchain->writeXTX(xtx_datablock);
+          break;
+        }
+        case EBufferFormat::BGR8:{
+          auto orig_fmt_str = EBufferFormatToName(img._format);
+          auto forc_fmt_str = EBufferFormatToName(forced_format);
+          printf("writing xtx : forcing format orig<%s> newfmt<%s>\n", orig_fmt_str.c_str(), forc_fmt_str.c_str());
+          auto converted_img = img.convertToFormat(forced_format);
+          converted_img._format = forced_format;
+          auto cmipchain = converted_img.uncompressedMipChain();
+          cmipchain->writeXTX(xtx_datablock);
+          break;
+        }
         case EBufferFormat::BGRA8:
         case EBufferFormat::RGBA8:{
           auto orig_fmt_str = EBufferFormatToName(img._format);
           auto forc_fmt_str = EBufferFormatToName(forced_format);
-          //printf("writing xtx : forcing format orig<%s> newfmt<%s>\n", orig_fmt_str.c_str(), forc_fmt_str.c_str());
-          auto converted_img = img;//.convertToFormat(forced_format);
+          printf("writing xtx : forcing format orig<%s> newfmt<%s>\n", orig_fmt_str.c_str(), forc_fmt_str.c_str());
+          auto converted_img = img.convertToFormat(forced_format);
           converted_img._format = forced_format;
           auto cmipchain = converted_img.uncompressedMipChain();
           cmipchain->writeXTX(xtx_datablock);

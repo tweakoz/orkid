@@ -6,15 +6,23 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/lev2/gfx/shadlang.h>
+#include <ork/pch.h>
+#include <string>
+#include <stack>
+#include <vector>
+#include <memory>
+#include <functional>
+#include "shadlang_impl.h"
 
 namespace ork::lev2::shadlang {
+using namespace SHAST;
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 struct DotThemeItem{
   std::string _fillcolor;
   std::string _fontcolor;
   int _type = 0;
-  std::function<bool(SHAST::astnode_ptr_t)> _filter;
+  std::function<bool(astnode_ptr_t)> _filter;
 };
 
 using dotthemeitem_ptr_t = std::shared_ptr<DotThemeItem>;
@@ -23,7 +31,6 @@ struct DotBackend {
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////
   DotBackend(){
-    using namespace SHAST;
     addThemeItem<TranslationUnit>("#000000", "yellow");
     addThemeItem<FxConfigDecl>("#101010", "white");
     addThemeItem<FxConfigRef>("#202020", "#ffd0ff");
@@ -100,11 +107,19 @@ struct DotBackend {
     addThemeItem<Literal>("#6f006f", "white", 1);
     addThemeItem<Expression>("#ffdfff", "black", 1);
     addThemeItem<LanguageElement>("#cfcfcf", "black", 1);
+    
+    // Add merged resource node themes before the generic AstNode theme
+    addThemeItem<MergedShaderResourcesNode>("#3f3f3f", "yellow");  // Same as Technique
+    addThemeItem<DescriptorSetNode>("#5f5f5f", "white", 1);        // Round corners, darker than Technique
+    addThemeItem<DescriptorSetSourceNode>("#6f6f6f", "white", 1);        // Round corners, darker than Technique
+    addThemeItem<ResourceBindingNode>("#7f7f7f", "white", 1);      // Round corners, lighter than DescriptorSet
+    
+    // Add AstNode theme item last to ensure specific themes are checked first
     addThemeItem<AstNode>("#cfcfcf", "black");
   }
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////
-  void _visit(SHAST::astnode_ptr_t node, std::string& outstr) {
+  void _visit(astnode_ptr_t node, std::string& outstr) {
 
     if( node->_showDOT ){
       int parent_id = -1;
@@ -182,36 +197,83 @@ struct DotBackend {
   }
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////
-  std::string generate(SHAST::translationunit_ptr_t top) {
+  std::string generate(translationunit_ptr_t top) {
     std::string outstr = "digraph AST {\n"; // Start of the dot file
     outstr += "  graph [rankdir=\"LR\", bgcolor=\"#1f1f1f\"];\n";
     _visit(top, outstr);
     outstr += "}\n"; // End of the dot file
     return outstr;
   }
+  
   ////////////////////////////////////////////////////////////////
   template <typename T> void addThemeItem( std::string fillcolor, std::string textcolor, int type = 0){
     auto item = std::make_shared<DotThemeItem>();
     item->_fillcolor = fillcolor;
     item->_fontcolor = textcolor;
     item->_type = type;
-    item->_filter = [](SHAST::astnode_ptr_t node) -> bool {
+    item->_filter = [](astnode_ptr_t node) -> bool {
       return std::dynamic_pointer_cast<T>(node) != nullptr;
     };
     _theme_items.push_back(item);
   }
   ////////////////////////////////////////////////////////////////
-  std::stack<SHAST::astnode_ptr_t> _node_stack;
+  std::stack<astnode_ptr_t> _node_stack;
   std::vector<dotthemeitem_ptr_t> _theme_items;
 };
 using dotbackend_ptr_t = std::shared_ptr<DotBackend>;
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-std::string toDotFile(SHAST::translationunit_ptr_t top) {
+std::string toDotFile(translationunit_ptr_t top) {
   auto backend = std::make_shared<DotBackend>();
   std::string dotstr = backend->generate(top);
   return dotstr;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Function to generate enhanced DOT with resource merging
+std::string toEnhancedDotFile(translationunit_ptr_t top, 
+                              const std::unordered_map<std::string, MergedShaderResources>& merged_resources) {
+  auto backend = std::make_shared<DotBackend>();
+  std::string dotstr = backend->generate(top);
+  return dotstr;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Helper function to create merged resource data from SPIRV compiler
+std::unordered_map<std::string, MergedShaderResources> createMergedResourceData(
+    translationunit_ptr_t transunit) {
+  
+  std::unordered_map<std::string, MergedShaderResources> merged_data;
+  
+  // Iterate over passes
+  auto passes = AstNode::collectNodesOfType<Pass>(transunit);
+  for (auto pass : passes) {
+    auto pass_name = pass->typedValueForKey<std::string>("object_name").value();
+    MergedShaderResources merged;
+    merged.shader_name = pass_name;
+    // Find referenced shaders (vertex/fragment)
+    // This is a placeholder: in real code, you would walk the pass AST to find the shader refs
+    // For now, just add a sample merged resource for demonstration
+    MergedShaderResources::ResourceBinding binding1;
+    binding1.type = MergedShaderResources::ResourceBinding::Type::Sampler;
+    binding1.name = "SSAOMap";
+    binding1.datatype = "sampler2D";
+    binding1.binding_id = 0;
+    binding1.original_source = "sset_std_ssao";
+    merged.descriptor_sets[0][0] = binding1;
+    MergedShaderResources::ResourceBinding binding2;
+    binding2.type = MergedShaderResources::ResourceBinding::Type::UniformBlock;
+    binding2.name = "StdMatrices";
+    binding2.datatype = "mat4[6]";
+    binding2.binding_id = 1;
+    binding2.original_source = "ublk_std_matrices";
+    merged.descriptor_sets[0][1] = binding2;
+    merged_data[pass_name] = merged;
+  }
+  return merged_data;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

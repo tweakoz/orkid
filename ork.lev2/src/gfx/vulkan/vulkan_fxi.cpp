@@ -5,7 +5,7 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-#include "vulkan_ctx.h"
+#include "headers/vulkan_ctx.h"
 #include "vulkan_ub_layout.inl"
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/util/hexdump.inl>
@@ -19,6 +19,11 @@ VkFxInterface::VkFxInterface(vkcontext_rawptr_t ctx)
     _slp_cache = _GVI->_slp_cache;
 
     _default_rasterstate = std::make_shared<lev2::RasterState>();
+    _default_rasterstate->_depthtest = EDepthTest::LESS;
+    _default_rasterstate->_culltest = ECullTest::PASS_FRONT;
+    _default_rasterstate->_frontface = FLIP_Y_LIKE_OPENGL 
+                                     ? EFrontFace::CLOCKWISE 
+                                     : EFrontFace::COUNTER_CLOCKWISE;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -84,11 +89,18 @@ int VkFxInterface::_pipelineBitsForShader(vkfxsprg_ptr_t shprog){
 
   if(shprog->_pipeline_bits_composite == -1){ // compute ?
 
+    auto vtx_shader = shprog->_vtxshader;
+    auto frg_shader = shprog->_frgshader;
+
+    printf("/////////////////\nshprog<v:%s <f:%s> pipeline_bits_composite<%d>\n", //
+           vtx_shader->_name.c_str(), //
+           frg_shader->_name.c_str(),
+           shprog->_pipeline_bits_composite);
+           
     ////////////////////////////
     // compute VIF bits
     ////////////////////////////
 
-    auto vtx_shader = shprog->_vtxshader;
     auto vif_id = vtx_shader->_vk_interfaces[0];
     auto it_vif = shprog->_shader_file->_vk_vtxinterfaces.find(vif_id);
     OrkAssert(it_vif!=shprog->_shader_file->_vk_vtxinterfaces.end());
@@ -100,6 +112,7 @@ int VkFxInterface::_pipelineBitsForShader(vkfxsprg_ptr_t shprog){
     for( auto input : VIF->_inputs ){
       crc.accumulateString(input->_datatype);
       crc.accumulateString(input->_semantic);
+      printf("dt<%s> sem<%s>\n", input->_datatype.c_str(), input->_semantic.c_str());
     }
     crc.finish();
     uint64_t hash = crc.result();
@@ -113,6 +126,7 @@ int VkFxInterface::_pipelineBitsForShader(vkfxsprg_ptr_t shprog){
       int new_index = _vk_vtxinterface_cache.size();
       _vk_vtxinterface_cache[hash] = new_index;
       VIF->_pipeline_bits = new_index;
+      VIF->_hash = hash;
     }
 
     ////////////////////////////

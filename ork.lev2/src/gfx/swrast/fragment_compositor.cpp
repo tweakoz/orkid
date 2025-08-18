@@ -9,7 +9,7 @@
 
 #include "lev3_test.h"
 #include <math.h>
-#include <ork/kernel/orkpool.h>
+#include <ork/kernel/orkpool.inl>
 #include <ork/kernel/Array.hpp>
 #include <ork/kernel/gstack.hpp>
 #include <ork/math/collision_test.h>

@@ -107,7 +107,7 @@ void Scene::gpuInit(Context* ctx) {
     return false;
   };
 
-  ctx->_stickyCallbacks.push_back(op);
+  ctx->_beginFrameBlockers.push_back(op);
 
 }
 

@@ -53,12 +53,14 @@ void ForwardPbrNodeImpl::_render_skybox(forward_pass_ptr_t fpass) {
   RenderContextInstData RCID(RCFD);
   RCID._pipeline_cache = _skybox_fxcache;
   auto pipeline        = _skybox_fxcache->findPipeline(RCID);
+  rtg_out->_autoclear = true;
   FBI->PushRtGroup(rtg_out.get());
   //FBI->rtGroupClear(rtg_out.get()); // TODO: vulkan
   pipeline->_rasterstate->setWriteMaskZ(true);
   pipeline->_rasterstate->setWriteMaskRGB(true);
   pipeline->_rasterstate->setWriteMaskA(true);
   pipeline->_rasterstate->setDepthTest(EDepthTest::OFF);
+  pipeline->bindUniformBuffer(_par_ublk_std_matrices, "ub_skybox"_crcu);
   pipeline->wrappedDrawCall(RCID, [=]() {
     FXI->applyRasterState(*pipeline->_rasterstate);
     GBI->render2dQuadEML(

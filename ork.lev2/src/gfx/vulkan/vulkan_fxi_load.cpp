@@ -5,7 +5,7 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-#include "vulkan_ctx.h"
+#include "headers/vulkan_ctx.h"
 #include "vulkan_ub_layout.inl"
 #include "../shadlang/shadlang_backend_spirv.h"
 #include <ork/file/chunkfile.inl>
@@ -58,6 +58,7 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
     if(input_path=="orkshader://pbr.fxv2"){
       printf("yo\n");
     }
+    printf("load shader from path<%s>\n", input_path.c_str());
     vulkan_shaderfile          = _loadShaderFromShaderText(pshader, input_path.c_str(), str_read->_data);
     _fxshaderfiles[input_path] = vulkan_shaderfile;
   }
@@ -96,6 +97,7 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(
   auto basehasher = DataBlock::createHasher();
   basehasher->accumulateString("vkfxshader-1.0");
   basehasher->accumulateString(shadertext);
+  basehasher->finish();
   uint64_t hashkey               = basehasher->result();
   datablock_ptr_t vkfx_datablock = DataBlockCache::findDataBlock(hashkey);
   vkfxsfile_ptr_t vulkan_shaderfile;

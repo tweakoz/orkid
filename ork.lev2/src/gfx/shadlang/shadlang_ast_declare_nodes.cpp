@@ -39,6 +39,7 @@ void ShadLangParser::preDeclareAstNodes() {
   declare("VertexShaderRef");
   declare("FragmentShaderRef");
   declare("GeometryShaderRef");
+  declare("ComputeShaderRef");
   declare("StateBlockRef");
 }
 
@@ -79,6 +80,7 @@ void ShadLangParser::declareAstNodes() {
   DECLARE_STD_AST_NODE(TypedIdentifier);
   DECLARE_STD_AST_NODE(SamplerDeclaration);
   DECLARE_STD_AST_NODE(DescriptorSetId);
+  DECLARE_STD_AST_NODE(DescriptorSetInhItem);
   DECLARE_STD_AST_NODE(DataDeclaration);
   DECLARE_STD_AST_NODE(DataDeclarations);
   DECLARE_STD_AST_NODE(ArrayDeclaration);
@@ -158,6 +160,7 @@ void ShadLangParser::declareAstNodes() {
   DECLARE_STD_AST_NODE(InheritList);
   DECLARE_STD_AST_NODE(InheritListItem);
   DECLARE_STD_AST_NODE(Pass);
+  DECLARE_STD_AST_NODE(VtxFrgPass);
   DECLARE_STD_AST_NODE(FxConfigRef);
   ///////////////////////////////////////////////////////////
   DECLARE_STD_AST_NODE(VertexInterface);

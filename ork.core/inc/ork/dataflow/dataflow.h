@@ -18,7 +18,7 @@
 #include <ork/config/config.h>
 
 #include <ork/math/multicurve.h>
-#include <ork/kernel/orkpool.h>
+#include <ork/kernel/orkpool.inl>
 #include <ork/event/Event.h>
 #include <ork/rtti/RTTIX.inl>
 #include <ork/util/logger.h>

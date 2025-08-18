@@ -82,6 +82,7 @@ struct SpirvCompilerGlobals {
 struct SpirvCompiler {
 
   SpirvCompiler(transunit_ptr_t _transu, bool vulkan);
+  SpirvCompiler(transunit_ptr_t _transu, bool vulkan, const std::map<int, std::map<std::string, MergedShaderResources::ResourceBinding>>& merged_resources);
   void processShader(shader_ptr_t sh);
   
 
@@ -101,6 +102,7 @@ private:
   void _inheritUniformBlk(std::string uniblkname, spirvuniblk_ptr_t uniblk_node);
   void _inheritIO(astnode_ptr_t interface_node);
   void _inheritExtension(semainhext_ptr_t ext_node);
+  void _emitMergedPushConstants();
 
   void _beginShader(shader_ptr_t sh);
   void _compileShader(shaderc_shader_kind shader_type);
@@ -113,18 +115,25 @@ private:
                         std::string direction,
                         size_t& IO_index);
 
+  // Helper function to find binding ID from merged resources
+  int _findBindingIdFromMergedResources(const std::string& resource_name, const std::string& source_name);
+
   transunit_ptr_t _transu;
   shader_ptr_t _shader;
   miscgroupnode_ptr_t _shader_group;
   miscgroupnode_ptr_t _interface_group;
-  miscgroupnode_ptr_t _types_group;
   miscgroupnode_ptr_t _extension_group;
   miscgroupnode_ptr_t _uniforms_group;
   miscgroupnode_ptr_t _libraries_group;
+  miscgroupnode_ptr_t _types_group;
   size_t _input_index = 0;
   size_t _output_index = 0;
   size_t _binding_id = 0;
   bool _vulkan = true;
+
+  // ADD: Merged resources for this pass
+  std::map<int, std::map<std::string, MergedShaderResources::ResourceBinding>> _merged_resources;
+  bool _has_merged_resources = false;
 
 public:
 
@@ -133,6 +142,7 @@ public:
   std::unordered_map<std::string, spirvsmpset_ptr_t> _spirvsamplersets;
   std::unordered_map<std::string, spirvuniset_ptr_t> _spirvuniformsets;
   std::unordered_map<std::string, spirvuniblk_ptr_t> _spirvuniformblks;
+  std::vector<spirvuniset_ptr_t> _collected_uniform_sets;
 
 };
 

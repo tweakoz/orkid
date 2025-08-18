@@ -8,7 +8,7 @@
 #pragma once
 
 #include <ork/lev2/lev2_types.h>
-#include <ork/kernel/orkpool.h>
+#include <ork/kernel/orkpool.inl>
 
 namespace ork::lev2 {
 

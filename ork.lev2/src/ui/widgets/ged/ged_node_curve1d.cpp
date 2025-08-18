@@ -15,7 +15,7 @@
 #include <ork/kernel/core_interface.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/math/multicurve.h>
-#include <ork/kernel/orkpool.h>
+#include <ork/kernel/orkpool.inl>
 #include <ork/reflect/properties/registerX.inl>
 
 ////////////////////////////////////////////////////////////////

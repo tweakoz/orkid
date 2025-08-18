@@ -109,6 +109,7 @@ enum struct EBufferFormat : crc_enum_t {
   CrcEnum(BGR5A1),
   CrcEnum(BGR8),
   CrcEnum(RGB8),
+  CrcEnum(SRGB_BGRA8),
   CrcEnum(BGRA8),
   CrcEnum(RGBA8),
   CrcEnum(RG16F),

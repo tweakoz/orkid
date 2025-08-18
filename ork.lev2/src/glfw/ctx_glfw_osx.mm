@@ -47,6 +47,33 @@ void setAlwaysOnTop(GLFWwindow *window) {
     windowLevel = CGWindowLevelForKey(kCGFloatingWindowLevelKey);
     ((void(*)(id, SEL, NSUInteger))objc_msgSend)(nsWindow, sel_registerName("setLevel:"), windowLevel);
 }
+void windowToFront(GLFWwindow* window) {
+    @autoreleasepool {
+        NSWindow* nswin = glfwGetCocoaWindow(window);
+        if (nswin) {
+            // Make the app a regular app (not a background app)
+            [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
+            
+            // Activate the app, bringing it to front
+            [NSApp activateIgnoringOtherApps:YES];
+            
+            // Make window key and order front
+            [nswin makeKeyAndOrderFront:nil];
+            [nswin orderFrontRegardless];
+            
+            // Set window level temporarily to force it on top
+            [nswin setLevel:NSFloatingWindowLevel];
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.1 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+                [nswin setLevel:NSNormalWindowLevel];
+            });
+            
+            // Force focus
+            [nswin makeFirstResponder:nil];
+            [nswin makeKeyWindow];
+            [nswin makeMainWindow];
+        }
+    }
+}
 ///////////////////////////////////////////////////////////////////////////////
 } //namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////

@@ -72,6 +72,11 @@ void ShadLangParser::defineAstHandlers() {
       ast_node->_name += "\n"+pbv;
       ast_node->setValueForKey<std::string>("ref_id",pbv);
     }
+    else if(pbk=="compute_shader"){
+      auto ast_node = ast_create<SHAST::ComputeShaderRef>(match);
+      ast_node->_name += "\n"+pbv;
+      ast_node->setValueForKey<std::string>("ref_id",pbv);
+    }
     else if(pbk=="state_block"){
       auto ast_node = ast_create<SHAST::StateBlockRef>(match);
       ast_node->_name += "\n"+pbv;
@@ -83,6 +88,8 @@ void ShadLangParser::defineAstHandlers() {
       OrkAssert(false);
     }
   });
+  ///////////////////////////////////////////////////////////
+
   ///////////////////////////////////////////////////////////
 }
 

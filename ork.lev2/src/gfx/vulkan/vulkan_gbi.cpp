@@ -5,11 +5,34 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-#include "vulkan_ctx.h"
+#include "headers/vulkan_ctx.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
+
+
+int VulkanVertexBuffer::pipelineBitsForFormat() const {
+  int rval = 0;
+  switch( _ork_vtxbuf.meStreamFormat) {
+    case EVtxStreamFormat::V12C4T16:
+      rval = 0;
+      break;
+    case EVtxStreamFormat::V12N12B12T16:
+      rval = 1;
+      break;
+    case EVtxStreamFormat::V12N12B12T8C4:
+      rval = 2;
+      break;
+    case EVtxStreamFormat::V16T16C16:
+      rval = 3;
+      break;
+    default:
+      OrkAssert(false);
+      break;
+  }
+  return rval;
+}
 
 VulkanVertexBuffer::VulkanVertexBuffer(vkcontext_rawptr_t ctx, VertexBufferBase& vtx_buf)
   : _ork_vtxbuf(vtx_buf) {
@@ -59,6 +82,7 @@ VkGeometryBufferInterface::VkGeometryBufferInterface(vkcontext_rawptr_t ctx)
     , _contextVK(ctx) {
 
   _instantiateVertexStreamConfig(EVtxStreamFormat::V12C4T16);
+  _instantiateVertexStreamConfig(EVtxStreamFormat::V12N12B12T16);
   _instantiateVertexStreamConfig(EVtxStreamFormat::V12N12B12T8C4);
   _instantiateVertexStreamConfig(EVtxStreamFormat::V16T16C16);
   ////////////////////////////////////////////////////////////////
@@ -90,7 +114,18 @@ VkGeometryBufferInterface::VkGeometryBufferInterface(vkcontext_rawptr_t ctx)
         OrkAssert(false);
         break;
     }
-    rval->_input_assembly_state.primitiveRestartEnable = VK_FALSE;
+    
+    // MoltenVK/Metal requires primitive restart to be enabled for strips and fans
+    switch(etype) {
+      case PrimitiveType::TRIANGLESTRIP:
+      case PrimitiveType::TRIANGLEFAN:
+        rval->_input_assembly_state.primitiveRestartEnable = VK_TRUE;
+        break;
+      default:
+        rval->_input_assembly_state.primitiveRestartEnable = VK_FALSE;
+        break;
+    }
+    
     return rval;
   };
   ////////////////////////////////////////////////////////////////
@@ -129,10 +164,19 @@ vertex_strconfig_ptr_t VkGeometryBufferInterface::_instantiateVertexStreamConfig
     case EVtxStreamFormat::V12N12B12T8C4: {
       config->addItem("POSITION", "vec3", sizeof(fvec3), 0, VK_FORMAT_R32G32B32_SFLOAT);
       config->addItem("NORMAL", "vec3", sizeof(fvec3), 12, VK_FORMAT_R32G32B32_SFLOAT);
-      config->addItem("BINORMAL0", "vec3", sizeof(fvec3), 24, VK_FORMAT_R32G32B32_SFLOAT);
+      config->addItem("BINORMAL", "vec3", sizeof(fvec3), 24, VK_FORMAT_R32G32B32_SFLOAT);
       config->addItem("TEXCOORD0", "vec2", sizeof(fvec2), 36, VK_FORMAT_R32G32_SFLOAT);
       config->addItem("COLOR0", "vec4", sizeof(uint32_t), 44, VK_FORMAT_R8G8B8A8_UNORM);
       config->_stride = sizeof(SVtxV12N12B12T8C4);
+      break;
+    }
+    case EVtxStreamFormat::V12N12B12T16: {
+      config->addItem("POSITION", "vec3", sizeof(fvec3), 0, VK_FORMAT_R32G32B32_SFLOAT);
+      config->addItem("NORMAL", "vec3", sizeof(fvec3), 12, VK_FORMAT_R32G32B32_SFLOAT);
+      config->addItem("BINORMAL", "vec3", sizeof(fvec3), 24, VK_FORMAT_R32G32B32_SFLOAT);
+      config->addItem("TEXCOORD0", "vec2", sizeof(fvec2), 36, VK_FORMAT_R32G32_SFLOAT);
+      config->addItem("TEXCOORD1", "vec2", sizeof(fvec2), 44, VK_FORMAT_R32G32_SFLOAT);
+      config->_stride = sizeof(SVtxV12N12B12T16);
       break;
     }
     case EVtxStreamFormat::V12C4T16: {
@@ -164,8 +208,13 @@ vkvertexinputconfig_ptr_t VkGeometryBufferInterface::vertexInputState(vkvtxbuf_p
 
   EVtxStreamFormat vb_format = vbuf->_ork_vtxbuf.GetStreamFormat();
   uint64_t vif_hash = vif->_hash; // hashed from shader input layout ordered(semantic, datatype)
+
+ printf("vertexInputState: vif<%s> hash<%016llx> vb_format<%s>\n", 
+         vif->_name.c_str(), vif_hash, EVtxStreamFormatToName(vb_format).c_str());
+ 
   auto it = vbuf->_vif_to_layout.find(vif_hash);
   if( it != vbuf->_vif_to_layout.end() ){
+    printf("  CACHED layout\n");
     return it->second;
   }
 
@@ -202,6 +251,8 @@ vkvertexinputconfig_ptr_t VkGeometryBufferInterface::vertexInputState(vkvtxbuf_p
     auto semantic = input->_semantic; // "POSITION", "NORMAL", "BINORMALn, "TANGENTn", "TEXCOORDn", "COLORn"
     auto shader_datatype = input->_datatype; // "vec4", "vec3", "vec2", "float", "half4", "half3", "half2", "half"
 
+        printf("  Looking for semantic<%s> shader_dt<%s>\n", semantic.c_str(), shader_datatype.c_str());
+
     auto it = vsc->_item_by_semantic.find(semantic);
     if( it == vsc->_item_by_semantic.end() ){
 
@@ -216,12 +267,17 @@ vkvertexinputconfig_ptr_t VkGeometryBufferInterface::vertexInputState(vkvtxbuf_p
 
     auto item = it->second;
 
+        printf("    Found: vbuf_dt<%s> offset<%zu> format<%d>\n", 
+           item->_vbuf_datatype.c_str(), item->_dataoffset, item->_vkformat);
+
     auto& atdesc = rval->_attribute_descriptions.emplace_back();
     atdesc.binding  = 0;
     atdesc.location = location++;
     atdesc.format   = item->_vkformat;
     atdesc.offset   = item->_dataoffset;
 
+       printf("    Final: location<%zu> offset<%u> format<%d>\n", 
+           location-1, atdesc.offset, atdesc.format);
     if(item->_vbuf_datatype != shader_datatype){
 
       ////////////////////////////////////////////
@@ -405,10 +461,6 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
     int ivbase,
     int ivcount) {
 
-  OrkAssert(_contextVK->_renderpass_index >= 0);
-
-  auto& CB = _contextVK->_cmdbufcur_gfx;
-
   ///////////////////////
   // get primclass (input to pipeline search)
   ///////////////////////
@@ -429,23 +481,27 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
 
   ///////////////////////
   // bind pipeline
-  // bind descriptor set
+  // bind descriptor set (if any)
   // flush push constants
   // bind vertex buffer
   ///////////////////////
 
-  fxi->_bindPipeline(pipeline);
-  auto desc_set = pipeline->_descriptorSetCache->fetchDescriptorSetForProgram(prog);
-  fxi->_bindGfxDescriptorSetOnSlot(desc_set, 0);
-  pipeline->applyPendingPushConstants(CB);
-  fxi->_bindVertexBufferOnSlot(vk_vbimpl, 0);
+  auto& CB = _contextVK->_vkcmdbuffer_current;
 
+  fxi->_bindPipeline(CB, pipeline);
+  auto desc_set = pipeline->_descriptorSetCache->fetchDescriptorSetForProgram(prog);
+  if (desc_set) {
+  fxi->_bindGfxDescriptorSetOnSlot(CB, desc_set, 0);
+  }
+  pipeline->applyPendingPushConstants(CB);
+  fxi->_bindVertexBufferOnSlot(CB, vk_vbimpl, 0);
+      
   ///////////////////////
   // draw
   ///////////////////////
 
   vkCmdDraw(
-      CB->_vkcmdbuf, // command buffer
+      CB, // command buffer
       ivcount,       // vertex count
       1,             // instance count
       ivbase,        // first vertex
@@ -458,9 +514,6 @@ void VkGeometryBufferInterface::DrawIndexedPrimitiveEML(
     const VertexBufferBase& vtx_buf,
     const IndexBufferBase& idx_buf,
     PrimitiveType eType) {
-  OrkAssert(_contextVK->_renderpass_index >= 0);
-
-  auto& CB = _contextVK->_cmdbufcur_gfx;
 
   int num_indices = idx_buf.GetNumIndices();
 
@@ -485,16 +538,19 @@ void VkGeometryBufferInterface::DrawIndexedPrimitiveEML(
 
   ///////////////////////
   // bind pipeline
-  // bind descriptor set
+  // bind descriptor set (if any)
   // flush push constants
   // bind vertex buffer
   ///////////////////////
 
-  fxi->_bindPipeline(pipeline);
+  auto& CB = _contextVK->_vkcmdbuffer_current;
+  fxi->_bindPipeline(CB,pipeline);
   auto desc_set = pipeline->_descriptorSetCache->fetchDescriptorSetForProgram(prog);
-  fxi->_bindGfxDescriptorSetOnSlot(desc_set, 0);
+  if (desc_set) {
+  fxi->_bindGfxDescriptorSetOnSlot(CB,desc_set, 0);
+  }
   pipeline->applyPendingPushConstants(CB);
-  fxi->_bindVertexBufferOnSlot(vk_vbimpl, 0);
+  fxi->_bindVertexBufferOnSlot(CB,vk_vbimpl, 0);
 
   ///////////////////////
   // bind index buffer
@@ -506,7 +562,7 @@ void VkGeometryBufferInterface::DrawIndexedPrimitiveEML(
 
   auto& vk_buffer = vk_ibimpl->_vkbuffer->_vkbuffer;
 
-  vkCmdBindIndexBuffer( CB->_vkcmdbuf,  // command buffer
+  vkCmdBindIndexBuffer( CB,  // command buffer 
                         vk_buffer,      // index buffer
                         0,              // start at first index in index buffer
                         vk_index_size); // index type
@@ -516,12 +572,12 @@ void VkGeometryBufferInterface::DrawIndexedPrimitiveEML(
   ///////////////////////
 
   vkCmdDrawIndexed(
-      CB->_vkcmdbuf, // command buffer
-      num_indices,   // index count
-      1,             // instance count
-      0,             // first vertex
-      0,             // vertex offset
-      0);            // first instance
+      CB, // command buffer
+      num_indices, // index count
+      1,           // instance count
+      0,           // first index
+      0,           // vertex offset
+      0);          // first instance
 }
 
 ///////////////////////////////////////////////////////////////////////////////

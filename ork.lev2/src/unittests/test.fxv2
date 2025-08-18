@@ -1,0 +1,84 @@
+///////////////////////////////////////////////////////////////
+// Recursive Inheritance Test Shader (Corrected)
+///////////////////////////////////////////////////////////////
+
+// FxConfig
+fxconfig fxcfg_test {
+  glsl_version = "150";
+}
+
+// Sampler set at the deepest level
+sampler_set sset_deep(descriptor_set 0) {
+  sampler2D DeepSampler;
+}
+
+// Uniform block at the deepest level
+uniform_block ublk_deep(descriptor_set 1) {
+  mat4 DeepMatrix;
+}
+
+// Library block that inherits sampler set and uniform block
+libblock lib_deeper : sset_deep : ublk_deep {
+  vec4 deep_func(vec2 uv) {
+    return texture(DeepSampler, uv) + DeepMatrix[0][0];
+  }
+}
+
+// Library block that inherits the previous library block
+libblock lib_mid : lib_deeper {
+  vec4 mid_func(vec2 uv) {
+    return deep_func(uv) * 2.0;
+  }
+}
+
+// Vertex interface (no libblock inheritance)
+vertex_interface iface_vtx_deep : ublk_deep {
+  inputs { vec4 position : POSITION; }
+  outputs { vec2 frg_uv; }
+}
+
+// Vertex interface that inherits the mid interface
+vertex_interface iface_vtx_top : ublk_deep : iface_vtx_deep {
+  inputs { vec4 position : POSITION; }
+  outputs { vec2 frg_uv; }
+}
+
+// Fragment interface (no libblock inheritance)
+fragment_interface iface_deep {
+  inputs { vec2 frg_uv; }
+  outputs { vec4 out_clr; }
+}
+
+// Fragment interface that inherits the deep interface
+fragment_interface iface_top : iface_deep {
+  inputs { vec2 frg_uv; }
+  outputs { vec4 out_clr; }
+}
+
+// Vertex shader inherits from interface
+vertex_shader vs_recursive : iface_vtx_top {
+  gl_Position = position;
+  frg_uv = position.xy;
+}
+
+// Fragment shader inherits from interface and libblock
+fragment_shader fs_recursive : iface_top : sset_deep : lib_mid {
+  out_clr = mid_func(frg_uv);
+}
+
+// State block
+state_block sb_test : default {
+  BlendMode = OFF;
+  DepthTest = OFF;
+  CullTest  = OFF;
+}
+
+// Technique and pass
+technique recursive_test {
+  fxconfig = fxcfg_test;
+  pass p0 {
+    vertex_shader   = vs_recursive;
+    fragment_shader = fs_recursive;
+    state_block     = sb_test;
+  }
+} 

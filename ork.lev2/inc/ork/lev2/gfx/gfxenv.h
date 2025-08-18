@@ -189,8 +189,8 @@ public:
   virtual void debugPopGroup() {
   }
   ///////////////////////////////////////////////////////////////////////
-  virtual void debugPushGroup(commandbuffer_ptr_t cb, const std::string str, const fvec4& color) {}
-  virtual void debugPopGroup(commandbuffer_ptr_t cb) {}
+  virtual void debugPushGroup(secondary_commandbuffer_ptr_t cb, const std::string str, const fvec4& color) {}
+  virtual void debugPopGroup(secondary_commandbuffer_ptr_t cb) {}
   ///////////////////////////////////////////////////////////////////////
   /// insert marker into commandstream (for renderdoc,apitrace,nsight,etc..)
   void debugMarker(const std::string str);
@@ -227,27 +227,13 @@ public:
   // command buffers / renderpasses
   ///////////////////////////////////////////////////////////////////////
 
-  commandbuffer_ptr_t beginRecordCommandBuffer(renderpass_ptr_t rpass, std::string name);
-  void endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf);
-  void pushCommandBuffer(commandbuffer_ptr_t cmdbuf, rtgroup_ptr_t rtg = nullptr);
-  commandbuffer_ptr_t popCommandBuffer();
-  void enqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf);
+  secondary_commandbuffer_ptr_t beginRecordCommandBuffer(std::string name, rtgroup_rawptr_t rtg = nullptr);
+  void endRecordCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf);
+  void enqueueSecondaryCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf);
 
-  void beginRenderPass(renderpass_ptr_t);
-  void endRenderPass(renderpass_ptr_t);
-  void beginSubPass(rendersubpass_ptr_t);
-  void endSubPass(rendersubpass_ptr_t);
-
-  virtual void _doPushCommandBuffer(commandbuffer_ptr_t cmdbuf, rtgroup_ptr_t rtg = nullptr);
-  virtual void _doPopCommandBuffer();
-  virtual void _doEnqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf);
-  virtual commandbuffer_ptr_t _beginRecordCommandBuffer(renderpass_ptr_t rpass, std::string name);
-  virtual void _endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf);
-
-  virtual void _beginRenderPass(renderpass_ptr_t);
-  virtual void _endRenderPass(renderpass_ptr_t);
-  virtual void _beginSubPass(rendersubpass_ptr_t);
-  virtual void _endSubPass(rendersubpass_ptr_t);
+  virtual void _doEnqueueSecondaryCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf);
+  virtual secondary_commandbuffer_ptr_t _beginRecordCommandBuffer(std::string name, rtgroup_rawptr_t rtg);
+  virtual void _endRecordCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf);
 
 
   ///////////////////////////////////////////////////////////////////////
@@ -399,6 +385,7 @@ public:
   const ::ork::rtti::ICastable* mpCurrentObject         = nullptr;
   RtGroup* _defaultRTG                                = nullptr;
 
+  uint64_t _currentPhase = 0;
   TargetType meTargetType;
   int miW, miH;
   int miModColorStackIndex;
@@ -411,13 +398,9 @@ public:
   fvec4 mvModColor;
   PerformanceItem mFramePerfItem;
   std::unordered_map<uint32_t, svar64_t> _miscVBs;
-  std::vector<sticky_cb_t> _stickyCallbacks;
+  std::vector<sticky_cb_t> _beginFrameBlockers;
 
-  commandbuffer_ptr_t _recordCommandBuffer;
-  commandbuffer_ptr_t _defaultCommandBuffer;
-  shared_pool::fixed_pool<CommandBuffer, 4> _cmdbuf_pool;
-  std::stack<commandbuffer_ptr_t> _cmdbuf_stack;
-  commandbuffer_ptr_t _current_cmdbuf;
+  secondary_commandbuffer_ptr_t _recordCommandBuffer;
 
 private:
   std::vector<void_lambda_t> _onBeginFrameCallbacks;
@@ -426,6 +409,10 @@ private:
   LockedResource<gpueventsink_map_t> _gpuEventSinks;
   gpuevent_queue_t _gpuEventQueue;
 
+  void _processBeginFrameBlockers();
+  void _loadingPhaseOperations();
+
+  virtual void _doPreBeginFrame() {}
   virtual void _doBeginFrame() = 0;
   virtual void _doEndFrame()   = 0;
   virtual load_token_t _doBeginLoad() {
@@ -787,33 +774,21 @@ private:
   int mCameraNumber;
 };
 
-struct RenderPass {
-  svarshp_t _impl;
-  std::vector<rendersubpass_ptr_t> _subpasses;
-  bool _immutable        = false;
-  bool _allow_clear      = true;
-  std::string _debugName = "RenderPass";
-};
-
-struct RenderSubPass {
-
-  RenderSubPass();
-
-  std::vector<rendersubpass_ptr_t> _subpass_dependencies;
-  rtgroup_ptr_t _rtg_input;
-  rtgroup_ptr_t _rtg_output;
-  svarshp_t _impl;
-  std::string _debugName;
-  commandbuffer_ptr_t _commandbuffer;
-};
-
-struct CommandBuffer {
-  CommandBuffer(std::string name = "---")
+struct PrimaryCommandBuffer {
+  PrimaryCommandBuffer(std::string name = "---")
       : _debugName(name) {
   }
   svarshp_t _impl;
   std::string _debugName;
-  bool _is_primary = false;
+  bool _no_draw    = false;
+};
+
+struct SecondaryCommandBuffer {
+  SecondaryCommandBuffer(std::string name = "---")
+      : _debugName(name) {
+  }
+  svarshp_t _impl;
+  std::string _debugName;
   bool _no_draw    = false;
 };
 

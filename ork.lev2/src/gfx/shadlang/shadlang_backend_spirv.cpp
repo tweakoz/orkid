@@ -12,51 +12,51 @@ namespace ork::lev2::shadlang::spirv {
 using namespace SHAST;
 /////////////////////////////////////////////////////////////////////////////////////////////////
 struct LayoutStandard430 { // layout by glsl standard 430
-    //////////////////////////////////////////////
-    LayoutStandard430()
-        : _cursor(0) {
+  //////////////////////////////////////////////
+  LayoutStandard430()
+      : _cursor(0) {
+  }
+  void incrementDatatype(const std::string& dtname, size_t array_len = 1) {
+    auto& block_sizes = SpirvCompilerGlobals::instance()->_block_data_sizes;
+    auto it           = block_sizes.find(dtname);
+    if (it == block_sizes.end()) {
+      printf("dtname<%s> not found in block_sizes\n", dtname.c_str());
+      OrkAssert(false);
     }
-    void incrementDatatype(const std::string& dtname, size_t array_len = 1) {
-        auto& block_sizes = SpirvCompilerGlobals::instance()->_block_data_sizes;
-        auto it = block_sizes.find(dtname);
-        if( it == block_sizes.end() ){
-          printf( "dtname<%s> not found in block_sizes\n", dtname.c_str() );
-          OrkAssert(false);
-        }
-        size_t item_size = it->second;
+    size_t item_size = it->second;
 
-        // Handle alignment
-        if (dtname == "vec3" || dtname == "ivec3" || dtname == "uvec3") {
-            item_size = 16; // Align to 16 bytes
-        } else if (dtname == "mat3" || dtname == "imat3" || dtname == "umat3") {
-            item_size = 48; // 3 vec3s each aligned to 16 bytes
-        }
-
-        // Handle arrays
-        if (array_len > 0) {
-            item_size *= array_len;
-
-            // Arrays are aligned to the size of one element
-            auto it = block_sizes.find(dtname);
-            OrkAssert(it != block_sizes.end());
-            size_t alignment = it->second;
-            if (_cursor % alignment != 0) {
-                _cursor += alignment - (_cursor % alignment);
-            }
-        }
-
-        _cursor += item_size;
+    // Handle alignment
+    if (dtname == "vec3" || dtname == "ivec3" || dtname == "uvec3") {
+      item_size = 16; // Align to 16 bytes
+    } else if (dtname == "mat3" || dtname == "imat3" || dtname == "umat3") {
+      item_size = 48; // 3 vec3s each aligned to 16 bytes
     }
-    //////////////////////////////////////////////
-    size_t cursor() const {
-        return _cursor;
+
+    // Handle arrays
+    if (array_len > 0) {
+      item_size *= array_len;
+
+      // Arrays are aligned to the size of one element
+      auto it = block_sizes.find(dtname);
+      OrkAssert(it != block_sizes.end());
+      size_t alignment = it->second;
+      if (_cursor % alignment != 0) {
+        _cursor += alignment - (_cursor % alignment);
+      }
     }
-    //////////////////////////////////////////////
-    std::size_t _cursor;
+
+    _cursor += item_size;
+  }
+  //////////////////////////////////////////////
+  size_t cursor() const {
+    return _cursor;
+  }
+  //////////////////////////////////////////////
+  std::size_t _cursor;
 };
 /////////////////////////////////////////////////////////////////////////////////////////////////
-SpirvCompilerGlobals::SpirvCompilerGlobals(){
-  bool _vulkan = true;
+SpirvCompilerGlobals::SpirvCompilerGlobals() {
+  bool _vulkan            = true;
   _io_data_sizes["int"]   = 1;
   _io_data_sizes["uint"]  = 1;
   _io_data_sizes["float"] = 1;
@@ -103,7 +103,7 @@ SpirvCompilerGlobals::SpirvCompilerGlobals(){
 
   if (_vulkan) {
     _id_renames["ofx_instanceID"] = "gl_InstanceIndex";
-    _id_renames["gl_VertexID"] = "gl_VertexIndex";
+    _id_renames["gl_VertexID"]    = "gl_VertexIndex";
 
   } else {
     _id_renames["ofx_depth"]      = "gl_FragDepth";
@@ -123,15 +123,14 @@ SpirvCompilerGlobals::SpirvCompilerGlobals(){
   _id_renames["DTOR"]        = "0.017453292519943295";
   _id_renames["RTOD"]        = "57.29577951308232";
 
-  #if defined(__APPLE__)
-    _id_renames["ORK_GPU_SHADER"]        = "";
-  #else
-    _id_renames["ORK_GPU_SHADER"]        = "GL_NV_gpu_shader5";
-  #endif
-
+#if defined(__APPLE__)
+  _id_renames["ORK_GPU_SHADER"] = "";
+#else
+  _id_renames["ORK_GPU_SHADER"] = "GL_NV_gpu_shader5";
+#endif
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
-spirvcompilerglobals_constptr_t SpirvCompilerGlobals::instance(){
+spirvcompilerglobals_constptr_t SpirvCompilerGlobals::instance() {
   static spirvcompilerglobals_constptr_t _instance = std::make_shared<SpirvCompilerGlobals>();
   return _instance;
 }
@@ -139,7 +138,6 @@ spirvcompilerglobals_constptr_t SpirvCompilerGlobals::instance(){
 SpirvCompiler::SpirvCompiler(transunit_ptr_t transu, bool vulkan)
     : _transu(transu)
     , _vulkan(vulkan) {
-
 
   _processGlobalRenames();
   _convertSamplerSets();
@@ -155,70 +153,83 @@ void SpirvCompiler::_beginShader(shader_ptr_t shader) {
   _extension_group = std::make_shared<MiscGroupNode>();
   _uniforms_group  = std::make_shared<MiscGroupNode>();
   _libraries_group = std::make_shared<MiscGroupNode>();
-  _types_group = std::make_shared<MiscGroupNode>();
+  _types_group     = std::make_shared<MiscGroupNode>();
   _input_index     = 0;
   _output_index    = 0;
 
-  printf( "begin shader<%s>\n", shader->_name.c_str() );
+  _collected_uniform_sets.clear();
 
-  /////////////////////////////////////////////////
   /////////////////////////////////////////////////
   // process shader inheritances
   /////////////////////////////////////////////////
-  /////////////////////////////////////////////////
   InheritanceTracker tracker(_transu);
   _binding_id = 0;
+
+  // Determine shader type
+  bool is_vertex_shader   = (std::dynamic_pointer_cast<VertexShader>(shader) != nullptr);
+  bool is_fragment_shader = (std::dynamic_pointer_cast<FragmentShader>(shader) != nullptr);
+  bool is_geometry_shader = (std::dynamic_pointer_cast<GeometryShader>(shader) != nullptr);
+  bool is_compute_shader  = (std::dynamic_pointer_cast<ComputeShader>(shader) != nullptr);
+
   ////////////////////////////////////////////////
   tracker._onInheritLibrary = [&](std::string INHID, libblock_ptr_t lib_block) { //
-    printf( "INHERIT LIB<%s> depth<%zu>\n", INHID.c_str(), tracker._stack_depth );
     _inheritLibrary(lib_block);
   };
   ////////////////////////////////////////////////
   tracker._onInheritTypes = [&](std::string INHID, typeblock_ptr_t typ_block) { //
-    printf( "INHERIT TYP<%s> depth<%zu>\n", INHID.c_str(), tracker._stack_depth );
     _inheritTypes(typ_block);
   };
   ////////////////////////////////////////////////
   tracker._onInheritSamplerSet = [=](std::string INHID, astnode_ptr_t sset) { //
-    printf( "INHERIT SSET<%s>\n", INHID.c_str() );
-    auto it_sset  = _spirvsamplersets.find(INHID);
+    auto it_sset = _spirvsamplersets.find(INHID);
     OrkAssert(it_sset != _spirvsamplersets.end());
     auto spirvsmpset = it_sset->second;
     _inheritSamplerSet(INHID, spirvsmpset);
   };
   ////////////////////////////////////////////////
   tracker._onInheritUniformSet = [=](std::string INHID, astnode_ptr_t uset) { //
-    printf( "INHERIT USET<%s>\n", INHID.c_str() );
-    auto it_uset  = _spirvuniformsets.find(INHID);
+    auto it_uset = _spirvuniformsets.find(INHID);
     OrkAssert(it_uset != _spirvuniformsets.end());
     auto spirvuniset = it_uset->second;
     _inheritUniformSet(INHID, spirvuniset);
   };
   ////////////////////////////////////////////////
   tracker._onInheritUniformBlk = [=](std::string INHID, astnode_ptr_t ublk) { //
-    printf( "INHERIT UBLK<%s>\n", INHID.c_str() );
-      auto it_ublk  = _spirvuniformblks.find(INHID);
-      OrkAssert(it_ublk != _spirvuniformblks.end());
-      auto spirvuniblk = it_ublk->second;
+    auto it_ublk = _spirvuniformblks.find(INHID);
+    OrkAssert(it_ublk != _spirvuniformblks.end());
+    auto spirvuniblk = it_ublk->second;
     _inheritUniformBlk(INHID, spirvuniblk);
   };
   ////////////////////////////////////////////////
   tracker._onInheritInterface = [=](std::string INHID, astnode_ptr_t interface_node) { //
-    printf( "INHERIT IO<%s>\n", INHID.c_str() );
+    // Only inherit the appropriate interface type for each shader
+    bool is_vertex_interface   = (std::dynamic_pointer_cast<VertexInterface>(interface_node) != nullptr);
+    bool is_fragment_interface = (std::dynamic_pointer_cast<FragmentInterface>(interface_node) != nullptr);
+    bool is_geometry_interface = (std::dynamic_pointer_cast<GeometryInterface>(interface_node) != nullptr);
+    bool is_compute_interface  = (std::dynamic_pointer_cast<ComputeInterface>(interface_node) != nullptr);
+
+    // Skip vertex interfaces when processing fragment shaders
+    // (they will be handled by the fragment interface inheritance)
+    if (is_fragment_shader && is_vertex_interface) {
+      return;
+    }
+
+    // Skip fragment interfaces when processing vertex shaders
+    if (is_vertex_shader && is_fragment_interface) {
+      return;
+    }
+
     _inheritIO(interface_node);
-  }; 
+  };
   ////////////////////////////////////////////////
   tracker._onInheritExtension = [=](std::string INHID, astnode_ptr_t ast_node) { //
-    printf( "INHERIT EXTENSIONS<%s>\n", INHID.c_str() );
     auto as_ext_node = std::dynamic_pointer_cast<SemaInheritExtension>(ast_node);
     OrkAssert(as_ext_node);
     _inheritExtension(as_ext_node);
-  }; 
+  };
   ////////////////////////////////////////////////
   tracker.fetchInheritances(shader);
   /////////////////////////////////////////////////
-  /////////////////////////////////////////////////
-
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void SpirvCompiler::processShader(shader_ptr_t sh) {
@@ -269,42 +280,126 @@ void SpirvCompiler::_processGlobalRenames() {
   }
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////
 void SpirvCompiler::_convertSamplerSets() {
   auto ast_smpsets = SHAST::AstNode::collectNodesOfType<SHAST::SamplerSet>(_transu);
+
+  //////////////////////////////////////////////////////////////////////////
+  // Stage 1: Create all sampler sets, parse their direct properties
+  //////////////////////////////////////////////////////////////////////////
   for (auto ast_smpset : ast_smpsets) {
-    auto dsetids = SHAST::AstNode::collectNodesOfType<SHAST::DescriptorSetId>(ast_smpset);
-    OrkAssert(dsetids.size() == 1);
-    int dset_id = dsetids[0]->typedValueForKey<int>("descriptor_set_id").value();
-    printf("sampler dset_id<%d>\n", dset_id);
-    //////////////////////////////////////
-    auto sampler_declarations = SHAST::AstNode::collectNodesOfType<SHAST::SamplerDeclaration>(ast_smpset);
-    //////////////////////////////////////
     auto smpset_name               = ast_smpset->typedValueForKey<std::string>("object_name").value();
-    auto smpset                 = std::make_shared<SpirvSamplerSet>();
+    auto smpset                    = std::make_shared<SpirvSamplerSet>();
     _spirvsamplersets[smpset_name] = smpset;
-    smpset->_name               = smpset_name;
-    smpset->_descriptor_set_id = dset_id;
-    OrkAssert((dset_id>=0) and (dset_id<=4));
-    //////////////////////////////////////
+    smpset->_name                  = smpset_name;
+    smpset->_descriptor_set_id     = -1; // Initialize to invalid value
+
+    // Check for direct DescriptorSetId
+    auto dsetids = SHAST::AstNode::collectNodesOfType<SHAST::DescriptorSetId>(ast_smpset);
+    if (dsetids.size() == 1) {
+      int dset_id                = dsetids[0]->typedValueForKey<int>("descriptor_set_id").value();
+      smpset->_descriptor_set_id = dset_id;
+      OrkAssert((dset_id >= 0) and (dset_id <= 4));
+    }
+
+    // Process local sampler declarations
+    auto sampler_declarations = SHAST::AstNode::collectNodesOfType<SHAST::SamplerDeclaration>(ast_smpset);
     for (auto decl : sampler_declarations) {
-      dumpAstNode(decl);
       auto sampler_type = decl->childAs<SHAST::SamplerType>(0);
       OrkAssert(sampler_type);
       auto smp_typename = sampler_type->typedValueForKey<std::string>("sampler_type").value();
-      auto semaid         = decl->childAs<SemaIdentifier>(1);
-      auto smp_name = semaid->typedValueForKey<std::string>("identifier_name").value();
-      auto sampler                     = std::make_shared<SpirvSampler>();
-      sampler->_datatype               = smp_typename;
-      sampler->_identifier             = smp_name;
+      auto semaid       = decl->childAs<SemaIdentifier>(1);
+      auto smp_name     = semaid->typedValueForKey<std::string>("identifier_name").value();
+
+      auto sampler                        = std::make_shared<SpirvSampler>();
+      sampler->_datatype                  = smp_typename;
+      sampler->_identifier                = smp_name;
       smpset->_samplers_by_name[smp_name] = sampler;
     }
-    //////////////////////////////////////
+  }
+
+  //////////////////////////////////////////////////////////////////////////
+  // Stage 2: Process inheritance
+  //////////////////////////////////////////////////////////////////////////
+  for (auto ast_smpset : ast_smpsets) {
+    auto smpset_name = ast_smpset->typedValueForKey<std::string>("object_name").value();
+    auto smpset      = _spirvsamplersets[smpset_name];
+
+    auto inherit_items = SHAST::AstNode::collectNodesOfType<SHAST::InheritListItem>(ast_smpset);
+
+    if (inherit_items.size() > 0) {
+      bool parent_was_found = false;
+
+      for (auto inherit_item : inherit_items) {
+        auto inherit_obj = inherit_item->typedValueForKey<std::string>("inherited_object").value();
+
+        // Check if the inherited item is a SamplerSet
+        auto parent_it = _spirvsamplersets.find(inherit_obj);
+        if (parent_it != _spirvsamplersets.end()) {
+          auto parent_smpset = parent_it->second;
+
+          // Inherit descriptor set ID
+          smpset->_descriptor_set_id = parent_smpset->_descriptor_set_id;
+
+          // Create new map with parent samplers first, then local samplers
+          std::unordered_map<std::string, spirvsampler_ptr_t> new_samplers_by_name;
+
+          // First add all parent samplers
+          for (auto parent_sampler_item : parent_smpset->_samplers_by_name) {
+            auto sampler_name   = parent_sampler_item.first;
+            auto parent_sampler = parent_sampler_item.second;
+
+            // Clone the sampler
+            auto inherited_sampler         = std::make_shared<SpirvSampler>();
+            inherited_sampler->_datatype   = parent_sampler->_datatype;
+            inherited_sampler->_identifier = parent_sampler->_identifier;
+
+            new_samplers_by_name[sampler_name] = inherited_sampler;
+          }
+
+          // Then add local samplers (checking for duplicates)
+          for (auto local_sampler_item : smpset->_samplers_by_name) {
+            auto sampler_name  = local_sampler_item.first;
+            auto local_sampler = local_sampler_item.second;
+
+            // Check for duplicates
+            auto it = new_samplers_by_name.find(sampler_name);
+            if (it != new_samplers_by_name.end()) {
+              printf("SamplerSet<%s> redefines inherited sampler<%s> - not allowed!\n", smpset_name.c_str(), sampler_name.c_str());
+              OrkAssert(false);
+            }
+
+            new_samplers_by_name[sampler_name] = local_sampler;
+          }
+
+          // Replace the sampler set's samplers with the new combined map
+          smpset->_samplers_by_name = new_samplers_by_name;
+
+          parent_was_found = true;
+          break; // Only inherit from first valid SamplerSet parent
+        }
+      }
+
+      if (!parent_was_found) {
+        printf(
+            "SamplerSet<%s> inherits from another SamplerSet<%s> which is not found!\n",
+            smpset_name.c_str(),
+            inherit_items[0]->typedValueForKey<std::string>("inherited_object").value().c_str());
+        OrkAssert(false);
+      }
+    } else {
+      // No inheritance - must have direct descriptor set ID
+      if (smpset->_descriptor_set_id < 0) {
+        printf("SamplerSet<%s> must have either DescriptorSetId or inherit from another SamplerSet!\n", smpset_name.c_str());
+        OrkAssert(false);
+      }
+    }
   }
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void SpirvCompiler::_convertUniformSets() {
   auto ast_unisets = SHAST::AstNode::collectNodesOfType<SHAST::UniformSet>(_transu);
-  //const auto& DATASIZES = SpirvCompilerGlobals::instance()->_data_sizes;
+  // const auto& DATASIZES = SpirvCompilerGlobals::instance()->_data_sizes;
   for (auto ast_uniset : ast_unisets) {
     auto decls = SHAST::AstNode::collectNodesOfType<SHAST::DataDeclarationBase>(ast_uniset);
     //////////////////////////////////////
@@ -317,8 +412,8 @@ void SpirvCompiler::_convertUniformSets() {
     for (auto d : decls) {
       auto tid = d->childAs<SHAST::TypedIdentifier>(0);
       OrkAssert(tid);
-      auto dt         = tid->typedValueForKey<std::string>("data_type").value();
-      auto id         = tid->typedValueForKey<std::string>("identifier_name").value();
+      auto dt                    = tid->typedValueForKey<std::string>("data_type").value();
+      auto id                    = tid->typedValueForKey<std::string>("identifier_name").value();
       auto item                  = std::make_shared<SpirvUniformSetItem>();
       item->_datatype            = dt;
       item->_identifier          = id;
@@ -331,15 +426,14 @@ void SpirvCompiler::_convertUniformSets() {
         item->_is_array     = true;
         auto ary_len_str    = len_node->typedValueForKey<std::string>("literal_value").value();
         item->_array_length = atoi(ary_len_str.c_str());
-        
+
         layout.incrementDatatype(dt, item->_array_length);
-        //offset += item_size*item->_array_length;
-      }
-      else{
+        // offset += item_size*item->_array_length;
+      } else {
         layout.incrementDatatype(dt, 0);
       }
-      if(layout.cursor()>256){
-        printf( "uniset<%s> pushconstant overflow length<%zu>\n", uni_name.c_str(), layout.cursor() );
+      if (layout.cursor() > 256) {
+        printf("uniset<%s> pushconstant overflow length<%zu>\n", uni_name.c_str(), layout.cursor());
         OrkAssert(false);
       }
     }
@@ -347,43 +441,50 @@ void SpirvCompiler::_convertUniformSets() {
   }
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////
 void SpirvCompiler::_convertUniformBlocks() {
   auto ast_uniblks = SHAST::AstNode::collectNodesOfType<SHAST::UniformBlk>(_transu);
+
+  //////////////////////////////////////////////////////////////////////////
+  // Stage 1: Create all uniform blocks, parse their direct properties
+  //////////////////////////////////////////////////////////////////////////
   for (auto ast_uniblk : ast_uniblks) {
-    auto dsetids = SHAST::AstNode::collectNodesOfType<SHAST::DescriptorSetId>(ast_uniblk);
-    OrkAssert(dsetids.size() == 1);
-    int dset_id = dsetids[0]->typedValueForKey<int>("descriptor_set_id").value();
-    printf("uniblk dset_id<%d>\n", dset_id);
-    //////////////////////////////////////
-    auto decls = SHAST::AstNode::collectNodesOfType<SHAST::DataDeclarationBase>(ast_uniblk);
-    //////////////////////////////////////
     auto uni_name               = ast_uniblk->typedValueForKey<std::string>("object_name").value();
     auto uniblk                 = std::make_shared<SpirvUniformBlock>();
     _spirvuniformblks[uni_name] = uniblk;
     uniblk->_name               = uni_name;
-    uniblk->_descriptor_set_id = dset_id;
-    OrkAssert((dset_id>=0) and (dset_id<=4));
-    //////////////////////////////////////
+    uniblk->_descriptor_set_id  = -1; // Initialize to invalid value
+
+    // Check for direct DescriptorSetId
+    auto dsetids = SHAST::AstNode::collectNodesOfType<SHAST::DescriptorSetId>(ast_uniblk);
+    if (dsetids.size() == 1) {
+      int dset_id                = dsetids[0]->typedValueForKey<int>("descriptor_set_id").value();
+      uniblk->_descriptor_set_id = dset_id;
+      OrkAssert((dset_id >= 0) and (dset_id <= 4));
+      printf("uniblk dset_id<%d>\n", dset_id);
+    }
+
+    // Parse local data declarations
+    auto decls = SHAST::AstNode::collectNodesOfType<SHAST::DataDeclarationBase>(ast_uniblk);
     LayoutStandard430 layout;
-    //////////////////////////////////////
+
     for (auto d : decls) {
       auto tid = d->childAs<SHAST::TypedIdentifier>(0);
       OrkAssert(tid);
-      auto dt                    = tid->typedValueForKey<std::string>("data_type").value();
-
-      auto id                    = tid->typedValueForKey<std::string>("identifier_name").value();
+      auto dt = tid->typedValueForKey<std::string>("data_type").value();
+      auto id = tid->typedValueForKey<std::string>("identifier_name").value();
 
       auto it = dt.find("sampler");
-      if( it != std::string::npos ){
-        printf( "sampler<%s:%s> in uniform block<%s> not allowed!\n", dt.c_str(), id.c_str(), uni_name.c_str() );
+      if (it != std::string::npos) {
+        printf("sampler<%s:%s> in uniform block<%s> not allowed!\n", dt.c_str(), id.c_str(), uni_name.c_str());
         OrkAssert(false);
       }
 
+      auto item         = std::make_shared<SpirvUniformBlockItem>();
+      item->_datatype   = dt;
+      item->_offset     = layout.cursor();
+      item->_identifier = id;
 
-      auto item                  = std::make_shared<SpirvUniformBlockItem>();
-      item->_datatype            = dt;
-      item->_offset = layout.cursor();
-      item->_identifier          = id;
       uniblk->_items_by_name[id] = item;
       uniblk->_items_by_order.push_back(item);
 
@@ -393,41 +494,146 @@ void SpirvCompiler::_convertUniformBlocks() {
         auto ary_len_str    = len_node->typedValueForKey<std::string>("literal_value").value();
         item->_array_length = atoi(ary_len_str.c_str());
         layout.incrementDatatype(dt, item->_array_length);
-        // dumpAstNode(as_array);
-      }
-      else{
+      } else {
         layout.incrementDatatype(dt, 0);
       }
     }
-    if(layout.cursor()>65536){
-      printf( "uniblk<%s> buffer overflow length<%zu>\n", uni_name.c_str(), layout.cursor() );
+
+    if (layout.cursor() > 65536) {
+      printf("uniblk<%s> buffer overflow length<%zu>\n", uni_name.c_str(), layout.cursor());
       OrkAssert(false);
     }
   }
-}
 
+  //////////////////////////////////////////////////////////////////////////
+  // Stage 2: Process inheritance
+  //////////////////////////////////////////////////////////////////////////
+  for (auto ast_uniblk : ast_uniblks) {
+    auto uni_name = ast_uniblk->typedValueForKey<std::string>("object_name").value();
+    auto uniblk   = _spirvuniformblks[uni_name];
+
+    auto inherit_items = SHAST::AstNode::collectNodesOfType<SHAST::InheritListItem>(ast_uniblk);
+
+    if (inherit_items.size() > 0) {
+      bool parent_was_found = false;
+
+      for (auto inherit_item : inherit_items) {
+        auto inherit_obj = inherit_item->typedValueForKey<std::string>("inherited_object").value();
+
+        // Check if the inherited item is a UniformBlock
+        auto parent_it = _spirvuniformblks.find(inherit_obj);
+        if (parent_it != _spirvuniformblks.end()) {
+          auto parent_uniblk = parent_it->second;
+
+          // Inherit descriptor set ID
+          uniblk->_descriptor_set_id = parent_uniblk->_descriptor_set_id;
+
+          // Prepend parent items to the beginning
+          std::vector<spirvuniblkitem_ptr_t> new_items_by_order;
+          std::unordered_map<std::string, spirvuniblkitem_ptr_t> new_items_by_name;
+
+          // First add all parent items
+          LayoutStandard430 new_layout;
+          for (auto parent_item : parent_uniblk->_items_by_order) {
+            // Clone the item
+            auto inherited_item           = std::make_shared<SpirvUniformBlockItem>();
+            inherited_item->_datatype     = parent_item->_datatype;
+            inherited_item->_identifier   = parent_item->_identifier;
+            inherited_item->_offset       = new_layout.cursor();
+            inherited_item->_is_array     = parent_item->_is_array;
+            inherited_item->_array_length = parent_item->_array_length;
+
+            new_items_by_order.push_back(inherited_item);
+            new_items_by_name[inherited_item->_identifier] = inherited_item;
+
+            // Update layout cursor
+            if (inherited_item->_is_array) {
+              new_layout.incrementDatatype(inherited_item->_datatype, inherited_item->_array_length);
+            } else {
+              new_layout.incrementDatatype(inherited_item->_datatype, 0);
+            }
+          }
+
+          // Then add local items (with updated offsets)
+          for (auto local_item : uniblk->_items_by_order) {
+            // Check for duplicates
+            auto it = new_items_by_name.find(local_item->_identifier);
+            if (it != new_items_by_name.end()) {
+              printf(
+                  "UniformBlock<%s> redefines inherited item<%s> - not allowed!\n",
+                  uni_name.c_str(),
+                  local_item->_identifier.c_str());
+              OrkAssert(false);
+            }
+
+            // Update offset based on inherited items
+            local_item->_offset = new_layout.cursor();
+
+            new_items_by_order.push_back(local_item);
+            new_items_by_name[local_item->_identifier] = local_item;
+
+            // Update layout cursor
+            if (local_item->_is_array) {
+              new_layout.incrementDatatype(local_item->_datatype, local_item->_array_length);
+            } else {
+              new_layout.incrementDatatype(local_item->_datatype, 0);
+            }
+          }
+
+          // Replace the block's items with the new combined list
+          uniblk->_items_by_order = new_items_by_order;
+          uniblk->_items_by_name  = new_items_by_name;
+
+          parent_was_found = true;
+          break; // Only inherit from first valid UniformBlock parent
+        }
+      }
+
+      if (!parent_was_found) {
+        printf(
+            "UniformBlock<%s> inherits from another UniformBlock<%s> which is not found!\n",
+            uni_name.c_str(),
+            inherit_items[0]->typedValueForKey<std::string>("inherited_object").value().c_str());
+        OrkAssert(false);
+      }
+    } else {
+      // No inheritance - must have direct descriptor set ID
+      if (uniblk->_descriptor_set_id < 0) {
+        printf("UniformBlock<%s> must have either DescriptorSetId or inherit from another UniformBlock!\n", uni_name.c_str());
+        OrkAssert(false);
+      }
+    }
+  }
+}
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void SpirvCompiler::_inheritSamplerSet(
     std::string unisetname,        //
     spirvsmpset_ptr_t spirvsset) { //
-    OrkAssert( (spirvsset->_descriptor_set_id>=0) and (spirvsset->_descriptor_set_id<=4) );
-    /////////////////////
-    // samplers
-    /////////////////////
-    for (auto item : spirvsset->_samplers_by_name) {
-      auto dt   = item.second->_datatype;
-      auto id   = item.second->_identifier;
-      auto line = FormatString(
-          "layout(set=%zu, binding=%d) uniform %s %s;",   //
-          spirvsset->_descriptor_set_id,                 //
-          _binding_id,                                   //
-          dt.c_str(),                                    //
-          id.c_str());
-      _appendText(_uniforms_group, line.c_str());
-     _binding_id++;
+  OrkAssert((spirvsset->_descriptor_set_id >= 0) and (spirvsset->_descriptor_set_id <= 4));
+  /////////////////////
+  // samplers
+  /////////////////////
+  for (auto item : spirvsset->_samplers_by_name) {
+    auto dt   = item.second->_datatype;
+    auto id   = item.second->_identifier;
+    
+    // Try to find binding ID from merged resources first
+    int binding_id = _findBindingIdFromMergedResources(id, unisetname);
+    if (binding_id == -1) {
+      // Fallback to original behavior if not found in merged resources
+      binding_id = _binding_id;
+      _binding_id++;
     }
-
+    
+    auto line = FormatString(
+        "layout(set=%zu, binding=%d) uniform %s %s;", //
+        spirvsset->_descriptor_set_id,                //
+        binding_id,                                   //
+        dt.c_str(),                                   //
+        id.c_str());
+    _appendText(_uniforms_group, line.c_str());
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -436,30 +642,97 @@ void SpirvCompiler::_inheritUniformSet(
     std::string unisetname,        //
     spirvuniset_ptr_t spirvuset) { //
   if (_vulkan) {
-    /////////////////////
-    // loose unis
-    /////////////////////
-    if( spirvuset->_items_by_order.size() ){
-      auto line = FormatString(
-          "layout(push_constant) uniform %s {", //
-          unisetname.c_str());
-      _appendText(_uniforms_group, line.c_str());
-      for (auto item : spirvuset->_items_by_order) {
-        auto dt = item->_datatype;
-        auto id = item->_identifier;
-        if (item->_is_array) {
-          size_t array_len = item->_array_length;
-          auto str         = FormatString("%s %s[%zu];", dt.c_str(), id.c_str(), array_len);
-          _appendText(_uniforms_group, str.c_str());
-        } else {
-          _appendText(_uniforms_group, (dt + " " + id + ";").c_str());
-        }
-      }
-      _appendText(_uniforms_group, "};");
-    }
+    // Just collect for now, don't emit
+    _collected_uniform_sets.push_back(spirvuset);
   } else { // opengl
     OrkAssert(false);
   }
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////
+void SpirvCompiler::_emitMergedPushConstants() {
+  if (!_vulkan || _collected_uniform_sets.empty()) {
+    return;
+  }
+
+  // Calculate total size and merge all items
+  LayoutStandard430 merged_layout;
+  std::vector<std::pair<spirvunisetitem_ptr_t, std::string>> all_items; // item, source_set_name
+
+  for (auto spirvuset : _collected_uniform_sets) {
+    for (auto item : spirvuset->_items_by_order) {
+      // Check for duplicate names
+      for (const auto& existing : all_items) {
+        if (existing.first->_identifier == item->_identifier) {
+          printf("ERROR: Duplicate uniform name '%s' found in uniform sets!\n", item->_identifier.c_str());
+          OrkAssert(false);
+        }
+      }
+
+      // Clone item with new offset
+      auto merged_item           = std::make_shared<SpirvUniformSetItem>();
+      merged_item->_datatype     = item->_datatype;
+      merged_item->_identifier   = item->_identifier;
+      merged_item->_is_array     = item->_is_array;
+      merged_item->_array_length = item->_array_length;
+      merged_item->_offset       = merged_layout.cursor();
+
+      all_items.push_back({merged_item, spirvuset->_name});
+
+      // Update layout
+      if (merged_item->_is_array) {
+        merged_layout.incrementDatatype(merged_item->_datatype, merged_item->_array_length);
+      } else {
+        merged_layout.incrementDatatype(merged_item->_datatype, 0);
+      }
+    }
+  }
+
+  // Check size limit AFTER collecting all items
+  size_t total_size = merged_layout.cursor();
+  if (total_size > 256) {
+    printf("ERROR: Combined push_constant size %zu exceeds 256 byte limit!\n", total_size);
+    printf("Uniform sets included:\n");
+    for (auto spirvuset : _collected_uniform_sets) {
+      printf("  - %s\n", spirvuset->_name.c_str());
+    }
+    OrkAssert(false);
+  }
+
+  if(all_items.size()){
+    // Emit single push_constant block ONCE, outside the loop
+    _appendText(_uniforms_group, "layout(push_constant) uniform PushConstants {");
+
+    // Add comment showing which sets were merged
+    std::string sets_comment = "  // Merged from: ";
+    for (size_t i = 0; i < _collected_uniform_sets.size(); i++) {
+      if (i > 0)
+        sets_comment += ", ";
+      sets_comment += _collected_uniform_sets[i]->_name;
+    }
+    _appendText(_uniforms_group, sets_comment.c_str());
+
+    // Emit all items
+    for (const auto& item_pair : all_items) {
+      auto item       = item_pair.first;
+      auto source_set = item_pair.second;
+
+      std::string line = "  ";
+      if (item->_is_array) {
+        line += FormatString(
+            "%s %s[%zu]; // from %s", item->_datatype.c_str(), item->_identifier.c_str(), item->_array_length, source_set.c_str());
+      } else {
+        line += FormatString("%s %s; // from %s", item->_datatype.c_str(), item->_identifier.c_str(), source_set.c_str());
+      }
+      _appendText(_uniforms_group, line.c_str());
+    }
+
+    _appendText(_uniforms_group, "};");
+  }
+
+  // Clear for next shader
+  _collected_uniform_sets.clear();
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void SpirvCompiler::_inheritLibrary(libblock_ptr_t lib_block) {
@@ -495,16 +768,25 @@ void SpirvCompiler::_inheritTypes(typeblock_ptr_t typ_block) {
 void SpirvCompiler::_inheritUniformBlk(
     std::string uniblkname,        //
     spirvuniblk_ptr_t spirvublk) { //
-    OrkAssert( (spirvublk->_descriptor_set_id>=0) and (spirvublk->_descriptor_set_id<=4) );
+  OrkAssert((spirvublk->_descriptor_set_id >= 0) and (spirvublk->_descriptor_set_id <= 4));
   if (_vulkan) {
     size_t _offset = 0;
     /////////////////////
     // loose unis
     /////////////////////
+    
+    // Try to find binding ID from merged resources first
+    int binding_id = _findBindingIdFromMergedResources(uniblkname, uniblkname);
+    if (binding_id == -1) {
+      // Fallback to original behavior if not found in merged resources
+      binding_id = _binding_id;
+      _binding_id++;
+    }
+    
     auto line = FormatString(
-        "layout(set=%zu, binding=%zu) uniform %s {", //
+        "layout(set=%zu, binding=%d) uniform %s {", //
         spirvublk->_descriptor_set_id,               //
-        _binding_id,                                 //
+        binding_id,                                  //
         uniblkname.c_str());
     _appendText(_uniforms_group, line.c_str());
     for (auto item : spirvublk->_items_by_order) {
@@ -519,7 +801,6 @@ void SpirvCompiler::_inheritUniformBlk(
       }
     }
     _appendText(_uniforms_group, "};");
-    _binding_id++;
   } else { // opengl
     OrkAssert(false);
   }
@@ -529,31 +810,30 @@ void SpirvCompiler::_inheritUniformBlk(
 
 std::string SpirvCompiler::_ifLayoutHeader(astnode_ptr_t layout_node, int iloc) {
   std::string outhdr = "layout(";
-  size_t num_items = layout_node->_children.size();
-  if(iloc>=0){
-    OrkAssert(num_items==0);
+  size_t num_items   = layout_node->_children.size();
+  if (iloc >= 0) {
+    OrkAssert(num_items == 0);
     outhdr += FormatString("location=%d", iloc);
-  }
-  else{
-    for( size_t i=0; i<num_items; i++  ){
+  } else {
+    for (size_t i = 0; i < num_items; i++) {
       auto item = layout_node->childAs<InterfaceLayoutItem>(i);
-      switch(item->_children.size() ){
-        case 1:{ // SemaId
-          auto key = childAsSemaIdString(item,0);
+      switch (item->_children.size()) {
+        case 1: { // SemaId
+          auto key = childAsSemaIdString(item, 0);
           outhdr += key;
           break;
         }
-        case 2:{ // SemaId = SemaIntegerLiteral
-          auto key = childAsSemaIdString(item,0);
-          auto val = childAsSemaInteger(item,1);
-          outhdr += key + "=" + FormatString("%d",val);
+        case 2: { // SemaId = SemaIntegerLiteral
+          auto key = childAsSemaIdString(item, 0);
+          auto val = childAsSemaInteger(item, 1);
+          outhdr += key + "=" + FormatString("%d", val);
           break;
         }
         default:
           OrkAssert(false);
           break;
       }
-      if(i<(num_items-1)){
+      if (i < (num_items - 1)) {
         outhdr += ",";
       }
     }
@@ -564,31 +844,31 @@ std::string SpirvCompiler::_ifLayoutHeader(astnode_ptr_t layout_node, int iloc) 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-std::string SpirvCompiler::_ifTypedId(astnode_ptr_t tid_node){
+std::string SpirvCompiler::_ifTypedId(astnode_ptr_t tid_node) {
   auto dt = tid_node->typedValueForKey<std::string>("data_type").value();
   auto id = tid_node->typedValueForKey<std::string>("identifier_name").value();
-  return FormatString( "%s %s", dt.c_str(), id.c_str() );
+  return FormatString("%s %s", dt.c_str(), id.c_str());
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-std::string SpirvCompiler::_ifIoItem(astnode_ptr_t layout_node, //
-                                     astnode_ptr_t tid_node,
-                                     std::string direction,
-                                     size_t& IO_index) { //
+std::string SpirvCompiler::_ifIoItem(
+    astnode_ptr_t layout_node, //
+    astnode_ptr_t tid_node,
+    std::string direction,
+    size_t& IO_index) { //
 
   const auto& DATASIZES = SpirvCompilerGlobals::instance()->_io_data_sizes;
 
   std::string item_str;
 
-  // InterfaceLayout 
+  // InterfaceLayout
   // TypedIdentifier
   // InterfaceLayout TypedIdentifier
 
-  bool has_layout = layout_node!=nullptr;
+  bool has_layout = layout_node != nullptr;
 
-
-  bool has_tid = tid_node!=nullptr;
+  bool has_tid = tid_node != nullptr;
 
   ////////////////////////////////
   // determine if layout needs a location
@@ -596,7 +876,7 @@ std::string SpirvCompiler::_ifIoItem(astnode_ptr_t layout_node, //
   ////////////////////////////////
 
   bool need_location = has_tid;
-  if(has_tid){
+  if (has_tid) {
     auto id = tid_node->typedValueForKey<std::string>("identifier_name").value();
     if (id.find("gl_") == 0) {
       need_location = false;
@@ -607,24 +887,22 @@ std::string SpirvCompiler::_ifIoItem(astnode_ptr_t layout_node, //
   // layout
   ////////////////////////////////
 
-  if( layout_node ){
-  
+  if (layout_node) {
+
     size_t num_items = layout_node->_children.size();
-    for( size_t i=0; i<num_items; i++  ){
+    for (size_t i = 0; i < num_items; i++) {
       auto item = layout_node->childAs<InterfaceLayoutItem>(i);
-      auto key = childAsSemaIdString(item,0);
-      if(key=="location"){
+      auto key  = childAsSemaIdString(item, 0);
+      if (key == "location") {
         need_location = false;
       }
     }
 
-    dumpAstNode(layout_node);
-    item_str = _ifLayoutHeader(layout_node, need_location ? IO_index : -1) + " "+direction+" ";
-  }
-  else if(need_location){
-    item_str = FormatString("layout(location=%d) %s ", IO_index, direction.c_str() );
-  }
-  else{
+    // dumpAstNode(layout_node);
+    item_str = _ifLayoutHeader(layout_node, need_location ? IO_index : -1) + " " + direction + " ";
+  } else if (need_location) {
+    item_str = FormatString("layout(location=%d) %s ", IO_index, direction.c_str());
+  } else {
     item_str = direction + " ";
   }
 
@@ -632,25 +910,24 @@ std::string SpirvCompiler::_ifIoItem(astnode_ptr_t layout_node, //
   // typed identifier
   ////////////////////////////////
 
-  if( tid_node ){
+  if (tid_node) {
 
     item_str += _ifTypedId(tid_node);
-    if(need_location){
+    if (need_location) {
       auto dt = tid_node->typedValueForKey<std::string>("data_type").value();
       auto it = DATASIZES.find(dt);
       OrkAssert(it != DATASIZES.end());
       IO_index += it->second;
     }
 
-    bool is_geom_shader = (std::dynamic_pointer_cast<GeometryShader>(_shader)!=nullptr);
+    bool is_geom_shader = (std::dynamic_pointer_cast<GeometryShader>(_shader) != nullptr);
 
-    if(is_geom_shader){ // geometry shaders need [] on their inputs (broadcast from vertex)
+    if (is_geom_shader) { // geometry shaders need [] on their inputs (broadcast from vertex)
 
-      if( direction == "in" ){
+      if (direction == "in") {
         item_str += "[]";
       }
     }
-
   }
 
   return item_str;
@@ -660,61 +937,98 @@ std::string SpirvCompiler::_ifIoItem(astnode_ptr_t layout_node, //
 
 void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
   //
-  // TODO inherited interfaces
+  // Handle inherited interfaces - specifically vertex outputs becoming fragment inputs
   //
-
-  //const auto& DATASIZES = SpirvCompilerGlobals::instance()->_io_data_sizes;
 
   auto ifname    = interface_node->typedValueForKey<std::string>("object_name").value();
   auto decorator = FormatString("// begin interface<%s>", ifname.c_str());
   _appendText(_interface_group, decorator.c_str());
 
-  auto input_groups  = AstNode::collectNodesOfType<InterfaceInputs>(interface_node);
-  auto output_groups = AstNode::collectNodesOfType<InterfaceOutputs>(interface_node);
-  auto storage_groups = AstNode::collectNodesOfType<InterfaceStorages>(interface_node);
-  // printf("  num_input_groups<%zu>\n", input_groups.size());
-  // printf("  num_output_groups<%zu>\n", output_groups.size());
-  /////////////////////////////////////////
+  // Check interface type
+  bool is_fragment_interface = (std::dynamic_pointer_cast<FragmentInterface>(interface_node) != nullptr);
+  bool is_vertex_interface   = (std::dynamic_pointer_cast<VertexInterface>(interface_node) != nullptr);
+  bool is_geometry_interface = (std::dynamic_pointer_cast<GeometryInterface>(interface_node) != nullptr);
+  bool is_compute_interface  = (std::dynamic_pointer_cast<ComputeInterface>(interface_node) != nullptr);
+
+  // For fragment interfaces, first convert inherited vertex outputs to inputs
+  if (is_fragment_interface) {
+    // Find inherited vertex interfaces
+    std::vector<astnode_ptr_t> inherited_vtx_outputs;
+
+    auto inherit_items = AstNode::collectNodesOfType<SemaInheritVertexInterface>(interface_node);
+    for (auto inherit_item : inherit_items) {
+      auto inherit_id = inherit_item->typedValueForKey<std::string>("inherit_id").value();
+      auto vtx_if     = _transu->find<VertexInterface>(inherit_id);
+      if (vtx_if) {
+        // Collect outputs from the vertex interface
+        auto output_groups = AstNode::collectNodesOfType<InterfaceOutputs>(vtx_if);
+        for (auto output_group : output_groups) {
+          auto outputs = AstNode::collectNodesOfType<InterfaceOutput>(output_group);
+          for (auto output : outputs) {
+            inherited_vtx_outputs.push_back(output);
+          }
+        }
+      }
+    }
+
+    // Convert vertex outputs to fragment inputs
+    if (!inherited_vtx_outputs.empty()) {
+      _appendText(_interface_group, "// Inputs inherited from vertex interface outputs");
+      for (auto vtx_output : inherited_vtx_outputs) {
+        auto as_layout = vtx_output->childAs<InterfaceLayout>(0);
+        auto as_tid    = (as_layout != nullptr) ? vtx_output->childAs<TypedIdentifier>(1) : vtx_output->childAs<TypedIdentifier>(0);
+
+        if (as_tid) {
+          // Skip built-in variables like gl_Position
+          auto id = as_tid->typedValueForKey<std::string>("identifier_name").value();
+          if (id.find("gl_") == 0) {
+            continue;
+          }
+
+          // Create input from vertex output
+          auto input_str = _ifIoItem(as_layout, as_tid, "in", _input_index);
+          _appendText(_interface_group, "%s;", input_str.c_str());
+        }
+      }
+    }
+  }
+
+  // Process regular inputs for all interface types
+  auto input_groups = AstNode::collectNodesOfType<InterfaceInputs>(interface_node);
   for (auto input_group : input_groups) {
     auto inputs = AstNode::collectNodesOfType<InterfaceInput>(input_group);
-    printf("  num_inputs<%zu>\n", inputs.size());
     for (auto input : inputs) {
       auto as_layout = input->childAs<InterfaceLayout>(0);
-      auto as_tid = (as_layout!=nullptr) //
-                  ? input->childAs<TypedIdentifier>(1) //
-                  : input->childAs<TypedIdentifier>(0);
+      auto as_tid    = (as_layout != nullptr) ? input->childAs<TypedIdentifier>(1) : input->childAs<TypedIdentifier>(0);
 
       auto input_str = _ifIoItem(as_layout, as_tid, "in", _input_index);
-      _appendText(_interface_group, "%s;", input_str.c_str() );
+      _appendText(_interface_group, "%s;", input_str.c_str());
     }
   }
-  /////////////////////////////////////////
+
+  // Process outputs
+  auto output_groups = AstNode::collectNodesOfType<InterfaceOutputs>(interface_node);
   for (auto output_group : output_groups) {
-    // printf("  num_outputs<%zu>\n", outputs.size());
-    ////////////////////////////////
     auto outputs = AstNode::collectNodesOfType<InterfaceOutput>(output_group);
-    ////////////////////////////////
     for (auto output : outputs) {
       auto as_layout = output->childAs<InterfaceLayout>(0);
-      auto as_tid = (as_layout!=nullptr) //
-                  ? output->childAs<TypedIdentifier>(1) //
-                  : output->childAs<TypedIdentifier>(0);
+      auto as_tid    = (as_layout != nullptr) ? output->childAs<TypedIdentifier>(1) : output->childAs<TypedIdentifier>(0);
 
       auto output_str = _ifIoItem(as_layout, as_tid, "out", _output_index);
-      _appendText(_interface_group, "%s;", output_str.c_str() );
+      _appendText(_interface_group, "%s;", output_str.c_str());
     }
   }
-  /////////////////////////////////////////
+
+  // Process storage groups
+  auto storage_groups = AstNode::collectNodesOfType<InterfaceStorages>(interface_node);
   for (auto storage_group : storage_groups) {
     auto storages = AstNode::collectNodesOfType<InterfaceStorage>(storage_group);
-    printf("  NUM_STORAGES<%zu>\n", storages.size());
     for (auto storage : storages) {
-      dumpAstNode(storage);
       ///////////////////////////////////////////////////////////
       // parse storage top
       ///////////////////////////////////////////////////////////
-      auto layout = storage->findFirstChildOfType<InterfaceLayout>();
-      auto decls  = storage->findFirstChildOfType<DataDeclarations>();
+      auto layout           = storage->findFirstChildOfType<InterfaceLayout>();
+      auto decls            = storage->findFirstChildOfType<DataDeclarations>();
       auto ast_storage_type = storage->childAs<SemaIdentifier>(1);
       auto ast_storage_name = storage->childAs<SemaIdentifier>(3);
       OrkAssert(layout);
@@ -723,8 +1037,6 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
       OrkAssert(ast_storage_name);
       auto storage_type = ast_storage_type->typedValueForKey<std::string>("identifier_name").value();
       auto storage_name = ast_storage_name->typedValueForKey<std::string>("identifier_name").value();
-      printf("storage_type<%s>\n", storage_type.c_str());
-      printf("storage_name<%s>\n", storage_name.c_str());
 
       ///////////////////////////////////////////////////////////
       // parse/emit layout
@@ -740,59 +1052,55 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
       OrkAssert(ast_bin_num);
       auto bin_num = atoi(ast_bin_num->typedValueForKey<std::string>("literal_value").value().c_str());
 
-      _appendText(_interface_group, //
-                  "layout(%s, binding=%d) %s %s {", //
-                  std.c_str(), // 
-                  bin_num, // 
-                  storage_type.c_str(), // 
-                  storage_name.c_str() );
+      _appendText(
+          _interface_group,                 //
+          "layout(%s, binding=%d) %s %s {", //
+          std.c_str(),                      //
+          bin_num,                          //
+          storage_type.c_str(),             //
+          storage_name.c_str());
 
       ///////////////////////////////////////////////////////////
       // parse data/array declarations
       ///////////////////////////////////////////////////////////
 
-      for( auto decl_sub : decls->_children ){
-        if( auto as_ddecl = std::dynamic_pointer_cast<DataDeclaration>(decl_sub) ){
+      for (auto decl_sub : decls->_children) {
+        if (auto as_ddecl = std::dynamic_pointer_cast<DataDeclaration>(decl_sub)) {
           auto tid = as_ddecl->childAs<TypedIdentifier>(0);
           OrkAssert(tid);
           auto dt = tid->typedValueForKey<std::string>("data_type").value();
           auto id = tid->typedValueForKey<std::string>("identifier_name").value();
-          printf( "STORAGE DATADECL dt<%s> id<%s>\n", dt.c_str(), id.c_str() );
           _appendText(_interface_group, " %s %s;", dt.c_str(), id.c_str());
-        }
-        else if( auto as_adecl = std::dynamic_pointer_cast<ArrayDeclaration>(decl_sub) ){
+        } else if (auto as_adecl = std::dynamic_pointer_cast<ArrayDeclaration>(decl_sub)) {
           auto tid = as_adecl->childAs<TypedIdentifier>(0);
           OrkAssert(tid);
-          auto dt = tid->typedValueForKey<std::string>("data_type").value();
-          auto id = tid->typedValueForKey<std::string>("identifier_name").value();
-          auto len_node = as_adecl->childAs<SemaIntegerLiteral>(1);
+          auto dt          = tid->typedValueForKey<std::string>("data_type").value();
+          auto id          = tid->typedValueForKey<std::string>("identifier_name").value();
+          auto len_node    = as_adecl->childAs<SemaIntegerLiteral>(1);
           auto ary_len_str = len_node->typedValueForKey<std::string>("literal_value").value();
-          auto ary_len = atoi(ary_len_str.c_str());
-          printf( "STORAGE ARYDECL dt<%s> id<%s> len<%d>\n", dt.c_str(), id.c_str(), ary_len );
+          auto ary_len     = atoi(ary_len_str.c_str());
           _appendText(_interface_group, " %s %s[%d];", dt.c_str(), id.c_str(), ary_len);
-        }
-        else{
+        } else {
           OrkAssert(false);
         }
       }
 
       _appendText(_interface_group, "};");
-
     }
   }
-  /////////////////////////////////////////
+
   decorator = FormatString("// end interface<%s>", ifname.c_str());
   _appendText(_interface_group, decorator.c_str());
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void SpirvCompiler::_inheritExtension(semainhext_ptr_t extension_node) {
-  auto ext_name = extension_node->typedValueForKey<std::string>("extension_name").value();
+  auto ext_name       = extension_node->typedValueForKey<std::string>("extension_name").value();
   const auto& RENAMES = SpirvCompilerGlobals::instance()->_id_renames;
-  auto ren = RENAMES.find(ext_name);
-  if(ren!=RENAMES.end()){
+  auto ren            = RENAMES.find(ext_name);
+  if (ren != RENAMES.end()) {
     ext_name = ren->second;
   }
-  if(ext_name!=""){
+  if (ext_name != "") {
     _appendText(_extension_group, "#extension %s : enable", ext_name.c_str());
   }
 }
@@ -808,14 +1116,16 @@ void SpirvCompiler::_compileShader(shaderc_shader_kind shader_type) {
     AstNode::treeops::removeFromParent(inh);
   }
 
+  _emitMergedPushConstants();
+
   ///////////////////////////////////////////////////////
   // final prep for shaderc
   // build final ast
   ///////////////////////////////////////////////////////
 
   _shader_name = _shader->typedValueForKey<std::string>("object_name").value();
-  auto fn_sig = FormatString("void %s()", _shader_name.c_str() );
-  auto fn_inv = FormatString("void main() { %s(); }", _shader_name.c_str() );
+  auto fn_sig  = FormatString("void %s()", _shader_name.c_str());
+  auto fn_inv  = FormatString("void main() { %s(); }", _shader_name.c_str());
 
   _shader_group->appendTypedChild<InsertLine>("#version 450");
   _shader_group->appendChild(_extension_group);
@@ -832,7 +1142,6 @@ void SpirvCompiler::_compileShader(shaderc_shader_kind shader_type) {
   ///////////////////////////////////////////////////////
 
   auto as_glsl = shadlang::toGLFX1(_shader_group);
-  printf("// shader<%s>:\n%s\n", _shader_name.c_str(), as_glsl.c_str());
 
   ///////////////////////////////////////////////////////
   // compile with shaderc
@@ -848,11 +1157,85 @@ void SpirvCompiler::_compileShader(shaderc_shader_kind shader_type) {
       options);
 
   if (result.GetCompilationStatus() != shaderc_compilation_status_success) {
+    printf("// shader<%s>:\n%s\n", _shader_name.c_str(), as_glsl.c_str());
     std::cerr << result.GetErrorMessage();
     OrkAssert(false);
   }
 
   _spirv_binary = shader_bin_t(result.cbegin(), result.cend());
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////
+// Helper function to find binding ID from merged resources in the transunit
+int SpirvCompiler::_findBindingIdFromMergedResources(const std::string& resource_name, const std::string& source_name) {
+  // Find the current pass that contains this shader
+  auto passes = AstNode::collectNodesOfType<Pass>(_transu);
+  
+  for (auto pass : passes) {
+    // Check if this pass contains the current shader
+    auto vtx_refs = AstNode::collectNodesOfType<VertexShaderRef>(pass);
+    auto frg_refs = AstNode::collectNodesOfType<FragmentShaderRef>(pass);
+    auto geo_refs = AstNode::collectNodesOfType<GeometryShaderRef>(pass);
+    auto com_refs = AstNode::collectNodesOfType<ComputeShaderRef>(pass);
+    
+    bool pass_contains_shader = false;
+    std::string shader_name = _shader->typedValueForKey<std::string>("object_name").value();
+    
+    for (auto vtx_ref : vtx_refs) {
+      auto ref_name = vtx_ref->typedValueForKey<std::string>("ref_id").value();
+      if (ref_name == shader_name) {
+        pass_contains_shader = true;
+        break;
+      }
+    }
+    for (auto frg_ref : frg_refs) {
+      auto ref_name = frg_ref->typedValueForKey<std::string>("ref_id").value();
+      if (ref_name == shader_name) {
+        pass_contains_shader = true;
+        break;
+      }
+    }
+    for (auto geo_ref : geo_refs) {
+      auto ref_name = geo_ref->typedValueForKey<std::string>("ref_id").value();
+      if (ref_name == shader_name) {
+        pass_contains_shader = true;
+        break;
+      }
+    }
+    for (auto com_ref : com_refs) {
+      auto ref_name = com_ref->typedValueForKey<std::string>("ref_id").value();
+      if (ref_name == shader_name) {
+        pass_contains_shader = true;
+        break;
+      }
+    }
+    
+    if (pass_contains_shader) {
+      // Find the merged resources node for this pass
+      auto merged_resources = pass->findFirstChildOfType<MergedShaderResourcesNode>();
+      if (merged_resources) {
+        // Look through all descriptor sets
+        auto descriptor_sets = AstNode::collectNodesOfType<DescriptorSetNode>(merged_resources);
+        for (auto descriptor_set : descriptor_sets) {
+          auto source_nodes = AstNode::collectNodesOfType<DescriptorSetSourceNode>(descriptor_set);
+          for (auto source_node : source_nodes) {
+            auto source_node_name = source_node->_source_name;
+            if (source_node_name == source_name) {
+              // Found the source, now look for the resource
+              auto binding_nodes = AstNode::collectNodesOfType<ResourceBindingNode>(source_node);
+              for (auto binding_node : binding_nodes) {
+                if (binding_node->_binding_name == resource_name) {
+                  return binding_node->_binding_id;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // If not found in merged resources, return -1 to indicate fallback to original behavior
+  return -1;
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::shadlang::spirv

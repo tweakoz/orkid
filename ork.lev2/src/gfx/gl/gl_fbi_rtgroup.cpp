@@ -32,7 +32,7 @@ void GlFrameBufferInterface::_pushRtGroup(RtGroup* Base) { // final
   __setRtGroup(Base);
 }
 
-void GlFrameBufferInterface::_popRtGroup(bool continue_render) { // final
+void GlFrameBufferInterface::_popRtGroup() { // final
   RtGroup* prev = mRtGroupStack.top();
   __setRtGroup(prev);
 }
@@ -56,7 +56,8 @@ void GlFrameBufferInterface::__setRtGroup(RtGroup* rtgroup) {
   // no rtgroup just means main surface
   //////////////////////////////////////////////
 
-  if (nullptr == rtgroup) {
+  bool isMainSurface = (nullptr == rtgroup) or (rtgroup==_main_rtg.get());
+  if (isMainSurface) {
     _bindMainSurface();
     return;
   }
@@ -70,12 +71,20 @@ void GlFrameBufferInterface::__setRtGroup(RtGroup* rtgroup) {
   if (auto as_impl = rtgroup->_impl.tryAs<glrtgroupimpl_ptr_t>()) {
     rtg_impl = as_impl.value();
   } else {
-    if (rtgroup->_pseudoRTG) { // popups ?
-      rtg_impl = _buildRtgImplForMainSurface(rtgroup);
-    } else if (rtgroup->_slice) {
-      rtg_impl = _buildRtgImplFromTextureArraySlice(rtgroup);
-    } else {
-      rtg_impl = _buildRtgImplFromScratch(rtgroup);
+    switch(rtgroup->_usage) {
+      case "user"_crcu: // user defined rtgroup
+        _regenRtgImplFromScratch(rtgroup);
+        break;
+      case "swapchain"_crcu: // swapchain
+      case "popup"_crcu: // popup
+        rtg_impl = _buildRtgImplForMainSurface(rtgroup);
+        break;
+      case "arrayslice"_crcu: // popup
+        rtg_impl = _buildRtgImplFromTextureArraySlice(rtgroup);
+        break;
+      default:
+        OrkAssert(false); // unknown usage
+        break;
     }
   }
 
@@ -133,7 +142,7 @@ void GlFrameBufferInterface::rtGroupClear(RtGroup* rtg) {
     glClearDepth(1.0f);
   }
   // printf( "clear<%p> depthONLY<%d>\n", rtg, int(rtg->_depthOnly) );
-  if (rtg->_clearMaskColor and rtg->GetNumTargets()) {
+  if (rtg->_clearMaskColor and rtg->numImageBuffers()) {
     BufferBits |= GL_COLOR_BUFFER_BIT;
     const auto& C = rtg->_clearColor;
     glClearColor(C.x, C.y, C.z, C.w);
@@ -170,6 +179,7 @@ void GlFrameBufferInterface::cloneDepthBuffer(rtgroup_ptr_t src_rtg, rtgroup_ptr
 
     // Create new depth buffer and texture as per MSAA settings
     dst_rtg->_depthBuffer           = dst_rtg->createRenderTarget(EBufferFormat::Z32F);
+    dst_rtg->_depthBuffer->_usage = "depth"_crcu;
     auto texture                    = std::make_shared<Texture>();
     texture->_texFormat             = EBufferFormat::Z32F;
     texture->_debugName             = "RtgDepthCopy";

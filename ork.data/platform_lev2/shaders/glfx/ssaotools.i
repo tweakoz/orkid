@@ -1,18 +1,21 @@
 ///////////////////////////////////////////////////////////////
-uniform_set uset_std_ssao {
-  sampler2D SSAOMap;          
-  sampler2D SSAOKernel;       
-  sampler2D SSAOScrNoise;   
-  float SSAORadius;          // 0.5
-  float SSAOBias;            // 0.01
-  float SSAOPower;           // 1.0  
-  float SSAOWeight;          // 1.0
-  int SSAONumSamples;
-  int SSAONumSteps;
-  float SSAOFeedback;
+sampler_set ss_std_ssao {
+  sampler2D MapDepth;
+  sampler2D MapLinearDepth;
+  sampler2D MapRandom;
+  sampler2D MapFeedback;
+  sampler2D MapPrimDepth;
+  sampler2D MapPrimNormal;
 }
 ///////////////////////////////////////////////////////////////
-libblock lib_ssao : uset_std_ssao {
+uniform_set us_std_ssao {
+  float SsaoNumSamples;
+  float SsaoPower;
+  float SsaoRadius;
+  float SsaoBias;
+}
+///////////////////////////////////////////////////////////////
+libblock lib_ssao : us_std_ssao : ss_std_ssao {
   /////////////////////////////////////////////////////////
   
   vec3 viewpos_nonlin(vec2 uv) {

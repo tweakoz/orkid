@@ -1,11 +1,13 @@
 ///////////////////////////////////////////////////////////////
-uniform_set ub_pick {
+// UNIFORM SETS AND BLOCKS
+///////////////////////////////////////////////////////////////
+uniform_set us_pick : us_std_pick {
   uvec4 oid;
   vec4 ModColor;
   mat4 mvp;
-  sampler2D InstanceMatrices;
-  usampler2D InstanceIds;
 }
+///////////////////////////////////////////////////////////////
+// STATE BLOCKS
 ///////////////////////////////////////////////////////////////
 state_block sb_pick : default {
 	DepthTest=OFF;
@@ -14,7 +16,9 @@ state_block sb_pick : default {
 	BlendMode = OFF;
 }
 ///////////////////////////////////////////////////////////////
-vertex_interface iface_vpick : ub_pick {
+// VERTEX INTERFACES
+///////////////////////////////////////////////////////////////
+vertex_interface iface_vpick : ub_std_vtx : us_pick {
   inputs {
     vec4 position : POSITION;
     vec3 normal : NORMAL;
@@ -25,7 +29,15 @@ vertex_interface iface_vpick : ub_pick {
   }
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_fpick : ub_pick {
+vertex_interface iface_vpick_instanced : iface_vpick : ss_std_instancing {
+  outputs {
+    flat uvec4 frg_iid;
+  }
+}
+///////////////////////////////////////////////////////////////
+// FRAGMENT INTERFACES
+///////////////////////////////////////////////////////////////
+fragment_interface iface_fpick : us_pick {
   inputs {
     vec4 frg_clr;
   }
@@ -35,53 +47,18 @@ fragment_interface iface_fpick : ub_pick {
   }
 }
 ///////////////////////////////////////////////////////////////
-// picking
+fragment_interface iface_fpick_instanced : iface_fpick {
+  inputs {
+    flat uvec4 frg_iid;
+  }
+}
+///////////////////////////////////////////////////////////////
+// VERTEX SHADERS
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_rigid_picking
 	: iface_vpick {
 		gl_Position = mvp*position;
     frg_clr = ModColor;
-}
-///////////////////////////////////////////////////////////////
-fragment_shader fs_picking
-	: iface_fpick {
-		out_iid = uvec4(ModColor);
-    out_nrmd = vec4(0,1,0,0);
-}
-///////////////////////////////////////////////////////////////
-technique picking_rigid {
-	fxconfig=fxcfg_default;
-	pass p0 {
-    vertex_shader=vs_rigid_picking;
-		fragment_shader=fs_picking;
-		state_block=sb_pick;
-	}
-}
-///////////////////////////////////////////////////////////////
-// instanced picking
-///////////////////////////////////////////////////////////////
-vertex_interface iface_vpick_instanced : ub_pick {
-  inputs {
-    vec4 position : POSITION;
-    vec3 normal : NORMAL;
-  }
-  //
-  outputs {
-    vec4 frg_clr;
-    flat uvec4 frg_iid;
-  }
-}
-///////////////////////////////////////////////////////////////
-fragment_interface iface_fpick_instanced : ub_pick {
-  inputs {
-    vec4 frg_clr;
-    flat uvec4 frg_iid;
-  }
-  outputs {
-    layout(location = 0) uvec4 out_iid;
-    layout(location = 1) vec4 out_nrmd;
-    //layout(location = 2) uvec4 out_iid;
-  }
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_rigid_picking_instanced
@@ -107,10 +84,29 @@ vertex_shader vs_rigid_picking_instanced
     frg_iid = iid;
 }
 ///////////////////////////////////////////////////////////////
+// FRAGMENT SHADERS
+///////////////////////////////////////////////////////////////
+fragment_shader fs_picking
+	: iface_fpick {
+		out_iid = uvec4(ModColor);
+    out_nrmd = vec4(0,1,0,0);
+}
+///////////////////////////////////////////////////////////////
 fragment_shader fs_picking_instanced
 	: iface_fpick_instanced {
 		out_iid = frg_iid;
     out_nrmd = vec4(frg_iid);
+}
+///////////////////////////////////////////////////////////////
+// TECHNIQUES
+///////////////////////////////////////////////////////////////
+technique picking_rigid {
+	fxconfig=fxcfg_default;
+	pass p0 {
+    vertex_shader=vs_rigid_picking;
+		fragment_shader=fs_picking;
+		state_block=sb_pick;
+	}
 }
 ///////////////////////////////////////////////////////////////
 technique picking_rigid_instanced {

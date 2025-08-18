@@ -5,7 +5,7 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-#include "vulkan_ctx.h"
+#include "headers/vulkan_ctx.h"
 #include <ork/lev2/gfx/shadman.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -105,12 +105,13 @@ const FxShaderParam* VkFxInterface::parameter(FxShader* pshader, const std::stri
   // search uniform blocks
   //////////////////////////////////////////////////////
 
-  if (1)
+  if (0){
     printf(
         "VkFxInterface shader<%s> parameter<%s> not found in unisets numunisets<%zu>\n", //
         shader_name.c_str(),                                                             //
         name.c_str(),                                                                    //
         num_unisets);
+    }
 
   // search uniform blocks
 
@@ -134,40 +135,38 @@ const FxShaderParam* VkFxInterface::parameter(FxShader* pshader, const std::stri
   if (rval != nullptr) {
     return rval;
   }
-  if (1)
+  if (0){
     printf(
         "VkFxInterface shader<%s> parameter<%s> not found in uniblks numuniblks<%zu>\n", //
         shader_name.c_str(),                                                             //
         name.c_str(),                                                                    //
         num_uniblks);
+    }
   return nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const FxUniformBlock* VkFxInterface::uniformBlock(FxShader* pshader, const std::string& name) {
-  const FxUniformBlock* rval = nullptr;
-  auto vkshfile                  = pshader->_internalHandle.get<vkfxsfile_ptr_t>();
-  auto it                        = vkshfile->_vk_uniformblks.find(name);
-  if (it != vkshfile->_vk_uniformblks.end()) {
-    if (0)
-      printf("found uniblk<%s>\n", name.c_str());
-    auto vk_uniblk  = it->second;
-    auto ork_uniblk = vk_uniblk->_orkparamblock;
-    rval            = ork_uniblk.get();
-  } else {
-    auto vkshfile      = pshader->_internalHandle.get<vkfxsfile_ptr_t>();
-    auto shader_name   = vkshfile->_shader_name;
-    size_t num_uniblks = vkshfile->_vk_uniformblks.size();
-    if (0)
-      printf(
-          "VkFxInterface shader<%s> uniblock<%s> not found numuniblks<%zu>\n", //
-          shader_name.c_str(),                                                 //
-          name.c_str(),                                                        //
-          num_uniblks);
-    OrkAssert(false);
+const FxUniformBlock* VkFxInterface::uniformBlock(FxShader* shader, const std::string& name) {
+  OrkAssert(shader != nullptr);
+  auto& blockmap = shader->_uniformBlockByName;
+  auto it        = blockmap.find(name);
+  auto fxsblock  = (it != blockmap.end()) ? it->second : nullptr;
+  auto vkshfile  = shader->_internalHandle.get<vkfxsfile_ptr_t>();
+  
+  auto it2 = vkshfile->_vk_uniformblks.find(name);
+  if (it2 != vkshfile->_vk_uniformblks.end()) {
+    auto vkblock = it2->second;
+    if (vkblock != nullptr and fxsblock == nullptr) {
+      // Create FxUniformBlock from Vulkan uniform block
+      auto ork_uniblk = vkblock->_orkparamblock;
+      fxsblock = ork_uniblk.get();
+      if (fxsblock) {
+        shader->_uniformBlockByName[name] = fxsblock;
+      }
+    }
   }
-  return rval;
+  return fxsblock; // Return nullptr if not found, matching GL behavior
 }
 
 fxsamplerset_constptr_t VkFxInterface::samplerSet(FxShader* hfx, const std::string& name) {

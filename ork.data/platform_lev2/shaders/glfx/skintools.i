@@ -33,20 +33,13 @@ libblock skin_tools {
     return normalize(WeightedNormal);
   }
 
-  struct SkinOut {
-    vec3 skn_pos;
-    vec3 skn_col;
-  };
-
-  SkinOut LitSkinned(vec3 objpos) {
-		SkinOut rval;
-		rval.skn_pos = SkinPosition(position.xyz);
+  vec3 LitSkinned(vec3 objpos) {
+    vec3 skn_pos = SkinPosition(position.xyz);
 	  vec3 sknorm  = SkinNormal(normal.xyz);
 	  vec3 wnorm   = normalize(mrot * sknorm);
 	  float dif = dot(wnorm, vec3(0, 0, 1));
 	  float amb = 0.3;
 	  float tot = dif + amb;
-		rval.skn_col = vec3(tot,tot,tot);
-		return rval;
+    return vec3(tot,tot,tot);
 	}
 }

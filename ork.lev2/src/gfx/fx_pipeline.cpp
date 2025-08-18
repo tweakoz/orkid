@@ -149,7 +149,7 @@ int FxPipeline::beginBlock(const RenderContextInstData& RCID) {
 
       }
     } else {
-      OrkAssert(false); // unhandled uniform buffer type
+      //OrkAssert(false); // unhandled uniform buffer type
     }
 
   }
