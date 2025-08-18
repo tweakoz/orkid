@@ -6,7 +6,7 @@
 
 The Asset Catalog system provides command-line tools for fetching, uploading, and inspecting assets. All tools use the `ork.python` interpreter and read configuration from the `ORKID_ASSET_MANIFEST_DIRS` environment variable.
 
-**Note**: Asset packaging is handled by namespace-specific tools (e.g., `ork.singularity.data.package.py`) not covered in this document.
+**Note**: Asset building and packaging is by nature, application specific and handled by namespace-specific tools (e.g., `ork.singularity.data.package.py`). Therefore it is not covered in this document.
 
 ---
 
