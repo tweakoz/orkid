@@ -323,7 +323,7 @@ ${OBT_STAGE}/assetcache/
 The Asset Catalog employs a **dual-hash verification system** that exponentially improves collision resistance:
 
 - **Content Hash**: MD5/SHA256 of original unencrypted data
-- **Storage Hash**: MD5 of encrypted data  
+- **Storage Hash**: MD5 of encrypted data on CDN-CAFS
 - **Combined Effect**: P(collision) = P(content) × P(storage)
 
 This means finding a collision requires matching both the original AND encrypted forms simultaneously, transforming even MD5+MD5 (2^128 operations) to be as strong as single SHA256. With SHA256+MD5, the attack complexity reaches 2^192 operations - computationally infeasible even with quantum computers.
