@@ -241,19 +241,14 @@ cache/enc/chunks/
 
 ---
 
-## Password Authentication
-
 ### Protected Namespaces
-Namespaces can require password authentication:
-- API key contains password placeholder
-- PasswordProvider prompts on main thread
-- Passwords cached for session duration
+Namespaces reference locations and have encryption_key's
 
-### Authentication Flow
-1. Check if API key requires password (PasswordProvider::requiresPasswordAuth)
-2. Prompt user on main thread before enqueueing
-3. Replace placeholder with actual password
-4. Use authenticated key for downloads
+###Locations can require authentication:
+- separate api keys for read and write
+- API key typically contains reference to env var ${PRJ_DEVCDN_API_KEY}, or <PasswordAuthentication> to use passwords (from terminal) 
+- PasswordProvider prompts on main thread for <PasswordAuthentication> case.
+- Passwords cached for session duration
 
 ---
 
