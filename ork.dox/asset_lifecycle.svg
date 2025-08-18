@@ -1,0 +1,221 @@
+<svg width="1400" height="900" viewBox="0 0 1400 900" xmlns="http://www.w3.org/2000/svg">
+  <!-- Definitions for gradients and arrows -->
+  <defs>
+    <!-- Arrow marker -->
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#6ac"/>
+    </marker>
+    
+    <!-- Gradients for sections -->
+    <linearGradient id="buildGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4a5a7a;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#3a4a6a;stop-opacity:1"/>
+    </linearGradient>
+    
+    <linearGradient id="cdnGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#5a4a6a;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#4a3a5a;stop-opacity:1"/>
+    </linearGradient>
+    
+    <linearGradient id="runtimeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4a6a5a;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#3a5a4a;stop-opacity:1"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1400" height="900" fill="#2a2a2a"/>
+  
+  <!-- Title -->
+  <text x="700" y="40" font-family="Arial, sans-serif" font-size="24" fill="white" text-anchor="middle" font-weight="bold">Asset Lifecycle: Build → Package → Upload → Download → Verify → Deliver</text>
+  
+  <!-- Main flow container -->
+  <g id="main-flow">
+    
+    <!-- BUILD PHASE -->
+    <g id="build-phase">
+      <rect x="50" y="100" width="380" height="700" rx="10" fill="url(#buildGrad)" stroke="#6a7a9a" stroke-width="2"/>
+      <text x="240" y="130" font-family="Arial, sans-serif" font-size="18" fill="white" text-anchor="middle" font-weight="bold">BUILD PHASE</text>
+      <text x="240" y="150" font-family="Arial, sans-serif" font-size="12" fill="#cde" text-anchor="middle">Development Environment</text>
+      
+      <!-- Data Build -->
+      <rect x="80" y="180" width="320" height="80" rx="6" fill="#3a4a5a" stroke="#5a6a7a" stroke-width="1"/>
+      <text x="240" y="205" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">1. Data Build</text>
+      <text x="240" y="225" font-family="Arial, sans-serif" font-size="11" fill="#acd" text-anchor="middle">• Compile shaders, textures, models</text>
+      <text x="240" y="240" font-family="Arial, sans-serif" font-size="11" fill="#acd" text-anchor="middle">• Generate level data, audio assets</text>
+      <text x="240" y="255" font-family="Arial, sans-serif" font-size="11" fill="#acd" text-anchor="middle">• Output to local directories</text>
+      
+      <!-- Package -->
+      <rect x="80" y="290" width="320" height="100" rx="6" fill="#3a4a5a" stroke="#5a6a7a" stroke-width="1"/>
+      <text x="240" y="315" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">2. Package</text>
+      <text x="240" y="335" font-family="Arial, sans-serif" font-size="11" fill="#acd" text-anchor="middle">• TAR archive creation (asset_pak)</text>
+      <text x="240" y="350" font-family="Arial, sans-serif" font-size="11" fill="#acd" text-anchor="middle">• LZ4 compression</text>
+      <text x="240" y="365" font-family="Arial, sans-serif" font-size="11" fill="#acd" text-anchor="middle">• Compute content_hash (MD5/SHA256)</text>
+      <text x="240" y="380" font-family="Arial, sans-serif" font-size="11" fill="#acd" text-anchor="middle">• Preserve directory structure</text>
+      
+      <!-- Encrypt -->
+      <rect x="80" y="420" width="320" height="100" rx="6" fill="#3a4a5a" stroke="#5a6a7a" stroke-width="1"/>
+      <text x="240" y="445" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">3. Encrypt</text>
+      <text x="240" y="465" font-family="Arial, sans-serif" font-size="11" fill="#acd" text-anchor="middle">• Namespace-specific key (libsodium)</text>
+      <text x="240" y="480" font-family="Arial, sans-serif" font-size="11" fill="#acd" text-anchor="middle">• Generate storage_hash of encrypted data</text>
+      <text x="240" y="495" font-family="Arial, sans-serif" font-size="11" fill="#acd" text-anchor="middle">• Content-addressable: {hash}.enc</text>
+      <text x="240" y="510" font-family="Arial, sans-serif" font-size="11" fill="#acd" text-anchor="middle">• Store in local cache</text>
+      
+      <!-- Chunk (if large) -->
+      <rect x="80" y="550" width="320" height="100" rx="6" fill="#3a4a5a" stroke="#5a6a7a" stroke-width="1"/>
+      <text x="240" y="575" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">4. Chunk (if >16MB)</text>
+      <text x="240" y="595" font-family="Arial, sans-serif" font-size="11" fill="#acd" text-anchor="middle">• Split into 16MB chunks</text>
+      <text x="240" y="610" font-family="Arial, sans-serif" font-size="11" fill="#acd" text-anchor="middle">• Each chunk encrypted independently</text>
+      <text x="240" y="625" font-family="Arial, sans-serif" font-size="11" fill="#acd" text-anchor="middle">• ChunkManifest with XXHash per chunk</text>
+      <text x="240" y="640" font-family="Arial, sans-serif" font-size="11" fill="#acd" text-anchor="middle">• {hash}.chunk.0, {hash}.chunk.1, ...</text>
+      
+      <!-- Manifest Update -->
+      <rect x="80" y="680" width="320" height="80" rx="6" fill="#3a4a5a" stroke="#5a6a7a" stroke-width="1"/>
+      <text x="240" y="705" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">5. Update Manifest</text>
+      <text x="240" y="725" font-family="Arial, sans-serif" font-size="11" fill="#acd" text-anchor="middle">• Record storage_hash, content_hash</text>
+      <text x="240" y="740" font-family="Arial, sans-serif" font-size="11" fill="#acd" text-anchor="middle">• Set platforms, dependencies</text>
+      <text x="240" y="755" font-family="Arial, sans-serif" font-size="11" fill="#acd" text-anchor="middle">• Write to manifest.json</text>
+    </g>
+    
+    <!-- CDN PHASE -->
+    <g id="cdn-phase">
+      <rect x="480" y="100" width="440" height="700" rx="10" fill="url(#cdnGrad)" stroke="#7a6a8a" stroke-width="2"/>
+      <text x="700" y="130" font-family="Arial, sans-serif" font-size="18" fill="white" text-anchor="middle" font-weight="bold">CDN PHASE</text>
+      <text x="700" y="150" font-family="Arial, sans-serif" font-size="12" fill="#dce" text-anchor="middle">Content Distribution Network</text>
+      
+      <!-- Upload -->
+      <rect x="510" y="180" width="380" height="120" rx="6" fill="#4a3a5a" stroke="#6a5a7a" stroke-width="1"/>
+      <text x="700" y="205" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">6. Upload</text>
+      <text x="700" y="225" font-family="Arial, sans-serif" font-size="11" fill="#dac" text-anchor="middle">• HTTPS/SCP transfer to CDN</text>
+      <text x="700" y="240" font-family="Arial, sans-serif" font-size="11" fill="#dac" text-anchor="middle">• API key authentication</text>
+      <text x="700" y="255" font-family="Arial, sans-serif" font-size="11" fill="#dac" text-anchor="middle">• Parallel chunk uploads (if chunked)</text>
+      <text x="700" y="270" font-family="Arial, sans-serif" font-size="11" fill="#dac" text-anchor="middle">• Progress tracking with UploadManager</text>
+      <text x="700" y="285" font-family="Arial, sans-serif" font-size="11" fill="#dac" text-anchor="middle">• Generate upload receipt</text>
+      
+      <!-- Storage -->
+      <rect x="510" y="330" width="380" height="140" rx="6" fill="#4a3a5a" stroke="#6a5a7a" stroke-width="1"/>
+      <text x="700" y="355" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">7. CDN Storage</text>
+      
+      <!-- Storage structure visualization -->
+      <rect x="530" y="375" width="340" height="80" rx="4" fill="#3a2a4a" stroke="#5a4a6a" stroke-width="1"/>
+      <text x="700" y="395" font-family="Courier, monospace" font-size="10" fill="#f8f" text-anchor="middle">cdn.example.com/game/</text>
+      <text x="700" y="410" font-family="Courier, monospace" font-size="10" fill="#8f8" text-anchor="middle">  ├── a1b2c3d4e5f6.enc (245KB)</text>
+      <text x="700" y="425" font-family="Courier, monospace" font-size="10" fill="#8f8" text-anchor="middle">  ├── 9876543210ab.enc (1.2MB)</text>
+      <text x="700" y="440" font-family="Courier, monospace" font-size="10" fill="#8f8" text-anchor="middle">  └── chunks/xyz789.chunk.0 (16MB)</text>
+      
+      <!-- Distribution -->
+      <rect x="510" y="500" width="380" height="100" rx="6" fill="#4a3a5a" stroke="#6a5a7a" stroke-width="1"/>
+      <text x="700" y="525" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">8. Global Distribution</text>
+      <text x="700" y="545" font-family="Arial, sans-serif" font-size="11" fill="#dac" text-anchor="middle">• Edge server replication</text>
+      <text x="700" y="560" font-family="Arial, sans-serif" font-size="11" fill="#dac" text-anchor="middle">• Geographic distribution</text>
+      <text x="700" y="575" font-family="Arial, sans-serif" font-size="11" fill="#dac" text-anchor="middle">• Load balancing</text>
+      <text x="700" y="590" font-family="Arial, sans-serif" font-size="11" fill="#dac" text-anchor="middle">• High availability</text>
+      
+      <!-- Manifest Distribution -->
+      <rect x="510" y="630" width="380" height="100" rx="6" fill="#4a3a5a" stroke="#6a5a7a" stroke-width="1"/>
+      <text x="700" y="655" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">9. Manifest Distribution</text>
+      <text x="700" y="675" font-family="Arial, sans-serif" font-size="11" fill="#dac" text-anchor="middle">• Manifest JSON files available</text>
+      <text x="700" y="690" font-family="Arial, sans-serif" font-size="11" fill="#dac" text-anchor="middle">• Config.json with locations/keys</text>
+      <text x="700" y="705" font-family="Arial, sans-serif" font-size="11" fill="#dac" text-anchor="middle">• Version controlled</text>
+      <text x="700" y="720" font-family="Arial, sans-serif" font-size="11" fill="#dac" text-anchor="middle">• Namespace organization</text>
+    </g>
+    
+    <!-- RUNTIME PHASE -->
+    <g id="runtime-phase">
+      <rect x="970" y="100" width="380" height="700" rx="10" fill="url(#runtimeGrad)" stroke="#6a8a7a" stroke-width="2"/>
+      <text x="1160" y="130" font-family="Arial, sans-serif" font-size="18" fill="white" text-anchor="middle" font-weight="bold">RUNTIME PHASE</text>
+      <text x="1160" y="150" font-family="Arial, sans-serif" font-size="12" fill="#cec" text-anchor="middle">Client Application</text>
+      
+      <!-- Request -->
+      <rect x="1000" y="180" width="320" height="80" rx="6" fill="#3a5a4a" stroke="#5a7a6a" stroke-width="1"/>
+      <text x="1160" y="205" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">10. Request Asset</text>
+      <text x="1160" y="225" font-family="Arial, sans-serif" font-size="11" fill="#adc" text-anchor="middle">• catalog.get("game|models|player")</text>
+      <text x="1160" y="240" font-family="Arial, sans-serif" font-size="11" fill="#adc" text-anchor="middle">• Check local cache first</text>
+      <text x="1160" y="255" font-family="Arial, sans-serif" font-size="11" fill="#adc" text-anchor="middle">• Locate in manifests</text>
+      
+      <!-- Download -->
+      <rect x="1000" y="290" width="320" height="100" rx="6" fill="#3a5a4a" stroke="#5a7a6a" stroke-width="1"/>
+      <text x="1160" y="315" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">11. Download</text>
+      <text x="1160" y="335" font-family="Arial, sans-serif" font-size="11" fill="#adc" text-anchor="middle">• DownloadManager with queue</text>
+      <text x="1160" y="350" font-family="Arial, sans-serif" font-size="11" fill="#adc" text-anchor="middle">• Parallel chunks (DownloadGroup)</text>
+      <text x="1160" y="365" font-family="Arial, sans-serif" font-size="11" fill="#adc" text-anchor="middle">• Progress tracking</text>
+      <text x="1160" y="380" font-family="Arial, sans-serif" font-size="11" fill="#adc" text-anchor="middle">• Password auth if required</text>
+      
+      <!-- Verify Storage -->
+      <rect x="1000" y="420" width="320" height="80" rx="6" fill="#3a5a4a" stroke="#5a7a6a" stroke-width="1"/>
+      <text x="1160" y="445" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">12. Verify Storage Hash</text>
+      <text x="1160" y="465" font-family="Arial, sans-serif" font-size="11" fill="#adc" text-anchor="middle">• MD5 of encrypted data</text>
+      <text x="1160" y="480" font-family="Arial, sans-serif" font-size="11" fill="#adc" text-anchor="middle">• Detect CDN tampering</text>
+      <text x="1160" y="495" font-family="Arial, sans-serif" font-size="11" fill="#adc" text-anchor="middle">• Cache if valid</text>
+      
+      <!-- Decrypt -->
+      <rect x="1000" y="530" width="320" height="80" rx="6" fill="#3a5a4a" stroke="#5a7a6a" stroke-width="1"/>
+      <text x="1160" y="555" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">13. Decrypt</text>
+      <text x="1160" y="575" font-family="Arial, sans-serif" font-size="11" fill="#adc" text-anchor="middle">• Namespace codec (libsodium)</text>
+      <text x="1160" y="590" font-family="Arial, sans-serif" font-size="11" fill="#adc" text-anchor="middle">• LZ4 decompress</text>
+      <text x="1160" y="605" font-family="Arial, sans-serif" font-size="11" fill="#adc" text-anchor="middle">• Extract TAR if asset_pak</text>
+      
+      <!-- Verify Content -->
+      <rect x="1000" y="640" width="320" height="80" rx="6" fill="#3a5a4a" stroke="#5a7a6a" stroke-width="1"/>
+      <text x="1160" y="665" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">14. Verify Content Hash</text>
+      <text x="1160" y="685" font-family="Arial, sans-serif" font-size="11" fill="#adc" text-anchor="middle">• MD5/SHA256 of decrypted data</text>
+      <text x="1160" y="700" font-family="Arial, sans-serif" font-size="11" fill="#adc" text-anchor="middle">• Ensure integrity end-to-end</text>
+      <text x="1160" y="715" font-family="Arial, sans-serif" font-size="11" fill="#adc" text-anchor="middle">• Dual-hash verification complete</text>
+      
+      <!-- Deliver -->
+      <rect x="1000" y="750" width="320" height="50" rx="6" fill="#4a7a5a" stroke="#6a9a7a" stroke-width="2"/>
+      <text x="1160" y="780" font-family="Arial, sans-serif" font-size="16" fill="white" text-anchor="middle" font-weight="bold">15. Deliver to Application</text>
+    </g>
+    
+    <!-- Flow arrows -->
+    <g id="flow-arrows">
+      <!-- Build to CDN -->
+      <path d="M 430 450 L 480 450" stroke="#6ac" stroke-width="3" marker-end="url(#arrowhead)"/>
+      <text x="455" y="445" font-family="Arial, sans-serif" font-size="11" fill="#6ac" text-anchor="middle">Upload</text>
+      
+      <!-- CDN to Runtime -->
+      <path d="M 920 450 L 970 450" stroke="#6ac" stroke-width="3" marker-end="url(#arrowhead)"/>
+      <text x="945" y="445" font-family="Arial, sans-serif" font-size="11" fill="#6ac" text-anchor="middle">Download</text>
+    </g>
+    
+    <!-- Key features callouts -->
+    <g id="callouts">
+      <!-- Dual Hash callout -->
+      <rect x="100" y="820" width="280" height="60" rx="5" fill="#3a4a5a" stroke="#5a6a7a" stroke-width="1" opacity="0.95"/>
+      <text x="240" y="840" font-family="Arial, sans-serif" font-size="12" fill="#8cf" text-anchor="middle" font-weight="bold">Dual Hash Protection</text>
+      <text x="240" y="855" font-family="Arial, sans-serif" font-size="10" fill="#acd" text-anchor="middle">Storage hash verified at download (step 12)</text>
+      <text x="240" y="870" font-family="Arial, sans-serif" font-size="10" fill="#acd" text-anchor="middle">Content hash verified after decrypt (step 14)</text>
+      
+      <!-- Parallel Processing -->
+      <rect x="410" y="820" width="280" height="60" rx="5" fill="#4a3a5a" stroke="#6a5a7a" stroke-width="1" opacity="0.95"/>
+      <text x="550" y="840" font-family="Arial, sans-serif" font-size="12" fill="#dac" text-anchor="middle" font-weight="bold">Parallel Processing</text>
+      <text x="550" y="855" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">Chunked uploads (step 6)</text>
+      <text x="550" y="870" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">Concurrent downloads (step 11)</text>
+      
+      <!-- Cache Optimization -->
+      <rect x="720" y="820" width="280" height="60" rx="5" fill="#3a5a4a" stroke="#5a7a6a" stroke-width="1" opacity="0.95"/>
+      <text x="860" y="840" font-family="Arial, sans-serif" font-size="12" fill="#afc" text-anchor="middle" font-weight="bold">Cache Optimization</text>
+      <text x="860" y="855" font-family="Arial, sans-serif" font-size="10" fill="#cfa" text-anchor="middle">Content-addressable storage</text>
+      <text x="860" y="870" font-family="Arial, sans-serif" font-size="10" fill="#cfa" text-anchor="middle">Verify without decryption</text>
+      
+      <!-- Async Operations -->
+      <rect x="1030" y="820" width="280" height="60" rx="5" fill="#4a5a5a" stroke="#6a7a7a" stroke-width="1" opacity="0.95"/>
+      <text x="1170" y="840" font-family="Arial, sans-serif" font-size="12" fill="#ccc" text-anchor="middle" font-weight="bold">Async Operations</text>
+      <text x="1170" y="855" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">AssetFuture with enqueueGet()</text>
+      <text x="1170" y="870" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">Non-blocking asset fetching</text>
+    </g>
+  </g>
+  
+  <!-- Side annotations -->
+  <g id="annotations">
+    <!-- Build time indicator -->
+    <text x="240" y="85" font-family="Arial, sans-serif" font-size="11" fill="#8af" text-anchor="middle">BUILD TIME</text>
+    
+    <!-- Runtime indicator -->
+    <text x="1160" y="85" font-family="Arial, sans-serif" font-size="11" fill="#8fa" text-anchor="middle">RUNTIME</text>
+    
+    <!-- Network boundary -->
+    <line x1="450" y1="100" x2="450" y2="800" stroke="#666" stroke-width="1" stroke-dasharray="5,5"/>
+    <line x1="950" y1="100" x2="950" y2="800" stroke="#666" stroke-width="1" stroke-dasharray="5,5"/>
+  </g>
+</svg>

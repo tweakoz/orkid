@@ -60,6 +60,58 @@ This symmetry ensures that what goes up comes down intact, with end-to-end verif
 
 ---
 
+## Asset Lifecycle
+
+The Asset Catalog system manages the complete lifecycle of assets from development through delivery to runtime applications. This symmetric design ensures data integrity and optimal performance at every stage.
+
+![Asset Lifecycle](asset_lifecycle.svg)
+
+### Build Phase (Development Environment)
+
+1. **Data Build**: The development pipeline generates raw assets (textures, models, audio, levels) and outputs them to local directories specified in manifests.
+
+2. **Package**: Assets are bundled into TAR archives (for asset_pak types), compressed with LZ4, and a content hash is computed from the original data.
+
+3. **Encrypt**: Using namespace-specific libsodium keys, assets are encrypted and a storage hash is generated from the encrypted form, creating content-addressable filenames.
+
+4. **Chunk**: Large files (>16MB) are automatically split into 16MB chunks, each encrypted independently with XXHash verification per chunk.
+
+5. **Manifest Update**: Asset metadata including both hashes, platforms, and dependencies are recorded in the manifest JSON.
+
+### CDN Phase (Content Distribution)
+
+6. **Upload**: Encrypted assets are transferred to the CDN using HTTPS/SCP with API key authentication, parallel chunk uploads, and progress tracking.
+
+7. **CDN Storage**: Assets are stored using content-addressable naming ({hash}.enc), enabling deduplication and cache efficiency.
+
+8. **Global Distribution**: CDN replicates assets to edge servers for geographic distribution and high availability.
+
+9. **Manifest Distribution**: Manifest and configuration files are made available for client discovery.
+
+### Runtime Phase (Client Application)
+
+10. **Request Asset**: Application requests an asset through the catalog API, which first checks local cache before initiating download.
+
+11. **Download**: DownloadManager handles retrieval with parallel chunk downloads, progress tracking, and authentication.
+
+12. **Verify Storage Hash**: The MD5 hash of the encrypted data is verified to detect any CDN tampering or corruption.
+
+13. **Decrypt**: Using the namespace codec, data is decrypted, decompressed, and extracted (for TAR archives).
+
+14. **Verify Content Hash**: The original content hash is verified against the decrypted data, completing the dual-hash verification.
+
+15. **Deliver**: Verified asset data is returned to the application through AssetResult.
+
+### Key Design Features
+
+- **End-to-End Verification**: Dual-hash system ensures integrity from build to delivery
+- **Parallel Operations**: Chunked uploads and downloads maximize throughput
+- **Cache Optimization**: Content-addressable storage enables efficient caching and deduplication
+- **Async Operations**: Non-blocking asset fetching with AssetFuture allows concurrent loading
+- **Symmetric Operations**: What goes up (build/encrypt/upload) comes down (download/decrypt/verify) intact
+
+---
+
 ## Design Principles
 
 ### Flyweight Pattern for Memory Efficiency
@@ -267,9 +319,16 @@ ${OBT_STAGE}/assetcache/
 - Secure key storage in config
 
 ### Integrity
-- Content hash verification (MD5/XXHash)
-- Storage hash for encrypted data
-- End-to-end tamper detection
+
+The Asset Catalog employs a **dual-hash verification system** that exponentially improves collision resistance:
+
+- **Content Hash**: MD5/SHA256 of original unencrypted data
+- **Storage Hash**: MD5 of encrypted data  
+- **Combined Effect**: P(collision) = P(content) × P(storage)
+
+This means finding a collision requires matching both the original AND encrypted forms simultaneously, transforming even MD5+MD5 (2^128 operations) to be as strong as single SHA256. With SHA256+MD5, the attack complexity reaches 2^192 operations - computationally infeasible even with quantum computers.
+
+Additional benefits include cache validation without decryption, tamper evidence at two points, and cryptographic proof of content integrity from CDN to application.
 
 ### Access Control
 - API key authentication
