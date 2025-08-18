@@ -184,7 +184,7 @@ EFileErrCode File::printF(const char* formatstring, ...){
   vsnprintf(&formatbuffer[0], sizeof(formatbuffer), formatstring, args);
   va_end(args);
   size_t len = strlen(formatbuffer);
-  mpDevice->write(*this,formatbuffer,len);  
+  return mpDevice->write(*this,formatbuffer,len);  
 }
 
 

@@ -174,7 +174,7 @@ bool CatalogImpl::saveToCacheFile(const datablock_ptr_t& data, const file::Path&
     file.Write(data->data(), data->length());
     file.Close();
 
-    logchan_catalog->log("Cached file saved: %s (%zu bytes)", cache_path.c_str(), data->length());
+    //logchan_catalog->log("Cached file saved: %s (%zu bytes)", cache_path.c_str(), data->length());
     return true;
   } catch (const std::exception& e) {
     logchan_catalog->log("ERROR: Failed to save cache file %s: %s", cache_path.c_str(), e.what());

@@ -77,6 +77,7 @@ assetlocation_ptr_t CatalogImpl::locateAsset(const assetid_t& fq_asset_id) const
           }
         }
 
+        // Handle template format <location_key>
         if (base_url.find("<") == 0 && base_url.find(">") != std::string::npos) {
           // Extract the location key from template
           size_t end_pos           = base_url.find(">");
@@ -103,6 +104,28 @@ assetlocation_ptr_t CatalogImpl::locateAsset(const assetid_t& fq_asset_id) const
                 break;
               } else {
                 printf("[DEBUG] Config %s has no location for %s\n", config_id.c_str(), location_key.c_str());
+              }
+            }
+          }
+        }
+        // Handle plain location key format (without brackets)
+        else if (!base_url.empty() && base_url.find("http") != 0 && base_url.find("/") != 0) {
+          // This looks like a location key (not a URL or path), try to resolve it
+          std::string location_key = base_url;
+          
+          if (_config_space) {
+            auto configs = _config_space->_configs;
+            for (const auto& [config_id, config] : configs) {
+              auto location_info = config->resolveRemoteLocation(location_key);
+              if (location_info) {
+                std::string resolved_url = location_info->_download_url.toString();
+                
+                // Check if URL was actually resolved
+                if (!resolved_url.empty() && resolved_url != location_key) {
+                  base_url               = resolved_url;
+                  result->_location_info = location_info; // Store the location_info
+                  break;
+                }
               }
             }
           }

@@ -292,7 +292,7 @@ void DownloadManager::processDownload(download_ptr_t dl) {
   // curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 
   // Log the URL being downloaded
-  _impl->_logchan_download->log(
+  if(0)_impl->_logchan_download->log(
       "DL %s -> %s",               //
       dl->_url.toString().c_str(), //
       dl->_destination_path.c_str());

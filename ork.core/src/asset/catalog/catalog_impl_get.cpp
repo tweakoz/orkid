@@ -242,7 +242,7 @@ datablock_ptr_t CatalogImpl::downloadChunkedData(const AssetLocation& location) 
 
   for (size_t i = 0; i < location._chunk_manifest->_chunks.size(); ++i) {
     URL chunk_url = _catalog->getChunkDownloadURL(&temp_entry, i, location._location_info);
-    logchan_catalog->log("DEBUG: Chunk download URL: %s", chunk_url.toString().c_str());
+    if(0)logchan_catalog->log("DEBUG: Chunk download URL: %s", chunk_url.toString().c_str());
 
     auto chunk = downloadFile(chunk_url, location._location_info);
     if (!chunk) {
@@ -265,7 +265,7 @@ datablock_ptr_t CatalogImpl::downloadChunkedData(const AssetLocation& location) 
     // Save verified chunk to cache
     file::Path chunk_cache_path = getCachePathForChunk(location, i);
     if (saveToCacheFile(chunk, chunk_cache_path)) {
-      logchan_catalog->log("Cached chunk %zu", i);
+      if(0)logchan_catalog->log("Cached chunk %zu", i);
     }
 
     chunks.push_back(chunk);
