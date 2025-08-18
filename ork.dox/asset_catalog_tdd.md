@@ -100,7 +100,7 @@ The Asset Catalog system manages the complete lifecycle of assets from developme
 
 ### Build Phase (Development Environment)
 
-1. **Data Build**: The development pipeline generates raw assets (textures, models, audio, levels) and outputs them to local directories specified in manifests.
+1. **Data Build**: The development pipeline generates raw or cooked assets (textures, models, audio, levels) and outputs them to local directories specified in manifests.
 
 2. **Package**: Assets are bundled into TAR archives (for asset_pak types), compressed with LZ4, and a content hash is computed from the original data.
 
