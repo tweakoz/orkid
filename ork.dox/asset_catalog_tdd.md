@@ -7,7 +7,7 @@
 The Asset Catalog provides a unified, thread-safe system for managing downloadable content with sophisticated caching, encryption, and state management. It serves dual purposes with symmetric operations:
 
 1. **Build-time**: Packages, encrypts, and uploads assets to CDN
-2. **Runtime**: Downloads, decrypts, verifies, caches, and serves assets to applications
+2. **Runtime**: Downloads, decrypts, unpackage, verifies, caches, and serves assets to applications
 
 The system maintains perfect symmetry:
 - **Build**: File → Package → Encrypt → Upload to CDN
