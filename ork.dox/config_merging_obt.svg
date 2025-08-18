@@ -30,194 +30,174 @@
   <text x="700" y="35" font-family="Arial, sans-serif" font-size="22" fill="white" text-anchor="middle" font-weight="bold">OBT Project Composition &amp; Configuration Merging</text>
   <text x="700" y="55" font-family="Arial, sans-serif" font-size="14" fill="#acd" text-anchor="middle">How Orkid Build Tool composes projects and merges configurations</text>
   
+  <!-- Launch Command -->
+  <rect x="50" y="75" width="1300" height="40" rx="6" fill="#3a3a4a" stroke="#5a5a6a" stroke-width="1"/>
+  <text x="700" y="98" font-family="Courier, monospace" font-size="11" fill="#8f8" text-anchor="middle">obt.env.launch.py --numcores 16 --stagedir ~/.staging --project ~/projects/orkid --project ~/projects/shared --project ~/projects/gameproj</text>
+  
+  <!-- Environment Variable -->
+  <g id="env-var">
+    <rect x="80" y="130" width="1260" height="70" rx="8" fill="#4a4a5a" stroke="#6a6a7a" stroke-width="2"/>
+    <text x="710" y="155" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">ORKID_ASSET_MANIFEST_DIRS (after all init_env.py scripts)</text>
+    <text x="710" y="180" font-family="Courier, monospace" font-size="11" fill="#8f8" text-anchor="middle">~/projects/orkid/ork.data/asset_manifests:~/projects/shared/asset_manifests:~/projects/gameproj/asset_manifests</text>
+    
+    <!-- Arrow from env var to OBT pipeline -->
+    <path d="M 710 200 L 710 220" stroke="#6ac" stroke-width="2" marker-end="url(#arrow)"/>
+  </g>
+  
   <!-- OBT Layer -->
   <g id="obt-layer">
-    <rect x="50" y="80" width="1300" height="180" rx="10" fill="url(#obtGrad)" stroke="#7a6a9a" stroke-width="2"/>
-    <text x="700" y="105" font-family="Arial, sans-serif" font-size="16" fill="white" text-anchor="middle" font-weight="bold">OBT (Orkid Build Tool)</text>
+    <rect x="50" y="220" width="1300" height="180" rx="10" fill="url(#obtGrad)" stroke="#7a6a9a" stroke-width="2"/>
+    <text x="700" y="245" font-family="Arial, sans-serif" font-size="16" fill="white" text-anchor="middle" font-weight="bold">OBT Configuration Pipeline</text>
     
-    <!-- OBT Components -->
-    <rect x="80" y="120" width="200" height="100" rx="6" fill="#4a3a5a" stroke="#6a5a7a" stroke-width="1"/>
-    <text x="180" y="145" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">Project Discovery</text>
-    <text x="180" y="165" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• Scans OBT_SEARCH_PATH</text>
-    <text x="180" y="180" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• Finds obt.project folders</text>
-    <text x="180" y="195" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• Resolves dependencies</text>
-    <text x="180" y="210" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• Orders load sequence</text>
+    <!-- Environment Launch -->
+    <rect x="80" y="260" width="300" height="110" rx="6" fill="#4a3a5a" stroke="#6a5a7a" stroke-width="1"/>
+    <text x="230" y="285" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">1. Project Discovery</text>
+    <text x="230" y="303" font-family="Arial, sans-serif" font-size="11" fill="#f8f" text-anchor="middle">[Environment Launch]</text>
+    <text x="230" y="320" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• Parse --project args</text>
+    <text x="230" y="335" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• Find obt.project/obt.manifest</text>
+    <text x="230" y="350" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• Execute init_env.py scripts</text>
+    <text x="230" y="365" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• Append to ORKID_ASSET_MANIFEST_DIRS</text>
     
-    <rect x="310" y="120" width="200" height="100" rx="6" fill="#4a3a5a" stroke="#6a5a7a" stroke-width="1"/>
-    <text x="410" y="145" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">Environment Setup</text>
-    <text x="410" y="165" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• OBT_STAGE path</text>
-    <text x="410" y="180" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• OBT_SEARCH_PATH</text>
-    <text x="410" y="195" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• PROJECT_BIN paths</text>
-    <text x="410" y="210" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• Python/lib paths</text>
+    <!-- Process Launch -->
+    <rect x="420" y="260" width="280" height="110" rx="6" fill="#4a3a5a" stroke="#6a5a7a" stroke-width="1"/>
+    <text x="560" y="285" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">2. Config Loading</text>
+    <text x="560" y="303" font-family="Arial, sans-serif" font-size="11" fill="#8ff" text-anchor="middle">[Process Launch]</text>
+    <text x="560" y="320" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• loadGlobalConfigs()</text>
+    <text x="560" y="335" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• Scan ORKID_ASSET_MANIFEST_DIRS</text>
+    <text x="560" y="350" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• Find all config.json files</text>
+    <text x="560" y="365" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• Load in order</text>
     
-    <rect x="540" y="120" width="200" height="100" rx="6" fill="#4a3a5a" stroke="#6a5a7a" stroke-width="1"/>
-    <text x="640" y="145" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">Config Loading</text>
-    <text x="640" y="165" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• Per-project configs</text>
-    <text x="640" y="180" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• Dependency order</text>
-    <text x="640" y="195" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• Glob pattern: *config.json</text>
-    <text x="640" y="210" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• Sequential merging</text>
+    <rect x="740" y="260" width="280" height="110" rx="6" fill="#4a3a5a" stroke="#6a5a7a" stroke-width="1"/>
+    <text x="880" y="285" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">3. Config Merging</text>
+    <text x="880" y="303" font-family="Arial, sans-serif" font-size="11" fill="#8ff" text-anchor="middle">[Process Launch]</text>
+    <text x="880" y="320" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• Merge into ConfigSpace</text>
+    <text x="880" y="335" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• Assert no namespace conflicts</text>
+    <text x="880" y="350" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• Assert no location conflicts</text>
+    <text x="880" y="365" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• ${VAR} expansion &amp; templates</text>
     
-    <rect x="770" y="120" width="200" height="100" rx="6" fill="#4a3a5a" stroke="#6a5a7a" stroke-width="1"/>
-    <text x="870" y="145" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">Template Processing</text>
-    <text x="870" y="165" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• &lt;stage&gt; → OBT_STAGE</text>
-    <text x="870" y="180" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• &lt;temp&gt; → temp dir</text>
-    <text x="870" y="195" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• ${VAR} → env expansion</text>
-    <text x="870" y="210" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• Path resolution</text>
-    
-    <rect x="1000" y="120" width="320" height="100" rx="6" fill="#4a3a5a" stroke="#6a5a7a" stroke-width="1"/>
-    <text x="1160" y="145" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">Manifest Assembly</text>
-    <text x="1160" y="165" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• Loads all manifest.json files</text>
-    <text x="1160" y="180" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• Merges asset entries across projects</text>
-    <text x="1160" y="195" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• Resolves cross-project dependencies</text>
-    <text x="1160" y="210" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• Creates unified asset catalog</text>
+    <rect x="1060" y="260" width="280" height="110" rx="6" fill="#4a3a5a" stroke="#6a5a7a" stroke-width="1"/>
+    <text x="1200" y="285" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">4. Manifest Loading</text>
+    <text x="1200" y="303" font-family="Arial, sans-serif" font-size="11" fill="#8ff" text-anchor="middle">[Process Launch]</text>
+    <text x="1200" y="320" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• loadFromGlobalManifests()</text>
+    <text x="1200" y="335" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• Parse all *.json in dirs</text>
+    <text x="1200" y="350" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• Build asset catalog</text>
+    <text x="1200" y="365" font-family="Arial, sans-serif" font-size="10" fill="#cad" text-anchor="middle">• Resolve dependencies</text>
   </g>
   
   <!-- Projects Layer -->
   <g id="projects-layer">
-    <text x="700" y="295" font-family="Arial, sans-serif" font-size="16" fill="#8cf" text-anchor="middle" font-weight="bold">Project Composition (OBT_SEARCH_PATH)</text>
+    <text x="700" y="435" font-family="Arial, sans-serif" font-size="16" fill="#8cf" text-anchor="middle" font-weight="bold">Project Structure (--project arguments)</text>
     
     <!-- Project 1: orkid -->
     <g id="project-orkid">
-      <rect x="80" y="320" width="280" height="240" rx="8" fill="url(#projectGrad)" stroke="#6a8a7a" stroke-width="2"/>
-      <text x="220" y="345" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">orkid/obt.project/</text>
+      <rect x="80" y="460" width="400" height="260" rx="8" fill="url(#projectGrad)" stroke="#6a8a7a" stroke-width="2"/>
+      <text x="280" y="485" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">~/projects/orkid/</text>
       
-      <rect x="100" y="365" width="240" height="50" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
-      <text x="220" y="383" font-family="Courier, monospace" font-size="10" fill="#8f8" text-anchor="middle">assetconfig.json</text>
-      <text x="220" y="398" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">• locations: { "orkid_cdn": "..." }</text>
-      <text x="220" y="410" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">• namespaces: { "singularity": {...} }</text>
+      <rect x="100" y="505" width="180" height="60" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
+      <text x="190" y="523" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">obt.project/</text>
+      <text x="190" y="538" font-family="Courier, monospace" font-size="9" fill="#8f8" text-anchor="middle">obt.manifest</text>
+      <text x="190" y="553" font-family="Courier, monospace" font-size="9" fill="#8f8" text-anchor="middle">scripts/init_env.py</text>
       
-      <rect x="100" y="425" width="240" height="50" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
-      <text x="220" y="443" font-family="Courier, monospace" font-size="10" fill="#8f8" text-anchor="middle">manifest.json</text>
-      <text x="220" y="458" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">• assets: singularity|std</text>
-      <text x="220" y="470" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">• assets: singularity|pbr</text>
+      <rect x="290" y="505" width="170" height="60" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
+      <text x="375" y="523" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">ork.data/asset_manifests/</text>
+      <text x="375" y="538" font-family="Courier, monospace" font-size="9" fill="#acd" text-anchor="middle">config.json</text>
+      <text x="375" y="553" font-family="Courier, monospace" font-size="9" fill="#acd" text-anchor="middle">singularity.json</text>
       
-      <rect x="100" y="485" width="240" height="60" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
-      <text x="220" y="503" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">Environment:</text>
-      <text x="220" y="518" font-family="Courier, monospace" font-size="9" fill="#8f8" text-anchor="middle">ORKID_ENCRYPTION_KEY=${...}</text>
-      <text x="220" y="533" font-family="Courier, monospace" font-size="9" fill="#8f8" text-anchor="middle">ORKID_CDN_API_KEY=${...}</text>
+      <rect x="100" y="575" width="360" height="70" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
+      <text x="280" y="593" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">init_env.py actions:</text>
+      <text x="280" y="608" font-family="Courier, monospace" font-size="9" fill="#8f8" text-anchor="middle">obt.env.append("ORKID_ASSET_MANIFEST_DIRS",</text>
+      <text x="280" y="623" font-family="Courier, monospace" font-size="9" fill="#8f8" text-anchor="middle">               orkid_dir/"ork.data"/"asset_manifests")</text>
+      
+      <rect x="100" y="655" width="360" height="50" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
+      <text x="280" y="673" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">Provides:</text>
+      <text x="280" y="688" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">• namespace: singularity</text>
+      <text x="280" y="700" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">• location: orkid_cdn</text>
     </g>
     
-    <!-- Project 2: game project -->
-    <g id="project-game">
-      <rect x="390" y="320" width="280" height="240" rx="8" fill="url(#projectGrad)" stroke="#6a8a7a" stroke-width="2"/>
-      <text x="530" y="345" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">gameproj/obt.project/</text>
-      
-      <rect x="410" y="365" width="240" height="50" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
-      <text x="530" y="383" font-family="Courier, monospace" font-size="10" fill="#8f8" text-anchor="middle">gameconfig.json</text>
-      <text x="530" y="398" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">• locations: { "game_cdn": "..." }</text>
-      <text x="530" y="410" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">• namespaces: { "game": {...} }</text>
-      
-      <rect x="410" y="425" width="240" height="50" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
-      <text x="530" y="443" font-family="Courier, monospace" font-size="10" fill="#8f8" text-anchor="middle">manifest.json</text>
-      <text x="530" y="458" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">• assets: game|levels|world1</text>
-      <text x="530" y="470" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">• assets: game|characters|hero</text>
-      
-      <rect x="410" y="485" width="240" height="60" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
-      <text x="530" y="503" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">Environment:</text>
-      <text x="530" y="518" font-family="Courier, monospace" font-size="9" fill="#8f8" text-anchor="middle">GAME_ENCRYPTION_KEY=${...}</text>
-      <text x="530" y="533" font-family="Courier, monospace" font-size="9" fill="#8f8" text-anchor="middle">GAME_CDN_API_KEY=${...}</text>
-    </g>
-    
-    <!-- Project 3: shared libs -->
+    <!-- Project 2: shared -->
     <g id="project-shared">
-      <rect x="700" y="320" width="280" height="240" rx="8" fill="url(#projectGrad)" stroke="#6a8a7a" stroke-width="2"/>
-      <text x="840" y="345" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">shared/obt.project/</text>
+      <rect x="510" y="460" width="400" height="260" rx="8" fill="url(#projectGrad)" stroke="#6a8a7a" stroke-width="2"/>
+      <text x="710" y="485" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">~/projects/shared/</text>
       
-      <rect x="720" y="365" width="240" height="50" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
-      <text x="840" y="383" font-family="Courier, monospace" font-size="10" fill="#8f8" text-anchor="middle">sharedconfig.json</text>
-      <text x="840" y="398" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">• destinations: { "cache": "&lt;stage&gt;/..." }</text>
-      <text x="840" y="410" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">• namespaces: { "shared": {...} }</text>
+      <rect x="530" y="505" width="180" height="60" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
+      <text x="620" y="523" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">obt.project/</text>
+      <text x="620" y="538" font-family="Courier, monospace" font-size="9" fill="#8f8" text-anchor="middle">obt.manifest</text>
+      <text x="620" y="553" font-family="Courier, monospace" font-size="9" fill="#8f8" text-anchor="middle">scripts/init_env.py</text>
       
-      <rect x="720" y="425" width="240" height="50" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
-      <text x="840" y="443" font-family="Courier, monospace" font-size="10" fill="#8f8" text-anchor="middle">manifest.json</text>
-      <text x="840" y="458" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">• assets: shared|audio|music</text>
-      <text x="840" y="470" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">• assets: shared|textures|ui</text>
+      <rect x="720" y="505" width="170" height="60" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
+      <text x="805" y="523" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">asset_manifests/</text>
+      <text x="805" y="538" font-family="Courier, monospace" font-size="9" fill="#acd" text-anchor="middle">config.json</text>
+      <text x="805" y="553" font-family="Courier, monospace" font-size="9" fill="#acd" text-anchor="middle">shared_assets.json</text>
       
-      <rect x="720" y="485" width="240" height="60" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
-      <text x="840" y="503" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">Dependencies:</text>
-      <text x="840" y="518" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">• Requires: orkid</text>
-      <text x="840" y="533" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">• Load order: 2</text>
+      <rect x="530" y="575" width="360" height="70" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
+      <text x="710" y="593" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">init_env.py actions:</text>
+      <text x="710" y="608" font-family="Courier, monospace" font-size="9" fill="#8f8" text-anchor="middle">obt.env.append("ORKID_ASSET_MANIFEST_DIRS",</text>
+      <text x="710" y="623" font-family="Courier, monospace" font-size="9" fill="#8f8" text-anchor="middle">               shared_dir/"asset_manifests")</text>
+      
+      <rect x="530" y="655" width="360" height="50" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
+      <text x="710" y="673" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">Provides:</text>
+      <text x="710" y="688" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">• namespace: shared</text>
+      <text x="710" y="700" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">• location: shared_cdn</text>
     </g>
     
-    <!-- Project 4: tools -->
-    <g id="project-tools">
-      <rect x="1010" y="320" width="280" height="240" rx="8" fill="url(#projectGrad)" stroke="#6a8a7a" stroke-width="2"/>
-      <text x="1150" y="345" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">tools/obt.project/</text>
+    <!-- Project 3: gameproj -->
+    <g id="project-game">
+      <rect x="940" y="460" width="400" height="260" rx="8" fill="url(#projectGrad)" stroke="#6a8a7a" stroke-width="2"/>
+      <text x="1140" y="485" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">~/projects/gameproj/</text>
       
-      <rect x="1030" y="365" width="240" height="50" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
-      <text x="1150" y="383" font-family="Courier, monospace" font-size="10" fill="#8f8" text-anchor="middle">toolsconfig.json</text>
-      <text x="1150" y="398" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">• locations: { "tools_cdn": "..." }</text>
-      <text x="1150" y="410" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">• destinations: { "bin": "&lt;stage&gt;/bin" }</text>
+      <rect x="960" y="505" width="180" height="60" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
+      <text x="1050" y="523" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">obt.project/</text>
+      <text x="1050" y="538" font-family="Courier, monospace" font-size="9" fill="#8f8" text-anchor="middle">obt.manifest</text>
+      <text x="1050" y="553" font-family="Courier, monospace" font-size="9" fill="#8f8" text-anchor="middle">scripts/init_env.py</text>
       
-      <rect x="1030" y="425" width="240" height="50" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
-      <text x="1150" y="443" font-family="Courier, monospace" font-size="10" fill="#8f8" text-anchor="middle">manifest.json</text>
-      <text x="1150" y="458" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">• assets: tools|editor|config</text>
-      <text x="1150" y="470" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">• assets: tools|scripts|build</text>
+      <rect x="1150" y="505" width="170" height="60" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
+      <text x="1235" y="523" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">asset_manifests/</text>
+      <text x="1235" y="538" font-family="Courier, monospace" font-size="9" fill="#acd" text-anchor="middle">config.json</text>
+      <text x="1235" y="553" font-family="Courier, monospace" font-size="9" fill="#acd" text-anchor="middle">game_manifest.json</text>
       
-      <rect x="1030" y="485" width="240" height="60" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
-      <text x="1150" y="503" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">Dependencies:</text>
-      <text x="1150" y="518" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">• Requires: orkid, shared</text>
-      <text x="1150" y="533" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">• Load order: 3</text>
+      <rect x="960" y="575" width="360" height="70" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
+      <text x="1140" y="593" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">init_env.py actions:</text>
+      <text x="1140" y="608" font-family="Courier, monospace" font-size="9" fill="#8f8" text-anchor="middle">obt.env.append("ORKID_ASSET_MANIFEST_DIRS",</text>
+      <text x="1140" y="623" font-family="Courier, monospace" font-size="9" fill="#8f8" text-anchor="middle">               gameproj_dir/"asset_manifests")</text>
+      
+      <rect x="960" y="655" width="360" height="50" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
+      <text x="1140" y="673" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">Provides:</text>
+      <text x="1140" y="688" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">• namespace: game</text>
+      <text x="1140" y="700" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">• location: game_cdn</text>
     </g>
   </g>
   
-  <!-- Merge Process -->
-  <g id="merge-process">
-    <!-- Arrows from projects to merge -->
-    <path d="M 220 560 L 400 630" stroke="#6ac" stroke-width="2" marker-end="url(#arrow)"/>
-    <path d="M 530 560 L 450 630" stroke="#6ac" stroke-width="2" marker-end="url(#arrow)"/>
-    <path d="M 840 560 L 500 630" stroke="#6ac" stroke-width="2" marker-end="url(#arrow)"/>
-    <path d="M 1150 560 L 550 630" stroke="#6ac" stroke-width="2" marker-end="url(#arrow)"/>
-    
-    <!-- Merge Operation -->
-    <rect x="320" y="620" width="320" height="100" rx="8" fill="url(#configGrad)" stroke="#8a8a6a" stroke-width="2"/>
-    <text x="480" y="645" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">Configuration Merge Process</text>
-    <text x="480" y="665" font-family="Arial, sans-serif" font-size="10" fill="#dac" text-anchor="middle">1. Load configs in dependency order</text>
-    <text x="480" y="680" font-family="Arial, sans-serif" font-size="10" fill="#dac" text-anchor="middle">2. Assert no namespace/location conflicts</text>
-    <text x="480" y="695" font-family="Arial, sans-serif" font-size="10" fill="#dac" text-anchor="middle">3. Merge into unified ConfigSpace</text>
-    <text x="480" y="710" font-family="Arial, sans-serif" font-size="10" fill="#dac" text-anchor="middle">4. Process templates and env vars</text>
-    
-    <!-- Arrow to final config -->
-    <path d="M 480 720 L 480 760" stroke="#6ac" stroke-width="3" marker-end="url(#arrow)"/>
+  <!-- Arrows from projects to final config -->
+  <g id="merge-arrows">
+    <path d="M 280 720 L 400 780" stroke="#6ac" stroke-width="2" marker-end="url(#arrow)"/>
+    <path d="M 710 720 L 710 760" stroke="#6ac" stroke-width="2" marker-end="url(#arrow)"/>
+    <path d="M 1140 720 L 1020 780" stroke="#6ac" stroke-width="2" marker-end="url(#arrow)"/>
   </g>
   
   <!-- Final ConfigSpace -->
   <g id="final-configspace">
-    <rect x="80" y="770" width="1240" height="100" rx="10" fill="#4a5a4a" stroke="#6a7a6a" stroke-width="2"/>
-    <text x="700" y="795" font-family="Arial, sans-serif" font-size="16" fill="white" text-anchor="middle" font-weight="bold">Final Merged AssetConfigSpace</text>
+    <rect x="80" y="770" width="1260" height="100" rx="10" fill="#4a5a4a" stroke="#6a7a6a" stroke-width="2"/>
+    <text x="710" y="795" font-family="Arial, sans-serif" font-size="16" fill="white" text-anchor="middle" font-weight="bold">Final Merged AssetConfigSpace</text>
     
     <!-- Merged components -->
-    <rect x="110" y="810" width="280" height="45" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
-    <text x="250" y="825" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">Namespaces (4)</text>
-    <text x="250" y="840" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">singularity, game, shared, tools</text>
-    <text x="250" y="850" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">✓ No conflicts</text>
+    <rect x="110" y="815" width="280" height="45" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
+    <text x="250" y="830" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">Configs (3)</text>
+    <text x="250" y="845" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">orkid, shared, gameproj</text>
+    <text x="250" y="858" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">✓ Merged sequentially</text>
     
-    <rect x="410" y="810" width="280" height="45" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
-    <text x="550" y="825" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">Locations (4)</text>
-    <text x="550" y="840" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">orkid_cdn, game_cdn, tools_cdn, cache</text>
-    <text x="550" y="850" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">✓ All resolved</text>
+    <rect x="410" y="815" width="280" height="45" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
+    <text x="550" y="830" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">Namespaces (3)</text>
+    <text x="550" y="845" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">singularity, shared, game</text>
+    <text x="550" y="858" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">✓ No conflicts</text>
     
-    <rect x="710" y="810" width="280" height="45" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
-    <text x="850" y="825" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">Manifests (4)</text>
-    <text x="850" y="840" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">All assets from 4 projects</text>
-    <text x="850" y="850" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">✓ Dependencies resolved</text>
+    <rect x="710" y="815" width="280" height="45" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
+    <text x="850" y="830" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">Locations (3)</text>
+    <text x="850" y="845" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">orkid_cdn, shared_cdn, game_cdn</text>
+    <text x="850" y="858" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">✓ All resolved</text>
     
-    <rect x="1010" y="810" width="280" height="45" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
-    <text x="1150" y="825" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">Environment</text>
-    <text x="1150" y="840" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">All ${VAR} expanded</text>
-    <text x="1150" y="850" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">✓ Templates processed</text>
-  </g>
-  
-  <!-- Key Points -->
-  <g id="key-points">
-    <text x="100" y="605" font-family="Arial, sans-serif" font-size="11" fill="#8cf" font-weight="bold">Key Points:</text>
-    <text x="100" y="620" font-family="Arial, sans-serif" font-size="10" fill="#acd">• Projects loaded in dependency order</text>
-    <text x="100" y="635" font-family="Arial, sans-serif" font-size="10" fill="#acd">• Conflicts cause assertions (fail-fast)</text>
-    <text x="100" y="650" font-family="Arial, sans-serif" font-size="10" fill="#acd">• Each project isolated namespace</text>
-    
-    <text x="900" y="605" font-family="Arial, sans-serif" font-size="11" fill="#8fc" font-weight="bold">Merge Rules:</text>
-    <text x="900" y="620" font-family="Arial, sans-serif" font-size="10" fill="#cfa">• Namespaces must be unique</text>
-    <text x="900" y="635" font-family="Arial, sans-serif" font-size="10" fill="#cfa">• Locations must be unique</text>
-    <text x="900" y="650" font-family="Arial, sans-serif" font-size="10" fill="#cfa">• Assets can reference any namespace</text>
+    <rect x="1010" y="815" width="300" height="45" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
+    <text x="1160" y="830" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">Manifests</text>
+    <text x="1160" y="845" font-family="Arial, sans-serif" font-size="9" fill="#acd" text-anchor="middle">All manifests loaded from directories</text>
+    <text x="1160" y="858" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">✓ Asset catalog ready</text>
   </g>
 </svg>
