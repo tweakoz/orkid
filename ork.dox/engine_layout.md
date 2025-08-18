@@ -1,6 +1,11 @@
 # Orkid Library Topology
-###### Orkid is divided into several shared libraries:
+
+![vizorg?](OrkidEngineLayout.png)
+
 ---
+
+# Orkid is divided into several shared libraries:
+
 ## ork.core
   - Reflection system
   - General OS utilities
@@ -161,8 +166,3 @@ archetype / entity / component / scene system. Lets you load a pregenerated 'sce
 
 ##### python3 module: orkengine.tool (planned)
 
----
-
-* Visual Topology :
-
-![vizorg?](OrkidEngineLayout.png)
