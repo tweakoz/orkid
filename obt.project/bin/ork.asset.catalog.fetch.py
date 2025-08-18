@@ -2,7 +2,7 @@
 
 ################################################################################
 
-import sys, argparse, os
+import sys, argparse, os, time
 import concurrent.futures
 from threading import Lock
 from orkengine import core
@@ -12,9 +12,10 @@ from orkengine import core
 ################################################################################
 
 class ParallelFetcher:
-    def __init__(self, catalog, max_workers=4):
+    def __init__(self, catalog, max_workers=4, disable_cache=False):
         self.catalog = catalog
         self.max_workers = max_workers
+        self.disable_cache = disable_cache
         self.completed = 0
         self.total = 0
         self.lock = Lock()
@@ -23,7 +24,7 @@ class ParallelFetcher:
     def fetch_single(self, asset_id):
         """Fetch a single asset (runs in thread)"""
         try:
-            result = self.catalog.get(asset_id, decrypt=True)
+            result = self.catalog.get(asset_id, decrypt=True, disable_cache=self.disable_cache)
             
             with self.lock:
                 self.completed += 1
@@ -51,6 +52,8 @@ class ParallelFetcher:
         results = []
         
         print(f"\nFetching {self.total} assets with {self.max_workers} workers...")
+        if self.disable_cache:
+            print("Cache disabled - downloading from remote")
         print("-" * 50)
         
         with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
@@ -98,31 +101,41 @@ def resolve_assets_to_fetch(catalog, patterns, namespaces):
     
     return sorted(list(assets_to_fetch))
 
-def fetch_assets_sequential(catalog, asset_ids, force=False):
-    """Fetch multiple assets sequentially with simple progress"""
+def fetch_assets_sequential(catalog, asset_ids, force=False, disable_cache=False):
+    """Fetch multiple assets concurrently using async API"""
     total = len(asset_ids)
     success_count = 0
     failed_assets = []
     
-    print(f"\nFetching {total} assets...")
+    print(f"\nFetching {total} assets concurrently...")
+    if disable_cache:
+        print("Cache disabled - downloading from remote")
     print("-" * 50)
     
-    for i, asset_id in enumerate(asset_ids, 1):
-        print(f"[{i}/{total}] {asset_id}")
-        
+    # Enqueue all assets for concurrent fetching
+    futures = []
+    for asset_id in asset_ids:
+        future = catalog.enqueue_get(asset_id, decrypt=True, disable_cache=disable_cache)
+        futures.append((asset_id, future))
+    
+    print(f"Enqueued {total} assets for concurrent download")
+    print("-" * 50)
+    
+    # Wait for all futures to complete
+    for asset_id, future in futures:
         try:
-            result = catalog.get(asset_id, decrypt=True)
+            result = future.wait()  # Block until this asset is ready
             
             if result and result.is_success():
-                print(f"  ✓ Success ({result.bytes_downloaded} bytes)")
+                print(f"  ✓ {asset_id} ({result.bytes_downloaded} bytes)")
                 success_count += 1
             else:
                 error = result.error_detail if result else "Unknown error"
-                print(f"  ✗ Failed: {error}")
+                print(f"  ✗ {asset_id}: {error}")
                 failed_assets.append(asset_id)
                 
         except Exception as e:
-            print(f"  ✗ Error: {e}")
+            print(f"  ✗ {asset_id}: {e}")
             failed_assets.append(asset_id)
     
     # Summary
@@ -137,9 +150,9 @@ def fetch_assets_sequential(catalog, asset_ids, force=False):
     
     return True
 
-def fetch_assets_parallel(catalog, asset_ids, num_workers=4):
+def fetch_assets_parallel(catalog, asset_ids, num_workers=4, disable_cache=False):
     """Fetch assets with parallel downloads"""
-    fetcher = ParallelFetcher(catalog, max_workers=num_workers)
+    fetcher = ParallelFetcher(catalog, max_workers=num_workers, disable_cache=disable_cache)
     results = fetcher.fetch_batch(asset_ids)
     
     # Summary
@@ -167,6 +180,8 @@ if __name__ == "__main__":
                        help='Fetch all assets from namespace(s)')
     parser.add_argument("-f", '--force', action='store_true',
                        help='Force download even if cached')
+    parser.add_argument("--disable-cache", action='store_true',
+                       help='Disable cache completely - always download from remote')
     parser.add_argument("--parallel", type=int, default=1,
                        help='Number of parallel downloads (default: 1)')
 
@@ -189,9 +204,11 @@ if __name__ == "__main__":
 
     # Fetch them
     if args.parallel > 1:
-        success = fetch_assets_parallel(catalog, assets, args.parallel)
+        success = fetch_assets_parallel(catalog, assets, args.parallel, 
+                                       disable_cache=args.disable_cache)
     else:
-        success = fetch_assets_sequential(catalog, assets, args.force)
+        success = fetch_assets_sequential(catalog, assets, args.force, 
+                                         disable_cache=args.disable_cache)
 
     core.coreappexit()
     sys.exit(0 if success else 1)

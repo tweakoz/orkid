@@ -63,12 +63,15 @@ struct DownloadManager::Impl {
 
     // Sum up total bytes from pending downloads
     for (const auto& dl : _pending_downloads) {
-      pending_bytes += dl->_total_bytes;
+      // Only count if we know the size (total_bytes > 0)
+      if (dl->_total_bytes > 0) {
+        pending_bytes += dl->_total_bytes;
+      }
     }
 
     // Also add remaining bytes from active downloads
     for (const auto& dl : _active_download_set) {
-      if (dl->_total_bytes > dl->_downloaded_bytes) {
+      if (dl->_total_bytes > 0 && dl->_total_bytes > dl->_downloaded_bytes) {
         pending_bytes += (dl->_total_bytes - dl->_downloaded_bytes);
       }
     }
@@ -77,34 +80,27 @@ struct DownloadManager::Impl {
   }
 
   void emitPerfMetrics() {
-    if (_perf_timer.SecsSinceStart() >= 3.0f) {
-      // Calculate bytes per second
-      size_t bytes_per_sec = _bytes_this_second.exchange(0);
+    float elapsed = _perf_timer.SecsSinceStart();
+    if (elapsed >= 1.0f) {
+      // Calculate bytes per second over the actual elapsed time
+      size_t bytes_in_period = _bytes_this_second.exchange(0);
+      float bytes_per_sec = bytes_in_period / elapsed;
       size_t pending_bytes = calculatePendingBytes();
+      
+      // Calculate total downloaded from all active downloads
+      size_t total_downloaded = _total_bytes_downloaded;
+      for (const auto& dl : _active_download_set) {
+        total_downloaded += dl->_downloaded_bytes;
+      }
 
       _logchan_download->log(
           "totMiB<%g> PendingMiB<%g> MiB/sec<%g> Active<%d> Enqueued<%d> Completed<%d>", //
-          float(_total_bytes_downloaded / 1048576),                                    //
-          float(pending_bytes / 1048576),
-          float(bytes_per_sec / 1048576), //
+          float(total_downloaded) / 1048576.0f,                                    //
+          float(pending_bytes) / 1048576.0f,
+          bytes_per_sec / 1048576.0f, //
           int(_active_downloads.load()),
           int(_queue_size.load()),
           int(_completed_downloads.load()));
-
-      // Emit performance metrics
-      /*_logchan_download->perfItem("DL:BytesPerSec", int(bytes_per_sec));
-      _logchan_download->perfItem("DL:TotalMB", int(_total_bytes_downloaded / 1048576));
-      _logchan_download->perfItem("DL:Active", int(_active_downloads.load()));
-      _logchan_download->perfItem("DL:QueueSize", int(_queue_size.load()));
-      _logchan_download->perfItem("DL:Completed", int(_completed_downloads.load()));
-      _logchan_download->perfItem("DL:Failed", int(_failed_downloads.load()));
-
-      // Calculate success rate
-      int total_finished = _completed_downloads + _failed_downloads;
-      if (total_finished > 0) {
-        float success_rate = float(_completed_downloads) / float(total_finished);
-        _logchan_download->perfItem("DL:SuccessRate", success_rate);
-      }*/
 
       // Reset timer
       _perf_timer.Start();
@@ -138,7 +134,7 @@ static int progress_callback(void* clientp, curl_off_t dltotal, curl_off_t dlnow
     size_t bytes_delta = (dlnow > prev_bytes) ? (dlnow - prev_bytes) : 0;
     auto* impl         = static_cast<DownloadManager::Impl*>(download->_manager_impl);
     impl->_bytes_this_second += bytes_delta;
-    impl->_total_bytes_downloaded += bytes_delta;
+    // Don't update _total_bytes_downloaded here - only when downloads complete
 
     // Emit performance metrics (throttled to 1Hz)
     impl->emitPerfMetrics();
@@ -346,6 +342,7 @@ void DownloadManager::processDownload(download_ptr_t dl) {
     if (response_code >= 200 && response_code < 300) {
       dl->_state = DownloadState::COMPLETED;
       _impl->_completed_downloads++;
+      _impl->_total_bytes_downloaded += dl->_downloaded_bytes;
       if (dl->_on_complete._item) {
         dl->_on_complete._item(true, dl->_destination_path);
       }

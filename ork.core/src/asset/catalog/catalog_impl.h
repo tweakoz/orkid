@@ -3,6 +3,19 @@
 namespace ork::asset::catalog {
 
 ////////////////////////////////////////////////////////////////
+// FetchRequest - Encapsulates all parameters for asset fetching
+////////////////////////////////////////////////////////////////
+
+struct FetchRequest {
+  assetid_t asset_id;
+  AssetLocation location;
+  assetentry_ptr_t asset_info;
+  bool decrypt = true;
+  bool disable_cache = false;
+  // Future expansion: priority, timeout, retry_count, etc.
+};
+
+////////////////////////////////////////////////////////////////
 // CatalogImpl - Implementation class for AssetCatalog
 ////////////////////////////////////////////////////////////////
 
@@ -61,6 +74,7 @@ struct CatalogImpl {
         
     // Initialize download manager with default concurrent queue
     _download_manager = std::make_shared<DownloadManager>(opq::concurrentQueue());
+    _download_manager->setMaxConcurrentDownloads(4); // Allow 4 parallel downloads
     
     // Initialize upload manager with default concurrent queue
     _upload_manager = std::make_shared<UploadManager>(opq::concurrentQueue());
@@ -113,17 +127,12 @@ struct CatalogImpl {
   datablock_ptr_t downloadFile(const URL& url, const locationinfo_ptr_t& location_info = nullptr);
   
   // High-level asset retrieval (new refactored method)
-  assetresult_ptr_t getAsset(
-    const assetid_t& fq_asset_id,
-    const AssetLocation& location,
-    const assetentry_ptr_t& asset_info,
-    bool decrypt
-  );
+  assetresult_ptr_t getAsset(fetchrequest_ptr_t request);
   
   // Download phases
-  datablock_ptr_t downloadAssetData(const AssetLocation& location);
-  datablock_ptr_t downloadChunkedData(const AssetLocation& location);
-  datablock_ptr_t downloadSingleData(const AssetLocation& location);
+  datablock_ptr_t downloadAssetData(fetchrequest_ptr_t request);
+  datablock_ptr_t downloadChunkedData(fetchrequest_ptr_t request);
+  datablock_ptr_t downloadSingleData(fetchrequest_ptr_t request);
   
   // Cache helpers
   file::Path getCachePathForAsset(const AssetLocation& location) const;
@@ -136,8 +145,7 @@ struct CatalogImpl {
   // Processing phases
   datablock_ptr_t processAssetData(
     datablock_ptr_t data,
-    const AssetLocation& location,
-    bool decrypt
+    fetchrequest_ptr_t request
   );
   datablock_ptr_t decryptData(
     datablock_ptr_t data,

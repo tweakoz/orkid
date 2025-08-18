@@ -167,6 +167,7 @@ public:
   NameType getFolder(EPathType etype) const;
 
   Path stripBasePath(const NameType& base) const;
+  Path withExtension(const char* new_ext) const;
 
   const char* c_str() const;
   std::string toStdString() const;

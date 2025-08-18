@@ -34,7 +34,7 @@ static logchannel_ptr_t logchan_catalog = logger()->getChannel("CATALOG");
 // Asset Retrieval
 ////////////////////////////////////////////////////////////////
 
-assetresult_ptr_t AssetCatalog::get(const assetid_t& fq_asset_id, bool decrypt) {
+assetresult_ptr_t AssetCatalog::get(const assetid_t& fq_asset_id, bool decrypt, bool disable_cache) {
   
   auto impl = _impl.getShared<CatalogImpl>();
   
@@ -62,8 +62,16 @@ assetresult_ptr_t AssetCatalog::get(const assetid_t& fq_asset_id, bool decrypt) 
     return result;
   }
   
-  // 4. Delegate to CatalogImpl for the actual work
-  auto result = impl->getAsset(fq_asset_id, *location, asset_info, decrypt);
+  // 4. Create fetch request with all parameters
+  auto fetch_request = std::make_shared<FetchRequest>();
+  fetch_request->asset_id = fq_asset_id;
+  fetch_request->location = *location;
+  fetch_request->asset_info = asset_info;
+  fetch_request->decrypt = decrypt;
+  fetch_request->disable_cache = disable_cache;
+  
+  // 5. Delegate to CatalogImpl for the actual work
+  auto result = impl->getAsset(fetch_request);
   
   // 5. Handle result and update state
   if (result->_status == AssetStatus::OK) {
@@ -83,6 +91,170 @@ assetresult_ptr_t AssetCatalog::get(const assetid_t& fq_asset_id, bool decrypt) 
   });
   
   return result;
+}
+
+////////////////////////////////////////////////////////////////
+// Async Asset Retrieval
+////////////////////////////////////////////////////////////////
+
+assetfuture_ptr_t AssetCatalog::enqueueGet(const assetid_t& fq_asset_id, bool decrypt, bool disable_cache) {
+  
+  auto impl = _impl.getShared<CatalogImpl>();
+  
+  // Create the future
+  auto future = std::make_shared<AssetFuture>();
+  future->_asset_id = fq_asset_id;
+  // Don't use shared_from_this - the future doesn't need catalog reference
+  
+  // 1. Validation - get or create flyweight request
+  auto request = mergeAssetReq(fq_asset_id);
+  
+  // 2. Check if asset exists
+  auto asset_info = getAssetInfo(fq_asset_id);
+  if (!asset_info) {
+    // Asset not found - complete immediately with error
+    auto result = std::make_shared<AssetResult>();
+    result->_status = AssetStatus::NOT_FOUND;
+    result->_error_detail = FormatString("Asset not found: %s", fq_asset_id.c_str());
+    request->_state = AssetState::FAILED;
+    
+    future->_result = result;
+    future->_is_complete = true;
+    future->_cv.notify_all();
+    return future;
+  }
+  
+  // 3. Locate the asset
+  auto location = impl->locateAsset(fq_asset_id);
+  if (!location) {
+    // Failed to locate - complete immediately with error
+    auto result = std::make_shared<AssetResult>();
+    result->_status = AssetStatus::NOT_FOUND;
+    result->_error_detail = "Failed to locate asset";
+    
+    future->_result = result;
+    future->_is_complete = true;
+    future->_cv.notify_all();
+    return future;
+  }
+  
+  // 4. Handle password authentication upfront (on main thread)
+  // This must happen before enqueueing to allow interactive password prompt
+  if (location->_location_info) {
+    auto& loc_info = location->_location_info;
+    if (loc_info->_api_key_read.has_value()) {
+      std::string api_key = loc_info->_api_key_read.value();
+      
+      // Check if this requires password authentication
+      if (PasswordProvider::requiresPasswordAuth(api_key)) {
+        // Prompt for password NOW on main thread
+        std::string host = loc_info->_download_url._host;
+        std::string prompt = FormatString("Password for %s: ", host.c_str());
+        auto password = PasswordProvider::getPassword(prompt, true); // Allow caching
+        
+        if (password.has_value()) {
+          // Replace the placeholder with actual password
+          loc_info->_api_key_read = password.value();
+        } else {
+          // No password provided - fail immediately
+          auto result = std::make_shared<AssetResult>();
+          result->_status = AssetStatus::PERMISSION;
+          result->_error_detail = "Password authentication required but not provided";
+          
+          future->_result = result;
+          future->_is_complete = true;
+          future->_cv.notify_all();
+          return future;
+        }
+      }
+    }
+  }
+  
+  // 5. Create fetch request with all parameters
+  auto fetch_request = std::make_shared<FetchRequest>();
+  fetch_request->asset_id = fq_asset_id;
+  fetch_request->location = *location;
+  fetch_request->asset_info = asset_info;
+  fetch_request->decrypt = decrypt;
+  fetch_request->disable_cache = disable_cache;
+  
+  future->_fetch_request = fetch_request;
+  
+  // 6. Enqueue the work to be done asynchronously
+  // Use the work queue from download manager or create one
+  opq::concurrentQueue()->enqueue([impl, fetch_request, future, request]() {
+    // Do the actual work
+    auto result = impl->getAsset(fetch_request);
+    
+    // Handle result and update state
+    if (result->_status == AssetStatus::OK) {
+      request->_state = AssetState::CACHED_MEMORY;
+    } else {
+      request->_state = AssetState::FAILED;
+    }
+    
+    // Update statistics
+    impl->_stats.atomicOp([&](CatalogImpl::Stats& stats) {
+      if (result->_status == AssetStatus::OK) {
+        stats.cache_misses++;
+        stats.bytes_downloaded += result->_bytes_downloaded;
+        stats.total_download_time += result->_download_time;
+        stats.total_processing_time += result->_processing_time;
+      }
+    });
+    
+    // Complete the future
+    {
+      std::lock_guard<std::mutex> lock(future->_mutex);
+      future->_result = result;
+      future->_is_complete = true;
+    }
+    future->_cv.notify_all();
+  });
+  
+  return future;
+}
+
+////////////////////////////////////////////////////////////////
+// AssetFuture Implementation
+////////////////////////////////////////////////////////////////
+
+assetresult_ptr_t AssetFuture::wait() {
+  std::unique_lock<std::mutex> lock(_mutex);
+  _cv.wait(lock, [this] { return _is_complete.load() || _is_cancelled.load(); });
+  
+  if (_is_cancelled) {
+    if (!_result) {
+      _result = std::make_shared<AssetResult>();
+      _result->_status = AssetStatus::CANCELLED;
+      _result->_error_detail = "Operation was cancelled";
+    }
+  }
+  
+  return _result;
+}
+
+void AssetFuture::cancel() {
+  {
+    std::lock_guard<std::mutex> lock(_mutex);
+    _is_cancelled = true;
+    
+    // If not already complete, create a cancelled result
+    if (!_is_complete) {
+      _result = std::make_shared<AssetResult>();
+      _result->_status = AssetStatus::CANCELLED;
+      _result->_error_detail = "Operation was cancelled";
+      _is_complete = true;
+    }
+  }
+  _cv.notify_all();
+}
+
+assetresult_ptr_t AssetFuture::getResult() const {
+  if (_is_complete.load()) {
+    return _result;
+  }
+  return nullptr;
 }
 
 ////////////////////////////////////////////////////////////////

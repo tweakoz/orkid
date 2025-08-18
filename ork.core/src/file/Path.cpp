@@ -565,6 +565,18 @@ Path Path::stripBasePath(const NameType& base) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+Path Path::withExtension(const char* new_ext) const {
+  DecomposedPath decomposed;
+  Path copy(*this);
+  copy.decompose(decomposed);
+  decomposed.mExtension = new_ext ? new_ext : "";
+  Path result;
+  result.compose(decomposed);
+  return result;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 // No longer needed - using standard strrchr instead
 
 //////////////////////////////////////////////////////////////////////////////

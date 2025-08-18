@@ -75,6 +75,10 @@ struct UploadProgress;             // Progress tracking for uploads
 struct AssetUploaderAdapter;       // Wraps generic uploaders with asset-specific logic
 struct AssetUploadCoordinator;     // Manages multiple uploaders for redundancy/fallback
 
+// Async fetching
+struct AssetFuture;                // Future/promise for async asset fetching
+struct FetchRequest;               // Encapsulates all parameters for asset fetching
+
 ////////////////////////////////////////////////////////////////////////////////
 // Shared pointer aliases
 ////////////////////////////////////////////////////////////////////////////////
@@ -91,6 +95,8 @@ using assetcatalog_wkptr_t = std::weak_ptr<AssetCatalog>;
 using assetresult_ptr_t = std::shared_ptr<AssetResult>;
 using assetlocation_ptr_t = std::shared_ptr<AssetLocation>;
 using assetconfigspace_ptr_t = std::shared_ptr<AssetConfigSpace>;
+using assetfuture_ptr_t = std::shared_ptr<AssetFuture>;
+using fetchrequest_ptr_t = std::shared_ptr<FetchRequest>;
 
 // manifestentry_ptr_t removed - use assetentry_ptr_t instead
 using assetpackager_ptr_t = std::shared_ptr<AssetPackager>;

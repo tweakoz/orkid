@@ -139,6 +139,22 @@ void pyinit_asset_catalog(py::module& module_core) {
       .export_values();
 
   /////////////////////////////////////////////////////////////////////////////////
+  // AssetFuture
+  /////////////////////////////////////////////////////////////////////////////////
+  auto future_type = py::class_<AssetFuture, assetfuture_ptr_t>(module_core, "AssetFuture")
+                         .def_readonly("asset_id", &AssetFuture::_asset_id)
+                         .def("is_complete", &AssetFuture::isComplete)
+                         .def("wait", &AssetFuture::wait, py::call_guard<py::gil_scoped_release>())
+                         .def("cancel", &AssetFuture::cancel)
+                         .def("get_result", &AssetFuture::getResult)
+                         .def("__repr__", [](assetfuture_ptr_t future) -> std::string {
+                           return FormatString("AssetFuture(asset_id='%s', complete=%s)", 
+                                             future->_asset_id.c_str(),
+                                             future->isComplete() ? "True" : "False");
+                         });
+  type_codec->registerStdCodec<assetfuture_ptr_t>(future_type);
+
+  /////////////////////////////////////////////////////////////////////////////////
   // AssetResult
   /////////////////////////////////////////////////////////////////////////////////
   auto result_type = py::class_<AssetResult, assetresult_ptr_t>(module_core, "AssetResult")
@@ -293,12 +309,22 @@ void pyinit_asset_catalog(py::module& module_core) {
           // Asset Retrieval
           .def(
               "get",
-              [](assetcatalog_ptr_t catalog, const std::string& asset_id, bool decrypt) -> assetresult_ptr_t {
+              [](assetcatalog_ptr_t catalog, const std::string& asset_id, bool decrypt, bool disable_cache) -> assetresult_ptr_t {
                 py::gil_scoped_release release;
-                return catalog->get(asset_id, decrypt);
+                return catalog->get(asset_id, decrypt, disable_cache);
               },
               py::arg("asset_id"),
-              py::arg("decrypt") = true)
+              py::arg("decrypt") = true,
+              py::arg("disable_cache") = false)
+          .def(
+              "enqueue_get",
+              [](assetcatalog_ptr_t catalog, const std::string& asset_id, bool decrypt, bool disable_cache) -> assetfuture_ptr_t {
+                py::gil_scoped_release release;
+                return catalog->enqueueGet(asset_id, decrypt, disable_cache);
+              },
+              py::arg("asset_id"),
+              py::arg("decrypt") = true,
+              py::arg("disable_cache") = false)
           .def("has_asset", &AssetCatalog::hasAsset)
           .def("get_asset_info", &AssetCatalog::getAssetInfo)
 

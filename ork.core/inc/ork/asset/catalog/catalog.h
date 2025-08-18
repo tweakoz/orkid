@@ -97,6 +97,34 @@ struct DownloadProgress {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
+// AssetFuture - Represents a pending async asset fetch operation
+////////////////////////////////////////////////////////////////////////////////
+
+struct AssetFuture {
+  assetid_t _asset_id;
+  std::atomic<bool> _is_complete{false};
+  std::atomic<bool> _is_cancelled{false};
+  assetresult_ptr_t _result;
+  std::mutex _mutex;
+  std::condition_variable _cv;
+  
+  // Internal state for tracking
+  fetchrequest_ptr_t _fetch_request;
+  
+  // Wait for completion (blocking)
+  assetresult_ptr_t wait();
+  
+  // Check if complete (non-blocking)
+  bool isComplete() const { return _is_complete.load(); }
+  
+  // Cancel the operation
+  void cancel();
+  
+  // Get result if ready (non-blocking, returns nullptr if not ready)
+  assetresult_ptr_t getResult() const;
+};
+
+////////////////////////////////////////////////////////////////////////////////
 // Main asset catalog class - Central orchestrator for all asset operations
 //
 // The AssetCatalog is the heart of the asset management system, providing:
@@ -216,7 +244,11 @@ struct AssetCatalog {
   //
   // Generation safety is built-in - if manifest changes during retrieval,
   // the operation either completes with old version or retries with new
-  assetresult_ptr_t get(const assetid_t& fq_asset_id, bool decrypt = true);
+  assetresult_ptr_t get(const assetid_t& fq_asset_id, bool decrypt = true, bool disable_cache = false);
+  
+  // Async version - enqueue asset fetch and return future immediately
+  // Allows parallel fetching of multiple assets
+  assetfuture_ptr_t enqueueGet(const assetid_t& fq_asset_id, bool decrypt = true, bool disable_cache = false);
   
   // Check if asset exists without downloading
   bool hasAsset(const assetid_t& fq_asset_id) const;

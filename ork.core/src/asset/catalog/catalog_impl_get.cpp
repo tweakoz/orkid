@@ -16,6 +16,7 @@
 #include <ork/util/md5.h>
 #include <ork/util/xxhash.inl>
 #include <ork/util/password_provider.h>
+#include <ork/util/download_group.h>
 #include <boost/filesystem.hpp>
 #include <regex>
 #include <thread>
@@ -35,14 +36,10 @@ static logchannel_ptr_t logchan_catalog = logger()->getChannel("CATALOG");
 
 ////////////////////////////////////////////////////////////////
 
-assetresult_ptr_t CatalogImpl::getAsset(
-    const assetid_t& fq_asset_id,
-    const AssetLocation& location,
-    const assetentry_ptr_t& asset_info,
-    bool decrypt) {
+assetresult_ptr_t CatalogImpl::getAsset(fetchrequest_ptr_t request) {
 
   auto result       = std::make_shared<AssetResult>();
-  result->_location = location;
+  result->_location = request->location;
   Timer overall_timer;
   overall_timer.Start();
 
@@ -50,7 +47,7 @@ assetresult_ptr_t CatalogImpl::getAsset(
   Timer _download_timer;
   _download_timer.Start();
 
-  auto raw_data = downloadAssetData(location);
+  auto raw_data = downloadAssetData(request);
   if (!raw_data) {
     printf("[DEBUG CatalogImpl] Download phase FAILED\n");
     result->_status       = AssetStatus::DOWNLOAD_FAILED;
@@ -65,14 +62,14 @@ assetresult_ptr_t CatalogImpl::getAsset(
   Timer process_timer;
   process_timer.Start();
 
-  auto processed_data = processAssetData(raw_data, location, decrypt);
+  auto processed_data = processAssetData(raw_data, request);
   if (!processed_data) {
     printf("[DEBUG CatalogImpl] Process phase FAILED\n");
     // processAssetData doesn't set _status, so set it here
-    if (decrypt && location._is_encrypted) {
+    if (request->decrypt && request->location._is_encrypted) {
       result->_status       = AssetStatus::DECRYPT_FAILED;
       result->_error_detail = "Failed to decrypt asset";
-    } else if (location._is_compressed) {
+    } else if (request->location._is_compressed) {
       result->_status       = AssetStatus::DECOMPRESS_FAILED;
       result->_error_detail = "Failed to decompress asset";
     }
@@ -82,11 +79,11 @@ assetresult_ptr_t CatalogImpl::getAsset(
   result->_processing_time = process_timer.SecsSinceStart();
 
   // 3. Handle by type
-  if (asset_info->_type == "asset_pak") {
+  if (request->asset_info->_type == "asset_pak") {
     handleAssetPak(processed_data, *result);
     // Also write to local location if available
-    if (!asset_info->_local_loc.empty()) {
-      writeAssetPakToLocal(asset_info, *result);
+    if (!request->asset_info->_local_loc.empty()) {
+      writeAssetPakToLocal(request->asset_info, *result);
     }
   } else {
     handleRegularAsset(processed_data, *result);
@@ -96,19 +93,21 @@ assetresult_ptr_t CatalogImpl::getAsset(
 }
 ////////////////////////////////////////////////////////////////
 
-datablock_ptr_t CatalogImpl::downloadAssetData(const AssetLocation& location) {
-  if (location._chunk_manifest) {
-    logchan_catalog->log("DEBUG: Using downloadChunkedData for %s", location._relative_path.c_str());
-    return downloadChunkedData(location);
+datablock_ptr_t CatalogImpl::downloadAssetData(fetchrequest_ptr_t request) {
+  if (request->location._chunk_manifest) {
+    logchan_catalog->log("DEBUG: Using downloadChunkedData for %s", request->location._relative_path.c_str());
+    return downloadChunkedData(request);
   } else {
-    logchan_catalog->log("DEBUG: Using downloadSingleData for %s", location._relative_path.c_str());
-    return downloadSingleData(location);
+    logchan_catalog->log("DEBUG: Using downloadSingleData for %s", request->location._relative_path.c_str());
+    return downloadSingleData(request);
   }
 }
 
 ////////////////////////////////////////////////////////////////
 
-datablock_ptr_t CatalogImpl::downloadSingleData(const AssetLocation& location) {
+datablock_ptr_t CatalogImpl::downloadSingleData(fetchrequest_ptr_t request) {
+  const auto& location = request->location;
+  
   // Get cache path for this asset
   file::Path cache_path = getCachePathForAsset(location);
 
@@ -118,8 +117,8 @@ datablock_ptr_t CatalogImpl::downloadSingleData(const AssetLocation& location) {
     storage_hash = storage_hash.substr(0, storage_hash.size() - 4);
   }
 
-  // Check if cached file exists and is valid
-  if (cache_path.doesPathExist()) {
+  // Check if cached file exists and is valid (skip if cache disabled)
+  if (!request->disable_cache && cache_path.doesPathExist()) {
     if (verifyCachedFileHash(cache_path, storage_hash)) {
       // Cache hit with valid hash
       logchan_catalog->log("Cache hit (verified): %s", storage_hash.c_str());
@@ -173,33 +172,37 @@ datablock_ptr_t CatalogImpl::downloadSingleData(const AssetLocation& location) {
 
 ////////////////////////////////////////////////////////////////
 
-datablock_ptr_t CatalogImpl::downloadChunkedData(const AssetLocation& location) {
+datablock_ptr_t CatalogImpl::downloadChunkedData(fetchrequest_ptr_t request) {
+  const auto& location = request->location;
+  
   if (!location._chunk_manifest) {
     logchan_catalog->log("ERROR: No chunk manifest for chunked download");
     return nullptr;
   }
 
-  // Check if all chunks are cached and valid
+  // Check if all chunks are cached and valid (skip cache check if disabled)
   std::vector<datablock_ptr_t> chunks;
-  bool all_chunks_cached    = true;
+  bool all_chunks_cached    = !request->disable_cache; // If cache disabled, force download
   size_t total_cached_bytes = 0;
 
-  for (size_t i = 0; i < location._chunk_manifest->_chunks.size(); ++i) {
-    file::Path chunk_cache_path = getCachePathForChunk(location, i);
+  if (!request->disable_cache) {
+    for (size_t i = 0; i < location._chunk_manifest->_chunks.size(); ++i) {
+      file::Path chunk_cache_path = getCachePathForChunk(location, i);
 
-    if (chunk_cache_path.doesPathExist() && verifyCachedChunkHash(chunk_cache_path, location._chunk_manifest->_chunks[i]._hash)) {
-      // Chunk is cached and valid
-      auto cached_chunk = readCachedFile(chunk_cache_path);
-      if (cached_chunk) {
-        chunks.push_back(cached_chunk);
-        total_cached_bytes += cached_chunk->length();
-        continue;
+      if (chunk_cache_path.doesPathExist() && verifyCachedChunkHash(chunk_cache_path, location._chunk_manifest->_chunks[i]._hash)) {
+        // Chunk is cached and valid
+        auto cached_chunk = readCachedFile(chunk_cache_path);
+        if (cached_chunk) {
+          chunks.push_back(cached_chunk);
+          total_cached_bytes += cached_chunk->length();
+          continue;
+        }
       }
-    }
 
-    // Chunk missing or corrupted - need to download all
-    all_chunks_cached = false;
-    break;
+      // Chunk missing or corrupted - need to download all
+      all_chunks_cached = false;
+      break;
+    }
   }
 
   if (all_chunks_cached) {
@@ -228,7 +231,9 @@ datablock_ptr_t CatalogImpl::downloadChunkedData(const AssetLocation& location) 
   // Need to download all chunks (all-or-nothing approach)
   logchan_catalog->log("Cache miss or partial cache - downloading all %zu chunks", location._chunk_manifest->_chunks.size());
 
-  chunks.clear();
+  // Use shared_ptr for chunks to avoid use-after-free in async callbacks
+  auto chunks_ptr = std::make_shared<std::vector<datablock_ptr_t>>();
+  chunks_ptr->resize(location._chunk_manifest->_chunks.size());
 
   // Create a temporary AssetEntry for URL generation
   AssetEntry temp_entry;
@@ -240,41 +245,102 @@ datablock_ptr_t CatalogImpl::downloadChunkedData(const AssetLocation& location) 
   temp_entry._storage_hash = storage_hash;
   temp_entry._namespace    = location._namespace_id;
 
+  // Create download group for parallel chunk downloads
+  auto download_group = std::make_shared<DownloadGroup>();
+  std::vector<file::Path> chunk_cache_paths;
+  
+  // Create download tasks for all chunks
   for (size_t i = 0; i < location._chunk_manifest->_chunks.size(); ++i) {
     URL chunk_url = _catalog->getChunkDownloadURL(&temp_entry, i, location._location_info);
-    if(0)logchan_catalog->log("DEBUG: Chunk download URL: %s", chunk_url.toString().c_str());
-
-    auto chunk = downloadFile(chunk_url, location._location_info);
-    if (!chunk) {
-      logchan_catalog->log("ERROR: Failed to download chunk %zu", i);
-      return nullptr;
-    }
-
-    // Verify chunk hash before caching
-    auto xxhasher = std::make_shared<XXH64HASH>();
-    xxhasher->init();
-    xxhasher->accumulate(chunk->data(), chunk->length());
-    xxhasher->finish();
-    chunk_hash_t computed_hash = xxhasher->result();
-
-    if (computed_hash != location._chunk_manifest->_chunks[i]._hash) {
-      logchan_catalog->log("ERROR: Downloaded chunk %zu hash mismatch", i);
-      return nullptr;
-    }
-
-    // Save verified chunk to cache
     file::Path chunk_cache_path = getCachePathForChunk(location, i);
-    if (saveToCacheFile(chunk, chunk_cache_path)) {
-      if(0)logchan_catalog->log("Cached chunk %zu", i);
+    chunk_cache_paths.push_back(chunk_cache_path);
+    
+    // Create a unique temporary file for each chunk download
+    file::Path temp_path = file::Path(FormatString("%s.%04zu.tmp", chunk_cache_path.c_str(), i));
+    
+    auto dl = std::make_shared<Download>(chunk_url, temp_path);
+    
+    // Set the expected size from the chunk manifest
+    dl->_total_bytes = location._chunk_manifest->_chunks[i]._size;
+    
+    // Add headers if needed (API key authentication)
+    if (location._location_info && location._location_info->_api_key_read) {
+      std::string api_key = location._location_info->_api_key_read.value();
+      dl->setHeader("X-API-Key", api_key);
     }
-
-    chunks.push_back(chunk);
+    if (location._location_info) {
+      dl->_ignore_tls_errors = location._location_info->_disable_cert_check;
+    } else {
+      dl->_ignore_tls_errors = true;
+    }
+    
+    // Capture chunk index for verification
+    size_t chunk_idx = i;
+    chunk_hash_t expected_hash = location._chunk_manifest->_chunks[i]._hash;
+    
+    dl->_on_complete._item = [this, chunk_idx, expected_hash, temp_path, chunk_cache_path, chunks_ptr](bool success, const file::Path& path) {
+      if (success) {
+        // Read downloaded chunk
+        auto chunk_data = readCachedFile(temp_path);
+        if (!chunk_data) {
+          logchan_catalog->log("ERROR: Failed to read downloaded chunk %zu", chunk_idx);
+          return;
+        }
+        
+        // Verify chunk hash
+        auto xxhasher = std::make_shared<XXH64HASH>();
+        xxhasher->init();
+        xxhasher->accumulate(chunk_data->data(), chunk_data->length());
+        xxhasher->finish();
+        chunk_hash_t computed_hash = xxhasher->result();
+        
+        if (computed_hash != expected_hash) {
+          logchan_catalog->log("ERROR: Downloaded chunk %zu hash mismatch", chunk_idx);
+          std::remove(temp_path.c_str());
+          return;
+        }
+        
+        // Move to cache location
+        if (std::rename(temp_path.c_str(), chunk_cache_path.c_str()) == 0) {
+          (*chunks_ptr)[chunk_idx] = chunk_data;
+        } else {
+          // Fallback: copy the data
+          saveToCacheFile(chunk_data, chunk_cache_path);
+          (*chunks_ptr)[chunk_idx] = chunk_data;
+          std::remove(temp_path.c_str());
+        }
+      }
+    };
+    
+    download_group->addDownload(dl);
+  }
+  
+  // Download all chunks in parallel
+  _download_manager->downloadGroup(download_group);
+  
+  // Wait for completion
+  while (!download_group->isComplete()) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
+  
+  // Check if all downloads succeeded
+  if (!download_group->allSuccessful()) {
+    logchan_catalog->log("ERROR: Failed to download all chunks");
+    return nullptr;
+  }
+  
+  // Verify all chunks are present
+  for (size_t i = 0; i < chunks_ptr->size(); ++i) {
+    if (!(*chunks_ptr)[i]) {
+      logchan_catalog->log("ERROR: Missing chunk %zu after download", i);
+      return nullptr;
+    }
   }
 
   // Assemble chunks
   ChunkAssembler::Config assembler_config;
   ChunkAssembler assembler(location._chunk_manifest, nullptr, assembler_config);
-  auto result = assembler.assembleFromChunks(chunks);
+  auto result = assembler.assembleFromChunks(*chunks_ptr);
 
   if (!result->success) {
     logchan_catalog->log("ERROR: Chunk assembly failed: %s", result->error_message.c_str());
@@ -286,12 +352,12 @@ datablock_ptr_t CatalogImpl::downloadChunkedData(const AssetLocation& location) 
 
 ////////////////////////////////////////////////////////////////
 
-datablock_ptr_t CatalogImpl::processAssetData(datablock_ptr_t _data, const AssetLocation& location, bool decrypt) {
-
+datablock_ptr_t CatalogImpl::processAssetData(datablock_ptr_t _data, fetchrequest_ptr_t request) {
+  const auto& location = request->location;
   auto result = _data;
 
   // Decrypt if needed
-  if (decrypt && location._is_encrypted) {
+  if (request->decrypt && location._is_encrypted) {
     result = decryptData(result, location._namespace_id);
     if (!result) {
       printf("[ERROR] Decryption failed\n");
