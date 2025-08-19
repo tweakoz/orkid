@@ -12,7 +12,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
-static auto logchan_vkbufmem = logger()->configureChannel("VKBUFMEM", fvec3(0.5, 0.5, 0.5), true);
+static auto logchan_vkbufmem = logger()->configureChannel("VKBUFMEM", fvec3(0.5, 0.5, 0.5), false);
 uint32_t VkContext::_findMemoryType(    //
     uint32_t typeFilter,                //
     VkMemoryPropertyFlags properties) { //

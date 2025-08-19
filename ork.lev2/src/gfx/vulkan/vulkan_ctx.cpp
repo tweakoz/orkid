@@ -12,7 +12,7 @@ ImplementReflectionX(ork::lev2::vulkan::VkContext, "VkContext");
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_vkctx = logger()->configureChannel("VKCTX", fvec3(1,1,.9));
+static logchannel_ptr_t logchan_vkctx = logger()->configureChannel("VKCTX", fvec3(1,1,.9),false);
 
 void VkContext::describeX(class_t* clazz) {
 

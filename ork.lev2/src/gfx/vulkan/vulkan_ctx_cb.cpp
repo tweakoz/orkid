@@ -10,7 +10,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_vkcb = logger()->configureChannel("VKCB", fvec3(1, 1, .9));
+static logchannel_ptr_t logchan_vkcb = logger()->configureChannel("VKCB", fvec3(1, 1, .9), false);
 
 void VkContext::_beginRecordCommandBuffer(secondary_commandbuffer_ptr_t cbuf) {
   

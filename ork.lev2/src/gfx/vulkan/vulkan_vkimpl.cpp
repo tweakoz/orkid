@@ -166,6 +166,14 @@ VulkanInstance::VulkanInstance() {
 
   printf("num vk instance extensions<%zu>\n", _instance_extensions.size());
 
+  char cwd[PATH_MAX];
+  getcwd(cwd, sizeof(cwd));
+  printf("Working dir: %s\n", cwd);
+  printf("VK_ICD_FILENAMES: %s\n", getenv("VK_ICD_FILENAMES"));
+  printf("VK_LAYER_PATH: %s\n", getenv("VK_LAYER_PATH"));
+  printf("DYLD_LIBRARY_PATH: %s\n", getenv("DYLD_LIBRARY_PATH"));
+  printf("MVK_CONFIG_LOG_LEVEL: %s\n", getenv("MVK_CONFIG_LOG_LEVEL"));
+
   VkResult res = vkCreateInstance(&_instancedata, nullptr, &_instance);
   OrkAssert(res == 0);
 

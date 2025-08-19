@@ -32,7 +32,7 @@ namespace ork::lev2{
 namespace ork::lev2 {
 extern bool g_allow_HIDPI;
 
-static logchannel_ptr_t logchan_ezapp = logger()->configureChannel("EZAPP", fvec3(0.7, 0.7, 0.9));
+static logchannel_ptr_t logchan_ezapp = logger()->configureChannel("EZAPP", fvec3(0.7, 0.7, 0.9),false);
 
 ////////////////////////////////////////////////////////////////////////////////
 EzUiEventInterceptor::EzUiEventInterceptor()

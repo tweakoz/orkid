@@ -13,7 +13,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_vkpip = logger()->configureChannel("VKPIP", fvec3(1,1,.2), true);
+static logchannel_ptr_t logchan_vkpip = logger()->configureChannel("VKPIP", fvec3(1,1,.2), false);
 
 vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
     vkvtxbuf_ptr_t vb,             //
