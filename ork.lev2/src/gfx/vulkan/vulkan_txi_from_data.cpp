@@ -75,7 +75,7 @@ secondary_commandbuffer_ptr_t SecCmdBufPoolAdapter::allocFresh() {
 
 void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid) {
 
-  ptex->_debugName = "VkTextureInterface::initTextureFromData";
+  //ptex->_debugName = "VkTextureInterface::initTextureFromData";
 
   /////////////////////////////////////
   // Handle format conversion for macOS
@@ -251,7 +251,8 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     auto VKICI   = makeVKICI(tid._w, tid._h, tid._d, actual_dst_format, 1); // Use actual format
     VKICI->usage = usage;
 
-    vktex->_imgobj = std::make_shared<VulkanImageObject>(_contextVK, VKICI);
+    std::string debug_name = ptex->_debugName.empty() ? "texture_from_data" : ptex->_debugName;
+    vktex->_imgobj = std::make_shared<VulkanImageObject>(_contextVK, VKICI, debug_name);
 
 
     auto IVCI = createImageViewInfo2D(
@@ -262,6 +263,12 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     initializeVkStruct(vktex->_imgobj->_vkimageview);
     VkResult ok = vkCreateImageView(_contextVK->_vkdevice, IVCI.get(), nullptr, &vktex->_imgobj->_vkimageview);
     OrkAssert(VK_SUCCESS == ok);
+    
+    // Set debug name for image view
+    if (!ptex->_debugName.empty()) {
+      std::string view_name = ptex->_debugName + "_view";
+      _contextVK->_setObjectDebugName(vktex->_imgobj->_vkimageview, VK_OBJECT_TYPE_IMAGE_VIEW, view_name.c_str());
+    }
 
     vktex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     vktex->_vkdescriptor_info.imageView   = vktex->_imgobj->_vkimageview;

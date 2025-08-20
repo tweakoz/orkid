@@ -43,10 +43,9 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   auto img_info   = makeVKICI(iwidth, iheight, 1, format, num_mips);
   img_info->usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
 
-  teximpl->_imgobj    = std::make_shared<VulkanImageObject>(_contextVK, img_info);
+  std::string debug_name = rtbuffer->_debugName.empty() ? "rtbuffer_texture" : rtbuffer->_debugName;
+  teximpl->_imgobj    = std::make_shared<VulkanImageObject>(_contextVK, img_info, debug_name);
   teximpl->_vksampler = _contextVK->_sampler_base;
-
-  _contextVK->_setObjectDebugName(teximpl->_imgobj->_vkimage, VK_OBJECT_TYPE_IMAGE, (rtbuffer->_debugName + ".vkimg").c_str());
 
   /////////////////////////////////////
   // create image view
@@ -61,6 +60,12 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   initializeVkStruct(teximpl->_imgobj->_vkimageview);
   VkResult ok = vkCreateImageView(_contextVK->_vkdevice, IVCI.get(), nullptr, &teximpl->_imgobj->_vkimageview);
   OrkAssert(VK_SUCCESS == ok);
+  
+  // Set debug name for image view
+  if (!rtbuffer->_debugName.empty()) {
+    std::string view_name = rtbuffer->_debugName + "_view";
+    _contextVK->_setObjectDebugName(teximpl->_imgobj->_vkimageview, VK_OBJECT_TYPE_IMAGE_VIEW, view_name.c_str());
+  }
 
   OrkAssert(teximpl->_imgobj->_vkimageview != VK_NULL_HANDLE);
 

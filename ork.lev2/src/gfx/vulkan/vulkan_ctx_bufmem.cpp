@@ -228,7 +228,9 @@ VulkanImageObject::VulkanImageObject(vkcontext_rawptr_t ctx, vkimagecreateinfo_p
   OrkAssert(VK_SUCCESS == ok);
   _imgmem = std::make_shared<VulkanMemoryForImage>(_ctx, _vkimage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
   if (name != "") {
-    _ctx->_setObjectDebugName(*(_imgmem->_vkmem), VK_OBJECT_TYPE_DEVICE_MEMORY, name.c_str());
+    _ctx->_setObjectDebugName(_vkimage, VK_OBJECT_TYPE_IMAGE, name.c_str());
+    std::string mem_name = name + "_mem";
+    _ctx->_setObjectDebugName(*(_imgmem->_vkmem), VK_OBJECT_TYPE_DEVICE_MEMORY, mem_name.c_str());
   }
   _format = cinfo->format;
   int SN    = _imgobjSN.fetch_add(1);

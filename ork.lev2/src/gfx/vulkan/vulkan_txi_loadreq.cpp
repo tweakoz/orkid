@@ -23,7 +23,7 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
   }
   
   logchan_txi_loadreq->log("xxx _createFromLoadReq<%p:%s>\n", (void*)ptex.get(), ptex->_debugName.c_str());
-  ptex->_debugName = "VkTextureInterface::_createFromLoadReq";
+  //ptex->_debugName = "VkTextureInterface::_createFromLoadReq";
 
   auto vktex       = ptex->_impl.makeShared<VulkanTextureObject>(this);
   auto chain       = req->_cmipchain;
@@ -35,7 +35,8 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
   // Create a single VkImage with all mip levels
   auto imageInfo   = makeVKICI(iwidth, iheight, 1, format, num_mips);
   imageInfo->usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-  vktex->_imgobj   = std::make_shared<VulkanImageObject>(_contextVK, imageInfo, "imgmemcfclr");
+  std::string debug_name = ptex->_debugName.empty() ? "texture_loadreq" : ptex->_debugName;
+  vktex->_imgobj   = std::make_shared<VulkanImageObject>(_contextVK, imageInfo, debug_name);
 
   vktex->_loadCB   = _contextVK->beginRecordCommandBuffer("VkTextureInterface::_createFromLoadReq");
 
@@ -116,6 +117,12 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
   initializeVkStruct(vktex->_imgobj->_vkimageview);
   VkResult ok = vkCreateImageView(_contextVK->_vkdevice, IVCI.get(), nullptr, &vktex->_imgobj->_vkimageview);
   OrkAssert(VK_SUCCESS == ok);
+  
+  // Set debug name for image view
+  if (!ptex->_debugName.empty()) {
+    std::string view_name = ptex->_debugName + "_view";
+    _contextVK->_setObjectDebugName(vktex->_imgobj->_vkimageview, VK_OBJECT_TYPE_IMAGE_VIEW, view_name.c_str());
+  }
 
   /////////////////////////////////////
   // descriptor image info

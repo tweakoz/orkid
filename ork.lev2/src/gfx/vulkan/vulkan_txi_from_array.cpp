@@ -133,7 +133,8 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
   VKICI->imageType   = VK_IMAGE_TYPE_2D;
   VKICI->flags       = 0; // VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT only if from 3d image
 
-  vktex->_imgobj = std::make_shared<VulkanImageObject>(_contextVK, VKICI);
+  std::string debug_name = array->_tex->_debugName.empty() ? "texture_array" : array->_tex->_debugName;
+  vktex->_imgobj = std::make_shared<VulkanImageObject>(_contextVK, VKICI, debug_name);
 
   printf(
       "max_levels<%zu> max_w<%zu> max_h<%zu> num_slices<%d> format<%s>\n",
@@ -160,6 +161,12 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
 
   VkResult ok = vkCreateImageView(_contextVK->_vkdevice, &viewInfo, nullptr, &vktex->_imgobj->_vkimageview);
   OrkAssert(VK_SUCCESS == ok);
+  
+  // Set debug name for image view
+  if (!array->_tex->_debugName.empty()) {
+    std::string view_name = array->_tex->_debugName + "_array_view";
+    _contextVK->_setObjectDebugName(vktex->_imgobj->_vkimageview, VK_OBJECT_TYPE_IMAGE_VIEW, view_name.c_str());
+  }
 
   vktex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
   vktex->_vkdescriptor_info.imageView   = vktex->_imgobj->_vkimageview;

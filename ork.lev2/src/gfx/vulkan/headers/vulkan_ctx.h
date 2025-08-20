@@ -534,7 +534,7 @@ public:
       nameInfo.objectType   = objectType;
       nameInfo.objectHandle = reinterpret_cast<uint64_t>(object);
       nameInfo.pObjectName  = name;
-      printf("Setting debug name for object type %d: %s\n", objectType, name);
+      //printf("Setting debug name for object type %d: %s\n", objectType, name);
       _vkSetDebugUtilsObjectName(_vkdevice, &nameInfo);
     }
   }
