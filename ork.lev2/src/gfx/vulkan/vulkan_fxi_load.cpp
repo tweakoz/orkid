@@ -9,6 +9,8 @@
 #include "vulkan_ub_layout.inl"
 #include "../shadlang/shadlang_backend_spirv.h"
 #include <ork/file/chunkfile.inl>
+#include <regex>
+#include <set>
 
 #if defined(__APPLE__)
 // #include <MoltenVK/mvk_vulkan.h>
@@ -89,14 +91,120 @@ FxShader* VkFxInterface::shaderFromShaderText(const std::string& name, const std
 
 ///////////////////////////////////////////////////////////////////////////////
 
+// Helper function to resolve import paths similar to how the parser does it
+static file::Path resolveImportPath(
+    const std::string& parent_path,
+    const std::string& import_path) {
+  
+  file::Path::NameType a, b;
+  file::Path proc_import_path;
+  
+  // Remove quotes if present
+  std::string clean_path = import_path;
+  if (!clean_path.empty() && clean_path.front() == '"')
+    clean_path.erase(0, 1);
+  if (!clean_path.empty() && clean_path.back() == '"')
+    clean_path.pop_back();
+  
+  auto rpath = file::Path(clean_path);
+  rpath.split(a, b, ':');
+  
+  if (b.length() != 0) { 
+    // Already has protocol (like orkshader://)
+    proc_import_path = rpath;
+  } else { 
+    // Infer protocol from parent
+    file::Path parent(parent_path);
+    parent.split(a, b, ':');
+    ork::FixedString<256> fxs;
+    fxs.format("%s://%s", a.c_str(), clean_path.c_str());
+    proc_import_path = fxs.c_str();
+  }
+  
+  return proc_import_path;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+// Recursively concatenate shader text with all imports in deterministic order
+static std::string concatenateShaderWithImports(
+    const std::string& shader_name,
+    const std::string& shader_text,
+    std::set<std::string>& visited) {
+    
+  std::string result;
+  result.reserve(shader_text.size() * 2); // Pre-allocate for efficiency
+  
+  // Regex to match import statements
+  std::regex import_regex("import\\s+\"([^\"]+)\"");
+  
+  auto search_start = shader_text.cbegin();
+  std::smatch match;
+  while (std::regex_search(search_start, shader_text.cend(), match, import_regex)) {
+    // Add text before the import statement
+    result.append(search_start, match[0].first);
+    
+    std::string import_path = match[1];
+    auto resolved_path = resolveImportPath(shader_name, import_path);
+    std::string resolved_str = resolved_path.c_str();
+    
+    // Check for circular imports
+    if (visited.insert(resolved_str).second) {
+      // Add import marker for debugging/determinism
+      result.append("\n//[[IMPORT_BEGIN:" + resolved_str + "]]\n");
+      
+      // Read and recursively process the imported file
+      auto import_data = ork::File::readAsString(resolved_path);
+      if (import_data != nullptr) {
+        std::string expanded_import = concatenateShaderWithImports(
+          resolved_str,
+          import_data->_data,
+          visited);
+        result.append(expanded_import);
+      } else {
+        result.append("//[[IMPORT_ERROR: Could not read " + resolved_str + "]]\n");
+      }
+      
+      result.append("//[[IMPORT_END:" + resolved_str + "]]\n");
+    } else {
+      // Circular import detected, skip it
+      result.append("//[[CIRCULAR_IMPORT_SKIPPED:" + resolved_str + "]]\n");
+    }
+    
+    // Move past this import statement
+    search_start = match.suffix().first;
+  }
+  
+  // Add any remaining text after the last import
+  result.append(search_start, shader_text.cend());
+  
+  return result;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+// Public wrapper for expanding shader text with all imports
+static std::string expandShaderText(
+    const std::string& shader_name,
+    const std::string& shader_text) {
+  std::set<std::string> visited;
+  visited.insert(shader_name); // Mark the main file as visited
+  return concatenateShaderWithImports(shader_name, shader_text, visited);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(
     FxShader* shader,                //
     const std::string& parser_name,  //
     const std::string& shadertext) { //
     
+  // Expand shader text to include all imports for proper cache invalidation
+  std::string expanded_text = expandShaderText(parser_name, shadertext);
+  
   auto basehasher = DataBlock::createHasher();
-  basehasher->accumulateString("vkfxshader-1.0");
-  basehasher->accumulateString(shadertext);
+  basehasher->accumulateString("vkfxshader-1.1"); // Bump version for new hashing scheme
+  basehasher->accumulateString(expanded_text);
   basehasher->finish();
   uint64_t hashkey               = basehasher->result();
   datablock_ptr_t vkfx_datablock = DataBlockCache::findDataBlock(hashkey);

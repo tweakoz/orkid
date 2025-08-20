@@ -308,8 +308,9 @@ vertex_shader vs_forward_test
   vs_common(position, normal, binormal); 
 
   gl_Position = mvp * position;
-  frg_uv0         = uv0 * vec2(1, -1);
-  frg_clr         = vec4(normal,1); //vtxcolor
+  //frg_uv0         = vec2(1,1)+ (uv0 * vec2(1, -1));
+  frg_uv0         = uv0;
+  frg_clr         = vec4(1,1,1,1); //vtxcolor
   frg_modcolor    = vec4(1,1,1,1); //modcolor
 }
 //////////////////////////////////////
@@ -320,10 +321,8 @@ fragment_shader ps_forward_test //
     : lib_def                   //
     : lib_fwd
     : std_forward_all {   
-  //vec4 frg_clr = vec4(1,1,1,1);
-  //vec4 frg_modcolor = vec4(1,1,1,1);
-  //out_color = vec4(forward_lighting_mono(ModColor.xyz), 1);
-  out_color = frg_clr;
+  out_color = vec4(forward_lighting_mono(frg_clr.xyz), 1);
+  //out_color = vec4(forward_lighting_mono(frg_clr.xyz*ModColor.xyz), 1);
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_forward_test_vtxcolor : vif_PNBC : lib_pbr_vtx : ublk_std_matrices {
