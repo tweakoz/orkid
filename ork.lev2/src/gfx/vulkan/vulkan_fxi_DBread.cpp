@@ -274,6 +274,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       vk_param->_datatype       = str_param_datatype;
       vk_param->_identifier     = str_param_identifier;
       vk_param->_offset         = uniforms_input_stream->ReadItem<size_t>();
+      vk_param->_parent_block   = vk_uniblk.get();
       vk_param->_orkparam       = std::make_shared<FxShaderParam>();
       vk_param->_orkparam->_impl.set<VkFxShaderUniformBlkItem*>(vk_param.get());
       vk_uniblk->_items_by_name[str_param_identifier] = vk_param;
@@ -282,6 +283,57 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       if (0)
         printf("uniblk<%s> ADDING Item PARAM<%s>\n", str_uniblk_name.c_str(), str_param_identifier.c_str());
     }
+    
+    // Calculate uniform block size and initialize shadow buffer
+    size_t max_offset = 0;
+    size_t last_size = 0;
+    for (auto& item : vk_uniblk->_items_by_order) {
+      if (item->_offset >= max_offset) {
+        max_offset = item->_offset;
+        // Estimate size based on datatype
+        if (item->_datatype == "float" || item->_datatype == "int" || item->_datatype == "bool" || item->_datatype == "uint") {
+          last_size = 4;
+        } else if (item->_datatype == "vec2") {
+          last_size = 8;
+        } else if (item->_datatype == "vec3") {
+          last_size = 16; // vec3 is padded to vec4 in std140
+        } else if (item->_datatype == "vec4") {
+          last_size = 16;
+        } else if (item->_datatype == "mat3") {
+          last_size = 48; // 3 columns of vec4
+        } else if (item->_datatype == "mat4") {
+          last_size = 64;
+        } else {
+          // Default/unknown type - assume vec4 size
+          last_size = 16;
+        }
+      }
+    }
+    
+    // Round up to 16-byte alignment
+    vk_uniblk->_buffer_size = ((max_offset + last_size + 15) / 16) * 16;
+    vk_uniblk->_shadow_buffer.resize(vk_uniblk->_buffer_size, 0);
+    
+    // Create GPU buffer for the uniform block
+    auto gpu_buffer = std::make_shared<VulkanBuffer>(
+      _contextVK, 
+      vk_uniblk->_buffer_size,
+      VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+      str_uniblk_name
+    );
+    vk_uniblk->_gpu_buffer = gpu_buffer->_vkbuffer;
+    vk_uniblk->_gpu_memory = *gpu_buffer->_memory->_vkmem;
+    
+    // Map the buffer for persistent updates
+    vk_uniblk->_mapped_ptr = gpu_buffer->map(0, vk_uniblk->_buffer_size, 0);
+    
+    // Check if memory is coherent
+    auto& memprops = _contextVK->_vkdeviceinfo->_devmemprops;
+    auto memtype_index = gpu_buffer->_memory->_allocinfo->memoryTypeIndex;
+    vk_uniblk->_needs_flush = !(memprops.memoryTypes[memtype_index].propertyFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    
+    // Store the buffer object for lifetime management
+    vk_uniblk->_gpu_buffer_object = gpu_buffer;
   }
   // TODO - read VIFS, GIFS
   /////////////////////////////////

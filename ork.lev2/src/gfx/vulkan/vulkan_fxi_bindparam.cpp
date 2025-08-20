@@ -102,108 +102,235 @@ bool VkFxInterface::_tryBindMergedResource(const FxShaderParam* hpar,
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::bindParamBool(const FxShaderParam* hpar, const bool bval) {
-  if( auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>() ){
+  if (auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>()) {
+    // Push constant path
+    uint32_t uval = bval ? 1 : 0;
+    auto& param_set = _currentVKPASS->_vk_program->_pending_params.emplace_back();
+    param_set._vk_param = as_uniset_item.value();
+    param_set._ork_param = param_set._vk_param->_orkparam.get();
+    param_set._value.set<uint32_t>(uval);
+  }
+  else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
+    // UBO path
+    auto block = as_uniblk_item.value()->_parent_block;
+    size_t offset = as_uniblk_item.value()->_offset;
+    uint32_t uval = bval ? 1 : 0;
+    memcpy(block->_shadow_buffer.data() + offset, &uval, 4);
+    block->addDirtyRange(offset, 4);
+    _currentVKPASS->_dirty_uniform_blocks.insert(block);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::bindParamInt(const FxShaderParam* hpar, const int ival) {
-  if( auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>() ){
+  if (auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>()) {
+    auto& param_set = _currentVKPASS->_vk_program->_pending_params.emplace_back();
+    param_set._vk_param = as_uniset_item.value();
+    param_set._ork_param = param_set._vk_param->_orkparam.get();
+    param_set._value.set<int32_t>(ival);
+  }
+  else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
+    auto block = as_uniblk_item.value()->_parent_block;
+    size_t offset = as_uniblk_item.value()->_offset;
+    memcpy(block->_shadow_buffer.data() + offset, &ival, 4);
+    block->addDirtyRange(offset, 4);
+    _currentVKPASS->_dirty_uniform_blocks.insert(block);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::bindParamVect2(const FxShaderParam* hpar, const fvec2& Vec) {
-  if( auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>() ){
+  if (auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>()) {
     // vec2 is fine as-is for std140 layout (8-byte alignment)
-    auto& param_set      = _currentVKPASS->_vk_program->_pending_params.emplace_back();
-    param_set._vk_param  = as_uniset_item.value();
+    auto& param_set = _currentVKPASS->_vk_program->_pending_params.emplace_back();
+    param_set._vk_param = as_uniset_item.value();
     param_set._ork_param = param_set._vk_param->_orkparam.get();
     param_set._value.set<fvec2>(Vec);
+  }
+  else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
+    auto block = as_uniblk_item.value()->_parent_block;
+    size_t offset = as_uniblk_item.value()->_offset;
+    memcpy(block->_shadow_buffer.data() + offset, Vec.asArray(), 8);
+    block->addDirtyRange(offset, 8);
+    _currentVKPASS->_dirty_uniform_blocks.insert(block);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::bindParamVect3(const FxShaderParam* hpar, const fvec3& Vec) {
-  if( auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>() ){
+  if (auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>()) {
     // Convert vec3 to vec4 for Vulkan alignment (vec3 requires vec4 alignment in std140)
     fvec4 aligned_vec(Vec.x, Vec.y, Vec.z, 0.0f);
     
-    auto& param_set      = _currentVKPASS->_vk_program->_pending_params.emplace_back();
-    param_set._vk_param  = as_uniset_item.value();
+    auto& param_set = _currentVKPASS->_vk_program->_pending_params.emplace_back();
+    param_set._vk_param = as_uniset_item.value();
     param_set._ork_param = param_set._vk_param->_orkparam.get();
     param_set._value.set<fvec4>(aligned_vec);
+  } 
+  else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
+    // UBO path
+    auto block = as_uniblk_item.value()->_parent_block;
+    size_t offset = as_uniblk_item.value()->_offset;
+    
+    // Vec3 needs vec4 alignment in std140
+    alignas(16) float data[4] = {Vec.x, Vec.y, Vec.z, 0.0f};
+    memcpy(block->_shadow_buffer.data() + offset, data, 16);
+    
+    // Track dirty range
+    block->addDirtyRange(offset, 16);
+    
+    // Add block to flush list if not already there
+    _currentVKPASS->_dirty_uniform_blocks.insert(block);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::bindParamVect4(const FxShaderParam* hpar, const fvec4& Vec) {
-  if( auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>() ){
-    auto& param_set      = _currentVKPASS->_vk_program->_pending_params.emplace_back();
-    param_set._vk_param  = as_uniset_item.value();
+  if (auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>()) {
+    auto& param_set = _currentVKPASS->_vk_program->_pending_params.emplace_back();
+    param_set._vk_param = as_uniset_item.value();
     param_set._ork_param = param_set._vk_param->_orkparam.get();
     param_set._value.set<fvec4>(Vec);
+  }
+  else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
+    auto block = as_uniblk_item.value()->_parent_block;
+    size_t offset = as_uniblk_item.value()->_offset;
+    memcpy(block->_shadow_buffer.data() + offset, Vec.asArray(), 16);
+    block->addDirtyRange(offset, 16);
+    _currentVKPASS->_dirty_uniform_blocks.insert(block);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::bindParamVect2Array(const FxShaderParam* hpar, const fvec2* Vec, const int icount) {
-  if( auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>() ){
+  if (auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>()) {
+    // Push constants - can pack as vec2s
+    // TODO: Need to implement setArray in svar64_t
+  }
+  else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
+    auto block = as_uniblk_item.value()->_parent_block;
+    size_t offset = as_uniblk_item.value()->_offset;
+    
+    // Each vec2 in array takes 16 bytes in std140!
+    for (int i = 0; i < icount; i++) {
+      memcpy(block->_shadow_buffer.data() + offset + (i * 16), Vec[i].asArray(), 8);
+      // 8 bytes padding after each vec2
+    }
+    
+    block->addDirtyRange(offset, icount * 16);
+    _currentVKPASS->_dirty_uniform_blocks.insert(block);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::bindParamVect3Array(const FxShaderParam* hpar, const fvec3* Vec, const int icount) {
-  if( auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>() ){
+  if (auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>()) {
+    // Push constants - need to pad each vec3 to vec4
+    // TODO: Need to implement setArray in svar64_t
+  }
+  else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
+    auto block = as_uniblk_item.value()->_parent_block;
+    size_t offset = as_uniblk_item.value()->_offset;
+    
+    for (int i = 0; i < icount; i++) {
+      alignas(16) float data[4] = {Vec[i].x, Vec[i].y, Vec[i].z, 0.0f};
+      memcpy(block->_shadow_buffer.data() + offset + (i * 16), data, 16);
+    }
+    
+    block->addDirtyRange(offset, icount * 16);
+    _currentVKPASS->_dirty_uniform_blocks.insert(block);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::bindParamVect4Array(const FxShaderParam* hpar, const fvec4* Vec, const int icount) {
-  if( auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>() ){
+  if (auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>()) {
+    // Push constants
+    // TODO: Need to implement setArray in svar64_t
+  }
+  else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
+    auto block = as_uniblk_item.value()->_parent_block;
+    size_t offset = as_uniblk_item.value()->_offset;
+    
+    memcpy(block->_shadow_buffer.data() + offset, Vec, icount * 16);
+    
+    block->addDirtyRange(offset, icount * 16);
+    _currentVKPASS->_dirty_uniform_blocks.insert(block);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::bindParamFloatArray(const FxShaderParam* hpar, const float* pfA, const int icnt) {
-  if( auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>() ){
+  if (auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>()) {
+    // Push constants - can pack tightly
+    // TODO: Need to implement setArray in svar64_t
+    // For now, we'll need to handle this differently
+  }
+  else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
+    // UBO - MUST use vec4 stride for arrays!
+    auto block = as_uniblk_item.value()->_parent_block;
+    size_t offset = as_uniblk_item.value()->_offset;
+    
+    // Each float in array takes 16 bytes in std140!
+    for (int i = 0; i < icnt; i++) {
+      memcpy(block->_shadow_buffer.data() + offset + (i * 16), &pfA[i], 4);
+      // Padding bytes are already zero in shadow buffer
+    }
+    
+    block->addDirtyRange(offset, icnt * 16);
+    _currentVKPASS->_dirty_uniform_blocks.insert(block);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::bindParamFloat(const FxShaderParam* hpar, float fA) {
-  if( auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>() ) {
-    auto& param_set      = _currentVKPASS->_vk_program->_pending_params.emplace_back();
-    param_set._vk_param  = as_uniset_item.value();
+  if (auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>()) {
+    auto& param_set = _currentVKPASS->_vk_program->_pending_params.emplace_back();
+    param_set._vk_param = as_uniset_item.value();
     param_set._ork_param = param_set._vk_param->_orkparam.get();
     param_set._value.set<float>(fA);
+  }
+  else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
+    auto block = as_uniblk_item.value()->_parent_block;
+    size_t offset = as_uniblk_item.value()->_offset;
+    memcpy(block->_shadow_buffer.data() + offset, &fA, 4);
+    block->addDirtyRange(offset, 4);
+    _currentVKPASS->_dirty_uniform_blocks.insert(block);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::bindParamMatrix(const FxShaderParam* hpar, const fmtx4& Mat) {
-  if( auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>() ) {
-    auto& param_set      = _currentVKPASS->_vk_program->_pending_params.emplace_back();
-    param_set._vk_param  = as_uniset_item.value();
+  if (auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>()) {
+    auto& param_set = _currentVKPASS->_vk_program->_pending_params.emplace_back();
+    param_set._vk_param = as_uniset_item.value();
     param_set._ork_param = param_set._vk_param->_orkparam.get();
     param_set._value.set<fmtx4>(Mat);
+  }
+  else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
+    auto block = as_uniblk_item.value()->_parent_block;
+    size_t offset = as_uniblk_item.value()->_offset;
+    // fmtx4 should already be 64 bytes, column-major
+    memcpy(block->_shadow_buffer.data() + offset, &Mat, 64);
+    block->addDirtyRange(offset, 64);
+    _currentVKPASS->_dirty_uniform_blocks.insert(block);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::bindParamMatrix(const FxShaderParam* hpar, const fmtx3& Mat) {
-  if( auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>() ){
+  if (auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>()) {
     // Convert fmtx3 (3x3) to Vulkan-aligned mat3 layout (3x4)
     // Vulkan requires mat3 to have each column aligned to vec4 (16 bytes)
     glm::mat3 src = Mat.asGlmMat3();
@@ -218,31 +345,82 @@ void VkFxInterface::bindParamMatrix(const FxShaderParam* hpar, const fmtx3& Mat)
       vk_mat3[col][3] = 0.0f; // padding
     }
     
-    auto& param_set      = _currentVKPASS->_vk_program->_pending_params.emplace_back();
-    param_set._vk_param  = as_uniset_item.value();
+    auto& param_set = _currentVKPASS->_vk_program->_pending_params.emplace_back();
+    param_set._vk_param = as_uniset_item.value();
     param_set._ork_param = param_set._vk_param->_orkparam.get();
     param_set._value.set<glm::mat3x4>(vk_mat3);
+  }
+  else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
+    // UBO path - mat3 is 3 columns of vec4 in std140
+    auto block = as_uniblk_item.value()->_parent_block;
+    size_t offset = as_uniblk_item.value()->_offset;
+    
+    glm::mat3 src = Mat.asGlmMat3();
+    for(int col = 0; col < 3; col++) {
+      alignas(16) float column[4] = {
+        src[col][0], src[col][1], src[col][2], 0.0f
+      };
+      memcpy(block->_shadow_buffer.data() + offset + (col * 16), column, 16);
+    }
+    
+    // Track dirty range (48 bytes for mat3)
+    block->addDirtyRange(offset, 48);
+    _currentVKPASS->_dirty_uniform_blocks.insert(block);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::bindParamMatrixArray(const FxShaderParam* hpar, const fmtx4* MatArray, int iCount) {
-  if( auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>() ){
+  if (auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>()) {
+    // Push constants
+    // TODO: Need to implement setArray in svar64_t
+  }
+  else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
+    auto block = as_uniblk_item.value()->_parent_block;
+    size_t offset = as_uniblk_item.value()->_offset;
+    
+    // fmtx4 should already be 64 bytes, column-major
+    memcpy(block->_shadow_buffer.data() + offset, MatArray, iCount * 64);
+    
+    block->addDirtyRange(offset, iCount * 64);
+    _currentVKPASS->_dirty_uniform_blocks.insert(block);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::bindParamU32(const FxShaderParam* hpar, uint32_t uval) {
-  if( auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>() ){
+  if (auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>()) {
+    auto& param_set = _currentVKPASS->_vk_program->_pending_params.emplace_back();
+    param_set._vk_param = as_uniset_item.value();
+    param_set._ork_param = param_set._vk_param->_orkparam.get();
+    param_set._value.set<uint32_t>(uval);
+  }
+  else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
+    auto block = as_uniblk_item.value()->_parent_block;
+    size_t offset = as_uniblk_item.value()->_offset;
+    memcpy(block->_shadow_buffer.data() + offset, &uval, 4);
+    block->addDirtyRange(offset, 4);
+    _currentVKPASS->_dirty_uniform_blocks.insert(block);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::bindParamU64(const FxShaderParam* hpar, uint64_t uval) {
-  if( auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>() ){
+  if (auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>()) {
+    auto& param_set = _currentVKPASS->_vk_program->_pending_params.emplace_back();
+    param_set._vk_param = as_uniset_item.value();
+    param_set._ork_param = param_set._vk_param->_orkparam.get();
+    param_set._value.set<uint64_t>(uval);
+  }
+  else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
+    auto block = as_uniblk_item.value()->_parent_block;
+    size_t offset = as_uniblk_item.value()->_offset;
+    memcpy(block->_shadow_buffer.data() + offset, &uval, 8);
+    block->addDirtyRange(offset, 8);
+    _currentVKPASS->_dirty_uniform_blocks.insert(block);
   }
 }
 

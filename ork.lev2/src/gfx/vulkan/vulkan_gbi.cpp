@@ -494,6 +494,7 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
   fxi->_bindGfxDescriptorSetOnSlot(CB, desc_set, 0);
   }
   pipeline->applyPendingPushConstants(CB);
+  fxi->flushDirtyUniformBlocks();
   fxi->_bindVertexBufferOnSlot(CB, vk_vbimpl, 0);
       
   ///////////////////////
@@ -550,6 +551,7 @@ void VkGeometryBufferInterface::DrawIndexedPrimitiveEML(
   fxi->_bindGfxDescriptorSetOnSlot(CB,desc_set, 0);
   }
   pipeline->applyPendingPushConstants(CB);
+  fxi->flushDirtyUniformBlocks();
   fxi->_bindVertexBufferOnSlot(CB,vk_vbimpl, 0);
 
   ///////////////////////

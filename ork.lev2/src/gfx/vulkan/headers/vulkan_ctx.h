@@ -380,6 +380,7 @@ struct VkFxInterface final : public FxInterface {
 
   void _flushRenderPassScopedState();
   int _pipelineBitsForShader(vkfxsprg_ptr_t shprog);
+  void flushDirtyUniformBlocks();
 
   fxtechnique_constptr_t _currentORKTEK = nullptr;
   VkFxShaderTechnique* _currentVKTEK;

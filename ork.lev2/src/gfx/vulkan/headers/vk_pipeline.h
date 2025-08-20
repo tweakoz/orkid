@@ -40,12 +40,45 @@ struct VkFxShaderUniformBlkItem {
   std::string _identifier;
   size_t _offset = 0;
   std::shared_ptr<FxShaderParam> _orkparam;
+  struct VkFxShaderUniformBlk* _parent_block = nullptr;
 };
+///////////////////////////////////////////////////////////////////////////////
+struct DirtyRange {
+  size_t offset;
+  size_t size;
+};
+using dirtyrange_ptr_t = std::shared_ptr<DirtyRange>;
+///////////////////////////////////////////////////////////////////////////////
+struct AlignedRange {
+  VkDeviceSize offset;
+  VkDeviceSize size;
+  
+  static std::shared_ptr<AlignedRange> fromDirtyRange(
+    dirtyrange_ptr_t dirty, 
+    VkDeviceSize atom_size, 
+    VkDeviceSize buffer_size);
+};
+using alignedrange_ptr_t = std::shared_ptr<AlignedRange>;
 ///////////////////////////////////////////////////////////////////////////////
 struct VkFxShaderUniformBlk : public VkFxShaderDescriptorSet {
   std::shared_ptr<FxUniformBlock> _orkparamblock;
   std::unordered_map<std::string, vkfxsuniblkitem_ptr_t> _items_by_name;
   std::vector<vkfxsuniblkitem_ptr_t> _items_by_order;
+  
+  // Shadow buffer mechanism
+  std::vector<uint8_t> _shadow_buffer;
+  std::vector<dirtyrange_ptr_t> _dirty_ranges;
+  
+  VkBuffer _gpu_buffer = VK_NULL_HANDLE;
+  VkDeviceMemory _gpu_memory = VK_NULL_HANDLE;
+  vkbuffer_ptr_t _gpu_buffer_object; // Holds VulkanBuffer for lifetime management
+  size_t _buffer_size = 0;
+  void* _mapped_ptr = nullptr;
+  bool _needs_flush = true;  // false if using coherent memory
+  
+  void addDirtyRange(size_t offset, size_t size);
+  void coalesceRanges();
+  std::vector<alignedrange_ptr_t> getAlignedRanges(VkDeviceSize atom_size) const;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VkFxShaderUniformSetsReference {
@@ -195,6 +228,7 @@ struct VkPipelineObject {
 struct VkFxShaderPass {
   vkfxsprg_ptr_t _vk_program;
   vk_merged_resources_ptr_t _merged_resources;
+  std::set<VkFxShaderUniformBlk*> _dirty_uniform_blocks;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VkFxShaderTechnique {
