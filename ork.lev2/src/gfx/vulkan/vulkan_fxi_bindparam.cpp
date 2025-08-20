@@ -117,6 +117,11 @@ void VkFxInterface::bindParamInt(const FxShaderParam* hpar, const int ival) {
 
 void VkFxInterface::bindParamVect2(const FxShaderParam* hpar, const fvec2& Vec) {
   if( auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>() ){
+    // vec2 is fine as-is for std140 layout (8-byte alignment)
+    auto& param_set      = _currentVKPASS->_vk_program->_pending_params.emplace_back();
+    param_set._vk_param  = as_uniset_item.value();
+    param_set._ork_param = param_set._vk_param->_orkparam.get();
+    param_set._value.set<fvec2>(Vec);
   }
 }
 
@@ -124,6 +129,13 @@ void VkFxInterface::bindParamVect2(const FxShaderParam* hpar, const fvec2& Vec) 
 
 void VkFxInterface::bindParamVect3(const FxShaderParam* hpar, const fvec3& Vec) {
   if( auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>() ){
+    // Convert vec3 to vec4 for Vulkan alignment (vec3 requires vec4 alignment in std140)
+    fvec4 aligned_vec(Vec.x, Vec.y, Vec.z, 0.0f);
+    
+    auto& param_set      = _currentVKPASS->_vk_program->_pending_params.emplace_back();
+    param_set._vk_param  = as_uniset_item.value();
+    param_set._ork_param = param_set._vk_param->_orkparam.get();
+    param_set._value.set<fvec4>(aligned_vec);
   }
 }
 
