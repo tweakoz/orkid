@@ -8,6 +8,7 @@
 #include "headers/vulkan_ctx.h"
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/util/logger.h>
+#include <glm/glm.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
@@ -191,6 +192,24 @@ void VkFxInterface::bindParamMatrix(const FxShaderParam* hpar, const fmtx4& Mat)
 
 void VkFxInterface::bindParamMatrix(const FxShaderParam* hpar, const fmtx3& Mat) {
   if( auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>() ){
+    // Convert fmtx3 (3x3) to Vulkan-aligned mat3 layout (3x4)
+    // Vulkan requires mat3 to have each column aligned to vec4 (16 bytes)
+    glm::mat3 src = Mat.asGlmMat3();
+    glm::mat3x4 vk_mat3; // 3 columns, 4 rows (for alignment)
+    
+    // Copy each column from mat3 to mat3x4
+    // GLM stores matrices in column-major order
+    for(int col = 0; col < 3; col++) {
+      vk_mat3[col][0] = src[col][0];
+      vk_mat3[col][1] = src[col][1];
+      vk_mat3[col][2] = src[col][2];
+      vk_mat3[col][3] = 0.0f; // padding
+    }
+    
+    auto& param_set      = _currentVKPASS->_vk_program->_pending_params.emplace_back();
+    param_set._vk_param  = as_uniset_item.value();
+    param_set._ork_param = param_set._vk_param->_orkparam.get();
+    param_set._value.set<glm::mat3x4>(vk_mat3);
   }
 }
 

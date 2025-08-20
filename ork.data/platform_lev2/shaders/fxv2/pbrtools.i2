@@ -109,8 +109,8 @@ state_block sb_default : default {
 libblock lib_pbr_vtx {
   void vs_common(vec4 pos, vec3 nrm, vec3 bin) {
     vec4 cpos       = mv * pos;
-    vec3 wnormal    = normalize(mrot * normal);
-    vec3 wbitangent = normalize(mrot * binormal); // technically binormal is a bitangent
+    vec3 wnormal    = normalize(mrot * nrm);
+    vec3 wbitangent = normalize(mrot * bin); // technically binormal is a bitangent
     vec3 wtangent   = cross(wbitangent, wnormal);
     frg_wpos        = m * pos;
     frg_tbn         = mat3(wtangent, wbitangent, wnormal);
