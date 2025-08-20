@@ -246,7 +246,10 @@ void VkFrameBufferInterface::_popRtGroup() {
   logchan_rtgroup->log("Switching back to primary command buffer %p before enqueuing", (void*)_contextVK->primary_cb()->_vkcmdbuf);
   _contextVK->_vkcmdbuffer_current = _contextVK->primary_cb()->_vkcmdbuf;
   
+  std::string group_name = "ExecuteSecondary_" + finished_rtg->_name;
+  _contextVK->debugPushGroup(group_name, fvec4(1,0,1,1));
   _contextVK->enqueueSecondaryCommandBuffer(RTGIMPL->_cmdbufRTG);
+  _contextVK->debugPopGroup();
 
   /////////////////////////////////////////////
   // transition finished rtgroup based on its usage
