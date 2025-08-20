@@ -171,6 +171,7 @@ void VkFxInterface::bindParamVect3(const FxShaderParam* hpar, const fvec3& Vec) 
     param_set._value.set<fvec4>(aligned_vec);
   } 
   else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
+
     // UBO path
     auto block = as_uniblk_item.value()->_parent_block;
     size_t offset = as_uniblk_item.value()->_offset;
@@ -184,6 +185,15 @@ void VkFxInterface::bindParamVect3(const FxShaderParam* hpar, const fvec3& Vec) 
     
     // Add block to flush list if not already there
     _currentVKPASS->_dirty_uniform_blocks.insert(block);
+    
+    // Debug logging for EyePostion tracking
+    //if (hpar->_name == "EyePostion") {
+    //  printf("UBO_UPDATE: param<EyePostion> value<%.3f %.3f %.3f> block<%s> offset<%zu> dset<%zu>\n", 
+    //         Vec.x, Vec.y, Vec.z, 
+    //         block->_orkparamblock ? block->_orkparamblock->_name.c_str() : "unknown", 
+    //         offset,
+    //         block->_descriptor_set_id);
+    //}
   }
 }
 

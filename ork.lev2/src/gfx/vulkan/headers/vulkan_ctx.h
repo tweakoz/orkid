@@ -113,7 +113,7 @@ struct VulkanInstance {
   uint32_t _numgroups = 0;
   shadlang::slpcache_ptr_t _slp_cache;
   MpMcBoundedQueue<load_token_t> _loadTokens;
-  bool _debugEnabled = false;
+  bool _debugEnabled = true;
   vkdeviceinfo_ptr_t _preferred;
 
   std::set<VkContext*> _contexts;
@@ -534,6 +534,7 @@ public:
       nameInfo.objectType   = objectType;
       nameInfo.objectHandle = reinterpret_cast<uint64_t>(object);
       nameInfo.pObjectName  = name;
+      printf("Setting debug name for object type %d: %s\n", objectType, name);
       _vkSetDebugUtilsObjectName(_vkdevice, &nameInfo);
     }
   }

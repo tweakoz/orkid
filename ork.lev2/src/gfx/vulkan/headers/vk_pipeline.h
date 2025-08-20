@@ -142,6 +142,8 @@ struct VulkanFxShaderObject {
   vkfxsunisetsref_ptr_t _uniset_refs;
   vkfxsuniblksref_ptr_t _uniblk_refs;
   vkfxssmpsetsref_ptr_t _smpset_refs;
+  // TODO: _vk_uniformblks appears to be unused - shader objects use _uniblk_refs instead
+  //       Consider removing this member if confirmed dead code
   std::unordered_map<std::string, vkfxsuniblk_ptr_t> _vk_uniformblks;
   std::vector<std::string> _vk_interfaces;
 

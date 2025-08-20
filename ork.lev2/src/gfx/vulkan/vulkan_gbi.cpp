@@ -573,6 +573,13 @@ void VkGeometryBufferInterface::DrawIndexedPrimitiveEML(
   // draw
   ///////////////////////
 
+  // Debug: Log draw with active shader
+  if (fxi->_currentPipeline) {
+    if(0)printf("UBO_DRAW: pipeline<%p> indices<%d>\n", 
+           (void*)fxi->_currentPipeline.get(), 
+           num_indices);
+  }
+
   vkCmdDrawIndexed(
       CB, // command buffer
       num_indices, // index count

@@ -105,10 +105,19 @@ void VkFxInterface::flushDirtyUniformBlocks() {
   for (auto& block : _currentVKPASS->_dirty_uniform_blocks) {
     if (block->_dirty_ranges.empty()) continue;
     
+    // Debug: Log UBO flush
+    //printf("UBO_FLUSH: block<%s> dset<%zu> ranges<%zu>\n", 
+    //       block->_orkparamblock ? block->_orkparamblock->_name.c_str() : "unknown", 
+    //       block->_descriptor_set_id,
+    //       block->_dirty_ranges.size());
+    
     // If using coherent memory, just copy
-    if (!block->_needs_flush) {
+    if (!block->_needs_flush) {                                                              
       OrkAssert(block->_mapped_ptr != nullptr);
       for (auto& range : block->_dirty_ranges) {
+
+        //printf("Flushing coherent dirty range: offset=%zu, size=%zu\n", range->offset, range->size);
+
         memcpy(
           static_cast<uint8_t*>(block->_mapped_ptr) + range->offset,
           block->_shadow_buffer.data() + range->offset,
@@ -123,6 +132,7 @@ void VkFxInterface::flushDirtyUniformBlocks() {
     if (block->_mapped_ptr) {
       // Copy shadow data to mapped memory
       for (auto& range : block->_dirty_ranges) {
+        //printf("Flushing non-coherent dirty range: offset=%zu, size=%zu\n", range->offset, range->size);
         memcpy(
           static_cast<uint8_t*>(block->_mapped_ptr) + range->offset,
           block->_shadow_buffer.data() + range->offset,

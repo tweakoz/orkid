@@ -294,6 +294,12 @@ VulkanBuffer::VulkanBuffer(vkcontext_rawptr_t ctxVK, size_t length, VkBufferUsag
   _memory = std::make_shared<VulkanMemoryForBuffer>(
       ctxVK, _vkbuffer, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
   vkBindBufferMemory(ctxVK->_vkdevice, _vkbuffer, *_memory->_vkmem, 0);
+  
+  // Also set debug name for the memory
+  if (name != "") {
+    std::string mem_name = name + "_memory";
+    _ctxVK->_setObjectDebugName(*_memory->_vkmem, VK_OBJECT_TYPE_DEVICE_MEMORY, mem_name.c_str());
+  }
 
   int SN = _bufferSN.fetch_add(1);
   int count = _buffercount.fetch_add(1);

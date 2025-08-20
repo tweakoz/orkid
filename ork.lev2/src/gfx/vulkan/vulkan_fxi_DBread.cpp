@@ -253,7 +253,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     auto vk_uniblk                                      = std::make_shared<VkFxShaderUniformBlk>();
     vk_uniblk->_orkparamblock                           = std::make_shared<FxUniformBlock>();
     vk_uniblk->_descriptor_set_id = dset_id;
-    //printf( "GOT UNIFORMBLK<%s>\n", str_uniblk_name.c_str() );
+    printf("UBO ASSIGNED TO DESCRIPTOR SET: UBO<%s> -> DESCRIPTOR_SET<%zu>\n", str_uniblk_name.c_str(), dset_id);
     vulkan_shaderfile->_vk_uniformblks[str_uniblk_name] = vk_uniblk;
 
     auto it = ork_shader->_uniformBlocks.find(str_uniblk_name);
@@ -334,6 +334,8 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     
     // Store the buffer object for lifetime management
     vk_uniblk->_gpu_buffer_object = gpu_buffer;
+    
+    // Debug names are already set in VulkanBuffer constructor
   }
   // TODO - read VIFS, GIFS
   /////////////////////////////////
@@ -441,13 +443,14 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     if (num_iuniblks) {
       auto refs                  = std::make_shared<VkFxShaderUniformBlksReference>();
       vulkan_shobj->_uniblk_refs = refs;
+      printf("SHADER<%s> REFERENCES %zu UBOS:\n", str_shader_name.c_str(), num_iuniblks);
       for (size_t i = 0; i < num_iuniblks; i++) {
         auto str_uniblk = shader_input_stream->ReadIndexedString(chunkreader);
-        //printf( "REF UNIFORMBLK str_smpset<%s>\n", str_uniblk.c_str() );
         auto it         = vulkan_shaderfile->_vk_uniformblks.find(str_uniblk);
         OrkAssert(it != vulkan_shaderfile->_vk_uniformblks.end());
         vkfxsuniblk_ptr_t vk_uniblk = it->second;
         refs->_uniblks[str_uniblk]  = vk_uniblk;
+        printf("  -> UBO<%s> IN DESCRIPTOR_SET<%zu>\n", str_uniblk.c_str(), vk_uniblk->_descriptor_set_id);
       }
       OrkAssert(refs->_uniblks.size() <= 8);
     }
@@ -583,6 +586,40 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         }
         vk_program->_frgshader = frg_obj;
       }
+      
+      ////////////////////////////////////////////////////////////
+      // Populate program's UBO map from all shader stages
+      // This is critical for descriptor set updates to find UBOs
+      ////////////////////////////////////////////////////////////
+      vk_program->_vk_uniformblks.clear();
+      
+      // Collect UBOs from vertex shader
+      if (vk_program->_vtxshader && vk_program->_vtxshader->_uniblk_refs) {
+        for (const auto& [name, ubo] : vk_program->_vtxshader->_uniblk_refs->_uniblks) {
+          vk_program->_vk_uniformblks[name] = ubo;
+          //printf("UBO_POPULATE: Program collected UBO<%s> from vertex shader\n", name.c_str());
+        }
+      }
+      
+      // Collect UBOs from geometry shader (if present)
+      if (vk_program->_geoshader && vk_program->_geoshader->_uniblk_refs) {
+        for (const auto& [name, ubo] : vk_program->_geoshader->_uniblk_refs->_uniblks) {
+          vk_program->_vk_uniformblks[name] = ubo;
+          //printf("UBO_POPULATE: Program collected UBO<%s> from geometry shader\n", name.c_str());
+        }
+      }
+      
+      // Collect UBOs from fragment shader
+      if (vk_program->_frgshader && vk_program->_frgshader->_uniblk_refs) {
+        for (const auto& [name, ubo] : vk_program->_frgshader->_uniblk_refs->_uniblks) {
+          vk_program->_vk_uniformblks[name] = ubo;
+          //printf("UBO_POPULATE: Program collected UBO<%s> from fragment shader\n", name.c_str());
+        }
+      }
+      
+      //printf("UBO_POPULATE: Program<%p> total UBOs: %zu\n", 
+      //       (void*)vk_program.get(), vk_program->_vk_uniformblks.size());
+      
       ////////////////////////////////////////////////////////////
       auto sblk_name = tecniq_input_stream->ReadIndexedString(chunkreader);
       printf("stateblock name<%s>\n", sblk_name.c_str());
@@ -687,12 +724,16 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
           
           size_t num_sources = tecniq_input_stream->ReadItem<size_t>();
           
+          printf("MERGED RESOURCES: DESCRIPTOR_SET<%d> HAS %zu SOURCES\n", descriptor_set_id, num_sources);
+          
           for (size_t src_idx = 0; src_idx < num_sources; src_idx++) {
             auto source_token = tecniq_input_stream->ReadIndexedString(chunkreader);
             OrkAssert(source_token == "source");
             
             auto source_name = tecniq_input_stream->ReadIndexedString(chunkreader);
             auto source_type = tecniq_input_stream->ReadIndexedString(chunkreader);
+            
+            printf("  SOURCE: NAME<%s> TYPE<%s>\n", source_name.c_str(), source_type.c_str());
             
             auto descriptor_set_source = std::make_shared<VkDescriptorSetSource>();
             descriptor_set_source->source_name = source_name;
@@ -711,6 +752,13 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
               binding->original_source = tecniq_input_stream->ReadIndexedString(chunkreader);
               binding->type = static_cast<VkMergedResourceBinding::Type>(
                   tecniq_input_stream->ReadItem<uint32_t>());
+              
+              const char* type_str = (binding->type == VkMergedResourceBinding::Type::UniformBlock) ? "UBO" :
+                                    (binding->type == VkMergedResourceBinding::Type::Sampler) ? "SAMPLER" :
+                                    (binding->type == VkMergedResourceBinding::Type::StorageBuffer) ? "SSBO" : "UNKNOWN";
+              printf("    BINDING[%u]: NAME<%s> TYPE<%s> DATATYPE<%s> ORIG_SOURCE<%s>\n", 
+                     binding->binding_id, binding->name.c_str(), type_str, 
+                     binding->datatype.c_str(), binding->original_source.c_str());
               
               descriptor_set_source->bindings.push_back(binding);
             }

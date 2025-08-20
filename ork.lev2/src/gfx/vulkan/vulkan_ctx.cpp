@@ -90,7 +90,6 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
   }
   _device_extensions.push_back("VK_KHR_portability_subset");
   _device_extensions.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
-  //_device_extensions.push_back("VK_EXT_debug_utils");
 
   VkDeviceCreateInfo DCI = {};
   initializeVkStruct(DCI, VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);

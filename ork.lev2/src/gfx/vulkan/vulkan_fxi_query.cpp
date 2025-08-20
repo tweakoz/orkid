@@ -186,6 +186,16 @@ const FxComputeShader* VkFxInterface::computeShader(FxShader* pshader, const std
   OrkAssert(sh_obj->_STAGE == "compute"_crcu);
   auto vk_program        = std::make_shared<VkFxShaderProgram>(vkshfile.get());
   vk_program->_comshader = sh_obj;
+  
+  // Populate program's UBO map from compute shader
+  vk_program->_vk_uniformblks.clear();
+  if (sh_obj && sh_obj->_uniblk_refs) {
+    for (const auto& [name, ubo] : sh_obj->_uniblk_refs->_uniblks) {
+      vk_program->_vk_uniformblks[name] = ubo;
+      //printf("UBO_POPULATE: Program collected UBO<%s> from compute shader\n", name.c_str());
+    }
+  }
+  
   auto cushader          = new FxComputeShader;
   cushader->_impl.set<vkfxsprg_ptr_t>(vk_program);
   static int prog_index          = 128;
