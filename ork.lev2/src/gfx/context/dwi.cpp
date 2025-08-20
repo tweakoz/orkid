@@ -256,4 +256,24 @@ void DrawingInterface::quad2DEMLTiled(const fvec4& QuadRect,
   GBI->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES, num2lock);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+void DrawingInterface::fullscreenQuad(const fvec4& UvRect, const fvec4& UvRect2, float depth) {
+  // Standard fullscreen quad in NDC space (-1 to 1)
+  const fvec4 QuadRect(-1, -1, 2, 2);
+  quad2D(QuadRect, UvRect, UvRect2, depth);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void DrawingInterface::quad2D(const fvec4& QuadRect, const fvec4& UvRect, const fvec4& UvRect2, float depth) {
+  // Check rendering conventions to determine which winding to use
+  const auto& conventions = _context.renderingConventions();
+  if (conventions.useClockwiseWinding()) {
+    quad2DEMLCCL(QuadRect, UvRect, UvRect2, depth);
+  } else {
+    quad2DEML(QuadRect, UvRect, UvRect2, depth);
+  }
+}
+
 } // namespace ork::lev2

@@ -409,6 +409,16 @@ VkContext::VkContext() {
   _GVI->_contexts.insert(this);
 
   ////////////////////////////
+  // Setup rendering conventions for Vulkan
+  ////////////////////////////
+  _renderingConventions._isRightHanded = true;      // Orkid uses RH like GL
+  _renderingConventions._isYUp = true;               // Emulating GL Y-up
+  _renderingConventions._ndcZRange01 = true;         // Vulkan native [0,1]
+  _renderingConventions._defaultWindingCCW = true;   // Default CCW like GL
+  // When FLIP_Y_LIKE_OPENGL is true, Y-flip reverses winding order
+  _renderingConventions._frontFaceWindingCCW = !FLIP_Y_LIKE_OPENGL;
+  
+  ////////////////////////////
   // create child interfaces
   ////////////////////////////
 

@@ -43,6 +43,18 @@ void line2DEML(const fvec2& v0, const fvec2& v1, const fvec4& vertex_color, floa
                  float depth = 0 );
 
   void quad2DEMLTiled(const fvec4& QuadRect, const fvec4& UvRect, const fvec4& UvRect2, int numtileseachdim);
+  
+  // Fullscreen quad that automatically uses correct winding based on rendering conventions
+  void fullscreenQuad(const fvec4& UvRect = fvec4(0, 0, 1, 1), //
+                      const fvec4& UvRect2 = fvec4(0, 0, 1, 1), //
+                      float depth = 0.0f);
+  
+  // General quad that automatically uses correct winding based on rendering conventions
+  void quad2D(const fvec4& QuadRect, //
+              const fvec4& UvRect = fvec4(0, 0, 1, 1), //
+              const fvec4& UvRect2 = fvec4(0, 0, 1, 1), //
+              float depth = 0.0f);
+  
   virtual ~DrawingInterface(){}
   Context& _context;
 };

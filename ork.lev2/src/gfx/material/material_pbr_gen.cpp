@@ -396,7 +396,8 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
           float uv_w = (float)chunk_w / w;
           float uv_h = (float)chunk_h / h;
 
-          dwi->quad2DEML(
+          // Use quad2D which handles winding order automatically
+          dwi->quad2D(
             fvec4(ndc_x, ndc_y, ndc_w, ndc_h),
             fvec4(uv_x, uv_y, uv_w, uv_h),
             fvec4(0, 0, 0, 0));
@@ -591,7 +592,8 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
           float uv_h = (float)chunk_h / h;
 
 
-          dwi->quad2DEML(
+          // Use quad2D which handles winding order automatically
+          dwi->quad2D(
             fvec4(ndc_x, ndc_y, ndc_w, ndc_h),
             fvec4(uv_x, uv_y, uv_w, uv_h),
             fvec4(0, 0, 0, 0));

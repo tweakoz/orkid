@@ -151,6 +151,23 @@ struct DebugGroup {
   Context* _context = nullptr;
 };
 
+struct RenderingConventions {
+  // Coordinate system conventions (currently matching OpenGL)
+  bool _isRightHanded = true;      // true for RH (GL/Orkid), false for LH
+  bool _isYUp = true;               // true for Y-up (GL/Orkid), false for Y-down (Vulkan native)
+  bool _ndcZRange01 = false;        // false for [-1,1] (GL), true for [0,1] (Vulkan/D3D)
+  
+  // Winding order conventions  
+  bool _defaultWindingCCW = true;   // true for CCW (GL default), false for CW
+  bool _frontFaceWindingCCW = true; // true if front faces use CCW winding in screen space
+  
+  // Helper to determine which quad function to use for correct winding
+  bool useClockwiseWinding() const {
+    // Use CW winding when front faces are expected to be CW
+    return !_frontFaceWindingCCW;
+  }
+};
+
 struct Context : public ::ork::Object {
   DeclareAbstractX(Context, ::ork::Object);
 
@@ -370,6 +387,14 @@ public:
   loadingphase_ptr_t newLoadingPhase();
   
   //////////////////////////////////////////////////////////
+  // Rendering conventions for this backend
+  //////////////////////////////////////////////////////////
+  
+  const RenderingConventions& renderingConventions() const { 
+    return _renderingConventions; 
+  }
+  
+  //////////////////////////////////////////////////////////
 
   static orkvector<DisplayMode*> mDisplayModes;
 
@@ -401,6 +426,9 @@ public:
   std::vector<sticky_cb_t> _beginFrameBlockers;
 
   secondary_commandbuffer_ptr_t _recordCommandBuffer;
+  
+protected:
+  RenderingConventions _renderingConventions;
 
 private:
   std::vector<void_lambda_t> _onBeginFrameCallbacks;
