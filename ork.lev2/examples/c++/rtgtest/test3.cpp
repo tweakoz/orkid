@@ -168,6 +168,7 @@ struct Resources {
   // Render leaf node with different techniques
   void renderLeafNode(RtgNode* node, Context* context, float abstime, float screen_aspect) {
     auto fbi = context->FBI();
+    auto gbi = context->GBI();
     fbi->PushRtGroup(node->rtg.get());
     auto RCFD = std::make_shared<RenderContextFrameData>(context);
     
@@ -186,7 +187,7 @@ struct Resources {
     _material->bindParamMatrix(_fxparameterMVP, M);
     
     // Render a quad
-    _appwin->Render2dQuadEML(fvec4(-.75, -.75, 1.5, 1.5), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
+    gbi->render2dQuadEMLCCL(fvec4(-.75, -.75, 1.5, 1.5), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
     
     _material->end(RCFD);
     fbi->PopRtGroup();
@@ -195,6 +196,7 @@ struct Resources {
   // Render intermediate node (composite children)
   void renderIntermediateNode(RtgNode* node, Context* context, float abstime, float screen_aspect) {
     auto fbi = context->FBI();
+    auto gbi = context->GBI();
     fbi->PushRtGroup(node->rtg.get());
     auto RCFD = std::make_shared<RenderContextFrameData>(context);
     
@@ -243,7 +245,7 @@ struct Resources {
         fvec3 up(0, 1, 0);
         fmtx4 V_child; V_child.lookAt(eye, target, up);
         _material->bindParamMatrix(_fxparameterMVP, T*(P * V_child)*M_child);
-        _appwin->Render2dQuadEML(fvec4(-0.5f, -0.5f, 1.0f, 1.0f), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
+        gbi->render2dQuadEMLCCL(fvec4(-0.5f, -0.5f, 1.0f, 1.0f), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
       }
     }
     
@@ -295,7 +297,7 @@ int main(int argc, char** argv,char** envp) {
   ezapp->onDraw([&](ui::drawevent_constptr_t drwev) {
     auto context = drwev->GetTarget();
     auto fbi = context->FBI(); // FrameBufferInterface
-
+    auto gbi = context->GBI(); // GeometryBufferInterface
     // Calculate the aspect ratio
     float w = context->mainSurfaceWidth();
     float h = context->mainSurfaceHeight();
@@ -335,7 +337,7 @@ int main(int argc, char** argv,char** envp) {
                                            resources->_rtg_root->rtg->buffer(0)->_texture.get());
     
     // Render root RTG to full screen
-    appwin->Render2dQuadEML(fvec4(-1.0f, -1.0f, 2.0f, 2.0f), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
+    gbi->render2dQuadEMLCCL(fvec4(-1.0f, -1.0f, 2.0f, 2.0f), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
     
     resources->_material->end(RCFD_main);
 

@@ -89,7 +89,7 @@ int main(int argc, char** argv,char** envp) {
   ezapp->onDraw([&](ui::drawevent_constptr_t drwev) {
     auto context        = drwev->GetTarget();
     auto fbi            = context->FBI(); // FrameBufferInterface
-
+    auto gbi            = context->GBI(); // GeometryBufferInterface
     ///////////////////////////////////////////////////
     // render to offscreen rtgroup
     ///////////////////////////////////////////////////
@@ -106,7 +106,7 @@ int main(int argc, char** argv,char** envp) {
     resources->_material->bindParamMatrix(resources->_fxparameterMVP, P1*V1*M1);
     //resources->_material->bindParamTexture(resources->_fxparameterTexture, resources->_offscreen_color->_texture.get());
 
-    appwin->Render2dQuadEML( fvec4(-.75, -.75, 1.5, 1.5), // quad in NDC
+    gbi->render2dQuadEMLCCL( fvec4(-.75, -.75, 1.5, 1.5), // quad in NDC
                              fvec4(0, 0, 1, 1),   // uv0rect
                              fvec4(0, 0, 1, 1));  // uv1rect
     resources->_material->end(RCFD1);    
@@ -138,7 +138,7 @@ int main(int argc, char** argv,char** envp) {
     resources->_material->bindParamMatrix(resources->_fxparameterMVP, P2*V2*M2);
     resources->_material->bindParamTexture(resources->_fxparameterTexture, resources->_offscreen_color->_texture.get());
 
-    appwin->Render2dQuadEML( fvec4(-.75, -.75, 1.5, 1.5), // quad in NDC
+    gbi->render2dQuadEMLCCL( fvec4(-.75, -.75, 1.5, 1.5), // quad in NDC
                              fvec4(0, 0, 1, 1),   // uv0rect
                              fvec4(0, 0, 1, 1));  // uv1rect
     resources->_material->end(RCFD2);    

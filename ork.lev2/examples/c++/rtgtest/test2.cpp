@@ -108,6 +108,7 @@ int main(int argc, char** argv,char** envp) {
   ezapp->onDraw([&](ui::drawevent_constptr_t drwev) {
     auto context = drwev->GetTarget();
     auto fbi = context->FBI(); // FrameBufferInterface
+    auto gbi = context->GBI(); // GeometryBufferInterface
 
     ///////////////////////////////////////////////////
     // Render to 4 offscreen rtgroups
@@ -149,7 +150,7 @@ int main(int argc, char** argv,char** envp) {
       resources->_material->bindParamMatrix(resources->_fxparameterMVP, P*V*M);
       
       // Render a cube or quad
-      appwin->Render2dQuadEML(fvec4(-.75, -.75, 1.5, 1.5), // quad in NDC
+      gbi->render2dQuadEMLCCL(fvec4(-.75, -.75, 1.5, 1.5), // quad in NDC
                               fvec4(0, 0, 1, 1),   // uv0rect
                               fvec4(0, 0, 1, 1));  // uv1rect
       
@@ -200,7 +201,7 @@ int main(int argc, char** argv,char** envp) {
       q.z -= gap * 2.0f;
       q.w -= gap * 2.0f;
       
-      appwin->Render2dQuadEML(q,                    // quad in NDC
+      gbi->render2dQuadEMLCCL(q,                    // quad in NDC
                               fvec4(0, 0, 1, 1),    // uv0rect
                               fvec4(0, 0, 1, 1));   // uv1rect
     }
