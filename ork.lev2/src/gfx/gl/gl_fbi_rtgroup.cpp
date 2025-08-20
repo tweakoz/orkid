@@ -73,7 +73,7 @@ void GlFrameBufferInterface::__setRtGroup(RtGroup* rtgroup) {
   } else {
     switch(rtgroup->_usage) {
       case "user"_crcu: // user defined rtgroup
-        _regenRtgImplFromScratch(rtgroup);
+        rtg_impl = _buildRtgImplFromScratch(rtgroup);
         break;
       case "swapchain"_crcu: // swapchain
       case "popup"_crcu: // popup
