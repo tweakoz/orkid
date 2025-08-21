@@ -466,7 +466,11 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
   rawenvmap->_vars->makeValueForKey<texture_ptr_t>("alt-tex-specenv") = alt_array->_tex;
   rawenvmap->_vars->makeValueForKey<texturearray_ptr_t>("alt-tex-specenv-array") = alt_array;
   targ->debugPopGroup();
-
+  
+  // Store datablock for build-time processing
+  rawenvmap->_vars->makeValueForKey<datablock_ptr_t>("specenv-datablock") = cmipchain_datablock;
+  
+  // Return the texture array for runtime use
   return alt_array->_tex;
 }
 
@@ -666,7 +670,37 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
 
   targ->debugPopGroup();
 
+  // Store datablock for build-time processing
+  rawenvmap->_vars->makeValueForKey<datablock_ptr_t>("diffenv-datablock") = cmipchain_datablock;
+
+  // Return the texture for runtime use  
   return alt_tex;
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+datablock_ptr_t PBRMaterial::filterSpecularEnvMapToDataBlock(texture_ptr_t rawenvmap, Context* targ, bool equirectangular) {
+  // First ensure the texture is filtered
+  filterSpecularEnvMap(rawenvmap, targ, equirectangular);
+  
+  // Then extract the cached datablock
+  if (auto as_datablock = rawenvmap->_vars->typedValueForKey<datablock_ptr_t>("specenv-datablock")) {
+    return as_datablock.value();
+  }
+  return nullptr;
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+datablock_ptr_t PBRMaterial::filterDiffuseEnvMapToDataBlock(texture_ptr_t rawenvmap, Context* targ, bool equirectangular) {
+  // First ensure the texture is filtered
+  filterDiffuseEnvMap(rawenvmap, targ, equirectangular);
+  
+  // Then extract the cached datablock
+  if (auto as_datablock = rawenvmap->_vars->typedValueForKey<datablock_ptr_t>("diffenv-datablock")) {
+    return as_datablock.value();
+  }
+  return nullptr;
 }
 
 } // namespace ork::lev2

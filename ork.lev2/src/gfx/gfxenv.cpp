@@ -324,6 +324,30 @@ DynamicVertexBuffer<SVtxV16T16C16>& GfxEnv::GetSharedDynamicV16T16C16() {
   return GetRef()._vtxBufSharedV16T16C16;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Deferred Context Operations Implementation
+///////////////////////////////////////////////////////////////////////////////
+
+void GfxEnv::enqueueDeferredContextOp(ctx_lambda_t op) {
+  using defctx_opq_t = std::queue<ctx_lambda_t>;
+  _deferredContextOps.atomicOp([op](defctx_opq_t& unlocked){
+    unlocked.push(op);
+  });
+}
+
+void GfxEnv::processDeferredContextOps(context_rawptr_t ctx) {
+  using defctx_opq_t = std::queue<ctx_lambda_t>;
+  _deferredContextOps.atomicOp([ctx](defctx_opq_t& unlocked){
+    while (!unlocked.empty()) {
+      auto op = unlocked.front();
+      unlocked.pop();
+      op(ctx);
+    }
+  });
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 GfxEnv::GfxEnv()
     : NoRttiSingleton<GfxEnv>()
     , mpMainWindow(nullptr)

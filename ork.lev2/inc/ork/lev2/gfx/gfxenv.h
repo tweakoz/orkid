@@ -675,6 +675,12 @@ public:
   recursive_mutex& GetGlobalLock() {
     return mGfxEnvMutex;
   }
+  
+  //////////////////////////////////////////////////////////////////////////////
+  // Deferred Context Operations
+  
+  void enqueueDeferredContextOp(ctx_lambda_t op);
+  void processDeferredContextOps(context_rawptr_t ctx);
 
   //////////////////////////////////////////////////////////////////////////////
   // Contex Factory
@@ -758,6 +764,10 @@ protected:
   orkstack<ContextCreationParams> mCreationParams;
   recursive_mutex mGfxEnvMutex;
   bool _initialized = false;
+  
+  // Queue for deferred operations that need a context
+  using defctx_opq_t = std::queue<ctx_lambda_t>;
+  LockedResource<defctx_opq_t> _deferredContextOps;
 
   struct WaitLockData {
     lockset_t _locks;

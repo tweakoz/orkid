@@ -12,7 +12,7 @@
 #include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/asset/FileAssetLoader.h>
 #include <ork/asset/Asset.inl>
-#include <ork/asset/AssetManager.hpp>
+#include <ork/asset/AssetManager.inl>
 #include <ork/lev2/ui/event.h>
 
 #include <ork/ecs/scene.h>

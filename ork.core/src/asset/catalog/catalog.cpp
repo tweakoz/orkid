@@ -22,6 +22,7 @@
 #include <thread>
 #include <chrono>
 #include <cstdio>
+#include <mutex>
 #include <sstream>
 #include <algorithm>
 #include <functional>
@@ -51,6 +52,21 @@ AssetResult::operator bool() const {
 ////////////////////////////////////////////////////////////////
 // AssetCatalog
 ////////////////////////////////////////////////////////////////
+
+// Static global instance - thread-safe initialization
+assetcatalog_ptr_t AssetCatalog::globalInstance() {
+  static std::once_flag init_flag;
+  static assetcatalog_ptr_t global_catalog;
+  
+  std::call_once(init_flag, []() {
+    // Load global configs first
+    auto config_space = AssetConfigSpace::loadGlobalConfigs();
+    // Create catalog with the loaded config space
+    global_catalog = std::make_shared<AssetCatalog>(config_space);
+  });
+  
+  return global_catalog;
+}
 
 AssetCatalog::AssetCatalog() {
   auto impl = _impl.makeShared<CatalogImpl>(this);

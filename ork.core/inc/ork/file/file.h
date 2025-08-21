@@ -51,6 +51,7 @@ public:
   size_t miUserPos; // current position user wants
 
   static datablock_ptr_t loadDatablock(const file::Path& sFileName);
+  static EFileErrCode saveDatablock(const file::Path& sFileName, datablock_ptr_t datablock);
 
   File(FileDev* pdev = NULL);
   File(const char* sFileName, EFileMode eMode, FileDev* pdev = NULL);

@@ -8,8 +8,6 @@ from orkengine.lev2 import *
 tokens = CrcStringProxy()
 
 ezapp = lev2appinit()
-#ctx = GfxEnv.loadingContext()
-#ctx.makeCurrent()
 
 #######################################
 # todo : dynamic enumeration of assets

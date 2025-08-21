@@ -27,6 +27,8 @@ using matrix_lamda_t = std::function<fmtx4()>;
 struct LoadingPhase;
 struct Context;
 class TextureInterface;
+class FrameBufferInterface;
+class GeometryBufferInterface;
 class CTXBASE;
 class GfxEnv;
 struct DisplayBuffer;
@@ -65,6 +67,17 @@ using cimg_array_t = std::vector<compressedimg_ptr_t>;
 
 using pickvariant_t = svar128_t;
 using rasterstate_ptr_t = std::shared_ptr<RasterState>;
+
+using txi_rawptr_t = TextureInterface*;
+using fbi_rawptr_t = FrameBufferInterface*;
+using gbi_rawptr_t = GeometryBufferInterface*;
+
+///////////////////////////////////////////////////////////////////////////////
+
+using ctx_lambda_t = std::function<void(context_rawptr_t)>; // for deferred ops that need a Context
+using txi_lambda_t = std::function<void(txi_rawptr_t)>;     // for deferred ops that need a TXI
+using fbi_lambda_t = std::function<void(fbi_rawptr_t)>;     // for deferred ops that need a FBI
+using gbi_lambda_t = std::function<void(gbi_rawptr_t)>;     // for deferred ops that need a GBI
 
 ///////////////////////////////////////////////////////////////////////////////
 

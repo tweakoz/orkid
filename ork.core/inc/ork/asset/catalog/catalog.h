@@ -155,6 +155,8 @@ struct AssetCatalog {
   explicit AssetCatalog(assetconfigspace_ptr_t space);
   ~AssetCatalog();
   
+  // Global instance - thread-safe lazy initialization
+  static assetcatalog_ptr_t globalInstance();
   
   ////////////////////////////////////////////////////////////////////////////////
   // === Namespace Management ===

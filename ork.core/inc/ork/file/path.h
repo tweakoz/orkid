@@ -28,6 +28,15 @@ namespace file {
 
 class Path;
 
+struct CatalogComponents {
+  std::string _namespace;
+  std::string _asset;
+  
+  bool isValid() const { 
+    return !_namespace.empty() && !_asset.empty(); 
+  }
+};
+
 class PathMarkers {
   friend class Path;
 
@@ -189,6 +198,13 @@ public:
   bool isFolder() const;
   bool isSymLink() const;
   HashType hashFileContents() const;
+  
+  // Asset catalog path detection
+  bool isAssetCatalogPath() const;
+  bool isFilePath() const;
+  CatalogComponents getCatalogComponents() const;
+  std::string getCatalogNamespace() const;
+  std::string getCatalogAssetId() const;
   
   // Directory creation
   bool ensureDirectoryExists() const;

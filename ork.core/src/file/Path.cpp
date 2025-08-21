@@ -934,6 +934,37 @@ bool Path::isSymLink() const {
    //printf( "stat<%s> : %d\n", c_str(), ist );
   return (ist == 0) ? bool(S_ISLNK(file_stat.st_mode)) : false;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// Asset catalog path detection methods
+///////////////////////////////////////////////////////////////////////////////
+
+bool Path::isAssetCatalogPath() const {
+  return !hasUrlBase() && _pathstring.find('|') != std::string::npos;
+}
+
+bool Path::isFilePath() const {
+  return hasUrlBase() || (_pathstring.find('|') == std::string::npos);
+}
+
+CatalogComponents Path::getCatalogComponents() const {
+  CatalogComponents result;
+  // Find LAST '|' to support nested namespaces
+  auto pos = _pathstring.rfind('|');
+  if (pos != std::string::npos && pos > 0 && pos < _pathstring.length() - 1) {
+    result._namespace = _pathstring.substr(0, pos);
+    result._asset = _pathstring.substr(pos + 1);
+  }
+  return result;
+}
+
+std::string Path::getCatalogNamespace() const {
+  return getCatalogComponents()._namespace;
+}
+
+std::string Path::getCatalogAssetId() const {
+  return getCatalogComponents()._asset;
+}
 ///////////////////////////////////////////////////////////////////////////////
 bool Path::ensureDirectoryExists() const {
   namespace bfs = boost::filesystem;

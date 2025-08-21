@@ -14,7 +14,7 @@
 #include <ork/kernel/orklut.hpp>
 #include <ork/kernel/opq.h>
 #include <ork/util/logger.h>
-#include <ork/asset/AssetManager.hpp>
+#include <ork/asset/AssetManager.inl>
 #include <ork/lev2/aud/audiodevice.h>
 
 ImplementReflectionX(ork::lev2::FxShaderAsset, "FxShader");

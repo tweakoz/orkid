@@ -174,6 +174,12 @@ void Context::beginFrame(bool visual) {
     l();
 
   _onBeginFrameCallbacks.clear();
+  
+  /////////////////////////////////////
+  // Process deferred context operations
+  /////////////////////////////////////
+  
+  GfxEnv::GetRef().processDeferredContextOps(this);
 
   /////////////////////////////////////
 
