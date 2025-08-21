@@ -139,6 +139,7 @@ void VkContext::_initVulkanForWindow(VkSurfaceKHR surface) {
     _fetchDeviceProcAddr(_vkCmdDebugMarkerBeginEXT, "vkCmdDebugMarkerBeginEXT");
     _fetchDeviceProcAddr(_vkCmdDebugMarkerEndEXT, "vkCmdDebugMarkerEndEXT");
     _fetchDeviceProcAddr(_vkCmdDebugMarkerInsertEXT, "vkCmdDebugMarkerInsertEXT");
+    _fetchDeviceProcAddr(_vkCmdInsertDebugUtilsLabelEXT, "vkCmdInsertDebugUtilsLabelEXT");
   }
 
   _fetchDeviceProcAddr( _vkCmdBeginRenderingKHR,"vkCmdBeginRenderingKHR");

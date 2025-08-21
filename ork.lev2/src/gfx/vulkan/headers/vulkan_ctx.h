@@ -113,7 +113,7 @@ struct VulkanInstance {
   uint32_t _numgroups = 0;
   shadlang::slpcache_ptr_t _slp_cache;
   MpMcBoundedQueue<load_token_t> _loadTokens;
-  bool _debugEnabled = true;
+  bool _debugEnabled = false;
   vkdeviceinfo_ptr_t _preferred;
 
   std::set<VkContext*> _contexts;
@@ -586,6 +586,7 @@ public:
   PFN_vkCmdDebugMarkerInsertEXT _vkCmdDebugMarkerInsertEXT    = nullptr;
   PFN_vkCmdBeginRendering _vkCmdBeginRenderingKHR             = nullptr;
   PFN_vkCmdEndRendering _vkCmdEndRenderingKHR                 = nullptr;
+  PFN_vkCmdInsertDebugUtilsLabelEXT _vkCmdInsertDebugUtilsLabelEXT = nullptr;
   //////////////////////////////////////////////
   void* mhHWND;
   vkcontext_ptr_t _parentTarget;

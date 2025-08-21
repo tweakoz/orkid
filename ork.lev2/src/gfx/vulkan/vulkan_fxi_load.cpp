@@ -57,10 +57,7 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
   } else { // load
     auto str_read = ork::File::readAsString(input_path);
     OrkAssert(str_read != nullptr);
-    if(input_path=="orkshader://pbr.fxv2"){
-      printf("yo\n");
-    }
-    printf("load shader from path<%s>\n", input_path.c_str());
+    //printf("load shader from path<%s>\n", input_path.c_str());
     // Create the parser cache with the top-level path
     auto slp_cache = std::make_shared<ShadLangParserCache>();
     slp_cache->_toplevel_path = file::Path(input_path.c_str());
@@ -115,7 +112,7 @@ static file::Path resolveImportPath(
   
   // This will handle both absolute paths (with schemes) and relative paths correctly
   auto resolved = import_file_path.resolveRelativeTo(parent_file_path);
-  printf("import resolved: parent='%s' import='%s' -> resolved='%s'\n", 
+  if(0)printf("import resolved: parent='%s' import='%s' -> resolved='%s'\n", 
          parent_path.c_str(), clean_path.c_str(), resolved.c_str());
   
   return resolved;
@@ -207,10 +204,6 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(
   uint64_t hashkey               = basehasher->result();
   datablock_ptr_t vkfx_datablock = DataBlockCache::findDataBlock(hashkey);
   vkfxsfile_ptr_t vulkan_shaderfile;
-    ////////////////////////////////////////////
-    if(parser_name=="orkshader://pbr.fxv2"){
-        printf("yo\n");
-    }
   ////////////////////////////////////////////
   // shader binary already cached
   // first check precompiled shader cache
@@ -222,9 +215,9 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(
   // shader binary not cached, compile and cache
   ////////////////////////////////////////////
   else {
-    printf("DEBUG: Calling shadlang::parseFromString with parser_name='%s'\n", parser_name.c_str());
-    printf("DEBUG: shadertext length=%zu, starts with: '%.100s'\n", shadertext.length(), shadertext.c_str());
-    printf("DEBUG: slp_cache->_toplevel_path='%s'\n", slp_cache->_toplevel_path.c_str());
+    //printf("DEBUG: Calling shadlang::parseFromString with parser_name='%s'\n", parser_name.c_str());
+    //printf("DEBUG: shadertext length=%zu, starts with: '%.100s'\n", shadertext.length(), shadertext.c_str());
+    //printf("DEBUG: slp_cache->_toplevel_path='%s'\n", slp_cache->_toplevel_path.c_str());
     auto transunit  = shadlang::parseFromString(slp_cache, parser_name, shadertext);
     vkfx_datablock  = _writeIntermediateToDataBlock(transunit);
     DataBlockCache::setDataBlock(hashkey, vkfx_datablock);

@@ -92,7 +92,7 @@ filedevctx_constptr_t FileEnv::contextForUriProto(const std::string& uriproto) {
     //printf("  FOUND context for '%s'\n", uriproto.c_str());
     return it->second;
   }
-  printf("  NOT FOUND context for '%s'\n", uriproto.c_str());
+  //printf("  NOT FOUND context for '%s'\n", uriproto.c_str());
   return nullptr;
 }
 

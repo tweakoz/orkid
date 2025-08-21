@@ -209,12 +209,12 @@ vkvertexinputconfig_ptr_t VkGeometryBufferInterface::vertexInputState(vkvtxbuf_p
   EVtxStreamFormat vb_format = vbuf->_ork_vtxbuf.GetStreamFormat();
   uint64_t vif_hash = vif->_hash; // hashed from shader input layout ordered(semantic, datatype)
 
- printf("vertexInputState: vif<%s> hash<%016llx> vb_format<%s>\n", 
+ if(0)printf("vertexInputState: vif<%s> hash<%016llx> vb_format<%s>\n", 
          vif->_name.c_str(), vif_hash, EVtxStreamFormatToName(vb_format).c_str());
  
   auto it = vbuf->_vif_to_layout.find(vif_hash);
   if( it != vbuf->_vif_to_layout.end() ){
-    printf("  CACHED layout\n");
+    if(0)printf("  CACHED layout\n");
     return it->second;
   }
 
@@ -251,7 +251,7 @@ vkvertexinputconfig_ptr_t VkGeometryBufferInterface::vertexInputState(vkvtxbuf_p
     auto semantic = input->_semantic; // "POSITION", "NORMAL", "BINORMALn, "TANGENTn", "TEXCOORDn", "COLORn"
     auto shader_datatype = input->_datatype; // "vec4", "vec3", "vec2", "float", "half4", "half3", "half2", "half"
 
-        printf("  Looking for semantic<%s> shader_dt<%s>\n", semantic.c_str(), shader_datatype.c_str());
+        if(0)printf("  Looking for semantic<%s> shader_dt<%s>\n", semantic.c_str(), shader_datatype.c_str());
 
     auto it = vsc->_item_by_semantic.find(semantic);
     if( it == vsc->_item_by_semantic.end() ){
@@ -267,7 +267,7 @@ vkvertexinputconfig_ptr_t VkGeometryBufferInterface::vertexInputState(vkvtxbuf_p
 
     auto item = it->second;
 
-        printf("    Found: vbuf_dt<%s> offset<%zu> format<%d>\n", 
+        if(0)printf("    Found: vbuf_dt<%s> offset<%zu> format<%d>\n", 
            item->_vbuf_datatype.c_str(), item->_dataoffset, item->_vkformat);
 
     auto& atdesc = rval->_attribute_descriptions.emplace_back();
@@ -276,7 +276,7 @@ vkvertexinputconfig_ptr_t VkGeometryBufferInterface::vertexInputState(vkvtxbuf_p
     atdesc.format   = item->_vkformat;
     atdesc.offset   = item->_dataoffset;
 
-       printf("    Final: location<%zu> offset<%u> format<%d>\n", 
+       if(0)printf("    Final: location<%zu> offset<%u> format<%d>\n", 
            location-1, atdesc.offset, atdesc.format);
     if(item->_vbuf_datatype != shader_datatype){
 
@@ -500,6 +500,23 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
   ///////////////////////
   // draw
   ///////////////////////
+
+  // Check for Metal debugger trigger
+  if(_debugNextPrimitive) {
+    printf("VK: Metal capture triggered for next draw call\n");
+    // Insert a debug marker for Metal debugging
+    if(_contextVK->_vkCmdInsertDebugUtilsLabelEXT) {
+      VkDebugUtilsLabelEXT label = {};
+      label.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+      label.pLabelName = "DEBUG_CAPTURE_DRAW";
+      label.color[0] = 1.0f;
+      label.color[1] = 0.0f;
+      label.color[2] = 1.0f;
+      label.color[3] = 1.0f;
+      _contextVK->_vkCmdInsertDebugUtilsLabelEXT(CB, &label);
+    }
+    _debugNextPrimitive = false;
+  }
 
   vkCmdDraw(
       CB, // command buffer

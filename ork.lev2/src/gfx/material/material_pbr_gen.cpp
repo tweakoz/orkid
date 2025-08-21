@@ -570,6 +570,14 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
       int num_chunks_x = (w + CHUNK_SIZE - 1) / CHUNK_SIZE;
       int num_chunks_y = (h + CHUNK_SIZE - 1) / CHUNK_SIZE;
 
+      // Trigger Metal debugger capture on first diffuse filtering draw
+      static bool first_diffuse_draw = true;
+      if(first_diffuse_draw) {
+        printf("TRIGGERING METAL CAPTURE for diffuse env filtering\n");
+        targ->GBI()->_debugNextPrimitive = true;
+        first_diffuse_draw = false;
+      }
+
       for(int cy = 0; cy < num_chunks_y; cy++) {
 
         printf("env diff-filt chunkrow<%d>             \r", cy );

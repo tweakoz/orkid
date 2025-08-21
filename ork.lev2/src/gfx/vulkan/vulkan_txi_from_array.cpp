@@ -136,7 +136,7 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
   std::string debug_name = array->_tex->_debugName.empty() ? "texture_array" : array->_tex->_debugName;
   vktex->_imgobj = std::make_shared<VulkanImageObject>(_contextVK, VKICI, debug_name);
 
-  printf(
+  if(0)printf(
       "max_levels<%zu> max_w<%zu> max_h<%zu> num_slices<%d> format<%s>\n",
       max_levels,
       max_w,

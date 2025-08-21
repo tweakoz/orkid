@@ -296,7 +296,7 @@ void _semaCollectNamedOfType(
         n->template setValueForKey<std::string>("raw_name", the_name);
         the_name = FormatString("ImportDirective<%s>", the_name.c_str());
       } else if constexpr (std::is_same<node_t, Technique>::value) {
-        printf("_name<%s> Technique<%s>\n", slp->_name.c_str(), the_name.c_str());
+        if(0)printf("_name<%s> Technique<%s>\n", slp->_name.c_str(), the_name.c_str());
         n->template setValueForKey<std::string>("raw_name", the_name);
       } else{
         n->template setValueForKey<std::string>("raw_name", the_name);
@@ -402,12 +402,12 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
     file::Path container_path = slp->_shader_path;
     if (!container_path.isAbsolute() && slp->_slp_cache) {
       container_path = slp->_slp_cache->_toplevel_path;
-      printf("shadlang using toplevel_path from cache: '%s'\n", container_path.c_str());
+      if(0)printf("shadlang using toplevel_path from cache: '%s'\n", container_path.c_str());
     }
     
     // This will handle both absolute paths (with schemes) and relative paths correctly
     auto proc_import_path = import_file_path.resolveRelativeTo(container_path);
-    printf("shadlang import resolved: container='%s' import='%s' -> resolved='%s'\n", 
+    if(0)printf("shadlang import resolved: container='%s' import='%s' -> resolved='%s'\n", 
            container_path.c_str(), raw_import_path.c_str(), proc_import_path.c_str());
     
     import_node->setValueForKey<std::string>("proc_import_path", proc_import_path.c_str());
@@ -1013,47 +1013,6 @@ int _semaLinkToInheritances(
           count++;
         }
         else if( inh_name!="default" ){
-          printf( "check_inheritance<%s> not found\n", inh_name.c_str() );
-          printf( "  Available library blocks:\n" );
-          for( auto& [name, obj] : slp->_slp_cache->_library_blocks ){
-            printf( "    %s\n", name.c_str() );
-          }
-          printf( "  Available type blocks:\n" );
-          for( auto& [name, obj] : slp->_slp_cache->_type_blocks ){
-            printf( "    %s\n", name.c_str() );
-          }
-          printf( "  Available sampler sets:\n" );
-          for( auto& [name, obj] : slp->_slp_cache->_sampler_sets ){
-            printf( "    %s\n", name.c_str() );
-          }
-          printf( "  Available uniform sets:\n" );
-          for( auto& [name, obj] : slp->_slp_cache->_uniform_sets ){
-            printf( "    %s\n", name.c_str() );
-          }
-          printf( "  Available uniform blocks:\n" );
-          for( auto& [name, obj] : slp->_slp_cache->_uniform_blocks ){
-            printf( "    %s\n", name.c_str() );
-          }
-          printf( "  Available vertex interfaces:\n" );
-          for( auto& [name, obj] : slp->_slp_cache->_vertex_interfaces ){
-            printf( "    %s\n", name.c_str() );
-          }
-          printf( "  Available fragment interfaces:\n" );
-          for( auto& [name, obj] : slp->_slp_cache->_fragment_interfaces ){
-            printf( "    %s\n", name.c_str() );
-          }
-          printf( "  Available geometry interfaces:\n" );
-          for( auto& [name, obj] : slp->_slp_cache->_geometry_interfaces ){
-            printf( "    %s\n", name.c_str() );
-          }
-          printf( "  Available compute interfaces:\n" );
-          for( auto& [name, obj] : slp->_slp_cache->_compute_interfaces ){
-            printf( "    %s\n", name.c_str() );
-          }
-          printf( "  Available state blocks:\n" );
-          for( auto& [name, obj] : slp->_stateblocks ){
-            printf( "    %s\n", name.c_str() );
-          }
           // Instead of asserting, just continue and let the inheritance be unresolved
           // OrkAssert(false);
         }
@@ -1139,6 +1098,7 @@ void _semaDecorateArrayDeclarations(impl::ShadLangParser* slp, astnode_ptr_t top
 void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_ptr_t top) {
   auto passes = AstNode::collectNodesOfType<Pass>(top);
   
+  /*
   printf("=== MERGED RESOURCE ATTACHMENT ===\n");
   printf("  Passes found: %zu\n", passes.size());
   printf("  Vertex interfaces: %zu\n", slp->_slp_cache->_vertex_interfaces.size());
@@ -1147,10 +1107,10 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
   printf("  Fragment shaders: %zu\n", slp->_slp_cache->_fragment_shaders.size());
   printf("  Sampler sets: %zu\n", slp->_slp_cache->_sampler_sets.size());
   printf("  Uniform blocks: %zu\n", slp->_slp_cache->_uniform_blocks.size());
-  
+  */
   for (auto pass : passes) {
     auto pass_name = pass->typedValueForKey<std::string>("object_name").value();
-    printf("  Processing pass: %s\n", pass_name.c_str());
+    //printf("  Processing pass: %s\n", pass_name.c_str());
     
     // Step 1: Collect all shaders referenced by this pass
     std::vector<astnode_ptr_t> pass_shaders;
@@ -1161,15 +1121,15 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
     auto geo_refs = AstNode::collectNodesOfType<GeometryShaderRef>(pass);
     auto com_refs = AstNode::collectNodesOfType<ComputeShaderRef>(pass);
     
-    printf("    Vertex refs: %zu, Fragment refs: %zu\n", vtx_refs.size(), frg_refs.size());
+    //printf("    Vertex refs: %zu, Fragment refs: %zu\n", vtx_refs.size(), frg_refs.size());
     
     // Resolve actual shader objects using symbol tables
     for (auto vtx_ref : vtx_refs) {
       auto shader_name = vtx_ref->typedValueForKey<std::string>("ref_id").value();
-      printf("    Looking for vertex shader: %s\n", shader_name.c_str());
+      //printf("    Looking for vertex shader: %s\n", shader_name.c_str());
       auto shader = slp->_slp_cache->_vertex_shaders.find(shader_name);
       if (shader != slp->_slp_cache->_vertex_shaders.end()) {
-        printf("    Found vertex shader: %s\n", shader_name.c_str());
+        //printf("    Found vertex shader: %s\n", shader_name.c_str());
         pass_shaders.push_back(shader->second);
       } else {
         printf("    WARNING: Vertex shader not found: %s\n", shader_name.c_str());
@@ -1178,10 +1138,10 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
     
     for (auto frg_ref : frg_refs) {
       auto shader_name = frg_ref->typedValueForKey<std::string>("ref_id").value();
-      printf("    Looking for fragment shader: %s\n", shader_name.c_str());
+      //printf("    Looking for fragment shader: %s\n", shader_name.c_str());
       auto shader = slp->_slp_cache->_fragment_shaders.find(shader_name);
       if (shader != slp->_slp_cache->_fragment_shaders.end()) {
-        printf("    Found fragment shader: %s\n", shader_name.c_str());
+        //printf("    Found fragment shader: %s\n", shader_name.c_str());
         pass_shaders.push_back(shader->second);
       } else {
         printf("    WARNING: Fragment shader not found: %s\n", shader_name.c_str());
@@ -1204,7 +1164,7 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
       }
     }
     
-    printf("    Total shaders for pass: %zu\n", pass_shaders.size());
+    //printf("    Total shaders for pass: %zu\n", pass_shaders.size());
     
     // Step 2: Collect all resources from all shaders using symbol tables
     std::map<int, std::map<std::string, MergedShaderResources::ResourceBinding>> merged_descriptor_sets;
@@ -1216,8 +1176,8 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
     
     for (size_t shader_index = 0; shader_index < pass_shaders.size(); shader_index++) {
       auto shader = pass_shaders[shader_index];
-      printf("    Processing shader[%zu]: %s\n", shader_index, shader->typedValueForKey<std::string>("object_name").value().c_str());
-      printf("    Shader pointer: %p\n", (void*)shader.get());
+      //printf("    Processing shader[%zu]: %s\n", shader_index, shader->typedValueForKey<std::string>("object_name").value().c_str());
+      //printf("    Shader pointer: %p\n", (void*)shader.get());
       
       // Determine shader type for debugging
       std::string shader_type = "unknown";
@@ -1230,7 +1190,7 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
       } else if (std::dynamic_pointer_cast<ComputeShader>(shader)) {
         shader_type = "compute";
       }
-      printf("      Shader type: %s\n", shader_type.c_str());
+      //printf("      Shader type: %s\n", shader_type.c_str());
       
       // Instead of using InheritanceTracker, directly collect inherited resources from the shader's AST
       // Look for SemaInheritSamplerSet and SemaInheritUniformBlk nodes in the shader
@@ -1240,8 +1200,8 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
       // Collect direct inherited resources from the shader
       auto direct_sampler_sets = AstNode::collectNodesOfType<SemaInheritSamplerSet>(shader);
       auto direct_uniform_blocks = AstNode::collectNodesOfType<SemaInheritUniformBlk>(shader);
-      printf("      Direct SemaInheritSamplerSet nodes: %zu\n", direct_sampler_sets.size());
-      printf("      Direct SemaInheritUniformBlk nodes: %zu\n", direct_uniform_blocks.size());
+      //printf("      Direct SemaInheritSamplerSet nodes: %zu\n", direct_sampler_sets.size());
+      //printf("      Direct SemaInheritUniformBlk nodes: %zu\n", direct_uniform_blocks.size());
       inherited_sampler_sets.insert(inherited_sampler_sets.end(), direct_sampler_sets.begin(), direct_sampler_sets.end());
       inherited_uniform_blocks.insert(inherited_uniform_blocks.end(), direct_uniform_blocks.begin(), direct_uniform_blocks.end());
       
@@ -1251,11 +1211,12 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
       auto inherited_geometry_interfaces = AstNode::collectNodesOfType<SemaInheritGeometryInterface>(shader);
       auto inherited_compute_interfaces = AstNode::collectNodesOfType<SemaInheritComputeInterface>(shader);
       
+      /*
       printf("      Inherited vertex interfaces: %zu\n", inherited_interfaces.size());
       printf("      Inherited fragment interfaces: %zu\n", inherited_fragment_interfaces.size());
       printf("      Inherited geometry interfaces: %zu\n", inherited_geometry_interfaces.size());
       printf("      Inherited compute interfaces: %zu\n", inherited_compute_interfaces.size());
-      
+      */
       // Collect all interfaces this shader inherits from
       std::vector<astnode_ptr_t> all_inherited_interfaces;
       for (auto iface : inherited_interfaces) {
@@ -1287,7 +1248,7 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
         }
       }
       
-      printf("      Total inherited interfaces: %zu\n", all_inherited_interfaces.size());
+      //printf("      Total inherited interfaces: %zu\n", all_inherited_interfaces.size());
       
       // Recursively collect all inherited resources from interfaces and library blocks
       std::function<void(astnode_ptr_t, std::vector<astnode_ptr_t>&, std::vector<astnode_ptr_t>&)> 
@@ -1355,23 +1316,23 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
       // ALSO: Collect resources directly from the shader itself recursively
       collectInheritedResources(shader, inherited_sampler_sets, inherited_uniform_blocks);
       
-      printf("      Inherited sampler sets: %zu\n", inherited_sampler_sets.size());
-      printf("      Inherited uniform blocks: %zu\n", inherited_uniform_blocks.size());
+      //printf("      Inherited sampler sets: %zu\n", inherited_sampler_sets.size());
+      //printf("      Inherited uniform blocks: %zu\n", inherited_uniform_blocks.size());
       
       // Debug: Print what resources were found
       for (auto inherit_node : inherited_sampler_sets) {
         auto sset_name = inherit_node->typedValueForKey<std::string>("inherit_id").value();
-        printf("        Found inherited sampler set: %s\n", sset_name.c_str());
+        //printf("        Found inherited sampler set: %s\n", sset_name.c_str());
       }
       for (auto inherit_node : inherited_uniform_blocks) {
         auto ublk_name = inherit_node->typedValueForKey<std::string>("inherit_id").value();
-        printf("        Found inherited uniform block: %s\n", ublk_name.c_str());
+        //printf("        Found inherited uniform block: %s\n", ublk_name.c_str());
       }
       
       // Process inherited sampler sets
       for (auto inherit_node : inherited_sampler_sets) {
         auto sset_name = inherit_node->typedValueForKey<std::string>("inherit_id").value();
-        printf("      Processing inherited sampler set: %s\n", sset_name.c_str());
+        //printf("      Processing inherited sampler set: %s\n", sset_name.c_str());
         
         // Find the actual sampler set in the symbol table
         auto sset_it = slp->_slp_cache->_sampler_sets.find(sset_name);
@@ -1415,7 +1376,7 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
               
               merged_descriptor_sets[descriptor_set_id][resource_key] = binding;
               processed_sampler_resources.insert(resource_key);
-              printf("        Added sampler: %s (%s) binding %d\n", name.c_str(), type_name.c_str(), binding_id);
+              //printf("        Added sampler: %s (%s) binding %d\n", name.c_str(), type_name.c_str(), binding_id);
             }
           }
         } else {
@@ -1426,7 +1387,7 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
       // Process inherited uniform blocks
       for (auto inherit_node : inherited_uniform_blocks) {
         auto ublk_name = inherit_node->typedValueForKey<std::string>("inherit_id").value();
-        printf("      Processing inherited uniform block: %s\n", ublk_name.c_str());
+        //printf("      Processing inherited uniform block: %s\n", ublk_name.c_str());
         
         // Find the actual uniform block in the symbol table
         auto ublk_it = slp->_slp_cache->_uniform_blocks.find(ublk_name);
@@ -1459,7 +1420,7 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
           
           merged_descriptor_sets[descriptor_set_id][resource_key] = binding;
           processed_uniform_block_resources.insert(resource_key);
-          printf("        Added uniform block: %s binding %d\n", ublk_name.c_str(), binding_id);
+          //printf("        Added uniform block: %s binding %d\n", ublk_name.c_str(), binding_id);
         } else {
           printf("      WARNING: Uniform block not found in symbol table: %s\n", ublk_name.c_str());
         }
@@ -1474,9 +1435,9 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
         // Create a single empty descriptor set 0 if none exist
         merged_descriptor_sets[0] = {};
         num_descriptor_sets = 1;
-        printf("    Creating EMPTY merged resource node with 1 descriptor set\n");
+        //printf("    Creating EMPTY merged resource node with 1 descriptor set\n");
       } else {
-        printf("    Creating merged resource node with %zu descriptor sets\n", num_descriptor_sets);
+        //printf("    Creating merged resource node with %zu descriptor sets\n", num_descriptor_sets);
       }
       auto merged_node = std::make_shared<MergedShaderResourcesNode>();
       merged_node->_name = FormatString("MergedResources: %s", pass_name.c_str());
@@ -1528,13 +1489,13 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
       pass->appendChild(merged_node);
     }
   }
-  printf("=== END MERGED RESOURCE ATTACHMENT ===\n");
+  //printf("=== END MERGED RESOURCE ATTACHMENT ===\n");
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void _semaTransformVfPassToExplicitPass(impl::ShadLangParser* slp, astnode_ptr_t top) {
-  printf("=== VF_PASS TRANSFORMATION ===\n");
+  //printf("=== VF_PASS TRANSFORMATION ===\n");
   
   // Collect all VtxFrgPass nodes and their parent techniques
   std::vector<std::pair<std::shared_ptr<Technique>, std::shared_ptr<VtxFrgPass>>> vfpass_nodes;
@@ -1554,7 +1515,7 @@ void _semaTransformVfPassToExplicitPass(impl::ShadLangParser* slp, astnode_ptr_t
   int pass_counter = 0;
   for (auto& [technique, vfpass] : vfpass_nodes) {
     auto tech_name = technique->typedValueForKey<std::string>("object_name").value();
-    printf("  Processing VtxFrgPass in technique: %s\n", tech_name.c_str());
+    //printf("  Processing VtxFrgPass in technique: %s\n", tech_name.c_str());
     
     // Extract shader names from SemaId children
     std::string vtx_name, frg_name, sb_name;
@@ -1573,7 +1534,7 @@ void _semaTransformVfPassToExplicitPass(impl::ShadLangParser* slp, astnode_ptr_t
       }
     }
     
-    printf("    Found vf_pass: vs=%s, ps=%s, sb=%s\n", 
+    if(0)printf("    Found vf_pass: vs=%s, ps=%s, sb=%s\n", 
            vtx_name.c_str(), frg_name.c_str(), sb_name.c_str());
     
     // Create a new Pass node
@@ -1633,11 +1594,11 @@ void _semaTransformVfPassToExplicitPass(impl::ShadLangParser* slp, astnode_ptr_t
     // Replace the VtxFrgPass node with the new Pass node
     slp->replaceInParent(vfpass, pass_node);
     
-    printf("    Replaced VtxFrgPass with Pass %s (%zu children)\n", 
+    if(0)printf("    Replaced VtxFrgPass with Pass %s (%zu children)\n", 
            pass_name.c_str(), pass_node->_children.size());
   }
   
-  printf("=== END VF_PASS TRANSFORMATION (processed %d vf_pass nodes) ===\n", (int)vfpass_nodes.size());
+  //printf("=== END VF_PASS TRANSFORMATION (processed %d vf_pass nodes) ===\n", (int)vfpass_nodes.size());
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1782,12 +1743,12 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
 
   auto as_tu                    = std::dynamic_pointer_cast<TranslationUnit>(top);
 
-  printf("=== TRANSLATABLES BEFORE FINALIZATION ===\n");
+  //printf("=== TRANSLATABLES BEFORE FINALIZATION ===\n");
   for( auto trans_item : _slp_cache->_translatables ){
     auto name = trans_item.first;
-    printf("  translatable: %s\n", name.c_str());
+    //printf("  translatable: %s\n", name.c_str());
   }
-  printf("=== END TRANSLATABLES ===\n");
+  //printf("=== END TRANSLATABLES ===\n");
 
   for( auto trans_item : _slp_cache->_translatables ){
     auto name = trans_item.first;

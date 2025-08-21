@@ -3,10 +3,10 @@
 ///////////////////////////////////////////////////////////////
 fxconfig fxcfg_default {
   glsl_version = "130";
-import "orkshader://mathtools.i2";
-import "orkshader://misctools.i2";
-import "orkshader://envtools.i2";
-import "orkshader://brdftools.i2";
+  import "mathtools.i2";
+  import "misctools.i2";
+  import "envtools.i2";
+  import "brdftools.i2";
 }
 ///////////////////////////////////////////////////////////////
 // Interfaces
@@ -92,7 +92,13 @@ fragment_shader ps_filterSpecularEnvMapSTD : iface_fyo : lib_math : lib_envmappi
   out_clr = vec4(o, 1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_filterSpecularEnvMapEQUI : iface_fyo : lib_math : lib_envmapping : lib_brdf : ss_frg : ublk_std_pbr {
+fragment_shader ps_filterSpecularEnvMapEQUI 
+ : iface_fyo 
+ : lib_math 
+ : lib_envmapping 
+ : lib_brdf 
+ : ss_frg 
+ : ublk_std_pbr {
 
   // Bicubic interpolation weight function
 
@@ -156,7 +162,13 @@ fragment_shader ps_filterSpecularEnvMapEQUI : iface_fyo : lib_math : lib_envmapp
   out_clr = vec4(o, 1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_filterDiffuseEnvMapSTD : iface_fyo : lib_math : lib_envmapping : lib_brdf : ss_frg : ublk_std_pbr {
+fragment_shader ps_filterDiffuseEnvMapSTD 
+ : iface_fyo 
+ : lib_math 
+ : lib_envmapping 
+ : lib_brdf 
+ : ss_frg 
+ : ublk_std_pbr {
   vec2 fcoord = gl_FragCoord.xy;
   fcoord *= vec2(1.0 / (imgdim.x - 1), 1.0 / (imgdim.y - 1)); // Normalize coordinates
 
@@ -209,7 +221,8 @@ fragment_shader ps_filterDiffuseEnvMapEQUI : iface_fyo : lib_math : lib_envmappi
   }
   //////////////////////////////////
   out_clr = vec4(o / w, 1);
-  // out_clr = textureLod(prefiltmap, frg_uv0,0);
+  //out_clr = textureLod(prefiltmap, frg_uv0,0);
+  //out_clr = vec4(1,0,1,1);
 }
 ///////////////////////////////////////////////////////////////
 state_block sb_filter : default {
@@ -246,10 +259,6 @@ technique tek_filterSpecularMapEquirectangular {
 ///////////////////////////////////////////////////////////////
 technique tek_filterDiffuseMapEquirectangular {
   fxconfig = fxcfg_default;
-  pass p0 {
-    vertex_shader   = vs_yo;
-    fragment_shader = ps_filterDiffuseEnvMapEQUI;
-    state_block     = sb_filter;
-  }
+  vf_pass = { vs_yo, ps_filterDiffuseEnvMapEQUI, sb_filter }
 }
 ///////////////////////////////////////////////////////////////

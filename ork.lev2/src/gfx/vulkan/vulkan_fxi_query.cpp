@@ -124,7 +124,7 @@ const FxShaderParam* VkFxInterface::parameter(FxShader* pshader, const std::stri
     if (it_item != uniblk->_items_by_name.end()) {
       auto item = it_item->second;
       rval      = item->_orkparam.get();
-      if (1)
+      if (0)
         printf(
             "VkFxInterface shader<%s> parameter<%s> found>\n", //
             shader_name.c_str(),                               //

@@ -405,13 +405,13 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       }
       if(refs->_smpsets.size()>1){
         // print out sampler set names
-        printf("Shader<%s> has multiple sampler sets:\n", str_shader_name.c_str());
+        //printf("Shader<%s> has multiple sampler sets:\n", str_shader_name.c_str());
         for (const auto& smp_it : refs->_smpsets) {
-          printf("  %s\n", smp_it.first.c_str());
+          //printf("  %s\n", smp_it.first.c_str());
         }
         // Multiple sampler sets are now handled by the merged resources system
         // No longer asserting - merged resources will handle the binding conflicts
-        printf("  Note: Multiple sampler sets will be handled by merged resources system\n");
+        //printf("  Note: Multiple sampler sets will be handled by merged resources system\n");
       }
     }
     /////////////////////////////////
@@ -429,7 +429,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       }
       if(refs->_unisets.size()>1){
         // print out uniform set names
-        printf("Shader<%s> has multiple uniform sets:\n", str_shader_name.c_str());
+        //printf("Shader<%s> has multiple uniform sets:\n", str_shader_name.c_str());
         for (const auto& uni_it : refs->_unisets) {
           printf("  %s\n", uni_it.first.c_str());
         }
@@ -443,14 +443,14 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     if (num_iuniblks) {
       auto refs                  = std::make_shared<VkFxShaderUniformBlksReference>();
       vulkan_shobj->_uniblk_refs = refs;
-      printf("SHADER<%s> REFERENCES %zu UBOS:\n", str_shader_name.c_str(), num_iuniblks);
+      //printf("SHADER<%s> REFERENCES %zu UBOS:\n", str_shader_name.c_str(), num_iuniblks);
       for (size_t i = 0; i < num_iuniblks; i++) {
         auto str_uniblk = shader_input_stream->ReadIndexedString(chunkreader);
         auto it         = vulkan_shaderfile->_vk_uniformblks.find(str_uniblk);
         OrkAssert(it != vulkan_shaderfile->_vk_uniformblks.end());
         vkfxsuniblk_ptr_t vk_uniblk = it->second;
         refs->_uniblks[str_uniblk]  = vk_uniblk;
-        printf("  -> UBO<%s> IN DESCRIPTOR_SET<%zu>\n", str_uniblk.c_str(), vk_uniblk->_descriptor_set_id);
+        //printf("  -> UBO<%s> IN DESCRIPTOR_SET<%zu>\n", str_uniblk.c_str(), vk_uniblk->_descriptor_set_id);
       }
       OrkAssert(refs->_uniblks.size() <= 8);
     }
@@ -520,10 +520,6 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
   //////////////////
 
   auto read_technique_from_stream = [&]() -> vkfxstek_ptr_t {
-
-      if(ork_shader->mName=="orkshader://pbr.fxv2"){
-          printf("yo\n");
-      }
 
       auto str_tek = tecniq_input_stream->ReadIndexedString(chunkreader);
     OrkAssert(str_tek == "technique");
@@ -622,7 +618,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       
       ////////////////////////////////////////////////////////////
       auto sblk_name = tecniq_input_stream->ReadIndexedString(chunkreader);
-      printf("stateblock name<%s>\n", sblk_name.c_str());
+      //printf("stateblock name<%s>\n", sblk_name.c_str());
 
       ////////////////////////////////////////////////////////////
 

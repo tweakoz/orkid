@@ -79,7 +79,7 @@ SHAST::translationunit_ptr_t parseFromFile(
   // CACHED ?
   if (it_imp != slpcache->_import_cache.end()) {
     auto rval = it_imp->second;
-    printf("Importing<%s> already cached\n", shader_path.c_str());
+    if(0)printf("Importing<%s> already cached\n", shader_path.c_str());
     return rval;
   }
 

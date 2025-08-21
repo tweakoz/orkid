@@ -51,14 +51,14 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL vk_debug_callback(       //
     VkDebugUtilsMessageTypeFlagsEXT messageType,               //
     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, //
     void* pUserData) {                                         //
-  std::cerr << "Vulkan Validation layer: " << pCallbackData->pMessage << std::endl;
+  //std::cerr << "Vulkan Validation layer: " << pCallbackData->pMessage << std::endl;
   return VK_FALSE; // abort ?
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 void VulkanInstance::_setupDebugMessenger() {
-
+  return;//
   VkDebugUtilsMessengerEXT debugMessenger;
   initializeVkStruct(debugMessenger);
 

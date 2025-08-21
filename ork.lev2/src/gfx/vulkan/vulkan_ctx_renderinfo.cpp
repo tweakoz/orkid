@@ -28,6 +28,7 @@ VulkanRenderInfo::VulkanRenderInfo(VkRtGroupImpl* rtg) {
     rai.loadOp           = rtg->_autoclear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
     rai.storeOp          = VK_ATTACHMENT_STORE_OP_STORE;
     auto cc = bufimpl->_clear_color;
+    // Debug logging for filtered environment maps
     rai.clearValue.color = {{cc.x,cc.y,cc.z,cc.w}};
     _rainfos_color.push_back(rai);
   }

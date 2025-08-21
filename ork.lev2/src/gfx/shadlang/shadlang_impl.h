@@ -87,7 +87,7 @@ struct ShadLangParser : public Parser {
       the_map[name] = translatable;
     }
     else{
-      printf( "translatable<%s> already found!\n", name.c_str() );
+      //printf( "translatable<%s> already found!\n", name.c_str() );
     }
     auto it2 = _slp_cache->_translatables.find(name);
     if( it2 != _slp_cache->_translatables.end() ){

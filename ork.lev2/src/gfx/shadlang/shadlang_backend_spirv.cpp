@@ -461,7 +461,7 @@ void SpirvCompiler::_convertUniformBlocks() {
       int dset_id                = dsetids[0]->typedValueForKey<int>("descriptor_set_id").value();
       uniblk->_descriptor_set_id = dset_id;
       OrkAssert((dset_id >= 0) and (dset_id <= 4));
-      printf("uniblk dset_id<%d>\n", dset_id);
+      if(0)printf("uniblk dset_id<%d>\n", dset_id);
     }
 
     // Parse local data declarations
