@@ -27,7 +27,7 @@ read_interface(chunkfile::InputStream* input_stream, chunkfile::Reader& chunkrea
   OrkAssert(str_interface == "interface");
   auto interface   = std::make_shared<if_type_t>();
   interface->_name = input_stream->ReadIndexedString(chunkreader);
-  printf(" vtx_interface<%s>\n", interface->_name.c_str());
+  //printf(" vtx_interface<%s>\n", interface->_name.c_str());
   /////////////////
   auto str_inputgroups = input_stream->ReadIndexedString(chunkreader);
   OrkAssert(str_inputgroups == "inputgroups");
@@ -65,7 +65,7 @@ read_interface(chunkfile::InputStream* input_stream, chunkfile::Reader& chunkrea
       if( str_item_type == "output" ){
         auto str_output_datatype   = input_stream->ReadIndexedString(chunkreader);
         auto str_output_identifier = input_stream->ReadIndexedString(chunkreader);
-        printf("  output<%s %s>\n", str_output_datatype.c_str(), str_output_identifier.c_str());
+        //printf("  output<%s %s>\n", str_output_datatype.c_str(), str_output_identifier.c_str());
         auto dsize = input_stream->ReadItem<size_t>();
         if (str_output_identifier.find("gl_") != 0) {
           // _appendText(_interface_group, "layout(location=%zu) out %s %s;", _output_index, dt.c_str(), id.c_str());
@@ -115,7 +115,7 @@ read_interface_inheritances(
     auto num_inh     = input_stream->ReadItem<size_t>();
     if (num_inh > 0) {
       auto str_inh_name = input_stream->ReadIndexedString(chunkreader);
-      printf(" interface<%s> INHERITS interface<%s>\n", str_if_name.c_str(), str_inh_name.c_str());
+      //printf(" interface<%s> INHERITS interface<%s>\n", str_if_name.c_str(), str_inh_name.c_str());
 
       auto if_child = the_map.find(str_if_name);
       OrkAssert(if_child != the_map.end());
@@ -253,7 +253,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     auto vk_uniblk                                      = std::make_shared<VkFxShaderUniformBlk>();
     vk_uniblk->_orkparamblock                           = std::make_shared<FxUniformBlock>();
     vk_uniblk->_descriptor_set_id = dset_id;
-    printf("UBO ASSIGNED TO DESCRIPTOR SET: UBO<%s> -> DESCRIPTOR_SET<%zu>\n", str_uniblk_name.c_str(), dset_id);
+    //printf("UBO ASSIGNED TO DESCRIPTOR SET: UBO<%s> -> DESCRIPTOR_SET<%zu>\n", str_uniblk_name.c_str(), dset_id);
     vulkan_shaderfile->_vk_uniformblks[str_uniblk_name] = vk_uniblk;
 
     auto it = ork_shader->_uniformBlocks.find(str_uniblk_name);
@@ -724,7 +724,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
           
           size_t num_sources = tecniq_input_stream->ReadItem<size_t>();
           
-          printf("MERGED RESOURCES: DESCRIPTOR_SET<%d> HAS %zu SOURCES\n", descriptor_set_id, num_sources);
+          //printf("MERGED RESOURCES: DESCRIPTOR_SET<%d> HAS %zu SOURCES\n", descriptor_set_id, num_sources);
           
           for (size_t src_idx = 0; src_idx < num_sources; src_idx++) {
             auto source_token = tecniq_input_stream->ReadIndexedString(chunkreader);
@@ -733,7 +733,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
             auto source_name = tecniq_input_stream->ReadIndexedString(chunkreader);
             auto source_type = tecniq_input_stream->ReadIndexedString(chunkreader);
             
-            printf("  SOURCE: NAME<%s> TYPE<%s>\n", source_name.c_str(), source_type.c_str());
+            //printf("  SOURCE: NAME<%s> TYPE<%s>\n", source_name.c_str(), source_type.c_str());
             
             auto descriptor_set_source = std::make_shared<VkDescriptorSetSource>();
             descriptor_set_source->source_name = source_name;
@@ -756,7 +756,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
               const char* type_str = (binding->type == VkMergedResourceBinding::Type::UniformBlock) ? "UBO" :
                                     (binding->type == VkMergedResourceBinding::Type::Sampler) ? "SAMPLER" :
                                     (binding->type == VkMergedResourceBinding::Type::StorageBuffer) ? "SSBO" : "UNKNOWN";
-              printf("    BINDING[%u]: NAME<%s> TYPE<%s> DATATYPE<%s> ORIG_SOURCE<%s>\n", 
+              if(0)printf("    BINDING[%u]: NAME<%s> TYPE<%s> DATATYPE<%s> ORIG_SOURCE<%s>\n", 
                      binding->binding_id, binding->name.c_str(), type_str, 
                      binding->datatype.c_str(), binding->original_source.c_str());
               
@@ -793,9 +793,6 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
   for (size_t i = 0; i < num_techniques; i++) {
     auto tecnik = read_technique_from_stream();
   }
-    if(ork_shader->mName=="orkshader://pbr.fxv2"){
-        printf("yo\n");
-    }
 
   return vulkan_shaderfile;
 }

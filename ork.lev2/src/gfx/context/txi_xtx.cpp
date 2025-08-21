@@ -22,7 +22,7 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool TextureInterface::_loadXTXTexture(texture_ptr_t ptex, datablock_ptr_t datablock) {
-  printf("Loadtex <%p:%s>\n", (void*)ptex.get(), ptex->_debugName.c_str());
+  //printf("Loadtex <%p:%s>\n", (void*)ptex.get(), ptex->_debugName.c_str());
   auto load_req = std::make_shared<TexLoadReq>();
   load_req->ptex                  = ptex;
   load_req->_inpstream._datablock = datablock;

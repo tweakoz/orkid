@@ -157,6 +157,7 @@ public:
   Path toAbsolute(EPathType etype = EPATHTYPE_NATIVE) const;
   Path toAbsoluteFolder(EPathType etype = EPATHTYPE_NATIVE) const;
   Path toAbsoluteFolderX() const;
+  Path resolveRelativeTo(const Path& basePath) const;
 
   //////////////////////////////////////////////
 

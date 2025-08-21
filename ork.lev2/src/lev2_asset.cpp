@@ -277,19 +277,43 @@ FxShaderLoader::FxShaderLoader()
 ///////////////////////////////////////////////////////////////////////////////
 
 asset_ptr_t FxShaderLoader::_doLoadAsset(asset::loadrequest_ptr_t loadreq) {
+  auto path = loadreq->_asset_path;
+  
+  // Check cache first
+  auto it = _shader_cache.find(path.c_str());
+  if (it != _shader_cache.end()) {
+    // Return cached shader asset
+    printf("FxShaderLoader: CACHE HIT for shader <%s>\n", path.c_str());
+    return it->second;
+  }
+  
+  // Create and load new shader
+  printf("FxShaderLoader: CACHE MISS for shader <%s>, loading...\n", path.c_str());
   auto pshader = std::make_shared<FxShaderAsset>();
   auto context = lev2::contextForCurrentThread();
   auto fxi     = context->FXI();
-  auto path = loadreq->_asset_path;
   bool bOK     = fxi->LoadFxShader(path, pshader->GetFxShader());
   OrkAssert(bOK);
   if (bOK)
     pshader->GetFxShader()->SetName(path.c_str());
+  
+  // Cache the loaded shader
+  _shader_cache[path.c_str()] = pshader;
+  printf("FxShaderLoader: Cached shader <%s>, cache size now: %zu\n", path.c_str(), _shader_cache.size());
+  
   return pshader;
 }
 
   void FxShaderLoader::destroy(asset_ptr_t asset) {
     auto shader_asset = std::dynamic_pointer_cast<FxShaderAsset>(asset);
+    if (shader_asset) {
+      // Remove from cache
+      auto name = shader_asset->GetFxShader()->mName;
+      auto it = _shader_cache.find(name);
+      if (it != _shader_cache.end()) {
+        _shader_cache.erase(it);
+      }
+    }
   }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -380,9 +380,6 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
 
   for (auto import_node : nodes) {
     //
-    file::Path::NameType a, b;
-    file::Path proc_import_path;
-    //
     auto raw_import_path = import_node->template typedValueForKey<std::string>("import_path").value();
     //printf("Import RawPath<%s>\n", raw_import_path.c_str());
 
@@ -398,21 +395,21 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
     import_node->setValueForKey<std::string>("raw_import_path", raw_import_path);
     ////////////////////////////////////////////////////
 
-    auto rpath = file::Path(raw_import_path);
-    rpath.split(a, b, ':');
-    if (b.length() != 0) { // use from import
-      // Check if this is a protocol-based path (like orkshader://)
-      proc_import_path = rpath;
-    } else { // infer from container
-      proc_import_path = slp->_shader_path;
-      //printf("Import ProcPath2<%s>\n", proc_import_path.c_str());
-      proc_import_path.split(a, b, ':');
-      ork::FixedString<256> fxs;
-      fxs.format("%s://%s", a.c_str(), rpath.c_str());
-      proc_import_path = fxs.c_str();
-      //printf("Import ProcPath3<%s>\n", proc_import_path.c_str());
-      // OrkAssert(false);
+    // Use Path::resolveRelativeTo for proper resolution
+    file::Path import_file_path(raw_import_path);
+    
+    // Use the toplevel path from cache if shader path is empty
+    file::Path container_path = slp->_shader_path;
+    if (!container_path.isAbsolute() && slp->_slp_cache) {
+      container_path = slp->_slp_cache->_toplevel_path;
+      printf("shadlang using toplevel_path from cache: '%s'\n", container_path.c_str());
     }
+    
+    // This will handle both absolute paths (with schemes) and relative paths correctly
+    auto proc_import_path = import_file_path.resolveRelativeTo(container_path);
+    printf("shadlang import resolved: container='%s' import='%s' -> resolved='%s'\n", 
+           container_path.c_str(), raw_import_path.c_str(), proc_import_path.c_str());
+    
     import_node->setValueForKey<std::string>("proc_import_path", proc_import_path.c_str());
 
     ////////////////////////////////////////////////////////

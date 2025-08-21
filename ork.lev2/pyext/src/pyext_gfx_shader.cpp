@@ -104,7 +104,10 @@ void pyinit_gfx_shader(py::module& module_lev2) {
           .def_property_readonly("name", [](pyfxtechnique_ptr_t& t) -> std::string { return t->_techniqueName; })
           .def("__repr__", [](pyfxtechnique_ptr_t& t) -> std::string {
             fxstring<256> fxs;
-            fxs.format("FxShaderTechnique(%p:%s)", t.get(), t->_techniqueName.c_str());
+              std::string tekname = t.get() ? t->_techniqueName.c_str() : "nulltek";
+              
+        
+            fxs.format("FxShaderTechnique(%p:%s)", t.get(), tekname.c_str());
             return fxs.c_str();
           });
   type_codec->registerStdCodec<pyfxtechnique_ptr_t>(tek_type);

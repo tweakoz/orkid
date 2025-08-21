@@ -131,25 +131,17 @@ bool TopNode::isIoAttrDecorator(const std::string typeName) const {
 }
 ///////////////////////////////////////////////////////////
 file::Path TopNode::_resolveImportPath(const std::string& importName) const {
-    file::Path::NameType a, b;
-    file::Path imppath;
-    //////////////////////////////////
-    // if import file has datasource (xxx://), use that
-    //  instead of inferring from container's path
-    //////////////////////////////////
-    file::Path(importName).split(a, b, ':');
-    if (b.length() != 0) { // use from import
-      imppath = importName;
-    } else { // infer from container
-      imppath = _parser->_name.c_str();
-      //imppath = this->_name.c_str();
-      //printf( "parent_parser<%s> imppath1<%s>\n", parent_parser->_name.c_str(), imppath.c_str());
-      imppath.split(a, b, ':');
-      ork::FixedString<256> fxs;
-      fxs.format("%s://%s", a.c_str(), importName.c_str());
-      imppath = fxs.c_str();
-    }
-    return imppath;
+    printf("TopNode::_resolveImportPath: importName='%s' containerPath='%s'\n", 
+           importName.c_str(), _parser->_name.c_str());
+    
+    file::Path importPath(importName);
+    file::Path containerPath(_parser->_name.c_str());
+    
+    // Use the new resolveRelativeTo method
+    // This will handle both absolute paths (with schemes) and relative paths correctly
+    auto result = importPath.resolveRelativeTo(containerPath);
+    printf("  resolved to: '%s'\n", result.c_str());
+    return result;
 }
 ///////////////////////////////////////////////////////////
 importnode_ptr_t TopNode::findOrLoadImport(const std::string& importName) {

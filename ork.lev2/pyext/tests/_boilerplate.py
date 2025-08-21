@@ -255,6 +255,7 @@ class BasicUiCamSgApp(object):
         #
         pipeline = material.fxcache.findPipeline(permu)
         pipeline.name = name
+        print(f"shaderfile<{shaderfile}> shader<{material.shader}> mtlnam: {name} tek nam:{techname} tek:{permu.technique} pip:{pipeline}")
         pipeline.bindParam(material.param("mvp"), tokens.RCFD_Camera_MVP_Mono)
         #
         pipeline.sharedMaterial = material
@@ -322,7 +323,6 @@ class BasicUiCamSgApp(object):
     ################################################
 
     def createBaryDrawableFromVertsAndFaces(self, ctx, verts, faces, scale):
-        print(FxShaderTechnique)
         solid_wire_pipeline =  self.createBaryWirePipeline()
         material = solid_wire_pipeline.sharedMaterial
         solid_wire_pipeline.bindParam( material.param("m"), tokens.RCFD_M)

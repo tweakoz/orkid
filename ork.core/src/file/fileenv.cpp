@@ -83,10 +83,16 @@ const file::Path::NameType& FileEnv::GetFilesystemBase(void) {
 filedevctx_constptr_t FileEnv::contextForUriProto(const std::string& uriproto) {
   static filedevctx_ptr_t default_ctx = std::make_shared<FileDevContext>();
   auto& the_map                       = GetRef()._filedevcontext_map;
+  //printf("DEBUG: contextForUriProto looking for '%s', map has %zu entries\n", uriproto.c_str(), the_map.size());
+  for (auto& kv : the_map) {
+    //printf("  - registered: '%s'\n", kv.first.c_str());
+  }
   auto it                             = the_map.find(uriproto);
   if (it != the_map.end()) {
+    //printf("  FOUND context for '%s'\n", uriproto.c_str());
     return it->second;
   }
+  printf("  NOT FOUND context for '%s'\n", uriproto.c_str());
   return nullptr;
 }
 
@@ -137,9 +143,9 @@ filedevctx_ptr_t FileEnv::createContextForUriBase(
     const std::string& uriproto, //
     const file::Path& base_location) {
 
-  if(0)
+  if(1)
     printf(
-      "createContextForUriBase proto<%s> baseloc<%s>\n", //
+      "DEBUG: createContextForUriBase proto<%s> baseloc<%s>\n", //
       uriproto.c_str(),
       base_location.c_str());
 

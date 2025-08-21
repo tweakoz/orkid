@@ -276,4 +276,52 @@ void DrawingInterface::quad2D(const fvec4& QuadRect, const fvec4& UvRect, const 
   }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+void DrawingInterface::quadTiled2D(const fvec4& QuadRect, 
+                                   const fvec4& UvRect, 
+                                   const fvec4& UvRect2, 
+                                   int numtileseachdim) {
+  // Check rendering conventions to determine which winding to use
+  const auto& conventions = _context.renderingConventions();
+  if (conventions.useClockwiseWinding()) {
+    // Use the clockwise version for tiled rendering
+    // For now, create a CW version of tiled - TODO: refactor quad2DEMLTiled to quadTiled2DEMLCCL
+    // and implement both versions
+    
+    // Temporarily use the per-tile approach until we implement batched CW version
+    float mult = 1.0f / float(numtileseachdim);
+    float tile_width  = QuadRect.z * mult;
+    float tile_height = QuadRect.w * mult;
+    float base_x = QuadRect.x;
+    float base_y = QuadRect.y;
+
+    float uv_tile_width  = UvRect.z * mult;
+    float uv_tile_height = UvRect.w * mult;
+    float base_u = UvRect.x;
+    float base_v = UvRect.y;
+
+    for (int iu = 0; iu < numtileseachdim; iu++) {
+      for (int iv = 0; iv < numtileseachdim; iv++) {
+        fvec4 tile_rect(
+          base_x + tile_width * float(iu), 
+          base_y + tile_height * float(iv), 
+          tile_width, 
+          tile_height);
+        
+        fvec4 tile_uvrect(
+          base_u + uv_tile_width * float(iu), 
+          base_v + uv_tile_height * float(iv), 
+          uv_tile_width, 
+          uv_tile_height);
+        
+        quad2DEMLCCL(tile_rect, tile_uvrect, UvRect2, 0.0f);
+      }
+    }
+  } else {
+    // Use the existing CCW batched version for efficiency
+    quad2DEMLTiled(QuadRect, UvRect, UvRect2, numtileseachdim);
+  }
+}
+
 } // namespace ork::lev2

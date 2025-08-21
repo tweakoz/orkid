@@ -361,7 +361,8 @@ struct VkFxInterface final : public FxInterface {
   vkfxsfile_ptr_t _loadShaderFromShaderText(
       FxShader* shader,               //
       const std::string& parser_name, //
-      const std::string& shadertext);
+      const std::string& shadertext,  //
+      shadlang::slpcache_ptr_t slp_cache);
 
   vkpipeline_obj_ptr_t _fetchPipeline(vkvtxbuf_ptr_t vb, vkprimclass_ptr_t primclas);
 

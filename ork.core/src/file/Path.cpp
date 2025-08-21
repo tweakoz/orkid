@@ -442,6 +442,57 @@ Path Path::toAbsoluteFolderX() const{
 
 ///////////////////////////////////////////////////////////////////////////////
 
+Path Path::resolveRelativeTo(const Path& basePath) const {
+  //printf("Path::resolveRelativeTo: this='%s' basePath='%s'\n", this->c_str(), basePath.c_str());
+  //printf("  this->isRelative()=%d basePath.isAbsolute()=%d\n", isRelative(), basePath.isAbsolute());
+  
+  if (!basePath.isAbsolute()) {
+    printf("ERROR: basePath is not absolute!\n");
+    return *this;  // Return this path unchanged if basePath is not absolute
+  }
+  
+  if (isRelative()) {
+    // For URL-based paths, we need to handle them specially to avoid
+    // dereferencing potentially unregistered contexts
+    if (basePath.hasUrlBase()) {
+      // Extract the URL base (e.g., "orkshader://")
+      std::string urlbase = basePath.getUrlBase().c_str();
+      std::string basepath_str = basePath.c_str();
+      
+      // Remove the filename from the base path to get the directory
+      size_t last_slash = basepath_str.find_last_of('/');
+      std::string base_dir;
+      if (last_slash != std::string::npos) {
+        base_dir = basepath_str.substr(0, last_slash + 1);
+      } else {
+        // No slash after URL base, just use the URL base
+        base_dir = urlbase;
+      }
+      
+      // Combine with the relative path
+      Path result(base_dir + this->c_str());
+      //printf("  URL-based result='%s'\n", result.c_str());
+      return result;
+    } else {
+      // Regular filesystem path - use toAbsoluteFolder
+      Path baseFolder = basePath.toAbsoluteFolder();
+      //printf("  baseFolder='%s'\n", baseFolder.c_str());
+      
+      // Append this relative path to the base folder
+      Path result = baseFolder;
+      result.appendFile(this->c_str());
+      //printf("  result='%s'\n", result.c_str());
+      return result;
+    }
+  } else {
+    // Already absolute, return as-is
+    //printf("  returning absolute path as-is: '%s'\n", this->c_str());
+    return *this;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 Path Path::toAbsoluteFolder(EPathType etype) const {
   // printf( " Path::toAbsoluteFolder (begin) inp<%s>\n", this->c_str()  );
 
@@ -452,7 +503,13 @@ Path Path::toAbsoluteFolder(EPathType etype) const {
 
   if (hasUrlBase()) {
     std::string urlbase  = getUrlBase().c_str();
+    //printf("DEBUG: toAbsoluteFolder path='%s' urlbase='%s'\n", this->c_str(), urlbase.c_str());
     auto urictx          = ork::FileEnv::contextForUriProto(urlbase.c_str());
+    if (!urictx) {
+      printf("ERROR: No context registered for URL base '%s'\n", urlbase.c_str());
+      // Return path as-is if no context found
+      return *this;
+    }
     auto basepath        = urictx->getFilesystemBaseAbs();
     std::string thispath = this->c_str();
 

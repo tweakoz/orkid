@@ -217,6 +217,42 @@ PYBIND11_MODULE(_core, module_core) {
         return fxs.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////
+  // FileDevContext bindings
+  using filedevctx_ptr_t = std::shared_ptr<FileDevContext>;
+  py::class_<FileDevContext, filedevctx_ptr_t>(module_core, "FileDevContext")
+      .def("setFilesystemBaseEnable", &FileDevContext::SetFilesystemBaseEnable)
+      .def("setPrependFilesystemBase", &FileDevContext::SetPrependFilesystemBase)
+      .def_property_readonly("filesystemBaseAbs", &FileDevContext::getFilesystemBaseAbs)
+      .def_property_readonly("prependFilesystemBase", &FileDevContext::GetPrependFilesystemBase)
+      .def("__repr__", [](const FileDevContext& self) -> std::string {
+        return FormatString("FileDevContext(base='%s', prepend=%s)", 
+                           self.getFilesystemBaseAbs().c_str(),
+                           self.GetPrependFilesystemBase() ? "true" : "false");
+      });
+  /////////////////////////////////////////////////////////////////////////////////
+  // FileEnv bindings (singleton)
+  py::class_<FileEnv>(module_core, "FileEnv")
+      .def_static("instance", []() -> FileEnv& {
+        return FileEnv::GetRef();
+      }, py::return_value_policy::reference)
+      .def_static("contextForUriProto", 
+                  [](const std::string& proto) -> filedevctx_ptr_t {
+                    auto ctx = FileEnv::contextForUriProto(proto);
+                    // Cast away const for Python binding (be careful with this)
+                    return std::const_pointer_cast<FileDevContext>(ctx);
+                  }, py::arg("uri_proto"))
+      .def_static("createContextForUriBase", 
+                  &FileEnv::createContextForUriBase,
+                  py::arg("uri_proto"), 
+                  py::arg("base_location"),
+                  "Create a new filesystem context for a URI protocol")
+      .def_property_readonly("uriRegistry", &FileEnv::uriRegistry,
+                            "Get the map of registered URI contexts")
+      .def("__repr__", [](const FileEnv& self) -> std::string {
+        return FormatString("FileEnv(singleton, %zu contexts registered)", 
+                           self.uriRegistry().size());
+      });
+  /////////////////////////////////////////////////////////////////////////////////
   py::class_<file::Path>(module_core, "Path")
       .def(py::init<std::string>())
       .def_property_readonly(
@@ -233,6 +269,14 @@ PYBIND11_MODULE(_core, module_core) {
       })
       .def("isAbsolute", &file::Path::isAbsolute)
       .def("IsRelative", &file::Path::isRelative)
+      .def("isRelative", &file::Path::isRelative)  // Add lowercase alias for consistency
+      .def("hasUrlBase", &file::Path::hasUrlBase)
+      .def("toAbsoluteFolder", 
+           [](const file::Path& self) -> file::Path {
+               return self.toAbsoluteFolder();
+           },
+           "Get absolute folder path")
+      .def("resolveRelativeTo", &file::Path::resolveRelativeTo)
       .def("toStdString", &file::Path::toStdString)
       .def("addToSysPath", [](const file::Path& self) {
         auto syspath = py::module::import("sys").attr("path");
