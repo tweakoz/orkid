@@ -211,7 +211,7 @@ RenderPresetContext CompositingData::presetForwardPBR(render_preset_data_ptr_t p
 
   if(_defaultBG){
     auto pbr_common = r1->_pbrcommon;
-    auto load_req = std::make_shared<asset::LoadRequest>("src://envmaps/tozenv_nebula");
+    auto load_req = std::make_shared<asset::LoadRequest>("envmaps|tozenv_nebula");
     //auto load_req = std::make_shared<asset::LoadRequest>("src://envmaps/blender_sunset");
     pbr_common->requestAndRefSkyboxTexture(load_req);
   }

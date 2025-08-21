@@ -163,6 +163,7 @@ void CommonStuff::requestAndRefSkyboxTexture(asset::loadrequest_ptr_t load_req) 
   opq::mainSerialQueue()->enqueue([=]() {
     //printf( "SKYBOX<%s>\n", load_req->_asset_path.c_str());
     auto enviromentmap_asset = asset::AssetManager<lev2::TextureAsset>::load(load_req);
+    OrkAssert(enviromentmap_asset != nullptr);
     OrkAssert(enviromentmap_asset->GetTexture() != nullptr);
     OrkAssert(enviromentmap_asset->_varmap.hasKey("postproc"));
     assignEnvTexture(enviromentmap_asset);
