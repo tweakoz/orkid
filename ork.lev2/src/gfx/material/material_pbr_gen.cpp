@@ -328,15 +328,28 @@ datablock_future_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap
     CompressedImageMipChain::miplevels_t compressed_levels;
     w                        = rawenvmap->_width;
     h                        = rawenvmap->_height;
-    std::atomic<int> pending = 0;
-    cimg_array_t cimgs;
+    // Create future for async processing
+    auto future = std::make_shared<DatablockFuture>();
+    
+    // Create async context to track all operations
+    struct AsyncFilterContext {
+      std::atomic<int> pending{0};
+      cimg_array_t cimgs;
+      datablock_ptr_t cmipchain_datablock;
+      chunkfile::Writer chunkwriter;
+      TextureArrayInitData array_init;
+      
+      AsyncFilterContext() : cmipchain_datablock(std::make_shared<DataBlock>()), chunkwriter("xtx-array") {}
+    };
+    
+    auto async_ctx = std::make_shared<AsyncFilterContext>();
+    
     while ((w < 1024) or (h < 1024)) {
       w *= 2;
       h *= 2;
     }
-    auto src_tex        = rawenvmap;
-    cmipchain_datablock = std::make_shared<DataBlock>();
-    chunkfile::Writer chunkwriter("xtx-array");
+    auto src_tex = rawenvmap;
+    
     for (int irough = 0; irough < num_ruf_levels; irough++) {
       float ir        = float(irough) / float(num_ruf_levels - 1);
       float ir2       = float(irough + 1) / float(num_ruf_levels);
@@ -411,14 +424,16 @@ datablock_future_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap
 
       auto captureb = std::make_shared<CaptureBuffer>();
       
-      // Capture async with completion callback
-      auto capture_future = fbi->capture(outbuffr.get(), captureb, [=, &chunkwriter, &array_init]() {
+      async_ctx->pending.fetch_add(1);
+      
+      // Capture async with completion callback  
+      auto capture_future = fbi->capture(outbuffr.get(), captureb, [=]() {
         // This callback runs when capture completes
         
         Image im_inp;
         im_inp.initRGBA8WithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
 
-        int index    = irough;
+        int index = irough;
         auto outpath = file::Path::temp_dir() / FormatString("filteredenv-specmap-ruf%d.exr", index);
         logchan_pbrgen->log("filterenv write dbgout<%s>", outpath.c_str());
         im_inp.writeToFile(outpath);
@@ -428,22 +443,40 @@ datablock_future_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap
 
         auto hdr_stream_name = FormatString("header-%d", irough);
         auto img_stream_name = FormatString("image-%d", irough);
-        auto hdr_stream      = chunkwriter.AddStream(hdr_stream_name);
-        auto img_stream      = chunkwriter.AddStream(img_stream_name);
-        slice._cmipchain->writeXTX(hdr_stream, img_stream, chunkwriter);
-        array_init._slices.push_back(slice);
+        auto hdr_stream      = async_ctx->chunkwriter.AddStream(hdr_stream_name);
+        auto img_stream      = async_ctx->chunkwriter.AddStream(img_stream_name);
+        slice._cmipchain->writeXTX(hdr_stream, img_stream, async_ctx->chunkwriter);
+        async_ctx->array_init._slices.push_back(slice);
+        
+        // Check if all async operations completed
+        int remaining = async_ctx->pending.fetch_sub(1) - 1;
+        if (remaining == 0) {
+          // All captures completed, finalize datablock
+          async_ctx->chunkwriter.writeToDataBlock(async_ctx->cmipchain_datablock);
+          DataBlockCache::setDataBlock(cmipchain_hashkey, async_ctx->cmipchain_datablock);
+          
+          future->_result = async_ctx->cmipchain_datablock;
+          future->_completed = true;
+          if (future->_on_complete) {
+            future->_on_complete();
+          }
+        }
       });
 
       src_tex = outbuffr->_texture;
 
     } // for (int irough = 0; irough < 10; irough++) {
-    while (pending.load() > 0) {
-      usleep(1000);
-    }
-    chunkwriter.writeToDataBlock(cmipchain_datablock);
-    DataBlockCache::setDataBlock(cmipchain_hashkey, cmipchain_datablock);
+    
+    // Return future immediately - async processing will complete in background
+    return future;
   } else { // datablock already exists
     logchan_pbrgen->log("filterenv-spec tex<%p> loading precomputed!", rawenvmap.get());
+    
+    // Create completed future with cached datablock
+    auto future = std::make_shared<DatablockFuture>();
+    future->_result = cmipchain_datablock;
+    future->_completed = true;
+    
     chunkfile::DefaultLoadAllocator load_alloc;
     chunkfile::Reader chunkreader(cmipchain_datablock, load_alloc);
     for (int irough = 0; irough < num_ruf_levels; irough++) {
@@ -459,26 +492,23 @@ datablock_future_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap
         array_init._slices.push_back(slice);
       }
     }
+    
+    auto alt_array        = std::make_shared<TextureArray>();
+    alt_array->_tex->_debugName = rawenvmap->_debugName + "[filter-specenv]";
+    txi->initTextureArray2DFromData(alt_array.get(), array_init);
+    // alt_array->_tex->mTexSampleMode.presetTrilinearClamp();
+    alt_array->_tex->mTexSampleMode.presetTrilinearWrap();
+    txi->ApplySamplingMode(alt_array->_tex.get());
+    rawenvmap->_vars->makeValueForKey<texture_ptr_t>("alt-tex-specenv") = alt_array->_tex;
+    rawenvmap->_vars->makeValueForKey<texturearray_ptr_t>("alt-tex-specenv-array") = alt_array;
+    
+    // Store datablock for build-time processing
+    rawenvmap->_vars->makeValueForKey<datablock_ptr_t>("specenv-datablock") = cmipchain_datablock;
+    
+    return future;
   }
 
-  auto alt_array        = std::make_shared<TextureArray>();
-  alt_array->_tex->_debugName = rawenvmap->_debugName + "[filter-specenv]";
-  txi->initTextureArray2DFromData(alt_array.get(), array_init);
-  // alt_array->_tex->mTexSampleMode.presetTrilinearClamp();
-  alt_array->_tex->mTexSampleMode.presetTrilinearWrap();
-  txi->ApplySamplingMode(alt_array->_tex.get());
-  rawenvmap->_vars->makeValueForKey<texture_ptr_t>("alt-tex-specenv") = alt_array->_tex;
-  rawenvmap->_vars->makeValueForKey<texturearray_ptr_t>("alt-tex-specenv-array") = alt_array;
   targ->debugPopGroup();
-  
-  // Store datablock for build-time processing
-  rawenvmap->_vars->makeValueForKey<datablock_ptr_t>("specenv-datablock") = cmipchain_datablock;
-  
-  // TODO: This is a temporary implementation - return a completed future with placeholder datablock
-  auto future = std::make_shared<DatablockFuture>();
-  future->_result = std::make_shared<DataBlock>(); // Placeholder empty datablock
-  future->_completed = true;
-  return future;
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -539,9 +569,22 @@ datablock_future_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap,
   uint64_t cmipchain_hashkey = basehasher.result();
   auto cmipchain_datablock   = DataBlockCache::findDataBlock(cmipchain_hashkey);
   ///////////////////////////////////////////////
-  if (cmipchain_datablock) {
-    // logchan_pbrgen->log("filterenv-diff tex<%p> loading precomputed!", rawenvmap);
-  } else {
+  if (not cmipchain_datablock) {
+    // Create future for async processing
+    auto future = std::make_shared<DatablockFuture>();
+    
+    // Create async context to track all operations
+    struct AsyncDiffuseContext {
+      std::atomic<int> pending{0};
+      std::vector<compressedimg_ptr_t> cimgs;
+      datablock_ptr_t cmipchain_datablock;
+      CompressedImageMipChain::miplevels_t compressed_levels;
+      
+      AsyncDiffuseContext() : cmipchain_datablock(std::make_shared<DataBlock>()) {}
+    };
+    
+    auto async_ctx = std::make_shared<AsyncDiffuseContext>();
+    
     auto RCFD = std::make_shared<RenderContextFrameData>(targ);
     int w     = rawenvmap->_width;
     int h     = rawenvmap->_height;
@@ -550,9 +593,6 @@ datablock_future_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap,
     int imip        = 0;
     float roughness = 1.0f;
     std::map<int, std::shared_ptr<CaptureBuffer>> cap4mip;
-    CompressedImageMipChain::miplevels_t compressed_levels;
-    std::atomic<int> pending = 0;
-    std::vector<compressedimg_ptr_t> cimgs;
     while (numpix != 0) {
 
       auto outgroup        = std::make_shared<RtGroup>(targ, w, h, MsaaSamples::MSAA_1X);
@@ -622,12 +662,12 @@ datablock_future_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap,
       mtl->end(RCFD);
       fbi->PopRtGroup();
 
-      pending.fetch_add(1);
+      async_ctx->pending.fetch_add(1);
       auto cimg = std::make_shared<CompressedImage>();
-      cimgs.push_back(cimg);
+      async_ctx->cimgs.push_back(cimg);
       
-      // Capture async with completion callback
-      auto capture_future = fbi->capture(outbuffr.get(), captureb, [=, &pending]() {
+      // Capture async with completion callback  
+      auto capture_future = fbi->capture(outbuffr.get(), captureb, [=]() {
         // This callback runs when capture completes
         
         if (1) {
@@ -642,11 +682,30 @@ datablock_future_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap,
         }
 
         // Process the captured data
-        auto op = [=, &pending]() {
+        auto op = [=]() {
           Image im;
           im.initRGBA8WithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
           im.compressDefault(*cimg);
-          pending.fetch_sub(1);
+          
+          // Check if all async operations completed
+          int remaining = async_ctx->pending.fetch_sub(1) - 1;
+          if (remaining == 0) {
+            // All captures completed, finalize datablock
+            for (auto cimg : async_ctx->cimgs) {
+              async_ctx->compressed_levels.push_back(*cimg);
+            }
+
+            CompressedImageMipChain cmipchain;
+            cmipchain.initWithPrecompressedMipLevels(async_ctx->compressed_levels);
+            cmipchain.writeXTX(async_ctx->cmipchain_datablock);
+            DataBlockCache::setDataBlock(cmipchain_hashkey, async_ctx->cmipchain_datablock);
+            
+            future->_result = async_ctx->cmipchain_datablock;
+            future->_completed = true;
+            if (future->_on_complete) {
+              future->_on_complete();
+            }
+          }
         };
         opq::concurrentQueue()->enqueue(op);
       });
@@ -661,35 +720,29 @@ datablock_future_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap,
       numpix = w * h;
       imip++;
     }
-    while (pending.load() > 0) {
-      usleep(1000);
-    }
-    for (auto cimg : cimgs) {
-      compressed_levels.push_back(*cimg);
-    }
+    
+    // Return future immediately - async processing will complete in background
+    return future;
+  } else { // datablock already exists
+    logchan_pbrgen->log("filterenv-diff tex<%p> loading precomputed!", rawenvmap.get());
+    
+    // Create completed future with cached datablock
+    auto future = std::make_shared<DatablockFuture>();
+    future->_result = cmipchain_datablock;
+    future->_completed = true;
+    
+    auto alt_tex        = std::make_shared<Texture>();
+    alt_tex->_debugName = rawenvmap->_debugName + "[filter-diffenv]";
+    txi->LoadTexture(alt_tex, cmipchain_datablock);
+    rawenvmap->_vars->makeValueForKey<texture_ptr_t>("alt-tex-diffenv") = alt_tex;
 
-    CompressedImageMipChain cmipchain;
-    cmipchain.initWithPrecompressedMipLevels(compressed_levels);
-    cmipchain_datablock = std::make_shared<DataBlock>();
-    cmipchain.writeXTX(cmipchain_datablock);
-    DataBlockCache::setDataBlock(cmipchain_hashkey, cmipchain_datablock);
+    // Store datablock for build-time processing
+    rawenvmap->_vars->makeValueForKey<datablock_ptr_t>("diffenv-datablock") = cmipchain_datablock;
+    
+    return future;
   }
 
-  auto alt_tex        = std::make_shared<Texture>();
-  alt_tex->_debugName = rawenvmap->_debugName + "[filter-diffenv]";
-  txi->LoadTexture(alt_tex, cmipchain_datablock);
-  rawenvmap->_vars->makeValueForKey<texture_ptr_t>("alt-tex-diffenv") = alt_tex;
-
   targ->debugPopGroup();
-
-  // Store datablock for build-time processing
-  rawenvmap->_vars->makeValueForKey<datablock_ptr_t>("diffenv-datablock") = cmipchain_datablock;
-
-  // TODO: This is a temporary implementation - return a completed future with placeholder datablock
-  auto future = std::make_shared<DatablockFuture>();
-  future->_result = std::make_shared<DataBlock>(); // Placeholder empty datablock
-  future->_completed = true;
-  return future;
 }
 
 /////////////////////////////////////////////////////////////////////////
