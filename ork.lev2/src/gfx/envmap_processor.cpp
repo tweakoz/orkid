@@ -80,64 +80,75 @@ xirprocessfuture_ptr_t EnvMapProcessor::processToXIRDataBlockAsync(
   return future;
 }
 
-EnvMapProcessor::ProcessResult EnvMapProcessor::processDirectory(
+std::vector<xirprocessfuture_ptr_t> EnvMapProcessor::processDirectory(
     const file::Path& source_dir,
     const file::Path& output_dir,
     const std::vector<std::string>& extensions) {
   
-  ProcessResult result;
-  Timer timer;
-  timer.Start();
+  std::vector<xirprocessfuture_ptr_t> futures;
   
   namespace bfs = boost::filesystem;
   if (!bfs::exists(source_dir.toBFS()) || !bfs::is_directory(source_dir.toBFS())) {
-    result._error_message = "Source directory does not exist";
-    return result;
+    // Return empty vector if source dir doesn't exist
+    return futures;
   }
   
   // Create output directory
   output_dir.ensureDirectoryExists();
   
-  int processed = 0;
-  int failed = 0;
+  // Collect all files to process
+  std::vector<file::Path> files_to_process;
   
   // Process each file
-  namespace bfs = boost::filesystem;
-  for (const auto& ext : extensions) {
-    // Use boost filesystem to iterate directory
-    bfs::path dir_path = source_dir.toBFS();
-    if (bfs::exists(dir_path) && bfs::is_directory(dir_path)) {
-      for (auto& entry : bfs::directory_iterator(dir_path)) {
-        if (bfs::is_regular_file(entry.path())) {
-          file::Path input_file(entry.path());
-          auto file_ext = input_file.getExtension();
-          
-          // Check if extension matches
-          if (std::find(extensions.begin(), extensions.end(), file_ext) != extensions.end()) {
-            auto stem = entry.path().stem().string();
-            auto output_file = output_dir / FormatString("%s.xir", stem.c_str());
-            
-            if (processToXIR(input_file, output_file)) {
-              processed++;
-              // Get file size
-              result._output_size += bfs::file_size(output_file.toBFS());
-            } else {
-              failed++;
-            }
-          }
+  bfs::path dir_path = source_dir.toBFS();
+  if (bfs::exists(dir_path) && bfs::is_directory(dir_path)) {
+    for (auto& entry : bfs::directory_iterator(dir_path)) {
+      if (bfs::is_regular_file(entry.path())) {
+        file::Path input_file(entry.path());
+        auto file_ext = input_file.getExtension();
+        
+        // Check if extension matches
+        if (std::find(extensions.begin(), extensions.end(), file_ext) != extensions.end()) {
+          files_to_process.push_back(input_file);
         }
       }
     }
   }
   
-  result._processing_time = timer.SecsSinceStart();
-  result._success = (failed == 0);
-  
-  if (failed > 0) {
-    result._error_message = FormatString("Failed to process %d files", failed);
+  // Process each file asynchronously
+  for (const auto& input_file : files_to_process) {
+    // Create a future that will write to disk when complete
+    auto future = processToXIRDataBlockAsync(input_file);
+    
+    // Add a wrapper future that saves to disk
+    auto wrapper_future = std::make_shared<XIRProcessFuture>();
+    
+    // Get output filename
+    auto stem = input_file.toBFS().stem().string();
+    auto output_file = output_dir / FormatString("%s.xir", stem.c_str());
+    
+    // Chain the operation to save when complete
+    GfxEnv::GetRef().enqueueDeferredContextOp(
+      [future, wrapper_future, output_file](Context* ctx) {
+        // Wait for processing to complete
+        auto xir_data = future->get();
+        if (xir_data) {
+          // Save to disk
+          auto result = File::saveDatablock(output_file, xir_data);
+          if (result == EFEC_FILE_OK) {
+            wrapper_future->setResult(xir_data);
+          } else {
+            wrapper_future->setResult(nullptr);
+          }
+        } else {
+          wrapper_future->setResult(nullptr);
+        }
+      });
+    
+    futures.push_back(wrapper_future);
   }
   
-  return result;
+  return futures;
 }
 
 } // namespace ork::lev2

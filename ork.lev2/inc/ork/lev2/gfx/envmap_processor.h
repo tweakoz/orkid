@@ -67,15 +67,8 @@ struct EnvMapProcessor {
   static xirprocessfuture_ptr_t processToXIRDataBlockAsync(
       const file::Path& input_path);
   
-  // Batch processing support
-  struct ProcessResult {
-    bool _success = false;
-    std::string _error_message;
-    size_t _output_size = 0;
-    double _processing_time = 0.0;
-  };
-  
-  static ProcessResult processDirectory(
+  // Batch processing support - returns futures for async processing
+  static std::vector<xirprocessfuture_ptr_t> processDirectory(
       const file::Path& source_dir,
       const file::Path& output_dir,
       const std::vector<std::string>& extensions = {".exr", ".hdr", ".png", ".dds"});

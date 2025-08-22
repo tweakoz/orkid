@@ -39,24 +39,24 @@ void pyinit_envmap_processor(py::module& module_lev2) {
       .def_static("processDirectory",
         [](const std::string& source_dir, 
            const std::string& output_dir,
-           py::list extensions) -> py::dict {
+           py::list extensions) -> py::list {
           
           std::vector<std::string> ext_vec;
           for (auto item : extensions) {
             ext_vec.push_back(py::cast<std::string>(item));
           }
           
-          auto result = EnvMapProcessor::processDirectory(
+          auto futures = EnvMapProcessor::processDirectory(
             file::Path(source_dir),
             file::Path(output_dir),
             ext_vec);
           
-          py::dict ret;
-          ret["success"] = result._success;
-          ret["error_message"] = result._error_message;
-          ret["output_size"] = result._output_size;
-          ret["processing_time"] = result._processing_time;
-          return ret;
+          // Convert vector of futures to Python list
+          py::list py_futures;
+          for (auto& future : futures) {
+            py_futures.append(future);
+          }
+          return py_futures;
         });
         
   // IrradianceMapsAsset bindings

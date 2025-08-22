@@ -10,6 +10,10 @@ if __name__ == "__main__":
   env_vars = dh.orkid_debug_env_vars()
   env_vars["DYLD_FALLBACK_LIBRARY_PATH"] = str(path.libs())
   env_vars["DYLD_LIBRARY_PATH"] = str(path.libs())+":/opt/homebrew/lib"
+  
+  # Add OKA_DIR if it exists
+  if "OKA_DIR" in os.environ:
+    env_vars["OKA_DIR"] = os.environ["OKA_DIR"]
   #print(env_vars)
   #assert(False)
   exe_name = args.executable_name

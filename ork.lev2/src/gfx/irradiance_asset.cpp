@@ -26,8 +26,12 @@ namespace ork::lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+// Forward declaration
+void registerIrradianceLoader();
+
 void IrradianceMapsAsset::describeX(class_t* clazz) {
-  // reflection setup if needed
+  // Register the loader for XIR files
+  registerIrradianceLoader();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
