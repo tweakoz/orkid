@@ -105,6 +105,36 @@ struct CaptureBuffer {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+
+struct CaptureAsync {
+  CaptureAsync();
+  ~CaptureAsync();
+  
+  // Wait for capture to complete and get the result
+  bool wait(CaptureBuffer* out_buffer);
+  
+  // Check if capture is ready (non-blocking)
+  bool isReady() const;
+  
+  // Get progress (0.0 to 1.0)
+  float progress() const;
+  
+  // Implementation-specific data (staging buffer, fence, etc)
+  svarshp_t _impl;
+  
+  // Capture parameters
+  int _width = 0;
+  int _height = 0;
+  EBufferFormat _format = EBufferFormat::NONE;
+  
+  // Status
+  bool _completed = false;
+  bool _failed = false;
+};
+
+using captureasync_ptr_t = std::shared_ptr<CaptureAsync>;
+
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
 ///////////////////////////////////////////////////////////////////////////////
 

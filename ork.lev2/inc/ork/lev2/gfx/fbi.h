@@ -122,7 +122,8 @@ public:
   virtual bool captureAsFormat(const RtBuffer* inpbuf, CaptureBuffer* buffer, EBufferFormat destfmt) {
     return false;
   }
-  virtual void capture(const RtBuffer* inpbuf, const file::Path& pth) {
+  virtual captureasync_ptr_t capture(const RtBuffer* inpbuf, const file::Path& pth) {
+    return nullptr;
   }
   virtual bool captureToTexture(const CaptureBuffer& capbuf, Texture& tex) {
     return false;

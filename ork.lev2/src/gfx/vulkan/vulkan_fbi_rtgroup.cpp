@@ -322,7 +322,11 @@ bool VkFrameBufferInterface::captureAsFormat(const RtBuffer* inpbuf, CaptureBuff
     h = capbuf->_captureH;
   }
 
-  //rtbi->_transitionToHostRead(_contextVK->primary_cb());
+  // Capture must be called during a frame when command buffer is active
+  auto cb = _contextVK->primary_cb();
+  OrkAssert(cb != nullptr); // capture must be called during frame recording
+  
+  rtbi->_transitionToHostRead(cb);
 
   // printf("captureAsFormat w<%d> h<%d>\n", w, h);
 
@@ -427,11 +431,33 @@ bool VkFrameBufferInterface::captureAsFormat(const RtBuffer* inpbuf, CaptureBuff
       break;
     }
     case EBufferFormat::RGBA8: {
-      // glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, capbuf->_data);
-      size_t rgbasize = w * h * 4;
-      if (capbuf->_tempbuffer.size() != rgbasize) {
-        capbuf->_tempbuffer.resize(rgbasize);
+      OrkAssert(vkfmt == VK_FORMAT_R8G8B8A8_UNORM || vkfmt == VK_FORMAT_B8G8R8A8_UNORM);
+      size_t bufsize = w * h * 4;
+      if (capbuf->_tempbuffer.size() != bufsize) {
+        capbuf->_tempbuffer.resize(bufsize);
       }
+      
+      // Create staging buffer for GPU to CPU transfer
+      auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, bufsize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, "capture_staging");
+      
+      // Copy image to staging buffer (image is already in TRANSFER_SRC_OPTIMAL from transition)
+      vkCmdCopyImageToBuffer(
+          cb->_vkcmdbuf, 
+          vkimg, 
+          VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 
+          staging_buffer->_vkbuffer, 
+          1, 
+          &region);
+      
+      // Transition back to render target for continued rendering
+      rtbi->_transitionToRenderTarget(cb);
+      
+      // Note: We can't read the staging buffer yet - it will be available after frame submit
+      // For now, store the staging buffer for later retrieval
+      capbuf->_impl.setShared<VulkanBuffer>(staging_buffer);
+      
+      // TODO: This should return a CaptureAsync future that waits for frame completion
+      printf("VkFrameBufferInterface::captureAsFormat - copy command recorded, data will be available after frame submit\n");
       break;
     }
     case EBufferFormat::RGB8: {

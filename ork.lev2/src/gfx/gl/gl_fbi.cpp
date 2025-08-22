@@ -312,10 +312,10 @@ void GlFrameBufferInterface::clearDepth(float fdepth) {
 */
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlFrameBufferInterface::capture(const RtBuffer* rtb, const file::Path& pth) {
+captureasync_ptr_t GlFrameBufferInterface::capture(const RtBuffer* rtb, const file::Path& pth) {
 
   if (not rtb->_impl.isSet())
-    return;
+    return nullptr;
 
   auto bufimpl = rtb->_impl.get<GlRtBufferImpl*>();
   auto teximpl = bufimpl->_teximpl.get<gltexobj_ptr_t>();
@@ -380,7 +380,7 @@ void GlFrameBufferInterface::capture(const RtBuffer* rtb, const file::Path& pth)
 #if defined(USE_OIIO)
   auto out = ImageOutput::create(pth.c_str());
   if (!out)
-    return;
+    return nullptr;
   ImageSpec spec(iw, ih, 4, TypeDesc::UINT8);
   out->open(pth.c_str(), spec);
   out->write_image(TypeDesc::UINT8, outbuf);
@@ -389,6 +389,14 @@ void GlFrameBufferInterface::capture(const RtBuffer* rtb, const file::Path& pth)
   free((void*)pu8);
   free((void*)outbuf);
 #endif
+
+  // Return an immediately completed future for GL (synchronous)
+  auto future = std::make_shared<CaptureAsync>();
+  future->_completed = true;
+  future->_width = iw;
+  future->_height = ih;
+  future->_format = EBufferFormat::RGBA8;
+  return future;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

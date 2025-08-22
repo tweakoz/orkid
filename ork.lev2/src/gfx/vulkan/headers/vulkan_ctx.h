@@ -221,7 +221,7 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
 
   ///////////////////////////////////////////////////////
 
-  void capture(const RtBuffer* inpbuf, const file::Path& pth) final;
+  captureasync_ptr_t capture(const RtBuffer* inpbuf, const file::Path& pth) final;
   bool captureToTexture(const CaptureBuffer& capbuf, Texture& tex) final;
   bool captureAsFormat(const RtBuffer* inpbuf, CaptureBuffer* buffer, EBufferFormat destfmt) final;
   void GetPixel(const fvec4& rAt, PixelFetchContext& ctx) final;

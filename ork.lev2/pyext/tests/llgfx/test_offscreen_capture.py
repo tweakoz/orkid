@@ -64,23 +64,22 @@ def main():
     print("Popping RTG...")
     fbi.rtGroupPop()
     
+    # Capture the frame to a PNG file (must be done before endFrame while command buffer is active)
+    output_path = core.Path("/tmp/test_capture.png")
+    print(f"Capturing frame to {output_path}...")
+    
+    # Get the render target buffer and capture it - returns a future
+    capture_future = fbi.captureToFile(rtb_color, output_path)
+    
     # End frame
     print("Ending frame...")
     ctx.endFrame()
     
-    # Process one iteration to ensure frame completes
-    print("Processing frame...")
-    ezapp.mainThreadIter()
-    
-    # Capture the frame to a PNG file
-    output_path = core.Path("/tmp/test_capture.png")
-    print(f"Capturing frame to {output_path}...")
-    
-    # Get the render target buffer and capture it
-    fbi.captureToFile(rtb_color, output_path)
-    
-    # Process another iteration to ensure capture completes
-    ezapp.mainThreadIter()
+    # Wait for the capture future to be realized
+    print("Waiting for capture to complete...")
+    while capture_future and not capture_future.is_ready:
+        ezapp.mainThreadIter()
+    print("Capture completed!")
     
     print("Ending main thread...")
     ezapp.mainThreadEnd()

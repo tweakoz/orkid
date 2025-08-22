@@ -101,8 +101,8 @@ void pyinit_gfx(py::module& module_lev2) {
           })
       .def(
           "captureToFile",
-          [](const fbi_t& fbi, rtbuffer_ptr_t rtb, const file::Path& pth) -> bool {
-            fbi.get()->capture(rtb.get(), pth);
+          [](const fbi_t& fbi, rtbuffer_ptr_t rtb, const file::Path& pth) -> captureasync_ptr_t {
+            return fbi.get()->capture(rtb.get(), pth);
           })
       .def(
           "captureAsFormat",
@@ -347,6 +347,18 @@ void pyinit_gfx(py::module& module_lev2) {
                          });
   type_codec->registerStdCodec<rasterstate_ptr_t>(rstate_type);
   /////////////////////////////////////////////////////////////////////////////////
+  auto capture_async_t = py::class_<CaptureAsync, captureasync_ptr_t>(module_lev2, "CaptureAsync")
+                   .def(
+                       "__repr__",
+                       [](captureasync_ptr_t cap) -> std::string {
+                         fxstring<256> fxs;
+                         fxs.format("CaptureAsync(%p)", cap.get());
+                         return fxs.c_str();
+                       })
+                   .def_property_readonly("is_ready", [](captureasync_ptr_t cap) -> bool { return cap->isReady(); })
+                   .def_property_readonly("progress", [](captureasync_ptr_t cap) -> float { return cap->progress(); })
+                   .def("wait", [](captureasync_ptr_t cap, CaptureBuffer* buffer) -> bool { return cap->wait(buffer); });
+
   auto rtb_t = py::class_<RtBuffer, rtbuffer_ptr_t>(module_lev2, "RtBuffer")
                    .def(
                        "__repr__",

@@ -82,11 +82,11 @@ void VkFrameBufferInterface::_doEndFrame() {
 
 ///////////////////////////////////////////////////////
 
-void VkFrameBufferInterface::capture(const RtBuffer* inpbuf, const file::Path& pth) {
+captureasync_ptr_t VkFrameBufferInterface::capture(const RtBuffer* inpbuf, const file::Path& pth) {
   // Use captureAsFormat to get the data
   CaptureBuffer capbuf;
   if (!captureAsFormat(inpbuf, &capbuf, EBufferFormat::RGBA8)) {
-    return;
+    return nullptr;
   }
 
   int iw = capbuf.width();
@@ -117,7 +117,7 @@ void VkFrameBufferInterface::capture(const RtBuffer* inpbuf, const file::Path& p
   auto out = ImageOutput::create(pth.c_str());
   if (!out) {
     free(outbuf);
-    return;
+    return nullptr;
   }
   ImageSpec spec(iw, ih, 4, TypeDesc::UINT8);
   out->open(pth.c_str(), spec);
@@ -126,6 +126,9 @@ void VkFrameBufferInterface::capture(const RtBuffer* inpbuf, const file::Path& p
 #endif
 
   free(outbuf);
+  
+  // TODO: Return a CaptureAsync future instead
+  return nullptr;
 }
 
 ///////////////////////////////////////////////////////

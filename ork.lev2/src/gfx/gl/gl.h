@@ -313,7 +313,7 @@ public:
   void _doBeginFrame() final;
   void _doEndFrame() final;
 
-  void capture(const RtBuffer* inpbuf, const file::Path& pth) final;
+  captureasync_ptr_t capture(const RtBuffer* inpbuf, const file::Path& pth) final;
   bool captureToTexture(const CaptureBuffer& capbuf, Texture& tex) final {
     return false;
   }
