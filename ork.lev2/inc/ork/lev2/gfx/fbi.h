@@ -138,6 +138,8 @@ public:
   void EndFrame();
   virtual void _doBeginFrame() = 0;
   virtual void _doEndFrame()   = 0;
+  
+  rtgroup_ptr_t _ensureMainRtg();
 
   //////////////////////////////////////////////
 

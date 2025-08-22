@@ -77,6 +77,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rt
     color_option._usage = rtb->_usage;
     color_option._format = VkFormatConverter::convertBufferFormat(rtb->format());
     color_option._with_texture = (rtb->texture() != nullptr);
+    logchan_rtgroup->log("Creating RTB impl - buffer %d usage=0x%zx (%zu)", i, color_option._usage, color_option._usage);
     options._colorOptions.push_back(color_option);
   }
   auto depth_buffer = rtgroup->_depthBuffer;
@@ -279,7 +280,8 @@ void VkFrameBufferInterface::_popRtGroup() {
   // Resume rendering on the next rtgroup if needed
   /////////////////////////////////////////////
 
-  bool back_to_main = (finished_rtg!=_main_rtg.get());
+    auto main_rtg = _ensureMainRtg();
+  bool back_to_main = (finished_rtg!=main_rtg.get());
 
   if(back_to_main) {
     // TODO:

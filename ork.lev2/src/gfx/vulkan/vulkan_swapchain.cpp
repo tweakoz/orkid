@@ -241,7 +241,7 @@ void VkSwapChain::_buildup() {
   depth_option._usage        = "depth"_crcu; // Use "depth" usage
   depth_option._with_texture = false; // No texture for depth buffer
 
-  auto rtg = _contextVK->_fbi->_main_rtg;
+  auto rtg = _contextVK->_fbi->_ensureMainRtg();
 
   vkrtgrpimpl_ptr_t rtg_impl;
   if (auto existing = rtg->_impl.tryAsShared<VkRtGroupImpl>()) {
@@ -411,7 +411,7 @@ VkResult VkSwapChain::acquireImage(vkcontext_rawptr_t ctxVK) {
   }
   OrkAssert(_curSwapWriteImage >= 0);
 
-  auto rtg              = _contextVK->_fbi->_main_rtg;
+  auto rtg              = _contextVK->_fbi->_ensureMainRtg();
   auto rtg_impl         = rtg->_impl.getShared<VkRtGroupImpl>();
   auto rtb_color        = rtg->buffer(0);
   auto rtb_impl         = rtb_color->_impl.getShared<VklRtBufferImpl>();

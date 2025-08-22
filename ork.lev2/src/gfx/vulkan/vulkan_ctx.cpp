@@ -22,7 +22,7 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_vkctx = logger()->configureChannel("VKCTX", fvec3(1,1,.9),false);
+static logchannel_ptr_t logchan_vkctx = logger()->configureChannel("VKCTX", fvec3(1,1,.9),true);
 
 void VkContext::describeX(class_t* clazz) {
 
@@ -593,9 +593,10 @@ void VkContext::_doPreBeginFrame() {
 
 void VkContext::_doBeginFrame() {
   //logchan_vkctx->log("VkContext<%p> _doBeginFrame w<%d> h<%d>", (void*)this, miW, miH);
-  if (_fbi->_main_rtg) {
-    miW = _fbi->_main_rtg->miW;
-    miH = _fbi->_main_rtg->miH;
+  auto main_rtg = _fbi->_ensureMainRtg();
+  if (main_rtg) {
+    miW = main_rtg->miW;
+    miH = main_rtg->miH;
   }
   // Poll timeline semaphores
   _pendingOneShotSemas.atomicOp([&](vkcompsema_set_t& unlocked) {
@@ -630,15 +631,17 @@ vkpricmdbufimpl_ptr_t VkContext::primary_cb() {
 
 void VkContext::_doEndFrame() {
   
+  auto main_rtg = _fbi->_ensureMainRtg();
   ////////////////////////
   // main_rtg -> presentation or readable layout
   ////////////////////////
 
-  auto main_rtb  = _fbi->_main_rtg->buffer(0);
+  auto main_rtb  = main_rtg->buffer(0);
   auto main_rtbi = main_rtb->_impl.getShared<VklRtBufferImpl>();
 
   // Only transition to present for window targets with swapchain
   // For offscreen, transition to texture-readable state
+  logchan_vkctx->log("_doEndFrame: meTargetType=%d (WINDOW=%d), buffer usage=0x%zx", (int)meTargetType, (int)TargetType::WINDOW, main_rtbi->_usage);
   if (meTargetType == TargetType::WINDOW) {
     main_rtbi->_transitionToPresent(primary_cb());
   } else {
@@ -1088,8 +1091,9 @@ vkswapchaincaps_ptr_t VkContext::_swapChainCapsForSurface(VkSurfaceKHR surface) 
 void VkContext::_doResizeMainSurface(int iw, int ih) {
   scheduleOnBeginFrame([this, iw, ih]() {
     logchan_vkctx->log("VkContext<%p> _doResizeMainSurface w<%d> h<%d>", (void*)this, iw, ih);
-    if (_fbi->_main_rtg) {
-      _fbi->_main_rtg->Resize(iw, ih);
+    auto main_rtg = _fbi->_ensureMainRtg();
+    if (main_rtg) {
+      main_rtg->Resize(iw, ih);
     }
   });
 }

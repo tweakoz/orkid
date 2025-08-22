@@ -56,7 +56,9 @@ void GlFrameBufferInterface::__setRtGroup(RtGroup* rtgroup) {
   // no rtgroup just means main surface
   //////////////////////////////////////////////
 
-  bool isMainSurface = (nullptr == rtgroup) or (rtgroup==_main_rtg.get());
+    auto main_rtg = _ensureMainRtg();
+
+  bool isMainSurface = (nullptr == rtgroup) or (rtgroup==main_rtg.get());
   if (isMainSurface) {
     _bindMainSurface();
     return;

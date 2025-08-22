@@ -164,7 +164,7 @@ void Context::beginFrame(bool visual) {
 
   mRenderContextInstData = 0;
   _doBeginFrame();
-  FBI()->PushRtGroup(FBI()->_main_rtg.get()); // implicit renderpass api
+  FBI()->PushRtGroup(FBI()->_ensureMainRtg().get()); // implicit renderpass api
 
   /////////////////////////////////////
   // call onBeginFrame callbacks

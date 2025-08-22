@@ -72,7 +72,7 @@ void VkFrameBufferInterface::_doBeginFrame() {
   if (_swapchain) {
     _swapchain->_update();
   }
-  _active_rtgroup = _main_rtg.get();
+  _active_rtgroup = _ensureMainRtg().get();
 }
 
 ///////////////////////////////////////////////////////

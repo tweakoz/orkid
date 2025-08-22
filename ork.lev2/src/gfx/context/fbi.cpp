@@ -30,6 +30,18 @@ FrameBufferInterface::FrameBufferInterface(Context& tgt)
   // for( int i=0; i<kiVPStackMax; i++ )
   //	maViewportStack[i]
   
+  // RTG creation deferred until target type is known
+  // This will be called later in _ensureMainRtg() when needed
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+rtgroup_ptr_t FrameBufferInterface::_ensureMainRtg() {
+  if (_main_rtg) return _main_rtg; // Already created
+  
+  auto& tgt = _target;
+  
   // Determine usage based on target type
   // WINDOW targets use swapchain, OFFSCREEN/LOADING use user RTG
   uint64_t rtg_usage = (tgt.meTargetType == TargetType::WINDOW) 
@@ -41,6 +53,9 @@ FrameBufferInterface::FrameBufferInterface(Context& tgt)
   uint64_t buffer_usage = (tgt.meTargetType == TargetType::WINDOW)
                           ? "swapchain"_crcu
                           : "color"_crcu;
+
+  printf("_ensureMainRtg: TargetType=%d (WINDOW=%d), buffer_usage=0x%zx (%zu)\n", 
+         (int)tgt.meTargetType, (int)TargetType::WINDOW, buffer_usage, buffer_usage);
   
   _main_rtg = std::make_shared<RtGroup>(&tgt,8,8,MsaaSamples::MSAA_1X,rtg_usage);
   _main_rtg->_name = "main_rtg";
@@ -48,7 +63,8 @@ FrameBufferInterface::FrameBufferInterface(Context& tgt)
 
   auto rtb_color = _main_rtg->createRenderTarget(EBufferFormat::SRGB_BGRA8, buffer_usage, false);
   auto rtb_depth = _main_rtg->createDepthBuffer(EBufferFormat::Z32F, false);
-
+  
+  return _main_rtg;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

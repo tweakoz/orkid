@@ -20,6 +20,8 @@ VklRtBufferImpl::VklRtBufferImpl(vkcontext_rawptr_t ctxVK, VkRtGroupImpl* par, u
     , _usage(usage)
     , _vkfmt(fmt) { //
 
+  logchan_rtgi->log("VklRtBufferImpl constructor - usage=0x%zx (%zu)", _usage, _usage);
+
   initializeVkStruct(_attachmentDesc);
 
   _attachmentDesc.samples       = VK_SAMPLE_COUNT_1_BIT;        // No multisampling for this example.
