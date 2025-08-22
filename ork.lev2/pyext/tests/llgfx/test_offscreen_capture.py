@@ -77,20 +77,20 @@ def main():
     
     # Wait for the capture future to be realized
     print("Waiting for capture to complete...")
-    while capture_future and not capture_future.is_ready:
+    done = False
+    while not done:
         ezapp.mainThreadIter()
-    print("Capture completed!")
+        done = capture_future and capture_future.is_ready
+        # Check if file was created
+        if done and output_path.exists:
+            file_size = os.path.getsize(str(output_path))
+            print(f"Success! Captured image saved to {output_path} (size: {file_size} bytes)")
+            print("Capture completed!")
+
     
     print("Ending main thread...")
     ezapp.mainThreadEnd()
-    
-    # Check if file was created
-    if output_path.exists:
-        file_size = os.path.getsize(str(output_path))
-        print(f"Success! Captured image saved to {output_path} (size: {file_size} bytes)")
-    else:
-        print(f"Warning: Output file {output_path} was not created")
-    
+        
     print("="*60)
     print("Offscreen frame capture test completed!")
     print("="*60)

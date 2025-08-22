@@ -326,6 +326,9 @@ bool VkFrameBufferInterface::captureAsFormat(const RtBuffer* inpbuf, CaptureBuff
   auto cb = _contextVK->primary_cb();
   OrkAssert(cb != nullptr); // capture must be called during frame recording
   
+  printf("VkFrameBufferInterface::captureAsFormat rtb<%p> w<%d> h<%d> format<0x%x>\n", 
+         inpbuf, w, h, rtbi->_vkfmt);
+  
   rtbi->_transitionToHostRead(cb);
 
   // printf("captureAsFormat w<%d> h<%d>\n", w, h);
@@ -344,6 +347,8 @@ bool VkFrameBufferInterface::captureAsFormat(const RtBuffer* inpbuf, CaptureBuff
 
   VkBufferImageCopy region = {};
   region.bufferOffset      = 0;
+  region.bufferRowLength   = 0;  // 0 means tightly packed
+  region.bufferImageHeight = 0;  // 0 means tightly packed
   region.imageSubresource  = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
   region.imageExtent       = {uint32_t(w), uint32_t(h), 1};
 

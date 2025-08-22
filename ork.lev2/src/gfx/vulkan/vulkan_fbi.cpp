@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include "headers/vulkan_ctx.h"
+#include "vulkan_captureasync.h"
 
 #define USE_OIIO
 #if defined(USE_OIIO)
@@ -83,52 +84,50 @@ void VkFrameBufferInterface::_doEndFrame() {
 ///////////////////////////////////////////////////////
 
 captureasync_ptr_t VkFrameBufferInterface::capture(const RtBuffer* inpbuf, const file::Path& pth) {
-  // Use captureAsFormat to get the data
-  CaptureBuffer capbuf;
-  if (!captureAsFormat(inpbuf, &capbuf, EBufferFormat::RGBA8)) {
-    return nullptr;
-  }
-
-  int iw = capbuf.width();
-  int ih = capbuf.height();
+  // For now, return a simple future that completes after one frame
+  // The actual GPU transfer happens in captureAsFormat which records the commands
+  // After endFrame submits the command buffer, the data will be available
   
-  printf("VkFrameBufferInterface::capture pth<%s> BUFW<%d> BUFH<%d>\n", pth.c_str(), iw, ih);
-
-  // Flip the image vertically (Vulkan has Y pointing down, while most image formats have Y pointing up)
-  auto outbuf = (uint8_t*)malloc(iw * ih * 4);
-  auto srcdata = (uint8_t*)capbuf._data;
+  auto future = std::make_shared<CaptureAsync>();
+  future->_width = inpbuf->_width;
+  future->_height = inpbuf->_height;
+  future->_format = EBufferFormat::RGBA8;
   
-  for (int iy = 0; iy < ih; iy++) {
-    for (int ix = 0; ix < iw; ix++) {
-      int src_pixel = iy * iw + ix;
-      int dst_pixel = (ih - 1 - iy) * iw + ix;
-      
-      int src_byte = src_pixel * 4;
-      int dst_byte = dst_pixel * 4;
-      
-      outbuf[dst_byte + 0] = srcdata[src_byte + 0]; // R
-      outbuf[dst_byte + 1] = srcdata[src_byte + 1]; // G
-      outbuf[dst_byte + 2] = srcdata[src_byte + 2]; // B
-      outbuf[dst_byte + 3] = srcdata[src_byte + 3]; // A
-    }
+  // Capture to a buffer (this records the GPU commands)
+  auto capbuf = std::make_shared<CaptureBuffer>();
+  if (!captureAsFormat(inpbuf, capbuf.get(), EBufferFormat::RGBA8)) {
+    future->_failed = true;
+    return future;
   }
-
-#if defined(USE_OIIO)
-  auto out = ImageOutput::create(pth.c_str());
-  if (!out) {
-    free(outbuf);
-    return nullptr;
-  }
-  ImageSpec spec(iw, ih, 4, TypeDesc::UINT8);
-  out->open(pth.c_str(), spec);
-  out->write_image(TypeDesc::UINT8, outbuf);
-  out->close();
-#endif
-
-  free(outbuf);
   
-  // TODO: Return a CaptureAsync future instead
-  return nullptr;
+  // Verify staging buffer was created
+  if (!capbuf->_impl.isSet()) {
+    future->_failed = true;
+    return future;
+  }
+  
+  // Store capture data in the future's implementation
+  struct VulkanCaptureData {
+    capturebuffer_ptr_t capture_buffer;
+    file::Path path;
+    int width;
+    int height;
+    bool frame_submitted = false;
+  };
+  
+  auto capture_data = std::make_shared<VulkanCaptureData>();
+  capture_data->capture_buffer = capbuf;
+  capture_data->path = pth;
+  capture_data->width = inpbuf->_width;
+  capture_data->height = inpbuf->_height;
+  
+  future->_impl.setShared<VulkanCaptureData>(capture_data);
+  
+  // After one frame iteration, the command buffer will be submitted and executed
+  // So we'll mark as ready after that
+  _contextVK->_pending_capture = future;
+  
+  return future;
 }
 
 ///////////////////////////////////////////////////////
