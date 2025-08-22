@@ -303,12 +303,17 @@ void VkFrameBufferInterface::_popRtGroup() {
 
 ///////////////////////////////////////////////////////
 
-bool VkFrameBufferInterface::captureAsFormat(const RtBuffer* inpbuf, CaptureBuffer* capbuf, EBufferFormat destfmt) {
+captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(const RtBuffer* inpbuf, capturebuffer_ptr_t capbuf, EBufferFormat destfmt, void_lambda_t on_capture_complete) {
 
+  auto future = std::make_shared<CaptureAsync>();
+  future->_width = inpbuf->_width;
+  future->_height = inpbuf->_height;
+  future->_format = destfmt;
+  
   auto rtbi = inpbuf->_impl.getShared<VklRtBufferImpl>();
   if (nullptr == capbuf) {
-    OrkAssert(false);
-    return false;
+    future->_failed = true;
+    return future;
   }
   int x = 0;
   int y = 0;
@@ -457,11 +462,33 @@ bool VkFrameBufferInterface::captureAsFormat(const RtBuffer* inpbuf, CaptureBuff
       // Transition back to render target for continued rendering
       rtbi->_transitionToRenderTarget(cb);
       
-      // Note: We can't read the staging buffer yet - it will be available after frame submit
-      // For now, store the staging buffer for later retrieval
+      // Store the staging buffer in the capture buffer for later retrieval
       capbuf->_impl.setShared<VulkanBuffer>(staging_buffer);
       
-      // TODO: This should return a CaptureAsync future that waits for frame completion
+      // Store capture data in the future's implementation
+      struct VulkanCaptureData {
+        capturebuffer_ptr_t capture_buffer;
+        texture_ptr_t capture_texture;
+        file::Path path;
+        int width;
+        int height;
+        EBufferFormat format;
+        bool frame_submitted = false;
+      };
+      
+      auto capture_data = std::make_shared<VulkanCaptureData>();
+      capture_data->capture_buffer = capbuf;
+      capture_data->width = w;
+      capture_data->height = h;
+      capture_data->format = destfmt;
+      
+      future->_impl.setShared<VulkanCaptureData>(capture_data);
+      future->_captureBuffer = capture_data->capture_buffer;
+      future->_on_capture_complete = on_capture_complete;
+      
+      // Register with context for processing after frame
+      _contextVK->_pending_captures.push_back(future);
+      
       printf("VkFrameBufferInterface::captureAsFormat - copy command recorded, data will be available after frame submit\n");
       break;
     }
@@ -498,20 +525,53 @@ bool VkFrameBufferInterface::captureAsFormat(const RtBuffer* inpbuf, CaptureBuff
     }
     ///////////////////////////////////////////////////////
     case EBufferFormat::RGBA32F: {
-      size_t rgbasize = w * h * 128;
-      if (capbuf->_tempbuffer.size() != rgbasize) {
-        capbuf->_tempbuffer.resize(rgbasize);
-      }
-      /*OrkAssert(vkfmt == VK_FORMAT_R32G32B32A32_SFLOAT);
+      OrkAssert(vkfmt == VK_FORMAT_R32G32B32A32_SFLOAT);
       size_t bufsize = w * h * 16;
       if (capbuf->_tempbuffer.size() != bufsize) {
         capbuf->_tempbuffer.resize(bufsize);
       }
-      auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, bufsize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+      
+      // Create staging buffer for GPU to CPU transfer
+      auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, bufsize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, "capture_staging_f32");
+      
+      // Copy image to staging buffer
       vkCmdCopyImageToBuffer(
-          _contextVK->primary_cb()->_vkcmdbuf, vkimg, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, staging_buffer->_vkbuffer, 1, &region);
-      staging_buffer->copyToHost(capbuf->_tempbuffer.data(), bufsize);
-      capbuf->_impl.setShared<VulkanBuffer>(staging_buffer);*/
+          cb->_vkcmdbuf, 
+          vkimg, 
+          VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 
+          staging_buffer->_vkbuffer, 
+          1, 
+          &region);
+      
+      // Transition back to render target
+      rtbi->_transitionToRenderTarget(cb);
+      
+      // Store the staging buffer
+      capbuf->_impl.setShared<VulkanBuffer>(staging_buffer);
+      
+      // Store capture data in the future
+      struct VulkanCaptureData {
+        capturebuffer_ptr_t capture_buffer;
+        texture_ptr_t capture_texture;
+        file::Path path;
+        int width;
+        int height;
+        EBufferFormat format;
+        bool frame_submitted = false;
+      };
+      
+      auto capture_data = std::make_shared<VulkanCaptureData>();
+      capture_data->capture_buffer = capbuf;
+      capture_data->width = w;
+      capture_data->height = h;
+      capture_data->format = destfmt;
+      
+      future->_impl.setShared<VulkanCaptureData>(capture_data);
+      future->_captureBuffer = capture_data->capture_buffer;
+      future->_on_capture_complete = on_capture_complete;
+      
+      // Register with context for processing after frame
+      _contextVK->_pending_captures.push_back(future);
       break;
     }
     ///////////////////////////////////////////////////////
@@ -536,7 +596,7 @@ bool VkFrameBufferInterface::captureAsFormat(const RtBuffer* inpbuf, CaptureBuff
   // glBindFramebuffer(GL_FRAMEBUFFER, 0);
   //   glReadBuffer( readbuffer ); // restore read buffer
   // GL_ERRORCHECK();
-  return true;
+  return future;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

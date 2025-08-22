@@ -312,7 +312,7 @@ void GlFrameBufferInterface::clearDepth(float fdepth) {
 */
 ///////////////////////////////////////////////////////////////////////////////
 
-captureasync_ptr_t GlFrameBufferInterface::capture(const RtBuffer* rtb, const file::Path& pth) {
+captureasync_ptr_t GlFrameBufferInterface::capture(const RtBuffer* rtb, const file::Path& pth, void_lambda_t on_capture_complete) {
 
   if (not rtb->_impl.isSet())
     return nullptr;
@@ -396,12 +396,47 @@ captureasync_ptr_t GlFrameBufferInterface::capture(const RtBuffer* rtb, const fi
   future->_width = iw;
   future->_height = ih;
   future->_format = EBufferFormat::RGBA8;
+  future->_on_capture_complete = on_capture_complete;
+  
+  // Call completion callback immediately since this is synchronous
+  if (future->_on_capture_complete) {
+    future->_on_capture_complete();
+  }
+  
   return future;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool GlFrameBufferInterface::captureAsFormat(const RtBuffer* rtb, CaptureBuffer* capbuf, EBufferFormat destfmt) {
+captureasync_ptr_t GlFrameBufferInterface::captureAsFormat(const RtBuffer* rtb, capturebuffer_ptr_t capbuf, EBufferFormat destfmt, void_lambda_t on_capture_complete) {
+  // Create a future that will be immediately completed
+  auto future = std::make_shared<CaptureAsync>();
+  future->_width = rtb->_width;
+  future->_height = rtb->_height;
+  future->_format = destfmt;
+  
+  // Do the synchronous capture
+  bool success = _captureAsFormatImmediate(rtb, capbuf.get(), destfmt);
+  
+  if (success) {
+    // Store the result
+    future->_captureBuffer = capbuf;
+    future->_completed = true;
+    
+    // Set and call completion callback if provided
+    future->_on_capture_complete = on_capture_complete;
+    if (future->_on_capture_complete) {
+      future->_on_capture_complete();
+    }
+  } else {
+    future->_failed = true;
+    future->_on_capture_complete = on_capture_complete;
+  }
+  
+  return future;
+}
+
+bool GlFrameBufferInterface::_captureAsFormatImmediate(const RtBuffer* rtb, CaptureBuffer* capbuf, EBufferFormat destfmt) {
 
   if (nullptr == capbuf) {
     OrkAssert(false);
@@ -778,6 +813,30 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& pfc) 
   _target.debugPopGroup();
 }
 
+
+///////////////////////////////////////////////////////////////////////////////
+
+captureasync_ptr_t GlFrameBufferInterface::captureToTexture(const RtBuffer* inpbuf, Texture& tex, void_lambda_t on_capture_complete) {
+  // Create a future that will be immediately completed
+  auto future = std::make_shared<CaptureAsync>();
+  future->_width = inpbuf->_width;
+  future->_height = inpbuf->_height;
+  future->_format = inpbuf->format();
+  
+  // Create temporary capture buffer
+  auto capbuf = std::make_shared<CaptureBuffer>();
+  
+  // Do the synchronous capture
+  bool success = _captureAsFormatImmediate(inpbuf, capbuf.get(), inpbuf->format());
+  
+  OrkAssert(false); // captureToTexture not implemented yet
+  
+  future->_captureTexture = nullptr;
+  future->_failed = true;
+  future->_on_capture_complete = on_capture_complete;
+  
+  return future;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2

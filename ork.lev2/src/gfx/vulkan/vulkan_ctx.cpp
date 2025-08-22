@@ -1110,9 +1110,11 @@ void VkContext::_processPendingCaptures() {
   // Get the VulkanCaptureData from the future
   struct VulkanCaptureData {
     capturebuffer_ptr_t capture_buffer;
+    texture_ptr_t capture_texture;
     file::Path path;
     int width;
     int height;
+    EBufferFormat format;
     bool frame_submitted = false;
   };
   
@@ -1129,14 +1131,54 @@ void VkContext::_processPendingCaptures() {
       continue;
     }
   
-    // Copy data from staging buffer to capture buffer
-    size_t bufsize = capture_data->capture_buffer->length();
-    staging_buffer->copyToHost(capture_data->capture_buffer->_data, bufsize);
+    // Handle different buffer formats
+    size_t bufsize = 0;
+    switch(capture_data->format) {
+      case EBufferFormat::RGBA8:
+        bufsize = capture_data->width * capture_data->height * 4;
+        break;
+      case EBufferFormat::RGB8:
+        bufsize = capture_data->width * capture_data->height * 3;
+        break;
+      case EBufferFormat::RGBA16F:
+        bufsize = capture_data->width * capture_data->height * 8;
+        break;
+      case EBufferFormat::RGBA32F:
+        bufsize = capture_data->width * capture_data->height * 16;
+        break;
+      case EBufferFormat::R32F:
+        bufsize = capture_data->width * capture_data->height * 4;
+        break;
+      case EBufferFormat::RG32F:
+        bufsize = capture_data->width * capture_data->height * 8;
+        break;
+      default:
+        capture->_failed = true;
+        continue;
+    }
+    
+    // Copy data from staging buffer
+    if (capture_data->capture_buffer) {
+      staging_buffer->copyToHost(capture_data->capture_buffer->_data, bufsize);
+    } else {
+      // Create temp buffer for texture/file output
+      auto temp_buffer = std::make_shared<CaptureBuffer>();
+      temp_buffer->setFormatAndSize(capture_data->format, capture_data->width, capture_data->height);
+      staging_buffer->copyToHost(temp_buffer->_data, bufsize);
+      capture_data->capture_buffer = temp_buffer;
+    }
   
-    // Write to file using OIIO
-    #if defined(USE_OIIO)
-    auto out = OIIO::ImageOutput::create(capture_data->path.c_str());
-    if (out) {
+    // Handle different output destinations
+    if (capture_data->capture_texture) {
+      // TODO: Upload to texture
+      logchan_vkctx->log("Capture to texture not yet implemented");
+    }
+    
+    // Write to file if path is specified
+    if (capture_data->path.exists()) {
+      #if defined(USE_OIIO)
+      auto out = OIIO::ImageOutput::create(capture_data->path.c_str());
+      if (out) {
       OIIO::ImageSpec spec(capture_data->width, capture_data->height, 4, OIIO::TypeDesc::UINT8);
       out->open(capture_data->path.c_str(), spec);
       
@@ -1155,9 +1197,23 @@ void VkContext::_processPendingCaptures() {
       out->write_image(OIIO::TypeDesc::UINT8, flipped.data());
       out->close();
       
-      logchan_vkctx->log("Capture saved to %s", capture_data->path.c_str());
+        logchan_vkctx->log("Capture saved to %s", capture_data->path.c_str());
+      }
+      #endif
     }
-    #endif
+    
+    // Store capture results in the future
+    capture->_captureBuffer = capture_data->capture_buffer;
+    capture->_captureTexture = capture_data->capture_texture;
+    capture->_capturePath = capture_data->path;
+    capture->_width = capture_data->width;
+    capture->_height = capture_data->height;
+    capture->_format = capture_data->format;
+    
+    // Call completion callback if set
+    if (capture->_on_capture_complete) {
+      capture->_on_capture_complete();
+    }
     
     // Mark capture as complete
     capture->_completed = true;

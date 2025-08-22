@@ -183,8 +183,8 @@ void computeAmbientOcclusion(int numsamples, meshutil::mesh_ptr_t model, Context
   auto capbufPOS = std::make_shared<CaptureBuffer>();
   auto capbufNRM = std::make_shared<CaptureBuffer>();
 
-  ctx->FBI()->captureAsFormat(rtb_pos.get(), capbufPOS.get(), EBufferFormat::RGBA32F);
-  ctx->FBI()->captureAsFormat(rtb_normal.get(), capbufNRM.get(), EBufferFormat::RGBA32F);
+  ctx->FBI()->captureAsFormat(rtb_pos.get(), capbufPOS, EBufferFormat::RGBA32F);
+  ctx->FBI()->captureAsFormat(rtb_normal.get(), capbufNRM, EBufferFormat::RGBA32F);
 
   OrkAssert(capbufPOS->length() == DIM * DIM * 4 * 4);
   OrkAssert(capbufNRM->length() == DIM * DIM * 4 * 4);

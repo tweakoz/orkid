@@ -709,9 +709,10 @@ void OrkEzApp::enableMovieRecording(file::Path output_path){
     auto mctx = _moviecontext.get();
     _movie_record_frame_lambda = [mctx,this](lev2::Context* ctx){
         auto fbi = ctx->FBI();
-        CaptureBuffer capbuf;
-        bool ok = fbi->captureAsFormat(nullptr, &capbuf, EBufferFormat::RGB8);
-        mctx->writeFrame(capbuf);
+        auto capbuf = std::make_shared<CaptureBuffer>();
+        auto future = fbi->captureAsFormat(nullptr, capbuf, EBufferFormat::RGB8);
+        bool ok = future && future->_completed;
+        mctx->writeFrame(*capbuf);
         //int ircount = _render_count.load();
         //int iucount = _update_count.load();
         //printf( "movie write frame<%d> ircount<%d> iucount<%d>\n", mctx->_frame, ircount, iucount );

@@ -221,9 +221,9 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
 
   ///////////////////////////////////////////////////////
 
-  captureasync_ptr_t capture(const RtBuffer* inpbuf, const file::Path& pth) final;
-  bool captureToTexture(const CaptureBuffer& capbuf, Texture& tex) final;
-  bool captureAsFormat(const RtBuffer* inpbuf, CaptureBuffer* buffer, EBufferFormat destfmt) final;
+  captureasync_ptr_t capture(const RtBuffer* inpbuf, const file::Path& pth, void_lambda_t on_capture_complete = nullptr) final;
+  captureasync_ptr_t captureToTexture(const RtBuffer* inpbuf, Texture& tex, void_lambda_t on_capture_complete = nullptr) final;
+  captureasync_ptr_t captureAsFormat(const RtBuffer* inpbuf, capturebuffer_ptr_t buffer, EBufferFormat destfmt, void_lambda_t on_capture_complete = nullptr) final;
   void GetPixel(const fvec4& rAt, PixelFetchContext& ctx) final;
 
   ///////////////////////////////////////////////////////
@@ -619,7 +619,7 @@ public:
   vkfxi_ptr_t _fxi;
   vkci_ptr_t _ci;
   
-  std::unordered_set<captureasync_ptr_t> _pending_captures;
+  std::vector<captureasync_ptr_t> _pending_captures;
   void _processPendingCaptures();
 };
 ///////////////////////////////////////////////////////////////////////////

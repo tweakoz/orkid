@@ -259,9 +259,10 @@ int main(int argc, char** argv, char** envp) {
         //auto rtbuf_accum = rdb._RCFD.getUserProperty("rtb_accum"_crc).get<rtbuffer_ptr_t>();
         auto fbi = context->FBI();
         //fbi->capture(rtbuf_accum.get(),"demo://output.png");
-        CaptureBuffer capbuf;
-        bool ok = fbi->captureAsFormat(nullptr, &capbuf, EBufferFormat::RGB8);
-        movie->writeFrame(capbuf);
+        auto capbuf = std::make_shared<CaptureBuffer>();
+        auto future = fbi->captureAsFormat(nullptr, capbuf, EBufferFormat::RGB8, [capbuf, movie](){
+            movie->writeFrame(*capbuf);
+        });
 
     }
 

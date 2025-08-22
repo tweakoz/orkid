@@ -58,9 +58,9 @@ FrameBufferInterface::~FrameBufferInterface() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool FrameBufferInterface::capture(const RtBuffer* rtb, CaptureBuffer* capbuf) {
+captureasync_ptr_t FrameBufferInterface::capture(const RtBuffer* rtb, capturebuffer_ptr_t capbuf, void_lambda_t on_capture_complete) {
   auto rtb_format = rtb->format();
-  return captureAsFormat(rtb, capbuf, rtb_format);
+  return captureAsFormat(rtb, capbuf, rtb_format, on_capture_complete);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

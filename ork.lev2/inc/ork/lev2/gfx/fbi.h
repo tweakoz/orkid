@@ -119,18 +119,18 @@ public:
   // Capture Interface
   ///////////////////////////////////////////////////////
 
-  virtual bool captureAsFormat(const RtBuffer* inpbuf, CaptureBuffer* buffer, EBufferFormat destfmt) {
-    return false;
-  }
-  virtual captureasync_ptr_t capture(const RtBuffer* inpbuf, const file::Path& pth) {
+  virtual captureasync_ptr_t captureAsFormat(const RtBuffer* inpbuf, capturebuffer_ptr_t buffer, EBufferFormat destfmt, void_lambda_t on_capture_complete = nullptr) {
     return nullptr;
   }
-  virtual bool captureToTexture(const CaptureBuffer& capbuf, Texture& tex) {
-    return false;
+  virtual captureasync_ptr_t capture(const RtBuffer* inpbuf, const file::Path& pth, void_lambda_t on_capture_complete = nullptr) {
+    return nullptr;
+  }
+  virtual captureasync_ptr_t captureToTexture(const RtBuffer* inpbuf, Texture& tex, void_lambda_t on_capture_complete = nullptr) {
+    return nullptr;
   }
   virtual void GetPixel(const fvec4& rAt, PixelFetchContext& ctx) = 0;
 
-  bool capture(const RtBuffer* rtb, CaptureBuffer* capbuf);
+  captureasync_ptr_t capture(const RtBuffer* rtb, capturebuffer_ptr_t capbuf, void_lambda_t on_capture_complete = nullptr);
 
   //////////////////////////////////////////////
 

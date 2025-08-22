@@ -410,7 +410,7 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
       fbi->PopRtGroup();
 
       auto captureb = std::make_shared<CaptureBuffer>();
-      fbi->capture(outbuffr.get(), captureb.get());
+      fbi->capture(outbuffr.get(), captureb);
 
       Image im_inp;
       im_inp.initRGBA8WithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
@@ -615,7 +615,7 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
       mtl->end(RCFD);
       fbi->PopRtGroup();
 
-      fbi->capture(outbuffr.get(), captureb.get());
+      fbi->capture(outbuffr.get(), captureb);
 
       if (1) {
         auto outpath = file::Path::temp_dir() / FormatString("filteredenv-diffmap-mip%d.exr", imip);

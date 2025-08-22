@@ -129,6 +129,14 @@ struct CaptureAsync {
   int _height = 0;
   EBufferFormat _format = EBufferFormat::NONE;
   
+  // Output destinations
+  capturebuffer_ptr_t _captureBuffer;  // For capture to buffer
+  texture_ptr_t _captureTexture;       // For capture to texture  
+  file::Path _capturePath;             // For capture to file
+  
+  // Completion callback
+  void_lambda_t _on_capture_complete;
+  
   // Status
   bool _completed = false;
   bool _failed = false;

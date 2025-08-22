@@ -83,7 +83,7 @@ void VkFrameBufferInterface::_doEndFrame() {
 
 ///////////////////////////////////////////////////////
 
-captureasync_ptr_t VkFrameBufferInterface::capture(const RtBuffer* inpbuf, const file::Path& pth) {
+captureasync_ptr_t VkFrameBufferInterface::capture(const RtBuffer* inpbuf, const file::Path& pth, void_lambda_t on_capture_complete) {
   // For now, return a simple future that completes after one frame
   // The actual GPU transfer happens in captureAsFormat which records the commands
   // After endFrame submits the command buffer, the data will be available
@@ -95,7 +95,7 @@ captureasync_ptr_t VkFrameBufferInterface::capture(const RtBuffer* inpbuf, const
   
   // Capture to a buffer (this records the GPU commands)
   auto capbuf = std::make_shared<CaptureBuffer>();
-  if (!captureAsFormat(inpbuf, capbuf.get(), EBufferFormat::RGBA8)) {
+  if (!captureAsFormat(inpbuf, capbuf, EBufferFormat::RGBA8)) {
     future->_failed = true;
     return future;
   }
@@ -109,9 +109,11 @@ captureasync_ptr_t VkFrameBufferInterface::capture(const RtBuffer* inpbuf, const
   // Store capture data in the future's implementation
   struct VulkanCaptureData {
     capturebuffer_ptr_t capture_buffer;
+    texture_ptr_t capture_texture;
     file::Path path;
     int width;
     int height;
+    EBufferFormat format;
     bool frame_submitted = false;
   };
   
@@ -120,21 +122,43 @@ captureasync_ptr_t VkFrameBufferInterface::capture(const RtBuffer* inpbuf, const
   capture_data->path = pth;
   capture_data->width = inpbuf->_width;
   capture_data->height = inpbuf->_height;
+  capture_data->format = EBufferFormat::RGBA8;
   
   future->_impl.setShared<VulkanCaptureData>(capture_data);
+  future->_on_capture_complete = on_capture_complete;
   
   // After one frame iteration, the command buffer will be submitted and executed
   // So we'll mark as ready after that
-  _contextVK->_pending_captures.insert(future);
+  _contextVK->_pending_captures.push_back(future);
   
   return future;
 }
 
 ///////////////////////////////////////////////////////
 
-bool VkFrameBufferInterface::captureToTexture(const CaptureBuffer& capbuf, Texture& tex) {
-  OrkAssert(false);
-  return false;
+captureasync_ptr_t VkFrameBufferInterface::captureToTexture(const RtBuffer* inpbuf, Texture& tex, void_lambda_t on_capture_complete) {
+  auto future = std::make_shared<CaptureAsync>();
+  future->_width = inpbuf->_width;
+  future->_height = inpbuf->_height;
+  future->_format = inpbuf->format();
+  
+  // Create temporary capture buffer
+  auto capbuf = std::make_shared<CaptureBuffer>();
+  
+  // Use captureAsFormat to do the actual capture
+  auto base_future = captureAsFormat(inpbuf, capbuf, inpbuf->format());
+  if (!base_future || base_future->_failed) {
+    future->_failed = true;
+    return future;
+  }
+  
+  OrkAssert(false); // captureToTexture not implemented yet
+  
+  future->_captureTexture = nullptr;
+  future->_failed = true;
+  future->_on_capture_complete = on_capture_complete;
+  
+  return future;
 }
 
 ///////////////////////////////////////////////////////

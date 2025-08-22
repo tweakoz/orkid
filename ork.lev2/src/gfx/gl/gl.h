@@ -313,11 +313,12 @@ public:
   void _doBeginFrame() final;
   void _doEndFrame() final;
 
-  captureasync_ptr_t capture(const RtBuffer* inpbuf, const file::Path& pth) final;
-  bool captureToTexture(const CaptureBuffer& capbuf, Texture& tex) final {
-    return false;
-  }
-  bool captureAsFormat(const RtBuffer* inpbuf, CaptureBuffer* buffer, EBufferFormat destfmt) final;
+  captureasync_ptr_t capture(const RtBuffer* inpbuf, const file::Path& pth, void_lambda_t on_capture_complete = nullptr) final;
+  captureasync_ptr_t captureToTexture(const RtBuffer* inpbuf, Texture& tex, void_lambda_t on_capture_complete = nullptr) final;
+  captureasync_ptr_t captureAsFormat(const RtBuffer* inpbuf, capturebuffer_ptr_t buffer, EBufferFormat destfmt, void_lambda_t on_capture_complete = nullptr) final;
+  
+  // Internal synchronous implementation
+  bool _captureAsFormatImmediate(const RtBuffer* inpbuf, CaptureBuffer* buffer, EBufferFormat destfmt);
 
   void GetPixel(const fvec4& rAt, PixelFetchContext& ctx) final;
 

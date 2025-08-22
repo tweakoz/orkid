@@ -96,8 +96,8 @@ void pyinit_gfx(py::module& module_lev2) {
       .def("capturePixel", [](const fbi_t& fbi, const fvec4& at, PixelFetchContext& pfc) { return fbi.get()->GetPixel(at, pfc); })
       .def(
           "captureBuffer",
-          [](const fbi_t& fbi, rtbuffer_ptr_t rtb, CaptureBuffer& capbuf) -> bool {
-            return fbi.get()->capture(rtb.get(), &capbuf);
+          [](const fbi_t& fbi, rtbuffer_ptr_t rtb, capturebuffer_ptr_t capbuf) -> captureasync_ptr_t {
+            return fbi.get()->capture(rtb.get(), capbuf);
           })
       .def(
           "captureToFile",
@@ -106,9 +106,9 @@ void pyinit_gfx(py::module& module_lev2) {
           })
       .def(
           "captureAsFormat",
-          [](const fbi_t& fbi, rtbuffer_ptr_t rtb, CaptureBuffer& capbuf, std::string format) -> bool {
+          [](const fbi_t& fbi, rtbuffer_ptr_t rtb, capturebuffer_ptr_t capbuf, std::string format) -> captureasync_ptr_t {
             auto crc_fmt = CrcString(format.c_str());
-            return fbi.get()->captureAsFormat(rtb.get(), &capbuf, EBufferFormat(crc_fmt._hashed));
+            return fbi.get()->captureAsFormat(rtb.get(), capbuf, EBufferFormat(crc_fmt._hashed));
           })
       //.def("clear", [](const fbi_t& fbi, const fcolor4& color, float depth) { return fbi.get()->Clear(color, depth); })
       .def("rtGroupPush", [](const fbi_t& fbi, rtgroup_ptr_t rtg) { return fbi.get()->PushRtGroup(rtg.get()); })
@@ -357,7 +357,7 @@ void pyinit_gfx(py::module& module_lev2) {
                        })
                    .def_property_readonly("is_ready", [](captureasync_ptr_t cap) -> bool { return cap->isReady(); })
                    .def_property_readonly("progress", [](captureasync_ptr_t cap) -> float { return cap->progress(); })
-                   .def("wait", [](captureasync_ptr_t cap, CaptureBuffer* buffer) -> bool { return cap->wait(buffer); });
+                   .def("wait", [](captureasync_ptr_t cap, capturebuffer_ptr_t buffer) -> bool { return cap->wait(buffer.get()); });
 
   auto rtb_t = py::class_<RtBuffer, rtbuffer_ptr_t>(module_lev2, "RtBuffer")
                    .def(
@@ -418,7 +418,7 @@ void pyinit_gfx(py::module& module_lev2) {
   //.def("texture", [](rtgroup_ptr_t rtg, int irtb) -> texture_ptr_t { return rtg->buffer(irtb)->texture(); });
   type_codec->registerStdCodec<rtgroup_ptr_t>(rtg_t);
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<CaptureBuffer>(module_lev2, "CaptureBuffer", pybind11::buffer_protocol())
+  py::class_<CaptureBuffer, capturebuffer_ptr_t>(module_lev2, "CaptureBuffer", pybind11::buffer_protocol())
       .def(py::init<>())
       .def_buffer([](CaptureBuffer& capbuf) -> pybind11::buffer_info {
         pybind11::buffer_info rval;
