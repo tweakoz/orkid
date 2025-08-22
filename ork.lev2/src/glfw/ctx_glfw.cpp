@@ -35,7 +35,7 @@ extern appinitdata_ptr_t _ginitdata;
 static logchannel_ptr_t logchan_glfw = logger()->configureChannel("GLFW", fvec3(0.8, 0.2, 0.6), true);
 void setAlwaysOnTop(GLFWwindow* window);
 void recomputeHIDPI(GLFWwindow* window);
-void windowToFront(GLFWwindow *window);
+void windowToFront(GLFWwindow* window);
 ///////////////////////////////////////////////////////////////////////////////
 static CtxGLFW* _gctx = nullptr;
 ///////////////////////////////////////////////////////////////////////////////
@@ -141,12 +141,12 @@ static void _glfw_callback_fbresized(GLFWwindow* window, int w, int h) {
   auto sink = ctxbase->_eventSINK;
   if (nullptr == sink)
     return;
-  logchan_glfw->status("FB RESIZED","w<%d> h<%d> cs<%g %g>", w, h, ctxbase->_contentScaleX, ctxbase->_contentScaleY);
+  logchan_glfw->status("FB RESIZED", "w<%d> h<%d> cs<%g %g>", w, h, ctxbase->_contentScaleX, ctxbase->_contentScaleY);
   sink->_on_callback_fbresized(w, h);
 }
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_contentScaleChanged(GLFWwindow* window, float sw, float sh) {
-  logchan_glfw->status("CONTENTSCALE","<%p %f %f>", window, sw, sh);
+  logchan_glfw->status("CONTENTSCALE", "<%p %f %f>", window, sw, sh);
   auto ctxbase = (CtxGLFW*)glfwGetWindowUserPointer(window);
   if (nullptr == ctxbase)
     return;
@@ -338,11 +338,11 @@ void CtxGLFW::Show() {
     int l = _appinitdata->_left;
     int t = _appinitdata->_top;
 
-    #if defined(__APPLE__)
+#if defined(__APPLE__)
     glfwWindowHint(
         GLFW_COCOA_RETINA_FRAMEBUFFER, //
         _appinitdata->_allowHIDPI ? GLFW_TRUE : GLFW_FALSE);
-    #endif
+#endif
 
     if (_appinitdata->_fullscreen) {
 
@@ -354,14 +354,13 @@ void CtxGLFW::Show() {
       logchan_glfw->log("desired_monitor_name<%s> ", desired_monitor_name.c_str());
 
       for (int i = 0; i < monitor_count; i++) {
-        GLFWmonitor* monitor    = monitors[i];
-          int mon_x               = 0;
-          int mon_y               = 0;
-          glfwGetMonitorPos(monitor, &mon_x, &mon_y);
-          const char* monitorName = glfwGetMonitorName(monitor);
-          logchan_glfw->log("have monitor<%d:%s> monx<%d> mony<%d>", i, monitorName, mon_x, mon_y);
+        GLFWmonitor* monitor = monitors[i];
+        int mon_x            = 0;
+        int mon_y            = 0;
+        glfwGetMonitorPos(monitor, &mon_x, &mon_y);
+        const char* monitorName = glfwGetMonitorName(monitor);
+        logchan_glfw->log("have monitor<%d:%s> monx<%d> mony<%d>", i, monitorName, mon_x, mon_y);
       }
-
 
       if (desired_monitor_name != "none") {
         for (int i = 0; i < monitor_count; i++) {
@@ -387,7 +386,8 @@ void CtxGLFW::Show() {
 
           int d = abs(mon_x - l);
 
-          logchan_glfw->log("diffmode: monitor<%d> %s mon_x<%d> mon_y<%d> dist<%d> idiff<%d>\n", i, monitorName, mon_x, mon_y, d, idiff);
+          logchan_glfw->log(
+              "diffmode: monitor<%d> %s mon_x<%d> mon_y<%d> dist<%d> idiff<%d>\n", i, monitorName, mon_x, mon_y, d, idiff);
 
           if (d < idiff) {
             fullscreen_monitor = monitor;
@@ -404,13 +404,13 @@ void CtxGLFW::Show() {
       //////////////////////////////////////
       const GLFWvidmode* mode = glfwGetVideoMode(fullscreen_monitor);
       const char* monitorName = glfwGetMonitorName(fullscreen_monitor);
-      if(monitorName==nullptr){
+      if (monitorName == nullptr) {
         monitorName = "";
       }
       float contentScaleX = 1.0f;
       float contentScaleY = 1.0f;
       // fetch content scale
-      //glfwGetMonitorContentScale(fullscreen_monitor, &contentScaleX, &contentScaleY);
+      // glfwGetMonitorContentScale(fullscreen_monitor, &contentScaleX, &contentScaleY);
 
       _width  = mode->width * contentScaleX;
       _height = mode->height * contentScaleY;
@@ -440,16 +440,13 @@ void CtxGLFW::Show() {
       int mon_x = 0;
       int mon_y = 0;
       glfwGetMonitorPos(selected_monitor, &mon_x, &mon_y);
-      _appinitdata->_left = mon_x;  // Use directly - already in screen coordinates
-      _appinitdata->_top = mon_y;   // Use directly - already in screen coordinates
+      _appinitdata->_left = mon_x; // Use directly - already in screen coordinates
+      _appinitdata->_top  = mon_y; // Use directly - already in screen coordinates
       logchan_glfw->log("Setting window position to monitor position: x<%d> y<%d>", mon_x, mon_y);
-
 
       this->onResize(_width, _height);
       fullscreen_monitor = nullptr; // disable actual fullscreen
     } // fullscreen
-
-
 
     switch (GRAPHICS_API) {
       case "VULKAN"_crcu:
@@ -500,7 +497,7 @@ void CtxGLFW::Show() {
   _glfwMonitor = selected_monitor;
 
   // if(_appinitdata->_allowHIDPI){
-  //glfwGetWindowContentScale(_glfwWindow, &_contentScaleX, &_contentScaleY);
+  // glfwGetWindowContentScale(_glfwWindow, &_contentScaleX, &_contentScaleY);
   //}
   // else{
   //  _contentScaleX = 1.0f;
@@ -534,7 +531,7 @@ void CtxGLFW::Show() {
   }
 
   if (_needsInitialize) {
-    //printf("CreateCONTEXT");
+    // printf("CreateCONTEXT");
     _orkwindow->initContext();
     if (_appinitdata->_fullscreen) {
       _target->resizeMainSurface(_width, _height);
@@ -544,16 +541,11 @@ void CtxGLFW::Show() {
   }
   if (not _appinitdata->_offscreen) {
     glfwShowWindow(_glfwWindow);
-    
+
     // Re-apply position after window is shown for fullscreen mode
     if (_appinitdata->_fullscreen) {
-      glfwSetWindowPos(
-        _glfwWindow,
-        _appinitdata->_left,
-        _appinitdata->_top);
-      logchan_glfw->log("Re-positioning window after show to: x<%d> y<%d>", 
-        _appinitdata->_left, 
-        _appinitdata->_top);
+      glfwSetWindowPos(_glfwWindow, _appinitdata->_left, _appinitdata->_top);
+      logchan_glfw->log("Re-positioning window after show to: x<%d> y<%d>", _appinitdata->_left, _appinitdata->_top);
     }
   }
   _appinitdata->_width  = (_appinitdata->_width * _contentScaleX);
@@ -562,12 +554,12 @@ void CtxGLFW::Show() {
   _height               = _appinitdata->_height;
 
   onResize(_width, _height);
-  if(_appinitdata->_canalwaysontop){
+  if (_appinitdata->_canalwaysontop) {
     setAlwaysOnTop(_glfwWindow);
   }
 
-  #ifdef __APPLE__
-    windowToFront(_glfwWindow);
+#ifdef __APPLE__
+  windowToFront(_glfwWindow);
 #endif
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -595,9 +587,7 @@ void CtxGLFW::pollEvents() {
   glfwPollEvents();
 }
 ///////////////////////////////////////////////////////////////////////////////
-int CtxGLFW::runloop() {
-  int rval = 0;
-
+void CtxGLFW::_runloopBegin() {
   OrkAssert(_target);
 
   lev2::ThreadGfxContext l2ctx_track(_target);
@@ -608,65 +598,59 @@ int CtxGLFW::runloop() {
     FontMan::gpuInit(_target);
     _onGpuInit(_target);
   }
-
-  while (_runstate == 1) {
-
-    //////////////////////////////
-    // poll UI/windowing system events
-    //////////////////////////////
-
-    // glfwWaitEvents();
-    glfwPollEvents();
-
-    //////////////////////////////
-    // run main thread app logic
-    //////////////////////////////
-
-    _onRunLoopIteration();
-
-    //////////////////////////////
-    // redraw ?
-    //////////////////////////////
-
-    if (_onGpuUpdate) {
-      _onGpuUpdate(_target);
-    }
-
-    // EASY_BLOCK("ctx_glfw::render::gpupre", profiler::colors::Red);
-
-    if (_onGpuPreFrame) {
-      _onGpuPreFrame(_target);
-    }
-
-    // for( auto fn : _gpu_misc_updates ){
-    // fn(_target);
-    //}
-
-    SlotRepaint();
-
-    // EASY_BLOCK("ctx_glfw::render::gpupos", profiler::colors::Red);
-    if (_onGpuPostFrame) {
-      _onGpuPostFrame(_target);
-    }
-    //////////////////////////////
-    // check for closed window
-    //////////////////////////////
-
-    if (_glfwWindow) {
-      bool window_should_close = glfwWindowShouldClose(_glfwWindow);
-      if (window_should_close) {
-        _runstate = 2;
-      }
-    }
-
-  } //  while (_runstate == 1) {
-
+}
+///////////////////////////////////////////////////////////////////////////////
+void CtxGLFW::_runloopIter() {
   //////////////////////////////
-  // run main thread app logic (one last time..)
+  // poll UI/windowing system events
   //////////////////////////////
 
-  //_onRunLoopIteration();
+  // glfwWaitEvents();
+  glfwPollEvents();
 
+  //////////////////////////////
+  // run main thread app logic
+  //////////////////////////////
+
+  _onRunLoopIteration();
+
+  //////////////////////////////
+  // redraw ?
+  //////////////////////////////
+
+  if (_onGpuUpdate) {
+    _onGpuUpdate(_target);
+  }
+
+  // EASY_BLOCK("ctx_glfw::render::gpupre", profiler::colors::Red);
+
+  if (_onGpuPreFrame) {
+    _onGpuPreFrame(_target);
+  }
+
+  // for( auto fn : _gpu_misc_updates ){
+  // fn(_target);
+  //}
+
+  SlotRepaint();
+
+  // EASY_BLOCK("ctx_glfw::render::gpupos", profiler::colors::Red);
+  if (_onGpuPostFrame) {
+    _onGpuPostFrame(_target);
+  }
+  //////////////////////////////
+  // check for closed window
+  //////////////////////////////
+
+  if (_glfwWindow) {
+    bool window_should_close = glfwWindowShouldClose(_glfwWindow);
+    if (window_should_close) {
+      _runstate = 2;
+    }
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+void CtxGLFW::_runloopEnd() {
   //////////////////////////////
 
   if (_onGpuExit) {
@@ -677,6 +661,15 @@ int CtxGLFW::runloop() {
 
   glfwDestroyWindow(_glfwWindow);
   _runstate = 3;
+}
+///////////////////////////////////////////////////////////////////////////////
+int CtxGLFW::runloop() {
+  int rval = 0;
+  _runloopBegin();
+  while (_runstate == 1) {
+    _runloopIter();
+  }
+  _runloopEnd();
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -847,8 +840,8 @@ GLFWwindow* CtxGLFW::_apiInitGL() {
 
 GLFWwindow* CtxGLFW::_apiInitVK() {
   OrkAssert(glfwVulkanSupported());
-  //OrkAssert(vulkan::_GVI);
-  //OrkAssert(vulkan::_GVI->_instance);
+  // OrkAssert(vulkan::_GVI);
+  // OrkAssert(vulkan::_GVI->_instance);
   auto ctx_vars = std::make_shared<varmap::VarMap>();
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   GLFWwindow* offscreen_window = glfwCreateWindow(
@@ -873,7 +866,7 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
 
     _gctx = new CtxGLFW(nullptr);
 
-    printf( "<<<glfwInit>>> HERE!!!\n");
+    printf("<<<glfwInit>>> HERE!!!\n");
 
     bool ok = glfwInit();
     assert(ok);
@@ -1198,7 +1191,7 @@ struct PopupImpl {
     glfwShowWindow(_glfwPopupWindow);
 
     _rtgroup             = std::make_shared<lev2::RtGroup>(_parent_context, _w, _h);
-    _rtgroup->_usage = "popup"_crcu;
+    _rtgroup->_usage     = "popup"_crcu;
     _rtgroup->mNumMrts   = 1;
     _rtgroup->_autoclear = false;
 
@@ -1224,11 +1217,10 @@ struct PopupImpl {
 
     _terminate = false;
 
-
     if (_uicontext->_top) {
       _uicontext->_top->gpuInit(_parent_context);
       _uicontext->_top->SetRect(0, 0, _w, _h);
-      //OrkAssert(false);
+      // OrkAssert(false);
     }
 
     ork::Timer timer;
@@ -1246,7 +1238,7 @@ struct PopupImpl {
 
       glfwPollEvents();
 
-      auto plato_saved = _parent_context->_impl;
+      auto plato_saved       = _parent_context->_impl;
       _parent_context->_impl = _cloned_plato;
       //_parent_context->bindPlatformHandle(_cloned_plato);
       _rtgroup->_clearColor = fvec4(0, 0, 0, 0);
@@ -1254,8 +1246,6 @@ struct PopupImpl {
       _parent_context->FBI()->pushViewport(0, 0, _w, _h);
       _parent_context->FBI()->pushScissor(0, 0, _w, _h);
       _parent_context->FBI()->PushRtGroup(_rtgroup.get());
-
-
 
       _uicontext->tick(updata);
 

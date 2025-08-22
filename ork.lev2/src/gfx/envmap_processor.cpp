@@ -56,7 +56,8 @@ xirprocessfuture_ptr_t EnvMapProcessor::processToXIRDataBlockAsync(
   auto ext_str = input_path.getExtension();
   // Convert to lowercase manually
   std::transform(ext_str.begin(), ext_str.end(), ext_str.begin(), ::tolower);
-  bool is_equirectangular = (ext_str == ".exr" || ext_str == ".hdr");
+  // getExtension returns without dot, so compare without dot
+  bool is_equirectangular = (ext_str == "exr" || ext_str == "hdr");
   
   // Queue the operation for when context is available
   GfxEnv::GetRef().enqueueDeferredContextOp(
@@ -107,8 +108,13 @@ std::vector<xirprocessfuture_ptr_t> EnvMapProcessor::processDirectory(
         file::Path input_file(entry.path());
         auto file_ext = input_file.getExtension();
         
+        printf("Checking file: %s, extension: '%s'\n", input_file.c_str(), file_ext.c_str());
+        
+        // Add dot to extension for comparison (getExtension returns without dot)
+        std::string ext_with_dot = "." + file_ext;
+        
         // Check if extension matches
-        if (std::find(extensions.begin(), extensions.end(), file_ext) != extensions.end()) {
+        if (std::find(extensions.begin(), extensions.end(), ext_with_dot) != extensions.end()) {
           files_to_process.push_back(input_file);
         }
       }
@@ -119,33 +125,7 @@ std::vector<xirprocessfuture_ptr_t> EnvMapProcessor::processDirectory(
   for (const auto& input_file : files_to_process) {
     // Create a future that will write to disk when complete
     auto future = processToXIRDataBlockAsync(input_file);
-    
-    // Add a wrapper future that saves to disk
-    auto wrapper_future = std::make_shared<XIRProcessFuture>();
-    
-    // Get output filename
-    auto stem = input_file.toBFS().stem().string();
-    auto output_file = output_dir / FormatString("%s.xir", stem.c_str());
-    
-    // Chain the operation to save when complete
-    GfxEnv::GetRef().enqueueDeferredContextOp(
-      [future, wrapper_future, output_file](Context* ctx) {
-        // Wait for processing to complete
-        auto xir_data = future->get();
-        if (xir_data) {
-          // Save to disk
-          auto result = File::saveDatablock(output_file, xir_data);
-          if (result == EFEC_FILE_OK) {
-            wrapper_future->setResult(xir_data);
-          } else {
-            wrapper_future->setResult(nullptr);
-          }
-        } else {
-          wrapper_future->setResult(nullptr);
-        }
-      });
-    
-    futures.push_back(wrapper_future);
+    futures.push_back(future);
   }
   
   return futures;

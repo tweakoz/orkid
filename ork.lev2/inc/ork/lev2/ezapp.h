@@ -195,6 +195,9 @@ struct OrkEzApp : public OrkEzAppBase {
   void _audioInit();
   void _audioExit();
   
+  void _mainThreadLoopBegin();
+  void _mainThreadLoopEnd();
+  void _mainThreadLoopIter();
   int mainThreadLoop();
   void setSceneRunLoop(scenegraph::scene_ptr_t scene);
 
@@ -250,6 +253,7 @@ public:
   int _gpuFrameCounter = 0;
   int _gpuFrameCounterUP = 0;
 
+  Thread::thread_lambda_t _update_thread_impl = nullptr;
   onsynfn_t _onSynthInit                    = nullptr;
   onauddevfn_t _onAudioInit                 = nullptr;
   onauddevfn_t _onAudioExit                 = nullptr;

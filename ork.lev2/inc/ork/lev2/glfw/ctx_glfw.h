@@ -69,6 +69,11 @@ struct CtxGLFW : public CTXBASE {
   void hideMouseCursor() final;
 
   void SlotRepaint() final;
+
+  void _runloopBegin();
+  void _runloopEnd();
+  void _runloopIter();
+
   int runloop();
 
   void Show() final;

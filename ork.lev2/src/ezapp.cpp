@@ -508,29 +508,12 @@ void OrkEzApp::_audioExit(){
   _audiodevice = nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
-int OrkEzApp::mainThreadLoop() {
-
-  EASY_PROFILER_ENABLE;
-  EASY_MAIN_THREAD;
-  profiler::startListen();
-
-  if(not _mainWindow){
-    while(this->_onRunLoopIteration){
-      opq::TrackCurrent opqtest(_mainq);
-      _mainq->Process();
-      this->_onRunLoopIteration();
-    }
-    return 0;
-  }
-
-  auto glfw_ctx = _mainWindow->_ctqt;
-
-  this->_gpuFrameCounter++;
+void OrkEzApp::_mainThreadLoopBegin() {
   ///////////////////////////////
   // update thread implementation
   ///////////////////////////////
 
-  auto update_thread_impl = [&](anyp data) {
+  _update_thread_impl = [&](anyp data) {
     _update_timer.Start();
     _update_prevtime        = _update_timer.SecsSinceStart();
     _update_timeaccumulator = 0.0;
@@ -612,13 +595,30 @@ int OrkEzApp::mainThreadLoop() {
     _audioExit();
     //printf( "update_thread exited.....\n");
   };
+  EASY_PROFILER_ENABLE;
+  EASY_MAIN_THREAD;
+  profiler::startListen();
+
+  if(not _mainWindow){
+    while(this->_onRunLoopIteration){
+      opq::TrackCurrent opqtest(_mainq);
+      _mainq->Process();
+      this->_onRunLoopIteration();
+    }
+    return;
+  }
+
+  auto glfw_ctx = _mainWindow->_ctqt;
+
+  this->_gpuFrameCounter++;
+
 
   ///////////////////////////////
   // hookup on gpuinit callback
   //   ensuring _onGpuInit called before onUpdateInit
   ///////////////////////////////
 
-  glfw_ctx->_onGpuInit = [this, update_thread_impl](lev2::Context* context) {
+  glfw_ctx->_onGpuInit = [this](lev2::Context* context) {
 
     logchan_ezapp->log("_initdata->_enable_audio<%d>", (int) _initdata->_enable_audio);
 
@@ -640,7 +640,7 @@ int OrkEzApp::mainThreadLoop() {
 
     }
 
-    _updateThread.start(update_thread_impl);
+    _updateThread.start(_update_thread_impl);
   };
 
   ///////////////////////////////
@@ -678,10 +678,27 @@ int OrkEzApp::mainThreadLoop() {
       _mainWindow->_onGpuExit(context);
     }
   };
-
-  ///////////////////////////////
-
-  return glfw_ctx->runloop();
+  glfw_ctx->_runloopBegin();
+}
+///////////////////////////////////////////////////////////////////////////////
+void OrkEzApp::_mainThreadLoopIter(){
+  auto glfw_ctx = _mainWindow->_ctqt;
+  glfw_ctx->_runloopIter();
+}
+///////////////////////////////////////////////////////////////////////////////
+void OrkEzApp::_mainThreadLoopEnd(){
+  auto glfw_ctx = _mainWindow->_ctqt;
+  glfw_ctx->_runloopEnd();
+}
+///////////////////////////////////////////////////////////////////////////////
+int OrkEzApp::mainThreadLoop() {
+  _mainThreadLoopBegin();
+  auto glfw_ctx = _mainWindow->_ctqt;
+  while(glfw_ctx->_runstate==1){
+    glfw_ctx->_runloopIter();
+  }
+  _mainThreadLoopEnd();
+  return 0;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::enableMovieRecording(file::Path output_path){

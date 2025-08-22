@@ -16,7 +16,7 @@
 namespace ork::lev2::vulkan {
 
 vkinstance_ptr_t _GVI = nullptr;
-constexpr bool _enable_validate = true;
+constexpr bool _enable_validate = false;
 constexpr bool _enable_renderdoc = false;
 constexpr bool _enable_debug = (_enable_validate or _enable_renderdoc);
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -100,7 +100,7 @@ vkdeviceinfo_ptr_t VulkanInstance::findDeviceForSurface(VkSurfaceKHR surface){
 
 VulkanInstance::VulkanInstance() {
 
-  printf( "VulkanInstance::VulkanInstance() HERE!!!\n");
+// printf( "VulkanInstance::VulkanInstance() HERE!!!\n");
 
   uint32_t glfwExtensionCount = 0;
   const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -117,7 +117,7 @@ VulkanInstance::VulkanInstance() {
   }
   auto layer_props = _layerProperties();
   for(size_t i=0; i<layer_props.size(); i++){
-   printf("layer<%d:%s>\n", i, layer_props[i].layerName);
+   //printf("layer<%d:%s>\n", i, layer_props[i].layerName);
   }
   _debugEnabled    = _enable_debug and _hasLayer(layer_props, validation_layers[0]);
 
@@ -164,7 +164,7 @@ VulkanInstance::VulkanInstance() {
   _instancedata.enabledExtensionCount   = _instance_extensions.size();
   _instancedata.ppEnabledExtensionNames = _instance_extensions.data();
 
-  printf("num vk instance extensions<%zu>\n", _instance_extensions.size());
+  //printf("num vk instance extensions<%zu>\n", _instance_extensions.size());
 
   char cwd[PATH_MAX];
   getcwd(cwd, sizeof(cwd));
@@ -177,7 +177,7 @@ VulkanInstance::VulkanInstance() {
   VkResult res = vkCreateInstance(&_instancedata, nullptr, &_instance);
   OrkAssert(res == 0);
 
-  deco::printf(yel, "vulkan::_init instance<%p> res<%d>\n", (void*) & _instance, int(res));
+  //deco::printf(yel, "vulkan::_init instance<%p> res<%d>\n", (void*) & _instance, int(res));
 
   /////////////////////////////////////////////////////////////////////////////
   // check device groups (for later multidevice support)
@@ -186,14 +186,14 @@ VulkanInstance::VulkanInstance() {
   res = vkEnumeratePhysicalDeviceGroups(_instance, &_numgroups, nullptr);
   _phygroups.resize(_numgroups);
   vkEnumeratePhysicalDeviceGroups(_instance, &_numgroups, _phygroups.data());
-  deco::printf(yel, "vulkan::_init numgroups<%u>\n", _numgroups);
+  //deco::printf(yel, "vulkan::_init numgroups<%u>\n", _numgroups);
   int igroup = 0;
   for (auto& group : _phygroups) {
     vkdevgrp_ptr_t dev_group_out = std::make_shared<VulkanDeviceGroup>();
     _devgroups.push_back(dev_group_out);
 
     dev_group_out->_deviceCount = group.physicalDeviceCount;
-    deco::printf(yel, "vulkan::_init grp<%d> numgpus<%zu>\n", igroup, dev_group_out->_deviceCount);
+    //deco::printf(yel, "vulkan::_init grp<%d> numgpus<%zu>\n", igroup, dev_group_out->_deviceCount);
     for (int idev = 0; idev < dev_group_out->_deviceCount; idev++) {
       auto device_info = std::make_shared<VulkanDeviceInfo>();
       dev_group_out->_device_infos.push_back(device_info);
@@ -201,7 +201,7 @@ VulkanInstance::VulkanInstance() {
       device_info->_phydev = group.physicalDevices[idev];
       vkGetPhysicalDeviceProperties(device_info->_phydev, &device_info->_devprops);
       device_info->_is_discrete = (device_info->_devprops.deviceType == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU);
-      deco::printf(
+      if(0)deco::printf(
           yel,
           "    gouup<%d> gpu<%d:%s> is_discrete<%d>\n",
           igroup,
@@ -236,7 +236,7 @@ VulkanInstance::VulkanInstance() {
   // std::vector<VkPhysicalDevice> phydevs(_numgpus);
   // vkEnumeratePhysicalDevices(_instance, &_numgpus, phydevs.data());
 
-  deco::printf(yel, "vulkan::_init numgpus<%u>\n", _numgpus);
+  //deco::printf(yel, "vulkan::_init numgpus<%u>\n", _numgpus);
   for (auto device_info : _device_infos) {
 
     const auto& phy    = device_info->_phydev;
@@ -251,6 +251,7 @@ VulkanInstance::VulkanInstance() {
     device_info->_maxWkgCountY = dev_props.limits.maxComputeWorkGroupCount[1];
     device_info->_maxWkgCountZ = dev_props.limits.maxComputeWorkGroupCount[2];
 
+    /*
     deco::printf(yel, "vulkan::_init gpu<%d:%s> is_discrete<%d>\n", dev_props.deviceID, dev_props.deviceName, int(is_discrete));
     deco::printf(yel, "         apiver<%u>\n", dev_props.apiVersion);
     deco::printf(yel, "         maxdim3d<%u>\n", dev_props.limits.maxImageDimension3D);
@@ -270,7 +271,7 @@ VulkanInstance::VulkanInstance() {
     deco::printf(yel, "         feat.shaderFloat64<%u>\n", int(dev_feats.shaderFloat64));
     deco::printf(yel, "         feat.sparseBinding<%u>\n", int(dev_feats.sparseBinding));
     deco::printf(yel, "         feat.multiDrawIndirect<%u>\n", int(dev_feats.multiDrawIndirect));
-
+    */
     vkGetPhysicalDeviceMemoryProperties(phy, &dev_memprops);
     auto heaps = dev_memprops.memoryHeaps;
     std::vector<VkMemoryHeap> heapsvect(heaps, heaps + dev_memprops.memoryHeapCount);
@@ -289,7 +290,7 @@ VulkanInstance::VulkanInstance() {
     device_info->_extensions.resize(numextensions);
     vkEnumerateDeviceExtensionProperties(phy, nullptr, &numextensions, device_info->_extensions.data());
     for (auto ext : device_info->_extensions) {
-      deco::printf(yel, "         extension: <%s>\n", ext.extensionName);
+      //deco::printf(yel, "         extension: <%s>\n", ext.extensionName);
       device_info->_extension_set.insert(ext.extensionName);
     }
   } // for(auto& phy : phydevs){

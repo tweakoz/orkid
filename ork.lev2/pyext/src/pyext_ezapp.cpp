@@ -433,6 +433,15 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               app->joinUpdate();
             }
             return rval;
+          }).
+          def("mainThreadBegin", [](orkezapp_ptr_t app) { //
+            app->_mainThreadLoopBegin();
+          })
+      .def("mainThreadEnd", [](orkezapp_ptr_t app) { //
+            app->_mainThreadLoopEnd();
+          })
+      .def("mainThreadIter", [](orkezapp_ptr_t app) { //
+            app->_mainThreadLoopIter();
           });
   /////////////////////////////////////////////////////////////////////////////////
   auto ezmainwin_type = //
