@@ -460,6 +460,13 @@ void CtxGLFW::Show() {
 
     logchan_glfw->log("glfwCreateWindow _width<%d> _height<%d>", _width, _height);
 
+    // Set window hints for offscreen mode to prevent focus stealing
+    if (_appinitdata->_offscreen) {
+      glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+      glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
+      glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
+    }
+
     _glfwWindow = glfwCreateWindow(
         _width,             //
         _height,            //
@@ -559,7 +566,9 @@ void CtxGLFW::Show() {
   }
 
 #ifdef __APPLE__
-  windowToFront(_glfwWindow);
+  if (not _appinitdata->_offscreen) {
+    windowToFront(_glfwWindow);
+  }
 #endif
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -811,6 +820,11 @@ GLFWwindow* CtxGLFW::_apiInitGL() {
         _appinitdata->_allowHIDPI ? GLFW_TRUE : GLFW_FALSE);
 #endif
 
+    // Prevent focus stealing for offscreen window
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
+    glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
+
     offscreen_window = glfwCreateWindow(
         32,      //
         32,      //
@@ -844,6 +858,10 @@ GLFWwindow* CtxGLFW::_apiInitVK() {
   // OrkAssert(vulkan::_GVI->_instance);
   auto ctx_vars = std::make_shared<varmap::VarMap>();
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+  // Hide the window and prevent focus for offscreen mode
+  glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+  glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
+  glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
   GLFWwindow* offscreen_window = glfwCreateWindow(
       32,      //
       32,      //
@@ -851,6 +869,7 @@ GLFWwindow* CtxGLFW::_apiInitVK() {
       nullptr, //
       nullptr);
   logchan_glfw->log("VK: offscreen_window<%p>", offscreen_window);
+  // Reset hints for future windows
   glfwWindowHint(GLFW_FOCUSED, GLFW_TRUE);
   glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
   glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);

@@ -325,6 +325,7 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
     _mainWindow->_ctqt->Show();
   }
   else { // no graphics
+    printf( "NO GRAPHICS ENABLED\n" );
     _mainWindow = nullptr;
     if(_initdata->_enable_audio){
       logchan_ezapp->log("initializing audio");

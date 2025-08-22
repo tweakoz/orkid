@@ -267,10 +267,9 @@ PYBIND11_MODULE(_core, module_core) {
       .def_property_readonly("sanitized", [](const file::Path& a) -> file::Path { 
         return a.sanitize(); 
       })
-      .def("isAbsolute", &file::Path::isAbsolute)
-      .def("IsRelative", &file::Path::isRelative)
-      .def("isRelative", &file::Path::isRelative)  // Add lowercase alias for consistency
-      .def("hasUrlBase", &file::Path::hasUrlBase)
+      .def_property_readonly("is_absolute", &file::Path::isAbsolute)
+      .def_property_readonly("is_relative", &file::Path::isRelative)
+      .def_property_readonly("has_urlbase", &file::Path::hasUrlBase)
       .def("toAbsoluteFolder", 
            [](const file::Path& self) -> file::Path {
                return self.toAbsoluteFolder();
@@ -283,6 +282,21 @@ PYBIND11_MODULE(_core, module_core) {
         auto str     = self.c_str();
         syspath.attr("append")(str);
       })
+      .def_property_readonly("exists", [](const file::Path& self) -> bool {
+        return self.exists();
+      }, "Check if the path exists")
+      .def_property_readonly("is_file", [](const file::Path& self) -> bool {
+        return self.isFile();
+      }, "Check if the path is a file")
+      .def_property_readonly("is_folder", [](const file::Path& self) -> bool {
+        return self.isFolder();
+      }, "Check if the path is a folder") 
+      .def_property_readonly("is_symlink", [](const file::Path& self) -> bool {
+        return self.isSymLink();
+      }, "Check if the path is a symbolic link")
+      .def_property_readonly("is_assetcatalog_path", [](const file::Path& self) -> bool {
+        return self.isAssetCatalogPath();
+      }, "Check if the path is an asset catalog path")
       .def("__truediv__", [](const file::Path& a, std::string b) -> file::Path { return (a / b); })
       .def("__str__", [](const file::Path& s) -> std::string { return s.c_str(); })
       .def("__repr__", [](const file::Path& s) -> std::string {

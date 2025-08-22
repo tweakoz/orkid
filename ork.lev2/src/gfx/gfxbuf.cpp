@@ -112,8 +112,18 @@ void Window::initContext() {
   _sharedcontext = std::dynamic_pointer_cast<Context>(ctxclazz->createShared());
   if (mpCTXBASE) {
     mpCTXBASE->setContext(_sharedcontext.get());
+    // Check if we're in offscreen mode
+    auto ctxglfw = dynamic_cast<CtxGLFW*>(mpCTXBASE);
+    if (ctxglfw && ctxglfw->_appinitdata && ctxglfw->_appinitdata->_offscreen) {
+      // Use offscreen context for offscreen mode
+      _sharedcontext->initializeOffscreenContext(this);
+    } else {
+      // Use window context for normal mode
+      _sharedcontext->initializeWindowContext(this, mpCTXBASE);
+    }
+  } else {
+    _sharedcontext->initializeWindowContext(this, mpCTXBASE);
   }
-  _sharedcontext->initializeWindowContext(this, mpCTXBASE);
 }
 
 /////////////////////////////////////////////////////////////////////////

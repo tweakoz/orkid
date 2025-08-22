@@ -155,10 +155,12 @@ VulkanInstance::VulkanInstance() {
 #if defined(__APPLE__)
   _instance_extensions.push_back("VK_MVK_macos_surface");
   _instance_extensions.push_back("VK_EXT_metal_surface");
+  _instance_extensions.push_back("VK_EXT_headless_surface");
   _instance_extensions.push_back("VK_KHR_portability_enumeration");
   _instancedata.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
  #else 
   _instance_extensions.push_back("VK_KHR_xcb_surface");
+  _instance_extensions.push_back("VK_EXT_headless_surface");
 #endif
 
   _instancedata.enabledExtensionCount   = _instance_extensions.size();
@@ -186,14 +188,14 @@ VulkanInstance::VulkanInstance() {
   res = vkEnumeratePhysicalDeviceGroups(_instance, &_numgroups, nullptr);
   _phygroups.resize(_numgroups);
   vkEnumeratePhysicalDeviceGroups(_instance, &_numgroups, _phygroups.data());
-  //deco::printf(yel, "vulkan::_init numgroups<%u>\n", _numgroups);
+  deco::printf(yel, "vulkan::_init numgroups<%u>\n", _numgroups);
   int igroup = 0;
   for (auto& group : _phygroups) {
     vkdevgrp_ptr_t dev_group_out = std::make_shared<VulkanDeviceGroup>();
     _devgroups.push_back(dev_group_out);
 
     dev_group_out->_deviceCount = group.physicalDeviceCount;
-    //deco::printf(yel, "vulkan::_init grp<%d> numgpus<%zu>\n", igroup, dev_group_out->_deviceCount);
+    deco::printf(yel, "vulkan::_init grp<%d> numgpus<%zu>\n", igroup, dev_group_out->_deviceCount);
     for (int idev = 0; idev < dev_group_out->_deviceCount; idev++) {
       auto device_info = std::make_shared<VulkanDeviceInfo>();
       dev_group_out->_device_infos.push_back(device_info);
@@ -201,7 +203,7 @@ VulkanInstance::VulkanInstance() {
       device_info->_phydev = group.physicalDevices[idev];
       vkGetPhysicalDeviceProperties(device_info->_phydev, &device_info->_devprops);
       device_info->_is_discrete = (device_info->_devprops.deviceType == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU);
-      if(0)deco::printf(
+      if(1)deco::printf(
           yel,
           "    gouup<%d> gpu<%d:%s> is_discrete<%d>\n",
           igroup,
@@ -251,7 +253,6 @@ VulkanInstance::VulkanInstance() {
     device_info->_maxWkgCountY = dev_props.limits.maxComputeWorkGroupCount[1];
     device_info->_maxWkgCountZ = dev_props.limits.maxComputeWorkGroupCount[2];
 
-    /*
     deco::printf(yel, "vulkan::_init gpu<%d:%s> is_discrete<%d>\n", dev_props.deviceID, dev_props.deviceName, int(is_discrete));
     deco::printf(yel, "         apiver<%u>\n", dev_props.apiVersion);
     deco::printf(yel, "         maxdim3d<%u>\n", dev_props.limits.maxImageDimension3D);
@@ -271,7 +272,7 @@ VulkanInstance::VulkanInstance() {
     deco::printf(yel, "         feat.shaderFloat64<%u>\n", int(dev_feats.shaderFloat64));
     deco::printf(yel, "         feat.sparseBinding<%u>\n", int(dev_feats.sparseBinding));
     deco::printf(yel, "         feat.multiDrawIndirect<%u>\n", int(dev_feats.multiDrawIndirect));
-    */
+
     vkGetPhysicalDeviceMemoryProperties(phy, &dev_memprops);
     auto heaps = dev_memprops.memoryHeaps;
     std::vector<VkMemoryHeap> heapsvect(heaps, heaps + dev_memprops.memoryHeapCount);

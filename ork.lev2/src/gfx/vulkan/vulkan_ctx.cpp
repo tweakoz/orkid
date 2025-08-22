@@ -9,6 +9,10 @@
 
 ImplementReflectionX(ork::lev2::vulkan::VkContext, "VkContext");
 
+namespace ork::lev2 {
+  extern appinitdata_ptr_t _ginitdata;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
@@ -121,6 +125,21 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
       _vkqfid_graphics, //
       0,                //
       &_vkqueue_graphics);
+  
+  // Load device function pointers needed for rendering
+  // These are needed for both window and offscreen contexts
+  if (_GVI->_debugEnabled) {
+    _fetchDeviceProcAddr(_vkSetDebugUtilsObjectName, "vkSetDebugUtilsObjectNameEXT");
+    _fetchDeviceProcAddr(_vkCmdDebugMarkerBeginEXT, "vkCmdDebugMarkerBeginEXT");
+    _fetchDeviceProcAddr(_vkCmdDebugMarkerEndEXT, "vkCmdDebugMarkerEndEXT");
+    _fetchDeviceProcAddr(_vkCmdDebugMarkerInsertEXT, "vkCmdDebugMarkerInsertEXT");
+    _fetchDeviceProcAddr(_vkCmdInsertDebugUtilsLabelEXT, "vkCmdInsertDebugUtilsLabelEXT");
+  }
+
+  _fetchDeviceProcAddr(_vkCmdBeginRenderingKHR, "vkCmdBeginRenderingKHR");
+  _fetchDeviceProcAddr(_vkCmdEndRenderingKHR, "vkCmdEndRenderingKHR");
+  OrkAssertI(_vkCmdBeginRenderingKHR != nullptr, "_vkCmdBeginRenderingKHR function pointer is null!");
+  OrkAssertI(_vkCmdEndRenderingKHR != nullptr, "_vkCmdEndRenderingKHR function pointer is null!");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -133,19 +152,6 @@ void VkContext::_initVulkanForWindow(VkSurfaceKHR surface) {
   }
   _initVulkanForDevInfo(vk_devinfo);
   _initVulkanCommon();
-
-  if (_GVI->_debugEnabled) {
-    _fetchDeviceProcAddr(_vkSetDebugUtilsObjectName, "vkSetDebugUtilsObjectNameEXT");
-    _fetchDeviceProcAddr(_vkCmdDebugMarkerBeginEXT, "vkCmdDebugMarkerBeginEXT");
-    _fetchDeviceProcAddr(_vkCmdDebugMarkerEndEXT, "vkCmdDebugMarkerEndEXT");
-    _fetchDeviceProcAddr(_vkCmdDebugMarkerInsertEXT, "vkCmdDebugMarkerInsertEXT");
-    _fetchDeviceProcAddr(_vkCmdInsertDebugUtilsLabelEXT, "vkCmdInsertDebugUtilsLabelEXT");
-  }
-
-  _fetchDeviceProcAddr( _vkCmdBeginRenderingKHR,"vkCmdBeginRenderingKHR");
-  _fetchDeviceProcAddr( _vkCmdEndRenderingKHR,"vkCmdEndRenderingKHR");
-   OrkAssertI(_vkCmdBeginRenderingKHR != nullptr, "_vkCmdBeginRenderingKHR function pointer is null!");
-   OrkAssertI(_vkCmdEndRenderingKHR != nullptr, "_vkCmdEndRenderingKHR function pointer is null!");
 
   // UGLY!!!
 
@@ -172,7 +178,6 @@ void VkContext::_initVulkanForOffscreen(DisplayBuffer* pBuf) {
   // TODO - this may choose a different device than the display device.
   // we need a method to choose the same device as the display device
   //  without having a surface already...
-  OrkAssert(false);
   OrkAssert(_GVI != nullptr);
   if (nullptr == _GVI->_preferred) {
     _GVI->_preferred = _GVI->_device_infos.front();
@@ -620,13 +625,21 @@ vkpricmdbufimpl_ptr_t VkContext::primary_cb() {
 void VkContext::_doEndFrame() {
   
   ////////////////////////
-  // main_rtg -> presentation layout
+  // main_rtg -> presentation or readable layout
   ////////////////////////
 
   auto main_rtb  = _fbi->_main_rtg->buffer(0);
   auto main_rtbi = main_rtb->_impl.getShared<VklRtBufferImpl>();
 
-  main_rtbi->_transitionToPresent(primary_cb());
+  // Only transition to present for window targets with swapchain
+  // For offscreen, transition to texture-readable state
+  if (meTargetType == TargetType::WINDOW) {
+    main_rtbi->_transitionToPresent(primary_cb());
+  } else {
+    // For offscreen/loader contexts, transition to texture-readable state
+    // This allows the rendered image to be read back or used as a texture
+    main_rtbi->_transitionToTexture(primary_cb());
+  }
 
   ////////////////////////
   // done with primary command buffer for this frame
@@ -644,25 +657,41 @@ void VkContext::_doEndFrame() {
   ///////////////////////////////////////////////////////
 
   auto swapchain = _fbi->_swapchain;
-  bool semas_empty = false;
-  _pendingOneShotSemas.atomicOp([&](vkcompsema_set_t& unlocked) {
-    semas_empty = unlocked.empty();
-  });
   
-  if ( not semas_empty) {
-    // Submit with timeline semaphores
-    swapchain->_submitFrameWithSemaphores(this);
-  } else {
-    // Normal submission
-    swapchain->enqueueFrame(this);
-  }
-  
-  ///////////////////////////////////////////////////////
-  // Present !
-  ///////////////////////////////////////////////////////
+  if (swapchain) {
+    // Onscreen rendering with swapchain
+    bool semas_empty = false;
+    _pendingOneShotSemas.atomicOp([&](vkcompsema_set_t& unlocked) {
+      semas_empty = unlocked.empty();
+    });
+    
+    if ( not semas_empty) {
+      // Submit with timeline semaphores
+      swapchain->_submitFrameWithSemaphores(this);
+    } else {
+      // Normal submission
+      swapchain->enqueueFrame(this);
+    }
+    
+    ///////////////////////////////////////////////////////
+    // Present !
+    ///////////////////////////////////////////////////////
 
-  swapchain->enqueuePresentFrame(this);
-  swapchain->waitPresentFrame(this);
+    swapchain->enqueuePresentFrame(this);
+    swapchain->waitPresentFrame(this);
+  } else {
+    // Offscreen rendering - just submit command buffers without presentation
+    // We need to submit the command buffer to complete the frame
+    VkSubmitInfo submitInfo = {};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &_cmdbufcurpri_gfx->_vkcmdbuf;
+    
+    vkQueueSubmit(_vkqueue_graphics, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(_vkqueue_graphics);
+    
+    logchan_vkctx->log("Offscreen frame submitted");
+  }
 
   ///////////////////////////////////////////////////////
 
@@ -720,26 +749,91 @@ void VkContext::initializeWindowContext(
 
   //logchan_vkctx->log("createWindowSurface with instance<%p>", (void*)&_GVI->_instance);
 
-  VkResult OK = glfwCreateWindowSurface(_GVI->_instance, glfw_window, nullptr, &_vkpresentationsurface);
-  OrkAssert(OK == VK_SUCCESS);
-
-  _initVulkanForWindow(_vkpresentationsurface);
-
-  for (uint32_t i = 0; i < _num_queue_types; i++) {
-    VkBool32 presentSupport = VK_FALSE;
-    vkGetPhysicalDeviceSurfaceSupportKHR(_vkphysicaldevice, i, _vkpresentationsurface, &presentSupport);
-    logchan_vkctx->log("Qfamily<%u> on surface supports presentation<%d>", i, int(presentSupport));
+  // Check if we're in offscreen mode
+  bool is_offscreen = (_ginitdata && _ginitdata->_offscreen);
+  
+  if (is_offscreen) {
+    // Create headless surface for offscreen rendering
+    logchan_vkctx->log("Creating headless surface for offscreen rendering");
+    
+    VkHeadlessSurfaceCreateInfoEXT headlessInfo = {};
+    headlessInfo.sType = VK_STRUCTURE_TYPE_HEADLESS_SURFACE_CREATE_INFO_EXT;
+    headlessInfo.pNext = nullptr;
+    headlessInfo.flags = 0;
+    
+    auto vkCreateHeadlessSurfaceEXT = (PFN_vkCreateHeadlessSurfaceEXT)
+      vkGetInstanceProcAddr(_GVI->_instance, "vkCreateHeadlessSurfaceEXT");
+    
+    if (vkCreateHeadlessSurfaceEXT) {
+      VkResult OK = vkCreateHeadlessSurfaceEXT(
+        _GVI->_instance, 
+        &headlessInfo, 
+        nullptr, 
+        &_vkpresentationsurface
+      );
+      OrkAssert(OK == VK_SUCCESS);
+      logchan_vkctx->log("Headless surface created successfully");
+    } else {
+      logchan_vkctx->log("ERROR: vkCreateHeadlessSurfaceEXT not available");
+      OrkAssert(false);
+    }
+  } else {
+    // Original onscreen path
+    VkResult OK = glfwCreateWindowSurface(_GVI->_instance, glfw_window, nullptr, &_vkpresentationsurface);
+    OrkAssert(OK == VK_SUCCESS);
   }
 
-  _vkpresentation_caps = _swapChainCapsForSurface(_vkpresentationsurface);
-  OrkAssert(_vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_IMMEDIATE_KHR));
-  OrkAssert(_vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_FIFO_KHR));
-  // OrkAssert(_vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_FIFO_RELAXED_KHR));
-  //  OrkAssert( _vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_MAILBOX_KHR) );
-  //  OrkAssert( _vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR) );
-  //  OrkAssert( _vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR) );
+  // Initialize Vulkan device - for offscreen, just use the first available device
+  if (is_offscreen) {
+    // For offscreen rendering, select the first available device (or preferred if set)
+    auto vk_devinfo = _GVI->_preferred ? _GVI->_preferred : (_GVI->_device_infos.empty() ? nullptr : _GVI->_device_infos[0]);
+    OrkAssert(vk_devinfo != nullptr);
+    logchan_vkctx->log("Offscreen mode: using device <%s>", vk_devinfo->_devprops.deviceName);
+    _initVulkanForDevInfo(vk_devinfo);
+    _initVulkanCommon();
+    
+    // Initialize debug functions if needed
+    if (_GVI->_debugEnabled) {
+      _fetchDeviceProcAddr(_vkSetDebugUtilsObjectName, "vkSetDebugUtilsObjectNameEXT");
+      _fetchDeviceProcAddr(_vkCmdDebugMarkerBeginEXT, "vkCmdDebugMarkerBeginEXT");
+      _fetchDeviceProcAddr(_vkCmdDebugMarkerEndEXT, "vkCmdDebugMarkerEndEXT");
+      _fetchDeviceProcAddr(_vkCmdDebugMarkerInsertEXT, "vkCmdDebugMarkerInsertEXT");
+      _fetchDeviceProcAddr(_vkCmdInsertDebugUtilsLabelEXT, "vkCmdInsertDebugUtilsLabelEXT");
+    }
+  } else {
+    // Original path for windowed rendering
+    _initVulkanForWindow(_vkpresentationsurface);
+    
+    for (uint32_t i = 0; i < _num_queue_types; i++) {
+      VkBool32 presentSupport = VK_FALSE;
+      vkGetPhysicalDeviceSurfaceSupportKHR(_vkphysicaldevice, i, _vkpresentationsurface, &presentSupport);
+      logchan_vkctx->log("Qfamily<%u> on surface supports presentation<%d>", i, int(presentSupport));
+    }
+  }
 
-  _fbi->_swapchain = std::make_shared<VkSwapChain>(this);
+  // Only get presentation capabilities if we have a surface
+  if (_vkpresentationsurface) {
+    _vkpresentation_caps = _swapChainCapsForSurface(_vkpresentationsurface);
+  }
+  
+  // Reuse is_offscreen variable from above
+  
+  if (!is_offscreen && _vkpresentation_caps) {
+    // Only create swapchain for onscreen rendering
+    OrkAssert(_vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_IMMEDIATE_KHR));
+    OrkAssert(_vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_FIFO_KHR));
+    // OrkAssert(_vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_FIFO_RELAXED_KHR));
+    //  OrkAssert( _vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_MAILBOX_KHR) );
+    //  OrkAssert( _vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR) );
+    //  OrkAssert( _vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR) );
+    
+    _fbi->_swapchain = std::make_shared<VkSwapChain>(this);
+    logchan_vkctx->log("Swapchain created for onscreen rendering");
+  } else {
+    // For offscreen, we'll render to framebuffer objects instead
+    _fbi->_swapchain = nullptr;
+    logchan_vkctx->log("Offscreen mode: no swapchain created");
+  }
 
 } // make a window
 
@@ -787,6 +881,31 @@ void VkContext::initializeLoaderContext() {
 
   plato->_ctxbase   = global_plato()->_ctxbase;
   plato->_needsInit = false;
+
+  // Initialize Vulkan device for loader context (always offscreen)
+  // Create headless surface
+  VkHeadlessSurfaceCreateInfoEXT headlessInfo = {};
+  headlessInfo.sType = VK_STRUCTURE_TYPE_HEADLESS_SURFACE_CREATE_INFO_EXT;
+  headlessInfo.pNext = nullptr;
+  headlessInfo.flags = 0;
+  
+  auto vkCreateHeadlessSurfaceEXT = (PFN_vkCreateHeadlessSurfaceEXT)
+    vkGetInstanceProcAddr(_GVI->_instance, "vkCreateHeadlessSurfaceEXT");
+  
+  if (vkCreateHeadlessSurfaceEXT) {
+    VkResult OK = vkCreateHeadlessSurfaceEXT(
+      _GVI->_instance, 
+      &headlessInfo, 
+      nullptr, 
+      &_vkpresentationsurface
+    );
+    OrkAssert(OK == VK_SUCCESS);
+  }
+  
+  // Initialize device without requiring surface support
+  auto vk_devinfo = _GVI->_preferred ? _GVI->_preferred : _GVI->_device_infos[0];
+  _initVulkanForDevInfo(vk_devinfo);
+  _initVulkanCommon();
 
   _defaultRTG  = new RtGroup(this, miW, miH, MsaaSamples::MSAA_1X);
   auto rtb     = _defaultRTG->createRenderTarget(EBufferFormat::RGBA8);

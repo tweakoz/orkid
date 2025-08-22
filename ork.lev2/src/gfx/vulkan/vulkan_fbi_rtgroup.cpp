@@ -11,7 +11,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_rtgroup = logger()->configureChannel("VKRTG", fvec3(0.8, 0.2, 0.5), false);
+static logchannel_ptr_t logchan_rtgroup = logger()->configureChannel("VKRTG", fvec3(0.8, 0.2, 0.5), true);
 
 ///////////////////////////////////////////////////////////////////////////////
 vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(const VkRtgCreateOptions& options) {
@@ -175,13 +175,13 @@ void VkFrameBufferInterface::__setRtGroup(rtgroup_rawptr_t rtgroup) {
   auto vkcmdbuf = RTGIMPL->_cmdbufRTG->_impl.getShared<VkSecondaryCommandBufferImpl>();
 
   // DEBUG: Log the primary command buffer we're recording to
-  logchan_rtgroup->log("__setRtGroup: Recording transition to primary CB %p", (void*)_contextVK->primary_cb()->_vkcmdbuf);
+  logchan_rtgroup->log("__setRtGroup: transitioning rtgroup<%p> to RenderTarget on primary CB %p", (void*) this, (void*)_contextVK->primary_cb()->_vkcmdbuf);
 
   // Move the transition here, before resetting and beginning the secondary command buffer
   RTGIMPL->_transitionToRenderTarget(_contextVK->primary_cb());
 
   // DEBUG: Log that transition is complete
-  logchan_rtgroup->log("__setRtGroup: Transition recorded, now resetting secondary CB %p", (void*)vkcmdbuf->_vkcmdbuf);
+  logchan_rtgroup->log("__setRtGroup: Transition recorded, now resetting secondary CB %p for new commands", (void*)vkcmdbuf->_vkcmdbuf);
 
   vkResetCommandBuffer(vkcmdbuf->_vkcmdbuf, 0);                         // vkBeginCommandBuffer does an implicit reset
   vkcmdbuf->_recorded = false;                                          // Reset the recorded flag

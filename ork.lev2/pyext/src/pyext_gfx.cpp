@@ -100,6 +100,11 @@ void pyinit_gfx(py::module& module_lev2) {
             return fbi.get()->capture(rtb.get(), &capbuf);
           })
       .def(
+          "captureToFile",
+          [](const fbi_t& fbi, rtbuffer_ptr_t rtb, const file::Path& pth) -> bool {
+            fbi.get()->capture(rtb.get(), pth);
+          })
+      .def(
           "captureAsFormat",
           [](const fbi_t& fbi, rtbuffer_ptr_t rtb, CaptureBuffer& capbuf, std::string format) -> bool {
             auto crc_fmt = CrcString(format.c_str());
@@ -350,7 +355,19 @@ void pyinit_gfx(py::module& module_lev2) {
                          fxs.format("RtBuffer(%p)", rtb.get());
                          return fxs.c_str();
                        })
-                   .def_property_readonly("texture", [](rtbuffer_ptr_t rtb) -> texture_ptr_t { return rtb->_texture; });
+                   .def_property_readonly("texture", [](rtbuffer_ptr_t rtb) -> texture_ptr_t { return rtb->_texture; })
+                   .def_property(
+                       "clearColor",
+                       [](rtbuffer_ptr_t rtb) -> fvec4 { return rtb->_clearColor; },
+                       [](rtbuffer_ptr_t rtb, const fvec4& color) { rtb->_clearColor = color; })
+                   .def_property(
+                       "clearDepth",
+                       [](rtbuffer_ptr_t rtb) -> float { return rtb->_clearDepth; },
+                       [](rtbuffer_ptr_t rtb, float depth) { rtb->_clearDepth = depth; })
+                   .def_property(
+                       "autoclear",
+                       [](rtbuffer_ptr_t rtb) -> bool { return rtb->_autoclear; },
+                       [](rtbuffer_ptr_t rtb, bool autoclear) { rtb->_autoclear = autoclear; });
   type_codec->registerStdCodec<rtbuffer_ptr_t>(rtb_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto rtg_t = py::class_<RtGroup, rtgroup_ptr_t>(module_lev2, "RtGroup")

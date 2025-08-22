@@ -29,11 +29,24 @@ FrameBufferInterface::FrameBufferInterface(Context& tgt)
 
   // for( int i=0; i<kiVPStackMax; i++ )
   //	maViewportStack[i]
-  _main_rtg = std::make_shared<RtGroup>(&tgt,8,8,MsaaSamples::MSAA_1X,"swapchain"_crcu);
+  
+  // Determine usage based on target type
+  // WINDOW targets use swapchain, OFFSCREEN/LOADING use user RTG
+  uint64_t rtg_usage = (tgt.meTargetType == TargetType::WINDOW) 
+                       ? "swapchain"_crcu 
+                       : "user"_crcu;
+  
+  // Buffer usage is different from RTG usage
+  // For buffers, we use "swapchain" for window targets, "color" for offscreen
+  uint64_t buffer_usage = (tgt.meTargetType == TargetType::WINDOW)
+                          ? "swapchain"_crcu
+                          : "color"_crcu;
+  
+  _main_rtg = std::make_shared<RtGroup>(&tgt,8,8,MsaaSamples::MSAA_1X,rtg_usage);
   _main_rtg->_name = "main_rtg";
   _main_rtg->_clearColor = fcolor4::Black();
 
-  auto rtb_color = _main_rtg->createRenderTarget(EBufferFormat::SRGB_BGRA8, "swapchain"_crcu,false);
+  auto rtb_color = _main_rtg->createRenderTarget(EBufferFormat::SRGB_BGRA8, buffer_usage, false);
   auto rtb_depth = _main_rtg->createDepthBuffer(EBufferFormat::Z32F, false);
 
 }

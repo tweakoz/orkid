@@ -7,6 +7,12 @@
 
 #include "headers/vulkan_ctx.h"
 
+#define USE_OIIO
+#if defined(USE_OIIO)
+#include <OpenImageIO/imageio.h>
+OIIO_NAMESPACE_USING
+#endif
+
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
@@ -62,7 +68,9 @@ void VkFrameBufferInterface::_setScissor(int iX, int iY, int iW, int iH) {
 void VkFrameBufferInterface::_doBeginFrame() {
   //logchan_fbi->log("_doBeginFrame()");
   OrkAssert(_contextVK->_is_visual_frame);
-  _swapchain->_update();
+  if (_swapchain) {
+    _swapchain->_update();
+  }
   _active_rtgroup = _main_rtg.get();
 }
 
@@ -75,7 +83,49 @@ void VkFrameBufferInterface::_doEndFrame() {
 ///////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::capture(const RtBuffer* inpbuf, const file::Path& pth) {
-  OrkAssert(false);
+  // Use captureAsFormat to get the data
+  CaptureBuffer capbuf;
+  if (!captureAsFormat(inpbuf, &capbuf, EBufferFormat::RGBA8)) {
+    return;
+  }
+
+  int iw = capbuf.width();
+  int ih = capbuf.height();
+  
+  printf("VkFrameBufferInterface::capture pth<%s> BUFW<%d> BUFH<%d>\n", pth.c_str(), iw, ih);
+
+  // Flip the image vertically (Vulkan has Y pointing down, while most image formats have Y pointing up)
+  auto outbuf = (uint8_t*)malloc(iw * ih * 4);
+  auto srcdata = (uint8_t*)capbuf._data;
+  
+  for (int iy = 0; iy < ih; iy++) {
+    for (int ix = 0; ix < iw; ix++) {
+      int src_pixel = iy * iw + ix;
+      int dst_pixel = (ih - 1 - iy) * iw + ix;
+      
+      int src_byte = src_pixel * 4;
+      int dst_byte = dst_pixel * 4;
+      
+      outbuf[dst_byte + 0] = srcdata[src_byte + 0]; // R
+      outbuf[dst_byte + 1] = srcdata[src_byte + 1]; // G
+      outbuf[dst_byte + 2] = srcdata[src_byte + 2]; // B
+      outbuf[dst_byte + 3] = srcdata[src_byte + 3]; // A
+    }
+  }
+
+#if defined(USE_OIIO)
+  auto out = ImageOutput::create(pth.c_str());
+  if (!out) {
+    free(outbuf);
+    return;
+  }
+  ImageSpec spec(iw, ih, 4, TypeDesc::UINT8);
+  out->open(pth.c_str(), spec);
+  out->write_image(TypeDesc::UINT8, outbuf);
+  out->close();
+#endif
+
+  free(outbuf);
 }
 
 ///////////////////////////////////////////////////////
