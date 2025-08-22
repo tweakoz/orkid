@@ -125,7 +125,7 @@ captureasync_ptr_t VkFrameBufferInterface::capture(const RtBuffer* inpbuf, const
   
   // After one frame iteration, the command buffer will be submitted and executed
   // So we'll mark as ready after that
-  _contextVK->_pending_capture = future;
+  _contextVK->_pending_captures.insert(future);
   
   return future;
 }

@@ -686,8 +686,8 @@ void VkContext::_doEndFrame() {
     swapchain->enqueuePresentFrame(this);
     swapchain->waitPresentFrame(this);
     
-    // Process pending capture after swapchain frame completion
-    _processPendingCapture();
+    // Process pending captures after swapchain frame completion
+    _processPendingCaptures();
   } else {
     // Offscreen rendering - just submit command buffers without presentation
     // We need to submit the command buffer to complete the frame
@@ -701,8 +701,8 @@ void VkContext::_doEndFrame() {
     
     logchan_vkctx->log("Offscreen frame submitted");
     
-    // Process pending capture after offscreen frame completion
-    _processPendingCapture();
+    // Process pending captures after offscreen frame completion
+    _processPendingCaptures();
   }
 
   ///////////////////////////////////////////////////////
@@ -1096,10 +1096,16 @@ void VkContext::_doResizeMainSurface(int iw, int ih) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkContext::_processPendingCapture() {
-  if (!_pending_capture) {
+void VkContext::_processPendingCaptures() {
+  if (_pending_captures.empty()) {
     return;
   }
+  
+  // Process all pending captures
+  auto captures_to_process = _pending_captures;
+  _pending_captures.clear();
+  
+  for (auto& capture : captures_to_process) {
   
   // Get the VulkanCaptureData from the future
   struct VulkanCaptureData {
@@ -1110,54 +1116,52 @@ void VkContext::_processPendingCapture() {
     bool frame_submitted = false;
   };
   
-  auto capture_data = _pending_capture->_impl.getShared<VulkanCaptureData>();
-  if (!capture_data) {
-    _pending_capture->_failed = true;
-    _pending_capture = nullptr;
-    return;
-  }
-  
-  // Get the staging buffer from the capture buffer
-  auto staging_buffer = capture_data->capture_buffer->_impl.getShared<VulkanBuffer>();
-  if (!staging_buffer) {
-    _pending_capture->_failed = true;
-    _pending_capture = nullptr;
-    return;
-  }
-  
-  // Copy data from staging buffer to capture buffer
-  size_t bufsize = capture_data->capture_buffer->length();
-  staging_buffer->copyToHost(capture_data->capture_buffer->_data, bufsize);
-  
-  // Write to file using OIIO
-  #if defined(USE_OIIO)
-  auto out = OIIO::ImageOutput::create(capture_data->path.c_str());
-  if (out) {
-    OIIO::ImageSpec spec(capture_data->width, capture_data->height, 4, OIIO::TypeDesc::UINT8);
-    out->open(capture_data->path.c_str(), spec);
-    
-    // Flip the image vertically (Vulkan is Y-down, images are Y-up)
-    auto flipped = std::vector<uint8_t>(bufsize);
-    int row_size = capture_data->width * 4;
-    for (int y = 0; y < capture_data->height; y++) {
-      int src_y = capture_data->height - 1 - y;
-      memcpy(
-        flipped.data() + y * row_size,
-        (uint8_t*)capture_data->capture_buffer->_data + src_y * row_size,
-        row_size
-      );
+    auto capture_data = capture->_impl.getShared<VulkanCaptureData>();
+    if (!capture_data) {
+      capture->_failed = true;
+      continue;
     }
-    
-    out->write_image(OIIO::TypeDesc::UINT8, flipped.data());
-    out->close();
-    
-    logchan_vkctx->log("Capture saved to %s", capture_data->path.c_str());
-  }
-  #endif
   
-  // Mark capture as complete
-  _pending_capture->_completed = true;
-  _pending_capture = nullptr;
+    // Get the staging buffer from the capture buffer
+    auto staging_buffer = capture_data->capture_buffer->_impl.getShared<VulkanBuffer>();
+    if (!staging_buffer) {
+      capture->_failed = true;
+      continue;
+    }
+  
+    // Copy data from staging buffer to capture buffer
+    size_t bufsize = capture_data->capture_buffer->length();
+    staging_buffer->copyToHost(capture_data->capture_buffer->_data, bufsize);
+  
+    // Write to file using OIIO
+    #if defined(USE_OIIO)
+    auto out = OIIO::ImageOutput::create(capture_data->path.c_str());
+    if (out) {
+      OIIO::ImageSpec spec(capture_data->width, capture_data->height, 4, OIIO::TypeDesc::UINT8);
+      out->open(capture_data->path.c_str(), spec);
+      
+      // Flip the image vertically (Vulkan is Y-down, images are Y-up)
+      auto flipped = std::vector<uint8_t>(bufsize);
+      int row_size = capture_data->width * 4;
+      for (int y = 0; y < capture_data->height; y++) {
+        int src_y = capture_data->height - 1 - y;
+        memcpy(
+          flipped.data() + y * row_size,
+          (uint8_t*)capture_data->capture_buffer->_data + src_y * row_size,
+          row_size
+        );
+      }
+      
+      out->write_image(OIIO::TypeDesc::UINT8, flipped.data());
+      out->close();
+      
+      logchan_vkctx->log("Capture saved to %s", capture_data->path.c_str());
+    }
+    #endif
+    
+    // Mark capture as complete
+    capture->_completed = true;
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -619,8 +619,8 @@ public:
   vkfxi_ptr_t _fxi;
   vkci_ptr_t _ci;
   
-  captureasync_ptr_t _pending_capture;
-  void _processPendingCapture();
+  std::unordered_set<captureasync_ptr_t> _pending_captures;
+  void _processPendingCaptures();
 };
 ///////////////////////////////////////////////////////////////////////////
 extern vkinstance_ptr_t _GVI;
