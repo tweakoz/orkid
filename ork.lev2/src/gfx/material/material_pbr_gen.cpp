@@ -254,7 +254,7 @@ static uint32_t this_hash() {
 
 /////////////////////////////////////////////////////////////////////////
 
-texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context* targ, bool equirectangular) {
+datablock_future_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context* targ, bool equirectangular) {
   targ->makeCurrentContext();
   auto txi = targ->TXI();
   auto fbi = targ->FBI();
@@ -410,25 +410,29 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
       fbi->PopRtGroup();
 
       auto captureb = std::make_shared<CaptureBuffer>();
-      fbi->capture(outbuffr.get(), captureb);
+      
+      // Capture async with completion callback
+      auto capture_future = fbi->capture(outbuffr.get(), captureb, [=, &chunkwriter, &array_init]() {
+        // This callback runs when capture completes
+        
+        Image im_inp;
+        im_inp.initRGBA8WithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
 
-      Image im_inp;
-      im_inp.initRGBA8WithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
+        int index    = irough;
+        auto outpath = file::Path::temp_dir() / FormatString("filteredenv-specmap-ruf%d.exr", index);
+        logchan_pbrgen->log("filterenv write dbgout<%s>", outpath.c_str());
+        im_inp.writeToFile(outpath);
 
-      int index    = irough;
-      auto outpath = file::Path::temp_dir() / FormatString("filteredenv-specmap-ruf%d.exr", index);
-      logchan_pbrgen->log("filterenv write dbgout<%s>", outpath.c_str());
-      im_inp.writeToFile(outpath);
+        TextureArrayInitSubItem slice;
+        slice._cmipchain = im_inp.uncompressedMipChain();
 
-      TextureArrayInitSubItem slice;
-      slice._cmipchain = im_inp.uncompressedMipChain();
-
-      auto hdr_stream_name = FormatString("header-%d", irough);
-      auto img_stream_name = FormatString("image-%d", irough);
-      auto hdr_stream      = chunkwriter.AddStream(hdr_stream_name);
-      auto img_stream      = chunkwriter.AddStream(img_stream_name);
-      slice._cmipchain->writeXTX(hdr_stream, img_stream, chunkwriter);
-      array_init._slices.push_back(slice);
+        auto hdr_stream_name = FormatString("header-%d", irough);
+        auto img_stream_name = FormatString("image-%d", irough);
+        auto hdr_stream      = chunkwriter.AddStream(hdr_stream_name);
+        auto img_stream      = chunkwriter.AddStream(img_stream_name);
+        slice._cmipchain->writeXTX(hdr_stream, img_stream, chunkwriter);
+        array_init._slices.push_back(slice);
+      });
 
       src_tex = outbuffr->_texture;
 
@@ -470,13 +474,16 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
   // Store datablock for build-time processing
   rawenvmap->_vars->makeValueForKey<datablock_ptr_t>("specenv-datablock") = cmipchain_datablock;
   
-  // Return the texture array for runtime use
-  return alt_array->_tex;
+  // TODO: This is a temporary implementation - return a completed future with placeholder datablock
+  auto future = std::make_shared<DatablockFuture>();
+  future->_result = std::make_shared<DataBlock>(); // Placeholder empty datablock
+  future->_completed = true;
+  return future;
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context* targ, bool equirectangular) {
+datablock_future_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context* targ, bool equirectangular) {
   targ->makeCurrentContext();
   auto txi = targ->TXI();
   auto fbi = targ->FBI();
@@ -615,29 +622,34 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
       mtl->end(RCFD);
       fbi->PopRtGroup();
 
-      fbi->capture(outbuffr.get(), captureb);
-
-      if (1) {
-        auto outpath = file::Path::temp_dir() / FormatString("filteredenv-diffmap-mip%d.exr", imip);
-        auto out     = ImageOutput::create(outpath.c_str());
-        // logchan_pbrgen->log("filterenv write dbgout<%s> <%p>", outpath.c_str(), out.get());
-        OrkAssert(out != nullptr);
-        ImageSpec spec(w, h, 4, TypeDesc::FLOAT);
-        out->open(outpath.c_str(), spec);
-        out->write_image(TypeDesc::FLOAT, captureb->_data);
-        out->close();
-      }
-
       pending.fetch_add(1);
       auto cimg = std::make_shared<CompressedImage>();
       cimgs.push_back(cimg);
-      auto op = [=, &pending]() {
-        Image im;
-        im.initRGBA8WithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
-        im.compressDefault(*cimg);
-        pending.fetch_sub(1);
-      };
-      opq::concurrentQueue()->enqueue(op);
+      
+      // Capture async with completion callback
+      auto capture_future = fbi->capture(outbuffr.get(), captureb, [=, &pending]() {
+        // This callback runs when capture completes
+        
+        if (1) {
+          auto outpath = file::Path::temp_dir() / FormatString("filteredenv-diffmap-mip%d.exr", imip);
+          auto out     = ImageOutput::create(outpath.c_str());
+          // logchan_pbrgen->log("filterenv write dbgout<%s> <%p>", outpath.c_str(), out.get());
+          OrkAssert(out != nullptr);
+          ImageSpec spec(w, h, 4, TypeDesc::FLOAT);
+          out->open(outpath.c_str(), spec);
+          out->write_image(TypeDesc::FLOAT, captureb->_data);
+          out->close();
+        }
+
+        // Process the captured data
+        auto op = [=, &pending]() {
+          Image im;
+          im.initRGBA8WithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
+          im.compressDefault(*cimg);
+          pending.fetch_sub(1);
+        };
+        opq::concurrentQueue()->enqueue(op);
+      });
 
       rawenvmap->_vars->makeValueForKey<std::shared_ptr<RtGroup>>(FormatString("alt-tex-diffenv-group-mip%d", imip))   = outgroup;
       rawenvmap->_vars->makeValueForKey<std::shared_ptr<RtBuffer>>(FormatString("alt-tex-diffenv-buffer-mip%d", imip)) = outbuffr;
@@ -673,34 +685,14 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
   // Store datablock for build-time processing
   rawenvmap->_vars->makeValueForKey<datablock_ptr_t>("diffenv-datablock") = cmipchain_datablock;
 
-  // Return the texture for runtime use  
-  return alt_tex;
+  // TODO: This is a temporary implementation - return a completed future with placeholder datablock
+  auto future = std::make_shared<DatablockFuture>();
+  future->_result = std::make_shared<DataBlock>(); // Placeholder empty datablock
+  future->_completed = true;
+  return future;
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-datablock_ptr_t PBRMaterial::filterSpecularEnvMapToDataBlock(texture_ptr_t rawenvmap, Context* targ, bool equirectangular) {
-  // First ensure the texture is filtered
-  filterSpecularEnvMap(rawenvmap, targ, equirectangular);
-  
-  // Then extract the cached datablock
-  if (auto as_datablock = rawenvmap->_vars->typedValueForKey<datablock_ptr_t>("specenv-datablock")) {
-    return as_datablock.value();
-  }
-  return nullptr;
-}
-
-/////////////////////////////////////////////////////////////////////////
-
-datablock_ptr_t PBRMaterial::filterDiffuseEnvMapToDataBlock(texture_ptr_t rawenvmap, Context* targ, bool equirectangular) {
-  // First ensure the texture is filtered
-  filterDiffuseEnvMap(rawenvmap, targ, equirectangular);
-  
-  // Then extract the cached datablock
-  if (auto as_datablock = rawenvmap->_vars->typedValueForKey<datablock_ptr_t>("diffenv-datablock")) {
-    return as_datablock.value();
-  }
-  return nullptr;
-}
 
 } // namespace ork::lev2

@@ -378,6 +378,32 @@ datablock_ptr_t DataBlock::createFromRandom(size_t length) {
   return block;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// DatablockFuture implementation
+///////////////////////////////////////////////////////////////////////////////
+
+DatablockFuture::DatablockFuture() {
+}
+
+DatablockFuture::~DatablockFuture() {
+}
+
+datablock_ptr_t DatablockFuture::wait() {
+  while (!_completed && !_failed) {
+    std::this_thread::sleep_for(std::chrono::microseconds(100));
+  }
+  return _result;
+}
+
+bool DatablockFuture::isReady() const {
+  return _completed || _failed;
+}
+
+float DatablockFuture::progress() const {
+  if (_failed) return 0.0f;
+  if (_completed) return 1.0f;
+  return 0.5f; // Default progress for in-progress operations
+}
 
 //////////////////////////////////////////////////////////////////////
 } // namespace ork

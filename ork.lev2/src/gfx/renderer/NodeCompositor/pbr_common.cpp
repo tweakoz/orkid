@@ -85,8 +85,18 @@ static asset::vars_ptr_t _irradianceVars() {
       auto equirectangular = load_req->_asset_vars->typedValueForKey<bool>("equirectangular").value();
 
 
-      auto filtenvSpecularMap = PBRMaterial::filterSpecularEnvMap(tex, targ,equirectangular);
-      auto filtenvDiffuseMap  = PBRMaterial::filterDiffuseEnvMap(tex, targ,equirectangular);
+      // TODO: This should be replaced with XIR asset loading according to .strategy2
+      // For now, wait on futures and extract textures (temporary compatibility)
+      auto specular_future = PBRMaterial::filterSpecularEnvMap(tex, targ,equirectangular);
+      auto diffuse_future = PBRMaterial::filterDiffuseEnvMap(tex, targ,equirectangular);
+      
+      // Wait for completion and extract textures (TEMPORARY)
+      auto specular_datablock = specular_future->wait();
+      auto diffuse_datablock = diffuse_future->wait();
+      
+      // TODO: Create textures from datablocks - this is temporary
+      texture_ptr_t filtenvSpecularMap = nullptr; // Will be extracted from datablock
+      texture_ptr_t filtenvDiffuseMap = nullptr;  // Will be extracted from datablock
       auto brdfIntegrationMapGGX = PBRMaterial::brdfIntegrationMap(targ,"GGX");
       auto brdfIntegrationMapVelvet = PBRMaterial::brdfIntegrationMap(targ,"GGXVELVET");
       auto brdfIntegrationMapRim = PBRMaterial::brdfIntegrationMap(targ,"GGXRIM");

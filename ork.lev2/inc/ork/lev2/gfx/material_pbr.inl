@@ -88,10 +88,8 @@ public:
   static FxUniformBuffer* boneDataBuffer(Context* targ);
 
   static texture_ptr_t brdfIntegrationMap(Context* targ,std::string type);
-  static texture_ptr_t filterSpecularEnvMap(texture_ptr_t rawenvmap, Context* targ, bool equirectangular);
-  static texture_ptr_t filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context* targ, bool equirectangular);
-  static datablock_ptr_t filterSpecularEnvMapToDataBlock(texture_ptr_t rawenvmap, Context* targ, bool equirectangular);
-  static datablock_ptr_t filterDiffuseEnvMapToDataBlock(texture_ptr_t rawenvmap, Context* targ, bool equirectangular);
+  static datablock_future_ptr_t filterSpecularEnvMap(texture_ptr_t rawenvmap, Context* targ, bool equirectangular);
+  static datablock_future_ptr_t filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context* targ, bool equirectangular);
 
   ////////////////////////////////////////////
 

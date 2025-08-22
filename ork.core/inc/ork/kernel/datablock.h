@@ -26,6 +26,39 @@ using datablock_list_t = std::vector<datablock_ptr_t>;
 using datablock_crcmap_t = std::unordered_map<uint32_t, datablock_ptr_t>;
 
 ///////////////////////////////////////////////////////////////////////////////
+// Forward declaration for DatablockFuture
+///////////////////////////////////////////////////////////////////////////////
+
+struct DatablockFuture {
+  DatablockFuture();
+  ~DatablockFuture();
+  
+  // Wait for completion and get the result
+  datablock_ptr_t wait();
+  
+  // Check if ready (non-blocking)
+  bool isReady() const;
+  
+  // Get progress (0.0 to 1.0)
+  float progress() const;
+  
+  // Implementation-specific data (async operations, etc)
+  svarshp_t _impl;
+  
+  // Completion callback
+  void_lambda_t _on_complete;
+  
+  // Status
+  bool _completed = false;
+  bool _failed = false;
+  
+  // Result
+  datablock_ptr_t _result;
+};
+
+using datablock_future_ptr_t = std::shared_ptr<DatablockFuture>;
+
+///////////////////////////////////////////////////////////////////////////////
 /// DataBlock : SerDes container for arbitrary binary data
 ///   with convenience methods for getting data in and out
 ///   The data is serdes'ed to and from a vector of bytes

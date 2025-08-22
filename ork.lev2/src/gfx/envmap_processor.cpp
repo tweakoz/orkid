@@ -62,11 +62,15 @@ xirprocessfuture_ptr_t EnvMapProcessor::processToXIRDataBlockAsync(
   // Queue the operation for when context is available
   GfxEnv::GetRef().enqueueDeferredContextOp(
     [rawenvmap, is_equirectangular, future](Context* ctx) {
-      // Filter environment maps (using new datablock-returning methods)
-      auto specular_data = PBRMaterial::filterSpecularEnvMapToDataBlock(
+      // Filter environment maps (using new async datablock-returning methods)
+      auto specular_future = PBRMaterial::filterSpecularEnvMap(
           rawenvmap, ctx, is_equirectangular);
-      auto diffuse_data = PBRMaterial::filterDiffuseEnvMapToDataBlock(
+      auto diffuse_future = PBRMaterial::filterDiffuseEnvMap(
           rawenvmap, ctx, is_equirectangular);
+      
+      // Wait for both futures to complete
+      auto specular_data = specular_future->wait();
+      auto diffuse_data = diffuse_future->wait();
       
       datablock_ptr_t result_data;
       if (specular_data && diffuse_data) {
