@@ -340,11 +340,13 @@ captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(const RtBuffer* inpbu
   auto cb = _contextVK->primary_cb();
   OrkAssert(cb != nullptr); // capture must be called during frame recording
   
+  /*
   printf("VkFrameBufferInterface::captureAsFormat rtb<%p> w<%d> h<%d> has_impl<%d>\n", 
          inpbuf, w, h, inpbuf->_impl.isSet());
   printf("  rtb->_impl.isShared<VklRtBufferImpl>() = %d\n", 
          inpbuf->_impl.isShared<VklRtBufferImpl>());
-  
+  */
+
   rtbi->_transitionToHostRead(cb);
 
   // printf("captureAsFormat w<%d> h<%d>\n", w, h);
@@ -436,7 +438,7 @@ captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(const RtBuffer* inpbu
       // Register with context for processing after frame
       _contextVK->_pending_captures.push_back(future);
       
-      printf("VkFrameBufferInterface::captureAsFormat - copy command recorded, data will be available after frame submit\n");
+      //printf("VkFrameBufferInterface::captureAsFormat - copy command recorded, data will be available after frame submit\n");
       break;
     }
     case EBufferFormat::RGB8: {

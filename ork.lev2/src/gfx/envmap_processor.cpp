@@ -503,7 +503,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
       auto future = fbi->captureAsFormat(rtb.get(), capbuf, EBufferFormat::RGBA8);
       diff_futures->push_back(future);
 
-      logchan_gen->log("EnvMapProcessor: Started async capture for diffuse mip level %zu", i);
+      //logchan_gen->log("EnvMapProcessor: Started async capture for diffuse mip level %zu", i);
     }
   });
 
@@ -523,17 +523,19 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
   auto package_phase = TaskGraph::phase(graph, "package_datablocks", primary_executor);
 
   package_phase->task("package_results", [=](taskgraph_ptr_t g) {
-    ::usleep(3<<20);
-    logchan_gen->log("EnvMapProcessor: Waiting for async captures to complete...");
+
+    size_t num_specs = spec_futures->size();
+    size_t num_diffs = diff_futures->size();
+    logchan_gen->log("EnvMapProcessor: Waiting for async captures spc<%zu> dif<%zu> to complete...",num_specs,num_diffs);
 
     // Wait for all specular captures
-    for (size_t i = 0; i < spec_futures->size(); i++) {
+    for (size_t i = 0; i < num_specs; i++) {
       auto future = (*spec_futures)[i];
       future->wait(nullptr);
     }
 
     // Wait for all diffuse captures
-    for (size_t i = 0; i < diff_futures->size(); i++) {
+    for (size_t i = 0; i < num_diffs; i++) {
       auto future = (*diff_futures)[i];
       future->wait(nullptr);
     }
