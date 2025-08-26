@@ -1,4 +1,4 @@
-#include <ork/lev2/gfx/gfxprimitives.h>
+#include <ork/lev2/gfx/pri.h>
 #include <ork/lev2/gfx/glheaders.h> // todo abstract somehow ?
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/renderer/irendertarget.h>

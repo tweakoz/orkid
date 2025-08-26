@@ -15,7 +15,7 @@
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
-#include <ork/lev2/gfx/gfxprimitives.h>
+#include <ork/lev2/gfx/pri.h>
 #include <ork/lev2/gfx/pickbuffer.h>
 #include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/gfx/shadman.h>
@@ -443,13 +443,16 @@ void GfxEnv::initializeWithContext(context_ptr_t target){
 
     if( not GetRef()._initialized  ){
       target->makeCurrentContext();
+      
+      // PrimitivesInterface initialization moved to Context::gpuInit()
+      ThreadGfxContext ctx_tracker(target.get());
+      
       /////////////////////////////////////
       #if !defined(__APPLE__)
       //target->beginFrame();
       #endif
       /////////////////////////////////////
       //target->debugPushGroup("GfxEnv.Lateinit");
-      ork::lev2::GfxPrimitives::Init(target.get());
       //target->debugPopGroup();
       /////////////////////////////////////
       #if !defined(__APPLE__)

@@ -5,7 +5,7 @@
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/util/hotkey.h>
 #include <ork/lev2/gfx/dbgfontman.h>
-#include <ork/lev2/gfx/gfxprimitives.h>
+#include <ork/lev2/gfx/pri.h>
 #include <ork/lev2/gfx/pickbuffer.h>
 
 namespace ork { namespace ui {
@@ -83,7 +83,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
   auto fbi    = tgt->FBI();
   auto fxi    = tgt->FXI();
   //auto rsi    = tgt->RSI();
-  auto& primi = lev2::GfxPrimitives::GetRef();
+  auto primi = tgt->PRI();
   ///////////////////////////////////////
   if (_decouple_from_ui_size) {
     int irtgw  = _rtgroup->width();
@@ -169,9 +169,8 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
 
      tgt->PushModColor(fcolor4::Black());
 
-      primi.RenderQuadAtZ(
+      primi->RenderQuadAtZ(
           ui_material.get(),
-          tgt,
           ix_root,
           ix_root + _geometry._w, // x0, x1
           iy_root,
@@ -198,9 +197,8 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
         int oy0 = hdiff/2;
         int oy1 = -hdiff/2;
 
-        primi.RenderQuadAtZ(
+        primi->RenderQuadAtZ(
             material.get(),
-            tgt,
             ix_root,
             ix_root + _geometry._w, // x0, x1
             iy_root + oy0,
@@ -217,9 +215,8 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
         int ox0 = wdiff/2;
         int ox1 = -wdiff/2;
 
-        primi.RenderQuadAtZ(
+        primi->RenderQuadAtZ(
             material.get(),
-            tgt,
             ix_root + ox0,
             ix_root + _geometry._w + ox1, // x0, x1
             iy_root,
@@ -235,9 +232,8 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
 
     } else {
       tgt->debugPushGroup("Surface::Draw::2");
-      primi.RenderQuadAtZ(
+      primi->RenderQuadAtZ(
           material.get(),
-          tgt,
           ix_root,
           ix_root + _geometry._w, // x0, x1
           iy_root,

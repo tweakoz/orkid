@@ -134,7 +134,7 @@ void SignalTrackWidget::DoDraw(ui::drawevent_constptr_t drwev) {
   auto fbi    = tgt->FBI();
   auto gbi    = tgt->GBI();
   auto mtxi   = tgt->MTXI();
-  auto& primi = lev2::GfxPrimitives::GetRef();
+  auto primi  = tgt->PRI();
   auto defmtl = lev2::defaultUIMaterial();
 
   bool is_1bit = _signal->_bit_width == 1;
@@ -265,9 +265,8 @@ void SignalTrackWidget::DoDraw(ui::drawevent_constptr_t drwev) {
   defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
   tgt->PushModColor(_color);
   mtxi->PushUIMatrix();
-  primi.RenderQuadAtZ(
+  primi->RenderQuadAtZ(
       defmtl.get(),
-      tgt,
       ix1,  // x0
       ix2,  // x1
       iy1,  // y0

@@ -8,7 +8,7 @@
 #pragma once
 #include <ork/lev2/gfx/scenegraph/scenegraph.h>
 #include <ork/lev2/gfx/fx_pipeline.h>
-#include <ork/lev2/gfx/gfxprimitives.h>
+#include <ork/lev2/gfx/pri.h>
 
 namespace ork::lev2::primitives {
 

@@ -18,7 +18,7 @@ def test_filesystem_paths():
     
     # Test case: Resolve relative import from shader file
     print("\nTest: Relative import resolution")
-    container = Path("/Users/michael/projects/orkid/ork.data/platform_lev2/shaders/fxv2/basic.fxv2")
+    container = Path(f"{ork_path.root}/ork.data/platform_lev2/shaders/fxv2/basic.fxv2")
     import_file = Path("skintools.i2")
     
     print(f"Container: {container}")
@@ -34,8 +34,8 @@ def test_filesystem_paths():
         resolved = import_file.resolveRelativeTo(container)
         print(f"Resolved: {resolved}")
         
-        # Expected: /Users/michael/projects/orkid/ork.data/platform_lev2/shaders/fxv2/skintools.i2
-        expected = "/Users/michael/projects/orkid/ork.data/platform_lev2/shaders/fxv2/skintools.i2"
+        # Expected: f"{ork_path.root}/ork.data/platform_lev2/shaders/fxv2/skintools.i2
+        expected = f"{ork_path.root}/ork.data/platform_lev2/shaders/fxv2/skintools.i2"
         if str(resolved) == expected:
             print(f"✓ SUCCESS: Correctly resolved to {resolved}")
         else:

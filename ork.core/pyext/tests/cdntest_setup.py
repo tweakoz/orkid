@@ -9,7 +9,6 @@ import os
 from pathlib import Path
 
 # Mock the CDN setup to test file copying
-sys.path.insert(0, '/Users/michael/projects/orkid/obt.project/modules/docker/ork-devcdn')
 
 # Import after path setup
 from ork import path as ork_path
@@ -17,6 +16,8 @@ import shutil
 import glob
 import json
 import time
+
+sys.path.insert(0, f"{ork_path.root}/obt.project/modules/docker/ork-devcdn")
 
 def test_setup_files():
     """Test the file setup functionality"""

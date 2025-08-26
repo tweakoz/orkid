@@ -8,14 +8,16 @@ Tests the shader import path resolution logic
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from orkengine.core import Path
+from ork import path as ork_path
 
 def test_basic_path_operations():
     """Test basic path operations"""
     print("\n=== Testing Basic Path Operations ===")
     
     # Test absolute path detection
-    abs_path = Path("/Users/michael/test.txt")
+    abs_path = Path("/Users/test/test.txt")
     print(f"Path: {abs_path}")
     print(f"  isAbsolute: {abs_path.isAbsolute()}")
     print(f"  isRelative: {abs_path.isRelative()}")
@@ -77,7 +79,7 @@ def test_resolve_relative_to():
     
     # Test 3: File system paths
     print("\nTest 3: File system paths")
-    container = Path("/Users/michael/projects/orkid/shaders/basic.fxv2")
+    container = Path(f"{ork_path.root}/shaders/basic.fxv2")
     import_file = Path("skintools.i2")
     
     print(f"Container: {container}")
@@ -86,14 +88,14 @@ def test_resolve_relative_to():
     resolved = import_file.resolveRelativeTo(container)
     print(f"Resolved: {resolved}")
     
-    # Should resolve to /Users/michael/projects/orkid/shaders/skintools.i2
-    expected = "/Users/michael/projects/orkid/shaders/skintools.i2"
+    # Should resolve to f{ork_path.root}/shaders/skintools.i2
+    expected = f"{ork_path.root}/shaders/skintools.i2"
     assert str(resolved) == expected, f"Expected {expected}, got {resolved}"
     print(f"✓ Correctly resolved to {resolved}")
     
     # Test 4: Real-world case from pixelart.py
     print("\nTest 4: Real-world shader import case")
-    container = Path("/Users/michael/projects/orkid/ork.data/platform_lev2/shaders/fxv2/basic.fxv2")
+    container = Path(f"{ork_path.root}/ork.data/platform_lev2/shaders/fxv2/basic.fxv2")
     import_file = Path("skintools.i2")
     
     print(f"Container: {container}")
@@ -103,7 +105,7 @@ def test_resolve_relative_to():
     print(f"Resolved: {resolved}")
     
     # Should resolve to full path with skintools.i2
-    expected = "/Users/michael/projects/orkid/ork.data/platform_lev2/shaders/fxv2/skintools.i2"
+    expected = f"{ork_path.root}/ork.data/platform_lev2/shaders/fxv2/skintools.i2"
     assert str(resolved) == expected, f"Expected {expected}, got {resolved}"
     print(f"✓ Correctly resolved to {resolved}")
 
@@ -112,7 +114,7 @@ def test_to_absolute_folder():
     print("\n=== Testing toAbsoluteFolder ===")
     
     # Test with file path
-    file_path = Path("/Users/michael/projects/orkid/test.txt")
+    file_path = Path(f"{ork_path.root}/test.txt")
     folder = file_path.toAbsoluteFolder()
     print(f"File: {file_path}")
     print(f"Folder: {folder}")

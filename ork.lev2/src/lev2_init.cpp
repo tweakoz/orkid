@@ -19,7 +19,7 @@
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/lighting/gfx_lighting.h>
 #include <ork/lev2/gfx/dbgfontman.h>
-#include <ork/lev2/gfx/gfxprimitives.h>
+#include <ork/lev2/gfx/pri.h>
 #include <ork/kernel/string/string.h>
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/targetinterfaces.h>
@@ -99,6 +99,7 @@ void exitModule(appinitdata_ptr_t init_data);
 namespace lev2 {
 
 appinitdata_ptr_t _ginitdata;
+context_ptr_t gloadercontext;
 
 uint64_t GRAPHICS_API = "OPENGL"_crcu;
 //uint64_t GRAPHICS_API = "VULKAN"_crcu;
@@ -119,7 +120,6 @@ namespace opengl{
 
 void registerEnums();
 
-ork::lev2::context_ptr_t gloadercontext;
 
 struct ClassToucher {
   ClassToucher(appinitdata_ptr_t aid) {
@@ -165,6 +165,7 @@ struct ClassToucher {
         case "VULKAN"_crcu:
         default: {
           gloadercontext = vulkan::createLoaderContext();
+          printf("gloadercontext (VK) <%p>\n", (void*)gloadercontext.get());
           break;
         }
       }
@@ -491,6 +492,7 @@ struct Lev2AppInit {
   }
   classinit_ptr_t _class_toucher;
 };
+
 
 using lev2appinit_ptr_t = std::shared_ptr<Lev2AppInit>;
 static lev2appinit_ptr_t g_lev2_initializer = nullptr;

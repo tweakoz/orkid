@@ -8,7 +8,7 @@
 #include <ork/kernel/datacache.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmodel.h>
-#include <ork/lev2/gfx/gfxprimitives.h>
+#include <ork/lev2/gfx/pri.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/pch.h>
 

@@ -214,6 +214,233 @@ cd ork.core/pyext/tests
 3. **Full Understanding**: Read entire subsystems before modifying
 4. **Incremental Development**: Each change must work before proceeding
 
+## Code Search Strategy Guide
+
+### Tool Hierarchy & When to Use Each
+
+**The Golden Rule**: Start broad with database tools, then narrow with text search.
+
+#### 1. C++ Database Tools (ork.cpp.*) - USE FIRST for structural queries
+These tools use a pre-built SQLite database of parsed C++ entities. They understand C++ semantics.
+
+```bash
+# When you need to understand CLASS/STRUCT structure
+ork.cpp.search.py Camera              # Find all entities with "Camera" 
+ork.cpp.search.py -t class UiCamera   # Find specific class
+ork.cpp.search.py -t objects Camera   # Find both classes AND structs
+ork.cpp.members.py CameraData         # See all members of a type
+
+# When you need to trace REFERENCES
+ork.cpp.references.py "ork::lev2::Context"                    # Find all uses
+ork.cpp.references.py "ork::lev2::CameraMatrices::_frustum"   # Find field accesses
+
+# When you need INHERITANCE information  
+ork.cpp.inhtree.py "ork::lev2::Context"   # See base and derived classes
+
+# When you need ENUM information
+ork.cpp.enums.py EBufferFormat            # See enum values and CRC hashes
+ork.cpp.enums.py --hash 0xE15695B7        # Reverse lookup hash to enum value
+```
+
+**Critical Learning**: These tools require EXACT names or patterns. If searching fails:
+- Drop namespace qualifiers and search broadly first
+- Use the short name (Camera not ork::lev2::Camera) to find the canonical name
+- The tools will show you the full qualified names in results
+
+#### 2. Text Search Tools - USE SECOND for implementation details
+
+**ork.find.py - Your Primary Text Search Tool**
+```bash
+# Basic search - finds in all orkid modules
+ork.find.py LoadTexture                   # Find all occurrences
+ork.find.py "LoadTexture("                # Find function calls specifically
+ork.find.py LoadTexture | grep cpp        # Filter to .cpp files only
+ork.find.py LoadTexture | grep "\.h:"     # Filter to headers only
+
+# Finding specific patterns
+ork.find.py "shared_from_this"            # Find anti-patterns
+ork.find.py "_contentHash ="              # Find assignments
+ork.find.py "TextureInterface::"          # Find class method implementations
+```
+
+**Grep Tool - When you need regex or context**
+```bash
+# When you need context lines
+Grep -B 3 -A 3 "LoadTexture" --output_mode=content   # Show 3 lines before/after
+
+# When you need file lists
+Grep "CrcEnum" --output_mode=files_with_matches      # Just show which files contain pattern
+
+# Complex regex patterns
+Grep "enum\s+(class|struct)" --output_mode=content   # Find enum declarations
+```
+
+#### 3. File Tools - For exploring and reading
+
+```bash
+# List files in database
+ork.cpp.db.files.py list --limit 20       # See what files are indexed
+
+# Search for files
+ork.cpp.db.files.py search "*.cpp"        # Find all cpp files
+ork.cpp.db.files.py find txi.cpp          # Find specific file
+
+# Show file content
+ork.cpp.db.files.py show txi.cpp          # Display file with line numbers
+```
+
+### Real-World Search Patterns
+
+#### Pattern 1: "I need to understand how a class works"
+```bash
+# Step 1: Find the class
+ork.cpp.search.py TextureInterface
+
+# Step 2: See its members
+ork.cpp.members.py ork::lev2::TextureInterface
+
+# Step 3: Find its implementation
+ork.find.py "TextureInterface::" | grep cpp
+
+# Step 4: See how it's used
+ork.cpp.references.py "ork::lev2::TextureInterface"
+```
+
+#### Pattern 2: "I need to find where something is defined"
+```bash
+# For types/classes - use database first
+ork.cpp.search.py EBufferFormat
+
+# For functions - use text search
+ork.find.py "LoadTexture.*\{"     # Find function definitions
+ork.find.py "def LoadTexture"     # Find Python definitions
+```
+
+#### Pattern 3: "I need to understand an enum and its values"
+```bash
+# See the enum definition and values
+ork.cpp.enums.py EBufferFormat
+
+# Find where it's used
+ork.find.py "EBufferFormat::"
+
+# Reverse lookup a hash from logs
+ork.cpp.enums.py --hash 0xE15695B7
+```
+
+#### Pattern 4: "I need to trace through a codebase"
+```bash
+# Start with high-level search
+ork.cpp.search.py -t objects Texture
+
+# Pick interesting class, see members
+ork.cpp.members.py ork::lev2::Texture
+
+# Find specific member usage
+ork.cpp.references.py "ork::lev2::Texture::_contentHash"
+
+# Read the actual implementation
+ork.find.py "_contentHash =" | head -20
+```
+
+### Common Pain Points & Solutions
+
+**Pain Point 1: "No results found" with database tools**
+```bash
+# DON'T do this:
+ork.cpp.search.py ork::lev2::Camera  # Too specific, might fail
+
+# DO this instead:
+ork.cpp.search.py Camera              # Search broadly first
+ork.cpp.search.py -t objects Camera   # Then narrow by type
+```
+
+**Pain Point 2: Need to see actual code, not just references**
+```bash
+# DON'T rely only on database tools
+ork.cpp.references.py "LoadTexture"   # Only shows locations
+
+# DO combine with text search
+ork.find.py "LoadTexture" | head -20  # See actual code immediately
+```
+
+**Pain Point 3: Too many results**
+```bash
+# DON'T do this:
+ork.find.py Context                   # Too broad, hundreds of results
+
+# DO refine your search:
+ork.find.py "class Context"           # More specific
+ork.find.py "Context::" | grep cpp    # Method implementations only
+ork.cpp.search.py -t class Context    # Use database for structured search
+```
+
+**Pain Point 4: Not sure of exact name**
+```bash
+# Use wildcards and patterns
+ork.cpp.search.py "*Camera*"          # Database search with wildcards
+ork.find.py "[Cc]amera"                # Text search with regex
+ork.cpp.enums.py "ork::lev2::*"       # All enums in namespace
+```
+
+### Search Strategy Flowchart
+
+```
+Need to find something?
+├── Is it a C++ entity (class/struct/enum)?
+│   ├── YES → Start with ork.cpp.search.py
+│   │   ├── Found it? → Use ork.cpp.members.py for details
+│   │   └── Not found? → Try without namespace, use wildcards
+│   └── NO → Use ork.find.py
+│
+├── Need to understand relationships?
+│   ├── Inheritance → ork.cpp.inhtree.py
+│   ├── References → ork.cpp.references.py
+│   └── Dependencies → Combine both
+│
+├── Need implementation details?
+│   ├── Single file → Read tool or ork.cpp.db.files.py show
+│   └── Multiple files → ork.find.py with grep filtering
+│
+└── Debugging enum/hash issues?
+    └── ork.cpp.enums.py (with --hash for reverse lookup)
+```
+
+### Pro Tips from Experience
+
+1. **Build the database first**: Before any C++ analysis session, ensure database is current:
+   ```bash
+   ork.cpp.db.build.py -m core lev2  # Build for modules you'll analyze
+   ```
+
+2. **Use JSON output for complex analysis**: Database tools support --json for scripting:
+   ```bash
+   ork.cpp.search.py Camera --json | jq '.entities[].canonical_name'
+   ```
+
+3. **Combine tools in pipelines**:
+   ```bash
+   # Find all classes that inherit from Object
+   ork.cpp.search.py -t class --all --json | \
+     jq -r '.entities[].canonical_name' | \
+     xargs -I{} ork.cpp.inhtree.py {} 2>/dev/null | \
+     grep "ork::Object"
+   ```
+
+4. **Remember the colorization in ork.find.py output**:
+   - Yellow `[38;5;228m` = filenames (easy to spot file boundaries)
+   - Gold `[38;5;226m` = line numbers (for navigation)
+   - Context after line number is actual code
+
+5. **When in doubt, start broad**: It's easier to filter down than to guess exact names:
+   ```bash
+   ork.cpp.search.py Texture           # Start here
+   ork.cpp.search.py -t class Texture  # Then narrow
+   ork.cpp.search.py -t class -n ork::lev2 Texture  # Then filter more
+   ```
+
+**Statistical trigger**: The colorized file:line:content format with ANSI codes provides superior information extraction speed compared to native Grep tool which requires multiple calls and manual correlation.
+
 ### Command Naming Convention - Reverse DNS Notation
 
 All Python commands in obt and orkid follow reverse DNS notation (generic→specific):

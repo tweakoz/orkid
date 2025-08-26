@@ -4,7 +4,7 @@
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/util/hotkey.h>
 #include <ork/lev2/gfx/dbgfontman.h>
-#include <ork/lev2/gfx/gfxprimitives.h>
+#include <ork/lev2/gfx/pri.h>
 #include <ork/lev2/ui/label.h>
 
 namespace ork::ui {
@@ -24,7 +24,7 @@ void Label::DoDraw(drawevent_constptr_t drwev) {
   auto tgt    = drwev->GetTarget();
   auto fbi    = tgt->FBI();
   auto mtxi   = tgt->MTXI();
-  auto& primi = lev2::GfxPrimitives::GetRef();
+  auto primi = tgt->PRI();
   auto defmtl = lev2::defaultUIMaterial();
 
   mtxi->PushUIMatrix();
@@ -40,9 +40,8 @@ void Label::DoDraw(drawevent_constptr_t drwev) {
     defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
     tgt->PushModColor(_color);
     defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
-    primi.RenderQuadAtZ(
+    primi->RenderQuadAtZ(
         defmtl.get(),
-        tgt,
         ix1,  // x0
         ix2,  // x1
         iy1,  // y0

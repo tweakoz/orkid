@@ -9,6 +9,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+from ork import path as ork_path
 from orkengine.core import Path, FileEnv, FileDevContext
 
 def test_fileenv_singleton():
@@ -87,7 +88,7 @@ def test_orkshader_registration():
     else:
         print("lev2:// not registered, using test path")
         # Use a test path for demonstration
-        shader_base = Path("/Users/michael/projects/orkid/ork.data/platform_lev2/shaders/fxv2")
+        shader_base = Path(f"{ork_path.root}/ork.data/platform_lev2/shaders/fxv2")
     
     # Register orkshader://
     print(f"\nRegistering orkshader:// with base: {shader_base}")
@@ -132,7 +133,7 @@ def test_path_resolution_with_context():
     ctx = FileEnv.contextForUriProto("orkshader://")
     if not ctx:
         # Register it for this test
-        shader_base = Path("/Users/michael/projects/orkid/ork.data/platform_lev2/shaders/fxv2")
+        shader_base = Path(f"{ork_path.root}/ork.data/platform_lev2/shaders/fxv2")
         ctx = FileEnv.createContextForUriBase("orkshader://", shader_base)
         if ctx:
             ctx.setFilesystemBaseEnable(True)

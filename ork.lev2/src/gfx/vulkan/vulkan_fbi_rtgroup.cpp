@@ -11,7 +11,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_rtgroup = logger()->configureChannel("VKRTG", fvec3(0.8, 0.2, 0.5), true);
+static logchannel_ptr_t logchan_rtgroup = logger()->configureChannel("VKRTG", fvec3(0.8, 0.2, 0.5), false);
 
 ///////////////////////////////////////////////////////////////////////////////
 vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(const VkRtgCreateOptions& options) {
@@ -132,12 +132,17 @@ void VkFrameBufferInterface::__setRtGroup(rtgroup_rawptr_t rtgroup) {
       OrkAssert(rtgroup);
       int iw = rtgroup->width();
       int ih = rtgroup->height();
+      
+      //printf("VkFrameBufferInterface::__setRtGroup rtgroup<%p> w<%d> h<%d> usage=user\n", rtgroup, iw, ih);
+      
       /////////////////////////////////////////
       int inumtargets = rtgroup->numImageBuffers();
       int numsamples  = msaaEnumToInt(rtgroup->_msaa_samples);
       if (auto as_impl = rtgroup->_impl.tryAsShared<VkRtGroupImpl>()) {
         RTGIMPL = as_impl.value();
+        //printf("  rtgroup already has impl\n");
       } else {
+        printf("  creating new impl for rtgroup\n");
         RTGIMPL = _createRtGroupImpl(rtgroup);
         rtgroup->_impl.setShared<VkRtGroupImpl>(RTGIMPL);
       }
@@ -155,6 +160,7 @@ void VkFrameBufferInterface::__setRtGroup(rtgroup_rawptr_t rtgroup) {
       }
       for (int i = 0; i < inumtargets; i++) {
         auto rtb      = rtgroup->buffer(i);
+        //printf("  checking rtbuffer<%p> has_impl<%d>\n", rtb.get(), rtb->_impl.isSet());
         auto rtb_impl = rtb->_impl.getShared<VklRtBufferImpl>();
         auto rtb_imgobj = rtb_impl->_imgobj;
         OrkAssert(rtb_imgobj->_vkimageview != VK_NULL_HANDLE);
@@ -312,6 +318,7 @@ captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(const RtBuffer* inpbu
   future->_height = inpbuf->_height;
   future->_format = destfmt;
   
+  OrkAssert(inpbuf->_impl.isShared<VklRtBufferImpl>()); // must have been implemented for vulkan already
   auto rtbi = inpbuf->_impl.getShared<VklRtBufferImpl>();
   if (nullptr == capbuf) {
     future->_failed = true;
@@ -333,8 +340,10 @@ captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(const RtBuffer* inpbu
   auto cb = _contextVK->primary_cb();
   OrkAssert(cb != nullptr); // capture must be called during frame recording
   
-  printf("VkFrameBufferInterface::captureAsFormat rtb<%p> w<%d> h<%d> format<0x%x>\n", 
-         inpbuf, w, h, rtbi->_vkfmt);
+  printf("VkFrameBufferInterface::captureAsFormat rtb<%p> w<%d> h<%d> has_impl<%d>\n", 
+         inpbuf, w, h, inpbuf->_impl.isSet());
+  printf("  rtb->_impl.isShared<VklRtBufferImpl>() = %d\n", 
+         inpbuf->_impl.isShared<VklRtBufferImpl>());
   
   rtbi->_transitionToHostRead(cb);
 
@@ -368,89 +377,24 @@ captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(const RtBuffer* inpbu
       if (capbuf->_tempbuffer.size() != rgbasize) {
         capbuf->_tempbuffer.resize(rgbasize);
       }
-
-      // glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, capbuf->_tempbuffer.data());
-      // GL_ERRORCHECK();
-      //  todo convert RGBA8 to NV12 (on GPU)
-
-      // grab RGBA8 vkimg to staging buffer
-      /*OrkAssert(vkfmt == VK_FORMAT_R8G8B8A8_UNORM);
-      auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, rgbasize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-      vkCmdCopyImageToBuffer(
-          _contextVK->primary_cb()->_vkcmdbuf, vkimg, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, staging_buffer->_vkbuffer, 1, &region);
-
-      staging_buffer->copyToHost(capbuf->_tempbuffer.data(), rgbasize);
-
-      // convert to NV12
-      auto outptr      = (uint8_t*)capbuf->_data;
-      size_t numpixels = w * h;
-      fvec3 avgcol;
-      for (size_t yin = 0; yin < h; yin++) {
-        int yout = (h - 1) - yin;
-        for (size_t x = 0; x < w; x++) {
-          int i_in       = (yin * w) + x;
-          int i_out      = (yout * w) + x;
-          size_t srcbase = i_in * 4;
-          int R          = capbuf->_tempbuffer[srcbase + 0];
-          int G          = capbuf->_tempbuffer[srcbase + 1];
-          int B          = capbuf->_tempbuffer[srcbase + 2];
-          // printf("RGB<%d %d %d>\n", R, G, B);
-          auto rgb = fvec3(R, G, B) * inv256;
-          avgcol += rgb;
-          auto yuv      = rgb.YUV();
-          outptr[i_out] = uint8_t(yuv.x * 255.0f);
-        }
-      }
-      avgcol *= 1.0f / float(numpixels);
-      for (size_t yin = 0; yin < h / 2; yin++) {
-        int yout = ((h / 2) - 1) - yin;
-        for (size_t x = 0; x < w / 2; x++) {
-          size_t ybase    = yin * 2;
-          size_t xbase    = x * 2;
-          size_t srcbase1 = (((ybase + 0) * w) + (xbase + 0)) * 4;
-          size_t srcbase2 = (((ybase + 0) * w) + (xbase + 1)) * 4;
-          size_t srcbase3 = (((ybase + 1) * w) + (xbase + 0)) * 4;
-          size_t srcbase4 = (((ybase + 1) * w) + (xbase + 1)) * 4;
-          int R1          = capbuf->_tempbuffer[srcbase1 + 0];
-          int G1          = capbuf->_tempbuffer[srcbase1 + 1];
-          int B1          = capbuf->_tempbuffer[srcbase1 + 2];
-          int R2          = capbuf->_tempbuffer[srcbase2 + 0];
-          int G2          = capbuf->_tempbuffer[srcbase2 + 1];
-          int B2          = capbuf->_tempbuffer[srcbase2 + 2];
-          int R3          = capbuf->_tempbuffer[srcbase3 + 0];
-          int G3          = capbuf->_tempbuffer[srcbase3 + 1];
-          int B3          = capbuf->_tempbuffer[srcbase3 + 2];
-          int R4          = capbuf->_tempbuffer[srcbase4 + 0];
-          int G4          = capbuf->_tempbuffer[srcbase4 + 1];
-          int B4          = capbuf->_tempbuffer[srcbase4 + 2];
-          auto rgb1       = fvec3(R1, G1, B1) * inv256;
-          auto rgb2       = fvec3(R2, G2, B2) * inv256;
-          auto rgb3       = fvec3(R3, G3, B3) * inv256;
-          auto rgb4       = fvec3(R4, G4, B4) * inv256;
-          auto yuv1       = rgb1.YUV();
-          auto yuv2       = rgb2.YUV();
-          auto yuv3       = rgb3.YUV();
-          auto yuv4       = rgb4.YUV();
-          auto yuv        = (yuv1 + yuv2 + yuv3 + yuv4) * 0.125;
-          yuv += fvec3(0.5, 0.5, 0.5);
-          int u                            = int(yuv.y * 255.0f);
-          int v                            = int(yuv.z * 255.0f);
-          int outindex                     = (yout * (w / 2) + x) * 2;
-          outptr[numpixels + outindex + 0] = u;
-          outptr[numpixels + outindex + 1] = v;
-        }
-      }*/
       break;
     }
     case EBufferFormat::RGBA8: {
-      OrkAssert(vkfmt == VK_FORMAT_R8G8B8A8_UNORM || vkfmt == VK_FORMAT_B8G8R8A8_UNORM);
-      size_t bufsize = w * h * 4;
-      if (capbuf->_tempbuffer.size() != bufsize) {
-        capbuf->_tempbuffer.resize(bufsize);
+      // Handle both 8-bit and 32-bit float formats
+      bool is_float_format = (vkfmt == VK_FORMAT_R32G32B32A32_SFLOAT);
+      bool is_8bit_format = (vkfmt == VK_FORMAT_R8G8B8A8_UNORM || vkfmt == VK_FORMAT_B8G8R8A8_UNORM);
+      
+      OrkAssert(is_float_format || is_8bit_format);
+      
+      size_t staging_bufsize = is_float_format ? (w * h * 16) : (w * h * 4); // 16 bytes per pixel for RGBA32F
+      size_t final_bufsize = w * h * 4; // Always 4 bytes per pixel for RGBA8 output
+      
+      if (capbuf->_tempbuffer.size() != final_bufsize) {
+        capbuf->_tempbuffer.resize(final_bufsize);
       }
       
       // Create staging buffer for GPU to CPU transfer
-      auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, bufsize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, "capture_staging");
+      auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, staging_bufsize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, "capture_staging");
       
       // Copy image to staging buffer (image is already in TRANSFER_SRC_OPTIMAL from transition)
       vkCmdCopyImageToBuffer(
@@ -464,19 +408,20 @@ captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(const RtBuffer* inpbu
       // Transition back to render target for continued rendering
       rtbi->_transitionToRenderTarget(cb);
       
-      // Store the staging buffer in the capture buffer for later retrieval
-      capbuf->_impl.setShared<VulkanBuffer>(staging_buffer);
-      
-      // Store capture data in the future's implementation
-      struct VulkanCaptureData {
-        capturebuffer_ptr_t capture_buffer;
-        texture_ptr_t capture_texture;
-        file::Path path;
-        int width;
-        int height;
-        EBufferFormat format;
-        bool frame_submitted = false;
+      // Store staging buffer with metadata about conversion requirements
+      struct VulkanCaptureStaging {
+        vkbuffer_ptr_t staging_buffer;
+        bool needs_float_to_uint8_conversion = false;
+        VkFormat source_format = VK_FORMAT_UNDEFINED;
       };
+      
+      auto capture_staging = std::make_shared<VulkanCaptureStaging>();
+      capture_staging->staging_buffer = staging_buffer;
+      capture_staging->needs_float_to_uint8_conversion = is_float_format;
+      capture_staging->source_format = vkfmt;
+      
+      // Store shared pointer to the staging struct
+      capbuf->_impl.setShared<VulkanCaptureStaging>(capture_staging);
       
       auto capture_data = std::make_shared<VulkanCaptureData>();
       capture_data->capture_buffer = capbuf;

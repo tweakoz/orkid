@@ -6,7 +6,7 @@
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/util/hotkey.h>
 #include <ork/lev2/gfx/dbgfontman.h>
-#include <ork/lev2/gfx/gfxprimitives.h>
+#include <ork/lev2/gfx/pri.h>
 #include <ork/lev2/gfx/gfxvtxbuf.inl>
 #include <ork/profiling.inl>
 
@@ -38,7 +38,7 @@ void Panel::DoDraw(ui::drawevent_constptr_t drwev) {
   auto tgt    = drwev->GetTarget();
   auto fbi    = tgt->FBI();
   auto mtxi   = tgt->MTXI();
-  auto& primi = lev2::GfxPrimitives::GetRef();
+  auto primi = tgt->PRI();
   auto defmtl = lev2::defaultUIMaterial();
 
   lev2::RasterState defstate;
@@ -47,9 +47,8 @@ void Panel::DoDraw(ui::drawevent_constptr_t drwev) {
   bool has_foc = hasMouseFocus();
 
   auto ren_quad = [&](int x, int y, int x2, int y2) {
-    primi.RenderQuadAtZ(
+    primi->RenderQuadAtZ(
         defmtl.get(),
-        tgt,
         x,
         x2, // x0, x1
         y,

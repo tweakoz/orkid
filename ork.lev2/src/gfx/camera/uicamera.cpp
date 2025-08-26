@@ -13,7 +13,7 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/ui/viewport.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
-#include <ork/lev2/gfx/gfxprimitives.h>
+#include <ork/lev2/gfx/pri.h>
 
 ImplementReflectionX(ork::lev2::UiCamera, "UiCamera");
 
@@ -127,13 +127,13 @@ callback_drawable_ptr_t UiCamera::createOverlayDrawable(){
     switch (RCFD->_renderingmodel._modelID){
       case "FORWARD_UNLIT"_crcu:{
         context->MTXI()->SetMMatrix(mtx_center);
-        GfxPrimitives::RenderTriCircle(context);
+        context->PRI()->RenderTriCircle();
         break;
       }
       case "FORWARD_PBR"_crcu:
       case "DEFERRED_PBR"_crcu:
         context->MTXI()->SetMMatrix(mtx_center);
-        GfxPrimitives::RenderTriCircle(context);
+        context->PRI()->RenderTriCircle();
         break;
       default:
         OrkAssert(false);

@@ -9,11 +9,29 @@
 
 #include <ork/kernel/datablock.h>
 #include <ork/file/path.h>
+#include <ork/kernel/taskgraph.h>
+#include <ork/lev2/lev2_types.h>
+#include <ork/math/box.h>
 #include <atomic>
 #include <mutex>
 #include <condition_variable>
 
 namespace ork::lev2 {
+
+////////////////////////////////////////////////////////////////////////////////
+// Tile rendering parameters
+////////////////////////////////////////////////////////////////////////////////
+
+struct TileParams {
+  int x, y;          // Tile position in pixels
+  int width, height; // Tile dimensions
+  int mip_level;     // For diffuse filtering (specular uses roughness level)
+  float roughness;   // For specular filtering  
+  
+  // NDC and UV coordinates computed from tile position
+  fvec4 getNDC(int tex_width, int tex_height) const;
+  fvec4 getUV(int tex_width, int tex_height) const;
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 // XIRProcessFuture - Future for async XIR processing
@@ -72,6 +90,30 @@ struct EnvMapProcessor {
       const file::Path& source_dir,
       const file::Path& output_dir,
       const std::vector<std::string>& extensions = {".exr", ".hdr", ".png", ".dds"});
+  
+  // TaskGraph-based filtering - creates the full filtering pipeline
+  static taskgraph_ptr_t createFilteringTaskGraph(
+      texture_ptr_t rawenvmap,
+      bool is_equirectangular);
+  
+  // Individual tile rendering methods
+  static void renderSpecularTile(
+      Context* ctx,
+      const TileParams& tile,
+      texture_ptr_t src_tex,
+      rtbuffer_ptr_t target_buffer,
+      float roughness,
+      int num_samples);
+  
+  static void renderDiffuseTile(
+      Context* ctx,
+      const TileParams& tile,
+      texture_ptr_t src_tex,
+      rtbuffer_ptr_t target_buffer);
+  
+  // Constants for tile sizes
+  static constexpr int SPECULAR_TILE_SIZE = 128;
+  static constexpr int DIFFUSE_TILE_SIZE = 256;
 };
 
 } // namespace ork::lev2

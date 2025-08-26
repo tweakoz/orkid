@@ -22,18 +22,48 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
     assreq->_on_event("beginLoadMainThread"_crcu, nullptr);
   }
   
-  logchan_txi_loadreq->log("xxx _createFromLoadReq<%p:%s>\n", (void*)ptex.get(), ptex->_debugName.c_str());
+  logchan_txi_loadreq->log("=== BEGIN _createFromLoadReq<%p:%s> ===", (void*)ptex.get(), ptex->_debugName.c_str());
   //ptex->_debugName = "VkTextureInterface::_createFromLoadReq";
 
   auto vktex       = ptex->_impl.makeShared<VulkanTextureObject>(this);
   auto chain       = req->_cmipchain;
   size_t num_mips  = chain->_levels.size();
-  auto format      = chain->_format;
+  auto src_format  = chain->_format;
   int iwidth       = chain->_width;
   int iheight      = chain->_height;
+  
+  logchan_txi_loadreq->log("  Base dimensions: %dx%d", iwidth, iheight);
+  logchan_txi_loadreq->log("  Number of mip levels: %zu", num_mips);
+  logchan_txi_loadreq->log("  Source format: %s", EBufferFormatToName(src_format).c_str());
+  
+  // Log all mip level details
+  for (int i = 0; i < num_mips; i++) {
+    auto& level = chain->_levels[i];
+    logchan_txi_loadreq->log("    Mip[%d]: %dx%d, data_length=%zu bytes",
+                             i, level._width, level._height, 
+                             level._data ? level._data->length() : 0);
+  }
 
-  // Create a single VkImage with all mip levels
-  auto imageInfo   = makeVKICI(iwidth, iheight, 1, format, num_mips);
+  // Convert format for platform if needed (e.g., BGR8->BGRA8 on macOS)
+  auto dst_format = convertFormatForPlatform(src_format);
+  bool needs_conversion = (dst_format != src_format);
+  
+  // Log format conversion
+  if (needs_conversion) {
+    auto src_format_name = EBufferFormatToName(src_format);
+    auto dst_format_name = EBufferFormatToName(dst_format);
+    logchan_txi_loadreq->log("FORMAT CONVERSION REQUIRED: %s -> %s for texture<%p:%s> (macOS/Metal compatibility)",
+                             src_format_name.c_str(), dst_format_name.c_str(),
+                             (void*)ptex.get(), ptex->_debugName.c_str());
+  } else {
+    auto format_name = EBufferFormatToName(src_format);
+    logchan_txi_loadreq->log("No format conversion needed: %s for texture<%p:%s>",
+                             format_name.c_str(),
+                             (void*)ptex.get(), ptex->_debugName.c_str());
+  }
+
+  // Create a single VkImage with all mip levels using the converted format
+  auto imageInfo   = makeVKICI(iwidth, iheight, 1, dst_format, num_mips);
   imageInfo->usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
   std::string debug_name = ptex->_debugName.empty() ? "texture_loadreq" : ptex->_debugName;
   vktex->_imgobj   = std::make_shared<VulkanImageObject>(_contextVK, imageInfo, debug_name);
@@ -43,15 +73,22 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
   auto cmdbuf_impl = vktex->_loadCB->_impl.getShared<VkSecondaryCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
 
-  // Get format name for events
-  auto fmt_name = EBufferFormatToName(format);
-
   for (int ilevel = 0; ilevel < num_mips; ilevel++) {
     auto& level         = chain->_levels[ilevel];
     int level_width     = level._width;
     int level_height    = level._height;
     auto level_data     = level._data->data(0);
     size_t level_length = level._data->length();
+    
+    // Skip empty mip levels
+    if (level_length == 0 || level_width == 0 || level_height == 0) {
+      logchan_txi_loadreq->log("  Skipping empty mip level %d (width=%d, height=%d, length=%zu)",
+                               ilevel, level_width, level_height, level_length);
+      continue;
+    }
+    
+    logchan_txi_loadreq->log("  Processing mip level %d: %dx%d, data_length=%zu bytes",
+                             ilevel, level_width, level_height, level_length);
 
     // Transition the mip level to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
     auto barrier = createImageBarrier(
@@ -65,9 +102,61 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
     vkCmdPipelineBarrier(
         vk_cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, barrier.get());
 
-    // Copy the mip level data from the staging buffer to the image
-    auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, level_length, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, "_createFromLoadReq");
-    staging_buffer->copyFromHost(level_data, level_length);
+    // Handle format conversion if needed
+    size_t staging_length = level_length;
+    const void* staging_data = level_data;
+    std::vector<uint8_t> converted_data;
+    
+    if (needs_conversion && level_length > 0) {
+      // Convert data based on format
+      if (src_format == EBufferFormat::BGR8 && dst_format == EBufferFormat::BGRA8) {
+        // Convert BGR8 to BGRA8
+        size_t pixel_count = level_width * level_height;
+        if (pixel_count > 0) {
+          converted_data.resize(pixel_count * 4);
+          const uint8_t* src = static_cast<const uint8_t*>(level_data);
+          uint8_t* dst = converted_data.data();
+          for (size_t i = 0; i < pixel_count; i++) {
+            dst[i * 4 + 0] = src[i * 3 + 0]; // B
+            dst[i * 4 + 1] = src[i * 3 + 1]; // G
+            dst[i * 4 + 2] = src[i * 3 + 2]; // R
+            dst[i * 4 + 3] = 255;             // A
+          }
+          staging_length = converted_data.size();
+          staging_data = converted_data.data();
+          logchan_txi_loadreq->log("    Converted mip[%d] BGR8->BGRA8: %zu pixels, %zu->%zu bytes",
+                                   ilevel, pixel_count, level_length, staging_length);
+        }
+      } else if (src_format == EBufferFormat::RGB8 && dst_format == EBufferFormat::RGBA8) {
+        // Convert RGB8 to RGBA8
+        size_t pixel_count = level_width * level_height;
+        if (pixel_count > 0) {
+          converted_data.resize(pixel_count * 4);
+          const uint8_t* src = static_cast<const uint8_t*>(level_data);
+          uint8_t* dst = converted_data.data();
+          for (size_t i = 0; i < pixel_count; i++) {
+            dst[i * 4 + 0] = src[i * 3 + 0]; // R
+            dst[i * 4 + 1] = src[i * 3 + 1]; // G
+            dst[i * 4 + 2] = src[i * 3 + 2]; // B
+            dst[i * 4 + 3] = 255;             // A
+          }
+          staging_length = converted_data.size();
+          staging_data = converted_data.data();
+          logchan_txi_loadreq->log("    Converted mip[%d] RGB8->RGBA8: %zu pixels, %zu->%zu bytes",
+                                   ilevel, pixel_count, level_length, staging_length);
+        }
+      }
+      // Add other conversions as needed
+    }
+    
+    // Ensure we have valid data before creating staging buffer
+    if (staging_length == 0) {
+      continue;
+    }
+    
+    // Copy the (possibly converted) mip level data to the staging buffer
+    auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, staging_length, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, "_createFromLoadReq");
+    staging_buffer->copyFromHost(staging_data, staging_length);
     vktex->_staging_buffers.insert(staging_buffer);
     VkBufferImageCopy region = {};
     region.bufferOffset      = 0;
@@ -99,8 +188,8 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
       data->makeValueForKey<int>("width") = level._width;
       data->makeValueForKey<int>("height") = level._height;
       data->makeValueForKey<datablock_ptr_t>("data") = level._data;
-      data->makeValueForKey<uint32_t>("format") = int(format);
-      data->makeValueForKey<std::string>("format_string") = fmt_name;
+      data->makeValueForKey<uint32_t>("format") = int(dst_format);  // Use converted format
+      data->makeValueForKey<std::string>("format_string") = EBufferFormatToName(dst_format);
       assreq->_on_event("onMipLoad"_crcu, data);
     }
   }
@@ -109,8 +198,8 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
   /////////////////////////////////////
 
   auto IVCI = createImageViewInfo2D(
-      vktex->_imgobj->_vkimage,                       //
-      VkFormatConverter::convertBufferFormat(format), //
+      vktex->_imgobj->_vkimage,                           //
+      VkFormatConverter::convertBufferFormat(dst_format), // Use converted format
       VK_IMAGE_ASPECT_COLOR_BIT);
   IVCI->subresourceRange.levelCount = num_mips;
 
@@ -145,10 +234,13 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
   ptex->_width = iwidth;
   ptex->_height = iheight;
   ptex->_depth = 1;
-  ptex->_texFormat = format;
+  ptex->_texFormat = dst_format;  // Use converted format
   ptex->_num_mips = num_mips;
   ptex->_dirty = false;
 
+  logchan_txi_loadreq->log("=== END _createFromLoadReq<%p:%s> - texture loaded successfully ===", 
+                           (void*)ptex.get(), ptex->_debugName.c_str());
+  
   // Fire endLoadMainThread - CPU work complete
   if (assreq and assreq->_on_event) {
     assreq->_on_event("endLoadMainThread"_crcu, nullptr);
@@ -175,7 +267,7 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
       assreq->_on_event("beginPostProc"_crcu, nullptr);
     }
     
-    logchan_txi_loadreq->log("VkTextureInterface::_createFromLoadReq: executing postproc for texture<%p:%s>\n", 
+    logchan_txi_loadreq->log("VkTextureInterface::_createFromLoadReq: executing postproc for texture<%p:%s>", 
                              (void*)ptex.get(), ptex->_debugName.c_str());
     auto postblock = postproc(ptex, _contextVK, dblock);
     
@@ -185,7 +277,7 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
     
     OrkAssert(postblock);
   } else {
-    logchan_txi_loadreq->log("VkTextureInterface::_createFromLoadReq: no postproc for texture<%p:%s>\n", 
+    logchan_txi_loadreq->log("VkTextureInterface::_createFromLoadReq: no postproc for texture<%p:%s>", 
                              (void*)ptex.get(), ptex->_debugName.c_str());
   }
   _contextVK->_endAssetProcessing();

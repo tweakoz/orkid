@@ -11,7 +11,7 @@
 #include <ork/kernel/environment.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmodel.h>
-#include <ork/lev2/gfx/gfxprimitives.h>
+#include <ork/lev2/gfx/pri.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/kernel/string/deco.inl>
 #include <ork/lev2/gfx/material_pbr.inl>

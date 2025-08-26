@@ -9,7 +9,7 @@
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/util/hotkey.h>
 #include <ork/lev2/gfx/dbgfontman.h>
-#include <ork/lev2/gfx/gfxprimitives.h>
+#include <ork/lev2/gfx/pri.h>
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/math/misc_math.h>
 #include <ork/lev2/gfx/gfxvtxbuf.inl>
@@ -150,7 +150,7 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
   auto fbi    = tgt->FBI();
   auto gbi    = tgt->GBI();
   auto mtxi   = tgt->MTXI();
-  auto& primi = lev2::GfxPrimitives::GetRef();
+  auto primi = tgt->PRI();
   auto defmtl = lev2::defaultUIMaterial();
   auto vbuf   = get_vertexbuffer(tgt);
 
@@ -187,9 +187,8 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
       ///////////////////////////////
       tgt->PushModColor(color);
       defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
-      primi.RenderQuadAtZ(
+      primi->RenderQuadAtZ(
           defmtl.get(),
-          tgt,
           ix1,  // x0
           ix2,  // x1
           iy1,  // y0

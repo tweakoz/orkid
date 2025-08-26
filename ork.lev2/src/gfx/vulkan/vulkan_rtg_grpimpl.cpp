@@ -164,6 +164,7 @@ void VkRtGroupImpl::_transitionToHostRead(vkpricmdbufimpl_ptr_t cb){
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkRtGroupImpl::assignToRtGroup(vkrtgrpimpl_ptr_t rtgimpl, rtgroup_rawptr_t rtgroup){
+  printf("VkRtGroupImpl::assignToRtGroup rtgroup<%p>\n", rtgroup);
   rtgroup->_impl.setShared<VkRtGroupImpl>(rtgimpl);
   int inumtargets = rtgroup->numImageBuffers();
   int inumimpls = rtgimpl->_color_buffer_impls.size();
@@ -171,6 +172,7 @@ void VkRtGroupImpl::assignToRtGroup(vkrtgrpimpl_ptr_t rtgimpl, rtgroup_rawptr_t 
   for(int i=0; i < inumtargets; i++) {
     auto rtb = rtgroup->buffer(i);
     auto rtb_impl = rtgimpl->_color_buffer_impls[i];
+    printf("  setting impl for rtbuffer[%d]<%p>\n", i, rtb.get());
     rtb->_impl.setShared<VklRtBufferImpl>(rtb_impl);
   }
   if(rtgroup->_depthBuffer) {

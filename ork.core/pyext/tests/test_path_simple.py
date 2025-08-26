@@ -41,7 +41,7 @@ else:
             print("  orkshader:// context registered successfully")
 
 print("\n1. Creating absolute path...")
-abs_path = Path("/Users/michael/test.txt")
+abs_path = Path("/Users/test/test.txt")
 print(f"  Created: {abs_path}")
 
 print("\n2. Testing isAbsolute...")

@@ -7,6 +7,7 @@
 
 #include <ork/pch.h>
 #include <ork/lev2/gfx/gfxenv.h>
+#include <ork/lev2/gfx/pri.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/gfx/renderer/rendercontext.h>
 #include <ork/kernel/string/string.h>
@@ -14,6 +15,9 @@
 #include <ork/lev2/gfx/texman.h>
 #include <ork/object/AutoConnector.h>
 #include <ork/lev2/gfx/ctxbase.h>
+#include <ork/kernel/taskgraph.h>
+#include <ork/kernel/opq.h>
+#include <ork/util/logger.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -24,6 +28,8 @@ ImplementReflectionX(ork::lev2::Context, "Context");
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork { namespace lev2 {
+
+static logchannel_ptr_t logchan_ctx = logger()->configureChannel("GFXCONTEXT", fvec3(0.3, 0.8, 0.8), true);
 
 int Context::mainSurfaceWidth() const {
   float content_scale = mCtxBase ? mCtxBase->_contentScaleX : 1.0f;
@@ -60,6 +66,18 @@ loadingphase_ptr_t Context::newLoadingPhase() {
 
 void LoadingPhase::enqueueOperation(gfxcontext_lambda_t l) {
   _load_operations.atomicOp([l](gfxcontext_lambda_list_t& unlocked) { unlocked.push_back(l); });
+}
+
+void LoadingPhase::join() {
+  // Ensure we're not on main thread to prevent deadlock
+  ork::opq::assertNotOnQueue(opq::mainSerialQueue());
+  
+  // Wait for all operations to complete
+  // The operations are processed by the main thread elsewhere
+  // This just waits until they're done
+  while (_load_operations.atomicCopy().size() > 0) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -110,24 +128,41 @@ void Context::_processBeginFrameBlockers() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Context::_loadingPhaseOperations() {
-  loadingphase_ptr_t phase = nullptr;
-  _loadingPhases.atomicOp([&phase](loadingphase_list_t& unlocked) {
-    if (unlocked.size()) {
-      phase = unlocked.front();
-      unlocked.pop_front();
-    }
-  });
-  if (phase) {
-    static gfxcontext_lambda_list_t ops;
-    phase->_load_operations.atomicOp([phase](gfxcontext_lambda_list_t& unlocked) {
-      ops = unlocked;
-      unlocked.clear();
+  bool done = false;
+  int counter = 0;
+  float t0 = _ctxtimer.SecsSinceStart();
+  while(not done) {
+    loadingphase_ptr_t phase = nullptr;
+    _loadingPhases.atomicOp([&phase](loadingphase_list_t& unlocked) {
+      if (unlocked.size()) {
+        phase = unlocked.front();
+        unlocked.pop_front();
+      }
     });
+    if (phase) {
+      static gfxcontext_lambda_list_t ops;
+      phase->_load_operations.atomicOp([phase](gfxcontext_lambda_list_t& unlocked) {
+        ops = unlocked;
+        unlocked.clear();
+      });
+      for (auto op : ops) {
+        logchan_ctx->log("Context: executing loading phase operation");
+        op(this);
+      }
+      ops.clear();
 
-    for (auto op : ops) {
-      op(this);
+      float t1 = _ctxtimer.SecsSinceStart();
+      float elapsed = t1 - t0;
+      if(elapsed>1.0f) {
+        logchan_ctx->log("Context: breaking out of loading phase operation loop after %f seconds", t1-t0);
+        _ctxtimer.Start();
+        done = true;
+      }
     }
-    ops.clear();
+    else {
+      done = true;
+    }
+
   }
 }
 
@@ -267,6 +302,10 @@ Context::Context()
     , mbPostInitializeContext(true)
     , mFramePerfItem(CreateFormattedString("<target:%p>", this)) {
 
+  printf("Context::Context() this<%p>\n", this);
+  _ctxtimer.Start();
+  _primitives_interface = std::make_shared<PrimitivesInterface>(this);
+
   static CompositingData _gdata;
   static auto _gimpl = _gdata.createImpl();
   auto RCFD          = std::make_shared<RenderContextFrameData>(this);
@@ -281,6 +320,15 @@ Context::Context()
 ///////////////////////////////////////////////////////////////////////////////
 
 Context::~Context() {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Context::gpuInit() {
+  // Initialize GPU-dependent resources
+  if (_primitives_interface) {
+    _primitives_interface->gpuInit();
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -323,6 +371,45 @@ void Context::debugMarker(const std::string str) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+contextexecutor_ptr_t Context::createContextExecutor() {
+  return std::make_shared<ContextExecutor>(this);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+ContextExecutor::ContextExecutor(context_rawptr_t ctx)
+  : _context(ctx) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void ContextExecutor::executePhase(taskphase_ptr_t phase) {
+
+  // Ensure we're not on main thread to prevent deadlock
+  ork::opq::assertNotOnQueue(opq::mainSerialQueue());
+
+  if (phase->_tasks.empty()) {
+    return;
+  }
+    
+  // Create a loading phase for GPU operations
+  auto loading_phase = _context->newLoadingPhase();
+  auto graph = phase->_graph.lock();
+  // Enqueue all tasks to the loading phase
+  for (auto task : phase->_tasks) {
+    printf("ContextExecutor::executePhase enqueing task<%s>\n", task->_name.c_str());
+    loading_phase->enqueueOperation([=](Context* ctx) {
+      printf("ContextExecutor::executePhase executing task<%s>\n", task->_name.c_str());
+      task->_func(graph); 
+    });
+  }
+  
+  // Wait for all GPU operations to complete
+  loading_phase->join();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 }} // namespace ork::lev2

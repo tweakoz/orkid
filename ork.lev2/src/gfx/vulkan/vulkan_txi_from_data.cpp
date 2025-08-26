@@ -81,21 +81,8 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   // Handle format conversion for macOS
   /////////////////////////////////////
   
-  EBufferFormat actual_dst_format = tid._dst_format;
-  bool needs_conversion = false;
-  
-#if defined(__APPLE__)
-  if (tid._dst_format == EBufferFormat::BGR8) {
-    actual_dst_format = EBufferFormat::BGRA8;
-    needs_conversion = true;
-  } else if (tid._dst_format == EBufferFormat::RGB8) {
-    actual_dst_format = EBufferFormat::RGBA8;
-    needs_conversion = true;
-  } else if (tid._dst_format == EBufferFormat::RGB32F) {
-    actual_dst_format = EBufferFormat::RGBA32F;
-    needs_conversion = true;
-  }
-#endif
+  EBufferFormat actual_dst_format = convertFormatForPlatform(tid._dst_format);
+  bool needs_conversion = (actual_dst_format != tid._dst_format);
 
   /////////////////////////////////////
   // hash the image creation parameters

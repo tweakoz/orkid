@@ -4,7 +4,7 @@
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/util/hotkey.h>
 #include <ork/lev2/gfx/dbgfontman.h>
-#include <ork/lev2/gfx/gfxprimitives.h>
+#include <ork/lev2/gfx/pri.h>
 #include <ork/lev2/ui/coloredit.h>
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/gfx/gfxvtxbuf.inl>
@@ -114,7 +114,7 @@ void ColorEdit::DoDraw(drawevent_constptr_t drwev) {
   auto fbi     = context->FBI();
   auto gbi     = context->GBI();
   auto mtxi    = context->MTXI();
-  auto& primi  = lev2::GfxPrimitives::GetRef();
+  auto primi  = context->PRI();
   auto defmtl  = lev2::defaultUIMaterial();
   using vtx_t  = lev2::SVtxV16T16C16;
   auto& VB     = lev2::GfxEnv::GetSharedDynamicV16T16C16();

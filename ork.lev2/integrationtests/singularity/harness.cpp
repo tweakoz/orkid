@@ -17,7 +17,7 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorVr.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
-#include <ork/lev2/gfx/gfxprimitives.h>
+#include <ork/lev2/gfx/pri.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/lev2/ui/layoutgroup.inl>
 #include <ork/lev2/gfx/gfxvtxbuf.inl>
@@ -307,10 +307,9 @@ singularitybenchapp_ptr_t createBenchmarkApp(appinitdata_ptr_t initdata, prgdata
       //////////////////////////////////////////////
       // draw background
       //////////////////////////////////////////////
-      auto& primi = lev2::GfxPrimitives::GetRef();
+      auto primi = context->PRI();
       app->_material->bindParamVec4(app->_fxparameterMODC, fvec4(0, 0, 0, 1));
-      primi.RenderEMLQuadAtZV16T16C16(
-          context,
+      primi->RenderEMLQuadAtZV16T16C16(
           8,              // x0
           tgtrect._w - 8, // x1
           8,              // y0

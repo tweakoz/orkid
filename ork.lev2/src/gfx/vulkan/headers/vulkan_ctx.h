@@ -294,6 +294,9 @@ struct VkTextureInterface final : public TextureInterface {
   void updateTextureArraySlice(TextureArraySliceRef* slice, image_ptr_t img) final;
   void _updateTextureArraySlice(TextureArraySliceRef* slice, compressedmipchain_ptr_t mipc);
 
+  // Helper function to convert 24-bit formats to 32-bit on macOS
+  static EBufferFormat convertFormatForPlatform(EBufferFormat format);
+  
   vkcontext_rawptr_t _contextVK;
   using sbpoolmap_t = std::unordered_map<size_t, stagingbufferpool_ptr_t>;
   stagingbufferpool_ptr_t stagingBufferPoolForSrcOfSize(size_t size);
@@ -622,6 +625,16 @@ public:
   std::vector<captureasync_ptr_t> _pending_captures;
   void _processPendingCaptures();
 };
+///////////////////////////////////////////////////////////////////////////
+  struct VulkanCaptureData {
+    capturebuffer_ptr_t capture_buffer;
+    texture_ptr_t capture_texture;
+    file::Path path;
+    int width;
+    int height;
+    EBufferFormat format;
+    bool frame_submitted = false;
+  };
 ///////////////////////////////////////////////////////////////////////////
 extern vkinstance_ptr_t _GVI;
 } // namespace ork::lev2::vulkan

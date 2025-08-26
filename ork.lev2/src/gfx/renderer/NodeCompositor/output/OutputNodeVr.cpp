@@ -8,7 +8,7 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorVr.h>
 #include <ork/application/application.h>
 #include <ork/lev2/gfx/camera/uicam.h>
-#include <ork/lev2/gfx/gfxprimitives.h>
+#include <ork/lev2/gfx/pri.h>
 #include <ork/lev2/gfx/renderer/builtin_frameeffects.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/rtgroup.h>
@@ -93,10 +93,11 @@ struct VRIMPL {
       targ->MTXI()->PushPMatrix(camdat->GetPMatrix());
       targ->PushModColor(fvec4::White());
       {
+        auto prims = targ->PRI();
         if (controller->_button2Down)
-          ork::lev2::GfxPrimitives::GetRef().RenderBox(targ);
+          prims->RenderBox();
         else
-          ork::lev2::GfxPrimitives::GetRef().RenderAxis(targ);
+          prims->RenderAxis();
       }
       targ->PopModColor();
       targ->MTXI()->PopPMatrix();

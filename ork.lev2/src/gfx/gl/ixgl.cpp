@@ -9,7 +9,7 @@
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include "gl.h"
-#include <ork/lev2/gfx/gfxprimitives.h>
+#include <ork/lev2/gfx/pri.h>
 #include <ork/kernel/environment.h>
 #include <ork/file/path.h>
 #include <dlfcn.h>

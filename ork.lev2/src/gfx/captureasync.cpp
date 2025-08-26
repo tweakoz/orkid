@@ -23,8 +23,11 @@ CaptureAsync::~CaptureAsync() {
 ////////////////////////////////////////////////////////////////
 
 bool CaptureAsync::wait(CaptureBuffer* out_buffer) {
-  // Default implementation - override in platform-specific code
-  return false;
+  while (not isReady()) {
+    // In a real app we'd pump message loop here
+    std::this_thread::sleep_for(std::chrono::microseconds(100));
+  }
+  return true;
 }
 
 ////////////////////////////////////////////////////////////////

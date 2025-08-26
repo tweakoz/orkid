@@ -172,7 +172,7 @@ submesh_ptr_t Generator::generateClipmaps() {
 
   //_mesh->MergeSubMesh(*_submesh, "clipmappolys");
 
-  // submeshWriteObj(*_submesh, file::Path("/Users/michael/clipmap.obj"));
+  // submeshWriteObj(*_submesh, file::Path("/Users/test/clipmap.obj"));
   return _submesh;
 }
 

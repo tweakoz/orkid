@@ -31,6 +31,7 @@ namespace ork::lev2{
 
 namespace ork::lev2 {
 extern bool g_allow_HIDPI;
+extern context_ptr_t gloadercontext;
 
 static logchannel_ptr_t logchan_ezapp = logger()->configureChannel("EZAPP", fvec3(0.7, 0.7, 0.9),false);
 
@@ -261,57 +262,67 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
 
   if(_initdata->_enable_graphics){
 
-    _uicontext   = std::make_shared<ui::Context>();
     _appstate    = 0;
 
-  //////////////////////////////////////////////
-
-    _mainWindow = std::make_shared<EzMainWin>(*this);
-
-    //////////////////////////////////////
-    // create leve gfxwindow
-    //////////////////////////////////////
-    _mainWindow->_appwin = std::make_shared<AppWindow>(nullptr);
-    _mainWindow->_appwin->miWidth = _initdata->_width;
-    _mainWindow->_appwin->miHeight = _initdata->_height;
-    GfxEnv::GetRef().RegisterWinContext(_mainWindow->_appwin.get());
-    //////////////////////////////////////
-    //////////////////////////////////////
-    _eztopwidget                       = std::make_shared<EzTopWidget>(_mainWindow.get());
-    if(initdata->_disableMouseCursor){
-      _eztopwidget->_clipEvents = false;
+    if( _initdata->_offscreen ) { // offscreen
+      _uicontext = nullptr;
+      _mainWindow = nullptr;
+      _eztopwidget = nullptr;
+      _topLayoutGroup = nullptr;
     }
-    _eztopwidget->_uicontext           = _uicontext.get();
-    _mainWindow->_appwin->_rootWidget = _eztopwidget;
-    _eztopwidget->_topLayoutGroup =
-        _uicontext->makeTop<ui::LayoutGroup>("ezapp-top-layoutgroup", 0, 0, _initdata->_width, _initdata->_height);
-    _topLayoutGroup = _eztopwidget->_topLayoutGroup;
-    if(initdata->_disableMouseCursor){
-      _topLayoutGroup->_clipEvents = false;
-    }
+    else { // not offscreen
+      _uicontext   = std::make_shared<ui::Context>();
+
+    //////////////////////////////////////////////
+
+      _mainWindow = std::make_shared<EzMainWin>(*this);
+
+      //////////////////////////////////////
+      // create leve gfxwindow
+      //////////////////////////////////////
+      _mainWindow->_appwin = std::make_shared<AppWindow>(nullptr);
+      _mainWindow->_appwin->miWidth = _initdata->_width;
+      _mainWindow->_appwin->miHeight = _initdata->_height;
+      GfxEnv::GetRef().RegisterWinContext(_mainWindow->_appwin.get());
+      //////////////////////////////////////
+      //////////////////////////////////////
+      _eztopwidget                       = std::make_shared<EzTopWidget>(_mainWindow.get());
+      if(initdata->_disableMouseCursor){
+        _eztopwidget->_clipEvents = false;
+      }
+      _eztopwidget->_uicontext           = _uicontext.get();
+      _mainWindow->_appwin->_rootWidget = _eztopwidget;
+      _eztopwidget->_topLayoutGroup =
+          _uicontext->makeTop<ui::LayoutGroup>("ezapp-top-layoutgroup", 0, 0, _initdata->_width, _initdata->_height);
+      _topLayoutGroup = _eztopwidget->_topLayoutGroup;
+      if(initdata->_disableMouseCursor){
+        _topLayoutGroup->_clipEvents = false;
+      }
+      _mainWindow->_ctqt = new CtxGLFW(_mainWindow->_appwin.get());
+      _mainWindow->_ctqt->initWithData(_initdata);
+
+      /////////////////////////////////////////////
+      // mainthread runloop callback
+      /////////////////////////////////////////////
+      _mainWindow->_ctqt->_onRunLoopIteration = [this]() {
+        //////////////////////////////
+        // handle main serialqueue
+        //////////////////////////////
+        opq::TrackCurrent opqtest(_mainq);
+        _mainq->Process();
+
+        if(this->_onRunLoopIteration){
+          this->_onRunLoopIteration();
+        }
+        //////////////////////////////
+      };
+      //////////////////////////////////////////////
+      _mainWindow->_ctqt->pushRefreshPolicy(RefreshPolicyItem{EREFRESH_WHENDIRTY});
+      _mainWindow->_ctqt->Show();
+    } // not offscreen
     /////////////////////////////////////////////
     _rthreadq = std::make_shared<opq::OperationsQueue>(0, "renderSerialQueue");
     /////////////////////////////////////////////
-    _mainWindow->_ctqt = new CtxGLFW(_mainWindow->_appwin.get());
-    _mainWindow->_ctqt->initWithData(_initdata);
-
-    /////////////////////////////////////////////
-    // mainthread runloop callback
-    /////////////////////////////////////////////
-    _mainWindow->_ctqt->_onRunLoopIteration = [this]() {
-      //////////////////////////////
-      // handle main serialqueue
-      //////////////////////////////
-      opq::TrackCurrent opqtest(_mainq);
-      _mainq->Process();
-
-      if(this->_onRunLoopIteration){
-        this->_onRunLoopIteration();
-      }
-      //////////////////////////////
-    };
-    //////////////////////////////////////////////
-    _mainWindow->_ctqt->pushRefreshPolicy(RefreshPolicyItem{EREFRESH_WHENDIRTY});
     /////////////////////////////////////////////
     if (not genviron.has("ORKID_DISABLE_DBLOCK_PROGRESS")) {
       auto handler = [this](opq::progressdata_ptr_t data) { //
@@ -321,8 +332,6 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
       };
       opq::setProgressHandler(handler);
     }
-
-    _mainWindow->_ctqt->Show();
   }
   else { // no graphics
     printf( "NO GRAPHICS ENABLED\n" );
@@ -683,20 +692,31 @@ void OrkEzApp::_mainThreadLoopBegin() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::_mainThreadLoopIter(){
-  auto glfw_ctx = _mainWindow->_ctqt;
-  glfw_ctx->_runloopIter();
+  if(_mainWindow){
+    auto glfw_ctx = _mainWindow->_ctqt;
+    glfw_ctx->_runloopIter();
+  }
+  else{
+    gloadercontext->beginFrame(false);
+    gloadercontext->endFrame();    
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::_mainThreadLoopEnd(){
-  auto glfw_ctx = _mainWindow->_ctqt;
-  glfw_ctx->_runloopEnd();
+    if(_mainWindow){
+        auto glfw_ctx = _mainWindow->_ctqt;
+        glfw_ctx->_runloopEnd();
+
+    }
 }
 ///////////////////////////////////////////////////////////////////////////////
 int OrkEzApp::mainThreadLoop() {
   _mainThreadLoopBegin();
-  auto glfw_ctx = _mainWindow->_ctqt;
-  while(glfw_ctx->_runstate==1){
-    glfw_ctx->_runloopIter();
+    if(_mainWindow){
+        auto glfw_ctx = _mainWindow->_ctqt;
+        while(glfw_ctx->_runstate==1){
+            glfw_ctx->_runloopIter();
+        }
   }
   _mainThreadLoopEnd();
   return 0;

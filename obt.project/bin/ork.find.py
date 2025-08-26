@@ -3,7 +3,7 @@
 import sys, os
 from obt import command 
 
-assert(len(sys.argv)==2)
+# Pass all arguments through (including potential --filetypes)
 args = sys.argv[1:]
 
 cmd_list = [

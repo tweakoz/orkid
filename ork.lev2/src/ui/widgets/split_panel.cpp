@@ -5,7 +5,7 @@
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/util/hotkey.h>
 #include <ork/lev2/gfx/dbgfontman.h>
-#include <ork/lev2/gfx/gfxprimitives.h>
+#include <ork/lev2/gfx/pri.h>
 #include <ork/kernel/opq.h>
 #include <ork/lev2/gfx/gfxvtxbuf.inl>
 
@@ -51,13 +51,12 @@ void SplitPanel::DoDraw(ui::drawevent_constptr_t drwev) {
   bool is_hdpi = tgt->hiDPI();
   auto fbi     = tgt->FBI();
   auto mtxi    = tgt->MTXI();
-  auto& primi  = lev2::GfxPrimitives::GetRef();
+  auto primi  = tgt->PRI();
   auto defmtl  = lev2::defaultUIMaterial();
 
   auto ren_quad = [&](int x, int y, int x2, int y2) {
-    primi.RenderQuadAtZ(
+    primi->RenderQuadAtZ(
         defmtl.get(),
-        tgt,
         x,
         x2, // x0, x1
         y,

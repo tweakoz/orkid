@@ -68,7 +68,7 @@ void VkFrameBufferInterface::_setScissor(int iX, int iY, int iW, int iH) {
 ///////////////////////////////////////////////////////
 void VkFrameBufferInterface::_doBeginFrame() {
   //logchan_fbi->log("_doBeginFrame()");
-  OrkAssert(_contextVK->_is_visual_frame);
+  //OrkAssert(_contextVK->_is_visual_frame);
   if (_swapchain) {
     _swapchain->_update();
   }

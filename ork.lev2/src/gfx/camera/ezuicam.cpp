@@ -12,7 +12,7 @@
 #include <ork/lev2/gfx/ctxbase.h>
 #include <ork/lev2/gfx/gfxenv.h>
 
-#include <ork/lev2/gfx/gfxprimitives.h>
+#include <ork/lev2/gfx/pri.h>
 //
 #include <math.h>
 #include <ork/file/tinyxml/tinyxml.h>
@@ -234,8 +234,9 @@ void EzUiCam::draw(Context* context) const {
                      ? priv->_materialinst_stereo
                      : priv->_materialinst_mono;
   mtlinst->wrappedDrawCall(RCID, [context]() {
-    auto& tricircle = GfxPrimitives::GetRef().mVtxBuf_TriCircle;
-    auto& axis      = GfxPrimitives::GetRef().mVtxBuf_Axis;
+    auto prims = context->PRI();
+    auto& tricircle = prims->mVtxBuf_TriCircle;
+    auto& axis      = prims->mVtxBuf_Axis;
     context->GBI()->DrawPrimitiveEML(tricircle,PrimitiveType::LINES);
     context->GBI()->DrawPrimitiveEML(axis,PrimitiveType::LINES);
   });

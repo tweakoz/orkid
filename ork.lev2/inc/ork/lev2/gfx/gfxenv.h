@@ -13,6 +13,7 @@
 
 #include <ork/rtti/RTTIX.inl>
 #include <ork/kernel/core/singleton.h>
+#include <ork/kernel/taskgraph.h>
 #include <ork/kernel/timer.h>
 #include <ork/object/Object.h>
 
@@ -95,6 +96,7 @@ struct RenderQueueSortingData {
 struct LoadingPhase {
 
   void enqueueOperation(gfxcontext_lambda_t l);
+  void join();
 
   LockedResource<gfxcontext_lambda_list_t> _load_operations;
 };
@@ -168,6 +170,19 @@ struct RenderingConventions {
   }
 };
 
+////////////////////////////////////////////////////////////////////////////////
+// ContextExecutor - TaskExecutor that runs tasks on GPU main thread
+////////////////////////////////////////////////////////////////////////////////
+
+struct ContextExecutor : public ::ork::TaskExecutor {
+  
+  ContextExecutor(context_rawptr_t ctx);
+  
+  void executePhase(taskphase_ptr_t phase) override;
+  
+  context_rawptr_t _context;
+};
+
 struct Context : public ::ork::Object {
   DeclareAbstractX(Context, ::ork::Object);
 
@@ -191,6 +206,12 @@ public:
   virtual ImmInterface* IMI() {
     return 0;
   } // Immediate Mode Interface (optional)
+  pri_rawptr_t PRI() {
+    return _primitives_interface.get();
+  } // Primitives Interface
+  
+  void gpuInit(); // Initialize GPU-dependent resources
+  
   ///////////////////////////////////////////////////////////////////////
   void triggerFrameDebugCapture();
   virtual void _doTriggerFrameDebugCapture() {
@@ -386,6 +407,8 @@ public:
 
   loadingphase_ptr_t newLoadingPhase();
   
+  contextexecutor_ptr_t createContextExecutor();
+  
   //////////////////////////////////////////////////////////
   // Rendering conventions for this backend
   //////////////////////////////////////////////////////////
@@ -427,10 +450,12 @@ public:
 
   secondary_commandbuffer_ptr_t _recordCommandBuffer;
   
+  Timer _ctxtimer;
 protected:
   RenderingConventions _renderingConventions;
 
 private:
+  pri_ptr_t _primitives_interface;
   std::vector<void_lambda_t> _onBeginFrameCallbacks;
   std::vector<void_lambda_t> _onEndFrameCallbacks;
   std::vector<void_lambda_t> _onBeforeDoEndFrameOneShotCallbacks;

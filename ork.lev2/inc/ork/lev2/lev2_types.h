@@ -26,9 +26,11 @@ using matrix_lamda_t = std::function<fmtx4()>;
 
 struct LoadingPhase;
 struct Context;
+struct ContextExecutor;
 class TextureInterface;
 class FrameBufferInterface;
 class GeometryBufferInterface;
+class PrimitivesInterface;
 class CTXBASE;
 class GfxEnv;
 struct DisplayBuffer;
@@ -52,6 +54,7 @@ using gfxcontext_lambda_list_t = std::vector<gfxcontext_lambda_t>;
 using context_ptr_t          = std::shared_ptr<Context>;
 using context_rawptr_t       = Context*;
 using context_factory_t      = std::function<context_ptr_t()>;
+using contextexecutor_ptr_t  = std::shared_ptr<ContextExecutor>;
 using ctxbase_ptr_t          = std::shared_ptr<CTXBASE>;
 using displaybuffer_ptr_t  = std::shared_ptr<DisplayBuffer>;
 using window_ptr_t           = std::shared_ptr<Window>;
@@ -71,6 +74,8 @@ using rasterstate_ptr_t = std::shared_ptr<RasterState>;
 using txi_rawptr_t = TextureInterface*;
 using fbi_rawptr_t = FrameBufferInterface*;
 using gbi_rawptr_t = GeometryBufferInterface*;
+using pri_rawptr_t = PrimitivesInterface*;
+using pri_ptr_t = std::shared_ptr<PrimitivesInterface>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -134,6 +139,8 @@ using rtgroup_ptr_t  = std::shared_ptr<RtGroup>;
 using rtgroup_rawptr_t = RtGroup*;
 using rtbuffer_ptr_t = std::shared_ptr<RtBuffer>;
 using rtbuffer_rawptr_t = RtBuffer*;
+using rtgroup_list_t = std::vector<rtgroup_ptr_t>;
+using rtbuffer_list_t = std::vector<rtbuffer_ptr_t>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Render Target

@@ -2,6 +2,7 @@
 
 import unittest
 from orkengine.core import coreappinit, URL
+from ork import path as ork_path
 
 coreappinit()
 
@@ -207,10 +208,10 @@ class TestURL(unittest.TestCase):
         self.assertTrue("limit=10" in api_url.query)
         
         # File URL
-        file_url = URL("file:///Users/michael/projects/orkid/README.md")
+        file_url = URL(f"file://{ork_path.root}/README.md")
         self.assertEqual(file_url.scheme, "file")
         self.assertEqual(file_url.host, "")
-        self.assertEqual(file_url.path, "/Users/michael/projects/orkid/README.md")
+        self.assertEqual(file_url.path, str(ork_path.root/"README.md"))
         
         # URL with authentication
         auth_url = URL("https://user:password@secure.example.com:8443/admin")

@@ -13,7 +13,7 @@
 namespace ork {
 
 class PoolString;
-class Object;
+struct Object;
 
 typedef orklist<std::string>        tokenlist;
 typedef orkmap<PoolString,Object*>	ObjectMap;

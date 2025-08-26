@@ -605,6 +605,7 @@ void CtxGLFW::_runloopBegin() {
 
   if (_onGpuInit) {
     FontMan::gpuInit(_target);
+    _target->gpuInit(); // Initialize Context GPU resources
     _onGpuInit(_target);
   }
 }
@@ -715,8 +716,10 @@ void CtxGLFW::SlotRepaint() {
   // OrkAssert(opq::TrackCurrent::is(opq::mainSerialQueue()));
 
   // auto lamb = [&]() {
-  if (not GfxEnv::initialized())
+  if (not GfxEnv::initialized()){
+    printf( "CtxGLFW::SlotRepaint() earlyret1\n" );
     return;
+  }
 
   ork::PerfMarkerPush("ork.viewport.draw.begin");
 
@@ -730,8 +733,15 @@ void CtxGLFW::SlotRepaint() {
     auto drwev         = std::make_shared<ui::DrawEvent>(this->_target);
 
     auto widget = gfxwin ? gfxwin->GetRootWidget() : nullptr;
+
+      printf( "CtxGLFW::SlotRepaint() _target<%p> widget<%p>\n", _target, widget );
+
     if (widget) {
       widget->draw(drwev);
+    }
+    else{
+      _target->beginFrame(false);  // false = non-visual frame
+      _target->endFrame();
     }
   }
   //}
