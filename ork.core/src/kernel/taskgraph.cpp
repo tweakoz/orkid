@@ -67,6 +67,18 @@ void TaskGraph::execute(taskgraph_ptr_t self, taskgraphcomplete_func_t on_comple
   self->_on_completion = on_completion;
 
   //////////////////////////////////////
+  // debug: print out phase list
+  //////////////////////////////////////
+
+  int iphase = 0;
+  for (auto phase : self->_phases) {
+    auto name = phase->_name;
+    int num_tasks = int(phase->_tasks.size());
+    logchan_tg->log("TaskGraph: phase %s numtasks<%d>", name.c_str(), num_tasks);
+    iphase++;
+  }
+
+  //////////////////////////////////////
   // Execute phases sequentially
   //////////////////////////////////////
 
