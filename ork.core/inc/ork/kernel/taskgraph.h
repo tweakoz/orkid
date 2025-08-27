@@ -109,7 +109,10 @@ struct TaskGraph {
   std::vector<taskphase_ptr_t> _phases;
   std::atomic<size_t> _phases_pending{0};
   taskgraphcomplete_func_t _on_completion;
-  
+  static std::atomic<int> g_taskgraph_perf_counter;
+  static std::atomic<int> g_taskgraph_index;
+  static std::atomic<int> g_task_perf_counter;
+  static std::atomic<int> g_task_index;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

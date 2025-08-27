@@ -30,6 +30,7 @@ ImplementReflectionX(ork::lev2::Context, "Context");
 namespace ork { namespace lev2 {
 
 static logchannel_ptr_t logchan_ctx = logger()->configureChannel("GFXCONTEXT", fvec3(0.3, 0.8, 0.8), true);
+static logchannel_ptr_t logchan_tg = logger()->getChannel("TASKGRAPH");
 
 int Context::mainSurfaceWidth() const {
   float content_scale = mCtxBase ? mCtxBase->_contentScaleX : 1.0f;
@@ -400,6 +401,10 @@ void ContextExecutor::executePhase(taskphase_ptr_t phase) {
   for (auto task : phase->_tasks) {
     loading_phase->enqueueOperation([=](Context* ctx) {
       task->_func(graph); 
+      TaskGraph::g_task_index += 1;
+      if((TaskGraph::g_task_index&0x3)==0) {
+        logchan_tg->log("TaskGraphs tasks completed: %zu", TaskGraph::g_task_index.load());
+      }
     });
   }
   

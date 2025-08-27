@@ -9,8 +9,11 @@
 #include <ork/kernel/opq.h>
 #include <mutex>
 #include <condition_variable>
+#include <ork/util/logger.h>
 
 namespace ork {
+
+static logchannel_ptr_t logchan_tg = logger()->getChannel("TASKGRAPH");
 
 ////////////////////////////////////////////////////////////////////////////////
 // OPQParallelExecutor - Executes all tasks in phase concurrently
@@ -34,6 +37,10 @@ public:
         // Execute the task with completion callback
         task->_func(graph);
         pending_tasks->fetch_sub(1);
+        TaskGraph::g_task_index += 1;
+        if((TaskGraph::g_task_index&0x3)==0) {
+          logchan_tg->log("TaskGraphs tasks completed: %zu", TaskGraph::g_task_index.load());
+        }
       });
     }
     while(pending_tasks->load()) {

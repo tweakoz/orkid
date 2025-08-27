@@ -58,11 +58,14 @@ taskgraph_rawptr_t TaskPhase::task(const std::string& name, taskfunc_t func) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+std::atomic<int> TaskGraph::g_taskgraph_perf_counter{0};
+std::atomic<int> TaskGraph::g_taskgraph_index{0};
+std::atomic<int> TaskGraph::g_task_perf_counter{0};
+std::atomic<int> TaskGraph::g_task_index{0};
 
 void TaskGraph::execute(taskgraph_ptr_t self, taskgraphcomplete_func_t on_completion) {
   self->_on_completion = on_completion;
-  
-  logchan_tg->log("TaskGraph: starting execution with %zu phases", self->_phases.size());
+
   //////////////////////////////////////
   // Execute phases sequentially
   //////////////////////////////////////
@@ -75,16 +78,16 @@ void TaskGraph::execute(taskgraph_ptr_t self, taskgraphcomplete_func_t on_comple
     // The executor should handle phase completion synchronously
     //////////////////////////////////////
 
-    logchan_tg->log("TaskGraph: begin phase %s", phase->_name.c_str());
+    //logchan_tg->log("TaskGraph: begin phase %s", phase->_name.c_str());
     phase->_executor->executePhase(phase);
-    logchan_tg->log("TaskGraph: end phase %s", phase->_name.c_str());
+    //logchan_tg->log("TaskGraph: end phase %s", phase->_name.c_str());
 
     //////////////////////////////////////
     // Phase is now complete, invoke phase completion callback if any
     //////////////////////////////////////
 
     if (phase->_on_completion) {
-      logchan_tg->log("TaskGraph: end phase %s invoking on_completion_handler", phase->_name.c_str());
+      //logchan_tg->log("TaskGraph: end phase %s invoking on_completion_handler", phase->_name.c_str());
       phase->_on_completion(phase);
     }
   }
@@ -97,7 +100,10 @@ void TaskGraph::execute(taskgraph_ptr_t self, taskgraphcomplete_func_t on_comple
     on_completion(self);
   }
 
-  logchan_tg->log("TaskGraph: done..");
+  g_taskgraph_index += 1;
+  if((g_taskgraph_index&0xf)==0) {
+    logchan_tg->log("TaskGraphs completed: %zu", g_taskgraph_index.load());
+  }
 
 }
 

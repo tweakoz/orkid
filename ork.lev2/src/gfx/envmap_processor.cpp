@@ -177,8 +177,8 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
       rtbuffer->_debugName = FormatString("envmap-specular-rough%d", i);
       specular_rtgroups->push_back(rtgroup);
       specular_rtbuffers->push_back(rtbuffer);
-      logchan_gen->log("Setup: Created specular rtgroup<%p> rtbuffer<%p> for roughness %d", 
-                       rtgroup.get(), rtbuffer.get(), i);
+      //logchan_gen->log("Setup: Created specular rtgroup<%p> rtbuffer<%p> for roughness %d", 
+      //                 rtgroup.get(), rtbuffer.get(), i);
     }
 
     // Create render targets for diffuse filtering (mip chain)
@@ -191,8 +191,8 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
       rtbuffer->_debugName = FormatString("envmap-diffuse-mip%d", mip);
       diffuse_rtgroups->push_back(rtgroup);
       diffuse_rtbuffers->push_back(rtbuffer);
-      logchan_gen->log("Setup: Created diffuse rtgroup<%p> rtbuffer<%p> for mip %d", 
-                       rtgroup.get(), rtbuffer.get(), mip);
+      //logchan_gen->log("Setup: Created diffuse rtgroup<%p> rtbuffer<%p> for mip %d", 
+      //                 rtgroup.get(), rtbuffer.get(), mip);
       diff_w >>= 1;
       diff_h >>= 1;
       mip++;
@@ -298,9 +298,9 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
           fvec4 uv  = tile.getUV(output_size, output_size);
 
           // Render the tile
-          //dwi->quad2D(ndc, uv, fvec4(0, 0, 0, 0));
+          dwi->quad2D(ndc, uv, fvec4(0, 0, 0, 0));
           
-          logchan_gen->log("  Would render tile<%d,%d> for roughness %d", tx, ty, rough_idx);
+          //logchan_gen->log("  Would render tile<%d,%d> for roughness %d", tx, ty, rough_idx);
         }
       }
 
@@ -408,9 +408,9 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
           fvec4 uv  = tile.getUV(output_size, output_size);
 
           // Render the tile
-          //dwi->quad2D(ndc, uv, fvec4(0, 0, 0, 0));
+          dwi->quad2D(ndc, uv, fvec4(0, 0, 0, 0));
           
-          logchan_gen->log("  Would render tile<%d,%d> for mip %d", tx, ty, mip);
+          //logchan_gen->log("  Would render tile<%d,%d> for mip %d", tx, ty, mip);
         }
       }
 
@@ -420,7 +420,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
       // Pop render target ONCE after all tiles
       fbi->PopRtGroup();
 
-      logchan_gen->log("EnvMapProcessor: completed diffuse filtering for mip %d", mip);
+      //logchan_gen->log("EnvMapProcessor: completed diffuse filtering for mip %d", mip);
     }); // diffuse_phase->task(
     
     // Note: we don't need the nested for loops for tiles anymore
@@ -466,7 +466,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
       auto future = fbi->captureAsFormat(rtb.get(), capbuf, EBufferFormat::RGBA8);
       spec_futures->push_back(future);
 
-      logchan_gen->log("EnvMapProcessor: Started async capture for specular roughness level %zu", i);
+      //logchan_gen->log("EnvMapProcessor: Started async capture for specular roughness level %zu", i);
     }
   });
 
