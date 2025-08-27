@@ -117,6 +117,10 @@ void EnvMapProcessor::renderDiffuseTile(Context* ctx, const TileParams& tile, te
 taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvmap, bool is_equirectangular) {
 
   auto graph = std::make_shared<TaskGraph>();
+  
+  // Get actual texture dimensions
+  int tex_width  = rawenvmap->_width;
+  int tex_height = rawenvmap->_height;
 
   ///////////////////////////////////////
   // Create executors
@@ -170,9 +174,8 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
 
     // Create render targets for specular filtering (10 roughness levels)
     const int num_roughness = 10;
-    const int spec_size     = 512;
     for (int i = 0; i < num_roughness; i++) {
-      auto rtgroup         = std::make_shared<RtGroup>(gloadercontext.get(), spec_size, spec_size, MsaaSamples::MSAA_1X);
+      auto rtgroup         = std::make_shared<RtGroup>(gloadercontext.get(), tex_width, tex_height, MsaaSamples::MSAA_1X);
       auto rtbuffer        = rtgroup->createRenderTarget(EBufferFormat::RGBA32F);
       rtbuffer->_debugName = FormatString("envmap-specular-rough%d", i);
       specular_rtgroups->push_back(rtgroup);
@@ -182,8 +185,8 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
     }
 
     // Create render targets for diffuse filtering (mip chain)
-    int diff_w = 512;
-    int diff_h = 512;
+    int diff_w = tex_width;
+    int diff_h = tex_height;
     int mip    = 0;
     while (diff_w >= 4 && diff_h >= 4) {  // Stop at 4x4, don't go smaller
       auto rtgroup         = std::make_shared<RtGroup>(gloadercontext.get(), diff_w, diff_h, MsaaSamples::MSAA_1X);
@@ -226,11 +229,9 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
     auto specular_phase = TaskGraph::phase(graph, phase_name, gpu_executor);
 
     // Calculate number of tiles needed
-    // Assuming 512x512 output per roughness level
-    const int output_size = 512;
     const int tile_size   = SPECULAR_TILE_SIZE;
-    const int num_tiles_x = (output_size + tile_size - 1) / tile_size;
-    const int num_tiles_y = (output_size + tile_size - 1) / tile_size;
+    const int num_tiles_x = (tex_width + tile_size - 1) / tile_size;
+    const int num_tiles_y = (tex_height + tile_size - 1) / tile_size;
 
     // Single task for this roughness level that renders all tiles
     std::string task_name = "spec_roughness_" + std::to_string(rough_idx);
@@ -278,7 +279,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
       specular_material->bindParamMatrix(param_mvp, fmtx4::Identity());
       specular_material->bindParamTexture(param_pfm, rawenvmap.get());
       specular_material->bindParamFloat(param_ruf, roughness);
-      specular_material->bindParamVec2(param_imgdim, fvec2(output_size, output_size));
+      specular_material->bindParamVec2(param_imgdim, fvec2(tex_width, tex_height));
       specular_material->bindParamU32(param_numsamples, 8192);
 
       specular_material->commit();
@@ -290,13 +291,13 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
           TileParams tile;
           tile.x         = tx * tile_size;
           tile.y         = ty * tile_size;
-          tile.width     = std::min(tile_size, output_size - tile.x);
-          tile.height    = std::min(tile_size, output_size - tile.y);
+          tile.width     = std::min(tile_size, tex_width - tile.x);
+          tile.height    = std::min(tile_size, tex_height - tile.y);
           tile.roughness = roughness;
 
           // Calculate NDC and UV coordinates for this tile
-          fvec4 ndc = tile.getNDC(output_size, output_size);
-          fvec4 uv  = tile.getUV(output_size, output_size);
+          fvec4 ndc = tile.getNDC(tex_width, tex_height);
+          fvec4 uv  = tile.getUV(tex_width, tex_height);
 
           // Render the tile
           dwi->quad2D(ndc, uv, fvec4(0, 0, 0, 0));
@@ -332,11 +333,11 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
     auto diffuse_phase = TaskGraph::phase(graph, phase_name, gpu_executor);
 
     // Calculate output size for this mip level
-    const int base_size   = 512;
-    const int output_size = base_size >> mip;
-    const int tile_size   = std::min(DIFFUSE_TILE_SIZE, output_size);
-    const int num_tiles_x = (output_size + tile_size - 1) / tile_size;
-    const int num_tiles_y = (output_size + tile_size - 1) / tile_size;
+    const int output_width  = tex_width >> mip;
+    const int output_height = tex_height >> mip;
+    const int tile_size     = DIFFUSE_TILE_SIZE;
+    const int num_tiles_x   = (output_width + tile_size - 1) / tile_size;
+    const int num_tiles_y   = (output_height + tile_size - 1) / tile_size;
 
     // Single task for this mip level that renders all tiles
     std::string task_name = "diff_mip_" + std::to_string(mip);
@@ -388,7 +389,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
       diffuse_material->bindParamMatrix(param_mvp, fmtx4::Identity());
       diffuse_material->bindParamTexture(param_pfm, rawenvmap.get());
       diffuse_material->bindParamFloat(param_ruf, 1.0f); // Diffuse uses roughness=1
-      diffuse_material->bindParamVec2(param_imgdim, fvec2(output_size, output_size));
+      diffuse_material->bindParamVec2(param_imgdim, fvec2(output_width, output_height));
       diffuse_material->bindParamU32(param_numsamples, 4096);
 
       diffuse_material->commit();
@@ -400,13 +401,13 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
           TileParams tile;
           tile.x         = tx * tile_size;
           tile.y         = ty * tile_size;
-          tile.width     = std::min(tile_size, output_size - tile.x);
-          tile.height    = std::min(tile_size, output_size - tile.y);
+          tile.width     = std::min(tile_size, output_width - tile.x);
+          tile.height    = std::min(tile_size, output_height - tile.y);
           tile.mip_level = mip;
 
           // Calculate NDC and UV coordinates for this tile
-          fvec4 ndc = tile.getNDC(output_size, output_size);
-          fvec4 uv  = tile.getUV(output_size, output_size);
+          fvec4 ndc = tile.getNDC(output_width, output_height);
+          fvec4 uv  = tile.getUV(output_width, output_height);
 
           // Render the tile
           dwi->quad2D(ndc, uv, fvec4(0, 0, 0, 0));
