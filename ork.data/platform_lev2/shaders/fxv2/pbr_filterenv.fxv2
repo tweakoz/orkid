@@ -89,7 +89,8 @@ fragment_shader ps_filterSpecularEnvMapSTD : iface_fyo : lib_math : lib_envmappi
   }
   //////////////////////////////////
   o       = o / w; // Normalize the output color by the total weight
-  out_clr = vec4(o, 1);
+  //out_clr = vec4(o, 1);
+  out_clr = vec4(fcoord,0,1);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_filterSpecularEnvMapEQUI 

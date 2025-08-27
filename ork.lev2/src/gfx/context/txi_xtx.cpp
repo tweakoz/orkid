@@ -38,15 +38,6 @@ bool TextureInterface::_loadXTXTexture(texture_ptr_t ptex, datablock_ptr_t datab
   ///////////////////////////////////////////////
    auto keys = load_req->_cmipchain->_varmap.dumpkeys();
   void_lambda_t lamb = [=]() {
-    /////////////////////////////////////////////
-    // texture preprocssing, if any..
-    //  on main thread.
-    /////////////////////////////////////////////
-    if (ptex->_vars->hasKey("preproc")) {
-      auto preproc        = ptex->_vars->typedValueForKey<Texture::proc_t>("preproc").value();
-      auto orig_datablock = datablock;
-      //auto postblock      = preproc(ptex, &mTargetGL, orig_datablock);
-    }
     this->_loadXTXTextureMainThreadPart(load_req);
   };
   opq::mainSerialQueue()->enqueue(lamb);

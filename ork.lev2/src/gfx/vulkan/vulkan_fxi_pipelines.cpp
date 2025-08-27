@@ -415,12 +415,13 @@ void VkPipelineObject::applyPendingPushConstants(VkCommandBuffer cmdbuf) { //
   OrkAssert(_vk_program->_pushConstantBlock != nullptr);
   size_t num_params = _vk_program->_pending_params.size();
 
-  if (num_params) {
-    auto data_layout = _vk_program->_pushConstantBlock->_data_layout;
-    auto& ranges     = _vk_program->_pushConstantBlock->_ranges;
-    size_t blocksize = _vk_program->_pushConstantBlock->_blockSize;
+  auto data_layout = _vk_program->_pushConstantBlock->_data_layout;
+  auto& ranges     = _vk_program->_pushConstantBlock->_ranges;
+  size_t blocksize = _vk_program->_pushConstantBlock->_blockSize;
 
-    auto data = _vk_program->_pushdatabuffer.data();
+  auto data = _vk_program->_pushdatabuffer.data();
+
+  if (num_params) {
 
     for (auto item : _vk_program->_pending_params) {
       auto dst_offset = data_layout->offsetForParam(item._ork_param);
@@ -428,7 +429,7 @@ void VkPipelineObject::applyPendingPushConstants(VkCommandBuffer cmdbuf) { //
         auto parm_name   = item._ork_param->_name;
         auto parm_type   = item._vk_param->_datatype;
         size_t parm_size = item._value.size();
-        if (0) {
+        if (1) {
           printf(
               "parm<%s:%s:%zu> range_offset<%d> dst_offset<%zu> ", //
               parm_type.c_str(),
@@ -443,21 +444,17 @@ void VkPipelineObject::applyPendingPushConstants(VkCommandBuffer cmdbuf) { //
         memcpy(dest_base + dst_offset, item._value.data(), parm_size);
       }
     }
-    // hexdumpbytes(data,blocksize);
-    vkCmdPushConstants(
-        cmdbuf,
-        _pipelineLayout,
-        VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-        0,         // dest-offset
-        blocksize, // size
-        data       // src-data
-    );
-    _vk_program->_pending_params.clear();
   }
-  for (auto op : _vk_program->_pending_param_ops) {
-    op();
-  }
-  _vk_program->_pending_param_ops.clear();
+  // hexdumpbytes(data,blocksize);
+  vkCmdPushConstants(
+      cmdbuf,
+      _pipelineLayout,
+      VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+      0,         // dest-offset
+      blocksize, // size
+      data       // src-data
+  );
+  _vk_program->_pending_params.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

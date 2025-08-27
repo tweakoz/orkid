@@ -31,12 +31,18 @@ bool TextureInterface::LoadTexture(texture_ptr_t ptex, datablock_ptr_t datablock
   DataBlockInputStream checkstream(datablock);
   uint32_t magic = checkstream.getItem<uint32_t>();
   bool ok        = false;
-  if (Char4("chkf") == Char4(magic))
+  if (Char4("chkf") == Char4(magic)){
+    printf("TXI::LoadTexture loading as xtx\n");
     ok = _loadXTXTexture(ptex, datablock);
-  else if (Char4("DDS ") == Char4(magic))
+  }
+  else if (Char4("DDS ") == Char4(magic)){
+    printf("TXI::LoadTexture loading as dds\n");
     ok = _loadDDSTexture(ptex, datablock);
-  else
+  }
+  else {
+    printf("TXI::LoadTexture loading as generic\n");
     ok = _loadImageTexture(ptex, datablock);
+  }
 
   ptex->_contentHash = datablock->hash();
 
@@ -61,10 +67,12 @@ bool TextureInterface::LoadTexture(const AssetPath& fname, texture_ptr_t ptex) {
   if (FileEnv::GetRef().DoesFileExist(XtxFilename))
     final_fname = XtxFilename;
 
-  //printf("fname<%s>\n", fname.c_str());
-  //printf("final_fname<%s>\n", final_fname.c_str());
-  if (auto dblock = datablockFromFileAtPath(final_fname))
+  printf("TXI::LoadTexture fname<%s>\n", fname.c_str());
+  printf("TXI::LoadTexture final_fname<%s>\n", final_fname.c_str());
+  if (auto dblock = datablockFromFileAtPath(final_fname)){
+    printf("TXI::LoadTexture dblock<%p>\n", (void*) dblock.get());
     return LoadTexture(ptex, dblock);
+  }
   else
     return false;
 }

@@ -153,8 +153,8 @@ void Context::_loadingPhaseOperations() {
 
       float t1 = _ctxtimer.SecsSinceStart();
       float elapsed = t1 - t0;
-      if(elapsed>1.0f) {
-        logchan_ctx->log("Context: breaking out of loading phase operation loop after %f seconds", t1-t0);
+      if(elapsed>0.03f) {
+        //logchan_ctx->log("Context: breaking out of loading phase operation loop after %f seconds", t1-t0);
         _ctxtimer.Start();
         done = true;
       }
@@ -418,6 +418,7 @@ void ContextExecutor::emptyFrame( taskgraph_ptr_t self,                         
   auto new_phase = std::make_shared<TaskPhase>(self,name,executor,on_completion);
   self->_phases.push_back(new_phase);
   new_phase->task("fence", [=](taskgraph_ptr_t g) {
+    ::usleep(1<<20);
     // No-op task to act as a synchronization point
   });  
 }

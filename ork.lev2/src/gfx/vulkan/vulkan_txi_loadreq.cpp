@@ -10,7 +10,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_txi_loadreq = logger()->configureChannel("VKTXILOAD", fvec3(0.8, 0.2, 0.5), false);
+static logchannel_ptr_t logchan_txi_loadreq = logger()->configureChannel("VKTXILOAD", fvec3(0.8, 0.2, 0.5), true);
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
@@ -258,6 +258,7 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
   // Handle postprocessing if specified
   /////////////////////////////////////
 
+  /*
   _contextVK->_beginAssetProcessing();
   if (ptex->_vars->hasKey("postproc")) {
     auto dblock    = req->_inpstream._datablock;
@@ -280,7 +281,7 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
     logchan_txi_loadreq->log("VkTextureInterface::_createFromLoadReq: no postproc for texture<%p:%s>", 
                              (void*)ptex.get(), ptex->_debugName.c_str());
   }
-  _contextVK->_endAssetProcessing();
+  _contextVK->_endAssetProcessing();*/
 
   ptex->_residenceState.fetch_or(1);
 }

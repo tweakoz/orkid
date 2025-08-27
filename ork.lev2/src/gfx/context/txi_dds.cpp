@@ -48,21 +48,13 @@ bool TextureInterface::_loadDDSTexture(texture_ptr_t ptex, datablock_ptr_t datab
   //load_req->pTEXOBJ    = pTEXOBJ;
 
   void_lambda_t lamb  = [=]() {
-    /////////////////////////////////////////////
-    // texture preprocssing, if any..
-    //  on main thread.
-    /////////////////////////////////////////////
-    if (ptex->_vars->hasKey("preproc")) {
-      auto preproc        = ptex->_vars->typedValueForKey<Texture::proc_t>("preproc").value();
-      auto orig_datablock = datablock;
-      //auto postblock      = preproc(ptex, &mTargetGL, orig_datablock);
-    }
     this->_loadDDSTextureMainThreadPart(load_req);
   };
   if (ptex->_vars->hasKey("loadimmediate")) {
     lamb();
   } else {
-    opq::mainSerialQueue()->enqueue(lamb);
+    auto ph = _ctx->newLoadingPhase();
+    ph->enqueueOperation([=](Context* ctx) { lamb(); });
   }
 
   ///////////////////////////////////////////////
@@ -118,7 +110,7 @@ void TextureInterface::_loadDDSTextureMainThreadPart(texloadreq_ptr_t req) {
   //}
   //pTEXOBJ->mTarget = TARGET;
 
-  if (0) {
+  if (1) {
     auto dbgname = ptex->_debugName;
     printf("  tex<%s> ptex<%p>\n", dbgname.c_str(), (void*) ptex.get());
     printf("  tex<%s> width<%d>\n", dbgname.c_str(), iwidth);

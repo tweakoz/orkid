@@ -269,16 +269,17 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
       auto param_imgdim = specular_material->param("imgdim");
       auto param_numsamples = specular_material->param("numsamples");
 
-      if (param_mvp)
-        specular_material->bindParamMatrix(param_mvp, fmtx4::Identity());
-      if (param_pfm)
-        specular_material->bindParamTexture(param_pfm, rawenvmap.get());
-      if (param_ruf)
-        specular_material->bindParamFloat(param_ruf, roughness);
-      if (param_imgdim)
-        specular_material->bindParamVec2(param_imgdim, fvec2(output_size, output_size));
-      if (param_numsamples)
-        specular_material->bindParamU32(param_numsamples, 8192);
+      OrkAssert(param_mvp);
+      OrkAssert(param_pfm);
+      OrkAssert(param_ruf);
+      OrkAssert(param_imgdim);
+      OrkAssert(param_numsamples);
+      
+      specular_material->bindParamMatrix(param_mvp, fmtx4::Identity());
+      specular_material->bindParamTexture(param_pfm, rawenvmap.get());
+      specular_material->bindParamFloat(param_ruf, roughness);
+      specular_material->bindParamVec2(param_imgdim, fvec2(output_size, output_size));
+      specular_material->bindParamU32(param_numsamples, 8192);
 
       specular_material->commit();
 
@@ -343,9 +344,8 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
     diffuse_phase->task(task_name, [=](taskgraph_ptr_t g) {
       //logchan_gen->log("EnvMapProcessor: starting diffuse filtering for mip %d", mip);
 
-      // Check if we have a valid mip level
-      if (mip >= diffuse_rtgroups->size())
-        return;
+      // Ensure we have a valid mip level
+      OrkAssert(mip < diffuse_rtgroups->size());
 
       // Get the render target for this mip level
       auto rtgroup  = (*diffuse_rtgroups)[mip];
@@ -379,16 +379,17 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
       auto param_imgdim = diffuse_material->param("imgdim");
       auto param_numsamples = diffuse_material->param("numsamples");
 
-      if (param_mvp)
-        diffuse_material->bindParamMatrix(param_mvp, fmtx4::Identity());
-      if (param_pfm)
-        diffuse_material->bindParamTexture(param_pfm, rawenvmap.get());
-      if (param_ruf)
-        diffuse_material->bindParamFloat(param_ruf, 1.0f); // Diffuse uses roughness=1
-      if (param_imgdim)
-        diffuse_material->bindParamVec2(param_imgdim, fvec2(output_size, output_size));
-      if (param_numsamples)
-        diffuse_material->bindParamU32(param_numsamples, 4096);
+      OrkAssert(param_mvp);
+      OrkAssert(param_pfm);
+      OrkAssert(param_ruf);
+      OrkAssert(param_imgdim);
+      OrkAssert(param_numsamples);
+      
+      diffuse_material->bindParamMatrix(param_mvp, fmtx4::Identity());
+      diffuse_material->bindParamTexture(param_pfm, rawenvmap.get());
+      diffuse_material->bindParamFloat(param_ruf, 1.0f); // Diffuse uses roughness=1
+      diffuse_material->bindParamVec2(param_imgdim, fvec2(output_size, output_size));
+      diffuse_material->bindParamU32(param_numsamples, 4096);
 
       diffuse_material->commit();
 
