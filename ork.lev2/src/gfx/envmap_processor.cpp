@@ -236,14 +236,14 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
     std::string task_name = "spec_roughness_" + std::to_string(rough_idx);
 
     specular_phase->task(task_name, [=](taskgraph_ptr_t g) {
-      logchan_gen->log("EnvMapProcessor: starting specular filtering for roughness %d (%f)", rough_idx, roughness);
+      //logchan_gen->log("EnvMapProcessor: starting specular filtering for roughness %d (%f)", rough_idx, roughness);
 
       // Get the render target for this roughness level
       auto rtgroup  = (*specular_rtgroups)[rough_idx];
       auto rtbuffer = (*specular_rtbuffers)[rough_idx];
       
-      logchan_gen->log("Specular filtering: Using rtgroup<%p> rtbuffer<%p> for roughness %d", 
-                       rtgroup.get(), rtbuffer.get(), rough_idx);
+      //logchan_gen->log("Specular filtering: Using rtgroup<%p> rtbuffer<%p> for roughness %d", 
+      //                 rtgroup.get(), rtbuffer.get(), rough_idx);
 
       // Set up render context
       auto RCFD = std::make_shared<RenderContextFrameData>(gloadercontext.get());
@@ -341,7 +341,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
     std::string task_name = "diff_mip_" + std::to_string(mip);
 
     diffuse_phase->task(task_name, [=](taskgraph_ptr_t g) {
-      logchan_gen->log("EnvMapProcessor: starting diffuse filtering for mip %d", mip);
+      //logchan_gen->log("EnvMapProcessor: starting diffuse filtering for mip %d", mip);
 
       // Check if we have a valid mip level
       if (mip >= diffuse_rtgroups->size())
@@ -351,8 +351,8 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
       auto rtgroup  = (*diffuse_rtgroups)[mip];
       auto rtbuffer = (*diffuse_rtbuffers)[mip];
       
-      logchan_gen->log("Diffuse filtering: Using rtgroup<%p> rtbuffer<%p> for mip %d", 
-                       rtgroup.get(), rtbuffer.get(), mip);
+      //logchan_gen->log("Diffuse filtering: Using rtgroup<%p> rtbuffer<%p> for mip %d", 
+      //                 rtgroup.get(), rtbuffer.get(), mip);
 
       // Set up render context
       auto RCFD = std::make_shared<RenderContextFrameData>(gloadercontext.get());
