@@ -7,6 +7,7 @@
 
 #include "vulkan_captureasync.h"
 #include "headers/vulkan_ctx.h"
+#include "headers/vk_misc.h"
 #include <ork/lev2/gfx/image.h>
 
 namespace ork::lev2::vulkan {
@@ -125,7 +126,7 @@ void VkContext::_processPendingCaptures() {
     auto staging_buffer = capbuf_impl->staging_buffer;
     
     // Determine if conversion is needed
-    EBufferFormat source_format = async_impl->format;
+    EBufferFormat source_format = VkFormatConverter::convertBufferFormat(capbuf_impl->_actual_format);
     bool needs_conversion = (source_format != capbuf_impl->_desired_format);
     
     if (needs_conversion) {
@@ -134,7 +135,8 @@ void VkContext::_processPendingCaptures() {
       
       auto temp_img = async_impl->capture_buffer->_raw_image;
       temp_img->initWithFormat(async_impl->width, async_impl->height, source_format);
-      size_t bufsize = async_impl->capture_buffer->length();
+      // Use actual buffer size from staging buffer (source format size)
+      size_t bufsize = staging_buffer->_length;
       staging_buffer->copyToHost((void*)temp_img->_data->data(), bufsize);
       
       // Do conversion async on opq
@@ -156,7 +158,7 @@ void VkContext::_processPendingCaptures() {
       
       auto img = async_impl->capture_buffer->_image;
       img->initWithFormat(async_impl->width, async_impl->height, source_format);
-      size_t bufsize = async_impl->capture_buffer->length();
+      size_t bufsize = staging_buffer->_length;
       staging_buffer->copyToHost((void*)img->_data->data(), bufsize);
       
       // Signal immediately

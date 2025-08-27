@@ -43,6 +43,10 @@ struct XIRProcessFuture {
   std::mutex _mutex;
   std::condition_variable _cv;
   
+  // Debug images - captured during processing
+  image_list_t _specular_images;  // One per roughness level
+  image_list_t _diffuse_images;   // One per mip level
+  
   datablock_ptr_t get() {
     std::unique_lock<std::mutex> lock(_mutex);
     _cv.wait(lock, [this] { return _is_complete.load(); });
@@ -60,6 +64,13 @@ struct XIRProcessFuture {
       _is_complete = true;
     }
     _cv.notify_all();
+  }
+  
+  void setDebugImages(const image_list_t& spec_images, 
+                      const image_list_t& diff_images) {
+    std::lock_guard<std::mutex> lock(_mutex);
+    _specular_images = spec_images;
+    _diffuse_images = diff_images;
   }
 };
 

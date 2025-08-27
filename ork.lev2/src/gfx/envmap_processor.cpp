@@ -530,6 +530,10 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
     auto specular_datablock = std::make_shared<DataBlock>();
     auto diffuse_datablock  = std::make_shared<DataBlock>();
 
+    // Collect debug images
+    image_list_t debug_spec_images;
+    image_list_t debug_diff_images;
+
     // For now, package all specular data as raw concatenated tiles
     // TODO: This should be properly formatted as DDS or other texture format
     size_t total_spec_size = 0;
@@ -547,6 +551,9 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
         // Add raw data to datablock
         specular_datablock->addData(capbuf->_image->_data->data(), data_size);
         total_spec_size += data_size;
+
+        // Store image for debug output
+        debug_spec_images.push_back(capbuf->_image);
 
         logchan_gen->log("EnvMapProcessor: Added specular roughness level %zu (%zu bytes)", i, data_size);
       }
@@ -569,6 +576,9 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
         diffuse_datablock->addData(capbuf->_image->_data->data(), data_size);
         total_diff_size += data_size;
 
+        // Store image for debug output
+        debug_diff_images.push_back(capbuf->_image);
+
         logchan_gen->log("EnvMapProcessor: Added diffuse mip level %zu (%zu bytes)", i, data_size);
       }
     }
@@ -576,10 +586,12 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
     logchan_gen->log("EnvMapProcessor: Total specular data: %zu bytes", total_spec_size);
     logchan_gen->log("EnvMapProcessor: Total diffuse data: %zu bytes", total_diff_size);
 
-    // Store datablocks in varmap for retrieval
+    // Store datablocks and debug images in varmap for retrieval
     graph->_varmap.atomicOp([=](varmap::VarMap& vmap) {
       vmap.set<datablock_ptr_t>("specular_datablock", specular_datablock);
       vmap.set<datablock_ptr_t>("diffuse_datablock", diffuse_datablock);
+      vmap.set<image_list_t>("debug_spec_images", debug_spec_images);
+      vmap.set<image_list_t>("debug_diff_images", debug_diff_images);
     });
 
     logchan_gen->log("EnvMapProcessor: Packaging complete!");
@@ -636,6 +648,8 @@ xirprocessfuture_ptr_t EnvMapProcessor::processToXIRDataBlockAsync(const file::P
       g->_varmap.atomicOp([future](varmap::VarMap& vmap) {
         datablock_ptr_t specular_data;
         datablock_ptr_t diffuse_data;
+        image_list_t debug_spec_images;
+        image_list_t debug_diff_images;
 
         if (auto spec_opt = vmap.typedValueForKey<datablock_ptr_t>("specular_datablock")) {
           specular_data = spec_opt.value();
@@ -647,6 +661,14 @@ xirprocessfuture_ptr_t EnvMapProcessor::processToXIRDataBlockAsync(const file::P
         } else {
           OrkAssert(false); // fail early (we cannot move forward until this passes)
         }
+        
+        // Get debug images if available
+        if (auto spec_img_opt = vmap.typedValueForKey<image_list_t>("debug_spec_images")) {
+          debug_spec_images = spec_img_opt.value();
+        }
+        if (auto diff_img_opt = vmap.typedValueForKey<image_list_t>("debug_diff_images")) {
+          debug_diff_images = diff_img_opt.value();
+        }
 
         datablock_ptr_t result_data;
         if (specular_data && diffuse_data) {
@@ -656,6 +678,9 @@ xirprocessfuture_ptr_t EnvMapProcessor::processToXIRDataBlockAsync(const file::P
           OrkAssert(false); // fail early (we cannot move forward until this passes)
         }
 
+        // Set debug images in the future
+        future->setDebugImages(debug_spec_images, debug_diff_images);
+        
         // Set the result in the future
         future->setResult(result_data);
       }); // g->_varmap.atomicOp([future](varmap::VarMap& vmap) {

@@ -96,6 +96,7 @@ struct TextureArrayInitData;
 using texture_ptr_t          = std::shared_ptr<Texture>;
 using ipctexture_ptr_t       = std::shared_ptr<IpcTexture>;
 using image_ptr_t            = std::shared_ptr<Image>;
+using image_list_t           = std::vector<image_ptr_t>;
 using texture_list_t = std::vector<texture_ptr_t>;
 using texture_rawlist_t = std::vector<Texture*>;
 using compressedmipchain_ptr_t = std::shared_ptr<CompressedImageMipChain>;

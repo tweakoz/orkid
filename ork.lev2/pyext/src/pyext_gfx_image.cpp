@@ -64,6 +64,9 @@ void pyinit_gfx_image(py::module& module_lev2) {
       .def_property_readonly("bytesPerChannel", [](image_ptr_t img) -> int { return img->_bytesPerChannel; })
       .def_property_readonly("format", [](image_ptr_t img) -> int { return int(img->_format); })
       .def_property_readonly("data", [](image_ptr_t img) -> datablock_ptr_t { return img->_data; })
+      .def("writeToFile", [](image_ptr_t img, const std::string& outpath) {
+        img->writeToFile(file::Path(outpath));
+      })
       ;
   type_codec->registerStdCodec<image_ptr_t>(image_type);      
 

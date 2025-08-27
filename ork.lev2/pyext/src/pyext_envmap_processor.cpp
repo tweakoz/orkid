@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/lev2/gfx/envmap_processor.h>
+#include <ork/lev2/gfx/image.h>
 #include <ork/lev2/gfx/irradiance_asset.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_common.h>
 #include <ork/python/pycodec.inl>
@@ -22,7 +23,15 @@ void pyinit_envmap_processor(py::module& module_lev2) {
   // XIRProcessFuture bindings
   py::class_<XIRProcessFuture, xirprocessfuture_ptr_t>(module_lev2, "XIRProcessFuture")
       .def("get", &XIRProcessFuture::get)
-      .def("isReady", &XIRProcessFuture::isReady);
+      .def("isReady", &XIRProcessFuture::isReady)
+      .def_property_readonly("specular_images", 
+        [](xirprocessfuture_ptr_t self) -> image_list_t {
+          return self->_specular_images;
+        })
+      .def_property_readonly("diffuse_images",
+        [](xirprocessfuture_ptr_t self) -> image_list_t {
+          return self->_diffuse_images;
+        });
   
   py::class_<EnvMapProcessor>(module_lev2, "EnvMapProcessor")
       .def_static("processToXIR", 

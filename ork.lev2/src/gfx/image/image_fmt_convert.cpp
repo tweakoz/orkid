@@ -12,6 +12,7 @@
 #include <ork/lev2/gfx/image.h>
 #include <ork/kernel/memcpy.inl>
 #include <math.h>
+#include <algorithm>
 
 namespace ork::lev2 {
 
@@ -279,6 +280,24 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
       }
     }
   }  
+  /////////////////////////////
+  else if (fmt == EBufferFormat::RGBA8 and inp._format == EBufferFormat::RGBA32F) {
+    // Convert from RGBA32F (float) to RGBA8 (8-bit)
+    init(inp._width, inp._height, 4, 1);
+    auto outptr = (uint8_t*)_data->data();
+    auto inptr  = (const float*)inp._data->data();
+    for (int y = 0; y < inp._height; y++) {
+      for (int x = 0; x < inp._width; x++) {
+        int pixelindex       = y * inp._width + x;
+        int elembase         = pixelindex * 4;
+        // Clamp float values to [0,1] range and convert to 0-255
+        outptr[elembase + 0] = uint8_t(std::clamp(inptr[elembase + 0], 0.0f, 1.0f) * 255.0f);
+        outptr[elembase + 1] = uint8_t(std::clamp(inptr[elembase + 1], 0.0f, 1.0f) * 255.0f);
+        outptr[elembase + 2] = uint8_t(std::clamp(inptr[elembase + 2], 0.0f, 1.0f) * 255.0f);
+        outptr[elembase + 3] = uint8_t(std::clamp(inptr[elembase + 3], 0.0f, 1.0f) * 255.0f);
+      }
+    }
+  }
   else {
     OrkAssert(false);
   }
