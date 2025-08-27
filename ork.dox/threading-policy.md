@@ -11,7 +11,7 @@ For complex high level workflows requiring phase-based coordination across diffe
 
 ---
 
-### CORE Only Apps (and general)
+### Bare Threads
 
 For long lived steady state uses, you should prefer ork::Thread over std::thread when allowed. ork::Thread is implemented on top of std::thread but adds some useful features like thread naming (for debuggers), etc..
 
@@ -29,6 +29,10 @@ void function(){
   thread = nullptr; // implicit join on destruction
 }
 ```
+
+---
+
+### Operations Queues
 
 For short asynchronous or parallel uses, or for synchronizing on a specific thread, one should use the OPQ (Operations Queue) which executes lambdas on a thread pool. OPQ is loosely based on Apple's grand central dispatch, but more c++ oriented. The API's are tuned for the highest signal to noise ratio when writing (and reading) concurrent/asynchronous code.
 
@@ -174,6 +178,7 @@ int main(int argc, char** argv, char** envp){
 }
 ```
 
+---
 
 ### LEV2 and ECS Apps
 
