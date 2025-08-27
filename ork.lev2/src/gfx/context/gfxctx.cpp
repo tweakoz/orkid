@@ -146,7 +146,6 @@ void Context::_loadingPhaseOperations() {
         unlocked.clear();
       });
       for (auto op : ops) {
-        logchan_ctx->log("Context: executing loading phase operation");
         op(this);
       }
       ops.clear();
@@ -399,17 +398,24 @@ void ContextExecutor::executePhase(taskphase_ptr_t phase) {
   auto graph = phase->_graph.lock();
   // Enqueue all tasks to the loading phase
   for (auto task : phase->_tasks) {
-    printf("ContextExecutor::executePhase enqueing task<%s>\n", task->_name.c_str());
     loading_phase->enqueueOperation([=](Context* ctx) {
-      printf("ContextExecutor::executePhase executing task<%s>\n", task->_name.c_str());
       task->_func(graph); 
     });
   }
   
-  // Wait for all GPU operations to complete
+  // Wait for all GPU operations in this phase to complete
   loading_phase->join();
 }
-
+void ContextExecutor::emptyFrame( taskgraph_ptr_t self,                            //
+                                  const std::string& name,                         //
+                                  contextexecutor_ptr_t executor,                     //
+                                  taskphasecomplete_func_t on_completion) {        //
+  auto new_phase = std::make_shared<TaskPhase>(self,name,executor,on_completion);
+  self->_phases.push_back(new_phase);
+  new_phase->task("fence", [=](taskgraph_ptr_t g) {
+    // No-op task to act as a synchronization point
+  });  
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 }} // namespace ork::lev2

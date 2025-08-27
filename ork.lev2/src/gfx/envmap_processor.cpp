@@ -209,10 +209,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
   // Frame barrier after setup to ensure rtgroups are initialized
   ///////////////////////////////////////
   
-  auto setup_barrier = TaskGraph::phase(graph, "setup_frame_barrier", gpu_executor);
-  setup_barrier->task("submit_setup_frame", [=](taskgraph_ptr_t g) {
-    logchan_gen->log("Frame barrier: submitting setup phase to GPU");
-  });
+  ContextExecutor::emptyFrame(graph, "setup-barrier", gpu_executor);
 
   ///////////////////////////////////////
   // Phase 2: Specular filtering - one phase per roughness level
@@ -319,11 +316,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
     // Note: we don't need the nested for loops for tiles anymore
     
     // Frame barrier after each specular roughness level
-    std::string barrier_name = "specular_barrier_" + std::to_string(rough_idx);
-    auto specular_barrier = TaskGraph::phase(graph, barrier_name, gpu_executor);
-    specular_barrier->task("submit_frame", [=](taskgraph_ptr_t g) {
-      logchan_gen->log("Frame barrier: submitting specular roughness %d", rough_idx);
-    });
+    ContextExecutor::emptyFrame(graph, "specular-barrier", gpu_executor);
   }
 
   ///////////////////////////////////////
@@ -432,22 +425,14 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
     
     // Note: we don't need the nested for loops for tiles anymore
     
-    // Frame barrier after each diffuse mip level
-    std::string barrier_name = "diffuse_barrier_" + std::to_string(mip);
-    auto diffuse_barrier = TaskGraph::phase(graph, barrier_name, gpu_executor);
-    diffuse_barrier->task("submit_frame", [=](taskgraph_ptr_t g) {
-      logchan_gen->log("Frame barrier: submitting diffuse mip %d", mip);
-    });
+    ContextExecutor::emptyFrame(graph, "diffuse-barrier", gpu_executor);
   }
 
   ///////////////////////////////////////
   // Final frame barrier before capture to ensure all filtering is complete
   ///////////////////////////////////////
   
-  auto pre_capture_barrier = TaskGraph::phase(graph, "pre_capture_frame_barrier", gpu_executor);
-  pre_capture_barrier->task("submit_all_filtering", [=](taskgraph_ptr_t g) {
-    logchan_gen->log("Frame barrier: ensuring all filtering operations are submitted before capture");
-  });
+  ContextExecutor::emptyFrame(graph, "final-frame-barrier", gpu_executor);
 
   ///////////////////////////////////////
   // Phase 4: Capture results asynchronously
@@ -512,10 +497,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
   // Frame barrier after capture to ensure GPU commands are submitted
   ///////////////////////////////////////
   
-  auto post_capture_barrier = TaskGraph::phase(graph, "post_capture_frame_barrier", gpu_executor);
-  post_capture_barrier->task("submit_capture_frame", [=](taskgraph_ptr_t g) {
-    logchan_gen->log("Frame barrier: capture GPU commands submitted");
-  });
+  ContextExecutor::emptyFrame(graph, "capture-submission-barrier", gpu_executor);
 
   ///////////////////////////////////////
   // Phase 5: Wait for captures and package datablocks

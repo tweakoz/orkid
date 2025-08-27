@@ -93,7 +93,7 @@ struct TaskGraph {
                                 const std::string& name,                         //
                                 taskexecutor_ptr_t executor,                     //
                                 taskphasecomplete_func_t on_completion=nullptr); //
-  
+                               
   /////////////////////////
   // Execution - can run on any thread including OPQ workers
   // whatever thread invokes execute() is termed the 'primary execution thread' for this graph

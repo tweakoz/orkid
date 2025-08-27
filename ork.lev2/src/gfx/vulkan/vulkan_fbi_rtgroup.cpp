@@ -143,7 +143,6 @@ void VkFrameBufferInterface::__setRtGroup(rtgroup_rawptr_t rtgroup) {
         RTGIMPL = as_impl.value();
         //printf("  rtgroup already has impl\n");
       } else {
-        printf("  creating new impl for rtgroup\n");
         RTGIMPL = _createRtGroupImpl(rtgroup);
         rtgroup->_impl.setShared<VkRtGroupImpl>(RTGIMPL);
       }
