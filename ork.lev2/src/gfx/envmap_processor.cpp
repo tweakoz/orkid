@@ -327,9 +327,10 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
   // Phase 3: Diffuse filtering - one phase per mip level
   ///////////////////////////////////////
 
-  const int num_mip_levels = 8;
+  int mip = 0;
+  for (auto rtgroup : *diffuse_rtgroups) {
 
-  for (int mip = 0; mip < num_mip_levels; mip++) {
+    auto rtbuffer = rtgroup->buffer(0);
     std::string phase_name = tex_name+".diffuse_mip_" + std::to_string(mip);
 
     auto diffuse_phase = TaskGraph::phase(graph, phase_name, gpu_executor);
@@ -345,15 +346,9 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
     std::string task_name = "diff_mip_" + std::to_string(mip);
 
     diffuse_phase->task(task_name, [=](taskgraph_ptr_t g) {
-      //logchan_gen->log("EnvMapProcessor: starting diffuse filtering for mip %d", mip);
-
-      // Ensure we have a valid mip level
-      OrkAssert(mip < diffuse_rtgroups->size());
-
-      // Get the render target for this mip level
-      auto rtgroup  = (*diffuse_rtgroups)[mip];
-      auto rtbuffer = (*diffuse_rtbuffers)[mip];
+      logchan_gen->log("EnvMapProcessor<%s>: starting diffuse filtering for mip %d", tex_name.c_str(), mip);
       
+      OrkAssert(false);
       //logchan_gen->log("Diffuse filtering: Using rtgroup<%p> rtbuffer<%p> for mip %d", 
       //                 rtgroup.get(), rtbuffer.get(), mip);
 
@@ -430,6 +425,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
     // Note: we don't need the nested for loops for tiles anymore
     
     ContextExecutor::emptyFrame(graph, tex_name+".diffuse-barrier", gpu_executor);
+    mip++;
   }
 
   ///////////////////////////////////////
@@ -454,46 +450,36 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
   cap_phase->task("capture_specular", [=](taskgraph_ptr_t g) {
     auto fbi = gloadercontext.get()->FBI();
 
+    /////////////////////////////////////////
     // Capture all specular filtering results
-    for (size_t i = 0; i < specular_rtgroups->size(); i++) {
-      auto rtg = (*specular_rtgroups)[i];
-      auto rtb = (*specular_rtbuffers)[i];
-      
-      logchan_gen->log("Capture specular: rtgroup<%p> rtbuffer<%p> for roughness %zu", 
-                       rtg.get(), rtb.get(), i);
+    /////////////////////////////////////////
 
-      // Create capture buffer
+    int i = 0;
+    for (auto rtg : *specular_rtgroups) {
+      auto rtb = rtg->buffer(0);
       auto capbuf = std::make_shared<CaptureBuffer>();
       spec_capbufs->push_back(capbuf);
-
-      // Start async capture - this records GPU commands
       auto future = fbi->captureAsFormat(rtb.get(), capbuf, EBufferFormat::RGBA8);
       spec_futures->push_back(future);
-
-      //logchan_gen->log("EnvMapProcessor: Started async capture for specular roughness level %zu", i);
+      i++;
     }
   });
 
   cap_phase->task(tex_name+".capture_diffuse", [=](taskgraph_ptr_t g) {
     auto fbi = gloadercontext.get()->FBI();
 
+    /////////////////////////////////////////
     // Capture all diffuse filtering results
-    for (size_t i = 0; i < diffuse_rtgroups->size(); i++) {
-      auto rtg = (*diffuse_rtgroups)[i];
-      auto rtb = (*diffuse_rtbuffers)[i];
-      
-      logchan_gen->log("Capture diffuse: rtgroup<%p> rtbuffer<%p> for mip %zu", 
-                       rtg.get(), rtb.get(), i);
+    /////////////////////////////////////////
 
-      // Create capture buffer
+    int i = 0;
+    for (auto rtg : *diffuse_rtgroups) {
+      auto rtb = rtg->buffer(0);
       auto capbuf = std::make_shared<CaptureBuffer>();
       diff_capbufs->push_back(capbuf);
-
-      // Start async capture - this records GPU commands
       auto future = fbi->captureAsFormat(rtb.get(), capbuf, EBufferFormat::RGBA8);
       diff_futures->push_back(future);
-
-      //logchan_gen->log("EnvMapProcessor: Started async capture for diffuse mip level %zu", i);
+      i++;
     }
   });
 
