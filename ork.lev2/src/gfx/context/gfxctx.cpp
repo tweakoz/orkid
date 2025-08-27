@@ -386,7 +386,7 @@ ContextExecutor::ContextExecutor(context_rawptr_t ctx)
 ///////////////////////////////////////////////////////////////////////////////
 
 void ContextExecutor::executePhase(taskphase_ptr_t phase) {
-
+  printf("ContextExecutor::executePhase phase<%s>\n", phase->_name.c_str());
   // Ensure we're not on main thread to prevent deadlock
   ork::opq::assertNotOnQueue(opq::mainSerialQueue());
 
