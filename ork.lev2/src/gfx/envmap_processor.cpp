@@ -121,7 +121,8 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
   // Get actual texture dimensions
   int tex_width  = rawenvmap->_width;
   int tex_height = rawenvmap->_height;
-  std::string tex_name = rawenvmap->_debugName;
+  std::string tex_name = file::Path(rawenvmap->_debugName).toBFS().stem().string();
+
   ///////////////////////////////////////
   // Create executors
   ///////////////////////////////////////
@@ -172,41 +173,6 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
     diffuse_material->_rasterstate->setCullTest(ECullTest::OFF);
     diffuse_material->gpuInit(gloadercontext.get(), filterenv_shader_path());
 
-    // Create render targets for specular filtering (10 roughness levels)
-    const int num_roughness = 10;
-    for (int i = 0; i < num_roughness; i++) {
-      auto rtgroup         = std::make_shared<RtGroup>(gloadercontext.get(), tex_width, tex_height, MsaaSamples::MSAA_1X);
-      auto rtbuffer        = rtgroup->createRenderTarget(EBufferFormat::RGBA32F);
-      rtbuffer->_debugName = FormatString("%s-spc-rtb%d", tex_name.c_str(), i);
-      rtgroup->_name       = FormatString("%s-spc-rtg%d", tex_name.c_str(), i);
-      specular_rtgroups->push_back(rtgroup);
-      specular_rtbuffers->push_back(rtbuffer);
-      //logchan_gen->log("Setup: Created specular rtgroup<%p> rtbuffer<%p> for roughness %d", 
-      //                 rtgroup.get(), rtbuffer.get(), i);
-    }
-
-    // Create render targets for diffuse filtering (mip chain)
-    int diff_w = tex_width;
-    int diff_h = tex_height;
-    int mip    = 0;
-    while (diff_w >= 4 && diff_h >= 4) {  // Stop at 4x4, don't go smaller
-      auto rtgroup         = std::make_shared<RtGroup>(gloadercontext.get(), diff_w, diff_h, MsaaSamples::MSAA_1X);
-      auto rtbuffer        = rtgroup->createRenderTarget(EBufferFormat::RGBA32F);
-      rtbuffer->_debugName = FormatString("%s-dif-rtb-mip%d", tex_name.c_str(), mip);
-      rtgroup->_name       = FormatString("%s-dif-rtg-mip%d", tex_name.c_str(), mip);
-      diffuse_rtgroups->push_back(rtgroup);
-      diffuse_rtbuffers->push_back(rtbuffer);
-      //logchan_gen->log("Setup: Created diffuse rtgroup<%p> rtbuffer<%p> for mip %d", 
-      //                 rtgroup.get(), rtbuffer.get(), mip);
-      diff_w >>= 1;
-      diff_h >>= 1;
-      mip++;
-    }
-
-    logchan_gen->log(
-        "EnvMapProcessor: Created %zu specular and %zu diffuse render targets",
-        specular_rtgroups->size(),
-        diffuse_rtgroups->size());
     logchan_gen->log("EnvMapProcessor: Setup phase completed");
   });
 
@@ -241,9 +207,12 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
     specular_phase->task(task_name, [=](taskgraph_ptr_t g) {
       //logchan_gen->log("EnvMapProcessor: starting specular filtering for roughness %d (%f)", rough_idx, roughness);
 
-      // Get the render target for this roughness level
-      auto rtgroup  = (*specular_rtgroups)[rough_idx];
-      auto rtbuffer = (*specular_rtbuffers)[rough_idx];
+      auto rtgroup         = std::make_shared<RtGroup>(gloadercontext.get(), tex_width, tex_height, MsaaSamples::MSAA_1X);
+      auto rtbuffer        = rtgroup->createRenderTarget(EBufferFormat::RGBA32F);
+      rtbuffer->_debugName = FormatString("%s-spc-rtb-%d", tex_name.c_str(), rough_idx);
+      rtgroup->_name       = FormatString("%s-spc-rtg-%d", tex_name.c_str(), rough_idx);
+      specular_rtgroups->push_back(rtgroup);
+      specular_rtbuffers->push_back(rtbuffer);
       
       //logchan_gen->log("Specular filtering: Using rtgroup<%p> rtbuffer<%p> for roughness %d", 
       //                 rtgroup.get(), rtbuffer.get(), rough_idx);
@@ -327,10 +296,18 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
   // Phase 3: Diffuse filtering - one phase per mip level
   ///////////////////////////////////////
 
-  int mip = 0;
-  for (auto rtgroup : *diffuse_rtgroups) {
-
-    auto rtbuffer = rtgroup->buffer(0);
+  int diff_w = tex_width;
+  int diff_h = tex_height;
+  int mip    = 0;
+  while (diff_w >= 4 && diff_h >= 4) {  // Stop at 4x4, don't go smaller
+    auto rtgroup         = std::make_shared<RtGroup>(gloadercontext.get(), diff_w, diff_h, MsaaSamples::MSAA_1X);
+    auto rtbuffer        = rtgroup->createRenderTarget(EBufferFormat::RGBA32F);
+    rtbuffer->_debugName = FormatString("%s-dif-rtb-mip%d", tex_name.c_str(), mip);
+    rtgroup->_name       = FormatString("%s-dif-rtg-mip%d", tex_name.c_str(), mip);
+    diffuse_rtgroups->push_back(rtgroup);
+    diffuse_rtbuffers->push_back(rtbuffer);
+    logchan_gen->log("Setup: Created diffuse rtgroup<%p> rtbuffer<%p> for mip %d", 
+                     rtgroup.get(), rtbuffer.get(), mip);
     std::string phase_name = tex_name+".diffuse_mip_" + std::to_string(mip);
 
     auto diffuse_phase = TaskGraph::phase(graph, phase_name, gpu_executor);
@@ -348,7 +325,6 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
     diffuse_phase->task(task_name, [=](taskgraph_ptr_t g) {
       logchan_gen->log("EnvMapProcessor<%s>: starting diffuse filtering for mip %d", tex_name.c_str(), mip);
       
-      OrkAssert(false);
       //logchan_gen->log("Diffuse filtering: Using rtgroup<%p> rtbuffer<%p> for mip %d", 
       //                 rtgroup.get(), rtbuffer.get(), mip);
 
@@ -425,6 +401,8 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
     // Note: we don't need the nested for loops for tiles anymore
     
     ContextExecutor::emptyFrame(graph, tex_name+".diffuse-barrier", gpu_executor);
+    diff_w >>= 1;
+    diff_h >>= 1;
     mip++;
   }
 
@@ -640,28 +618,28 @@ xirprocessfuture_ptr_t EnvMapProcessor::processToXIRDataBlockAsync(const file::P
 
     auto on_graph_complete = [future](taskgraph_ptr_t g) {
       // When graph completes, extract results and package as XIR
-      g->_varmap.atomicOp([future](varmap::VarMap& vmap) {
+      g->_varmap.atomicOp([future](varmap::VarMap& unlocked) {
         datablock_ptr_t specular_data;
         datablock_ptr_t diffuse_data;
         image_list_t debug_spec_images;
         image_list_t debug_diff_images;
 
-        if (auto spec_opt = vmap.typedValueForKey<datablock_ptr_t>("specular_datablock")) {
+        if (auto spec_opt = unlocked.typedValueForKey<datablock_ptr_t>("specular_datablock")) {
           specular_data = spec_opt.value();
         } else {
           OrkAssert(false); // fail early (we cannot move forward until this passes)
         }
-        if (auto diff_opt = vmap.typedValueForKey<datablock_ptr_t>("diffuse_datablock")) {
+        if (auto diff_opt = unlocked.typedValueForKey<datablock_ptr_t>("diffuse_datablock")) {
           diffuse_data = diff_opt.value();
         } else {
           OrkAssert(false); // fail early (we cannot move forward until this passes)
         }
         
         // Get debug images if available
-        if (auto spec_img_opt = vmap.typedValueForKey<image_list_t>("debug_spec_images")) {
+        if (auto spec_img_opt = unlocked.typedValueForKey<image_list_t>("debug_spec_images")) {
           debug_spec_images = spec_img_opt.value();
         }
-        if (auto diff_img_opt = vmap.typedValueForKey<image_list_t>("debug_diff_images")) {
+        if (auto diff_img_opt = unlocked.typedValueForKey<image_list_t>("debug_diff_images")) {
           debug_diff_images = diff_img_opt.value();
         }
 
@@ -678,7 +656,7 @@ xirprocessfuture_ptr_t EnvMapProcessor::processToXIRDataBlockAsync(const file::P
         
         // Set the result in the future
         future->setResult(result_data);
-      }); // g->_varmap.atomicOp([future](varmap::VarMap& vmap) {
+      }); // g->_varmap.atomicOp([future](varmap::VarMap& unlocked) {
     };
     TaskGraph::execute(taskgraph, on_graph_complete);
   });
