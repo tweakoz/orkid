@@ -310,7 +310,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
       // Pop render target ONCE after all tiles
       fbi->PopRtGroup();
 
-      logchan_gen->log("EnvMapProcessor: completed specular filtering for roughness %d", rough_idx);
+      //logchan_gen->log("EnvMapProcessor: completed specular filtering for roughness %d", rough_idx);
     });
     
     // Note: we don't need the nested for loops for tiles anymore
