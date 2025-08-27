@@ -1,0 +1,181 @@
+<svg width="1200" height="700" viewBox="0 0 1200 700" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1200" height="700" fill="#3a3a3a"/>
+  
+  <!-- Title -->
+  <text x="600" y="30" font-family="Arial, sans-serif" font-size="18" fill="white" text-anchor="middle" font-weight="bold">TaskGraph Architecture</text>
+  
+  <!-- Graph Construction Layer -->
+  <g id="construction-layer">
+    <rect x="50" y="60" width="500" height="200" rx="8" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+    <text x="300" y="85" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">Graph Construction</text>
+    
+    <!-- Static Factory -->
+    <rect x="70" y="110" width="150" height="60" rx="6" fill="#5a4a3a" stroke="#8a6a4a" stroke-width="1"/>
+    <text x="145" y="135" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle">TaskGraph::create()</text>
+    <text x="145" y="155" font-family="Arial, sans-serif" font-size="10" fill="#aaa" text-anchor="middle">Static Factory</text>
+    
+    <!-- Phase Creation -->
+    <rect x="240" y="110" width="150" height="60" rx="6" fill="#3a4a5a" stroke="#5a6a8a" stroke-width="1"/>
+    <text x="315" y="135" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle">TaskGraph::phase()</text>
+    <text x="315" y="155" font-family="Arial, sans-serif" font-size="10" fill="#aaa" text-anchor="middle">Add Phases</text>
+    
+    <!-- Task Addition -->
+    <rect x="410" y="110" width="120" height="60" rx="6" fill="#4a3a5a" stroke="#6a5a7a" stroke-width="1"/>
+    <text x="470" y="135" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle">Phase::task()</text>
+    <text x="470" y="155" font-family="Arial, sans-serif" font-size="10" fill="#aaa" text-anchor="middle">Add Tasks</text>
+    
+    <!-- Arrows -->
+    <path d="M 220 140 L 240 140" stroke="#888" stroke-width="2" marker-end="url(#arrowhead)"/>
+    <path d="M 390 140 L 410 140" stroke="#888" stroke-width="2" marker-end="url(#arrowhead)"/>
+    
+    <!-- VarMap -->
+    <rect x="70" y="190" width="460" height="50" rx="6" fill="#5a5a3a" stroke="#7a7a5a" stroke-width="1"/>
+    <text x="300" y="210" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle">VarMap (Thread-Safe Shared State)</text>
+    <text x="300" y="228" font-family="Arial, sans-serif" font-size="10" fill="#aaa" text-anchor="middle">LockedResource&lt;varmap::VarMap&gt; for inter-phase communication</text>
+  </g>
+  
+  <!-- Execution Layer -->
+  <g id="execution-layer">
+    <rect x="50" y="280" width="500" height="380" rx="8" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+    <text x="300" y="305" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">Execution Flow</text>
+    
+    <!-- Execute -->
+    <rect x="70" y="330" width="460" height="40" rx="6" fill="#5a3a3a" stroke="#8a5a5a" stroke-width="1"/>
+    <text x="300" y="350" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle">TaskGraph::execute(graph, on_complete)</text>
+    <text x="300" y="365" font-family="Arial, sans-serif" font-size="10" fill="#aaa" text-anchor="middle">Synchronous execution - blocks until complete</text>
+    
+    <!-- Phase 1 -->
+    <g id="phase1">
+      <rect x="70" y="390" width="140" height="100" rx="6" fill="#3a5a4a" stroke="#5a7a6a" stroke-width="1"/>
+      <text x="140" y="410" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">Phase 1</text>
+      <rect x="80" y="420" width="120" height="25" rx="4" fill="#2a4a3a" stroke="#4a6a5a" stroke-width="1"/>
+      <text x="140" y="437" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">Task 1</text>
+      <rect x="80" y="450" width="120" height="25" rx="4" fill="#2a4a3a" stroke="#4a6a5a" stroke-width="1"/>
+      <text x="140" y="467" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">Task 2</text>
+    </g>
+    
+    <!-- Phase 2 -->
+    <g id="phase2">
+      <rect x="230" y="390" width="140" height="100" rx="6" fill="#4a4a5a" stroke="#6a6a7a" stroke-width="1"/>
+      <text x="300" y="410" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">Phase 2</text>
+      <rect x="240" y="420" width="120" height="25" rx="4" fill="#3a3a4a" stroke="#5a5a6a" stroke-width="1"/>
+      <text x="300" y="437" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">Task A</text>
+      <rect x="240" y="450" width="120" height="25" rx="4" fill="#3a3a4a" stroke="#5a5a6a" stroke-width="1"/>
+      <text x="300" y="467" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">Task B</text>
+    </g>
+    
+    <!-- Phase N -->
+    <g id="phaseN">
+      <rect x="390" y="390" width="140" height="100" rx="6" fill="#5a4a4a" stroke="#7a6a6a" stroke-width="1"/>
+      <text x="460" y="410" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">Phase N</text>
+      <rect x="400" y="420" width="120" height="25" rx="4" fill="#4a3a3a" stroke="#6a5a5a" stroke-width="1"/>
+      <text x="460" y="437" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">Task X</text>
+      <rect x="400" y="450" width="120" height="25" rx="4" fill="#4a3a3a" stroke="#6a5a5a" stroke-width="1"/>
+      <text x="460" y="467" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">Task Y</text>
+    </g>
+    
+    <!-- Sequential arrows -->
+    <path d="M 210 440 L 230 440" stroke="#8f8" stroke-width="2" marker-end="url(#arrowhead-green)"/>
+    <path d="M 370 440 L 390 440" stroke="#8f8" stroke-width="2" marker-end="url(#arrowhead-green)"/>
+    
+    <!-- Executors -->
+    <rect x="70" y="510" width="140" height="60" rx="6" fill="#5a3a5a" stroke="#7a5a7a" stroke-width="1"/>
+    <text x="140" y="530" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">OPQParallel</text>
+    <text x="140" y="545" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Concurrent</text>
+    <text x="140" y="558" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Worker Threads</text>
+    
+    <rect x="230" y="510" width="140" height="60" rx="6" fill="#5a3a5a" stroke="#7a5a7a" stroke-width="1"/>
+    <text x="300" y="530" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">Serial</text>
+    <text x="300" y="545" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Sequential</text>
+    <text x="300" y="558" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Calling Thread</text>
+    
+    <rect x="390" y="510" width="140" height="60" rx="6" fill="#5a3a5a" stroke="#7a5a7a" stroke-width="1"/>
+    <text x="460" y="530" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">ContextExecutor</text>
+    <text x="460" y="545" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">GPU Context</text>
+    <text x="460" y="558" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Render Thread</text>
+    
+    <!-- Completion -->
+    <rect x="70" y="590" width="460" height="50" rx="6" fill="#4a5a3a" stroke="#6a7a5a" stroke-width="1"/>
+    <text x="300" y="610" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle">Completion Callback</text>
+    <text x="300" y="628" font-family="Arial, sans-serif" font-size="10" fill="#aaa" text-anchor="middle">Optional graph completion handler invoked after all phases</text>
+  </g>
+  
+  <!-- Right side - Key Concepts -->
+  <g id="key-concepts">
+    <rect x="580" y="60" width="570" height="600" rx="8" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+    <text x="865" y="85" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">Key Concepts</text>
+    
+    <!-- Tasks -->
+    <g id="tasks-concept">
+      <rect x="600" y="110" width="250" height="120" rx="6" fill="#3a4a5a" stroke="#5a6a8a" stroke-width="1"/>
+      <text x="725" y="130" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">Tasks</text>
+      <text x="725" y="150" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• Lambda functions</text>
+      <text x="725" y="167" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• Receive graph as parameter</text>
+      <text x="725" y="184" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• Access VarMap for shared state</text>
+      <text x="725" y="201" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• Execute in phase's executor</text>
+      <text x="725" y="218" font-family="Arial, sans-serif" font-size="10" fill="#8f8" text-anchor="middle">taskfunc_t = std::function&lt;void(taskgraph_ptr_t)&gt;</text>
+    </g>
+    
+    <!-- Phases -->
+    <g id="phases-concept">
+      <rect x="880" y="110" width="250" height="120" rx="6" fill="#4a3a5a" stroke="#6a5a7a" stroke-width="1"/>
+      <text x="1005" y="130" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">Phases</text>
+      <text x="1005" y="150" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• Sequential execution</text>
+      <text x="1005" y="167" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• Own executor strategy</text>
+      <text x="1005" y="184" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• Optional completion callback</text>
+      <text x="1005" y="201" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• Contains multiple tasks</text>
+      <text x="1005" y="218" font-family="Arial, sans-serif" font-size="10" fill="#8f8" text-anchor="middle">Execute in declaration order</text>
+    </g>
+    
+    <!-- Data Flow -->
+    <g id="data-flow">
+      <rect x="600" y="250" width="530" height="140" rx="6" fill="#5a5a3a" stroke="#7a7a5a" stroke-width="1"/>
+      <text x="865" y="270" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">Data Flow Mechanisms</text>
+      
+      <!-- VarMap -->
+      <rect x="615" y="285" width="240" height="85" rx="4" fill="#4a4a2a" stroke="#6a6a4a" stroke-width="1"/>
+      <text x="735" y="305" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">VarMap (Cross-Phase)</text>
+      <text x="735" y="323" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">• Thread-safe via atomicOp()</text>
+      <text x="735" y="338" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">• Type-safe storage</text>
+      <text x="735" y="353" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">• Graph-scoped lifetime</text>
+      
+      <!-- Lambda Captures -->
+      <rect x="875" y="285" width="240" height="85" rx="4" fill="#4a4a2a" stroke="#6a6a4a" stroke-width="1"/>
+      <text x="995" y="305" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">Lambda Captures (Phase-Local)</text>
+      <text x="995" y="323" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">• Shared_ptr for safety</text>
+      <text x="995" y="338" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">• Phase-scoped state</text>
+      <text x="995" y="353" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">• Avoid unnecessary VarMap</text>
+    </g>
+    
+    <!-- Frame Barriers -->
+    <g id="frame-barriers">
+      <rect x="600" y="410" width="530" height="100" rx="6" fill="#5a4a4a" stroke="#7a6a6a" stroke-width="1"/>
+      <text x="865" y="430" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">Frame Barriers (GPU Synchronization)</text>
+      <text x="865" y="450" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">ContextExecutor::emptyFrame(graph, name, gpu_executor)</text>
+      <text x="865" y="468" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">• Ensure GPU resources ready after initialization</text>
+      <text x="865" y="483" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">• Flush GPU commands between render passes</text>
+      <text x="865" y="498" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">• Synchronize before capture operations</text>
+    </g>
+    
+    <!-- Memory Management -->
+    <g id="memory-mgmt">
+      <rect x="600" y="530" width="530" height="110" rx="6" fill="#4a5a5a" stroke="#6a7a7a" stroke-width="1"/>
+      <text x="865" y="550" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">Memory Management</text>
+      <text x="865" y="570" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• Graph owned by creator, passed as shared_ptr</text>
+      <text x="865" y="587" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• Phases owned by graph as shared_ptr vector</text>
+      <text x="865" y="604" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• Tasks owned by phases as shared_ptr vector</text>
+      <text x="865" y="621" font-family="Arial, sans-serif" font-size="10" fill="#8f8" text-anchor="middle">No shared_from_this complexity!</text>
+    </g>
+  </g>
+  
+  <!-- Arrow markers -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#888"/>
+    </marker>
+    <marker id="arrowhead-green" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#8f8"/>
+    </marker>
+  </defs>
+</svg>

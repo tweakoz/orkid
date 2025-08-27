@@ -1,0 +1,150 @@
+<svg width="1200" height="800" viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1200" height="800" fill="#3a3a3a"/>
+  
+  <!-- Title -->
+  <text x="600" y="30" font-family="Arial, sans-serif" font-size="18" fill="white" text-anchor="middle" font-weight="bold">TaskGraph Execution Flow</text>
+  
+  <!-- Actors -->
+  <g id="actors">
+    <!-- Client -->
+    <rect x="50" y="60" width="120" height="40" rx="6" fill="#5a4a3a" stroke="#8a6a4a" stroke-width="1"/>
+    <text x="110" y="85" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle">Client</text>
+    
+    <!-- Graph -->
+    <rect x="250" y="60" width="120" height="40" rx="6" fill="#3a4a5a" stroke="#5a6a8a" stroke-width="1"/>
+    <text x="310" y="85" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle">TaskGraph</text>
+    
+    <!-- Phase -->
+    <rect x="450" y="60" width="120" height="40" rx="6" fill="#4a3a5a" stroke="#6a5a7a" stroke-width="1"/>
+    <text x="510" y="85" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle">Phase</text>
+    
+    <!-- Executor -->
+    <rect x="650" y="60" width="120" height="40" rx="6" fill="#5a5a3a" stroke="#7a7a5a" stroke-width="1"/>
+    <text x="710" y="85" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle">Executor</text>
+    
+    <!-- Task -->
+    <rect x="850" y="60" width="120" height="40" rx="6" fill="#5a3a3a" stroke="#7a5a5a" stroke-width="1"/>
+    <text x="910" y="85" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle">Task</text>
+    
+    <!-- OPQ -->
+    <rect x="1030" y="60" width="120" height="40" rx="6" fill="#4a5a5a" stroke="#6a7a7a" stroke-width="1"/>
+    <text x="1090" y="85" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle">OPQ</text>
+  </g>
+  
+  <!-- Lifelines -->
+  <line x1="110" y1="100" x2="110" y2="750" stroke="#666" stroke-width="1" stroke-dasharray="5,5"/>
+  <line x1="310" y1="100" x2="310" y2="750" stroke="#666" stroke-width="1" stroke-dasharray="5,5"/>
+  <line x1="510" y1="100" x2="510" y2="750" stroke="#666" stroke-width="1" stroke-dasharray="5,5"/>
+  <line x1="710" y1="100" x2="710" y2="750" stroke="#666" stroke-width="1" stroke-dasharray="5,5"/>
+  <line x1="910" y1="100" x2="910" y2="750" stroke="#666" stroke-width="1" stroke-dasharray="5,5"/>
+  <line x1="1090" y1="100" x2="1090" y2="750" stroke="#666" stroke-width="1" stroke-dasharray="5,5"/>
+  
+  <!-- Messages -->
+  <g id="messages">
+    <!-- execute() call -->
+    <path d="M 110 130 L 310 130" stroke="#8f8" stroke-width="2" marker-end="url(#arrowhead-green)"/>
+    <text x="210" y="125" font-family="monospace" font-size="10" fill="#8f8" text-anchor="middle">execute(graph, on_complete)</text>
+    
+    <!-- Phase loop box -->
+    <rect x="290" y="150" width="830" height="470" rx="4" fill="none" stroke="#888" stroke-width="1" stroke-dasharray="3,3"/>
+    <rect x="290" y="150" width="150" height="25" rx="4" fill="#444" stroke="#888" stroke-width="1"/>
+    <text x="365" y="167" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">For each phase</text>
+    
+    <!-- Get next phase -->
+    <line x1="310" y1="190" x2="510" y2="190" stroke="#88f" stroke-width="2" marker-end="url(#arrowhead-blue)"/>
+    <text x="410" y="185" font-family="monospace" font-size="10" fill="#88f" text-anchor="middle">Get next phase</text>
+    
+    <!-- executePhase -->
+    <path d="M 310 220 L 710 220" stroke="#8f8" stroke-width="2" marker-end="url(#arrowhead-green)"/>
+    <text x="510" y="215" font-family="monospace" font-size="10" fill="#8f8" text-anchor="middle">executePhase(phase)</text>
+    
+    <!-- Parallel Executor branch -->
+    <rect x="690" y="240" width="410" height="220" rx="4" fill="#2a3a2a" stroke="#5a7a5a" stroke-width="1"/>
+    <rect x="690" y="240" width="150" height="20" rx="4" fill="#3a4a3a"/>
+    <text x="765" y="254" font-family="Arial, sans-serif" font-size="9" fill="white" text-anchor="middle">Parallel Executor</text>
+    
+    <!-- Task loop -->
+    <rect x="700" y="270" width="380" height="120" rx="4" fill="none" stroke="#666" stroke-width="1" stroke-dasharray="2,2"/>
+    <text x="760" y="285" font-family="Arial, sans-serif" font-size="9" fill="#aaa">For each task</text>
+    
+    <!-- Enqueue to OPQ -->
+    <path d="M 710 300 L 1090 300" stroke="#f88" stroke-width="2" marker-end="url(#arrowhead-red)"/>
+    <text x="900" y="295" font-family="monospace" font-size="10" fill="#f88" text-anchor="middle">enqueue(task)</text>
+    
+    <!-- OPQ executes task -->
+    <path d="M 1090 330 L 910 330" stroke="#88f" stroke-width="2" marker-end="url(#arrowhead-blue)"/>
+    <text x="1000" y="325" font-family="monospace" font-size="10" fill="#88f" text-anchor="middle">execute(graph)</text>
+    
+    <!-- Task completes -->
+    <path d="M 910 360 L 710 360" stroke="#8f8" stroke-width="2" marker-end="url(#arrowhead-green)" stroke-dasharray="5,2"/>
+    <text x="810" y="355" font-family="monospace" font-size="10" fill="#8f8" text-anchor="middle">complete</text>
+    
+    <!-- Wait for all -->
+    <rect x="700" y="400" width="150" height="40" rx="4" fill="#4a3a3a" stroke="#6a5a5a" stroke-width="1"/>
+    <text x="775" y="415" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">Wait for all tasks</text>
+    <text x="775" y="430" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">while(pending &gt; 0)</text>
+    
+    <!-- Serial Executor branch -->
+    <rect x="690" y="470" width="300" height="100" rx="4" fill="#2a2a3a" stroke="#5a5a7a" stroke-width="1"/>
+    <rect x="690" y="470" width="150" height="20" rx="4" fill="#3a4a3a"/>
+    <text x="765" y="484" font-family="Arial, sans-serif" font-size="9" fill="white" text-anchor="middle">Serial Executor</text>
+    
+    <!-- Direct task execution -->
+    <rect x="700" y="495" width="280" height="65" rx="4" fill="none" stroke="#666" stroke-width="1" stroke-dasharray="2,2"/>
+    <text x="760" y="510" font-family="Arial, sans-serif" font-size="9" fill="#aaa">For each task</text>
+    
+    <path d="M 710 525 L 910 525" stroke="#8f8" stroke-width="2" marker-end="url(#arrowhead-green)"/>
+    <text x="810" y="520" font-family="monospace" font-size="10" fill="#8f8" text-anchor="middle">execute(graph)</text>
+    
+    <path d="M 910 545 L 710 545" stroke="#8f8" stroke-width="2" marker-end="url(#arrowhead-green)" stroke-dasharray="5,2"/>
+    <text x="810" y="540" font-family="monospace" font-size="10" fill="#8f8" text-anchor="middle">complete</text>
+    
+    <!-- Phase complete -->
+    <path d="M 710 590 L 310 590" stroke="#8f8" stroke-width="2" marker-end="url(#arrowhead-green)" stroke-dasharray="5,2"/>
+    <text x="510" y="585" font-family="monospace" font-size="10" fill="#8f8" text-anchor="middle">phase complete</text>
+    
+    <!-- Phase completion callback -->
+    <rect x="290" y="600" width="240" height="15" rx="4" fill="#4a4a2a" stroke="#6a6a4a" stroke-width="1"/>
+    <text x="410" y="610" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">if phase has completion callback</text>
+    
+    <!-- Graph completion -->
+    <rect x="90" y="640" width="240" height="15" rx="4" fill="#4a4a2a" stroke="#6a6a4a" stroke-width="1"/>
+    <text x="210" y="650" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">if graph has completion callback</text>
+    
+    <path d="M 310 670 L 110 670" stroke="#8f8" stroke-width="2" marker-end="url(#arrowhead-green)"/>
+    <text x="210" y="665" font-family="monospace" font-size="10" fill="#8f8" text-anchor="middle">on_completion(graph)</text>
+    
+    <!-- execute returns -->
+    <path d="M 310 700 L 110 700" stroke="#8f8" stroke-width="2" marker-end="url(#arrowhead-green)" stroke-dasharray="5,2"/>
+    <text x="210" y="695" font-family="monospace" font-size="10" fill="#8f8" text-anchor="middle">execute returns</text>
+  </g>
+  
+  <!-- Legend -->
+  <g id="legend">
+    <rect x="50" y="770" width="200" height="20" rx="4" fill="#2a2a2a" stroke="#4a4a4a" stroke-width="1"/>
+    <line x1="60" y1="780" x2="90" y2="780" stroke="#8f8" stroke-width="2" marker-end="url(#arrowhead-green)"/>
+    <text x="95" y="784" font-family="Arial, sans-serif" font-size="9" fill="#aaa">Synchronous call</text>
+    
+    <rect x="270" y="770" width="200" height="20" rx="4" fill="#2a2a2a" stroke="#4a4a4a" stroke-width="1"/>
+    <line x1="280" y1="780" x2="310" y2="780" stroke="#f88" stroke-width="2" marker-end="url(#arrowhead-red)"/>
+    <text x="315" y="784" font-family="Arial, sans-serif" font-size="9" fill="#aaa">Async enqueue</text>
+    
+    <rect x="490" y="770" width="200" height="20" rx="4" fill="#2a2a2a" stroke="#4a4a4a" stroke-width="1"/>
+    <line x1="500" y1="780" x2="530" y2="780" stroke="#8f8" stroke-width="2" stroke-dasharray="5,2" marker-end="url(#arrowhead-green)"/>
+    <text x="535" y="784" font-family="Arial, sans-serif" font-size="9" fill="#aaa">Return/Complete</text>
+  </g>
+  
+  <!-- Arrow markers -->
+  <defs>
+    <marker id="arrowhead-green" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#8f8"/>
+    </marker>
+    <marker id="arrowhead-blue" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#88f"/>
+    </marker>
+    <marker id="arrowhead-red" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#f88"/>
+    </marker>
+  </defs>
+</svg>

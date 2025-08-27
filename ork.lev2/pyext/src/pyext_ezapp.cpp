@@ -442,6 +442,10 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
           })
       .def("mainThreadIter", [](orkezapp_ptr_t app) { //
             app->_mainThreadLoopIter();
+          })
+      .def("mainThreadIterCommandLine", [](orkezapp_ptr_t app) { //
+            app->_mainThreadLoopIter();
+            ork::opq::mainSerialQueue()->Process();
           });
   /////////////////////////////////////////////////////////////////////////////////
   auto ezmainwin_type = //

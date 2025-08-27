@@ -1,0 +1,215 @@
+<svg width="1400" height="900" viewBox="0 0 1400 900" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1400" height="900" fill="#3a3a3a"/>
+  
+  <!-- Title -->
+  <text x="700" y="30" font-family="Arial, sans-serif" font-size="18" fill="white" text-anchor="middle" font-weight="bold">TaskGraph Use Case: Environment Map Processing</text>
+  
+  <!-- Main container -->
+  <rect x="30" y="50" width="1340" height="830" rx="8" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+  
+  <!-- Setup Phase -->
+  <g id="setup-phase">
+    <rect x="50" y="80" width="1300" height="140" rx="6" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
+    <rect x="50" y="80" width="200" height="30" rx="4" fill="#4a5a4a"/>
+    <text x="150" y="100" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">Setup Phase [GPU Thread]</text>
+    
+    <!-- Initialize Materials -->
+    <rect x="70" y="120" width="280" height="80" rx="4" fill="#2a3a2a" stroke="#4a5a4a" stroke-width="1"/>
+    <text x="210" y="140" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">Initialize Materials</text>
+    <text x="210" y="158" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">• specular_material->gpuInit()</text>
+    <text x="210" y="173" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">• diffuse_material->gpuInit()</text>
+    <text x="210" y="188" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">• Load pbr_filterenv.fxv2 shader</text>
+    
+    <!-- Create Render Targets -->
+    <rect x="370" y="120" width="280" height="80" rx="4" fill="#2a3a2a" stroke="#4a5a4a" stroke-width="1"/>
+    <text x="510" y="140" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">Create Render Targets</text>
+    <text x="510" y="158" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">• 10 specular RTs (512x512)</text>
+    <text x="510" y="173" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">• 8 diffuse RTs (mip chain)</text>
+    <text x="510" y="188" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">• Format: RGBA32F</text>
+    
+    <!-- Frame Barrier -->
+    <rect x="670" y="120" width="200" height="80" rx="4" fill="#4a3a2a" stroke="#6a5a4a" stroke-width="1"/>
+    <text x="770" y="145" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">Frame Barrier</text>
+    <text x="770" y="165" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">ContextExecutor::</text>
+    <text x="770" y="180" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">emptyFrame()</text>
+    
+    <!-- Shared State -->
+    <rect x="890" y="120" width="440" height="80" rx="4" fill="#3a3a3a" stroke="#5a5a5a" stroke-width="1"/>
+    <text x="1110" y="140" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">Shared State (Lambda Captures)</text>
+    <text x="1110" y="158" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">• shared_ptr&lt;rtgroup_list_t&gt; specular_rtgroups</text>
+    <text x="1110" y="173" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">• shared_ptr&lt;rtbuffer_list_t&gt; specular_rtbuffers</text>
+    <text x="1110" y="188" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">• shared_ptr&lt;FreestyleMaterial&gt; materials</text>
+  </g>
+  
+  <!-- Specular Filtering Phases -->
+  <g id="specular-phases">
+    <rect x="50" y="240" width="1300" height="200" rx="6" fill="#4a3a4a" stroke="#6a5a6a" stroke-width="1"/>
+    <rect x="50" y="240" width="250" height="30" rx="4" fill="#5a4a5a"/>
+    <text x="175" y="260" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">Specular Filtering [GPU Thread]</text>
+    
+    <!-- Multiple phases for roughness -->
+    <text x="70" y="290" font-family="Arial, sans-serif" font-size="10" fill="#aaa">10 Sequential Phases (roughness 0-9):</text>
+    
+    <!-- Roughness 0 -->
+    <rect x="70" y="305" width="120" height="110" rx="4" fill="#3a2a4a" stroke="#5a4a6a" stroke-width="1"/>
+    <text x="130" y="325" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">Roughness 0</text>
+    <text x="130" y="342" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">r = 0.00</text>
+    <text x="130" y="358" font-family="Arial, sans-serif" font-size="8" fill="#8f8" text-anchor="middle">Bind params</text>
+    <text x="130" y="373" font-family="Arial, sans-serif" font-size="8" fill="#8f8" text-anchor="middle">Render tiles</text>
+    <text x="130" y="388" font-family="Arial, sans-serif" font-size="8" fill="#8f8" text-anchor="middle">8x8 tiles</text>
+    <text x="130" y="403" font-family="Arial, sans-serif" font-size="8" fill="#88f" text-anchor="middle">Frame barrier</text>
+    
+    <!-- Roughness 1 -->
+    <rect x="210" y="305" width="120" height="110" rx="4" fill="#3a2a4a" stroke="#5a4a6a" stroke-width="1"/>
+    <text x="270" y="325" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">Roughness 1</text>
+    <text x="270" y="342" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">r = 0.33</text>
+    <text x="270" y="358" font-family="Arial, sans-serif" font-size="8" fill="#8f8" text-anchor="middle">Bind params</text>
+    <text x="270" y="373" font-family="Arial, sans-serif" font-size="8" fill="#8f8" text-anchor="middle">Render tiles</text>
+    <text x="270" y="388" font-family="Arial, sans-serif" font-size="8" fill="#8f8" text-anchor="middle">8x8 tiles</text>
+    <text x="270" y="403" font-family="Arial, sans-serif" font-size="8" fill="#88f" text-anchor="middle">Frame barrier</text>
+    
+    <!-- ... indicator -->
+    <text x="380" y="360" font-family="Arial, sans-serif" font-size="20" fill="#666" text-anchor="middle">...</text>
+    
+    <!-- Roughness 9 -->
+    <rect x="430" y="305" width="120" height="110" rx="4" fill="#3a2a4a" stroke="#5a4a6a" stroke-width="1"/>
+    <text x="490" y="325" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">Roughness 9</text>
+    <text x="490" y="342" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">r = 1.00</text>
+    <text x="490" y="358" font-family="Arial, sans-serif" font-size="8" fill="#8f8" text-anchor="middle">Bind params</text>
+    <text x="490" y="373" font-family="Arial, sans-serif" font-size="8" fill="#8f8" text-anchor="middle">Render tiles</text>
+    <text x="490" y="388" font-family="Arial, sans-serif" font-size="8" fill="#8f8" text-anchor="middle">8x8 tiles</text>
+    <text x="490" y="403" font-family="Arial, sans-serif" font-size="8" fill="#88f" text-anchor="middle">Frame barrier</text>
+    
+    <!-- Shader operations -->
+    <rect x="580" y="305" width="380" height="110" rx="4" fill="#2a3a3a" stroke="#4a5a4a" stroke-width="1"/>
+    <text x="770" y="325" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">Per-Phase Operations</text>
+    <text x="770" y="345" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">1. fbi->PushRtGroup(rtgroup)</text>
+    <text x="770" y="360" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">2. material->begin(technique, RCFD)</text>
+    <text x="770" y="375" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">3. material->bindParam*(params)</text>
+    <text x="770" y="390" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">4. dwi->quad2D() for each tile</text>
+    <text x="770" y="405" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">5. fbi->PopRtGroup()</text>
+    
+    <!-- Parameters -->
+    <rect x="980" y="305" width="350" height="110" rx="4" fill="#2a3a3a" stroke="#4a5a4a" stroke-width="1"/>
+    <text x="1155" y="325" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">Bound Parameters</text>
+    <text x="1155" y="345" font-family="monospace" font-size="8" fill="#8f8" text-anchor="middle">param_mvp        → fmtx4::Identity()</text>
+    <text x="1155" y="360" font-family="monospace" font-size="8" fill="#8f8" text-anchor="middle">param_prefiltmap → rawenvmap</text>
+    <text x="1155" y="375" font-family="monospace" font-size="8" fill="#8f8" text-anchor="middle">param_roughness  → [0.0 - 1.0]</text>
+    <text x="1155" y="390" font-family="monospace" font-size="8" fill="#8f8" text-anchor="middle">param_imgdim     → fvec2(512, 512)</text>
+    <text x="1155" y="405" font-family="monospace" font-size="8" fill="#8f8" text-anchor="middle">param_numsamples → 8192</text>
+  </g>
+  
+  <!-- Diffuse Filtering Phases -->
+  <g id="diffuse-phases">
+    <rect x="50" y="460" width="650" height="140" rx="6" fill="#4a4a3a" stroke="#6a6a5a" stroke-width="1"/>
+    <rect x="50" y="460" width="250" height="30" rx="4" fill="#5a5a4a"/>
+    <text x="175" y="480" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">Diffuse Filtering [GPU Thread]</text>
+    
+    <text x="70" y="510" font-family="Arial, sans-serif" font-size="10" fill="#aaa">8 Sequential Phases (mip levels):</text>
+    
+    <!-- Mip levels -->
+    <rect x="70" y="520" width="90" height="65" rx="4" fill="#3a3a2a" stroke="#5a5a4a" stroke-width="1"/>
+    <text x="115" y="540" font-family="Arial, sans-serif" font-size="9" fill="white" text-anchor="middle">Mip 0</text>
+    <text x="115" y="555" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">512x512</text>
+    <text x="115" y="570" font-family="Arial, sans-serif" font-size="8" fill="#88f" text-anchor="middle">Barrier</text>
+    
+    <rect x="170" y="520" width="90" height="65" rx="4" fill="#3a3a2a" stroke="#5a5a4a" stroke-width="1"/>
+    <text x="215" y="540" font-family="Arial, sans-serif" font-size="9" fill="white" text-anchor="middle">Mip 1</text>
+    <text x="215" y="555" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">256x256</text>
+    <text x="215" y="570" font-family="Arial, sans-serif" font-size="8" fill="#88f" text-anchor="middle">Barrier</text>
+    
+    <text x="310" y="552" font-family="Arial, sans-serif" font-size="16" fill="#666" text-anchor="middle">...</text>
+    
+    <rect x="360" y="520" width="90" height="65" rx="4" fill="#3a3a2a" stroke="#5a5a4a" stroke-width="1"/>
+    <text x="405" y="540" font-family="Arial, sans-serif" font-size="9" fill="white" text-anchor="middle">Mip 7</text>
+    <text x="405" y="555" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">4x4</text>
+    <text x="405" y="570" font-family="Arial, sans-serif" font-size="8" fill="#88f" text-anchor="middle">Barrier</text>
+    
+    <!-- Diffuse params -->
+    <rect x="470" y="520" width="210" height="65" rx="4" fill="#2a3a3a" stroke="#4a5a4a" stroke-width="1"/>
+    <text x="575" y="540" font-family="Arial, sans-serif" font-size="9" fill="white" text-anchor="middle">Diffuse Parameters</text>
+    <text x="575" y="555" font-family="monospace" font-size="8" fill="#8f8" text-anchor="middle">roughness = 1.0</text>
+    <text x="575" y="570" font-family="monospace" font-size="8" fill="#8f8" text-anchor="middle">numsamples = 4096</text>
+  </g>
+  
+  <!-- Capture Phase -->
+  <g id="capture-phase">
+    <rect x="720" y="460" width="630" height="140" rx="6" fill="#5a3a4a" stroke="#7a5a6a" stroke-width="1"/>
+    <rect x="720" y="460" width="200" height="30" rx="4" fill="#6a4a5a"/>
+    <text x="820" y="480" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">Capture Phase [GPU Thread]</text>
+    
+    <!-- Parallel captures -->
+    <rect x="740" y="505" width="280" height="80" rx="4" fill="#3a2a3a" stroke="#5a4a5a" stroke-width="1"/>
+    <text x="880" y="525" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">Capture Specular</text>
+    <text x="880" y="543" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">• 10 render targets</text>
+    <text x="880" y="558" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">• captureAsFormat(RGBA8)</text>
+    <text x="880" y="573" font-family="Arial, sans-serif" font-size="9" fill="#f88" text-anchor="middle">Async GPU → CPU transfer</text>
+    
+    <rect x="1040" y="505" width="290" height="80" rx="4" fill="#3a2a3a" stroke="#5a4a5a" stroke-width="1"/>
+    <text x="1185" y="525" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">Capture Diffuse</text>
+    <text x="1185" y="543" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">• 8 render targets</text>
+    <text x="1185" y="558" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">• captureAsFormat(RGBA8)</text>
+    <text x="1185" y="573" font-family="Arial, sans-serif" font-size="9" fill="#f88" text-anchor="middle">Async GPU → CPU transfer</text>
+  </g>
+  
+  <!-- Package Phase -->
+  <g id="package-phase">
+    <rect x="50" y="620" width="1300" height="140" rx="6" fill="#5a4a3a" stroke="#7a6a5a" stroke-width="1"/>
+    <rect x="50" y="620" width="250" height="30" rx="4" fill="#6a5a4a"/>
+    <text x="175" y="640" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">Package Phase [Primary Thread]</text>
+    
+    <!-- Wait for captures -->
+    <rect x="70" y="665" width="250" height="80" rx="4" fill="#3a3a2a" stroke="#5a5a4a" stroke-width="1"/>
+    <text x="195" y="685" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">Wait for Captures</text>
+    <text x="195" y="703" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">for each future:</text>
+    <text x="195" y="718" font-family="Arial, sans-serif" font-size="9" fill="#88f" text-anchor="middle">future->wait(nullptr)</text>
+    <text x="195" y="733" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">Block until GPU complete</text>
+    
+    <!-- Create datablocks -->
+    <rect x="340" y="665" width="250" height="80" rx="4" fill="#3a3a2a" stroke="#5a5a4a" stroke-width="1"/>
+    <text x="465" y="685" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">Create Datablocks</text>
+    <text x="465" y="703" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">• Package specular data</text>
+    <text x="465" y="718" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">• Package diffuse data</text>
+    <text x="465" y="733" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">• Compress with LZ4</text>
+    
+    <!-- Generate XIR -->
+    <rect x="610" y="665" width="250" height="80" rx="4" fill="#3a3a2a" stroke="#5a5a4a" stroke-width="1"/>
+    <text x="735" y="685" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">Generate XIR</text>
+    <text x="735" y="703" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">XIRWriter::writeIrradianceMaps()</text>
+    <text x="735" y="718" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">• Combine spec + diff</text>
+    <text x="735" y="733" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">Store in VarMap</text>
+    
+    <!-- Final output -->
+    <rect x="880" y="665" width="450" height="80" rx="4" fill="#4a4a2a" stroke="#6a6a4a" stroke-width="1"/>
+    <text x="1105" y="685" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">Output to VarMap</text>
+    <text x="1105" y="703" font-family="monospace" font-size="9" fill="#8f8" text-anchor="middle">vmap.set("specular_datablock", spec_data)</text>
+    <text x="1105" y="718" font-family="monospace" font-size="9" fill="#8f8" text-anchor="middle">vmap.set("diffuse_datablock", diff_data)</text>
+    <text x="1105" y="733" font-family="monospace" font-size="9" fill="#8f8" text-anchor="middle">future->setResult(xir_data)</text>
+  </g>
+  
+  <!-- Summary box -->
+  <g id="summary">
+    <rect x="50" y="780" width="1300" height="80" rx="6" fill="#3a3a3a" stroke="#5a5a5a" stroke-width="1"/>
+    <text x="700" y="800" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">Key Patterns Demonstrated</text>
+    <text x="350" y="820" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• GPU Context Execution for rendering</text>
+    <text x="350" y="838" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• Frame barriers for synchronization</text>
+    <text x="700" y="820" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• Lambda captures for shared state</text>
+    <text x="700" y="838" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• Thread transition: GPU → Primary</text>
+    <text x="1050" y="820" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• Async GPU capture operations</text>
+    <text x="1050" y="838" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• VarMap for cross-phase data</text>
+  </g>
+  
+  <!-- Arrows showing flow -->
+  <path d="M 160 220 L 160 240" stroke="#8f8" stroke-width="2" marker-end="url(#arrowhead-green)"/>
+  <path d="M 160 440 L 160 460" stroke="#8f8" stroke-width="2" marker-end="url(#arrowhead-green)"/>
+  <path d="M 375 600 L 820 600 L 820 620" stroke="#8f8" stroke-width="2" marker-end="url(#arrowhead-green)"/>
+  <path d="M 1035 600 L 1035 620" stroke="#8f8" stroke-width="2" marker-end="url(#arrowhead-green)"/>
+  
+  <!-- Arrow markers -->
+  <defs>
+    <marker id="arrowhead-green" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#8f8"/>
+    </marker>
+  </defs>
+</svg>

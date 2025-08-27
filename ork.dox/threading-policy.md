@@ -4,6 +4,13 @@ Orkid has a few threading policies which may or may not be relevant depending on
 
 ---
 
+### TaskGraph
+
+For complex high level workflows requiring phase-based coordination across different execution contexts, Orkid provides the **TaskGraph** system. TaskGraph builds on top of OPQ to provide structured, deterministic execution of multi-phase operations with automatic synchronization between phases. This is particularly useful for GPU-intensive workflows like asset processing pipelines where different phases need to execute on specific threads (GPU context, main thread, or worker threads) in a defined sequence. See the [TaskGraph Technical Design Document](taskgraph_tdd.md) for detailed information about this higher-level coordination system.
+
+
+---
+
 ### CORE Only Apps (and general)
 
 For long lived steady state uses, you should prefer ork::Thread over std::thread when allowed. ork::Thread is implemented on top of std::thread but adds some useful features like thread naming (for debuggers), etc..
@@ -167,7 +174,6 @@ int main(int argc, char** argv, char** envp){
 }
 ```
 
----
 
 ### LEV2 and ECS Apps
 
