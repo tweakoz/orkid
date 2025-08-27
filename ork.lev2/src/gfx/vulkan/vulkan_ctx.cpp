@@ -23,6 +23,7 @@ namespace ork::lev2 {
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 static logchannel_ptr_t logchan_vkctx = logger()->configureChannel("VKCTX", fvec3(1,1,.9),false);
+static logchannel_ptr_t logchan_vkcap = logger()->configureChannel("VKCAPTURE", fvec3(1,1,.9),true);
 
 void VkContext::describeX(class_t* clazz) {
 
@@ -559,7 +560,7 @@ void VkContext::_doPreBeginFrame() {
   // Check if command buffer pool is healthy
   ////////////////////////
 
-  // logchan_vkctx->log("  Allocating command buffer from pool (available: %zu)\n", _pri_cmdbuf_pool.available());
+  // logchan_vkctx->log("  Allocating command buffer from pool (available: %zu)", _pri_cmdbuf_pool.available());
   _defaultCommandBuffer = _pri_cmdbuf_pool.allocate();
 
   ////////////////////////
@@ -659,7 +660,7 @@ void VkContext::_doEndFrame() {
 
   ////////////////////////
 
-  // logchan_vkctx->log( "num renderpasses<%zu>\n", _renderpasses.size() );
+  // logchan_vkctx->log( "num renderpasses<%zu>", _renderpasses.size() );
 
   ///////////////////////////////////////////////////////
   // submit primary command buffer for this frame
@@ -931,7 +932,7 @@ void VkContext::initializeLoaderContext() {
     if (this->mTargetDrawableSizeDirty) {
       int w = mainSurfaceWidth();
       int h = mainSurfaceHeight();
-      // logchan_vkctx->log("resizing defaultRTG<%p>\n", _defaultRTG);
+      // logchan_vkctx->log("resizing defaultRTG<%p>", _defaultRTG);
       _defaultRTG->Resize(w, h);
       mTargetDrawableSizeDirty = false;
     }
@@ -1115,10 +1116,10 @@ void VkContext::_processPendingCaptures() {
     auto capture_data = capture_async->_impl.getShared<VulkanCaptureData>();
     if (!capture_data) {
       capture_async->_failed = true;
-      printf("Processing capture: failed...\n");
+      logchan_vkcap->log("Processing capture: failed...");
       continue;
     }
-    printf("Processing capture: w=%d h=%d format=%d\n", capture_data->width, capture_data->height, int(capture_data->format));
+    logchan_vkcap->log("Process Pending capture: w=%d h=%d format=%d", capture_data->width, capture_data->height, int(capture_data->format));
     // Get the staging buffer and conversion metadata from the capture buffer
     struct VulkanCaptureStaging {
       vkbuffer_ptr_t staging_buffer;
@@ -1142,11 +1143,13 @@ void VkContext::_processPendingCaptures() {
     }
     else {
       capture_async->_failed = true;
+      logchan_vkcap->log("Processing capture: failed (no valid staging buffer)...");
       continue;
     }
     
     if (!staging_buffer) {
       capture_async->_failed = true;
+      logchan_vkcap->log("Processing capture: failed (null staging buffer)...");
       continue;
     }
   
@@ -1157,26 +1160,32 @@ void VkContext::_processPendingCaptures() {
       case EBufferFormat::RGBA8:
         bufsize = capture_data->width * capture_data->height * 4;
         // If converting from float, staging buffer is larger
+        logchan_vkcap->log("reading as RGBA8 (needs_float_conversion:%d) ", int(needs_float_conversion));
         staging_bufsize = needs_float_conversion ? 
                          (capture_data->width * capture_data->height * 16) : bufsize;
         break;
       case EBufferFormat::RGB8:
         bufsize = capture_data->width * capture_data->height * 3;
+        logchan_vkcap->log("reading as RGB8");
         staging_bufsize = bufsize;
         break;
       case EBufferFormat::RGBA16F:
+        logchan_vkcap->log("reading as RGBA16F");
         bufsize = capture_data->width * capture_data->height * 8;
         staging_bufsize = bufsize;
         break;
       case EBufferFormat::RGBA32F:
+        logchan_vkcap->log("reading as RGBA32F");
         bufsize = capture_data->width * capture_data->height * 16;
         staging_bufsize = bufsize;
         break;
       case EBufferFormat::R32F:
+        logchan_vkcap->log("reading as R32F");
         bufsize = capture_data->width * capture_data->height * 4;
         staging_bufsize = bufsize;
         break;
       case EBufferFormat::RG32F:
+        logchan_vkcap->log("reading as RG32F");
         bufsize = capture_data->width * capture_data->height * 8;
         staging_bufsize = bufsize;
         break;
@@ -1188,6 +1197,7 @@ void VkContext::_processPendingCaptures() {
     // Copy data from staging buffer
     if (capture_data->capture_buffer) {
       if (needs_float_conversion) {
+        logchan_vkcap->log("converting float to ");
         // Read float data and convert to RGBA8
         std::vector<float> float_buffer(capture_data->width * capture_data->height * 4);
         staging_buffer->copyToHost(float_buffer.data(), staging_bufsize);
@@ -1201,6 +1211,7 @@ void VkContext::_processPendingCaptures() {
           out_data[i] = uint8_t(val * 255.0f);
         }
       } else {
+        logchan_vkcap->log("copying raw data...");
         staging_buffer->copyToHost(capture_data->capture_buffer->_data, bufsize);
       }
     } else {
@@ -1209,6 +1220,7 @@ void VkContext::_processPendingCaptures() {
       temp_buffer->setFormatAndSize(capture_data->format, capture_data->width, capture_data->height);
       
       if (needs_float_conversion) {
+        logchan_vkcap->log("xxx...");
         // Read float data and convert to RGBA8
         std::vector<float> float_buffer(capture_data->width * capture_data->height * 4);
         staging_buffer->copyToHost(float_buffer.data(), staging_bufsize);
@@ -1222,6 +1234,7 @@ void VkContext::_processPendingCaptures() {
           out_data[i] = uint8_t(val * 255.0f);
         }
       } else {
+        logchan_vkcap->log("yyy...");
         staging_buffer->copyToHost(temp_buffer->_data, bufsize);
       }
       
@@ -1231,11 +1244,12 @@ void VkContext::_processPendingCaptures() {
     // Handle different output destinations
     if (capture_data->capture_texture) {
       // TODO: Upload to texture
-      logchan_vkctx->log("Capture to texture not yet implemented");
+      logchan_vkcap->log("Capture to texture not yet implemented");
     }
     
     // Write to file if path is specified
     if (capture_data->path.exists()) {
+        logchan_vkcap->log("writing to <%s>...", capture_data->path.c_str());
       #if defined(USE_OIIO)
       auto out = OIIO::ImageOutput::create(capture_data->path.c_str());
       if (out) {
@@ -1257,7 +1271,7 @@ void VkContext::_processPendingCaptures() {
       out->write_image(OIIO::TypeDesc::UINT8, flipped.data());
       out->close();
       
-        logchan_vkctx->log("Capture saved to %s", capture_data->path.c_str());
+        logchan_vkcap->log("Capture saved to %s", capture_data->path.c_str());
       }
       #endif
     }
@@ -1272,10 +1286,12 @@ void VkContext::_processPendingCaptures() {
     
     // Call completion callback if set
     if (capture_async->_on_capture_complete) {
+        logchan_vkcap->log("invoking completion callback");
       capture_async->_on_capture_complete();
     }
     
     // Mark capture as complete
+        logchan_vkcap->log("marked complete...");
     capture_async->_completed = true;
   }
 }
