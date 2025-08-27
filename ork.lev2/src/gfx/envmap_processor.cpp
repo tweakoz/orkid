@@ -513,7 +513,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
   
   auto post_capture_barrier = TaskGraph::phase(graph, "post_capture_frame_barrier", gpu_executor);
   post_capture_barrier->task("submit_capture_frame", [=](taskgraph_ptr_t g) {
-    logchan_gen->log("Frame barrier: submitting capture commands to GPU");
+    logchan_gen->log("Frame barrier: capture GPU commands submitted");
   });
 
   ///////////////////////////////////////
