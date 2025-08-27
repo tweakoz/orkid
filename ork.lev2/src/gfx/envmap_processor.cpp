@@ -121,7 +121,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
   // Get actual texture dimensions
   int tex_width  = rawenvmap->_width;
   int tex_height = rawenvmap->_height;
-
+  std::string tex_name = rawenvmap->_debugName;
   ///////////////////////////////////////
   // Create executors
   ///////////////////////////////////////
@@ -142,7 +142,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
   // Phase 1: Setup and initialization
   ///////////////////////////////////////
 
-  auto setup_phase = TaskGraph::phase(graph, "setup", gpu_executor);
+  auto setup_phase = TaskGraph::phase(graph, tex_name+".setup", gpu_executor);
 
   // Capture all the needed data for filtering
   // Using lambda captures instead of varmap for simplicity
@@ -159,7 +159,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
   setup_phase->task("initialize_materials", [=](taskgraph_ptr_t g) {
     logchan_gen->log("EnvMapProcessor: Setup phase starting");
     logchan_gen->log("EnvMapProcessor: Using context %p for material initialization", gloadercontext.get());
-
+        
     // Initialize specular filtering material
     specular_material->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
     specular_material->_rasterstate->setDepthTest(EDepthTest::OFF);
@@ -177,7 +177,8 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
     for (int i = 0; i < num_roughness; i++) {
       auto rtgroup         = std::make_shared<RtGroup>(gloadercontext.get(), tex_width, tex_height, MsaaSamples::MSAA_1X);
       auto rtbuffer        = rtgroup->createRenderTarget(EBufferFormat::RGBA32F);
-      rtbuffer->_debugName = FormatString("envmap-specular-rough%d", i);
+      rtbuffer->_debugName = FormatString("%s-spc-rtb%d", tex_name.c_str(), i);
+      rtgroup->_name       = FormatString("%s-spc-rtg%d", tex_name.c_str(), i);
       specular_rtgroups->push_back(rtgroup);
       specular_rtbuffers->push_back(rtbuffer);
       //logchan_gen->log("Setup: Created specular rtgroup<%p> rtbuffer<%p> for roughness %d", 
@@ -191,7 +192,8 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
     while (diff_w >= 4 && diff_h >= 4) {  // Stop at 4x4, don't go smaller
       auto rtgroup         = std::make_shared<RtGroup>(gloadercontext.get(), diff_w, diff_h, MsaaSamples::MSAA_1X);
       auto rtbuffer        = rtgroup->createRenderTarget(EBufferFormat::RGBA32F);
-      rtbuffer->_debugName = FormatString("envmap-diffuse-mip%d", mip);
+      rtbuffer->_debugName = FormatString("%s-dif-rtb-mip%d", tex_name.c_str(), mip);
+      rtgroup->_name       = FormatString("%s-dif-rtg-mip%d", tex_name.c_str(), mip);
       diffuse_rtgroups->push_back(rtgroup);
       diffuse_rtbuffers->push_back(rtbuffer);
       //logchan_gen->log("Setup: Created diffuse rtgroup<%p> rtbuffer<%p> for mip %d", 
@@ -212,7 +214,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
   // Frame barrier after setup to ensure rtgroups are initialized
   ///////////////////////////////////////
   
-  ContextExecutor::emptyFrame(graph, "setup-barrier", gpu_executor);
+  ContextExecutor::emptyFrame(graph, tex_name+".setup-barrier", gpu_executor);
 
   ///////////////////////////////////////
   // Phase 2: Specular filtering - one phase per roughness level
@@ -224,7 +226,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
 
   for (int rough_idx = 0; rough_idx < num_roughness_levels; rough_idx++) {
     float roughness        = powf(float(rough_idx) / 9.0f, roughness_power);
-    std::string phase_name = "specular_roughness_" + std::to_string(rough_idx);
+    std::string phase_name = tex_name+".specular_roughness_" + std::to_string(rough_idx);
 
     auto specular_phase = TaskGraph::phase(graph, phase_name, gpu_executor);
 
@@ -328,7 +330,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
   const int num_mip_levels = 8;
 
   for (int mip = 0; mip < num_mip_levels; mip++) {
-    std::string phase_name = "diffuse_mip_" + std::to_string(mip);
+    std::string phase_name = tex_name+".diffuse_mip_" + std::to_string(mip);
 
     auto diffuse_phase = TaskGraph::phase(graph, phase_name, gpu_executor);
 
@@ -427,20 +429,20 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
     
     // Note: we don't need the nested for loops for tiles anymore
     
-    ContextExecutor::emptyFrame(graph, "diffuse-barrier", gpu_executor);
+    ContextExecutor::emptyFrame(graph, tex_name+".diffuse-barrier", gpu_executor);
   }
 
   ///////////////////////////////////////
   // Final frame barrier before capture to ensure all filtering is complete
   ///////////////////////////////////////
   
-  ContextExecutor::emptyFrame(graph, "final-frame-barrier", gpu_executor);
+  ContextExecutor::emptyFrame(graph, tex_name+".final-frame-barrier", gpu_executor);
 
   ///////////////////////////////////////
   // Phase 4: Capture results asynchronously
   ///////////////////////////////////////
 
-  auto cap_phase = TaskGraph::phase(graph, "capture_results", gpu_executor);
+  auto cap_phase = TaskGraph::phase(graph, tex_name+".capture_results", gpu_executor);
 
   // Storage for captured data
   auto spec_futures = std::make_shared<std::vector<captureasync_ptr_t>>();
@@ -472,7 +474,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
     }
   });
 
-  cap_phase->task("capture_diffuse", [=](taskgraph_ptr_t g) {
+  cap_phase->task(tex_name+".capture_diffuse", [=](taskgraph_ptr_t g) {
     auto fbi = gloadercontext.get()->FBI();
 
     // Capture all diffuse filtering results
@@ -499,13 +501,13 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
   // Frame barrier after capture to ensure GPU commands are submitted
   ///////////////////////////////////////
   
-  ContextExecutor::emptyFrame(graph, "capture-submission-barrier", gpu_executor);
+  ContextExecutor::emptyFrame(graph, tex_name+".capture-submission-barrier", gpu_executor);
 
   ///////////////////////////////////////
   // Phase 5: Wait for captures and package datablocks
   ///////////////////////////////////////
 
-  auto package_phase = TaskGraph::phase(graph, "package_datablocks", primary_executor);
+  auto package_phase = TaskGraph::phase(graph, tex_name+".package_datablocks", primary_executor);
 
   package_phase->task("package_results", [=](taskgraph_ptr_t g) {
 
@@ -621,6 +623,9 @@ xirprocessfuture_ptr_t EnvMapProcessor::processToXIRDataBlockAsync(const file::P
   }
 
   auto rawenvmap = texasset->GetTexture();
+  
+  // Extract texture name for debug purposes
+  std::string texture_name = input_path.getName();
 
   // Determine format from extension
   auto ext_str = input_path.getExtension();
@@ -632,8 +637,11 @@ xirprocessfuture_ptr_t EnvMapProcessor::processToXIRDataBlockAsync(const file::P
   // Create the TaskGraph for filtering
   auto taskgraph = createFilteringTaskGraph(rawenvmap, is_equirectangular);
 
-  // Store the future in the graph's varmap so tasks can access it
-  taskgraph->_varmap.atomicOp([future](varmap::VarMap& vmap) { vmap.set<xirprocessfuture_ptr_t>("xir_future", future); });
+  // Store the future and texture name in the graph's varmap so tasks can access it
+  taskgraph->_varmap.atomicOp([future, texture_name](varmap::VarMap& vmap) { 
+    vmap.set<xirprocessfuture_ptr_t>("xir_future", future);
+    vmap.set<std::string>("texture_name", texture_name);
+  });
 
   // Execute on a worker thread with ContextExecutor
   opq::concurrentQueue()->enqueue([=]() {
