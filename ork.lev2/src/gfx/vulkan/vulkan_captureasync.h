@@ -29,13 +29,7 @@ struct VkCaptureAsyncImpl {
   VkCaptureAsyncImpl() = default;  // Allow default construction for metadata-only use
   VkCaptureAsyncImpl(vkcontext_rawptr_t ctx);
   ~VkCaptureAsyncImpl();
-  
-  // Check if GPU has finished writing to staging buffer (non-blocking)
-  bool isDataReady() const;
-  
-  // Wait for GPU to finish (blocking, waits forever)
-  void waitForData();
-
+    
 };
 
 using vkcaptureasyncimpl_ptr_t = std::shared_ptr<VkCaptureAsyncImpl>;

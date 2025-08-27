@@ -528,21 +528,21 @@ bool GlFrameBufferInterface::_captureAsFormatImmediate(const RtBuffer* rtb, Capt
     case EBufferFormat::NV12: {
       size_t rgbasize = w * h * 4;
       // Use temp_image for temporary RGBA storage
-      if (!capbuf->_temp_image) {
-        capbuf->_temp_image = std::make_shared<Image>();
+      if (!capbuf->_raw_image) {
+        capbuf->_raw_image = std::make_shared<Image>();
       }
-      capbuf->_temp_image->_width = w;
-      capbuf->_temp_image->_height = h;
-      capbuf->_temp_image->_format = EBufferFormat::RGBA8;
-      if (!capbuf->_temp_image->_data) {
-        capbuf->_temp_image->_data = std::make_shared<DataBlock>();
+      capbuf->_raw_image->_width = w;
+      capbuf->_raw_image->_height = h;
+      capbuf->_raw_image->_format = EBufferFormat::RGBA8;
+      if (!capbuf->_raw_image->_data) {
+        capbuf->_raw_image->_data = std::make_shared<DataBlock>();
       }
-      capbuf->_temp_image->_data->reserve(rgbasize);
-      if (capbuf->_temp_image->_data->length() < rgbasize) {
-        capbuf->_temp_image->_data->addData(nullptr, rgbasize - capbuf->_temp_image->_data->length());
+      capbuf->_raw_image->_data->reserve(rgbasize);
+      if (capbuf->_raw_image->_data->length() < rgbasize) {
+        capbuf->_raw_image->_data->addData(nullptr, rgbasize - capbuf->_raw_image->_data->length());
       }
       
-      glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, (void*)capbuf->_temp_image->_data->data());
+      glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, (void*)capbuf->_raw_image->_data->data());
       GL_ERRORCHECK();
       
       // Setup main image for NV12
@@ -562,7 +562,7 @@ bool GlFrameBufferInterface::_captureAsFormatImmediate(const RtBuffer* rtb, Capt
       
       // todo convert RGBA8 to NV12 (on GPU)
       auto outptr      = (uint8_t*)capbuf->_image->_data->data();
-      auto inptr       = (uint8_t*)capbuf->_temp_image->_data->data();
+      auto inptr       = (uint8_t*)capbuf->_raw_image->_data->data();
       size_t numpixels = w * h;
       fvec3 avgcol;
       for (size_t yin = 0; yin < h; yin++) {
@@ -646,21 +646,21 @@ bool GlFrameBufferInterface::_captureAsFormatImmediate(const RtBuffer* rtb, Capt
       size_t rgb8size = w * h * 3;
       
       // Setup temp image for RGBA8
-      if (!capbuf->_temp_image) {
-        capbuf->_temp_image = std::make_shared<Image>();
+      if (!capbuf->_raw_image) {
+        capbuf->_raw_image = std::make_shared<Image>();
       }
-      capbuf->_temp_image->_width = w;
-      capbuf->_temp_image->_height = h;
-      capbuf->_temp_image->_format = EBufferFormat::RGBA8;
-      if (!capbuf->_temp_image->_data) {
-        capbuf->_temp_image->_data = std::make_shared<DataBlock>();
+      capbuf->_raw_image->_width = w;
+      capbuf->_raw_image->_height = h;
+      capbuf->_raw_image->_format = EBufferFormat::RGBA8;
+      if (!capbuf->_raw_image->_data) {
+        capbuf->_raw_image->_data = std::make_shared<DataBlock>();
       }
-      capbuf->_temp_image->_data->reserve(rgbasize);
-      if (capbuf->_temp_image->_data->length() < rgbasize) {
-        capbuf->_temp_image->_data->addData(nullptr, rgbasize - capbuf->_temp_image->_data->length());
+      capbuf->_raw_image->_data->reserve(rgbasize);
+      if (capbuf->_raw_image->_data->length() < rgbasize) {
+        capbuf->_raw_image->_data->addData(nullptr, rgbasize - capbuf->_raw_image->_data->length());
       }
       
-      glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, (void*)capbuf->_temp_image->_data->data());
+      glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, (void*)capbuf->_raw_image->_data->data());
       
       //////////////////////////////////////
       // Setup main image for RGB8 and discard alpha
@@ -676,7 +676,7 @@ bool GlFrameBufferInterface::_captureAsFormatImmediate(const RtBuffer* rtb, Capt
         capbuf->_image->_data->addData(nullptr, rgb8size - capbuf->_image->_data->length());
       }
       
-      auto SRC = (const uint32_t*) capbuf->_temp_image->_data->data();
+      auto SRC = (const uint32_t*) capbuf->_raw_image->_data->data();
       auto DST = (uint8_t*) capbuf->_image->_data->data();
       for( size_t ipix=0; ipix<(w*h); ipix++ ){
         int idi = ipix*3;

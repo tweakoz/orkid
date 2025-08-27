@@ -459,6 +459,8 @@ void pyinit_gfx(py::module& module_lev2) {
         }
         return rval;
       })
+      .def_property_readonly("image", [](CaptureBuffer& capbuf) -> image_ptr_t { return capbuf._image; })
+      .def_property_readonly("raw_image", [](CaptureBuffer& capbuf) -> image_ptr_t { return capbuf._raw_image; })
       .def_property_readonly("length", [](CaptureBuffer& capbuf) -> int { return int(capbuf.length()); })
       .def_property_readonly("width", [](CaptureBuffer& capbuf) -> int { return int(capbuf.width()); })
       .def_property_readonly("height", [](CaptureBuffer& capbuf) -> int { return int(capbuf.height()); })

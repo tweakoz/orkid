@@ -475,7 +475,7 @@ CaptureBuffer::CaptureBuffer()
     , miH(0)
     , _buffersize(0) {
   _image = std::make_shared<Image>();
-  _temp_image = std::make_shared<Image>();
+  _raw_image = std::make_shared<Image>();
 }
 CaptureBuffer::~CaptureBuffer() {
   // Image will clean up its own data

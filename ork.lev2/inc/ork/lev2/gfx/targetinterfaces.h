@@ -90,7 +90,7 @@ struct CaptureBuffer {
   int miW;
   int miH;
   image_ptr_t _image;
-  image_ptr_t _temp_image; // temporary working image for conversions
+  image_ptr_t _raw_image; // temporary working image for conversions
   size_t _buffersize;
   int _captureX = 0;
   int _captureY = 0;
