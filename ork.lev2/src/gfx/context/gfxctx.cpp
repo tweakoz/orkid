@@ -418,7 +418,7 @@ void ContextExecutor::emptyFrame( taskgraph_ptr_t self,                         
   auto new_phase = std::make_shared<TaskPhase>(self,name,executor,on_completion);
   self->_phases.push_back(new_phase);
   new_phase->task("fence", [=](taskgraph_ptr_t g) {
-    ::usleep(1<<20);
+    //::usleep(1<<20);
     // No-op task to act as a synchronization point
   });  
 }

@@ -11,6 +11,8 @@ struct VkFxShaderUniformSetItem {
   std::string _identifier;
   size_t _offset = 0;
   std::shared_ptr<FxShaderParam> _orkparam;
+  VkShaderStageFlags _shader_stage = 0;  // Which shader stage this parameter belongs to
+  size_t _range_index = 0;                // Which push constant range to use
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VkFxShaderUniformSetSampler {

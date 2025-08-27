@@ -429,31 +429,42 @@ void VkPipelineObject::applyPendingPushConstants(VkCommandBuffer cmdbuf) { //
         auto parm_name   = item._ork_param->_name;
         auto parm_type   = item._vk_param->_datatype;
         size_t parm_size = item._value.size();
-        if (1) {
+        if (0) {
+          // Find the correct range for this parameter
+          size_t range_idx = item._vk_param->_range_index;
+          int range_offset = (range_idx < ranges.size()) ? ranges[range_idx].offset : -1;
           printf(
-              "parm<%s:%s:%zu> range_offset<%d> dst_offset<%zu> ", //
+              "parm<%s:%s:%zu> range_idx<%zu> range_offset<%d> dst_offset<%zu> ", //
               parm_type.c_str(),
               parm_name.c_str(),
               parm_size,
-              int(ranges[0].offset),
+              range_idx,
+              range_offset,
               dst_offset);
           printf("\n");
         }
-        auto dest_base = data + ranges[0].offset;
+        // dst_offset is already the absolute offset in the combined push constant block
+        // We don't need to add range offset - that's for the shader's view, not CPU layout
         OrkAssert((dst_offset + parm_size) <= blocksize);
-        memcpy(dest_base + dst_offset, item._value.data(), parm_size);
+        memcpy(data + dst_offset, item._value.data(), parm_size);
       }
     }
   }
-  // hexdumpbytes(data,blocksize);
-  vkCmdPushConstants(
-      cmdbuf,
-      _pipelineLayout,
-      VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-      0,         // dest-offset
-      blocksize, // size
-      data       // src-data
-  );
+  //hexdumpbytes(data,blocksize);
+  
+  // Push each range separately so shaders see their data at offset 0
+  for (const auto& range : ranges) {
+    // Each range gets pushed to offset 0 for its shader stage
+    // The shader sees its uniform_set starting at offset 0
+    vkCmdPushConstants(
+        cmdbuf,
+        _pipelineLayout,
+        range.stageFlags,    // Only the stages that use this range
+        0,                    // Shader sees it at offset 0
+        range.size,           // Size of this range
+        data + range.offset   // Source data at the range's offset in our buffer
+    );
+  }
   _vk_program->_pending_params.clear();
 }
 
