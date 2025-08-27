@@ -31,6 +31,52 @@ void Image::init(size_t w, size_t h, size_t numc, int bpc) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void Image::initWithFormat(size_t w, size_t h, EBufferFormat fmt) {
+  _width = w;
+  _height = h;
+  _format = fmt;
+  
+  // Determine components and bytes per channel from format
+  switch(fmt) {
+    case EBufferFormat::RGB8:
+      _numcomponents = 3;
+      _bytesPerChannel = 1;
+      break;
+    case EBufferFormat::RGBA8:
+      _numcomponents = 4;
+      _bytesPerChannel = 1;
+      break;
+    case EBufferFormat::RGBA16F:
+      _numcomponents = 4;
+      _bytesPerChannel = 2;
+      break;
+    case EBufferFormat::RGBA32F:
+      _numcomponents = 4;
+      _bytesPerChannel = 4;
+      break;
+    case EBufferFormat::R32F:
+      _numcomponents = 1;
+      _bytesPerChannel = 4;
+      break;
+    case EBufferFormat::RG32F:
+      _numcomponents = 2;
+      _bytesPerChannel = 4;
+      break;
+    default:
+      OrkAssert(false); // Unsupported format
+      break;
+  }
+  
+  // Ensure data block exists and resize it
+  if (!_data) {
+    _data = std::make_shared<DataBlock>();
+  }
+  size_t bufsize = _width * _height * _numcomponents * _bytesPerChannel;
+  _data->resize(bufsize); // no-ops if same size
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 Image Image::clone() const {
   Image rval;
   rval._format          = _format;
@@ -72,25 +118,14 @@ const uint16_t* Image::pixel16(int x, int y) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Image::initRGB8WithColor(size_t w, size_t h, fvec3 color, EBufferFormat fmt) {
+void Image::initRGB8WithColor(size_t w, size_t h, fvec3 color) {
   uint8_t r        = uint8_t(color.x * 255.0f);
   uint8_t g        = uint8_t(color.y * 255.0f);
   uint8_t b        = uint8_t(color.z * 255.0f);
-  _format          = fmt; // EBufferFormat::RGB8;
+  _format          = EBufferFormat::RGB8;
   _bytesPerChannel = 1;
   init(w, h, 3, 1);
   auto outptr = (uint8_t*)_data->data();
-  using enum EBufferFormat;
-  switch (fmt) {
-    case RGB8:
-      break;
-    case BGR8:
-      std::swap(r, b);
-      break;
-    default:
-      OrkAssert(false);
-      break;
-  }
   for (int y = 0; y < h; y++) {
     for (int x = 0; x < w; x++) {
       int pixelindex       = y * w + x;
@@ -104,26 +139,15 @@ void Image::initRGB8WithColor(size_t w, size_t h, fvec3 color, EBufferFormat fmt
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Image::initRGBA8WithColor(size_t w, size_t h, fvec4 color, EBufferFormat fmt) {
+void Image::initRGBA8WithColor(size_t w, size_t h, fvec4 color) {
   uint8_t r        = uint8_t(color.x * 255.0f);
   uint8_t g        = uint8_t(color.y * 255.0f);
   uint8_t b        = uint8_t(color.z * 255.0f);
   uint8_t a        = uint8_t(color.w * 255.0f);
-  _format          = fmt;
+  _format          = EBufferFormat::RGBA8;
   _bytesPerChannel = 1;
   init(w, h, 4, 1);
   auto outptr = (uint8_t*)_data->data();
-  using enum EBufferFormat;
-  switch (fmt) {
-    case RGBA8:
-      break;
-    case BGRA8:
-      std::swap(r, b);
-      break;
-    default:
-      OrkAssert(false);
-      break;
-  }
   for (int y = 0; y < h; y++) {
     for (int x = 0; x < w; x++) {
       int pixelindex       = y * w + x;

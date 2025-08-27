@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include "headers/vulkan_ctx.h"
+#include "vulkan_captureasync.h"
 #include <ork/util/logger.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -375,10 +376,8 @@ captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(const RtBuffer* inpbu
   constexpr float inv256 = 1.0f / 255.0f;
   switch (destfmt) {
     case EBufferFormat::NV12: {
-      size_t rgbasize = w * h * 4;
-      if (capbuf->_tempbuffer.size() != rgbasize) {
-        capbuf->_tempbuffer.resize(rgbasize);
-      }
+      // Set up image with format and preallocated data
+      capbuf->_image->initWithFormat(w, h, destfmt);
       break;
     }
     case EBufferFormat::RGBA8: {
@@ -389,11 +388,9 @@ captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(const RtBuffer* inpbu
       OrkAssert(is_float_format || is_8bit_format);
       
       size_t staging_bufsize = is_float_format ? (w * h * 16) : (w * h * 4); // 16 bytes per pixel for RGBA32F
-      size_t final_bufsize = w * h * 4; // Always 4 bytes per pixel for RGBA8 output
       
-      if (capbuf->_tempbuffer.size() != final_bufsize) {
-        capbuf->_tempbuffer.resize(final_bufsize);
-      }
+      // Set up image with format and preallocated data
+      capbuf->_image->initWithFormat(w, h, destfmt);
       
       // Create staging buffer for GPU to CPU transfer
       auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, staging_bufsize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, "capture_staging");
@@ -411,28 +408,22 @@ captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(const RtBuffer* inpbu
       rtbi->_transitionToRenderTarget(cb);
       
       // Store staging buffer with metadata about conversion requirements
-      struct VulkanCaptureStaging {
-        vkbuffer_ptr_t staging_buffer;
-        bool needs_float_to_uint8_conversion = false;
-        VkFormat source_format = VK_FORMAT_UNDEFINED;
-      };
+      auto capbuf_impl = capbuf->_impl.makeShared<VkCaptureBufferImpl>();
+      capbuf_impl->staging_buffer = staging_buffer;
+      capbuf_impl->_actual_format = vkfmt;
+      capbuf_impl->_desired_format = destfmt;
       
-      auto capture_staging = std::make_shared<VulkanCaptureStaging>();
-      capture_staging->staging_buffer = staging_buffer;
-      capture_staging->needs_float_to_uint8_conversion = is_float_format;
-      capture_staging->source_format = vkfmt;
+      auto async_impl = std::make_shared<VkCaptureAsyncImpl>(_contextVK);
+      async_impl->capture_buffer = capbuf;
+      async_impl->width = w;
+      async_impl->height = h;
+      async_impl->format = destfmt;
+      async_impl->_stagingBuffer = staging_buffer;
+      async_impl->_copySubmitted = true;  // Will be submitted with this command buffer
+      // Note: fence will be set when frame is submitted
       
-      // Store shared pointer to the staging struct
-      capbuf->_impl.setShared<VulkanCaptureStaging>(capture_staging);
-      
-      auto capture_data = std::make_shared<VulkanCaptureData>();
-      capture_data->capture_buffer = capbuf;
-      capture_data->width = w;
-      capture_data->height = h;
-      capture_data->format = destfmt;
-      
-      future->_impl.setShared<VulkanCaptureData>(capture_data);
-      future->_captureBuffer = capture_data->capture_buffer;
+      future->_impl.setShared<VkCaptureAsyncImpl>(async_impl);
+      future->_captureBuffer = async_impl->capture_buffer;
       future->_on_capture_complete = on_capture_complete;
       
       // Register with context for processing after frame
@@ -443,44 +434,30 @@ captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(const RtBuffer* inpbu
     }
     case EBufferFormat::RGB8: {
       //////////////////////////////////////
-      // read RGBA
+      // RGB8 not implemented for Vulkan yet
       //////////////////////////////////////
-      size_t rgbasize = w * h * 3;
-      if (capbuf->_tempbuffer.size() != rgbasize) {
-        capbuf->_tempbuffer.resize(rgbasize);
-      }
-      // glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, capbuf->_tempbuffer.data());
-      //////////////////////////////////////
-      // discard alpha
-      //////////////////////////////////////
-      auto SRC = (const uint32_t*)capbuf->_tempbuffer.data();
-      auto DST = (uint8_t*)capbuf->_data;
-      for (size_t ipix = 0; ipix < (w * h); ipix++) {
-        int idi    = ipix * 3;
-        DST[idi++] = (SRC[ipix] & 0x00ff0000) >> 16;
-        DST[idi++] = (SRC[ipix] & 0x0000ff00) >> 8;
-        DST[idi++] = (SRC[ipix] & 0x000000ff);
-      }
+      // Set up image with format and preallocated data
+      capbuf->_image->initWithFormat(w, h, destfmt);
+      // TODO: Implement RGB8 capture for Vulkan
+      OrkAssert(false);
       //////////////////////////////////////
       break;
     }
     case EBufferFormat::RGBA16F:{
-      size_t rgbasize = w * h * 64;
-      if (capbuf->_tempbuffer.size() != rgbasize) {
-        capbuf->_tempbuffer.resize(rgbasize);
-      }
-      // glReadPixels(x, y, w, h, GL_RGBA, GL_HALF_FLOAT, capbuf->_data);
+      // Set up image with format and preallocated data
+      capbuf->_image->initWithFormat(w, h, destfmt);
+      // TODO: Implement RGBA16F capture for Vulkan
+      OrkAssert(false);
       break;
     }
     ///////////////////////////////////////////////////////
     case EBufferFormat::RGBA32F: {
       OrkAssert(vkfmt == VK_FORMAT_R32G32B32A32_SFLOAT);
-      size_t bufsize = w * h * 16;
-      if (capbuf->_tempbuffer.size() != bufsize) {
-        capbuf->_tempbuffer.resize(bufsize);
-      }
+      // Set up image with format and preallocated data
+      capbuf->_image->initWithFormat(w, h, destfmt);
       
       // Create staging buffer for GPU to CPU transfer
+      size_t bufsize = w * h * 16; // 16 bytes per pixel for RGBA32F
       auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, bufsize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, "capture_staging_f32");
       
       // Copy image to staging buffer
@@ -495,28 +472,24 @@ captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(const RtBuffer* inpbu
       // Transition back to render target
       rtbi->_transitionToRenderTarget(cb);
       
-      // Store the staging buffer
-      capbuf->_impl.setShared<VulkanBuffer>(staging_buffer);
+      // Store staging buffer with metadata (use same struct for consistency)
+      auto capbuf_impl = capbuf->_impl.makeShared<VkCaptureBufferImpl>();
+      capbuf_impl->staging_buffer = staging_buffer;
+      capbuf_impl->_actual_format = vkfmt;
+      capbuf_impl->_desired_format = destfmt;
       
       // Store capture data in the future
-      struct VulkanCaptureData {
-        capturebuffer_ptr_t capture_buffer;
-        texture_ptr_t capture_texture;
-        file::Path path;
-        int width;
-        int height;
-        EBufferFormat format;
-        bool frame_submitted = false;
-      };
+      auto async_impl = std::make_shared<VkCaptureAsyncImpl>(_contextVK);
+      async_impl->capture_buffer = capbuf;
+      async_impl->width = w;
+      async_impl->height = h;
+      async_impl->format = destfmt;
+      async_impl->_stagingBuffer = staging_buffer;
+      async_impl->_copySubmitted = true;  // Will be submitted with this command buffer
+      // Note: fence will be set when frame is submitted
       
-      auto capture_data = std::make_shared<VulkanCaptureData>();
-      capture_data->capture_buffer = capbuf;
-      capture_data->width = w;
-      capture_data->height = h;
-      capture_data->format = destfmt;
-      
-      future->_impl.setShared<VulkanCaptureData>(capture_data);
-      future->_captureBuffer = capture_data->capture_buffer;
+      future->_impl.setShared<VkCaptureAsyncImpl>(async_impl);
+      future->_captureBuffer = async_impl->capture_buffer;
       future->_on_capture_complete = on_capture_complete;
       
       // Register with context for processing after frame

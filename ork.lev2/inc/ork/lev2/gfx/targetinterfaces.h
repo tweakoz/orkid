@@ -80,10 +80,6 @@ struct CaptureBuffer {
   int width() const;
   int height() const;
   EBufferFormat format() const;
-  const void* GetData() const {
-    return _data;
-  }
-  void CopyData(const void* pfrom, int isize);
   ////////////////////////////
   void setFormatAndSize(EBufferFormat fmt, int w, int h);
   ////////////////////////////
@@ -93,8 +89,8 @@ struct CaptureBuffer {
   EBufferFormat meFormat;
   int miW;
   int miH;
-  void* _data;
-  std::vector<uint8_t> _tempbuffer;
+  image_ptr_t _image;
+  image_ptr_t _temp_image; // temporary working image for conversions
   size_t _buffersize;
   int _captureX = 0;
   int _captureY = 0;

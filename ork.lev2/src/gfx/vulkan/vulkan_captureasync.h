@@ -7,10 +7,16 @@
 namespace ork::lev2::vulkan {
 
 struct VkCaptureAsyncImpl {
-  VkCaptureAsyncImpl(vkcontext_rawptr_t ctx);
-  ~VkCaptureAsyncImpl();
-
-  // Vulkan resources
+  // Metadata (from what was VulkanCaptureData)
+  capturebuffer_ptr_t capture_buffer;
+  texture_ptr_t capture_texture;
+  file::Path path;
+  int width = 0;
+  int height = 0;
+  EBufferFormat format = EBufferFormat::NONE;
+  bool frame_submitted = false;
+  
+  // Vulkan async resources
   vkcontext_rawptr_t _contextVK = nullptr;
   vkbuffer_ptr_t _stagingBuffer;
   vkfence_obj_ptr_t _fence;
@@ -19,8 +25,17 @@ struct VkCaptureAsyncImpl {
   bool _copySubmitted = false;
   bool _dataRetrieved = false;
   
-  // Wait for fence and copy data
-  bool retrieveData(CaptureBuffer* out_buffer);
+  // Methods
+  VkCaptureAsyncImpl() = default;  // Allow default construction for metadata-only use
+  VkCaptureAsyncImpl(vkcontext_rawptr_t ctx);
+  ~VkCaptureAsyncImpl();
+  
+  // Check if GPU has finished writing to staging buffer (non-blocking)
+  bool isDataReady() const;
+  
+  // Wait for GPU to finish (blocking, waits forever)
+  void waitForData();
+
 };
 
 using vkcaptureasyncimpl_ptr_t = std::shared_ptr<VkCaptureAsyncImpl>;

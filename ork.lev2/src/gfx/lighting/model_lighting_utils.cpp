@@ -189,8 +189,8 @@ void computeAmbientOcclusion(int numsamples, meshutil::mesh_ptr_t model, Context
   OrkAssert(capbufPOS->length() == DIM * DIM * 4 * 4);
   OrkAssert(capbufNRM->length() == DIM * DIM * 4 * 4);
 
-  auto posdata = (const fvec4*)capbufPOS->_data;
-  auto nrmdata = (const fvec4*)capbufNRM->_data;
+  auto posdata = (const fvec4*)capbufPOS->_image->_data->data();
+  auto nrmdata = (const fvec4*)capbufNRM->_image->_data->data();
 
   size_t num_pixels = DIM * DIM;
 

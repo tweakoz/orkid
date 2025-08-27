@@ -22,6 +22,7 @@
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/gfx/renderer/rendercontext.h>
 #include <ork/lev2/gfx/targetinterfaces.h>
+#include <ork/lev2/gfx/image.h>
 #include <ork/asset/Asset.inl>
 #include <ork/kernel/timer.h>
 #include <ork/kernel/opq.h>
@@ -553,12 +554,15 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
       auto capbuf = (*spec_capbufs)[i];
       auto future = (*spec_futures)[i];
 
-      if (!future->_failed && capbuf->GetData()) {
-        // The data should already be available in capbuf->_data after capture completes
+      if (!future->_failed && capbuf->_image) {
+        // The data should already be available in capbuf->_image after capture completes
         size_t data_size = capbuf->width() * capbuf->height() * 4; // RGBA8
+        
+        // Verify the datablock has the expected size
+        OrkAssert(capbuf->_image->_data->length() == data_size);
 
         // Add raw data to datablock
-        specular_datablock->addData(capbuf->GetData(), data_size);
+        specular_datablock->addData(capbuf->_image->_data->data(), data_size);
         total_spec_size += data_size;
 
         logchan_gen->log("EnvMapProcessor: Added specular roughness level %zu (%zu bytes)", i, data_size);
@@ -571,12 +575,15 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
       auto capbuf = (*diff_capbufs)[i];
       auto future = (*diff_futures)[i];
 
-      if (!future->_failed && capbuf->GetData()) {
-        // The data should already be available in capbuf->_data after capture completes
+      if (!future->_failed && capbuf->_image) {
+        // The data should already be available in capbuf->_image after capture completes
         size_t data_size = capbuf->width() * capbuf->height() * 4; // RGBA8
+        
+        // Verify the datablock has the expected size
+        OrkAssert(capbuf->_image->_data->length() == data_size);
 
         // Add raw data to datablock
-        diffuse_datablock->addData(capbuf->GetData(), data_size);
+        diffuse_datablock->addData(capbuf->_image->_data->data(), data_size);
         total_diff_size += data_size;
 
         logchan_gen->log("EnvMapProcessor: Added diffuse mip level %zu (%zu bytes)", i, data_size);

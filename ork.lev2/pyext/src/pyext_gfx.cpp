@@ -425,7 +425,7 @@ void pyinit_gfx(py::module& module_lev2) {
         switch (capbuf.format()) {
           case EBufferFormat::RGBA8: {
             rval = pybind11::buffer_info(
-                capbuf._data,          // Pointer to buffer
+                (void*)capbuf._image->_data->data(),  // Pointer to buffer
                 sizeof(unsigned char), // Size of one scalar
                 pybind11::format_descriptor<unsigned char>::format(),
                 1,                 // Number of dimensions
@@ -435,7 +435,7 @@ void pyinit_gfx(py::module& module_lev2) {
           }
           case EBufferFormat::RGBA32F: {
             rval = pybind11::buffer_info(
-                capbuf._data,  // Pointer to buffer
+                (void*)capbuf._image->_data->data(),  // Pointer to buffer
                 sizeof(float), // Size of one scalar
                 pybind11::format_descriptor<float>::format(),
                 1,                     // Number of dimensions
@@ -445,7 +445,7 @@ void pyinit_gfx(py::module& module_lev2) {
           }
           case EBufferFormat::R32F: {
             rval = pybind11::buffer_info(
-                capbuf._data,  // Pointer to buffer
+                (void*)capbuf._image->_data->data(),  // Pointer to buffer
                 sizeof(float), // Size of one scalar
                 pybind11::format_descriptor<float>::format(),
                 1,                     // Number of dimensions

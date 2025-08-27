@@ -7,6 +7,7 @@
 
 #include "vulkan_captureasync.h"
 #include "headers/vulkan_ctx.h"
+#include <ork/lev2/gfx/image.h>
 
 namespace ork::lev2::vulkan {
 
@@ -27,27 +28,28 @@ VkCaptureAsyncImpl::~VkCaptureAsyncImpl() {
 
 ////////////////////////////////////////////////////////////////
 
-bool VkCaptureAsyncImpl::retrieveData(CaptureBuffer* out_buffer) {
+bool VkCaptureAsyncImpl::isDataReady() const {
   if (_dataRetrieved) {
     return true; // Already retrieved
   }
   
-  if (!_copySubmitted || !_fence || !_stagingBuffer) {
-    return false; // Not ready
+  if (!_copySubmitted || !_fence) {
+    return false; // No fence to check
   }
   
-  // Wait for the fence
-  VkResult result = vkWaitForFences(_contextVK->_vkdevice, 1, &_fence->_vkfence, VK_TRUE, UINT64_MAX);
-  if (result != VK_SUCCESS) {
-    return false;
-  }
+  // Check fence status without blocking
+  VkResult result = vkGetFenceStatus(_contextVK->_vkdevice, _fence->_vkfence);
+  return (result == VK_SUCCESS);
+}
+
+////////////////////////////////////////////////////////////////
+
+void VkCaptureAsyncImpl::waitForData() {
+  OrkAssert(_fence); // Must have a fence to wait on
+  OrkAssert(_copySubmitted); // Copy must have been submitted
   
-  // Copy data from staging buffer to output
-  size_t bufsize = out_buffer->length();
-  _stagingBuffer->copyToHost(out_buffer->_data, bufsize);
-  
-  _dataRetrieved = true;
-  return true;
+  // Wait for the fence forever
+  vkWaitForFences(_contextVK->_vkdevice, 1, &_fence->_vkfence, VK_TRUE, UINT64_MAX);
 }
 
 ////////////////////////////////////////////////////////////////

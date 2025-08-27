@@ -53,7 +53,7 @@ void PBRMaterial::setActiveLightMap(std::string name, fvec3 c ){
 void PBRMaterial::conformLightmaps() {
   if(_lightmap_image_assets.size()==0){
     auto img = std::make_shared<Image>();
-    img->initRGB8WithColor(64, 64, fvec3(1,1,1),EBufferFormat::RGB8);
+    img->initRGB8WithColor(64, 64, fvec3(1,1,1));
     _lightmap_image_assets["default"] = img;
   }
 

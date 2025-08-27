@@ -640,6 +640,32 @@ struct MyStruct {
 ### Pitfall: Manual memory management  
 **Solution**: RAII and smart pointers everywhere
 
+### Pitfall: Over-filtering command output (tail, grep, head)
+**Problem**: Filtering build output or test results can hide critical information and create misleading impressions of success. This is especially problematic with parallel builds where errors can appear anywhere in the output stream.
+
+**Examples of Bad Patterns:**
+```bash
+# BAD: Hides actual build status
+ork.build.py 2>&1 | tail -5           # May show "built" targets while hiding errors
+ork.build.py 2>&1 | grep "error:"     # Misses context, warnings, and completion status
+
+# BAD: Can miss critical test failures
+test.py 2>&1 | tail -20               # May cut off stack traces or setup errors
+test.py 2>&1 | grep "PASS"            # Creates false impression of success
+
+# BAD: Loses important diagnostic information  
+command 2>&1 | grep -A2 "pattern"     # Arbitrary context windows miss related info
+```
+
+**Why This Matters:**
+- Build systems interleave output in parallel mode - errors aren't always at the end
+- Test failures often have critical context before/after the actual error
+- Completion status (make exit codes, final summaries) often appear after errors
+- Stack traces and diagnostic messages can span hundreds of lines
+- Filtering creates false confidence - seeing "Building [100%]" doesn't mean build succeeded
+
+**Solution**: Always run commands without filters first to understand the full output. Only filter when you know exactly what you're looking for and understand what you might miss. For build errors, search for the FIRST error, not the last lines of output.
+
 ## Session Management
 
 ### Working with LLMs

@@ -136,7 +136,7 @@ texture_ptr_t TextureInterface::createColorTextureV3(fvec3 color, int w, int h){
 texturearray_ptr_t TextureInterface::createColorTextureV3Array(fvec3 color, int w, int h, int d){
 
   auto image = std::make_shared<Image>();
-  image->initRGB8WithColor(w,h,color,EBufferFormat::RGB8);
+  image->initRGB8WithColor(w,h,color);
 
   TextureArrayInitData TID;
 

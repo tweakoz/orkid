@@ -431,7 +431,7 @@ datablock_future_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap
         // This callback runs when capture completes
         
         Image im_inp;
-        im_inp.initRGBA8WithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
+        im_inp.initRGBA8WithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_image->_data->data());
 
         int index = irough;
         auto outpath = file::Path::temp_dir() / FormatString("filteredenv-specmap-ruf%d.exr", index);
@@ -677,14 +677,14 @@ datablock_future_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap,
           OrkAssert(out != nullptr);
           ImageSpec spec(w, h, 4, TypeDesc::FLOAT);
           out->open(outpath.c_str(), spec);
-          out->write_image(TypeDesc::FLOAT, captureb->_data);
+          out->write_image(TypeDesc::FLOAT, captureb->_image->_data->data());
           out->close();
         }
 
         // Process the captured data
         auto op = [=]() {
           Image im;
-          im.initRGBA8WithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
+          im.initRGBA8WithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_image->_data->data());
           im.compressDefault(*cimg);
           
           // Check if all async operations completed

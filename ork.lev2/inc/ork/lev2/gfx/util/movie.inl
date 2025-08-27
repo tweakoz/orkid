@@ -2,6 +2,7 @@
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
+#include <ork/lev2/gfx/image.h>
 
 extern "C" {
 //#include <x264.h>
@@ -192,10 +193,10 @@ struct MovieContext {
     // blit into scaling buffer
     ///////////////////////////////////////
 
-    auto src_pixels = (const uint8_t*)capbuf._data;
-    size_t src_pixcount = capbuf.miW*capbuf.miH;
+    auto src_pixels = (const uint8_t*)capbuf._image->_data->data();
+    size_t src_pixcount = capbuf._image->_width * capbuf._image->_height;
     size_t src_pixsize = src_pixcount*3;
-    OrkAssert(capbuf.meFormat == EBufferFormat::RGB8);
+    OrkAssert(capbuf._image->_format == EBufferFormat::RGB8);
 
     auto dest_buffer   = _rgb_pic->data[0];
     auto dest_linesize = _rgb_pic->linesize[0];

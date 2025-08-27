@@ -97,6 +97,9 @@ struct DataBlock {
   /// reserve len bytes in container (for optimizing allocations)
   void reserve(size_t len);
   /////////////////////////////////////////////
+  /// resize container to specific size (truncate or extend with zeros)
+  void resize(size_t len);
+  /////////////////////////////////////////////
   /// append data from memory into datablock
   void addData(const void* data, size_t len);
   /////////////////////////////////////////////

@@ -626,14 +626,10 @@ public:
   void _processPendingCaptures();
 };
 ///////////////////////////////////////////////////////////////////////////
-  struct VulkanCaptureData {
-    capturebuffer_ptr_t capture_buffer;
-    texture_ptr_t capture_texture;
-    file::Path path;
-    int width;
-    int height;
-    EBufferFormat format;
-    bool frame_submitted = false;
+  struct VkCaptureBufferImpl {
+    vkbuffer_ptr_t staging_buffer;
+    VkFormat _actual_format = VK_FORMAT_UNDEFINED;
+    EBufferFormat _desired_format = EBufferFormat::NONE;
   };
 ///////////////////////////////////////////////////////////////////////////
 extern vkinstance_ptr_t _GVI;

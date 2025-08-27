@@ -12,6 +12,7 @@
 #include <ork/kernel/prop.hpp>
 #include <ork/lev2/gfx/gfxctxdummy.h>
 #include <ork/lev2/gfx/gfxenv.h>
+#include <ork/lev2/gfx/image.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
@@ -470,13 +471,14 @@ void GfxEnv::initializeWithContext(context_ptr_t target){
 
 CaptureBuffer::CaptureBuffer()
     : meFormat(EBufferFormat::NONE)
-    , _data(0)
+    , miW(0)
+    , miH(0)
     , _buffersize(0) {
+  _image = std::make_shared<Image>();
+  _temp_image = std::make_shared<Image>();
 }
 CaptureBuffer::~CaptureBuffer() {
-  if (_data) {
-    free(_data);
-  }
+  // Image will clean up its own data
 }
 int CaptureBuffer::GetStride() const {
   int istride = 0;
@@ -525,15 +527,11 @@ int CaptureBuffer::height() const {
 EBufferFormat CaptureBuffer::format() const {
   return meFormat;
 }
-void CaptureBuffer::CopyData(const void* pfrom, int isize) {
-  int icapsize = GetStride() * miW * miH;
-  OrkAssert(isize == icapsize);
-  memcpy_fast(_data, pfrom, isize);
-}
-
 void CaptureBuffer::setFormatAndSize(EBufferFormat fmt, int w, int h) {
-  if (_data != nullptr)
-    free(_data);
+  // Update Image with new format and size
+  if (!_image) {
+    _image = std::make_shared<Image>();
+  }
 
   int bytesperpix = 0;
   switch (fmt) {
@@ -564,7 +562,14 @@ void CaptureBuffer::setFormatAndSize(EBufferFormat fmt, int w, int h) {
       assert(false);
       break;
   }
-  _data    = malloc(_buffersize);
+  
+  // Initialize Image with the required format and size
+  _image->_width = w;
+  _image->_height = h;
+  _image->_format = fmt;
+  _image->_data = std::make_shared<DataBlock>();
+  _image->_data->reserve(_buffersize);
+  
   meFormat = fmt;
   miW      = w;
   miH      = h;

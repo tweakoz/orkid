@@ -13,6 +13,7 @@
 #include <ork/application/application.h>
 #include <ork/lev2/gfx/pri.h>
 #include <ork/lev2/gfx/rtgroup.h>
+#include <ork/lev2/gfx/image.h>
 #include <ork/lev2/gfx/renderer/builtin_frameeffects.h>
 #include <ork/lev2/gfx/renderer/compositor.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
@@ -114,7 +115,7 @@ struct CpuNodeImpl {
     /////////////////////////////////////
     _lightjobcount = 0;
     _pendingtilecounter.store(0);
-    auto depthclusterbase = (const uint32_t*)_context._clustercapture._data;
+    auto depthclusterbase = (const uint32_t*)_context._clustercapture._image->_data->data();
     for (int iy = 0; iy <= _context._clusterH; iy++) {
       for (int ix = 0; ix <= _context._clusterW; ix++) {
         auto job = [this, ix, iy, &depthclusterbase]() {

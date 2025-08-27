@@ -7,6 +7,7 @@
 
 #include "gl.h"
 #include <ork/lev2/gfx/gfxenv.h>
+#include <ork/lev2/gfx/image.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/gfx/texman.h>
@@ -526,13 +527,42 @@ bool GlFrameBufferInterface::_captureAsFormatImmediate(const RtBuffer* rtb, Capt
   switch (destfmt) {
     case EBufferFormat::NV12: {
       size_t rgbasize = w * h * 4;
-      if (capbuf->_tempbuffer.size() != rgbasize) {
-        capbuf->_tempbuffer.resize(rgbasize);
+      // Use temp_image for temporary RGBA storage
+      if (!capbuf->_temp_image) {
+        capbuf->_temp_image = std::make_shared<Image>();
       }
-      glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, capbuf->_tempbuffer.data());
+      capbuf->_temp_image->_width = w;
+      capbuf->_temp_image->_height = h;
+      capbuf->_temp_image->_format = EBufferFormat::RGBA8;
+      if (!capbuf->_temp_image->_data) {
+        capbuf->_temp_image->_data = std::make_shared<DataBlock>();
+      }
+      capbuf->_temp_image->_data->reserve(rgbasize);
+      if (capbuf->_temp_image->_data->length() < rgbasize) {
+        capbuf->_temp_image->_data->addData(nullptr, rgbasize - capbuf->_temp_image->_data->length());
+      }
+      
+      glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, (void*)capbuf->_temp_image->_data->data());
       GL_ERRORCHECK();
+      
+      // Setup main image for NV12
+      capbuf->_image->_width = w;
+      capbuf->_image->_height = h;
+      capbuf->_image->_format = EBufferFormat::NV12;
+      size_t ysize = w * h;
+      size_t uvsize = ysize >> 1;
+      size_t nv12size = ysize + uvsize;
+      if (!capbuf->_image->_data) {
+        capbuf->_image->_data = std::make_shared<DataBlock>();
+      }
+      capbuf->_image->_data->reserve(nv12size);
+      if (capbuf->_image->_data->length() < nv12size) {
+        capbuf->_image->_data->addData(nullptr, nv12size - capbuf->_image->_data->length());
+      }
+      
       // todo convert RGBA8 to NV12 (on GPU)
-      auto outptr      = (uint8_t*)capbuf->_data;
+      auto outptr      = (uint8_t*)capbuf->_image->_data->data();
+      auto inptr       = (uint8_t*)capbuf->_temp_image->_data->data();
       size_t numpixels = w * h;
       fvec3 avgcol;
       for (size_t yin = 0; yin < h; yin++) {
@@ -541,9 +571,9 @@ bool GlFrameBufferInterface::_captureAsFormatImmediate(const RtBuffer* rtb, Capt
           int i_in       = (yin * w) + x;
           int i_out      = (yout * w) + x;
           size_t srcbase = i_in * 4;
-          int R          = capbuf->_tempbuffer[srcbase + 0];
-          int G          = capbuf->_tempbuffer[srcbase + 1];
-          int B          = capbuf->_tempbuffer[srcbase + 2];
+          int R          = inptr[srcbase + 0];
+          int G          = inptr[srcbase + 1];
+          int B          = inptr[srcbase + 2];
           // printf("RGB<%d %d %d>\n", R, G, B);
           auto rgb = fvec3(R, G, B) * inv256;
           avgcol += rgb;
@@ -561,18 +591,18 @@ bool GlFrameBufferInterface::_captureAsFormatImmediate(const RtBuffer* rtb, Capt
           size_t srcbase2 = (((ybase + 0) * w) + (xbase + 1)) * 4;
           size_t srcbase3 = (((ybase + 1) * w) + (xbase + 0)) * 4;
           size_t srcbase4 = (((ybase + 1) * w) + (xbase + 1)) * 4;
-          int R1          = capbuf->_tempbuffer[srcbase1 + 0];
-          int G1          = capbuf->_tempbuffer[srcbase1 + 1];
-          int B1          = capbuf->_tempbuffer[srcbase1 + 2];
-          int R2          = capbuf->_tempbuffer[srcbase2 + 0];
-          int G2          = capbuf->_tempbuffer[srcbase2 + 1];
-          int B2          = capbuf->_tempbuffer[srcbase2 + 2];
-          int R3          = capbuf->_tempbuffer[srcbase3 + 0];
-          int G3          = capbuf->_tempbuffer[srcbase3 + 1];
-          int B3          = capbuf->_tempbuffer[srcbase3 + 2];
-          int R4          = capbuf->_tempbuffer[srcbase4 + 0];
-          int G4          = capbuf->_tempbuffer[srcbase4 + 1];
-          int B4          = capbuf->_tempbuffer[srcbase4 + 2];
+          int R1          = inptr[srcbase1 + 0];
+          int G1          = inptr[srcbase1 + 1];
+          int B1          = inptr[srcbase1 + 2];
+          int R2          = inptr[srcbase2 + 0];
+          int G2          = inptr[srcbase2 + 1];
+          int B2          = inptr[srcbase2 + 2];
+          int R3          = inptr[srcbase3 + 0];
+          int G3          = inptr[srcbase3 + 1];
+          int B3          = inptr[srcbase3 + 2];
+          int R4          = inptr[srcbase4 + 0];
+          int G4          = inptr[srcbase4 + 1];
+          int B4          = inptr[srcbase4 + 2];
           auto rgb1       = fvec3(R1, G1, B1) * inv256;
           auto rgb2       = fvec3(R2, G2, B2) * inv256;
           auto rgb3       = fvec3(R3, G3, B3) * inv256;
@@ -593,23 +623,61 @@ bool GlFrameBufferInterface::_captureAsFormatImmediate(const RtBuffer* rtb, Capt
       break;
     }
     case EBufferFormat::RGBA8: {
-      glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, capbuf->_data);
+      // Setup image for RGBA8
+      capbuf->_image->_width = w;
+      capbuf->_image->_height = h;
+      capbuf->_image->_format = EBufferFormat::RGBA8;
+      size_t rgba8size = w * h * 4;
+      if (!capbuf->_image->_data) {
+        capbuf->_image->_data = std::make_shared<DataBlock>();
+      }
+      capbuf->_image->_data->reserve(rgba8size);
+      if (capbuf->_image->_data->length() < rgba8size) {
+        capbuf->_image->_data->addData(nullptr, rgba8size - capbuf->_image->_data->length());
+      }
+      glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, (void*)capbuf->_image->_data->data());
       break;
     }
     case EBufferFormat::RGB8: {
       //////////////////////////////////////
-      // read RGBA
+      // read RGBA into temp buffer
       //////////////////////////////////////
       size_t rgbasize = w * h * 4;
-      if (capbuf->_tempbuffer.size() != rgbasize) {
-        capbuf->_tempbuffer.resize(rgbasize);
+      size_t rgb8size = w * h * 3;
+      
+      // Setup temp image for RGBA8
+      if (!capbuf->_temp_image) {
+        capbuf->_temp_image = std::make_shared<Image>();
       }
-      glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, capbuf->_tempbuffer.data());
+      capbuf->_temp_image->_width = w;
+      capbuf->_temp_image->_height = h;
+      capbuf->_temp_image->_format = EBufferFormat::RGBA8;
+      if (!capbuf->_temp_image->_data) {
+        capbuf->_temp_image->_data = std::make_shared<DataBlock>();
+      }
+      capbuf->_temp_image->_data->reserve(rgbasize);
+      if (capbuf->_temp_image->_data->length() < rgbasize) {
+        capbuf->_temp_image->_data->addData(nullptr, rgbasize - capbuf->_temp_image->_data->length());
+      }
+      
+      glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, (void*)capbuf->_temp_image->_data->data());
+      
       //////////////////////////////////////
-      // discard alpha
+      // Setup main image for RGB8 and discard alpha
       //////////////////////////////////////
-      auto SRC = (const uint32_t*) capbuf->_tempbuffer.data();
-      auto DST = (uint8_t*) capbuf->_data;
+      capbuf->_image->_width = w;
+      capbuf->_image->_height = h;
+      capbuf->_image->_format = EBufferFormat::RGB8;
+      if (!capbuf->_image->_data) {
+        capbuf->_image->_data = std::make_shared<DataBlock>();
+      }
+      capbuf->_image->_data->reserve(rgb8size);
+      if (capbuf->_image->_data->length() < rgb8size) {
+        capbuf->_image->_data->addData(nullptr, rgb8size - capbuf->_image->_data->length());
+      }
+      
+      auto SRC = (const uint32_t*) capbuf->_temp_image->_data->data();
+      auto DST = (uint8_t*) capbuf->_image->_data->data();
       for( size_t ipix=0; ipix<(w*h); ipix++ ){
         int idi = ipix*3;
         DST[idi++] = (SRC[ipix]&0x00ff0000)>>16;
@@ -619,21 +687,86 @@ bool GlFrameBufferInterface::_captureAsFormatImmediate(const RtBuffer* rtb, Capt
       //////////////////////////////////////
       break;
     }
-    case EBufferFormat::RGBA16F:
-      glReadPixels(x, y, w, h, GL_RGBA, GL_HALF_FLOAT, capbuf->_data);
+    case EBufferFormat::RGBA16F: {
+      // Setup image for RGBA16F
+      capbuf->_image->_width = w;
+      capbuf->_image->_height = h;
+      capbuf->_image->_format = EBufferFormat::RGBA16F;
+      size_t size = w * h * 8;
+      if (!capbuf->_image->_data) {
+        capbuf->_image->_data = std::make_shared<DataBlock>();
+      }
+      capbuf->_image->_data->reserve(size);
+      if (capbuf->_image->_data->length() < size) {
+        capbuf->_image->_data->addData(nullptr, size - capbuf->_image->_data->length());
+      }
+      glReadPixels(x, y, w, h, GL_RGBA, GL_HALF_FLOAT, (void*)capbuf->_image->_data->data());
       break;
-    case EBufferFormat::RGBA32F:
-      glReadPixels(x, y, w, h, GL_RGBA, GL_FLOAT, capbuf->_data);
+    }
+    case EBufferFormat::RGBA32F: {
+      // Setup image for RGBA32F
+      capbuf->_image->_width = w;
+      capbuf->_image->_height = h;
+      capbuf->_image->_format = EBufferFormat::RGBA32F;
+      size_t size = w * h * 16;
+      if (!capbuf->_image->_data) {
+        capbuf->_image->_data = std::make_shared<DataBlock>();
+      }
+      capbuf->_image->_data->reserve(size);
+      if (capbuf->_image->_data->length() < size) {
+        capbuf->_image->_data->addData(nullptr, size - capbuf->_image->_data->length());
+      }
+      glReadPixels(x, y, w, h, GL_RGBA, GL_FLOAT, (void*)capbuf->_image->_data->data());
       break;
-    case EBufferFormat::R32F:
-      glReadPixels(x, y, w, h, GL_RED, GL_FLOAT, capbuf->_data);
+    }
+    case EBufferFormat::R32F: {
+      // Setup image for R32F
+      capbuf->_image->_width = w;
+      capbuf->_image->_height = h;
+      capbuf->_image->_format = EBufferFormat::R32F;
+      size_t size = w * h * 4;
+      if (!capbuf->_image->_data) {
+        capbuf->_image->_data = std::make_shared<DataBlock>();
+      }
+      capbuf->_image->_data->reserve(size);
+      if (capbuf->_image->_data->length() < size) {
+        capbuf->_image->_data->addData(nullptr, size - capbuf->_image->_data->length());
+      }
+      glReadPixels(x, y, w, h, GL_RED, GL_FLOAT, (void*)capbuf->_image->_data->data());
       break;
-    case EBufferFormat::R32UI:
-      glReadPixels(x, y, w, h, GL_RED_INTEGER, GL_UNSIGNED_INT, capbuf->_data);
+    }
+    case EBufferFormat::R32UI: {
+      // Setup image for R32UI
+      capbuf->_image->_width = w;
+      capbuf->_image->_height = h;
+      capbuf->_image->_format = EBufferFormat::R32UI;
+      size_t size = w * h * 4;
+      if (!capbuf->_image->_data) {
+        capbuf->_image->_data = std::make_shared<DataBlock>();
+      }
+      capbuf->_image->_data->reserve(size);
+      if (capbuf->_image->_data->length() < size) {
+        capbuf->_image->_data->addData(nullptr, size - capbuf->_image->_data->length());
+      }
+      glReadPixels(x, y, w, h, GL_RED_INTEGER, GL_UNSIGNED_INT, (void*)capbuf->_image->_data->data());
       break;
-    case EBufferFormat::RG32F:
-      glReadPixels(x, y, w, h, GL_RG, GL_FLOAT, capbuf->_data);
+    }
+    case EBufferFormat::RG32F: {
+      // Setup image for RG32F
+      capbuf->_image->_width = w;
+      capbuf->_image->_height = h;
+      capbuf->_image->_format = EBufferFormat::RG32F;
+      size_t size = w * h * 8;
+      if (!capbuf->_image->_data) {
+        capbuf->_image->_data = std::make_shared<DataBlock>();
+      }
+      capbuf->_image->_data->reserve(size);
+      if (capbuf->_image->_data->length() < size) {
+        capbuf->_image->_data->addData(nullptr, size - capbuf->_image->_data->length());
+      }
+      glReadPixels(x, y, w, h, GL_RG, GL_FLOAT, (void*)capbuf->_image->_data->data());
       break;
+    }
     default:
       OrkAssert(false);
       break;

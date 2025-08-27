@@ -26,12 +26,12 @@ void pyinit_gfx_image(py::module& module_lev2) {
       })
       .def_static("createRGB8FromColor", [](int w, int h, fvec3 color) -> image_ptr_t {
         auto img = std::make_shared<Image>();
-        img->initRGB8WithColor(w,h,color,EBufferFormat::RGB8);
+        img->initRGB8WithColor(w,h,color);
         return img;
       })
       .def_static("createRGBA8FromColor", [](int w, int h, fvec4 color) -> image_ptr_t {
         auto img = std::make_shared<Image>();
-        img->initRGBA8WithColor(w,h,color,EBufferFormat::RGBA8);
+        img->initRGBA8WithColor(w,h,color);
         return img;
       })
       .def_static("createFromBuffer", [](int w, int h, crcstring_ptr_t fmt, py::buffer data) -> image_ptr_t {

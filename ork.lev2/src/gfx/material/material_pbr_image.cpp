@@ -252,7 +252,7 @@ void PBRMaterial::conformImages(){
     auto OP = [=, &sync_defaults](){
       fvec3 color = fvec3(1,1,1);
       _image_color = std::make_shared<Image>();
-      _image_color->initRGB8WithColor(max_w, max_h, color, EBufferFormat::RGB8);
+      _image_color->initRGB8WithColor(max_w, max_h, color);
       sync_defaults--;
     };
     opq::concurrentQueue()->enqueue(OP);
@@ -262,7 +262,7 @@ void PBRMaterial::conformImages(){
     auto OP = [=, &sync_defaults](){
       fvec3 color = fvec3(0.5,0.5,1);
       _image_normal = std::make_shared<Image>();
-      _image_normal->initRGB8WithColor(max_w, max_h, color, EBufferFormat::RGB8);
+      _image_normal->initRGB8WithColor(max_w, max_h, color);
       sync_defaults--;
     };
     opq::concurrentQueue()->enqueue(OP);
@@ -274,7 +274,7 @@ void PBRMaterial::conformImages(){
                   ? fvec3(1,0,0) //
                   : fvec3(1,0,1);
       _image_mtlruf = std::make_shared<Image>();
-      _image_mtlruf->initRGB8WithColor(max_w, max_h, color, EBufferFormat::RGB8);
+      _image_mtlruf->initRGB8WithColor(max_w, max_h, color);
       sync_defaults--;
     };
     opq::concurrentQueue()->enqueue(OP);
@@ -284,7 +284,7 @@ void PBRMaterial::conformImages(){
     auto OP = [=, &sync_defaults](){
       fvec3 color = fvec3(0,0,0);
       _image_emissive = std::make_shared<Image>();
-      _image_emissive->initRGB8WithColor(max_w, max_h, color, EBufferFormat::RGB8);
+      _image_emissive->initRGB8WithColor(max_w, max_h, color);
       sync_defaults--;
     };
     opq::concurrentQueue()->enqueue(OP);
@@ -294,7 +294,7 @@ void PBRMaterial::conformImages(){
     auto OP = [=, &sync_defaults](){
       fvec3 color = fvec3(1,1,1);
       _image_ambocc = std::make_shared<Image>();
-      _image_ambocc->initRGB8WithColor(max_w, max_h, color, EBufferFormat::RGB8);
+      _image_ambocc->initRGB8WithColor(max_w, max_h, color);
       sync_defaults--;
     };
     opq::concurrentQueue()->enqueue(OP);

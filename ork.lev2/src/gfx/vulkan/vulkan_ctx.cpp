@@ -6,6 +6,8 @@
 ////////////////////////////////////////////////////////////////
 
 #include "headers/vulkan_ctx.h"
+#include "vulkan_captureasync.h"
+#include <ork/lev2/gfx/image.h>
 
 #define USE_OIIO
 #if defined(USE_OIIO)
@@ -675,6 +677,17 @@ void VkContext::_doEndFrame() {
       semas_empty = unlocked.empty();
     });
     
+    // Associate frame fence with pending captures
+    size_t sub_index = swapchain->subIndex();
+    if (sub_index < swapchain->_frameFences.size() && !_pending_captures.empty()) {
+      auto frame_fence = swapchain->_frameFences[sub_index];
+      for (auto& capture : _pending_captures) {
+        if (auto async_impl = capture->_impl.getShared<VkCaptureAsyncImpl>()) {
+          async_impl->_fence = frame_fence;
+        }
+      }
+    }
+    
     if ( not semas_empty) {
       // Submit with timeline semaphores
       swapchain->_submitFrameWithSemaphores(this);
@@ -700,8 +713,25 @@ void VkContext::_doEndFrame() {
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &_cmdbufcurpri_gfx->_vkcmdbuf;
     
-    vkQueueSubmit(_vkqueue_graphics, 1, &submitInfo, VK_NULL_HANDLE);
-    vkQueueWaitIdle(_vkqueue_graphics);
+    // Create fence for captures if needed
+    vkfence_obj_ptr_t capture_fence;
+    if (!_pending_captures.empty()) {
+      capture_fence = std::make_shared<VulkanFenceObject>(this);
+      capture_fence->reset(); // Start unsignaled
+      
+      // Associate fence with pending captures
+      for (auto& capture : _pending_captures) {
+        if (auto async_impl = capture->_impl.getShared<VkCaptureAsyncImpl>()) {
+          async_impl->_fence = capture_fence;
+        }
+      }
+      
+      vkQueueSubmit(_vkqueue_graphics, 1, &submitInfo, capture_fence->_vkfence);
+      capture_fence->wait(); // Wait for fence to be signaled
+    } else {
+      vkQueueSubmit(_vkqueue_graphics, 1, &submitInfo, VK_NULL_HANDLE);
+      vkQueueWaitIdle(_vkqueue_graphics);
+    }
     
     logchan_vkctx->log("Offscreen frame submitted");
     
@@ -1111,191 +1141,67 @@ void VkContext::_processPendingCaptures() {
   _pending_captures.clear();
   
   for (auto capture_async : captures_to_process) {
-  
-  
-    auto capture_data = capture_async->_impl.getShared<VulkanCaptureData>();
-    if (!capture_data) {
-      capture_async->_failed = true;
-      logchan_vkcap->log("Processing capture: failed...");
-      continue;
-    }
-    logchan_vkcap->log("Process Pending capture: w=%d h=%d format=%d", capture_data->width, capture_data->height, int(capture_data->format));
-    // Get the staging buffer and conversion metadata from the capture buffer
-    struct VulkanCaptureStaging {
-      vkbuffer_ptr_t staging_buffer;
-      bool needs_float_to_uint8_conversion = false;
-      VkFormat source_format = VK_FORMAT_UNDEFINED;
-    };
+    auto async_impl = capture_async->_impl.getShared<VkCaptureAsyncImpl>();
     
-    vkbuffer_ptr_t staging_buffer;
-    bool needs_float_conversion = false;
+    logchan_vkcap->log("Process Pending capture: w=%d h=%d format=%d", 
+                       async_impl->width, async_impl->height, int(async_impl->format));
+    // Get the capture buffer implementation
+    auto capbuf_impl = async_impl->capture_buffer->_impl.getShared<VkCaptureBufferImpl>();
+    OrkAssert(capbuf_impl->staging_buffer); // Must have staging buffer if we got here
+    auto staging_buffer = capbuf_impl->staging_buffer;
     
-    // Try to get the new staging struct pointer first
-    if (capture_data->capture_buffer->_impl.isShared<VulkanCaptureStaging>()) {
-      auto capture_staging = capture_data->capture_buffer->_impl.getShared<VulkanCaptureStaging>();
-      staging_buffer = capture_staging->staging_buffer;
-      needs_float_conversion = capture_staging->needs_float_to_uint8_conversion;
-    } 
-    // Fallback for legacy code paths that might still use VulkanBuffer directly
-    else if (capture_data->capture_buffer->_impl.isShared<VulkanBuffer>()) {
-      staging_buffer = capture_data->capture_buffer->_impl.getShared<VulkanBuffer>();
-      needs_float_conversion = false;
-    }
-    else {
-      capture_async->_failed = true;
-      logchan_vkcap->log("Processing capture: failed (no valid staging buffer)...");
-      continue;
-    }
+    // Determine if conversion is needed
+    EBufferFormat source_format = async_impl->format;
+    bool needs_conversion = (source_format != capbuf_impl->_desired_format);
     
-    if (!staging_buffer) {
-      capture_async->_failed = true;
-      logchan_vkcap->log("Processing capture: failed (null staging buffer)...");
-      continue;
-    }
-  
-    // Handle different buffer formats
-    size_t bufsize = 0;
-    size_t staging_bufsize = 0;
-    switch(capture_data->format) {
-      case EBufferFormat::RGBA8:
-        bufsize = capture_data->width * capture_data->height * 4;
-        // If converting from float, staging buffer is larger
-        logchan_vkcap->log("reading as RGBA8 (needs_float_conversion:%d) ", int(needs_float_conversion));
-        staging_bufsize = needs_float_conversion ? 
-                         (capture_data->width * capture_data->height * 16) : bufsize;
-        break;
-      case EBufferFormat::RGB8:
-        bufsize = capture_data->width * capture_data->height * 3;
-        logchan_vkcap->log("reading as RGB8");
-        staging_bufsize = bufsize;
-        break;
-      case EBufferFormat::RGBA16F:
-        logchan_vkcap->log("reading as RGBA16F");
-        bufsize = capture_data->width * capture_data->height * 8;
-        staging_bufsize = bufsize;
-        break;
-      case EBufferFormat::RGBA32F:
-        logchan_vkcap->log("reading as RGBA32F");
-        bufsize = capture_data->width * capture_data->height * 16;
-        staging_bufsize = bufsize;
-        break;
-      case EBufferFormat::R32F:
-        logchan_vkcap->log("reading as R32F");
-        bufsize = capture_data->width * capture_data->height * 4;
-        staging_bufsize = bufsize;
-        break;
-      case EBufferFormat::RG32F:
-        logchan_vkcap->log("reading as RG32F");
-        bufsize = capture_data->width * capture_data->height * 8;
-        staging_bufsize = bufsize;
-        break;
-      default:
-        capture_async->_failed = true;
-        continue;
-    }
-    
-    // Copy data from staging buffer
-    if (capture_data->capture_buffer) {
-      if (needs_float_conversion) {
-        logchan_vkcap->log("converting float to ");
-        // Read float data and convert to RGBA8
-        std::vector<float> float_buffer(capture_data->width * capture_data->height * 4);
-        staging_buffer->copyToHost(float_buffer.data(), staging_bufsize);
+    if (needs_conversion) {
+      // Copy to temp image for conversion
+      // if same capturebuffer is reused for same RtBuffer, this avoids reallocation
+      logchan_vkcap->log("Converting from %d to %d", int(source_format), int(capbuf_impl->_desired_format));
+      
+      auto& temp_img = async_impl->capture_buffer->_temp_image;
+      temp_img->initWithFormat(async_impl->width, async_impl->height, source_format);
+      size_t bufsize = async_impl->capture_buffer->length();
+      staging_buffer->copyToHost((void*)temp_img->_data->data(), bufsize);
+      
+      // Do conversion async on opq
+      opq::concurrentQueue()->enqueue([capture_async, async_impl, desired_fmt = capbuf_impl->_desired_format]() {
+        auto capbuf = async_impl->capture_buffer;
+        capbuf->_image->convertFromImageToFormat(*capbuf->_temp_image, desired_fmt);
         
-        // Convert float to uint8
-        uint8_t* out_data = (uint8_t*)capture_data->capture_buffer->_data;
-        for (size_t i = 0; i < capture_data->width * capture_data->height * 4; i++) {
-          float val = float_buffer[i];
-          // Clamp to [0, 1] and convert to [0, 255]
-          val = std::max(0.0f, std::min(1.0f, val));
-          out_data[i] = uint8_t(val * 255.0f);
+        // Signal completion
+        capture_async->_completed = true;
+        if (capture_async->_on_capture_complete) {
+          capture_async->_on_capture_complete();
         }
-      } else {
-        logchan_vkcap->log("copying raw data...");
-        staging_buffer->copyToHost(capture_data->capture_buffer->_data, bufsize);
-      }
+      });
     } else {
-      // Create temp buffer for texture/file output
-      auto temp_buffer = std::make_shared<CaptureBuffer>();
-      temp_buffer->setFormatAndSize(capture_data->format, capture_data->width, capture_data->height);
+      // No conversion needed - copy directly to main image
+      // if same capturebuffer is reused for same RtBuffer, this avoids reallocation
+      logchan_vkcap->log("Direct copy - no conversion needed");
       
-      if (needs_float_conversion) {
-        logchan_vkcap->log("xxx...");
-        // Read float data and convert to RGBA8
-        std::vector<float> float_buffer(capture_data->width * capture_data->height * 4);
-        staging_buffer->copyToHost(float_buffer.data(), staging_bufsize);
-        
-        // Convert float to uint8
-        uint8_t* out_data = (uint8_t*)temp_buffer->_data;
-        for (size_t i = 0; i < capture_data->width * capture_data->height * 4; i++) {
-          float val = float_buffer[i];
-          // Clamp to [0, 1] and convert to [0, 255]
-          val = std::max(0.0f, std::min(1.0f, val));
-          out_data[i] = uint8_t(val * 255.0f);
-        }
-      } else {
-        logchan_vkcap->log("yyy...");
-        staging_buffer->copyToHost(temp_buffer->_data, bufsize);
+      auto& img = async_impl->capture_buffer->_image;
+      img->initWithFormat(async_impl->width, async_impl->height, source_format);
+      size_t bufsize = async_impl->capture_buffer->length();
+      staging_buffer->copyToHost((void*)img->_data->data(), bufsize);
+      
+      // Signal immediately
+      capture_async->_completed = true;
+      if (capture_async->_on_capture_complete) {
+        capture_async->_on_capture_complete();
       }
-      
-      capture_data->capture_buffer = temp_buffer;
-    }
-  
-    // Handle different output destinations
-    if (capture_data->capture_texture) {
-      // TODO: Upload to texture
-      logchan_vkcap->log("Capture to texture not yet implemented");
-    }
-    
-    // Write to file if path is specified
-    if (capture_data->path.exists()) {
-        logchan_vkcap->log("writing to <%s>...", capture_data->path.c_str());
-      #if defined(USE_OIIO)
-      auto out = OIIO::ImageOutput::create(capture_data->path.c_str());
-      if (out) {
-      OIIO::ImageSpec spec(capture_data->width, capture_data->height, 4, OIIO::TypeDesc::UINT8);
-      out->open(capture_data->path.c_str(), spec);
-      
-      // Flip the image vertically (Vulkan is Y-down, images are Y-up)
-      auto flipped = std::vector<uint8_t>(bufsize);
-      int row_size = capture_data->width * 4;
-      for (int y = 0; y < capture_data->height; y++) {
-        int src_y = capture_data->height - 1 - y;
-        memcpy(
-          flipped.data() + y * row_size,
-          (uint8_t*)capture_data->capture_buffer->_data + src_y * row_size,
-          row_size
-        );
-      }
-      
-      out->write_image(OIIO::TypeDesc::UINT8, flipped.data());
-      out->close();
-      
-        logchan_vkcap->log("Capture saved to %s", capture_data->path.c_str());
-      }
-      #endif
     }
     
     // Store capture results in the future
-    capture_async->_captureBuffer = capture_data->capture_buffer;
-    capture_async->_captureTexture = capture_data->capture_texture;
-    capture_async->_capturePath = capture_data->path;
-    capture_async->_width = capture_data->width;
-    capture_async->_height = capture_data->height;
-    capture_async->_format = capture_data->format;
-    
-    // Call completion callback if set
-    if (capture_async->_on_capture_complete) {
-        logchan_vkcap->log("invoking completion callback");
-      capture_async->_on_capture_complete();
-    }
-    
-    // Mark capture as complete
-        logchan_vkcap->log("marked complete...");
-    capture_async->_completed = true;
+    capture_async->_captureBuffer = async_impl->capture_buffer;
+    capture_async->_captureTexture = async_impl->capture_texture;
+    capture_async->_capturePath = async_impl->path;
+    capture_async->_width = async_impl->width;
+    capture_async->_height = async_impl->height;
+    capture_async->_format = async_impl->format;
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::vulkan
-///////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
