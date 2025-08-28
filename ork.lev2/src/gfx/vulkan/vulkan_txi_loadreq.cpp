@@ -10,7 +10,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_txi_loadreq = logger()->configureChannel("VKTXILOAD", fvec3(0.8, 0.2, 0.5), true);
+static logchannel_ptr_t logchan_txi_loadreq = logger()->configureChannel("VKTXILOAD", fvec3(0.8, 0.2, 0.5), false);
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {

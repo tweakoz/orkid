@@ -666,7 +666,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
           if (shader_stage == VK_SHADER_STAGE_VERTEX_BIT) stage_name = "VERTEX";
           else if (shader_stage == VK_SHADER_STAGE_FRAGMENT_BIT) stage_name = "FRAGMENT";
           else if (shader_stage == VK_SHADER_STAGE_GEOMETRY_BIT) stage_name = "GEOMETRY";
-          printf("DEBUG: Stage %s starting at cursor position %zu\n", stage_name, start_cursor);
+          if(0)printf("DEBUG: Stage %s starting at cursor position %zu\n", stage_name, start_cursor);
         }
         
         for (auto uset_item : shobj->_uniset_refs->_unisets) {
@@ -706,7 +706,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
                 OrkAssert(false);
               }
               // OrkAssert(cursor==item_ptr->_offset);
-              printf("VKFXI: param<%s> datatype<%s> cursor<%zu> stage<0x%x> range<%zu>\n", 
+              if(0)printf("VKFXI: param<%s> datatype<%s> cursor<%zu> stage<0x%x> range<%zu>\n", 
                      item_name.c_str(), datatype.c_str(), cursor, shader_stage, range_index);
             }
           }
@@ -719,7 +719,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         if (shader_stage == VK_SHADER_STAGE_VERTEX_BIT) stage_name = "VERTEX";
         else if (shader_stage == VK_SHADER_STAGE_FRAGMENT_BIT) stage_name = "FRAGMENT";
         else if (shader_stage == VK_SHADER_STAGE_GEOMETRY_BIT) stage_name = "GEOMETRY";
-        printf("DEBUG: Stage %s ending at cursor position %zu\n", stage_name, end_cursor);
+        if(0)printf("DEBUG: Stage %s ending at cursor position %zu\n", stage_name, end_cursor);
       };
 
       if (vk_program->_vtxshader) {
@@ -741,7 +741,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       push_constants->_ranges.reserve(8);
       
       // Create ranges based on actual uniform set sizes from each shader stage
-      printf("DEBUG: Creating push constant ranges from stage offsets:\n");
+      if(0)printf("DEBUG: Creating push constant ranges from stage offsets:\n");
       for (const auto& [stage_flags, start_offset] : stage_start_offsets) {
         auto end_offset = stage_end_offsets[stage_flags];
         size_t range_size = end_offset - start_offset;
@@ -751,7 +751,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         else if (stage_flags == VK_SHADER_STAGE_FRAGMENT_BIT) stage_name = "FRAGMENT";
         else if (stage_flags == VK_SHADER_STAGE_GEOMETRY_BIT) stage_name = "GEOMETRY";
         
-        printf("  Stage %s: start=%zu, end=%zu, size=%zu\n", 
+        if(0)printf("  Stage %s: start=%zu, end=%zu, size=%zu\n", 
                stage_name, start_offset, end_offset, range_size);
         
         if (range_size > 0) {
@@ -761,11 +761,11 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
           range.size = range_size;
           range.stageFlags = stage_flags;
           
-          printf("  -> Created range[%zu]: offset=%u, size=%u, stageFlags=0x%x\n", 
+          if(0)printf("  -> Created range[%zu]: offset=%u, size=%u, stageFlags=0x%x\n", 
                  push_constants->_ranges.size()-1, range.offset, range.size, range.stageFlags);
         }
       }
-      printf("DEBUG: Total ranges created: %zu\n", push_constants->_ranges.size());
+      if(0)printf("DEBUG: Total ranges created: %zu\n", push_constants->_ranges.size());
       
       // Fallback if no ranges were created (shouldn't happen with push constants)
       if (push_constants->_ranges.empty()) {
@@ -774,7 +774,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         pc_range.offset     = 0;
         pc_range.size       = pc_size;
         pc_range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-        printf("Push constant range: SHARED [0-%zu]\n", pc_size);
+        if(0)printf("Push constant range: SHARED [0-%zu]\n", pc_size);
         
         // TODO: Handle additional shader stages:
         // - Geometry shader (VK_SHADER_STAGE_GEOMETRY_BIT)

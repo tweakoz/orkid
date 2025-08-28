@@ -24,11 +24,11 @@ static std::atomic<int> g_ImageInstanceCounter = 0;
 
 Image::Image() {
   int numimages = g_ImageInstanceCounter.fetch_add(1);
-  printf("Image<%p> numimages<%d>\n", (void*)this, numimages+1);
+  if(0)printf("Image<%p> numimages<%d>\n", (void*)this, numimages+1);
 }
 Image::~Image(){
   int numimages = g_ImageInstanceCounter.fetch_sub(1);
-  printf("~Image<%p> <%dx%d> numimages<%d>\n", (void*)this, _width, _height, numimages-1);
+  if(0)printf("~Image<%p> <%dx%d> numimages<%d>\n", (void*)this, _width, _height, numimages-1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
