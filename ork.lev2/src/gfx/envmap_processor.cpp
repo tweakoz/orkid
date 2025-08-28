@@ -131,15 +131,6 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
   auto primary_executor = TaskExecutor::createSerial(); // on primary execution thread
 
   ///////////////////////////////////////
-  // Store input parameters in the graph's varmap
-  ///////////////////////////////////////
-
-  graph->_varmap.atomicOp([=](varmap::VarMap& vmap) {
-    vmap.set<texture_ptr_t>("rawenvmap", rawenvmap);
-    vmap.set<bool>("is_equirectangular", is_equirectangular);
-  });
-
-  ///////////////////////////////////////
   // Phase 1: Setup and initialization
   ///////////////////////////////////////
 
@@ -156,6 +147,27 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
 
   auto specular_material = std::make_shared<FreestyleMaterial>();
   auto diffuse_material  = std::make_shared<FreestyleMaterial>();
+  auto spec_futures = std::make_shared<captureasync_list_t>();
+  auto diff_futures = std::make_shared<captureasync_list_t>();
+  auto spec_capbufs = std::make_shared<capturebuffer_list_t>();
+  auto diff_capbufs = std::make_shared<capturebuffer_list_t>();
+
+
+  graph->_varmap.atomicOp([=](varmap::VarMap& unlocked) {
+    // retain stuff with graph
+    unlocked.set<texture_ptr_t>("rawenvmap", rawenvmap);
+    unlocked.set<bool>("is_equirectangular", is_equirectangular);
+    unlocked.set<rtgroup_list_ptr_t>("specular_rtgroups", specular_rtgroups);
+    unlocked.set<rtbuffer_list_ptr_t>("specular_rtbuffers", specular_rtbuffers);
+    unlocked.set<rtgroup_list_ptr_t>("diffuse_rtgroups", diffuse_rtgroups);
+    unlocked.set<rtbuffer_list_ptr_t>("diffuse_rtbuffers", diffuse_rtbuffers);
+    unlocked.set<material_ptr_t>("specular_material", specular_material);
+    unlocked.set<material_ptr_t>("diffuse_material", diffuse_material);
+    unlocked.set<captureasync_list_ptr_t>("spec_futures", spec_futures);
+    unlocked.set<captureasync_list_ptr_t>("diff_futures", diff_futures);
+    unlocked.set<capturebuffer_list_ptr_t>("spec_capbufs", spec_capbufs);
+    unlocked.set<capturebuffer_list_ptr_t>("diff_capbufs", diff_capbufs);
+  });
 
   setup_phase->task(
       "initialize_materials",
@@ -218,6 +230,8 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
          tex_name,                         //
          specular_rtgroups,                //
          specular_rtbuffers,               //
+         spec_futures,                     //
+         spec_capbufs,                     //
          roughness,                        //
          tile_size,                        //
          is_equirectangular,               //
@@ -299,6 +313,10 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
 
           // Pop render target ONCE after all tiles
           fbi->PopRtGroup();
+          auto capbuf = std::make_shared<CaptureBuffer>();
+          spec_capbufs->push_back(capbuf);
+          auto future = fbi->captureAsFormat(rtbuffer.get(), capbuf, EBufferFormat::RGBA8);
+          spec_futures->push_back(future);
 
           // logchan_gen->log("EnvMapProcessor: completed specular filtering for roughness %d", rough_idx);
         });
@@ -348,6 +366,9 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
          output_height,                    //
          tex_name,                         //
          rtgroup,                          //
+         rtbuffer,                         //
+         diff_futures,                     //
+         diff_capbufs,                     //
          tile_size,                        //
          mip,                              //
          is_equirectangular](taskgraph_wkptr_t g) { //
@@ -422,6 +443,10 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
 
           // Pop render target ONCE after all tiles
           fbi->PopRtGroup();
+          auto capbuf = std::make_shared<CaptureBuffer>();
+          diff_capbufs->push_back(capbuf);
+          auto future = fbi->captureAsFormat(rtbuffer.get(), capbuf, EBufferFormat::RGBA8);
+          diff_futures->push_back(future);
 
           // logchan_gen->log("EnvMapProcessor: completed diffuse filtering for mip %d", mip);
         }); // diffuse_phase->task(
@@ -439,65 +464,6 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
   ///////////////////////////////////////
 
   ContextExecutor::emptyFrame(graph, tex_name + ".final-frame-barrier", gpu_executor);
-
-  ///////////////////////////////////////
-  // Phase 4: Capture results asynchronously
-  ///////////////////////////////////////
-
-  auto cap_phase = TaskGraph::phase(graph, tex_name + ".capture_results", gpu_executor);
-
-  // Storage for captured data
-  auto spec_futures = std::make_shared<std::vector<captureasync_ptr_t>>();
-  auto diff_futures = std::make_shared<std::vector<captureasync_ptr_t>>();
-
-  auto spec_capbufs = std::make_shared<std::vector<capturebuffer_ptr_t>>();
-  auto diff_capbufs = std::make_shared<std::vector<capturebuffer_ptr_t>>();
-
-  cap_phase->task("capture_specular", [specular_rtgroups,                   //
-                                       spec_capbufs,                        //
-                                       spec_futures](taskgraph_wkptr_t g) { //
-    auto fbi = gloadercontext.get()->FBI();
-
-    /////////////////////////////////////////
-    // Capture all specular filtering results
-    /////////////////////////////////////////
-
-    int i = 0;
-    for (auto rtg : *specular_rtgroups) {
-      auto rtb    = rtg->buffer(0);
-      auto capbuf = std::make_shared<CaptureBuffer>();
-      spec_capbufs->push_back(capbuf);
-      auto future = fbi->captureAsFormat(rtb.get(), capbuf, EBufferFormat::RGBA8);
-      spec_futures->push_back(future);
-      i++;
-    }
-  });
-
-  cap_phase->task(tex_name + ".capture_diffuse", [diffuse_rtgroups,                    //
-                                                  diff_capbufs,                        //
-                                                  diff_futures](taskgraph_wkptr_t g) { //
-    auto fbi = gloadercontext.get()->FBI();
-
-    /////////////////////////////////////////
-    // Capture all diffuse filtering results
-    /////////////////////////////////////////
-
-    int i = 0;
-    for (auto rtg : *diffuse_rtgroups) {
-      auto rtb    = rtg->buffer(0);
-      auto capbuf = std::make_shared<CaptureBuffer>();
-      diff_capbufs->push_back(capbuf);
-      auto future = fbi->captureAsFormat(rtb.get(), capbuf, EBufferFormat::RGBA8);
-      diff_futures->push_back(future);
-      i++;
-    }
-  });
-
-  ///////////////////////////////////////
-  // Frame barrier after capture to ensure GPU commands are submitted
-  ///////////////////////////////////////
-
-  ContextExecutor::emptyFrame(graph, tex_name + ".capture-submission-barrier", gpu_executor);
 
   ///////////////////////////////////////
   // Phase 5: Wait for captures and package datablocks

@@ -101,6 +101,9 @@ struct CaptureBuffer {
 };
 
 using capturebuffer_ptr_t = std::shared_ptr<CaptureBuffer>;
+using capturebuffer_wkptr_t = std::weak_ptr<CaptureBuffer>;
+using capturebuffer_list_t = std::vector<capturebuffer_ptr_t>;
+using capturebuffer_list_ptr_t = std::shared_ptr<capturebuffer_list_t>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -139,6 +142,9 @@ struct CaptureAsync {
 };
 
 using captureasync_ptr_t = std::shared_ptr<CaptureAsync>;
+using captureasync_wkptr_t = std::weak_ptr<CaptureAsync>;
+using captureasync_list_t = std::vector<captureasync_ptr_t>;
+using captureasync_list_ptr_t = std::shared_ptr<captureasync_list_t>;
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

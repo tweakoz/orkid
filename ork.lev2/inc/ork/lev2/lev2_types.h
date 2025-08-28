@@ -142,6 +142,8 @@ using rtbuffer_ptr_t = std::shared_ptr<RtBuffer>;
 using rtbuffer_rawptr_t = RtBuffer*;
 using rtgroup_list_t = std::vector<rtgroup_ptr_t>;
 using rtbuffer_list_t = std::vector<rtbuffer_ptr_t>;
+using rtgroup_list_ptr_t = std::shared_ptr<rtgroup_list_t>;
+using rtbuffer_list_ptr_t = std::shared_ptr<rtbuffer_list_t>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Render Target
