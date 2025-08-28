@@ -39,11 +39,9 @@ static constexpr uint64_t KAPPSTATEFLAG_JOINED     = 1 << 2;
 
 struct EzAppContext {
 
-public:
   static ezappctx_ptr_t get(appinitdata_ptr_t appinitdata = nullptr);
   ~EzAppContext();
 
-private:
   EzAppContext(appinitdata_ptr_t appinitdata=nullptr);
 
   opq::TrackCurrent* _trackq;
@@ -263,3 +261,5 @@ public:
 };
 
 } // namespace ork::lev2
+
+ork::lev2::orkezapp_ptr_t lev2appinit(ork::appinitdata_ptr_t initdata = nullptr);

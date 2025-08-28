@@ -101,14 +101,14 @@ Texture::Texture(ipctexture_ptr_t external_memory)
   _vars = std::make_shared<asset::vars_t>();
   _residenceState.store(0);
   int texcount = _texture_count.fetch_add(1);
-   printf( "Texture::_texture_count: %zu\n", texcount+1 );
+   //printf( "Texture::_texture_count: %zu\n", texcount+1 );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 Texture::~Texture() {
   int texcount = _texture_count.fetch_add(-1);
-  printf( "~Texture::_texture_count: %zu\n", texcount-1 );
+  //printf( "~Texture::_texture_count: %zu\n", texcount-1 );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

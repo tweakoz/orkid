@@ -64,67 +64,31 @@ extern context_ptr_t gloadercontext;
 
 } // namespace ork::lev2
 
-
-////////////////////////////////////////////////////////////////////////////////
-
-
-orkezapp_ptr_t lev2appinit() {
-
-  ork::SetCurrentThreadName("main");
-
-  
-  ork::genviron.init_from_global_env();
-
-  static std::shared_ptr<lev2::ThreadGfxContext> _gthreadgfxctx;
-  static std::vector<std::string> _dynaargs_storage;
-  static std::vector<char*> _dynaargs_refs;
-
+ork::lev2::orkezapp_ptr_t pylev2appinit() {
   py::object python_exec = py::module_::import("sys").attr("executable");
   py::object argv_list = py::module_::import("sys").attr("argv");
-
   auto exec_as_str = py::cast<std::string>(python_exec);
   //printf( "exec_as_str<%s>\n", exec_as_str.c_str() );
+  auto init_data  = std::make_shared<AppInitData>();
 
-  _dynaargs_storage.push_back(exec_as_str);
+  init_data->_dynaargs_storage.push_back(exec_as_str);
 
   for (auto item : argv_list) {
     auto as_str = py::cast<std::string>(item);
-    _dynaargs_storage.push_back(as_str);
+    init_data->_dynaargs_storage.push_back(as_str);
     //printf( "as_str<%s>\n", as_str.c_str() );
   }
   //OrkAssert(false);
 
-  for( std::string& item : _dynaargs_storage ){
+  for( std::string& item : init_data->_dynaargs_storage ){
     char* ref = item.data();
-    _dynaargs_refs.push_back(ref);
+    init_data->_dynaargs_refs.push_back(ref);
   }
 
-  int argc      = _dynaargs_refs.size();
-  char** argv = _dynaargs_refs.data();
+  int argc      = init_data->_dynaargs_refs.size();
+  char** argv = init_data->_dynaargs_refs.data();
 
-  //for( int i=0; i<argc; i++ ){
-    //printf( "dynarg<%d:%s>\n", i, argv[i] );
-  //}
-
-  static auto init_data = std::make_shared<AppInitData>(argc,argv);
-
-  auto po_opts = OrkEzApp::createDefaultOptions( init_data, "python-ork-app");
-  init_data->_offscreen = true;
-  try {
-    auto vars = *init_data->parse();
-  }
-  catch (std::exception& e) {
-
-  }
-  auto ezapp = OrkEzApp::create(init_data);
-
-  lev2::initModule(init_data);
-
-  _gthreadgfxctx = std::make_shared<lev2::ThreadGfxContext>(gloadercontext.get());
-
-  lev2::gloadercontext->makeCurrentContext();
-
-  return ezapp;
+  return lev2appinit(init_data);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -157,7 +121,7 @@ PYBIND11_MODULE(_lev2, module_lev2) {
   //////////////////////////////////////////////////////////////////////////////
   module_lev2.doc() = "Orkid Lev2 Library (graphics,audio,vr,input,etc..)";
   //////////////////////////////////////////////////////////////////////////////
-  module_lev2.def("lev2appinit", &lev2appinit);
+  module_lev2.def("lev2appinit", &pylev2appinit);
   module_lev2.def("lev2apppoll", &lev2apppoll);
   module_lev2.def("lev2exdir", &lev2exdir);
   module_lev2.def("shutdownApp", &lev2appshutdown);

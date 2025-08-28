@@ -749,3 +749,28 @@ void OrkEzApp::setRefreshPolicy(RefreshPolicyItem policy) {
 ///////////////////////////////////////////////////////////////////////////////
 
 } // namespace ork::lev2
+
+ork::lev2::orkezapp_ptr_t lev2appinit(ork::appinitdata_ptr_t init_data) {
+  ork::SetCurrentThreadName("main");
+
+  
+  ork::genviron.init_from_global_env();
+
+
+  static auto _init_data = init_data;
+  if( _init_data == nullptr ){    
+    _init_data = std::make_shared<ork::AppInitData>();
+  }
+ 
+  _init_data->_offscreen = true;
+  auto ezapp = ork::lev2::OrkEzApp::create(_init_data);
+
+  ork::lev2::initModule(init_data);
+
+  static std::shared_ptr<ork::lev2::ThreadGfxContext> _gthreadgfxctx;
+  _gthreadgfxctx = std::make_shared<ork::lev2::ThreadGfxContext>(ork::lev2::gloadercontext.get());
+
+  ork::lev2::gloadercontext->makeCurrentContext();
+
+  return ezapp;
+}

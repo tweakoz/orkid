@@ -49,20 +49,20 @@ class ImposterApp(boilerplate.ImposterBaseApp):
     sceneparams.DiffuseIntensity = float(1)
     sceneparams.AmbientLight = vec3(0.0)
     sceneparams.DepthFogDistance = float(1e5)
-    sceneparams.SkyboxTexPathStr = self.envmap
+    #sceneparams.SkyboxTexPathStr = self.envmap
 
     ###################################
     # post fx node
     ###################################
 
-    postNode = lev2.PostFxNodeHSVG()
-    postNode.hue = 0.0
-    postNode.saturation = 0.7
-    postNode.value = 1.0
-    postNode.gamma = 0.8
-    postNode.gpuInit(ctx,8,8);
-    postNode.addToSceneVars(sceneparams,"PostFxChain")
-    self.post_node = postNode
+    #postNode = lev2.PostFxNodeHSVG()
+    #postNode.hue = 0.0
+    #postNode.saturation = 0.7
+    #postNode.value = 1.0
+    #postNode.gamma = 0.8
+    #postNode.gpuInit(ctx,8,8);
+    #postNode.addToSceneVars(sceneparams,"PostFxChain")
+    #self.post_node = postNode
 
     self.scene = self.ezapp.createScene(sceneparams)
     self.layer_donly = self.scene.createLayer("depth_prepass")
@@ -75,6 +75,7 @@ class ImposterApp(boilerplate.ImposterBaseApp):
     # create model
     ###################################
 
+    """
     model = lev2.XgmModel("data://tests/misc_gltf_samples/lion.glb")
     model.debugRenderingModel = tokens.ALL if self.statedebug else tokens.NONE
     model.debugPassID = tokens.PRIMARY if self.statedebug else tokens.NONE
@@ -83,11 +84,12 @@ class ImposterApp(boilerplate.ImposterBaseApp):
     self.modelnode = self.scene.createDrawableNodeOnLayers(self.fwd_layers,"model-node",self.drawable_model)
     self.modelnode.worldTransform.scale = 1.5
     self.modelnode.worldTransform.translation = vec3(0,1,0)
-
+    """
     ###################################
     # create grid
     ###################################
 
+    """
     self.grid_data = createGridData(extent=1000.0)
     self.grid_data.shader_suffix = "_V4"
     self.grid_data.modcolor = vec3(1.0)
@@ -98,18 +100,19 @@ class ImposterApp(boilerplate.ImposterBaseApp):
     self.grid_data.lineWidth = 0.025
     self.grid_node = self.layer_fwd.createDrawableNodeFromData("grid",self.grid_data)
     self.grid_node.sortkey = 1
+    """
 
   ##############################################
   # create imposter
   ##############################################
 
-    if True:
+    if False:
       imposter = createImposter( context=ctx,
                                  radius=1.0,
                                  filtertype=tokens.BILINEAR,
                                  filterradius=3.0, 
                                  detail=3,
-                                 shaderpath=this_dir/"i5.glfx",
+                                 shaderpath=this_dir/"i5.fxv2",
                                  shadertek="tek_imp",
                                  layer=self.layer_fwd,
                                  DIM = IMP_DIM,
@@ -152,10 +155,11 @@ class ImposterApp(boilerplate.ImposterBaseApp):
     shadow_bias = 1e-4
     intens_scale = 0.5
     speed_scale = 0.5
-    self.spotlight1 = MySpotLight(index=0,app=self,model=model,frq=0.17*speed_scale,color=vec3(0,150,0)*intens_scale,cookie=cookie1,depth_cookie=depth1,fovbase=60.0,fovamp=20.0,voffset=10,vscale=5,bias=shadow_bias,dim=shadow_size,radius=1.2)
-    self.spotlight2 = MySpotLight(index=1,app=self,model=model,frq=0.37*speed_scale,color=vec3(300,0,0)*intens_scale,cookie=cookie2,depth_cookie=depth2,fovbase=60.0,fovamp=20.0,voffset=10,vscale=5,bias=shadow_bias,dim=shadow_size,radius=1.5)
-    self.spotlight3 = MySpotLight(index=2,app=self,model=model,frq=0.57*speed_scale,color=vec3(100)*intens_scale,cookie=cookie3,depth_cookie=depth3,fovbase=60.0,fovamp=20.0,voffset=10,vscale=5,bias=shadow_bias,dim=shadow_size,radius=2.0)
-    self.spotlight4 = MySpotLight(index=3,app=self,model=model,frq=0.97*speed_scale,color=vec3(0,0,200)*intens_scale,cookie=cookie4,depth_cookie=depth4,fovbase=70.0,fovamp=20.0,voffset=3,vscale=2,bias=shadow_bias,dim=shadow_size,radius=7)
+    if hasattr(self,"modelnode"):
+      self.spotlight1 = MySpotLight(index=0,app=self,model=model,frq=0.17*speed_scale,color=vec3(0,150,0)*intens_scale,cookie=cookie1,depth_cookie=depth1,fovbase=60.0,fovamp=20.0,voffset=10,vscale=5,bias=shadow_bias,dim=shadow_size,radius=1.2)
+      self.spotlight2 = MySpotLight(index=1,app=self,model=model,frq=0.37*speed_scale,color=vec3(300,0,0)*intens_scale,cookie=cookie2,depth_cookie=depth2,fovbase=60.0,fovamp=20.0,voffset=10,vscale=5,bias=shadow_bias,dim=shadow_size,radius=1.5)
+      self.spotlight3 = MySpotLight(index=2,app=self,model=model,frq=0.57*speed_scale,color=vec3(100)*intens_scale,cookie=cookie3,depth_cookie=depth3,fovbase=60.0,fovamp=20.0,voffset=10,vscale=5,bias=shadow_bias,dim=shadow_size,radius=2.0)
+      self.spotlight4 = MySpotLight(index=3,app=self,model=model,frq=0.97*speed_scale,color=vec3(0,0,200)*intens_scale,cookie=cookie4,depth_cookie=depth4,fovbase=70.0,fovamp=20.0,voffset=3,vscale=2,bias=shadow_bias,dim=shadow_size,radius=7)
 
   ################################################
 

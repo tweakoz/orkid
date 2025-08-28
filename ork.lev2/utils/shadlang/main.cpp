@@ -9,6 +9,7 @@
 #include <ork/kernel/spawner.h>
 #include <ork/application/application.h>
 #include <ork/lev2/gfx/shadlang.h>
+#include <ork/lev2/ezapp.h>
 #include <boost/program_options.hpp>
 
 using namespace ork;
@@ -28,8 +29,8 @@ int main(int argc, char** argv, char** envp) {
       ("glfx", po::value<std::string>()->default_value(""), "output shader glfx file path");
   auto opts = init_data->parse();
 
-  auto incdir     = file::Path::orkroot_dir() / "ork.data" / "platform_lev2" / "shaders" / "glfx";
-  auto fdevctx    = FileEnv::createContextForUriBase("orkshader://", incdir);
+  auto ezapp = lev2appinit(init_data);
+
   auto input_path = init_data->commandLineOption("in").as<std::string>();
   auto ast_output_path = init_data->commandLineOption("ast").as<std::string>();
   auto dot_output_path = init_data->commandLineOption("dot").as<std::string>();

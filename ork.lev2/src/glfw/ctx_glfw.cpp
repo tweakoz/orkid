@@ -734,7 +734,7 @@ void CtxGLFW::SlotRepaint() {
 
     auto widget = gfxwin ? gfxwin->GetRootWidget() : nullptr;
 
-      printf( "CtxGLFW::SlotRepaint() _target<%p> widget<%p>\n", _target, widget );
+      //printf( "CtxGLFW::SlotRepaint() _target<%p> widget<%p>\n", _target, widget );
 
     if (widget) {
       widget->draw(drwev);

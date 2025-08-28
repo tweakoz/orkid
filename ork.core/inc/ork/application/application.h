@@ -80,6 +80,8 @@ struct AppInitData{
 
   opts_desc_ptr_t _commandline_desc;
   opts_var_map_ptr_t _commandline_vars;
+  std::vector<std::string> _dynaargs_storage;
+  std::vector<char*> _dynaargs_refs;
 
   bool _enable_audio = false;
   bool _enable_audio_input = false;
