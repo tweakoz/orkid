@@ -115,7 +115,7 @@ TaskGraph::execute(graph, [](taskgraph_ptr_t g) {
 
 ## Real-World Example: Environment Map Processing
 
-This example from `envmap_processor.cpp` shows how to process HDR environment maps for PBR rendering.
+This example from `radiancemaps_processor.cpp` shows how to process HDR environment maps for PBR rendering.
 
 ```cpp
 taskgraph_ptr_t createFilteringTaskGraph(

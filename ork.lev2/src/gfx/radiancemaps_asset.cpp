@@ -6,7 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
-#include <ork/lev2/gfx/irradiance_asset.h>
+#include <ork/lev2/gfx/radiancemaps_asset.h>
 #include <ork/lev2/gfx/xir_format.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/texman.h>
@@ -21,7 +21,7 @@
 #include <ork/rtti/RTTIX.inl>
 #include <ork/util/hexdump.inl>
 
-ImplementReflectionX(ork::lev2::IrradianceMapsAsset, "IrradianceMapsAsset");
+ImplementReflectionX(ork::lev2::RadianceMapsAsset, "RadianceMapsAsset");
 
 namespace ork::lev2 {
 extern context_ptr_t gloadercontext;
@@ -29,16 +29,16 @@ extern context_ptr_t gloadercontext;
 ///////////////////////////////////////////////////////////////////////////////
 
 // Forward declaration
-void registerIrradianceLoader();
+void registerRadianceLoader();
 
-void IrradianceMapsAsset::describeX(class_t* clazz) {
+void RadianceMapsAsset::describeX(class_t* clazz) {
   // Register the loader for XIR files
-  registerIrradianceLoader();
+  registerRadianceLoader();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-IrradianceMapsLoader::IrradianceMapsLoader() {
+RadianceMapsLoader::RadianceMapsLoader() {
   // Register for .xir extension
   // Note: The registration needs to happen when the loader is created,
   // typically during static initialization
@@ -46,7 +46,7 @@ IrradianceMapsLoader::IrradianceMapsLoader() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-asset::asset_ptr_t IrradianceMapsLoader::_doLoadFromDatablock(
+asset::asset_ptr_t RadianceMapsLoader::_doLoadFromDatablock(
     asset::loadrequest_ptr_t loadreq,
     datablock_ptr_t dblock) {
   return _loadFromXIR(loadreq, dblock);
@@ -54,7 +54,7 @@ asset::asset_ptr_t IrradianceMapsLoader::_doLoadFromDatablock(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-asset::asset_ptr_t IrradianceMapsLoader::_loadFromXIR(
+asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
     asset::loadrequest_ptr_t loadreq,
     datablock_ptr_t xir_data) {
   // Use XIRReader to get raw datablocks
@@ -76,9 +76,9 @@ asset::asset_ptr_t IrradianceMapsLoader::_loadFromXIR(
   }
   
   // Create asset
-  auto asset = std::make_shared<IrradianceMapsAsset>();
-  auto irrmaps = std::make_shared<pbr::IrradianceMaps>();
-  asset->_irradianceMaps = irrmaps;
+  auto asset = std::make_shared<RadianceMapsAsset>();
+  auto irrmaps = std::make_shared<pbr::RadianceMaps>();
+  asset->_RadianceMaps = irrmaps;
   
   // Create textures (CPU only, no GPU resources yet)
   auto diffuse_tex = std::make_shared<Texture>();
@@ -146,14 +146,14 @@ asset::asset_ptr_t IrradianceMapsLoader::_loadFromXIR(
 // Static loader instance - will be created during static initialization
 
 // Registration function to be called during initialization
-void registerIrradianceLoader() {
-  static auto _irradiance_loader = std::make_shared<IrradianceMapsLoader>();
-  asset::registerLoader<IrradianceMapsAsset>(_irradiance_loader);
-  asset::AssetLoader::registerLoaderForExtension("xir", _irradiance_loader);
+void registerRadianceLoader() {
+  static auto _Radiance_loader = std::make_shared<RadianceMapsLoader>();
+  asset::registerLoader<RadianceMapsAsset>(_Radiance_loader);
+  asset::AssetLoader::registerLoaderForExtension("xir", _Radiance_loader);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 } // namespace ork::lev2
 
-template struct ork::asset::AssetManager<ork::lev2::IrradianceMapsAsset>;
+template struct ork::asset::AssetManager<ork::lev2::RadianceMapsAsset>;

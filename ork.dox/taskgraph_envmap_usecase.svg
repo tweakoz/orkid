@@ -176,7 +176,7 @@
     <!-- Generate XIR -->
     <rect x="610" y="665" width="250" height="80" rx="4" fill="#3a3a2a" stroke="#5a5a4a" stroke-width="1"/>
     <text x="735" y="685" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">Generate XIR</text>
-    <text x="735" y="703" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">XIRWriter::writeIrradianceMaps()</text>
+    <text x="735" y="703" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">XIRWriter::writeRadianceMaps()</text>
     <text x="735" y="718" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">• Combine spec + diff</text>
     <text x="735" y="733" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">Store in VarMap</text>
     

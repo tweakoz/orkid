@@ -13,7 +13,7 @@
 #include <boost/filesystem.hpp>
 #include <ork/pch.h>
 #include <ork/util/logger.h>
-#include <ork/lev2/gfx/envmap_processor.h>
+#include <ork/lev2/gfx/radiancemaps_processor.h>
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/xir_format.h>
 #include <ork/lev2/gfx/texman.h>

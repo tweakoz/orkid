@@ -38,7 +38,7 @@
      * Metallic-Roughness workflow.
      * Supports monoscopic and stereo-VR. 
      * Point lights.
-     * Irradiance Probes
+     * Radiance Probes
      * Spot lights (textured and untextured).
      * Directional lights.
      * Shadowing support

@@ -6,7 +6,7 @@ class MyCookie:
   def __init__(self,path):
     self.path = path
     self.tex = Texture.load(path)
-    self.irr = PbrCommon.requestIrradianceMaps(path)    
+    self.irr = PbrCommon.requestRadianceMaps(path)    
 class MySpotLight:
   def __init__( self,
                 app=None,
@@ -52,7 +52,7 @@ class MySpotLight:
     self.spot_light.data.shadowMapSize = dim
     self.spot_light.colorCookie = cookie
     self.spot_light.depthCookie = depth_cookie
-    #self.spot_light.irradianceCookie = cookie.irr
+    #self.spot_light.RadianceCookie = cookie.irr
     self.spot_light.shadowCaster = True
     #print(self.spot_light.shadowMatrix)
     self.lnode = app.layer_fwd.createLightNode("spotlight%d"%index,self.spot_light)

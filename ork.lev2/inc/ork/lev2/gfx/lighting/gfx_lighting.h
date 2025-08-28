@@ -164,14 +164,14 @@ struct Light : public Drawable {
   texturearraysliceref_ptr_t _cookieColor;
   texturearraysliceref_ptr_t _cookieDepth;
   rtgroup_ptr_t _depthRTG;
-  pbr::irradiancemaps_ptr_t _irradianceCookie;
+  pbr::RadianceMaps_ptr_t _RadianceCookie;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 enum class LightProbeType : uint64_t {
   CrcEnum(REFLECTION),
-  CrcEnum(SH_IRRADIANCE),
+  CrcEnum(SH_Radiance),
   CrcEnum(END)
 };
 

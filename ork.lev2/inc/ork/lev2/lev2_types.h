@@ -548,10 +548,10 @@ class TextureAnimationInst;
 
 namespace pbr {
   struct CommonStuff;
-  struct IrradianceMaps;
+  struct RadianceMaps;
   using commonstuff_ptr_t = std::shared_ptr<CommonStuff>;
-  using irradiancemaps_ptr_t = std::shared_ptr<IrradianceMaps>;
-  using irradiancemaps_wkptr_t = std::weak_ptr<IrradianceMaps>;
+  using RadianceMaps_ptr_t = std::shared_ptr<RadianceMaps>;
+  using RadianceMaps_wkptr_t = std::weak_ptr<RadianceMaps>;
   namespace deferrednode{
     struct DeferredContext;
   };

@@ -316,7 +316,7 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
           break;
         }
         case "RCFD_PBR_BRDF_INTEGRATION_GGX"_crcu: {
-          auto brdf_integration = pbrcommon->_irradianceMaps->_brdfIntegrationMapGGX.get();
+          auto brdf_integration = pbrcommon->_RadianceMaps->_brdfIntegrationMapGGX.get();
           FXI->bindParamTexture(param, brdf_integration);
           break;
         }

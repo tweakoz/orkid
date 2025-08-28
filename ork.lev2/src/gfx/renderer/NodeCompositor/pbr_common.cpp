@@ -31,7 +31,7 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_light_processor_cpu.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_light_processor_simple.h>
-#include <ork/lev2/gfx/irradiance_asset.h>
+#include <ork/lev2/gfx/radiancemaps_asset.h>
 #include <ork/lev2/gfx/xir_format.h>
 
 #include <ork/profiling.inl>
@@ -49,7 +49,7 @@ static logchannel_ptr_t logchan_pbrcom = logger()->configureChannel("PBRCOM", fv
 
 ///////////////////////////////////////////////////////////////////////////////
 
-/*static asset::vars_ptr_t _irradianceVars() {
+/*static asset::vars_ptr_t _RadianceVars() {
 
   auto vars                                          = std::make_shared<asset::vars_t>();
   vars->makeValueForKey<Texture::proc_t>("postproc") = //
@@ -58,13 +58,13 @@ static logchannel_ptr_t logchan_pbrcom = logger()->configureChannel("PBRCOM", fv
           Context* targ,     //
           datablock_constptr_t inp_datablock) -> datablock_ptr_t {
     logchan_pbrcom->log(
-        "EnvironmentTexture Irradiance PreProcessor tex<%p:%s> datablocklen<%zu>",
+        "EnvironmentTexture Radiance PreProcessor tex<%p:%s> datablocklen<%zu>",
         tex.get(),
         tex->_debugName.c_str(),
         inp_datablock->length());
 
     auto hasher = DataBlock::createHasher();
-    hasher->accumulateString("irradiancemap-v2");
+    hasher->accumulateString("Radiancemap-v2");
     hasher->accumulateItem<uint64_t>(inp_datablock->hash()); // data content
     hasher->finish();
     uint64_t cachekey = hasher->result();
@@ -113,7 +113,7 @@ static logchannel_ptr_t logchan_pbrcom = logger()->configureChannel("PBRCOM", fv
       load_req->_asset_vars->makeValueForKey<texture_ptr_t>("brdf_mapBLINN") = brdfIntegrationMapBlinn;
       load_req->_asset_vars->makeValueForKey<texture_ptr_t>("brdf_mapPHONG") = brdfIntegrationMapPhong;
 
-      auto irrmaps = load_req->_asset_vars->typedValueForKey<irradiancemaps_ptr_t>("irrmaps").value();
+      auto irrmaps = load_req->_asset_vars->typedValueForKey<RadianceMaps_ptr_t>("irrmaps").value();
       irrmaps->_filtenvSpecularMap = filtenvSpecularMap;
       irrmaps->_filtenvDiffuseMap  = filtenvDiffuseMap;
       irrmaps->_brdfIntegrationMapGGX = brdfIntegrationMapGGX;
@@ -134,7 +134,7 @@ static logchannel_ptr_t logchan_pbrcom = logger()->configureChannel("PBRCOM", fv
 ///////////////////////////////////////////////////////////////////////////////
 CommonStuff::CommonStuff() {
 
-  _irradianceMaps = std::make_shared<IrradianceMaps>();
+  _RadianceMaps = std::make_shared<RadianceMaps>();
   _clearColor     = fvec4(0, 0, 0, 1);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -149,21 +149,21 @@ void CommonStuff::assignEnvTexture(asset::asset_ptr_t texasset) {
   _environmentTextureAsset = texasset;
   if (nullptr == _environmentTextureAsset)
     return;
-  //_environmentTextureAsset->_varmap = *_irradianceVars();
+  //_environmentTextureAsset->_varmap = *_RadianceVars();
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-irradiancemaps_ptr_t CommonStuff::requestIrradianceMaps(const AssetPath& texture_path) {
+RadianceMaps_ptr_t CommonStuff::requestRadianceMaps(const AssetPath& texture_path) {
   // Load XIR file directly using the registered XIR loader
   auto load_req = std::make_shared<asset::LoadRequest>(texture_path);
   
-  // Load using generic asset mechanism - the XIR extension will route to IrradianceMapsLoader
-  auto generic_asset = asset::AssetManager<IrradianceMapsAsset>::load(load_req);
+  // Load using generic asset mechanism - the XIR extension will route to RadianceMapsLoader
+  auto generic_asset = asset::AssetManager<RadianceMapsAsset>::load(load_req);
   if (generic_asset) {
-    // Cast to IrradianceMapsAsset
-    auto irradiance_asset = std::dynamic_pointer_cast<IrradianceMapsAsset>(generic_asset);
-    if (irradiance_asset) {
-      return irradiance_asset->_irradianceMaps;
+    // Cast to RadianceMapsAsset
+    auto radiancemaps_asset = std::dynamic_pointer_cast<RadianceMapsAsset>(generic_asset);
+    if (radiancemaps_asset) {
+      return radiancemaps_asset->_RadianceMaps;
     }
   }
   return nullptr;
@@ -172,10 +172,10 @@ irradiancemaps_ptr_t CommonStuff::requestIrradianceMaps(const AssetPath& texture
 ///////////////////////////////////////////////////////////////////////////////
 void CommonStuff::requestAndRefSkyboxTexture(asset::loadrequest_ptr_t load_req) {
   auto texture_path = load_req->_asset_path;
-  //load_req->_asset_vars    = _irradianceVars();
+  //load_req->_asset_vars    = _RadianceVars();
   load_req->_asset_vars->makeValueForKey<bool>("equirectangular") = true;
-  load_req->_asset_vars->makeValueForKey<irradiancemaps_ptr_t>("irrmaps") = _irradianceMaps;
-  _irradianceMaps->_loadRequest = load_req;
+  load_req->_asset_vars->makeValueForKey<RadianceMaps_ptr_t>("irrmaps") = _RadianceMaps;
+  _RadianceMaps->_loadRequest = load_req;
   opq::mainSerialQueue()->enqueue([=]() {
     //printf( "SKYBOX<%s>\n", load_req->_asset_path.c_str());
     auto enviromentmap_asset = asset::AssetManager<lev2::TextureAsset>::load(load_req);
@@ -281,11 +281,11 @@ void CommonStuff::_writeEnvTexture(asset::asset_ptr_t const& tex) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 lev2::texture_ptr_t CommonStuff::envSpecularTexture() const {
-  return _irradianceMaps->_filtenvSpecularMap;
+  return _RadianceMaps->_filtenvSpecularMap;
 }
 ///////////////////////////////////////////////////////////////////////////////
 lev2::texture_ptr_t CommonStuff::envDiffuseTexture() const {
-  return _irradianceMaps->_filtenvDiffuseMap;
+  return _RadianceMaps->_filtenvDiffuseMap;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CommonStuff::_readEnvTexture(asset::asset_ptr_t& tex) const {
@@ -325,7 +325,7 @@ void CommonStuff::describeX(class_t* c) {
             auto _this = std::dynamic_pointer_cast<CommonStuff>(obj);
             OrkAssert(_this);
             OrkAssert(false);
-            return _irradianceVars();
+            return _RadianceVars();
           });*/
 }
 void CommonStuff::onGpuInit(Context* ctx) {

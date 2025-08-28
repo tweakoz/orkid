@@ -124,7 +124,7 @@ libblock lib_fwd_impl
     vec3 probe_REFL       = env_cube(reflectionPROBE, refl_probe_coord).xyz;
     /////////////////////////
     vec3 refl_equi = vec3(refl.x, -refl.y, refl.z);
-    // Use normal for diffuse (irradiance)
+    // Use normal for diffuse (Radiance)
     // vec3 diffuse_env = env_equirectangular(diffn, MapDiffuseEnv, 0);
     //  Use reflection with appropriate mip level for specular
     float rl       = roughness * roughness;

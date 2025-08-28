@@ -300,7 +300,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _parLightDepthCookies = fxi->parameter(_shader, "light_cookie_depths");
 
   _parProbeReflection = fxi->parameter(_shader, "reflectionPROBE");
-  _parProbeIrradiance = fxi->parameter(_shader, "irradiancePROBE");
+  _parProbeRadiance = fxi->parameter(_shader, "RadiancePROBE");
 
   // printf( "_parLightCookies<%p>\n", _parLightCookies );
 

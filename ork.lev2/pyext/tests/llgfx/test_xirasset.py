@@ -1,6 +1,6 @@
 #!/usr/bin/env ork.python
 """
-Test for loading XIR irradiance assets from Python.
+Test for loading XIR Xir (Radiance) assets from Python.
 Loads a pre-filtered environment map and verifies the textures are created.
 """
 
@@ -12,7 +12,7 @@ from orkengine import lev2
 tokens = core.CrcStringProxy()
 
 print("="*60)
-print("Starting XIR irradiance asset loading test")
+print("Starting XIR Radiance asset loading test")
 print("="*60)
 
 # Initialize lev2 app with offscreen graphics context
@@ -31,14 +31,14 @@ fbi = ctx.FBI
 print("Starting main thread...")
 ezapp.mainThreadBegin()
 
-# Load XIR irradiance asset
-print("Loading XIR irradiance asset: ork_envmaps|tozenv_nebula")
+# Load XIR Radiance asset
+print("Loading XIR Radiance asset: ork_envmaps|tozenv_nebula")
 
-# Request irradiance maps from XIR file
-irr_maps = lev2.PbrCommon.requestIrradianceMaps("ork_envmaps|tozenv_nebula")
-print(irr_maps)
-if irr_maps:
-    print("Successfully loaded irradiance maps!")
+# Request Radiance maps from XIR file
+ibl_maps = lev2.PbrCommon.requestRadianceMaps("ork_envmaps|tozenv_nebula")
+print(ibl_maps)
+if ibl_maps:
+    print("Successfully loaded Radiance maps!")
     
     # Process one frame to ensure GPU resources are created
     print("Processing frame to create GPU resources...")
@@ -47,14 +47,14 @@ if irr_maps:
     ctx.endFrame()
     ezapp.mainThreadIter()
                 
-    print("\nIrradiance maps summary:")
-    print(f"  diffuse: {irr_maps.diffuse}")
-    print(f"  specular: {irr_maps.specular}")
-    print(f"  BRDF GGX: {irr_maps.brdf_ggx}")
+    print("\nRadiance maps summary:")
+    print(f"  diffuse: {ibl_maps.diffuse}")
+    print(f"  specular: {ibl_maps.specular}")
+    print(f"  BRDF GGX: {ibl_maps.brdf_ggx}")
     sys.exit(0)
     
 else:
-    print("ERROR: Failed to load irradiance maps")
+    print("ERROR: Failed to load Radiance maps")
     ezapp.mainThreadEnd()
     sys.exit(1)
     

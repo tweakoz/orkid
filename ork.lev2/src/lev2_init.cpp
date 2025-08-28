@@ -67,7 +67,7 @@
 #include <ork/lev2/ui/ged/ged_node.h>
 #include <ork/lev2/ui/ged/ged_test_objects.h>
 #include <ork/lev2/ui/ged/ged_factory.h>
-#include <ork/lev2/gfx/irradiance_asset.h>
+#include <ork/lev2/gfx/radiancemaps_asset.h>
 
 #include <openvdb/openvdb.h>
 #include <openvdb/points/PointDataGrid.h>
@@ -327,7 +327,7 @@ struct ClassToucher {
     RegisterClassX(FxShaderAsset);
     RegisterClassX(XgmAnimAsset);
     RegisterClassX(XgmModelAsset);
-    RegisterClassX(IrradianceMapsAsset);
+    RegisterClassX(RadianceMapsAsset);
 
     //////////////////////////////////////////
     // register audio classes

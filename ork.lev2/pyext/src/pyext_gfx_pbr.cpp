@@ -21,37 +21,37 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
 
   /////////////////////////////////////////////////////////////////////////////////
   auto irrmap_type =
-      py::class_<pbr::IrradianceMaps, pbr::irradiancemaps_ptr_t>(module_lev2, "IrradianceMap")
+      py::class_<pbr::RadianceMaps, pbr::RadianceMaps_ptr_t>(module_lev2, "RadianceMap")
           .def(py::init<>())
-          .def_property_readonly("specular", [](pbr::irradiancemaps_ptr_t m) -> texture_ptr_t { return m->_filtenvSpecularMap; })
-          .def_property_readonly("diffuse", [](pbr::irradiancemaps_ptr_t m) -> texture_ptr_t { return m->_filtenvDiffuseMap; })
-          .def_property_readonly("brdf_ggx", [](pbr::irradiancemaps_ptr_t m) -> texture_ptr_t { return m->_brdfIntegrationMapGGX; })
+          .def_property_readonly("specular", [](pbr::RadianceMaps_ptr_t m) -> texture_ptr_t { return m->_filtenvSpecularMap; })
+          .def_property_readonly("diffuse", [](pbr::RadianceMaps_ptr_t m) -> texture_ptr_t { return m->_filtenvDiffuseMap; })
+          .def_property_readonly("brdf_ggx", [](pbr::RadianceMaps_ptr_t m) -> texture_ptr_t { return m->_brdfIntegrationMapGGX; })
           .def_property_readonly(
-              "loadRequest", [](pbr::irradiancemaps_ptr_t m) -> asset::loadrequest_ptr_t { return m->_loadRequest; })
-          .def("__repr__", [](pbr::irradiancemaps_ptr_t d) -> std::string {
+              "loadRequest", [](pbr::RadianceMaps_ptr_t m) -> asset::loadrequest_ptr_t { return m->_loadRequest; })
+          .def("__repr__", [](pbr::RadianceMaps_ptr_t d) -> std::string {
             fxstring<64> fxs;
-            fxs.format("IrradianceMap(%p)", d.get());
+            fxs.format("RadianceMap(%p)", d.get());
             return fxs.c_str();
           });
   /////////////////////////////////////////////////////////////////////////////////
   auto pbrcommon_type = //
       py::class_<pbr::CommonStuff, pbr::commonstuff_ptr_t>(module_lev2, "PbrCommon")
           .def_static(
-              "requestIrradianceMaps",
-              [](py::object path) -> pbr::irradiancemaps_ptr_t { //
+              "requestRadianceMaps",
+              [](py::object path) -> pbr::RadianceMaps_ptr_t { //
                 auto as_py_str = py::str(path);
                 auto as_str    = as_py_str.cast<std::string>();
-                // printf("requestIrradianceMaps<%s>\n", as_str.c_str());
-                return pbr::CommonStuff::requestIrradianceMaps(as_str);
+                // printf("requestRadianceMaps<%s>\n", as_str.c_str());
+                return pbr::CommonStuff::requestRadianceMaps(as_str);
               })
           .def(py::init<>())
           .def_property(
-              "irradianceMaps",
-              [](pbr::commonstuff_ptr_t pbc) -> pbr::irradiancemaps_ptr_t { //
-                return pbc->_irradianceMaps;                                //
+              "RadianceMaps",
+              [](pbr::commonstuff_ptr_t pbc) -> pbr::RadianceMaps_ptr_t { //
+                return pbc->_RadianceMaps;                                //
               },
-              [](pbr::commonstuff_ptr_t pbc, pbr::irradiancemaps_ptr_t v) { //
-                pbc->_irradianceMaps = v;                                   //
+              [](pbr::commonstuff_ptr_t pbc, pbr::RadianceMaps_ptr_t v) { //
+                pbc->_RadianceMaps = v;                                   //
               })
           .def(
               "requestSkyboxTexture",

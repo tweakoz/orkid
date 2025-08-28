@@ -765,7 +765,7 @@ void LightManager::bindEnumeratedToUniformBuffer( Context* ctx, enumeratedlights
   enumerated_lights->_num_active_texspotlights = 0;
   for (auto item : enumerated_lights->_tex2spotlightmap) {
     for (auto light : item.second) {
-      auto irr = light->_irradianceCookie;
+      auto irr = light->_RadianceCookie;
 
       auto C    = fvec4(light->color(), light->intensity());
       auto P    = light->worldMatrix().translation();

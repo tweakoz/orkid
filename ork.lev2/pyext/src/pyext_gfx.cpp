@@ -700,12 +700,12 @@ void pyinit_gfx(py::module& module_lev2) {
         return rtg;
       })*/
       .def_property(
-          "needsIrradianceCache",
+          "needsRadianceCache",
           [](texturearray_ptr_t texarray) -> bool { //
-            return texarray->_needsIrradianceCache;
+            return texarray->_needsRadianceCache;
           },
           [](texturearray_ptr_t texarray, bool b) { //
-            texarray->_needsIrradianceCache = b;
+            texarray->_needsRadianceCache = b;
           })
       .def_property(
           "bufferFormat",

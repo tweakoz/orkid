@@ -203,7 +203,7 @@ public:
   fxparam_constptr_t _parLightDepthCookies   = nullptr;
 
   fxparam_constptr_t _parProbeReflection   = nullptr;
-  fxparam_constptr_t _parProbeIrradiance   = nullptr;
+  fxparam_constptr_t _parProbeRadiance   = nullptr;
 
   fxparam_constptr_t _parUnTexPointLightsCount  = nullptr;
   fxparam_constptr_t _parTexSpotLightsCount   = nullptr;
@@ -253,7 +253,7 @@ public:
 
   ///////////////////////////////////////////
 
-  //pbr::irradiancemaps_ptr_t _irradianceMaps;
+  //pbr::RadianceMaps_ptr_t _RadianceMaps;
   pbr::commonstuff_ptr_t _commonOverride;
 
   texturearray_ptr_t _texArrayCNMREA;

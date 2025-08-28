@@ -84,7 +84,7 @@ using xirprocessfuture_wkptr_t = std::weak_ptr<XIRProcessFuture>;
 // EnvMapProcessor - Build-time processing of environment maps
 //
 // Processes raw environment maps (HDR, EXR, etc.) into pre-filtered
-// irradiance maps stored in XIR format. This moves the expensive
+// Radiance maps stored in XIR format. This moves the expensive
 // filtering operations from runtime to build time.
 ////////////////////////////////////////////////////////////////////////////////
 

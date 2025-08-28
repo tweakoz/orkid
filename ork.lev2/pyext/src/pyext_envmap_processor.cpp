@@ -5,9 +5,9 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-#include <ork/lev2/gfx/envmap_processor.h>
+#include <ork/lev2/gfx/radiancemaps_processor.h>
 #include <ork/lev2/gfx/image.h>
-#include <ork/lev2/gfx/irradiance_asset.h>
+#include <ork/lev2/gfx/radiancemaps_asset.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_common.h>
 #include <ork/python/pycodec.inl>
 #include <ork/asset/Asset.inl>
@@ -18,7 +18,7 @@ using namespace ork::lev2;
 
 namespace ork::lev2 {
 
-void pyinit_envmap_processor(py::module& module_lev2) {
+void pyinit_radiancemaps_processor(py::module& module_lev2) {
   
   // XIRProcessFuture bindings
   py::class_<XIRProcessFuture, xirprocessfuture_ptr_t>(module_lev2, "XIRProcessFuture")
@@ -68,18 +68,18 @@ void pyinit_envmap_processor(py::module& module_lev2) {
           return py_futures;
         });
         
-  // IrradianceMapsAsset bindings
-  auto type_codec = py::class_<IrradianceMapsAsset, 
+  // RadianceMapsAsset bindings
+  auto type_codec = py::class_<RadianceMapsAsset, 
                                 asset::Asset,
-                                irradianceasset_ptr_t>(
-      module_lev2, "IrradianceMapsAsset")
+                                Radianceasset_ptr_t>(
+      module_lev2, "RadianceMapsAsset")
       .def_static("load", [](const std::string& path) {
         auto loadreq = std::make_shared<asset::LoadRequest>(path);
-        return asset::AssetManager<IrradianceMapsAsset>::load(loadreq);
+        return asset::AssetManager<RadianceMapsAsset>::load(loadreq);
       })
-      .def_property_readonly("irradiance_maps", 
-        [](irradianceasset_ptr_t self) -> pbr::irradiancemaps_ptr_t {
-          return self->_irradianceMaps;
+      .def_property_readonly("Radiance_maps", 
+        [](Radianceasset_ptr_t self) -> pbr::RadianceMaps_ptr_t {
+          return self->_RadianceMaps;
         });
 }
 

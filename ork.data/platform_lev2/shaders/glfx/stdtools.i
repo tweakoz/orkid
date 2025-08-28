@@ -50,7 +50,7 @@ uniform_set uset_std_pbr {
   //////////////////////////////
   sampler2DArray CNMREA;         
   samplerCube reflectionPROBE;
-  samplerCube irradiancePROBE;
+  samplerCube RadiancePROBE;
   sampler2D MapBrdfIntegration; 
   sampler2D MapDiffuseEnv;      
   sampler2DArray MapSpecularEnv;

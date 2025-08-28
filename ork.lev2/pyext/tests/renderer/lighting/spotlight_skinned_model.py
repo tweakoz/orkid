@@ -132,7 +132,7 @@ class StereoApp1(object):
     lmgr = self.scene.lightingmanager
     color_cookies = lmgr.spot_cookies_color
     depth_cookies = lmgr.spot_cookies_depth
-    color_cookies.needsIrradianceCache = True
+    color_cookies.needsRadianceCache = True
     color_cookies.resize(1024,1024,NUM_SPOTS,tokens.RGB8,True)
     depth_cookies.resize(1024,1024,NUM_SPOTS,tokens.Z32F,True)
 

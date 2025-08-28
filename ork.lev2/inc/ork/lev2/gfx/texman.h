@@ -202,7 +202,7 @@ struct TextureArray {
   size_t _height = 0;
   size_t _maxslices = 0;
   bool _requires_mips = false;
-  bool _needsIrradianceCache = false;
+  bool _needsRadianceCache = false;
   EBufferFormat _format = EBufferFormat::RGB8;
   std::map<std::string,size_t> _slices_by_path;
   texture_ptr_t _tex;

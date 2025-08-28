@@ -15,31 +15,31 @@
 namespace ork::lev2 {
 
 ////////////////////////////////////////////////////////////////////////////////
-// IrradianceMapsAsset - Asset type for pre-filtered environment maps
+// RadianceMapsAsset - Asset type for pre-filtered environment maps
 // 
-// Contains both diffuse and specular irradiance maps that have been
+// Contains both diffuse and specular Radiance maps that have been
 // pre-filtered at build time and stored in XIR format
 ////////////////////////////////////////////////////////////////////////////////
 
-struct IrradianceMapsAsset : public asset::Asset {
-  DeclareConcreteX(IrradianceMapsAsset, asset::Asset);
+struct RadianceMapsAsset : public asset::Asset {
+  DeclareConcreteX(RadianceMapsAsset, asset::Asset);
   
-  static const char* assetTypeNameStatic() { return "irradiance"; }
+  static const char* assetTypeNameStatic() { return "Radiance"; }
   
-  pbr::irradiancemaps_ptr_t _irradianceMaps;
+  pbr::RadianceMaps_ptr_t _RadianceMaps;
 };
 
-using irradianceasset_ptr_t = std::shared_ptr<IrradianceMapsAsset>;
+using Radianceasset_ptr_t = std::shared_ptr<RadianceMapsAsset>;
 
 ////////////////////////////////////////////////////////////////////////////////
-// IrradianceMapsLoader - Loader for XIR format irradiance maps
+// RadianceMapsLoader - Loader for XIR format Radiance maps
 // 
 // Supports both file-based and catalog-based loading through HybridAssetLoader
 // Performs deferred GPU upload to avoid requiring context during load
 ////////////////////////////////////////////////////////////////////////////////
 
-struct IrradianceMapsLoader : public asset::HybridAssetLoader {
-  IrradianceMapsLoader();
+struct RadianceMapsLoader : public asset::HybridAssetLoader {
+  RadianceMapsLoader();
     
 protected:
   asset::asset_ptr_t _doLoadFromDatablock(

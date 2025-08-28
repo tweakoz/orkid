@@ -116,14 +116,14 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
       //printf( "BINDING PROBES!  count<%d>\n", num_probes );
       //printf( "binding probetex<%p>\n", probe_tex.get() );
       FXI->bindParamTexture(mtl->_parProbeReflection, probe_tex.get() );
-      FXI->bindParamTexture(mtl->_parProbeIrradiance, probe_tex.get() );
+      FXI->bindParamTexture(mtl->_parProbeRadiance, probe_tex.get() );
 
 
     }
     else{
       //printf( "NOT BINDING PROBES black<%p>!\n", mtl->_texCubeBlack.get() );
       FXI->bindParamTexture(mtl->_parProbeReflection, pbrcommon->_texCubeBlack.get() );
-      FXI->bindParamTexture(mtl->_parProbeIrradiance, pbrcommon->_texCubeBlack.get() );
+      FXI->bindParamTexture(mtl->_parProbeRadiance, pbrcommon->_texCubeBlack.get() );
     }
 
     ///////////////////////////////////////////////////////////////////////////

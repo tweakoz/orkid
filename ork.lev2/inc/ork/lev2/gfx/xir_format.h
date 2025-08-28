@@ -15,14 +15,14 @@
 namespace ork::lev2::xir {
 
 ////////////////////////////////////////////////////////////////////////////////
-// XIR (eXtended Irradiance) Format
+// XIR (eXtended Radiance) Format
 // 
 // A chunked file format for storing pre-filtered environment maps
-// Contains both diffuse and specular irradiance maps as compressed textures
+// Contains both diffuse and specular Radiance maps as compressed textures
 ////////////////////////////////////////////////////////////////////////////////
 
 struct XIRWriter {
-  // Write irradiance maps to XIR format datablock
+  // Write Radiance maps to XIR format datablock
   static datablock_ptr_t writeXirDatablocks(
       datablock_ptr_t diffuse_data,
       datablock_ptr_t specular_data);
@@ -30,7 +30,7 @@ struct XIRWriter {
 
 struct XIRReader {
   
-  // Read irradiance maps from XIR format - returns raw datablocks for deferred loading
+  // Read Radiance maps from XIR format - returns raw datablocks for deferred loading
   struct XIRData {
     datablock_ptr_t _diffuse_data;
     datablock_ptr_t _specular_data;

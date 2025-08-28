@@ -72,7 +72,7 @@ for item in assets_to_process:
 #######################################
 irr_maps = dict()
 for item in envmap_assets_to_process:
-  X = PbrCommon.requestIrradianceMaps(str(item))
+  X = PbrCommon.requestRadianceMaps(str(item))
   irr_maps[item] = X
 #######################################
 ok_to_exit = False
