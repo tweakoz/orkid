@@ -33,8 +33,8 @@ using taskgraph_wkptr_t = std::weak_ptr<TaskGraph>;
 using tasknode_ptr_t = std::shared_ptr<TaskNode>;
 using taskphase_ptr_t = std::shared_ptr<TaskPhase>;
 using taskexecutor_ptr_t = std::shared_ptr<TaskExecutor>;
-using taskfunc_t = std::function<void(taskgraph_ptr_t)>;
-using taskgraphcomplete_func_t = std::function<void(taskgraph_ptr_t)>;
+using taskfunc_t = std::function<void(taskgraph_wkptr_t)>;
+using taskgraphcomplete_func_t = std::function<void(taskgraph_wkptr_t)>;
 using taskphasecomplete_func_t = std::function<void(taskphase_ptr_t)>;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -89,7 +89,7 @@ struct TaskGraph {
 
   static taskgraph_ptr_t create();
 
-  static taskphase_ptr_t phase( taskgraph_ptr_t self,                            //
+  static taskphase_ptr_t phase( taskgraph_wkptr_t self,                            //
                                 const std::string& name,                         //
                                 taskexecutor_ptr_t executor,                     //
                                 taskphasecomplete_func_t on_completion=nullptr); //
@@ -104,6 +104,9 @@ struct TaskGraph {
                        taskgraphcomplete_func_t on_completion=nullptr);          //
 
   /////////////////////////
+
+  TaskGraph();
+  ~TaskGraph();
 
   LockedResource<varmap::VarMap> _varmap;
   std::vector<taskphase_ptr_t> _phases;

@@ -34,16 +34,26 @@ TaskPhase::TaskPhase(taskgraph_wkptr_t graph,                  //
 // TaskGraph implementation
 ////////////////////////////////////////////////////////////////////////////////
 
+std::atomic<int> _g_taskgraph_counter{0};
+TaskGraph::TaskGraph() {
+  int tgnum = _g_taskgraph_counter.fetch_add(1);
+  printf("TaskGraph<%p> tgnum<%d>\n", (void*)this, tgnum);
+}
+TaskGraph::~TaskGraph() {
+  int tgnum = _g_taskgraph_counter.fetch_sub(1);
+  printf("~TaskGraph<%p> tgnum<%d>\n", (void*)this, tgnum-1);
+}
+
 taskgraph_ptr_t TaskGraph::create() {
   return std::make_shared<TaskGraph>();
 }
 
-taskphase_ptr_t TaskGraph::phase(taskgraph_ptr_t self,                     //
+taskphase_ptr_t TaskGraph::phase(taskgraph_wkptr_t self,                     //
                                  const std::string& name,                  //
                                  taskexecutor_ptr_t executor,              //
                                  taskphasecomplete_func_t on_completion) { //
   auto new_phase = std::make_shared<TaskPhase>(self,name,executor,on_completion);
-  self->_phases.push_back(new_phase);  
+  self.lock()->_phases.push_back(new_phase);  
   return new_phase;
 }
 

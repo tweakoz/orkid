@@ -53,6 +53,9 @@ struct XIRProcessFuture {
     return _result;
   }
   
+  XIRProcessFuture();
+  ~XIRProcessFuture();
+  
   bool isReady() const {
     return _is_complete.load();
   }
@@ -75,6 +78,7 @@ struct XIRProcessFuture {
 };
 
 using xirprocessfuture_ptr_t = std::shared_ptr<XIRProcessFuture>;
+using xirprocessfuture_wkptr_t = std::weak_ptr<XIRProcessFuture>;
 
 ////////////////////////////////////////////////////////////////////////////////
 // EnvMapProcessor - Build-time processing of environment maps

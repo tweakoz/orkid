@@ -103,6 +103,9 @@ struct CompressedImageMipChain {
 
 struct Image {
 
+  Image();
+  ~Image();
+  
   void init(size_t w, size_t h, size_t numc, int bytesperchannel);
   void initWithFormat(size_t w, size_t h, EBufferFormat fmt);
   Image clone() const;

@@ -396,7 +396,7 @@ void ContextExecutor::executePhase(taskphase_ptr_t phase) {
     
   // Create a loading phase for GPU operations
   auto loading_phase = _context->newLoadingPhase();
-  auto graph = phase->_graph.lock();
+  auto graph = phase->_graph;
   // Enqueue all tasks to the loading phase
   for (auto task : phase->_tasks) {
     loading_phase->enqueueOperation([=](Context* ctx) {
@@ -411,13 +411,13 @@ void ContextExecutor::executePhase(taskphase_ptr_t phase) {
   // Wait for all GPU operations in this phase to complete
   loading_phase->join();
 }
-void ContextExecutor::emptyFrame( taskgraph_ptr_t self,                            //
+void ContextExecutor::emptyFrame( taskgraph_wkptr_t self,                            //
                                   const std::string& name,                         //
                                   contextexecutor_ptr_t executor,                     //
                                   taskphasecomplete_func_t on_completion) {        //
   auto new_phase = std::make_shared<TaskPhase>(self,name,executor,on_completion);
-  self->_phases.push_back(new_phase);
-  new_phase->task("fence", [=](taskgraph_ptr_t g) {
+  self.lock()->_phases.push_back(new_phase);
+  new_phase->task("fence", [=](taskgraph_wkptr_t g) {
     //::usleep(1<<20);
     // No-op task to act as a synchronization point
   });  

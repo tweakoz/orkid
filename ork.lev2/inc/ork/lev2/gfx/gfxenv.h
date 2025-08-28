@@ -179,7 +179,7 @@ struct ContextExecutor : public ::ork::TaskExecutor {
   ContextExecutor(context_rawptr_t ctx);
   
   void executePhase(taskphase_ptr_t phase) override;
-  static void emptyFrame( taskgraph_ptr_t self,                            //
+  static void emptyFrame( taskgraph_wkptr_t self,                            //
                           const std::string& name,                         //
                           contextexecutor_ptr_t executor,                  //
                           taskphasecomplete_func_t on_completion=nullptr); //

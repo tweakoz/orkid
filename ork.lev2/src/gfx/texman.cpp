@@ -100,14 +100,15 @@ Texture::Texture(ipctexture_ptr_t external_memory)
     , _external_memory(external_memory) {
   _vars = std::make_shared<asset::vars_t>();
   _residenceState.store(0);
-  _texture_count.fetch_add(1);
-  // printf( "_texture_count: %zu\n", _texture_count.load() );
+  int texcount = _texture_count.fetch_add(1);
+   printf( "Texture::_texture_count: %zu\n", texcount+1 );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 Texture::~Texture() {
-  _texture_count.fetch_add(-1);
+  int texcount = _texture_count.fetch_add(-1);
+  printf( "~Texture::_texture_count: %zu\n", texcount-1 );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

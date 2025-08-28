@@ -86,7 +86,7 @@ void EnvMapProcessor::renderSpecularTile(
   fvec4 uv  = tile.getUV(tex_width, tex_height);
 
   // Render the tile using quad2D
-  //dwi->quad2D(ndc, uv, fvec4(0, 0, 0, 0));
+  // dwi->quad2D(ndc, uv, fvec4(0, 0, 0, 0));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -107,7 +107,7 @@ void EnvMapProcessor::renderDiffuseTile(Context* ctx, const TileParams& tile, te
   fvec4 uv  = tile.getUV(tex_width, tex_height);
 
   // Render the tile using quad2D
-  //dwi->quad2D(ndc, uv, fvec4(0, 0, 0, 0));
+  // dwi->quad2D(ndc, uv, fvec4(0, 0, 0, 0));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -117,10 +117,10 @@ void EnvMapProcessor::renderDiffuseTile(Context* ctx, const TileParams& tile, te
 taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvmap, bool is_equirectangular) {
 
   auto graph = std::make_shared<TaskGraph>();
-  
+
   // Get actual texture dimensions
-  int tex_width  = rawenvmap->_width;
-  int tex_height = rawenvmap->_height;
+  int tex_width        = rawenvmap->_width;
+  int tex_height       = rawenvmap->_height;
   std::string tex_name = file::Path(rawenvmap->_debugName).toBFS().stem().string();
 
   ///////////////////////////////////////
@@ -143,7 +143,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
   // Phase 1: Setup and initialization
   ///////////////////////////////////////
 
-  auto setup_phase = TaskGraph::phase(graph, tex_name+".setup", gpu_executor);
+  auto setup_phase = TaskGraph::phase(graph, tex_name + ".setup", gpu_executor);
 
   // Capture all the needed data for filtering
   // Using lambda captures instead of varmap for simplicity
@@ -157,30 +157,33 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
   auto specular_material = std::make_shared<FreestyleMaterial>();
   auto diffuse_material  = std::make_shared<FreestyleMaterial>();
 
-  setup_phase->task("initialize_materials", [=](taskgraph_ptr_t g) {
-    logchan_gen->log("EnvMapProcessor: Setup phase starting");
-    logchan_gen->log("EnvMapProcessor: Using context %p for material initialization", gloadercontext.get());
-        
-    // Initialize specular filtering material
-    specular_material->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
-    specular_material->_rasterstate->setDepthTest(EDepthTest::OFF);
-    specular_material->_rasterstate->setCullTest(ECullTest::OFF);
-    specular_material->gpuInit(gloadercontext.get(), filterenv_shader_path());
+  setup_phase->task(
+      "initialize_materials",
+      [specular_material,                       //
+       diffuse_material](taskgraph_wkptr_t g) { //
+        logchan_gen->log("EnvMapProcessor: Setup phase starting");
+        logchan_gen->log("EnvMapProcessor: Using context %p for material initialization", gloadercontext.get());
 
-    // Initialize diffuse filtering material
-    diffuse_material->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
-    diffuse_material->_rasterstate->setDepthTest(EDepthTest::OFF);
-    diffuse_material->_rasterstate->setCullTest(ECullTest::OFF);
-    diffuse_material->gpuInit(gloadercontext.get(), filterenv_shader_path());
+        // Initialize specular filtering material
+        specular_material->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
+        specular_material->_rasterstate->setDepthTest(EDepthTest::OFF);
+        specular_material->_rasterstate->setCullTest(ECullTest::OFF);
+        specular_material->gpuInit(gloadercontext.get(), filterenv_shader_path());
 
-    logchan_gen->log("EnvMapProcessor: Setup phase completed");
-  });
+        // Initialize diffuse filtering material
+        diffuse_material->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
+        diffuse_material->_rasterstate->setDepthTest(EDepthTest::OFF);
+        diffuse_material->_rasterstate->setCullTest(ECullTest::OFF);
+        diffuse_material->gpuInit(gloadercontext.get(), filterenv_shader_path());
+
+        logchan_gen->log("EnvMapProcessor: Setup phase completed");
+      });
 
   ///////////////////////////////////////
   // Frame barrier after setup to ensure rtgroups are initialized
   ///////////////////////////////////////
-  
-  ContextExecutor::emptyFrame(graph, tex_name+".setup-barrier", gpu_executor);
+
+  ContextExecutor::emptyFrame(graph, tex_name + ".setup-barrier", gpu_executor);
 
   ///////////////////////////////////////
   // Phase 2: Specular filtering - one phase per roughness level
@@ -192,7 +195,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
 
   for (int rough_idx = 0; rough_idx < num_roughness_levels; rough_idx++) {
     float roughness        = powf(float(rough_idx) / 9.0f, roughness_power);
-    std::string phase_name = tex_name+".specular_roughness_" + std::to_string(rough_idx);
+    std::string phase_name = tex_name + ".specular_roughness_" + std::to_string(rough_idx);
 
     auto specular_phase = TaskGraph::phase(graph, phase_name, gpu_executor);
 
@@ -204,90 +207,104 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
     // Single task for this roughness level that renders all tiles
     std::string task_name = "spec_roughness_" + std::to_string(rough_idx);
 
-    specular_phase->task(task_name, [=](taskgraph_ptr_t g) {
-      //logchan_gen->log("EnvMapProcessor: starting specular filtering for roughness %d (%f)", rough_idx, roughness);
+    specular_phase->task(                  //
+        task_name,                         //
+        [rawenvmap,                        //
+         specular_material,                //
+         num_tiles_x,                      //
+         num_tiles_y,                      //
+         tex_width,                        //
+         tex_height,                       //
+         tex_name,                         //
+         specular_rtgroups,                //
+         specular_rtbuffers,               //
+         roughness,                        //
+         tile_size,                        //
+         is_equirectangular,               //
+         rough_idx](taskgraph_wkptr_t g) { //
+          // logchan_gen->log("EnvMapProcessor: starting specular filtering for roughness %d (%f)", rough_idx, roughness);
 
-      auto rtgroup         = std::make_shared<RtGroup>(gloadercontext.get(), tex_width, tex_height, MsaaSamples::MSAA_1X);
-      auto rtbuffer        = rtgroup->createRenderTarget(EBufferFormat::RGBA32F);
-      rtbuffer->_debugName = FormatString("%s-spc-rtb-%d", tex_name.c_str(), rough_idx);
-      rtgroup->_name       = FormatString("%s-spc-rtg-%d", tex_name.c_str(), rough_idx);
-      specular_rtgroups->push_back(rtgroup);
-      specular_rtbuffers->push_back(rtbuffer);
-      
-      //logchan_gen->log("Specular filtering: Using rtgroup<%p> rtbuffer<%p> for roughness %d", 
-      //                 rtgroup.get(), rtbuffer.get(), rough_idx);
+          auto rtgroup         = std::make_shared<RtGroup>(gloadercontext.get(), tex_width, tex_height, MsaaSamples::MSAA_1X);
+          auto rtbuffer        = rtgroup->createRenderTarget(EBufferFormat::RGBA32F);
+          rtbuffer->_debugName = FormatString("%s-spc-rtb-%d", tex_name.c_str(), rough_idx);
+          rtgroup->_name       = FormatString("%s-spc-rtg-%d", tex_name.c_str(), rough_idx);
+          specular_rtgroups->push_back(rtgroup);
+          specular_rtbuffers->push_back(rtbuffer);
 
-      // Set up render context
-      auto RCFD = std::make_shared<RenderContextFrameData>(gloadercontext.get());
-      auto fbi  = gloadercontext.get()->FBI();
-      auto dwi  = gloadercontext.get()->DWI();
+          // logchan_gen->log("Specular filtering: Using rtgroup<%p> rtbuffer<%p> for roughness %d",
+          //                  rtgroup.get(), rtbuffer.get(), rough_idx);
 
-      // Push render target ONCE for all tiles
-      fbi->PushRtGroup(rtgroup.get());
+          // Set up render context
+          auto RCFD = std::make_shared<RenderContextFrameData>(gloadercontext.get());
+          auto fbi  = gloadercontext.get()->FBI();
+          auto dwi  = gloadercontext.get()->DWI();
 
-      // Get the appropriate technique based on format
-      auto technique_name = is_equirectangular                           //
-                                ? "tek_filterSpecularMapEquirectangular" //
-                                : "tek_filterSpecularMapStandard";
-      auto technique      = specular_material->technique(technique_name);
-      OrkAssert(technique);
-      // Begin material pass
-      specular_material->begin(technique, RCFD);
+          // Push render target ONCE for all tiles
+          fbi->PushRtGroup(rtgroup.get());
 
-      // Bind parameters
-      auto param_mvp = specular_material->param("mvp");
-      auto param_pfm = specular_material->param("prefiltmap");
-      auto param_ruf = specular_material->param("roughness");
-      auto param_imgdim = specular_material->param("imgdim");
-      auto param_numsamples = specular_material->param("numsamples");
+          // Get the appropriate technique based on format
+          auto technique_name = is_equirectangular                           //
+                                    ? "tek_filterSpecularMapEquirectangular" //
+                                    : "tek_filterSpecularMapStandard";
+          auto technique      = specular_material->technique(technique_name);
+          OrkAssert(technique);
+          // Begin material pass
+          specular_material->begin(technique, RCFD);
 
-      OrkAssert(param_mvp);
-      OrkAssert(param_pfm);
-      OrkAssert(param_ruf);
-      OrkAssert(param_imgdim);
-      OrkAssert(param_numsamples);
-      
-      specular_material->bindParamMatrix(param_mvp, fmtx4::Identity());
-      specular_material->bindParamTexture(param_pfm, rawenvmap.get());
-      specular_material->bindParamFloat(param_ruf, roughness);
-      specular_material->bindParamVec2(param_imgdim, fvec2(tex_width, tex_height));
-      specular_material->bindParamU32(param_numsamples, 8192);
+          // Bind parameters
+          auto param_mvp        = specular_material->param("mvp");
+          auto param_pfm        = specular_material->param("prefiltmap");
+          auto param_ruf        = specular_material->param("roughness");
+          auto param_imgdim     = specular_material->param("imgdim");
+          auto param_numsamples = specular_material->param("numsamples");
 
-      specular_material->commit();
+          OrkAssert(param_mvp);
+          OrkAssert(param_pfm);
+          OrkAssert(param_ruf);
+          OrkAssert(param_imgdim);
+          OrkAssert(param_numsamples);
 
-      // Render all tiles sequentially within this single task
-      for (int ty = 0; ty < num_tiles_y; ty++) {
-        for (int tx = 0; tx < num_tiles_x; tx++) {
-          // Create tile parameters
-          TileParams tile;
-          tile.x         = tx * tile_size;
-          tile.y         = ty * tile_size;
-          tile.width     = std::min(tile_size, tex_width - tile.x);
-          tile.height    = std::min(tile_size, tex_height - tile.y);
-          tile.roughness = roughness;
+          specular_material->bindParamMatrix(param_mvp, fmtx4::Identity());
+          specular_material->bindParamTexture(param_pfm, rawenvmap.get());
+          specular_material->bindParamFloat(param_ruf, roughness);
+          specular_material->bindParamVec2(param_imgdim, fvec2(tex_width, tex_height));
+          specular_material->bindParamU32(param_numsamples, 8192);
 
-          // Calculate NDC and UV coordinates for this tile
-          fvec4 ndc = tile.getNDC(tex_width, tex_height);
-          fvec4 uv  = tile.getUV(tex_width, tex_height);
+          specular_material->commit();
 
-          // Render the tile
-          dwi->quad2D(ndc, uv, fvec4(0, 0, 0, 0));
-          
-          //logchan_gen->log("  Would render tile<%d,%d> for roughness %d", tx, ty, rough_idx);
-        }
-      }
+          // Render all tiles sequentially within this single task
+          for (int ty = 0; ty < num_tiles_y; ty++) {
+            for (int tx = 0; tx < num_tiles_x; tx++) {
+              // Create tile parameters
+              TileParams tile;
+              tile.x         = tx * tile_size;
+              tile.y         = ty * tile_size;
+              tile.width     = std::min(tile_size, tex_width - tile.x);
+              tile.height    = std::min(tile_size, tex_height - tile.y);
+              tile.roughness = roughness;
 
-      // End material pass
-      specular_material->end(RCFD);
+              // Calculate NDC and UV coordinates for this tile
+              fvec4 ndc = tile.getNDC(tex_width, tex_height);
+              fvec4 uv  = tile.getUV(tex_width, tex_height);
 
-      // Pop render target ONCE after all tiles
-      fbi->PopRtGroup();
+              // Render the tile
+              dwi->quad2D(ndc, uv, fvec4(0, 0, 0, 0));
 
-      //logchan_gen->log("EnvMapProcessor: completed specular filtering for roughness %d", rough_idx);
-    });
-    
+              // logchan_gen->log("  Would render tile<%d,%d> for roughness %d", tx, ty, rough_idx);
+            }
+          }
+
+          // End material pass
+          specular_material->end(RCFD);
+
+          // Pop render target ONCE after all tiles
+          fbi->PopRtGroup();
+
+          // logchan_gen->log("EnvMapProcessor: completed specular filtering for roughness %d", rough_idx);
+        });
+
     // Note: we don't need the nested for loops for tiles anymore
-    
+
     // Frame barrier after each specular roughness level
     ContextExecutor::emptyFrame(graph, "specular-barrier", gpu_executor);
   }
@@ -299,16 +316,15 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
   int diff_w = tex_width;
   int diff_h = tex_height;
   int mip    = 0;
-  while (diff_w >= 4 && diff_h >= 4) {  // Stop at 4x4, don't go smaller
+  while (diff_w >= 4 && diff_h >= 4) { // Stop at 4x4, don't go smaller
     auto rtgroup         = std::make_shared<RtGroup>(gloadercontext.get(), diff_w, diff_h, MsaaSamples::MSAA_1X);
     auto rtbuffer        = rtgroup->createRenderTarget(EBufferFormat::RGBA32F);
     rtbuffer->_debugName = FormatString("%s-dif-rtb-mip%d", tex_name.c_str(), mip);
     rtgroup->_name       = FormatString("%s-dif-rtg-mip%d", tex_name.c_str(), mip);
     diffuse_rtgroups->push_back(rtgroup);
     diffuse_rtbuffers->push_back(rtbuffer);
-    logchan_gen->log("Setup: Created diffuse rtgroup<%p> rtbuffer<%p> for mip %d", 
-                     rtgroup.get(), rtbuffer.get(), mip);
-    std::string phase_name = tex_name+".diffuse_mip_" + std::to_string(mip);
+    logchan_gen->log("Setup: Created diffuse rtgroup<%p> rtbuffer<%p> for mip %d", rtgroup.get(), rtbuffer.get(), mip);
+    std::string phase_name = tex_name + ".diffuse_mip_" + std::to_string(mip);
 
     auto diffuse_phase = TaskGraph::phase(graph, phase_name, gpu_executor);
 
@@ -322,85 +338,97 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
     // Single task for this mip level that renders all tiles
     std::string task_name = "diff_mip_" + std::to_string(mip);
 
-    diffuse_phase->task(task_name, [=](taskgraph_ptr_t g) {
-      logchan_gen->log("EnvMapProcessor<%s>: starting diffuse filtering for mip %d", tex_name.c_str(), mip);
-      
-      //logchan_gen->log("Diffuse filtering: Using rtgroup<%p> rtbuffer<%p> for mip %d", 
-      //                 rtgroup.get(), rtbuffer.get(), mip);
+    diffuse_phase->task(                   //
+        task_name,                         //
+        [rawenvmap,                        //
+         diffuse_material,                 //
+         num_tiles_x,                      //
+         num_tiles_y,                      //
+         output_width,                     //
+         output_height,                    //
+         tex_name,                         //
+         rtgroup,                          //
+         tile_size,                        //
+         mip,                              //
+         is_equirectangular](taskgraph_wkptr_t g) { //
+          logchan_gen->log("EnvMapProcessor<%s>: starting diffuse filtering for mip %d", tex_name.c_str(), mip);
 
-      // Set up render context
-      auto RCFD = std::make_shared<RenderContextFrameData>(gloadercontext.get());
-      auto fbi  = gloadercontext.get()->FBI();
-      auto dwi  = gloadercontext.get()->DWI();
+          // logchan_gen->log("Diffuse filtering: Using rtgroup<%p> rtbuffer<%p> for mip %d",
+          //                  rtgroup.get(), rtbuffer.get(), mip);
 
-      // Push render target ONCE for all tiles
-      fbi->PushRtGroup(rtgroup.get());
+          // Set up render context
+          auto RCFD = std::make_shared<RenderContextFrameData>(gloadercontext.get());
+          auto fbi  = gloadercontext.get()->FBI();
+          auto dwi  = gloadercontext.get()->DWI();
 
-      // Get the appropriate technique based on format
-      auto technique_name = is_equirectangular                          //
-                                ? "tek_filterDiffuseMapEquirectangular" //
-                                : "tek_filterDiffuseMapStandard";
-      auto technique      = diffuse_material->technique(technique_name);
-      OrkAssert(technique);
+          // Push render target ONCE for all tiles
+          fbi->PushRtGroup(rtgroup.get());
 
-      // Begin material pass
-      diffuse_material->begin(technique, RCFD);
+          // Get the appropriate technique based on format
+          auto technique_name = is_equirectangular                          //
+                                    ? "tek_filterDiffuseMapEquirectangular" //
+                                    : "tek_filterDiffuseMapStandard";
+          auto technique      = diffuse_material->technique(technique_name);
+          OrkAssert(technique);
 
-      // Bind parameters
-      auto param_mvp = diffuse_material->param("mvp");
-      auto param_pfm = diffuse_material->param("prefiltmap");
-      auto param_ruf = diffuse_material->param("roughness");
-      auto param_imgdim = diffuse_material->param("imgdim");
-      auto param_numsamples = diffuse_material->param("numsamples");
+          // Begin material pass
+          diffuse_material->begin(technique, RCFD);
 
-      OrkAssert(param_mvp);
-      OrkAssert(param_pfm);
-      OrkAssert(param_ruf);
-      OrkAssert(param_imgdim);
-      OrkAssert(param_numsamples);
-      
-      diffuse_material->bindParamMatrix(param_mvp, fmtx4::Identity());
-      diffuse_material->bindParamTexture(param_pfm, rawenvmap.get());
-      diffuse_material->bindParamFloat(param_ruf, 1.0f); // Diffuse uses roughness=1
-      diffuse_material->bindParamVec2(param_imgdim, fvec2(output_width, output_height));
-      diffuse_material->bindParamU32(param_numsamples, 4096);
+          // Bind parameters
+          auto param_mvp        = diffuse_material->param("mvp");
+          auto param_pfm        = diffuse_material->param("prefiltmap");
+          auto param_ruf        = diffuse_material->param("roughness");
+          auto param_imgdim     = diffuse_material->param("imgdim");
+          auto param_numsamples = diffuse_material->param("numsamples");
 
-      diffuse_material->commit();
+          OrkAssert(param_mvp);
+          OrkAssert(param_pfm);
+          OrkAssert(param_ruf);
+          OrkAssert(param_imgdim);
+          OrkAssert(param_numsamples);
 
-      // Render all tiles sequentially within this single task
-      for (int ty = 0; ty < num_tiles_y; ty++) {
-        for (int tx = 0; tx < num_tiles_x; tx++) {
-          // Create tile parameters
-          TileParams tile;
-          tile.x         = tx * tile_size;
-          tile.y         = ty * tile_size;
-          tile.width     = std::min(tile_size, output_width - tile.x);
-          tile.height    = std::min(tile_size, output_height - tile.y);
-          tile.mip_level = mip;
+          diffuse_material->bindParamMatrix(param_mvp, fmtx4::Identity());
+          diffuse_material->bindParamTexture(param_pfm, rawenvmap.get());
+          diffuse_material->bindParamFloat(param_ruf, 1.0f); // Diffuse uses roughness=1
+          diffuse_material->bindParamVec2(param_imgdim, fvec2(output_width, output_height));
+          diffuse_material->bindParamU32(param_numsamples, 4096);
 
-          // Calculate NDC and UV coordinates for this tile
-          fvec4 ndc = tile.getNDC(output_width, output_height);
-          fvec4 uv  = tile.getUV(output_width, output_height);
+          diffuse_material->commit();
 
-          // Render the tile
-          dwi->quad2D(ndc, uv, fvec4(0, 0, 0, 0));
-          
-          //logchan_gen->log("  Would render tile<%d,%d> for mip %d", tx, ty, mip);
-        }
-      }
+          // Render all tiles sequentially within this single task
+          for (int ty = 0; ty < num_tiles_y; ty++) {
+            for (int tx = 0; tx < num_tiles_x; tx++) {
+              // Create tile parameters
+              TileParams tile;
+              tile.x         = tx * tile_size;
+              tile.y         = ty * tile_size;
+              tile.width     = std::min(tile_size, output_width - tile.x);
+              tile.height    = std::min(tile_size, output_height - tile.y);
+              tile.mip_level = mip;
 
-      // End material pass
-      diffuse_material->end(RCFD);
+              // Calculate NDC and UV coordinates for this tile
+              fvec4 ndc = tile.getNDC(output_width, output_height);
+              fvec4 uv  = tile.getUV(output_width, output_height);
 
-      // Pop render target ONCE after all tiles
-      fbi->PopRtGroup();
+              // Render the tile
+              dwi->quad2D(ndc, uv, fvec4(0, 0, 0, 0));
 
-      //logchan_gen->log("EnvMapProcessor: completed diffuse filtering for mip %d", mip);
-    }); // diffuse_phase->task(
-    
+              // logchan_gen->log("  Would render tile<%d,%d> for mip %d", tx, ty, mip);
+            }
+          }
+
+          // End material pass
+          diffuse_material->end(RCFD);
+
+          // Pop render target ONCE after all tiles
+          fbi->PopRtGroup();
+
+          // logchan_gen->log("EnvMapProcessor: completed diffuse filtering for mip %d", mip);
+        }); // diffuse_phase->task(
+
     // Note: we don't need the nested for loops for tiles anymore
-    
-    ContextExecutor::emptyFrame(graph, tex_name+".diffuse-barrier", gpu_executor);
+
+    ContextExecutor::emptyFrame(graph, tex_name + ".diffuse-barrier", gpu_executor);
     diff_w >>= 1;
     diff_h >>= 1;
     mip++;
@@ -409,14 +437,14 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
   ///////////////////////////////////////
   // Final frame barrier before capture to ensure all filtering is complete
   ///////////////////////////////////////
-  
-  ContextExecutor::emptyFrame(graph, tex_name+".final-frame-barrier", gpu_executor);
+
+  ContextExecutor::emptyFrame(graph, tex_name + ".final-frame-barrier", gpu_executor);
 
   ///////////////////////////////////////
   // Phase 4: Capture results asynchronously
   ///////////////////////////////////////
 
-  auto cap_phase = TaskGraph::phase(graph, tex_name+".capture_results", gpu_executor);
+  auto cap_phase = TaskGraph::phase(graph, tex_name + ".capture_results", gpu_executor);
 
   // Storage for captured data
   auto spec_futures = std::make_shared<std::vector<captureasync_ptr_t>>();
@@ -425,7 +453,9 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
   auto spec_capbufs = std::make_shared<std::vector<capturebuffer_ptr_t>>();
   auto diff_capbufs = std::make_shared<std::vector<capturebuffer_ptr_t>>();
 
-  cap_phase->task("capture_specular", [=](taskgraph_ptr_t g) {
+  cap_phase->task("capture_specular", [specular_rtgroups,                   //
+                                       spec_capbufs,                        //
+                                       spec_futures](taskgraph_wkptr_t g) { //
     auto fbi = gloadercontext.get()->FBI();
 
     /////////////////////////////////////////
@@ -434,7 +464,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
 
     int i = 0;
     for (auto rtg : *specular_rtgroups) {
-      auto rtb = rtg->buffer(0);
+      auto rtb    = rtg->buffer(0);
       auto capbuf = std::make_shared<CaptureBuffer>();
       spec_capbufs->push_back(capbuf);
       auto future = fbi->captureAsFormat(rtb.get(), capbuf, EBufferFormat::RGBA8);
@@ -443,7 +473,9 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
     }
   });
 
-  cap_phase->task(tex_name+".capture_diffuse", [=](taskgraph_ptr_t g) {
+  cap_phase->task(tex_name + ".capture_diffuse", [diffuse_rtgroups,                    //
+                                                  diff_capbufs,                        //
+                                                  diff_futures](taskgraph_wkptr_t g) { //
     auto fbi = gloadercontext.get()->FBI();
 
     /////////////////////////////////////////
@@ -452,7 +484,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
 
     int i = 0;
     for (auto rtg : *diffuse_rtgroups) {
-      auto rtb = rtg->buffer(0);
+      auto rtb    = rtg->buffer(0);
       auto capbuf = std::make_shared<CaptureBuffer>();
       diff_capbufs->push_back(capbuf);
       auto future = fbi->captureAsFormat(rtb.get(), capbuf, EBufferFormat::RGBA8);
@@ -464,20 +496,23 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
   ///////////////////////////////////////
   // Frame barrier after capture to ensure GPU commands are submitted
   ///////////////////////////////////////
-  
-  ContextExecutor::emptyFrame(graph, tex_name+".capture-submission-barrier", gpu_executor);
+
+  ContextExecutor::emptyFrame(graph, tex_name + ".capture-submission-barrier", gpu_executor);
 
   ///////////////////////////////////////
   // Phase 5: Wait for captures and package datablocks
   ///////////////////////////////////////
 
-  auto package_phase = TaskGraph::phase(graph, tex_name+".package_datablocks", primary_executor);
+  auto package_phase = TaskGraph::phase(graph, tex_name + ".package_datablocks", primary_executor);
 
-  package_phase->task("package_results", [=](taskgraph_ptr_t g) {
-
+  package_phase->task("package_results", [spec_futures, //
+                                          diff_futures, //
+                                          spec_capbufs, //
+                                          diff_capbufs //
+                                        ](taskgraph_wkptr_t g) {
     size_t num_specs = spec_futures->size();
     size_t num_diffs = diff_futures->size();
-    logchan_gen->log("EnvMapProcessor: Waiting for async captures spc<%zu> dif<%zu> to complete...",num_specs,num_diffs);
+    logchan_gen->log("EnvMapProcessor: Waiting for async captures spc<%zu> dif<%zu> to complete...", num_specs, num_diffs);
 
     // Wait for all specular captures
     for (size_t i = 0; i < num_specs; i++) {
@@ -511,7 +546,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
       if (!future->_failed && capbuf->_image) {
         // The data should already be available in capbuf->_image after capture completes
         size_t data_size = capbuf->width() * capbuf->height() * 4; // RGBA8
-        
+
         // Verify the datablock has the expected size
         OrkAssert(capbuf->_image->_data->length() == data_size);
 
@@ -535,7 +570,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
       if (!future->_failed && capbuf->_image) {
         // The data should already be available in capbuf->_image after capture completes
         size_t data_size = capbuf->width() * capbuf->height() * 4; // RGBA8
-        
+
         // Verify the datablock has the expected size
         OrkAssert(capbuf->_image->_data->length() == data_size);
 
@@ -554,7 +589,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
     logchan_gen->log("EnvMapProcessor: Total diffuse data: %zu bytes", total_diff_size);
 
     // Store datablocks and debug images in varmap for retrieval
-    graph->_varmap.atomicOp([=](varmap::VarMap& vmap) {
+    g.lock()->_varmap.atomicOp([=](varmap::VarMap& vmap) {
       vmap.set<datablock_ptr_t>("specular_datablock", specular_datablock);
       vmap.set<datablock_ptr_t>("diffuse_datablock", diffuse_datablock);
       vmap.set<image_list_t>("debug_spec_images", debug_spec_images);
@@ -587,7 +622,7 @@ xirprocessfuture_ptr_t EnvMapProcessor::processToXIRDataBlockAsync(const file::P
   }
 
   auto rawenvmap = texasset->GetTexture();
-  
+
   // Extract texture name for debug purposes
   std::string texture_name = input_path.getName();
 
@@ -599,16 +634,11 @@ xirprocessfuture_ptr_t EnvMapProcessor::processToXIRDataBlockAsync(const file::P
   bool is_equirectangular = (ext_str == "exr" || ext_str == "hdr");
 
   // Create the TaskGraph for filtering
-  auto taskgraph = createFilteringTaskGraph(rawenvmap, is_equirectangular);
-
-  // Store the future and texture name in the graph's varmap so tasks can access it
-  taskgraph->_varmap.atomicOp([future, texture_name](varmap::VarMap& vmap) { 
-    vmap.set<xirprocessfuture_ptr_t>("xir_future", future);
-    vmap.set<std::string>("texture_name", texture_name);
-  });
 
   // Execute on a worker thread with ContextExecutor
   opq::concurrentQueue()->enqueue([=]() {
+    auto taskgraph = createFilteringTaskGraph(rawenvmap, is_equirectangular);
+  
     // Get a context executor (will use main thread for GPU ops)
     // Need to get context from somewhere - will be set up properly later
     // For now, we'll assume it gets passed through the varmap
@@ -616,47 +646,25 @@ xirprocessfuture_ptr_t EnvMapProcessor::processToXIRDataBlockAsync(const file::P
 
     // Execute the graph - this will handle GPU operations properly
 
-    auto on_graph_complete = [future](taskgraph_ptr_t g) {
+    auto on_graph_complete = [future](taskgraph_wkptr_t g) {
       // When graph completes, extract results and package as XIR
-      g->_varmap.atomicOp([future](varmap::VarMap& unlocked) {
-        datablock_ptr_t specular_data;
-        datablock_ptr_t diffuse_data;
-        image_list_t debug_spec_images;
-        image_list_t debug_diff_images;
+      datablock_ptr_t specular_data;
+      datablock_ptr_t diffuse_data;
+      image_list_t debug_spec_images;
+      image_list_t debug_diff_images;
+      datablock_ptr_t result_data;
 
-        if (auto spec_opt = unlocked.typedValueForKey<datablock_ptr_t>("specular_datablock")) {
-          specular_data = spec_opt.value();
-        } else {
-          OrkAssert(false); // fail early (we cannot move forward until this passes)
-        }
-        if (auto diff_opt = unlocked.typedValueForKey<datablock_ptr_t>("diffuse_datablock")) {
-          diffuse_data = diff_opt.value();
-        } else {
-          OrkAssert(false); // fail early (we cannot move forward until this passes)
-        }
-        
-        // Get debug images if available
-        if (auto spec_img_opt = unlocked.typedValueForKey<image_list_t>("debug_spec_images")) {
-          debug_spec_images = spec_img_opt.value();
-        }
-        if (auto diff_img_opt = unlocked.typedValueForKey<image_list_t>("debug_diff_images")) {
-          debug_diff_images = diff_img_opt.value();
-        }
-
-        datablock_ptr_t result_data;
-        if (specular_data && diffuse_data) {
-          // Package as XIR
-          result_data = xir::XIRWriter::writeIrradianceMaps(diffuse_data, specular_data);
-        } else {
-          OrkAssert(false); // fail early (we cannot move forward until this passes)
-        }
-
-        // Set debug images in the future
-        future->setDebugImages(debug_spec_images, debug_diff_images);
-        
-        // Set the result in the future
-        future->setResult(result_data);
+      g.lock()->_varmap.atomicOp([&](varmap::VarMap& unlocked) {
+        specular_data     = unlocked.typedValueForKey<datablock_ptr_t>("specular_datablock").value();
+        diffuse_data      = unlocked.typedValueForKey<datablock_ptr_t>("diffuse_datablock").value();
+        debug_spec_images = unlocked.typedValueForKey<image_list_t>("debug_spec_images").value();
+        debug_diff_images = unlocked.typedValueForKey<image_list_t>("debug_diff_images").value();
+        result_data       = xir::XIRWriter::writeIrradianceMaps(diffuse_data, specular_data);
       }); // g->_varmap.atomicOp([future](varmap::VarMap& unlocked) {
+      // Set debug images in the future
+      // Set the result in the future
+      future->setDebugImages(debug_spec_images, debug_diff_images);
+      future->setResult(result_data);
     };
     TaskGraph::execute(taskgraph, on_graph_complete);
   });
@@ -733,6 +741,17 @@ std::vector<xirprocessfuture_ptr_t> EnvMapProcessor::processDirectory(
   }
 
   return futures;
+}
+
+static std::atomic<int> gXIRProcessFutureCount{0};
+
+XIRProcessFuture::XIRProcessFuture() {
+  int count = gXIRProcessFutureCount.fetch_add(1);
+  logchan_gen->log("XIRProcessFuture<%p> Ctor count<%d>", this, count + 1);
+}
+XIRProcessFuture::~XIRProcessFuture() {
+  int count = gXIRProcessFutureCount.fetch_sub(1);
+  logchan_gen->log("XIRProcessFuture<%p> Dtor count<%d>", this, count - 1);
 }
 
 } // namespace ork::lev2

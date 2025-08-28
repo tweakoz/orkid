@@ -26,10 +26,10 @@ TEST(TaskGraphBasicConstruction) {
   auto executor = TaskExecutor::createOPQParallel();
   auto graph = TaskGraph::create();
   auto phase = TaskGraph::phase(graph, "test_phase", executor);
-  phase->task("task1", [&](taskgraph_ptr_t g) {
+  phase->task("task1", [&](taskgraph_wkptr_t g) {
     task1_executed = true;
   });
-  phase->task("task2", [&](taskgraph_ptr_t g) {
+  phase->task("task2", [&](taskgraph_wkptr_t g) {
     task2_executed = true;
   });
   TaskGraph::execute(graph);
@@ -49,14 +49,14 @@ TEST(TaskGraphExecutionCompletion) {
   std::atomic<int> tasks_executed{0};
   
   auto phase = TaskGraph::phase(graph, "test_phase", executor);
-  phase->task("task1", [&](taskgraph_ptr_t g) {
+  phase->task("task1", [&](taskgraph_wkptr_t g) {
     tasks_executed++;
   });
-  phase->task("task2", [&](taskgraph_ptr_t g) {
+  phase->task("task2", [&](taskgraph_wkptr_t g) {
     tasks_executed++;
   });
   
-  TaskGraph::execute(graph, [&](taskgraph_ptr_t g) {
+  TaskGraph::execute(graph, [&](taskgraph_wkptr_t g) {
     graph_completed = true;
   });
   
@@ -82,22 +82,22 @@ TEST(TaskGraphMultiplePhases) {
   std::atomic<int> phase2_tasks{0};
   
   auto phase1 = TaskGraph::phase(graph, "phase1", parallel_executor);
-  phase1->task("task1", [&](taskgraph_ptr_t g) {
+  phase1->task("task1", [&](taskgraph_wkptr_t g) {
     phase1_tasks++;
   });
-  phase1->task("task2", [&](taskgraph_ptr_t g) {
+  phase1->task("task2", [&](taskgraph_wkptr_t g) {
     phase1_tasks++;
   });
        
   auto phase2 = TaskGraph::phase(graph, "phase2", serial_executor);
-  phase2->task("task3", [&](taskgraph_ptr_t g) {
+  phase2->task("task3", [&](taskgraph_wkptr_t g) {
     phase2_tasks++;
   });
-  phase2->task("task4", [&](taskgraph_ptr_t g) {
+  phase2->task("task4", [&](taskgraph_wkptr_t g) {
     phase2_tasks++;
   });
   
-  TaskGraph::execute(graph, [&](taskgraph_ptr_t g) {
+  TaskGraph::execute(graph, [&](taskgraph_wkptr_t g) {
     graph_completed = true;
   });
   
@@ -123,22 +123,22 @@ TEST(TaskGraphVarMapDataPassing) {
   std::atomic<int> final_value{0};
   
   auto producer_phase = TaskGraph::phase(graph, "producer", executor);
-  producer_phase->task("produce_data", [&](taskgraph_ptr_t g) {
-    g->_varmap.atomicOp([](varmap::VarMap& vmap) {
+  producer_phase->task("produce_data", [&](taskgraph_wkptr_t g) {
+    g.lock()->_varmap.atomicOp([](varmap::VarMap& vmap) {
       vmap.set<int>("test_value", 42);
     });
   });
        
   auto consumer_phase = TaskGraph::phase(graph, "consumer", executor);
-  consumer_phase->task("consume_data", [&](taskgraph_ptr_t g) {
-    g->_varmap.atomicOp([&final_value](varmap::VarMap& vmap) {
+  consumer_phase->task("consume_data", [&](taskgraph_wkptr_t g) {
+    g.lock()->_varmap.atomicOp([&final_value](varmap::VarMap& vmap) {
       if (auto as_int = vmap.typedValueForKey<int>("test_value")) {
         final_value = as_int.value();
       }
     });
   });
   
-  TaskGraph::execute(graph, [&](taskgraph_ptr_t g) {
+  TaskGraph::execute(graph, [&](taskgraph_wkptr_t g) {
     graph_completed = true;
   });
   
@@ -159,7 +159,7 @@ TEST(TaskGraphEmptyCompletion) {
   
   std::atomic<bool> graph_completed{false};
   
-  TaskGraph::execute(graph, [&](taskgraph_ptr_t g) {
+  TaskGraph::execute(graph, [&](taskgraph_wkptr_t g) {
     graph_completed = true;
   });
   
@@ -190,7 +190,7 @@ TEST(TaskGraphParallelComputation) {
   // Create worker tasks that compute partial sums
   for (int worker_id = 0; worker_id < NUM_WORKERS; worker_id++) {
     std::string task_name = "compute_worker_" + std::to_string(worker_id);
-    compute_phase->task(task_name, [worker_id, CHUNK_SIZE, RANGE_START, RANGE_END](taskgraph_ptr_t g) {
+    compute_phase->task(task_name, [worker_id, CHUNK_SIZE, RANGE_START, RANGE_END](taskgraph_wkptr_t g) {
       int64_t start = RANGE_START + worker_id * CHUNK_SIZE;
       int64_t end = (worker_id == NUM_WORKERS - 1) ? RANGE_END : start + CHUNK_SIZE - 1;
       
@@ -202,7 +202,7 @@ TEST(TaskGraphParallelComputation) {
       
       // Store partial result in varmap
       std::string key = "partial_sum_" + std::to_string(worker_id);
-      g->_varmap.atomicOp([key, partial_sum](varmap::VarMap& vmap) {
+      g.lock()->_varmap.atomicOp([key, partial_sum](varmap::VarMap& vmap) {
         vmap.set<__int128_t>(key, partial_sum);
       });
       });
@@ -210,8 +210,8 @@ TEST(TaskGraphParallelComputation) {
   
   // Serial phase to combine results
   auto combine_phase = TaskGraph::phase(graph, "combine_results", serial_executor);
-  combine_phase->task("final_sum", [NUM_WORKERS](taskgraph_ptr_t g) {
-    g->_varmap.atomicOp([NUM_WORKERS](varmap::VarMap& vmap) {
+  combine_phase->task("final_sum", [NUM_WORKERS](taskgraph_wkptr_t g) {
+    g.lock()->_varmap.atomicOp([NUM_WORKERS](varmap::VarMap& vmap) {
       __int128_t total_sum = 0;
       
       // Gather all partial sums
@@ -227,7 +227,7 @@ TEST(TaskGraphParallelComputation) {
     });
   });
   
-  TaskGraph::execute(graph, [&](taskgraph_ptr_t g) {
+  TaskGraph::execute(graph, [&](taskgraph_wkptr_t g) {
     graph_completed = true;
   });
   

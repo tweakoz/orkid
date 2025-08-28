@@ -31,7 +31,7 @@ public:
     auto mutex = std::make_shared<std::mutex>();
     auto cv = std::make_shared<std::condition_variable>();
     // Launch all tasks in parallel
-    auto graph = phase->_graph.lock();  // Get shared_ptr from weak_ptr
+    auto graph = phase->_graph;  // Get shared_ptr from weak_ptr
     for (auto& task : phase->_tasks) {
       opq::concurrentQueue()->enqueue([=]() {
         // Execute the task with completion callback
@@ -62,7 +62,7 @@ public:
     auto mutex = std::make_shared<std::mutex>();
     auto cv = std::make_shared<std::condition_variable>();
     auto phase_complete = std::make_shared<std::atomic<bool>>(false);
-    auto graph = phase->_graph.lock();  // Get shared_ptr from weak_ptr
+    auto graph = phase->_graph;  // Get shared_ptr from weak_ptr
     for( auto task : phase->_tasks ) {
       task->_func(graph);
     }

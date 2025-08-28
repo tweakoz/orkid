@@ -62,7 +62,7 @@ VulkanMemoryForImage::VulkanMemoryForImage(vkcontext_rawptr_t ctxVK, VkImage ima
   int count    = _imgmemcount.fetch_add(1);
   size_t bytes = _imgmembytes.fetch_add(_memreq->size);
   if((SN&0xff)==0){
-    logchan_vkbufmem->log("VulkanMemoryForImage<%p> SN<%d> numalive<%d> bytes<%zu>", (void*)this, SN, count, bytes);
+    logchan_vkbufmem->log("VulkanMemoryForImage<%p> SN<%d> bytes-alloced<%zu> alloc-count<%d> ", (void*)this, SN, bytes, count);
   }
 }
 
@@ -70,6 +70,11 @@ VulkanMemoryForImage::~VulkanMemoryForImage() {
   vkFreeMemory(_ctxVK->_vkdevice, *_vkmem, nullptr);
   int count    = _imgmemcount.fetch_sub(1);
   size_t bytes = _imgmembytes.fetch_sub(_memreq->size);
+  printf("~VulkanMemoryForImage<%p> bytes-freed<%zu> bytes-remaining<%zu> alloc-count<%zu> \n", 
+         (void*)this, 
+         _memreq->size, 
+         bytes, 
+         count - 1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

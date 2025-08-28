@@ -7,6 +7,7 @@
 
 #include "headers/vulkan_ctx.h"
 #include <ork/util/logger.h>
+#include <ork/lev2/gfx/gfxenv.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
@@ -28,6 +29,25 @@ VkRtGroupImpl::VkRtGroupImpl(vkcontext_rawptr_t ctxVK)
   _cmdBufCBBI_GFX.pInheritanceInfo = &_cmdBufII;
 }
 VkRtGroupImpl::~VkRtGroupImpl() {
+  // Capture resources that need cleanup
+  auto cmdbuf = _cmdbufRTG;
+  auto color_buffers = _color_buffer_impls;
+  auto depth_buffer = _depth_buffer_impl;
+  auto attachments = __attachments;
+  
+  if (!color_buffers.empty() || depth_buffer || cmdbuf || attachments) {
+    // Enqueue cleanup to main thread with proper Vulkan context
+    GfxEnv::GetRef().enqueueDeferredContextOp(
+      [=](Context* ctx) {
+        // Release shared_ptrs - their destructors will handle cleanup
+        // This ensures cleanup happens on the main thread with valid Vulkan context
+        auto temp_colors = color_buffers;
+        auto temp_depth = depth_buffer;
+        auto temp_cmd = cmdbuf;
+        auto temp_attach = attachments;
+      });
+  }
+  
   _cmdbufRTG = nullptr; // Clear the command buffer to avoid dangling pointers
 }
 ///////////////////////////////////////////////////////////////////////////////
