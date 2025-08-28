@@ -19,6 +19,7 @@
 #include <ork/asset/AssetManager.h>
 #include <ork/asset/Asset.inl>
 #include <ork/rtti/RTTIX.inl>
+#include <ork/util/hexdump.inl>
 
 ImplementReflectionX(ork::lev2::IrradianceMapsAsset, "IrradianceMapsAsset");
 
@@ -56,12 +57,22 @@ asset::asset_ptr_t IrradianceMapsLoader::_doLoadFromDatablock(
 asset::asset_ptr_t IrradianceMapsLoader::_loadFromXIR(
     asset::loadrequest_ptr_t loadreq,
     datablock_ptr_t xir_data) {
-  printf("XXX\n");
   // Use XIRReader to get raw datablocks
   auto xir_data_result = xir::XIRReader::readXirDatablocks(xir_data);
   
   if (!xir_data_result._valid) {
+    printf("XIR data invalid\n");
     return nullptr;
+  }
+  
+  printf("XIR data valid, diffuse size: %zu, specular size: %zu\n", 
+         xir_data_result._diffuse_data->length(),
+         xir_data_result._specular_data->length());
+  
+  // Debug: Check first few bytes of diffuse data to see format
+  if (xir_data_result._diffuse_data->length() > 64) {
+    printf("Diffuse data first 64 bytes:\n");
+    hexdumpbytes(xir_data_result._diffuse_data->data(), 64);
   }
   
   // Create asset

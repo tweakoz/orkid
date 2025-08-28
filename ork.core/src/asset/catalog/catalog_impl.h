@@ -156,9 +156,8 @@ struct CatalogImpl {
     CompressionType compression_type
   );
   
-  // Asset type handlers
-  void handleAssetPak(datablock_ptr_t data, AssetResult& result);
-  void handleRegularAsset(datablock_ptr_t data, AssetResult& result);
+  // Asset type handlers (everything is a pak now)
+  void handleAssetPak(datablock_ptr_t data, AssetResult& result, fetchrequest_ptr_t request);
   void writeAssetPakToLocal(const assetentry_ptr_t& asset_info, AssetResult& result);
     
   

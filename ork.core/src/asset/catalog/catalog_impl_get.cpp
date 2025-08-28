@@ -24,6 +24,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <nlohmann/json.hpp>
 #include "catalog_impl.h"
 
 ////////////////////////////////////////////////////////////////
@@ -42,6 +43,53 @@ assetresult_ptr_t CatalogImpl::getAsset(fetchrequest_ptr_t request) {
   result->_location = request->location;
   Timer overall_timer;
   overall_timer.Start();
+
+  // Check local manifest first for extracted cache
+  if (!request->disable_cache) {
+    // Parse asset ID to get namespace and name
+    auto [namespace_id, asset_name] = parseAssetId(request->asset_id);
+    
+    // Check for local manifest
+    file::Path manifest_path = _catalog->getCacheDir() / "local_manifests" / namespace_id / (asset_name + ".json");
+    
+    if (manifest_path.doesPathExist()) {
+      // Load manifest
+      std::string manifest_data;
+      FILE* fp = fopen(manifest_path.c_str(), "r");
+      if (fp) {
+        fseek(fp, 0, SEEK_END);
+        size_t size = ftell(fp);
+        fseek(fp, 0, SEEK_SET);
+        manifest_data.resize(size);
+        fread(&manifest_data[0], 1, size, fp);
+        fclose(fp);
+      }
+      
+      try {
+        auto manifest = nlohmann::json::parse(manifest_data);
+        
+        // Check if auto-unwrapped single file
+        if (manifest.contains("auto_unwrapped") && manifest["auto_unwrapped"].get<bool>()) {
+          // Load the single file directly
+          std::string extracted_path = manifest["extracted_path"].get<std::string>();
+          file::Path extracted_file = _catalog->getCacheDir() / extracted_path;
+          
+          if (extracted_file.doesPathExist()) {
+            // Read the cached extracted file
+            result->_data = readCachedFile(extracted_file);
+            result->_status = AssetStatus::OK;
+            result->_bytes_downloaded = 0; // From cache
+            
+            logchan_catalog->log("Served from extracted cache (auto-unwrapped): %s", 
+                               manifest["filename"].get<std::string>().c_str());
+            return result;
+          }
+        }
+      } catch (const std::exception& e) {
+        logchan_catalog->log("Failed to parse local manifest: %s", e.what());
+      }
+    }
+  }
 
   // 1. Download phase
   Timer _download_timer;
@@ -78,16 +126,8 @@ assetresult_ptr_t CatalogImpl::getAsset(fetchrequest_ptr_t request) {
 
   result->_processing_time = process_timer.SecsSinceStart();
 
-  // 3. Handle by type
-  if (request->asset_info->_type == "asset_pak") {
-    handleAssetPak(processed_data, *result);
-    // Also write to local location if available
-    if (!request->asset_info->_local_loc.empty()) {
-      writeAssetPakToLocal(request->asset_info, *result);
-    }
-  } else {
-    handleRegularAsset(processed_data, *result);
-  }
+  // 3. Handle as asset pak (everything is a pak now)
+  handleAssetPak(processed_data, *result, request);
 
   return result;
 }
@@ -404,12 +444,11 @@ datablock_ptr_t CatalogImpl::decompressData(datablock_ptr_t _data, CompressionTy
 
 ////////////////////////////////////////////////////////////////
 
-void CatalogImpl::handleAssetPak(datablock_ptr_t _data, AssetResult& result) {
+void CatalogImpl::handleAssetPak(datablock_ptr_t _data, AssetResult& result, fetchrequest_ptr_t request) {
 
   // Extract tar contents
   auto archive = util::TarArchive::loadFromMemory(_data);
   if (!archive || !archive->isValid()) {
-    printf("[ERROR] Failed to parse tar archive\n");
     result._status       = AssetStatus::DECOMPRESS_FAILED;
     result._error_detail = "Failed to parse tar archive";
     return;
@@ -419,30 +458,86 @@ void CatalogImpl::handleAssetPak(datablock_ptr_t _data, AssetResult& result) {
   util::TarExtractOptions extract_options;
   auto extracted_entries = archive->extractToMemory(extract_options);
   if (extracted_entries.empty()) {
-    printf("[ERROR] No entries found in tar archive\n");
     result._status       = AssetStatus::DECOMPRESS_FAILED;
     result._error_detail = "No entries found in tar archive";
     return;
   }
 
-  // Convert tar entries to AssetResult format
-  for (const auto& [filename, entry] : extracted_entries) {
+  // AUTO-UNWRAP: If single file, return it directly
+  if (extracted_entries.size() == 1) {
+    auto& [filename, entry] = *extracted_entries.begin();
     if (entry && entry->data) {
-      result._pak_contents[filename] = entry->data;
-      printf("[DEBUG] Extracted: %s (%zu bytes)\n", filename.c_str(), entry->data->length());
+      
+      // Set the data directly (auto-unwrap)
+      result._data = entry->data;
+      result._status = AssetStatus::OK;
+      
+      // Create local manifest for future cache hits
+      if (!request->disable_cache) {
+        auto [namespace_id, asset_name] = parseAssetId(request->asset_id);
+        
+        // Save extracted file to cache
+        file::Path extracted_dir = _catalog->getCacheDir() / "extracted" / namespace_id / asset_name;
+        extracted_dir.ensureDirectoryExists();
+        file::Path extracted_file = extracted_dir / filename;
+        saveToCacheFile(entry->data, extracted_file);
+        
+        // Write to local location if configured
+        if (!request->asset_info->_local_loc.empty()) {
+          file::Path local_path = request->asset_info->getResolvedLocalPath();
+          if (!local_path.empty()) {
+            local_path.ensureDirectoryExists();
+            file::Path local_file = local_path / filename;
+            saveToCacheFile(entry->data, local_file);
+            logchan_catalog->log("Written to local: %s", local_file.c_str());
+          }
+        }
+        
+        // Create manifest in local_manifests
+        nlohmann::json manifest;
+        manifest["type"] = "single_file_pak";
+        manifest["extracted_at"] = std::time(nullptr);
+        manifest["filename"] = filename;
+        manifest["storage_hash"] = request->asset_info->_storage_hash;
+        manifest["auto_unwrapped"] = true;
+        manifest["extracted_path"] = FormatString("extracted/%s/%s/%s", 
+                                                  namespace_id.c_str(), 
+                                                  asset_name.c_str(), 
+                                                  filename.c_str());
+        
+        file::Path manifest_dir = _catalog->getCacheDir() / "local_manifests" / namespace_id;
+        manifest_dir.ensureDirectoryExists();
+        file::Path manifest_path = manifest_dir / (asset_name + ".json");
+        
+        FILE* fp = fopen(manifest_path.c_str(), "w");
+        if (fp) {
+          std::string json_str = manifest.dump(2);
+          fwrite(json_str.c_str(), 1, json_str.length(), fp);
+          fclose(fp);
+          logchan_catalog->log("Created local manifest: %s", manifest_path.c_str());
+        }
+      }
+      
+      logchan_catalog->log("Auto-unwrapped single-file pak: %s (%zu bytes)", 
+                          filename.c_str(), entry->data->length());
+      return;
     }
   }
 
+  // Multiple files - return as pak_contents
+  for (const auto& [filename, entry] : extracted_entries) {
+    if (entry && entry->data) {
+      result._pak_contents[filename] = entry->data;
+    }
+  }
+  
+  // Write multi-file pak to local if configured
+  if (!request->asset_info->_local_loc.empty()) {
+    writeAssetPakToLocal(request->asset_info, result);
+  }
+  
   result._status = AssetStatus::OK;
-  printf("[DEBUG] Asset pak extraction complete: %zu files\n", result._pak_contents.size());
-}
-
-////////////////////////////////////////////////////////////////
-
-void CatalogImpl::handleRegularAsset(datablock_ptr_t _data, AssetResult& result) {
-  result._data             = _data;
-  result._status           = AssetStatus::OK;
-  result._bytes_downloaded = _data->length();
+  logchan_catalog->log("Asset pak extraction complete: %zu files", result._pak_contents.size());
 }
 
 ////////////////////////////////////////////////////////////////
