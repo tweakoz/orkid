@@ -48,7 +48,6 @@ void pyinit_asset_catalog(py::module& module_core) {
               py::arg("tar_root") = "",
               py::arg("filters") = std::vector<std::string>{})
           .def("toJson", &AssetManifest::toJson)
-          .def_static("fromJson", &AssetManifest::fromJson)
           .def("getCodec", &AssetManifest::getCodec)
           .def("repackage", &AssetManifest::repackage)
           .def("upload", &AssetManifest::upload, 
@@ -248,7 +247,6 @@ void pyinit_asset_catalog(py::module& module_core) {
                               .def("supports_current_platform", &AssetEntry::supportsCurrentPlatform)
                               .def("is_chunked", &AssetEntry::isChunked)
                               .def("toJson", &AssetEntry::toJson)
-                              .def_static("fromJson", &AssetEntry::fromJson)
                               .def("repackage", &AssetEntry::repackage)
                               .def("upload", &AssetEntry::upload, 
                                    py::arg("config"), 

@@ -86,7 +86,6 @@ struct AssetEntry {
   
   // Serialization
   std::string toJson() const;
-  static assetentry_ptr_t fromJson(const std::string& json_str);
   
   // Repackage asset (recompute hashes, rechunk if needed)
   void repackage();
@@ -150,15 +149,10 @@ struct AssetManifest {
   
   // Save to JSON file
   bool saveToFile(const file::Path& path) const;
-  
-  // Convert to JSON string
-  
+    
   // Convert to JSON string with pretty formatting
   std::string toJson() const;
-  
-  // Create manifest from JSON
-  static assetmanifest_ptr_t fromJson(const std::string& json_str);
-  
+    
   // Merge another manifest into this one
   void merge(const AssetManifest& other);
   
