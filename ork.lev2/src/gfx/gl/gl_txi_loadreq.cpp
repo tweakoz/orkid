@@ -200,20 +200,6 @@ void GlTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
     data->makeValueForKey<std::string>("loader") = "_loadDDSTexture";
     assreq->_on_event("loadComplete"_crcu,data);
   }
-  if (ptex->_vars->hasKey("postproc")) {
-    auto dblock    = req->_inpstream._datablock;
-    auto postproc  = ptex->_vars->typedValueForKey<Texture::proc_t>("postproc").value();
-    if(assreq and assreq->_on_event){
-      assreq->_on_event("beginPostProc"_crcu,nullptr);
-    }
-    auto postblock = postproc(ptex, &mTargetGL, dblock);
-    if(assreq and assreq->_on_event){
-      assreq->_on_event("endPostProc"_crcu,nullptr);
-    }
-    OrkAssert(postblock);
-  } else {
-    // printf("ptex<%p> no postproc\n", ptex);
-  }
 
 
   ptex->_residenceState.fetch_or(1);

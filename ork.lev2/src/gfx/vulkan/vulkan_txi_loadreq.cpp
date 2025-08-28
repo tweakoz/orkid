@@ -254,35 +254,6 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
     assreq->_on_event("loadComplete"_crcu, data);
   }
 
-  /////////////////////////////////////
-  // Handle postprocessing if specified
-  /////////////////////////////////////
-
-  /*
-  _contextVK->_beginAssetProcessing();
-  if (ptex->_vars->hasKey("postproc")) {
-    auto dblock    = req->_inpstream._datablock;
-    auto postproc  = ptex->_vars->typedValueForKey<Texture::proc_t>("postproc").value();
-    
-    if (assreq and assreq->_on_event) {
-      assreq->_on_event("beginPostProc"_crcu, nullptr);
-    }
-    
-    logchan_txi_loadreq->log("VkTextureInterface::_createFromLoadReq: executing postproc for texture<%p:%s>", 
-                             (void*)ptex.get(), ptex->_debugName.c_str());
-    auto postblock = postproc(ptex, _contextVK, dblock);
-    
-    if (assreq and assreq->_on_event) {
-      assreq->_on_event("endPostProc"_crcu, nullptr);
-    }
-    
-    OrkAssert(postblock);
-  } else {
-    logchan_txi_loadreq->log("VkTextureInterface::_createFromLoadReq: no postproc for texture<%p:%s>", 
-                             (void*)ptex.get(), ptex->_debugName.c_str());
-  }
-  _contextVK->_endAssetProcessing();*/
-
   ptex->_residenceState.fetch_or(1);
 }
 ///////////////////////////////////////////////////////////////////////////////

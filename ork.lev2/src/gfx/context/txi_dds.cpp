@@ -273,20 +273,6 @@ void TextureInterface::_loadDDSTextureMainThreadPart(texloadreq_ptr_t req) {
   //glBindTexture(TARGET, 0);
   //GL_ERRORCHECK();
 
-  ////////////////////////////////////////////////
-  // done loading texture,
-  //  perform postprocessing, if any..
-  ////////////////////////////////////////////////
-
-  if (ptex->_vars->hasKey("postproc")) {
-    auto dblock    = req->_inpstream._datablock;
-    auto postproc  = ptex->_vars->typedValueForKey<Texture::proc_t>("postproc").value();
-    auto postblock = postproc(ptex, _ctx, dblock);
-    OrkAssert(postblock);
-  } else {
-    // printf("ptex<%p> no postproc\n", ptex);
-  }
-
   //mTargetGL.debugPopGroup();
 }
 

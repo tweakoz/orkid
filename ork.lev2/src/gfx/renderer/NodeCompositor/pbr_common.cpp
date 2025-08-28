@@ -46,91 +46,6 @@ constexpr size_t KNUMSSAONOISEFRAMES = 60;
 
 static logchannel_ptr_t logchan_pbrcom = logger()->configureChannel("PBRCOM", fvec3(0.8, 0.8, 0.5), false);
 
-
-///////////////////////////////////////////////////////////////////////////////
-
-/*static asset::vars_ptr_t _RadianceVars() {
-
-  auto vars                                          = std::make_shared<asset::vars_t>();
-  vars->makeValueForKey<Texture::proc_t>("postproc") = //
-      [vars](
-          texture_ptr_t tex, //
-          Context* targ,     //
-          datablock_constptr_t inp_datablock) -> datablock_ptr_t {
-    logchan_pbrcom->log(
-        "EnvironmentTexture Radiance PreProcessor tex<%p:%s> datablocklen<%zu>",
-        tex.get(),
-        tex->_debugName.c_str(),
-        inp_datablock->length());
-
-    auto hasher = DataBlock::createHasher();
-    hasher->accumulateString("Radiancemap-v2");
-    hasher->accumulateItem<uint64_t>(inp_datablock->hash()); // data content
-    hasher->finish();
-    uint64_t cachekey = hasher->result();
-
-    //////////////////////////////////////////
-    // TODO cache at this level...
-    //////////////////////////////////////////
-
-    auto irrmapdblock = DataBlockCache::findDataBlock(cachekey);
-    if (false) { // irrmapdblock) {
-      // found in cache, nothing to do..
-    } else {
-      // not found in cache, generate
-      irrmapdblock = std::make_shared<DataBlock>();
-      ///////////////////////////
-
-      auto load_req = tex->loadRequest();
-      OrkAssert(load_req);
-
-      auto equirectangular = load_req->_asset_vars->typedValueForKey<bool>("equirectangular").value();
-
-
-      // TODO: This should be replaced with XIR asset loading according to .strategy2
-      // For now, wait on futures and extract textures (temporary compatibility)
-      auto specular_future = PBRMaterial::filterSpecularEnvMap(tex, targ,equirectangular);
-      auto diffuse_future = PBRMaterial::filterDiffuseEnvMap(tex, targ,equirectangular);
-      
-      // Wait for completion and extract textures (TEMPORARY)
-      auto specular_datablock = specular_future->wait();
-      auto diffuse_datablock = diffuse_future->wait();
-      
-      // TODO: Create textures from datablocks - this is temporary
-      texture_ptr_t filtenvSpecularMap = nullptr; // Will be extracted from datablock
-      texture_ptr_t filtenvDiffuseMap = nullptr;  // Will be extracted from datablock
-      auto brdfIntegrationMapGGX = PBRMaterial::brdfIntegrationMap(targ,"GGX");
-      auto brdfIntegrationMapVelvet = PBRMaterial::brdfIntegrationMap(targ,"GGXVELVET");
-      auto brdfIntegrationMapRim = PBRMaterial::brdfIntegrationMap(targ,"GGXRIM");
-      auto brdfIntegrationMapBlinn = PBRMaterial::brdfIntegrationMap(targ,"BLINN");
-      auto brdfIntegrationMapPhong = PBRMaterial::brdfIntegrationMap(targ,"PHONG");
-
-      load_req->_asset_vars->makeValueForKey<texture_ptr_t>("irrmap_spec") = filtenvSpecularMap;
-      load_req->_asset_vars->makeValueForKey<texture_ptr_t>("irrmap_diff") = filtenvDiffuseMap;
-      load_req->_asset_vars->makeValueForKey<texture_ptr_t>("brdf_mapGGX") = brdfIntegrationMapGGX;
-      load_req->_asset_vars->makeValueForKey<texture_ptr_t>("brdf_mapVELVET") = brdfIntegrationMapVelvet;
-      load_req->_asset_vars->makeValueForKey<texture_ptr_t>("brdf_mapGGXRIM") = brdfIntegrationMapRim;
-      load_req->_asset_vars->makeValueForKey<texture_ptr_t>("brdf_mapBLINN") = brdfIntegrationMapBlinn;
-      load_req->_asset_vars->makeValueForKey<texture_ptr_t>("brdf_mapPHONG") = brdfIntegrationMapPhong;
-
-      auto irrmaps = load_req->_asset_vars->typedValueForKey<RadianceMaps_ptr_t>("irrmaps").value();
-      irrmaps->_filtenvSpecularMap = filtenvSpecularMap;
-      irrmaps->_filtenvDiffuseMap  = filtenvDiffuseMap;
-      irrmaps->_brdfIntegrationMapGGX = brdfIntegrationMapGGX;
-      irrmaps->_brdfIntegrationMapVelvet = brdfIntegrationMapVelvet;
-      irrmaps->_brdfIntegrationMapGGXRIM = brdfIntegrationMapRim;
-      irrmaps->_brdfIntegrationMapBlinn = brdfIntegrationMapBlinn;
-      irrmaps->_brdfIntegrationMapPhong = brdfIntegrationMapPhong;
-      //_environmentMipScale = _filtenvSpecularMap->_num_mips-1;
-      //////////////////////////////////////////////////////////////
-      DataBlockCache::setDataBlock(cachekey, irrmapdblock);
-    }
-
-    return irrmapdblock;
-  };
-  return vars;
-}*/
-
 ///////////////////////////////////////////////////////////////////////////////
 CommonStuff::CommonStuff() {
 
@@ -171,21 +86,7 @@ RadianceMaps_ptr_t CommonStuff::requestRadianceMaps(const AssetPath& texture_pat
 
 ///////////////////////////////////////////////////////////////////////////////
 void CommonStuff::requestAndRefSkyboxTexture(asset::loadrequest_ptr_t load_req) {
-  auto texture_path = load_req->_asset_path;
-  //load_req->_asset_vars    = _RadianceVars();
-  load_req->_asset_vars->makeValueForKey<bool>("equirectangular") = true;
-  load_req->_asset_vars->makeValueForKey<RadianceMaps_ptr_t>("irrmaps") = _RadianceMaps;
-  _RadianceMaps->_loadRequest = load_req;
-  opq::mainSerialQueue()->enqueue([=]() {
-    //printf( "SKYBOX<%s>\n", load_req->_asset_path.c_str());
-    auto enviromentmap_asset = asset::AssetManager<lev2::TextureAsset>::load(load_req);
-    OrkAssert(enviromentmap_asset != nullptr);
-    OrkAssert(enviromentmap_asset->GetTexture() != nullptr);
-    OrkAssert(enviromentmap_asset->_varmap.hasKey("postproc"));
-    assignEnvTexture(enviromentmap_asset);
-    if(load_req->_on_load_complete)
-      load_req->_on_load_complete();
-  });
+  auto generic_asset = asset::AssetManager<RadianceMapsAsset>::load(load_req);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

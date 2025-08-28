@@ -242,110 +242,86 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
       //printf("texture_path<%s>\n", texture_path.c_str());
       //_renderPresetData->_assetSynchro->increment();
       // aliases 
-      if(texture_path == "black") {
-        texture_path = "src://effect_textures/black";
-      }
-      else if(texture_path == "white") {
-        texture_path = "src://effect_textures/white";
-      }
-      else if(texture_path == "red") {
-        texture_path = "src://effect_textures/red";
-      }
-      else if(texture_path == "green") {
-        texture_path = "src://effect_textures/green";
-      }
-      else if(texture_path == "yellow") {
-        texture_path = "src://effect_textures/yellow";
-      }
-      else if(texture_path == "blue") {
-        texture_path = "src://effect_textures/blue";
-      }
-      else if(texture_path == "magenta") {
-        texture_path = "src://effect_textures/magenta";
-      }
-      else if(texture_path == "cyan") {
-        texture_path = "src://effect_textures/cyan";
-      }
-      else if(texture_path == "nebula") {
-        texture_path = "src://envmaps/tozenv_nebula";
+      if(texture_path == "nebula") {
+        texture_path = "ork_envmaps|tozenv_nebula";
       }
       else if(texture_path == "hellscape") {
-        texture_path = "src://envmaps/tozenv_hellscape";
+        texture_path = "ork_envmaps|tozenv_hellscape";
       }
       else if(texture_path == "caustics") {
-        texture_path = "src://envmaps/tozenv_caustic1";
+        texture_path = "ork_envmaps|tozenv_caustic1";
       }
       else if(texture_path == "forest") {
-        texture_path = "src://envmaps/blender_forest";
+        texture_path = "ork_envmaps|blender_forest";
       }
       else if(texture_path == "city") {
-        texture_path = "src://envmaps/blender_city";
+        texture_path = "ork_envmaps|blender_city";
       }
       else if(texture_path == "courtyard") {
-        texture_path = "src://envmaps/blender_courtyard";
+        texture_path = "ork_envmaps|blender_courtyard";
       }
       else if(texture_path == "studio") {
-        texture_path = "src://envmaps/blender_studio";
+        texture_path = "ork_envmaps|blender_studio";
       }
       else if(texture_path == "interior") {
-        texture_path = "src://envmaps/blender_interior";
+        texture_path = "ork_envmaps|blender_interior";
       }
       else if(texture_path == "night") {
-        texture_path = "src://envmaps/blender_night";
+        texture_path = "ork_envmaps|blender_night";
       }
       else if(texture_path == "sunrise") {
-        texture_path = "src://envmaps/blender_sunrise";
+        texture_path = "ork_envmaps|blender_sunrise";
       }
       else if(texture_path == "sunset") {
-        texture_path = "src://envmaps/blender_sunset";
+        texture_path = "ork_envmaps|blender_sunset";
       }
       else if(texture_path == "arena") {
-        texture_path = "src://envmaps/arena4k";
+        texture_path = "ork_envmaps|arena4k";
       }
       else if(texture_path == "arena8k") {
-        texture_path = "src://envmaps/arena8k";
+        texture_path = "ork_envmaps|arena8k";
       }
       else if(texture_path == "club") {
-        texture_path = "src://envmaps/club4k";
+        texture_path = "ork_envmaps|club4k";
       }
       else if(texture_path == "club8k") {
-        texture_path = "src://envmaps/club8k";
+        texture_path = "ork_envmaps|club8k";
       }
       else if(texture_path == "cold") {
-        texture_path = "src://envmaps/cold4k";
+        texture_path = "ork_envmaps|cold4k";
       }
       else if(texture_path == "cold8k") {
-        texture_path = "src://envmaps/cold8k";
+        texture_path = "ork_envmaps|cold8k";
       }
       else if(texture_path == "pillars") {
-        texture_path = "src://envmaps/pillars4k";
+        texture_path = "ork_envmaps|pillars4k";
       }
       else if(texture_path == "pillars8k") {
-        texture_path = "src://envmaps/pillars8k";
+        texture_path = "ork_envmaps|pillars8k";
       }
       else if(texture_path == "desert") {
-        texture_path = "src://envmaps/desert4k";
+        texture_path = "ork_envmaps|desert4k";
       }
       else if(texture_path == "desert8k") {
-        texture_path = "src://envmaps/desert8k";
+        texture_path = "ork_envmaps|desert8k";
       }
       else if(texture_path == "ocean") {
-        texture_path = "src://envmaps/ocean4k";
+        texture_path = "ork_envmaps|ocean4k";
       }
       else if(texture_path == "ocean8k") {
-        texture_path = "src://envmaps/ocean8k";
+        texture_path = "ork_envmaps|ocean8k";
       }
       else if(texture_path == "crossroads") {
-        texture_path = "src://envmaps/crossroads4k";
+        texture_path = "ork_envmaps|crossroads4k";
       }
       else if(texture_path == "ethereal") {
-        texture_path = "src://envmaps/ethereal4k";
+        texture_path = "ork_envmaps|ethereal4k";
       }
       else if(texture_path == "futcity") {
-        texture_path = "src://envmaps/futcity4k";
+        texture_path = "ork_envmaps|futcity4k";
       }
       else if(texture_path == "futcity8k") {
-        texture_path = "src://envmaps/futcity8k";
+        texture_path = "ork_envmaps|futcity8k";
       }
       _pbr_common->_useFloatColorBuffer = use_float_buffer;
 

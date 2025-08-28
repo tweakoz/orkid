@@ -37,14 +37,6 @@ struct PbrMatrixBlockApplicator : public MaterialInstApplicator {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct FilteredEnvMap {
-  std::shared_ptr<RtGroup> _rtgroup;
-  std::shared_ptr<RtBuffer> _rtbuffer;
-  Texture* _texture = nullptr;
-};
-typedef std::shared_ptr<FilteredEnvMap> filtenvmapptr_t;
-///////////////////////////////////////////////////////////////////////////////
-
 class PBRMaterial final : public GfxMaterial {
 
   DeclareConcreteX(PBRMaterial, GfxMaterial);
@@ -88,8 +80,6 @@ public:
   static FxUniformBuffer* boneDataBuffer(Context* targ);
 
   static texture_ptr_t brdfIntegrationMap(Context* targ,std::string type);
-  static datablock_future_ptr_t filterSpecularEnvMap(texture_ptr_t rawenvmap, Context* targ, bool equirectangular);
-  static datablock_future_ptr_t filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context* targ, bool equirectangular);
 
   ////////////////////////////////////////////
 

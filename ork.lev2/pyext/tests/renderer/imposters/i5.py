@@ -49,7 +49,7 @@ class ImposterApp(boilerplate.ImposterBaseApp):
     sceneparams.DiffuseIntensity = float(1)
     sceneparams.AmbientLight = vec3(0.0)
     sceneparams.DepthFogDistance = float(1e5)
-    #sceneparams.SkyboxTexPathStr = self.envmap
+    sceneparams.SkyboxTexPathStr = "ork_envmaps|tozenv_nebula"
 
     ###################################
     # post fx node
@@ -173,10 +173,10 @@ class ImposterApp(boilerplate.ImposterBaseApp):
       self.imposter.onGpuUpdate(ctx)
       z = math.sin(self.imposter.frame_index*0.003)*2.0
       self.imposter.sgnode.worldTransform.translation = vec3(0,0.1,z)
-    self.spotlight1.update(self.lighttime)
-    self.spotlight2.update(self.lighttime)
-    self.spotlight3.update(self.lighttime)
-    self.spotlight4.update(self.lighttime)
+      self.spotlight1.update(self.lighttime)
+      self.spotlight2.update(self.lighttime)
+      self.spotlight3.update(self.lighttime)
+      self.spotlight4.update(self.lighttime)
     if hasattr(self,"sgnode_frustum"):
       self.layer_fwd.removeDrawableNode(self.sgnode_frustum )
 

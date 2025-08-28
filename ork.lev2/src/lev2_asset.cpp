@@ -127,9 +127,6 @@ asset_ptr_t StaticTexFileLoader::_doLoadAsset(ork::asset::loadrequest_ptr_t load
   texture_asset->_varmap               = *loadreq->_asset_vars;
   texture_asset->GetTexture()->_vars   = loadreq->_asset_vars;
   texture_asset->_load_request          = loadreq;
-  if (loadreq->_asset_vars->hasKey("postproc")){ //
-    logchan_l2asso->log("texasset<%p:%s> has postproc", texture_asset.get(), loadreq->_asset_path.c_str());
-  }
   auto context = lev2::contextForCurrentThread();
 
   auto txi = context->TXI();
