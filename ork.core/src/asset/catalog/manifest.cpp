@@ -446,6 +446,11 @@ void AssetManifest::parseFromJsonInternal(const std::string& json_str, const fil
           entry._hash_algorithm = "md5";
         }
         
+        // Handle content hash
+        if (asset_data.HasMember("content_hash") && asset_data["content_hash"].IsString()) {
+          entry._content_hash = asset_data["content_hash"].GetString();
+        }
+        
         // Parse native_size (original uncompressed size)
         if (asset_data.HasMember("native_size")) {
           if (asset_data["native_size"].IsUint64()) {
@@ -493,80 +498,6 @@ void AssetManifest::parseFromJsonInternal(const std::string& json_str, const fil
         
         impl->_assets[_asset_id] = std::make_shared<AssetEntry>(entry);
       }
-    }
-  } else {
-    ///////////////////////////////////////////////////////////
-    // Old format - assume singularity namespace
-    ///////////////////////////////////////////////////////////
-    impl->_namespace = "singularity";
-    impl->_version = "1.0.0";
-    
-    // Each top-level key is an asset
-    for (auto it = doc.MemberBegin(); it != doc.MemberEnd(); ++it) {
-      std::string _asset_id = it->name.GetString();
-      const auto& asset_data = it->value;
-      
-      if (!asset_data.IsObject()) continue;
-      
-      AssetEntry entry;
-      entry._id = _asset_id;                        // Set the asset ID
-      entry._namespace = impl->_namespace;
-      entry._manifest_source = source_file.c_str();
-      entry._priority = 100;  // Default priority
-      
-      ///////////////////////////////////////////////////////////
-      // Convert old field names
-      ///////////////////////////////////////////////////////////
-      if (asset_data.HasMember("type") && asset_data["type"].IsString()) {
-        entry._type = asset_data["type"].GetString();
-      }
-      
-      if (asset_data.HasMember("local_loc") && asset_data["local_loc"].IsString()) {
-        entry._local_loc = asset_data["local_loc"].GetString();
-      }
-      
-      
-      // filename field no longer used
-      
-      if (asset_data.HasMember("tar_root") && asset_data["tar_root"].IsString()) {
-        entry._tar_root = asset_data["tar_root"].GetString();
-      }
-      
-      // Handle storage hash - both new "storage_hash" and legacy "hash"/"md5" fields
-      if (asset_data.HasMember("storage_hash") && asset_data["storage_hash"].IsString()) {
-        entry._storage_hash = asset_data["storage_hash"].GetString();
-      } else if (asset_data.HasMember("hash") && asset_data["hash"].IsString()) {
-        entry._storage_hash = asset_data["hash"].GetString();
-      } else if (asset_data.HasMember("md5") && asset_data["md5"].IsString()) {
-        entry._storage_hash = asset_data["md5"].GetString();
-      }
-      
-      // Handle content hash
-      if (asset_data.HasMember("content_hash") && asset_data["content_hash"].IsString()) {
-        entry._content_hash = asset_data["content_hash"].GetString();
-      }
-      
-      // Parse hash algorithm if specified
-      if (asset_data.HasMember("hash_algorithm") && asset_data["hash_algorithm"].IsString()) {
-        entry._hash_algorithm = asset_data["hash_algorithm"].GetString();
-        // Validate hash algorithm - only MD5 supported for now
-        OrkAssert(entry._hash_algorithm == "md5" && "Only MD5 hash algorithm is currently supported");
-      }
-      
-      // Parse native_size (original uncompressed size)
-      if (asset_data.HasMember("native_size")) {
-        if (asset_data["native_size"].IsUint64()) {
-          entry._size = asset_data["native_size"].GetUint64();
-        } else if (asset_data["native_size"].IsUint()) {
-          entry._size = asset_data["native_size"].GetUint();
-        } else if (asset_data["native_size"].IsInt64()) {
-          entry._size = asset_data["native_size"].GetInt64();
-        } else if (asset_data["native_size"].IsInt()) {
-          entry._size = asset_data["native_size"].GetInt();
-        }
-      }
-      
-      impl->_assets[_asset_id] = std::make_shared<AssetEntry>(entry);
     }
   }
 }

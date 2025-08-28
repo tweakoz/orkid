@@ -234,6 +234,7 @@ std::string AssetEntry::toJson() const {
 ////////////////////////////////////////////////////////////////////////////////
 
 assetentry_ptr_t AssetEntry::fromJson(const std::string& json_str) {
+  OrkAssert(false);
   rapidjson::Document doc;
   doc.Parse(json_str.c_str());
   
