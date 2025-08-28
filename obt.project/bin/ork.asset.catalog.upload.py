@@ -47,8 +47,8 @@ def upload_namespace(catalog, namespace_id, dry_run=False):
         # TODO: Add dry run support to the API
         
     try:
-        # Use the catalog's upload method
-        receipt = catalog.upload(namespace_id)
+        # Use the catalog's uploadNamespace method
+        receipt = catalog.uploadNamespace(namespace_id)
         
         if receipt:
             print_upload_receipt(receipt)
@@ -104,31 +104,20 @@ def upload_single_asset(catalog, asset_id, dry_run=False):
     try:
         print(f"\nUploading asset '{asset_id}'...")
         
-        # Get the specific asset entry
-        entry = catalog.get_asset_info(asset_id)
-        if not entry:
-            print(f"✗ Asset not found: {asset_id}")
+        if dry_run:
+            print("[DRY RUN MODE - No actual uploads will occur]")
+            # TODO: Add dry run support to the API
             return False
         
-        # Get the namespace from the asset_id to determine destination
-        namespace_id = asset_id.split('|')[0]
+        # Use the catalog's uploadAsset method
+        receipt = catalog.uploadAsset(asset_id)
         
-        # Get the merged config from the catalog
-        config = catalog.merged_config
-        if not config:
-            print(f"✗ No configuration available")
+        if receipt:
+            print_upload_receipt(receipt, "  ")
+            return receipt.success
+        else:
+            print(f"✗ Upload failed - no receipt returned")
             return False
-        
-        # Get the remote destination for this namespace
-        destination_id = config.getRemoteLocationForNamespace(namespace_id)
-        if not destination_id:
-            print(f"✗ No upload destination configured for namespace: {namespace_id}")
-            return False
-        
-        # Upload the individual asset using AssetEntry's upload method
-        receipt = entry.upload(config, destination_id)
-        print_upload_receipt(receipt, "  ")
-        return receipt.success if receipt else False
             
     except Exception as e:
         print(f"✗ Upload error: {e}")

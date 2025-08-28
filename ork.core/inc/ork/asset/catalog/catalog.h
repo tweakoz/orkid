@@ -342,7 +342,11 @@ struct AssetCatalog {
   
   // Upload a single namespace to its configured remote location
   // Returns: upload receipt for the namespace
-  uploadreceipt_ptr_t upload(const namespaceid_t& namespace_id);
+  uploadreceipt_ptr_t uploadNamespace(const namespaceid_t& namespace_id);
+  
+  // Upload a single asset to its configured remote location
+  // Returns: upload receipt for the asset
+  uploadreceipt_ptr_t uploadAsset(const assetid_t& fq_asset_id);
   
   // Upload all namespaces to their configured remote locations
   // Returns: map of namespace ID to upload receipt

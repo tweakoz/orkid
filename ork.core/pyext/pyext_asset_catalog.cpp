@@ -340,7 +340,9 @@ void pyinit_asset_catalog(py::module& module_core) {
           .def("repackage", &AssetCatalog::repackage)
           
           // Upload Operations
-          .def("upload", &AssetCatalog::upload, py::arg("namespace_id"))
+          .def("upload", &AssetCatalog::uploadNamespace, py::arg("namespace_id"))  // Backward compatibility
+          .def("uploadNamespace", &AssetCatalog::uploadNamespace, py::arg("namespace_id"))
+          .def("uploadAsset", &AssetCatalog::uploadAsset, py::arg("fq_asset_id"))
           .def("uploadAllNamespaces", &AssetCatalog::uploadAllNamespaces)
           .def_property_readonly("config_space", &AssetCatalog::getConfigSpace)
           .def_property_readonly("merged_config", [](assetcatalog_ptr_t self) -> assetconfig_ptr_t {

@@ -1,0 +1,1312 @@
+{
+  "id": "ork_envmaps",
+  "uuid": "3a1145a6-3ab4-433f-b3b0-436d377b80a7",
+  "namespace": "ork_envmaps",
+  "version": "1.0.0",
+  "assets": {
+    "arena4k": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/envmaps",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "",
+      "storage_hash": "f43bbd04077329848d672913bca5530d",
+      "hash_algorithm": "md5",
+      "native_size": 380284416,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 380284444,
+        "file_hash": 7103501471476214481,
+        "compression": "none",
+        "is_encrypted": false,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 1082359891733221225
+          },
+          {
+            "offset": 16777216,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 12757858521201887281
+          },
+          {
+            "offset": 33554432,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 10602536961157688889
+          },
+          {
+            "offset": 50331648,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 8930740741664047293
+          },
+          {
+            "offset": 67108864,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 2686890118534816146
+          },
+          {
+            "offset": 83886080,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 12486783938918253592
+          },
+          {
+            "offset": 100663296,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 10812031519234022916
+          },
+          {
+            "offset": 117440512,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 8942517236495071809
+          },
+          {
+            "offset": 134217728,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 18156293331277315279
+          },
+          {
+            "offset": 150994944,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 6197409735277813038
+          },
+          {
+            "offset": 167772160,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 11007651278356262068
+          },
+          {
+            "offset": 184549376,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 102328764691680716
+          },
+          {
+            "offset": 201326592,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 17690120192071834907
+          },
+          {
+            "offset": 218103808,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 8812695539214448206
+          },
+          {
+            "offset": 234881024,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 6389305869030494460
+          },
+          {
+            "offset": 251658240,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 4766575335801289530
+          },
+          {
+            "offset": 268435456,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 10743437705981248239
+          },
+          {
+            "offset": 285212672,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 76159017814639409
+          },
+          {
+            "offset": 301989888,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 11813449200260035432
+          },
+          {
+            "offset": 318767104,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 1140721249599752093
+          },
+          {
+            "offset": 335544320,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 9632455598936026063
+          },
+          {
+            "offset": 352321536,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 4719737933027051021
+          },
+          {
+            "offset": 369098752,
+            "size": 11185692,
+            "compressed_size": 11185692,
+            "hash": 8070058179569497039
+          }
+        ]
+      }
+    },
+    "canyon4k": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/envmaps",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "",
+      "storage_hash": "7511e5210597094394ad608102ba39ee",
+      "hash_algorithm": "md5",
+      "native_size": 380284416,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 380284444,
+        "file_hash": 7213985275439618144,
+        "compression": "none",
+        "is_encrypted": false,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 14749415145361992404
+          },
+          {
+            "offset": 16777216,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 7245657212207267247
+          },
+          {
+            "offset": 33554432,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 4087778196256002437
+          },
+          {
+            "offset": 50331648,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 7999924737193518334
+          },
+          {
+            "offset": 67108864,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 3499891796467081215
+          },
+          {
+            "offset": 83886080,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 4420897858382682189
+          },
+          {
+            "offset": 100663296,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 10276595250801483809
+          },
+          {
+            "offset": 117440512,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 16897740973534822455
+          },
+          {
+            "offset": 134217728,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 3649924654156450621
+          },
+          {
+            "offset": 150994944,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 10130291457665665980
+          },
+          {
+            "offset": 167772160,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 16584112626063225335
+          },
+          {
+            "offset": 184549376,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 17347447273581390743
+          },
+          {
+            "offset": 201326592,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 13650428954996424509
+          },
+          {
+            "offset": 218103808,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 4928627101924733765
+          },
+          {
+            "offset": 234881024,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 671225999588855084
+          },
+          {
+            "offset": 251658240,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 17985123077912416471
+          },
+          {
+            "offset": 268435456,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 15882064962295409051
+          },
+          {
+            "offset": 285212672,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 17302083438879226862
+          },
+          {
+            "offset": 301989888,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 1215808472995525469
+          },
+          {
+            "offset": 318767104,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 17606985165357872599
+          },
+          {
+            "offset": 335544320,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 7742437790857162072
+          },
+          {
+            "offset": 352321536,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 11317888807571194202
+          },
+          {
+            "offset": 369098752,
+            "size": 11185692,
+            "compressed_size": 11185692,
+            "hash": 2532781299127124057
+          }
+        ]
+      }
+    },
+    "club4k": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/envmaps",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "",
+      "storage_hash": "ea353a2221f0fe6bd2da717160bc21d9",
+      "hash_algorithm": "md5",
+      "native_size": 380284416,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 380284444,
+        "file_hash": 11915178761970579302,
+        "compression": "none",
+        "is_encrypted": false,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 8475375236007787389
+          },
+          {
+            "offset": 16777216,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 18374522454801370696
+          },
+          {
+            "offset": 33554432,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 12083968470458336722
+          },
+          {
+            "offset": 50331648,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 7471233401779800740
+          },
+          {
+            "offset": 67108864,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 16785557623337081621
+          },
+          {
+            "offset": 83886080,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 12299412923293800090
+          },
+          {
+            "offset": 100663296,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 6528793545504713289
+          },
+          {
+            "offset": 117440512,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 5614944474211614113
+          },
+          {
+            "offset": 134217728,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 5091031419264248302
+          },
+          {
+            "offset": 150994944,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 17880539656533115840
+          },
+          {
+            "offset": 167772160,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 7577709898192588599
+          },
+          {
+            "offset": 184549376,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 16948898667362776106
+          },
+          {
+            "offset": 201326592,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 8950511642150593020
+          },
+          {
+            "offset": 218103808,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 7868601381822402364
+          },
+          {
+            "offset": 234881024,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 13477237416067422759
+          },
+          {
+            "offset": 251658240,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 538843830961045191
+          },
+          {
+            "offset": 268435456,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 8591714511679569076
+          },
+          {
+            "offset": 285212672,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 2864660335023551932
+          },
+          {
+            "offset": 301989888,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 5306521066696599457
+          },
+          {
+            "offset": 318767104,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 5174366282906405390
+          },
+          {
+            "offset": 335544320,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 1584894757569790267
+          },
+          {
+            "offset": 352321536,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 10832975844338425540
+          },
+          {
+            "offset": 369098752,
+            "size": 11185692,
+            "compressed_size": 11185692,
+            "hash": 11573595905100291018
+          }
+        ]
+      }
+    },
+    "desert4k": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/envmaps",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "",
+      "storage_hash": "01290bc4f5d51738e069700e539e50c9",
+      "hash_algorithm": "md5",
+      "native_size": 380284416,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 380284444,
+        "file_hash": 14009003060953592284,
+        "compression": "none",
+        "is_encrypted": false,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 14047673067441374414
+          },
+          {
+            "offset": 16777216,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 2692152036492114347
+          },
+          {
+            "offset": 33554432,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 2261403901812668135
+          },
+          {
+            "offset": 50331648,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 14116469861057347595
+          },
+          {
+            "offset": 67108864,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 4411824826143043815
+          },
+          {
+            "offset": 83886080,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 2042120330275323704
+          },
+          {
+            "offset": 100663296,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 11152399562932568642
+          },
+          {
+            "offset": 117440512,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 7878576096210871686
+          },
+          {
+            "offset": 134217728,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 7812605560139554713
+          },
+          {
+            "offset": 150994944,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 12238918516172646050
+          },
+          {
+            "offset": 167772160,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 7293074304811917111
+          },
+          {
+            "offset": 184549376,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 1244558650211249878
+          },
+          {
+            "offset": 201326592,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 4865951351114047803
+          },
+          {
+            "offset": 218103808,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 18065660588053852970
+          },
+          {
+            "offset": 234881024,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 7772233893314716709
+          },
+          {
+            "offset": 251658240,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 9196401584725991404
+          },
+          {
+            "offset": 268435456,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 18250136975920385611
+          },
+          {
+            "offset": 285212672,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 3800383351311820821
+          },
+          {
+            "offset": 301989888,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 8922143682854950086
+          },
+          {
+            "offset": 318767104,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 9771852203198789867
+          },
+          {
+            "offset": 335544320,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 10930343103464182772
+          },
+          {
+            "offset": 352321536,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 777699960854672002
+          },
+          {
+            "offset": 369098752,
+            "size": 11185692,
+            "compressed_size": 11185692,
+            "hash": 11906931091959699297
+          }
+        ]
+      }
+    },
+    "ethereal4k": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/envmaps",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "",
+      "storage_hash": "da673838e4689beab8e3c86e0adab11c",
+      "hash_algorithm": "md5",
+      "native_size": 380284416,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 380284444,
+        "file_hash": 458675444176807273,
+        "compression": "none",
+        "is_encrypted": false,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 8424141369799852213
+          },
+          {
+            "offset": 16777216,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 7484381035740043666
+          },
+          {
+            "offset": 33554432,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 2621761066941043887
+          },
+          {
+            "offset": 50331648,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 6892505253793969255
+          },
+          {
+            "offset": 67108864,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 10526224149840060476
+          },
+          {
+            "offset": 83886080,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 18408450074400380915
+          },
+          {
+            "offset": 100663296,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 135227176917500511
+          },
+          {
+            "offset": 117440512,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 11624339954911171284
+          },
+          {
+            "offset": 134217728,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 1099602062074949909
+          },
+          {
+            "offset": 150994944,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 8719809271991508203
+          },
+          {
+            "offset": 167772160,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 14630873405852569049
+          },
+          {
+            "offset": 184549376,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 16649455904383821671
+          },
+          {
+            "offset": 201326592,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 11758835057707009887
+          },
+          {
+            "offset": 218103808,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 18022305481075743462
+          },
+          {
+            "offset": 234881024,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 12299587103877362630
+          },
+          {
+            "offset": 251658240,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 16553139884615877522
+          },
+          {
+            "offset": 268435456,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 9408735681226287544
+          },
+          {
+            "offset": 285212672,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 1900603257845698420
+          },
+          {
+            "offset": 301989888,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 14053748678750586151
+          },
+          {
+            "offset": 318767104,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 13507646622344283978
+          },
+          {
+            "offset": 335544320,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 12435892303730403622
+          },
+          {
+            "offset": 352321536,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 10837665977182844850
+          },
+          {
+            "offset": 369098752,
+            "size": 11185692,
+            "compressed_size": 11185692,
+            "hash": 10203742092054508939
+          }
+        ]
+      }
+    },
+    "pillars4k": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/envmaps",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "",
+      "storage_hash": "82ddead9c88019704f0560f3c2f884d9",
+      "hash_algorithm": "md5",
+      "native_size": 380284416,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 380284444,
+        "file_hash": 14825129824372819916,
+        "compression": "none",
+        "is_encrypted": false,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 14979986033751644277
+          },
+          {
+            "offset": 16777216,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 9099149145626989184
+          },
+          {
+            "offset": 33554432,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 7417194106520164814
+          },
+          {
+            "offset": 50331648,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 15087870494659862756
+          },
+          {
+            "offset": 67108864,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 16077553428134165369
+          },
+          {
+            "offset": 83886080,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 10205375656122995021
+          },
+          {
+            "offset": 100663296,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 8822364707939781735
+          },
+          {
+            "offset": 117440512,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 7998900079673313379
+          },
+          {
+            "offset": 134217728,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 6808436286642153863
+          },
+          {
+            "offset": 150994944,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 10352273015734116372
+          },
+          {
+            "offset": 167772160,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 10390082815304103036
+          },
+          {
+            "offset": 184549376,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 16893510718282101273
+          },
+          {
+            "offset": 201326592,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 15606568299672306915
+          },
+          {
+            "offset": 218103808,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 16178555389443755992
+          },
+          {
+            "offset": 234881024,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 17949397990169449754
+          },
+          {
+            "offset": 251658240,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 12310659501922402702
+          },
+          {
+            "offset": 268435456,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 1796600839413325750
+          },
+          {
+            "offset": 285212672,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 7218530627763916378
+          },
+          {
+            "offset": 301989888,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 6796197126195633976
+          },
+          {
+            "offset": 318767104,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 558275713440148864
+          },
+          {
+            "offset": 335544320,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 13610543744321323416
+          },
+          {
+            "offset": 352321536,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 6252438116080653039
+          },
+          {
+            "offset": 369098752,
+            "size": 11185692,
+            "compressed_size": 11185692,
+            "hash": 10340802725926674916
+          }
+        ]
+      }
+    },
+    "tozenv_basic": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/envmaps",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "668d6e506a1b5c1b240765786875e55c",
+      "storage_hash": "a8225fce1e4f1435d05a75c023d4c2de",
+      "hash_algorithm": "md5",
+      "native_size": 94003712,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 94003740,
+        "file_hash": 9733040561275552122,
+        "compression": "none",
+        "is_encrypted": false,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 1912978932947892424
+          },
+          {
+            "offset": 16777216,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 11308609485216139960
+          },
+          {
+            "offset": 33554432,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 11362385315028823585
+          },
+          {
+            "offset": 50331648,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 6476952004166807319
+          },
+          {
+            "offset": 67108864,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 8985164276381564809
+          },
+          {
+            "offset": 83886080,
+            "size": 10117660,
+            "compressed_size": 10117660,
+            "hash": 2390049735593931401
+          }
+        ]
+      }
+    },
+    "tozenv_caustic1": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/envmaps",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "eb6282784cc563e69cbf7bcd2fb7cbe3",
+      "storage_hash": "c30ff70d82980f46a2da0d047bded030",
+      "hash_algorithm": "md5",
+      "native_size": 380284416,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 380284444,
+        "file_hash": 7290883632063598361,
+        "compression": "none",
+        "is_encrypted": false,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 3379646931460285636
+          },
+          {
+            "offset": 16777216,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 6629761218564850454
+          },
+          {
+            "offset": 33554432,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 9987069556702730995
+          },
+          {
+            "offset": 50331648,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 9873680762892130917
+          },
+          {
+            "offset": 67108864,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 2369218128743970414
+          },
+          {
+            "offset": 83886080,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 10192763115222342034
+          },
+          {
+            "offset": 100663296,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 9473372659380968629
+          },
+          {
+            "offset": 117440512,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 6862907161990050915
+          },
+          {
+            "offset": 134217728,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 55060680681056965
+          },
+          {
+            "offset": 150994944,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 6838235630869161702
+          },
+          {
+            "offset": 167772160,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 11816833738072200002
+          },
+          {
+            "offset": 184549376,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 12513400465951474816
+          },
+          {
+            "offset": 201326592,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 17754225510076728369
+          },
+          {
+            "offset": 218103808,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 10687086241227496401
+          },
+          {
+            "offset": 234881024,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 13672028250886511043
+          },
+          {
+            "offset": 251658240,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 911464369918257807
+          },
+          {
+            "offset": 268435456,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 16655649319570030887
+          },
+          {
+            "offset": 285212672,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 1911604920315997800
+          },
+          {
+            "offset": 301989888,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 7233753890691070372
+          },
+          {
+            "offset": 318767104,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 16256111942159748585
+          },
+          {
+            "offset": 335544320,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 3891267477961346022
+          },
+          {
+            "offset": 352321536,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 10465137851256019813
+          },
+          {
+            "offset": 369098752,
+            "size": 11185692,
+            "compressed_size": 11185692,
+            "hash": 12967645528632483387
+          }
+        ]
+      }
+    },
+    "tozenv_colornoise": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/envmaps",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "9cfe087d47c27dc0ca5e4d16a698f5d5",
+      "storage_hash": "2436801f9299c8aec83ecc9a0c6a0bee",
+      "hash_algorithm": "md5",
+      "native_size": 94003712,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 94003740,
+        "file_hash": 2809289228768664884,
+        "compression": "none",
+        "is_encrypted": false,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 807696634053414878
+          },
+          {
+            "offset": 16777216,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 7043869411078220256
+          },
+          {
+            "offset": 33554432,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 689402465048635958
+          },
+          {
+            "offset": 50331648,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 10643492070793112093
+          },
+          {
+            "offset": 67108864,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 11699987468990097805
+          },
+          {
+            "offset": 83886080,
+            "size": 10117660,
+            "compressed_size": 10117660,
+            "hash": 12062441749665674701
+          }
+        ]
+      }
+    },
+    "tozenv_nebula": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/envmaps",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "cf52475d6b8f197e29971ad4a37ac577",
+      "storage_hash": "16cfaad887e37cc8c143509e43d39599",
+      "hash_algorithm": "md5",
+      "native_size": 94003712,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 94003740,
+        "file_hash": 131725222877138232,
+        "compression": "none",
+        "is_encrypted": false,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 10624587569250383518
+          },
+          {
+            "offset": 16777216,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 856606443193362739
+          },
+          {
+            "offset": 33554432,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 15601116458717406744
+          },
+          {
+            "offset": 50331648,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 13121719161651760074
+          },
+          {
+            "offset": 67108864,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 3023825426451586063
+          },
+          {
+            "offset": 83886080,
+            "size": 10117660,
+            "compressed_size": 10117660,
+            "hash": 8935539763876555016
+          }
+        ]
+      }
+    }
+  }
+}

@@ -592,7 +592,7 @@ void AssetCatalog::repackage() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-uploadreceipt_ptr_t AssetCatalog::upload(const namespaceid_t& namespace_id) {
+uploadreceipt_ptr_t AssetCatalog::uploadNamespace(const namespaceid_t& namespace_id) {
   logchan_catalog->log("Starting upload for namespace: %s", namespace_id.c_str());
   
   auto impl = _impl.getShared<CatalogImpl>();
@@ -695,6 +695,117 @@ uploadreceipt_ptr_t AssetCatalog::upload(const namespaceid_t& namespace_id) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+uploadreceipt_ptr_t AssetCatalog::uploadAsset(const assetid_t& fq_asset_id) {
+  logchan_catalog->log("Starting upload for asset: %s", fq_asset_id.c_str());
+  
+  auto impl = _impl.getShared<CatalogImpl>();
+  
+  // Parse the fully qualified asset ID to get namespace and asset ID
+  size_t separator_pos = fq_asset_id.find('|');
+  if (separator_pos == std::string::npos) {
+    logchan_catalog->log("ERROR: Invalid fully qualified asset ID (missing namespace separator '|'): %s", fq_asset_id.c_str());
+    return nullptr;
+  }
+  
+  namespaceid_t namespace_id = fq_asset_id.substr(0, separator_pos);
+  assetid_t asset_id = fq_asset_id.substr(separator_pos + 1);
+  
+  // Get the config space to determine destination
+  auto config_space = getConfigSpace();
+  if (!config_space) {
+    logchan_catalog->log("ERROR: No config space available for catalog upload");
+    return nullptr;
+  }
+  
+  // Get merged config (should have namespace configuration)
+  auto config = config_space->merged();
+  if (!config) {
+    logchan_catalog->log("ERROR: No merged config found in config space");
+    return nullptr;
+  }
+  
+  // Check if namespace has remote location configured
+  auto upload_location = config->getRemoteLocationForNamespace(namespace_id);
+  if (!upload_location) {
+    logchan_catalog->log("ERROR: No upload location configured for namespace: %s", namespace_id.c_str());
+    return nullptr;
+  }
+  
+  // Find the manifest containing this asset
+  assetmanifest_ptr_t target_manifest;
+  assetentry_ptr_t target_asset;
+  
+  impl->_state.atomicOp([&](const CatalogImpl::CatalogState& state) {
+    auto it = state._manifests_by_namespace.find(namespace_id);
+    if (it != state._manifests_by_namespace.end()) {
+      for (const auto& manifest : it->second) {
+        if (manifest) {
+          // Get all assets and search for the one we want
+          const auto& assets = manifest->getAssets();
+          auto asset_it = assets.find(asset_id);
+          if (asset_it != assets.end()) {
+            target_manifest = manifest;
+            target_asset = asset_it->second;
+            break;
+          }
+        }
+      }
+    }
+  });
+  
+  if (!target_manifest || !target_asset) {
+    logchan_catalog->log("ERROR: Asset not found: %s", fq_asset_id.c_str());
+    return nullptr;
+  }
+  
+  logchan_catalog->log("Found asset '%s' in manifest '%s'", asset_id.c_str(), target_manifest->getManifestId().c_str());
+  
+  // Create receipt for single asset upload
+  auto receipt = std::make_shared<UploadReceipt>();
+  receipt->upload_id = "asset_" + fq_asset_id + "_" + std::to_string(std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()));
+  receipt->timestamp = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+  receipt->success = false;
+  receipt->status_message = "Starting asset upload: " + fq_asset_id;
+  receipt->total_files = 0;
+  receipt->bytes_uploaded = 0;
+  
+  try {
+    // Upload the single asset using AssetEntry's upload method (same as manifest does)
+    auto upload_receipt = target_asset->upload(*config, upload_location);
+    
+    if (upload_receipt) {
+      // Copy results from upload receipt
+      receipt->success = upload_receipt->success;
+      receipt->total_files = upload_receipt->total_files;
+      receipt->successful_files = upload_receipt->successful_files;
+      receipt->bytes_uploaded = upload_receipt->bytes_uploaded;
+      receipt->failed_files = upload_receipt->failed_files;
+      
+      if (upload_receipt->success) {
+        receipt->status_message = "Successfully uploaded asset '" + fq_asset_id + "': " + 
+                                 std::to_string(receipt->bytes_uploaded) + " bytes";
+        logchan_catalog->log("Asset upload SUCCESS - asset: %s, bytes: %zu", 
+                           fq_asset_id.c_str(), receipt->bytes_uploaded);
+      } else {
+        receipt->status_message = "Failed to upload asset '" + fq_asset_id + "': " + upload_receipt->status_message;
+        logchan_catalog->log("ERROR: Asset upload FAILED - asset: %s, error: %s", 
+                           fq_asset_id.c_str(), upload_receipt->status_message.c_str());
+      }
+    } else {
+      receipt->status_message = "Upload returned no receipt";
+      logchan_catalog->log("ERROR: Asset upload failed - no receipt returned");
+    }
+  } catch (const std::exception& e) {
+    receipt->status_message = "Asset upload failed: " + std::string(e.what());
+    logchan_catalog->log("ERROR: Asset upload exception: %s", e.what());
+  }
+  
+  logchan_catalog->log("Completed upload for asset: %s", fq_asset_id.c_str());
+  return receipt;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 upload_result_map_t AssetCatalog::uploadAllNamespaces() {
   logchan_catalog->log("Starting upload for all namespaces");
   
@@ -719,7 +830,7 @@ upload_result_map_t AssetCatalog::uploadAllNamespaces() {
     logchan_catalog->log("Uploading namespace: %s", namespace_id.c_str());
     
     try {
-      auto receipt = upload(namespace_id);
+      auto receipt = uploadNamespace(namespace_id);
       results[namespace_id] = receipt;
       
       if (receipt && receipt->success) {
