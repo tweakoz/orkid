@@ -83,7 +83,8 @@ asset::asset_ptr_t IrradianceMapsLoader::_loadFromXIR(
   // Create textures (CPU only, no GPU resources yet)
   auto diffuse_tex = std::make_shared<Texture>();
   auto specular_tex = std::make_shared<Texture>();
-  
+  diffuse_tex->_debugName = loadreq->_asset_path.getName() + ".ibldiff";
+  specular_tex->_debugName = loadreq->_asset_path.getName() + ".iblspec";
   // Extract base name from asset path for texture naming
   std::string base_name = loadreq->_asset_path.getName();
   

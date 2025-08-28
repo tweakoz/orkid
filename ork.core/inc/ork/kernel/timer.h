@@ -43,6 +43,8 @@ private:
   bool mKill;
 };
 
+using timer_ptr_t = std::shared_ptr<Timer>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct PerfItem2 {

@@ -138,7 +138,7 @@ struct ConcurrencyGroup {
   ConcurrencyGroup(OperationsQueue& q, const char* pname);
   void enqueue(const Op& the_op);
   bool try_pop(Op& out_op);
-  void drain();
+  void drain(float timeout_seconds = 0.0f);
   void MakeSerial() {
     _limit_maxops_inflight = 1;
   }
@@ -247,7 +247,7 @@ struct OperationsQueue : public std::enable_shared_from_this<OperationsQueue> {
   void enqueue(const BarrierSyncReq& s);
   void enqueueAndWait(const Op& the_op);
   void sync();
-  void drain();
+  void drain(float timeout_seconds = 0.0f);
   void terminate();
   bool goingDown() const { return _terminated; }
 

@@ -517,14 +517,14 @@ void OperationsQueue::sync() {
   the_fut->getResult();
 }
 ///////////////////////////////////////////////////////////////////////////
-void OperationsQueue::drain() {
+void OperationsQueue::drain(float timeout_seconds) {
   // todo - drain all groups atomically
   concgroupvect_t copy_cgv;
   _linearconcurrencygroups.atomicOp([&copy_cgv](concgroupvect_t& cgv) { copy_cgv = cgv; });
   for (auto g : copy_cgv)
-    g->drain();
+    g->drain(timeout_seconds);
   for (auto g : copy_cgv)
-    g->drain();
+    g->drain(timeout_seconds);
 }
 /////////////////////////////////////////////////////////////////////////////
 void OperationsQueue::setHook(std::string hookname, hooklambda_t l) {
@@ -599,7 +599,7 @@ void OperationsQueue::terminate() {
   }
   
   // Drain any remaining operations
-  drain();
+  drain(1.0f);
 }
 
 OperationsQueue::~OperationsQueue() {
@@ -689,11 +689,15 @@ void ConcurrencyGroup::enqueue(const Op& the_op) {
   _queue.mSemaphore.notify();
 }
 ///////////////////////////////////////////////////////////////////////////
-void ConcurrencyGroup::drain() {
-  bool was_drained = false;
-
-  while (false == was_drained) {
-
+void ConcurrencyGroup::drain(float timeout_seconds) {
+  bool keep_waiting = true;
+  timer_ptr_t timer;
+  if(timeout_seconds!=0.0f){
+    timer = std::make_shared<Timer>();
+    timer->Start();
+  }
+  while (keep_waiting){
+    bool was_drained = false;
     _ops.atomicOp([this, &was_drained](ConcurrencyGroup::internal_oper_queue_t& q) {
       int opsinfl = _opsinflight.load();
       was_drained = q.empty();
@@ -704,6 +708,12 @@ void ConcurrencyGroup::drain() {
     if (false == was_drained) {
       static std::atomic<int> slindex(0);
       dispersed_sleep(slindex++, 10); // semaphores are slowing us down
+    }
+    keep_waiting = (false == was_drained);
+    if(timer){
+      if( timer->SecsSinceStart() > timeout_seconds ){
+        keep_waiting = false;
+      }
     }
   }
 } // namespace ork
