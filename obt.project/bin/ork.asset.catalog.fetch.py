@@ -189,11 +189,7 @@ if __name__ == "__main__":
 
     # Initialize
     core.coreappinit()
-    cfgspc = core.AssetConfigSpace.loadGlobalConfigs()
-    catalog = core.AssetCatalog(space=cfgspc)
-    
-    # Load from global manifests
-    core.AssetCatalog.loadFromGlobalManifests(catalog)
+    catalog = core.AssetCatalog.instance
 
     # Resolve what to fetch
     assets = resolve_assets_to_fetch(catalog, args.patterns, args.namespaces)

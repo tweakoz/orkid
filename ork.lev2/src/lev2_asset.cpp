@@ -16,6 +16,7 @@
 #include <ork/util/logger.h>
 #include <ork/asset/AssetManager.inl>
 #include <ork/lev2/aud/audiodevice.h>
+#include <ork/lev2/gfx/irradiance_asset.h>
 
 ImplementReflectionX(ork::lev2::FxShaderAsset, "FxShader");
 ImplementReflectionX(ork::lev2::TextureAsset, "lev2tex");
@@ -27,6 +28,7 @@ template struct ork::asset::AssetManager<ork::lev2::FxShaderAsset>;
 template struct ork::asset::AssetManager<ork::lev2::XgmModelAsset>;
 template struct ork::asset::AssetManager<ork::lev2::TextureAsset>;
 template struct ork::asset::AssetManager<ork::lev2::XgmAnimAsset>;
+template struct ork::asset::AssetManager<ork::lev2::IrradianceMapsAsset>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

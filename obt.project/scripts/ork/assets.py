@@ -241,7 +241,6 @@ def clear_catalog_cache():
 def default_cfg_and_catalog():
     """Create default config space and catalog"""
     core.coreappinit()
-    cfgspc = core.AssetConfigSpace.loadGlobalConfigs()
-    catalog = core.AssetCatalog(space=cfgspc)
-    core.AssetCatalog.loadFromGlobalManifests(catalog)
+    catalog = core.AssetCatalog.instance
+    cfgspc = catalog.config_space
     return cfgspc, catalog

@@ -31,6 +31,8 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_light_processor_cpu.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_light_processor_simple.h>
+#include <ork/lev2/gfx/irradiance_asset.h>
+#include <ork/lev2/gfx/xir_format.h>
 
 #include <ork/profiling.inl>
 #include <ork/asset/Asset.inl>
@@ -47,7 +49,7 @@ static logchannel_ptr_t logchan_pbrcom = logger()->configureChannel("PBRCOM", fv
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static asset::vars_ptr_t _irradianceVars() {
+/*static asset::vars_ptr_t _irradianceVars() {
 
   auto vars                                          = std::make_shared<asset::vars_t>();
   vars->makeValueForKey<Texture::proc_t>("postproc") = //
@@ -127,7 +129,7 @@ static asset::vars_ptr_t _irradianceVars() {
     return irrmapdblock;
   };
   return vars;
-}
+}*/
 
 ///////////////////////////////////////////////////////////////////////////////
 CommonStuff::CommonStuff() {
@@ -152,21 +154,25 @@ void CommonStuff::assignEnvTexture(asset::asset_ptr_t texasset) {
 ///////////////////////////////////////////////////////////////////////////////
 
 irradiancemaps_ptr_t CommonStuff::requestIrradianceMaps(const AssetPath& texture_path) {
-  auto load_req            = std::make_shared<asset::LoadRequest>(texture_path);
-  load_req->_asset_vars    = _irradianceVars();
-  auto irrmaps = std::make_shared<IrradianceMaps>();
-  load_req->_asset_vars->makeValueForKey<bool>("equirectangular") = false;
-  load_req->_asset_vars->makeValueForKey<irradiancemaps_ptr_t>("irrmaps") = irrmaps;
-  auto enviromentmap_asset = asset::AssetManager<lev2::TextureAsset>::load(load_req);
-  OrkAssert(enviromentmap_asset->GetTexture() != nullptr);
-  OrkAssert(enviromentmap_asset->_varmap.hasKey("postproc"));
-  return irrmaps;
+  // Load XIR file directly using the registered XIR loader
+  auto load_req = std::make_shared<asset::LoadRequest>(texture_path);
+  
+  // Load using generic asset mechanism - the XIR extension will route to IrradianceMapsLoader
+  auto generic_asset = asset::AssetManager<IrradianceMapsAsset>::load(load_req);
+  if (generic_asset) {
+    // Cast to IrradianceMapsAsset
+    auto irradiance_asset = std::dynamic_pointer_cast<IrradianceMapsAsset>(generic_asset);
+    if (irradiance_asset) {
+      return irradiance_asset->_irradianceMaps;
+    }
+  }
+  return nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 void CommonStuff::requestAndRefSkyboxTexture(asset::loadrequest_ptr_t load_req) {
   auto texture_path = load_req->_asset_path;
-  load_req->_asset_vars    = _irradianceVars();
+  //load_req->_asset_vars    = _irradianceVars();
   load_req->_asset_vars->makeValueForKey<bool>("equirectangular") = true;
   load_req->_asset_vars->makeValueForKey<irradiancemaps_ptr_t>("irrmaps") = _irradianceMaps;
   _irradianceMaps->_loadRequest = load_req;
@@ -306,7 +312,7 @@ void CommonStuff::describeX(class_t* c) {
   c->floatProperty("DepthFogDistance", float_range{0.1, 5000}, &CommonStuff::_depthFogDistance);
   c->floatProperty("DepthFogPower", float_range{0.01, 100.0}, &CommonStuff::_depthFogPower);
 
-  c->accessorProperty(
+  /*c->accessorProperty(
        "EnvironmentTexture", //
        &CommonStuff::_readEnvTexture,
        &CommonStuff::_writeEnvTexture)
@@ -320,7 +326,7 @@ void CommonStuff::describeX(class_t* c) {
             OrkAssert(_this);
             OrkAssert(false);
             return _irradianceVars();
-          });
+          });*/
 }
 void CommonStuff::onGpuInit(Context* ctx) {
   if(not _needsGpuInit){

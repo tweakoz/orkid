@@ -22,7 +22,7 @@
 
 namespace ork::asset::catalog {
 
-logchannel_ptr_t logchan_catalog = logger()->configureChannel("CATALOG", fvec3(0.6, 0.6, 0.8), true);
+logchannel_ptr_t logchan_catalog = logger()->getChannel("CATALOG");
 
 ////////////////////////////////////////////////////////////////
 // Manifest Management

@@ -49,7 +49,7 @@ assetresult_ptr_t CatalogImpl::getAsset(fetchrequest_ptr_t request) {
 
   auto raw_data = downloadAssetData(request);
   if (!raw_data) {
-    printf("[DEBUG CatalogImpl] Download phase FAILED\n");
+    logchan_catalog->log("[DEBUG CatalogImpl] Download phase FAILED");
     result->_status       = AssetStatus::DOWNLOAD_FAILED;
     result->_error_detail = "Failed to download asset _data";
     return result;
@@ -64,7 +64,7 @@ assetresult_ptr_t CatalogImpl::getAsset(fetchrequest_ptr_t request) {
 
   auto processed_data = processAssetData(raw_data, request);
   if (!processed_data) {
-    printf("[DEBUG CatalogImpl] Process phase FAILED\n");
+    logchan_catalog->log("[DEBUG CatalogImpl] Process phase FAILED");
     // processAssetData doesn't set _status, so set it here
     if (request->decrypt && request->location._is_encrypted) {
       result->_status       = AssetStatus::DECRYPT_FAILED;

@@ -44,7 +44,7 @@ assetresult_ptr_t AssetCatalog::get(const assetid_t& fq_asset_id, bool decrypt, 
   // 2. Check if asset exists
   auto asset_info = getAssetInfo(fq_asset_id);
   if (!asset_info) {
-    printf("[DEBUG] Asset not found in catalog\n");
+    logchan_catalog->log("[DEBUG] Asset<%s> not found in catalog", fq_asset_id.c_str());
     auto result = std::make_shared<AssetResult>();
     result->_status = AssetStatus::NOT_FOUND;
     result->_error_detail = FormatString("Asset not found: %s", fq_asset_id.c_str());
@@ -55,7 +55,7 @@ assetresult_ptr_t AssetCatalog::get(const assetid_t& fq_asset_id, bool decrypt, 
   // 3. Locate the asset
   auto location = impl->locateAsset(fq_asset_id);
   if (!location) {
-    printf("[DEBUG] Failed to locate asset\n");
+    logchan_catalog->log("[DEBUG] Failed to locate asset");
     auto result = std::make_shared<AssetResult>();
     result->_status = AssetStatus::NOT_FOUND;
     result->_error_detail = "Failed to locate asset";
@@ -76,8 +76,10 @@ assetresult_ptr_t AssetCatalog::get(const assetid_t& fq_asset_id, bool decrypt, 
   // 5. Handle result and update state
   if (result->_status == AssetStatus::OK) {
     request->_state = AssetState::CACHED_MEMORY;
+    logchan_catalog->log("[DEBUG] Asset<%s> OK", fq_asset_id.c_str());
   } else {
     request->_state = AssetState::FAILED;
+    logchan_catalog->log("[DEBUG] Asset<%s> FAILED", fq_asset_id.c_str());
   }
   
   // 6. Update statistics

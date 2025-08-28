@@ -86,6 +86,7 @@ struct AppInitData{
   bool _enable_audio_output = false;
   bool _enable_audio_synth = false;
   bool _enable_graphics = true;
+  bool _std_asset_catalog = true;
 
   bool _fullscreen = false;
   bool _offscreen = false;

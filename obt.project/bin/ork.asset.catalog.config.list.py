@@ -8,13 +8,8 @@ import obt.deco
 deco = obt.deco.Deco()
 
 core.coreappinit()
+catalog = core.AssetCatalog.instance
 
-# Create config space and catalog
-cfgspc = core.AssetConfigSpace.loadGlobalConfigs()
-catalog = core.AssetCatalog(space=cfgspc)
-
-# Load from global manifests
-core.AssetCatalog.loadFromGlobalManifests(catalog)
 
 print(deco.yellow("Configuration files loaded:") + "\n")
 

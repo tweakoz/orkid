@@ -8,6 +8,7 @@
 #include <iostream>
 #include <ork/pch.h>
 #include <ork/application/application.h>
+#include <ork/asset/catalog/catalog.h>
 #include <ork/rtti/Class.h>
 #include <ork/kernel/string/ResizableString.h>
 #include <ork/kernel/string/PoolString.h>
@@ -81,6 +82,10 @@ void AppInitData::finalizeInitialization(){
   executePostInitOps();
   _preinitoperations.clear();
   _postinitoperations.clear();
+  if(_std_asset_catalog){
+    using namespace asset::catalog;
+    auto catalog = AssetCatalog::globalInstance();
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -24,7 +24,7 @@
 
 namespace ork::asset::catalog {
 
-static logchannel_ptr_t logchan_catalog = logger()->configureChannel("CATALOG", fvec3(1, 1, 0), true);
+static logchannel_ptr_t logchan_catalog = logger()->configureChannel("CATALOG", fvec3(0.5, 0.5, 0.8), true);
 
 ////////////////////////////////////////////////////////////////
 

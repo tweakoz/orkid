@@ -11,9 +11,11 @@
 #include <ork/file/file.h>
 #include <ork/asset/catalog/catalog.h>
 #include <ork/kernel/datablock.h>
+#include <ork/util/logger.h>
 
 namespace ork::asset {
 
+static logchannel_ptr_t logchan_hyb = logger()->configureChannel("HYBLOAD", fvec3(0.8, 0.5, 0.5), true);
 ///////////////////////////////////////////////////////////////////////////////
 
 asset_ptr_t HybridAssetLoader::load(loadrequest_ptr_t loadreq) {
@@ -21,15 +23,19 @@ asset_ptr_t HybridAssetLoader::load(loadrequest_ptr_t loadreq) {
   datablock_ptr_t dblock;
   
   if (path.isAssetCatalogPath()) {
+    logchan_hyb->log("Loading from asset catalog: %s", path.c_str());
     // Load from asset catalog
     auto components = path.getCatalogComponents();
     if (components.isValid()) {
       auto catalog = asset::catalog::AssetCatalog::globalInstance();
       auto catalog_path = components._namespace + "|" + components._asset;
-      auto result = catalog->get(catalog_path);
+      auto result = catalog->get(catalog_path); // synchronous 
+      logchan_hyb->log("result %p", (void*) result.get());
       dblock = result ? result->_data : nullptr;
+      logchan_hyb->log("dblock %p", (void*) dblock.get());
     }
   } else if (path.isFilePath()) {
+    logchan_hyb->log("Loading from filesystem: %s", path.c_str());
     // Load from filesystem
     auto abs_path = path.toAbsolute();
     if (abs_path.doesPathExist()) {

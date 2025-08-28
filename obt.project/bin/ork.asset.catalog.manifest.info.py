@@ -125,13 +125,7 @@ def main():
     args = parser.parse_args()
     
     core.coreappinit()
-    
-    # Create config space and catalog
-    cfgspc = core.AssetConfigSpace.loadGlobalConfigs()
-    catalog = core.AssetCatalog(space=cfgspc)
-    
-    # Load from global manifests
-    core.AssetCatalog.loadFromGlobalManifests(catalog)
+    catalog = core.AssetCatalog.instance
     
     # Print manifest info
     if args.json:

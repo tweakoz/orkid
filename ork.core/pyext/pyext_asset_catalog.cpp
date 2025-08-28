@@ -282,6 +282,9 @@ void pyinit_asset_catalog(py::module& module_core) {
           .def("add_manifest", &AssetCatalog::addManifest)
           .def("get_manifest", &AssetCatalog::getManifest)
           .def_static("loadFromGlobalManifests", &AssetCatalog::loadFromGlobalManifests)
+          .def_property_readonly_static("instance", [](py::object /* self */) -> assetcatalog_ptr_t { 
+              return AssetCatalog::globalInstance(); 
+          })
           .def(
               "createManifest",
               [](assetcatalog_ptr_t self,

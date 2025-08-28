@@ -625,7 +625,7 @@ xirprocessfuture_ptr_t EnvMapProcessor::processToXIRDataBlockAsync(const file::P
         diffuse_data      = unlocked.typedValueForKey<datablock_ptr_t>("diffuse_datablock").value();
         debug_spec_images = unlocked.typedValueForKey<image_list_t>("debug_spec_images").value();
         debug_diff_images = unlocked.typedValueForKey<image_list_t>("debug_diff_images").value();
-        result_data       = xir::XIRWriter::writeIrradianceMaps(diffuse_data, specular_data);
+        result_data       = xir::XIRWriter::writeXirDatablocks(diffuse_data, specular_data);
       }); // g->_varmap.atomicOp([future](varmap::VarMap& unlocked) {
       // Set debug images in the future
       // Set the result in the future

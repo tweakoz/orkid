@@ -60,12 +60,7 @@ def print_flat_tree(tree):
 
 core.coreappinit()
 
-# Create config space and catalog
-cfgspc = core.AssetConfigSpace.loadGlobalConfigs()
-catalog = core.AssetCatalog(space=cfgspc)
-
-# Load from global manifests
-core.AssetCatalog.loadFromGlobalManifests(catalog)
+catalog = core.AssetCatalog.instance
 
 # Build and print the tree
 tree = build_tree(catalog)

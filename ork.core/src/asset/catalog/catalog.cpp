@@ -63,6 +63,7 @@ assetcatalog_ptr_t AssetCatalog::globalInstance() {
     auto config_space = AssetConfigSpace::loadGlobalConfigs();
     // Create catalog with the loaded config space
     global_catalog = std::make_shared<AssetCatalog>(config_space);
+    AssetCatalog::loadFromGlobalManifests(global_catalog);
   });
   
   return global_catalog;

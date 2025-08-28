@@ -107,13 +107,9 @@ def main():
     
     core.coreappinit()
     
-    # Create config space and catalog
-    cfgspc = core.AssetConfigSpace.loadGlobalConfigs()
-    catalog = core.AssetCatalog(space=cfgspc)
-    
-    # Load from global manifests
-    core.AssetCatalog.loadFromGlobalManifests(catalog)
-    
+    catalog = core.AssetCatalog.instance
+    cfgspc = catalog.config_space
+
     # Print config info
     if args.json:
         success = print_json_info(catalog, args.namespace_id, cfgspc)

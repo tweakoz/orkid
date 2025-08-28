@@ -23,6 +23,7 @@
 ImplementReflectionX(ork::lev2::IrradianceMapsAsset, "IrradianceMapsAsset");
 
 namespace ork::lev2 {
+extern context_ptr_t gloadercontext;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -55,53 +56,32 @@ asset::asset_ptr_t IrradianceMapsLoader::_doLoadFromDatablock(
 asset::asset_ptr_t IrradianceMapsLoader::_loadFromXIR(
     asset::loadrequest_ptr_t loadreq,
     datablock_ptr_t xir_data) {
+  printf("XXX\n");
+  // Use XIRReader to get raw datablocks
+  auto xir_data_result = xir::XIRReader::readXirDatablocks(xir_data);
   
-  // Parse XIR format
-  chunkfile::DefaultLoadAllocator allocator;
-  auto xir_reader = std::make_shared<chunkfile::Reader>(xir_data, allocator);
-  
-  // Verify XIR format
-  if (xir_reader->_chunkfiletype != "xir-1.0") {
-    return nullptr;
-  }
-  
-  // Get streams
-  auto diffuse_stream = xir_reader->GetStream("diffuse");
-  auto specular_stream = xir_reader->GetStream("specular");
-  
-  if (!diffuse_stream || !specular_stream) {
+  if (!xir_data_result._valid) {
     return nullptr;
   }
   
   // Create asset
   auto asset = std::make_shared<IrradianceMapsAsset>();
-  asset->_irradianceMaps = std::make_shared<pbr::IrradianceMaps>();
+  auto irrmaps = std::make_shared<pbr::IrradianceMaps>();
+  asset->_irradianceMaps = irrmaps;
   
   // Create textures (CPU only, no GPU resources yet)
   auto diffuse_tex = std::make_shared<Texture>();
   auto specular_tex = std::make_shared<Texture>();
-  
-  // For now, we'll deserialize the compressed image data
-  // The actual deserialization depends on how textures are stored in the datablock
-  // This is a simplified version - actual implementation may need adjustment
-  // based on how CompressedImageMipChain serialization works
-  
-  // Create texture load requests for deferred GPU upload
-  auto diffuse_data = diffuse_stream->readData(diffuse_stream->GetLength());
-  auto diffuse_dblock = std::make_shared<DataBlock>(diffuse_data.data(), diffuse_data.size());
-  
-  auto specular_data = specular_stream->readData(specular_stream->GetLength());
-  auto specular_dblock = std::make_shared<DataBlock>(specular_data.data(), specular_data.size());
   
   // Extract base name from asset path for texture naming
   std::string base_name = loadreq->_asset_path.getName();
   
   // Parse XTX data into CompressedImageMipChains
   auto diffuse_cmipchain = std::make_shared<CompressedImageMipChain>();
-  diffuse_cmipchain->readXTX(diffuse_dblock);
+  diffuse_cmipchain->readXTX(xir_data_result._diffuse_data);
   
   auto specular_cmipchain = std::make_shared<CompressedImageMipChain>();
-  specular_cmipchain->readXTX(specular_dblock);
+  specular_cmipchain->readXTX(xir_data_result._specular_data);
   
   auto diffuse_loadreq = std::make_shared<TexLoadReq>();
   diffuse_loadreq->ptex = diffuse_tex;
@@ -128,22 +108,34 @@ asset::asset_ptr_t IrradianceMapsLoader::_loadFromXIR(
     });
   
   // Store textures in asset
-  asset->_irradianceMaps->_filtenvDiffuseMap = diffuse_tex;
-  asset->_irradianceMaps->_filtenvSpecularMap = specular_tex;
   
   // Set asset path
   asset->_name = loadreq->_asset_path.toStdString();
   
+  auto brdfIntegrationMapGGX = PBRMaterial::brdfIntegrationMap(gloadercontext.get(),"GGX");
+  auto brdfIntegrationMapVelvet = PBRMaterial::brdfIntegrationMap(gloadercontext.get(),"GGXVELVET");
+  auto brdfIntegrationMapRim = PBRMaterial::brdfIntegrationMap(gloadercontext.get(),"GGXRIM");
+  auto brdfIntegrationMapBlinn = PBRMaterial::brdfIntegrationMap(gloadercontext.get(),"BLINN");
+  auto brdfIntegrationMapPhong = PBRMaterial::brdfIntegrationMap(gloadercontext.get(),"PHONG");
+
+  irrmaps->_filtenvDiffuseMap = diffuse_tex;
+  irrmaps->_filtenvSpecularMap = specular_tex;
+  irrmaps->_brdfIntegrationMapGGX = brdfIntegrationMapGGX;
+  irrmaps->_brdfIntegrationMapVelvet = brdfIntegrationMapVelvet;
+  irrmaps->_brdfIntegrationMapGGXRIM = brdfIntegrationMapRim;
+  irrmaps->_brdfIntegrationMapBlinn = brdfIntegrationMapBlinn;
+  irrmaps->_brdfIntegrationMapPhong = brdfIntegrationMapPhong;
+
   return asset;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 // Static loader instance - will be created during static initialization
-static auto _irradiance_loader = std::make_shared<IrradianceMapsLoader>();
 
 // Registration function to be called during initialization
 void registerIrradianceLoader() {
+  static auto _irradiance_loader = std::make_shared<IrradianceMapsLoader>();
   asset::registerLoader<IrradianceMapsAsset>(_irradiance_loader);
   asset::AssetLoader::registerLoaderForExtension("xir", _irradiance_loader);
 }
@@ -151,3 +143,5 @@ void registerIrradianceLoader() {
 ///////////////////////////////////////////////////////////////////////////////
 
 } // namespace ork::lev2
+
+template struct ork::asset::AssetManager<ork::lev2::IrradianceMapsAsset>;
