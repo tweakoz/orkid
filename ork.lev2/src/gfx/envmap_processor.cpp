@@ -494,65 +494,92 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
 
     logchan_gen->log("EnvMapProcessor: All captures complete, packaging datablocks...");
 
-    // Create datablocks to hold all captured tiles as a single texture data stream
-    auto specular_datablock = std::make_shared<DataBlock>();
-    auto diffuse_datablock  = std::make_shared<DataBlock>();
-
     // Collect debug images
     image_list_t debug_spec_images;
     image_list_t debug_diff_images;
 
-    // For now, package all specular data as raw concatenated tiles
-    // TODO: This should be properly formatted as DDS or other texture format
-    size_t total_spec_size = 0;
+    // Create proper XTX format for specular data  
+    CompressedImageMipChain specular_mipchain;
+    CompressedImageMipChain::miplevels_t spec_levels;
+    
     for (size_t i = 0; i < spec_capbufs->size(); i++) {
       auto capbuf = (*spec_capbufs)[i];
       auto future = (*spec_futures)[i];
 
       if (!future->_failed && capbuf->_image) {
-        // The data should already be available in capbuf->_image after capture completes
-        size_t data_size = capbuf->width() * capbuf->height() * 4; // RGBA8
-
-        // Verify the datablock has the expected size
-        OrkAssert(capbuf->_image->_data->length() == data_size);
-
-        // Add raw data to datablock
-        specular_datablock->addData(capbuf->_image->_data->data(), data_size);
-        total_spec_size += data_size;
-
+        // Create mip level from capture buffer
+        CompressedImage miplevel;
+        miplevel._width = capbuf->width();
+        miplevel._height = capbuf->height();
+        miplevel._depth = 1;
+        miplevel._data = capbuf->_image->_data;
+        spec_levels.push_back(miplevel);
+        
         // Store image for debug output
         debug_spec_images.push_back(capbuf->_image);
-
-        logchan_gen->log("EnvMapProcessor: Added specular roughness level %zu (%zu bytes)", i, data_size);
+        
+        logchan_gen->log("EnvMapProcessor: Added specular roughness level %zu (%dx%d)", 
+                        i, miplevel._width, miplevel._height);
       }
     }
+    
+    // Initialize specular mipchain
+    if (!spec_levels.empty()) {
+      const auto& first_level = spec_levels[0];
+      specular_mipchain._width = first_level._width;
+      specular_mipchain._height = first_level._height;
+      specular_mipchain._depth = 1;
+      specular_mipchain._format = EBufferFormat::RGBA8;
+      specular_mipchain._numcomponents = 4;
+      specular_mipchain._levels = spec_levels;
+    }
+    
+    // Write specular to XTX format
+    auto specular_datablock = std::make_shared<DataBlock>();
+    specular_mipchain.writeXTX(specular_datablock);
 
-    // Package all diffuse data as raw concatenated mip levels
-    size_t total_diff_size = 0;
+    // Create proper XTX format for diffuse data
+    CompressedImageMipChain diffuse_mipchain;
+    CompressedImageMipChain::miplevels_t diff_levels;
+    
     for (size_t i = 0; i < diff_capbufs->size(); i++) {
       auto capbuf = (*diff_capbufs)[i];
       auto future = (*diff_futures)[i];
 
       if (!future->_failed && capbuf->_image) {
-        // The data should already be available in capbuf->_image after capture completes
-        size_t data_size = capbuf->width() * capbuf->height() * 4; // RGBA8
-
-        // Verify the datablock has the expected size
-        OrkAssert(capbuf->_image->_data->length() == data_size);
-
-        // Add raw data to datablock
-        diffuse_datablock->addData(capbuf->_image->_data->data(), data_size);
-        total_diff_size += data_size;
-
+        // Create mip level from capture buffer
+        CompressedImage miplevel;
+        miplevel._width = capbuf->width();
+        miplevel._height = capbuf->height();
+        miplevel._depth = 1;
+        miplevel._data = capbuf->_image->_data;
+        diff_levels.push_back(miplevel);
+        
         // Store image for debug output
         debug_diff_images.push_back(capbuf->_image);
 
-        logchan_gen->log("EnvMapProcessor: Added diffuse mip level %zu (%zu bytes)", i, data_size);
+        logchan_gen->log("EnvMapProcessor: Added diffuse mip level %zu (%dx%d)", 
+                        i, miplevel._width, miplevel._height);
       }
     }
+    
+    // Initialize diffuse mipchain
+    if (!diff_levels.empty()) {
+      const auto& first_level = diff_levels[0];
+      diffuse_mipchain._width = first_level._width;
+      diffuse_mipchain._height = first_level._height;
+      diffuse_mipchain._depth = 1;
+      diffuse_mipchain._format = EBufferFormat::RGBA8;
+      diffuse_mipchain._numcomponents = 4;
+      diffuse_mipchain._levels = diff_levels;
+    }
+    
+    // Write diffuse to XTX format
+    auto diffuse_datablock = std::make_shared<DataBlock>();
+    diffuse_mipchain.writeXTX(diffuse_datablock);
 
-    logchan_gen->log("EnvMapProcessor: Total specular data: %zu bytes", total_spec_size);
-    logchan_gen->log("EnvMapProcessor: Total diffuse data: %zu bytes", total_diff_size);
+    logchan_gen->log("EnvMapProcessor: XTX specular datablock: %zu bytes", specular_datablock->length());
+    logchan_gen->log("EnvMapProcessor: XTX diffuse datablock: %zu bytes", diffuse_datablock->length());
 
     // Store datablocks and debug images in varmap for retrieval
     g.lock()->_varmap.atomicOp([=](varmap::VarMap& vmap) {

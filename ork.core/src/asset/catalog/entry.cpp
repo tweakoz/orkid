@@ -28,6 +28,8 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <nlohmann/json.hpp>
+#include <ctime>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/filesystem.hpp>
@@ -477,6 +479,37 @@ void AssetEntry::repackage() {
   // Update compression info
   _is_compressed = false; // Will be true after actual compression
   _compressed_size = _size; // Will be updated after compression
+  
+  // Create local manifest for immediate use without upload
+  if (catalog && _type == "asset_pak" && !_storage_hash.empty()) {
+    // Create local manifest entry
+    nlohmann::json local_manifest;
+    local_manifest["asset_id"] = _id;
+    local_manifest["namespace"] = _namespace;
+    local_manifest["storage_hash"] = _storage_hash;
+    local_manifest["content_hash"] = _content_hash;
+    local_manifest["type"] = _type;
+    local_manifest["size"] = _size;
+    local_manifest["timestamp"] = std::time(nullptr);
+    
+    // For single-file paks, mark as auto-unwrappable
+    if (!_filters.empty() && _filters.size() == 1) {
+      local_manifest["auto_unwrap"] = true;
+      local_manifest["unwrapped_file"] = _filters[0];
+    }
+    
+    // Save local manifest
+    file::Path local_manifest_dir = file::Path::stage_dir() / "assetcache" / "local_manifests" / _namespace;
+    local_manifest_dir.ensureDirectoryExists();
+    file::Path manifest_path = local_manifest_dir / (_id + ".json");
+    
+    std::ofstream manifest_file(manifest_path.c_str());
+    if (manifest_file.is_open()) {
+      manifest_file << local_manifest.dump(2);
+      manifest_file.close();
+      logchan_catalog->log("Created local manifest: %s", manifest_path.c_str());
+    }
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -43,6 +43,7 @@ def main():
         
         # Process one frame to ensure GPU resources are created
         print("Processing frame to create GPU resources...")
+        
         ctx.beginFrame()
         ctx.endFrame()
         ezapp.mainThreadIter()

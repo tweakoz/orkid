@@ -68,21 +68,48 @@ assetresult_ptr_t CatalogImpl::getAsset(fetchrequest_ptr_t request) {
       try {
         auto manifest = nlohmann::json::parse(manifest_data);
         
-        // Check if auto-unwrapped single file
-        if (manifest.contains("auto_unwrapped") && manifest["auto_unwrapped"].get<bool>()) {
-          // Load the single file directly
-          std::string extracted_path = manifest["extracted_path"].get<std::string>();
-          file::Path extracted_file = _catalog->getCacheDir() / extracted_path;
+        // Check if we have the encrypted file locally
+        if (manifest.contains("storage_hash")) {
+          std::string storage_hash = manifest["storage_hash"].get<std::string>();
+          file::Path encrypted_path = _catalog->getCacheDir() / "enc" / (storage_hash + ".enc");
           
-          if (extracted_file.doesPathExist()) {
-            // Read the cached extracted file
-            result->_data = readCachedFile(extracted_file);
-            result->_status = AssetStatus::OK;
-            result->_bytes_downloaded = 0; // From cache
+          if (encrypted_path.doesPathExist()) {
+            // We have the encrypted file locally - no need to download
+            logchan_catalog->log("Found local encrypted file: %s", encrypted_path.c_str());
             
-            logchan_catalog->log("Served from extracted cache (auto-unwrapped): %s", 
-                               manifest["filename"].get<std::string>().c_str());
-            return result;
+            // Skip download phase and go directly to processing
+            // Read the encrypted file
+            auto raw_data = readCachedFile(encrypted_path);
+            if (raw_data) {
+              // Process phase (decrypt/decompress)
+              Timer process_timer;
+              process_timer.Start();
+              
+              auto processed_data = processAssetData(raw_data, request);
+              if (!processed_data) {
+                logchan_catalog->log("[DEBUG CatalogImpl] Process phase FAILED");
+                if (request->decrypt && manifest.contains("type") && manifest["type"] == "asset_pak") {
+                  result->_status = AssetStatus::DECRYPT_FAILED;
+                  result->_error_detail = "Failed to decrypt asset";
+                }
+                return result;
+              }
+              
+              result->_processing_time = process_timer.SecsSinceStart();
+              result->_bytes_downloaded = 0; // From local cache
+              
+              // Handle as asset pak
+              handleAssetPak(processed_data, *result, request);
+              
+              // Check if auto-unwrap single file
+              if (manifest.contains("auto_unwrap") && manifest["auto_unwrap"].get<bool>() 
+                  && manifest.contains("unwrapped_file")) {
+                logchan_catalog->log("Served from local manifest (auto-unwrapped): %s", 
+                                   manifest["unwrapped_file"].get<std::string>().c_str());
+              }
+              
+              return result;
+            }
           }
         }
       } catch (const std::exception& e) {
@@ -91,20 +118,41 @@ assetresult_ptr_t CatalogImpl::getAsset(fetchrequest_ptr_t request) {
     }
   }
 
-  // 1. Download phase
-  Timer _download_timer;
-  _download_timer.Start();
-
-  auto raw_data = downloadAssetData(request);
-  if (!raw_data) {
-    logchan_catalog->log("[DEBUG CatalogImpl] Download phase FAILED");
-    result->_status       = AssetStatus::DOWNLOAD_FAILED;
-    result->_error_detail = "Failed to download asset _data";
-    return result;
+  // Check if we already have the assembled encrypted file locally (for chunked assets)
+  datablock_ptr_t raw_data;
+  if (!request->disable_cache && request->location._chunk_manifest) {
+    // Extract storage hash from relative path
+    std::string storage_hash = request->location._relative_path;
+    if (storage_hash.ends_with(".enc")) {
+      storage_hash = storage_hash.substr(0, storage_hash.length() - 4);
+    }
+    
+    // Check if assembled encrypted file exists
+    file::Path assembled_path = _catalog->getCacheDir() / "enc" / (storage_hash + ".enc");
+    if (assembled_path.doesPathExist()) {
+      logchan_catalog->log("Found assembled encrypted file locally: %s", assembled_path.c_str());
+      raw_data = readCachedFile(assembled_path);
+      result->_bytes_downloaded = 0; // From local cache
+    }
   }
+  
+  // If not found locally, proceed with download
+  if (!raw_data) {
+    // 1. Download phase
+    Timer _download_timer;
+    _download_timer.Start();
 
-  result->_download_time    = _download_timer.SecsSinceStart();
-  result->_bytes_downloaded = raw_data->length();
+    raw_data = downloadAssetData(request);
+    if (!raw_data) {
+      logchan_catalog->log("[DEBUG CatalogImpl] Download phase FAILED");
+      result->_status       = AssetStatus::DOWNLOAD_FAILED;
+      result->_error_detail = "Failed to download asset _data";
+      return result;
+    }
+
+    result->_download_time    = _download_timer.SecsSinceStart();
+    result->_bytes_downloaded = raw_data->length();
+  }
 
   // 2. Process phase
   Timer process_timer;
