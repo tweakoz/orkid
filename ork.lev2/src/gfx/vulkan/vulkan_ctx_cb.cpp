@@ -214,6 +214,8 @@ vkpricmdbufimpl_ptr_t VkContext::_createPrimaryVkCommandBuffer(PrimaryCommandBuf
 }
 vkseccmdbufimpl_ptr_t VkContext::_createSecondaryVkCommandBuffer(SecondaryCommandBuffer* ork_cb) {
 
+  OrkAssert(_vkcmdpool_graphics != VK_NULL_HANDLE); // Ensure command pool is created
+  
   vkseccmdbufimpl_ptr_t rval           = ork_cb->_impl.makeShared<VkSecondaryCommandBufferImpl>(this);
   rval->_orkCB                         = ork_cb;
   VkCommandBufferAllocateInfo CBAI_GFX = {};

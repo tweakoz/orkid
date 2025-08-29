@@ -116,7 +116,7 @@ struct VulkanInstance {
   bool _debugEnabled = false;
   vkdeviceinfo_ptr_t _preferred;
 
-  std::set<VkContext*> _contexts;
+  std::vector<VkContext*> _contexts;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VkDrawingInterface final : public DrawingInterface {
@@ -538,7 +538,7 @@ public:
       nameInfo.objectType   = objectType;
       nameInfo.objectHandle = reinterpret_cast<uint64_t>(object);
       nameInfo.pObjectName  = name;
-      //printf("Setting debug name for object type %d: %s\n", objectType, name);
+      printf("Setting debug name for object type %d: %s\n", objectType, name);
       _vkSetDebugUtilsObjectName(_vkdevice, &nameInfo);
     }
   }
@@ -564,9 +564,9 @@ public:
   uint32_t _vkqfid_graphics          = NO_QUEUE;
   uint32_t _vkqfid_compute           = NO_QUEUE;
   uint32_t _vkqfid_transfer          = NO_QUEUE;
-  VkQueue _vkqueue_graphics;
-  VkCommandPool _vkcmdpool_graphics;
-  VkCommandBuffer _vkcmdbuffer_current;
+  VkQueue _vkqueue_graphics          = VK_NULL_HANDLE;
+  VkCommandPool _vkcmdpool_graphics  = VK_NULL_HANDLE;
+  VkCommandBuffer _vkcmdbuffer_current = VK_NULL_HANDLE;
   primary_commandbuffer_ptr_t _defaultCommandBuffer;
   vkpricmdbufimpl_ptr_t _defaultCommandBufferImpl;
   vkpricmdbufimpl_ptr_t _cmdbufcurpri_gfx;

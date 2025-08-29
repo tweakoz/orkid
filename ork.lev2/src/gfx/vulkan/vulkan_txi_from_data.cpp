@@ -182,6 +182,9 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
           dst[i * 4 + 3] = 1.0f;           // A
         }
       }
+      else{
+        OrkAssert(false); // Unsupported conversion
+      }
       staging_buffer->unmap();
     } else {
       // Direct copy

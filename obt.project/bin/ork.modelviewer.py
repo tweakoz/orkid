@@ -127,6 +127,7 @@ class SceneGraphApp(object):
     sceneparams.DiffuseIntensity = float(diffuintens)
     sceneparams.AmbientLight = vec3(ambiuintens)
     sceneparams.DepthFogDistance = float(1e5)
+    sceneparams.SkyboxTexPathStr = "ork_envmaps|tozenv_nebula"
 
     if envmap != "":
       sceneparams.SkyboxTexPathStr = envmap

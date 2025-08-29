@@ -159,25 +159,32 @@ void VkContext::_initVulkanForWindow(VkSurfaceKHR surface) {
   if (vk_devinfo != _GVI->_preferred) {
     _GVI->_preferred = vk_devinfo;
   }
-  _initVulkanForDevInfo(vk_devinfo);
-  _initVulkanCommon();
 
   // UGLY!!!
+  if(_GVI->_contexts.size()>=1){
+    auto context0 = *_GVI->_contexts.begin();
+    _vkdevice = context0->_vkdevice;
+    _vkdeviceinfo = context0->_vkdeviceinfo;
+    _vkphysicaldevice = context0->_vkphysicaldevice;
+    _vkqueue_graphics = context0->_vkqueue_graphics;
+    _vkqfid_graphics = context0->_vkqfid_graphics;
+    _vkqfid_transfer = context0->_vkqfid_transfer;
+    _vkqfid_compute = context0->_vkqfid_compute;
+    _vkSetDebugUtilsObjectName = context0->_vkSetDebugUtilsObjectName;
+    _vkCmdDebugMarkerBeginEXT = context0->_vkCmdDebugMarkerBeginEXT;
+    _vkCmdDebugMarkerEndEXT = context0->_vkCmdDebugMarkerEndEXT;
+    _vkCmdDebugMarkerInsertEXT = context0->_vkCmdDebugMarkerInsertEXT;
+    _vkCmdBeginRenderingKHR = context0->_vkCmdBeginRenderingKHR;
+    _vkCmdEndRenderingKHR = context0->_vkCmdEndRenderingKHR;
 
-  for (auto ctx : _GVI->_contexts) {
-    if (ctx != this) {
-      ctx->_vkdevice         = _vkdevice;
-      ctx->_vkphysicaldevice = _vkphysicaldevice;
-      ctx->_vkqueue_graphics = _vkqueue_graphics;
-      ctx->_vkqfid_graphics  = _vkqfid_graphics;
-      ctx->_vkqfid_transfer  = _vkqfid_transfer;
-      ctx->_vkqfid_compute   = _vkqfid_compute;
-
-      ctx->_vkSetDebugUtilsObjectName = _vkSetDebugUtilsObjectName;
-      ctx->_vkCmdDebugMarkerBeginEXT  = _vkCmdDebugMarkerBeginEXT;
-      ctx->_vkCmdDebugMarkerEndEXT    = _vkCmdDebugMarkerEndEXT;
-      ctx->_vkCmdDebugMarkerInsertEXT = _vkCmdDebugMarkerInsertEXT;
-    }
+    _device_extensions = context0->_device_extensions;
+    _num_queue_types = context0->_num_queue_types;
+    _DQCIs = context0->_DQCIs;
+    _initVulkanCommon();
+  }
+  else{
+    _initVulkanForDevInfo(vk_devinfo);
+    _initVulkanCommon();
   }
 }
 
@@ -421,7 +428,7 @@ void VkContext::_initDefaultTextures() {
 VkContext::VkContext() {
   _present_timer.Start();
   _prev_time = 0.0f;
-  _GVI->_contexts.insert(this);
+  _GVI->_contexts.push_back(this);
 
   ////////////////////////////
   // Setup rendering conventions for Vulkan

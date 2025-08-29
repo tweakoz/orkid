@@ -125,7 +125,7 @@ static texture_ptr_t _getbrdfintmap(Context* targ, uint64_t type) {
   brdfhasher->finish();
   uint64_t brdfhash = brdfhasher->result();
   // logchan_pbrgen->log("brdfIntegrationMap hashkey<%zx>", brdfhash);
-  auto dblock = DataBlockCache::findDataBlock(brdfhash);
+  datablock_ptr_t dblock = DataBlockCache::findDataBlock(brdfhash);
   if (dblock) {
     // loaded from cache
     // logchan_pbrgen->log("brdfIntegrationMap loaded from cache");

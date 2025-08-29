@@ -16,7 +16,7 @@
 namespace ork::lev2::vulkan {
 
 vkinstance_ptr_t _GVI = nullptr;
-constexpr bool _enable_validate = false;
+constexpr bool _enable_validate = true;
 constexpr bool _enable_renderdoc = false;
 constexpr bool _enable_debug = (_enable_validate or _enable_renderdoc);
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -117,9 +117,9 @@ VulkanInstance::VulkanInstance() {
   }
   auto layer_props = _layerProperties();
   for(size_t i=0; i<layer_props.size(); i++){
-   //printf("layer<%d:%s>\n", i, layer_props[i].layerName);
+   printf("layer<%d:%s>\n", i, layer_props[i].layerName);
   }
-  _debugEnabled    = _enable_debug and _hasLayer(layer_props, validation_layers[0]);
+    _debugEnabled    = _enable_debug and _hasLayer(layer_props, validation_layers[0]);
 
   initializeVkStruct(_appdata,VK_STRUCTURE_TYPE_APPLICATION_INFO);
   _appdata.pApplicationName   = "Orkid";
