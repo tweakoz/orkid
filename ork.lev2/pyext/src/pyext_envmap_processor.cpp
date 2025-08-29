@@ -44,28 +44,6 @@ void pyinit_radiance_maps_processor(py::module& module_lev2) {
         [](const std::string& input_path) -> xirprocessfuture_ptr_t {
           return EnvMapProcessor::processToXIRDataBlockAsync(
             file::Path(input_path));
-        })
-      .def_static("processDirectory",
-        [](const std::string& source_dir, 
-           const std::string& output_dir,
-           py::list extensions) -> py::list {
-          
-          std::vector<std::string> ext_vec;
-          for (auto item : extensions) {
-            ext_vec.push_back(py::cast<std::string>(item));
-          }
-          
-          auto futures = EnvMapProcessor::processDirectory(
-            file::Path(source_dir),
-            file::Path(output_dir),
-            ext_vec);
-          
-          // Convert vector of futures to Python list
-          py::list py_futures;
-          for (auto& future : futures) {
-            py_futures.append(future);
-          }
-          return py_futures;
         });
         
   // RadianceMapsAsset bindings

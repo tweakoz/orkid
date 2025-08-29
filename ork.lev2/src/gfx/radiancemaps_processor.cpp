@@ -684,58 +684,6 @@ bool EnvMapProcessor::processToXIR(const file::Path& input_path, const file::Pat
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// processDirectory
-//////////////////////////////////////////////////////////////////////////////////
-
-std::vector<xirprocessfuture_ptr_t> EnvMapProcessor::processDirectory(
-    const file::Path& source_dir,
-    const file::Path& output_dir,
-    const std::vector<std::string>& extensions) {
-
-  std::vector<xirprocessfuture_ptr_t> futures;
-
-  namespace bfs = boost::filesystem;
-  if (!bfs::exists(source_dir.toBFS()) || !bfs::is_directory(source_dir.toBFS())) {
-    // Return empty vector if source dir doesn't exist
-    return futures;
-  }
-
-  // Create output directory
-  output_dir.ensureDirectoryExists();
-
-  // Collect all files to process
-  std::vector<file::Path> files_to_process;
-
-  // Process each file
-  bfs::path dir_path = source_dir.toBFS();
-  if (bfs::exists(dir_path) && bfs::is_directory(dir_path)) {
-    for (auto& entry : bfs::directory_iterator(dir_path)) {
-      if (bfs::is_regular_file(entry.path())) {
-        file::Path input_file(entry.path());
-        auto file_ext = input_file.getExtension();
-
-        logchan_gen->log("Checking file: %s, extension: '%s'", input_file.c_str(), file_ext.c_str());
-
-        // Add dot to extension for comparison (getExtension returns without dot)
-        std::string ext_with_dot = "." + file_ext;
-
-        // Check if extension matches
-        if (std::find(extensions.begin(), extensions.end(), ext_with_dot) != extensions.end()) {
-          files_to_process.push_back(input_file);
-        }
-      }
-    }
-  }
-
-  // Process each file asynchronously
-  for (const auto& input_file : files_to_process) {
-    // Create a future that will write to disk when complete
-    auto future = processToXIRDataBlockAsync(input_file);
-    futures.push_back(future);
-  }
-
-  return futures;
-}
 
 static std::atomic<int> gXIRProcessFutureCount{0};
 
