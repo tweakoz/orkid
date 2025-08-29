@@ -113,6 +113,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rt
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::__setRtGroup(rtgroup_rawptr_t rtgroup) {
+  printf("VkFrameBufferInterface __setRtGroup rtgroup<%p>\n", (void*) rtgroup);
   _active_rtgroup = rtgroup;
   vkrtgrpimpl_ptr_t RTGIMPL;
 
@@ -215,9 +216,12 @@ void VkFrameBufferInterface::__setRtGroup(rtgroup_rawptr_t rtgroup) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
+  printf("VkFrameBufferInterface _pushRtGroup rtgroup<%p>\n", (void*) rtgroup);
+  bool must_push = _contextVK->meTargetType != TargetType::WINDOW;
+
+  if(must_push or (_active_rtgroup!=rtgroup)){
     __setRtGroup(rtgroup);
-  if(_active_rtgroup!=rtgroup){
-    logchan_rtgroup->log("PushRtGroup: RTG %p, primary CB %p", (void*)rtgroup, _contextVK->primary_cb() ? (void*)_contextVK->primary_cb().get() : nullptr);
+    //logchan_rtgroup->log("PushRtGroup: RTG %p, primary CB %p", (void*)rtgroup, _contextVK->primary_cb() ? (void*)_contextVK->primary_cb().get() : nullptr);
   }
 }
 
