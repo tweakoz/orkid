@@ -108,11 +108,11 @@ struct CommonStuff : public ork::Object {
   }
 
   void requestAndRefSkyboxTexture(asset::loadrequest_ptr_t load_req);
-  static RadianceMaps_ptr_t requestRadianceMaps(const AssetPath& texture_path);
+  static radiancemaps_ptr_t requestRadianceMaps(const AssetPath& texture_path);
 
   void onGpuInit(lev2::Context* ctx);
 
-  RadianceMaps_ptr_t _RadianceMaps;
+  radiancemaps_ptr_t _radiance_maps;
 
   asset::asset_ptr_t _environmentTextureAsset;
   std::unordered_map<uint64_t, lev2::texture_ptr_t> _ssaoKernels;

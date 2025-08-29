@@ -71,14 +71,15 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
   
   // Debug: Check first few bytes of diffuse data to see format
   if (xir_data_result._diffuse_data->length() > 64) {
-    printf("Diffuse data first 64 bytes:\n");
+    printf("XIR Diffuse data first 64 bytes:\n");
     hexdumpbytes(xir_data_result._diffuse_data->data(), 64);
   }
   
   // Create asset
   auto asset = std::make_shared<RadianceMapsAsset>();
   auto irrmaps = std::make_shared<pbr::RadianceMaps>();
-  asset->_RadianceMaps = irrmaps;
+  asset->_radiance_maps = irrmaps;
+
   
   // Create textures (CPU only, no GPU resources yet)
   auto diffuse_tex = std::make_shared<Texture>();
@@ -137,6 +138,8 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
   irrmaps->_brdfIntegrationMapGGXRIM = brdfIntegrationMapRim;
   irrmaps->_brdfIntegrationMapBlinn = brdfIntegrationMapBlinn;
   irrmaps->_brdfIntegrationMapPhong = brdfIntegrationMapPhong;
+
+  printf("XIR asset<%p> irrmaps<%p> dtex<%p> stex<%p>\n", (void*) asset.get(), (void*) irrmaps.get(),diffuse_tex.get(), specular_tex.get() );
 
   return asset;
 }

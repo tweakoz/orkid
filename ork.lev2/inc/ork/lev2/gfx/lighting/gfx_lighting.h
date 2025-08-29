@@ -164,7 +164,7 @@ struct Light : public Drawable {
   texturearraysliceref_ptr_t _cookieColor;
   texturearraysliceref_ptr_t _cookieDepth;
   rtgroup_ptr_t _depthRTG;
-  pbr::RadianceMaps_ptr_t _RadianceCookie;
+  pbr::radiancemaps_ptr_t _RadianceCookie;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -18,7 +18,7 @@ using namespace ork::lev2;
 
 namespace ork::lev2 {
 
-void pyinit_radiancemaps_processor(py::module& module_lev2) {
+void pyinit_radiance_maps_processor(py::module& module_lev2) {
   
   // XIRProcessFuture bindings
   py::class_<XIRProcessFuture, xirprocessfuture_ptr_t>(module_lev2, "XIRProcessFuture")
@@ -78,8 +78,8 @@ void pyinit_radiancemaps_processor(py::module& module_lev2) {
         return asset::AssetManager<RadianceMapsAsset>::load(loadreq);
       })
       .def_property_readonly("Radiance_maps", 
-        [](Radianceasset_ptr_t self) -> pbr::RadianceMaps_ptr_t {
-          return self->_RadianceMaps;
+        [](Radianceasset_ptr_t self) -> pbr::radiancemaps_ptr_t {
+          return self->_radiance_maps;
         });
 }
 

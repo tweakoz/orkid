@@ -91,24 +91,24 @@ FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl) {
 
     switch (pbrcommon->_brdftype) {
       case "BLINN"_crcu:
-        FXI->bindParamTexture(mtl->_parMapBrdfIntegration, pbrcommon->_RadianceMaps->_brdfIntegrationMapBlinn.get());
+        FXI->bindParamTexture(mtl->_parMapBrdfIntegration, pbrcommon->_radiance_maps->_brdfIntegrationMapBlinn.get());
         // printf("PBRMaterial<%p> using BLINN brdf integration map\n", mtl);
         break;
       case "PHONG"_crcu:
-        FXI->bindParamTexture(mtl->_parMapBrdfIntegration, pbrcommon->_RadianceMaps->_brdfIntegrationMapPhong.get());
+        FXI->bindParamTexture(mtl->_parMapBrdfIntegration, pbrcommon->_radiance_maps->_brdfIntegrationMapPhong.get());
         // printf("PBRMaterial<%p> using PHONG brdf integration map\n", mtl);
         break;
       case "GGXVELVET"_crcu:
-        FXI->bindParamTexture(mtl->_parMapBrdfIntegration, pbrcommon->_RadianceMaps->_brdfIntegrationMapVelvet.get());
+        FXI->bindParamTexture(mtl->_parMapBrdfIntegration, pbrcommon->_radiance_maps->_brdfIntegrationMapVelvet.get());
         // printf("PBRMaterial<%p> using GGXVELVET brdf integration map\n", mtl);
         break;
       case "GGXRIM"_crcu:
-        FXI->bindParamTexture(mtl->_parMapBrdfIntegration, pbrcommon->_RadianceMaps->_brdfIntegrationMapGGXRIM.get());
+        FXI->bindParamTexture(mtl->_parMapBrdfIntegration, pbrcommon->_radiance_maps->_brdfIntegrationMapGGXRIM.get());
         // printf("PBRMaterial<%p> using GGXRIM brdf integration map\n", mtl);
         break;
       case "GGX"_crcu:
       default:
-        FXI->bindParamTexture(mtl->_parMapBrdfIntegration, pbrcommon->_RadianceMaps->_brdfIntegrationMapGGX.get());
+        FXI->bindParamTexture(mtl->_parMapBrdfIntegration, pbrcommon->_radiance_maps->_brdfIntegrationMapGGX.get());
         // printf("PBRMaterial<%p> using GGX brdf integration map\n", mtl);
         break;
     }

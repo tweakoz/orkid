@@ -21,14 +21,14 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
 
   /////////////////////////////////////////////////////////////////////////////////
   auto irrmap_type =
-      py::class_<pbr::RadianceMaps, pbr::RadianceMaps_ptr_t>(module_lev2, "RadianceMap")
+      py::class_<pbr::RadianceMaps, pbr::radiancemaps_ptr_t>(module_lev2, "RadianceMap")
           .def(py::init<>())
-          .def_property_readonly("specular", [](pbr::RadianceMaps_ptr_t m) -> texture_ptr_t { return m->_filtenvSpecularMap; })
-          .def_property_readonly("diffuse", [](pbr::RadianceMaps_ptr_t m) -> texture_ptr_t { return m->_filtenvDiffuseMap; })
-          .def_property_readonly("brdf_ggx", [](pbr::RadianceMaps_ptr_t m) -> texture_ptr_t { return m->_brdfIntegrationMapGGX; })
+          .def_property_readonly("specular", [](pbr::radiancemaps_ptr_t m) -> texture_ptr_t { return m->_filtenvSpecularMap; })
+          .def_property_readonly("diffuse", [](pbr::radiancemaps_ptr_t m) -> texture_ptr_t { return m->_filtenvDiffuseMap; })
+          .def_property_readonly("brdf_ggx", [](pbr::radiancemaps_ptr_t m) -> texture_ptr_t { return m->_brdfIntegrationMapGGX; })
           .def_property_readonly(
-              "loadRequest", [](pbr::RadianceMaps_ptr_t m) -> asset::loadrequest_ptr_t { return m->_loadRequest; })
-          .def("__repr__", [](pbr::RadianceMaps_ptr_t d) -> std::string {
+              "loadRequest", [](pbr::radiancemaps_ptr_t m) -> asset::loadrequest_ptr_t { return m->_loadRequest; })
+          .def("__repr__", [](pbr::radiancemaps_ptr_t d) -> std::string {
             fxstring<64> fxs;
             fxs.format("RadianceMap(%p)", d.get());
             return fxs.c_str();
@@ -38,7 +38,7 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
       py::class_<pbr::CommonStuff, pbr::commonstuff_ptr_t>(module_lev2, "PbrCommon")
           .def_static(
               "requestRadianceMaps",
-              [](py::object path) -> pbr::RadianceMaps_ptr_t { //
+              [](py::object path) -> pbr::radiancemaps_ptr_t { //
                 auto as_py_str = py::str(path);
                 auto as_str    = as_py_str.cast<std::string>();
                 // printf("requestRadianceMaps<%s>\n", as_str.c_str());
@@ -47,11 +47,11 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
           .def(py::init<>())
           .def_property(
               "RadianceMaps",
-              [](pbr::commonstuff_ptr_t pbc) -> pbr::RadianceMaps_ptr_t { //
-                return pbc->_RadianceMaps;                                //
+              [](pbr::commonstuff_ptr_t pbc) -> pbr::radiancemaps_ptr_t { //
+                return pbc->_radiance_maps;                                //
               },
-              [](pbr::commonstuff_ptr_t pbc, pbr::RadianceMaps_ptr_t v) { //
-                pbc->_RadianceMaps = v;                                   //
+              [](pbr::commonstuff_ptr_t pbc, pbr::radiancemaps_ptr_t v) { //
+                pbc->_radiance_maps = v;                                   //
               })
           .def(
               "requestSkyboxTexture",

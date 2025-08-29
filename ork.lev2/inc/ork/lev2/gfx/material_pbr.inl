@@ -243,7 +243,6 @@ public:
 
   ///////////////////////////////////////////
 
-  //pbr::RadianceMaps_ptr_t _RadianceMaps;
   pbr::commonstuff_ptr_t _commonOverride;
 
   texturearray_ptr_t _texArrayCNMREA;

@@ -242,7 +242,7 @@ struct XgmMesh final {
 struct XgmModelAssetMaterialModifiers{
   std::map<std::string, std::string> _lightmap_paths;
   std::map<std::string, uint64_t> _lightmap_hashes;
-  std::map<std::string, pbr::RadianceMaps_ptr_t> _lightmap_irrs;
+  std::map<std::string, pbr::radiancemaps_ptr_t> _lightmap_irrs;
   std::map<std::string, image_ptr_t> _lightmap_image_assets;
   std::string _material_class;
 };

@@ -125,10 +125,10 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
             })
         .def_property(
           "RadianceCookie",                                  //
-          [](light_ptr_t light) -> pbr::RadianceMaps_ptr_t { //
+          [](light_ptr_t light) -> pbr::radiancemaps_ptr_t { //
             return light->_RadianceCookie;
           },
-          [](light_ptr_t light, pbr::RadianceMaps_ptr_t tex) { //
+          [](light_ptr_t light, pbr::radiancemaps_ptr_t tex) { //
             light->_RadianceCookie = tex;
           })
       .def_property(

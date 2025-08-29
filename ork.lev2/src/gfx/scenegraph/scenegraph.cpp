@@ -327,6 +327,7 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
 
       _compositorData->_defaultBG = false;
       auto load_req               = std::make_shared<asset::LoadRequest>(texture_path);
+      printf( "SCENE<%p> pbrc<%p> REQ SKYBOX TEX ASSET<%s>\n", (void*) this, (void*) _pbr_common.get(), texture_path.c_str() );
       _pbr_common->requestAndRefSkyboxTexture(load_req);
     }
 

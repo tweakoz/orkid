@@ -26,7 +26,7 @@ struct RadianceMapsAsset : public asset::Asset {
   
   static const char* assetTypeNameStatic() { return "Radiance"; }
   
-  pbr::RadianceMaps_ptr_t _RadianceMaps;
+  pbr::radiancemaps_ptr_t _radiance_maps;
 };
 
 using Radianceasset_ptr_t = std::shared_ptr<RadianceMapsAsset>;

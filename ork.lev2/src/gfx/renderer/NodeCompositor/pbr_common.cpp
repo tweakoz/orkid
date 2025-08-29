@@ -49,7 +49,7 @@ static logchannel_ptr_t logchan_pbrcom = logger()->configureChannel("PBRCOM", fv
 ///////////////////////////////////////////////////////////////////////////////
 CommonStuff::CommonStuff() {
 
-  _RadianceMaps = std::make_shared<RadianceMaps>();
+  _radiance_maps = std::make_shared<RadianceMaps>();
   _clearColor     = fvec4(0, 0, 0, 1);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -68,7 +68,7 @@ void CommonStuff::assignEnvTexture(asset::asset_ptr_t texasset) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-RadianceMaps_ptr_t CommonStuff::requestRadianceMaps(const AssetPath& texture_path) {
+radiancemaps_ptr_t CommonStuff::requestRadianceMaps(const AssetPath& texture_path) {
   // Load XIR file directly using the registered XIR loader
   auto load_req = std::make_shared<asset::LoadRequest>(texture_path);
   
@@ -78,7 +78,9 @@ RadianceMaps_ptr_t CommonStuff::requestRadianceMaps(const AssetPath& texture_pat
     // Cast to RadianceMapsAsset
     auto radiancemaps_asset = std::dynamic_pointer_cast<RadianceMapsAsset>(generic_asset);
     if (radiancemaps_asset) {
-      return radiancemaps_asset->_RadianceMaps;
+      //_radiance_maps = radiancemaps_asset->_radiance_maps;
+      printf("RRM: asset<%p> irrmaps<%p>\n", (void*) radiancemaps_asset.get(), (void*) radiancemaps_asset->_radiance_maps.get()  );
+      return radiancemaps_asset->_radiance_maps;
     }
   }
   return nullptr;
@@ -87,6 +89,10 @@ RadianceMaps_ptr_t CommonStuff::requestRadianceMaps(const AssetPath& texture_pat
 ///////////////////////////////////////////////////////////////////////////////
 void CommonStuff::requestAndRefSkyboxTexture(asset::loadrequest_ptr_t load_req) {
   auto generic_asset = asset::AssetManager<RadianceMapsAsset>::load(load_req);
+  if( auto as_radmaps = std::dynamic_pointer_cast<RadianceMapsAsset>(generic_asset) ){
+    _radiance_maps = as_radmaps->_radiance_maps;
+    printf("RARST: asset<%p> irrmaps<%p> pbrcommon<%p>\n", (void*) as_radmaps.get(), (void*) _radiance_maps.get(), (void*) this  );
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -182,11 +188,11 @@ void CommonStuff::_writeEnvTexture(asset::asset_ptr_t const& tex) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 lev2::texture_ptr_t CommonStuff::envSpecularTexture() const {
-  return _RadianceMaps->_filtenvSpecularMap;
+  return _radiance_maps->_filtenvSpecularMap;
 }
 ///////////////////////////////////////////////////////////////////////////////
 lev2::texture_ptr_t CommonStuff::envDiffuseTexture() const {
-  return _RadianceMaps->_filtenvDiffuseMap;
+  return _radiance_maps->_filtenvDiffuseMap;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CommonStuff::_readEnvTexture(asset::asset_ptr_t& tex) const {
