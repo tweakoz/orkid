@@ -50,13 +50,16 @@ struct PointLight {
 
 struct RadianceMaps {
 
-  texture_ptr_t _filtenvSpecularMap;
+  texture_ptr_t _filtenvSpecularMap;  // Legacy single texture
+  texturearray_ptr_t _filtenvSpecularMapArray;  // New: texture array with roughness slices
   texture_ptr_t _filtenvDiffuseMap;
   texture_ptr_t _brdfIntegrationMapGGX;
   texture_ptr_t _brdfIntegrationMapVelvet;
   texture_ptr_t _brdfIntegrationMapGGXRIM;
   texture_ptr_t _brdfIntegrationMapBlinn;
   texture_ptr_t _brdfIntegrationMapPhong;
+  std::vector<float> _specularRoughnessValues;  // Roughness value for each array slice
+  int _numRoughnessLevels = 0;  // Number of roughness levels in array
   asset::loadrequest_ptr_t _loadRequest;
 
 };

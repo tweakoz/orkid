@@ -151,7 +151,9 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
   auto diff_futures = std::make_shared<captureasync_list_t>();
   auto spec_capbufs = std::make_shared<capturebuffer_list_t>();
   auto diff_capbufs = std::make_shared<capturebuffer_list_t>();
-
+  
+  // Pre-declare spec_roughness_values here
+  auto spec_roughness_values = std::make_shared<std::vector<float>>();
 
   graph->_varmap.atomicOp([=](varmap::VarMap& unlocked) {
     // retain stuff with graph
@@ -167,6 +169,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
     unlocked.set<captureasync_list_ptr_t>("diff_futures", diff_futures);
     unlocked.set<capturebuffer_list_ptr_t>("spec_capbufs", spec_capbufs);
     unlocked.set<capturebuffer_list_ptr_t>("diff_capbufs", diff_capbufs);
+    unlocked.set<std::shared_ptr<std::vector<float>>>("spec_roughness_values", spec_roughness_values);
   });
 
   setup_phase->task(
@@ -207,6 +210,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
 
   for (int rough_idx = 0; rough_idx < num_roughness_levels; rough_idx++) {
     float roughness        = powf(float(rough_idx) / 9.0f, roughness_power);
+    spec_roughness_values->push_back(roughness); // Store the original roughness value
     std::string phase_name = tex_name + ".specular_roughness_" + std::to_string(rough_idx);
 
     auto specular_phase = TaskGraph::phase(graph, phase_name, gpu_executor);
@@ -313,6 +317,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
 
           // Pop render target ONCE after all tiles
           fbi->PopRtGroup();
+                    
           auto capbuf = std::make_shared<CaptureBuffer>();
           spec_capbufs->push_back(capbuf);
           auto future = fbi->captureAsFormat(rtbuffer.get(), capbuf, EBufferFormat::RGBA8);
@@ -443,6 +448,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
 
           // Pop render target ONCE after all tiles
           fbi->PopRtGroup();
+                   
           auto capbuf = std::make_shared<CaptureBuffer>();
           diff_capbufs->push_back(capbuf);
           auto future = fbi->captureAsFormat(rtbuffer.get(), capbuf, EBufferFormat::RGBA8);
@@ -474,7 +480,8 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
   package_phase->task("package_results", [spec_futures, //
                                           diff_futures, //
                                           spec_capbufs, //
-                                          diff_capbufs //
+                                          diff_capbufs, //
+                                          spec_roughness_values //
                                         ](taskgraph_wkptr_t g) {
     size_t num_specs = spec_futures->size();
     size_t num_diffs = diff_futures->size();
@@ -498,46 +505,43 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
     image_list_t debug_spec_images;
     image_list_t debug_diff_images;
 
-    // TODO << this needs to be a Texture Array !
-    // Create proper XTX format for specular data  
-    CompressedImageMipChain specular_mipchain;
-    CompressedImageMipChain::miplevels_t spec_levels;
+    // Package each specular roughness level separately for texture array
+    std::vector<datablock_ptr_t> specular_datablocks;
     
     for (size_t i = 0; i < spec_capbufs->size(); i++) {
       auto capbuf = (*spec_capbufs)[i];
       auto future = (*spec_futures)[i];
 
       if (!future->_failed && capbuf->_image) {
-        // Create mip level from capture buffer
-        CompressedImage miplevel;
-        miplevel._width = capbuf->width();
-        miplevel._height = capbuf->height();
-        miplevel._depth = 1;
-        miplevel._data = capbuf->_image->_data;
-        spec_levels.push_back(miplevel);
+        // Create single-level mipchain for this roughness (GPU will generate mips)
+        CompressedImageMipChain single_level_chain;
+        CompressedImage base_level;
+        base_level._width = capbuf->width();
+        base_level._height = capbuf->height();
+        base_level._depth = 1;
+        base_level._format = EBufferFormat::RGBA8;
+        base_level._numcomponents = 4;
+        base_level._data = capbuf->_image->_data;
+        
+        single_level_chain._width = base_level._width;
+        single_level_chain._height = base_level._height;
+        single_level_chain._depth = 1;
+        single_level_chain._format = base_level._format;
+        single_level_chain._numcomponents = 4;
+        single_level_chain._levels = {base_level};
+        
+        // Write this roughness level to its own datablock
+        auto roughness_datablock = std::make_shared<DataBlock>();
+        single_level_chain.writeXTX(roughness_datablock);
+        specular_datablocks.push_back(roughness_datablock);
         
         // Store image for debug output
         debug_spec_images.push_back(capbuf->_image);
         
-        logchan_gen->log("EnvMapProcessor: Added specular roughness level %zu (%dx%d)", 
-                        i, miplevel._width, miplevel._height);
+        logchan_gen->log("EnvMapProcessor: Packaged specular roughness level %zu (%dx%d)", 
+                        i, base_level._width, base_level._height);
       }
     }
-    
-    // Initialize specular mipchain
-    if (!spec_levels.empty()) {
-      const auto& first_level = spec_levels[0];
-      specular_mipchain._width = first_level._width;
-      specular_mipchain._height = first_level._height;
-      specular_mipchain._depth = 1;
-      specular_mipchain._format = EBufferFormat::RGBA8;
-      specular_mipchain._numcomponents = 4;
-      specular_mipchain._levels = spec_levels;
-    }
-    
-    // Write specular to XTX format
-    auto specular_datablock = std::make_shared<DataBlock>();
-    specular_mipchain.writeXTX(specular_datablock);
 
     // Create proper XTX format for diffuse data
     CompressedImageMipChain diffuse_mipchain;
@@ -579,20 +583,22 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
     auto diffuse_datablock = std::make_shared<DataBlock>();
     diffuse_mipchain.writeXTX(diffuse_datablock);
 
-    logchan_gen->log("EnvMapProcessor: XTX specular datablock: %zu bytes", specular_datablock->length());
     logchan_gen->log("EnvMapProcessor: XTX diffuse datablock: %zu bytes", diffuse_datablock->length());
+    logchan_gen->log("EnvMapProcessor: Packaged %zu specular roughness levels", specular_datablocks.size());
 
     // Store datablocks and debug images in varmap for retrieval
     g.lock()->_varmap.atomicOp([=](varmap::VarMap& vmap) {
-      vmap.set<datablock_ptr_t>("specular_datablock", specular_datablock);
+      vmap.set<std::vector<datablock_ptr_t>>("specular_datablocks", specular_datablocks);
+      vmap.set<std::vector<float>>("specular_roughness_values", *spec_roughness_values);
+      vmap.set<int>("num_roughness_levels", spec_roughness_values->size());
       vmap.set<datablock_ptr_t>("diffuse_datablock", diffuse_datablock);
       vmap.set<image_list_t>("debug_spec_images", debug_spec_images);
       vmap.set<image_list_t>("debug_diff_images", debug_diff_images);
     });
 
     logchan_gen->log("EnvMapProcessor: Packaging complete!");
-    logchan_gen->log("  Specular datablock size: %zu bytes", specular_datablock->length());
     logchan_gen->log("  Diffuse datablock size: %zu bytes", diffuse_datablock->length());
+    logchan_gen->log("  Specular roughness levels: %zu", specular_datablocks.size());
   });
 
   return graph;
@@ -642,21 +648,23 @@ xirprocessfuture_ptr_t EnvMapProcessor::processToXIRDataBlockAsync(const file::P
 
     auto on_graph_complete = [future](taskgraph_wkptr_t g) {
       // When graph completes, extract results and package as XIR
-      datablock_ptr_t specular_data;
+      std::vector<datablock_ptr_t> specular_datablocks;
+      std::vector<float> specular_roughness_values;
       datablock_ptr_t diffuse_data;
       image_list_t debug_spec_images;
       image_list_t debug_diff_images;
       datablock_ptr_t result_data;
 
       g.lock()->_varmap.atomicOp([&](varmap::VarMap& unlocked) {
-        specular_data     = unlocked.typedValueForKey<datablock_ptr_t>("specular_datablock").value();
-        diffuse_data      = unlocked.typedValueForKey<datablock_ptr_t>("diffuse_datablock").value();
+        specular_datablocks = unlocked.typedValueForKey<std::vector<datablock_ptr_t>>("specular_datablocks").value();
+        specular_roughness_values = unlocked.typedValueForKey<std::vector<float>>("specular_roughness_values").value();
+        diffuse_data = unlocked.typedValueForKey<datablock_ptr_t>("diffuse_datablock").value();
         debug_spec_images = unlocked.typedValueForKey<image_list_t>("debug_spec_images").value();
         debug_diff_images = unlocked.typedValueForKey<image_list_t>("debug_diff_images").value();
-        result_data       = xir::XIRWriter::writeXirDatablocks(diffuse_data, specular_data);
-      }); // g->_varmap.atomicOp([future](varmap::VarMap& unlocked) {
+        // Use new array writer
+        result_data = xir::XIRWriter::writeXirDatablocksWithArray(diffuse_data, specular_datablocks, specular_roughness_values);
+      });
       // Set debug images in the future
-      // Set the result in the future
       future->setDebugImages(debug_spec_images, debug_diff_images);
       future->setResult(result_data);
     };

@@ -52,6 +52,45 @@ datablock_ptr_t XIRWriter::writeXirDatablocks(
   return result;
 }
 
+datablock_ptr_t XIRWriter::writeXirDatablocksWithArray(
+    datablock_ptr_t diffuse_data,
+    const std::vector<datablock_ptr_t>& specular_datablocks,
+    const std::vector<float>& roughness_values) {
+  
+  logchan_xirio->log("Writing XIR with %zu specular roughness levels", specular_datablocks.size());
+  
+  chunkfile::Writer writer("xir-2.0");  // New version for array format
+  
+  // Add metadata
+  auto meta_stream = writer.AddStream("metadata");
+  meta_stream->AddItem<uint32_t>(2); // version 2 for array format
+  meta_stream->AddItem<uint32_t>(specular_datablocks.size()); // number of roughness levels
+  
+  // Add roughness values
+  auto roughness_stream = writer.AddStream("roughness_values");
+  for (float r : roughness_values) {
+    roughness_stream->AddItem<float>(r);
+  }
+  
+  // Add diffuse texture data
+  auto diffuse_stream = writer.AddStream("diffuse");
+  diffuse_stream->AddDataBlock(diffuse_data);
+  
+  // Add each specular roughness level
+  for (size_t i = 0; i < specular_datablocks.size(); i++) {
+    std::string stream_name = FormatString("specular_%zu", i);
+    auto spec_stream = writer.AddStream(stream_name.c_str());
+    spec_stream->AddDataBlock(specular_datablocks[i]);
+  }
+  
+  datablock_ptr_t result = std::make_shared<DataBlock>();
+  writer.writeToDataBlock(result);
+  
+  logchan_xirio->log("XIR array format datablock: %zu bytes", result->length());
+  
+  return result;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // XIRReader implementation
 ////////////////////////////////////////////////////////////////////////////////
@@ -63,22 +102,68 @@ XIRReader::XIRData XIRReader::readXirDatablocks(datablock_ptr_t xir_data) {
   chunkfile::DefaultLoadAllocator allocator;
   chunkfile::Reader reader(xir_data, allocator);
   
-  if (reader._chunkfiletype != "xir-1.0") {
-    return result;
+  // Check version
+  if (reader._chunkfiletype == "xir-2.0") {
+    // New array format
+    result._is_array_format = true;
+    
+    // Read metadata
+    if (auto meta_stream = reader.GetStream("metadata")) {
+      uint32_t version = 0;
+      uint32_t num_levels = 0;
+      meta_stream->GetItem(version);
+      meta_stream->GetItem(num_levels);
+      result._num_roughness_levels = num_levels;
+      
+      logchan_xirio->log("Reading XIR v2 with %d roughness levels", num_levels);
+    }
+    
+    // Read roughness values
+    if (auto roughness_stream = reader.GetStream("roughness_values")) {
+      result._roughness_values.resize(result._num_roughness_levels);
+      for (int i = 0; i < result._num_roughness_levels; i++) {
+        roughness_stream->GetItem(result._roughness_values[i]);
+      }
+    }
+    
+    // Read diffuse
+    if (auto stream = reader.GetStream("diffuse")) {
+      auto data = stream->readData(stream->GetLength());
+      result._diffuse_data = std::make_shared<DataBlock>(data.data(), data.size());
+    }
+    
+    // Read each specular roughness level
+    for (int i = 0; i < result._num_roughness_levels; i++) {
+      std::string stream_name = FormatString("specular_%d", i);
+      if (auto stream = reader.GetStream(stream_name.c_str())) {
+        auto data = stream->readData(stream->GetLength());
+        result._specular_datablocks.push_back(
+          std::make_shared<DataBlock>(data.data(), data.size())
+        );
+      }
+    }
+    
+    result._valid = result._diffuse_data && 
+                   (result._specular_datablocks.size() == result._num_roughness_levels);
+    
+  } else if (reader._chunkfiletype == "xir-1.0") {
+    // Legacy format
+    result._is_array_format = false;
+    
+    // Get raw datablocks
+    if (auto stream = reader.GetStream("diffuse")) {
+      auto data = stream->readData(stream->GetLength());
+      result._diffuse_data = std::make_shared<DataBlock>(data.data(), data.size());
+    }
+    
+    if (auto stream = reader.GetStream("specular")) {
+      auto data = stream->readData(stream->GetLength());
+      result._specular_data = std::make_shared<DataBlock>(data.data(), data.size());
+    }
+    
+    result._valid = result._diffuse_data && result._specular_data;
   }
   
-  // Get raw datablocks
-  if (auto stream = reader.GetStream("diffuse")) {
-    auto data = stream->readData(stream->GetLength());
-    result._diffuse_data = std::make_shared<DataBlock>(data.data(), data.size());
-  }
-  
-  if (auto stream = reader.GetStream("specular")) {
-    auto data = stream->readData(stream->GetLength());
-    result._specular_data = std::make_shared<DataBlock>(data.data(), data.size());
-  }
-  
-  result._valid = result._diffuse_data && result._specular_data;
   return result;
 }
 

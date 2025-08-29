@@ -602,7 +602,7 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
     std::vector<VkDescriptorBufferInfo> buffer_infos; // Keep alive during vkUpdateDescriptorSets
     
     // Reserve space to prevent reallocation
-    size_t estimated_buffer_count = 20; // Estimate max UBOs we might have
+    size_t estimated_buffer_count = 128; // Estimate max UBOs we might have
     buffer_infos.reserve(estimated_buffer_count);
     
     // First, handle textures/samplers

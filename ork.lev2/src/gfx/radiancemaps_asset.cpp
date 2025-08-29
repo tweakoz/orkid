@@ -65,63 +65,83 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
     return nullptr;
   }
   
-  printf("XIR data valid, diffuse size: %zu, specular size: %zu\n", 
-         xir_data_result._diffuse_data->length(),
-         xir_data_result._specular_data->length());
-  
-  // Debug: Check first few bytes of diffuse data to see format
-  if (xir_data_result._diffuse_data->length() > 64) {
-    printf("XIR Diffuse data first 64 bytes:\n");
-    hexdumpbytes(xir_data_result._diffuse_data->data(), 64);
+  if (!xir_data_result._is_array_format) {
+    printf("ERROR: XIR v1 legacy format no longer supported. Please regenerate radiance maps.\n");
+    return nullptr;
   }
   
   // Create asset
   auto asset = std::make_shared<RadianceMapsAsset>();
   auto irrmaps = std::make_shared<pbr::RadianceMaps>();
   asset->_radiance_maps = irrmaps;
-
   
-  // Create textures (CPU only, no GPU resources yet)
-  auto diffuse_tex = std::make_shared<Texture>();
-  auto specular_tex = std::make_shared<Texture>();
-  diffuse_tex->_debugName = loadreq->_asset_path.getName() + ".ibldiff";
-  specular_tex->_debugName = loadreq->_asset_path.getName() + ".iblspec";
+  printf("XIR v2 array format: diffuse size: %zu, %d roughness levels\n", 
+         xir_data_result._diffuse_data->length(),
+         xir_data_result._num_roughness_levels);
+  
   // Extract base name from asset path for texture naming
   std::string base_name = loadreq->_asset_path.getName();
   
-  // Parse XTX data into CompressedImageMipChains
+  // Parse diffuse data
   auto diffuse_cmipchain = std::make_shared<CompressedImageMipChain>();
   diffuse_cmipchain->readXTX(xir_data_result._diffuse_data);
   
-  auto specular_cmipchain = std::make_shared<CompressedImageMipChain>();
-  specular_cmipchain->readXTX(xir_data_result._specular_data);
+  auto diffuse_tex = std::make_shared<Texture>();
+  diffuse_tex->_debugName = base_name + ".ibldiff";
   
+  // Parse specular roughness array
+  std::vector<image_ptr_t> specular_images;
+  int num_roughness_levels = xir_data_result._num_roughness_levels;
+  
+  for(int i = 0; i < num_roughness_levels; i++) {
+    // Read single-level XTX for each roughness
+    auto cmipchain = std::make_shared<CompressedImageMipChain>();
+    cmipchain->readXTX(xir_data_result._specular_datablocks[i]);
+    
+    // Convert to Image for texture array
+    auto image = std::make_shared<Image>();
+    cmipchain->_levels[0].convertToImage(*image);
+    specular_images.push_back(image);
+  }
+  
+  // Create texture array for specular
+  auto specular_texarray = std::make_shared<TextureArray>();
+  specular_texarray->_tex->_debugName = base_name + ".iblspec_array";
+  
+  // Set radiance map properties
+  irrmaps->_numRoughnessLevels = num_roughness_levels;
+  irrmaps->_specularRoughnessValues = xir_data_result._roughness_values;
+  
+  // Queue GPU operations
+  // Diffuse upload
   auto diffuse_loadreq = std::make_shared<TexLoadReq>();
   diffuse_loadreq->ptex = diffuse_tex;
   diffuse_loadreq->_cmipchain = diffuse_cmipchain;
   diffuse_loadreq->_texname = base_name + ".irrdiff";
   
-  // TODO << this needs to be a Texture Array !
-  auto specular_loadreq = std::make_shared<TexLoadReq>();
-  specular_loadreq->ptex = specular_tex;
-  specular_loadreq->_cmipchain = specular_cmipchain;
-  specular_loadreq->_texname = base_name + ".irrspec";
-  
-  // Queue deferred GPU upload operations to GfxEnv
-  // These will be executed at the beginning of the next frame with a context
   GfxEnv::GetRef().enqueueDeferredContextOp(
     [diffuse_loadreq](Context* ctx) {
       auto txi = ctx->TXI();
       txi->_createFromLoadReq(diffuse_loadreq);
     });
     
+  // Specular array upload (using existing method like PBRMaterial)
   GfxEnv::GetRef().enqueueDeferredContextOp(
-    [specular_loadreq](Context* ctx) {
+    [specular_texarray, specular_images, num_roughness_levels](Context* ctx) {
+      
+      // Use EXISTING initTextureArray2DFromData (same as PBRMaterial)
+      TextureArrayInitData TID;
+      TID._slices.resize(num_roughness_levels);
+      
+      for(int i = 0; i < num_roughness_levels; i++) {
+        // Use CRC for usage ID, similar to PBRMaterial
+        uint32_t usage_id = CrcString(FormatString("roughness_%d", i).c_str()).hashed();
+        TID._slices[i] = TextureArrayInitSubItem{usage_id, specular_images[i]};
+      }
+      
       auto txi = ctx->TXI();
-      txi->_createFromLoadReq(specular_loadreq);
+      txi->initTextureArray2DFromData(specular_texarray.get(), TID);
     });
-  
-  // Store textures in asset
   
   // Set asset path
   asset->_name = loadreq->_asset_path.toStdString();
@@ -133,14 +153,16 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
   auto brdfIntegrationMapPhong = PBRMaterial::brdfIntegrationMap(gloadercontext.get(),"PHONG");
 
   irrmaps->_filtenvDiffuseMap = diffuse_tex;
-  irrmaps->_filtenvSpecularMap = specular_tex;
+  irrmaps->_filtenvSpecularMapArray = specular_texarray;  // Use array instead of single texture
   irrmaps->_brdfIntegrationMapGGX = brdfIntegrationMapGGX;
   irrmaps->_brdfIntegrationMapVelvet = brdfIntegrationMapVelvet;
   irrmaps->_brdfIntegrationMapGGXRIM = brdfIntegrationMapRim;
   irrmaps->_brdfIntegrationMapBlinn = brdfIntegrationMapBlinn;
   irrmaps->_brdfIntegrationMapPhong = brdfIntegrationMapPhong;
 
-  printf("XIR asset<%p> irrmaps<%p> dtex<%p> stex<%p>\n", (void*) asset.get(), (void*) irrmaps.get(),diffuse_tex.get(), specular_tex.get() );
+  printf("XIR asset<%p> irrmaps<%p> dtex<%p> stexarray<%p> roughness_levels<%d>\n", 
+         (void*) asset.get(), (void*) irrmaps.get(), diffuse_tex.get(), 
+         specular_texarray.get(), num_roughness_levels);
 
   return asset;
 }
