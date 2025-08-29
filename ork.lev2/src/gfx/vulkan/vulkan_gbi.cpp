@@ -27,6 +27,9 @@ int VulkanVertexBuffer::pipelineBitsForFormat() const {
     case EVtxStreamFormat::V16T16C16:
       rval = 3;
       break;
+    case EVtxStreamFormat::V12T8:
+      rval = 4;
+      break;
     default:
       OrkAssert(false);
       break;
@@ -85,6 +88,7 @@ VkGeometryBufferInterface::VkGeometryBufferInterface(vkcontext_rawptr_t ctx)
   _instantiateVertexStreamConfig(EVtxStreamFormat::V12N12B12T16);
   _instantiateVertexStreamConfig(EVtxStreamFormat::V12N12B12T8C4);
   _instantiateVertexStreamConfig(EVtxStreamFormat::V16T16C16);
+  _instantiateVertexStreamConfig(EVtxStreamFormat::V12T8);
   ////////////////////////////////////////////////////////////////
   auto create_primclass = [&](PrimitiveType etype) -> vkprimclass_ptr_t {
     auto rval            = std::make_shared<VkPrimitiveClass>();
@@ -192,6 +196,12 @@ vertex_strconfig_ptr_t VkGeometryBufferInterface::_instantiateVertexStreamConfig
       config->addItem("TEXCOORD0", "vec4", sizeof(fvec4), 16, VK_FORMAT_R32G32B32A32_SFLOAT);
       config->addItem("COLOR0", "vec4", sizeof(fvec4), 32, VK_FORMAT_R32G32B32A32_SFLOAT);
       config->_stride = sizeof(SVtxV16T16C16);
+      break;
+    }
+    case EVtxStreamFormat::V12T8:{
+      config->addItem("POSITION", "vec3", sizeof(fvec3), 0, VK_FORMAT_R32G32B32_SFLOAT);
+      config->addItem("TEXCOORD0", "vec2", sizeof(fvec2), 12, VK_FORMAT_R32G32_SFLOAT);
+      config->_stride = sizeof(VtxV12T8);
       break;
     }
     default:
