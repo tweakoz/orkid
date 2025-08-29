@@ -187,8 +187,8 @@ void CommonStuff::_writeEnvTexture(asset::asset_ptr_t const& tex) {
   assignEnvTexture(tex);
 }
 ///////////////////////////////////////////////////////////////////////////////
-lev2::texture_ptr_t CommonStuff::envSpecularTexture() const {
-  return _radiance_maps->_filtenvSpecularMap;
+lev2::texturearray_ptr_t CommonStuff::envSpecularTexture() const {
+  return _radiance_maps->_filtenvSpecularMapArray;
 }
 ///////////////////////////////////////////////////////////////////////////////
 lev2::texture_ptr_t CommonStuff::envDiffuseTexture() const {

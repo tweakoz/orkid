@@ -164,7 +164,7 @@ struct PbrNodeImpl {
 
       _context->_lightingmtl->bindParamTexture(_context->_parMapDepth, rtg_gbuffer->_depthBuffer->_texture.get());
 
-      _context->_lightingmtl->bindParamTexture(_context->_parMapSpecularEnv, pbrcommon->envSpecularTexture().get());
+      _context->_lightingmtl->bindParamTextureArray(_context->_parMapSpecularEnv, pbrcommon->envSpecularTexture().get());
       _context->_lightingmtl->bindParamTexture(_context->_parMapDiffuseEnv, pbrcommon->envDiffuseTexture().get());
 
       OrkAssert(_context->brdfIntegrationTexture() != nullptr);

@@ -327,7 +327,7 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
         }
         case "RCFD_PBR_SPECULAR_ENV"_crcu: {
           auto the_tex = pbrcommon->envSpecularTexture().get();
-          FXI->bindParamTexture(param, the_tex);
+          FXI->bindParamTextureArray(param, the_tex);
           break;
         }
         case "RCFD_PBR_BLACK_2DMAP"_crcu: {

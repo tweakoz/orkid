@@ -201,6 +201,7 @@ struct TextureArray {
   size_t _width = 0;
   size_t _height = 0;
   size_t _maxslices = 0;
+  int _num_mips = 1;
   bool _requires_mips = false;
   bool _needsRadianceCache = false;
   EBufferFormat _format = EBufferFormat::RGB8;

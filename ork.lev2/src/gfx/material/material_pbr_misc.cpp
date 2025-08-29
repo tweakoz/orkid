@@ -51,7 +51,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineSKY(const FxPipelinePermutation& 
     auto pbrcommon = RCFD->_pbrcommon;
     auto envtex    = pbrcommon->envSpecularTexture();
 
-    FXI->bindParamTexture(this->_parMapSpecularEnv, envtex.get());
+    FXI->bindParamTextureArray(this->_parMapSpecularEnv, envtex.get());
 
     basic_lambda(RCID);
     mut->_rasterstate->setCullTest(ECullTest::OFF);

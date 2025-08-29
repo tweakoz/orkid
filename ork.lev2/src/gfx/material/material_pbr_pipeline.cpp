@@ -76,15 +76,15 @@ FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl) {
       pbrcommon = mtl->_commonOverride;
     }
     auto spec_tex  = pbrcommon->envSpecularTexture();
-    float num_mips = spec_tex->_num_mips;
+    float num_mips = spec_tex ? spec_tex->_num_mips : 1.0f;
 
     FXI->bindParamVect3(mtl->_paramAmbientLevel, pbrcommon->_ambientLevel);
     FXI->bindParamFloat(mtl->_paramSpecularLevel, pbrcommon->_specularLevel);
     FXI->bindParamFloat(mtl->_parSpecularMipBias, pbrcommon->_specularMipBias);
     FXI->bindParamFloat(mtl->_paramDiffuseLevel, pbrcommon->_diffuseLevel);
     FXI->bindParamFloat(mtl->_paramSkyboxLevel, pbrcommon->_skyboxLevel);
-    // printf("pbrcommon<%s> _skyboxLevel<%f>\n", pbrcommon->_name.c_str(), pbrcommon->_skyboxLevel);
-    FXI->bindParamTexture(mtl->_parMapSpecularEnv, spec_tex.get());
+    //printf("pbrcommon<%s> spec_tex<%p>\n", pbrcommon->_name.c_str(), (void*) spec_tex.get());
+    FXI->bindParamTextureArray(mtl->_parMapSpecularEnv, spec_tex.get());
     FXI->bindParamTexture(mtl->_parMapDiffuseEnv, pbrcommon->envDiffuseTexture().get());
 
     FXI->bindParamFloat(mtl->_parMapSpecularRufLevels, PBRMaterial::roughnessLevels);

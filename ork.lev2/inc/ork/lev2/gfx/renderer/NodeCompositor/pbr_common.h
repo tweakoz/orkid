@@ -50,7 +50,6 @@ struct PointLight {
 
 struct RadianceMaps {
 
-  texture_ptr_t _filtenvSpecularMap;  // Legacy single texture
   texturearray_ptr_t _filtenvSpecularMapArray;  // New: texture array with roughness slices
   texture_ptr_t _filtenvDiffuseMap;
   texture_ptr_t _brdfIntegrationMapGGX;
@@ -76,7 +75,7 @@ struct CommonStuff : public ork::Object {
   void setEnvTexturePath(file::Path path);
 
   void assignEnvTexture(asset::asset_ptr_t texasset);
-  lev2::texture_ptr_t envSpecularTexture() const;
+  lev2::texturearray_ptr_t envSpecularTexture() const;
   lev2::texture_ptr_t envDiffuseTexture() const;
 
   lev2::texture_ptr_t ssaoKernel(lev2::Context* ctx, int seed);

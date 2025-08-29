@@ -23,7 +23,7 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
   auto irrmap_type =
       py::class_<pbr::RadianceMaps, pbr::radiancemaps_ptr_t>(module_lev2, "RadianceMap")
           .def(py::init<>())
-          .def_property_readonly("specular", [](pbr::radiancemaps_ptr_t m) -> texture_ptr_t { return m->_filtenvSpecularMap; })
+          .def_property_readonly("specular", [](pbr::radiancemaps_ptr_t m) -> texturearray_ptr_t { return m->_filtenvSpecularMapArray; })
           .def_property_readonly("diffuse", [](pbr::radiancemaps_ptr_t m) -> texture_ptr_t { return m->_filtenvDiffuseMap; })
           .def_property_readonly("brdf_ggx", [](pbr::radiancemaps_ptr_t m) -> texture_ptr_t { return m->_brdfIntegrationMapGGX; })
           .def_property_readonly(

@@ -87,12 +87,12 @@ sampler_set sset_std_lighting (descriptor_set 0) {
 ///////////////////////////////////////////////////////////////
 sampler_set sset_std_pbr(descriptor_set 0) {
   //////////////////////////////
-  sampler2DArray CNMREA;         
+  sampler2DArray CNMREA; // slices: albedo, normal,mtlruf,emission,AO
   samplerCube reflectionPROBE;
   samplerCube RadiancePROBE;
   sampler2D MapBrdfIntegration; 
   sampler2D MapDiffuseEnv;      
-  sampler2D MapSpecularEnv;
+  sampler2DArray MapSpecularEnv; // 1 slice per roughness level
 }
 ///////////////////////////////////////////////////////////////
 uniform_block ublk_std_lighting(descriptor_set 0) {

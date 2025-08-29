@@ -199,6 +199,9 @@ void FreestyleMaterial::bindParam(const FxShaderParam* param, const varval_t& va
     } else if (auto as_texture = val.tryAs<texture_ptr_t>()) {
       auto texture = as_texture.value();
       FXI->bindParamTexture(param, texture.get());
+    } else if (auto as_texturearray = val.tryAs<texturearray_ptr_t>()) {
+      auto texture = as_texturearray.value();
+      FXI->bindParamTextureArray(param, texture.get());
     } else if (auto as_bool_ = val.tryAs<bool>()) {
       FXI->bindParamBool(param, as_bool_.value());
     } else if (auto as_float_ = val.tryAs<float>()) {
@@ -252,6 +255,12 @@ void FreestyleMaterial::bindParamTexture(const FxShaderParam* par, const Texture
   OrkAssert(par);
   auto fxi = _initialTarget->FXI();
   fxi->bindParamTexture(par, tex);
+}
+///////////////////////////////////////////////////////////////////////////////
+void FreestyleMaterial::bindParamTextureArray(const FxShaderParam* par, const TextureArray* tex) {
+  OrkAssert(par);
+  auto fxi = _initialTarget->FXI();
+  fxi->bindParamTextureArray(par, tex);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::bindParamVec2(const FxShaderParam* par, const fvec2& v) {

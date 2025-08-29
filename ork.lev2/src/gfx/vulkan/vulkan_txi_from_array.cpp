@@ -452,6 +452,7 @@ void VkTextureInterface::initTextureArray2D(TextureArray* texture_array) {
       lh = lh >> 1;
       num_levels++;
     }
+    texture_array->_num_mips = num_levels;
   }
 
   // Create texture object
