@@ -286,7 +286,7 @@ std::pair<std::string, std::string> CatalogImpl::parseAssetId(const assetid_t& f
   if (last_sep != std::string::npos) {
     // Everything before last :: is the namespace path
     // Everything after last :: is the asset path
-    return {fq_asset_id.substr(0, last_sep), fq_asset_id.substr(last_sep + 2)};
+    return {fq_asset_id.substr(0, last_sep), fq_asset_id.substr(last_sep + 1)};
   }
   // No :: found, so no namespace - asset is in root namespace
   return {"", fq_asset_id};
