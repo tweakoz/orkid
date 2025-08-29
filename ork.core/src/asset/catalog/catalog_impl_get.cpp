@@ -562,7 +562,7 @@ void CatalogImpl::handleAssetPak(datablock_ptr_t _data, AssetResult& result, fet
           std::string json_str = manifest.dump(2);
           fwrite(json_str.c_str(), 1, json_str.length(), fp);
           fclose(fp);
-          logchan_catalog->log("Created local manifest: %s", manifest_path.c_str());
+          logchan_catalog->log("A: Created local manifest: %s", manifest_path.c_str());
         }
       }
       

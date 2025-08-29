@@ -96,7 +96,7 @@ FxUniformBuffer* PBRMaterial::boneDataBuffer(Context* targ) {
 
 /////////////////////////////////////////////////////////////////////////
 
-static texture_ptr_t _getbrdfintmap(Context* targ, uint64_t type) {
+static texture_ptr_t _getbrdfintmap(Context* targ, std::string typname, uint64_t type) {
   texture_ptr_t _map;
 
   targ->makeCurrentContext();
@@ -104,7 +104,7 @@ static texture_ptr_t _getbrdfintmap(Context* targ, uint64_t type) {
 
   uint64_t LOCK = lev2::GfxEnv::createLock();
 
-  _map->_debugName = "brdfIntegrationMap";
+  _map->_debugName = FormatString("brdfIntegrationMap:%s", typname.c_str());
 
 #if defined(__APPLE__)
   constexpr int DIM = 512;
@@ -120,13 +120,35 @@ static texture_ptr_t _getbrdfintmap(Context* targ, uint64_t type) {
   auto brdfhasher = DataBlock::createHasher();
   brdfhasher->accumulateString(_map->_debugName); // identifier
   brdfhasher->accumulateItem<uint64_t>(type);         // version code
-  brdfhasher->accumulateItem<float>(1.0);         // version code
+  brdfhasher->accumulateItem<float>(0.99);         // version code
   brdfhasher->accumulateItem<float>(DIM);         // dimension
   brdfhasher->finish();
   uint64_t brdfhash = brdfhasher->result();
   // logchan_pbrgen->log("brdfIntegrationMap hashkey<%zx>", brdfhash);
   datablock_ptr_t dblock = DataBlockCache::findDataBlock(brdfhash);
   if (dblock) {
+    switch(type) {
+      case "BLINN"_crcu: {
+        logchan_pbrgen->log("brdfIntegrationMap BLINN loaded from cache");
+        break;
+      }
+      case "GGX"_crcu: {
+        logchan_pbrgen->log("brdfIntegrationMap GGX loaded from cache");
+        break;
+      }
+      case "GGXVELVET"_crcu: {
+        logchan_pbrgen->log("brdfIntegrationMap GGXVELVET loaded from cache");
+        break;
+      }
+      case "GGXRIM"_crcu: {
+        logchan_pbrgen->log("brdfIntegrationMap GGXRIM loaded from cache");
+        break;
+      }
+      case "PHONG"_crcu: {
+        logchan_pbrgen->log("brdfIntegrationMap PHONG loaded from cache");
+        break;
+      }
+    }
     // loaded from cache
     // logchan_pbrgen->log("brdfIntegrationMap loaded from cache");
   } else { // recompute and cache
@@ -160,7 +182,8 @@ static texture_ptr_t _getbrdfintmap(Context* targ, uint64_t type) {
       }
       case "PHONG"_crcu: {
         printf( "GENERATING PHONG BRDF INTEGRATION MAP\n");
-        generator = [](double fx, double fy) -> dvec2 { return brdf::integratePhongLike<4096>(fx, fy); };
+        generator = [](double fx, double fy) -> dvec2 { return brdf::integrateGGXStrongRim<4096>(fx, fy); };
+        //generator = [](double fx, double fy) -> dvec2 { return brdf::integratePhongLike<4096>(fx, fy); };
         break;
       }
     }
@@ -173,15 +196,15 @@ static texture_ptr_t _getbrdfintmap(Context* targ, uint64_t type) {
           float fx = float(x) / float(DIM - 1);
           dvec3 output = generator(fx, fy);
           int texidxbase         = (ybase + x) * 4;
-          texels[texidxbase + 0] = float(output.x);
-          texels[texidxbase + 1] = float(output.y);
-          texels[texidxbase + 2] = float(output.z);
+          texels[texidxbase + 0] = fx; //float(output.x);
+          texels[texidxbase + 1] = fy; //float(output.y);
+          texels[texidxbase + 2] = 0.0f; //float(output.z);
           texels[texidxbase + 3] = 1.0f;
         }
       });
     }
     group->join();
-    // logchan_pbrgen->log("End Compute brdfIntegrationMap");
+    logchan_pbrgen->log("End Compute brdfIntegrationMap");
     fflush(stdout);
     DataBlockCache::setDataBlock(brdfhash, dblock);
   }
@@ -190,8 +213,8 @@ static texture_ptr_t _getbrdfintmap(Context* targ, uint64_t type) {
   // verify (debug)
   ///////////////////////////////
 
-  if (0) {
-    auto outpath = file::Path::temp_dir() / "brdftest.exr";
+  if (1) {
+    auto outpath = file::Path::temp_dir() / FormatString("brdftest%zx.exr",type);
     auto out     = ImageOutput::create(outpath.c_str());
     assert(out != nullptr);
     ImageSpec spec(DIM, DIM, 4, TypeDesc::FLOAT);
@@ -201,16 +224,17 @@ static texture_ptr_t _getbrdfintmap(Context* targ, uint64_t type) {
   }
 
   ///////////////////////////////
-
-  TextureInitData tid;
-  tid._w           = DIM;
-  tid._h           = DIM;
-  tid._src_format  = EBufferFormat::RGBA32F;
-  tid._dst_format  = EBufferFormat::RGBA32F;
-  tid._autogenmips = true;
-  tid._data        = dblock->data();
-
-  targ->TXI()->initTextureFromData(_map.get(), tid);
+  auto enq_op = [DIM,dblock,_map](Context* ctx) {
+      TextureInitData tid;
+      tid._w           = DIM;
+      tid._h           = DIM;
+      tid._src_format  = EBufferFormat::RGBA32F;
+      tid._dst_format  = EBufferFormat::RGBA32F;
+      tid._autogenmips = false;
+      tid._data        = dblock->data();
+      ctx->TXI()->initTextureFromData(_map.get(), tid);
+  };
+  GfxEnv::GetRef().enqueueDeferredContextOp(enq_op);
   lev2::GfxEnv::releaseLock(LOCK);
   return _map;
 }
@@ -218,17 +242,18 @@ static texture_ptr_t _getbrdfintmap(Context* targ, uint64_t type) {
 /////////////////////////////////////////////////////////////////////////
 
 texture_ptr_t PBRMaterial::brdfIntegrationMap(Context* targ,std::string type) {
-  static std::unordered_map<uint64_t,texture_ptr_t> _maps;
   uint64_t type_hash = CrcString(type.c_str()).hashed();
+  uint64_t vhash = (type_hash) ^ uint64_t(type_hash);
 
-  auto it = _maps.find(type_hash);
+  static std::unordered_map<uint64_t,texture_ptr_t> _maps;
+
+  auto it = _maps.find(vhash);
   if( it != _maps.end() ){
     return it->second;
   }
   else{
-    auto new_tex = _getbrdfintmap(targ,type_hash);
-    new_tex->_debugName = FormatString("brdfIntegrationMap<%s>", type.c_str());
-    _maps[type_hash] = new_tex;
+    auto new_tex = _getbrdfintmap(targ,type,type_hash);
+    _maps[vhash] = new_tex;
     return new_tex;
   }
 }

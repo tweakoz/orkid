@@ -628,19 +628,19 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
     }
     
     // Now handle UBOs from merged resources  
-    printf("UBO_DESC_CHECK: _currentVKPASS<%p>\n", (void*)_ctxVK->_fxi->_currentVKPASS.get());
+    if(0)printf("UBO_DESC_CHECK: _currentVKPASS<%p>\n", (void*)_ctxVK->_fxi->_currentVKPASS.get());
     if (_ctxVK->_fxi->_currentVKPASS) {
-      printf("UBO_DESC_CHECK: _merged_resources<%p>\n", (void*)_ctxVK->_fxi->_currentVKPASS->_merged_resources.get());
+      if(0)printf("UBO_DESC_CHECK: _merged_resources<%p>\n", (void*)_ctxVK->_fxi->_currentVKPASS->_merged_resources.get());
     }
     if (_ctxVK->_fxi->_currentVKPASS && _ctxVK->_fxi->_currentVKPASS->_merged_resources) {
       auto merged_resources = _ctxVK->_fxi->_currentVKPASS->_merged_resources;
       auto vk_program = _ctxVK->_fxi->_currentVKPASS->_vk_program;
-      printf("UBO_DESC_CHECK: Found merged_resources with %zu descriptor sets\n", merged_resources->descriptor_sets.size());
+      if(0)printf("UBO_DESC_CHECK: Found merged_resources with %zu descriptor sets\n", merged_resources->descriptor_sets.size());
       
       for (const auto& [set_id, sources] : merged_resources->descriptor_sets) {
         for (const auto& source : sources) {
           for (const auto& binding : source->bindings) {
-            printf("UBO_DESC_CHECK: Binding<%s> type<%d> UniformBlock=%d\n",
+            if(0)printf("UBO_DESC_CHECK: Binding<%s> type<%d> UniformBlock=%d\n",
                    binding->name.c_str(),
                    (int)binding->type,
                    (int)VkMergedResourceBinding::Type::UniformBlock);
@@ -649,17 +649,17 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
               VkFxShaderUniformBlk* ubo_block = nullptr;
               
               // Search in the program's uniform blocks
-              printf("UBO_DESC_CHECK: Looking for UBO<%s> in program's _vk_uniformblks\n", binding->name.c_str());
+              if(0)printf("UBO_DESC_CHECK: Looking for UBO<%s> in program's _vk_uniformblks\n", binding->name.c_str());
               auto it = vk_program->_vk_uniformblks.find(binding->name);
               if (it != vk_program->_vk_uniformblks.end()) {
                 ubo_block = it->second.get();
-                printf("UBO_DESC_CHECK: Found UBO<%s> ptr<%p>\n", binding->name.c_str(), (void*)ubo_block);
+                if(0)printf("UBO_DESC_CHECK: Found UBO<%s> ptr<%p>\n", binding->name.c_str(), (void*)ubo_block);
               } else {
-                printf("UBO_DESC_CHECK: UBO<%s> NOT FOUND in _vk_uniformblks\n", binding->name.c_str());
+                if(0)printf("UBO_DESC_CHECK: UBO<%s> NOT FOUND in _vk_uniformblks\n", binding->name.c_str());
               }
               
               if (ubo_block) {
-                printf("UBO_DESC_CHECK: UBO<%s> _gpu_buffer<%p> _buffer_size<%zu>\n",
+                if(0)printf("UBO_DESC_CHECK: UBO<%s> _gpu_buffer<%p> _buffer_size<%zu>\n",
                        binding->name.c_str(),
                        (void*)ubo_block->_gpu_buffer,
                        ubo_block->_buffer_size);
@@ -684,13 +684,13 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
                 DWRITE.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
                 DWRITE.pBufferInfo     = &buffer_infos.back();
                 
-                printf("UBO_DESC_UPDATE: ubo<%s> binding<%d> buffer<%p> size<%zu>\n",
+                if(0)printf("UBO_DESC_UPDATE: ubo<%s> binding<%d> buffer<%p> size<%zu>\n",
                        binding->name.c_str(), binding->binding_id,
                        (void*)ubo_block->_gpu_buffer, ubo_block->_buffer_size);
                 
                 descriptor_writes.push_back(DWRITE);
               } else if (ubo_block) {
-                printf("UBO_DESC_CHECK: SKIPPING UBO<%s> - no GPU buffer\n", binding->name.c_str());
+                if(0)printf("UBO_DESC_CHECK: SKIPPING UBO<%s> - no GPU buffer\n", binding->name.c_str());
               }
             }
           }

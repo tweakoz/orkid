@@ -24,8 +24,8 @@ InFlightTextureTransfer::InFlightTextureTransfer(vkcontext_rawptr_t ctx, //
   , _command_buffer(cmd_buffer) { //
   int count = _xfercount.fetch_add(1);
   int SN = _xferSN.fetch_add(1);
-  if((SN&0xfff)==0){
-    logchan_txidata->log("InFlightTextureTransfer count<%d> SN<%d>", count, SN);
+  if(1){ //(SN&0xfff)==0){
+    logchan_txidata->log("InFlightTextureTransfer ctx<%p> count<%d> SN<%d>", (void*) ctx, count, SN);
   }
   auto cmdbuf_impl = _command_buffer->_impl.getShared<VkSecondaryCommandBufferImpl>();
 
@@ -76,7 +76,7 @@ secondary_commandbuffer_ptr_t SecCmdBufPoolAdapter::allocFresh() {
 void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid) {
 
   //ptex->_debugName = "VkTextureInterface::initTextureFromData";
-
+  bool is_brdf = ptex->_debugName.find("brdfIntegrationMap") != std::string::npos;
   /////////////////////////////////////
   // Handle format conversion for macOS
   /////////////////////////////////////
@@ -146,6 +146,19 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   // asynchronously copy data from host to staging buffer
   /////////////////////////////////////
 
+  // Debug logging for RGBA32F textures
+  if (tid._dst_format == EBufferFormat::RGBA32F && !ptex->_debugName.empty()) {
+    if(is_brdf)logchan_txidata->log("Uploading RGBA32F texture <%p:%s> size<%zux%zu> data<%p>", 
+                         (void*) ptex, ptex->_debugName.c_str(), tid._w, tid._h, tid._data);
+    // Verify data is not all zeros
+    const float* float_data = (const float*)tid._data;
+    float sum = 0.0f;
+    for (size_t i = 0; i < 16; i++) { // Check first 16 floats
+      sum += std::abs(float_data[i]);
+    }
+    if(is_brdf)logchan_txidata->log("  First 16 floats sum: %f", sum);
+  }
+
   std::atomic<bool> staging_buffer_ready = false;
   auto copy_op = [=,&staging_buffer_ready]() {
     if (needs_conversion) {
@@ -188,7 +201,21 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       staging_buffer->unmap();
     } else {
       // Direct copy
+        if(is_brdf){
+          logchan_txidata->log(" _contextVK<%p> hash_changed<%d>  DIRECT COPY size<%zu>", (void*) _contextVK, int(hash_changed), transfer_size);
+        }
       staging_buffer->copyFromHost(tid._data, transfer_size);
+      // Debug: verify copy for RGBA32F
+      if (tid._dst_format == EBufferFormat::RGBA32F && !ptex->_debugName.empty()) {
+        void* verify_data = staging_buffer->map(0, 64, 0); // Map first 64 bytes
+        const float* staged = (const float*)verify_data;
+        float sum = 0.0f;
+        for (size_t i = 0; i < 16; i++) {
+          sum += std::abs(staged[i]);
+        }
+        if(is_brdf)logchan_txidata->log("  Staging buffer verification sum: %f", sum);
+        staging_buffer->unmap();
+      }
     }
     staging_buffer_ready.store(true);
   };
@@ -276,7 +303,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   /////////////////////////////////////
 
   vktex->_vksampler = _contextVK->_sampler_base;
-  // vktex->_vkdescriptor_info.sampler     = vktex->_vksampler->_vksampler;
+  vktex->_vkdescriptor_info.sampler     = vktex->_vksampler->_vksampler;
 
   /////////////////////////////////////
   // record transition to transfer destination (for copy)

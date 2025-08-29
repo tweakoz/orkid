@@ -166,6 +166,7 @@ int main(int argc, char** argv,char** envp) {
   ezapp->onDraw([&](ui::drawevent_constptr_t drwev) {
     auto context        = drwev->GetTarget();
     auto fbi            = context->FBI(); // FrameBufferInterface
+    auto dwi            = context->DWI();
     float fi = abstime * 0.33f;
     float r             = sinf(fi * 2.1f) * 0.25f + 0.5f;
     float g             = cosf(fi * 3.13f) * 0.25f + 0.5f;
@@ -186,9 +187,8 @@ int main(int argc, char** argv,char** envp) {
     M.rotateOnZ(abstime*0.25f);
     resources->_material->bindParamMatrix(resources->_fxparameterMVP, P*V*M);
     resources->_material->bindParamTexture(resources->_fxparameterTexture, resources->_texture.get());
-    appwin->Render2dQuadEML( fvec4(-.75, -.75, 1.5, 1.5), // quad in NDC
-                             fvec4(0, 0, 1, 1),   // uv0rect
-                             fvec4(0, 0, 1, 1));  // uv1rect
+    dwi->fullscreenQuad( fvec4(0, 0, 1, 1),   // uv0rect
+                         fvec4(0, 0, 1, 1));  // uv1rect
     resources->_material->end(RCFD);    
 
     //::usleep(1<<20); // sleep 1ms to avoid hogging the CPU

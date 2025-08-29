@@ -12,8 +12,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_txidata = logger()->configureChannel("VKTXIDAT", fvec3(0.8, 0.2, 0.5), true);
-static logchannel_ptr_t logchan_txia2d  = logger()->configureChannel("VKTEXARRAY", fvec3(0.8, 0.5, 0.2), true);
+static logchannel_ptr_t logchan_txidata = logger()->configureChannel("VKTXIDAT2", fvec3(0.8, 0.2, 0.5), false);
+static logchannel_ptr_t logchan_txia2d  = logger()->configureChannel("VKTEXARRAY", fvec3(0.8, 0.5, 0.2), false);
 constexpr bool DEBUG_TEXARRAY2D = false;
 ///////////////////////////////////////////////////////////////////////////////
 

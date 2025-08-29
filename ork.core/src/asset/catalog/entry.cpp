@@ -507,7 +507,7 @@ void AssetEntry::repackage() {
     if (manifest_file.is_open()) {
       manifest_file << local_manifest.dump(2);
       manifest_file.close();
-      logchan_catalog->log("Created local manifest: %s", manifest_path.c_str());
+      logchan_catalog->log("B: Created local manifest: %s", manifest_path.c_str());
     }
   }
 }
