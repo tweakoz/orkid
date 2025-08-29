@@ -291,7 +291,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipeline(const FxPipelinePermutation& per
   /////////////////////////////////////////////////////////////////////////////
 
   if (pipeline and pipeline->_technique) {
-
+    printf("pipetech:%s\n", pipeline->_technique->_techniqueName.c_str());
     pipeline->bindParam(mtl->_paramMROT, "RCFD_Model_Rot"_crcsh);
 
     auto require_pbr = mtl->_vars->typedValueForKey<bool>("requirePBRparams");

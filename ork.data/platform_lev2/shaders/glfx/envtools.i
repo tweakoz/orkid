@@ -69,7 +69,7 @@ libblock lib_envmapping
     vec3 n  = vec3(normal.x, normal.z, normal.y);
     vec2 uv = env_equirectangularN2UV(n);
     //float level = textureQueryLod(envtex, uv).x+bias;
-    return texture(envtex, vec3(-uv.x, -uv.y,slice+3)).xyz;
+    return textureLod(envtex, vec2(-uv.x, -uv.y),0).xyz;
   }
   vec3 env_equirectangular_spec(vec3 normal, sampler2DArray envtex, float slice) {
     vec3 n  = vec3(normal.x, normal.z, normal.y);

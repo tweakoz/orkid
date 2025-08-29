@@ -44,6 +44,7 @@ void ForwardPbrNodeImpl::_render_skybox(forward_pass_ptr_t fpass) {
   auto FBI      = context->FBI();
   auto FXI      = context->FXI();
   auto GBI      = context->GBI();
+  auto DWI      = context->DWI();
 
   context->debugPushGroup("ForwardPBR::skybox pass");
   //printf("render skybox rtg<%p>\n", (void*)rtg_out.get());
@@ -54,7 +55,7 @@ void ForwardPbrNodeImpl::_render_skybox(forward_pass_ptr_t fpass) {
   RCID._pipeline_cache = _skybox_fxcache;
   auto pipeline        = _skybox_fxcache->findPipeline(RCID);
   rtg_out->_autoclear = true;
-  FBI->PushRtGroup(rtg_out.get());
+  //FBI->PushRtGroup(rtg_out.get());
   //FBI->rtGroupClear(rtg_out.get()); // TODO: vulkan
   pipeline->_rasterstate->setWriteMaskZ(true);
   pipeline->_rasterstate->setWriteMaskRGB(true);
@@ -63,14 +64,13 @@ void ForwardPbrNodeImpl::_render_skybox(forward_pass_ptr_t fpass) {
   pipeline->bindUniformBuffer(_par_ublk_std_matrices, "ub_skybox"_crcu);
   pipeline->wrappedDrawCall(RCID, [=]() {
     FXI->applyRasterState(*pipeline->_rasterstate);
-    GBI->render2dQuadEML(
-        fvec4(-1, -1, 2, 2), //
+    DWI->fullscreenQuad(
         fvec4(0, 0, 1, 1),   //
         fvec4(0, 0, 1, 1),   //
         0.9999f);            // full screen quad
   });
   context->debugPopGroup();
-  FBI->PopRtGroup();
+  //FBI->PopRtGroup();
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -267,9 +267,7 @@ void ForwardPbrNodeImpl::_render_colorpass(forward_pass_ptr_t fpass) {
 
   ////////////////////////////////
 
-  FBI->PushRtGroup(rtg_out.get());
   _currentIRenderer->drawEnqueuedRenderables(true);
-  FBI->PopRtGroup();
 
 }
 

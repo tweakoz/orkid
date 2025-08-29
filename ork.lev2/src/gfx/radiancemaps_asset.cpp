@@ -101,6 +101,7 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
   diffuse_loadreq->_cmipchain = diffuse_cmipchain;
   diffuse_loadreq->_texname = base_name + ".irrdiff";
   
+  // TODO << this needs to be a Texture Array !
   auto specular_loadreq = std::make_shared<TexLoadReq>();
   specular_loadreq->ptex = specular_tex;
   specular_loadreq->_cmipchain = specular_cmipchain;

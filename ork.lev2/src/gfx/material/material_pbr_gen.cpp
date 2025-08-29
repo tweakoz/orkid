@@ -120,7 +120,7 @@ static texture_ptr_t _getbrdfintmap(Context* targ, std::string typname, uint64_t
   auto brdfhasher = DataBlock::createHasher();
   brdfhasher->accumulateString(_map->_debugName); // identifier
   brdfhasher->accumulateItem<uint64_t>(type);         // version code
-  brdfhasher->accumulateItem<float>(0.99);         // version code
+  brdfhasher->accumulateItem<float>(0.95);         // version code
   brdfhasher->accumulateItem<float>(DIM);         // dimension
   brdfhasher->finish();
   uint64_t brdfhash = brdfhasher->result();
@@ -196,9 +196,9 @@ static texture_ptr_t _getbrdfintmap(Context* targ, std::string typname, uint64_t
           float fx = float(x) / float(DIM - 1);
           dvec3 output = generator(fx, fy);
           int texidxbase         = (ybase + x) * 4;
-          texels[texidxbase + 0] = fx; //float(output.x);
-          texels[texidxbase + 1] = fy; //float(output.y);
-          texels[texidxbase + 2] = 0.0f; //float(output.z);
+          texels[texidxbase + 0] = float(output.x);
+          texels[texidxbase + 1] = float(output.y);
+          texels[texidxbase + 2] = float(output.z);
           texels[texidxbase + 3] = 1.0f;
         }
       });
@@ -243,17 +243,16 @@ static texture_ptr_t _getbrdfintmap(Context* targ, std::string typname, uint64_t
 
 texture_ptr_t PBRMaterial::brdfIntegrationMap(Context* targ,std::string type) {
   uint64_t type_hash = CrcString(type.c_str()).hashed();
-  uint64_t vhash = (type_hash) ^ uint64_t(type_hash);
 
   static std::unordered_map<uint64_t,texture_ptr_t> _maps;
 
-  auto it = _maps.find(vhash);
+  auto it = _maps.find(type_hash);
   if( it != _maps.end() ){
     return it->second;
   }
   else{
     auto new_tex = _getbrdfintmap(targ,type,type_hash);
-    _maps[vhash] = new_tex;
+    _maps[type_hash] = new_tex;
     return new_tex;
   }
 }

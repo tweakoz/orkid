@@ -43,11 +43,6 @@ uniform_set uset_std_filtering {
   float FilterRadius;
 }
 ///////////////////////////////////////////////////////////////
-uniform_set uset_std_aux {
-  vec4 AuxA;
-  vec4 AuxB;
-}
-///////////////////////////////////////////////////////////////
 uniform_set uset_std_pick {
   uint obj_pickID;
 }
@@ -76,6 +71,10 @@ uniform_block ublk_std_pbr(descriptor_set 0) {
   float SpecularMipBias;
   float DepthFogDistance;
   float DepthFogPower;
+  //////////////////////////////
+  vec4 AuxA;
+  vec4 AuxB;
+
 }
 ///////////////////////////////////////////////////////////////
 sampler_set sset_std_lighting (descriptor_set 0) {
@@ -93,7 +92,7 @@ sampler_set sset_std_pbr(descriptor_set 0) {
   samplerCube RadiancePROBE;
   sampler2D MapBrdfIntegration; 
   sampler2D MapDiffuseEnv;      
-  sampler2DArray MapSpecularEnv;
+  sampler2D MapSpecularEnv;
 }
 ///////////////////////////////////////////////////////////////
 uniform_block ublk_std_lighting(descriptor_set 0) {

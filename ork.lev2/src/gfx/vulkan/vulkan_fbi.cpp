@@ -90,7 +90,10 @@ void VkFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
 ///////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::rtGroupClear(RtGroup* rtg) {
-  //OrkAssert(false);
+  _contextVK->debugPushGroup("VkFBI::rtGroupClear",fvec4(1,0,0,0));
+  _pushRtGroup(rtg);
+  _popRtGroup();
+  _contextVK->debugPopGroup();
 }
 
 ///////////////////////////////////////////////////////

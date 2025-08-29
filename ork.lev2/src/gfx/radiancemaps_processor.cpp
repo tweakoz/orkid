@@ -498,6 +498,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
     image_list_t debug_spec_images;
     image_list_t debug_diff_images;
 
+    // TODO << this needs to be a Texture Array !
     // Create proper XTX format for specular data  
     CompressedImageMipChain specular_mipchain;
     CompressedImageMipChain::miplevels_t spec_levels;

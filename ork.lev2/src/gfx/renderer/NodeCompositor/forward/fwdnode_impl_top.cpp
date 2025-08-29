@@ -157,17 +157,16 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
   rtg_out->_clearMaskColor = true;
   rtg_out->_clearDepth     = 1.0f;
   rtg_out->_clearColor     = _node->_pbrcommon->_clearColor;
-  rtg_out->_autoclear      = false;
+  rtg_out->_autoclear      = true;
 
   FBI->setViewport(0,0,_currentWidth, _currentHeight);
   FBI->setScissor(0,0,_currentWidth, _currentHeight);
-  FBI->rtGroupClear(rtg_out.get()); // TODO: vulkan 
+
 
   ///////////////////////////////////////////////////////////////////////////
   // Render Skybox first so MSAA can blend with it
   ///////////////////////////////////////////////////////////////////////////
 
-  _render_skybox(fpass);
 
   ///////////////////////////////////////////////////////////////////////////
   // depth prepass
@@ -175,7 +174,7 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
 
   if (pbrcommon->_useDepthPrepass) {
     // depth prepass
-    _render_dpp(fpass);
+    //_render_dpp(fpass);
     _currentRCFD->setUserProperty("DEPTH_MAP"_crcu, rtg_out->_depthBuffer->_texture);
   }
   else{
@@ -212,7 +211,11 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
   // main color pass
   ///////////////////////////////////////////////////////////////////////////
 
+  //FBI->rtGroupClear(rtg_out.get()); // TODO: vulkan 
+  FBI->PushRtGroup(rtg_out.get());
+  _render_skybox(fpass);
   _render_colorpass(fpass);
+  FBI->PopRtGroup();
 
   ///////////////////////////////////////////////////////////////////////////
   _currentCIMPL->popCPD();
