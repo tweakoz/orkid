@@ -601,6 +601,10 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
     std::vector<VkWriteDescriptorSet> descriptor_writes;
     std::vector<VkDescriptorBufferInfo> buffer_infos; // Keep alive during vkUpdateDescriptorSets
     
+    // Reserve space to prevent reallocation
+    size_t estimated_buffer_count = 20; // Estimate max UBOs we might have
+    buffer_infos.reserve(estimated_buffer_count);
+    
     // First, handle textures/samplers
     for (auto it : program->_merged_resource_bindings) {
       auto param = it.first;
@@ -661,7 +665,11 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
                        ubo_block->_buffer_size);
               }
               
-              if (ubo_block && ubo_block->_gpu_buffer != VK_NULL_HANDLE) {
+              if (ubo_block && ubo_block->_gpu_buffer != VK_NULL_HANDLE && ubo_block->_buffer_size > 0) {
+                // Validate buffer handle
+                OrkAssert(ubo_block->_gpu_buffer != nullptr);
+                OrkAssert(ubo_block->_buffer_size > 0);
+                
                 VkDescriptorBufferInfo buffer_info = {};
                 buffer_info.buffer = ubo_block->_gpu_buffer;
                 buffer_info.offset = 0;
