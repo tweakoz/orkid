@@ -1,6 +1,6 @@
 {
   "id": "ork_envmaps",
-  "uuid": "f2329dac-31ec-4b55-8d8a-7c4aff8d0ea0",
+  "uuid": "315c4c2c-17ba-43bd-8c69-c9149629db12",
   "namespace": "ork_envmaps",
   "version": "1.0.0",
   "assets": {
@@ -13,14 +13,14 @@
         "linux"
       ],
       "dependencies": [],
-      "content_hash": "6266886aa4e814435f238fff60514328",
-      "storage_hash": "f43bbd04077329848d672913bca5530d",
+      "content_hash": "438c4919d6ebf1e8ac968c8c54863f85",
+      "storage_hash": "15f6ffa9c67c60ff4d5530a8823cd71f",
       "hash_algorithm": "md5",
-      "native_size": 380284416,
+      "native_size": 380287488,
       "chunks": {
         "chunk_size": 16777216,
-        "total_size": 380284444,
-        "file_hash": 7103501471476214481,
+        "total_size": 380287516,
+        "file_hash": 2312062858112798402,
         "compression": "none",
         "is_encrypted": false,
         "chunks": [
@@ -28,139 +28,139 @@
             "offset": 0,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 1082359891733221225
+            "hash": 14984384437414060622
           },
           {
             "offset": 16777216,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 12757858521201887281
+            "hash": 8574093329930504360
           },
           {
             "offset": 33554432,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 10602536961157688889
+            "hash": 10379203690028628075
           },
           {
             "offset": 50331648,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 8930740741664047293
+            "hash": 15077235433047686858
           },
           {
             "offset": 67108864,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 2686890118534816146
+            "hash": 4538468287954984665
           },
           {
             "offset": 83886080,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 12486783938918253592
+            "hash": 7811646286133363819
           },
           {
             "offset": 100663296,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 10812031519234022916
+            "hash": 10109831578472346086
           },
           {
             "offset": 117440512,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 8942517236495071809
+            "hash": 11705070384412880839
           },
           {
             "offset": 134217728,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 18156293331277315279
+            "hash": 6866475964315684174
           },
           {
             "offset": 150994944,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 6197409735277813038
+            "hash": 16496261839303239258
           },
           {
             "offset": 167772160,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 11007651278356262068
+            "hash": 512294053074668122
           },
           {
             "offset": 184549376,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 102328764691680716
+            "hash": 569717786053915322
           },
           {
             "offset": 201326592,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 17690120192071834907
+            "hash": 17893290723024258566
           },
           {
             "offset": 218103808,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 8812695539214448206
+            "hash": 11531718020169430976
           },
           {
             "offset": 234881024,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 6389305869030494460
+            "hash": 9134089194213065635
           },
           {
             "offset": 251658240,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 4766575335801289530
+            "hash": 15829388322811448089
           },
           {
             "offset": 268435456,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 10743437705981248239
+            "hash": 11861218574167304409
           },
           {
             "offset": 285212672,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 76159017814639409
+            "hash": 8637847877180649318
           },
           {
             "offset": 301989888,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 11813449200260035432
+            "hash": 4433562385645609289
           },
           {
             "offset": 318767104,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 1140721249599752093
+            "hash": 7660883490544049116
           },
           {
             "offset": 335544320,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 9632455598936026063
+            "hash": 8317398057191293987
           },
           {
             "offset": 352321536,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 4719737933027051021
+            "hash": 7176931868034590279
           },
           {
             "offset": 369098752,
-            "size": 11185692,
-            "compressed_size": 11185692,
-            "hash": 8070058179569497039
+            "size": 11188764,
+            "compressed_size": 11188764,
+            "hash": 17923690387254338257
           }
         ]
       }
@@ -174,14 +174,14 @@
         "linux"
       ],
       "dependencies": [],
-      "content_hash": "2bb92c4a0c652c1ff96f6677d267598f",
-      "storage_hash": "7511e5210597094394ad608102ba39ee",
+      "content_hash": "51d966a95833f8ca81ebbd26baad54a6",
+      "storage_hash": "92d1cac4a271f246809350de0e816fbd",
       "hash_algorithm": "md5",
-      "native_size": 380284416,
+      "native_size": 380287488,
       "chunks": {
         "chunk_size": 16777216,
-        "total_size": 380284444,
-        "file_hash": 7213985275439618144,
+        "total_size": 380287516,
+        "file_hash": 11062195514335248797,
         "compression": "none",
         "is_encrypted": false,
         "chunks": [
@@ -189,139 +189,139 @@
             "offset": 0,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 14749415145361992404
+            "hash": 7695167166657267416
           },
           {
             "offset": 16777216,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 7245657212207267247
+            "hash": 2796536736956662748
           },
           {
             "offset": 33554432,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 4087778196256002437
+            "hash": 15791487794523493098
           },
           {
             "offset": 50331648,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 7999924737193518334
+            "hash": 16384505096317296428
           },
           {
             "offset": 67108864,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 3499891796467081215
+            "hash": 16524967939591398444
           },
           {
             "offset": 83886080,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 4420897858382682189
+            "hash": 16094469339206580579
           },
           {
             "offset": 100663296,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 10276595250801483809
+            "hash": 9098307893590700083
           },
           {
             "offset": 117440512,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 16897740973534822455
+            "hash": 10350404724002917614
           },
           {
             "offset": 134217728,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 3649924654156450621
+            "hash": 1589861179271629816
           },
           {
             "offset": 150994944,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 10130291457665665980
+            "hash": 4899626241174968248
           },
           {
             "offset": 167772160,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 16584112626063225335
+            "hash": 12968528277709986263
           },
           {
             "offset": 184549376,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 17347447273581390743
+            "hash": 13984177364191170654
           },
           {
             "offset": 201326592,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 13650428954996424509
+            "hash": 17833637034307856815
           },
           {
             "offset": 218103808,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 4928627101924733765
+            "hash": 2334535204306399019
           },
           {
             "offset": 234881024,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 671225999588855084
+            "hash": 7228975541192025056
           },
           {
             "offset": 251658240,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 17985123077912416471
+            "hash": 10586173592810368505
           },
           {
             "offset": 268435456,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 15882064962295409051
+            "hash": 6699489508667950499
           },
           {
             "offset": 285212672,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 17302083438879226862
+            "hash": 16189638551881070595
           },
           {
             "offset": 301989888,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 1215808472995525469
+            "hash": 15856165978042865111
           },
           {
             "offset": 318767104,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 17606985165357872599
+            "hash": 17452768716824459481
           },
           {
             "offset": 335544320,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 7742437790857162072
+            "hash": 8986743795096736547
           },
           {
             "offset": 352321536,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 11317888807571194202
+            "hash": 1788255283237260298
           },
           {
             "offset": 369098752,
-            "size": 11185692,
-            "compressed_size": 11185692,
-            "hash": 2532781299127124057
+            "size": 11188764,
+            "compressed_size": 11188764,
+            "hash": 2449897929642196069
           }
         ]
       }
@@ -487,6 +487,167 @@
         ]
       }
     },
+    "cold4k": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/envmaps",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "138bcd7e3edf5c3032f724a7f564fb07",
+      "storage_hash": "130a4fd5512a068715b1d5433a2ab4b4",
+      "hash_algorithm": "md5",
+      "native_size": 380287488,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 380287516,
+        "file_hash": 17343331252659519411,
+        "compression": "none",
+        "is_encrypted": false,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 14218685956733900437
+          },
+          {
+            "offset": 16777216,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 3235113281498356375
+          },
+          {
+            "offset": 33554432,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 12513256569542028394
+          },
+          {
+            "offset": 50331648,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 4491418992178561152
+          },
+          {
+            "offset": 67108864,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 18091051440095006504
+          },
+          {
+            "offset": 83886080,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 3151572735710728499
+          },
+          {
+            "offset": 100663296,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 12895095401119035556
+          },
+          {
+            "offset": 117440512,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 11128959575584290247
+          },
+          {
+            "offset": 134217728,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 460437422975510733
+          },
+          {
+            "offset": 150994944,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 3027084340070360454
+          },
+          {
+            "offset": 167772160,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 17507143007664194493
+          },
+          {
+            "offset": 184549376,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 5303497271519864476
+          },
+          {
+            "offset": 201326592,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 2178014270231860553
+          },
+          {
+            "offset": 218103808,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 10069399592620913979
+          },
+          {
+            "offset": 234881024,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 12520460628083798762
+          },
+          {
+            "offset": 251658240,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 4412961092455141792
+          },
+          {
+            "offset": 268435456,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 3975235396939760721
+          },
+          {
+            "offset": 285212672,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 507156469889999710
+          },
+          {
+            "offset": 301989888,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 16476116569853768014
+          },
+          {
+            "offset": 318767104,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 222876335533258772
+          },
+          {
+            "offset": 335544320,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 13623249857514041786
+          },
+          {
+            "offset": 352321536,
+            "size": 16777216,
+            "compressed_size": 16777216,
+            "hash": 11883459343969938485
+          },
+          {
+            "offset": 369098752,
+            "size": 11188764,
+            "compressed_size": 11188764,
+            "hash": 862606460244009733
+          }
+        ]
+      }
+    },
     "desert4k": {
       "type": "asset_pak",
       "priority": 0,
@@ -496,14 +657,14 @@
         "linux"
       ],
       "dependencies": [],
-      "content_hash": "ca23219ea497a571538f9916036b11d8",
-      "storage_hash": "01290bc4f5d51738e069700e539e50c9",
+      "content_hash": "1008fbf39c891954691e18c0d0d2aa0f",
+      "storage_hash": "0df38c06a8d8c49303620499761e0988",
       "hash_algorithm": "md5",
-      "native_size": 380284416,
+      "native_size": 380287488,
       "chunks": {
         "chunk_size": 16777216,
-        "total_size": 380284444,
-        "file_hash": 14009003060953592284,
+        "total_size": 380287516,
+        "file_hash": 17980739205593345583,
         "compression": "none",
         "is_encrypted": false,
         "chunks": [
@@ -511,139 +672,139 @@
             "offset": 0,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 14047673067441374414
+            "hash": 11047286580720440667
           },
           {
             "offset": 16777216,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 2692152036492114347
+            "hash": 17468066587535769660
           },
           {
             "offset": 33554432,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 2261403901812668135
+            "hash": 10634729402473797370
           },
           {
             "offset": 50331648,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 14116469861057347595
+            "hash": 2277530910386787462
           },
           {
             "offset": 67108864,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 4411824826143043815
+            "hash": 4574814213774647098
           },
           {
             "offset": 83886080,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 2042120330275323704
+            "hash": 18364356336342321513
           },
           {
             "offset": 100663296,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 11152399562932568642
+            "hash": 6310933197792100807
           },
           {
             "offset": 117440512,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 7878576096210871686
+            "hash": 4012985674947997851
           },
           {
             "offset": 134217728,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 7812605560139554713
+            "hash": 4613066020686393877
           },
           {
             "offset": 150994944,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 12238918516172646050
+            "hash": 1501463649419118733
           },
           {
             "offset": 167772160,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 7293074304811917111
+            "hash": 8310224950360599495
           },
           {
             "offset": 184549376,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 1244558650211249878
+            "hash": 17292532252505172505
           },
           {
             "offset": 201326592,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 4865951351114047803
+            "hash": 53055594382329208
           },
           {
             "offset": 218103808,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 18065660588053852970
+            "hash": 4858148390012136184
           },
           {
             "offset": 234881024,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 7772233893314716709
+            "hash": 10759885988409675365
           },
           {
             "offset": 251658240,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 9196401584725991404
+            "hash": 5197428818190723777
           },
           {
             "offset": 268435456,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 18250136975920385611
+            "hash": 15321748251851071222
           },
           {
             "offset": 285212672,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 3800383351311820821
+            "hash": 15989662225410319918
           },
           {
             "offset": 301989888,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 8922143682854950086
+            "hash": 15061545690910034078
           },
           {
             "offset": 318767104,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 9771852203198789867
+            "hash": 15786671678741373016
           },
           {
             "offset": 335544320,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 10930343103464182772
+            "hash": 14903842182341920749
           },
           {
             "offset": 352321536,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 777699960854672002
+            "hash": 18362798887487840854
           },
           {
             "offset": 369098752,
-            "size": 11185692,
-            "compressed_size": 11185692,
-            "hash": 11906931091959699297
+            "size": 11188764,
+            "compressed_size": 11188764,
+            "hash": 2625292358284811804
           }
         ]
       }
@@ -657,14 +818,14 @@
         "linux"
       ],
       "dependencies": [],
-      "content_hash": "69fad4a0f0090be905633e2dff81495f",
-      "storage_hash": "da673838e4689beab8e3c86e0adab11c",
+      "content_hash": "32f2e6d4f283c03848725f2465a3f4a5",
+      "storage_hash": "0333e2604efd5304bf46d60d3d350a1f",
       "hash_algorithm": "md5",
-      "native_size": 380284416,
+      "native_size": 380287488,
       "chunks": {
         "chunk_size": 16777216,
-        "total_size": 380284444,
-        "file_hash": 458675444176807273,
+        "total_size": 380287516,
+        "file_hash": 15039434252497733300,
         "compression": "none",
         "is_encrypted": false,
         "chunks": [
@@ -672,139 +833,139 @@
             "offset": 0,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 8424141369799852213
+            "hash": 14600277862039680100
           },
           {
             "offset": 16777216,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 7484381035740043666
+            "hash": 6657121460354371986
           },
           {
             "offset": 33554432,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 2621761066941043887
+            "hash": 11458207708418480051
           },
           {
             "offset": 50331648,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 6892505253793969255
+            "hash": 4792832985262437321
           },
           {
             "offset": 67108864,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 10526224149840060476
+            "hash": 18121215875426361119
           },
           {
             "offset": 83886080,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 18408450074400380915
+            "hash": 13424795119859057561
           },
           {
             "offset": 100663296,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 135227176917500511
+            "hash": 6916229086265772087
           },
           {
             "offset": 117440512,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 11624339954911171284
+            "hash": 17793251620042736724
           },
           {
             "offset": 134217728,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 1099602062074949909
+            "hash": 17707225823068287506
           },
           {
             "offset": 150994944,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 8719809271991508203
+            "hash": 15672675734170898075
           },
           {
             "offset": 167772160,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 14630873405852569049
+            "hash": 11315019769906364596
           },
           {
             "offset": 184549376,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 16649455904383821671
+            "hash": 14906498528603183930
           },
           {
             "offset": 201326592,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 11758835057707009887
+            "hash": 10559677568227509523
           },
           {
             "offset": 218103808,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 18022305481075743462
+            "hash": 15976800298055126934
           },
           {
             "offset": 234881024,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 12299587103877362630
+            "hash": 13583650263869396904
           },
           {
             "offset": 251658240,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 16553139884615877522
+            "hash": 11995033475126070288
           },
           {
             "offset": 268435456,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 9408735681226287544
+            "hash": 10154817059324738616
           },
           {
             "offset": 285212672,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 1900603257845698420
+            "hash": 12332080574790869770
           },
           {
             "offset": 301989888,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 14053748678750586151
+            "hash": 12214984664897447161
           },
           {
             "offset": 318767104,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 13507646622344283978
+            "hash": 3589026470887114240
           },
           {
             "offset": 335544320,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 12435892303730403622
+            "hash": 2290803574918256508
           },
           {
             "offset": 352321536,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 10837665977182844850
+            "hash": 14561708151356033350
           },
           {
             "offset": 369098752,
-            "size": 11185692,
-            "compressed_size": 11185692,
-            "hash": 10203742092054508939
+            "size": 11188764,
+            "compressed_size": 11188764,
+            "hash": 12334938089395880217
           }
         ]
       }
@@ -818,14 +979,14 @@
         "linux"
       ],
       "dependencies": [],
-      "content_hash": "a37bbab647c19aa8baefe4cc9bf1e6d0",
-      "storage_hash": "baaf31eea70f63f8bdccaec00d23af77",
+      "content_hash": "36fcdff1289f811aacb91c014f7e9e34",
+      "storage_hash": "357bf23fa858ab5648ff388afdde9af1",
       "hash_algorithm": "md5",
-      "native_size": 380284416,
+      "native_size": 380287488,
       "chunks": {
         "chunk_size": 16777216,
-        "total_size": 380284444,
-        "file_hash": 5522850729678608335,
+        "total_size": 380287516,
+        "file_hash": 14670935724549287210,
         "compression": "none",
         "is_encrypted": false,
         "chunks": [
@@ -833,139 +994,139 @@
             "offset": 0,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 12482184346194562312
+            "hash": 5615060654013978534
           },
           {
             "offset": 16777216,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 8760415458938057940
+            "hash": 15546776184227468544
           },
           {
             "offset": 33554432,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 2036176027398902665
+            "hash": 1601337325954825239
           },
           {
             "offset": 50331648,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 12499710098164257323
+            "hash": 18062547541305048728
           },
           {
             "offset": 67108864,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 15307238382684061149
+            "hash": 5523077123165126210
           },
           {
             "offset": 83886080,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 148253915062556554
+            "hash": 14956992505859957494
           },
           {
             "offset": 100663296,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 13942715765835836643
+            "hash": 13408524171161299845
           },
           {
             "offset": 117440512,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 5561236491561837904
+            "hash": 6961787686820405704
           },
           {
             "offset": 134217728,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 6493869002463491719
+            "hash": 17670128195578227428
           },
           {
             "offset": 150994944,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 14504799300432696488
+            "hash": 7077604557968131176
           },
           {
             "offset": 167772160,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 8196460137885821676
+            "hash": 7722077635293432155
           },
           {
             "offset": 184549376,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 10794117715973320240
+            "hash": 859192706593297819
           },
           {
             "offset": 201326592,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 10596366209143747138
+            "hash": 17961901093356268310
           },
           {
             "offset": 218103808,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 15575605056308630741
+            "hash": 14152374690075134604
           },
           {
             "offset": 234881024,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 9468119804788905749
+            "hash": 4254522280389007888
           },
           {
             "offset": 251658240,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 4233065673166290013
+            "hash": 18289325149457335169
           },
           {
             "offset": 268435456,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 1127102699808662508
+            "hash": 16342741087912736509
           },
           {
             "offset": 285212672,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 1361012611451205622
+            "hash": 3011408778144867586
           },
           {
             "offset": 301989888,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 18318485149602751826
+            "hash": 17222516270390633731
           },
           {
             "offset": 318767104,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 11272178428265212132
+            "hash": 8180996897095033178
           },
           {
             "offset": 335544320,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 7477818320867681377
+            "hash": 8272558388316148733
           },
           {
             "offset": 352321536,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 3443215459051128700
+            "hash": 9039994266265535099
           },
           {
             "offset": 369098752,
-            "size": 11185692,
-            "compressed_size": 11185692,
-            "hash": 16121689482584013308
+            "size": 11188764,
+            "compressed_size": 11188764,
+            "hash": 4150908014846602141
           }
         ]
       }
@@ -979,14 +1140,14 @@
         "linux"
       ],
       "dependencies": [],
-      "content_hash": "f597067f7908f4019e099859d7e84e35",
-      "storage_hash": "7c59aac3704e8cf5568c1b679529af44",
+      "content_hash": "68f673293d5c466bf254aac61b1776c3",
+      "storage_hash": "0e9402515fd405445901ffafaa0770e6",
       "hash_algorithm": "md5",
-      "native_size": 380284416,
+      "native_size": 380287488,
       "chunks": {
         "chunk_size": 16777216,
-        "total_size": 380284444,
-        "file_hash": 16618508998744900193,
+        "total_size": 380287516,
+        "file_hash": 7482955713804484149,
         "compression": "none",
         "is_encrypted": false,
         "chunks": [
@@ -994,139 +1155,139 @@
             "offset": 0,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 13996414972248592669
+            "hash": 14371201760838818325
           },
           {
             "offset": 16777216,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 9498357893679564177
+            "hash": 17035942460370482981
           },
           {
             "offset": 33554432,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 17046319211642552137
+            "hash": 3725254869765611386
           },
           {
             "offset": 50331648,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 12879604288350550890
+            "hash": 1723693998221717221
           },
           {
             "offset": 67108864,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 15637867284741739296
+            "hash": 1777050429416181111
           },
           {
             "offset": 83886080,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 11342656239503731763
+            "hash": 5374300243495356912
           },
           {
             "offset": 100663296,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 10270558822727408701
+            "hash": 10124396161646047248
           },
           {
             "offset": 117440512,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 3933479460058143845
+            "hash": 9080152875450863477
           },
           {
             "offset": 134217728,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 15713001736482454031
+            "hash": 410388814217106105
           },
           {
             "offset": 150994944,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 6016076620687440216
+            "hash": 8284499555036610889
           },
           {
             "offset": 167772160,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 1365983206073707671
+            "hash": 1039585064980387830
           },
           {
             "offset": 184549376,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 8779055601329290139
+            "hash": 6028143333307882252
           },
           {
             "offset": 201326592,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 4284507541331202385
+            "hash": 16847286351815643965
           },
           {
             "offset": 218103808,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 14491108267959120076
+            "hash": 17902575413460104268
           },
           {
             "offset": 234881024,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 6414305706520079626
+            "hash": 2078290980786244849
           },
           {
             "offset": 251658240,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 11789317453924170246
+            "hash": 9497281662915082174
           },
           {
             "offset": 268435456,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 7556397090260944111
+            "hash": 3593720410852423007
           },
           {
             "offset": 285212672,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 5734762318204804877
+            "hash": 9362325760377733915
           },
           {
             "offset": 301989888,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 9499421289203877240
+            "hash": 11034771613143632865
           },
           {
             "offset": 318767104,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 13826501540680230565
+            "hash": 8681721240615857906
           },
           {
             "offset": 335544320,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 7631894891629853354
+            "hash": 8949514177346159214
           },
           {
             "offset": 352321536,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 13861576756054346121
+            "hash": 3250141651276811676
           },
           {
             "offset": 369098752,
-            "size": 11185692,
-            "compressed_size": 11185692,
-            "hash": 12419222207347234912
+            "size": 11188764,
+            "compressed_size": 11188764,
+            "hash": 10241976792546238342
           }
         ]
       }
@@ -1140,14 +1301,14 @@
         "linux"
       ],
       "dependencies": [],
-      "content_hash": "a1c380d7d102a6224239ba43a943b8b5",
-      "storage_hash": "938f070d57f15a78b38db397dee8e819",
+      "content_hash": "3eaaf63df4194eb7115ae485e2498f2a",
+      "storage_hash": "7c59259d5d0dbb5581db524b34d7dcc1",
       "hash_algorithm": "md5",
-      "native_size": 380285440,
+      "native_size": 380287488,
       "chunks": {
         "chunk_size": 16777216,
-        "total_size": 380285468,
-        "file_hash": 985658807265644122,
+        "total_size": 380287516,
+        "file_hash": 9804172695665224121,
         "compression": "none",
         "is_encrypted": false,
         "chunks": [
@@ -1155,139 +1316,139 @@
             "offset": 0,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 5946077874690963992
+            "hash": 12490373238715966
           },
           {
             "offset": 16777216,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 10001691934690298361
+            "hash": 3589594084049815785
           },
           {
             "offset": 33554432,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 12092142489265539754
+            "hash": 15311724437835257137
           },
           {
             "offset": 50331648,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 13140562520322292495
+            "hash": 9112235056212064238
           },
           {
             "offset": 67108864,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 17068314120067029598
+            "hash": 8424304960169628769
           },
           {
             "offset": 83886080,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 9288060034100831497
+            "hash": 2534153921138862661
           },
           {
             "offset": 100663296,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 9330259123032585830
+            "hash": 15395156149003901814
           },
           {
             "offset": 117440512,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 14079503050556743716
+            "hash": 8501603086164834206
           },
           {
             "offset": 134217728,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 625237423674767777
+            "hash": 17559585280606595857
           },
           {
             "offset": 150994944,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 3580158041998751216
+            "hash": 16805668616144880895
           },
           {
             "offset": 167772160,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 10434225495542528475
+            "hash": 6135217623649761300
           },
           {
             "offset": 184549376,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 4507525102762709134
+            "hash": 11301226389219053291
           },
           {
             "offset": 201326592,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 8202435672085343996
+            "hash": 15429445981596206547
           },
           {
             "offset": 218103808,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 7676279843146457849
+            "hash": 3447018258401332625
           },
           {
             "offset": 234881024,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 15758853292631571616
+            "hash": 2993215480990642967
           },
           {
             "offset": 251658240,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 3800111267513172722
+            "hash": 7205361328303141084
           },
           {
             "offset": 268435456,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 3244047681949650290
+            "hash": 10964189904422549082
           },
           {
             "offset": 285212672,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 3882936056139556749
+            "hash": 7522613078150179404
           },
           {
             "offset": 301989888,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 1274814368635718867
+            "hash": 13651198991641595037
           },
           {
             "offset": 318767104,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 5243856609944353526
+            "hash": 3861956710394404501
           },
           {
             "offset": 335544320,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 16212143137400150169
+            "hash": 15704927915892364650
           },
           {
             "offset": 352321536,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 722947885359575016
+            "hash": 6687171048355846259
           },
           {
             "offset": 369098752,
-            "size": 11186716,
-            "compressed_size": 11186716,
-            "hash": 13828517414610406037
+            "size": 11188764,
+            "compressed_size": 11188764,
+            "hash": 3195140924359032283
           }
         ]
       }
