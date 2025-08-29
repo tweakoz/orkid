@@ -143,7 +143,7 @@ filedevctx_ptr_t FileEnv::createContextForUriBase(
     const std::string& uriproto, //
     const file::Path& base_location) {
 
-  if(1)
+  if(0)
     printf(
       "DEBUG: createContextForUriBase proto<%s> baseloc<%s>\n", //
       uriproto.c_str(),
