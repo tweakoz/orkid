@@ -173,6 +173,7 @@ struct DMVRIMPL {
     auto context   = drawdata.context();
     auto fbi       = context->FBI();
     auto gbi       = context->GBI();
+    auto dwi       = context->DWI();
     auto framedata = drawdata.RCFD();
     auto tex       = render_out->texture();
     auto this_buf  = context->FBI()->GetThisBuffer();
@@ -203,7 +204,7 @@ struct DMVRIMPL {
     ViewportRect extents(0, 0, _per_eye_width, _per_eye_height);
     fbi->pushViewport(extents);
     fbi->pushScissor(extents);
-    gbi->render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
+    dwi->fullscreenQuad(fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
     fbi->popViewport();
     fbi->popScissor();
     mtl.end(framedata);

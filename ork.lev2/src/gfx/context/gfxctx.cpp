@@ -129,7 +129,7 @@ void Context::_processBeginFrameBlockers() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Context::_loadingPhaseOperations() {
-  printf("begin Context::_loadingPhaseOperations this<%p>\n", this);
+  if(0)printf("begin Context::_loadingPhaseOperations this<%p>\n", this);
   bool done = false;
   int counter = 0;
   float t0 = _ctxtimer.SecsSinceStart();
@@ -166,13 +166,13 @@ void Context::_loadingPhaseOperations() {
     }
 
   }
-  printf("end Context::_loadingPhaseOperations this<%p> ops_done<%d>\n", this, counter);
+  if(0)printf("end Context::_loadingPhaseOperations this<%p> ops_done<%d>\n", this, counter);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void Context::beginFrame(bool visual) {
-  printf("enter Context::beginFrame this<%p>\n", this);
+  if(0)printf("enter Context::beginFrame this<%p>\n", this);
   OrkAssert(_currentPhase == 0); 
   _currentPhase = "INFRAME"_crcu;
 
@@ -269,7 +269,7 @@ void Context::endFrame(void) {
 
   OrkAssert(_currentPhase == "INFRAME"_crcu); 
   _currentPhase = 0;
-  printf("exit Context::endFrame this<%p>\n", this);
+  if(0)printf("exit Context::endFrame this<%p>\n", this);
 
 }
 
