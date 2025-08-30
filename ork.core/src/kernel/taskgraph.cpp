@@ -72,6 +72,7 @@ std::atomic<int> TaskGraph::g_taskgraph_perf_counter{0};
 std::atomic<int> TaskGraph::g_taskgraph_index{0};
 std::atomic<int> TaskGraph::g_task_perf_counter{0};
 std::atomic<int> TaskGraph::g_task_index{0};
+std::atomic<int> TaskGraph::g_tasks_pending{0};
 
 void TaskGraph::execute(taskgraph_ptr_t self, taskgraphcomplete_func_t on_completion) {
   self->_on_completion = on_completion;
@@ -84,8 +85,13 @@ void TaskGraph::execute(taskgraph_ptr_t self, taskgraphcomplete_func_t on_comple
   for (auto phase : self->_phases) {
     auto name = phase->_name;
     int num_tasks = int(phase->_tasks.size());
-    logchan_tg->log("TaskGraph: phase %s numtasks<%d>", name.c_str(), num_tasks);
+    if(0)logchan_tg->log("TaskGraph: phase %s numtasks<%d>", name.c_str(), num_tasks);
     iphase++;
+  }
+
+  for (auto phase : self->_phases) {
+    size_t num_tasks = phase->_tasks.size();
+    TaskGraph::g_tasks_pending.fetch_add(num_tasks);
   }
 
   //////////////////////////////////////

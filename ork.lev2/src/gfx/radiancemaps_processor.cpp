@@ -176,8 +176,8 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
       "initialize_materials",
       [specular_material,                       //
        diffuse_material](taskgraph_wkptr_t g) { //
-        logchan_gen->log("EnvMapProcessor: Setup phase starting");
-        logchan_gen->log("EnvMapProcessor: Using context %p for material initialization", gloadercontext.get());
+        if(0)logchan_gen->log("EnvMapProcessor: Setup phase starting");
+        if(0)logchan_gen->log("EnvMapProcessor: Using context %p for material initialization", gloadercontext.get());
 
         // Initialize specular filtering material
         specular_material->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
@@ -191,7 +191,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
         diffuse_material->_rasterstate->setCullTest(ECullTest::OFF);
         diffuse_material->gpuInit(gloadercontext.get(), filterenv_shader_path());
 
-        logchan_gen->log("EnvMapProcessor: Setup phase completed");
+        if(0)logchan_gen->log("EnvMapProcessor: Setup phase completed");
       });
 
   ///////////////////////////////////////
@@ -346,7 +346,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
     rtgroup->_name       = FormatString("%s-dif-rtg-mip%d", tex_name.c_str(), mip);
     diffuse_rtgroups->push_back(rtgroup);
     diffuse_rtbuffers->push_back(rtbuffer);
-    logchan_gen->log("Setup: Created diffuse rtgroup<%p> rtbuffer<%p> for mip %d", rtgroup.get(), rtbuffer.get(), mip);
+    if(0)logchan_gen->log("Setup: Created diffuse rtgroup<%p> rtbuffer<%p> for mip %d", rtgroup.get(), rtbuffer.get(), mip);
     std::string phase_name = tex_name + ".diffuse_mip_" + std::to_string(mip);
 
     auto diffuse_phase = TaskGraph::phase(graph, phase_name, gpu_executor);
@@ -377,7 +377,7 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
          tile_size,                        //
          mip,                              //
          is_equirectangular](taskgraph_wkptr_t g) { //
-          logchan_gen->log("EnvMapProcessor<%s>: starting diffuse filtering for mip %d", tex_name.c_str(), mip);
+          if(0)logchan_gen->log("EnvMapProcessor<%s>: starting diffuse filtering for mip %d", tex_name.c_str(), mip);
 
           // logchan_gen->log("Diffuse filtering: Using rtgroup<%p> rtbuffer<%p> for mip %d",
           //                  rtgroup.get(), rtbuffer.get(), mip);

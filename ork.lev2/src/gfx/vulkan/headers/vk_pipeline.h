@@ -23,6 +23,7 @@ struct VkFxShaderUniformSetSampler {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VkFxShaderUniformSet {
+  std::string _name;
   std::unordered_map<std::string, vkfxsunisetitem_ptr_t> _items_by_name;
   std::vector<vkfxsunisetitem_ptr_t> _items_by_order;
 };
@@ -36,31 +37,6 @@ struct VkFxShaderSamplerSet : public VkFxShaderDescriptorSet {
   std::vector<vkfxsunisetsamp_ptr_t> _samplers_by_order;
   svar64_t _impl;
 };
-///////////////////////////////////////////////////////////////////////////////
-struct VkFxShaderUniformBlkItem {
-  std::string _datatype;
-  std::string _identifier;
-  size_t _offset = 0;
-  std::shared_ptr<FxShaderParam> _orkparam;
-  struct VkFxShaderUniformBlk* _parent_block = nullptr;
-};
-///////////////////////////////////////////////////////////////////////////////
-struct DirtyRange {
-  size_t offset;
-  size_t size;
-};
-using dirtyrange_ptr_t = std::shared_ptr<DirtyRange>;
-///////////////////////////////////////////////////////////////////////////////
-struct AlignedRange {
-  VkDeviceSize offset;
-  VkDeviceSize size;
-  
-  static std::shared_ptr<AlignedRange> fromDirtyRange(
-    dirtyrange_ptr_t dirty, 
-    VkDeviceSize atom_size, 
-    VkDeviceSize buffer_size);
-};
-using alignedrange_ptr_t = std::shared_ptr<AlignedRange>;
 ///////////////////////////////////////////////////////////////////////////////
 struct VkFxShaderUniformBlk : public VkFxShaderDescriptorSet {
   std::shared_ptr<FxUniformBlock> _orkparamblock;
@@ -81,6 +57,29 @@ struct VkFxShaderUniformBlk : public VkFxShaderDescriptorSet {
   void addDirtyRange(size_t offset, size_t size);
   void coalesceRanges();
   std::vector<alignedrange_ptr_t> getAlignedRanges(VkDeviceSize atom_size) const;
+};
+///////////////////////////////////////////////////////////////////////////////
+struct VkFxShaderUniformBlkItem {
+  std::string _datatype;
+  std::string _identifier;
+  size_t _offset = 0;
+  std::shared_ptr<FxShaderParam> _orkparam;
+  struct VkFxShaderUniformBlk* _parent_block = nullptr;
+};
+///////////////////////////////////////////////////////////////////////////////
+struct DirtyRange {
+  size_t offset;
+  size_t size;
+};
+///////////////////////////////////////////////////////////////////////////////
+struct AlignedRange {
+  VkDeviceSize offset;
+  VkDeviceSize size;
+  
+  static std::shared_ptr<AlignedRange> fromDirtyRange(
+    dirtyrange_ptr_t dirty, 
+    VkDeviceSize atom_size, 
+    VkDeviceSize buffer_size);
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VkFxShaderUniformSetsReference {

@@ -559,16 +559,10 @@ void VkContext::makeCurrentContext() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkContext::_doPreBeginFrame() {
-  //logchan_vkctx->log("VkContext<%p> _doPreBeginFrame", (void*)this );
-
-  mpCurrentObject        = 0;
-  mRenderContextInstData = 0;
-
+void VkContext::_doBeginPrimaryCommandBuffer() {
   ////////////////////////
   // Check if command buffer pool is healthy
   ////////////////////////
-
   // logchan_vkctx->log("  Allocating command buffer from pool (available: %zu)", _pri_cmdbuf_pool.available());
   _defaultCommandBuffer = _pri_cmdbuf_pool.allocate();
 
@@ -577,16 +571,114 @@ void VkContext::_doPreBeginFrame() {
   _cmdbufcurpri_gfx         = _defaultCommandBufferImpl;
   _vkcmdbuffer_current      = _cmdbufcurpri_gfx->_vkcmdbuf; // Initialize current command buffer to primary
   ////////////////////////
-
   logchan_vkctx->log("CMDBUF: _doPreBeginFrame: setting primary CB to %p", _cmdbufcurpri_gfx ? (void*)_cmdbufcurpri_gfx->_vkcmdbuf : nullptr);
-
   //logchan_vkctx->log("VkContext<%p> begin primaryCB", (void*)this );
-
+  ////////////////////////
   VkCommandBufferBeginInfo CBBI_GFX = {};
   initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
   CBBI_GFX.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
   CBBI_GFX.pInheritanceInfo = nullptr;
   vkBeginCommandBuffer(primary_cb()->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkContext::_doEndPrimaryCommandBuffer() {
+  primary_cb()->_recorded = true;
+  vkEndCommandBuffer(primary_cb()->_vkcmdbuf);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkContext::_doSubmitPrimaryCommandBuffer(){
+
+  auto swapchain = _fbi->_swapchain;
+  
+  if (swapchain) {
+    // Onscreen rendering with swapchain
+    bool semas_empty = false;
+    _pendingOneShotSemas.atomicOp([&](vkcompsema_set_t& unlocked) {
+      semas_empty = unlocked.empty();
+    });
+    
+    // Associate frame fence with pending captures
+    size_t sub_index = swapchain->subIndex();
+    if (sub_index < swapchain->_frameFences.size() && !_pending_captures.empty()) {
+      auto frame_fence = swapchain->_frameFences[sub_index];
+      for (auto& capture : _pending_captures) {
+        if (auto async_impl = capture->_impl.getShared<VkCaptureAsyncImpl>()) {
+          async_impl->_fence = frame_fence;
+        }
+      }
+    }
+    
+    if ( not semas_empty) {
+      // Submit with timeline semaphores
+      swapchain->_submitFrameWithSemaphores(this);
+    } else {
+      // Normal submission
+      swapchain->enqueueFrame(this);
+    }
+    
+    ///////////////////////////////////////////////////////
+    // Present !
+    ///////////////////////////////////////////////////////
+
+    swapchain->enqueuePresentFrame(this);
+    swapchain->waitPresentFrame(this);
+    
+    // Process pending captures after swapchain frame completion
+    _processPendingCaptures();
+  } else {
+    // Offscreen rendering - just submit command buffers without presentation
+    // We need to submit the command buffer to complete the frame
+    VkSubmitInfo SI = {};
+    initializeVkStruct(SI, VK_STRUCTURE_TYPE_SUBMIT_INFO);
+    SI.commandBufferCount = 1;
+    SI.pCommandBuffers = &_cmdbufcurpri_gfx->_vkcmdbuf;
+    
+    // Create fence for captures if needed
+    vkfence_obj_ptr_t capture_fence;
+    if (!_pending_captures.empty()) {
+      capture_fence = std::make_shared<VulkanFenceObject>(this);
+      capture_fence->reset(); // Start unsignaled
+      
+      // Associate fence with pending captures
+      for (auto& capture : _pending_captures) {
+        if (auto async_impl = capture->_impl.getShared<VkCaptureAsyncImpl>()) {
+          async_impl->_fence = capture_fence;
+        }
+      }
+      
+      vkQueueSubmit(_vkqueue_graphics, 1, &SI, capture_fence->_vkfence);
+      capture_fence->wait(); // Wait for fence to be signaled
+    } else {
+      vkQueueSubmit(_vkqueue_graphics, 1, &SI, VK_NULL_HANDLE);
+      vkQueueWaitIdle(_vkqueue_graphics);
+    }
+    
+    logchan_vkctx->log("Offscreen frame submitted");
+    
+    // Process pending captures after offscreen frame completion
+    _processPendingCaptures();
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+vkpricmdbufimpl_ptr_t VkContext::primary_cb() {
+  return _cmdbufcurpri_gfx;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkContext::_doPreBeginFrame() {
+  //logchan_vkctx->log("VkContext<%p> _doPreBeginFrame", (void*)this );
+
+  mpCurrentObject        = 0;
+  mRenderContextInstData = 0;
+  _doBeginPrimaryCommandBuffer();
 
   /////////////////////////////////////////
   _pendingOneShotCommands.atomicOp([&](vkseccmdbufarray_t& unlocked) {
@@ -633,12 +725,6 @@ void VkContext::_doBeginFrame() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-vkpricmdbufimpl_ptr_t VkContext::primary_cb() {
-  return _cmdbufcurpri_gfx;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 void VkContext::_doEndFrame() {
   
   auto main_rtg = _fbi->_ensureMainRtg();
@@ -664,8 +750,7 @@ void VkContext::_doEndFrame() {
   // done with primary command buffer for this frame
   ////////////////////////
 
-  primary_cb()->_recorded = true;
-  vkEndCommandBuffer(primary_cb()->_vkcmdbuf);
+  _doEndPrimaryCommandBuffer();
 
   ////////////////////////
 
@@ -675,76 +760,7 @@ void VkContext::_doEndFrame() {
   // submit primary command buffer for this frame
   ///////////////////////////////////////////////////////
 
-  auto swapchain = _fbi->_swapchain;
-  
-  if (swapchain) {
-    // Onscreen rendering with swapchain
-    bool semas_empty = false;
-    _pendingOneShotSemas.atomicOp([&](vkcompsema_set_t& unlocked) {
-      semas_empty = unlocked.empty();
-    });
-    
-    // Associate frame fence with pending captures
-    size_t sub_index = swapchain->subIndex();
-    if (sub_index < swapchain->_frameFences.size() && !_pending_captures.empty()) {
-      auto frame_fence = swapchain->_frameFences[sub_index];
-      for (auto& capture : _pending_captures) {
-        if (auto async_impl = capture->_impl.getShared<VkCaptureAsyncImpl>()) {
-          async_impl->_fence = frame_fence;
-        }
-      }
-    }
-    
-    if ( not semas_empty) {
-      // Submit with timeline semaphores
-      swapchain->_submitFrameWithSemaphores(this);
-    } else {
-      // Normal submission
-      swapchain->enqueueFrame(this);
-    }
-    
-    ///////////////////////////////////////////////////////
-    // Present !
-    ///////////////////////////////////////////////////////
-
-    swapchain->enqueuePresentFrame(this);
-    swapchain->waitPresentFrame(this);
-    
-    // Process pending captures after swapchain frame completion
-    _processPendingCaptures();
-  } else {
-    // Offscreen rendering - just submit command buffers without presentation
-    // We need to submit the command buffer to complete the frame
-    VkSubmitInfo submitInfo = {};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &_cmdbufcurpri_gfx->_vkcmdbuf;
-    
-    // Create fence for captures if needed
-    vkfence_obj_ptr_t capture_fence;
-    if (!_pending_captures.empty()) {
-      capture_fence = std::make_shared<VulkanFenceObject>(this);
-      capture_fence->reset(); // Start unsignaled
-      
-      // Associate fence with pending captures
-      for (auto& capture : _pending_captures) {
-        if (auto async_impl = capture->_impl.getShared<VkCaptureAsyncImpl>()) {
-          async_impl->_fence = capture_fence;
-        }
-      }
-      
-      vkQueueSubmit(_vkqueue_graphics, 1, &submitInfo, capture_fence->_vkfence);
-      capture_fence->wait(); // Wait for fence to be signaled
-    } else {
-      vkQueueSubmit(_vkqueue_graphics, 1, &submitInfo, VK_NULL_HANDLE);
-      vkQueueWaitIdle(_vkqueue_graphics);
-    }
-    
-    logchan_vkctx->log("Offscreen frame submitted");
-    
-    // Process pending captures after offscreen frame completion
-    _processPendingCaptures();
-  }
+  submitPrimaryCommandBuffer();
 
   ///////////////////////////////////////////////////////
 
@@ -760,7 +776,7 @@ void VkContext::_doEndFrame() {
   //logchan_vkctx->log("VkContext<%p> clear renderpasses", (void*)this );
 
   _defaultCommandBuffer = nullptr;
-  _cmdbufcurpri_gfx = nullptr;
+  //_cmdbufcurpri_gfx = nullptr;
   _vkcmdbuffer_current = nullptr; // Clear current command buffer
   _first_frame            = false;
 

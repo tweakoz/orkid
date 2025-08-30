@@ -630,6 +630,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
 
   glfw_ctx->_onGpuInit = [this](lev2::Context* context) {
 
+    context->beginPrimaryCommandBuffer();
     logchan_ezapp->log("_initdata->_enable_audio<%d>", (int) _initdata->_enable_audio);
 
     if( _ginitdata->_disableMouseCursor ){
@@ -649,6 +650,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
       }
 
     }
+    context->endPrimaryCommandBuffer();
 
     _updateThread.start(_update_thread_impl);
   };

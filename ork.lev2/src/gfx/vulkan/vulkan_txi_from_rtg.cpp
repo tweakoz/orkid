@@ -12,7 +12,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_txirtg = logger()->configureChannel("VKTXIRTG", fvec3(0.8, 0.2, 0.5), false);
+static logchannel_ptr_t logchan_txirtg = logger()->configureChannel("VKTXIRTG", fvec3(0.8, 0.2, 0.5), true);
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
@@ -26,7 +26,7 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   int num_mips = 1;
   auto fmt_str = EBufferFormatToName(format);
 
-  if (1) {
+  if (0) {
     logchan_txirtg->log(
         "_initTextureFromRtBuffer ptex<%p:%s> w<%d> h<%d> fmt<%s>",
         (void*)ptex,

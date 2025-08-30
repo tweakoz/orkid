@@ -116,6 +116,7 @@ struct TaskGraph {
   static std::atomic<int> g_taskgraph_index;
   static std::atomic<int> g_task_perf_counter;
   static std::atomic<int> g_task_index;
+  static std::atomic<int> g_tasks_pending;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

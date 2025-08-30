@@ -372,6 +372,13 @@ public:
   virtual void stateDebugger() const {
   }
 
+  void beginPrimaryCommandBuffer();
+  void endPrimaryCommandBuffer();
+  void submitPrimaryCommandBuffer();
+  virtual void _doBeginPrimaryCommandBuffer();
+  virtual void _doEndPrimaryCommandBuffer();
+  virtual void _doSubmitPrimaryCommandBuffer();
+
   load_token_t beginLoad();
   void endLoad(load_token_t ploadtok);
 

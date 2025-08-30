@@ -171,6 +171,25 @@ void Context::_loadingPhaseOperations() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void Context::beginPrimaryCommandBuffer() {
+  _doBeginPrimaryCommandBuffer();
+}
+void Context::endPrimaryCommandBuffer() {
+  _doEndPrimaryCommandBuffer();
+}
+void Context::submitPrimaryCommandBuffer(){
+  _doSubmitPrimaryCommandBuffer();
+}
+void Context::_doBeginPrimaryCommandBuffer() {
+
+}
+void Context::_doEndPrimaryCommandBuffer() {
+}
+void Context::_doSubmitPrimaryCommandBuffer(){
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void Context::beginFrame(bool visual) {
   if(0)printf("enter Context::beginFrame this<%p>\n", this);
   OrkAssert(_currentPhase == 0); 
@@ -391,7 +410,7 @@ ContextExecutor::ContextExecutor(context_rawptr_t ctx)
 ///////////////////////////////////////////////////////////////////////////////
 
 void ContextExecutor::executePhase(taskphase_ptr_t phase) {
-  printf("ContextExecutor::executePhase phase<%s>\n", phase->_name.c_str());
+  if(0)printf("ContextExecutor::executePhase phase<%s>\n", phase->_name.c_str());
   // Ensure we're not on main thread to prevent deadlock
   ork::opq::assertNotOnQueue(opq::mainSerialQueue());
 
@@ -407,9 +426,8 @@ void ContextExecutor::executePhase(taskphase_ptr_t phase) {
     loading_phase->enqueueOperation([=](Context* ctx) {
       task->_func(graph); 
       TaskGraph::g_task_index += 1;
-      if((TaskGraph::g_task_index&0x3)==0) {
-        logchan_tg->log("TaskGraphs tasks completed: %zu", TaskGraph::g_task_index.load());
-      }
+      size_t num_tasks = TaskGraph::g_tasks_pending.fetch_sub(1);
+      logchan_tg->log("TaskGraph tasks pending: %zu", num_tasks);
     });
   }
   

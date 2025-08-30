@@ -254,14 +254,31 @@ VulkanInstance::VulkanInstance() {
     device_info->_maxWkgCountZ = dev_props.limits.maxComputeWorkGroupCount[2];
 
     deco::printf(yel, "vulkan::_init gpu<%d:%s> is_discrete<%d>\n", dev_props.deviceID, dev_props.deviceName, int(is_discrete));
-    deco::printf(yel, "         apiver<%u>\n", dev_props.apiVersion);
-    deco::printf(yel, "         maxdim3d<%u>\n", dev_props.limits.maxImageDimension3D);
-    deco::printf(yel, "         maxubrange<%u>\n", dev_props.limits.maxUniformBufferRange);
-    deco::printf(yel, "         maxfbwidth<%u>\n", dev_props.limits.maxFramebufferWidth);
-    deco::printf(yel, "         maxfblayers<%u>\n", dev_props.limits.maxFramebufferLayers);
-    deco::printf(yel, "         maxcolorattachments<%u>\n", dev_props.limits.maxColorAttachments);
-    deco::printf(yel, "         maxcomputeshmsize<%u>\n", dev_props.limits.maxComputeSharedMemorySize);
-    deco::printf(yel, "         maxcomputewkgsize<%u>\n", dev_props.limits.maxComputeWorkGroupSize);
+    deco::printf(yel, "         apiVersion<%u>\n", dev_props.apiVersion);
+    deco::printf(yel, "         maxImageDimension1D<%u>\n", dev_props.limits.maxImageDimension1D);
+    deco::printf(yel, "         maxImageDimension2D<%u>\n", dev_props.limits.maxImageDimension2D);
+    deco::printf(yel, "         maxImageDimension3D<%u>\n", dev_props.limits.maxImageDimension3D);
+    deco::printf(yel, "         maxImageDimensionCube<%u>\n", dev_props.limits.maxImageDimensionCube);
+    deco::printf(yel, "         maxImageArrayLayers<%u>\n", dev_props.limits.maxImageArrayLayers);
+
+    deco::printf(yel, "         maxBoundDescriptorSets<%u>\n", dev_props.limits.maxBoundDescriptorSets);
+    deco::printf(yel, "         maxPerStageDescriptorSamplers<%u>\n", dev_props.limits.maxPerStageDescriptorSamplers);
+    deco::printf(yel, "         maxPerStageDescriptorUniformBuffers<%u>\n", dev_props.limits.maxPerStageDescriptorUniformBuffers);
+    deco::printf(yel, "         maxPerStageDescriptorStorageBuffers<%u>\n", dev_props.limits.maxPerStageDescriptorStorageBuffers);
+    deco::printf(yel, "         maxPerStageDescriptorSampledImages<%u>\n", dev_props.limits.maxPerStageDescriptorSampledImages);
+    deco::printf(yel, "         maxPerStageDescriptorStorageImages<%u>\n", dev_props.limits.maxPerStageDescriptorStorageImages);
+    deco::printf(yel, "         maxPerStageDescriptorInputAttachments<%u>\n", dev_props.limits.maxPerStageDescriptorInputAttachments);
+
+    deco::printf(yel, "         maxUniformBufferRange<%u>\n", dev_props.limits.maxUniformBufferRange);
+    deco::printf(yel, "         maxFramebufferWidth<%u>\n", dev_props.limits.maxFramebufferWidth);
+    deco::printf(yel, "         maxFramebufferLayers<%u>\n", dev_props.limits.maxFramebufferLayers);
+    deco::printf(yel, "         maxColorAttachments<%u>\n", dev_props.limits.maxColorAttachments);
+    deco::printf(yel, "         maxComputeSharedMemorySize<%u>\n", dev_props.limits.maxComputeSharedMemorySize);
+    deco::printf(yel, "         maxComputeWorkGroupSize<%u>\n", dev_props.limits.maxComputeWorkGroupSize);
+    deco::printf(yel, "         maxPushConstantsSize<%u>\n", dev_props.limits.maxPushConstantsSize);
+
+    deco::printf(yel, "         maxPushConstantsSize<%u>\n", dev_props.limits.maxPushConstantsSize);
+
     deco::printf(
         yel,
         "         maxcomputewkgcount<%u,%u,%u>\n",

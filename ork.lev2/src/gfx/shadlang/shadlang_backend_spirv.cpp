@@ -10,6 +10,7 @@
 
 namespace ork::lev2::shadlang::spirv {
 using namespace SHAST;
+constexpr size_t MAX_PUSH_CONSTANT_SIZE = 4096; // Vulkan spec limit
 /////////////////////////////////////////////////////////////////////////////////////////////////
 struct LayoutStandard430 { // layout by glsl standard 430
   //////////////////////////////////////////////
@@ -432,7 +433,7 @@ void SpirvCompiler::_convertUniformSets() {
       } else {
         layout.incrementDatatype(dt, 0);
       }
-      if (layout.cursor() > 256) {
+      if (layout.cursor() > MAX_PUSH_CONSTANT_SIZE) {
         printf("uniset<%s> pushconstant overflow length<%zu>\n", uni_name.c_str(), layout.cursor());
         OrkAssert(false);
       }
@@ -691,8 +692,8 @@ void SpirvCompiler::_emitMergedPushConstants() {
 
   // Check size limit AFTER collecting all items
   size_t total_size = merged_layout.cursor();
-  if (total_size > 256) {
-    printf("ERROR: Combined push_constant size %zu exceeds 256 byte limit!\n", total_size);
+  if (total_size > MAX_PUSH_CONSTANT_SIZE) {
+    printf("ERROR: Combined push_constant size %zu exceeds 4096 byte limit!\n", total_size);
     printf("Uniform sets included:\n");
     for (auto spirvuset : _collected_uniform_sets) {
       printf("  - %s\n", spirvuset->_name.c_str());

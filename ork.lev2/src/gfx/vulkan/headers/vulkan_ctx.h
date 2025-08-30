@@ -474,6 +474,10 @@ public:
   void _beginAssetProcessing();
   void _endAssetProcessing();
 
+  void _doBeginPrimaryCommandBuffer() final;
+  void _doEndPrimaryCommandBuffer() final;
+  void _doSubmitPrimaryCommandBuffer() final;
+
   //////////////////////////////////////////////
 
   secondary_commandbuffer_ptr_t _beginRecordCommandBuffer(std::string name, rtgroup_rawptr_t rtg) final;

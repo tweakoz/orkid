@@ -72,6 +72,10 @@ struct VulkanSemaphoreBase;
 struct VulkanBinarySemaphore;
 struct VulkanTimelineSemaphore;
 struct VulkanCompletionSemaphore;
+struct AlignedRange;
+struct DirtyRange;
+using alignedrange_ptr_t = std::shared_ptr<AlignedRange>;
+using dirtyrange_ptr_t = std::shared_ptr<DirtyRange>;
 
 struct VulkanVertexInterface;
 struct VulkanVertexInterfaceInput;

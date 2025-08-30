@@ -319,7 +319,7 @@ def createImposter( context = None,
     def createRGBRTG(self,name):
       rtg = RtGroup(context,DIM,DIM)
       rtg.name = name
-      rtg.createBuffer(tokens.RGBA32F,tokens.NONE)
+      rtg.createBuffer(tokens.RGBA32F,tokens.color)
       context.FBI.rtGroupInit(rtg)
       return rtg
 

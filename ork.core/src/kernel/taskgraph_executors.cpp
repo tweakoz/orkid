@@ -36,11 +36,10 @@ public:
       opq::concurrentQueue()->enqueue([=]() {
         // Execute the task with completion callback
         task->_func(graph);
-        pending_tasks->fetch_sub(1);
         TaskGraph::g_task_index += 1;
-        if((TaskGraph::g_task_index&0x3)==0) {
-          logchan_tg->log("TaskGraphs tasks completed: %zu", TaskGraph::g_task_index.load());
-        }
+        pending_tasks->fetch_sub(1);
+        size_t num_tasks = TaskGraph::g_tasks_pending.fetch_sub(1);
+        logchan_tg->log("TaskGraph tasks pending: %zu", num_tasks);
       });
     }
     while(pending_tasks->load()) {
@@ -64,6 +63,8 @@ public:
     auto phase_complete = std::make_shared<std::atomic<bool>>(false);
     auto graph = phase->_graph;  // Get shared_ptr from weak_ptr
     for( auto task : phase->_tasks ) {
+      size_t num_tasks = TaskGraph::g_tasks_pending.fetch_sub(1);
+      logchan_tg->log("TaskGraph tasks pending: %zu", num_tasks);
       task->_func(graph);
     }
   }

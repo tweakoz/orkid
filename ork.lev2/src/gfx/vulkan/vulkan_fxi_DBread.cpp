@@ -16,6 +16,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
+constexpr size_t MAX_PUSH_CONSTANT_SIZE = 4096; // Vulkan spec limit
 ///////////////////////////////////////////////////////////////////////////////
 using namespace shadlang;
 ///////////////////////////////////////////////////////////////////////////////
@@ -216,6 +217,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     OrkAssert(str_uniset == "uniset");
     auto str_uniset_name                                = uniforms_input_stream->ReadIndexedString(chunkreader);
     auto vk_uniset                                      = std::make_shared<VkFxShaderUniformSet>();
+    vk_uniset->_name = str_uniset_name;
     //printf( "GOT UNIFORMSET<%s>\n", str_uniset_name.c_str() );
     vulkan_shaderfile->_vk_uniformsets[str_uniset_name] = vk_uniset;
     ///////////////////////////////////////////////
@@ -736,8 +738,25 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
 
       size_t pc_size = alignUp(pc_layout->cursor(), 16);
       // TODO: Wire this up to the actual Vulkan device property
-      constexpr size_t kDefaultMaxPushConstantSize = 256;
-      OrkAssert(pc_size <= kDefaultMaxPushConstantSize);
+      constexpr size_t kDefaultMaxPushConstantSize = MAX_PUSH_CONSTANT_SIZE;
+      if(pc_size > kDefaultMaxPushConstantSize) {
+        printf("ERROR: tek<%s> Push constant block size %zu exceeds default max %zu\n", //
+               str_tek_name.c_str(),                                                    //
+               pc_size,                                                                 //
+               kDefaultMaxPushConstantSize);                                            //
+
+
+        // print out all uniform set name that contributed to the push constant block
+        printf("  Contributing uniform sets:\n");
+        for (const auto& uset : unisets_set) {
+          printf("    %s (num items: %zu)\n", uset->_name.c_str(), uset->_items_by_order.size());
+          for (const auto& item : uset->_items_by_order) {
+            printf("    %s (datatype: %s, offset: %zu)\n", item->_identifier.c_str(), item->_datatype.c_str(), item->_offset);
+          }
+        }
+        printf("         This will cause issues on some hardware\n");
+        OrkAssert(false);
+      }
       push_constants->_ranges.reserve(8);
       
       // Create ranges based on actual uniform set sizes from each shader stage

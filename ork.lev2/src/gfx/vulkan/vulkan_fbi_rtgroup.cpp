@@ -300,16 +300,17 @@ void VkFrameBufferInterface::_popRtGroup() {
     //  probably need to start a new command buffer here    
     //   instead of restarting the current one
     _active_rtgroup = next_rtg;
-    auto RTGIMPL = next_rtg->_impl.getShared<VkRtGroupImpl>();
-    RTGIMPL->_transitionToRenderTarget(_contextVK->primary_cb());
-    auto vkcmdbuf = RTGIMPL->_cmdbufRTG->_impl.getShared<VkSecondaryCommandBufferImpl>();
-    auto rinfo = RTGIMPL->renderinfo();
-    vkResetCommandBuffer(vkcmdbuf->_vkcmdbuf, 0);                         // vkBeginCommandBuffer does an implicit reset
-    vkcmdbuf->_recorded = false;                                          // Reset the recorded flag
-    vkBeginCommandBuffer(vkcmdbuf->_vkcmdbuf, &RTGIMPL->_cmdBufCBBI_GFX); 
-    _contextVK->_vkCmdBeginRenderingKHR(vkcmdbuf->_vkcmdbuf, &rinfo->_renderinfo);
-    _contextVK->_vkcmdbuffer_current = RTGIMPL->_cmdbufRTG->_impl.getShared<VkSecondaryCommandBufferImpl>()->_vkcmdbuf;
-  
+      if(next_rtg){
+          auto RTGIMPL = next_rtg->_impl.getShared<VkRtGroupImpl>();
+          RTGIMPL->_transitionToRenderTarget(_contextVK->primary_cb());
+          auto vkcmdbuf = RTGIMPL->_cmdbufRTG->_impl.getShared<VkSecondaryCommandBufferImpl>();
+          auto rinfo = RTGIMPL->renderinfo();
+          vkResetCommandBuffer(vkcmdbuf->_vkcmdbuf, 0);                         // vkBeginCommandBuffer does an implicit reset
+          vkcmdbuf->_recorded = false;                                          // Reset the recorded flag
+          vkBeginCommandBuffer(vkcmdbuf->_vkcmdbuf, &RTGIMPL->_cmdBufCBBI_GFX);
+          _contextVK->_vkCmdBeginRenderingKHR(vkcmdbuf->_vkcmdbuf, &rinfo->_renderinfo);
+          _contextVK->_vkcmdbuffer_current = RTGIMPL->_cmdbufRTG->_impl.getShared<VkSecondaryCommandBufferImpl>()->_vkcmdbuf;
+      }
   }
 
   logchan_rtgroup->log("PopRtGroup: RTG %p, primary CB %p", (void*)_active_rtgroup, _contextVK->primary_cb() ? (void*)_contextVK->primary_cb().get() : nullptr);
