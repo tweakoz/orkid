@@ -49,7 +49,7 @@ class ImposterApp(boilerplate.ImposterBaseApp):
     sceneparams.DiffuseIntensity = float(1)
     sceneparams.AmbientLight = vec3(0.0)
     sceneparams.DepthFogDistance = float(1e5)
-    sceneparams.SkyboxTexPathStr = "ork_envmaps|tozenv_nebula"
+    sceneparams.SkyboxTexPathStr = self.envmap
 
     ###################################
     # post fx node

@@ -79,7 +79,7 @@ radiancemaps_ptr_t CommonStuff::requestRadianceMaps(const AssetPath& texture_pat
     auto radiancemaps_asset = std::dynamic_pointer_cast<RadianceMapsAsset>(generic_asset);
     if (radiancemaps_asset) {
       //_radiance_maps = radiancemaps_asset->_radiance_maps;
-      printf("RRM: asset<%p> irrmaps<%p>\n", (void*) radiancemaps_asset.get(), (void*) radiancemaps_asset->_radiance_maps.get()  );
+      if(0)printf("RRM: asset<%p> irrmaps<%p>\n", (void*) radiancemaps_asset.get(), (void*) radiancemaps_asset->_radiance_maps.get()  );
       return radiancemaps_asset->_radiance_maps;
     }
   }
@@ -91,7 +91,7 @@ void CommonStuff::requestAndRefSkyboxTexture(asset::loadrequest_ptr_t load_req) 
   auto generic_asset = asset::AssetManager<RadianceMapsAsset>::load(load_req);
   if( auto as_radmaps = std::dynamic_pointer_cast<RadianceMapsAsset>(generic_asset) ){
     _radiance_maps = as_radmaps->_radiance_maps;
-    printf("RARST: asset<%p> irrmaps<%p> pbrcommon<%p>\n", (void*) as_radmaps.get(), (void*) _radiance_maps.get(), (void*) this  );
+    if(0)printf("RARST: asset<%p> irrmaps<%p> pbrcommon<%p>\n", (void*) as_radmaps.get(), (void*) _radiance_maps.get(), (void*) this  );
   }
 }
 

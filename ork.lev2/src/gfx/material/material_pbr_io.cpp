@@ -37,7 +37,7 @@ OIIO_NAMESPACE_USING
 
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_pbr_io = logger()->configureChannel("PBRMtlIO", fvec3(0.8, 0.8, 0.1), true);
+static logchannel_ptr_t logchan_pbr_io = logger()->configureChannel("PBRMtlIO", fvec3(0.8, 0.8, 0.1), false);
 ///////////////////////////////////////////////////////////////////////////////
 
 material_ptr_t PBRMaterial::_xgmReader( chunkfile::XgmMaterialReaderContext& ctx ){

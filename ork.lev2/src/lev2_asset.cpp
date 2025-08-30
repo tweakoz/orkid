@@ -290,7 +290,7 @@ asset_ptr_t FxShaderLoader::_doLoadAsset(asset::loadrequest_ptr_t loadreq) {
   //printf("FxShaderLoader: CACHE MISS for shader <%s>, loading...\n", path.c_str());
   auto pshader = std::make_shared<FxShaderAsset>();
   auto context = lev2::contextForCurrentThread();
-  printf("FxShaderLoader: context=%p path=%s\n", context, path.c_str());
+  if(0)printf("FxShaderLoader: context=%p path=%s\n", context, path.c_str());
   if (!context) {
     printf("FxShaderLoader: ERROR - context is null!\n");
     OrkAssert(false);

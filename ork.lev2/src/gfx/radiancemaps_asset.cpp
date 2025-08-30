@@ -75,7 +75,7 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
   auto irrmaps = std::make_shared<pbr::RadianceMaps>();
   asset->_radiance_maps = irrmaps;
   
-  printf("XIR v2 array format: diffuse size: %zu, %d roughness levels\n", 
+  if(0)printf("XIR v2 array format: diffuse size: %zu, %d roughness levels\n", 
          xir_data_result._diffuse_data->length(),
          xir_data_result._num_roughness_levels);
   
@@ -160,7 +160,7 @@ asset::asset_ptr_t RadianceMapsLoader::_loadFromXIR(
   irrmaps->_brdfIntegrationMapBlinn = brdfIntegrationMapBlinn;
   irrmaps->_brdfIntegrationMapPhong = brdfIntegrationMapPhong;
 
-  printf("XIR asset<%p> irrmaps<%p> dtex<%p> stexarray<%p> roughness_levels<%d>\n", 
+  if(0)printf("XIR asset<%p> irrmaps<%p> dtex<%p> stexarray<%p> roughness_levels<%d>\n", 
          (void*) asset.get(), (void*) irrmaps.get(), diffuse_tex.get(), 
          specular_texarray.get(), num_roughness_levels);
 

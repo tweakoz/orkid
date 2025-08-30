@@ -12,7 +12,7 @@ def createParams( rendermodel : str = "ForwardPBR" ):
   sceneparams.DiffuseIntensity = float(1)
   sceneparams.AmbientLight = vec3(0.0)
   sceneparams.DepthFogDistance = float(1e6)
-  sceneparams.SkyboxTexPathStr = "src://envmaps/tozenv_nebula"
+  sceneparams.SkyboxTexPathStr = "pillars"
 
   if rendermodel == "DeferredPBR":
     sceneparams.layers = ["std_deferred","depth_prepass"]

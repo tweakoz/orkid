@@ -166,7 +166,7 @@ struct ClassToucher {
         case "VULKAN"_crcu:
         default: {
           gloadercontext = vulkan::createLoaderContext();
-          printf("gloadercontext (VK) <%p>\n", (void*)gloadercontext.get());
+          if(0)printf("gloadercontext (VK) <%p>\n", (void*)gloadercontext.get());
           break;
         }
       }

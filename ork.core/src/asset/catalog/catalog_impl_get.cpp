@@ -522,7 +522,7 @@ void CatalogImpl::handleAssetPak(datablock_ptr_t _data, AssetResult& result, fet
       
       // Create local manifest for future cache hits
       if (!request->disable_cache) {
-        printf("request->asset_id<%s>\n", request->asset_id.c_str());
+        if(0)printf("request->asset_id<%s>\n", request->asset_id.c_str());
         auto [namespace_id, asset_name] = parseAssetId(request->asset_id);
         
         // Save extracted file to cache

@@ -307,7 +307,7 @@ Context::Context()
     , mbPostInitializeContext(true)
     , mFramePerfItem(CreateFormattedString("<target:%p>", this)) {
 
-  printf("Context::Context() this<%p>\n", this);
+  if(0)printf("Context::Context() this<%p>\n", this);
   _ctxtimer.Start();
   _primitives_interface = std::make_shared<PrimitivesInterface>(this);
 

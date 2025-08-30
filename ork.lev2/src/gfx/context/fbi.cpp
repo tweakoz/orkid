@@ -54,7 +54,7 @@ rtgroup_ptr_t FrameBufferInterface::_ensureMainRtg() {
                           ? "swapchain"_crcu
                           : "color"_crcu;
 
-  printf("_ensureMainRtg: TargetType=%d (WINDOW=%d), buffer_usage=0x%zx (%zu)\n", 
+  if(0)printf("_ensureMainRtg: TargetType=%d (WINDOW=%d), buffer_usage=0x%zx (%zu)\n", 
          (int)tgt.meTargetType, (int)TargetType::WINDOW, buffer_usage, buffer_usage);
   
   _main_rtg = std::make_shared<RtGroup>(&tgt,8,8,MsaaSamples::MSAA_1X,rtg_usage);

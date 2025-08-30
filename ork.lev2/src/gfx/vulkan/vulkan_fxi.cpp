@@ -92,7 +92,7 @@ int VkFxInterface::_pipelineBitsForShader(vkfxsprg_ptr_t shprog){
     auto vtx_shader = shprog->_vtxshader;
     auto frg_shader = shprog->_frgshader;
 
-    printf("/////////////////\nshprog<v:%s <f:%s> pipeline_bits_composite<%d>\n", //
+    if(0)printf("/////////////////\nshprog<v:%s <f:%s> pipeline_bits_composite<%d>\n", //
            vtx_shader->_name.c_str(), //
            frg_shader->_name.c_str(),
            shprog->_pipeline_bits_composite);
@@ -112,7 +112,7 @@ int VkFxInterface::_pipelineBitsForShader(vkfxsprg_ptr_t shprog){
     for( auto input : VIF->_inputs ){
       crc.accumulateString(input->_datatype);
       crc.accumulateString(input->_semantic);
-      printf("dt<%s> sem<%s>\n", input->_datatype.c_str(), input->_semantic.c_str());
+      if(0)printf("dt<%s> sem<%s>\n", input->_datatype.c_str(), input->_semantic.c_str());
     }
     crc.finish();
     uint64_t hash = crc.result();

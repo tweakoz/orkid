@@ -109,7 +109,7 @@ void VkSwapChain::_buildup() {
   if (dimensions_changed) {
 
     printf("Swap chain dimensions: requested=%dx%d, clamped=%ux%u\n", width, height, uint32_t(width), uint32_t(height));
-    printf(
+    if(0)printf(
         "Surface caps: min=%ux%u, max=%ux%u, current=%ux%u\n",
         caps.minImageExtent.width,
         caps.minImageExtent.height,
@@ -140,7 +140,7 @@ void VkSwapChain::_buildup() {
     SCINFO.imageUsage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
   }
 
-  printf("Supported usage flags: 0x%x, requesting: 0x%x\n", caps.supportedUsageFlags, SCINFO.imageUsage);
+  if(0)printf("Supported usage flags: 0x%x, requesting: 0x%x\n", caps.supportedUsageFlags, SCINFO.imageUsage);
 
   // Ensure we're not requesting unsupported usage
   SCINFO.imageUsage &= caps.supportedUsageFlags;

@@ -431,11 +431,11 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         // print out uniform set names
         //printf("Shader<%s> has multiple uniform sets:\n", str_shader_name.c_str());
         for (const auto& uni_it : refs->_unisets) {
-          printf("  %s\n", uni_it.first.c_str());
+          if(0)printf("  %s\n", uni_it.first.c_str());
         }
         // Multiple uniform sets are now handled by the merged resources system
         // No longer asserting - merged resources will handle the binding conflicts
-        printf("  Note: Multiple uniform sets will be handled by merged resources system\n");
+        if(0)printf("  Note: Multiple uniform sets will be handled by merged resources system\n");
       }
     }
     /////////////////////////////////
