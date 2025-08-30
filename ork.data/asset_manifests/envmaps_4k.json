@@ -1,6 +1,6 @@
 {
   "id": "ork_envmaps",
-  "uuid": "c5b78de0-2dd9-4b0b-afd5-c65f28691767",
+  "uuid": "d26ec497-24c8-40a3-80c6-34c93718a54f",
   "namespace": "ork_envmaps",
   "version": "1.0.0",
   "assets": {
@@ -13,14 +13,14 @@
         "linux"
       ],
       "dependencies": [],
-      "content_hash": "438c4919d6ebf1e8ac968c8c54863f85",
-      "storage_hash": "15f6ffa9c67c60ff4d5530a8823cd71f",
+      "content_hash": "4c04e08667836d841e10344050de3cff",
+      "storage_hash": "0a8edefa837ddc7efc2309ded9bce290",
       "hash_algorithm": "md5",
       "native_size": 380287488,
       "chunks": {
         "chunk_size": 16777216,
         "total_size": 380287516,
-        "file_hash": 2312062858112798402,
+        "file_hash": 15528085142585550372,
         "compression": "none",
         "is_encrypted": false,
         "chunks": [
@@ -28,7 +28,7 @@
             "offset": 0,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 14984384437414060622
+            "hash": 1122176221078950357
           },
           {
             "offset": 16777216,
@@ -160,7 +160,7 @@
             "offset": 369098752,
             "size": 11188764,
             "compressed_size": 11188764,
-            "hash": 17923690387254338257
+            "hash": 16915511256330196905
           }
         ]
       }
@@ -496,14 +496,14 @@
         "linux"
       ],
       "dependencies": [],
-      "content_hash": "138bcd7e3edf5c3032f724a7f564fb07",
-      "storage_hash": "130a4fd5512a068715b1d5433a2ab4b4",
+      "content_hash": "73ee3a910c9a40ae4dbbd91764947160",
+      "storage_hash": "6b131469c69121241ad94e93d5aefcf6",
       "hash_algorithm": "md5",
       "native_size": 380287488,
       "chunks": {
         "chunk_size": 16777216,
         "total_size": 380287516,
-        "file_hash": 17343331252659519411,
+        "file_hash": 3075527054684834219,
         "compression": "none",
         "is_encrypted": false,
         "chunks": [
@@ -511,7 +511,7 @@
             "offset": 0,
             "size": 16777216,
             "compressed_size": 16777216,
-            "hash": 14218685956733900437
+            "hash": 14281933181853523593
           },
           {
             "offset": 16777216,
@@ -643,7 +643,7 @@
             "offset": 369098752,
             "size": 11188764,
             "compressed_size": 11188764,
-            "hash": 862606460244009733
+            "hash": 9992038312713777415
           }
         ]
       }
