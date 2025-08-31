@@ -4,10 +4,12 @@ Test for loading XIR Xir (Radiance) assets from Python.
 Loads a pre-filtered environment map and verifies the textures are created.
 """
 
-import sys
-import time
+import sys, time, argparse
 from orkengine import core
 from orkengine import lev2
+
+parser = argparse.ArgumentParser(description='XIR Radiance asset loading test')
+parser.add_argument("--id", type=str, default="ork_envmaps|tozenv_nebula", help="XIR asset ID")
 
 tokens = core.CrcStringProxy()
 
