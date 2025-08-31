@@ -41,8 +41,8 @@ int main(int argc, char* argv[]) {
     // Set the environment variable
     setenv("DYLD_LIBRARY_PATH", dyld_path.c_str(), 1);
     
-    // Build path to ork.python
-    std::string python_path = std::string(obt_stage) + "/bin/ork.python";
+    // Build path to orkids custom python executable
+    std::string python_path = std::string(obt_stage) + "/pyvenv/bin/python3";
     
     // Build argument list for execv
     std::vector<char*> exec_args;

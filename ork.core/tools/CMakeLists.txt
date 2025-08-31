@@ -8,5 +8,5 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g")
 
 add_executable(ork.python.wrapper ork_python_wrapper.cpp)
 target_link_libraries(ork.python.wrapper PRIVATE c m )
-set_target_properties(ork.python.wrapper PROPERTIES OUTPUT_NAME "ork.python.wrapper")
+set_target_properties(ork.python.wrapper PROPERTIES OUTPUT_NAME "ork.python")
 install(TARGETS ork.python.wrapper DESTINATION $ENV{OBT_SUBSPACE_BIN_DIR} )
