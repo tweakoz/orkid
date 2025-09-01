@@ -17,6 +17,20 @@ void pyinit_asset_catalog(py::module& module_core) {
   auto type_codec = python::pb11_typecodec_t::instance();
 
   /////////////////////////////////////////////////////////////////////////////////
+  // CompressionType enum (needed for ChunkManifest.compression return type)
+  /////////////////////////////////////////////////////////////////////////////////
+  py::enum_<CompressionType>(module_core, "CompressionType")
+      .value("NONE", CompressionType::NONE)
+      .value("LZ4", CompressionType::LZ4)
+      .value("LZ4HC", CompressionType::LZ4HC);
+
+  /////////////////////////////////////////////////////////////////////////////////
+  // AssetNamespace (needed as return type for find_namespace)
+  /////////////////////////////////////////////////////////////////////////////////
+  auto namespace_type = py::class_<AssetNamespace, assetnamespace_ptr_t>(module_core, "AssetNamespace");
+  type_codec->registerStdCodec<assetnamespace_ptr_t>(namespace_type);
+
+  /////////////////////////////////////////////////////////////////////////////////
   // AssetManifest
   /////////////////////////////////////////////////////////////////////////////////
   auto manifest_type =
@@ -24,8 +38,7 @@ void pyinit_asset_catalog(py::module& module_core) {
           .def_property_readonly("namespace", &AssetManifest::getNamespace)
           .def_property_readonly("version", &AssetManifest::getVersion)
           .def_property_readonly("assets", &AssetManifest::getAssets)
-          .def_static("load_from_file", &AssetManifest::loadFromFile)
-          .def_static("parse_from_string", &AssetManifest::parseFromString)
+          .def_static("loadFromFile", &AssetManifest::loadFromFile)
           .def(
               "createAsset",
               [](assetmanifest_ptr_t self,
@@ -48,11 +61,6 @@ void pyinit_asset_catalog(py::module& module_core) {
               py::arg("tar_root") = "",
               py::arg("filters") = std::vector<std::string>{})
           .def("toJson", &AssetManifest::toJson)
-          .def("getCodec", &AssetManifest::getCodec)
-          .def("repackage", &AssetManifest::repackage)
-          .def("upload", &AssetManifest::upload, 
-               py::arg("config"), 
-               py::arg("destination_id"))
           .def("__repr__", [](assetmanifest_ptr_t manifest) -> std::string {
             return FormatString(
                 "AssetManifest(namespace='%s', version='%s', assets=%zu)",
@@ -62,90 +70,14 @@ void pyinit_asset_catalog(py::module& module_core) {
           });
   type_codec->registerStdCodec<assetmanifest_ptr_t>(manifest_type);
 
-  /////////////////////////////////////////////////////////////////////////////////
-  // AssetRequest
-  /////////////////////////////////////////////////////////////////////////////////
-  auto assetreq_type =
-      py::class_<AssetRequest, assetreq_ptr_t>(module_core, "AssetRequest")
-          .def(py::init<>())
-          .def(py::init<const std::string&>(), py::arg("namespace"))
-          .def(py::init<const std::string&, const std::string&>(), py::arg("namespace"), py::arg("asset_id"))
-          .def_readwrite("namespace", &AssetRequest::_namespace)
-          .def_readwrite("asset_id", &AssetRequest::_asset_id)
-          .def("is_valid", &AssetRequest::isValid)
-          .def(
-              "set_progress_callback",
-              [](assetreq_ptr_t req, py::function fn) {
-                if (!fn.is_none()) {
-                  req->_progress_callback._data.makeShared<py::function>(fn);
-                  req->_progress_callback._item = [req](size_t downloaded, size_t total) {
-                    auto fn = req->_progress_callback._data.getShared<py::function>();
-                    py::gil_scoped_acquire acquire;
-                    fn->operator()(downloaded, total);
-                  };
-                } else {
-                  req->_progress_callback._item = nullptr;
-                }
-              })
-          .def("__repr__", [](assetreq_ptr_t req) -> std::string {
-            return FormatString("AssetRequest(namespace='%s', asset_id='%s')", req->_namespace.c_str(), req->_asset_id.c_str());
-          });
-  type_codec->registerStdCodec<assetreq_ptr_t>(assetreq_type);
 
 
-
-  /////////////////////////////////////////////////////////////////////////////////
-  // AssetState enum
-  /////////////////////////////////////////////////////////////////////////////////
-  py::enum_<AssetState>(module_core, "AssetState")
-      .value("NOT_AVAILABLE", AssetState::NOT_AVAILABLE)
-      .value("QUEUED", AssetState::QUEUED)
-      .value("DOWNLOADING", AssetState::DOWNLOADING)
-      .value("ASSEMBLING", AssetState::ASSEMBLING)
-      .value("VERIFYING", AssetState::VERIFYING)
-      .value("CACHED_MEMORY", AssetState::CACHED_MEMORY)
-      .value("CACHED_DISK", AssetState::CACHED_DISK)
-      .value("FAILED", AssetState::FAILED)
-      .value("CORRUPTED", AssetState::CORRUPTED)
-      .export_values();
-
-  /////////////////////////////////////////////////////////////////////////////////
-  // AssetStatus enum
-  /////////////////////////////////////////////////////////////////////////////////
-  py::enum_<AssetStatus>(module_core, "AssetStatus")
-      .value("OK", AssetStatus::OK)
-      .value("NETWORK", AssetStatus::NETWORK)
-      .value("DOWNLOAD_FAILED", AssetStatus::DOWNLOAD_FAILED)
-      .value("UPLOAD_FAILED", AssetStatus::UPLOAD_FAILED)
-      .value("FILE_NOT_FOUND", AssetStatus::FILE_NOT_FOUND)
-      .value("PERMISSION", AssetStatus::PERMISSION)
-      .value("TIMEOUT", AssetStatus::TIMEOUT)
-      .value("CANCELLED", AssetStatus::CANCELLED)
-      .value("NOT_FOUND", AssetStatus::NOT_FOUND)
-      .value("CHECKSUM", AssetStatus::CHECKSUM)
-      .value("DECRYPT_FAILED", AssetStatus::DECRYPT_FAILED)
-      .value("DECOMPRESS_FAILED", AssetStatus::DECOMPRESS_FAILED)
-      .value("UNSUPPORTED", AssetStatus::UNSUPPORTED)
-      .export_values();
-
-  /////////////////////////////////////////////////////////////////////////////////
-  // CompressionType enum
-  /////////////////////////////////////////////////////////////////////////////////
-  py::enum_<CompressionType>(module_core, "CompressionType")
-      .value("NONE", CompressionType::NONE)
-      .value("LZ4", CompressionType::LZ4)
-      .value("LZ4HC", CompressionType::LZ4HC)
-      .export_values();
 
   /////////////////////////////////////////////////////////////////////////////////
   // AssetFuture
   /////////////////////////////////////////////////////////////////////////////////
   auto future_type = py::class_<AssetFuture, assetfuture_ptr_t>(module_core, "AssetFuture")
-                         .def_readonly("asset_id", &AssetFuture::_asset_id)
-                         .def("is_complete", &AssetFuture::isComplete)
                          .def("wait", &AssetFuture::wait, py::call_guard<py::gil_scoped_release>())
-                         .def("cancel", &AssetFuture::cancel)
-                         .def("get_result", &AssetFuture::getResult)
                          .def("__repr__", [](assetfuture_ptr_t future) -> std::string {
                            return FormatString("AssetFuture(asset_id='%s', complete=%s)", 
                                              future->_asset_id.c_str(),
@@ -157,14 +89,9 @@ void pyinit_asset_catalog(py::module& module_core) {
   // AssetResult
   /////////////////////////////////////////////////////////////////////////////////
   auto result_type = py::class_<AssetResult, assetresult_ptr_t>(module_core, "AssetResult")
-                         .def_readonly("data", &AssetResult::_data)
-                         .def_readonly("status", &AssetResult::_status)
                          .def_readonly("error_detail", &AssetResult::_error_detail)
-                         .def_readonly("download_time", &AssetResult::_download_time)
-                         .def_readonly("processing_time", &AssetResult::_processing_time)
                          .def_readonly("bytes_downloaded", &AssetResult::_bytes_downloaded)
                          .def("is_success", &AssetResult::isSuccess)
-                         .def("__bool__", &AssetResult::operator bool)
                          .def("__repr__", [](assetresult_ptr_t result) -> std::string {
                            return FormatString("AssetResult(status=%d, bytes=%zu)", (int)result->_status, result->_bytes_downloaded);
                          });
@@ -187,7 +114,6 @@ void pyinit_asset_catalog(py::module& module_core) {
   auto chunk_manifest_type = py::class_<ChunkManifest, chunkmanifest_ptr_t>(module_core, "ChunkManifest")
                                  .def(py::init<>())
                                  .def_readonly_static("chunk_size", &ChunkManifest::chunk_size)
-                                 .def_readonly_static("chunk_threshold", &ChunkManifest::chunk_threshold)
                                  .def_readonly("total_size", &ChunkManifest::_total_size)
                                  .def_readonly("file_hash", &ChunkManifest::_file_hash)
                                  .def_readonly("chunks", &ChunkManifest::_chunks)
@@ -199,30 +125,15 @@ void pyinit_asset_catalog(py::module& module_core) {
   // AssetEntry (merged from ManifestEntry)
   /////////////////////////////////////////////////////////////////////////////////
   auto asset_entry_type = py::class_<AssetEntry, assetentry_ptr_t>(module_core, "AssetEntry")
-                              .def_readonly("id", &AssetEntry::_id)
-                              .def_property_readonly(
-                                  "namespace",
-                                  [](assetentry_ptr_t e) -> assetnamespace_ptr_t {
-                                    return e->_namespace_ptr.lock(); // Convert weak pointer to shared pointer
-                                  })
-                              .def_property_readonly("fqid", &AssetEntry::buildFullyQualifiedId)
                               .def_readonly("type", &AssetEntry::_type)
                               .def_readonly("priority", &AssetEntry::_priority)
-                              .def_readonly("merge", &AssetEntry::_merge)
                               .def_readonly("local_loc", &AssetEntry::_local_loc)
-                              .def_readonly("relative_path", &AssetEntry::_relative_path)
-                              .def_readwrite("_tar_root", &AssetEntry::_tar_root)
                               .def_readonly("size", &AssetEntry::_size)
                               .def_readonly("storage_hash", &AssetEntry::_storage_hash)
                               .def_readonly("content_hash", &AssetEntry::_content_hash)
                               .def_readonly("hash_algorithm", &AssetEntry::_hash_algorithm)
-                              .def_readonly("modification_time", &AssetEntry::_modification_time)
-                              .def_readonly("is_compressed", &AssetEntry::_is_compressed)
                               .def_readonly("is_encrypted", &AssetEntry::_is_encrypted)
-                              .def_readonly("compressed_size", &AssetEntry::_compressed_size)
-                              .def_readonly("compression_type", &AssetEntry::_compression_type)
                               .def_readonly("platforms", &AssetEntry::_platforms)
-                              .def_readonly("namespace_id", &AssetEntry::_namespace)
                               .def_readonly("chunk_manifest", &AssetEntry::_chunk_manifest)
                               .def_property_readonly(
                                   "resolved_local_path",
@@ -264,10 +175,6 @@ void pyinit_asset_catalog(py::module& module_core) {
           .def(py::init<>())
           .def(py::init<assetconfigspace_ptr_t>(), py::arg("space") = nullptr)
           // Namespace Management
-          .def_property_readonly("space", [](assetcatalog_ptr_t self) -> assetconfigspace_ptr_t {
-            return self->getConfigSpace();
-          })
-          .def("register_namespace", &AssetCatalog::registerNamespace)
           .def("find_namespace", &AssetCatalog::findNamespace)
           .def("list_namespaces", &AssetCatalog::listNamespaces, py::arg("pattern") = "*")
 
@@ -279,7 +186,6 @@ void pyinit_asset_catalog(py::module& module_core) {
                 auto as_str   = as_pystr.cast<std::string>();
                 self->loadManifestsFromPath(as_str);
               })
-          .def("add_manifest", &AssetCatalog::addManifest)
           .def("get_manifest", &AssetCatalog::getManifest)
           .def_static("loadFromGlobalManifests", &AssetCatalog::loadFromGlobalManifests)
           .def_property_readonly_static("instance", [](py::object /* self */) -> assetcatalog_ptr_t { 
@@ -302,10 +208,7 @@ void pyinit_asset_catalog(py::module& module_core) {
               py::arg("file"))
 
           // Codec Management
-          .def("registerCodec", &AssetCatalog::registerCodec, py::arg("namespace_id"), py::arg("codec"))
           .def("registerCodecWithPassword", &AssetCatalog::registerCodecWithPassword, py::arg("namespace_id"), py::arg("password"))
-          .def("codecForNamespace", &AssetCatalog::codecForNamespace, py::arg("namespace_id"))
-          .def("clearCodecs", &AssetCatalog::clearCodecs)
 
           // Asset Retrieval
           .def(
@@ -326,22 +229,12 @@ void pyinit_asset_catalog(py::module& module_core) {
               py::arg("asset_id"),
               py::arg("decrypt") = true,
               py::arg("disable_cache") = false)
-          .def("has_asset", &AssetCatalog::hasAsset)
           .def("get_asset_info", &AssetCatalog::getAssetInfo)
 
           // Asset Queries
           .def("list_assets", &AssetCatalog::listAssets, py::arg("pattern") = "*")
-          .def("list_assets_in_namespace", &AssetCatalog::listAssetsInNamespace)
-          .def_property_readonly("all_fqids", &AssetCatalog::dumpAllAssetFQIDs)
-
-          // Serialization
-          .def("toJson", &AssetCatalog::toJson)
-          
-          // Repackaging
-          .def("repackage", &AssetCatalog::repackage)
           
           // Upload Operations
-          .def("upload", &AssetCatalog::uploadNamespace, py::arg("namespace_id"))  // Backward compatibility
           .def("uploadNamespace", &AssetCatalog::uploadNamespace, py::arg("namespace_id"))
           .def("uploadAsset", &AssetCatalog::uploadAsset, py::arg("fq_asset_id"))
           .def("uploadAllNamespaces", &AssetCatalog::uploadAllNamespaces)
@@ -357,34 +250,9 @@ void pyinit_asset_catalog(py::module& module_core) {
               [](assetcatalog_ptr_t& catalog, const std::string& dir) {
                 catalog->setCacheDir(file::Path(dir));
               })
-          .def_property_readonly("encrypted_dir", [](const assetcatalog_ptr_t& catalog) -> std::string {
-            return catalog->getEncryptedDir().toStdString();
-          })
-          .def_property_readonly("chunks_dir", [](const assetcatalog_ptr_t& catalog) -> std::string {
-            return catalog->getChunksDir().toStdString();
-          })
-          .def_property_readonly("receipts_dir", [](const assetcatalog_ptr_t& catalog) -> std::string {
-            return catalog->getReceiptsDir().toStdString();
-          })
-          .def_property_readonly("temp_dir", [](const assetcatalog_ptr_t& catalog) -> std::string {
-            return catalog->getTempDir().toStdString();
-          })
 
           .def("__repr__", [](assetcatalog_ptr_t catalog) -> std::string { return "AssetCatalog()"; });
   type_codec->registerStdCodec<assetcatalog_ptr_t>(catalog_type);
 
-  /////////////////////////////////////////////////////////////////////////////////
-  // AssetNamespace
-  /////////////////////////////////////////////////////////////////////////////////
-  auto namespace_type = py::class_<AssetNamespace, assetnamespace_ptr_t>(module_core, "AssetNamespace")
-                            .def(py::init<const std::string&>(), py::arg("id"))
-                            .def_property_readonly("id", [](assetnamespace_ptr_t ns) -> std::string {
-                              return ns->_id; // Accessing the private _id directly
-                            })
-                            .def("has_codec", &AssetNamespace::hasCodec)
-                            .def("__repr__", [](assetnamespace_ptr_t ns) -> std::string {
-                              return FormatString("AssetNamespace(id='%s')", ns->_id.c_str());
-                            });
-  type_codec->registerStdCodec<assetnamespace_ptr_t>(namespace_type);
 } // void pyinit_asset_catalog(py::module& module_core) {
 } // namespace ork::asset::catalog
