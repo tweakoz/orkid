@@ -34,7 +34,7 @@ static logchannel_ptr_t logchan_catalog = logger()->getChannel("CATALOG");
 // Asset Retrieval
 ////////////////////////////////////////////////////////////////
 
-assetresult_ptr_t AssetCatalog::get(const assetid_t& fq_asset_id, bool decrypt, bool disable_cache) {
+assetresult_ptr_t AssetCatalog::fetch(const assetid_t& fq_asset_id, bool decrypt, bool disable_cache) {
   
   auto impl = _impl.getShared<CatalogImpl>();
   
@@ -99,7 +99,7 @@ assetresult_ptr_t AssetCatalog::get(const assetid_t& fq_asset_id, bool decrypt, 
 // Async Asset Retrieval
 ////////////////////////////////////////////////////////////////
 
-assetfuture_ptr_t AssetCatalog::enqueueGet(const assetid_t& fq_asset_id, bool decrypt, bool disable_cache) {
+assetfuture_ptr_t AssetCatalog::fetchAsync(const assetid_t& fq_asset_id, bool decrypt, bool disable_cache) {
   
   auto impl = _impl.getShared<CatalogImpl>();
   

@@ -29,7 +29,7 @@ asset_ptr_t HybridAssetLoader::load(loadrequest_ptr_t loadreq) {
     if (components.isValid()) {
       auto catalog = asset::catalog::AssetCatalog::globalInstance();
       auto catalog_path = components._namespace + "|" + components._asset;
-      auto result = catalog->get(catalog_path); // synchronous 
+      auto result = catalog->fetch(catalog_path); // synchronous 
       logchan_hyb->log("result %p", (void*) result.get());
       dblock = result ? result->_data : nullptr;
       logchan_hyb->log("dblock %p", (void*) dblock.get());

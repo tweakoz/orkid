@@ -246,11 +246,11 @@ struct AssetCatalog {
   //
   // Generation safety is built-in - if manifest changes during retrieval,
   // the operation either completes with old version or retries with new
-  assetresult_ptr_t get(const assetid_t& fq_asset_id, bool decrypt = true, bool disable_cache = false);
+  assetresult_ptr_t fetch(const assetid_t& fq_asset_id, bool decrypt = true, bool disable_cache = false);
   
   // Async version - enqueue asset fetch and return future immediately
   // Allows parallel fetching of multiple assets
-  assetfuture_ptr_t enqueueGet(const assetid_t& fq_asset_id, bool decrypt = true, bool disable_cache = false);
+  assetfuture_ptr_t fetchAsync(const assetid_t& fq_asset_id, bool decrypt = true, bool disable_cache = false);
   
   // Check if asset exists without downloading
   bool hasAsset(const assetid_t& fq_asset_id) const;

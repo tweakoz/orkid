@@ -61,7 +61,7 @@ TEST(AssetCatalog_Get_BasicSync) {
     
     // This test would require a running server or mock HTTP client
     // For now, just test that the API returns appropriate error for missing assets
-    auto result = catalog->get("test::test.txt", false);
+    auto result = catalog->fetch("test::test.txt", false);
     CHECK(result != nullptr);
     CHECK(!result->isSuccess());
     CHECK(result->_status == AssetStatus::NOT_FOUND);
@@ -72,7 +72,7 @@ TEST(AssetCatalog_Get_NotFound) {
     auto catalog = std::make_shared<AssetCatalog>(cfgspc);
     
     // Try to get non-existent asset
-    auto result = catalog->get("test::nonexistent.txt", false);
+    auto result = catalog->fetch("test::nonexistent.txt", false);
     CHECK(result != nullptr);
     CHECK(!result->isSuccess());
     //CHECK_EQUAL(AssetStatus::NOT_FOUND, result->_status);

@@ -24,7 +24,7 @@ class ParallelFetcher:
     def fetch_single(self, asset_id):
         """Fetch a single asset (runs in thread)"""
         try:
-            result = self.catalog.get(asset_id, decrypt=True, disable_cache=self.disable_cache)
+            result = self.catalog.fetch(asset_id, decrypt=True, disable_cache=self.disable_cache)
             
             with self.lock:
                 self.completed += 1
@@ -115,7 +115,7 @@ def fetch_assets_sequential(catalog, asset_ids, force=False, disable_cache=False
     # Enqueue all assets for concurrent fetching
     futures = []
     for asset_id in asset_ids:
-        future = catalog.enqueue_get(asset_id, decrypt=True, disable_cache=disable_cache)
+        future = catalog.fetchAsync(asset_id, decrypt=True, disable_cache=disable_cache)
         futures.append((asset_id, future))
     
     print(f"Enqueued {total} assets for concurrent download")

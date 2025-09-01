@@ -212,19 +212,19 @@ void pyinit_asset_catalog(py::module& module_core) {
 
           // Asset Retrieval
           .def(
-              "get",
+              "fetch",
               [](assetcatalog_ptr_t catalog, const std::string& asset_id, bool decrypt, bool disable_cache) -> assetresult_ptr_t {
                 py::gil_scoped_release release;
-                return catalog->get(asset_id, decrypt, disable_cache);
+                return catalog->fetch(asset_id, decrypt, disable_cache);
               },
               py::arg("asset_id"),
               py::arg("decrypt") = true,
               py::arg("disable_cache") = false)
           .def(
-              "enqueue_get",
+              "fetchAsync",
               [](assetcatalog_ptr_t catalog, const std::string& asset_id, bool decrypt, bool disable_cache) -> assetfuture_ptr_t {
                 py::gil_scoped_release release;
-                return catalog->enqueueGet(asset_id, decrypt, disable_cache);
+                return catalog->fetchAsync(asset_id, decrypt, disable_cache);
               },
               py::arg("asset_id"),
               py::arg("decrypt") = true,

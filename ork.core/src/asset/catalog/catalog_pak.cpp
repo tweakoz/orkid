@@ -49,7 +49,7 @@ assetresult_ptr_t AssetCatalog::unpackToLocal(const assetid_t& fq_pak_asset_id) 
   }
 
   // 3. Get pak contents using regular get() - this handles download/decryption/decompression
-  auto pak_result = get(fq_pak_asset_id, true);
+  auto pak_result = fetch(fq_pak_asset_id, true);
   if (!pak_result || !pak_result->isSuccess() || !pak_result->isPak()) {
     result->_status       = pak_result ? pak_result->_status : AssetStatus::DOWNLOAD_FAILED;
     result->_error_detail = pak_result ? pak_result->_error_detail : "Failed to retrieve pak";

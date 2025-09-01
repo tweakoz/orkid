@@ -101,7 +101,6 @@ AssetCatalog::AssetCatalog(assetconfigspace_ptr_t space) {
 AssetCatalog::~AssetCatalog() {
   auto impl       = _impl.getShared<CatalogImpl>();
   impl->_shutdown = true;
-  // TODO: Cancel all downloads if needed
 }
 
 /////////////////////////////////////////////////////////////////////////////////
