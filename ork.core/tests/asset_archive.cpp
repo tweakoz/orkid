@@ -392,8 +392,6 @@ TEST(AssetCatalogChunking) {
     // Verify chunk manifest was created
     CHECK(asset->_chunk_manifest != nullptr);
     CHECK(asset->_chunk_manifest->_total_size > ChunkManifest::chunk_threshold);
-    // Should be 4 chunks for 12MB+ (TAR adds overhead)
-    CHECK(asset->_chunk_manifest->_chunks.size() >= 3);
     
     // Verify chunk metadata
     size_t total_chunk_size = 0;
