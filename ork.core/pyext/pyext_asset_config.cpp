@@ -90,7 +90,6 @@ void pyinit_asset_config(py::module& module_core) {
                                }
                                return destinations;
                              })
-                         .def("toJson", &AssetConfig::toJson)
                          .def_static(
                              "loadFromDirectory",
                              [](py::object path) -> assetconfig_ptr_t {

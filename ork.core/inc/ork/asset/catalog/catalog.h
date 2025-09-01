@@ -332,11 +332,7 @@ struct AssetCatalog {
   // Format: namespace_id + "|" + asset_path
   // Example: buildAssetId("game|ui|button", "icon.png") -> "game|ui|button|icon.png"
   static assetid_t buildAssetId(const namespaceid_t& namespace_id, const std::string& asset_path);
-  
-  // Convert catalog to JSON
-  // Returns dictionary of manifest_path -> manifest_json
-  std::string toJson() const;
-  
+    
   // Repackage all assets in all manifests
   void repackage();
   
@@ -378,13 +374,7 @@ struct AssetCatalog {
   
   // Get flyweight namespace for an ID (creates if doesn't exist)
   assetnamespace_ptr_t mergeNamespace(const namespaceid_t& namespace_id);
-  
-  // Get all requests in a specific state
-  std::vector<assetreq_ptr_t> getRequestsInState(AssetState state) const;
-  
-  // Get request count for an asset
-  int getRequestCount(const assetid_t& asset_id) const;
-    
+        
 // Members:
   ////////////////////////////////////////////////////////////////////////////////
   // === Generation-Based Versioning System ===
