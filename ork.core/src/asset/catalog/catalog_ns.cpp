@@ -41,8 +41,6 @@ void AssetCatalog::registerNamespace(const namespaceid_t& path, assetnamespace_p
     state._nodes_by_namespace[path] = ns;
   });
 
-  // Increment generation to invalidate caches
-  impl->_generation.fetch_add(1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

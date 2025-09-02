@@ -117,6 +117,19 @@ void setProgressHandler(progress_handler_t new_handler) {
 }
 ///////////////////////////////////////////////////////////////////////
 
+int quantaForProfile(EPerformaceProfile p) {
+  switch (p) {
+    case EPerformaceProfile::LOW_LATENCY:
+      return 5;
+    case EPerformaceProfile::BALANCED:
+      return 25;
+    case EPerformaceProfile::IO:
+      return 2500;
+  }
+  return 1 << 14;
+}
+///////////////////////////////////////////////////////////////////////
+
 void dispersed_sleep(int idx, int iquantausec) {
   static const int ktabsize       = 16;
   static const int ktab[ktabsize] = {
@@ -319,7 +332,8 @@ void OpqThread::run() // virtual
 
   while (EPOQSTATE_OK2KILL != _state.load()) {
 
-    dispersed_sleep(slindex++, 10); // semaphores are slowing us down
+    int quanta = quantaForProfile(q->_perf_profile);
+    dispersed_sleep(slindex++, quanta); // semaphores are slowing us down
     // popq->mSemaphore.wait(); // wait for an op (without spinning)
 
     switch (_state.load()) {
@@ -683,7 +697,8 @@ void ConcurrencyGroup::enqueue(const Op& the_op) {
 
     if (false == was_enqueued) {
       static std::atomic<int> slindex(0);
-      dispersed_sleep(slindex++, 10); // semaphores are slowing us down
+      int quanta = quantaForProfile(_queue._perf_profile);
+      dispersed_sleep(slindex++, quanta); // semaphores are slowing us down
     }
   }
   _queue.mSemaphore.notify();
@@ -707,7 +722,8 @@ void ConcurrencyGroup::drain(float timeout_seconds) {
 
     if (false == was_drained) {
       static std::atomic<int> slindex(0);
-      dispersed_sleep(slindex++, 10); // semaphores are slowing us down
+      int quanta = quantaForProfile(_queue._perf_profile);
+      dispersed_sleep(slindex++, quanta); // semaphores are slowing us down
     }
     keep_waiting = (false == was_drained);
     if(timer){

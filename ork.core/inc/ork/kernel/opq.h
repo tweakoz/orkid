@@ -227,6 +227,14 @@ struct OpqThread : public ork::Thread {
 
 //////////////////////////////////////////////////////////////////////
 
+enum struct EPerformaceProfile : uint32_t {
+  LOW_LATENCY = 0,
+  BALANCED = 1,
+  IO = 2
+};
+
+//////////////////////////////////////////////////////////////////////
+
 struct OperationsQueue : public std::enable_shared_from_this<OperationsQueue> {
   OperationsQueue(int inumthreads, const char* name = "DefOpQ");
   ~OperationsQueue();
@@ -288,6 +296,7 @@ struct OperationsQueue : public std::enable_shared_from_this<OperationsQueue> {
   std::atomic<int> _numInFlight;
   std::string _name;
   std::string _debuginfo;
+  EPerformaceProfile _perf_profile = EPerformaceProfile::BALANCED;
 
   using hookmap_t = std::unordered_map<std::string,hooklambda_t>;
 

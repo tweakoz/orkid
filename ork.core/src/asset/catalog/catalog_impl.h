@@ -65,26 +65,10 @@ struct CatalogImpl {
     std::map<namespaceid_t, encryptioncodec_ptr_t> _codecs_by_namespace;
   };
 
-  CatalogImpl(AssetCatalog* catalog) : _catalog(catalog), _generation(1) {
-    // State is now initialized via LockedResource default constructor
-    
-    // Initialize root namespace
-    _root_namespace = std::make_shared<AssetNamespace>("");
-    _root_namespace->_full_path = "";
-        
-    // Initialize download manager with default concurrent queue
-    _download_manager = std::make_shared<DownloadManager>(opq::concurrentQueue());
-    _download_manager->setMaxConcurrentDownloads(4); // Allow 4 parallel downloads
-    
-    // Initialize upload manager with default concurrent queue
-    _upload_manager = std::make_shared<UploadManager>(opq::concurrentQueue());
-  }
+  CatalogImpl(AssetCatalog* catalog);
   
   AssetCatalog* _catalog;
-  
-  // Single source of truth for catalog version (still used for cache invalidation)
-  std::atomic<uint64_t> _generation;
-  
+    
   // All catalog state - thread-safe via LockedResource direct mutation
   LockedResource<CatalogState> _state;
   
@@ -104,6 +88,7 @@ struct CatalogImpl {
   // No explicit shutdown needed, same as opq.cpp::concurrentQueue()
   downloadmanager_ptr_t _download_manager;
   uploadmanager_ptr_t _upload_manager;
+  opq::opq_ptr_t _xfer_opq;
   std::atomic<bool> _shutdown{false};
   
   // Progress tracking - thread-safe via LockedResource

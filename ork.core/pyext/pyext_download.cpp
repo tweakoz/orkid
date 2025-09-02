@@ -185,7 +185,6 @@ void pyinit_download(py::module& module_core) {
     .def_readwrite("max_concurrent_downloads", &DownloadManager::_max_concurrent_downloads)
     .def("download", &DownloadManager::download)
     .def("downloadGroup", &DownloadManager::downloadGroup)
-    .def("set_max_concurrent_downloads", &DownloadManager::setMaxConcurrentDownloads)
     .def("shutdown", &DownloadManager::shutdown)
     .def("is_active", &DownloadManager::isActive)
     .def("active_download_count", &DownloadManager::activeDownloadCount)

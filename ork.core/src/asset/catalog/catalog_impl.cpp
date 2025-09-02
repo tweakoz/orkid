@@ -28,6 +28,25 @@ static logchannel_ptr_t logchan_catalog = logger()->configureChannel("CATALOG", 
 
 ////////////////////////////////////////////////////////////////
 
+CatalogImpl::CatalogImpl(AssetCatalog* catalog) //
+  : _catalog(catalog) {  //
+    // State is now initialized via LockedResource default constructor
+    
+    _xfer_opq = std::make_shared<opq::OperationsQueue>(6, "transferOpQueue");
+    _xfer_opq->_perf_profile = opq::EPerformaceProfile::IO;
+    // Initialize root namespace
+    _root_namespace = std::make_shared<AssetNamespace>("");
+    _root_namespace->_full_path = "";
+        
+    // Initialize download manager with default concurrent queue
+    _download_manager = std::make_shared<DownloadManager>(_xfer_opq);
+    
+    // Initialize upload manager with default concurrent queue
+    _upload_manager = std::make_shared<UploadManager>(_xfer_opq);
+  }
+  
+  ////////////////////////////////////////////////////////////////
+
 assetlocation_ptr_t CatalogImpl::locateAsset(const assetid_t& fq_asset_id) const {
   assetlocation_ptr_t result;
 

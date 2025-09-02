@@ -231,8 +231,6 @@ void AssetCatalog::addManifest(assetmanifest_ptr_t manifest) {
     }
   });
 
-  // Increment generation to invalidate caches
-  impl->_generation.fetch_add(1);
 }
 
 /////////////////////////////////////////////////////////////////////////////////

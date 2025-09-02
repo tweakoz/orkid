@@ -29,8 +29,6 @@ void AssetCatalog::registerCodec(const namespaceid_t& namespace_id, encryptionco
   // Direct mutation with proper locking
   impl->_state.atomicOp([&](CatalogImpl::CatalogState& state) { state._codecs_by_namespace[namespace_id] = codec; });
 
-  // Increment generation for cache invalidation
-  ++impl->_generation;
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -71,8 +69,6 @@ void AssetCatalog::clearCodecs() {
   // Direct mutation with proper locking
   impl->_state.atomicOp([&](CatalogImpl::CatalogState& state) { state._codecs_by_namespace.clear(); });
 
-  // Increment generation for cache invalidation
-  ++impl->_generation;
 }
 
 } //  namespace ork::asset::catalog {

@@ -212,13 +212,6 @@ void DownloadManager::downloadGroup(download_group_ptr_t group) {
 
 void DownloadManager::processDownload(download_ptr_t dl) {
   
-  // Wait if we're at max concurrent downloads
-  while (_impl->_active_downloads >= _max_concurrent_downloads && !_impl->_shutdown_requested) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    // Emit metrics during wait
-    _impl->emitPerfMetrics();
-  }
-
   if (_impl->_shutdown_requested) {
     dl->_state = DownloadState::CANCELLED;
     _impl->_failed_downloads++;
@@ -397,12 +390,6 @@ void DownloadManager::updateActiveDownloads() {
       ++it;
     }
   }
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-void DownloadManager::setMaxConcurrentDownloads(size_t max) {
-  _max_concurrent_downloads = max;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

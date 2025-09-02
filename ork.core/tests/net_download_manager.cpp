@@ -46,18 +46,6 @@ TEST(NetDownloadManagerCanCreateDownload) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-TEST(NetDownloadManagerCanSetMaxConcurrent) {
-  auto mgr = std::make_shared<DownloadManager>();
-  
-  mgr->setMaxConcurrentDownloads(8);
-  CHECK(mgr->_max_concurrent_downloads == 8);
-  
-  mgr->setMaxConcurrentDownloads(2);
-  CHECK(mgr->_max_concurrent_downloads == 2);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 TEST(NetDownloadManagerCanCheckRemoteFileExists) {
   auto mgr = std::make_shared<DownloadManager>();
   
