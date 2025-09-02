@@ -236,7 +236,7 @@ enum struct EPerformaceProfile : uint32_t {
 //////////////////////////////////////////////////////////////////////
 
 struct OperationsQueue : public std::enable_shared_from_this<OperationsQueue> {
-  OperationsQueue(int inumthreads, const char* name = "DefOpQ");
+  OperationsQueue(int inumthreads, const char* name = "DefOpQ", EPerformaceProfile p = EPerformaceProfile::BALANCED);
   ~OperationsQueue();
 
   struct InternalLock {
@@ -337,6 +337,7 @@ void exit();
 opq_ptr_t updateSerialQueue();
 opq_ptr_t mainSerialQueue();
 opq_ptr_t concurrentQueue();
+opq_ptr_t ioQueue();
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::opq

@@ -182,7 +182,6 @@ void pyinit_download(py::module& module_core) {
   auto download_manager_type = py::class_<DownloadManager, downloadmanager_ptr_t>(module_core, "DownloadManager")
     .def(py::init<>())
     .def(py::init<opq::opq_ptr_t>())
-    .def_readwrite("max_concurrent_downloads", &DownloadManager::_max_concurrent_downloads)
     .def("download", &DownloadManager::download)
     .def("downloadGroup", &DownloadManager::downloadGroup)
     .def("shutdown", &DownloadManager::shutdown)
@@ -201,8 +200,8 @@ void pyinit_download(py::module& module_core) {
          py::arg("ignore_tls_errors") = false,
          "Check if a remote file exists using HEAD request")
     .def("__repr__", [](downloadmanager_ptr_t mgr) -> std::string {
-      return FormatString("DownloadManager(max_concurrent=%zu, active=%zu)", 
-        mgr->_max_concurrent_downloads, mgr->activeDownloadCount());
+      return FormatString("DownloadManager(active=%zu)", 
+        mgr->activeDownloadCount());
     });
   type_codec->registerStdCodec<downloadmanager_ptr_t>(download_manager_type);
 }

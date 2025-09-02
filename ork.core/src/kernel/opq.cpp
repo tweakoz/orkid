@@ -564,8 +564,9 @@ concurrency_group_ptr_t OperationsQueue::createConcurrencyGroup(const char* pnam
   return pgrp;
 }
 ///////////////////////////////////////////////////////////////////////////
-OperationsQueue::OperationsQueue(int inumthreads, const char* name)
+OperationsQueue::OperationsQueue(int inumthreads, const char* name, EPerformaceProfile p)
     : mSemaphore(name)
+    , _perf_profile(p)
     , _name(name) {
   _lock                   = false;
   _terminated             = false;
@@ -773,12 +774,12 @@ int OpqSynchro::pendingOps() const {
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 opq_ptr_t updateSerialQueue() {
-  static opq_ptr_t gupdserq = std::make_shared<OperationsQueue>(0, "updateSerialQueue");
+  static opq_ptr_t gupdserq = std::make_shared<OperationsQueue>(0, "updateSerialQueue", EPerformaceProfile::LOW_LATENCY);
   return gupdserq;
 }
 ///////////////////////////////////////////////////////////////////////
 opq_ptr_t mainSerialQueue() {
-  static opq_ptr_t gmainthrq = std::make_shared<OperationsQueue>(0, "mainSerialQueue");
+  static opq_ptr_t gmainthrq = std::make_shared<OperationsQueue>(0, "mainSerialQueue", EPerformaceProfile::BALANCED);
   return gmainthrq;
 }
 ///////////////////////////////////////////////////////////////////////
@@ -794,8 +795,13 @@ opq_ptr_t concurrentQueue() {
     MAX_THREADS = 12;
   }
   /////////////////////////////////////////////////////////
-  static opq_ptr_t gconcurrentq = std::make_shared<OperationsQueue>(MIN_THREADS, "concurrentQueue");
+  static opq_ptr_t gconcurrentq = std::make_shared<OperationsQueue>(MIN_THREADS, "concurrentQueue", EPerformaceProfile::BALANCED);
   return gconcurrentq;
+}
+///////////////////////////////////////////////////////////////////////
+opq_ptr_t ioQueue() {
+  static opq_ptr_t gioq = std::make_shared<OperationsQueue>(6, "ioQueue", EPerformaceProfile::IO);
+  return gioq;
 }
 ///////////////////////////////////////////////////////////////////////
 std::shared_ptr<OperationsQueue::InternalLock> OperationsQueue::scopedLock() {

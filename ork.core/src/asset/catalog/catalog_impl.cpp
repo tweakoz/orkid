@@ -32,17 +32,15 @@ CatalogImpl::CatalogImpl(AssetCatalog* catalog) //
   : _catalog(catalog) {  //
     // State is now initialized via LockedResource default constructor
     
-    _xfer_opq = std::make_shared<opq::OperationsQueue>(6, "transferOpQueue");
-    _xfer_opq->_perf_profile = opq::EPerformaceProfile::IO;
     // Initialize root namespace
     _root_namespace = std::make_shared<AssetNamespace>("");
     _root_namespace->_full_path = "";
         
     // Initialize download manager with default concurrent queue
-    _download_manager = std::make_shared<DownloadManager>(_xfer_opq);
+    _download_manager = std::make_shared<DownloadManager>(opq::ioQueue());
     
     // Initialize upload manager with default concurrent queue
-    _upload_manager = std::make_shared<UploadManager>(_xfer_opq);
+    _upload_manager = std::make_shared<UploadManager>(opq::ioQueue());
   }
   
   ////////////////////////////////////////////////////////////////

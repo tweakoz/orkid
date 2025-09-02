@@ -88,7 +88,6 @@ struct CatalogImpl {
   // No explicit shutdown needed, same as opq.cpp::concurrentQueue()
   downloadmanager_ptr_t _download_manager;
   uploadmanager_ptr_t _upload_manager;
-  opq::opq_ptr_t _xfer_opq;
   std::atomic<bool> _shutdown{false};
   
   // Progress tracking - thread-safe via LockedResource
