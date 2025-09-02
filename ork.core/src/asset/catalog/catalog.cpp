@@ -9,6 +9,7 @@
 #include <ork/asset/catalog/chunk_assembler.h>
 #include <ork/asset/catalog/config.h>
 #include <ork/asset/catalog/uploader.h>
+#include <ork/asset/catalog/request.h>
 #include <ork/file/file.h>
 #include <ork/kernel/string/deco.inl>
 #include <ork/util/crypt.h>
@@ -36,18 +37,6 @@
 namespace ork::asset::catalog {
 
 static logchannel_ptr_t logchan_catalog = logger()->getChannel("CATALOG");
-
-////////////////////////////////////////////////////////////////
-// AssetResult implementations moved from header
-////////////////////////////////////////////////////////////////
-
-bool AssetResult::isSuccess() const {
-  return _status == AssetStatus::OK;
-}
-
-AssetResult::operator bool() const {
-  return isSuccess();
-}
 
 ////////////////////////////////////////////////////////////////
 // AssetCatalog
@@ -382,20 +371,20 @@ URL AssetCatalog::getChunkDownloadURL(const AssetEntry* entry, size_t chunk_inde
 // Asset Request State Management (Flyweight)
 ////////////////////////////////////////////////////////////////
 
-assetreq_ptr_t AssetCatalog::mergeAssetReq(const assetid_t& _asset_id) {
+assethandle_ptr_t AssetCatalog::mergeAsset(const assetid_t& _asset_id) {
   auto impl = _impl.getShared<CatalogImpl>();
-  assetreq_ptr_t request;
+  assethandle_ptr_t request;
 
-  impl->_active_requests.atomicOp([&](std::map<assetid_t, assetreq_ptr_t>& requests) {
-    auto it = requests.find(_asset_id);
-    if (it != requests.end()) {
+  impl->_active_handles.atomicOp([&](assethandle_map_t& unlocked) {
+    auto it = unlocked.find(_asset_id);
+    if (it != unlocked.end()) {
       // Return existing request (flyweight pattern)
       request = it->second;
     } else {
       // Create new request
-      request            = std::make_shared<AssetRequest>();
+      request            = std::make_shared<AssetHandle>();
       request->_asset_id = _asset_id;
-      requests[_asset_id] = request;
+      unlocked[_asset_id] = request;
     }
     // Increment refcount for this access
     request->_refcount.fetch_add(1);

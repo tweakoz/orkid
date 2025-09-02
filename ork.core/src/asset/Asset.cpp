@@ -11,6 +11,7 @@
 #include <ork/asset/Asset.h>
 #include <ork/asset/AssetSetEntry.h>
 #include <ork/asset/catalog/catalog.h>
+#include <ork/asset/catalog/request.h>
 #include <ork/reflect/properties/registerX.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -66,24 +67,24 @@ LoadRequest::LoadRequest(const AssetPath& p,vars_ptr_t vars) //
 
 ///////////////////////////////////////////////////////////////////////////////
 
-LoadRequest::LoadRequest(const AssetPath& p, catalog::assetreq_ptr_t catalog_req)
+LoadRequest::LoadRequest(const AssetPath& p, catalog::assethandle_ptr_t catalog_handle)
   : _asset_path(p)
-  , _catalog_request(catalog_req) {
+  , _catalog_handle(catalog_handle) {
   _asset_vars = std::make_shared<vars_t>();
-  OrkAssert(catalog_req != nullptr);
-  OrkAssert(catalog_req->isValid());
+  OrkAssert(catalog_handle != nullptr);
+  OrkAssert(catalog_handle->isValid());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-LoadRequest::LoadRequest(catalog::assetreq_ptr_t catalog_req)
-  : _catalog_request(catalog_req) {
+LoadRequest::LoadRequest(catalog::assethandle_ptr_t catalog_handle)
+  : _catalog_handle(catalog_handle) {
   _asset_vars = std::make_shared<vars_t>();
-  OrkAssert(catalog_req != nullptr);
-  OrkAssert(catalog_req->isValid());
+  OrkAssert(catalog_handle != nullptr);
+  OrkAssert(catalog_handle->isValid());
   // Path will be resolved from catalog asset_id if needed
-  if (!catalog_req->_asset_id.empty()) {
-    _asset_path = AssetPath(catalog_req->_asset_id.c_str());
+  if (!catalog_handle->_asset_id.empty()) {
+    _asset_path = AssetPath(catalog_handle->_asset_id.c_str());
   }
 }
 
@@ -123,10 +124,10 @@ void LoadRequest::waitForCompletion() const { //
 ///////////////////////////////////////////////////////////////////////////////
 
 std::string LoadRequest::getAssetIdentifier() const {
-  if (_catalog_request) {
+  if (_catalog_handle) {
     // For catalog: namespace.assetid or namespace.derivedname
-    if (!_catalog_request->_asset_id.empty()) {
-      return _catalog_request->_namespace + "." + _catalog_request->_asset_id;
+    if (!_catalog_handle->_asset_id.empty()) {
+      return _catalog_handle->_namespace + "." + _catalog_handle->_asset_id;
     }
     // Derive from path - use base filename without extension
     std::string name = _asset_path.getName();
@@ -134,7 +135,7 @@ std::string LoadRequest::getAssetIdentifier() const {
     if (dot_pos != std::string::npos) {
       name = name.substr(0, dot_pos);
     }
-    return _catalog_request->_namespace + "." + name;
+    return _catalog_handle->_namespace + "." + name;
   }
   // For file: just the path
   return _asset_path.c_str();

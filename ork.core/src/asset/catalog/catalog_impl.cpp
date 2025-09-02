@@ -1,6 +1,7 @@
 #include <ork/asset/catalog/catalog.h>
 #include <ork/asset/catalog/chunk_assembler.h>
 #include <ork/asset/catalog/config.h>
+#include <ork/asset/catalog/request.h>
 #include <ork/file/file.h>
 #include <ork/kernel/string/deco.inl>
 #include <ork/util/crypt.h>

@@ -3,19 +3,6 @@
 namespace ork::asset::catalog {
 
 ////////////////////////////////////////////////////////////////
-// FetchRequest - Encapsulates all parameters for asset fetching
-////////////////////////////////////////////////////////////////
-
-struct FetchRequest {
-  assetid_t asset_id;
-  AssetLocation location;
-  assetentry_ptr_t asset_info;
-  bool decrypt = true;
-  bool disable_cache = false;
-  // Future expansion: priority, timeout, retry_count, etc.
-};
-
-////////////////////////////////////////////////////////////////
 // CatalogImpl - Implementation class for AssetCatalog
 ////////////////////////////////////////////////////////////////
 
@@ -81,7 +68,7 @@ struct CatalogImpl {
   assetnamespace_ptr_t _root_namespace;
   
   // Flyweight asset request storage
-  LockedResource<std::map<assetid_t, assetreq_ptr_t>> _active_requests;
+  LockedResource<assethandle_map_t> _active_handles;
   
   // Download/Upload management
   // Managers follow singleton pattern - live until program exit
@@ -119,8 +106,8 @@ struct CatalogImpl {
   datablock_ptr_t downloadSingleData(fetchrequest_ptr_t request);
   
   // Cache helpers
-  file::Path getCachePathForAsset(const AssetLocation& location) const;
-  file::Path getCachePathForChunk(const AssetLocation& location, size_t chunk_index) const;
+  file::Path getCachePathForAsset(assetlocation_ptr_t location) const;
+  file::Path getCachePathForChunk(assetlocation_ptr_t location, size_t chunk_index) const;
   bool verifyCachedFileHash(const file::Path& cache_path, const std::string& expected_hash) const;
   bool verifyCachedChunkHash(const file::Path& cache_path, chunk_hash_t expected_hash) const;
   datablock_ptr_t readCachedFile(const file::Path& cache_path) const;
@@ -171,7 +158,7 @@ struct CatalogImpl {
   
   // Identity
   std::string asset_id;
-  AssetLocation location;
+  assetlocation_ptr_t location;
   chunkmanifest_ptr_t chunk_manifest;
   
   // Progress tracking
@@ -195,7 +182,7 @@ struct CatalogImpl {
   // Constructor
   ////////////////////////////////////////////////////////////////////////////////
   ChunkDownloadCoordinator(const std::string& id, 
-                           const AssetLocation& loc,
+                           assetlocation_ptr_t loc,
                            chunkmanifest_ptr_t manifest)
       : asset_id(id), location(loc), chunk_manifest(manifest), 
         total_chunks(manifest ? manifest->_chunks.size() : 0) {

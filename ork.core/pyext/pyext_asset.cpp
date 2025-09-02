@@ -9,6 +9,7 @@
 #include <ork/asset/Asset.h>
 #include <ork/asset/AssetLoader.h>
 #include <ork/asset/catalog/manifest.h>
+#include <ork/asset/catalog/request.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -81,7 +82,7 @@ void pyinit_asset(py::module& module_core) {
     return loadreq;
   });
   /////////////////////////////////////////////////////////////////////////////////
-  amodule.def("enqueueCatalogLoad", [type_codec](catalog::assetreq_ptr_t catalog_req, py::kwargs _kwargs) -> loadrequest_ptr_t {
+  amodule.def("enqueueCatalogLoad", [type_codec](catalog::assethandle_ptr_t catalog_handle, py::kwargs _kwargs) -> loadrequest_ptr_t {
     varmap::varmap_ptr_t as_varmap = nullptr;
     py::dict vars;
     py::function py_on_event;
@@ -118,9 +119,9 @@ void pyinit_asset(py::module& module_core) {
     // Create LoadRequest with catalog
     loadrequest_ptr_t loadreq;
     if (apath.empty()) {
-      loadreq = std::make_shared<LoadRequest>(catalog_req);
+      loadreq = std::make_shared<LoadRequest>(catalog_handle);
     } else {
-      loadreq = std::make_shared<LoadRequest>(apath, catalog_req);
+      loadreq = std::make_shared<LoadRequest>(apath, catalog_handle);
     }
     
     if(py_on_event){
@@ -145,7 +146,7 @@ void pyinit_asset(py::module& module_core) {
     OrkAssert(net_loader);
     net_loader->load(loadreq);
     return loadreq;
-  }, py::arg("catalog_request"));
+  }, py::arg("catalog_handleuest"));
   /////////////////////////////////////////////////////////////////////////////////
   auto aset_type = py::class_<Asset,asset_ptr_t>(amodule, "Asset");
   type_codec->registerStdCodec<asset_ptr_t>(aset_type);

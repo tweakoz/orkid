@@ -11,6 +11,7 @@
 #include <ork/asset/catalog/config.h>
 #include <ork/asset/catalog/packager.h>
 #include <ork/asset/catalog/uploader.h>
+#include <ork/asset/catalog/request.h>
 #include <ork/kernel/string/deco.inl>
 #include <ork/file/file.h>
 #include <ork/object/ObjectClass.h>
@@ -500,24 +501,6 @@ void AssetManifest::parseFromJsonInternal(const std::string& json_str, const fil
       }
     }
   }
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-AssetRequest::AssetRequest() {
-}
-
-AssetRequest::AssetRequest(const std::string& ns) 
-  : _namespace(ns) {
-}
-
-AssetRequest::AssetRequest(const std::string& ns, const std::string& _asset_id)
-  : _namespace(ns)
-  , _asset_id(_asset_id) {
-}
-
-bool AssetRequest::isValid() const {
-  return !_namespace.empty();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

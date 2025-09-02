@@ -12,6 +12,7 @@
 #include <ork/asset/catalog/packager.h>
 #include <ork/asset/catalog/uploader.h>
 #include <ork/asset/catalog/chunk_assembler.h>
+#include <ork/asset/catalog/request.h>
 #include <ork/kernel/string/deco.inl>
 #include <ork/file/file.h>
 #include <ork/object/ObjectClass.h>

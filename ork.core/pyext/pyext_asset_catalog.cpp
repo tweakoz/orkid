@@ -10,6 +10,7 @@
 #include <ork/asset/catalog/manifest.h>
 #include <ork/asset/catalog/config.h>
 #include <ork/asset/catalog/uploader.h>
+#include <ork/asset/catalog/request.h>
 
 namespace ork::asset::catalog {
 

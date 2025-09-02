@@ -195,7 +195,7 @@ bool FileAssetLoader::resolvePath(
 asset_ptr_t FileAssetLoader::load(loadrequest_ptr_t loadreq) {
   
   // Catalog request? Use catalog loader.
-  if (loadreq->isCatalogLoad()) {
+  if (loadreq->isLoadFromCatalog()) {
     assetloader_ptr_t net_loader;
     AssetLoader::_loaders_by_ext.atomicOp(
       [&net_loader](loader_by_ext_map_t& map) {

@@ -7,6 +7,7 @@
 
 #include <ork/asset/catalog/uploader.h>
 #include <ork/asset/catalog/catalog.h>
+#include <ork/asset/catalog/request.h>
 #include "catalog_impl.h"
 #include <ork/file/file.h>
 #include <ork/kernel/string/deco.inl>

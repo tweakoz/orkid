@@ -6,6 +6,7 @@
 #include <ork/asset/catalog/catalog.h>
 #include <ork/asset/catalog/manifest.h>
 #include <ork/asset/catalog/config.h>
+#include <ork/asset/catalog/request.h>
 #include <ork/file/file.h>
 #include <ork/file/path.h>
 #include <ork/kernel/string/deco.inl>

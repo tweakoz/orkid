@@ -33,13 +33,13 @@ static logchannel_ptr_t logchan_catalog = logger()->getChannel("CATALOG");
 // Cache Helper Functions
 ////////////////////////////////////////////////////////////////
 
-file::Path CatalogImpl::getCachePathForAsset(const AssetLocation& location) const {
+file::Path CatalogImpl::getCachePathForAsset(assetlocation_ptr_t location) const {
   // Build cache path: {cache_dir}/enc/{storage_hash}.enc
   // Single location for all .enc files regardless of namespace
   file::Path cache_path = _catalog->_cache_dir / "enc";
 
   // Extract storage hash from relative path (it's the filename without .enc)
-  std::string storage_hash = location._relative_path;
+  std::string storage_hash = location->_relative_path;
   if (storage_hash.size() > 4 && storage_hash.substr(storage_hash.size() - 4) == ".enc") {
     storage_hash = storage_hash.substr(0, storage_hash.size() - 4);
   }
@@ -49,13 +49,13 @@ file::Path CatalogImpl::getCachePathForAsset(const AssetLocation& location) cons
 
 ////////////////////////////////////////////////////////////////
 
-file::Path CatalogImpl::getCachePathForChunk(const AssetLocation& location, size_t chunk_index) const {
+file::Path CatalogImpl::getCachePathForChunk(assetlocation_ptr_t location, size_t chunk_index) const {
   // Build cache path: {cache_dir}/enc/chunks/{storage_hash}.enc.chunk.{index:04d}
   // Single location for all chunk files regardless of namespace
   file::Path cache_path = _catalog->_cache_dir / "enc" / "chunks";
 
   // Extract storage hash from relative path
-  std::string storage_hash = location._relative_path;
+  std::string storage_hash = location->_relative_path;
   if (storage_hash.size() > 4 && storage_hash.substr(storage_hash.size() - 4) == ".enc") {
     storage_hash = storage_hash.substr(0, storage_hash.size() - 4);
   }

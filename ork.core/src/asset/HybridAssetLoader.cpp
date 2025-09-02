@@ -10,6 +10,7 @@
 #include <ork/file/path.h>
 #include <ork/file/file.h>
 #include <ork/asset/catalog/catalog.h>
+#include <ork/asset/catalog/request.h>
 #include <ork/kernel/datablock.h>
 #include <ork/util/logger.h>
 

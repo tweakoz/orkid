@@ -39,7 +39,7 @@ namespace ork::asset::catalog {
 // Core types
 struct AssetManifest;              // Registry of all assets in a namespace with metadata and locations
 struct AssetEntry;                 // Single asset's metadata including size, hash, dependencies
-struct AssetRequest;               // Request to fetch an asset with callbacks and priority
+struct AssetHandle;               // Request to fetch an asset with callbacks and priority
 struct AssetConfig;                // Configuration for asset catalog system (paths, cache settings, etc)
 struct NamespaceConfig;            // Configuration specific to a namespace (encryption key, upload location)
 struct AssetNamespace;             // Logical grouping of assets with manifest, codec, and metadata
@@ -79,6 +79,8 @@ struct AssetUploadCoordinator;     // Manages multiple uploaders for redundancy/
 struct AssetFuture;                // Future/promise for async asset fetching
 struct FetchRequest;               // Encapsulates all parameters for asset fetching
 
+struct AssetIdentifier;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Shared pointer aliases
 ////////////////////////////////////////////////////////////////////////////////
@@ -87,7 +89,7 @@ using assetmanifest_ptr_t = std::shared_ptr<AssetManifest>;
 using assetmanifest_wkptr_t = std::weak_ptr<AssetManifest>;
 using manifest_list_t = std::vector<assetmanifest_ptr_t>;
 using assetentry_ptr_t = std::shared_ptr<AssetEntry>;
-using assetreq_ptr_t = std::shared_ptr<AssetRequest>;
+using assethandle_ptr_t = std::shared_ptr<AssetHandle>;
 using assetconfig_ptr_t = std::shared_ptr<AssetConfig>;
 using assetnamespace_ptr_t = std::shared_ptr<AssetNamespace>;
 using assetcatalog_ptr_t = std::shared_ptr<AssetCatalog>;
@@ -97,6 +99,7 @@ using assetlocation_ptr_t = std::shared_ptr<AssetLocation>;
 using assetconfigspace_ptr_t = std::shared_ptr<AssetConfigSpace>;
 using assetfuture_ptr_t = std::shared_ptr<AssetFuture>;
 using fetchrequest_ptr_t = std::shared_ptr<FetchRequest>;
+using assetid_ptr_t = std::shared_ptr<AssetIdentifier>;
 
 // manifestentry_ptr_t removed - use assetentry_ptr_t instead
 using assetpackager_ptr_t = std::shared_ptr<AssetPackager>;
@@ -129,6 +132,8 @@ using configlist_t = std::vector<assetconfig_ptr_t>;
 using assetid_t = std::string;
 using assetid_list_t = std::vector<assetid_t>;
 using namespaceid_t = std::string;
+
+using assethandle_map_t = std::map<assetid_t, assethandle_ptr_t>;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Container type aliases

@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/asset/catalog/catalog.h>
+#include <ork/asset/catalog/request.h>
 #include <ork/asset/catalog/chunk_assembler.h>
 #include <ork/asset/catalog/config.h>
 #include <ork/file/file.h>
@@ -38,8 +39,8 @@ assetresult_ptr_t AssetCatalog::fetch(const assetid_t& fq_asset_id, bool decrypt
   
   auto impl = _impl.getShared<CatalogImpl>();
   
-  // 1. Validation - get or create flyweight request
-  auto request = mergeAssetReq(fq_asset_id);
+  // flyweighted request
+  auto request = mergeAsset(fq_asset_id);
   
   // 2. Check if asset exists
   auto asset_info = getAssetInfo(fq_asset_id);
@@ -65,7 +66,7 @@ assetresult_ptr_t AssetCatalog::fetch(const assetid_t& fq_asset_id, bool decrypt
   // 4. Create fetch request with all parameters
   auto fetch_request = std::make_shared<FetchRequest>();
   fetch_request->asset_id = fq_asset_id;
-  fetch_request->location = *location;
+  fetch_request->location = location;
   fetch_request->asset_info = asset_info;
   fetch_request->decrypt = decrypt;
   fetch_request->disable_cache = disable_cache;
@@ -109,7 +110,7 @@ assetfuture_ptr_t AssetCatalog::fetchAsync(const assetid_t& fq_asset_id, bool de
   // Don't use shared_from_this - the future doesn't need catalog reference
   
   // 1. Validation - get or create flyweight request
-  auto request = mergeAssetReq(fq_asset_id);
+  auto request = mergeAsset(fq_asset_id);
   
   // 2. Check if asset exists
   auto asset_info = getAssetInfo(fq_asset_id);
@@ -175,7 +176,7 @@ assetfuture_ptr_t AssetCatalog::fetchAsync(const assetid_t& fq_asset_id, bool de
   // 5. Create fetch request with all parameters
   auto fetch_request = std::make_shared<FetchRequest>();
   fetch_request->asset_id = fq_asset_id;
-  fetch_request->location = *location;
+  fetch_request->location = location;
   fetch_request->asset_info = asset_info;
   fetch_request->decrypt = decrypt;
   fetch_request->disable_cache = disable_cache;
@@ -215,48 +216,6 @@ assetfuture_ptr_t AssetCatalog::fetchAsync(const assetid_t& fq_asset_id, bool de
   });
   
   return future;
-}
-
-////////////////////////////////////////////////////////////////
-// AssetFuture Implementation
-////////////////////////////////////////////////////////////////
-
-assetresult_ptr_t AssetFuture::wait() {
-  std::unique_lock<std::mutex> lock(_mutex);
-  _cv.wait(lock, [this] { return _is_complete.load() || _is_cancelled.load(); });
-  
-  if (_is_cancelled) {
-    if (!_result) {
-      _result = std::make_shared<AssetResult>();
-      _result->_status = AssetStatus::CANCELLED;
-      _result->_error_detail = "Operation was cancelled";
-    }
-  }
-  
-  return _result;
-}
-
-void AssetFuture::cancel() {
-  {
-    std::lock_guard<std::mutex> lock(_mutex);
-    _is_cancelled = true;
-    
-    // If not already complete, create a cancelled result
-    if (!_is_complete) {
-      _result = std::make_shared<AssetResult>();
-      _result->_status = AssetStatus::CANCELLED;
-      _result->_error_detail = "Operation was cancelled";
-      _is_complete = true;
-    }
-  }
-  _cv.notify_all();
-}
-
-assetresult_ptr_t AssetFuture::getResult() const {
-  if (_is_complete.load()) {
-    return _result;
-  }
-  return nullptr;
 }
 
 ////////////////////////////////////////////////////////////////

@@ -8,6 +8,7 @@
 #include <ork/asset/catalog/catalog.h>
 #include <ork/asset/catalog/chunk_assembler.h>
 #include <ork/asset/catalog/config.h>
+#include <ork/asset/catalog/request.h>
 #include <ork/file/file.h>
 #include <ork/kernel/string/deco.inl>
 #include <ork/util/crypt.h>
@@ -120,9 +121,9 @@ assetresult_ptr_t CatalogImpl::getAsset(fetchrequest_ptr_t request) {
 
   // Check if we already have the assembled encrypted file locally (for chunked assets)
   datablock_ptr_t raw_data;
-  if (!request->disable_cache && request->location._chunk_manifest) {
+  if (!request->disable_cache && request->location->_chunk_manifest) {
     // Extract storage hash from relative path
-    std::string storage_hash = request->location._relative_path;
+    std::string storage_hash = request->location->_relative_path;
     if (storage_hash.ends_with(".enc")) {
       storage_hash = storage_hash.substr(0, storage_hash.length() - 4);
     }
@@ -162,10 +163,10 @@ assetresult_ptr_t CatalogImpl::getAsset(fetchrequest_ptr_t request) {
   if (!processed_data) {
     logchan_catalog->log("[DEBUG CatalogImpl] Process phase FAILED");
     // processAssetData doesn't set _status, so set it here
-    if (request->decrypt && request->location._is_encrypted) {
+    if (request->decrypt && request->location->_is_encrypted) {
       result->_status       = AssetStatus::DECRYPT_FAILED;
       result->_error_detail = "Failed to decrypt asset";
-    } else if (request->location._is_compressed) {
+    } else if (request->location->_is_compressed) {
       result->_status       = AssetStatus::DECOMPRESS_FAILED;
       result->_error_detail = "Failed to decompress asset";
     }
@@ -182,11 +183,11 @@ assetresult_ptr_t CatalogImpl::getAsset(fetchrequest_ptr_t request) {
 ////////////////////////////////////////////////////////////////
 
 datablock_ptr_t CatalogImpl::downloadAssetData(fetchrequest_ptr_t request) {
-  if (request->location._chunk_manifest) {
-    logchan_catalog->log("DEBUG: Using downloadChunkedData for %s", request->location._relative_path.c_str());
+  if (request->location->_chunk_manifest) {
+    logchan_catalog->log("DEBUG: Using downloadChunkedData for %s", request->location->_relative_path.c_str());
     return downloadChunkedData(request);
   } else {
-    logchan_catalog->log("DEBUG: Using downloadSingleData for %s", request->location._relative_path.c_str());
+    logchan_catalog->log("DEBUG: Using downloadSingleData for %s", request->location->_relative_path.c_str());
     return downloadSingleData(request);
   }
 }
@@ -200,7 +201,7 @@ datablock_ptr_t CatalogImpl::downloadSingleData(fetchrequest_ptr_t request) {
   file::Path cache_path = getCachePathForAsset(location);
 
   // Extract storage hash from relative path for verification
-  std::string storage_hash = location._relative_path;
+  std::string storage_hash = location->_relative_path;
   if (storage_hash.size() > 4 && storage_hash.substr(storage_hash.size() - 4) == ".enc") {
     storage_hash = storage_hash.substr(0, storage_hash.size() - 4);
   }
@@ -230,11 +231,11 @@ datablock_ptr_t CatalogImpl::downloadSingleData(fetchrequest_ptr_t request) {
   // Create a temporary AssetEntry for URL generation
   AssetEntry temp_entry;
   temp_entry._storage_hash = storage_hash;
-  temp_entry._namespace    = location._namespace_id;
+  temp_entry._namespace    = location->_namespace_id;
 
-  URL url = _catalog->getAssetDownloadURL(&temp_entry, location._location_info);
+  URL url = _catalog->getAssetDownloadURL(&temp_entry, location->_location_info);
 
-  auto data = downloadFile(url, location._location_info);
+  auto data = downloadFile(url, location->_location_info);
 
   if (data) {
     // Verify downloaded data before caching
@@ -263,7 +264,7 @@ datablock_ptr_t CatalogImpl::downloadSingleData(fetchrequest_ptr_t request) {
 datablock_ptr_t CatalogImpl::downloadChunkedData(fetchrequest_ptr_t request) {
   const auto& location = request->location;
   
-  if (!location._chunk_manifest) {
+  if (!location->_chunk_manifest) {
     logchan_catalog->log("ERROR: No chunk manifest for chunked download");
     return nullptr;
   }
@@ -274,10 +275,10 @@ datablock_ptr_t CatalogImpl::downloadChunkedData(fetchrequest_ptr_t request) {
   size_t total_cached_bytes = 0;
 
   if (!request->disable_cache) {
-    for (size_t i = 0; i < location._chunk_manifest->_chunks.size(); ++i) {
+    for (size_t i = 0; i < location->_chunk_manifest->_chunks.size(); ++i) {
       file::Path chunk_cache_path = getCachePathForChunk(location, i);
 
-      if (chunk_cache_path.doesPathExist() && verifyCachedChunkHash(chunk_cache_path, location._chunk_manifest->_chunks[i]._hash)) {
+      if (chunk_cache_path.doesPathExist() && verifyCachedChunkHash(chunk_cache_path, location->_chunk_manifest->_chunks[i]._hash)) {
         // Chunk is cached and valid
         auto cached_chunk = readCachedFile(chunk_cache_path);
         if (cached_chunk) {
@@ -305,7 +306,7 @@ datablock_ptr_t CatalogImpl::downloadChunkedData(fetchrequest_ptr_t request) {
 
     // Assemble chunks
     ChunkAssembler::Config assembler_config;
-    ChunkAssembler assembler(location._chunk_manifest, nullptr, assembler_config);
+    ChunkAssembler assembler(location->_chunk_manifest, nullptr, assembler_config);
     auto result = assembler.assembleFromChunks(chunks);
 
     if (!result->success) {
@@ -317,29 +318,29 @@ datablock_ptr_t CatalogImpl::downloadChunkedData(fetchrequest_ptr_t request) {
   }
 
   // Need to download all chunks (all-or-nothing approach)
-  logchan_catalog->log("Cache miss or partial cache - downloading all %zu chunks", location._chunk_manifest->_chunks.size());
+  logchan_catalog->log("Cache miss or partial cache - downloading all %zu chunks", location->_chunk_manifest->_chunks.size());
 
   // Use shared_ptr for chunks to avoid use-after-free in async callbacks
   auto chunks_ptr = std::make_shared<std::vector<datablock_ptr_t>>();
-  chunks_ptr->resize(location._chunk_manifest->_chunks.size());
+  chunks_ptr->resize(location->_chunk_manifest->_chunks.size());
 
   // Create a temporary AssetEntry for URL generation
   AssetEntry temp_entry;
   // Extract storage hash from relative_path (format: {storage_hash}.enc)
-  std::string storage_hash = location._relative_path;
+  std::string storage_hash = location->_relative_path;
   if (storage_hash.ends_with(".enc")) {
     storage_hash = storage_hash.substr(0, storage_hash.length() - 4);
   }
   temp_entry._storage_hash = storage_hash;
-  temp_entry._namespace    = location._namespace_id;
+  temp_entry._namespace    = location->_namespace_id;
 
   // Create download group for parallel chunk downloads
   auto download_group = std::make_shared<DownloadGroup>();
   std::vector<file::Path> chunk_cache_paths;
   
   // Create download tasks for all chunks
-  for (size_t i = 0; i < location._chunk_manifest->_chunks.size(); ++i) {
-    URL chunk_url = _catalog->getChunkDownloadURL(&temp_entry, i, location._location_info);
+  for (size_t i = 0; i < location->_chunk_manifest->_chunks.size(); ++i) {
+    URL chunk_url = _catalog->getChunkDownloadURL(&temp_entry, i, location->_location_info);
     file::Path chunk_cache_path = getCachePathForChunk(location, i);
     chunk_cache_paths.push_back(chunk_cache_path);
     
@@ -349,22 +350,22 @@ datablock_ptr_t CatalogImpl::downloadChunkedData(fetchrequest_ptr_t request) {
     auto dl = std::make_shared<Download>(chunk_url, temp_path);
     
     // Set the expected size from the chunk manifest
-    dl->_total_bytes = location._chunk_manifest->_chunks[i]._size;
+    dl->_total_bytes = location->_chunk_manifest->_chunks[i]._size;
     
     // Add headers if needed (API key authentication)
-    if (location._location_info && location._location_info->_api_key_read) {
-      std::string api_key = location._location_info->_api_key_read.value();
+    if (location->_location_info && location->_location_info->_api_key_read) {
+      std::string api_key = location->_location_info->_api_key_read.value();
       dl->setHeader("X-API-Key", api_key);
     }
-    if (location._location_info) {
-      dl->_ignore_tls_errors = location._location_info->_disable_cert_check;
+    if (location->_location_info) {
+      dl->_ignore_tls_errors = location->_location_info->_disable_cert_check;
     } else {
       dl->_ignore_tls_errors = true;
     }
     
     // Capture chunk index for verification
     size_t chunk_idx = i;
-    chunk_hash_t expected_hash = location._chunk_manifest->_chunks[i]._hash;
+    chunk_hash_t expected_hash = location->_chunk_manifest->_chunks[i]._hash;
     
     dl->_on_complete._item = [this, chunk_idx, expected_hash, temp_path, chunk_cache_path, chunks_ptr](bool success, const file::Path& path) {
       if (success) {
@@ -427,7 +428,7 @@ datablock_ptr_t CatalogImpl::downloadChunkedData(fetchrequest_ptr_t request) {
 
   // Assemble chunks
   ChunkAssembler::Config assembler_config;
-  ChunkAssembler assembler(location._chunk_manifest, nullptr, assembler_config);
+  ChunkAssembler assembler(location->_chunk_manifest, nullptr, assembler_config);
   auto result = assembler.assembleFromChunks(*chunks_ptr);
 
   if (!result->success) {
@@ -445,8 +446,8 @@ datablock_ptr_t CatalogImpl::processAssetData(datablock_ptr_t _data, fetchreques
   auto result = _data;
 
   // Decrypt if needed
-  if (request->decrypt && location._is_encrypted) {
-    result = decryptData(result, location._namespace_id);
+  if (request->decrypt && location->_is_encrypted) {
+    result = decryptData(result, location->_namespace_id);
     if (!result) {
       printf("[ERROR] Decryption failed\n");
       return nullptr;
@@ -454,8 +455,8 @@ datablock_ptr_t CatalogImpl::processAssetData(datablock_ptr_t _data, fetchreques
   }
 
   // Decompress if needed
-  if (location._is_compressed) {
-    result = decompressData(result, location._compression_type);
+  if (location->_is_compressed) {
+    result = decompressData(result, location->_compression_type);
     if (!result) {
       printf("[ERROR] Decompression failed\n");
       return nullptr;
