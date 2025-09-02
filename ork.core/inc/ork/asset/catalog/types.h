@@ -79,7 +79,7 @@ struct AssetUploadCoordinator;     // Manages multiple uploaders for redundancy/
 struct AssetFuture;                // Future/promise for async asset fetching
 struct FetchRequest;               // Encapsulates all parameters for asset fetching
 
-struct AssetIdentifier;
+struct AssetFqIdentifier;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shared pointer aliases
@@ -99,7 +99,7 @@ using assetlocation_ptr_t = std::shared_ptr<AssetLocation>;
 using assetconfigspace_ptr_t = std::shared_ptr<AssetConfigSpace>;
 using assetfuture_ptr_t = std::shared_ptr<AssetFuture>;
 using fetchrequest_ptr_t = std::shared_ptr<FetchRequest>;
-using assetid_ptr_t = std::shared_ptr<AssetIdentifier>;
+using assetfqid_ptr_t = std::shared_ptr<AssetFqIdentifier>;
 
 // manifestentry_ptr_t removed - use assetentry_ptr_t instead
 using assetpackager_ptr_t = std::shared_ptr<AssetPackager>;

@@ -41,14 +41,14 @@ static logchannel_ptr_t logchan_catalog = logger()->getChannel("CATALOG");
 assetresult_ptr_t CatalogImpl::getAsset(fetchrequest_ptr_t request) {
 
   auto result       = std::make_shared<AssetResult>();
-  result->_location = request->location;
+  result->_location = request->_fqid->_location;
   Timer overall_timer;
   overall_timer.Start();
 
   // Check local manifest first for extracted cache
   if (!request->disable_cache) {
     // Parse asset ID to get namespace and name
-    auto [namespace_id, asset_name] = parseAssetId(request->asset_id);
+    auto [namespace_id, asset_name] = parseAssetId(request->_fqid->_asset_id);
     
     // Check for local manifest
     file::Path manifest_path = _catalog->getCacheDir() / "local_manifests" / namespace_id / (asset_name + ".json");
@@ -121,9 +121,9 @@ assetresult_ptr_t CatalogImpl::getAsset(fetchrequest_ptr_t request) {
 
   // Check if we already have the assembled encrypted file locally (for chunked assets)
   datablock_ptr_t raw_data;
-  if (!request->disable_cache && request->location->_chunk_manifest) {
+  if (!request->disable_cache && request->_fqid->_location->_chunk_manifest) {
     // Extract storage hash from relative path
-    std::string storage_hash = request->location->_relative_path;
+    std::string storage_hash = request->_fqid->_location->_relative_path;
     if (storage_hash.ends_with(".enc")) {
       storage_hash = storage_hash.substr(0, storage_hash.length() - 4);
     }
@@ -163,10 +163,10 @@ assetresult_ptr_t CatalogImpl::getAsset(fetchrequest_ptr_t request) {
   if (!processed_data) {
     logchan_catalog->log("[DEBUG CatalogImpl] Process phase FAILED");
     // processAssetData doesn't set _status, so set it here
-    if (request->decrypt && request->location->_is_encrypted) {
+    if (request->decrypt && request->_fqid->_location->_is_encrypted) {
       result->_status       = AssetStatus::DECRYPT_FAILED;
       result->_error_detail = "Failed to decrypt asset";
-    } else if (request->location->_is_compressed) {
+    } else if (request->_fqid->_location->_is_compressed) {
       result->_status       = AssetStatus::DECOMPRESS_FAILED;
       result->_error_detail = "Failed to decompress asset";
     }
@@ -183,11 +183,11 @@ assetresult_ptr_t CatalogImpl::getAsset(fetchrequest_ptr_t request) {
 ////////////////////////////////////////////////////////////////
 
 datablock_ptr_t CatalogImpl::downloadAssetData(fetchrequest_ptr_t request) {
-  if (request->location->_chunk_manifest) {
-    logchan_catalog->log("DEBUG: Using downloadChunkedData for %s", request->location->_relative_path.c_str());
+  if (request->_fqid->_location->_chunk_manifest) {
+    logchan_catalog->log("DEBUG: Using downloadChunkedData for %s", request->_fqid->_location->_relative_path.c_str());
     return downloadChunkedData(request);
   } else {
-    logchan_catalog->log("DEBUG: Using downloadSingleData for %s", request->location->_relative_path.c_str());
+    logchan_catalog->log("DEBUG: Using downloadSingleData for %s", request->_fqid->_location->_relative_path.c_str());
     return downloadSingleData(request);
   }
 }
@@ -195,7 +195,7 @@ datablock_ptr_t CatalogImpl::downloadAssetData(fetchrequest_ptr_t request) {
 ////////////////////////////////////////////////////////////////
 
 datablock_ptr_t CatalogImpl::downloadSingleData(fetchrequest_ptr_t request) {
-  const auto& location = request->location;
+  const auto& location = request->_fqid->_location;
   
   // Get cache path for this asset
   file::Path cache_path = getCachePathForAsset(location);
@@ -262,7 +262,7 @@ datablock_ptr_t CatalogImpl::downloadSingleData(fetchrequest_ptr_t request) {
 ////////////////////////////////////////////////////////////////
 
 datablock_ptr_t CatalogImpl::downloadChunkedData(fetchrequest_ptr_t request) {
-  const auto& location = request->location;
+  const auto& location = request->_fqid->_location;
   
   if (!location->_chunk_manifest) {
     logchan_catalog->log("ERROR: No chunk manifest for chunked download");
@@ -442,7 +442,7 @@ datablock_ptr_t CatalogImpl::downloadChunkedData(fetchrequest_ptr_t request) {
 ////////////////////////////////////////////////////////////////
 
 datablock_ptr_t CatalogImpl::processAssetData(datablock_ptr_t _data, fetchrequest_ptr_t request) {
-  const auto& location = request->location;
+  const auto& location = request->_fqid->_location;
   auto result = _data;
 
   // Decrypt if needed
@@ -523,8 +523,8 @@ void CatalogImpl::handleAssetPak(datablock_ptr_t _data, AssetResult& result, fet
       
       // Create local manifest for future cache hits
       if (!request->disable_cache) {
-        if(0)printf("request->asset_id<%s>\n", request->asset_id.c_str());
-        auto [namespace_id, asset_name] = parseAssetId(request->asset_id);
+        if(0)printf("request->_fqid->_asset_id<%s>\n", request->_fqid->_asset_id.c_str());
+        auto [namespace_id, asset_name] = parseAssetId(request->_fqid->_asset_id);
         
         // Save extracted file to cache
         file::Path extracted_dir = _catalog->getCacheDir() / "extracted" / namespace_id / asset_name;

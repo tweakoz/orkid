@@ -62,11 +62,13 @@ assetresult_ptr_t AssetCatalog::fetch(const assetid_t& fq_asset_id, bool decrypt
     result->_error_detail = "Failed to locate asset";
     return result;
   }
-  
+  auto fqID = std::make_shared<AssetFqIdentifier>();
+  fqID->_namespace_id = asset_info->_namespace;
+  fqID->_asset_id = asset_info->_id;
+  fqID->_location = location;
   // 4. Create fetch request with all parameters
   auto fetch_request = std::make_shared<FetchRequest>();
-  fetch_request->asset_id = fq_asset_id;
-  fetch_request->location = location;
+  fetch_request->_fqid = fqID;
   fetch_request->asset_info = asset_info;
   fetch_request->decrypt = decrypt;
   fetch_request->disable_cache = disable_cache;
@@ -141,6 +143,11 @@ assetfuture_ptr_t AssetCatalog::fetchAsync(const assetid_t& fq_asset_id, bool de
     return future;
   }
   
+  auto fqID = std::make_shared<AssetFqIdentifier>();
+  fqID->_namespace_id = asset_info->_namespace;
+  fqID->_asset_id = asset_info->_id;
+  fqID->_location = location;
+
   // 4. Handle password authentication upfront (on main thread)
   // This must happen before enqueueing to allow interactive password prompt
   if (location->_location_info) {
@@ -175,8 +182,7 @@ assetfuture_ptr_t AssetCatalog::fetchAsync(const assetid_t& fq_asset_id, bool de
   
   // 5. Create fetch request with all parameters
   auto fetch_request = std::make_shared<FetchRequest>();
-  fetch_request->asset_id = fq_asset_id;
-  fetch_request->location = location;
+  fetch_request->_fqid = fqID;
   fetch_request->asset_info = asset_info;
   fetch_request->decrypt = decrypt;
   fetch_request->disable_cache = disable_cache;

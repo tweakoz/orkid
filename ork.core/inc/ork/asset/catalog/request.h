@@ -25,11 +25,12 @@
 
 namespace ork::asset::catalog {
 
-struct AssetIdentifier {
-  namespaceid_t namespace_id;     // Namespace the asset belongs to
-  assetid_t asset_id;             // asset ID (within the namespace)
+struct AssetFqIdentifier {
+  namespaceid_t _namespace_id;     // Namespace the asset belongs to
+  assetid_t _asset_id;             // asset ID (within the namespace)
   assetlocation_ptr_t _location;  // resolved location info (if any)
 };
+//TODO: hoist all fqid parsing to one place AssetFqIdentifier::parse(const std::string& fqid);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Result of an asset retrieval operation
@@ -108,8 +109,7 @@ struct AssetFuture {
 ////////////////////////////////////////////////////////////////
 
 struct FetchRequest {
-  assetid_t asset_id;
-  assetlocation_ptr_t location;
+  assetfqid_ptr_t _fqid;
   assetentry_ptr_t asset_info;
   bool decrypt = true;
   bool disable_cache = false;
