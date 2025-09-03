@@ -30,7 +30,7 @@ class ParallelFetcher:
                 self.completed += 1
                 current = self.completed
                 
-            if result and result.is_success():
+            if result and result.succeeded:
                 print(f"  [{current}/{self.total}] ✓ {asset_id} ({result.bytes_downloaded} bytes)")
                 return (asset_id, True, result)
             else:
@@ -122,14 +122,13 @@ def fetch_assets_sequential(catalog, asset_ids):
     # Wait for all futures to complete
     for asset_id, future in futures:
         try:
-            result = future.wait()  # Block until this asset is ready
+            OK = future.wait()  # Block until this asset is ready
             
-            if result and result.is_success():
-                print(f"  ✓ {asset_id} ({result.bytes_downloaded} bytes)")
+            if OK:
+                print(f"  ✓ {asset_id} OK")
                 success_count += 1
             else:
-                error = result.error_detail if result else "Unknown error"
-                print(f"  ✗ {asset_id}: {error}")
+                print(f"  ✗ {asset_id}: ERROR")
                 failed_assets.append(asset_id)
                 
         except Exception as e:

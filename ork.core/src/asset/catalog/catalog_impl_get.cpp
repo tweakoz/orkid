@@ -56,11 +56,14 @@ bool CatalogImpl::getAsset(fetchrequest_ptr_t request) {
   ///////////////////////////////////////////////////
 
   auto download_asset = [&](fetchrequest_ptr_t request) -> datablock_ptr_t {
+    request->_state = AssetState::DOWNLOADING;
     Timer _download_timer;
     _download_timer.Start();
     auto raw_data = _downloadAssetData(request);
     request->_download_time    = _download_timer.SecsSinceStart();
     request->_bytes_downloaded = raw_data->length();
+
+    printf("[DEBUG CatalogImpl] DOWNLOADING time<%f> bytes<%zu>\n", request->_download_time, request->_bytes_downloaded.load());
     return raw_data;
   };
 
@@ -91,12 +94,17 @@ bool CatalogImpl::getAsset(fetchrequest_ptr_t request) {
   ///////////////////////////////////////////////////
 
   if (enc_data == nullptr) {
+    printf("[DEBUG CatalogImpl] re-downloading asset data\n");
     enc_data = download_asset(request);
   }
   if( enc_data == nullptr ) {
     logchan_catalog->log("[DEBUG CatalogImpl] Download phase FAILED");
+    request->_state = AssetState::FAILED;
     return false;
   }
+
+  request->_state = AssetState::PROCESSING;
+  printf("[DEBUG CatalogImpl] PROCESSING\n");
 
   ///////////////////////////////////////////////////
   // ensure we have the decrypted and uncompressed data
@@ -108,9 +116,11 @@ bool CatalogImpl::getAsset(fetchrequest_ptr_t request) {
   unw_data = _processAssetData(enc_data, request);
   if (unw_data == nullptr) {
     logchan_catalog->log("[DEBUG CatalogImpl] Process phase FAILED");
+    request->_state = AssetState::FAILED;
     return false;
   }
   
+  printf("[DEBUG CatalogImpl] unw_data<%p> size<%zu>\n", (void*) unw_data.get(), unw_data->length());
   request->_processing_time = process_timer.SecsSinceStart();
 
   ///////////////////////////////////////////////////
@@ -118,6 +128,12 @@ bool CatalogImpl::getAsset(fetchrequest_ptr_t request) {
   ///////////////////////////////////////////////////
   // Create local manifest 
   ///////////////////////////////////////////////////
+  printf("[DEBUG CatalogImpl] unpacked<%d>\n", int(unpacked));
+
+  if(false==unpacked) {
+    printf("[DEBUG CatalogImpl] Unpack phase FAILED: %s\n", request->_error_detail.c_str());
+    return false;
+  }
 
   if(nullptr==local_manifest){
     auto timestamp = std::time(nullptr);
@@ -141,6 +157,8 @@ bool CatalogImpl::getAsset(fetchrequest_ptr_t request) {
     _saveLocalManifest(local_manifest, manifest_path);
   }
 
+  request->_state = AssetState::SUCCEEDED;
+
   return unpacked;
 }
 
@@ -157,7 +175,7 @@ datablock_ptr_t CatalogImpl::_downloadAssetData(fetchrequest_ptr_t request) {
   //  and which we need to download
   /////////////////////////////////////////////////
   size_t NUM_CHUNKS = location->_chunk_manifest->_chunks.size();
-
+  printf("[DEBUG] Asset has %zu chunks\n", NUM_CHUNKS);
   ///////////////////////////////////////////////////
   // Create a temporary AssetEntry for URL generation
   ///////////////////////////////////////////////////
@@ -351,14 +369,13 @@ datablock_ptr_t CatalogImpl::_processAssetData(datablock_ptr_t _data, fetchreque
   }
 
   // Decompress if needed
-  if (location->_is_compressed) {
-    result = _decompressData(result, location->_compression_type);
-    if (!result) {
-      printf("[ERROR] Decompression failed\n");
-      return nullptr;
-    }
+  result = _decompressData(result, location->_compression_type);
+  if (!result) {
+    printf("[ERROR] Decompression failed\n");
+    return nullptr;
   }
 
+  printf("[DEBUG CatalogImpl] processAssetData complete: decompressed size<%zu>\n", result->length());
   return result;
 }
 

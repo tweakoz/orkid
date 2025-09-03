@@ -246,6 +246,16 @@ void AssetEntry::repackage() {
   _encrypted_size = encrypted_data->length();
 
   ////////////////////////////////////////////////////////
+  // Compute storage hash from encrypted data
+  ////////////////////////////////////////////////////////
+
+  CMD5 storage_hasher;
+  storage_hasher.update(encrypted_data->data(), encrypted_data->length());
+  storage_hasher.finalize();
+  Md5Sum storage_md5_result = storage_hasher.Result();
+  _storage_hash = storage_md5_result.hex_digest();
+
+  ////////////////////////////////////////////////////////
   // Chunkify..
   ////////////////////////////////////////////////////////
 

@@ -200,7 +200,7 @@ void pyinit_asset_catalog(py::module& module_core) {
           .def(
               "fetch",
               [](assetcatalog_ptr_t catalog, const std::string& asset_id) -> fetchrequest_ptr_t {
-                py::gil_scoped_release release;
+                //py::gil_scoped_release release;
                 return catalog->fetch(asset_id);
               },
               py::arg("asset_id"))

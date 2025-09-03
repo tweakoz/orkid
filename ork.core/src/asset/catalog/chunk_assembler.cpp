@@ -541,24 +541,15 @@ datablock_ptr_t ChunkAssembler::processChunk(
   }
   
   const auto& chunk_meta = _chunk_manifest->_chunks[chunk_index];
-  
-  // Decrypt if needed
-  datablock_ptr_t decrypted = chunk_data;
-  OrkAssert(_codec);
-  decrypted = _codec->decrypt(chunk_data.get());
-  if (!decrypted) {
-    logchan_catalog->log("ERROR: Failed to decrypt chunk %zu", chunk_index);
-    return nullptr;
-  }
-    
+      
   // Verify size matches expected
-  if (decrypted->length() != chunk_meta._size) {
+  if (chunk_data->length() != chunk_meta._size) {
     logchan_catalog->log("ERROR: Chunk %zu size mismatch: expected %zu, got %zu",
-                         chunk_index, chunk_meta._size, decrypted->length());
+                         chunk_index, chunk_meta._size, chunk_data->length());
     return nullptr;
   }
   
-  return decrypted;
+  return chunk_data;
 }
 
 bool ChunkAssembler::verifyChunk(
