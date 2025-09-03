@@ -17,10 +17,6 @@ from obt import crypt, path as obt_path
 from orkengine import core
 
 
-# Module-level catalog cache to share state across build_assetpak calls
-_catalog_cache = {}
-
-
 def get_current_platform():
     """Get the current platform name"""
     system = platform.system()
@@ -90,28 +86,15 @@ def build_assetpak(
     if not platforms:
         platforms = [get_current_platform()]
     
-    # Check if we have a cached catalog for this namespace and output file
-    cache_key = f"{namespace}:{output}"  # Include output file to prevent cross-contamination
-    if cache_key in _catalog_cache:
-        print(f"Using cached catalog for namespace '{namespace}'")
-        catalog = _catalog_cache[cache_key]['catalog']
-        cfgspc = _catalog_cache[cache_key]['cfgspc']
-    else:
-        # Initialize core for catalog API
-        core.coreappinit()
-        
-        # Create empty catalog first
-        cfgspc = core.AssetConfigSpace.loadGlobalConfigs()
-        catalog = core.AssetCatalog(space=cfgspc)
-        
-        # Load from global manifests (this populates the catalog and registers codecs)
-        core.AssetCatalog.loadFromGlobalManifests(catalog)
-        
-        # Cache the catalog and config space
-        _catalog_cache[cache_key] = {
-            'catalog': catalog,
-            'cfgspc': cfgspc
-        }
+    # Initialize core for catalog API
+    core.coreappinit()
+    
+    # Create empty catalog first
+    cfgspc = core.AssetConfigSpace.loadGlobalConfigs()
+    catalog = core.AssetCatalog(space=cfgspc)
+    
+    # Load from global manifests (this populates the catalog and registers codecs)
+    core.AssetCatalog.loadFromGlobalManifests(catalog)
     
     # If config_path is provided, load additional config
     if config_path:
@@ -151,37 +134,30 @@ def build_assetpak(
     print("############################################")
     
     # Get or create the manifest
-    if cache_key in _catalog_cache and 'manifest' in _catalog_cache[cache_key]:
-        manifest = _catalog_cache[cache_key]['manifest']
-        print(f"Using cached manifest for namespace '{namespace}'")
-    else:
-        manifests = catalog.manifestsForNamespace(namespace)
-        # find specific manifest by output path if multiple exist
-        manifest = None
-        if manifests:
-            if len(manifests) == 1:
-                manifest = manifests[0]
-            else:
-                for m in manifests:
-                    if m.source_file == output:
-                        manifest = m
-                        break
-        
-        if manifest:
-            print(f"Using existing manifest for namespace '{namespace}'")
+    manifests = catalog.manifestsForNamespace(namespace)
+    # find specific manifest by output path if multiple exist
+    manifest = None
+    if manifests:
+        if len(manifests) == 1:
+            manifest = manifests[0]
         else:
-            # Create new manifest using the catalog
-            manifest = core.AssetCatalog.createManifest(
-                catalog,
-                f"{namespace}_manifest",
-                version,
-                namespace,
-                output
-            )
-            print(f"Created new manifest for namespace '{namespace}'")
-        
-        # Cache the manifest
-        _catalog_cache[cache_key]['manifest'] = manifest
+            for m in manifests:
+                if m.source_file == output:
+                    manifest = m
+                    break
+    
+    if manifest:
+        print(f"Using existing manifest for namespace '{namespace}'")
+    else:
+        # Create new manifest using the catalog
+        manifest = core.AssetCatalog.createManifest(
+            catalog,
+            f"{namespace}_manifest",
+            version,
+            namespace,
+            output
+        )
+        print(f"Created new manifest for namespace '{namespace}'")
     
     print("############################################")
     print(f"## PACKAGING")
@@ -236,11 +212,6 @@ def build_assetpak(
     }
 
 
-def clear_catalog_cache():
-    """Clear the module-level catalog cache"""
-    global _catalog_cache
-    _catalog_cache.clear()
-    print("Catalog cache cleared")
 
 
 def default_cfg_and_catalog():
