@@ -52,6 +52,7 @@ struct AssetManifestImpl {
   time_t _creation_time = 0;
   std::string _creator;             // Tool/person that created this manifest
   asset_metadata_map_t _meta_data;  // Custom metadata
+  file::Path _source_file;           // Path to JSON file this manifest was loaded from
   
   // Parent catalog reference (for accessing ConfigSpace)
 };
@@ -183,6 +184,11 @@ const asset_entry_map_t& AssetManifest::getAssets() const {
 const asset_metadata_map_t& AssetManifest::getMetadata() const {
   auto impl = _impl.getShared<AssetManifestImpl>();
   return impl->_meta_data;
+}
+
+const file::Path& AssetManifest::getSourceFile() const {
+  auto impl = _impl.getShared<AssetManifestImpl>();
+  return impl->_source_file;
 }
 
 void AssetManifest::setNamespace(const namespaceid_t& ns) {
@@ -372,6 +378,7 @@ assetmanifest_ptr_t AssetManifest::parseFromString(const std::string& json_str, 
 
 void AssetManifest::parseFromJsonInternal(const std::string& json_str, const file::Path& source_file) {
   auto impl = _impl.getShared<AssetManifestImpl>();
+  impl->_source_file = source_file;  // Store the source file path
   rapidjson::Document doc;
   
   // Parse JSON

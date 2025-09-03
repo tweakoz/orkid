@@ -39,6 +39,9 @@ void pyinit_asset_catalog(py::module& module_core) {
           .def_property_readonly("namespace", &AssetManifest::getNamespace)
           .def_property_readonly("version", &AssetManifest::getVersion)
           .def_property_readonly("assets", &AssetManifest::getAssets)
+          .def_property_readonly("source_file", [](assetmanifest_ptr_t self) -> std::string {
+            return self->getSourceFile().toStdString();
+          })
           .def_static("loadFromFile", &AssetManifest::loadFromFile)
           .def(
               "createAsset",
@@ -171,7 +174,7 @@ void pyinit_asset_catalog(py::module& module_core) {
                 auto as_str   = as_pystr.cast<std::string>();
                 self->loadManifestsFromPath(as_str);
               })
-          .def("get_manifest", &AssetCatalog::getManifest)
+          .def("manifestsForNamespace", &AssetCatalog::manifestsForNamespace)
           .def("findAssetEntry", &AssetCatalog::findAssetEntry)
           .def_static("loadFromGlobalManifests", &AssetCatalog::loadFromGlobalManifests)
           .def_property_readonly_static("instance", [](py::object /* self */) -> assetcatalog_ptr_t { 

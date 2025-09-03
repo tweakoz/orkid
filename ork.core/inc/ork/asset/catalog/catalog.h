@@ -123,7 +123,7 @@ struct AssetCatalog {
     const file::Path& file);
   
   // Get manifest for namespace (returns first if multiple)
-  assetmanifest_ptr_t getManifest(const namespaceid_t& namespace_id) const;
+  manifest_list_t manifestsForNamespace(const namespaceid_t& namespace_id) const;
     
   // Set manifest search paths
   void setManifestSearchPaths(const path_list_t& paths);

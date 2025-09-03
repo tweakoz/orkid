@@ -175,6 +175,7 @@ struct AssetManifest {
   const std::string& getBaseUrl() const;
   const asset_entry_map_t& getAssets() const;
   const asset_metadata_map_t& getMetadata() const;
+  const file::Path& getSourceFile() const;
   
   // Get codec for this manifest's namespace
   encryptioncodec_ptr_t getCodec() const;

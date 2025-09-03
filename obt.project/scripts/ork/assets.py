@@ -155,7 +155,17 @@ def build_assetpak(
         manifest = _catalog_cache[cache_key]['manifest']
         print(f"Using cached manifest for namespace '{namespace}'")
     else:
-        manifest = catalog.get_manifest(namespace)
+        manifests = catalog.manifestsForNamespace(namespace)
+        # find specific manifest by output path if multiple exist
+        manifest = None
+        if manifests:
+            if len(manifests) == 1:
+                manifest = manifests[0]
+            else:
+                for m in manifests:
+                    if m.source_file == output:
+                        manifest = m
+                        break
         
         if manifest:
             print(f"Using existing manifest for namespace '{namespace}'")

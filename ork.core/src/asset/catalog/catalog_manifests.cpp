@@ -235,13 +235,13 @@ void AssetCatalog::_addManifest(assetmanifest_ptr_t manifest) {
 
 /////////////////////////////////////////////////////////////////////////////////
 
-assetmanifest_ptr_t AssetCatalog::getManifest(const namespaceid_t& namespace_id) const {
+manifest_list_t AssetCatalog::manifestsForNamespace(const namespaceid_t& namespace_id) const {
   auto impl                  = _impl.getShared<CatalogImpl>();
-  assetmanifest_ptr_t result = nullptr;
+  manifest_list_t result;
   impl->_state.atomicOp([&](const CatalogImpl::CatalogState& state) {
     auto it = state._manifests_by_namespace.find(namespace_id);
     if (it != state._manifests_by_namespace.end() && !it->second.empty()) {
-      result = it->second.front(); // Return first manifest in the list
+      result = it->second;
     }
   });
   return result;
