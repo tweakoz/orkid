@@ -13,6 +13,7 @@
 #include <memory>
 #include <map>
 #include <functional>
+#include <sys/types.h>
 
 namespace ork::util {
 
@@ -67,7 +68,15 @@ struct TarCreateOptions {
     tar_progress_callback_t progress;   // Progress callback (optional)
     std::string base_path = "";         // Base path to strip from file paths
     mode_t default_mode = 0644;         // Default file permissions
-    
+
+    // New deterministic options
+    bool _deterministic = false;          // Enable deterministic mode
+    time_t _fixed_mtime = 0;              // Fixed timestamp (0 = epoch)
+    mode_t _fixed_mode = 0666;            // Fixed file permissions
+    uid_t _fixed_uid = 0;                 // Fixed user ID
+    gid_t _fixed_gid = 0;                 // Fixed group ID
+
+
     // Filters
     std::function<bool(const std::string& path)> include_filter; // Return true to include file
     std::function<bool(const std::string& path)> exclude_filter; // Return true to exclude file

@@ -224,10 +224,16 @@ localmanifest_ptr_t CatalogImpl::_loadLocalManifest(const file::Path& manifest_p
 
 void CatalogImpl::_saveLocalManifest(localmanifest_ptr_t mani, const file::Path& path){
   
+  printf("[DEBUG] begin Saving local manifest to %s\n", path.c_str());
   OrkAssert(mani!=nullptr);
 
+  printf("[DEBUG] mani->_storage_hash %s\n", mani->_storage_hash.c_str());
+  printf("[DEBUG] mani->_content_hash %s\n", mani->_content_hash.c_str());
+  printf("[DEBUG] mani->_unwrapped_path %s\n", mani->_unwrapped_path.c_str());
+  printf("[DEBUG] mani->_type %s\n", mani->_type.c_str());
+  printf("[DEBUG] mani->_timestamp %s\n", mani->_timestamp.c_str());
+
   nlohmann::json local_manifest;
-  local_manifest["storage_hash"] = mani->_storage_hash;
   local_manifest["auto_unwrap"] = mani->_auto_unwrap;
   local_manifest["unwrapped_file"] = mani->_unwrapped_path;
   local_manifest["fqid"] = mani->_fqid;
@@ -246,12 +252,14 @@ void CatalogImpl::_saveLocalManifest(localmanifest_ptr_t mani, const file::Path&
   FILE* fp = fopen(path.c_str(), "w");
   if (fp) {
     std::string manifest_str = local_manifest.dump(4);
+    printf("[DEBUG] json encode: %s\n", manifest_str.c_str());
     fwrite(manifest_str.c_str(), 1, manifest_str.size(), fp);
     fclose(fp);
   } else {
     logchan_catalog->log("ERROR: Failed to save local manifest to %s", path.c_str());
     OrkAssert(false);
   }
+  printf("[DEBUG] end Saving local manifest to %s\n", path.c_str());
 }
 
 ////////////////////////////////////////////////////////////////

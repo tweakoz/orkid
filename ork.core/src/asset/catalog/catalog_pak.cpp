@@ -59,6 +59,7 @@ datablock_ptr_t AssetCatalog::_packFromLocal(assetfqid_ptr_t fqid) {
   // 6. Create TAR from directory contents
   util::TarCreateOptions create_options;
   create_options.base_path = source_dir.c_str();
+  create_options._deterministic = true;
   
   // Apply filters if specified
   if (!asset_info->_filters.empty()) {

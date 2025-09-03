@@ -1,6 +1,6 @@
 {
   "id": "ork_envmaps",
-  "uuid": "782edcc4-a0a5-4f6b-b393-015699c9ce9d",
+  "uuid": "7ea25ebc-d3d8-4f79-8bd0-b67ba9dfd930",
   "namespace": "ork_envmaps",
   "version": "1.0.0",
   "assets": {
@@ -365,6 +365,151 @@
             "offset": 33554432,
             "size": 12026580,
             "hash": 4650175230364490107
+          }
+        ]
+      }
+    },
+    "tozenv_basic": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/envmaps",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "64c2596bc1120210ca6be72e684714c8",
+      "storage_hash": "f7752eb8a7701e9e21fc14c44b5b0439",
+      "hash_algorithm": "md5",
+      "archive_size": 94006272,
+      "encrypted_size": 4625912,
+      "compressed_size": 4625884,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 4625912,
+        "file_hash": 15520887389268104055,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 4625912,
+            "hash": 15520887389268104055
+          }
+        ]
+      }
+    },
+    "tozenv_caustic1": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/envmaps",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "64386ce5b4a51b16dc091eb467d4825d",
+      "storage_hash": "c332f881e1f9ade504fe810435608807",
+      "hash_algorithm": "md5",
+      "archive_size": 380287488,
+      "encrypted_size": 28419811,
+      "compressed_size": 28419783,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 28419811,
+        "file_hash": 2388517698587782863,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 6350564818689874379
+          },
+          {
+            "offset": 16777216,
+            "size": 11642595,
+            "hash": 9926544734054340836
+          }
+        ]
+      }
+    },
+    "tozenv_colornoise": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/envmaps",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "5c534e06849b283948468144b2aa752c",
+      "storage_hash": "3f8fadb54bcb95b877a62a61384433a4",
+      "hash_algorithm": "md5",
+      "archive_size": 94006272,
+      "encrypted_size": 6971109,
+      "compressed_size": 6971081,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 6971109,
+        "file_hash": 10428270608486946442,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 6971109,
+            "hash": 10428270608486946442
+          }
+        ]
+      }
+    },
+    "tozenv_hellscape": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/envmaps",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "cd2dcea5d3d5f2cc799177c98e889510",
+      "storage_hash": "8865090c871444445af1a6a291013a11",
+      "hash_algorithm": "md5",
+      "archive_size": 94006272,
+      "encrypted_size": 6516177,
+      "compressed_size": 6516149,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 6516177,
+        "file_hash": 10464705009643076759,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 6516177,
+            "hash": 10464705009643076759
+          }
+        ]
+      }
+    },
+    "tozenv_nebula": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/envmaps",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "be38548a435eb977cafc2f15c375f9b6",
+      "storage_hash": "c937188d7021d947959ccf55fce89473",
+      "hash_algorithm": "md5",
+      "archive_size": 94006272,
+      "encrypted_size": 5894375,
+      "compressed_size": 5894347,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 5894375,
+        "file_hash": 7482926005836938479,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 5894375,
+            "hash": 7482926005836938479
           }
         ]
       }

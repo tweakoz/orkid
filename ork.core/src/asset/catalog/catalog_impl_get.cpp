@@ -137,8 +137,7 @@ bool CatalogImpl::getAsset(fetchrequest_ptr_t request) {
 
   if(nullptr==local_manifest){
     auto timestamp = std::time(nullptr);
-    auto timestr = std::asctime(std::localtime(&timestamp));
-    timestr[strlen(timestr)-1] = 0; // remove newline
+    auto timestr = std::to_string(timestamp);
 
     auto local_manifest = std::make_shared<LocalManifest>();
     std::string storage_hash = "???"; // hash of encrypted data
@@ -457,8 +456,7 @@ bool CatalogImpl::_extractAssetPak(datablock_ptr_t _data, fetchrequest_ptr_t req
       }
       auto local_manifest = std::make_shared<LocalManifest>();
       auto timestamp = std::time(nullptr);
-      auto timestr = std::asctime(std::localtime(&timestamp));
-      timestr[strlen(timestr)-1] = 0; // remove newline
+      auto timestr = std::to_string(timestamp);
       local_manifest->_fqid = request->_fqid->_original_fqid;
       local_manifest->_storage_hash = request->_fqid->_asset_info->_storage_hash;
       local_manifest->_content_hash = request->_fqid->_asset_info->_content_hash;

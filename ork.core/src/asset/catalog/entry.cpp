@@ -312,6 +312,8 @@ void AssetEntry::repackage() {
     // Create local manifest entry
     auto impl = catalog->_impl.getShared<CatalogImpl>();
     if (impl) {
+      auto timestamp = std::time(nullptr);
+      auto timestamp_str = std::to_string(timestamp);
       localmanifest_ptr_t local_mani = std::make_shared<LocalManifest>();
       local_mani->_fqid = fqid_str;
       local_mani->_storage_hash = _storage_hash;
@@ -320,7 +322,7 @@ void AssetEntry::repackage() {
       local_mani->_archive_size = _archive_size;
       local_mani->_encrypted_size = _encrypted_size;
       local_mani->_compressed_size = _compressed_size;
-      local_mani->_timestamp = std::time(nullptr);
+      local_mani->_timestamp = timestamp_str;
       local_mani->_auto_unwrap = (_filters.size() == 1);
       if (local_mani->_auto_unwrap) {
         local_mani->_unwrapped_path = _filters[0];
