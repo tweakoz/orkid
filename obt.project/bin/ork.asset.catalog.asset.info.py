@@ -12,7 +12,7 @@ deco = obt.deco.Deco()
 
 def print_asset_info(cfgspc, catalog, fqid):
     """Print detailed information about a single asset"""
-    asset_info = catalog.get_asset_info(fqid)
+    asset_info = catalog.findAssetEntry(fqid)
     merged_cfg = cfgspc.merged_config
     if not asset_info:
         print(deco.red(f"Asset not found: {fqid}"))
@@ -53,8 +53,14 @@ def print_asset_info(cfgspc, catalog, fqid):
     if hasattr(asset_info, 'filename') and asset_info.filename:
         print(f"  {deco.key('Filename:')} {deco.val(asset_info.filename)}")
     
-    if hasattr(asset_info, 'size') and asset_info.size > 0:
-        print(f"  {deco.key('Size:')} {deco.val(f'{asset_info.size:,} bytes')}")
+    print(f"  {deco.key('Archive Size:')} {deco.val(f'{asset_info.archive_size:,} bytes')}")
+    print(f"  {deco.key('Compressed Size:')} {deco.val(f'{asset_info.compressed_size:,} bytes')}")
+    print(f"  {deco.key('Encrypted Size:')} {deco.val(f'{asset_info.encrypted_size:,} bytes')}")
+
+    compression_ratio = 100.0-(asset_info.compressed_size / asset_info.archive_size * 100.0) if asset_info.archive_size > 0 else 0.0
+
+    print(f"  {deco.key('Compression ratio:')} {deco.val(f'{compression_ratio:.2f}%')}")
+
     if hasattr(asset_info, 'content_hash') and asset_info.content_hash:
         print(f"  {deco.key('Content hash:')} {deco.val(asset_info.content_hash)}")
     if hasattr(asset_info, 'storage_hash') and asset_info.storage_hash:

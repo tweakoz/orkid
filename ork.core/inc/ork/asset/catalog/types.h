@@ -49,7 +49,7 @@ struct AssetConfigSpace;           // Container for multiple configurations
 
 // Manifest and packaging
 // ManifestEntry merged into AssetEntry
-struct AssetPackager;              // Compresses and encrypts assets for distribution
+//struct AssetPackager;              // Compresses and encrypts assets for distribution
 struct PackageConfig;              // Configuration for asset packaging (compression, chunking)
 struct PackageResult;              // Overall result of packaging operation with statistics
 struct AssetPackageResult;         // Result of packaging a single asset
@@ -77,6 +77,7 @@ struct AssetUploadCoordinator;     // Manages multiple uploaders for redundancy/
 struct FetchRequest;               // Encapsulates all parameters for asset fetching
 struct LocalManifest;
 struct AssetFqIdentifier;
+struct AssetIndexEntry;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shared pointer aliases
@@ -96,7 +97,7 @@ using fetchrequest_ptr_t = std::shared_ptr<FetchRequest>;
 using assetfqid_ptr_t = std::shared_ptr<AssetFqIdentifier>;
 
 // manifestentry_ptr_t removed - use assetentry_ptr_t instead
-using assetpackager_ptr_t = std::shared_ptr<AssetPackager>;
+//using assetpackager_ptr_t = std::shared_ptr<AssetPackager>;
 using packageconfig_ptr_t = std::shared_ptr<PackageConfig>;
 using packageresult_ptr_t = std::shared_ptr<PackageResult>;
 
@@ -116,6 +117,8 @@ using assetuploadcoordinator_ptr_t = std::shared_ptr<AssetUploadCoordinator>;
 using configlist_t = std::vector<assetconfig_ptr_t>;
 
 using localmanifest_ptr_t = std::shared_ptr<LocalManifest>;
+
+using assetindexentry_ptr_t = std::shared_ptr<AssetIndexEntry>;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Weak pointer aliases (only for types that actually use weak_ptr)

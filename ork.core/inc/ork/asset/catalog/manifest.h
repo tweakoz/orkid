@@ -88,7 +88,7 @@ struct AssetEntry {
   
   // Repackage asset (recompute hashes, rechunk if needed)
   void repackage();
-  datablock_ptr_t _archiveAsset(); 
+  datablock_ptr_t _archiveAsset(assetfqid_ptr_t fqid); 
   datablock_ptr_t _encryptAsset(datablock_ptr_t raw_data); 
   
   // Upload asset file to configured remote location

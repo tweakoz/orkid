@@ -550,25 +550,15 @@ datablock_ptr_t ChunkAssembler::processChunk(
     logchan_catalog->log("ERROR: Failed to decrypt chunk %zu", chunk_index);
     return nullptr;
   }
-  
-  // Decompress if needed
-  datablock_ptr_t decompressed = decrypted;
-  if (_chunk_manifest->_compression != CompressionType::NONE) {
-    decompressed = decrypted->decompressed();
-    if (!decompressed) {
-      logchan_catalog->log("ERROR: Failed to decompress chunk %zu", chunk_index);
-      return nullptr;
-    }
-  }
-  
+    
   // Verify size matches expected
-  if (decompressed->length() != chunk_meta._size) {
+  if (decrypted->length() != chunk_meta._size) {
     logchan_catalog->log("ERROR: Chunk %zu size mismatch: expected %zu, got %zu",
-                         chunk_index, chunk_meta._size, decompressed->length());
+                         chunk_index, chunk_meta._size, decrypted->length());
     return nullptr;
   }
   
-  return decompressed;
+  return decrypted;
 }
 
 bool ChunkAssembler::verifyChunk(
@@ -744,7 +734,6 @@ chunkdisassemblyresult_ptr_t ChunkDisassembler::disassemble(
   // Create chunk manifest
   result->_chunk_manifest = std::make_shared<ChunkManifest>();
   result->_chunk_manifest->_total_size = data->length();
-  result->_chunk_manifest->_compression = compression;
   
   // Calculate file hash for the complete data
   auto file_xxhasher = std::make_shared<XXH64HASH>();
@@ -763,21 +752,11 @@ chunkdisassemblyresult_ptr_t ChunkDisassembler::disassemble(
     auto chunk_data = std::make_shared<DataBlock>();
     chunk_data->reserve(current_chunk_size);
     chunk_data->addData(data->data() + offset, current_chunk_size);
-    
-    // Apply compression if requested
-    datablock_ptr_t processed_chunk = chunk_data;
-    if (compression != CompressionType::NONE) {
-      processed_chunk = chunk_data->compressed();
-      if (!processed_chunk) {
-        printf("Failed to compress chunk\n");
-        return nullptr;
-      }
-    }
-    
+        
     // Apply encryption if codec provided
     if (codec) {
-      processed_chunk = codec->encrypt(processed_chunk.get());
-      if (!processed_chunk) {
+      chunk_data = codec->encrypt(chunk_data.get());
+      if (!chunk_data) {
         printf("Failed to encrypt chunk\n");
         return nullptr;
       }
@@ -786,18 +765,17 @@ chunkdisassemblyresult_ptr_t ChunkDisassembler::disassemble(
     // Calculate chunk hash (on the final processed data)
     auto xxhasher = std::make_shared<XXH64HASH>();
     xxhasher->init();
-    xxhasher->accumulate(processed_chunk->data(), processed_chunk->length());
+    xxhasher->accumulate(chunk_data->data(), chunk_data->length());
     xxhasher->finish();
     
     // Create chunk metadata
     ChunkMeta chunk_meta;
     chunk_meta._offset = offset;
     chunk_meta._size = current_chunk_size;
-    chunk_meta._compressed_size = processed_chunk->length();
     chunk_meta._hash = xxhasher->result();
     
     // Add to results
-    result->_chunks.push_back(processed_chunk);
+    result->_chunks.push_back(chunk_data);
     result->_chunk_manifest->_chunks.push_back(chunk_meta);
     
     offset += current_chunk_size;

@@ -54,20 +54,20 @@ assetlocation_ptr_t CatalogImpl::locateAsset(const assetid_t& fq_asset_id) const
     auto it = state._entries_by_assetid.find(fq_asset_id);
     if (it != state._entries_by_assetid.end()) {
       result                   = std::make_shared<AssetLocation>();
-      result->_namespace_id    = it->second.namespace_id;
-      result->_relative_path   = it->second.asset_path;
-      result->_source_manifest = it->second.manifest;
+      result->_namespace_id    = it->second->_namespace_id;
+      result->_relative_path   = it->second->_asset_path;
+      result->_source_manifest = it->second->_manifest;
       // All CDN content is encrypted (system invariant)
-      result->_compression_type = it->second.entry->_compression_type;
-      result->_chunk_manifest   = it->second.entry->_chunk_manifest;
+      result->_compression_type = it->second->_entry->_compression_type;
+      result->_chunk_manifest   = it->second->_entry->_chunk_manifest;
 
       // Build location info from namespace configuration
-      std::string namespace_id = it->second.namespace_id;
+      std::string namespace_id = it->second->_namespace_id;
       std::string remote_loc = "";
       if (_config_space) {
         remote_loc = _config_space->getNamespaceRemoteLocation(namespace_id);
       }
-      std::string storage_hash = it->second.entry->_storage_hash;
+      std::string storage_hash = it->second->_entry->_storage_hash;
 
       if (!remote_loc.empty() && !storage_hash.empty()) {
         std::string base_url = remote_loc;
@@ -150,9 +150,9 @@ assetlocation_ptr_t CatalogImpl::locateAsset(const assetid_t& fq_asset_id) const
 
         result->_base_url      = base_url;
         result->_relative_path = storage_hash + ".enc";
-      } else if (!it->second.entry->_local_loc.empty()) {
+      } else if (!it->second->_entry->_local_loc.empty()) {
         // Fallback to local location if remote location is empty
-        result->_base_url = it->second.entry->_local_loc;
+        result->_base_url = it->second->_entry->_local_loc;
       }
     }
   });

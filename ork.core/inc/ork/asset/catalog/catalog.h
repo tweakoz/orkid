@@ -41,7 +41,7 @@ struct AssetLocation {
   std::string _relative_path;          // Content-addressable: {hash}.enc or {hash}
   chunkmanifest_ptr_t _chunk_manifest; // If chunked: {hash}.chunk.{index}
   bool _is_compressed = false;
-  CompressionType _compression_type = CompressionType::NONE;
+  CompressionType _compression_type = CompressionType::LZ4;
   
   // Source tracking
   std::string _namespace_id;           // Which namespace owns this asset
@@ -87,6 +87,7 @@ struct AssetCatalog {
   static assetcatalog_ptr_t globalInstance();
   
   assetfqid_ptr_t findAsset(const assetid_t& fq_asset_id) const;
+
   ////////////////////////////////////////////////////////////////////////////////
   // === Namespace Management ===
   ////////////////////////////////////////////////////////////////////////////////
@@ -185,7 +186,9 @@ struct AssetCatalog {
   bool hasAsset(const assetid_t& fq_asset_id) const;
   
   // Get asset metadata without downloading
-  assetentry_ptr_t getAssetInfo(const assetid_t& fq_asset_id) const;
+  assetindexentry_ptr_t findAssetIndexEntry(const assetid_t& fq_asset_id) const;
+  assetentry_ptr_t findAssetEntry(const assetid_t& fq_asset_id) const;
+  assetindexentry_ptr_t _addNewAssetIndexEntry(const assetid_t& fq_asset_id);
   
   ////////////////////////////////////////////////////////////////////////////////
   // === Asset Pak Operations ===

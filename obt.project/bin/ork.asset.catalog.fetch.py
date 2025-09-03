@@ -101,21 +101,19 @@ def resolve_assets_to_fetch(catalog, patterns, namespaces):
     
     return sorted(list(assets_to_fetch))
 
-def fetch_assets_sequential(catalog, asset_ids, force=False, disable_cache=False):
+def fetch_assets_sequential(catalog, asset_ids):
     """Fetch multiple assets concurrently using async API"""
     total = len(asset_ids)
     success_count = 0
     failed_assets = []
     
     print(f"\nFetching {total} assets concurrently...")
-    if disable_cache:
-        print("Cache disabled - downloading from remote")
     print("-" * 50)
     
     # Enqueue all assets for concurrent fetching
     futures = []
     for asset_id in asset_ids:
-        future = catalog.fetchAsync(asset_id, decrypt=True, disable_cache=disable_cache)
+        future = catalog.fetchAsync(asset_id)
         futures.append((asset_id, future))
     
     print(f"Enqueued {total} assets for concurrent download")
@@ -178,10 +176,6 @@ if __name__ == "__main__":
                        help='Asset pattern(s) to fetch (can specify multiple)')
     parser.add_argument("-n", '--namespace', action='append', dest='namespaces', 
                        help='Fetch all assets from namespace(s)')
-    parser.add_argument("-f", '--force', action='store_true',
-                       help='Force download even if cached')
-    parser.add_argument("--disable-cache", action='store_true',
-                       help='Disable cache completely - always download from remote')
     parser.add_argument("--parallel", type=int, default=1,
                        help='Number of parallel downloads (default: 1)')
 
@@ -200,11 +194,9 @@ if __name__ == "__main__":
 
     # Fetch them
     if args.parallel > 1:
-        success = fetch_assets_parallel(catalog, assets, args.parallel, 
-                                       disable_cache=args.disable_cache)
+        success = fetch_assets_parallel(catalog, assets, args.parallel)
     else:
-        success = fetch_assets_sequential(catalog, assets, args.force, 
-                                         disable_cache=args.disable_cache)
+        success = fetch_assets_sequential(catalog, assets)
 
     core.coreappexit()
     sys.exit(0 if success else 1)

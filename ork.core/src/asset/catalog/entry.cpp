@@ -9,7 +9,6 @@
 #include <ork/asset/catalog/namespace.h>
 #include <ork/asset/catalog/catalog.h>
 #include <ork/asset/catalog/config.h>
-#include <ork/asset/catalog/packager.h>
 #include <ork/asset/catalog/uploader.h>
 #include <ork/asset/catalog/chunk_assembler.h>
 #include <ork/asset/catalog/request.h>
@@ -71,7 +70,6 @@ static void saveChunkManifest(chunkmanifest_ptr_t manifest, const file::Path& pa
   // Add manifest fields
   doc.AddMember("total_size", rapidjson::Value(static_cast<uint64_t>(manifest->_total_size)), allocator);
   doc.AddMember("file_hash", rapidjson::Value(static_cast<uint64_t>(manifest->_file_hash)), allocator);
-  doc.AddMember("compression", rapidjson::Value(compressionTypeToString(manifest->_compression), allocator), allocator);
   
   // Add chunks array
   rapidjson::Value chunks_array(rapidjson::kArrayType);
@@ -79,7 +77,6 @@ static void saveChunkManifest(chunkmanifest_ptr_t manifest, const file::Path& pa
     rapidjson::Value chunk_obj(rapidjson::kObjectType);
     chunk_obj.AddMember("offset", rapidjson::Value(static_cast<uint64_t>(chunk._offset)), allocator);
     chunk_obj.AddMember("size", rapidjson::Value(static_cast<uint64_t>(chunk._size)), allocator);
-    chunk_obj.AddMember("compressed_size", rapidjson::Value(static_cast<uint64_t>(chunk._compressed_size)), allocator);
     chunk_obj.AddMember("hash", rapidjson::Value(static_cast<uint64_t>(chunk._hash)), allocator);
     chunks_array.PushBack(chunk_obj, allocator);
   }
@@ -96,44 +93,6 @@ static void saveChunkManifest(chunkmanifest_ptr_t manifest, const file::Path& pa
     out_file.close();
   }
 }
-
-////////////////////////////////////////////////////////////////////////////////
-/*
-bool AssetEntry::isValid() const {
-  // Basic validation
-  if (_type.empty()) {
-    return false;
-  }
-  
-  // Must have hash
-  if (_storage_hash.empty()) {
-    return false;
-  }
-    
-  return true;
-}*/
-
-////////////////////////////////////////////////////////////////////////////////
-
-/*std::string AssetEntry::getValidationError() const {
-  if (_type.empty()) {
-    return "Asset type is empty";
-  }
-  
-  if (_storage_hash.empty()) {
-    return "Storage hash is required";
-  }
-  
-  return "";
-}*/
-
-////////////////////////////////////////////////////////////////
-// AssetEntry implementations moved from header
-////////////////////////////////////////////////////////////////
-
-/*bool AssetEntry::isChunked() const {
-  return _chunk_manifest != nullptr;
-}*/
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -165,72 +124,10 @@ std::string AssetEntry::buildFullyQualifiedId() const {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/*
-std::string AssetEntry::toJson() const {
-  logchan_catalog->log("CHUNK DEBUG: toJson for %s - _chunk_manifest=%p", 
-                       _id.c_str(), _chunk_manifest.get());
-  rapidjson::Document doc;
-  doc.SetObject();
-  auto& allocator = doc.GetAllocator();
-  
-  // Basic fields
-  doc.AddMember("id", rapidjson::Value(_id.c_str(), allocator), allocator);
-  doc.AddMember("namespace", rapidjson::Value(_namespace.c_str(), allocator), allocator);
-  doc.AddMember("type", rapidjson::Value(_type.c_str(), allocator), allocator);
-  doc.AddMember("priority", _priority, allocator);
-  doc.AddMember("local", rapidjson::Value(_local_loc.c_str(), allocator), allocator);
-  // filename field no longer used
-  
-  if (!_tar_root.empty()) {
-    doc.AddMember("tar_root", rapidjson::Value(_tar_root.c_str(), allocator), allocator);
-  }
-  
-  // Platforms
-  rapidjson::Value platforms_array(rapidjson::kArrayType);
-  for (const auto& platform : _platforms) {
-    platforms_array.PushBack(rapidjson::Value(platform.c_str(), allocator), allocator);
-  }
-  doc.AddMember("platforms", platforms_array, allocator);
-  
-  // Dependencies - convert map back to list
-  rapidjson::Value deps_array(rapidjson::kArrayType);
-  for (const auto& [dep_id, dep_value] : _dependencies) {
-    deps_array.PushBack(rapidjson::Value(dep_id.c_str(), allocator), allocator);
-  }
-  doc.AddMember("dependencies", deps_array, allocator);
-  
-  // Hash info
-  doc.AddMember("content_hash", rapidjson::Value(_content_hash.c_str(), allocator), allocator);
-  doc.AddMember("storage_hash", rapidjson::Value(_storage_hash.c_str(), allocator), allocator);
-  doc.AddMember("hash_algorithm", rapidjson::Value(_hash_algorithm.c_str(), allocator), allocator);
-  
-  // Size info
-  doc.AddMember("native_size", static_cast<uint64_t>(_size), allocator);
-  doc.AddMember("compressed_size", static_cast<uint64_t>(_compressed_size), allocator);
-  
-  // Chunk info if present - use ChunkManifest's own serialization
-  if (_chunk_manifest) {
-    logchan_catalog->log("CHUNK DEBUG: toJson for %s - serializing %zu chunks", 
-                         _id.c_str(), _chunk_manifest->_chunks.size());
-    rapidjson::Value chunks_obj(rapidjson::kObjectType);
-    _chunk_manifest->toJson(&chunks_obj, &allocator);
-    doc.AddMember("chunks", chunks_obj, allocator);
-  }
-  
-  // Convert to string
-  rapidjson::StringBuffer buffer;
-  rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
-  writer.SetIndent(' ', 2);
-  doc.Accept(writer);
-  
-  return buffer.GetString();
-}*/
-
-////////////////////////////////////////////////////////////////////////////////
 // AssetEntry::_archiveAsset() - archive locals to TAR
 ////////////////////////////////////////////////////////////////////////////////
 
-datablock_ptr_t AssetEntry::_archiveAsset() {
+datablock_ptr_t AssetEntry::_archiveAsset(assetfqid_ptr_t fqid) {
   ////////////////////////////////////////////////////////
   // Check if we have valid file information
   ////////////////////////////////////////////////////////
@@ -285,7 +182,6 @@ datablock_ptr_t AssetEntry::_archiveAsset() {
 
   auto catalog = getCatalog();
   OrkAssert(catalog!=nullptr);
-  auto fqid = catalog->findAsset(buildFullyQualifiedId());
   auto tar_data = catalog->_packFromLocal(fqid);
   OrkAssert(tar_data);
   return tar_data;
@@ -319,7 +215,7 @@ void AssetEntry::repackage() {
   // Archive asset to TAR
   ////////////////////////////////////////////////////////
 
-  auto tar_data = _archiveAsset();
+  auto tar_data = _archiveAsset(fqid);
   _archive_size = tar_data->length();
   
   ////////////////////////////////////////////////////////
@@ -331,12 +227,21 @@ void AssetEntry::repackage() {
   content_hasher.finalize();
   Md5Sum content_md5_result = content_hasher.Result();
   _content_hash = content_md5_result.hex_digest();
+
+  ////////////////////////////////////////////////////////
+  // compress
+  ////////////////////////////////////////////////////////
+
+  auto compressed_data = tar_data->compressed(8); // level 0
+  OrkAssert(compressed_data);
+  _compressed_size = compressed_data->length();
+
     
   ////////////////////////////////////////////////////////
   // Encrypt the TAR data
   ////////////////////////////////////////////////////////
 
-  auto encrypted_data = _encryptAsset(tar_data);
+  auto encrypted_data = _encryptAsset(compressed_data);
   OrkAssert(encrypted_data);
   _encrypted_size = encrypted_data->length();
 
@@ -391,10 +296,7 @@ void AssetEntry::repackage() {
 
   logchan_catalog->log("CHUNK DEBUG: End of repackage for %s - _chunk_manifest=%p", 
                        _id.c_str(), _chunk_manifest.get());
-  
-  // Update compression info
-  _compressed_size = _archive_size; // Will be updated after compression
-  
+    
   // Create local manifest for immediate use without upload
   if (catalog && _type == "asset_pak" && !_storage_hash.empty()) {
     // Create local manifest entry

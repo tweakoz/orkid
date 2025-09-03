@@ -95,7 +95,6 @@ void pyinit_asset_catalog(py::module& module_core) {
                              .def(py::init<>())
                              .def_readonly("offset", &ChunkMeta::_offset)
                              .def_readonly("size", &ChunkMeta::_size)
-                             .def_readonly("compressed_size", &ChunkMeta::_compressed_size)
                              .def_readonly("hash", &ChunkMeta::_hash);
   type_codec->registerStdCodec<ChunkMeta>(chunk_meta_type);
 
@@ -107,8 +106,7 @@ void pyinit_asset_catalog(py::module& module_core) {
                                  .def_readonly_static("chunk_size", &ChunkManifest::chunk_size)
                                  .def_readonly("total_size", &ChunkManifest::_total_size)
                                  .def_readonly("file_hash", &ChunkManifest::_file_hash)
-                                 .def_readonly("chunks", &ChunkManifest::_chunks)
-                                 .def_readonly("compression", &ChunkManifest::_compression);
+                                 .def_readonly("chunks", &ChunkManifest::_chunks);
   type_codec->registerStdCodec<chunkmanifest_ptr_t>(chunk_manifest_type);
 
   /////////////////////////////////////////////////////////////////////////////////
@@ -174,6 +172,7 @@ void pyinit_asset_catalog(py::module& module_core) {
                 self->loadManifestsFromPath(as_str);
               })
           .def("get_manifest", &AssetCatalog::getManifest)
+          .def("findAssetEntry", &AssetCatalog::findAssetEntry)
           .def_static("loadFromGlobalManifests", &AssetCatalog::loadFromGlobalManifests)
           .def_property_readonly_static("instance", [](py::object /* self */) -> assetcatalog_ptr_t { 
               return AssetCatalog::globalInstance(); 
@@ -212,8 +211,6 @@ void pyinit_asset_catalog(py::module& module_core) {
                 return catalog->fetchAsync(asset_id);
               },
               py::arg("asset_id"))
-          .def("get_asset_info", &AssetCatalog::getAssetInfo)
-
           // Asset Queries
           .def("list_assets", &AssetCatalog::listAssets, py::arg("pattern") = "*")
           

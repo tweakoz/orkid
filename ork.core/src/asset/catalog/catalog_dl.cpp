@@ -33,12 +33,13 @@ static logchannel_ptr_t logchan_catalog = logger()->getChannel("CATALOG");
 assetfqid_ptr_t AssetCatalog::findAsset(const assetid_t& fq_asset_id) const {
   auto impl = _impl.getShared<CatalogImpl>();
   auto location = impl->locateAsset(fq_asset_id);
-  auto asset_info = getAssetInfo(fq_asset_id);
+  auto asset_index_entry = findAssetIndexEntry(fq_asset_id);
 
-  if ((asset_info==nullptr) or (location==nullptr)) {
+  if ((asset_index_entry==nullptr) or (location==nullptr)) {
     logchan_catalog->log("[DEBUG] Asset<%s> or location not found in catalog", fq_asset_id.c_str());
     return nullptr;
   }
+  auto asset_info = asset_index_entry->_entry;
   auto fqID = std::make_shared<AssetFqIdentifier>();
   fqID->_original_fqid = fq_asset_id;
   fqID->_namespace_id = asset_info->_namespace;

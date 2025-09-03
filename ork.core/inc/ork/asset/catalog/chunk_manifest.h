@@ -27,8 +27,7 @@ namespace ork::asset::catalog {
 
 struct ChunkMeta {
   chunk_offset_t _offset = 0;    // Offset of this chunk in the original file
-  chunk_size_t _size = 0;        // Size of this chunk (uncompressed)
-  chunk_size_t _compressed_size = 0;  // Size after compression (if applicable)
+  chunk_size_t _size = 0;        // Size of this chunk (uncompressed)  chunk_size_t _compressed_size = 0;  // Size after compression (if applicable)
   chunk_hash_t _hash = 0;        // Hash of the chunk data (for verification)
   
 };
@@ -45,7 +44,6 @@ struct ChunkManifest {
 
   chunk_size_t _total_size = 0;                // Total size of original file
   chunk_hash_t _file_hash = 0;                 // Hash of complete file (used for filename)
-  CompressionType _compression = CompressionType::NONE;
   
   chunk_meta_list_t _chunks;                   // Metadata for each chunk
   

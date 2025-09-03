@@ -211,17 +211,12 @@ def build_assetpak(
     print(f"  Type: {asset_obj.type}")
     print(f"  Content hash: {asset_obj.content_hash}")
     print(f"  Storage hash: {asset_obj.storage_hash}")
-    print(f"  Size: {asset_obj.size}")
+    print(f"  Archive Size: {asset_obj.archive_size}")
+    print(f"  Compressed Size: {asset_obj.compressed_size}")
+    print(f"  Encrypted Size: {asset_obj.encrypted_size}")
     if not write_manifest:
         print(f"  Note: Manifest not written to disk (use write_manifest=True to save)")
-    
-    # Check if encrypted file was created
-    enc_path = obt_path.stage() / "assetcache" / "enc" / f"{asset_obj.storage_hash}.enc"
-    if enc_path.exists():
-        print(f"✓ Encrypted file created: {enc_path}")
-    else:
-        print(f"⚠ Encrypted file not found at: {enc_path}")
-    
+        
     print(f"\nTo upload this asset, use: ork.asset.catalog.upload.py --namespace {namespace}")
     
     return {

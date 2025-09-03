@@ -117,7 +117,6 @@ struct UploadReceipt {
 // - Progress tracking with asset context
 //
 // Typical workflow:
-// 1. Package assets using AssetPackager
 // 2. Create asset uploader adapter with appropriate uploader
 // 3. Upload manifest or individual asset files
 // 4. Receive upload receipt for verification

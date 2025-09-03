@@ -102,18 +102,55 @@ bool AssetCatalog::hasAsset(const assetid_t& fq_asset_id) const {
 
 /////////////////////////////////////////////////////////////////////////////////
 
-assetentry_ptr_t AssetCatalog::getAssetInfo(const assetid_t& fq_asset_id) const {
+assetindexentry_ptr_t AssetCatalog::findAssetIndexEntry(const assetid_t& fq_asset_id) const {
   auto impl               = _impl.getShared<CatalogImpl>();
-  assetentry_ptr_t result = nullptr;
+  assetindexentry_ptr_t result = nullptr;
   impl->_state.atomicOp([&](const CatalogImpl::CatalogState& state) {
     auto it = state._entries_by_assetid.find(fq_asset_id);
     if (it != state._entries_by_assetid.end()) {
-      result = it->second.entry;
+      result = it->second;
     }
   });
   return result;
 }
 
+/////////////////////////////////////////////////////////////////////////////////
+
+assetentry_ptr_t AssetCatalog::findAssetEntry(const assetid_t& fq_asset_id) const {
+  auto index_entry = findAssetIndexEntry(fq_asset_id);
+  assetentry_ptr_t result = nullptr;
+  if (index_entry) {
+    result = index_entry->_entry;
+  }
+  return result;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+
+assetindexentry_ptr_t AssetCatalog::_addNewAssetIndexEntry(const assetid_t& fq_asset_id) {
+  auto impl               = _impl.getShared<CatalogImpl>();
+  assetindexentry_ptr_t result = nullptr;
+  impl->_state.atomicOp([&](CatalogImpl::CatalogState& unlocked) {
+    auto it = unlocked._entries_by_assetid.find(fq_asset_id);
+    if (it != unlocked._entries_by_assetid.end()) {
+      OrkAssert(false); // Entry already exists
+    }
+    else{
+      // Asset not found, create a new entry with minimal info
+      auto new_entry = std::make_shared<AssetEntry>();
+      auto [ns_id, asset_id] = impl->parseAssetId(fq_asset_id);
+      new_entry->_namespace = ns_id;
+      new_entry->_id = asset_id;
+      new_entry->_storage_hash = ""; // Unknown at this point
+      new_entry->_local_loc = "";    // Unknown at this point
+      result = std::make_shared<AssetIndexEntry>();
+      result->_entry = new_entry;
+      result->_namespace_id = ns_id;
+      unlocked._entries_by_assetid[fq_asset_id] = result;
+    }
+  });
+  return result;
+}
 ////////////////////////////////////////////////////////////////
 // Asset Queries
 ////////////////////////////////////////////////////////////////
@@ -161,7 +198,7 @@ assetid_list_t AssetCatalog::listAssetsInNamespace(const namespaceid_t& namespac
 
   impl->_state.atomicOp([&](const CatalogImpl::CatalogState& state) {
     for (const auto& [_asset_id, entry] : state._entries_by_assetid) {
-      if (entry.namespace_id == namespace_id) {
+      if (entry->_namespace_id == namespace_id) {
         result.push_back(_asset_id);
       }
     }
@@ -185,9 +222,9 @@ std::string AssetCatalog::dumpAllAssetFQIDs() const {
       if (!ns->isContainerOnly()) {
         impl->_state.atomicOp([&](const CatalogImpl::CatalogState& state) {
           for (const auto& [fq_asset_id, index_entry] : state._entries_by_assetid) {
-            if (index_entry.namespace_id == ns->_id) {
+            if (index_entry->_namespace_id == ns->_id) {
               // Use the AssetEntry's buildFullyQualifiedId method
-              std::string fqid = index_entry.entry->buildFullyQualifiedId();
+              std::string fqid = index_entry->_entry->buildFullyQualifiedId();
               result += fqid + "\n";
             }
           }

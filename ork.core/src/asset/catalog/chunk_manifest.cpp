@@ -18,19 +18,6 @@ namespace ork::asset::catalog {
 // ChunkManifest implementations moved from header
 ////////////////////////////////////////////////////////////////
 
-////////////////////////////////////////////////////////////////
-// ChunkMeta
-////////////////////////////////////////////////////////////////
-
-// ChunkMeta methods implemented in header
-
-////////////////////////////////////////////////////////////////
-// ChunkManifest
-////////////////////////////////////////////////////////////////
-
-// ChunkManifest constructor/destructor - using default
-
-
 bool ChunkManifest::isValid() const {
   if (_chunks.empty()) return false;
   if (_chunks.size() == 0) return false;
@@ -47,35 +34,6 @@ bool ChunkManifest::isValid() const {
   return expected_offset == _total_size;
 }
 
-// getChunk methods not in header
-
-// getChunksForRange method not in header
-
-// calculateTotalSize and verifyIntegrity methods not in header
-
-
-
-// ChunkManifestBuilder not in headers - removing
-
-////////////////////////////////////////////////////////////////
-// Utility functions
-////////////////////////////////////////////////////////////////
-
-const char* compressionTypeToString(CompressionType type) {
-  switch (type) {
-    case CompressionType::NONE: return "none";
-    case CompressionType::LZ4: return "lz4";
-    case CompressionType::LZ4HC: return "lz4hc";
-    default: return "unknown";
-  }
-}
-
-CompressionType compressionTypeFromString(const std::string& str) {
-  if (str == "lz4") return CompressionType::LZ4;
-  if (str == "lz4hc") return CompressionType::LZ4HC;
-  return CompressionType::NONE;
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 // ChunkManifest::toJson - Serialize to rapidjson::Value
 ////////////////////////////////////////////////////////////////////////////////
@@ -89,7 +47,6 @@ void ChunkManifest::toJson(void* value_ptr, void* allocator_ptr) const {
   value.AddMember("chunk_size", static_cast<uint64_t>(chunk_size), allocator);
   value.AddMember("total_size", static_cast<uint64_t>(_total_size), allocator);
   value.AddMember("file_hash", static_cast<uint64_t>(_file_hash), allocator);
-  value.AddMember("compression", rapidjson::Value(compressionTypeToString(_compression), allocator), allocator);
   
   // Add chunks array
   rapidjson::Value chunks_array(rapidjson::kArrayType);
@@ -97,7 +54,6 @@ void ChunkManifest::toJson(void* value_ptr, void* allocator_ptr) const {
     rapidjson::Value chunk_obj(rapidjson::kObjectType);
     chunk_obj.AddMember("offset", static_cast<uint64_t>(chunk._offset), allocator);
     chunk_obj.AddMember("size", static_cast<uint64_t>(chunk._size), allocator);
-    chunk_obj.AddMember("compressed_size", static_cast<uint64_t>(chunk._compressed_size), allocator);
     chunk_obj.AddMember("hash", static_cast<uint64_t>(chunk._hash), allocator);
     chunks_array.PushBack(chunk_obj, allocator);
   }
@@ -126,11 +82,7 @@ void ChunkManifest::fromJson(const void* value_ptr) {
   if (value.HasMember("file_hash") && value["file_hash"].IsUint64()) {
     _file_hash = value["file_hash"].GetUint64();
   }
-  
-  if (value.HasMember("compression") && value["compression"].IsString()) {
-    _compression = compressionTypeFromString(value["compression"].GetString());
-  }
-    
+      
   // Read chunks array
   if (value.HasMember("chunks") && value["chunks"].IsArray()) {
     _chunks.clear();
@@ -148,11 +100,7 @@ void ChunkManifest::fromJson(const void* value_ptr) {
         if (chunk_obj.HasMember("size") && chunk_obj["size"].IsUint64()) {
           chunk._size = chunk_obj["size"].GetUint64();
         }
-        
-        if (chunk_obj.HasMember("compressed_size") && chunk_obj["compressed_size"].IsUint64()) {
-          chunk._compressed_size = chunk_obj["compressed_size"].GetUint64();
-        }
-        
+                
         if (chunk_obj.HasMember("hash") && chunk_obj["hash"].IsUint64()) {
           chunk._hash = chunk_obj["hash"].GetUint64();
         }

@@ -5,7 +5,6 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-#include <ork/asset/catalog/packager.h>
 #include <ork/asset/catalog/catalog.h>
 #include <ork/asset/catalog/request.h>
 #include <ork/file/file.h>

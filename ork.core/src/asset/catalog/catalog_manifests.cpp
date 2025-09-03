@@ -218,11 +218,11 @@ void AssetCatalog::_addManifest(assetmanifest_ptr_t manifest) {
       entry->_namespace     = namespace_id; // Set namespace string
       entry->_namespace_ptr = ns;           // Set namespace weak pointer
 
-      CatalogImpl::AssetIndexEntry index_entry;
-      index_entry.namespace_id = namespace_id;
-      index_entry.asset_path   = _asset_id;
-      index_entry.manifest     = manifest;
-      index_entry.entry        = entry;
+      auto index_entry = std::make_shared<AssetIndexEntry>();
+      index_entry->_namespace_id = namespace_id;
+      index_entry->_asset_path   = _asset_id;
+      index_entry->_manifest     = manifest;
+      index_entry->_entry        = entry;
 
       // Store with fully qualified ID
       std::string fq_asset_id                = buildAssetId(namespace_id, _asset_id);

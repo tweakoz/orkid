@@ -9,7 +9,6 @@
 #include <ork/asset/catalog/namespace.h>
 #include <ork/asset/catalog/catalog.h>
 #include <ork/asset/catalog/config.h>
-#include <ork/asset/catalog/packager.h>
 #include <ork/asset/catalog/uploader.h>
 #include <ork/asset/catalog/request.h>
 #include <ork/kernel/string/deco.inl>
@@ -32,6 +31,7 @@
 #include <boost/filesystem.hpp>
 #include <sys/stat.h>
 #include <ctime>
+#include "catalog_impl.h"
 
 namespace ork::asset::catalog {
 
@@ -247,27 +247,36 @@ assetentry_ptr_t AssetManifest::createAsset(
     const std::vector<std::string>& filters) {
   
   auto impl = self->_impl.getShared<AssetManifestImpl>();
-  
+  auto catalog = self->_parent_catalog.lock();
+  OrkAssert(catalog != nullptr);
+  namespaceid_t namespace_id = self->getNamespace();
+  auto fqid_str = AssetCatalog::buildAssetId(namespace_id, id);
   // Create new asset entry
-  auto entry = std::make_shared<AssetEntry>();
-  
+  auto index_entry = catalog->findAssetIndexEntry(fqid_str);
+  if(nullptr==index_entry){
+    index_entry = catalog->_addNewAssetIndexEntry(fqid_str);
+  }
+  index_entry->_manifest = self;
+  index_entry->_asset_path = local;
+  auto asset_info = index_entry->_entry;
+  OrkAssert(asset_info != nullptr);
   // Set basic properties
-  entry->_parent_manifest = self;
-  entry->_id = id;
-  entry->_priority = priority;
-  entry->_type = type;
-  entry->_local_loc = local;
-  entry->_tar_root = tar_root;  // Set tar_root from parameter
-  entry->_filters = filters;     // Set filters from parameter
-  entry->_platforms = platforms;
+  asset_info->_parent_manifest = self;
+  asset_info->_id = id;
+  asset_info->_priority = priority;
+  asset_info->_type = type;
+  asset_info->_local_loc = local;
+  asset_info->_tar_root = tar_root;  // Set tar_root from parameter
+  asset_info->_filters = filters;     // Set filters from parameter
+  asset_info->_platforms = platforms;
   // Convert dependency list to map format
   // Store each dependency with itself as the key for now
   for (const auto& dep : dependencies) {
-    entry->_dependencies[dep] = dep;
+    asset_info->_dependencies[dep] = dep;
   }
   
   // Set namespace from manifest
-  entry->_namespace = impl->_namespace;
+  asset_info->_namespace = impl->_namespace;
   
   // Generate UUID
   boost::uuids::uuid uuid = object::ObjectClass::genUUID();
@@ -314,10 +323,10 @@ assetentry_ptr_t AssetManifest::createAsset(
   
   if (source_dir.doesPathExist()) {
     // Directory exists - the TAR will be created during repackage
-    entry->_hash_algorithm = "md5";
+    asset_info->_hash_algorithm = "md5";
     
     // Call repackage which will create the TAR and compute hashes
-    entry->repackage();
+    asset_info->repackage();
   } else {
     // Directory doesn't exist - this is an error
     logchan_catalog->log("ERROR: Asset pak directory does not exist! Looking for: %s (local_dir: %s, tar_root: %s)",
@@ -326,9 +335,9 @@ assetentry_ptr_t AssetManifest::createAsset(
   }
   
   // Add to manifest
-  self->addAsset(id, entry);
+  self->addAsset(id, asset_info);
   
-  return entry;
+  return asset_info;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -571,26 +580,6 @@ asset_type_count_map_t AssetManifest::countAssetsByType() const {
   }
   return counts;
 }
-
-////////////////////////////////////////////////////////////////////////////////
-
-/*validation_error_list_t AssetManifest::getValidationErrors() const {
-  auto impl = _impl.getShared<AssetManifestImpl>();
-  validation_error_list_t errors;
-  
-  if (impl->_namespace.empty()) {
-    errors.push_back("Manifest namespace is empty");
-  }
-  
-  for (const auto& [id, entry] : impl->_assets) {
-    if (!entry->isValid()) {
-      std::string error = "Asset " + id + ": " + entry->getValidationError();
-      errors.push_back(error);
-    }
-  }
-  
-  return errors;
-}*/
 
 ////////////////////////////////////////////////////////////////////////////////
 

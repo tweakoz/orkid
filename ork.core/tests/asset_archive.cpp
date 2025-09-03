@@ -260,7 +260,7 @@ TEST(AssetCatalogChunking) {
         // Verify chunk file size
         struct stat st;
         stat(chunk_path.c_str(), &st);
-        CHECK(st.st_size == chunk._compressed_size);
+        CHECK(st.st_size == chunk._size);
     }
     
     // Test chunk manifest serialization

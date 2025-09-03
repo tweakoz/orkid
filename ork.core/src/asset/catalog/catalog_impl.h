@@ -6,6 +6,13 @@ namespace ork::asset::catalog {
 // CatalogImpl - Implementation class for AssetCatalog
 ////////////////////////////////////////////////////////////////
 
+struct AssetIndexEntry {
+  namespaceid_t _namespace_id;
+  std::string _asset_path;
+  assetmanifest_ptr_t _manifest;
+  assetentry_ptr_t _entry;
+};
+
 struct CatalogImpl {
   ////////////////////////////////////////////////////////////////////////////////
   // Internal Types - defined first for VersionedState
@@ -17,12 +24,6 @@ struct CatalogImpl {
   using chunk_upload_coordinator_map_t = std::map<assetid_t, chunkuploadcoordinator_ptr_t>;
   
   // Asset index entry
-  struct AssetIndexEntry {
-    namespaceid_t namespace_id;
-    std::string asset_path;
-    assetmanifest_ptr_t manifest;
-    assetentry_ptr_t entry;
-  };
   
   
   // Statistics struct
@@ -48,7 +49,7 @@ struct CatalogImpl {
   struct CatalogState {
     std::map<namespaceid_t, manifest_list_t> _manifests_by_namespace;
     std::unordered_map<namespaceid_t, assetnamespace_ptr_t> _nodes_by_namespace;
-    std::map<assetid_t, AssetIndexEntry> _entries_by_assetid;
+    std::map<assetid_t, assetindexentry_ptr_t> _entries_by_assetid;
     std::map<namespaceid_t, encryptioncodec_ptr_t> _codecs_by_namespace;
   };
 

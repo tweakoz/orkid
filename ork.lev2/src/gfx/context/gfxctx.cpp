@@ -156,7 +156,7 @@ void Context::_loadingPhaseOperations() {
       float t1 = _ctxtimer.SecsSinceStart();
       float elapsed = t1 - t0;
       if(elapsed>0.03f) {
-        logchan_ctx->log("Context: breaking out of loading phase operation loop after %f seconds", t1-t0);
+        //logchan_ctx->log("Context: breaking out of loading phase operation loop after %f seconds", t1-t0);
         _ctxtimer.Start();
         done = true;
       }
