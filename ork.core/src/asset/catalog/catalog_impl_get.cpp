@@ -60,6 +60,13 @@ bool CatalogImpl::getAsset(fetchrequest_ptr_t request) {
     Timer _download_timer;
     _download_timer.Start();
     auto raw_data = _downloadAssetData(request);
+    if(nullptr==raw_data) {
+      auto name = (request->_fqid && request->_fqid->_original_fqid.size())
+                      ? request->_fqid->_original_fqid
+                      : "UNKNOWN";
+      logchan_catalog->log("[DEBUG CatalogImpl] Download phase <%s> FAILED", name.c_str());
+      OrkAssert(false);
+    }
     request->_download_time    = _download_timer.SecsSinceStart();
     request->_bytes_downloaded = raw_data->length();
 
