@@ -46,7 +46,6 @@ struct ChunkManifest {
   chunk_size_t _total_size = 0;                // Total size of original file
   chunk_hash_t _file_hash = 0;                 // Hash of complete file (used for filename)
   CompressionType _compression = CompressionType::NONE;
-  bool _is_encrypted = false;
   
   chunk_meta_list_t _chunks;                   // Metadata for each chunk
   

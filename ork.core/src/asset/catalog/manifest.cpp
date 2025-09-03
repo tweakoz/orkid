@@ -315,7 +315,6 @@ assetentry_ptr_t AssetManifest::createAsset(
   if (source_dir.doesPathExist()) {
     // Directory exists - the TAR will be created during repackage
     entry->_hash_algorithm = "md5";
-    entry->_size = 0; // Will be updated after TAR creation
     
     // Call repackage which will create the TAR and compute hashes
     entry->repackage();
@@ -453,17 +452,9 @@ void AssetManifest::parseFromJsonInternal(const std::string& json_str, const fil
         }
         
         // Parse native_size (original uncompressed size)
-        if (asset_data.HasMember("native_size")) {
-          if (asset_data["native_size"].IsUint64()) {
-            entry._size = asset_data["native_size"].GetUint64();
-          } else if (asset_data["native_size"].IsUint()) {
-            entry._size = asset_data["native_size"].GetUint();
-          } else if (asset_data["native_size"].IsInt64()) {
-            entry._size = asset_data["native_size"].GetInt64();
-          } else if (asset_data["native_size"].IsInt()) {
-            entry._size = asset_data["native_size"].GetInt();
-          }
-        }
+        entry._archive_size = asset_data["archive_size"].GetUint64();
+        entry._encrypted_size = asset_data["encrypted_size"].GetInt64();
+        entry._compressed_size = asset_data["compressed_size"].GetInt64();
         
         ///////////////////////////////////////////////////////////
         // Parse platforms
@@ -554,7 +545,7 @@ size_t AssetManifest::getTotalSize() const {
   auto impl = _impl.getShared<AssetManifestImpl>();
   size_t total = 0;
   for (const auto& [id, entry] : impl->_assets) {
-    total += entry->_size;
+    total += entry->_archive_size;
   }
   return total;
 }
@@ -565,11 +556,7 @@ size_t AssetManifest::getTotalCompressedSize() const {
   auto impl = _impl.getShared<AssetManifestImpl>();
   size_t total = 0;
   for (const auto& [id, entry] : impl->_assets) {
-    if (entry->_is_compressed && entry->_compressed_size > 0) {
-      total += entry->_compressed_size;
-    } else {
-      total += entry->_size;
-    }
+    total += entry->_compressed_size;
   }
   return total;
 }
@@ -587,26 +574,7 @@ asset_type_count_map_t AssetManifest::countAssetsByType() const {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bool AssetManifest::isValid() const {
-  auto impl = _impl.getShared<AssetManifestImpl>();
-  // Check namespace
-  if (impl->_namespace.empty()) {
-    return false;
-  }
-  
-  // Check each asset
-  for (const auto& [id, entry] : impl->_assets) {
-    if (!entry->isValid()) {
-      return false;
-    }
-  }
-  
-  return true;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-validation_error_list_t AssetManifest::getValidationErrors() const {
+/*validation_error_list_t AssetManifest::getValidationErrors() const {
   auto impl = _impl.getShared<AssetManifestImpl>();
   validation_error_list_t errors;
   
@@ -622,7 +590,7 @@ validation_error_list_t AssetManifest::getValidationErrors() const {
   }
   
   return errors;
-}
+}*/
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -682,10 +650,9 @@ std::string AssetManifest::toJson() const {
     asset_obj.AddMember("hash_algorithm", rapidjson::Value(entry->_hash_algorithm.c_str(), allocator), allocator);
     
     // Size info
-    asset_obj.AddMember("native_size", static_cast<uint64_t>(entry->_size), allocator);
-    if (entry->_is_compressed) {
-      asset_obj.AddMember("compressed_size", static_cast<uint64_t>(entry->_compressed_size), allocator);
-    }
+    asset_obj.AddMember("archive_size", static_cast<uint64_t>(entry->_archive_size), allocator);
+    asset_obj.AddMember("encrypted_size", static_cast<uint64_t>(entry->_encrypted_size), allocator);
+    asset_obj.AddMember("compressed_size", static_cast<uint64_t>(entry->_compressed_size), allocator);
     
     // Chunk info if present - use ChunkManifest's own serialization
     if (entry->_chunk_manifest) {

@@ -379,9 +379,9 @@ uploadreceipt_ptr_t AssetUploaderAdapter::uploadManifest(
     try {
       if (uploadAssetFile(_asset_id, manifest, source_dir)) {
         successful_uploads++;
-        bytes_uploaded += entry->_size;
+        bytes_uploaded += entry->_encrypted_size;
         file_entry.success = true;
-        file_entry.size = entry->_size;
+        file_entry.size = entry->_encrypted_size;
         file_entry.hash = entry->_storage_hash;
         // Build remote URL from config and storage hash
         std::string remote_url = impl->_config->remote_base_path;
@@ -495,9 +495,9 @@ uploadreceipt_ptr_t AssetUploaderAdapter::uploadAssetFiles(
     try {
       if (uploadAssetFile(_asset_id, manifest, source_dir)) {
         successful_uploads++;
-        bytes_uploaded += entry->_size;
+        bytes_uploaded += entry->_encrypted_size;
         file_entry.success = true;
-        file_entry.size = entry->_size;
+        file_entry.size = entry->_encrypted_size;
         file_entry.hash = entry->_storage_hash;
         // Build remote URL from config and storage hash
         std::string remote_url = impl->_config->remote_base_path;
@@ -533,7 +533,7 @@ uploadreceipt_ptr_t AssetUploaderAdapter::uploadAssetFiles(
       for (const auto& id : _asset_ids) {
         auto asset_it = assets.find(id);
         if (asset_it != assets.end()) {
-          total_requested_bytes += asset_it->second->_size;
+          total_requested_bytes += asset_it->second->_encrypted_size;
         }
       }
       progress.total_bytes = total_requested_bytes;
@@ -627,69 +627,50 @@ bool AssetUploaderAdapter::uploadAssetFile(
   }
   remote_url += entry->_storage_hash + ".enc";
   
-  // Check if this is a chunked asset
-  if (entry->isChunked()) {
-    // Upload chunked asset using CURL multi interface
-    auto chunk_manifest = entry->_chunk_manifest;
-    if (!chunk_manifest) {
-      logchan_catalog->log("ERROR: Asset marked as chunked but no chunk manifest found");
+  // Upload chunked asset using CURL multi interface
+  auto chunk_manifest = entry->_chunk_manifest;
+  if (!chunk_manifest) {
+    logchan_catalog->log("ERROR: Asset marked as chunked but no chunk manifest found");
+    return false;
+  }
+  
+  logchan_catalog->log("Starting concurrent upload of %zu chunks for asset '%s'", 
+                       chunk_manifest->_chunks.size(), _asset_id.c_str());
+  
+  // Prepare chunk file paths and remote paths
+  std::vector<file::Path> chunk_files;
+  std::vector<std::string> chunk_remote_paths;
+  auto chunks_dir = catalog->getChunksDir();
+  
+  for (size_t chunk_idx = 0; chunk_idx < chunk_manifest->_chunks.size(); ++chunk_idx) {
+    // Construct chunk filename
+    std::string chunk_filename = FormatString("%s.enc.chunk.%04zu", 
+                                             entry->_storage_hash.c_str(), 
+                                             chunk_idx);
+    
+    // Construct source path for chunk
+    file::Path chunk_source = chunks_dir / chunk_filename;
+    
+    if (!chunk_source.doesPathExist()) {
+      logchan_catalog->log("ERROR: Chunk file doesn't exist in cache: '%s'", chunk_source.c_str());
       return false;
     }
     
-    logchan_catalog->log("Starting concurrent upload of %zu chunks for asset '%s'", 
-                         chunk_manifest->_chunks.size(), _asset_id.c_str());
-    
-    // Prepare chunk file paths and remote paths
-    std::vector<file::Path> chunk_files;
-    std::vector<std::string> chunk_remote_paths;
-    auto chunks_dir = catalog->getChunksDir();
-    
-    for (size_t chunk_idx = 0; chunk_idx < chunk_manifest->_chunks.size(); ++chunk_idx) {
-      // Construct chunk filename
-      std::string chunk_filename = FormatString("%s.enc.chunk.%04zu", 
-                                               entry->_storage_hash.c_str(), 
-                                               chunk_idx);
-      
-      // Construct source path for chunk
-      file::Path chunk_source = chunks_dir / chunk_filename;
-      
-      if (!chunk_source.doesPathExist()) {
-        logchan_catalog->log("ERROR: Chunk file doesn't exist in cache: '%s'", chunk_source.c_str());
-        return false;
-      }
-      
-      chunk_files.push_back(chunk_source);
-      chunk_remote_paths.push_back(chunk_filename);
-    }
-    
-    // Use HttpsUploader's uploadFiles with CURL multi interface for true concurrency
-    bool success = impl->_uploader->uploadFiles(chunk_files, chunk_remote_paths);
-    
-    if (success) {
-      logchan_catalog->log("Successfully uploaded all %zu chunks for '%s'", 
-                          chunk_manifest->_chunks.size(), _asset_id.c_str());
-    } else {
-      logchan_catalog->log("Failed to upload some chunks for '%s'", _asset_id.c_str());
-    }
-    
-    return success;
+    chunk_files.push_back(chunk_source);
+    chunk_remote_paths.push_back(chunk_filename);
   }
   
-  // For now, extract just the filename for the uploader
-  // TODO: Update uploaders to handle full URLs properly
-  auto remote_path = entry->_storage_hash + ".enc";
+  // Use HttpsUploader's uploadFiles with CURL multi interface for true concurrency
+  bool success = impl->_uploader->uploadFiles(chunk_files, chunk_remote_paths);
   
-  try {
-    // Perform the upload using the underlying uploader
-    bool result = impl->_uploader->uploadFile(source_file, remote_path);
-    return result;
-  } catch (const std::exception& e) {
-    logchan_catalog->log("ERROR: Upload exception: %s", e.what());
-    return false;
-  } catch (...) {
-    logchan_catalog->log("ERROR: Unknown upload exception");
-    return false;
+  if (success) {
+    logchan_catalog->log("Successfully uploaded all %zu chunks for '%s'", 
+                        chunk_manifest->_chunks.size(), _asset_id.c_str());
+  } else {
+    logchan_catalog->log("Failed to upload some chunks for '%s'", _asset_id.c_str());
   }
+  
+  return success;
 }
 
 // Implementation methods moved to AssetUploaderAdapterImpl

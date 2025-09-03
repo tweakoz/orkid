@@ -71,32 +71,22 @@ void pyinit_asset_catalog(py::module& module_core) {
           });
   type_codec->registerStdCodec<assetmanifest_ptr_t>(manifest_type);
 
-
-
-
   /////////////////////////////////////////////////////////////////////////////////
-  // AssetFuture
+  // FetchRequest
   /////////////////////////////////////////////////////////////////////////////////
-  auto future_type = py::class_<AssetFuture, assetfuture_ptr_t>(module_core, "AssetFuture")
-                         .def("wait", &AssetFuture::wait, py::call_guard<py::gil_scoped_release>())
-                         .def("__repr__", [](assetfuture_ptr_t future) -> std::string {
-                           return FormatString("AssetFuture(asset_id='%s', complete=%s)", 
-                                             future->_asset_id.c_str(),
-                                             future->isComplete() ? "True" : "False");
+  auto request_type = py::class_<FetchRequest, fetchrequest_ptr_t>(module_core, "FetchRequest")
+                         .def_readonly("error_detail", &FetchRequest::_error_detail)
+                         .def_readonly("bytes_downloaded", &FetchRequest::_bytes_downloaded)
+                         .def("wait", [](fetchrequest_ptr_t self) -> bool {
+                           py::gil_scoped_release release;
+                           return self->wait();
+                         })
+                         .def_property_readonly("succeeded", [](fetchrequest_ptr_t self) -> bool { return self->isSuccess(); })
+                         .def_property_readonly("completed", [](fetchrequest_ptr_t self) -> bool { return self->isComplete(); })
+                         .def("__repr__", [](fetchrequest_ptr_t result) -> std::string {
+                           return FormatString("FetchRequest(status=%d, bytes=%zu)", (int)result->_status, result->_bytes_downloaded.load());
                          });
-  type_codec->registerStdCodec<assetfuture_ptr_t>(future_type);
-
-  /////////////////////////////////////////////////////////////////////////////////
-  // AssetResult
-  /////////////////////////////////////////////////////////////////////////////////
-  auto result_type = py::class_<AssetResult, assetresult_ptr_t>(module_core, "AssetResult")
-                         .def_readonly("error_detail", &AssetResult::_error_detail)
-                         .def_readonly("bytes_downloaded", &AssetResult::_bytes_downloaded)
-                         .def("is_success", &AssetResult::isSuccess)
-                         .def("__repr__", [](assetresult_ptr_t result) -> std::string {
-                           return FormatString("AssetResult(status=%d, bytes=%zu)", (int)result->_status, result->_bytes_downloaded);
-                         });
-  type_codec->registerStdCodec<assetresult_ptr_t>(result_type);
+  type_codec->registerStdCodec<fetchrequest_ptr_t>(request_type);
 
   /////////////////////////////////////////////////////////////////////////////////
   // ChunkMeta
@@ -118,8 +108,7 @@ void pyinit_asset_catalog(py::module& module_core) {
                                  .def_readonly("total_size", &ChunkManifest::_total_size)
                                  .def_readonly("file_hash", &ChunkManifest::_file_hash)
                                  .def_readonly("chunks", &ChunkManifest::_chunks)
-                                 .def_readonly("compression", &ChunkManifest::_compression)
-                                 .def_readonly("is_encrypted", &ChunkManifest::_is_encrypted);
+                                 .def_readonly("compression", &ChunkManifest::_compression);
   type_codec->registerStdCodec<chunkmanifest_ptr_t>(chunk_manifest_type);
 
   /////////////////////////////////////////////////////////////////////////////////
@@ -129,11 +118,12 @@ void pyinit_asset_catalog(py::module& module_core) {
                               .def_readonly("type", &AssetEntry::_type)
                               .def_readonly("priority", &AssetEntry::_priority)
                               .def_readonly("local_loc", &AssetEntry::_local_loc)
-                              .def_readonly("size", &AssetEntry::_size)
+                              .def_readonly("archive_size", &AssetEntry::_archive_size)
+                              .def_readonly("encrypted_size", &AssetEntry::_encrypted_size)
+                              .def_readonly("compressed_size", &AssetEntry::_compressed_size)
                               .def_readonly("storage_hash", &AssetEntry::_storage_hash)
                               .def_readonly("content_hash", &AssetEntry::_content_hash)
                               .def_readonly("hash_algorithm", &AssetEntry::_hash_algorithm)
-                              .def_readonly("is_encrypted", &AssetEntry::_is_encrypted)
                               .def_readonly("platforms", &AssetEntry::_platforms)
                               .def_readonly("chunk_manifest", &AssetEntry::_chunk_manifest)
                               .def_property_readonly(
@@ -154,17 +144,13 @@ void pyinit_asset_catalog(py::module& module_core) {
                                     }
                                     return py::str(encrypted_path.c_str());
                                   })
-                              .def("is_valid", &AssetEntry::isValid)
-                              .def("get_validation_error", &AssetEntry::getValidationError)
                               .def("supports_current_platform", &AssetEntry::supportsCurrentPlatform)
-                              .def("is_chunked", &AssetEntry::isChunked)
-                              .def("toJson", &AssetEntry::toJson)
                               .def("repackage", &AssetEntry::repackage)
                               .def("upload", &AssetEntry::upload, 
                                    py::arg("config"), 
                                    py::arg("destination_id"))
                               .def("__repr__", [](assetentry_ptr_t entry) -> std::string {
-                                return FormatString("AssetEntry(id='%s', size=%zu)", entry->_id.c_str(), entry->_size);
+                                return FormatString("AssetEntry(id='%s', size=%zu)", entry->_id.c_str(), entry->_archive_size);
                               });
   type_codec->registerStdCodec<assetentry_ptr_t>(asset_entry_type);
 
@@ -214,22 +200,18 @@ void pyinit_asset_catalog(py::module& module_core) {
           // Asset Retrieval
           .def(
               "fetch",
-              [](assetcatalog_ptr_t catalog, const std::string& asset_id, bool decrypt, bool disable_cache) -> assetresult_ptr_t {
+              [](assetcatalog_ptr_t catalog, const std::string& asset_id) -> fetchrequest_ptr_t {
                 py::gil_scoped_release release;
-                return catalog->fetch(asset_id, decrypt, disable_cache);
+                return catalog->fetch(asset_id);
               },
-              py::arg("asset_id"),
-              py::arg("decrypt") = true,
-              py::arg("disable_cache") = false)
+              py::arg("asset_id"))
           .def(
               "fetchAsync",
-              [](assetcatalog_ptr_t catalog, const std::string& asset_id, bool decrypt, bool disable_cache) -> assetfuture_ptr_t {
+              [](assetcatalog_ptr_t catalog, const std::string& asset_id) -> fetchrequest_ptr_t {
                 py::gil_scoped_release release;
-                return catalog->fetchAsync(asset_id, decrypt, disable_cache);
+                return catalog->fetchAsync(asset_id);
               },
-              py::arg("asset_id"),
-              py::arg("decrypt") = true,
-              py::arg("disable_cache") = false)
+              py::arg("asset_id"))
           .def("get_asset_info", &AssetCatalog::getAssetInfo)
 
           // Asset Queries

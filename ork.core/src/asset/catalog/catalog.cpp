@@ -235,10 +235,10 @@ assetmanifest_ptr_t AssetCatalog::createManifest(
   // UUID is automatically gene_rated in AssetManifest constructor
   
   // Register namespace if it doesn't exist
-  auto ns = catalog->mergeNamespace(namespace_id);
+  auto ns = catalog->_mergeNamespace(namespace_id);
   
   // Add manifest to catalog
-  catalog->addManifest(manifest);
+  catalog->_addManifest(manifest);
   
   // TODO: Track file path for later writeToDisk
   
@@ -279,6 +279,8 @@ std::pair<std::string, std::string> CatalogImpl::parseAssetId(const assetid_t& f
   // No :: found, so no namespace - asset is in root namespace
   return {"", fq_asset_id};
 }
+
+////////////////////////////////////////////////////////////////
 
 assetid_t AssetCatalog::buildAssetId(const namespaceid_t& namespace_id, const std::string& asset_path) {
   if (namespace_id.empty()) {
@@ -371,20 +373,21 @@ URL AssetCatalog::getChunkDownloadURL(const AssetEntry* entry, size_t chunk_inde
 // Asset Request State Management (Flyweight)
 ////////////////////////////////////////////////////////////////
 
-assethandle_ptr_t AssetCatalog::mergeAsset(const assetid_t& _asset_id) {
+fetchrequest_ptr_t AssetCatalog::_mergeRequest(assetfqid_ptr_t fqid) {
   auto impl = _impl.getShared<CatalogImpl>();
-  assethandle_ptr_t request;
+  fetchrequest_ptr_t request;
 
   impl->_active_handles.atomicOp([&](assethandle_map_t& unlocked) {
-    auto it = unlocked.find(_asset_id);
+    auto aid = fqid->_original_fqid;
+    auto it = unlocked.find(aid);
     if (it != unlocked.end()) {
       // Return existing request (flyweight pattern)
       request = it->second;
     } else {
       // Create new request
-      request            = std::make_shared<AssetHandle>();
-      request->_asset_id = _asset_id;
-      unlocked[_asset_id] = request;
+      request            = std::make_shared<FetchRequest>();
+      unlocked[aid] = request;
+      request->_fqid = fqid;
     }
     // Increment refcount for this access
     request->_refcount.fetch_add(1);
@@ -395,7 +398,7 @@ assethandle_ptr_t AssetCatalog::mergeAsset(const assetid_t& _asset_id) {
 
 ////////////////////////////////////////////////////////////////
 
-assetnamespace_ptr_t AssetCatalog::mergeNamespace(const namespaceid_t& namespace_id) {
+assetnamespace_ptr_t AssetCatalog::_mergeNamespace(const namespaceid_t& namespace_id) {
   auto impl = _impl.getShared<CatalogImpl>();
   assetnamespace_ptr_t ns;
 

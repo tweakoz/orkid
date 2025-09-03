@@ -90,7 +90,6 @@ void ChunkManifest::toJson(void* value_ptr, void* allocator_ptr) const {
   value.AddMember("total_size", static_cast<uint64_t>(_total_size), allocator);
   value.AddMember("file_hash", static_cast<uint64_t>(_file_hash), allocator);
   value.AddMember("compression", rapidjson::Value(compressionTypeToString(_compression), allocator), allocator);
-  value.AddMember("is_encrypted", _is_encrypted, allocator);
   
   // Add chunks array
   rapidjson::Value chunks_array(rapidjson::kArrayType);
@@ -131,11 +130,7 @@ void ChunkManifest::fromJson(const void* value_ptr) {
   if (value.HasMember("compression") && value["compression"].IsString()) {
     _compression = compressionTypeFromString(value["compression"].GetString());
   }
-  
-  if (value.HasMember("is_encrypted") && value["is_encrypted"].IsBool()) {
-    _is_encrypted = value["is_encrypted"].GetBool();
-  }
-  
+    
   // Read chunks array
   if (value.HasMember("chunks") && value["chunks"].IsArray()) {
     _chunks.clear();

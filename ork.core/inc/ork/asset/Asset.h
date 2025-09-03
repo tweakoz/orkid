@@ -45,13 +45,12 @@ struct LoadRequest{
   LoadRequest(datablock_ptr_t db,vars_ptr_t asset_vars=nullptr);
   
   // Catalog support
-  LoadRequest(const AssetPath& p, catalog::assethandle_ptr_t catalog_handle);
-  LoadRequest(catalog::assethandle_ptr_t catalog_handle);
+  LoadRequest(const AssetPath& p, catalog::fetchrequest_ptr_t catalog_handle);
+  LoadRequest(catalog::fetchrequest_ptr_t catalog_handle);
 
   void incrementPartialLoadCount();
   void decrementPartialLoadCount();
   void waitForCompletion() const;
-  void enqueueAsync(void_lambda_t on_complete) const;
 
   template <typename T>
   std::shared_ptr<T> assetAs() const {
@@ -65,7 +64,7 @@ struct LoadRequest{
   event_lambda_t _on_event;
   datablock_ptr_t _datablock;
   uint64_t _contentHash = 0;
-  catalog::assethandle_ptr_t _catalog_handle;
+  catalog::fetchrequest_ptr_t _catalog_handle;
 
   std::atomic<int> _partial_load_counter = 0;
   

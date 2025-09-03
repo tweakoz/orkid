@@ -36,6 +36,7 @@
 #include <boost/filesystem.hpp>
 #include <sys/stat.h>
 #include <ctime>
+#include "catalog_impl.h"
 
 namespace ork::asset::catalog {
 
@@ -71,7 +72,6 @@ static void saveChunkManifest(chunkmanifest_ptr_t manifest, const file::Path& pa
   doc.AddMember("total_size", rapidjson::Value(static_cast<uint64_t>(manifest->_total_size)), allocator);
   doc.AddMember("file_hash", rapidjson::Value(static_cast<uint64_t>(manifest->_file_hash)), allocator);
   doc.AddMember("compression", rapidjson::Value(compressionTypeToString(manifest->_compression), allocator), allocator);
-  doc.AddMember("is_encrypted", manifest->_is_encrypted, allocator);
   
   // Add chunks array
   rapidjson::Value chunks_array(rapidjson::kArrayType);
@@ -98,7 +98,7 @@ static void saveChunkManifest(chunkmanifest_ptr_t manifest, const file::Path& pa
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
+/*
 bool AssetEntry::isValid() const {
   // Basic validation
   if (_type.empty()) {
@@ -109,19 +109,13 @@ bool AssetEntry::isValid() const {
   if (_storage_hash.empty()) {
     return false;
   }
-  
-  // If chunked, must have chunk manifest
-  if (_size > ChunkManifest::chunk_threshold && !_chunk_manifest) {
-    // Large files should be chunked
-    // This is a warning, not an error
-  }
-  
+    
   return true;
-}
+}*/
 
 ////////////////////////////////////////////////////////////////////////////////
 
-std::string AssetEntry::getValidationError() const {
+/*std::string AssetEntry::getValidationError() const {
   if (_type.empty()) {
     return "Asset type is empty";
   }
@@ -131,15 +125,15 @@ std::string AssetEntry::getValidationError() const {
   }
   
   return "";
-}
+}*/
 
 ////////////////////////////////////////////////////////////////
 // AssetEntry implementations moved from header
 ////////////////////////////////////////////////////////////////
 
-bool AssetEntry::isChunked() const {
+/*bool AssetEntry::isChunked() const {
   return _chunk_manifest != nullptr;
-}
+}*/
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -171,7 +165,7 @@ std::string AssetEntry::buildFullyQualifiedId() const {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
+/*
 std::string AssetEntry::toJson() const {
   logchan_catalog->log("CHUNK DEBUG: toJson for %s - _chunk_manifest=%p", 
                        _id.c_str(), _chunk_manifest.get());
@@ -212,9 +206,7 @@ std::string AssetEntry::toJson() const {
   
   // Size info
   doc.AddMember("native_size", static_cast<uint64_t>(_size), allocator);
-  if (_is_compressed) {
-    doc.AddMember("compressed_size", static_cast<uint64_t>(_compressed_size), allocator);
-  }
+  doc.AddMember("compressed_size", static_cast<uint64_t>(_compressed_size), allocator);
   
   // Chunk info if present - use ChunkManifest's own serialization
   if (_chunk_manifest) {
@@ -232,31 +224,43 @@ std::string AssetEntry::toJson() const {
   doc.Accept(writer);
   
   return buffer.GetString();
-}
+}*/
 
 ////////////////////////////////////////////////////////////////////////////////
-// AssetEntry::repackage() - Repackage asset (recompute hashes, rechunk if needed)
+// AssetEntry::_archiveAsset() - archive locals to TAR
 ////////////////////////////////////////////////////////////////////////////////
-void AssetEntry::repackage() {
-  
+
+datablock_ptr_t AssetEntry::_archiveAsset() {
+  ////////////////////////////////////////////////////////
   // Check if we have valid file information
+  ////////////////////////////////////////////////////////
+
   if (_local_loc.empty()) {
-    return;
+    return nullptr;
   }
   
+  ////////////////////////////////////////////////////////
   // Resolve local path using getResolvedLocalPath()
+  ////////////////////////////////////////////////////////
+
   file::Path base_path = getResolvedLocalPath();
   if (base_path.empty()) {
-    return;
+    return nullptr;
   }
   
+  ////////////////////////////////////////////////////////
   // Only asset_pak supported
+  ////////////////////////////////////////////////////////
+
   if (_type != "asset_pak") {
     logchan_catalog->log("ERROR: Only asset_pak type is supported. Asset type: %s", _type.c_str());
     OrkAssert(false);
   }
   
+  ////////////////////////////////////////////////////////
   // Determine source directory using tar_root field
+  ////////////////////////////////////////////////////////
+
   file::Path source_dir;
   if (_tar_root.empty()) {
     // No tar_root specified - use base_path directly
@@ -266,250 +270,152 @@ void AssetEntry::repackage() {
     source_dir = base_path / _tar_root;
   }
   
+  ////////////////////////////////////////////////////////
   // Check if directory exists
-  if (!source_dir.doesPathExist()) {
+  ////////////////////////////////////////////////////////
+
+  if (not source_dir.doesPathExist()) {
     logchan_catalog->log("ERROR: Asset pak directory does not exist: %s", source_dir.c_str());
     OrkAssert(false);
   }
   
+  ////////////////////////////////////////////////////////
   // Create TAR from directory and store it for later use
+  ////////////////////////////////////////////////////////
+
   auto catalog = getCatalog();
-  datablock_ptr_t tar_data;
+  OrkAssert(catalog!=nullptr);
+  auto fqid = catalog->findAsset(buildFullyQualifiedId());
+  auto tar_data = catalog->_packFromLocal(fqid);
+  OrkAssert(tar_data);
+  return tar_data;
+} 
   
-  if (catalog) {
-    // Pass 'this' directly to avoid lookup issues during creation
-    auto self = std::make_shared<AssetEntry>(*this);
-    auto pak_result = catalog->packFromLocal(self);
-    if (pak_result && pak_result->isSuccess() && pak_result->_data) {
-      // Store TAR _data for encryption later
-      tar_data = pak_result->_data;
-      
-      // Update size from packed data
-      _size = tar_data->length();
-      
-      // Compute content hash from TAR data
-      CMD5 content_hasher;
-      content_hasher.update(tar_data->data(), tar_data->length());
-      content_hasher.finalize();
-      Md5Sum content_md5_result = content_hasher.Result();
-      _content_hash = content_md5_result.hex_digest();
-      
-      // Store the TAR _data in a member variable so we don't have to recreate it
-      _temp_tar_data = tar_data;
-    } else {
-      logchan_catalog->log("ERROR: Failed to pack asset_pak from directory: %s", source_dir.c_str());
-      OrkAssert(false);
-    }
-  } else {
-    logchan_catalog->log("ERROR: No catalog available for asset_pak packing");
-    OrkAssert(false);
-  }
-  
-  // Package the file (encrypt)
-  // Get codec from parent manifest
+////////////////////////////////////////////////////////////////////////////////
+// AssetEntry::_encryptAsset() - encrypt with codec
+////////////////////////////////////////////////////////////////////////////////
+
+datablock_ptr_t AssetEntry::_encryptAsset(datablock_ptr_t tar_data) {
   encryptioncodec_ptr_t codec;
   auto parent_manifest = _parent_manifest.lock();
   if (parent_manifest) {
     codec = parent_manifest->getCodec();
     printf("[DEBUG REPACKAGE] Got codec from parent manifest for namespace: %s\n", _namespace.c_str());
   }
+  OrkAssert(codec);
+  return codec->encrypt(tar_data.get());
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// AssetEntry::repackage() - Repackage asset (recompute hashes, rechunk if needed)
+////////////////////////////////////////////////////////////////////////////////
+
+void AssetEntry::repackage() {
   
-  if (codec) {
-    printf("[DEBUG REPACKAGE] Using codec to encrypt asset: %s\n", _id.c_str());
-    // Get the TAR data to encrypt
-    std::vector<uint8_t> file_content;
+  auto catalog = getCatalog();
+  auto fqid_str = buildFullyQualifiedId();
+  auto fqid = catalog->findAsset(fqid_str); 
+  ////////////////////////////////////////////////////////
+  // Archive asset to TAR
+  ////////////////////////////////////////////////////////
+
+  auto tar_data = _archiveAsset();
+  _archive_size = tar_data->length();
+  
+  ////////////////////////////////////////////////////////
+  // Compute content hash from TAR data
+  ////////////////////////////////////////////////////////
+
+  CMD5 content_hasher;
+  content_hasher.update(tar_data->data(), tar_data->length());
+  content_hasher.finalize();
+  Md5Sum content_md5_result = content_hasher.Result();
+  _content_hash = content_md5_result.hex_digest();
     
-    // For asset_pak, use the TAR data we already created
-    if (_temp_tar_data) {
-      file_content.resize(_temp_tar_data->length());
-      memcpy(file_content.data(), _temp_tar_data->data(), _temp_tar_data->length());
-      
-      // Clear the temporary data after use
-      _temp_tar_data.reset();
-    } else {
-      logchan_catalog->log("ERROR: No TAR data available for asset_pak encryption");
-      return;
+  ////////////////////////////////////////////////////////
+  // Encrypt the TAR data
+  ////////////////////////////////////////////////////////
+
+  auto encrypted_data = _encryptAsset(tar_data);
+  OrkAssert(encrypted_data);
+  _encrypted_size = encrypted_data->length();
+
+  ////////////////////////////////////////////////////////
+  // Chunkify..
+  ////////////////////////////////////////////////////////
+
+  auto disassembly_result = ChunkDisassembler::disassemble(
+    encrypted_data,
+    nullptr,  // Already encrypted, don't encrypt again
+    CompressionType::NONE  // Already processed
+  );
+  
+  OrkAssert(disassembly_result->_success);
+  OrkAssert(disassembly_result->_chunks.size() == disassembly_result->_chunk_manifest->_chunks.size());
+
+  _chunk_manifest = disassembly_result->_chunk_manifest;
+  logchan_catalog->log("CHUNK DEBUG: Set _chunk_manifest for %s - %zu chunks, total_size=%zu", 
+                      _id.c_str(), _chunk_manifest->_chunks.size(), _chunk_manifest->_total_size);
+  
+  // Get chunks directory
+  OrkAssert(catalog!=nullptr);
+  file::Path chunks_dir = catalog->getChunksDir();
+  chunks_dir.ensureDirectoryExists();
+  
+  // Save each chunk with proper hash-based naming
+  for (size_t i = 0; i < disassembly_result->_chunks.size(); ++i) {
+    const auto& chunk_data = disassembly_result->_chunks[i];
+    const auto& chunk_meta = _chunk_manifest->_chunks[i];
+    
+    // Chunk filename: {chunk_hash}.chunk.{index:04d}
+    std::string chunk_filename = FormatString("%llu.chunk.%04zu", //
+                                              chunk_meta._hash, i);
+    file::Path chunk_path = chunks_dir / chunk_filename;
+    
+    // Write chunk to disk
+    File chunk_file(chunk_path, EFM_WRITE);
+    chunk_file.Write(chunk_data->data(), chunk_data->length());
+    
+    logchan_catalog->log("Saved chunk %zu/%zu: %s (size: %zu)", 
+                        i + 1, disassembly_result->_chunks.size(),
+                        chunk_filename.c_str(), chunk_data->length());
     }
     
-    if (!file_content.empty()) {
-      
-      // Encrypt the content
-      auto input_block = std::make_shared<DataBlock>(file_content.data(), file_content.size());
-      auto encrypted_block = codec->encrypt(input_block.get());
-      
-      if (encrypted_block) {
-        // Compute storage hash from encrypted data
-        // Calculate MD5 storage hash of encrypted data
-        CMD5 storage_hasher;
-        storage_hasher.update(encrypted_block->data(), encrypted_block->length());
-        storage_hasher.finalize();
-        Md5Sum storage_md5_result = storage_hasher.Result();
-        _storage_hash = storage_md5_result.hex_digest();
-        
-        // Get catalog from parent manifest to access cache directory
-        file::Path enc_dir;
-        auto catalog = parent_manifest->getParentCatalog();
-        if (catalog) {
-          enc_dir = catalog->getEncryptedDir();
-        } else {
-          // Fallback to default location
-          enc_dir = file::Path::stage_dir() / "assetcache" / "enc";
-        }
-        // Ensure enc directory exists
-        enc_dir.ensureDirectoryExists();
-        file::Path encrypted_path = enc_dir / (_storage_hash + ".enc");
-        
-        std::ofstream out_file(encrypted_path.c_str(), std::ios::binary);
-        if (out_file.is_open()) {
-          out_file.write(reinterpret_cast<const char*>(encrypted_block->data()), encrypted_block->length());
-          out_file.close();
-          logchan_catalog->log("Wrote encrypted file: %s", encrypted_path.c_str());
-        }
-      }
-    }
-  } else {
-    // No codec available - fallback to fake hash
-    CMD5 storage_hasher;
-    std::string fake_data = _content_hash + "_encrypted";
-    storage_hasher.update((const unsigned char*)fake_data.c_str(), fake_data.length());
-    storage_hasher.finalize();
-    Md5Sum storage_md5_result = storage_hasher.Result();
-    _storage_hash = storage_md5_result.hex_digest();
-  }
-  
-  // Check if file needs chunking
-  logchan_catalog->log("CHUNK DEBUG: Asset %s - size=%zu, threshold=%zu, codec=%p, type=%s", 
-                       _id.c_str(), _size, ChunkManifest::chunk_threshold, codec.get(), _type.c_str());
-  if (_size > ChunkManifest::chunk_threshold) {
-    // Only chunk if we have encrypted data available
-    if (codec && _type == "asset_pak") {
-      logchan_catalog->log("Asset %s size %zu exceeds threshold, will chunk", _id.c_str(), _size);
-      
-      // Get encrypted file that was just saved
-      file::Path enc_dir;
-      auto catalog = parent_manifest->getParentCatalog();
-      if (catalog) {
-        enc_dir = catalog->getEncryptedDir();
-      } else {
-        enc_dir = file::Path::stage_dir() / "assetcache" / "enc";
-      }
-      file::Path encrypted_path = enc_dir / (_storage_hash + ".enc");
-      
-      // Read the encrypted data back
-      if (encrypted_path.doesPathExist()) {
-        File enc_file(encrypted_path, EFM_READ);
-        size_t enc_size = 0;
-        enc_file.GetLength(enc_size);
-        
-        auto encrypted_data = std::make_shared<DataBlock>();
-        encrypted_data->reserve(enc_size);
-        encrypted_data->_storage.resize(enc_size);
-        enc_file.Read(const_cast<uint8_t*>(encrypted_data->data()), enc_size);
-        
-        // Use ChunkDisassembler to split into chunks
-        auto disassembly_result = ChunkDisassembler::disassemble(
-          encrypted_data,
-          nullptr,  // Already encrypted, don't encrypt again
-          CompressionType::NONE  // Already processed
-        );
-        
-        if (disassembly_result.success && disassembly_result.chunk_manifest) {
-          _chunk_manifest = disassembly_result.chunk_manifest;
-          logchan_catalog->log("CHUNK DEBUG: Set _chunk_manifest for %s - %zu chunks, total_size=%zu", 
-                              _id.c_str(), _chunk_manifest->_chunks.size(), _chunk_manifest->_total_size);
-          
-          // Get chunks directory
-          file::Path chunks_dir;
-          if (catalog) {
-            chunks_dir = catalog->getChunksDir();
-          } else {
-            chunks_dir = file::Path::stage_dir() / "assetcache" / "enc" / "chunks";
-          }
-          chunks_dir.ensureDirectoryExists();
-          
-          // Save each chunk with proper hash-based naming
-          for (size_t i = 0; i < disassembly_result.chunks.size(); ++i) {
-            const auto& chunk_data = disassembly_result.chunks[i];
-            const auto& chunk_meta = _chunk_manifest->_chunks[i];
-            
-            // Chunk filename: {chunk_hash}.chunk.{index:04d}
-            std::string chunk_filename = FormatString("%llu.chunk.%04zu", 
-                                                     chunk_meta._hash, i);
-            file::Path chunk_path = chunks_dir / chunk_filename;
-            
-            // Write chunk to disk
-            File chunk_file(chunk_path, EFM_WRITE);
-            chunk_file.Write(chunk_data->data(), chunk_data->length());
-            
-            logchan_catalog->log("Saved chunk %zu/%zu: %s (size: %zu)", 
-                                i + 1, disassembly_result.chunks.size(),
-                                chunk_filename.c_str(), chunk_data->length());
-          }
-          
-          // Save chunk manifest
-          file::Path manifest_path = enc_dir / (_storage_hash + ".chunkmanifest");
-          saveChunkManifest(_chunk_manifest, manifest_path);
-          logchan_catalog->log("Saved chunk manifest: %s", manifest_path.c_str());
-          
-        } else {
-          logchan_catalog->log("ERROR: Failed to disassemble into chunks: %s", 
-                              disassembly_result.error_message.c_str());
-          _chunk_manifest.reset();
-          logchan_catalog->log("CHUNK DEBUG: Reset _chunk_manifest for %s (disassembly failed)", _id.c_str());
-        }
-      } else {
-        logchan_catalog->log("ERROR: Encrypted file not found for chunking: %s", 
-                            encrypted_path.c_str());
-        _chunk_manifest.reset();
-        logchan_catalog->log("CHUNK DEBUG: Reset _chunk_manifest for %s (encrypted file not found)", _id.c_str());
-      }
-    } else {
-      // Non-pak or no codec - no chunking
-      _chunk_manifest.reset();
-      logchan_catalog->log("CHUNK DEBUG: Reset _chunk_manifest for %s (non-pak or no codec)", _id.c_str());
-    }
-  } else {
-    // Small file - no chunking needed
-    _chunk_manifest.reset();
-    logchan_catalog->log("CHUNK DEBUG: Reset _chunk_manifest for %s (size %zu <= threshold)", _id.c_str(), _size);
-  }
-  
+  // Save chunk manifest
+  auto enc_dir = catalog->getEncryptedDir();
+  file::Path manifest_path = enc_dir / (_storage_hash + ".chunkmanifest");
+  saveChunkManifest(_chunk_manifest, manifest_path);
+  logchan_catalog->log("Saved chunk manifest: %s", manifest_path.c_str());
+    
+  ////////////////////////////////////////////////////////
+
   logchan_catalog->log("CHUNK DEBUG: End of repackage for %s - _chunk_manifest=%p", 
                        _id.c_str(), _chunk_manifest.get());
   
   // Update compression info
-  _is_compressed = false; // Will be true after actual compression
-  _compressed_size = _size; // Will be updated after compression
+  _compressed_size = _archive_size; // Will be updated after compression
   
   // Create local manifest for immediate use without upload
   if (catalog && _type == "asset_pak" && !_storage_hash.empty()) {
     // Create local manifest entry
-    nlohmann::json local_manifest;
-    local_manifest["asset_id"] = _id;
-    local_manifest["namespace"] = _namespace;
-    local_manifest["storage_hash"] = _storage_hash;
-    local_manifest["content_hash"] = _content_hash;
-    local_manifest["type"] = _type;
-    local_manifest["size"] = _size;
-    local_manifest["timestamp"] = std::time(nullptr);
-    
-    // For single-file paks, mark as auto-unwrappable
-    if (!_filters.empty() && _filters.size() == 1) {
-      local_manifest["auto_unwrap"] = true;
-      local_manifest["unwrapped_file"] = _filters[0];
-    }
-    
-    // Save local manifest
-    file::Path local_manifest_dir = file::Path::stage_dir() / "assetcache" / "local_manifests" / _namespace;
-    local_manifest_dir.ensureDirectoryExists();
-    file::Path manifest_path = local_manifest_dir / (_id + ".json");
-    
-    std::ofstream manifest_file(manifest_path.c_str());
-    if (manifest_file.is_open()) {
-      manifest_file << local_manifest.dump(2);
-      manifest_file.close();
-      logchan_catalog->log("B: Created local manifest: %s", manifest_path.c_str());
-    }
+    auto impl = catalog->_impl.getShared<CatalogImpl>();
+    if (impl) {
+      localmanifest_ptr_t local_mani = std::make_shared<LocalManifest>();
+      local_mani->_fqid = fqid_str;
+      local_mani->_storage_hash = _storage_hash;
+      local_mani->_content_hash = _content_hash;
+      local_mani->_type = _type;
+      local_mani->_archive_size = _archive_size;
+      local_mani->_encrypted_size = _encrypted_size;
+      local_mani->_compressed_size = _compressed_size;
+      local_mani->_timestamp = std::time(nullptr);
+      local_mani->_auto_unwrap = (_filters.size() == 1);
+      if (local_mani->_auto_unwrap) {
+        local_mani->_unwrapped_path = _filters[0];
+      }
+      file::Path manifest_path = impl->localManifestPathForFqid(fqid);
+      impl->_saveLocalManifest(local_mani, manifest_path);
+    }    
   }
 }
 

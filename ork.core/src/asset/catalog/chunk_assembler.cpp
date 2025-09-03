@@ -285,10 +285,9 @@ chunkassemblyresult_ptr_t ChunkAssembler::assembleFromDirectory(
     for (size_t i = 0; i < _chunk_manifest->_chunks.size(); ++i) {
       // Determine chunk filename
       // Format: chunk_{index:04d}_{hash:016x}.enc (if encrypted) or without .enc
-      std::string chunk_filename = FormatString("chunk_%04zu_%016lx%s",
+      std::string chunk_filename = FormatString("chunk_%04zu_%016lx%s.enc",
                                                i,
-                                               _chunk_manifest->_chunks[i]._hash,
-                                               _chunk_manifest->_is_encrypted ? ".enc" : "");
+                                               _chunk_manifest->_chunks[i]._hash);
       
       file::Path chunk_path = chunk_dir / base_filename / chunk_filename;
       chunk_files.push_back(chunk_path);
@@ -545,12 +544,11 @@ datablock_ptr_t ChunkAssembler::processChunk(
   
   // Decrypt if needed
   datablock_ptr_t decrypted = chunk_data;
-  if (_chunk_manifest->_is_encrypted && _codec) {
-    decrypted = _codec->decrypt(chunk_data.get());
-    if (!decrypted) {
-      logchan_catalog->log("ERROR: Failed to decrypt chunk %zu", chunk_index);
-      return nullptr;
-    }
+  OrkAssert(_codec);
+  decrypted = _codec->decrypt(chunk_data.get());
+  if (!decrypted) {
+    logchan_catalog->log("ERROR: Failed to decrypt chunk %zu", chunk_index);
+    return nullptr;
   }
   
   // Decompress if needed
@@ -730,32 +728,30 @@ bool ChunkAssemblerImpl::writeChunkToStream(chunk_index_t chunk_index, const dat
 // ChunkDisassembler
 ////////////////////////////////////////////////////////////////
 
-ChunkDisassembler::DisassemblyResult ChunkDisassembler::disassemble(
-    const datablock_ptr_t& data,
+chunkdisassemblyresult_ptr_t ChunkDisassembler::disassemble(
+    datablock_ptr_t data,
     encryptioncodec_ptr_t codec,
     CompressionType compression) {
-  DisassemblyResult result;
+  auto result = std::make_shared<ChunkDisassemblyResult>();
   Timer timer;
   timer.Start();
   
   if (!data || data->length() == 0) {
-    result.success = false;
-    result.error_message = "No data to disassemble";
-    return result;
+    printf("No data to disassemble\n");
+    return nullptr;
   }
   
   // Create chunk manifest
-  result.chunk_manifest = std::make_shared<ChunkManifest>();
-  result.chunk_manifest->_total_size = data->length();
-  result.chunk_manifest->_compression = compression;
-  result.chunk_manifest->_is_encrypted = (codec != nullptr);
+  result->_chunk_manifest = std::make_shared<ChunkManifest>();
+  result->_chunk_manifest->_total_size = data->length();
+  result->_chunk_manifest->_compression = compression;
   
   // Calculate file hash for the complete data
   auto file_xxhasher = std::make_shared<XXH64HASH>();
   file_xxhasher->init();
   file_xxhasher->accumulate(data->data(), data->length());
   file_xxhasher->finish();
-  result.chunk_manifest->_file_hash = file_xxhasher->result();
+  result->_chunk_manifest->_file_hash = file_xxhasher->result();
   
   // Split data into chunks using the constant chunk size
   constexpr size_t chunk_size = ChunkManifest::chunk_size;
@@ -773,9 +769,8 @@ ChunkDisassembler::DisassemblyResult ChunkDisassembler::disassemble(
     if (compression != CompressionType::NONE) {
       processed_chunk = chunk_data->compressed();
       if (!processed_chunk) {
-        result.success = false;
-        result.error_message = "Failed to compress chunk";
-        return result;
+        printf("Failed to compress chunk\n");
+        return nullptr;
       }
     }
     
@@ -783,9 +778,8 @@ ChunkDisassembler::DisassemblyResult ChunkDisassembler::disassemble(
     if (codec) {
       processed_chunk = codec->encrypt(processed_chunk.get());
       if (!processed_chunk) {
-        result.success = false;
-        result.error_message = "Failed to encrypt chunk";
-        return result;
+        printf("Failed to encrypt chunk\n");
+        return nullptr;
       }
     }
     
@@ -803,17 +797,17 @@ ChunkDisassembler::DisassemblyResult ChunkDisassembler::disassemble(
     chunk_meta._hash = xxhasher->result();
     
     // Add to results
-    result.chunks.push_back(processed_chunk);
-    result.chunk_manifest->_chunks.push_back(chunk_meta);
+    result->_chunks.push_back(processed_chunk);
+    result->_chunk_manifest->_chunks.push_back(chunk_meta);
     
     offset += current_chunk_size;
   }
   
-  result.success = true;
-  result.processing_time = timer.SecsSinceStart();
+  result->_success = true;
+  result->_processing_time = timer.SecsSinceStart();
   
   logchan_catalog->log("Disassembled %zu bytes into %zu chunks (chunk_size=%zu)",
-                      data->length(), result.chunks.size(), chunk_size);
+                      data->length(), result->_chunks.size(), chunk_size);
   
   return result;
 }

@@ -138,27 +138,6 @@ bool CatalogImpl::verifyCachedChunkHash(const file::Path& cache_path, chunk_hash
   }
 }
 
-////////////////////////////////////////////////////////////////
-
-datablock_ptr_t CatalogImpl::readCachedFile(const file::Path& cache_path) const {
-  try {
-    File file(cache_path, EFM_READ);
-    size_t file_size = 0;
-    file.GetLength(file_size);
-
-    auto data = std::make_shared<DataBlock>();
-    data->reserve(file_size);
-    data->_storage.resize(file_size);
-
-    file.Read(const_cast<uint8_t*>(data->data()), file_size);
-    file.Close();
-
-    return data;
-  } catch (const std::exception& e) {
-    logchan_catalog->log("ERROR: Failed to read cached file %s: %s", cache_path.c_str(), e.what());
-    return nullptr;
-  }
-}
 
 ////////////////////////////////////////////////////////////////
 

@@ -189,23 +189,25 @@ struct ChunkAssembler {
 // Used during packaging, inverse of ChunkAssembler
 ////////////////////////////////////////////////////////////////////////////////
 
+struct ChunkDisassemblyResult {
+  bool _success = false;
+  datablock_list_t _chunks;
+  chunkmanifest_ptr_t _chunk_manifest;
+  double _processing_time = 0.0;
+};
+
+using chunkdisassemblyresult_ptr_t = std::shared_ptr<ChunkDisassemblyResult>;
+
 struct ChunkDisassembler {
   ////////////////////////////////////////////////////////////////////////////////
   // Result of disassembly
   ////////////////////////////////////////////////////////////////////////////////
-  struct DisassemblyResult {
-    bool success = false;
-    std::vector<datablock_ptr_t> chunks;
-    chunkmanifest_ptr_t chunk_manifest;
-    std::string error_message;
-    double processing_time = 0.0;
-  };
   
   ////////////////////////////////////////////////////////////////////////////////
   // Disassemble a file into chunks
   ////////////////////////////////////////////////////////////////////////////////
-  static DisassemblyResult disassemble(
-    const datablock_ptr_t& data,
+  static chunkdisassemblyresult_ptr_t disassemble(
+    datablock_ptr_t data,
     encryptioncodec_ptr_t codec = nullptr,
     CompressionType compression = CompressionType::NONE
   );

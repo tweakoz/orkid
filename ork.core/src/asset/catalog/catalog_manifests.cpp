@@ -50,7 +50,7 @@ void AssetCatalog::loadManifestsFromPath(const file::Path& path) {
           // Load manifest from JSON file
           auto manifest = AssetManifest::loadFromFile(manifest_file);
           if (manifest) {
-            addManifest(manifest);
+            _addManifest(manifest);
             // Already logged below
           } else {
             logchan_catalog->log("WARNING: Failed to load manifest: %s", manifest_file.c_str());
@@ -61,7 +61,7 @@ void AssetCatalog::loadManifestsFromPath(const file::Path& path) {
       // Single manifest file
       auto manifest = AssetManifest::loadFromFile(path);
       if (manifest) {
-        addManifest(manifest);
+        _addManifest(manifest);
         // Already logged via logchan_catalog
       } else {
         logchan_catalog->log("WARNING: Failed to load manifest: %s", path.c_str());
@@ -156,7 +156,7 @@ void AssetCatalog::loadFromGlobalManifests(assetcatalog_ptr_t self) {
         
         auto manifest = AssetManifest::loadFromFile(manifest_file);
         if (manifest) {
-          self->addManifest(manifest);
+          self->_addManifest(manifest);
           manifest->_parent_catalog = self; // Set parent catalog for manifest
         } else {
           logchan_catalog->log("    WARNING: Failed to load");
@@ -195,7 +195,7 @@ void AssetCatalog::loadFromGlobalManifests(assetcatalog_ptr_t self) {
 
 /////////////////////////////////////////////////////////////////////////////////
 
-void AssetCatalog::addManifest(assetmanifest_ptr_t manifest) {
+void AssetCatalog::_addManifest(assetmanifest_ptr_t manifest) {
   if (!manifest)
     return;
 
@@ -204,7 +204,7 @@ void AssetCatalog::addManifest(assetmanifest_ptr_t manifest) {
   // Manifest addition logged at higher level
 
   // Get or create flyweight namespace
-  auto ns = mergeNamespace(namespace_id);
+  auto ns = _mergeNamespace(namespace_id);
 
   impl->_state.atomicOp([&](CatalogImpl::CatalogState& state) {
     // Add manifest to namespace's manifest list

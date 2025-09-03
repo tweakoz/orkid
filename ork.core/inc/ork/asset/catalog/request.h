@@ -26,38 +26,17 @@
 namespace ork::asset::catalog {
 
 struct AssetFqIdentifier {
+  assetid_t _original_fqid;        // Original fully-qualified ID (namespace|asset)
   namespaceid_t _namespace_id;     // Namespace the asset belongs to
+  assetnamespace_ptr_t _namespace; // Resolved namespace (if any)
   assetid_t _asset_id;             // asset ID (within the namespace)
-  assetlocation_ptr_t _location;  // resolved location info (if any)
+  assetlocation_ptr_t _location;   // resolved location info (if any)
+  assetentry_ptr_t _asset_info;    // resolved asset info (if any)
+  file::Path _pak_local_path;      // local path where pak was created (if any)
+  file::Path  _source_dir;         // local source directory used to create pak (if any)
 };
+
 //TODO: hoist all fqid parsing to one place AssetFqIdentifier::parse(const std::string& fqid);
-
-////////////////////////////////////////////////////////////////////////////////
-// Result of an asset retrieval operation
-////////////////////////////////////////////////////////////////////////////////
-
-struct AssetResult {
-  datablock_ptr_t _data;               // The actual asset data (if successful)
-                                      // For asset_pak: nullptr (use _pak_contents instead)
-  assetlocation_ptr_t _location;             // Where the asset came from
-  AssetStatus _status = AssetStatus::OK;  // Using CrcEnum for Python compatibility
-  std::string _error_detail;           // Additional context for debugging
-  
-  // For asset_pak types: map of extracted files
-  // Key: relative path within the tar (e.g., "models/character.obj")
-  // Value: datablock containing the file contents
-  std::map<std::string, datablock_ptr_t> _pak_contents;
-  
-  // Performance metrics
-  double _download_time = 0.0;         // Time spent downloading
-  double _processing_time = 0.0;       // Time spent decrypting/decompressing
-  size_t _bytes_downloaded = 0;        // Total bytes downloaded (may be less than data size if compressed)
-  
-  // Helpers
-  bool isSuccess() const;
-  operator bool() const;  // Allow if(result) syntax
-  bool isPak() const { return !_pak_contents.empty(); }  // Check if this is a pak result
-};
 
 ////////////////////////////////////////////////////////////////////////////////
 // Progress information for active downloads
@@ -77,61 +56,29 @@ struct DownloadProgress {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-// AssetFuture - Represents a pending async asset fetch operation
+// Result of an asset retrieval operation
 ////////////////////////////////////////////////////////////////////////////////
-
-struct AssetFuture {
-  assetid_t _asset_id;
-  std::atomic<bool> _is_complete{false};
-  std::atomic<bool> _is_cancelled{false};
-  assetresult_ptr_t _result;
-  std::mutex _mutex;
-  std::condition_variable _cv;
-  
-  // Internal state for tracking
-  fetchrequest_ptr_t _fetch_request;
-  
-  // Wait for completion (blocking)
-  assetresult_ptr_t wait();
-  
-  // Check if complete (non-blocking)
-  bool isComplete() const { return _is_complete.load(); }
-  
-  // Cancel the operation
-  void cancel();
-  
-  // Get result if ready (non-blocking, returns nullptr if not ready)
-  assetresult_ptr_t getResult() const;
-};
-
-////////////////////////////////////////////////////////////////
-// FetchRequest - Encapsulates all parameters for asset fetching
-////////////////////////////////////////////////////////////////
 
 struct FetchRequest {
+
   assetfqid_ptr_t _fqid;
-  assetentry_ptr_t asset_info;
-  bool decrypt = true;
-  bool disable_cache = false;
-  // Future expansion: priority, timeout, retry_count, etc.
-};
-
-////////////////////////////////////////////////////////////////////////////////
-
-struct AssetHandle {
+  bool _enable_caching = true;
+  datablock_ptr_t _data;                  // The actual asset data (if successful)
+                                          // For asset_pak: nullptr (use _pak_contents instead)
+  AssetStatus _status = AssetStatus::OK;  // Using CrcEnum for Python compatibility
+  std::string _error_detail;              // Additional context for debugging
   
-  //////////////////////////////////////////////////////////////////////////////
-  // Configuration
-  //////////////////////////////////////////////////////////////////////////////
+  static void invokeCompletionCallbacks(fetchrequest_ptr_t request);
+  // For asset_pak types: map of extracted files
+  // Key: relative path within the tar (e.g., "models/character.obj")
+  // Value: datablock containing the file contents
+  std::map<std::string, datablock_ptr_t> _pak_contents;
+  LockedResource<asset_callback_list_t> _completion_callbacks; // Callbacks to invoke on completion
+  // Performance metrics
+  double _download_time = 0.0;         // Time spent downloading
+  double _processing_time = 0.0;       // Time spent decrypting/decompressing
   
-  namespaceid_t _namespace;          // Catalog namespace to use
-  assetid_t _asset_id;           // Specific asset ID (optional)
-  
-  //////////////////////////////////////////////////////////////////////////////
-  // State tracking (for flyweight pattern)
-  //////////////////////////////////////////////////////////////////////////////
-  
-  std::atomic<AssetState> _state{AssetState::NOT_AVAILABLE};
+  std::atomic<AssetState> _state{AssetState::NEW};
   std::atomic<float> _progress{0.0f};
   std::atomic<size_t> _bytes_downloaded{0};
   std::atomic<size_t> _bytes_total{0};
@@ -146,16 +93,15 @@ struct AssetHandle {
   //////////////////////////////////////////////////////////////////////////////
   
   pysafe_asset_request_progress_t _progress_callback;
-  
-  //////////////////////////////////////////////////////////////////////////////
-  // Methods
-  //////////////////////////////////////////////////////////////////////////////
-  
-  AssetHandle();
-  AssetHandle(const namespaceid_t& ns);
-  AssetHandle(const namespaceid_t& ns, const assetid_t& asset_id);
-  
-  bool isValid() const;
+
+  bool wait();
+  bool isComplete() const;  
+
+  // Helpers
+  //bool isValid() const;
+  bool isSuccess() const;
+  operator bool() const;  // Allow if(result) syntax
+  bool isPak() const { return !_pak_contents.empty(); }  // Check if this is a pak result
 };
 
 

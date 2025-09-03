@@ -39,12 +39,10 @@ namespace ork::asset::catalog {
 // Core types
 struct AssetManifest;              // Registry of all assets in a namespace with metadata and locations
 struct AssetEntry;                 // Single asset's metadata including size, hash, dependencies
-struct AssetHandle;               // Request to fetch an asset with callbacks and priority
 struct AssetConfig;                // Configuration for asset catalog system (paths, cache settings, etc)
 struct NamespaceConfig;            // Configuration specific to a namespace (encryption key, upload location)
 struct AssetNamespace;             // Logical grouping of assets with manifest, codec, and metadata
 struct AssetCatalog;               // Main interface for asset discovery, fetching, and caching
-struct AssetResult;                // Result of an asset fetch operation with data or error
 struct AssetLocation;              // Where to find an asset (URL, path, CDN endpoint)
 struct DownloadProgress;           // Progress tracking for asset downloads
 struct AssetConfigSpace;           // Container for multiple configurations
@@ -76,9 +74,8 @@ struct AssetUploaderAdapter;       // Wraps generic uploaders with asset-specifi
 struct AssetUploadCoordinator;     // Manages multiple uploaders for redundancy/fallback
 
 // Async fetching
-struct AssetFuture;                // Future/promise for async asset fetching
 struct FetchRequest;               // Encapsulates all parameters for asset fetching
-
+struct LocalManifest;
 struct AssetFqIdentifier;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -89,15 +86,12 @@ using assetmanifest_ptr_t = std::shared_ptr<AssetManifest>;
 using assetmanifest_wkptr_t = std::weak_ptr<AssetManifest>;
 using manifest_list_t = std::vector<assetmanifest_ptr_t>;
 using assetentry_ptr_t = std::shared_ptr<AssetEntry>;
-using assethandle_ptr_t = std::shared_ptr<AssetHandle>;
 using assetconfig_ptr_t = std::shared_ptr<AssetConfig>;
 using assetnamespace_ptr_t = std::shared_ptr<AssetNamespace>;
 using assetcatalog_ptr_t = std::shared_ptr<AssetCatalog>;
 using assetcatalog_wkptr_t = std::weak_ptr<AssetCatalog>;
-using assetresult_ptr_t = std::shared_ptr<AssetResult>;
 using assetlocation_ptr_t = std::shared_ptr<AssetLocation>;
 using assetconfigspace_ptr_t = std::shared_ptr<AssetConfigSpace>;
-using assetfuture_ptr_t = std::shared_ptr<AssetFuture>;
 using fetchrequest_ptr_t = std::shared_ptr<FetchRequest>;
 using assetfqid_ptr_t = std::shared_ptr<AssetFqIdentifier>;
 
@@ -120,6 +114,9 @@ using assetuploaderadapter_ptr_t = std::shared_ptr<AssetUploaderAdapter>;
 using assetuploadcoordinator_ptr_t = std::shared_ptr<AssetUploadCoordinator>;
 
 using configlist_t = std::vector<assetconfig_ptr_t>;
+
+using localmanifest_ptr_t = std::shared_ptr<LocalManifest>;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Weak pointer aliases (only for types that actually use weak_ptr)
 ////////////////////////////////////////////////////////////////////////////////
@@ -133,7 +130,7 @@ using assetid_t = std::string;
 using assetid_list_t = std::vector<assetid_t>;
 using namespaceid_t = std::string;
 
-using assethandle_map_t = std::map<assetid_t, assethandle_ptr_t>;
+using assethandle_map_t = std::map<assetid_t, fetchrequest_ptr_t>;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Container type aliases
@@ -235,15 +232,13 @@ enum class CompressionType : ::ork::crc_enum_t {
 
 // Asset lifecycle states
 enum class AssetState : ::ork::crc_enum_t {
-  CrcEnum(NOT_AVAILABLE),   // Not in cache, not downloading
-  CrcEnum(QUEUED),          // Queued for download
+  CrcEnum(NEW),             // brand new request
+  CrcEnum(ENQUEUE_PENDING), // awaiting enqueue
+  CrcEnum(ENQUEUED),        // Enqueued for download
   CrcEnum(DOWNLOADING),     // Currently downloading
-  CrcEnum(ASSEMBLING),      // Chunks downloaded, assembling
-  CrcEnum(VERIFYING),       // Verifying hash/integrity
-  CrcEnum(CACHED_MEMORY),   // Available in memory cache
-  CrcEnum(CACHED_DISK),     // Available in disk cache
-  CrcEnum(FAILED),          // Download/assembly failed
-  CrcEnum(CORRUPTED),       // Hash verification failed
+  CrcEnum(PROCESSING),      // assembling, verifying, decrypting, etc.
+  CrcEnum(SUCCEEDED),       // asset is ready
+  CrcEnum(FAILED),          // asset has failed
 };
 
 // Recoverable errors - operations can retry or fallback
@@ -290,8 +285,8 @@ struct AssetOpResult {
 ////////////////////////////////////////////////////////////////////////////////
 
 // Core asset callbacks
-using asset_callback_t = std::function<void(assetresult_ptr_t)>;
-using asset_batch_callback_t = std::function<void(std::vector<assetresult_ptr_t>)>;
+using asset_callback_t = std::function<void(fetchrequest_ptr_t)>;
+using asset_callback_list_t = std::vector<asset_callback_t>;
 using download_progress_callback_t = std::function<void(const DownloadProgress&)>;
 using completion_callback_t = std::function<void(datablock_ptr_t)>;
 using error_callback_t = std::function<void(const std::string&)>;
@@ -326,7 +321,6 @@ using asset_fetcher_complete_fn_t = std::function<void(const std::string&, bool)
 
 // Core asset callbacks
 using pysafe_asset_callback_t = ::ork::ItemAndData<asset_callback_t>;
-using pysafe_asset_batch_callback_t = ::ork::ItemAndData<asset_batch_callback_t>;
 using pysafe_download_progress_callback_t = ::ork::ItemAndData<download_progress_callback_t>;
 using pysafe_completion_callback_t = ::ork::ItemAndData<completion_callback_t>;
 using pysafe_error_callback_t = ::ork::ItemAndData<error_callback_t>;

@@ -18,6 +18,7 @@
 #include <cstdlib>
 #include <cstring>
 #include "catalog_impl.h"
+#include <nlohmann/json.hpp>
 
 ////////////////////////////////////////////////////////////////
 // Internal Methods
@@ -57,8 +58,6 @@ assetlocation_ptr_t CatalogImpl::locateAsset(const assetid_t& fq_asset_id) const
       result->_relative_path   = it->second.asset_path;
       result->_source_manifest = it->second.manifest;
       // All CDN content is encrypted (system invariant)
-      result->_is_encrypted     = true;
-      result->_is_compressed    = it->second.entry->_is_compressed;
       result->_compression_type = it->second.entry->_compression_type;
       result->_chunk_manifest   = it->second.entry->_chunk_manifest;
 
@@ -185,6 +184,74 @@ std::regex CatalogImpl::wildcardToRegex(const std::string& pattern) {
     }
   }
   return std::regex(regex_str);
+}
+
+  ////////////////////////////////////////////////////////////////
+
+localmanifest_ptr_t CatalogImpl::_loadLocalManifest(const file::Path& manifest_path) {
+  if(not manifest_path.doesPathExist()) return nullptr;
+  localmanifest_ptr_t local_manifest;
+  // Load manifest
+  std::string manifest_data;
+  FILE* fp = fopen(manifest_path.c_str(), "r");
+  if (fp) {
+    fseek(fp, 0, SEEK_END);
+    size_t size = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+    manifest_data.resize(size);
+    fread(&manifest_data[0], 1, size, fp);
+    fclose(fp);
+  }
+  
+  auto manifest_json = nlohmann::json::parse(manifest_data);
+  local_manifest = std::make_shared<LocalManifest>();
+  // Check if we have the encrypted file locally
+  local_manifest->_storage_hash = manifest_json["storage_hash"].get<std::string>();
+  local_manifest->_encrypted_path = manifest_json["storage_hash"].get<std::string>();
+  local_manifest->_content_hash = manifest_json["content_hash"].get<std::string>();
+  local_manifest->_auto_unwrap = manifest_json["auto_unwrap"].get<bool>();
+  local_manifest->_unwrapped_path = manifest_json["unwrapped_file"].get<std::string>();
+  local_manifest->_fqid = manifest_json["fqid"].get<std::string>();
+  local_manifest->_type = manifest_json["type"].get<std::string>();
+  local_manifest->_archive_size = manifest_json["archive_size"].get<size_t>();
+  local_manifest->_encrypted_size = manifest_json["encrypted_size"].get<size_t>();
+  local_manifest->_compressed_size = manifest_json["compressed_size"].get<size_t>();
+  local_manifest->_timestamp = manifest_json["timestamp"].get<std::string>();
+  return local_manifest;
+}
+
+////////////////////////////////////////////////////////////////
+
+void CatalogImpl::_saveLocalManifest(localmanifest_ptr_t mani, const file::Path& path){
+  
+  OrkAssert(mani!=nullptr);
+
+  nlohmann::json local_manifest;
+  local_manifest["storage_hash"] = mani->_storage_hash;
+  local_manifest["auto_unwrap"] = mani->_auto_unwrap;
+  local_manifest["unwrapped_file"] = mani->_unwrapped_path;
+  local_manifest["fqid"] = mani->_fqid;
+  local_manifest["storage_hash"] = mani->_storage_hash;
+  local_manifest["content_hash"] = mani->_content_hash;
+  local_manifest["type"] = mani->_type;
+  local_manifest["archive_size"] = mani->_archive_size;
+  local_manifest["encrypted_size"] = mani->_encrypted_size;
+  local_manifest["compressed_size"] = mani->_compressed_size;
+  local_manifest["timestamp"] = mani->_timestamp;
+  
+  // Save local manifest
+  file::Path local_manifest_dir = path.toAbsoluteFolder();
+  local_manifest_dir.ensureDirectoryExists();
+  
+  FILE* fp = fopen(path.c_str(), "w");
+  if (fp) {
+    std::string manifest_str = local_manifest.dump(4);
+    fwrite(manifest_str.c_str(), 1, manifest_str.size(), fp);
+    fclose(fp);
+  } else {
+    logchan_catalog->log("ERROR: Failed to save local manifest to %s", path.c_str());
+    OrkAssert(false);
+  }
 }
 
 ////////////////////////////////////////////////////////////////

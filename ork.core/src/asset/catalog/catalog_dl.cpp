@@ -30,222 +30,180 @@ namespace ork::asset::catalog {
 
 static logchannel_ptr_t logchan_catalog = logger()->getChannel("CATALOG");
 
+assetfqid_ptr_t AssetCatalog::findAsset(const assetid_t& fq_asset_id) const {
+  auto impl = _impl.getShared<CatalogImpl>();
+  auto location = impl->locateAsset(fq_asset_id);
+  auto asset_info = getAssetInfo(fq_asset_id);
+
+  if ((asset_info==nullptr) or (location==nullptr)) {
+    logchan_catalog->log("[DEBUG] Asset<%s> or location not found in catalog", fq_asset_id.c_str());
+    return nullptr;
+  }
+  auto fqID = std::make_shared<AssetFqIdentifier>();
+  fqID->_original_fqid = fq_asset_id;
+  fqID->_namespace_id = asset_info->_namespace;
+  fqID->_asset_id = asset_info->_id;
+  fqID->_location = location;
+  fqID->_asset_info = asset_info;
+  fqID->_namespace = findNamespace(fqID->_namespace_id);
+  // 3. Determine source directory from _local_loc with template resolution
+  file::Path pak_local_path;
+  if (!asset_info->_local_loc.empty()) {
+    // Resolve template paths like <cache>, <stage> 
+    std::string resolved_local = asset_info->_local_loc;
+    
+    // Use the same resolution logic as AssetEntry::getResolvedLocalPath()
+    if (resolved_local.find("<stage>") == 0) {
+      resolved_local.replace(0, 7, file::Path::stage_dir().c_str());
+    } else if (resolved_local.find("<assetcache>") == 0) {
+      std::string cache_path = (file::Path::stage_dir() / "assetcache").c_str();
+      resolved_local.replace(0, 12, cache_path);
+    } else if (resolved_local.find("<cache>") == 0) {
+      std::string cache_path = (file::Path::stage_dir() / "assetcache").c_str();
+      resolved_local.replace(0, 7, cache_path);
+    }
+    
+    // Handle file:// URLs
+    if (resolved_local.find("file://") == 0) {
+      pak_local_path = file::Path(resolved_local.substr(7)); // Remove "file://"
+    } else {
+      pak_local_path = file::Path(resolved_local);
+    }
+  } else {
+    //logchan_catalog->log("packFromLocal: Asset ID has empty _local_loc: %s", fq_pak_asset_id.c_str());
+    //return false;
+  }
+  fqID->_pak_local_path = pak_local_path;
+  // 4. Determine source directory using tar_root field
+  file::Path source_dir;
+  if (asset_info->_tar_root.empty()) {
+    // No tar_root specified - use pak_local_path directly
+    source_dir = pak_local_path;
+  } else {
+    // Use tar_root to find the source directory
+    source_dir = pak_local_path / asset_info->_tar_root;
+  }
+  fqID->_source_dir = source_dir;
+  return fqID;
+}
 
 ////////////////////////////////////////////////////////////////
 // Asset Retrieval
 ////////////////////////////////////////////////////////////////
 
-assetresult_ptr_t AssetCatalog::fetch(const assetid_t& fq_asset_id, bool decrypt, bool disable_cache) {
-  
-  auto impl = _impl.getShared<CatalogImpl>();
-  
-  // flyweighted request
-  auto request = mergeAsset(fq_asset_id);
-  
-  // 2. Check if asset exists
-  auto asset_info = getAssetInfo(fq_asset_id);
-  if (!asset_info) {
-    logchan_catalog->log("[DEBUG] Asset<%s> not found in catalog", fq_asset_id.c_str());
-    auto result = std::make_shared<AssetResult>();
-    result->_status = AssetStatus::NOT_FOUND;
-    result->_error_detail = FormatString("Asset not found: %s", fq_asset_id.c_str());
-    request->_state = AssetState::FAILED;
-    return result;
+fetchrequest_ptr_t AssetCatalog::fetch( const assetid_t& fq_asset_id, //
+                                        bool enable_caching) {         //
+  ////////////////////////////////////////
+  // async fetch
+  ////////////////////////////////////////
+  auto request = fetchAsync(fq_asset_id,enable_caching);
+  if (!request) {
+    return nullptr;
   }
-  
-  // 3. Locate the asset
-  auto location = impl->locateAsset(fq_asset_id);
-  if (!location) {
-    logchan_catalog->log("[DEBUG] Failed to locate asset");
-    auto result = std::make_shared<AssetResult>();
-    result->_status = AssetStatus::NOT_FOUND;
-    result->_error_detail = "Failed to locate asset";
-    return result;
-  }
-  auto fqID = std::make_shared<AssetFqIdentifier>();
-  fqID->_namespace_id = asset_info->_namespace;
-  fqID->_asset_id = asset_info->_id;
-  fqID->_location = location;
-  // 4. Create fetch request with all parameters
-  auto fetch_request = std::make_shared<FetchRequest>();
-  fetch_request->_fqid = fqID;
-  fetch_request->asset_info = asset_info;
-  fetch_request->decrypt = decrypt;
-  fetch_request->disable_cache = disable_cache;
-  
-  // 5. Delegate to CatalogImpl for the actual work
-  auto result = impl->getAsset(fetch_request);
-  
-  // 5. Handle result and update state
-  if (result->_status == AssetStatus::OK) {
-    request->_state = AssetState::CACHED_MEMORY;
-    logchan_catalog->log("[DEBUG] Asset<%s> OK", fq_asset_id.c_str());
-  } else {
-    request->_state = AssetState::FAILED;
-    logchan_catalog->log("[DEBUG] Asset<%s> FAILED", fq_asset_id.c_str());
-  }
-  
-  // 6. Update statistics
-  impl->_stats.atomicOp([&](CatalogImpl::Stats& stats) {
-    if (result->_status == AssetStatus::OK) {
-      stats.cache_misses++;
-      stats.bytes_downloaded += result->_bytes_downloaded;
-      stats.total_download_time += result->_download_time;
-      stats.total_processing_time += result->_processing_time;
-    }
-  });
-  
-  return result;
+  ////////////////////////////////////////
+  // wait (synchronous)
+  ////////////////////////////////////////
+  bool OK = request->wait();
+  return request;
 }
 
 ////////////////////////////////////////////////////////////////
 // Async Asset Retrieval
 ////////////////////////////////////////////////////////////////
 
-assetfuture_ptr_t AssetCatalog::fetchAsync(const assetid_t& fq_asset_id, bool decrypt, bool disable_cache) {
-  
+fetchrequest_ptr_t AssetCatalog::fetchAsync(const assetid_t& fq_asset_id, //
+                                            bool enable_caching) { //
+  ////////////////////////////////////////
+  // find asset from catalog
+  ////////////////////////////////////////
   auto impl = _impl.getShared<CatalogImpl>();
-  
-  // Create the future
-  auto future = std::make_shared<AssetFuture>();
-  future->_asset_id = fq_asset_id;
-  // Don't use shared_from_this - the future doesn't need catalog reference
-  
-  // 1. Validation - get or create flyweight request
-  auto request = mergeAsset(fq_asset_id);
-  
-  // 2. Check if asset exists
-  auto asset_info = getAssetInfo(fq_asset_id);
-  if (!asset_info) {
-    // Asset not found - complete immediately with error
-    auto result = std::make_shared<AssetResult>();
-    result->_status = AssetStatus::NOT_FOUND;
-    result->_error_detail = FormatString("Asset not found: %s", fq_asset_id.c_str());
-    request->_state = AssetState::FAILED;
-    
-    future->_result = result;
-    future->_is_complete = true;
-    future->_cv.notify_all();
-    return future;
+  auto fqid = findAsset(fq_asset_id);
+  if(nullptr==fqid) {
+    return nullptr;
   }
-  
-  // 3. Locate the asset
-  auto location = impl->locateAsset(fq_asset_id);
-  if (!location) {
-    // Failed to locate - complete immediately with error
-    auto result = std::make_shared<AssetResult>();
-    result->_status = AssetStatus::NOT_FOUND;
-    result->_error_detail = "Failed to locate asset";
-    
-    future->_result = result;
-    future->_is_complete = true;
-    future->_cv.notify_all();
-    return future;
+  ////////////////////////////////////////
+  // 1. flyweighted request
+  ////////////////////////////////////////
+  auto request = _mergeRequest(fqid);
+  if (!request) {
+    return nullptr;
   }
-  
-  auto fqID = std::make_shared<AssetFqIdentifier>();
-  fqID->_namespace_id = asset_info->_namespace;
-  fqID->_asset_id = asset_info->_id;
-  fqID->_location = location;
+  ////////////////////////////////////////
+  // check request state 
+  //  (only proceed if NEW)
+  ////////////////////////////////////////
 
-  // 4. Handle password authentication upfront (on main thread)
-  // This must happen before enqueueing to allow interactive password prompt
+  switch( request->_state.load() ) {
+    case AssetState::NEW:
+      break;
+    case AssetState::ENQUEUE_PENDING:
+    case AssetState::ENQUEUED:
+    case AssetState::DOWNLOADING:
+    case AssetState::PROCESSING:
+    case AssetState::SUCCEEDED:
+      // Already completed or invalid
+      return request;
+    default:
+      OrkAssert(false);
+      return request;
+  }
+
+  request->_enable_caching = enable_caching;
+
+  ////////////////////////////////////////
+  // New Request. Proceed to enqueue.
+  ////////////////////////////////////////
+  auto location = fqid->_location;
   if (location->_location_info) {
     auto& loc_info = location->_location_info;
     if (loc_info->_api_key_read.has_value()) {
       std::string api_key = loc_info->_api_key_read.value();
-      
+    
       // Check if this requires password authentication
       if (PasswordProvider::requiresPasswordAuth(api_key)) {
         // Prompt for password NOW on main thread
         std::string host = loc_info->_download_url._host;
         std::string prompt = FormatString("Password for %s: ", host.c_str());
         auto password = PasswordProvider::getPassword(prompt, true); // Allow caching
-        
+      
         if (password.has_value()) {
           // Replace the placeholder with actual password
           loc_info->_api_key_read = password.value();
         } else {
-          // No password provided - fail immediately
-          auto result = std::make_shared<AssetResult>();
-          result->_status = AssetStatus::PERMISSION;
-          result->_error_detail = "Password authentication required but not provided";
-          
-          future->_result = result;
-          future->_is_complete = true;
-          future->_cv.notify_all();
-          return future;
+          return nullptr;
         }
       }
     }
   }
   
+  ////////////////////////////////////////
   // 5. Create fetch request with all parameters
-  auto fetch_request = std::make_shared<FetchRequest>();
-  fetch_request->_fqid = fqID;
-  fetch_request->asset_info = asset_info;
-  fetch_request->decrypt = decrypt;
-  fetch_request->disable_cache = disable_cache;
-  
-  future->_fetch_request = fetch_request;
+  ////////////////////////////////////////
   
   // 6. Enqueue the work to be done asynchronously
   // Use the work queue from download manager or create one
-  opq::concurrentQueue()->enqueue([impl, fetch_request, future, request]() {
+  opq::concurrentQueue()->enqueue([impl, request]() {
     // Do the actual work
-    auto result = impl->getAsset(fetch_request);
-    
     // Handle result and update state
-    if (result->_status == AssetStatus::OK) {
-      request->_state = AssetState::CACHED_MEMORY;
+    if (impl->getAsset(request)) { // synchronous call
+      request->_state = AssetState::SUCCEEDED;
     } else {
       request->_state = AssetState::FAILED;
     }
-    
+    FetchRequest::invokeCompletionCallbacks(request);
     // Update statistics
     impl->_stats.atomicOp([&](CatalogImpl::Stats& stats) {
-      if (result->_status == AssetStatus::OK) {
+      if (request->_status == AssetStatus::OK) {
         stats.cache_misses++;
-        stats.bytes_downloaded += result->_bytes_downloaded;
-        stats.total_download_time += result->_download_time;
-        stats.total_processing_time += result->_processing_time;
+        stats.bytes_downloaded += request->_bytes_downloaded;
+        stats.total_download_time += request->_download_time;
+        stats.total_processing_time += request->_processing_time;
       }
-    });
-    
-    // Complete the future
-    {
-      std::lock_guard<std::mutex> lock(future->_mutex);
-      future->_result = result;
-      future->_is_complete = true;
-    }
-    future->_cv.notify_all();
+    });    
   });
-  
-  return future;
+
+  return request;
 }
-
-////////////////////////////////////////////////////////////////
-// Download Management
-////////////////////////////////////////////////////////////////
-
-
-void AssetCatalog::cancelDownload(chunkdownloadcoordinator_ptr_t coordinator) {
-  if (!coordinator)
-    return;
-
-  // Cancel the download operation
-  coordinator->cancel();
-
-  // TODO: Remove from _coordinators_by_assetid tracking
-  auto impl = _impl.getShared<CatalogImpl>();
-  impl->_coordinators_by_assetid.atomicOp([&](CatalogImpl::chunk_coordinator_map_t& map) {
-    auto it = map.find(coordinator->asset_id);
-    if (it != map.end() && it->second == coordinator) {
-      map.erase(it);
-    }
-  });
-}
-
 
 ////////////////////////////////////////////////////////////////
 // DownloadProgress
@@ -263,7 +221,7 @@ std::string DownloadProgress::getRateString() const {
 
 ////////////////////////////////////////////////////////////////
 
-datablock_ptr_t CatalogImpl::downloadFile(const URL& url, const locationinfo_ptr_t& location_info) {
+datablock_ptr_t CatalogImpl::_downloadFile(const URL& url, const locationinfo_ptr_t& location_info) {
   // Atomic file download
 
   // Handle different URL schemes

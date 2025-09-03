@@ -90,46 +90,45 @@ struct CatalogImpl {
   // Internal Methods moved from header
   ////////////////////////////////////////////////////////////////////////////////
   
-  
+  file::Path localManifestPathForFqid(assetfqid_ptr_t fqid) const;
+  localmanifest_ptr_t _loadLocalManifest(const file::Path& path);
+  void _saveLocalManifest(localmanifest_ptr_t mani, const file::Path& path);
   // Locate asset in manifests
   assetlocation_ptr_t locateAsset(const std::string& fq_asset_id) const;
   
   // Atomic file download - just gets bytes from a URL
-  datablock_ptr_t downloadFile(const URL& url, const locationinfo_ptr_t& location_info = nullptr);
+  datablock_ptr_t _downloadFile(const URL& url, const locationinfo_ptr_t& location_info = nullptr);
   
   // High-level asset retrieval (new refactored method)
-  assetresult_ptr_t getAsset(fetchrequest_ptr_t request);
+  bool getAsset(fetchrequest_ptr_t request);
   
   // Download phases
-  datablock_ptr_t downloadAssetData(fetchrequest_ptr_t request);
-  datablock_ptr_t downloadChunkedData(fetchrequest_ptr_t request);
-  datablock_ptr_t downloadSingleData(fetchrequest_ptr_t request);
+  datablock_ptr_t _downloadAssetData(fetchrequest_ptr_t request);
   
   // Cache helpers
   file::Path getCachePathForAsset(assetlocation_ptr_t location) const;
   file::Path getCachePathForChunk(assetlocation_ptr_t location, size_t chunk_index) const;
   bool verifyCachedFileHash(const file::Path& cache_path, const std::string& expected_hash) const;
   bool verifyCachedChunkHash(const file::Path& cache_path, chunk_hash_t expected_hash) const;
-  datablock_ptr_t readCachedFile(const file::Path& cache_path) const;
   bool saveToCacheFile(const datablock_ptr_t& data, const file::Path& cache_path) const;
   
   // Processing phases
-  datablock_ptr_t processAssetData(
+  datablock_ptr_t _processAssetData(
     datablock_ptr_t data,
     fetchrequest_ptr_t request
   );
-  datablock_ptr_t decryptData(
+  datablock_ptr_t _decryptData(
     datablock_ptr_t data,
     const namespaceid_t& namespace_id
   );
-  datablock_ptr_t decompressData(
+  datablock_ptr_t _decompressData(
     datablock_ptr_t data,
     CompressionType compression_type
   );
   
   // Asset type handlers (everything is a pak now)
-  void handleAssetPak(datablock_ptr_t data, AssetResult& result, fetchrequest_ptr_t request);
-  void writeAssetPakToLocal(const assetentry_ptr_t& asset_info, AssetResult& result);
+  bool _extractAssetPak(datablock_ptr_t data, fetchrequest_ptr_t request);
+  void _writeAssetPakToLocal(fetchrequest_ptr_t result);
     
   
   // Parse fully qualified asset ID into namespace and asset path

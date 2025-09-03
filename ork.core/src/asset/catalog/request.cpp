@@ -20,76 +20,55 @@
 
 namespace ork::asset::catalog {
 
-////////////////////////////////////////////////////////////////////////////////
-
-AssetHandle::AssetHandle() {
-}
-
-AssetHandle::AssetHandle(const std::string& ns) 
-  : _namespace(ns) {
-}
-
-AssetHandle::AssetHandle(const std::string& ns, const std::string& _asset_id)
-  : _namespace(ns)
-  , _asset_id(_asset_id) {
-}
-
-bool AssetHandle::isValid() const {
-  return !_namespace.empty();
-}
-
 ////////////////////////////////////////////////////////////////
 // AssetFuture Implementation
 ////////////////////////////////////////////////////////////////
 
-assetresult_ptr_t AssetFuture::wait() {
-  std::unique_lock<std::mutex> lock(_mutex);
-  _cv.wait(lock, [this] { return _is_complete.load() || _is_cancelled.load(); });
-  
-  if (_is_cancelled) {
-    if (!_result) {
-      _result = std::make_shared<AssetResult>();
-      _result->_status = AssetStatus::CANCELLED;
-      _result->_error_detail = "Operation was cancelled";
-    }
+bool FetchRequest::wait() {
+  while( not isComplete() ) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
-  
-  return _result;
+  return isSuccess();
 }
 
-void AssetFuture::cancel() {
-  {
-    std::lock_guard<std::mutex> lock(_mutex);
-    _is_cancelled = true;
-    
-    // If not already complete, create a cancelled result
-    if (!_is_complete) {
-      _result = std::make_shared<AssetResult>();
-      _result->_status = AssetStatus::CANCELLED;
-      _result->_error_detail = "Operation was cancelled";
-      _is_complete = true;
-    }
-  }
-  _cv.notify_all();
-}
+////////////////////////////////////////////////////////////////
 
-assetresult_ptr_t AssetFuture::getResult() const {
-  if (_is_complete.load()) {
-    return _result;
+bool FetchRequest::isComplete() const {
+  switch(_state) {
+    case AssetState::NEW:               // brand new request
+    case AssetState::ENQUEUE_PENDING:   // merged but not yet queued
+    case AssetState::ENQUEUED:          // waiting to be downloaded
+    case AssetState::DOWNLOADING:       // downloading in progress
+    case AssetState::PROCESSING:       // downloading in progress
+      return false;
+    case AssetState::SUCCEEDED:
+    case AssetState::FAILED:
+      return true;
   }
-  return nullptr;
+  return false;
 }
 
 ////////////////////////////////////////////////////////////////
 // AssetResult implementations moved from header
 ////////////////////////////////////////////////////////////////
 
-bool AssetResult::isSuccess() const {
-  return _status == AssetStatus::OK;
+bool FetchRequest::isSuccess() const {
+  return _state == AssetState::SUCCEEDED;
 }
 
-AssetResult::operator bool() const {
+FetchRequest::operator bool() const {
   return isSuccess();
 }
 
+void FetchRequest::invokeCompletionCallbacks(fetchrequest_ptr_t self) { // static
+  asset_callback_list_t callbacks; 
+  self->_completion_callbacks.atomicOp([&](const asset_callback_list_t& list) {
+    callbacks = list; // copy to avoid holding lock during callbacks
+  });
+  for (const auto& cb : callbacks) {
+    if (cb) {
+      cb(self);
+    }
+  }
+}
 } // namespace ork::asset::catalog {

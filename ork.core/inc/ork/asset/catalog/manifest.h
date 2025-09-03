@@ -44,18 +44,17 @@ struct AssetEntry {
   std::vector<std::string> _filters;     // File patterns to include in TAR (empty = include all)
   
   // Extended metadata
-  size_t _size = 0;                      // File size in bytes
   std::string _storage_hash;             // Storage hash (encrypted data) - for CAFS naming
   std::string _content_hash;             // Content hash (raw data) - for verification
   std::string _hash_algorithm = "md5";   // Hash algorithm used
   time_t _modification_time = 0;         // Last modification time
   
   // Compression/encryption info
-  bool _is_compressed = false;
-  bool _is_encrypted = false;
   CompressionType _compression_type = CompressionType::NONE;
-  size_t _compressed_size = 0;           // Size after compression
-  
+  size_t _archive_size = 0;             // Size before compression and encryption
+  size_t _encrypted_size = 0;           // Size after encryption
+  size_t _compressed_size = 0;          // Size after compression
+
   // Chunk info for large files
   chunkmanifest_ptr_t _chunk_manifest;
   
@@ -73,7 +72,7 @@ struct AssetEntry {
   bool supportsCurrentPlatform() const;
   
   // Check if this entry has chunk information
-  bool isChunked() const;
+  //bool isChunked() const;
   
   
   // Build fully qualified asset ID
@@ -81,14 +80,16 @@ struct AssetEntry {
   std::string buildFullyQualifiedId() const;
   
   // Validation
-  bool isValid() const;
-  std::string getValidationError() const;
+  //bool isValid() const;
+  //std::string getValidationError() const;
   
   // Serialization
-  std::string toJson() const;
+  //std::string toJson() const;
   
   // Repackage asset (recompute hashes, rechunk if needed)
   void repackage();
+  datablock_ptr_t _archiveAsset(); 
+  datablock_ptr_t _encryptAsset(datablock_ptr_t raw_data); 
   
   // Upload asset file to configured remote location
   // Returns: upload receipt with results
@@ -113,13 +114,11 @@ struct AssetEntry {
   // Get catalog from parent manifest
   assetcatalog_ptr_t getCatalog() const;
   
-private:
+  private:
   // Helper methods for upload
   void saveReceipt(uploadreceipt_ptr_t receipt) const;
   std::string formatChunkIndex(int index) const;
   
-  // Temporary storage for TAR data during repackage
-  mutable datablock_ptr_t _temp_tar_data;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -166,8 +165,8 @@ struct AssetManifest {
   asset_type_count_map_t countAssetsByType() const;
   
   // Validate manifest
-  bool isValid() const;
-  validation_error_list_t getValidationErrors() const;
+  //bool isValid() const;
+  //validation_error_list_t getValidationErrors() const;
   
   // Accessors for pimpl
   const std::string& getManifestId() const;
@@ -220,6 +219,26 @@ private:
   
   // Internal parsing
   void parseFromJsonInternal(const std::string& json_str, const file::Path& source_file);
+};
+
+////////////////////////////////////////////////////////////////////////////////
+// LocalManifest - represents metadata of an asset stored locally 
+//  (not in catalog)
+////////////////////////////////////////////////////////////////////////////////
+
+struct LocalManifest {
+  file::Path _path; 
+  std::string _fqid;
+  std::string _type = "asset_pak";
+  size_t _archive_size = 0;
+  size_t _encrypted_size = 0;
+  size_t _compressed_size = 0;
+  std::string _unwrapped_path;
+  file::Path _encrypted_path; 
+  std::string _storage_hash;
+  std::string _content_hash;
+  std::string _timestamp;
+  bool _auto_unwrap = false;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

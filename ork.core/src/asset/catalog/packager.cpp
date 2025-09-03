@@ -326,7 +326,6 @@ AssetPackageResult AssetPackagerImpl::processChunkedFile(
     chunk_manifest->_total_size = fileSize;
     chunk_manifest->_file_hash = 0; // Will be calculated at the end
     chunk_manifest->_compression = _config->compression_type;
-    chunk_manifest->_is_encrypted = _config->enable_encryption && _codec;
     size_t _total_chunks = (fileSize + chunk_size - 1) / chunk_size;
     
     // Initialize streaming MD5 hash for the entire file

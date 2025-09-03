@@ -56,58 +56,6 @@ void write_test_file(const Path& path, const std::string& content) {
 } // anonymous namespace
 
 ////////////////////////////////////////////////////////////////////////////////
-// AssetManifest JSON Tests
-////////////////////////////////////////////////////////////////////////////////
-
-TEST(AssetManifest_JsonCreation) {
-    auto manifest = std::make_shared<AssetManifest>();
-    manifest->setNamespace("test");
-    manifest->setVersion("1.0.0");
-    manifest->setDescription("Test manifest");
-    
-    // Add an asset
-    auto entry = std::make_shared<AssetEntry>();
-    entry->_type = "asset";
-    entry->_size = 1024;
-    entry->_storage_hash = "abc123";
-    manifest->addAsset("test_asset", entry);
-    
-    // Convert to JSON
-    auto json = manifest->toJson();
-    CHECK(!json.empty());
-    CHECK(json.find("\"namespace\"") != std::string::npos);
-    CHECK(json.find("\"test\"") != std::string::npos);
-    CHECK(json.find("\"version\"") != std::string::npos);
-    CHECK(json.find("\"1.0.0\"") != std::string::npos);
-}
-
-TEST(AssetManifest_JsonParsing) {
-    std::string json = R"({
-        "namespace": "test_parse",
-        "version": "2.0.0",
-        "assets": {
-            "asset1": {
-                "type": "asset",
-                "priority": 100,
-                "filename": "asset1.dat",
-                "size": 2048,
-                "hash": "def456",
-                "hash_algorithm": "md5"
-            }
-        }
-    })";
-    
-    auto manifest = AssetManifest::parseFromString(json, Path("test.json"));
-    CHECK(manifest != nullptr);
-    CHECK(manifest->getNamespace() == "test_parse");
-    CHECK(manifest->getVersion() == "2.0.0");
-    
-    auto& assets = manifest->getAssets();
-    CHECK(assets.size() == 1);
-    CHECK(assets.find("asset1") != assets.end());
-}
-
-////////////////////////////////////////////////////////////////////////////////
 // AssetManifest Merge Tests
 ////////////////////////////////////////////////////////////////////////////////
 

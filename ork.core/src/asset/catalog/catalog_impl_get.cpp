@@ -25,7 +25,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <nlohmann/json.hpp>
 #include "catalog_impl.h"
 
 ////////////////////////////////////////////////////////////////
@@ -36,262 +35,144 @@ namespace ork::asset::catalog {
 
 static logchannel_ptr_t logchan_catalog = logger()->getChannel("CATALOG");
 
-////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////
 
-assetresult_ptr_t CatalogImpl::getAsset(fetchrequest_ptr_t request) {
+  file::Path CatalogImpl::localManifestPathForFqid(assetfqid_ptr_t fqid) const {
+    return _catalog->getCacheDir()        //
+           / "local_manifests"            //
+           / fqid->_namespace_id          //
+           / (fqid->_asset_id + ".json");
+  }
 
-  auto result       = std::make_shared<AssetResult>();
-  result->_location = request->_fqid->_location;
+  ////////////////////////////////////////////////////////////////
+
+bool CatalogImpl::getAsset(fetchrequest_ptr_t request) {
+
+  request->_state = AssetState::ENQUEUE_PENDING;
   Timer overall_timer;
   overall_timer.Start();
+  auto FQID = request->_fqid;
 
-  // Check local manifest first for extracted cache
-  if (!request->disable_cache) {
-    // Parse asset ID to get namespace and name
-    auto [namespace_id, asset_name] = parseAssetId(request->_fqid->_asset_id);
-    
-    // Check for local manifest
-    file::Path manifest_path = _catalog->getCacheDir() / "local_manifests" / namespace_id / (asset_name + ".json");
-    
-    if (manifest_path.doesPathExist()) {
-      // Load manifest
-      std::string manifest_data;
-      FILE* fp = fopen(manifest_path.c_str(), "r");
-      if (fp) {
-        fseek(fp, 0, SEEK_END);
-        size_t size = ftell(fp);
-        fseek(fp, 0, SEEK_SET);
-        manifest_data.resize(size);
-        fread(&manifest_data[0], 1, size, fp);
-        fclose(fp);
-      }
-      
-      try {
-        auto manifest = nlohmann::json::parse(manifest_data);
-        
-        // Check if we have the encrypted file locally
-        if (manifest.contains("storage_hash")) {
-          std::string storage_hash = manifest["storage_hash"].get<std::string>();
-          file::Path encrypted_path = _catalog->getCacheDir() / "enc" / (storage_hash + ".enc");
-          
-          if (encrypted_path.doesPathExist()) {
-            // We have the encrypted file locally - no need to download
-            logchan_catalog->log("Found local encrypted file: %s", encrypted_path.c_str());
-            
-            // Skip download phase and go directly to processing
-            // Read the encrypted file
-            auto raw_data = readCachedFile(encrypted_path);
-            if (raw_data) {
-              // Process phase (decrypt/decompress)
-              Timer process_timer;
-              process_timer.Start();
-              
-              auto processed_data = processAssetData(raw_data, request);
-              if (!processed_data) {
-                logchan_catalog->log("[DEBUG CatalogImpl] Process phase FAILED");
-                if (request->decrypt && manifest.contains("type") && manifest["type"] == "asset_pak") {
-                  result->_status = AssetStatus::DECRYPT_FAILED;
-                  result->_error_detail = "Failed to decrypt asset";
-                }
-                return result;
-              }
-              
-              result->_processing_time = process_timer.SecsSinceStart();
-              result->_bytes_downloaded = 0; // From local cache
-              
-              // Handle as asset pak
-              handleAssetPak(processed_data, *result, request);
-              
-              // Check if auto-unwrap single file
-              if (manifest.contains("auto_unwrap") && manifest["auto_unwrap"].get<bool>() 
-                  && manifest.contains("unwrapped_file")) {
-                logchan_catalog->log("Served from local manifest (auto-unwrapped): %s", 
-                                   manifest["unwrapped_file"].get<std::string>().c_str());
-              }
-              
-              return result;
-            }
-          }
-        }
-      } catch (const std::exception& e) {
-        logchan_catalog->log("Failed to parse local manifest: %s", e.what());
-      }
-    }
-  }
+  ///////////////////////////////////////////////////
 
-  // Check if we already have the assembled encrypted file locally (for chunked assets)
-  datablock_ptr_t raw_data;
-  if (!request->disable_cache && request->_fqid->_location->_chunk_manifest) {
-    // Extract storage hash from relative path
-    std::string storage_hash = request->_fqid->_location->_relative_path;
-    if (storage_hash.ends_with(".enc")) {
-      storage_hash = storage_hash.substr(0, storage_hash.length() - 4);
-    }
-    
-    // Check if assembled encrypted file exists
-    file::Path assembled_path = _catalog->getCacheDir() / "enc" / (storage_hash + ".enc");
-    if (assembled_path.doesPathExist()) {
-      logchan_catalog->log("Found assembled encrypted file locally: %s", assembled_path.c_str());
-      raw_data = readCachedFile(assembled_path);
-      result->_bytes_downloaded = 0; // From local cache
-    }
-  }
-  
-  // If not found locally, proceed with download
-  if (!raw_data) {
-    // 1. Download phase
+  auto download_asset = [&](fetchrequest_ptr_t request) -> datablock_ptr_t {
     Timer _download_timer;
     _download_timer.Start();
+    auto raw_data = _downloadAssetData(request);
+    request->_download_time    = _download_timer.SecsSinceStart();
+    request->_bytes_downloaded = raw_data->length();
+    return raw_data;
+  };
 
-    raw_data = downloadAssetData(request);
-    if (!raw_data) {
-      logchan_catalog->log("[DEBUG CatalogImpl] Download phase FAILED");
-      result->_status       = AssetStatus::DOWNLOAD_FAILED;
-      result->_error_detail = "Failed to download asset _data";
-      return result;
+  ///////////////////////////////////////////////////
+  // Check local manifest first for extracted cache
+  ///////////////////////////////////////////////////
+
+  // Check for local manifest
+  file::Path manifest_path = localManifestPathForFqid(FQID);
+   auto local_manifest = _loadLocalManifest(manifest_path);
+
+  ///////////////////////////////////////////////////
+
+  datablock_ptr_t enc_data;
+  datablock_ptr_t unw_data;
+
+  ///////////////////////////////////////////////////
+
+  if (local_manifest) { // found local manifest (implying it is downloaded already...)
+    enc_data = datablockFromFileAtPath(local_manifest->_encrypted_path);
+    if (enc_data) {
+      request->_bytes_downloaded = 0; // From local cache
     }
+  } // found local manifest
 
-    result->_download_time    = _download_timer.SecsSinceStart();
-    result->_bytes_downloaded = raw_data->length();
+  ///////////////////////////////////////////////////
+  // ensure we have the encrypted data
+  ///////////////////////////////////////////////////
+
+  if (enc_data == nullptr) {
+    enc_data = download_asset(request);
+  }
+  if( enc_data == nullptr ) {
+    logchan_catalog->log("[DEBUG CatalogImpl] Download phase FAILED");
+    return false;
   }
 
-  // 2. Process phase
+  ///////////////////////////////////////////////////
+  // ensure we have the decrypted and uncompressed data
+  ///////////////////////////////////////////////////
+
   Timer process_timer;
   process_timer.Start();
-
-  auto processed_data = processAssetData(raw_data, request);
-  if (!processed_data) {
+  
+  unw_data = _processAssetData(enc_data, request);
+  if (unw_data == nullptr) {
     logchan_catalog->log("[DEBUG CatalogImpl] Process phase FAILED");
-    // processAssetData doesn't set _status, so set it here
-    if (request->decrypt && request->_fqid->_location->_is_encrypted) {
-      result->_status       = AssetStatus::DECRYPT_FAILED;
-      result->_error_detail = "Failed to decrypt asset";
-    } else if (request->_fqid->_location->_is_compressed) {
-      result->_status       = AssetStatus::DECOMPRESS_FAILED;
-      result->_error_detail = "Failed to decompress asset";
-    }
-    return result;
+    return false;
   }
-
-  result->_processing_time = process_timer.SecsSinceStart();
-
-  // 3. Handle as asset pak (everything is a pak now)
-  handleAssetPak(processed_data, *result, request);
-
-  return result;
-}
-////////////////////////////////////////////////////////////////
-
-datablock_ptr_t CatalogImpl::downloadAssetData(fetchrequest_ptr_t request) {
-  if (request->_fqid->_location->_chunk_manifest) {
-    logchan_catalog->log("DEBUG: Using downloadChunkedData for %s", request->_fqid->_location->_relative_path.c_str());
-    return downloadChunkedData(request);
-  } else {
-    logchan_catalog->log("DEBUG: Using downloadSingleData for %s", request->_fqid->_location->_relative_path.c_str());
-    return downloadSingleData(request);
-  }
-}
-
-////////////////////////////////////////////////////////////////
-
-datablock_ptr_t CatalogImpl::downloadSingleData(fetchrequest_ptr_t request) {
-  const auto& location = request->_fqid->_location;
   
-  // Get cache path for this asset
-  file::Path cache_path = getCachePathForAsset(location);
+  request->_processing_time = process_timer.SecsSinceStart();
 
-  // Extract storage hash from relative path for verification
-  std::string storage_hash = location->_relative_path;
-  if (storage_hash.size() > 4 && storage_hash.substr(storage_hash.size() - 4) == ".enc") {
-    storage_hash = storage_hash.substr(0, storage_hash.size() - 4);
+  ///////////////////////////////////////////////////
+  bool unpacked = _extractAssetPak(unw_data, request);  
+  ///////////////////////////////////////////////////
+  // Create local manifest 
+  ///////////////////////////////////////////////////
+
+  if(nullptr==local_manifest){
+    auto timestamp = std::time(nullptr);
+    auto timestr = std::asctime(std::localtime(&timestamp));
+    timestr[strlen(timestr)-1] = 0; // remove newline
+
+    auto local_manifest = std::make_shared<LocalManifest>();
+    std::string storage_hash = "???"; // hash of encrypted data
+    std::string content_hash = "???"; // hash of unwrapped data
+    local_manifest->_fqid = FQID->_original_fqid;
+    local_manifest->_storage_hash = storage_hash;
+    local_manifest->_content_hash = content_hash;
+    local_manifest->_type = FQID->_asset_info->_type;
+    local_manifest->_archive_size = unw_data->length();
+    local_manifest->_compressed_size = 0;
+    local_manifest->_encrypted_size = enc_data->length();
+    local_manifest->_timestamp = timestr;
+    local_manifest->_auto_unwrap = false;
+    local_manifest->_unwrapped_path = ""; // path inside pak if auto_unwrap
+    local_manifest->_encrypted_path = _catalog->getCacheDir() / "enc" / (storage_hash + ".enc");
+    _saveLocalManifest(local_manifest, manifest_path);
   }
 
-  // Check if cached file exists and is valid (skip if cache disabled)
-  if (!request->disable_cache && cache_path.doesPathExist()) {
-    if (verifyCachedFileHash(cache_path, storage_hash)) {
-      // Cache hit with valid hash
-      logchan_catalog->log("Cache hit (verified): %s", storage_hash.c_str());
-      auto cached_data = readCachedFile(cache_path);
-      if (cached_data) {
-        // Update statistics for cache hit
-        _stats.atomicOp([&](Stats& stats) {
-          stats.cache_hits++;
-          stats.bytes_served_from_cache += cached_data->length();
-        });
-        return cached_data;
-      }
-    } else {
-      // Corrupted cache - delete it
-      logchan_catalog->log("Cache corrupted, removing: %s", cache_path.c_str());
-      std::remove(cache_path.c_str());
-    }
-  }
-
-  // Cache miss - download from remote
-  // Create a temporary AssetEntry for URL generation
-  AssetEntry temp_entry;
-  temp_entry._storage_hash = storage_hash;
-  temp_entry._namespace    = location->_namespace_id;
-
-  URL url = _catalog->getAssetDownloadURL(&temp_entry, location->_location_info);
-
-  auto data = downloadFile(url, location->_location_info);
-
-  if (data) {
-    // Verify downloaded data before caching
-    CMD5 hasher;
-    hasher.update(data->data(), data->length());
-    hasher.finalize();
-    std::string computed_hash = hasher.Result().hex_digest();
-
-    if (computed_hash != storage_hash) {
-      logchan_catalog->log(
-          "ERROR: Downloaded file hash mismatch! Expected %s, got %s", storage_hash.c_str(), computed_hash.c_str());
-      return nullptr; // Don't cache or use corrupt data
-    }
-
-    // Save verified data to cache
-    if (saveToCacheFile(data, cache_path)) {
-      logchan_catalog->log("Cached asset: %s", storage_hash.c_str());
-    }
-  }
-
-  return data;
+  return unpacked;
 }
 
 ////////////////////////////////////////////////////////////////
 
-datablock_ptr_t CatalogImpl::downloadChunkedData(fetchrequest_ptr_t request) {
-  const auto& location = request->_fqid->_location;
+datablock_ptr_t CatalogImpl::_downloadAssetData(fetchrequest_ptr_t request) {
+
+  auto location = request->_fqid->_location;
   
-  if (!location->_chunk_manifest) {
-    logchan_catalog->log("ERROR: No chunk manifest for chunked download");
-    return nullptr;
-  }
+  OrkAssert(location->_chunk_manifest);
 
   // Check if all chunks are cached and valid (skip cache check if disabled)
-  std::vector<datablock_ptr_t> chunks;
-  bool all_chunks_cached    = !request->disable_cache; // If cache disabled, force download
+  datablock_list_t chunks;
+  bool all_chunks_cached    = false; 
   size_t total_cached_bytes = 0;
 
-  if (!request->disable_cache) {
-    for (size_t i = 0; i < location->_chunk_manifest->_chunks.size(); ++i) {
-      file::Path chunk_cache_path = getCachePathForChunk(location, i);
+  for (size_t i = 0; i < location->_chunk_manifest->_chunks.size(); ++i) {
+    file::Path chunk_cache_path = getCachePathForChunk(location, i);
 
-      if (chunk_cache_path.doesPathExist() && verifyCachedChunkHash(chunk_cache_path, location->_chunk_manifest->_chunks[i]._hash)) {
-        // Chunk is cached and valid
-        auto cached_chunk = readCachedFile(chunk_cache_path);
-        if (cached_chunk) {
-          chunks.push_back(cached_chunk);
-          total_cached_bytes += cached_chunk->length();
-          continue;
-        }
+    if (chunk_cache_path.doesPathExist() && verifyCachedChunkHash(chunk_cache_path, location->_chunk_manifest->_chunks[i]._hash)) {
+      // Chunk is cached and valid
+      auto cached_chunk = datablockFromFileAtPath(chunk_cache_path);
+      if (cached_chunk) {
+        chunks.push_back(cached_chunk);
+        total_cached_bytes += cached_chunk->length();
+        continue;
       }
-
-      // Chunk missing or corrupted - need to download all
-      all_chunks_cached = false;
-      break;
     }
+
+    // Chunk missing or corrupted - need to download all
+    all_chunks_cached = false;
+    break;
   }
 
   if (all_chunks_cached) {
@@ -321,7 +202,7 @@ datablock_ptr_t CatalogImpl::downloadChunkedData(fetchrequest_ptr_t request) {
   logchan_catalog->log("Cache miss or partial cache - downloading all %zu chunks", location->_chunk_manifest->_chunks.size());
 
   // Use shared_ptr for chunks to avoid use-after-free in async callbacks
-  auto chunks_ptr = std::make_shared<std::vector<datablock_ptr_t>>();
+  auto chunks_ptr = std::make_shared<datablock_list_t>();
   chunks_ptr->resize(location->_chunk_manifest->_chunks.size());
 
   // Create a temporary AssetEntry for URL generation
@@ -370,7 +251,7 @@ datablock_ptr_t CatalogImpl::downloadChunkedData(fetchrequest_ptr_t request) {
     dl->_on_complete._item = [this, chunk_idx, expected_hash, temp_path, chunk_cache_path, chunks_ptr](bool success, const file::Path& path) {
       if (success) {
         // Read downloaded chunk
-        auto chunk_data = readCachedFile(temp_path);
+        auto chunk_data = datablockFromFileAtPath(temp_path);
         if (!chunk_data) {
           logchan_catalog->log("ERROR: Failed to read downloaded chunk %zu", chunk_idx);
           return;
@@ -441,22 +322,20 @@ datablock_ptr_t CatalogImpl::downloadChunkedData(fetchrequest_ptr_t request) {
 
 ////////////////////////////////////////////////////////////////
 
-datablock_ptr_t CatalogImpl::processAssetData(datablock_ptr_t _data, fetchrequest_ptr_t request) {
+datablock_ptr_t CatalogImpl::_processAssetData(datablock_ptr_t _data, fetchrequest_ptr_t request) {
   const auto& location = request->_fqid->_location;
   auto result = _data;
 
   // Decrypt if needed
-  if (request->decrypt && location->_is_encrypted) {
-    result = decryptData(result, location->_namespace_id);
-    if (!result) {
-      printf("[ERROR] Decryption failed\n");
-      return nullptr;
-    }
+  result = _decryptData(result, location->_namespace_id);
+  if (!result) {
+    printf("[ERROR] Decryption failed\n");
+    return nullptr;
   }
 
   // Decompress if needed
   if (location->_is_compressed) {
-    result = decompressData(result, location->_compression_type);
+    result = _decompressData(result, location->_compression_type);
     if (!result) {
       printf("[ERROR] Decompression failed\n");
       return nullptr;
@@ -468,7 +347,7 @@ datablock_ptr_t CatalogImpl::processAssetData(datablock_ptr_t _data, fetchreques
 
 ////////////////////////////////////////////////////////////////
 
-datablock_ptr_t CatalogImpl::decryptData(datablock_ptr_t _data, const namespaceid_t& namespace_id) {
+datablock_ptr_t CatalogImpl::_decryptData(datablock_ptr_t _data, const namespaceid_t& namespace_id) {
 
   auto codec = _catalog->codecForNamespace(namespace_id);
   if (!codec) {
@@ -486,30 +365,31 @@ datablock_ptr_t CatalogImpl::decryptData(datablock_ptr_t _data, const namespacei
 
 ////////////////////////////////////////////////////////////////
 
-datablock_ptr_t CatalogImpl::decompressData(datablock_ptr_t _data, CompressionType compression_type) {
+datablock_ptr_t CatalogImpl::_decompressData(datablock_ptr_t _data, CompressionType compression_type) {
 
   return _data->decompressed();
 }
 
 ////////////////////////////////////////////////////////////////
 
-void CatalogImpl::handleAssetPak(datablock_ptr_t _data, AssetResult& result, fetchrequest_ptr_t request) {
+bool CatalogImpl::_extractAssetPak(datablock_ptr_t _data, fetchrequest_ptr_t request) {
 
+  auto fqid = request->_fqid;
   // Extract tar contents
   auto archive = util::TarArchive::loadFromMemory(_data);
   if (!archive || !archive->isValid()) {
-    result._status       = AssetStatus::DECOMPRESS_FAILED;
-    result._error_detail = "Failed to parse tar archive";
-    return;
+    request->_status       = AssetStatus::DECOMPRESS_FAILED;
+    request->_error_detail = "Failed to parse tar archive";
+    return false;
   }
 
   // Extract all entries to memory
   util::TarExtractOptions extract_options;
   auto extracted_entries = archive->extractToMemory(extract_options);
   if (extracted_entries.empty()) {
-    result._status       = AssetStatus::DECOMPRESS_FAILED;
-    result._error_detail = "No entries found in tar archive";
-    return;
+    request->_status       = AssetStatus::DECOMPRESS_FAILED;
+    request->_error_detail = "No entries found in tar archive";
+    return false;
   }
 
   // AUTO-UNWRAP: If single file, return it directly
@@ -518,88 +398,77 @@ void CatalogImpl::handleAssetPak(datablock_ptr_t _data, AssetResult& result, fet
     if (entry && entry->data) {
       
       // Set the data directly (auto-unwrap)
-      result._data = entry->data;
-      result._status = AssetStatus::OK;
+      request->_data = entry->data;
+      request->_status = AssetStatus::OK;
       
       // Create local manifest for future cache hits
-      if (!request->disable_cache) {
-        if(0)printf("request->_fqid->_asset_id<%s>\n", request->_fqid->_asset_id.c_str());
-        auto [namespace_id, asset_name] = parseAssetId(request->_fqid->_asset_id);
-        
-        // Save extracted file to cache
-        file::Path extracted_dir = _catalog->getCacheDir() / "extracted" / namespace_id / asset_name;
-        extracted_dir.ensureDirectoryExists();
-        file::Path extracted_file = extracted_dir / filename;
-        saveToCacheFile(entry->data, extracted_file);
-        
-        // Write to local location if configured
-        if (!request->asset_info->_local_loc.empty()) {
-          file::Path local_path = request->asset_info->getResolvedLocalPath();
-          if (!local_path.empty()) {
-            local_path.ensureDirectoryExists();
-            file::Path local_file = local_path / filename;
-            saveToCacheFile(entry->data, local_file);
-            logchan_catalog->log("Written to local: %s", local_file.c_str());
-          }
-        }
-        
-        // Create manifest in local_manifests
-        nlohmann::json manifest;
-        manifest["type"] = "single_file_pak";
-        manifest["extracted_at"] = std::time(nullptr);
-        manifest["filename"] = filename;
-        manifest["storage_hash"] = request->asset_info->_storage_hash;
-        manifest["auto_unwrapped"] = true;
-        manifest["extracted_path"] = FormatString("extracted/%s/%s/%s", 
-                                                  namespace_id.c_str(), 
-                                                  asset_name.c_str(), 
-                                                  filename.c_str());
-        
-        file::Path manifest_dir = _catalog->getCacheDir() / "local_manifests" / namespace_id;
-        manifest_dir.ensureDirectoryExists();
-        file::Path manifest_path = manifest_dir / (asset_name + ".json");
-        
-        FILE* fp = fopen(manifest_path.c_str(), "w");
-        if (fp) {
-          std::string json_str = manifest.dump(2);
-          fwrite(json_str.c_str(), 1, json_str.length(), fp);
-          fclose(fp);
-          logchan_catalog->log("A: Created local manifest: %s", manifest_path.c_str());
+      if(0)printf("request->_fqid->_asset_id<%s>\n", request->_fqid->_asset_id.c_str());
+      auto [namespace_id, asset_name] = parseAssetId(request->_fqid->_asset_id);
+      
+      // Save extracted file to cache
+      file::Path extracted_dir = _catalog->getCacheDir() / "extracted" / namespace_id / asset_name;
+      extracted_dir.ensureDirectoryExists();
+      file::Path extracted_file = extracted_dir / filename;
+      saveToCacheFile(entry->data, extracted_file);
+      
+      // Write to local location if configured
+      if (!fqid->_asset_info->_local_loc.empty()) {
+        file::Path local_path = fqid->_asset_info->getResolvedLocalPath();
+        if (!local_path.empty()) {
+          local_path.ensureDirectoryExists();
+          file::Path local_file = local_path / filename;
+          saveToCacheFile(entry->data, local_file);
+          logchan_catalog->log("Written to local: %s", local_file.c_str());
         }
       }
-      
-      logchan_catalog->log("Auto-unwrapped single-file pak: %s (%zu bytes)", 
-                          filename.c_str(), entry->data->length());
-      return;
+      auto local_manifest = std::make_shared<LocalManifest>();
+      auto timestamp = std::time(nullptr);
+      auto timestr = std::asctime(std::localtime(&timestamp));
+      timestr[strlen(timestr)-1] = 0; // remove newline
+      local_manifest->_fqid = request->_fqid->_original_fqid;
+      local_manifest->_storage_hash = request->_fqid->_asset_info->_storage_hash;
+      local_manifest->_content_hash = request->_fqid->_asset_info->_content_hash;
+      local_manifest->_type = request->_fqid->_asset_info->_type;
+      local_manifest->_archive_size = entry->data->length();
+      local_manifest->_timestamp = timestr;
+      local_manifest->_auto_unwrap = true;
+      local_manifest->_unwrapped_path = filename;
+      local_manifest->_encrypted_path = _catalog->getCacheDir() / "enc" / (local_manifest->_storage_hash + ".enc");
+      file::Path mani_path = _catalog->getCacheDir() / "local_manifests" / namespace_id / (asset_name + ".json");
+      _saveLocalManifest(local_manifest, mani_path);
+      return true;
     }
   }
 
   // Multiple files - return as pak_contents
   for (const auto& [filename, entry] : extracted_entries) {
     if (entry && entry->data) {
-      result._pak_contents[filename] = entry->data;
+      request->_pak_contents[filename] = entry->data;
     }
   }
   
   // Write multi-file pak to local if configured
-  if (!request->asset_info->_local_loc.empty()) {
-    writeAssetPakToLocal(request->asset_info, result);
+  if (not fqid->_asset_info->_local_loc.empty()) {
+    _writeAssetPakToLocal(request);
   }
   
-  result._status = AssetStatus::OK;
-  logchan_catalog->log("Asset pak extraction complete: %zu files", result._pak_contents.size());
+  request->_status = AssetStatus::OK;
+  logchan_catalog->log("Asset pak extraction complete: %zu files", request->_pak_contents.size());
+  return true;
 }
 
 ////////////////////////////////////////////////////////////////
 
-void CatalogImpl::writeAssetPakToLocal(const assetentry_ptr_t& asset_info, AssetResult& result) {
+void CatalogImpl::_writeAssetPakToLocal(fetchrequest_ptr_t request) {
+  auto fqid = request->_fqid;
+  auto asset_info = fqid->_asset_info;
   printf("[DEBUG] Writing asset pak to local location: %s\n", asset_info->_local_loc.c_str());
 
   // Resolve local path
   file::Path local_path = asset_info->getResolvedLocalPath();
   if (local_path.empty()) {
     printf("[ERROR] Failed to resolve local path\n");
-    return;
+    OrkAssert(false);
   }
 
   // For asset_pak, extract directly to local_path
@@ -611,7 +480,7 @@ void CatalogImpl::writeAssetPakToLocal(const assetentry_ptr_t& asset_info, Asset
   extract_dir.ensureDirectoryExists();
 
   // Write each file from _pak_contents
-  for (const auto& [filename, _data] : result._pak_contents) {
+  for (const auto& [filename, _data] : request->_pak_contents) {
     if (!_data)
       continue;
 

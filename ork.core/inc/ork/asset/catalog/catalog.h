@@ -40,7 +40,6 @@ struct AssetLocation {
   std::string _base_url;               // CDN or file:// URL
   std::string _relative_path;          // Content-addressable: {hash}.enc or {hash}
   chunkmanifest_ptr_t _chunk_manifest; // If chunked: {hash}.chunk.{index}
-  bool _is_encrypted = false;
   bool _is_compressed = false;
   CompressionType _compression_type = CompressionType::NONE;
   
@@ -87,6 +86,7 @@ struct AssetCatalog {
   // Global instance - thread-safe lazy initialization
   static assetcatalog_ptr_t globalInstance();
   
+  assetfqid_ptr_t findAsset(const assetid_t& fq_asset_id) const;
   ////////////////////////////////////////////////////////////////////////////////
   // === Namespace Management ===
   ////////////////////////////////////////////////////////////////////////////////
@@ -111,7 +111,7 @@ struct AssetCatalog {
   // Typically called when manifest JSON arrives via network request
   // Increments generation and creates new versioned state
   // Old state remains valid for in-flight operations
-  void addManifest(assetmanifest_ptr_t manifest);
+  void _addManifest(assetmanifest_ptr_t manifest);
   
   // Create a new manifest with builder pattern
   static assetmanifest_ptr_t createManifest(
@@ -175,11 +175,11 @@ struct AssetCatalog {
   //
   // Generation safety is built-in - if manifest changes during retrieval,
   // the operation either completes with old version or retries with new
-  assetresult_ptr_t fetch(const assetid_t& fq_asset_id, bool decrypt = true, bool disable_cache = false);
+  fetchrequest_ptr_t fetch(const assetid_t& fq_asset_id, bool enable_cache = true);
   
   // Async version - enqueue asset fetch and return future immediately
   // Allows parallel fetching of multiple assets
-  assetfuture_ptr_t fetchAsync(const assetid_t& fq_asset_id, bool decrypt = true, bool disable_cache = false);
+  fetchrequest_ptr_t fetchAsync(const assetid_t& fq_asset_id, bool enable_cache = true);
   
   // Check if asset exists without downloading
   bool hasAsset(const assetid_t& fq_asset_id) const;
@@ -191,20 +191,13 @@ struct AssetCatalog {
   // === Asset Pak Operations ===
   ////////////////////////////////////////////////////////////////////////////////
   
-  // Extract asset pak contents to local directory structure
-  // Uses manifest's _local_loc to determine base extraction path
-  // Returns AssetResult with status and error details
-  // For pak at "namespace|pak.tar", extracts files to directory containing pak
-  // Example: pak at /assets/models/characters.tar extracts to /assets/models/
-  assetresult_ptr_t unpackToLocal(const assetid_t& fq_pak_asset_id);
   
   // Create asset pak from local directory structure  
   // Uses manifest's _local_loc to determine source files
   // Returns AssetResult with pak data and status
   // Scans directory for files matching manifest entries
   // Example: creates pak from files in /assets/models/ directory
-  assetresult_ptr_t packFromLocal(const assetid_t& fq_pak_asset_id);
-  assetresult_ptr_t packFromLocal(assetentry_ptr_t asset_info);
+  datablock_ptr_t _packFromLocal(assetfqid_ptr_t fqid);
   
   ////////////////////////////////////////////////////////////////////////////////
   // === Asset Queries ===
@@ -218,13 +211,7 @@ struct AssetCatalog {
   
   // Dump all asset FQIDs via recursive descent of namespace tree (root at top, 1 per line)
   std::string dumpAllAssetFQIDs() const;
-    
-    
-  // Cancel specific download
-  // Takes a download coordinator that represents the entire asset download operation
-  void cancelDownload(chunkdownloadcoordinator_ptr_t coordinator);
-  
-  
+      
   ////////////////////////////////////////////////////////////////////////////////
   // === Configuration ===
   ////////////////////////////////////////////////////////////////////////////////
@@ -299,10 +286,10 @@ struct AssetCatalog {
   ////////////////////////////////////////////////////////////////////////////////
   
   // Get flyweight request for an asset (creates if doesn't exist)
-  assethandle_ptr_t mergeAsset(const assetid_t& asset_id);
+  fetchrequest_ptr_t _mergeRequest(assetfqid_ptr_t fqid);
   
   // Get flyweight namespace for an ID (creates if doesn't exist)
-  assetnamespace_ptr_t mergeNamespace(const namespaceid_t& namespace_id);
+  assetnamespace_ptr_t _mergeNamespace(const namespaceid_t& namespace_id);
         
 // Members:
   ////////////////////////////////////////////////////////////////////////////////
