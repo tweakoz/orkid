@@ -90,8 +90,8 @@ def build_assetpak(
     if not platforms:
         platforms = [get_current_platform()]
     
-    # Check if we have a cached catalog for this namespace
-    cache_key = namespace
+    # Check if we have a cached catalog for this namespace and output file
+    cache_key = f"{namespace}:{output}"  # Include output file to prevent cross-contamination
     if cache_key in _catalog_cache:
         print(f"Using cached catalog for namespace '{namespace}'")
         catalog = _catalog_cache[cache_key]['catalog']
