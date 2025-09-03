@@ -59,7 +59,6 @@ datablock_ptr_t AssetCatalog::_packFromLocal(assetfqid_ptr_t fqid) {
   // 6. Create TAR from directory contents
   util::TarCreateOptions create_options;
   create_options.base_path = source_dir.c_str();
-  create_options._deterministic = true;
   
   // Apply filters if specified
   if (!asset_info->_filters.empty()) {
@@ -115,13 +114,15 @@ datablock_ptr_t AssetCatalog::_packFromLocal(assetfqid_ptr_t fqid) {
   }
   // If no filters specified, include everything (default behavior)
 
+  create_options._deterministic = true;
   auto archive = util::TarArchive::createFromDirectory(source_dir, create_options);
   if (!archive || !archive->isValid()) {
     logchan_catalog->log("packFromLocal: Failed to create tar archive from directory: %s", source_dir.c_str());
     return nullptr;
   }
+  auto tar_data = archive->getArchiveData();
 
-  return archive->getArchiveData();
+  return tar_data;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

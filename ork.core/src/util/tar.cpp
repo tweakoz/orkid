@@ -139,23 +139,17 @@ tararchive_ptr_t TarArchive::createFromFiles(const std::vector<file::Path>& file
       }
     }
 
-    // Load file data
-    File file(file_path, EFM_READ);
-    if (!file.IsOpen()) {
+    auto datablock = datablockFromFileAtPath(file_path);
+
+    if (datablock==nullptr) {
       continue;
     }
 
-    size_t file_size = 0;
-    file.GetLength(file_size);
+    size_t file_size = datablock->length();
 
-    entry->data = std::make_shared<DataBlock>();
-    entry->data->reserve(file_size);
-    entry->data->_storage.resize(file_size);
+    printf("[TARX] Adding file: %s (as %s) file_size<%zu> hash<0x%llx>\n", file_path.c_str(), entry->name.c_str(), file_size, datablock->hash());
 
-    if (file_size > 0) {
-      file.Read(const_cast<uint8_t*>(entry->data->data()), file_size);
-    }
-
+    entry->data = datablock;
     entry->size = file_size;
     entry->mode = options.default_mode;
     if (options._deterministic) {
