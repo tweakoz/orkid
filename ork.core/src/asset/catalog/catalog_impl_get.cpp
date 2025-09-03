@@ -166,6 +166,13 @@ bool CatalogImpl::getAsset(fetchrequest_ptr_t request) {
 datablock_ptr_t CatalogImpl::_downloadAssetData(fetchrequest_ptr_t request) {
 
   auto location = request->_fqid->_location;
+  auto linfo = location->_location_info;
+  
+  printf("[DEBUG _downloadAssetData] location ptr: %p\n", location.get());
+  printf("[DEBUG _downloadAssetData] location->_location_info is %s\n", linfo ? "SET" : "NULL");
+  if (linfo) {
+    printf("[DEBUG _downloadAssetData] location_info->_download_url: %s\n", linfo->_download_url.toString().c_str());
+  }
   
   OrkAssert(location->_chunk_manifest);
 
@@ -175,6 +182,14 @@ datablock_ptr_t CatalogImpl::_downloadAssetData(fetchrequest_ptr_t request) {
   /////////////////////////////////////////////////
   size_t NUM_CHUNKS = location->_chunk_manifest->_chunks.size();
   printf("[DEBUG] Asset has %zu chunks\n", NUM_CHUNKS);
+  printf("[DEBUG]  location baseurl<%s>\n", location->_base_url.c_str());
+  printf("[DEBUG]  location relpath<%s>\n", location->_relative_path.c_str());
+  printf("[DEBUG]  location nsid<%s>\n", location->_namespace_id.c_str());
+  if (linfo) {
+    printf("[DEBUG]  locinfo _download_url<%s>\n", linfo->_download_url.toString().c_str());
+  } else {
+    printf("[DEBUG]  locinfo is NULL - cannot get download URL\n");
+  }
   ///////////////////////////////////////////////////
   // Create a temporary AssetEntry for URL generation
   ///////////////////////////////////////////////////
@@ -228,7 +243,11 @@ datablock_ptr_t CatalogImpl::_downloadAssetData(fetchrequest_ptr_t request) {
     /////////////////////////
 
     file::Path temp_path = file::Path(FormatString("%s.%04zu.tmp", chunk_cache_path.c_str(), i));
-    URL chunk_url = _catalog->getChunkDownloadURL(&temp_entry, i, location->_location_info);    
+    URL chunk_url = _catalog->getChunkDownloadURL(&temp_entry, i, location->_location_info);
+    printf("[DEBUG _downloadAssetData] chunk %zu URL: %s\n", i, chunk_url.toString().c_str());
+    if (chunk_url.toString().empty()) {
+      printf("[DEBUG _downloadAssetData] WARNING: Empty chunk URL for chunk %zu\n", i);
+    }    
     auto dl = std::make_shared<Download>(chunk_url, temp_path);
      dl->_total_bytes = location->_chunk_manifest->_chunks[i]._size;
     

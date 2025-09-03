@@ -398,12 +398,23 @@ URL AssetCatalog::getAssetDownloadURL(const AssetEntry* entry, locationinfo_ptr_
 
 URL AssetCatalog::getChunkDownloadURL(const AssetEntry* entry, size_t chunk_index, 
                                       locationinfo_ptr_t location) const {
-  if (!entry || !location) return URL();
+  printf("[DEBUG getChunkDownloadURL] entry=%p, location=%p, chunk_index=%zu\n", 
+         entry, location.get(), chunk_index);
+  if (!entry) {
+    printf("[DEBUG getChunkDownloadURL] Returning empty URL: entry is NULL\n");
+    return URL();
+  }
+  if (!location) {
+    printf("[DEBUG getChunkDownloadURL] Returning empty URL: location is NULL\n");
+    return URL();
+  }
   
   // Individual chunk: {download_url}/{namespace}/enc/chunks/{storage_hash}.chunk.{index:04zu}
   // Must match upload URL structure
   std::string chunk_filename = FormatString("%s.chunk.%04zu", entry->_storage_hash.c_str(), chunk_index);
-  return location->_download_url / entry->_namespace / "enc/chunks" / chunk_filename;
+  URL result = location->_download_url / entry->_namespace / "enc/chunks" / chunk_filename;
+  printf("[DEBUG getChunkDownloadURL] Constructed URL: %s\n", result.toString().c_str());
+  return result;
 }
 
 ////////////////////////////////////////////////////////////////

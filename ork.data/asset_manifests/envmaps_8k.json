@@ -4,44 +4,6 @@
   "namespace": "ork_envmaps",
   "version": "1.0.0",
   "assets": {
-    "arena4k": {
-      "type": "asset_pak",
-      "priority": 0,
-      "local_loc": "<stage>/envmaps",
-      "platforms": [
-        "mac",
-        "linux"
-      ],
-      "dependencies": [],
-      "content_hash": "9a6501d79809d6b61b1dc6c6748626fc",
-      "storage_hash": "",
-      "hash_algorithm": "md5",
-      "archive_size": 380287488,
-      "encrypted_size": 37437716,
-      "compressed_size": 37437688,
-      "chunks": {
-        "chunk_size": 16777216,
-        "total_size": 37437716,
-        "file_hash": 13313461905466218801,
-        "chunks": [
-          {
-            "offset": 0,
-            "size": 16777216,
-            "hash": 15875411013439890387
-          },
-          {
-            "offset": 16777216,
-            "size": 16777216,
-            "hash": 11570068085735633864
-          },
-          {
-            "offset": 33554432,
-            "size": 3883284,
-            "hash": 17054546913402759885
-          }
-        ]
-      }
-    },
     "arena8k": {
       "type": "asset_pak",
       "priority": 0,
@@ -105,44 +67,6 @@
         ]
       }
     },
-    "canyon4k": {
-      "type": "asset_pak",
-      "priority": 0,
-      "local_loc": "<stage>/envmaps",
-      "platforms": [
-        "mac",
-        "linux"
-      ],
-      "dependencies": [],
-      "content_hash": "6400729aab3a224f24e54a0f88395881",
-      "storage_hash": "c1dcd77c5c141bb694284d48e5c8b279",
-      "hash_algorithm": "md5",
-      "archive_size": 380287488,
-      "encrypted_size": 36203655,
-      "compressed_size": 36203627,
-      "chunks": {
-        "chunk_size": 16777216,
-        "total_size": 36203655,
-        "file_hash": 14272371806312378551,
-        "chunks": [
-          {
-            "offset": 0,
-            "size": 16777216,
-            "hash": 13503309651465117491
-          },
-          {
-            "offset": 16777216,
-            "size": 16777216,
-            "hash": 8137803041469818907
-          },
-          {
-            "offset": 33554432,
-            "size": 2649223,
-            "hash": 8533714171456275113
-          }
-        ]
-      }
-    },
     "canyon8k": {
       "type": "asset_pak",
       "priority": 0,
@@ -202,44 +126,6 @@
             "offset": 117440512,
             "size": 12519194,
             "hash": 8267427852943730605
-          }
-        ]
-      }
-    },
-    "club4k": {
-      "type": "asset_pak",
-      "priority": 0,
-      "local_loc": "<stage>/envmaps",
-      "platforms": [
-        "mac",
-        "linux"
-      ],
-      "dependencies": [],
-      "content_hash": "6058b77eeb98c5e5ef4621f20aec39f3",
-      "storage_hash": "89e9919d4414241f9f489bca1d53c92f",
-      "hash_algorithm": "md5",
-      "archive_size": 380287488,
-      "encrypted_size": 36467484,
-      "compressed_size": 36467456,
-      "chunks": {
-        "chunk_size": 16777216,
-        "total_size": 36467484,
-        "file_hash": 2293627992686259474,
-        "chunks": [
-          {
-            "offset": 0,
-            "size": 16777216,
-            "hash": 12804970347423865156
-          },
-          {
-            "offset": 16777216,
-            "size": 16777216,
-            "hash": 15540427613273605015
-          },
-          {
-            "offset": 33554432,
-            "size": 2913052,
-            "hash": 13081470238748970936
           }
         ]
       }
@@ -312,39 +198,6 @@
         ]
       }
     },
-    "cold4k": {
-      "type": "asset_pak",
-      "priority": 0,
-      "local_loc": "<stage>/envmaps",
-      "platforms": [
-        "mac",
-        "linux"
-      ],
-      "dependencies": [],
-      "content_hash": "8c755d2b940816b18d22b4567a8bf8a7",
-      "storage_hash": "",
-      "hash_algorithm": "md5",
-      "archive_size": 380287488,
-      "encrypted_size": 18770828,
-      "compressed_size": 18770800,
-      "chunks": {
-        "chunk_size": 16777216,
-        "total_size": 18770828,
-        "file_hash": 17095467504222156924,
-        "chunks": [
-          {
-            "offset": 0,
-            "size": 16777216,
-            "hash": 12686876538808175252
-          },
-          {
-            "offset": 16777216,
-            "size": 1993612,
-            "hash": 2785866091426563836
-          }
-        ]
-      }
-    },
     "cold8k": {
       "type": "asset_pak",
       "priority": 0,
@@ -389,44 +242,6 @@
             "offset": 67108864,
             "size": 6471298,
             "hash": 16846035779768553398
-          }
-        ]
-      }
-    },
-    "crossroads4k": {
-      "type": "asset_pak",
-      "priority": 0,
-      "local_loc": "<stage>/envmaps",
-      "platforms": [
-        "mac",
-        "linux"
-      ],
-      "dependencies": [],
-      "content_hash": "39be2f29a823678e70fe6e6b66006188",
-      "storage_hash": "",
-      "hash_algorithm": "md5",
-      "archive_size": 380287488,
-      "encrypted_size": 46779703,
-      "compressed_size": 46779675,
-      "chunks": {
-        "chunk_size": 16777216,
-        "total_size": 46779703,
-        "file_hash": 8797215444051925331,
-        "chunks": [
-          {
-            "offset": 0,
-            "size": 16777216,
-            "hash": 17346641507745164568
-          },
-          {
-            "offset": 16777216,
-            "size": 16777216,
-            "hash": 14043462481250485251
-          },
-          {
-            "offset": 33554432,
-            "size": 13225271,
-            "hash": 8968940544088886245
           }
         ]
       }
@@ -509,39 +324,6 @@
         ]
       }
     },
-    "desert4k": {
-      "type": "asset_pak",
-      "priority": 0,
-      "local_loc": "<stage>/envmaps",
-      "platforms": [
-        "mac",
-        "linux"
-      ],
-      "dependencies": [],
-      "content_hash": "20284bcfcb3291e6ab50428342548e2c",
-      "storage_hash": "71f9f70c11cc8bf0ff6c125eb6c1d518",
-      "hash_algorithm": "md5",
-      "archive_size": 380287488,
-      "encrypted_size": 26990962,
-      "compressed_size": 26990934,
-      "chunks": {
-        "chunk_size": 16777216,
-        "total_size": 26990962,
-        "file_hash": 1299988400771606211,
-        "chunks": [
-          {
-            "offset": 0,
-            "size": 16777216,
-            "hash": 10668192202032357918
-          },
-          {
-            "offset": 16777216,
-            "size": 10213746,
-            "hash": 6414823934400247562
-          }
-        ]
-      }
-    },
     "desert8k": {
       "type": "asset_pak",
       "priority": 0,
@@ -596,82 +378,6 @@
             "offset": 100663296,
             "size": 6727403,
             "hash": 11760444015677919640
-          }
-        ]
-      }
-    },
-    "ethereal4k": {
-      "type": "asset_pak",
-      "priority": 0,
-      "local_loc": "<stage>/envmaps",
-      "platforms": [
-        "mac",
-        "linux"
-      ],
-      "dependencies": [],
-      "content_hash": "88dbc275c14a0b31dfc000c607f708b9",
-      "storage_hash": "",
-      "hash_algorithm": "md5",
-      "archive_size": 380287488,
-      "encrypted_size": 30814063,
-      "compressed_size": 30814035,
-      "chunks": {
-        "chunk_size": 16777216,
-        "total_size": 30814063,
-        "file_hash": 15576966576384517744,
-        "chunks": [
-          {
-            "offset": 0,
-            "size": 16777216,
-            "hash": 3765227539239679209
-          },
-          {
-            "offset": 16777216,
-            "size": 14036847,
-            "hash": 13011942873974049953
-          }
-        ]
-      }
-    },
-    "futcity4k": {
-      "type": "asset_pak",
-      "priority": 0,
-      "local_loc": "<stage>/envmaps",
-      "platforms": [
-        "mac",
-        "linux"
-      ],
-      "dependencies": [],
-      "content_hash": "43d047c34d2ec871b64a99cd899d1706",
-      "storage_hash": "463d552536328366bdd457cb99d33286",
-      "hash_algorithm": "md5",
-      "archive_size": 380287488,
-      "encrypted_size": 51528176,
-      "compressed_size": 51528148,
-      "chunks": {
-        "chunk_size": 16777216,
-        "total_size": 51528176,
-        "file_hash": 735981334600937909,
-        "chunks": [
-          {
-            "offset": 0,
-            "size": 16777216,
-            "hash": 13326837216446687648
-          },
-          {
-            "offset": 16777216,
-            "size": 16777216,
-            "hash": 1958996198415106562
-          },
-          {
-            "offset": 33554432,
-            "size": 16777216,
-            "hash": 10853321056640116177
-          },
-          {
-            "offset": 50331648,
-            "size": 1196528,
-            "hash": 2173687397232605817
           }
         ]
       }
@@ -754,39 +460,6 @@
         ]
       }
     },
-    "ocean4k": {
-      "type": "asset_pak",
-      "priority": 0,
-      "local_loc": "<stage>/envmaps",
-      "platforms": [
-        "mac",
-        "linux"
-      ],
-      "dependencies": [],
-      "content_hash": "e4fc94bfc07957ddaa246893ccd5d468",
-      "storage_hash": "",
-      "hash_algorithm": "md5",
-      "archive_size": 380287488,
-      "encrypted_size": 18085848,
-      "compressed_size": 18085820,
-      "chunks": {
-        "chunk_size": 16777216,
-        "total_size": 18085848,
-        "file_hash": 9424423911335718267,
-        "chunks": [
-          {
-            "offset": 0,
-            "size": 16777216,
-            "hash": 11922180093513868201
-          },
-          {
-            "offset": 16777216,
-            "size": 1308632,
-            "hash": 6559352408899936126
-          }
-        ]
-      }
-    },
     "ocean8k": {
       "type": "asset_pak",
       "priority": 0,
@@ -831,44 +504,6 @@
             "offset": 67108864,
             "size": 6151679,
             "hash": 15464616651085496786
-          }
-        ]
-      }
-    },
-    "pillars4k": {
-      "type": "asset_pak",
-      "priority": 0,
-      "local_loc": "<stage>/envmaps",
-      "platforms": [
-        "mac",
-        "linux"
-      ],
-      "dependencies": [],
-      "content_hash": "200f3e65ed91c7dc9f24f9302ef15041",
-      "storage_hash": "0c16abbccf327a75cb16c0dd10068081",
-      "hash_algorithm": "md5",
-      "archive_size": 380287488,
-      "encrypted_size": 45580993,
-      "compressed_size": 45580965,
-      "chunks": {
-        "chunk_size": 16777216,
-        "total_size": 45580993,
-        "file_hash": 10218775826444830498,
-        "chunks": [
-          {
-            "offset": 0,
-            "size": 16777216,
-            "hash": 17700292681768288522
-          },
-          {
-            "offset": 16777216,
-            "size": 16777216,
-            "hash": 12599507836996440916
-          },
-          {
-            "offset": 33554432,
-            "size": 12026561,
-            "hash": 16873182945360184130
           }
         ]
       }
