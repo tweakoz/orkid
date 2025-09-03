@@ -342,7 +342,8 @@ void DownloadManager::processDownload(download_ptr_t dl) {
     } else {
       dl->_state         = DownloadState::FAILED;
       dl->_error_message = "HTTP error " + std::to_string(response_code);
-      _impl->_logchan_download->log("Download failed with HTTP %ld\n", response_code);
+      _impl->_logchan_download->log("Download failed with HTTP %ld", response_code);
+      _impl->_logchan_download->log("  url=%s", dl->_url.toString().c_str());
       _impl->_failed_downloads++;
       if (dl->_on_failure._item) {
         dl->_on_failure._item(dl->_error_message);
@@ -353,7 +354,8 @@ void DownloadManager::processDownload(download_ptr_t dl) {
   } else {
     dl->_state         = DownloadState::FAILED;
     dl->_error_message = curl_easy_strerror(res);
-    _impl->_logchan_download->log("Download failed: %s\n", dl->_error_message.c_str());
+    _impl->_logchan_download->log("Download failed: %s", dl->_error_message.c_str());
+    _impl->_logchan_download->log("  url=%s", dl->_url.toString().c_str());
     _impl->_failed_downloads++;
     if (dl->_on_failure._item) {
       dl->_on_failure._item(dl->_error_message);

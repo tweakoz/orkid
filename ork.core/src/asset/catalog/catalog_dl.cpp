@@ -344,6 +344,8 @@ datablock_ptr_t CatalogImpl::_downloadFile(const URL& url, const locationinfo_pt
       // Set failure callback
       dl->_on_failure._item = [&](const std::string& error) {
         printf("[DEBUG] Download failure callback called: error=%s\n", error.c_str());
+        printf("[DEBUG]   url=%s\n", url.toString().c_str());
+
         logchan_catalog->log("ERROR: Download failed: %s", error.c_str());
         download_complete = true;
       };
