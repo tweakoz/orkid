@@ -800,7 +800,7 @@ opq_ptr_t concurrentQueue() {
 }
 ///////////////////////////////////////////////////////////////////////
 opq_ptr_t ioQueue() {
-  static opq_ptr_t gioq = std::make_shared<OperationsQueue>(6, "ioQueue", EPerformaceProfile::IO);
+  static opq_ptr_t gioq = std::make_shared<OperationsQueue>(3, "ioQueue", EPerformaceProfile::IO);
   return gioq;
 }
 ///////////////////////////////////////////////////////////////////////
