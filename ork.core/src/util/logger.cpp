@@ -187,10 +187,7 @@ logger_ptr_t logger() {
 ///////////////////////////////////////////////////////////////////////////////
 
 logchannel_ptr_t logerrchannel() {
-  logchannel_ptr_t errchan = logger()->getChannel("ERROR");
-  if (nullptr == errchan) {
-    errchan = logger()->configureChannel("ERROR", fvec3(1, 0, 0));
-  }
+  static logchannel_ptr_t errchan = logger()->configureChannel("ERROR", fvec3(1, 0, 0), true);
   return errchan;
 }
 

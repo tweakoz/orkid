@@ -78,6 +78,7 @@ void MatchAttempt::dump1(int indent) {
       logchan_matchattempt->log("%s", log_str.c_str());
     }
   }
+  //OrkAssert(false);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -583,15 +584,16 @@ void Parser::popAttempt(match_attempt_ptr_t attempt, matcher_ptr_t matcher, scan
       track->_matcher = matcher;
       track->_view    = view;
 
-      if( _trackcontig ){
-        if(view->_start!=-1 and view->_end!=-1){
+      // Only update tracking if view is valid
+      if(view->_start != -1 && view->_end != -1) {
+        if( _trackcontig ){
           if( view->_start > _trackcontig->_view->_start ){
             _trackcontig    = track;
           }
         }
-      }
-      else{
-        _trackcontig    = track;
+        else{
+          _trackcontig    = track;
+        }
       }
 
   } else {
@@ -692,13 +694,15 @@ match_ptr_t Parser::match(
     OrkAssert(errview);
     //topview->dump("topview");
 
-    root_match_attempt->dump1(0);
+    logerrchannel()->log("FULL MATCH FAILED");
+    logerrchannel()->log("topview<%zu:%zu>", topview->_start, topview->_end);
+    if(errview){
+      logerrchannel()->log("errview<%zu:%zu>", errview->_start, errview->_end);
+    }
+
 
     auto errtok = topview->token(errview->_start);
 
-    logerrchannel()->log("FULL MATCH FAILED");
-    logerrchannel()->log("topview<%zu:%zu>", topview->_start, topview->_end);
-    logerrchannel()->log("errview<%zu:%zu>", errview->_start, errview->_end);
     size_t errtok_lineno = 0;
     size_t errtok_colno  = 0;
     if (errtok) {
@@ -707,9 +711,11 @@ match_ptr_t Parser::match(
       logerrchannel()->log("errtok<%s> errtok_linenum<%zu> errtok_columnnum<%zu>", errtok->text.c_str(), errtok_lineno, errtok_colno);
     } else {
       logerrchannel()->log("NO END");
+      fflush(stdout);
       exit(-1);
     }
 
+      root_match_attempt->dump1(0);
     logerrchannel()->log("////////////////////// CURRENT POS (succeeded) ////////////////////// ");
 
     size_t st_line = std::max((errtok_lineno - 3), size_t(0));

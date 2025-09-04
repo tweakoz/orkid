@@ -10,6 +10,9 @@ STAREQ              <| "\*=" |>
 PLUSEQ              <| "\+=" |>
 MINUSEQ             <| "\-=" |>
 SLASHEQ             <| "\/=" |>
+ANDEQ               <| "&=" |>
+OREQ                <| "\|=" |>
+XOREQ               <| "\^=" |>
 
 PLUSPLUS            <| "\+\+" |>
 MINUSMINUS          <| "\-\-" |>

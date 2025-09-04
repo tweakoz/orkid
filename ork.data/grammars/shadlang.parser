@@ -67,7 +67,7 @@ SamplerDeclaration <| sel {
 ///////////////////////////////////////////////////////////
 
 WrOnlyOperator <| EQUALS |>
-RdWrOperator   <| sel{ PLUSEQ MINUSEQ STAREQ SLASHEQ } |>
+RdWrOperator   <| sel{ PLUSEQ MINUSEQ STAREQ SLASHEQ ANDEQ OREQ XOREQ } |>
 UnaryOperator  <| sel{
   PLUS
   MINUS
@@ -233,7 +233,10 @@ AssignmentOperator <| sel{
     PLUSEQ 
     MINUSEQ 
     STAREQ 
-    SLASHEQ 
+    SLASHEQ
+    ANDEQ
+    OREQ
+    XOREQ
 }|>
 
 AssignmentExpression <| sel{
