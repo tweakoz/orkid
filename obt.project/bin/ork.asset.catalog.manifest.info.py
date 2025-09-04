@@ -33,44 +33,51 @@ def find_manifest_file(namespace_id):
 def print_manifest_info(catalog, namespace_id):
     """Print detailed information about a manifest"""
     
-    manifest = catalog.get_manifest(namespace_id)
-    if not manifest:
-        print(deco.red(f"No manifest found for namespace: {namespace_id}"))
-        return False
+    ########################################################
+    manifests = catalog.manifestsForNamespace(namespace_id)
+    ########################################################
+    def proc_manifest(manifest):
+        if not manifest:
+            print(deco.red(f"No manifest found for namespace: {namespace_id}"))
+            return False
     
-    print(deco.yellow(f"Manifest for namespace: ") + deco.cyan(namespace_id))
-    print(deco.key(f"  Version: ") + deco.val(manifest.version))
-    
-    # Find the manifest file
-    manifest_file = find_manifest_file(namespace_id)
-    if manifest_file:
-        print(deco.key(f"  File: ") + deco.val(manifest_file))
-    
-    # Get assets
-    assets = manifest.assets
-    print(deco.key(f"  Asset count: ") + deco.val(str(len(assets))))
-    
-    if len(assets) > 0:
-        print(deco.yellow("\nAssets:"))
-        for asset_id, asset in sorted(assets.items()):
-            print(deco.cyan(f"\n  {asset_id}:"))
-            print(deco.key(f"    Type: ") + deco.val(asset.type))
-            print(deco.key(f"    Priority: ") + deco.val(str(asset.priority)))
-            print(deco.key(f"    Platforms: ") + deco.val(', '.join(asset.platforms)))
-            
-            if hasattr(asset, 'filename') and asset.filename:
-                print(deco.key(f"    Filename: ") + deco.val(asset.filename))
-            if hasattr(asset, 'storage_hash') and asset.storage_hash:
-                print(deco.key(f"    Storage hash: ") + deco.val(asset.storage_hash))
-            if hasattr(asset, 'local_loc') and asset.local_loc:
-                print(deco.key(f"    Local location: ") + deco.val(asset.local_loc))
-            if hasattr(asset, 'remote_loc') and asset.remote_loc:
-                print(deco.key(f"    Remote location: ") + deco.val(asset.remote_loc))
-            
-            # Dependencies
-            if hasattr(asset, 'dependencies') and asset.dependencies:
-                print(deco.key(f"    Dependencies: ") + deco.val(', '.join(asset.dependencies)))
-    
+        print(deco.yellow(f"Manifest for namespace: ") + deco.cyan(namespace_id))
+        print(deco.key(f"  Version: ") + deco.val(manifest.version))
+        
+        # Find the manifest file
+        manifest_file = find_manifest_file(namespace_id)
+        if manifest_file:
+            print(deco.key(f"  File: ") + deco.val(manifest_file))
+        
+        # Get assets
+        assets = manifest.assets
+        print(deco.key(f"  Asset count: ") + deco.val(str(len(assets))))
+        
+        if len(assets) > 0:
+            print(deco.yellow("\nAssets:"))
+            for asset_id, asset in sorted(assets.items()):
+                print(deco.cyan(f"\n  {asset_id}:"))
+                print(deco.key(f"    Type: ") + deco.val(asset.type))
+                print(deco.key(f"    Priority: ") + deco.val(str(asset.priority)))
+                print(deco.key(f"    Platforms: ") + deco.val(', '.join(asset.platforms)))
+                
+                if hasattr(asset, 'filename') and asset.filename:
+                    print(deco.key(f"    Filename: ") + deco.val(asset.filename))
+                if hasattr(asset, 'storage_hash') and asset.storage_hash:
+                    print(deco.key(f"    Storage hash: ") + deco.val(asset.storage_hash))
+                if hasattr(asset, 'local_loc') and asset.local_loc:
+                    print(deco.key(f"    Local location: ") + deco.val(asset.local_loc))
+                if hasattr(asset, 'remote_loc') and asset.remote_loc:
+                    print(deco.key(f"    Remote location: ") + deco.val(asset.remote_loc))
+                
+                # Dependencies
+                if hasattr(asset, 'dependencies') and asset.dependencies:
+                    print(deco.key(f"    Dependencies: ") + deco.val(', '.join(asset.dependencies)))
+        
+    for manifest in manifests:
+        print(deco.green(80 * "#"))
+        proc_manifest(manifest)
+
     return True
 
 def print_json_info(catalog, namespace_id):

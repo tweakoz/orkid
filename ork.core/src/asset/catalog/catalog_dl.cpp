@@ -32,65 +32,7 @@ static logchannel_ptr_t logchan_catalog = logger()->getChannel("CATALOG");
 
 assetfqid_ptr_t AssetCatalog::findAsset(const assetid_t& fq_asset_id) const {
   auto impl = _impl.getShared<CatalogImpl>();
-  auto location = impl->locateAsset(fq_asset_id);
-  auto asset_index_entry = findAssetIndexEntry(fq_asset_id);
-
-  OrkAssert(location);
-  auto locinfo = location->_location_info;
-  OrkAssert(locinfo);
-
-
-  if ((asset_index_entry==nullptr) or (location==nullptr)) {
-    logchan_catalog->log("[DEBUG] Asset<%s> or location not found in catalog", fq_asset_id.c_str());
-    return nullptr;
-  }
-  auto asset_info = asset_index_entry->_entry;
-  auto fqID = std::make_shared<AssetFqIdentifier>();
-  fqID->_original_fqid = fq_asset_id;
-  fqID->_namespace_id = asset_info->_namespace;
-  fqID->_asset_id = asset_info->_id;
-  fqID->_location = location;
-  fqID->_asset_info = asset_info;
-  fqID->_namespace = findNamespace(fqID->_namespace_id);
-  // 3. Determine source directory from _local_loc with template resolution
-  file::Path pak_local_path;
-  if (!asset_info->_local_loc.empty()) {
-    // Resolve template paths like <cache>, <stage> 
-    std::string resolved_local = asset_info->_local_loc;
-    
-    // Use the same resolution logic as AssetEntry::getResolvedLocalPath()
-    if (resolved_local.find("<stage>") == 0) {
-      resolved_local.replace(0, 7, file::Path::stage_dir().c_str());
-    } else if (resolved_local.find("<assetcache>") == 0) {
-      std::string cache_path = (file::Path::stage_dir() / "assetcache").c_str();
-      resolved_local.replace(0, 12, cache_path);
-    } else if (resolved_local.find("<cache>") == 0) {
-      std::string cache_path = (file::Path::stage_dir() / "assetcache").c_str();
-      resolved_local.replace(0, 7, cache_path);
-    }
-    
-    // Handle file:// URLs
-    if (resolved_local.find("file://") == 0) {
-      pak_local_path = file::Path(resolved_local.substr(7)); // Remove "file://"
-    } else {
-      pak_local_path = file::Path(resolved_local);
-    }
-  } else {
-    //logchan_catalog->log("packFromLocal: Asset ID has empty _local_loc: %s", fq_pak_asset_id.c_str());
-    //return false;
-  }
-  fqID->_pak_local_path = pak_local_path;
-  // 4. Determine source directory using tar_root field
-  file::Path source_dir;
-  if (asset_info->_tar_root.empty()) {
-    // No tar_root specified - use pak_local_path directly
-    source_dir = pak_local_path;
-  } else {
-    // Use tar_root to find the source directory
-    source_dir = pak_local_path / asset_info->_tar_root;
-  }
-  fqID->_source_dir = source_dir;
-  return fqID;
+  return impl->locateAsset(fq_asset_id);
 }
 
 ////////////////////////////////////////////////////////////////
@@ -159,27 +101,23 @@ fetchrequest_ptr_t AssetCatalog::fetchAsync(const assetid_t& fq_asset_id, //
   ////////////////////////////////////////
   // New Request. Proceed to enqueue.
   ////////////////////////////////////////
-  auto location = fqid->_location;
-  OrkAssert(location);
-  OrkAssert(location->_location_info);
-  if (location->_location_info) {
-    auto& loc_info = location->_location_info;
-    if (loc_info->_api_key_read.has_value()) {
-      std::string api_key = loc_info->_api_key_read.value();
+  auto location_info = fqid->_location_info;
+  OrkAssert(location_info);
+  if (location_info->_api_key_read.has_value()) {
+    std::string api_key = location_info->_api_key_read.value();
+  
+    // Check if this requires password authentication
+    if (PasswordProvider::requiresPasswordAuth(api_key)) {
+      // Prompt for password NOW on main thread
+      std::string host = location_info->_download_url._host;
+      std::string prompt = FormatString("Password for %s: ", host.c_str());
+      auto password = PasswordProvider::getPassword(prompt, true); // Allow caching
     
-      // Check if this requires password authentication
-      if (PasswordProvider::requiresPasswordAuth(api_key)) {
-        // Prompt for password NOW on main thread
-        std::string host = loc_info->_download_url._host;
-        std::string prompt = FormatString("Password for %s: ", host.c_str());
-        auto password = PasswordProvider::getPassword(prompt, true); // Allow caching
-      
-        if (password.has_value()) {
-          // Replace the placeholder with actual password
-          loc_info->_api_key_read = password.value();
-        } else {
-          return nullptr;
-        }
+      if (password.has_value()) {
+        // Replace the placeholder with actual password
+        location_info->_api_key_read = password.value();
+      } else {
+        return nullptr;
       }
     }
   }

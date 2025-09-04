@@ -116,6 +116,8 @@ void pyinit_asset_catalog(py::module& module_core) {
   // AssetEntry (merged from ManifestEntry)
   /////////////////////////////////////////////////////////////////////////////////
   auto asset_entry_type = py::class_<AssetEntry, assetentry_ptr_t>(module_core, "AssetEntry")
+                              .def_readonly("id", &AssetEntry::_id)
+                              .def_readonly("namespace", &AssetEntry::_namespace)
                               .def_readonly("type", &AssetEntry::_type)
                               .def_readonly("priority", &AssetEntry::_priority)
                               .def_readonly("local_loc", &AssetEntry::_local_loc)

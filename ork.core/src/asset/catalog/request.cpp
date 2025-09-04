@@ -41,7 +41,7 @@ bool FetchRequest::isComplete() const {
     case AssetState::PROCESSING:       // downloading in progress
       return false;
     case AssetState::SUCCEEDED:
-      printf("[DEBUG] FetchRequest::isComplete() SUCCEEDED\n");
+      //printf("[DEBUG] FetchRequest::isComplete() SUCCEEDED\n");
       return true;
     case AssetState::FAILED:
       printf("[DEBUG] FetchRequest::isComplete() FAILED\n");

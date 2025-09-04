@@ -263,7 +263,6 @@ assetentry_ptr_t AssetManifest::createAsset(
     index_entry = catalog->_addNewAssetIndexEntry(fqid_str);
   }
   index_entry->_manifest = self;
-  index_entry->_asset_path = local;
   auto asset_info = index_entry->_entry;
   OrkAssert(asset_info != nullptr);
   // Set basic properties

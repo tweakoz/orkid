@@ -146,10 +146,6 @@ def print_asset_info(cfgspc, catalog, fqid):
     
     # Get the parent manifest info if available
     namespace_id = fqid.split('|')[0]
-    manifest = catalog.get_manifest(namespace_id)
-    if manifest:
-        print(f"  {deco.key('Manifest namespace:')} {deco.val(manifest.namespace)}")
-        print(f"  {deco.key('Manifest version:')} {deco.val(manifest.version)}")
     
     return True
 

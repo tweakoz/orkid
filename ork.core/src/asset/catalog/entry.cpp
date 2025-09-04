@@ -511,7 +511,8 @@ uploadreceipt_ptr_t AssetEntry::upload(
     chunk_files.push_back(chunk_path);
     
     // Get the URL and extract just the path part we need
-    URL chunk_url = catalog->getChunkUploadURL(location_info, _chunk_manifest, chunk_idx );
+    auto chunk_filename = catalog->getChunkFilename(_storage_hash, chunk_idx);
+    URL chunk_url = location_info->_upload_url / chunk_filename;
     chunk_urls.push_back(chunk_url);
     
     // Extract relative path from URL for the uploader

@@ -220,12 +220,11 @@ void AssetCatalog::_addManifest(assetmanifest_ptr_t manifest) {
 
       auto index_entry = std::make_shared<AssetIndexEntry>();
       index_entry->_namespace_id = namespace_id;
-      index_entry->_asset_path   = _asset_id;
       index_entry->_manifest     = manifest;
       index_entry->_entry        = entry;
       
       // Debug: Check what's in the entry
-      if (_asset_id == "arena4k") {
+      if(0){
         printf("[DEBUG catalog_manifests] Indexing arena4k:\n");
         printf("  storage_hash: '%s'\n", entry->_storage_hash.c_str());
         printf("  content_hash: '%s'\n", entry->_content_hash.c_str());

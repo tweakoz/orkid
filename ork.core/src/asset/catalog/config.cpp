@@ -612,19 +612,19 @@ std::string AssetConfig::toJson() const {
 ////////////////////////////////////////////////////////////////////////////////
 
 std::string AssetConfigSpace::getNamespaceRemoteLocation(const std::string& namespace_id) const {
-  printf("[DEBUG getNamespaceRemoteLocation] Looking for namespace: '%s'\n", namespace_id.c_str());
-  printf("[DEBUG getNamespaceRemoteLocation] Number of configs: %zu\n", _configs.size());
+  if(0)printf("[DEBUG getNamespaceRemoteLocation] Looking for namespace: '%s'\n", namespace_id.c_str());
+  if(0)printf("[DEBUG getNamespaceRemoteLocation] Number of configs: %zu\n", _configs.size());
   // Search through all configs to find the namespace
   for (const auto& [config_id, config] : _configs) {
-    printf("[DEBUG getNamespaceRemoteLocation] Checking config: '%s'\n", config_id.c_str());
+    if(0)printf("[DEBUG getNamespaceRemoteLocation] Checking config: '%s'\n", config_id.c_str());
     auto it = config->_namespaces.find(namespace_id);
     if (it != config->_namespaces.end()) {
-      printf("[DEBUG getNamespaceRemoteLocation] Found namespace, remote_location: '%s'\n", 
+      if(0)printf("[DEBUG getNamespaceRemoteLocation] Found namespace, remote_location: '%s'\n", 
              it->second->_remote_location.c_str());
       return it->second->_remote_location;
     }
   }
-  printf("[DEBUG getNamespaceRemoteLocation] Namespace not found\n");
+  if(0)printf("[DEBUG getNamespaceRemoteLocation] Namespace not found\n");
   return ""; // Namespace not found
 }
 

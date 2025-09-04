@@ -379,23 +379,9 @@ URL AssetCatalog::getAssetDownloadURL(const AssetEntry* entry, locationinfo_ptr_
 // Individual chunk: {xfer_url}/{chunk_hash}.chunk.{index:04zu}
 ////////////////////////////////////////////////////////////////////////////////
 
-URL AssetCatalog::getChunkDownloadURL(locationinfo_ptr_t location, //
-                                      chunkmanifest_ptr_t chkinfo, //
-                                      size_t chunk_index) const {  //
-  const auto& chunk = chkinfo->_chunks[chunk_index];
-  uint64_t chunk_hash = chunk._hash;
-  std::string chunk_filename = FormatString("%zu.chunk.%04zu", chunk_hash, chunk_index);
-  URL result = location->_download_url / chunk_filename;
-  return result;
-}
-
-URL AssetCatalog::getChunkUploadURL(locationinfo_ptr_t location, //
-                                    chunkmanifest_ptr_t chkinfo, //
-                                    size_t chunk_index) const {  //
-  const auto& chunk = chkinfo->_chunks[chunk_index];
-  uint64_t chunk_hash = chunk._hash;
-  std::string chunk_filename = FormatString("%zu.chunk.%04zu", chunk_hash, chunk_index);
-  return location->_upload_url / chunk_filename;
+std::string AssetCatalog::getChunkFilename(std::string basename,        //
+                                           size_t chunk_index) const {  //
+  return FormatString("%s.chunk.%04zu", basename.c_str(), chunk_index);
 }
 
 ////////////////////////////////////////////////////////////////

@@ -8,7 +8,6 @@ namespace ork::asset::catalog {
 
 struct AssetIndexEntry {
   namespaceid_t _namespace_id;
-  std::string _asset_path;
   assetmanifest_ptr_t _manifest;
   assetentry_ptr_t _entry;
 };
@@ -95,7 +94,7 @@ struct CatalogImpl {
   localmanifest_ptr_t _loadLocalManifest(const file::Path& path);
   void _saveLocalManifest(localmanifest_ptr_t mani, const file::Path& path);
   // Locate asset in manifests
-  assetlocation_ptr_t locateAsset(const std::string& fq_asset_id) const;
+  assetfqid_ptr_t locateAsset(const std::string& fq_asset_id) const;
   
   // Atomic file download - just gets bytes from a URL
   datablock_ptr_t _downloadFile(const URL& url, const locationinfo_ptr_t& location_info = nullptr);
@@ -107,8 +106,8 @@ struct CatalogImpl {
   datablock_ptr_t _downloadAssetData(fetchrequest_ptr_t request);
   
   // Cache helpers
-  file::Path getCachePathForAsset(assetlocation_ptr_t location) const;
-  file::Path getCachePathForChunk(assetlocation_ptr_t location, size_t chunk_index) const;
+  file::Path getCachePathForAsset(assetfqid_ptr_t fqid) const;
+  file::Path getCachePathForChunk(assetfqid_ptr_t fqid, size_t chunk_index) const;
   bool verifyCachedFileHash(const file::Path& cache_path, const std::string& expected_hash) const;
   bool verifyCachedChunkHash(const file::Path& cache_path, chunk_hash_t expected_hash) const;
   bool saveToCacheFile(const datablock_ptr_t& data, const file::Path& cache_path) const;
@@ -153,12 +152,18 @@ struct CatalogImpl {
 ////////////////////////////////////////////////////////////////////////////////
 
   struct ChunkDownloadCoordinator {
-  // Type aliases
+
+  ChunkDownloadCoordinator(assetfqid_ptr_t fqid, chunkmanifest_ptr_t manifest);
+  void cancel();
+  float getOverallProgress() const;
+  bool isComplete() const;
+  bool hasFailed() const;
+
+    // Type aliases
   using path_vect_t = path_list_t;
   
   // Identity
-  std::string asset_id;
-  assetlocation_ptr_t location;
+  assetfqid_ptr_t _fqid;
   chunkmanifest_ptr_t chunk_manifest;
   
   // Progress tracking
@@ -178,43 +183,6 @@ struct CatalogImpl {
   pysafe_completion_callback_t on_complete;
   pysafe_error_callback_t on_error;
   
-  ////////////////////////////////////////////////////////////////////////////////
-  // Constructor
-  ////////////////////////////////////////////////////////////////////////////////
-  ChunkDownloadCoordinator(const std::string& id, 
-                           assetlocation_ptr_t loc,
-                           chunkmanifest_ptr_t manifest)
-      : asset_id(id), location(loc), chunk_manifest(manifest), 
-        total_chunks(manifest ? manifest->_chunks.size() : 0) {
-    // Initialize chunk paths vector
-    chunk_paths.atomicOp([this](path_vect_t& paths) {
-      paths.resize(total_chunks);
-    });
-  }
-  
-  
-  ////////////////////////////////////////////////////////////////////////////////
-  // Cancel the download
-  ////////////////////////////////////////////////////////////////////////////////
-  void cancel() {
-    cancelled = true;
-    // TODO: Cancel pending downloads and cleanup
-  }
-  
-  ////////////////////////////////////////////////////////////////////////////////
-  // Progress calculation
-  ////////////////////////////////////////////////////////////////////////////////
-  float getOverallProgress() const {
-    return static_cast<float>(chunks_downloaded.load()) / total_chunks;
-  }
-  
-  bool isComplete() const {
-    return chunks_downloaded.load() == total_chunks;
-  }
-  
-  bool hasFailed() const {
-    return chunks_failed.load() > 0 && !isComplete();
-  }
 };
 
 ////////////////////////////////////////////////////////////////

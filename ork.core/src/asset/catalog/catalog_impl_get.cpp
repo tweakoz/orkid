@@ -60,17 +60,18 @@ bool CatalogImpl::getAsset(fetchrequest_ptr_t request) {
     Timer _download_timer;
     _download_timer.Start();
     auto raw_data = _downloadAssetData(request);
-    if(nullptr==raw_data) {
+    if(raw_data){
+      request->_bytes_downloaded = raw_data->length();
+    }
+    else {
       auto name = (request->_fqid && request->_fqid->_original_fqid.size())
                       ? request->_fqid->_original_fqid
                       : "UNKNOWN";
       logchan_catalog->log("[DEBUG CatalogImpl] Download phase <%s> FAILED", name.c_str());
-      OrkAssert(false);
     }
     request->_download_time    = _download_timer.SecsSinceStart();
-    request->_bytes_downloaded = raw_data->length();
 
-    printf("[DEBUG CatalogImpl] DOWNLOADING time<%f> bytes<%zu>\n", request->_download_time, request->_bytes_downloaded.load());
+    if(0)printf("[DEBUG CatalogImpl] DOWNLOADING time<%f> bytes<%zu>\n", request->_download_time, request->_bytes_downloaded.load());
     return raw_data;
   };
 
@@ -98,7 +99,7 @@ bool CatalogImpl::getAsset(fetchrequest_ptr_t request) {
   }
 
   request->_state = AssetState::PROCESSING;
-  printf("[DEBUG CatalogImpl] PROCESSING\n");
+  if(0)printf("[DEBUG CatalogImpl] PROCESSING\n");
 
   ///////////////////////////////////////////////////
   // ensure we have the decrypted and uncompressed data
@@ -114,7 +115,7 @@ bool CatalogImpl::getAsset(fetchrequest_ptr_t request) {
     return false;
   }
   
-  printf("[DEBUG CatalogImpl] unw_data<%p> size<%zu>\n", (void*) unw_data.get(), unw_data->length());
+  if(0)printf("[DEBUG CatalogImpl] unw_data<%p> size<%zu>\n", (void*) unw_data.get(), unw_data->length());
   request->_processing_time = process_timer.SecsSinceStart();
 
   ///////////////////////////////////////////////////
@@ -122,7 +123,7 @@ bool CatalogImpl::getAsset(fetchrequest_ptr_t request) {
   ///////////////////////////////////////////////////
   // Create local manifest 
   ///////////////////////////////////////////////////
-  printf("[DEBUG CatalogImpl] unpacked<%d>\n", int(unpacked));
+  if(0)printf("[DEBUG CatalogImpl] unpacked<%d>\n", int(unpacked));
 
   if(false==unpacked) {
     printf("[DEBUG CatalogImpl] Unpack phase FAILED: %s\n", request->_error_detail.c_str());
@@ -158,34 +159,32 @@ bool CatalogImpl::getAsset(fetchrequest_ptr_t request) {
 ////////////////////////////////////////////////////////////////
 
 datablock_ptr_t CatalogImpl::_downloadAssetData(fetchrequest_ptr_t request) {
-
-  auto location = request->_fqid->_location;
-  auto linfo = location->_location_info;
-  auto ainfo = request->_fqid->_asset_info;
-  auto chkinfo = ainfo->_chunk_manifest;
+  auto fqid = request->_fqid;
+  auto linfo = fqid->_location_info;
+  auto ainfo = fqid->_asset_info;
+  auto chk_manifest = ainfo->_chunk_manifest;
   OrkAssert(linfo);
   OrkAssert(ainfo); 
-  OrkAssert(chkinfo); 
+  OrkAssert(chk_manifest); 
 
-  if(1){
-    printf("[DEBUG _downloadAssetData] location ptr: %p\n", location.get());
+  if(0){
     printf("[DEBUG _downloadAssetData] location->_location_info is %s\n", linfo ? "SET" : "NULL");
     printf("[DEBUG _downloadAssetData] location_info->_download_url: %s\n", linfo->_download_url.toString().c_str());
   }
   
-  OrkAssert(chkinfo);
+  OrkAssert(chk_manifest);
 
   /////////////////////////////////////////////////
   // figure out which chunks we already have cached
   //  and which we need to download
   /////////////////////////////////////////////////
-  size_t NUM_CHUNKS = chkinfo->_chunks.size();
+  size_t NUM_CHUNKS = chk_manifest->_chunks.size();
 
   if(0){
     printf("[DEBUG] Asset has %zu chunks\n", NUM_CHUNKS);
-    printf("[DEBUG]  location baseurl<%s>\n", location->_base_url.c_str());
-    printf("[DEBUG]  location relpath<%s>\n", location->_relative_path.c_str());
-    printf("[DEBUG]  location nsid<%s>\n", location->_namespace_id.c_str());
+    //printf("[DEBUG]  location baseurl<%s>\n", location->_base_url.c_str());
+    //printf("[DEBUG]  location relpath<%s>\n", location->_relative_path.c_str());
+    //printf("[DEBUG]  location nsid<%s>\n", location->_namespace_id.c_str());
     printf("[DEBUG]  locinfo _download_url<%s>\n", linfo->_download_url.toString().c_str());
   }
 
@@ -204,13 +203,12 @@ datablock_ptr_t CatalogImpl::_downloadAssetData(fetchrequest_ptr_t request) {
   auto CHUNKS = std::make_shared<wrapped_chunk_map_t>();
  
   for (size_t i = 0; i < NUM_CHUNKS; ++i) {
-    file::Path chunk_cache_path = getCachePathForChunk(location, i);
+    file::Path chunk_cache_path = getCachePathForChunk(fqid, i);
     datablock_ptr_t chunk_data;
     CHUNKS->atomicOp([&](chunk_map_t& unlocked) {
       unlocked[i] = nullptr;
     });
-    auto chunk_mani = location->_chunk_manifest;
-    auto& chunk_info = chunk_mani->_chunks[i];
+    auto& chunk_info = chk_manifest->_chunks[i];
     if (chunk_cache_path.doesPathExist() && verifyCachedChunkHash(chunk_cache_path, chunk_info._hash)) {
       chunk_data = datablockFromFileAtPath(chunk_cache_path);
       CHUNKS->atomicOp([=](chunk_map_t& unlocked) {
@@ -229,27 +227,27 @@ datablock_ptr_t CatalogImpl::_downloadAssetData(fetchrequest_ptr_t request) {
     /////////////////////////
     // Create a unique temporary file for each chunk download
     /////////////////////////
-
+    std::string chunk_filename = _catalog->getChunkFilename(ainfo->_storage_hash, i );
     file::Path temp_path = file::Path(FormatString("%s.%04zu.tmp", chunk_cache_path.c_str(), i));
-    URL chunk_url = _catalog->getChunkDownloadURL(linfo, chkinfo, i);
+    URL chunk_url = linfo->_download_url / chunk_filename;
     if(0)printf("[DEBUG _downloadAssetData] chunk %zu URL: %s\n", i, chunk_url.toString().c_str());
     if (chunk_url.toString().empty()) {
       if(0)printf("[DEBUG _downloadAssetData] WARNING: Empty chunk URL for chunk %zu\n", i);
     }    
     auto dl = std::make_shared<Download>(chunk_url, temp_path);
-     dl->_total_bytes = location->_chunk_manifest->_chunks[i]._size;
+     dl->_total_bytes = chk_manifest->_chunks[i]._size;
     
     //////////////////////////////////////////////
     // Add headers if needed (API key authentication)
     //////////////////////////////////////////////
 
-    if (location->_location_info && location->_location_info->_api_key_read) {
-      std::string api_key = location->_location_info->_api_key_read.value();
+    if (linfo && linfo->_api_key_read) {
+      std::string api_key = linfo->_api_key_read.value();
       dl->setHeader("X-API-Key", api_key);
     }
 
-    dl->_ignore_tls_errors = location->_location_info                      //
-                           ? location->_location_info->_disable_cert_check //
+    dl->_ignore_tls_errors = linfo                      //
+                           ? linfo->_disable_cert_check //
                            : true;
     
     //////////////////////////////////////////////
@@ -350,7 +348,7 @@ datablock_ptr_t CatalogImpl::_downloadAssetData(fetchrequest_ptr_t request) {
   //////////////////////////////////////////////
 
   ChunkAssembler::Config assembler_config;
-  ChunkAssembler assembler(location->_chunk_manifest, nullptr, assembler_config);
+  ChunkAssembler assembler(chk_manifest, nullptr, assembler_config);
   auto result = assembler.assembleFromChunks(chunks_array);
 
   if (!result->success) {
@@ -364,24 +362,25 @@ datablock_ptr_t CatalogImpl::_downloadAssetData(fetchrequest_ptr_t request) {
 ////////////////////////////////////////////////////////////////
 
 datablock_ptr_t CatalogImpl::_processAssetData(datablock_ptr_t _data, fetchrequest_ptr_t request) {
-  const auto& location = request->_fqid->_location;
+  auto fqid = request->_fqid;
+  auto ainfo = fqid->_asset_info;
   auto result = _data;
 
   // Decrypt if needed
-  result = _decryptData(result, location->_namespace_id);
+  result = _decryptData(result, fqid->_namespace_id);
   if (!result) {
     printf("[ERROR] Decryption failed\n");
     return nullptr;
   }
 
   // Decompress if needed
-  result = _decompressData(result, location->_compression_type);
+  result = _decompressData(result, ainfo->_compression_type);
   if (!result) {
     printf("[ERROR] Decompression failed\n");
     return nullptr;
   }
 
-  printf("[DEBUG CatalogImpl] processAssetData complete: decompressed size<%zu>\n", result->length());
+  if(0)printf("[DEBUG CatalogImpl] processAssetData complete: decompressed size<%zu>\n", result->length());
   return result;
 }
 

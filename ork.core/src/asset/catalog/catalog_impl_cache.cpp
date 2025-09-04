@@ -8,6 +8,7 @@
 #include <ork/asset/catalog/catalog.h>
 #include <ork/asset/catalog/chunk_assembler.h>
 #include <ork/asset/catalog/config.h>
+#include <ork/asset/catalog/request.h>
 #include <ork/file/file.h>
 #include <ork/kernel/string/deco.inl>
 #include <ork/util/crypt.h>
@@ -33,35 +34,17 @@ static logchannel_ptr_t logchan_catalog = logger()->getChannel("CATALOG");
 // Cache Helper Functions
 ////////////////////////////////////////////////////////////////
 
-file::Path CatalogImpl::getCachePathForAsset(assetlocation_ptr_t location) const {
-  // Build cache path: {cache_dir}/enc/{storage_hash}.enc
-  // Single location for all .enc files regardless of namespace
-  file::Path cache_path = _catalog->_cache_dir / "enc";
-
-  // Extract storage hash from relative path (it's the filename without .enc)
-  std::string storage_hash = location->_relative_path;
-  if (storage_hash.size() > 4 && storage_hash.substr(storage_hash.size() - 4) == ".enc") {
-    storage_hash = storage_hash.substr(0, storage_hash.size() - 4);
-  }
-
-  return cache_path / (storage_hash + ".enc");
+file::Path CatalogImpl::getCachePathForAsset(assetfqid_ptr_t fqid) const {
+  auto ainfo = fqid->_asset_info;
+  return _catalog->_cache_dir / "enc" / (ainfo->_storage_hash + ".enc");
 }
 
 ////////////////////////////////////////////////////////////////
 
-file::Path CatalogImpl::getCachePathForChunk(assetlocation_ptr_t location, size_t chunk_index) const {
-  // Build cache path: {cache_dir}/enc/chunks/{storage_hash}.enc.chunk.{index:04d}
-  // Single location for all chunk files regardless of namespace
-  file::Path cache_path = _catalog->_cache_dir / "enc" / "chunks";
-
-  // Extract storage hash from relative path
-  std::string storage_hash = location->_relative_path;
-  if (storage_hash.size() > 4 && storage_hash.substr(storage_hash.size() - 4) == ".enc") {
-    storage_hash = storage_hash.substr(0, storage_hash.size() - 4);
-  }
-
-  std::string chunk_filename = FormatString("%s.enc.chunk.%04zu", storage_hash.c_str(), chunk_index);
-  return cache_path / chunk_filename;
+file::Path CatalogImpl::getCachePathForChunk(assetfqid_ptr_t fqid, size_t chunk_index) const {
+  auto ainfo = fqid->_asset_info;
+  std::string chunk_filename = FormatString("%s.enc.chunk.%04zu", ainfo->_storage_hash.c_str(), chunk_index);
+  return _catalog->_cache_dir / "enc" / "chunks" / chunk_filename;
 }
 
 ////////////////////////////////////////////////////////////////

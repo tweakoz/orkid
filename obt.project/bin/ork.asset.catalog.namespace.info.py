@@ -19,97 +19,98 @@ def print_namespace_info(catalog, namespace_id, config_space):
     print(deco.white(f"Namespace: ") + deco.val(namespace_id))
     
     # Get manifest for this namespace
-    manifest = catalog.get_manifest(namespace_id)
-    if manifest:
-        print(deco.key(f"  Has manifest: ") + deco.val("Yes"))
+    
+    def proc_manifest(manifest):
+        print(deco.key(f"  Manifest source_file: ") + deco.val(manifest.source_file))
         print(deco.key(f"  Manifest version: ") + deco.val(manifest.version))
+        print(deco.key(f"  Manifest namespace: ") + deco.val(manifest.namespace))
         
         # Count assets
-        assets = catalog.list_assets(f"{namespace_id}|*")
+        assets = manifest.assets
         print(deco.key(f"  Asset count: ") + deco.val(str(len(assets))))
-        
         # List assets if not too many
-        if len(assets) > 0 and len(assets) <= 10:
-            print(deco.key(f"  Assets:"))
-            for asset in sorted(assets):
-                asset_id = asset.split('|')[-1]
-                # Get asset info for more details
-                asset_info = catalog.get_asset_info(asset)
-                if asset_info:
-                    # size field contains the native_size from manifest (original uncompressed size)
-                    size = asset_info.size
-                    if size < 1024:
-                        size_str = f"{size}B"
-                    elif size < 1024 * 1024:
-                        size_str = f"{size/1024:.1f}KB"
-                    elif size < 1024 * 1024 * 1024:
-                        size_str = f"{size/(1024*1024):.1f}MB"
+        count = 0
+        for k in assets.keys():
+
+            count += 1
+            if count > 10:
+                print(deco.key(f"    ... and {len(assets)-10} more"))
+                break
+
+            asset_id = k
+            asset_info = assets[k]
+            #print(deco.key(f"    asset_id: ") + deco.val(asset_id))
+            asset_id = asset_info.id
+            size = asset_info.archive_size
+            if size < 1024:
+                size_str = f"{size}B"
+            elif size < 1024 * 1024:
+                size_str = f"{size/1024:.1f}KB"
+            elif size < 1024 * 1024 * 1024:
+                size_str = f"{size/(1024*1024):.1f}MB"
+            else:
+                size_str = f"{size/(1024*1024*1024):.2f}GB"
+            
+            # Get type and other info
+            asset_type = asset_info.type if asset_info.type else "unknown"
+            
+            # Get hash info (first 8 chars of storage hash)
+            hash_str = ""
+            if asset_info.storage_hash:
+                hash_str = asset_info.storage_hash[:8]
+            
+            # Check if downloaded/unpacked
+            download_info = ""
+            
+            # For asset_pak types, check if unpacked to local_loc
+            if asset_type == "asset_pak":
+                import os
+                from orkengine.core import Path
+                
+                # Get resolved local path where it should be unpacked
+                resolved_path = asset_info.resolved_local_path
+                if resolved_path:
+                    # Check if the unpacked location exists
+                    local_path_str = resolved_path
+                    # For asset_pak, we check if the directory exists and has files
+                    if os.path.isdir(local_path_str):
+                        # It's unpacked - show location in green
+                        local_path = Path(local_path_str)
+                        sanitized_loc = local_path.sanitized.toStdString()
+                        download_info = "downloaded: " + deco.cyan(sanitized_loc)
                     else:
-                        size_str = f"{size/(1024*1024*1024):.2f}GB"
-                    
-                    # Get type and other info
-                    asset_type = asset_info.type if asset_info.type else "unknown"
-                    is_chunked = "chunked" if asset_info.is_chunked() else "single"
-                    is_encrypted = "enc" if asset_info.is_encrypted else "plain"
-                    
-                    # Get hash info (first 8 chars of storage hash)
-                    hash_str = ""
-                    if asset_info.storage_hash:
-                        hash_str = asset_info.storage_hash[:8]
-                    
-                    # Check if downloaded/unpacked
-                    download_info = ""
-                    
-                    # For asset_pak types, check if unpacked to local_loc
-                    if asset_type == "asset_pak":
-                        import os
-                        from orkengine.core import Path
-                        
-                        # Get resolved local path where it should be unpacked
-                        resolved_path = asset_info.resolved_local_path
-                        if resolved_path:
-                            # Check if the unpacked location exists
-                            local_path_str = resolved_path
-                            # For asset_pak, we check if the directory exists and has files
-                            if os.path.isdir(local_path_str):
-                                # It's unpacked - show location in green
-                                local_path = Path(local_path_str)
-                                sanitized_loc = local_path.sanitized.toStdString()
-                                download_info = "downloaded: " + deco.cyan(sanitized_loc)
+                        # Check if encrypted file exists in cache
+                        encrypted_path = asset_info.local_encrypted_path
+                        if encrypted_path:
+                            enc_path_str = encrypted_path
+                            if os.path.isfile(enc_path_str):
+                                # Downloaded but not unpacked - show cached in yellow
+                                download_info = "downloaded: " + deco.yellow("[cached]")
                             else:
-                                # Check if encrypted file exists in cache
-                                encrypted_path = asset_info.local_encrypted_path
-                                if encrypted_path:
-                                    enc_path_str = encrypted_path
-                                    if os.path.isfile(enc_path_str):
-                                        # Downloaded but not unpacked - show cached in yellow
-                                        download_info = "downloaded: " + deco.yellow("[cached]")
-                                    else:
-                                        # Not downloaded - show NO in red
-                                        download_info = "downloaded: " + deco.red("NO")
-                                else:
-                                    # Not downloaded - show NO in red
-                                    download_info = "downloaded: " + deco.red("NO")
-                    
-                    # Format the line with aligned columns
-                    line = f"    - {asset_id:<20} "
-                    line += deco.white(f"[{asset_type:<12}] ")
-                    line += deco.cyan(f"{size_str:>8} ")
-                    line += deco.yellow(f"{is_chunked:<7} ")
-                    line += deco.orange(f"{is_encrypted:<5} ")
-                    if hash_str:
-                        line += deco.magenta(f"[{hash_str}] ")
-                    if download_info:
-                        line += download_info
-                    print(line)
-                else:
-                    print(deco.key(f"    - ") + deco.val(asset_id))
-        elif len(assets) > 10:
-            print(deco.key(f"  Assets: ") + deco.val(f"[{len(assets)} assets - use ork.asset.catalog.list.py to see all]"))
-    else:
-        print(deco.key(f"  Has manifest: ") + deco.val("No"))
-        print(deco.key(f"  Asset count: ") + deco.val("0"))
-    
+                                # Not downloaded - show NO in red
+                                download_info = "downloaded: " + deco.red("NO")
+                        else:
+                            # Not downloaded - show NO in red
+                            download_info = "downloaded: " + deco.red("NO")
+            
+                # Format the line with aligned columns
+                line = f"    - {asset_id:<20} "
+                line += deco.white(f"[{asset_type:<12}] ")
+                line += deco.cyan(f"{size_str:>8} ")
+                if hash_str:
+                    line += deco.magenta(f"[{hash_str}] ")
+                if download_info:
+                    line += download_info
+                print(line)
+            else:
+                print(deco.key(f"    - ") + deco.val(asset_id))
+
+    ########################################################
+    manifests = catalog.manifestsForNamespace(namespace_id)
+    for manifest in manifests:
+        proc_manifest(manifest)
+    ########################################################
+
     # Check config
     if config_space:
         # Get namespace remote location from config space

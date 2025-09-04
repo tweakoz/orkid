@@ -50,7 +50,7 @@ struct AssetEntry {
   time_t _modification_time = 0;         // Last modification time
   
   // Compression/encryption info
-  CompressionType _compression_type = CompressionType::NONE;
+  CompressionType _compression_type = CompressionType::LZ4;
   size_t _archive_size = 0;             // Size before compression and encryption
   size_t _encrypted_size = 0;           // Size after encryption
   size_t _compressed_size = 0;          // Size after compression

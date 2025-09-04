@@ -43,7 +43,7 @@ struct ChunkManifest {
   static constexpr chunk_size_t chunk_threshold = 16<<20; // 10MB
 
   chunk_size_t _total_size = 0;                // Total size of original file
-  chunk_hash_t _file_hash = 0;                 // Hash of complete file (used for filename)
+  chunk_hash_t _file_hash = 0;                 // Hash of complete file (used for verification pass)
   
   chunk_meta_list_t _chunks;                   // Metadata for each chunk
   

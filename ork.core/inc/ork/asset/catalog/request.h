@@ -30,10 +30,11 @@ struct AssetFqIdentifier {
   namespaceid_t _namespace_id;     // Namespace the asset belongs to
   assetnamespace_ptr_t _namespace; // Resolved namespace (if any)
   assetid_t _asset_id;             // asset ID (within the namespace)
-  assetlocation_ptr_t _location;   // resolved location info (if any)
+  locationinfo_ptr_t _location_info;   // Configuration for this location
   assetentry_ptr_t _asset_info;    // resolved asset info (if any)
   file::Path _pak_local_path;      // local path where pak was created (if any)
   file::Path  _source_dir;         // local source directory used to create pak (if any)
+  std::string _resolved_base_url;  // base URL for downloads (if any)
 };
 
 //TODO: hoist all fqid parsing to one place AssetFqIdentifier::parse(const std::string& fqid);

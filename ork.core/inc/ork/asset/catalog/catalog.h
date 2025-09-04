@@ -36,6 +36,7 @@ namespace ork::asset::catalog {
 // Location information for an asset
 ////////////////////////////////////////////////////////////////////////////////
 
+/*
 struct AssetLocation {
   std::string _base_url;               // CDN or file:// URL
   std::string _relative_path;          // Content-addressable: {hash}.enc or {hash}
@@ -49,7 +50,7 @@ struct AssetLocation {
   
   // Location configuration (API key, TLS settings, etc.)
   locationinfo_ptr_t _location_info;   // Configuration for this location
-};
+};*/
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -238,12 +239,8 @@ struct AssetCatalog {
 
   ////////////////////////////////////////////////////////////////////////////////
 
-  URL getChunkDownloadURL(locationinfo_ptr_t location, //
-                          chunkmanifest_ptr_t chkinfo, //
-                          size_t chunk_index ) const;  //
-  URL getChunkUploadURL(  locationinfo_ptr_t location, //
-                          chunkmanifest_ptr_t chkinfo, //
-                          size_t chunk_index) const;   //
+  std::string getChunkFilename(std::string basename, //
+                               size_t chunk_index ) const;  //
 
   
   ////////////////////////////////////////////////////////////////////////////////

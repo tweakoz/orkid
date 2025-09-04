@@ -91,13 +91,10 @@ using assetconfig_ptr_t = std::shared_ptr<AssetConfig>;
 using assetnamespace_ptr_t = std::shared_ptr<AssetNamespace>;
 using assetcatalog_ptr_t = std::shared_ptr<AssetCatalog>;
 using assetcatalog_wkptr_t = std::weak_ptr<AssetCatalog>;
-using assetlocation_ptr_t = std::shared_ptr<AssetLocation>;
 using assetconfigspace_ptr_t = std::shared_ptr<AssetConfigSpace>;
 using fetchrequest_ptr_t = std::shared_ptr<FetchRequest>;
 using assetfqid_ptr_t = std::shared_ptr<AssetFqIdentifier>;
 
-// manifestentry_ptr_t removed - use assetentry_ptr_t instead
-//using assetpackager_ptr_t = std::shared_ptr<AssetPackager>;
 using packageconfig_ptr_t = std::shared_ptr<PackageConfig>;
 using packageresult_ptr_t = std::shared_ptr<PackageResult>;
 
