@@ -48,8 +48,8 @@ struct AstNode {
     return treeops(this).hasChildOfType<T>();
   }
   template <typename T> //
-  bool hasAncestorOfType() const {
-    return tree_constops(this).hasAncestorOfType<T>();
+  int hasAncestorOfType(int depth=1000) const {
+    return tree_constops(this).hasAncestorOfType<T>(depth);
   }
   ///////////////////////////
   template <typename child_t> //
@@ -282,6 +282,8 @@ DECLARE_STD_AST_CLASS(Expression,MultiplicativeExpression);
 DECLARE_STD_AST_CLASS(Expression,UnaryExpression);
 DECLARE_STD_AST_CLASS(Expression,PostfixExpression);
 DECLARE_STD_AST_CLASS(Expression,PrimaryExpression);
+DECLARE_STD_AST_CLASS(PrimaryExpression,ArrayConstructor);
+DECLARE_STD_AST_CLASS(PrimaryExpression,ArrayConstructorId);
 DECLARE_STD_AST_CLASS(Expression,AssignmentExpression);
 DECLARE_STD_AST_CLASS(Expression,ConditionalExpression);
 DECLARE_STD_AST_CLASS(Expression,ShiftExpression);
@@ -345,6 +347,7 @@ DECLARE_STD_AST_CLASS(Statement,ForStatement);
 DECLARE_STD_AST_CLASS(Statement,ReturnStatement);
 DECLARE_STD_AST_CLASS(Statement,CompoundStatement);
 DECLARE_STD_AST_CLASS(Statement,ExpressionStatement);
+DECLARE_STD_AST_CLASS(Statement,DeclarationStatement);
 DECLARE_STD_AST_CLASS(Statement,DiscardStatement);
 DECLARE_STD_AST_CLASS(Statement,EmptyStatement);
 //

@@ -249,16 +249,36 @@ GLFX1Backend::GLFX1Backend() {
   registerAstPreChildCB<UniformBlk>(named_item_pre_child_cb);
   /////////////////////////////////////////////////////////////////////
   registerAstPreCB<DataDeclaration>([=](auto ddecl) {
-    emitBeginLine("");
+    // Check if we're directly inside a DeclarationStatement (immediate parent)
+    int depth = ddecl->template hasAncestorOfType<DeclarationStatement>(1);
+    bool in_declaration_statement = (depth == 0);
+    if (!in_declaration_statement) {
+      emitBeginLine("");
+    }
   });
   registerAstPostCB<DataDeclaration>([=](auto ddecl) {
-    emitEndLine(";");
+    // Check if we're directly inside a DeclarationStatement (immediate parent)
+    int depth = ddecl->template hasAncestorOfType<DeclarationStatement>(1);
+    bool in_declaration_statement = (depth == 0);
+    if (!in_declaration_statement) {
+      emitEndLine(";");
+    }
   });
   registerAstPreCB<ArrayDeclaration>([=](auto adecl) {
-    emitBeginLine("");
+    // Check if we're directly inside a DeclarationStatement (immediate parent)
+    int depth = adecl->template hasAncestorOfType<DeclarationStatement>(1);
+    bool in_declaration_statement = (depth == 0);
+    if (!in_declaration_statement) {
+      emitBeginLine("");
+    }
   });
   registerAstPostCB<ArrayDeclaration>([=](auto adecl) {
-    emitEndLine(";");
+    // Check if we're directly inside a DeclarationStatement (immediate parent)
+    int depth = adecl->template hasAncestorOfType<DeclarationStatement>(1);
+    bool in_declaration_statement = (depth == 0);
+    if (!in_declaration_statement) {
+      emitEndLine(";");
+    }
   });
   registerAstPreChildCB<ArrayDeclaration>([=](auto adecl, astnode_ptr_t child) {
     OrkAssert(adecl->_children.size()==2);
@@ -470,6 +490,30 @@ GLFX1Backend::GLFX1Backend() {
     emitContinueLine("%s", fn_name.c_str());
   });
   /////////////////////////////////////////////////////////////////////
+  // Array constructors
+  registerAstPreCB<ArrayConstructor>([=](auto ac) {
+    // ArrayConstructor: DataType L_SQUARE IntegerLiteral R_SQUARE ParensExpression
+  });
+  registerAstPostChildCB<ArrayConstructor>([=](auto ac, astnode_ptr_t child) {
+    OrkAssert(ac->_children.size() == 3); // DataType, IntegerLiteral, ParensExpression
+    if (child == ac->_children[0]) { // After DataType
+      emitContinueLine("[");
+    } else if (child == ac->_children[1]) { // After IntegerLiteral
+      emitContinueLine("]");
+    }
+  });
+  registerAstPreCB<ArrayConstructorId>([=](auto ac) {
+    // ArrayConstructorId: IDENTIFIER L_SQUARE IntegerLiteral R_SQUARE ParensExpression
+  });
+  registerAstPostChildCB<ArrayConstructorId>([=](auto ac, astnode_ptr_t child) {
+    OrkAssert(ac->_children.size() == 3); // Identifier, IntegerLiteral, ParensExpression
+    if (child == ac->_children[0]) { // After Identifier
+      emitContinueLine("[");
+    } else if (child == ac->_children[1]) { // After IntegerLiteral
+      emitContinueLine("]");
+    }
+  });
+  /////////////////////////////////////////////////////////////////////
   registerAstPreCB<SemaConstructorArguments>([=](auto sca_node) { emitContinueLine("("); });
   registerAstPostCB<SemaConstructorArguments>([=](auto sca_node) { emitContinueLine(")"); });
   registerAstPostChildCB<SemaConstructorArguments>([=](auto sca_node, astnode_ptr_t child) {
@@ -516,6 +560,24 @@ GLFX1Backend::GLFX1Backend() {
   registerAstPostCB<ReturnStatement>([=](auto retstmt) { emitContinueLine(";"); });
   registerAstPreCB<DiscardStatement>([=](auto disc) { emitContinueLine("discard "); });
   registerAstPostCB<DiscardStatement>([=](auto disc) { emitContinueLine(";"); });
+  registerAstPreCB<DeclarationStatement>([=](auto decl) { 
+    emitBeginLine("");
+  });
+  registerAstPostChildCB<DeclarationStatement>([=](auto decl, astnode_ptr_t child) {
+    // After the DataDeclaration child, add the assignment operator before the Expression
+    if (decl->_children.size() > 1 && child == decl->_children[0]) {
+      emitContinueLine(" = ");
+    }
+  });
+  registerAstPostCB<DeclarationStatement>([=](auto decl) { 
+    emitEndLine(";");
+  });
+  registerAstPreCB<WhileStatement>([=](auto whilestmt) { emitContinueLine("while("); });
+  registerAstPostChildCB<WhileStatement>([=](auto whilestmt, astnode_ptr_t child) {
+    if (child == whilestmt->_children[0]) {
+      emitContinueLine(") ");
+    }
+  });
   
   /////////////////////////////////////////////////////////////////////
   // expressions

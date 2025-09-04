@@ -118,6 +118,8 @@ TernaryExpression <|[
 ]|>
 
 PrimaryExpression <| sel{ 
+  [ DataType L_SQUARE IntegerLiteral R_SQUARE ParensExpression ] : "ArrayConstructor"
+  [ IDENTIFIER L_SQUARE IntegerLiteral R_SQUARE ParensExpression ] : "ArrayConstructorId"
   [ DataType ParensExpression ]
   [ IDENTIFIER ParensExpression ] : "IdentifierCall"
   [ ParensExpression ] : "PrimaryParensExpression"
@@ -322,7 +324,7 @@ DiscardStatement <|[
 ]|>
 
 DeclarationStatement <|[
-    DataDeclaration SEMICOLON
+    DataDeclaration opt{[EQUALS Expression]} SEMICOLON
 ]|>
 
 Statement <| sel{ 

@@ -126,17 +126,20 @@ template <typename treenode_type> struct ConstOps {
   /////////////////////////////////////////////////////////////////////////////
 
   template <typename T> //
-  bool hasAncestorOfType() const {
-    if(_root->_parent){
-     auto typed = std::dynamic_pointer_cast<T>(_root->_parent);
+  int hasAncestorOfType(int max_depth=1000) const {
+    if(_root->_parent && max_depth > 0){
+      auto typed = std::dynamic_pointer_cast<T>(_root->_parent);
       if (typed) {
-        return true;
+        return 0;  // Found at immediate parent
       }
-      else{
-        return _root->_parent->template hasAncestorOfType<T>();
+      else {
+        int parent_result = ConstOps(_root->_parent.get()).hasAncestorOfType<T>(max_depth - 1);
+        if (parent_result >= 0) {
+          return parent_result + 1;  // Found at parent's level + 1
+        }
       }
     }
-    return false;
+    return -1;  // Not found
   }
 
   /////////////////////////////////////////////////////////////////////////////

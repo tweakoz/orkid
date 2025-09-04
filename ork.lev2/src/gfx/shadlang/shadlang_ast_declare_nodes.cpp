@@ -110,6 +110,8 @@ void ShadLangParser::declareAstNodes() {
   DECLARE_STD_AST_NODE(UnaryExpression);
   DECLARE_STD_AST_NODE(PostfixExpression);
   DECLARE_STD_AST_NODE(PrimaryExpression);
+  DECLARE_STD_AST_NODE(ArrayConstructor);
+  DECLARE_STD_AST_NODE(ArrayConstructorId);
   DECLARE_STD_AST_NODE(ConditionalExpression);
   DECLARE_STD_AST_NODE(AssignmentExpression);
   DECLARE_STD_AST_NODE(LogicalAndExpression);
@@ -139,6 +141,7 @@ void ShadLangParser::declareAstNodes() {
   ///////////////////////////////////////////////////////////
   DECLARE_STD_AST_NODE(Statement);
   DECLARE_STD_AST_NODE(DiscardStatement);
+  DECLARE_STD_AST_NODE(DeclarationStatement);
   DECLARE_STD_AST_NODE(ExpressionStatement);
   DECLARE_STD_AST_NODE(CompoundStatement);
   DECLARE_STD_AST_NODE(IfStatement);
