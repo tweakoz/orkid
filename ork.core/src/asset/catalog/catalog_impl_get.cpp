@@ -86,7 +86,13 @@ bool CatalogImpl::getAsset(fetchrequest_ptr_t request) {
   ///////////////////////////////////////////////////
 
   request->_bytes_downloaded = 0; // From local cache
-  datablock_ptr_t enc_data = download_asset(request);
+  constexpr size_t MAX_RETRIES = 4;
+
+  datablock_ptr_t enc_data;
+  while( (enc_data == nullptr) and (request->_retry_count < MAX_RETRIES) ) {
+    request->_retry_count++;
+    enc_data = download_asset(request);
+  }
 
   ///////////////////////////////////////////////////
   // ensure we have the encrypted data
