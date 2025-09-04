@@ -99,7 +99,6 @@ struct FetchRequest {
   bool isComplete() const;  
 
   // Helpers
-  //bool isValid() const;
   bool isSuccess() const;
   operator bool() const;  // Allow if(result) syntax
   bool isPak() const { return !_pak_contents.empty(); }  // Check if this is a pak result

@@ -71,21 +71,10 @@ struct AssetEntry {
   // Check if this asset supports the current platform
   bool supportsCurrentPlatform() const;
   
-  // Check if this entry has chunk information
-  //bool isChunked() const;
-  
-  
   // Build fully qualified asset ID
   // Returns: {_namespace}::{_id}
   std::string buildFullyQualifiedId() const;
-  
-  // Validation
-  //bool isValid() const;
-  //std::string getValidationError() const;
-  
-  // Serialization
-  //std::string toJson() const;
-  
+    
   // Repackage asset (recompute hashes, rechunk if needed)
   void repackage();
   datablock_ptr_t _archiveAsset(assetfqid_ptr_t fqid); 
@@ -163,11 +152,7 @@ struct AssetManifest {
   
   // Count assets by type
   asset_type_count_map_t countAssetsByType() const;
-  
-  // Validate manifest
-  //bool isValid() const;
-  //validation_error_list_t getValidationErrors() const;
-  
+    
   // Accessors for pimpl
   const std::string& getManifestId() const;
   const namespaceid_t& getNamespace() const;

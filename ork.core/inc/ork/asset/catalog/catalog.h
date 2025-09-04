@@ -25,34 +25,6 @@
 
 namespace ork::asset::catalog {
 
-// Type aliases moved to types.h
-
-////////////////////////////////////////////////////////////////////////////////
-// Callback types are defined in types.h for consistency
-// This includes both regular and Python-safe (ItemAndData) versions
-////////////////////////////////////////////////////////////////////////////////
-
-////////////////////////////////////////////////////////////////////////////////
-// Location information for an asset
-////////////////////////////////////////////////////////////////////////////////
-
-/*
-struct AssetLocation {
-  std::string _base_url;               // CDN or file:// URL
-  std::string _relative_path;          // Content-addressable: {hash}.enc or {hash}
-  chunkmanifest_ptr_t _chunk_manifest; // If chunked: {hash}.chunk.{index}
-  bool _is_compressed = false;
-  CompressionType _compression_type = CompressionType::LZ4;
-  
-  // Source tracking
-  std::string _namespace_id;           // Which namespace owns this asset
-  assetmanifest_ptr_t _source_manifest; // Which manifest it came from
-  
-  // Location configuration (API key, TLS settings, etc.)
-  locationinfo_ptr_t _location_info;   // Configuration for this location
-};*/
-
-
 ////////////////////////////////////////////////////////////////////////////////
 // Main asset catalog class - Central orchestrator for all asset operations
 //

@@ -47,13 +47,6 @@ struct AssetLocation;              // Where to find an asset (URL, path, CDN end
 struct DownloadProgress;           // Progress tracking for asset downloads
 struct AssetConfigSpace;           // Container for multiple configurations
 
-// Manifest and packaging
-// ManifestEntry merged into AssetEntry
-//struct AssetPackager;              // Compresses and encrypts assets for distribution
-struct PackageConfig;              // Configuration for asset packaging (compression, chunking)
-struct PackageResult;              // Overall result of packaging operation with statistics
-struct AssetPackageResult;         // Result of packaging a single asset
-
 // Chunking
 struct ChunkManifest;              // Describes how a large file is split into chunks
 struct ChunkMeta;                  // Metadata for a single chunk (size, hash, offset)
@@ -95,9 +88,6 @@ using assetconfigspace_ptr_t = std::shared_ptr<AssetConfigSpace>;
 using fetchrequest_ptr_t = std::shared_ptr<FetchRequest>;
 using assetfqid_ptr_t = std::shared_ptr<AssetFqIdentifier>;
 
-using packageconfig_ptr_t = std::shared_ptr<PackageConfig>;
-using packageresult_ptr_t = std::shared_ptr<PackageResult>;
-
 using chunkmanifest_ptr_t = std::shared_ptr<ChunkManifest>;
 using chunkassembler_ptr_t = std::shared_ptr<ChunkAssembler>;
 using chunkassemblyresult_ptr_t = std::shared_ptr<ChunkAssemblyResult>;
@@ -116,11 +106,6 @@ using configlist_t = std::vector<assetconfig_ptr_t>;
 using localmanifest_ptr_t = std::shared_ptr<LocalManifest>;
 
 using assetindexentry_ptr_t = std::shared_ptr<AssetIndexEntry>;
-
-////////////////////////////////////////////////////////////////////////////////
-// Weak pointer aliases (only for types that actually use weak_ptr)
-////////////////////////////////////////////////////////////////////////////////
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // String type aliases for semantic clarity
@@ -188,11 +173,6 @@ using namespace_metadata_map_t = std::map<std::string, std::string>;
 using namespace_component_list_t = std::vector<std::string>;
 using namespace_list_t = std::vector<assetnamespace_ptr_t>;
 using namespace_node_visitor_fn_t = std::function<void(const AssetNamespace&, int depth)>;
-
-// Packager type aliases
-using package_result_list_t = std::vector<AssetPackageResult>;
-using failed_asset_list_t = std::vector<std::string>;
-using packager_progress_fn_t = std::function<void(const std::string& asset_path, float progress)>;
 
 // Uploader type aliases
 using upload_file_list_t = std::vector<std::string>;
