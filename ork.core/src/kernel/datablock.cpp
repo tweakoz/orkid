@@ -327,12 +327,7 @@ datablock_ptr_t DataBlock::decompressed() const {
   
   // Read uncompressed size
   uint64_t uncompressed_size = stream.getItem<uint64_t>();
-  
-  // Validate size
-  if (uncompressed_size > 1024 * 1024 * 1024) { // 1GB limit
-    throw std::runtime_error("Uncompressed size too large");
-  }
-  
+    
   // Create output datablock
   auto output = std::make_shared<DataBlock>();
   output->_name = _name;
