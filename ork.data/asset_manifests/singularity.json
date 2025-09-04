@@ -1,0 +1,186 @@
+{
+  "id": "singularity",
+  "uuid": "7d4e8a92-121c-47c5-a356-a8cca940af42",
+  "namespace": "singularity",
+  "version": "1.0.0",
+  "assets": {
+    "casiocz": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/share",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "8db897300e2a505e09b07a172f2ca720",
+      "storage_hash": "3a090ab0d77e1c462f3f8df0e3fd8c19",
+      "hash_algorithm": "md5",
+      "archive_size": 35118592,
+      "encrypted_size": 32700551,
+      "compressed_size": 32700523,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 32700551,
+        "file_hash": 8035182951225767162,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 6319244549139642378
+          },
+          {
+            "offset": 16777216,
+            "size": 15923335,
+            "hash": 12771308182610613132
+          }
+        ]
+      }
+    },
+    "irs": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/share",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "480de9457cf4b5652cfe13b8b59f01a9",
+      "storage_hash": "ce2ea54ed13dbbfab7c06f5177457395",
+      "hash_algorithm": "md5",
+      "archive_size": 42170368,
+      "encrypted_size": 8079576,
+      "compressed_size": 8079548,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 8079576,
+        "file_hash": 15845201286923000789,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 8079576,
+            "hash": 15845201286923000789
+          }
+        ]
+      }
+    },
+    "kurzweil": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/share",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "4bcd4fd7e17560eec2cd2332b99168c2",
+      "storage_hash": "0f3fafc7e69a61fb00fe1db69c8c1e77",
+      "hash_algorithm": "md5",
+      "archive_size": 27340800,
+      "encrypted_size": 23996492,
+      "compressed_size": 23996464,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 23996492,
+        "file_hash": 10978931610669451767,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 17252298090121609855
+          },
+          {
+            "offset": 16777216,
+            "size": 7219276,
+            "hash": 13053917012725562646
+          }
+        ]
+      }
+    },
+    "midifiles": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/share",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "7220b6b38123ba79799d35a9c3ddf63a",
+      "storage_hash": "ac58933d3db05d1cc9645d1ff0684616",
+      "hash_algorithm": "md5",
+      "archive_size": 25600,
+      "encrypted_size": 13572,
+      "compressed_size": 13544,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 13572,
+        "file_hash": 14100907981635396363,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 13572,
+            "hash": 14100907981635396363
+          }
+        ]
+      }
+    },
+    "tx81z": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/share",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "7893670f360d200a4b742861dca70608",
+      "storage_hash": "5a93d8e5ad0d7639175369387abaf46c",
+      "hash_algorithm": "md5",
+      "archive_size": 5209600,
+      "encrypted_size": 5093756,
+      "compressed_size": 5093728,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 5093756,
+        "file_hash": 10402252826435879438,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 5093756,
+            "hash": 10402252826435879438
+          }
+        ]
+      }
+    },
+    "wavs": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/share",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "e28be7d1741324e51af372c1665b527a",
+      "storage_hash": "9cb10fd3957f1a108fbc58e9320c49d2",
+      "hash_algorithm": "md5",
+      "archive_size": 10742784,
+      "encrypted_size": 9908200,
+      "compressed_size": 9908172,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 9908200,
+        "file_hash": 4093374640868632040,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 9908200,
+            "hash": 4093374640868632040
+          }
+        ]
+      }
+    }
+  }
+}

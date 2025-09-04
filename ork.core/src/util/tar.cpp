@@ -147,7 +147,7 @@ tararchive_ptr_t TarArchive::createFromFiles(const std::vector<file::Path>& file
 
     size_t file_size = datablock->length();
 
-    printf("[TARX] Adding file: %s (as %s) file_size<%zu> hash<0x%llx>\n", file_path.c_str(), entry->name.c_str(), file_size, datablock->hash());
+    if(0)printf("[TARX] Adding file: %s (as %s) file_size<%zu> hash<0x%llx>\n", file_path.c_str(), entry->name.c_str(), file_size, datablock->hash());
 
     entry->data = datablock;
     entry->size = file_size;

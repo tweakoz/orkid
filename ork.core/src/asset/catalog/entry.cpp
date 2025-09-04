@@ -217,7 +217,7 @@ void AssetEntry::repackage() {
 
   auto tar_data = _archiveAsset(fqid);
   _archive_size = tar_data->length();
-  printf("[TARX] tar_data out hash<0x%llx>\n", tar_data->hash());
+  if(0)printf("[TARX] tar_data out hash<0x%llx>\n", tar_data->hash());
   
   ////////////////////////////////////////////////////////
   // Compute content hash from TAR data
@@ -228,7 +228,7 @@ void AssetEntry::repackage() {
   content_hasher.finalize();
   Md5Sum content_md5_result = content_hasher.Result();
   _content_hash = content_md5_result.hex_digest();
-  printf("[TARX] _content_hash<%s>\n", _content_hash.c_str());
+  if(0)printf("[TARX] _content_hash<%s>\n", _content_hash.c_str());
 
   ////////////////////////////////////////////////////////
   // compress

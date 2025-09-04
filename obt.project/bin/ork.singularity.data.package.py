@@ -1,9 +1,15 @@
 #!/usr/bin/env ork.python
-import os
+import os, argparse
 from pathlib import Path
 from obt import path as obt_path
 from ork import path as ork_path
 from ork import assets
+
+parser = argparse.ArgumentParser(description="Package Singularity assets into asset_pak files.")
+parser.add_argument("--upload", action="store_true",
+                    help="Upload packaged assets to CDN after packaging")
+args = parser.parse_args()
+upload_enabled = args.upload
 
 # Source directory (same as local_loc for symmetry)
 source_dir = Path(obt_path.stage()) / "share"
@@ -24,6 +30,9 @@ subdirs = [
     ("tx81z", "tx81z", "singularity/tx81z/*"),
     ("wavs", "wavs", "singularity/wavs/*")
 ]
+
+upload_failed = 0
+upload_success = 0
 
 for src_name, asset_id, filter in subdirs:
     # Check if source exists
@@ -48,8 +57,27 @@ for src_name, asset_id, filter in subdirs:
         platforms=["mac","linux"],
         write_manifest=True
     )
-    
     print(f"  Storage hash: {result['storage_hash']}")
+    if upload_enabled:
+        spc, catalog = assets.default_cfg_and_catalog()
+        print("  Uploading assets to CDN...")
+        fqid = f"singularity|{asset_id}"
+        print(f"Uploading {fqid}...")
+            
+        try:
+            # Upload this specific asset using the new uploadAsset method
+            receipt = catalog.uploadAsset(fqid)
+            if receipt and receipt.success:
+                print(f"  ✓ Uploaded successfully")
+                upload_success += 1
+            else:
+                print(f"  ✗ Upload failed")
+                upload_failed += 1
+                
+        except Exception as e:
+            print(f"  ✗ Upload error: {e}")
+            upload_failed += 1
+    
 
 print("\nPackaging complete!")
 print(f"Manifest saved to: {manifest_file}")
@@ -80,4 +108,23 @@ if do_bin_assets_exist:
   print(f"BIN: Manifest saved to: {manifest_file}")
   print(f"BIN: TAR files will be created from: {source_dir}")
   print(f"BIN: Encrypted files are in: {obt_path.stage()}/assetcache/enc")
+if upload_enabled:
+    spc, catalog = assets.default_cfg_and_catalog()
+    print("  Uploading assets to CDN...")
+    fqid = f"singularity_ext|bin_assets"
+    print(f"Uploading {fqid}...")
+        
+    try:
+        # Upload this specific asset using the new uploadAsset method
+        receipt = catalog.uploadAsset(fqid)
+        if receipt and receipt.success:
+            print(f"  ✓ Uploaded successfully")
+            upload_success += 1
+        else:
+            print(f"  ✗ Upload failed")
+            upload_failed += 1
+            
+    except Exception as e:
+        print(f"  ✗ Upload error: {e}")
+        upload_failed += 1
   
