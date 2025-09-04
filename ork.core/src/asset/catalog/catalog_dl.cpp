@@ -35,6 +35,11 @@ assetfqid_ptr_t AssetCatalog::findAsset(const assetid_t& fq_asset_id) const {
   auto location = impl->locateAsset(fq_asset_id);
   auto asset_index_entry = findAssetIndexEntry(fq_asset_id);
 
+  OrkAssert(location);
+  auto locinfo = location->_location_info;
+  OrkAssert(locinfo);
+
+
   if ((asset_index_entry==nullptr) or (location==nullptr)) {
     logchan_catalog->log("[DEBUG] Asset<%s> or location not found in catalog", fq_asset_id.c_str());
     return nullptr;
@@ -155,6 +160,8 @@ fetchrequest_ptr_t AssetCatalog::fetchAsync(const assetid_t& fq_asset_id, //
   // New Request. Proceed to enqueue.
   ////////////////////////////////////////
   auto location = fqid->_location;
+  OrkAssert(location);
+  OrkAssert(location->_location_info);
   if (location->_location_info) {
     auto& loc_info = location->_location_info;
     if (loc_info->_api_key_read.has_value()) {

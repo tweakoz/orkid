@@ -64,22 +64,22 @@ assetlocation_ptr_t CatalogImpl::locateAsset(const assetid_t& fq_asset_id) const
       // Build location info from namespace configuration
       std::string namespace_id = it->second->_namespace_id;
       std::string remote_loc = "";
-      printf("[DEBUG locateAsset] namespace_id: '%s'\n", namespace_id.c_str());
-      printf("[DEBUG locateAsset] _config_space: %p\n", _config_space.get());
+      if(0)printf("[DEBUG locateAsset] namespace_id: '%s'\n", namespace_id.c_str());
+      if(0)printf("[DEBUG locateAsset] _config_space: %p\n", _config_space.get());
       if (_config_space) {
         remote_loc = _config_space->getNamespaceRemoteLocation(namespace_id);
-        printf("[DEBUG locateAsset] getNamespaceRemoteLocation returned: '%s'\n", remote_loc.c_str());
+        if(0)printf("[DEBUG locateAsset] getNamespaceRemoteLocation returned: '%s'\n", remote_loc.c_str());
       } else {
-        printf("[DEBUG locateAsset] _config_space is NULL\n");
+        if(0)printf("[DEBUG locateAsset] _config_space is NULL\n");
       }
       std::string storage_hash = it->second->_entry->_storage_hash;
-      printf("[DEBUG locateAsset] storage_hash: '%s'\n", storage_hash.c_str());
-      printf("[DEBUG locateAsset] entry->_local_loc: '%s'\n", it->second->_entry->_local_loc.c_str());
+      if(0)printf("[DEBUG locateAsset] storage_hash: '%s'\n", storage_hash.c_str());
+      if(0)printf("[DEBUG locateAsset] entry->_local_loc: '%s'\n", it->second->_entry->_local_loc.c_str());
 
       if (!remote_loc.empty() && !storage_hash.empty()) {
         std::string base_url = remote_loc;
-        printf("[DEBUG locateAsset] Initial remote_loc: '%s'\n", remote_loc.c_str());
-        printf("[DEBUG locateAsset] Initial base_url: '%s'\n", base_url.c_str());
+        if(0)printf("[DEBUG locateAsset] Initial remote_loc: '%s'\n", remote_loc.c_str());
+        if(0)printf("[DEBUG locateAsset] Initial base_url: '%s'\n", base_url.c_str());
 
         // Check for environment variable pattern ${VAR_NAME}
         if (base_url.find("${") != std::string::npos) {
@@ -105,7 +105,7 @@ assetlocation_ptr_t CatalogImpl::locateAsset(const assetid_t& fq_asset_id) const
 
         // Handle template format <location_key> or <location_key>/path
         if (base_url.find("<") == 0 && base_url.find(">") != std::string::npos) {
-          printf("[DEBUG locateAsset] Found template format in base_url: '%s'\n", base_url.c_str());
+          if(0)printf("[DEBUG locateAsset] Found template format in base_url: '%s'\n", base_url.c_str());
           // Extract the location key from template
           size_t end_pos           = base_url.find(">");
           std::string location_key = base_url.substr(1, end_pos - 1);
@@ -113,9 +113,9 @@ assetlocation_ptr_t CatalogImpl::locateAsset(const assetid_t& fq_asset_id) const
           // Check if there's a path after the template
           if (end_pos + 1 < base_url.length()) {
             path_suffix = base_url.substr(end_pos + 1);
-            printf("[DEBUG locateAsset] Found path suffix: '%s'\n", path_suffix.c_str());
+            if(0)printf("[DEBUG locateAsset] Found path suffix: '%s'\n", path_suffix.c_str());
           }
-          printf("[DEBUG locateAsset] Extracted location_key: '%s'\n", location_key.c_str());
+          if(0)printf("[DEBUG locateAsset] Extracted location_key: '%s'\n", location_key.c_str());
 
           // Get config for this namespace and resolve the location
           if (_config_space) {
@@ -135,11 +135,11 @@ assetlocation_ptr_t CatalogImpl::locateAsset(const assetid_t& fq_asset_id) const
                 // Location found logged at higher level if needed
                 base_url               = resolved_url + path_suffix;  // Append path suffix if any
                 result->_location_info = location_info; // Store the location_info
-                printf("[DEBUG locateAsset] Set location_info from template resolution\n");
-                printf("[DEBUG locateAsset] Final base_url with suffix: '%s'\n", base_url.c_str());
+                if(1)printf("[DEBUG locateAsset] Set location_info from template resolution\n");
+                if(1)printf("[DEBUG locateAsset] Final base_url with suffix: '%s'\n", base_url.c_str());
                 break;
               } else {
-                printf("[DEBUG] Config %s has no location for %s\n", config_id.c_str(), location_key.c_str());
+                if(1)printf("[DEBUG] Config %s has no location for %s\n", config_id.c_str(), location_key.c_str());
               }
             }
           }
@@ -160,7 +160,7 @@ assetlocation_ptr_t CatalogImpl::locateAsset(const assetid_t& fq_asset_id) const
                 if (!resolved_url.empty() && resolved_url != location_key) {
                   base_url               = resolved_url;
                   result->_location_info = location_info; // Store the location_info
-                  printf("[DEBUG locateAsset] Set location_info from plain location key resolution\n");
+                  if(0)printf("[DEBUG locateAsset] Set location_info from plain location key resolution\n");
                   break;
                 }
               }
@@ -169,22 +169,22 @@ assetlocation_ptr_t CatalogImpl::locateAsset(const assetid_t& fq_asset_id) const
         }
 
         // Debug: Check location_info state before setting base_url
-        printf("[DEBUG locateAsset] base_url: %s\n", base_url.c_str());
-        printf("[DEBUG locateAsset] location_info is %s\n", result->_location_info ? "SET" : "NULL");
+        if(0)printf("[DEBUG locateAsset] base_url: %s\n", base_url.c_str());
+        if(0)printf("[DEBUG locateAsset] location_info is %s\n", result->_location_info ? "SET" : "NULL");
         if (result->_location_info) {
-          printf("[DEBUG locateAsset] location_info->_download_url: %s\n", result->_location_info->_download_url.toString().c_str());
+          if(0)printf("[DEBUG locateAsset] location_info->_download_url: %s\n", result->_location_info->_download_url.toString().c_str());
         }
 
         result->_base_url      = base_url;
         result->_relative_path = storage_hash + ".enc";
       } else if (!it->second->_entry->_local_loc.empty()) {
         // Fallback to local location if remote location is empty
-        printf("[DEBUG locateAsset] WARNING: No storage_hash, falling back to local_loc: '%s'\n", 
+        if(0)printf("[DEBUG locateAsset] WARNING: No storage_hash, falling back to local_loc: '%s'\n", 
                it->second->_entry->_local_loc.c_str());
         result->_base_url = it->second->_entry->_local_loc;
         // Note: This is a local path, not a remote URL - downloading won't work!
       } else {
-        printf("[DEBUG locateAsset] ERROR: No storage_hash and no local_loc\n");
+        if(0)printf("[DEBUG locateAsset] ERROR: No storage_hash and no local_loc\n");
       }
     }
   });

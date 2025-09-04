@@ -362,59 +362,40 @@ file::Path AssetCatalog::getTempDir() const {
 
 ////////////////////////////////////////////////////////////////////////////////
 // URL Generation Methods - Single Source of Truth
+// Non-chunked asset: {xfer_url}/{storage_hash}.enc
 ////////////////////////////////////////////////////////////////////////////////
 
-URL AssetCatalog::getAssetUploadURL(const AssetEntry* entry, locationinfo_ptr_t location) const {
-  if (!entry || !location) return URL();
-  
-  // Non-chunked asset: {upload_url}/{storage_hash}.enc
+URL AssetCatalog::getAssetUploadURL( const AssetEntry* entry, //
+                                     locationinfo_ptr_t location) const { //
   return location->_upload_url / (entry->_storage_hash + ".enc");
 }
 
-URL AssetCatalog::getChunkManifestUploadURL(const AssetEntry* entry, locationinfo_ptr_t location) const {
-  if (!entry || !location) return URL();
-  
-  // Chunk manifest: {upload_url}/{namespace}/enc/{storage_hash}.chunkmanifest
-  return location->_upload_url / entry->_namespace / "enc" / 
-         (entry->_storage_hash + ".chunkmanifest");
-}
-
-URL AssetCatalog::getChunkUploadURL(const AssetEntry* entry, size_t chunk_index, 
-                                    chunk_hash_t chunk_hash, locationinfo_ptr_t location) const {
-  if (!entry || !location) return URL();
-  
-  // Individual chunk: {upload_url}/{namespace}/enc/chunks/{storage_hash}.chunk.{index:04d}
-  // Using storage_hash for consistency with download
-  std::string chunk_filename = FormatString("%s.chunk.%04zu", entry->_storage_hash.c_str(), chunk_index);
-  return location->_upload_url / entry->_namespace / "enc/chunks" / chunk_filename;
-}
-
 URL AssetCatalog::getAssetDownloadURL(const AssetEntry* entry, locationinfo_ptr_t location) const {
-  if (!entry || !location) return URL();
-  
-  // Non-chunked asset: {download_url}/{storage_hash}.enc
   return location->_download_url / (entry->_storage_hash + ".enc");
 }
 
-URL AssetCatalog::getChunkDownloadURL(const AssetEntry* entry, size_t chunk_index, 
-                                      locationinfo_ptr_t location) const {
-  printf("[DEBUG getChunkDownloadURL] entry=%p, location=%p, chunk_index=%zu\n", 
-         entry, location.get(), chunk_index);
-  if (!entry) {
-    printf("[DEBUG getChunkDownloadURL] Returning empty URL: entry is NULL\n");
-    return URL();
-  }
-  if (!location) {
-    printf("[DEBUG getChunkDownloadURL] Returning empty URL: location is NULL\n");
-    return URL();
-  }
-  
-  // Individual chunk: {download_url}/{namespace}/enc/chunks/{storage_hash}.chunk.{index:04zu}
-  // Must match upload URL structure
-  std::string chunk_filename = FormatString("%s.chunk.%04zu", entry->_storage_hash.c_str(), chunk_index);
-  URL result = location->_download_url / entry->_namespace / "enc/chunks" / chunk_filename;
-  printf("[DEBUG getChunkDownloadURL] Constructed URL: %s\n", result.toString().c_str());
+////////////////////////////////////////////////////////////////////////////////
+// URL Generation Methods (chunks) - Single Source of Truth
+// Individual chunk: {xfer_url}/{chunk_hash}.chunk.{index:04zu}
+////////////////////////////////////////////////////////////////////////////////
+
+URL AssetCatalog::getChunkDownloadURL(locationinfo_ptr_t location, //
+                                      chunkmanifest_ptr_t chkinfo, //
+                                      size_t chunk_index) const {  //
+  const auto& chunk = chkinfo->_chunks[chunk_index];
+  uint64_t chunk_hash = chunk._hash;
+  std::string chunk_filename = FormatString("%zu.chunk.%04zu", chunk_hash, chunk_index);
+  URL result = location->_download_url / chunk_filename;
   return result;
+}
+
+URL AssetCatalog::getChunkUploadURL(locationinfo_ptr_t location, //
+                                    chunkmanifest_ptr_t chkinfo, //
+                                    size_t chunk_index) const {  //
+  const auto& chunk = chkinfo->_chunks[chunk_index];
+  uint64_t chunk_hash = chunk._hash;
+  std::string chunk_filename = FormatString("%zu.chunk.%04zu", chunk_hash, chunk_index);
+  return location->_upload_url / chunk_filename;
 }
 
 ////////////////////////////////////////////////////////////////

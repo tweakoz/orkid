@@ -411,22 +411,19 @@ uploadreceipt_ptr_t AssetEntry::upload(
     const AssetConfig& config,
     locationinfo_ptr_t location_info) const {
   
-  // Starting asset upload
-  
+  ////////////////////////////////////
   // Verify entry is repackaged
+  ////////////////////////////////////
+
   if (!isRepackaged()) {
     logchan_catalog->log("ERROR: Asset not repackaged");
     throw std::runtime_error("Asset must be repackaged before upload");
   }
-  // Asset is repackaged
   
-  // _chunk_manifest should already be set by repackage() if chunking was needed
-  // Cannot load it here as upload() is a const function
-  
-  // Resolve destination from config
-  // Resolving remote destination
-  
+  ////////////////////////////////////
   // Get API key from namespace encryption key if not set in location
+  ////////////////////////////////////
+
   if (!location_info->_api_key_write.has_value()) {
     std::string encryption_key = config.getEncryptionKeyForNamespace(_namespace);
     if (!encryption_key.empty()) {
@@ -435,7 +432,10 @@ uploadreceipt_ptr_t AssetEntry::upload(
     }
   }
   
+  ////////////////////////////////////
   // Check if password authentication is required for uploads
+  ////////////////////////////////////
+
   if (location_info->_api_key_write.has_value()) {
     std::string api_key = location_info->_api_key_write.value();
     if (PasswordProvider::requiresPasswordAuth(api_key)) {
@@ -456,249 +456,164 @@ uploadreceipt_ptr_t AssetEntry::upload(
     }
   }
   
+  ////////////////////////////////////
   // Create upload receipt
-  // Creating upload receipt
+  ////////////////////////////////////
+
   auto receipt = std::make_shared<UploadReceipt>();
   receipt->upload_id = _id;  // Use asset id as upload id
   receipt->namespace_id = _namespace;
   receipt->destination = location_info->_upload_url.toString();
   receipt->timestamp = time(nullptr);
-  // Upload receipt created
-  
-  // Get catalog for paths
+
+  ////////////////////////////////////
   // Getting parent manifest and catalog
-  auto manifest = getParentManifest();
-  if (!manifest) {
-    logchan_catalog->log("ERROR: Asset entry has no parent manifest");
-    throw std::runtime_error("Asset entry has no parent manifest");
-  }
-  auto catalog = manifest->getParentCatalog();
+  ////////////////////////////////////
+
+  auto asset_manifest = getParentManifest();
+  OrkAssert(asset_manifest);
+
+  auto catalog = asset_manifest->getParentCatalog();
   if (!catalog) {
     logchan_catalog->log("ERROR: Asset manifest has no parent catalog");
     throw std::runtime_error("Asset manifest has no parent catalog");
   }
-  // Got catalog
+
+  OrkAssert(_chunk_manifest);
   
-  if (_chunk_manifest) {
-    // CHUNKED: Upload manifest + chunks
+  ////////////////////////////////////          
+  // Store chunk manifest in receipt for transparency
+  ////////////////////////////////////          
+
+  receipt->_chunk_manifest = _chunk_manifest;
+  
+  ////////////////////////////////////          
+  // Upload chunks using batch upload for concurrency
+  ////////////////////////////////////          
+
+  logchan_catalog->log("Starting concurrent upload of %zu chunks", _chunk_manifest->_chunks.size());
+  
+  // Collect all chunk files and their remote paths
+  std::vector<file::Path> chunk_files;
+  std::vector<std::string> chunk_remote_paths;
+  std::vector<URL> chunk_urls;
+  std::vector<size_t> chunk_sizes;
+  
+  for (size_t chunk_idx = 0; chunk_idx < _chunk_manifest->_chunks.size(); ++chunk_idx) {
+
+    const auto& chunk = _chunk_manifest->_chunks[chunk_idx];
+
+    auto chunk_path = catalog->getChunksDir() //
+                    / (std::to_string(chunk._hash) + ".chunk." + formatChunkIndex(chunk_idx));
+                    
+    OrkAssert(chunk_path.doesPathExist());    
     
-    // 1. Upload chunk manifest
-    auto manifest_path = catalog->getEncryptedDir() / (_storage_hash + ".chunkmanifest");
-    if(0)logchan_catalog->log("Uploading chunk manifest: %s", manifest_path.c_str());
+    chunk_files.push_back(chunk_path);
     
-    // Check if manifest file exists
-    if (!manifest_path.doesPathExist()) {
-      logchan_catalog->log("ERROR: Chunk manifest file not found: %s", manifest_path.c_str());
-      receipt->success = false;
-      receipt->status_message = "Chunk manifest file not found: " + manifest_path.toStdString();
-      return receipt;
+    // Get the URL and extract just the path part we need
+    URL chunk_url = catalog->getChunkUploadURL(location_info, _chunk_manifest, chunk_idx );
+    chunk_urls.push_back(chunk_url);
+    
+    // Extract relative path from URL for the uploader
+    // The URL path should be something like /upload/namespace/enc/chunks/hash.chunk.0000
+    // We need just the last part: hash.chunk.0000
+    std::string url_path = chunk_url._path;
+    size_t last_slash = url_path.rfind('/');
+    std::string remote_path = (last_slash != std::string::npos) 
+                              ? url_path.substr(last_slash + 1)
+                              : url_path;
+    chunk_remote_paths.push_back(remote_path);
+    chunk_sizes.push_back(chunk._size);
+
+  } // for each chunk
+  
+  ////////////////////////////////////          
+  // Create HTTPS upload-config from location info
+  ////////////////////////////////////          
+
+  auto https_config = std::make_shared<HttpsUploaderConfig>();
+  
+  ////////////////////////////////////          
+  // Parse the first chunk URL to get host/port settings
+  ////////////////////////////////////          
+
+  if (!chunk_urls.empty()) {
+    const URL& first_url = chunk_urls[0];
+    https_config->host = first_url._host;
+    https_config->port = first_url._port;
+    https_config->verify_ssl = !location_info->_disable_cert_check;
+    if (location_info->_api_key_write.has_value()) {
+      https_config->api_key = location_info->_api_key_write.value();
     }
     
-    auto manifest_upload = std::make_shared<Upload>();
-    manifest_upload->_source_path = manifest_path;
-    
-    // Use catalog's URL generation
-    manifest_upload->_destination_url = catalog->getChunkManifestUploadURL(this, location_info);
-    
-    manifest_upload->_api_key = location_info->_api_key_write;
-    manifest_upload->_ignore_tls_errors = location_info->_disable_cert_check;
-    
-    if (!manifest_upload->execute()) {
-      receipt->success = false;
-      receipt->status_message = "Failed to upload chunk manifest: " + manifest_upload->_error_message;
-      saveReceipt(receipt);
-      return receipt;
-    }
-    
-    // Add manifest to files list
-    UploadFileEntry manifest_entry;
-    manifest_entry.relative_path = manifest_path.getName();
-    manifest_entry.remote_path = manifest_upload->_destination_url.toString();
-    manifest_entry.size = manifest_upload->_total_bytes;
-    manifest_entry.success = true;
-    receipt->files.push_back(manifest_entry);
-    receipt->bytes_uploaded += manifest_upload->_total_bytes;
-    
-    // Store chunk manifest in receipt for transparency
-    receipt->_chunk_manifest = _chunk_manifest;
-    
-    // 2. Upload chunks using batch upload for concurrency
-    logchan_catalog->log("Starting concurrent upload of %zu chunks", _chunk_manifest->_chunks.size());
-    
-    // Collect all chunk files and their remote paths
-    std::vector<file::Path> chunk_files;
-    std::vector<std::string> chunk_remote_paths;
-    std::vector<URL> chunk_urls;
-    std::vector<size_t> chunk_sizes;
-    
-    for (size_t chunk_idx = 0; chunk_idx < _chunk_manifest->_chunks.size(); ++chunk_idx) {
-      const auto& chunk = _chunk_manifest->_chunks[chunk_idx];
-      auto chunk_path = catalog->getChunksDir() / 
-                       (std::to_string(chunk._hash) + ".chunk." + formatChunkIndex(chunk_idx));
-      
-      // Check if chunk file exists
-      if (!chunk_path.doesPathExist()) {
-        logchan_catalog->log("ERROR: Chunk file not found: %s", chunk_path.c_str());
-        receipt->success = false;
-        receipt->status_message = "Chunk file not found: " + chunk_path.toStdString();
-        saveReceipt(receipt);
-        return receipt;
-      }
-      
-      chunk_files.push_back(chunk_path);
-      
-      // Get the URL and extract just the path part we need
-      URL chunk_url = catalog->getChunkUploadURL(this, chunk_idx, chunk._hash, location_info);
-      chunk_urls.push_back(chunk_url);
-      
-      // Extract relative path from URL for the uploader
-      // The URL path should be something like /upload/namespace/enc/chunks/hash.chunk.0000
-      // We need just the last part: hash.chunk.0000
-      std::string url_path = chunk_url._path;
-      size_t last_slash = url_path.rfind('/');
-      std::string remote_path = (last_slash != std::string::npos) 
-                                ? url_path.substr(last_slash + 1)
-                                : url_path;
-      chunk_remote_paths.push_back(remote_path);
-      chunk_sizes.push_back(chunk._size);
-    }
-    
-    // Create HTTPS uploader config from location info
-    auto https_config = std::make_shared<HttpsUploaderConfig>();
-    
-    // Parse the first chunk URL to get host/port settings
-    if (!chunk_urls.empty()) {
-      const URL& first_url = chunk_urls[0];
-      https_config->host = first_url._host;
-      https_config->port = first_url._port;
-      https_config->verify_ssl = !location_info->_disable_cert_check;
-      if (location_info->_api_key_write.has_value()) {
-        https_config->api_key = location_info->_api_key_write.value();
-      }
-      
-      // Extract base path from URL (everything before the filename)
-      std::string url_path = first_url._path;
-      size_t last_slash = url_path.rfind('/');
-      https_config->remote_base_path = (last_slash != std::string::npos) 
-                                       ? url_path.substr(0, last_slash)
-                                       : "/";
-    }
-    
-    // Create HTTPS uploader and perform batch upload
-    HttpsUploader uploader(https_config);
-    bool chunks_success = uploader.uploadFiles(chunk_files, chunk_remote_paths);
-    
-    if (!chunks_success) {
-      // Some or all chunks failed - add failure entries
-      for (size_t i = 0; i < chunk_files.size(); ++i) {
-        UploadFileEntry chunk_entry;
-        chunk_entry.relative_path = chunk_files[i].getName();
-        chunk_entry.remote_path = chunk_urls[i].toString();
-        chunk_entry.size = chunk_sizes[i];
-        chunk_entry.success = false;
-        chunk_entry.error_message = "Batch upload failed";
-        receipt->files.push_back(chunk_entry);
-        receipt->failed_files++;
-      }
-      
-      receipt->success = false;
-      receipt->status_message = "Failed to upload chunks";
-      saveReceipt(receipt);
-      return receipt;
-    }
-    
-    // All chunks uploaded successfully
-    if(0)logchan_catalog->log("Successfully uploaded all %zu chunks concurrently", _chunk_manifest->_chunks.size());
-    
+    // Extract base path from URL (everything before the filename)
+    std::string url_path = first_url._path;
+    size_t last_slash = url_path.rfind('/');
+    https_config->remote_base_path = (last_slash != std::string::npos) //
+                                   ? url_path.substr(0, last_slash)    //
+                                   : "/";
+  }
+  
+  ////////////////////////////////////          
+  // HTTPS batch upload !
+  ////////////////////////////////////          
+
+  HttpsUploader uploader(https_config);
+  bool chunks_success = uploader.uploadFiles(chunk_files, chunk_remote_paths);
+  
+  if (!chunks_success) {
+    // Some or all chunks failed - add failure entries
     for (size_t i = 0; i < chunk_files.size(); ++i) {
       UploadFileEntry chunk_entry;
       chunk_entry.relative_path = chunk_files[i].getName();
       chunk_entry.remote_path = chunk_urls[i].toString();
       chunk_entry.size = chunk_sizes[i];
-      chunk_entry.hash = std::to_string(_chunk_manifest->_chunks[i]._hash);
-      chunk_entry.success = true;
+      chunk_entry.success = false;
+      chunk_entry.error_message = "Batch upload failed";
       receipt->files.push_back(chunk_entry);
-      receipt->bytes_uploaded += chunk_sizes[i];
-      receipt->successful_files++;
-    }
-    
-  } else {
-    // REGULAR: Upload single encrypted file
-    // Regular file upload
-    auto enc_path = getLocalEncryptedPath();
-    // Encrypted file path set
-    
-    // Check if file exists
-    if (!enc_path.doesPathExist()) {
-      logchan_catalog->log("ERROR: Encrypted file does not exist: %s", enc_path.c_str());
-      receipt->success = false;
-      receipt->status_message = "Encrypted file not found: " + enc_path.toStdString();
-      return receipt;
-    }
-    // Encrypted file exists
-    
-    // Create upload object
-    // Creating Upload object
-    auto file_upload = std::make_shared<Upload>();
-    file_upload->_source_path = enc_path;
-    
-    // Use catalog's URL generation
-    file_upload->_destination_url = catalog->getAssetUploadURL(this, location_info);
-    
-    // Upload configuration set
-    
-    file_upload->_api_key = location_info->_api_key_write;
-    file_upload->_ignore_tls_errors = location_info->_disable_cert_check;
-    
-    // API key and TLS settings configured
-    
-    // Executing upload
-    if (!file_upload->execute()) {
-      logchan_catalog->log("ERROR: Upload failed! Error: %s (state: %d)", 
-                           file_upload->_error_message.c_str(), (int)file_upload->_state.load());
-      
-      UploadFileEntry file_entry;
-      file_entry.relative_path = enc_path.getName();
-      file_entry.remote_path = file_upload->_destination_url.toString();
-      file_entry.success = false;
-      file_entry.error_message = file_upload->_error_message;
-      receipt->files.push_back(file_entry);
       receipt->failed_files++;
-      
-      receipt->success = false;
-      receipt->status_message = "Failed to upload file: " + file_upload->_error_message;
-      saveReceipt(receipt);
-      // Upload failed
-      return receipt;
     }
     
-    if(0)logchan_catalog->log("Upload succeeded! Bytes uploaded: %zu", file_upload->_bytes_uploaded.load());
-    
-    // Add successful file to receipt
-    UploadFileEntry file_entry;
-    file_entry.relative_path = enc_path.getName();
-    file_entry.remote_path = file_upload->_destination_url.toString();
-    file_entry.size = file_upload->_total_bytes;
-    file_entry.hash = _storage_hash;
-    file_entry.success = true;
-    receipt->files.push_back(file_entry);
-    receipt->bytes_uploaded = file_upload->_total_bytes;
-    receipt->successful_files = 1;
-    // Added successful file to receipt
+    receipt->success = false;
+    receipt->status_message = "Failed to upload chunks";
+    saveReceipt(receipt);
+    return receipt;
   }
   
+  ////////////////////////////////////          
+  // All chunks uploaded successfully
+  //  mark so in receipt
+  ////////////////////////////////////          
+
+  if(0)logchan_catalog->log("Successfully uploaded all %zu chunks concurrently", _chunk_manifest->_chunks.size());
+  
+  for (size_t i = 0; i < chunk_files.size(); ++i) {
+    UploadFileEntry chunk_entry;
+    chunk_entry.relative_path = chunk_files[i].getName();
+    chunk_entry.remote_path = chunk_urls[i].toString();
+    chunk_entry.size = chunk_sizes[i];
+    chunk_entry.hash = std::to_string(_chunk_manifest->_chunks[i]._hash);
+    chunk_entry.success = true;
+    receipt->files.push_back(chunk_entry);
+    receipt->bytes_uploaded += chunk_sizes[i];
+    receipt->successful_files++;
+  }
+  
+  ////////////////////////////////////          
   // Set final receipt status
-  // Setting final receipt status
+  ////////////////////////////////////          
+
   receipt->total_files = receipt->files.size();
   receipt->success = true;
   receipt->status_message = "Upload completed successfully";
   logchan_catalog->log("Upload receipt summary: %zu/%zu files successful", receipt->successful_files, receipt->total_files);
   
+  ////////////////////////////////////          
   // Saving receipt to disk
+  ////////////////////////////////////          
+
   saveReceipt(receipt);
-  // Receipt saved
-  
-  // Upload completed successfully
+
   return receipt;
 }
 

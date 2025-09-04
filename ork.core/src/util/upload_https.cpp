@@ -249,7 +249,7 @@ bool HttpsUploader::uploadFiles(
       _config->port,
       full_path.c_str());
     
-    if(0)_log_channel->log("Uploading multi %s to %s", ctx->local_path.c_str(), full_url.c_str());
+    if(1)_log_channel->log("Uploading multi %s to %s", ctx->local_path.c_str(), full_url.c_str());
     
     // Setup CURL options
     curl_easy_setopt(ctx->curl, CURLOPT_URL, full_url.c_str());

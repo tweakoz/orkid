@@ -1,6 +1,6 @@
 {
   "id": "ork_envmaps",
-  "uuid": "a8c67452-74b7-4f75-b185-d52552571494",
+  "uuid": "9e02b341-1bf8-4396-ba9f-a7dbd6616739",
   "namespace": "ork_envmaps",
   "version": "1.0.0",
   "assets": {
@@ -13,8 +13,8 @@
         "linux"
       ],
       "dependencies": [],
-      "content_hash": "38020b5723cecf321a1f3665e0d40735",
-      "storage_hash": "ca7b8758f4af410b3ccc4f8b42209016",
+      "content_hash": "3fa86f721bacb6e75cc718a2a2542f38",
+      "storage_hash": "ad35c8143bc1685793009c9a756db113",
       "hash_algorithm": "md5",
       "archive_size": 94006272,
       "encrypted_size": 4625912,
@@ -22,12 +22,12 @@
       "chunks": {
         "chunk_size": 16777216,
         "total_size": 4625912,
-        "file_hash": 12073516728967651178,
+        "file_hash": 7140262227826369692,
         "chunks": [
           {
             "offset": 0,
             "size": 4625912,
-            "hash": 12073516728967651178
+            "hash": 7140262227826369692
           }
         ]
       }
@@ -41,8 +41,8 @@
         "linux"
       ],
       "dependencies": [],
-      "content_hash": "9c5b123d711c373b0811441508d509c5",
-      "storage_hash": "2c71a6d054aee45173fecf9e677d636b",
+      "content_hash": "7bd1f57252f7a46c0671c20fad0801dc",
+      "storage_hash": "4039cf974fe2248697977afe903583b6",
       "hash_algorithm": "md5",
       "archive_size": 380287488,
       "encrypted_size": 28419811,
@@ -50,17 +50,17 @@
       "chunks": {
         "chunk_size": 16777216,
         "total_size": 28419811,
-        "file_hash": 10248157511829273253,
+        "file_hash": 1882717834981334568,
         "chunks": [
           {
             "offset": 0,
             "size": 16777216,
-            "hash": 14847020859394152162
+            "hash": 339426543480916112
           },
           {
             "offset": 16777216,
             "size": 11642595,
-            "hash": 16663087428658564250
+            "hash": 7079325643653425854
           }
         ]
       }
@@ -74,8 +74,8 @@
         "linux"
       ],
       "dependencies": [],
-      "content_hash": "a33be352f6eb4d8fde03f36e9f4d41de",
-      "storage_hash": "fad14fb90341ead2c9bd19627c6161a6",
+      "content_hash": "ecc4f3565d76941a07fa4c4c5b60c036",
+      "storage_hash": "7fabbcb8dfbf9fbcedf8ccfb26a62b12",
       "hash_algorithm": "md5",
       "archive_size": 94006272,
       "encrypted_size": 6971109,
@@ -83,12 +83,12 @@
       "chunks": {
         "chunk_size": 16777216,
         "total_size": 6971109,
-        "file_hash": 16431780455114433939,
+        "file_hash": 16043193859856332210,
         "chunks": [
           {
             "offset": 0,
             "size": 6971109,
-            "hash": 16431780455114433939
+            "hash": 16043193859856332210
           }
         ]
       }
@@ -102,8 +102,8 @@
         "linux"
       ],
       "dependencies": [],
-      "content_hash": "58a98f2bdad813f7bc16af0a013e5b46",
-      "storage_hash": "7385b35b82b179fe18ffbb4536261af3",
+      "content_hash": "3ea07af4bea27e8d3baeb24ca5f9e25c",
+      "storage_hash": "6da41dc57d9bfc4afed19080426f02d3",
       "hash_algorithm": "md5",
       "archive_size": 94006272,
       "encrypted_size": 6516177,
@@ -111,12 +111,12 @@
       "chunks": {
         "chunk_size": 16777216,
         "total_size": 6516177,
-        "file_hash": 10494010279555405270,
+        "file_hash": 7150458832806794673,
         "chunks": [
           {
             "offset": 0,
             "size": 6516177,
-            "hash": 10494010279555405270
+            "hash": 7150458832806794673
           }
         ]
       }
@@ -130,8 +130,8 @@
         "linux"
       ],
       "dependencies": [],
-      "content_hash": "c6f63b1d9699481e0a8685f1f1513e33",
-      "storage_hash": "0014d01356f4e1bdeb8500a7ec5a1b92",
+      "content_hash": "a6ba863da685d1f7e2105819d096adc2",
+      "storage_hash": "e17a6eb00d41bf8698fb024c5b4dcdaa",
       "hash_algorithm": "md5",
       "archive_size": 94006272,
       "encrypted_size": 5894375,
@@ -139,12 +139,12 @@
       "chunks": {
         "chunk_size": 16777216,
         "total_size": 5894375,
-        "file_hash": 8455752701855356119,
+        "file_hash": 8508311230828508522,
         "chunks": [
           {
             "offset": 0,
             "size": 5894375,
-            "hash": 8455752701855356119
+            "hash": 8508311230828508522
           }
         ]
       }

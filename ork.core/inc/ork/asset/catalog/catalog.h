@@ -234,14 +234,17 @@ struct AssetCatalog {
   
   // Upload URLs
   URL getAssetUploadURL(const AssetEntry* entry, locationinfo_ptr_t location) const;
-  URL getChunkManifestUploadURL(const AssetEntry* entry, locationinfo_ptr_t location) const;
-  URL getChunkUploadURL(const AssetEntry* entry, size_t chunk_index, 
-                        chunk_hash_t chunk_hash, locationinfo_ptr_t location) const;
-  
-  // Download URLs
   URL getAssetDownloadURL(const AssetEntry* entry, locationinfo_ptr_t location) const;
-  URL getChunkDownloadURL(const AssetEntry* entry, size_t chunk_index, 
-                          locationinfo_ptr_t location) const;
+
+  ////////////////////////////////////////////////////////////////////////////////
+
+  URL getChunkDownloadURL(locationinfo_ptr_t location, //
+                          chunkmanifest_ptr_t chkinfo, //
+                          size_t chunk_index ) const;  //
+  URL getChunkUploadURL(  locationinfo_ptr_t location, //
+                          chunkmanifest_ptr_t chkinfo, //
+                          size_t chunk_index) const;   //
+
   
   ////////////////////////////////////////////////////////////////////////////////
   // === Serialization ===

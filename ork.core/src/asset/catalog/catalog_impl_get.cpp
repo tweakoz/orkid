@@ -55,7 +55,7 @@ bool CatalogImpl::getAsset(fetchrequest_ptr_t request) {
 
   ///////////////////////////////////////////////////
 
-  auto download_asset = [&](fetchrequest_ptr_t request) -> datablock_ptr_t {
+  auto download_asset = [=](fetchrequest_ptr_t request) -> datablock_ptr_t {
     request->_state = AssetState::DOWNLOADING;
     Timer _download_timer;
     _download_timer.Start();
@@ -84,26 +84,13 @@ bool CatalogImpl::getAsset(fetchrequest_ptr_t request) {
 
   ///////////////////////////////////////////////////
 
-  datablock_ptr_t enc_data;
-  datablock_ptr_t unw_data;
-
-  ///////////////////////////////////////////////////
-
-  if (local_manifest) { // found local manifest (implying it is downloaded already...)
-    enc_data = datablockFromFileAtPath(local_manifest->_encrypted_path);
-    if (enc_data) {
-      request->_bytes_downloaded = 0; // From local cache
-    }
-  } // found local manifest
+  request->_bytes_downloaded = 0; // From local cache
+  datablock_ptr_t enc_data = download_asset(request);
 
   ///////////////////////////////////////////////////
   // ensure we have the encrypted data
   ///////////////////////////////////////////////////
 
-  if (enc_data == nullptr) {
-    printf("[DEBUG CatalogImpl] re-downloading asset data\n");
-    enc_data = download_asset(request);
-  }
   if( enc_data == nullptr ) {
     logchan_catalog->log("[DEBUG CatalogImpl] Download phase FAILED");
     request->_state = AssetState::FAILED;
@@ -120,7 +107,7 @@ bool CatalogImpl::getAsset(fetchrequest_ptr_t request) {
   Timer process_timer;
   process_timer.Start();
   
-  unw_data = _processAssetData(enc_data, request);
+  datablock_ptr_t unw_data = _processAssetData(enc_data, request);
   if (unw_data == nullptr) {
     logchan_catalog->log("[DEBUG CatalogImpl] Process phase FAILED");
     request->_state = AssetState::FAILED;
@@ -174,41 +161,33 @@ datablock_ptr_t CatalogImpl::_downloadAssetData(fetchrequest_ptr_t request) {
 
   auto location = request->_fqid->_location;
   auto linfo = location->_location_info;
-  
-  printf("[DEBUG _downloadAssetData] location ptr: %p\n", location.get());
-  printf("[DEBUG _downloadAssetData] location->_location_info is %s\n", linfo ? "SET" : "NULL");
-  if (linfo) {
+  auto ainfo = request->_fqid->_asset_info;
+  auto chkinfo = ainfo->_chunk_manifest;
+  OrkAssert(linfo);
+  OrkAssert(ainfo); 
+  OrkAssert(chkinfo); 
+
+  if(1){
+    printf("[DEBUG _downloadAssetData] location ptr: %p\n", location.get());
+    printf("[DEBUG _downloadAssetData] location->_location_info is %s\n", linfo ? "SET" : "NULL");
     printf("[DEBUG _downloadAssetData] location_info->_download_url: %s\n", linfo->_download_url.toString().c_str());
   }
   
-  OrkAssert(location->_chunk_manifest);
+  OrkAssert(chkinfo);
 
   /////////////////////////////////////////////////
   // figure out which chunks we already have cached
   //  and which we need to download
   /////////////////////////////////////////////////
-  size_t NUM_CHUNKS = location->_chunk_manifest->_chunks.size();
-  printf("[DEBUG] Asset has %zu chunks\n", NUM_CHUNKS);
-  printf("[DEBUG]  location baseurl<%s>\n", location->_base_url.c_str());
-  printf("[DEBUG]  location relpath<%s>\n", location->_relative_path.c_str());
-  printf("[DEBUG]  location nsid<%s>\n", location->_namespace_id.c_str());
-  if (linfo) {
-    printf("[DEBUG]  locinfo _download_url<%s>\n", linfo->_download_url.toString().c_str());
-  } else {
-    printf("[DEBUG]  locinfo is NULL - cannot get download URL\n");
-  }
-  ///////////////////////////////////////////////////
-  // Create a temporary AssetEntry for URL generation
-  ///////////////////////////////////////////////////
+  size_t NUM_CHUNKS = chkinfo->_chunks.size();
 
-  AssetEntry temp_entry;
-  // Extract storage hash from relative_path (format: {storage_hash}.enc)
-  std::string storage_hash = location->_relative_path;
-  if (storage_hash.ends_with(".enc")) {
-    storage_hash = storage_hash.substr(0, storage_hash.length() - 4);
+  if(0){
+    printf("[DEBUG] Asset has %zu chunks\n", NUM_CHUNKS);
+    printf("[DEBUG]  location baseurl<%s>\n", location->_base_url.c_str());
+    printf("[DEBUG]  location relpath<%s>\n", location->_relative_path.c_str());
+    printf("[DEBUG]  location nsid<%s>\n", location->_namespace_id.c_str());
+    printf("[DEBUG]  locinfo _download_url<%s>\n", linfo->_download_url.toString().c_str());
   }
-  temp_entry._storage_hash = storage_hash;
-  temp_entry._namespace    = location->_namespace_id;
 
   // Create download group for parallel chunk downloads
   auto download_group = std::make_shared<DownloadGroup>();
@@ -218,21 +197,23 @@ datablock_ptr_t CatalogImpl::_downloadAssetData(fetchrequest_ptr_t request) {
   /////////////////////////////////////////////////
 
   using chunk_map_t = std::map<size_t, datablock_ptr_t>;
-  LockedResource<chunk_map_t> CHUNKS;
-  std::unordered_map<size_t, file::Path> CHUNKS_PATHS;
-
+  using wrapped_chunk_map_t = LockedResource<chunk_map_t>;
+  using chunk_map_ptr_t = std::shared_ptr<wrapped_chunk_map_t>;
+  using chunk_pathmap_t = std::unordered_map<size_t, file::Path>;
+  using chunk_pathmap_ptr_t = std::shared_ptr<chunk_pathmap_t>;
+  auto CHUNKS = std::make_shared<wrapped_chunk_map_t>();
+ 
   for (size_t i = 0; i < NUM_CHUNKS; ++i) {
     file::Path chunk_cache_path = getCachePathForChunk(location, i);
-    CHUNKS_PATHS[i] = chunk_cache_path;
     datablock_ptr_t chunk_data;
-    CHUNKS.atomicOp([&](chunk_map_t& unlocked) {
+    CHUNKS->atomicOp([&](chunk_map_t& unlocked) {
       unlocked[i] = nullptr;
     });
     auto chunk_mani = location->_chunk_manifest;
     auto& chunk_info = chunk_mani->_chunks[i];
     if (chunk_cache_path.doesPathExist() && verifyCachedChunkHash(chunk_cache_path, chunk_info._hash)) {
       chunk_data = datablockFromFileAtPath(chunk_cache_path);
-      CHUNKS.atomicOp([&](chunk_map_t& unlocked) {
+      CHUNKS->atomicOp([=](chunk_map_t& unlocked) {
         unlocked[i] = chunk_data;
       });
     }
@@ -250,10 +231,10 @@ datablock_ptr_t CatalogImpl::_downloadAssetData(fetchrequest_ptr_t request) {
     /////////////////////////
 
     file::Path temp_path = file::Path(FormatString("%s.%04zu.tmp", chunk_cache_path.c_str(), i));
-    URL chunk_url = _catalog->getChunkDownloadURL(&temp_entry, i, location->_location_info);
-    printf("[DEBUG _downloadAssetData] chunk %zu URL: %s\n", i, chunk_url.toString().c_str());
+    URL chunk_url = _catalog->getChunkDownloadURL(linfo, chkinfo, i);
+    if(0)printf("[DEBUG _downloadAssetData] chunk %zu URL: %s\n", i, chunk_url.toString().c_str());
     if (chunk_url.toString().empty()) {
-      printf("[DEBUG _downloadAssetData] WARNING: Empty chunk URL for chunk %zu\n", i);
+      if(0)printf("[DEBUG _downloadAssetData] WARNING: Empty chunk URL for chunk %zu\n", i);
     }    
     auto dl = std::make_shared<Download>(chunk_url, temp_path);
      dl->_total_bytes = location->_chunk_manifest->_chunks[i]._size;
@@ -283,7 +264,7 @@ datablock_ptr_t CatalogImpl::_downloadAssetData(fetchrequest_ptr_t request) {
                               chunk_idx,                                        //
                               expected_hash,                                    //
                               chunk_cache_path,                                 //
-                              &CHUNKS](bool success, const file::Path& path) {  //
+                              CHUNKS](bool success, const file::Path& path) {  //
       if (success) {
         // Read downloaded chunk
         auto chunk_data = datablockFromFileAtPath(temp_path);
@@ -306,7 +287,7 @@ datablock_ptr_t CatalogImpl::_downloadAssetData(fetchrequest_ptr_t request) {
           return;
         }
         
-        CHUNKS.atomicOp([=](chunk_map_t& unlocked) {
+        CHUNKS->atomicOp([=](chunk_map_t& unlocked) {
           unlocked[chunk_idx] = chunk_data;
         });
         saveToCacheFile(chunk_data, chunk_cache_path);
@@ -345,7 +326,7 @@ datablock_ptr_t CatalogImpl::_downloadAssetData(fetchrequest_ptr_t request) {
 
   datablock_list_t chunks_array;
   bool all_present = true;
-  CHUNKS.atomicOp([&](const chunk_map_t& unlocked) {
+  CHUNKS->atomicOp([&](const chunk_map_t& unlocked) {
     chunks_array.resize(unlocked.size());
     for (auto item : unlocked) {
       size_t i = item.first;
