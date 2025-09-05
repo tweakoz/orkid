@@ -434,9 +434,10 @@ VkContext::VkContext() {
   // Setup rendering conventions for Vulkan
   ////////////////////////////
   _renderingConventions._isRightHanded = true;      // Orkid uses RH like GL
-  _renderingConventions._isYUp = true;               // Emulating GL Y-up
-  _renderingConventions._ndcZRange01 = true;         // Vulkan native [0,1]
-  _renderingConventions._defaultWindingCCW = true;   // Default CCW like GL
+  _renderingConventions._isLogicalYUp = true;       // Emulating GL Y-up
+  _renderingConventions._isNativeYUp = false;       // Vulkan native is Y-down
+  _renderingConventions._ndcZRange01 = true;        // Vulkan native [0,1]
+  _renderingConventions._defaultWindingCCW = true;  // Default CCW like GL
   // When FLIP_Y_LIKE_OPENGL is true, Y-flip reverses winding order
   _renderingConventions._frontFaceWindingCCW = !FLIP_Y_LIKE_OPENGL;
   

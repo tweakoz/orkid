@@ -73,8 +73,6 @@ void OrkAssertFunction(const char *fmtstr)
 	std::exception a; // just in case we are on a platform 
 	throw a;          // that allows nullptr deref without seg-faulting..
 
-
-
 	while(1){} // and as a last resort, ...
 
 	//assert(false);

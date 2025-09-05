@@ -32,12 +32,37 @@ GeometryBufferInterface::~GeometryBufferInterface() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void GeometryBufferInterface::render2dQuadEML(fvec4 QuadRect, fvec4 UvRect, fvec4 UvRect2, float depth) {
+  const auto& conventions = _context.renderingConventions();
+  if( !conventions._isLogicalYUp && conventions._isNativeYUp ) {
+    float qtop = QuadRect.w;
+    QuadRect.w  = QuadRect.y;
+    QuadRect.y  = qtop;
+    float uvtop  = UvRect.w;
+    UvRect.w     = UvRect.y;
+    UvRect.y     = uvtop;
+    float uv2top = UvRect2.w;
+    UvRect2.w    = UvRect2.y;
+    UvRect2.y    = uv2top;
+  }
+
   _context.DWI()->quad2DEML(QuadRect, UvRect, UvRect2, depth);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void GeometryBufferInterface::render2dQuadEMLCCL(fvec4 QuadRect, fvec4 UvRect, fvec4 UvRect2, float depth) {
+  const auto& conventions = _context.renderingConventions();
+  if( !conventions._isLogicalYUp && conventions._isNativeYUp ) {
+    float qtop = QuadRect.w;
+    QuadRect.w  = QuadRect.y;
+    QuadRect.y  = qtop;
+    float uvtop  = UvRect.w;
+    UvRect.w     = UvRect.y;
+    UvRect.y     = uvtop;
+    float uv2top = UvRect2.w;
+    UvRect2.w    = UvRect2.y;
+    UvRect2.y    = uv2top;
+  }
   _context.DWI()->quad2DEMLCCL(QuadRect, UvRect, UvRect2, depth);
 }
 

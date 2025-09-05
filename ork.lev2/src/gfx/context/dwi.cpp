@@ -269,10 +269,24 @@ void DrawingInterface::fullscreenQuad(const fvec4& UvRect, const fvec4& UvRect2,
 void DrawingInterface::quad2D(const fvec4& QuadRect, const fvec4& UvRect, const fvec4& UvRect2, float depth) {
   // Check rendering conventions to determine which winding to use
   const auto& conventions = _context.renderingConventions();
+
+  fvec4 logical_uvrect = UvRect;
+  fvec4 logical_uvrect2 = UvRect2;
+
+  if(conventions._isLogicalYUp!=conventions._isNativeYUp){
+    // Flip the V coordinate for logical vs native Y-axis orientation
+    logical_uvrect.y = UvRect.y + UvRect.w;
+    logical_uvrect.w = -UvRect.w;
+
+    logical_uvrect2.y = UvRect2.y + UvRect2.w;
+    logical_uvrect2.w = -UvRect2.w;
+
+  }
+
   if (conventions.useClockwiseWinding()) {
-    quad2DEMLCCL(QuadRect, UvRect, UvRect2, depth);
+    quad2DEMLCCL(QuadRect, logical_uvrect, logical_uvrect2, depth);
   } else {
-    quad2DEML(QuadRect, UvRect, UvRect2, depth);
+    quad2DEML(QuadRect, logical_uvrect, logical_uvrect2, depth);
   }
 }
 

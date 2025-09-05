@@ -77,22 +77,22 @@ VkRasterState::VkRasterState(rasterstate_ptr_t rstate){
       break;
     }
     case ECullTest::PASS_FRONT: {
-      _VKRSCI.cullMode = VK_CULL_MODE_FRONT_BIT;
+      _VKRSCI.cullMode = VK_CULL_MODE_BACK_BIT;
       break;
     }
     case ECullTest::PASS_BACK: {
-      _VKRSCI.cullMode = VK_CULL_MODE_BACK_BIT;
+      _VKRSCI.cullMode = VK_CULL_MODE_FRONT_BIT;
       break;
     }
   }
   hasher.accumulateItem(rstate->_frontface);
   switch(rstate->_frontface){
     case EFrontFace::CLOCKWISE: {
-      _VKRSCI.frontFace = VK_FRONT_FACE_CLOCKWISE;
+      _VKRSCI.frontFace = FLIP_Y_LIKE_OPENGL ? VK_FRONT_FACE_COUNTER_CLOCKWISE : VK_FRONT_FACE_CLOCKWISE;
       break;
     }
     case EFrontFace::COUNTER_CLOCKWISE: {
-      _VKRSCI.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+      _VKRSCI.frontFace = FLIP_Y_LIKE_OPENGL ? VK_FRONT_FACE_CLOCKWISE : VK_FRONT_FACE_COUNTER_CLOCKWISE;
       break;
     }
   }

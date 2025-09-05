@@ -156,7 +156,8 @@ struct DebugGroup {
 struct RenderingConventions {
   // Coordinate system conventions (currently matching OpenGL)
   bool _isRightHanded = true;      // true for RH (GL/Orkid), false for LH
-  bool _isYUp = true;               // true for Y-up (GL/Orkid), false for Y-down (Vulkan native)
+  bool _isLogicalYUp = true;               // true for Y-up (GL/Orkid), false for Y-down (Vulkan native)
+  bool _isNativeYUp = true;          // true for Y-up (GL/Orkid), false for Y-down (Vulkan native)
   bool _ndcZRange01 = false;        // false for [-1,1] (GL), true for [0,1] (Vulkan/D3D)
   
   // Winding order conventions  

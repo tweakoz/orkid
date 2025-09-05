@@ -180,8 +180,9 @@ ContextGL::ContextGL()
   ////////////////////////////
   // Setup rendering conventions for OpenGL
   ////////////////////////////
-  _renderingConventions._isRightHanded = true;      // GL native RH
-  _renderingConventions._isYUp = true;               // GL native Y-up
+  _renderingConventions._isRightHanded = true;       // GL native RH
+  _renderingConventions._isLogicalYUp = true;        // GL native Y-up
+  _renderingConventions._isNativeYUp = true;         // GL native Y-up
   _renderingConventions._ndcZRange01 = false;        // GL uses [-1,1]
   _renderingConventions._defaultWindingCCW = true;   // GL default CCW
   _renderingConventions._frontFaceWindingCCW = true; // GL front faces are CCW

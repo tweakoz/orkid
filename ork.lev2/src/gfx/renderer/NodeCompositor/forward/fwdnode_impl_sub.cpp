@@ -66,8 +66,8 @@ void ForwardPbrNodeImpl::_render_skybox(forward_pass_ptr_t fpass) {
   pipeline->wrappedDrawCall(RCID, [=]() {
     FXI->applyRasterState(*pipeline->_rasterstate);
     DWI->fullscreenQuad(
-        fvec4(0, 0, 1, 1),   //
-        fvec4(0, 0, 1, 1),   //
+        fvec4(0, 1, 1, -1),   // uv0 (x,y,w,h)
+        fvec4(0, 1, 1, -1),   // uv1 (x,y,w,h)
         0.9999f);            // full screen quad
   });
   context->debugPopGroup();
