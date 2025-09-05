@@ -18,26 +18,33 @@ namespace ork::lev2 {
 
 void pyinit_gfx_primitives_instanced_indexed(py::module& primitives) {
   auto type_codec = python::pb11_typecodec_t::instance();
-
+  using prim_t = primitives::InstancedIndexedPrimitive;
+  using ptr_t = primitives::instanced_indexed_primitive_ptr_t;
   ////////////////////////////////////////////////////////////////////////////////
   auto instancedprim_type = //
-    py::class_<primitives::InstancedIndexedPrimitive, primitives::instanced_indexed_primitive_ptr_t>(primitives, "InstancedIndexedQuadPrimitive")
+    py::class_<prim_t, ptr_t>(primitives, "InstancedIndexedQuadPrimitive")
         .def(
             "create",
-            [](ctx_t& context, int num_instances) -> primitives::instanced_indexed_primitive_ptr_t {
+            [](ctx_t& context, int num_instances) -> ptr_t {
               std::vector<uint16_t> quad_indices = {0, 1, 2, 3};
-              return std::make_shared<primitives::InstancedIndexedPrimitive>(
+              return std::make_shared<prim_t>(
                 context.get(), quad_indices, PrimitiveType::TRIANGLESTRIP, num_instances);
             })
         .def(
             "lock",
-            [](primitives::instanced_indexed_primitive_ptr_t prim, ctx_t& context, int num_instances) -> py::array_t<SVtxVU32Inst> {
-              auto buffer = prim->lock(context.get(), num_instances);
-              return py::array_t<SVtxVU32Inst>(prim->_num_instances, buffer, py::none());
+            [](ptr_t prim, ctx_t& context, int num_instances) -> py::array_t<uint32_t> {
+              auto buffer = (uint32_t*) prim->lock(context.get(), num_instances);
+              return py::array_t<uint32_t>(prim->_num_instances, buffer, py::none());
             })
-        .def("unlock", [](primitives::instanced_indexed_primitive_ptr_t prim, ctx_t& context) { return prim->unlock(context.get()); })
-        .def("createNode", createNodeLambdaFromPrimType<primitives::instanced_indexed_primitive_ptr_t>());
-  type_codec->registerStdCodec<primitives::instanced_indexed_primitive_ptr_t>(instancedprim_type);
+        .def_property("num_instances", [](ptr_t prim) { //
+          return prim->_num_instances; //
+        },
+        [](ptr_t prim, int v) { //
+          prim->_num_instances = v; //
+        })
+        .def("unlock", [](ptr_t prim, ctx_t& context) { return prim->unlock(context.get()); })
+        .def("createNode", createNodeLambdaFromPrimType<ptr_t>());
+  type_codec->registerStdCodec<ptr_t>(instancedprim_type);
 }
 
 } // namespace ork::lev2

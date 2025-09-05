@@ -30,6 +30,12 @@ int VulkanVertexBuffer::pipelineBitsForFormat() const {
     case EVtxStreamFormat::V12T8:
       rval = 4;
       break;
+    case EVtxStreamFormat::VU32:
+      rval = 5;
+      break;
+    case EVtxStreamFormat::VU32INST:
+      rval = 6;
+      break;
     default:
       OrkAssert(false);
       break;
@@ -89,6 +95,8 @@ VkGeometryBufferInterface::VkGeometryBufferInterface(vkcontext_rawptr_t ctx)
   _instantiateVertexStreamConfig(EVtxStreamFormat::V12N12B12T8C4);
   _instantiateVertexStreamConfig(EVtxStreamFormat::V16T16C16);
   _instantiateVertexStreamConfig(EVtxStreamFormat::V12T8);
+  _instantiateVertexStreamConfig(EVtxStreamFormat::VU32);
+  _instantiateVertexStreamConfig(EVtxStreamFormat::VU32INST);
   ////////////////////////////////////////////////////////////////
   auto create_primclass = [&](PrimitiveType etype) -> vkprimclass_ptr_t {
     auto rval            = std::make_shared<VkPrimitiveClass>();
@@ -204,6 +212,16 @@ vertex_strconfig_ptr_t VkGeometryBufferInterface::_instantiateVertexStreamConfig
       config->_stride = sizeof(VtxV12T8);
       break;
     }
+    case EVtxStreamFormat::VU32:{
+      config->addItem("POSITION", "uint32_t", sizeof(uint32_t), 0, VK_FORMAT_R32_UINT);
+      config->_stride = sizeof(SVtxVU32);
+      break;
+    }
+    case EVtxStreamFormat::VU32INST:{
+      config->addItem("INSTANCE_ID", "uint32_t", sizeof(uint32_t), 0, VK_FORMAT_R32_UINT);
+      config->_stride = sizeof(SVtxVU32Inst);
+      break;
+    }
     default:
       OrkAssert(false);
       break;
@@ -247,10 +265,21 @@ vkvertexinputconfig_ptr_t VkGeometryBufferInterface::vertexInputState(vkvtxbuf_p
 
   rval = std::make_shared<VkVertexInputConfiguration>();
 
+  // Determine input rate based on format
+  VkVertexInputRate input_rate;
+  switch (vb_format) {
+    case EVtxStreamFormat::VU32INST:
+      input_rate = VK_VERTEX_INPUT_RATE_INSTANCE;
+      break;
+    default:
+      input_rate = VK_VERTEX_INPUT_RATE_VERTEX;
+      break;
+  }
+
   rval->_binding_description = VkVertexInputBindingDescription{
       0, // binding
       uint32_t(vsc->_stride), // stride
-      VK_VERTEX_INPUT_RATE_VERTEX,
+      input_rate,
   };
 
   //// vtx input map
@@ -304,6 +333,9 @@ vkvertexinputconfig_ptr_t VkGeometryBufferInterface::vertexInputState(vkvtxbuf_p
       else if( shader_datatype == "vec2" and item->_vbuf_datatype == "vec4" ){
         atdesc.format = VK_FORMAT_R32G32_SFLOAT;
       }
+      else if( shader_datatype == "uint" and item->_vbuf_datatype == "uint32_t" ){
+        atdesc.format = VK_FORMAT_R32_UINT;
+      }
       else{
         printf( "MISMATCH: shader_datatype<%s> semantic<%s> item->_vbuf_datatype<%s>\n"
               , shader_datatype.c_str()
@@ -335,6 +367,7 @@ void* VkGeometryBufferInterface::LockVB(VertexBufferBase& vtx_buf, int ivbase, i
   OrkAssert(false == vtx_buf.IsLocked());
   size_t ibasebytes = ivbase * vtx_buf.GetVtxSize();
   size_t isizebytes = ivcount * vtx_buf.GetVtxSize();
+  size_t isizebytes_max = vtx_buf.GetVtxSize() * vtx_buf.GetMax();
   bool is_static    = vtx_buf.IsStatic();
   //////////////////////////////////////////////////////////
   // create or reference the vbo
@@ -347,6 +380,8 @@ void* VkGeometryBufferInterface::LockVB(VertexBufferBase& vtx_buf, int ivbase, i
     vtx_buf._impl.setShared(vk_impl);
   }
   void* vertex_memory = nullptr;
+
+  printf("LockVB ivbase<%d> ivcount<%d> isizebytes<%zu> isizebytes_max<%zu> is_static<%d>\n", ivbase, ivcount, isizebytes, isizebytes_max, int(is_static));
 
   if (is_static) {
     OrkAssert(ibasebytes == 0); // TODO change api to not require offset for static buffers
@@ -367,6 +402,7 @@ void VkGeometryBufferInterface::UnLockVB(VertexBufferBase& vtx_buf) {
   OrkAssert(vtx_buf.IsLocked());
   vk_impl->_vkbuffer->unmap();
   vtx_buf.Unlock();
+  //printf("UnLockVB\n");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -628,10 +664,103 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
 
 void VkGeometryBufferInterface::DrawInstancedIndexedPrimitiveEML(
     const VertexBufferBase& vtx_buf,
-    const IndexBufferBase& IdxBuf,
+    const IndexBufferBase& idx_buf,
     PrimitiveType eType,
     size_t instance_count) {
-  OrkAssert(false);
+
+  int num_indices = idx_buf.GetNumIndices();
+
+  ///////////////////////
+  // get primclass (input to pipeline search)
+  ///////////////////////
+
+  auto it_pc = _primclasses.find(uint64_t(eType));
+  OrkAssert(it_pc != _primclasses.end());
+  auto primclass = it_pc->second;
+
+  ///////////////////////
+  // find pipeline, pass, prog
+  ///////////////////////
+
+  auto vk_vbimpl = vtx_buf._impl.getShared<VulkanVertexBuffer>();
+  auto vk_ibimpl = idx_buf._impl.getShared<VulkanIndexBuffer>();
+  auto fxi       = _contextVK->_fxi;
+  auto pipeline  = fxi->_fetchPipeline(vk_vbimpl, primclass);
+  auto pass      = fxi->_currentVKPASS;
+  auto prog      = pass->_vk_program;
+
+  ///////////////////////
+  // bind pipeline
+  // bind descriptor set (if any)
+  // flush push constants
+  // bind vertex buffer
+  ///////////////////////
+
+  auto& CB = _contextVK->_vkcmdbuffer_current;
+  fxi->_bindPipeline(CB, pipeline);
+  auto desc_set = pipeline->_descriptorSetCache->fetchDescriptorSetForProgram(prog);
+  if (desc_set) {
+    fxi->_bindGfxDescriptorSetOnSlot(CB, desc_set, 0);
+  }
+  pipeline->applyPendingPushConstants(CB);
+  fxi->flushDirtyUniformBlocks();
+  fxi->_bindVertexBufferOnSlot(CB, vk_vbimpl, 0);
+
+  ///////////////////////
+  // bind index buffer
+  ///////////////////////
+
+  auto vk_index_size = idx_buf.indexSize() == 2 //
+                     ? VK_INDEX_TYPE_UINT16 //
+                     : VK_INDEX_TYPE_UINT32;
+
+  auto& vk_buffer = vk_ibimpl->_vkbuffer->_vkbuffer;
+
+  vkCmdBindIndexBuffer(CB,            // command buffer 
+                       vk_buffer,      // index buffer
+                       0,              // start at first index in index buffer
+                       vk_index_size); // index type
+
+  ///////////////////////
+  // draw instanced
+  ///////////////////////
+
+  // Check for Metal debugger trigger
+  if (_debugNextPrimitive) {
+    printf("VK: Metal capture triggered for instanced draw call\n");
+    // Insert a debug marker for Metal debugging
+    if (_contextVK->_vkCmdInsertDebugUtilsLabelEXT) {
+      VkDebugUtilsLabelEXT label = {};
+      label.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+      label.pLabelName = "DEBUG_CAPTURE_INSTANCED_DRAW";
+      label.color[0] = 1.0f;
+      label.color[1] = 0.0f;
+      label.color[2] = 1.0f;
+      label.color[3] = 1.0f;
+      _contextVK->_vkCmdInsertDebugUtilsLabelEXT(CB, &label);
+    }
+    _debugNextPrimitive = false;
+  }
+
+  // Update triangle count for stats (similar to OpenGL implementation)
+  switch (eType) {
+    case PrimitiveType::TRIANGLES:
+      miTrianglesRendered += (num_indices / 3) * instance_count;
+      break;
+    case PrimitiveType::TRIANGLESTRIP:
+      miTrianglesRendered += (num_indices - 2) * instance_count;
+      break;
+    default:
+      break;
+  }
+
+  vkCmdDrawIndexed(
+      CB,              // command buffer
+      num_indices,     // index count
+      instance_count,  // instance count
+      0,               // first index
+      0,               // vertex offset
+      0);              // first instance
 }
 
 //////////////////////////////////////////////
