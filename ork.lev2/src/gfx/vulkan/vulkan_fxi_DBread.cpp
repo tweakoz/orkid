@@ -212,8 +212,12 @@ void read_stateblocks(
       if (key == "BlendMode") {
         if (value == "OFF") {
           rstate->setBlendingMacro(BlendingMacro::OFF);
+        } else if (value == "PREMA") {
+          rstate->setBlendingMacro(BlendingMacro::PREMA);
         } else if (value == "ALPHA") {
           rstate->setBlendingMacro(BlendingMacro::ALPHA);
+        } else if (value == "DSTALPHA") {
+          rstate->setBlendingMacro(BlendingMacro::DSTALPHA);
         } else if (value == "ADDITIVE") {
           rstate->setBlendingMacro(BlendingMacro::ADDITIVE);
         } else if (value == "ALPHA_ADDITIVE") {
