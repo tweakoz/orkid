@@ -96,7 +96,7 @@ inline micromesh_connectivity_ptr_t MicroMesh::computeVertexConnectivity() const
       for( size_t itri=0; itri<_tris.size(); itri++ ){
         auto& tri = _tris[itri];
         for( size_t iv=0; iv<tri.size(); iv++ ){
-          int iv0 = tri[iv];
+          int iv0 = tri[(iv+0)%3];
           int iv1 = tri[(iv+1)%3];
           int iv2 = tri[(iv+2)%3];
           conn->_connectivity[iv0].push_back(iv1);
@@ -106,7 +106,7 @@ inline micromesh_connectivity_ptr_t MicroMesh::computeVertexConnectivity() const
       for( size_t iquad=0; iquad<_quads.size(); iquad++ ){
         auto& quad = _quads[iquad];
         for( size_t iv=0; iv<quad.size(); iv++ ){
-          int iv0 = quad[iv];
+          int iv0 = quad[(iv+0)%4];
           int iv1 = quad[(iv+1)%4];
           int iv2 = quad[(iv+2)%4];
           int iv3 = quad[(iv+3)%4];
@@ -209,16 +209,16 @@ void MicroMesh::updateRigidPrim(umesh_rprim_ptr_t prim,
   auto typed_indices = (uint32_t*)idxptr;
 
   for( auto t : _tris ){
-    typed_indices[oidx++] = t[2];
-    typed_indices[oidx++] = t[1];
     typed_indices[oidx++] = t[0];
+    typed_indices[oidx++] = t[1];
+    typed_indices[oidx++] = t[2];
   }
   for( auto q : _quads ){
-    typed_indices[oidx++] = q[2];
+    typed_indices[oidx++] = q[0];
     typed_indices[oidx++] = q[1];
-    typed_indices[oidx++] = q[0];
     typed_indices[oidx++] = q[2];
     typed_indices[oidx++] = q[0];
+    typed_indices[oidx++] = q[2];
     typed_indices[oidx++] = q[3];
   }
   OrkAssert(oidx == num_indices_required);

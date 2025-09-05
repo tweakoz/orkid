@@ -27,14 +27,17 @@ int VulkanVertexBuffer::pipelineBitsForFormat() const {
     case EVtxStreamFormat::V16T16C16:
       rval = 3;
       break;
-    case EVtxStreamFormat::V12T8:
+    case EVtxStreamFormat::V12C4:
       rval = 4;
       break;
-    case EVtxStreamFormat::VU32:
+    case EVtxStreamFormat::V12T8:
       rval = 5;
       break;
-    case EVtxStreamFormat::VU32INST:
+    case EVtxStreamFormat::VU32:
       rval = 6;
+      break;
+    case EVtxStreamFormat::VU32INST:
+      rval = 7;
       break;
     default:
       OrkAssert(false);
@@ -94,6 +97,7 @@ VkGeometryBufferInterface::VkGeometryBufferInterface(vkcontext_rawptr_t ctx)
   _instantiateVertexStreamConfig(EVtxStreamFormat::V12N12B12T16);
   _instantiateVertexStreamConfig(EVtxStreamFormat::V12N12B12T8C4);
   _instantiateVertexStreamConfig(EVtxStreamFormat::V16T16C16);
+  _instantiateVertexStreamConfig(EVtxStreamFormat::V12C4);
   _instantiateVertexStreamConfig(EVtxStreamFormat::V12T8);
   _instantiateVertexStreamConfig(EVtxStreamFormat::VU32);
   _instantiateVertexStreamConfig(EVtxStreamFormat::VU32INST);
@@ -204,6 +208,12 @@ vertex_strconfig_ptr_t VkGeometryBufferInterface::_instantiateVertexStreamConfig
       config->addItem("TEXCOORD0", "vec4", sizeof(fvec4), 16, VK_FORMAT_R32G32B32A32_SFLOAT);
       config->addItem("COLOR0", "vec4", sizeof(fvec4), 32, VK_FORMAT_R32G32B32A32_SFLOAT);
       config->_stride = sizeof(SVtxV16T16C16);
+      break;
+    }
+    case EVtxStreamFormat::V12C4:{
+      config->addItem("POSITION", "vec3", sizeof(fvec3), 0, VK_FORMAT_R32G32B32_SFLOAT);
+      config->addItem("COLOR0", "vec4", sizeof(uint32_t), 12, VK_FORMAT_R8G8B8A8_UNORM);
+      config->_stride = sizeof(VtxV12C4);
       break;
     }
     case EVtxStreamFormat::V12T8:{
@@ -423,11 +433,9 @@ void VkGeometryBufferInterface::UnLockVB(const VertexBufferBase& vtx_buf) {
 
 void VkGeometryBufferInterface::ReleaseVB(VertexBufferBase& vtx_buf) {
   auto vk_impl = vtx_buf._impl.getShared<VulkanVertexBuffer>();
-
   if (vk_impl) {
     vtx_buf._impl = buffer_impl_t();
   }
-  OrkAssert(false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -494,8 +502,6 @@ void VkGeometryBufferInterface::ReleaseIB(IndexBufferBase& idx_buf) {
   if (vk_buf) {
     idx_buf._impl.clear();
   }
-  OrkAssert(false);
-  OrkAssert(false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

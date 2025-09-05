@@ -13,6 +13,12 @@ namespace ork::lev2 {
 
 /////////////////////////////////////////////////////////////////////////
 
+RasterState::RasterState() {
+  _frontface = EFrontFace::COUNTER_CLOCKWISE;
+}
+
+/////////////////////////////////////////////////////////////////////////
+
 rasterstate_ptr_t RasterState::clone() const{
   auto rval = std::make_shared<RasterState>();
   rval->_writemaskZ = _writemaskZ;

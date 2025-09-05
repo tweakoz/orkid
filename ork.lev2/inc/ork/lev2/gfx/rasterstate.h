@@ -15,6 +15,7 @@ namespace ork { namespace lev2 {
 
 struct RasterState {
 
+  RasterState();
   rasterstate_ptr_t clone() const;
 
   void setDepthTest(EDepthTest dt);
@@ -60,7 +61,7 @@ struct RasterState {
 
   EPolygonMode _polygonMode = EPolygonMode::FILL;
   ECullTest _culltest = ECullTest::PASS_FRONT;         
-  EFrontFace _frontface = EFrontFace::COUNTER_CLOCKWISE;
+  EFrontFace _frontface;
 
   EDepthTest _depthtest  = EDepthTest::LESS; 
   fvec4 _blendConstant = fvec4(0,0,0,0);
