@@ -314,7 +314,16 @@ void VkFxInterface::bindParamFloat(const FxShaderParam* hpar, float fA) {
     size_t offset = as_uniblk_item.value()->_offset;
     memcpy(block->_shadow_buffer.data() + offset, &fA, 4);
     block->addDirtyRange(offset, 4);
+    printf("VK: bindParamFloat: param<%s> value<%f> block<%p:%s> offset<%zu> dset<%zu>\n", 
+           hpar->_name.c_str(), fA, 
+           block,
+           block->_orkparamblock ? block->_orkparamblock->_name.c_str() : "unknown", 
+           offset,
+           block->_descriptor_set_id);
     _currentVKPASS->_dirty_uniform_blocks.insert(block);
+  }
+  else{
+    OrkAssert(false);
   }
 }
 

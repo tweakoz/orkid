@@ -321,8 +321,7 @@ fragment_shader ps_forward_test //
     : lib_def                   //
     : lib_fwd
     : std_forward_all {   
-  out_color = vec4(forward_lighting_mono(frg_clr.xyz), 1);
-  //out_color = vec4(forward_lighting_mono(frg_clr.xyz*ModColor.xyz), 1);
+  out_color = vec4(forward_lighting_mono(frg_clr.xyz*ModColor.xyz), 1);
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_forward_test_vtxcolor : vif_PNBC : lib_pbr_vtx : ublk_std_matrices {

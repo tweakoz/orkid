@@ -430,6 +430,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       vk_param->_offset         = uniforms_input_stream->ReadItem<size_t>();
       vk_param->_parent_block   = vk_uniblk.get();
       vk_param->_orkparam       = std::make_shared<FxShaderParam>();
+      vk_param->_orkparam->_name = str_param_identifier;
       vk_param->_orkparam->_impl.set<VkFxShaderUniformBlkItem*>(vk_param.get());
       vk_uniblk->_items_by_name[str_param_identifier] = vk_param;
       vk_uniblk->_items_by_order.push_back(vk_param);

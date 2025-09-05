@@ -391,7 +391,7 @@ void* VkGeometryBufferInterface::LockVB(VertexBufferBase& vtx_buf, int ivbase, i
   }
   void* vertex_memory = nullptr;
 
-  printf("LockVB ivbase<%d> ivcount<%d> isizebytes<%zu> isizebytes_max<%zu> is_static<%d>\n", ivbase, ivcount, isizebytes, isizebytes_max, int(is_static));
+  if(0)printf("LockVB ivbase<%d> ivcount<%d> isizebytes<%zu> isizebytes_max<%zu> is_static<%d>\n", ivbase, ivcount, isizebytes, isizebytes_max, int(is_static));
 
   if (is_static) {
     OrkAssert(ibasebytes == 0); // TODO change api to not require offset for static buffers
