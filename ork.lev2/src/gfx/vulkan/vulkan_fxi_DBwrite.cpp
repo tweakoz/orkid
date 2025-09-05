@@ -111,7 +111,7 @@ void write_stateblocks(
   
   for (auto sb : stateblocks) {
     // Get state block name
-    auto sb_name_str = sb->typedValueForKey<std::string>("sb_name").value();
+    auto sb_name_str = sb->typedValueForKey<std::string>("object_name").value();
     out_stream->AddIndexedString(sb_name_str, chunkwriter);
     
     // Get parent (if inheriting)
