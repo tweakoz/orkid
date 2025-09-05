@@ -921,47 +921,18 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       }
       push_constants->_ranges.reserve(8);
       
-      // Create ranges based on actual uniform set sizes from each shader stage
-      if(0)printf("DEBUG: Creating push constant ranges from stage offsets:\n");
-      for (const auto& [stage_flags, start_offset] : stage_start_offsets) {
-        auto end_offset = stage_end_offsets[stage_flags];
-        size_t range_size = end_offset - start_offset;
-        
-        const char* stage_name = "UNKNOWN";
-        if (stage_flags == VK_SHADER_STAGE_VERTEX_BIT) stage_name = "VERTEX";
-        else if (stage_flags == VK_SHADER_STAGE_FRAGMENT_BIT) stage_name = "FRAGMENT";
-        else if (stage_flags == VK_SHADER_STAGE_GEOMETRY_BIT) stage_name = "GEOMETRY";
-        
-        if(0)printf("  Stage %s: start=%zu, end=%zu, size=%zu\n", 
-               stage_name, start_offset, end_offset, range_size);
-        
-        if (range_size > 0) {
-          auto& range = push_constants->_ranges.emplace_back();
-          initializeVkStruct(range);
-          range.offset = start_offset;
-          range.size = range_size;
-          range.stageFlags = stage_flags;
-          
-          if(0)printf("  -> Created range[%zu]: offset=%u, size=%u, stageFlags=0x%x\n", 
-                 push_constants->_ranges.size()-1, range.offset, range.size, range.stageFlags);
-        }
-      }
-      if(0)printf("DEBUG: Total ranges created: %zu\n", push_constants->_ranges.size());
+      // Create a single shared range for all stages since uniform sets are shared
+      auto& pc_range = push_constants->_ranges.emplace_back();
+      initializeVkStruct(pc_range);
+      pc_range.offset     = 0;
+      pc_range.size       = pc_size;
+      pc_range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+      if(0)printf("Push constant range: SHARED [0-%zu]\n", pc_size);
       
-      // Fallback if no ranges were created (shouldn't happen with push constants)
-      if (push_constants->_ranges.empty()) {
-        auto& pc_range = push_constants->_ranges.emplace_back();
-        initializeVkStruct(pc_range);
-        pc_range.offset     = 0;
-        pc_range.size       = pc_size;
-        pc_range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-        if(0)printf("Push constant range: SHARED [0-%zu]\n", pc_size);
-        
-        // TODO: Handle additional shader stages:
-        // - Geometry shader (VK_SHADER_STAGE_GEOMETRY_BIT)
-        // - Tessellation shaders (VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
-        // - Compute shader (VK_SHADER_STAGE_COMPUTE_BIT)
-      }
+      // TODO: Handle additional shader stages:
+      // - Geometry shader (VK_SHADER_STAGE_GEOMETRY_BIT)
+      // - Tessellation shaders (VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
+      // - Compute shader (VK_SHADER_STAGE_COMPUTE_BIT)
 
       push_constants->_blockSize = pc_size;
       vk_program->_pushdatabuffer.clear();
