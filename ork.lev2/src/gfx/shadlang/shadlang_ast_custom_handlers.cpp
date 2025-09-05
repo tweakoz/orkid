@@ -49,6 +49,29 @@ void ShadLangParser::defineAstHandlers() {
     fn_def->_name = objname->_name;
   });
   ///////////////////////////////////////////////////////////
+  onPost("stateblock_item", [=](match_ptr_t match) {
+    // Similar to pass_item handler - get the sequence directly
+    auto seq = match->followImplAsShared<Sequence>();
+    
+    // stateblock_item: sb_key EQUALS IDENTIFIER SEMICOLON
+    // item[0] = sb_key (selector: KW_BLENDMODE, KW_DEPTHTEST, etc.)
+    // item[1] = EQUALS  
+    // item[2] = IDENTIFIER (value)
+    // item[3] = SEMICOLON
+    
+    auto sb_key_selector = seq->_items[0]->followImplAsShared<OneOf>()->_selected;
+    auto sb_val_match = seq->_items[2];
+    
+    auto sbk = sb_key_selector->asShared<ClassMatch>()->_token->text;
+    auto sbv = sb_val_match->asShared<ClassMatch>()->_token->text;
+    
+    // Create StateBlockItem AST node with property name and value
+    auto ast_node = ast_create<SHAST::StateBlockItem>(match);
+    ast_node->setValueForKey<std::string>("property_name", sbk);
+    ast_node->setValueForKey<std::string>("property_value", sbv);
+    ast_node->_name = sbk + " = " + sbv;
+  });
+  ///////////////////////////////////////////////////////////
   onPost("pass_item", [=](match_ptr_t match) {
     auto seq = match->followImplAsShared<Sequence>();
     match->dump1(0);

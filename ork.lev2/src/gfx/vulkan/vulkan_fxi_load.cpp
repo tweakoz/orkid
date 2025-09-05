@@ -198,7 +198,7 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(
   std::string expanded_text = expandShaderText(parser_name, shadertext);
   
   auto basehasher = DataBlock::createHasher();
-  basehasher->accumulateString("vkfxshader-1.1"); // Bump version for new hashing scheme
+  basehasher->accumulateString("vkfxshader-1.2"); // Bump version for new hashing scheme
   basehasher->accumulateString(expanded_text);
   basehasher->finish();
   uint64_t hashkey               = basehasher->result();

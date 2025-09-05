@@ -253,7 +253,6 @@ DECLARE_STD_AST_CLASS_WPTR(LanguageElement,SamplerType, smp_ptr_t);
 //
 DECLARE_STD_AST_CLASS_WPTR(LanguageElement,TypedIdentifier, tid_ptr_t);
 DECLARE_STD_AST_CLASS(LanguageElement,ObjectName);
-DECLARE_STD_AST_CLASS(LanguageElement,StateBlockItem);
 DECLARE_STD_AST_CLASS(LanguageElement,AssignmentStatementVarRef);
 DECLARE_STD_AST_CLASS(LanguageElement,AssignmentStatementVarDecl);
 DECLARE_STD_AST_CLASS(LanguageElement,Expression);
@@ -363,6 +362,8 @@ DECLARE_STD_AST_CLASS_WPTR(Translatable,FunctionDef2, fndef2_ptr_t);
 DECLARE_STD_AST_CLASS_WPTR(Translatable,UniformSet,uniset_ptr_t);
 DECLARE_STD_AST_CLASS_WPTR(Translatable,SamplerSet,samplerset_ptr_t);
 DECLARE_STD_AST_CLASS(Translatable,UniformBlk);
+//
+DECLARE_STD_AST_CLASS(AstNode,StateBlockItem);
 //
 DECLARE_STD_AST_CLASS(AstNode,Pass);
 DECLARE_STD_AST_CLASS(AstNode,VtxFrgPass);

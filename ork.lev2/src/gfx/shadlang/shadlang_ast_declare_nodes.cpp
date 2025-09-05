@@ -166,12 +166,13 @@ void ShadLangParser::declareAstNodes() {
   DECLARE_STD_AST_NODE(VtxFrgPass);
   DECLARE_STD_AST_NODE(FxConfigRef);
   ///////////////////////////////////////////////////////////
+  DECLARE_STD_AST_NODE(StateBlockItem);
+  ///////////////////////////////////////////////////////////
   DECLARE_STD_AST_NODE(VertexInterface);
   DECLARE_STD_AST_NODE(FragmentInterface);
   DECLARE_STD_AST_NODE(GeometryInterface);
   DECLARE_STD_AST_NODE(ComputeInterface);
   DECLARE_STD_AST_NODE(StateBlock);
-  DECLARE_STD_AST_NODE(StateBlockItem);
   DECLARE_STD_AST_NODE(FxConfigDecl);
   DECLARE_STD_AST_NODE(SamplerSet);
   DECLARE_STD_AST_NODE(UniformSet);

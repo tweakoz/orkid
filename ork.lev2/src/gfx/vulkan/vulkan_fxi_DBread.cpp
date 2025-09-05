@@ -129,6 +129,154 @@ read_interface_inheritances(
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void read_stateblocks(
+    VkFxShaderFile* vulkan_shaderfile,
+    chunkfile::InputStream* inp_stream,
+    chunkfile::Reader& chunkreader) {
+  
+  auto str_stateblocks = inp_stream->ReadIndexedString(chunkreader);
+  OrkAssert(str_stateblocks == "stateblocks");
+  
+  size_t num_stateblocks = inp_stream->ReadItem<size_t>();
+  
+  // First pass: read all state block definitions
+  struct StateBlockData {
+    std::string name;
+    std::string parent_name;
+    std::map<std::string, std::string> items;
+  };
+  std::vector<StateBlockData> stateblock_data;
+  
+  for (size_t i = 0; i < num_stateblocks; i++) {
+    StateBlockData sb_data;
+    
+    // Read state block name
+    sb_data.name = inp_stream->ReadIndexedString(chunkreader);
+    
+    // Read parent name (for inheritance)
+    sb_data.parent_name = inp_stream->ReadIndexedString(chunkreader);
+    
+    // Read state block items
+    size_t num_items = inp_stream->ReadItem<size_t>();
+    
+    for (size_t j = 0; j < num_items; j++) {
+      auto key = inp_stream->ReadIndexedString(chunkreader);
+      auto value = inp_stream->ReadIndexedString(chunkreader);
+      sb_data.items[key] = value;
+    }
+    
+    stateblock_data.push_back(sb_data);
+  }
+  
+  // Helper to resolve state block with inheritance
+  std::function<rasterstate_ptr_t(const std::string&)> resolve_stateblock;
+  resolve_stateblock = [&](const std::string& name) -> rasterstate_ptr_t {
+    // Check if already resolved
+    auto it = vulkan_shaderfile->_stateblock_rasterstates.find(name);
+    if (it != vulkan_shaderfile->_stateblock_rasterstates.end()) {
+      return it->second;
+    }
+    
+    // Find the state block data
+    auto data_it = std::find_if(stateblock_data.begin(), stateblock_data.end(),
+                                 [&](const StateBlockData& d) { return d.name == name; });
+    
+    if (data_it == stateblock_data.end()) {
+      // Special case for "default" base state block
+      if (name == "default") {
+        auto rstate = std::make_shared<RasterState>();
+        // Set engine defaults
+        rstate->setDepthTest(EDepthTest::LESS);
+        rstate->setCullTest(ECullTest::PASS_FRONT);
+        rstate->setWriteMaskZ(true);
+        rstate->setWriteMaskRGB(true);
+        rstate->setWriteMaskA(true);
+        rstate->setBlendingMacro(BlendingMacro::OFF);
+        vulkan_shaderfile->_stateblock_rasterstates[name] = rstate;
+        return rstate;
+      }
+      return nullptr;
+    }
+    
+    // Start with parent state or default
+    rasterstate_ptr_t rstate;
+    if (!data_it->parent_name.empty()) {
+      auto parent = resolve_stateblock(data_it->parent_name);
+      rstate = parent ? parent->clone() : std::make_shared<RasterState>();
+    } else {
+      rstate = std::make_shared<RasterState>();
+    }
+    
+    // Apply this state block's settings
+    for (const auto& [key, value] : data_it->items) {
+      if (key == "BlendMode") {
+        if (value == "OFF") {
+          rstate->setBlendingMacro(BlendingMacro::OFF);
+        } else if (value == "ALPHA") {
+          rstate->setBlendingMacro(BlendingMacro::ALPHA);
+        } else if (value == "ADDITIVE") {
+          rstate->setBlendingMacro(BlendingMacro::ADDITIVE);
+        } else if (value == "ALPHA_ADDITIVE") {
+          rstate->setBlendingMacro(BlendingMacro::ALPHA_ADDITIVE);
+        } else if (value == "SUBTRACTIVE") {
+          rstate->setBlendingMacro(BlendingMacro::SUBTRACTIVE);
+        } else if (value == "ALPHA_SUBTRACTIVE") {
+          rstate->setBlendingMacro(BlendingMacro::ALPHA_SUBTRACTIVE);
+        } else if (value == "MODULATE") {
+          rstate->setBlendingMacro(BlendingMacro::MODULATE);
+        }
+      }
+      else if (key == "DepthTest") {
+        if (value == "OFF") {
+          rstate->setDepthTest(EDepthTest::OFF);
+        } else if (value == "LESS") {
+          rstate->setDepthTest(EDepthTest::LESS);
+        } else if (value == "LEQUALS") {
+          rstate->setDepthTest(EDepthTest::LEQUALS);
+        } else if (value == "GREATER") {
+          rstate->setDepthTest(EDepthTest::GREATER);
+        } else if (value == "GEQUALS") {
+          rstate->setDepthTest(EDepthTest::GEQUALS);
+        } else if (value == "EQUALS") {
+          rstate->setDepthTest(EDepthTest::EQUALS);
+        } else if (value == "ALWAYS") {
+          rstate->setDepthTest(EDepthTest::ALWAYS);
+        }
+      }
+      else if (key == "CullTest") {
+        if (value == "OFF") {
+          rstate->setCullTest(ECullTest::OFF);
+        } else if (value == "PASS_FRONT") {
+          rstate->setCullTest(ECullTest::PASS_FRONT);
+        } else if (value == "PASS_BACK") {
+          rstate->setCullTest(ECullTest::PASS_BACK);
+        }
+      }
+      else if (key == "DepthMask") {
+        rstate->setWriteMaskZ(value == "ON" || value == "true");
+      }
+      else if (key == "ColorMask") {
+        // Could parse RGB/A separately if needed
+        bool enabled = (value == "ON" || value == "true");
+        rstate->setWriteMaskRGB(enabled);
+        rstate->setWriteMaskA(enabled);
+      }
+      // Add more state items as needed
+    }
+    
+    // Cache and return
+    vulkan_shaderfile->_stateblock_rasterstates[name] = rstate;
+    return rstate;
+  };
+  
+  // Second pass: resolve all state blocks (handles inheritance)
+  for (const auto& sb_data : stateblock_data) {
+    resolve_stateblock(sb_data.name);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock, FxShader* ork_shader) {
 
   ////////////////////////////////////////////////////////
@@ -621,6 +769,16 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       ////////////////////////////////////////////////////////////
       auto sblk_name = tecniq_input_stream->ReadIndexedString(chunkreader);
       //printf("stateblock name<%s>\n", sblk_name.c_str());
+      
+      // PRE-RESOLVE the state block to a rasterstate at load time!
+      auto it = vulkan_shaderfile->_stateblock_rasterstates.find(sblk_name);
+      if (it != vulkan_shaderfile->_stateblock_rasterstates.end()) {
+        vk_pass->_stateblock_rasterstate = it->second;  // Store pre-resolved rasterstate
+      } else {
+        printf("Warning: State block '%s' not found for pass\n", sblk_name.c_str());
+        // Use a default rasterstate or nullptr
+        vk_pass->_stateblock_rasterstate = nullptr;
+      }
 
       ////////////////////////////////////////////////////////////
 
@@ -890,6 +1048,9 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     return vk_tek;
   };
 
+  // Read state blocks before techniques (so they can be pre-resolved)
+  read_stateblocks(vulkan_shaderfile.get(), tecniq_input_stream, chunkreader);
+  
   for (size_t i = 0; i < num_techniques; i++) {
     auto tecnik = read_technique_from_stream();
   }

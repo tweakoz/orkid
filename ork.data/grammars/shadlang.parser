@@ -572,7 +572,7 @@ ComputeInterface <|[
 sb_key <| sel{ KW_BLENDMODE KW_CULLTEST KW_DEPTHTEST KW_DEPTHMASK } |>
 
 StateBlockItem <|[
-    [ sb_key EQUALS IDENTIFIER SEMICOLON ] : "stateblock_item"
+    sb_key EQUALS IDENTIFIER SEMICOLON
 ]|>
 
 StateBlock <|[
@@ -580,7 +580,9 @@ StateBlock <|[
   [ IDENTIFIER ] : "sb_name"
   zom{ InheritListItem } : "sb_dependencies"
   L_CURLY
-  zom{ StateBlockItem }
+  zom{ 
+    StateBlockItem : "stateblock_item"
+  }
   R_CURLY
 ]|>
 

@@ -96,6 +96,53 @@ void writeInterfaces( chunkfile::OutputStream* out_stream,
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void write_stateblocks(
+    chunkfile::OutputStream* out_stream,
+    chunkfile::Writer& chunkwriter,
+    shadlang::SHAST::translationunit_ptr_t transu) {
+    
+  using namespace shadlang::SHAST;
+  
+  // Collect all StateBlock nodes from the AST
+  auto stateblocks = AstNode::collectNodesOfType<StateBlock>(transu);
+  
+  out_stream->AddIndexedString("stateblocks", chunkwriter);
+  out_stream->AddItem<size_t>(stateblocks.size());
+  
+  for (auto sb : stateblocks) {
+    // Get state block name
+    auto sb_name_str = sb->typedValueForKey<std::string>("sb_name").value();
+    out_stream->AddIndexedString(sb_name_str, chunkwriter);
+    
+    // Get parent (if inheriting)
+    std::string parent_name = "";
+    auto inherit_items = AstNode::collectNodesOfType<InheritListItem>(sb);
+    if (!inherit_items.empty()) {
+      // First inheritance item is the parent state block
+      auto parent_item = inherit_items[0];
+      if (auto parent_id = parent_item->template findFirstChildOfType<SemaIdentifier>()) {
+        parent_name = parent_id->typedValueForKey<std::string>("identifier_name").value();
+      }
+    }
+    out_stream->AddIndexedString(parent_name, chunkwriter);
+    
+    // Collect all StateBlockItems
+    auto items = AstNode::collectNodesOfType<StateBlockItem>(sb);
+    out_stream->AddItem<size_t>(items.size());
+    
+    for (auto item : items) {
+      // Get property name and value from StateBlockItem's varmap
+      auto prop_name = item->typedValueForKey<std::string>("property_name").value();
+      auto prop_value = item->typedValueForKey<std::string>("property_value").value();
+      
+      out_stream->AddIndexedString(prop_name, chunkwriter);
+      out_stream->AddIndexedString(prop_value, chunkwriter);
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename T>
 void writeInterfaceInheritances( chunkfile::OutputStream* out_stream,
                                  chunkfile::Writer& chunkwriter, 
@@ -394,6 +441,12 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
     SPC->processShader(cshader); //
     write_shader_to_stream(cshader, "compute");
   }
+
+  //////////////////
+  // state blocks
+  //////////////////
+
+  write_stateblocks(tecniq_stream, chunkwriter, transunit);
 
   //////////////////
   // techniques (always VTG for now)

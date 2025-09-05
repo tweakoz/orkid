@@ -126,6 +126,7 @@ struct VkFxShaderFile {
   std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
   std::unordered_map<std::string, vkfxsuniblk_ptr_t> _vk_uniformblks;
   std::unordered_map<std::string, vkvertexinterface_ptr_t> _vk_vtxinterfaces;
+  std::unordered_map<std::string, rasterstate_ptr_t> _stateblock_rasterstates; // Registry of pre-built rasterstates
   std::unordered_map<std::string, vkgeometryinterface_ptr_t> _vk_geointerfaces;
 };
 ///////////////////////////////////////////////////////////////////////////////
@@ -231,6 +232,7 @@ struct VkFxShaderPass {
   vkfxsprg_ptr_t _vk_program;
   vk_merged_resources_ptr_t _merged_resources;
   std::set<VkFxShaderUniformBlk*> _dirty_uniform_blocks;
+  rasterstate_ptr_t _stateblock_rasterstate; // Pre-resolved rasterstate from state block
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VkFxShaderTechnique {

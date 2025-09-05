@@ -35,11 +35,19 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
   ////////////////////////////////////////////////////
 
   OrkAssert(_current_rasterstate != nullptr);
+  rasterstate_ptr_t effective_rasterstate = _current_rasterstate;
+
+  // Use pre-resolved state block rasterstate if present
+  if (_currentVKPASS && _currentVKPASS->_stateblock_rasterstate) {
+    // State block was pre-resolved at shader load time - just use it!
+    effective_rasterstate = _currentVKPASS->_stateblock_rasterstate;
+  }
+
   vkrasterstate_ptr_t vkrstate;
-  if (auto try_vkrs = _current_rasterstate->_impl.tryAsShared<VkRasterState>()) {
+  if (auto try_vkrs = effective_rasterstate->_impl.tryAsShared<VkRasterState>()) {
     vkrstate = try_vkrs.value();
   } else {
-    vkrstate = _current_rasterstate->_impl.makeShared<VkRasterState>(_current_rasterstate);
+    vkrstate = effective_rasterstate->_impl.makeShared<VkRasterState>(effective_rasterstate);
   }
 
   ////////////////////////////////////////////////////
