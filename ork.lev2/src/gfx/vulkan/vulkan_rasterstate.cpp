@@ -77,11 +77,11 @@ VkRasterState::VkRasterState(rasterstate_ptr_t rstate){
       break;
     }
     case ECullTest::PASS_FRONT: {
-      _VKRSCI.cullMode = VK_CULL_MODE_BACK_BIT;
+      _VKRSCI.cullMode = VK_CULL_MODE_FRONT_BIT;
       break;
     }
     case ECullTest::PASS_BACK: {
-      _VKRSCI.cullMode = VK_CULL_MODE_FRONT_BIT;
+      _VKRSCI.cullMode = VK_CULL_MODE_BACK_BIT;
       break;
     }
   }
