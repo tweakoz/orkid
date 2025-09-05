@@ -217,6 +217,7 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
   // descriptor image info
   /////////////////////////////////////
 
+  // Temporarily set a default sampler - will be updated by ApplySamplingMode
   vktex->_vksampler                     = _contextVK->_sampler_per_maxlod[num_mips];
   vktex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
   vktex->_vkdescriptor_info.imageView   = vktex->_imgobj->_vkimageview;
@@ -237,6 +238,17 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
   ptex->_texFormat = dst_format;  // Use converted format
   ptex->_num_mips = num_mips;
   ptex->_dirty = false;
+  
+  /////////////////////////////////////
+  // Set default sampling mode and apply it (matching GL behavior)
+  /////////////////////////////////////
+  
+  // Set default sampling mode based on mip count (same as GL)
+  if (num_mips > 3) {
+    ptex->TexSamplingMode().presetTrilinearWrap();
+  }
+  // Apply the sampling mode to create/update the sampler
+  this->ApplySamplingMode(ptex.get());
 
   logchan_txi_loadreq->log("=== END _createFromLoadReq<%p:%s> - texture loaded successfully ===", 
                            (void*)ptex.get(), ptex->_debugName.c_str());

@@ -395,6 +395,12 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
   _contextVK->endRecordCommandBuffer(transfer->_command_buffer);
   _contextVK->enqueueDeferredOneShotCommand(transfer->_command_buffer);
 
+  // Apply sampling mode based on mip count
+  if (max_levels > 3) {
+    array->_tex->TexSamplingMode().presetTrilinearWrap();
+  }
+  this->ApplySamplingMode(array->_tex.get());
+
   array->_tex->_dirty = false;
   array->_dirty_slices.clear();
   array->_free_slices.clear();
@@ -492,6 +498,13 @@ void VkTextureInterface::initTextureArray2D(TextureArray* texture_array) {
   vktex->_vksampler                     = _contextVK->_sampler_base;
 
   texture_array->_tex->_impl = vktex;
+  
+  // Apply sampling mode based on mip count
+  if (num_levels > 3) {
+    texture_array->_tex->TexSamplingMode().presetTrilinearWrap();
+  }
+  this->ApplySamplingMode(texture_array->_tex.get());
+  
   texture_array->_isDirty    = false;
 
   if(DEBUG_TEXARRAY2D) {

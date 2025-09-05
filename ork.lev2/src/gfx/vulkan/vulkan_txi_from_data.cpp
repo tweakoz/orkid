@@ -395,6 +395,12 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   _contextVK->enqueueDeferredOneShotCommand(transfer->_command_buffer);
 
   /////////////////////////////////////
+  // Apply sampling mode (default or user-specified)
+  /////////////////////////////////////
+  
+  this->ApplySamplingMode(ptex);
+
+  /////////////////////////////////////
 
   ptex->_dirty = false;
 }

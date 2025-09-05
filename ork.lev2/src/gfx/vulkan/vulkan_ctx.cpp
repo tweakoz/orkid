@@ -240,6 +240,9 @@ void VkContext::_initVulkanCommon() {
     _sampler_per_maxlod[maxlod] = std::make_shared<VulkanSamplerObject>(this, vksci);
   }
 
+  // Initialize sampler cache
+  _sampler_cache.clear();
+
   // create descriptor pool
   std::vector<VkDescriptorPoolSize> poolSizes;
 
@@ -1151,6 +1154,145 @@ void VkContext::_doResizeMainSurface(int iw, int ih) {
       main_rtg->Resize(iw, ih);
     }
   });
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+// Helper functions for texture sampling mode conversion
+namespace {
+
+VkFilter orkidMagFilterToVulkan(ETextureMagnifyFilterMode mode) {
+  switch(mode) {
+    case ETextureMagnifyFilterMode::NEAREST:
+      return VK_FILTER_NEAREST;
+    case ETextureMagnifyFilterMode::LINEAR:
+      return VK_FILTER_LINEAR;
+    default:
+      return VK_FILTER_LINEAR;
+  }
+}
+
+VkFilter orkidMinFilterToVulkan(ETextureMinifyFilterMode mode) {
+  switch(mode) {
+    case ETextureMinifyFilterMode::NEAREST:
+    case ETextureMinifyFilterMode::NEAREST_MIPMAP_NEAREST:
+    case ETextureMinifyFilterMode::NEAREST_MIPMAP_LINEAR:
+      return VK_FILTER_NEAREST;
+    case ETextureMinifyFilterMode::LINEAR:
+    case ETextureMinifyFilterMode::LINEAR_MIPMAP_LINEAR:
+    case ETextureMinifyFilterMode::LINEAR_MIPMAP_NEAREST:
+      return VK_FILTER_LINEAR;
+    default:
+      return VK_FILTER_LINEAR;
+  }
+}
+
+VkSamplerMipmapMode orkidMipModeToVulkan(ETextureMinifyFilterMode mode) {
+  switch(mode) {
+    case ETextureMinifyFilterMode::NEAREST:
+    case ETextureMinifyFilterMode::LINEAR:
+      return VK_SAMPLER_MIPMAP_MODE_NEAREST; // No mipmapping
+    case ETextureMinifyFilterMode::NEAREST_MIPMAP_NEAREST:
+    case ETextureMinifyFilterMode::LINEAR_MIPMAP_NEAREST:
+      return VK_SAMPLER_MIPMAP_MODE_NEAREST;
+    case ETextureMinifyFilterMode::NEAREST_MIPMAP_LINEAR:
+    case ETextureMinifyFilterMode::LINEAR_MIPMAP_LINEAR:
+      return VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    default:
+      return VK_SAMPLER_MIPMAP_MODE_LINEAR;
+  }
+}
+
+VkSamplerAddressMode orkidWrapToVulkan(TextureAddressMode mode) {
+  switch(mode) {
+    case TextureAddressMode::WRAP:
+      return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    case TextureAddressMode::CLAMP:
+      return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    default:
+      return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  }
+}
+
+uint64_t hashSamplingMode(const TextureSamplingModeData& mode) {
+  boost::Crc64 hasher;
+  hasher.init();
+  hasher.accumulateItem(mode._texFiltModeMag);
+  hasher.accumulateItem(mode._texFiltModeMin);
+  hasher.accumulateItem(mode._texAddrModeS);
+  hasher.accumulateItem(mode._texAddrModeT);
+  hasher.accumulateItem(mode._texAddrModeR);
+  hasher.accumulateItem(mode._maxAnisotropy);
+  hasher.finish();
+  return hasher.result();
+}
+
+} // namespace
+
+vksampler_obj_ptr_t VkContext::_getOrCreateSampler(const TextureSamplingModeData& sampling_mode) {
+  // Calculate hash
+  SamplerCacheKey key;
+  key._hash = hashSamplingMode(sampling_mode);
+  
+  // Check cache
+  {
+    std::lock_guard<std::mutex> lock(_sampler_cache_mutex);
+    auto it = _sampler_cache.find(key);
+    if (it != _sampler_cache.end()) {
+      return it->second;
+    }
+  }
+  
+  // Create new sampler
+  auto sci = std::make_shared<VkSamplerCreateInfo>();
+  initializeVkStruct(*sci, VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
+  
+  // Filter modes
+  sci->magFilter = orkidMagFilterToVulkan(sampling_mode._texFiltModeMag);
+  sci->minFilter = orkidMinFilterToVulkan(sampling_mode._texFiltModeMin);
+  sci->mipmapMode = orkidMipModeToVulkan(sampling_mode._texFiltModeMin);
+  
+  // Address modes
+  sci->addressModeU = orkidWrapToVulkan(sampling_mode._texAddrModeS);
+  sci->addressModeV = orkidWrapToVulkan(sampling_mode._texAddrModeT);
+  sci->addressModeW = orkidWrapToVulkan(sampling_mode._texAddrModeR);
+  
+  // Anisotropy
+  float max_aniso = sampling_mode._maxAnisotropy;
+  if (max_aniso > 1.0f) {
+    sci->anisotropyEnable = VK_TRUE;
+    sci->maxAnisotropy = max_aniso;
+  } else {
+    sci->anisotropyEnable = VK_FALSE;
+    sci->maxAnisotropy = 1.0f;
+  }
+  
+  // LOD settings
+  sci->mipLodBias = 0.0f;
+  sci->minLod = 0.0f;
+  sci->maxLod = VK_LOD_CLAMP_NONE; // Or texture's max mip level
+  
+  // Border color for CLAMP_TO_BORDER mode
+  // Default to opaque black (most common)
+  sci->borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+  
+  // Comparison for depth textures
+  sci->compareEnable = VK_FALSE;
+  sci->compareOp = VK_COMPARE_OP_ALWAYS;
+  
+  // Unnormalized coordinates (false for normal textures)
+  sci->unnormalizedCoordinates = VK_FALSE;
+  
+  // Create sampler object
+  auto sampler = std::make_shared<VulkanSamplerObject>(this, sci);
+  
+  // Cache it
+  {
+    std::lock_guard<std::mutex> lock(_sampler_cache_mutex);
+    _sampler_cache[key] = sampler;
+  }
+  
+  return sampler;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

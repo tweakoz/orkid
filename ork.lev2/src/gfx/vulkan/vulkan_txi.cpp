@@ -44,6 +44,46 @@ opq::mainSerialQueue()->enqueue(lamb);
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkTextureInterface::ApplySamplingMode(Texture* ptex) {
+  if (!ptex) return;
+  
+  // Get or create VulkanTextureObject
+  vktexobj_ptr_t vktex;
+  if (auto as_vktext = ptex->_impl.tryAsShared<VulkanTextureObject>()) {
+    vktex = as_vktext.value();
+  } else {
+    // Texture not initialized yet - store sampling mode for later
+    // This will be applied when texture is actually created
+    return;
+  }
+  
+  // Get the sampling mode
+  const auto& sampling_mode = ptex->TexSamplingMode();
+  
+  // Get or create appropriate sampler
+  auto new_sampler = _contextVK->_getOrCreateSampler(sampling_mode);
+  
+  // Update texture object
+  vktex->_vksampler = new_sampler;
+  
+  // Update descriptor info for binding
+  if (vktex->_imgobj && vktex->_imgobj->_vkimageview) {
+    vktex->_vkdescriptor_info.sampler = new_sampler->_vksampler;
+    vktex->_vkdescriptor_info.imageView = vktex->_imgobj->_vkimageview;
+    vktex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  }
+  
+  // Special handling for depth textures
+  if (ptex->_isDepthTexture) {
+    // Might need to enable compare mode for shadow sampling
+    // This would require creating a different sampler with compareEnable = VK_TRUE
+  }
+  
+  // Debug logging
+  if (0) {
+    printf("VkTXI::ApplySamplingMode tex<%s> sampler<%p>\n", 
+           ptex->_debugName.c_str(), 
+           new_sampler.get());
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -354,6 +394,15 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
   ptex->_depth     = 1;
   ptex->_num_mips  = num_levels;
   // ptex->_target    = ETEXTARGET_2D;
+
+  /////////////////////////////////////
+  // Set default sampling mode and apply it
+  /////////////////////////////////////
+  
+  if (num_levels > 3) {
+    ptex->TexSamplingMode().presetTrilinearWrap();
+  }
+  this->ApplySamplingMode(ptex);
 
   /////////////////////////////////////
 

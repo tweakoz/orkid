@@ -580,6 +580,26 @@ public:
   std::vector<vksampler_obj_ptr_t> _sampler_per_maxlod;
   VkDescriptorPool _vkDescriptorPool;
   
+  // Sampler cache for texture sampling modes
+  struct SamplerCacheKey {
+    uint64_t _hash = 0;
+    
+    bool operator==(const SamplerCacheKey& other) const {
+      return _hash == other._hash;
+    }
+  };
+  
+  struct SamplerCacheKeyHasher {
+    size_t operator()(const SamplerCacheKey& key) const {
+      return key._hash;
+    }
+  };
+  
+  std::unordered_map<SamplerCacheKey, vksampler_obj_ptr_t, SamplerCacheKeyHasher> _sampler_cache;
+  std::mutex _sampler_cache_mutex;
+  
+  vksampler_obj_ptr_t _getOrCreateSampler(const TextureSamplingModeData& sampling_mode);
+  
   // Default texture implementations for unloaded textures
   vktexobj_ptr_t _defaultTexImpl2D;
   vktexobj_ptr_t _defaultTexImplCube;
