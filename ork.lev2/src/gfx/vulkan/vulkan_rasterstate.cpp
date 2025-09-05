@@ -108,11 +108,16 @@ VkRasterState::VkRasterState(rasterstate_ptr_t rstate){
   hasher.accumulateItem(rstate->_writemaskZ);
 
 
-  _VKCBATT.colorWriteMask = rstate->_writemaskRGB //
-                          ? VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT // 
-                          : 0;
+  _VKCBATT.colorWriteMask = 0;
+  if(rstate->_writemaskRGB) {
+    _VKCBATT.colorWriteMask |= VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT;
+  }
+  if(rstate->_writemaskA) {
+    _VKCBATT.colorWriteMask |= VK_COLOR_COMPONENT_A_BIT;
+  }
   
   hasher.accumulateItem(rstate->_writemaskRGB);
+  hasher.accumulateItem(rstate->_writemaskA);
 
   _VKCBATT.blendEnable = rstate->_blendEnable ? VK_TRUE : VK_FALSE;
 
@@ -226,14 +231,14 @@ VkRasterState::VkRasterState(rasterstate_ptr_t rstate){
     auto it = unlocked.find(hashed);
     if( it == unlocked.end() ){
       _pipeline_bits = unlocked.size();
-      //printf( "VkRasterState::VkRasterState hashed<%016llx> NEW<%d>\n", hashed, _pipeline_bits );
+      printf( "VkRasterState::VkRasterState hashed<%016llx> NEW<%d>\n", hashed, _pipeline_bits );
       unlocked[hashed] = _pipeline_bits;
       OrkAssert(_pipeline_bits<256);
       OrkAssert(_pipeline_bits>=0);
     }
     else{
       _pipeline_bits = it->second;
-      //printf( "VkRasterState::VkRasterState hashed<%016llx> PREV<%d>\n", hashed, _pipeline_bits );
+      printf( "VkRasterState::VkRasterState hashed<%016llx> PREV<%d>\n", hashed, _pipeline_bits );
       OrkAssert(_pipeline_bits<256);
       OrkAssert(_pipeline_bits>=0);
     }

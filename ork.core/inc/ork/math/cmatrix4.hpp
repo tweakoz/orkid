@@ -1077,7 +1077,9 @@ void Matrix44<T>::perspective(T fovy, T aspect, T fnear, T ffar) { //
   if(fnear<0.001f) {
     fnear = 0.001f; // prevent division by zero
   }
-  OrkAssert(ffar > fnear);
+    if(ffar<=fnear){
+        ffar = fnear+10.0f;
+    }
 
   Matrix44<T> out;
   out   = glm::perspectiveRH(fovy, aspect, fnear, ffar);
