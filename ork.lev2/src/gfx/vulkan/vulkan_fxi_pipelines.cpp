@@ -577,9 +577,10 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
   uint64_t descset_bits = crc64.result();
   // printf( "dscache<%p> descset_bits<%016llx>\n", this, descset_bits );
   auto it = _vkDescriptorSetByHash.find(descset_bits);
-
   vkdescriptorset_ptr_t descset_ptr = nullptr;
-  if (it == _vkDescriptorSetByHash.end()) {
+  if (it != _vkDescriptorSetByHash.end()) {
+    descset_ptr = it->second;
+  } else {
     // make new descriptor set
     static int descset_count             = 0;
     descset_ptr                          = std::make_shared<VulkanDescriptorSet>();
@@ -635,122 +636,120 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
         break;
     }
     OrkAssert(VK_SUCCESS == OK);
-
-    // Update descriptor set with merged resource bindings
-    std::vector<VkWriteDescriptorSet> descriptor_writes;
-    std::vector<VkDescriptorBufferInfo> buffer_infos; // Keep alive during vkUpdateDescriptorSets
+  } 
+  // Update descriptor set with merged resource bindings
+  std::vector<VkWriteDescriptorSet> descriptor_writes;
+  std::vector<VkDescriptorBufferInfo> buffer_infos; // Keep alive during vkUpdateDescriptorSets
+  
+  // Reserve space to prevent reallocation
+  size_t estimated_buffer_count = 128; // Estimate max UBOs we might have
+  buffer_infos.reserve(estimated_buffer_count);
+  
+  // First, handle textures/samplers
+  for (auto it : program->_merged_resource_bindings) {
+    auto param = it.first;
+    auto [set_id, binding_id] = it.second;
+    auto vk_tex = program->_textures_by_orkparam[param];
+    auto& desc_info = vk_tex->_vkdescriptor_info;
+    OrkAssert(desc_info.imageView != VK_NULL_HANDLE);
     
-    // Reserve space to prevent reallocation
-    size_t estimated_buffer_count = 128; // Estimate max UBOs we might have
-    buffer_infos.reserve(estimated_buffer_count);
-    
-    // First, handle textures/samplers
-    for (auto it : program->_merged_resource_bindings) {
-      auto param = it.first;
-      auto [set_id, binding_id] = it.second;
-      auto vk_tex = program->_textures_by_orkparam[param];
-      auto& desc_info = vk_tex->_vkdescriptor_info;
-      OrkAssert(desc_info.imageView != VK_NULL_HANDLE);
-      
-      VkWriteDescriptorSet DWRITE = {};
-      initializeVkStruct(DWRITE, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-      DWRITE.dstSet          = descset_ptr->_vkdescset;
-      DWRITE.dstBinding      = binding_id; // Use merged resource binding ID
-      DWRITE.descriptorCount = 1;
-      DWRITE.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-      DWRITE.pImageInfo      = &desc_info;
+    VkWriteDescriptorSet DWRITE = {};
+    initializeVkStruct(DWRITE, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+    DWRITE.dstSet          = descset_ptr->_vkdescset;
+    DWRITE.dstBinding      = binding_id; // Use merged resource binding ID
+    DWRITE.descriptorCount = 1;
+    DWRITE.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    DWRITE.pImageInfo      = &desc_info;
 
-      logchan_vkpip->log("update descset (merged): set<%d> bidx<%d> tex<%p> param<%s>", 
-                         set_id, binding_id, (void*)vk_tex.get(), param->_name.c_str());
+    logchan_vkpip->log("update descset (merged): set<%d> bidx<%d> tex<%p> param<%s>", 
+                       set_id, binding_id, (void*)vk_tex.get(), param->_name.c_str());
 
-      descriptor_writes.push_back(DWRITE);
-    }
+    descriptor_writes.push_back(DWRITE);
+  }
+  
+  // Now handle UBOs from merged resources  
+  if(1)logchan_vkpip->log("UBO_DESC_CHECK: _currentVKPASS<%p>", (void*)_ctxVK->_fxi->_currentVKPASS.get());
+  if (_ctxVK->_fxi->_currentVKPASS) {
+    if(1)logchan_vkpip->log("UBO_DESC_CHECK: _merged_resources<%p>", (void*)_ctxVK->_fxi->_currentVKPASS->_merged_resources.get());
+  }
+  if (_ctxVK->_fxi->_currentVKPASS && _ctxVK->_fxi->_currentVKPASS->_merged_resources) {
+    auto merged_resources = _ctxVK->_fxi->_currentVKPASS->_merged_resources;
+    auto vk_program = _ctxVK->_fxi->_currentVKPASS->_vk_program;
+    if(1)logchan_vkpip->log("UBO_DESC_CHECK: Found merged_resources with %zu descriptor sets", merged_resources->descriptor_sets.size());
     
-    // Now handle UBOs from merged resources  
-    if(0)printf("UBO_DESC_CHECK: _currentVKPASS<%p>\n", (void*)_ctxVK->_fxi->_currentVKPASS.get());
-    if (_ctxVK->_fxi->_currentVKPASS) {
-      if(0)printf("UBO_DESC_CHECK: _merged_resources<%p>\n", (void*)_ctxVK->_fxi->_currentVKPASS->_merged_resources.get());
-    }
-    if (_ctxVK->_fxi->_currentVKPASS && _ctxVK->_fxi->_currentVKPASS->_merged_resources) {
-      auto merged_resources = _ctxVK->_fxi->_currentVKPASS->_merged_resources;
-      auto vk_program = _ctxVK->_fxi->_currentVKPASS->_vk_program;
-      if(0)printf("UBO_DESC_CHECK: Found merged_resources with %zu descriptor sets\n", merged_resources->descriptor_sets.size());
-      
-      for (const auto& [set_id, sources] : merged_resources->descriptor_sets) {
-        for (const auto& source : sources) {
-          for (const auto& binding : source->bindings) {
-            if(0)printf("UBO_DESC_CHECK: Binding<%s> type<%d> UniformBlock=%d\n",
-                   binding->name.c_str(),
-                   (int)binding->type,
-                   (int)VkMergedResourceBinding::Type::UniformBlock);
-            if (binding->type == VkMergedResourceBinding::Type::UniformBlock) {
-              // Find the corresponding VkFxShaderUniformBlk
-              VkFxShaderUniformBlk* ubo_block = nullptr;
+    for (const auto& [set_id, sources] : merged_resources->descriptor_sets) {
+      for (const auto& source : sources) {
+        for (const auto& binding : source->bindings) {
+          if(1)logchan_vkpip->log("UBO_DESC_CHECK: Binding<%s> type<%d> UniformBlock=%d",
+                 binding->name.c_str(),
+                 (int)binding->type,
+                 (int)VkMergedResourceBinding::Type::UniformBlock);
+          if (binding->type == VkMergedResourceBinding::Type::UniformBlock) {
+            // Find the corresponding VkFxShaderUniformBlk
+            VkFxShaderUniformBlk* ubo_block = nullptr;
+            
+            // Search in the program's uniform blocks
+            if(1)logchan_vkpip->log("UBO_DESC_CHECK: Looking for UBO<%s> in program's _vk_uniformblks", binding->name.c_str());
+            auto it = vk_program->_vk_uniformblks.find(binding->name);
+            if (it != vk_program->_vk_uniformblks.end()) {
+              ubo_block = it->second.get();
+              if(1)logchan_vkpip->log("UBO_DESC_CHECK: Found UBO<%s> ptr<%p>", binding->name.c_str(), (void*)ubo_block);
+            } else {
+              if(1)logchan_vkpip->log("UBO_DESC_CHECK: UBO<%s> NOT FOUND in _vk_uniformblks", binding->name.c_str());
+            }
+            
+            if (ubo_block) {
+              if(1)logchan_vkpip->log("UBO_DESC_CHECK: UBO<%s> _gpu_buffer<%p> _buffer_size<%zu>",
+                     binding->name.c_str(),
+                     (void*)ubo_block->_gpu_buffer,
+                     ubo_block->_buffer_size);
+            }
+            
+            if (ubo_block && ubo_block->_gpu_buffer != VK_NULL_HANDLE && ubo_block->_buffer_size > 0) {
+              // Validate buffer handle
+              OrkAssert(ubo_block->_gpu_buffer != nullptr);
+              OrkAssert(ubo_block->_buffer_size > 0);
               
-              // Search in the program's uniform blocks
-              if(0)printf("UBO_DESC_CHECK: Looking for UBO<%s> in program's _vk_uniformblks\n", binding->name.c_str());
-              auto it = vk_program->_vk_uniformblks.find(binding->name);
-              if (it != vk_program->_vk_uniformblks.end()) {
-                ubo_block = it->second.get();
-                if(0)printf("UBO_DESC_CHECK: Found UBO<%s> ptr<%p>\n", binding->name.c_str(), (void*)ubo_block);
-              } else {
-                if(0)printf("UBO_DESC_CHECK: UBO<%s> NOT FOUND in _vk_uniformblks\n", binding->name.c_str());
-              }
+              VkDescriptorBufferInfo buffer_info = {};
+              buffer_info.buffer = ubo_block->_gpu_buffer;
+              buffer_info.offset = 0;
+              buffer_info.range = ubo_block->_buffer_size;
+              buffer_infos.push_back(buffer_info);
               
-              if (ubo_block) {
-                if(0)printf("UBO_DESC_CHECK: UBO<%s> _gpu_buffer<%p> _buffer_size<%zu>\n",
-                       binding->name.c_str(),
-                       (void*)ubo_block->_gpu_buffer,
-                       ubo_block->_buffer_size);
-              }
+              VkWriteDescriptorSet DWRITE = {};
+              initializeVkStruct(DWRITE, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+              DWRITE.dstSet          = descset_ptr->_vkdescset;
+              DWRITE.dstBinding      = binding->binding_id;
+              DWRITE.descriptorCount = 1;
+              DWRITE.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+              DWRITE.pBufferInfo     = &buffer_infos.back();
               
-              if (ubo_block && ubo_block->_gpu_buffer != VK_NULL_HANDLE && ubo_block->_buffer_size > 0) {
-                // Validate buffer handle
-                OrkAssert(ubo_block->_gpu_buffer != nullptr);
-                OrkAssert(ubo_block->_buffer_size > 0);
-                
-                VkDescriptorBufferInfo buffer_info = {};
-                buffer_info.buffer = ubo_block->_gpu_buffer;
-                buffer_info.offset = 0;
-                buffer_info.range = ubo_block->_buffer_size;
-                buffer_infos.push_back(buffer_info);
-                
-                VkWriteDescriptorSet DWRITE = {};
-                initializeVkStruct(DWRITE, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-                DWRITE.dstSet          = descset_ptr->_vkdescset;
-                DWRITE.dstBinding      = binding->binding_id;
-                DWRITE.descriptorCount = 1;
-                DWRITE.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                DWRITE.pBufferInfo     = &buffer_infos.back();
-                
-                printf("UBO_DESC_UPDATE: ubo<%s> binding<%d> buffer<%p> size<%zu> block_ptr<%p>\n",
-                       binding->name.c_str(), binding->binding_id,
-                       (void*)ubo_block->_gpu_buffer, ubo_block->_buffer_size,
-                       (void*)ubo_block);
-                
-                descriptor_writes.push_back(DWRITE);
-              } else if (ubo_block) {
-                if(0)printf("UBO_DESC_CHECK: SKIPPING UBO<%s> - no GPU buffer\n", binding->name.c_str());
-              }
+              logchan_vkpip->log("UBO_DESC_UPDATE: ubo<%s> binding<%d> buffer<%p> size<%zu> block_ptr<%p>",
+                     binding->name.c_str(), binding->binding_id,
+                     (void*)ubo_block->_gpu_buffer, ubo_block->_buffer_size,
+                     (void*)ubo_block);
+              
+              descriptor_writes.push_back(DWRITE);
+            } else if (ubo_block) {
+              if(0)logchan_vkpip->log("UBO_DESC_CHECK: SKIPPING UBO<%s> - no GPU buffer", binding->name.c_str());
             }
           }
         }
       }
     }
-    
-    // Update all descriptors at once
-    if (!descriptor_writes.empty()) {
-      vkUpdateDescriptorSets(
-          _ctxVK->_vkdevice,
-          descriptor_writes.size(),
-          descriptor_writes.data(),
-          0,
-          nullptr
-      );
-    }
-  } else {
-    descset_ptr = it->second;
   }
+  
+  // Update all descriptors at once
+  if (!descriptor_writes.empty()) {
+    vkUpdateDescriptorSets(
+        _ctxVK->_vkdevice,
+        descriptor_writes.size(),
+        descriptor_writes.data(),
+        0,
+        nullptr
+    );
+  }
+
   return descset_ptr;
 }
 

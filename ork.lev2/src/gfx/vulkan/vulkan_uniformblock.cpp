@@ -13,6 +13,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
+static logchannel_ptr_t logchan_ubo = logger()->configureChannel("VKUBO", fvec3(1,1,.4), true);
 
 // AlignedRange implementation
 alignedrange_ptr_t AlignedRange::fromDirtyRange(
@@ -103,13 +104,13 @@ std::vector<alignedrange_ptr_t> VkFxShaderUniformBlk::getAlignedRanges(VkDeviceS
 void VkFxInterface::_flushDirtyUniformBlocks() {
   if (!_currentVKPASS) return;
   
-  printf("VK_FLUSH: flushing %zu dirty blocks\n", _currentVKPASS->_dirty_uniform_blocks.size());
+  logchan_ubo->log("VK_FLUSH: flushing %zu dirty blocks", _currentVKPASS->_dirty_uniform_blocks.size());
   
   for (auto& block : _currentVKPASS->_dirty_uniform_blocks) {
     if (block->_dirty_ranges.empty()) continue;
     
     // Debug: Log UBO flush
-    printf("VK_FLUSH: block<%p> name<%s> dset<%zu> ranges<%zu> buffer_size<%zu> gpu_buffer<%p>\n", 
+    logchan_ubo->log("VK_FLUSH: block<%p> name<%s> dset<%zu> ranges<%zu> buffer_size<%zu> gpu_buffer<%p>", 
            block,
            block->_orkparamblock ? block->_orkparamblock->_name.c_str() : "unknown", 
            block->_descriptor_set_id,
