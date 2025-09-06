@@ -1805,138 +1805,163 @@ void impl::ShadLangParser::collectPassReportData(astnode_ptr_t top) {
       report.technique_name = technique_name;
       report.pass_num = pass_num;
       
-      // Check for shader stages
-      auto vertex_shaders = AstNode::collectNodesOfType<VertexShader>(pass_node);
-      auto fragment_shaders = AstNode::collectNodesOfType<FragmentShader>(pass_node);
-      auto geometry_shaders = AstNode::collectNodesOfType<GeometryShader>(pass_node);
+      // Check for shader stage references in the pass
+      auto vertex_shader_refs = AstNode::collectNodesOfType<VertexShaderRef>(pass_node);
+      auto fragment_shader_refs = AstNode::collectNodesOfType<FragmentShaderRef>(pass_node);
       
-      report.has_vertex_shader = !vertex_shaders.empty();
-      report.has_fragment_shader = !fragment_shaders.empty();
-      report.has_geometry_shader = !geometry_shaders.empty();
+      printf("DEBUG: Pass %d has %zu vertex refs, %zu fragment refs\n", 
+             pass_num, vertex_shader_refs.size(), fragment_shader_refs.size());
       
-      // Collect uniform blocks
-      auto uniform_blocks = AstNode::collectNodesOfType<UniformBlk>(pass_node);
-      for (auto ub_node : uniform_blocks) {
-        std::string ub_name = ub_node->_name;
-        report.uniform_block_names.push_back(ub_name);
+      report.has_vertex_shader = !vertex_shader_refs.empty();
+      report.has_fragment_shader = !fragment_shader_refs.empty();
+      report.has_geometry_shader = false;
+      
+      // Now find the actual shaders from the refs
+      std::vector<astnode_ptr_t> vertex_shaders;
+      std::vector<astnode_ptr_t> fragment_shaders;
+      
+      // Look up vertex shaders by name from the refs (using ref_id like in _semaAttachMergedResourceNodesToPasses)
+      // Use the already collected shaders from _slp_cache
+      for (auto vref : vertex_shader_refs) {
+        auto ref_name = vref->typedValueForKey<std::string>("ref_id").value();
+        printf("DEBUG: Looking for vertex shader: %s\n", ref_name.c_str());
         
-        // Get descriptor set ID
-        size_t dset_id = 0;
-        if (auto dset_val = ub_node->typedValueForKey<size_t>("descriptor_set_id")) {
-          dset_id = dset_val.value();
+        // Look in the already collected vertex shaders
+        auto it = _slp_cache->_vertex_shaders.find(ref_name);
+        if (it != _slp_cache->_vertex_shaders.end()) {
+          printf("DEBUG: Found vertex shader: %s\n", ref_name.c_str());
+          vertex_shaders.push_back(it->second);
         }
-        
-        // Create uniform block info
-        UniformBlockInfo ub_info;
-        ub_info.name = ub_name;
-        ub_info.descriptor_set_id = dset_id;
-        ub_info.binding_id = 0; // Will be filled from merged resources
-        ub_info.total_size = 0;
-        
-        // Determine which stages use this uniform block
-        if (report.has_vertex_shader) {
-          // Check if vertex shader references this UB
-          auto vsh_uniforms = AstNode::collectNodesOfType<UniformBlk>(vertex_shaders[0]);
-          for (auto vsh_ub : vsh_uniforms) {
-            if (vsh_ub->_name == ub_name) {
-              ub_info.stages.insert("vertex");
-              break;
-            }
-          }
-        }
-        
-        if (report.has_fragment_shader) {
-          // Check if fragment shader references this UB
-          auto fsh_uniforms = AstNode::collectNodesOfType<UniformBlk>(fragment_shaders[0]);
-          for (auto fsh_ub : fsh_uniforms) {
-            if (fsh_ub->_name == ub_name) {
-              ub_info.stages.insert("fragment");
-              break;
-            }
-          }
-        }
-        
-        // Parse uniform block members
-        auto members = AstNode::collectNodesOfType<TypedIdentifier>(ub_node);
-        size_t current_offset = 0;
-        
-        for (auto member : members) {
-          UniformBlockMember ub_member;
-          ub_member.name = member->_name;
-          
-          // Get type from DataType child
-          auto dt_nodes = AstNode::collectNodesOfType<DataType>(member);
-          if (!dt_nodes.empty()) {
-            if (auto base_type = dt_nodes[0]->typedValueForKey<std::string>("base_type")) {
-              ub_member.type = base_type.value();
-            }
-          }
-          
-          // Calculate std140 layout
-          ub_member.offset = calculateStd140Offset(ub_member.type, current_offset);
-          ub_member.size = getStd140Size(ub_member.type);
-          current_offset = ub_member.offset + ub_member.size;
-          
-          ub_info.members.push_back(ub_member);
-        }
-        
-        ub_info.total_size = current_offset;
-        
-        // Add to descriptor set info
-        auto& ds_info = report.descriptor_sets[dset_id];
-        ds_info.set_id = dset_id;
-        ds_info.uniform_blocks.push_back(ub_info);
-        ds_info.total_buffer_size += ub_info.total_size;
       }
       
-      // Collect samplers
-      auto samplers = AstNode::collectNodesOfType<SamplerDeclaration>(pass_node);
-      for (auto sampler_node : samplers) {
-        std::string sampler_name = sampler_node->_name;
-        report.sampler_names.push_back(sampler_name);
+      // Look up fragment shaders by name from the refs (using ref_id)
+      // Use the already collected shaders from _slp_cache
+      for (auto fref : fragment_shader_refs) {
+        auto ref_name = fref->typedValueForKey<std::string>("ref_id").value();
+        printf("DEBUG: Looking for fragment shader: %s\n", ref_name.c_str());
         
-        // Get descriptor set ID
-        size_t dset_id = 0;
-        if (auto dset_val = sampler_node->typedValueForKey<size_t>("descriptor_set_id")) {
-          dset_id = dset_val.value();
+        // Look in the already collected fragment shaders
+        auto it = _slp_cache->_fragment_shaders.find(ref_name);
+        if (it != _slp_cache->_fragment_shaders.end()) {
+          printf("DEBUG: Found fragment shader: %s\n", ref_name.c_str());
+          fragment_shaders.push_back(it->second);
         }
-        
-        SamplerInfo sampler_info;
-        sampler_info.name = sampler_name;
-        sampler_info.type = "Sampler2D"; // TODO: Extract actual sampler type
-        sampler_info.descriptor_set_id = dset_id;
-        sampler_info.binding_id = 0; // Will be filled from merged resources
-        
-        // Determine which stages use this sampler
-        if (report.has_vertex_shader) {
-          sampler_info.stages.insert("vertex");
-        }
-        if (report.has_fragment_shader) {
-          sampler_info.stages.insert("fragment");
-        }
-        
-        auto& ds_info = report.descriptor_sets[dset_id];
-        ds_info.set_id = dset_id;
-        ds_info.samplers.push_back(sampler_info);
       }
       
-      // Note: Merged resource information will be added in a future update
-      // For now, binding IDs will be assigned sequentially
+      printf("DEBUG: Collected %zu vertex shaders, %zu fragment shaders\n",
+             vertex_shaders.size(), fragment_shaders.size());
       
-      // Assign sequential binding IDs per descriptor set
+      // Get the MergedShaderResourcesNode from the pass - it contains all descriptor sets and bindings
+      auto merged_resource_nodes = AstNode::collectNodesOfType<MergedShaderResourcesNode>(pass_node);
+      printf("DEBUG: Pass has %zu merged resource nodes\n", merged_resource_nodes.size());
+      
+      if (!merged_resource_nodes.empty()) {
+        auto merged_node = merged_resource_nodes[0];
+        
+        // Get descriptor set nodes
+        auto descriptor_set_nodes = AstNode::collectNodesOfType<DescriptorSetNode>(merged_node);
+        printf("DEBUG: Found %zu descriptor sets\n", descriptor_set_nodes.size());
+        
+        for (auto dset_node : descriptor_set_nodes) {
+          size_t dset_id = dset_node->_descriptor_set_id;
+          printf("DEBUG: Processing descriptor set %zu\n", dset_id);
+          
+          // Get resource bindings from this descriptor set
+          auto resource_binding_nodes = AstNode::collectNodesOfType<ResourceBindingNode>(dset_node);
+          printf("DEBUG: Descriptor set %zu has %zu resource bindings\n", dset_id, resource_binding_nodes.size());
+          
+          for (auto binding_node : resource_binding_nodes) {
+            std::string resource_name = binding_node->_binding_name;
+            std::string datatype = binding_node->_datatype;
+            size_t binding_id = binding_node->_binding_id;
+            auto resource_type = binding_node->_resource_type;
+            
+            printf("DEBUG: Resource: %s (datatype: %s, binding: %zu)\n", 
+                   resource_name.c_str(), datatype.c_str(), binding_id);
+            
+            // Check if it's a uniform block or sampler
+            if (resource_type == MergedShaderResources::ResourceBinding::Type::UniformBlock) {
+              report.uniform_block_names.push_back(resource_name);
+              
+              // Look up the actual uniform block to get member details
+              auto ub_it = _slp_cache->_uniform_blocks.find(resource_name);
+              if (ub_it != _slp_cache->_uniform_blocks.end()) {
+                auto uniform_block = ub_it->second;
+                
+                UniformBlockInfo ub_info;
+                ub_info.name = resource_name;
+                ub_info.descriptor_set_id = dset_id;
+                ub_info.binding_id = binding_id;
+                
+                // Get uniform block members
+                auto members = AstNode::collectNodesOfType<TypedIdentifier>(uniform_block);
+                size_t current_offset = 0;
+                for (auto member : members) {
+                  UniformBlockMember ub_member;
+                  ub_member.name = member->_name;
+                  
+                  // Try to get the type from child DataType nodes
+                  auto datatypes = AstNode::collectNodesOfType<DataType>(member);
+                  if (!datatypes.empty()) {
+                    auto type_val = datatypes[0]->typedValueForKey<std::string>("base_type");
+                    if (type_val) {
+                      ub_member.type = type_val.value();
+                    } else {
+                      ub_member.type = "vec4"; // default
+                    }
+                  } else {
+                    ub_member.type = "vec4"; // default if no type info found
+                  }
+                  
+                  ub_member.offset = current_offset;
+                  ub_member.size = getStd140Size(ub_member.type);
+                  current_offset = calculateStd140Offset(ub_member.type, current_offset + ub_member.size);
+                  ub_info.members.push_back(ub_member);
+                }
+                
+                ub_info.total_size = current_offset;
+                
+                // Determine which stages use this uniform block
+                if (report.has_vertex_shader) {
+                  ub_info.stages.insert("vertex");
+                }
+                if (report.has_fragment_shader) {
+                  ub_info.stages.insert("fragment");
+                }
+                
+                // Add to descriptor set info
+                auto& ds_info = report.descriptor_sets[dset_id];
+                ds_info.set_id = dset_id;
+                ds_info.uniform_blocks.push_back(ub_info);
+                ds_info.total_buffer_size += ub_info.total_size;
+              }
+            } else if (resource_type == MergedShaderResources::ResourceBinding::Type::Sampler) {
+              report.sampler_names.push_back(resource_name);
+              
+              SamplerInfo sampler_info;
+              sampler_info.name = resource_name;
+              sampler_info.type = datatype;
+              sampler_info.descriptor_set_id = dset_id;
+              sampler_info.binding_id = binding_id;
+              
+              // Determine which stages use this sampler
+              if (report.has_vertex_shader) {
+                sampler_info.stages.insert("vertex");
+              }
+              if (report.has_fragment_shader) {
+                sampler_info.stages.insert("fragment");
+              }
+              
+              auto& ds_info = report.descriptor_sets[dset_id];
+              ds_info.set_id = dset_id;
+              ds_info.samplers.push_back(sampler_info);
+            }
+          }
+        }
+      }
+      
+      // Calculate total bindings per descriptor set
       for (auto& [dset_id, ds_info] : report.descriptor_sets) {
-        size_t binding_counter = 0;
-        
-        // Assign binding IDs to uniform blocks
-        for (auto& ub : ds_info.uniform_blocks) {
-          ub.binding_id = binding_counter++;
-        }
-        
-        // Assign binding IDs to samplers
-        for (auto& sampler : ds_info.samplers) {
-          sampler.binding_id = binding_counter++;
-        }
-        
         ds_info.total_bindings = ds_info.uniform_blocks.size() + ds_info.samplers.size();
       }
       
@@ -2064,46 +2089,95 @@ void impl::ShadLangParser::writePassReport(const std::string& key, const PassRep
   fprintf(fp, "## Descriptor Set Layouts\n\n");
   
   for (const auto& [dset_id, ds_info] : report.descriptor_sets) {
-    fprintf(fp, "### Pass %s.%d - Descriptor Set %zu\n\n",
+    fprintf(fp, "### Descriptor Set %zu - %s.%d\n\n",
+            dset_id,
             report.technique_name.c_str(),
-            report.pass_num,
-            dset_id);
+            report.pass_num);
     
-    fprintf(fp, "#### Layout Overview\n");
-    fprintf(fp, "Total Bindings: %zu\n", ds_info.total_bindings);
-    fprintf(fp, "Total Size: %zu bytes\n\n", ds_info.total_buffer_size);
+    fprintf(fp, "**Total Bindings:** %zu | **Total Buffer Size:** %zu bytes\n\n", 
+            ds_info.total_bindings, 
+            ds_info.total_buffer_size);
     
-    // Layout table
-    fprintf(fp, "| Binding | Type | Name | Source Stage | Size | Offset |\n");
-    fprintf(fp, "|---------|------|------|--------------|------|--------|\n");
+    // Create sorted list of all resources
+    struct ResourceEntry {
+      int binding_id;
+      std::string type;
+      std::string name;
+      std::string stages;
+      size_t size;
+      bool is_sampler;
+    };
+    std::vector<ResourceEntry> resources;
     
-    // Uniform blocks
+    // Add uniform blocks
     for (const auto& ub : ds_info.uniform_blocks) {
+      ResourceEntry entry;
+      entry.binding_id = ub.binding_id;
+      entry.type = "UBO";
+      entry.name = ub.name;
+      entry.size = ub.total_size;
+      entry.is_sampler = false;
+      
+      // Abbreviate stages
       std::string stages_str;
-      for (const auto& stage : ub.stages) {
-        if (!stages_str.empty()) stages_str += "+";
-        stages_str += stage;
-      }
-      fprintf(fp, "| %zu | UniformBlock | %s | %s | %zu | 0 |\n",
-              ub.binding_id,
-              ub.name.c_str(),
-              stages_str.c_str(),
-              ub.total_size);
+      if (ub.stages.count("vertex")) stages_str += "V";
+      if (ub.stages.count("fragment")) stages_str += "F";
+      if (ub.stages.count("geometry")) stages_str += "G";
+      if (ub.stages.count("compute")) stages_str += "C";
+      entry.stages = stages_str.empty() ? "VF" : stages_str; // default to VF if empty
+      
+      resources.push_back(entry);
     }
     
-    // Samplers
+    // Add samplers with abbreviated types
     for (const auto& sampler : ds_info.samplers) {
+      ResourceEntry entry;
+      entry.binding_id = sampler.binding_id;
+      
+      // Abbreviate sampler types
+      if (sampler.type == "sampler2D") entry.type = "Tex2D";
+      else if (sampler.type == "sampler2DArray") entry.type = "Tex2DA";
+      else if (sampler.type == "samplerCube") entry.type = "TexCube";
+      else if (sampler.type == "sampler3D") entry.type = "Tex3D";
+      else if (sampler.type == "usampler2D") entry.type = "uTex2D";
+      else entry.type = sampler.type;
+      
+      entry.name = sampler.name;
+      entry.size = 0;
+      entry.is_sampler = true;
+      
+      // Abbreviate stages
       std::string stages_str;
-      for (const auto& stage : sampler.stages) {
-        if (!stages_str.empty()) stages_str += "+";
-        stages_str += stage;
-      }
-      fprintf(fp, "| %zu | %s | %s | %s | - | - |\n",
-              sampler.binding_id,
-              sampler.type.c_str(),
-              sampler.name.c_str(),
-              stages_str.c_str());
+      if (sampler.stages.count("vertex")) stages_str += "V";
+      if (sampler.stages.count("fragment")) stages_str += "F";
+      if (sampler.stages.count("geometry")) stages_str += "G";
+      if (sampler.stages.count("compute")) stages_str += "C";
+      entry.stages = stages_str.empty() ? "VF" : stages_str; // default to VF if empty
+      
+      resources.push_back(entry);
     }
+    
+    // Sort by binding ID
+    std::sort(resources.begin(), resources.end(), 
+              [](const ResourceEntry& a, const ResourceEntry& b) {
+                return a.binding_id < b.binding_id;
+              });
+    
+    // Fixed-width table
+    fprintf(fp, "```\n");
+    fprintf(fp, "Bind | Size   | Type    | Stages | Name\n");
+    fprintf(fp, "-----|--------|---------|--------|---------------------------------\n");
+    
+    for (const auto& res : resources) {
+      if (res.is_sampler) {
+        fprintf(fp, "%4d | %6s | %-7s | %-6s | %s\n",
+                res.binding_id, "-", res.type.c_str(), res.stages.c_str(), res.name.c_str());
+      } else {
+        fprintf(fp, "%4d | %6zu | %-7s | %-6s | %s\n",
+                res.binding_id, res.size, res.type.c_str(), res.stages.c_str(), res.name.c_str());
+      }
+    }
+    fprintf(fp, "```\n");
     
     fprintf(fp, "\n#### Aggregate Memory Layout\n");
     fprintf(fp, "Total Buffer Size: %zu bytes\n", ds_info.total_buffer_size);

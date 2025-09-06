@@ -226,6 +226,9 @@ struct VkPipelineObject {
   
   // Storage for merged resource descriptor set layouts
   std::vector<VkDescriptorSetLayout> _merged_resource_descriptor_set_layouts;
+  
+  // Report filename for debugging descriptor set issues
+  std::string _report_filename;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VkFxShaderPass {

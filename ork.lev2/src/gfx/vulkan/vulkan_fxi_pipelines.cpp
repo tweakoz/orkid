@@ -9,6 +9,8 @@
 #include "vulkan_ub_layout.inl"
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/util/hexdump.inl>
+#include <ctime>
+#include <boost/filesystem.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
@@ -107,6 +109,49 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
     rval                      = std::make_shared<VkPipelineObject>(_contextVK);
     _pipelines[pipeline_hash] = rval;
     rval->_vk_program         = shprog;
+
+    // Generate pipeline report for debugging descriptor set issues
+    std::string report_filename;
+    
+    // Generate filename matching shader report schema
+    // Use shader filename and technique name, process URI like in shader reports
+    std::string shader_name_raw = shprog->_shader_file ? shprog->_shader_file->_shader_name : "unknown";
+    
+    // Process shader name to extract just the filename from URI (e.g., "orkshader://pbr.fxv2" -> "pbr.fxv2")
+    file::Path shader_path = shader_name_raw;
+    auto shader_leaf = shader_path.toBFS().leaf();
+    std::string shader_name = shader_leaf.string();
+    
+    std::string technique_name = _currentORKTEK->_techniqueName;
+    
+    // Find pass index by searching through technique's passes
+    int pass_num = 0;
+    for (size_t i = 0; i < _currentVKTEK->_vk_passes.size(); ++i) {
+      if (_currentVKTEK->_vk_passes[i] == _currentVKPASS) {
+        pass_num = i;
+        break;
+      }
+    }
+    
+    // Get stage directory
+    const char* stage_env = std::getenv("OBT_STAGE");
+    if (stage_env) {
+      std::string stage_dir = std::string(stage_env);
+      std::string report_dir = stage_dir + "/vulkanpipe_reports";
+      
+      // Create directory if it doesn't exist
+      file::Path report_path(report_dir);
+      report_path.ensureDirectoryExists();
+      
+      // Generate report filename: shadername.technique.passnum.md
+      report_filename = FormatString("%s/%s.%s.%d.md",
+                                    report_dir.c_str(),
+                                    shader_name.c_str(),
+                                    technique_name.c_str(),
+                                    pass_num);
+      
+      logchan_vkpip->log("Pipeline report will be written to: %s", report_filename.c_str());
+    }
 
     auto& CINFO = rval->_VKGFXPCI;
     initializeVkStruct(CINFO, VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
@@ -291,6 +336,96 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
       rval->_merged_resource_descriptor_set_layouts = descriptor_set_layouts;
       
       logchan_vkpip->log("Pipeline layout will have %zu descriptor set layouts", descriptor_set_layouts.size());
+      
+      // Store report filename in pipeline for later updates
+      rval->_report_filename = report_filename;
+      
+      // Write pipeline report if filename was generated
+      if (!report_filename.empty() && _currentVKPASS->_merged_resources) {
+        FILE* fp = fopen(report_filename.c_str(), "w");
+        if (fp) {
+          // Header - use same shader name processing as filename
+          std::string shader_name_raw = shprog->_shader_file ? shprog->_shader_file->_shader_name : "unknown";
+          file::Path shader_path = shader_name_raw;
+          auto shader_leaf = shader_path.toBFS().leaf();
+          std::string shader_name = shader_leaf.string();
+          
+          int pass_num = 0;
+          for (size_t i = 0; i < _currentVKTEK->_vk_passes.size(); ++i) {
+            if (_currentVKTEK->_vk_passes[i] == _currentVKPASS) {
+              pass_num = i;
+              break;
+            }
+          }
+          fprintf(fp, "# Vulkan Pipeline Report: %s - %s - Pass %d\n", 
+                  shader_name.c_str(),
+                  _currentORKTEK->_techniqueName.c_str(),
+                  pass_num);
+          time_t now = time(0);
+          fprintf(fp, "Generated: %s", ctime(&now));
+          fprintf(fp, "Pipeline Hash: 0x%016llx\n\n", pipeline_hash);
+          
+          // Descriptor Set Layout Creation
+          fprintf(fp, "## Descriptor Set Layout Creation\n\n");
+          
+          int layout_index = 0;
+          for (const auto& [set_id, sources] : _currentVKPASS->_merged_resources->descriptor_sets) {
+            fprintf(fp, "### Descriptor Set %d\n\n", set_id);
+            fprintf(fp, "**Layout Index:** %d | **Sources:** %zu\n\n", layout_index++, sources.size());
+            
+            // Table of bindings as created in layout
+            fprintf(fp, "```\n");
+            fprintf(fp, "Bind | Type         | Stages | Source              | Name\n");
+            fprintf(fp, "-----|--------------|--------|---------------------|--------------------------------\n");
+            
+            // Collect all bindings for this set
+            std::vector<std::tuple<int, std::string, std::string, std::string, std::string>> layout_bindings;
+            
+            for (const auto& source : sources) {
+              for (const auto& binding : source->bindings) {
+                std::string type_str;
+                switch (binding->type) {
+                  case VkMergedResourceBinding::Type::Sampler:
+                    type_str = "Sampler";
+                    break;
+                  case VkMergedResourceBinding::Type::UniformBlock:
+                    type_str = "UBO";
+                    break;
+                  case VkMergedResourceBinding::Type::StorageBuffer:
+                    type_str = "SSBO";
+                    break;
+                  default:
+                    type_str = "Unknown";
+                    break;
+                }
+                
+                layout_bindings.push_back(std::make_tuple(
+                  binding->binding_id,
+                  type_str,
+                  "ALL_GFX",  // We use VK_SHADER_STAGE_ALL_GRAPHICS
+                  binding->original_source,
+                  binding->name
+                ));
+              }
+            }
+            
+            // Sort by binding ID for clarity
+            std::sort(layout_bindings.begin(), layout_bindings.end(),
+                     [](const auto& a, const auto& b) {
+                       return std::get<0>(a) < std::get<0>(b);
+                     });
+            
+            for (const auto& [bind_id, type, stages, source, name] : layout_bindings) {
+              fprintf(fp, "%4d | %-12s | %-6s | %-19s | %s\n",
+                      bind_id, type.c_str(), stages.c_str(), source.c_str(), name.c_str());
+            }
+            fprintf(fp, "```\n\n");
+          }
+          
+          fclose(fp);
+          logchan_vkpip->log("Pipeline report written to: %s", report_filename.c_str());
+        }
+      }
       
     } else {
       // No descriptor sets available - this is valid for shaders that only use push constants
@@ -748,6 +883,78 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
         0,
         nullptr
     );
+    
+    // Append descriptor set update info to pipeline report if report filename is stored
+    if (_ctxVK->_fxi->_currentPipeline && !_ctxVK->_fxi->_currentPipeline->_report_filename.empty()) {
+      // Append update info to report file
+      FILE* fp = fopen(_ctxVK->_fxi->_currentPipeline->_report_filename.c_str(), "a");
+      if (fp) {
+        static int update_count = 0;
+        fprintf(fp, "\n## Descriptor Set Update %d (%p)\n\n", update_count++, (void*)descset_ptr->_vkdescset);
+        fprintf(fp, "**Update contains %zu writes**\n\n", descriptor_writes.size());
+        fprintf(fp, "```\n");
+        fprintf(fp, "Bind | Type    | Resource\n");
+        fprintf(fp, "-----|---------|--------------------------------\n");
+        
+        // Sort writes by binding ID for comparison with layout
+        std::vector<std::tuple<int, std::string, std::string>> updates;
+        
+        for (const auto& write : descriptor_writes) {
+          std::string type_str;
+          std::string resource_str;
+          
+          if (write.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
+            type_str = "Sampler";
+            // Find the texture param name
+            for (auto it : program->_merged_resource_bindings) {
+              auto [set_id, binding_id] = it.second;
+              if (binding_id == write.dstBinding) {
+                resource_str = it.first->_name;
+                break;
+              }
+            }
+          } else if (write.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
+            type_str = "UBO";
+            // Find UBO name from merged resources
+            if (_ctxVK->_fxi->_currentVKPASS && _ctxVK->_fxi->_currentVKPASS->_merged_resources) {
+              auto merged_resources = _ctxVK->_fxi->_currentVKPASS->_merged_resources;
+              for (const auto& [set_id, sources] : merged_resources->descriptor_sets) {
+                for (const auto& source : sources) {
+                  for (const auto& binding : source->bindings) {
+                    if (binding->binding_id == write.dstBinding && 
+                        binding->type == VkMergedResourceBinding::Type::UniformBlock) {
+                      resource_str = binding->name;
+                      break;
+                    }
+                  }
+                  if (!resource_str.empty()) break;
+                }
+                if (!resource_str.empty()) break;
+              }
+            }
+          }
+          
+          updates.push_back(std::make_tuple(write.dstBinding, type_str, resource_str));
+        }
+        
+        std::sort(updates.begin(), updates.end(),
+                 [](const auto& a, const auto& b) {
+                   return std::get<0>(a) < std::get<0>(b);
+                 });
+        
+        for (const auto& [bind_id, type, resource] : updates) {
+          fprintf(fp, "%4d | %-7s | %s\n", bind_id, type.c_str(), resource.c_str());
+        }
+        fprintf(fp, "```\n\n");
+        
+        // Compare with expected layout
+        fprintf(fp, "### Binding Verification\n\n");
+        fprintf(fp, "Comparing descriptor set updates with layout creation to identify mismatches.\n\n");
+        
+        fclose(fp);
+        logchan_vkpip->log("Appended descriptor set update to pipeline report");
+      }
+    }
   }
 
   return descset_ptr;
