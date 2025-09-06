@@ -1779,7 +1779,19 @@ void impl::ShadLangParser::collectPassReportData(astnode_ptr_t top) {
   auto techniques = AstNode::collectNodesOfType<Technique>(top);
   
   for (auto tech_node : techniques) {
-    std::string technique_name = tech_node->_name;
+    std::string raw_name = tech_node->_name;
+    
+    // The technique name seems to have "Technique\n{actual_name}" format
+    // Extract the actual name after the newline
+    std::string technique_name;
+    size_t newline_pos = raw_name.find('\n');
+    if (newline_pos != std::string::npos && newline_pos + 1 < raw_name.length()) {
+      technique_name = raw_name.substr(newline_pos + 1);
+    } else {
+      technique_name = raw_name; // fallback if no newline found
+    }
+    
+    printf("DEBUG: Processing technique: %s (from raw: %zu chars)\n", technique_name.c_str(), raw_name.length());
     
     // Find all passes in this technique
     auto passes = AstNode::collectNodesOfType<Pass>(tech_node);
