@@ -265,6 +265,10 @@ void VkContext::_initVulkanCommon() {
   poolsize_uniform_buffers.type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
   poolsize_uniform_buffers.descriptorCount = DESCRIPTORSET_COUNT; // Number of descriptors of this type to allocate
 
+  auto& poolsize_uniform_buffers_dynamic           = poolSizes.emplace_back();
+  poolsize_uniform_buffers_dynamic.type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+  poolsize_uniform_buffers_dynamic.descriptorCount = DESCRIPTORSET_COUNT; // Number of descriptors of this type to allocate
+
   auto& poolsize_storage_buffers           = poolSizes.emplace_back();
   poolsize_storage_buffers.type            = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
   poolsize_storage_buffers.descriptorCount = DESCRIPTORSET_COUNT; // Number of descriptors of this type to allocate

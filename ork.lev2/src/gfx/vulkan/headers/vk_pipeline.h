@@ -47,12 +47,13 @@ struct VkFxShaderUniformBlk : public VkFxShaderDescriptorSet {
   std::vector<uint8_t> _shadow_buffer;
   std::vector<dirtyrange_ptr_t> _dirty_ranges;
   
-  VkBuffer _gpu_buffer = VK_NULL_HANDLE;
-  VkDeviceMemory _gpu_memory = VK_NULL_HANDLE;
-  vkbuffer_ptr_t _gpu_buffer_object; // Holds VulkanBuffer for lifetime management
+  // Individual buffers removed - using global dynamic UBO system instead
+  // VkBuffer _gpu_buffer = VK_NULL_HANDLE;
+  // VkDeviceMemory _gpu_memory = VK_NULL_HANDLE;
+  // vkbuffer_ptr_t _gpu_buffer_object; // Holds VulkanBuffer for lifetime management
   size_t _buffer_size = 0;
-  void* _mapped_ptr = nullptr;
-  bool _needs_flush = true;  // false if using coherent memory
+  // void* _mapped_ptr = nullptr;
+  // bool _needs_flush = true;  // false if using coherent memory
   
   // For dynamic UBO support
   uint32_t _binding_id = 0;  // Binding point in descriptor set

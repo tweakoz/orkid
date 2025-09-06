@@ -102,139 +102,18 @@ std::vector<alignedrange_ptr_t> VkFxShaderUniformBlk::getAlignedRanges(VkDeviceS
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::_flushDirtyUniformBlocks() {
+  // This function is now obsolete - dynamic UBO system handles updates
+  // The actual data copying happens in VkPipelineObject::applyPendingUboUpdates
+  // which allocates from the dynamic system and copies shadow buffer data
+  
   if (!_currentVKPASS) return;
   
-  logchan_ubo->log("VK_FLUSH: flushing %zu dirty blocks", _currentVKPASS->_dirty_uniform_blocks.size());
-  
+  // Just clear the dirty ranges since the data has already been handled
   for (auto& block : _currentVKPASS->_dirty_uniform_blocks) {
-    if (block->_dirty_ranges.empty()) continue;
-    
-    // Debug: Log UBO flush
-    logchan_ubo->log("VK_FLUSH: block<%p> name<%s> dset<%zu> ranges<%zu> buffer_size<%zu> gpu_buffer<%p>", 
-           block,
-           block->_orkparamblock ? block->_orkparamblock->_name.c_str() : "unknown", 
-           block->_descriptor_set_id,
-           block->_dirty_ranges.size(),
-           block->_buffer_size,
-           (void*)block->_gpu_buffer);
-    
-    // If using coherent memory, just copy
-    if (!block->_needs_flush) {                                                              
-      OrkAssert(block->_mapped_ptr != nullptr);
-      for (auto& range : block->_dirty_ranges) {
-
-        printf("VK_COHERENT Flush dirty range: block<%s> offset=0x%zx, size=%zu\n", //
-               block->_orkparamblock->_name.c_str(), //
-               range->offset, //
-               range->size);
-
-        if(range->offset == 0x50 ){
-          // cast to float 
-          float* fptr = (float*)(block->_shadow_buffer.data() + range->offset);
-          printf("  float values @ 0x50: [%f %f %f %f]\n", fptr[0], fptr[1], fptr[2], fptr[3]);
-        }
-
-        memcpy(
-          static_cast<uint8_t*>(block->_mapped_ptr) + range->offset,
-          block->_shadow_buffer.data() + range->offset,
-          range->size
-        );
-        
-        // Debug: verify mapped pointer and buffer handle
-        if (block->_orkparamblock && block->_orkparamblock->_name == "ublk_std_pbr") {
-          printf("VK_COHERENT: mapped_ptr<%p> gpu_buffer<%p> gpu_memory<%p>\n",
-                 block->_mapped_ptr,
-                 (void*)block->_gpu_buffer,
-                 (void*)block->_gpu_memory);
-        }
-        
-        // Debug: dump the range being copied for ublk_std_pbr (coherent memory)
-        if (block->_orkparamblock && block->_orkparamblock->_name == "ublk_std_pbr") {
-          printf("VK_COHERENT_COPY: block<%s> offset=%zu size=%zu\n", 
-                 block->_orkparamblock->_name.c_str(),
-                 range->offset,
-                 range->size);
-          
-          // Dump shadow buffer contents for this range
-          if(0){
-            printf("  Shadow buffer contents [offset %zu, size %zu]:\n", 
-                 range->offset,
-                 range->size);
-            hexdumpbytes(block->_shadow_buffer.data() + range->offset, range->size);
-          
-            // Dump mapped memory contents for this range (after memcpy)
-            printf("  Mapped memory contents [offset %zu, size %zu]:\n",
-                   range->offset,
-                   range->size);
-            hexdumpbytes(static_cast<uint8_t*>(block->_mapped_ptr) + range->offset, range->size);
-          }
-        }
-      }
-      block->_dirty_ranges.clear();
-      continue;
-    }
-    
-    // Non-coherent memory needs flush
-    if (block->_mapped_ptr) {
-      // Copy shadow data to mapped memory
-      for (auto& range : block->_dirty_ranges) {
-        //printf("Flushing non-coherent dirty range: offset=%zu, size=%zu\n", range->offset, range->size);
-        
-        memcpy(
-          static_cast<uint8_t*>(block->_mapped_ptr) + range->offset,
-          block->_shadow_buffer.data() + range->offset,
-          range->size
-        );
-      }
-      
-      // Get aligned ranges for flush
-      auto aligned_ranges = block->getAlignedRanges(
-        _contextVK->_vkdeviceinfo->_devprops.limits.nonCoherentAtomSize
-      );
-      
-      // Build flush descriptors
-      std::vector<VkMappedMemoryRange> flush_ranges;
-      for (auto& range : aligned_ranges) {
-        VkMappedMemoryRange flush_range = {};
-        flush_range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-        flush_range.memory = block->_gpu_memory;
-        flush_range.offset = range->offset;
-        flush_range.size = range->size;
-        flush_ranges.push_back(flush_range);
-        
-        // Debug: dump the range being flushed for ublk_std_pbr
-        if (block->_orkparamblock) {
-          printf("VK_FLUSH_RANGE: block<%s> flush offset=%llu size=%llu\n", 
-                 block->_orkparamblock->_name.c_str(),
-                 (unsigned long long)range->offset,
-                 (unsigned long long)range->size);
-          
-          // Dump shadow buffer contents for this range
-          printf("  Shadow buffer contents [offset %llu, size %llu]:\n", 
-                 (unsigned long long)range->offset,
-                 (unsigned long long)range->size);
-          hexdumpbytes(block->_shadow_buffer.data() + range->offset, range->size);
-          
-          // Dump mapped memory contents for this range (after memcpy, before flush)
-          if (block->_mapped_ptr) {
-            printf("  Mapped memory contents [offset %llu, size %llu]:\n",
-                   (unsigned long long)range->offset,
-                   (unsigned long long)range->size);
-            hexdumpbytes(static_cast<uint8_t*>(block->_mapped_ptr) + range->offset, range->size);
-          }
-        }
-      }
-      
-      // Flush to GPU
-      vkFlushMappedMemoryRanges(_contextVK->_vkdevice, 
-                                 flush_ranges.size(), 
-                                 flush_ranges.data());
-    }
-    
     block->_dirty_ranges.clear();
   }
   
-  _currentVKPASS->_dirty_uniform_blocks.clear();
+  // Don't clear _dirty_uniform_blocks here - let applyPendingUboUpdates handle it
 }
 
 ///////////////////////////////////////////////////////////////////////////////

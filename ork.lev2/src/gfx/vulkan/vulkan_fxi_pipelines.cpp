@@ -976,20 +976,21 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
             }
             
             if (ubo_block) {
-              if(1)logchan_vkpip->log("UBO_DESC_CHECK: UBO<%s> _gpu_buffer<%p> _buffer_size<%zu>",
+              if(1)logchan_vkpip->log("UBO_DESC_CHECK: UBO<%s> _buffer_size<%zu>",
                      binding->name.c_str(),
-                     (void*)ubo_block->_gpu_buffer,
                      ubo_block->_buffer_size);
             }
             
-            if (ubo_block && ubo_block->_gpu_buffer != VK_NULL_HANDLE && ubo_block->_buffer_size > 0) {
-              // Validate buffer handle
-              OrkAssert(ubo_block->_gpu_buffer != nullptr);
-              OrkAssert(ubo_block->_buffer_size > 0);
+            if (ubo_block && ubo_block->_buffer_size > 0) {
+              // Use global dynamic UBO buffer
+              extern VkDynamicUBOSystem* g_dynamic_ubo_system;
+              OrkAssert(g_dynamic_ubo_system != nullptr);
+              auto global_buffer = g_dynamic_ubo_system->get_buffer();
+              OrkAssert(global_buffer != nullptr);
               
               VkDescriptorBufferInfo buffer_info = {};
-              buffer_info.buffer = ubo_block->_gpu_buffer;
-              buffer_info.offset = 0;
+              buffer_info.buffer = global_buffer->_vkbuffer;
+              buffer_info.offset = 0;  // Dynamic offset will be provided at bind time
               buffer_info.range = ubo_block->_buffer_size;
               buffer_infos.push_back(buffer_info);
               
@@ -998,17 +999,17 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
               DWRITE.dstSet          = descset_ptr->_vkdescset;
               DWRITE.dstBinding      = binding->binding_id;
               DWRITE.descriptorCount = 1;
-              DWRITE.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+              DWRITE.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
               DWRITE.pBufferInfo     = &buffer_infos.back();
               
-              logchan_vkpip->log("UBO_DESC_UPDATE: ubo<%s> binding<%d> buffer<%p> size<%zu> block_ptr<%p>",
+              logchan_vkpip->log("UBO_DESC_UPDATE: ubo<%s> binding<%d> global_buffer<%p> size<%zu> block_ptr<%p>",
                      binding->name.c_str(), binding->binding_id,
-                     (void*)ubo_block->_gpu_buffer, ubo_block->_buffer_size,
+                     (void*)global_buffer->_vkbuffer, ubo_block->_buffer_size,
                      (void*)ubo_block);
               
               descriptor_writes.push_back(DWRITE);
             } else if (ubo_block) {
-              if(0)logchan_vkpip->log("UBO_DESC_CHECK: SKIPPING UBO<%s> - no GPU buffer", binding->name.c_str());
+              if(0)logchan_vkpip->log("UBO_DESC_CHECK: SKIPPING UBO<%s> - zero size", binding->name.c_str());
             }
           }
         }

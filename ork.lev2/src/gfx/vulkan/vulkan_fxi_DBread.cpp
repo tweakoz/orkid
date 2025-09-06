@@ -510,26 +510,8 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       vk_uniblk->_buffer_size = ((max_offset + last_size + 15) / 16) * 16;
       vk_uniblk->_shadow_buffer.resize(vk_uniblk->_buffer_size, 0);
       
-      // Create GPU buffer for the uniform block
-      auto gpu_buffer = std::make_shared<VulkanBuffer>(
-        _contextVK, 
-        vk_uniblk->_buffer_size,
-        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-        str_uniblk_name
-      );
-      vk_uniblk->_gpu_buffer = gpu_buffer->_vkbuffer;
-      vk_uniblk->_gpu_memory = *gpu_buffer->_memory->_vkmem;
-      
-      // Map the buffer for persistent updates
-      vk_uniblk->_mapped_ptr = gpu_buffer->map(0, vk_uniblk->_buffer_size, 0);
-      
-      // Check if memory is coherent
-      auto& memprops = _contextVK->_vkdeviceinfo->_devmemprops;
-      auto memtype_index = gpu_buffer->_memory->_allocinfo->memoryTypeIndex;
-      vk_uniblk->_needs_flush = !(memprops.memoryTypes[memtype_index].propertyFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-      
-      // Store the buffer object for lifetime management
-      vk_uniblk->_gpu_buffer_object = gpu_buffer;
+      // No longer create individual GPU buffers - using global dynamic UBO system
+      // The global buffer will be bound when creating descriptor sets
       
       // Debug names are already set in VulkanBuffer constructor
     } // end if (!is_reused)
