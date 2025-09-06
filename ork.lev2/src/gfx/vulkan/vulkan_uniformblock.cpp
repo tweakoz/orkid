@@ -47,7 +47,7 @@ void VkFxShaderUniformBlk::addDirtyRange(size_t offset, size_t size) {
       size_t new_end = std::max(offset + size, range->offset + range->size);
       range->offset = new_start;
       range->size = new_end - new_start;
-      coalesceRanges();
+      //coalesceRanges();
       return;
     }
   }
@@ -123,7 +123,16 @@ void VkFxInterface::_flushDirtyUniformBlocks() {
       OrkAssert(block->_mapped_ptr != nullptr);
       for (auto& range : block->_dirty_ranges) {
 
-        printf("Flushing coherent dirty range: offset=%zu, size=%zu\n", range->offset, range->size);
+        printf("VK_COHERENT Flush dirty range: block<%s> offset=0x%zx, size=%zu\n", //
+               block->_orkparamblock->_name.c_str(), //
+               range->offset, //
+               range->size);
+
+        if(range->offset == 0x50 ){
+          // cast to float 
+          float* fptr = (float*)(block->_shadow_buffer.data() + range->offset);
+          printf("  float values @ 0x50: [%f %f %f %f]\n", fptr[0], fptr[1], fptr[2], fptr[3]);
+        }
 
         memcpy(
           static_cast<uint8_t*>(block->_mapped_ptr) + range->offset,

@@ -304,7 +304,7 @@ VulkanBuffer::VulkanBuffer(vkcontext_rawptr_t ctxVK, size_t length, VkBufferUsag
   
   // Also set debug name for the memory
   if (name != "") {
-    std::string mem_name = name + "_memory";
+    std::string mem_name = name + FormatString("_memory<%p>",(void*)*_memory->_vkmem);
     _ctxVK->_setObjectDebugName(*_memory->_vkmem, VK_OBJECT_TYPE_DEVICE_MEMORY, mem_name.c_str());
   }
 

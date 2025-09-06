@@ -1032,8 +1032,8 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
               const char* type_str = (binding->type == VkMergedResourceBinding::Type::UniformBlock) ? "UBO" :
                                     (binding->type == VkMergedResourceBinding::Type::Sampler) ? "SAMPLER" :
                                     (binding->type == VkMergedResourceBinding::Type::StorageBuffer) ? "SSBO" : "UNKNOWN";
-              if(1)printf("XXXX<dbread> BINDING[%u]: NAME<%s> TYPE<%s> DATATYPE<%s> ORIG_SOURCE<%s>\n", 
-                     binding->binding_id, binding->name.c_str(), type_str, 
+              if(1)printf("XXXX<dbread> tekname<%s> BINDING[%u]: NAME<%s> TYPE<%s> DATATYPE<%s> ORIG_SOURCE<%s>\n", 
+                     str_tek_name.c_str(), binding->binding_id, binding->name.c_str(), type_str, 
                      binding->datatype.c_str(), binding->original_source.c_str());
               
               descriptor_set_source->bindings.push_back(binding);

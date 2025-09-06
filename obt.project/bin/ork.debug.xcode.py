@@ -11,6 +11,7 @@ if __name__ == "__main__":
   env_vars["DYLD_FALLBACK_LIBRARY_PATH"] = str(path.libs())
   env_vars["DYLD_LIBRARY_PATH"] = str(path.libs())+":/opt/homebrew/lib"
   env_vars["MVK_CONFIG_LOG_LEVEL"] = "1"
+  env_vars["MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS"] = "0"
 
   # Add OKA_DIR if it exists
   if "OKA_DIR" in os.environ:

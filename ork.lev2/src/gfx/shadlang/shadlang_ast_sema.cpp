@@ -1111,7 +1111,11 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
 
   for (auto pass : passes) {
     auto pass_name = pass->typedValueForKey<std::string>("object_name").value();
-    //printf("  Processing pass: %s\n", pass_name.c_str());
+
+    auto technique = pass->findAncestorOfType<Technique>();
+    OrkAssert(technique);
+    auto tech_name = technique->typedValueForKey<std::string>("object_name").value();
+    printf("  Processing technique<%s> pass: %s\n", tech_name.c_str(), pass_name.c_str());
     
     // Step 1: Collect all shaders referenced by this pass
     std::vector<astnode_ptr_t> pass_shaders;
@@ -1477,7 +1481,8 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
                                              binding.datatype.c_str(),
                                              binding.name.c_str());
 
-                                             printf("XXXX<merging> binding_name<%s>, type<%s> id<%d>\n",
+                                             printf("XXXX<merging> tech_name<%s> binding_name<%s>, type<%s> id<%d>\n",
+                                             tech_name.c_str(),
                                              binding.name.c_str(),
                                              binding.datatype.c_str(),
                                              binding.binding_id);

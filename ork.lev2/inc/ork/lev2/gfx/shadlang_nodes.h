@@ -51,6 +51,10 @@ struct AstNode {
   int hasAncestorOfType(int depth=1000) const {
     return tree_constops(this).hasAncestorOfType<T>(depth);
   }
+  template <typename T> //
+  astnode_ptr_t findAncestorOfType(int depth=1000) const {
+    return tree_constops(this).findAncestorOfType<T>(depth);
+  }
   ///////////////////////////
   template <typename child_t> //
   astnode_ptr_t findFirstChildOfType() const {
