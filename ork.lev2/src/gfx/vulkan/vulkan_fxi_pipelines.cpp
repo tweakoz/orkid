@@ -16,7 +16,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_vkpip = logger()->configureChannel("VKPIP", fvec3(1,1,.2), true);
+static logchannel_ptr_t logchan_vkpip = logger()->configureChannel("VKPIP", fvec3(1,1,.2), false);
 
 vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
     vkvtxbuf_ptr_t vb,             //
@@ -1028,7 +1028,7 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
     );
     
     // Append descriptor set update info to pipeline report if report filename is stored
-    if (_ctxVK->_fxi->_currentPipeline && !_ctxVK->_fxi->_currentPipeline->_report_filename.empty()) {
+    if (0 and _ctxVK->_fxi->_currentPipeline && !_ctxVK->_fxi->_currentPipeline->_report_filename.empty()) {
       // Append update info to report file
       FILE* fp = fopen(_ctxVK->_fxi->_currentPipeline->_report_filename.c_str(), "a");
       if (fp) {

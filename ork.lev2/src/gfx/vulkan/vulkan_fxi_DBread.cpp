@@ -28,7 +28,7 @@ read_interface(chunkfile::InputStream* input_stream, chunkfile::Reader& chunkrea
   OrkAssert(str_interface == "interface");
   auto interface   = std::make_shared<if_type_t>();
   interface->_name = input_stream->ReadIndexedString(chunkreader);
-  //printf(" vtx_interface<%s>\n", interface->_name.c_str());
+  // printf(" vtx_interface<%s>\n", interface->_name.c_str());
   /////////////////
   auto str_inputgroups = input_stream->ReadIndexedString(chunkreader);
   OrkAssert(str_inputgroups == "inputgroups");
@@ -38,19 +38,17 @@ read_interface(chunkfile::InputStream* input_stream, chunkfile::Reader& chunkrea
     auto num_inputs = input_stream->ReadItem<size_t>();
     for (size_t ii = 0; ii < num_inputs; ii++) {
       auto str_item_type = input_stream->ReadIndexedString(chunkreader);
-      
-      if( str_item_type == "input" ){
+
+      if (str_item_type == "input") {
         auto input         = std::make_shared<typename if_type_t::input_t>();
         input->_datatype   = input_stream->ReadIndexedString(chunkreader);
         input->_identifier = input_stream->ReadIndexedString(chunkreader);
         input->_semantic   = input_stream->ReadIndexedString(chunkreader);
         input->_datasize   = input_stream->ReadItem<size_t>();
         interface->_inputs.push_back(input);
-      }
-      else if(str_item_type=="layout"){
+      } else if (str_item_type == "layout") {
 
-      }
-      else{
+      } else {
         OrkAssert(false);
       }
     }
@@ -63,20 +61,18 @@ read_interface(chunkfile::InputStream* input_stream, chunkfile::Reader& chunkrea
     auto num_outputs = input_stream->ReadItem<size_t>();
     for (size_t oi = 0; oi < num_outputs; oi++) {
       auto str_item_type = input_stream->ReadIndexedString(chunkreader);
-      if( str_item_type == "output" ){
+      if (str_item_type == "output") {
         auto str_output_datatype   = input_stream->ReadIndexedString(chunkreader);
         auto str_output_identifier = input_stream->ReadIndexedString(chunkreader);
-        //printf("  output<%s %s>\n", str_output_datatype.c_str(), str_output_identifier.c_str());
+        // printf("  output<%s %s>\n", str_output_datatype.c_str(), str_output_identifier.c_str());
         auto dsize = input_stream->ReadItem<size_t>();
         if (str_output_identifier.find("gl_") != 0) {
           // _appendText(_interface_group, "layout(location=%zu) out %s %s;", _output_index, dt.c_str(), id.c_str());
           // o_output_index += dsize;
         }
-      }
-      else if(str_item_type=="layout"){
+      } else if (str_item_type == "layout") {
 
-      }
-      else{
+      } else {
         OrkAssert(false);
       }
     }
@@ -116,7 +112,7 @@ read_interface_inheritances(
     auto num_inh     = input_stream->ReadItem<size_t>();
     if (num_inh > 0) {
       auto str_inh_name = input_stream->ReadIndexedString(chunkreader);
-      //printf(" interface<%s> INHERITS interface<%s>\n", str_if_name.c_str(), str_inh_name.c_str());
+      // printf(" interface<%s> INHERITS interface<%s>\n", str_if_name.c_str(), str_inh_name.c_str());
 
       auto if_child = the_map.find(str_if_name);
       OrkAssert(if_child != the_map.end());
@@ -129,16 +125,13 @@ read_interface_inheritances(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void read_stateblocks(
-    VkFxShaderFile* vulkan_shaderfile,
-    chunkfile::InputStream* inp_stream,
-    chunkfile::Reader& chunkreader) {
-  
+void read_stateblocks(VkFxShaderFile* vulkan_shaderfile, chunkfile::InputStream* inp_stream, chunkfile::Reader& chunkreader) {
+
   auto str_stateblocks = inp_stream->ReadIndexedString(chunkreader);
   OrkAssert(str_stateblocks == "stateblocks");
-  
+
   size_t num_stateblocks = inp_stream->ReadItem<size_t>();
-  
+
   // First pass: read all state block definitions
   struct StateBlockData {
     std::string name;
@@ -146,28 +139,28 @@ void read_stateblocks(
     std::map<std::string, std::string> items;
   };
   std::vector<StateBlockData> stateblock_data;
-  
+
   for (size_t i = 0; i < num_stateblocks; i++) {
     StateBlockData sb_data;
-    
+
     // Read state block name
     sb_data.name = inp_stream->ReadIndexedString(chunkreader);
-    
+
     // Read parent name (for inheritance)
     sb_data.parent_name = inp_stream->ReadIndexedString(chunkreader);
-    
+
     // Read state block items
     size_t num_items = inp_stream->ReadItem<size_t>();
-    
+
     for (size_t j = 0; j < num_items; j++) {
-      auto key = inp_stream->ReadIndexedString(chunkreader);
-      auto value = inp_stream->ReadIndexedString(chunkreader);
+      auto key           = inp_stream->ReadIndexedString(chunkreader);
+      auto value         = inp_stream->ReadIndexedString(chunkreader);
       sb_data.items[key] = value;
     }
-    
+
     stateblock_data.push_back(sb_data);
   }
-  
+
   // Helper to resolve state block with inheritance
   std::function<rasterstate_ptr_t(const std::string&)> resolve_stateblock;
   resolve_stateblock = [&](const std::string& name) -> rasterstate_ptr_t {
@@ -176,11 +169,11 @@ void read_stateblocks(
     if (it != vulkan_shaderfile->_stateblock_rasterstates.end()) {
       return it->second;
     }
-    
+
     // Find the state block data
-    auto data_it = std::find_if(stateblock_data.begin(), stateblock_data.end(),
-                                 [&](const StateBlockData& d) { return d.name == name; });
-    
+    auto data_it =
+        std::find_if(stateblock_data.begin(), stateblock_data.end(), [&](const StateBlockData& d) { return d.name == name; });
+
     if (data_it == stateblock_data.end()) {
       // Special case for "default" base state block
       if (name == "default") {
@@ -197,16 +190,16 @@ void read_stateblocks(
       }
       return nullptr;
     }
-    
+
     // Start with parent state or default
     rasterstate_ptr_t rstate;
     if (!data_it->parent_name.empty()) {
       auto parent = resolve_stateblock(data_it->parent_name);
-      rstate = parent ? parent->clone() : std::make_shared<RasterState>();
+      rstate      = parent ? parent->clone() : std::make_shared<RasterState>();
     } else {
       rstate = std::make_shared<RasterState>();
     }
-    
+
     // Apply this state block's settings
     for (const auto& [key, value] : data_it->items) {
       if (key == "BlendMode") {
@@ -229,8 +222,7 @@ void read_stateblocks(
         } else if (value == "MODULATE") {
           rstate->setBlendingMacro(BlendingMacro::MODULATE);
         }
-      }
-      else if (key == "DepthTest") {
+      } else if (key == "DepthTest") {
         if (value == "OFF") {
           rstate->setDepthTest(EDepthTest::OFF);
         } else if (value == "LESS") {
@@ -246,8 +238,7 @@ void read_stateblocks(
         } else if (value == "ALWAYS") {
           rstate->setDepthTest(EDepthTest::ALWAYS);
         }
-      }
-      else if (key == "CullTest") {
+      } else if (key == "CullTest") {
         if (value == "OFF") {
           rstate->setCullTest(ECullTest::OFF);
         } else if (value == "PASS_FRONT") {
@@ -255,11 +246,9 @@ void read_stateblocks(
         } else if (value == "PASS_BACK") {
           rstate->setCullTest(ECullTest::PASS_BACK);
         }
-      }
-      else if (key == "DepthMask") {
+      } else if (key == "DepthMask") {
         rstate->setWriteMaskZ(value == "ON" || value == "true");
-      }
-      else if (key == "ColorMask") {
+      } else if (key == "ColorMask") {
         // Could parse RGB/A separately if needed
         bool enabled = (value == "ON" || value == "true");
         rstate->setWriteMaskRGB(enabled);
@@ -267,12 +256,12 @@ void read_stateblocks(
       }
       // Add more state items as needed
     }
-    
+
     // Cache and return
     vulkan_shaderfile->_stateblock_rasterstates[name] = rstate;
     return rstate;
   };
-  
+
   // Second pass: resolve all state blocks (handles inheritance)
   for (const auto& sb_data : stateblock_data) {
     resolve_stateblock(sb_data.name);
@@ -283,12 +272,12 @@ void read_stateblocks(
 
 vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock, FxShader* ork_shader) {
 
-  printf("VkFxInterface::_readFromDataBlock datablock<%p> ork_shader<%s>\n", (void*) vkfx_datablock.get(), ork_shader->mName.c_str());
+  if(0)printf(
+      "VkFxInterface::_readFromDataBlock datablock<%p> ork_shader<%s>\n", (void*)vkfx_datablock.get(), ork_shader->mName.c_str());
   ////////////////////////////////////////////////////////
   // parse datablock
   ////////////////////////////////////////////////////////
-        
-    
+
   auto vulkan_shaderfile = std::make_shared<VkFxShaderFile>();
   ork_shader->_internalHandle.setShared<VkFxShaderFile>(vulkan_shaderfile);
 
@@ -303,7 +292,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
   OrkAssert(shader_input_stream != nullptr);
   OrkAssert(tecniq_input_stream != nullptr);
 
-  //header_input_stream->dump();
+  // header_input_stream->dump();
 
   auto str_shader_counts = header_input_stream->ReadIndexedString(chunkreader);
   OrkAssert(str_shader_counts == "shader_counts");
@@ -329,14 +318,14 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
   for (size_t i = 0; i < num_smpsets; i++) {
     auto str_uniset = uniforms_input_stream->ReadIndexedString(chunkreader);
     OrkAssert(str_uniset == "smpset");
-    auto str_smpset_name                                = uniforms_input_stream->ReadIndexedString(chunkreader);
-    auto vk_smpset                                      = std::make_shared<VkFxShaderSamplerSet>();
-    auto ork_smpset = vk_smpset->_impl.makeShared<FxSamplerSet>();
-    auto dset_id    = uniforms_input_stream->ReadItem<size_t>();
+    auto str_smpset_name          = uniforms_input_stream->ReadIndexedString(chunkreader);
+    auto vk_smpset                = std::make_shared<VkFxShaderSamplerSet>();
+    auto ork_smpset               = vk_smpset->_impl.makeShared<FxSamplerSet>();
+    auto dset_id                  = uniforms_input_stream->ReadItem<size_t>();
     vk_smpset->_descriptor_set_id = dset_id;
-    //printf( "shader<%p:%s> GOT SAMPLERSET<%s>\n", (void*) ork_shader, ork_shader->mName.c_str(), str_smpset_name.c_str() );
+    // printf( "shader<%p:%s> GOT SAMPLERSET<%s>\n", (void*) ork_shader, ork_shader->mName.c_str(), str_smpset_name.c_str() );
     vulkan_shaderfile->_vk_samplersets[str_smpset_name] = vk_smpset;
-    ork_shader->_samplerSets[str_smpset_name] = ork_smpset.get();
+    ork_shader->_samplerSets[str_smpset_name]           = ork_smpset.get();
     ///////////////////////////////////////////////
     auto str_samplers = uniforms_input_stream->ReadIndexedString(chunkreader);
     OrkAssert(str_samplers == "samplers");
@@ -347,7 +336,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       auto vk_samp                = std::make_shared<VkFxShaderUniformSetSampler>();
       vk_samp->_datatype          = str_sampler_datatype;
       vk_samp->_identifier        = str_sampler_identifier;
-      auto ork_param = std::make_shared<FxShaderParam>();
+      auto ork_param              = std::make_shared<FxShaderParam>();
       vk_samp->_orkparam          = ork_param;
       vk_samp->_orkparam->_name   = str_sampler_identifier;
       vk_samp->_orkparam->_impl.set<VkFxShaderUniformSetSampler*>(vk_samp.get());
@@ -368,10 +357,10 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
   for (size_t i = 0; i < num_unisets; i++) {
     auto str_uniset = uniforms_input_stream->ReadIndexedString(chunkreader);
     OrkAssert(str_uniset == "uniset");
-    auto str_uniset_name                                = uniforms_input_stream->ReadIndexedString(chunkreader);
-    auto vk_uniset                                      = std::make_shared<VkFxShaderUniformSet>();
-    vk_uniset->_name = str_uniset_name;
-    //printf( "GOT UNIFORMSET<%s>\n", str_uniset_name.c_str() );
+    auto str_uniset_name = uniforms_input_stream->ReadIndexedString(chunkreader);
+    auto vk_uniset       = std::make_shared<VkFxShaderUniformSet>();
+    vk_uniset->_name     = str_uniset_name;
+    // printf( "GOT UNIFORMSET<%s>\n", str_uniset_name.c_str() );
     vulkan_shaderfile->_vk_uniformsets[str_uniset_name] = vk_uniset;
     ///////////////////////////////////////////////
     auto str_params = uniforms_input_stream->ReadIndexedString(chunkreader);
@@ -403,37 +392,38 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
   for (size_t i = 0; i < num_uniblks; i++) {
     auto str_uniblk = uniforms_input_stream->ReadIndexedString(chunkreader);
     OrkAssert(str_uniblk == "uniblk");
-    auto str_uniblk_name                                = uniforms_input_stream->ReadIndexedString(chunkreader);
-    auto dset_id                                        = uniforms_input_stream->ReadItem<size_t>();
-    
+    auto str_uniblk_name = uniforms_input_stream->ReadIndexedString(chunkreader);
+    auto dset_id         = uniforms_input_stream->ReadItem<size_t>();
+
     // Check if uniform block already exists in this shader file
     vkfxsuniblk_ptr_t vk_uniblk;
     auto existing_it = vulkan_shaderfile->_vk_uniformblks.find(str_uniblk_name);
-    bool is_reused = false;
-    
+    bool is_reused   = false;
+
     if (existing_it != vulkan_shaderfile->_vk_uniformblks.end()) {
       // REUSE EXISTING BLOCK - prevents duplicate shadow buffers and GPU allocations
       vk_uniblk = existing_it->second;
       is_reused = true;
-      
+
       // Verify descriptor set ID matches
       if (vk_uniblk->_descriptor_set_id != dset_id) {
-        printf("WARNING: UBO<%s> reused but descriptor set mismatch: existing<%zu> new<%zu>\n",
-               str_uniblk_name.c_str(), vk_uniblk->_descriptor_set_id, dset_id);
+        printf(
+            "WARNING: UBO<%s> reused but descriptor set mismatch: existing<%zu> new<%zu>\n",
+            str_uniblk_name.c_str(),
+            vk_uniblk->_descriptor_set_id,
+            dset_id);
       }
-      
-      printf("VK_UBO: REUSING UBO<%s> ptr<%p> for shader file\n", 
-             str_uniblk_name.c_str(), vk_uniblk.get());
+
+      if(0)printf("VK_UBO: REUSING UBO<%s> ptr<%p> for shader file\n", str_uniblk_name.c_str(), vk_uniblk.get());
     } else {
       // CREATE NEW BLOCK (first occurrence in this shader file)
-      vk_uniblk                                      = std::make_shared<VkFxShaderUniformBlk>();
+      vk_uniblk                                           = std::make_shared<VkFxShaderUniformBlk>();
       vk_uniblk->_orkparamblock                           = std::make_shared<FxUniformBlock>();
-      vk_uniblk->_orkparamblock->_name = str_uniblk_name;  // SET THE NAME!
-      vk_uniblk->_descriptor_set_id = dset_id;
+      vk_uniblk->_orkparamblock->_name                    = str_uniblk_name; // SET THE NAME!
+      vk_uniblk->_descriptor_set_id                       = dset_id;
       vulkan_shaderfile->_vk_uniformblks[str_uniblk_name] = vk_uniblk;
-      
-      printf("VK_UBO: CREATING UBO<%s> ptr<%p> DSID<%zu>\n", 
-             str_uniblk_name.c_str(), vk_uniblk.get(), dset_id);
+
+      if(0)printf("VK_UBO: CREATING UBO<%s> ptr<%p> DSID<%zu>\n", str_uniblk_name.c_str(), vk_uniblk.get(), dset_id);
     }
 
     // Only register with ork_shader if not already registered
@@ -442,25 +432,24 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       ork_shader->_uniformBlocks[str_uniblk_name] = vk_uniblk->_orkparamblock.get();
     }
 
-
     if (0)
       printf("str_uniblk_name<%s>\n", str_uniblk_name.c_str());
     ///////////////////////////////////////////////
     auto str_params = uniforms_input_stream->ReadIndexedString(chunkreader);
     OrkAssert(str_params == "items");
     auto num_params = uniforms_input_stream->ReadItem<size_t>();
-    
+
     if (!is_reused) {
       // Process parameters only for new blocks
       for (size_t j = 0; j < num_params; j++) {
-        auto str_param_datatype   = uniforms_input_stream->ReadIndexedString(chunkreader);
-        auto str_param_identifier = uniforms_input_stream->ReadIndexedString(chunkreader);
-        auto vk_param             = std::make_shared<VkFxShaderUniformBlkItem>();
-        vk_param->_datatype       = str_param_datatype;
-        vk_param->_identifier     = str_param_identifier;
-        vk_param->_offset         = uniforms_input_stream->ReadItem<size_t>();
-        vk_param->_parent_block   = vk_uniblk.get();
-        vk_param->_orkparam       = std::make_shared<FxShaderParam>();
+        auto str_param_datatype    = uniforms_input_stream->ReadIndexedString(chunkreader);
+        auto str_param_identifier  = uniforms_input_stream->ReadIndexedString(chunkreader);
+        auto vk_param              = std::make_shared<VkFxShaderUniformBlkItem>();
+        vk_param->_datatype        = str_param_datatype;
+        vk_param->_identifier      = str_param_identifier;
+        vk_param->_offset          = uniforms_input_stream->ReadItem<size_t>();
+        vk_param->_parent_block    = vk_uniblk.get();
+        vk_param->_orkparam        = std::make_shared<FxShaderParam>();
         vk_param->_orkparam->_name = str_param_identifier;
         vk_param->_orkparam->_impl.set<VkFxShaderUniformBlkItem*>(vk_param.get());
         vk_uniblk->_items_by_name[str_param_identifier] = vk_param;
@@ -473,16 +462,16 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       // Skip reading parameters for reused blocks - they were already processed
       for (size_t j = 0; j < num_params; j++) {
         uniforms_input_stream->ReadIndexedString(chunkreader); // datatype
-        uniforms_input_stream->ReadIndexedString(chunkreader); // identifier  
+        uniforms_input_stream->ReadIndexedString(chunkreader); // identifier
         uniforms_input_stream->ReadItem<size_t>();             // offset
       }
-      printf("VK_UBO: SKIPPED reading %zu items for reused UBO<%s>\n", num_params, str_uniblk_name.c_str());
+      if(0)printf("VK_UBO: SKIPPED reading %zu items for reused UBO<%s>\n", num_params, str_uniblk_name.c_str());
     }
-    
+
     // Calculate uniform block size and initialize shadow buffer (only for new blocks)
     if (!is_reused) {
       size_t max_offset = 0;
-      size_t last_size = 0;
+      size_t last_size  = 0;
       for (auto& item : vk_uniblk->_items_by_order) {
         if (item->_offset >= max_offset) {
           max_offset = item->_offset;
@@ -505,14 +494,14 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
           }
         }
       }
-      
+
       // Round up to 16-byte alignment
       vk_uniblk->_buffer_size = ((max_offset + last_size + 15) / 16) * 16;
       vk_uniblk->_shadow_buffer.resize(vk_uniblk->_buffer_size, 0);
-      
+
       // No longer create individual GPU buffers - using global dynamic UBO system
       // The global buffer will be bound when creating descriptor sets
-      
+
       // Debug names are already set in VulkanBuffer constructor
     } // end if (!is_reused)
   }
@@ -576,21 +565,21 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       vulkan_shobj->_smpset_refs = refs;
       for (size_t i = 0; i < num_ismpsets; i++) {
         auto str_smpset = shader_input_stream->ReadIndexedString(chunkreader);
-        //printf( "REF SAMPLERSET str_smpset<%s>\n", str_smpset.c_str() );
-        auto it         = vulkan_shaderfile->_vk_samplersets.find(str_smpset);
+        // printf( "REF SAMPLERSET str_smpset<%s>\n", str_smpset.c_str() );
+        auto it = vulkan_shaderfile->_vk_samplersets.find(str_smpset);
         OrkAssert(it != vulkan_shaderfile->_vk_samplersets.end());
         vkfxssmpset_ptr_t vk_smpset = it->second;
         refs->_smpsets[str_smpset]  = vk_smpset;
       }
-      if(refs->_smpsets.size()>1){
+      if (refs->_smpsets.size() > 1) {
         // print out sampler set names
-        //printf("Shader<%s> has multiple sampler sets:\n", str_shader_name.c_str());
+        // printf("Shader<%s> has multiple sampler sets:\n", str_shader_name.c_str());
         for (const auto& smp_it : refs->_smpsets) {
-          //printf("  %s\n", smp_it.first.c_str());
+          // printf("  %s\n", smp_it.first.c_str());
         }
         // Multiple sampler sets are now handled by the merged resources system
         // No longer asserting - merged resources will handle the binding conflicts
-        //printf("  Note: Multiple sampler sets will be handled by merged resources system\n");
+        // printf("  Note: Multiple sampler sets will be handled by merged resources system\n");
       }
     }
     /////////////////////////////////
@@ -600,21 +589,23 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       vulkan_shobj->_uniset_refs = refs;
       for (size_t i = 0; i < num_iunisets; i++) {
         auto str_uniset = shader_input_stream->ReadIndexedString(chunkreader);
-        //printf( "REF UNIFORMSET str_smpset<%s>\n", str_uniset.c_str() );
-        auto it         = vulkan_shaderfile->_vk_uniformsets.find(str_uniset);
+        // printf( "REF UNIFORMSET str_smpset<%s>\n", str_uniset.c_str() );
+        auto it = vulkan_shaderfile->_vk_uniformsets.find(str_uniset);
         OrkAssert(it != vulkan_shaderfile->_vk_uniformsets.end());
         vkfxsuniset_ptr_t vk_uniset = it->second;
         refs->_unisets[str_uniset]  = vk_uniset;
       }
-      if(refs->_unisets.size()>1){
+      if (refs->_unisets.size() > 1) {
         // print out uniform set names
-        //printf("Shader<%s> has multiple uniform sets:\n", str_shader_name.c_str());
+        // printf("Shader<%s> has multiple uniform sets:\n", str_shader_name.c_str());
         for (const auto& uni_it : refs->_unisets) {
-          if(0)printf("  %s\n", uni_it.first.c_str());
+          if (0)
+            printf("  %s\n", uni_it.first.c_str());
         }
         // Multiple uniform sets are now handled by the merged resources system
         // No longer asserting - merged resources will handle the binding conflicts
-        if(0)printf("  Note: Multiple uniform sets will be handled by merged resources system\n");
+        if (0)
+          printf("  Note: Multiple uniform sets will be handled by merged resources system\n");
       }
     }
     /////////////////////////////////
@@ -622,14 +613,14 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     if (num_iuniblks) {
       auto refs                  = std::make_shared<VkFxShaderUniformBlksReference>();
       vulkan_shobj->_uniblk_refs = refs;
-      //printf("SHADER<%s> REFERENCES %zu UBOS:\n", str_shader_name.c_str(), num_iuniblks);
+      // printf("SHADER<%s> REFERENCES %zu UBOS:\n", str_shader_name.c_str(), num_iuniblks);
       for (size_t i = 0; i < num_iuniblks; i++) {
         auto str_uniblk = shader_input_stream->ReadIndexedString(chunkreader);
         auto it         = vulkan_shaderfile->_vk_uniformblks.find(str_uniblk);
         OrkAssert(it != vulkan_shaderfile->_vk_uniformblks.end());
         vkfxsuniblk_ptr_t vk_uniblk = it->second;
         refs->_uniblks[str_uniblk]  = vk_uniblk;
-        //printf("  -> UBO<%s> IN DESCRIPTOR_SET<%zu>\n", str_uniblk.c_str(), vk_uniblk->_descriptor_set_id);
+        // printf("  -> UBO<%s> IN DESCRIPTOR_SET<%zu>\n", str_uniblk.c_str(), vk_uniblk->_descriptor_set_id);
       }
       OrkAssert(refs->_uniblks.size() <= 8);
     }
@@ -638,7 +629,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     if (num_ifaces) {
       for (size_t i = 0; i < num_ifaces; i++) {
         auto str_iface = shader_input_stream->ReadIndexedString(chunkreader);
-        //printf( "REF IFACE<%s>\n", str_iface.c_str() );
+        // printf( "REF IFACE<%s>\n", str_iface.c_str() );
         vulkan_shobj->_vk_interfaces.push_back(str_iface);
       }
     }
@@ -699,8 +690,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
   //////////////////
 
   auto read_technique_from_stream = [&]() -> vkfxstek_ptr_t {
-
-      auto str_tek = tecniq_input_stream->ReadIndexedString(chunkreader);
+    auto str_tek = tecniq_input_stream->ReadIndexedString(chunkreader);
     OrkAssert(str_tek == "technique");
     auto str_tek_name = tecniq_input_stream->ReadIndexedString(chunkreader);
 
@@ -709,13 +699,13 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
 
     size_t num_passes = tecniq_input_stream->ReadItem<size_t>();
 
-    auto ork_tek = vk_tek->_orktechnique;
+    auto ork_tek                          = vk_tek->_orktechnique;
     ork_tek->_techniqueName               = str_tek_name;
     ork_tek->_shader                      = ork_shader;
     ork_shader->_techniques[str_tek_name] = ork_tek.get();
-    ork_tek->_validated = true;
+    ork_tek->_validated                   = true;
 
-      for (size_t i = 0; i < num_passes; i++) {
+    for (size_t i = 0; i < num_passes; i++) {
 
       // vulkan side
       auto str_pass = tecniq_input_stream->ReadIndexedString(chunkreader);
@@ -761,48 +751,48 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         }
         vk_program->_frgshader = frg_obj;
       }
-      
+
       ////////////////////////////////////////////////////////////
       // Populate program's UBO map from all shader stages
       // This is critical for descriptor set updates to find UBOs
       ////////////////////////////////////////////////////////////
       vk_program->_vk_uniformblks.clear();
-      
+
       // Collect UBOs from vertex shader
       if (vk_program->_vtxshader && vk_program->_vtxshader->_uniblk_refs) {
         for (const auto& [name, ubo] : vk_program->_vtxshader->_uniblk_refs->_uniblks) {
           vk_program->_vk_uniformblks[name] = ubo;
-          //printf("UBO_POPULATE: Program collected UBO<%s> from vertex shader\n", name.c_str());
+          // printf("UBO_POPULATE: Program collected UBO<%s> from vertex shader\n", name.c_str());
         }
       }
-      
+
       // Collect UBOs from geometry shader (if present)
       if (vk_program->_geoshader && vk_program->_geoshader->_uniblk_refs) {
         for (const auto& [name, ubo] : vk_program->_geoshader->_uniblk_refs->_uniblks) {
           vk_program->_vk_uniformblks[name] = ubo;
-          //printf("UBO_POPULATE: Program collected UBO<%s> from geometry shader\n", name.c_str());
+          // printf("UBO_POPULATE: Program collected UBO<%s> from geometry shader\n", name.c_str());
         }
       }
-      
+
       // Collect UBOs from fragment shader
       if (vk_program->_frgshader && vk_program->_frgshader->_uniblk_refs) {
         for (const auto& [name, ubo] : vk_program->_frgshader->_uniblk_refs->_uniblks) {
           vk_program->_vk_uniformblks[name] = ubo;
-          //printf("UBO_POPULATE: Program collected UBO<%s> from fragment shader\n", name.c_str());
+          // printf("UBO_POPULATE: Program collected UBO<%s> from fragment shader\n", name.c_str());
         }
       }
-      
-      //printf("UBO_POPULATE: Program<%p> total UBOs: %zu\n", 
-      //       (void*)vk_program.get(), vk_program->_vk_uniformblks.size());
-      
+
+      // printf("UBO_POPULATE: Program<%p> total UBOs: %zu\n",
+      //        (void*)vk_program.get(), vk_program->_vk_uniformblks.size());
+
       ////////////////////////////////////////////////////////////
       auto sblk_name = tecniq_input_stream->ReadIndexedString(chunkreader);
-      //printf("stateblock name<%s>\n", sblk_name.c_str());
-      
+      // printf("stateblock name<%s>\n", sblk_name.c_str());
+
       // PRE-RESOLVE the state block to a rasterstate at load time!
       auto it = vulkan_shaderfile->_stateblock_rasterstates.find(sblk_name);
       if (it != vulkan_shaderfile->_stateblock_rasterstates.end()) {
-        vk_pass->_stateblock_rasterstate = it->second;  // Store pre-resolved rasterstate
+        vk_pass->_stateblock_rasterstate = it->second; // Store pre-resolved rasterstate
       } else {
         printf("Warning: State block '%s' not found for pass\n", sblk_name.c_str());
         // Use a default rasterstate or nullptr
@@ -819,45 +809,49 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       push_constants->_ranges.reserve(16);
 
       auto pc_layout = std::make_shared<VkBufferLayout>();
-      
+
       std::set<vkfxsuniset_ptr_t> unisets_set;
-      
+
       // Track the layout cursor position for each shader stage
       std::map<VkShaderStageFlags, size_t> stage_start_offsets;
       std::map<VkShaderStageFlags, size_t> stage_end_offsets;
-      
+
       auto uniset_to_pushconstants = [&](vkfxsobj_ptr_t shobj, vkbufferlayout_ptr_t dest_layout) {
         if (nullptr == shobj->_uniset_refs) {
           return;
         }
-        
+
         // Determine shader stage and range index
         VkShaderStageFlags shader_stage = 0;
-        size_t range_index = 0;
-        
+        size_t range_index              = 0;
+
         if (shobj == vk_program->_vtxshader) {
           shader_stage = VK_SHADER_STAGE_VERTEX_BIT;
-          range_index = 0;
+          range_index  = 0;
         } else if (shobj == vk_program->_frgshader) {
           shader_stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-          range_index = 1;
+          range_index  = 1;
         } else if (shobj == vk_program->_geoshader) {
           shader_stage = VK_SHADER_STAGE_GEOMETRY_BIT;
-          range_index = 2; // TODO: Adjust when adding geometry shader support
+          range_index  = 2; // TODO: Adjust when adding geometry shader support
         }
         // TODO: Add tessellation shader support with appropriate range indices
-        
+
         // Track where this stage's uniforms start in the layout
         if (stage_start_offsets.find(shader_stage) == stage_start_offsets.end()) {
-          size_t start_cursor = dest_layout->cursor();
+          size_t start_cursor               = dest_layout->cursor();
           stage_start_offsets[shader_stage] = start_cursor;
-          const char* stage_name = "UNKNOWN";
-          if (shader_stage == VK_SHADER_STAGE_VERTEX_BIT) stage_name = "VERTEX";
-          else if (shader_stage == VK_SHADER_STAGE_FRAGMENT_BIT) stage_name = "FRAGMENT";
-          else if (shader_stage == VK_SHADER_STAGE_GEOMETRY_BIT) stage_name = "GEOMETRY";
-          if(0)printf("DEBUG: Stage %s starting at cursor position %zu\n", stage_name, start_cursor);
+          const char* stage_name            = "UNKNOWN";
+          if (shader_stage == VK_SHADER_STAGE_VERTEX_BIT)
+            stage_name = "VERTEX";
+          else if (shader_stage == VK_SHADER_STAGE_FRAGMENT_BIT)
+            stage_name = "FRAGMENT";
+          else if (shader_stage == VK_SHADER_STAGE_GEOMETRY_BIT)
+            stage_name = "GEOMETRY";
+          if (0)
+            printf("DEBUG: Stage %s starting at cursor position %zu\n", stage_name, start_cursor);
         }
-        
+
         for (auto uset_item : shobj->_uniset_refs->_unisets) {
           auto uset_name = uset_item.first;
           auto uset      = uset_item.second;
@@ -869,11 +863,11 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
               auto datatype  = item_ptr->_datatype;
               size_t cursor  = 0xffffffff;
               auto orkparam  = item_ptr->_orkparam.get();
-              
+
               // Set shader stage info for this item
               item_ptr->_shader_stage = shader_stage;
-              item_ptr->_range_index = range_index;
-              
+              item_ptr->_range_index  = range_index;
+
               if (datatype == "float") {
                 cursor = dest_layout->layoutItem<float>(orkparam);
               } else if (datatype == "int") {
@@ -895,20 +889,30 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
                 OrkAssert(false);
               }
               // OrkAssert(cursor==item_ptr->_offset);
-              if(0)printf("VKFXI: param<%s> datatype<%s> cursor<%zu> stage<0x%x> range<%zu>\n", 
-                     item_name.c_str(), datatype.c_str(), cursor, shader_stage, range_index);
+              if (0)
+                printf(
+                    "VKFXI: param<%s> datatype<%s> cursor<%zu> stage<0x%x> range<%zu>\n",
+                    item_name.c_str(),
+                    datatype.c_str(),
+                    cursor,
+                    shader_stage,
+                    range_index);
             }
           }
         }
-        
+
         // Track where this stage's uniforms end in the layout
-        size_t end_cursor = dest_layout->cursor();
+        size_t end_cursor               = dest_layout->cursor();
         stage_end_offsets[shader_stage] = end_cursor;
-        const char* stage_name = "UNKNOWN";
-        if (shader_stage == VK_SHADER_STAGE_VERTEX_BIT) stage_name = "VERTEX";
-        else if (shader_stage == VK_SHADER_STAGE_FRAGMENT_BIT) stage_name = "FRAGMENT";
-        else if (shader_stage == VK_SHADER_STAGE_GEOMETRY_BIT) stage_name = "GEOMETRY";
-        if(0)printf("DEBUG: Stage %s ending at cursor position %zu\n", stage_name, end_cursor);
+        const char* stage_name          = "UNKNOWN";
+        if (shader_stage == VK_SHADER_STAGE_VERTEX_BIT)
+          stage_name = "VERTEX";
+        else if (shader_stage == VK_SHADER_STAGE_FRAGMENT_BIT)
+          stage_name = "FRAGMENT";
+        else if (shader_stage == VK_SHADER_STAGE_GEOMETRY_BIT)
+          stage_name = "GEOMETRY";
+        if (0)
+          printf("DEBUG: Stage %s ending at cursor position %zu\n", stage_name, end_cursor);
       };
 
       if (vk_program->_vtxshader) {
@@ -926,12 +930,12 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       size_t pc_size = alignUp(pc_layout->cursor(), 16);
       // TODO: Wire this up to the actual Vulkan device property
       constexpr size_t kDefaultMaxPushConstantSize = MAX_PUSH_CONSTANT_SIZE;
-      if(pc_size > kDefaultMaxPushConstantSize) {
-        printf("ERROR: tek<%s> Push constant block size %zu exceeds default max %zu\n", //
-               str_tek_name.c_str(),                                                    //
-               pc_size,                                                                 //
-               kDefaultMaxPushConstantSize);                                            //
-
+      if (pc_size > kDefaultMaxPushConstantSize) {
+        printf(
+            "ERROR: tek<%s> Push constant block size %zu exceeds default max %zu\n", //
+            str_tek_name.c_str(),                                                    //
+            pc_size,                                                                 //
+            kDefaultMaxPushConstantSize);                                            //
 
         // print out all uniform set name that contributed to the push constant block
         printf("  Contributing uniform sets:\n");
@@ -945,15 +949,16 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         OrkAssert(false);
       }
       push_constants->_ranges.reserve(8);
-      
+
       // Create a single shared range for all stages since uniform sets are shared
       auto& pc_range = push_constants->_ranges.emplace_back();
       initializeVkStruct(pc_range);
       pc_range.offset     = 0;
       pc_range.size       = pc_size;
       pc_range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-      if(0)printf("Push constant range: SHARED [0-%zu]\n", pc_size);
-      
+      if (0)
+        printf("Push constant range: SHARED [0-%zu]\n", pc_size);
+
       // TODO: Handle additional shader stages:
       // - Geometry shader (VK_SHADER_STAGE_GEOMETRY_BIT)
       // - Tessellation shaders (VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
@@ -971,60 +976,66 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       auto next_token = tecniq_input_stream->ReadIndexedString(chunkreader);
       if (next_token == "merged_resources") {
         auto merged_resources = std::make_shared<VkMergedResources>();
-        
+
         size_t num_descriptor_sets = tecniq_input_stream->ReadItem<size_t>();
-        
+
         for (size_t ds_idx = 0; ds_idx < num_descriptor_sets; ds_idx++) {
           auto descriptor_set_token = tecniq_input_stream->ReadIndexedString(chunkreader);
           OrkAssert(descriptor_set_token == "descriptor_set");
-          
+
           int descriptor_set_id = tecniq_input_stream->ReadItem<int>();
-          
+
           size_t num_sources = tecniq_input_stream->ReadItem<size_t>();
-          
-          //printf("MERGED RESOURCES: DESCRIPTOR_SET<%d> HAS %zu SOURCES\n", descriptor_set_id, num_sources);
-          
+
+          // printf("MERGED RESOURCES: DESCRIPTOR_SET<%d> HAS %zu SOURCES\n", descriptor_set_id, num_sources);
+
           for (size_t src_idx = 0; src_idx < num_sources; src_idx++) {
             auto source_token = tecniq_input_stream->ReadIndexedString(chunkreader);
             OrkAssert(source_token == "source");
-            
+
             auto source_name = tecniq_input_stream->ReadIndexedString(chunkreader);
             auto source_type = tecniq_input_stream->ReadIndexedString(chunkreader);
-            
-            //printf("  SOURCE: NAME<%s> TYPE<%s>\n", source_name.c_str(), source_type.c_str());
-            
-            auto descriptor_set_source = std::make_shared<VkDescriptorSetSource>();
+
+            // printf("  SOURCE: NAME<%s> TYPE<%s>\n", source_name.c_str(), source_type.c_str());
+
+            auto descriptor_set_source         = std::make_shared<VkDescriptorSetSource>();
             descriptor_set_source->source_name = source_name;
             descriptor_set_source->source_type = source_type;
-            
+
             size_t num_bindings = tecniq_input_stream->ReadItem<size_t>();
-            
+
             for (size_t bind_idx = 0; bind_idx < num_bindings; bind_idx++) {
               auto binding_token = tecniq_input_stream->ReadIndexedString(chunkreader);
               OrkAssert(binding_token == "binding");
-              
-              auto binding = std::make_shared<VkMergedResourceBinding>();
-              binding->binding_id = tecniq_input_stream->ReadItem<uint32_t>();
-              binding->name = tecniq_input_stream->ReadIndexedString(chunkreader);
-              binding->datatype = tecniq_input_stream->ReadIndexedString(chunkreader);
+
+              auto binding             = std::make_shared<VkMergedResourceBinding>();
+              binding->binding_id      = tecniq_input_stream->ReadItem<uint32_t>();
+              binding->name            = tecniq_input_stream->ReadIndexedString(chunkreader);
+              binding->datatype        = tecniq_input_stream->ReadIndexedString(chunkreader);
               binding->original_source = tecniq_input_stream->ReadIndexedString(chunkreader);
-              binding->type = static_cast<VkMergedResourceBinding::Type>(
-                  tecniq_input_stream->ReadItem<uint32_t>());
-              
-              const char* type_str = (binding->type == VkMergedResourceBinding::Type::UniformBlock) ? "UBO" :
-                                    (binding->type == VkMergedResourceBinding::Type::Sampler) ? "SAMPLER" :
-                                    (binding->type == VkMergedResourceBinding::Type::StorageBuffer) ? "SSBO" : "UNKNOWN";
-              if(1)printf("XXXX<dbread> tekname<%s> BINDING[%u]: NAME<%s> TYPE<%s> DATATYPE<%s> ORIG_SOURCE<%s>\n", 
-                     str_tek_name.c_str(), binding->binding_id, binding->name.c_str(), type_str, 
-                     binding->datatype.c_str(), binding->original_source.c_str());
-              
+              binding->type            = static_cast<VkMergedResourceBinding::Type>(tecniq_input_stream->ReadItem<uint32_t>());
+
+              const char* type_str = (binding->type == VkMergedResourceBinding::Type::UniformBlock)    ? "UBO"
+                                     : (binding->type == VkMergedResourceBinding::Type::Sampler)       ? "SAMPLER"
+                                     : (binding->type == VkMergedResourceBinding::Type::StorageBuffer) ? "SSBO"
+                                                                                                       : "UNKNOWN";
+              if (0)
+                printf(
+                    "XXXX<dbread> tekname<%s> BINDING[%u]: NAME<%s> TYPE<%s> DATATYPE<%s> ORIG_SOURCE<%s>\n",
+                    str_tek_name.c_str(),
+                    binding->binding_id,
+                    binding->name.c_str(),
+                    type_str,
+                    binding->datatype.c_str(),
+                    binding->original_source.c_str());
+
               descriptor_set_source->bindings.push_back(binding);
             }
-            
+
             merged_resources->descriptor_sets[descriptor_set_id].push_back(descriptor_set_source);
           }
         }
-        
+
         vk_pass->_merged_resources = merged_resources;
       } else if (next_token == "no_merged_resources") {
         // No merged resources for this pass
@@ -1050,7 +1061,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
 
   // Read state blocks before techniques (so they can be pre-resolved)
   read_stateblocks(vulkan_shaderfile.get(), tecniq_input_stream, chunkreader);
-  
+
   for (size_t i = 0; i < num_techniques; i++) {
     auto tecnik = read_technique_from_stream();
   }

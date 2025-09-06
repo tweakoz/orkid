@@ -297,21 +297,8 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipeline(const FxPipelinePermutation& per
     auto require_pbr = mtl->_vars->typedValueForKey<bool>("requirePBRparams");
 
     if (require_pbr and require_pbr.value()) {
-      // printf("WTF\n");
-      // pipeline->bindParam(mtl->_paramMapColor, mtl->_texColor);
-      // pipeline->bindParam(mtl->_paramMapColor, mtl->_texAmbOcc);
-      // printf("_texAmbOcc<%p>\n", mtl->_texAmbOcc.get());
-      // pipeline->bindParam(mtl->_paramMapNormal, mtl->_texNormal);
-      // pipeline->bindParam(mtl->_paramMapMtlRuf, mtl->_texMtlRuf);
-      // pipeline->bindParam(mtl->_paramMapEmissive, mtl->_texEmissive);
-
       pipeline->bindParam(mtl->_parMetallicFactor, mtl->_metallicFactor);
       pipeline->bindParam(mtl->_parRoughnessFactor, mtl->_roughnessFactor);
-      if(1)printf("pipeline<%p> PBRMaterial<%p> _parMetallicFactor<%f> _parRoughnessFactor<%f>\n",
-            (void*) pipeline.get(),
-             mtl,
-             mtl->_metallicFactor,
-             mtl->_roughnessFactor);
     }
 
     pipeline->_parInstanceMatrixMap = mtl->_paramInstanceMatrixMap;
