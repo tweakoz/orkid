@@ -120,6 +120,69 @@ struct ShadLangParser : public Parser {
 
   scannerlightview_ptr_t _top_slv;
   scannerview_ptr_t _top_view;
+
+  ////////////////////////////////////////////
+  // Pass report generation (for debugging)
+  ////////////////////////////////////////////
+  
+  struct UniformBlockMember {
+    std::string name;
+    std::string type;
+    size_t offset;
+    size_t size;
+  };
+  
+  struct UniformBlockInfo {
+    std::string name;
+    size_t descriptor_set_id;
+    size_t binding_id;
+    size_t total_size;
+    std::vector<UniformBlockMember> members;
+    std::set<std::string> stages; // "vertex", "fragment", "geometry"
+  };
+  
+  struct SamplerInfo {
+    std::string name;
+    std::string type; // "Sampler2D", "Sampler3D", etc.
+    size_t descriptor_set_id;
+    size_t binding_id;
+    std::set<std::string> stages;
+  };
+  
+  struct DescriptorSetInfo {
+    size_t set_id;
+    std::vector<UniformBlockInfo> uniform_blocks;
+    std::vector<SamplerInfo> samplers;
+    size_t total_bindings;
+    size_t total_buffer_size;
+  };
+  
+  struct PassReportData {
+    std::string shader_name;
+    std::string technique_name;
+    int pass_num;
+    std::map<size_t, DescriptorSetInfo> descriptor_sets;
+    std::vector<std::string> uniform_block_names;
+    std::vector<std::string> sampler_names;
+    std::vector<std::string> push_constant_names;
+    std::vector<std::string> warnings;
+    bool has_vertex_shader = false;
+    bool has_fragment_shader = false;
+    bool has_geometry_shader = false;
+    int vertex_shader_lines = 0;
+    int fragment_shader_lines = 0;
+    int geometry_shader_lines = 0;
+    size_t push_constant_size = 0;
+  };
+  
+  std::map<std::string, PassReportData> _pass_reports; // key: "technique.passnum"
+  
+  void collectPassReportData(SHAST::astnode_ptr_t top);
+  void writePassReports();
+  void writePassReport(const std::string& key, const PassReportData& report);
+  size_t calculateStd140Offset(const std::string& type, size_t current_offset);
+  size_t getStd140Size(const std::string& type);
+  
 }; // struct ShadLangParser
 
 void implStackDump(slpcache_ptr_t cache);
