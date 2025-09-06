@@ -780,26 +780,67 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
   size_t estimated_buffer_count = 128; // Estimate max UBOs we might have
   buffer_infos.reserve(estimated_buffer_count);
   
-  // First, handle textures/samplers
+  // First, handle textures/samplers - ensure ALL samplers from merged resources are bound
+  // Build a map of what's already bound
+  std::map<int, vktexobj_ptr_t> bound_textures;
   for (auto it : program->_merged_resource_bindings) {
     auto param = it.first;
     auto [set_id, binding_id] = it.second;
     auto vk_tex = program->_textures_by_orkparam[param];
-    auto& desc_info = vk_tex->_vkdescriptor_info;
-    OrkAssert(desc_info.imageView != VK_NULL_HANDLE);
+    bound_textures[binding_id] = vk_tex;
+  }
+  
+  // Now iterate through ALL sampler bindings from merged resources
+  if (_ctxVK->_fxi->_currentVKPASS && _ctxVK->_fxi->_currentVKPASS->_merged_resources) {
+    auto merged_resources = _ctxVK->_fxi->_currentVKPASS->_merged_resources;
     
-    VkWriteDescriptorSet DWRITE = {};
-    initializeVkStruct(DWRITE, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-    DWRITE.dstSet          = descset_ptr->_vkdescset;
-    DWRITE.dstBinding      = binding_id; // Use merged resource binding ID
-    DWRITE.descriptorCount = 1;
-    DWRITE.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    DWRITE.pImageInfo      = &desc_info;
-
-    logchan_vkpip->log("update descset (merged): set<%d> bidx<%d> tex<%p> param<%s>", 
-                       set_id, binding_id, (void*)vk_tex.get(), param->_name.c_str());
-
-    descriptor_writes.push_back(DWRITE);
+    for (const auto& [set_id, sources] : merged_resources->descriptor_sets) {
+      for (const auto& source : sources) {
+        for (const auto& binding : source->bindings) {
+          if (binding->type == VkMergedResourceBinding::Type::Sampler) {
+            vktexobj_ptr_t vk_tex;
+            
+            // Check if this binding is already bound
+            auto bound_it = bound_textures.find(binding->binding_id);
+            if (bound_it != bound_textures.end()) {
+              vk_tex = bound_it->second;
+              logchan_vkpip->log("update descset (merged): set<%d> bidx<%d> tex<%p> name<%s>", 
+                                set_id, binding->binding_id, (void*)vk_tex.get(), binding->name.c_str());
+            } else {
+              // Use default texture for unbound samplers
+              // Determine texture type from datatype string if possible
+              if (binding->datatype.find("Cube") != std::string::npos) {
+                vk_tex = _ctxVK->_defaultTexImplCube;
+              } else if (binding->datatype.find("Array") != std::string::npos || 
+                        binding->datatype.find("2DA") != std::string::npos) {
+                vk_tex = _ctxVK->_defaultTexImpl2DArray;
+              } else if (binding->datatype.find("3D") != std::string::npos) {
+                vk_tex = _ctxVK->_defaultTexImpl3D;
+              } else {
+                vk_tex = _ctxVK->_defaultTexImpl2D; // Default to 2D
+              }
+              logchan_vkpip->log("update descset (default): set<%d> bidx<%d> tex<%p> name<%s> type<%s>", 
+                                set_id, binding->binding_id, (void*)vk_tex.get(), 
+                                binding->name.c_str(), binding->datatype.c_str());
+            }
+            
+            // Create descriptor write
+            auto& desc_info = vk_tex->_vkdescriptor_info;
+            OrkAssert(desc_info.imageView != VK_NULL_HANDLE);
+            
+            VkWriteDescriptorSet DWRITE = {};
+            initializeVkStruct(DWRITE, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+            DWRITE.dstSet          = descset_ptr->_vkdescset;
+            DWRITE.dstBinding      = binding->binding_id;
+            DWRITE.descriptorCount = 1;
+            DWRITE.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            DWRITE.pImageInfo      = &desc_info;
+            
+            descriptor_writes.push_back(DWRITE);
+          }
+        }
+      }
+    }
   }
   
   // Now handle UBOs from merged resources  
