@@ -7,6 +7,7 @@
 
 #include "headers/vulkan_ctx.h"
 #include "vulkan_captureasync.h"
+#include "vulkan_ubo_dynamic.h"
 #include <ork/lev2/gfx/image.h>
 
 #define USE_OIIO
@@ -282,6 +283,17 @@ void VkContext::_initVulkanCommon() {
   ////////////////////////////
   
   _initDefaultTextures();
+  
+  ////////////////////////////
+  // Initialize dynamic UBO system
+  ////////////////////////////
+  
+  extern VkDynamicUBOSystem* g_dynamic_ubo_system;
+  if (!g_dynamic_ubo_system) {
+    g_dynamic_ubo_system = new VkDynamicUBOSystem();
+    g_dynamic_ubo_system->init(this);
+    printf("VkContext: Initialized dynamic UBO system\n");
+  }
 }
 
   void VkContext::_beginAssetProcessing() {

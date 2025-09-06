@@ -54,6 +54,10 @@ struct VkFxShaderUniformBlk : public VkFxShaderDescriptorSet {
   void* _mapped_ptr = nullptr;
   bool _needs_flush = true;  // false if using coherent memory
   
+  // For dynamic UBO support
+  uint32_t _binding_id = 0;  // Binding point in descriptor set
+  std::string _name;         // Name of the uniform block
+  
   void addDirtyRange(size_t offset, size_t size);
   void coalesceRanges();
   std::vector<alignedrange_ptr_t> getAlignedRanges(VkDeviceSize atom_size) const;
@@ -214,6 +218,7 @@ struct VkPipelineObject {
   VkPipelineObject(vkcontext_rawptr_t ctx);
 
   void applyPendingPushConstants(VkCommandBuffer cmdbuf);
+  void applyPendingUboUpdates(VkCommandBuffer cmdbuf, uint32_t frame_index);
 
   vkfxsprg_ptr_t _vk_program;
   VkGraphicsPipelineCreateInfo _VKGFXPCI;
@@ -226,6 +231,11 @@ struct VkPipelineObject {
   
   // Storage for merged resource descriptor set layouts
   std::vector<VkDescriptorSetLayout> _merged_resource_descriptor_set_layouts;
+  
+  // Dynamic UBO support
+  std::vector<VkFxShaderUniformBlk*> _uniform_blocks;  // Ordered by binding ID
+  std::map<uint32_t, VkFxShaderUniformBlk*> _ubo_by_binding;  // Quick lookup
+  std::vector<uint32_t> _dynamic_offsets;  // Populated at draw time
   
   // Report filename for debugging descriptor set issues
   std::string _report_filename;

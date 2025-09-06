@@ -7,6 +7,7 @@
 
 #include "headers/vulkan_ctx.h"
 #include "vulkan_ub_layout.inl"
+#include "vulkan_ubo_dynamic.h"
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/util/hexdump.inl>
 
@@ -24,6 +25,8 @@ VkFxInterface::VkFxInterface(vkcontext_rawptr_t ctx)
     _default_rasterstate->_frontface = FLIP_Y_LIKE_OPENGL 
                                      ? EFrontFace::CLOCKWISE 
                                      : EFrontFace::COUNTER_CLOCKWISE;
+    
+    // Dynamic UBO system will be initialized after Vulkan setup
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -7,6 +7,7 @@
 
 #include "headers/vulkan_ctx.h"
 #include "vulkan_ub_layout.inl"
+#include "vulkan_ubo_dynamic.h"
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/util/hexdump.inl>
 #include <ctime>
@@ -288,9 +289,39 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
               case VkMergedResourceBinding::Type::Sampler:
                 vk_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                 break;
-              case VkMergedResourceBinding::Type::UniformBlock:
-                vk_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+              case VkMergedResourceBinding::Type::UniformBlock: {
+                // ALL uniform blocks are now dynamic
+                vk_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+                
+                // Track this UBO for the pipeline
+                // Find or create VkFxShaderUniformBlk for this binding
+                VkFxShaderUniformBlk* ubo = nullptr;
+                
+                // Check if UBO already exists in pass
+                for (auto* existing_ubo : _currentVKPASS->_dirty_uniform_blocks) {
+                  if (existing_ubo->_orkparamblock && 
+                      existing_ubo->_orkparamblock->_name == binding->name) {
+                    ubo = existing_ubo;
+                    break;
+                  }
+                }
+                
+                if (!ubo) {
+                  // Create new UBO structure
+                  ubo = new VkFxShaderUniformBlk();
+                  ubo->_descriptor_set_id = set_id;
+                  ubo->_binding_id = binding->binding_id;
+                  ubo->_name = binding->name;
+                  // Note: _orkparamblock will be set when uniform block is actually bound
+                  // For now just track the binding metadata
+                }
+                
+                // Add to pipeline's UBO list
+                rval->_uniform_blocks.push_back(ubo);
+                rval->_ubo_by_binding[binding->binding_id] = ubo;
+                
                 break;
+              }
               case VkMergedResourceBinding::Type::StorageBuffer:
                 vk_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
                 break;
@@ -328,6 +359,19 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
           logchan_vkpip->log("  Created descriptor set layout for set %d with %zu bindings", set_id, bindings.size());
         }
       }
+      
+      // Sort uniform blocks by binding ID for consistent ordering with dynamic offsets
+      std::sort(rval->_uniform_blocks.begin(),
+                rval->_uniform_blocks.end(),
+                [](const VkFxShaderUniformBlk* a, const VkFxShaderUniformBlk* b) {
+                  // First sort by descriptor set, then by binding within the set
+                  if (a->_descriptor_set_id != b->_descriptor_set_id) {
+                    return a->_descriptor_set_id < b->_descriptor_set_id;
+                  }
+                  return a->_binding_id < b->_binding_id;
+                });
+      
+      logchan_vkpip->log("Pipeline has %zu uniform blocks tracked for dynamic updates", rval->_uniform_blocks.size());
       
       PLCI.setLayoutCount = descriptor_set_layouts.size();
       PLCI.pSetLayouts = descriptor_set_layouts.data();
@@ -549,13 +593,37 @@ void VkFxInterface::_bindPipeline(VkCommandBuffer cmdbuf, vkpipeline_obj_ptr_t p
 void VkFxInterface::_uploadPipelineData(VkCommandBuffer CB, 
                                         vkpipeline_obj_ptr_t pipeline){
   auto prog      = _currentVKPASS->_vk_program;
+  
+  // Apply dynamic UBO updates for this draw
+  // This allocates per-draw memory and copies shadow buffers
+  static uint32_t frame_index = 0; // TODO: Get actual frame index from swapchain
+  pipeline->applyPendingUboUpdates(CB, frame_index);
+  
   // Flush uniform blocks BEFORE fetching descriptor set
   // This ensures the GPU buffers have the correct data when bound
+  // Note: With dynamic UBOs, this may become unnecessary
   _flushDirtyUniformBlocks();
+  
   auto desc_set = pipeline->_descriptorSetCache->fetchDescriptorSetForProgram(prog);
   if (desc_set) {
-    _bindGfxDescriptorSetOnSlot(CB, desc_set, 0);
+    // Bind descriptor set with dynamic offsets from applyPendingUboUpdates
+    if (!pipeline->_dynamic_offsets.empty()) {
+      vkCmdBindDescriptorSets(
+        CB,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        pipeline->_pipelineLayout,
+        0,  // first set
+        1,  // set count
+        &desc_set->_vkdescset,
+        pipeline->_dynamic_offsets.size(),
+        pipeline->_dynamic_offsets.data()
+      );
+    } else {
+      // Fallback to static binding if no dynamic offsets
+      _bindGfxDescriptorSetOnSlot(CB, desc_set, 0);
+    }
   }
+  
   pipeline->applyPendingPushConstants(CB);
 }
 
@@ -654,6 +722,39 @@ void VkPipelineObject::applyPendingPushConstants(VkCommandBuffer cmdbuf) { //
 
 VulkanDescriptorSetCache::VulkanDescriptorSetCache(vkcontext_rawptr_t ctx)
     : _ctxVK(ctx) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkPipelineObject::applyPendingUboUpdates(VkCommandBuffer cmdbuf, uint32_t frame_index) {
+  // Ensure global dynamic UBO system is initialized
+  extern VkDynamicUBOSystem* g_dynamic_ubo_system;
+  if (!g_dynamic_ubo_system) {
+    // Dynamic UBO system not initialized yet
+    return;
+  }
+  
+  _dynamic_offsets.clear();
+  
+  // Process all UBOs in binding order (already sorted)
+  for (auto* ubo : _uniform_blocks) {
+    // Allocate dynamic memory for this draw
+    auto allocation = g_dynamic_ubo_system->allocate(
+      ubo->_shadow_buffer.size(),
+      frame_index
+    );
+    
+    // Copy shadow buffer to dynamic allocation
+    memcpy(allocation.cpu_ptr,
+           ubo->_shadow_buffer.data(),
+           ubo->_shadow_buffer.size());
+    
+    // Track offset for descriptor binding
+    _dynamic_offsets.push_back(allocation.dynamic_offset);
+  }
+  
+  // Note: The actual descriptor set binding with dynamic offsets will happen
+  // in the draw call when descriptor sets are bound
 }
 
 ///////////////////////////////////////////////////////////////////////////////
