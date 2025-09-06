@@ -283,6 +283,7 @@ void read_stateblocks(
 
 vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock, FxShader* ork_shader) {
 
+  printf("VkFxInterface::_readFromDataBlock datablock<%p> ork_shader<%s>\n", (void*) vkfx_datablock.get(), ork_shader->mName.c_str());
   ////////////////////////////////////////////////////////
   // parse datablock
   ////////////////////////////////////////////////////////

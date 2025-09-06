@@ -46,7 +46,7 @@ VulkanFxShaderObject::~VulkanFxShaderObject() {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader) {
-    
+  pshader->mName = input_path.c_str();
   auto it = _fxshaderfiles.find(input_path);
   vkfxsfile_ptr_t vulkan_shaderfile;
   ////////////////////////////////////////////
@@ -76,6 +76,7 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
 
 FxShader* VkFxInterface::shaderFromShaderText(const std::string& name, const std::string& shadertext) {
   FxShader* shader                  = new FxShader;
+  shader->mName                      = name;
   // Create the parser cache with the name as top-level path
   auto slp_cache = std::make_shared<ShadLangParserCache>();
   slp_cache->_toplevel_path = file::Path(name.c_str());

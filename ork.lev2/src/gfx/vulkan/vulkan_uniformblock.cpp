@@ -122,7 +122,7 @@ void VkFxInterface::_flushDirtyUniformBlocks() {
       OrkAssert(block->_mapped_ptr != nullptr);
       for (auto& range : block->_dirty_ranges) {
 
-        //printf("Flushing coherent dirty range: offset=%zu, size=%zu\n", range->offset, range->size);
+        printf("Flushing coherent dirty range: offset=%zu, size=%zu\n", range->offset, range->size);
 
         memcpy(
           static_cast<uint8_t*>(block->_mapped_ptr) + range->offset,
@@ -146,16 +146,18 @@ void VkFxInterface::_flushDirtyUniformBlocks() {
                  range->size);
           
           // Dump shadow buffer contents for this range
-          printf("  Shadow buffer contents [offset %zu, size %zu]:\n", 
+          if(0){
+            printf("  Shadow buffer contents [offset %zu, size %zu]:\n", 
                  range->offset,
                  range->size);
-          hexdumpbytes(block->_shadow_buffer.data() + range->offset, range->size);
+            hexdumpbytes(block->_shadow_buffer.data() + range->offset, range->size);
           
-          // Dump mapped memory contents for this range (after memcpy)
-          printf("  Mapped memory contents [offset %zu, size %zu]:\n",
-                 range->offset,
-                 range->size);
-          hexdumpbytes(static_cast<uint8_t*>(block->_mapped_ptr) + range->offset, range->size);
+            // Dump mapped memory contents for this range (after memcpy)
+            printf("  Mapped memory contents [offset %zu, size %zu]:\n",
+                   range->offset,
+                   range->size);
+            hexdumpbytes(static_cast<uint8_t*>(block->_mapped_ptr) + range->offset, range->size);
+          }
         }
       }
       block->_dirty_ranges.clear();
@@ -191,7 +193,7 @@ void VkFxInterface::_flushDirtyUniformBlocks() {
         flush_ranges.push_back(flush_range);
         
         // Debug: dump the range being flushed for ublk_std_pbr
-        if (block->_orkparamblock && block->_orkparamblock->_name == "ublk_std_pbr") {
+        if (block->_orkparamblock) {
           printf("VK_FLUSH_RANGE: block<%s> flush offset=%llu size=%llu\n", 
                  block->_orkparamblock->_name.c_str(),
                  (unsigned long long)range->offset,

@@ -113,7 +113,7 @@ struct VulkanInstance {
   uint32_t _numgroups = 0;
   shadlang::slpcache_ptr_t _slp_cache;
   MpMcBoundedQueue<load_token_t> _loadTokens;
-  bool _debugEnabled = false;
+  bool _debugEnabled = true;
   vkdeviceinfo_ptr_t _preferred;
 
   std::vector<VkContext*> _contexts;
@@ -354,8 +354,6 @@ struct VkFxInterface final : public FxInterface {
   size_t numDescriptorSetBindPoints(fxtechnique_constptr_t tek);
 
   fxdescriptorsetbindpoint_constptr_t descriptorSetBindPoint(fxtechnique_constptr_t tek, int slot_index);
-
-  void bindDescriptorSet(fxdescriptorsetbindpoint_constptr_t bindingpoint, fxdescriptorset_constptr_t the_set);
 
   //////////////////////////////////////////
 

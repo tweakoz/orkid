@@ -53,27 +53,27 @@ uniform_block ublk_std_depth(descriptor_set 0) {
 ///////////////////////////////////////////////////////////////
 uniform_block ublk_std_pbr(descriptor_set 0) {
   //////////////////////////////
-  vec3 AmbientLevel;
-  vec3 EyePostion;
-  vec3 EyePostionL;
-  vec3 EyePostionR;
-  vec4 ModColor;
+  vec3 AmbientLevel;          // 0x00 
+  vec3 EyePostion;            // 0x10
+  vec3 EyePostionL;           // 0x20
+  vec3 EyePostionR;           // 0x30
+  vec4 ModColor;              // 0x40
   //////////////////////////////
-  float MetallicFactor;
-  float RoughnessFactor;
-  float RoughnessPower;
-  float SkyboxLevel;
-  float SpecularLevel;
-  float DiffuseLevel;
-  float EnvironmentMipBias;
-  float EnvironmentMipScale;
-  float RoughnessLevels;
-  float SpecularMipBias;
-  float DepthFogDistance;
-  float DepthFogPower;
+  float MetallicFactor;       // 0x50
+  float RoughnessFactor;      // 0x54
+  float RoughnessPower;       // 0x58
+  float SkyboxLevel;          // 0x5c
+  float SpecularLevel;        // 0x60
+  float DiffuseLevel;         // 0x64
+  float EnvironmentMipBias;   // 0x68
+  float EnvironmentMipScale;  // 0x6c
+  float RoughnessLevels;      // 0x70
+  float SpecularMipBias;      // 0x74
+  float DepthFogDistance;     // 0x78
+  float DepthFogPower;        // 0x7c
   //////////////////////////////
-  vec4 AuxA;
-  vec4 AuxB;
+  vec4 AuxA;                  // 0x80
+  vec4 AuxB;                  // 0x90
 
 }
 ///////////////////////////////////////////////////////////////

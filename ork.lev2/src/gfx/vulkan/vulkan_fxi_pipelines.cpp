@@ -13,7 +13,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_vkpip = logger()->configureChannel("VKPIP", fvec3(1,1,.2), false);
+static logchannel_ptr_t logchan_vkpip = logger()->configureChannel("VKPIP", fvec3(1,1,.2), true);
 
 vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
     vkvtxbuf_ptr_t vb,             //
@@ -523,28 +523,20 @@ VulkanDescriptorSetCache::VulkanDescriptorSetCache(vkcontext_rawptr_t ctx)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkFxInterface::bindDescriptorSet(fxdescriptorsetbindpoint_constptr_t bindingpoint, fxdescriptorset_constptr_t the_set) {
-  OrkAssert(false);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void VkFxInterface::_bindGfxDescriptorSetOnSlot(VkCommandBuffer cmdbuf, vkdescriptorset_ptr_t desc_set, size_t slot) {
-  // Only bind if desc_set is not nullptr (i.e., there are descriptor sets)
-  if (desc_set) {
-    // Debug: Log descriptor set binding (descriptor sets don't have names, skip this check)
-    
-    vkCmdBindDescriptorSets(
-        cmdbuf,
-        VK_PIPELINE_BIND_POINT_GRAPHICS,   // pipeline bind point
-        _currentPipeline->_pipelineLayout, // pipeline layout
-        slot,                              // index into descriptor sets slots
-        1,
-        &desc_set->_vkdescset, // bind 1 descriptor set
-        0,
-        nullptr); // dynamic offsets
+void VkFxInterface::_bindGfxDescriptorSetOnSlot(VkCommandBuffer cmdbuf,         //
+                                                vkdescriptorset_ptr_t desc_set, //
+                                                size_t slot) {                  //
+  OrkAssert(desc_set);
+  vkCmdBindDescriptorSets(
+      cmdbuf,
+      VK_PIPELINE_BIND_POINT_GRAPHICS,   // pipeline bind point
+      _currentPipeline->_pipelineLayout, // pipeline layout
+      slot,                              // index into descriptor sets slots
+      1,                                 // bind 1 descriptor set
+      &desc_set->_vkdescset,             // bind 1 descriptor set
+      0,                                 // dynamic offset count
+      nullptr);                          // dynamic offsets
     _active_gfx_descriptorSets[slot] = desc_set;
-  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

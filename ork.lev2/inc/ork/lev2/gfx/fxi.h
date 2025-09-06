@@ -67,8 +67,6 @@ public:
   virtual fxdescriptorsetbindpoint_constptr_t descriptorSetBindPoint(fxtechnique_constptr_t tek, int slot_index) {
     return nullptr;
   }
-  virtual void bindDescriptorSet(fxdescriptorsetbindpoint_constptr_t bindingpoint, fxdescriptorset_constptr_t the_set) {
-  }
 
   //////////////////////////////////////////
 
