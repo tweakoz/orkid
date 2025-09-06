@@ -1476,6 +1476,11 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
                                              binding_counter++,
                                              binding.datatype.c_str(),
                                              binding.name.c_str());
+
+                                             printf("XXXX<merging> binding_name<%s>, type<%s> id<%d>\n",
+                                             binding.name.c_str(),
+                                             binding.datatype.c_str(),
+                                             binding.binding_id);
             binding_node->_binding_id = binding.binding_id;
             binding_node->_binding_name = binding.name;
             binding_node->_datatype = binding.datatype;

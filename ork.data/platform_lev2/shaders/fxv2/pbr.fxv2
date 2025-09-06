@@ -19,6 +19,7 @@ technique FWD_UNLIT_NI_MO {
 	fxconfig=fxcfg_default;
 	vf_pass={vs_forward_unlit,ps_forward_unlit,sb_default}
 }
+
 ///////////////////////////////////////////////////////////////
 technique FWD_CV_EMI_RI_NI_MO {
 	fxconfig=fxcfg_default;
