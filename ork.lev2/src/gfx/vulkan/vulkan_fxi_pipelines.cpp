@@ -332,24 +332,32 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkFxInterface::_bindPipeline(VkCommandBuffer cmdbuf, vkpipeline_obj_ptr_t pipe) {
-
-  if (_currentPipeline != pipe) {
-    vkCmdBindPipeline(
-        cmdbuf,                          // command buffer
-        VK_PIPELINE_BIND_POINT_GRAPHICS, // pipeline type
-        pipe->_pipeline);                // pipeline
-    _currentPipeline            = pipe;
-    _currentPipeline->_viewport = nullptr;
-    _currentPipeline->_scissor  = nullptr;
-  }
+void VkFxInterface::_bindPipeline(VkCommandBuffer cmdbuf, vkpipeline_obj_ptr_t pipeline) {
 
   auto fbi    = _contextVK->_fbi;
   auto fbi_vp = fbi->_viewportTracker;
   auto fbi_sc = fbi->_scissorTracker;
 
-  if (pipe->_viewport != fbi_vp) {
-    pipe->_viewport = fbi_vp;
+  ////////////////////////////////////////
+  // bind pipeline (if not already bound)
+  ////////////////////////////////////////
+
+  if (_currentPipeline != pipeline) {
+    vkCmdBindPipeline(
+        cmdbuf,                          // command buffer
+        VK_PIPELINE_BIND_POINT_GRAPHICS, // pipeline type
+        pipeline->_pipeline);                // pipeline
+    _currentPipeline            = pipeline;
+    _currentPipeline->_viewport = nullptr;
+    _currentPipeline->_scissor  = nullptr;
+  }
+
+  ////////////////////////////////////////
+  // set dynamic viewport (if changed)
+  ////////////////////////////////////////
+
+  if (pipeline->_viewport != fbi_vp) {
+    pipeline->_viewport = fbi_vp;
     VkViewport vkvp = {};
     vkvp.x          = fbi_vp->_x;
     vkvp.width      = fbi_vp->_width;
@@ -365,21 +373,26 @@ void VkFxInterface::_bindPipeline(VkCommandBuffer cmdbuf, vkpipeline_obj_ptr_t p
       vkvp.height = fbi_vp->_height;
     }
 
-    // printf( "SETVP<%p> x<%f> y<%f> w<%f> h<%f>\n", pipe.get(), vkvp.x, vkvp.y, vkvp.width, vkvp.height);
+    // printf( "SETVP<%p> x<%f> y<%f> w<%f> h<%f>\n", pipeline.get(), vkvp.x, vkvp.y, vkvp.width, vkvp.height);
     vkCmdSetViewport(
         cmdbuf, // command buffer
         0,      // first viewport
         1,      // viewport count
         &vkvp); // viewport data
   }
-  if (pipe->_scissor != fbi_sc) {
-    pipe->_scissor     = fbi_sc;
+
+  ////////////////////////////////////////
+  // set dynamic scissor (if changed)
+  ////////////////////////////////////////
+
+  if (pipeline->_scissor != fbi_sc) {
+    pipeline->_scissor     = fbi_sc;
     VkRect2D vksc      = {};
     vksc.offset.x      = fbi_sc->_x;
     vksc.offset.y      = fbi_sc->_y;
     vksc.extent.width  = fbi_sc->_width;
     vksc.extent.height = fbi_sc->_height;
-    // printf( "SETSC<%p> x<%d> y<%d> w<%d> h<%d>\n", pipe.get(), vksc.offset.x, vksc.offset.y, vksc.extent.width,
+    // printf( "SETSC<%p> x<%d> y<%d> w<%d> h<%d>\n", pipeline.get(), vksc.offset.x, vksc.offset.y, vksc.extent.width,
     // vksc.extent.height);
     vkCmdSetScissor(
         cmdbuf, // command buffer
@@ -387,7 +400,31 @@ void VkFxInterface::_bindPipeline(VkCommandBuffer cmdbuf, vkpipeline_obj_ptr_t p
         1,      // scissor count
         &vksc); // scissor data
   }
+
+  ////////////////////////////////////////
+  // upload descriptor sets and push constants
+  ////////////////////////////////////////
+
+  _uploadPipelineData(cmdbuf, pipeline);
+
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkFxInterface::_uploadPipelineData(VkCommandBuffer CB, 
+                                        vkpipeline_obj_ptr_t pipeline){
+  auto prog      = _currentVKPASS->_vk_program;
+  // Flush uniform blocks BEFORE fetching descriptor set
+  // This ensures the GPU buffers have the correct data when bound
+  _flushDirtyUniformBlocks();
+  auto desc_set = pipeline->_descriptorSetCache->fetchDescriptorSetForProgram(prog);
+  if (desc_set) {
+    _bindGfxDescriptorSetOnSlot(CB, desc_set, 0);
+  }
+  pipeline->applyPendingPushConstants(CB);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::_flushRenderPassScopedState() {
   for (int slot = 0; slot < 4; slot++) {
@@ -694,9 +731,10 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
                 DWRITE.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
                 DWRITE.pBufferInfo     = &buffer_infos.back();
                 
-                if(0)printf("UBO_DESC_UPDATE: ubo<%s> binding<%d> buffer<%p> size<%zu>\n",
+                printf("UBO_DESC_UPDATE: ubo<%s> binding<%d> buffer<%p> size<%zu> block_ptr<%p>\n",
                        binding->name.c_str(), binding->binding_id,
-                       (void*)ubo_block->_gpu_buffer, ubo_block->_buffer_size);
+                       (void*)ubo_block->_gpu_buffer, ubo_block->_buffer_size,
+                       (void*)ubo_block);
                 
                 descriptor_writes.push_back(DWRITE);
               } else if (ubo_block) {

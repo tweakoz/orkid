@@ -533,20 +533,12 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
 
   ///////////////////////
   // bind pipeline
-  // bind descriptor set (if any)
-  // flush push constants
   // bind vertex buffer
   ///////////////////////
 
   auto& CB = _contextVK->_vkcmdbuffer_current;
 
   fxi->_bindPipeline(CB, pipeline);
-  auto desc_set = pipeline->_descriptorSetCache->fetchDescriptorSetForProgram(prog);
-  if (desc_set) {
-  fxi->_bindGfxDescriptorSetOnSlot(CB, desc_set, 0);
-  }
-  pipeline->applyPendingPushConstants(CB);
-  fxi->flushDirtyUniformBlocks();
   fxi->_bindVertexBufferOnSlot(CB, vk_vbimpl, 0);
       
   ///////////////////////
@@ -608,19 +600,11 @@ void VkGeometryBufferInterface::DrawIndexedPrimitiveEML(
 
   ///////////////////////
   // bind pipeline
-  // bind descriptor set (if any)
-  // flush push constants
   // bind vertex buffer
   ///////////////////////
 
   auto& CB = _contextVK->_vkcmdbuffer_current;
   fxi->_bindPipeline(CB,pipeline);
-  auto desc_set = pipeline->_descriptorSetCache->fetchDescriptorSetForProgram(prog);
-  if (desc_set) {
-  fxi->_bindGfxDescriptorSetOnSlot(CB,desc_set, 0);
-  }
-  pipeline->applyPendingPushConstants(CB);
-  fxi->flushDirtyUniformBlocks();
   fxi->_bindVertexBufferOnSlot(CB,vk_vbimpl, 0);
 
   ///////////////////////
@@ -704,12 +688,6 @@ void VkGeometryBufferInterface::DrawInstancedIndexedPrimitiveEML(
 
   auto& CB = _contextVK->_vkcmdbuffer_current;
   fxi->_bindPipeline(CB, pipeline);
-  auto desc_set = pipeline->_descriptorSetCache->fetchDescriptorSetForProgram(prog);
-  if (desc_set) {
-    fxi->_bindGfxDescriptorSetOnSlot(CB, desc_set, 0);
-  }
-  pipeline->applyPendingPushConstants(CB);
-  fxi->flushDirtyUniformBlocks();
   fxi->_bindVertexBufferOnSlot(CB, vk_vbimpl, 0);
 
   ///////////////////////

@@ -404,15 +404,42 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     OrkAssert(str_uniblk == "uniblk");
     auto str_uniblk_name                                = uniforms_input_stream->ReadIndexedString(chunkreader);
     auto dset_id                                        = uniforms_input_stream->ReadItem<size_t>();
-    auto vk_uniblk                                      = std::make_shared<VkFxShaderUniformBlk>();
-    vk_uniblk->_orkparamblock                           = std::make_shared<FxUniformBlock>();
-    vk_uniblk->_descriptor_set_id = dset_id;
-    //printf("UBO ASSIGNED TO DESCRIPTOR SET: UBO<%s> -> DESCRIPTOR_SET<%zu>\n", str_uniblk_name.c_str(), dset_id);
-    vulkan_shaderfile->_vk_uniformblks[str_uniblk_name] = vk_uniblk;
+    
+    // Check if uniform block already exists in this shader file
+    vkfxsuniblk_ptr_t vk_uniblk;
+    auto existing_it = vulkan_shaderfile->_vk_uniformblks.find(str_uniblk_name);
+    bool is_reused = false;
+    
+    if (existing_it != vulkan_shaderfile->_vk_uniformblks.end()) {
+      // REUSE EXISTING BLOCK - prevents duplicate shadow buffers and GPU allocations
+      vk_uniblk = existing_it->second;
+      is_reused = true;
+      
+      // Verify descriptor set ID matches
+      if (vk_uniblk->_descriptor_set_id != dset_id) {
+        printf("WARNING: UBO<%s> reused but descriptor set mismatch: existing<%zu> new<%zu>\n",
+               str_uniblk_name.c_str(), vk_uniblk->_descriptor_set_id, dset_id);
+      }
+      
+      printf("VK_UBO: REUSING UBO<%s> ptr<%p> for shader file\n", 
+             str_uniblk_name.c_str(), vk_uniblk.get());
+    } else {
+      // CREATE NEW BLOCK (first occurrence in this shader file)
+      vk_uniblk                                      = std::make_shared<VkFxShaderUniformBlk>();
+      vk_uniblk->_orkparamblock                           = std::make_shared<FxUniformBlock>();
+      vk_uniblk->_orkparamblock->_name = str_uniblk_name;  // SET THE NAME!
+      vk_uniblk->_descriptor_set_id = dset_id;
+      vulkan_shaderfile->_vk_uniformblks[str_uniblk_name] = vk_uniblk;
+      
+      printf("VK_UBO: CREATING UBO<%s> ptr<%p> DSID<%zu>\n", 
+             str_uniblk_name.c_str(), vk_uniblk.get(), dset_id);
+    }
 
+    // Only register with ork_shader if not already registered
     auto it = ork_shader->_uniformBlocks.find(str_uniblk_name);
-    OrkAssert(it==ork_shader->_uniformBlocks.end());
-    ork_shader->_uniformBlocks[str_uniblk_name] = vk_uniblk->_orkparamblock.get();
+    if (it == ork_shader->_uniformBlocks.end()) {
+      ork_shader->_uniformBlocks[str_uniblk_name] = vk_uniblk->_orkparamblock.get();
+    }
 
 
     if (0)
@@ -421,76 +448,90 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     auto str_params = uniforms_input_stream->ReadIndexedString(chunkreader);
     OrkAssert(str_params == "items");
     auto num_params = uniforms_input_stream->ReadItem<size_t>();
-    for (size_t j = 0; j < num_params; j++) {
-      auto str_param_datatype   = uniforms_input_stream->ReadIndexedString(chunkreader);
-      auto str_param_identifier = uniforms_input_stream->ReadIndexedString(chunkreader);
-      auto vk_param             = std::make_shared<VkFxShaderUniformBlkItem>();
-      vk_param->_datatype       = str_param_datatype;
-      vk_param->_identifier     = str_param_identifier;
-      vk_param->_offset         = uniforms_input_stream->ReadItem<size_t>();
-      vk_param->_parent_block   = vk_uniblk.get();
-      vk_param->_orkparam       = std::make_shared<FxShaderParam>();
-      vk_param->_orkparam->_name = str_param_identifier;
-      vk_param->_orkparam->_impl.set<VkFxShaderUniformBlkItem*>(vk_param.get());
-      vk_uniblk->_items_by_name[str_param_identifier] = vk_param;
-      vk_uniblk->_items_by_order.push_back(vk_param);
-      vk_uniblk->_orkparamblock->_subparams[str_param_identifier] = vk_param->_orkparam.get();
-      if (0)
-        printf("uniblk<%s> ADDING Item PARAM<%s>\n", str_uniblk_name.c_str(), str_param_identifier.c_str());
+    
+    if (!is_reused) {
+      // Process parameters only for new blocks
+      for (size_t j = 0; j < num_params; j++) {
+        auto str_param_datatype   = uniforms_input_stream->ReadIndexedString(chunkreader);
+        auto str_param_identifier = uniforms_input_stream->ReadIndexedString(chunkreader);
+        auto vk_param             = std::make_shared<VkFxShaderUniformBlkItem>();
+        vk_param->_datatype       = str_param_datatype;
+        vk_param->_identifier     = str_param_identifier;
+        vk_param->_offset         = uniforms_input_stream->ReadItem<size_t>();
+        vk_param->_parent_block   = vk_uniblk.get();
+        vk_param->_orkparam       = std::make_shared<FxShaderParam>();
+        vk_param->_orkparam->_name = str_param_identifier;
+        vk_param->_orkparam->_impl.set<VkFxShaderUniformBlkItem*>(vk_param.get());
+        vk_uniblk->_items_by_name[str_param_identifier] = vk_param;
+        vk_uniblk->_items_by_order.push_back(vk_param);
+        vk_uniblk->_orkparamblock->_subparams[str_param_identifier] = vk_param->_orkparam.get();
+        if (0)
+          printf("uniblk<%s> ADDING Item PARAM<%s>\n", str_uniblk_name.c_str(), str_param_identifier.c_str());
+      }
+    } else {
+      // Skip reading parameters for reused blocks - they were already processed
+      for (size_t j = 0; j < num_params; j++) {
+        uniforms_input_stream->ReadIndexedString(chunkreader); // datatype
+        uniforms_input_stream->ReadIndexedString(chunkreader); // identifier  
+        uniforms_input_stream->ReadItem<size_t>();             // offset
+      }
+      printf("VK_UBO: SKIPPED reading %zu items for reused UBO<%s>\n", num_params, str_uniblk_name.c_str());
     }
     
-    // Calculate uniform block size and initialize shadow buffer
-    size_t max_offset = 0;
-    size_t last_size = 0;
-    for (auto& item : vk_uniblk->_items_by_order) {
-      if (item->_offset >= max_offset) {
-        max_offset = item->_offset;
-        // Estimate size based on datatype
-        if (item->_datatype == "float" || item->_datatype == "int" || item->_datatype == "bool" || item->_datatype == "uint") {
-          last_size = 4;
-        } else if (item->_datatype == "vec2") {
-          last_size = 8;
-        } else if (item->_datatype == "vec3") {
-          last_size = 16; // vec3 is padded to vec4 in std140
-        } else if (item->_datatype == "vec4") {
-          last_size = 16;
-        } else if (item->_datatype == "mat3") {
-          last_size = 48; // 3 columns of vec4
-        } else if (item->_datatype == "mat4") {
-          last_size = 64;
-        } else {
-          // Default/unknown type - assume vec4 size
-          last_size = 16;
+    // Calculate uniform block size and initialize shadow buffer (only for new blocks)
+    if (!is_reused) {
+      size_t max_offset = 0;
+      size_t last_size = 0;
+      for (auto& item : vk_uniblk->_items_by_order) {
+        if (item->_offset >= max_offset) {
+          max_offset = item->_offset;
+          // Estimate size based on datatype
+          if (item->_datatype == "float" || item->_datatype == "int" || item->_datatype == "bool" || item->_datatype == "uint") {
+            last_size = 4;
+          } else if (item->_datatype == "vec2") {
+            last_size = 8;
+          } else if (item->_datatype == "vec3") {
+            last_size = 16; // vec3 is padded to vec4 in std140
+          } else if (item->_datatype == "vec4") {
+            last_size = 16;
+          } else if (item->_datatype == "mat3") {
+            last_size = 48; // 3 columns of vec4
+          } else if (item->_datatype == "mat4") {
+            last_size = 64;
+          } else {
+            // Default/unknown type - assume vec4 size
+            last_size = 16;
+          }
         }
       }
-    }
-    
-    // Round up to 16-byte alignment
-    vk_uniblk->_buffer_size = ((max_offset + last_size + 15) / 16) * 16;
-    vk_uniblk->_shadow_buffer.resize(vk_uniblk->_buffer_size, 0);
-    
-    // Create GPU buffer for the uniform block
-    auto gpu_buffer = std::make_shared<VulkanBuffer>(
-      _contextVK, 
-      vk_uniblk->_buffer_size,
-      VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-      str_uniblk_name
-    );
-    vk_uniblk->_gpu_buffer = gpu_buffer->_vkbuffer;
-    vk_uniblk->_gpu_memory = *gpu_buffer->_memory->_vkmem;
-    
-    // Map the buffer for persistent updates
-    vk_uniblk->_mapped_ptr = gpu_buffer->map(0, vk_uniblk->_buffer_size, 0);
-    
-    // Check if memory is coherent
-    auto& memprops = _contextVK->_vkdeviceinfo->_devmemprops;
-    auto memtype_index = gpu_buffer->_memory->_allocinfo->memoryTypeIndex;
-    vk_uniblk->_needs_flush = !(memprops.memoryTypes[memtype_index].propertyFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    
-    // Store the buffer object for lifetime management
-    vk_uniblk->_gpu_buffer_object = gpu_buffer;
-    
-    // Debug names are already set in VulkanBuffer constructor
+      
+      // Round up to 16-byte alignment
+      vk_uniblk->_buffer_size = ((max_offset + last_size + 15) / 16) * 16;
+      vk_uniblk->_shadow_buffer.resize(vk_uniblk->_buffer_size, 0);
+      
+      // Create GPU buffer for the uniform block
+      auto gpu_buffer = std::make_shared<VulkanBuffer>(
+        _contextVK, 
+        vk_uniblk->_buffer_size,
+        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        str_uniblk_name
+      );
+      vk_uniblk->_gpu_buffer = gpu_buffer->_vkbuffer;
+      vk_uniblk->_gpu_memory = *gpu_buffer->_memory->_vkmem;
+      
+      // Map the buffer for persistent updates
+      vk_uniblk->_mapped_ptr = gpu_buffer->map(0, vk_uniblk->_buffer_size, 0);
+      
+      // Check if memory is coherent
+      auto& memprops = _contextVK->_vkdeviceinfo->_devmemprops;
+      auto memtype_index = gpu_buffer->_memory->_allocinfo->memoryTypeIndex;
+      vk_uniblk->_needs_flush = !(memprops.memoryTypes[memtype_index].propertyFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+      
+      // Store the buffer object for lifetime management
+      vk_uniblk->_gpu_buffer_object = gpu_buffer;
+      
+      // Debug names are already set in VulkanBuffer constructor
+    } // end if (!is_reused)
   }
   // TODO - read VIFS, GIFS
   /////////////////////////////////

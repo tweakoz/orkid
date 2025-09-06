@@ -379,12 +379,13 @@ struct VkFxInterface final : public FxInterface {
   rasterstate_ptr_t _doPopRasterState() final;
 
   void _bindPipeline(VkCommandBuffer cmdbuf, vkpipeline_obj_ptr_t pipe);
+  void _uploadPipelineData(VkCommandBuffer cmdbuf, vkpipeline_obj_ptr_t pipe);
   void _bindGfxDescriptorSetOnSlot(VkCommandBuffer cmdbuf, vkdescriptorset_ptr_t desc_set, size_t slot);
   void _bindVertexBufferOnSlot(VkCommandBuffer cmdbuf, vkvtxbuf_ptr_t vb, size_t slot);
 
   void _flushRenderPassScopedState();
   int _pipelineBitsForShader(vkfxsprg_ptr_t shprog);
-  void flushDirtyUniformBlocks();
+  void _flushDirtyUniformBlocks();
 
   fxtechnique_constptr_t _currentORKTEK = nullptr;
   VkFxShaderTechnique* _currentVKTEK;

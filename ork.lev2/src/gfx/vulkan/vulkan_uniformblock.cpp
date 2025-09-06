@@ -8,6 +8,7 @@
 #include "headers/vulkan_ctx.h"
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/util/logger.h>
+#include <ork/util/hexdump.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
@@ -99,7 +100,7 @@ std::vector<alignedrange_ptr_t> VkFxShaderUniformBlk::getAlignedRanges(VkDeviceS
 // VkFxInterface implementation
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkFxInterface::flushDirtyUniformBlocks() {
+void VkFxInterface::_flushDirtyUniformBlocks() {
   if (!_currentVKPASS) return;
   
   printf("VK_FLUSH: flushing %zu dirty blocks\n", _currentVKPASS->_dirty_uniform_blocks.size());
@@ -108,12 +109,13 @@ void VkFxInterface::flushDirtyUniformBlocks() {
     if (block->_dirty_ranges.empty()) continue;
     
     // Debug: Log UBO flush
-    printf("VK_FLUSH: block<%p> name<%s> dset<%zu> ranges<%zu> buffer_size<%zu>\n", 
+    printf("VK_FLUSH: block<%p> name<%s> dset<%zu> ranges<%zu> buffer_size<%zu> gpu_buffer<%p>\n", 
            block,
            block->_orkparamblock ? block->_orkparamblock->_name.c_str() : "unknown", 
            block->_descriptor_set_id,
            block->_dirty_ranges.size(),
-           block->_buffer_size);
+           block->_buffer_size,
+           (void*)block->_gpu_buffer);
     
     // If using coherent memory, just copy
     if (!block->_needs_flush) {                                                              
@@ -121,22 +123,40 @@ void VkFxInterface::flushDirtyUniformBlocks() {
       for (auto& range : block->_dirty_ranges) {
 
         //printf("Flushing coherent dirty range: offset=%zu, size=%zu\n", range->offset, range->size);
-        
-        // Debug: print values at specific offsets
-        if (range->offset <= 80 && (range->offset + range->size) > 80) {
-          float metallic = *reinterpret_cast<float*>(block->_shadow_buffer.data() + 80);
-          printf("VK_FLUSH: MetallicFactor at offset 80 = %f\n", metallic);
-        }
-        if (range->offset <= 84 && (range->offset + range->size) > 84) {
-          float roughness = *reinterpret_cast<float*>(block->_shadow_buffer.data() + 84);
-          printf("VK_FLUSH: RoughnessFactor at offset 84 = %f\n", roughness);
-        }
 
         memcpy(
           static_cast<uint8_t*>(block->_mapped_ptr) + range->offset,
           block->_shadow_buffer.data() + range->offset,
           range->size
         );
+        
+        // Debug: verify mapped pointer and buffer handle
+        if (block->_orkparamblock && block->_orkparamblock->_name == "ublk_std_pbr") {
+          printf("VK_COHERENT: mapped_ptr<%p> gpu_buffer<%p> gpu_memory<%p>\n",
+                 block->_mapped_ptr,
+                 (void*)block->_gpu_buffer,
+                 (void*)block->_gpu_memory);
+        }
+        
+        // Debug: dump the range being copied for ublk_std_pbr (coherent memory)
+        if (block->_orkparamblock && block->_orkparamblock->_name == "ublk_std_pbr") {
+          printf("VK_COHERENT_COPY: block<%s> offset=%zu size=%zu\n", 
+                 block->_orkparamblock->_name.c_str(),
+                 range->offset,
+                 range->size);
+          
+          // Dump shadow buffer contents for this range
+          printf("  Shadow buffer contents [offset %zu, size %zu]:\n", 
+                 range->offset,
+                 range->size);
+          hexdumpbytes(block->_shadow_buffer.data() + range->offset, range->size);
+          
+          // Dump mapped memory contents for this range (after memcpy)
+          printf("  Mapped memory contents [offset %zu, size %zu]:\n",
+                 range->offset,
+                 range->size);
+          hexdumpbytes(static_cast<uint8_t*>(block->_mapped_ptr) + range->offset, range->size);
+        }
       }
       block->_dirty_ranges.clear();
       continue;
@@ -147,16 +167,6 @@ void VkFxInterface::flushDirtyUniformBlocks() {
       // Copy shadow data to mapped memory
       for (auto& range : block->_dirty_ranges) {
         //printf("Flushing non-coherent dirty range: offset=%zu, size=%zu\n", range->offset, range->size);
-        
-        // Debug: print values at specific offsets
-        if (range->offset <= 80 && (range->offset + range->size) > 80) {
-          float metallic = *reinterpret_cast<float*>(block->_shadow_buffer.data() + 80);
-          printf("VK_FLUSH_NC: MetallicFactor at offset 80 = %f\n", metallic);
-        }
-        if (range->offset <= 84 && (range->offset + range->size) > 84) {
-          float roughness = *reinterpret_cast<float*>(block->_shadow_buffer.data() + 84);
-          printf("VK_FLUSH_NC: RoughnessFactor at offset 84 = %f\n", roughness);
-        }
         
         memcpy(
           static_cast<uint8_t*>(block->_mapped_ptr) + range->offset,
@@ -179,6 +189,28 @@ void VkFxInterface::flushDirtyUniformBlocks() {
         flush_range.offset = range->offset;
         flush_range.size = range->size;
         flush_ranges.push_back(flush_range);
+        
+        // Debug: dump the range being flushed for ublk_std_pbr
+        if (block->_orkparamblock && block->_orkparamblock->_name == "ublk_std_pbr") {
+          printf("VK_FLUSH_RANGE: block<%s> flush offset=%llu size=%llu\n", 
+                 block->_orkparamblock->_name.c_str(),
+                 (unsigned long long)range->offset,
+                 (unsigned long long)range->size);
+          
+          // Dump shadow buffer contents for this range
+          printf("  Shadow buffer contents [offset %llu, size %llu]:\n", 
+                 (unsigned long long)range->offset,
+                 (unsigned long long)range->size);
+          hexdumpbytes(block->_shadow_buffer.data() + range->offset, range->size);
+          
+          // Dump mapped memory contents for this range (after memcpy, before flush)
+          if (block->_mapped_ptr) {
+            printf("  Mapped memory contents [offset %llu, size %llu]:\n",
+                   (unsigned long long)range->offset,
+                   (unsigned long long)range->size);
+            hexdumpbytes(static_cast<uint8_t*>(block->_mapped_ptr) + range->offset, range->size);
+          }
+        }
       }
       
       // Flush to GPU
