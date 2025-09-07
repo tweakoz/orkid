@@ -117,9 +117,9 @@ Image Image::convertToFormat(EBufferFormat fmt) const {
         int pixelindex       = y * _width + x;
         int elembaseIN       = pixelindex * 3;
         int elembaseOUT      = pixelindex * 4;
-        outptr[elembaseOUT + 0] = inptr[elembaseIN + 2];
+        outptr[elembaseOUT + 0] = inptr[elembaseIN + 0];
         outptr[elembaseOUT + 1] = inptr[elembaseIN + 1];
-        outptr[elembaseOUT + 2] = inptr[elembaseIN + 0];
+        outptr[elembaseOUT + 2] = inptr[elembaseIN + 2];
         outptr[elembaseOUT + 3] = 255;
       }
     }

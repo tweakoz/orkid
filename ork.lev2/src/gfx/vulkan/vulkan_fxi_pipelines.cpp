@@ -682,36 +682,34 @@ void VkPipelineObject::applyPendingPushConstants(VkCommandBuffer cmdbuf) { //
 
   auto data = _vk_program->_pushdatabuffer.data();
 
-  if (num_params) {
 
-    for (auto item : _vk_program->_pending_params) {
-      auto dst_offset = data_layout->offsetForParam(item._ork_param);
-      if (dst_offset != -1) {
-        auto parm_name   = item._ork_param->_name;
-        auto parm_type   = item._vk_param->_datatype;
-        size_t parm_size = item._value.size();
-        if (0) {
-          // Find the correct range for this parameter
-          size_t range_idx = item._vk_param->_range_index;
-          int range_offset = (range_idx < ranges.size()) ? ranges[range_idx].offset : -1;
-          printf(
-              "parm<%s:%s:%zu> range_idx<%zu> range_offset<%d> dst_offset<%zu> ", //
-              parm_type.c_str(),
-              parm_name.c_str(),
-              parm_size,
-              range_idx,
-              range_offset,
-              dst_offset);
-          printf("\n");
-        }
-        // dst_offset is already the absolute offset in the combined push constant block
-        // We don't need to add range offset - that's for the shader's view, not CPU layout
-        OrkAssert((dst_offset + parm_size) <= blocksize);
-        memcpy(data + dst_offset, item._value.data(), parm_size);
+  for (auto item : _vk_program->_pending_params) {
+    auto dst_offset = data_layout->offsetForParam(item._ork_param);
+    if (dst_offset != -1) {
+      auto parm_name   = item._ork_param->_name;
+      auto parm_type   = item._vk_param->_datatype;
+      size_t parm_size = item._value.size();
+      if (1) {
+        // Find the correct range for this parameter
+        size_t range_idx = item._vk_param->_range_index;
+        int range_offset = (range_idx < ranges.size()) ? ranges[range_idx].offset : -1;
+        printf(
+            "parm<%s:%s:%zu> range_idx<%zu> range_offset<%d> dst_offset<%zu> ", //
+            parm_type.c_str(),
+            parm_name.c_str(),
+            parm_size,
+            range_idx,
+            range_offset,
+            dst_offset);
+        printf("\n");
       }
+      // dst_offset is already the absolute offset in the combined push constant block
+      // We don't need to add range offset - that's for the shader's view, not CPU layout
+      OrkAssert((dst_offset + parm_size) <= blocksize);
+      memcpy(data + dst_offset, item._value.data(), parm_size);
     }
   }
-  //hexdumpbytes(data,blocksize);
+  hexdumpbytes(data,blocksize);
   
   // Push each range separately so shaders see their data at offset 0
   for (const auto& range : ranges) {

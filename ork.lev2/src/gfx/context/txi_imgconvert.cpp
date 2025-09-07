@@ -155,7 +155,7 @@ bool TextureInterface::_loadImageTexture(texture_ptr_t ptex, datablock_ptr_t src
         case EBufferFormat::RGB8:{
           auto orig_fmt_str = EBufferFormatToName(img._format);
           auto forc_fmt_str = EBufferFormatToName(forced_format);
-          //printf("writing xtx : forcing format orig<%s> newfmt<%s>\n", orig_fmt_str.c_str(), forc_fmt_str.c_str());
+          printf("writing xtx : forcing format orig<%s> newfmt<%s>\n", orig_fmt_str.c_str(), forc_fmt_str.c_str());
           auto converted_img = img.convertToFormat(forced_format);
           converted_img._format = forced_format;
           auto cmipchain = converted_img.uncompressedMipChain();
@@ -165,7 +165,7 @@ bool TextureInterface::_loadImageTexture(texture_ptr_t ptex, datablock_ptr_t src
         case EBufferFormat::BGR8:{
           auto orig_fmt_str = EBufferFormatToName(img._format);
           auto forc_fmt_str = EBufferFormatToName(forced_format);
-          //printf("writing xtx : forcing format orig<%s> newfmt<%s>\n", orig_fmt_str.c_str(), forc_fmt_str.c_str());
+          printf("writing xtx : forcing format orig<%s> newfmt<%s>\n", orig_fmt_str.c_str(), forc_fmt_str.c_str());
           auto converted_img = img.convertToFormat(forced_format);
           converted_img._format = forced_format;
           auto cmipchain = converted_img.uncompressedMipChain();
@@ -176,7 +176,7 @@ bool TextureInterface::_loadImageTexture(texture_ptr_t ptex, datablock_ptr_t src
         case EBufferFormat::RGBA8:{
           auto orig_fmt_str = EBufferFormatToName(img._format);
           auto forc_fmt_str = EBufferFormatToName(forced_format);
-          //printf("writing xtx : forcing format orig<%s> newfmt<%s>\n", orig_fmt_str.c_str(), forc_fmt_str.c_str());
+          printf("writing xtx : forcing format orig<%s> newfmt<%s>\n", orig_fmt_str.c_str(), forc_fmt_str.c_str());
           auto converted_img = img.convertToFormat(forced_format);
           converted_img._format = forced_format;
           auto cmipchain = converted_img.uncompressedMipChain();
