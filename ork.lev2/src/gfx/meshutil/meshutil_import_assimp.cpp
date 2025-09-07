@@ -118,7 +118,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
         int h                 = texture->mHeight;
         const aiTexel* texels = texture->pcData;
       } else {
-        assert(false);
+        OrkAssert(false);
       }
 
       logchan_meshutilassimp->log("embtex: name<%s> fmt<%s> texpath<%s> texlen<%d>", //
