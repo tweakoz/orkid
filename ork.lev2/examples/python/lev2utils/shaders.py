@@ -154,14 +154,19 @@ fragment_shader ps_pseudowire : iface_frg {
 
     out_clr = vec4(modcolor.xyz*intens,1);
 }
-
+////////////////////////////////////////
+state_block sb_pseudowire : default {
+  CullTest = OFF;
+  BlendMode = ADDITIVE;
+  DepthTest = OFF;
+}
 ////////////////////////////////////////
 technique tek_pseudowire {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader   = vs_pseudowire;
     fragment_shader = ps_pseudowire;
-    state_block     = default;
+    state_block     = sb_pseudowire;
   }
 }
 """
