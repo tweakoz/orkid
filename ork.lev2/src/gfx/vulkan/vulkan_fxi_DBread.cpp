@@ -898,7 +898,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
                 OrkAssert(false);
               }
               // Check if offsets match
-              if (cursor != item_ptr->_offset) {
+              if (0) { //cursor != item_ptr->_offset) {
                 printf(
                     "VKFXI: OFFSET MISMATCH param<%s> datatype<%s> cursor<%zu> shader_offset<%zu> stage<0x%x> range<%zu>\n",
                     item_name.c_str(),
@@ -908,7 +908,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
                     shader_stage,
                     range_index);
               }
-              item_ptr->_offset = cursor; // Use the actual layout offset
+              //item_ptr->_offset = cursor; // Use the actual layout offset
             }
           }
         }
