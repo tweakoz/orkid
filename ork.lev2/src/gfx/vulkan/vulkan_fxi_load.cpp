@@ -206,13 +206,16 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(
   datablock_ptr_t vkfx_datablock = DataBlockCache::findDataBlock(hashkey);
   vkfxsfile_ptr_t vulkan_shaderfile;
   ////////////////////////////////////////////
-      // if ORKID_DISABLE_SHADER_CACHE env var is defined,
-      // bypass the shader cache entirely
-      // this is useful for development
-      // when you want to ensure shaders
-      // are recompiled on each run
+  // if ORKID_DISABLE_SHADER_CACHE env var is defined,
+  // bypass the shader cache entirely
+  // this is useful for development
+  // when you want to ensure shaders
+  // are recompiled on each run
   ////////////////////////////////////////////
-  std::string disable_cache = getenv("ORKID_DISABLE_SHADER_CACHE") ? getenv("ORKID_DISABLE_SHADER_CACHE") : "1";
+  std::string disable_cache = getenv("ORKID_DISABLE_SHADER_CACHE") //
+                            ? getenv("ORKID_DISABLE_SHADER_CACHE") //
+                            : "0";
+
   if( disable_cache=="1" ){
       vkfx_datablock = nullptr;
   }

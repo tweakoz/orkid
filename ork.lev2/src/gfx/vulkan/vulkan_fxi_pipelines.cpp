@@ -111,47 +111,53 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
     _pipelines[pipeline_hash] = rval;
     rval->_vk_program         = shprog;
 
-    // Generate pipeline report for debugging descriptor set issues
+    ///////////////////////////////////////////////////
+    // pipeline report
+    ///////////////////////////////////////////////////
     std::string report_filename;
-    
-    // Generate filename matching shader report schema
-    // Use shader filename and technique name, process URI like in shader reports
-    std::string shader_name_raw = shprog->_shader_file ? shprog->_shader_file->_shader_name : "unknown";
-    
-    // Process shader name to extract just the filename from URI (e.g., "orkshader://pbr.fxv2" -> "pbr.fxv2")
-    file::Path shader_path = shader_name_raw;
-    auto shader_leaf = shader_path.toBFS().leaf();
-    std::string shader_name = shader_leaf.string();
-    
-    std::string technique_name = _currentORKTEK->_techniqueName;
-    
-    // Find pass index by searching through technique's passes
-    int pass_num = 0;
-    for (size_t i = 0; i < _currentVKTEK->_vk_passes.size(); ++i) {
-      if (_currentVKTEK->_vk_passes[i] == _currentVKPASS) {
-        pass_num = i;
-        break;
+    if(0){
+
+      // Generate pipeline report for debugging descriptor set issues
+      
+      // Generate filename matching shader report schema
+      // Use shader filename and technique name, process URI like in shader reports
+      std::string shader_name_raw = shprog->_shader_file ? shprog->_shader_file->_shader_name : "unknown";
+      
+      // Process shader name to extract just the filename from URI (e.g., "orkshader://pbr.fxv2" -> "pbr.fxv2")
+      file::Path shader_path = shader_name_raw;
+      auto shader_leaf = shader_path.toBFS().leaf();
+      std::string shader_name = shader_leaf.string();
+      
+      std::string technique_name = _currentORKTEK->_techniqueName;
+      
+      // Find pass index by searching through technique's passes
+      int pass_num = 0;
+      for (size_t i = 0; i < _currentVKTEK->_vk_passes.size(); ++i) {
+        if (_currentVKTEK->_vk_passes[i] == _currentVKPASS) {
+          pass_num = i;
+          break;
+        }
       }
-    }
-    
-    // Get stage directory
-    const char* stage_env = std::getenv("OBT_STAGE");
-    if (stage_env) {
-      std::string stage_dir = std::string(stage_env);
-      std::string report_dir = stage_dir + "/vulkanpipe_reports";
       
-      // Create directory if it doesn't exist
-      file::Path report_path(report_dir);
-      report_path.ensureDirectoryExists();
-      
-      // Generate report filename: shadername.technique.passnum.md
-      report_filename = FormatString("%s/%s.%s.%d.md",
-                                    report_dir.c_str(),
-                                    shader_name.c_str(),
-                                    technique_name.c_str(),
-                                    pass_num);
-      
-      logchan_vkpip->log("Pipeline report will be written to: %s", report_filename.c_str());
+      // Get stage directory
+      const char* stage_env = std::getenv("OBT_STAGE");
+      if (stage_env) {
+        std::string stage_dir = std::string(stage_env);
+        std::string report_dir = stage_dir + "/vulkanpipe_reports";
+        
+        // Create directory if it doesn't exist
+        file::Path report_path(report_dir);
+        report_path.ensureDirectoryExists();
+        
+        // Generate report filename: shadername.technique.passnum.md
+        report_filename = FormatString("%s/%s.%s.%d.md",
+                                      report_dir.c_str(),
+                                      shader_name.c_str(),
+                                      technique_name.c_str(),
+                                      pass_num);
+        
+        logchan_vkpip->log("Pipeline report will be written to: %s", report_filename.c_str());
+      }
     }
 
     auto& CINFO = rval->_VKGFXPCI;
@@ -384,10 +390,13 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
       logchan_vkpip->log("Pipeline layout will have %zu descriptor set layouts", descriptor_set_layouts.size());
       
       // Store report filename in pipeline for later updates
-      rval->_report_filename = report_filename;
       
+      ///////////////////////////////////////////////////
       // Write pipeline report if filename was generated
+      ///////////////////////////////////////////////////
+
       if (!report_filename.empty() && _currentVKPASS->_merged_resources) {
+        rval->_report_filename = report_filename;
         FILE* fp = fopen(report_filename.c_str(), "w");
         if (fp) {
           // Header - use same shader name processing as filename
@@ -610,12 +619,6 @@ void VkFxInterface::_uploadPipelineData(VkCommandBuffer CB,
   if (desc_set) {
     // Bind descriptor set with dynamic offsets from applyPendingUboUpdates
     if (!pipeline->_dynamic_offsets.empty()) {
-      printf("XXXX: Binding descriptor set with %zu dynamic offsets:", pipeline->_dynamic_offsets.size());
-      for (size_t i = 0; i < pipeline->_dynamic_offsets.size(); i++) {
-        printf(" [%zu]=%u", i, pipeline->_dynamic_offsets[i]);
-      }
-      printf("\n");
-      
       vkCmdBindDescriptorSets(
         CB,
         VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -756,11 +759,7 @@ void VkPipelineObject::applyPendingUboUpdates(VkCommandBuffer cmdbuf, uint32_t f
     memcpy(allocation.cpu_ptr,
            ubo->_shadow_buffer.data(),
            ubo->_shadow_buffer.size());
-    
-    printf("XXXX: UBO<%s> copying to GPU: shadow_size=%zu alloc_size=%zu dynamic_offset=%u\n",
-           ubo->_orkparamblock ? ubo->_orkparamblock->_name.c_str() : "unknown",
-           ubo->_shadow_buffer.size(), allocation.size, allocation.dynamic_offset);
-    
+        
     // Track offset for descriptor binding
     _dynamic_offsets.push_back(allocation.dynamic_offset);
   }

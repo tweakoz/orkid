@@ -167,8 +167,8 @@ libblock lib_fwd_impl
   PbrData pbr;
   pbr._emissive = emissive;
   pbr._albedo = albedo;
-  pbr._metallic = rufmtlamb.y;
-  pbr._roughness = rufmtlamb.z;
+  pbr._metallic = rufmtlamb.x;
+  pbr._roughness = rufmtlamb.y;
   pbr._wpos = frg_wpos.xyz;
   pbr._wnrm = normal;
   pbr._fogZ = 0.0;

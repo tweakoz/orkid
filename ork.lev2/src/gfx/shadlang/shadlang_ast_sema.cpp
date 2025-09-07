@@ -1775,8 +1775,10 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
   //////////////////////////////////
   // Generate pass reports for debugging
   //////////////////////////////////
-  collectPassReportData(top);
-  writePassReports();
+  if(0){
+    collectPassReportData(top);
+    writePassReports();
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

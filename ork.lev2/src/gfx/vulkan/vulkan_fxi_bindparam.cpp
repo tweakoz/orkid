@@ -294,22 +294,7 @@ void VkFxInterface::bindParamVect3Array(const FxShaderParam* hpar, const fvec3* 
       float data[4] = {Vec[i].x, Vec[i].y, Vec[i].z, 0.0f};
       memcpy(block->_shadow_buffer.data() + offset + (i * 16), data, 16);
     }
-    
-    if (hpar->_name == "LightMapColors") {
-      printf("XXXX: bindParamVect3Array<%s> count=%d offset=%zu block=%s Vec=%p\n",
-             hpar->_name.c_str(), icount, offset,
-             block->_orkparamblock ? block->_orkparamblock->_name.c_str() : "unknown", Vec);
-      if (icount == 0) {
-        printf("  WARNING: count is 0!\n");
-      } else if (Vec == nullptr) {
-        printf("  WARNING: Vec is nullptr!\n");
-      } else {
-        for (int i = 0; i < icount; i++) {
-          printf("  [%d] = {%.3f, %.3f, %.3f}\n", i, Vec[i].x, Vec[i].y, Vec[i].z);
-        }
-      }
-    }
-    
+        
     block->addDirtyRange(offset, icount * 16);
     _currentVKPASS->_dirty_uniform_blocks.insert(block);
   }

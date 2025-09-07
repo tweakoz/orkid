@@ -19,7 +19,7 @@ namespace ork::lev2::vulkan {
 
 class VkDynamicUBOSystem {
 public:
-  static constexpr size_t MAX_CHUNKS = 4096;  // Support many draws per frame
+  static constexpr size_t MAX_CHUNKS = 65536;  // Support many draws per frame
   
   struct Allocation {
     uint32_t dynamic_offset;  // Offset to pass to vkCmdBindDescriptorSets

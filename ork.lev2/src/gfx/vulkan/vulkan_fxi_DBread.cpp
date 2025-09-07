@@ -457,10 +457,6 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         vk_uniblk->_items_by_name[str_param_identifier] = vk_param;
         vk_uniblk->_items_by_order.push_back(vk_param);
         vk_uniblk->_orkparamblock->_subparams[str_param_identifier] = vk_param->_orkparam.get();
-        if (vk_param->_is_array || true) // Always log for debugging
-          printf("XXXX: uniblk<%s> ADDING Item PARAM<%s> is_array<%d> array_len<%zu> offset<%zu>\n", 
-                 str_uniblk_name.c_str(), str_param_identifier.c_str(), 
-                 vk_param->_is_array, vk_param->_array_length, vk_param->_offset);
       }
     } else {
       // Skip reading parameters for reused blocks - they were already processed
@@ -515,12 +511,6 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       vk_uniblk->_buffer_size = ((max_offset + last_size + 15) / 16) * 16;
       vk_uniblk->_shadow_buffer.resize(vk_uniblk->_buffer_size, 0);
       
-      printf("XXXX: UBO<%s> calculated size: max_offset=%zu last_size=%zu total_size=%zu\n",
-             str_uniblk_name.c_str(), max_offset, last_size, vk_uniblk->_buffer_size);
-
-      // No longer create individual GPU buffers - using global dynamic UBO system
-      // The global buffer will be bound when creating descriptor sets
-
       // Debug names are already set in VulkanBuffer constructor
     } // end if (!is_reused)
   }
