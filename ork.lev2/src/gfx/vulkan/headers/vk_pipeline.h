@@ -16,7 +16,6 @@ struct VkFxShaderUniformSetItem {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VkFxShaderUniformSetSampler {
-  size_t _binding_id = -1;
   std::string _datatype;
   std::string _identifier;
   std::shared_ptr<FxShaderParam> _orkparam;
@@ -56,7 +55,6 @@ struct VkFxShaderUniformBlk : public VkFxShaderDescriptorSet {
   // bool _needs_flush = true;  // false if using coherent memory
   
   // For dynamic UBO support
-  uint32_t _binding_id = 0;  // Binding point in descriptor set
   std::string _name;         // Name of the uniform block
   
   void addDirtyRange(size_t offset, size_t size);

@@ -293,30 +293,23 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
                 // ALL uniform blocks are now dynamic
                 vk_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
                 
-                // Track this UBO for the pipeline
-                // Find or create VkFxShaderUniformBlk for this binding
-                VkFxShaderUniformBlk* ubo = nullptr;
+                // Look up the UBO from the program's uniform blocks
+                // These were loaded from the datablock
+                auto vk_program = _currentVKPASS->_vk_program;
+                OrkAssert(vk_program != nullptr);
                 
-                // Check if UBO already exists in pass
-                for (auto* existing_ubo : _currentVKPASS->_dirty_uniform_blocks) {
-                  if (existing_ubo->_orkparamblock && 
-                      existing_ubo->_orkparamblock->_name == binding->name) {
-                    ubo = existing_ubo;
-                    break;
-                  }
+                auto ubo_it = vk_program->_vk_uniformblks.find(binding->name);
+                if (ubo_it == vk_program->_vk_uniformblks.end()) {
+                  // Fatal error: shader declares a UBO that wasn't in the datablock
+                  logchan_vkpip->log("FATAL: UBO '%s' declared in merged resources but not found in datablock", binding->name.c_str());
+                  OrkAssert(false);
                 }
                 
-                if (!ubo) {
-                  // Create new UBO structure
-                  ubo = new VkFxShaderUniformBlk();
-                  ubo->_descriptor_set_id = set_id;
-                  ubo->_binding_id = binding->binding_id;
-                  ubo->_name = binding->name;
-                  // Note: _orkparamblock will be set when uniform block is actually bound
-                  // For now just track the binding metadata
-                }
+                VkFxShaderUniformBlk* ubo = ubo_it->second.get();
+                OrkAssert(ubo != nullptr);
+                OrkAssert(ubo->_orkparamblock != nullptr);
                 
-                // Add to pipeline's UBO list
+                // Track this UBO for the pipeline with its binding ID
                 rval->_uniform_blocks.push_back(ubo);
                 rval->_ubo_by_binding[binding->binding_id] = ubo;
                 
@@ -361,14 +354,23 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
       }
       
       // Sort uniform blocks by binding ID for consistent ordering with dynamic offsets
+      // Build a reverse map to get binding IDs for each UBO
+      std::map<VkFxShaderUniformBlk*, uint32_t> ubo_to_binding;
+      for (const auto& [binding_id, ubo] : rval->_ubo_by_binding) {
+        ubo_to_binding[ubo] = binding_id;
+      }
+      
       std::sort(rval->_uniform_blocks.begin(),
                 rval->_uniform_blocks.end(),
-                [](const VkFxShaderUniformBlk* a, const VkFxShaderUniformBlk* b) {
+                [&ubo_to_binding](const VkFxShaderUniformBlk* a, const VkFxShaderUniformBlk* b) {
                   // First sort by descriptor set, then by binding within the set
                   if (a->_descriptor_set_id != b->_descriptor_set_id) {
                     return a->_descriptor_set_id < b->_descriptor_set_id;
                   }
-                  return a->_binding_id < b->_binding_id;
+                  // Look up binding IDs from the map
+                  uint32_t binding_a = ubo_to_binding.at(const_cast<VkFxShaderUniformBlk*>(a));
+                  uint32_t binding_b = ubo_to_binding.at(const_cast<VkFxShaderUniformBlk*>(b));
+                  return binding_a < binding_b;
                 });
       
       logchan_vkpip->log("Pipeline has %zu uniform blocks tracked for dynamic updates", rval->_uniform_blocks.size());
