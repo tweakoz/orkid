@@ -100,7 +100,7 @@ libblock lib_fwd_impl
     /////////////////////////
     float ambientshade = clamp(dot(N, -edir), 0, 1) * 0.3 + 0.7;
     vec3 ambient       = AmbientLevel * ambientshade * ambocc;
-    vec3 diffuse_env   = env_equirectangular2(diffn, MapDiffuseEnv) * DiffuseLevel * SkyboxLevel*0.5;
+    vec3 diffuse_env   = env_equirectangular2(diffn, MapDiffuseEnv) * DiffuseLevel * SkyboxLevel;
     vec3 diffuse_light = ambient + diffuse_env;
     /////////////////////////
     vec3 diffuse = clamp(basecolor * diffuse_light * dialetric * ambocc, 0, 1);
@@ -125,7 +125,7 @@ libblock lib_fwd_impl
     vec3 specularMask   = clamp(F * brdf.x + brdf.y, 0, 1);
     vec3 specular       = specularMask * specularC*2.0;// * ambocc;
     /////////////////////////
-    return saturateV((diffuse + specular)*SkyboxLevel);
+    return saturateV((diffuse + specular)*SkyboxLevel*0.5);
 
   } // vec3 environmentLighting(){
 
@@ -142,7 +142,7 @@ libblock lib_fwd_impl
     /////////////////////////
     vec3 edir = normalize(pbd._wpos - eyepos);
     vec3 refl = normalize(reflect(edir, pbd._wnrm));
-    refl.x *= -1.0;
+    //refl.x *= -1.0;
     /////////////////////////
     // light maps
     /////////////////////////
@@ -155,7 +155,7 @@ libblock lib_fwd_impl
     /////////////////////////
     vec3 env_lighting = pbrEnvironmentLightingXXX(pbd, eyepos);
     env_lighting += light_maps;
-    return env_lighting+emission;
+    return (env_lighting+emission)*modcolor;
   }
   vec3 _forward_lightingZ(vec3 modcolor, 
                           vec3 albedo,
