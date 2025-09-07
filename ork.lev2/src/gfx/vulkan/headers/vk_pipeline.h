@@ -68,6 +68,8 @@ struct VkFxShaderUniformBlkItem {
   std::string _datatype;
   std::string _identifier;
   size_t _offset = 0;
+  bool _is_array = false;
+  size_t _array_length = 0;
   std::shared_ptr<FxShaderParam> _orkparam;
   struct VkFxShaderUniformBlk* _parent_block = nullptr;
 };

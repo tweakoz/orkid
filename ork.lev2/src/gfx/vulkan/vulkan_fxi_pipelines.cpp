@@ -608,6 +608,12 @@ void VkFxInterface::_uploadPipelineData(VkCommandBuffer CB,
   if (desc_set) {
     // Bind descriptor set with dynamic offsets from applyPendingUboUpdates
     if (!pipeline->_dynamic_offsets.empty()) {
+      printf("XXXX: Binding descriptor set with %zu dynamic offsets:", pipeline->_dynamic_offsets.size());
+      for (size_t i = 0; i < pipeline->_dynamic_offsets.size(); i++) {
+        printf(" [%zu]=%u", i, pipeline->_dynamic_offsets[i]);
+      }
+      printf("\n");
+      
       vkCmdBindDescriptorSets(
         CB,
         VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -748,6 +754,10 @@ void VkPipelineObject::applyPendingUboUpdates(VkCommandBuffer cmdbuf, uint32_t f
     memcpy(allocation.cpu_ptr,
            ubo->_shadow_buffer.data(),
            ubo->_shadow_buffer.size());
+    
+    printf("XXXX: UBO<%s> copying to GPU: shadow_size=%zu alloc_size=%zu dynamic_offset=%u\n",
+           ubo->_orkparamblock ? ubo->_orkparamblock->_name.c_str() : "unknown",
+           ubo->_shadow_buffer.size(), allocation.size, allocation.dynamic_offset);
     
     // Track offset for descriptor binding
     _dynamic_offsets.push_back(allocation.dynamic_offset);

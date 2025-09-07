@@ -47,7 +47,7 @@ void VkFxShaderUniformBlk::addDirtyRange(size_t offset, size_t size) {
       size_t new_end = std::max(offset + size, range->offset + range->size);
       range->offset = new_start;
       range->size = new_end - new_start;
-      coalesceRanges();
+      //coalesceRanges();
       return;
     }
   }

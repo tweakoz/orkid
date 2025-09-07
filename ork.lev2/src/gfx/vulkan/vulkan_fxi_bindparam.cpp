@@ -239,27 +239,6 @@ void VkFxInterface::bindParamVect2Array(const FxShaderParam* hpar, const fvec2* 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkFxInterface::bindParamVect3Array(const FxShaderParam* hpar, const fvec3* Vec, const int icount) {
-  if (auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>()) {
-    // Push constants - need to pad each vec3 to vec4
-    // TODO: Need to implement setArray in svar64_t
-  }
-  else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
-    auto block = as_uniblk_item.value()->_parent_block;
-    size_t offset = as_uniblk_item.value()->_offset;
-    
-    for (int i = 0; i < icount; i++) {
-      alignas(16) float data[4] = {Vec[i].x, Vec[i].y, Vec[i].z, 0.0f};
-      memcpy(block->_shadow_buffer.data() + offset + (i * 16), data, 16);
-    }
-    
-    block->addDirtyRange(offset, icount * 16);
-    _currentVKPASS->_dirty_uniform_blocks.insert(block);
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 void VkFxInterface::bindParamVect4Array(const FxShaderParam* hpar, const fvec4* Vec, const int icount) {
   if (auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>()) {
     // Push constants
@@ -296,6 +275,36 @@ void VkFxInterface::bindParamFloatArray(const FxShaderParam* hpar, const float* 
     }
     
     block->addDirtyRange(offset, icnt * 16);
+    _currentVKPASS->_dirty_uniform_blocks.insert(block);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkFxInterface::bindParamVect3Array(const FxShaderParam* hpar, const fvec3* Vec, const int icount) {
+  if (auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>()) {
+    // Push constants - need to pad each vec3 to vec4
+    // TODO: Need to implement setArray in svar64_t
+  }
+  else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
+    auto block = as_uniblk_item.value()->_parent_block;
+    size_t offset = as_uniblk_item.value()->_offset;
+    
+    for (int i = 0; i < icount; i++) {
+      float data[4] = {Vec[i].x, Vec[i].y, Vec[i].z, 0.0f};
+      memcpy(block->_shadow_buffer.data() + offset + (i * 16), data, 16);
+    }
+    
+    if (hpar->_name == "LightMapColors") {
+      printf("XXXX: bindParamVect3Array<%s> count=%d offset=%zu block=%s\n",
+             hpar->_name.c_str(), icount, offset,
+             block->_orkparamblock ? block->_orkparamblock->_name.c_str() : "unknown");
+      for (int i = 0; i < icount; i++) {
+        printf("  [%d] = {%.3f, %.3f, %.3f}\n", i, Vec[i].x, Vec[i].y, Vec[i].z);
+      }
+    }
+    
+    block->addDirtyRange(offset, icount * 16);
     _currentVKPASS->_dirty_uniform_blocks.insert(block);
   }
 }

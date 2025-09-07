@@ -130,7 +130,10 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
     // lightmaps
     ///////////////////////////////////////////////////////////////////////////
 
-
+    /*for( int i=0; i<8; i++ ){
+      auto C = mtl->_lightmapColors[i];
+      printf( "lightmapcolor<%d> = <%f %f %f>\n", i, C.x, C.y, C.z );
+    }*/
     if(mtl->_texLightMapArray){
       //printf("binding lightmap array\n");
       FXI->bindParamTextureArray(mtl->_parMapLightMapArray, mtl->_texLightMapArray.get());

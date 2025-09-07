@@ -1912,29 +1912,72 @@ void impl::ShadLangParser::collectPassReportData(astnode_ptr_t top) {
                 ub_info.descriptor_set_id = dset_id;
                 ub_info.binding_id        = binding_id;
 
-                // Get uniform block members
-                auto members          = AstNode::collectNodesOfType<TypedIdentifier>(uniform_block);
+                // Get uniform block members (both arrays and non-arrays)
+                auto data_decls = AstNode::collectNodesOfType<DataDeclarationBase>(uniform_block);
                 size_t current_offset = 0;
-                for (auto member : members) {
+                
+                for (auto decl : data_decls) {
                   UniformBlockMember ub_member;
-                  ub_member.name = member->_name;
-
-                  // Try to get the type from child DataType nodes
-                  auto datatypes = AstNode::collectNodesOfType<DataType>(member);
+                  
+                  // Check if this is an array declaration
+                  bool is_array = false;
+                  size_t array_length = 0;
+                  astnode_ptr_t tid_node = nullptr;
+                  
+                  if (auto as_array = std::dynamic_pointer_cast<ArrayDeclaration>(decl)) {
+                    is_array = true;
+                    tid_node = as_array->childAs<TypedIdentifier>(0);
+                    auto len_node = as_array->childAs<SemaIntegerLiteral>(1);
+                    if (len_node) {
+                      auto ary_len_str = len_node->typedValueForKey<std::string>("literal_value").value();
+                      array_length = atoi(ary_len_str.c_str());
+                    }
+                  } else {
+                    // Regular DataDeclaration
+                    tid_node = decl->childAs<TypedIdentifier>(0);
+                  }
+                  
+                  if (!tid_node) continue;
+                  
+                  // Get the actual identifier name (not the node type name)
+                  auto id_name = tid_node->typedValueForKey<std::string>("identifier_name");
+                  if (id_name) {
+                    ub_member.name = id_name.value();
+                  } else {
+                    ub_member.name = tid_node->_name; // fallback
+                  }
+                  
+                  // Get the type
+                  std::string base_type = "vec4"; // default
+                  auto datatypes = AstNode::collectNodesOfType<DataType>(tid_node);
                   if (!datatypes.empty()) {
                     auto type_val = datatypes[0]->typedValueForKey<std::string>("base_type");
                     if (type_val) {
-                      ub_member.type = type_val.value();
+                      base_type = type_val.value();
+                      ub_member.type = base_type;
+                      if (is_array) {
+                        ub_member.type += "[" + std::to_string(array_length) + "]";
+                      }
                     } else {
-                      ub_member.type = "vec4"; // default
+                      ub_member.type = base_type;
                     }
                   } else {
-                    ub_member.type = "vec4"; // default if no type info found
+                    ub_member.type = base_type;
                   }
 
                   ub_member.offset = current_offset;
-                  ub_member.size   = getStd140Size(ub_member.type);
-                  current_offset   = calculateStd140Offset(ub_member.type, current_offset + ub_member.size);
+                  
+                  // Calculate size based on whether it's an array
+                  if (is_array && array_length > 0) {
+                    size_t element_size = getStd140Size(base_type);
+                    // In std140, array elements are aligned to vec4 boundaries
+                    size_t aligned_element_size = ((element_size + 15) / 16) * 16;
+                    ub_member.size = aligned_element_size * array_length;
+                  } else {
+                    ub_member.size = getStd140Size(ub_member.type);
+                  }
+                  
+                  current_offset = calculateStd140Offset(ub_member.type, current_offset + ub_member.size);
                   ub_info.members.push_back(ub_member);
                 }
 
@@ -2216,14 +2259,14 @@ void impl::ShadLangParser::writePassReport(const std::string& key, const PassRep
     // Detailed memory layout for each uniform block
     for (const auto& ub : ds_info.uniform_blocks) {
       fprintf(fp, "Binding %zu: %s (%zu bytes)\n", ub.binding_id, ub.name.c_str(), ub.total_size);
-      fprintf(fp, "+--------+------------------+--------+--------+\n");
-      fprintf(fp, "| Offset | Member           | Size   | Type   |\n");
-      fprintf(fp, "+--------+------------------+--------+--------+\n");
+      fprintf(fp, "+----------+---------------------------+----------+------------------+\n");
+      fprintf(fp, "| Offset   | Member                    | Size     | Type             |\n");
+      fprintf(fp, "+----------+---------------------------+----------+------------------+\n");
 
       for (const auto& member : ub.members) {
-        fprintf(fp, "| 0x%04zX | %-16s | %-6zu | %-6s |\n", member.offset, member.name.c_str(), member.size, member.type.c_str());
+        fprintf(fp, "| 0x%06zX | %-25s | %-8zu | %-16s |\n", member.offset, member.name.c_str(), member.size, member.type.c_str());
       }
-      fprintf(fp, "+--------+------------------+--------+--------+\n\n");
+      fprintf(fp, "+----------+---------------------------+----------+------------------+\n\n");
     }
 
     // List samplers

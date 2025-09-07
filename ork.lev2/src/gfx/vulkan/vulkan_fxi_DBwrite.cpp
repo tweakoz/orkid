@@ -332,6 +332,8 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
         uniforms_stream->AddIndexedString(item->_datatype, chunkwriter);
         uniforms_stream->AddIndexedString(item->_identifier, chunkwriter);
         uniforms_stream->AddItem<size_t>(item->_offset);
+        uniforms_stream->AddItem<bool>(item->_is_array);
+        uniforms_stream->AddItem<size_t>(item->_array_length);
       }
     }
   };

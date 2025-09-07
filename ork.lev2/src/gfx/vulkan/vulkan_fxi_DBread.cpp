@@ -448,6 +448,8 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         vk_param->_datatype        = str_param_datatype;
         vk_param->_identifier      = str_param_identifier;
         vk_param->_offset          = uniforms_input_stream->ReadItem<size_t>();
+        vk_param->_is_array        = uniforms_input_stream->ReadItem<bool>();
+        vk_param->_array_length    = uniforms_input_stream->ReadItem<size_t>();
         vk_param->_parent_block    = vk_uniblk.get();
         vk_param->_orkparam        = std::make_shared<FxShaderParam>();
         vk_param->_orkparam->_name = str_param_identifier;
@@ -455,8 +457,10 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         vk_uniblk->_items_by_name[str_param_identifier] = vk_param;
         vk_uniblk->_items_by_order.push_back(vk_param);
         vk_uniblk->_orkparamblock->_subparams[str_param_identifier] = vk_param->_orkparam.get();
-        if (0)
-          printf("uniblk<%s> ADDING Item PARAM<%s>\n", str_uniblk_name.c_str(), str_param_identifier.c_str());
+        if (vk_param->_is_array || true) // Always log for debugging
+          printf("XXXX: uniblk<%s> ADDING Item PARAM<%s> is_array<%d> array_len<%zu> offset<%zu>\n", 
+                 str_uniblk_name.c_str(), str_param_identifier.c_str(), 
+                 vk_param->_is_array, vk_param->_array_length, vk_param->_offset);
       }
     } else {
       // Skip reading parameters for reused blocks - they were already processed
@@ -464,6 +468,8 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         uniforms_input_stream->ReadIndexedString(chunkreader); // datatype
         uniforms_input_stream->ReadIndexedString(chunkreader); // identifier
         uniforms_input_stream->ReadItem<size_t>();             // offset
+        uniforms_input_stream->ReadItem<bool>();               // is_array
+        uniforms_input_stream->ReadItem<size_t>();             // array_length
       }
       if(0)printf("VK_UBO: SKIPPED reading %zu items for reused UBO<%s>\n", num_params, str_uniblk_name.c_str());
     }
@@ -475,22 +481,32 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       for (auto& item : vk_uniblk->_items_by_order) {
         if (item->_offset >= max_offset) {
           max_offset = item->_offset;
-          // Estimate size based on datatype
+          // Calculate base element size based on datatype
+          size_t element_size = 0;
           if (item->_datatype == "float" || item->_datatype == "int" || item->_datatype == "bool" || item->_datatype == "uint") {
-            last_size = 4;
+            element_size = 4;
           } else if (item->_datatype == "vec2") {
-            last_size = 8;
+            element_size = 8;
           } else if (item->_datatype == "vec3") {
-            last_size = 16; // vec3 is padded to vec4 in std140
+            element_size = 16; // vec3 is padded to vec4 in std140
           } else if (item->_datatype == "vec4") {
-            last_size = 16;
+            element_size = 16;
           } else if (item->_datatype == "mat3") {
-            last_size = 48; // 3 columns of vec4
+            element_size = 48; // 3 columns of vec4
           } else if (item->_datatype == "mat4") {
-            last_size = 64;
+            element_size = 64;
           } else {
             // Default/unknown type - assume vec4 size
-            last_size = 16;
+            element_size = 16;
+          }
+          
+          // Account for arrays
+          if (item->_is_array && item->_array_length > 0) {
+            // In std140, array elements are aligned to vec4 boundaries (16 bytes)
+            size_t aligned_element_size = ((element_size + 15) / 16) * 16;
+            last_size = aligned_element_size * item->_array_length;
+          } else {
+            last_size = element_size;
           }
         }
       }
@@ -498,6 +514,9 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       // Round up to 16-byte alignment
       vk_uniblk->_buffer_size = ((max_offset + last_size + 15) / 16) * 16;
       vk_uniblk->_shadow_buffer.resize(vk_uniblk->_buffer_size, 0);
+      
+      printf("XXXX: UBO<%s> calculated size: max_offset=%zu last_size=%zu total_size=%zu\n",
+             str_uniblk_name.c_str(), max_offset, last_size, vk_uniblk->_buffer_size);
 
       // No longer create individual GPU buffers - using global dynamic UBO system
       // The global buffer will be bound when creating descriptor sets

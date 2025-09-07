@@ -113,7 +113,7 @@ struct VulkanInstance {
   uint32_t _numgroups = 0;
   shadlang::slpcache_ptr_t _slp_cache;
   MpMcBoundedQueue<load_token_t> _loadTokens;
-  bool _debugEnabled = true;
+  bool _debugEnabled = false;
   vkdeviceinfo_ptr_t _preferred;
 
   std::vector<VkContext*> _contexts;
