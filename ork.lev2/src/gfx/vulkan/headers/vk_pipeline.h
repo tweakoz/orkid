@@ -27,17 +27,17 @@ struct VkFxShaderUniformSet {
   std::vector<vkfxsunisetitem_ptr_t> _items_by_order;
 };
 ///////////////////////////////////////////////////////////////////////////////
-struct VkFxShaderDescriptorSet {
+struct VkFxShaderDescriptorSetItem {
   size_t _descriptor_set_id = 0;
 };
 ///////////////////////////////////////////////////////////////////////////////
-struct VkFxShaderSamplerSet : public VkFxShaderDescriptorSet {
+struct VkFxShaderSamplerSet : public VkFxShaderDescriptorSetItem {
   std::unordered_map<std::string, vkfxsunisetsamp_ptr_t> _samplers_by_name;
   std::vector<vkfxsunisetsamp_ptr_t> _samplers_by_order;
   svar64_t _impl;
 };
 ///////////////////////////////////////////////////////////////////////////////
-struct VkFxShaderUniformBlk : public VkFxShaderDescriptorSet {
+struct VkFxShaderUniformBlk : public VkFxShaderDescriptorSetItem {
   std::shared_ptr<FxUniformBlock> _orkparamblock;
   std::unordered_map<std::string, vkfxsuniblkitem_ptr_t> _items_by_name;
   std::vector<vkfxsuniblkitem_ptr_t> _items_by_order;
@@ -46,15 +46,7 @@ struct VkFxShaderUniformBlk : public VkFxShaderDescriptorSet {
   std::vector<uint8_t> _shadow_buffer;
   std::vector<dirtyrange_ptr_t> _dirty_ranges;
   
-  // Individual buffers removed - using global dynamic UBO system instead
-  // VkBuffer _gpu_buffer = VK_NULL_HANDLE;
-  // VkDeviceMemory _gpu_memory = VK_NULL_HANDLE;
-  // vkbuffer_ptr_t _gpu_buffer_object; // Holds VulkanBuffer for lifetime management
   size_t _buffer_size = 0;
-  // void* _mapped_ptr = nullptr;
-  // bool _needs_flush = true;  // false if using coherent memory
-  
-  // For dynamic UBO support
   std::string _name;         // Name of the uniform block
   
   void addDirtyRange(size_t offset, size_t size);
@@ -113,15 +105,6 @@ struct VkFxShaderPushConstantBlock {
   size_t _blockSize = 0;
 };
 ///////////////////////////////////////////////////////////////////////////////
-struct VkDescriptorSetBindings {
-
-  std::map<size_t, vkfxdescset_ptr_t> _descriptorsets;
-
-  descriptor_bindings_vect_t _vkbindings;
-  size_t _sampler_count = 0;
-  VkDescriptorSetLayout _dsetlayout;
-};
-///////////////////////////////////////////////////////////////////////////////
 struct VkFxShaderFile {
   std::string _shader_name;
   // shadlang::SHAST::translationunit_ptr_t _trans_unit;
@@ -149,9 +132,6 @@ struct VulkanFxShaderObject {
   vkfxsunisetsref_ptr_t _uniset_refs;
   vkfxsuniblksref_ptr_t _uniblk_refs;
   vkfxssmpsetsref_ptr_t _smpset_refs;
-  // TODO: _vk_uniformblks appears to be unused - shader objects use _uniblk_refs instead
-  //       Consider removing this member if confirmed dead code
-  std::unordered_map<std::string, vkfxsuniblk_ptr_t> _vk_uniformblks;
   std::vector<std::string> _vk_interfaces;
 
   uint64_t _STAGE = 0;
