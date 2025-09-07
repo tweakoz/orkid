@@ -30,10 +30,7 @@ vertex_interface iface_v2uv : ub_vtx {
   }
 }
 ///////////////////////////////////////////////////////////////
-uniform_set ub_frg {
-  mat4 IVPArray[2];
-  mat4 VArray[2];
-  mat4 PArray[2];
+sampler_set ss_frg (descriptor_set 0) {
   //sampler2D MapAlbedoAo;
   //sampler2D MapNormalL;
   //sampler2D MapRufMtlAlpha;
@@ -46,6 +43,12 @@ uniform_set ub_frg {
   sampler2D MapLightingCookie;
   sampler2D MapShadowDepth;
   sampler3D MapVolTexA;
+}
+///////////////////////////////////////////////////////////////
+uniform_set ub_frg {
+  mat4 IVPArray[2];
+  mat4 VArray[2];
+  mat4 PArray[2];
   vec3 EyePostion;
   vec2 InvViewportSize; // inverse target size
   float Time;
@@ -80,6 +83,16 @@ fragment_interface iface_f2uv {
   outputs { vec4 out_clr; }
 }
 ///////////////////////////////////////////////////////////////
+typeblock my_types {
+  struct SpotLightCalc2{
+    vec3 _lightoutput;
+    vec2 _lightuv;
+    bool _mask;
+    float _lightz;
+    vec3 _lightdel;
+  };
+}
+///////////////////////////////////////////////////////////////
 libblock lib_deferred
   : ub_light
   : ub_frg
@@ -89,7 +102,8 @@ libblock lib_deferred
   : lib_brdf
   : lib_gbuf_decode
   : lib_def
-  : lib_mmnoise {
+  : lib_mmnoise
+  : my_types {
   /////////////////////////////////////////////////////////
   vec3 gammaCorrect(vec3 inp){
     return inp;
@@ -281,13 +295,6 @@ libblock lib_deferred
     return l*depth_fogval;
   }
   /////////////////////////////////////////////////////////
-  struct SpotLightCalc2{
-    vec3 _lightoutput;
-    vec2 _lightuv;
-    bool _mask;
-    float _lightz;
-    vec3 _lightdel;
-  };
   SpotLightCalc2 slcalc(GBufData gbd,int lidx){
     SpotLightCalc2 slc;
     mat4 lmtx = LightMatrix[lidx];

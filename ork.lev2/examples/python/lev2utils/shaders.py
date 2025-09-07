@@ -389,14 +389,17 @@ fragment_shader ps_points : iface_frg_points {
   float z = 1.0 - frg_col.x;
   out_clr = vec4(x,y,z,1);
 }
-
+////////////////////////////////////////
+state_block sb_pc : default {
+  
+}
 ////////////////////////////////////////
 technique tek_points_fwd {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader   = vs_points;
     fragment_shader = ps_points;
-    state_block     = default;
+    state_block     = sb_pc;
   }
 }
 """

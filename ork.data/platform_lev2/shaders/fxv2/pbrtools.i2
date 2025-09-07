@@ -52,6 +52,12 @@ vertex_interface vif_PNBC : ub_std_vtx {
   }
 }
 ///////////////////////////////////////////////////////////////
+vertex_interface vif_PNBTI : vif_PNBT {
+  outputs {
+    vec4 frg_modcolor;
+  }
+}
+///////////////////////////////////////////////////////////////
 vertex_interface vif_PNBT_skinned : vif_PNBT : iface_skintools {
 }
 ///////////////////////////////////////////////////////////////
@@ -322,6 +328,32 @@ fragment_shader ps_forward_test //
     : lib_fwd
     : std_forward_all {   
   out_color = vec4(forward_lighting_mono(frg_clr.xyz*ModColor.xyz), 1);
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_forward_instanced 
+  : vif_PNBTI 
+  : lib_pbr_vtx_instanced {
+  int matrix_v     = (gl_InstanceIndex >> 10);
+  int matrix_u     = (gl_InstanceIndex & 0x3ff) << 2;
+  mat4 instancemtx = mat4(
+      texelFetch(InstanceMatrices, ivec2(matrix_u + 0, matrix_v), 0),
+      texelFetch(InstanceMatrices, ivec2(matrix_u + 1, matrix_v), 0),
+      texelFetch(InstanceMatrices, ivec2(matrix_u + 2, matrix_v), 0),
+      texelFetch(InstanceMatrices, ivec2(matrix_u + 3, matrix_v), 0));
+  ////////////////////////////////
+  vec4 instanced_pos = (instancemtx * position);
+  vs_instanced(position, normal, binormal, instancemtx);
+  ////////////////////////////////
+  gl_Position = mvp * instanced_pos;
+}
+fragment_shader ps_forward_test_instanced_mono 
+    : fif_FWDTEST             //
+    : lib_math                  //
+    : lib_brdf                  //
+    : lib_def                   //
+    : lib_fwd
+    : std_forward_all {   
+  out_color = vec4(forward_lighting_mono(frg_modcolor.xyz), 1);
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_forward_test_vtxcolor : vif_PNBC : lib_pbr_vtx : ublk_std_matrices {

@@ -1,10 +1,12 @@
 ///////////////////////////////////////////////////////////////
+sampler_set X (descriptor_set 0) {
+  sampler2D InstanceMatrices;
+  usampler2D InstanceIds;
+}
 uniform_set ub_pick {
   uvec4 oid;
   vec4 ModColor;
   mat4 mvp;
-  sampler2D InstanceMatrices;
-  usampler2D InstanceIds;
 }
 ///////////////////////////////////////////////////////////////
 state_block sb_pick : default {
