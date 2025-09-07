@@ -1,10 +1,10 @@
 ///////////////////////////////////////////////////////////////
 // FxConfigs
 ///////////////////////////////////////////////////////////////
+import "gbuftools.i2";
 fxconfig fxcfg_default
 {
 	glsl_version = "130";
-	import "gbuftools.i2"
 }
 ///////////////////////////////////////////////////////////////
 // Interfaces
@@ -24,7 +24,7 @@ vertex_interface iface_v_mono
 	    vec4 position : POSITION;
         vec4 vtxcolor : COLOR0;
 	    vec2 uv0 : TEXCOORD0;
-	    vec2 uv1 : TEXCOORD1;
+	    //vec2 uv1 : TEXCOORD1;
 	}
     outputs {
         vec4 frg_clr;
@@ -123,10 +123,10 @@ fragment_shader ps_deferred_emissive_fragclr
 ///////////////////////////////////////////////////////////////
 state_block sb_m1 : sb_default
 {
-	DepthTest=OFF;
+	DepthTest=LESS;
 	DepthMask=true;
 	CullTest=OFF;
-	BlendMode = OFF;
+	BlendMode = ALPHA;
 }
 
 state_block sb_pick : sb_default
