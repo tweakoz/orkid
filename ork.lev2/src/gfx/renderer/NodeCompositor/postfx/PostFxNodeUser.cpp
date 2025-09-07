@@ -82,9 +82,8 @@ struct IMPL {
             ViewportRect extents(0, 0, w, h);
             FBI->pushViewport(extents);
             FBI->pushScissor(extents);
-            DWI->quad2DEMLCCL(fvec4(-1, -1, 2, 2), // pos
-                              fvec4(0, 0, 1, 1), // uv0
-                              fvec4(0, 0, 1, 1));
+            DWI->fullscreenQuad(fvec4(0, 0, 1, 1), // uv0
+                                fvec4(0, 0, 1, 1));
             FBI->popViewport();
             FBI->popScissor();
           };

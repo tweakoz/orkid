@@ -44,8 +44,8 @@ class ImposterApp(boilerplate.ImposterBaseApp):
       
     sceneparams = VarMap() 
     sceneparams.preset = self.RENDERMODEL
-    sceneparams.SkyboxIntensity = float(0.25)
-    sceneparams.SpecularIntensity = float(5)
+    sceneparams.SkyboxIntensity = float(0.5)
+    sceneparams.SpecularIntensity = float(1)
     sceneparams.DiffuseIntensity = float(1)
     sceneparams.AmbientLight = vec3(0.0)
     sceneparams.DepthFogDistance = float(1e5)
@@ -55,14 +55,14 @@ class ImposterApp(boilerplate.ImposterBaseApp):
     # post fx node
     ###################################
 
-    #postNode = lev2.PostFxNodeHSVG()
-    #postNode.hue = 0.0
-    #postNode.saturation = 0.7
-    #postNode.value = 1.0
-    #postNode.gamma = 0.8
-    #postNode.gpuInit(ctx,8,8);
-    #postNode.addToSceneVars(sceneparams,"PostFxChain")
-    #self.post_node = postNode
+    postNode = lev2.PostFxNodeHSVG()
+    postNode.hue = 0.0
+    postNode.saturation = 0.7
+    postNode.value = 1.0
+    postNode.gamma = 0.8
+    postNode.gpuInit(ctx,8,8);
+    postNode.addToSceneVars(sceneparams,"PostFxChain")
+    self.post_node = postNode
 
     self.scene = self.ezapp.createScene(sceneparams)
     self.layer_donly = self.scene.createLayer("depth_prepass")

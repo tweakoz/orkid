@@ -58,7 +58,7 @@ class HSVGAPP(object):
     sceneparams.DiffuseIntensity = float(1.0)
     sceneparams.AmbientLight = vec3(0.0)
     sceneparams.DepthFogDistance = float(1e6)
-    sceneparams.SkyboxTexPathStr = "src://envmaps/tozenv_caustic1.png"
+    sceneparams.SkyboxTexPathStr = "cold"
     ###################################
     # post fx node
     ###################################

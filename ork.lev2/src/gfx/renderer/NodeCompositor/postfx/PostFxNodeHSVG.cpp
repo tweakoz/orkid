@@ -84,9 +84,8 @@ struct IMPL {
             ViewportRect extents(0, 0, w, h);
             FBI->pushViewport(extents);
             FBI->pushScissor(extents);
-            DWI->quad2DEMLCCL(fvec4(-1, -1, 2, 2), // pos
-                              fvec4(0, 0, 1, 1), // uv0
-                              fvec4(0, 0, 1, 1));
+            DWI->fullscreenQuad(fvec4(0, 1, 1, -1), // uv0
+                                fvec4(0, 1, 1, -1));
             FBI->popViewport();
             FBI->popScissor();
           };
@@ -96,7 +95,6 @@ struct IMPL {
             auto final_rtg = try_final.value();
             int finalw = final_rtg->width();
             int finalh = final_rtg->height();
-            //target->beginFrame();
             /////////////////////
             // final blit
             /////////////////////
@@ -115,7 +113,6 @@ struct IMPL {
             _freestyle_mtl->end(framedata);
             FBI->PopRtGroup();
             /////////////////////
-            //target->endFrame();
           }
           target->debugPopGroup();
         }

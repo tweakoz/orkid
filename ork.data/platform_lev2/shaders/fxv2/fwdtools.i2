@@ -125,7 +125,7 @@ libblock lib_fwd_impl
     vec3 specularMask   = clamp(F * brdf.x + brdf.y, 0, 1);
     vec3 specular       = specularMask * specularC*2.0;// * ambocc;
     /////////////////////////
-    return saturateV((diffuse + specular)*SkyboxLevel*0.5);
+    return saturateV((diffuse + specular)*SkyboxLevel);
 
   } // vec3 environmentLighting(){
 
