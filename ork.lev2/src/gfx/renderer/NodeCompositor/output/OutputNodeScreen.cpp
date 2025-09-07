@@ -55,6 +55,7 @@ struct SCRIMPL {
       _fxtechnique6x6       = _blit2screenmtl.technique("downsample_6x6");
       _fxpMVP               = _blit2screenmtl.param("MatMVP");
       _fxpColorMap          = _blit2screenmtl.param("ColorMap");
+      _fxpVpDim             = _blit2screenmtl.param("ViewportDim");
       _needsinit            = false;
       _msaadownsamplebuffer = std::make_shared<RtGroup>(ctx, 8, 8, MsaaSamples::MSAA_1X);
       auto dsbuf            = _msaadownsamplebuffer->createRenderTarget(_node->_format);
@@ -123,6 +124,7 @@ struct SCRIMPL {
   const FxShaderTechnique* _fxtechnique6x6;
   const FxShaderParam* _fxpMVP;
   const FxShaderParam* _fxpColorMap;
+  const FxShaderParam* _fxpVpDim;
   bool _needsinit = true;
   int _width      = 0;
   int _height     = 0;
@@ -214,6 +216,7 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
           mtl._rasterstate->setBlendingMacro(BlendingMacro::OFF);
           mtl.bindParamTexture(impl->_fxpColorMap, tex);
           mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
+          mtl.bindParamVec2(impl->_fxpVpDim, fvec2(float(context->mainSurfaceWidth()), float(context->mainSurfaceHeight())));
           ViewportRect extents(0, 0, context->mainSurfaceWidth(), context->mainSurfaceHeight());
           fbi->pushViewport(extents);
           fbi->pushScissor(extents);

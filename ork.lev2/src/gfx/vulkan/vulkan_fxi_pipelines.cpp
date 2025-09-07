@@ -689,7 +689,7 @@ void VkPipelineObject::applyPendingPushConstants(VkCommandBuffer cmdbuf) { //
       auto parm_name   = item._ork_param->_name;
       auto parm_type   = item._vk_param->_datatype;
       size_t parm_size = item._value.size();
-      if (1) {
+      if (0) {
         // Find the correct range for this parameter
         size_t range_idx = item._vk_param->_range_index;
         int range_offset = (range_idx < ranges.size()) ? ranges[range_idx].offset : -1;
@@ -709,7 +709,7 @@ void VkPipelineObject::applyPendingPushConstants(VkCommandBuffer cmdbuf) { //
       memcpy(data + dst_offset, item._value.data(), parm_size);
     }
   }
-  hexdumpbytes(data,blocksize);
+  //hexdumpbytes(data,blocksize);
   
   // Push each range separately so shaders see their data at offset 0
   for (const auto& range : ranges) {
