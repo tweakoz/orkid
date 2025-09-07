@@ -61,7 +61,8 @@ rtgroup_ptr_t FrameBufferInterface::_ensureMainRtg() {
   _main_rtg->_name = "main_rtg";
   _main_rtg->_clearColor = fcolor4::Black();
 
-  auto rtb_color = _main_rtg->createRenderTarget(EBufferFormat::SRGB_BGRA8, buffer_usage, false);
+  //auto rtb_color = _main_rtg->createRenderTarget(EBufferFormat::SRGB_BGRA8, buffer_usage, false);
+  auto rtb_color = _main_rtg->createRenderTarget(EBufferFormat::BGRA8, buffer_usage, false);
   auto rtb_depth = _main_rtg->createDepthBuffer(EBufferFormat::Z32F, false);
   
   return _main_rtg;

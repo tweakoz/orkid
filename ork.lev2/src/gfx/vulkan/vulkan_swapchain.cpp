@@ -56,11 +56,16 @@ void VkSwapChain::_buildup() {
 
   VkSurfaceFormatKHR surfaceFormat = pres_caps->_formats[0];
   for (const auto& format : pres_caps->_formats) {
-    // Prefer BGRA8 SRGB if available
-    if (format.format == VK_FORMAT_B8G8R8A8_SRGB && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+    // Prefer BGRA8 non-SRGB if available
+    if (format.format == VK_FORMAT_B8G8R8A8_UNORM && format.colorSpace == VK_COLOR_SPACE_PASS_THROUGH_EXT) {
       surfaceFormat = format;
       break;
     }
+    /*// Prefer BGRA8 SRGB if available
+    if (format.format == VK_FORMAT_B8G8R8A8_SRGB && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+      surfaceFormat = format;
+      break;
+    }*/
   }
 
   VkSurfaceTransformFlagsKHR preTransform;

@@ -1,6 +1,6 @@
 {
   "id": "ork_envmaps",
-  "uuid": "648c38c8-a1f2-4a84-8cf5-33160472db1b",
+  "uuid": "5c1826dc-8154-4b1f-809d-35dc23faf64c",
   "namespace": "ork_envmaps",
   "version": "1.0.0",
   "assets": {
@@ -13,56 +13,56 @@
         "linux"
       ],
       "dependencies": [],
-      "content_hash": "e456ff364670323d7e79f62aad64bf73",
-      "storage_hash": "9c4f4e5008293403c76afa192f0bd180",
+      "content_hash": "eb04d958c177d6992e601dbce7c74a32",
+      "storage_hash": "582b9c8b2740e505bc7d6898aa11d668",
       "hash_algorithm": "md5",
       "archive_size": 1521138176,
-      "encrypted_size": 132111079,
-      "compressed_size": 132111051,
+      "encrypted_size": 132124022,
+      "compressed_size": 132123994,
       "chunks": {
         "chunk_size": 16777216,
-        "total_size": 132111079,
-        "file_hash": 6372804400011803313,
+        "total_size": 132124022,
+        "file_hash": 8872513780040073418,
         "chunks": [
           {
             "offset": 0,
             "size": 16777216,
-            "hash": 4492642219228446974
+            "hash": 12755436535739631463
           },
           {
             "offset": 16777216,
             "size": 16777216,
-            "hash": 16133205425714748995
+            "hash": 16886735424074121501
           },
           {
             "offset": 33554432,
             "size": 16777216,
-            "hash": 15199268390143249242
+            "hash": 12671219741651716129
           },
           {
             "offset": 50331648,
             "size": 16777216,
-            "hash": 3538106236421616985
+            "hash": 16207362961618065668
           },
           {
             "offset": 67108864,
             "size": 16777216,
-            "hash": 7733271663014697554
+            "hash": 5477589983538240957
           },
           {
             "offset": 83886080,
             "size": 16777216,
-            "hash": 16125621454787800538
+            "hash": 14360948533726269328
           },
           {
             "offset": 100663296,
             "size": 16777216,
-            "hash": 14657121630782760414
+            "hash": 18140463989971717788
           },
           {
             "offset": 117440512,
-            "size": 14670567,
-            "hash": 14467526943971408610
+            "size": 14683510,
+            "hash": 12084534126073997799
           }
         ]
       }
