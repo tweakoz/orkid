@@ -12,22 +12,23 @@ fxconfig fxcfg_default {
 // Interfaces
 ///////////////////////////////////////////////////////////////
 uniform_set ub_vtx {
-  mat4 mv;
-  mat4 mvp;
-  vec2 InvViewportSize; // inverse target size
-}
+  mat4 mv;              // off: 0 siz: 64
+  mat4 mvp;             // off: 64 siz: 64
+  vec2 InvViewportSize; // off: 128 siz: 8
+} // total siz: 136
 ///////////////////////////////////////////////////////////////
-sampler_set ss_frg(descriptor_set 0){
+sampler_set ss_frg (descriptor_set 0) {
   sampler2D prefiltmap;
 }
 ///////////////////////////////////////////////////////////////
-uniform_set ub_frg {
-  vec2 imgdim; // target size
-  float roughness;
-  uint numsamples;
-  vec2 ViewportSize;
-  vec2 InvViewportSize;
-}
+uniform_block ub_frg (descriptor_set 0) {
+  vec2 imgdim;               // off: 0 siz: 8
+  float roughness;           // off: 8 siz: 16
+  uint numsamples;           // off: 12 siz:16
+  vec2 ViewportSize;         // off: 16 siz: 8
+  vec2 InvViewportSizeFrg;   // off: 24 siz: 8
+} // total siz: 56
+// 136+56 = 192 
 ///////////////////////////////////////////////////////////////
 // StateBlocks
 ///////////////////////////////////////////////////////////////

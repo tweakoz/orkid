@@ -275,6 +275,9 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
           auto param_ruf        = specular_material->param("roughness");
           auto param_imgdim     = specular_material->param("imgdim");
           auto param_numsamples = specular_material->param("numsamples");
+          auto param_viewport_size = specular_material->param("ViewportSize");
+          auto param_inv_viewport_size_vtx = specular_material->param("InvViewportSize");  // Vertex uniform
+          auto param_inv_viewport_size_frg = specular_material->param("InvViewportSizeFrg"); // Fragment uniform
 
           OrkAssert(param_mvp);
           OrkAssert(param_pfm);
@@ -287,6 +290,19 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
           specular_material->bindParamFloat(param_ruf, roughness);
           specular_material->bindParamVec2(param_imgdim, fvec2(tex_width, tex_height));
           specular_material->bindParamU32(param_numsamples, 8192);
+          
+          // Set viewport size parameters
+          if (param_viewport_size) {
+            specular_material->bindParamVec2(param_viewport_size, fvec2(tex_width, tex_height));
+          }
+          // Set vertex InvViewportSize
+          if (param_inv_viewport_size_vtx) {
+            specular_material->bindParamVec2(param_inv_viewport_size_vtx, fvec2(1.0f / tex_width, 1.0f / tex_height));
+          }
+          // Set fragment InvViewportSizeFrg
+          if (param_inv_viewport_size_frg) {
+            specular_material->bindParamVec2(param_inv_viewport_size_frg, fvec2(1.0f / tex_width, 1.0f / tex_height));
+          }
 
           specular_material->commit();
 
@@ -406,6 +422,9 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
           auto param_ruf        = diffuse_material->param("roughness");
           auto param_imgdim     = diffuse_material->param("imgdim");
           auto param_numsamples = diffuse_material->param("numsamples");
+          auto param_viewport_size = diffuse_material->param("ViewportSize");
+          auto param_inv_viewport_size_vtx = diffuse_material->param("InvViewportSize");  // Vertex uniform
+          auto param_inv_viewport_size_frg = diffuse_material->param("InvViewportSizeFrg"); // Fragment uniform
 
           OrkAssert(param_mvp);
           OrkAssert(param_pfm);
@@ -418,6 +437,19 @@ taskgraph_ptr_t EnvMapProcessor::createFilteringTaskGraph(texture_ptr_t rawenvma
           diffuse_material->bindParamFloat(param_ruf, 1.0f); // Diffuse uses roughness=1
           diffuse_material->bindParamVec2(param_imgdim, fvec2(output_width, output_height));
           diffuse_material->bindParamU32(param_numsamples, 4096);
+          
+          // Set viewport size parameters
+          if (param_viewport_size) {
+            diffuse_material->bindParamVec2(param_viewport_size, fvec2(output_width, output_height));
+          }
+          // Set vertex InvViewportSize
+          if (param_inv_viewport_size_vtx) {
+            diffuse_material->bindParamVec2(param_inv_viewport_size_vtx, fvec2(1.0f / output_width, 1.0f / output_height));
+          }
+          // Set fragment InvViewportSizeFrg
+          if (param_inv_viewport_size_frg) {
+            diffuse_material->bindParamVec2(param_inv_viewport_size_frg, fvec2(1.0f / output_width, 1.0f / output_height));
+          }
 
           diffuse_material->commit();
 

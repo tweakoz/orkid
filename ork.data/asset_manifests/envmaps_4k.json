@@ -1,6 +1,6 @@
 {
   "id": "ork_envmaps",
-  "uuid": "3f0fcd49-1eac-428d-bd8a-3d72879fa839",
+  "uuid": "7e0a2321-51ea-43a4-8ef0-9ca5949370b0",
   "namespace": "ork_envmaps",
   "version": "1.0.0",
   "assets": {
@@ -127,26 +127,26 @@
         "linux"
       ],
       "dependencies": [],
-      "content_hash": "2857e714e3aaaf11f94ac35c066cc9cc",
-      "storage_hash": "f99eaf671f84bfba4ab082a4b8a29566",
+      "content_hash": "08e01747b3c7ad73f61cdc77973d59b4",
+      "storage_hash": "81ad91baeeee07dc077eeb0db2d66a8f",
       "hash_algorithm": "md5",
       "archive_size": 380287488,
-      "encrypted_size": 18770848,
-      "compressed_size": 18770820,
+      "encrypted_size": 18774512,
+      "compressed_size": 18774484,
       "chunks": {
         "chunk_size": 16777216,
-        "total_size": 18770848,
-        "file_hash": 18381895632961488465,
+        "total_size": 18774512,
+        "file_hash": 13077834010093423101,
         "chunks": [
           {
             "offset": 0,
             "size": 16777216,
-            "hash": 18373896280000931579
+            "hash": 13583634687805659071
           },
           {
             "offset": 16777216,
-            "size": 1993632,
-            "hash": 15435657805751253831
+            "size": 1997296,
+            "hash": 7075688522161697416
           }
         ]
       }

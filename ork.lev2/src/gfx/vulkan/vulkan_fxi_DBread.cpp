@@ -839,10 +839,10 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
           range_index  = 0;
         } else if (shobj == vk_program->_frgshader) {
           shader_stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-          range_index  = 1;
+          range_index  = 0;  // Fragment and vertex share the same push constant range
         } else if (shobj == vk_program->_geoshader) {
           shader_stage = VK_SHADER_STAGE_GEOMETRY_BIT;
-          range_index  = 2; // TODO: Adjust when adding geometry shader support
+          range_index  = 0; // All stages share the same push constant range for now
         }
         // TODO: Add tessellation shader support with appropriate range indices
 
@@ -897,15 +897,18 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
                 printf("VKFXI: unknown datatype<%s>\n", datatype.c_str());
                 OrkAssert(false);
               }
-              // OrkAssert(cursor==item_ptr->_offset);
-              if (0)
+              // Check if offsets match
+              if (cursor != item_ptr->_offset) {
                 printf(
-                    "VKFXI: param<%s> datatype<%s> cursor<%zu> stage<0x%x> range<%zu>\n",
+                    "VKFXI: OFFSET MISMATCH param<%s> datatype<%s> cursor<%zu> shader_offset<%zu> stage<0x%x> range<%zu>\n",
                     item_name.c_str(),
                     datatype.c_str(),
                     cursor,
+                    item_ptr->_offset,
                     shader_stage,
                     range_index);
+              }
+              item_ptr->_offset = cursor; // Use the actual layout offset
             }
           }
         }
