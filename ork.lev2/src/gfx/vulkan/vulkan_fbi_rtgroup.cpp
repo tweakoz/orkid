@@ -13,7 +13,7 @@
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 static logchannel_ptr_t logchan_rtgroup = logger()->configureChannel("VKRTG", fvec3(0.8, 0.2, 0.5), false);
-
+//constexpr uint32_t VK_RENDERING_RESUMING_BIT = 0x00000004;
 ///////////////////////////////////////////////////////////////////////////////
 vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(const VkRtgCreateOptions& options) {
   vkrtgrpimpl_ptr_t RTGIMPL = std::make_shared<VkRtGroupImpl>(_contextVK);
@@ -187,8 +187,13 @@ void VkFrameBufferInterface::__setRtGroup(rtgroup_rawptr_t rtgroup) {
         (void*)this,
         (void*)_contextVK->primary_cb()->_vkcmdbuf);
 
+
+  bool first = mRtGroupStack.size() == 1;
+
+
   RTGIMPL->_transitionToRenderTarget(_contextVK->primary_cb());
   auto rinfo = RTGIMPL->renderinfo();
+  rinfo->_renderinfo.flags &= (~VK_RENDERING_RESUMING_BIT);
   _contextVK->_vkCmdBeginRenderingKHR(CB, &rinfo->_renderinfo);
 }
 
@@ -264,6 +269,7 @@ void VkFrameBufferInterface::_popRtGroup() {
       auto RTGIMPL = next_rtg->_impl.getShared<VkRtGroupImpl>();
       RTGIMPL->_transitionToRenderTarget(_contextVK->primary_cb());
       auto rinfo = RTGIMPL->renderinfo();
+      rinfo->_renderinfo.flags |= VK_RENDERING_RESUMING_BIT;
       _contextVK->_vkCmdBeginRenderingKHR(CB, &rinfo->_renderinfo);
     }
   }
