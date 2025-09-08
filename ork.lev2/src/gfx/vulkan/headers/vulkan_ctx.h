@@ -569,7 +569,6 @@ public:
   uint32_t _vkqfid_transfer          = NO_QUEUE;
   VkQueue _vkqueue_graphics          = VK_NULL_HANDLE;
   VkCommandPool _vkcmdpool_graphics  = VK_NULL_HANDLE;
-  VkCommandBuffer _vkcmdbuffer_current = VK_NULL_HANDLE;
   primary_commandbuffer_ptr_t _defaultCommandBuffer;
   vkpricmdbufimpl_ptr_t _defaultCommandBufferImpl;
   vkpricmdbufimpl_ptr_t _cmdbufcurpri_gfx;

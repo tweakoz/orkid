@@ -148,6 +148,18 @@ vertex_interface vif_PT {
   }
 }
 ///////////////////////////////////////////////////////////////
+vertex_interface vif_PTT {
+  inputs {
+    vec4 position : POSITION;
+    vec2 uv0 : TEXCOORD0;
+    vec2 uv1 : TEXCOORD1;
+  }
+  outputs {
+    vec2 frg_uv0;
+    vec2 frg_uv1;
+  }
+}
+///////////////////////////////////////////////////////////////
 fragment_interface fif_T : vif_PT : ublock_frg {
   outputs {
     layout(location = 0) vec4 out_clr;

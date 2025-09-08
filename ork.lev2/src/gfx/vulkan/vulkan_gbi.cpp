@@ -536,7 +536,7 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
   // bind vertex buffer
   ///////////////////////
 
-  auto& CB = _contextVK->_vkcmdbuffer_current;
+  auto& CB = _contextVK->primary_cb()->_vkcmdbuf;
 
   fxi->_bindPipeline(CB, pipeline);
   fxi->_bindVertexBufferOnSlot(CB, vk_vbimpl, 0);
@@ -603,7 +603,7 @@ void VkGeometryBufferInterface::DrawIndexedPrimitiveEML(
   // bind vertex buffer
   ///////////////////////
 
-  auto& CB = _contextVK->_vkcmdbuffer_current;
+  auto& CB = _contextVK->primary_cb()->_vkcmdbuf;
   fxi->_bindPipeline(CB,pipeline);
   fxi->_bindVertexBufferOnSlot(CB,vk_vbimpl, 0);
 
@@ -686,7 +686,7 @@ void VkGeometryBufferInterface::DrawInstancedIndexedPrimitiveEML(
   // bind vertex buffer
   ///////////////////////
 
-  auto& CB = _contextVK->_vkcmdbuffer_current;
+  auto& CB = _contextVK->primary_cb()->_vkcmdbuf;
   fxi->_bindPipeline(CB, pipeline);
   fxi->_bindVertexBufferOnSlot(CB, vk_vbimpl, 0);
 

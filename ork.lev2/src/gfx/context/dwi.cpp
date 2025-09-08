@@ -73,11 +73,12 @@ void DrawingInterface::quad3DEML(
   ork::lev2::VtxWriter<SVtxV12C4T16> vw;
   vw.Lock(GBI, &vb, 6);
   vw.AddVertex(SVtxV12C4T16(V0.x, V0.y, V0.z, Uv0.x, Uv0.y, Uv0.x, Uv0.y, color));
-  vw.AddVertex(SVtxV12C4T16(V2.x, V2.y, V2.z, Uv2.x, Uv2.y, Uv2.x, Uv2.y, color));
   vw.AddVertex(SVtxV12C4T16(V1.x, V1.y, V1.z, Uv1.x, Uv1.y, Uv1.x, Uv1.y, color));
-  vw.AddVertex(SVtxV12C4T16(V0.x, V0.y, V0.z, Uv0.x, Uv0.y, Uv0.x, Uv0.y, color));
-  vw.AddVertex(SVtxV12C4T16(V3.x, V3.y, V3.z, Uv3.x, Uv3.y, Uv3.x, Uv3.y, color));
   vw.AddVertex(SVtxV12C4T16(V2.x, V2.y, V2.z, Uv2.x, Uv2.y, Uv2.x, Uv2.y, color));
+
+  vw.AddVertex(SVtxV12C4T16(V0.x, V0.y, V0.z, Uv0.x, Uv0.y, Uv0.x, Uv0.y, color));
+  vw.AddVertex(SVtxV12C4T16(V2.x, V2.y, V2.z, Uv2.x, Uv2.y, Uv2.x, Uv2.y, color));
+  vw.AddVertex(SVtxV12C4T16(V3.x, V3.y, V3.z, Uv3.x, Uv3.y, Uv3.x, Uv3.y, color));
   vw.UnLock(GBI);
   GBI->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES, 6);
  }

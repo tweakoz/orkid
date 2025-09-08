@@ -178,6 +178,211 @@ void VkContext::_processPendingCaptures() {
   }
 }
 
+///////////////////////////////////////////////////////
+
+captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(
+    const RtBuffer* inpbuf,
+    capturebuffer_ptr_t capbuf,
+    EBufferFormat destfmt,
+    void_lambda_t on_capture_complete) {
+
+  auto future     = std::make_shared<CaptureAsync>();
+  future->_width  = inpbuf->_width;
+  future->_height = inpbuf->_height;
+  future->_format = destfmt;
+
+  OrkAssert(inpbuf->_impl.isShared<VklRtBufferImpl>()); // must have been implemented for vulkan already
+  auto rtbi = inpbuf->_impl.getShared<VklRtBufferImpl>();
+  if (nullptr == capbuf) {
+    future->_failed = true;
+    return future;
+  }
+  int x = 0;
+  int y = 0;
+  int w = inpbuf->_width;
+  int h = inpbuf->_height;
+
+  if (capbuf->_captureW != 0) {
+    x = capbuf->_captureX;
+    y = capbuf->_captureY;
+    w = capbuf->_captureW;
+    h = capbuf->_captureH;
+  }
+
+  // Capture must be called during a frame when command buffer is active
+  auto cb = _contextVK->primary_cb();
+  OrkAssert(cb != nullptr); // capture must be called during frame recording
+
+  /*
+  printf("VkFrameBufferInterface::captureAsFormat rtb<%p> w<%d> h<%d> has_impl<%d>\n",
+         inpbuf, w, h, inpbuf->_impl.isSet());
+  printf("  rtb->_impl.isShared<VklRtBufferImpl>() = %d\n",
+         inpbuf->_impl.isShared<VklRtBufferImpl>());
+  */
+
+  rtbi->_transitionToHostRead(cb);
+
+  // printf("captureAsFormat w<%d> h<%d>\n", w, h);
+
+  bool fmtmatch = (capbuf->format() == destfmt);
+  bool sizmatch = (capbuf->width() == w);
+  sizmatch &= (capbuf->height() == h);
+
+  if (not(fmtmatch and sizmatch))
+    capbuf->setFormatAndSize(destfmt, w, h);
+
+  auto vkimg     = rtbi->_imgobj->_vkimage;
+  auto vkfmt     = rtbi->_vkfmt;
+  auto imgobj    = rtbi->_imgobj;
+  auto vkimgview = imgobj->_vkimageview;
+
+  VkBufferImageCopy region = {};
+  region.bufferOffset      = 0;
+  region.bufferRowLength   = 0; // 0 means tightly packed
+  region.bufferImageHeight = 0; // 0 means tightly packed
+  region.imageSubresource  = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+  region.imageExtent       = {uint32_t(w), uint32_t(h), 1};
+
+  // GL_ERRORCHECK();
+  static size_t yo       = 0;
+  constexpr float inv256 = 1.0f / 255.0f;
+  switch (destfmt) {
+    case EBufferFormat::NV12: {
+      // Set up image with format and preallocated data
+      capbuf->_image->initWithFormat(w, h, destfmt);
+      break;
+    }
+    case EBufferFormat::RGBA8: {
+      // Handle both 8-bit and 32-bit float formats
+      bool is_float_format = (vkfmt == VK_FORMAT_R32G32B32A32_SFLOAT);
+      bool is_8bit_format  = (vkfmt == VK_FORMAT_R8G8B8A8_UNORM || vkfmt == VK_FORMAT_B8G8R8A8_UNORM);
+
+      OrkAssert(is_float_format || is_8bit_format);
+
+      size_t staging_bufsize = is_float_format ? (w * h * 16) : (w * h * 4); // 16 bytes per pixel for RGBA32F
+
+      // Set up image with format and preallocated data
+      capbuf->_image->initWithFormat(w, h, destfmt);
+
+      // Create staging buffer for GPU to CPU transfer
+      auto staging_buffer =
+          std::make_shared<VulkanBuffer>(_contextVK, staging_bufsize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, "capture_staging");
+
+      // Copy image to staging buffer (image is already in TRANSFER_SRC_OPTIMAL from transition)
+      vkCmdCopyImageToBuffer(cb->_vkcmdbuf, vkimg, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, staging_buffer->_vkbuffer, 1, &region);
+
+      // Transition back to render target for continued rendering
+      rtbi->_transitionToRenderTarget(cb);
+
+      // Store staging buffer with metadata about conversion requirements
+      auto capbuf_impl             = capbuf->_impl.makeShared<VkCaptureBufferImpl>();
+      capbuf_impl->staging_buffer  = staging_buffer;
+      capbuf_impl->_actual_format  = vkfmt;
+      capbuf_impl->_desired_format = destfmt;
+
+      auto async_impl            = std::make_shared<VkCaptureAsyncImpl>(_contextVK);
+      async_impl->capture_buffer = capbuf;
+      async_impl->width          = w;
+      async_impl->height         = h;
+      async_impl->format         = destfmt;
+      async_impl->_stagingBuffer = staging_buffer;
+      async_impl->_copySubmitted = true; // Will be submitted with this command buffer
+      // Note: fence will be set when frame is submitted
+
+      future->_impl.setShared<VkCaptureAsyncImpl>(async_impl);
+      future->_captureBuffer       = async_impl->capture_buffer;
+      future->_on_capture_complete = on_capture_complete;
+
+      // Register with context for processing after frame
+      _contextVK->_pending_captures.push_back(future);
+
+      // printf("VkFrameBufferInterface::captureAsFormat - copy command recorded, data will be available after frame submit\n");
+      break;
+    }
+    case EBufferFormat::RGB8: {
+      //////////////////////////////////////
+      // RGB8 not implemented for Vulkan yet
+      //////////////////////////////////////
+      // Set up image with format and preallocated data
+      capbuf->_image->initWithFormat(w, h, destfmt);
+      // TODO: Implement RGB8 capture for Vulkan
+      OrkAssert(false);
+      //////////////////////////////////////
+      break;
+    }
+    case EBufferFormat::RGBA16F: {
+      // Set up image with format and preallocated data
+      capbuf->_image->initWithFormat(w, h, destfmt);
+      // TODO: Implement RGBA16F capture for Vulkan
+      OrkAssert(false);
+      break;
+    }
+    ///////////////////////////////////////////////////////
+    case EBufferFormat::RGBA32F: {
+      OrkAssert(vkfmt == VK_FORMAT_R32G32B32A32_SFLOAT);
+      // Set up image with format and preallocated data
+      capbuf->_image->initWithFormat(w, h, destfmt);
+
+      // Create staging buffer for GPU to CPU transfer
+      size_t bufsize = w * h * 16; // 16 bytes per pixel for RGBA32F
+      auto staging_buffer =
+          std::make_shared<VulkanBuffer>(_contextVK, bufsize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, "capture_staging_f32");
+
+      // Copy image to staging buffer
+      vkCmdCopyImageToBuffer(cb->_vkcmdbuf, vkimg, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, staging_buffer->_vkbuffer, 1, &region);
+
+      // Transition back to render target
+      rtbi->_transitionToRenderTarget(cb);
+
+      // Store staging buffer with metadata (use same struct for consistency)
+      auto capbuf_impl             = capbuf->_impl.makeShared<VkCaptureBufferImpl>();
+      capbuf_impl->staging_buffer  = staging_buffer;
+      capbuf_impl->_actual_format  = vkfmt;
+      capbuf_impl->_desired_format = destfmt;
+
+      // Store capture data in the future
+      auto async_impl            = std::make_shared<VkCaptureAsyncImpl>(_contextVK);
+      async_impl->capture_buffer = capbuf;
+      async_impl->width          = w;
+      async_impl->height         = h;
+      async_impl->format         = destfmt;
+      async_impl->_stagingBuffer = staging_buffer;
+      async_impl->_copySubmitted = true; // Will be submitted with this command buffer
+      // Note: fence will be set when frame is submitted
+
+      future->_impl.setShared<VkCaptureAsyncImpl>(async_impl);
+      future->_captureBuffer       = async_impl->capture_buffer;
+      future->_on_capture_complete = on_capture_complete;
+
+      // Register with context for processing after frame
+      _contextVK->_pending_captures.push_back(future);
+      break;
+    }
+    ///////////////////////////////////////////////////////
+    case EBufferFormat::R32F:
+      OrkAssert(false);
+      // glReadPixels(x, y, w, h, GL_RED, GL_FLOAT, capbuf->_data);
+      break;
+    case EBufferFormat::R32UI:
+      OrkAssert(false);
+      // glReadPixels(x, y, w, h, GL_RED_INTEGER, GL_UNSIGNED_INT, capbuf->_data);
+      break;
+    case EBufferFormat::RG32F:
+      OrkAssert(false);
+      // glReadPixels(x, y, w, h, GL_RG, GL_FLOAT, capbuf->_data);
+      break;
+    default:
+      OrkAssert(false);
+      break;
+  }
+  // GL_ERRORCHECK();
+
+  // glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  //   glReadBuffer( readbuffer ); // restore read buffer
+  // GL_ERRORCHECK();
+  return future;
+}
+
 ////////////////////////////////////////////////////////////////
 
 } // namespace ork::lev2::vulkan

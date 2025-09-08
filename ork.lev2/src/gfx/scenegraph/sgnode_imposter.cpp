@@ -109,11 +109,11 @@ void ImposterDrawableImpl::gpuInit(lev2::Context* ctx) {
     auto blpass = _impdata->_blit_pass;
 
     auto blmtl = std::make_shared<FreestyleMaterial>();
-    blmtl->gpuInit(ctx, "orkshader://solid");
+    blmtl->gpuInit(ctx, "orkshader://imposters");
     _blit_tek_bilinear   = blmtl->technique("imposter_blit_bilinear");
     _blit_tek_lanczos    = blmtl->technique("imposter_blit_lanczos");
     _blit_tek_bicubic    = blmtl->technique("imposter_blit_bicubic");
-    _blit_par_mvp        = blmtl->param("MatMVP");
+    _blit_par_mvp        = blmtl->param("mvp");
     auto par_tex         = blmtl->param("ColorMap");
     auto par_dmp         = blmtl->param("ImpDepthMap");
     auto par_near        = blmtl->param("ImpNear");
@@ -279,7 +279,6 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
 
 
     FBI->PushRtGroup(RTG.get());
-  /*
 
     if (imppass->_onPreRender) {
       imppass->_onPreRender();
@@ -301,7 +300,6 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
     if (imppass->_onPostRender) {
       imppass->_onPostRender();
     }
-  */
 
     FBI->PopRtGroup();
 
@@ -317,7 +315,6 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
     RCFD->setUserProperty("RCFD_Camera_IVP_Mono"_crcu,prev_IVPMONO);
   }
 
-  return;
   ////////////////////////////////////////////
   // user passes
   ////////////////////////////////////////////
@@ -342,7 +339,7 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
       p->_pipeline->wrappedDrawCall(
           RCID,   //
           [=]() { //
-            DWI->quad2DEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
+            DWI->fullscreenQuad( fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
           });
       FBI->PopRtGroup();
       FBI->popViewport();
