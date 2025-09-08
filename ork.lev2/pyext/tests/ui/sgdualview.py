@@ -86,19 +86,6 @@ class UiSgQuadViewTestApp(object):
     self.anim = XgmAnim("data://tests/chartest/char_testanim1")
 
     ########################################################
-    # scenegraph init data
-    ########################################################
-
-    sg_params_fwd = VarMap()
-    sg_params_fwd.SkyboxIntensity = 3.0
-    sg_params_fwd.DiffuseIntensity = 1.0
-    sg_params_fwd.SpecularIntensity = 1.0
-    sg_params_fwd.AmbientLevel = vec3(.125)
-    sg_params_fwd.DepthFogDistance = 10000.0
-    sg_params_fwd.preset = "ForwardPBR"
-
-
-    ########################################################
     # create scenegraph / panels
     ########################################################
 
@@ -137,46 +124,26 @@ class UiSgQuadViewTestApp(object):
         if True:
 
           if index==0:
-            sg_params_def = VarMap()
-            sg_params_def.SkyboxIntensity = 3.0
-            sg_params_def.DiffuseIntensity = 1.0
-            sg_params_def.SpecularIntensity = 1.0
-            sg_params_def.AmbientLevel = vec3(.125)
-            sg_params_def.DepthFogDistance = 10000.0
-            sg_params_def.preset = "DeferredPBR"
-            self.scenegraph = scenegraph.Scene(sg_params_def)
+            sg_params = VarMap()
+            sg_params.SkyboxIntensity = 1.0
+            sg_params.DiffuseIntensity = 1.0
+            sg_params.SpecularIntensity = 1.0
+            sg_params.AmbientLevel = vec3(.125)
+            sg_params.DepthFogDistance = 10000.0
+            sg_params.preset = "ForwardPBR"
+            sg_params.SkyboxTexPathStr = "ork_envmaps|tozenv_nebula"
+            self.scenegraph = scenegraph.Scene(sg_params)
           else:
-            comp_tek = NodeCompositingTechnique()
-            comp_tek.renderNode = DeferredPbrRenderNode()
-            comp_tek.outputNode = ScreenOutputNode()
+            sg_params = VarMap()
+            sg_params.SkyboxIntensity = 1.0
+            sg_params.DiffuseIntensity = 1.0
+            sg_params.SpecularIntensity = 1.0
+            sg_params.AmbientLevel = vec3(.125)
+            sg_params.DepthFogDistance = 10000.0
+            sg_params.preset = "ForwardPBR"
+            sg_params.SkyboxTexPathStr = "ork_envmaps|pillars4k"
+            self.scenegraph = scenegraph.Scene(sg_params)
 
-            comp_data = CompositingData()
-            comp_scene = comp_data.createScene("scene1")
-            comp_sceneitem = comp_scene.createSceneItem("item1")
-            comp_sceneitem.technique = comp_tek
-
-            # OVERRIDES
-
-            pbr_common = comp_tek.renderNode.pbr_common
-            pbr_common.requestSkyboxTexture("src://envmaps/tozenv_hellscape")
-            pbr_common.environmentIntensity = 1
-            pbr_common.environmentMipBias = 10
-            pbr_common.environmentMipScale = 1
-            pbr_common.diffuseLevel = 1
-            pbr_common.specularLevel = 1
-            pbr_common.specularMipBias = 1
-            pbr_common.skyboxLevel = .5
-            pbr_common.depthFogDistance = 100
-            pbr_common.depthFogPower = 1
-            comp_tek.renderNode.overrideShader(str(this_dir/"sgdualview.glfx"))
-
-            print(comp_sceneitem)
-            print(comp_tek)
-            print(pbr_common)
-            sg_params_xxx = VarMap()
-            sg_params_xxx.preset = "USER"
-            sg_params_xxx.compositordata = comp_data
-            self.scenegraph = scenegraph.Scene(sg_params_xxx)
 
           self.use_event = True
           self.layer = self.scenegraph.createLayer("layer")

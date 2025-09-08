@@ -102,7 +102,7 @@ void EzTopWidget::enableUiDraw() {
     CPD->_irendertarget = &rt;
     CPD->SetDstRect(tgtrect);
     compositorimpl->pushCPD(*CPD);
-    context->beginFrame();
+    //context->beginFrame();
     mtxi->PushUIMatrix();
     ezapp->_uicontext->draw(drwev);
     mtxi->PopUIMatrix();
@@ -111,7 +111,7 @@ void EzTopWidget::enableUiDraw() {
       ezapp->_mainWindow->_onGpuPostFrame(context);
     }
 
-    context->endFrame();
+    //context->endFrame();
     rcfd->popCompositor();
     ////////////////////////////////////////////////////
     if (DB)

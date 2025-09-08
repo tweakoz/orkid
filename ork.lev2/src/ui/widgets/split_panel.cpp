@@ -51,22 +51,14 @@ void SplitPanel::DoDraw(ui::drawevent_constptr_t drwev) {
   bool is_hdpi = tgt->hiDPI();
   auto fbi     = tgt->FBI();
   auto mtxi    = tgt->MTXI();
-  auto primi  = tgt->PRI();
+  auto primi   = tgt->PRI();
   auto defmtl  = lev2::defaultUIMaterial();
-
+  auto dwi     = tgt->DWI();
   auto ren_quad = [&](int x, int y, int x2, int y2) {
-    primi->RenderQuadAtZ(
-        defmtl.get(),
-        x,
-        x2, // x0, x1
-        y,
-        y2,   // y0, y1
-        0.0f, // z
-        0.0f,
-        1.0f, // u0, u1
-        0.0f,
-        1.0f // v0, v1
-    );
+    auto qrect = fvec4(float(x), float(y), float(x2 - x), float(y2 - y));
+    auto uvrect = fvec4(0.0f, 0.0f, 1.0f, 1.0f);
+    float z = 0.0f;
+    dwi->quad2D(qrect, uvrect, uvrect, z);
   };
   auto ren_line = [&](int x, int y, int x2, int y2) {
     auto vb = &lev2::GfxEnv::GetSharedDynamicVB();

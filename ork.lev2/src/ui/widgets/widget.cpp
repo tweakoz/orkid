@@ -282,6 +282,7 @@ bool Widget::IsEventInside(event_constptr_t Ev) const {
 /////////////////////////////////////////////////////////////////////////
 void Widget::LocalToRoot(int lx, int ly, int& rx, int& ry) const {
   bool ishidpi    = _target ? _target->hiDPI() : false;
+  int h = _target->mainSurfaceHeight();
   rx              = lx;
   ry              = ly;
   const Widget* w = this;
