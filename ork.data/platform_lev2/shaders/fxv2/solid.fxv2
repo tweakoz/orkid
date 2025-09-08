@@ -548,13 +548,23 @@ technique textexmodcolor {
 technique texmodcolorFB {
 }
 ///////////////////////////////////////////////////////////////
+fragment_interface fif_IMP     //
+                 : vif_PT      //
+                 : ublock_frg  //
+                 : samplers        //
+                 : imp_samplers {  //
+  outputs {
+    layout(location = 0) vec4 out_clr;
+  }
+}
+///////////////////////////////////////////////////////////////
 fragment_shader ps_impblit //
-  : iface_fmt              //
-  : samplers               //
-  : imp_samplers {         //
+  : fif_IMP              //
+  {         //
   out_clr   = texture(ColorMap, frg_uv0);
   gl_FragDepth = textureLod(ImpDepthMap,frg_uv0,0).r;
 }
+///////////////////////////////////////////////////////////////
 technique imposter_blit_bilinear {
   fxconfig = fxcfg_default;
   vf_pass = { vs_vtxcolor, ps_impblit, sb_default }

@@ -440,7 +440,7 @@ fragment_shader ps_fbin : fif_FFX : samplers_all { out_clr = texture(MrtMap0, fr
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_vtxcolor //
   : vif_FFX               //
-  : uset_std_matrices {   //
+  : ublk_std_matrices {   //
   gl_Position = mvp * position;
   frg_clr     = vtxcolor;
   frg_uv      = uv0;

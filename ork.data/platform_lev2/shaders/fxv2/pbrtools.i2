@@ -308,7 +308,7 @@ fragment_interface fif_FWDTEST
 vertex_shader vs_forward_test 
   : vif_FWDTEST 
   : lib_pbr_vtx 
-  : uset_std_matrices {
+  : ublk_std_matrices {
 
   // frg_wpos, frg_tbn, frg_camz, frg_camdist
   vs_common(position, normal, binormal); 

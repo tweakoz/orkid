@@ -1,17 +1,5 @@
 ///////////////////////////////////////////////////////////////
-uniform_set uset_std_matrices {
-  mat4 m;
-  mat4 v;
-  mat4 p;
-  mat4 mv;
-  mat4 vp;
-  mat4 mvp;
-  mat3 mrot;
-  //
-  mat4 inv_v;
-  mat4 inv_p;
-  //mat4 inv_vp;
-}
+
 uniform_block ublk_std_matrices (descriptor_set 0) {
   mat4 m;
   mat4 v;
@@ -40,6 +28,11 @@ uniform_set uset_std_viewport {
   vec2 InvViewportSize; // inverse target size
 }
 ///////////////////////////////////////////////////////////////
+uniform_block ublk_std_viewport (descriptor_set 0) {
+  vec2 ViewportSize;    // target size
+  vec2 InvViewportSize; // inverse target size
+}
+///////////////////////////////////////////////////////////////
 sampler_set sset_std_instancing(descriptor_set 0) {
   sampler2D InstanceMatrices;
   sampler2D InstanceColors;
@@ -47,6 +40,10 @@ sampler_set sset_std_instancing(descriptor_set 0) {
 }
 ///////////////////////////////////////////////////////////////
 uniform_set uset_std_filtering {
+  float FilterRadius;
+}
+///////////////////////////////////////////////////////////////
+uniform_block ublk_std_filtering (descriptor_set 0) {
   float FilterRadius;
 }
 ///////////////////////////////////////////////////////////////

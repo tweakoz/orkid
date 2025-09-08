@@ -42,7 +42,7 @@ fragment_interface fif_FWDLIT : vif_FWDLIT : ub_frg_fwd : ub_frg_fwd_lighting : 
   }
 }
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_grid_forward_lit : vif_FWDLIT : lib_pbr_vtx : uset_std_matrices {
+vertex_shader vs_grid_forward_lit : vif_FWDLIT : lib_pbr_vtx : ublk_std_matrices {
   gl_Position = mvp * position;
   frg_uv0     = uv0;
   frg_wpos    = m * position;

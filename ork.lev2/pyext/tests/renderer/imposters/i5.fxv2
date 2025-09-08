@@ -12,9 +12,7 @@ sampler_set i5_samplers (descriptor_set 0) {
   sampler2D depthtex;
 }
 ////////////////////////////////////////
-uniform_set uset_frg_i4    //
-    : uset_std_viewport    //
-    : uset_std_filtering { //
+uniform_block ublk_frg_i4 (descriptor_set 0) { //
   float time;
   vec3 raydir;
 }
@@ -27,9 +25,6 @@ vertex_interface vif_I5 : ub_std_vtx {
   outputs {
     vec4 frg_wpos;
     vec2 frg_uv0;
-    mat3 frg_tbn;
-    float frg_camdist;
-    vec3 frg_camz;
   }
 }
 ////////////////////////////////////////
@@ -41,7 +36,7 @@ fragment_interface fif_I5 : vif_I5 {
 ////////////////////////////////////////
 vertex_shader vs_I5    //
   : vif_I5            //
-  : uset_std_matrices { //
+  : ublk_std_matrices { //
   frg_wpos    = (m * position);
   frg_uv0     = uv0;
   gl_Position = mvp * position;
@@ -88,10 +83,11 @@ libblock lib_X        //
 ////////////////////////////////////////
 fragment_shader ps_I5      //
     : fif_I5               //
-    : uset_std_matrices    //
-    : uset_frg_i4          //
+    : ublk_std_matrices    //
+    : ublk_std_viewport    //
+    : ublk_std_filtering
+    : ublk_frg_i4          //
     : i5_samplers          //
-    : uset_std_viewport    //
     : lib_X {              //
 
   float radius       = sin(time * 1.0) * 0.1 + 0.65; // oscillating radius
@@ -146,7 +142,9 @@ fragment_shader ps_I5      //
   gl_FragDepth = depthAtWpos(frg_wpos.xyz, vp);
 }
 ////////////////////////////////////////
-state_block sb_i5 : default {}
+state_block sb_i5 : default {
+  BlendMode = ADDITIVE;
+}
 ////////////////////////////////////////
 technique tek_imp {
   fxconfig = fxcfg_default;
