@@ -245,14 +245,17 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
 
   // Create perspective projection matrix
   // Use aspect ratio 1:1 since we're rendering to a square texture
-
+  fmtx4 prev_VPMONO, prev_IVPMONO;
+  bool restore_prev_vpmono = false;
+  bool restore_prev_ivpmono = false;
+  auto imppass = _impdata->_imp_pass;
+  auto blpass  = _impdata->_blit_pass;
+  auto RTG = imppass->_rtg;
   rtgProj.perspective(fovy, 1.0f, CAMDAT.mNear, CAMDAT.mFar); // printf("eye_pos<%g %g %g>\n", eye_pos.x, eye_pos.y, eye_pos.z);
   auto SUBVP  = (rtgProj * rtgView);
   auto SUBMVP = SUBVP * worldmatrix;
 
-  fmtx4 prev_VPMONO, prev_IVPMONO;
-  bool restore_prev_vpmono = false;
-  bool restore_prev_ivpmono = false;
+
   if(RCFD->hasUserProperty("RCFD_Camera_VP_Mono"_crcu)){
     prev_VPMONO = RCFD->userPropertyAs<fmtx4>("RCFD_Camera_VP_Mono"_crcu);
     restore_prev_vpmono = true;
@@ -264,18 +267,20 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
   RCFD->setUserProperty("RCFD_Camera_VP_Mono"_crcu,SUBVP);
   RCFD->setUserProperty("RCFD_Camera_IVP_Mono"_crcu,SUBVP.inverse());
 
-  auto imppass = _impdata->_imp_pass;
-  auto blpass  = _impdata->_blit_pass;
-
-  auto RTG = imppass->_rtg;
   if (RTG) {
 
     RTG->_autoclear  = true;
     RTG->_clearColor = fvec4(0, 0, 0, 0);
     auto vprect_rtg  = RTG->viewportRect();
+
+
     FBI->pushScissor(vprect_rtg);
     FBI->pushViewport(vprect_rtg);
+
+
     FBI->PushRtGroup(RTG.get());
+  /*
+
     if (imppass->_onPreRender) {
       imppass->_onPreRender();
     }
@@ -296,11 +301,14 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
     if (imppass->_onPostRender) {
       imppass->_onPostRender();
     }
+  */
 
     FBI->PopRtGroup();
+
     FBI->popViewport();
     FBI->popScissor();
   }
+
 
   if(restore_prev_vpmono){
     RCFD->setUserProperty("RCFD_Camera_VP_Mono"_crcu,prev_VPMONO);
@@ -308,7 +316,8 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
   if(restore_prev_ivpmono){
     RCFD->setUserProperty("RCFD_Camera_IVP_Mono"_crcu,prev_IVPMONO);
   }
-  
+
+  return;
   ////////////////////////////////////////////
   // user passes
   ////////////////////////////////////////////
@@ -457,7 +466,7 @@ void ImposterDrawableData::describeX(class_t* c) {
 drawable_ptr_t ImposterDrawableData::createDrawable() const {
   auto drw      = std::make_shared<CallbackDrawable>(nullptr);
   auto impl     = drw->_implA.makeShared<ImposterDrawableImpl>(this, drw);
-  drw->_sortkey = 10;
+  drw->_sortkey = 1000;
   drw->SetRenderCallback(ImposterDrawableImpl::renderImp);
   return drw;
 }
