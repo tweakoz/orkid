@@ -52,9 +52,10 @@ VulkanRenderInfo::VulkanRenderInfo(VkRtGroupImpl* rtg) {
     _rainfo_depth.resolveMode = VK_RESOLVE_MODE_NONE;
     //_rainfo_depth.resolveImageView = VkImageView();
     //_rainfo_depth.resolveImageLayout = VkImageLayout();
-    _rainfo_depth.loadOp                        = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    _rainfo_depth.loadOp                        = rtg->_autoclear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
     _rainfo_depth.storeOp                       = VK_ATTACHMENT_STORE_OP_STORE;
     _rainfo_depth.clearValue.depthStencil.depth = 1.0f;
+    _rainfo_depth.clearValue.depthStencil.stencil = 0;
     _renderinfo.pDepthAttachment                = &_rainfo_depth;
   }
 }

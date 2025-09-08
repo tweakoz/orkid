@@ -78,9 +78,11 @@ void VkRtGroupImpl::_updateMainSurface(VkFrameBufferInterface* fbi) {
 ///////////////////////////////////////////////////////////////////////////////
 
 vkrenderinfo_ptr_t VkRtGroupImpl::renderinfo() {
-  auto rinfo = std::make_shared<VulkanRenderInfo>(this); 
-  _renderinfo_set.insert(rinfo);
-  return rinfo;
+  if (!_rinfo_retain) {
+    _rinfo_retain = std::make_shared<VulkanRenderInfo>(this); 
+    _renderinfo_set.insert(_rinfo_retain);
+  }
+  return _rinfo_retain;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -145,6 +147,7 @@ void VkRtGroupImpl::_transitionToRenderTarget(vkpricmdbufimpl_ptr_t cb) {
 void VkRtGroupImpl::_invalidateAttachments() {
   __attachments = nullptr;
   _renderinfo_set.clear();
+  _rinfo_retain = nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
