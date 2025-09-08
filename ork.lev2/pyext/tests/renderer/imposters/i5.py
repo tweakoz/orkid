@@ -103,7 +103,7 @@ class ImposterApp(boilerplate.ImposterBaseApp):
   # create imposter
   ##############################################
 
-    if False:
+    if True:
       imposter = createImposter( context=ctx,
                                  radius=1.0,
                                  filtertype=tokens.BILINEAR,
@@ -114,12 +114,12 @@ class ImposterApp(boilerplate.ImposterBaseApp):
                                  layer=self.layer_fwd,
                                  DIM = IMP_DIM,
                                  is_stereo=self.is_stereo,
-                                 use_pbr=True )
+                                 use_pbr=False )
       
       imp_mtl = imposter.imp_mtl
       imp_pass = imposter.impdata.imp_pass
-      imp_pass.pipeline.bindParam(imp_mtl.param("raydir"), tokens.RCFD_Camera_ZNORMAL_Mono )
-      imp_pass.pipeline.bindParam(imp_mtl.param("time"), lambda: self.time*3.0)
+      #imp_pass.pipeline.bindParam(imp_mtl.param("raydir"), tokens.RCFD_Camera_ZNORMAL_Mono )
+      #imp_pass.pipeline.bindParam(imp_mtl.param("time"), lambda: self.time*3.0)
 
       imposter.installStandardBlit()
 
@@ -171,10 +171,11 @@ class ImposterApp(boilerplate.ImposterBaseApp):
       self.imposter.onGpuUpdate(ctx)
       z = math.sin(self.imposter.frame_index*0.003)*2.0
       self.imposter.sgnode.worldTransform.translation = vec3(0,0.1,z)
-      self.spotlight1.update(self.lighttime)
-      self.spotlight2.update(self.lighttime)
-      self.spotlight3.update(self.lighttime)
-      self.spotlight4.update(self.lighttime)
+      if hasattr(self,"spotlight1"):
+        self.spotlight1.update(self.lighttime)
+        self.spotlight2.update(self.lighttime)
+        self.spotlight3.update(self.lighttime)
+        self.spotlight4.update(self.lighttime)
     if hasattr(self,"sgnode_frustum"):
       self.layer_fwd.removeDrawableNode(self.sgnode_frustum )
 

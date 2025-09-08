@@ -1,27 +1,15 @@
 ////////////////////////////////////////
 fxconfig fxcfg_default {
   glsl_version = "410";
-  import "orkshader://stdtools.i2";
-}
-///////////////////////////////////////////////////////////////
-vertex_interface vif_PNT {
-  inputs {
-    vec4 position : POSITION;
-    vec3 normal   : NORMAL;
-    vec2 uv0      : TEXCOORD0;
-  }
-  outputs {
-    vec2 frg_uv0;
-    vec3 frg_opos;
-    vec3 frg_wpos;
-    vec3 frg_clr;
-  }
+import "orkshader://stdtools.i2";
+import "orkshader://mathtools.i2";
+import "orkshader://sdftools.i2";
+import "orkshader://misctools.i2";
 }
 ////////////////////////////////////////
-fragment_interface fif_PNT : vif_PNT {
-  outputs {
-    layout(location = 0) vec4 out_color;
-  }
+sampler_set i5_samplers (descriptor_set 0) {
+  sampler2D rtgtex;
+  sampler2D depthtex;
 }
 ////////////////////////////////////////
 uniform_set uset_frg_i4    //
@@ -30,41 +18,137 @@ uniform_set uset_frg_i4    //
   float time;
   vec3 raydir;
 }
-////////////////////////////////////////
-sampler_set ss_frg_i5(descriptor_set 0) {
-  sampler2D rtgtex;
-  sampler2D depthtex;
-}
-////////////////////////////////////////
-vertex_shader vs_imp 
-  : vif_PNT
-  : ublk_std_matrices {
-  frg_clr     = vec3(normalize(normal));
-  //frg_opos    = position.xyz;
-  //frg_uv0     = uv0;
-  //frg_wpos    = (m*position).xyz;
-  //gl_Position = mvp * position;
-}
-////////////////////////////////////////
-libblock lib_X {       //
-
-  float X(vec3 p) {
-    return 1.0;
+vertex_interface vif_I5 : ub_std_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec3 normal : NORMAL;
+    vec2 uv0 : TEXCOORD0;
   }
+  outputs {
+    vec4 frg_wpos;
+    vec2 frg_uv0;
+    mat3 frg_tbn;
+    float frg_camdist;
+    vec3 frg_camz;
+  }
+}
+////////////////////////////////////////
+fragment_interface fif_I5 : vif_I5 {
+  outputs {
+    layout(location = 0) vec4 out_color;
+  }
+}
+////////////////////////////////////////
+vertex_shader vs_I5    //
+  : vif_I5            //
+  : uset_std_matrices { //
+  frg_wpos    = (m * position);
+  frg_uv0     = uv0;
+  gl_Position = mvp * position;
+}
+////////////////////////////////////////
+libblock lib_X        //
+    : lib_math        //
+    : lib_sdftools    //
+    : lib_mmnoise     //
+    : lib_cellnoise { //
 
+  float myWorldSDF(vec3 p) {
+    float radius       = sin(time * 1.0) * 0.1 + 0.65; // oscillating radius
+    vec3 sphere_center = m[3].xyz;                     // center of the sphere @ node position
+    float sphere_dist  = length(p - sphere_center) - radius;
+    float angleXY      = atan(p.y - sphere_center.y, p.x - sphere_center.x);
+    float angleYZ      = atan(p.y - sphere_center.y, p.z - sphere_center.z);
+    float displacement = 0.0;
+    displacement += sin(angleXY * 10.0 + time * 1.5) * 0.1; // oscillating displacement
+    displacement += -cos(angleYZ * 3.0 + time * 2.7) * 0.1; // oscillating displacement
+    sphere_dist += displacement;                            // apply displacement to the sphere distance
+    float NN2 = 1.0 + noise(p * 7) * 0.5;
+    return sphere_dist;
+  }
+  vec3 myWorldNormal(vec3 p) {
+    // compute normal of myWorldSDF at point p
+    float eps = 0.0001;
+    vec3 n;
+    n.x = myWorldSDF(vec3(p.x + eps, p.y, p.z)) - myWorldSDF(vec3(p.x - eps, p.y, p.z));
+    n.y = myWorldSDF(vec3(p.x, p.y + eps, p.z)) - myWorldSDF(vec3(p.x, p.y - eps, p.z));
+    n.z = myWorldSDF(vec3(p.x, p.y, p.z + eps)) - myWorldSDF(vec3(p.x, p.y, p.z - eps));
+    return normalize(n);
+  }
+  float curvature(vec3 p) {
+    // compute curvature of myWorldSDF at point p
+    float eps = 0.0001;
+    vec3 n    = myWorldNormal(p);
+    float d2  = myWorldSDF(p + n * eps);
+    float d1  = myWorldSDF(p - n * eps);
+    return (d2 - d1) / (2.0 * eps);
+  }
 }
 
 ////////////////////////////////////////
-fragment_shader ps_imp      //
-  : fif_PNT                 //
-  : lib_X                   //
-{                           //
-  //gl_FragDepth = depthAtWpos(frg_wpos.xyz, vp);
-  out_color = vec4(1,0,0,1);
+fragment_shader ps_I5      //
+    : fif_I5               //
+    : uset_std_matrices    //
+    : uset_frg_i4          //
+    : i5_samplers          //
+    : uset_std_viewport    //
+    : lib_X {              //
+
+  float radius       = sin(time * 1.0) * 0.1 + 0.65; // oscillating radius
+  vec3 sphere_center = m[3].xyz;                     // center of the sphere @ node position
+
+  // raymarch sphere of radius 0.75
+
+  vec3 rayori              = frg_wpos.xyz; // surface of imposter sphere
+  const float STEPRATE     = 0.01;
+  const float maxdist      = 2.5;
+  const float _EPSILON     = 0.0005;
+  const int MAX_STEPS      = 500;
+  float distance_travelled = 0.0;
+  bool hit                 = false;
+
+  vec3 p = rayori;
+  for (int i = 0; i < MAX_STEPS; i++) {
+    float sdf_distance = myWorldSDF(p);
+    if (sdf_distance < _EPSILON) {
+      hit = true;
+      break;
+    }
+    if (distance_travelled > maxdist) {
+      break;
+    }
+    float D = sdf_distance * STEPRATE;
+    p += raydir * D;
+    distance_travelled += D;
+  }
+  if (!hit) {
+    discard;
+  }
+  vec3 n    = myWorldNormal(p); // normal at the surface
+  float NN  = 1.0 + cellnoise(p * 7) * 0.5;
+  float NN2 = 1.0 + noise(p * 7) * 0.5;
+
+  float K        = curvature(p);
+  float K2       = saturateF(1.0 - pow(K, 4) * 0.3);
+  vec3 CA        = vec3(1, 1, 2) * saturateF(pow(NN * 0.75, 2)); //, vec3(1,1,1), NN2); // color based on curvature
+
+  vec3 C = mix(CA, vec3(3, 2, 1) * NN * 2, K2);
+/*  PbrData pbr;
+  pbr._emissive  = false;
+  pbr._albedo    = C;          //*0.35;
+  pbr._metallic  = mix(1, 0, K2);
+  pbr._roughness = 1.0 - pow(K2, 1.0); // oscillating roughness
+  pbr._wpos      = p;
+  pbr._wnrm      = n;*/
+  //vec3 pbr_lit   = _forward_lightingX(pbr, EyePostion, vec3(0), vec3(1));
+  //out_color      = vec4(pbr_lit * float(int(hit)), 1); // debug color
+  out_color = vec4(C*float(int(hit)), 1); // debug color
+  gl_FragDepth = depthAtWpos(frg_wpos.xyz, vp);
 }
+////////////////////////////////////////
+state_block sb_i5 : default {}
 ////////////////////////////////////////
 technique tek_imp {
   fxconfig = fxcfg_default;
-  vf_pass={vs_imp, ps_imp, sb_default}
+  vf_pass = { vs_I5, ps_I5, sb_i5 }
 }
-
