@@ -40,6 +40,7 @@ RtBuffer::RtBuffer(const RtGroup* rtg, int slot, EBufferFormat efmt, int iW, int
   if(with_texture){
     _texture = std::make_shared<Texture>();
     _texture->_texFormat = efmt;
+    _texture->_texType   = ETEXTYPE_2D;
     _texture->_width     = iW;
     _texture->_height    = iH;
     _texture->_debugName = FormatString("rtg%d", slot);
@@ -112,7 +113,7 @@ Context* RtGroup::ParentTarget() const {
 }
 /////////////////////////////////////////
 rtbuffer_ptr_t RtGroup::createDepthBuffer(EBufferFormat efmt, bool with_texture) {
-  _depthBuffer = std::make_shared<RtBuffer>(this, -1, efmt, 8, 8, "depth"_crcu, with_texture);
+  _depthBuffer = std::make_shared<RtBuffer>(this, -1, efmt, miW, miH, "depth"_crcu, with_texture);
   return _depthBuffer;
 }
 /////////////////////////////////////////

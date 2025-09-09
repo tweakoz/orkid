@@ -397,7 +397,7 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
 
   bmat->begin(tek, RCFD);
   bmat->bindParam(bpar_tex, COLOR_RTG->texture(0));
-  bmat->bindParam(bpar_dmp, DEPTH_RTG->depthTexture());
+  bmat->bindParam(bpar_dmp, COLOR_RTG->depthTexture());
   bmat->bindParam(_blit_par_mvp, VP);
   //bmat->bindParamMatrix(bpar_m, worldmatrix);
   bmat->bindParamFloat(bpar_near, CAMDAT.mNear);

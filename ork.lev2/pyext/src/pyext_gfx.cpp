@@ -185,7 +185,9 @@ void pyinit_gfx(py::module& module_lev2) {
 #if defined(ENABLE_SSBO)
       .def(
           "createShaderStorageBufferWithLength",
-          [](ci_t& ci, size_t length) -> fxshaderstoragebuffer_ptr_t { return fxshaderstoragebuffer_ptr_t(ci.get()->createStorageBuffer(length)); })
+          [](ci_t& ci, size_t length) -> fxshaderstoragebuffer_ptr_t {
+            return fxshaderstoragebuffer_ptr_t(ci.get()->createStorageBuffer(length));
+          })
       .def(
           "copyDataIntoShaderStorageBuffer",
           [](ci_t& ci, py::object data, fxshaderstoragebuffer_ptr_t buffer, size_t dest_offset) { //
@@ -274,10 +276,10 @@ void pyinit_gfx(py::module& module_lev2) {
             return the_txi->createColorTexture(color, w, h); //
           })
       .def(
-          "updateTexture",           //
-          [](const txi_t& the_txi,             //
-             texture_ptr_t tex, //
-             image_ptr_t img) {                //
+          "updateTexture",         //
+          [](const txi_t& the_txi, //
+             texture_ptr_t tex,    //
+             image_ptr_t img) {    //
             the_txi->initTextureFromImage(tex.get(), img);
           })
       .def(
@@ -347,17 +349,18 @@ void pyinit_gfx(py::module& module_lev2) {
                          });
   type_codec->registerStdCodec<rasterstate_ptr_t>(rstate_type);
   /////////////////////////////////////////////////////////////////////////////////
-  auto capture_async_t = py::class_<CaptureAsync, captureasync_ptr_t>(module_lev2, "CaptureAsync")
-                   .def(
-                       "__repr__",
-                       [](captureasync_ptr_t cap) -> std::string {
-                         fxstring<256> fxs;
-                         fxs.format("CaptureAsync(%p)", cap.get());
-                         return fxs.c_str();
-                       })
-                   .def_property_readonly("is_ready", [](captureasync_ptr_t cap) -> bool { return cap->isReady(); })
-                   .def_property_readonly("progress", [](captureasync_ptr_t cap) -> float { return cap->progress(); })
-                   .def("wait", [](captureasync_ptr_t cap, capturebuffer_ptr_t buffer) -> bool { return cap->wait(buffer.get()); });
+  auto capture_async_t =
+      py::class_<CaptureAsync, captureasync_ptr_t>(module_lev2, "CaptureAsync")
+          .def(
+              "__repr__",
+              [](captureasync_ptr_t cap) -> std::string {
+                fxstring<256> fxs;
+                fxs.format("CaptureAsync(%p)", cap.get());
+                return fxs.c_str();
+              })
+          .def_property_readonly("is_ready", [](captureasync_ptr_t cap) -> bool { return cap->isReady(); })
+          .def_property_readonly("progress", [](captureasync_ptr_t cap) -> float { return cap->progress(); })
+          .def("wait", [](captureasync_ptr_t cap, capturebuffer_ptr_t buffer) -> bool { return cap->wait(buffer.get()); });
 
   auto rtb_t = py::class_<RtBuffer, rtbuffer_ptr_t>(module_lev2, "RtBuffer")
                    .def(
@@ -384,7 +387,7 @@ void pyinit_gfx(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto rtg_t = py::class_<RtGroup, rtgroup_ptr_t>(module_lev2, "RtGroup")
                    .def(py::init([](ctx_t& ctx, int w, int h) -> rtgroup_ptr_t {
-                     uint64_t usage = "user"_crcu;
+                     uint64_t usage           = "user"_crcu;
                      MsaaSamples msaa_samples = MsaaSamples::MSAA_1X;
                      auto rtg                 = std::make_shared<RtGroup>(ctx.get(), w, h, msaa_samples, usage);
                      return rtg;
@@ -402,6 +405,13 @@ void pyinit_gfx(py::module& module_lev2) {
                          auto efmt       = EBufferFormat(format->hashed());
                          uint64_t eusage = usage ? uint64_t(usage->hashed()) : 0;
                          auto rtb        = rtg->createRenderTarget(efmt, eusage);
+                         return rtb;
+                       })
+                   .def(
+                       "createDepthBuffer",
+                       [](rtgroup_ptr_t rtg, crcstring_ptr_t format, bool with_texture) -> rtbuffer_ptr_t {
+                         auto efmt = EBufferFormat(format->hashed());
+                         auto rtb  = rtg->createDepthBuffer(efmt, with_texture);
                          return rtb;
                        })
                    .def(
@@ -425,8 +435,8 @@ void pyinit_gfx(py::module& module_lev2) {
         switch (capbuf.format()) {
           case EBufferFormat::RGBA8: {
             rval = pybind11::buffer_info(
-                (void*)capbuf._image->_data->data(),  // Pointer to buffer
-                sizeof(unsigned char), // Size of one scalar
+                (void*)capbuf._image->_data->data(), // Pointer to buffer
+                sizeof(unsigned char),               // Size of one scalar
                 pybind11::format_descriptor<unsigned char>::format(),
                 1,                 // Number of dimensions
                 {capbuf.length()}, // Buffer dimensions
@@ -435,8 +445,8 @@ void pyinit_gfx(py::module& module_lev2) {
           }
           case EBufferFormat::RGBA32F: {
             rval = pybind11::buffer_info(
-                (void*)capbuf._image->_data->data(),  // Pointer to buffer
-                sizeof(float), // Size of one scalar
+                (void*)capbuf._image->_data->data(), // Pointer to buffer
+                sizeof(float),                       // Size of one scalar
                 pybind11::format_descriptor<float>::format(),
                 1,                     // Number of dimensions
                 {capbuf.length() / 4}, // Buffer dimensions
@@ -445,8 +455,8 @@ void pyinit_gfx(py::module& module_lev2) {
           }
           case EBufferFormat::R32F: {
             rval = pybind11::buffer_info(
-                (void*)capbuf._image->_data->data(),  // Pointer to buffer
-                sizeof(float), // Size of one scalar
+                (void*)capbuf._image->_data->data(), // Pointer to buffer
+                sizeof(float),                       // Size of one scalar
                 pybind11::format_descriptor<float>::format(),
                 1,                     // Number of dimensions
                 {capbuf.length() / 4}, // Buffer dimensions
@@ -507,8 +517,8 @@ void pyinit_gfx(py::module& module_lev2) {
               [](texture_ptr_t tex) -> std::string { return tex->_debugName; },
               [](texture_ptr_t tex, std::string name) { tex->_debugName = name; });
 
-      // using rawtexptr_t = Texture*;
-      type_codec->registerStdCodec<texture_ptr_t>(texture_type);
+  // using rawtexptr_t = Texture*;
+  type_codec->registerStdCodec<texture_ptr_t>(texture_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto pfc_type = py::class_<PixelFetchContext, pixelfetchctx_ptr_t>(module_lev2, "PixelFetchContext")
                       .def_property(

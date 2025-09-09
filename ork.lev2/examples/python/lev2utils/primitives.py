@@ -320,6 +320,7 @@ def createImposter( context = None,
       rtg = RtGroup(context,DIM,DIM)
       rtg.name = name
       rtg.createBuffer(tokens.RGBA32F,tokens.color)
+      rtg.createDepthBuffer(tokens.Z32F,True)
       context.FBI.rtGroupInit(rtg)
       return rtg
 
