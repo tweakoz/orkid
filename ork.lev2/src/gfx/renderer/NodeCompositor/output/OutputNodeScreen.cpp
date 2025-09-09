@@ -45,7 +45,7 @@ struct SCRIMPL {
   ///////////////////////////////////////
   void gpuInit(lev2::Context* ctx) {
     if (_needsinit) {
-      _blit2screenmtl.gpuInit(ctx, "orkshader://solid");
+      _blit2screenmtl.gpuInit(ctx, "orkshader://blit");
       _blit2screenmtl._rasterstate->setCullTest(ECullTest::OFF);
       _fxtechnique1x1       = _blit2screenmtl.technique("texcolor");
       _fxtechnique2x2       = _blit2screenmtl.technique("downsample_2x2");
@@ -234,10 +234,10 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
           }
           else{
             if(_flipY){
-              dwi->quad2DEML2(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
+                dwi->fullscreenQuad();
             }
             else{
-              dwi->quad2DEML2(fvec4(-1, -1, 2, 2), fvec4(0, 1, 1, -1), fvec4(0, 1, 1, -1));            
+                dwi->fullscreenQuad(fvec4(0, 1, 1, -1), fvec4(0, 1, 1, -1));
             }
           }
           //this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
