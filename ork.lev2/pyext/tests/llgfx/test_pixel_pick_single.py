@@ -126,27 +126,30 @@ def main():
     
     GBI.unlock(vw)
 
-    #counter = 0
-    #while counter<100000:
-    #  render_and_capture(ctx,rtg,mtl,permu.technique,pipeline,vw)
-    #  counter += 1
-    #  time.sleep(1)
-    render_and_capture(ctx,rtg,mtl,permu.technique,pipeline,vw)
-  
+    if False:
+        counter = 0
+        while counter<100000:
+          render_and_capture(ctx,rtg,mtl,permu.technique,pipeline,vw)
+          counter += 1
+          time.sleep(1)
+    else:
+        render_and_capture(ctx,rtg,mtl,permu.technique,pipeline,vw)
+
     ctx.beginFrame()
 
     # Test pixel picking at known locations in our test pattern
+    # In Vulkan, NDC Y goes from -1 (top) to 1 (bottom)
     # The framebuffer is 256x256, with 4 quadrants:
-    # Top-left (0,0 to 127,127): Red
-    # Top-right (128,0 to 255,127): Green  
-    # Bottom-left (0,128 to 127,255): Blue
-    # Bottom-right (128,128 to 255,255): Yellow
+    # Top-left (0,0 to 127,127): Blue
+    # Top-right (128,0 to 255,127): Yellow  
+    # Bottom-left (0,128 to 127,255): Red
+    # Bottom-right (128,128 to 255,255): Green
     test_points = [
-        (64, 64, "Red", vec4(1.0, 0.0, 0.0, 1.0)),       # Top-left quadrant
-        (192, 64, "Green", vec4(0.0, 1.0, 0.0, 1.0)),    # Top-right quadrant
-        (64, 192, "Blue", vec4(0.0, 0.0, 1.0, 1.0)),     # Bottom-left quadrant
-        (192, 192, "Yellow", vec4(1.0, 1.0, 0.0, 1.0)),  # Bottom-right quadrant
-        (127, 127, "Red/Green/Blue/Yellow boundary", None),  # Center boundary (could be any)
+        (64, 64, "Blue", vec4(0.0, 0.0, 1.0, 1.0)),       # Top-left quadrant
+        (192, 64, "Yellow", vec4(1.0, 1.0, 0.0, 1.0)),    # Top-right quadrant
+        (64, 192, "Red", vec4(1.0, 0.0, 0.0, 1.0)),       # Bottom-left quadrant
+        (192, 192, "Green", vec4(0.0, 1.0, 0.0, 1.0)),    # Bottom-right quadrant
+        (127, 127, "Blue/Yellow/Red/Green boundary", None),  # Center boundary (could be any)
     ]
     
     print("\nCapturing pixels at test points...")

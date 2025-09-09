@@ -265,6 +265,7 @@ captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(
   region.bufferRowLength   = 0; // 0 means tightly packed
   region.bufferImageHeight = 0; // 0 means tightly packed
   region.imageSubresource  = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+  region.imageOffset       = {int32_t(x), int32_t(y), 0}; // Specify where to copy from in the source image
   region.imageExtent       = {uint32_t(w), uint32_t(h), 1};
 
   // GL_ERRORCHECK();
