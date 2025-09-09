@@ -106,6 +106,14 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rt
     }
   }
   ///////////////////////////////////////////////////
+  // Handle depth buffer texture if present
+  ///////////////////////////////////////////////////
+  if (false) { //depth_buffer && depth_buffer->texture()) {
+    auto depth_impl = depth_buffer->_impl.getShared<VklRtBufferImpl>();
+    _contextVK->_txi->_initTextureFromRtBuffer(depth_buffer.get());
+    depth_impl->_imgobj = depth_buffer->texture()->_impl.getShared<VulkanTextureObject>()->_imgobj;
+  }
+  ///////////////////////////////////////////////////
   return rtgimpl;
 }
 

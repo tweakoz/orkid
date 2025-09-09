@@ -25,15 +25,19 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   int iheight  = rtbuffer->_height;
   int num_mips = 1;
   auto fmt_str = EBufferFormatToName(format);
+  
+  // Check if this is a depth buffer
+  bool is_depth = (rtbuffer->_usage == "depth"_crcu);
 
   if (0) {
     logchan_txirtg->log(
-        "_initTextureFromRtBuffer ptex<%p:%s> w<%d> h<%d> fmt<%s>",
+        "_initTextureFromRtBuffer ptex<%p:%s> w<%d> h<%d> fmt<%s> is_depth<%d>",
         (void*)ptex,
         ptex->_debugName.c_str(),
         iwidth,
         iheight,
-        fmt_str.c_str());
+        fmt_str.c_str(),
+        is_depth);
   }
 
   /////////////////////////////////////
@@ -41,7 +45,11 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   /////////////////////////////////////
 
   auto img_info   = makeVKICI(iwidth, iheight, 1, format, num_mips);
-  img_info->usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+  if (is_depth) {
+    img_info->usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+  } else {
+    img_info->usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+  }
 
   std::string debug_name = rtbuffer->_debugName.empty() ? "rtbuffer_texture" : rtbuffer->_debugName;
   teximpl->_imgobj    = std::make_shared<VulkanImageObject>(_contextVK, img_info, debug_name);
@@ -50,11 +58,13 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   /////////////////////////////////////
   // create image view
   /////////////////////////////////////
+  
+  VkImageAspectFlagBits aspect_mask = is_depth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 
   auto IVCI = createImageViewInfo2D(
       teximpl->_imgobj->_vkimage,                     //
       VkFormatConverter::convertBufferFormat(format), //
-      VK_IMAGE_ASPECT_COLOR_BIT);
+      aspect_mask);
   IVCI->subresourceRange.levelCount = num_mips;
 
   initializeVkStruct(teximpl->_imgobj->_vkimageview);
@@ -83,7 +93,7 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   rtb_impl->_teximpl = teximpl;
 
   /////////////////////////////////////
-  // transition to transfer dst (for copy)
+  // transition to appropriate attachment layout
   /////////////////////////////////////
 
   auto cmdbuf = _contextVK->beginRecordCommandBuffer("VkTextureInterface::_initTextureFromRtBuffer");
@@ -91,17 +101,31 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   auto cmdbuf_impl = cmdbuf->_impl.getShared<VkSecondaryCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
 
+  VkImageLayout target_layout;
+  VkAccessFlagBits access_flags;
+  VkPipelineStageFlags stage_flags;
+  
+  if (is_depth) {
+    target_layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    access_flags = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    stage_flags = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+  } else {
+    target_layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    access_flags = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    stage_flags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+  }
+
   auto barrier = createImageBarrier(
       teximpl->_imgobj->_vkimage,
       VK_IMAGE_LAYOUT_UNDEFINED,
-      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+      target_layout,
       VkAccessFlagBits(0),
-      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+      access_flags);
 
   vkCmdPipelineBarrier(
       vk_cmdbuf,
       VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+      stage_flags,
       0,
       0,
       nullptr,
