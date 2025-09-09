@@ -42,8 +42,10 @@ vertex_shader vs_blit : vif_PC : ublock_vtx {
   frg_clr     = vtxcolor;
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_blit : fif_min_T : samplers {
-  vec3 texc = texture(ColorMap, frg_uv0.xy).xyz;
+fragment_shader ps_blit : iface_fmt : samplers {
+  vec2 uv = gl_FragCoord.xy;
+  vec2 uvb = uv.xy - vec2(0.5, 0.5);
+  vec3 texc = texelFetch(ColorMap, ivec2(uvb),0).xyz;
   out_clr   = vec4(texc, 1);
 }
 ///////////////////////////////////////////////////////////////
@@ -148,8 +150,8 @@ fragment_shader ps_downsample7x7 : iface_fmt : samplers {
 }
 ///////////////////////////////////////////////////////////////
 state_block sb_blit : default {
-  DepthTest = LEQUALS;
-  DepthMask = ON;
+  DepthTest = OFF;
+  DepthMask = OFF;
   CullTest = OFF;
 }
 ///////////////////////////////////////////////////////////////
