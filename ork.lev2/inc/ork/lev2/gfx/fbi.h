@@ -15,6 +15,11 @@ namespace ork::lev2 {
 /// ////////////////////////////////////////////////////////////////////////////
 /// ////////////////////////////////////////////////////////////////////////////
 
+struct RtgStackItem {
+  svar64_t _impl;        // Implementation-specific data (e.g., VkRtgStackItemImpl)
+  RtGroup* _rtgroup;     // The RTGroup associated with this stack item
+};
+
 class FrameBufferInterface {
 public:
   FrameBufferInterface(Context& mTarget);
@@ -170,7 +175,7 @@ public:
 
   fcolor4 _clearColor;
   int _pickState;
-  std::stack<lev2::RtGroup*> mRtGroupStack;
+  std::stack<RtgStackItem> mRtGroupStack;
 
   RtGroup* _active_rtgroup = nullptr;
   rtgroup_ptr_t _main_rtg;

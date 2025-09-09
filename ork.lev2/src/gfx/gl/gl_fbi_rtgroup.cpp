@@ -28,12 +28,24 @@ GlFboObject::GlFboObject() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlFrameBufferInterface::_pushRtGroup(RtGroup* Base) { // final
-  RtGroup* prev = mRtGroupStack.top();
+  // Create and push stack item
+  RtgStackItem stack_item;
+  stack_item._rtgroup = Base;
+  // OpenGL doesn't need implementation-specific data like Vulkan
+  mRtGroupStack.push(stack_item);
   __setRtGroup(Base);
 }
 
 void GlFrameBufferInterface::_popRtGroup() { // final
-  RtGroup* prev = mRtGroupStack.top();
+  // Pop current item
+  OrkAssert(!mRtGroupStack.empty());
+  mRtGroupStack.pop();
+  
+  // Restore previous RTGroup
+  RtGroup* prev = nullptr;
+  if (!mRtGroupStack.empty()) {
+    prev = mRtGroupStack.top()._rtgroup;
+  }
   __setRtGroup(prev);
 }
 

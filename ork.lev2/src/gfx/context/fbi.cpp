@@ -113,7 +113,7 @@ void FrameBufferInterface::PushRtGroup(RtGroup* rtg_top) {
   bool pushing_same = (rtg_top==_active_rtgroup);
   OrkAssert(not pushing_same);
   bool first = mRtGroupStack.empty();
-  mRtGroupStack.push(_active_rtgroup);
+  // Note: stack push is now handled in _pushRtGroup implementation
   _pushRtGroup(rtg_top);
 
   ////////////////////////////////////////////////////////////////
@@ -137,9 +137,8 @@ void FrameBufferInterface::PushRtGroup(RtGroup* rtg_top) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void FrameBufferInterface::PopRtGroup() {
-  RtGroup* prev = mRtGroupStack.top();
+  // Note: stack pop is now handled in _popRtGroup implementation
   _popRtGroup();
-  mRtGroupStack.pop();
   popViewport();
   popScissor();
 }

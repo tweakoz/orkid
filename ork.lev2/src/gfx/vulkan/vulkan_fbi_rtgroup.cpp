@@ -202,78 +202,115 @@ void VkFrameBufferInterface::__setRtGroup(rtgroup_rawptr_t rtgroup) {
 void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
   if (0)
     printf("VkFrameBufferInterface _pushRtGroup rtgroup<%p>\n", (void*)rtgroup);
+  
+  // Create stack item to track this push operation
+  RtgStackItem stack_item;
+  stack_item._rtgroup = rtgroup;
+  
+  auto impl = std::make_shared<VkRtgStackItemImpl>();
+  impl->_previous_rtgroup = _active_rtgroup;
+  
   bool must_push = _contextVK->meTargetType != TargetType::WINDOW;
-
-  if (must_push or (_active_rtgroup != rtgroup)) {
-    __setRtGroup(rtgroup);
+  bool needs_begin = must_push or (_active_rtgroup != rtgroup);
+  
+  if (needs_begin) {
+    __setRtGroup(rtgroup);  // This calls vkCmdBeginRenderingKHR
+    impl->_did_begin_rendering = true;
+    impl->_was_redundant = false;
     // logchan_rtgroup->log("PushRtGroup: RTG %p, primary CB %p", (void*)rtgroup, _contextVK->primary_cb() ?
     // (void*)_contextVK->primary_cb().get() : nullptr);
+  } else {
+    // Redundant push - same rtgroup already active
+    impl->_did_begin_rendering = false;
+    impl->_was_redundant = true;
   }
+  
+  stack_item._impl.setShared<VkRtgStackItemImpl>(impl);
+  mRtGroupStack.push(stack_item);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::_popRtGroup() {
-
-  auto finished_rtg         = _active_rtgroup;
-  rtgroup_rawptr_t next_rtg = mRtGroupStack.top();
-  _active_rtgroup           = next_rtg;
-  auto RTGIMPL              = finished_rtg->_impl.getShared<VkRtGroupImpl>();
-  auto& CB                  = _contextVK->primary_cb()->_vkcmdbuf;
-
-  ///////////////////////////////////////////////////
-
-  int num_buf = finished_rtg->numImageBuffers();
-
-  //////////////////////////////////////////////
-  // end dynamic rendering
-  // RTG commandbuffer complete, pop and execute
-  //////////////////////////////////////////////
-
-  _contextVK->_vkCmdEndRenderingKHR(CB);
-
-  /////////////////////////////////////////////
-  // transition finished rtgroup based on its usage
-  /////////////////////////////////////////////
-
-  switch (finished_rtg->_usage) {
-    case "swapchain"_crcu: {
-      break;
-    }
-    case "popup"_crcu: {
-      OrkAssert(false);
-      break;
-    }
-    case "user"_crcu: { // we will probably use it as a texture...
-      RTGIMPL->_transitionToTexture(_contextVK->primary_cb());
-      break;
-    }
-    case "arrayslice"_crcu:
-      OrkAssert(false);
-      break;
-    default:
-      OrkAssert(false);
-      break;
-  }
-
-  /////////////////////////////////////////////
-  // Resume rendering on the next rtgroup if needed
-  /////////////////////////////////////////////
-
-  auto main_rtg     = _ensureMainRtg();
-  bool back_to_main = (finished_rtg != main_rtg.get());
-
-  if (back_to_main) {
-    _active_rtgroup = next_rtg;
-    if (next_rtg) {
-      auto RTGIMPL = next_rtg->_impl.getShared<VkRtGroupImpl>();
-      RTGIMPL->_transitionToRenderTarget(_contextVK->primary_cb());
-      auto rinfo = RTGIMPL->renderinfo();
-      rinfo->_renderinfo.flags |= VK_RENDERING_RESUMING_BIT;
-      _contextVK->_vkCmdBeginRenderingKHR(CB, &rinfo->_renderinfo);
+  // Get the stack item we're popping
+  OrkAssert(!mRtGroupStack.empty());
+  RtgStackItem popped_item = mRtGroupStack.top();
+  mRtGroupStack.pop();
+  
+  auto impl = popped_item._impl.getShared<VkRtgStackItemImpl>();
+  auto finished_rtg = popped_item._rtgroup;
+  
+  // Only end rendering if we actually began it during push
+  if (impl && impl->_did_begin_rendering) {
+    auto& CB = _contextVK->primary_cb()->_vkcmdbuf;
+    
+    //////////////////////////////////////////////
+    // end dynamic rendering
+    //////////////////////////////////////////////
+    _contextVK->_vkCmdEndRenderingKHR(CB);
+    
+    /////////////////////////////////////////////
+    // transition finished rtgroup based on its usage
+    /////////////////////////////////////////////
+    auto RTGIMPL = finished_rtg->_impl.getShared<VkRtGroupImpl>();
+    
+    switch (finished_rtg->_usage) {
+      case "swapchain"_crcu: {
+        break;
+      }
+      case "popup"_crcu: {
+        OrkAssert(false);
+        break;
+      }
+      case "user"_crcu: { // we will probably use it as a texture...
+        RTGIMPL->_transitionToTexture(_contextVK->primary_cb());
+        break;
+      }
+      case "arrayslice"_crcu:
+        OrkAssert(false);
+        break;
+      default:
+        OrkAssert(false);
+        break;
     }
   }
-
+  
+  /////////////////////////////////////////////
+  // Restore the previous rtgroup and resume if needed
+  /////////////////////////////////////////////
+  
+  rtgroup_rawptr_t next_rtg = nullptr;
+  bool needs_resume = false;
+  
+  // Check if there's another item on the stack
+  if (!mRtGroupStack.empty()) {
+    // Get the rtgroup we're returning to
+    auto& next_item = mRtGroupStack.top();
+    next_rtg = next_item._rtgroup;
+    auto next_impl = next_item._impl.getShared<VkRtgStackItemImpl>();
+    
+    // We need to resume if the next item had begun rendering
+    needs_resume = next_impl && next_impl->_did_begin_rendering;
+  } else {
+    // Stack is empty, return to main RTG
+    auto main_rtg = _ensureMainRtg();
+    next_rtg = main_rtg.get();
+    
+    // Resume main RTG if we're not already there
+    needs_resume = (finished_rtg != next_rtg) && (impl && impl->_did_begin_rendering);
+  }
+  
+  _active_rtgroup = next_rtg;
+  
+  if (needs_resume && next_rtg) {
+    auto& CB = _contextVK->primary_cb()->_vkcmdbuf;
+    auto RTGIMPL = next_rtg->_impl.getShared<VkRtGroupImpl>();
+    RTGIMPL->_transitionToRenderTarget(_contextVK->primary_cb());
+    auto rinfo = RTGIMPL->renderinfo();
+    rinfo->_renderinfo.flags |= VK_RENDERING_RESUMING_BIT;
+    _contextVK->_vkCmdBeginRenderingKHR(CB, &rinfo->_renderinfo);
+  }
+  
   logchan_rtgroup->log(
       "PopRtGroup: RTG %p, primary CB %p",
       (void*)_active_rtgroup,

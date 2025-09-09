@@ -52,25 +52,16 @@ captureasync_ptr_t VkFrameBufferInterface::capture(const RtBuffer* inpbuf, const
     return future;
   }
   
-  // Store capture data in the future's implementation
-  struct VulkanCaptureData {
-    capturebuffer_ptr_t capture_buffer;
-    texture_ptr_t capture_texture;
-    file::Path path;
-    int width;
-    int height;
-    EBufferFormat format;
-    bool frame_submitted = false;
-  };
+  // Store capture data in the future's implementation using VkCaptureAsyncImpl
+  auto async_impl = std::make_shared<VkCaptureAsyncImpl>(_contextVK);
+  async_impl->capture_buffer = capbuf;
+  async_impl->path = pth;
+  async_impl->width = inpbuf->_width;
+  async_impl->height = inpbuf->_height;
+  async_impl->format = EBufferFormat::RGBA8;
+  async_impl->frame_submitted = false;
   
-  auto capture_data = std::make_shared<VulkanCaptureData>();
-  capture_data->capture_buffer = capbuf;
-  capture_data->path = pth;
-  capture_data->width = inpbuf->_width;
-  capture_data->height = inpbuf->_height;
-  capture_data->format = EBufferFormat::RGBA8;
-  
-  future->_impl.setShared<VulkanCaptureData>(capture_data);
+  future->_impl.setShared<VkCaptureAsyncImpl>(async_impl);
   future->_on_capture_complete = on_capture_complete;
   
   // After one frame iteration, the command buffer will be submitted and executed

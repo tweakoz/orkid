@@ -214,6 +214,12 @@ struct VkGeometryBufferInterface final : public GeometryBufferInterface {
   std::unordered_map<EVtxStreamFormat, vertex_strconfig_ptr_t> _vertexStreamConfigs;
 };
 ///////////////////////////////////////////////////////////////////////////////
+struct VkRtgStackItemImpl {
+  bool _did_begin_rendering = false;  // Whether this push actually called vkCmdBeginRenderingKHR
+  bool _was_redundant = false;        // Whether this push was a no-op (same rtgroup already active)
+  RtGroup* _previous_rtgroup = nullptr; // The RTGroup that was active before this push
+};
+///////////////////////////////////////////////////////////////////////////////
 struct VkFrameBufferInterface final : public FrameBufferInterface {
 
   VkFrameBufferInterface(vkcontext_rawptr_t ctx);
