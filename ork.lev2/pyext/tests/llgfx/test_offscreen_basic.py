@@ -45,15 +45,15 @@ def main():
     
     # Push RTG
     print("Pushing RTG...")
-    fbi.rtGroupPush(rtg)
+    #fbi.rtGroupPush(rtg)
     
     # Clear the framebuffer
     print("Clearing framebuffer...")
-    fbi.rtGroupClear(rtg)  # Dark blue clear color
+    #fbi.rtGroupClear(rtg)  # Dark blue clear color
     
     # Pop RTG
     print("Popping RTG...")
-    fbi.rtGroupPop()
+    #fbi.rtGroupPop()
     
     # End frame
     print("Ending frame...")

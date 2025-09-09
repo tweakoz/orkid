@@ -87,8 +87,8 @@ def main():
         print(f"  Capturing RTG {idx} to {output_path}...")
         
         # Get the render target buffer and capture it - returns a future
-        capture_future = fbi.captureToFile(rtb, output_path)
-        captures.append((idx, output_path, capture_future))
+        #capture_future = fbi.captureToFile(rtb, output_path)
+        #captures.append((idx, output_path, capture_future))
     
     # End frame
     print("\nEnding frame...")

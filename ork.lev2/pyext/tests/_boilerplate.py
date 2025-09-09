@@ -150,7 +150,7 @@ vertex_shader vs_points : iface_vtx_points {
 }
 ////////////////////////////////////////
 fragment_shader ps_points : iface_frg_points {
-  out_clr = modcolor;
+  out_clr = vec4(frg_col,1);
 }
 
 ////////////////////////////////////////

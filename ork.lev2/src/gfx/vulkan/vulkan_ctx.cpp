@@ -590,7 +590,7 @@ void VkContext::_doBeginPrimaryCommandBuffer() {
   _defaultCommandBufferImpl = _defaultCommandBuffer->_impl.getShared<VkPrimaryCommandBufferImpl>();
   _cmdbufcurpri_gfx         = _defaultCommandBufferImpl;
   ////////////////////////
-  logchan_vkctx->log("CMDBUF: _doPreBeginFrame: setting primary CB to %p", _cmdbufcurpri_gfx ? (void*)_cmdbufcurpri_gfx->_vkcmdbuf : nullptr);
+  //logchan_vkctx->log("CMDBUF: _doPreBeginFrame: setting primary CB to %p", _cmdbufcurpri_gfx ? (void*)_cmdbufcurpri_gfx->_vkcmdbuf : nullptr);
   //logchan_vkctx->log("VkContext<%p> begin primaryCB", (void*)this );
   ////////////////////////
   VkCommandBufferBeginInfo CBBI_GFX = {};
@@ -795,7 +795,6 @@ void VkContext::_doEndFrame() {
   //logchan_vkctx->log("VkContext<%p> clear renderpasses", (void*)this );
 
   _defaultCommandBuffer = nullptr;
-  //_cmdbufcurpri_gfx = nullptr;
   _first_frame            = false;
 
 }

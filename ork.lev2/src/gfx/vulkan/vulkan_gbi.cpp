@@ -15,29 +15,32 @@ namespace ork::lev2::vulkan {
 int VulkanVertexBuffer::pipelineBitsForFormat() const {
   int rval = 0;
   switch( _ork_vtxbuf.meStreamFormat) {
-    case EVtxStreamFormat::V12C4T16:
+    case EVtxStreamFormat::VU32:
       rval = 0;
       break;
-    case EVtxStreamFormat::V12N12B12T16:
+    case EVtxStreamFormat::VU32INST:
       rval = 1;
       break;
-    case EVtxStreamFormat::V12N12B12T8C4:
+    case EVtxStreamFormat::V12:
       rval = 2;
       break;
-    case EVtxStreamFormat::V16T16C16:
+    case EVtxStreamFormat::V12C4:
       rval = 3;
       break;
-    case EVtxStreamFormat::V12C4:
+    case EVtxStreamFormat::V12T8:
       rval = 4;
       break;
-    case EVtxStreamFormat::V12T8:
+    case EVtxStreamFormat::V12C4T16:
       rval = 5;
       break;
-    case EVtxStreamFormat::VU32:
+    case EVtxStreamFormat::V16T16C16:
       rval = 6;
       break;
-    case EVtxStreamFormat::VU32INST:
+    case EVtxStreamFormat::V12N12B12T16:
       rval = 7;
+      break;
+    case EVtxStreamFormat::V12N12B12T8C4:
+      rval = 8;
       break;
     default:
       OrkAssert(false);
@@ -93,14 +96,15 @@ VkGeometryBufferInterface::VkGeometryBufferInterface(vkcontext_rawptr_t ctx)
     : GeometryBufferInterface(*ctx)
     , _contextVK(ctx) {
 
-  _instantiateVertexStreamConfig(EVtxStreamFormat::V12C4T16);
-  _instantiateVertexStreamConfig(EVtxStreamFormat::V12N12B12T16);
-  _instantiateVertexStreamConfig(EVtxStreamFormat::V12N12B12T8C4);
-  _instantiateVertexStreamConfig(EVtxStreamFormat::V16T16C16);
-  _instantiateVertexStreamConfig(EVtxStreamFormat::V12C4);
-  _instantiateVertexStreamConfig(EVtxStreamFormat::V12T8);
   _instantiateVertexStreamConfig(EVtxStreamFormat::VU32);
   _instantiateVertexStreamConfig(EVtxStreamFormat::VU32INST);
+  _instantiateVertexStreamConfig(EVtxStreamFormat::V12);
+  _instantiateVertexStreamConfig(EVtxStreamFormat::V12C4);
+  _instantiateVertexStreamConfig(EVtxStreamFormat::V12T8);
+  _instantiateVertexStreamConfig(EVtxStreamFormat::V12C4T16);
+  _instantiateVertexStreamConfig(EVtxStreamFormat::V16T16C16);
+  _instantiateVertexStreamConfig(EVtxStreamFormat::V12N12B12T16);
+  _instantiateVertexStreamConfig(EVtxStreamFormat::V12N12B12T8C4);
   ////////////////////////////////////////////////////////////////
   auto create_primclass = [&](PrimitiveType etype) -> vkprimclass_ptr_t {
     auto rval            = std::make_shared<VkPrimitiveClass>();
@@ -220,6 +224,11 @@ vertex_strconfig_ptr_t VkGeometryBufferInterface::_instantiateVertexStreamConfig
       config->addItem("POSITION", "vec3", sizeof(fvec3), 0, VK_FORMAT_R32G32B32_SFLOAT);
       config->addItem("TEXCOORD0", "vec2", sizeof(fvec2), 12, VK_FORMAT_R32G32_SFLOAT);
       config->_stride = sizeof(VtxV12T8);
+      break;
+    }
+    case EVtxStreamFormat::V12:{
+      config->addItem("POSITION", "vec3", sizeof(fvec3), 0, VK_FORMAT_R32G32B32_SFLOAT);
+      config->_stride = sizeof(VtxV12);
       break;
     }
     case EVtxStreamFormat::VU32:{

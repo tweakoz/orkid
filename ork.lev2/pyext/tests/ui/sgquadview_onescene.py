@@ -43,13 +43,13 @@ class panel:
       r = vec3(0)
       r.x = random.uniform(-10,10)
       r.z = random.uniform(-10,10)
-      r.y = random.uniform(  0,10)
+      r.y = random.uniform(  -1,-10)
       return r 
     
     if self.counter<=0:
       self.counter = int(random.uniform(1,1000))
-      self.dst_eye = genpos()
       self.dst_tgt = vec3(0,random.uniform(  0,2),0)
+      self.dst_eye = self.dst_tgt+genpos()
 
     self.cur_eye = self.cur_eye*0.9995 + self.dst_eye*0.0005
     self.cur_tgt = self.cur_tgt*0.9995 + self.dst_tgt*0.0005

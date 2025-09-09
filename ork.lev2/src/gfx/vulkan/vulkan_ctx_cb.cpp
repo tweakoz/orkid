@@ -103,11 +103,12 @@ void VkContext::_doEnqueueSecondaryCommandBuffer(secondary_commandbuffer_ptr_t c
   }
   
   // DEBUG: Log when secondary command buffer is executed
-  logchan_vkcb->log("_doEnqueueSecondaryCommandBuffer: Executing secondary CB %p in primary CB %p", 
-                    (void*)impl->_vkcmdbuf, (void*)primary_cb()->_vkcmdbuf);
+    auto pricb =primary_cb();
+  logchan_vkcb->log("_doEnqueueSecondaryCommandBuffer: Executing secondary CB %p in primary CB %p",
+                    (void*)impl->_vkcmdbuf, (void*)pricb->_vkcmdbuf);
   
-  vkCmdExecuteCommands(primary_cb()->_vkcmdbuf, 1, &impl->_vkcmdbuf);
-  primary_cb()->_secondary_cmdbuffers.push_back(cmdbuf);
+  vkCmdExecuteCommands(pricb->_vkcmdbuf, 1, &impl->_vkcmdbuf);
+    pricb->_secondary_cmdbuffers.push_back(cmdbuf);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

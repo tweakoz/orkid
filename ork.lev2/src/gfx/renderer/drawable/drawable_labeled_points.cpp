@@ -56,19 +56,19 @@ LabeledPointDrawable::LabeledPointDrawable(const LabeledPointDrawableData* data)
     _rendercb = [this,rdata](lev2::RenderContextInstData& RCID) {
         auto context = RCID.context();
         if(nullptr==rdata->_vtxbuf){
-            auto vb = VertexBufferBase::CreateVertexBuffer(EVtxStreamFormat::V12,65536,false);
+            auto vb = VertexBufferBase::CreateVertexBuffer(EVtxStreamFormat::V12C4,65536,false);
             rdata->_vtxbuf = vb;
             vb->SetRingLock(true);
         }
         /////////////////////////////////////////////////////////////
         size_t num_points = _data->_points_only_mesh->numVertices();
         if(num_points>0){
-            VtxWriter<VtxV12> vw;
+            VtxWriter<VtxV12C4> vw;
             vw.Lock(context,rdata->_vtxbuf.get(),num_points);
             for( size_t i=0; i<num_points; i++ ){
                 auto inp_vtx = _data->_points_only_mesh->vertex(i);
                 const auto& pos = inp_vtx->mPos;
-                vw.AddVertex(VtxV12(pos.x,pos.y,pos.z));
+                vw.AddVertex(VtxV12C4(pos.x,pos.y,pos.z,0xffffffff));
             }
             vw.UnLock(context);
             /////////////////////////////////////////////////////////////
@@ -79,7 +79,7 @@ LabeledPointDrawable::LabeledPointDrawable(const LabeledPointDrawableData* data)
                 });
             }
             /////////////////////////////////////////////////////////////
-            if( true ) { //_data->_text_pipeline ){
+            if( false ) { //_data->_text_pipeline ){
                 auto mtxi = context->MTXI();
                 auto RCFD = RCID.rcfd();
                 const auto& CPD             = RCFD->topCPD();

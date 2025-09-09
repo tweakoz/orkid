@@ -62,6 +62,9 @@ vtxbufferbase_ptr_t VertexBufferBase::CreateVertexBuffer(EVtxStreamFormat eforma
     case EVtxStreamFormat::V12:
       pvb = _createvb<VtxV12>(inumverts, bstatic);
       break;
+    case EVtxStreamFormat::V12C4:
+      pvb = _createvb<VtxV12C4>(inumverts, bstatic);
+      break;
     case EVtxStreamFormat::V12C4T16:
       pvb = _createvb<SVtxV12C4T16>(inumverts, bstatic);
       break;

@@ -82,8 +82,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
   auto mtxi   = tgt->MTXI();
   auto fbi    = tgt->FBI();
   auto fxi    = tgt->FXI();
-  //auto rsi    = tgt->RSI();
-  auto primi = tgt->PRI();
+  auto dwi    = tgt->DWI();
   ///////////////////////////////////////
   if (_decouple_from_ui_size) {
     int irtgw  = _rtgroup->width();
@@ -156,34 +155,34 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
     int ix_root = 0;
     int iy_root = 0;
     LocalToRoot(0, 0, ix_root, iy_root);
+    
+    // Flip Y coordinate for Vulkan's top-left origin
+    int window_height = tgt->mainSurfaceHeight();
+    int iy_flipped = window_height - iy_root - _geometry._h;
 
     // printf( "Surface<%s>::Draw wx<%d> wy<%d> w<%d> h<%d>\n", _name.c_str(), ix_root, iy_root, _geometry._w, _geometry._h );
 
     if (_decouple_from_ui_size and _aspect_from_rtgroup) {
       tgt->debugPushGroup("Surface::Draw::1");
 
+      // UV coordinates - flip V for Vulkan
       float u0 = 0.0f;
       float u1 = 1.0f;
-      float v0 = 1.0f;
-      float v1 = 0.0f;
+      float v0 = 1.0f;  // Flipped: was 0.0f
+      float v1 = 0.0f;  // Flipped: was 1.0f
 
-     tgt->PushModColor(fcolor4::Black());
+      tgt->PushModColor(fcolor4::Black());
 
-      primi->RenderQuadAtZ(
-          ui_material.get(),
-          ix_root,
-          ix_root + _geometry._w, // x0, x1
-          iy_root,
-          iy_root + _geometry._h, // y0, y1
-          0.0f,                   // z
-          0.0f,
-          1.0f, // u0, u1
-          1.0f,
-          0.0f, // v0, v1
-          DEBUG_BLIT // debug
+      ui_material->BeginBlock(tgt);
+      dwi->quad2D(
+          fvec4(ix_root, iy_flipped, _geometry._w, _geometry._h),  // QuadRect: x, y, width, height
+          fvec4(0.0f, 1.0f, 1.0f, -1.0f),  // UvRect - flip V coordinates
+          fvec4(0, 0, 1, 1),  // UvRect2
+          0.0f  // depth
       );
+      ui_material->EndBlock(tgt);
 
-     tgt->PopModColor();
+      tgt->PopModColor();
 
       float inp_aspect = float(_decoupled_width) / float(_decoupled_height);
       float out_aspect = float(_geometry._w) / float(_geometry._h);
@@ -196,54 +195,50 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
         int hdiff = _geometry._h - int(float(_geometry._h)/aspectt);
         int oy0 = hdiff/2;
         int oy1 = -hdiff/2;
+        
+        // Flip Y with offsets for Vulkan
+        int final_y = window_height - (iy_root + oy0) - (_geometry._h + oy1 - oy0);
 
-        primi->RenderQuadAtZ(
-            material.get(),
-            ix_root,
-            ix_root + _geometry._w, // x0, x1
-            iy_root + oy0,
-            iy_root + _geometry._h + oy1, // y0, y1
-            0.0f,                   // z
-            u0,
-            u1,
-            v0,
-            v1,
-            DEBUG_BLIT ); // debug
+        material->BeginBlock(tgt);
+        dwi->quad2D(
+            fvec4(ix_root, final_y, _geometry._w, _geometry._h + oy1 - oy0),  // QuadRect
+            fvec4(u0, v0, u1 - u0, v1 - v0),  // UvRect - using flipped V coordinates
+            fvec4(0, 0, 1, 1),  // UvRect2
+            0.0f  // depth
+        );
+        material->EndBlock(tgt);
 
       } else {
         int wdiff = _geometry._w - int(float(_geometry._w)*aspectt);
         int ox0 = wdiff/2;
         int ox1 = -wdiff/2;
+        
+        // Flip Y for Vulkan
+        int final_y = window_height - iy_root - _geometry._h;
 
-        primi->RenderQuadAtZ(
-            material.get(),
-            ix_root + ox0,
-            ix_root + _geometry._w + ox1, // x0, x1
-            iy_root,
-            iy_root + _geometry._h, // y0, y1
-            0.0f,                   // z
-            u0,
-            u1,
-            v0,
-            v1,
-            DEBUG_BLIT ); // debug
+        material->BeginBlock(tgt);
+        dwi->quad2D(
+            fvec4(ix_root + ox0, final_y, _geometry._w + ox1 - ox0, _geometry._h),  // QuadRect
+            fvec4(u0, v0, u1 - u0, v1 - v0),  // UvRect - using flipped V coordinates
+            fvec4(0, 0, 1, 1),  // UvRect2
+            0.0f  // depth
+        );
+        material->EndBlock(tgt);
       }
       tgt->debugPopGroup();
 
     } else {
       tgt->debugPushGroup("Surface::Draw::2");
-      primi->RenderQuadAtZ(
-          material.get(),
-          ix_root,
-          ix_root + _geometry._w, // x0, x1
-          iy_root,
-          iy_root + _geometry._h, // y0, y1
-          0.0f,                   // z
-          0.0f,
-          1.0f, // u0, u1
-          1.0f,
-          0.0f, // v0, v1
-          DEBUG_BLIT ); // debug
+      
+      material->BeginBlock(tgt);
+      dwi->quad2D(
+          fvec4(ix_root, iy_flipped, _geometry._w, _geometry._h),  // QuadRect: x, y, width, height
+          fvec4(0.0f, 1.0f, 1.0f, -1.0f),  // UvRect - flip V coordinates for Vulkan
+          fvec4(0, 0, 1, 1),  // UvRect2
+          0.0f  // depth
+      );
+      material->EndBlock(tgt);
+      
       tgt->debugPopGroup();
     }
   }

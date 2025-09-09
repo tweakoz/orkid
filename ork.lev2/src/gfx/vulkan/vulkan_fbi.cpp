@@ -67,12 +67,11 @@ void VkFrameBufferInterface::_setScissor(int iX, int iY, int iW, int iH) {
 
 ///////////////////////////////////////////////////////
 void VkFrameBufferInterface::_doBeginFrame() {
-  //logchan_fbi->log("_doBeginFrame()");
-  //OrkAssert(_contextVK->_is_visual_frame);
   if (_swapchain) {
     _swapchain->_update();
   }
-  _active_rtgroup = _ensureMainRtg().get();
+  _ensureMainRtg().get();    // ensure main rtgroup is created
+  _active_rtgroup = nullptr; // ensure main rtgroup is pushed on first use
 }
 
 ///////////////////////////////////////////////////////
