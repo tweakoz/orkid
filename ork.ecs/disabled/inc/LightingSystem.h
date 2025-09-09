@@ -49,12 +49,12 @@ public:
 
   LightingSystem(const LightingSystemData& data, ork::ent::Simulation* pinst);
 
-  ork::lev2::LightManager& GetLightManager() {
-    return mLightManager;
+  ork::lev2::lightmanager_ptr_t GetLightManager() {
+    return _lightManager;
   }
 
 private:
-  ork::lev2::LightManager mLightManager;
+  ork::lev2::lightmanager_ptr_t _lightManager;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

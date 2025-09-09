@@ -52,7 +52,7 @@ void EzTopWidget::enableUiDraw() {
   auto outpnode         = nodetek->tryOutputNodeAs<ScreenOutputCompositingNode>();
   auto compositorimpl   = compdata->createImpl();
   compositorimpl->_name = "EzTopWidget::compositorimpl";
-  compositorimpl->bindLighting(lightmgr.get());
+  compositorimpl->bindLighting(lightmgr);
   CPD->addStandardLayers();
   (*cameras)["spawncam"] = camdata;
   /////////////////////////////////////////////////////////////////////

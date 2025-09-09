@@ -72,7 +72,7 @@ void CompositingSystem::DoUpdate(Simulation* psim) {
 
 bool CompositingSystem::DoLink(Simulation* psi) {
   if (auto lsys = psi->findSystem<LightingSystem>()) {
-    _impl->bindLighting(&lsys->GetLightManager());
+    _impl->bindLighting(lsys->GetLightManager().get());
   }
   return true;
 }

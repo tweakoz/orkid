@@ -364,6 +364,9 @@ void pyinit_gfx(py::module& module_lev2) {
               })
           .def_property_readonly("is_ready", [](captureasync_ptr_t cap) -> bool { return cap->isReady(); })
           .def_property_readonly("progress", [](captureasync_ptr_t cap) -> float { return cap->progress(); })
+          .def_property_readonly("pixelFetchContext", [](captureasync_ptr_t cap) -> pixelfetchctx_ptr_t { 
+                return cap->_pixelFetchContext; 
+              })
           .def("wait", [](captureasync_ptr_t cap, capturebuffer_ptr_t buffer) -> bool { return cap->wait(buffer.get()); });
 
   auto rtb_t = py::class_<RtBuffer, rtbuffer_ptr_t>(module_lev2, "RtBuffer")

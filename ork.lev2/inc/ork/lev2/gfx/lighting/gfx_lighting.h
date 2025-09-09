@@ -33,6 +33,7 @@ struct EnumeratedLights;
 struct PointLight;
 struct SpotLight;
 struct LightManagerData;
+struct LightManager;
 
 using enumeratedlights_ptr_t = std::shared_ptr<EnumeratedLights>;
 using enumeratedlights_constptr_t = std::shared_ptr<const EnumeratedLights>;
@@ -42,6 +43,7 @@ using tex2pointlightmap_t = std::map<Texture*, pointlightlist_t>;
 using tex2spotlightmap_t  = std::map<texturearraysliceref_ptr_t, spotlightlist_t>;
 using lightprobeset_t = std::vector<lightprobe_ptr_t>;
 using lightmanagerdata_ptr_t = std::shared_ptr<LightManagerData>;
+using lightmanager_ptr_t = std::shared_ptr<LightManager>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

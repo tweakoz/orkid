@@ -167,6 +167,38 @@ void VkContext::_processPendingCaptures() {
     capture_async->_width = async_impl->width;
     capture_async->_height = async_impl->height;
     capture_async->_format = async_impl->format;
+    
+    // If this is a single pixel capture, populate the PixelFetchContext
+    if (capture_async->_pixelFetchContext && capture_async->_width == 1 && capture_async->_height == 1) {
+      auto pixfetch_ctx = capture_async->_pixelFetchContext;
+      auto img = async_impl->capture_buffer->_image;
+      
+      if (img && img->_data) {
+        // Extract the pixel value based on format
+        switch (capture_async->_format) {
+          case EBufferFormat::RGBA8: {
+            // Get RGBA8 pixel and convert to float
+            auto pixel_data = img->_data->data();
+            float r = pixel_data[0] / 255.0f;
+            float g = pixel_data[1] / 255.0f;
+            float b = pixel_data[2] / 255.0f;
+            float a = pixel_data[3] / 255.0f;
+            pixfetch_ctx->_pickvalues.push_back(fvec4(r, g, b, a));
+            break;
+          }
+          case EBufferFormat::RGBA32F: {
+            // Get RGBA32F pixel directly
+            auto pixel_data = reinterpret_cast<const float*>(img->_data->data());
+            pixfetch_ctx->_pickvalues.push_back(fvec4(pixel_data[0], pixel_data[1], pixel_data[2], pixel_data[3]));
+            break;
+          }
+          default:
+            // For other formats, just add a placeholder for now
+            pixfetch_ctx->_pickvalues.push_back(fvec4(0, 0, 0, 0));
+            break;
+        }
+      }
+    }
   }
 }
 

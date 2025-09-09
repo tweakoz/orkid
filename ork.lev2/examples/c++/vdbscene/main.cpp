@@ -241,7 +241,7 @@ struct GpuResources {
     auto outpnode             = nodetek->tryOutputNodeAs<ScreenOutputCompositingNode>();
      outpnode->setSuperSample(KSUPERSAMPLE);
     _compositorimpl = _compositordata->createImpl();
-    _compositorimpl->bindLighting(_lightmgr.get());
+    _compositorimpl->bindLighting(_lightmgr);
 
     _TOPCPD = std::make_shared<lev2::CompositingPassData>();
     _TOPCPD->addStandardLayers();

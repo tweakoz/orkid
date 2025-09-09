@@ -410,7 +410,7 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     // OrkAssert(false);
   }
   _compositorImpl = _compositorData->createImpl();
-  _compositorImpl->bindLighting(_lightManager.get());
+  _compositorImpl->bindLighting(_lightManager);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -93,8 +93,10 @@ int FxPipeline::beginBlock(const RenderContextInstData& RCID) {
   auto RCFD       = RCID.rcfd();
   const auto& CPD = RCFD->topCPD();
   auto CIMPL      = RCFD->topCompositor();
-  auto LMGR       = CIMPL->lightManager();
   auto PBRC       = RCFD->_pbrcommon;
+  lightmanager_ptr_t LMGR = CIMPL                 //
+                          ? CIMPL->lightManager() //
+                          : nullptr;              //
 
   int rval = FXI->BeginBlock(_technique, RCID);
 
@@ -178,8 +180,10 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
   auto pbrcommon        = RCID.rcfd()->_pbrcommon;
   auto modcolor         = context->RefModColor();
   auto CIMPL            = RCFD->topCompositor();
-  auto LMGR             = CIMPL->lightManager();
-
+  lightmanager_ptr_t LMGR = CIMPL                 //
+                          ? CIMPL->lightManager() //
+                          : nullptr;              //
+  
   ////////////////////////////////////////////////////////////
   // try to order these by commonalitiy
   //  or find a quicker dispatch method

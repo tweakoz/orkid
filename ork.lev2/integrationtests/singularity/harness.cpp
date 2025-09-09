@@ -127,7 +127,7 @@ singularitytestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
   auto nodetek        = compdata->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
   auto outpnode       = nodetek->tryOutputNodeAs<RtGroupOutputCompositingNode>();
   auto compositorimpl = compdata->createImpl();
-  compositorimpl->bindLighting(lightmgr.get());
+  compositorimpl->bindLighting(lightmgr);
   CPD->addStandardLayers();
   (*cameras)["spawncam"] = camdata;
   //////////////////////////////////////////////////////////

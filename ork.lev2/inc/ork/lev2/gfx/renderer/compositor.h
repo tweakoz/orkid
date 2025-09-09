@@ -302,10 +302,10 @@ struct CompositingImpl {
 
   void update(float dt);
 
-  void bindLighting(LightManager* lmgr) {
+  void bindLighting(lightmanager_ptr_t lmgr) {
     _lightmgr = lmgr;
   }
-  const LightManager* lightManager() const {
+  lightmanager_ptr_t lightManager() const {
     return _lightmgr;
   }
 
@@ -320,7 +320,7 @@ struct CompositingImpl {
   const CompositingData& _compositingData;
   compositordata_constptr_t _shared_compositingData;
 
-  LightManager* _lightmgr                = nullptr;
+  lightmanager_ptr_t _lightmgr           = nullptr;
   CameraData* _cimplcamdat               = nullptr;
   cameramatrices_ptr_t _defaultCameraMatrices = nullptr;
 

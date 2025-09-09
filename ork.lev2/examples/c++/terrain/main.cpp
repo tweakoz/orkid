@@ -95,7 +95,7 @@ int main(int argc, char** argv, char** envp) {
     // compositor instance
     ///////////////////////////////////////
     compositorimpl = compositordata->createImpl();
-    compositorimpl->bindLighting(lightmgr.get());
+    compositorimpl->bindLighting(lightmgr);
     TOPCPD = std::make_shared<lev2::CompositingPassData>();
     TOPCPD->addStandardLayers();
     (*cameras)["spawncam"] = camdata;

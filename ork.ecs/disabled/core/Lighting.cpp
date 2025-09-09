@@ -227,7 +227,7 @@ bool LightingComponentInst::DoLink(ork::ent::Simulation* psi) {
   if (nullptr == lmi)
     return false;
 
-  ork::lev2::LightManager& lightmanager = lmi->GetLightManager();
+  ork::lev2::lightmanager_ptr_t lightmanager = lmi->GetLightManager();
   bool bisdyn                           = _lcdata.isDynamic();
 
   auto light_instance = GetLight();
@@ -239,9 +239,9 @@ bool LightingComponentInst::DoLink(ork::ent::Simulation* psi) {
       case ork::lev2::ELIGHTTYPE_DIRECTIONAL:
       case ork::lev2::ELIGHTTYPE_AMBIENT: {
         if (bisdyn)
-          lightmanager.mGlobalMovingLights.AddLight(light_instance);
+          lightmanager->mGlobalMovingLights.AddLight(light_instance);
         else
-          lightmanager.mGlobalStationaryLights.AddLight(light_instance);
+          lightmanager->mGlobalStationaryLights.AddLight(light_instance);
       } break;
     }
   }
@@ -251,9 +251,9 @@ bool LightingComponentInst::DoLink(ork::ent::Simulation* psi) {
 LightingComponentInst::~LightingComponentInst() {
   if (auto lmi = GetEntity()->simulation()->findSystem<ent::LightingSystem>()) {
 
-    ork::lev2::LightManager& lightmanager = lmi->GetLightManager();
+    ork::lev2::lightmanager_ptr_t lightmanager = lmi->GetLightManager();
 
-    ork::lev2::LightContainer& global_container = lightmanager.mGlobalMovingLights;
+    ork::lev2::LightContainer& global_container = lightmanager->mGlobalMovingLights;
 
     if (_light) {
       global_container.RemoveLight(_light);
