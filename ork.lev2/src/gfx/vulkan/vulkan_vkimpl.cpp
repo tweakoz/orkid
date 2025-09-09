@@ -7,6 +7,7 @@
 
 #include <ork/pch.h>
 #include <ork/kernel/string/deco.inl>
+#include <ork/kernel/environment.h>
 #include <ork/lev2/lev2_asset.h>
 #include <ork/asset/Asset.inl>
 #if defined(ENABLE_VULKAN)
@@ -16,9 +17,9 @@
 namespace ork::lev2::vulkan {
 
 vkinstance_ptr_t _GVI = nullptr;
-constexpr bool _enable_validate = false;
-constexpr bool _enable_renderdoc = false;
-constexpr bool _enable_debug = (_enable_validate or _enable_renderdoc);
+static bool _enable_validate = false;
+static bool _enable_renderdoc = false;
+static bool _enable_debug = (_enable_validate or _enable_renderdoc);
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 using layer_props_t = std::vector<VkLayerProperties>;
@@ -108,6 +109,21 @@ VulkanInstance::VulkanInstance() {
   auto yel = fvec3::Yellow();
 
   std::vector<const char*> validation_layers;
+
+  std::string ORKID_VULKAN_VALIDATE;
+  if (genviron.get("ORKID_VULKAN_VALIDATE", ORKID_VULKAN_VALIDATE) && !ORKID_VULKAN_VALIDATE.empty()) {
+    if (ORKID_VULKAN_VALIDATE == "1") {
+      deco::printf(yel, "VulkanInstance::VulkanInstance() ENABLE VALIDATION\n");
+      _enable_validate = true;
+      _enable_debug = true;
+    }
+    if (ORKID_VULKAN_VALIDATE == "0") {
+      deco::printf(yel, "VulkanInstance::VulkanInstance() DISABLE VALIDATION\n");
+      _enable_validate = false;
+      _enable_debug = false;
+    }
+  }
+
 
   if( _enable_validate ){
     validation_layers.push_back("VK_LAYER_KHRONOS_validation");
