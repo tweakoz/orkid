@@ -50,7 +50,8 @@ void pyinit_gfx_buffers(py::module& module_lev2) {
           [](size_t size) -> vb_static_vtxa_t //
           { return vb_static_vtxa_t(size, 0); });
   /////////////////////////////////////////////////////////////////////////////////
-  //py::class_<vb_static_vtxa_t, VertexBufferBase>(module_lev2, "VtxV12N12B12T8C4_StaticBuffer");
+  using vb_static_vtxa_ptr_t = std::shared_ptr<vb_static_vtxa_t>;
+  py::class_<vb_static_vtxa_t, vb_static_vtxa_ptr_t, VertexBufferBase>(module_lev2, "VtxV12N12B12T8C4_StaticBuffer");
   /////////////////////////////////////////////////////////////////////////////////
   module_lev2.def(
     "createVertexBufferStaticV12T8",

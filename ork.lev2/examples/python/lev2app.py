@@ -12,13 +12,13 @@ from orkengine.lev2 import *
 lev2appinit()
 gfxenv = GfxEnv.ref
 ctx = gfxenv.loadingContext()
-FBI = ctx.FBI()
-GBI = ctx.GBI()
+FBI = ctx.FBI
+GBI = ctx.GBI
 print(ctx)
 w = ctx.mainSurfaceWidth()
 h = ctx.mainSurfaceHeight()
 print(w,h)
-ctx.makeCurrent()
+#ctx.makeCurrent()
 mtl = FreestyleMaterial()
 mtl.gpuInit(ctx,"orkshader://deferred")
 print(mtl)
@@ -69,16 +69,16 @@ mtl.end(RCFD)
 
 print(FBI)
 print(FBI.clearcolor)
-print(ctx.FXI())
-print(ctx.GBI())
-print(ctx.TXI())
-print(ctx.RSI())
+print(ctx.FXI)
+print(ctx.GBI)
+print(ctx.TXI)
+print(ctx.RSI)
 
-pfc = PixelFetchContext(rtg,1)
-print(pfc.color(0))
+#pfc = PixelFetchContext(rtg,1)
+#print(pfc.color(0))
 
-FBI.capturePixel(vec4(0,1,0,0), pfc)
-print(pfc.color(0))
+#FBI.capturePixel(vec4(0,1,0,0), pfc)
+#print(pfc.color(0))
 ctx.endFrame()
 
 print(ctx.frameIndex)
