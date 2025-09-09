@@ -327,6 +327,10 @@ state_block sb_xxx : default {
   DepthMask = ON;
 }
 ///////////////////////////////////////////////////////////////
+state_block sb_nocull : default {
+  CullTest  = OFF;
+}
+///////////////////////////////////////////////////////////////
 technique vtxcolor {
   fxconfig = fxcfg_default;
   pass p0 {
@@ -340,7 +344,7 @@ technique debuguv {
   pass p0 {
     vertex_shader   = vs_debuguv;
     fragment_shader = fs_debuguv;
-    state_block     = sb_default;
+    state_block     = sb_nocull;
   }
 }
 technique testlib1x {

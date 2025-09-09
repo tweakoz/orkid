@@ -234,7 +234,7 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
           }
           else{
             if(_flipY){
-              dwi->quad2DEML2(fvec4(-1, -1, 2, 2), fvec4(0, 1, 1, -1), fvec4(0, 0, 1, 1));
+              dwi->quad2DEML2(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
             }
             else{
               dwi->quad2DEML2(fvec4(-1, -1, 2, 2), fvec4(0, 1, 1, -1), fvec4(0, 1, 1, -1));            

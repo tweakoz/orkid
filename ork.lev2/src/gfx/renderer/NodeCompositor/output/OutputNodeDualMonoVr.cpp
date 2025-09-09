@@ -204,7 +204,7 @@ struct DMVRIMPL {
     ViewportRect extents(0, 0, _per_eye_width, _per_eye_height);
     fbi->pushViewport(extents);
     fbi->pushScissor(extents);
-    dwi->fullscreenQuad(fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
+    dwi->fullscreenQuad();
     fbi->popViewport();
     fbi->popScissor();
     mtl.end(framedata);

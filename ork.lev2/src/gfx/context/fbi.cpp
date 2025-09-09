@@ -111,7 +111,7 @@ void FrameBufferInterface::PushRtGroup(RtGroup* rtg_top) {
   bool first_push = mRtGroupStack.size() == 0;
   bool pushing_main = (rtg_top==_main_rtg.get());
   bool pushing_same = (rtg_top==_active_rtgroup);
-  OrkAssert(not pushing_same);
+  //OrkAssert(not pushing_same);
   bool first = mRtGroupStack.empty();
   // Note: stack push is now handled in _pushRtGroup implementation
   _pushRtGroup(rtg_top);

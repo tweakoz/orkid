@@ -339,7 +339,7 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
       p->_pipeline->wrappedDrawCall(
           RCID,   //
           [=]() { //
-            DWI->fullscreenQuad( fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
+            DWI->fullscreenQuad();
           });
       FBI->PopRtGroup();
       FBI->popViewport();

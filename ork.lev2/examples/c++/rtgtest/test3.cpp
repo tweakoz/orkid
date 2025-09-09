@@ -340,7 +340,7 @@ int main(int argc, char** argv,char** envp) {
                                            resources->_rtg_root->rtg->buffer(0)->_texture.get());
     
     // Render root RTG to full screen
-    dwi->fullscreenQuad(fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
+    dwi->fullscreenQuad();
     
     resources->_material->end(RCFD_main);
 

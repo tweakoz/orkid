@@ -15,7 +15,7 @@ state_block sb_forward : default {
   // BlendMode = ALPHA;
   // DepthTest = LEQUALS;
   // DepthMask = true;
-  // CullTest  = OFF;
+  CullTest  = OFF;
 }
 ///////////////////////////////////////////////////////////////
 vertex_interface vif_FWDLIT : ub_std_vtx {

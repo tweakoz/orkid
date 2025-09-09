@@ -240,6 +240,14 @@ CameraMatrices CameraData::computeMatrices(float faspect) const {
   else{
     rval._pmatrix.perspective(faper, faspect, fnear, ffar);
   }
+  
+  // Apply Y-flip for Vulkan coordinate system (Y increases downward)
+  // This flips the Y axis in clip space
+  fmtx4 flip_y;
+  flip_y.setToIdentity();
+  flip_y.setElemXY(1, 1, -1.0f);  // Flip Y scale
+  rval._pmatrix = fmtx4::multiply_ltor(flip_y, rval._pmatrix);
+  
   rval._ipmatrix.inverseOf(rval._pmatrix);
   ///////////////////////////////////////////////////
   rval._vmatrix.lookAt(mEye, mTarget, mUp);

@@ -5,6 +5,10 @@ fxconfig fxcfg_default {
 	import "orkshader://pbrtools.i2";
 }
 ///////////////////////////////////////////////////////////////
+state_block sb_no_cull : sb_default {
+	CullTest = OFF;
+}
+///////////////////////////////////////////////////////////////
 technique PIK_RI_NI {
 	fxconfig=fxcfg_default;
 	vf_pass={vs_forward_test,ps_forward_test,sb_default}
@@ -12,7 +16,7 @@ technique PIK_RI_NI {
 ///////////////////////////////////////////////////////////////
 technique FWD_SKYBOX_MO {
 	fxconfig=fxcfg_default;
-	vf_pass={vs_forward_skybox_mono,ps_forward_skybox_mono,sb_default}
+	vf_pass={vs_forward_skybox_mono,ps_forward_skybox_mono,sb_no_cull}
 }
 ///////////////////////////////////////////////////////////////
 technique FWD_UNLIT_NI_MO {

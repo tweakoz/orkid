@@ -88,11 +88,11 @@ VkRasterState::VkRasterState(rasterstate_ptr_t rstate){
   hasher.accumulateItem(rstate->_frontface);
   switch(rstate->_frontface){
     case EFrontFace::CLOCKWISE: {
-      _VKRSCI.frontFace = FLIP_Y_LIKE_OPENGL ? VK_FRONT_FACE_COUNTER_CLOCKWISE : VK_FRONT_FACE_CLOCKWISE;
+      _VKRSCI.frontFace = FLIP_Y_LIKE_OPENGL ? VK_FRONT_FACE_CLOCKWISE : VK_FRONT_FACE_COUNTER_CLOCKWISE;
       break;
     }
     case EFrontFace::COUNTER_CLOCKWISE: {
-      _VKRSCI.frontFace = FLIP_Y_LIKE_OPENGL ? VK_FRONT_FACE_CLOCKWISE : VK_FRONT_FACE_COUNTER_CLOCKWISE;
+      _VKRSCI.frontFace = FLIP_Y_LIKE_OPENGL ? VK_FRONT_FACE_COUNTER_CLOCKWISE : VK_FRONT_FACE_CLOCKWISE;
       break;
     }
   }

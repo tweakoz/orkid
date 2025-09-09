@@ -19,10 +19,10 @@ VkMatrixStackInterface::VkMatrixStackInterface(vkcontext_rawptr_t ctx)
 fmtx4 VkMatrixStackInterface::Ortho(float left, float right, float top, float bottom, float fnear, float ffar) {
   fmtx4 ortho_projection_for_vulkan;
   ortho_projection_for_vulkan.setElemXY(0,0,2.0f / (right - left));
-  ortho_projection_for_vulkan.setElemXY(1,1,2.0f / (top - bottom));
+  ortho_projection_for_vulkan.setElemXY(1,1,2.0f / (bottom - top));  // Flip: use bottom-top instead of top-bottom
   ortho_projection_for_vulkan.setElemXY(2,2,1.0f / (fnear - ffar));
   ortho_projection_for_vulkan.setElemXY(3,0,(left + right) / (left - right));
-  ortho_projection_for_vulkan.setElemXY(3,1,(top + bottom) / (bottom - top));
+  ortho_projection_for_vulkan.setElemXY(3,1,(top + bottom) / (top - bottom));  // Flip: use top-bottom instead of bottom-top
   ortho_projection_for_vulkan.setElemXY(3,2,fnear / (fnear - ffar));
   return ortho_projection_for_vulkan;
 }
@@ -39,8 +39,8 @@ fmtx4 VkMatrixStackInterface::Frustum(float left, float right, float top, float 
   
   const float m00 = two_near_dist / right_minus_left;
   const float m02 = (right + left) / right_minus_left;
-  const float m11 = two_near_dist / top_minus_bottom;
-  const float m12 = (top + bottom) / top_minus_bottom;
+  const float m11 = two_near_dist / (bottom - top);  // Flip: use bottom-top instead of top-bottom
+  const float m12 = (top + bottom) / (top - bottom);  // Flip: use top-bottom instead of bottom-top
   //const float m22 = -(zf + zn) / far_minus_near;
   //const float m23 = -(2.0f * zf * zn) / far_minus_near;
   const float m22 = -zf / far_minus_near; // Adjusted for Vulkan

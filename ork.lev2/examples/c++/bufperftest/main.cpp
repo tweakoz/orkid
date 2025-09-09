@@ -16,7 +16,7 @@ using namespace std::string_literals;
 using namespace ork;
 using namespace ork::lev2;
 
-constexpr int DIM           = 64;
+constexpr int DIM           = 4096;
 constexpr size_t BUFSIZE       = DIM*DIM*4*sizeof(float);
 constexpr float finv        = 1.0f / 256.0f;
 constexpr float finvdim     = 1.0f / float(DIM);
@@ -120,6 +120,7 @@ int main(int argc, char** argv,char** envp) {
     auto fbi            = context->FBI(); // FrameBufferInterface
     auto fxi            = context->FXI(); // FX Interface
     auto txi            = context->TXI(); // Texture Interface
+    auto dwi            = context->DWI(); // DrawingInterface
     float r             = float(rand() % 256) / 255.0f;
     float g             = float(rand() % 256) / 255.0f;
     float b             = float(rand() % 256) / 255.0f;
@@ -128,7 +129,6 @@ int main(int argc, char** argv,char** envp) {
     const SRect tgtrect = SRect(0, 0, TARGW, TARGH);
 
     fbi->SetClearColor(fvec4(0,0,0, 1));
-    context->beginFrame();
 
     TextureInitData tid;
     tid._w           = DIM;
@@ -148,9 +148,8 @@ int main(int argc, char** argv,char** envp) {
     resources->_material->begin(resources->_fxtechnique, RCFD);
     resources->_material->bindParamMatrix(resources->_fxparameterMVP, fmtx4::Identity());
     resources->_material->bindParamTexture(resources->_fxparameterTexture, resources->_texture.get());
-    appwin->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
+    dwi->fullscreenQuad();
     resources->_material->end(RCFD);
-    context->endFrame();
 
     if (timer.SecsSinceStart() > 5.0f) {
       float FPS    = float(framecounter) / timer.SecsSinceStart();

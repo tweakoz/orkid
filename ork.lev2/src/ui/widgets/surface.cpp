@@ -156,9 +156,9 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
     int iy_root = 0;
     LocalToRoot(0, 0, ix_root, iy_root);
     
-    // Flip Y coordinate for Vulkan's top-left origin
-    int window_height = tgt->mainSurfaceHeight();
-    int iy_flipped = window_height - iy_root - _geometry._h;
+    // For Vulkan, we don't need to flip Y position since UI coordinates already use top-left origin
+    // Only the texture UV coordinates need flipping
+    int iy_flipped = iy_root;
 
     // printf( "Surface<%s>::Draw wx<%d> wy<%d> w<%d> h<%d>\n", _name.c_str(), ix_root, iy_root, _geometry._w, _geometry._h );
 
@@ -168,15 +168,15 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
       // UV coordinates - flip V for Vulkan
       float u0 = 0.0f;
       float u1 = 1.0f;
-      float v0 = 1.0f;  // Flipped: was 0.0f
-      float v1 = 0.0f;  // Flipped: was 1.0f
+      float v0 = 1.0f;  // Flipped: start at 1
+      float v1 = 0.0f;  // Flipped: end at 0
 
       tgt->PushModColor(fcolor4::Black());
 
       ui_material->BeginBlock(tgt);
       dwi->quad2D(
           fvec4(ix_root, iy_flipped, _geometry._w, _geometry._h),  // QuadRect: x, y, width, height
-          fvec4(0.0f, 1.0f, 1.0f, -1.0f),  // UvRect - flip V coordinates
+          fvec4(0.0f, 1.0f, 1.0f, -1.0f),  // UvRect - flip V coordinates for Vulkan
           fvec4(0, 0, 1, 1),  // UvRect2
           0.0f  // depth
       );
@@ -196,8 +196,8 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
         int oy0 = hdiff/2;
         int oy1 = -hdiff/2;
         
-        // Flip Y with offsets for Vulkan
-        int final_y = window_height - (iy_root + oy0) - (_geometry._h + oy1 - oy0);
+        // Use the already correct Y position
+        int final_y = iy_root + oy0;
 
         material->BeginBlock(tgt);
         dwi->quad2D(
@@ -213,8 +213,8 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
         int ox0 = wdiff/2;
         int ox1 = -wdiff/2;
         
-        // Flip Y for Vulkan
-        int final_y = window_height - iy_root - _geometry._h;
+        // Use the already correct Y position
+        int final_y = iy_root;
 
         material->BeginBlock(tgt);
         dwi->quad2D(
