@@ -15,6 +15,7 @@
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/lev2/gfx/pickbuffer.h>
+#include <ork/lev2/gfx/rtgroup.h>
 #include <ork/math/misc_math.h>
 #include <ork/kernel/environment.h>
 #include <ork/lev2/ui/popups.inl>
@@ -147,245 +148,226 @@ void GedSurface::onInvalidate() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+///////////////////////////////////////////////////////////////////////////////
+// Event handler helper methods
+///////////////////////////////////////////////////////////////////////////////
+
+void GedSurface::_onUiEventDoLoad(ui::event_constptr_t EV) {
+  if (!EV->mbCTRL) return;
+  
+  std::string default_path;
+  genviron.get("ORKID_WORKSPACE_DIR", default_path);
+  auto P = file::Path(default_path) / "ORKFILE.orj";
+  auto path = ui::popupOpenDialog(
+      "Open Orkid Json Object File",
+      P.c_str(),
+      {"*.orj"},
+      false);
+  
+  ork::File inputfile(path, ork::EFM_READ);
+  size_t length = 0;
+  inputfile.GetLength(length);
+  auto dblock = std::make_shared<DataBlock>();
+  auto dest = (char*)dblock->allocateBlock(length + 1);
+  inputfile.Read((void*)dest, length);
+  inputfile.Close();
+  dest[length] = 0; // null terminate
+  
+  object_ptr_t instance_out;
+  reflect::serdes::JsonDeserializer deser(dest);
+  deser.deserializeTop(instance_out);
+}
+
+void GedSurface::_onUiEventDoSave(ui::event_constptr_t EV) {
+  if (!EV->mbCTRL) return;
+  
+  auto obj = _model->_currentObject;
+  if (!obj) return;
+  
+  std::string default_path;
+  genviron.get("ORKID_WORKSPACE_DIR", default_path);
+  auto P = file::Path(default_path) / "ORKFILE.orj";
+  auto path = ui::popupSaveDialog(
+      "Save Orkid Json Object File",
+      P.c_str(),
+      {"*.orj"});
+  
+  printf("path<%s>\n", path.c_str());
+  reflect::serdes::JsonSerializer ser;
+  auto topnode = ser.serializeRoot(obj);
+  auto resultdata = ser.output();
+  ork::File outputfile(path, ork::EFM_WRITE);
+  outputfile.Write(resultdata.c_str(), resultdata.length());
+  outputfile.Close();
+}
+
+void GedSurface::_onUiEventDoKeyboard(ui::event_constptr_t EV) {
+  int mikeyc = EV->mFilteredEvent.miKeyCode;
+  printf("key<%d>\n", mikeyc);
+  
+  switch (mikeyc) {
+    case 'L': // load
+      _onUiEventDoLoad(EV);
+      break;
+    case 'S': // save
+      _onUiEventDoSave(EV);
+      break;
+    case 264: // CURS UP
+      miScrollY = _clampedScroll(miScrollY - 16);
+      mNeedsSurfaceRepaint = true;
+      break;
+    case 265: // CURS DOWN
+      miScrollY = _clampedScroll(miScrollY + 16);
+      mNeedsSurfaceRepaint = true;
+      break;
+    case 266: // PG DOWN
+      miScrollY = _clampedScroll(miScrollY + 128);
+      mNeedsSurfaceRepaint = true;
+      break;
+    case 267: // PG UP
+      miScrollY = _clampedScroll(miScrollY - 128);
+      mNeedsSurfaceRepaint = true;
+      break;
+    case 268: // HOME
+      miScrollY = 0;
+      mNeedsSurfaceRepaint = true;
+      break;
+    case 269: // END
+      miScrollY = _clampedScroll(-100000);
+      mNeedsSurfaceRepaint = true;
+      break;
+    case '!':
+      _container.IncrementSkin();
+      mNeedsSurfaceRepaint = true;
+      break;
+    default:
+      break;
+  }
+}
+
+void GedSurface::_onUiEventDoMouseWheel(ui::event_constptr_t EV) {
+  bool bisshift = EV->mbSHIFT;
+  int iscrollamt = bisshift ? 32 : 8;
+  int idelta = EV->miMWY;
+  
+  if (idelta > 0) {
+    miScrollY = _clampedScroll(miScrollY + iscrollamt);
+  } else if (idelta < 0) {
+    miScrollY = _clampedScroll(miScrollY - iscrollamt);
+  }
+  
+  mNeedsSurfaceRepaint = true;
+}
+
+void GedSurface::_onUiEventDoMove(ui::event_constptr_t EV, ui::event_ptr_t locEV) {
+  static int gctr = 0;
+  
+  if (0 != gctr % 4) {
+    gctr++;
+    return;
+  }
+  gctr++;
+  
+  int ilocx, ilocy;
+  RootToLocal(EV->miX, EV->miY, ilocx, ilocy);
+  
+  // Async capture - just update mouse position, no picking on move for now
+  // This avoids the performance hit of constant picking during mouse movement
+  _lastMouseX = ilocx;
+  _lastMouseY = ilocy;
+  
+  // We'll do the actual picking on mouse button events
+  mNeedsSurfaceRepaint = true;
+}
+
+void GedSurface::_onUiEventDoDrag(ui::event_constptr_t EV, ui::event_ptr_t locEV) {
+  if (!_activeNode) return;
+  
+  auto as_item_node = dynamic_cast<GedItemNode*>(_activeNode);
+  if (as_item_node) {
+    locEV->miX -= as_item_node->GetX();
+    locEV->miY -= as_item_node->GetY();
+  }
+  bool was_handled = _activeNode->OnUiEvent(locEV);
+  mNeedsSurfaceRepaint = true;
+}
+
+void GedSurface::_onUiEventDoMouseButton(ui::event_constptr_t EV, ui::event_ptr_t locEV) {
+  int ilocx, ilocy;
+  RootToLocal(EV->miX, EV->miY, ilocx, ilocy);
+  
+  // For now, handle mouse button events without picking
+  // since async pixel capture requires more infrastructure
+  
+  switch (EV->mFilteredEvent._eventcode) {
+    case ui::EventCode::PUSH:
+      // Would normally set _activeNode based on pick
+      printf("GedSurface:: mouse push at <%d,%d> (async pick disabled)\n", ilocx, ilocy);
+      break;
+    case ui::EventCode::RELEASE:
+      _activeNode = nullptr;
+      printf("GedSurface:: mouse release at <%d,%d>\n", ilocx, ilocy);
+      break;
+    case ui::EventCode::DOUBLECLICK:
+      printf("GedSurface:: mouse doubleclick at <%d,%d> (async pick disabled)\n", ilocx, ilocy);
+      break;
+    default:
+      break;
+  }
+  
+  mNeedsSurfaceRepaint = true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Main event handler
+///////////////////////////////////////////////////////////////////////////////
+
 ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
   ui::HandlerResult ret(this);
-
+  
   const auto& filtev = EV->mFilteredEvent;
-
+  
   int ix = EV->miX;
   int iy = EV->miY;
   int ilocx, ilocy;
   RootToLocal(ix, iy, ilocx, ilocy);
-
-  lev2::PixelFetchContext ctx(1);
-  ctx.miMrtMask = (1 << 0); //| (1 << 1); // ObjectID and ObjectUVD
-  ctx._usage[0] = lev2::PixelFetchContext::EPU_PTR64;
-
-  bool filt_kpush = (filtev.mAction == "keypush");
-
-  bool filt_leftbutton   = filtev.mBut0;
-  bool filt_middlebutton = filtev.mBut1;
-  bool filt_rightbutton  = filtev.mBut2;
-
-  bool bisshift = EV->mbSHIFT;
-
+  
   auto locEV = std::make_shared<ui::Event>(*EV.get());
-
-  locEV->miX    = ilocx;
-  locEV->miY    = ilocy - miScrollY;
+  locEV->miX = ilocx;
+  locEV->miY = ilocy - miScrollY;
   locEV->miRawX = locEV->miX;
   locEV->miRawY = locEV->miY;
   locEV->miScreenPosX = EV->miScreenPosX;
   locEV->miScreenPosY = EV->miScreenPosY;
-
-  if (_activeNode){
-   // bool was_handled = _activeNode->OnUiEvent(locEV);
-  }
-
+  
   switch (filtev._eventcode) {
     case ui::EventCode::KEY_DOWN:
-    case ui::EventCode::KEY_REPEAT: {
-      int mikeyc = filtev.miKeyCode;
-      printf("key<%d>\n", mikeyc);
-      switch (mikeyc) {
-        case 'L': { // load
-          if( EV->mbCTRL ){
-            std::string default_path;
-            genviron.get("ORKID_WORKSPACE_DIR",default_path);
-            auto P = file::Path(default_path)/"ORKFILE.orj";
-            auto path = ui::popupOpenDialog( //
-                "Open Orkid Json Object File", //
-                P.c_str(), //
-                {"*.orj"}, //
-                false); //
-            ork::File inputfile(path, ork::EFM_READ);
-            size_t length = 0;
-            inputfile.GetLength(length);
-            auto dblock = std::make_shared<DataBlock>();
-            auto dest  = (char*) dblock->allocateBlock(length+1);
-            inputfile.Read((void*)dest, length);
-            inputfile.Close();
-            dest[length] = 0; // null terminate
-            object_ptr_t instance_out;
-            reflect::serdes::JsonDeserializer deser(dest);
-            deser.deserializeTop(instance_out);
-          }
-          break;
-        }
-        case 'S': { // save
-          if( EV->mbCTRL ){
-            auto obj = _model->_currentObject;
-            if(obj){
-              std::string default_path;
-              genviron.get("ORKID_WORKSPACE_DIR",default_path);
-              auto P = file::Path(default_path)/"ORKFILE.orj";
-              auto path = ui::popupSaveDialog( //
-                  "Save Orkid Json Object File", //
-                  P.c_str(), //
-                  {"*.orj"}); //
-              printf( "path<%s>\n", path.c_str() );
-              reflect::serdes::JsonSerializer ser;
-              auto topnode    = ser.serializeRoot(obj);
-              auto resultdata = ser.output();
-              ork::File outputfile(path, ork::EFM_WRITE);
-              outputfile.Write(resultdata.c_str(), resultdata.length());
-              outputfile.Close();
-            }
-          }
-          break;
-        }
-        case 264: { // CURS UP
-          miScrollY            = _clampedScroll(miScrollY - 16);
-          mNeedsSurfaceRepaint = true;
-          break;
-        }
-        case 265: { // CURS DOWN
-          miScrollY            = _clampedScroll(miScrollY + 16);
-          mNeedsSurfaceRepaint = true;
-          break;
-        }
-        case 266: { // PG DOWN
-          miScrollY            = _clampedScroll(miScrollY + 128);
-          mNeedsSurfaceRepaint = true;
-          break;
-        }
-        case 267: { // PG UP
-          miScrollY            = _clampedScroll(miScrollY - 128);
-          mNeedsSurfaceRepaint = true;
-          break;
-        }
-        case 268: { // HOME
-          miScrollY            = 0;
-          mNeedsSurfaceRepaint = true;
-          break;
-        }
-        case 269: { // END
-          miScrollY            = _clampedScroll(-100000);
-          mNeedsSurfaceRepaint = true;
-          break;
-        }
-        case '!': {
-          _container.IncrementSkin();
-          mNeedsSurfaceRepaint = true;
-        }
-        default:
-          break;
-      }
+    case ui::EventCode::KEY_REPEAT:
+      _onUiEventDoKeyboard(EV);
       break;
-    }
-    case ui::EventCode::MOUSEWHEEL: {
-      int iscrollamt = bisshift ? 32 : 8;
-
-      // if( pobj )
-      {
-        int idelta = EV->miMWY;
-
-        if (idelta > 0) {
-          miScrollY = _clampedScroll(miScrollY + iscrollamt);
-        } else if (idelta < 0) {
-          miScrollY = _clampedScroll(miScrollY - iscrollamt);
-          // printf("predelta<%d> iscrollmin<%d> miScrollY<%d>\n", idelta, iscrollmin, miScrollY);
-        }
-      }
-
-      mNeedsSurfaceRepaint = true;
+      
+    case ui::EventCode::MOUSEWHEEL:
+      _onUiEventDoMouseWheel(EV);
       break;
-    }
-    case ui::EventCode::MOVE: {
-      static int gctr = 0;
-
-      if (0 == gctr % 4) {
-        GetPixel(ilocx, ilocy, ctx);
-        auto pobj = (ork::Object*)ctx.GetObject(_pickbuffer, 0);
-        if(0)printf( "move ilocx<%d> ilocy<%d> pobj<%p> ", ilocx, ilocy, (void*) pobj );
-        if( pobj ) {
-            if(0)printf( "clazz<%s> ", pobj->objectClass()->Name().c_str() );
-          auto pnode = dynamic_cast<GedObject*>(pobj);
-          if (pnode) {
-            if(0)printf( "pnode<%p> ", (void*) pnode );
-            auto as_inode = dynamic_cast<GedItemNode*>(pobj);
-            if( as_inode ){
-              if(0)printf( "as_inode<%s>", as_inode->_propname.c_str() );
-            }
-            _mouseoverNode = pnode;
-            if (pnode != _activeNode){
-              bool was_handled = pnode->OnUiEvent(locEV);
-            }
-          }
-        }
-        if(0)printf( "\n");
-        mNeedsSurfaceRepaint = true;
-      }
-      gctr++;
+      
+    case ui::EventCode::MOVE:
+      _onUiEventDoMove(EV, locEV);
       break;
-    }
-    case ui::EventCode::DRAG: {
-      if (_activeNode) {
-        auto as_item_node = dynamic_cast<GedItemNode*>(_activeNode);
-        if (as_item_node) {
-          locEV->miX -= as_item_node->GetX();
-          locEV->miY -= as_item_node->GetY();
-        }
-        bool was_handled = _activeNode->OnUiEvent(locEV);
-        mNeedsSurfaceRepaint = true;
-      }
+      
+    case ui::EventCode::DRAG:
+      _onUiEventDoDrag(EV, locEV);
       break;
-    }
+      
     case ui::EventCode::PUSH:
     case ui::EventCode::RELEASE:
-    case ui::EventCode::DOUBLECLICK: {
-
-      GetPixel(ilocx, ilocy, ctx);
-      float fx  = float(ilocx) / float(width());
-      float fy  = float(ilocy) / float(height());
-      auto pobj = ctx.GetObject(_pickbuffer, 0);
-
-      printf( "GedSurface:: pick ilocx<%d> ilocy<%d> fx<%g> fy<%g> pobj<%p>\n", ilocx, ilocy, fx, fy, (void*) pobj );
-
-      bool is_in_set = GedSkin::IsObjInSet(pobj);
-      const auto clr = ctx._pickvalues[0];
-      /////////////////////////////////////
-      // test object against known set
-      if (false == is_in_set)
-        pobj = 0;
-      /////////////////////////////////////
-
-      if (auto pnode = dynamic_cast<GedObject*>(pobj)) {
-        if (auto as_inode = dynamic_cast<GedItemNode*>(pobj)) {
-          locEV->miX -= as_inode->GetX();
-          locEV->miY -= as_inode->GetY();
-          auto clazz     = as_inode->GetClass();
-          auto clazzname = clazz->Name();
-           printf( "obj<%p> class<%s>\n", (void*) pobj, clazzname.c_str() );
-        }
-
-        switch (filtev._eventcode) {
-          case ui::EventCode::PUSH:{
-            _activeNode = pnode;
-            bool was_handled = pnode->OnUiEvent(locEV);
-            break;
-          }
-          case ui::EventCode::RELEASE:{
-            bool was_handled = pnode->OnUiEvent(locEV);
-            _activeNode = nullptr;
-            break;
-          }
-          case ui::EventCode::DOUBLECLICK:{
-            _activeNode = pnode;
-            bool was_handled = pnode->OnUiEvent(locEV);
-            break;
-          }
-          default:
-            break;
-        }
-      }
-
-      mNeedsSurfaceRepaint = true;
+    case ui::EventCode::DOUBLECLICK:
+      _onUiEventDoMouseButton(EV, locEV);
       break;
-    }
+      
     default:
       break;
   }
+  
   return ret;
 }
 void GedSurface::ResetScroll() {
@@ -393,6 +375,21 @@ void GedSurface::ResetScroll() {
 }
 const GedObject* GedSurface::GetMouseOverNode() const {
   return _mouseoverNode;
+}
+
+void GedSurface::_processCapturedPick(int ilocx, int ilocy, float fx, float fy) {
+  // TODO: Implement async pick processing when infrastructure is ready
+  // This will decode the pick ID from the captured pixel data
+  // and handle the appropriate UI event
+  
+  printf("GedSurface:: _processCapturedPick called (not yet implemented)\n");
+  
+  // Clear pending state
+  _pendingPickFuture = nullptr;
+  _pendingPickEvent = nullptr;
+  _pendingPickLocEvent = nullptr;
+  
+  mNeedsSurfaceRepaint = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
