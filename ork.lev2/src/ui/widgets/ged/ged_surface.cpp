@@ -271,12 +271,34 @@ void GedSurface::_onUiEventDoMove(ui::event_constptr_t EV, ui::event_ptr_t locEV
   int ilocx, ilocy;
   RootToLocal(EV->miX, EV->miY, ilocx, ilocy);
   
-  // Async capture - just update mouse position, no picking on move for now
-  // This avoids the performance hit of constant picking during mouse movement
-  _lastMouseX = ilocx;
-  _lastMouseY = ilocy;
+  // Prepare pixel fetch context for picking
+  lev2::PixelFetchContext pfc(1);
+  pfc.miMrtMask = (1 << 0);
+  pfc._usage[0] = lev2::PixelFetchContext::EPU_PTR64;
   
-  // We'll do the actual picking on mouse button events
+  // Trigger pickbuffer rendering for mouseover detection
+  if (_pickbuffer) {
+    auto tgt = _pickbuffer->context();
+    auto fbi = tgt->FBI();
+    pfc._rtgroup = _pickbuffer->_rtgroup;
+    
+    // Render the pick buffer (preserving original rendering code)
+    fbi->pushViewport(0, 0, width(), height());
+    fbi->pushScissor(0, 0, width(), height());
+    _pickbuffer->Draw(pfc);
+    fbi->popViewport();
+    fbi->popScissor();
+    
+    // TODO: Implement async capture for mouseover
+    // For now, we can't get the object under the mouse
+    // auto pobj = (ork::Object*)ctx.GetObject(_pickbuffer, 0);
+    
+    if(0)printf( "move ilocx<%d> ilocy<%d> (async capture TODO)\n", ilocx, ilocy);
+    
+    // The original code would set _mouseoverNode here
+    // and call OnUiEvent if it changed from _activeNode
+  }
+  
   mNeedsSurfaceRepaint = true;
 }
 
@@ -296,23 +318,61 @@ void GedSurface::_onUiEventDoMouseButton(ui::event_constptr_t EV, ui::event_ptr_
   int ilocx, ilocy;
   RootToLocal(EV->miX, EV->miY, ilocx, ilocy);
   
-  // For now, handle mouse button events without picking
-  // since async pixel capture requires more infrastructure
+  // Prepare pixel fetch context for picking
+  lev2::PixelFetchContext pfc(1);
+  pfc.miMrtMask = (1 << 0);
+  pfc._usage[0] = lev2::PixelFetchContext::EPU_PTR64;
   
-  switch (EV->mFilteredEvent._eventcode) {
-    case ui::EventCode::PUSH:
-      // Would normally set _activeNode based on pick
-      printf("GedSurface:: mouse push at <%d,%d> (async pick disabled)\n", ilocx, ilocy);
-      break;
-    case ui::EventCode::RELEASE:
-      _activeNode = nullptr;
-      printf("GedSurface:: mouse release at <%d,%d>\n", ilocx, ilocy);
-      break;
-    case ui::EventCode::DOUBLECLICK:
-      printf("GedSurface:: mouse doubleclick at <%d,%d> (async pick disabled)\n", ilocx, ilocy);
-      break;
-    default:
-      break;
+  float fx = float(ilocx) / float(width());
+  float fy = float(ilocy) / float(height());
+  
+  // Trigger pickbuffer rendering and capture asynchronously
+  if (_pickbuffer) {
+    auto tgt = _pickbuffer->context();
+    auto fbi = tgt->FBI();
+    pfc._rtgroup = _pickbuffer->_rtgroup;
+    
+    // Render the pick buffer (preserving original rendering code)
+    fbi->pushViewport(0, 0, width(), height());
+    fbi->pushScissor(0, 0, width(), height());
+    _pickbuffer->Draw(pfc);
+    fbi->popViewport();
+    fbi->popScissor();
+    
+    // Now instead of GetPixel, we need to capture asynchronously
+    // For now, just handle the event without the pick result
+    printf("GedSurface:: pick ilocx<%d> ilocy<%d> fx<%g> fy<%g> (async capture TODO)\n", ilocx, ilocy, fx, fy);
+    
+    // TODO: Implement async capture of the rendered pickbuffer
+    // auto rtb = _pickbuffer->_rtgroup->buffer(0).get();
+    // auto future = fbi->captureAsFormat(rtb, capbuf, lev2::EBufferFormat::RGBA8);
+    
+    switch (EV->mFilteredEvent._eventcode) {
+      case ui::EventCode::PUSH:
+        // Will set _activeNode based on async pick result
+        break;
+      case ui::EventCode::RELEASE:
+        _activeNode = nullptr;
+        break;
+      case ui::EventCode::DOUBLECLICK:
+        // Will set _activeNode based on async pick result
+        break;
+      default:
+        break;
+    }
+  } else {
+    // No pickbuffer, just handle the event
+    switch (EV->mFilteredEvent._eventcode) {
+      case ui::EventCode::PUSH:
+        break;
+      case ui::EventCode::RELEASE:
+        _activeNode = nullptr;
+        break;
+      case ui::EventCode::DOUBLECLICK:
+        break;
+      default:
+        break;
+    }
   }
   
   mNeedsSurfaceRepaint = true;

@@ -134,6 +134,10 @@ public:
     return nullptr;
   }
   virtual void GetPixel(const fvec4& rAt, PixelFetchContext& ctx) = 0;
+  
+  virtual captureasync_ptr_t capturePixelAsync(rtgroup_ptr_t rtg, int x, int y, void_lambda_t on_capture_complete = nullptr) {
+    return nullptr;
+  }
 
   captureasync_ptr_t capture(const RtBuffer* rtb, capturebuffer_ptr_t capbuf, void_lambda_t on_capture_complete = nullptr);
 

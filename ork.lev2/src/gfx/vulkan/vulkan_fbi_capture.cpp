@@ -9,6 +9,7 @@
 #include "headers/vulkan_ctx.h"
 #include "headers/vk_misc.h"
 #include <ork/lev2/gfx/image.h>
+#include <ork/lev2/gfx/pickbuffer.h>
 
 namespace ork::lev2::vulkan {
 
@@ -371,6 +372,47 @@ captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(
   // glBindFramebuffer(GL_FRAMEBUFFER, 0);
   //   glReadBuffer( readbuffer ); // restore read buffer
   // GL_ERRORCHECK();
+  return future;
+}
+
+////////////////////////////////////////////////////////////////
+
+captureasync_ptr_t VkFrameBufferInterface::capturePixelAsync(
+    rtgroup_ptr_t rtg, 
+    int x, 
+    int y, 
+    void_lambda_t on_capture_complete) {
+  
+  // For now, capture from the first buffer (color buffer)
+  // TODO: Support capturing from multiple buffers for deep pixels
+  auto rtb = rtg->buffer(0);
+  if (!rtb) {
+    auto future = std::make_shared<CaptureAsync>();
+    future->_failed = true;
+    return future;
+  }
+  
+  // Create a capture buffer for the single pixel
+  auto capbuf = std::make_shared<CaptureBuffer>();
+  capbuf->_captureX = x;
+  capbuf->_captureY = y;
+  capbuf->_captureW = 1;
+  capbuf->_captureH = 1;
+  
+  // Use captureAsFormat to do the actual capture of the 1x1 region
+  auto future = captureAsFormat(rtb.get(), capbuf, rtb->format(), on_capture_complete);
+  if (!future || future->_failed) {
+    return future;
+  }
+  
+  // Attach PixelFetchContext for deep pixel support
+  auto pixfetch_ctx = std::make_shared<PixelFetchContext>();
+  pixfetch_ctx->_rtgroup = rtg;
+  future->_pixelFetchContext = pixfetch_ctx;
+  
+  // The pixel data will be available after frame submit
+  // The PixelFetchContext will be populated when the data is retrieved
+  
   return future;
 }
 

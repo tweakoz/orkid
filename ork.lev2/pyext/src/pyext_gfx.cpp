@@ -93,7 +93,11 @@ void pyinit_gfx(py::module& module_lev2) {
           "clearcolor",
           [](const fbi_t& fbi) -> fvec4 { return fbi.get()->GetClearColor(); },
           [](fbi_t& fbi, const fvec4& value) { fbi.get()->SetClearColor(value); })
-      .def("capturePixel", [](const fbi_t& fbi, const fvec4& at, PixelFetchContext& pfc) { return fbi.get()->GetPixel(at, pfc); })
+      .def("capturePixel", [](const fbi_t& fbi, rtgroup_ptr_t rtg, int x, int y) -> captureasync_ptr_t {
+            // Create a capture async future for single pixel capture
+            // The implementation will populate _pixelFetchContext when complete
+            return fbi.get()->capturePixelAsync(rtg, x, y);
+          })
       .def(
           "captureBuffer",
           [](const fbi_t& fbi, rtbuffer_ptr_t rtb, capturebuffer_ptr_t capbuf) -> captureasync_ptr_t {
