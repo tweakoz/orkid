@@ -42,7 +42,7 @@ GedSurface::GedSurface(const std::string& name, objectmodel_ptr_t model)
     , _model(model)
     , _container(model)
     , miScrollY(0){
-
+  _alwaysRepaint = true;
   _container._viewport = this;
 
   gAllViewports.insert(this);

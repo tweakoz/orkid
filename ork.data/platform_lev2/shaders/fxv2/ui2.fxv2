@@ -7,7 +7,7 @@ fxconfig fxcfg_default {
 ///////////////////////////////////////////////////////////////
 state_block sb_ui : default {
 	DepthTest=OFF;
-	DepthMask=true;
+	DepthMask=OFF;
 	CullTest=OFF;
 	BlendMode = OFF;
 }

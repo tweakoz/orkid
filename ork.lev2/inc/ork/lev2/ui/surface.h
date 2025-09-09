@@ -44,6 +44,7 @@ public:
   F32 mfClearDepth;
   lev2::rtgroup_ptr_t _rtgroup;
   bool mNeedsSurfaceRepaint;
+  bool _alwaysRepaint = false;
   lev2::PickBuffer* _pickbuffer;
 
   void_lambda_t _postRenderCallback;

@@ -83,6 +83,9 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
   auto fbi    = tgt->FBI();
   auto fxi    = tgt->FXI();
   auto dwi    = tgt->DWI();
+  if(_alwaysRepaint){
+    mNeedsSurfaceRepaint = true;
+  }
   ///////////////////////////////////////
   if (_decouple_from_ui_size) {
     int irtgw  = _rtgroup->width();
