@@ -5,7 +5,7 @@ typeblock typ_mmnoise {
   };
 
 }
-libblock lib_mmnoise : typ_mmnoise{
+libblock lib_mmnoise : typ_mmnoise {
 
 
   float octavenoise(sampler3D krntex,vec3 pos,vec3 d, float time, int numoct){

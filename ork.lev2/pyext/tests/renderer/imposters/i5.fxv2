@@ -1,8 +1,8 @@
 import "orkshader://stdtools.i2";
-//import "orkshader://pbrtools.i2";
-//import "orkshader://mathtools.i2";
-//import "orkshader://sdftools.i2";
-//import "orkshader://misctools.i2";
+import "orkshader://pbrtools.i2";
+import "orkshader://mathtools.i2";
+import "orkshader://sdftools.i2";
+import "orkshader://misctools.i2";
 
 ////////////////////////////////////////
 fxconfig fxcfg_default {
@@ -11,12 +11,12 @@ fxconfig fxcfg_default {
 sampler_set i5_samplers (descriptor_set 0) {
   sampler2D rtgtex;
   sampler2D depthtex;
-}/*
+}
 ////////////////////////////////////////
-uniform_block ublk_frg_i4 (descriptor_set 0) { //
+uniform_block ublk_frg_i5 (descriptor_set 0) { //
   float time;
   vec3 raydir;
-}*/
+}
 vertex_interface vif_I5 : ub_std_vtx {
   inputs {
     vec4 position : POSITION;
@@ -43,10 +43,10 @@ vertex_shader vs_I5    //
   gl_Position = mvp * position;
 }
 ////////////////////////////////////////
-/*libblock lib_X        //
+libblock lib_X        //
     : lib_math        //
-    : lib_sdftools    //
     : lib_mmnoise     //
+    : lib_sdftools    //
     : lib_cellnoise { //
 
   float myWorldSDF(vec3 p) {
@@ -59,7 +59,7 @@ vertex_shader vs_I5    //
     displacement += sin(angleXY * 10.0 + time * 1.5) * 0.1; // oscillating displacement
     displacement += -cos(angleYZ * 3.0 + time * 2.7) * 0.1; // oscillating displacement
     sphere_dist += displacement;                            // apply displacement to the sphere distance
-    float NN2 = 1.0 + noise(p * 7) * 0.5;
+    float NN2 = 1.0 + noise(p * 7.0) * 0.5;
     return sphere_dist;
   }
   vec3 myWorldNormal(vec3 p) {
@@ -80,18 +80,18 @@ vertex_shader vs_I5    //
     return (d2 - d1) / (2.0 * eps);
   }
 }
-*/
 ////////////////////////////////////////
 fragment_shader ps_I5      //
     : fif_I5               //
-    //: ublk_std_matrices    //
-    //: ublk_std_viewport    //
-    //: ublk_std_filtering
-    //: ublk_frg_i4          //
+    : ublk_std_matrices    //
+    : ublk_std_viewport    //
+    : ublk_std_filtering   //
+    : ublk_frg_i4          //
+    : ublk_frg_i5          //
     : i5_samplers          //
-    //: lib_X {              //
-{
-  /*float radius       = sin(time * 1.0) * 0.1 + 0.65; // oscillating radius
+    : lib_X {              //
+
+  float radius       = sin(time * 1.0) * 0.1 + 0.65; // oscillating radius
   vec3 sphere_center = m[3].xyz;                     // center of the sphere @ node position
 
   // raymarch sphere of radius 0.75
@@ -129,24 +129,26 @@ fragment_shader ps_I5      //
   float K2       = saturateF(1.0 - pow(K, 4) * 0.3);
   vec3 CA        = vec3(1, 1, 2) * saturateF(pow(NN * 0.75, 2)); //, vec3(1,1,1), NN2); // color based on curvature
 
-  vec3 C = mix(CA, vec3(3, 2, 1) * NN * 2, K2);*/
+  vec3 C = mix(CA, vec3(3, 2, 1) * NN * 2, K2);
 
-/*  PbrData pbr;
+  /*  
+  PbrData pbr;
   pbr._emissive  = false;
   pbr._albedo    = C;          //*0.35;
   pbr._metallic  = mix(1, 0, K2);
   pbr._roughness = 1.0 - pow(K2, 1.0); // oscillating roughness
   pbr._wpos      = p;
-  pbr._wnrm      = n;*/
+  pbr._wnrm      = n;
   //vec3 pbr_lit   = _forward_lightingX(pbr, EyePostion, vec3(0), vec3(1));
   //out_color      = vec4(pbr_lit * float(int(hit)), 1); // debug color
   //out_color = vec4(C*float(int(hit)), 1); // debug color
   //gl_FragDepth = depthAtWpos(frg_wpos.xyz, vp);
-  out_color = vec4(1,0,1,1);
+  */
+  out_color = vec4(C,length(C)!=0.0);
 }
 ////////////////////////////////////////
 state_block sb_i5 : default {
-  BlendMode = ADDITIVE;
+  BlendMode = OFF;
 }
 ////////////////////////////////////////
 technique tek_imp {

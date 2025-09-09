@@ -50,22 +50,23 @@ fragment_shader ps_impblit //
   out_clr   = texture(ColorMap, frg_uv0);
   gl_FragDepth = textureLod(ImpDepthMap,frg_uv0,0).r;
 }
-state_block sb_default : default {
+state_block sb_imp : default {
   DepthTest = LEQUALS;
   DepthMask = ON;
+  BlendMode = ADDITIVE;
 }
 ///////////////////////////////////////////////////////////////
 technique imposter_blit_bilinear {
   fxconfig = fxcfg_default;
-  vf_pass = { vs_IMP, ps_impblit, sb_default }
+  vf_pass = { vs_IMP, ps_impblit, sb_imp }
 }
 ///////////////////////////////////////////////////////////////
 technique imposter_blit_bicubic {
   fxconfig = fxcfg_default;
-  vf_pass = { vs_IMP, ps_impblit, sb_default }
+  vf_pass = { vs_IMP, ps_impblit, sb_imp }
 }
 ///////////////////////////////////////////////////////////////
 technique imposter_blit_lanczos {
   fxconfig = fxcfg_default;
-  vf_pass = { vs_IMP, ps_impblit, sb_default }
+  vf_pass = { vs_IMP, ps_impblit, sb_imp }
 }

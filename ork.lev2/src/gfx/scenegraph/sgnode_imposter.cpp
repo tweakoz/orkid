@@ -98,9 +98,11 @@ void ImposterDrawableImpl::gpuInit(lev2::Context* ctx) {
 
     auto paramRTGTEX = as_fstyle->param("rtgtex");
     OrkAssert(paramRTGTEX != nullptr);
+    auto paramM = as_fstyle->param("m");
     auto paramMVP = as_fstyle->param("mvp");
     imppass->_userdata->set("par_rtgtex", paramRTGTEX);
     imppass->_userdata->set("par_mvp", paramMVP);
+    imppass->_userdata->set("par_m", paramM);
 
     ///////////////////////////////////////
     // blit pass
@@ -167,8 +169,10 @@ void ImposterDrawableImpl::gpuInit(lev2::Context* ctx) {
       auto paramRTGTEX = as_fstyle->param("rtgtex");
       OrkAssert(paramRTGTEX != nullptr);
       auto paramMVP = as_fstyle->param("mvp");
+      auto paramM = as_fstyle->param("m");
       p->_userdata->set("par_rtgtex", paramRTGTEX);
       p->_userdata->set("par_mvp", paramMVP);
+      p->_userdata->set("par_m", paramM);
     }
 
   } else {
@@ -367,6 +371,7 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
   auto bpar_near2 = blud->typedValueForKey<fxparam_constptr_t>("par_near2").value();
   auto bpar_far2  = blud->typedValueForKey<fxparam_constptr_t>("par_far2").value();
   auto bpar_ivp   = blud->typedValueForKey<fxparam_constptr_t>("par_ivp").value();
+  //auto bpar_m   = blud->typedValueForKey<fxparam_constptr_t>("par_m").value();
   auto COLOR_RTG  = blud->typedValueForKey<rtgroup_ptr_t>("color_rtg").value();
   auto DEPTH_RTG  = blud->typedValueForKey<rtgroup_ptr_t>("depth_rtg").value();
 
@@ -394,6 +399,7 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
   bmat->bindParam(bpar_tex, COLOR_RTG->texture(0));
   bmat->bindParam(bpar_dmp, DEPTH_RTG->depthTexture());
   bmat->bindParam(_blit_par_mvp, VP);
+  //bmat->bindParamMatrix(bpar_m, worldmatrix);
   bmat->bindParamFloat(bpar_near, CAMDAT.mNear);
   bmat->bindParamFloat(bpar_far, CAMDAT.mFar);
   bmat->bindParamFloat(bpar_near2, CAMDAT.mNear);
@@ -420,10 +426,10 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
       V1,
       V2,
       V3, // positions
-      fvec2(0, 0),
-      fvec2(1, 0),
+      fvec2(0, 1),
       fvec2(1, 1),
-      fvec2(0, 1), // uv
+      fvec2(1, 0),
+      fvec2(0, 0), // uv
       0xffffffff); // color
 
   context->debugPopGroup();

@@ -118,8 +118,8 @@ class ImposterApp(boilerplate.ImposterBaseApp):
       
       imp_mtl = imposter.imp_mtl
       imp_pass = imposter.impdata.imp_pass
-      #imp_pass.pipeline.bindParam(imp_mtl.param("raydir"), tokens.RCFD_Camera_ZNORMAL_Mono )
-      #imp_pass.pipeline.bindParam(imp_mtl.param("time"), lambda: self.time*3.0)
+      imp_pass.pipeline.bindParam(imp_mtl.param("raydir"), tokens.RCFD_Camera_ZNORMAL_Mono )
+      imp_pass.pipeline.bindParam(imp_mtl.param("time"), lambda: self.time*3.0)
 
       imposter.installStandardBlit()
 
@@ -170,7 +170,7 @@ class ImposterApp(boilerplate.ImposterBaseApp):
     if hasattr(self,"imposter"):
       self.imposter.onGpuUpdate(ctx)
       z = math.sin(self.imposter.frame_index*0.003)*2.0
-      self.imposter.sgnode.worldTransform.translation = vec3(0,0.1,z)
+      #self.imposter.sgnode.worldTransform.translation = vec3(0,0.1,z)
       if hasattr(self,"spotlight1"):
         self.spotlight1.update(self.lighttime)
         self.spotlight2.update(self.lighttime)
