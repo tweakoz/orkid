@@ -203,6 +203,11 @@ VulkanInstance::VulkanInstance() {
 
   res = vkEnumeratePhysicalDeviceGroups(_instance, &_numgroups, nullptr);
   _phygroups.resize(_numgroups);
+  // Initialize sType for each group properties structure
+  for (auto& group : _phygroups) {
+    group.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GROUP_PROPERTIES;
+    group.pNext = nullptr;
+  }
   vkEnumeratePhysicalDeviceGroups(_instance, &_numgroups, _phygroups.data());
   deco::printf(yel, "vulkan::_init numgroups<%u>\n", _numgroups);
   int igroup = 0;
