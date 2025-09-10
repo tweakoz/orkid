@@ -77,12 +77,8 @@ class PixelPickTest:
         # Create buffers for each format
         self.rtbuffers = []
         for i, (fmt_token, fmt_name) in enumerate(zip(self.buffer_formats, self.format_names)):
-            # First buffer uses 'color', others use mrt1, mrt2, etc.
-            if i == 0:
-                rtb = self.rtg.createBuffer(fmt_token, tokens.color)
-            else:
-                mrt_token = tokens.__getattr__(f"mrt{i}")
-                rtb = self.rtg.createBuffer(fmt_token, mrt_token)
+            # All MRT buffers must use 'color' usage in Vulkan
+            rtb = self.rtg.createBuffer(fmt_token, tokens.color)
             
             # Set clear color to black (ID=0)
             rtb.clearColor = core.vec4(0.0, 0.0, 0.0, 1.0)
