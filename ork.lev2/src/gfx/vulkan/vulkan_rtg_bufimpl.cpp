@@ -139,8 +139,9 @@ void _vkCreateImageForBuffer(
     // Use as texture
     VKICI->usage |= VK_IMAGE_USAGE_SAMPLED_BIT;       // Allow sampling from this image
     VKICI->usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;  // Allow data transfer to it
-    VKICI->usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;  // Allow data transfer from it (for readback/save)
   }
+  // Always allow readback for pixel capture
+  VKICI->usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;  // Allow data transfer from it (for readback/capture)
   ///////////////////////////////////////////////////
   auto imgobj = std::make_shared<VulkanImageObject>(ctxVK, VKICI);
   auto& vkimage       = imgobj->_vkimage;

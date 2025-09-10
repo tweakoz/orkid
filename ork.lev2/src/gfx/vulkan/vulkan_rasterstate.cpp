@@ -16,7 +16,8 @@ namespace ork::lev2::vulkan {
 
 LockedResource<VkRasterState::rsmap_t> VkRasterState::_global_rasterstate_map;
 
-VkRasterState::VkRasterState(rasterstate_ptr_t rstate){
+VkRasterState::VkRasterState(rasterstate_ptr_t rstate, int attachment_count, const std::vector<VkFormat>* formats){
+  _attachment_count = attachment_count;
   initializeVkStruct(_VKRSCI, VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO);
   initializeVkStruct(_VKDSSCI, VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO);
   initializeVkStruct(_VKCBSI, VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO);
@@ -215,13 +216,66 @@ VkRasterState::VkRasterState(rasterstate_ptr_t rstate){
 
   _VKCBSI.logicOpEnable = VK_FALSE;
   _VKCBSI.logicOp = VK_LOGIC_OP_COPY; // Optional
-  _VKCBSI.attachmentCount = 1;
-  _VKCBSI.pAttachments = &_VKCBATT;
+  
+  // Setup blend attachments for MRT
+  _VKCBATT_array.resize(_attachment_count);
+  for(int i = 0; i < _attachment_count; i++) {
+    _VKCBATT_array[i] = _VKCBATT; // Copy base blend state to all attachments
+    
+    // Check if format is integer and disable blending if so
+    if (formats && i < formats->size()) {
+      VkFormat fmt = (*formats)[i];
+      // Check for integer formats (UI = unsigned int, SI = signed int)
+      bool is_integer_format = false;
+      switch(fmt) {
+        case VK_FORMAT_R8_UINT:
+        case VK_FORMAT_R8_SINT:
+        case VK_FORMAT_R8G8_UINT:
+        case VK_FORMAT_R8G8_SINT:
+        case VK_FORMAT_R8G8B8_UINT:
+        case VK_FORMAT_R8G8B8_SINT:
+        case VK_FORMAT_R8G8B8A8_UINT:
+        case VK_FORMAT_R8G8B8A8_SINT:
+        case VK_FORMAT_R16_UINT:
+        case VK_FORMAT_R16_SINT:
+        case VK_FORMAT_R16G16_UINT:
+        case VK_FORMAT_R16G16_SINT:
+        case VK_FORMAT_R16G16B16_UINT:
+        case VK_FORMAT_R16G16B16_SINT:
+        case VK_FORMAT_R16G16B16A16_UINT:
+        case VK_FORMAT_R16G16B16A16_SINT:
+        case VK_FORMAT_R32_UINT:
+        case VK_FORMAT_R32_SINT:
+        case VK_FORMAT_R32G32_UINT:
+        case VK_FORMAT_R32G32_SINT:
+        case VK_FORMAT_R32G32B32_UINT:
+        case VK_FORMAT_R32G32B32_SINT:
+        case VK_FORMAT_R32G32B32A32_UINT:
+        case VK_FORMAT_R32G32B32A32_SINT:
+          is_integer_format = true;
+          break;
+        default:
+          is_integer_format = false;
+          break;
+      }
+      
+      if (is_integer_format) {
+        // Disable blending for integer formats
+        _VKCBATT_array[i].blendEnable = VK_FALSE;
+      }
+      
+      hasher.accumulateItem(fmt); // Include format in hash
+    }
+  }
+  
+  _VKCBSI.attachmentCount = _attachment_count;
+  _VKCBSI.pAttachments = _VKCBATT_array.data();
   _VKCBSI.blendConstants[0] = rstate->_blendConstant.x; 
   _VKCBSI.blendConstants[1] = rstate->_blendConstant.y; 
   _VKCBSI.blendConstants[2] = rstate->_blendConstant.z; 
   _VKCBSI.blendConstants[3] = rstate->_blendConstant.w; 
   hasher.accumulateItem(rstate->_blendConstant);
+  hasher.accumulateItem(_attachment_count); // Include attachment count in hash
 
   hasher.finish();
   uint64_t hashed = hasher.result();

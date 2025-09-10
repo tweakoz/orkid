@@ -269,12 +269,14 @@ struct VulkanGeometryInterface {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VkRasterState {
-  VkRasterState(rasterstate_ptr_t rstate);
+  VkRasterState(rasterstate_ptr_t rstate, int attachment_count = 1, const std::vector<VkFormat>* formats = nullptr);
   VkPipelineRasterizationStateCreateInfo _VKRSCI;
   VkPipelineDepthStencilStateCreateInfo _VKDSSCI;
   VkPipelineColorBlendStateCreateInfo _VKCBSI;
-  VkPipelineColorBlendAttachmentState _VKCBATT;
+  VkPipelineColorBlendAttachmentState _VKCBATT; // Base attachment state (for backward compat)
+  std::vector<VkPipelineColorBlendAttachmentState> _VKCBATT_array; // Array for MRT
   int _pipeline_bits = -1;
+  int _attachment_count = 1;
 
   using rsmap_t = std::unordered_map<uint64_t, int>;
 

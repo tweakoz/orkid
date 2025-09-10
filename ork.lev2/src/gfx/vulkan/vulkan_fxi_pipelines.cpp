@@ -46,13 +46,6 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
     effective_rasterstate = _currentVKPASS->_stateblock_rasterstate;
   }
 
-  vkrasterstate_ptr_t vkrstate;
-  if (auto try_vkrs = effective_rasterstate->_impl.tryAsShared<VkRasterState>()) {
-    vkrstate = try_vkrs.value();
-  } else {
-    vkrstate = effective_rasterstate->_impl.makeShared<VkRasterState>(effective_rasterstate);
-  }
-
   ////////////////////////////////////////////////////
   // get pipeline hash from permutations
   ////////////////////////////////////////////////////
@@ -69,6 +62,35 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
   auto rtg       = fbi->_active_rtgroup;
   auto rtg_impl  = rtg->_impl.getShared<VkRtGroupImpl>();
   auto msaa_impl = rtg_impl->_msaaState;
+  
+  // Get attachment count and formats from active render target group
+  int attachment_count = rtg->numImageBuffers(); // Get number of color attachments
+  if (attachment_count == 0) {
+    attachment_count = 1; // Default to 1 if no MRT
+  }
+  
+  // Get formats for each attachment
+  std::vector<VkFormat> formats;
+  for (int i = 0; i < attachment_count; i++) {
+    auto buffer = rtg->buffer(i);
+    if (buffer) {
+      auto vk_fmt = VkFormatConverter::convertBufferFormat(buffer->format());
+      formats.push_back(vk_fmt);
+    }
+  }
+  
+  vkrasterstate_ptr_t vkrstate;
+  if (auto try_vkrs = effective_rasterstate->_impl.tryAsShared<VkRasterState>()) {
+    vkrstate = try_vkrs.value();
+    // Check if attachment count matches (need to recreate if different)
+    if (vkrstate->_attachment_count != attachment_count) {
+      // Need to recreate with correct attachment count and formats
+      vkrstate = std::make_shared<VkRasterState>(effective_rasterstate, attachment_count, &formats);
+      effective_rasterstate->_impl.set<vkrasterstate_ptr_t>(vkrstate);
+    }
+  } else {
+    vkrstate = effective_rasterstate->_impl.makeShared<VkRasterState>(effective_rasterstate, attachment_count, &formats);
+  }
 
   uint64_t rtg_pbits = check_pb_range(rtg_impl->_pipeline_bits, 4);
   uint64_t pc_pbits  = check_pb_range(primclass->_pipeline_bits, 4);
