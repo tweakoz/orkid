@@ -96,6 +96,12 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   // transition to appropriate attachment layout
   /////////////////////////////////////
 
+  // Suspend render pass if active - we need to execute barriers
+  bool was_active = _contextVK->_renderPassActive;
+  if (was_active) {
+    _contextVK->suspendRenderPass();
+  }
+
   auto cmdbuf = _contextVK->beginRecordCommandBuffer("VkTextureInterface::_initTextureFromRtBuffer");
 
   auto cmdbuf_impl = cmdbuf->_impl.getShared<VkSecondaryCommandBufferImpl>();
@@ -139,6 +145,11 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   _contextVK->endRecordCommandBuffer(cmdbuf);
   _contextVK->enqueueSecondaryCommandBuffer(cmdbuf);
   //_contextVK->enqueueDeferredOneShotCommand(cmdbuf);
+  
+  // Resume render pass if it was active
+  if (was_active) {
+    _contextVK->resumeRenderPass();
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
