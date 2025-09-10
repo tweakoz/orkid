@@ -69,6 +69,15 @@ bool File::writeBinary(const file::Path& input_path, std::vector<uint8_t> data){
   OrkAssert( OK == EFEC_FILE_OK );
   return true;
 }
+bool File::writeBinary(const file::Path& input_path, const void* data, size_t datasize){
+  auto output_file = std::make_shared<File>();
+  auto ecode = output_file->OpenFile(input_path, EFM_WRITE);
+  OrkAssert( ecode == EFEC_FILE_OK );
+
+  EFileErrCode OK = output_file->Write( (void*)data, datasize );
+  OrkAssert( OK == EFEC_FILE_OK );
+  return true;
+}
 
 datablock_ptr_t File::loadDatablock(const file::Path& sFileName){
   File file(sFileName, EFM_READ);

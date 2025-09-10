@@ -751,6 +751,8 @@ captureasync_ptr_t VkFrameBufferInterface::capturePixelAsync(
       sub_pfc->_resize(1);
       sub_pfc->_usage[0] = pfc->_usage[buf_idx];
       future->_pixelFetchContext = sub_pfc;
+      future->_width = 1;
+      future->_height = 1;
       
       // Store this future for later processing
       compfut->buffer_futures.push_back(future);

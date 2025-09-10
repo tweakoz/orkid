@@ -1134,8 +1134,8 @@ void SpirvCompiler::_compileShader(shaderc_shader_kind shader_type) {
   ///////////////////////////////////////////////////////
 
   _shader_name = _shader->typedValueForKey<std::string>("object_name").value();
-  auto fn_sig  = FormatString("void %s()", _shader_name.c_str());
-  auto fn_inv  = FormatString("void main() { %s(); }", _shader_name.c_str());
+  auto fn_sig  = FormatString("void main() // %s", _shader_name.c_str());
+  //auto fn_inv  = FormatString("void main() { %s(); }", _shader_name.c_str());
 
   _shader_group->appendTypedChild<InsertLine>("#version 450");
   _shader_group->appendChild(_extension_group);
@@ -1145,7 +1145,7 @@ void SpirvCompiler::_compileShader(shaderc_shader_kind shader_type) {
   _shader_group->appendChild(_libraries_group);
   _shader_group->appendTypedChild<InsertLine>(fn_sig);
   _shader_group->appendChildrenFrom(_shader); // compound statement
-  _shader_group->appendTypedChild<InsertLine>(fn_inv);
+  //_shader_group->appendTypedChild<InsertLine>(fn_inv);
 
   ///////////////////////////////////////////////////////
   // emit
@@ -1171,8 +1171,12 @@ void SpirvCompiler::_compileShader(shaderc_shader_kind shader_type) {
     std::cerr << result.GetErrorMessage();
     OrkAssert(false);
   }
+  auto output_path = file::Path::temp_dir()/FormatString("%s.glsl",_shader_name.c_str());
+  bool OK = File::writeString(output_path, as_glsl);
 
+  output_path = file::Path::temp_dir()/FormatString("%s.spv",_shader_name.c_str());
   _spirv_binary = shader_bin_t(result.cbegin(), result.cend());
+  File::writeBinary(output_path, _spirv_binary.data(), _spirv_binary.size()*sizeof(uint32_t));
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
 // Helper function to find binding ID from merged resources in the transunit

@@ -62,6 +62,7 @@ public:
   static binfilereadresult_ptr_t readAsBinary(const file::Path& input_path);
   static bool writeString(const file::Path& input_path, std::string data);
   static bool writeBinary(const file::Path& input_path, std::vector<uint8_t> data);
+  static bool writeBinary(const file::Path& input_path, const void* data, size_t datasize);
 
   EFileErrCode OpenFile(const file::Path& sFileName, EFileMode eMode);
   EFileErrCode Open();
