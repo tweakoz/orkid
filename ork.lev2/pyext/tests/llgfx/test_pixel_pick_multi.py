@@ -4,7 +4,7 @@ Test for multi-buffer (deep pixel) picking with mixed formats.
 Tests simultaneous capture from RGBA32F, RGBA16F, RGBA32UI, and RGBA16UI buffers.
 """
 
-import sys
+import sys, time
 from orkengine import core
 from orkengine import lev2
 from orkengine.core import vec4
@@ -39,10 +39,10 @@ vertex_interface vif_multi : ublk_vtx {
 ////////////////////////////////////////
 fragment_interface fif_multi : vif_multi : ublk_frg {
   outputs { 
-    vec4 out_color;      // RGBA32F (layout location 0)
-    vec4 out_color16f;   // RGBA16F (layout location 1)
-    uvec4 out_pickid32;  // RGBA32UI (layout location 2)
-    uvec4 out_pickid16;  // RGBA16UI (layout location 3)
+    layout(location = 0) vec4 out_color;      // RGBA32F 
+    layout(location = 1) vec4 out_color16f;   // RGBA16F 
+    layout(location = 2) uvec4 out_pickid32;  // RGBA32UI
+    layout(location = 3) uvec4 out_pickid16;  // RGBA16UI
   }
 }
 ////////////////////////////////////////
@@ -69,10 +69,10 @@ vertex_shader vs_multi : vif_multi {
 ////////////////////////////////////////
 fragment_shader ps_multi : fif_multi {
   // Output to all 4 render targets
-  out_color = frg_color;           // RGBA32F - direct color
-  out_color16f = frg_color;         // RGBA16F - direct color (will be quantized by format)
-  out_pickid32 = frg_pickid32;      // RGBA32UI - 32-bit IDs
-  out_pickid16 = frg_pickid16;      // RGBA16UI - 16-bit IDs
+  out_color = frg_color;        // RGBA32F - direct color
+  out_color16f = frg_color;     // RGBA16F - direct color (will be quantized by format)
+  out_pickid32 = frg_pickid32;  // RGBA32UI - 32-bit IDs
+  out_pickid16 = frg_pickid16;  // RGBA16UI - 16-bit IDs
 }
 ////////////////////////////////////////
 state_block sb_multi : default {
@@ -81,11 +81,7 @@ state_block sb_multi : default {
 ////////////////////////////////////////
 technique tek_multi_buffer {
   fxconfig = fxcfg_default;
-  pass p0 {
-    vertex_shader   = vs_multi;
-    fragment_shader = ps_multi;
-    state_block     = sb_multi;
-  }
+  vf_pass = { vs_multi, ps_multi, sb_multi }
 }
 """
 
@@ -134,6 +130,7 @@ class MultiBufferPickTest(PixelPickTest):
         self.permu = None
         
     def render_frame(self):
+        time.sleep(4)
         """Override render to use custom pipeline."""
         self.ctx.beginFrame()
         self.FBI.rtGroupPush(self.rtg)

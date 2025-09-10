@@ -655,37 +655,118 @@ captureasync_ptr_t VkFrameBufferInterface::capturePixelAsync(
     int y, 
     void_lambda_t on_capture_complete) {
   
-  // For now, capture from the first buffer (color buffer)
-  // TODO: Support capturing from multiple buffers for deep pixels
+  // Local struct to hold all data for composite capture
+  struct CompositeFuture {
+    std::atomic<int> pending_count;
+    std::vector<captureasync_ptr_t> buffer_futures;
+    std::vector<int> buffer_indices;  // Maps future index to buffer index
+    pixelfetchctx_ptr_t pixel_context;
+    void_lambda_t completion_callback;
+    
+    CompositeFuture(int count, pixelfetchctx_ptr_t pfc, void_lambda_t cb) 
+      : pending_count(count)
+      , pixel_context(pfc)
+      , completion_callback(cb) {}
+  };
+  
+  // Capture from all buffers for deep pixel support
   auto rtg = pfc->_rtgroup;
-  auto rtb = rtg->buffer(0);
-  if (!rtb) {
+  
+  // Count how many buffers we need to capture
+  int num_buffers = 0;
+  for (int i = 0; i < 8; i++) { // Max 8 MRT buffers
+    if (rtg->buffer(i)) {
+      num_buffers++;
+    } else {
+      break;
+    }
+  }
+  
+  if (num_buffers == 0) {
     auto future = std::make_shared<CaptureAsync>();
     future->_failed = true;
     return future;
   }
   
-  // Create a capture buffer for the single pixel
-  auto capbuf = std::make_shared<CaptureBuffer>();
-  capbuf->_captureX = x;
-  capbuf->_captureY = y;
-  capbuf->_captureW = 1;
-  capbuf->_captureH = 1;
+  // Create a composite future that will capture all buffers
+  auto main_future = std::make_shared<CaptureAsync>();
+  main_future->_pixelFetchContext = pfc;
+  pfc->_rtgroup = rtg;
   
-  // Use captureAsFormat to do the actual capture of the 1x1 region
-  auto future = captureAsFormat(rtb.get(), capbuf, rtb->format(), on_capture_complete);
-  if (!future || future->_failed) {
-    return future;
+  // Create composite future structure
+  auto compfut = main_future->_impl.makeShared<CompositeFuture>(num_buffers, pfc, on_capture_complete);
+  
+  // Capture from each buffer
+  for (int buf_idx = 0; buf_idx < num_buffers; buf_idx++) {
+    auto rtb = rtg->buffer(buf_idx);
+    if (!rtb) continue;
+    
+    // Create a capture buffer for the single pixel
+    auto capbuf = std::make_shared<CaptureBuffer>();
+    capbuf->_captureX = x;
+    capbuf->_captureY = y;
+    capbuf->_captureW = 1;
+    capbuf->_captureH = 1;
+    
+    // Create sub-future completion callback that will be called after pixel data is processed
+    auto sub_complete = [main_future, compfut, buf_idx, pfc]() {
+      // The sub-future has been processed by _processPendingCaptures
+      // and its pixel data should be available. We need to extract it
+      // and place it in the correct slot of the main PixelFetchContext
+      
+      // Find the sub-future for this buffer
+      for (size_t i = 0; i < compfut->buffer_indices.size(); i++) {
+        if (compfut->buffer_indices[i] == buf_idx) {
+          auto sub_future = compfut->buffer_futures[i];
+          if (sub_future && sub_future->_pixelFetchContext) {
+            // Copy the value from sub-future's PFC to main PFC at correct index
+            if (buf_idx < pfc->_pickvalues.size() && 
+                sub_future->_pixelFetchContext->_pickvalues.size() > 0) {
+              pfc->_pickvalues[buf_idx] = sub_future->_pixelFetchContext->_pickvalues[0];
+            }
+          }
+          break;
+        }
+      }
+      
+      // Decrement the counter
+      int remaining = compfut->pending_count.fetch_sub(1) - 1;
+      
+      // If this was the last buffer, mark main future as complete
+      if (remaining == 0) {
+        main_future->_completed = true;
+        
+        // Fire the main callback if provided
+        if (compfut->completion_callback) {
+          compfut->completion_callback();
+        }
+      }
+    };
+    
+    // Use captureAsFormat to do the actual capture of the 1x1 region
+    auto future = captureAsFormat(rtb.get(), capbuf, rtb->format(), sub_complete);
+    if (future && !future->_failed) {
+      // Create a PixelFetchContext for this sub-future (single value)
+      auto sub_pfc = std::make_shared<PixelFetchContext>();
+      sub_pfc->_resize(1);
+      sub_pfc->_usage[0] = pfc->_usage[buf_idx];
+      future->_pixelFetchContext = sub_pfc;
+      
+      // Store this future for later processing
+      compfut->buffer_futures.push_back(future);
+      compfut->buffer_indices.push_back(buf_idx);
+      
+      // Add sub-future to pending captures for normal processing
+      _contextVK->_pending_captures.push_back(future);
+    } else {
+      // If capture failed, decrement counter immediately
+      compfut->pending_count.fetch_sub(1);
+    }
   }
   
-  // Attach PixelFetchContext for deep pixel support
-  pfc->_rtgroup = rtg;
-  future->_pixelFetchContext = pfc;
-  
-  // The pixel data will be available after frame submit
-  // The PixelFetchContext will be populated when the data is retrieved
-  
-  return future;
+  // Don't add main_future to _pending_captures - it will be marked complete
+  // when all sub-futures complete via the atomic counter mechanism
+  return main_future;
 }
 
 ////////////////////////////////////////////////////////////////
