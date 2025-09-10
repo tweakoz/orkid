@@ -67,6 +67,9 @@ VulkanMemoryForImage::VulkanMemoryForImage(vkcontext_rawptr_t ctxVK, VkImage ima
 }
 
 VulkanMemoryForImage::~VulkanMemoryForImage() {
+    if(nullptr==_ctxVK->_vkdevice){
+        return;
+    }
   vkFreeMemory(_ctxVK->_vkdevice, *_vkmem, nullptr);
   int count    = _imgmemcount.fetch_sub(1);
   size_t bytes = _imgmembytes.fetch_sub(_memreq->size);
@@ -258,6 +261,9 @@ VulkanImageObject::VulkanImageObject(vkcontext_rawptr_t ctx, VkImage img, VkImag
 ///////////////////////////////////////////////////////////////////////////////
 VulkanImageObject::~VulkanImageObject() {
   _imgobjcount.fetch_sub(1);
+    if(_ctx->_vkdevice==nullptr){
+        return;
+    }
   if (_delete_imageview and (_vkimageview != VK_NULL_HANDLE)) {
     vkDestroyImageView(_ctx->_vkdevice, _vkimageview, nullptr);
   }

@@ -19,7 +19,13 @@ SamplerType <|[
   }
 ]|>
 
-TypedIdentifier      <|[ sel { SamplerType DataType IDENTIFIER } IDENTIFIER ]|>
+InterpolationQualifier <| sel{ KW_FLAT KW_SMOOTH KW_NOPERSPECTIVE } |>
+
+TypedIdentifier <|[ 
+    opt{ InterpolationQualifier }
+    sel { SamplerType DataType IDENTIFIER } 
+    IDENTIFIER 
+]|>
 
 FloatLiteral         <| [ FLOATING_POINT ] |>
 IntegerLiteral       <| sel{ HEX_INTEGER INTEGER } |>

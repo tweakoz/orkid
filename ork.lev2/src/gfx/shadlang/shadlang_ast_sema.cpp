@@ -174,11 +174,39 @@ void _semaNameTypedIdentifers(impl::ShadLangParser* slp, astnode_ptr_t top) {
 
     auto seq = match->asShared<Sequence>();
 
+    int seq_index = 0;
+    
     ////////////////////
-    // item 0 (type)
+    // Check if first item is optional (interpolation qualifier)
+    ////////////////////
+    
+    auto first_item = seq->_items[0];
+    
+    if (auto opt_qual = first_item->tryAsShared<Optional>()) {
+      // First item IS an Optional, so the grammar includes the optional qualifier
+      // Whether it's actually present or not, the structure is:
+      // [0] = Optional, [1] = OneOf (type), [2] = ClassMatch (identifier)
+      
+      if (opt_qual.value()->_subitem) {
+        // The optional qualifier is present
+        auto qual_oneof = opt_qual.value()->_subitem->asShared<OneOf>();
+        auto qual_cm = qual_oneof->_selected->asShared<ClassMatch>();
+        auto qual_text = qual_cm->_token->text;
+        tid_node->setValueForKey<std::string>("interpolation_qualifier", qual_text);
+      }
+      seq_index = 1; // Type is at index 1 when Optional is present
+    } else {
+      // Old-style TypedIdentifier without optional qualifier
+      // [0] = OneOf (type), [1] = ClassMatch (identifier)
+      seq_index = 0; // Type is at index 0
+    }
+
+    ////////////////////
+    // Next item is type
     ////////////////////
 
-    auto sel = seq->itemAsShared<OneOf>(0)->_selected;
+    auto type_item = seq->itemAsShared<OneOf>(seq_index);
+    auto sel = type_item->_selected;
     std::string type_name;
     if (auto as_cm = sel->tryAsShared<ClassMatch>()) {
       type_name = as_cm.value()->_token->text;
@@ -199,12 +227,13 @@ void _semaNameTypedIdentifers(impl::ShadLangParser* slp, astnode_ptr_t top) {
 
     // tid_node->_name += FormatString("type: %s\n", type_name.c_str());
     tid_node->setValueForKey<std::string>("data_type", type_name);
+    seq_index++;
 
     ////////////////////
-    // item 1 (identifier)
+    // item 2 (identifier) 
     ////////////////////
 
-    auto cm1     = seq->itemAsShared<ClassMatch>(1);
+    auto cm1     = seq->itemAsShared<ClassMatch>(seq_index);
     auto id_name = cm1->_token->text;
     // tid_node->_name += FormatString("id: %s", id_name.c_str());
     tid_node->setValueForKey<std::string>("identifier_name", id_name);

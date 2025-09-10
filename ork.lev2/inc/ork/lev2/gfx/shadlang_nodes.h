@@ -255,6 +255,7 @@ DECLARE_STD_AST_CLASS(DataDeclarationBase,ArrayDeclaration);
 DECLARE_STD_AST_CLASS(LanguageElement,SamplerDeclaration);
 DECLARE_STD_AST_CLASS_WPTR(LanguageElement,SamplerType, smp_ptr_t);
 //
+DECLARE_STD_AST_CLASS(LanguageElement,InterpolationQualifier);
 DECLARE_STD_AST_CLASS_WPTR(LanguageElement,TypedIdentifier, tid_ptr_t);
 DECLARE_STD_AST_CLASS(LanguageElement,ObjectName);
 DECLARE_STD_AST_CLASS(LanguageElement,AssignmentStatementVarRef);

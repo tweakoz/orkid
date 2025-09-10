@@ -913,6 +913,12 @@ std::string SpirvCompiler::_ifIoItem(
 
   if (tid_node) {
 
+    // Check for interpolation qualifier
+    auto interp_qual = tid_node->typedValueForKey<std::string>("interpolation_qualifier");
+    if (interp_qual) {
+      item_str = interp_qual.value() + " " + item_str;
+    }
+
     item_str += _ifTypedId(tid_node);
     if (need_location) {
       auto dt = tid_node->typedValueForKey<std::string>("data_type").value();

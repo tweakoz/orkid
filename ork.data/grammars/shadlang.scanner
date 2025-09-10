@@ -65,6 +65,10 @@ KW_FLOAT            <| "float" |>
 KW_UINT             <| "uint" |>
 KW_INT              <| "int" |>
 
+KW_FLAT             <| "flat" |>
+KW_SMOOTH           <| "smooth" |>
+KW_NOPERSPECTIVE    <| "noperspective" |>
+
 KW_VEC2             <| "vec2" |>
 KW_VEC3             <| "vec3" |>
 KW_VEC4             <| "vec4" |>

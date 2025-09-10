@@ -178,6 +178,9 @@ VkPrimaryCommandBufferImpl::VkPrimaryCommandBufferImpl(VkContext* ctx)
 
 VkPrimaryCommandBufferImpl::~VkPrimaryCommandBufferImpl() {
   // printf ("DESTROY CB<%p>\n", (void*) _vkcmdbuf );
+    if(_contextVK->_vkdevice==nullptr){
+        return;
+    }
   vkFreeCommandBuffers(_contextVK->_vkdevice, _contextVK->_vkcmdpool_graphics, 1, &_vkcmdbuf);
   _cmdbufcount.fetch_sub(1);
 }
@@ -189,11 +192,15 @@ std::atomic<int> VkSecondaryCommandBufferImpl::_cmdbufcount(0);
 VkSecondaryCommandBufferImpl::VkSecondaryCommandBufferImpl(VkContext* ctx)
     : _contextVK(ctx) {
   int count = _cmdbufcount.fetch_add(1);
+_vkcmdbuf = nullptr;
   //logchan_vkcb->log("VkSecondaryCommandBufferImpl<%p> count<%d>", (void*)this, count);
 }
 
 VkSecondaryCommandBufferImpl::~VkSecondaryCommandBufferImpl() {
   // printf ("DESTROY CB<%p>\n", (void*) _vkcmdbuf );
+  if(_contextVK->_vkdevice==nullptr){
+    return;
+  }
   vkFreeCommandBuffers(_contextVK->_vkdevice, _contextVK->_vkcmdpool_graphics, 1, &_vkcmdbuf);
   _cmdbufcount.fetch_sub(1);
 }

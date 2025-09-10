@@ -712,6 +712,13 @@ GLFX1Backend::GLFX1Backend() {
     auto ident = pid_node->template typedValueForKey<std::string>("identifier_name").value();
     emitContinueLine("%s", ident.c_str());
   });
+  registerAstPreCB<TypedIdentifier>([=](auto tid_node) {
+    // Check for interpolation qualifier and emit it first
+    auto interp_qual = tid_node->template typedValueForKey<std::string>("interpolation_qualifier");
+    if (interp_qual) {
+      emitContinueLine("%s ", interp_qual.value().c_str());
+    }
+  });
   registerAstPostChildCB<TypedIdentifier>([=](auto tid_node, astnode_ptr_t child) {
     emitContinueLine(" ");
   });
