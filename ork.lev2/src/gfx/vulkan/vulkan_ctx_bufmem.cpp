@@ -103,6 +103,9 @@ VulkanMemoryForBuffer::VulkanMemoryForBuffer(vkcontext_rawptr_t ctxVK, VkBuffer 
 }
 
 VulkanMemoryForBuffer::~VulkanMemoryForBuffer() {
+    if(nullptr==_ctxVK->_vkdevice){
+        return ;
+    }
   vkFreeMemory(_ctxVK->_vkdevice, *_vkmem, nullptr);
 }
 
@@ -323,6 +326,9 @@ VulkanBuffer::VulkanBuffer(vkcontext_rawptr_t ctxVK, size_t length, VkBufferUsag
 }
 //////////////////////////////////////
 VulkanBuffer::~VulkanBuffer() {
+    if(nullptr==_ctxVK->_vkdevice){
+        return;
+    }
   if(_vkbuffer != VK_NULL_HANDLE) {
     vkDestroyBuffer(_ctxVK->_vkdevice, _vkbuffer, nullptr);
   }
