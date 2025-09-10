@@ -75,6 +75,10 @@ void Image::initWithFormat(size_t w, size_t h, EBufferFormat fmt) {
       _numcomponents = 2;
       _bytesPerChannel = 4;
       break;
+    case EBufferFormat::RGBA16UI:
+      _numcomponents = 4;
+      _bytesPerChannel = 2;
+      break;
     case EBufferFormat::RGBA32UI:
       _numcomponents = 4;
       _bytesPerChannel = 4;

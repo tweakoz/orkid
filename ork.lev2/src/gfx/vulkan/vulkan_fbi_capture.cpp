@@ -231,6 +231,17 @@ void VkContext::_processPendingCaptures() {
             pixfetch_ctx->_pickvalues.push_back(fvec4(pixel_data[0], pixel_data[1], pixel_data[2], pixel_data[3]));
             break;
           }
+          case EBufferFormat::RGBA16UI: {
+            // Get RGBA16UI pixel - 16-bit unsigned integers
+            auto pixel_data = reinterpret_cast<const uint16_t*>(img->_data->data());
+            // Convert uint16 values to float
+            float r = static_cast<float>(pixel_data[0]);
+            float g = static_cast<float>(pixel_data[1]);
+            float b = static_cast<float>(pixel_data[2]);
+            float a = static_cast<float>(pixel_data[3]);
+            pixfetch_ctx->_pickvalues.push_back(fvec4(r, g, b, a));
+            break;
+          }
           case EBufferFormat::RGBA32UI: {
             // Get RGBA32UI pixel - unsigned integers
             auto pixel_data = reinterpret_cast<const uint32_t*>(img->_data->data());
@@ -480,6 +491,47 @@ captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(
       OrkAssert(false);
       // glReadPixels(x, y, w, h, GL_RG, GL_FLOAT, capbuf->_data);
       break;
+    ///////////////////////////////////////////////////////
+    case EBufferFormat::RGBA16UI: {
+      OrkAssert(vkfmt == VK_FORMAT_R16G16B16A16_UINT);
+      // Set up image with format and preallocated data
+      capbuf->_image->initWithFormat(w, h, destfmt);
+
+      // Create staging buffer for GPU to CPU transfer
+      size_t bufsize = w * h * 8; // 8 bytes per pixel for RGBA16UI (2 bytes per channel)
+      auto staging_buffer =
+          std::make_shared<VulkanBuffer>(_contextVK, bufsize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, "capture_staging_ui16");
+
+      // Copy image to staging buffer
+      vkCmdCopyImageToBuffer(cb->_vkcmdbuf, vkimg, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, staging_buffer->_vkbuffer, 1, &region);
+
+      // Transition back to render target
+      rtbi->_transitionToRenderTarget(cb);
+
+      // Store staging buffer with metadata (use same struct for consistency)
+      auto capbuf_impl             = capbuf->_impl.makeShared<VkCaptureBufferImpl>();
+      capbuf_impl->staging_buffer  = staging_buffer;
+      capbuf_impl->_actual_format  = vkfmt;
+      capbuf_impl->_desired_format = destfmt;
+
+      // Store capture data in the future
+      auto async_impl            = std::make_shared<VkCaptureAsyncImpl>(_contextVK);
+      async_impl->capture_buffer = capbuf;
+      async_impl->width          = w;
+      async_impl->height         = h;
+      async_impl->format         = destfmt;
+      async_impl->_stagingBuffer = staging_buffer;
+      async_impl->_copySubmitted = true; // Will be submitted with this command buffer
+      // Note: fence will be set when frame is submitted
+
+      future->_impl.setShared<VkCaptureAsyncImpl>(async_impl);
+      future->_captureBuffer       = async_impl->capture_buffer;
+      future->_on_capture_complete = on_capture_complete;
+
+      // Register with context for processing after frame
+      _contextVK->_pending_captures.push_back(future);
+      break;
+    }
     ///////////////////////////////////////////////////////
     case EBufferFormat::RGBA32UI: {
       OrkAssert(vkfmt == VK_FORMAT_R32G32B32A32_UINT);
