@@ -13,6 +13,8 @@ if __name__ == "__main__":
   env_vars["MVK_CONFIG_LOG_LEVEL"] = "1"
   env_vars["MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS"] = "0"
   env_vars["ORKID_VULKAN_VALIDATE"] = "1"
+  env_vars["ORKID_AUDIO_INPUT_DEVICE"] = os.environ.get("ORKID_AUDIO_INPUT_DEVICE", "default")
+  env_vars["ORKID_AUDIO_OUTPUT_DEVICE"] = os.environ.get("ORKID_AUDIO_OUTPUT_DEVICE", "default")
 
   # Add OKA_DIR if it exists
   if "OKA_DIR" in os.environ:
