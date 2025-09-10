@@ -24,6 +24,9 @@ VulkanSemaphoreBase::VulkanSemaphoreBase(vkcontext_rawptr_t ctxVK)
 
 VulkanSemaphoreBase::~VulkanSemaphoreBase() {
   // logchan_vksynch->log("VulkanSemaphoreBase<%p> destroyed", (void*)this);
+    if(nullptr==_ctxVK->_vkdevice){
+        return;
+    }
   if (_vksema) {
     vkDestroySemaphore(_ctxVK->_vkdevice, _vksema, nullptr);
     _vksema = VK_NULL_HANDLE;
@@ -167,6 +170,9 @@ VulkanFenceObject::VulkanFenceObject(vkcontext_rawptr_t ctxVK)
 ///////////////////////////////////////////////////
 
 VulkanFenceObject::~VulkanFenceObject() {
+    if(nullptr==_ctxVK->_vkdevice){
+        return;
+    }
   vkDestroyFence(_ctxVK->_vkdevice, _vkfence, nullptr);
 }
 

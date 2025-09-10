@@ -297,6 +297,9 @@ void VkSwapChain::_buildup() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkSwapChain::_teardown() {
+    if(nullptr==_contextVK->_vkdevice){
+        return;
+    }
   vkDeviceWaitIdle(_contextVK->_vkdevice);
   vkQueueWaitIdle(_contextVK->_vkqueue_graphics);
   if (_vkSwapChain != VK_NULL_HANDLE) {
