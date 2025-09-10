@@ -166,8 +166,13 @@ class PixelPickTest:
         self.captures = []
         
         for x, y, expected_name, expected_color in test_points:
+            # Create PixelFetchContext for single pixel capture
+            pfc = lev2.PixelFetchContext(self.rtg, 1)
+            # Set usage to FVEC4 (default for most tests)
+            pfc.setUsage(0, tokens.FVEC4)
+            
             # Capture single pixel asynchronously (must be done before endFrame)
-            capture_future = self.FBI.capturePixel(self.rtg, x, y)
+            capture_future = self.FBI.capturePixel(pfc, x, y)
             self.captures.append((x, y, expected_name, expected_color, capture_future))
             print(f"  Capturing pixel at ({x:3}, {y:3}) - expecting {expected_name}")
         

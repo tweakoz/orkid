@@ -173,90 +173,151 @@ void VkContext::_processPendingCaptures() {
       auto pixfetch_ctx = capture_async->_pixelFetchContext;
       auto img = async_impl->capture_buffer->_image;
       
-      if (img && img->_data) {
-        // Extract the pixel value based on format
-        switch (capture_async->_format) {
-          case EBufferFormat::RGBA8: {
-            // Get RGBA8 pixel and convert to float
-            auto pixel_data = img->_data->data();
-            float r = pixel_data[0] / 255.0f;
-            float g = pixel_data[1] / 255.0f;
-            float b = pixel_data[2] / 255.0f;
-            float a = pixel_data[3] / 255.0f;
-            pixfetch_ctx->_pickvalues.push_back(fvec4(r, g, b, a));
-            break;
-          }
-          case EBufferFormat::RGBA16F: {
-            // Get RGBA16F pixel and convert half-float to float
-            auto pixel_data = reinterpret_cast<const uint16_t*>(img->_data->data());
-            // Convert half-float to float using bit manipulation
-            auto half_to_float = [](uint16_t h) -> float {
-              uint32_t sign = (h & 0x8000) << 16;
-              uint32_t exponent = ((h & 0x7C00) >> 10);
-              uint32_t mantissa = (h & 0x03FF) << 13;
-              
-              if (exponent == 0) {
-                // Denormalized number or zero
-                if (mantissa == 0) return 0.0f;
-                // Convert denormalized half to normalized float
-                exponent = 1;
-                while (!(mantissa & 0x00800000)) {
-                  mantissa <<= 1;
-                  exponent--;
-                }
-                mantissa &= ~0x00800000;
-                exponent += 127 - 15;
-              } else if (exponent == 0x1F) {
-                // Infinity or NaN
-                exponent = 0xFF;
-              } else {
-                // Normalized number
-                exponent += 127 - 15;
+      if (img && img->_data && pixfetch_ctx->_pickvalues.size() > 0) {
+        // Get the usage mode for the first (and only) MRT
+        auto usage_mode = pixfetch_ctx->_usage.size() > 0 ? pixfetch_ctx->_usage[0] : PixelFetchContext::EPixelUsage::FVEC4;
+        
+        // Extract the pixel value based on format and usage mode
+        switch (usage_mode) {
+          case PixelFetchContext::EPixelUsage::SVARIANT: {
+            // Store raw data as svariant based on format
+            switch (capture_async->_format) {
+              case EBufferFormat::RGBA32F: {
+                auto pixel_data = reinterpret_cast<const float*>(img->_data->data());
+                fvec4 rgba(pixel_data[0], pixel_data[1], pixel_data[2], pixel_data[3]);
+                pixfetch_ctx->_pickvalues[0] = pixfetch_ctx->decodePixel(rgba);
+                break;
               }
-              
-              uint32_t result = sign | (exponent << 23) | mantissa;
-              return *reinterpret_cast<float*>(&result);
-            };
-            
-            float r = half_to_float(pixel_data[0]);
-            float g = half_to_float(pixel_data[1]);
-            float b = half_to_float(pixel_data[2]);
-            float a = half_to_float(pixel_data[3]);
-            pixfetch_ctx->_pickvalues.push_back(fvec4(r, g, b, a));
+              case EBufferFormat::RGBA16UI: {
+                auto pixel_data = reinterpret_cast<const uint16_t*>(img->_data->data());
+                // Pack as u32vec4 for decodePixel (will extend 16-bit to 32-bit)
+                u32vec4 value(pixel_data[0], pixel_data[1], pixel_data[2], pixel_data[3]);
+                pixfetch_ctx->_pickvalues[0] = pixfetch_ctx->decodePixel(value);
+                break;
+              }
+              case EBufferFormat::RGBA32UI: {
+                auto pixel_data = reinterpret_cast<const uint32_t*>(img->_data->data());
+                u32vec4 value(pixel_data[0], pixel_data[1], pixel_data[2], pixel_data[3]);
+                pixfetch_ctx->_pickvalues[0] = pixfetch_ctx->decodePixel(value);
+                break;
+              }
+              default:
+                pixfetch_ctx->_pickvalues[0] = nullptr;
+                break;
+            }
             break;
           }
-          case EBufferFormat::RGBA32F: {
-            // Get RGBA32F pixel directly
-            auto pixel_data = reinterpret_cast<const float*>(img->_data->data());
-            pixfetch_ctx->_pickvalues.push_back(fvec4(pixel_data[0], pixel_data[1], pixel_data[2], pixel_data[3]));
+          case PixelFetchContext::EPixelUsage::PTR64: {
+            // Pack data into 64-bit pointer
+            switch (capture_async->_format) {
+              case EBufferFormat::RGBA16UI: {
+                auto pixel_data = reinterpret_cast<const uint16_t*>(img->_data->data());
+                // Swizzle so hex appears as xxxxyyyyzzzzwwww (same as GL implementation)
+                uint64_t a = uint64_t(pixel_data[0]);
+                uint64_t b = uint64_t(pixel_data[1]);
+                uint64_t c = uint64_t(pixel_data[2]);
+                uint64_t d = uint64_t(pixel_data[3]);
+                uint64_t value = (d << 48) | (c << 32) | (b << 16) | a;
+                pixfetch_ctx->_pickvalues[0].set<uint64_t>(value);
+                break;
+              }
+              case EBufferFormat::RGBA32UI: {
+                auto pixel_data = reinterpret_cast<const uint32_t*>(img->_data->data());
+                // Pack two 32-bit values into 64-bit (using R and G channels)
+                uint64_t low = uint64_t(pixel_data[0]);
+                uint64_t high = uint64_t(pixel_data[1]);
+                uint64_t value = (high << 32) | low;
+                pixfetch_ctx->_pickvalues[0].set<uint64_t>(value);
+                break;
+              }
+              default:
+                pixfetch_ctx->_pickvalues[0].set<uint64_t>(0);
+                break;
+            }
             break;
           }
-          case EBufferFormat::RGBA16UI: {
-            // Get RGBA16UI pixel - 16-bit unsigned integers
-            auto pixel_data = reinterpret_cast<const uint16_t*>(img->_data->data());
-            // Convert uint16 values to float
-            float r = static_cast<float>(pixel_data[0]);
-            float g = static_cast<float>(pixel_data[1]);
-            float b = static_cast<float>(pixel_data[2]);
-            float a = static_cast<float>(pixel_data[3]);
-            pixfetch_ctx->_pickvalues.push_back(fvec4(r, g, b, a));
+          case PixelFetchContext::EPixelUsage::FVEC4:
+          default: {
+            // Convert to fvec4 (default behavior)
+            switch (capture_async->_format) {
+              case EBufferFormat::RGBA8: {
+                auto pixel_data = img->_data->data();
+                float r = pixel_data[0] / 255.0f;
+                float g = pixel_data[1] / 255.0f;
+                float b = pixel_data[2] / 255.0f;
+                float a = pixel_data[3] / 255.0f;
+                pixfetch_ctx->_pickvalues[0].set<fvec4>(fvec4(r, g, b, a));
+                break;
+              }
+              case EBufferFormat::RGBA16F: {
+                auto pixel_data = reinterpret_cast<const uint16_t*>(img->_data->data());
+                // Convert half-float to float using bit manipulation
+                auto half_to_float = [](uint16_t h) -> float {
+                  uint32_t sign = (h & 0x8000) << 16;
+                  uint32_t exponent = ((h & 0x7C00) >> 10);
+                  uint32_t mantissa = (h & 0x03FF) << 13;
+                  
+                  if (exponent == 0) {
+                    // Denormalized number or zero
+                    if (mantissa == 0) return 0.0f;
+                    // Convert denormalized half to normalized float
+                    exponent = 1;
+                    while (!(mantissa & 0x00800000)) {
+                      mantissa <<= 1;
+                      exponent--;
+                    }
+                    mantissa &= ~0x00800000;
+                    exponent += 127 - 15;
+                  } else if (exponent == 0x1F) {
+                    // Infinity or NaN
+                    exponent = 0xFF;
+                  } else {
+                    // Normalized number
+                    exponent += 127 - 15;
+                  }
+                  
+                  uint32_t result = sign | (exponent << 23) | mantissa;
+                  return *reinterpret_cast<float*>(&result);
+                };
+                
+                float r = half_to_float(pixel_data[0]);
+                float g = half_to_float(pixel_data[1]);
+                float b = half_to_float(pixel_data[2]);
+                float a = half_to_float(pixel_data[3]);
+                pixfetch_ctx->_pickvalues[0].set<fvec4>(fvec4(r, g, b, a));
+                break;
+              }
+              case EBufferFormat::RGBA32F: {
+                auto pixel_data = reinterpret_cast<const float*>(img->_data->data());
+                pixfetch_ctx->_pickvalues[0].set<fvec4>(fvec4(pixel_data[0], pixel_data[1], pixel_data[2], pixel_data[3]));
+                break;
+              }
+              case EBufferFormat::RGBA16UI: {
+                auto pixel_data = reinterpret_cast<const uint16_t*>(img->_data->data());
+                // Convert uint16 values to float
+                float r = static_cast<float>(pixel_data[0]);
+                float g = static_cast<float>(pixel_data[1]);
+                float b = static_cast<float>(pixel_data[2]);
+                float a = static_cast<float>(pixel_data[3]);
+                pixfetch_ctx->_pickvalues[0].set<fvec4>(fvec4(r, g, b, a));
+                break;
+              }
+              case EBufferFormat::RGBA32UI: {
+                auto pixel_data = reinterpret_cast<const uint32_t*>(img->_data->data());
+                // Convert uint32 values to float (note: may lose precision for large values)
+                float r = static_cast<float>(pixel_data[0]);
+                float g = static_cast<float>(pixel_data[1]);
+                float b = static_cast<float>(pixel_data[2]);
+                float a = static_cast<float>(pixel_data[3]);
+                pixfetch_ctx->_pickvalues[0].set<fvec4>(fvec4(r, g, b, a));
+                break;
+              }
+              default:
+                pixfetch_ctx->_pickvalues[0].set<fvec4>(fvec4(0, 0, 0, 0));
+                break;
+            }
             break;
           }
-          case EBufferFormat::RGBA32UI: {
-            // Get RGBA32UI pixel - unsigned integers
-            auto pixel_data = reinterpret_cast<const uint32_t*>(img->_data->data());
-            // Convert uint32 values to float (note: may lose precision for large values)
-            float r = static_cast<float>(pixel_data[0]);
-            float g = static_cast<float>(pixel_data[1]);
-            float b = static_cast<float>(pixel_data[2]);
-            float a = static_cast<float>(pixel_data[3]);
-            pixfetch_ctx->_pickvalues.push_back(fvec4(r, g, b, a));
-            break;
-          }
-          default:
-            // For other formats, just add a placeholder for now
-            pixfetch_ctx->_pickvalues.push_back(fvec4(0, 0, 0, 0));
-            break;
         }
       }
     }
@@ -589,13 +650,14 @@ captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(
 ////////////////////////////////////////////////////////////////
 
 captureasync_ptr_t VkFrameBufferInterface::capturePixelAsync(
-    rtgroup_ptr_t rtg, 
+    pixelfetchctx_ptr_t pfc,
     int x, 
     int y, 
     void_lambda_t on_capture_complete) {
   
   // For now, capture from the first buffer (color buffer)
   // TODO: Support capturing from multiple buffers for deep pixels
+  auto rtg = pfc->_rtgroup;
   auto rtb = rtg->buffer(0);
   if (!rtb) {
     auto future = std::make_shared<CaptureAsync>();
@@ -617,9 +679,8 @@ captureasync_ptr_t VkFrameBufferInterface::capturePixelAsync(
   }
   
   // Attach PixelFetchContext for deep pixel support
-  auto pixfetch_ctx = std::make_shared<PixelFetchContext>();
-  pixfetch_ctx->_rtgroup = rtg;
-  future->_pixelFetchContext = pixfetch_ctx;
+  pfc->_rtgroup = rtg;
+  future->_pixelFetchContext = pfc;
   
   // The pixel data will be available after frame submit
   // The PixelFetchContext will be populated when the data is retrieved

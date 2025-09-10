@@ -135,7 +135,7 @@ public:
   }
   virtual void GetPixel(const fvec4& rAt, PixelFetchContext& ctx) = 0;
   
-  virtual captureasync_ptr_t capturePixelAsync(rtgroup_ptr_t rtg, int x, int y, void_lambda_t on_capture_complete = nullptr) {
+  virtual captureasync_ptr_t capturePixelAsync( pixelfetchctx_ptr_t pfc, int x, int y, void_lambda_t on_capture_complete = nullptr) {
     return nullptr;
   }
 

@@ -16,14 +16,14 @@ SgPickBuffer::SgPickBuffer(ork::lev2::Context* ctx, Scene& scene)
   _pick_mvp_matrix           = std::make_shared<fmtx4>();
   if(scene._pickFormat==0){
   _pfc = std::make_shared<PixelFetchContext>(4);
-  _pfc->_usage[3]   = lev2::PixelFetchContext::EPU_FVEC4;
-  _pfc->_usage[2]   = lev2::PixelFetchContext::EPU_FVEC4;
-  _pfc->_usage[1]   = lev2::PixelFetchContext::EPU_FVEC4;
+  _pfc->_usage[3]   = lev2::PixelFetchContext::EPixelUsage::FVEC4;
+  _pfc->_usage[2]   = lev2::PixelFetchContext::EPixelUsage::FVEC4;
+  _pfc->_usage[1]   = lev2::PixelFetchContext::EPixelUsage::FVEC4;
   }
   else{
   _pfc = std::make_shared<PixelFetchContext>(1);
   }
-  _pfc->_usage[0]   = lev2::PixelFetchContext::EPU_SVARIANT;
+  _pfc->_usage[0]   = lev2::PixelFetchContext::EPixelUsage::SVARIANT;
   _pfc->_gfxContext = ctx;
 }
 ///////////////////////////////////////////////////////////////////////////

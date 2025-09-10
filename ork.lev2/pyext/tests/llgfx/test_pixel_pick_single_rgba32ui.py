@@ -161,8 +161,13 @@ class RGBA32UIPickTest(PixelPickTest):
         self.captures = []
         
         for x, y, expected_name, expected_value in test_points:
+            # Create PixelFetchContext for RGBA32UI capture
+            pfc = lev2.PixelFetchContext(self.rtg, 1)
+            # Set usage to FVEC4 (converts uint32 values to float)
+            pfc.setUsage(0, tokens.FVEC4)
+            
             # Capture single pixel asynchronously
-            capture_future = self.FBI.capturePixel(self.rtg, x, y)
+            capture_future = self.FBI.capturePixel(pfc, x, y)
             self.captures.append((x, y, expected_name, expected_value, capture_future))
             print(f"  Capturing pixel at ({x:3}, {y:3}) - expecting {expected_name}")
         

@@ -93,10 +93,10 @@ void pyinit_gfx(py::module& module_lev2) {
           "clearcolor",
           [](const fbi_t& fbi) -> fvec4 { return fbi.get()->GetClearColor(); },
           [](fbi_t& fbi, const fvec4& value) { fbi.get()->SetClearColor(value); })
-      .def("capturePixel", [](const fbi_t& fbi, rtgroup_ptr_t rtg, int x, int y) -> captureasync_ptr_t {
+      .def("capturePixel", [](const fbi_t& fbi, pixelfetchctx_ptr_t pfc, int x, int y) -> captureasync_ptr_t {
             // Create a capture async future for single pixel capture
             // The implementation will populate _pixelFetchContext when complete
-            return fbi.get()->capturePixelAsync(rtg, x, y);
+            return fbi.get()->capturePixelAsync(pfc, x, y);
           })
       .def(
           "captureBuffer",
@@ -528,6 +528,17 @@ void pyinit_gfx(py::module& module_lev2) {
   type_codec->registerStdCodec<texture_ptr_t>(texture_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto pfc_type = py::class_<PixelFetchContext, pixelfetchctx_ptr_t>(module_lev2, "PixelFetchContext")
+                      .def(py::init([](rtgroup_ptr_t rtg, size_t size) -> pixelfetchctx_ptr_t {
+                          auto pfc = std::make_shared<PixelFetchContext>();
+                          pfc->_rtgroup = rtg;
+                          pfc->_resize(size);
+                          return pfc;
+                      }), py::arg("rtgroup"), py::arg("size") = 1)
+                      .def("setUsage", [](pixelfetchctx_ptr_t pfc, int index, crcstring_ptr_t usage) {
+                          OrkAssert(index >= 0 && index < pfc->_usage.size());
+                          auto eusage = static_cast<PixelFetchContext::EPixelUsage>(usage->hashed());
+                          pfc->_usage[index] = eusage;
+                      }, py::arg("index"), py::arg("usage"))
                       .def_property(
                           "rtgroup",
                           [](pixelfetchctx_ptr_t pfc) -> rtgroup_ptr_t { return pfc->_rtgroup; },

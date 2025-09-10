@@ -274,7 +274,7 @@ void GedSurface::_onUiEventDoMove(ui::event_constptr_t EV, ui::event_ptr_t locEV
   // Prepare pixel fetch context for picking
   lev2::PixelFetchContext pfc(1);
   pfc.miMrtMask = (1 << 0);
-  pfc._usage[0] = lev2::PixelFetchContext::EPU_PTR64;
+  pfc._usage[0] = lev2::PixelFetchContext::EPixelUsage::PTR64;
   
   // Trigger pickbuffer rendering for mouseover detection
   if (_pickbuffer) {
@@ -321,7 +321,7 @@ void GedSurface::_onUiEventDoMouseButton(ui::event_constptr_t EV, ui::event_ptr_
   // Prepare pixel fetch context for picking
   lev2::PixelFetchContext pfc(1);
   pfc.miMrtMask = (1 << 0);
-  pfc._usage[0] = lev2::PixelFetchContext::EPU_PTR64;
+  pfc._usage[0] = lev2::PixelFetchContext::EPixelUsage::PTR64;
   
   float fx = float(ilocx) / float(width());
   float fy = float(ilocy) / float(height());

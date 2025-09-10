@@ -844,7 +844,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& pfc) 
               GL_ERRORCHECK();
 
               switch (pfc._usage[MrtIndex]) {
-                case PixelFetchContext::EPU_SVARIANT: {
+                case PixelFetchContext::EPixelUsage::SVARIANT: {
                   switch(rtbuffer->mFormat){
                     case EBufferFormat::RGBA32F: {
                       fvec4 rgba;
@@ -868,7 +868,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& pfc) 
                   }
                   break;
                 }
-                case PixelFetchContext::EPU_PTR64: {
+                case PixelFetchContext::EPixelUsage::PTR64: {
                   switch(rtbuffer->mFormat){
                     case EBufferFormat::RGBA16UI: {
                       uint16_t rgba[4] = {0,0,0,0};
@@ -915,7 +915,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& pfc) 
                   /////////////////////////////////////////////////////////////////
                   break;
                 }
-                case PixelFetchContext::EPU_FVEC4: {
+                case PixelFetchContext::EPixelUsage::FVEC4: {
                   fvec4 rv;
                   glReadPixels(sx, sy, 1, 1, GL_RGBA, GL_FLOAT, (void*)rv.asArray());
                   pfc._pickvalues[MrtIndex].set<fvec4>(rv);

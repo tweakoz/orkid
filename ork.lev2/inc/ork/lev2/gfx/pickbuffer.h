@@ -34,7 +34,7 @@ struct PixelFetchContext {
   ork::rtti::ICastable* GetObject(PickBuffer* pb, int ichan) const;
   void* GetPointer(int ichan) const;
   PixelFetchContext(size_t size=0);
-  void resize(size_t s);
+  void _resize(size_t s);
   //////////////////////
 
   void beginPickRender();
@@ -46,11 +46,11 @@ struct PixelFetchContext {
 
   //////////////////////
 
-  enum EPixelUsage {
-    EPU_FLOAT = 0,
-    EPU_FVEC4,
-    EPU_PTR64,
-    EPU_SVARIANT,
+  enum class EPixelUsage : uint32_t{
+    CrcEnum(FLOAT),
+    CrcEnum(FVEC4),
+    CrcEnum(PTR64),
+    CrcEnum(SVARIANT)
   };
 
   Context* _gfxContext = nullptr;

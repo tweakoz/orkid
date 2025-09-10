@@ -137,7 +137,7 @@ struct CaptureAsync {
   void_lambda_t _on_capture_complete;
   
   // Pixel fetch context (for pixel picking operations)
-  std::shared_ptr<PixelFetchContext> _pixelFetchContext;
+  pixelfetchctx_ptr_t _pixelFetchContext;
   
   // Status
   bool _completed = false;

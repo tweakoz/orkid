@@ -36,18 +36,18 @@ std::atomic<int> PixelFetchContext::_gpickcounter = 0;
 PixelFetchContext::PixelFetchContext(size_t s)
     : miMrtMask(0)
     , mUserData(nullptr){
-    resize(s);
+    _resize(s);
   _offset  = uint64_t(_gscrambler->scramble(_pickindex+0))<<0;
   _offset += uint64_t(_gscrambler->scramble(_pickindex+1))<<16;
   _offset += uint64_t(_gscrambler->scramble(_pickindex+2))<<32;
   _offset += uint64_t(_gscrambler->scramble(_pickindex+3))<<48;
 }
-void PixelFetchContext::resize(size_t s){
+void PixelFetchContext::_resize(size_t s){
   _pickvalues.resize(s);
   _usage.resize(s);
   miMrtMask = (1<<s)-1;
   for( size_t i=0; i<s; i++ ){
-    _usage[i] = EPU_SVARIANT;
+    _usage[i] = PixelFetchContext::EPixelUsage::SVARIANT;
     _pickvalues[i] = fvec4(0,0,0,1);
   }
 }
