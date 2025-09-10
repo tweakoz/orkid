@@ -1,0 +1,103 @@
+///////////////////////////////////////////////////////////////
+// Test shader for qualified typed identifiers (flat, smooth, noperspective)
+// Used for testing shadlang parser and AST generation
+///////////////////////////////////////////////////////////////
+
+fxconfig fxcfg_default {}
+
+///////////////////////////////////////////////////////////////
+// Uniform blocks
+///////////////////////////////////////////////////////////////
+
+uniform_set ub_vtx {
+    mat4 mvp;
+}
+
+uniform_set ub_frg {
+    vec4 modcolor;
+}
+
+///////////////////////////////////////////////////////////////
+// Vertex Interface
+///////////////////////////////////////////////////////////////
+
+vertex_interface vif_X : ub_vtx {
+    inputs {
+        vec4 position : POSITION;
+        vec4 vtxcolor : COLOR0;
+        vec2 uv0 : TEXCOORD0;
+        uvec4 vtxids : COLOR1;
+    }
+    outputs {
+        vec4 frg_clr;
+        vec2 frg_uv;
+        flat uvec4 frg_ids;             // Test flat qualifier for unsigned int
+        smooth vec3 frg_smooth;         // Test smooth qualifier
+        noperspective vec2 frg_nopersp; // Test noperspective qualifier
+        ivec2 frg_ivals;                // Should require flat but testing without
+    }
+}
+
+///////////////////////////////////////////////////////////////
+// Fragment Interface  
+///////////////////////////////////////////////////////////////
+
+fragment_interface fif_X : vif_X : ub_frg {
+    // inputs inherited from vertex interface
+    outputs {
+        layout(location = 0) vec4 out_clr;
+        layout(location = 1) uvec4 out_ids;
+    }
+}
+
+///////////////////////////////////////////////////////////////
+// State Block
+///////////////////////////////////////////////////////////////
+
+state_block sb_X : default {
+    CullTest = OFF;
+    DepthTest = LESS;
+}
+
+///////////////////////////////////////////////////////////////
+// Vertex Shader
+///////////////////////////////////////////////////////////////
+
+vertex_shader vs_X : vif_X {
+    gl_Position = mvp * position;
+    frg_clr = vtxcolor;
+    frg_uv = uv0;
+    frg_ids = vtxids;
+    frg_smooth = vtxcolor.xyz;
+    frg_nopersp = uv0 * 2.0;
+    frg_ivals = ivec2(int(position.x), int(position.y));
+}
+
+///////////////////////////////////////////////////////////////
+// Fragment Shader
+///////////////////////////////////////////////////////////////
+
+fragment_shader fs_X : fif_X {
+    vec4 base_color = frg_clr * modcolor;
+    
+    // Use the interpolated values
+    base_color.xy += frg_nopersp * 0.1;
+    base_color.xyz += frg_smooth * 0.1;
+    
+    // Integer values aren't interpolated with flat
+    uint id_sum = frg_ids.x + frg_ids.y + frg_ids.z + frg_ids.w;
+    base_color.a = float(id_sum) / 1024.0;
+    
+    // Output
+    out_clr = base_color;
+    out_ids = frg_ids;
+}
+
+///////////////////////////////////////////////////////////////
+// Technique
+///////////////////////////////////////////////////////////////
+
+technique tek_test {
+    fxconfig = fxcfg_default;
+    vf_pass = { vs_X, fs_X, sb_X }
+}
