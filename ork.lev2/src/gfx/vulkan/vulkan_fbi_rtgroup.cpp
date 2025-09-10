@@ -119,98 +119,6 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rt
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkFrameBufferInterface::__setRtGroup(rtgroup_rawptr_t rtgroup) {
-  if (0)
-    printf("VkFrameBufferInterface __setRtGroup rtgroup<%p>\n", (void*)rtgroup);
-  _active_rtgroup = rtgroup;
-  vkrtgrpimpl_ptr_t RTGIMPL;
-  auto& CB = _contextVK->primary_cb()->_vkcmdbuf;
-
-  /////////////////////////////////
-  // main_rtg ?
-  //  (images managed by swapchain)
-  /////////////////////////////////
-  switch (rtgroup->_usage) {
-    case "swapchain"_crcu:
-      RTGIMPL = rtgroup->_impl.getShared<VkRtGroupImpl>();
-      RTGIMPL->_updateClearParams(rtgroup);
-      RTGIMPL->_updateMainSurface(this);
-      break;
-    case "popup"_crcu:
-      OrkAssert(false);
-      break;
-    case "user"_crcu: {
-      OrkAssert(rtgroup);
-      int iw = rtgroup->width();
-      int ih = rtgroup->height();
-
-      // printf("VkFrameBufferInterface::__setRtGroup rtgroup<%p> w<%d> h<%d> usage=user\n", rtgroup, iw, ih);
-
-      /////////////////////////////////////////
-      int inumtargets = rtgroup->numImageBuffers();
-      int numsamples  = msaaEnumToInt(rtgroup->_msaa_samples);
-      if (auto as_impl = rtgroup->_impl.tryAsShared<VkRtGroupImpl>()) {
-        RTGIMPL = as_impl.value();
-        // printf("  rtgroup already has impl\n");
-      } else {
-        RTGIMPL = _createRtGroupImpl(rtgroup);
-        rtgroup->_impl.setShared<VkRtGroupImpl>(RTGIMPL);
-      }
-      /////////////////////////////////////////
-      int implw      = RTGIMPL->_width;
-      int implh      = RTGIMPL->_height;
-      int rtgw       = rtgroup->width();
-      int rtgh       = rtgroup->height();
-      bool size_diff = (rtgw != implw) || (rtgh != implh);
-      if (size_diff) {
-        logchan_rtgroup->log("resize FBO iw<%d> ih<%d>", iw, ih);
-        RTGIMPL = _createRtGroupImpl(rtgroup);
-        rtgroup->_impl.setShared<VkRtGroupImpl>(RTGIMPL);
-        rtgroup->SetSizeDirty(false);
-      }
-      for (int i = 0; i < inumtargets; i++) {
-        auto rtb = rtgroup->buffer(i);
-        // printf("  checking rtbuffer<%p> has_impl<%d>\n", rtb.get(), rtb->_impl.isSet());
-        auto rtb_impl   = rtb->_impl.getShared<VklRtBufferImpl>();
-        auto rtb_imgobj = rtb_impl->_imgobj;
-        OrkAssert(rtb_imgobj->_vkimageview != VK_NULL_HANDLE);
-      }
-      break;
-    }
-    case "arrayslice"_crcu:
-      OrkAssert(false);
-      break;
-    default:
-      OrkAssert(false);
-      break;
-  }
-
-  /////////////////////////////////////////
-  // Begin dynamic rendering
-  /////////////////////////////////////////
-  // DEBUG: Log the primary command buffer we're recording to
-  if (0)
-    logchan_rtgroup->log(
-        "__setRtGroup: transitioning rtgroup<%p> to RenderTarget on primary CB %p",
-        (void*)this,
-        (void*)_contextVK->primary_cb()->_vkcmdbuf);
-
-
-  bool first = mRtGroupStack.size() == 1;
-
-
-  RTGIMPL->_transitionToRenderTarget(_contextVK->primary_cb());
-  auto rinfo = RTGIMPL->renderinfo();
-  rinfo->_renderinfo.flags &= (~VK_RENDERING_RESUMING_BIT);
-  _contextVK->_vkCmdBeginRenderingKHR(CB, &rinfo->_renderinfo);
-  
-  // Track that we've started a render pass
-  _contextVK->_renderPassActive = true;
-  _contextVK->_activeRenderPassRTG = RTGIMPL;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
   if (0)
     printf("VkFrameBufferInterface _pushRtGroup rtgroup<%p>\n", (void*)rtgroup);
@@ -226,11 +134,81 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
   bool needs_begin = must_push or (_active_rtgroup != rtgroup);
   
   if (needs_begin) {
-    __setRtGroup(rtgroup);  // This calls vkCmdBeginRenderingKHR
+    // STEP 1: End any currently active render pass FIRST
+    if (_contextVK->_renderPassActive) {
+      auto& CB = _contextVK->primary_cb()->_vkcmdbuf;
+      _contextVK->_vkCmdEndRenderingKHR(CB);
+      _contextVK->_renderPassActive = false;
+      _contextVK->_activeRenderPassRTG = nullptr;
+    }
+    
+    // STEP 2: Now safe to create/setup RTG implementation (barriers are allowed here)
+    vkrtgrpimpl_ptr_t RTGIMPL;
+    auto& CB = _contextVK->primary_cb()->_vkcmdbuf;
+    
+    switch (rtgroup->_usage) {
+      case "swapchain"_crcu:
+        RTGIMPL = rtgroup->_impl.getShared<VkRtGroupImpl>();
+        RTGIMPL->_updateClearParams(rtgroup);
+        RTGIMPL->_updateMainSurface(this);
+        break;
+      case "popup"_crcu:
+        OrkAssert(false);
+        break;
+      case "user"_crcu: {
+        OrkAssert(rtgroup);
+        int iw = rtgroup->width();
+        int ih = rtgroup->height();
+        
+        int inumtargets = rtgroup->numImageBuffers();
+        int numsamples  = msaaEnumToInt(rtgroup->_msaa_samples);
+        if (auto as_impl = rtgroup->_impl.tryAsShared<VkRtGroupImpl>()) {
+          RTGIMPL = as_impl.value();
+        } else {
+          RTGIMPL = _createRtGroupImpl(rtgroup);
+          rtgroup->_impl.setShared<VkRtGroupImpl>(RTGIMPL);
+        }
+        
+        int implw      = RTGIMPL->_width;
+        int implh      = RTGIMPL->_height;
+        int rtgw       = rtgroup->width();
+        int rtgh       = rtgroup->height();
+        bool size_diff = (rtgw != implw) || (rtgh != implh);
+        if (size_diff) {
+          logchan_rtgroup->log("resize FBO iw<%d> ih<%d>", iw, ih);
+          RTGIMPL = _createRtGroupImpl(rtgroup);
+          rtgroup->_impl.setShared<VkRtGroupImpl>(RTGIMPL);
+          rtgroup->SetSizeDirty(false);
+        }
+        for (int i = 0; i < inumtargets; i++) {
+          auto rtb = rtgroup->buffer(i);
+          auto rtb_impl   = rtb->_impl.getShared<VklRtBufferImpl>();
+          auto rtb_imgobj = rtb_impl->_imgobj;
+          OrkAssert(rtb_imgobj->_vkimageview != VK_NULL_HANDLE);
+        }
+        break;
+      }
+      case "arrayslice"_crcu:
+        OrkAssert(false);
+        break;
+      default:
+        OrkAssert(false);
+        break;
+    }
+    
+    // STEP 3: Now begin the new render pass
+    RTGIMPL->_transitionToRenderTarget(_contextVK->primary_cb());
+    auto rinfo = RTGIMPL->renderinfo();
+    rinfo->_renderinfo.flags &= (~VK_RENDERING_RESUMING_BIT);
+    _contextVK->_vkCmdBeginRenderingKHR(CB, &rinfo->_renderinfo);
+    
+    // STEP 4: Update tracking state
+    _active_rtgroup = rtgroup;
+    _contextVK->_renderPassActive = true;
+    _contextVK->_activeRenderPassRTG = RTGIMPL;
+    
     impl->_did_begin_rendering = true;
     impl->_was_redundant = false;
-    // logchan_rtgroup->log("PushRtGroup: RTG %p, primary CB %p", (void*)rtgroup, _contextVK->primary_cb() ?
-    // (void*)_contextVK->primary_cb().get() : nullptr);
   } else {
     // Redundant push - same rtgroup already active
     impl->_did_begin_rendering = false;
