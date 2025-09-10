@@ -366,6 +366,9 @@ captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(
          inpbuf->_impl.isShared<VklRtBufferImpl>());
   */
 
+  // Suspend render pass if active - we need to do barriers and copies
+  _contextVK->suspendRenderPass();
+  
   rtbi->_transitionToHostRead(cb);
 
   // printf("captureAsFormat w<%d> h<%d>\n", w, h);
@@ -644,6 +647,10 @@ captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(
   // glBindFramebuffer(GL_FRAMEBUFFER, 0);
   //   glReadBuffer( readbuffer ); // restore read buffer
   // GL_ERRORCHECK();
+  
+  // Resume render pass after capture operations are recorded
+  _contextVK->resumeRenderPass();
+  
   return future;
 }
 
