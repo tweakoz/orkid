@@ -653,6 +653,16 @@ public:
   
   std::vector<captureasync_ptr_t> _pending_captures;
   void _processPendingCaptures();
+  
+  //////////////////////////////////////////////
+  // Render pass suspension/resumption support
+  //////////////////////////////////////////////
+  
+  bool _renderPassActive = false;
+  vkrtgrpimpl_ptr_t _activeRenderPassRTG = nullptr;
+  
+  void suspendRenderPass();
+  void resumeRenderPass();
 };
 ///////////////////////////////////////////////////////////////////////////
   struct VkCaptureBufferImpl {

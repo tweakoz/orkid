@@ -203,6 +203,10 @@ void VkFrameBufferInterface::__setRtGroup(rtgroup_rawptr_t rtgroup) {
   auto rinfo = RTGIMPL->renderinfo();
   rinfo->_renderinfo.flags &= (~VK_RENDERING_RESUMING_BIT);
   _contextVK->_vkCmdBeginRenderingKHR(CB, &rinfo->_renderinfo);
+  
+  // Track that we've started a render pass
+  _contextVK->_renderPassActive = true;
+  _contextVK->_activeRenderPassRTG = RTGIMPL;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -256,6 +260,10 @@ void VkFrameBufferInterface::_popRtGroup() {
     // end dynamic rendering
     //////////////////////////////////////////////
     _contextVK->_vkCmdEndRenderingKHR(CB);
+    
+    // Track that render pass has ended
+    _contextVK->_renderPassActive = false;
+    _contextVK->_activeRenderPassRTG = nullptr;
     
     /////////////////////////////////////////////
     // transition finished rtgroup based on its usage
@@ -317,6 +325,10 @@ void VkFrameBufferInterface::_popRtGroup() {
     auto rinfo = RTGIMPL->renderinfo();
     rinfo->_renderinfo.flags |= VK_RENDERING_RESUMING_BIT;
     _contextVK->_vkCmdBeginRenderingKHR(CB, &rinfo->_renderinfo);
+    
+    // Track that we've resumed a render pass
+    _contextVK->_renderPassActive = true;
+    _contextVK->_activeRenderPassRTG = RTGIMPL;
   }
   
   logchan_rtgroup->log(

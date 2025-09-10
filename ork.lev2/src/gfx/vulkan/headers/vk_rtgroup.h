@@ -58,6 +58,7 @@ struct VkRtGroupImpl {
 
   rtgroup_attachments_ptr_t attachments();
   vkrenderinfo_ptr_t renderinfo();
+  vkrenderinfo_ptr_t renderinfoForResume();
   void _updateClearParams(rtgroup_rawptr_t _rtg);
 
   void _transitionToRenderTarget(vkpricmdbufimpl_ptr_t cb);
@@ -81,6 +82,7 @@ struct VkRtGroupImpl {
   vkmsaastate_ptr_t _msaaState;
 
   vkrenderinfo_ptr_t _rinfo_retain;
+  vkrenderinfo_ptr_t _rinfo_resume_retain;
   vkpipelinerenderinfo_ptr_t _prinfo_retain;
 
   secondary_commandbuffer_ptr_t _cmdbufRTG;

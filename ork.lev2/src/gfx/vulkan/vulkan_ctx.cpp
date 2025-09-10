@@ -1310,5 +1310,46 @@ vksampler_obj_ptr_t VkContext::_getOrCreateSampler(const TextureSamplingModeData
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void VkContext::suspendRenderPass() {
+  if (!_renderPassActive) {
+    // No render pass to suspend
+    return;
+  }
+  
+  // End the current render pass
+  auto& CB = primary_cb()->_vkcmdbuf;
+  _vkCmdEndRenderingKHR(CB);
+  
+  // Mark render pass as inactive but keep the RTG reference
+  // so we know what to resume
+  _renderPassActive = false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkContext::resumeRenderPass() {
+  if (_renderPassActive) {
+    // Already in a render pass, nothing to do
+    return;
+  }
+  
+  if (!_activeRenderPassRTG) {
+    // No RTG to resume to
+    return;
+  }
+  
+  // Resume the render pass using the cached RTG
+  auto& CB = primary_cb()->_vkcmdbuf;
+  
+  // Use renderinfoForResume() which has LOAD ops and RESUMING bit
+  auto rinfo = _activeRenderPassRTG->renderinfoForResume();
+  _vkCmdBeginRenderingKHR(CB, &rinfo->_renderinfo);
+  
+  // Mark render pass as active again
+  _renderPassActive = true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::vulkan
 //////////////////////////////////////////////////////////////////////////////

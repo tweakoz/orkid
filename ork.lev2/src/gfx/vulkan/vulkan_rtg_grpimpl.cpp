@@ -87,6 +87,31 @@ vkrenderinfo_ptr_t VkRtGroupImpl::renderinfo() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+vkrenderinfo_ptr_t VkRtGroupImpl::renderinfoForResume() {
+  if (!_rinfo_resume_retain) {
+    // Create resume render info based on this RTG
+    _rinfo_resume_retain = std::make_shared<VulkanRenderInfo>(this);
+    
+    // Modify it for resume semantics - force all attachments to LOAD
+    for(auto& colorAttachment : _rinfo_resume_retain->_rainfos_color) {
+      colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+    }
+    
+    // Force depth attachment to LOAD if present
+    if(_rinfo_resume_retain->_renderinfo.pDepthAttachment) {
+      _rinfo_resume_retain->_rainfo_depth.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+    }
+    
+    // Always set the RESUMING bit
+    _rinfo_resume_retain->_renderinfo.flags |= VK_RENDERING_RESUMING_BIT;
+    
+    _renderinfo_set.insert(_rinfo_resume_retain);
+  }
+  return _rinfo_resume_retain;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 rtgroup_attachments_ptr_t VkRtGroupImpl::attachments() {
   if (__attachments) {
     return __attachments;
@@ -148,6 +173,7 @@ void VkRtGroupImpl::_invalidateAttachments() {
   __attachments = nullptr;
   _renderinfo_set.clear();
   _rinfo_retain = nullptr;
+  _rinfo_resume_retain = nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
