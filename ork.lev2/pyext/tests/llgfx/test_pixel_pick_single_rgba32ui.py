@@ -98,8 +98,8 @@ def createPipeline(ctx, shadertext, shadername="rgba32ui_pick"):
 class RGBA32UIPickTest(PixelPickTest):
     """Extended test class that uses custom pipeline for RGBA32UI."""
     
-    def __init__(self, buffer_format, format_name):
-        super().__init__(buffer_format, format_name)
+    def __init__(self, format_names):
+        super().__init__(format_names)
         self.custom_pipeline = None
         self.custom_material = None
         
@@ -181,7 +181,7 @@ def main():
     # For this test, vertex colors are converted to unsigned int IDs
     
     # Create and run the RGBA32UI-specific test
-    test = RGBA32UIPickTest(tokens.RGBA32UI, "RGBA32UI")
+    test = RGBA32UIPickTest(["RGBA32UI"])
     
     # The test expects these ID values based on the vertex colors:
     # Blue (0xFFFF0000) -> R=0, G=0, B=255, A=255

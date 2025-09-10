@@ -17,9 +17,24 @@ tokens = core.CrcStringProxy()
 class PixelPickTest:
     """Encapsulates all test state to ensure proper object lifetime."""
     
-    def __init__(self, buffer_format, format_name):
-        self.buffer_format = buffer_format
-        self.format_name = format_name
+    def __init__(self, format_names):
+        """
+        Initialize the test with a list of format names.
+        
+        Args:
+            format_names: List of format name strings (e.g., ["RGBA32F", "RGBA32UI"])
+                         or a single format name string
+        """
+        # Convert single format to list for consistency
+        if isinstance(format_names, str):
+            format_names = [format_names]
+        assert(type(format_names) == list and len(format_names) > 0), "format_names must be a non-empty list"
+        self.format_names = format_names
+        self.buffer_formats = []
+        # Convert format names to tokens
+        for fmt_name in format_names:
+            fmt_token = tokens.__getattr__(fmt_name)
+            self.buffer_formats.append(fmt_token)
         self.ezapp = None
         self.ctx = None
         self.FBI = None
@@ -37,7 +52,8 @@ class PixelPickTest:
     def initialize(self):
         """Initialize lev2 app and graphics context."""
         print("="*60)
-        print(f"Starting single channel pixel pick test ({self.format_name})")
+        formats_str = ", ".join(self.format_names)
+        print(f"Starting pixel pick test ({formats_str})")
         print("="*60)
         
         print("Initializing lev2 app...")
@@ -54,16 +70,29 @@ class PixelPickTest:
         
     def setup_render_target(self, width=256, height=256):
         """Create render target group for offscreen rendering."""
-        print(f"Creating render target group with format {self.format_name}...")
+        formats_str = ", ".join(self.format_names)
+        print(f"Creating render target group with formats: {formats_str}...")
         self.rtg = lev2.RtGroup(self.ctx, width, height)
         
-        # Add a color buffer with specified format
-        self.rtb_color = self.rtg.createBuffer(self.buffer_format, tokens.color)
+        # Create buffers for each format
+        self.rtbuffers = []
+        for i, (fmt_token, fmt_name) in enumerate(zip(self.buffer_formats, self.format_names)):
+            # First buffer uses 'color', others use mrt1, mrt2, etc.
+            if i == 0:
+                rtb = self.rtg.createBuffer(fmt_token, tokens.color)
+            else:
+                mrt_token = tokens.__getattr__(f"mrt{i}")
+                rtb = self.rtg.createBuffer(fmt_token, mrt_token)
+            
+            # Set clear color to black (ID=0)
+            rtb.clearColor = core.vec4(0.0, 0.0, 0.0, 1.0)
+            self.rtbuffers.append(rtb)
+            print(f"  Created buffer {i}: {fmt_name}")
         
-        # Set clear color to black (ID=0)
-        self.rtb_color.clearColor = core.vec4(0.0, 0.0, 0.0, 1.0)
+        # Keep reference to first color buffer for compatibility
+        self.rtb_color = self.rtbuffers[0] if self.rtbuffers else None
         
-        print(f"Created RTG: {width}x{height} with format {self.format_name}")
+        print(f"Created RTG: {width}x{height} with {len(self.rtbuffers)} buffer(s)")
         
     def setup_material(self):
         """Set up material and pipeline for rendering."""
@@ -166,10 +195,12 @@ class PixelPickTest:
         self.captures = []
         
         for x, y, expected_name, expected_color in test_points:
-            # Create PixelFetchContext for single pixel capture
-            pfc = lev2.PixelFetchContext(self.rtg, 1)
-            # Set usage to FVEC4 (default for most tests)
-            pfc.setUsage(0, tokens.FVEC4)
+            # Create PixelFetchContext for single/multi pixel capture
+            num_buffers = len(self.rtbuffers)
+            pfc = lev2.PixelFetchContext(self.rtg, num_buffers)
+            # Set usage to FVEC4 for all buffers (default for most tests)
+            for i in range(num_buffers):
+                pfc.setUsage(i, tokens.FVEC4)
             
             # Capture single pixel asynchronously (must be done before endFrame)
             capture_future = self.FBI.capturePixel(pfc, x, y)
@@ -201,7 +232,8 @@ class PixelPickTest:
     def verify_results(self):
         """Verify captured pixels match expected values."""
         print("\n" + "="*60)
-        print(f"Single Pixel Capture Results ({self.format_name}):")
+        formats_str = ", ".join(self.format_names)
+        print(f"Single Pixel Capture Results ({formats_str}):")
         print("="*60)
         
         passed_tests = 0
@@ -241,10 +273,11 @@ class PixelPickTest:
         
         print("\n" + "-"*60)
         print(f"Test Summary: {passed_tests}/{total_tests} tests passed")
+        formats_str = ", ".join(self.format_names)
         if passed_tests == total_tests:
-            print(f"✓ All pixel captures completed successfully for {self.format_name}!")
+            print(f"✓ All pixel captures completed successfully for {formats_str}!")
         else:
-            print(f"✗ Some pixel captures failed for {self.format_name}")
+            print(f"✗ Some pixel captures failed for {formats_str}")
         
         return 0 if passed_tests == total_tests else 1
         
@@ -254,7 +287,8 @@ class PixelPickTest:
         self.ezapp.mainThreadEnd()
         
         print("="*60)
-        print(f"Single channel pixel pick test ({self.format_name}) completed!")
+        formats_str = ", ".join(self.format_names)
+        print(f"Pixel pick test ({formats_str}) completed!")
         print("="*60)
         
     def run(self, enable_render_loop=False):
@@ -281,14 +315,17 @@ class PixelPickTest:
         
         return result
 
-def run_pixel_pick_test(buffer_format, format_name, enable_render_loop=False):
+def run_pixel_pick_test(format_names, enable_render_loop=False):
     """
-    Run a pixel picking test with the specified buffer format.
+    Run a pixel picking test with the specified buffer formats.
     
     Args:
-        buffer_format: The buffer format token (e.g., tokens.RGBA32F)
-        format_name: Human-readable format name for display
+        format_names: List of format name strings or single format name string
         enable_render_loop: Whether to run continuous rendering loop
     """
-    test = PixelPickTest(buffer_format, format_name)
+    # Convert single format to list for consistency
+    if isinstance(format_names, str):
+        format_names = [format_names]
+    
+    test = PixelPickTest(format_names)
     return test.run(enable_render_loop)

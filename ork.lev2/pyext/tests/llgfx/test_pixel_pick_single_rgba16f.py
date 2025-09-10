@@ -25,7 +25,7 @@ def main():
     
     # Run test with RGBA16F format
     # Note: RGBA16F may need larger tolerance due to half-precision
-    return run_pixel_pick_test(tokens.RGBA16F, "RGBA16F", enable_render_loop=False)
+    return run_pixel_pick_test("RGBA16F", enable_render_loop=False)
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -23,7 +23,7 @@ def main():
         ]
     
     # Run test with RGBA32F format
-    return run_pixel_pick_test(tokens.RGBA32F, "RGBA32F")
+    return run_pixel_pick_test("RGBA32F")
 
 if __name__ == "__main__":
     sys.exit(main())

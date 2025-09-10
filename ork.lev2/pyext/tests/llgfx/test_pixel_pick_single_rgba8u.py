@@ -25,7 +25,7 @@ def main():
     
     # Run test with RGBA8 format
     # Note: RGBA8 may have quantization errors due to 8-bit precision (1/255 steps)
-    return run_pixel_pick_test(tokens.RGBA8, "RGBA8")
+    return run_pixel_pick_test("RGBA8")
 
 if __name__ == "__main__":
     sys.exit(main())
