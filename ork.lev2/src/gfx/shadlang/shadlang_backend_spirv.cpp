@@ -888,6 +888,15 @@ std::string SpirvCompiler::_ifIoItem(
   // layout
   ////////////////////////////////
 
+  // Check for interpolation qualifier first
+  std::string qualifier_str;
+  if (tid_node) {
+    auto interp_qual = tid_node->typedValueForKey<std::string>("interpolation_qualifier");
+    if (interp_qual) {
+      qualifier_str = interp_qual.value() + " ";
+    }
+  }
+
   if (layout_node) {
 
     size_t num_items = layout_node->_children.size();
@@ -900,11 +909,11 @@ std::string SpirvCompiler::_ifIoItem(
     }
 
     // dumpAstNode(layout_node);
-    item_str = _ifLayoutHeader(layout_node, need_location ? IO_index : -1) + " " + direction + " ";
+    item_str = _ifLayoutHeader(layout_node, need_location ? IO_index : -1) + " " + qualifier_str + direction + " ";
   } else if (need_location) {
-    item_str = FormatString("layout(location=%d) %s ", IO_index, direction.c_str());
+    item_str = FormatString("layout(location=%d) %s%s ", IO_index, qualifier_str.c_str(), direction.c_str());
   } else {
-    item_str = direction + " ";
+    item_str = qualifier_str + direction + " ";
   }
 
   ////////////////////////////////
@@ -912,12 +921,6 @@ std::string SpirvCompiler::_ifIoItem(
   ////////////////////////////////
 
   if (tid_node) {
-
-    // Check for interpolation qualifier
-    auto interp_qual = tid_node->typedValueForKey<std::string>("interpolation_qualifier");
-    if (interp_qual) {
-      item_str = interp_qual.value() + " " + item_str;
-    }
 
     item_str += _ifTypedId(tid_node);
     if (need_location) {

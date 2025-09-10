@@ -236,7 +236,7 @@ void _semaNameTypedIdentifers(impl::ShadLangParser* slp, astnode_ptr_t top) {
     auto cm1     = seq->itemAsShared<ClassMatch>(seq_index);
     auto id_name = cm1->_token->text;
     // tid_node->_name += FormatString("id: %s", id_name.c_str());
-    tid_node->setValueForKey<std::string>("identifier_name", id_name);
+    tid_node->setValueForKey<std::string>("identifier_name", id_name);    
   }
 }
 

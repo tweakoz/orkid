@@ -17,34 +17,32 @@ RGBA32UI_PICK_SHADERTEXT = """
 ////////////////////////////////////////
 fxconfig fxcfg_default { glsl_version = "330"; }
 ////////////////////////////////////////
-uniform_set ublock_vtx {
+uniform_set ublk_VPICK {
   mat4 MatMVP;
 }
 ////////////////////////////////////////
-uniform_set ublock_frg {
+uniform_set ublk_FPICK {
   // No uniforms needed for simple ID output
 }
 ////////////////////////////////////////
-vertex_interface iface_vtx_pick : ublock_vtx {
+vertex_interface vif_PICK : ublk_VPICK {
   inputs {
     vec4 position : POSITION;
     vec4 vtxcolor : COLOR0;
   }
   outputs {
-    uvec4 frg_pickid;
+    flat uvec4 frg_pickid;
   }
 }
 ////////////////////////////////////////
-fragment_interface iface_frg_pick : ublock_frg {
-  inputs {
-    uvec4 frg_pickid;
-  }
+fragment_interface fif_PICK : vif_PICK : ublk_FPICK {
+  // inputs inherited from vertex interface
   outputs { 
     uvec4 out_pickid;
   }
 }
 ////////////////////////////////////////
-vertex_shader vs_pick : iface_vtx_pick {
+vertex_shader vs_pick : vif_PICK {
   // Convert vertex color (0-255 range packed in RGBA8) to pick ID
   // For this test, we'll use the color components as ID components
   // In real picking, this would be an object ID
@@ -56,7 +54,7 @@ vertex_shader vs_pick : iface_vtx_pick {
   gl_Position = MatMVP * vec4(position.xyz, 1.0);
 }
 ////////////////////////////////////////
-fragment_shader ps_pick : iface_frg_pick {
+fragment_shader ps_pick : fif_PICK {
   out_pickid = frg_pickid;
 }
 ////////////////////////////////////////
