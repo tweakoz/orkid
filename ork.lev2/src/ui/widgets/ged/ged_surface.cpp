@@ -247,7 +247,7 @@ void GedSurface::_onUiEventDoKeyboard(ui::event_constptr_t EV) {
 
 void GedSurface::_onUiEventDoMouseWheel(ui::event_constptr_t EV) {
   bool bisshift = EV->mbSHIFT;
-  int iscrollamt = bisshift ? 32 : 8;
+  int iscrollamt = bisshift ? 32 : 16;
   int idelta = EV->miMWY;
   
   if (idelta > 0) {
