@@ -61,7 +61,10 @@ void DecompTransform::lookAt( const fvec3& eye, const fvec3& tgt, const fvec3& u
 fmtx4 DecompTransform::composed() const{
   fmtx4 rval;
 
-  if(_usedirectmatrix){
+  if(_matrix_provider){
+    return _matrix_provider();
+  }
+  else if(_usedirectmatrix){
     rval = _directmatrix;
   }
   else{

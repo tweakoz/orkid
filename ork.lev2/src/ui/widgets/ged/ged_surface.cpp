@@ -261,7 +261,7 @@ void GedSurface::_onUiEventDoMouseWheel(ui::event_constptr_t EV) {
 
 void GedSurface::_onUiEventDoMove(ui::event_constptr_t EV, ui::event_ptr_t locEV) {
   static int gctr = 0;
-  
+    
   if (0 != gctr % 4) {
     gctr++;
     return;
@@ -384,7 +384,7 @@ void GedSurface::_onUiEventDoMouseButton(ui::event_constptr_t EV, ui::event_ptr_
 
 ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
   ui::HandlerResult ret(this);
-  
+  return ret; // TEMP DISABLE
   const auto& filtev = EV->mFilteredEvent;
   
   int ix = EV->miX;
