@@ -27,6 +27,10 @@ void init_math_la_float(py::module& module_core,python::pb11_typecodec_ptr_t typ
 void init_math_la_double(py::module& module_core,python::pb11_typecodec_ptr_t type_codec);
 void init_math(py::module& module_core,python::pb11_typecodec_ptr_t type_codec) {
   /////////////////////////////////////////////////////////////////////////////////
+  using mtxprov_t = py::class_<MatrixProvider, matrix_provider_ptr_t>;
+  auto mtxprov_type = mtxprov_t(module_core, "MatrixProvider");
+  type_codec->registerStdCodec<matrix_provider_ptr_t>(mtxprov_type);
+  /////////////////////////////////////////////////////////////////////////////////
   using sphere_ptr_t = std::shared_ptr<Sphere>;
   auto sphere_t = py::class_<Sphere, sphere_ptr_t>(module_core, "Sphere") //
   .def(py::init<>([](const fvec3& center, float radius) -> sphere_ptr_t {

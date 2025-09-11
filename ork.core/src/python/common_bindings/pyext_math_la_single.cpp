@@ -75,6 +75,12 @@ void init_math_la_float(py::module& module_core,python::pb11_typecodec_ptr_t typ
                 dcxf->_directmatrix    = inp;
                 dcxf->_usedirectmatrix = true;
               })
+              .def_property(
+              "provider",
+              [](decompxf_const_ptr_t dcxf) -> matrix_provider_ptr_t { return dcxf->_matrix_provider; },
+              [](decompxf_ptr_t dcxf, matrix_provider_ptr_t inp) {
+                dcxf->_matrix_provider    = inp;
+              })
           .def_property_readonly("composed", [](decompxf_const_ptr_t dcxf) -> fmtx4 { return dcxf->composed(); })
           .def_property_readonly("composed2", [](decompxf_const_ptr_t dcxf) -> fmtx4 { return dcxf->composed2(); })
           .def("__str__", dcxf2str)
