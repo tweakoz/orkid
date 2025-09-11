@@ -24,8 +24,18 @@ using decompxf_ptr_t = std::shared_ptr<DecompTransform>;
 using xfnode_ptr_t = std::shared_ptr<TransformNode>;
 using decompxf_const_ptr_t = std::shared_ptr<const DecompTransform>;
 using xfnode_const_ptr_t = std::shared_ptr<const TransformNode>;
-using matrix_provider_t = std::function<fmtx4()>;
 
+///////////////////////////////////////////////////////////////////////////////
+
+struct MatrixProvider {
+  virtual fmtx4 get() const = 0;
+};
+using matrix_provider_ptr_t = std::shared_ptr<MatrixProvider>;
+///////////////////////////////////////////////////////////////////////////////
+struct LambdaMatrixProvider : public MatrixProvider {
+  std::function<fmtx4()> _func = []() { return fmtx4::Identity(); };
+  fmtx4 get() const final;
+};
 ///////////////////////////////////////////////////////////////////////////////
 
 struct DecompTransform : public ork::Object {
@@ -42,7 +52,7 @@ struct DecompTransform : public ork::Object {
   float _uniformScale = 1.0f;
   fvec3 _nonUniformScale;
   std::atomic<int> _state;
-  matrix_provider_t _matrix_provider;
+  matrix_provider_ptr_t _matrix_provider;
   
   fmtx4 _directmatrix;
   bool _usedirectmatrix = false;

@@ -21,6 +21,10 @@ namespace ork {
 
 
 ///////////////////////////////////////////////////////////////////////////////
+fmtx4 LambdaMatrixProvider::get() const {
+  return _func();
+}
+///////////////////////////////////////////////////////////////////////////////
 void DecompTransform::describeX(class_t* c) {
   c->directProperty("translation", &DecompTransform::_translation);
   c->directProperty("rotation", &DecompTransform::_rotation);
@@ -62,7 +66,7 @@ fmtx4 DecompTransform::composed() const{
   fmtx4 rval;
 
   if(_matrix_provider){
-    return _matrix_provider();
+    return _matrix_provider->get();
   }
   else if(_usedirectmatrix){
     rval = _directmatrix;
