@@ -229,7 +229,6 @@ void LayoutGroup::removeChild(anchor::layout_ptr_t ch) {
 }
 //////////////////////////////////////
 void LayoutGroup::replaceChild(anchor::layout_ptr_t ch, layoutitem_ptr_t rep) {
-  printf("LayoutGroup<%s>::replaceChild ch<%p> rep<%p>\n", _name.c_str(), (void*)ch.get(), (void*)rep.get());
   _layout->removeChild(rep->_layout);
   Group::removeChild(ch->_widget);
   Group::addChild(rep->_widget);

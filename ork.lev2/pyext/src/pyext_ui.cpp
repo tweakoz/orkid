@@ -373,7 +373,7 @@ void pyinit_ui(py::module& module_lev2) {
               })
           .def(
               "replaceChild",
-              [](uilayoutgroup_ptr_t lgrp, uilayout_ptr_t ch, uilayoutitem_ptr_t rep) -> py::list { //
+              [](uilayoutgroup_ptr_t lgrp, uilayout_ptr_t ch, uilayoutitem_ptr_t rep) { //
                 lgrp->replaceChild(ch, rep);
               })
           .def(
