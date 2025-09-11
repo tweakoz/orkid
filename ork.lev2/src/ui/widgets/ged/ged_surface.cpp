@@ -384,7 +384,6 @@ void GedSurface::_onUiEventDoMouseButton(ui::event_constptr_t EV, ui::event_ptr_
 
 ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
   ui::HandlerResult ret(this);
-  return ret; // TEMP DISABLE
   const auto& filtev = EV->mFilteredEvent;
   
   int ix = EV->miX;
@@ -403,6 +402,7 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
   switch (filtev._eventcode) {
     case ui::EventCode::KEY_DOWN:
     case ui::EventCode::KEY_REPEAT:
+      return ret; // TEMP DISABLE
       _onUiEventDoKeyboard(EV);
       break;
       
@@ -411,16 +411,19 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
       break;
       
     case ui::EventCode::MOVE:
+      return ret; // TEMP DISABLE
       _onUiEventDoMove(EV, locEV);
       break;
       
     case ui::EventCode::DRAG:
+      return ret; // TEMP DISABLE
       _onUiEventDoDrag(EV, locEV);
       break;
       
     case ui::EventCode::PUSH:
     case ui::EventCode::RELEASE:
     case ui::EventCode::DOUBLECLICK:
+      return ret; // TEMP DISABLE
       _onUiEventDoMouseButton(EV, locEV);
       break;
       
