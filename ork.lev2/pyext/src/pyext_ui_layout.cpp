@@ -196,6 +196,9 @@ void pyinit_ui_layout(py::module& uimodule) {
               })
           .def_property_readonly("layout", [](uilayoutitem_ptr_t item) -> uilayout_ptr_t { //
             return item->_layout;
+          })
+          .def("__repr__", [](uilayoutitem_ptr_t item) {
+            return FormatString("<LayoutItem widget<%p> layout<%p>>", (void*)item->_widget.get(), (void*)item->_layout.get());
           });
   type_codec->registerStdCodec<uilayoutitem_ptr_t>(litem_type);
 }

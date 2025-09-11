@@ -373,7 +373,7 @@ void pyinit_ui(py::module& module_lev2) {
               })
           .def(
               "replaceChild",
-              [](uilayoutgroup_ptr_t lgrp, uilayout_ptr_t ch, uilayoutitem_ptr_t rep) { //
+              [](uilayoutgroup_ptr_t lgrp, uilayout_ptr_t ch, uilayoutitem_ptr_t rep) -> py::list { //
                 lgrp->replaceChild(ch, rep);
               })
           .def(
@@ -463,6 +463,10 @@ void pyinit_ui(py::module& module_lev2) {
                   }
                   OrkAssert(args_parsed == 4);
                   rval = uirc_factory(lgrp, rccounts, margin, args);
+                  for(auto item : rval) {
+                    auto litem = py::cast<uilayoutitem_ptr_t>(item);
+                    printf("layoutgroup_type makeRowsColumns item<%p> w<%p>\n", (void*) litem.get(), (void*)litem->_widget.get());
+                  }
                 }
                 return rval;
               })
@@ -599,9 +603,14 @@ void pyinit_ui(py::module& module_lev2) {
                 auto layoutitems  = lg->makeWidgetsRC<ui::Box>(rccounts, name, color);
                 py::list rval;
                 for (auto item : layoutitems) {
-                  rval.append(item.as_shared());
+                  auto shitem = item.as_shared();
+                  printf("box_type uircfactory item<%p>\n", (void*)shitem->_widget.get());
+                  rval.append(shitem);
                 }
                 return rval;
+              })
+              .def("__repr__", [](uibox_ptr_t box) {
+                return FormatString("<Box name<%s> widget<%p>>", box->GetName().c_str(), (void*)box.get());
               });
   type_codec->registerStdCodec<uibox_ptr_t>(box_type);
   /////////////////////////////////////////////////////////////////////////////////
