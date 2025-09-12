@@ -118,6 +118,7 @@ private:
   // Helper function to find binding ID from merged resources
   int _findBindingIdFromMergedResources(const std::string& resource_name, const std::string& source_name);
 
+  std::string _input_name;
   transunit_ptr_t _transu;
   shader_ptr_t _shader;
   miscgroupnode_ptr_t _shader_group;

@@ -58,6 +58,7 @@ struct LayoutStandard430 { // layout by glsl standard 430
 /////////////////////////////////////////////////////////////////////////////////////////////////
 SpirvCompilerGlobals::SpirvCompilerGlobals() {
   bool _vulkan            = true;
+  _io_data_sizes["bool"]  = 1;
   _io_data_sizes["int"]   = 1;
   _io_data_sizes["uint"]  = 1;
   _io_data_sizes["float"] = 1;
@@ -80,6 +81,7 @@ SpirvCompilerGlobals::SpirvCompilerGlobals() {
   _io_data_sizes["umat3"] = 3;
   _io_data_sizes["umat4"] = 4;
 
+  _block_data_sizes["bool"]  = 4;
   _block_data_sizes["int"]   = 4;
   _block_data_sizes["uint"]  = 4;
   _block_data_sizes["float"] = 4;

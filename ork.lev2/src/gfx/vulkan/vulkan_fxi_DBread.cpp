@@ -877,11 +877,15 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
               item_ptr->_shader_stage = shader_stage;
               item_ptr->_range_index  = range_index;
 
-              if (datatype == "float") {
+              if (datatype == "bool") {
+                cursor = dest_layout->layoutItem<bool>(orkparam);
+              } else if (datatype == "float") {
                 cursor = dest_layout->layoutItem<float>(orkparam);
               } else if (datatype == "int") {
                 cursor = dest_layout->layoutItem<int>(orkparam);
               } else if (datatype == "uint") {
+                cursor = dest_layout->layoutItem<uint32_t>(orkparam);
+              } else if (datatype == "uint32") {
                 cursor = dest_layout->layoutItem<uint32_t>(orkparam);
               } else if (datatype == "vec2") {
                 cursor = dest_layout->layoutItem<fvec2>(orkparam);

@@ -22,7 +22,18 @@ void pyinit_gfx_primitives_instanced_indexed(py::module& primitives) {
   using ptr_t = primitives::instanced_indexed_primitive_ptr_t;
   ////////////////////////////////////////////////////////////////////////////////
   auto instancedprim_type = //
-    py::class_<prim_t, ptr_t>(primitives, "InstancedIndexedQuadPrimitive")
+    py::class_<prim_t, ptr_t>(primitives, "InstancedIndexedQuadPrimitive", pybind11::buffer_protocol())
+         .def_buffer([](prim_t& self) -> pybind11::buffer_info {
+           auto data = self._locked_data; // const uint32_t*
+           OrkAssert(data); // must be locked!
+           size_t N  = self._num_instances;
+           return pybind11::buffer_info( (uint32_t*) data,                                            //
+                                         sizeof(uint32_t),                                //
+                                         pybind11::format_descriptor<uint32_t>::format(), //
+                                         1,                                               //
+                                         { N },                                           //
+                                         { sizeof(uint32_t) });                           //
+          })
         .def(
             "create",
             [](ctx_t& context, int num_instances) -> ptr_t {

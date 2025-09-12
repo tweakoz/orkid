@@ -16,7 +16,7 @@ struct VkBufferLayout {
     //////////////////////////////////////////////
     template <typename T>
     std::size_t getAlignment() const {
-        if (std::is_same<T, float>::value || std::is_same<T, int>::value) {
+        if (std::is_same<T, float>::value || std::is_same<T, int>::value || std::is_same<T, uint32_t>::value || std::is_same<T, bool>::value) {
             return sizeof(T);
         }
         if (std::is_same<T, glm::vec2>::value) {

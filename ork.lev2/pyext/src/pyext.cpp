@@ -99,7 +99,7 @@ void lev2apppoll() {
 }
 
 void lev2appshutdown() { // TODO fixme
-  exit(0);
+  ork::opq::exit();
 }
 
   ////////////////////////////////////////////////////////////////////////////////

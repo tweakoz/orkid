@@ -28,7 +28,7 @@ struct InstancedIndexedPrimitive {
   instance_vb_ptr_t _instance_vb;
   idxbufferbase_ptr_t _base_ib;
   fxpipeline_ptr_t _pipeline;
-
+  instance_t* _locked_data = nullptr;
   //////////////////////////////////////////////////////////////////////////////
 
   inline InstancedIndexedPrimitive(
@@ -73,10 +73,12 @@ struct InstancedIndexedPrimitive {
       _num_instances = num_instances;
       OrkAssert(num_instances<=_capacity);
     }
-    return (instance_t*) context->GBI()->LockVB(*_instance_vb, 0, _num_instances);
+    _locked_data = (instance_t*) context->GBI()->LockVB(*_instance_vb, 0, _num_instances);
+    return _locked_data;
   }
 
   inline void unlock(Context* context) {
+    _locked_data = nullptr;
     context->GBI()->UnLockVB(*_instance_vb);
   }
 
