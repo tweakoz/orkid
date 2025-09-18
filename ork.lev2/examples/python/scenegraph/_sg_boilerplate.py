@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 ################################################################################
 # lev2 sample which renders a scenegraph, optionally in VR mode
 # Copyright 1996-2023, Michael T. Mayers.
@@ -8,41 +6,17 @@
 ################################################################################
 
 import math, random, argparse, sys
+from ork import path as ork_path
 from orkengine.core import *
 from orkengine.lev2 import *
 
 SSAO_NUM_SAMPLES = 96
 
-################################################################################
-
-sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
 from lev2utils.cameras import *
 from lev2utils.shaders import *
-from lev2utils.primitives import createGridData
 from lev2utils.scenegraph import createSceneGraph
 
-################################################################################
-
-parser = argparse.ArgumentParser(description='scenegraph example')
-parser.add_argument('--numinstances', metavar="numinstances", help='number of mesh instances' )
-parser.add_argument('--vrmode', action="store_true", help='run in vr' )
-parser.add_argument('--seed', type=int, default=57, help='run in vr' )
-
-################################################################################
-
-args = vars(parser.parse_args())
-vrmode = (args["vrmode"]==True)
-if args["numinstances"]==None:
-  numinstances = 300
-else:
-  numinstances = int(args["numinstances"])
-
-seed = args["seed"]
-random.seed(seed)
-
-################################################################################
-
-class modelinst(object):
+class SpinningModelInst(object):
 
   def __init__(self,model,layer, index):
 
@@ -50,13 +24,38 @@ class modelinst(object):
 
     self.model = model
     self.sgnode = model.createNode("node%d"%index,layer)
-    self.pos = vec3(random.uniform(-25.0,25),
-                    random.uniform(1,3),
-                    random.uniform(-25.0,25))
+    self.pos = vec3(random.uniform(-1.5,1.5),
+                    random.uniform(1,2),
+                    random.uniform(-1.5,1.5))
     self.rot = quat(vec3(0,1,0),0)
     incraxis = vec3(random.uniform(-1,1),
                     random.uniform(-1,1),
                     random.uniform(-1,1)).normalized
+    incrmagn = random.uniform(-0.01,0.01)
+    self.rotincr = quat(incraxis,incrmagn)
+    self.scale = 1.0
+    self.sgnode.worldTransform.translation = self.pos 
+    self.sgnode.worldTransform.scale = self.scale
+
+  def update(self,deltatime):
+    self.rot = self.rot*self.rotincr
+    self.sgnode.worldTransform.orientation = self.rot 
+
+class TurntableModelInst(object):
+
+  def __init__(self,model,layer, index):
+
+    super().__init__()
+
+    self.model = model
+    self.sgnode = model.createNode("node%d"%index,layer)
+    
+    self.pos = vec3(random.uniform(-4.5,4.5),
+                    random.uniform(-2,2),
+                    random.uniform(-4.5,4.5))
+    self.pos = self.pos.normalized*3
+    self.rot = quat(vec3(0,1,0),0)
+    incraxis = vec3(0,1,0)
     incrmagn = random.uniform(-0.01,0.01)
     self.rotincr = quat(incraxis,incrmagn)
     self.scale = random.uniform(0.5,0.7)
@@ -67,18 +66,18 @@ class modelinst(object):
     self.rot = self.rot*self.rotincr
     self.sgnode.worldTransform.orientation = self.rot 
 
-################################################################################
-
-class SceneGraphApp(object):
+class BoilerplateSgApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self)
+    self.ezapp = OrkEzApp.create(self,ssaa=2)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
-    setupUiCamera(app=self,eye=vec3(0,0.5,3))
+    setupUiCamera(app=self,tgt=vec3(0,0,1),eye=vec3(0,0,0))
     self.modelinsts=[]
     self.ssaamode = False
+    self.skybox = "nebula"
+    self.skybox_intensity = 1.0
 
   ##############################################
 
@@ -86,13 +85,14 @@ class SceneGraphApp(object):
 
     ###################################
     sceneparams = VarMap() 
-    sceneparams.preset = "PBRVR" if vrmode else "ForwardPBR"
-    sceneparams.SkyboxIntensity = float(2)
+    sceneparams.preset = "ForwardPBR"
+    sceneparams.SkyboxIntensity = float(self.skybox_intensity)
     sceneparams.SpecularIntensity = float(1)
     sceneparams.DiffuseIntensity = float(1)
     sceneparams.AmbientLight = vec3(0.0)
     sceneparams.DepthFogDistance = float(1e6)
     sceneparams.UseFloatBuffer = True
+    sceneparams.SkyboxTexPathStr = self.skybox
     ###################################
     # post fx node
     ###################################
@@ -110,23 +110,6 @@ class SceneGraphApp(object):
     self.layer_fwd = self.scene.createLayer("std_forward")
     self.fwd_layers = [self.layer_fwd,self.layer_donly]
     self.pbr_common = self.scene.pbr_common
-
-    models = []
-    models += [XgmModel("data://tests/pbr1/pbr1")]
-    models += [XgmModel("data://tests/pbr_calib.glb")]
-    models += [XgmModel("src://environ/objects/misc/ref/torus.glb")]
-
-    ###################################
-
-    for i in range(numinstances):
-      model = models[i%len(models)]
-      self.modelinsts += [modelinst(model,self.layer_fwd,i)]
-
-    ###################################
-
-    self.grid_data = createGridData()
-    self.grid_node = self.layer_fwd.createDrawableNodeFromData("grid",self.grid_data)
-    self.grid_node.sortkey = 1
 
   ##############################################
 
@@ -156,11 +139,4 @@ class SceneGraphApp(object):
     else:
       self.pbr_common.ssaoNumSamples = 0
 
-    for minst in self.modelinsts:
-      minst.update(updinfo.deltatime)
-
     self.scene.updateScene(self.cameralut) 
-
-###############################################################################
-
-SceneGraphApp().ezapp.mainThreadLoop()

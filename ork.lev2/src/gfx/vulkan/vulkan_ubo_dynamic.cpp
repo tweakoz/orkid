@@ -63,7 +63,7 @@ VkDynamicUBOSystem::Allocation VkDynamicUBOSystem::allocate(size_t data_size, ui
   if (_current_offset + aligned_size > _buffer_size) {
     _current_offset = 0;
     // TODO: In production, should track frame to avoid overwriting in-flight data
-    printf("VkDynamicUBOSystem: WARNING - buffer wrapped around, may overwrite in-flight data\n");
+    //printf("VkDynamicUBOSystem: WARNING - buffer wrapped around, may overwrite in-flight data\n");
   }
   
   Allocation alloc;
