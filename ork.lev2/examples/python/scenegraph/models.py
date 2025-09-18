@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env ork.python
 
 ################################################################################
 # lev2 sample which renders a scenegraph, optionally in VR mode
@@ -42,8 +42,8 @@ class SceneGraphApp(BoilerplateSgApp):
     #self.skybox = "cold8k"     # ice planet (bright, soft)
     #self.skybox = "ocean8k"     # ocean planet (soft)
     #self.skybox = "arena8k"    # the grid  (dark)
-    self.skybox = "club8k"     # gothic club (dark)
-    #self.skybox = "desert8k"   # desert planet (bright)
+    #self.skybox = "club8k"     # gothic club (dark)
+    self.skybox = "desert8k"   # desert planet (bright)
     self.skybox_intensity = 1.0 # skybox intensity multiplier
   ##############################################
 

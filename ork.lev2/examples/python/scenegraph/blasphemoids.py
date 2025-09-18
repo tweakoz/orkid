@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env ork.python
 ################################################################################
 # lev2 scenegraph sample which allows the individual donning the VR HMD to
 #  blast away some blasphemoids

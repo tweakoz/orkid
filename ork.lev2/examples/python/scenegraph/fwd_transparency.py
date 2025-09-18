@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env ork.python
 ################################################################################
 # lev2 sample which renders a scenegraph to a window
 # Copyright 1996-2023, Michael T. Mayers.

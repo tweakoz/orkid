@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env ork.python
 ################################################################################
 # lev2 sample which renders an instanced model, optionally in VR mode
 # Copyright 1996-2023, Michael T. Mayers.
