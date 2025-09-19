@@ -54,20 +54,22 @@ class SceneGraphApp(BoilerplateSgApp):
     TESTS = asset_path("data://tests")
     MISC_GLTF = TESTS/"misc_gltf_samples"
     BASEOBJS = asset_path("src://environ/objects")
+    ART = MISC_GLTF/"art_and_sculpture"
+    CHARS = MISC_GLTF/"characters"
 
     SPIKEE = TESTS/"pbr1"/"pbr1"               # coronavirus looking thing
     PBRCALIB = TESTS/"pbr_calib.glb"           # pbr calibration ball
     TORUS = BASEOBJS/"misc"/"ref"/"torus.glb"  # generic torus
-    SITTER = MISC_GLTF/"sitter.glb"            # sitting figure
-    SCARLETT = MISC_GLTF/"scarlett.glb"        # anime girl
-    OMASK = MISC_GLTF/"omask.glb"              # oni mask
-    OBOX = MISC_GLTF/"obox.glb"                # ancient box
-    LION = MISC_GLTF/"lion.glb"                # lion statue
-    DHELM = MISC_GLTF/"dragon_helm.glb"        # dragon helm
-    FRACVASE = MISC_GLTF/"fracvase.glb"        # fractal vase
-    ORCHID = MISC_GLTF/"orchid1.glb"           # fractal vase
-    TEAPOT = MISC_GLTF/"gothic_teapot.glb"     # gothic teapot
-    WARHORN = MISC_GLTF/"warhorn.glb"          # war horn
+    SCARLETT = CHARS/"scarlett.glb"        # anime girl
+    SITTER = ART/"sitter.glb"            # sitting figure
+    ORCHID = ART/"orchid1.glb"           # fractal vase
+    OMASK = ART/"omask.glb"              # oni mask
+    OBOX = ART/"obox.glb"                # ancient box
+    LION = ART/"lion.glb"                # lion statue
+    DHELM = ART/"dragon_helm.glb"        # dragon helm
+    FRACVASE = ART/"fracvase.glb"        # fractal vase
+    TEAPOT = ART/"gothic_teapot.glb"     # gothic teapot
+    WARHORN = ART/"warhorn.glb"          # war horn
 
     models = []
     models += [lev2.XgmModel(WARHORN)]
