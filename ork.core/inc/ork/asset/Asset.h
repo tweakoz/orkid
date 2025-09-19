@@ -61,9 +61,11 @@ struct LoadRequest{
   AssetPath _asset_path;
   vars_ptr_t _asset_vars;
   void_lambda_t _on_load_complete;
+  void_lambda_t _on_load_failed;
   event_lambda_t _on_event;
   datablock_ptr_t _datablock;
   uint64_t _contentHash = 0;
+  uint64_t _assetStatus = 0;
   catalog::fetchrequest_ptr_t _catalog_handle;
 
   std::atomic<int> _partial_load_counter = 0;

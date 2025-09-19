@@ -111,6 +111,7 @@ struct CommonStuff : public ork::Object {
 
   void requestAndRefSkyboxTexture(asset::loadrequest_ptr_t load_req);
   static radiancemaps_ptr_t requestRadianceMaps(const AssetPath& texture_path);
+  static radiancemaps_ptr_t requestRadianceMapsAsync(const AssetPath& texture_path);
 
   void onGpuInit(lev2::Context* ctx);
 

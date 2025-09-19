@@ -83,6 +83,7 @@ bool CatalogImpl::getAsset(fetchrequest_ptr_t request) {
   file::Path manifest_path = localManifestPathForFqid(FQID);
    auto local_manifest = _loadLocalManifest(manifest_path);
 
+   if(0)printf("[DEBUG CatalogImpl] manifest_path<%s>\n", manifest_path.c_str());
   ///////////////////////////////////////////////////
 
   request->_bytes_downloaded = 0; // From local cache
@@ -387,6 +388,28 @@ datablock_ptr_t CatalogImpl::_processAssetData(datablock_ptr_t _data, fetchreque
   }
 
   if(0)printf("[DEBUG CatalogImpl] processAssetData complete: decompressed size<%zu>\n", result->length());
+
+  auto cont_hash = request->_fqid->_asset_info->_content_hash;
+  auto stor_hash = request->_fqid->_asset_info->_storage_hash;
+
+  // verify storage hash
+  if(0){
+    CMD5 md5_storage;
+    md5_storage.update(_data->data(), _data->length());
+    md5_storage.finalize();
+    auto computed_stor_hash = md5_storage.Result().hex_digest();  
+    printf("[DEBUG CatalogImpl] storage_hash<%s> computed_stor_hash<%s>\n", stor_hash.c_str(), computed_stor_hash.c_str());
+  }
+
+  // Verify content hash
+  if(0) {
+    CMD5 md5_content;
+    md5_content.update(result->data(), result->length());
+    md5_content.finalize();
+    auto computed_hash = md5_content.Result().hex_digest();  
+    printf("[DEBUG CatalogImpl] content_hash<%s> computed_hash<%s>\n", cont_hash.c_str(), computed_hash.c_str());
+  }
+
   return result;
 }
 
@@ -420,6 +443,15 @@ datablock_ptr_t CatalogImpl::_decompressData(datablock_ptr_t _data, CompressionT
 bool CatalogImpl::_extractAssetPak(datablock_ptr_t _data, fetchrequest_ptr_t request) {
 
   auto fqid = request->_fqid;
+
+
+  // Verify content hash
+  CMD5 md5_content;
+  md5_content.update(_data->data(), _data->length());
+  md5_content.finalize();
+  auto computed_hash = md5_content.Result().hex_digest();  
+  printf("[DEBUG CatalogImpl::_extractAssetPak] computed_hash<%s>\n", computed_hash.c_str());
+
   // Extract tar contents
   auto archive = util::TarArchive::loadFromMemory(_data);
   if (!archive || !archive->isValid()) {

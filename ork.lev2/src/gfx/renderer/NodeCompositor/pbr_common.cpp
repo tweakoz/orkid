@@ -85,6 +85,23 @@ radiancemaps_ptr_t CommonStuff::requestRadianceMaps(const AssetPath& texture_pat
   }
   return nullptr;
 }
+radiancemaps_ptr_t CommonStuff::requestRadianceMapsAsync(const AssetPath& texture_path) {
+  // Load XIR file directly using the registered XIR loader
+  auto load_req = std::make_shared<asset::LoadRequest>(texture_path);
+  
+  // Load using generic asset mechanism - the XIR extension will route to RadianceMapsLoader
+  auto generic_asset = asset::AssetManager<RadianceMapsAsset>::load(load_req);
+  if (generic_asset) {
+    // Cast to RadianceMapsAsset
+    auto radiancemaps_asset = std::dynamic_pointer_cast<RadianceMapsAsset>(generic_asset);
+    if (radiancemaps_asset) {
+      //_radiance_maps = radiancemaps_asset->_radiance_maps;
+      if(0)printf("RRM: asset<%p> irrmaps<%p>\n", (void*) radiancemaps_asset.get(), (void*) radiancemaps_asset->_radiance_maps.get()  );
+      return radiancemaps_asset->_radiance_maps;
+    }
+  }
+  return nullptr;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 void CommonStuff::requestAndRefSkyboxTexture(asset::loadrequest_ptr_t load_req) {

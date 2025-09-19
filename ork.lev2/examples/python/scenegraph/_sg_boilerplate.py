@@ -66,9 +66,9 @@ class TurntableModelInst(object):
 
 class BoilerplateSgApp(object):
 
-  def __init__(self,fullscreen=False):
+  def __init__(self,fullscreen=False,ssaa=1):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=0,fullscreen=fullscreen)
+    self.ezapp = OrkEzApp.create(self,ssaa=ssaa,fullscreen=fullscreen)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
     setupUiCamera(app=self,tgt=vec3(0,0,0),eye=vec3(0,-3.5,-3.5))

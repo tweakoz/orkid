@@ -191,12 +191,7 @@ public:
     // Check if archive is valid
     bool isValid() const;
 
-private:
-    struct Impl;
-    std::unique_ptr<Impl> _impl;
-    
-    // Internal constructor for loaded archives
-    explicit TarArchive(std::unique_ptr<Impl> impl);
+    svar64_t _impl;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

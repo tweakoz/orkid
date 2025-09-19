@@ -27,7 +27,7 @@ static logchannel_ptr_t logchan_tar = logger()->configureChannel("TAR", fvec3(0.
 // Internal implementation using libtar
 ////////////////////////////////////////////////////////////////////////////////
 
-struct TarArchive::Impl {
+struct TarArchive_Impl {
   datablock_ptr_t archive_data; // Raw tar archive data
   tar_entry_map_t entries;      // Cached entry information
   std::string last_error;       // Last error message
@@ -43,12 +43,8 @@ struct TarArchive::Impl {
 // TarArchive Implementation
 ////////////////////////////////////////////////////////////////////////////////
 
-TarArchive::TarArchive()
-    : _impl(std::make_unique<Impl>()) {
-}
-
-TarArchive::TarArchive(std::unique_ptr<Impl> impl)
-    : _impl(std::move(impl)) {
+TarArchive::TarArchive(){
+  _impl.makeShared<TarArchive_Impl>();
 }
 
 TarArchive::~TarArchive() = default;
@@ -173,8 +169,8 @@ tararchive_ptr_t TarArchive::createFromFiles(const std::vector<file::Path>& file
 tararchive_ptr_t TarArchive::createFromMemory(const tar_entry_map_t& entries, const TarCreateOptions& options) {
 
   auto archive = std::make_shared<TarArchive>();
-
-  if (!archive->_impl->createFromEntries(entries, options)) {
+  auto impl = archive->_impl.getShared<TarArchive_Impl>();
+  if (!impl->createFromEntries(entries, options)) {
     return nullptr;
   }
 
@@ -186,8 +182,8 @@ tararchive_ptr_t TarArchive::createFromMemory(const tar_entry_map_t& entries, co
 ////////////////////////////////////////////////////////////////////////////////
 
 bool TarArchive::extractToDirectory(const file::Path& output_directory, const TarExtractOptions& options) const {
-
-  if (!_impl->is_valid || !_impl->archive_data) {
+  auto impl = _impl.getShared<TarArchive_Impl>();
+  if (!impl->is_valid || !impl->archive_data) {
     return false;
   }
 
@@ -201,7 +197,7 @@ bool TarArchive::extractToDirectory(const file::Path& output_directory, const Ta
   }
 
   // Extract each entry
-  for (const auto& [name, entry] : _impl->entries) {
+  for (const auto& [name, entry] : impl->entries) {
     // Apply filters
     if (options.include_filter && !options.include_filter(name)) {
       continue;
@@ -247,13 +243,14 @@ bool TarArchive::extractToDirectory(const file::Path& output_directory, const Ta
 
 tar_entry_map_t TarArchive::extractToMemory(const TarExtractOptions& options) const {
   tar_entry_map_t result;
+  auto impl = _impl.getShared<TarArchive_Impl>();
 
-  if (!_impl->is_valid) {
+  if (!impl->is_valid) {
     return result;
   }
 
   // Apply filters and copy entries
-  for (const auto& [name, entry] : _impl->entries) {
+  for (const auto& [name, entry] : impl->entries) {
     if (options.include_filter && !options.include_filter(name)) {
       continue;
     }
@@ -273,15 +270,16 @@ tar_entry_map_t TarArchive::extractToMemory(const TarExtractOptions& options) co
 }
 
 datablock_ptr_t TarArchive::extractFile(const std::string& filename) const {
+  auto impl = _impl.getShared<TarArchive_Impl>();
   logchan_tar->log("extractFile: looking for '%s'", filename.c_str());
-  if (!_impl->is_valid) {
+  if (!impl->is_valid) {
     logchan_tar->log("extractFile: archive not valid");
     return nullptr;
   }
 
-  logchan_tar->log("extractFile: archive has %zu entries", _impl->entries.size());
-  auto it = _impl->entries.find(filename);
-  if (it != _impl->entries.end()) {
+  logchan_tar->log("extractFile: archive has %zu entries", impl->entries.size());
+  auto it = impl->entries.find(filename);
+  if (it != impl->entries.end()) {
     logchan_tar->log(
         "extractFile: found entry, data=%p, size=%zu", it->second->data.get(), it->second->data ? it->second->data->length() : 0);
     return it->second->data;
@@ -297,8 +295,8 @@ datablock_ptr_t TarArchive::extractFile(const std::string& filename) const {
 
 std::vector<std::string> TarArchive::listEntries() const {
   std::vector<std::string> result;
-
-  for (const auto& [name, entry] : _impl->entries) {
+  auto impl = _impl.getShared<TarArchive_Impl>();
+  for (const auto& [name, entry] : impl->entries) {
     result.push_back(name);
   }
 
@@ -307,24 +305,28 @@ std::vector<std::string> TarArchive::listEntries() const {
 }
 
 tarentry_ptr_t TarArchive::getEntryInfo(const std::string& filename) const {
-  auto it = _impl->entries.find(filename);
-  if (it != _impl->entries.end()) {
+  auto impl = _impl.getShared<TarArchive_Impl>();
+  auto it = impl->entries.find(filename);
+  if (it != impl->entries.end()) {
     return it->second;
   }
   return nullptr;
 }
 
 bool TarArchive::hasFile(const std::string& filename) const {
-  return _impl->entries.find(filename) != _impl->entries.end();
+  auto impl = _impl.getShared<TarArchive_Impl>();
+  return impl->entries.find(filename) != impl->entries.end();
 }
 
 size_t TarArchive::getArchiveSize() const {
-  return _impl->archive_data ? _impl->archive_data->length() : 0;
+  auto impl = _impl.getShared<TarArchive_Impl>();
+  return impl->archive_data ? impl->archive_data->length() : 0;
 }
 
 size_t TarArchive::getTotalSize() const {
   size_t total = 0;
-  for (const auto& [name, entry] : _impl->entries) {
+  auto impl = _impl.getShared<TarArchive_Impl>();
+  for (const auto& [name, entry] : impl->entries) {
     total += entry->size;
   }
   return total;
@@ -336,18 +338,19 @@ size_t TarArchive::getTotalSize() const {
 
 bool TarArchive::saveToFile(const file::Path& tar_file) const {
   logchan_tar->log("saveToFile: starting, path='%s'", tar_file.c_str());
+  auto impl = _impl.getShared<TarArchive_Impl>();
 
-  if (!_impl->is_valid) {
+  if (!impl->is_valid) {
     logchan_tar->log("saveToFile: archive not valid");
     return false;
   }
 
-  if (!_impl->archive_data) {
+  if (!impl->archive_data) {
     logchan_tar->log("saveToFile: no archive data");
     return false;
   }
 
-  logchan_tar->log("saveToFile: archive_data size=%zu", _impl->archive_data->length());
+  logchan_tar->log("saveToFile: archive_data size=%zu", impl->archive_data->length());
 
   File file(tar_file, EFM_WRITE);
   if (!file.IsOpen()) {
@@ -357,7 +360,7 @@ bool TarArchive::saveToFile(const file::Path& tar_file) const {
 
   logchan_tar->log("saveToFile: file opened successfully");
 
-  EFileErrCode write_result = file.Write(_impl->archive_data->data(), _impl->archive_data->length());
+  EFileErrCode write_result = file.Write(impl->archive_data->data(), impl->archive_data->length());
   logchan_tar->log("saveToFile: Write() returned error code: %d", (int)write_result);
 
   // Force close and check file exists
@@ -373,7 +376,7 @@ bool TarArchive::saveToFile(const file::Path& tar_file) const {
       logchan_tar->log("saveToFile: actual file size on disk: %zu bytes", file_size);
 
       // Success if write returned no error and file size matches
-      bool success = (write_result == 0) && (file_size == _impl->archive_data->length());
+      bool success = (write_result == 0) && (file_size == impl->archive_data->length());
       logchan_tar->log("saveToFile: %s", success ? "SUCCESS" : "FAILED");
       return success;
     }
@@ -408,20 +411,20 @@ tararchive_ptr_t TarArchive::loadFromFile(const file::Path& tar_file) {
 }
 
 datablock_ptr_t TarArchive::getArchiveData() const {
-  return _impl->archive_data;
+  auto impl = _impl.getShared<TarArchive_Impl>();
+  return impl->archive_data;
 }
 
 tararchive_ptr_t TarArchive::loadFromMemory(datablock_ptr_t data) {
   if (!data || data->length() == 0) {
     return nullptr;
   }
-
-  auto impl = std::make_unique<Impl>();
+  auto archive = std::make_shared<TarArchive>();
+  auto impl = archive->_impl.getShared<TarArchive_Impl>();
   if (!impl->loadFromData(data)) {
     return nullptr;
   }
-
-  return std::shared_ptr<TarArchive>(new TarArchive(std::move(impl)));
+  return archive;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -429,18 +432,20 @@ tararchive_ptr_t TarArchive::loadFromMemory(datablock_ptr_t data) {
 ////////////////////////////////////////////////////////////////////////////////
 
 std::string TarArchive::getLastError() const {
-  return _impl->last_error;
+  auto impl = _impl.getShared<TarArchive_Impl>();
+  return impl->last_error;
 }
 
 bool TarArchive::isValid() const {
-  return _impl->is_valid;
+  auto impl = _impl.getShared<TarArchive_Impl>();
+  return impl->is_valid;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Impl Helper Methods
 ////////////////////////////////////////////////////////////////////////////////
 
-bool TarArchive::Impl::loadFromData(datablock_ptr_t data) {
+bool TarArchive_Impl::loadFromData(datablock_ptr_t data) {
   archive_data = data;
   entries.clear();
   last_error.clear();
@@ -560,7 +565,7 @@ bool TarArchive::Impl::loadFromData(datablock_ptr_t data) {
   return true;
 }
 
-bool TarArchive::Impl::createFromEntries(const tar_entry_map_t& entries_input, const TarCreateOptions& options) {
+bool TarArchive_Impl::createFromEntries(const tar_entry_map_t& entries_input, const TarCreateOptions& options) {
   entries = entries_input;
   last_error.clear();
   is_valid = false;
@@ -702,7 +707,7 @@ logchan_tar->log("createFromEntries: success");
 return true;
 }
 
-std::string TarArchive::Impl::formatLibtarError(const std::string& operation) {
+std::string TarArchive_Impl::formatLibtarError(const std::string& operation) {
   return FormatString("Tar operation '%s' failed", operation.c_str());
 }
 

@@ -536,6 +536,9 @@ void VkFxInterface::bindParamTexture(const FxShaderParam* hpar, const Texture* p
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::bindParamTextureArray(const FxShaderParam* hpar, const TextureArray* tex_array) {
+    if(tex_array==nullptr){
+        return;
+    }
   OrkAssert(tex_array);
   OrkAssert(tex_array->_tex);
   

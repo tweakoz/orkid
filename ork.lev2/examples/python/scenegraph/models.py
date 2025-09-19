@@ -34,7 +34,7 @@ random.seed(seed)
 class SceneGraphApp(BoilerplateSgApp):
 
   def __init__(self):
-    super().__init__(fullscreen=False)
+    super().__init__(fullscreen=True,ssaa=3)
 
     ####################################
     # builtin skybox list
@@ -171,7 +171,7 @@ class SceneGraphApp(BoilerplateSgApp):
         if skybox_name in self.skybox_cache:
           self.skybox = self.skybox_cache[skybox_name]
         else:
-          self.skybox = lev2.PbrCommon.requestRadianceMaps(skybox_name)
+          self.skybox = lev2.PbrCommon.requestRadianceMapsAsync(skybox_name)
           self.skybox_cache[skybox_name] = self.skybox
         #####################################
         self.pbr_common.RadianceMaps = self.skybox
