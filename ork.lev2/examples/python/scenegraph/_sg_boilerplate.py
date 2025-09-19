@@ -51,7 +51,7 @@ class TurntableModelInst(object):
     self.sgnode = model.createNode("node%d"%index,layer)
     
     self.pos = vec3(math.cos(fi)*3.14, math.sin(fi*3.14)*0.25, math.sin(fi)*3.14)
-    self.pos = self.pos.normalized*3.0
+    self.pos = self.pos.normalized*3.5
     self.rot = quat(vec3(0,1,0),0)
     incraxis = vec3(0,1,0)
     incrmagn = random.uniform(-0.001,0.001)
@@ -66,9 +66,9 @@ class TurntableModelInst(object):
 
 class BoilerplateSgApp(object):
 
-  def __init__(self):
+  def __init__(self,fullscreen=False):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=2,fullscreen=True)
+    self.ezapp = OrkEzApp.create(self,ssaa=0,fullscreen=fullscreen)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
     setupUiCamera(app=self,tgt=vec3(0,0,0),eye=vec3(0,-3.5,-3.5))
@@ -109,24 +109,6 @@ class BoilerplateSgApp(object):
     self.fwd_layers = [self.layer_fwd,self.layer_donly]
     self.pbr_common = self.scene.pbr_common
 
-  ##############################################
-
-  def onUiEvent(self,uievent):
-    res = ui.HandlerResult()
-    if uievent.code == tokens.KEY_DOWN.hashed:
-      if uievent.keycode == ord("A"):
-        if self.ssaamode == True:
-          self.ssaamode = False
-        else:
-          self.ssaamode = True
-        print("SSAO MODE",self.ssaamode)
-        return res
-    handled = self.uicam.uiEventHandler(uievent)
-    if handled:
-      self.camera.copyFrom( self.uicam.cameradata )
-    else:
-      handled = ui.HandlerResult()
-    return res
   
   ################################################
 
