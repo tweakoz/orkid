@@ -39,11 +39,11 @@ class SceneGraphApp(BoilerplateSgApp):
     super().__init__()
     #self.skybox = "nebula"     # (purple, soft)
     #self.skybox = "pillars8k"  # pillars of creation (sharp)
-    #self.skybox = "cold8k"     # ice planet (bright, soft)
+    self.skybox = "cold8k"     # ice planet (bright, soft)
     #self.skybox = "ocean8k"     # ocean planet (soft)
     #self.skybox = "arena8k"    # the grid  (dark)
     #self.skybox = "club8k"     # gothic club (dark)
-    self.skybox = "desert8k"   # desert planet (bright)
+    #self.skybox = "desert8k"   # desert planet (bright)
     self.skybox_intensity = 1.0 # skybox intensity multiplier
   ##############################################
 
@@ -64,21 +64,31 @@ class SceneGraphApp(BoilerplateSgApp):
     OBOX = MISC_GLTF/"obox.glb"                # ancient box
     LION = MISC_GLTF/"lion.glb"                # lion statue
     DHELM = MISC_GLTF/"dragon_helm.glb"        # dragon helm
+    FRACVASE = MISC_GLTF/"fracvase.glb"        # fractal vase
+    ORCHID = MISC_GLTF/"orchid1.glb"           # fractal vase
+    TEAPOT = MISC_GLTF/"gothic_teapot.glb"     # gothic teapot
+    WARHORN = MISC_GLTF/"warhorn.glb"          # war horn
 
     models = []
+    models += [lev2.XgmModel(WARHORN)]
     models += [lev2.XgmModel(LION)]
     models += [lev2.XgmModel(OMASK)]
     models += [lev2.XgmModel(OBOX)]
     models += [lev2.XgmModel(SITTER)]
+    models += [lev2.XgmModel(FRACVASE)]
     models += [lev2.XgmModel(DHELM)]
     models += [lev2.XgmModel(SCARLETT)]
+    models += [lev2.XgmModel(ORCHID)]
+    models += [lev2.XgmModel(TEAPOT)]
 
     ###################################
 
+    fi = 0.0
     for i in range(numinstances):
       model = models[i%len(models)]
-      minst = TurntableModelInst(model,self.layer_fwd,i)
+      minst = TurntableModelInst(model,self.layer_fwd,i,fi)
       self.modelinsts += [minst]
+      fi += (1.0/numinstances)*math.pi*2.0
 
     ###################################
 
