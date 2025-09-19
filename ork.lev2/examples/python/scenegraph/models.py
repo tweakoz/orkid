@@ -23,11 +23,9 @@ from lev2utils.primitives import createGridData
 ################################################################################
 
 parser = argparse.ArgumentParser(description='scenegraph example')
-parser.add_argument('--numinstances', metavar="numinstances", type=int, default=10, help='number of mesh instances' )
 parser.add_argument('--seed', type=int, default=57, help='random seed' )
 
 args = vars(parser.parse_args())
-numinstances = args["numinstances"]
 seed = args["seed"]
 random.seed(seed)
 
@@ -60,7 +58,11 @@ class SceneGraphApp(BoilerplateSgApp):
     SPIKEE = TESTS/"pbr1"/"pbr1"               # coronavirus looking thing
     PBRCALIB = TESTS/"pbr_calib.glb"           # pbr calibration ball
     TORUS = BASEOBJS/"misc"/"ref"/"torus.glb"  # generic torus
-    SCARLETT = CHARS/"scarlett.glb"        # anime girl
+    SCARLETT = CHARS/"scarlett.glb"            # anime girl
+    KNIGHT = CHARS/"knight1.glb"               # anime girl
+    TITAN = CHARS/"titan.glb"                  # anime girl
+    ENCH = CHARS/"enchantress1.glb"            # anime girl
+    GOBL = CHARS/"goblin1.glb"            # anime girl
     SITTER = ART/"sitter.glb"            # sitting figure
     ORCHID = ART/"orchid1.glb"           # fractal vase
     OMASK = ART/"omask.glb"              # oni mask
@@ -72,17 +74,24 @@ class SceneGraphApp(BoilerplateSgApp):
     WARHORN = ART/"warhorn.glb"          # war horn
 
     models = []
-    models += [lev2.XgmModel(WARHORN)]
-    models += [lev2.XgmModel(LION)]
-    models += [lev2.XgmModel(OMASK)]
-    models += [lev2.XgmModel(OBOX)]
-    models += [lev2.XgmModel(SITTER)]
-    models += [lev2.XgmModel(FRACVASE)]
-    models += [lev2.XgmModel(DHELM)]
-    models += [lev2.XgmModel(SCARLETT)]
-    models += [lev2.XgmModel(ORCHID)]
-    models += [lev2.XgmModel(TEAPOT)]
+    models += [WARHORN]
+    models += [LION]
+    models += [OMASK]
+    models += [OBOX]
+    models += [SITTER]
+    models += [FRACVASE]
+    models += [DHELM]
+    models += [SCARLETT]
+    models += [KNIGHT]
+    models += [ENCH]
+    models += [TITAN]
+    models += [GOBL]
+    models += [ORCHID]
+    models += [TEAPOT]
+    print(models)
 
+    numinstances = len(models)
+    models = [lev2.XgmModel(str(m)) for m in models]
     ###################################
 
     fi = 0.0

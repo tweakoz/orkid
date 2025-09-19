@@ -50,11 +50,11 @@ class TurntableModelInst(object):
     self.model = model
     self.sgnode = model.createNode("node%d"%index,layer)
     
-    self.pos = vec3(math.cos(fi)*3.14, math.sin(fi*3.14), math.sin(fi)*3.14)
-    self.pos = self.pos.normalized*2.5
+    self.pos = vec3(math.cos(fi)*3.14, math.sin(fi*3.14)*0.25, math.sin(fi)*3.14)
+    self.pos = self.pos.normalized*3.0
     self.rot = quat(vec3(0,1,0),0)
     incraxis = vec3(0,1,0)
-    incrmagn = random.uniform(-0.01,0.01)
+    incrmagn = random.uniform(-0.001,0.001)
     self.rotincr = quat(incraxis,incrmagn)
     self.scale = random.uniform(0.5,0.7)
     self.sgnode.worldTransform.translation = self.pos 
@@ -68,10 +68,10 @@ class BoilerplateSgApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=2)
+    self.ezapp = OrkEzApp.create(self,ssaa=2,fullscreen=True)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
-    setupUiCamera(app=self,tgt=vec3(0,0,0),eye=vec3(0,-3,-3))
+    setupUiCamera(app=self,tgt=vec3(0,0,0),eye=vec3(0,-3.5,-3.5))
     self.modelinsts=[]
     self.ssaamode = False
     self.skybox = "nebula"
