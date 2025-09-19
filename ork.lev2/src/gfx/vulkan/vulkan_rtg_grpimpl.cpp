@@ -124,10 +124,14 @@ rtgroup_attachments_ptr_t VkRtGroupImpl::attachments() {
     auto imgobj     = bufferimpl->_imgobj;
     __attachments->_descriptions.push_back(bufferimpl->_attachmentDesc);
     __attachments->_references.push_back(bufferimpl->_attachmentRef);
-    __attachments->_imageviews.push_back(imgobj->_vkimageview);
+    // Use slice view from descriptor if available, otherwise use image view
+    VkImageView view_to_use = bufferimpl->_descriptorInfo.imageView != VK_NULL_HANDLE 
+                               ? bufferimpl->_descriptorInfo.imageView 
+                               : imgobj->_vkimageview;
+    __attachments->_imageviews.push_back(view_to_use);
     __attachments->descimginfos.push_back(bufferimpl->_descriptorInfo);
 
-    if (imgobj->_vkimageview == VK_NULL_HANDLE) {
+    if (view_to_use == VK_NULL_HANDLE) {
       //printf("rtg<%s> has null imageview\n", _rtg->_name.c_str());
       OrkAssert(false);
     }
@@ -136,9 +140,13 @@ rtgroup_attachments_ptr_t VkRtGroupImpl::attachments() {
     auto imgobj     = _depth_buffer_impl->_imgobj;
     __attachments->_descriptions.push_back(_depth_buffer_impl->_attachmentDesc);
     __attachments->_references.push_back(_depth_buffer_impl->_attachmentRef);
-    __attachments->_imageviews.push_back(imgobj->_vkimageview);
+    // Use slice view from descriptor if available, otherwise use image view
+    VkImageView view_to_use = _depth_buffer_impl->_descriptorInfo.imageView != VK_NULL_HANDLE 
+                               ? _depth_buffer_impl->_descriptorInfo.imageView 
+                               : imgobj->_vkimageview;
+    __attachments->_imageviews.push_back(view_to_use);
     __attachments->descimginfos.push_back(_depth_buffer_impl->_descriptorInfo);
-    OrkAssert(imgobj->_vkimageview != VK_NULL_HANDLE);
+    OrkAssert(view_to_use != VK_NULL_HANDLE);
   }
   return __attachments;
 }

@@ -51,6 +51,34 @@ vertex_shader vs_grid_forward_lit : vif_FWDLIT : lib_pbr_vtx : ublk_std_matrices
   frg_clr     = vec4(1, 1, 1, 1);
 }
 ///////////////////////////////////////////////////////////////
+vertex_interface vif_DEPTHPP {
+  inputs {
+    vec4 position : POSITION;
+  }
+  outputs {
+    float frg_camz;
+  }
+}
+fragment_interface fif_DEPTHPP : vif_DEPTHPP {
+  // inherits inputs from vif
+  outputs {
+    layout(location = 0) float out_z;
+  }
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_grid_forward_depth_prepass //
+  : vif_DEPTHPP                             //
+  : ublk_std_matrices {                     //
+  vec4 HPOS = mvp * position;
+  gl_Position = HPOS;
+  frg_camz     = HPOS.z/HPOS.w;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_grid_forward_depth_prepass //
+ : fif_DEPTHPP {                              //
+  out_z   = frg_camz;
+}
+///////////////////////////////////////////////////////////////
 libblock lib_frg_grid {
   float grid(float coord, float size) {
     float halfsize = size * 0.5;
@@ -220,4 +248,24 @@ technique FWD_CT_NM_RI_NI_MO_V4 {
 technique FWD_CT_NM_RI_NI_MO_V5 {
   fxconfig = fxcfg_default;
   vf_pass  = { vs_grid_forward_lit, ps_grid_forward_lit_mono_V4, sb_forward }
+}
+technique FWD_DEPTHPREPASS_RI_NI_MO {
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_grid_forward_depth_prepass, ps_grid_forward_depth_prepass, sb_forward }
+}
+technique FWD_DEPTHPREPASS_RI_NI_MO_V2 {
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_grid_forward_depth_prepass, ps_grid_forward_depth_prepass, sb_forward }
+}
+technique FWD_DEPTHPREPASS_RI_NI_MO_V3 {
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_grid_forward_depth_prepass, ps_grid_forward_depth_prepass, sb_forward }
+}
+technique FWD_DEPTHPREPASS_RI_NI_MO_V4 {
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_grid_forward_depth_prepass, ps_grid_forward_depth_prepass, sb_forward }
+}
+technique FWD_DEPTHPREPASS_RI_NI_MO_V5 {
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_grid_forward_depth_prepass, ps_grid_forward_depth_prepass, sb_forward }
 }

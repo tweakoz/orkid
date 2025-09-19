@@ -20,7 +20,10 @@ VulkanRenderInfo::VulkanRenderInfo(VkRtGroupImpl* rtg) {
     auto vkfmt   = bufimpl->_vkfmt;
     VkRenderingAttachmentInfo rai;
     initializeVkStruct(rai, VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO);
-    rai.imageView   = bufimpl->_imgobj->_vkimageview;
+    // Use slice view from descriptor if available, otherwise use image view
+    rai.imageView   = bufimpl->_descriptorInfo.imageView != VK_NULL_HANDLE 
+                      ? bufimpl->_descriptorInfo.imageView 
+                      : bufimpl->_imgobj->_vkimageview;
     rai.imageLayout = bufimpl->_currentLayout;
     rai.resolveMode = VK_RESOLVE_MODE_NONE;
     // rai.resolveImageView = VkImageView();
@@ -47,7 +50,10 @@ VulkanRenderInfo::VulkanRenderInfo(VkRtGroupImpl* rtg) {
   auto dbuf_impl                       = rtg->_depth_buffer_impl;
   if (dbuf_impl) {
     initializeVkStruct(_rainfo_depth, VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO);
-    _rainfo_depth.imageView   = dbuf_impl->_imgobj->_vkimageview;
+    // Use slice view from descriptor if available, otherwise use image view
+    _rainfo_depth.imageView   = dbuf_impl->_descriptorInfo.imageView != VK_NULL_HANDLE 
+                                ? dbuf_impl->_descriptorInfo.imageView 
+                                : dbuf_impl->_imgobj->_vkimageview;
     _rainfo_depth.imageLayout = dbuf_impl->_currentLayout;
     _rainfo_depth.resolveMode = VK_RESOLVE_MODE_NONE;
     //_rainfo_depth.resolveImageView = VkImageView();

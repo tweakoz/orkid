@@ -90,7 +90,7 @@ class SceneGraphApp(object):
     if envmap != "":
       params_dict["SkyboxTexPathStr"] = envmap
     else:
-      params_dict["SkyboxTexPathStr"] = "src://envmaps/blender_night"
+      params_dict["SkyboxTexPathStr"] = "ork_envmaps|blender_night"
 
     createSceneGraph(app=self,
                      rendermodel="ForwardPBR",

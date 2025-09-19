@@ -188,9 +188,10 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
         }
         break;
       }
-      case "arrayslice"_crcu:
-        OrkAssert(false);
+      case "arrayslice"_crcu: {
+        RTGIMPL = _buildRtgImplFromTextureArraySlice(rtgroup);
         break;
+      }
       default:
         OrkAssert(false);
         break;
@@ -260,9 +261,11 @@ void VkFrameBufferInterface::_popRtGroup() {
         RTGIMPL->_transitionToTexture(_contextVK->primary_cb());
         break;
       }
-      case "arrayslice"_crcu:
-        OrkAssert(false);
+      case "arrayslice"_crcu: {
+        // Array slices are typically used as textures after rendering (e.g., shadow maps)
+        RTGIMPL->_transitionToTexture(_contextVK->primary_cb());
         break;
+      }
       default:
         OrkAssert(false);
         break;
