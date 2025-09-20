@@ -547,6 +547,10 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
 
   auto& CB = _contextVK->primary_cb()->_vkcmdbuf;
 
+  if(_debugNextPrimitive){
+    OrkBreak();
+  }
+
   fxi->_bindPipeline(CB, pipeline);
   fxi->_bindVertexBufferOnSlot(CB, vk_vbimpl, 0);
       
@@ -555,7 +559,7 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
   ///////////////////////
 
   // Check for Metal debugger trigger
-  if(_debugNextPrimitive) {
+  /*if(_debugNextPrimitive) {
     printf("VK: Metal capture triggered for next draw call\n");
     // Insert a debug marker for Metal debugging
     if(_contextVK->_vkCmdInsertDebugUtilsLabelEXT) {
@@ -569,7 +573,7 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
       _contextVK->_vkCmdInsertDebugUtilsLabelEXT(CB, &label);
     }
     _debugNextPrimitive = false;
-  }
+  }*/
 
   vkCmdDraw(
       CB, // command buffer

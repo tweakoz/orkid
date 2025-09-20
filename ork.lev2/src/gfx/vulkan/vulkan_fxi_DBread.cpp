@@ -724,6 +724,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
 
       auto vk_pass         = std::make_shared<VkFxShaderPass>();
       auto vk_program      = std::make_shared<VkFxShaderProgram>(vulkan_shaderfile.get());
+      vk_program->_tek_name = str_tek_name;
       vk_pass->_vk_program = vk_program;
       vk_tek->_vk_passes.push_back(vk_pass);
       static int prog_index          = 0;

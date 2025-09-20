@@ -10,7 +10,7 @@ import "envtools.i2";
 ///////////////////////////////////////////////////////////////
 // Uniform Blocks and Sets
 ///////////////////////////////////////////////////////////////
-uniform_block ub_frg_fwd(descriptor_set 0){
+uniform_block ub_frg_fwd (descriptor_set 0) {
   float DppZBias;
   vec4 ShadowParams;
 }
@@ -75,15 +75,6 @@ fragment_interface iface_forward : ub_frg_fwd : ub_frg_fwd_lighting : ss_frg_fwd
   }
   outputs {
     layout(location = 0) vec4 out_color;
-  }
-}
-///////////////////////////////////////////////////////////////
-fragment_interface iface_fdprepass : ub_frg_fwd {
-  inputs {
-    float frg_depth;
-  }
-  outputs {
-    // layout(location = 0) vec4 out_color;
   }
 }
 ///////////////////////////////////////////////////////////////
@@ -237,7 +228,7 @@ fragment_shader ps_gbuffer_n // normalmap
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 
-vertex_interface iface_vdprepass : ub_std_vtx {
+vertex_interface vif_DPP {
   inputs {
     vec4 position : POSITION;
   }
@@ -245,7 +236,7 @@ vertex_interface iface_vdprepass : ub_std_vtx {
     float frg_depth;
   }
 }
-vertex_interface iface_vdprepass_skinned : ub_std_vtx : iface_skintools {
+vertex_interface vif_DPP_skinned : ub_std_vtx : iface_skintools {
   inputs {
     vec4 position : POSITION;
     vec3 normal : NORMAL;
@@ -254,23 +245,40 @@ vertex_interface iface_vdprepass_skinned : ub_std_vtx : iface_skintools {
     float frg_depth;
   }
 }
+///////////////////////////////////////////////////////////////
+fragment_interface fif_DPP 
+  : vif_DPP
+  : ub_frg_fwd {
+  outputs {
+    layout(location = 0) float gl_FragDepth;
+  }
+}
 
 ///////////////////////////////////////////////////////////////
 // Forward Depth Prepass
 ///////////////////////////////////////////////////////////////
+uniform_block ublk_dpp (descriptor_set 0) {
+  mat4 mvp_dpp;
+}
 
-vertex_shader vs_forward_depthprepass_mono : iface_vdprepass : ublk_std_matrices {
-  vec4 hpos    = mvp * position;
+vertex_shader vs_forward_depthprepass_mono //
+  : vif_DPP                        //
+  : ublk_dpp {                    //
+  vec4 hpos    = mvp_dpp * position;
   gl_Position  = hpos;
   frg_depth =  (hpos.z/hpos.w);
 }
-vertex_shader vs_forward_depthprepass_skinned_mono : iface_vdprepass_skinned : lib_skin_tools : ublk_std_matrices {
+vertex_shader vs_forward_depthprepass_skinned_mono //
+  : vif_DPP_skinned //
+  : lib_skin_tools //
+  : ublk_std_matrices { //
   vec4 skn_pos = vec4(SkinPosition(position.xyz), 1);
   vec4 hpos    = mvp * skn_pos;
   gl_Position  = hpos;
   frg_depth = (hpos.z) / (hpos.w);
 }
-fragment_shader ps_forward_depthprepass_mono : iface_fdprepass {
+fragment_shader ps_forward_depthprepass_mono // 
+  : fif_DPP { //
   //gl_FragDepth = frg_depth;
   gl_FragDepth = gl_FragCoord.z + DppZBias;
 }

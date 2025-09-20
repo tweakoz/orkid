@@ -16,7 +16,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_vkpip = logger()->configureChannel("VKPIP", fvec3(1,1,.2), false);
+static logchannel_ptr_t logchan_vkpip = logger()->configureChannel("VKPIP", fvec3(1,1,.2), true);
 
 vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
     vkvtxbuf_ptr_t vb,             //
@@ -32,6 +32,9 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
          _currentORKTEK->_techniqueName.c_str(),
          shprog.get(), 
          shprog->_vertexinterface ? shprog->_vertexinterface->_name.c_str() : "null");
+  if(shprog->_tek_name == "FWD_DEPTHPREPASS_RI_NI_MO"){
+    //OrkBreak();
+  }
 
   ////////////////////////////////////////////////////
   // rasterstate info
@@ -137,7 +140,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
     // pipeline report
     ///////////////////////////////////////////////////
     std::string report_filename;
-    if(0){
+    if(1){
 
       // Generate pipeline report for debugging descriptor set issues
       
@@ -276,6 +279,9 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
     ////////////////////////////////////////////////////
     // descriptors - NEW: Use merged resource data instead of legacy reflection
     ////////////////////////////////////////////////////
+  if(shprog->_tek_name == "FWD_DEPTHPREPASS_RI_NI_MO"){
+    OrkBreak();
+  }
 
     // Store descriptor set layouts for cleanup later
     std::vector<VkDescriptorSetLayout> descriptor_set_layouts;
@@ -637,6 +643,9 @@ void VkFxInterface::_uploadPipelineData(VkCommandBuffer CB,
   // Note: With dynamic UBOs, this may become unnecessary
   _flushDirtyUniformBlocks();
   
+  if(prog->_tek_name=="FWD_DEPTHPREPASS_RI_NI_MO"){
+    OrkBreak();
+  }
   auto desc_set = pipeline->_descriptorSetCache->fetchDescriptorSetForProgram(prog);
   if (desc_set) {
     // Bind descriptor set with dynamic offsets from applyPendingUboUpdates
@@ -818,7 +827,7 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
 
   // Check if program has any merged resource bindings
   if (program->_merged_resource_bindings.empty()) {
-    logchan_vkpip->log("Program has no merged resource bindings - returning null descriptor set");
+    logchan_vkpip->log("Program<%s> has no merged resource bindings - returning null descriptor set", program->_tek_name.c_str());
     return nullptr; // No descriptor sets needed for push constants only
   }
 

@@ -104,9 +104,9 @@ class SceneGraphApp(object):
     self.pbr_common.useDepthPrepass = True
     self.pbr_common.dppZBias = 1.0e-4
 
-    self.rendernode.debugRenderingModel = tokens.NONE # NONE ALL FORWARD_PBR
-    self.rendernode.debugPassID = tokens.ALL # PROBE MAIN
-    self.rendernode.debugSubPassID = tokens.SSAO_LINDEPTH # tokens.FORWARD_PBR
+    self.rendernode.debugRenderingModel = tokens.DEPTH_PREPASS # NONE ALL FORWARD_PBR
+    self.rendernode.debugPassID = tokens.SHADOW # PROBE MAIN
+    self.rendernode.debugSubPassID = tokens.ALL # tokens.FORWARD_PBR
 
     ###################################
 
@@ -129,7 +129,7 @@ class SceneGraphApp(object):
         )
         submesh.material = copy
 
-    for i in range(81):
+    for i in range(4):
       node = NODE(model,self,i)
 
       x = (i % 9)

@@ -52,7 +52,9 @@ bool VkFxInterface::_tryBindMergedResource(const FxShaderParam* hpar,
     printf("_tryBindMergedResource: _vk_program is null for param<%s>\n", hpar->_name.c_str());
     return false;
   }
-  
+  if(vk_shprog->_tek_name == "FWD_DEPTHPREPASS_RI_NI_MO"){
+    OrkBreak();
+  }
   if (!_currentVKPASS->_merged_resources) {
     return false;
   }
