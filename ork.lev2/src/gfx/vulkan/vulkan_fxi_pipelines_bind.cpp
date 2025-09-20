@@ -140,16 +140,6 @@ void VkFxInterface::_uploadPipelineData(VkCommandBuffer CB, vkpipeline_obj_ptr_t
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkFxInterface::_flushRenderPassScopedState() {
-  for (int slot = 0; slot < 4; slot++) {
-    _active_vbs[slot]                = nullptr;
-    _active_gfx_descriptorSets[slot] = nullptr;
-  }
-  _currentPipeline = nullptr;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 void VkFxInterface::_bindVertexBufferOnSlot(VkCommandBuffer cmdbuf, vkvtxbuf_ptr_t vb, size_t slot) {
   if (true) { //_active_vbs[slot] != vb) {
     VkDeviceSize offset = 0;
@@ -305,11 +295,11 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
 
   // Include merged resource bindings in hash calculation
   for (auto it : vk_program->_merged_resource_bindings) {
-    auto param                = it.first;
-    auto [set_id, binding_id] = it.second;
+    auto param          = it.first;
+    DescBinding binding = it.second;
 
-    crc64.accumulateItem(set_id);
-    crc64.accumulateItem(binding_id);
+    crc64.accumulateItem(binding._set_id);
+    crc64.accumulateItem(binding._binding_id);
 
     // Check if this is a texture binding
     auto tex_it = vk_program->_textures_by_orkparam.find(param);

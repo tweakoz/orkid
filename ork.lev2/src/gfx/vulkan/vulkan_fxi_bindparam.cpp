@@ -76,7 +76,7 @@ bool VkFxInterface::_tryBindMergedResource(const FxShaderParam* hpar,
   }
   
   // Store the binding info
-  vk_shprog->_merged_resource_bindings[hpar] = std::make_pair(set_id, binding_info->binding_id);
+  vk_shprog->_merged_resource_bindings[hpar] = DescBinding{set_id, binding_info->binding_id};
   
   // Store the resource data based on type
   switch (expected_type) {

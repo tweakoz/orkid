@@ -1077,7 +1077,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
                       auto first_item = vk_ubo->_items_by_order[0];
                       if (first_item && first_item->_orkparam) {
                         auto fxparam = first_item->_orkparam.get();
-                        vk_program->_merged_resource_bindings[fxparam] = {set_id, binding->binding_id};
+                        vk_program->_merged_resource_bindings[fxparam] = DescBinding{uint32_t(set_id), binding->binding_id};
                         //printf("AUTO-REGISTERED UBO<%s> at set<%d> binding<%d>\n", 
                         //       binding->name.c_str(), set_id, binding->binding_id);
                       }

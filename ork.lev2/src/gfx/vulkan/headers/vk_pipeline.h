@@ -145,6 +145,11 @@ struct VkParamSetItem {
   svar64_t _value;
 };
 ///////////////////////////////////////////////////////////////////////////////
+struct DescBinding {
+  uint32_t _set_id     = 0;
+  uint32_t _binding_id = 0;
+};
+///////////////////////////////////////////////////////////////////////////////
 struct VkFxShaderProgram {
 
   VkFxShaderProgram(VkFxShaderFile* file);
@@ -169,7 +174,7 @@ struct VkFxShaderProgram {
   std::unordered_map<fxparam_constptr_t, vkbuffer_ptr_t> _uniformbuffers_by_orkparam;
   
   // Storage for merged resource bindings (set_id, binding_id)
-  std::unordered_map<fxparam_constptr_t, std::pair<uint32_t, uint32_t>> _merged_resource_bindings;
+  std::unordered_map<fxparam_constptr_t, DescBinding> _merged_resource_bindings;
   
   int _pipeline_bits_prg       = -1;
   int _pipeline_bits_composite = -1;

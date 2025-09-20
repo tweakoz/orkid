@@ -392,7 +392,6 @@ struct VkFxInterface final : public FxInterface {
   void _bindGfxDescriptorSetOnSlot(VkCommandBuffer cmdbuf, vkdescriptorset_ptr_t desc_set, size_t slot);
   void _bindVertexBufferOnSlot(VkCommandBuffer cmdbuf, vkvtxbuf_ptr_t vb, size_t slot);
 
-  void _flushRenderPassScopedState();
   int _pipelineBitsForShader(vkfxsprg_ptr_t shprog);
   void _flushDirtyUniformBlocks();
 
