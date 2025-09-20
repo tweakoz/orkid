@@ -343,7 +343,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       vk_samp->_orkparam->_name   = str_sampler_identifier;
       vk_samp->_orkparam->_impl.set<VkFxShaderUniformSetSampler*>(vk_samp.get());
       vk_smpset->_samplers_by_name[str_sampler_identifier] = vk_samp;
-
+      ork_param->_impl.set<VkFxShaderUniformSetSampler*>(vk_samp.get());
       ork_smpset->_parametersByName[str_sampler_identifier] = ork_param.get();
       if (0)
         printf("uniset<%s> ADDING Sampler PARAM<%s>\n", str_smpset_name.c_str(), str_sampler_identifier.c_str());
@@ -1105,7 +1105,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       ork_pass->_impl.setShared<VkFxShaderPass>(vk_pass);
 
       ork_tek->_passes.push_back(ork_pass);
-    }
+    } //for (size_t i = 0; i < num_passes; i++) {
 
     return vk_tek;
   };

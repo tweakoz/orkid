@@ -58,7 +58,8 @@ bool VkFxInterface::_tryBindMergedResource(const FxShaderParam* hpar,
   if (!_currentVKPASS->_merged_resources) {
     return false;
   }
-  
+   
+
   // Find binding info in merged resources
   auto [set_id, binding_info] = findBindingInMergedResources(_currentVKPASS->_merged_resources, hpar->_name);
   
@@ -80,16 +81,19 @@ bool VkFxInterface::_tryBindMergedResource(const FxShaderParam* hpar,
   
   // Store the resource data based on type
   switch (expected_type) {
-    case VkMergedResourceBinding::Type::Sampler:
+    case VkMergedResourceBinding::Type::Sampler: {
+      auto par_sampler_impl = hpar->_impl.get<VkFxShaderUniformSetSampler*>();
       if (resource_data) {
         vk_shprog->_textures_by_orkparam[hpar] = *static_cast<vktexobj_ptr_t*>(resource_data);
       }
       break;
-    case VkMergedResourceBinding::Type::UniformBlock:
+    }
+    case VkMergedResourceBinding::Type::UniformBlock: {
       if (resource_data) {
         vk_shprog->_uniformbuffers_by_orkparam[hpar] = *static_cast<vkbuffer_ptr_t*>(resource_data);
       }
       break;
+    }
     case VkMergedResourceBinding::Type::StorageBuffer:
       // TODO: Add storage for storage buffers when the data structure is added
       break;
@@ -504,7 +508,7 @@ void VkFxInterface::bindParamTexture(const FxShaderParam* hpar, const Texture* p
   if (!pTex) {
     return;
   }
-  
+
   vktexobj_ptr_t vk_tex;
   if (auto as_to = pTex->_impl.tryAsShared<VulkanTextureObject>()) {
     vk_tex = as_to.value();

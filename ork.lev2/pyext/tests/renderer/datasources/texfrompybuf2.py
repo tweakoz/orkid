@@ -69,7 +69,7 @@ class StereoApp1(object):
     ###################################
 
     params_dict = {
-      "SkyboxTexPathStr": "src://envmaps/blender_studio.dds",
+      "SkyboxTexPathStr": "ork_envmaps|blender_studio",
       "SkyboxIntensity": 1.5,
       "DiffuseIntensity": 1.0,
       "SpecularIntensity": 1.0,

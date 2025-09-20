@@ -143,7 +143,7 @@ class TestApp(object):
     ###################################
 
     params_dict = createParams()
-    params_dict.SkyboxTexPathStr = "src://envmaps/blender_studio"
+    params_dict.SkyboxTexPathStr = "ork_envmaps|blender_studio"
     params_dict.SkyboxIntensity = 1.5
 
     ##################
