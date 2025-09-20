@@ -23,27 +23,38 @@ vkpipeline_obj_ptr_t VkFxInterface::_createPipeline(vkvtxbuf_ptr_t vb,          
                                                     vkprimclass_ptr_t primclass,     //
                                                     vkrasterstate_ptr_t vkrstate ) { //
 
-  vkpipeline_obj_ptr_t rval = std::make_shared<VkPipelineObject>(_contextVK);
+  vkpipeline_obj_ptr_t pipeline = std::make_shared<VkPipelineObject>(_contextVK);
   auto shprog = _currentVKPASS->_vk_program;
-  rval->_vk_program         = shprog;
+  pipeline->_vk_program         = shprog;
   auto fbi = _contextVK->_fbi;
   auto gbi = _contextVK->_gbi;
   auto rtg       = fbi->_active_rtgroup;
   auto rtg_impl  = rtg->_impl.getShared<VkRtGroupImpl>();
 
-  auto& CINFO = rval->_VKGFXPCI;
-  initializeVkStruct(CINFO, VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
+  ////////////////////////////////////////////////////
+  // create pipeline info
+  ////////////////////////////////////////////////////
 
-  CINFO.flags      = VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT;
-  CINFO.renderPass = VK_NULL_HANDLE;
-  CINFO.subpass    = 0;
+  auto& PIPE_CREATE_INFO = pipeline->_VKGFXPCI;
+  initializeVkStruct(PIPE_CREATE_INFO, VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
 
+  PIPE_CREATE_INFO.flags      = VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT;
+  PIPE_CREATE_INFO.renderPass = VK_NULL_HANDLE;
+  PIPE_CREATE_INFO.subpass    = 0;
+
+  ////////////////////////////////////////////////////
   // Dynamic rendering info
+  ////////////////////////////////////////////////////
+
   rtg_impl->_prinfo_retain = std::make_shared<VulkanPipelineRenderInfo>(rtg);
 
   OrkAssert(rtg_impl->_prinfo_retain);
-  CINFO.pNext = &rtg_impl->_prinfo_retain->_createInfo; // Set the dynamic rendering info
-  // count shader stages
+  PIPE_CREATE_INFO.pNext = &rtg_impl->_prinfo_retain->_createInfo; // Set the dynamic rendering info
+  
+  ////////////////////////////////////////////////////
+  // count/assign shader stages
+  ////////////////////////////////////////////////////
+
   std::vector<VkPipelineShaderStageCreateInfo> stages;
   if (shprog->_vtxshader)
     stages.push_back(shprog->_vtxshader->_shaderstageinfo);
@@ -56,10 +67,10 @@ vkpipeline_obj_ptr_t VkFxInterface::_createPipeline(vkvtxbuf_ptr_t vb,          
   auto vtx_state = gbi->vertexInputState(vb, VIF);
   OrkAssert(vtx_state);
 
-  CINFO.stageCount          = stages.size();
-  CINFO.pStages             = stages.data();
-  CINFO.pVertexInputState   = &vtx_state->_vertex_input_state;
-  CINFO.pInputAssemblyState = &primclass->_input_assembly_state;
+  PIPE_CREATE_INFO.stageCount          = stages.size();
+  PIPE_CREATE_INFO.pStages             = stages.data();
+  PIPE_CREATE_INFO.pVertexInputState   = &vtx_state->_vertex_input_state;
+  PIPE_CREATE_INFO.pInputAssemblyState = &primclass->_input_assembly_state;
 
   ////////////////////////////////////////////////////
   // dynamic states (viewport, scissor)
@@ -71,7 +82,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_createPipeline(vkvtxbuf_ptr_t vb,          
   dynamicState.dynamicStateCount = dynamic_states.size(); // We have two dynamic states: viewport and scissor
   dynamicState.pDynamicStates    = dynamic_states.data();
 
-  CINFO.pDynamicState = &dynamicState;
+  PIPE_CREATE_INFO.pDynamicState = &dynamicState;
 
   VkPipelineViewportStateCreateInfo VPSTATE = {};
   VPSTATE.sType                             = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -80,10 +91,10 @@ vkpipeline_obj_ptr_t VkFxInterface::_createPipeline(vkvtxbuf_ptr_t vb,          
   VPSTATE.scissorCount                      = 1;       // This should match viewportCount
   VPSTATE.pScissors                         = nullptr; // Assuming you're also setting scissor dynamically
 
-  CINFO.pViewportState = &VPSTATE;
+  PIPE_CREATE_INFO.pViewportState = &VPSTATE;
 
   ////////////////////////////////////////////////////
-  // msaa state
+  // MSAA state
   ////////////////////////////////////////////////////
 
   VkPipelineMultisampleStateCreateInfo MSAA = {};
@@ -95,42 +106,82 @@ vkpipeline_obj_ptr_t VkFxInterface::_createPipeline(vkvtxbuf_ptr_t vb,          
   MSAA.alphaToCoverageEnable = VK_FALSE;              // Enable/Disable alpha to coverage
   MSAA.alphaToOneEnable      = VK_FALSE;              // Enable/Disable alpha to one
 
-  CINFO.pMultisampleState = &MSAA; // msaa_impl->_VKSTATE; // todo : dynamic
+  PIPE_CREATE_INFO.pMultisampleState = &MSAA; // msaa_impl->_VKSTATE; // todo : dynamic
 
   ////////////////////////////////////////////////////
   // raster states
   ////////////////////////////////////////////////////
 
-  CINFO.pRasterizationState = &vkrstate->_VKRSCI;
-  CINFO.pDepthStencilState  = &vkrstate->_VKDSSCI;
-  CINFO.pColorBlendState    = &vkrstate->_VKCBSI;
+  PIPE_CREATE_INFO.pRasterizationState = &vkrstate->_VKRSCI;
+  PIPE_CREATE_INFO.pDepthStencilState  = &vkrstate->_VKDSSCI;
+  PIPE_CREATE_INFO.pColorBlendState    = &vkrstate->_VKCBSI;
 
+  ///////////////////////////////////////////////////
+  // create pipeline layout
+  // (descriptor sets and push constants)
   ////////////////////////////////////////////////////
-  // pipeline layout...
-  ////////////////////////////////////////////////////
+
+  auto PLCI = _createPipelineLayoutData(pipeline);                                                      
+
+  VkResult OK = vkCreatePipelineLayout(
+      _contextVK->_vkdevice,   // device
+      &PLCI,                   // pipeline layout create info
+      nullptr,                 // allocator
+      &pipeline->_pipelineLayout); // pipeline layout
+  OrkAssert(VK_SUCCESS == OK);
+
+  PIPE_CREATE_INFO.layout = pipeline->_pipelineLayout;
+
+  ///////////////////////////////////////////////////
+  // create the graphics pipeline
+  ///////////////////////////////////////////////////
+
+  OK = vkCreateGraphicsPipelines(
+      _contextVK->_vkdevice, // device
+      VK_NULL_HANDLE,        // pipeline cache
+      1,                     // count
+      &PIPE_CREATE_INFO,       // create info
+      nullptr,               // allocator
+      &pipeline->_pipeline);
+
+  OrkAssert(VK_SUCCESS == OK);
+
+  ///////////////////////////////////////////////////
+  // pipeline report (generates report and stores filename in pipeline)
+  ///////////////////////////////////////////////////
+
+  if(0) {
+    _createPipelineReport(pipeline);
+  }
+
+  ///////////////////////////////////////////////////
+
+  return pipeline;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_obj_ptr_t pipeline) {
+
+  auto shprog = _currentVKPASS->_vk_program;
 
   VkPipelineLayoutCreateInfo PLCI;
 
   initializeVkStruct(PLCI, VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
 
-  ////////////////////////////////////////////////////
   // push constants
-  ////////////////////////////////////////////////////
 
   if (shprog->_pushConstantBlock) {
     PLCI.pushConstantRangeCount = shprog->_pushConstantBlock->_ranges.size();
     PLCI.pPushConstantRanges    = shprog->_pushConstantBlock->_ranges.data();
   }
 
-  ////////////////////////////////////////////////////
   // descriptors - NEW: Use merged resource data instead of legacy reflection
-  ////////////////////////////////////////////////////
-  if (shprog->_tek_name == "FWD_DEPTHPREPASS_RI_NI_MO") {
-    // OrkBreak();
-  }
 
   // Store descriptor set layouts for cleanup later
-  std::vector<VkDescriptorSetLayout> descriptor_set_layouts;
+  pipeline->_merged_resource_descriptor_set_layouts.clear();
 
   if (_currentVKPASS && _currentVKPASS->_merged_resources && !_currentVKPASS->_merged_resources->descriptor_sets.empty()) {
     logchan_vkpipc->log("Creating descriptor set layouts from merged resources");
@@ -179,8 +230,8 @@ vkpipeline_obj_ptr_t VkFxInterface::_createPipeline(vkvtxbuf_ptr_t vb,          
               OrkAssert(ubo->_orkparamblock != nullptr);
 
               // Track this UBO for the pipeline with its binding ID
-              rval->_uniform_blocks.push_back(ubo);
-              rval->_ubo_by_binding[binding->binding_id] = ubo;
+              pipeline->_uniform_blocks.push_back(ubo);
+              pipeline->_ubo_by_binding[binding->binding_id] = ubo;
 
               break;
             }
@@ -217,7 +268,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_createPipeline(vkvtxbuf_ptr_t vb,          
         VkResult OK = vkCreateDescriptorSetLayout(_contextVK->_vkdevice, &LCI, nullptr, &dset_layout);
         OrkAssert(VK_SUCCESS == OK);
 
-        descriptor_set_layouts.push_back(dset_layout);
+        pipeline->_merged_resource_descriptor_set_layouts.push_back(dset_layout);
 
         logchan_vkpipc->log("  Created descriptor set layout for set %d with %zu bindings", set_id, bindings.size());
       }
@@ -226,13 +277,13 @@ vkpipeline_obj_ptr_t VkFxInterface::_createPipeline(vkvtxbuf_ptr_t vb,          
     // Sort uniform blocks by binding ID for consistent ordering with dynamic offsets
     // Build a reverse map to get binding IDs for each UBO
     std::map<VkFxShaderUniformBlk*, uint32_t> ubo_to_binding;
-    for (const auto& [binding_id, ubo] : rval->_ubo_by_binding) {
+    for (const auto& [binding_id, ubo] : pipeline->_ubo_by_binding) {
       ubo_to_binding[ubo] = binding_id;
     }
 
     std::sort(
-        rval->_uniform_blocks.begin(),
-        rval->_uniform_blocks.end(),
+        pipeline->_uniform_blocks.begin(),
+        pipeline->_uniform_blocks.end(),
         [&ubo_to_binding](const VkFxShaderUniformBlk* a, const VkFxShaderUniformBlk* b) {
           // First sort by descriptor set, then by binding within the set
           if (a->_descriptor_set_id != b->_descriptor_set_id) {
@@ -244,15 +295,14 @@ vkpipeline_obj_ptr_t VkFxInterface::_createPipeline(vkvtxbuf_ptr_t vb,          
           return binding_a < binding_b;
         });
 
-    logchan_vkpipc->log("Pipeline has %zu uniform blocks tracked for dynamic updates", rval->_uniform_blocks.size());
+    logchan_vkpipc->log("Pipeline has %zu uniform blocks tracked for dynamic updates", pipeline->_uniform_blocks.size());
 
-    PLCI.setLayoutCount = descriptor_set_layouts.size();
-    PLCI.pSetLayouts    = descriptor_set_layouts.data();
+    PLCI.setLayoutCount = pipeline->_merged_resource_descriptor_set_layouts.size();
+    PLCI.pSetLayouts    = pipeline->_merged_resource_descriptor_set_layouts.data();
 
     // Store the merged resource layouts in the pipeline object for descriptor set allocation
-    rval->_merged_resource_descriptor_set_layouts = descriptor_set_layouts;
 
-    logchan_vkpipc->log("Pipeline layout will have %zu descriptor set layouts", descriptor_set_layouts.size());
+    logchan_vkpipc->log("Pipeline layout will have %zu descriptor set layouts", pipeline->_merged_resource_descriptor_set_layouts.size());
 
   } else {
     // No descriptor sets available - this is valid for shaders that only use push constants
@@ -260,47 +310,9 @@ vkpipeline_obj_ptr_t VkFxInterface::_createPipeline(vkvtxbuf_ptr_t vb,          
     PLCI.setLayoutCount = 0;
     PLCI.pSetLayouts    = nullptr;
   }
-
-  ///////////////////////////////////////////////////
-  // create pipeline layout
-  // (descriptor sets and push constants)
-  ////////////////////////////////////////////////////
-
-  VkResult OK = vkCreatePipelineLayout(
-      _contextVK->_vkdevice,   // device
-      &PLCI,                   // pipeline layout create info
-      nullptr,                 // allocator
-      &rval->_pipelineLayout); // pipeline layout
-  OrkAssert(VK_SUCCESS == OK);
-
-  CINFO.layout = rval->_pipelineLayout;
-
-  ///////////////////////////////////////////////////
-  // create the graphics pipeline
-  ///////////////////////////////////////////////////
-
-  OK = vkCreateGraphicsPipelines(
-      _contextVK->_vkdevice, // device
-      VK_NULL_HANDLE,        // pipeline cache
-      1,                     // count
-      &CINFO,                // create info
-      nullptr,               // allocator
-      &rval->_pipeline);
-
-  OrkAssert(VK_SUCCESS == OK);
-
-  ///////////////////////////////////////////////////
-  // pipeline report (generates report and stores filename in pipeline)
-  ///////////////////////////////////////////////////
-
-  if(0) {
-    _createPipelineReport(rval);
-  }
-
-  ///////////////////////////////////////////////////
-
-  return rval;
+  return PLCI;
 }
+
 ///////////////////////////////////////////////////////////////////////////////
 } //namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
