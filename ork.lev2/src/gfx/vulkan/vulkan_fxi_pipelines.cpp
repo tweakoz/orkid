@@ -63,7 +63,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
   }
 
   if (shprog->_tek_name == "FWD_DEPTHPREPASS_RI_NI_MO") {
-    printf("WTF\n");
+    //printf("WTF\n");
   }
 
   /////////////////////////////////////////////////////////////////////

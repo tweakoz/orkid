@@ -710,6 +710,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     vulkan_shaderfile->_vk_techniques[str_tek_name] = vk_tek;
 
     size_t num_passes = tecniq_input_stream->ReadItem<size_t>();
+    OrkAssert(num_passes<=1); // only single pass supported for now
 
     auto ork_tek                          = vk_tek->_orktechnique;
     ork_tek->_techniqueName               = str_tek_name;
@@ -811,8 +812,6 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         // Use a default rasterstate or nullptr
         vk_pass->_stateblock_rasterstate = nullptr;
       }
-
-      ////////////////////////////////////////////////////////////
 
       //////////////////////////////////////////////////////////////
       // push constants
@@ -1095,7 +1094,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         vk_pass->_merged_resources = std::make_shared<VkMergedResources>();
       }
       ////////////////////////////////////////////////////////////
-
+      OrkAssert(vk_pass->_merged_resources!=nullptr);
       ////////////////////////////////////////////////////////////
 
       // orkid side

@@ -285,14 +285,14 @@ VkRasterState::VkRasterState(rasterstate_ptr_t rstate, int attachment_count, con
     auto it = unlocked.find(hashed);
     if( it == unlocked.end() ){
       _pipeline_bits = unlocked.size();
-      printf( "VkRasterState::VkRasterState hashed<%016llx> NEW<%d>\n", hashed, _pipeline_bits );
+      //printf( "VkRasterState::VkRasterState hashed<%016llx> NEW<%d>\n", hashed, _pipeline_bits );
       unlocked[hashed] = _pipeline_bits;
       OrkAssert(_pipeline_bits<256);
       OrkAssert(_pipeline_bits>=0);
     }
     else{
       _pipeline_bits = it->second;
-      printf( "VkRasterState::VkRasterState hashed<%016llx> PREV<%d>\n", hashed, _pipeline_bits );
+      //printf( "VkRasterState::VkRasterState hashed<%016llx> PREV<%d>\n", hashed, _pipeline_bits );
       OrkAssert(_pipeline_bits<256);
       OrkAssert(_pipeline_bits>=0);
     }

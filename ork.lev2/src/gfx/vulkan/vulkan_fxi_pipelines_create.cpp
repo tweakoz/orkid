@@ -23,6 +23,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_createPipeline(vkvtxbuf_ptr_t vb,          
                                                     vkprimclass_ptr_t primclass,     //
                                                     vkrasterstate_ptr_t vkrstate ) { //
 
+  OrkAssert(_currentVKPASS!=nullptr);
   vkpipeline_obj_ptr_t pipeline = std::make_shared<VkPipelineObject>(_contextVK);
   auto shprog = _currentVKPASS->_vk_program;
   pipeline->_vk_program  = shprog;
@@ -166,45 +167,53 @@ vkpipeline_obj_ptr_t VkFxInterface::_createPipeline(vkvtxbuf_ptr_t vb,          
 
 VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_obj_ptr_t pipeline) {
 
-  auto shprog = _currentVKPASS->_vk_program;
+  auto vk_program = _currentVKPASS->_vk_program;
+  OrkAssert(vk_program != nullptr);
 
   VkPipelineLayoutCreateInfo PLCI;
 
   initializeVkStruct(PLCI, VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
 
+  ////////////////////////////////////////////////////
   // push constants
+  ////////////////////////////////////////////////////
 
-  if (shprog->_pushConstantBlock) {
-    PLCI.pushConstantRangeCount = shprog->_pushConstantBlock->_ranges.size();
-    PLCI.pPushConstantRanges    = shprog->_pushConstantBlock->_ranges.data();
+  if (vk_program->_pushConstantBlock) {
+    PLCI.pushConstantRangeCount = vk_program->_pushConstantBlock->_ranges.size();
+    PLCI.pPushConstantRanges    = vk_program->_pushConstantBlock->_ranges.data();
   }
 
-  // descriptors - NEW: Use merged resource data instead of legacy reflection
+  ////////////////////////////////////////////////////
+  // descriptorset layouts
+  ////////////////////////////////////////////////////
 
-  // Store descriptor set layouts for cleanup later
-  pipeline->_merged_resource_descriptor_set_layouts.clear();
+  pipeline->_dset_layouts.clear();
 
-  if (_currentVKPASS && _currentVKPASS->_merged_resources && !_currentVKPASS->_merged_resources->descriptor_sets.empty()) {
-    logchan_vkpipc->log("Creating descriptor set layouts from merged resources");
+  auto resources = _currentVKPASS->_merged_resources;
 
-    // Create descriptor set layouts from merged resource data
-    for (const auto& [set_id, sources] : _currentVKPASS->_merged_resources->descriptor_sets) {
-      std::vector<VkDescriptorSetLayoutBinding> bindings;
+  if (not resources->descriptor_sets.empty()) {
 
-      logchan_vkpipc->log("  Descriptor Set %d: %zu sources", set_id, sources.size());
+    ///////////////////////////////////////////////////////////
+    // Create descriptor set layout from merged resource data
+    ///////////////////////////////////////////////////////////
+
+    std::vector<VkDescriptorSetLayoutBinding> bindings;
+
+    for (const auto& [set_id, sources] : resources->descriptor_sets) {
+
+      bindings.clear();
 
       for (const auto& source : sources) {
-        logchan_vkpipc->log(
-            "    Source: %s (%s) - %zu bindings",
-            source->source_name.c_str(),
-            source->source_type.c_str(),
-            source->bindings.size());
 
         for (const auto& binding : source->bindings) {
+
           VkDescriptorSetLayoutBinding vk_binding = {};
           vk_binding.binding                      = binding->binding_id;
 
+          ///////////////////////////////////////////////////////////
           // Map resource type to Vulkan descriptor type
+          ///////////////////////////////////////////////////////////
+
           switch (binding->type) {
             case VkMergedResourceBinding::Type::Sampler:
               vk_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -212,17 +221,12 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_o
             case VkMergedResourceBinding::Type::UniformBlock: {
               // ALL uniform blocks are now dynamic
               vk_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-
               // Look up the UBO from the program's uniform blocks
               // These were loaded from the datablock
-              auto vk_program = _currentVKPASS->_vk_program;
-              OrkAssert(vk_program != nullptr);
-
               auto ubo_it = vk_program->_vk_uniformblks.find(binding->name);
               if (ubo_it == vk_program->_vk_uniformblks.end()) {
                 // Fatal error: shader declares a UBO that wasn't in the datablock
-                logchan_vkpipc->log(
-                    "FATAL: UBO '%s' declared in merged resources but not found in datablock", binding->name.c_str());
+                logchan_vkpipc->log("FATAL: UBO '%s' declared in merged resources but not found in datablock", binding->name.c_str());
                 OrkAssert(false);
               }
 
@@ -230,7 +234,10 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_o
               OrkAssert(ubo != nullptr);
               OrkAssert(ubo->_orkparamblock != nullptr);
 
+              //////////////////////////////////////////////////////
               // Track this UBO for the pipeline with its binding ID
+              //////////////////////////////////////////////////////
+
               pipeline->_uniform_blocks.push_back(ubo);
               pipeline->_ubo_by_binding[binding->binding_id] = ubo;
 
@@ -250,14 +257,13 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_o
 
           bindings.push_back(vk_binding);
 
-          logchan_vkpipc->log(
-              "      Binding %d: %s (%s) from %s",
-              binding->binding_id,
-              binding->name.c_str(),
-              binding->datatype.c_str(),
-              binding->original_source.c_str());
-        }
-      }
+        } // for (const auto& binding : source->bindings) {
+
+      } // for (const auto& source : sources) {
+
+      //////////////////////////////////////////////////////
+      // Create descriptor set layout for this descriptor set
+      //////////////////////////////////////////////////////
 
       if (!bindings.empty()) {
         VkDescriptorSetLayoutCreateInfo LCI = {};
@@ -269,14 +275,16 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_o
         VkResult OK = vkCreateDescriptorSetLayout(_contextVK->_vkdevice, &LCI, nullptr, &dset_layout);
         OrkAssert(VK_SUCCESS == OK);
 
-        pipeline->_merged_resource_descriptor_set_layouts.push_back(dset_layout);
-
-        logchan_vkpipc->log("  Created descriptor set layout for set %d with %zu bindings", set_id, bindings.size());
+        pipeline->_dset_layouts.push_back(dset_layout);
       }
-    }
 
+    } // for (const auto& [set_id, sources] : resources->descriptor_sets) {
+
+    //////////////////////////////////////////////////////
     // Sort uniform blocks by binding ID for consistent ordering with dynamic offsets
     // Build a reverse map to get binding IDs for each UBO
+    //////////////////////////////////////////////////////
+
     std::map<VkFxShaderUniformBlk*, uint32_t> ubo_to_binding;
     for (const auto& [binding_id, ubo] : pipeline->_ubo_by_binding) {
       ubo_to_binding[ubo] = binding_id;
@@ -296,14 +304,10 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_o
           return binding_a < binding_b;
         });
 
-    logchan_vkpipc->log("Pipeline has %zu uniform blocks tracked for dynamic updates", pipeline->_uniform_blocks.size());
-
-    PLCI.setLayoutCount = pipeline->_merged_resource_descriptor_set_layouts.size();
-    PLCI.pSetLayouts    = pipeline->_merged_resource_descriptor_set_layouts.data();
+    PLCI.setLayoutCount = pipeline->_dset_layouts.size();
+    PLCI.pSetLayouts    = pipeline->_dset_layouts.data();
 
     // Store the merged resource layouts in the pipeline object for descriptor set allocation
-
-    logchan_vkpipc->log("Pipeline layout will have %zu descriptor set layouts", pipeline->_merged_resource_descriptor_set_layouts.size());
 
   } else {
     // No descriptor sets available - this is valid for shaders that only use push constants

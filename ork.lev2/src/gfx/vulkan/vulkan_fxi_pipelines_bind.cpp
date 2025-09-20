@@ -335,9 +335,9 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
     VkDescriptorSetLayout layout_to_use = VK_NULL_HANDLE;
 
     // Check if we have a current pipeline with merged resource layouts
-    if (_ctxVK->_fxi->_currentPipeline && !_ctxVK->_fxi->_currentPipeline->_merged_resource_descriptor_set_layouts.empty()) {
+    if (_ctxVK->_fxi->_currentPipeline && !_ctxVK->_fxi->_currentPipeline->_dset_layouts.empty()) {
       // Use the first merged resource layout (assuming single descriptor set for now)
-      layout_to_use = _ctxVK->_fxi->_currentPipeline->_merged_resource_descriptor_set_layouts[0];
+      layout_to_use = _ctxVK->_fxi->_currentPipeline->_dset_layouts[0];
       logchan_vkpipb->log("Using merged resource descriptor set layout: %p", (void*)layout_to_use);
     } else {
       OrkAssert(false); // No valid descriptor set layout found - merged resources should always be available

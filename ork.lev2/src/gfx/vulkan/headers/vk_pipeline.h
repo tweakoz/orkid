@@ -217,7 +217,7 @@ struct VkPipelineObject {
   vkviewporttracker_ptr_t _scissor;
   
   // Storage for merged resource descriptor set layouts
-  std::vector<VkDescriptorSetLayout> _merged_resource_descriptor_set_layouts;
+  std::vector<VkDescriptorSetLayout> _dset_layouts;
   
   // Dynamic UBO support
   std::vector<VkFxShaderUniformBlk*> _uniform_blocks;  // Ordered by binding ID
