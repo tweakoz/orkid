@@ -211,7 +211,8 @@ struct VkPipelineObject {
   VkPipeline _pipeline;
   VkPipelineLayout _pipelineLayout;
   vkdescriptorsetcache_ptr_t _descriptorSetCache;
-
+  vkrasterstate_ptr_t _rasterstate;
+  
   vkviewporttracker_ptr_t _viewport;
   vkviewporttracker_ptr_t _scissor;
   

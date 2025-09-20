@@ -17,54 +17,39 @@
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 static logchannel_ptr_t logchan_vkpip = logger()->configureChannel("VKPIP", fvec3(1, 1, .2), false);
+///////////////////////////////////////////////////////////////////////////////
+
+VkPipelineObject::VkPipelineObject(vkcontext_rawptr_t ctx) {
+  _descriptorSetCache = std::make_shared<VulkanDescriptorSetCache>(ctx);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
     vkvtxbuf_ptr_t vb,             //
     vkprimclass_ptr_t primclass) { //
 
-  auto fbi = _contextVK->_fbi;
-  auto gbi = _contextVK->_gbi;
+  auto fbi                = _contextVK->_fbi;
+  auto gbi                = _contextVK->_gbi;
+  EVtxStreamFormat vb_fmt = vb->_ork_vtxbuf.meStreamFormat;
 
   auto shprog = _currentVKPASS->_vk_program;
 
-  if (0)
+  if (0) {
     printf(
         "_fetchPipeline: tek<%s> shprog<%p> vif<%s>\n",
         _currentORKTEK->_techniqueName.c_str(),
         shprog.get(),
         shprog->_vertexinterface ? shprog->_vertexinterface->_name.c_str() : "null");
-
-  ////////////////////////////////////////////////////
-  // rasterstate info
-  ////////////////////////////////////////////////////
-
-  OrkAssert(_current_rasterstate != nullptr);
-  rasterstate_ptr_t effective_rasterstate = _current_rasterstate;
-
-  // Use pre-resolved state block rasterstate if present
-  if (_currentVKPASS && _currentVKPASS->_stateblock_rasterstate) {
-    // State block was pre-resolved at shader load time - just use it!
-    effective_rasterstate = _currentVKPASS->_stateblock_rasterstate;
   }
 
   ////////////////////////////////////////////////////
-  // get pipeline hash from permutations
+  // Get attachment count and formats from active render target group
   ////////////////////////////////////////////////////
 
-  auto check_pb_range = [](uint64_t inp, int nbits) -> uint64_t {
-    uint64_t maxval = (1 << nbits);
-    // printf( "check_pb_range nbits<%d> maxval<%d> inp<%d>\n", nbits, maxval, inp);
-    OrkAssert(inp < maxval);
-    return inp;
-  };
-
-  EVtxStreamFormat vb_fmt = vb->_ork_vtxbuf.meStreamFormat;
-
-  auto rtg       = fbi->_active_rtgroup;
-  auto rtg_impl  = rtg->_impl.getShared<VkRtGroupImpl>();
-  auto msaa_impl = rtg_impl->_msaaState;
-
-  // Get attachment count and formats from active render target group
+  auto rtg             = fbi->_active_rtgroup;
+  auto rtg_impl        = rtg->_impl.getShared<VkRtGroupImpl>();
+  auto msaa_impl       = rtg_impl->_msaaState;
   int attachment_count = rtg->numImageBuffers(); // Get number of color attachments
 
   // Get formats for each attachment
@@ -76,8 +61,20 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
       formats.push_back(vk_fmt);
     }
   }
+
   if (shprog->_tek_name == "FWD_DEPTHPREPASS_RI_NI_MO") {
     printf("WTF\n");
+  }
+
+  /////////////////////////////////////////////////////////////////////
+  // resolve effective rasterstate
+  /////////////////////////////////////////////////////////////////////
+
+  rasterstate_ptr_t effective_rasterstate = _current_rasterstate;
+
+  if (_currentVKPASS && _currentVKPASS->_stateblock_rasterstate) {
+    // State block was pre-resolved at shader load time - just use it!
+    effective_rasterstate = _currentVKPASS->_stateblock_rasterstate;
   }
 
   vkrasterstate_ptr_t vkrstate;
@@ -89,19 +86,33 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
       vkrstate = nullptr;
     }
   }
-  if(nullptr == vkrstate) { // If not already a VkRasterState, create one
-    vkrstate = effective_rasterstate->_impl.makeShared<VkRasterState>(effective_rasterstate, attachment_count, &formats);
+  if (nullptr == vkrstate) { // If not already a VkRasterState, create one
+    vkrstate = effective_rasterstate->_impl.makeShared<VkRasterState>(
+        effective_rasterstate, //
+        attachment_count,      //
+        &formats);             //
   }
 
-  uint64_t rtg_pbits = check_pb_range(rtg_impl->_pipeline_bits, 4);
-  uint64_t pc_pbits  = check_pb_range(primclass->_pipeline_bits, 4);
+  /////////////////////////////////////////////////////////////////////
+  // compute pipeline bits (for hashing pipeline state)
+  /////////////////////////////////////////////////////////////////////
 
-  int vb_pbits = check_pb_range(vb->pipelineBitsForFormat(), 4);
+  auto check_plbits_range = [](uint64_t inp, int nbits) -> uint64_t {
+    uint64_t maxval = (1 << nbits);
+    // printf( "check_plbits_range nbits<%d> maxval<%d> inp<%d>\n", nbits, maxval, inp);
+    OrkAssert(inp < maxval);
+    return inp;
+  };
+
+  uint64_t rtg_pbits = check_plbits_range(rtg_impl->_pipeline_bits, 4);
+  uint64_t pc_pbits  = check_plbits_range(primclass->_pipeline_bits, 4);
+
+  int vb_pbits = check_plbits_range(vb->pipelineBitsForFormat(), 4);
 
   uint64_t sh_pbits = _pipelineBitsForShader(shprog);
-  sh_pbits          = check_pb_range(sh_pbits, 24);
+  sh_pbits          = check_plbits_range(sh_pbits, 24);
 
-  uint64_t rs_pbits = check_pb_range(vkrstate->_pipeline_bits, 8);
+  uint64_t rs_pbits = check_plbits_range(vkrstate->_pipeline_bits, 8);
 
   if (0)
     printf("RS_PBITS<%llx>\n", rs_pbits);
@@ -122,15 +133,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
 
   auto it = _pipelines.find(pipeline_hash);
   if (it == _pipelines.end()) { // create pipeline
-    logchan_vkpip->log(
-        "CREATE PIPELINE<%016llx> vb_pbits<%d> rtg_pbits<%llx> pc_pbits<%llx> sh_pbits<%llx> rs_pbits<%llx>", //
-        pipeline_hash,
-        vb_pbits,
-        rtg_pbits,
-        pc_pbits,
-        sh_pbits,
-        rs_pbits);
-    rval = _createPipeline(vb, primclass,vkrstate);
+    rval                      = _createPipeline(vb, primclass, vkrstate);
     _pipelines[pipeline_hash] = rval;
   } else { // pipeline already cached!
     rval = it->second;
@@ -140,12 +143,6 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
   OrkAssert(rval != nullptr);
   ////////////////////////////////////////////////////
   return rval;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-VkPipelineObject::VkPipelineObject(vkcontext_rawptr_t ctx) {
-  _descriptorSetCache = std::make_shared<VulkanDescriptorSetCache>(ctx);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

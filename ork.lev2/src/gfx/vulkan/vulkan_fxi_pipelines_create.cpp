@@ -25,7 +25,8 @@ vkpipeline_obj_ptr_t VkFxInterface::_createPipeline(vkvtxbuf_ptr_t vb,          
 
   vkpipeline_obj_ptr_t pipeline = std::make_shared<VkPipelineObject>(_contextVK);
   auto shprog = _currentVKPASS->_vk_program;
-  pipeline->_vk_program         = shprog;
+  pipeline->_vk_program  = shprog;
+  pipeline->_rasterstate = vkrstate;
   auto fbi = _contextVK->_fbi;
   auto gbi = _contextVK->_gbi;
   auto rtg       = fbi->_active_rtgroup;
@@ -112,9 +113,9 @@ vkpipeline_obj_ptr_t VkFxInterface::_createPipeline(vkvtxbuf_ptr_t vb,          
   // raster states
   ////////////////////////////////////////////////////
 
-  PIPE_CREATE_INFO.pRasterizationState = &vkrstate->_VKRSCI;
-  PIPE_CREATE_INFO.pDepthStencilState  = &vkrstate->_VKDSSCI;
-  PIPE_CREATE_INFO.pColorBlendState    = &vkrstate->_VKCBSI;
+  PIPE_CREATE_INFO.pRasterizationState = &pipeline->_rasterstate->_VKRSCI;
+  PIPE_CREATE_INFO.pDepthStencilState  = &pipeline->_rasterstate->_VKDSSCI;
+  PIPE_CREATE_INFO.pColorBlendState    = &pipeline->_rasterstate->_VKCBSI;
 
   ///////////////////////////////////////////////////
   // create pipeline layout
