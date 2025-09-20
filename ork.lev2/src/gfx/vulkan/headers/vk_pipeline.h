@@ -15,10 +15,11 @@ struct VkFxShaderUniformSetItem {
   size_t _range_index = 0;                // Which push constant range to use
 };
 ///////////////////////////////////////////////////////////////////////////////
-struct VkFxShaderUniformSetSampler {
+struct VkFxShaderUniformSampler {
   std::string _datatype;
   std::string _identifier;
   std::shared_ptr<FxShaderParam> _orkparam;
+  vktexobj_ptr_t _current_texture; // Currently bound texture
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VkFxShaderUniformSet {
@@ -32,8 +33,8 @@ struct VkFxShaderDescriptorSetItem {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VkFxShaderSamplerSet : public VkFxShaderDescriptorSetItem {
-  std::unordered_map<std::string, vkfxsunisetsamp_ptr_t> _samplers_by_name;
-  std::vector<vkfxsunisetsamp_ptr_t> _samplers_by_order;
+  std::unordered_map<std::string, vkfxsunisampler_ptr_t> _samplers_by_name;
+  std::vector<vkfxsunisampler_ptr_t> _samplers_by_order;
   svar64_t _impl;
 };
 ///////////////////////////////////////////////////////////////////////////////
@@ -154,6 +155,7 @@ struct VkFxShaderProgram {
 
   VkFxShaderProgram(VkFxShaderFile* file);
 
+  uint64_t samplersHash();
   std::string _tek_name;
 
   vkfxsobj_ptr_t _vtxshader;
@@ -178,12 +180,13 @@ struct VkFxShaderProgram {
   
   int _pipeline_bits_prg       = -1;
   int _pipeline_bits_composite = -1;
-
+  uint64_t _samplers_hash     = 0;
   std::unordered_map<std::string, vkfxssmpset_ptr_t> _vk_samplersets;
   std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
   std::unordered_map<std::string, vkfxsuniblk_ptr_t> _vk_uniformblks;
   VkFxShaderFile* _shader_file = nullptr;
-  
+  boost::Crc64 _incr_crc64;
+
   // Synthetic params for auto-registered UBO blocks (to maintain lifetime)
   std::vector<fxparam_ptr_t> _synthetic_ubo_params;
 };
@@ -197,6 +200,7 @@ struct VulkanDescriptorSetCache {
   VulkanDescriptorSetCache(vkcontext_rawptr_t ctx);
 
   vkdescriptorset_ptr_t fetchDescriptorSetForProgram(vkfxsprg_ptr_t program);
+  vkdescriptorset_ptr_t _createNewDescriptorSetForProgram(vkfxsprg_ptr_t program);
 
   std::unordered_map<uint64_t, vkdescriptorset_ptr_t> _vkDescriptorSetByHash;
   vkcontext_rawptr_t _ctxVK;

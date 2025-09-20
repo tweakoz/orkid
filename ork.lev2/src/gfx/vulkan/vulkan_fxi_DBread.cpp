@@ -335,15 +335,15 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     for (size_t j = 0; j < num_samplers; j++) {
       auto str_sampler_datatype   = uniforms_input_stream->ReadIndexedString(chunkreader);
       auto str_sampler_identifier = uniforms_input_stream->ReadIndexedString(chunkreader);
-      auto vk_samp                = std::make_shared<VkFxShaderUniformSetSampler>();
+      auto vk_samp                = std::make_shared<VkFxShaderUniformSampler>();
       vk_samp->_datatype          = str_sampler_datatype;
       vk_samp->_identifier        = str_sampler_identifier;
       auto ork_param              = std::make_shared<FxShaderParam>();
       vk_samp->_orkparam          = ork_param;
       vk_samp->_orkparam->_name   = str_sampler_identifier;
-      vk_samp->_orkparam->_impl.set<VkFxShaderUniformSetSampler*>(vk_samp.get());
+      vk_samp->_orkparam->_impl.set<VkFxShaderUniformSampler*>(vk_samp.get());
       vk_smpset->_samplers_by_name[str_sampler_identifier] = vk_samp;
-      ork_param->_impl.set<VkFxShaderUniformSetSampler*>(vk_samp.get());
+      ork_param->_impl.set<VkFxShaderUniformSampler*>(vk_samp.get());
       ork_smpset->_parametersByName[str_sampler_identifier] = ork_param.get();
       if (0)
         printf("uniset<%s> ADDING Sampler PARAM<%s>\n", str_smpset_name.c_str(), str_sampler_identifier.c_str());
@@ -1077,7 +1077,10 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
                       auto first_item = vk_ubo->_items_by_order[0];
                       if (first_item && first_item->_orkparam) {
                         auto fxparam = first_item->_orkparam.get();
+                        vk_program->_incr_crc64.accumulateItem(fxparam);
                         vk_program->_merged_resource_bindings[fxparam] = DescBinding{uint32_t(set_id), binding->binding_id};
+                        vk_program->_incr_crc64.accumulateItem(uint32_t(set_id));
+                        vk_program->_incr_crc64.accumulateItem(binding->binding_id);
                         //printf("AUTO-REGISTERED UBO<%s> at set<%d> binding<%d>\n", 
                         //       binding->name.c_str(), set_id, binding->binding_id);
                       }

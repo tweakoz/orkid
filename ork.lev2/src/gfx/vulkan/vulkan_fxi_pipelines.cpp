@@ -146,5 +146,21 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+uint64_t VkFxShaderProgram::samplersHash() {
+  if(0==_samplers_hash){
+    boost::Crc64 the_crc;
+    the_crc.init();
+    for (auto& it : _textures_by_orkparam) {
+      auto as_vktex  = it.second;
+      the_crc.accumulateItem(as_vktex->_format_hash);
+      the_crc.accumulateItem(as_vktex->_imgview_hash.result());
+    }
+    _samplers_hash = the_crc.finished();
+  }
+  return _samplers_hash;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::vulkan
 ///////////////////////////////////////////////////////////////////////////////

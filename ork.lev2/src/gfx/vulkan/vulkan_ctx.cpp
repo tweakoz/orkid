@@ -432,6 +432,11 @@ void VkContext::_initDefaultTextures() {
     tex_obj->_vkdescriptor_info.imageView = tex_obj->_imgobj->_vkimageview;
     tex_obj->_vkdescriptor_info.sampler = _sampler_base->_vksampler;
     
+    tex_obj->_imgview_hash.init();
+    tex_obj->_imgview_hash.accumulateItem(tex_obj);
+    tex_obj->_imgview_hash.accumulateItem(tex_obj->_imgobj);
+    tex_obj->_imgview_hash.accumulateItem(tex_obj->_imgobj->_vkimageview);
+    tex_obj->_imgview_hash.finish();
     return tex_obj;
   };
   

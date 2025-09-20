@@ -42,6 +42,9 @@ struct Crc64 {
   inline void finish() {
     _crc0 ^= uint64_t(0xffffffffffffffff);
   }
+  inline uint64_t finished() const {
+    return _crc0 ^ uint64_t(0xffffffffffffffff);
+  }
 
   uint64_t result() const {
     return _crc0;

@@ -91,7 +91,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   uint64_t usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT //
                  | VK_IMAGE_USAGE_SAMPLED_BIT;
 
-  uint64_t image_params_hash = hashImageCreationParams(
+  uint64_t format_hash = hashImageCreationParams(
       tid._w,          //
       tid._h,          //
       tid._d,          //
@@ -107,16 +107,16 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   if (auto existing = ptex->_impl.tryAsShared<VulkanTextureObject>()) {
     // Texture already exists - we're updating it
     vktex = existing.value();
-    hash_changed = (image_params_hash != vktex->_image_params_hash);
+    hash_changed = (format_hash != vktex->_format_hash);
     if(hash_changed){
       _texobjs_pending_for_deletion.insert(vktex);
       vktex = ptex->_impl.makeShared<VulkanTextureObject>(this);
-      vktex->_image_params_hash = image_params_hash;
+      vktex->_format_hash = format_hash;
     }
   } else {
     // New texture
     vktex = ptex->_impl.makeShared<VulkanTextureObject>(this);
-    vktex->_image_params_hash = image_params_hash;
+    vktex->_format_hash = format_hash;
     hash_changed = true;
   }
 
@@ -304,6 +304,12 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   vktex->_vksampler = _contextVK->_sampler_base;
   vktex->_vkdescriptor_info.sampler     = vktex->_vksampler->_vksampler;
+
+  vktex->_imgview_hash.init();
+  vktex->_imgview_hash.accumulateItem(vktex);
+  vktex->_imgview_hash.accumulateItem(vktex->_imgobj);
+  vktex->_imgview_hash.accumulateItem(vktex->_imgobj->_vkimageview);
+  vktex->_imgview_hash.finish();
 
   /////////////////////////////////////
   // record transition to transfer destination (for copy)

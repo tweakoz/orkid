@@ -92,6 +92,12 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   rtb_impl->setLayout(VK_IMAGE_LAYOUT_UNDEFINED);
   rtb_impl->_teximpl = teximpl;
 
+  teximpl->_imgview_hash.init();
+  teximpl->_imgview_hash.accumulateItem(teximpl);
+  teximpl->_imgview_hash.accumulateItem(teximpl->_imgobj);
+  teximpl->_imgview_hash.accumulateItem(teximpl->_imgobj->_vkimageview);
+  teximpl->_imgview_hash.finish();
+
   /////////////////////////////////////
   // transition to appropriate attachment layout
   /////////////////////////////////////

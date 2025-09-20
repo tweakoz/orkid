@@ -47,8 +47,8 @@ bool VkFxInterface::_tryBindMergedResource(const FxShaderParam* hpar,
     return false;
   }
   
-  auto vk_shprog = _currentVKPASS->_vk_program;
-  if (!vk_shprog) {
+  auto vk_program = _currentVKPASS->_vk_program;
+  if (!vk_program) {
     printf("_tryBindMergedResource: _vk_program is null for param<%s>\n", hpar->_name.c_str());
     return false;
   }
@@ -74,19 +74,23 @@ bool VkFxInterface::_tryBindMergedResource(const FxShaderParam* hpar,
   }
   
   // Store the binding info
-  vk_shprog->_merged_resource_bindings[hpar] = DescBinding{set_id, binding_info->binding_id};
+  vk_program->_merged_resource_bindings[hpar] = DescBinding{set_id, binding_info->binding_id};
   
   // Store the resource data based on type
   switch (expected_type) {
     case VkMergedResourceBinding::Type::Sampler: {
-      auto par_sampler_impl = hpar->_impl.get<VkFxShaderUniformSetSampler*>();
+      auto par_sampler_impl = hpar->_impl.get<VkFxShaderUniformSampler*>();
       auto as_vktex = resource_data.getShared<VulkanTextureObject>();
-      vk_shprog->_textures_by_orkparam[hpar] = as_vktex;
+      if(par_sampler_impl->_current_texture!=as_vktex){
+        par_sampler_impl->_current_texture = as_vktex;
+        vk_program->_samplers_hash = 0;
+      }
+      vk_program->_textures_by_orkparam[hpar] = as_vktex;
       break;
     }
     case VkMergedResourceBinding::Type::UniformBlock: {
       auto as_buffer = resource_data.getShared<VulkanBuffer>();
-      vk_shprog->_uniformbuffers_by_orkparam[hpar] = as_buffer;
+      vk_program->_uniformbuffers_by_orkparam[hpar] = as_buffer;
       break;
     }
     case VkMergedResourceBinding::Type::StorageBuffer:
@@ -456,8 +460,8 @@ void VkFxInterface::bindUniformBuffer(const FxUniformBlock* block, FxUniformBuff
     return;
   }
   
-  auto vk_shprog = _currentVKPASS->_vk_program;
-  if (!vk_shprog) {
+  auto vk_program = _currentVKPASS->_vk_program;
+  if (!vk_program) {
     printf("bindUniformBuffer: _vk_program is null for block<%s>\n", block->_name.c_str());
     return;
   }
@@ -543,7 +547,7 @@ void VkFxInterface::bindParamTextureArray(const FxShaderParam* hpar, const Textu
   OrkAssert(tex_array);
   OrkAssert(tex_array->_tex);
   
-  auto vk_shprog = _currentVKPASS->_vk_program;
+  auto vk_program = _currentVKPASS->_vk_program;
     
   if (tex_array && tex_array->_tex) {
     // For texture arrays, use the same logic as regular textures

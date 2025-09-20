@@ -223,6 +223,12 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
   vktex->_vkdescriptor_info.imageView   = vktex->_imgobj->_vkimageview;
   vktex->_vkdescriptor_info.sampler     = vktex->_vksampler->_vksampler;
 
+  vktex->_imgview_hash.init();
+  vktex->_imgview_hash.accumulateItem(vktex);
+  vktex->_imgview_hash.accumulateItem(vktex->_imgobj);
+  vktex->_imgview_hash.accumulateItem(vktex->_imgobj->_vkimageview);
+  vktex->_imgview_hash.finish();
+
   /////////////////////////////////////
 
   _contextVK->endRecordCommandBuffer(vktex->_loadCB);

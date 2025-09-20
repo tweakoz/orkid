@@ -121,7 +121,7 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
       max_levels, // mip levels
       usage);     // usage
 
-  vktex->_image_params_hash = image_params_hash;
+  vktex->_format_hash = image_params_hash;
 
   ///////////////////////////
   // Create VkImage for texture array
@@ -496,6 +496,12 @@ void VkTextureInterface::initTextureArray2D(TextureArray* texture_array) {
   vktex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
   vktex->_vkdescriptor_info.imageView   = vktex->_imgobj->_vkimageview;
   vktex->_vksampler                     = _contextVK->_sampler_base;
+
+  vktex->_imgview_hash.init();
+  vktex->_imgview_hash.accumulateItem(vktex);
+  vktex->_imgview_hash.accumulateItem(vktex->_imgobj);
+  vktex->_imgview_hash.accumulateItem(vktex->_imgobj->_vkimageview);
+  vktex->_imgview_hash.finish();
 
   texture_array->_tex->_impl = vktex;
   

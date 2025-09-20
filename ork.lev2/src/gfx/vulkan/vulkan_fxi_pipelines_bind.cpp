@@ -265,6 +265,73 @@ void VkFxInterface::_bindGfxDescriptorSetOnSlot(
 
 ///////////////////////////////////////////////////////////////////////////////
 
+vkdescriptorset_ptr_t VulkanDescriptorSetCache::_createNewDescriptorSetForProgram(vkfxsprg_ptr_t program){
+  auto current_pass = _ctxVK->_fxi->_currentVKPASS;
+  auto cur_pipeline = _ctxVK->_fxi->_currentPipeline;
+  OrkAssert(current_pass != nullptr);
+  OrkAssert(cur_pipeline != nullptr);
+  auto merged_resources = current_pass->_merged_resources;
+  ////////////////////////
+  // make new descriptor set
+  ////////////////////////
+  
+  static int descset_count             = 0;
+  auto descset_ptr                          = std::make_shared<VulkanDescriptorSet>();
+
+  VkDescriptorSetAllocateInfo DSAI;
+  initializeVkStruct(DSAI, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO);
+  DSAI.descriptorPool     = _ctxVK->_vkDescriptorPool;
+  DSAI.descriptorSetCount = 1;
+
+  // Use merged resource layouts if available, otherwise fall back to legacy
+  VkDescriptorSetLayout layout_to_use = VK_NULL_HANDLE;
+
+  // Check if we have a current pipeline with merged resource layouts
+  if (not cur_pipeline->_dset_layouts.empty()) {
+    // Use the first merged resource layout (assuming single descriptor set for now)
+    layout_to_use = cur_pipeline->_dset_layouts[0];
+    logchan_vkpipb->log("Using merged resource descriptor set layout: %p", (void*)layout_to_use);
+  } else {
+    OrkAssert(false); // No valid descriptor set layout found - merged resources should always be available
+  }
+
+  DSAI.pSetLayouts = &layout_to_use;
+
+  // printf("ALLOC DESC SET<%d:%p>\n", descset_count, descset_ptr.get());
+  VkResult OK = vkAllocateDescriptorSets(
+      _ctxVK->_vkdevice, //
+      &DSAI,             //
+      &descset_ptr->_vkdescset);
+
+  descset_count++;
+  switch (OK) {
+    case VK_SUCCESS:
+      break;
+    case VK_ERROR_OUT_OF_HOST_MEMORY:
+      printf("VK_ERROR_OUT_OF_HOST_MEMORY\n");
+      break;
+    case VK_ERROR_OUT_OF_POOL_MEMORY:
+      printf("VK_ERROR_OUT_OF_POOL_MEMORY\n");
+      break;
+    case VK_ERROR_OUT_OF_DEVICE_MEMORY:
+      printf("VK_ERROR_OUT_OF_DEVICE_MEMORY\n");
+      break;
+    case VK_ERROR_FRAGMENTED_POOL:
+      printf("VK_ERROR_FRAGMENTED_POOL\n");
+      break;
+    case VK_ERROR_TOO_MANY_OBJECTS:
+      printf("VK_ERROR_TOO_MANY_OBJECTS\n");
+      break;
+    default:
+      printf("VK_ERROR_UNKNOWN\n");
+      break;
+  }
+  OrkAssert(VK_SUCCESS == OK);
+  return descset_ptr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkfxsprg_ptr_t vk_program) {
 
   auto current_pass = _ctxVK->_fxi->_currentVKPASS;
@@ -272,9 +339,16 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
   OrkAssert(current_pass != nullptr);
   OrkAssert(cur_pipeline != nullptr);
   auto merged_resources = current_pass->_merged_resources;
-  // auto vk_program       = current_pass->_vk_program;
+
+  /////////////////////
+  // early exits
+  /////////////////////
+
   if (not merged_resources) {
     return nullptr;
+  }
+  if (vk_program->_merged_resource_bindings.empty()) {
+    return nullptr; 
   }
 
   /////////////////////////////////
@@ -283,105 +357,14 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
   //    we will (over time) expose descriptor sets to higher level systems
   /////////////////////////////////
 
-  // Check if program has any merged resource bindings
-  if (vk_program->_merged_resource_bindings.empty()) {
-    logchan_vkpipb->log(
-        "Program<%s> has no merged resource bindings - returning null descriptor set", vk_program->_tek_name.c_str());
-    return nullptr; // No descriptor sets needed for push constants only
-  }
-
-  boost::Crc64 crc64;
-  crc64.init();
-
-  // Include merged resource bindings in hash calculation
-  for (auto it : vk_program->_merged_resource_bindings) {
-    auto param          = it.first;
-    DescBinding binding = it.second;
-
-    crc64.accumulateItem(binding._set_id);
-    crc64.accumulateItem(binding._binding_id);
-
-    // Check if this is a texture binding
-    auto tex_it = vk_program->_textures_by_orkparam.find(param);
-    if (tex_it != vk_program->_textures_by_orkparam.end()) {
-      auto vk_tex  = tex_it->second;
-      auto img_obj = vk_tex->_imgobj;
-      crc64.accumulateItem(vk_tex.get());
-      crc64.accumulateItem(img_obj.get());
-      crc64.accumulateItem(vk_tex->_image_params_hash);
-      crc64.accumulateItem(vk_tex->_vkdescriptor_info.imageView);
-    } else {
-      // For UBOs, just use the param pointer as part of the hash
-      crc64.accumulateItem(param);
-    }
-  }
-
-  crc64.finish();
-  uint64_t descset_bits = crc64.result();
-  // printf( "dscache<%p> descset_bits<%016llx>\n", this, descset_bits );
-  auto it                           = _vkDescriptorSetByHash.find(descset_bits);
+  uint64_t descset_bits = vk_program->samplersHash();
+  auto it               = _vkDescriptorSetByHash.find(descset_bits);
   vkdescriptorset_ptr_t descset_ptr = nullptr;
   if (it != _vkDescriptorSetByHash.end()) {
     descset_ptr = it->second;
   } else {
-
-    ////////////////////////
-    // make new descriptor set
-    ////////////////////////
-  
-    static int descset_count             = 0;
-    descset_ptr                          = std::make_shared<VulkanDescriptorSet>();
+    descset_ptr = _createNewDescriptorSetForProgram(vk_program);  
     _vkDescriptorSetByHash[descset_bits] = descset_ptr;
-
-    VkDescriptorSetAllocateInfo DSAI;
-    initializeVkStruct(DSAI, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO);
-    DSAI.descriptorPool     = _ctxVK->_vkDescriptorPool;
-    DSAI.descriptorSetCount = 1;
-
-    // Use merged resource layouts if available, otherwise fall back to legacy
-    VkDescriptorSetLayout layout_to_use = VK_NULL_HANDLE;
-
-    // Check if we have a current pipeline with merged resource layouts
-    if (not cur_pipeline->_dset_layouts.empty()) {
-      // Use the first merged resource layout (assuming single descriptor set for now)
-      layout_to_use = cur_pipeline->_dset_layouts[0];
-      logchan_vkpipb->log("Using merged resource descriptor set layout: %p", (void*)layout_to_use);
-    } else {
-      OrkAssert(false); // No valid descriptor set layout found - merged resources should always be available
-    }
-
-    DSAI.pSetLayouts = &layout_to_use;
-
-    // printf("ALLOC DESC SET<%d:%p>\n", descset_count, descset_ptr.get());
-    VkResult OK = vkAllocateDescriptorSets(
-        _ctxVK->_vkdevice, //
-        &DSAI,             //
-        &descset_ptr->_vkdescset);
-
-    descset_count++;
-    switch (OK) {
-      case VK_SUCCESS:
-        break;
-      case VK_ERROR_OUT_OF_HOST_MEMORY:
-        printf("VK_ERROR_OUT_OF_HOST_MEMORY\n");
-        break;
-      case VK_ERROR_OUT_OF_POOL_MEMORY:
-        printf("VK_ERROR_OUT_OF_POOL_MEMORY\n");
-        break;
-      case VK_ERROR_OUT_OF_DEVICE_MEMORY:
-        printf("VK_ERROR_OUT_OF_DEVICE_MEMORY\n");
-        break;
-      case VK_ERROR_FRAGMENTED_POOL:
-        printf("VK_ERROR_FRAGMENTED_POOL\n");
-        break;
-      case VK_ERROR_TOO_MANY_OBJECTS:
-        printf("VK_ERROR_TOO_MANY_OBJECTS\n");
-        break;
-      default:
-        printf("VK_ERROR_UNKNOWN\n");
-        break;
-    }
-    OrkAssert(VK_SUCCESS == OK);
   }
 
   ////////////////////////
@@ -411,7 +394,7 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
     }
   }
 
-  // Now iterate through ALL sampler bindings from merged resources
+  // Now iterate through ALL sampler bindings and UBO's from merged resources
   static std::vector<VkWriteDescriptorSet> descriptor_writes;
   descriptor_writes.clear();
   for (const auto& [set_id, sources] : merged_resources->descriptor_sets) {
@@ -511,6 +494,7 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
 VkFxShaderProgram::VkFxShaderProgram(VkFxShaderFile* file)
     : _shader_file(file) {
   _pushdatabuffer.reserve(1024); // todo : grow as needed
+  _incr_crc64.init();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

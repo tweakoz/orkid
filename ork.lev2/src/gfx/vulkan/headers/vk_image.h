@@ -47,8 +47,8 @@ struct VulkanTextureObject {
   vksampler_obj_ptr_t _vksampler;
   VkDescriptorImageInfo _vkdescriptor_info;
   secondary_commandbuffer_ptr_t _loadCB;
-  uint64_t _image_params_hash = 0;
-
+  uint64_t _format_hash = 0;
+  boost::Crc64 _imgview_hash;
   std::unordered_set<inflighttextrans_ptr_t> _inflight_transfers;
   std::atomic<uint64_t> _dataVersion{0};
 

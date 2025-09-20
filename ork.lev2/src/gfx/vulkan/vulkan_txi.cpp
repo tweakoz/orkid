@@ -70,6 +70,13 @@ void VkTextureInterface::ApplySamplingMode(Texture* ptex) {
     vktex->_vkdescriptor_info.sampler = new_sampler->_vksampler;
     vktex->_vkdescriptor_info.imageView = vktex->_imgobj->_vkimageview;
     vktex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    vktex->_imgview_hash.init();
+    vktex->_imgview_hash.accumulateItem(vktex);
+    vktex->_imgview_hash.accumulateItem(vktex->_imgobj);
+    vktex->_imgview_hash.accumulateItem(vktex->_imgobj->_vkimageview);
+    vktex->_imgview_hash.finish();
+
   }
   
   // Special handling for depth textures
@@ -415,6 +422,7 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
 ///////////////////////////////////////////////////////////////////////////////
 
 VulkanTextureObject::VulkanTextureObject(vktxi_rawptr_t txi) {
+
   initializeVkStruct(_vksampler);
   initializeVkStruct(_vkdescriptor_info);
 

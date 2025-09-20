@@ -48,7 +48,7 @@ struct VkFxShaderSamplerSet;
 struct VkFxShaderSamplerSetItem;
 struct VkFxShaderUniformSet;
 struct VkFxShaderUniformSetItem;
-struct VkFxShaderUniformSetSampler;
+struct VkFxShaderUniformSampler;
 struct VkFxShaderUniformBlk;
 struct VkFxShaderUniformBlkItem;
 struct VkFxShaderPushConstantBlock;
@@ -164,7 +164,7 @@ using vkprimclass_ptr_t     = std::shared_ptr<VkPrimitiveClass>;
 using vkfxssmpset_ptr_t     = std::shared_ptr<VkFxShaderSamplerSet>;
 using vkfxsuniset_ptr_t     = std::shared_ptr<VkFxShaderUniformSet>;
 using vkfxsunisetitem_ptr_t = std::shared_ptr<VkFxShaderUniformSetItem>;
-using vkfxsunisetsamp_ptr_t = std::shared_ptr<VkFxShaderUniformSetSampler>;
+using vkfxsunisampler_ptr_t = std::shared_ptr<VkFxShaderUniformSampler>;
 
 using vkfxsuniblk_ptr_t         = std::shared_ptr<VkFxShaderUniformBlk>;
 using vkfxsuniblkitem_ptr_t     = std::shared_ptr<VkFxShaderUniformBlkItem>;
