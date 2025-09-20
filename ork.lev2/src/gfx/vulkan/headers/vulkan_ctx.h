@@ -372,7 +372,10 @@ struct VkFxInterface final : public FxInterface {
       const std::string& shadertext,  //
       shadlang::slpcache_ptr_t slp_cache);
 
-  vkpipeline_obj_ptr_t _fetchPipeline(vkvtxbuf_ptr_t vb, vkprimclass_ptr_t primclas);
+  vkpipeline_obj_ptr_t _fetchPipeline( vkvtxbuf_ptr_t vb, vkprimclass_ptr_t primclas);
+  vkpipeline_obj_ptr_t _createPipeline( vkvtxbuf_ptr_t vb,             //
+                                        vkprimclass_ptr_t primclas,    //
+                                        vkrasterstate_ptr_t rstate );  //
 
   // ubo
   FxUniformBuffer* createUniformBuffer(size_t length) final;

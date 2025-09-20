@@ -82,7 +82,7 @@ VulkanPipelineRenderInfo::VulkanPipelineRenderInfo(rtgroup_rawptr_t rtg)
   }
 
   _createInfo.colorAttachmentCount    = _colorFormats.size();
-  _createInfo.pColorAttachmentFormats = _colorFormats.data();
+  _createInfo.pColorAttachmentFormats = _colorFormats.empty() ? nullptr : _colorFormats.data();
 
   if (rtg->_depthBuffer) {
     _depthFormat                      = VkFormatConverter::convertBufferFormat(rtg->_depthBuffer->format());

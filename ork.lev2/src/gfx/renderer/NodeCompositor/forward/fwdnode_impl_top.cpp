@@ -174,7 +174,7 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
 
   if (pbrcommon->_useDepthPrepass) {
     // depth prepass
-    //_render_dpp(fpass);
+    _render_dpp(fpass);
     _currentRCFD->setUserProperty("DEPTH_MAP"_crcu, rtg_out->_depthBuffer->_texture);
   }
   else{
