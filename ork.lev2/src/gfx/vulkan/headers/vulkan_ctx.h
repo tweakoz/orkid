@@ -413,7 +413,7 @@ struct VkFxInterface final : public FxInterface {
 
   bool _tryBindMergedResource(const FxShaderParam* hpar,
                               VkMergedResourceBinding::Type expected_type,
-                              void* resource_data);
+                              svar64_t resource_data);
   
   void _ensureUBORegistered(VkFxShaderUniformBlk* block);
 };

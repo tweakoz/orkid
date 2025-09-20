@@ -40,8 +40,8 @@ std::pair<uint32_t, VkMergedResourceBinding*> findBindingInMergedResources(
 ///////////////////////////////////////////////////////////////////////////////
 
 bool VkFxInterface::_tryBindMergedResource(const FxShaderParam* hpar,
-                                          VkMergedResourceBinding::Type expected_type,
-                                          void* resource_data) {
+                                           VkMergedResourceBinding::Type expected_type,
+                                           svar64_t resource_data) {
   if (!_currentVKPASS) {
     printf("_tryBindMergedResource: _currentVKPASS is null for param<%s>\n", hpar->_name.c_str());
     return false;
@@ -51,9 +51,6 @@ bool VkFxInterface::_tryBindMergedResource(const FxShaderParam* hpar,
   if (!vk_shprog) {
     printf("_tryBindMergedResource: _vk_program is null for param<%s>\n", hpar->_name.c_str());
     return false;
-  }
-  if(vk_shprog->_tek_name == "FWD_DEPTHPREPASS_RI_NI_MO"){
-    OrkBreak();
   }
   if (!_currentVKPASS->_merged_resources) {
     return false;
@@ -83,15 +80,13 @@ bool VkFxInterface::_tryBindMergedResource(const FxShaderParam* hpar,
   switch (expected_type) {
     case VkMergedResourceBinding::Type::Sampler: {
       auto par_sampler_impl = hpar->_impl.get<VkFxShaderUniformSetSampler*>();
-      if (resource_data) {
-        vk_shprog->_textures_by_orkparam[hpar] = *static_cast<vktexobj_ptr_t*>(resource_data);
-      }
+      auto as_vktex = resource_data.getShared<VulkanTextureObject>();
+      vk_shprog->_textures_by_orkparam[hpar] = as_vktex;
       break;
     }
     case VkMergedResourceBinding::Type::UniformBlock: {
-      if (resource_data) {
-        vk_shprog->_uniformbuffers_by_orkparam[hpar] = *static_cast<vkbuffer_ptr_t*>(resource_data);
-      }
+      auto as_buffer = resource_data.getShared<VulkanBuffer>();
+      vk_shprog->_uniformbuffers_by_orkparam[hpar] = as_buffer;
       break;
     }
     case VkMergedResourceBinding::Type::StorageBuffer:
@@ -495,7 +490,7 @@ void VkFxInterface::bindUniformBuffer(const FxUniformBlock* block, FxUniformBuff
   dummy_param->_name = block->_name;
   
   // Store the buffer in the program's uniform buffer map
-  if (_tryBindMergedResource(dummy_param.get(), VkMergedResourceBinding::Type::UniformBlock, &vk_buffer)) {
+  if (_tryBindMergedResource(dummy_param.get(), VkMergedResourceBinding::Type::UniformBlock, block->_impl)) {
     // Success
   } else {
     printf("bindUniformBuffer: failed to bind block<%s> via merged resources\n", block->_name.c_str());
@@ -536,7 +531,7 @@ void VkFxInterface::bindParamTexture(const FxShaderParam* hpar, const Texture* p
   }
   
   // Try to bind via merged resources
-  _tryBindMergedResource(hpar, VkMergedResourceBinding::Type::Sampler, &vk_tex);
+  _tryBindMergedResource(hpar, VkMergedResourceBinding::Type::Sampler, vk_tex);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
