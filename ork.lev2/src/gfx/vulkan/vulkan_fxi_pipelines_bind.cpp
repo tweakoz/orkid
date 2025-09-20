@@ -90,16 +90,40 @@ void VkFxInterface::_bindPipeline(VkCommandBuffer cmdbuf, vkpipeline_obj_ptr_t p
   }
 
   ////////////////////////////////////////
-  // upload descriptor sets and push constants
+  // upload ubo data and push constants
   ////////////////////////////////////////
 
   _uploadPipelineData(cmdbuf, pipeline);
+
+  ////////////////////////////////////////
+  // bind descriptor set (if changed)
+  ////////////////////////////////////////
+
+  auto prog = _currentVKPASS->_vk_program;
+  auto desc_set = pipeline->_descriptorSetCache->fetchDescriptorSetForProgram(prog);
+  if (desc_set) {
+    // Bind descriptor set with dynamic offsets from applyPendingUboUpdates
+    if (!pipeline->_dynamic_offsets.empty()) {
+      vkCmdBindDescriptorSets(
+          cmdbuf,
+          VK_PIPELINE_BIND_POINT_GRAPHICS,
+          pipeline->_pipelineLayout,
+          0, // first set
+          1, // set count
+          &desc_set->_vkdescset,
+          pipeline->_dynamic_offsets.size(),
+          pipeline->_dynamic_offsets.data());
+    } else {
+      // Fallback to static binding if no dynamic offsets
+      _bindGfxDescriptorSetOnSlot(cmdbuf, desc_set, 0);
+    }
+  }
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::_uploadPipelineData(VkCommandBuffer CB, vkpipeline_obj_ptr_t pipeline) {
-  auto prog = _currentVKPASS->_vk_program;
 
   // Apply dynamic UBO updates for this draw
   // This allocates per-draw memory and copies shadow buffers
@@ -110,28 +134,6 @@ void VkFxInterface::_uploadPipelineData(VkCommandBuffer CB, vkpipeline_obj_ptr_t
   // This ensures the GPU buffers have the correct data when bound
   // Note: With dynamic UBOs, this may become unnecessary
   _flushDirtyUniformBlocks();
-
-  if (prog->_tek_name == "FWD_DEPTHPREPASS_RI_NI_MO") {
-    // OrkBreak();
-  }
-  auto desc_set = pipeline->_descriptorSetCache->fetchDescriptorSetForProgram(prog);
-  if (desc_set) {
-    // Bind descriptor set with dynamic offsets from applyPendingUboUpdates
-    if (!pipeline->_dynamic_offsets.empty()) {
-      vkCmdBindDescriptorSets(
-          CB,
-          VK_PIPELINE_BIND_POINT_GRAPHICS,
-          pipeline->_pipelineLayout,
-          0, // first set
-          1, // set count
-          &desc_set->_vkdescset,
-          pipeline->_dynamic_offsets.size(),
-          pipeline->_dynamic_offsets.data());
-    } else {
-      // Fallback to static binding if no dynamic offsets
-      _bindGfxDescriptorSetOnSlot(CB, desc_set, 0);
-    }
-  }
 
   pipeline->applyPendingPushConstants(CB);
 }
