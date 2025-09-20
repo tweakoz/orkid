@@ -16,7 +16,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_vkpip = logger()->configureChannel("VKPIP", fvec3(1,1,.2), true);
+static logchannel_ptr_t logchan_vkpip = logger()->configureChannel("VKPIP", fvec3(1,1,.2), false);
 
 vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
     vkvtxbuf_ptr_t vb,             //
@@ -32,9 +32,6 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
          _currentORKTEK->_techniqueName.c_str(),
          shprog.get(), 
          shprog->_vertexinterface ? shprog->_vertexinterface->_name.c_str() : "null");
-  if(shprog->_tek_name == "FWD_DEPTHPREPASS_RI_NI_MO"){
-    //OrkBreak();
-  }
 
   ////////////////////////////////////////////////////
   // rasterstate info
@@ -81,7 +78,10 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
       formats.push_back(vk_fmt);
     }
   }
-  
+if(shprog->_tek_name == "FWD_DEPTHPREPASS_RI_NI_MO"){
+    printf("WTF\n");
+}
+
   vkrasterstate_ptr_t vkrstate;
   if (auto try_vkrs = effective_rasterstate->_impl.tryAsShared<VkRasterState>()) {
     vkrstate = try_vkrs.value();
@@ -140,7 +140,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
     // pipeline report
     ///////////////////////////////////////////////////
     std::string report_filename;
-    if(1){
+    if(0){
 
       // Generate pipeline report for debugging descriptor set issues
       
@@ -280,7 +280,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
     // descriptors - NEW: Use merged resource data instead of legacy reflection
     ////////////////////////////////////////////////////
   if(shprog->_tek_name == "FWD_DEPTHPREPASS_RI_NI_MO"){
-    OrkBreak();
+    //OrkBreak();
   }
 
     // Store descriptor set layouts for cleanup later
@@ -644,7 +644,7 @@ void VkFxInterface::_uploadPipelineData(VkCommandBuffer CB,
   _flushDirtyUniformBlocks();
   
   if(prog->_tek_name=="FWD_DEPTHPREPASS_RI_NI_MO"){
-    OrkBreak();
+    //OrkBreak();
   }
   auto desc_set = pipeline->_descriptorSetCache->fetchDescriptorSetForProgram(prog);
   if (desc_set) {
@@ -838,15 +838,23 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
   for (auto it : program->_merged_resource_bindings) {
     auto param = it.first;
     auto [set_id, binding_id] = it.second;
-    auto vk_tex = program->_textures_by_orkparam[param];
-    auto img_obj = vk_tex->_imgobj;
     
     crc64.accumulateItem(set_id);
     crc64.accumulateItem(binding_id);
-    crc64.accumulateItem(vk_tex.get());
-    crc64.accumulateItem(img_obj.get());
-    crc64.accumulateItem(vk_tex->_image_params_hash);
-    crc64.accumulateItem(vk_tex->_vkdescriptor_info.imageView);
+    
+    // Check if this is a texture binding
+    auto tex_it = program->_textures_by_orkparam.find(param);
+    if (tex_it != program->_textures_by_orkparam.end()) {
+      auto vk_tex = tex_it->second;
+      auto img_obj = vk_tex->_imgobj;
+      crc64.accumulateItem(vk_tex.get());
+      crc64.accumulateItem(img_obj.get());
+      crc64.accumulateItem(vk_tex->_image_params_hash);
+      crc64.accumulateItem(vk_tex->_vkdescriptor_info.imageView);
+    } else {
+      // For UBOs, just use the param pointer as part of the hash
+      crc64.accumulateItem(param);
+    }
   }
   
   crc64.finish();
@@ -922,13 +930,17 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
   buffer_infos.reserve(estimated_buffer_count);
   
   // First, handle textures/samplers - ensure ALL samplers from merged resources are bound
-  // Build a map of what's already bound
+  // Build a map of what's already bound (only for texture params)
   std::map<int, vktexobj_ptr_t> bound_textures;
   for (auto it : program->_merged_resource_bindings) {
     auto param = it.first;
     auto [set_id, binding_id] = it.second;
-    auto vk_tex = program->_textures_by_orkparam[param];
-    bound_textures[binding_id] = vk_tex;
+    // Only process textures here, skip UBOs
+    auto tex_it = program->_textures_by_orkparam.find(param);
+    if (tex_it != program->_textures_by_orkparam.end()) {
+      auto vk_tex = tex_it->second;
+      bound_textures[binding_id] = vk_tex;
+    }
   }
   
   // Now iterate through ALL sampler bindings from merged resources

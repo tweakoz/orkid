@@ -454,6 +454,9 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         vk_param->_orkparam        = std::make_shared<FxShaderParam>();
         vk_param->_orkparam->_name = str_param_identifier;
         vk_param->_orkparam->_impl.set<VkFxShaderUniformBlkItem*>(vk_param.get());
+        // Set _blockinfo to point to parent UBO (matching GL behavior)
+        vk_param->_orkparam->_blockinfo = new FxShaderParamInBlockInfo;
+        vk_param->_orkparam->_blockinfo->_parent = vk_uniblk->_orkparamblock.get();
         vk_uniblk->_items_by_name[str_param_identifier] = vk_param;
         vk_uniblk->_items_by_order.push_back(vk_param);
         vk_uniblk->_orkparamblock->_subparams[str_param_identifier] = vk_param->_orkparam.get();
@@ -1054,6 +1057,36 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         }
 
         vk_pass->_merged_resources = merged_resources;
+        
+        // Auto-register UBOs in _merged_resource_bindings at load time
+        // This ensures descriptor sets can be created for UBOs even when only
+        // individual members are bound (not the entire UBO via bindUniformBuffer)
+        if (merged_resources) {
+          for (const auto& [set_id, sources] : merged_resources->descriptor_sets) {
+            for (const auto& source : sources) {
+              for (const auto& binding : source->bindings) {
+                if (binding->type == VkMergedResourceBinding::Type::UniformBlock) {
+                  // Find the VkFxShaderUniformBlk for this UBO
+                  auto ubo_it = vulkan_shaderfile->_vk_uniformblks.find(binding->name);
+                  if (ubo_it != vulkan_shaderfile->_vk_uniformblks.end()) {
+                    auto vk_ubo = ubo_it->second;
+                    if (vk_ubo && !vk_ubo->_items_by_order.empty()) {
+                      // Use the first member's FxShaderParam as a representative key
+                      // When any UBO member is bound, we can find its parent via _blockinfo
+                      auto first_item = vk_ubo->_items_by_order[0];
+                      if (first_item && first_item->_orkparam) {
+                        auto fxparam = first_item->_orkparam.get();
+                        vk_program->_merged_resource_bindings[fxparam] = {set_id, binding->binding_id};
+                        //printf("AUTO-REGISTERED UBO<%s> at set<%d> binding<%d>\n", 
+                        //       binding->name.c_str(), set_id, binding->binding_id);
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       } else if (next_token == "no_merged_resources") {
         // No merged resources for this pass
         vk_pass->_merged_resources = std::make_shared<VkMergedResources>();

@@ -263,8 +263,8 @@ uniform_block ublk_dpp (descriptor_set 0) {
 
 vertex_shader vs_forward_depthprepass_mono //
   : vif_DPP                        //
-  : ublk_dpp {                    //
-  vec4 hpos    = mvp_dpp * position;
+  : ublk_std_matrices {                    //
+  vec4 hpos    = mvp * position;
   gl_Position  = hpos;
   frg_depth =  (hpos.z/hpos.w);
 }

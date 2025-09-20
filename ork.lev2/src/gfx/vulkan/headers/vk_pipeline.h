@@ -180,6 +180,9 @@ struct VkFxShaderProgram {
   std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
   std::unordered_map<std::string, vkfxsuniblk_ptr_t> _vk_uniformblks;
   VkFxShaderFile* _shader_file = nullptr;
+  
+  // Synthetic params for auto-registered UBO blocks (to maintain lifetime)
+  std::vector<fxparam_ptr_t> _synthetic_ubo_params;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VulkanDescriptorSet {
