@@ -59,6 +59,7 @@ struct RasterState {
 
   /////////////////////////////
 
+  std::string _name;
   EPolygonMode _polygonMode = EPolygonMode::FILL;
   ECullTest _culltest = ECullTest::PASS_FRONT;         
   EFrontFace _frontface;

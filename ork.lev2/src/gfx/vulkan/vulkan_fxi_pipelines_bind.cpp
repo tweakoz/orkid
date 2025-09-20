@@ -273,7 +273,17 @@ void VkFxInterface::_bindGfxDescriptorSetOnSlot(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkfxsprg_ptr_t program) {
+vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkfxsprg_ptr_t vk_program) {
+
+  auto current_pass = _ctxVK->_fxi->_currentVKPASS;
+  auto cur_pipeline = _ctxVK->_fxi->_currentPipeline;
+  OrkAssert(current_pass != nullptr);
+  OrkAssert(cur_pipeline != nullptr);
+  auto merged_resources = current_pass->_merged_resources;
+  // auto vk_program       = current_pass->_vk_program;
+  if (not merged_resources) {
+    return nullptr;
+  }
 
   /////////////////////////////////
   // todo: this is the slow path
@@ -282,8 +292,9 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
   /////////////////////////////////
 
   // Check if program has any merged resource bindings
-  if (program->_merged_resource_bindings.empty()) {
-    logchan_vkpipb->log("Program<%s> has no merged resource bindings - returning null descriptor set", program->_tek_name.c_str());
+  if (vk_program->_merged_resource_bindings.empty()) {
+    logchan_vkpipb->log(
+        "Program<%s> has no merged resource bindings - returning null descriptor set", vk_program->_tek_name.c_str());
     return nullptr; // No descriptor sets needed for push constants only
   }
 
@@ -291,7 +302,7 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
   crc64.init();
 
   // Include merged resource bindings in hash calculation
-  for (auto it : program->_merged_resource_bindings) {
+  for (auto it : vk_program->_merged_resource_bindings) {
     auto param                = it.first;
     auto [set_id, binding_id] = it.second;
 
@@ -299,8 +310,8 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
     crc64.accumulateItem(binding_id);
 
     // Check if this is a texture binding
-    auto tex_it = program->_textures_by_orkparam.find(param);
-    if (tex_it != program->_textures_by_orkparam.end()) {
+    auto tex_it = vk_program->_textures_by_orkparam.find(param);
+    if (tex_it != vk_program->_textures_by_orkparam.end()) {
       auto vk_tex  = tex_it->second;
       auto img_obj = vk_tex->_imgobj;
       crc64.accumulateItem(vk_tex.get());
@@ -321,7 +332,11 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
   if (it != _vkDescriptorSetByHash.end()) {
     descset_ptr = it->second;
   } else {
+
+    ////////////////////////
     // make new descriptor set
+    ////////////////////////
+  
     static int descset_count             = 0;
     descset_ptr                          = std::make_shared<VulkanDescriptorSet>();
     _vkDescriptorSetByHash[descset_bits] = descset_ptr;
@@ -335,9 +350,9 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
     VkDescriptorSetLayout layout_to_use = VK_NULL_HANDLE;
 
     // Check if we have a current pipeline with merged resource layouts
-    if (_ctxVK->_fxi->_currentPipeline && !_ctxVK->_fxi->_currentPipeline->_dset_layouts.empty()) {
+    if (not cur_pipeline->_dset_layouts.empty()) {
       // Use the first merged resource layout (assuming single descriptor set for now)
-      layout_to_use = _ctxVK->_fxi->_currentPipeline->_dset_layouts[0];
+      layout_to_use = cur_pipeline->_dset_layouts[0];
       logchan_vkpipb->log("Using merged resource descriptor set layout: %p", (void*)layout_to_use);
     } else {
       OrkAssert(false); // No valid descriptor set layout found - merged resources should always be available
@@ -376,9 +391,13 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
     }
     OrkAssert(VK_SUCCESS == OK);
   }
+
+  ////////////////////////
   // Update descriptor set with merged resource bindings
-  std::vector<VkWriteDescriptorSet> descriptor_writes;
-  std::vector<VkDescriptorBufferInfo> buffer_infos; // Keep alive during vkUpdateDescriptorSets
+  ////////////////////////
+
+  static std::vector<VkDescriptorBufferInfo> buffer_infos; // Keep alive during vkUpdateDescriptorSets
+  buffer_infos.clear();
 
   // Reserve space to prevent reallocation
   size_t estimated_buffer_count = 128; // Estimate max UBOs we might have
@@ -386,38 +405,35 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
 
   // First, handle textures/samplers - ensure ALL samplers from merged resources are bound
   // Build a map of what's already bound (only for texture params)
-  std::map<int, vktexobj_ptr_t> bound_textures;
-  for (auto it : program->_merged_resource_bindings) {
+  static std::unordered_map<int, vktexobj_ptr_t> bound_textures;
+  bound_textures.clear();
+
+  for (auto it : vk_program->_merged_resource_bindings) {
     auto param                = it.first;
     auto [set_id, binding_id] = it.second;
     // Only process textures here, skip UBOs
-    auto tex_it = program->_textures_by_orkparam.find(param);
-    if (tex_it != program->_textures_by_orkparam.end()) {
+    auto tex_it = vk_program->_textures_by_orkparam.find(param);
+    if (tex_it != vk_program->_textures_by_orkparam.end()) {
       auto vk_tex                = tex_it->second;
       bound_textures[binding_id] = vk_tex;
     }
   }
 
   // Now iterate through ALL sampler bindings from merged resources
-  if (_ctxVK->_fxi->_currentVKPASS && _ctxVK->_fxi->_currentVKPASS->_merged_resources) {
-    auto merged_resources = _ctxVK->_fxi->_currentVKPASS->_merged_resources;
+  static std::vector<VkWriteDescriptorSet> descriptor_writes;
+  descriptor_writes.clear();
+  for (const auto& [set_id, sources] : merged_resources->descriptor_sets) {
+    for (const auto& source : sources) {
+      for (const auto& binding : source->bindings) {
 
-    for (const auto& [set_id, sources] : merged_resources->descriptor_sets) {
-      for (const auto& source : sources) {
-        for (const auto& binding : source->bindings) {
-          if (binding->type == VkMergedResourceBinding::Type::Sampler) {
+        switch (binding->type) {
+          case VkMergedResourceBinding::Type::Sampler: {
             vktexobj_ptr_t vk_tex;
 
             // Check if this binding is already bound
             auto bound_it = bound_textures.find(binding->binding_id);
             if (bound_it != bound_textures.end()) {
               vk_tex = bound_it->second;
-              logchan_vkpipb->log(
-                  "update descset (merged): set<%d> bidx<%d> tex<%p> name<%s>",
-                  set_id,
-                  binding->binding_id,
-                  (void*)vk_tex.get(),
-                  binding->name.c_str());
             } else {
               // Use default texture for unbound samplers
               // Determine texture type from datatype string if possible
@@ -431,13 +447,6 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
               } else {
                 vk_tex = _ctxVK->_defaultTexImpl2D; // Default to 2D
               }
-              logchan_vkpipb->log(
-                  "update descset (default): set<%d> bidx<%d> tex<%p> name<%s> type<%s>",
-                  set_id,
-                  binding->binding_id,
-                  (void*)vk_tex.get(),
-                  binding->name.c_str(),
-                  binding->datatype.c_str());
             }
 
             // Create descriptor write
@@ -453,55 +462,15 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
             DWRITE.pImageInfo      = &desc_info;
 
             descriptor_writes.push_back(DWRITE);
-          }
-        }
-      }
-    }
-  }
-
-  // Now handle UBOs from merged resources
-  if (1)
-    logchan_vkpipb->log("UBO_DESC_CHECK: _currentVKPASS<%p>", (void*)_ctxVK->_fxi->_currentVKPASS.get());
-  if (_ctxVK->_fxi->_currentVKPASS) {
-    if (1)
-      logchan_vkpipb->log("UBO_DESC_CHECK: _merged_resources<%p>", (void*)_ctxVK->_fxi->_currentVKPASS->_merged_resources.get());
-  }
-  if (_ctxVK->_fxi->_currentVKPASS && _ctxVK->_fxi->_currentVKPASS->_merged_resources) {
-    auto merged_resources = _ctxVK->_fxi->_currentVKPASS->_merged_resources;
-    auto vk_program       = _ctxVK->_fxi->_currentVKPASS->_vk_program;
-    if (1)
-      logchan_vkpipb->log(
-          "UBO_DESC_CHECK: Found merged_resources with %zu descriptor sets", merged_resources->descriptor_sets.size());
-
-    for (const auto& [set_id, sources] : merged_resources->descriptor_sets) {
-      for (const auto& source : sources) {
-        for (const auto& binding : source->bindings) {
-          if (1)
-            logchan_vkpipb->log(
-                "UBO_DESC_CHECK: Binding<%s> type<%d> UniformBlock=%d",
-                binding->name.c_str(),
-                (int)binding->type,
-                (int)VkMergedResourceBinding::Type::UniformBlock);
-          if (binding->type == VkMergedResourceBinding::Type::UniformBlock) {
+            break;
+          } // case VkMergedResourceBinding::Type::Sampler: {
+          case VkMergedResourceBinding::Type::UniformBlock: {
             // Find the corresponding VkFxShaderUniformBlk
             VkFxShaderUniformBlk* ubo_block = nullptr;
 
-            // Search in the program's uniform blocks
-            if (1)
-              logchan_vkpipb->log("UBO_DESC_CHECK: Looking for UBO<%s> in program's _vk_uniformblks", binding->name.c_str());
             auto it = vk_program->_vk_uniformblks.find(binding->name);
             if (it != vk_program->_vk_uniformblks.end()) {
               ubo_block = it->second.get();
-              if (1)
-                logchan_vkpipb->log("UBO_DESC_CHECK: Found UBO<%s> ptr<%p>", binding->name.c_str(), (void*)ubo_block);
-            } else {
-              if (1)
-                logchan_vkpipb->log("UBO_DESC_CHECK: UBO<%s> NOT FOUND in _vk_uniformblks", binding->name.c_str());
-            }
-
-            if (ubo_block) {
-              if (1)
-                logchan_vkpipb->log("UBO_DESC_CHECK: UBO<%s> _buffer_size<%zu>", binding->name.c_str(), ubo_block->_buffer_size);
             }
 
             if (ubo_block && ubo_block->_buffer_size > 0) {
@@ -525,98 +494,21 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
               DWRITE.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
               DWRITE.pBufferInfo     = &buffer_infos.back();
 
-              logchan_vkpipb->log(
-                  "UBO_DESC_UPDATE: ubo<%s> binding<%d> global_buffer<%p> size<%zu> block_ptr<%p>",
-                  binding->name.c_str(),
-                  binding->binding_id,
-                  (void*)global_buffer->_vkbuffer,
-                  ubo_block->_buffer_size,
-                  (void*)ubo_block);
-
               descriptor_writes.push_back(DWRITE);
-            } else if (ubo_block) {
-              if (0)
-                logchan_vkpipb->log("UBO_DESC_CHECK: SKIPPING UBO<%s> - zero size", binding->name.c_str());
             }
-          }
-        }
-      }
-    }
-  }
+            break;
+          } // case VkMergedResourceBinding::Type::UniformBlock: {
+          default:
+            // Ignore other types for now
+            break;
+        } // switch (binding->type) {
+      } // for (const auto& binding : source->bindings) {
+    } // for (const auto& source : sources) {
+  } // for (const auto& [set_id, sources] : merged_resources->descriptor_sets) {
 
   // Update all descriptors at once
   if (!descriptor_writes.empty()) {
     vkUpdateDescriptorSets(_ctxVK->_vkdevice, descriptor_writes.size(), descriptor_writes.data(), 0, nullptr);
-
-    // Append descriptor set update info to pipeline report if report filename is stored
-    if (0 and _ctxVK->_fxi->_currentPipeline && !_ctxVK->_fxi->_currentPipeline->_report_filename.empty()) {
-      // Append update info to report file
-      FILE* fp = fopen(_ctxVK->_fxi->_currentPipeline->_report_filename.c_str(), "a");
-      if (fp) {
-        static int update_count = 0;
-        fprintf(fp, "\n## Descriptor Set Update %d (%p)\n\n", update_count++, (void*)descset_ptr->_vkdescset);
-        fprintf(fp, "**Update contains %zu writes**\n\n", descriptor_writes.size());
-        fprintf(fp, "```\n");
-        fprintf(fp, "Bind | Type    | Resource\n");
-        fprintf(fp, "-----|---------|--------------------------------\n");
-
-        // Sort writes by binding ID for comparison with layout
-        std::vector<std::tuple<int, std::string, std::string>> updates;
-
-        for (const auto& write : descriptor_writes) {
-          std::string type_str;
-          std::string resource_str;
-
-          if (write.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
-            type_str = "Sampler";
-            // Find the texture param name
-            for (auto it : program->_merged_resource_bindings) {
-              auto [set_id, binding_id] = it.second;
-              if (binding_id == write.dstBinding) {
-                resource_str = it.first->_name;
-                break;
-              }
-            }
-          } else if (write.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
-            type_str = "UBO";
-            // Find UBO name from merged resources
-            if (_ctxVK->_fxi->_currentVKPASS && _ctxVK->_fxi->_currentVKPASS->_merged_resources) {
-              auto merged_resources = _ctxVK->_fxi->_currentVKPASS->_merged_resources;
-              for (const auto& [set_id, sources] : merged_resources->descriptor_sets) {
-                for (const auto& source : sources) {
-                  for (const auto& binding : source->bindings) {
-                    if (binding->binding_id == write.dstBinding && binding->type == VkMergedResourceBinding::Type::UniformBlock) {
-                      resource_str = binding->name;
-                      break;
-                    }
-                  }
-                  if (!resource_str.empty())
-                    break;
-                }
-                if (!resource_str.empty())
-                  break;
-              }
-            }
-          }
-
-          updates.push_back(std::make_tuple(write.dstBinding, type_str, resource_str));
-        }
-
-        std::sort(updates.begin(), updates.end(), [](const auto& a, const auto& b) { return std::get<0>(a) < std::get<0>(b); });
-
-        for (const auto& [bind_id, type, resource] : updates) {
-          fprintf(fp, "%4d | %-7s | %s\n", bind_id, type.c_str(), resource.c_str());
-        }
-        fprintf(fp, "```\n\n");
-
-        // Compare with expected layout
-        fprintf(fp, "### Binding Verification\n\n");
-        fprintf(fp, "Comparing descriptor set updates with layout creation to identify mismatches.\n\n");
-
-        fclose(fp);
-        logchan_vkpipb->log("Appended descriptor set update to pipeline report");
-      }
-    }
   }
 
   return descset_ptr;
@@ -630,29 +522,6 @@ VkFxShaderProgram::VkFxShaderProgram(VkFxShaderFile* file)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-void VkFxShaderProgram::bindDescriptorTexture(fxparam_constptr_t param, const Texture* pTex) {
-  if (pTex) {
-    vktexobj_ptr_t vk_tex;
-    if (auto as_to = pTex->_impl.tryAsShared<VulkanTextureObject>()) {
-      vk_tex = as_to.value();
-    } else {
-      // printf("No Texture impl tex<%p:%s>\n", pTex, pTex->_debugName.c_str());
-      return;
-    }
-
-    // Store the texture object for merged resource binding
-    _textures_by_orkparam[param] = vk_tex;
-
-    // If this is a texture array, ensure the descriptor info is set up correctly
-    if (pTex->_texType == ETEXTYPE_2D_ARRAY) {
-      // The image view should already be configured as VK_IMAGE_VIEW_TYPE_2D_ARRAY
-      // from initTextureArray2DFromData
-    }
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-} //namespace ork::lev2::vulkan {
+} // namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

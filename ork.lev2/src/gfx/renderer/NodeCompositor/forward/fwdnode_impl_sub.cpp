@@ -19,7 +19,8 @@ void ForwardPbrNodeImpl::_render_dpp(forward_pass_ptr_t fpass) {
 
   //printf("render dppass rtg<%p>\n", (void*)rtg_out.get());
 
-  _currentDrawQueue->enqueueLayerToRenderQueue(fpass->_dpp_pass_layer, _currentIRenderer);
+  _currentDrawQueue->enqueueLayerToRenderQueue( fpass->_dpp_pass_layer, //
+                                                _currentIRenderer);     //
 
   //fpass->_fwd_pass_layer
   _currentRCFD->_renderingmodel = "DEPTH_PREPASS"_crcu;

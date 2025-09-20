@@ -178,6 +178,7 @@ void read_stateblocks(VkFxShaderFile* vulkan_shaderfile, chunkfile::InputStream*
       // Special case for "default" base state block
       if (name == "default") {
         auto rstate = std::make_shared<RasterState>();
+        rstate->_name = name;
         // Set engine defaults
         rstate->setDepthTest(EDepthTest::LESS);
         rstate->setCullTest(ECullTest::PASS_FRONT);
@@ -196,6 +197,7 @@ void read_stateblocks(VkFxShaderFile* vulkan_shaderfile, chunkfile::InputStream*
     if (!data_it->parent_name.empty()) {
       auto parent = resolve_stateblock(data_it->parent_name);
       rstate      = parent ? parent->clone() : std::make_shared<RasterState>();
+      rstate->_name = name;
     } else {
       rstate = std::make_shared<RasterState>();
     }

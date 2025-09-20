@@ -149,8 +149,6 @@ struct VkFxShaderProgram {
 
   VkFxShaderProgram(VkFxShaderFile* file);
 
-  void bindDescriptorTexture(fxparam_constptr_t param, const Texture* pTex);
-
   std::string _tek_name;
 
   vkfxsobj_ptr_t _vtxshader;
