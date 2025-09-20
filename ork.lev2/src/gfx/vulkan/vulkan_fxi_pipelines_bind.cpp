@@ -20,6 +20,149 @@ static logchannel_ptr_t logchan_vkpipb = logger()->configureChannel("VKPIPB", fv
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void VkFxInterface::_bindPipeline(VkCommandBuffer cmdbuf, vkpipeline_obj_ptr_t pipeline) {
+
+  auto fbi    = _contextVK->_fbi;
+  auto fbi_vp = fbi->_viewportTracker;
+  auto fbi_sc = fbi->_scissorTracker;
+
+  ////////////////////////////////////////
+  // bind pipeline (if not already bound)
+  ////////////////////////////////////////
+
+  if (_currentPipeline != pipeline) {
+    vkCmdBindPipeline(
+        cmdbuf,                          // command buffer
+        VK_PIPELINE_BIND_POINT_GRAPHICS, // pipeline type
+        pipeline->_pipeline);            // pipeline
+    _currentPipeline            = pipeline;
+    _currentPipeline->_viewport = nullptr;
+    _currentPipeline->_scissor  = nullptr;
+  }
+
+  ////////////////////////////////////////
+  // set dynamic viewport (if changed)
+  ////////////////////////////////////////
+
+  if (pipeline->_viewport != fbi_vp) {
+    pipeline->_viewport = fbi_vp;
+    VkViewport vkvp     = {};
+    vkvp.x              = fbi_vp->_x;
+    vkvp.width          = fbi_vp->_width;
+
+    vkvp.minDepth = 0.0f;
+    vkvp.maxDepth = 1.0f;
+
+    if (not FLIP_Y_LIKE_OPENGL) {
+      vkvp.y      = (fbi_vp->_y + fbi_vp->_height);
+      vkvp.height = -fbi_vp->_height;
+    } else {
+      vkvp.y      = fbi_vp->_y;
+      vkvp.height = fbi_vp->_height;
+    }
+
+    // printf( "SETVP<%p> x<%f> y<%f> w<%f> h<%f>\n", pipeline.get(), vkvp.x, vkvp.y, vkvp.width, vkvp.height);
+    vkCmdSetViewport(
+        cmdbuf, // command buffer
+        0,      // first viewport
+        1,      // viewport count
+        &vkvp); // viewport data
+  }
+
+  ////////////////////////////////////////
+  // set dynamic scissor (if changed)
+  ////////////////////////////////////////
+
+  if (pipeline->_scissor != fbi_sc) {
+    pipeline->_scissor = fbi_sc;
+    VkRect2D vksc      = {};
+    vksc.offset.x      = fbi_sc->_x;
+    vksc.offset.y      = fbi_sc->_y;
+    vksc.extent.width  = fbi_sc->_width;
+    vksc.extent.height = fbi_sc->_height;
+    // printf( "SETSC<%p> x<%d> y<%d> w<%d> h<%d>\n", pipeline.get(), vksc.offset.x, vksc.offset.y, vksc.extent.width,
+    // vksc.extent.height);
+    vkCmdSetScissor(
+        cmdbuf, // command buffer
+        0,      // first scissor
+        1,      // scissor count
+        &vksc); // scissor data
+  }
+
+  ////////////////////////////////////////
+  // upload descriptor sets and push constants
+  ////////////////////////////////////////
+
+  _uploadPipelineData(cmdbuf, pipeline);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkFxInterface::_uploadPipelineData(VkCommandBuffer CB, vkpipeline_obj_ptr_t pipeline) {
+  auto prog = _currentVKPASS->_vk_program;
+
+  // Apply dynamic UBO updates for this draw
+  // This allocates per-draw memory and copies shadow buffers
+  static uint32_t frame_index = 0; // TODO: Get actual frame index from swapchain
+  pipeline->applyPendingUboUpdates(CB, frame_index);
+
+  // Flush uniform blocks BEFORE fetching descriptor set
+  // This ensures the GPU buffers have the correct data when bound
+  // Note: With dynamic UBOs, this may become unnecessary
+  _flushDirtyUniformBlocks();
+
+  if (prog->_tek_name == "FWD_DEPTHPREPASS_RI_NI_MO") {
+    // OrkBreak();
+  }
+  auto desc_set = pipeline->_descriptorSetCache->fetchDescriptorSetForProgram(prog);
+  if (desc_set) {
+    // Bind descriptor set with dynamic offsets from applyPendingUboUpdates
+    if (!pipeline->_dynamic_offsets.empty()) {
+      vkCmdBindDescriptorSets(
+          CB,
+          VK_PIPELINE_BIND_POINT_GRAPHICS,
+          pipeline->_pipelineLayout,
+          0, // first set
+          1, // set count
+          &desc_set->_vkdescset,
+          pipeline->_dynamic_offsets.size(),
+          pipeline->_dynamic_offsets.data());
+    } else {
+      // Fallback to static binding if no dynamic offsets
+      _bindGfxDescriptorSetOnSlot(CB, desc_set, 0);
+    }
+  }
+
+  pipeline->applyPendingPushConstants(CB);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkFxInterface::_flushRenderPassScopedState() {
+  for (int slot = 0; slot < 4; slot++) {
+    _active_vbs[slot]                = nullptr;
+    _active_gfx_descriptorSets[slot] = nullptr;
+  }
+  _currentPipeline = nullptr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkFxInterface::_bindVertexBufferOnSlot(VkCommandBuffer cmdbuf, vkvtxbuf_ptr_t vb, size_t slot) {
+  if (true) { //_active_vbs[slot] != vb) {
+    VkDeviceSize offset = 0;
+    vkCmdBindVertexBuffers(
+        cmdbuf,                    // command buffer
+        slot,                      // slot to bind to
+        1,                         // binding count
+        &vb->_vkbuffer->_vkbuffer, // buffers
+        &offset);                  // offsets
+    _active_vbs[slot] = vb;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void VkPipelineObject::applyPendingPushConstants(VkCommandBuffer cmdbuf) { //
 
   OrkAssert(_vk_program->_pushConstantBlock != nullptr);

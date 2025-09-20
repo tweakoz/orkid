@@ -376,6 +376,7 @@ struct VkFxInterface final : public FxInterface {
   vkpipeline_obj_ptr_t _createPipeline( vkvtxbuf_ptr_t vb,             //
                                         vkprimclass_ptr_t primclas,    //
                                         vkrasterstate_ptr_t rstate );  //
+  void _createPipelineReport(vkpipeline_obj_ptr_t pipeline);           //
 
   // ubo
   FxUniformBuffer* createUniformBuffer(size_t length) final;
