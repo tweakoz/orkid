@@ -99,7 +99,7 @@ sampler_set sset_std_pbr(descriptor_set 0) {
   sampler2DArray MapSpecularEnv; // 1 slice per roughness level
 }
 ///////////////////////////////////////////////////////////////
-uniform_block ublk_std_lighting(descriptor_set 0) {
+uniform_block ublk_std_lighting (descriptor_set 0) {
   //////////////////////////////
   vec3 LightMapColors[8];        
   //////////////////////////////
@@ -107,12 +107,14 @@ uniform_block ublk_std_lighting(descriptor_set 0) {
   int spot_light_count;
 }
 ///////////////////////////////////////////////////////////////
-uniform_block ublk_frg_fwd_lighting(descriptor_set 0) {
-  vec4 _lightcolor[64];    // 1024 : 1024 
-  vec4 _lightsizbias[64];  // 1024 : 2048
-  vec4 _lightpos[64];      // 1024 : 3072
-  mat4 _shadowmatrix[64];  // 4096 : 7168
-  uint _lightTexSlice[64]; // 256  : 7424
+storage_interface storage_fwd_lighting (descriptor_set 0) {
+  buffer layout(std430) lights {
+    vec4 _lightcolor[64];    // 1024 : 1024 
+    vec4 _lightsizbias[64];  // 1024 : 2048
+    vec4 _lightpos[64];      // 1024 : 3072
+    mat4 _shadowmatrix[64];  // 4096 : 7168
+    uint _lightTexSlice[64]; // 256  : 7424
+  };
 }
 ///////////////////////////////////////////////////////////////
 uniform_block ublk_deferred_lighting(descriptor_set 0) {

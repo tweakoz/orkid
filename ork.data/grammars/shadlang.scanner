@@ -117,10 +117,12 @@ KW_VTXIFACE         <| "vertex_interface" |>
 KW_GEOIFACE         <| "geometry_interface" |>
 KW_FRGIFACE         <| "fragment_interface" |>
 KW_COMIFACE         <| "compute_interface" |>
+KW_STOIFACE         <| "storage_interface" |>
 KW_MSHIFACE         <| "mesh_interface" |>
 KW_INPUTS           <| "inputs" |>
 KW_OUTPUTS          <| "outputs" |>
 KW_STORAGE          <| "storage" |>
+KW_BUFFER           <| "buffer" |>
 
 KW_STATEBLOCK       <| "state_block" |>
 KW_PASS             <| "pass" |>

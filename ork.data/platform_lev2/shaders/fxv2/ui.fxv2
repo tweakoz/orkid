@@ -77,19 +77,6 @@ vertex_shader vs_uitext : iface_vdefault {
 
 }
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_uitext_stereo //
-  : extension(GL_NV_stereo_view_rendering) //
-  : extension(GL_NV_viewport_array2) //
- : iface_vdefault { //
-  gl_Position = mvp_l * position;
-  gl_SecondaryPositionNV = mvp_r*position;
-  //frg_clr     = vtxcolor;
-  frg_uv      = uv0;
-    gl_Layer = 0;
-    gl_ViewportMask[0] = 1;
-    gl_SecondaryViewportMaskNV[0] = 2;
-}
-///////////////////////////////////////////////////////////////
 fragment_shader ps_uitext : iface_fmt {
   vec4 s = texture(ColorMap, frg_uv);
   float texa = pow(s.a*s.r,0.75);
@@ -126,14 +113,6 @@ technique uitext {
   pass p0A {
     vertex_shader   = vs_uitext;
     fragment_shader = ps_uitext;
-    state_block     = sb_lerpblend;
-  }
-}
-technique uitext_stereo {
-  fxconfig = fxcfg_default;
-  pass p0B {
-    vertex_shader   = vs_uitext_stereo;
-    fragment_shader = ps_uitext_stereo;
     state_block     = sb_lerpblend;
   }
 }

@@ -345,6 +345,7 @@ GLFX1Backend::GLFX1Backend() {
   registerAstPostCB<InterfaceOutput>([=](auto ii_node){
     emitEndLine(";");
   });
+  /*
   registerAstPreCB<InterfaceLayout>([=](auto il_node){
     emitContinueLine("layout(");
   });
@@ -367,8 +368,8 @@ GLFX1Backend::GLFX1Backend() {
     else{
       emitContinueLine("=");
     }
-  });
-  registerAstPreCB<InterfaceStorages>([=](auto is_node){
+  });*/
+  /*registerAstPreCB<InterfaceStorages>([=](auto is_node){
     emitLine("storage {" );
     _indent++;
   });
@@ -395,7 +396,7 @@ GLFX1Backend::GLFX1Backend() {
     else if (child == is_node->_children[3]) { // storage_name
       emitContinueLine(";");
     }
-  });
+  });*/
   
   /////////////////////////////////////////////////////////////////////
   registerAstPreCB<VertexInterface>([=](auto vtx_if) { named_precb( vtx_if, "vertex_interface" ); });

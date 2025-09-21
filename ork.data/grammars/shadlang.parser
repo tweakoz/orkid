@@ -507,27 +507,17 @@ InterfaceOutputs <|[
   R_CURLY
 ]|>
 
-InterfaceStorage <|[
-   InterfaceLayout
-    [ IDENTIFIER ] : "storage_class"
-    L_CURLY
-    DataDeclarations : "storage_decls"
-    R_CURLY
-    [ IDENTIFIER ] : "storage_name"
-    SEMICOLON
- ]|>
-
-InterfaceStorages <|[
+InterfaceStorageRefs <|[
     KW_STORAGE
     L_CURLY
-    zom{ InterfaceStorage }
+    zom{ IDENTIFIER }
     R_CURLY
 ]|>
 
 InterfaceItem <| sel{
     InterfaceInputs
     InterfaceOutputs
-    InterfaceStorages
+    InterfaceStorageRefs
 }|>
 
 StructDecl <|[
@@ -575,7 +565,26 @@ ComputeInterface <|[
   R_CURLY
 ]|>
 
-stateblock_key <| sel{ KW_BLENDMODE KW_CULLTEST KW_DEPTHTEST KW_DEPTHMASK } |>
+StorageInterfaceItem <|[
+   KW_BUFFER
+   InterfaceLayout
+    [ IDENTIFIER ] : "storage_name"
+    L_CURLY
+    DataDeclarations : "storage_decls"
+    R_CURLY
+    SEMICOLON
+]|>
+
+StorageInterface <|[
+   KW_STOIFACE
+   IDENTIFIER  : "storage_interface_name"
+   DescriptorSetId
+   L_CURLY
+   zom { StorageInterfaceItem }
+   R_CURLY
+ ]|>
+ 
+ stateblock_key <| sel{ KW_BLENDMODE KW_CULLTEST KW_DEPTHTEST KW_DEPTHMASK } |>
 
 sblock_item <|[
     stateblock_key EQUALS IDENTIFIER SEMICOLON
@@ -677,6 +686,7 @@ Translatable <|
     GeometryInterface
     FragmentInterface 
     ComputeInterface
+    StorageInterface
     StateBlock
     Technique
     FxConfigDecl 

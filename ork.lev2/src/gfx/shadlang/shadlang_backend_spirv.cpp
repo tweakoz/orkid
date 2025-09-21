@@ -1032,8 +1032,8 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
   }
 
   // Process storage groups
-  auto storage_groups = AstNode::collectNodesOfType<InterfaceStorages>(interface_node);
-  for (auto storage_group : storage_groups) {
+  auto storage_groups = AstNode::collectNodesOfType<InterfaceStorageRefs>(interface_node);
+  /*for (auto storage_group : storage_groups) {
     auto storages = AstNode::collectNodesOfType<InterfaceStorage>(storage_group);
     for (auto storage : storages) {
       ///////////////////////////////////////////////////////////
@@ -1099,7 +1099,7 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
 
       _appendText(_interface_group, "};");
     }
-  }
+  }*/
 
   decorator = FormatString("// end interface<%s>", ifname.c_str());
   _appendText(_interface_group, decorator.c_str());

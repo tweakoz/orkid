@@ -230,8 +230,7 @@ DECLARE_STD_AST_CLASS(AstNode,InterfaceInputSemantic);
 DECLARE_STD_AST_CLASS(AstNode,InterfaceOutput);
 DECLARE_STD_AST_CLASS(AstNode,InterfaceInputs);
 DECLARE_STD_AST_CLASS(AstNode,InterfaceOutputs);
-DECLARE_STD_AST_CLASS(AstNode,InterfaceStorage);
-DECLARE_STD_AST_CLASS(AstNode,InterfaceStorages);
+DECLARE_STD_AST_CLASS(AstNode,InterfaceStorageRefs);
 
 DECLARE_STD_AST_CLASS(AstNode,Dependency);
 DECLARE_STD_AST_CLASS(Dependency,Extension);
@@ -389,6 +388,7 @@ DECLARE_STD_AST_CLASS(PipelineInterface,VertexInterface);
 DECLARE_STD_AST_CLASS(PipelineInterface,GeometryInterface);
 DECLARE_STD_AST_CLASS(PipelineInterface,FragmentInterface);
 DECLARE_STD_AST_CLASS(PipelineInterface,ComputeInterface);
+DECLARE_STD_AST_CLASS(PipelineInterface,StorageInterface);
 
 ///////////////////////////////////////////////////////////
 

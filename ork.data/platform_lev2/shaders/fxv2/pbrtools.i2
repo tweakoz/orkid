@@ -311,6 +311,9 @@ fragment_interface fif_FWDTEST
   outputs {
     layout(location = 0) vec4 out_color;
   }
+  storage { 
+    storage_fwd_lighting
+  }
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_forward_test 
@@ -402,7 +405,7 @@ libblock std_forward_all
     : uset_std_viewport
     : ublk_std_pbr 
     : ublk_std_matrices
-    : ublk_frg_fwd_lighting
+    //: storage_fwd_lighting
     : sset_std_lighting 
     : sset_std_pbr
     : sset_std_ssao
