@@ -36,6 +36,31 @@ VkFxInterface::~VkFxInterface(){
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+FxShaderStorageBuffer* VkFxInterface::createStorageBuffer(size_t length) {
+  return nullptr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+storagebuffermappingptr_t VkFxInterface::mapStorageBuffer(FxShaderStorageBuffer* b, size_t base, size_t length) {
+  return nullptr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkFxInterface::unmapStorageBuffer(FxShaderStorageBufferMapping* mapping) {
+}
+
+void VkFxInterface::copyBufferIntoStorageBuffer(FxShaderStorageBuffer* ssbo, std::vector<uint8_t> data, size_t dest_offset) { 
+  OrkAssert(false);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkComputeInterface::bindStorageBuffer(const FxComputeShader* shader, uint32_t binding_index, FxShaderStorageBuffer* buffer) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::_doBeginFrame() {
   _currentPipeline = nullptr;

@@ -33,7 +33,7 @@ public:
   virtual fxsamplerset_constptr_t samplerSet(FxShader* hfx, const std::string& name) = 0;
 
   virtual const FxComputeShader* computeShader(FxShader* hfx, const std::string& name) = 0;
-  virtual const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) = 0;
+  virtual fxparamstorageblock_constptr_t storageBlock(FxShader* hfx, const std::string& name) = 0;
 
   virtual void bindParamBool(const FxShaderParam* hpar, const bool bval)                          = 0;
   virtual void bindParamInt(const FxShaderParam* hpar, const int ival)                            = 0;
@@ -56,6 +56,13 @@ public:
   virtual void bindParamTextureList(const FxShaderParam* hpar, texture_rawlist_t rawlist) {}
 
   void bindParamTex(const FxShaderParam* hpar, const lev2::TextureAsset* tex);
+
+  //////////////////////////////////////////
+
+  virtual FxShaderStorageBuffer* createStorageBuffer(size_t length) { return nullptr; }
+  virtual void copyBufferIntoStorageBuffer(FxShaderStorageBuffer* ssbo, std::vector<uint8_t> buffer, size_t dest_offset) { }
+  virtual storagebuffermappingptr_t mapStorageBuffer(FxShaderStorageBuffer*b,size_t base=0, size_t length=0) { return nullptr; }
+  virtual void unmapStorageBuffer(FxShaderStorageBufferMapping* mapping) {}
 
   //////////////////////////////////////////
   // new descriptorset api

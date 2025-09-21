@@ -93,7 +93,9 @@ void pyinit_gfx(py::module& module_lev2) {
           "clearcolor",
           [](const fbi_t& fbi) -> fvec4 { return fbi.get()->GetClearColor(); },
           [](fbi_t& fbi, const fvec4& value) { fbi.get()->SetClearColor(value); })
-      .def("capturePixel", [](const fbi_t& fbi, pixelfetchctx_ptr_t pfc, int x, int y) -> captureasync_ptr_t {
+      .def(
+          "capturePixel",
+          [](const fbi_t& fbi, pixelfetchctx_ptr_t pfc, int x, int y) -> captureasync_ptr_t {
             // Create a capture async future for single pixel capture
             // The implementation will populate _pixelFetchContext when complete
             return fbi.get()->capturePixelAsync(pfc, x, y);
@@ -130,11 +132,33 @@ void pyinit_gfx(py::module& module_lev2) {
         return fxs.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<fxi_t>(module_lev2, "FxInterface").def("__repr__", [](const fxi_t& fxi) -> std::string {
-    fxstring<256> fxs;
-    fxs.format("FXI(%p)", fxi.get());
-    return fxs.c_str();
-  });
+  py::class_<fxi_t>(module_lev2, "FxInterface")
+      .def(
+          "__repr__",
+          [](const fxi_t& fxi) -> std::string {
+            fxstring<256> fxs;
+            fxs.format("FXI(%p)", fxi.get());
+            return fxs.c_str();
+          })
+      .def(
+          "createShaderStorageBufferWithLength",
+          [](fxi_t& fxi, size_t length) -> fxshaderstoragebuffer_ptr_t {
+            return fxshaderstoragebuffer_ptr_t(fxi.get()->createStorageBuffer(length));
+          })
+      .def(
+          "copyDataIntoShaderStorageBuffer",
+          [](fxi_t& fxi, py::object data, fxshaderstoragebuffer_ptr_t buffer, size_t dest_offset) { //
+            if (py::isinstance<py::float_>(data)) {
+              auto as_float  = data.cast<py::float_>();
+              auto datablock = std::make_shared<DataBlock>();
+              datablock->addItem<float>(as_float);
+              fxi.get()->copyBufferIntoStorageBuffer(buffer.get(), datablock->_storage, dest_offset);
+            } else {
+              auto type_str = data.get_type().attr("__name__").cast<std::string>();
+              printf("copyDataIntoShaderStorageBuffer unknown type<%s>\n", type_str.c_str());
+              OrkAssert(false);
+            }
+          });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<gbi_t>(module_lev2, "GeometryBufferInterface")
       .def(
@@ -186,26 +210,6 @@ void pyinit_gfx(py::module& module_lev2) {
             fxs.format("CI(%p)", gbi.get());
             return fxs.c_str();
           })
-#if defined(ENABLE_SSBO)
-      .def(
-          "createShaderStorageBufferWithLength",
-          [](ci_t& ci, size_t length) -> fxshaderstoragebuffer_ptr_t {
-            return fxshaderstoragebuffer_ptr_t(ci.get()->createStorageBuffer(length));
-          })
-      .def(
-          "copyDataIntoShaderStorageBuffer",
-          [](ci_t& ci, py::object data, fxshaderstoragebuffer_ptr_t buffer, size_t dest_offset) { //
-            if (py::isinstance<py::float_>(data)) {
-              auto as_float  = data.cast<py::float_>();
-              auto datablock = std::make_shared<DataBlock>();
-              datablock->addItem<float>(as_float);
-              ci.get()->copyBufferIntoStorageBuffer(buffer.get(), datablock->_storage, dest_offset);
-            } else {
-              auto type_str = data.get_type().attr("__name__").cast<std::string>();
-              printf("copyDataIntoShaderStorageBuffer unknown type<%s>\n", type_str.c_str());
-              OrkAssert(false);
-            }
-          })
 #if defined(ENABLE_PYTORCH)
       .def(
           "createShaderStorageBufferFromTensor",
@@ -217,7 +221,6 @@ void pyinit_gfx(py::module& module_lev2) {
           [](ci_t& ci, torchtensor_ptr_t tensor, fxshaderstoragebuffer_ptr_t buffer, size_t dest_offset) {
             ci.get()->copyTensorIntoStorageBuffer(buffer.get(), tensor, dest_offset);
           })
-#endif
 #endif
       .def("dispatch", [](ci_t& ci, pyfxcomputeshader_ptr_t csh, uint32_t numx, uint32_t numy, uint32_t numz) {
         ci.get()->dispatchCompute(csh.get(), numx, numy, numz);
@@ -364,9 +367,8 @@ void pyinit_gfx(py::module& module_lev2) {
               })
           .def_property_readonly("is_ready", [](captureasync_ptr_t cap) -> bool { return cap->isReady(); })
           .def_property_readonly("progress", [](captureasync_ptr_t cap) -> float { return cap->progress(); })
-          .def_property_readonly("pixelFetchContext", [](captureasync_ptr_t cap) -> pixelfetchctx_ptr_t { 
-                return cap->_pixelFetchContext; 
-              })
+          .def_property_readonly(
+              "pixelFetchContext", [](captureasync_ptr_t cap) -> pixelfetchctx_ptr_t { return cap->_pixelFetchContext; })
           .def("wait", [](captureasync_ptr_t cap, capturebuffer_ptr_t buffer) -> bool { return cap->wait(buffer.get()); });
 
   auto rtb_t = py::class_<RtBuffer, rtbuffer_ptr_t>(module_lev2, "RtBuffer")
@@ -528,17 +530,24 @@ void pyinit_gfx(py::module& module_lev2) {
   type_codec->registerStdCodec<texture_ptr_t>(texture_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto pfc_type = py::class_<PixelFetchContext, pixelfetchctx_ptr_t>(module_lev2, "PixelFetchContext")
-                      .def(py::init([](rtgroup_ptr_t rtg, size_t size) -> pixelfetchctx_ptr_t {
-                          auto pfc = std::make_shared<PixelFetchContext>();
-                          pfc->_rtgroup = rtg;
-                          pfc->_resize(size);
-                          return pfc;
-                      }), py::arg("rtgroup"), py::arg("size") = 1)
-                      .def("setUsage", [](pixelfetchctx_ptr_t pfc, int index, crcstring_ptr_t usage) {
-                          OrkAssert(index >= 0 && index < pfc->_usage.size());
-                          auto eusage = static_cast<PixelFetchContext::EPixelUsage>(usage->hashed());
-                          pfc->_usage[index] = eusage;
-                      }, py::arg("index"), py::arg("usage"))
+                      .def(
+                          py::init([](rtgroup_ptr_t rtg, size_t size) -> pixelfetchctx_ptr_t {
+                            auto pfc      = std::make_shared<PixelFetchContext>();
+                            pfc->_rtgroup = rtg;
+                            pfc->_resize(size);
+                            return pfc;
+                          }),
+                          py::arg("rtgroup"),
+                          py::arg("size") = 1)
+                      .def(
+                          "setUsage",
+                          [](pixelfetchctx_ptr_t pfc, int index, crcstring_ptr_t usage) {
+                            OrkAssert(index >= 0 && index < pfc->_usage.size());
+                            auto eusage        = static_cast<PixelFetchContext::EPixelUsage>(usage->hashed());
+                            pfc->_usage[index] = eusage;
+                          },
+                          py::arg("index"),
+                          py::arg("usage"))
                       .def_property(
                           "rtgroup",
                           [](pixelfetchctx_ptr_t pfc) -> rtgroup_ptr_t { return pfc->_rtgroup; },

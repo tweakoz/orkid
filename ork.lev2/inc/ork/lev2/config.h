@@ -24,12 +24,12 @@
 #endif
 
 #define ENABLE_PYTORCH
+#define ENABLE_SSBO
 
 #if defined(LINUX)
  #define ENABLE_ALSA
  #define ENABLE_PORTAUDIO 
  #define ENABLE_PIPEWIRE
- #define ENABLE_SSBO
 // #define ENABLE_CUDA
 #else 
 #define ENABLE_PORTAUDIO

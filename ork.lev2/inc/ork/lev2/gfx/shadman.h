@@ -155,7 +155,7 @@ struct FxShaderStorageBufferMapping {
   ~FxShaderStorageBufferMapping();
   void unmap();
   FxShaderStorageBuffer* _buffer = nullptr;
-  ComputeInterface* _ci          = nullptr;
+  FxInterface* _fxi              = nullptr;
   size_t _offset                 = 0;
   size_t _cursor                 = 0;
   size_t _length                 = 0;

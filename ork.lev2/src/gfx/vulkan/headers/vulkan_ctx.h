@@ -355,6 +355,13 @@ struct VkFxInterface final : public FxInterface {
   FxShader* shaderFromShaderText(const std::string& name, const std::string& shadertext) final;
 
   //////////////////////////////////////////
+
+  void copyBufferIntoStorageBuffer(FxShaderStorageBuffer* ssbo, std::vector<uint8_t>, size_t dest_offset) final;
+  FxShaderStorageBuffer* createStorageBuffer(size_t length) final;
+  storagebuffermappingptr_t mapStorageBuffer(FxShaderStorageBuffer* b, size_t base = 0, size_t length = 0) final;
+  void unmapStorageBuffer(FxShaderStorageBufferMapping* mapping) final;
+
+  //////////////////////////////////////////
   // new descriptorset api
   //////////////////////////////////////////
 
@@ -426,19 +433,12 @@ struct VkComputeInterface : public ComputeInterface {
 
   void dispatchComputeIndirect(const FxComputeShader* shader, int32_t* indirect) final;
 
-#if defined(ENABLE_SSBO)
 
-  void copyBufferIntoStorageBuffer(FxShaderStorageBuffer* ssbo, std::vector<uint8_t>, size_t dest_offset) final;
-  FxShaderStorageBuffer* createStorageBuffer(size_t length) final;
-  storagebuffermappingptr_t mapStorageBuffer(FxShaderStorageBuffer* b, size_t base = 0, size_t length = 0) final;
-  void unmapStorageBuffer(FxShaderStorageBufferMapping* mapping) final;
   void bindStorageBuffer(const FxComputeShader* shader, uint32_t binding_index, FxShaderStorageBuffer* buffer) final;
 
 #if defined(ENABLE_PYTORCH)
   FxShaderStorageBuffer* storageBufferFromTensor(torchtensor_ptr_t tensor) final;
   void copyTensorIntoStorageBuffer(FxShaderStorageBuffer* ssbo, torchtensor_ptr_t tensor, size_t dest_offset) final;
-#endif
-
 #endif
 
   void bindImage(const FxComputeShader* shader, uint32_t binding_index, Texture* tex, ImageBindAccess access) final;

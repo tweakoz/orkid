@@ -197,7 +197,7 @@ public:
   fxparam_constptr_t _parUnTexPointLightsCount  = nullptr;
   fxparam_constptr_t _parTexSpotLightsCount   = nullptr;
 
-  fxparamblock_constptr_t _parForwardLightBlock   = nullptr;
+  fxparamstorageblock_constptr_t _parForwardLightBlock   = nullptr;
 
   ///////////////////////////////////////////
   // instancing (via texture)

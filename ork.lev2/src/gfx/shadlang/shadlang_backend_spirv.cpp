@@ -1069,7 +1069,7 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
         _appendText(_interface_group, header.c_str());
         /////////////////
         // todo:
-        //   dynamic set, binding assignment
+        //   dynamic set, binding assignment <<<<
         /////////////////
         _appendText(
             _interface_group, //
@@ -1099,7 +1099,7 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
         /////////////////
         _appendText(
             _interface_group, //
-            "}; // layout(set=%d, binding=1)",dset_id);
+            "}; // layout(set=%d, binding=1) TODO: use real binding ID",dset_id);
         /////////////////
         auto tailer = FormatString("// end interface<%s>", id_name.c_str());
         _appendText(_interface_group, tailer.c_str());

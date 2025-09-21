@@ -21,16 +21,10 @@ struct ComputeInterface {
                                
   virtual void dispatchComputeIndirect(const FxComputeShader* shader, int32_t* indirect) {}
   
-  #if defined(ENABLE_SSBO)
-  virtual FxShaderStorageBuffer* createStorageBuffer(size_t length) { return nullptr; }
-  virtual void copyBufferIntoStorageBuffer(FxShaderStorageBuffer* ssbo, std::vector<uint8_t> buffer, size_t dest_offset) { }
-  virtual storagebuffermappingptr_t mapStorageBuffer(FxShaderStorageBuffer*b,size_t base=0, size_t length=0) { return nullptr; }
-  virtual void unmapStorageBuffer(FxShaderStorageBufferMapping* mapping) {}
   virtual void bindStorageBuffer(const FxComputeShader* shader, uint32_t binding_index, FxShaderStorageBuffer* buffer) {}
   #if defined(ENABLE_PYTORCH)
   virtual void copyTensorIntoStorageBuffer(FxShaderStorageBuffer* ssbo, torchtensor_ptr_t tensor, size_t dest_offset) { }
   virtual FxShaderStorageBuffer* storageBufferFromTensor(torchtensor_ptr_t tensor) { return nullptr; }
-  #endif
   #endif
 
 

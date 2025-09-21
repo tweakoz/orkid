@@ -213,6 +213,7 @@ using fxshader_constptr_t    = const FxShader*;
 using fxparam_constptr_t     = const FxShaderParam*;
 using fxtechnique_constptr_t = const FxShaderTechnique*;
 using fxparamblock_constptr_t     = const FxUniformBlock*;
+using fxparamstorageblock_constptr_t = const FxShaderStorageBlock*;
 using fxparamptrmap_t        = std::map<std::string, fxparam_constptr_t>;
 using fxtechniqueptrmap_t    = std::map<std::string, fxtechnique_constptr_t>;
 using fxpipeline_ptr_t = std::shared_ptr<FxPipeline>;

@@ -32,32 +32,6 @@ void VkComputeInterface::dispatchCompute(
 void VkComputeInterface::dispatchComputeIndirect(const FxComputeShader* shader, int32_t* indirect) {
 }
 
-///////////////////////////////////////////////////////////////////////////////
-#if defined(ENABLE_SSBO)
-FxShaderStorageBuffer* VkComputeInterface::createStorageBuffer(size_t length) {
-  return nullptr;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-storagebuffermappingptr_t VkComputeInterface::mapStorageBuffer(FxShaderStorageBuffer* b, size_t base, size_t length) {
-  return nullptr;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void VkComputeInterface::unmapStorageBuffer(FxShaderStorageBufferMapping* mapping) {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void VkComputeInterface::bindStorageBuffer(const FxComputeShader* shader, uint32_t binding_index, FxShaderStorageBuffer* buffer) {
-}
-
-void VkComputeInterface::copyBufferIntoStorageBuffer(FxShaderStorageBuffer* ssbo, std::vector<uint8_t> data, size_t dest_offset) { 
-  OrkAssert(false);
-}
-
 #if defined(ENABLE_PYTORCH)
 
 FxShaderStorageBuffer* VkComputeInterface::storageBufferFromTensor(torchtensor_ptr_t tensor) {
@@ -68,8 +42,6 @@ void VkComputeInterface::copyTensorIntoStorageBuffer(FxShaderStorageBuffer* ssbo
   OrkAssert(false);
 
 }
-
-#endif
 
 #endif
 

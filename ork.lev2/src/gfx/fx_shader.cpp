@@ -89,9 +89,7 @@ FxShaderStorageBufferMapping::~FxShaderStorageBufferMapping() {
   assert(_mappedaddr == nullptr);
 }
 void FxShaderStorageBufferMapping::unmap() {
-  #if defined(ENABLE_SSBO)
-  _ci->unmapStorageBuffer(this);
-  #endif
+  _fxi->unmapStorageBuffer(this);
 }
 
 
