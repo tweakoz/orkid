@@ -75,7 +75,7 @@ public:
 
   ////////////////////////////////////////////
 
-  static FxUniformBuffer* pointLightDataBuffer(Context* targ);
+  static FxUniformBuffer* lightingDataBuffer(Context* targ);
   static FxUniformBuffer* boneDataBuffer(Context* targ);
 
   static texture_ptr_t brdfIntegrationMap(Context* targ,std::string type);

@@ -717,8 +717,10 @@ HeadLightManager::HeadLightManager(RenderContextFrameData& FrameData)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void LightManager::bindEnumeratedToUniformBuffer( Context* ctx, enumeratedlights_ptr_t enumerated_lights, FxUniformBuffer* ubo ) const {
-
+void LightManager::bindEnumeratedToUniformBuffer( Context* ctx,                             //
+                                                  enumeratedlights_ptr_t enumerated_lights, //
+                                                  FxUniformBuffer* ubo ) const {            //
+  constexpr size_t kmaxlights = 64;
   auto FXI = ctx->FXI();
   ///////////////////////////////////////////////////////////////////////////
   // build lighting UBO
@@ -745,6 +747,10 @@ void LightManager::bindEnumeratedToUniformBuffer( Context* ctx, enumeratedlights
   }
   // 16*(16+16+8) = 16*40 = 640
 
+  //////////////////////////////////////////
+  // Untextured point lights
+  //////////////////////////////////////////
+
   size_t index = 0;
   for (auto light : enumerated_lights->_untexturedpointlights) {
     auto C                                                    = fvec4(light->color(), light->intensity());
@@ -759,9 +765,18 @@ void LightManager::bindEnumeratedToUniformBuffer( Context* ctx, enumeratedlights
   }
   enumerated_lights->_num_active_untextured_pointlights = enumerated_lights->_untexturedpointlights.size(); 
 
-  for (int i = 0; i < 64; i++) {
+  //////////////////////////////////////////
+  // Textured spot lights
+  //////////////////////////////////////////
+
+  for (int i = 0; i < kmaxlights; i++) {
     pl_mapped->ref<uint32_t>(base_lighttexid + (i * vec4_stride)) = i;
   }
+
+  //////////////////////////////////////////
+  // Textured spot lights
+  //////////////////////////////////////////
+
   enumerated_lights->_num_active_texspotlights = 0;
   for (auto item : enumerated_lights->_tex2spotlightmap) {
     for (auto light : item.second) {
@@ -794,7 +809,7 @@ void LightManager::bindEnumeratedToUniformBuffer( Context* ctx, enumeratedlights
       enumerated_lights->_num_active_texspotlights++;
     }
   }
-
+  OrkAssert(index <= kmaxlights);
   // printf( "texlistsize<%d>\n", texlist.size() );
   pl_mapped->unmap();
 

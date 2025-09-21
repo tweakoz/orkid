@@ -243,6 +243,7 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
   int node_frame = _node->_frameIndex;
   RCFD->setUserProperty("noise_seed"_crcu, node_frame);
   // printf( "node_frame<%d>\n", node_frame );
+
   /////////////////////////////////////////////////
   // enumerate lights / PBR
   /////////////////////////////////////////////////
@@ -251,7 +252,7 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
     EASY_BLOCK("lights-1");
     const auto TOPCPD = CIMPL->topCPD();
     lmgr->enumerateInPass(TOPCPD, _enumeratedLights);
-    auto pl_buffer = PBRMaterial::pointLightDataBuffer(context);
+    auto pl_buffer = PBRMaterial::lightingDataBuffer(context);
     lmgr->bindEnumeratedToUniformBuffer( context, _enumeratedLights, pl_buffer );
   }
 

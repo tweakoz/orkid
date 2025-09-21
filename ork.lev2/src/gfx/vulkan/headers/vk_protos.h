@@ -167,6 +167,7 @@ using vkfxsunisetitem_ptr_t = std::shared_ptr<VkFxShaderUniformSetItem>;
 using vkfxsunisampler_ptr_t = std::shared_ptr<VkFxShaderUniformSampler>;
 
 using vkfxsuniblk_ptr_t         = std::shared_ptr<VkFxShaderUniformBlk>;
+using vkfxsuniblk_wkptr_t       = std::weak_ptr<VkFxShaderUniformBlk>;
 using vkfxsuniblkitem_ptr_t     = std::shared_ptr<VkFxShaderUniformBlkItem>;
 using vkfxpushconstantblk_ptr_t = std::shared_ptr<VkFxShaderPushConstantBlock>;
 using vkbufferlayout_ptr_t      = std::shared_ptr<VkBufferLayout>;

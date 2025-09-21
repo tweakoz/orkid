@@ -89,7 +89,7 @@ bool VkFxInterface::_tryBindMergedResource(const FxShaderParam* hpar,
       break;
     }
     case VkMergedResourceBinding::Type::UniformBlock: {
-      auto as_buffer = resource_data.getShared<VulkanBuffer>();
+      auto as_buffer = resource_data.get<vkbuffer_ptr_t>();
       vk_program->_uniformbuffers_by_orkparam[hpar] = as_buffer;
       break;
     }
@@ -456,48 +456,60 @@ void VkFxInterface::bindUniformBuffer(const FxUniformBlock* block, FxUniformBuff
   }
   
   if (!_currentVKPASS) {
-    printf("bindUniformBuffer: _currentVKPASS is null for block<%s>\n", block->_name.c_str());
+    static int counter = 0;
+    counter++;
+    if(counter<10) {
+      printf("bindUniformBuffer: _currentVKPASS is null for block<%s>\n", block->_name.c_str());
+    }
     return;
   }
   
   auto vk_program = _currentVKPASS->_vk_program;
   if (!vk_program) {
-    printf("bindUniformBuffer: _vk_program is null for block<%s>\n", block->_name.c_str());
+    static int counter = 0;
+    counter++;
+    if(counter<10) {
+      printf("bindUniformBuffer: _vk_program is null for block<%s>\n", block->_name.c_str());
+    }
     return;
   }
   
   // Get the Vulkan buffer implementation
   auto vk_buffer = buffer->_impl.tryAsShared<VulkanBuffer>();
   if (!vk_buffer) {
-    printf("bindUniformBuffer: buffer has no Vulkan implementation\n");
+    static int counter = 0;
+    counter++;
+    if(counter<10) {
+      printf("bindUniformBuffer: buffer has no Vulkan implementation\n");
+    }
     return;
   }
   
   // Get the Vulkan uniform block from the block's implementation
-  auto vk_block = block->_impl.tryAs<VkFxShaderUniformBlk*>();
+  auto vk_block = block->_impl.tryAs<vkfxsuniblk_wkptr_t>();
   if (!vk_block) {
-    printf("bindUniformBuffer: block<%s> has no Vulkan implementation\n", block->_name.c_str());
+    static int counter = 0;
+    counter++;
+    if(counter<10) {
+      printf("bindUniformBuffer: block<%s> has no Vulkan implementation\n", block->_name.c_str());
+    }
     return;
   }
-  
-  // Find the associated parameter for this block
-  // First check if the block has an associated orkparam
-  auto vk_blk_impl = vk_block.value();
-  if (!vk_blk_impl || !vk_blk_impl->_orkparamblock) {
-    printf("bindUniformBuffer: block<%s> has no associated parameter\n", block->_name.c_str());
-    return;
-  }
-  
+    
   // The FxUniformBlock should have a pseudo-parameter that represents the block binding
   // Try to bind via merged resources using the block name as the parameter name
   auto dummy_param = std::make_shared<FxShaderParam>();
   dummy_param->_name = block->_name;
   
   // Store the buffer in the program's uniform buffer map
-  if (_tryBindMergedResource(dummy_param.get(), VkMergedResourceBinding::Type::UniformBlock, block->_impl)) {
+  if (_tryBindMergedResource(dummy_param.get(), VkMergedResourceBinding::Type::UniformBlock, vk_buffer.value())) {
     // Success
   } else {
-    printf("bindUniformBuffer: failed to bind block<%s> via merged resources\n", block->_name.c_str());
+    static int counter = 0;
+    counter++;
+    if(counter<10) {
+      printf("bindUniformBuffer: failed to bind block<%s> via merged resources\n", block->_name.c_str());
+    }
   }
 }
 

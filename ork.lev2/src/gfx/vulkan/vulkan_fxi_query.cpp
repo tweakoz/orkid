@@ -147,7 +147,8 @@ const FxShaderParam* VkFxInterface::parameter(FxShader* pshader, const std::stri
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const FxUniformBlock* VkFxInterface::uniformBlock(FxShader* shader, const std::string& name) {
+const FxUniformBlock* VkFxInterface::uniformBlock( FxShader* shader, //
+                                                   const std::string& name) { //
   OrkAssert(shader != nullptr);
   auto& blockmap = shader->_uniformBlockByName;
   auto it        = blockmap.find(name);

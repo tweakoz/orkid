@@ -421,11 +421,12 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       // CREATE NEW BLOCK (first occurrence in this shader file)
       vk_uniblk                                           = std::make_shared<VkFxShaderUniformBlk>();
       vk_uniblk->_orkparamblock                           = std::make_shared<FxUniformBlock>();
+      vk_uniblk->_orkparamblock->_impl.set<vkfxsuniblk_wkptr_t>(vk_uniblk);
       vk_uniblk->_orkparamblock->_name                    = str_uniblk_name; // SET THE NAME!
       vk_uniblk->_descriptor_set_id                       = dset_id;
       vulkan_shaderfile->_vk_uniformblks[str_uniblk_name] = vk_uniblk;
 
-      if(0)printf("VK_UBO: CREATING UBO<%s> ptr<%p> DSID<%zu>\n", str_uniblk_name.c_str(), vk_uniblk.get(), dset_id);
+      if(1)printf("VK_UBO: CREATING UBO<%s> ptr<%p> DSID<%zu>\n", str_uniblk_name.c_str(), vk_uniblk.get(), dset_id);
     }
 
     // Only register with ork_shader if not already registered

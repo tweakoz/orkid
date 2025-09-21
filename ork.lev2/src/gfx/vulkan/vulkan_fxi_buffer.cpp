@@ -22,8 +22,8 @@ FxUniformBuffer* VkFxInterface::createUniformBuffer(size_t length) {
 ///////////////////////////////////////////////////////////////////////////////
 
 fxuniformbuffermapping_ptr_t VkFxInterface::mapUniformBuffer(FxUniformBuffer* b, //
-                                                      size_t base, //
-                                                      size_t length) { //
+                                                             size_t base, //
+                                                             size_t length) { //
 
   auto bufimpl = b->_impl.getShared<VulkanBuffer>();
   auto mapping = std::make_shared<FxUniformBufferMapping>();
