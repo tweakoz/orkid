@@ -131,7 +131,7 @@ private:
   size_t _output_index = 0;
   size_t _binding_id = 0;
   bool _vulkan = true;
-
+  bool _assert_on_done = false;
   // ADD: Merged resources for this pass
   std::map<int, std::map<std::string, MergedShaderResources::ResourceBinding>> _merged_resources;
   bool _has_merged_resources = false;

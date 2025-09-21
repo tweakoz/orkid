@@ -465,7 +465,8 @@ void SpirvCompiler::_convertUniformBlocks() {
       int dset_id                = dsetids[0]->typedValueForKey<int>("descriptor_set_id").value();
       uniblk->_descriptor_set_id = dset_id;
       OrkAssert((dset_id >= 0) and (dset_id <= 4));
-      if(0)printf("uniblk dset_id<%d>\n", dset_id);
+      if (0)
+        printf("uniblk dset_id<%d>\n", dset_id);
     }
 
     // Parse local data declarations
@@ -619,9 +620,9 @@ void SpirvCompiler::_inheritSamplerSet(
   // samplers
   /////////////////////
   for (auto item : spirvsset->_samplers_by_name) {
-    auto dt   = item.second->_datatype;
-    auto id   = item.second->_identifier;
-    
+    auto dt = item.second->_datatype;
+    auto id = item.second->_identifier;
+
     // Try to find binding ID from merged resources first
     int binding_id = _findBindingIdFromMergedResources(id, unisetname);
     if (binding_id == -1) {
@@ -629,7 +630,7 @@ void SpirvCompiler::_inheritSamplerSet(
       binding_id = _binding_id;
       _binding_id++;
     }
-    
+
     auto line = FormatString(
         "layout(set=%zu, binding=%d) uniform %s %s;", //
         spirvsset->_descriptor_set_id,                //
@@ -704,7 +705,7 @@ void SpirvCompiler::_emitMergedPushConstants() {
     OrkAssert(false);
   }
 
-  if(all_items.size()){
+  if (all_items.size()) {
     // Emit single push_constant block ONCE, outside the loop
     _appendText(_uniforms_group, "layout(push_constant) uniform PushConstants {");
 
@@ -778,7 +779,7 @@ void SpirvCompiler::_inheritUniformBlk(
     /////////////////////
     // loose unis
     /////////////////////
-    
+
     // Try to find binding ID from merged resources first
     int binding_id = _findBindingIdFromMergedResources(uniblkname, uniblkname);
     if (binding_id == -1) {
@@ -786,11 +787,11 @@ void SpirvCompiler::_inheritUniformBlk(
       binding_id = _binding_id;
       _binding_id++;
     }
-    
+
     auto line = FormatString(
         "layout(set=%zu, binding=%d) uniform %s {", //
-        spirvublk->_descriptor_set_id,               //
-        binding_id,                                  //
+        spirvublk->_descriptor_set_id,              //
+        binding_id,                                 //
         uniblkname.c_str());
     _appendText(_uniforms_group, line.c_str());
     for (auto item : spirvublk->_items_by_order) {
@@ -962,7 +963,7 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
   bool is_vertex_interface   = (std::dynamic_pointer_cast<VertexInterface>(interface_node) != nullptr);
   bool is_geometry_interface = (std::dynamic_pointer_cast<GeometryInterface>(interface_node) != nullptr);
   bool is_compute_interface  = (std::dynamic_pointer_cast<ComputeInterface>(interface_node) != nullptr);
-  //bool is_storage_interface  = (std::dynamic_pointer_cast<StorageInterface>(interface_node) != nullptr);
+  // bool is_storage_interface  = (std::dynamic_pointer_cast<StorageInterface>(interface_node) != nullptr);
 
   // For fragment interfaces, first convert inherited vertex outputs to inputs
   if (is_fragment_interface) {
@@ -1036,87 +1037,77 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
   // Process storage groups
   auto storage_groups = AstNode::collectNodesOfType<InterfaceStorageRefs>(interface_node);
   for (auto storage_group : storage_groups) {
-   dumpAstNode(storage_group);
+    dumpAstNode(storage_group);
     auto storage_refs = AstNode::collectNodesOfType<SemaIdentifier>(storage_group);
     for (auto storage : storage_refs) {
       auto id_name = storage->typedValueForKey<std::string>("identifier_name").value();
-      printf("InterfaceStorageRef %s\n", id_name.c_str() );
-      auto sto_if     = _transu->find<StorageInterface>(id_name);
+      //printf("InterfaceStorageRef %s\n", id_name.c_str());
+      auto sto_if = _transu->find<StorageInterface>(id_name);
       if (sto_if) {
         auto storage_name = sto_if->typedValueForKey<std::string>("object_name").value();
-        printf(" found StorageInterface '%s' name<%s>\n", id_name.c_str(), storage_name.c_str() );
-      }
-      else{
+        //printf(" found StorageInterface '%s' name<%s>\n", id_name.c_str(), storage_name.c_str());
+        //_assert_on_done = true;
+        auto dsid_node  = sto_if->findFirstChildOfType<DescriptorSetId>();
+        int dset_id     = dsid_node->typedValueForKey<int>("descriptor_set_id").value();
+        auto sitem_node  = sto_if->findFirstChildOfType<StorageInterfaceItem>();
+        auto sitemn_node  = sitem_node->findFirstChildOfType<StorageInterfaceItemName>();
+        auto semaid_nodes = AstNode::collectNodesOfType<SemaIdentifier>(sitemn_node);
+        auto sitem_name  = getSemaIdString(semaid_nodes[0]);
+        /*layout(set = 0, binding = 0) buffer ObjectBuffer
+        {
+            int some_int;
+            float fixed_array[42];
+            float variable_array[];
+        };*/
+        /////////////////////////////////////////////////////////////////////
+        auto header = FormatString("// begin interface<%s> sitem_name<%s>", //
+                                   id_name.c_str(),                        //
+                                   sitem_name.c_str());                //
+        //auto header = FormatString("// begin interface<%s> sitem_ast<%s>", //
+        //                           id_name.c_str(),                        //
+        //                           (void*)toASTstring(sitemn_node).c_str());                //
+        _appendText(_interface_group, header.c_str());
+        /////////////////
+        // todo:
+        //   dynamic set, binding assignment
+        /////////////////
+        _appendText(
+            _interface_group, //
+            "layout(set=%d, binding=1) buffer %s {", dset_id, sitem_name.c_str() );
+        /////////////////
+        auto decls = sitem_node->findFirstChildOfType<DataDeclarations>();
+        for (auto decl_sub : decls->_children) {
+          if (auto as_ddecl = std::dynamic_pointer_cast<DataDeclaration>(decl_sub)) {
+            auto tid = as_ddecl->childAs<TypedIdentifier>(0);
+            OrkAssert(tid);
+            auto dt = tid->typedValueForKey<std::string>("data_type").value();
+            auto id = tid->typedValueForKey<std::string>("identifier_name").value();
+            _appendText(_interface_group, " %s %s;", dt.c_str(), id.c_str());
+          } else if (auto as_adecl = std::dynamic_pointer_cast<ArrayDeclaration>(decl_sub)) {
+            auto tid = as_adecl->childAs<TypedIdentifier>(0);
+            OrkAssert(tid);
+            auto dt          = tid->typedValueForKey<std::string>("data_type").value();
+            auto id          = tid->typedValueForKey<std::string>("identifier_name").value();
+            auto len_node    = as_adecl->childAs<SemaIntegerLiteral>(1);
+            auto ary_len_str = len_node->typedValueForKey<std::string>("literal_value").value();
+            auto ary_len     = atoi(ary_len_str.c_str());
+            _appendText(_interface_group, " %s %s[%d];", dt.c_str(), id.c_str(), ary_len);
+          } else {
+            OrkAssert(false);
+          }
+        }
+        /////////////////
+        _appendText(
+            _interface_group, //
+            "}; // layout(set=%d, binding=1)",dset_id);
+        /////////////////
+        auto tailer = FormatString("// end interface<%s>", id_name.c_str());
+        _appendText(_interface_group, tailer.c_str());
+      } else {
         printf("ERROR: StorageInterface '%s' not found!\n", id_name.c_str());
         OrkAssert(false);
       }
-
-
-      ///////////////////////////////////////////////////////////
-      // parse storage top
-      ///////////////////////////////////////////////////////////
-      /*auto layout           = storage->findFirstChildOfType<InterfaceLayout>();
-      auto decls            = storage->findFirstChildOfType<DataDeclarations>();
-      auto ast_storage_type = storage->childAs<SemaIdentifier>(1);
-      auto ast_storage_name = storage->childAs<SemaIdentifier>(3);
-      OrkAssert(layout);
-      OrkAssert(decls);
-      OrkAssert(ast_storage_type);
-      OrkAssert(ast_storage_name);
-      auto storage_type = ast_storage_type->typedValueForKey<std::string>("identifier_name").value();
-      auto storage_name = ast_storage_name->typedValueForKey<std::string>("identifier_name").value();
-
-      ///////////////////////////////////////////////////////////
-      // parse/emit layout
-      ///////////////////////////////////////////////////////////
-      auto ast_std = layout->childAs<InterfaceLayoutItem>(0);
-      auto ast_bin = layout->childAs<InterfaceLayoutItem>(1);
-      OrkAssert(ast_std);
-      OrkAssert(ast_bin);
-      auto std = getSemaIdString(ast_std->_children[0]);
-      auto bin = getSemaIdString(ast_bin->_children[0]);
-
-      auto ast_bin_num = ast_bin->childAs<SemaIntegerLiteral>(1);
-      OrkAssert(ast_bin_num);
-      auto bin_num = atoi(ast_bin_num->typedValueForKey<std::string>("literal_value").value().c_str());
-
-      _appendText(
-          _interface_group,                 //
-          "layout(%s, binding=%d) %s %s {", //
-          std.c_str(),                      //
-          bin_num,                          //
-          storage_type.c_str(),             //
-          storage_name.c_str());
-
-      ///////////////////////////////////////////////////////////
-      // parse data/array declarations
-      ///////////////////////////////////////////////////////////
-
-      for (auto decl_sub : decls->_children) {
-        if (auto as_ddecl = std::dynamic_pointer_cast<DataDeclaration>(decl_sub)) {
-          auto tid = as_ddecl->childAs<TypedIdentifier>(0);
-          OrkAssert(tid);
-          auto dt = tid->typedValueForKey<std::string>("data_type").value();
-          auto id = tid->typedValueForKey<std::string>("identifier_name").value();
-          _appendText(_interface_group, " %s %s;", dt.c_str(), id.c_str());
-        } else if (auto as_adecl = std::dynamic_pointer_cast<ArrayDeclaration>(decl_sub)) {
-          auto tid = as_adecl->childAs<TypedIdentifier>(0);
-          OrkAssert(tid);
-          auto dt          = tid->typedValueForKey<std::string>("data_type").value();
-          auto id          = tid->typedValueForKey<std::string>("identifier_name").value();
-          auto len_node    = as_adecl->childAs<SemaIntegerLiteral>(1);
-          auto ary_len_str = len_node->typedValueForKey<std::string>("literal_value").value();
-          auto ary_len     = atoi(ary_len_str.c_str());
-          _appendText(_interface_group, " %s %s[%d];", dt.c_str(), id.c_str(), ary_len);
-        } else {
-          OrkAssert(false);
-        }
-      }
-
-      _appendText(_interface_group, "};");
-      */
     }
-    OrkAssert(false);
   }
 
   decorator = FormatString("// end interface<%s>", ifname.c_str());
@@ -1155,7 +1146,7 @@ void SpirvCompiler::_compileShader(shaderc_shader_kind shader_type) {
 
   _shader_name = _shader->typedValueForKey<std::string>("object_name").value();
   auto fn_sig  = FormatString("void main() // %s", _shader_name.c_str());
-  //auto fn_inv  = FormatString("void main() { %s(); }", _shader_name.c_str());
+  // auto fn_inv  = FormatString("void main() { %s(); }", _shader_name.c_str());
 
   _shader_group->appendTypedChild<InsertLine>("#version 450");
   _shader_group->appendChild(_extension_group);
@@ -1186,34 +1177,35 @@ void SpirvCompiler::_compileShader(shaderc_shader_kind shader_type) {
       "main",                                                       // entry point name
       options);
 
+  printf("// shader<%s>:\n%s\n", _shader_name.c_str(), as_glsl.c_str());
   if (result.GetCompilationStatus() != shaderc_compilation_status_success) {
-    printf("// shader<%s>:\n%s\n", _shader_name.c_str(), as_glsl.c_str());
     std::cerr << result.GetErrorMessage();
     OrkAssert(false);
   }
-  auto output_path = file::Path::temp_dir()/FormatString("%s.glsl",_shader_name.c_str());
-  bool OK = File::writeString(output_path, as_glsl);
+  auto output_path = file::Path::temp_dir() / FormatString("%s.glsl", _shader_name.c_str());
+  bool OK          = File::writeString(output_path, as_glsl);
 
-  output_path = file::Path::temp_dir()/FormatString("%s.spv",_shader_name.c_str());
+  output_path   = file::Path::temp_dir() / FormatString("%s.spv", _shader_name.c_str());
   _spirv_binary = shader_bin_t(result.cbegin(), result.cend());
-  File::writeBinary(output_path, _spirv_binary.data(), _spirv_binary.size()*sizeof(uint32_t));
+  File::writeBinary(output_path, _spirv_binary.data(), _spirv_binary.size() * sizeof(uint32_t));
+  OrkAssert(not _assert_on_done);
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
 // Helper function to find binding ID from merged resources in the transunit
 int SpirvCompiler::_findBindingIdFromMergedResources(const std::string& resource_name, const std::string& source_name) {
   // Find the current pass that contains this shader
   auto passes = AstNode::collectNodesOfType<Pass>(_transu);
-  
+
   for (auto pass : passes) {
     // Check if this pass contains the current shader
     auto vtx_refs = AstNode::collectNodesOfType<VertexShaderRef>(pass);
     auto frg_refs = AstNode::collectNodesOfType<FragmentShaderRef>(pass);
     auto geo_refs = AstNode::collectNodesOfType<GeometryShaderRef>(pass);
     auto com_refs = AstNode::collectNodesOfType<ComputeShaderRef>(pass);
-    
+
     bool pass_contains_shader = false;
-    std::string shader_name = _shader->typedValueForKey<std::string>("object_name").value();
-    
+    std::string shader_name   = _shader->typedValueForKey<std::string>("object_name").value();
+
     for (auto vtx_ref : vtx_refs) {
       auto ref_name = vtx_ref->typedValueForKey<std::string>("ref_id").value();
       if (ref_name == shader_name) {
@@ -1242,7 +1234,7 @@ int SpirvCompiler::_findBindingIdFromMergedResources(const std::string& resource
         break;
       }
     }
-    
+
     if (pass_contains_shader) {
       // Find the merged resources node for this pass
       auto merged_resources = pass->findFirstChildOfType<MergedShaderResourcesNode>();
@@ -1267,7 +1259,7 @@ int SpirvCompiler::_findBindingIdFromMergedResources(const std::string& resource
       }
     }
   }
-  
+
   // If not found in merged resources, return -1 to indicate fallback to original behavior
   return -1;
 }

@@ -436,13 +436,6 @@ GLFX1Backend::GLFX1Backend() {
   registerAstPreChildCB<ComputeInterface>(named_item_pre_child_cb);
   registerAstPreCB<ComputeShader>([=](auto com_sh) { named_precb( com_sh, "compute_shader" ); });
   /////////////////////////////////////////////////////////////////////
-  /*layout(std430, binding = 2) buffer anotherLayoutName
-  {
-      int some_int;
-      float fixed_array[42];
-      float variable_array[];
-  };*/
-  /////////////////////////////////////////////////////////////////////
   registerAstReplCB<StorageInterface>([=](auto sto_if) { 
   });
   registerAstReplCB<InterfaceStorageRefs>([=](auto sto_if) { 

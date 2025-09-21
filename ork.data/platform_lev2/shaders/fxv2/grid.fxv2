@@ -40,6 +40,9 @@ fragment_interface fif_FWDLIT : vif_FWDLIT : ub_frg_fwd : ub_frg_fwd_lighting : 
   outputs {
     layout(location = 0) vec4 out_clr;
   }
+  storage {
+    storage_fwd_lighting
+  }
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_grid_forward_lit : vif_FWDLIT : lib_pbr_vtx : ublk_std_matrices {

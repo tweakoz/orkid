@@ -76,6 +76,9 @@ fragment_interface iface_forward : ub_frg_fwd : ub_frg_fwd_lighting : ss_frg_fwd
   outputs {
     layout(location = 0) vec4 out_color;
   }
+  storage {
+    storage_fwd_lighting
+  }
 }
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_fgbuffer : us_frg : ss_frg_fwd {
@@ -405,7 +408,6 @@ libblock std_forward_all
     : uset_std_viewport
     : ublk_std_pbr 
     : ublk_std_matrices
-    //: storage_fwd_lighting
     : sset_std_lighting 
     : sset_std_pbr
     : sset_std_ssao
