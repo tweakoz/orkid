@@ -131,7 +131,6 @@ callback_drawable_ptr_t UiCamera::createOverlayDrawable(){
         break;
       }
       case "FORWARD_PBR"_crcu:
-      case "DEFERRED_PBR"_crcu:
         context->MTXI()->SetMMatrix(mtx_center);
         context->PRI()->RenderTriCircle();
         break;

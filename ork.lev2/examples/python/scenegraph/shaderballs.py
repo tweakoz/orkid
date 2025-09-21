@@ -161,9 +161,7 @@ class SceneGraphApp(object):
 
       ######################
 
-
-
-      self.nodes += [node]
+    self.nodes += [node]
 
     lmgr = self.scene.lightingmanager
     color_cookies = lmgr.spot_cookies_color
@@ -175,7 +173,16 @@ class SceneGraphApp(object):
     cookie1 = color_cookies.load("src://effect_textures/knob2.png")
     depth_cookie1 = depth_cookies.slice(0)
 
-    self.spotlight1 = MySpotLight( index=0,app=self,model=model,frq=0.17,color=vec3(1000,800,500),cookie=cookie1,depth_cookie=depth_cookie1, radius=24,voffset=10,fovbase=25)
+    self.spotlight1 = MySpotLight( index=0,
+                                   app=self,
+                                   model=model,
+                                   frq=0.17,
+                                   color=vec3(1000,800,500),
+                                   cookie=cookie1,
+                                   depth_cookie=depth_cookie1, 
+                                   radius=24,
+                                   voffset=10,
+                                   fovbase=25)
 
     print("LMGR",lmgr)
     #assert(False)

@@ -269,7 +269,7 @@ VkRasterState::VkRasterState(rasterstate_ptr_t rstate, int attachment_count, con
   }
   
   _VKCBSI.attachmentCount = _attachment_count;
-  _VKCBSI.pAttachments = _VKCBATT_array.data();
+  _VKCBSI.pAttachments = (_attachment_count>0) ? _VKCBATT_array.data() : nullptr;
   _VKCBSI.blendConstants[0] = rstate->_blendConstant.x; 
   _VKCBSI.blendConstants[1] = rstate->_blendConstant.y; 
   _VKCBSI.blendConstants[2] = rstate->_blendConstant.z; 

@@ -18,11 +18,11 @@
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/lighting/gfx_lighting.h>
 #include <ork/lev2/gfx/renderer/compositor.h>
+#include <ork/lev2/gfx/renderer/irendertarget.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
 #include <ork/lev2/gfx/material_freestyle.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/unlit_node.h>
 
@@ -86,6 +86,7 @@ int main(int argc, char** argv, char** envp) {
       compositordata->presetDeferredPBR();
 
     compositordata->mbEnable     = true;
+    /*
     auto nodetek                = compositordata->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto rendnode               = nodetek->tryRenderNodeAs<pbr::deferrednode::DeferredCompositingNodePbr>();
     auto pbrcommon              = rendnode->_pbrcommon;
@@ -107,7 +108,7 @@ int main(int argc, char** argv, char** envp) {
     _terrainInst = _terrainDrawable->GetUserDataB().getShared<TerrainDrawableInst>();
     _terrainInst->_worldHeight = 5000.0f;
     _terrainInst->_worldSizeXZ = 8192.0f;
-
+    */
 
     ctx->debugPushGroup("main.onGpuInit");
     renderer->setContext(ctx);

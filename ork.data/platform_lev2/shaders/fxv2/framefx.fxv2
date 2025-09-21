@@ -533,12 +533,19 @@ technique framefx_hsvg {
   fxconfig = fxcfg_default;
   vf_pass = { vs_vtxcolor, ps_hsvg, sb_default_ffx }
 }
+state_block sb_ssao : default {
+  BlendMode = OFF;
+  DepthTest = LESS;
+  DepthMask = ON;
+  CullTest  = PASS_FRONT;
+}
+
 technique framefx_ssao_prepass {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader   = vs_vtxcolor;
     fragment_shader = ps_ssao_prepass;
-    state_block     = sb_default_ffx;
+    state_block     = sb_ssao;
   }
 }
 technique framefx_linearize_depth {

@@ -53,12 +53,6 @@ static FxUniformBuffer* _getPointLightDataBuffer(Context* context) {
 
   _buffer     = context->FXI()->createUniformBuffer(16384);
   auto mapped = context->FXI()->mapUniformBuffer(_buffer);
-  // size_t base  = 0;
-  // for (int i = 0; i < KMAXLIGHTSPERCHUNK; i++)
-  // mapped->ref<fvec3>(base + i * sizeof(fvec4)) = fvec3(0, 0, 0);
-  // base += KMAXLIGHTSPERCHUNK * sizeof(fvec4);
-  // for (int i = 0; i < KMAXLIGHTSPERCHUNK; i++)
-  // mapped->ref<fvec4>(base + i * sizeof(fvec4)) = fvec4();
   mapped->unmap();
 
   lev2::GfxEnv::releaseLock(LOCK);

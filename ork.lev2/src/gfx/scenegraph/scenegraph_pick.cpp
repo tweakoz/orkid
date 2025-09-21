@@ -3,6 +3,7 @@
 #include <ork/kernel/opq.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorPicking.h>
+#include <ork/lev2/gfx/renderer/irendertarget.h>
 using namespace std::string_literals;
 using namespace ork;
 

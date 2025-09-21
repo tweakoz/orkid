@@ -118,19 +118,6 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineVTX(const FxPipelinePermutation& 
       }
       break;
     }
-    case "DEFERRED_PBR"_crcu: {
-      if (not permu._instanced and not permu._skinned and not permu._stereo) {
-        if (this->_tek_GBU_CV_EMI_RI_NI_MO) {
-          pipeline             = std::make_shared<FxPipeline>(permu);
-          pipeline->_technique = this->_tek_GBU_CV_EMI_RI_NI_MO;
-          pipeline->bindParam(this->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
-          pipeline->addStateLambda(createBasicStateLambda(this));
-          pipeline->addStateLambda(no_cull_stateblock);
-          OrkAssert(pipeline->_technique != nullptr);
-        }
-      }
-      break;
-    }
     case "PICKING"_crcu: {
       if (not permu._instanced and not permu._skinned and not permu._stereo) {
         if (this->_tek_PIK_RI_NI) {

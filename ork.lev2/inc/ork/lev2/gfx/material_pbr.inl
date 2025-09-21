@@ -43,7 +43,6 @@ class PBRMaterial final : public GfxMaterial {
 
   static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu, const PBRMaterial* mtl);
   fxpipeline_ptr_t _createFxPipelineFWD(const FxPipelinePermutation& permu) const;
-  fxpipeline_ptr_t _createFxPipelineDEF(const FxPipelinePermutation& permu) const;
   fxpipeline_ptr_t _createFxPipelineDPP(const FxPipelinePermutation& permu) const;
   fxpipeline_ptr_t _createFxPipelinePIK(const FxPipelinePermutation& permu) const;
   fxpipeline_ptr_t _createFxPipelineUNL(const FxPipelinePermutation& permu) const;
@@ -198,7 +197,7 @@ public:
   fxparam_constptr_t _parUnTexPointLightsCount  = nullptr;
   fxparam_constptr_t _parTexSpotLightsCount   = nullptr;
 
-  fxparamblock_constptr_t _parUnTexPointLightsData   = nullptr;
+  fxparamblock_constptr_t _parForwardLightBlock   = nullptr;
 
   ///////////////////////////////////////////
   // instancing (via texture)

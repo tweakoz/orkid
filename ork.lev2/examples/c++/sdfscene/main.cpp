@@ -27,7 +27,6 @@
 #include <ork/asset/DynamicAssetLoader.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/unlit_node.h>
 
@@ -241,6 +240,7 @@ struct GpuResources {
     //////////////////////////////////////////////////////////
 
     _compositordata = std::make_shared<CompositingData>();
+    /*
     auto preset = _compositordata->presetDeferredPBR();
     _compositordata->mbEnable = true;
     auto nodetek              = _compositordata->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
@@ -259,7 +259,7 @@ struct GpuResources {
     ctx->debugPushGroup("main.onGpuInit");
     loadreq = std::make_shared<asset::LoadRequest>("data://tests/pbr1/pbr1");
     _modelasset = asset::AssetManager<XgmModelAsset>::load(loadreq);
-
+    */
     ctx->debugPopGroup();
   }
 

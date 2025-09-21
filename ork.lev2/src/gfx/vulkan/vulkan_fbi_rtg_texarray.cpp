@@ -103,7 +103,10 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_buildRtgImplFromTextureArraySlice(rtg
   if (is_depth) {
     // Create depth buffer impl for this slice
     uint64_t usage = "depth"_crcu;
+    auto rtb = rtgroup->createDepthBuffer(texarray->_format, false);
+    rtb->_mipgen = RtBuffer::EMipGen::EMG_NONE;
     auto bufferimpl = std::make_shared<VklRtBufferImpl>(_contextVK, RTGIMPL.get(), usage, vk_fmt);
+    rtb->_impl.setShared<VklRtBufferImpl>(bufferimpl);
     bufferimpl->_imgobj = vktex->_imgobj;
     
     // Store the slice view in the descriptor info
@@ -125,7 +128,10 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_buildRtgImplFromTextureArraySlice(rtg
   } else {
     // Color attachment case
     uint64_t usage = "color"_crcu;
+    auto rtb = rtgroup->createRenderTarget(texarray->_format, "arrayslice"_crcu, false);
+    rtb->_mipgen = RtBuffer::EMipGen::EMG_NONE;
     auto bufferimpl = std::make_shared<VklRtBufferImpl>(_contextVK, RTGIMPL.get(), usage, vk_fmt);
+    rtb->_impl.setShared<VklRtBufferImpl>(bufferimpl);
     bufferimpl->_imgobj = vktex->_imgobj;
     
     // Store the slice view in the descriptor info

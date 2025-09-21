@@ -14,7 +14,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
-#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/unlit_node.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_common.h>
@@ -192,24 +191,6 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     _compositorPreset = _compositorData->presetForwardPBR(_renderPresetData);
     auto nodetek      = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outrnode     = nodetek->tryRenderNodeAs<pbr::ForwardNode>();
-    _pbr_common     = outrnode->_pbrcommon;
-  } else if (preset == "DeferredPBR") {
-    _compositorPreset = _compositorData->presetDeferredPBR(_renderPresetData);
-    auto nodetek      = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
-    auto outpnode     = nodetek->tryOutputNodeAs<RtGroupOutputCompositingNode>();
-    auto outrnode     = nodetek->tryRenderNodeAs<pbr::deferrednode::DeferredCompositingNodePbr>();
-
-    if (auto try_supersample = params->typedValueForKey<int>("supersample")) {
-      if (outpnode) {
-        outpnode->setSuperSample(try_supersample.value());
-      }
-    }
-    OrkAssert(outrnode);
-    _pbr_common     = outrnode->_pbrcommon;
-  } else if (preset == "PBRVR") {
-    _compositorPreset = _compositorData->presetPBRVR(_renderPresetData);
-    auto nodetek      = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
-    auto outrnode     = nodetek->tryRenderNodeAs<pbr::deferrednode::DeferredCompositingNodePbr>();
     _pbr_common     = outrnode->_pbrcommon;
   } else if (preset == "FWDPBRVR") {
     _compositorPreset = _compositorData->presetForwardPBRVR(_renderPresetData);

@@ -10,7 +10,6 @@
 #include <ork/lev2/gfx/terrain/terrain_drawable.h>
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/unlit_node.h>
-#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeDecompBlur.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeHSVG.h>
@@ -401,7 +400,6 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
                 scene->_parent        = cdata.get();
                 return scene;
               })
-          .def("presetDeferredPBR", [](compositordata_ptr_t cdata) { cdata->presetDeferredPBR(); })
           .def("__repr__", [](compositordata_ptr_t d) -> std::string {
             fxstring<64> fxs;
             fxs.format("CompositingData(%p)", d.get());
@@ -570,154 +568,6 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
   type_codec->registerStdCodec<unlit_ptr_t>(unlitnode_type);
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
-  auto defpbrctx_type = //
-      py::class_<pbr::deferrednode::DeferredContext, pbr_deferred_context_ptr_t>(module_lev2, "DeferredPbrContext")
-          .def_property_readonly(
-              "lightingMaterial",
-              [](pbr_deferred_context_ptr_t ctx) -> freestyle_mtl_ptr_t { //
-                return ctx->_lightingmtl;
-              })
-          .def_property_readonly(
-              "pipeline_envlighting_model0_mono",
-              [](pbr_deferred_context_ptr_t ctx) -> fxpipeline_ptr_t { //
-                return ctx->_pipeline_envlighting_model0_mono;
-              })
-          .def_property_readonly(
-              "gbuffer",
-              [](pbr_deferred_context_ptr_t ctx) -> rtgroup_ptr_t { //
-                return ctx->_rtgGbuffer;
-              })
-          .def_property_readonly(
-              "lbuffer",
-              [](pbr_deferred_context_ptr_t ctx) -> rtgroup_ptr_t { //
-                return ctx->_rtgLbuffer;
-              })
-          .def(
-              "createAuxBinding",
-              [](pbr_deferred_context_ptr_t ctx, std::string paramname) -> pbr::deferrednode::auxparambinding_ptr_t { //
-                return ctx->createAuxParamBinding(paramname);
-              })
-          .def_property(
-              "lightAccumFormat",
-              [](pbr_deferred_context_ptr_t ctx) -> crcstring_ptr_t {
-                return std::make_shared<CrcString>(uint64_t(ctx->_lightAccumFormat));
-              },
-              [](pbr_deferred_context_ptr_t ctx, crcstring_ptr_t value) {
-                ctx->_lightAccumFormat = EBufferFormat(value->hashed());
-              })
-          .def_property(
-              "auxiliaryFormat",
-              [](pbr_deferred_context_ptr_t ctx) -> crcstring_ptr_t {
-                return std::make_shared<CrcString>(uint64_t(ctx->_auxBufferFormat));
-              },
-              [](pbr_deferred_context_ptr_t ctx, crcstring_ptr_t value) { ctx->_auxBufferFormat = EBufferFormat(value->hashed()); })
-          .def(
-              "gpuInit",
-              [](pbr_deferred_context_ptr_t ctx, ctx_t gfx_ctx) { //
-                ctx->gpuInit(gfx_ctx.get());
-              })
-          .def("onGpuInit", [](pbr_deferred_context_ptr_t ctx, py::object callback) { //
-            ctx->_vars->makeValueForKey<py::object>("_hold_callback", callback);
-            auto L = [ctx]() {
-              py::gil_scoped_acquire acquire;
-              auto cb = ctx->_vars->typedValueForKey<py::object>("_hold_callback");
-              cb.value()();
-            };
-            ctx->_onGpuInitialized = L;
-          });
-  type_codec->registerStdCodec<pbr_deferred_context_ptr_t>(defpbrctx_type);
-  /////////////////////////////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////////
-  auto auxbinding_type = //
-      py::class_<pbr::deferrednode::AuxParamBinding, pbr::deferrednode::auxparambinding_ptr_t>(module_lev2, "AuxParamBinding")
-          .def_property(
-              "texture",
-              [](pbr::deferrednode::auxparambinding_ptr_t self) -> texture_ptr_t { //
-                return self->_var.getShared<Texture>();
-              },
-              [](pbr::deferrednode::auxparambinding_ptr_t self, texture_ptr_t texture) { //
-                self->_var.setShared<Texture>(texture);
-              })
-          .def_property(
-              "bool",
-              [](pbr::deferrednode::auxparambinding_ptr_t self) -> bool { //
-                return self->_var.get<bool>();
-              },
-              [](pbr::deferrednode::auxparambinding_ptr_t self, bool val) { //
-                self->_var.set<bool>(val);
-              })
-          .def_property(
-              "float",
-              [](pbr::deferrednode::auxparambinding_ptr_t self) -> float { //
-                return self->_var.get<float>();
-              },
-              [](pbr::deferrednode::auxparambinding_ptr_t self, float val) { //
-                self->_var.set<float>(val);
-              })
-          .def_property(
-              "vec2",
-              [](pbr::deferrednode::auxparambinding_ptr_t self) -> fvec2 { //
-                return self->_var.get<fvec2>();
-              },
-              [](pbr::deferrednode::auxparambinding_ptr_t self, fvec2 val) { //
-                self->_var.set<fvec2>(val);
-              })
-          .def_property(
-              "vec3",
-              [](pbr::deferrednode::auxparambinding_ptr_t self) -> fvec3 { //
-                return self->_var.get<fvec3>();
-              },
-              [](pbr::deferrednode::auxparambinding_ptr_t self, fvec3 val) { //
-                self->_var.set<fvec3>(val);
-              })
-          .def_property(
-              "vec4",
-              [](pbr::deferrednode::auxparambinding_ptr_t self) -> fvec4 { //
-                return self->_var.get<fvec4>();
-              },
-              [](pbr::deferrednode::auxparambinding_ptr_t self, fvec4 val) { //
-                self->_var.set<fvec4>(val);
-              })
-          .def_property(
-              "mtx4",
-              [](pbr::deferrednode::auxparambinding_ptr_t self) -> fmtx4 { //
-                return self->_var.get<fmtx4>();
-              },
-              [](pbr::deferrednode::auxparambinding_ptr_t self, fmtx4 val) { //
-                self->_var.set<fmtx4>(val);
-              });
-  type_codec->registerStdCodec<pbr::deferrednode::auxparambinding_ptr_t>(auxbinding_type);
-  /////////////////////////////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////////
-  using defpbrnode_ptr_t = std::shared_ptr<pbr::deferrednode::DeferredCompositingNodePbr>;
-  auto defpbrnode_type   = //
-      py::class_<pbr::deferrednode::DeferredCompositingNodePbr, RenderCompositingNode, defpbrnode_ptr_t>(
-          module_lev2, "DeferredPbrRenderNode")
-          .def(py::init([] -> defpbrnode_ptr_t { //
-            return std::make_shared<pbr::deferrednode::DeferredCompositingNodePbr>(nullptr);
-          }))
-          .def_property_readonly(
-              "pbr_common",
-              [](defpbrnode_ptr_t node) -> pbr::commonstuff_ptr_t { //
-                return node->_pbrcommon;
-              })
-          .def_property_readonly(
-              "context",
-              [](defpbrnode_ptr_t node) -> pbr_deferred_context_ptr_t { //
-                return node->deferredContext();
-              })
-          .def(
-              "overrideShader",
-              [](defpbrnode_ptr_t node, std::string shaderpath) { //
-                return node->overrideShader(shaderpath);
-              })
-          .def("__repr__", [](defpbrnode_ptr_t node) -> std::string {
-            fxstring<64> fxs;
-            fxs.format("DeferredPbrRenderNode(%p)", node.get());
-            return fxs.c_str();
-          });
-  type_codec->registerStdCodec<defpbrnode_ptr_t>(defpbrnode_type);
-
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   using fwdpbrnode_ptr_t = std::shared_ptr<pbr::ForwardNode>;

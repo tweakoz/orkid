@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/lev2/gfx/scenegraph/scenegraph.h>
+#include <ork/lev2/gfx/renderer/irendertarget.h>
 #include <ork/lev2/ui/event.h>
 #include <ork/util/logger.h>
 #include <ork/profiling.inl>

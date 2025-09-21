@@ -39,7 +39,7 @@ struct FxPipelinePermutation {
   void dump() const;
   uint64_t genIndex() const;
 
-  uint32_t _rendering_model = "DEFERRED_PBR"_crcu;
+  uint32_t _rendering_model = "FORWARD_PBR"_crcu;
   bool _stereo = false;
   bool _instanced = false;
   bool _skinned = false;

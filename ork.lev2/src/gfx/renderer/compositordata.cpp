@@ -26,7 +26,6 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorVr.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/unlit_node.h>
 ///////////////////////////////////////////////////////////////////////////////
@@ -94,6 +93,8 @@ RenderPresetContext CompositingData::presetDeferredPBR(render_preset_data_ptr_t 
   rtgroup_ptr_t outputgroup = pdata ? pdata->_outputGroup : nullptr;
   pbr::commonstuff_ptr_t pbrc = pdata ? pdata->_pbr_common : nullptr;
   RenderPresetContext rval;
+  OrkAssert(false);// disabled for now
+  /*
   auto t1 = std::make_shared<NodeCompositingTechnique>();
   auto r1 = t1->createRenderNode<pbr::deferrednode::DeferredCompositingNodePbr>(pbrc);
 
@@ -123,7 +124,7 @@ RenderPresetContext CompositingData::presetDeferredPBR(render_preset_data_ptr_t 
     auto pbr_common = r1->_pbrcommon;
     auto load_req = std::make_shared<asset::LoadRequest>("src://envmaps/tozenv_nebula");
     pbr_common->requestAndRefSkyboxTexture(load_req);
-  }
+  }*/
 
   return rval;
 }
@@ -134,6 +135,8 @@ RenderPresetContext CompositingData::presetPBRVR(render_preset_data_ptr_t pdata)
   rtgroup_ptr_t outputgroup = pdata ? pdata->_outputGroup : nullptr;
   pbr::commonstuff_ptr_t pbrc = pdata ? pdata->_pbr_common : nullptr;
   RenderPresetContext rval;
+  OrkAssert(false);// disabled for now
+  /*
   auto t1 = std::make_shared<NodeCompositingTechnique>();
   auto o1 = t1->createOutputNode<VrOutputNode>();
   auto r1 = t1->createRenderNode<pbr::deferrednode::DeferredCompositingNodePbr>(pbrc);
@@ -157,7 +160,7 @@ RenderPresetContext CompositingData::presetPBRVR(render_preset_data_ptr_t pdata)
   rval._nodetek    = t1;
   rval._outputnode = o1;
   rval._rendernode = r1;
-
+  */
   return rval;
 }
 

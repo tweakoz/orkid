@@ -11,9 +11,9 @@
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/gfxvtxbuf.inl>
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/unlit_node.h>
+#include <ork/lev2/gfx/renderer/irendertarget.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/imgui/imgui.h>
 #include <ork/lev2/imgui/imgui_impl_glfw.h>
@@ -167,6 +167,7 @@ inline GpuResources::GpuResources(
   _sg_layer    = _sg_scene->createLayer("default");
   auto sg_compdata = _sg_scene->_compositorData;
   auto nodetek     = sg_compdata->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
+      /*
   auto rendnode    = nodetek->tryRenderNodeAs<ork::lev2::pbr::deferrednode::DeferredCompositingNodePbr>();
   _pbrcommon   = rendnode->_pbrcommon;
 
@@ -174,7 +175,7 @@ inline GpuResources::GpuResources(
   _pbrcommon->_depthFogPower    = 1.0f;
   _pbrcommon->_skyboxLevel      = 1;
   _pbrcommon->_diffuseLevel     = 1;
-  _pbrcommon->_specularLevel    = 1;
+  _pbrcommon->_specularLevel    = 1;*/
 
   auto outpnode = nodetek->tryOutputNodeAs<ScreenOutputCompositingNode>();
 

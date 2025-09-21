@@ -35,12 +35,6 @@ void FxPipelinePermutation::dump() const {
   std::string rmodel = FormatString("0x%zx", uint64_t(_rendering_model));
 
   switch (_rendering_model) {
-    case "DEFERRED_PBR"_crcu:
-      rmodel = "DEFERRED_PBR";
-      break;
-    case "DeferredPBR"_crcu:
-      rmodel = "DeferredPBR(Did you mean DEFERRED_PBR?)";
-      break;
     case "FORWARD_PBR"_crcu:
       rmodel = "FORWARD_PBR";
       break;

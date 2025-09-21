@@ -81,9 +81,9 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
     if (mtl->_parUnTexPointLightsCount) {
       FXI->bindParamInt(mtl->_parUnTexPointLightsCount, enumlights->_num_active_untextured_pointlights);
     }
-    if (mtl->_parUnTexPointLightsData) {
+    if (mtl->_parForwardLightBlock) {
       auto pl_buffer = PBRMaterial::pointLightDataBuffer(context);
-      FXI->bindUniformBuffer(mtl->_parUnTexPointLightsData, pl_buffer);
+      FXI->bindUniformBuffer(mtl->_parForwardLightBlock, pl_buffer);
     }
 
     ///////////////////////////////////////////////////////////////////////////

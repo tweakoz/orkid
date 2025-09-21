@@ -41,7 +41,6 @@
 #include <ork/lev2/gfx/particle/modular_forces.h>
 #include <ork/lev2/gfx/particle/modular_renderers.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/unlit_node.h>
 ///////////////////////////////////////////////////////////////////////////////
@@ -305,8 +304,6 @@ struct ClassToucher {
 
     RegisterClassX(RenderCompositingNode);
     RegisterClassX(compositor::UnlitNode);
-    RegisterClassX(pbr::deferrednode::DeferredCompositingNode);
-    RegisterClassX(pbr::deferrednode::DeferredCompositingNodePbr);
 
 #if defined(ENABLE_NVMESH_SHADERS)
     RegisterClassX(pbr::deferrednode::DeferredCompositingNodeNvMs);

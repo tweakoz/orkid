@@ -204,6 +204,7 @@ void ForwardPbrNodeImpl::_update_shadow_maps() {
         continue;
 
       if (auto as_spotlight = dynamic_cast<SpotLight*>(light)) {
+        _currentContext->debugPushGroup(FormatString("ForwardPBR::_update_shadow_maps spot<%p>", (void*) light));
 
         if (light->_depthRTG == nullptr) {
           auto depcookie = light->_cookieDepth;
@@ -239,6 +240,8 @@ void ForwardPbrNodeImpl::_update_shadow_maps() {
 
         FBI->PopRtGroup();
         topcomp->popCPD();
+
+        _currentContext->debugPopGroup();        
       }
       num_shadow_casters++;
     }

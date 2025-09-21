@@ -11,6 +11,8 @@
 #include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/reflect/properties/DirectObjectVector.inl>
 #include <ork/math/cvector4.h>
+#include <ork/lev2/gfx/renderer/irendertarget.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_common.h>
 
 #include <ork/ecs/ecs.h>
 #include <ork/ecs/system.h>

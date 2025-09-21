@@ -36,15 +36,7 @@ RenderingModel::RenderingModel(uint32_t id) //
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool RenderingModel::isDeferred() const { //
-	bool rval = false;
-	switch(_modelID){
-		case "DEFERRED_PBR"_crcu:
-			rval = true;
-			break;
-		default:
-			break;
-	}
-	return rval;
+	return false;
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool RenderingModel::isForward() const{

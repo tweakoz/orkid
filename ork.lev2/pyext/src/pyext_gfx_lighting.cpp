@@ -10,6 +10,8 @@
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_grid.h>
+#include <ork/lev2/gfx/material_pbr.inl>
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_common.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 

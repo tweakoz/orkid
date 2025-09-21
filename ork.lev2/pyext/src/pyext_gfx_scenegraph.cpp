@@ -12,6 +12,8 @@
 #include <ork/lev2/gfx/scenegraph/sgnode_groundplane.h>
 #include <ork/python/pycodec.inl>
 #include <ork/lev2/gfx/gfxvtxbuf.inl>
+#include <ork/lev2/gfx/material_pbr.inl>
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_common.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 

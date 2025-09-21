@@ -291,7 +291,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _parDepthFogPower       = fxi->parameter(_shader, "DepthFogPower");
 
   _parUnTexPointLightsCount = fxi->parameter(_shader, "point_light_count");
-  _parUnTexPointLightsData  = fxi->uniformBlock(_shader, "ub_frg_fwd_lighting");
+  _parForwardLightBlock  = fxi->uniformBlock(_shader, "ublk_frg_fwd_lighting");
 
   _parTexSpotLightsCount = fxi->parameter(_shader, "spot_light_count");
 

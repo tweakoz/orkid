@@ -28,9 +28,6 @@
 #include <ork/util/logger.h>
 #include <ork/math/misc_math.h>
 
-#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
-#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_light_processor_cpu.h>
-#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_light_processor_simple.h>
 #include <ork/lev2/gfx/radiancemaps_asset.h>
 #include <ork/lev2/gfx/xir_format.h>
 

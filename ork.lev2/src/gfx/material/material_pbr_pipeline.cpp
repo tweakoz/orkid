@@ -229,15 +229,6 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipeline(const FxPipelinePermutation& per
           break;
         }
         //////////////////////////////////////////
-        case "DEFERRED_PBR"_crcu: {
-          if (is_picking) {
-            OrkAssert(false);
-          }
-          // rendering std pbr material to deferred PBR frame
-          pipeline = mtl->_createFxPipelineDEF(permu);
-          break;
-        }
-        //////////////////////////////////////////
         case "FORWARD_PBR"_crcu: {
           // rendering std pbr material to forward PBR frame
           pipeline = mtl->_createFxPipelineFWD(permu);
@@ -320,9 +311,6 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipeline(const FxPipelinePermutation& per
     std::string rmodelstr, variantstr;
 
     switch (permu._rendering_model) { // rendering/lighting model of frame
-      case "DEFERRED_PBR"_crcu:
-        rmodelstr = "DEFERRED_PBR";
-        break;
       case "FORWARD_PBR"_crcu:
         rmodelstr = "FORWARD_PBR";
         break;

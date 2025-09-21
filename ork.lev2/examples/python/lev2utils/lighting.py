@@ -27,8 +27,8 @@ class MySpotLight:
                 layers = None):
     
     if layers == None:
-      if hasattr(app,"fwd_layers"):
-        layers = app.fwd_layers
+      if hasattr(app,"layer_fwd"):
+        layers = [app.layer_fwd]
       
     self.radius = radius
     self.voffset = voffset

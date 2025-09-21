@@ -249,23 +249,31 @@ technique FWD_CT_NM_RI_NI_MO_V5 {
   fxconfig = fxcfg_default;
   vf_pass  = { vs_grid_forward_lit, ps_grid_forward_lit_mono_V4, sb_forward }
 }
+///////////////////////////////////////////////////////////////
+state_block sb_grid_dpp : default {
+  // BlendMode = ALPHA;
+  // DepthTest = LEQUALS;
+  // DepthMask = true;
+  CullTest  = OFF;
+}
+///////////////////////////////////////////////////////////////
 technique FWD_DEPTHPREPASS_RI_NI_MO {
   fxconfig = fxcfg_default;
-  vf_pass  = { vs_grid_forward_depth_prepass, ps_grid_forward_depth_prepass, sb_forward }
+  vf_pass  = { vs_grid_forward_depth_prepass, ps_grid_forward_depth_prepass, sb_grid_dpp }
 }
 technique FWD_DEPTHPREPASS_RI_NI_MO_V2 {
   fxconfig = fxcfg_default;
-  vf_pass  = { vs_grid_forward_depth_prepass, ps_grid_forward_depth_prepass, sb_forward }
+  vf_pass  = { vs_grid_forward_depth_prepass, ps_grid_forward_depth_prepass, sb_grid_dpp }
 }
 technique FWD_DEPTHPREPASS_RI_NI_MO_V3 {
   fxconfig = fxcfg_default;
-  vf_pass  = { vs_grid_forward_depth_prepass, ps_grid_forward_depth_prepass, sb_forward }
+  vf_pass  = { vs_grid_forward_depth_prepass, ps_grid_forward_depth_prepass, sb_grid_dpp }
 }
 technique FWD_DEPTHPREPASS_RI_NI_MO_V4 {
   fxconfig = fxcfg_default;
-  vf_pass  = { vs_grid_forward_depth_prepass, ps_grid_forward_depth_prepass, sb_forward }
+  vf_pass  = { vs_grid_forward_depth_prepass, ps_grid_forward_depth_prepass, sb_grid_dpp }
 }
 technique FWD_DEPTHPREPASS_RI_NI_MO_V5 {
   fxconfig = fxcfg_default;
-  vf_pass  = { vs_grid_forward_depth_prepass, ps_grid_forward_depth_prepass, sb_forward }
+  vf_pass  = { vs_grid_forward_depth_prepass, ps_grid_forward_depth_prepass, sb_grid_dpp }
 }
