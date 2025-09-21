@@ -101,8 +101,7 @@ namespace lev2 {
 appinitdata_ptr_t _ginitdata;
 context_ptr_t gloadercontext;
 
-uint64_t GRAPHICS_API = "OPENGL"_crcu;
-//uint64_t GRAPHICS_API = "VULKAN"_crcu;
+uint64_t GRAPHICS_API = "VULKAN"_crcu;
 
 namespace vulkan{
   lev2::context_ptr_t createLoaderContext();
@@ -112,11 +111,6 @@ namespace dummy{
   lev2::context_ptr_t createLoaderContext();
   void touchClasses();
 }
-namespace opengl{
-  lev2::context_ptr_t createLoaderContext();
-  void touchClasses();
-}
-
 
 void registerEnums();
 
@@ -132,7 +126,6 @@ struct ClassToucher {
     if(aid->_enable_graphics){
       vulkan::touchClasses();
       dummy::touchClasses();
-      opengl::touchClasses();
 
       ////////////////////////////////////////
 
@@ -140,9 +133,6 @@ struct ClassToucher {
       if( genviron.get("ORKID_GRAPHICS_API",gfx_api_str) ){
         if(gfx_api_str=="VULKAN"){
           GRAPHICS_API  = "VULKAN"_crcu;
-        }     
-        else if(gfx_api_str=="OPENGL"){
-          GRAPHICS_API  = "OPENGL"_crcu;
         }     
         else if(gfx_api_str=="DUMMY"){
           GRAPHICS_API  = "DUMMY"_crcu;
@@ -156,10 +146,6 @@ struct ClassToucher {
           gloadercontext = dummy::createLoaderContext();
           //GfxEnv::setContextClass(clazz);
           OrkAssert(false);
-          break;
-        }
-        case "OPENGL"_crcu:{
-          gloadercontext = opengl::createLoaderContext();
           break;
         }
         case "VULKAN"_crcu:

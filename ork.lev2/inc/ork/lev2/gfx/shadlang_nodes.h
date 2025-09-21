@@ -327,6 +327,7 @@ DECLARE_STD_AST_CLASS_WPTR(SemaInheritInterface,SemaInheritVertexInterface, sema
 DECLARE_STD_AST_CLASS_WPTR(SemaInheritInterface,SemaInheritFragmentInterface, semainhfif_ptr_t);
 DECLARE_STD_AST_CLASS_WPTR(SemaInheritInterface,SemaInheritGeometryInterface, semainhgif_ptr_t);
 DECLARE_STD_AST_CLASS_WPTR(SemaInheritInterface,SemaInheritComputeInterface, semainhcif_ptr_t);
+DECLARE_STD_AST_CLASS_WPTR(SemaInheritInterface,SemaInheritStorageInterface, semainhsif_ptr_t);
 //
 DECLARE_STD_AST_CLASS(Expression,ExpressionList);
 //

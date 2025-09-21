@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/lev2/gfx/shadlang.h>
+#include <ork/util/parser_peg.h>
 #include "shadlang_backend_spirv.h"
 
 namespace ork::lev2::shadlang::spirv {
@@ -961,6 +962,7 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
   bool is_vertex_interface   = (std::dynamic_pointer_cast<VertexInterface>(interface_node) != nullptr);
   bool is_geometry_interface = (std::dynamic_pointer_cast<GeometryInterface>(interface_node) != nullptr);
   bool is_compute_interface  = (std::dynamic_pointer_cast<ComputeInterface>(interface_node) != nullptr);
+  //bool is_storage_interface  = (std::dynamic_pointer_cast<StorageInterface>(interface_node) != nullptr);
 
   // For fragment interfaces, first convert inherited vertex outputs to inputs
   if (is_fragment_interface) {
@@ -1033,13 +1035,27 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
 
   // Process storage groups
   auto storage_groups = AstNode::collectNodesOfType<InterfaceStorageRefs>(interface_node);
-  /*for (auto storage_group : storage_groups) {
-    auto storages = AstNode::collectNodesOfType<InterfaceStorage>(storage_group);
-    for (auto storage : storages) {
+  for (auto storage_group : storage_groups) {
+   dumpAstNode(storage_group);
+    auto storage_refs = AstNode::collectNodesOfType<SemaIdentifier>(storage_group);
+    for (auto storage : storage_refs) {
+      auto id_name = storage->typedValueForKey<std::string>("identifier_name").value();
+      printf("InterfaceStorageRef %s\n", id_name.c_str() );
+      auto sto_if     = _transu->find<StorageInterface>(id_name);
+      if (sto_if) {
+        auto storage_name = sto_if->typedValueForKey<std::string>("object_name").value();
+        printf(" found StorageInterface '%s' name<%s>\n", id_name.c_str(), storage_name.c_str() );
+      }
+      else{
+        printf("ERROR: StorageInterface '%s' not found!\n", id_name.c_str());
+        OrkAssert(false);
+      }
+
+
       ///////////////////////////////////////////////////////////
       // parse storage top
       ///////////////////////////////////////////////////////////
-      auto layout           = storage->findFirstChildOfType<InterfaceLayout>();
+      /*auto layout           = storage->findFirstChildOfType<InterfaceLayout>();
       auto decls            = storage->findFirstChildOfType<DataDeclarations>();
       auto ast_storage_type = storage->childAs<SemaIdentifier>(1);
       auto ast_storage_name = storage->childAs<SemaIdentifier>(3);
@@ -1098,8 +1114,10 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
       }
 
       _appendText(_interface_group, "};");
+      */
     }
-  }*/
+    OrkAssert(false);
+  }
 
   decorator = FormatString("// end interface<%s>", ifname.c_str());
   _appendText(_interface_group, decorator.c_str());

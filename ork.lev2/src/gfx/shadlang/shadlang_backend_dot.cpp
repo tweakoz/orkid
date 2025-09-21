@@ -86,13 +86,14 @@ struct DotBackend {
     addThemeItem<SemaInheritFragmentInterface>("#f0c040", "black", 1);
     addThemeItem<SemaInheritGeometryInterface>("#f0c040", "black", 1);
     addThemeItem<SemaInheritComputeInterface>("#f0c040", "black", 1);
+    addThemeItem<SemaInheritStorageInterface>("#f0c040", "black", 1);
     addThemeItem<SemaInheritSamplerSet>("#f0c040", "black", 1);
     addThemeItem<SemaInheritUniformSet>("#f0c040", "black", 1);
     addThemeItem<SemaInheritUniformBlk>("#f0c040", "black", 1);
     addThemeItem<SemaInheritStateBlock>("#f0c040", "black", 1);
     addThemeItem<SemaInheritExtension>("#f0c040", "black", 1);
     addThemeItem<SemaIdentifier>("#f0c040", "black", 1);
-    
+
     //
     addThemeItem<Pass>("#bf4f4f", "white", 1);
     addThemeItem<VertexShaderRef>("#7f3f3f", "white", 1);

@@ -509,9 +509,7 @@ InterfaceOutputs <|[
 
 InterfaceStorageRefs <|[
     KW_STORAGE
-    L_CURLY
-    zom{ IDENTIFIER }
-    R_CURLY
+    [ L_CURLY zom{ IDENTIFIER } R_CURLY] : "references"
 ]|>
 
 InterfaceItem <| sel{

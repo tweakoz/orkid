@@ -202,6 +202,21 @@ void InheritanceTracker::_processNode(astnode_ptr_t node) {
     }
   }
   //////////////////////////////////////////////////////////////////////
+  else if (auto as_sif = std::dynamic_pointer_cast<SemaInheritStorageInterface>(node)) {
+    auto INHID = as_sif->typedValueForKey<std::string>("inherit_id").value();
+    auto it    = _set_inherited_interfaces.find(INHID);
+    if (it == _set_inherited_interfaces.end()) {
+      _set_inherited_interfaces.insert(INHID);
+      auto IFACE = _translation_unit->find<StorageInterface>(INHID);
+      OrkAssert(IFACE);
+      _inherited_ifaces.push_back(IFACE);
+      if (_onInheritInterface)
+        _onInheritInterface(INHID, IFACE);
+    } else {
+      // storage interface already inherited
+    }
+  }
+  //////////////////////////////////////////////////////////////////////
   else if (auto as_sset = std::dynamic_pointer_cast<SemaInheritSamplerSet>(node)) {
     auto INHID    = as_sset->typedValueForKey<std::string>("inherit_id").value();
     auto ast_uset = _translation_unit->find<SHAST::SamplerSet>(INHID);
@@ -318,6 +333,14 @@ void InheritanceTracker::fetchInheritances(astnode_ptr_t parent_node) {
     else if (auto as_cif = std::dynamic_pointer_cast<SemaInheritComputeInterface>(c)) {
       auto INHID = as_cif->typedValueForKey<std::string>("inherit_id").value();
       auto IFACE = _translation_unit->find<ComputeInterface>(INHID);
+      OrkAssert(IFACE);
+      fetchInheritances(IFACE);
+      _processNode(as_cif);
+    }
+    //////////////////////////////////////////////////////////////////////
+    else if (auto as_cif = std::dynamic_pointer_cast<SemaInheritStorageInterface>(c)) {
+      auto INHID = as_cif->typedValueForKey<std::string>("inherit_id").value();
+      auto IFACE = _translation_unit->find<StorageInterface>(INHID);
       OrkAssert(IFACE);
       fetchInheritances(IFACE);
       _processNode(as_cif);

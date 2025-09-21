@@ -101,6 +101,7 @@ struct ShadLangParserCache{
   SHAST::astnode_map_t _fragment_interfaces;
   SHAST::astnode_map_t _geometry_interfaces;
   SHAST::astnode_map_t _compute_interfaces;
+  SHAST::astnode_map_t _storage_interfaces;
   SHAST::astnode_map_t _vertex_shaders;
   SHAST::astnode_map_t _fragment_shaders;
   SHAST::astnode_map_t _geometry_shaders;

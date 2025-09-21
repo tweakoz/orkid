@@ -23,8 +23,6 @@
 #include <GL/gl.h>
 #endif
 
-extern GLuint gLastBoundNonZeroTex;
-
 using namespace ork;
 using namespace ork::lev2;
 
@@ -74,9 +72,9 @@ public:
 
       GLint curtex = 0;
       glGetIntegerv(GL_TEXTURE_BINDING_2D, &curtex);
-      printf("tex<%d>\n", int(gLastBoundNonZeroTex));
+      //printf("tex<%d>\n", int(gLastBoundNonZeroTex));
 
-      glBindTexture(GL_TEXTURE_2D, gLastBoundNonZeroTex);
+      //glBindTexture(GL_TEXTURE_2D, gLastBoundNonZeroTex);
       static uint32_t* gpu32 = new uint32_t[512 * 512];
       int ix                 = rand() % 512;
       int iy                 = rand() % 512;

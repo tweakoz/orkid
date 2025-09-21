@@ -500,6 +500,10 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
           slp->importTranslatable<ComputeInterface>(name, as_cif, slp->_slp_cache->_compute_interfaces);
         }
         ////////////////////////////////////////////////////////////////////////////////////////
+        else if (auto as_cif = std::dynamic_pointer_cast<StorageInterface>(translatable)) {
+          slp->importTranslatable<StorageInterface>(name, as_cif, slp->_slp_cache->_storage_interfaces);
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////
         else if (auto as_vsh = std::dynamic_pointer_cast<VertexShader>(translatable)) {
@@ -898,6 +902,7 @@ int _semaLinkToInheritances(
         bool check_geo_iface   = false;
         bool check_frg_iface   = false;
         bool check_com_iface   = false;
+        bool check_sto_iface   = false;
         bool check_stateblocks = false;
         /////////////////////////////////
         // LibraryBlocks
@@ -1033,6 +1038,12 @@ int _semaLinkToInheritances(
         } else if (check_com_iface and check_inheritance(inh_name, "cif", slp->_slp_cache->_compute_interfaces)) {
           auto semanode   = std::make_shared<SemaInheritComputeInterface>();
           semanode->_name = FormatString("SemaInheritComputeInterface: %s", inh_name.c_str());
+          semanode->setValueForKey<std::string>("inherit_id", inh_name);
+          slp->replaceInParent(inh_item, semanode);
+          count++;
+        } else if (check_com_iface and check_inheritance(inh_name, "sif", slp->_slp_cache->_storage_interfaces)) {
+          auto semanode   = std::make_shared<SemaInheritStorageInterface>();
+          semanode->_name = FormatString("SemaInheritStorageInterface: %s", inh_name.c_str());
           semanode->setValueForKey<std::string>("inherit_id", inh_name);
           slp->replaceInParent(inh_item, semanode);
           count++;
@@ -1243,6 +1254,7 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
       auto inherited_fragment_interfaces = AstNode::collectNodesOfType<SemaInheritFragmentInterface>(shader);
       auto inherited_geometry_interfaces = AstNode::collectNodesOfType<SemaInheritGeometryInterface>(shader);
       auto inherited_compute_interfaces  = AstNode::collectNodesOfType<SemaInheritComputeInterface>(shader);
+      auto inherited_storage_interfaces  = AstNode::collectNodesOfType<SemaInheritStorageInterface>(shader);
 
       /*
       printf("      Inherited vertex interfaces: %zu\n", inherited_interfaces.size());
@@ -1280,6 +1292,13 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
           all_inherited_interfaces.push_back(iface_obj->second);
         }
       }
+      for (auto iface : inherited_storage_interfaces) {
+        auto iface_name = iface->typedValueForKey<std::string>("inherit_id").value();
+        auto iface_obj  = slp->_slp_cache->_storage_interfaces.find(iface_name);
+        if (iface_obj != slp->_slp_cache->_storage_interfaces.end()) {
+          all_inherited_interfaces.push_back(iface_obj->second);
+        }
+      }
 
       // printf("      Total inherited interfaces: %zu\n", all_inherited_interfaces.size());
 
@@ -1297,6 +1316,7 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
             auto node_fragment_interfaces = AstNode::collectNodesOfType<SemaInheritFragmentInterface>(node);
             auto node_geometry_interfaces = AstNode::collectNodesOfType<SemaInheritGeometryInterface>(node);
             auto node_compute_interfaces  = AstNode::collectNodesOfType<SemaInheritComputeInterface>(node);
+            auto node_storage_interfaces  = AstNode::collectNodesOfType<SemaInheritStorageInterface>(node);
 
             // Recursively process inherited interfaces
             for (auto iface_inherit : node_vertex_interfaces) {
@@ -1324,6 +1344,13 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
               auto iface_name = iface_inherit->typedValueForKey<std::string>("inherit_id").value();
               auto iface_obj  = slp->_slp_cache->_compute_interfaces.find(iface_name);
               if (iface_obj != slp->_slp_cache->_compute_interfaces.end()) {
+                collectInheritedResources(iface_obj->second, sampler_sets, uniform_blocks);
+              }
+            }
+            for (auto iface_inherit : node_storage_interfaces) {
+              auto iface_name = iface_inherit->typedValueForKey<std::string>("inherit_id").value();
+              auto iface_obj  = slp->_slp_cache->_storage_interfaces.find(iface_name);
+              if (iface_obj != slp->_slp_cache->_storage_interfaces.end()) {
                 collectInheritedResources(iface_obj->second, sampler_sets, uniform_blocks);
               }
             }
@@ -1687,6 +1714,7 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
     _semaCollectNamedOfType<GeometryInterface>(this, top, _slp_cache->_geometry_interfaces);
     _semaCollectNamedOfType<FragmentInterface>(this, top, _slp_cache->_fragment_interfaces);
     _semaCollectNamedOfType<ComputeInterface>(this, top, _slp_cache->_compute_interfaces);
+    _semaCollectNamedOfType<StorageInterface>(this, top, _slp_cache->_storage_interfaces);
 
     _semaCollectNamedOfType<VertexShader>(this, top, _slp_cache->_vertex_shaders);
     _semaCollectNamedOfType<FragmentShader>(this, top, _slp_cache->_fragment_shaders);
@@ -1755,6 +1783,7 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
     count += _semaLinkToInheritances<GeometryInterface>(this, top);
     count += _semaLinkToInheritances<FragmentInterface>(this, top);
     count += _semaLinkToInheritances<ComputeInterface>(this, top);
+    count += _semaLinkToInheritances<StorageInterface>(this, top);
 
     count += _semaLinkToInheritances<VertexShader>(this, top);
     count += _semaLinkToInheritances<FragmentShader>(this, top);
