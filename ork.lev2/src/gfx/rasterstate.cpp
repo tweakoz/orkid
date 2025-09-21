@@ -245,4 +245,33 @@ void RasterState::setBlendingMacro(BlendingMacro bm) {
   }
   _impl.clear();
 }
+
+void RasterState::dump() const {
+  printf("RASTERSTATE<%p:%s>\n", this, _name.c_str());
+  printf("  LINEWIDTH<%f>\n", _lineWidth);
+  printf("  POLYMODE<0x%08x>\n", uint32_t(_polygonMode));
+  printf("  CULLTEST<0x%08x>\n", uint32_t(_culltest));
+  printf("  FRONTFACE<0x%08x>\n", uint32_t(_frontface));
+  printf("  DEPTHTEST<0x%08x>\n", uint32_t(_depthtest));
+  printf("   WRITEMASKZ<%d>\n", int(_writemaskZ));
+  printf("   WRITEMASKRGB<%d>\n", int(_writemaskRGB));
+  printf("   WRITEMASKA<%d>\n", int(_writemaskA));
+  printf("  DEPTHCLAMPENABLE<%d>\n", int(_depthClampEnable));
+  printf("  DEPTHBIASENABLE<%d>\n", int(_depthBiasEnable));
+  printf("  DEPTHBIASSLOPEFACTOR<%f>\n", _depthBiasSlopeFactor);
+  printf("  DEPTHBIASCONSTANTFACTOR<%f>\n", _depthBiasConstantFactor);
+  printf("  DEPTHBIASCLAMP<%f>\n", _depthBiasClamp);
+  printf("    RASTERIZERDISCARD<%d>\n", int(_rasterizerDiscard));
+  printf("    BLENDENABLE<%d>\n", int(_blendEnable));
+  if (_blendEnable) {
+    printf("      BLENDCONSTANT<%f %f %f %f>\n", _blendConstant.x, _blendConstant.y, _blendConstant.z, _blendConstant.w);
+    printf("      BLENDFACTORSRCRGB<0x%08x>\n", uint32_t(_blendFactorSrcRGB));
+    printf("      BLENDFACTORDSTRGB<0x%08x>\n", uint32_t(_blendFactorDstRGB));
+    printf("      BLENDFACTORSRCA<0x%08x>\n", uint32_t(_blendFactorSrcA));
+    printf("      BLENDFACTORDSTA<0x%08x>\n", uint32_t(_blendFactorDstA));
+    printf("      BLENDOPRGB<0x%08x>\n", uint32_t(_blendOpRGB));
+    printf("      BLENDOPA<0x%08x>\n", uint32_t(_blendOpA));
+  }
+}
+
 } //namespace ork::lev2 {

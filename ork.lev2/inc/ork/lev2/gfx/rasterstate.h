@@ -75,6 +75,8 @@ struct RasterState {
 
   // todo: logic ops
 
+  void dump() const;
+
   /////////////////////////////
 
   svar16_t _impl;

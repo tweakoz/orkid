@@ -809,11 +809,16 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       auto it = vulkan_shaderfile->_stateblock_rasterstates.find(sblk_name);
       if (it != vulkan_shaderfile->_stateblock_rasterstates.end()) {
         vk_pass->_stateblock_rasterstate = it->second; // Store pre-resolved rasterstate
+        vk_pass->_stateblock_rasterstate->_name = sblk_name;
       } else {
         printf("Warning: State block '%s' not found for pass\n", sblk_name.c_str());
         // Use a default rasterstate or nullptr
         vk_pass->_stateblock_rasterstate = nullptr;
       }
+      printf("TEK<%s> RASTERSTATE<%p:%s>\n",  //
+             str_tek_name.c_str(),        //
+             (void*)vk_pass->_stateblock_rasterstate.get(),  //
+             sblk_name.c_str());
 
       //////////////////////////////////////////////////////////////
       // push constants

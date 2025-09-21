@@ -77,7 +77,12 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
     effective_rasterstate = _currentVKPASS->_stateblock_rasterstate;
   }
 
+  /////////////////////////////////////////////////
+  // first check if we already have a VkRasterState
+  /////////////////////////////////////////////////
+
   vkrasterstate_ptr_t vkrstate;
+
   if (auto try_vkrs = effective_rasterstate->_impl.tryAsShared<VkRasterState>()) {
     vkrstate = try_vkrs.value();
     if (vkrstate->_attachment_count != attachment_count) {
@@ -86,11 +91,22 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
       vkrstate = nullptr;
     }
   }
-  if (nullptr == vkrstate) { // If not already a VkRasterState, create one
+
+  /////////////////////////////////////////////////
+  // we do not, so create one
+  /////////////////////////////////////////////////
+
+  if (nullptr == vkrstate) { 
+    if(effective_rasterstate->_name=="sb_dpp"){
+      printf("VKRS<%s> attcnt<%d>\n", effective_rasterstate->_name.c_str(), attachment_count);
+      //OrkBreak();
+      //effective_rasterstate->dump();
+    }
     vkrstate = effective_rasterstate->_impl.makeShared<VkRasterState>(
         effective_rasterstate, //
         attachment_count,      //
         &formats);             //
+        vkrstate->_ork_rasterstate = effective_rasterstate.get();
   }
 
   /////////////////////////////////////////////////////////////////////

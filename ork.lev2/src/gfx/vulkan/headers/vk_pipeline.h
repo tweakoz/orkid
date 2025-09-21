@@ -290,6 +290,7 @@ struct VkRasterState {
   std::vector<VkPipelineColorBlendAttachmentState> _VKCBATT_array; // Array for MRT
   int _pipeline_bits = -1;
   int _attachment_count = 1;
+  RasterState* _ork_rasterstate = nullptr;
 
   using rsmap_t = std::unordered_map<uint64_t, int>;
 

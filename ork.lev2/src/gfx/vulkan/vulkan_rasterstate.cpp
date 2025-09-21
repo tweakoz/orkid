@@ -277,6 +277,13 @@ VkRasterState::VkRasterState(rasterstate_ptr_t rstate, int attachment_count, con
   hasher.accumulateItem(rstate->_blendConstant);
   hasher.accumulateItem(_attachment_count); // Include attachment count in hash
 
+  ////////////////////////////////////
+  // we dont have enough bits in _pipeline_bits
+  // to represent all rasterstate combos
+  // so we use a global map to assign
+  // unique indices to unique rasterstates
+  ////////////////////////////////////
+
   hasher.finish();
   uint64_t hashed = hasher.result();
 
@@ -285,20 +292,29 @@ VkRasterState::VkRasterState(rasterstate_ptr_t rstate, int attachment_count, con
     auto it = unlocked.find(hashed);
     if( it == unlocked.end() ){
       _pipeline_bits = unlocked.size();
-      //printf( "VkRasterState::VkRasterState hashed<%016llx> NEW<%d>\n", hashed, _pipeline_bits );
+      printf( "VkRasterState<%p:%s> hashed<%016llx> NEW<%d>\n", //
+              (void*) this,                                     //
+              rstate->_name.c_str(),                            //
+              hashed,                                           //
+              _pipeline_bits );
       unlocked[hashed] = _pipeline_bits;
       OrkAssert(_pipeline_bits<256);
       OrkAssert(_pipeline_bits>=0);
     }
     else{
       _pipeline_bits = it->second;
-      //printf( "VkRasterState::VkRasterState hashed<%016llx> PREV<%d>\n", hashed, _pipeline_bits );
+      printf( "VkRasterState<%p:%s> hashed<%016llx> PRV<%d>\n", //
+              (void*) this,                                     //
+              rstate->_name.c_str(),                            //
+              hashed,                                           //
+              _pipeline_bits );
       OrkAssert(_pipeline_bits<256);
       OrkAssert(_pipeline_bits>=0);
     }
   };
   _global_rasterstate_map.atomicOp(op);
-}
+
+} // VkRasterState::VkRasterState()
 
 ///////////////////////////////////////////////////////////////////////////////
 } //namespace ork::lev2::vulkan {
