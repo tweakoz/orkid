@@ -60,6 +60,8 @@ void ShadLangParser::declareAstNodes() {
   DECLARE_OBJNAME_AST_NODE("gif_name");
   DECLARE_OBJNAME_AST_NODE("fif_name");
   DECLARE_OBJNAME_AST_NODE("cif_name");
+  DECLARE_OBJNAME_AST_NODE("sif_name");
+  DECLARE_OBJNAME_AST_NODE("sif_item_name");
   DECLARE_OBJNAME_AST_NODE("lib_name");
   DECLARE_OBJNAME_AST_NODE("typeblock_name");
   DECLARE_OBJNAME_AST_NODE("sb_name");
@@ -169,6 +171,9 @@ void ShadLangParser::declareAstNodes() {
   DECLARE_STD_AST_NODE(FragmentInterface);
   DECLARE_STD_AST_NODE(GeometryInterface);
   DECLARE_STD_AST_NODE(ComputeInterface);
+  DECLARE_STD_AST_NODE(StorageInterface);
+  DECLARE_STD_AST_NODE(StorageInterfaceItem);
+  DECLARE_STD_AST_NODE(StorageInterfaceItemName);
   DECLARE_STD_AST_NODE(StateBlock);
   DECLARE_STD_AST_NODE(FxConfigDecl);
   DECLARE_STD_AST_NODE(SamplerSet);

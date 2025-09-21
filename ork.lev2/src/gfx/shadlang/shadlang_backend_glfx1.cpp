@@ -23,6 +23,11 @@ struct GLFX1Backend {
     return std::dynamic_pointer_cast<T>(node);
   }
 
+  template <typename T> void registerAstReplCB(std::function<void(std::shared_ptr<T>)> tcb) {
+    auto cb = [=](astnode_ptr_t node) {
+    };
+    _replcb_map[T::_static_type_name] = cb;
+  }
   template <typename T> void registerAstPreCB(std::function<void(std::shared_ptr<T>)> tcb) {
     auto cb = [=](astnode_ptr_t node) {
       auto tnode = as<T>(node);
@@ -110,12 +115,13 @@ struct GLFX1Backend {
 
   using base_cb_t  = std::function<void(astnode_ptr_t)>;
   using child_cb_t = std::function<void(astnode_ptr_t, astnode_ptr_t)>;
+  using repl_cb_t = std::function<void(astnode_ptr_t)>;
 
   std::string _outstr;
   std::stack<astnode_ptr_t> _node_stack;
   std::map<std::string, base_cb_t> _precb_map;
   std::map<std::string, base_cb_t> _postcb_map;
-
+  std::map<std::string, repl_cb_t> _replcb_map;
   std::map<std::string, child_cb_t> _postchildcb_map;
   std::map<std::string, child_cb_t> _prechildcb_map;
   size_t _indent       = 0;
@@ -129,6 +135,17 @@ void GLFX1Backend::_visit(astnode_ptr_t node) {
   int parent_id = -1;
   if (_node_stack.size()) {
     parent_id = _node_stack.top()->_nodeID;
+  }
+
+  ///////////////////////////////////////////////
+  // replacement visit
+  ///////////////////////////////////////////////
+
+  auto it_repl = _replcb_map.find(node->_type_name);
+  if (it_repl != _replcb_map.end()) {
+    auto replcb = it_repl->second;
+    replcb(node);
+    return;
   }
 
   ///////////////////////////////////////////////
@@ -418,6 +435,21 @@ GLFX1Backend::GLFX1Backend() {
   registerAstPostCB<ComputeInterface>([=](auto com_if) { named_postcb(com_if); });
   registerAstPreChildCB<ComputeInterface>(named_item_pre_child_cb);
   registerAstPreCB<ComputeShader>([=](auto com_sh) { named_precb( com_sh, "compute_shader" ); });
+  /////////////////////////////////////////////////////////////////////
+  /*layout(std430, binding = 2) buffer anotherLayoutName
+  {
+      int some_int;
+      float fixed_array[42];
+      float variable_array[];
+  };*/
+  /////////////////////////////////////////////////////////////////////
+  registerAstReplCB<StorageInterface>([=](auto sto_if) { 
+  });
+  registerAstReplCB<InterfaceStorageRefs>([=](auto sto_if) { 
+  });
+  //registerAstPreCB<StorageInterface>([=](auto sto_if) { named_precb( sto_if, "storage_interface" ); });
+  //registerAstPostCB<StorageInterface>([=](auto sto_if) { named_postcb(sto_if); });
+  //registerAstPreChildCB<StorageInterface>(named_item_pre_child_cb);
   /////////////////////////////////////////////////////////////////////
   registerAstPreCB<Technique>([=](auto tek) { 
     auto the_name = tek->template typedValueForKey<std::string>("object_name").value();

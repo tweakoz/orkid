@@ -231,6 +231,8 @@ DECLARE_STD_AST_CLASS(AstNode,InterfaceOutput);
 DECLARE_STD_AST_CLASS(AstNode,InterfaceInputs);
 DECLARE_STD_AST_CLASS(AstNode,InterfaceOutputs);
 DECLARE_STD_AST_CLASS(AstNode,InterfaceStorageRefs);
+DECLARE_STD_AST_CLASS(AstNode,StorageInterfaceItem);
+DECLARE_STD_AST_CLASS(AstNode,StorageInterfaceItemName);
 
 DECLARE_STD_AST_CLASS(AstNode,Dependency);
 DECLARE_STD_AST_CLASS(Dependency,Extension);

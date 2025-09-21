@@ -563,19 +563,23 @@ ComputeInterface <|[
   R_CURLY
 ]|>
 
+StorageInterfaceItemName <|[
+    [ IDENTIFIER ] : "sif_item_name"
+]|>
+
 StorageInterfaceItem <|[
    KW_BUFFER
    InterfaceLayout
-    [ IDENTIFIER ] : "storage_name"
-    L_CURLY
-    DataDeclarations : "storage_decls"
-    R_CURLY
-    SEMICOLON
+   StorageInterfaceItemName
+   L_CURLY
+   DataDeclarations : "storage_decls"
+   R_CURLY
+   SEMICOLON
 ]|>
 
 StorageInterface <|[
    KW_STOIFACE
-   IDENTIFIER  : "storage_interface_name"
+   [ IDENTIFIER ]  : "sif_name"
    DescriptorSetId
    L_CURLY
    zom { StorageInterfaceItem }

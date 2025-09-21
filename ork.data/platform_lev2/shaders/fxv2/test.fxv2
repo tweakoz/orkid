@@ -23,6 +23,15 @@ vertex_interface iface_vdefault {
     storage_fwd_lighting
   }
 }
+storage_interface storage_xxx (descriptor_set 0) {
+  buffer layout(std430) lights {
+    vec4 _lightcolor[64];    // 1024 : 1024 
+    vec4 _lightsizbias[64];  // 1024 : 2048
+    vec4 _lightpos[64];      // 1024 : 3072
+    mat4 _shadowmatrix[64];  // 4096 : 7168
+    uint _lightTexSlice[64]; // 256  : 7424
+  };
+}
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_fdefault : iface_vdefault {
   outputs { vec4 out_clr; }

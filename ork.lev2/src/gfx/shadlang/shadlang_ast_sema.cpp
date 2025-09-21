@@ -500,8 +500,8 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
           slp->importTranslatable<ComputeInterface>(name, as_cif, slp->_slp_cache->_compute_interfaces);
         }
         ////////////////////////////////////////////////////////////////////////////////////////
-        else if (auto as_cif = std::dynamic_pointer_cast<StorageInterface>(translatable)) {
-          slp->importTranslatable<StorageInterface>(name, as_cif, slp->_slp_cache->_storage_interfaces);
+        else if (auto as_sif = std::dynamic_pointer_cast<StorageInterface>(translatable)) {
+          slp->importTranslatable<StorageInterface>(name, as_sif, slp->_slp_cache->_storage_interfaces);
         }
         ////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////
@@ -1041,7 +1041,7 @@ int _semaLinkToInheritances(
           semanode->setValueForKey<std::string>("inherit_id", inh_name);
           slp->replaceInParent(inh_item, semanode);
           count++;
-        } else if (check_com_iface and check_inheritance(inh_name, "sif", slp->_slp_cache->_storage_interfaces)) {
+        } else if (check_sto_iface and check_inheritance(inh_name, "sif", slp->_slp_cache->_storage_interfaces)) {
           auto semanode   = std::make_shared<SemaInheritStorageInterface>();
           semanode->_name = FormatString("SemaInheritStorageInterface: %s", inh_name.c_str());
           semanode->setValueForKey<std::string>("inherit_id", inh_name);
@@ -1783,7 +1783,7 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
     count += _semaLinkToInheritances<GeometryInterface>(this, top);
     count += _semaLinkToInheritances<FragmentInterface>(this, top);
     count += _semaLinkToInheritances<ComputeInterface>(this, top);
-    count += _semaLinkToInheritances<StorageInterface>(this, top);
+    //count += _semaLinkToInheritances<StorageInterface>(this, top);
 
     count += _semaLinkToInheritances<VertexShader>(this, top);
     count += _semaLinkToInheritances<FragmentShader>(this, top);
