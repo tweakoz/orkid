@@ -928,6 +928,7 @@ int _semaLinkToInheritances(
           check_uni_sets   = true;
           check_uni_blks   = true;
           check_vtx_iface  = true;
+          check_sto_iface  = true;
         }
         /////////////////////////////////
         // GeometryShaders
@@ -938,6 +939,7 @@ int _semaLinkToInheritances(
           check_smp_sets   = true;
           check_uni_sets   = true;
           check_uni_blks   = true;
+          check_sto_iface  = true;
           // check_vtx_iface  = true;
           check_geo_iface = true;
         }
@@ -953,6 +955,7 @@ int _semaLinkToInheritances(
           check_vtx_iface  = true;
           check_geo_iface  = true;
           check_frg_iface  = true;
+          check_sto_iface  = true;
         }
         /////////////////////////////////
         // ComputeShaders
@@ -964,6 +967,7 @@ int _semaLinkToInheritances(
           check_uni_sets   = true;
           check_uni_blks   = true;
           check_com_iface  = true;
+          check_sto_iface  = true;
         }
         /////////////////////////////////
         // PipelineInterfaces
@@ -1213,6 +1217,7 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
     std::map<int, std::map<std::string, MergedShaderResources::ResourceBinding>> merged_descriptor_sets;
     std::set<std::string> processed_sampler_resources;       // Track samplers to prevent duplicates
     std::set<std::string> processed_uniform_block_resources; // Track uniform blocks to prevent duplicates
+    std::set<std::string> processed_storage_block_resources; // Track storage blocks to prevent duplicates
 
     // ADD: Binding counter per descriptor set
     std::map<int, int> next_binding_id_per_descriptor_set;
@@ -1240,6 +1245,7 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
       // Look for SemaInheritSamplerSet and SemaInheritUniformBlk nodes in the shader
       std::vector<astnode_ptr_t> inherited_sampler_sets;
       std::vector<astnode_ptr_t> inherited_uniform_blocks;
+      std::vector<astnode_ptr_t> inherited_storage_interfaces;
 
       // Collect direct inherited resources from the shader
       auto direct_sampler_sets   = AstNode::collectNodesOfType<SemaInheritSamplerSet>(shader);
@@ -1254,7 +1260,6 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
       auto inherited_fragment_interfaces = AstNode::collectNodesOfType<SemaInheritFragmentInterface>(shader);
       auto inherited_geometry_interfaces = AstNode::collectNodesOfType<SemaInheritGeometryInterface>(shader);
       auto inherited_compute_interfaces  = AstNode::collectNodesOfType<SemaInheritComputeInterface>(shader);
-      auto inherited_storage_interfaces  = AstNode::collectNodesOfType<SemaInheritStorageInterface>(shader);
 
       /*
       printf("      Inherited vertex interfaces: %zu\n", inherited_interfaces.size());
@@ -1303,55 +1308,56 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
       // printf("      Total inherited interfaces: %zu\n", all_inherited_interfaces.size());
 
       // Recursively collect all inherited resources from interfaces and library blocks
-      std::function<void(astnode_ptr_t, std::vector<astnode_ptr_t>&, std::vector<astnode_ptr_t>&)> collectInheritedResources =
-          [&](astnode_ptr_t node, std::vector<astnode_ptr_t>& sampler_sets, std::vector<astnode_ptr_t>& uniform_blocks) {
-            // Check for direct sampler sets and uniform blocks in this node
+      std::function<void(astnode_ptr_t, std::vector<astnode_ptr_t>&, std::vector<astnode_ptr_t>&, std::vector<astnode_ptr_t>&)> collectInheritedResources =
+          [&](astnode_ptr_t node, std::vector<astnode_ptr_t>& sampler_sets, std::vector<astnode_ptr_t>& uniform_blocks, std::vector<astnode_ptr_t>& storage_interfaces) {
+            // Check for direct sampler sets, uniform blocks, and storage interfaces in this node
             auto node_sampler_sets   = AstNode::collectNodesOfType<SemaInheritSamplerSet>(node);
             auto node_uniform_blocks = AstNode::collectNodesOfType<SemaInheritUniformBlk>(node);
+            auto node_storage_interfaces = AstNode::collectNodesOfType<SemaInheritStorageInterface>(node);
             sampler_sets.insert(sampler_sets.end(), node_sampler_sets.begin(), node_sampler_sets.end());
             uniform_blocks.insert(uniform_blocks.end(), node_uniform_blocks.begin(), node_uniform_blocks.end());
+            storage_interfaces.insert(storage_interfaces.end(), node_storage_interfaces.begin(), node_storage_interfaces.end());
 
             // Check for inherited interfaces in this node
             auto node_vertex_interfaces   = AstNode::collectNodesOfType<SemaInheritVertexInterface>(node);
             auto node_fragment_interfaces = AstNode::collectNodesOfType<SemaInheritFragmentInterface>(node);
             auto node_geometry_interfaces = AstNode::collectNodesOfType<SemaInheritGeometryInterface>(node);
             auto node_compute_interfaces  = AstNode::collectNodesOfType<SemaInheritComputeInterface>(node);
-            auto node_storage_interfaces  = AstNode::collectNodesOfType<SemaInheritStorageInterface>(node);
 
             // Recursively process inherited interfaces
             for (auto iface_inherit : node_vertex_interfaces) {
               auto iface_name = iface_inherit->typedValueForKey<std::string>("inherit_id").value();
               auto iface_obj  = slp->_slp_cache->_vertex_interfaces.find(iface_name);
               if (iface_obj != slp->_slp_cache->_vertex_interfaces.end()) {
-                collectInheritedResources(iface_obj->second, sampler_sets, uniform_blocks);
+                collectInheritedResources(iface_obj->second, sampler_sets, uniform_blocks, storage_interfaces);
               }
             }
             for (auto iface_inherit : node_fragment_interfaces) {
               auto iface_name = iface_inherit->typedValueForKey<std::string>("inherit_id").value();
               auto iface_obj  = slp->_slp_cache->_fragment_interfaces.find(iface_name);
               if (iface_obj != slp->_slp_cache->_fragment_interfaces.end()) {
-                collectInheritedResources(iface_obj->second, sampler_sets, uniform_blocks);
+                collectInheritedResources(iface_obj->second, sampler_sets, uniform_blocks, storage_interfaces);
               }
             }
             for (auto iface_inherit : node_geometry_interfaces) {
               auto iface_name = iface_inherit->typedValueForKey<std::string>("inherit_id").value();
               auto iface_obj  = slp->_slp_cache->_geometry_interfaces.find(iface_name);
               if (iface_obj != slp->_slp_cache->_geometry_interfaces.end()) {
-                collectInheritedResources(iface_obj->second, sampler_sets, uniform_blocks);
+                collectInheritedResources(iface_obj->second, sampler_sets, uniform_blocks, storage_interfaces);
               }
             }
             for (auto iface_inherit : node_compute_interfaces) {
               auto iface_name = iface_inherit->typedValueForKey<std::string>("inherit_id").value();
               auto iface_obj  = slp->_slp_cache->_compute_interfaces.find(iface_name);
               if (iface_obj != slp->_slp_cache->_compute_interfaces.end()) {
-                collectInheritedResources(iface_obj->second, sampler_sets, uniform_blocks);
+                collectInheritedResources(iface_obj->second, sampler_sets, uniform_blocks, storage_interfaces);
               }
             }
             for (auto iface_inherit : node_storage_interfaces) {
               auto iface_name = iface_inherit->typedValueForKey<std::string>("inherit_id").value();
               auto iface_obj  = slp->_slp_cache->_storage_interfaces.find(iface_name);
               if (iface_obj != slp->_slp_cache->_storage_interfaces.end()) {
-                collectInheritedResources(iface_obj->second, sampler_sets, uniform_blocks);
+                collectInheritedResources(iface_obj->second, sampler_sets, uniform_blocks, storage_interfaces);
               }
             }
 
@@ -1361,18 +1367,18 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
               auto lib_name = lib_inherit->typedValueForKey<std::string>("inherit_id").value();
               auto lib_obj  = slp->_slp_cache->_library_blocks.find(lib_name);
               if (lib_obj != slp->_slp_cache->_library_blocks.end()) {
-                collectInheritedResources(lib_obj->second, sampler_sets, uniform_blocks);
+                collectInheritedResources(lib_obj->second, sampler_sets, uniform_blocks, storage_interfaces);
               }
             }
           };
 
       // Collect all inherited resources recursively from all interfaces
       for (auto iface : all_inherited_interfaces) {
-        collectInheritedResources(iface, inherited_sampler_sets, inherited_uniform_blocks);
+        collectInheritedResources(iface, inherited_sampler_sets, inherited_uniform_blocks, inherited_storage_interfaces);
       }
 
       // ALSO: Collect resources directly from the shader itself recursively
-      collectInheritedResources(shader, inherited_sampler_sets, inherited_uniform_blocks);
+      collectInheritedResources(shader, inherited_sampler_sets, inherited_uniform_blocks, inherited_storage_interfaces);
 
       // printf("      Inherited sampler sets: %zu\n", inherited_sampler_sets.size());
       // printf("      Inherited uniform blocks: %zu\n", inherited_uniform_blocks.size());
@@ -1481,6 +1487,48 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
           // printf("        Added uniform block: %s binding %d\n", ublk_name.c_str(), binding_id);
         } else {
           printf("      WARNING: Uniform block not found in symbol table: %s\n", ublk_name.c_str());
+        }
+      }
+
+      // Process inherited storage interfaces
+      for (auto inherit_node : inherited_storage_interfaces) {
+        auto storage_name = inherit_node->typedValueForKey<std::string>("inherit_id").value();
+        // printf("      Processing inherited storage interface: %s\n", storage_name.c_str());
+
+        // Find the actual storage interface in the symbol table
+        auto storage_it = slp->_slp_cache->_storage_interfaces.find(storage_name);
+        if (storage_it != slp->_slp_cache->_storage_interfaces.end()) {
+          auto storage_interface = storage_it->second;
+
+          // Get descriptor set ID
+          int descriptor_set_id = 0; // Default
+          auto dset_ids = AstNode::collectNodesOfType<DescriptorSetId>(storage_interface);
+          if (dset_ids.size() > 0) {
+            descriptor_set_id = dset_ids[0]->typedValueForKey<int>("descriptor_set_id").value();
+          }
+
+          // Create unique key for this storage block resource
+          std::string resource_key = storage_name;
+
+          // Check for duplicates - if already processed, skip
+          if (processed_storage_block_resources.find(resource_key) != processed_storage_block_resources.end()) {
+            continue; // Skip duplicate
+          }
+
+          // Use counter to assign unique binding number
+          int binding_id = next_binding_id_per_descriptor_set[descriptor_set_id]++;
+          MergedShaderResources::ResourceBinding binding;
+          binding.type            = MergedShaderResources::ResourceBinding::Type::SSBO;
+          binding.name            = storage_name;
+          binding.datatype        = "storage_buffer";
+          binding.binding_id      = binding_id;
+          binding.original_source = storage_name;
+
+          merged_descriptor_sets[descriptor_set_id][resource_key] = binding;
+          processed_storage_block_resources.insert(resource_key);
+          // printf("        Added storage block: %s binding %d\n", storage_name.c_str(), binding_id);
+        } else {
+          printf("      WARNING: Storage interface not found in symbol table: %s\n", storage_name.c_str());
         }
       }
     }

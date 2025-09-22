@@ -157,6 +157,7 @@ libblock lib_fwd_impl : lib_math //
     env_lighting += light_maps;
     /////////////////////////
     vec3 spot_lighting = vec3(0, 0, 0);
+    /*
     for (int i = 0; i < spot_light_count; i++) {
       int j = i + point_light_count;
       /////////////////////
@@ -177,6 +178,7 @@ libblock lib_fwd_impl : lib_math //
       }
       spot_lighting += lightcol * shadow_factor;
     }
+    */
     /////////////////////////
     return (env_lighting + emission + spot_lighting) * modcolor;
   }

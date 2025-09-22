@@ -63,7 +63,10 @@ vertex_interface vif_PNBT_skinned : vif_PNBT : iface_skintools {
 ///////////////////////////////////////////////////////////////
 // Fragment Interfaces
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_forward : ub_frg_fwd : ub_frg_fwd_lighting : ss_frg_fwd {
+fragment_interface iface_forward 
+  : ub_frg_fwd 
+  : ss_frg_fwd
+  : storage_fwd_lighting {
   inputs {
     vec4 frg_wpos;
     vec4 frg_clr;
@@ -75,9 +78,6 @@ fragment_interface iface_forward : ub_frg_fwd : ub_frg_fwd_lighting : ss_frg_fwd
   }
   outputs {
     layout(location = 0) vec4 out_color;
-  }
-  storage {
-    storage_fwd_lighting
   }
 }
 ///////////////////////////////////////////////////////////////
@@ -309,13 +309,10 @@ vertex_interface vif_FWDTEST : ub_std_vtx {
 fragment_interface fif_FWDTEST 
   : vif_FWDTEST
   : ub_frg_fwd 
-  : ub_frg_fwd_lighting 
+  //: storage_fwd_lighting 
   : ss_frg_fwd {
   outputs {
     layout(location = 0) vec4 out_color;
-  }
-  storage { 
-    storage_fwd_lighting
   }
 }
 ///////////////////////////////////////////////////////////////
