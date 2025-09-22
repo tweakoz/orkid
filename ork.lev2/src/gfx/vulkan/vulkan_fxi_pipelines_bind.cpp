@@ -473,6 +473,48 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
             }
             break;
           } // case VkMergedResourceBinding::Type::UniformBlock: {
+          case VkMergedResourceBinding::Type::StorageBuffer: {
+            // Find the corresponding VkFxShaderStorageBlock
+            VkFxShaderStorageBlock* ssbo_block = nullptr;
+
+            auto it = vk_program->_vk_ssbo_blocks.find(binding->name);
+            if (it != vk_program->_vk_ssbo_blocks.end()) {
+              ssbo_block = it->second.get();
+            }
+
+            if (ssbo_block && ssbo_block->_buffer_size > 0) {
+              // Check if a buffer is bound
+              VkBuffer vk_buffer = VK_NULL_HANDLE;
+              VkDeviceSize buffer_size = ssbo_block->_buffer_size;
+
+              if (ssbo_block->_bound_buffer) {
+                vk_buffer = ssbo_block->_bound_buffer->_vkbuffer;
+                buffer_size = ssbo_block->_bound_buffer->_length;
+              } else {
+                // Create a default buffer if none is bound
+                // This is just a placeholder - real app should bind proper buffer
+                printf("WARNING: No SSBO bound for block '%s', skipping descriptor update\n", binding->name.c_str());
+                break;
+              }
+
+              VkDescriptorBufferInfo buffer_info = {};
+              buffer_info.buffer = vk_buffer;
+              buffer_info.offset = 0;
+              buffer_info.range = buffer_size;
+              buffer_infos.push_back(buffer_info);
+
+              VkWriteDescriptorSet DWRITE = {};
+              initializeVkStruct(DWRITE, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+              DWRITE.dstSet = descset_ptr->_vkdescset;
+              DWRITE.dstBinding = binding->binding_id;
+              DWRITE.descriptorCount = 1;
+              DWRITE.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+              DWRITE.pBufferInfo = &buffer_infos.back();
+
+              descriptor_writes.push_back(DWRITE);
+            }
+            break;
+          } // case VkMergedResourceBinding::Type::StorageBuffer: {
           default:
             // Ignore other types for now
             break;

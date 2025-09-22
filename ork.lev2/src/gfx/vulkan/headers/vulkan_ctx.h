@@ -356,13 +356,6 @@ struct VkFxInterface final : public FxInterface {
   FxShader* shaderFromShaderText(const std::string& name, const std::string& shadertext) final;
 
   //////////////////////////////////////////
-
-  void copyBufferIntoStorageBuffer(FxShaderStorageBuffer* ssbo, std::vector<uint8_t>, size_t dest_offset) final;
-  FxShaderStorageBuffer* createStorageBuffer(size_t length) final;
-  storagebuffermappingptr_t mapStorageBuffer(FxShaderStorageBuffer* b, size_t base = 0, size_t length = 0) final;
-  void unmapStorageBuffer(FxShaderStorageBufferMapping* mapping) final;
-
-  //////////////////////////////////////////
   // new descriptorset api
   //////////////////////////////////////////
 
@@ -391,6 +384,13 @@ struct VkFxInterface final : public FxInterface {
   fxuniformbuffermapping_ptr_t mapUniformBuffer(FxUniformBuffer* b, size_t base, size_t length) final;
   void unmapUniformBuffer(FxUniformBufferMapping* mapping) final;
   void bindUniformBuffer(const FxUniformBlock* block, FxUniformBuffer* buffer) final;
+
+  // ssbo
+  FxShaderStorageBuffer* createStorageBuffer(size_t length) final;
+  storagebuffermappingptr_t mapStorageBuffer(FxShaderStorageBuffer* b, size_t base, size_t length) final;
+  void unmapStorageBuffer(FxShaderStorageBufferMapping* mapping) final;
+  void bindStorageBuffer(const FxShaderStorageBlock* block, FxShaderStorageBuffer* buffer);
+  void copyBufferIntoStorageBuffer(FxShaderStorageBuffer* ssbo, std::vector<uint8_t> buffer, size_t dest_offset) final;
 
   void _doPushRasterState(rasterstate_ptr_t rs) final;
   rasterstate_ptr_t _doPopRasterState() final;

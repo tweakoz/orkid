@@ -243,9 +243,30 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_o
 
               break;
             }
-            case VkMergedResourceBinding::Type::StorageBuffer:
+            case VkMergedResourceBinding::Type::StorageBuffer: {
               vk_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+
+              //////////////////////////////////////////////////////
+              // Find the corresponding SSBO
+              //////////////////////////////////////////////////////
+
+              VkFxShaderStorageBlock* ssbo = nullptr;
+              auto it = pipeline->_vk_program->_vk_ssbo_blocks.find(binding->name);
+              if (it != pipeline->_vk_program->_vk_ssbo_blocks.end()) {
+                ssbo = it->second.get();
+              }
+
+              if (ssbo) {
+                //////////////////////////////////////////////////////
+                // Track this SSBO for the pipeline with its binding ID
+                //////////////////////////////////////////////////////
+
+                pipeline->_storage_blocks.push_back(ssbo);
+                pipeline->_ssbo_by_binding[binding->binding_id] = ssbo;
+              }
+
               break;
+            }
             default:
               OrkAssert(false); // Unknown resource type
               break;
@@ -301,6 +322,26 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_o
           // Look up binding IDs from the map
           uint32_t binding_a = ubo_to_binding.at(const_cast<VkFxShaderUniformBlk*>(a));
           uint32_t binding_b = ubo_to_binding.at(const_cast<VkFxShaderUniformBlk*>(b));
+          return binding_a < binding_b;
+        });
+
+    // Sort SSBOs by descriptor set and binding for consistent ordering
+    std::map<VkFxShaderStorageBlock*, uint32_t> ssbo_to_binding;
+    for (const auto& [binding_id, ssbo] : pipeline->_ssbo_by_binding) {
+      ssbo_to_binding[ssbo] = binding_id;
+    }
+
+    std::sort(
+        pipeline->_storage_blocks.begin(),
+        pipeline->_storage_blocks.end(),
+        [&ssbo_to_binding](const VkFxShaderStorageBlock* a, const VkFxShaderStorageBlock* b) {
+          // First sort by descriptor set, then by binding within the set
+          if (a->_descriptor_set_id != b->_descriptor_set_id) {
+            return a->_descriptor_set_id < b->_descriptor_set_id;
+          }
+          // Look up binding IDs from the map
+          uint32_t binding_a = ssbo_to_binding.at(const_cast<VkFxShaderStorageBlock*>(a));
+          uint32_t binding_b = ssbo_to_binding.at(const_cast<VkFxShaderStorageBlock*>(b));
           return binding_a < binding_b;
         });
 

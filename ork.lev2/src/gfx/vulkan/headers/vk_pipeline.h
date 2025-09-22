@@ -96,6 +96,10 @@ struct VkFxShaderStorageBlock : public VkFxShaderDescriptorSetItem {
   size_t _buffer_size = 0;
   std::string _name;         // Name of the storage block
   std::string _buffer_name;  // Name of the buffer block in shader
+
+  // Runtime binding
+  std::shared_ptr<VulkanBuffer> _bound_buffer;
+  FxShaderStorageBuffer* _bound_ssbo = nullptr;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VkFxShaderStorageBlocksReference {
@@ -247,7 +251,12 @@ struct VkPipelineObject {
   std::vector<VkFxShaderUniformBlk*> _uniform_blocks;  // Ordered by binding ID
   std::map<uint32_t, VkFxShaderUniformBlk*> _ubo_by_binding;  // Quick lookup
   std::vector<uint32_t> _dynamic_offsets;  // Populated at draw time
-  
+
+  // Dynamic SSBO support
+  std::set<VkFxShaderStorageBlock*> _dirty_ssbo_blocks;
+  std::vector<VkFxShaderStorageBlock*> _storage_blocks;  // Ordered by binding ID
+  std::map<uint32_t, VkFxShaderStorageBlock*> _ssbo_by_binding;  // Quick lookup
+
   // Report filename for debugging descriptor set issues
   std::string _report_filename;
 };
