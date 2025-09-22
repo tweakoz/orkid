@@ -34,6 +34,7 @@ public:
 
   virtual const FxComputeShader* computeShader(FxShader* hfx, const std::string& name) = 0;
   virtual fxparamstorageblock_constptr_t storageBlock(FxShader* hfx, const std::string& name) = 0;
+  virtual fxbuffer_member_constptr_t findStorageMember(fxparamstorageblock_constptr_t block, const std::string& member_name) = 0;
 
   virtual void bindParamBool(const FxShaderParam* hpar, const bool bval)                          = 0;
   virtual void bindParamInt(const FxShaderParam* hpar, const int ival)                            = 0;

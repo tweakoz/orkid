@@ -332,6 +332,7 @@ struct VkFxInterface final : public FxInterface {
 
   const FxComputeShader* computeShader(FxShader* hfx, const std::string& name) final;
   const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) final;
+  fxbuffer_member_constptr_t findStorageMember(fxparamstorageblock_constptr_t block, const std::string& member_name) final;
 
   void bindParamBool(const FxShaderParam* hpar, const bool bval) final;
   void bindParamInt(const FxShaderParam* hpar, const int ival) final;

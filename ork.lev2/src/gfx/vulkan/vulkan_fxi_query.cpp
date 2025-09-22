@@ -211,6 +211,15 @@ const FxShaderStorageBlock* VkFxInterface::storageBlock(FxShader* pshader, const
   return nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
+fxbuffer_member_constptr_t VkFxInterface::findStorageMember(
+    fxparamstorageblock_constptr_t block,
+    const std::string& member_name) {
+  if (!block) {
+    return nullptr;
+  }
+  return block->findMember(member_name);
+}
+///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::vulkan

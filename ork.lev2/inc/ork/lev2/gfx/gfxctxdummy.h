@@ -49,6 +49,9 @@ public:
   const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) final {
     return nullptr;
   }
+  fxbuffer_member_constptr_t findStorageMember(fxparamstorageblock_constptr_t block, const std::string& member_name) final {
+    return nullptr;
+  }
   const FxComputeShader* computeShader(FxShader* hfx, const std::string& name) final {
     return nullptr;
   }

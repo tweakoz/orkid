@@ -141,10 +141,43 @@ struct FxUniformBufferMapping {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+// Buffer member descriptor - describes a single field in a storage/uniform buffer
+///////////////////////////////////////////////////////////////////////////////
+struct FxBufferMember {
+  std::string _name;        // Member identifier (e.g., "_lightcolor")
+  std::string _datatype;    // GLSL type (e.g., "vec4", "mat4", "uint")
+  size_t _offset = 0;       // Byte offset from buffer start
+  size_t _size = 0;         // Size of single element in bytes
+  size_t _stride = 0;       // Bytes between array elements (0 if not array)
+  bool _is_array = false;   // True if this is an array
+  size_t _array_length = 0; // Number of array elements (0 if not array)
 
+  // Helper to calculate total size
+  size_t totalSize() const {
+    return _is_array ? (_stride * _array_length) : _size;
+  }
+
+  // Helper to get offset of array element
+  size_t elementOffset(size_t index) const {
+    OrkAssert(_is_array && index < _array_length);
+    return _offset + (index * _stride);
+  }
+};
+
+///////////////////////////////////////////////////////////////////////////////
+// Storage block descriptor - describes an SSBO
+///////////////////////////////////////////////////////////////////////////////
 struct FxShaderStorageBlock {
-  std::string _name;
-  svarshp_t _impl;
+  std::string _name;                                                    // Storage interface name
+  size_t _buffer_size = 0;                                             // Total buffer size in bytes
+  std::unordered_map<std::string, fxbuffer_member_ptr_t> _members;    // Buffer members by name
+  svarshp_t _impl;                                                      // Platform-specific implementation
+
+  // Helper to find member by name - O(1) lookup
+  fxbuffer_member_constptr_t findMember(const std::string& name) const {
+    auto it = _members.find(name);
+    return (it != _members.end()) ? it->second : nullptr;
+  }
 };
 struct FxShaderStorageBuffer {
   size_t _length = 0;
