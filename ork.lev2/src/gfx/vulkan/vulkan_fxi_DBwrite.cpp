@@ -338,9 +338,40 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
     }
   };
 
+  //////////////////
+  // SSBOs (storage interfaces)
+  //////////////////
+  auto write_ssbos_to_stream = [&](std::unordered_map<std::string, spirv::spirvstorageif_ptr_t>& spirv_ssbos) {
+    uniforms_stream->AddIndexedString("ssbos", chunkwriter);
+    uniforms_stream->AddItem<size_t>(spirv_ssbos.size());
+
+    for (auto [name, spirv_ssbo] : spirv_ssbos) {
+      uniforms_stream->AddIndexedString("ssbo", chunkwriter);
+      uniforms_stream->AddIndexedString(name, chunkwriter);
+      uniforms_stream->AddItem<size_t>(spirv_ssbo->_descriptor_set_id);
+      uniforms_stream->AddIndexedString(spirv_ssbo->_buffer_name, chunkwriter);
+      uniforms_stream->AddItem<size_t>(spirv_ssbo->_buffer_size);
+
+      // Write members with complete layout info
+      uniforms_stream->AddIndexedString("members", chunkwriter);
+      uniforms_stream->AddItem<size_t>(spirv_ssbo->_items_by_order.size());
+
+      for (auto item : spirv_ssbo->_items_by_order) {
+        uniforms_stream->AddIndexedString(item->_datatype, chunkwriter);
+        uniforms_stream->AddIndexedString(item->_identifier, chunkwriter);
+        uniforms_stream->AddItem<size_t>(item->_offset);
+        uniforms_stream->AddItem<size_t>(item->_size);
+        uniforms_stream->AddItem<size_t>(item->_stride);
+        uniforms_stream->AddItem<bool>(item->_is_array);
+        uniforms_stream->AddItem<size_t>(item->_array_length);
+      }
+    }
+  };
+
   write_smpsets_to_stream(SPC->_spirvsamplersets);
   write_unisets_to_stream(SPC->_spirvuniformsets);
   write_uniblks_to_stream(SPC->_spirvuniformblks);
+  write_ssbos_to_stream(SPC->_spirvstorageinterfaces);
 
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////
@@ -395,6 +426,13 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
       auto INHID = ublk->typedValueForKey<std::string>("object_name").value();
       shader_stream->AddIndexedString(INHID, chunkwriter);
       //printf("WRITE UNIFORMBLOCK REF<%s>\n", INHID.c_str());
+    }
+    //////////////////////////////////////////////////////////////////
+    shader_stream->AddItem<size_t>(tracker._inherited_storage.size());
+    for (auto ssbo : tracker._inherited_storage) {
+      auto INHID = ssbo->typedValueForKey<std::string>("object_name").value();
+      shader_stream->AddIndexedString(INHID, chunkwriter);
+      //printf("WRITE SSBO REF<%s>\n", INHID.c_str());
     }
     //////////////////////////////////////////////////////////////////
     shader_stream->AddItem<size_t>(tracker._inherited_ifaces.size());

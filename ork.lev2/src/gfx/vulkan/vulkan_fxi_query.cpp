@@ -196,7 +196,16 @@ const FxComputeShader* VkFxInterface::computeShader(FxShader* pshader, const std
       //printf("UBO_POPULATE: Program collected UBO<%s> from compute shader\n", name.c_str());
     }
   }
-  
+
+  // Populate program's SSBO map from compute shader
+  vk_program->_vk_ssbo_blocks.clear();
+  if (sh_obj && sh_obj->_ssbo_refs) {
+    for (const auto& [name, ssbo] : sh_obj->_ssbo_refs->_ssbo_blocks) {
+      vk_program->_vk_ssbo_blocks[name] = ssbo;
+      //printf("SSBO_POPULATE: Program collected SSBO<%s> from compute shader\n", name.c_str());
+    }
+  }
+
   auto cushader          = new FxComputeShader;
   cushader->_impl.set<vkfxsprg_ptr_t>(vk_program);
   static int prog_index          = 128;
@@ -206,9 +215,24 @@ const FxComputeShader* VkFxInterface::computeShader(FxShader* pshader, const std
   return cushader;
 }
 const FxShaderStorageBlock* VkFxInterface::storageBlock(FxShader* pshader, const std::string& name) {
+  OrkAssert(pshader != nullptr);
+  auto& blockmap = pshader->_storageBlockByName;
+  auto it = blockmap.find(name);
+  auto fxsblock = (it != blockmap.end()) ? it->second : nullptr;
   auto vkshfile = pshader->_internalHandle.get<vkfxsfile_ptr_t>();
-  OrkAssert(false);
-  return nullptr;
+
+  auto it2 = vkshfile->_vk_ssbo_blocks.find(name);
+  if (it2 != vkshfile->_vk_ssbo_blocks.end()) {
+    auto vkssbo = it2->second;
+    if (vkssbo != nullptr && fxsblock == nullptr) {
+      // Create FxShaderStorageBlock from Vulkan storage block
+      fxsblock = vkssbo->_orkstorageblock.get();
+      if (fxsblock) {
+        pshader->_storageBlockByName[name] = fxsblock;
+      }
+    }
+  }
+  return fxsblock; // Return nullptr if not found, matching GL behavior
 }
 ///////////////////////////////////////////////////////////////////////////////
 fxbuffer_member_constptr_t VkFxInterface::findStorageMember(

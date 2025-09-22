@@ -80,6 +80,8 @@ struct SpirvStorageInterfaceItem {
   bool _is_array = false;
   size_t _array_length = 0;
   size_t _offset = 0;
+  size_t _size = 0;    // Size of single element in bytes
+  size_t _stride = 0;  // Bytes between array elements (0 if not array)
 };
 
 struct SpirvStorageInterface {

@@ -88,6 +88,20 @@ struct VkFxShaderUniformBlksReference {
   uniblk_map_t _uniblks;
 };
 ///////////////////////////////////////////////////////////////////////////////
+struct VkFxShaderStorageBlock : public VkFxShaderDescriptorSetItem {
+  std::shared_ptr<FxShaderStorageBlock> _orkstorageblock;
+  std::unordered_map<std::string, fxbuffer_member_ptr_t> _members_by_name;
+  std::vector<fxbuffer_member_ptr_t> _members_by_order;
+
+  size_t _buffer_size = 0;
+  std::string _name;         // Name of the storage block
+  std::string _buffer_name;  // Name of the buffer block in shader
+};
+///////////////////////////////////////////////////////////////////////////////
+struct VkFxShaderStorageBlocksReference {
+  std::map<std::string, std::shared_ptr<VkFxShaderStorageBlock>> _ssbo_blocks;
+};
+///////////////////////////////////////////////////////////////////////////////
 struct VkFxShaderSamplerSetsReference {
   static size_t descriptor_set_counter;
   smpset_map_t _smpsets;
@@ -114,6 +128,7 @@ struct VkFxShaderFile {
   std::unordered_map<std::string, vkfxssmpset_ptr_t> _vk_samplersets;
   std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
   std::unordered_map<std::string, vkfxsuniblk_ptr_t> _vk_uniformblks;
+  std::unordered_map<std::string, vkfxssbo_ptr_t> _vk_ssbo_blocks;
   std::unordered_map<std::string, vkvertexinterface_ptr_t> _vk_vtxinterfaces;
   std::unordered_map<std::string, rasterstate_ptr_t> _stateblock_rasterstates; // Registry of pre-built rasterstates
   std::unordered_map<std::string, vkgeometryinterface_ptr_t> _vk_geointerfaces;
@@ -133,6 +148,7 @@ struct VulkanFxShaderObject {
   vkfxsunisetsref_ptr_t _uniset_refs;
   vkfxsuniblksref_ptr_t _uniblk_refs;
   vkfxssmpsetsref_ptr_t _smpset_refs;
+  std::shared_ptr<VkFxShaderStorageBlocksReference> _ssbo_refs;
   std::vector<std::string> _vk_interfaces;
 
   uint64_t _STAGE = 0;
@@ -184,6 +200,7 @@ struct VkFxShaderProgram {
   std::unordered_map<std::string, vkfxssmpset_ptr_t> _vk_samplersets;
   std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
   std::unordered_map<std::string, vkfxsuniblk_ptr_t> _vk_uniformblks;
+  std::unordered_map<std::string, vkfxssbo_ptr_t> _vk_ssbo_blocks;
   VkFxShaderFile* _shader_file = nullptr;
   boost::Crc64 _incr_crc64;
 

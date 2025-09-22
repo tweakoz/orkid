@@ -672,16 +672,30 @@ void SpirvCompiler::_convertStorageInterfaces() {
               item->_datatype = dt;
               item->_identifier = id;
               item->_is_array = false;
-              
-              // Calculate offset and size using std430 rules
+
+              // Calculate offset, size, and stride using std430 rules
               auto& block_sizes = SpirvCompilerGlobals::instance()->_block_data_sizes;
               auto size_it = block_sizes.find(dt);
               if (size_it != block_sizes.end()) {
                 item->_offset = layout.cursor();
+                item->_size = size_it->second;
+
+                // Handle special alignments for vec3 and mat3
+                if (dt == "vec3" || dt == "ivec3" || dt == "uvec3") {
+                  item->_stride = 16; // vec3 aligns to 16
+                } else if (dt == "mat3" || dt == "imat3" || dt == "umat3") {
+                  item->_size = 48; // 3 columns × 16 bytes
+                  item->_stride = 48;
+                } else {
+                  item->_stride = item->_size;
+                }
+
                 layout.incrementDatatype(dt);
               } else {
                 printf("WARNING: Unknown datatype '%s' in storage interface\n", dt.c_str());
                 item->_offset = layout.cursor();
+                item->_size = 0;
+                item->_stride = 0;
               }
               
               spirv_sif->_items_by_name[id] = item;
@@ -701,16 +715,34 @@ void SpirvCompiler::_convertStorageInterfaces() {
               item->_identifier = id;
               item->_is_array = true;
               item->_array_length = ary_len;
-              
-              // Calculate offset and size for array using std430 rules
+
+              // Calculate offset, size, and stride for array using std430 rules
               auto& block_sizes = SpirvCompilerGlobals::instance()->_block_data_sizes;
               auto size_it = block_sizes.find(dt);
               if (size_it != block_sizes.end()) {
                 item->_offset = layout.cursor();
+                item->_size = size_it->second;
+
+                // Calculate stride (spacing between array elements)
+                if (dt == "vec3" || dt == "ivec3" || dt == "uvec3") {
+                  item->_stride = 16; // vec3 aligns to 16
+                } else if (dt == "mat3" || dt == "imat3" || dt == "umat3") {
+                  item->_size = 48; // 3 columns × 16 bytes
+                  item->_stride = 48;
+                } else if (dt.find("mat") != std::string::npos) {
+                  // All matrices align to 16 bytes
+                  item->_stride = ((item->_size + 15) / 16) * 16;
+                } else {
+                  // For scalars and vectors, stride equals size (except vec3)
+                  item->_stride = item->_size;
+                }
+
                 layout.incrementDatatype(dt, ary_len);
               } else {
                 printf("WARNING: Unknown datatype '%s' in storage interface array\n", dt.c_str());
                 item->_offset = layout.cursor();
+                item->_size = 0;
+                item->_stride = 0;
               }
               
               spirv_sif->_items_by_name[id] = item;

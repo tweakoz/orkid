@@ -520,6 +520,69 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       // Debug names are already set in VulkanBuffer constructor
     } // end if (!is_reused)
   }
+  /////////////////////////////////
+  // read SSBOs
+  /////////////////////////////////
+  auto str_ssbos = uniforms_input_stream->ReadIndexedString(chunkreader);
+  OrkAssert(str_ssbos == "ssbos");
+  auto num_ssbos = uniforms_input_stream->ReadItem<size_t>();
+  for (size_t i = 0; i < num_ssbos; i++) {
+    auto str_ssbo = uniforms_input_stream->ReadIndexedString(chunkreader);
+    OrkAssert(str_ssbo == "ssbo");
+    auto str_ssbo_name = uniforms_input_stream->ReadIndexedString(chunkreader);
+    auto dset_id = uniforms_input_stream->ReadItem<size_t>();
+    auto str_buffer_name = uniforms_input_stream->ReadIndexedString(chunkreader);
+    auto buffer_size = uniforms_input_stream->ReadItem<size_t>();
+
+    // Create VkFxShaderStorageBlock
+    auto vk_ssbo = std::make_shared<VkFxShaderStorageBlock>();
+    vk_ssbo->_name = str_ssbo_name;
+    vk_ssbo->_buffer_name = str_buffer_name;
+    vk_ssbo->_descriptor_set_id = dset_id;
+    vk_ssbo->_buffer_size = buffer_size;
+
+    // Create FxShaderStorageBlock
+    auto ork_ssbo = std::make_shared<FxShaderStorageBlock>();
+    ork_ssbo->_name = str_ssbo_name;
+    ork_ssbo->_buffer_size = buffer_size;
+    ork_ssbo->_impl.makeShared<VkFxShaderStorageBlock*>(vk_ssbo.get());
+    vk_ssbo->_orkstorageblock = ork_ssbo;
+
+    // Read members
+    auto str_members = uniforms_input_stream->ReadIndexedString(chunkreader);
+    OrkAssert(str_members == "members");
+    auto num_members = uniforms_input_stream->ReadItem<size_t>();
+
+    for (size_t j = 0; j < num_members; j++) {
+      auto member_datatype = uniforms_input_stream->ReadIndexedString(chunkreader);
+      auto member_identifier = uniforms_input_stream->ReadIndexedString(chunkreader);
+      auto member_offset = uniforms_input_stream->ReadItem<size_t>();
+      auto member_size = uniforms_input_stream->ReadItem<size_t>();
+      auto member_stride = uniforms_input_stream->ReadItem<size_t>();
+      auto member_is_array = uniforms_input_stream->ReadItem<bool>();
+      auto member_array_length = uniforms_input_stream->ReadItem<size_t>();
+
+      auto fxmember = std::make_shared<FxBufferMember>();
+      fxmember->_name = member_identifier;
+      fxmember->_datatype = member_datatype;
+      fxmember->_offset = member_offset;
+      fxmember->_size = member_size;
+      fxmember->_stride = member_stride;
+      fxmember->_is_array = member_is_array;
+      fxmember->_array_length = member_array_length;
+
+      vk_ssbo->_members_by_name[member_identifier] = fxmember;
+      vk_ssbo->_members_by_order.push_back(fxmember);
+      ork_ssbo->_members[member_identifier] = fxmember;
+    }
+
+    // Store in shader file
+    vulkan_shaderfile->_vk_ssbo_blocks[str_ssbo_name] = vk_ssbo;
+    ork_shader->_storageBlockByName[str_ssbo_name] = ork_ssbo.get();
+
+    if(0)printf("VK_SSBO: Loaded SSBO<%s> buffer<%s> size<%zu> members<%zu> dset<%zu>\n",
+           str_ssbo_name.c_str(), str_buffer_name.c_str(), buffer_size, num_members, dset_id);
+  }
   // TODO - read VIFS, GIFS
   /////////////////////////////////
   // read vertex interfaces / inheritances
@@ -638,6 +701,21 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         // printf("  -> UBO<%s> IN DESCRIPTOR_SET<%zu>\n", str_uniblk.c_str(), vk_uniblk->_descriptor_set_id);
       }
       OrkAssert(refs->_uniblks.size() <= 8);
+    }
+    /////////////////////////////////
+    auto num_issbos = shader_input_stream->ReadItem<size_t>();
+    if (num_issbos) {
+      auto refs = std::make_shared<VkFxShaderStorageBlocksReference>();
+      vulkan_shobj->_ssbo_refs = refs;
+      // printf("SHADER<%s> REFERENCES %zu SSBOs:\n", str_shader_name.c_str(), num_issbos);
+      for (size_t i = 0; i < num_issbos; i++) {
+        auto str_ssbo = shader_input_stream->ReadIndexedString(chunkreader);
+        auto it = vulkan_shaderfile->_vk_ssbo_blocks.find(str_ssbo);
+        OrkAssert(it != vulkan_shaderfile->_vk_ssbo_blocks.end());
+        vkfxssbo_ptr_t vk_ssbo = it->second;
+        refs->_ssbo_blocks[str_ssbo] = vk_ssbo;
+        // printf("  -> SSBO<%s> IN DESCRIPTOR_SET<%zu>\n", str_ssbo.c_str(), vk_ssbo->_descriptor_set_id);
+      }
     }
     /////////////////////////////////
     auto num_ifaces = shader_input_stream->ReadItem<size_t>();
@@ -801,6 +879,39 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
 
       // printf("UBO_POPULATE: Program<%p> total UBOs: %zu\n",
       //        (void*)vk_program.get(), vk_program->_vk_uniformblks.size());
+
+      ////////////////////////////////////////////////////////////
+      // Collect SSBOs from vertex shader
+      if (vk_program->_vtxshader && vk_program->_vtxshader->_ssbo_refs) {
+        for (const auto& [name, ssbo] : vk_program->_vtxshader->_ssbo_refs->_ssbo_blocks) {
+          vk_program->_vk_ssbo_blocks[name] = ssbo;
+          // printf("SSBO_POPULATE: Program collected SSBO<%s> from vertex shader\n", name.c_str());
+        }
+      }
+
+      // Collect SSBOs from geometry shader (if present)
+      if (vk_program->_geoshader && vk_program->_geoshader->_ssbo_refs) {
+        for (const auto& [name, ssbo] : vk_program->_geoshader->_ssbo_refs->_ssbo_blocks) {
+          vk_program->_vk_ssbo_blocks[name] = ssbo;
+          // printf("SSBO_POPULATE: Program collected SSBO<%s> from geometry shader\n", name.c_str());
+        }
+      }
+
+      // Collect SSBOs from fragment shader
+      if (vk_program->_frgshader && vk_program->_frgshader->_ssbo_refs) {
+        for (const auto& [name, ssbo] : vk_program->_frgshader->_ssbo_refs->_ssbo_blocks) {
+          vk_program->_vk_ssbo_blocks[name] = ssbo;
+          // printf("SSBO_POPULATE: Program collected SSBO<%s> from fragment shader\n", name.c_str());
+        }
+      }
+
+      // Collect SSBOs from compute shader (if present)
+      if (vk_program->_comshader && vk_program->_comshader->_ssbo_refs) {
+        for (const auto& [name, ssbo] : vk_program->_comshader->_ssbo_refs->_ssbo_blocks) {
+          vk_program->_vk_ssbo_blocks[name] = ssbo;
+          // printf("SSBO_POPULATE: Program collected SSBO<%s> from compute shader\n", name.c_str());
+        }
+      }
 
       ////////////////////////////////////////////////////////////
       auto sblk_name = tecniq_input_stream->ReadIndexedString(chunkreader);
