@@ -1068,12 +1068,21 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
         //                           (void*)toASTstring(sitemn_node).c_str());                //
         _appendText(_interface_group, header.c_str());
         /////////////////
-        // todo:
-        //   dynamic set, binding assignment <<<<
+        // Try to find binding ID from merged resources first
+        int binding_id = _findBindingIdFromMergedResources(storage_name, storage_name);
+        if (binding_id == -1) {
+          // Fallback to original behavior if not found in merged resources
+          printf("WARNING: Storage interface '%s' not found in merged resources, using fallback binding\n", storage_name.c_str());
+          binding_id = _binding_id;
+          _binding_id++;
+        }
         /////////////////
-        _appendText(
-            _interface_group, //
-            "layout(set=%d, binding=1) buffer %s {", dset_id, sitem_name.c_str() );
+        auto layout_line = FormatString(
+            "layout(set=%d, binding=%d) buffer %s {", //
+            dset_id,                                   //
+            binding_id,                                //
+            sitem_name.c_str());
+        _appendText(_interface_group, layout_line.c_str());
         /////////////////
         auto decls = sitem_node->findFirstChildOfType<DataDeclarations>();
         for (auto decl_sub : decls->_children) {
@@ -1097,9 +1106,12 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
           }
         }
         /////////////////
-        _appendText(
-            _interface_group, //
-            "}; // layout(set=%d, binding=1) TODO: use real binding ID",dset_id);
+        auto closing_comment = FormatString(
+            "}; // layout(set=%d, binding=%d) buffer %s", //
+            dset_id,                                       //
+            binding_id,                                    //
+            sitem_name.c_str());
+        _appendText(_interface_group, closing_comment.c_str());
         /////////////////
         auto tailer = FormatString("// end interface<%s>", id_name.c_str());
         _appendText(_interface_group, tailer.c_str());

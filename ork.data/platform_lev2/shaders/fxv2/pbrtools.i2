@@ -117,7 +117,7 @@ libblock lib_pbr_vtx {
     frg_camz        = wnormal.xyz;
     frg_camdist     = -cpos.z;
   }
-} // lib_pbr_vtx
+}
 ///////////////////////////////////////////////////////////////
 libblock lib_pbr_frg : lib_gbuf_encode : sset_std_pbr
     : ublk_std_pbr
