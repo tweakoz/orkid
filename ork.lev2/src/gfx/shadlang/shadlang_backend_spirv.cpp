@@ -147,10 +147,14 @@ SpirvCompiler::SpirvCompiler(transunit_ptr_t transu, bool vulkan)
   _convertSamplerSets();
   _convertUniformSets();
   _convertUniformBlocks();
+  _convertStorageInterfaces();
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void SpirvCompiler::_beginShader(shader_ptr_t shader) {
+
+    printf("_beginShader<%s> try check interface'\n", shader->_name.c_str());
+
   _shader          = shader;
   _shader_group    = std::make_shared<MiscGroupNode>();
   _interface_group = std::make_shared<MiscGroupNode>();
@@ -205,7 +209,22 @@ void SpirvCompiler::_beginShader(shader_ptr_t shader) {
     _inheritUniformBlk(INHID, spirvuniblk);
   };
   ////////////////////////////////////////////////
+  tracker._onInheritStorageInterface = [=](std::string INHID, astnode_ptr_t interface_node) { //
+    printf("sh<%s> Processing inheritance of storage interface '%s'\n", shader->_name.c_str(), INHID.c_str());
+    
+    auto it_storage = _spirvstorageinterfaces.find(INHID);
+    if (it_storage != _spirvstorageinterfaces.end()) {
+      auto spirvstorageif = it_storage->second;
+      _inheritStorageInterface(INHID, spirvstorageif);
+    } else {
+      printf("WARNING: Storage interface '%s' not found in processed storage interfaces\n", INHID.c_str());
+    }
+  };
+  ////////////////////////////////////////////////
   tracker._onInheritInterface = [=](std::string INHID, astnode_ptr_t interface_node) { //
+
+    printf("sh<%s> Processing inheritance of interface '%s'\n", shader->_name.c_str(), INHID.c_str());
+
     // Only inherit the appropriate interface type for each shader
     bool is_vertex_interface   = (std::dynamic_pointer_cast<VertexInterface>(interface_node) != nullptr);
     bool is_fragment_interface = (std::dynamic_pointer_cast<FragmentInterface>(interface_node) != nullptr);
@@ -611,6 +630,100 @@ void SpirvCompiler::_convertUniformBlocks() {
   }
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
+void SpirvCompiler::_convertStorageInterfaces() {
+  auto ast_storage_ifs = SHAST::AstNode::collectNodesOfType<SHAST::StorageInterface>(_transu);
+  
+  for (auto ast_storage_if : ast_storage_ifs) {
+    auto storage_name = ast_storage_if->typedValueForKey<std::string>("object_name").value();
+    auto spirv_sif = std::make_shared<SpirvStorageInterface>();
+    _spirvstorageinterfaces[storage_name] = spirv_sif;
+    spirv_sif->_name = storage_name;
+    
+    // Get descriptor set ID
+    auto dsid_node = ast_storage_if->findFirstChildOfType<DescriptorSetId>();
+    if (dsid_node) {
+      spirv_sif->_descriptor_set_id = dsid_node->typedValueForKey<int>("descriptor_set_id").value();
+    }
+    
+    // Get the storage interface item (buffer block)
+    auto sitem_node = ast_storage_if->findFirstChildOfType<StorageInterfaceItem>();
+    if (sitem_node) {
+      // Get buffer name
+      auto sitemn_node = sitem_node->findFirstChildOfType<StorageInterfaceItemName>();
+      if (sitemn_node) {
+        auto semaid_nodes = AstNode::collectNodesOfType<SemaIdentifier>(sitemn_node);
+        if (!semaid_nodes.empty()) {
+          spirv_sif->_buffer_name = getSemaIdString(semaid_nodes[0]);
+        }
+      }
+      
+      // Parse buffer members using std430 layout
+      auto decls = sitem_node->findFirstChildOfType<DataDeclarations>();
+      if (decls) {
+        LayoutStandard430 layout;
+        for (auto decl_sub : decls->_children) {
+          if (auto as_ddecl = std::dynamic_pointer_cast<DataDeclaration>(decl_sub)) {
+            auto tid = as_ddecl->childAs<TypedIdentifier>(0);
+            if (tid) {
+              auto dt = tid->typedValueForKey<std::string>("data_type").value();
+              auto id = tid->typedValueForKey<std::string>("identifier_name").value();
+              
+              auto item = std::make_shared<SpirvStorageInterfaceItem>();
+              item->_datatype = dt;
+              item->_identifier = id;
+              item->_is_array = false;
+              
+              // Calculate offset and size using std430 rules
+              auto& block_sizes = SpirvCompilerGlobals::instance()->_block_data_sizes;
+              auto size_it = block_sizes.find(dt);
+              if (size_it != block_sizes.end()) {
+                item->_offset = layout.cursor();
+                layout.incrementDatatype(dt);
+              } else {
+                printf("WARNING: Unknown datatype '%s' in storage interface\n", dt.c_str());
+                item->_offset = layout.cursor();
+              }
+              
+              spirv_sif->_items_by_name[id] = item;
+              spirv_sif->_items_by_order.push_back(item);
+            }
+          } else if (auto as_adecl = std::dynamic_pointer_cast<ArrayDeclaration>(decl_sub)) {
+            auto tid = as_adecl->childAs<TypedIdentifier>(0);
+            if (tid) {
+              auto dt = tid->typedValueForKey<std::string>("data_type").value();
+              auto id = tid->typedValueForKey<std::string>("identifier_name").value();
+              auto len_node = as_adecl->childAs<SemaIntegerLiteral>(1);
+              auto ary_len_str = len_node->typedValueForKey<std::string>("literal_value").value();
+              auto ary_len = atoi(ary_len_str.c_str());
+              
+              auto item = std::make_shared<SpirvStorageInterfaceItem>();
+              item->_datatype = dt;
+              item->_identifier = id;
+              item->_is_array = true;
+              item->_array_length = ary_len;
+              
+              // Calculate offset and size for array using std430 rules
+              auto& block_sizes = SpirvCompilerGlobals::instance()->_block_data_sizes;
+              auto size_it = block_sizes.find(dt);
+              if (size_it != block_sizes.end()) {
+                item->_offset = layout.cursor();
+                layout.incrementDatatype(dt, ary_len);
+              } else {
+                printf("WARNING: Unknown datatype '%s' in storage interface array\n", dt.c_str());
+                item->_offset = layout.cursor();
+              }
+              
+              spirv_sif->_items_by_name[id] = item;
+              spirv_sif->_items_by_order.push_back(item);
+            }
+          }
+        }
+        spirv_sif->_buffer_size = layout.cursor();
+      }
+    }
+  }
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////
 
 void SpirvCompiler::_inheritSamplerSet(
     std::string unisetname,        //
@@ -810,6 +923,53 @@ void SpirvCompiler::_inheritUniformBlk(
     OrkAssert(false);
   }
 }
+/////////////////////////////////////////////////////////////////////////////////////////////////
+void SpirvCompiler::_inheritStorageInterface(
+    std::string storage_name,
+    spirvstorageif_ptr_t spirv_sif) {
+  
+
+  printf("Inheriting storage interface '%s'\n", storage_name.c_str());
+  OrkAssert((spirv_sif->_descriptor_set_id >= 0) and (spirv_sif->_descriptor_set_id <= 4));
+  
+  // Get binding ID from merged resources
+  int binding_id = _findBindingIdFromMergedResources(storage_name, storage_name);
+  if (binding_id == -1) {
+    // Fallback to auto-increment if not found
+    printf("WARNING: Storage interface '%s' not found in merged resources, using fallback binding\n", storage_name.c_str());
+    binding_id = _binding_id++;
+  }
+  
+  // Emit the GLSL storage buffer declaration
+  auto header = FormatString("// Storage interface: %s", storage_name.c_str());
+  _appendText(_uniforms_group, header.c_str());
+  
+  auto layout_line = FormatString(
+      "layout(set=%zu, binding=%d, std430) buffer %s {",
+      spirv_sif->_descriptor_set_id,
+      binding_id,
+      spirv_sif->_buffer_name.c_str());
+  _appendText(_uniforms_group, layout_line.c_str());
+  
+  // Emit buffer members
+  for (auto item : spirv_sif->_items_by_order) {
+    if (item->_is_array) {
+      auto member_line = FormatString("  %s %s[%zu];", 
+                                      item->_datatype.c_str(), 
+                                      item->_identifier.c_str(), 
+                                      item->_array_length);
+      _appendText(_uniforms_group, member_line.c_str());
+    } else {
+      auto member_line = FormatString("  %s %s;", 
+                                      item->_datatype.c_str(), 
+                                      item->_identifier.c_str());
+      _appendText(_uniforms_group, member_line.c_str());
+    }
+  }
+  
+  auto closing = FormatString("}; // end storage interface %s", storage_name.c_str());
+  _appendText(_uniforms_group, closing.c_str());
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -953,7 +1113,7 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
   //
   // Handle inherited interfaces - specifically vertex outputs becoming fragment inputs
   //
-
+  printf("_inheritIO interface '%s'\n", interface_node->typedValueForKey<std::string>("object_name").value().c_str());
   auto ifname    = interface_node->typedValueForKey<std::string>("object_name").value();
   auto decorator = FormatString("// begin interface<%s>", ifname.c_str());
   _appendText(_interface_group, decorator.c_str());

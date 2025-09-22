@@ -309,7 +309,7 @@ vertex_interface vif_FWDTEST : ub_std_vtx {
 fragment_interface fif_FWDTEST 
   : vif_FWDTEST
   : ub_frg_fwd 
-  //: storage_fwd_lighting 
+  : storage_fwd_lighting 
   : ss_frg_fwd {
   outputs {
     layout(location = 0) vec4 out_color;
@@ -357,6 +357,7 @@ vertex_shader vs_forward_instanced
   ////////////////////////////////
   gl_Position = mvp * instanced_pos;
 }
+///////////////////////////////////////////////////////////////
 fragment_shader ps_forward_test_instanced_mono 
     : fif_FWDTEST             //
     : lib_math                  //

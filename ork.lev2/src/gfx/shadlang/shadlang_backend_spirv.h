@@ -19,6 +19,8 @@ struct SpirvUniformSetItem;
 struct SpirvSampler;
 struct SpirvUniformBlock;
 struct SpirvUniformBlockItem;
+struct SpirvStorageInterface;
+struct SpirvStorageInterfaceItem;
 
 using spirvuniset_ptr_t     = std::shared_ptr<SpirvUniformSet>;
 using spirvsmpset_ptr_t     = std::shared_ptr<SpirvSamplerSet>;
@@ -27,6 +29,9 @@ using spirvsampler_ptr_t    = std::shared_ptr<SpirvSampler>;
 
 using spirvuniblk_ptr_t     = std::shared_ptr<SpirvUniformBlock>;
 using spirvuniblkitem_ptr_t = std::shared_ptr<SpirvUniformBlockItem>;
+
+using spirvstorageif_ptr_t     = std::shared_ptr<SpirvStorageInterface>;
+using spirvstorageitem_ptr_t = std::shared_ptr<SpirvStorageInterfaceItem>;
 
 using shader_bin_t     = std::vector<uint32_t>;
 
@@ -69,6 +74,23 @@ struct SpirvUniformBlock {
   std::vector<spirvuniblkitem_ptr_t> _items_by_order;
 };
 
+struct SpirvStorageInterfaceItem {
+  std::string _datatype;
+  std::string _identifier;
+  bool _is_array = false;
+  size_t _array_length = 0;
+  size_t _offset = 0;
+};
+
+struct SpirvStorageInterface {
+  std::string _name;
+  std::string _buffer_name;  // The name of the buffer block
+  size_t _descriptor_set_id = -1;
+  size_t _buffer_size = 0;
+  std::unordered_map<std::string, spirvstorageitem_ptr_t> _items_by_name;
+  std::vector<spirvstorageitem_ptr_t> _items_by_order;
+};
+
 struct SpirvCompilerGlobals;
 using spirvcompilerglobals_constptr_t = std::shared_ptr<const SpirvCompilerGlobals>;
 struct SpirvCompilerGlobals {
@@ -91,6 +113,7 @@ private:
   void _convertSamplerSets();
   void _convertUniformSets();
   void _convertUniformBlocks();
+  void _convertStorageInterfaces();
   void _appendText(miscgroupnode_ptr_t grp, const char* formatstring, ...);
   void _collectLibBlocks();
   void _processGlobalRenames();
@@ -100,6 +123,7 @@ private:
   void _inheritSamplerSet(std::string unisetname, spirvsmpset_ptr_t smpset_node);
   void _inheritUniformSet(std::string unisetname, spirvuniset_ptr_t uniset_node);
   void _inheritUniformBlk(std::string uniblkname, spirvuniblk_ptr_t uniblk_node);
+  void _inheritStorageInterface(std::string storage_name, spirvstorageif_ptr_t storage_interface);
   void _inheritIO(astnode_ptr_t interface_node);
   void _inheritExtension(semainhext_ptr_t ext_node);
   void _emitMergedPushConstants();
@@ -143,6 +167,7 @@ public:
   std::unordered_map<std::string, spirvsmpset_ptr_t> _spirvsamplersets;
   std::unordered_map<std::string, spirvuniset_ptr_t> _spirvuniformsets;
   std::unordered_map<std::string, spirvuniblk_ptr_t> _spirvuniformblks;
+  std::unordered_map<std::string, spirvstorageif_ptr_t> _spirvstorageinterfaces;
   std::vector<spirvuniset_ptr_t> _collected_uniform_sets;
 
 };

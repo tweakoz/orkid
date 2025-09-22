@@ -458,6 +458,7 @@ struct InheritanceTracker{
   using on_sset_fn_t = std::function<void(std::string, astnode_ptr_t)>;
   using on_uset_fn_t = std::function<void(std::string, astnode_ptr_t)>;
   using on_ublk_fn_t = std::function<void(std::string, astnode_ptr_t)>;
+  using on_storage_fn_t = std::function<void(std::string, astnode_ptr_t)>;
   using on_ext_fn_t = std::function<void(std::string,astnode_ptr_t)>;
 
   on_lib_fn_t _onInheritLibrary = nullptr;
@@ -466,6 +467,7 @@ struct InheritanceTracker{
   on_sset_fn_t _onInheritSamplerSet = nullptr;
   on_uset_fn_t _onInheritUniformSet = nullptr;
   on_ublk_fn_t _onInheritUniformBlk = nullptr; 
+  on_storage_fn_t _onInheritStorageInterface = nullptr;
   on_ext_fn_t _onInheritExtension = nullptr;
 
   transunit_ptr_t _translation_unit;
@@ -475,6 +477,7 @@ struct InheritanceTracker{
   std::set<std::string> _set_inherited_smpsets;
   std::set<std::string> _set_inherited_unisets;
   std::set<std::string> _set_inherited_uniblks;
+  std::set<std::string> _set_inherited_storage;
   std::set<std::string> _set_inherited_interfaces;
   std::set<std::string> _set_inherited_extensions;
 
@@ -483,6 +486,7 @@ struct InheritanceTracker{
   std::vector<astnode_ptr_t> _inherited_ssets;
   std::vector<astnode_ptr_t> _inherited_usets;
   std::vector<astnode_ptr_t> _inherited_ublks;
+  std::vector<astnode_ptr_t> _inherited_storage;
   std::vector<astnode_ptr_t> _inherited_ifaces;
   std::vector<std::string> _inherited_exts;
   size_t _stack_depth = 0;

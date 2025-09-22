@@ -980,6 +980,7 @@ int _semaLinkToInheritances(
           check_geo_iface = true;
           check_frg_iface = true;
           check_com_iface = true;
+          check_sto_iface  = true;
         }
         /////////////////////////////////
         // StateBlocks
