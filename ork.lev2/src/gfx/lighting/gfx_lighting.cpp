@@ -688,6 +688,16 @@ LightManager::LightManager(lightmanagerdata_constptr_t lmd)
   _cookies_spot_depth                   = std::make_shared<TextureArray>();
   _cookies_spot_color->_tex->_debugName = "cookies_spot_color";
   _cookies_spot_depth->_tex->_debugName = "cookies_spot_depth";
+
+  // Set depth texture to use clamp-to-edge for proper shadow mapping
+  _cookies_spot_depth->_tex->mTexSampleMode._texAddrModeS = TextureAddressMode::CLAMP;
+  _cookies_spot_depth->_tex->mTexSampleMode._texAddrModeT = TextureAddressMode::CLAMP;
+  _cookies_spot_depth->_tex->mTexSampleMode._texAddrModeR = TextureAddressMode::CLAMP;
+
+  // Color cookies might also benefit from clamping to avoid wrapping artifacts
+  _cookies_spot_color->_tex->mTexSampleMode._texAddrModeS = TextureAddressMode::CLAMP;
+  _cookies_spot_color->_tex->mTexSampleMode._texAddrModeT = TextureAddressMode::CLAMP;
+  _cookies_spot_color->_tex->mTexSampleMode._texAddrModeR = TextureAddressMode::CLAMP;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

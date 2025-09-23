@@ -396,8 +396,12 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
   _contextVK->enqueueDeferredOneShotCommand(transfer->_command_buffer);
 
   // Apply sampling mode based on mip count
+  // Only update filtering mode if mipmaps present, preserve address modes
   if (max_levels > 3) {
-    array->_tex->TexSamplingMode().presetTrilinearWrap();
+    auto& samplingMode = array->_tex->TexSamplingMode();
+    samplingMode._texFiltModeMin = ETextureMinifyFilterMode::LINEAR_MIPMAP_LINEAR;
+    samplingMode._texFiltModeMag = ETextureMagnifyFilterMode::LINEAR;
+    // Keep existing address modes (CLAMP/WRAP) that were set externally
   }
   this->ApplySamplingMode(array->_tex.get());
 
@@ -506,8 +510,12 @@ void VkTextureInterface::initTextureArray2D(TextureArray* texture_array) {
   texture_array->_tex->_impl = vktex;
   
   // Apply sampling mode based on mip count
+  // Only update filtering mode if mipmaps present, preserve address modes
   if (num_levels > 3) {
-    texture_array->_tex->TexSamplingMode().presetTrilinearWrap();
+    auto& samplingMode = texture_array->_tex->TexSamplingMode();
+    samplingMode._texFiltModeMin = ETextureMinifyFilterMode::LINEAR_MIPMAP_LINEAR;
+    samplingMode._texFiltModeMag = ETextureMagnifyFilterMode::LINEAR;
+    // Keep existing address modes (CLAMP/WRAP) that were set externally
   }
   this->ApplySamplingMode(texture_array->_tex.get());
   

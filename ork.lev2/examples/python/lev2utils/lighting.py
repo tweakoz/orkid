@@ -20,7 +20,7 @@ class MySpotLight:
                 fovamp=20.0,
                 voffset=1,
                 vscale=1,
-                bias=1e-3,
+                bias=1e-5,
                 dim=2048,
                 range=100.0,
                 radius=12,

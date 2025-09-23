@@ -129,7 +129,7 @@ class SceneGraphApp(object):
         )
         submesh.material = copy
 
-    for i in range(4):
+    for i in range(81):
       node = NODE(model,self,i)
 
       x = (i % 9)
@@ -167,8 +167,9 @@ class SceneGraphApp(object):
     color_cookies = lmgr.spot_cookies_color
     depth_cookies = lmgr.spot_cookies_depth
     color_cookies.needsRadianceCache = True
-    color_cookies.resize(1024,1024,1,tokens.RGB8,True)
-    depth_cookies.resize(1024,1024,1,tokens.Z32F,True)
+    COOKIE_DIM = 2048
+    color_cookies.resize(COOKIE_DIM,COOKIE_DIM,1,tokens.RGB8,True)
+    depth_cookies.resize(COOKIE_DIM,COOKIE_DIM,1,tokens.Z32F,True)
 
     cookie1 = color_cookies.load("src://effect_textures/knob2.png")
     depth_cookie1 = depth_cookies.slice(0)
@@ -180,6 +181,7 @@ class SceneGraphApp(object):
                                    color=vec3(1000,800,500),
                                    cookie=cookie1,
                                    depth_cookie=depth_cookie1, 
+                                   dim=COOKIE_DIM,
                                    radius=24,
                                    voffset=10,
                                    fovbase=25)
