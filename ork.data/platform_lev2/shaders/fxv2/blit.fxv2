@@ -30,7 +30,6 @@ sampler_set samplers(descriptor_set 0) {
 fragment_interface iface_fmt : ublock_frg : samplers {
   inputs {
     vec4 frg_clr;
-    vec2 frg_uv0;
   }
   outputs {
     layout(location = 0) vec4 out_clr;

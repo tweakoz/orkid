@@ -218,29 +218,31 @@ VulkanInstance::VulkanInstance() {
   VkResult res = vkCreateInstance(&_instancedata, nullptr, &_instance);
   OrkAssert(res == 0);
 
-  _fetchInstanceProcAddr(_vkCreateDebugUtilsMessengerEXT, "vkCreateDebugUtilsMessengerEXT");
+  if(_debugEnabled) {
+    _fetchInstanceProcAddr(_vkCreateDebugUtilsMessengerEXT, "vkCreateDebugUtilsMessengerEXT");
 
-  //deco::printf(yel, "vulkan::_init instance<%p> res<%d>\n", (void*) & _instance, int(res));
-  VkDebugUtilsMessengerEXT debugMessenger;
-    
-    VkDebugUtilsMessengerCreateInfoEXT dbg_createInfo = {};
-    dbg_createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-    dbg_createInfo.messageSeverity = 
-        VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-        VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-        VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-    dbg_createInfo.messageType = 
-        VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-        VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-        VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-    dbg_createInfo.pfnUserCallback = debugCallback;
-    dbg_createInfo.pUserData = nullptr; // Optional user data
-    
-    if (_vkCreateDebugUtilsMessengerEXT(_instance, &dbg_createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
-        OrkAssert(false);
-    }
-  
-    /////////////////////////////////////////////////////////////////////////////
+    //deco::printf(yel, "vulkan::_init instance<%p> res<%d>\n", (void*) & _instance, int(res));
+    VkDebugUtilsMessengerEXT debugMessenger;
+      
+      VkDebugUtilsMessengerCreateInfoEXT dbg_createInfo = {};
+      dbg_createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+      dbg_createInfo.messageSeverity = 
+          VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+          VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+          VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+      dbg_createInfo.messageType = 
+          VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+          VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+          VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+      dbg_createInfo.pfnUserCallback = debugCallback;
+      dbg_createInfo.pUserData = nullptr; // Optional user data
+      
+      if (_vkCreateDebugUtilsMessengerEXT(_instance, &dbg_createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
+          OrkAssert(false);
+      }
+  }
+
+  /////////////////////////////////////////////////////////////////////////////
   // check device groups (for later multidevice support)
   /////////////////////////////////////////////////////////////////////////////
 
