@@ -117,6 +117,15 @@ struct VulkanInstance {
   vkdeviceinfo_ptr_t _preferred;
 
   std::vector<VkContext*> _contexts;
+
+  PFN_vkCreateDebugUtilsMessengerEXT _vkCreateDebugUtilsMessengerEXT = nullptr;
+
+  //////////////////////////////////////////////
+  template <typename T> bool _fetchInstanceProcAddr(T& object, const char* name) {
+    object = reinterpret_cast<T>(vkGetInstanceProcAddr(_instance, name));
+    return (object != nullptr);
+  }
+
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VkDrawingInterface final : public DrawingInterface {

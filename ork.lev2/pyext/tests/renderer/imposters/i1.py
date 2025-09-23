@@ -107,7 +107,7 @@ class ImposterApp(object):
                                filtertype=tokens.BILINEAR,
                                filterradius=3.0, 
                                detail=2,
-                               shaderpath=this_dir/"i1.glfx",
+                               shaderpath=this_dir/"i1.fxv2",
                                shadertek="tek_imp1",
                                layer=self.lyr_fwd,
                                DIM = IMP_DIM,

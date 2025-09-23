@@ -178,7 +178,7 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_o
   // push constants
   ////////////////////////////////////////////////////
 
-  if (vk_program->_pushConstantBlock) {
+  if (vk_program->_pushConstantBlock and (vk_program->_pushConstantBlock->_ranges.size()>0)) {
     PLCI.pushConstantRangeCount = vk_program->_pushConstantBlock->_ranges.size();
     PLCI.pPushConstantRanges    = vk_program->_pushConstantBlock->_ranges.data();
   }

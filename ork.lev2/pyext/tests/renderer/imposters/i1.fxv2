@@ -1,22 +1,22 @@
+import "orkshader://sdftools.i2";
+import "orkshader://misctools.i2";
+import "orkshader://stdtools.i2";
 ////////////////////////////////////////
 fxconfig fxcfg_default {
   glsl_version = "410";
-  import "orkshader://sdftools.i";
-  import "orkshader://misctools.i";
-  import "orkshader://stdtools.i";
 }
 ////////////////////////////////////////
-uniform_set uset_vtx : uset_std_matrices {
-}
-////////////////////////////////////////
-uniform_set uset_frg {
+sampler_set i1_samplers (descriptor_set 0) {
   sampler2D rtgtex;
   sampler2D fbtex;
   sampler2D depthtex;
+}
+////////////////////////////////////////
+uniform_block uset_frg (descriptor_set 0) {
   float time;
 }
 ////////////////////////////////////////
-vertex_interface iface_vtx : uset_vtx {
+vertex_interface iface_vtx {
   inputs {
     vec4 pos : POSITION;
     vec3 nrm : NORMAL;
@@ -30,24 +30,26 @@ vertex_interface iface_vtx : uset_vtx {
   }
 }
 ////////////////////////////////////////
-fragment_interface iface_frg : uset_frg {
-  inputs {
-    vec3 frg_col;
-    vec2 frg_uv0;
-    vec3 frg_pos;
-  }
+fragment_interface iface_frg //
+  : iface_vtx {              //
+  // inputs inherited from iface_vtx's outputs
   outputs {
     layout(location = 0) vec4 out_clr;
   }
 }
 ////////////////////////////////////////
-vertex_shader vs_imp1 : iface_vtx {
+vertex_shader vs_imp1   //
+  : iface_vtx           //
+  : ublk_std_matrices { //
   frg_col     = normalize(nrm); //+vec3(1))*0.5;
   frg_pos     = pos.xyz;
   gl_Position = mvp * pos;
 }
 ////////////////////////////////////////
-libblock lib_X : lib_sdftools : lib_mmnoise : lib_cellnoise {
+libblock lib_X       //   
+  : lib_sdftools     //
+  : lib_mmnoise      //
+  : lib_cellnoise {  //
   float sampleNoise(vec3 p) {
     float n = 0.0;
     for (int o = 0; o < 4; o++) {
@@ -67,7 +69,11 @@ libblock lib_X : lib_sdftools : lib_mmnoise : lib_cellnoise {
   }
 }
 ////////////////////////////////////////
-fragment_shader ps_imp : iface_frg : lib_X {
+fragment_shader ps_imp //
+  : iface_frg          //
+  : uset_frg           //
+  : i1_samplers        //
+  : lib_X {            //
 
   const int MAX_STEPS      = 128;
   const float MAX_DIST     = 20.0;
@@ -124,13 +130,17 @@ fragment_shader ps_imp : iface_frg : lib_X {
   // gl_FragDepth = 0.5;
 }
 ////////////////////////////////////////
-vertex_shader vs_upass : iface_vtx {
+vertex_shader vs_upass   //
+  : iface_vtx            //
+  : ublk_std_matrices {  //
   frg_col     = vec3(1, 0, 0);
   frg_pos     = pos.xyz;
   frg_uv0     = uv0;
   gl_Position = mvp * pos;
 }
-fragment_shader ps_upass : iface_frg {
+fragment_shader ps_upass //
+  : iface_frg            //
+  : i1_samplers {        //
   float Z = texture(depthtex, frg_uv0).r;
   if (Z > 0.9999)
     discard;
@@ -141,20 +151,16 @@ fragment_shader ps_upass : iface_frg {
   gl_FragDepth = Z;
 }
 ////////////////////////////////////////
+state_block sb_default : default {
+  BlendMode = OFF;
+}
+////////////////////////////////////////
 technique tek_imp1 {
   fxconfig = fxcfg_default;
-  pass p0 {
-    vertex_shader   = vs_imp1;
-    fragment_shader = ps_imp;
-    state_block     = default;
-  }
+  vf_pass = { vs_imp1, ps_imp, sb_default }
 }
 ////////////////////////////////////////
 technique tek_upass {
   fxconfig = fxcfg_default;
-  pass p0 {
-    vertex_shader   = vs_upass;
-    fragment_shader = ps_upass;
-    state_block     = default;
-  }
+  vf_pass = { vs_upass, ps_upass, sb_default }
 }

@@ -75,7 +75,7 @@ class ImposterApp(boilerplate.ImposterBaseApp):
     # create model
     ###################################
 
-    model = lev2.XgmModel("data://tests/misc_gltf_samples/lion.glb")
+    model = lev2.XgmModel("data://tests/misc_gltf_samples/art_and_sculpture/lion.glb")
     model.debugRenderingModel = tokens.ALL if self.statedebug else tokens.NONE
     model.debugPassID = tokens.PRIMARY if self.statedebug else tokens.NONE
     model.debugSubPassID = tokens.ALL if self.statedebug else tokens.NONE

@@ -158,11 +158,16 @@ void VkFxInterface::_bindVertexBufferOnSlot(VkCommandBuffer cmdbuf, vkvtxbuf_ptr
 void VkPipelineObject::applyPendingPushConstants(VkCommandBuffer cmdbuf) { //
 
   OrkAssert(_vk_program->_pushConstantBlock != nullptr);
-  size_t num_params = _vk_program->_pending_params.size();
 
   auto data_layout = _vk_program->_pushConstantBlock->_data_layout;
   auto& ranges     = _vk_program->_pushConstantBlock->_ranges;
+
+  if(ranges.size()==0) return;
+  
   size_t blocksize = _vk_program->_pushConstantBlock->_blockSize;
+
+  size_t num_params = _vk_program->_pending_params.size();
+
 
   auto data = _vk_program->_pushdatabuffer.data();
 
@@ -198,6 +203,7 @@ void VkPipelineObject::applyPendingPushConstants(VkCommandBuffer cmdbuf) { //
   for (const auto& range : ranges) {
     // Each range gets pushed to offset 0 for its shader stage
     // The shader sees its uniform_set starting at offset 0
+    if(range.size==0) continue;
     vkCmdPushConstants(
         cmdbuf,
         _pipelineLayout,
