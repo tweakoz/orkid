@@ -43,7 +43,7 @@ class panel:
       r = vec3(0)
       r.x = random.uniform(-10,10)
       r.z = random.uniform(-10,10)
-      r.y = random.uniform(  -1,-10)
+      r.y = random.uniform(  1,10)
       return r 
     
     if self.counter<=0:

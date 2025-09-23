@@ -143,6 +143,7 @@ void RtGroupOutputCompositingNode::composite(CompositorDrawData& drawdata) {
   auto framedata = drawdata.RCFD();
   auto fbi                          = context->FBI();
   auto gbi = context->GBI();
+  auto dwi = context->DWI();
   auto output_rtg = impl->_outputRTG.get();
 
   if(0)
@@ -203,7 +204,7 @@ void RtGroupOutputCompositingNode::composite(CompositorDrawData& drawdata) {
         ViewportRect extents(0, 0, dstw, dsth);
         fbi->pushViewport(extents);
         fbi->pushScissor(extents);
-        gbi->render2dQuadEML(); // full screen quad
+        dwi->fullscreenQuad(); // full screen quad
         fbi->popViewport();
         fbi->popScissor();
         mtl.end(framedata);
