@@ -42,23 +42,20 @@ bool force_pbrgen_spec = false;
 
 /////////////////////////////////////////////////////////////////////////
 
-static FxUniformBuffer* _getlightingDataBuffer(Context* context) {
-  FxUniformBuffer* _buffer;
+static FxShaderStorageBuffer* _getlightingDataBuffer(Context* context) {
+  FxShaderStorageBuffer* _buffer;
   uint64_t LOCK = lev2::GfxEnv::createLock();
   context->makeCurrentContext();
-  std::vector<uint8_t> initial_bytes;
-  initial_bytes.resize(16384);
-  _buffer     = context->FXI()->createUniformBuffer(16384);
-  auto mapped = context->FXI()->mapUniformBuffer(_buffer);
-  mapped->unmap();
+  // Use larger size for SSBO (support up to 256 lights * ~120 bytes per light = ~30KB)
+  _buffer = context->FXI()->createStorageBuffer(32768);
   lev2::GfxEnv::releaseLock(LOCK);
   return _buffer;
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-FxUniformBuffer* PBRMaterial::lightingDataBuffer(Context* targ) {
-  static FxUniformBuffer* _buffer = _getlightingDataBuffer(targ);
+FxShaderStorageBuffer* PBRMaterial::lightingDataBuffer(Context* targ) {
+  static FxShaderStorageBuffer* _buffer = _getlightingDataBuffer(targ);
   return _buffer;
 }
 

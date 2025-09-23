@@ -717,16 +717,16 @@ HeadLightManager::HeadLightManager(RenderContextFrameData& FrameData)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void LightManager::bindEnumeratedToUniformBuffer( Context* ctx,                             //
+void LightManager::bindEnumeratedToStorageBuffer( Context* ctx,                             //
                                                   enumeratedlights_ptr_t enumerated_lights, //
-                                                  FxUniformBuffer* ubo ) const {            //
+                                                  FxShaderStorageBuffer* ssbo ) const {            //
   constexpr size_t kmaxlights = 64;
   auto FXI = ctx->FXI();
   ///////////////////////////////////////////////////////////////////////////
   // build lighting UBO
   ///////////////////////////////////////////////////////////////////////////
 
-  auto pl_mapped = FXI->mapUniformBuffer(ubo, 0, ubo->_length);
+  auto pl_mapped = FXI->mapStorageBuffer(ssbo, 0, ssbo->_length);
 
   size_t i32_stride  = sizeof(int32_t);
   size_t f32_stride  = sizeof(float);

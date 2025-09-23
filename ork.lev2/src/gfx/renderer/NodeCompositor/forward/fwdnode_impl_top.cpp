@@ -253,7 +253,7 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
     const auto TOPCPD = CIMPL->topCPD();
     lmgr->enumerateInPass(TOPCPD, _enumeratedLights);
     auto pl_buffer = PBRMaterial::lightingDataBuffer(context);
-    lmgr->bindEnumeratedToUniformBuffer( context, _enumeratedLights, pl_buffer );
+    lmgr->bindEnumeratedToStorageBuffer( context, _enumeratedLights, pl_buffer );
   }
 
   //////////////////////////////////////////////////////

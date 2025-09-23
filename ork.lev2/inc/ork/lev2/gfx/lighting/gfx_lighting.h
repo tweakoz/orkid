@@ -578,7 +578,7 @@ public:
   size_t GetNumLightGroups() const;
   void Clear();
 
-  void bindEnumeratedToUniformBuffer(Context* ctx, enumeratedlights_ptr_t enumerated_lights, FxUniformBuffer* ubo) const;  
+  void bindEnumeratedToStorageBuffer(Context* ctx, enumeratedlights_ptr_t enumerated_lights, FxShaderStorageBuffer* ssbo) const;  
 
   lightmanagerdata_constptr_t _data;
   texturearray_ptr_t _cookies_spot_color;

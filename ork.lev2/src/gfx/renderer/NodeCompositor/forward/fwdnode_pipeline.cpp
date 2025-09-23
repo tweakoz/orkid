@@ -83,8 +83,7 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
     }
     if (mtl->_parForwardLightBlock) {
       auto pl_buffer = PBRMaterial::lightingDataBuffer(context);
-      OrkAssert(false); // update to SSBO interface
-      //FXI->bindUniformBuffer(mtl->_parForwardLightBlock, pl_buffer);
+      FXI->bindStorageBuffer(mtl->_parForwardLightBlock, pl_buffer);
     }
 
     ///////////////////////////////////////////////////////////////////////////

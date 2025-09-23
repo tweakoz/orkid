@@ -136,9 +136,10 @@ int FxPipeline::beginBlock(const RenderContextInstData& RCID) {
     if (auto as_crcstr = val.tryAs<crcstring_ptr_t>()) {
       const auto& crcstr = *as_crcstr.value().get();
       if (crcstr == "LMGR_LIGHTING_UBO"_crcu) {
-        auto enumlights = RCFD->userPropertyAs<enumeratedlights_ptr_t>("enumeratedlights"_crcu);
-        auto pl_buffer  = PBRMaterial::lightingDataBuffer(context);
-        FXI->bindUniformBuffer(param, pl_buffer);
+        // This path is deprecated - lighting now uses SSBO
+        // auto enumlights = RCFD->userPropertyAs<enumeratedlights_ptr_t>("enumeratedlights"_crcu);
+        // auto pl_buffer  = PBRMaterial::lightingDataBuffer(context);
+        // FXI->bindUniformBuffer(param, pl_buffer);
         // auto clr_cookies = LMGR->_cookies_spot_color;
         // auto dep_cookies = LMGR->_cookies_spot_depth;
       }

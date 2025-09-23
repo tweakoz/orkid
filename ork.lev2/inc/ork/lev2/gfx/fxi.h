@@ -95,6 +95,8 @@ public:
   }
   virtual void bindUniformBuffer(const FxUniformBlock* block, FxUniformBuffer* buffer) {
   }
+  virtual void bindStorageBuffer(const FxShaderStorageBlock* block, FxShaderStorageBuffer* buffer) {
+  }
 
   FxInterface();
   virtual ~FxInterface() {
