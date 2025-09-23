@@ -12,7 +12,7 @@ sampler_set i1_samplers (descriptor_set 0) {
   sampler2D depthtex;
 }
 ////////////////////////////////////////
-uniform_block uset_frg (descriptor_set 0) {
+uniform_block ublk_frg (descriptor_set 0) {
   float time;
 }
 ////////////////////////////////////////
@@ -71,7 +71,7 @@ libblock lib_X       //
 ////////////////////////////////////////
 fragment_shader ps_imp //
   : iface_frg          //
-  : uset_frg           //
+  : ublk_frg           //
   : i1_samplers        //
   : lib_X {            //
 

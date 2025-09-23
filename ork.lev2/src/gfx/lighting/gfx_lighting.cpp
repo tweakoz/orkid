@@ -625,6 +625,11 @@ void LightManager::Clear() {
   mcollector.Clear();
 }
 
+void LightManager::gpuInit(Context* ctx) {
+  ctx->TXI()->updateTextureArray(_cookies_spot_color.get());
+  ctx->TXI()->updateTextureArray(_cookies_spot_depth.get());
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -688,6 +693,9 @@ LightManager::LightManager(lightmanagerdata_constptr_t lmd)
   _cookies_spot_depth                   = std::make_shared<TextureArray>();
   _cookies_spot_color->_tex->_debugName = "cookies_spot_color";
   _cookies_spot_depth->_tex->_debugName = "cookies_spot_depth";
+
+  _cookies_spot_color->resize(256, 256, 1, EBufferFormat::RGBA8);
+  _cookies_spot_depth->resize(256, 256, 1, EBufferFormat::R32F);
 
   // Set depth texture to use clamp-to-edge for proper shadow mapping
   _cookies_spot_depth->_tex->mTexSampleMode._texAddrModeS = TextureAddressMode::CLAMP;

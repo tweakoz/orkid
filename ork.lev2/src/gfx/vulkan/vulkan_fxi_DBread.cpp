@@ -1066,47 +1066,54 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       push_constants->_data_layout = pc_layout;
 
       size_t pc_size = alignUp(pc_layout->cursor(), 16);
-      // TODO: Wire this up to the actual Vulkan device property
-      constexpr size_t kDefaultMaxPushConstantSize = MAX_PUSH_CONSTANT_SIZE;
-      if (pc_size > kDefaultMaxPushConstantSize) {
-        printf(
-            "ERROR: tek<%s> Push constant block size %zu exceeds default max %zu\n", //
-            str_tek_name.c_str(),                                                    //
-            pc_size,                                                                 //
-            kDefaultMaxPushConstantSize);                                            //
 
-        // print out all uniform set name that contributed to the push constant block
-        printf("  Contributing uniform sets:\n");
-        for (const auto& uset : unisets_set) {
-          printf("    %s (num items: %zu)\n", uset->_name.c_str(), uset->_items_by_order.size());
-          for (const auto& item : uset->_items_by_order) {
-            printf("    %s (datatype: %s, offset: %zu)\n", item->_identifier.c_str(), item->_datatype.c_str(), item->_offset);
+      // Only create push constant block if there are actual uniform sets
+      if (pc_size > 0) {
+        // TODO: Wire this up to the actual Vulkan device property
+        constexpr size_t kDefaultMaxPushConstantSize = MAX_PUSH_CONSTANT_SIZE;
+        if (pc_size > kDefaultMaxPushConstantSize) {
+          printf(
+              "ERROR: tek<%s> Push constant block size %zu exceeds default max %zu\n", //
+              str_tek_name.c_str(),                                                    //
+              pc_size,                                                                 //
+              kDefaultMaxPushConstantSize);                                            //
+
+          // print out all uniform set name that contributed to the push constant block
+          printf("  Contributing uniform sets:\n");
+          for (const auto& uset : unisets_set) {
+            printf("    %s (num items: %zu)\n", uset->_name.c_str(), uset->_items_by_order.size());
+            for (const auto& item : uset->_items_by_order) {
+              printf("    %s (datatype: %s, offset: %zu)\n", item->_identifier.c_str(), item->_datatype.c_str(), item->_offset);
+            }
           }
+          printf("         This will cause issues on some hardware\n");
+          OrkAssert(false);
         }
-        printf("         This will cause issues on some hardware\n");
-        OrkAssert(false);
+        push_constants->_ranges.reserve(8);
+
+        // Create a single shared range for all stages since uniform sets are shared
+        auto& pc_range = push_constants->_ranges.emplace_back();
+        initializeVkStruct(pc_range);
+        pc_range.offset     = 0;
+        pc_range.size       = pc_size;
+        pc_range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+        if (0)
+          printf("Push constant range: SHARED [0-%zu]\n", pc_size);
+
+        // TODO: Handle additional shader stages:
+        // - Geometry shader (VK_SHADER_STAGE_GEOMETRY_BIT)
+        // - Tessellation shaders (VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
+        // - Compute shader (VK_SHADER_STAGE_COMPUTE_BIT)
+
+        push_constants->_blockSize = pc_size;
+        vk_program->_pushdatabuffer.clear();
+        vk_program->_pushdatabuffer.resize(pc_size);
+        memset(vk_program->_pushdatabuffer.data(), 0, pc_size);
+        vk_program->_pushConstantBlock = push_constants;
+      } else {
+        // No push constants needed - set nullptr
+        vk_program->_pushConstantBlock = nullptr;
       }
-      push_constants->_ranges.reserve(8);
-
-      // Create a single shared range for all stages since uniform sets are shared
-      auto& pc_range = push_constants->_ranges.emplace_back();
-      initializeVkStruct(pc_range);
-      pc_range.offset     = 0;
-      pc_range.size       = pc_size;
-      pc_range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-      if (0)
-        printf("Push constant range: SHARED [0-%zu]\n", pc_size);
-
-      // TODO: Handle additional shader stages:
-      // - Geometry shader (VK_SHADER_STAGE_GEOMETRY_BIT)
-      // - Tessellation shaders (VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
-      // - Compute shader (VK_SHADER_STAGE_COMPUTE_BIT)
-
-      push_constants->_blockSize = pc_size;
-      vk_program->_pushdatabuffer.clear();
-      vk_program->_pushdatabuffer.resize(pc_size);
-      memset(vk_program->_pushdatabuffer.data(), 0, pc_size);
-      vk_program->_pushConstantBlock = push_constants;
 
       ////////////////////////////////////////////////////////////
       // Read merged resources for this pass

@@ -565,7 +565,10 @@ struct LightManager {
   LightCollector mcollector;
 
 public:
+
   LightManager(lightmanagerdata_constptr_t lmd);
+
+  void gpuInit(Context* ctx);
 
   GlobalLightContainer mGlobalStationaryLights; // non-moving, potentially animating color or texture (and => not lightmappable)
   LightContainer mGlobalMovingLights;           // moving lights

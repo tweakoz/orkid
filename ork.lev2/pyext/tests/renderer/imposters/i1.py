@@ -146,6 +146,8 @@ class ImposterApp(object):
     #imposter.impdata.imp_pass.debug_shaderstate = True
     #imposter.impdata.blit_pass.debug_shaderstate = True
 
+    self.scene.lightingmanager.gpuInit(ctx)
+    
   ##############################################
 
   def onUiEvent(self,uievent):

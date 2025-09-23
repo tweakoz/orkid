@@ -156,8 +156,9 @@ void VkFxInterface::_bindVertexBufferOnSlot(VkCommandBuffer cmdbuf, vkvtxbuf_ptr
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkPipelineObject::applyPendingPushConstants(VkCommandBuffer cmdbuf) { //
-
-  OrkAssert(_vk_program->_pushConstantBlock != nullptr);
+  if(not _vk_program->_pushConstantBlock){
+    return;
+  }
 
   auto data_layout = _vk_program->_pushConstantBlock->_data_layout;
   auto& ranges     = _vk_program->_pushConstantBlock->_ranges;

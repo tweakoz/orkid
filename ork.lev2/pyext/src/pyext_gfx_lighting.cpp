@@ -40,6 +40,9 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
       [](lightmanager_ptr_t lm, texturearray_ptr_t tex) { //
         lm->_cookies_spot_depth = tex;
       });
+      lm_type_t.def("gpuInit", [](lightmanager_ptr_t lm, ctx_t ctx) { //
+        lm->gpuInit(ctx.get());
+      });      
   type_codec->registerStdCodec<lightmanager_ptr_t>(lm_type_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto lc_type_t = py::class_<LightCollector, lightcollector_ptr_t>(module_lev2, "LightCollector");
