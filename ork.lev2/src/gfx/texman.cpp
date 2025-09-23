@@ -399,26 +399,21 @@ void TextureArray::_conform(EBufferFormat fmt) {
 ///////////////////////////////////////////////////////////////////////////////
 
 texturearraysliceref_ptr_t TextureArray::load(const std::string& path) {
-  auto it = _slices_by_path.find(path);
-  if (it == _slices_by_path.end()) {
-    auto it_first = _free_slices.begin();
-    OrkAssert(it_first != _free_slices.end());
-    size_t slice_index = *it_first;
-    _free_slices.erase(it_first);
-    auto new_slice = std::make_shared<TextureArraySliceRef>(this, slice_index);
-    auto temp_image = std::make_shared<Image>();
-    temp_image->readFromFile(path);
-    auto formatted_image = std::make_shared<Image>();
-    formatted_image->convertFromImageToFormat(*temp_image, _format);
-    auto resized_image = std::make_shared<Image>();
-    resized_image->resizedOf(*formatted_image, _width, _height);
-    _images[slice_index] = resized_image;
-    _dirty_slices.insert(slice_index);
-    _slices_by_path[path] = slice_index;
-    printf("TextureArray<%p>::load slice_index<%zu> path<%s> new_slice<%p>\n", (void*) this, slice_index, path.c_str(), (void*) new_slice.get()); 
-    return new_slice;
-  }
-  auto new_slice = std::make_shared<TextureArraySliceRef>(this, it->second);
+  auto it_first = _free_slices.begin();
+  OrkAssert(it_first != _free_slices.end());
+  size_t slice_index = *it_first;
+  _free_slices.erase(it_first);
+  auto new_slice = std::make_shared<TextureArraySliceRef>(this, slice_index);
+  auto temp_image = std::make_shared<Image>();
+  temp_image->readFromFile(path);
+  auto formatted_image = std::make_shared<Image>();
+  formatted_image->convertFromImageToFormat(*temp_image, _format);
+  auto resized_image = std::make_shared<Image>();
+  resized_image->resizedOf(*formatted_image, _width, _height);
+  _images[slice_index] = resized_image;
+  _dirty_slices.insert(slice_index);
+  //_slices_by_path[path] = slice_index;
+  if(0)printf("TextureArray<%p>::load slice_index<%zu> path<%s> dim<%d %d> new_slice<%p>\n", (void*) this, slice_index, path.c_str(), _width, _height, (void*) new_slice.get()); 
   return new_slice;
 }
 

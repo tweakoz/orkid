@@ -164,13 +164,18 @@ void AssetCatalog::loadFromGlobalManifests(assetcatalog_ptr_t self) {
       }
     }
   }
-
+  std::atomic<int> codec_counter = 0;
   // Register codecs for all namespaces found in configs
   if (impl->_config_space) {
+    logchan_catalog->log("merging config:");
+
     auto merged_config = impl->_config_space->merged();
+
+    logchan_catalog->log("registering codecs.");
 
     // Get all namespaces from merged config
     for (const auto& [namespace_id, namespace_info] : merged_config->_namespaces) {
+      codec_counter.fetch_add(1);
       // Check if codec already registered
       bool needs_registration = false;
       impl->_state.atomicOp([&](CatalogImpl::CatalogState& state) {
@@ -185,11 +190,20 @@ void AssetCatalog::loadFromGlobalManifests(assetcatalog_ptr_t self) {
 
         if (!encryption_key.empty()) {
           // Use the public API to register codec
-          self->registerCodecWithPassword(namespace_id, encryption_key);
+          auto op = [=,&codec_counter](){
+            self->registerCodecWithPassword(namespace_id, encryption_key);
+            codec_counter.fetch_sub(1);
+          };
+          opq::concurrentQueue()->enqueue(op);
           // Codec registration logged elsewhere if needed
         }
       }
     }
+    while(codec_counter.load()>0) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    logchan_catalog->log("codecs registered...");
+
   }
 }
 

@@ -33,7 +33,7 @@ namespace ork::lev2 {
 extern bool g_allow_HIDPI;
 extern context_ptr_t gloadercontext;
 
-static logchannel_ptr_t logchan_ezapp = logger()->configureChannel("EZAPP", fvec3(0.7, 0.7, 0.9),false);
+static logchannel_ptr_t logchan_ezapp = logger()->configureChannel("EZAPP", fvec3(0.7, 0.7, 0.9),true);
 
 ////////////////////////////////////////////////////////////////////////////////
 EzUiEventInterceptor::EzUiEventInterceptor()
@@ -262,6 +262,8 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
 
   if(_initdata->_enable_graphics){
 
+    logchan_ezapp->log("initializing graphics");
+    fflush(stdout);
     _appstate    = 0;
 
     if( _initdata->_offscreen ) { // offscreen

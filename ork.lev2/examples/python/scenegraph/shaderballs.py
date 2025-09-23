@@ -172,6 +172,9 @@ class SceneGraphApp(object):
     depth_cookies.resize(COOKIE_DIM,COOKIE_DIM,1,tokens.Z32F,True)
 
     cookie1 = color_cookies.load("src://effect_textures/knob2.png")
+    ctx.TXI.updateTextureArray(color_cookies)
+
+
     depth_cookie1 = depth_cookies.slice(0)
 
     self.spotlight1 = MySpotLight( index=0,

@@ -13,7 +13,7 @@
 
 namespace ork::util::crypt {
 
-static logchannel_ptr_t logchan_crypt = logger()->configureChannel("CRYPT", fvec3(0.8f, 0.4f, 0.8f), false);
+static logchannel_ptr_t logchan_crypt = logger()->configureChannel("CRYPT", fvec3(0.8f, 0.4f, 0.8f), true);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Initialize libsodium

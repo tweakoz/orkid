@@ -150,8 +150,8 @@ assetconfig_ptr_t AssetConfig::loadFromFile(const file::Path& file) {
 
 void AssetConfig::merge(const AssetConfig& other) {
 
-  auto this_json = this->toJson();
-  auto other_json = other.toJson();
+  //auto this_json = this->toJson();
+  //auto other_json = other.toJson();
   //printf("Merging AssetConfig:\nThis: %s\nOther: %s\n", this_json.c_str(), other_json.c_str());
   // Merge namespaces
   for (const auto& [key, value] : other._namespaces) {
@@ -191,7 +191,7 @@ void AssetConfig::merge(const AssetConfig& other) {
     }
     _local_locations[key] = value;
   }
-  this_json = this->toJson();
+  //this_json = this->toJson();
   //printf("Merged After: %s\n", this_json.c_str());
 }
 

@@ -111,9 +111,9 @@ class StereoApp1(object):
 
     self.grid_data = createGridData()
     self.grid_data.shader_suffix = "_V4"
-    self.grid_data.modcolor = vec3(1.7)
-    self.grid_data.intensityA = 1.0*0.3
-    self.grid_data.intensityB = 0.97*0.3
+    self.grid_data.modcolor = vec3(0.3)
+    self.grid_data.intensityA = 0.1
+    self.grid_data.intensityB = 0.2
     self.grid_data.intensityC = 0
     self.grid_data.intensityD = 0
     self.grid_data.lineWidth = 0.025
@@ -133,7 +133,7 @@ class StereoApp1(object):
     cookie2 = color_cookies.load("lev2://textures/transponder24.png")
     cookie3 = color_cookies.load("src://effect_textures/knob2.png")
     cookie4 = color_cookies.load("src://effect_textures/knob2.png")
-    color_cookies.conform(tokens.RGBA8)
+    #color_cookies.conform(tokens.RGBA8)
     ctx.TXI.updateTextureArray(color_cookies)
     depth1 = depth_cookies.slice(0)
     depth2 = depth_cookies.slice(1)

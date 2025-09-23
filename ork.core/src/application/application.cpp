@@ -15,9 +15,11 @@
 
 #include <ork/util/Context.hpp>
 #include <ork/kernel/environment.h>
+#include <ork/util/logger.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
+static logchannel_ptr_t logchan_APP = logger()->configureChannel("APPLICATION",fvec3(0.9,0.6,0.2),true);
 ///////////////////////////////////////////////////////////////////////////////
 AppInitData::AppInitData(int argc, char** argv, char** envp) {
   _argc             = argc;
@@ -61,6 +63,7 @@ void AppInitData::enqueuePostInitOp(AppInitOrder order, void_lambda_t l) { //
 }
 
 void AppInitData::executePreInitOps(){
+  logchan_APP->log("AppInitData::executePreInitOps");
   for (auto item : _preinitoperations){
     uint64_t order = item.first;
     auto operation = item.second;
@@ -68,6 +71,7 @@ void AppInitData::executePreInitOps(){
   }
 }
 void AppInitData::executePostInitOps(){
+  logchan_APP->log("AppInitData::executePostInitOps");
   for (auto item : _postinitoperations){
     uint64_t order = item.first;
     auto operation = item.second;
@@ -82,10 +86,12 @@ void AppInitData::finalizeInitialization(){
   executePostInitOps();
   _preinitoperations.clear();
   _postinitoperations.clear();
+  logchan_APP->log("AppInitData init catalog");
   if(_std_asset_catalog){
     using namespace asset::catalog;
     auto catalog = AssetCatalog::globalInstance();
   }
+  logchan_APP->log("AppInitData init catalog complete..");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -40,7 +40,7 @@ def createSceneGraph( app : object = None,
         if k == "preset":
           rendermodel = params_dict[k]
         sceneparams.__setattr__(k,params_dict[k])
-        print("sceneparams<%s> = %s" % (k,params_dict[k]))
+        #print("sceneparams<%s> = %s" % (k,params_dict[k]))
 
     
     sceneparams.preset = rendermodel

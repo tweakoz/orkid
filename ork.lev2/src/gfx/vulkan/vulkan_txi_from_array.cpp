@@ -12,9 +12,9 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_txidata = logger()->configureChannel("VKTXIDAT2", fvec3(0.8, 0.2, 0.5), true);
-static logchannel_ptr_t logchan_txia2d  = logger()->configureChannel("VKTEXARRAY", fvec3(0.8, 0.5, 0.2), true);
-constexpr bool DEBUG_TEXARRAY2D         = true;
+static logchannel_ptr_t logchan_txidata = logger()->configureChannel("VKTXIDAT2", fvec3(0.8, 0.2, 0.5), false);
+static logchannel_ptr_t logchan_txia2d  = logger()->configureChannel("VKTEXARRAY", fvec3(0.8, 0.5, 0.2), false);
+constexpr bool DEBUG_TEXARRAY2D         = false;
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, TextureArrayInitData tid) {
@@ -565,8 +565,12 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
 
   // IMPORTANT: Clamp to the texture array's actual mip levels
   int array_mip_levels = array->_tex->_num_mips;
-  num_levels           = std::min(num_levels, array_mip_levels);
 
+    printf("array_mip_levels<%d>\n", array_mip_levels);
+    printf("num_levels<%d>\n", num_levels);
+
+    num_levels           = std::min(num_levels, array_mip_levels);
+    
   // Calculate staging buffer size
   size_t staging_size = 0;
   for (int level = 0; level < num_levels; level++) {
@@ -584,7 +588,9 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
   }
 
   // Get staging buffer and command buffer
+    printf("staging_size<%zu>\n", staging_size);
   auto poolForSize    = stagingBufferPoolForSrcOfSize(staging_size);
+    printf("poolForSize<%p>\n", (void*) poolForSize.get() );
   auto staging_buffer = poolForSize->borrowItem();
   secondary_commandbuffer_ptr_t command_buffer;
   _seccmdbufpool_xfer.atomicOp([&](sseccmdbufpool_ptr_t& pool) { command_buffer = pool->borrowItem(); });
@@ -815,7 +821,83 @@ void VkTextureInterface::updateTextureArraySlice(TextureArraySliceRef* slice_ref
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkTextureInterface::updateTextureArray(TextureArray* array) { // final
-  // update all dirty slices
+  // Check if array needs initialization or has no GPU resources
+  bool needs_init = !array->_tex->_impl.isShared<VulkanTextureObject>() || array->_isDirty;
+
+  // If we need to initialize but have images, we should use initTextureArray2DFromData instead
+  if (needs_init && !array->_images.empty()) {
+    logchan_txia2d->log("updateTextureArray: initializing from data with %zu images", array->_images.size());
+
+    // Build TextureArrayInitData from current images
+    // Need to ensure we have the right number of slices with proper ordering
+    TextureArrayInitData init_data;
+
+    // Create slices for all indices up to maxslices
+    for (size_t i = 0; i < array->_maxslices; i++) {
+      TextureArrayInitSubItem slice_item;
+
+      // Check if we have an image for this slice
+      auto img_iter = array->_images.find(i);
+      if (img_iter != array->_images.end() && img_iter->second) {
+        slice_item._subimg = img_iter->second;
+      } else {
+        // Create a blank image for empty slots
+        auto blank_img = std::make_shared<Image>();
+        blank_img->initWithFormat(array->_width, array->_height, array->_format);
+        slice_item._subimg = blank_img;
+      }
+
+      init_data._slices.push_back(slice_item);
+    }
+
+    // Initialize with the data (this will handle mip levels correctly)
+    initTextureArray2DFromData(array, init_data);
+
+    // Clear dirty flags since initTextureArray2DFromData uploads everything
+    array->_dirty_slices.clear();
+    array->_isDirty = false;
+    return;
+  }
+
+  // If already initialized but just needs basic structure
+  if (needs_init) {
+    initTextureArray2D(array);
+  }
+
+  // Early exit if no dirty slices
+  if (array->_dirty_slices.empty()) {
+    return;
+  }
+
+  logchan_txia2d->log("updateTextureArray: processing %zu dirty slices", array->_dirty_slices.size());
+
+  // Process each dirty slice
+  for (size_t slice_index : array->_dirty_slices) {
+    auto img_iter = array->_images.find(slice_index);
+    if (img_iter != array->_images.end()) {
+      auto img = img_iter->second;
+
+      if (img) {
+        logchan_txia2d->log("Updating dirty slice %zu", slice_index);
+
+        // Create temporary slice ref for this index
+        TextureArraySliceRef slice_ref(array, slice_index);
+
+        // Use existing slice update mechanism
+        updateTextureArraySlice(&slice_ref, img);
+      } else {
+        logchan_txia2d->log("WARNING: Slice %zu marked dirty but has null image", slice_index);
+      }
+    } else {
+      logchan_txia2d->log("WARNING: Slice %zu marked dirty but not found in _images", slice_index);
+    }
+  }
+
+  // Clear dirty flags after successful upload
+  array->_dirty_slices.clear();
+  array->_isDirty = false;
+
+  logchan_txia2d->log("updateTextureArray: completed, all slices clean");
 }
 
   ///////////////////////////////////////////////////////////////////////////////

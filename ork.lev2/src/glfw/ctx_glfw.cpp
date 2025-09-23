@@ -329,6 +329,8 @@ void CtxGLFW::initWithData(appinitdata_ptr_t aid) {
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::Show() {
 
+  logchan_glfw->log("CtxGLFW::Show");
+  fflush(stdout);
   GLFWmonitor* fullscreen_monitor = nullptr;
   GLFWmonitor* selected_monitor   = nullptr;
 

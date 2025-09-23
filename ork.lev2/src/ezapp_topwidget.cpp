@@ -16,7 +16,7 @@
 using namespace std::string_literals;
 
 namespace ork::lev2 {
-static logchannel_ptr_t logchan_ezapp = logger()->getChannel("EZAPP");
+static logchannel_ptr_t logchan_ezapp = logger()->getChannel("EZAPP2");
 ///////////////////////////////////////////////////////////////////////////////
 EzTopWidget::EzTopWidget(EzMainWin* mainwin)
     : ui::Group("ezviewport", 1, 1, 1, 1)

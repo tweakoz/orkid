@@ -296,7 +296,7 @@ void VkContext::_initVulkanCommon() {
   if (!g_dynamic_ubo_system) {
     g_dynamic_ubo_system = new VkDynamicUBOSystem();
     g_dynamic_ubo_system->init(this);
-    printf("VkContext: Initialized dynamic UBO system\n");
+    if(0)printf("VkContext: Initialized dynamic UBO system\n");
   }
 }
 

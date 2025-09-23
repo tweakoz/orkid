@@ -62,10 +62,6 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
     }
   }
 
-  if (shprog->_tek_name == "FWD_DEPTHPREPASS_RI_NI_MO") {
-    //printf("WTF\n");
-  }
-
   /////////////////////////////////////////////////////////////////////
   // resolve effective rasterstate
   /////////////////////////////////////////////////////////////////////
@@ -97,11 +93,6 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
   /////////////////////////////////////////////////
 
   if (nullptr == vkrstate) { 
-    if(effective_rasterstate->_name=="sb_dpp"){
-      printf("VKRS<%s> attcnt<%d>\n", effective_rasterstate->_name.c_str(), attachment_count);
-      //OrkBreak();
-      //effective_rasterstate->dump();
-    }
     vkrstate = effective_rasterstate->_impl.makeShared<VkRasterState>(
         effective_rasterstate, //
         attachment_count,      //

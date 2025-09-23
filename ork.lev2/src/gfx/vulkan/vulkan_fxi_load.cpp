@@ -57,7 +57,7 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
   } else { // load
     auto str_read = ork::File::readAsString(input_path);
     OrkAssert(str_read != nullptr);
-    printf("load shader from path<%s>\n", input_path.c_str());
+    if(0)printf("load shader from path<%s>\n", input_path.c_str());
     // Create the parser cache with the top-level path
     auto slp_cache = std::make_shared<ShadLangParserCache>();
     slp_cache->_toplevel_path = file::Path(input_path.c_str());
