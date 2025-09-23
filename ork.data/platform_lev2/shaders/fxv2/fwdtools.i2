@@ -166,17 +166,42 @@ libblock lib_fwd_impl : lib_math //
       vec3 lightcol        = _lightcolor[i].xyz;
       vec3 lightpos        = _lightpos[i].xyz;
       vec4 LSB             = _lightsizbias[i];
+      float lightrange     = LSB.x;
       /////////////////////
       vec3 lightdel       = lightpos - pbd._wpos;
-      vec4 shadow_hpos    = (shmtx)*vec4(pbd._wpos, 1);
-      vec3 shadow_ndc     = (shadow_hpos.xyz / shadow_hpos.w);
-      vec2 shadow_uv      = shadow_ndc.xy * 0.5 + vec2(0.5);
-      float shadow_factor = 0.0;
-      bool shadow_mask    = shadow_ndc.x >= -1 && shadow_ndc.x < 1 && shadow_ndc.y >= -1 && shadow_ndc.y < 1;
-      if (!shadow_mask) {
-        shadow_factor = 1.0;
+      vec4 light_hpos    = (shmtx)*vec4(pbd._wpos, 1);
+      vec3 light_ndc     = (light_hpos.xyz / light_hpos.w);
+      vec2 light_uv      = light_ndc.xy * 0.5 + vec2(0.5);
+      float lightz        = light_ndc.z;
+      float light_factor = 0.0;
+      bool light_mask_x = (light_ndc.x > -1) && (light_ndc.x < 1);
+      bool light_mask_y = (light_ndc.y > -1) && (light_ndc.y < 1);
+      bool light_mask_z = (light_ndc.z > -1) && (light_ndc.z < 1);
+      bool light_mask = light_mask_x && light_mask_y && light_mask_z;
+      if (light_mask) {
+        float bias             = LSB.y; // Increased bias to help with shadow acne
+        float far              = lightrange;
+        float near             = lightrange * 0.001;
+        float shadow_depth_ndc = _sample_depth_cookie(light_tex_slice, light_uv) * 2.0 - 1.0;
+
+        // Percentage-Closer Filtering (PCF)
+        int pcf_width         = 1;           // Size of the PCF kernel
+        float pcf_filter_size = 1.0 / LSB.z; // Adjust based on your shadow map resolution
+
+        for (int x = -pcf_width; x <= pcf_width; x++) {
+          for (int y = -pcf_width; y <= pcf_width; y++) {
+            vec2 pcf_uv     = light_uv + vec2(x, y) * pcf_filter_size;
+            float pcf_depth = _sample_depth_cookie(light_tex_slice, pcf_uv) * 2.0 - 1.0;
+            light_factor += (pcf_depth + bias) >= lightz ? 1.0 : 0.0;
+          }
+        }
+
+        // Normalize the shadow factor by the number of samples taken
+        light_factor /= float((pcf_width * 2 + 1) * (pcf_width * 2 + 1));
+      } else {        
+        light_factor = 0.0;
       }
-      spot_lighting += lightcol * shadow_factor;
+      spot_lighting += lightcol * light_factor;
     }
     //
     /////////////////////////
