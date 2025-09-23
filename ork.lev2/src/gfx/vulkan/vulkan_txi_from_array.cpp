@@ -14,7 +14,7 @@ namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 static logchannel_ptr_t logchan_txidata = logger()->configureChannel("VKTXIDAT2", fvec3(0.8, 0.2, 0.5), false);
 static logchannel_ptr_t logchan_txia2d  = logger()->configureChannel("VKTEXARRAY", fvec3(0.8, 0.5, 0.2), false);
-constexpr bool DEBUG_TEXARRAY2D = false;
+constexpr bool DEBUG_TEXARRAY2D         = true;
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, TextureArrayInitData tid) {
@@ -134,15 +134,16 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
   VKICI->flags       = 0; // VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT only if from 3d image
 
   std::string debug_name = array->_tex->_debugName.empty() ? "texture_array" : array->_tex->_debugName;
-  vktex->_imgobj = std::make_shared<VulkanImageObject>(_contextVK, VKICI, debug_name);
+  vktex->_imgobj         = std::make_shared<VulkanImageObject>(_contextVK, VKICI, debug_name);
 
-  if(0)printf(
-      "max_levels<%zu> max_w<%zu> max_h<%zu> num_slices<%d> format<%s>\n",
-      max_levels,
-      max_w,
-      max_h,
-      num_slices,
-      EBufferFormatToName(format).c_str());
+  if (0)
+    printf(
+        "max_levels<%zu> max_w<%zu> max_h<%zu> num_slices<%d> format<%s>\n",
+        max_levels,
+        max_w,
+        max_h,
+        num_slices,
+        EBufferFormatToName(format).c_str());
 
   ///////////////////////////
   // Create image view for the entire array
@@ -161,7 +162,7 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
 
   VkResult ok = vkCreateImageView(_contextVK->_vkdevice, &viewInfo, nullptr, &vktex->_imgobj->_vkimageview);
   OrkAssert(VK_SUCCESS == ok);
-  
+
   // Set debug name for image view
   if (!array->_tex->_debugName.empty()) {
     std::string view_name = array->_tex->_debugName + "_array_view";
@@ -209,9 +210,7 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
   auto poolForSize    = stagingBufferPoolForSrcOfSize(total_staging_size);
   auto staging_buffer = poolForSize->borrowItem();
   secondary_commandbuffer_ptr_t command_buffer;
-  _seccmdbufpool_xfer.atomicOp([&](sseccmdbufpool_ptr_t& pool) {
-    command_buffer = pool->borrowItem();
-  });
+  _seccmdbufpool_xfer.atomicOp([&](sseccmdbufpool_ptr_t& pool) { command_buffer = pool->borrowItem(); });
 
   // Create transfer object
   auto transfer = std::make_shared<InFlightTextureTransfer>(_contextVK, staging_buffer, command_buffer);
@@ -225,9 +224,7 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
   tlsema->_onComplete               = [=]() {
     vktex->_inflight_transfers.erase(transfer);
     poolForSize->returnItem(staging_buffer);
-    _seccmdbufpool_xfer.atomicOp([&](sseccmdbufpool_ptr_t& pool) {
-      pool->returnItem(command_buffer);
-    });
+    _seccmdbufpool_xfer.atomicOp([&](sseccmdbufpool_ptr_t& pool) { pool->returnItem(command_buffer); });
   };
 
   ///////////////////////////
@@ -254,19 +251,19 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
       if (needs_conversion && mip_data) {
         // Convert RGB to RGBA (both RGB8 and RGB16)
         size_t bytes_per_pixel = (format == EBufferFormat::RGBA8) ? 1 : 2; // 1 for 8-bit, 2 for 16-bit
-        size_t src_size = mip_w * mip_h * 3 * bytes_per_pixel;
-        size_t dst_size = mip_w * mip_h * 4 * bytes_per_pixel;
+        size_t src_size        = mip_w * mip_h * 3 * bytes_per_pixel;
+        size_t dst_size        = mip_w * mip_h * 4 * bytes_per_pixel;
 
         const uint8_t* src = (const uint8_t*)mip_data->data();
         uint8_t* dst       = staging_data + staging_offset;
 
         if (format == EBufferFormat::RGBA8) {
           // Convert RGB8 to RGBA8
-        for (size_t i = 0; i < mip_w * mip_h; i++) {
-          dst[i * 4 + 0] = src[i * 3 + 0]; // R
-          dst[i * 4 + 1] = src[i * 3 + 1]; // G
-          dst[i * 4 + 2] = src[i * 3 + 2]; // B
-          dst[i * 4 + 3] = 255;            // A
+          for (size_t i = 0; i < mip_w * mip_h; i++) {
+            dst[i * 4 + 0] = src[i * 3 + 0]; // R
+            dst[i * 4 + 1] = src[i * 3 + 1]; // G
+            dst[i * 4 + 2] = src[i * 3 + 2]; // B
+            dst[i * 4 + 3] = 255;            // A
           }
         } else if (format == EBufferFormat::BGRA8) {
           // Convert BGR8 to BGRA8
@@ -279,7 +276,7 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
         } else if (format == EBufferFormat::RGBA16) {
           // Convert RGB16 to RGBA16
           const uint16_t* src16 = (const uint16_t*)src;
-          uint16_t* dst16 = (uint16_t*)dst;
+          uint16_t* dst16       = (uint16_t*)dst;
           for (size_t i = 0; i < mip_w * mip_h; i++) {
             dst16[i * 4 + 0] = src16[i * 3 + 0]; // R
             dst16[i * 4 + 1] = src16[i * 3 + 1]; // G
@@ -289,7 +286,7 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
         } else if (format == EBufferFormat::RGBA32F) {
           // Convert RGB32F to RGBA32F
           const float* src32 = (const float*)src;
-          float* dst32 = (float*)dst;
+          float* dst32       = (float*)dst;
           for (size_t i = 0; i < mip_w * mip_h; i++) {
             dst32[i * 4 + 0] = src32[i * 3 + 0]; // R
             dst32[i * 4 + 1] = src32[i * 3 + 1]; // G
@@ -297,6 +294,8 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
             dst32[i * 4 + 3] = 1.0f;             // A
           }
           dst_size = mip_w * mip_h * 4 * sizeof(float);
+        } else {
+          OrkAssert(false); // Unsupported format for conversion
         }
 
         // Add copy region
@@ -398,7 +397,7 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
   // Apply sampling mode based on mip count
   // Only update filtering mode if mipmaps present, preserve address modes
   if (max_levels > 3) {
-    auto& samplingMode = array->_tex->TexSamplingMode();
+    auto& samplingMode           = array->_tex->TexSamplingMode();
     samplingMode._texFiltModeMin = ETextureMinifyFilterMode::LINEAR_MIPMAP_LINEAR;
     samplingMode._texFiltModeMag = ETextureMagnifyFilterMode::LINEAR;
     // Keep existing address modes (CLAMP/WRAP) that were set externally
@@ -508,26 +507,26 @@ void VkTextureInterface::initTextureArray2D(TextureArray* texture_array) {
   vktex->_imgview_hash.finish();
 
   texture_array->_tex->_impl = vktex;
-  
+
   // Apply sampling mode based on mip count
   // Only update filtering mode if mipmaps present, preserve address modes
   if (num_levels > 3) {
-    auto& samplingMode = texture_array->_tex->TexSamplingMode();
+    auto& samplingMode           = texture_array->_tex->TexSamplingMode();
     samplingMode._texFiltModeMin = ETextureMinifyFilterMode::LINEAR_MIPMAP_LINEAR;
     samplingMode._texFiltModeMag = ETextureMagnifyFilterMode::LINEAR;
     // Keep existing address modes (CLAMP/WRAP) that were set externally
   }
   this->ApplySamplingMode(texture_array->_tex.get());
-  
-  texture_array->_isDirty    = false;
 
-  if(DEBUG_TEXARRAY2D) {
-  logchan_txia2d->log(
-      "VkTextureInterface::initTextureArray2D created blank array w<%d> h<%d> slices<%d> format<%s>",
-      w,
-      h,
-      num_slices,
-      EBufferFormatToName(format).c_str());
+  texture_array->_isDirty = false;
+
+  if (DEBUG_TEXARRAY2D) {
+    logchan_txia2d->log(
+        "VkTextureInterface::initTextureArray2D created blank array w<%d> h<%d> slices<%d> format<%s>",
+        w,
+        h,
+        num_slices,
+        EBufferFormatToName(format).c_str());
   }
 }
 
@@ -543,17 +542,17 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
 #if defined(__APPLE__)
   if (mipc->_format == EBufferFormat::RGB8 && array->_tex->_texFormat == EBufferFormat::RGBA8) {
     needs_conversion = true;
-    if(DEBUG_TEXARRAY2D){
+    if (DEBUG_TEXARRAY2D) {
       logchan_txia2d->log("Converting RGB8 to RGBA8 for slice %d update", slice_index);
     }
   } else if (mipc->_format == EBufferFormat::BGR8 && array->_tex->_texFormat == EBufferFormat::BGRA8) {
     needs_conversion = true;
-    if(DEBUG_TEXARRAY2D){
+    if (DEBUG_TEXARRAY2D) {
       logchan_txia2d->log("Converting BGR8 to BGRA8 for slice %d update", slice_index);
     }
   } else if (mipc->_format == EBufferFormat::RGB32F && array->_tex->_texFormat == EBufferFormat::RGBA32F) {
     needs_conversion = true;
-    if(DEBUG_TEXARRAY2D){
+    if (DEBUG_TEXARRAY2D) {
       logchan_txia2d->log("Converting RGB32F to RGBA32F for slice %d update", slice_index);
     }
   }
@@ -577,7 +576,7 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
       if (mipc->_format == EBufferFormat::RGB32F) {
         staging_size += mip._width * mip._height * 4 * sizeof(float);
       } else {
-      staging_size += mip._width * mip._height * 4;
+        staging_size += mip._width * mip._height * 4;
       }
     } else {
       staging_size += mip._data->length();
@@ -588,26 +587,24 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
   auto poolForSize    = stagingBufferPoolForSrcOfSize(staging_size);
   auto staging_buffer = poolForSize->borrowItem();
   secondary_commandbuffer_ptr_t command_buffer;
-  _seccmdbufpool_xfer.atomicOp([&](sseccmdbufpool_ptr_t& pool) {
-    command_buffer = pool->borrowItem();
-  });
+  _seccmdbufpool_xfer.atomicOp([&](sseccmdbufpool_ptr_t& pool) { command_buffer = pool->borrowItem(); });
 
   // Create transfer
   auto transfer = std::make_shared<InFlightTextureTransfer>(_contextVK, staging_buffer, command_buffer);
   vktex->_inflight_transfers.insert(transfer);
 
-  auto cmdbuf_impl = command_buffer->_impl.getShared<VkSecondaryCommandBufferImpl>();
-  auto vk_sec_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
+  auto cmdbuf_impl   = command_buffer->_impl.getShared<VkSecondaryCommandBufferImpl>();
+  auto vk_sec_cmdbuf = cmdbuf_impl->_vkcmdbuf;
 
-  if(DEBUG_TEXARRAY2D) {
+  if (DEBUG_TEXARRAY2D) {
     logchan_txia2d->log(
-      "updateTextureArraySlice vktex<%p> imgobj<%p:%zx:%zx> staging_size<%zu> num_levels<%d>", //
-      (void*)vktex.get(),                                                                      //
-      vktex->_imgobj.get(),                                                                    //
-      vktex->_imgobj->_vkimage,                                                                //
-      vktex->_imgobj->_vkimageview,                                                            //
-      staging_size,                                                                            //
-      num_levels);
+        "updateTextureArraySlice vktex<%p> imgobj<%p:%zx:%zx> staging_size<%zu> num_levels<%d>", //
+        (void*)vktex.get(),                                                                      //
+        vktex->_imgobj.get(),                                                                    //
+        vktex->_imgobj->_vkimage,                                                                //
+        vktex->_imgobj->_vkimageview,                                                            //
+        staging_size,                                                                            //
+        num_levels);
   }
 
   // Setup completion
@@ -616,9 +613,7 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
   tlsema->_onComplete               = [=]() {
     vktex->_inflight_transfers.erase(transfer);
     poolForSize->returnItem(staging_buffer);
-    _seccmdbufpool_xfer.atomicOp([&](sseccmdbufpool_ptr_t& pool) {
-      pool->returnItem(command_buffer);
-    });
+    _seccmdbufpool_xfer.atomicOp([&](sseccmdbufpool_ptr_t& pool) { pool->returnItem(command_buffer); });
   };
 
   // Copy data to staging buffer
@@ -636,16 +631,16 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
     if (needs_conversion && mip_data) {
       // Convert RGB to RGBA (both RGB8 and RGB16)
       size_t bytes_per_pixel = (array->_tex->_texFormat == EBufferFormat::RGBA8) ? 1 : 2; // 1 for 8-bit, 2 for 16-bit
-      size_t src_size = mip_w * mip_h * 3 * bytes_per_pixel;
-      size_t dst_size = mip_w * mip_h * 4 * bytes_per_pixel;
+      size_t src_size        = mip_w * mip_h * 3 * bytes_per_pixel;
+      size_t dst_size        = mip_w * mip_h * 4 * bytes_per_pixel;
 
       if (array->_tex->_texFormat == EBufferFormat::RGBA8) {
-      // Convert RGB8 to RGBA8
-      for (size_t i = 0; i < mip_w * mip_h; i++) {
+        // Convert RGB8 to RGBA8
+        for (size_t i = 0; i < mip_w * mip_h; i++) {
           dst[i * 4 + 0] = src[i * 3 + 0]; // R
-        dst[i * 4 + 1] = src[i * 3 + 1]; // G
-        dst[i * 4 + 2] = src[i * 3 + 2]; // B
-        dst[i * 4 + 3] = 255;            // A
+          dst[i * 4 + 1] = src[i * 3 + 1]; // G
+          dst[i * 4 + 2] = src[i * 3 + 2]; // B
+          dst[i * 4 + 3] = 255;            // A
         }
       } else if (array->_tex->_texFormat == EBufferFormat::BGRA8) {
         // Convert BGR8 to BGRA8
@@ -658,7 +653,7 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
       } else if (array->_tex->_texFormat == EBufferFormat::RGBA16) {
         // Convert RGB16 to RGBA16
         const uint16_t* src16 = (const uint16_t*)src;
-        uint16_t* dst16 = (uint16_t*)dst;
+        uint16_t* dst16       = (uint16_t*)dst;
         for (size_t i = 0; i < mip_w * mip_h; i++) {
           dst16[i * 4 + 0] = src16[i * 3 + 0]; // R
           dst16[i * 4 + 1] = src16[i * 3 + 1]; // G
@@ -668,7 +663,7 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
       } else if (array->_tex->_texFormat == EBufferFormat::RGBA32F) {
         // Convert RGB32F to RGBA32F
         const float* src32 = (const float*)src;
-        float* dst32 = (float*)dst;
+        float* dst32       = (float*)dst;
         for (size_t i = 0; i < mip_w * mip_h; i++) {
           dst32[i * 4 + 0] = src32[i * 3 + 0]; // R
           dst32[i * 4 + 1] = src32[i * 3 + 1]; // G
@@ -716,7 +711,16 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
   barrier->subresourceRange.levelCount     = num_levels;
 
   vkCmdPipelineBarrier(
-      vk_sec_cmdbuf, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, barrier.get());
+      vk_sec_cmdbuf,
+      VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+      VK_PIPELINE_STAGE_TRANSFER_BIT,
+      0,
+      0,
+      nullptr,
+      0,
+      nullptr,
+      1,
+      barrier.get());
 
   // Record commands
   vkCmdCopyBufferToImage(
@@ -731,7 +735,7 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
   barrier->oldLayout     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
   barrier->newLayout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
   barrier->srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-  //barrier->dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+  // barrier->dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
   barrier->dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_MEMORY_READ_BIT;
   vkCmdPipelineBarrier(
       vk_sec_cmdbuf,
@@ -749,7 +753,7 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
   _contextVK->endRecordCommandBuffer(transfer->_command_buffer);
   _contextVK->enqueueDeferredOneShotCommand(transfer->_command_buffer);
 
-  if(DEBUG_TEXARRAY2D){
+  if (DEBUG_TEXARRAY2D) {
     logchan_txia2d->log("Updated texture array slice %d", slice_index);
   }
 }
@@ -799,7 +803,7 @@ void VkTextureInterface::updateTextureArraySlice(TextureArraySliceRef* slice_ref
   }
   // Get mipchain from image
   compressedmipchain_ptr_t mipc;
-  if(array->_requires_mips) {
+  if (array->_requires_mips) {
     // If the texture array requires mipmaps, use the mipchain from the image
     mipc = img->uncompressedMipChain();
   } else {

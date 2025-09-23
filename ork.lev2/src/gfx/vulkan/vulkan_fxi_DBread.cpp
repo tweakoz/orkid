@@ -426,7 +426,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       vk_uniblk->_descriptor_set_id                       = dset_id;
       vulkan_shaderfile->_vk_uniformblks[str_uniblk_name] = vk_uniblk;
 
-      if(1)printf("VK_UBO: CREATING UBO<%s> ptr<%p> DSID<%zu>\n", str_uniblk_name.c_str(), vk_uniblk.get(), dset_id);
+      if(0)printf("VK_UBO: CREATING UBO<%s> ptr<%p> DSID<%zu>\n", str_uniblk_name.c_str(), vk_uniblk.get(), dset_id);
     }
 
     // Only register with ork_shader if not already registered
@@ -927,7 +927,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         // Use a default rasterstate or nullptr
         vk_pass->_stateblock_rasterstate = nullptr;
       }
-      printf("TEK<%s> RASTERSTATE<%p:%s>\n",  //
+      if(0)printf("TEK<%s> RASTERSTATE<%p:%s>\n",  //
              str_tek_name.c_str(),        //
              (void*)vk_pass->_stateblock_rasterstate.get(),  //
              sblk_name.c_str());

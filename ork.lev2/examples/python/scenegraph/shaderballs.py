@@ -166,7 +166,7 @@ class SceneGraphApp(object):
     lmgr = self.scene.lightingmanager
     color_cookies = lmgr.spot_cookies_color
     depth_cookies = lmgr.spot_cookies_depth
-    color_cookies.needsRadianceCache = True
+    color_cookies.needsRadianceCache = False
     COOKIE_DIM = 2048
     color_cookies.resize(COOKIE_DIM,COOKIE_DIM,1,tokens.RGB8,True)
     depth_cookies.resize(COOKIE_DIM,COOKIE_DIM,1,tokens.Z32F,True)

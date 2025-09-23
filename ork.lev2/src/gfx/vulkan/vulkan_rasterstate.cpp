@@ -292,7 +292,7 @@ VkRasterState::VkRasterState(rasterstate_ptr_t rstate, int attachment_count, con
     auto it = unlocked.find(hashed);
     if( it == unlocked.end() ){
       _pipeline_bits = unlocked.size();
-      printf( "VkRasterState<%p:%s> hashed<%016llx> NEW<%d>\n", //
+      if(0)printf( "VkRasterState<%p:%s> hashed<%016llx> NEW<%d>\n", //
               (void*) this,                                     //
               rstate->_name.c_str(),                            //
               hashed,                                           //
@@ -303,7 +303,7 @@ VkRasterState::VkRasterState(rasterstate_ptr_t rstate, int attachment_count, con
     }
     else{
       _pipeline_bits = it->second;
-      printf( "VkRasterState<%p:%s> hashed<%016llx> PRV<%d>\n", //
+      if(0)printf( "VkRasterState<%p:%s> hashed<%016llx> PRV<%d>\n", //
               (void*) this,                                     //
               rstate->_name.c_str(),                            //
               hashed,                                           //

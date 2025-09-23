@@ -232,7 +232,7 @@ libblock lib_fwd_impl : lib_math //
 
 
 
-      float level            = pbd._roughness * 4;
+      float level            = 0; //pbd._roughness * 4;
       vec3 diffuse_lighttex  = _sample_color_cookie(light_tex_slice, 0, light_uv).xyz;
       vec3 specular_lighttex = _sample_color_cookie(light_tex_slice, level, specular_lightuv).xyz; // specular WIP
       vec3 LN     = normalize(lightdel);
