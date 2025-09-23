@@ -47,9 +47,9 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
 
   auto img_info   = makeVKICI(iwidth, iheight, 1, format, num_mips);
   if (is_depth) {
-    img_info->usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    img_info->usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
   } else {
-    img_info->usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    img_info->usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
   }
 
   std::string debug_name = rtbuffer->_debugName.empty() ? "rtbuffer_texture" : rtbuffer->_debugName;
@@ -129,24 +129,46 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
     stage_flags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
   }
 
-  auto barrier = createImageBarrier(
+  // First transition to TRANSFER_DST for clearing
+  auto clear_barrier = createImageBarrier(
       teximpl->_imgobj->_vkimage,
       VK_IMAGE_LAYOUT_UNDEFINED,
-      target_layout,
+      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
       VkAccessFlagBits(0),
-      access_flags);
+      VK_ACCESS_TRANSFER_WRITE_BIT);
 
   vkCmdPipelineBarrier(
       vk_cmdbuf,
       VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+      VK_PIPELINE_STAGE_TRANSFER_BIT,
+      0, 0, nullptr, 0, nullptr, 1, clear_barrier.get());
+
+  // Clear the image
+  if (is_depth) {
+    VkClearDepthStencilValue clear_value = {1.0f, 0};
+    VkImageSubresourceRange range = {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1};
+    vkCmdClearDepthStencilImage(vk_cmdbuf, teximpl->_imgobj->_vkimage,
+                                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear_value, 1, &range);
+  } else {
+    VkClearColorValue clear_color = {{0.0f, 0.0f, 0.0f, 0.0f}};
+    VkImageSubresourceRange range = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+    vkCmdClearColorImage(vk_cmdbuf, teximpl->_imgobj->_vkimage,
+                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear_color, 1, &range);
+  }
+
+  // Now transition to the target attachment layout
+  auto attach_barrier = createImageBarrier(
+      teximpl->_imgobj->_vkimage,
+      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+      target_layout,
+      VK_ACCESS_TRANSFER_WRITE_BIT,
+      access_flags);
+
+  vkCmdPipelineBarrier(
+      vk_cmdbuf,
+      VK_PIPELINE_STAGE_TRANSFER_BIT,
       stage_flags,
-      0,
-      0,
-      nullptr,
-      0,
-      nullptr,
-      1,
-      barrier.get());
+      0, 0, nullptr, 0, nullptr, 1, attach_barrier.get());
 
   // Update the buffer's current layout to match what we transitioned to
   rtb_impl->setLayout(target_layout);

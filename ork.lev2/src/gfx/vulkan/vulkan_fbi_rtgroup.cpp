@@ -242,21 +242,25 @@ void VkFrameBufferInterface::_popRtGroup() {
   // Only end rendering if we actually began it during push
   if (impl && impl->_did_begin_rendering) {
     auto& CB = _contextVK->primary_cb()->_vkcmdbuf;
-    
+
     //////////////////////////////////////////////
     // end dynamic rendering
     //////////////////////////////////////////////
     _contextVK->_vkCmdEndRenderingKHR(CB);
-    
+
     // Track that render pass has ended
     _contextVK->_renderPassActive = false;
     _contextVK->_activeRenderPassRTG = nullptr;
-    
-    /////////////////////////////////////////////
-    // transition finished rtgroup based on its usage
-    /////////////////////////////////////////////
+  }
+
+  /////////////////////////////////////////////
+  // transition finished rtgroup based on its usage
+  // This happens regardless of whether rendering occurred
+  // since texture might be used even without being rendered to
+  /////////////////////////////////////////////
+  if (finished_rtg) {
     auto RTGIMPL = finished_rtg->_impl.getShared<VkRtGroupImpl>();
-    
+
     switch (finished_rtg->_usage) {
       case "swapchain"_crcu: {
         break;
