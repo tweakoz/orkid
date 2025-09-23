@@ -975,11 +975,13 @@ void SpirvCompiler::_inheritStorageInterface(
   // Emit the GLSL storage buffer declaration
   auto header = FormatString("// Storage interface: %s", storage_name.c_str());
   _appendText(_uniforms_group, header.c_str());
+  bool is_readonly = true; // TODO: change grammar, parse from AST
   
   auto layout_line = FormatString(
-      "layout(set=%zu, binding=%d, std430) buffer %s {",
+      "layout(set=%zu, binding=%d, std430) %s buffer %s {",
       spirv_sif->_descriptor_set_id,
       binding_id,
+      is_readonly ? "readonly" : "",
       spirv_sif->_buffer_name.c_str());
   _appendText(_uniforms_group, layout_line.c_str());
   
@@ -1269,10 +1271,13 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
           _binding_id++;
         }
         /////////////////
+        bool is_readonly = true; // TODO: change grammar, parse from AST
+        /////////////////
         auto layout_line = FormatString(
-            "layout(set=%d, binding=%d) buffer %s {", //
+            "layout(set=%d, binding=%d) %s buffer %s {", //
             dset_id,                                   //
             binding_id,                                //
+            is_readonly ? "readonly" : "",             //
             sitem_name.c_str());
         _appendText(_interface_group, layout_line.c_str());
         /////////////////

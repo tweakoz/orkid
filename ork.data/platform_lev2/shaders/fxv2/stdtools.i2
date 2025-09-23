@@ -22,6 +22,7 @@ uniform_block ublk_std_matrices (descriptor_set 0) {
   mat4 mvp_l;
   mat4 mvp_r;
 }
+//
 ///////////////////////////////////////////////////////////////
 uniform_set uset_std_viewport {
   vec2 ViewportSize;    // target size

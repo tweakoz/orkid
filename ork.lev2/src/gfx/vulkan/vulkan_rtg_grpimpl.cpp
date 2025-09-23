@@ -72,6 +72,9 @@ void VkRtGroupImpl::_updateMainSurface(VkFrameBufferInterface* fbi) {
     //SetSizeDirty(false);
     _width  = w;
     _height = h;
+    // Invalidate cached render info since size changed
+    _rinfo_retain = nullptr;
+    _rinfo_resume_retain = nullptr;
   }  
 }
 
