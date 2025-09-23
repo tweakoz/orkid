@@ -102,6 +102,9 @@ public:
   }
   virtual void updateTextureArraySlice(TextureArraySliceRef* slice, image_ptr_t img) {
   }
+  virtual void updateTextureArray(TextureArray* array) {
+  }
+  
   virtual Texture* createFromMipChain(MipChain* from_chain) {
     return nullptr;
   }

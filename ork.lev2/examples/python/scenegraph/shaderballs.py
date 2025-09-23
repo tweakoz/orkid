@@ -66,7 +66,7 @@ class SceneGraphApp(object):
     self.materials = set()
     setupUiCamera(app=self,eye=vec3(0,12,15),near=0.1,far=100)
     self.nodes=[]
-    self.ssaomode = True
+    self.ssaomode = False
 
   ##############################################
 

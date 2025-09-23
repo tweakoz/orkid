@@ -296,6 +296,11 @@ void pyinit_gfx(py::module& module_lev2) {
              image_ptr_t img) {                //
             the_txi->updateTextureArraySlice(slice.get(), img);
           })
+      .def(
+          "updateTextureArray",           //
+          [](const txi_t& the_txi) {                //
+            the_txi->updateTextureArray();
+          })
 #if defined(ENABLE_PYTORCH)
       .def(
           "initTextureFromTensor",     //
@@ -722,6 +727,10 @@ void pyinit_gfx(py::module& module_lev2) {
             texarray->resize(w, h, d, efmt);
           })
       .def("load", [](texturearray_ptr_t texarray, std::string path) -> texturearraysliceref_ptr_t { return texarray->load(path); })
+      .def("conform", [](texturearray_ptr_t texarray, crcstring_ptr_t crc) { //
+        auto fmt = EBufferFormat(crc->hashed());
+        return texarray->_conform(fmt); 
+      })
       .def("slice", [](texturearray_ptr_t texarray, size_t index) -> texturearraysliceref_ptr_t { return texarray->slice(index); })
       /*.def("createRtGroup", [](texturearray_ptr_t texarray, ctx_t context) -> rtgroup_ptr_t {
         auto rtg = std::make_shared<RtGroup>(context.get(),texarray->_width, texarray->_height);

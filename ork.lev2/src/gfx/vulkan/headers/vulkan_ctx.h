@@ -300,6 +300,7 @@ struct VkTextureInterface final : public TextureInterface {
   void initTextureArray2D(TextureArray* ptex) final;
   void updateTextureArraySlice(TextureArraySliceRef* slice, image_ptr_t img) final;
   void _updateTextureArraySlice(TextureArraySliceRef* slice, compressedmipchain_ptr_t mipc);
+  void updateTextureArray(TextureArray* array) final;
 
   // Helper function to convert 24-bit formats to 32-bit on macOS
   static EBufferFormat convertFormatForPlatform(EBufferFormat format);

@@ -12,7 +12,7 @@ if __name__ == "__main__":
   env_vars["DYLD_LIBRARY_PATH"] = str(path.libs())+":/opt/homebrew/lib"
   env_vars["MVK_CONFIG_LOG_LEVEL"] = "1"
   env_vars["MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS"] = "0"
-  env_vars["ORKID_VULKAN_VALIDATE"] = "1"
+  env_vars["ORKID_VULKAN_VALIDATE"] = "0"
   env_vars["ORKID_AUDIO_INPUT_DEVICE"] = os.environ.get("ORKID_AUDIO_INPUT_DEVICE", "MacBook Pro Microphone")
   env_vars["ORKID_AUDIO_OUTPUT_DEVICE"] = os.environ.get("ORKID_AUDIO_OUTPUT_DEVICE", "MacBook Pro Speakers")
   env_vars["ORKID_DISABLE_SHADER_CACHE"] = os.environ.get("ORKID_DISABLE_SHADER_CACHE", "")

@@ -148,7 +148,11 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
     
     switch (rtgroup->_usage) {
       case "swapchain"_crcu:
-        RTGIMPL = rtgroup->_impl.getShared<VkRtGroupImpl>();
+        if(rtgroup->_impl.isShared<VkRtGroupImpl>()){
+          RTGIMPL = rtgroup->_impl.getShared<VkRtGroupImpl>();
+        } else {
+          RTGIMPL = rtgroup->_impl.getShared<VkRtGroupImpl>();
+        }
         RTGIMPL->_updateClearParams(rtgroup);
         RTGIMPL->_updateMainSurface(this);
         break;
@@ -189,13 +193,17 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
         break;
       }
       case "arrayslice"_crcu: {
-        RTGIMPL = _buildRtgImplFromTextureArraySlice(rtgroup);
+        if(rtgroup->_impl.isShared<VkRtGroupImpl>()){
+          RTGIMPL = rtgroup->_impl.getShared<VkRtGroupImpl>();
+        } else {
+          RTGIMPL = _buildRtgImplFromTextureArraySlice(rtgroup);
+        }
         break;
       }
       default:
         OrkAssert(false);
         break;
-    }
+    } // switch (rtgroup->_usage) {
     
     // STEP 3: Now begin the new render pass
     RTGIMPL->_transitionToRenderTarget(_contextVK->primary_cb());

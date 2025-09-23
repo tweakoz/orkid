@@ -125,20 +125,22 @@ class StereoApp1(object):
     lmgr = self.scene.lightingmanager
     color_cookies = lmgr.spot_cookies_color
     depth_cookies = lmgr.spot_cookies_depth
-    color_cookies.needsRadianceCache = True
-    color_cookies.resize(1024,1024,5,tokens.RGB8,True)
-    depth_cookies.resize(1024,1024,5,tokens.Z32F,True)
+    color_cookies.needsRadianceCache = False
+    color_cookies.resize(1024,1024,4,tokens.RGB8,True)
+    depth_cookies.resize(1024,1024,4,tokens.Z32F,True)
 
     cookie1 = color_cookies.load("src://effect_textures/L0D.png")
     cookie2 = color_cookies.load("lev2://textures/transponder24.png")
     cookie3 = color_cookies.load("src://effect_textures/knob2.png")
     cookie4 = color_cookies.load("src://effect_textures/knob2.png")
+    color_cookies.conform(tokens.RGBA8)
+    ctx.TXI.updateTextureArray(color_cookies)
     depth1 = depth_cookies.slice(0)
     depth2 = depth_cookies.slice(1)
     depth3 = depth_cookies.slice(2)
     depth4 = depth_cookies.slice(3)
     shadow_size = 2048
-    shadow_bias = 1e-4
+    shadow_bias = 1e-5
     intens_scale = 0.5
     speed_scale = 0.5
     self.spotlight1 = MySpotLight(index=0,app=self,model=model,frq=0.17*speed_scale,color=vec3(0,5500,0)*intens_scale,cookie=cookie1,depth_cookie=depth1,fovbase=60.0,fovamp=20.0,voffset=15,vscale=13,bias=shadow_bias,dim=shadow_size,radius=12)
