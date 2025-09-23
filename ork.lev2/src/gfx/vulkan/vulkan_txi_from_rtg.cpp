@@ -18,6 +18,7 @@ static logchannel_ptr_t logchan_txirtg = logger()->configureChannel("VKTXIRTG", 
 void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   auto ptex = rtbuffer->texture();
   OrkAssert(ptex);
+  ptex->_source = ETextureSource::FROM_RTG;
   auto teximpl = ptex->_impl.makeShared<VulkanTextureObject>(_contextVK->_txi.get());
 
   auto format  = rtbuffer->format();
@@ -89,6 +90,7 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
 
   auto rtb_impl        = rtbuffer->_impl.getShared<VklRtBufferImpl>();
   rtb_impl->_imgobj = teximpl->_imgobj;
+  // Initialize layout to UNDEFINED since this is a new image
   rtb_impl->setLayout(VK_IMAGE_LAYOUT_UNDEFINED);
   rtb_impl->_teximpl = teximpl;
 
@@ -145,6 +147,9 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
       nullptr,
       1,
       barrier.get());
+
+  // Update the buffer's current layout to match what we transitioned to
+  rtb_impl->setLayout(target_layout);
 
   /////////////////////////////////////
 

@@ -75,6 +75,7 @@ secondary_commandbuffer_ptr_t SecCmdBufPoolAdapter::allocFresh() {
 
 void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid) {
 
+  ptex->_source = ETextureSource::FROM_DATA;
   //ptex->_debugName = "VkTextureInterface::initTextureFromData";
   bool is_brdf = ptex->_debugName.find("brdfIntegrationMap") != std::string::npos;
   /////////////////////////////////////

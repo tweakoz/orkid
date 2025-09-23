@@ -181,6 +181,7 @@ struct Texture {
   Context* _creatingTarget    = nullptr;
   std::string _debugName;
   bool _isDepthTexture = false;
+  ETextureSource _source = ETextureSource::NONE;
   varmap::varmap_ptr_t _vars;
   const TextureAsset* _asset    = nullptr;
   bool _formatSupportsFiltering = true;

@@ -101,6 +101,22 @@ enum ETextureType {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+
+enum class ETextureSource : uint64_t {
+  NONE = 0,
+  FROM_DATA,      // initTextureFromData
+  FROM_RTG,       // initTextureFromRtBuffer
+  FROM_IMAGE,     // initTextureFromImage
+  FROM_TENSOR,    // initTextureFromTensor
+  FROM_MIPCHAIN,  // createFromMipChain
+  FROM_XTX,       // loadXTXTexture
+  FROM_DDS,       // loadDDSTexture
+  FROM_ASSET,     // loadTextureFromAsset
+  FROM_ARRAY,     // initTextureArray
+  FROM_DEFAULT,   // default textures (white, black, etc)
+};
+
+///////////////////////////////////////////////////////////////////////////////
 enum struct EBufferFormat : crc_enum_t {
   CrcEnum(R8),
   CrcEnum(Y16UI),

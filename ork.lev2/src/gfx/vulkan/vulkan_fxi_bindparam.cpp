@@ -523,6 +523,34 @@ void VkFxInterface::bindParamTexture(const FxShaderParam* hpar, const Texture* p
   vktexobj_ptr_t vk_tex;
   if (auto as_to = pTex->_impl.tryAsShared<VulkanTextureObject>()) {
     vk_tex = as_to.value();
+
+    // Validate render target texture layout
+    if (pTex->_source == ETextureSource::FROM_RTG) {
+      // This texture comes from a render target - verify it's ready for shader use
+      auto& desc_info = vk_tex->_vkdescriptor_info;
+
+      // The descriptor should expect VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+      OrkAssert(desc_info.imageView != VK_NULL_HANDLE);
+
+      if (desc_info.imageLayout != VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+        printf("RTG texture descriptor has wrong layout expectation!\n");
+        printf("  Texture: %s\n", pTex->_debugName.c_str());
+        printf("  Descriptor layout: %d\n", desc_info.imageLayout);
+        printf("  Should be: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL (%d)\n", VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        OrkAssertI(false, "RTG texture descriptor has wrong layout - see console output for details");
+      }
+
+      // Check if we need a transition to shader read layout
+      // This is a temporary warning - the real fix needs to happen
+      // when the RTG is popped or when explicitly transitioning to texture mode
+
+      // Assert immediately when binding an RTG texture
+      // The actual image layout is likely UNDEFINED while the descriptor expects SHADER_READ_ONLY_OPTIMAL
+      printf("ASSERT: Binding RTG texture '%s'\n", pTex->_debugName.c_str());
+      printf("        Descriptor expects layout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL\n");
+      printf("        But actual image is likely in: VK_IMAGE_LAYOUT_UNDEFINED\n");
+      OrkAssertI(false, "RTG texture bound without proper layout transition - need to transition from UNDEFINED to SHADER_READ_ONLY_OPTIMAL");
+    }
   } else {
     // Use default texture based on texture type
     switch (pTex->_texType) {

@@ -265,19 +265,30 @@ void VklRtBufferImpl::_transitionToRenderTarget(vkpricmdbufimpl_ptr_t cb) { //
 ///////////////////////////////////////////////////////////////////////////////
 
 void VklRtBufferImpl::_transitionToTexture(vkpricmdbufimpl_ptr_t cb)      { //
-  switch( _usage) {
-    case "color"_crcu: // color attachment
-      _transitionImage(cb, kToTextureColor);
-      break;
-    case "depth"_crcu: // depth attachment
-      _transitionImage(cb, kToTextureDepth);
-      break;
-    case "swapchain"_crcu: // present attachment
-      OrkAssert(false); // swapchain should not be used as a texture
-      break;
-    default:
-      OrkAssert(false);
-      break;
+  // If image is still undefined, we need different transition params
+  if (_currentLayout == VK_IMAGE_LAYOUT_UNDEFINED) {
+    VkTransitionParams params;
+    params.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    params.srcAccess = VkAccessFlagBits(0); // No prior access from UNDEFINED
+    params.dstAccess = VK_ACCESS_SHADER_READ_BIT;
+    params.srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT; // Start of pipeline for UNDEFINED
+    params.dstStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
+    _transitionImage(cb, params);
+  } else {
+    switch( _usage) {
+      case "color"_crcu: // color attachment
+        _transitionImage(cb, kToTextureColor);
+        break;
+      case "depth"_crcu: // depth attachment
+        _transitionImage(cb, kToTextureDepth);
+        break;
+      case "swapchain"_crcu: // present attachment
+        OrkAssert(false); // swapchain should not be used as a texture
+        break;
+      default:
+        OrkAssert(false);
+        break;
+    }
   }
 }
 

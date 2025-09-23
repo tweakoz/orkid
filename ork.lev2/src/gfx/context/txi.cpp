@@ -33,14 +33,17 @@ bool TextureInterface::LoadTexture(texture_ptr_t ptex, datablock_ptr_t datablock
   bool ok        = false;
   if (Char4("chkf") == Char4(magic)){
     if(0)printf("TXI::LoadTexture loading as xtx\n");
+    ptex->_source = ETextureSource::FROM_XTX;
     ok = _loadXTXTexture(ptex, datablock);
   }
   else if (Char4("DDS ") == Char4(magic)){
     if(0)printf("TXI::LoadTexture loading as dds\n");
+    ptex->_source = ETextureSource::FROM_DDS;
     ok = _loadDDSTexture(ptex, datablock);
   }
   else {
     if(0)printf("TXI::LoadTexture loading as generic\n");
+    ptex->_source = ETextureSource::FROM_IMAGE;
     ok = _loadImageTexture(ptex, datablock);
   }
 
@@ -59,6 +62,7 @@ bool TextureInterface::LoadTexture(const AssetPath& fname, texture_ptr_t ptex) {
   PngFilename.setExtension("png");
   XtxFilename.setExtension("xtx");
   ptex->_debugName = fname.toStdString();
+  ptex->_source = ETextureSource::FROM_ASSET;
   AssetPath final_fname;
   if (FileEnv::GetRef().DoesFileExist(PngFilename))
     final_fname = PngFilename;
@@ -87,6 +91,7 @@ void TextureInterface::SaveTexture(const ork::AssetPath& fname, Texture* ptex) {
 
 texture_ptr_t TextureInterface::createColorTexture(fvec4 color, int w, int h){
   auto rval = std::make_shared<Texture>();
+  rval->_source = ETextureSource::FROM_DEFAULT;
 
   int numpixels = (w*h);
   auto data = new uint32_t[numpixels];
@@ -113,6 +118,7 @@ texture_ptr_t TextureInterface::createColorTexture(fvec4 color, int w, int h){
 
 texture_ptr_t TextureInterface::createColorTextureV3(fvec3 color, int w, int h){
   auto rval = std::make_shared<Texture>();
+  rval->_source = ETextureSource::FROM_DEFAULT;
 
   int numpixels = (w*h);
   auto data = new uint8_t[numpixels*3];
@@ -163,6 +169,7 @@ texturearray_ptr_t TextureInterface::createColorTextureV3Array(fvec3 color, int 
 
 texture_ptr_t TextureInterface::createColorCubeTexture(fvec4 color, int w, int h){
   auto rval = std::make_shared<Texture>();
+  rval->_source = ETextureSource::FROM_DEFAULT;
 
   // Cube textures need data for all 6 faces
   int numpixels_per_face = (w*h);
