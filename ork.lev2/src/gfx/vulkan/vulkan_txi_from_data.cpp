@@ -265,22 +265,57 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   if (hash_changed) {
 
-    auto VKICI   = makeVKICI(tid._w, tid._h, tid._d, actual_dst_format, 1); // Use actual format
+    // Check if this is a cube texture
+    bool is_cube = tid._initCubeTexture;
+    int array_layers = tid._d;
+
+    // For cube textures, we need 6 layers
+    if (is_cube) {
+      array_layers = 6;
+    }
+
+    auto VKICI   = makeVKICI(tid._w, tid._h, 1, actual_dst_format, 1); // depth is always 1 for 2D images
     VKICI->usage = usage;
+
+    // Fix the extent.depth and arrayLayers
+    VKICI->extent.depth = 1;  // 2D images always have depth = 1
+    VKICI->arrayLayers = array_layers;  // Set the correct number of array layers
+
+    // Add cube-compatible flag if this is a cube texture
+    if (is_cube) {
+      VKICI->flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+    }
 
     std::string debug_name = ptex->_debugName.empty() ? "texture_from_data" : ptex->_debugName;
     vktex->_imgobj = std::make_shared<VulkanImageObject>(_contextVK, VKICI, debug_name);
 
+    // Create the appropriate image view type
+    std::shared_ptr<VkImageViewCreateInfo> IVCI;
 
-    auto IVCI = createImageViewInfo2D(
-        vktex->_imgobj->_vkimage,                                //
-        VkFormatConverter::convertBufferFormat(actual_dst_format), // Use actual format
-        VK_IMAGE_ASPECT_COLOR_BIT);
+    if (is_cube) {
+      // Create cube image view
+      IVCI = std::make_shared<VkImageViewCreateInfo>();
+      initializeVkStruct(*IVCI, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
+      IVCI->image = vktex->_imgobj->_vkimage;
+      IVCI->viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+      IVCI->format = VkFormatConverter::convertBufferFormat(actual_dst_format);
+      IVCI->subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      IVCI->subresourceRange.baseMipLevel = 0;
+      IVCI->subresourceRange.levelCount = 1;
+      IVCI->subresourceRange.baseArrayLayer = 0;
+      IVCI->subresourceRange.layerCount = 6;
+    } else {
+      // Keep existing 2D image view creation for non-cube textures
+      IVCI = createImageViewInfo2D(
+          vktex->_imgobj->_vkimage,
+          VkFormatConverter::convertBufferFormat(actual_dst_format),
+          VK_IMAGE_ASPECT_COLOR_BIT);
+    }
 
     initializeVkStruct(vktex->_imgobj->_vkimageview);
     VkResult ok = vkCreateImageView(_contextVK->_vkdevice, IVCI.get(), nullptr, &vktex->_imgobj->_vkimageview);
     OrkAssert(VK_SUCCESS == ok);
-    
+
     // Set debug name for image view
     if (!ptex->_debugName.empty()) {
       std::string view_name = ptex->_debugName + "_view";
@@ -295,7 +330,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     ptex->_texFormat = actual_dst_format; // Store the actual format
     ptex->_width     = tid._w;
     ptex->_height    = tid._h;
-    ptex->_depth     = tid._d;
+    ptex->_depth     = is_cube ? 6 : tid._d;  // Cube textures always have depth 6
     ptex->_num_mips  = 1;
 
   }
@@ -347,7 +382,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       VK_IMAGE_ASPECT_COLOR_BIT, //
       0,
       0,
-      1};
+      tid._initCubeTexture ? 6u : uint32_t(tid._d)};  // For cube textures, copy all 6 faces
   region.imageOffset = {0, 0, 0};
   region.imageExtent = {uint32_t(tid._w), uint32_t(tid._h), 1};
 

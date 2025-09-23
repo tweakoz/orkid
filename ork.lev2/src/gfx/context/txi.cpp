@@ -164,10 +164,12 @@ texturearray_ptr_t TextureInterface::createColorTextureV3Array(fvec3 color, int 
 texture_ptr_t TextureInterface::createColorCubeTexture(fvec4 color, int w, int h){
   auto rval = std::make_shared<Texture>();
 
-  int numpixels = (w*h);
-  auto data = new uint32_t[numpixels];
+  // Cube textures need data for all 6 faces
+  int numpixels_per_face = (w*h);
+  int total_pixels = numpixels_per_face * 6; // 6 faces for cube
+  auto data = new uint32_t[total_pixels];
   auto swizzled = color.ABGRU32();
-  for( int i=0; i<numpixels; i++ ){
+  for( int i=0; i<total_pixels; i++ ){
     data[i] = swizzled;
   }
 
@@ -175,6 +177,7 @@ texture_ptr_t TextureInterface::createColorCubeTexture(fvec4 color, int w, int h
   tid._initCubeTexture = true;
   tid._w = w;
   tid._h = h;
+  tid._d = 6; // Set depth to 6 for cube textures
   tid._src_format = EBufferFormat::RGBA8;
   tid._dst_format = EBufferFormat::RGBA8;
   tid._autogenmips = true;
