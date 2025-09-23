@@ -486,7 +486,7 @@ bool CatalogImpl::_extractAssetPak(datablock_ptr_t _data, fetchrequest_ptr_t req
       file::Path extracted_dir = _catalog->getCacheDir() / "extracted" / namespace_id / asset_name;
       extracted_dir.ensureDirectoryExists();
       file::Path extracted_file = extracted_dir / filename;
-      saveToCacheFile(entry->data, extracted_file);
+      //saveToCacheFile(entry->data, extracted_file);
       
       // Write to local location if configured
       if (!fqid->_asset_info->_local_loc.empty()) {
@@ -494,8 +494,8 @@ bool CatalogImpl::_extractAssetPak(datablock_ptr_t _data, fetchrequest_ptr_t req
         if (!local_path.empty()) {
           local_path.ensureDirectoryExists();
           file::Path local_file = local_path / filename;
-          saveToCacheFile(entry->data, local_file);
-          logchan_catalog->log("Written to local: %s", local_file.c_str());
+          //saveToCacheFile(entry->data, local_file);
+          //logchan_catalog->log("Written to local: %s", local_file.c_str());
         }
       }
       auto local_manifest = std::make_shared<LocalManifest>();

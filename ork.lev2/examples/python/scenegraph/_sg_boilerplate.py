@@ -43,7 +43,7 @@ class SpinningModelInst(object):
 
 class TurntableModelInst(object):
 
-  def __init__(self,model,layer, index, fi):
+  def __init__(self,model,layer, index, fi,range=3.5):
 
     super().__init__()
 
@@ -51,7 +51,7 @@ class TurntableModelInst(object):
     self.sgnode = model.createNode("node%d"%index,layer)
     
     self.pos = vec3(math.cos(fi)*3.14, math.sin(fi*3.14)*0.25, math.sin(fi)*3.14)
-    self.pos = self.pos.normalized*3.5
+    self.pos = self.pos.normalized*range
     self.rot = quat(vec3(0,1,0),0)
     incraxis = vec3(0,1,0)
     incrmagn = random.uniform(-0.001,0.001)

@@ -34,7 +34,7 @@ random.seed(seed)
 class SceneGraphApp(BoilerplateSgApp):
 
   def __init__(self):
-    super().__init__(fullscreen=True,ssaa=3)
+    super().__init__(fullscreen=True,ssaa=1)
 
     ####################################
     # builtin skybox list
@@ -82,6 +82,7 @@ class SceneGraphApp(BoilerplateSgApp):
     ART = MISC_GLTF/"art_and_sculpture"
     CHARS = MISC_GLTF/"characters"
     VEHI = MISC_GLTF/"vehicles"
+    PLANTS = MISC_GLTF/"plants"
     
     ####################################
     # model assets
@@ -106,6 +107,13 @@ class SceneGraphApp(BoilerplateSgApp):
     TEAPOT = ART/"gothic_teapot.glb"     # gothic teapot
     WARHORN = ART/"warhorn.glb"          # war horn
     CAR = VEHI/"car.glb"          # war horn
+    PLANT1 = PLANTS/"plant1.glb"          # plant
+    PLANT2 = PLANTS/"plant2.glb"          # plant
+    PLANT3 = PLANTS/"plant3.glb"          # plant
+    PLANT4 = PLANTS/"plant4.glb"          # plant
+    PLANT5 = PLANTS/"plant5.glb"          # plant
+    
+    HELMET = MISC_GLTF/"DamagedHelmet.glb"    # knight helmet
 
     models = []
     models += [WARHORN]
@@ -125,12 +133,24 @@ class SceneGraphApp(BoilerplateSgApp):
     models += [TEAPOT]
     models += [CAR]
 
+    models2  = [PLANT1]
+    models2 += [PLANT2]
+    models2 += [PLANT3]
+    models2 += [PLANT4]
+    models2 += [PLANT5]
+
+    models3  = [HELMET]
+
     ####################################
     # load models
     ####################################
 
     numinstances = len(models)
+    numinstances2 = len(models2)
+    numinstances3 = len(models3)
     models = [lev2.XgmModel(str(m)) for m in models]
+    models2 = [lev2.XgmModel(str(m)) for m in models2]
+    models3 = [lev2.XgmModel(str(m)) for m in models3]
 
     ###################################
     # create scenegraph nodes
@@ -139,9 +159,23 @@ class SceneGraphApp(BoilerplateSgApp):
     fi = 0.0
     for i in range(numinstances):
       model = models[i%len(models)]
-      minst = TurntableModelInst(model,self.layer_fwd,i,fi)
+      minst = TurntableModelInst(model,self.layer_fwd,i,fi,range=3.5)
       self.modelinsts += [minst]
       fi += (1.0/numinstances)*math.pi*2.0
+
+    fi = 0.0
+    for i in range(numinstances2):
+      model = models2[i%len(models2)]
+      minst = TurntableModelInst(model,self.layer_fwd,i,fi,range=1.5)
+      self.modelinsts += [minst]
+      fi += (1.0/numinstances2)*math.pi*2.0
+
+    fi = 0.0
+    for i in range(numinstances3):
+      model = models3[i%len(models3)]
+      minst = TurntableModelInst(model,self.layer_fwd,i,fi,range=0)
+      self.modelinsts += [minst]
+      fi += (1.0/numinstances3)*math.pi*2.0
 
     ###################################
 
