@@ -814,7 +814,7 @@ void VkTextureInterface::updateTextureArraySlice(TextureArraySliceRef* slice_ref
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkTextureInterface::updateTextureArray(TextureArray* array) final {
+void VkTextureInterface::updateTextureArray(TextureArray* array) { // final
   // update all dirty slices
 }
 

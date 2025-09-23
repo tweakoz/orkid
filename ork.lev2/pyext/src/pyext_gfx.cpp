@@ -298,8 +298,8 @@ void pyinit_gfx(py::module& module_lev2) {
           })
       .def(
           "updateTextureArray",           //
-          [](const txi_t& the_txi) {                //
-            the_txi->updateTextureArray();
+          [](const txi_t& the_txi, texturearray_ptr_t array) {                //
+            the_txi->updateTextureArray(array.get());
           })
 #if defined(ENABLE_PYTORCH)
       .def(
