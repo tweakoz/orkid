@@ -172,6 +172,10 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
 
   // Update the buffer's current layout to match what we transitioned to
   rtb_impl->setLayout(target_layout);
+  // Also update the image object's layout
+  if (teximpl->_imgobj) {
+    teximpl->_imgobj->_currentLayout = target_layout;
+  }
 
   /////////////////////////////////////
 

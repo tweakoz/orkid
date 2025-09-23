@@ -259,6 +259,10 @@ void VkFrameBufferInterface::_popRtGroup() {
   // since texture might be used even without being rendered to
   /////////////////////////////////////////////
   if (finished_rtg) {
+    printf("_popRtGroup: RTG %p usage=%llu, did_begin_rendering=%d\n",
+           finished_rtg,
+           (unsigned long long)finished_rtg->_usage,
+           impl ? impl->_did_begin_rendering : 0);
     auto RTGIMPL = finished_rtg->_impl.getShared<VkRtGroupImpl>();
 
     switch (finished_rtg->_usage) {

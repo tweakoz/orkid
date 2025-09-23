@@ -76,6 +76,11 @@ void VklRtBufferImpl::setLayout(VkImageLayout layout) {
   _attachmentDesc.finalLayout   = layout;
   OrkAssert(_rtg_impl);
   _rtg_impl->__attachments = nullptr;
+
+  // Sync layout to the image object so we can check it during texture binding
+  if (_imgobj) {
+    _imgobj->_currentLayout = layout;
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -154,6 +159,7 @@ void _vkCreateImageForBuffer(
   VkResult OK = vkCreateImageView(ctxVK->_vkdevice, IVCI.get(), nullptr, &imgobj->_vkimageview);
   OrkAssert(OK == VK_SUCCESS);
   bufferimpl->_currentLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Reset layout to undefined after creation
+  imgobj->_currentLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Also set on the image object
   ///////////////////////////////////////////////////
   logchan_rtgi->log("IMAGE: Created image %p, initial layout %d", (void*)vkimage, bufferimpl->_currentLayout);
 }
@@ -163,7 +169,10 @@ void _vkCreateImageForBuffer(
 void VklRtBufferImpl::_replaceImage(vkimageobj_ptr_t imgobj) { //
   _imgobj = imgobj;
   _vkfmt = imgobj->_format;
-  _currentLayout = VK_IMAGE_LAYOUT_UNDEFINED; 
+  _currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  if (_imgobj) {
+    _imgobj->_currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  }
   _rtg_impl->_invalidateAttachments();
 }
 
@@ -265,6 +274,8 @@ void VklRtBufferImpl::_transitionToRenderTarget(vkpricmdbufimpl_ptr_t cb) { //
 ///////////////////////////////////////////////////////////////////////////////
 
 void VklRtBufferImpl::_transitionToTexture(vkpricmdbufimpl_ptr_t cb)      { //
+  printf("VklRtBufferImpl::_transitionToTexture: current layout = %d (UNDEFINED=%d, COLOR_ATTACH=%d, SHADER_READ=%d)\n",
+         _currentLayout, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
   // If image is still undefined, we need different transition params
   if (_currentLayout == VK_IMAGE_LAYOUT_UNDEFINED) {
     VkTransitionParams params;

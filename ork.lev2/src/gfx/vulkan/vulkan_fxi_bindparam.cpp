@@ -524,6 +524,20 @@ void VkFxInterface::bindParamTexture(const FxShaderParam* hpar, const Texture* p
   if (auto as_to = pTex->_impl.tryAsShared<VulkanTextureObject>()) {
     vk_tex = as_to.value();
 
+    // Check for invalid/uninitialized texture
+    if (vk_tex->_imgobj) {
+      VkImage vkimg = vk_tex->_imgobj->_vkimage;
+      // Check for suspicious image handles that look like uninitialized memory
+      if (vkimg == VK_NULL_HANDLE || (uint64_t)vkimg == 0xdc00000000dcULL || ((uint64_t)vkimg & 0xFF00000000FFULL) == 0xdc00000000dcULL) {
+        printf("ERROR: Attempting to bind invalid/uninitialized texture!\n");
+        printf("  Texture ptr: %p\n", pTex);
+        printf("  Texture name: %s\n", pTex->_debugName.c_str());
+        printf("  VkImage handle: 0x%llx\n", (unsigned long long)vkimg);
+        printf("  Texture source: %d\n", (int)pTex->_source);
+        OrkAssertI(false, "Invalid VkImage handle detected - likely uninitialized texture");
+      }
+    }
+
     // Validate render target texture layout
     if (pTex->_source == ETextureSource::FROM_RTG) {
       // This texture comes from a render target - verify it's ready for shader use
@@ -532,24 +546,41 @@ void VkFxInterface::bindParamTexture(const FxShaderParam* hpar, const Texture* p
       // The descriptor should expect VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
       OrkAssert(desc_info.imageView != VK_NULL_HANDLE);
 
+      // CRITICAL: Check if this is a swapchain texture - those should NEVER be used as textures!
+      // Need to check the source RTBuffer to determine if it's from a swapchain
+      // For now, detect by checking if the image is still in UNDEFINED layout after pop
+
+      // Check the ACTUAL image layout, not just what the descriptor expects
+      VkImageLayout actual_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+      if (vk_tex->_imgobj) {
+        actual_layout = vk_tex->_imgobj->_currentLayout;
+      }
+
+      printf("DEBUG: Binding RTG texture '%s' ptr=%p, descriptor expects layout=%d, actual image layout=%d (expected %d)\n",
+             pTex->_debugName.c_str(), pTex, desc_info.imageLayout, actual_layout, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+      // Assert if the actual image layout is wrong - this catches the problem at the source
+      if (actual_layout == VK_IMAGE_LAYOUT_UNDEFINED) {
+        printf("ERROR: Attempting to bind an RTG texture that is still in UNDEFINED layout!\n");
+        printf("  This likely means a swapchain RTG is being incorrectly used as a texture.\n");
+        printf("  Swapchain RTGs should NEVER be used as textures - they're for presentation only!\n");
+        printf("  Texture: %s\n", pTex->_debugName.c_str());
+        OrkAssertI(false, "RTG texture in UNDEFINED layout - likely a swapchain RTG being misused as texture");
+      } else if (actual_layout != VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+        printf("ERROR: RTG texture has wrong actual image layout!\n");
+        printf("  Texture: %s\n", pTex->_debugName.c_str());
+        printf("  Actual image layout: %d\n", actual_layout);
+        printf("  Should be: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL (%d)\n", VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        OrkAssertI(false, "RTG texture image is in wrong layout - not transitioned to SHADER_READ_ONLY_OPTIMAL");
+      }
+
+      // Also check descriptor expectation matches
       if (desc_info.imageLayout != VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-        printf("RTG texture descriptor has wrong layout expectation!\n");
+        printf("WARNING: RTG texture descriptor has wrong layout expectation!\n");
         printf("  Texture: %s\n", pTex->_debugName.c_str());
         printf("  Descriptor layout: %d\n", desc_info.imageLayout);
         printf("  Should be: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL (%d)\n", VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        OrkAssertI(false, "RTG texture descriptor has wrong layout - see console output for details");
       }
-
-      // Check if we need a transition to shader read layout
-      // This is a temporary warning - the real fix needs to happen
-      // when the RTG is popped or when explicitly transitioning to texture mode
-
-      // Assert immediately when binding an RTG texture
-      // The actual image layout is likely UNDEFINED while the descriptor expects SHADER_READ_ONLY_OPTIMAL
-      printf("ASSERT: Binding RTG texture '%s'\n", pTex->_debugName.c_str());
-      printf("        Descriptor expects layout: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL\n");
-      printf("        But actual image is likely in: VK_IMAGE_LAYOUT_UNDEFINED\n");
-      OrkAssertI(false, "RTG texture bound without proper layout transition - need to transition from UNDEFINED to SHADER_READ_ONLY_OPTIMAL");
     }
   } else {
     // Use default texture based on texture type
