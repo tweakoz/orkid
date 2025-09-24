@@ -87,15 +87,15 @@ void FxPipeline::wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_
 }
 ///////////////////////////////////////////////////////////////////////////////
 int FxPipeline::beginBlock(const RenderContextInstData& RCID) {
-  auto context    = RCID.rcfd()->GetTarget();
-  auto FXI        = context->FXI();
-  auto RCFD       = RCID.rcfd();
-  const auto& CPD = RCFD->topCPD();
-  auto CIMPL      = RCFD->topCompositor();
-  auto PBRC       = RCFD->_pbrcommon;
-  lightmanager_ptr_t LMGR = CIMPL                 //
-                          ? CIMPL->lightManager() //
-                          : nullptr;              //
+  auto context            = RCID.rcfd()->GetTarget();
+  auto FXI                = context->FXI();
+  auto RCFD               = RCID.rcfd();
+  const auto& CPD         = RCFD->topCPD();
+  auto CIMPL              = RCFD->topCompositor();
+  auto PBRC               = RCFD->_pbrcommon;
+  lightmanager_ptr_t LMGR = CIMPL                       //
+                                ? CIMPL->lightManager() //
+                                : nullptr;              //
 
   int rval = FXI->BeginBlock(_technique, RCID);
 
@@ -139,7 +139,7 @@ int FxPipeline::beginBlock(const RenderContextInstData& RCID) {
 
   for (auto item : _storages) {
     fxparamstorageblock_constptr_t stor = item.first;
-    const auto& val          = item.second;
+    const auto& val                     = item.second;
     _set_storage(RCID, stor, val);
   }
 
@@ -155,10 +155,10 @@ int FxPipeline::beginBlock(const RenderContextInstData& RCID) {
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void FxPipeline::_set_storage(const RenderContextInstData& RCID, fxparamstorageblock_constptr_t p, varval_t val){
-  auto context          = RCID.rcfd()->GetTarget();
-  auto RCFD             = RCID.rcfd();
-  auto FXI              = context->FXI();
+void FxPipeline::_set_storage(const RenderContextInstData& RCID, fxparamstorageblock_constptr_t p, varval_t val) {
+  auto context = RCID.rcfd()->GetTarget();
+  auto RCFD    = RCID.rcfd();
+  auto FXI     = context->FXI();
   if (auto as_crcstr = val.tryAs<crcstring_ptr_t>()) {
     const auto& crcstr = *as_crcstr.value().get();
     switch (crcstr.hashed()) {
@@ -174,25 +174,416 @@ void FxPipeline::_set_storage(const RenderContextInstData& RCID, fxparamstorageb
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
+FxPipelineProviderContext::FxPipelineProviderContext(
+    const RenderContextInstData& rcid,
+    const CompositingPassData& topCPD,
+    FxInterface* fxi)          //
+    : _rcid(rcid)              //
+    , _rcfd(rcid.rcfd().get()) //
+    , _fxi(fxi)                //
+    , _topCPD(topCPD) {        //
+}
+///////////////////////////////////////////////////////////////////////////////
+FxPipelineNamedParamProviders::FxPipelineNamedParamProviders() {
+  /////////////////////////////////////////////////////////////////
+  _providers["RCID_PickID"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    const auto& RCFDPROPS = ppc._rcfd->userProperties();
+    auto itpfc            = RCFDPROPS.find("pixel_fetch_context"_crc);
+    OrkAssert(itpfc != RCFDPROPS.end());
+    auto as_pfc = itpfc->second.get<pixelfetchctx_ptr_t>();
+    auto as_u32 = as_pfc->encodeVariant(ppc._rcid._pickID);
+    // printf( "PICKID: RGBA<%g %g %g %g>\n", as_rgba.x, as_rgba.y, as_rgba.z, as_rgba.w );
+    ppc._fxi->bindParamU32(param, as_u32);
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_Camera_Pick"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    const auto& RCFDPROPS = ppc._rcfd->userProperties();
+    auto it               = RCFDPROPS.find("pickbufferMvpMatrix"_crc);
+    OrkAssert(it != RCFDPROPS.end());
+    auto as_mtx4p    = it->second.get<fmtx4_ptr_t>();
+    const fmtx4& MVP = *(as_mtx4p.get());
+    // MVP.dump("pickbufferMvpMatrix");
+    ppc._fxi->bindParamMatrix(param, MVP);
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_Camera_Pick"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    const auto& RCFDPROPS = ppc._rcfd->userProperties();
+    auto it               = RCFDPROPS.find("pickbufferMvpMatrix"_crc);
+    OrkAssert(it != RCFDPROPS.end());
+    auto as_mtx4p    = it->second.get<fmtx4_ptr_t>();
+    const fmtx4& MVP = *(as_mtx4p.get());
+    // MVP.dump("pickbufferMvpMatrix");
+    ppc._fxi->bindParamMatrix(param, MVP);
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_TIME"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto RCFD  = ppc._rcfd;
+    float time = RCFD->getUserProperty("time"_crc).get<float>();
+    ppc._fxi->bindParamFloat(param, time);
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["CPD_Rtg_Dim"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    const auto& CPD = ppc._topCPD;
+    int W           = CPD._width;
+    int H           = CPD._height;
+    ppc._fxi->bindParamVect2(param, fvec2(W, H));
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["CPD_Rtg_InvDim"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    const auto& CPD = ppc._topCPD;
+    int W           = CPD._width;
+    int H           = CPD._height;
+    fvec2 invdim(1.0f / float(W), 1.0f / float(H));
+    ppc._fxi->bindParamVect2(param, invdim);
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["FBI_RTG_DIM"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto context = ppc._rcfd->GetTarget();
+    auto rtg     = context->FBI()->_active_rtgroup;
+    int fbiw     = rtg->miW;
+    int fbih     = rtg->miH;
+    ppc._fxi->bindParamVect2(param, fvec2(fbiw, fbih));
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["FBI_RTG_INVDIM"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto context = ppc._rcfd->GetTarget();
+    auto rtg     = context->FBI()->_active_rtgroup;
+    int fbiw     = rtg->miW;
+    int fbih     = rtg->miH;
+    ppc._fxi->bindParamVect2(param, fvec2(1.0 / fbiw, 1.0 / fbih));
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_MODCOLOR"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto context  = ppc._rcfd->GetTarget();
+    auto modcolor = context->RefModColor();
+    ppc._fxi->bindParamVect4(param, modcolor);
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_M"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto context     = ppc._rcfd->GetTarget();
+    auto mtxi        = context->MTXI();
+    auto worldmatrix = ppc._rcid.worldMatrix();
+    ppc._fxi->bindParamMatrix(param, worldmatrix);
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_DEPTH_MAP"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto RCFD      = ppc._rcfd;
+    auto depth_tex = RCFD->getUserProperty("DEPTH_MAP"_crc).get<texture_ptr_t>();
+    ppc._fxi->bindParamTexture(param, depth_tex.get());
+    // OrkAssert(false);
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_EYE_POSITION"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto monocams = ppc._topCPD._mono_cam_matrices;
+    fmtx4 V;
+    if (monocams) {
+      V = monocams->_vmatrix;
+    }
+    auto eyepos = V.inverse().translation();
+    ppc._fxi->bindParamVect3(param, eyepos);
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_PBR_BRDF_INTEGRATION_GGX"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto pbrcommon          = ppc._rcfd->_pbrcommon;
+    auto brdf_integration = pbrcommon->_radiance_maps->_brdfIntegrationMapGGX.get();
+    ppc._fxi->bindParamTexture(param, brdf_integration);
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_PBR_DIFFUSE_ENV"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto pbrcommon          = ppc._rcfd->_pbrcommon;
+    auto the_tex = pbrcommon->envDiffuseTexture().get();
+    ppc._fxi->bindParamTexture(param, the_tex);
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_PBR_SPECULAR_ENV"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto pbrcommon          = ppc._rcfd->_pbrcommon;
+    auto the_tex = pbrcommon->envSpecularTexture().get();
+    ppc._fxi->bindParamTextureArray(param, the_tex);
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_PBR_BLACK_2DMAP"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto pbrcommon          = ppc._rcfd->_pbrcommon;
+    ppc._fxi->bindParamTexture(param, pbrcommon->_texBlack.get());
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_PBR_WHITE_2DMAP"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto pbrcommon          = ppc._rcfd->_pbrcommon;
+    ppc._fxi->bindParamTexture(param, pbrcommon->_texWhite.get());
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_PBR_WHITE_LIGHTMAP_ARRAY"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto pbrcommon          = ppc._rcfd->_pbrcommon;
+    ppc._fxi->bindParamTextureArray(param, pbrcommon->_texWhiteLightMapArray.get());
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_PBR_BLACK_LIGHTMAP_ARRAY"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto pbrcommon          = ppc._rcfd->_pbrcommon;
+    ppc._fxi->bindParamTextureArray(param, pbrcommon->_texBlackLightMapArray.get());
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_PBR_LIGHTMAP_COLORS"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    static fvec3 lightmap_colors[8] = {
+        fvec3(1.0f, 1.0f, 1.0f), // white
+        fvec3(0.5f, 0.5f, 0.5f), // gray
+        fvec3(1.0f, 0.5f, 0.5f), // red
+        fvec3(0.5f, 1.0f, 0.5f), // green
+        fvec3(0.5f, 0.5f, 1.0f), // blue
+        fvec3(1.0f, 1.0f, 0.5f), // yellow
+        fvec3(1.0f, 0.5f, 1.0f), // magenta
+        fvec3(0.5f, 1.0f, 1.0f)  // cyan
+    };
+    ppc._fxi->bindParamVect3Array(param, lightmap_colors, 8);
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_PBR_BLACK_CUBEMAP"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto pbrcommon          = ppc._rcfd->_pbrcommon;
+    ppc._fxi->bindParamTexture(param, pbrcommon->_texCubeBlack.get());
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_PBR_WHITE_CUBEMAP"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto pbrcommon          = ppc._rcfd->_pbrcommon;
+    ppc._fxi->bindParamTexture(param, pbrcommon->_texCubeWhite.get());
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_MONOCAM_NEAR_FAR"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto monocams = ppc._topCPD._mono_cam_matrices;
+    float near = monocams->_camdat.mNear;
+    float far  = monocams->_camdat.mFar;
+    ppc._fxi->bindParamVect2(param, fvec2(near, far));
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_Camera_MVP_Mono"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto monocams = ppc._topCPD._mono_cam_matrices;
+    auto worldmatrix = ppc._rcid.worldMatrix();
+    if (monocams) {
+      // printf( "RCFD_Camera_MVP_Mono: monocams<%p>\n", (void*)monocams );
+      ppc._fxi->bindParamMatrix(param, monocams->MVPMONO(worldmatrix));
+    } else {
+      auto MTXI        = ppc._rcfd->GetTarget()->MTXI();
+      auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix());
+      ppc._fxi->bindParamMatrix(param, MVP);
+    }
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_Camera_MV_Mono"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto monocams = ppc._topCPD._mono_cam_matrices;
+    auto worldmatrix = ppc._rcid.worldMatrix();
+    if (monocams) {
+      // printf( "RCFD_Camera_MVP_Mono: monocams<%p>\n", (void*)monocams );
+      ppc._fxi->bindParamMatrix(param, monocams->_vmatrix * worldmatrix);
+    } else {
+      auto MTXI        = ppc._rcfd->GetTarget()->MTXI();
+      auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix());
+      ppc._fxi->bindParamMatrix(param, MVP);
+    }
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_Camera_V_Mono"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto monocams = ppc._topCPD._mono_cam_matrices;
+    if (monocams) {
+      ppc._fxi->bindParamMatrix(param, monocams->_vmatrix);
+    } else {
+      auto MTXI        = ppc._rcfd->GetTarget()->MTXI();
+      ppc._fxi->bindParamMatrix(param, MTXI->RefVMatrix());
+    }
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_Camera_P_Mono"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto monocams = ppc._topCPD._mono_cam_matrices;
+    if (monocams) {
+      ppc._fxi->bindParamMatrix(param, monocams->_pmatrix);
+    } else {
+      auto MTXI        = ppc._rcfd->GetTarget()->MTXI();
+      ppc._fxi->bindParamMatrix(param, MTXI->RefPMatrix());
+    }
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_Camera_VP_Mono"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto monocams = ppc._topCPD._mono_cam_matrices;
+    auto worldmatrix = ppc._rcid.worldMatrix();
+    if (monocams) {
+      fmtx4 vp = monocams->VPMONO();
+      // vp.dump("monocams->VPMONO()");
+      ppc._fxi->bindParamMatrix(param, vp);
+    } else {
+      auto MTXI        = ppc._rcfd->GetTarget()->MTXI();
+      auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix());
+      ppc._fxi->bindParamMatrix(param, MVP);
+    }
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_Camera_IV_Mono"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto monocams = ppc._topCPD._mono_cam_matrices;
+    auto worldmatrix = ppc._rcid.worldMatrix();
+    if (monocams) {
+      ppc._fxi->bindParamMatrix(param, monocams->GetIVMatrix());
+    } else {
+      auto MTXI        = ppc._rcfd->GetTarget()->MTXI();
+      auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVMatrix().inverse());
+      ppc._fxi->bindParamMatrix(param, MVP);
+    }
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_Camera_IP_Mono"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto monocams = ppc._topCPD._mono_cam_matrices;
+    auto worldmatrix = ppc._rcid.worldMatrix();
+    if (monocams) {
+      ppc._fxi->bindParamMatrix(param, monocams->_pmatrix.inverse());
+    } else {
+      auto MTXI        = ppc._rcfd->GetTarget()->MTXI();
+      auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVMatrix().inverse());
+      ppc._fxi->bindParamMatrix(param, MVP);
+    }
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_Camera_IVP_Mono"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto monocams = ppc._topCPD._mono_cam_matrices;
+    auto worldmatrix = ppc._rcid.worldMatrix();
+    if (monocams) {
+      auto VP  = monocams->VPMONO();
+      auto IVP = VP.inverse();
+      // IVP.dump("IVP");
+      ppc._fxi->bindParamMatrix(param, IVP);
+    } else {
+      auto MTXI        = ppc._rcfd->GetTarget()->MTXI();
+      auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix().inverse());
+      ppc._fxi->bindParamMatrix(param, MVP);
+    }
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_Camera_ZNORMAL_Mono"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto monocams = ppc._topCPD._mono_cam_matrices;
+    auto worldmatrix = ppc._rcid.worldMatrix();
+    if (monocams) {
+      auto VP      = monocams->VPMONO();
+      auto IVP     = VP.inverse();
+      fvec3 raydir = IVP.zNormal().normalized();
+      // IVP.dump("IVP");
+      // printf("raydir1<%g %g %g>\n", raydir.x, raydir.y, raydir.z);
+      ppc._fxi->bindParamVect4(param, raydir);
+    } else {
+      auto MTXI        = ppc._rcfd->GetTarget()->MTXI();
+      auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix().inverse());
+      // printf("raydir2<%g %g %g>\n", raydir.x, raydir.y, raydir.z);
+      ppc._fxi->bindParamMatrix(param, MVP);
+    }
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_Camera_VP_Left"_crcu] = [this](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto stereocams = ppc._topCPD._stereo_cam_matrices;
+    bool is_stereo = ppc._topCPD.isSinglePassStereo();
+    if (is_stereo and stereocams) {
+      ppc._fxi->bindParamMatrix(param, stereocams->VPL());
+    }
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_Camera_VP_Right"_crcu] = [this](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto stereocams = ppc._topCPD._stereo_cam_matrices;
+    bool is_stereo = ppc._topCPD.isSinglePassStereo();
+    if (is_stereo and stereocams) {
+      ppc._fxi->bindParamMatrix(param, stereocams->VPR());
+    }
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_Camera_IVP_Left"_crcu] = [this](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto stereocams = ppc._topCPD._stereo_cam_matrices;
+    bool is_stereo = ppc._topCPD.isSinglePassStereo();
+    if (is_stereo and stereocams) {
+      auto m = stereocams->VPL().inverse();
+      ppc._fxi->bindParamMatrix(param, m);
+    }
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_Camera_IVP_Right"_crcu] = [this](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto stereocams = ppc._topCPD._stereo_cam_matrices;
+    bool is_stereo = ppc._topCPD.isSinglePassStereo();
+    if (is_stereo and stereocams) {
+      ppc._fxi->bindParamMatrix(param, stereocams->VPR().inverse());
+    }
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_Camera_MVP_Left"_crcu] = [this](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto stereocams = ppc._topCPD._stereo_cam_matrices;
+    bool is_stereo = ppc._topCPD.isSinglePassStereo();
+    if (is_stereo and stereocams) {
+      auto worldmatrix = ppc._rcid.worldMatrix();
+      ppc._fxi->bindParamMatrix(param, stereocams->MVPL(worldmatrix));
+    }
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_Camera_MVP_Right"_crcu] = [this](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto stereocams = ppc._topCPD._stereo_cam_matrices;
+    bool is_stereo = ppc._topCPD.isSinglePassStereo();
+    if (is_stereo and stereocams) {
+      auto worldmatrix = ppc._rcid.worldMatrix();
+      ppc._fxi->bindParamMatrix(param, stereocams->MVPR(worldmatrix));
+    }
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_Model_Rot"_crcu] = [this](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto worldmatrix = ppc._rcid.worldMatrix();
+    auto rotmtx = worldmatrix.rotMatrix33();
+    ppc._fxi->bindParamMatrix(param, rotmtx);
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_PBR_DPP_ZBIAS"_crcu] = [this](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto pbrcommon          = ppc._rcfd->_pbrcommon;
+    ppc._fxi->bindParamFloat(param, pbrcommon->_dppZbias);
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["LMGR_ACTIVE_UNTEXTURED_POINTLIGHT_COUNT"_crcu] = [this](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto enumlights = ppc._rcfd->userPropertyAs<enumeratedlights_ptr_t>("enumeratedlights"_crcu);
+    ppc._fxi->bindParamInt(param, enumlights->_num_active_untextured_pointlights);
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["LMGR_ACTIVE_TEXTURED_SPOTLIGHT_COUNT"_crcu] = [this](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto enumlights = ppc._rcfd->userPropertyAs<enumeratedlights_ptr_t>("enumeratedlights"_crcu);
+    ppc._fxi->bindParamInt(param, enumlights->_num_active_texspotlights);
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["LMGR_ACTIVE_TEXTURED_SPOTLIGHT_COLOR_COOKIES"_crcu] = [this](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto CIMPL              = ppc._rcfd->topCompositor();
+    lightmanager_ptr_t LMGR = CIMPL->lightManager();
+    ppc._fxi->bindParamTextureArray(param, LMGR->_cookies_spot_color.get());
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["LMGR_ACTIVE_TEXTURED_SPOTLIGHT_DEPTH_COOKIES"_crcu] = [this](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto CIMPL              = ppc._rcfd->topCompositor();
+    lightmanager_ptr_t LMGR = CIMPL->lightManager();
+    ppc._fxi->bindParamTextureArray(param, LMGR->_cookies_spot_depth.get());
+  };
+  /////////////////////////////////////////////////////////////////
+}
+///////////////////////////////////////////////////////////////////////////////
+fxpipelinenamedparamproviders_ptr_t FxPipelineNamedParamProviders::instance() {
+  static fxpipelinenamedparamproviders_ptr_t inst = std::make_shared<FxPipelineNamedParamProviders>();
+  return inst;
+}
+///////////////////////////////////////////////////////////////////////////////
 void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_constptr_t param, varval_t val) {
-  auto context          = RCID.rcfd()->GetTarget();
-  auto RCFD             = RCID.rcfd();
-  auto FXI              = context->FXI();
-  auto worldmatrix      = RCID.worldMatrix();
-  const auto& CPD       = RCID.rcfd()->topCPD();
-  int W                 = CPD._width;
-  int H                 = CPD._height;
-  auto MTXI             = context->MTXI();
-  const auto& RCFDPROPS = RCID.rcfd()->userProperties();
-  bool is_picking       = CPD.isPicking();
-  bool is_stereo        = CPD.isSinglePassStereo();
-  auto pbrcommon        = RCID.rcfd()->_pbrcommon;
-  auto modcolor         = context->RefModColor();
-  auto CIMPL            = RCFD->topCompositor();
-  lightmanager_ptr_t LMGR = CIMPL                 //
-                          ? CIMPL->lightManager() //
-                          : nullptr;              //
-  
+  auto context            = RCID.rcfd()->GetTarget();
+  auto RCFD               = RCID.rcfd();
+  auto FXI                = context->FXI();
+  auto worldmatrix        = RCID.worldMatrix();
+  const auto& CPD         = RCID.rcfd()->topCPD();
+  int W                   = CPD._width;
+  int H                   = CPD._height;
+  auto MTXI               = context->MTXI();
+  const auto& RCFDPROPS   = RCID.rcfd()->userProperties();
+  bool is_picking         = CPD.isPicking();
+  bool is_stereo          = CPD.isSinglePassStereo();
+  auto pbrcommon          = RCID.rcfd()->_pbrcommon;
+  auto modcolor           = context->RefModColor();
+  auto CIMPL              = RCFD->topCompositor();
+  auto named_providers    = FxPipelineNamedParamProviders::instance();
+  lightmanager_ptr_t LMGR = CIMPL                       //
+                                ? CIMPL->lightManager() //
+                                : nullptr;              //
+
+  ////////////////////////////////////////////////////////////
+  // amortize lookups
+  ////////////////////////////////////////////////////////////
+  FxPipelineProviderContext PPC(RCID, CPD, FXI);
   ////////////////////////////////////////////////////////////
   // try to order these by commonalitiy
   //  or find a quicker dispatch method
@@ -249,303 +640,12 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
   ///////////////////////////////////////////////////////////////////
   else if (auto as_crcstr = val.tryAs<crcstring_ptr_t>()) {
     const auto& crcstr = *as_crcstr.value().get();
-
-    auto stereocams = CPD._stereo_cam_matrices;
-    auto monocams   = CPD._mono_cam_matrices;
-
-    switch (crcstr.hashed()) {
-
-      case "RCID_PickID"_crcu: {
-        auto itpfc = RCFDPROPS.find("pixel_fetch_context"_crc);
-        OrkAssert(itpfc != RCFDPROPS.end());
-        auto as_pfc = itpfc->second.get<pixelfetchctx_ptr_t>();
-        auto as_u32 = as_pfc->encodeVariant(RCID._pickID);
-        // printf( "PICKID: RGBA<%g %g %g %g>\n", as_rgba.x, as_rgba.y, as_rgba.z, as_rgba.w );
-        FXI->bindParamU32(param, as_u32);
-        break;
-      }
-      case "RCFD_Camera_Pick"_crcu: {
-        auto it = RCFDPROPS.find("pickbufferMvpMatrix"_crc);
-        OrkAssert(it != RCFDPROPS.end());
-        auto as_mtx4p    = it->second.get<fmtx4_ptr_t>();
-        const fmtx4& MVP = *(as_mtx4p.get());
-        // MVP.dump("pickbufferMvpMatrix");
-        FXI->bindParamMatrix(param, MVP);
-        break;
-      }
-      case "RCFD_TIME"_crcu: {
-        auto RCFD  = RCID.rcfd();
-        float time = RCFD->getUserProperty("time"_crc).get<float>();
-        FXI->bindParamFloat(param, time);
-        break;
-      }
-      case "CPD_Rtg_Dim"_crcu: {
-        FXI->bindParamVect2(param, fvec2(W, H));
-        break;
-      }
-      case "CPD_Rtg_InvDim"_crcu: {
-        fvec2 invdim(1.0f / float(W), 1.0f / float(H));
-        FXI->bindParamVect2(param, invdim);
-        break;
-      }
-      case "FBI_RTG_DIM"_crcu: {
-        auto rtg = context->FBI()->_active_rtgroup;
-        int fbiw = rtg->miW;
-        int fbih = rtg->miH;
-        FXI->bindParamVect2(param, fvec2(fbiw, fbih));
-        break;
-      }
-      case "FBI_RTG_INVDIM"_crcu: {
-        auto rtg = context->FBI()->_active_rtgroup;
-        int fbiw = rtg->miW;
-        int fbih = rtg->miH;
-        FXI->bindParamVect2(param, fvec2(1.0 / fbiw, 1.0 / fbih));
-        break;
-      }
-      case "RCFD_MODCOLOR"_crcu: {
-        FXI->bindParamVect4(param, modcolor);
-        break;
-      }
-      case "RCFD_M"_crcu: {
-        FXI->bindParamMatrix(param, worldmatrix);
-        break;
-      }
-      case "RCFD_DEPTH_MAP"_crcu: {
-        auto RCFD      = RCID.rcfd();
-        auto depth_tex = RCFD->getUserProperty("DEPTH_MAP"_crc).get<texture_ptr_t>();
-        FXI->bindParamTexture(param, depth_tex.get());
-        // OrkAssert(false);
-        break;
-      }
-      case "RCFD_EYE_POSITION"_crcu: {
-        auto RCFD = RCID.rcfd();
-        fmtx4 V;
-        if (monocams) {
-          V = monocams->_vmatrix;
-        }
-        auto eyepos = V.inverse().translation();
-        FXI->bindParamVect3(param, eyepos);
-        // OrkAssert(false);
-        break;
-      }
-      case "RCFD_PBR_BRDF_INTEGRATION_GGX"_crcu: {
-        auto brdf_integration = pbrcommon->_radiance_maps->_brdfIntegrationMapGGX.get();
-        FXI->bindParamTexture(param, brdf_integration);
-        break;
-      }
-      case "RCFD_PBR_DIFFUSE_ENV"_crcu: {
-        auto the_tex = pbrcommon->envDiffuseTexture().get();
-        FXI->bindParamTexture(param, the_tex);
-        break;
-      }
-      case "RCFD_PBR_SPECULAR_ENV"_crcu: {
-        auto the_tex = pbrcommon->envSpecularTexture().get();
-        FXI->bindParamTextureArray(param, the_tex);
-        break;
-      }
-      case "RCFD_PBR_BLACK_2DMAP"_crcu: {
-        FXI->bindParamTexture(param, pbrcommon->_texBlack.get());
-        break;
-      }
-      case "RCFD_PBR_WHITE_2DMAP"_crcu: {
-        FXI->bindParamTexture(param, pbrcommon->_texWhite.get());
-        break;
-      }
-      case "RCFD_PBR_WHITE_LIGHTMAP_ARRAY"_crcu: {
-        FXI->bindParamTextureArray(param, pbrcommon->_texWhiteLightMapArray.get());
-        break;
-      }
-      case "RCFD_PBR_BLACK_LIGHTMAP_ARRAY"_crcu: {
-        FXI->bindParamTextureArray(param, pbrcommon->_texBlackLightMapArray.get());
-        break;
-      }
-      case "RCFD_PBR_LIGHTMAP_COLORS"_crcu: {
-        static fvec3 lightmap_colors[8] = {
-            fvec3(1.0f, 1.0f, 1.0f), // white
-            fvec3(0.5f, 0.5f, 0.5f), // gray
-            fvec3(1.0f, 0.5f, 0.5f), // red
-            fvec3(0.5f, 1.0f, 0.5f), // green
-            fvec3(0.5f, 0.5f, 1.0f), // blue
-            fvec3(1.0f, 1.0f, 0.5f), // yellow
-            fvec3(1.0f, 0.5f, 1.0f), // magenta
-            fvec3(0.5f, 1.0f, 1.0f)  // cyan
-        };
-        FXI->bindParamVect3Array(param, lightmap_colors, 8);
-        break;
-      }
-      case "RCFD_PBR_BLACK_CUBEMAP"_crcu: {
-        FXI->bindParamTexture(param, pbrcommon->_texCubeBlack.get());
-        break;
-      }
-      case "RCFD_PBR_WHITE_CUBEMAP"_crcu: {
-        FXI->bindParamTexture(param, pbrcommon->_texCubeWhite.get());
-        break;
-      }
-      case "RCFD_MONOCAM_NEAR_FAR"_crcu: {
-        float near = monocams->_camdat.mNear;
-        float far  = monocams->_camdat.mFar;
-        FXI->bindParamVect2(param, fvec2(near, far));
-        break;
-      }
-      case "RCFD_Camera_MVP_Mono"_crcu: {
-        if (monocams) {
-          // printf( "RCFD_Camera_MVP_Mono: monocams<%p>\n", (void*)monocams );
-          FXI->bindParamMatrix(param, monocams->MVPMONO(worldmatrix));
-        } else {
-          auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix());
-          FXI->bindParamMatrix(param, MVP);
-        }
-        break;
-      }
-      case "RCFD_Camera_MV_Mono"_crcu: {
-        if (monocams) {
-          // printf( "RCFD_Camera_MVP_Mono: monocams<%p>\n", (void*)monocams );
-          FXI->bindParamMatrix(param, monocams->_vmatrix * worldmatrix);
-        } else {
-          auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix());
-          FXI->bindParamMatrix(param, MVP);
-        }
-        break;
-      }
-      case "RCFD_Camera_V_Mono"_crcu: {
-        if (monocams) {
-          FXI->bindParamMatrix(param, monocams->_vmatrix);
-        } else {
-          FXI->bindParamMatrix(param, MTXI->RefVMatrix());
-        }
-        break;
-      }
-      case "RCFD_Camera_P_Mono"_crcu: {
-        if (monocams) {
-          FXI->bindParamMatrix(param, monocams->_pmatrix);
-        } else {
-          FXI->bindParamMatrix(param, MTXI->RefPMatrix());
-        }
-        break;
-      }
-      case "RCFD_Camera_VP_Mono"_crcu: {
-        if (monocams) {
-          fmtx4 vp = monocams->VPMONO();
-          // vp.dump("monocams->VPMONO()");
-          FXI->bindParamMatrix(param, vp);
-        } else {
-          auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix());
-          FXI->bindParamMatrix(param, MVP);
-        }
-        break;
-      }
-      case "RCFD_Camera_IV_Mono"_crcu: {
-        if (monocams) {
-          FXI->bindParamMatrix(param, monocams->GetIVMatrix());
-        } else {
-          auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVMatrix().inverse());
-          FXI->bindParamMatrix(param, MVP);
-        }
-        break;
-      }
-      case "RCFD_Camera_IP_Mono"_crcu: {
-        if (monocams) {
-          FXI->bindParamMatrix(param, monocams->_pmatrix.inverse());
-        } else {
-          auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVMatrix().inverse());
-          FXI->bindParamMatrix(param, MVP);
-        }
-        break;
-      }
-      case "RCFD_Camera_IVP_Mono"_crcu: {
-        if (monocams) {
-          auto VP  = monocams->VPMONO();
-          auto IVP = VP.inverse();
-          // IVP.dump("IVP");
-          FXI->bindParamMatrix(param, IVP);
-        } else {
-          auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix().inverse());
-          FXI->bindParamMatrix(param, MVP);
-        }
-        break;
-      }
-      case "RCFD_Camera_ZNORMAL_Mono"_crcu: {
-        if (monocams) {
-          auto VP      = monocams->VPMONO();
-          auto IVP     = VP.inverse();
-          fvec3 raydir = IVP.zNormal().normalized();
-          // IVP.dump("IVP");
-          //printf("raydir1<%g %g %g>\n", raydir.x, raydir.y, raydir.z);
-          FXI->bindParamVect4(param, raydir);
-        } else {
-          auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix().inverse());
-          //printf("raydir2<%g %g %g>\n", raydir.x, raydir.y, raydir.z);
-          FXI->bindParamMatrix(param, MVP);
-        }
-        break;
-      }
-      case "RCFD_Camera_VP_Left"_crcu: {
-        if (is_stereo and stereocams) {
-          FXI->bindParamMatrix(param, stereocams->VPL());
-        }
-        break;
-      }
-      case "RCFD_Camera_VP_Right"_crcu: {
-        if (is_stereo and stereocams) {
-          FXI->bindParamMatrix(param, stereocams->VPR());
-        }
-        break;
-      }
-      case "RCFD_Camera_IVP_Left"_crcu: {
-        if (is_stereo and stereocams) {
-          auto m = stereocams->VPL().inverse();
-          FXI->bindParamMatrix(param, m);
-        }
-        break;
-      }
-      case "RCFD_Camera_IVP_Right"_crcu: {
-        if (is_stereo and stereocams) {
-          FXI->bindParamMatrix(param, stereocams->VPR().inverse());
-        }
-        break;
-      }
-      case "RCFD_Camera_MVP_Left"_crcu: {
-        if (is_stereo and stereocams) {
-          FXI->bindParamMatrix(param, stereocams->MVPL(worldmatrix));
-        }
-        break;
-      }
-      case "RCFD_Camera_MVP_Right"_crcu: {
-        if (is_stereo and stereocams) {
-          FXI->bindParamMatrix(param, stereocams->MVPR(worldmatrix));
-        }
-        break;
-      }
-      case "RCFD_Model_Rot"_crcu: {
-        auto rotmtx = worldmatrix.rotMatrix33();
-        FXI->bindParamMatrix(param, rotmtx);
-        break;
-      }
-      case "RCFD_PBR_DPP_ZBIAS"_crcu: {
-        FXI->bindParamFloat(param, pbrcommon->_dppZbias);
-        break;
-      }
-      case "LMGR_ACTIVE_UNTEXTURED_POINTLIGHT_COUNT"_crcu: {
-        auto enumlights = RCFD->userPropertyAs<enumeratedlights_ptr_t>("enumeratedlights"_crcu);
-        FXI->bindParamInt(param, enumlights->_num_active_untextured_pointlights);
-        break;
-      }
-      case "LMGR_ACTIVE_TEXTURED_SPOTLIGHT_COUNT"_crcu: {
-        auto enumlights = RCFD->userPropertyAs<enumeratedlights_ptr_t>("enumeratedlights"_crcu);
-        FXI->bindParamInt(param, enumlights->_num_active_texspotlights);
-        break;
-      }
-      case "LMGR_ACTIVE_TEXTURED_SPOTLIGHT_COLOR_COOKIES"_crcu: {
-        FXI->bindParamTextureArray(param, LMGR->_cookies_spot_color.get());
-        break;
-      }
-      case "LMGR_ACTIVE_TEXTURED_SPOTLIGHT_DEPTH_COOKIES"_crcu: {
-        FXI->bindParamTextureArray(param, LMGR->_cookies_spot_depth.get());
-        break;
-      }
-      default:
-        OrkAssert(false);
-        break;
+    auto it = named_providers->_providers.find(crcstr.hashed());
+    if (it != named_providers->_providers.end()) {
+      auto func = it->second;
+      func(PPC, param);
+    } else {
+      OrkAssert(false);
     }
   } else {
     OrkAssert(false);

@@ -57,6 +57,29 @@ struct FxPipelinePermutationSet {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+struct FxPipelineNamedParamProviders;
+using fxpipelinenamedparamproviders_ptr_t = std::shared_ptr<FxPipelineNamedParamProviders>;
+
+struct FxPipelineProviderContext {
+  FxPipelineProviderContext(const RenderContextInstData& rcid, 
+                            const CompositingPassData& topCPD, 
+                            FxInterface* fxi);
+  const RenderContextInstData& _rcid;
+  const RenderContextFrameData* _rcfd;
+  FxInterface* _fxi;
+  const CompositingPassData& _topCPD;
+};
+struct FxPipelineNamedParamProviders {
+
+  static fxpipelinenamedparamproviders_ptr_t instance();
+  FxPipelineNamedParamProviders();
+
+  using provider_fn_t = std::function<void(const FxPipelineProviderContext&, fxparam_constptr_t)>;
+  std::unordered_map<uint64_t,provider_fn_t> _providers;
+};
+
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct FxPipeline {
 

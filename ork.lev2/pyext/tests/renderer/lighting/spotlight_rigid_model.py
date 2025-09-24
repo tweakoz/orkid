@@ -51,7 +51,7 @@ class StereoApp1(object):
   def onGpuInit(self,ctx):
 
     params_dict = {
-      "SkyboxIntensity": float(2.5),
+      "SkyboxIntensity": float(1.0),
       "SpecularIntensity": float(1),
       "DiffuseIntensity": float(1),
       "AmbientLight": vec3(0.1),
