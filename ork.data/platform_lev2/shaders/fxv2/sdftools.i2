@@ -199,7 +199,7 @@ libblock lib_sdftools {
   float depthAtWpos(vec3 wpos, mat4 vp) {
     vec4 hpos = vp * vec4(wpos, 1.0);
     if (hpos.w == 0.0) return 0.0; // Avoid division by zero
-    return (hpos.z / hpos.w + 1.0) * 0.5; // Convert to normalized depth
+    return (hpos.z / hpos.w); // Convert to normalized depth
 }
   ///////////////////////////////
 }

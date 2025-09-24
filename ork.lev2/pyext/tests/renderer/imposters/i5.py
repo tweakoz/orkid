@@ -26,7 +26,7 @@ from lev2utils.scenegraph import createSceneGraph
 from lev2utils.lighting import MySpotLight, MyCookie
 
 tokens = CrcStringProxy()
-IMP_DIM = 768
+IMP_DIM = 1024
 ################################################################################
 
 ################################################################################
