@@ -738,7 +738,7 @@ HeadLightManager::HeadLightManager(RenderContextFrameData& FrameData)
 void LightManager::bindEnumeratedToStorageBuffer( Context* ctx,                             //
                                                   enumeratedlights_ptr_t enumerated_lights, //
                                                   FxShaderStorageBuffer* ssbo ) const {            //
-  constexpr size_t kmaxlights = 64;
+  constexpr size_t kmaxlights = 64; // must match storage_interface storage_fwd_lighting array size
   auto FXI = ctx->FXI();
   ///////////////////////////////////////////////////////////////////////////
   // build lighting UBO
@@ -752,10 +752,10 @@ void LightManager::bindEnumeratedToStorageBuffer( Context* ctx,                 
   size_t mat4_stride = sizeof(fmtx4);
 
   size_t base_color      = 0;
-  size_t base_sizbias    = base_color + vec4_stride * 64;
-  size_t base_position   = base_sizbias + vec4_stride * 64;
-  size_t base_shmtx      = base_position + vec4_stride * 64;
-  size_t base_lighttexid = base_shmtx + mat4_stride * 64;
+  size_t base_sizbias    = base_color + vec4_stride * kmaxlights;
+  size_t base_position   = base_sizbias + vec4_stride * kmaxlights;
+  size_t base_shmtx      = base_position + vec4_stride * kmaxlights;
+  size_t base_lighttexid = base_shmtx + mat4_stride * kmaxlights;
 
   if (0) {
     printf("base_color<%zu>\n", base_color);
@@ -788,7 +788,7 @@ void LightManager::bindEnumeratedToStorageBuffer( Context* ctx,                 
   //////////////////////////////////////////
 
   for (int i = 0; i < kmaxlights; i++) {
-    pl_mapped->ref<uint32_t>(base_lighttexid + (i * vec4_stride)) = i;
+    pl_mapped->ref<uint32_t>(base_lighttexid + (i * i32_stride)) = i;
   }
 
   //////////////////////////////////////////
@@ -817,7 +817,7 @@ void LightManager::bindEnumeratedToStorageBuffer( Context* ctx,                 
       pl_mapped->ref<fvec4>(base_sizbias + v4_offset)           = fvec4(R, B, SMS, 1);
       pl_mapped->ref<fvec4>(base_position + v4_offset)          = P;
       pl_mapped->ref<fmtx4>(base_shmtx + (index * mat4_stride)) = light->shadowMatrix();
-      size_t texid_addr                                         = base_lighttexid + (index * vec4_stride);
+      size_t texid_addr                                         = base_lighttexid + (index * i32_stride);
       // printf( "TEXID ADDR<%zu> ID<%d>\n", tex_addr, num_texspotlights );
 
       int cookie_index = light->_cookieColor->_slice;

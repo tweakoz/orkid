@@ -64,6 +64,11 @@ void FxPipeline::bindParam(fxparam_constptr_t p, varval_t v) {
   _params[p] = v;
 }
 /////////////////////////////////////////////////////////////////////////
+void FxPipeline::bindStorage(fxparamstorageblock_constptr_t p, varval_t v) {
+  OrkAssert(p != nullptr);
+  _storages[p] = v;
+}
+/////////////////////////////////////////////////////////////////////////
 void FxPipeline::bindUniformBuffer(fxuniformblock_constptr_t p, varval_t v) {
   OrkAssert(p != nullptr);
   _uniformbuffers[p] = v;
@@ -131,6 +136,14 @@ int FxPipeline::beginBlock(const RenderContextInstData& RCID) {
   }
 
   ///////////////////////////////
+
+  for (auto item : _storages) {
+    fxparamstorageblock_constptr_t stor = item.first;
+    const auto& val          = item.second;
+    _set_storage(RCID, stor, val);
+  }
+
+  ///////////////////////////////
   // apply raster state
   ///////////////////////////////
   if (_rasterstate) {
@@ -140,6 +153,25 @@ int FxPipeline::beginBlock(const RenderContextInstData& RCID) {
   ///////////////////////////////
 
   return rval;
+}
+///////////////////////////////////////////////////////////////////////////////
+void FxPipeline::_set_storage(const RenderContextInstData& RCID, fxparamstorageblock_constptr_t p, varval_t val){
+  auto context          = RCID.rcfd()->GetTarget();
+  auto RCFD             = RCID.rcfd();
+  auto FXI              = context->FXI();
+  if (auto as_crcstr = val.tryAs<crcstring_ptr_t>()) {
+    const auto& crcstr = *as_crcstr.value().get();
+    switch (crcstr.hashed()) {
+      case "LMGR_LIGHTING_STORAGE"_crcu: {
+        auto pl_buffer = PBRMaterial::lightingDataBuffer(context);
+        FXI->bindStorageBuffer(p, pl_buffer);
+        break;
+      }
+      default:
+        OrkAssert(false);
+        break;
+    }
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_constptr_t param, varval_t val) {

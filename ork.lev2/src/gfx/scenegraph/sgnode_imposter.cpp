@@ -271,12 +271,16 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
   RCFD->setUserProperty("RCFD_Camera_VP_Mono"_crcu,SUBVP);
   RCFD->setUserProperty("RCFD_Camera_IVP_Mono"_crcu,SUBVP.inverse());
 
+
   if (RTG) {
+
+    ////////////////////////////////////////////
+    // imp pass
+    ////////////////////////////////////////////
 
     RTG->_autoclear  = true;
     RTG->_clearColor = fvec4(0, 0, 0, 0);
     auto vprect_rtg  = RTG->viewportRect();
-
 
     FBI->pushScissor(vprect_rtg);
     FBI->pushViewport(vprect_rtg);

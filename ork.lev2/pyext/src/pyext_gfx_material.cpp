@@ -228,6 +228,15 @@ void pyinit_gfx_material(py::module& module_lev2) {
                   pipeline->bindUniformBuffer(ublock.get(),py::cast<crcstring_ptr_t>(inp_value));
                 }
               })
+          .def(
+              "bindStorage",                                                                    //
+              [type_codec](fxpipeline_ptr_t pipeline, //
+                 pyfxstorage_ptr_t storage, //
+                 py::object inp_value) { //
+                if( py::isinstance<CrcString>(inp_value) ){
+                  pipeline->bindStorage(storage.get(),py::cast<crcstring_ptr_t>(inp_value));
+                }
+              })
               .def(
               "bindParam",                                                                    //
               [type_codec](fxpipeline_ptr_t pipeline, //
@@ -416,6 +425,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
           #endif
           .def("param", [](freestyle_mtl_ptr_t m, std::string named) -> pyfxparam_ptr_t { return pyfxparam_ptr_t(m->param(named)); })
           .def("uniblk", [](freestyle_mtl_ptr_t m, std::string named) -> pyfxuniblk_ptr_t { return pyfxuniblk_ptr_t(m->uniformBlock(named)); })
+          .def("storage", [](freestyle_mtl_ptr_t m, std::string named) -> pyfxstorage_ptr_t { return pyfxstorage_ptr_t(m->storageBlock(named)); })
           .def("bindParamBool", [](freestyle_mtl_ptr_t m, pyfxparam_ptr_t& p, bool value) { m->bindParamBool(p.get(), value); })
           .def("bindParamFloat", [](freestyle_mtl_ptr_t m, pyfxparam_ptr_t& p, float value) { m->bindParamFloat(p.get(), value); })
           .def(

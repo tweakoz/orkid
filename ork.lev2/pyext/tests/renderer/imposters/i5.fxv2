@@ -157,7 +157,16 @@ fragment_shader ps_I5      //
   */
   //out_color      = vec4(pbr_lit * float(int(hit)), 1); // debug color
   C = C * dot(n, raydir.xyz*-1.0)*0.5+0.5;
-  out_color = vec4(C,1); 
+  //out_color = vec4(C,1); 
+  vec3 OC = _forward_lightingZ(
+    vec3(1), // modcolor
+    C,       // albedo
+    vec3(1,0,0), // rufmtlamb
+    vec3(0), // emission
+    EyePostion,
+    n,
+    false);
+  out_color = vec4(OC,1);
   //* float(int(hit)); // debug color
   //out_color = vec4(C*float(int(hit)), 1); // debug color
   gl_FragDepth = depthAtWpos(frg_wpos.xyz, vp);

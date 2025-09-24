@@ -107,6 +107,7 @@ uniform_block ublk_std_lighting (descriptor_set 0) {
   int point_light_count;
   int spot_light_count;
 }
+
 ///////////////////////////////////////////////////////////////
 storage_interface storage_fwd_lighting (descriptor_set 0) {
   buffer layout(std430) lights {

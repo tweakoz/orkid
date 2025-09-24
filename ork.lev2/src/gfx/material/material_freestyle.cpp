@@ -374,9 +374,6 @@ void FreestyleMaterial::end(rcfd_ptr_t RCFD) {
   this->EndBlock(targ);
 }
 ////////////////////////////////////////////////////////////////////////////////
-// Compute Shaders ?
-////////////////////////////////////////////////////////////////////////////////
-#if defined(ENABLE_COMPUTE_SHADERS)
 const FxShaderStorageBlock* FreestyleMaterial::storageBlock(std::string named) {
   auto fxi = _initialTarget->FXI();
   auto blk = fxi->storageBlock(_shader, named);
@@ -384,7 +381,10 @@ const FxShaderStorageBlock* FreestyleMaterial::storageBlock(std::string named) {
     _storageBlocks.insert(blk);
   return blk;
 }
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+// Compute Shaders ?
+////////////////////////////////////////////////////////////////////////////////
+#if defined(ENABLE_COMPUTE_SHADERS)
 const FxComputeShader* FreestyleMaterial::computeShader(std::string named) {
   auto fxi = _initialTarget->FXI();
   auto tek = fxi->computeShader(_shader, named);

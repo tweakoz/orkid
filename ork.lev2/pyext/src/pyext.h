@@ -52,6 +52,7 @@ using pyfxshader_ptr_t    = ork::python::unmanaged_const_ptr<FxShader>;
 using pyfxcomputeshader_ptr_t    = ork::python::unmanaged_const_ptr<FxComputeShader>;
 using pyfxparam_ptr_t     = ork::python::unmanaged_const_ptr<FxShaderParam>;
 using pyfxuniblk_ptr_t     = ork::python::unmanaged_const_ptr<FxUniformBlock>;
+using pyfxstorage_ptr_t     = ork::python::unmanaged_const_ptr<FxShaderStorageBlock>;
 using pyfxtechnique_ptr_t = ork::python::unmanaged_const_ptr<FxShaderTechnique>;
 using fxparammap_t        = std::map<std::string, pyfxparam_ptr_t>;
 using fxtechniquemap_t    = std::map<std::string, pyfxtechnique_ptr_t>;

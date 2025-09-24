@@ -311,7 +311,7 @@ def createImposter( context = None,
         imp_pass.pipeline.bindParam(imp_mtl.param("DiffuseLevel"), 1.0 )
         imp_pass.pipeline.bindParam(imp_mtl.param("SpecularLevel"), 1.0 )
         imp_pass.pipeline.bindParam(imp_mtl.param("RoughnessLevels"), 16.0 )
-        imp_pass.pipeline.bindUniBlock(imp_mtl.uniblk("ublk_frg_fwd_lighting"), tokens.LMGR_LIGHTING_UBO )
+        imp_pass.pipeline.bindStorage(imp_mtl.storage("storage_fwd_lighting"), tokens.LMGR_LIGHTING_STORAGE )
         imp_pass.pipeline.bindParam(imp_mtl.param("point_light_count"), tokens.LMGR_ACTIVE_UNTEXTURED_POINTLIGHT_COUNT )
         imp_pass.pipeline.bindParam(imp_mtl.param("spot_light_count"), tokens.LMGR_ACTIVE_TEXTURED_SPOTLIGHT_COUNT )
         imp_pass.pipeline.bindParam(imp_mtl.param("light_cookie_colors"), tokens.LMGR_ACTIVE_TEXTURED_SPOTLIGHT_COLOR_COOKIES )

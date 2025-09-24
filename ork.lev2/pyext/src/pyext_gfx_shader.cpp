@@ -103,6 +103,17 @@ void pyinit_gfx_shader(py::module& module_lev2) {
           });
   type_codec->registerStdCodec<pyfxuniblk_ptr_t>(uniblk_type);
   /////////////////////////////////////////////////////////////////////////////////
+  auto storage_type = //
+      py::class_<pyfxstorage_ptr_t>(module_lev2, "FxShaderStorageBlock")
+          .def_property_readonly("name", [](pyfxstorage_ptr_t& p) -> std::string { return p->_name; })
+          .def("__repr__", [](pyfxstorage_ptr_t& p) -> std::string {
+            if(p.get()){
+              return FormatString("FxShaderStorageBlock(%p:%s)", p.get(), p->_name.c_str());
+            }
+            return FormatString("FxShaderStorageBlock(nil)");
+          });
+  type_codec->registerStdCodec<pyfxstorage_ptr_t>(storage_type);
+  /////////////////////////////////////////////////////////////////////////////////
   auto tek_type = //
       py::class_<pyfxtechnique_ptr_t>(module_lev2, "FxShaderTechnique")
           .def_property_readonly("name", [](pyfxtechnique_ptr_t& t) -> std::string { return t->_techniqueName; })
