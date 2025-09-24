@@ -58,7 +58,9 @@ rtgroup_ptr_t FrameBufferInterface::_ensureMainRtg() {
         buffer_usage,
         buffer_usage);
 
-  _main_rtg              = std::make_shared<RtGroup>(&tgt, 8, 8, MsaaSamples::MSAA_1X, rtg_usage);
+  int w = tgt.miW;
+  int h = tgt.miH;
+  _main_rtg              = std::make_shared<RtGroup>(&tgt, w, h, MsaaSamples::MSAA_1X, rtg_usage);
   _main_rtg->_name       = "main_rtg";
   _main_rtg->_clearColor = fcolor4::Black();
 

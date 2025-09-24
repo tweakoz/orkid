@@ -136,6 +136,10 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
   std::string debug_name = array->_tex->_debugName.empty() ? "texture_array" : array->_tex->_debugName;
   vktex->_imgobj         = std::make_shared<VulkanImageObject>(_contextVK, VKICI, debug_name);
 
+  printf("initTextureArray2DFromData: created image %p for array '%s'\n",
+         (void*)vktex->_imgobj->_vkimage,
+         debug_name.c_str());
+
   if (0)
     printf(
         "max_levels<%zu> max_w<%zu> max_h<%zu> num_slices<%d> format<%s>\n",
@@ -173,6 +177,7 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
   vktex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
   vktex->_vkdescriptor_info.imageView   = vktex->_imgobj->_vkimageview;
   vktex->_vksampler                     = _contextVK->_sampler_base;
+  vktex->_vkdescriptor_info.sampler     = vktex->_vksampler->_vksampler;
 
   ///////////////////////////
   // Set texture properties
@@ -469,10 +474,6 @@ void VkTextureInterface::initTextureArray2DAsync(TextureArray* texture_array) { 
 
 void VkTextureInterface::initTextureArray2D(TextureArray* texture_array) { // final
 
-  if (not texture_array->_isDirty) {
-    return;
-  }
-
   /////////////////////////////////////////////////////
   // Initialize texture array on primary command buffer
   /////////////////////////////////////////////////////
@@ -549,8 +550,15 @@ void VkTextureInterface::_enqueueInitTextureArray2DOnCB(TextureArray* texture_ar
 
   // Setup usage flags
   uint64_t usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-  if (format == EBufferFormat::Z32F) {
-    usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+  switch (format) {
+    case EBufferFormat::Z16F:
+    case EBufferFormat::Z24S8:
+    case EBufferFormat::Z32F:
+    case EBufferFormat::Z32FS8:
+      usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+      break;
+    default:
+      break;
   }
 
   /////////////////////////////////
@@ -577,6 +585,10 @@ void VkTextureInterface::_enqueueInitTextureArray2DOnCB(TextureArray* texture_ar
 
   vktex->_imgobj = std::make_shared<VulkanImageObject>(_contextVK, VKICI);
 
+  printf("initTextureArray2D: created image %p for array '%s'\n",
+         (void*)vktex->_imgobj->_vkimage,
+         texture_array->_tex->_debugName.c_str());
+
   // Create image view
   VkImageViewCreateInfo viewInfo{};
   initializeVkStruct(viewInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
@@ -596,6 +608,7 @@ void VkTextureInterface::_enqueueInitTextureArray2DOnCB(TextureArray* texture_ar
   vktex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
   vktex->_vkdescriptor_info.imageView   = vktex->_imgobj->_vkimageview;
   vktex->_vksampler                     = _contextVK->_sampler_base;
+  vktex->_vkdescriptor_info.sampler     = vktex->_vksampler->_vksampler;
 
   vktex->_imgview_hash.init();
   vktex->_imgview_hash.accumulateItem(vktex);
@@ -609,12 +622,25 @@ void VkTextureInterface::_enqueueInitTextureArray2DOnCB(TextureArray* texture_ar
   // This is needed for texture arrays that may never get data uploaded
 
   // Clear the image first (to black/transparent)
+  bool is_depth = false;
+  switch (format) {
+    case EBufferFormat::Z16F:
+    case EBufferFormat::Z24S8:
+    case EBufferFormat::Z32F:
+    case EBufferFormat::Z32FS8:
+      is_depth = true;
+      break;
+    default:
+      is_depth = false;
+      break;
+  }
   auto clear_barrier = createImageBarrier(
       vktex->_imgobj->_vkimage,
       VK_IMAGE_LAYOUT_UNDEFINED,
       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
       VkAccessFlagBits(0),
       VK_ACCESS_TRANSFER_WRITE_BIT);
+  clear_barrier->subresourceRange.aspectMask = is_depth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
   clear_barrier->subresourceRange.levelCount = num_levels;
   clear_barrier->subresourceRange.layerCount = num_slices;
 
@@ -624,15 +650,26 @@ void VkTextureInterface::_enqueueInitTextureArray2DOnCB(TextureArray* texture_ar
       VK_PIPELINE_STAGE_TRANSFER_BIT,
       0, 0, nullptr, 0, nullptr, 1, clear_barrier.get());
 
-  // Clear to black/transparent
-  VkClearColorValue clear_color = {{0.0f, 0.0f, 0.0f, 0.0f}};
-  VkImageSubresourceRange range = {
-      VK_IMAGE_ASPECT_COLOR_BIT,
-      0, static_cast<uint32_t>(num_levels),
-      0, static_cast<uint32_t>(num_slices)
-  };
-  vkCmdClearColorImage(vk_cmdbuf, vktex->_imgobj->_vkimage,
-                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear_color, 1, &range);
+  // Clear based on format type
+  if (is_depth) {
+    VkClearDepthStencilValue clear_value = {1.0f, 0};
+    VkImageSubresourceRange range = {
+        VK_IMAGE_ASPECT_DEPTH_BIT,
+        0, static_cast<uint32_t>(num_levels),
+        0, static_cast<uint32_t>(num_slices)
+    };
+    vkCmdClearDepthStencilImage(vk_cmdbuf, vktex->_imgobj->_vkimage,
+                                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear_value, 1, &range);
+  } else {
+    VkClearColorValue clear_color = {{0.0f, 0.0f, 0.0f, 0.0f}};
+    VkImageSubresourceRange range = {
+        VK_IMAGE_ASPECT_COLOR_BIT,
+        0, static_cast<uint32_t>(num_levels),
+        0, static_cast<uint32_t>(num_slices)
+    };
+    vkCmdClearColorImage(vk_cmdbuf, vktex->_imgobj->_vkimage,
+                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear_color, 1, &range);
+  }
 
   // Now transition to shader read-only
   auto read_barrier = createImageBarrier(
@@ -641,6 +678,7 @@ void VkTextureInterface::_enqueueInitTextureArray2DOnCB(TextureArray* texture_ar
       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
       VK_ACCESS_TRANSFER_WRITE_BIT,
       VK_ACCESS_SHADER_READ_BIT);
+  read_barrier->subresourceRange.aspectMask = is_depth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
   read_barrier->subresourceRange.levelCount = num_levels;
   read_barrier->subresourceRange.layerCount = num_slices;
 

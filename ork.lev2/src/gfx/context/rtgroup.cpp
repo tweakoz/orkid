@@ -189,8 +189,11 @@ void RtGroup::Resize(int iw, int ih) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-RtgSet::RtgSet(Context* ctx, MsaaSamples s, std::string name, uint64_t usage, bool do_rendertarget)
+RtgSet::RtgSet(Context* ctx, int w, int h,
+         MsaaSamples s, std::string name, uint64_t usage, bool do_rendertarget)
     : _context(ctx)
+    , _width(w)
+    , _height(h)
     , _msaasamples(s)
     , _do_rendertarget(do_rendertarget)
     , _name(name)
@@ -201,7 +204,7 @@ rtgroup_ptr_t RtgSet::fetch(uint64_t key) {
   rtgroup_ptr_t rval = nullptr;
   auto it            = _rtgs.find(key);
   if (it == _rtgs.end()) {
-    rval = std::make_shared<RtGroup>(_context, 8, 8, _msaasamples);
+    rval = std::make_shared<RtGroup>(_context, _width, _height, _msaasamples);
     rval->_name = _name + FormatString(".%zx", key);
     rval->_autoclear = _autoclear;
 

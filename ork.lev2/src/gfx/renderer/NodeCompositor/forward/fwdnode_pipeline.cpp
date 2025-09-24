@@ -212,7 +212,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
           auto ssaotexture = RCFD->userPropertyAs<texture_ptr_t>("SSAO_MAP"_crcu);
           auto depthtexture = RCFD->userPropertyAs<texture_ptr_t>("DEPTH_MAP"_crcu);
 
-          FXI->bindParamTexture(this->_paramMapDepth, depthtexture.get() );
+          //FXI->bindParamTexture(this->_paramMapDepth, depthtexture.get() );
 
           auto near_far = RCFD->userPropertyAs<fvec2>("NEAR_FAR"_crcu);
           auto ssaoDIM = RCFD->userPropertyAs<fvec2>("SSAO_DIM"_crcu);

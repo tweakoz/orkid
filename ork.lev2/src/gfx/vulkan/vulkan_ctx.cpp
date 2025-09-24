@@ -817,6 +817,8 @@ bool VkSwapChainCaps::supportsPresentationMode(VkPresentModeKHR mode) const {
 void VkContext::initializeWindowContext(
     Window* pWin,        //
     CTXBASE* pctxbase) { //
+    miW = pWin->miWidth;
+    miH = pWin->miHeight;
   meTargetType = TargetType::WINDOW;
   ///////////////////////
   auto glfw_container = (CtxGLFW*)pctxbase;

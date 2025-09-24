@@ -434,6 +434,7 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
             // Create descriptor write
             auto& desc_info = vk_tex->_vkdescriptor_info;
             OrkAssert(desc_info.imageView != VK_NULL_HANDLE);
+            OrkAssert(desc_info.sampler != VK_NULL_HANDLE);
 
             VkWriteDescriptorSet DWRITE = {};
             initializeVkStruct(DWRITE, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);

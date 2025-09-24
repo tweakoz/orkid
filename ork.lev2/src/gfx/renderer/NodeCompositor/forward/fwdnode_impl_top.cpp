@@ -39,10 +39,10 @@ void ForwardPbrNodeImpl::init(lev2::Context* context, int iw, int ih) {
 
   if (nullptr == _rtgs_primary) {
 
-    _rtg_primary_depth_copy  = std::make_shared<RtGroup>(context, 8, 8);
+    _rtg_primary_depth_copy  = std::make_shared<RtGroup>(context, iw, ih);
     _rtg_cube1_depth_copy = std::make_shared<RtGroup>(context, 8, 8);
-    _rtg_ambocc_accum     = std::make_shared<RtGroup>(context, 8, 8);
-    _rtg_ambocc_accum2    = std::make_shared<RtGroup>(context, 8, 8);
+    _rtg_ambocc_accum     = std::make_shared<RtGroup>(context, iw, ih);
+    _rtg_ambocc_accum2    = std::make_shared<RtGroup>(context, iw, ih);
 
     auto pbrcommon = _node->_pbrcommon;
 
@@ -52,7 +52,7 @@ void ForwardPbrNodeImpl::init(lev2::Context* context, int iw, int ih) {
     }
 
     auto e_msaa = intToMsaaEnum(_ginitdata->_msaa_samples);
-    _rtgs_primary  = std::make_shared<RtgSet>(context, e_msaa, "rtgs-main", "color"_crcu);
+    _rtgs_primary  = std::make_shared<RtgSet>(context, iw, ih, e_msaa, "rtgs-main", "color"_crcu);
     _rtgs_primary->addBuffer("ForwardRt0", efmt);
 
     auto rtb1 = _rtg_ambocc_accum->createRenderTarget(EBufferFormat::R32F);

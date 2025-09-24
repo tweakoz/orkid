@@ -12,7 +12,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_rtgroup = logger()->configureChannel("VKRTG", fvec3(0.8, 0.2, 0.5), false);
+static logchannel_ptr_t logchan_rtgroup = logger()->configureChannel("VKRTG", fvec3(0.8, 0.2, 0.5), true);
 //constexpr uint32_t VK_RENDERING_RESUMING_BIT = 0x00000004;
 ///////////////////////////////////////////////////////////////////////////////
 vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(const VkRtgCreateOptions& options) {
@@ -108,10 +108,13 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rt
   ///////////////////////////////////////////////////
   // Handle depth buffer texture if present
   ///////////////////////////////////////////////////
-  if (false) { //depth_buffer && depth_buffer->texture()) {
+  if (depth_buffer) {
     auto depth_impl = depth_buffer->_impl.getShared<VklRtBufferImpl>();
-    _contextVK->_txi->_initTextureFromRtBuffer(depth_buffer.get());
-    depth_impl->_imgobj = depth_buffer->texture()->_impl.getShared<VulkanTextureObject>()->_imgobj;
+      if(depth_buffer->texture()){
+          _contextVK->_txi->_initTextureFromRtBuffer(depth_buffer.get());
+        depth_impl->_imgobj = depth_buffer->texture()->_impl.getShared<VulkanTextureObject>()->_imgobj;
+
+      }
   }
   ///////////////////////////////////////////////////
   return rtgimpl;
@@ -120,8 +123,8 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rt
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
-  if (0)
-    printf("VkFrameBufferInterface _pushRtGroup rtgroup<%p>\n", (void*)rtgroup);
+  if (1)
+    logchan_rtgroup->log("VkFrameBufferInterface _pushRtGroup rtgroup<%p>", (void*)rtgroup);
   
   // Create stack item to track this push operation
   RtgStackItem stack_item;
@@ -238,7 +241,12 @@ void VkFrameBufferInterface::_popRtGroup() {
   
   auto impl = popped_item._impl.getShared<VkRtgStackItemImpl>();
   auto finished_rtg = popped_item._rtgroup;
-  
+
+  if(1)logchan_rtgroup->log("_popRtGroup: RTG %p usage=%llu, did_begin_rendering=%d",
+       finished_rtg,
+       (unsigned long long)finished_rtg->_usage,
+       impl ? impl->_did_begin_rendering : 0);
+
   // Only end rendering if we actually began it during push
   if (impl && impl->_did_begin_rendering) {
     auto& CB = _contextVK->primary_cb()->_vkcmdbuf;
@@ -259,10 +267,6 @@ void VkFrameBufferInterface::_popRtGroup() {
   // since texture might be used even without being rendered to
   /////////////////////////////////////////////
   if (finished_rtg) {
-    if(0)printf("_popRtGroup: RTG %p usage=%llu, did_begin_rendering=%d\n",
-           finished_rtg,
-           (unsigned long long)finished_rtg->_usage,
-           impl ? impl->_did_begin_rendering : 0);
     auto RTGIMPL = finished_rtg->_impl.getShared<VkRtGroupImpl>();
 
     switch (finished_rtg->_usage) {

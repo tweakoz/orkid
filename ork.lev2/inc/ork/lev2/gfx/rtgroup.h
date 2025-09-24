@@ -111,7 +111,12 @@ struct RtGroup final {
 
 struct RtgSet {
   
-  RtgSet(Context* ctx, MsaaSamples s, std::string name, uint64_t usage = "color"_crcu, bool do_rendertarget=false);
+  RtgSet(Context* ctx, 
+         int w, int h,
+         MsaaSamples s, 
+         std::string name, 
+         uint64_t usage = "color"_crcu, 
+         bool do_rendertarget=false);
   rtgroup_ptr_t fetch(uint64_t key);
   void addBuffer(std::string name, EBufferFormat fmt);
 
@@ -128,6 +133,8 @@ struct RtgSet {
   bool _autoclear = true;
   std::string _name;
   uint64_t _usage = "color"_crcu;
+  int _width = 8;
+  int _height = 8;
 
 };
 
