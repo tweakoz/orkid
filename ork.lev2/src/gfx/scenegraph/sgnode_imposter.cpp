@@ -426,10 +426,10 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
       V1,
       V2,
       V3, // positions
-      fvec2(0, 1),
-      fvec2(1, 1),
+      fvec2(0, 0),
       fvec2(1, 0),
-      fvec2(0, 0), // uv
+      fvec2(1, 1),
+      fvec2(0, 1), // uv
       0xffffffff); // color
 
   context->debugPopGroup();

@@ -12,7 +12,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_rtgi = logger()->configureChannel("VKRTGI", fvec3(0.8, 0.2, 0.5), true);
+static logchannel_ptr_t logchan_rtbi = logger()->configureChannel("VKRTBI", fvec3(0.8, 0.2, 0.5), false);
 ///////////////////////////////////////////////////////////////////////////////
 
 VklRtBufferImpl::VklRtBufferImpl(vkcontext_rawptr_t ctxVK, VkRtGroupImpl* par, uint64_t usage, VkFormat fmt) //
@@ -21,7 +21,7 @@ VklRtBufferImpl::VklRtBufferImpl(vkcontext_rawptr_t ctxVK, VkRtGroupImpl* par, u
     , _usage(usage)
     , _vkfmt(fmt) { //
 
-  logchan_rtgi->log("VklRtBufferImpl constructor - usage=0x%zx (%zu)", _usage, _usage);
+  logchan_rtbi->log("VklRtBufferImpl constructor - usage=0x%zx (%zu)", _usage, _usage);
 
   initializeVkStruct(_attachmentDesc);
 
@@ -120,12 +120,12 @@ void _vkCreateImageForBuffer(
       options._format,                // format
       1);                             // miplevels
   
-  logchan_rtgi->log("_vkCreateImageForBuffer: usage=0x%zx (%zu) format=%d", options._usage, options._usage, options._format);
+  logchan_rtbi->log("_vkCreateImageForBuffer: usage=0x%zx (%zu) format=%d", options._usage, options._usage, options._format);
   
   // Defensive check: convert usage=0 to "color"_crcu
   uint64_t effective_usage = options._usage;
   if (effective_usage == 0) {
-    logchan_rtgi->log("WARNING: _vkCreateImageForBuffer received usage=0, defaulting to 'color'");
+    logchan_rtbi->log("WARNING: _vkCreateImageForBuffer received usage=0, defaulting to 'color'");
     effective_usage = "color"_crcu;
     // Also update the buffer's usage to the corrected value
     bufferimpl->_usage = effective_usage;
@@ -142,7 +142,7 @@ void _vkCreateImageForBuffer(
       VKICI->usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; // Allow rendering Color to this image
       break;
     default:
-      logchan_rtgi->log("ERROR: Unknown usage value 0x%zx in _vkCreateImageForBuffer", effective_usage);
+      logchan_rtbi->log("ERROR: Unknown usage value 0x%zx in _vkCreateImageForBuffer", effective_usage);
       OrkAssert(false);
       break;
   }
@@ -167,7 +167,7 @@ void _vkCreateImageForBuffer(
   bufferimpl->_currentLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Reset layout to undefined after creation
   imgobj->_currentLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Also set on the image object
   ///////////////////////////////////////////////////
-  logchan_rtgi->log("IMAGE: Created image %p, initial layout %d", (void*)vkimage, bufferimpl->_currentLayout);
+  logchan_rtbi->log("IMAGE: Created image %p, initial layout %d", (void*)vkimage, bufferimpl->_currentLayout);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -237,9 +237,9 @@ void VklRtBufferImpl::_transitionImage(vkpricmdbufimpl_ptr_t cb, const VkTransit
     VkImage img = _imgobj->_vkimage;
     OrkAssert(img != VK_NULL_HANDLE);
     
-    logchan_rtgi->log("IMAGE: Transition requested for image %p: current layout %d, target layout %d, CB %p", (void*)img, _currentLayout, p.layout, (void*)cb->_vkcmdbuf);
+    logchan_rtbi->log("IMAGE: Transition requested for image %p: current layout %d, target layout %d, CB %p", (void*)img, _currentLayout, p.layout, (void*)cb->_vkcmdbuf);
     if (_currentLayout == VK_IMAGE_LAYOUT_UNDEFINED || _currentLayout != p.layout) {
-      logchan_rtgi->log("IMAGE: Performing transition for image %p from %d to %d", (void*)img, _currentLayout, p.layout);
+      logchan_rtbi->log("IMAGE: Performing transition for image %p from %d to %d", (void*)img, _currentLayout, p.layout);
     auto barrier = createImageBarrier(img, _currentLayout, p.layout, p.srcAccess, p.dstAccess);
     barrier->subresourceRange.aspectMask = VkFormatConverter::_instance.aspectForUsage(_usage);
     
@@ -252,9 +252,9 @@ void VklRtBufferImpl::_transitionImage(vkpricmdbufimpl_ptr_t cb, const VkTransit
                          1, barrier.get());             // image memory barriers
 
     setLayout(p.layout);
-      logchan_rtgi->log("IMAGE: Transition complete for image %p, new layout %d", (void*)img, _currentLayout);
+      logchan_rtbi->log("IMAGE: Transition complete for image %p, new layout %d", (void*)img, _currentLayout);
     } else {
-      logchan_rtgi->log("IMAGE: Skipping transition for image %p, already in layout %d", (void*)img, _currentLayout);
+      logchan_rtbi->log("IMAGE: Skipping transition for image %p, already in layout %d", (void*)img, _currentLayout);
     }
 }
 

@@ -153,6 +153,7 @@ fragment_shader ps_upass //
 ////////////////////////////////////////
 state_block sb_default : default {
   BlendMode = OFF;
+  CullTest = OFF;
 }
 ////////////////////////////////////////
 technique tek_imp1 {
