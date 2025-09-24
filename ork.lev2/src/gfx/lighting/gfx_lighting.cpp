@@ -695,7 +695,7 @@ LightManager::LightManager(lightmanagerdata_constptr_t lmd)
   _cookies_spot_depth->_tex->_debugName = "cookies_spot_depth";
 
   _cookies_spot_color->resize(256, 256, 1, EBufferFormat::RGBA8);
-  _cookies_spot_depth->resize(256, 256, 1, EBufferFormat::R32F);
+  _cookies_spot_depth->resize(256, 256, 1, EBufferFormat::Z32F);
 
   // Set depth texture to use clamp-to-edge for proper shadow mapping
   _cookies_spot_depth->_tex->mTexSampleMode._texAddrModeS = TextureAddressMode::CLAMP;

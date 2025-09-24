@@ -136,6 +136,7 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
       VkAccessFlagBits(0),
       VK_ACCESS_TRANSFER_WRITE_BIT);
+  clear_barrier->subresourceRange.aspectMask = aspect_mask;
 
   vkCmdPipelineBarrier(
       vk_cmdbuf,
@@ -163,6 +164,7 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
       target_layout,
       VK_ACCESS_TRANSFER_WRITE_BIT,
       access_flags);
+  attach_barrier->subresourceRange.aspectMask = aspect_mask;
 
   vkCmdPipelineBarrier(
       vk_cmdbuf,
