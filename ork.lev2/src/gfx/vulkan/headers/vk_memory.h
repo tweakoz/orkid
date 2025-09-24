@@ -8,7 +8,7 @@ struct VulkanMemoryForImage {
   ~VulkanMemoryForImage();
 
   vkcontext_rawptr_t _ctxVK;
-  VkImage _vkimage;
+  VkImage _vkimage = VK_NULL_HANDLE;
   vkmemreq_ptr_t _memreq;
   vkmemallocinfo_ptr_t _allocinfo;
   vkmem_ptr_t _vkmem;
@@ -28,7 +28,7 @@ struct VulkanMemoryForBuffer {
   ~VulkanMemoryForBuffer();
 
   vkcontext_rawptr_t _ctxVK;
-  VkBuffer _vkbuffer;
+  VkBuffer _vkbuffer = VK_NULL_HANDLE;
   vkmemreq_ptr_t _memreq;
   vkmemallocinfo_ptr_t _allocinfo;
   vkmem_ptr_t _vkmem;
@@ -49,7 +49,7 @@ struct VulkanBuffer {
   size_t _length;
   VkBufferUsageFlags _usage;
   VkBufferCreateInfo _cinfo;
-  VkBuffer _vkbuffer;
+  VkBuffer _vkbuffer = VK_NULL_HANDLE;
   vkmemforbuf_ptr_t _memory;
 
   static std::atomic<int> _buffercount;

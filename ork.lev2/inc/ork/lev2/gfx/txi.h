@@ -98,6 +98,8 @@ public:
   }
   virtual void initTextureArray2D(TextureArray* ptex) {
   }
+  virtual void initTextureArray2DAsync(TextureArray* ptex) {
+  }
   virtual void initTextureArray3DFromData(TextureArray* ptex, TextureArrayInitData tid) {
   }
   virtual void updateTextureArraySlice(TextureArraySliceRef* slice, image_ptr_t img) {

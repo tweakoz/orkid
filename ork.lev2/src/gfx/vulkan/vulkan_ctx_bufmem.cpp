@@ -236,6 +236,7 @@ VulkanImageObject::VulkanImageObject(vkcontext_rawptr_t ctx, vkimagecreateinfo_p
   initializeVkStruct(_vkimage);
   initializeVkStruct(_vkimageview);
   VkResult ok = vkCreateImage(_ctx->_vkdevice, cinfo.get(), nullptr, &_vkimage);
+  //OrkAssert((uint64_t)_vkimage != 0xdc00000000dcULL)
   OrkAssert(VK_SUCCESS == ok);
   _imgmem = std::make_shared<VulkanMemoryForImage>(_ctx, _vkimage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
   if (name != "") {
@@ -273,6 +274,7 @@ VulkanImageObject::~VulkanImageObject() {
   if (_delete_image and (_vkimage != VK_NULL_HANDLE)) {
     vkDestroyImage(_ctx->_vkdevice, _vkimage, nullptr);
   }
+  _vkimage = VK_NULL_HANDLE;
   _imgmem = nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////

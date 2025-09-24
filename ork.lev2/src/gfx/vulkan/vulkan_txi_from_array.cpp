@@ -169,6 +169,7 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
     _contextVK->_setObjectDebugName(vktex->_imgobj->_vkimageview, VK_OBJECT_TYPE_IMAGE_VIEW, view_name.c_str());
   }
 
+  // Set to SHADER_READ_ONLY since we'll transition after upload
   vktex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
   vktex->_vkdescriptor_info.imageView   = vktex->_imgobj->_vkimageview;
   vktex->_vksampler                     = _contextVK->_sampler_base;
@@ -394,6 +395,9 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
   _contextVK->endRecordCommandBuffer(transfer->_command_buffer);
   _contextVK->enqueueDeferredOneShotCommand(transfer->_command_buffer);
 
+  // Update descriptor to reflect new layout after transition
+  vktex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
   // Apply sampling mode based on mip count
   // Only update filtering mode if mipmaps present, preserve address modes
   if (max_levels > 3) {
@@ -421,10 +425,86 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkTextureInterface::initTextureArray2D(TextureArray* texture_array) {
-  if (!texture_array->_isDirty) {
+void VkTextureInterface::initTextureArray2DAsync(TextureArray* texture_array) { // final
+
+  if (not texture_array->_isDirty) {
     return;
   }
+
+  /////////////////////////////////
+  // enqueue texture array initialization on a secondary command buffer
+  // and enqueue it for execution
+  /////////////////////////////////
+
+  auto cmdbuf = _contextVK->beginRecordCommandBuffer("initTextureArray2D_transition");
+  auto cmdbuf_impl = cmdbuf->_impl.getShared<VkSecondaryCommandBufferImpl>();
+  auto vk_cmdbuf = cmdbuf_impl->_vkcmdbuf;
+  _enqueueInitTextureArray2DOnCB(texture_array,vk_cmdbuf);
+  _contextVK->endRecordCommandBuffer(cmdbuf);
+  _contextVK->enqueueDeferredOneShotCommand(cmdbuf);
+
+  /////////////////////////////////
+  // Update the image object's tracked layout
+  /////////////////////////////////
+
+  texture_array->_isDirty = false;
+
+  /////////////////////////////////
+
+  if (DEBUG_TEXARRAY2D) {
+    int w                = texture_array->_width;
+    int h                = texture_array->_height;
+    int num_slices       = texture_array->_maxslices;
+    EBufferFormat format = texture_array->_format;
+    logchan_txia2d->log(
+        "VkTextureInterface::initTextureArray2DAsync created blank array w<%d> h<%d> slices<%d> format<%s>",
+        w,
+        h,
+        num_slices,
+        EBufferFormatToName(format).c_str());
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkTextureInterface::initTextureArray2D(TextureArray* texture_array) { // final
+
+  if (not texture_array->_isDirty) {
+    return;
+  }
+
+  /////////////////////////////////////////////////////
+  // Initialize texture array on primary command buffer
+  /////////////////////////////////////////////////////
+
+  auto vk_cmdbuf = _contextVK->primary_cb()->_vkcmdbuf;
+  _enqueueInitTextureArray2DOnCB(texture_array,vk_cmdbuf);
+  
+  /////////////////////////////////
+  // Update the image object's tracked layout
+  /////////////////////////////////
+
+  texture_array->_isDirty = false;
+
+  /////////////////////////////////
+
+  if (DEBUG_TEXARRAY2D) {
+    int w                = texture_array->_width;
+    int h                = texture_array->_height;
+    int num_slices       = texture_array->_maxslices;
+    EBufferFormat format = texture_array->_format;
+    logchan_txia2d->log(
+        "VkTextureInterface::initTextureArray2D created blank array w<%d> h<%d> slices<%d> format<%s>",
+        w,
+        h,
+        num_slices,
+        EBufferFormatToName(format).c_str());
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkTextureInterface::_enqueueInitTextureArray2DOnCB(TextureArray* texture_array, VkCommandBuffer vk_cmdbuf) {
 
   bool w_mips          = texture_array->_requires_mips;
   int w                = texture_array->_width;
@@ -473,7 +553,23 @@ void VkTextureInterface::initTextureArray2D(TextureArray* texture_array) {
     usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
   }
 
+  /////////////////////////////////
+  // Apply sampling mode based on mip count
+  // Only update filtering mode if mipmaps present, preserve address modes
+  /////////////////////////////////
+
+  if (num_levels > 3) {
+    auto& samplingMode           = texture_array->_tex->TexSamplingMode();
+    samplingMode._texFiltModeMin = ETextureMinifyFilterMode::LINEAR_MIPMAP_LINEAR;
+    samplingMode._texFiltModeMag = ETextureMagnifyFilterMode::LINEAR;
+    // Keep existing address modes (CLAMP/WRAP) that were set externally
+  }
+  this->ApplySamplingMode(texture_array->_tex.get());
+
+  /////////////////////////////////
   // Create image
+  /////////////////////////////////
+
   auto VKICI         = makeVKICI(w, h, 1, format, num_levels); // depth must be 1 for 2D arrays!
   VKICI->usage       = usage;
   VKICI->arrayLayers = num_slices; // array layers specify the number of slices
@@ -496,6 +592,7 @@ void VkTextureInterface::initTextureArray2D(TextureArray* texture_array) {
   VkResult ok = vkCreateImageView(_contextVK->_vkdevice, &viewInfo, nullptr, &vktex->_imgobj->_vkimageview);
   OrkAssert(VK_SUCCESS == ok);
 
+  // Set descriptor to expect SHADER_READ_ONLY layout
   vktex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
   vktex->_vkdescriptor_info.imageView   = vktex->_imgobj->_vkimageview;
   vktex->_vksampler                     = _contextVK->_sampler_base;
@@ -508,26 +605,52 @@ void VkTextureInterface::initTextureArray2D(TextureArray* texture_array) {
 
   texture_array->_tex->_impl = vktex;
 
-  // Apply sampling mode based on mip count
-  // Only update filtering mode if mipmaps present, preserve address modes
-  if (num_levels > 3) {
-    auto& samplingMode           = texture_array->_tex->TexSamplingMode();
-    samplingMode._texFiltModeMin = ETextureMinifyFilterMode::LINEAR_MIPMAP_LINEAR;
-    samplingMode._texFiltModeMag = ETextureMagnifyFilterMode::LINEAR;
-    // Keep existing address modes (CLAMP/WRAP) that were set externally
-  }
-  this->ApplySamplingMode(texture_array->_tex.get());
+  // Transition the blank image to shader read-only layout
+  // This is needed for texture arrays that may never get data uploaded
 
-  texture_array->_isDirty = false;
+  // Clear the image first (to black/transparent)
+  auto clear_barrier = createImageBarrier(
+      vktex->_imgobj->_vkimage,
+      VK_IMAGE_LAYOUT_UNDEFINED,
+      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+      VkAccessFlagBits(0),
+      VK_ACCESS_TRANSFER_WRITE_BIT);
+  clear_barrier->subresourceRange.levelCount = num_levels;
+  clear_barrier->subresourceRange.layerCount = num_slices;
 
-  if (DEBUG_TEXARRAY2D) {
-    logchan_txia2d->log(
-        "VkTextureInterface::initTextureArray2D created blank array w<%d> h<%d> slices<%d> format<%s>",
-        w,
-        h,
-        num_slices,
-        EBufferFormatToName(format).c_str());
-  }
+  vkCmdPipelineBarrier(
+      vk_cmdbuf,
+      VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+      VK_PIPELINE_STAGE_TRANSFER_BIT,
+      0, 0, nullptr, 0, nullptr, 1, clear_barrier.get());
+
+  // Clear to black/transparent
+  VkClearColorValue clear_color = {{0.0f, 0.0f, 0.0f, 0.0f}};
+  VkImageSubresourceRange range = {
+      VK_IMAGE_ASPECT_COLOR_BIT,
+      0, static_cast<uint32_t>(num_levels),
+      0, static_cast<uint32_t>(num_slices)
+  };
+  vkCmdClearColorImage(vk_cmdbuf, vktex->_imgobj->_vkimage,
+                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear_color, 1, &range);
+
+  // Now transition to shader read-only
+  auto read_barrier = createImageBarrier(
+      vktex->_imgobj->_vkimage,
+      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+      VK_ACCESS_TRANSFER_WRITE_BIT,
+      VK_ACCESS_SHADER_READ_BIT);
+  read_barrier->subresourceRange.levelCount = num_levels;
+  read_barrier->subresourceRange.layerCount = num_slices;
+
+  vkCmdPipelineBarrier(
+      vk_cmdbuf,
+      VK_PIPELINE_STAGE_TRANSFER_BIT,
+      VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+      0, 0, nullptr, 0, nullptr, 1, read_barrier.get());
+
+  vktex->_imgobj->_currentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

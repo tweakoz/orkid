@@ -306,10 +306,22 @@ struct VkTextureInterface final : public TextureInterface {
   void _createFromLoadReq(texloadreq_ptr_t tlr) final;
   void _initTextureFromRtBuffer(RtBuffer* rtb);
   void initTextureArray2DFromData(TextureArray* array, TextureArrayInitData tid) final;
-  void initTextureArray2D(TextureArray* ptex) final;
+
+  /////////////////////////////
+  // init a blank texture array
+  /////////////////////////////
+
+  void initTextureArray2D(TextureArray* ptex) final; 
+  void initTextureArray2DAsync(TextureArray* ptex) final;
+  void _enqueueInitTextureArray2DOnCB(TextureArray* ptex,VkCommandBuffer extcmdbuf);
+
+  /////////////////////////////
+
   void updateTextureArraySlice(TextureArraySliceRef* slice, image_ptr_t img) final;
   void _updateTextureArraySlice(TextureArraySliceRef* slice, compressedmipchain_ptr_t mipc);
-  void updateTextureArray(TextureArray* array) final;
+
+  void updateTextureArray(TextureArray* array) final; // sync
+
 
   // Helper function to convert 24-bit formats to 32-bit on macOS
   static EBufferFormat convertFormatForPlatform(EBufferFormat format);

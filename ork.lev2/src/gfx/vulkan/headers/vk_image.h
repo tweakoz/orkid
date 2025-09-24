@@ -8,8 +8,8 @@ struct VulkanImageObject {
   ~VulkanImageObject();
   vkcontext_rawptr_t _ctx = nullptr;
   vkimagecreateinfo_ptr_t _cinfo;
-  VkImage _vkimage;
-  VkImageView _vkimageview;
+  VkImage _vkimage = VK_NULL_HANDLE;
+  VkImageView _vkimageview = VK_NULL_HANDLE;
   vkmemforimg_ptr_t _imgmem;
   VkFormat _format = VK_FORMAT_UNDEFINED;
   VkImageLayout _currentLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Track actual image layout
@@ -22,7 +22,7 @@ struct VulkanImageObject {
 struct VulkanSamplerObject {
   VulkanSamplerObject(vkcontext_rawptr_t ctx, vksamplercreateinfo_ptr_t cinfo);
   vksamplercreateinfo_ptr_t _cinfo;
-  VkSampler _vksampler;
+  VkSampler _vksampler = VK_NULL_HANDLE;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct InFlightTextureTransfer {

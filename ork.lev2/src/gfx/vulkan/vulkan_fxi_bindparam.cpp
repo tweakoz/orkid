@@ -528,7 +528,7 @@ void VkFxInterface::bindParamTexture(const FxShaderParam* hpar, const Texture* p
     if (vk_tex->_imgobj) {
       VkImage vkimg = vk_tex->_imgobj->_vkimage;
       // Check for suspicious image handles that look like uninitialized memory
-      if (vkimg == VK_NULL_HANDLE || (uint64_t)vkimg == 0xdc00000000dcULL || ((uint64_t)vkimg & 0xFF00000000FFULL) == 0xdc00000000dcULL) {
+      if (vkimg == VK_NULL_HANDLE) {
         printf("ERROR: Attempting to bind invalid/uninitialized texture!\n");
         printf("  Texture ptr: %p\n", pTex);
         printf("  Texture name: %s\n", pTex->_debugName.c_str());
@@ -556,10 +556,12 @@ void VkFxInterface::bindParamTexture(const FxShaderParam* hpar, const Texture* p
         actual_layout = vk_tex->_imgobj->_currentLayout;
       }
 
-      printf("DEBUG: Binding RTG texture '%s' ptr=%p, descriptor expects layout=%d, actual image layout=%d (expected %d)\n",
-             pTex->_debugName.c_str(), pTex, desc_info.imageLayout, actual_layout, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
       // Assert if the actual image layout is wrong - this catches the problem at the source
+      if(actual_layout != desc_info.imageLayout ){
+        printf("DEBUG: Binding RTG texture '%s' ptr=%p, descriptor expects layout=%d, actual image layout=%d (expected %d)\n",
+             pTex->_debugName.c_str(), pTex, desc_info.imageLayout, actual_layout, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+      }
+
       if (actual_layout == VK_IMAGE_LAYOUT_UNDEFINED) {
         printf("ERROR: Attempting to bind an RTG texture that is still in UNDEFINED layout!\n");
         printf("  This likely means a swapchain RTG is being incorrectly used as a texture.\n");
@@ -617,9 +619,14 @@ void VkFxInterface::bindParamTextureArray(const FxShaderParam* hpar, const Textu
     }
   OrkAssert(tex_array);
   OrkAssert(tex_array->_tex);
-  
+
+  // Assert that the texture has a valid implementation
+  OrkAssertI(tex_array->_tex->_impl.isSet(),
+             FormatString("TextureArray '%s' has uninitialized Vulkan implementation",
+                          tex_array->_tex->_debugName.c_str()).c_str());
+
   auto vk_program = _currentVKPASS->_vk_program;
-    
+
   if (tex_array && tex_array->_tex) {
     // For texture arrays, use the same logic as regular textures
     // The difference is in the shader (sampler2DArray vs sampler2D)

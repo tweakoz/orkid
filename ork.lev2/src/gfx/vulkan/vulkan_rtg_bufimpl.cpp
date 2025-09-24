@@ -274,7 +274,7 @@ void VklRtBufferImpl::_transitionToRenderTarget(vkpricmdbufimpl_ptr_t cb) { //
 ///////////////////////////////////////////////////////////////////////////////
 
 void VklRtBufferImpl::_transitionToTexture(vkpricmdbufimpl_ptr_t cb)      { //
-  printf("VklRtBufferImpl::_transitionToTexture: current layout = %d (UNDEFINED=%d, COLOR_ATTACH=%d, SHADER_READ=%d)\n",
+  if(0)printf("VklRtBufferImpl::_transitionToTexture: current layout = %d (UNDEFINED=%d, COLOR_ATTACH=%d, SHADER_READ=%d)\n",
          _currentLayout, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
   // If image is still undefined, we need different transition params
   if (_currentLayout == VK_IMAGE_LAYOUT_UNDEFINED) {
