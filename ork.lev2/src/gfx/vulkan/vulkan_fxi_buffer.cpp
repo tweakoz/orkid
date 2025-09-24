@@ -104,6 +104,11 @@ void VkFxInterface::copyBufferIntoStorageBuffer(FxShaderStorageBuffer* ssbo,
 
 void VkFxInterface::bindStorageBuffer(const FxShaderStorageBlock* block,
                                       FxShaderStorageBuffer* buffer) {
+
+ if(0) printf("bindStorageBuffer: block<%s> buffer<%p>\n", block ? block->_name.c_str() : "null", buffer);
+
+
+
   if (!block || !buffer) {
     return;
   }

@@ -346,7 +346,8 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
   OrkAssert(current_pass != nullptr);
   OrkAssert(cur_pipeline != nullptr);
   auto merged_resources = current_pass->_merged_resources;
-
+  auto shfile = vk_program->_shader_file;
+  auto shname = shfile->_shader_name;
   /////////////////////
   // early exits
   /////////////////////
@@ -501,7 +502,11 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
               } else {
                 // Create a default buffer if none is bound
                 // This is just a placeholder - real app should bind proper buffer
-                if(0)printf("WARNING: No SSBO bound for block '%s', skipping descriptor update\n", binding->name.c_str());
+                if(1)printf("WARNING: No SSBO bound for block '%p:%s', skipping descriptor update. tek<%s> sh<%s>\n", //
+                            (void*) ssbo_block,
+                            binding->name.c_str(), //
+                            vk_program->_tek_name.c_str(), //
+                            shname.c_str());  //
                 break;
               }
 

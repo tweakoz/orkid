@@ -132,12 +132,14 @@ class ImposterApp(boilerplate.ImposterBaseApp):
     # create spotlights
     ###################################
 
+    spotmodel = lev2.XgmModel("data://tests/pbr_calib.glb")
+
     lmgr = self.scene.lightingmanager
     color_cookies = lmgr.spot_cookies_color
     depth_cookies = lmgr.spot_cookies_depth
-    color_cookies.needsRadianceCache = True
-    color_cookies.resize(1024,1024,5,tokens.RGB8,True)
-    depth_cookies.resize(1024,1024,5,tokens.Z32F,True)
+    color_cookies.needsRadianceCache = False
+    color_cookies.resize(1024,1024,4,tokens.RGB8,True)
+    depth_cookies.resize(1024,1024,4,tokens.Z32F,True)
 
     cookie1 = color_cookies.load("src://effect_textures/L0D.png")
     cookie2 = color_cookies.load("lev2://textures/transponder24.png")
@@ -149,13 +151,14 @@ class ImposterApp(boilerplate.ImposterBaseApp):
     depth4 = depth_cookies.slice(3)
     shadow_size = 2048
     shadow_bias = 1e-4
-    intens_scale = 0.15
+    intens_scale = 1.0
     speed_scale = 0.5
+    ctx.TXI.updateTextureArray(color_cookies)
     if hasattr(self,"modelnode"):
-      self.spotlight1 = MySpotLight(index=0,app=self,model=model,frq=0.17*speed_scale,color=vec3(0,150,0)*intens_scale,cookie=cookie1,depth_cookie=depth1,fovbase=60.0,fovamp=20.0,voffset=10,vscale=5,bias=shadow_bias,dim=shadow_size,radius=1.2)
-      self.spotlight2 = MySpotLight(index=1,app=self,model=model,frq=0.37*speed_scale,color=vec3(300,0,0)*intens_scale,cookie=cookie2,depth_cookie=depth2,fovbase=60.0,fovamp=20.0,voffset=10,vscale=5,bias=shadow_bias,dim=shadow_size,radius=1.5)
-      self.spotlight3 = MySpotLight(index=2,app=self,model=model,frq=0.57*speed_scale,color=vec3(100)*intens_scale,cookie=cookie3,depth_cookie=depth3,fovbase=60.0,fovamp=20.0,voffset=10,vscale=5,bias=shadow_bias,dim=shadow_size,radius=2.0)
-      self.spotlight4 = MySpotLight(index=3,app=self,model=model,frq=0.97*speed_scale,color=vec3(0,0,200)*intens_scale,cookie=cookie4,depth_cookie=depth4,fovbase=70.0,fovamp=20.0,voffset=3,vscale=2,bias=shadow_bias,dim=shadow_size,radius=7)
+      self.spotlight1 = MySpotLight(index=0,app=self,model=spotmodel,frq=0.17*speed_scale,color=vec3(0,150,0)*intens_scale,cookie=cookie1,depth_cookie=depth1,fovbase=60.0,fovamp=20.0,voffset=10,vscale=5,bias=shadow_bias,dim=shadow_size,radius=1.2)
+      self.spotlight2 = MySpotLight(index=1,app=self,model=spotmodel,frq=0.37*speed_scale,color=vec3(300,0,0)*intens_scale,cookie=cookie2,depth_cookie=depth2,fovbase=60.0,fovamp=20.0,voffset=10,vscale=5,bias=shadow_bias,dim=shadow_size,radius=1.5)
+      self.spotlight3 = MySpotLight(index=2,app=self,model=spotmodel,frq=0.57*speed_scale,color=vec3(100)*intens_scale,cookie=cookie3,depth_cookie=depth3,fovbase=60.0,fovamp=20.0,voffset=10,vscale=5,bias=shadow_bias,dim=shadow_size,radius=2.0)
+      self.spotlight4 = MySpotLight(index=3,app=self,model=spotmodel,frq=0.97*speed_scale,color=vec3(0,0,200)*intens_scale,cookie=cookie4,depth_cookie=depth4,fovbase=70.0,fovamp=20.0,voffset=3,vscale=2,bias=shadow_bias,dim=shadow_size,radius=7)
 
   ################################################
 

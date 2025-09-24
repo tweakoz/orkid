@@ -83,10 +83,13 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
     }
     if (mtl->_parForwardLightBlock) {
       auto pl_buffer = PBRMaterial::lightingDataBuffer(context);
-      FXI->bindStorageBuffer(mtl->_parForwardLightBlock, pl_buffer);
-      /*printf("BINDING LIGHTING SSBO<%p> to param<%p>\n", //
+      if(0)printf("BINDING LIGHTING SSBO<%p> to param<%p> mtl<%s>\n", //
              (void*) pl_buffer,                          //
-             mtl->_parForwardLightBlock);*/
+             mtl->_parForwardLightBlock,
+             mtl->mMaterialName.c_str());
+
+
+      FXI->bindStorageBuffer(mtl->_parForwardLightBlock, pl_buffer);
     }
 
     ///////////////////////////////////////////////////////////////////////////

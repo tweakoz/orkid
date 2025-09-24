@@ -232,10 +232,20 @@ fragment_shader ps_grid_forward_lit_mono_V4                         //
     : lib_def                                                       //
     : lib_fwd                                                       //
     : lib_frg_grid                                                  //
+    : storage_fwd_lighting                                          //
     : std_forward_all {                                             //
   vec4 gout = grid_output_V4(frg_wpos.xyz);
-  vec3 oc = forward_lighting_mono(gout.xyz);
-  out_clr = vec4(oc.xyz, 1);
+  
+  vec3 oc = _forward_lightingZ(
+    vec3(1,1,1), // modcolor
+    gout.xyz,    // albedo
+    vec3(1,0,0), // rufmtlamb
+    vec3(0,0,0), // emission
+    EyePostion,  // eye
+    vec3(0,1,0), // normal
+    false        // emissive toggle
+  );
+  out_clr = vec4(oc, 1);
 }
 ///////////////////////////////////////////////////////////////
 technique FWD_CT_NM_RI_NI_MO {

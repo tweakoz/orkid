@@ -46,6 +46,7 @@ void GridDrawableImpl::gpuInit(lev2::Context* ctx) {
   _pbrmaterial                 = std::make_shared<PBRMaterial>();
   _pbrmaterial->_shader_suffix = _griddata->_shader_suffix;
   _pbrmaterial->_shaderpath    = "orkshader://grid";
+  _pbrmaterial->mMaterialName  = "GridMaterial";
   _pbrmaterial->assignImages(
       ctx,           // context
       _color_image,  // COLOR

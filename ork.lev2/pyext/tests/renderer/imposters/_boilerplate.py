@@ -26,7 +26,7 @@ class ImposterBaseApp(object):
     self.envmap = envmap
     
     if extapp==None:
-      self.ezapp = lev2.OrkEzApp.create(self,ssaa=0)
+      self.ezapp = lev2.OrkEzApp.create(self,ssaa=0,fullscreen=True)
       self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     else:
       self.ezapp = extapp.ezapp

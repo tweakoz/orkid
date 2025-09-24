@@ -98,7 +98,7 @@ struct VkFxShaderStorageBlock : public VkFxShaderDescriptorSetItem {
   std::string _buffer_name;  // Name of the buffer block in shader
 
   // Runtime binding
-  std::shared_ptr<VulkanBuffer> _bound_buffer;
+  vkbuffer_ptr_t _bound_buffer;
   FxShaderStorageBuffer* _bound_ssbo = nullptr;
 };
 ///////////////////////////////////////////////////////////////////////////////
