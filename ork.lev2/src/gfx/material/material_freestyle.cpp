@@ -165,6 +165,12 @@ const FxShaderParam* FreestyleMaterial::param(std::string named) {
   auto par = fxi->parameter(_shader, named);
   if (par != nullptr)
     _params.insert(par);
+  else{
+    printf("FreestyleMaterial<%s> no param named<%s>\n", //
+           _shader->mName.c_str(),                       //
+           named.c_str());                               //
+    fflush(stdout);
+  }
   return par;
 }
 ///////////////////////////////////////////////////////////////////////////////

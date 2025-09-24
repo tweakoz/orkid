@@ -42,7 +42,7 @@ class StereoApp1(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = lev2.OrkEzApp.create(self,ssaa=2)
+    self.ezapp = lev2.OrkEzApp.create(self,ssaa=0)
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.cameralut = lev2.CameraDataLut()
     self.vrcamera = lev2.CameraData()

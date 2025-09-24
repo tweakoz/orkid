@@ -13,6 +13,7 @@ sampler_set i1_samplers (descriptor_set 0) {
 }
 ////////////////////////////////////////
 uniform_block ublk_frg (descriptor_set 0) {
+  vec4 raydir;
   float time;
 }
 ////////////////////////////////////////

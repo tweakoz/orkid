@@ -177,12 +177,21 @@ void VkFxInterface::bindParamVect3(const FxShaderParam* hpar, const fvec3& Vec) 
   } 
   else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
 
+    /*  else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
+    auto block = as_uniblk_item.value()->_parent_block;
+    size_t offset = as_uniblk_item.value()->_offset;
+    // fmtx4 should already be 64 bytes, column-major
+    memcpy(block->_shadow_buffer.data() + offset, &Mat, 64);
+    block->addDirtyRange(offset, 64);
+    _currentVKPASS->_dirty_uniform_blocks.insert(block);
+  }*/
+
     // UBO path
     auto block = as_uniblk_item.value()->_parent_block;
     size_t offset = as_uniblk_item.value()->_offset;
     
     // Vec3 needs vec4 alignment in std140
-    alignas(16) float data[4] = {Vec.x, Vec.y, Vec.z, 0.0f};
+    float data[4] = {Vec.x, Vec.y, Vec.z, 0.0f};
     memcpy(block->_shadow_buffer.data() + offset, data, 16);
     
     // Track dirty range
@@ -193,12 +202,16 @@ void VkFxInterface::bindParamVect3(const FxShaderParam* hpar, const fvec3& Vec) 
     
     // Debug logging for EyePostion tracking
     //if (hpar->_name == "EyePostion") {
-    //  printf("UBO_UPDATE: param<EyePostion> value<%.3f %.3f %.3f> block<%s> offset<%zu> dset<%zu>\n", 
-    //         Vec.x, Vec.y, Vec.z, 
-    //         block->_orkparamblock ? block->_orkparamblock->_name.c_str() : "unknown", 
-    //         offset,
-    //         block->_descriptor_set_id);
+      if(0)printf("UBO_UPDATE: param<%s> value<%.3f %.3f %.3f> block<%s> offset<%zu> dset<%zu>\n", 
+        hpar->_name.c_str(),
+        Vec.x, Vec.y, Vec.z, 
+             block->_orkparamblock ? block->_orkparamblock->_name.c_str() : "unknown", 
+             offset,
+             block->_descriptor_set_id);
     //}
+  }
+  else {
+    OrkAssert(false); // Unsupported binding type
   }
 }
 

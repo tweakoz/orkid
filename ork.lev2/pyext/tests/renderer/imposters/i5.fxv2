@@ -14,9 +14,10 @@ sampler_set i5_samplers (descriptor_set 0) {
 }
 ////////////////////////////////////////
 uniform_block ublk_frg_i5 (descriptor_set 0) { //
+  vec4 raydir;
   float time;
-  vec3 raydir;
 }
+////////////////////////////////////////
 vertex_interface vif_I5 : ub_std_vtx {
   inputs {
     vec4 position : POSITION;
@@ -60,8 +61,8 @@ libblock lib_X        //
     float angleXY      = atan(p.y - sphere_center.y, p.x - sphere_center.x);
     float angleYZ      = atan(p.y - sphere_center.y, p.z - sphere_center.z);
     float displacement = 0.0;
-    displacement += sin(angleXY * 10.0 + time * 1.5) * 0.2; // oscillating displacement
-    displacement += -cos(angleYZ * 3.0 + time * 2.7) * 0.2; // oscillating displacement
+    displacement += sin(angleXY * 10.0 + time * 1.5) * 0.1; // oscillating displacement
+    displacement += -cos(angleYZ * 3.0 + time * 2.7) * 0.1; // oscillating displacement
     sphere_dist += displacement;                            // apply displacement to the sphere distance
     float NN2 = 1.0 + noise(p * 7.0) * 0.5;
     return sphere_dist;
@@ -90,15 +91,14 @@ fragment_shader ps_I5      //
     //: ublk_std_matrices    //
     //: ublk_std_viewport    //
     //: ublk_std_filtering   //
-    : ublk_frg_i4          //
     : ublk_frg_i5          //
     : std_forward_all      //   
     : i5_samplers          //
-    //: lib_math             //
-    //: lib_brdf             //
-    //: lib_def              //
-    //: lib_fwd              //
-    //: storage_fwd_lighting  //
+    : lib_math             //
+    : lib_brdf             //
+    : lib_def              //
+    : lib_fwd              //
+    : storage_fwd_lighting  //
     : lib_X {              //
 
   float radius       = sin(time * 1.0) * 0.1 + 0.65; // oscillating radius
@@ -107,10 +107,10 @@ fragment_shader ps_I5      //
   // raymarch sphere of radius 0.75
 
   vec3 rayori              = frg_wpos.xyz; // surface of imposter sphere
-  const float STEPRATE     = 0.1;
-  const float maxdist      = 2.5;
-  const float _EPSILON     = 0.0005;
-  const int MAX_STEPS      = 50;
+  const float STEPRATE     = 0.01;
+  const float maxdist      = 1.5;
+  const float _EPSILON     = 0.05;
+  const int MAX_STEPS      = 500;
   float distance_travelled = 0.0;
   bool hit                 = false;
 
@@ -125,10 +125,10 @@ fragment_shader ps_I5      //
       break;
     }
     float D = sdf_distance * STEPRATE;
-    p += raydir * D;
+    p += raydir.xyz * D;
     distance_travelled += D;
   }
-  if (!hit) {
+  if (hit==false) {
     discard;
   }
   vec3 n    = myWorldNormal(p); // normal at the surface
@@ -140,19 +140,25 @@ fragment_shader ps_I5      //
   vec3 CA        = vec3(1, 1, 2) * saturateF(pow(NN * 0.75, 2)); //, vec3(1,1,1), NN2); // color based on curvature
 
   vec3 C = mix(CA, vec3(3, 2, 1) * NN * 2, K2);
+  //vec3 C = vec3(mod(distance_travelled,1));
+  //vec3 C = vec3(float(hit));
 
-  /*
-  PbrData pbr;
+  /*PbrData pbr;
   pbr._emissive  = false;
   pbr._albedo    = C;          //*0.35;
   pbr._metallic  = mix(1, 0, K2);
   pbr._roughness = 1.0 - pow(K2, 1.0); // oscillating roughness
   pbr._wpos      = p;
   pbr._wnrm      = n;
-  vec3 pbr_lit   = _forward_lightingX(pbr, EyePostion, vec3(0), vec3(1));*/
+  pbr._fogZ      = 0.0;
+  pbr._atmos     = 0.0;
+  pbr._alpha     = 1.0;
+  vec3 pbr_lit   = _forward_lightingX(pbr, EyePostion, vec3(0), vec3(1));
+  */
   //out_color      = vec4(pbr_lit * float(int(hit)), 1); // debug color
-  C = C * dot(n, vec3(0,1,0));
-  out_color = vec4(C,length(C)); //* float(int(hit)); // debug color
+  C = C * dot(n, raydir.xyz*-1.0)*0.5+0.5;
+  out_color = vec4(C,1); 
+  //* float(int(hit)); // debug color
   //out_color = vec4(C*float(int(hit)), 1); // debug color
   gl_FragDepth = depthAtWpos(frg_wpos.xyz, vp);
   //out_color = out_color
@@ -160,9 +166,9 @@ fragment_shader ps_I5      //
 ////////////////////////////////////////
 state_block sb_i5 : default {
   BlendMode = OFF;
-  DepthTest = LEQUALS;
+  DepthTest = ALWAYS;
   DepthMask = ON;
-  CullTest = OFF;
+  CullTest = PASS_BACK;
 }
 ////////////////////////////////////////
 technique tek_imp {

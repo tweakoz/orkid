@@ -53,7 +53,7 @@ fragment_shader ps_impblit //
 state_block sb_imp : default {
   DepthTest = LEQUALS;
   DepthMask = ON;
-  BlendMode = ALPHA;
+  BlendMode = OFF;
   CullTest = PASS_FRONT;
 }
 ///////////////////////////////////////////////////////////////

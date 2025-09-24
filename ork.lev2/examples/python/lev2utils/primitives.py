@@ -282,10 +282,18 @@ def createImposter( context = None,
       #####################
 
       imp_pass.pipeline.bindParam(imp_mtl.param("m"),  tokens.RCFD_M )
+      imp_pass.pipeline.bindParam(imp_mtl.param("mrot"),  tokens.RCFD_Model_Rot )
+      imp_pass.pipeline.bindParam(imp_mtl.param("v"),  tokens.RCFD_Camera_V_Mono )
+      imp_pass.pipeline.bindParam(imp_mtl.param("mv"),  tokens.RCFD_Camera_MV_Mono )
+      imp_pass.pipeline.bindParam(imp_mtl.param("p"),  tokens.RCFD_Camera_P_Mono )
       imp_pass.pipeline.bindParam(imp_mtl.param("vp"),  tokens.RCFD_Camera_VP_Mono )
+      imp_pass.pipeline.bindParam(imp_mtl.param("mvp"),  tokens.RCFD_Camera_MVP_Mono )
+      imp_pass.pipeline.bindParam(imp_mtl.param("inv_v"), tokens.RCFD_Camera_IV_Mono )
+      imp_pass.pipeline.bindParam(imp_mtl.param("inv_p"), tokens.RCFD_Camera_IP_Mono )
       imp_pass.pipeline.bindParam(imp_mtl.param("inv_vp"), tokens.RCFD_Camera_IVP_Mono )
       imp_pass.pipeline.bindParam(imp_mtl.param("ViewportSize"), tokens.FBI_RTG_DIM )
       imp_pass.pipeline.bindParam(imp_mtl.param("InvViewportSize"), tokens.FBI_RTG_INVDIM )
+      imp_pass.pipeline.bindParam(imp_mtl.param("raydir"), tokens.RCFD_Camera_ZNORMAL_Mono )
 
       #####################
 

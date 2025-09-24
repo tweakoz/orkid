@@ -32,7 +32,7 @@ class ImposterBaseApp(object):
       self.ezapp = extapp.ezapp
     #self.materials = set()
     self.extapp = extapp
-    setupUiCamera(app=self,eye=vec3(0,12,15))
+    setupUiCamera(app=self,eye=vec3(0,-12,15))
     self.is_stereo = is_stereo
     self.time = 0.0
     

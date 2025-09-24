@@ -130,7 +130,7 @@ galaxian4 = \
 class PixelArtApp(BasicUiCamSgApp):
 
   def __init__(self):
-    super().__init__(ssaa=1)
+    super().__init__(ssaa=0)
     self.time = 0.0
 
   ##############################################

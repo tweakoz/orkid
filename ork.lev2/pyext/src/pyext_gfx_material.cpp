@@ -123,6 +123,9 @@ void pyinit_gfx_material(py::module& module_lev2) {
                     auto var_val = it->second;
                     return type_codec->encode(var_val);
                   }
+                  else{
+                    printf("FxPipelineParams::__getitem__ no param found for %s\n",as_param.value()->_name.c_str());
+                  }
                 } else {
                   OrkAssert(false);
                 }

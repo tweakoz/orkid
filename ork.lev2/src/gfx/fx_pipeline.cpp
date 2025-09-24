@@ -365,6 +365,24 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
         }
         break;
       }
+      case "RCFD_Camera_MV_Mono"_crcu: {
+        if (monocams) {
+          // printf( "RCFD_Camera_MVP_Mono: monocams<%p>\n", (void*)monocams );
+          FXI->bindParamMatrix(param, monocams->_vmatrix * worldmatrix);
+        } else {
+          auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix());
+          FXI->bindParamMatrix(param, MVP);
+        }
+        break;
+      }
+      case "RCFD_Camera_V_Mono"_crcu: {
+        if (monocams) {
+          FXI->bindParamMatrix(param, monocams->_vmatrix);
+        } else {
+          FXI->bindParamMatrix(param, MTXI->RefVMatrix());
+        }
+        break;
+      }
       case "RCFD_Camera_P_Mono"_crcu: {
         if (monocams) {
           FXI->bindParamMatrix(param, monocams->_pmatrix);
@@ -393,6 +411,15 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
         }
         break;
       }
+      case "RCFD_Camera_IP_Mono"_crcu: {
+        if (monocams) {
+          FXI->bindParamMatrix(param, monocams->_pmatrix.inverse());
+        } else {
+          auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVMatrix().inverse());
+          FXI->bindParamMatrix(param, MVP);
+        }
+        break;
+      }
       case "RCFD_Camera_IVP_Mono"_crcu: {
         if (monocams) {
           auto VP  = monocams->VPMONO();
@@ -409,11 +436,13 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
         if (monocams) {
           auto VP      = monocams->VPMONO();
           auto IVP     = VP.inverse();
-          fvec3 raydir = IVP.zNormal();
+          fvec3 raydir = IVP.zNormal().normalized();
           // IVP.dump("IVP");
-          FXI->bindParamVect3(param, raydir);
+          //printf("raydir1<%g %g %g>\n", raydir.x, raydir.y, raydir.z);
+          FXI->bindParamVect4(param, raydir);
         } else {
           auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix().inverse());
+          //printf("raydir2<%g %g %g>\n", raydir.x, raydir.y, raydir.z);
           FXI->bindParamMatrix(param, MVP);
         }
         break;

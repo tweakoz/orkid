@@ -501,7 +501,7 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
               } else {
                 // Create a default buffer if none is bound
                 // This is just a placeholder - real app should bind proper buffer
-                printf("WARNING: No SSBO bound for block '%s', skipping descriptor update\n", binding->name.c_str());
+                if(0)printf("WARNING: No SSBO bound for block '%s', skipping descriptor update\n", binding->name.c_str());
                 break;
               }
 
