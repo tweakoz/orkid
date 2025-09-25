@@ -113,7 +113,10 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rt
   // Handle depth buffer texture if present
   ///////////////////////////////////////////////////
   if (depth_buffer) {
-    auto depth_impl = depth_buffer->_impl.getShared<VklRtBufferImpl>();
+    depth_buffer->_width  = rtgroup->width();
+    depth_buffer->_height = rtgroup->height();
+    auto depth_impl = rtgimpl->_depth_buffer_impl;
+    depth_buffer->_impl.setShared<VklRtBufferImpl>(depth_impl);
     auto texture = depth_buffer->texture();
     if (texture) {
       _contextVK->_txi->_initTextureFromRtBuffer(depth_buffer.get());
