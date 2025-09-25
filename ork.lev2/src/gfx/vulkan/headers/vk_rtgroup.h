@@ -15,6 +15,7 @@ struct VkRtbCreateOption {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VkRtgCreateOptions {
+  rtgroup_rawptr_t _rtgroup = nullptr;
   int _width = 0;
   int _height = 0;
   uint64_t _usage = 0;
@@ -53,7 +54,7 @@ struct VklRtBufferImpl {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VkRtGroupImpl {
-  VkRtGroupImpl(vkcontext_rawptr_t ctxVK);
+  VkRtGroupImpl(vkcontext_rawptr_t ctxVK, rtgroup_rawptr_t rtgroup);
   ~VkRtGroupImpl();
 
   rtgroup_attachments_ptr_t attachments();
@@ -69,6 +70,7 @@ struct VkRtGroupImpl {
 
   static void assignToRtGroup(vkrtgrpimpl_ptr_t rtgimpl, rtgroup_rawptr_t rtgroup);
 
+  rtgroup_rawptr_t _rtgroup = nullptr;
   vkrtbufimpl_ptr_t _standard;
   vkrtbufimpl_ptr_t _depthonly;
   rtgroup_attachments_ptr_t __attachments;

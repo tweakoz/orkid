@@ -16,7 +16,7 @@ static logchannel_ptr_t logchan_rtgroup = logger()->configureChannel("VKRTG", fv
 // constexpr uint32_t VK_RENDERING_RESUMING_BIT = 0x00000004;
 ///////////////////////////////////////////////////////////////////////////////
 vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(const VkRtgCreateOptions& options) {
-  vkrtgrpimpl_ptr_t RTGIMPL = std::make_shared<VkRtGroupImpl>(_contextVK);
+  vkrtgrpimpl_ptr_t RTGIMPL = std::make_shared<VkRtGroupImpl>(_contextVK,options._rtgroup);
   RTGIMPL->_width           = options._width;
   RTGIMPL->_height          = options._height;
   RTGIMPL->_pipeline_bits   = 0;
@@ -52,6 +52,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(const VkRtgCreateOp
   if (options._depthOptions._format != VK_FORMAT_UNDEFINED) {
     uint64_t USAGE  = "depth"_crcu;
     auto bufferimpl = std::make_shared<VklRtBufferImpl>(_contextVK, RTGIMPL.get(), USAGE, options._depthOptions._format);
+    printf("Creating depth buffer impl <%p> - w<%d> h<%d>\n", bufferimpl.get(), options._width,options._height );
     RTGIMPL->_depth_buffer_impl = bufferimpl;
     _vkCreateImageForBuffer(_contextVK, bufferimpl, options._depthOptions);
     auto& adesc          = bufferimpl->_attachmentDesc;
@@ -69,6 +70,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rt
   int inumtargets = rtgroup->numImageBuffers();
   logchan_rtgroup->log("Creating RTG<%p> impl - inumtargets<%d>", rtgroup, inumtargets);
   VkRtgCreateOptions options;
+  options._rtgroup = rtgroup;
   options._width  = rtgroup->width();
   options._height = rtgroup->height();
   options._usage       = rtgroup->_usage;
@@ -181,7 +183,7 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
         int rtgh       = rtgroup->height();
         bool size_diff = (rtgw != RTGIMPL->_width) or (rtgh != RTGIMPL->_height);
         if (size_diff) {
-          logchan_rtgroup->log("resize FBO iw<%d> ih<%d>", iw, ih);
+          logchan_rtgroup->log("resize FBO from <%d x %d> to <%d x %d>", RTGIMPL->_width, RTGIMPL->_height, rtgw, rtgh);
           RTGIMPL = _createRtGroupImpl(rtgroup);
           rtgroup->SetSizeDirty(false);
         }

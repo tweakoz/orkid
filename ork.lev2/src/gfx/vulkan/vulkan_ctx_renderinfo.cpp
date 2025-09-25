@@ -12,7 +12,11 @@ namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
 VulkanRenderInfo::VulkanRenderInfo(VkRtGroupImpl* rtgi) {
-  bool log = (rtgi->_width != 1280);
+  bool log = (rtgi->_rtgroup->_usage!="swapchain"_crcu);
+
+  if(log){
+    //OrkAssert(false);
+  }
 
   initializeVkStruct(_renderinfo, VK_STRUCTURE_TYPE_RENDERING_INFO);
   _rainfos_color.clear();
@@ -48,8 +52,8 @@ VulkanRenderInfo::VulkanRenderInfo(VkRtGroupImpl* rtgi) {
   _renderinfo.pColorAttachments        = _rainfos_color.data();
   _renderinfo.pStencilAttachment       = nullptr;
 
-  if(log)printf("rtgi->_width<%d> rtgi->_height<%d>\n", rtgi->_width, rtgi->_height);
   auto dbuf_impl = rtgi->_depth_buffer_impl;
+  if(log)printf("rtgi->_width<%d> rtgi->_height<%d> dbuf_impl<%p>\n", rtgi->_width, rtgi->_height, (void*) dbuf_impl.get());
   if (dbuf_impl) {
     initializeVkStruct(_rainfo_depth, VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO);
     // Use slice view from descriptor if available, otherwise use image view

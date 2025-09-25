@@ -12,12 +12,13 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_rtgi = logger()->configureChannel("VKRTGI", fvec3(0.8, 0.2, 0.5), false);
+static logchannel_ptr_t logchan_rtgi = logger()->configureChannel("VKRTGI", fvec3(0.8, 0.2, 0.5), true);
 ///////////////////////////////////////////////////////////////////////////////
 
 
-VkRtGroupImpl::VkRtGroupImpl(vkcontext_rawptr_t ctxVK)
-    : _contextVK(ctxVK) {
+VkRtGroupImpl::VkRtGroupImpl(vkcontext_rawptr_t ctxVK, rtgroup_rawptr_t rtgroup)
+    : _contextVK(ctxVK)
+    , _rtgroup(rtgroup) {
   std::string name = "rtg";
   _cmdbufRTG = std::make_shared<SecondaryCommandBuffer>();
   _cmdbufRTG->_debugName = name;
@@ -52,7 +53,7 @@ VkRtGroupImpl::~VkRtGroupImpl() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkRtGroupImpl::_updateClearParams(rtgroup_rawptr_t rtg) {
+void VkRtGroupImpl::_updateClearParams(::ork::lev2::rtgroup_rawptr_t rtg) {
   _autoclear = rtg->_autoclear;
   for(int i = 0; i < rtg->numImageBuffers(); i++) {
     auto rtb      = rtg->buffer(i);
@@ -75,14 +76,14 @@ void VkRtGroupImpl::_updateMainSurface(VkFrameBufferInterface* fbi) {
     // Invalidate cached render info since size changed
     _rinfo_retain = nullptr;
     _rinfo_resume_retain = nullptr;
-  }  
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 vkrenderinfo_ptr_t VkRtGroupImpl::renderinfo() {
   if (!_rinfo_retain) {
-    _rinfo_retain = std::make_shared<VulkanRenderInfo>(this); 
+    _rinfo_retain = std::make_shared<VulkanRenderInfo>(this);
     _renderinfo_set.insert(_rinfo_retain);
   }
   return _rinfo_retain;
@@ -160,22 +161,22 @@ void VkRtGroupImpl::_transitionToRenderTarget(vkpricmdbufimpl_ptr_t cb) {
   //logchan_rtgi->log("_transitionToRenderTarget<%p>", (void*)cb.get());
   
   // DEBUG: Log the transition
-  logchan_rtgi->log("_transitionToRenderTarget: Transitioning depth buffer to VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL");
+  if(0)logchan_rtgi->log("_transitionToRenderTarget: Transitioning depth buffer to VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL");
   
   for (int i = 0; i < _color_buffer_impls.size(); i++) {
     auto rtb_impl = _color_buffer_impls[i];
-    logchan_rtgi->log("Color buffer %d before transition: layout %d", i, rtb_impl->_currentLayout);
+    if(0)logchan_rtgi->log("Color buffer %d before transition: layout %d", i, rtb_impl->_currentLayout);
     rtb_impl->_transitionToRenderTarget(cb);
-    logchan_rtgi->log("Color buffer %d after transition: layout %d", i, rtb_impl->_currentLayout);
+    if(0)logchan_rtgi->log("Color buffer %d after transition: layout %d", i, rtb_impl->_currentLayout);
   }
   if (_depth_buffer_impl) {
-    logchan_rtgi->log("Depth buffer before transition: layout %d", _depth_buffer_impl->_currentLayout);
+    if(0)logchan_rtgi->log("Depth buffer before transition: layout %d", _depth_buffer_impl->_currentLayout);
     _depth_buffer_impl->_transitionToRenderTarget(cb);
-    logchan_rtgi->log("Depth buffer after transition: layout %d", _depth_buffer_impl->_currentLayout);
+    if(0)logchan_rtgi->log("Depth buffer after transition: layout %d", _depth_buffer_impl->_currentLayout);
   }
   
   // DEBUG: Log that transition is complete
-  logchan_rtgi->log("_transitionToRenderTarget: Depth buffer transition complete");
+  if(0)logchan_rtgi->log("_transitionToRenderTarget: Depth buffer transition complete");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -194,13 +195,13 @@ void VkRtGroupImpl::_transitionToTexture(vkpricmdbufimpl_ptr_t cb){
   for (int i = 0; i < numrt; i++) {
     auto rtb_impl = _color_buffer_impls[i];
     rtb_impl->_transitionToTexture(cb);
-    logchan_rtgi->log("RTG transitioning color buffer %p from %d to %d in CB %p", (void*)rtb_impl->_imgobj->_vkimage, rtb_impl->_currentLayout, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, (void*)cb->_vkcmdbuf);
+    if(0)logchan_rtgi->log("RTG transitioning color buffer %p from %d to %d in CB %p", (void*)rtb_impl->_imgobj->_vkimage, rtb_impl->_currentLayout, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, (void*)cb->_vkcmdbuf);
     rtb_impl->_attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
   }
   if (_depth_buffer_impl) {
     _depth_buffer_impl->_attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
     _depth_buffer_impl->_transitionToTexture(cb);
-    logchan_rtgi->log("RTG transitioning depth buffer %p from %d to %d in CB %p", (void*)_depth_buffer_impl->_imgobj->_vkimage, _depth_buffer_impl->_currentLayout, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, (void*)cb->_vkcmdbuf);
+    if(0)logchan_rtgi->log("RTG transitioning depth buffer %p from %d to %d in CB %p", (void*)_depth_buffer_impl->_imgobj->_vkimage, _depth_buffer_impl->_currentLayout, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, (void*)cb->_vkcmdbuf);
   }
 }
 
@@ -211,19 +212,19 @@ void VkRtGroupImpl::_transitionToHostRead(vkpricmdbufimpl_ptr_t cb){
   for (int i = 0; i < numrt; i++) {
     auto rtb_impl = _color_buffer_impls[i];
     rtb_impl->_transitionToHostRead(cb);
-    logchan_rtgi->log("RTG transitioning color buffer %p from %d to %d in CB %p", (void*)rtb_impl->_imgobj->_vkimage, rtb_impl->_currentLayout, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, (void*)cb->_vkcmdbuf);
+    if(0)logchan_rtgi->log("RTG transitioning color buffer %p from %d to %d in CB %p", (void*)rtb_impl->_imgobj->_vkimage, rtb_impl->_currentLayout, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, (void*)cb->_vkcmdbuf);
     rtb_impl->_attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
   }
   if (_depth_buffer_impl) {
     _depth_buffer_impl->_attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
     _depth_buffer_impl->_transitionToHostRead(cb);
-    logchan_rtgi->log("RTG transitioning depth buffer %p from %d to %d in CB %p", (void*)_depth_buffer_impl->_imgobj->_vkimage, _depth_buffer_impl->_currentLayout, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, (void*)cb->_vkcmdbuf);
+    if(0)logchan_rtgi->log("RTG transitioning depth buffer %p from %d to %d in CB %p", (void*)_depth_buffer_impl->_imgobj->_vkimage, _depth_buffer_impl->_currentLayout, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, (void*)cb->_vkcmdbuf);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkRtGroupImpl::assignToRtGroup(vkrtgrpimpl_ptr_t rtgimpl, rtgroup_rawptr_t rtgroup){
+void VkRtGroupImpl::assignToRtGroup(vkrtgrpimpl_ptr_t rtgimpl, ::ork::lev2::rtgroup_rawptr_t rtgroup){
   rtgroup->_impl.setShared<VkRtGroupImpl>(rtgimpl);
   int inumtargets = rtgroup->numImageBuffers();
   int inumimpls = rtgimpl->_color_buffer_impls.size();

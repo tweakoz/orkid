@@ -49,7 +49,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_buildRtgImplFromTextureArraySlice(rtg
   /////////////////////////////////////////////
   // Create RTG implementation
   /////////////////////////////////////////////
-  vkrtgrpimpl_ptr_t RTGIMPL = std::make_shared<VkRtGroupImpl>(_contextVK);
+  vkrtgrpimpl_ptr_t RTGIMPL = std::make_shared<VkRtGroupImpl>(_contextVK,rtgroup);
   RTGIMPL->_width = iw;
   RTGIMPL->_height = ih;
   RTGIMPL->_pipeline_bits = 0;
