@@ -12,21 +12,21 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_rtgroup = logger()->configureChannel("VKRTG", fvec3(0.8, 0.2, 0.5), false);
-//constexpr uint32_t VK_RENDERING_RESUMING_BIT = 0x00000004;
+static logchannel_ptr_t logchan_rtgroup = logger()->configureChannel("VKRTG", fvec3(0.8, 0.2, 0.5), true);
+// constexpr uint32_t VK_RENDERING_RESUMING_BIT = 0x00000004;
 ///////////////////////////////////////////////////////////////////////////////
 vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(const VkRtgCreateOptions& options) {
   vkrtgrpimpl_ptr_t RTGIMPL = std::make_shared<VkRtGroupImpl>(_contextVK);
   RTGIMPL->_width           = options._width;
   RTGIMPL->_height          = options._height;
   RTGIMPL->_pipeline_bits   = 0;
+  int inumtargets           = options._colorOptions.size();
   //////////////////////////////////////////////////
   // color buffers
   //////////////////////////////////////////////////
   switch (options._usage) {
     case "swapchain"_crcu:
     case "user"_crcu: {
-      int inumtargets = options._colorOptions.size();
       for (int it = 0; it < inumtargets; it++) {
         const auto& color_option = options._colorOptions[it];
         uint64_t buf_usage       = color_option._usage;
@@ -67,10 +67,13 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(const VkRtgCreateOp
 
 vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rtgroup) {
   int inumtargets = rtgroup->numImageBuffers();
+  logchan_rtgroup->log("Creating RTG<%p> impl - inumtargets<%d>", rtgroup, inumtargets);
   VkRtgCreateOptions options;
+  options._width  = rtgroup->width();
+  options._height = rtgroup->height();
   options._usage       = rtgroup->_usage;
   options._msaaSamples = rtgroup->_msaa_samples;
-  bool as_texture      = false;
+  ///////////////////////////////////////////////////
   for (int i = 0; i < inumtargets; i++) {
     auto rtb = rtgroup->buffer(i);
     VkRtbCreateOption color_option;
@@ -80,6 +83,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rt
     logchan_rtgroup->log("Creating RTB impl - buffer %d usage=0x%zx (%zu)", i, color_option._usage, color_option._usage);
     options._colorOptions.push_back(color_option);
   }
+  ///////////////////////////////////////////////////
   auto depth_buffer = rtgroup->_depthBuffer;
   if (depth_buffer) {
     VkRtbCreateOption depth_option;
@@ -88,21 +92,19 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rt
     depth_option._usage        = depth_buffer->_usage;
     options._depthOptions      = depth_option;
   }
-  options._width  = rtgroup->width();
-  options._height = rtgroup->height();
-  auto rtgimpl    = _createRtGroupImpl(options);
   ///////////////////////////////////////////////////
   // set impls in rtgroup and rtbuffers
   ///////////////////////////////////////////////////
+  auto rtgimpl    = _createRtGroupImpl(options);
   VkRtGroupImpl::assignToRtGroup(rtgimpl, rtgroup);
   ///////////////////////////////////////////////////
   for (int i = 0; i < inumtargets; i++) {
-    auto rtbuffer   = rtgroup->buffer(i);
-    auto bufferimpl = rtbuffer->_impl.getShared<VklRtBufferImpl>();
-    auto texture    = rtbuffer->texture();
+    auto rtb     = rtgroup->buffer(i);
+    auto rtbi    = rtb->_impl.getShared<VklRtBufferImpl>();
+    auto texture = rtb->texture();
     if (texture) {
-      _contextVK->_txi->_initTextureFromRtBuffer(rtbuffer.get());
-      bufferimpl->_imgobj = texture->_impl.getShared<VulkanTextureObject>()->_imgobj;
+      _contextVK->_txi->_initTextureFromRtBuffer(rtb.get());
+      rtbi->_imgobj = texture->_impl.getShared<VulkanTextureObject>()->_imgobj;
     }
   }
   ///////////////////////////////////////////////////
@@ -110,11 +112,11 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rt
   ///////////////////////////////////////////////////
   if (depth_buffer) {
     auto depth_impl = depth_buffer->_impl.getShared<VklRtBufferImpl>();
-      if(depth_buffer->texture()){
-          _contextVK->_txi->_initTextureFromRtBuffer(depth_buffer.get());
-        depth_impl->_imgobj = depth_buffer->texture()->_impl.getShared<VulkanTextureObject>()->_imgobj;
-
-      }
+    auto texture = depth_buffer->texture();
+    if (texture) {
+      _contextVK->_txi->_initTextureFromRtBuffer(depth_buffer.get());
+      depth_impl->_imgobj = texture->_impl.getShared<VulkanTextureObject>()->_imgobj;
+    }
   }
   ///////////////////////////////////////////////////
   return rtgimpl;
@@ -123,35 +125,35 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rt
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
-  if (1)
+  if (0)
     logchan_rtgroup->log("VkFrameBufferInterface _pushRtGroup rtgroup<%p>", (void*)rtgroup);
-  
+
   // Create stack item to track this push operation
   RtgStackItem stack_item;
   stack_item._rtgroup = rtgroup;
-  
-  auto impl = std::make_shared<VkRtgStackItemImpl>();
-  impl->_previous_rtgroup = _active_rtgroup;
-  
-  bool must_push = _contextVK->meTargetType != TargetType::WINDOW;
+
+  auto stack_impl         = std::make_shared<VkRtgStackItemImpl>();
+  stack_impl->_previous_rtgroup = _active_rtgroup;
+
+  bool must_push   = _contextVK->meTargetType != TargetType::WINDOW;
   bool needs_begin = must_push or (_active_rtgroup != rtgroup);
-  
+
   if (needs_begin) {
     // STEP 1: End any currently active render pass FIRST
     if (_contextVK->_renderPassActive) {
       auto& CB = _contextVK->primary_cb()->_vkcmdbuf;
       _contextVK->_vkCmdEndRenderingKHR(CB);
-      _contextVK->_renderPassActive = false;
+      _contextVK->_renderPassActive    = false;
       _contextVK->_activeRenderPassRTG = nullptr;
     }
-    
+
     // STEP 2: Now safe to create/setup RTG implementation (barriers are allowed here)
     vkrtgrpimpl_ptr_t RTGIMPL;
     auto& CB = _contextVK->primary_cb()->_vkcmdbuf;
-    
+
     switch (rtgroup->_usage) {
       case "swapchain"_crcu:
-        if(rtgroup->_impl.isShared<VkRtGroupImpl>()){
+        if (rtgroup->_impl.isShared<VkRtGroupImpl>()) {
           RTGIMPL = rtgroup->_impl.getShared<VkRtGroupImpl>();
         } else {
           RTGIMPL = rtgroup->_impl.getShared<VkRtGroupImpl>();
@@ -166,37 +168,27 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
         OrkAssert(rtgroup);
         int iw = rtgroup->width();
         int ih = rtgroup->height();
-        
+
         int inumtargets = rtgroup->numImageBuffers();
         int numsamples  = msaaEnumToInt(rtgroup->_msaa_samples);
         if (auto as_impl = rtgroup->_impl.tryAsShared<VkRtGroupImpl>()) {
           RTGIMPL = as_impl.value();
         } else {
           RTGIMPL = _createRtGroupImpl(rtgroup);
-          rtgroup->_impl.setShared<VkRtGroupImpl>(RTGIMPL);
         }
-        
-        int implw      = RTGIMPL->_width;
-        int implh      = RTGIMPL->_height;
+
         int rtgw       = rtgroup->width();
         int rtgh       = rtgroup->height();
-        bool size_diff = (rtgw != implw) || (rtgh != implh);
+        bool size_diff = (rtgw != RTGIMPL->_width) or (rtgh != RTGIMPL->_height);
         if (size_diff) {
           logchan_rtgroup->log("resize FBO iw<%d> ih<%d>", iw, ih);
           RTGIMPL = _createRtGroupImpl(rtgroup);
-          rtgroup->_impl.setShared<VkRtGroupImpl>(RTGIMPL);
           rtgroup->SetSizeDirty(false);
-        }
-        for (int i = 0; i < inumtargets; i++) {
-          auto rtb = rtgroup->buffer(i);
-          auto rtb_impl   = rtb->_impl.getShared<VklRtBufferImpl>();
-          auto rtb_imgobj = rtb_impl->_imgobj;
-          OrkAssert(rtb_imgobj->_vkimageview != VK_NULL_HANDLE);
         }
         break;
       }
       case "arrayslice"_crcu: {
-        if(rtgroup->_impl.isShared<VkRtGroupImpl>()){
+        if (rtgroup->_impl.isShared<VkRtGroupImpl>()) {
           RTGIMPL = rtgroup->_impl.getShared<VkRtGroupImpl>();
         } else {
           RTGIMPL = _buildRtgImplFromTextureArraySlice(rtgroup);
@@ -207,27 +199,27 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
         OrkAssert(false);
         break;
     } // switch (rtgroup->_usage) {
-    
+
     // STEP 3: Now begin the new render pass
     RTGIMPL->_transitionToRenderTarget(_contextVK->primary_cb());
     auto rinfo = RTGIMPL->renderinfo();
     rinfo->_renderinfo.flags &= (~VK_RENDERING_RESUMING_BIT);
     _contextVK->_vkCmdBeginRenderingKHR(CB, &rinfo->_renderinfo);
-    
+
     // STEP 4: Update tracking state
-    _active_rtgroup = rtgroup;
-    _contextVK->_renderPassActive = true;
+    _active_rtgroup                  = rtgroup;
+    _contextVK->_renderPassActive    = true;
     _contextVK->_activeRenderPassRTG = RTGIMPL;
-    
-    impl->_did_begin_rendering = true;
-    impl->_was_redundant = false;
+
+    stack_impl->_did_begin_rendering = true;
+    stack_impl->_was_redundant       = false;
   } else {
     // Redundant push - same rtgroup already active
-    impl->_did_begin_rendering = false;
-    impl->_was_redundant = true;
+    stack_impl->_did_begin_rendering = false;
+    stack_impl->_was_redundant       = true;
   }
-  
-  stack_item._impl.setShared<VkRtgStackItemImpl>(impl);
+
+  stack_item._impl.setShared<VkRtgStackItemImpl>(stack_impl);
   mRtGroupStack.push(stack_item);
 }
 
@@ -238,17 +230,19 @@ void VkFrameBufferInterface::_popRtGroup() {
   OrkAssert(!mRtGroupStack.empty());
   RtgStackItem popped_item = mRtGroupStack.top();
   mRtGroupStack.pop();
-  
-  auto impl = popped_item._impl.getShared<VkRtgStackItemImpl>();
+
+  auto stack_impl   = popped_item._impl.getShared<VkRtgStackItemImpl>();
   auto finished_rtg = popped_item._rtgroup;
 
-  if(1)logchan_rtgroup->log("_popRtGroup: RTG %p usage=%llu, did_begin_rendering=%d",
-       finished_rtg,
-       (unsigned long long)finished_rtg->_usage,
-       impl ? impl->_did_begin_rendering : 0);
+  if (0)
+    logchan_rtgroup->log(
+        "_popRtGroup: RTG %p usage=%llu, did_begin_rendering=%d",
+        finished_rtg,
+        (unsigned long long)finished_rtg->_usage,
+        stack_impl ? stack_impl->_did_begin_rendering : 0);
 
   // Only end rendering if we actually began it during push
-  if (impl && impl->_did_begin_rendering) {
+  if (stack_impl && stack_impl->_did_begin_rendering) {
     auto& CB = _contextVK->primary_cb()->_vkcmdbuf;
 
     //////////////////////////////////////////////
@@ -257,7 +251,7 @@ void VkFrameBufferInterface::_popRtGroup() {
     _contextVK->_vkCmdEndRenderingKHR(CB);
 
     // Track that render pass has ended
-    _contextVK->_renderPassActive = false;
+    _contextVK->_renderPassActive    = false;
     _contextVK->_activeRenderPassRTG = nullptr;
   }
 
@@ -291,51 +285,52 @@ void VkFrameBufferInterface::_popRtGroup() {
         break;
     }
   }
-  
+
   /////////////////////////////////////////////
   // Restore the previous rtgroup and resume if needed
   /////////////////////////////////////////////
-  
+
   rtgroup_rawptr_t next_rtg = nullptr;
-  bool needs_resume = false;
-  
+  bool needs_resume         = false;
+
   // Check if there's another item on the stack
   if (!mRtGroupStack.empty()) {
     // Get the rtgroup we're returning to
     auto& next_item = mRtGroupStack.top();
-    next_rtg = next_item._rtgroup;
-    auto next_impl = next_item._impl.getShared<VkRtgStackItemImpl>();
-    
+    next_rtg        = next_item._rtgroup;
+    auto next_impl  = next_item._impl.getShared<VkRtgStackItemImpl>();
+
     // We need to resume if the next item had begun rendering
     needs_resume = next_impl && next_impl->_did_begin_rendering;
   } else {
     // Stack is empty, return to main RTG
     auto main_rtg = _ensureMainRtg();
-    next_rtg = main_rtg.get();
-    
+    next_rtg      = main_rtg.get();
+
     // Resume main RTG if we're not already there
-    needs_resume = (finished_rtg != next_rtg) && (impl && impl->_did_begin_rendering);
+    needs_resume = (finished_rtg != next_rtg) && (stack_impl && stack_impl->_did_begin_rendering);
   }
-  
+
   _active_rtgroup = next_rtg;
-  
+
   if (needs_resume && next_rtg) {
-    auto& CB = _contextVK->primary_cb()->_vkcmdbuf;
+    auto& CB     = _contextVK->primary_cb()->_vkcmdbuf;
     auto RTGIMPL = next_rtg->_impl.getShared<VkRtGroupImpl>();
     RTGIMPL->_transitionToRenderTarget(_contextVK->primary_cb());
     auto rinfo = RTGIMPL->renderinfo();
     rinfo->_renderinfo.flags |= VK_RENDERING_RESUMING_BIT;
     _contextVK->_vkCmdBeginRenderingKHR(CB, &rinfo->_renderinfo);
-    
+
     // Track that we've resumed a render pass
-    _contextVK->_renderPassActive = true;
+    _contextVK->_renderPassActive    = true;
     _contextVK->_activeRenderPassRTG = RTGIMPL;
   }
-  
-  logchan_rtgroup->log(
-      "PopRtGroup: RTG %p, primary CB %p",
-      (void*)_active_rtgroup,
-      _contextVK->primary_cb() ? (void*)_contextVK->primary_cb().get() : nullptr);
+
+  if (0)
+    logchan_rtgroup->log(
+        "PopRtGroup: RTG %p, primary CB %p",
+        (void*)_active_rtgroup,
+        _contextVK->primary_cb() ? (void*)_contextVK->primary_cb().get() : nullptr);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

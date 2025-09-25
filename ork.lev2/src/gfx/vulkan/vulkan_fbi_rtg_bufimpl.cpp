@@ -12,7 +12,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_rtbi = logger()->configureChannel("VKRTBI", fvec3(0.8, 0.2, 0.5), false);
+static logchannel_ptr_t logchan_rtbi = logger()->configureChannel("VKRTBI", fvec3(0.8, 0.2, 0.5), true);
 ///////////////////////////////////////////////////////////////////////////////
 
 VklRtBufferImpl::VklRtBufferImpl(vkcontext_rawptr_t ctxVK, VkRtGroupImpl* par, uint64_t usage, VkFormat fmt) //
@@ -110,17 +110,18 @@ void _vkCreateImageForBuffer(
     vkcontext_rawptr_t ctxVK, //
     vkrtbufimpl_ptr_t bufferimpl,
     VkRtbCreateOption options) {               //
+    int w = bufferimpl->_rtg_impl->_width;
+    int h = bufferimpl->_rtg_impl->_height;
 
     auto old_imgobj = bufferimpl->_imgobj;
 
     auto VKICI = makeVKICI(           //
-      bufferimpl->_rtg_impl->_width,  // width
-      bufferimpl->_rtg_impl->_height, // height
+      w,  // width
+      h, // height
       1,                              // depth
       options._format,                // format
       1);                             // miplevels
   
-  logchan_rtbi->log("_vkCreateImageForBuffer: usage=0x%zx (%zu) format=%d", options._usage, options._usage, options._format);
   
   // Defensive check: convert usage=0 to "color"_crcu
   uint64_t effective_usage = options._usage;
@@ -130,15 +131,19 @@ void _vkCreateImageForBuffer(
     // Also update the buffer's usage to the corrected value
     bufferimpl->_usage = effective_usage;
   }
-  
+
+
   switch (effective_usage) {
     case "depth"_crcu:
+      logchan_rtbi->log("_vkCreateImageForBuffer: DEPTH format=%d wh<%d %d>", options._format, w, h);
       VKICI->usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT; // Allow rendering D/S to this image
       break;
     case "color"_crcu:
+      logchan_rtbi->log("_vkCreateImageForBuffer: COLOR format=%d wh<%d %d>", options._format, w, h);
       VKICI->usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; // Allow rendering Color to this image      
       break;
     case "swapchain"_crcu:
+      logchan_rtbi->log("_vkCreateImageForBuffer: SWAPCHAIN format=%d wh<%d %d>", options._format, w, h);
       VKICI->usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; // Allow rendering Color to this image
       break;
     default:
@@ -237,9 +242,9 @@ void VklRtBufferImpl::_transitionImage(vkpricmdbufimpl_ptr_t cb, const VkTransit
     VkImage img = _imgobj->_vkimage;
     OrkAssert(img != VK_NULL_HANDLE);
     
-    logchan_rtbi->log("IMAGE: Transition requested for image %p: current layout %d, target layout %d, CB %p", (void*)img, _currentLayout, p.layout, (void*)cb->_vkcmdbuf);
+    if(0)logchan_rtbi->log("IMAGE: Transition requested for image %p: current layout %d, target layout %d, CB %p", (void*)img, _currentLayout, p.layout, (void*)cb->_vkcmdbuf);
     if (_currentLayout == VK_IMAGE_LAYOUT_UNDEFINED || _currentLayout != p.layout) {
-      logchan_rtbi->log("IMAGE: Performing transition for image %p from %d to %d", (void*)img, _currentLayout, p.layout);
+    if(0)logchan_rtbi->log("IMAGE: Performing transition for image %p from %d to %d", (void*)img, _currentLayout, p.layout);
     auto barrier = createImageBarrier(img, _currentLayout, p.layout, p.srcAccess, p.dstAccess);
     barrier->subresourceRange.aspectMask = VkFormatConverter::_instance.aspectForUsage(_usage);
     
@@ -252,9 +257,9 @@ void VklRtBufferImpl::_transitionImage(vkpricmdbufimpl_ptr_t cb, const VkTransit
                          1, barrier.get());             // image memory barriers
 
     setLayout(p.layout);
-      logchan_rtbi->log("IMAGE: Transition complete for image %p, new layout %d", (void*)img, _currentLayout);
+    if(0)logchan_rtbi->log("IMAGE: Transition complete for image %p, new layout %d", (void*)img, _currentLayout);
     } else {
-      logchan_rtbi->log("IMAGE: Skipping transition for image %p, already in layout %d", (void*)img, _currentLayout);
+      if(0)logchan_rtbi->log("IMAGE: Skipping transition for image %p, already in layout %d", (void*)img, _currentLayout);
     }
 }
 

@@ -11,12 +11,14 @@
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
-VulkanRenderInfo::VulkanRenderInfo(VkRtGroupImpl* rtg) {
+VulkanRenderInfo::VulkanRenderInfo(VkRtGroupImpl* rtgi) {
+  bool log = (rtgi->_width != 1280);
+
   initializeVkStruct(_renderinfo, VK_STRUCTURE_TYPE_RENDERING_INFO);
   _rainfos_color.clear();
-  size_t num_image_buffers = rtg->_color_buffer_impls.size();
+  size_t num_image_buffers = rtgi->_color_buffer_impls.size();
   for (int i = 0; i < num_image_buffers; i++) {
-    auto bufimpl = rtg->_color_buffer_impls[i];
+    auto bufimpl = rtgi->_color_buffer_impls[i];
     auto vkfmt   = bufimpl->_vkfmt;
     VkRenderingAttachmentInfo rai;
     initializeVkStruct(rai, VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO);
@@ -28,7 +30,7 @@ VulkanRenderInfo::VulkanRenderInfo(VkRtGroupImpl* rtg) {
     rai.resolveMode = VK_RESOLVE_MODE_NONE;
     // rai.resolveImageView = VkImageView();
     // rai.resolveImageLayout = VkImageLayout();
-    rai.loadOp           = rtg->_autoclear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
+    rai.loadOp           = rtgi->_autoclear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
     rai.storeOp          = VK_ATTACHMENT_STORE_OP_STORE;
     auto cc = bufimpl->_clear_color;
     // Debug logging for filtered environment maps
@@ -40,25 +42,25 @@ VulkanRenderInfo::VulkanRenderInfo(VkRtGroupImpl* rtg) {
   _renderinfo.flags                    = VkRenderingFlags();
   _renderinfo.renderArea.offset.x      = 0;
   _renderinfo.renderArea.offset.y      = 0;
-  _renderinfo.renderArea.extent.width  = rtg->_width;
-  _renderinfo.renderArea.extent.height = rtg->_height;
+  _renderinfo.renderArea.extent.width  = rtgi->_width;
+  _renderinfo.renderArea.extent.height = rtgi->_height;
   _renderinfo.colorAttachmentCount     = _rainfos_color.size();
   _renderinfo.pColorAttachments        = _rainfos_color.data();
   _renderinfo.pStencilAttachment       = nullptr;
 
-  //printf("rtg->_width<%d> rtg->_height<%d>\n", rtg->_width, rtg->_height);
-  auto dbuf_impl                       = rtg->_depth_buffer_impl;
+  if(log)printf("rtgi->_width<%d> rtgi->_height<%d>\n", rtgi->_width, rtgi->_height);
+  auto dbuf_impl = rtgi->_depth_buffer_impl;
   if (dbuf_impl) {
     initializeVkStruct(_rainfo_depth, VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO);
     // Use slice view from descriptor if available, otherwise use image view
-    _rainfo_depth.imageView   = dbuf_impl->_descriptorInfo.imageView != VK_NULL_HANDLE 
-                                ? dbuf_impl->_descriptorInfo.imageView 
-                                : dbuf_impl->_imgobj->_vkimageview;
+    _rainfo_depth.imageView   = dbuf_impl->_descriptorInfo.imageView != VK_NULL_HANDLE //
+                              ? dbuf_impl->_descriptorInfo.imageView //
+                              : dbuf_impl->_imgobj->_vkimageview; //
     _rainfo_depth.imageLayout = dbuf_impl->_currentLayout;
     _rainfo_depth.resolveMode = VK_RESOLVE_MODE_NONE;
     //_rainfo_depth.resolveImageView = VkImageView();
     //_rainfo_depth.resolveImageLayout = VkImageLayout();
-    _rainfo_depth.loadOp                        = rtg->_autoclear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
+    _rainfo_depth.loadOp                        = rtgi->_autoclear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
     _rainfo_depth.storeOp                       = VK_ATTACHMENT_STORE_OP_STORE;
     _rainfo_depth.clearValue.depthStencil.depth = 1.0f;
     _rainfo_depth.clearValue.depthStencil.stencil = 0;
