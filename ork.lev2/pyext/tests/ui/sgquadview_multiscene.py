@@ -123,6 +123,7 @@ class UiSgQuadViewTestApp(object):
         griditem.widget.cameraName = self.camname
         griditem.widget.scenegraph = self.scenegraph
         griditem.widget.forkDB()
+        self.scenegraph.lightingmanager.gpuInit(ctx)
 
         ########################################### 
         # route events to panels ui camera ?

@@ -52,7 +52,7 @@ struct VulkanTextureObject {
   boost::Crc64 _imgview_hash;
   std::unordered_set<inflighttextrans_ptr_t> _inflight_transfers;
   std::atomic<uint64_t> _dataVersion{0};
-
+  bool _readyForSampling = false;
   static std::atomic<size_t> _vkto_count;
 };
 ///////////////////////////////////////////////////////////////////////////////

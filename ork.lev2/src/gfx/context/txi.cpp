@@ -170,6 +170,7 @@ texturearray_ptr_t TextureInterface::createColorTextureV3Array(fvec3 color, int 
 texture_ptr_t TextureInterface::createColorCubeTexture(fvec4 color, int w, int h){
   auto rval = std::make_shared<Texture>();
   rval->_source = ETextureSource::FROM_DEFAULT;
+  rval->_texType = ETEXTYPE_CUBE;
 
   // Cube textures need data for all 6 faces
   int numpixels_per_face = (w*h);

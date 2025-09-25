@@ -31,11 +31,6 @@ vertex_interface iface_v_mono
 	    vec2 frg_uv;
 	}
 }
-vertex_interface iface_v_stereo : iface_v_mono {
-  outputs {
-    layout(secondary_view_offset=1) int gl_Layer;
-  }
-}
 ///////////////////////////////////////////////////////////////
 uniform_set ub_frg
 {
@@ -66,18 +61,6 @@ vertex_shader vs_vtxcolor_mono
 	gl_Position = mvp*position;
 	frg_clr = vtxcolor;
 	frg_uv = uv0;
-}
-vertex_shader vs_vtxcolor_stereo
-	: iface_v_stereo
-	: extension(GL_NV_stereo_view_rendering)
-  : extension(GL_NV_viewport_array2) {
-	gl_Position = mvpL*position;
-	gl_SecondaryPositionNV = mvpR*position;
-	frg_clr = vtxcolor;
-	frg_uv = uv0;
-  gl_Layer = 0;
-	gl_ViewportMask[0] = 1;
-	gl_SecondaryViewportMaskNV[0] = 2;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_modclr
@@ -165,15 +148,6 @@ technique std_mono_fwd
     fragment_shader=ps_vtxcolor;
     state_block=sb_m1;
   }
-}
-technique std_stereo
-{
-	fxconfig=fxcfg_default;
-	pass p0
-	{	vertex_shader=vs_vtxcolor_stereo;
-		fragment_shader=ps_deferred_emissive_fragclr;
-		state_block=sb_m1;
-	}
 }
 technique pick {
 	fxconfig=fxcfg_default;

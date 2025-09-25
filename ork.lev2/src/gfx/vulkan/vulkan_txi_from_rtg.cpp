@@ -19,7 +19,7 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   auto ptex = rtbuffer->texture();
   OrkAssert(ptex);
   ptex->_source = ETextureSource::FROM_RTG;
-  auto teximpl = ptex->_impl.makeShared<VulkanTextureObject>(_contextVK->_txi.get());
+  auto vk_tex = ptex->_impl.makeShared<VulkanTextureObject>(_contextVK->_txi.get());
 
   auto format  = rtbuffer->format();
   int iwidth   = rtbuffer->_width;
@@ -53,8 +53,8 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   }
 
   std::string debug_name = rtbuffer->_debugName.empty() ? "rtbuffer_texture" : rtbuffer->_debugName;
-  teximpl->_imgobj    = std::make_shared<VulkanImageObject>(_contextVK, img_info, debug_name);
-  teximpl->_vksampler = _contextVK->_sampler_base;
+  vk_tex->_imgobj    = std::make_shared<VulkanImageObject>(_contextVK, img_info, debug_name);
+  vk_tex->_vksampler = _contextVK->_sampler_base;
 
   /////////////////////////////////////
   // create image view
@@ -63,42 +63,42 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   VkImageAspectFlagBits aspect_mask = is_depth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 
   auto IVCI = createImageViewInfo2D(
-      teximpl->_imgobj->_vkimage,                     //
+      vk_tex->_imgobj->_vkimage,                     //
       VkFormatConverter::convertBufferFormat(format), //
       aspect_mask);
   IVCI->subresourceRange.levelCount = num_mips;
 
-  initializeVkStruct(teximpl->_imgobj->_vkimageview);
-  VkResult ok = vkCreateImageView(_contextVK->_vkdevice, IVCI.get(), nullptr, &teximpl->_imgobj->_vkimageview);
+  initializeVkStruct(vk_tex->_imgobj->_vkimageview);
+  VkResult ok = vkCreateImageView(_contextVK->_vkdevice, IVCI.get(), nullptr, &vk_tex->_imgobj->_vkimageview);
   OrkAssert(VK_SUCCESS == ok);
   
   // Set debug name for image view
   if (!rtbuffer->_debugName.empty()) {
     std::string view_name = rtbuffer->_debugName + "_view";
-    _contextVK->_setObjectDebugName(teximpl->_imgobj->_vkimageview, VK_OBJECT_TYPE_IMAGE_VIEW, view_name.c_str());
+    _contextVK->_setObjectDebugName(vk_tex->_imgobj->_vkimageview, VK_OBJECT_TYPE_IMAGE_VIEW, view_name.c_str());
   }
 
-  OrkAssert(teximpl->_imgobj->_vkimageview != VK_NULL_HANDLE);
+  OrkAssert(vk_tex->_imgobj->_vkimageview != VK_NULL_HANDLE);
 
   /////////////////////////////////////
   // create descriptor image info
   /////////////////////////////////////
 
-  teximpl->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-  teximpl->_vkdescriptor_info.imageView   = teximpl->_imgobj->_vkimageview;
-  teximpl->_vkdescriptor_info.sampler     = teximpl->_vksampler->_vksampler;
+  vk_tex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  vk_tex->_vkdescriptor_info.imageView   = vk_tex->_imgobj->_vkimageview;
+  vk_tex->_vkdescriptor_info.sampler     = vk_tex->_vksampler->_vksampler;
 
   auto rtb_impl        = rtbuffer->_impl.getShared<VklRtBufferImpl>();
-  rtb_impl->_imgobj = teximpl->_imgobj;
+  rtb_impl->_imgobj = vk_tex->_imgobj;
   // Initialize layout to UNDEFINED since this is a new image
   rtb_impl->setLayout(VK_IMAGE_LAYOUT_UNDEFINED);
-  rtb_impl->_teximpl = teximpl;
+  rtb_impl->_teximpl = vk_tex;
 
-  teximpl->_imgview_hash.init();
-  teximpl->_imgview_hash.accumulateItem(teximpl);
-  teximpl->_imgview_hash.accumulateItem(teximpl->_imgobj);
-  teximpl->_imgview_hash.accumulateItem(teximpl->_imgobj->_vkimageview);
-  teximpl->_imgview_hash.finish();
+  vk_tex->_imgview_hash.init();
+  vk_tex->_imgview_hash.accumulateItem(vk_tex);
+  vk_tex->_imgview_hash.accumulateItem(vk_tex->_imgobj);
+  vk_tex->_imgview_hash.accumulateItem(vk_tex->_imgobj->_vkimageview);
+  vk_tex->_imgview_hash.finish();
 
   /////////////////////////////////////
   // transition to appropriate attachment layout
@@ -131,7 +131,7 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
 
   // First transition to TRANSFER_DST for clearing
   auto clear_barrier = createImageBarrier(
-      teximpl->_imgobj->_vkimage,
+      vk_tex->_imgobj->_vkimage,
       VK_IMAGE_LAYOUT_UNDEFINED,
       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
       VkAccessFlagBits(0),
@@ -148,18 +148,18 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   if (is_depth) {
     VkClearDepthStencilValue clear_value = {1.0f, 0};
     VkImageSubresourceRange range = {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1};
-    vkCmdClearDepthStencilImage(vk_cmdbuf, teximpl->_imgobj->_vkimage,
+    vkCmdClearDepthStencilImage(vk_cmdbuf, vk_tex->_imgobj->_vkimage,
                                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear_value, 1, &range);
   } else {
     VkClearColorValue clear_color = {{0.0f, 0.0f, 0.0f, 0.0f}};
     VkImageSubresourceRange range = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-    vkCmdClearColorImage(vk_cmdbuf, teximpl->_imgobj->_vkimage,
+    vkCmdClearColorImage(vk_cmdbuf, vk_tex->_imgobj->_vkimage,
                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear_color, 1, &range);
   }
 
   // Now transition to the target attachment layout
   auto attach_barrier = createImageBarrier(
-      teximpl->_imgobj->_vkimage,
+      vk_tex->_imgobj->_vkimage,
       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
       target_layout,
       VK_ACCESS_TRANSFER_WRITE_BIT,
@@ -175,9 +175,13 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   // Update the buffer's current layout to match what we transitioned to
   rtb_impl->setLayout(target_layout);
   // Also update the image object's layout
-  if (teximpl->_imgobj) {
-    teximpl->_imgobj->_currentLayout = target_layout;
+  if (vk_tex->_imgobj) {
+    vk_tex->_imgobj->_currentLayout = target_layout;
   }
+
+  /////////////////////////////////////
+
+  vk_tex->_readyForSampling = true;
 
   /////////////////////////////////////
 

@@ -230,6 +230,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   _seccmdbufpool_xfer.atomicOp([&](sseccmdbufpool_ptr_t& pool) {
     command_buffer = pool->borrowItem();
   });
+
   /////////////////////////////////////
   // create a transfer object
   /////////////////////////////////////
@@ -239,13 +240,14 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
                                                              command_buffer );
   vktex->_inflight_transfers.insert(transfer);
 
-  auto cmdbuf_impl = transfer->_command_buffer->_impl.getShared<VkSecondaryCommandBufferImpl>();
+  auto cmdbuf_impl = command_buffer->_impl.getShared<VkSecondaryCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
 
   /////////////////////////////////////
   // Set up completion callback
   /////////////////////////////////////
 
+  vktex->_readyForSampling = false;
   auto tlsema         = std::make_shared<VulkanCompletionSemaphore>(this->_contextVK);
   cmdbuf_impl->_completionSemaphore = tlsema;
   tlsema->_onComplete = [=]() {
@@ -254,6 +256,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     _seccmdbufpool_xfer.atomicOp([&](sseccmdbufpool_ptr_t& pool) {
       pool->returnItem(command_buffer);
     });
+    vktex->_readyForSampling = true;
     //printf("free stgbuf<%p>\n", (void*)staging_buffer.get());
   };
 
@@ -287,7 +290,9 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       VKICI->flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
     }
 
-    std::string debug_name = ptex->_debugName.empty() ? "texture_from_data" : ptex->_debugName;
+    std::string debug_name = ptex->_debugName.empty() 
+                           ? (is_cube?"texture_from_data(cube)":"texture_from_data") 
+                           : ptex->_debugName;
     vktex->_imgobj = std::make_shared<VulkanImageObject>(_contextVK, VKICI, debug_name);
 
     // Create the appropriate image view type
@@ -358,6 +363,11 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       VkAccessFlagBits(0),
       VK_ACCESS_TRANSFER_WRITE_BIT);
 
+  // For cube textures, ensure all 6 layers are transitioned
+  if (tid._initCubeTexture) {
+    barrier->subresourceRange.layerCount = 6;
+  }
+
   vkCmdPipelineBarrier(
       vk_cmdbuf,                         //
       VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, //
@@ -406,15 +416,12 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   vkCmdPipelineBarrier(
       vk_cmdbuf,
-      VK_PIPELINE_STAGE_TRANSFER_BIT,
-      VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-      0,
-      0,
-      nullptr,
-      0,
-      nullptr,
-      1,
-      barrier.get());
+      VK_PIPELINE_STAGE_TRANSFER_BIT,        // srcStageMask
+      VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, // dstStageMask
+      0, // dependencyFlags
+      0, nullptr, // memory barriers
+      0, nullptr, // buffer barriers
+      1, barrier.get()); // image barriers
 
   /////////////////////////////////////
   // enqueue recorded texture update cmdbuf

@@ -287,10 +287,22 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_o
       //////////////////////////////////////////////////////
 
       if (!bindings.empty()) {
+
+        //std::vector<VkDescriptorBindingFlags> bindingFlags;
+        //bindingFlags.resize(bindings.size(), VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT);
+
+        //VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo{};
+        //bindingFlagsInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
+        //bindingFlagsInfo.bindingCount = bindingFlags.size();
+        //bindingFlagsInfo.pBindingFlags = bindingFlags.data();
+
         VkDescriptorSetLayoutCreateInfo LCI = {};
         initializeVkStruct(LCI, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO);
         LCI.bindingCount = bindings.size();
         LCI.pBindings    = bindings.data();
+        //LCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        //LCI.pNext = &bindingFlagsInfo;
+        //LCI.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
 
         VkDescriptorSetLayout dset_layout;
         VkResult OK = vkCreateDescriptorSetLayout(_contextVK->_vkdevice, &LCI, nullptr, &dset_layout);

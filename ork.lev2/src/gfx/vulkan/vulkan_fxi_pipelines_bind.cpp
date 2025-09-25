@@ -97,7 +97,11 @@ void VkFxInterface::_bindPipeline(VkCommandBuffer cmdbuf, vkpipeline_obj_ptr_t p
   ////////////////////////////////////////
   // bind descriptor set (if changed)
   ////////////////////////////////////////
-
+  static int counter = 0;
+    counter++;
+    if(counter==3){
+        printf("yo\n");
+    }
   auto prog = _currentVKPASS->_vk_program;
   auto desc_set = pipeline->_descriptorSetCache->fetchDescriptorSetForProgram(prog);
   if (desc_set) {
@@ -372,172 +376,172 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
   } else {
     descset_ptr = _createNewDescriptorSetForProgram(vk_program);  
     _vkDescriptorSetByHash[descset_bits] = descset_ptr;
-  }
 
-  ////////////////////////
-  // Update descriptor set with merged resource bindings
-  ////////////////////////
+    ////////////////////////
+    // Update descriptor set with merged resource bindings
+    ////////////////////////
 
-  static std::vector<VkDescriptorBufferInfo> buffer_infos; // Keep alive during vkUpdateDescriptorSets
-  buffer_infos.clear();
+    static std::vector<VkDescriptorBufferInfo> buffer_infos; // Keep alive during vkUpdateDescriptorSets
+    buffer_infos.clear();
 
-  // Reserve space to prevent reallocation
-  size_t estimated_buffer_count = 128; // Estimate max UBOs we might have
-  buffer_infos.reserve(estimated_buffer_count);
+    // Reserve space to prevent reallocation
+    size_t estimated_buffer_count = 128; // Estimate max UBOs we might have
+    buffer_infos.reserve(estimated_buffer_count);
 
-  // First, handle textures/samplers - ensure ALL samplers from merged resources are bound
-  // Build a map of what's already bound (only for texture params)
-  static std::unordered_map<int, vktexobj_ptr_t> bound_textures;
-  bound_textures.clear();
+    // First, handle textures/samplers - ensure ALL samplers from merged resources are bound
+    // Build a map of what's already bound (only for texture params)
+    static std::unordered_map<int, vktexobj_ptr_t> bound_textures;
+    bound_textures.clear();
 
-  for (auto it : vk_program->_merged_resource_bindings) {
-    auto param                = it.first;
-    auto [set_id, binding_id] = it.second;
-    // Only process textures here, skip UBOs
-    auto tex_it = vk_program->_textures_by_orkparam.find(param);
-    if (tex_it != vk_program->_textures_by_orkparam.end()) {
-      auto vk_tex                = tex_it->second;
-      bound_textures[binding_id] = vk_tex;
+    for (auto it : vk_program->_merged_resource_bindings) {
+      auto param                = it.first;
+      auto [set_id, binding_id] = it.second;
+      // Only process textures here, skip UBOs
+      auto tex_it = vk_program->_textures_by_orkparam.find(param);
+      if (tex_it != vk_program->_textures_by_orkparam.end()) {
+        auto vk_tex                = tex_it->second;
+        bound_textures[binding_id] = vk_tex;
+      }
     }
-  }
 
-  // Now iterate through ALL sampler bindings and UBO's from merged resources
-  static std::vector<VkWriteDescriptorSet> descriptor_writes;
-  descriptor_writes.clear();
-  for (const auto& [set_id, sources] : merged_resources->descriptor_sets) {
-    for (const auto& source : sources) {
-      for (const auto& binding : source->bindings) {
+    // Now iterate through ALL sampler bindings and UBO's from merged resources
+    static std::vector<VkWriteDescriptorSet> descriptor_writes;
+    descriptor_writes.clear();
+    for (const auto& [set_id, sources] : merged_resources->descriptor_sets) {
+      for (const auto& source : sources) {
+        for (const auto& binding : source->bindings) {
 
-        switch (binding->type) {
-          case VkMergedResourceBinding::Type::Sampler: {
-            vktexobj_ptr_t vk_tex;
+          switch (binding->type) {
+            case VkMergedResourceBinding::Type::Sampler: {
+              vktexobj_ptr_t vk_tex;
 
-            // Check if this binding is already bound
-            auto bound_it = bound_textures.find(binding->binding_id);
-            if (bound_it != bound_textures.end()) {
-              vk_tex = bound_it->second;
-            } else {
-              // Use default texture for unbound samplers
-              // Determine texture type from datatype string if possible
-              if (binding->datatype.find("Cube") != std::string::npos) {
-                vk_tex = _ctxVK->_defaultTexImplCube;
-              } else if (
-                  binding->datatype.find("Array") != std::string::npos || binding->datatype.find("2DA") != std::string::npos) {
-                vk_tex = _ctxVK->_defaultTexImpl2DArray;
-              } else if (binding->datatype.find("3D") != std::string::npos) {
-                vk_tex = _ctxVK->_defaultTexImpl3D;
+              // Check if this binding is already bound
+              auto bound_it = bound_textures.find(binding->binding_id);
+              if (bound_it != bound_textures.end()) {
+                vk_tex = bound_it->second;
               } else {
-                vk_tex = _ctxVK->_defaultTexImpl2D; // Default to 2D
+                // Use default texture for unbound samplers
+                // Determine texture type from datatype string if possible
+                if (binding->datatype.find("Cube") != std::string::npos) {
+                  vk_tex = _ctxVK->_defaultTexImplCube;
+                } else if (
+                    binding->datatype.find("Array") != std::string::npos || binding->datatype.find("2DA") != std::string::npos) {
+                  vk_tex = _ctxVK->_defaultTexImpl2DArray;
+                } else if (binding->datatype.find("3D") != std::string::npos) {
+                  vk_tex = _ctxVK->_defaultTexImpl3D;
+                } else {
+                  vk_tex = _ctxVK->_defaultTexImpl2D; // Default to 2D
+                }
               }
-            }
 
-            // Create descriptor write
-            auto& desc_info = vk_tex->_vkdescriptor_info;
-            OrkAssert(desc_info.imageView != VK_NULL_HANDLE);
-            OrkAssert(desc_info.sampler != VK_NULL_HANDLE);
-
-            VkWriteDescriptorSet DWRITE = {};
-            initializeVkStruct(DWRITE, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-            DWRITE.dstSet          = descset_ptr->_vkdescset;
-            DWRITE.dstBinding      = binding->binding_id;
-            DWRITE.descriptorCount = 1;
-            DWRITE.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            DWRITE.pImageInfo      = &desc_info;
-
-            descriptor_writes.push_back(DWRITE);
-            break;
-          } // case VkMergedResourceBinding::Type::Sampler: {
-          case VkMergedResourceBinding::Type::UniformBlock: {
-            // Find the corresponding VkFxShaderUniformBlk
-            VkFxShaderUniformBlk* ubo_block = nullptr;
-
-            auto it = vk_program->_vk_uniformblks.find(binding->name);
-            if (it != vk_program->_vk_uniformblks.end()) {
-              ubo_block = it->second.get();
-            }
-
-            if (ubo_block && ubo_block->_buffer_size > 0) {
-              // Use global dynamic UBO buffer
-              extern VkDynamicUBOSystem* g_dynamic_ubo_system;
-              OrkAssert(g_dynamic_ubo_system != nullptr);
-              auto global_buffer = g_dynamic_ubo_system->get_buffer();
-              OrkAssert(global_buffer != nullptr);
-
-              VkDescriptorBufferInfo buffer_info = {};
-              buffer_info.buffer                 = global_buffer->_vkbuffer;
-              buffer_info.offset                 = 0; // Dynamic offset will be provided at bind time
-              buffer_info.range                  = ubo_block->_buffer_size;
-              buffer_infos.push_back(buffer_info);
+              // Create descriptor write
+              auto& desc_info = vk_tex->_vkdescriptor_info;
+              OrkAssert(desc_info.imageView != VK_NULL_HANDLE);
+              OrkAssert(desc_info.sampler != VK_NULL_HANDLE);
 
               VkWriteDescriptorSet DWRITE = {};
               initializeVkStruct(DWRITE, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
               DWRITE.dstSet          = descset_ptr->_vkdescset;
               DWRITE.dstBinding      = binding->binding_id;
               DWRITE.descriptorCount = 1;
-              DWRITE.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-              DWRITE.pBufferInfo     = &buffer_infos.back();
+              DWRITE.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+              DWRITE.pImageInfo      = &desc_info;
 
               descriptor_writes.push_back(DWRITE);
-            }
-            break;
-          } // case VkMergedResourceBinding::Type::UniformBlock: {
-          case VkMergedResourceBinding::Type::StorageBuffer: {
-            // Find the corresponding VkFxShaderStorageBlock
-            VkFxShaderStorageBlock* ssbo_block = nullptr;
+              break;
+            } // case VkMergedResourceBinding::Type::Sampler: {
+            case VkMergedResourceBinding::Type::UniformBlock: {
+              // Find the corresponding VkFxShaderUniformBlk
+              VkFxShaderUniformBlk* ubo_block = nullptr;
 
-            auto it = vk_program->_vk_ssbo_blocks.find(binding->name);
-            if (it != vk_program->_vk_ssbo_blocks.end()) {
-              ssbo_block = it->second.get();
-            }
-
-            if (ssbo_block && ssbo_block->_buffer_size > 0) {
-              // Check if a buffer is bound
-              VkBuffer vk_buffer = VK_NULL_HANDLE;
-              VkDeviceSize buffer_size = ssbo_block->_buffer_size;
-
-              if (ssbo_block->_bound_buffer) {
-                vk_buffer = ssbo_block->_bound_buffer->_vkbuffer;
-                buffer_size = ssbo_block->_bound_buffer->_length;
-              } else {
-                // Create a default buffer if none is bound
-                // This is just a placeholder - real app should bind proper buffer
-                if(1)printf("WARNING: No SSBO bound for block '%p:%s', skipping descriptor update. tek<%s> sh<%s>\n", //
-                            (void*) ssbo_block,
-                            binding->name.c_str(), //
-                            vk_program->_tek_name.c_str(), //
-                            shname.c_str());  //
-                break;
+              auto it = vk_program->_vk_uniformblks.find(binding->name);
+              if (it != vk_program->_vk_uniformblks.end()) {
+                ubo_block = it->second.get();
               }
 
-              VkDescriptorBufferInfo buffer_info = {};
-              buffer_info.buffer = vk_buffer;
-              buffer_info.offset = 0;
-              buffer_info.range = buffer_size;
-              buffer_infos.push_back(buffer_info);
+              if (ubo_block && ubo_block->_buffer_size > 0) {
+                // Use global dynamic UBO buffer
+                extern VkDynamicUBOSystem* g_dynamic_ubo_system;
+                OrkAssert(g_dynamic_ubo_system != nullptr);
+                auto global_buffer = g_dynamic_ubo_system->get_buffer();
+                OrkAssert(global_buffer != nullptr);
 
-              VkWriteDescriptorSet DWRITE = {};
-              initializeVkStruct(DWRITE, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-              DWRITE.dstSet = descset_ptr->_vkdescset;
-              DWRITE.dstBinding = binding->binding_id;
-              DWRITE.descriptorCount = 1;
-              DWRITE.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-              DWRITE.pBufferInfo = &buffer_infos.back();
+                VkDescriptorBufferInfo buffer_info = {};
+                buffer_info.buffer                 = global_buffer->_vkbuffer;
+                buffer_info.offset                 = 0; // Dynamic offset will be provided at bind time
+                buffer_info.range                  = ubo_block->_buffer_size;
+                buffer_infos.push_back(buffer_info);
 
-              descriptor_writes.push_back(DWRITE);
-            }
-            break;
-          } // case VkMergedResourceBinding::Type::StorageBuffer: {
-          default:
-            // Ignore other types for now
-            break;
-        } // switch (binding->type) {
-      } // for (const auto& binding : source->bindings) {
-    } // for (const auto& source : sources) {
-  } // for (const auto& [set_id, sources] : merged_resources->descriptor_sets) {
+                VkWriteDescriptorSet DWRITE = {};
+                initializeVkStruct(DWRITE, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+                DWRITE.dstSet          = descset_ptr->_vkdescset;
+                DWRITE.dstBinding      = binding->binding_id;
+                DWRITE.descriptorCount = 1;
+                DWRITE.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+                DWRITE.pBufferInfo     = &buffer_infos.back();
 
-  // Update all descriptors at once
-  if (!descriptor_writes.empty()) {
-    vkUpdateDescriptorSets(_ctxVK->_vkdevice, descriptor_writes.size(), descriptor_writes.data(), 0, nullptr);
+                descriptor_writes.push_back(DWRITE);
+              }
+              break;
+            } // case VkMergedResourceBinding::Type::UniformBlock: {
+            case VkMergedResourceBinding::Type::StorageBuffer: {
+              // Find the corresponding VkFxShaderStorageBlock
+              VkFxShaderStorageBlock* ssbo_block = nullptr;
+
+              auto it = vk_program->_vk_ssbo_blocks.find(binding->name);
+              if (it != vk_program->_vk_ssbo_blocks.end()) {
+                ssbo_block = it->second.get();
+              }
+
+              if (ssbo_block && ssbo_block->_buffer_size > 0) {
+                // Check if a buffer is bound
+                VkBuffer vk_buffer = VK_NULL_HANDLE;
+                VkDeviceSize buffer_size = ssbo_block->_buffer_size;
+
+                if (ssbo_block->_bound_buffer) {
+                  vk_buffer = ssbo_block->_bound_buffer->_vkbuffer;
+                  buffer_size = ssbo_block->_bound_buffer->_length;
+                } else {
+                  // Create a default buffer if none is bound
+                  // This is just a placeholder - real app should bind proper buffer
+                  if(1)printf("WARNING: No SSBO bound for block '%p:%s', skipping descriptor update. tek<%s> sh<%s>\n", //
+                              (void*) ssbo_block,
+                              binding->name.c_str(), //
+                              vk_program->_tek_name.c_str(), //
+                              shname.c_str());  //
+                  break;
+                }
+
+                VkDescriptorBufferInfo buffer_info = {};
+                buffer_info.buffer = vk_buffer;
+                buffer_info.offset = 0;
+                buffer_info.range = buffer_size;
+                buffer_infos.push_back(buffer_info);
+
+                VkWriteDescriptorSet DWRITE = {};
+                initializeVkStruct(DWRITE, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+                DWRITE.dstSet = descset_ptr->_vkdescset;
+                DWRITE.dstBinding = binding->binding_id;
+                DWRITE.descriptorCount = 1;
+                DWRITE.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+                DWRITE.pBufferInfo = &buffer_infos.back();
+
+                descriptor_writes.push_back(DWRITE);
+              }
+              break;
+            } // case VkMergedResourceBinding::Type::StorageBuffer: {
+            default:
+              // Ignore other types for now
+              break;
+          } // switch (binding->type) {
+        } // for (const auto& binding : source->bindings) {
+      } // for (const auto& source : sources) {
+    } // for (const auto& [set_id, sources] : merged_resources->descriptor_sets) {
+
+    // Update all descriptors at once
+    if (!descriptor_writes.empty()) {
+      vkUpdateDescriptorSets(_ctxVK->_vkdevice, descriptor_writes.size(), descriptor_writes.data(), 0, nullptr);
+    }
   }
 
   return descset_ptr;

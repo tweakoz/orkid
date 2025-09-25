@@ -536,6 +536,9 @@ void VkFxInterface::bindParamTexture(const FxShaderParam* hpar, const Texture* p
   vktexobj_ptr_t vk_tex;
   if (auto as_to = pTex->_impl.tryAsShared<VulkanTextureObject>()) {
     vk_tex = as_to.value();
+  }
+
+  if (vk_tex and vk_tex->_readyForSampling) {
 
     // Check for invalid/uninitialized texture
     if (vk_tex->_imgobj) {

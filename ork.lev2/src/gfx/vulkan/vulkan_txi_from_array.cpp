@@ -24,7 +24,6 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
     logchan_txia2d->log("// VkTextureInterface::initTextureArray2DFromData array<%p>", array);
     logchan_txia2d->log("///////////////////////////////////////////////////////////");
   }
-
   array->_tex->_texType = ETEXTYPE_2D_ARRAY;
   int num_slices        = int(tid._slices.size());
   std::vector<compressedmipchain_ptr_t> subimagedata;
@@ -106,6 +105,7 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
   ///////////////////////////
 
   vktexobj_ptr_t vktex = array->_tex->_impl.makeShared<VulkanTextureObject>(this);
+  vktex->_readyForSampling = false;
 
   ///////////////////////////
   // Setup image creation parameters
@@ -231,6 +231,7 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
     vktex->_inflight_transfers.erase(transfer);
     poolForSize->returnItem(staging_buffer);
     _seccmdbufpool_xfer.atomicOp([&](sseccmdbufpool_ptr_t& pool) { pool->returnItem(command_buffer); });
+    vktex->_readyForSampling = true;
   };
 
   ///////////////////////////

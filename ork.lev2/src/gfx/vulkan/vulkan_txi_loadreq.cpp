@@ -70,8 +70,23 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
 
   vktex->_loadCB   = _contextVK->beginRecordCommandBuffer("VkTextureInterface::_createFromLoadReq");
 
+
+  /////////////////////////////////////
+  // Set up completion callback
+  /////////////////////////////////////
+
+  vktex->_readyForSampling = false;
+
   auto cmdbuf_impl = vktex->_loadCB->_impl.getShared<VkSecondaryCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
+
+  auto tlsema         = std::make_shared<VulkanCompletionSemaphore>(this->_contextVK);
+  cmdbuf_impl->_completionSemaphore = tlsema;
+  tlsema->_onComplete = [=]() {
+    vktex->_readyForSampling = true;
+  };
+
+  /////////////////////////////////////
 
   for (int ilevel = 0; ilevel < num_mips; ilevel++) {
     auto& level         = chain->_levels[ilevel];

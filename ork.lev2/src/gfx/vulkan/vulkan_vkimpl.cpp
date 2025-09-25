@@ -285,6 +285,14 @@ VulkanInstance::VulkanInstance() {
       vk13Features.dynamicRendering = VK_TRUE;
       device_info->_devfeatures2.pNext = &vk13Features;
       
+      VkPhysicalDeviceDescriptorIndexingFeatures indexingFeatures{};
+      indexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
+      indexingFeatures.descriptorBindingUpdateUnusedWhilePending = VK_TRUE;
+      indexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
+      indexingFeatures.descriptorBindingVariableDescriptorCount = VK_TRUE;
+      indexingFeatures.runtimeDescriptorArray = VK_TRUE;
+      vk13Features.pNext = &indexingFeatures;
+      
       vkGetPhysicalDeviceFeatures2(device_info->_phydev, &device_info->_devfeatures2);
       device_info->_devfeatures = device_info->_devfeatures2.features;
       
