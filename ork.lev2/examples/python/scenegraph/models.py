@@ -34,7 +34,7 @@ random.seed(seed)
 class SceneGraphApp(BoilerplateSgApp):
 
   def __init__(self):
-    super().__init__(fullscreen=True,ssaa=0)
+    super().__init__(fullscreen=True,ssaa=3)
 
     ####################################
     # builtin skybox list
