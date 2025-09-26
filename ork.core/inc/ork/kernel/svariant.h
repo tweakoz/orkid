@@ -27,6 +27,7 @@
 
 #pragma once
 
+#include <stdlib.h>
 #include <assert.h>
 #include <memory>
 #include <new>
