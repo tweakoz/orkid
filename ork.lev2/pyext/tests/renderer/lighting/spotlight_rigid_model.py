@@ -35,10 +35,10 @@ class StereoApp1(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = lev2.OrkEzApp.create(self,ssaa=0,msaa=0)
+    self.ezapp = lev2.OrkEzApp.create(self,ssaa=3,fullscreen=True)
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.materials = set()
-    setupUiCamera(app=self,eye=vec3(0,12,15))
+    setupUiCamera(app=self,eye=vec3(0,-12,15))
 
     def onCtrlC(signum, frame):
       print("signalling EXIT to ezapp")

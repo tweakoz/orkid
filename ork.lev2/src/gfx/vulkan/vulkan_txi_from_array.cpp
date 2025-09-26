@@ -728,8 +728,8 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
   // IMPORTANT: Clamp to the texture array's actual mip levels
   int array_mip_levels = array->_tex->_num_mips;
 
-    printf("array_mip_levels<%d>\n", array_mip_levels);
-    printf("num_levels<%d>\n", num_levels);
+    if(0)printf("array_mip_levels<%d>\n", array_mip_levels);
+    if(0)printf("num_levels<%d>\n", num_levels);
 
     num_levels           = std::min(num_levels, array_mip_levels);
     
@@ -750,9 +750,9 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
   }
 
   // Get staging buffer and command buffer
-    printf("staging_size<%zu>\n", staging_size);
+    if(0)printf("staging_size<%zu>\n", staging_size);
   auto poolForSize    = stagingBufferPoolForSrcOfSize(staging_size);
-    printf("poolForSize<%p>\n", (void*) poolForSize.get() );
+    if(0)printf("poolForSize<%p>\n", (void*) poolForSize.get() );
   auto staging_buffer = poolForSize->borrowItem();
   secondary_commandbuffer_ptr_t command_buffer;
   _seccmdbufpool_xfer.atomicOp([&](sseccmdbufpool_ptr_t& pool) { command_buffer = pool->borrowItem(); });
