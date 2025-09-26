@@ -311,7 +311,7 @@ struct MovieContext {
     av_write_trailer(_muxer); // Writing the end of the file.
     if (!(_format->flags & AVFMT_NOFILE))
       avio_closep(&_muxer->pb);
-    avcodec_close(_encoder);
+    //avio_close(_encoder);
     sws_freeContext(_swscontext);
     av_frame_free(&_rgb_pic);
     av_frame_free(&_yuv_pic);
