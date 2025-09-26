@@ -18,11 +18,10 @@
   * Compute Shader support. 
   * NVidia Mesh Shader support.
   * NVidia Single Pass Stereo support.
-  * OpenGL 4.1-core (MacOs) 
-  * OpenGL 4.6-core (Linux)
+  * OpenGL 4.1-core (MacOs) <- Replaced By MoltenVK 
+  * OpenGL 4.6-core (Linux) <- Replaced By Vulkan
   * Pipeline object support pending.
-  * Vulkan and Metal pending.
-  * Built in OpenGL state debugging.
+  * Vulkan and MoltenVK
   
 2. Mid level renderer building blocks
   * Natively supports update and render on separate threads via async *drawbuffers*.
@@ -90,10 +89,9 @@
    * Also works standalone with C++ or python
 
 6. Integrations
-   * Supports ImGui integration direct in c++ (ImGui is embedded in this case)
-   * Supports ImGui integration via pyimgui in python (in this case ImGui is embedded in the pyimgui extension)
-   * PyOpenGL integration with Orkid's native UI system
    * PyTorch/CUDA integration (can source shader storage buffers from torch::Tensor without PCIe bus traffic)
+   * IGL (Geometry Processing Library)
+   * OpenVDB (Volumetric Data Processing Library)
 
 ---
 
