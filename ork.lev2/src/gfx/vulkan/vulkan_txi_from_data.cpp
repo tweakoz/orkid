@@ -484,7 +484,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   /////////////////////////////////////
   // Apply sampling mode (default or user-specified)
   /////////////////////////////////////
-  
+  ptex->mTexSampleMode = tid._samplingMode;
   this->ApplySamplingMode(ptex);
 
   /////////////////////////////////////
