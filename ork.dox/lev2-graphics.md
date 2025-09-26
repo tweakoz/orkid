@@ -21,7 +21,7 @@
   * OpenGL 4.1-core (MacOs) <- Replaced By MoltenVK 
   * OpenGL 4.6-core (Linux) <- Replaced By Vulkan
   * Pipeline object support pending.
-  * Vulkan and MoltenVK)
+  * Vulkan and MoltenVK
   
 2. Mid level renderer building blocks
   * Natively supports update and render on separate threads via async *drawbuffers*.
