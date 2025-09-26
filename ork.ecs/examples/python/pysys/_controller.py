@@ -19,7 +19,7 @@ from ork import path as ork_path
 sys.path.append(str(ork_path.lev2_pylib)) # add parent dir to path
 tokens = CrcStringProxy()
 ################################################################################
-if False:
+if True:
   RENDERING_MODEL = "ForwardPBR"
   LAYERNAME = "std_forward"
   all_layers = [LAYERNAME,"depth_prepass"]

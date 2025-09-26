@@ -64,12 +64,14 @@ class ECS_INSTANCED(object):
     systemdata_SG = self.ecsscene.declareSystem("SceneGraphSystem")
     systemdata_SG.declareLayer(LAYERNAME)
     systemdata_SG.declareParams({
+      "preset": "ForwardPBR",
       "SkyboxIntensity": float(2.0),
       "SpecularIntensity": float(1),
       "DiffuseIntensity": float(1),
       "AmbientLight": vec3(0.1),
       "DepthFogDistance": float(2000),
       "DepthFogPower": float(1.25),
+      "SkyboxTexPathStr": "pillars"
     })
 
     drawable = lev2.InstancedModelDrawableData("data://tests/pbr_calib.glb")

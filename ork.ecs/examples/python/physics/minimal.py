@@ -20,7 +20,7 @@ from lev2utils.cameras import setupUiCamera
 
 ################################################################################
 tokens = CrcStringProxy()
-LAYERNAME = "std_deferred"
+LAYERNAME = "std_forward"
 ################################################################################
 
 class ECS_MINIMAL(object):
@@ -61,12 +61,14 @@ class ECS_MINIMAL(object):
     systemdata_SG = self.ecsscene.declareSystem("SceneGraphSystem")
     systemdata_SG.declareLayer(LAYERNAME)
     systemdata_SG.declareParams({
-      "SkyboxIntensity": float(2.0),
+      "preset": "ForwardPBR",
+      "SkyboxIntensity": float(1.0),
       "SpecularIntensity": float(1),
       "DiffuseIntensity": float(1),
       "AmbientLight": vec3(0.1),
       "DepthFogDistance": float(2000),
       "DepthFogPower": float(1.25),
+      "SkyboxTexPathStr": "pillars"
     })
 
     ####################
