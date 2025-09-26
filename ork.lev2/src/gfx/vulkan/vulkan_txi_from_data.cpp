@@ -75,6 +75,8 @@ secondary_commandbuffer_ptr_t SecCmdBufPoolAdapter::allocFresh() {
 
 void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid) {
 
+  bool async = true; //tid._allow_async;
+
   ptex->_source = ETextureSource::FROM_DATA;
   //ptex->_debugName = "VkTextureInterface::initTextureFromData";
   bool is_brdf = ptex->_debugName.find("brdfIntegrationMap") != std::string::npos;
@@ -220,45 +222,71 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     }
     staging_buffer_ready.store(true);
   };
-  opq::concurrentQueue()->enqueue(copy_op);
-
-  /////////////////////////////////////
-  // allocate a secondary command buffer
-  /////////////////////////////////////
+  if(async){
+    ork::opq::concurrentQueue()->enqueue(copy_op);
+  }
+  else{
+    copy_op();
+  }
+ 
 
   secondary_commandbuffer_ptr_t command_buffer;
-  _seccmdbufpool_xfer.atomicOp([&](sseccmdbufpool_ptr_t& pool) {
-    command_buffer = pool->borrowItem();
-  });
+  VkCommandBuffer vk_cmdbuf = VK_NULL_HANDLE;
+  inflighttextrans_ptr_t transfer;
 
-  /////////////////////////////////////
-  // create a transfer object
-  /////////////////////////////////////
+  /////////////////////////////////////////////////////////
+  if(async){
+  /////////////////////////////////////////////////////////
 
-  auto transfer = std::make_shared<InFlightTextureTransfer>( _contextVK,     //
-                                                             staging_buffer, //
-                                                             command_buffer );
-  vktex->_inflight_transfers.insert(transfer);
+    /////////////////////////////////////
+    // allocate a secondary command buffer
+    /////////////////////////////////////
 
-  auto cmdbuf_impl = command_buffer->_impl.getShared<VkSecondaryCommandBufferImpl>();
-  auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
-
-  /////////////////////////////////////
-  // Set up completion callback
-  /////////////////////////////////////
-
-  vktex->_readyForSampling = false;
-  auto tlsema         = std::make_shared<VulkanCompletionSemaphore>(this->_contextVK);
-  cmdbuf_impl->_completionSemaphore = tlsema;
-  tlsema->_onComplete = [=]() {
-    vktex->_inflight_transfers.erase(transfer);
-    poolForSize->returnItem(staging_buffer);
     _seccmdbufpool_xfer.atomicOp([&](sseccmdbufpool_ptr_t& pool) {
-      pool->returnItem(command_buffer);
+      command_buffer = pool->borrowItem();
     });
+
+    /////////////////////////////////////
+    // create a transfer object
+    /////////////////////////////////////
+    vkseccmdbufimpl_ptr_t cmdbuf_impl;
+
+    transfer = std::make_shared<InFlightTextureTransfer>( _contextVK,     //
+                                                          staging_buffer, //
+                                                          command_buffer );
+    vktex->_inflight_transfers.insert(transfer);
+    cmdbuf_impl = command_buffer->_impl.getShared<VkSecondaryCommandBufferImpl>();
+    vk_cmdbuf = cmdbuf_impl->_vkcmdbuf;
+
+    vktex->_readyForSampling = false;
+
+    /////////////////////////////////////
+    // Set up completion callback
+    /////////////////////////////////////
+
+    auto tlsema         = std::make_shared<VulkanCompletionSemaphore>(this->_contextVK);
+    cmdbuf_impl->_completionSemaphore = tlsema;
+    tlsema->_onComplete = [=]() {
+      vktex->_inflight_transfers.erase(transfer);
+      poolForSize->returnItem(staging_buffer);
+      _seccmdbufpool_xfer.atomicOp([&](sseccmdbufpool_ptr_t& pool) {
+        pool->returnItem(command_buffer);
+      });
+      vktex->_readyForSampling = true;
+      //printf("free stgbuf<%p>\n", (void*)staging_buffer.get());
+    };
+
+  }
+  /////////////////////////////////////////////////////////
+  else { // synchronous path
+  /////////////////////////////////////////////////////////
+    vk_cmdbuf = _contextVK->primary_cb()->_vkcmdbuf;
     vktex->_readyForSampling = true;
-    //printf("free stgbuf<%p>\n", (void*)staging_buffer.get());
-  };
+  }
+
+  /////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////
+
 
   /////////////////////////////////////
   // if the image params have changed
@@ -423,26 +451,36 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       0, nullptr, // buffer barriers
       1, barrier.get()); // image barriers
 
-  /////////////////////////////////////
-  // enqueue recorded texture update cmdbuf
-  /////////////////////////////////////
+  if(async){
+    /////////////////////////////////////
+    // enqueue recorded texture update cmdbuf
+    /////////////////////////////////////
 
-  _contextVK->endRecordCommandBuffer(transfer->_command_buffer);
+    _contextVK->endRecordCommandBuffer(transfer->_command_buffer);
 
-  /////////////////////////////////////
-  // wait for the staging buffer to be ready
-  /////////////////////////////////////
+    /////////////////////////////////////
+    // wait for the staging buffer to be ready
+    /////////////////////////////////////
 
-  while( not staging_buffer_ready.load()) {
-    std::this_thread::yield();
+    while( not staging_buffer_ready.load()) {
+      std::this_thread::yield();
+    }
+
+    /////////////////////////////////////
+    // enqueue the command buffer for execution
+    /////////////////////////////////////
+
+    _contextVK->enqueueDeferredOneShotCommand(transfer->_command_buffer);
+  }
+  else {
+    // synchronous path
+    vktex->_readyForSampling = true;
   }
 
-  /////////////////////////////////////
-  // enqueue the command buffer for execution
-  /////////////////////////////////////
-
-  _contextVK->enqueueDeferredOneShotCommand(transfer->_command_buffer);
-
+  if(not tid._allow_async){
+    // temp hack
+    vktex->_readyForSampling = true;
+  }
   /////////////////////////////////////
   // Apply sampling mode (default or user-specified)
   /////////////////////////////////////
