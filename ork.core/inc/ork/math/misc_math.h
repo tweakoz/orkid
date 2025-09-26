@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <ork/orktypes.h>
 #include <random>
+#include <cstdlib>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
