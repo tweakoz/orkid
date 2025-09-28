@@ -122,42 +122,38 @@ struct LayoutGroup : public Group {
   template <typename T, typename... A> //
   std::vector<LayoutItem<T>> makeGridOfWidgets(int w, int h, A&&... args) {
     std::vector<LayoutItem<T>> layout_items;
-    ui::anchor::guide_ptr_t gxa, gxb;
-    ui::anchor::guide_ptr_t gya, gyb;
-    for (int x = 0; x < w; x++) {
-      float fxa = float(x) / float(w);
-      float fxb = float(x + 1) / float(w);
-      if (x == 0) {
-        gxa          = _layout->proportionalVerticalGuide(fxa); // 23,27,31,35
-        gxa->_margin = _margin;
-      } else {
-        gxa = gxb;
-      }
-      gxb          = _layout->proportionalVerticalGuide(fxb); // 24,28,32,36
-      gxb->_margin = _margin;
-      _vguides.insert(gxa);
-      _vguides.insert(gxb);
-      for (int y = 0; y < h; y++) {
-        float fya = float(y) / float(h);
-        float fyb = float(y + 1) / float(h);
-        if (y == 0) {
-          gya          = _layout->proportionalHorizontalGuide(fya); // 25,29,33,37
-          gya->_margin = _margin;
-        } else {
-          gya = gyb;
-        }
-        gyb          = _layout->proportionalHorizontalGuide(fyb); // 25,29,33,37
-        gyb->_margin = _margin;
-        _hguides.insert(gya);
-        _hguides.insert(gyb);
+
+    // Create all vertical guides first (shared across all rows)
+    std::vector<ui::anchor::guide_ptr_t> vguides;
+    for (int x = 0; x <= w; x++) {
+      float fx = float(x) / float(w);
+      auto guide = _layout->proportionalVerticalGuide(fx);
+      guide->_margin = _margin;
+      vguides.push_back(guide);
+      _vguides.insert(guide);
+    }
+
+    // Create all horizontal guides (shared across all columns)
+    std::vector<ui::anchor::guide_ptr_t> hguides;
+    for (int y = 0; y <= h; y++) {
+      float fy = float(y) / float(h);
+      auto guide = _layout->proportionalHorizontalGuide(fy);
+      guide->_margin = _margin;
+      hguides.push_back(guide);
+      _hguides.insert(guide);
+    }
+
+    // Now create cells and anchor them to the appropriate guides
+    for (int y = 0; y < h; y++) {
+      for (int x = 0; x < w; x++) {
         auto name   = _name + FormatString("-ch-%d", (y * w + x));
         auto chitem = this->makeChild<T>(std::forward<A>(args)...);
         layout_items.push_back(chitem);
         chitem._layout->setMargin(_margin);
-        chitem._layout->top()->anchorTo(gya);
-        chitem._layout->left()->anchorTo(gxa);
-        chitem._layout->bottom()->anchorTo(gyb);
-        chitem._layout->right()->anchorTo(gxb);
+        chitem._layout->top()->anchorTo(hguides[y]);
+        chitem._layout->left()->anchorTo(vguides[x]);
+        chitem._layout->bottom()->anchorTo(hguides[y + 1]);
+        chitem._layout->right()->anchorTo(vguides[x + 1]);
       }
     }
     return layout_items;
