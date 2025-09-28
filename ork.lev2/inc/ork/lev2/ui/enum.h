@@ -51,6 +51,19 @@ enum class EventCode : crc_enum_t {
   CrcEnum(MIDI_KEY_UP),
 };
 
+enum class ETextAlignH : uint64_t {
+  CrcEnum(LEFT),
+  CrcEnum(CENTER),
+  CrcEnum(CENTER_ALL),
+  CrcEnum(RIGHT)
+};
+
+enum class ETextAlignV : uint64_t {
+  CrcEnum(TOP),
+  CrcEnum(CENTER),
+  CrcEnum(BOTTOM)
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
 } // namespace ork::ui

@@ -8,7 +8,7 @@
 #include <ork/lev2/aud/singularity/hud.h>
 #include <ork/lev2/aud/singularity/dsp_pmx.h>
 #include <ork/lev2/ui/box.h>
-#include <ork/lev2/ui/label.h>
+#include <ork/lev2/ui/labelbox.h>
 #include <ork/lev2/ui/dial.h>
 #include <ork/lev2/aud/singularity/hud_widgets.h>
 
@@ -37,22 +37,22 @@ widget_ptr_t createParamHeader(
   auto guideh5   = toplayout->proportionalVerticalGuide(5.0f / 6.0f);
   auto guideh6   = toplayout->proportionalVerticalGuide(6.0f / 6.0f);
 
-  auto headeritem = headergroupitem.typedWidget()->makeChild<Label>("header", fvec4(), "params");
+  auto headeritem = headergroupitem.typedWidget()->makeChild<LabelBox>("header", fvec4(), "params");
   headeritem.applyBounds({guidevt, guideh0, guidevc, guideh6, 2});
 
-  auto coarseitem = headergroupitem.typedWidget()->makeChild<Label>("coarse", fvec4(), "Coarse");
+  auto coarseitem = headergroupitem.typedWidget()->makeChild<LabelBox>("coarse", fvec4(), "Coarse");
   coarseitem.applyBounds({guidevc, guideh1, guidevb, guideh2, 2});
 
-  auto fineitem = headergroupitem.typedWidget()->makeChild<Label>("fine", fvec4(), "Fine");
+  auto fineitem = headergroupitem.typedWidget()->makeChild<LabelBox>("fine", fvec4(), "Fine");
   fineitem.applyBounds({guidevc, guideh2, guidevb, guideh3, 2});
 
-  auto ktitem = headergroupitem.typedWidget()->makeChild<Label>("kt", fvec4(), "KeyTrack");
+  auto ktitem = headergroupitem.typedWidget()->makeChild<LabelBox>("kt", fvec4(), "KeyTrack");
   ktitem.applyBounds({guidevc, guideh3, guidevb, guideh4, 2});
 
-  auto s1item = headergroupitem.typedWidget()->makeChild<Label>("s1", fvec4(), "ModSrc1");
+  auto s1item = headergroupitem.typedWidget()->makeChild<LabelBox>("s1", fvec4(), "ModSrc1");
   s1item.applyBounds({guidevc, guideh4, guidevb, guideh5, 2});
 
-  auto s1ditem = headergroupitem.typedWidget()->makeChild<Label>("s1d", fvec4(), "Src1Depth");
+  auto s1ditem = headergroupitem.typedWidget()->makeChild<LabelBox>("s1d", fvec4(), "Src1Depth");
   s1ditem.applyBounds({guidevc, guideh5, guidevb, guideh6, 2});
 
   return headergroupitem.typedWidget();
@@ -81,7 +81,7 @@ layoutgroup_ptr_t createParamEdit(
   ///////////////////////////////////////////////////////////////////////////////
   //
   auto namee      = FormatString("%s(%s)", named.c_str(), param->_units.c_str());
-  auto headeritem = paramitem.typedWidget()->makeChild<Label>("header", color, namee);
+  auto headeritem = paramitem.typedWidget()->makeChild<LabelBox>("header", color, namee);
   headeritem.applyBounds({guidevt, guidehl, guidevb, guideh0, 2});
   ///////////////////////////////////////////////////////////////////////////////
   auto coarseitem = paramitem.typedWidget()->makeChild<Dial>("coarse", color);
@@ -122,7 +122,7 @@ layoutgroup_ptr_t createParamEdit(
   ///////////////////////////////////////////////////////////////////////////////
   auto src1src  = param->_mods->_src1;
   auto src1lab  = src1src ? src1src->_name.c_str() : "---";
-  auto src1item = paramitem.typedWidget()->makeChild<Label>("src1", color, src1lab);
+  auto src1item = paramitem.typedWidget()->makeChild<LabelBox>("src1", color, src1lab);
   src1item.applyBounds({guidevt, guideh3, guidevb, guideh4, 2});
   ///////////////////////////////////////////////////////////////////////////////
   auto src1ditem = paramitem.typedWidget()->makeChild<Dial>("src1d", color);
@@ -162,7 +162,7 @@ hudpanel_ptr_t createPmxEditView(
   ////////////////////////////////////////////////
   //
   auto hdrstr     = FormatString("Pmx: %s", pmxdata->_name.c_str());
-  auto headeritem = pmxviewitem.typedWidget()->makeChild<Label>("header", color, hdrstr);
+  auto headeritem = pmxviewitem.typedWidget()->makeChild<LabelBox>("header", color, hdrstr);
   headeritem.applyBounds({topvt, guidehl, topv0, guidehr, 2});
   ////////////////////////////////////////////////
   //

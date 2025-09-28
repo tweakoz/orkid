@@ -30,6 +30,8 @@ struct SplitPanel;
 struct Viewport;
 struct Coordinate;
 struct Event;
+struct LabelBox;
+struct TextBox;
 struct DrawEvent;
 struct MultiTouchPoint;
 struct IWidgetEventFilter;
@@ -48,6 +50,8 @@ using viewport_ptr_t    = std::shared_ptr<Viewport>;
 using eventfilter_ptr_t = std::shared_ptr<IWidgetEventFilter>;
 using event_ptr_t       = std::shared_ptr<Event>;
 using event_constptr_t  = std::shared_ptr<const Event>;
+using labelbox_ptr_t    = std::shared_ptr<LabelBox>;
+using textbox_ptr_t    = std::shared_ptr<TextBox>;
 
 ////////////////////////////////////////////////////////////////////////////////
 

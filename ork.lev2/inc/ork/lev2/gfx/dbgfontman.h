@@ -147,7 +147,10 @@ struct FontMan { //: public NoRttiSingleton<FontMan> {
 
   void _beginTextBlock(Context* pTARG, int imaxcharcount = 0);
   void _endTextBlock(Context* pTARG);
-  void _enqueueText(float fx, float fy, vtxwriter_t& vwriter, const fixedstring_t& text, const fvec4& color);
+  void _enqueueText(float fx, float fy,         //
+                    vtxwriter_t& vwriter,       //
+                    const fixedstring_t& text,  //
+                    const fvec4& color);
 
   vtxwriter_t& textwriter() {
     return mTextWriter;

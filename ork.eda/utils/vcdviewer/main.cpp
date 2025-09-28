@@ -112,7 +112,7 @@ int main(int argc, char** argv, char** envp) {
 
     auto labclr = (i & 1) ? fvec4(0.1, 0.1, 0.1, 1.0) : fvec4(0.2, 0.2, 0.2, 1.0);
 
-    auto w  = w_tracks.typedWidget()->makeChild<Label>(sigtrack._name, labclr, label);
+    auto w  = w_tracks.typedWidget()->makeChild<LabelBox>(sigtrack._name, labclr, label);
     auto wl = w._layout;
     wl->top()->anchorTo(gtop);
     wl->bottom()->anchorTo(gbot);

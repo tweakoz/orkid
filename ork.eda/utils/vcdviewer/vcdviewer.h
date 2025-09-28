@@ -14,7 +14,7 @@
 #include <ork/lev2/ui/viewport.h>
 #include <ork/lev2/ui/layoutgroup.inl>
 #include <ork/lev2/ui/context.h>
-#include <ork/lev2/ui/label.h>
+#include <ork/lev2/ui/labelbox.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>

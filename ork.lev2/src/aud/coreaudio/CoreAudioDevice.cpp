@@ -161,9 +161,9 @@ void CoreAudioDevice::startup() {
     auto unlocked_appinitdata = _appinitdata.lock();
 
   constexpr double desired_sample_rate = 48000.0;
-  constexpr int inumfr                = desired_framesize;
-  constexpr double seconds_per_buffer = static_cast<double>(inumfr) / desired_sample_rate;
-  constexpr double available_time_us  = seconds_per_buffer * 1000000.0; // microseconds
+  int inumfr                = desired_framesize;
+  double seconds_per_buffer = static_cast<double>(inumfr) / desired_sample_rate;
+  double available_time_us  = seconds_per_buffer * 1000000.0; // microseconds
                                                                         // For mach_time conversion
   mach_timebase_info_data_t timebase;
   mach_timebase_info(&timebase);

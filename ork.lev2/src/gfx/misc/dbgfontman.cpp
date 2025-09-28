@@ -183,7 +183,12 @@ void FontMan::_endTextBlock(Context* context) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void FontMan::_enqueueText(float fx, float fy, vtxwriter_t& vwriter, const fixedstring_t& text, const fvec4& color) {
+
+void FontMan::_enqueueText( float fx, float fy,        //
+                            vtxwriter_t& vwriter,      //
+                            const fixedstring_t& text, //
+                            const fvec4& color) {      //
+                              
   ///////////////////////////////////
   auto the_font         = currentFont();
   size_t iLen           = text.length();

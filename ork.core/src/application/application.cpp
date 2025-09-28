@@ -17,6 +17,7 @@
 #include <ork/kernel/environment.h>
 #include <ork/util/logger.h>
 
+int desired_framesize = 1024; // audio framesize from environment or command line
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 static logchannel_ptr_t logchan_APP = logger()->configureChannel("APPLICATION",fvec3(0.9,0.6,0.2),true);
@@ -40,6 +41,11 @@ AppInitData::AppInitData(int argc, char** argv, char** envp) {
   }
   if (genviron.has("ORKID_DISABLE_ALWAYS_ON_TOP")) {
     _canalwaysontop = false;
+  }
+  if (genviron.has("ORKID_AUDIO_FRAMESIZE")) {
+    std::string framesize_str;
+    genviron.get("ORKID_AUDIO_FRAMESIZE", framesize_str);
+    desired_framesize = atoi(framesize_str.c_str());
   }
 
 

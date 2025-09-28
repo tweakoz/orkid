@@ -4,6 +4,7 @@
 #include "au.h"
 #include "CoreAudioBuffer.hpp"
 #include <ork/util/logger.h>
+#include <ork/kernel/environment.h>
 
 namespace ork::lev2::ca {
 static logchannel_ptr_t logchan_audunit = logger()->configureChannel("AuContext", fvec3(1, 0.3, .6), true);
@@ -11,8 +12,8 @@ static logchannel_ptr_t logchan_audunit = logger()->configureChannel("AuContext"
 ///////////////////////////////////////////////////////////////////////////////
 
 AuContext::AuContext() //
-    : _outputPool(4)  //
-    , _inputPool(4) { //
+    : _outputPool(4)   //
+    , _inputPool(4) {  //
 
   _inputCallback = [](LayerFragment* data) { //
                                              // printf( "got buffer for channel<%d>\n", abd.mChannelID );
@@ -279,27 +280,20 @@ OSStatus AuContext::configureHALUnit(AudioUnit unit, AudioDeviceID deviceID, boo
     err      = AudioUnitSetProperty(unit, kAudioOutputUnitProperty_EnableIO, kAudioUnitScope_Input, 1, &enableIO, sizeof(enableIO));
     AuCheckErr(err);
   }
- 
-    // Set the device AFTER enabling/disabling IO
-  err = AudioUnitSetProperty(unit, kAudioOutputUnitProperty_CurrentDevice, 
-                             kAudioUnitScope_Global, 0, &deviceID, sizeof(deviceID));
-  AuCheckErr(err);
-  
 
- // Set the buffer frame size
- UInt32 bufferFrameSize = desired_framesize;
- UInt32 propertySize = sizeof(UInt32);
- 
- // Try to set the preferred buffer size
- err = AudioUnitSetProperty(unit, 
-                            kAudioDevicePropertyBufferFrameSize, 
-                            kAudioUnitScope_Global, 
-                            0, 
-                            &bufferFrameSize, 
-                            propertySize);
- // It's OK if this fails - we'll use whatever the device prefers
- // Don't check the error here
- 
+  // Set the device AFTER enabling/disabling IO
+  err = AudioUnitSetProperty(unit, kAudioOutputUnitProperty_CurrentDevice, kAudioUnitScope_Global, 0, &deviceID, sizeof(deviceID));
+  AuCheckErr(err);
+
+  // Set the buffer frame size
+  UInt32 bufferFrameSize = desired_framesize;
+  UInt32 propertySize    = sizeof(UInt32);
+
+  // Try to set the preferred buffer size
+  err = AudioUnitSetProperty(unit, kAudioDevicePropertyBufferFrameSize, kAudioUnitScope_Global, 0, &bufferFrameSize, propertySize);
+  // It's OK if this fails - we'll use whatever the device prefers
+  // Don't check the error here
+
   return err;
 }
 ///////////////////////////////////////////////////////////////////////////////

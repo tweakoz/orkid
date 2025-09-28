@@ -55,11 +55,15 @@ fragment_interface iface_fmt
 state_block sb_default : default {
   DepthTest = OFF;
   CullTest  = OFF;
+  DepthTest = ALWAYS;
+  DepthMask = OFF;
 }
 ///////////////////////////////////////////////////////////////
 state_block sb_lerpblend : sb_default {
   BlendMode = ALPHA;
   CullTest  = OFF;
+  DepthTest = ALWAYS;
+  DepthMask = OFF;
 }
 ///////////////////////////////////////////////////////////////
 state_block sb_additive : sb_default {

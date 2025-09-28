@@ -16,12 +16,13 @@ from orkengine.lev2 import *
 from _seq import midiToSingularitySequence
 from mido import MidiFile 
 
+tokens = CrcStringProxy()
+
 ################################################################################
 sys.path.append((thisdir()).normalized.as_string) # add parent dir to path
 sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
 from _boilerplate import *
 ################################################################################
-
 def find_index(sorted_list, value):
     index = bisect.bisect_left(sorted_list, value)
     if index != len(sorted_list) and sorted_list[index] == value:
@@ -55,12 +56,34 @@ class SingulTestApp(object):
     self.griditems = lg_group.makeRowsColumns(
       rccounts = rccounts,
       margin = 4,
-      uiclass = ui.Box,
+      uiclass = ui.TextBox,
       args = ["label",vec4(0.1,0.1,0.3,1)],
     )
 
     for g in self.griditems:
       g.widget.ignoreEvents = True
+
+    ######################### 
+
+    text = "Singularity Test Harness\n\n"
+    text += "  Ensure Focus in this TextBox\n\n"
+    text += "  0   : select main bus\n"
+    text += "  1-9 : select bus\n"
+    text += "  [ ] : decr/incr gain\n"
+    text += "  - = : prev/next effect\n"
+    text += "  , . : prev/next program\n"
+    text += "  A W S E D F T G Y H U J K O L P ; ' : play notes\n"
+    text += "  Z X : decr/incr octave\n"
+    text += "  SPACE : hold drones\n"
+    text += "  C : release drones\n"
+    text += "  N : new sequence\n"
+    text += "  M : arm/disarm recording\n"
+    text += "  Q : quantize recorded clip\n"
+    text += "  ! : panic\n"
+    g0 = self.griditems[0].widget
+    g0.setText(text)
+    g0.halign = tokens.CENTER_ALL
+    g0.valign = tokens.CENTER
 
     ######################### 
 

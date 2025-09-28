@@ -5,11 +5,11 @@
 #include <ork/util/hotkey.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/gfx/pri.h>
-#include <ork/lev2/ui/label.h>
+#include <ork/lev2/ui/labelbox.h>
 
 namespace ork::ui {
 ///////////////////////////////////////////////////////////////////////////////
-Label::Label(
+LabelBox::LabelBox(
     const std::string& name, //
     fvec4 color,
     std::string label)
@@ -19,7 +19,7 @@ Label::Label(
   _textcolor = fvec4(1, 1, 1, 1);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Label::DoDraw(drawevent_constptr_t drwev) {
+void LabelBox::DoDraw(drawevent_constptr_t drwev) {
 
   auto tgt    = drwev->GetTarget();
   auto fbi    = tgt->FBI();

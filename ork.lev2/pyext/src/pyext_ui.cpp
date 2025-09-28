@@ -14,6 +14,8 @@
 #include <ork/lev2/ui/layoutgroup.inl>
 #include <ork/lev2/ui/anchor.h>
 #include <ork/lev2/ui/box.h>
+#include <ork/lev2/ui/labelbox.h>
+#include <ork/lev2/ui/textbox.h>
 #include <ork/lev2/ui/ged/ged_surface.h>
 #include <ork/lev2/ui/popups.inl>
 #include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
@@ -614,6 +616,150 @@ void pyinit_ui(py::module& module_lev2) {
               });
   type_codec->registerStdCodec<uibox_ptr_t>(box_type);
   /////////////////////////////////////////////////////////////////////////////////
+  auto labbox_type = //
+      py::class_<ui::LabelBox, ui::Widget, ui::labelbox_ptr_t>(uimodule, "LabelBox")
+          .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+                auto decoded_args    = type_codec->decodeList(py_args);
+                auto name            = decoded_args[0].get<std::string>();
+                auto color           = decoded_args[1].get<fvec4>();
+                auto layoutitem      = lg->makeChild<ui::Box>(name, color);
+                return layoutitem.as_shared();
+              })
+          .def_static(
+              "uigridfactory",
+              [type_codec](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto color        = decoded_args[1].get<fvec4>();
+                auto layoutitems  = lg->makeGridOfWidgets<ui::LabelBox>(grid_w, grid_h, name, color, "");
+                py::list rval;
+                for (auto item : layoutitems) {
+                  rval.append(item.as_shared());
+                }
+                return rval;
+              })
+          .def_static(
+              "uircfactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list rowcols, int m, py::list py_args) -> py::list { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto color        = decoded_args[1].get<fvec4>();
+                int h = rowcols.size();
+                std::vector<int> rccounts;
+                for (int i = 0; i < h; i++) {
+                  int rc = py::cast<int>(rowcols[i]);
+                  rccounts.push_back(rc);
+                }
+                auto layoutitems  = lg->makeWidgetsRC<ui::LabelBox>(rccounts, name, color, "");
+                py::list rval;
+                for (auto item : layoutitems) {
+                  auto shitem = item.as_shared();
+                  printf("box_type uircfactory item<%p>\n", (void*)shitem->_widget.get());
+                  rval.append(shitem);
+                }
+                return rval;
+              })
+              .def_property(
+                  "text",
+                  [](ui::labelbox_ptr_t box) -> std::string { //
+                    return box->_label;
+                  },
+                  [](ui::labelbox_ptr_t box, std::string txt) { //
+                    box->_label = txt;
+                  })
+              .def_property(
+                  "halign",
+                  [](ui::labelbox_ptr_t box) -> crcstring_ptr_t { //
+                    return std::make_shared<CrcString>((uint64_t)box->_halign);
+                  },
+                  [](ui::labelbox_ptr_t box, crcstring_ptr_t c) { //
+                    box->_halign = ui::ETextAlignH(c->hashed());
+                  })
+              .def_property(
+                  "valign",
+                  [](ui::labelbox_ptr_t box) -> crcstring_ptr_t { //
+                    return std::make_shared<CrcString>((uint64_t)box->_valign);
+                  },
+                  [](ui::labelbox_ptr_t box, crcstring_ptr_t c) { //
+                    box->_valign = ui::ETextAlignV(c->hashed());
+                  })
+              .def("__repr__", [](ui::labelbox_ptr_t box) {
+                return FormatString("<LabelBox name<%s> widget<%p>>", box->GetName().c_str(), (void*)box.get());
+              });
+  type_codec->registerStdCodec<ui::labelbox_ptr_t>(labbox_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto textbox_type = //
+      py::class_<ui::TextBox, ui::Widget, ui::textbox_ptr_t>(uimodule, "TextBox")
+          .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+                auto decoded_args    = type_codec->decodeList(py_args);
+                auto name            = decoded_args[0].get<std::string>();
+                auto color           = decoded_args[1].get<fvec4>();
+                auto layoutitem      = lg->makeChild<ui::Box>(name, color);
+                return layoutitem.as_shared();
+              })
+          .def_static(
+              "uigridfactory",
+              [type_codec](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto color        = decoded_args[1].get<fvec4>();
+                auto layoutitems  = lg->makeGridOfWidgets<ui::TextBox>(grid_w, grid_h, name, color, "");
+                py::list rval;
+                for (auto item : layoutitems) {
+                  rval.append(item.as_shared());
+                }
+                return rval;
+              })
+          .def_static(
+              "uircfactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list rowcols, int m, py::list py_args) -> py::list { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto color        = decoded_args[1].get<fvec4>();
+                int h = rowcols.size();
+                std::vector<int> rccounts;
+                for (int i = 0; i < h; i++) {
+                  int rc = py::cast<int>(rowcols[i]);
+                  rccounts.push_back(rc);
+                }
+                auto layoutitems  = lg->makeWidgetsRC<ui::TextBox>(rccounts, name, color, "");
+                py::list rval;
+                for (auto item : layoutitems) {
+                  auto shitem = item.as_shared();
+                  printf("box_type uircfactory item<%p>\n", (void*)shitem->_widget.get());
+                  rval.append(shitem);
+                }
+                return rval;
+              })
+              .def("setText",
+                  [](ui::textbox_ptr_t box, std::string txt) { //
+                    box->setText(txt);
+                  })
+              .def_property(
+                  "halign",
+                  [](ui::textbox_ptr_t box) -> crcstring_ptr_t { //
+                    return std::make_shared<CrcString>((uint64_t)box->_halign);
+                  },
+                  [](ui::textbox_ptr_t box, crcstring_ptr_t c) { //
+                    box->_halign = ui::ETextAlignH(c->hashed());
+                  })
+              .def_property(
+                  "valign",
+                  [](ui::textbox_ptr_t box) -> crcstring_ptr_t { //
+                    return std::make_shared<CrcString>((uint64_t)box->_valign);
+                  },
+                  [](ui::textbox_ptr_t box, crcstring_ptr_t c) { //
+                    box->_valign = ui::ETextAlignV(c->hashed());
+                  })
+              .def("__repr__", [](ui::textbox_ptr_t box) {
+                return FormatString("<TextBox name<%s> widget<%p>>", box->GetName().c_str(), (void*)box.get());
+              });
+  type_codec->registerStdCodec<ui::textbox_ptr_t>(textbox_type);
+      /////////////////////////////////////////////////////////////////////////////////
   auto evtestbox_type = //
       py::class_<ui::EvTestBox, ui::Widget, uievtestbox_ptr_t>(uimodule, "EvTestBox")
           .def_static(

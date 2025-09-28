@@ -9,7 +9,7 @@
 #include <ork/lev2/aud/singularity/dspblocks.h>
 #include <ork/lev2/aud/singularity/envelope.h>
 #include <ork/lev2/ui/box.h>
-#include <ork/lev2/ui/label.h>
+#include <ork/lev2/ui/labelbox.h>
 #include <ork/lev2/ui/dial.h>
 #include <ork/lev2/aud/singularity/hud_widgets.h>
 
@@ -51,7 +51,7 @@ hudpanel_ptr_t createEnvYmEditView(
   ////////////////////////////////////////////////
   //
   auto hdrstr     = FormatString("YmEnv: %s", ymenvdata->_name.c_str());
-  auto headeritem = envviewitem.typedWidget()->makeChild<ui::Label>("header", color, hdrstr);
+  auto headeritem = envviewitem.typedWidget()->makeChild<ui::LabelBox>("header", color, hdrstr);
   headeritem.applyBounds({guidevt, guidehl, guidev0, guidehr, 2});
   //
   auto atkshapeitem = envviewitem.typedWidget()->makeChild<ui::Dial>("atkshape", color);

@@ -111,7 +111,7 @@ void Panel::DoDraw(ui::drawevent_constptr_t drwev) {
     }
 
     if (_title.length()) {
-      tgt->PushModColor(fcolor4::Yellow());
+      tgt->PushModColor(fcolor4::White());
       auto font = lev2::FontMan::GetFont("i13");
 
       lev2::FontMan::PushFont(font);
