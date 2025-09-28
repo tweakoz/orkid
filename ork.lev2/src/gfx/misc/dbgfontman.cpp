@@ -489,34 +489,41 @@ void Font::enqueueCharacter( FontMan::vtxwriter_t& vw, //
   const auto& fontdesc = mFontDesc;
 
   ///////////////////////////////////////////////
-  // calc vertex pos
+  // calc vertex pos - ensure pixel alignment
   ///////////////////////////////////////////////
 
-  float fix1       = fx;
-  float fiy1       = fy;
-  const float fix2 = fx + (is_stereo ? fontdesc._3d_char_width : fontdesc.miCharWidth);
-  const float fiy2 = fy + (is_stereo ? fontdesc._3d_char_height : fontdesc.miCharHeight);
+  // Round to nearest pixel for crisp rendering
+  float fix1       = std::floor(fx + 0.5f);
+  float fiy1       = std::floor(fy + 0.5f);
+  const float fix2 = fix1 + (is_stereo ? fontdesc._3d_char_width : fontdesc.miCharWidth);
+  const float fiy2 = fiy1 + (is_stereo ? fontdesc._3d_char_height : fontdesc.miCharHeight);
 
   ///////////////////////////////////////////////
-  // calc UVs
+  // calc UVs for 1:1 texel mapping
   ///////////////////////////////////////////////
 
-  float fcellbaseU = float(cell_X) * float(fontdesc.miCellWidth);
-  float fcellbaseV = float(cell_Y) * float(fontdesc.miCellHeight);
-  float fu1        = fcellbaseU + (is_stereo ? fontdesc._3d_char_u_offset : fontdesc.miCharOffsetX);
-  float fv1        = fcellbaseV + (is_stereo ? fontdesc._3d_char_v_offset : fontdesc.miCharOffsetY);
-  float fu2        = fu1 + (is_stereo ? fontdesc._3d_char_u_width : fontdesc.miCharWidth);
-  float fv2        = fv1 + (is_stereo ? fontdesc._3d_char_v_height : fontdesc.miCharHeight);
+  // Calculate exact texel coordinates
+  float texel_u1 = float(cell_X * fontdesc.miCellWidth) +
+                   (is_stereo ? fontdesc._3d_char_u_offset : fontdesc.miCharOffsetX);
+  float texel_v1 = float(cell_Y * fontdesc.miCellHeight) +
+                   (is_stereo ? fontdesc._3d_char_v_offset : fontdesc.miCharOffsetY);
+  float texel_u2 = texel_u1 + (is_stereo ? fontdesc._3d_char_u_width : fontdesc.miCharWidth);
+  float texel_v2 = texel_v1 + (is_stereo ? fontdesc._3d_char_v_height : fontdesc.miCharHeight);
 
   ///////////////////////////////////////////////
-  // unitize UV's
+  // unitize UV's for texture sampling
+  // Use exact texture size (not size-1) for proper 1:1 mapping
   ///////////////////////////////////////////////
 
-  float kitexs = 1.0f / float(fontdesc.miTexWidth - 1);
-  fu1 *= kitexs;
-  fu2 *= kitexs;
-  fv1 *= kitexs;
-  fv2 *= kitexs;
+  float tex_width = float(fontdesc.miTexWidth);
+  float tex_height = float(fontdesc.miTexHeight);
+
+  // Direct texel-to-UV mapping for 1:1 correspondence
+  // No half-texel offset with point filtering for exact texel sampling
+  float fu1 = texel_u1 / tex_width;
+  float fv1 = texel_v1 / tex_height;
+  float fu2 = texel_u2 / tex_width;
+  float fv2 = texel_v2 / tex_height;
 
   ///////////////////////////////////////////////
   // in 3d, flip V
