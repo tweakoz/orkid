@@ -409,7 +409,7 @@ static bool _isMouseOverGuide(const Guide* guide, const fvec2& mousePos, float t
   Line line = guide->line(Mode::Geometry);
   float distance = _distanceFromPointToLine(mousePos, line._from, line._to);
   // Margin extends on both sides, so detection radius is half the margin
-  bool is_over = distance <= float(guide->_margin) * 0.5f;
+  bool is_over = distance <= float(guide->_margin);
   if(is_over){
     //printf("is_over guide<%d> edge<%s> distance<%g> threshold<%g> pos<%g,%g>\n", guide->_name, edge2str(guide->_edge).c_str(), distance, threshold, mousePos.x, mousePos.y);
   }
