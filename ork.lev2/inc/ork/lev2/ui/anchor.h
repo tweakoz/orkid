@@ -89,6 +89,7 @@ struct Layout {
 
   void visitHierarchy(visit_fn_t vfn);
   void visitGuides(guide_visit_fn gfn);
+  std::vector<guide_ptr_t> getDraggableGuides() const;
 
   int _margin = 0;
   int _name   = -1;

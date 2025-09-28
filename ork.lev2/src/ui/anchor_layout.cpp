@@ -348,4 +348,23 @@ void Layout::dump(int level) {
   }
 }
 /////////////////////////////////////////////////////////////////////////
+std::vector<guide_ptr_t> Layout::getDraggableGuides() const {
+  std::vector<guide_ptr_t> guides;
+
+  // Add unlocked custom guides from this layout
+  for (auto& custom_guide : _customguides) {
+    if (!custom_guide->_locked) {
+      guides.push_back(custom_guide);
+    }
+  }
+
+  // Recursively get from child layouts only (traverse down the hierarchy)
+  for (const auto& child : _childlayouts) {
+    auto child_guides = child->getDraggableGuides();
+    guides.insert(guides.end(), child_guides.begin(), child_guides.end());
+  }
+
+  return guides;
+}
+/////////////////////////////////////////////////////////////////////////
 } // namespace ork::ui::anchor

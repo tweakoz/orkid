@@ -319,8 +319,8 @@ Line Guide::line(Mode mode) const {
         outline._from = fvec2(rect._x, _fixed);
         outline._to   = fvec2(rect.x2(), _fixed);
       } else if (_fixed < 0) {
-        outline._from = fvec2(rect._x, rect._h + _fixed);
-        outline._to   = fvec2(rect.x2(), rect._h + _fixed);
+        outline._from = fvec2(rect._x, rect._y + rect._h + _fixed);
+        outline._to   = fvec2(rect.x2(), rect._y + rect._h + _fixed);
       }
       break;
     };
@@ -333,8 +333,8 @@ Line Guide::line(Mode mode) const {
         outline._from = fvec2(_fixed, rect._y);
         outline._to   = fvec2(_fixed, rect.y2());
       } else if (_fixed < 0) {
-        outline._from = fvec2(rect._w + _fixed, rect._y);
-        outline._to   = fvec2(rect._w + _fixed, rect.y2());
+        outline._from = fvec2(rect._x + rect._w + _fixed, rect._y);
+        outline._to   = fvec2(rect._x + rect._w + _fixed, rect.y2());
       }
       break;
     };
@@ -403,14 +403,14 @@ static float _distanceFromPointToLine(const fvec2& point, const fvec2& lineStart
 /////////////////////////////////////////////////////////////////////////
 // Function to check if a point (mouse position) is over a guide
 /////////////////////////////////////////////////////////////////////////
-static bool _isMouseOverGuide(const Guide* guide, const fvec2& mousePos) {
+static bool _isMouseOverGuide(const Guide* guide, const fvec2& mousePos, float threshold = 5.0f) {
   if (!guide)
     return false;
   Line line = guide->line(Mode::Geometry);
   float distance = _distanceFromPointToLine(mousePos, line._from, line._to);
-  bool is_over = distance < guide->_margin;
+  bool is_over = distance < threshold; // Use fixed threshold for hit detection
   if(is_over){
-    //printf("is_over guide<%d> edge<%s> distance<%g> margin<%d> pos<%g,%g>\n", guide->_name, edge2str(guide->_edge).c_str(), distance, guide->_margin, mousePos.x, mousePos.y);
+    //printf("is_over guide<%d> edge<%s> distance<%g> threshold<%g> pos<%g,%g>\n", guide->_name, edge2str(guide->_edge).c_str(), distance, threshold, mousePos.x, mousePos.y);
   }
   return is_over;
 }
@@ -436,46 +436,35 @@ static std::vector<guide_ptr_t> _getAllGuides(const Layout* layout) {
   return guides;
 }
 /////////////////////////////////////////////////////////////////////////
-static std::pair<guide_ptr_t, guide_ptr_t>
-_findGuidePairRecursive(const Layout* layout, const fvec2& mousePos, const std::vector<guide_ptr_t>& guides) {
-  if (!layout)
-    return {nullptr, nullptr};
+// Find the closest draggable guide under the mouse
+/////////////////////////////////////////////////////////////////////////
+static guide_ptr_t _findClosestDraggableGuide(const Layout* rootLayout, const fvec2& mousePos) {
+  if (!rootLayout)
+    return nullptr;
 
-  for (const auto& guide : guides) {
-    if (_isMouseOverGuide(guide.get(), mousePos)) {
-      // Check for a pair within the same layout
-      for (const auto& otherGuide : _getAllGuides(layout)) {
-        if (guide != otherGuide && _isMouseOverGuide(otherGuide.get(), mousePos)) {
-          return {guide, otherGuide};
-        }
-      }
+  auto draggableGuides = rootLayout->getDraggableGuides();
 
-      // Recursively check child layouts
-      for (const auto& childLayout : layout->_childlayouts) {
-        auto result = _findGuidePairRecursive(childLayout.get(), mousePos, guides);
-        if (result.first && result.second) {
-          return result;
-        }
-      }
+  guide_ptr_t closestGuide = nullptr;
+  float closestDistance = std::numeric_limits<float>::max();
+
+  for (const auto& guide : draggableGuides) {
+    Line line = guide->line(Mode::Geometry);
+    float distance = _distanceFromPointToLine(mousePos, line._from, line._to);
+
+    if (distance < 10.0f && distance < closestDistance) { // 10 pixel threshold
+      closestDistance = distance;
+      closestGuide = guide;
     }
   }
 
-  return {nullptr, nullptr};
+  return closestGuide;
 }
 /////////////////////////////////////////////////////////////////////////
 std::pair<guide_ptr_t, guide_ptr_t> findGuidePairUnderMouse(const Layout* rootLayout, const fvec2& mousePos) {
-  std::vector<guide_ptr_t> allGuides;
-  std::function<void(const Layout*)> enumerateAllGuides = [&](const Layout* layout) {
-    if (!layout)
-      return;
-    auto guides = _getAllGuides(layout);
-    allGuides.insert(allGuides.end(), guides.begin(), guides.end());
-    for (const auto& child : layout->_childlayouts) {
-      enumerateAllGuides(child.get());
-    }
-  };
-  enumerateAllGuides(rootLayout);
-  return _findGuidePairRecursive(rootLayout, mousePos, allGuides);
+  // For compatibility, we now return the same guide twice if found
+  // This signals that we found a draggable guide
+  auto guide = _findClosestDraggableGuide(rootLayout, mousePos);
+  return {guide, guide};
 }
 /////////////////////////////////////////////////////////////////////////
 static void _adjustGuidePositionVProportional(const guide_ptr_t& guide, float deltaX) {
@@ -546,7 +535,6 @@ static void _dragGuideV(const guide_ptr_t& guide, float deltaX) {
       else
         _adjustGuidePositionVProportional(guide, deltaX);
       break;
-      break;
     default:
       // Not a vertical guide, no action needed
       break;
@@ -554,17 +542,17 @@ static void _dragGuideV(const guide_ptr_t& guide, float deltaX) {
 }
 /////////////////////////////////////////////////////////////////////////
 void dragGuidePairH(const std::pair<guide_ptr_t, guide_ptr_t>& pair, float deltaY) {
-  if (!pair.first || !pair.second)
+  // Now we just drag the single guide (first and second are the same)
+  if (!pair.first)
     return;
   _dragGuideH(pair.first, deltaY);
-  _dragGuideH(pair.second, deltaY);
 }
 /////////////////////////////////////////////////////////////////////////
 void dragGuidePairV(const std::pair<guide_ptr_t, guide_ptr_t>& pair, float deltaX) {
-  if (!pair.first || !pair.second)
+  // Now we just drag the single guide (first and second are the same)
+  if (!pair.first)
     return;
   _dragGuideV(pair.first, deltaX);
-  _dragGuideV(pair.second, deltaX);
 }
 /////////////////////////////////////////////////////////////////////////
 } // namespace ork::ui::anchor
