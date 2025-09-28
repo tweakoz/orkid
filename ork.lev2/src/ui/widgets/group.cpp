@@ -138,8 +138,9 @@ void Group::_doOnPreDestroy() {
   }
 }
 /////////////////////////////////////////////////////////////////////////
-LayoutGroup::LayoutGroup(const std::string& name, int x, int y, int w, int h)
-    : Group(name, x, y, w, h) {
+LayoutGroup::LayoutGroup(const std::string& name, int x, int y, int w, int h, int margin)
+    : Group(name, x, y, w, h)
+    , _margin(margin) {
   _layout = std::make_shared<anchor::Layout>(this);
   _evrouter = [this](ui::event_constptr_t ev) -> ui::Widget* { //
     return doRouteUiEvent(ev);
