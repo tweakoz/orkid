@@ -73,6 +73,7 @@ int main(int argc, char** argv, char** envp) {
   //////////////////////////////////////
   root_layout->dump();
   // exit(0);
+  app->_eztopwidget->enableUiDraw();
   //////////////////////////////////////
   app->setRefreshPolicy({EREFRESH_FIXEDFPS, 60});
   return app->mainThreadLoop();
