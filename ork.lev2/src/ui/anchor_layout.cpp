@@ -44,6 +44,7 @@ layout_ptr_t Layout::childLayout(Widget* w) {
   auto l = std::make_shared<Layout>(w);
   _childlayouts.push_back(l);
   l->_parent = this;
+  l->setMargin(_margin);  // Inherit parent's margin
   return l;
 }
 /////////////////////////////////////////////////////////////////////////
@@ -275,6 +276,7 @@ guide_ptr_t Layout::proportionalHorizontalGuide(float proportion) {
   guide->_proportion = proportion;
   guide->_type = GuideType::PROPORTIONAL;
   guide->_locked = _locked;
+  guide->_margin = _margin;  // Inherit layout's margin
   _customguides.insert(guide);
   return guide;
 }
@@ -284,6 +286,7 @@ guide_ptr_t Layout::proportionalVerticalGuide(float proportion) {
   guide->_proportion = proportion;
   guide->_type = GuideType::PROPORTIONAL;
   guide->_locked = _locked;
+  guide->_margin = _margin;  // Inherit layout's margin
   _customguides.insert(guide);
   return guide;
 }
@@ -293,6 +296,7 @@ guide_ptr_t Layout::fixedHorizontalGuide(int fixed) {
   guide->_fixed = fixed;
   guide->_type = GuideType::FIXED;
   guide->_locked = _locked;
+  guide->_margin = _margin;  // Inherit layout's margin
   _customguides.insert(guide);
   return guide;
 }
@@ -302,6 +306,7 @@ guide_ptr_t Layout::fixedVerticalGuide(int fixed) {
   guide->_fixed = fixed;
   guide->_type = GuideType::FIXED;
   guide->_locked = _locked;
+  guide->_margin = _margin;  // Inherit layout's margin
   _customguides.insert(guide);
   return guide;
 }

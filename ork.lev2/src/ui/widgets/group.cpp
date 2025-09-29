@@ -3,8 +3,11 @@
 #include <ork/lev2/ui/event.h>
 #include <ork/lev2/ui/layoutgroup.inl>
 #include <ork/profiling.inl>
+#include <ork/lev2/gfx/gfxmaterial_ui.h>
+#include <ork/lev2/gfx/pri.h>
 
 namespace ork { namespace ui {
+static anchor::guide_ptr_t GUIDES_UNDER_MOUSE;
 /////////////////////////////////////////////////////////////////////////
 Group::Group(const std::string& name, int x, int y, int w, int h)
     : Widget(name, x, y, w, h) {
@@ -141,8 +144,10 @@ void Group::_doOnPreDestroy() {
 LayoutGroup::LayoutGroup(const std::string& name, int x, int y, int w, int h, int margin)
     : Group(name, x, y, w, h)
     , _margin(margin) {
-  _clear = false;
+  _clearColorStd = fvec4(0.0, 0.0, 0.0, 1);
+  _clearColorGuide = fvec4(0.3, 0.0, 0.3, 1);
   _layout = std::make_shared<anchor::Layout>(this);
+  _layout->_margin = _margin;  // Set layout's margin from constructor param
   _evrouter = [this](ui::event_constptr_t ev) -> ui::Widget* { //
     return doRouteUiEvent(ev);
   };
@@ -206,8 +211,70 @@ void LayoutGroup::DoDraw(drawevent_constptr_t drwev) {
   int w = _geometry._w;
   int h = _geometry._h;
   //printf("LayoutGroup<%s>::DoDraw xywh<%d %d %d %d> clear<%d>\n", _name.c_str(), x, y, w, h, int(_clear));
-  Widget::_drawColoredBox(drwev, _clear ? fvec4(0,0,0,0) : _clearColor);
+  if(_clear){
+    Widget::_drawColoredBox(drwev,  _clearColorStd);
+  }
   drawChildren(drwev);
+
+  // Draw highlighted guide if one is under the mouse
+  if (GUIDES_UNDER_MOUSE) {
+    auto tgt    = drwev->GetTarget();
+    auto fbi    = tgt->FBI();
+    auto mtxi   = tgt->MTXI();
+    auto primi  = tgt->PRI();
+    auto defmtl = lev2::defaultUIMaterial();
+
+    mtxi->PushUIMatrix();
+    {
+      // Get the guide's line in geometry space
+      auto line = GUIDES_UNDER_MOUSE->line(anchor::Mode::Geometry);
+
+      // Transform to root space (same as in guide detection)
+      Widget* widget = GUIDES_UNDER_MOUSE->_layout->_widget;
+      Widget* current = widget->parent();
+      while (current && current->parent()) {
+        auto geo = current->geometry();
+        line._from.x += geo._x;
+        line._from.y += geo._y;
+        line._to.x += geo._x;
+        line._to.y += geo._y;
+        current = current->parent();
+      }
+
+      // Calculate the box around the guide based on its margin
+      int margin = GUIDES_UNDER_MOUSE->_margin;
+      int ix1, iy1, ix2, iy2;
+
+      if (GUIDES_UNDER_MOUSE->isVertical()) {
+        // Vertical guide - draw a vertical box
+        ix1 = line._from.x - margin;
+        ix2 = line._from.x + margin;
+        iy1 = line._from.y;
+        iy2 = line._to.y;
+      } else {
+        // Horizontal guide - draw a horizontal box
+        ix1 = line._from.x;
+        ix2 = line._to.x;
+        iy1 = line._from.y - margin;
+        iy2 = line._from.y + margin;
+      }
+
+      defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
+      defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
+      tgt->PushModColor(_clearColorGuide);
+      defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
+      primi->RenderQuadAtZ(
+          defmtl.get(),
+          ix1, ix2,  // x0, x1
+          iy1, iy2,  // y0, y1
+          0.0f,      // z
+          0.0f, 1.0f, // u0, u1
+          0.0f, 1.0f  // v0, v1
+      );
+      tgt->PopModColor();
+    }
+    mtxi->PopUIMatrix();
+  }
 }
 //////////////////////////////////////
 anchor::layout_ptr_t LayoutGroup::layoutAndAddChild(widget_ptr_t w) {
@@ -229,14 +296,6 @@ void LayoutGroup::replaceChild(anchor::layout_ptr_t ch, layoutitem_ptr_t rep) {
   rep->_layout = ch;
 }
 //////////////////////////////////////
-void LayoutGroup::setClearColor(fvec4 clr) {
-  _clearColor = clr;
-}
-//////////////////////////////////////
-fvec4 LayoutGroup::clearColor() const {
-  return _clearColor;
-}
-//////////////////////////////////////
 const std::set<uiguide_ptr_t>& LayoutGroup::horizontalGuides() const {
   return _hguides;
 }
@@ -250,7 +309,6 @@ namespace anchor{
   void dragGuidePairV(guide_ptr_t guide, float deltaX);
 };
 ///////////////////////////////////////////////////////////
-static anchor::guide_ptr_t GUIDES_UNDER_MOUSE;
 HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
   // ev->mFilteredEvent.Reset();
   static int counter = 0;
@@ -314,7 +372,9 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
       lasty = ev->miY;
       break;
     }
+    case ui::EventCode::MOUSE_LEAVE: 
     default: {
+      _highlightGuides = false;
       break;
     }
   }
@@ -327,10 +387,10 @@ Widget* LayoutGroup::doRouteUiEvent(event_constptr_t ev) {
   //
   GUIDES_UNDER_MOUSE = anchor::findGuidePairUnderMouse(_layout.get(), fvec2(ev->miX, ev->miY));
   if(GUIDES_UNDER_MOUSE){
-    _clear = true;
+    _highlightGuides = true;
     return this;
   }
-  _clear = false;
+  _highlightGuides = false;
   for (auto& child : _children) {
     bool inside = child->IsEventInside(ev);
     if (inside) {

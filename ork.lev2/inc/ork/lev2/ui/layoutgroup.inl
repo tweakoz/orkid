@@ -50,7 +50,7 @@ using layoutitem_ptr_t = std::shared_ptr<LayoutItemBase>;
 
 struct LayoutGroup : public Group {
 
-  LayoutGroup(const std::string& name, int x = 0, int y = 0, int w = 0, int h = 0, int margin = 2);
+  LayoutGroup(const std::string& name, int x = 0, int y = 0, int w = 0, int h = 0, int margin = 0);
   ~LayoutGroup();
 
   //////////////////////////////////////
@@ -84,12 +84,12 @@ struct LayoutGroup : public Group {
       float fyb = float(y + 1) / float(h);
       if (y == 0) {
         gya          = _layout->proportionalHorizontalGuide(fya); // 23,27,31,35
-        gya->_margin = _margin;
+        // Margin inherited from layout
       } else {
         gya = gyb;
       }
       gyb          = _layout->proportionalHorizontalGuide(fyb); // 24,28,32,36
-      gyb->_margin = _margin;
+      // Margin inherited from layout
       _hguides.insert(gya);
       _hguides.insert(gyb);
       int w = rccounts[y];
@@ -98,12 +98,12 @@ struct LayoutGroup : public Group {
         float fxb = float(x + 1) / float(w);
         if (x == 0) {
           gxa          = _layout->proportionalVerticalGuide(fxa); // 25,29,33,37
-          gxa->_margin = _margin;
+          // Margin inherited from layout
         } else {
           gxa = gxb;
         }
         gxb          = _layout->proportionalVerticalGuide(fxb); // 25,29,33,37
-        gxb->_margin = _margin;
+        // Margin inherited from layout
         _vguides.insert(gxa);
         _vguides.insert(gxb);
         auto name   = _name + FormatString("-ch-%d", (y * w + x));
@@ -128,7 +128,7 @@ struct LayoutGroup : public Group {
     for (int x = 0; x <= w; x++) {
       float fx = float(x) / float(w);
       auto guide = _layout->proportionalVerticalGuide(fx);
-      guide->_margin = _margin;
+      // Margin inherited from layout
       vguides.push_back(guide);
       _vguides.insert(guide);
     }
@@ -138,7 +138,7 @@ struct LayoutGroup : public Group {
     for (int y = 0; y <= h; y++) {
       float fy = float(y) / float(h);
       auto guide = _layout->proportionalHorizontalGuide(fy);
-      guide->_margin = _margin;
+      // Margin inherited from layout
       hguides.push_back(guide);
       _hguides.insert(guide);
     }
@@ -162,8 +162,6 @@ struct LayoutGroup : public Group {
   anchor::layout_ptr_t layoutAndAddChild(widget_ptr_t w);
   void removeChild(anchor::layout_ptr_t ch);
   void replaceChild(anchor::layout_ptr_t ch, layoutitem_ptr_t rep);
-  void setClearColor(fvec4 clr);
-  fvec4 clearColor() const;
   const std::set<uiguide_ptr_t>& horizontalGuides() const;
   const std::set<uiguide_ptr_t>& verticalGuides() const;
   HandlerResult OnUiEvent(event_constptr_t ev);
@@ -172,9 +170,11 @@ struct LayoutGroup : public Group {
 
   int _margin = 2;
   bool _clear = true;
-  fvec4 _clearColor;
+  fvec4 _clearColorStd;
+  fvec4 _clearColorGuide;
+  bool _highlightGuides = false;
   Widget* doRouteUiEvent(event_constptr_t Ev) override;
-
+  
 private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;
   void _doOnResized() override;

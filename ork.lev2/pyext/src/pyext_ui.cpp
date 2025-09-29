@@ -325,12 +325,20 @@ void pyinit_ui(py::module& module_lev2) {
   auto layoutgroup_type = //
       py::class_<ui::LayoutGroup, ui::Group, uilayoutgroup_ptr_t>(uimodule, "LayoutGroup")
           .def_property(
-              "clearColor",
+              "clearColorStd",
               [](uilayoutgroup_ptr_t lgrp) -> fvec4 { //
-                return lgrp->clearColor();
+                return lgrp->_clearColorStd;
               },
               [](uilayoutgroup_ptr_t lgrp, fvec4 c) { //
-                lgrp->setClearColor(c);
+                lgrp->_clearColorStd = c;
+              })
+          .def_property(
+              "clearColorGuide",
+              [](uilayoutgroup_ptr_t lgrp) -> fvec4 { //
+                return lgrp->_clearColorGuide;
+              },
+              [](uilayoutgroup_ptr_t lgrp, fvec4 c) { //
+                lgrp->_clearColorGuide = c;
               })
           .def_property_readonly(
               "layout",
