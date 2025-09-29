@@ -3,6 +3,7 @@
 #include <ork/lev2/ui/box.h>
 #include <ork/lev2/ui/viewport.h>
 #include <ork/lev2/ui/layoutgroup.inl>
+#include <ork/lev2/ui/tabs.h>
 #include <ork/lev2/ui/context.h>
 #include "harness.h"
 
@@ -25,7 +26,7 @@ int main(int argc, char** argv, char** envp) {
   root_layout->setMargin(margin);
   vp->_margin = margin;
   //////////////////////////////////////
-  auto i_top               = vp->makeChild<EvTestBox>("top", fvec4(0.5, 0.3, 0.2, 1));
+  auto i_top               = vp->makeChild<TabWidget>("top", 0, 0, 0, 0);
   auto i_mid               = vp->makeChild<LayoutGroup>("mid", 0, 0, 0, 0, margin); 
   auto i_bot               = vp->makeChild<EvTestBox>("bot", fvec4(0, 1, 0, 1));
   auto w_top               = i_top.typedWidget();
@@ -36,8 +37,10 @@ int main(int argc, char** argv, char** envp) {
   auto i_4x4               = w_mid->makeChild<LayoutGroup>("4x4", 0, 0, 0, 0, margin);
   auto w_mid_left          = i_mid_left.typedWidget();
   auto w_4x4               = i_4x4.typedWidget();
-  //vp->removeChild(w_mid._layout);
-  //vp->removeChild(w_4x4._layout);
+  //////////////////////////////////////
+  w_top->makeChild<EvTestBox>("box1", fvec4(1, 0, 0, 1));
+  w_top->makeChild<EvTestBox>("box2", fvec4(0, 1, 0, 1));
+  w_top->makeChild<EvTestBox>("box3", fvec4(0, 0, 1, 1));
   //////////////////////////////////////
   auto i_lbox              = w_mid_left->makeChild<EvTestBox>("lbox", fvec4(0, 0.3, 0.5, 1));
   auto i_8x8               = w_mid_left->makeChild<LayoutGroup>("8x8", 0, 0, 0, 0, margin);
