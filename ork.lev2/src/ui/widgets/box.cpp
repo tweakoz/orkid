@@ -148,8 +148,10 @@ void EvTestBox::DoDraw(drawevent_constptr_t drwev) {
     defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
     defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
     ///////////////////////////////
-    if (not hasMouseFocus())
-      color *= 0.9f;
+    if (not hasMouseFocus()){
+      color *= 0.8f;
+      statename = "---";
+    }
     tgt->PushModColor(color);
     defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
     primi->RenderQuadAtZ(

@@ -39,7 +39,7 @@ int main(int argc, char** argv, char** envp) {
   //vp->removeChild(w_mid._layout);
   //vp->removeChild(w_4x4._layout);
   //////////////////////////////////////
-  auto i_lbox              = w_mid_left->makeChild<EvTestBox>("lbox", fvec4(0, 1, 1, 1));
+  auto i_lbox              = w_mid_left->makeChild<EvTestBox>("lbox", fvec4(0, 0.3, 0.5, 1));
   auto i_8x8               = w_mid_left->makeChild<LayoutGroup>("8x8", 0, 0, 0, 0, margin);
   auto w_lbox              = i_lbox.typedWidget();
   auto w_8x8               = i_8x8.typedWidget();
@@ -70,7 +70,7 @@ int main(int argc, char** argv, char** envp) {
   auto cg_topmid = root_layout->proportionalHorizontalGuide(0.25);
   auto cg_midbot = root_layout->fixedHorizontalGuide(-32);
   cg_midbot->_locked = true;
-  root_layout->lockAllGuides();
+  //root_layout->lockAllGuides();
   //////////////////////////////////////
   l_top->top()->anchorTo(root_layout->top());     
   l_top->left()->anchorTo(root_layout->left());   
