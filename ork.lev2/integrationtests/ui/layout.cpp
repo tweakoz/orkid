@@ -70,6 +70,7 @@ int main(int argc, char** argv, char** envp) {
   auto cg_topmid = root_layout->proportionalHorizontalGuide(0.25);
   auto cg_midbot = root_layout->fixedHorizontalGuide(-32);
   cg_midbot->_locked = true;
+  root_layout->lockAllGuides();
   //////////////////////////////////////
   l_top->top()->anchorTo(root_layout->top());     
   l_top->left()->anchorTo(root_layout->left());   

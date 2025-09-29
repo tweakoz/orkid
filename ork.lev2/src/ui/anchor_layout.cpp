@@ -21,6 +21,13 @@ Layout::Layout(Widget* w)
 Layout::~Layout() {
 }
 ////////////////////////////////////////////////////////////////////////
+void Layout::lockAllGuides() {
+  auto gfn = [this](Guide* g){
+    g->_locked = true;
+  };
+  visitGuides(gfn);
+}
+////////////////////////////////////////////////////////////////////////
 void Layout::visitHierarchy(visit_fn_t vfn){
   vfn(this);
   for( auto it : _childlayouts ){

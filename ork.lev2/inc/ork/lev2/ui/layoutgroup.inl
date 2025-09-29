@@ -131,6 +131,11 @@ struct LayoutGroup : public Group {
       // Margin inherited from layout
       vguides.push_back(guide);
       _vguides.insert(guide);
+      bool first = (x == 0);
+      bool last = (x == w);
+      if(first or last){
+        guide->_locked = true;
+      }
     }
 
     // Create all horizontal guides (shared across all columns)
@@ -141,6 +146,11 @@ struct LayoutGroup : public Group {
       // Margin inherited from layout
       hguides.push_back(guide);
       _hguides.insert(guide);
+      bool first = (y == 0);
+      bool last = (y == h);
+      if(first or last){
+        guide->_locked = true;  
+      }
     }
 
     // Now create cells and anchor them to the appropriate guides
@@ -174,7 +184,7 @@ struct LayoutGroup : public Group {
   fvec4 _clearColorGuide;
   bool _highlightGuides = false;
   Widget* doRouteUiEvent(event_constptr_t Ev) override;
-  
+
 private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;
   void _doOnResized() override;

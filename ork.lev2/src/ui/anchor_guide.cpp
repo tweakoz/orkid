@@ -214,7 +214,9 @@ void Guide::anchorTo(guide_ptr_t other) {
 }
 /////////////////////////////////////////////////////////////////////////
 void Guide::anchorTo(Guide* other) {
-
+  if(other->_locked){
+    _locked = true;
+  }
   //////////////////////////////////////////
   // sanity checks
   //////////////////////////////////////////
@@ -520,10 +522,35 @@ guide_ptr_t findGuidePairUnderMouse(const Layout* rootLayout, const fvec2& mouse
 static void _adjustGuidePositionVProportional(const guide_ptr_t& guide, float deltaX) {
     auto layout_dimensions = guide->_layout->_widget->geometry();
     float try_new_proportion = guide->_proportion + (deltaX / static_cast<float>(layout_dimensions._w));
-    try_new_proportion = std::max(0.05f, std::min(0.95f, try_new_proportion)); 
-    int try_size_left = static_cast<int>(try_new_proportion * layout_dimensions._w);
-    int try_size_right = layout_dimensions._w - try_size_left;
-    if (try_size_left >= 8 && try_size_right >= 8) {
+
+    // Find adjacent vertical guides to prevent crossing
+    float min_proportion = 0.0f;
+    float max_proportion = 1.0f;
+
+    // Get all custom guides from the same layout
+    for (auto& other_guide : guide->_layout->_customguides) {
+        if (other_guide->isVertical() && other_guide != guide) {
+            float other_prop = other_guide->_proportion;
+            // Find the closest guide on the left (smaller proportion)
+            if (other_prop < guide->_proportion && other_prop > min_proportion) {
+                min_proportion = other_prop;
+            }
+            // Find the closest guide on the right (larger proportion)
+            if (other_prop > guide->_proportion && other_prop < max_proportion) {
+                max_proportion = other_prop;
+            }
+        }
+    }
+
+    // Add minimum spacing of 32 pixels between guides
+    float min_spacing = 32.0f / layout_dimensions._w;
+    min_proportion += min_spacing;
+    max_proportion -= min_spacing;
+
+    // Clamp the new proportion to prevent crossing
+    try_new_proportion = std::max(min_proportion, std::min(max_proportion, try_new_proportion));
+
+    if (try_new_proportion != guide->_proportion) {
         guide->_proportion = try_new_proportion;
         guide->_layout->updateAll();
     }
@@ -531,11 +558,39 @@ static void _adjustGuidePositionVProportional(const guide_ptr_t& guide, float de
 /////////////////////////////////////////////////////////////////////////
 static void _adjustGuidePositionVFixed(const guide_ptr_t& guide, float deltaX) {
     auto layout_dimensions = guide->_layout->_widget->geometry();
-    int new_fixed = guide->_fixed + static_cast<int>(deltaX);
-    int try_size_left = new_fixed;
-    int try_size_right = layout_dimensions._w - new_fixed;
-    if (try_size_left >= 8 && try_size_right >= 8) {
-        guide->_fixed = new_fixed;
+    int try_new_fixed = guide->_fixed + static_cast<int>(deltaX);
+
+    // Find adjacent vertical guides to prevent crossing
+    int min_pos = 0;
+    int max_pos = layout_dimensions._w;
+
+    // Get all custom guides from the same layout
+    for (auto& other_guide : guide->_layout->_customguides) {
+        if (other_guide->isVertical() && other_guide != guide) {
+            int other_pos = (other_guide->_type == GuideType::FIXED)
+                ? other_guide->_fixed
+                : static_cast<int>(other_guide->_proportion * layout_dimensions._w);
+
+            // Find the closest guide on the left
+            if (other_pos < guide->_fixed && other_pos > min_pos) {
+                min_pos = other_pos;
+            }
+            // Find the closest guide on the right
+            if (other_pos > guide->_fixed && other_pos < max_pos) {
+                max_pos = other_pos;
+            }
+        }
+    }
+
+    // Add minimum spacing of 32 pixels between guides
+    min_pos += 32;
+    max_pos -= 32;
+
+    // Clamp the new position to prevent crossing
+    try_new_fixed = std::max(min_pos, std::min(max_pos, try_new_fixed));
+
+    if (try_new_fixed != guide->_fixed) {
+        guide->_fixed = try_new_fixed;
         guide->_layout->updateAll();
     }
 }
@@ -543,10 +598,35 @@ static void _adjustGuidePositionVFixed(const guide_ptr_t& guide, float deltaX) {
 static void _adjustGuidePositionHProportional(const guide_ptr_t& guide, float deltaY) {
     auto layout_dimensions = guide->_layout->_widget->geometry();
     float try_new_proportion = guide->_proportion + (deltaY / static_cast<float>(layout_dimensions._h));
-    try_new_proportion = std::max(0.05f, std::min(0.95f, try_new_proportion)); 
-    int try_size_above = static_cast<int>(try_new_proportion * layout_dimensions._h);
-    int try_size_below = layout_dimensions._h - try_size_above;
-    if (try_size_above >= 8 && try_size_below >= 8) {
+
+    // Find adjacent horizontal guides to prevent crossing
+    float min_proportion = 0.0f;
+    float max_proportion = 1.0f;
+
+    // Get all custom guides from the same layout
+    for (auto& other_guide : guide->_layout->_customguides) {
+        if (other_guide->isHorizontal() && other_guide != guide) {
+            float other_prop = other_guide->_proportion;
+            // Find the closest guide above (smaller proportion)
+            if (other_prop < guide->_proportion && other_prop > min_proportion) {
+                min_proportion = other_prop;
+            }
+            // Find the closest guide below (larger proportion)
+            if (other_prop > guide->_proportion && other_prop < max_proportion) {
+                max_proportion = other_prop;
+            }
+        }
+    }
+
+    // Add minimum spacing of 32 pixels between guides
+    float min_spacing = 32.0f / layout_dimensions._h;
+    min_proportion += min_spacing;
+    max_proportion -= min_spacing;
+
+    // Clamp the new proportion to prevent crossing
+    try_new_proportion = std::max(min_proportion, std::min(max_proportion, try_new_proportion));
+
+    if (try_new_proportion != guide->_proportion) {
         guide->_proportion = try_new_proportion;
         guide->_layout->updateAll();
     }
@@ -555,9 +635,37 @@ static void _adjustGuidePositionHProportional(const guide_ptr_t& guide, float de
 static void _adjustGuidePositionHFixed(const guide_ptr_t& guide, float deltaY) {
     auto layout_dimensions = guide->_layout->_widget->geometry();
     int try_new_fixed = guide->_fixed + static_cast<int>(deltaY);
-    int try_size_above = try_new_fixed;
-    int try_size_below = layout_dimensions._h - try_new_fixed;
-    if (try_size_above >= 8 && try_size_below >= 8) {
+
+    // Find adjacent horizontal guides to prevent crossing
+    int min_pos = 0;
+    int max_pos = layout_dimensions._h;
+
+    // Get all custom guides from the same layout
+    for (auto& other_guide : guide->_layout->_customguides) {
+        if (other_guide->isHorizontal() && other_guide != guide) {
+            int other_pos = (other_guide->_type == GuideType::FIXED)
+                ? other_guide->_fixed
+                : static_cast<int>(other_guide->_proportion * layout_dimensions._h);
+
+            // Find the closest guide above
+            if (other_pos < guide->_fixed && other_pos > min_pos) {
+                min_pos = other_pos;
+            }
+            // Find the closest guide below
+            if (other_pos > guide->_fixed && other_pos < max_pos) {
+                max_pos = other_pos;
+            }
+        }
+    }
+
+    // Add minimum spacing of 32 pixels between guides
+    min_pos += 32;
+    max_pos -= 32;
+
+    // Clamp the new position to prevent crossing
+    try_new_fixed = std::max(min_pos, std::min(max_pos, try_new_fixed));
+
+    if (try_new_fixed != guide->_fixed) {
         guide->_fixed = try_new_fixed;
         guide->_layout->updateAll();
     }

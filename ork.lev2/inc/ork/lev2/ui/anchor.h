@@ -80,7 +80,7 @@ struct Layout {
   guide_ptr_t proportionalVerticalGuide(float proportion);
   guide_ptr_t fixedHorizontalGuide(int fixed);
   guide_ptr_t fixedVerticalGuide(int fixed);
-
+  void lockAllGuides();
   void dump(int level=0);
   void prune();
 
