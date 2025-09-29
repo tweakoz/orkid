@@ -3,6 +3,7 @@
 #include <ork/lev2/ui/box.h>
 #include <ork/lev2/ui/viewport.h>
 #include <ork/lev2/ui/layoutgroup.inl>
+#include <ork/lev2/ui/layoutsurface.h>
 #include <ork/lev2/ui/tabs.h>
 #include <ork/lev2/ui/context.h>
 #include "harness.h"
@@ -19,6 +20,7 @@ int main(int argc, char** argv, char** envp) {
   int margin = 2;
   auto initdata = std::make_shared<ork::AppInitData>(argc,argv,envp);
   auto app = createEZapp(initdata);
+  app->_eztopwidget->enableUiDraw();
   auto uic = app->_eztopwidget->_uicontext;
   //////////////////////////////////////
   auto vp                  = app->_topLayoutGroup;
@@ -42,10 +44,21 @@ int main(int argc, char** argv, char** envp) {
   w_top->makeChild<EvTestBox>("box2", fvec4(0, 1, 0, 1));
   w_top->makeChild<EvTestBox>("box3", fvec4(0, 0, 1, 1));
   //////////////////////////////////////
-  auto i_lbox              = w_mid_left->makeChild<EvTestBox>("lbox", fvec4(0, 0.3, 0.5, 1));
+  auto i_lbox              = w_mid_left->makeChild<LayoutSurface>("lbox", 0, 0, 0, 0, margin);
   auto i_8x8               = w_mid_left->makeChild<LayoutGroup>("8x8", 0, 0, 0, 0, margin);
   auto w_lbox              = i_lbox.typedWidget();
   auto w_8x8               = i_8x8.typedWidget();
+  //////////////////////////////////////
+  w_lbox->_virtualWidth = 0;
+  w_lbox->_virtualHeight = 1024;
+  auto wllg = w_lbox->layoutGroup();
+  auto iwllg_0 = wllg->makeChild<EvTestBox>("lbox1", fvec4(1, 0, 0, 1));
+  auto wwllg_0 = iwllg_0.typedWidget();
+  auto lwllg_0 = iwllg_0._layout;
+  lwllg_0->top()->anchorTo(wllg->_layout->top());
+  lwllg_0->left()->anchorTo(wllg->_layout->left());
+  lwllg_0->bottom()->anchorTo(wllg->_layout->bottom());
+  lwllg_0->right()->anchorTo(wllg->_layout->right());
   //////////////////////////////////////
   w_4x4->makeGridOfWidgets<EvTestBox>(4,4,"yo",fvec4(0, 0, .3, 1));
   w_8x8->makeGridOfWidgets<EvTestBox>(8,8,"yo",fvec4(0.25, 0, 0.4, 1));
@@ -103,17 +116,19 @@ int main(int argc, char** argv, char** envp) {
   l_4x4->bottom()->anchorTo(l_mid->bottom());
   l_4x4->right()->anchorTo(l_mid->right());  
   //////////////////////////////////////
-  // Create child widgets for w_mid_left (which is now a LayoutGroup)
-  //////////////////////////////////////
-  //////////////////////////////////////
   // Create a horizontal guide in w1 to split it (like SplitPanel would)
+  //////////////////////////////////////
   auto splitH = l_mid_left->proportionalHorizontalGuide(0.5); // Split at 50%
+  //////////////////////////////////////
   // Layouts for the panels inside w1
+  //////////////////////////////////////
   l_lbox->bottom()->anchorTo(splitH);
   l_lbox->top()->anchorTo(l_mid_left->top());
   l_lbox->left()->anchorTo(l_mid_left->left());
   l_lbox->right()->anchorTo(l_mid_left->right());
+  //////////////////////////////////////
   // Anchor panel_w1 to bottom half
+  //////////////////////////////////////
   l_8x8->top()->anchorTo(splitH);
   l_8x8->left()->anchorTo(l_mid_left->left());
   l_8x8->bottom()->anchorTo(l_mid_left->bottom());
@@ -121,7 +136,6 @@ int main(int argc, char** argv, char** envp) {
   //////////////////////////////////////
   //root_layout->dump();
   // exit(0);
-  app->_eztopwidget->enableUiDraw();
   //////////////////////////////////////
   app->setRefreshPolicy({EREFRESH_FIXEDFPS, 60});
   return app->mainThreadLoop();
