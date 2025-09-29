@@ -424,7 +424,7 @@ static bool _isMouseOverGuide(const Guide* guide, const fvec2& mousePos, float t
   }
 
   float distance = _distanceFromPointToLine(mousePos, line._from, line._to);
-  // Margin extends on both sides, so detection radius is half the margin
+  // The entire margin area should be draggable
   bool is_over = distance <= float(guide->_margin);
   if(is_over){
     //printf("is_over guide<%d> edge<%s> distance<%g> threshold<%g> pos<%g,%g>\n", guide->_name, edge2str(guide->_edge).c_str(), distance, threshold, mousePos.x, mousePos.y);
@@ -486,8 +486,10 @@ static guide_ptr_t _findClosestDraggableGuide(const Layout* rootLayout, const fv
 
     float distance = _distanceFromPointToLine(mousePos, line._from, line._to);
 
-    // Margin extends on both sides, so detection radius is half the margin
-    float threshold = float(guide->_margin) * 0.5f;
+    // The guide's margin extends on both sides of the guide line
+    // So if margin is 3, the draggable area is 3 pixels on each side = 6 pixels total
+    // The distance check should be against the full margin size since distance is from the center line
+    float threshold = float(guide->_margin);
 
     if (distance <= threshold && distance < closestDistance) {
       closestDistance = distance;
