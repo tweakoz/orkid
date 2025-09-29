@@ -74,12 +74,15 @@ void LayoutSurface::setScrollPosition(int x, int y) {
 
 /////////////////////////////////////////////////////////////////////////
 void LayoutSurface::_updateRenderTarget() {
-  if (_rtgroup && _virtualWidth > 0 && _virtualHeight > 0) {
+  int vw = (_virtualWidth==0) ? _geometry._w : _virtualWidth;
+  int vh = (_virtualHeight==0) ? _geometry._h : _virtualHeight;
+    printf("LayoutSurface<%s> resizing rtgroup to %d x %d\n", _name.c_str(), vw, vh);
+  if (_rtgroup and (vw > 0) and (vh > 0)) {
     // Only resize if dimensions changed
-    if (_rtgroup->width() != _virtualWidth || _rtgroup->height() != _virtualHeight) {
-      _rtgroup->Resize(_virtualWidth, _virtualHeight);
-      mNeedsSurfaceRepaint = true;
-    }
+   // if (_rtgroup->width() != _virtualWidth || _rtgroup->height() != _virtualHeight) {
+   _rtgroup->Resize(vw, vh);
+    mNeedsSurfaceRepaint = true;
+    //}
   }
 }
 
@@ -94,7 +97,11 @@ void LayoutSurface::_doOnResized() {
 
 /////////////////////////////////////////////////////////////////////////
 void LayoutSurface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
-  auto target = drwev->GetTarget();
+  auto tgt    = drwev->GetTarget();
+  auto fbi    = tgt->FBI();
+  auto mtxi   = tgt->MTXI();
+  auto primi = tgt->PRI();
+  auto defmtl = lev2::defaultUIMaterial();
 
   int vw = (_virtualWidth==0) ? _geometry._w : _virtualWidth;
   int vh = (_virtualHeight==0) ? _geometry._h : _virtualHeight;
@@ -104,7 +111,41 @@ void LayoutSurface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   int lgh = _layoutGroup->_geometry._h;
   //
 
-  printf("LayoutSurface::DoRePaintSurface wx<%d> wy<%d> w<%d> h<%d> vw<%d> vh<%d> lgw<%d> lgh<%d>\n",
+  auto uimtx = mtxi->uiMatrix(vw, vh);
+  mtxi->PushMMatrix(fmtx4::Identity());
+  mtxi->PushVMatrix(fmtx4::Identity());
+  mtxi->PushPMatrix(uimtx);
+  {
+    int ix1, iy1, ix2, iy2;
+    //LocalToRoot(0, 0, ix1, iy1);
+    ix1 = 0;
+    iy1 = 0;
+    ix2 = vw;
+    iy2 = vh;
+
+    defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
+    defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
+    //tgt->PushModColor(color);
+    defmtl->SetUIColorMode(lev2::UiColorMode::VTX);
+    primi->RenderQuadAtZ(
+        defmtl.get(),
+        ix1,  // x0
+        ix2,  // x1
+        iy1,  // y0
+        iy2,  // y1
+        0.0f, // z
+        0.0f,
+        1.0f, // u0, u1
+        0.0f,
+        1.0f // v0, v1
+    );
+    //tgt->PopModColor();
+  }
+  mtxi->PopPMatrix();
+  mtxi->PopVMatrix();
+  mtxi->PopMMatrix();
+
+  if(0)printf("LayoutSurface::DoRePaintSurface wx<%d> wy<%d> w<%d> h<%d> vw<%d> vh<%d> lgw<%d> lgh<%d>\n",
           _geometry._x, 
           _geometry._y, 
           _geometry._w, 
@@ -113,6 +154,9 @@ void LayoutSurface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
           vh,
           lgw, lgh);
 
+
+          
+
   // The rtgroup is already set as the current render target by Surface::DoDraw
   // We just need to render our LayoutGroup hierarchy into it
 
@@ -120,7 +164,7 @@ void LayoutSurface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
   // Draw the entire LayoutGroup hierarchy
   // It renders to the full virtual size (the rtgroup size)
-  _layoutGroup->draw(drwev);
+  //_layoutGroup->draw(drwev);
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -130,11 +174,16 @@ void LayoutSurface::DoDraw(drawevent_constptr_t drwev) {
   auto fbi = tgt->FBI();
   auto dwi = tgt->DWI();
 
+  mNeedsSurfaceRepaint = true; // TEMP
   // First, ensure rtgroup is the right size
   if (_rtgroup) {
     _updateRenderTarget();
   } else {
-    _rtgroup = std::make_shared<lev2::RtGroup>(tgt, _virtualWidth, _virtualHeight, lev2::MsaaSamples::MSAA_1X);
+
+    int vw = (_virtualWidth==0) ? _geometry._w : _virtualWidth;
+    int vh = (_virtualHeight==0) ? _geometry._h : _virtualHeight;
+
+    _rtgroup = std::make_shared<lev2::RtGroup>(tgt, vw, vh, lev2::MsaaSamples::MSAA_1X);
     _rtgroup->_name = FormatString("ui::LayoutSurface<%p>", (void*)this);
     auto mrt0 = _rtgroup->createRenderTarget(lev2::EBufferFormat::RGBA8);  
   }

@@ -100,14 +100,33 @@ fragment_shader ps_uitextured : iface_fmt {
   out_clr   = vec4(texc.xyz, 1);
 }
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_vtxcolor : iface_vdefault {
-  gl_Position = mvp * position;
-  //frg_clr     = vtxcolor;
-  frg_uv      = uv0;
+vertex_interface vif_VTXCOL : push_constants {
+  inputs {
+    vec4 position : POSITION;
+    vec4 vtxcolor : COLOR0;
+    vec2 uv0 : TEXCOORD0;
+    vec2 uv1 : TEXCOORD1;
+  }
+  outputs {
+    vec4 frg_clr;
+  }
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_fragclr : iface_fdefault {
-  //out_clr = frg_clr;
+fragment_interface fif_VTXCOL 
+  : vif_VTXCOL {
+  outputs {
+    vec4 out_clr;
+  }
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_vtxcolor : vif_VTXCOL {
+  gl_Position = mvp * position;
+  frg_clr     = vec4(uv0,0,1);
+  //frg_uv      = uv0;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_fragclr : fif_VTXCOL {
+  out_clr = frg_clr;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_modclr : iface_fmt { out_clr = ModColor; }
