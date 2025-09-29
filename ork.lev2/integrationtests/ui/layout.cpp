@@ -16,7 +16,7 @@ void TestViewport::onUpdateThreadTick(ui::updatedata_ptr_t updata) {
 }
 
 int main(int argc, char** argv, char** envp) {
-  int margin = 3;
+  int margin = 2;
   auto initdata = std::make_shared<ork::AppInitData>(argc,argv,envp);
   auto app = createEZapp(initdata);
   auto uic = app->_eztopwidget->_uicontext;
