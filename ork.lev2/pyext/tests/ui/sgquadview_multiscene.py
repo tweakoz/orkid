@@ -124,7 +124,6 @@ class UiSgQuadViewTestApp(object):
         griditem.widget.scenegraph = self.scenegraph
         griditem.widget.forkDB()
         self.scenegraph.lightingmanager.gpuInit(ctx)
-
         ########################################### 
         # route events to panels ui camera ?
         ########################################### 
@@ -208,6 +207,7 @@ class UiSgQuadViewTestApp(object):
 
     if True: # try out widget replacement
       lg_group = self.ezapp.topLayoutGroup
+      lg_group.margin = 4
       item = lg_group.makeEvTestBox( w=100, #
                                      h=100, #
                                      x=100, #
@@ -217,13 +217,13 @@ class UiSgQuadViewTestApp(object):
                                      color_doubleclick=vec4(0.5,1.0,0.5,0.5), #
                                      color_drag=vec4(0.5,0.5,1.0,0.5), #
                                      name="testbox1")
-      self.uicontext.dumpWidgets("UI1")
-      lg_group.layout.dump()
+      #self.uicontext.dumpWidgets("UI1")
+      #lg_group.layout.dump()
       #lg_group.removeChild(self.panels[0].griditem.layout)
       lg_group.replaceChild(self.panels[0].griditem.layout,item)
       self.uicontext.dumpWidgets("UI2")
-      lg_group.layout.dump()
-      lg_group.clearColor = vec4(1,0,1,1)
+      #lg_group.layout.dump()
+      lg_group.clearColorGuide = vec4(1,0,1,1)
 
   ################################################
 
