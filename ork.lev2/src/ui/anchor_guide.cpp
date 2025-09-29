@@ -407,6 +407,22 @@ static bool _isMouseOverGuide(const Guide* guide, const fvec2& mousePos, float t
   if (!guide)
     return false;
   Line line = guide->line(Mode::Geometry);
+
+  // Transform guide coordinates to root space
+  Widget* widget = guide->_layout->_widget;
+  if (widget && widget->parent()) {
+    // Walk up the parent chain to accumulate offsets
+    Widget* parent = widget->parent();
+    while (parent) {
+      auto parent_geo = parent->geometry();
+      line._from.x += parent_geo._x;
+      line._from.y += parent_geo._y;
+      line._to.x += parent_geo._x;
+      line._to.y += parent_geo._y;
+      parent = parent->parent();
+    }
+  }
+
   float distance = _distanceFromPointToLine(mousePos, line._from, line._to);
   // Margin extends on both sides, so detection radius is half the margin
   bool is_over = distance <= float(guide->_margin);
@@ -450,6 +466,24 @@ static guide_ptr_t _findClosestDraggableGuide(const Layout* rootLayout, const fv
 
   for (const auto& guide : draggableGuides) {
     Line line = guide->line(Mode::Geometry);
+
+    // Transform guide coordinates to root space
+    // Mode::Geometry returns coordinates relative to the widget's parent
+    // We need to accumulate parent offsets to get root coordinates
+    Widget* widget = guide->_layout->_widget;
+    if (widget && widget->parent()) {
+      // Walk up the parent chain to accumulate offsets
+      Widget* parent = widget->parent();
+      while (parent) {
+        auto parent_geo = parent->geometry();
+        line._from.x += parent_geo._x;
+        line._from.y += parent_geo._y;
+        line._to.x += parent_geo._x;
+        line._to.y += parent_geo._y;
+        parent = parent->parent();
+      }
+    }
+
     float distance = _distanceFromPointToLine(mousePos, line._from, line._to);
 
     // Margin extends on both sides, so detection radius is half the margin
