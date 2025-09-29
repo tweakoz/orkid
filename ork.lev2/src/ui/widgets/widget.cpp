@@ -337,6 +337,50 @@ void Widget::draw(ui::drawevent_constptr_t drwev) {
   _drawEvent = nullptr;
 }
 /////////////////////////////////////////////////////////////////////////
+void Widget::_drawColoredBox(ui::drawevent_constptr_t drwev, const fvec4& color){
+  auto tgt    = drwev->GetTarget();
+  auto fbi    = tgt->FBI();
+  auto mtxi   = tgt->MTXI();
+  auto primi = tgt->PRI();
+  auto defmtl = lev2::defaultUIMaterial();
+
+  mtxi->PushUIMatrix();
+  {
+    int ix1, iy1, ix2, iy2;
+    LocalToRoot(0, 0, ix1, iy1);
+    ix2 = ix1 + _geometry._w;
+    iy2 = iy1 + _geometry._h;
+
+    if (0)
+      printf(
+          "drawbox<%s> xy1<%d,%d> xy2<%d,%d>\n", //
+          _name.c_str(),
+          ix1,
+          iy1,
+          ix2,
+          iy2);
+
+    defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
+    defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
+    tgt->PushModColor(color);
+    defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
+    primi->RenderQuadAtZ(
+        defmtl.get(),
+        ix1,  // x0
+        ix2,  // x1
+        iy1,  // y0
+        iy2,  // y1
+        0.0f, // z
+        0.0f,
+        1.0f, // u0, u1
+        0.0f,
+        1.0f // v0, v1
+    );
+    tgt->PopModColor();
+  }
+  mtxi->PopUIMatrix();
+}
+/////////////////////////////////////////////////////////////////////////
 float Widget::logicalWidth() const {
   bool ishidpi = _target ? _target->hiDPI() : false;
   return ishidpi ? width() * 2 : width();

@@ -141,6 +141,7 @@ void Group::_doOnPreDestroy() {
 LayoutGroup::LayoutGroup(const std::string& name, int x, int y, int w, int h, int margin)
     : Group(name, x, y, w, h)
     , _margin(margin) {
+  _clear = false;
   _layout = std::make_shared<anchor::Layout>(this);
   _evrouter = [this](ui::event_constptr_t ev) -> ui::Widget* { //
     return doRouteUiEvent(ev);
@@ -173,7 +174,6 @@ LayoutGroup::~LayoutGroup() {
 }
 /////////////////////////////////////////////////////////////////////////
 void LayoutGroup::_doOnResized() {
-  _clear = true;
 }
 /////////////////////////////////////////////////////////////////////////
 void LayoutGroup::DoLayout() {
@@ -194,27 +194,19 @@ void LayoutGroup::DoLayout() {
         g._y,
         g._w,
         g._h);
-  if (_layout)
+  if (_layout){
     _layout->updateAll();
+  }
   //
 }
 /////////////////////////////////////////////////////////////////////////
 void LayoutGroup::DoDraw(drawevent_constptr_t drwev) {
-  if (_clear) {
-    auto context = drwev->GetTarget();
-    auto FBI     = context->FBI();
-    lev2::ViewportRect vrect;
-    vrect._x = x();
-    vrect._y = y();
-    vrect._w = width();
-    vrect._h = height();
-    //FBI->pushScissor(vrect);
-    //FBI->pushViewport(vrect);
-    //FBI->Clear(_clearColor, 1);
-    //FBI->popViewport();
-    //FBI->popScissor();
-    //_clear = false;
-  }
+  int x = _geometry._x;
+  int y = _geometry._y;
+  int w = _geometry._w;
+  int h = _geometry._h;
+  //printf("LayoutGroup<%s>::DoDraw xywh<%d %d %d %d> clear<%d>\n", _name.c_str(), x, y, w, h, int(_clear));
+  Widget::_drawColoredBox(drwev, _clear ? fvec4(0,0,0,0) : _clearColor);
   drawChildren(drwev);
 }
 //////////////////////////////////////
@@ -253,17 +245,19 @@ const std::set<uiguide_ptr_t>& LayoutGroup::verticalGuides() const {
   return _vguides;
 }
 namespace anchor{
-  std::pair<guide_ptr_t, guide_ptr_t> findGuidePairUnderMouse(const Layout* rootLayout, const fvec2& mousePos);
-  void dragGuidePairH(const std::pair<guide_ptr_t, guide_ptr_t>& pair, float deltaY);
-  void dragGuidePairV(const std::pair<guide_ptr_t, guide_ptr_t>& pair, float deltaX);
+  guide_ptr_t findGuidePairUnderMouse(const Layout* rootLayout, const fvec2& mousePos);
+  void dragGuidePairH(guide_ptr_t guide, float deltaY);
+  void dragGuidePairV(guide_ptr_t guide, float deltaX);
 };
 ///////////////////////////////////////////////////////////
+static anchor::guide_ptr_t GUIDES_UNDER_MOUSE;
 HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
   // ev->mFilteredEvent.Reset();
-  //printf("LayoutGroup<%p>::OnUiEvent _evhandlerset<%d>\n", this, int(_evhandler != nullptr));
+  static int counter = 0;
+  int count = counter++;
+  //printf("LayoutGroup<%p>::OnUiEvent count<%d>\n", this, count);
   ui::HandlerResult result;
   bool was_handled = false;
-  static std::pair<anchor::guide_ptr_t, anchor::guide_ptr_t> GUIDES_UNDER_MOUSE;
   static int lastx = ev->miX;
   static int lasty = ev->miY;
   switch (ev->_eventcode) {
@@ -272,14 +266,13 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
       break;
     }
     case ui::EventCode::RELEASE: {
-      _clearColor = fvec4(0, 0, 0, 1);
+      //_clearColor = fvec4(0, 0, 0, 1);
       was_handled = true;
       break;
     }
     case ui::EventCode::BEGIN_DRAG: {
       was_handled       = true;
       result.mHoldFocus = true;
-      GUIDES_UNDER_MOUSE = anchor::findGuidePairUnderMouse(_layout.get(), fvec2(ev->miX, ev->miY));
       lastx = ev->miX;
       lasty = ev->miY;
       break;
@@ -287,29 +280,28 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
     case ui::EventCode::END_DRAG: {
       was_handled       = true;
       result.mHoldFocus = false;
-      GUIDES_UNDER_MOUSE = std::pair<anchor::guide_ptr_t, anchor::guide_ptr_t>(nullptr,nullptr);
+      //GUIDES_UNDER_MOUSE = std::pair<anchor::guide_ptr_t, anchor::guide_ptr_t>(nullptr,nullptr);
       break;
     }
     case ui::EventCode::MOVE: {
-      _clearColor = fvec4(0.1,0.1,0.2, 1);
+      //_clearColor = fvec4(0.1,0.1,0.2, 1);
       break;
     }
     case ui::EventCode::DRAG: {
       result.mHoldFocus = true;
       was_handled       = true;
-      auto g1 = GUIDES_UNDER_MOUSE.first;
-      auto g2 = GUIDES_UNDER_MOUSE.second;
+      auto g1 = GUIDES_UNDER_MOUSE;
       int dx           = ev->miX - lastx;
       int dy           = ev->miY - lasty;
-      if(g1 and g2){
-        if((not g1->_locked) and (not g2->_locked)){
-          _clearColor = fvec4(0.2,0.2,0.3, 1);
-          if(g1->isVertical() && g2->isVertical()){
-            dragGuidePairV(GUIDES_UNDER_MOUSE, dx);
+      if(g1){
+        if(not g1->_locked){
+          //_clearColor = fvec4(0.2,0.2,0.3, 1);
+          if(g1->isVertical()){
+            dragGuidePairV(g1, dx);
             _layout->updateAll();
           }
-          else if(g1->isHorizontal() && g2->isHorizontal()){
-            dragGuidePairH(GUIDES_UNDER_MOUSE, dy);
+          else if(g1->isHorizontal()){
+            dragGuidePairH(g1, dy);
             _layout->updateAll();
           }
           else{
@@ -333,21 +325,27 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
 /////////////////////////////////////////////////////////////////////////
 Widget* LayoutGroup::doRouteUiEvent(event_constptr_t ev) {
   //
+  GUIDES_UNDER_MOUSE = anchor::findGuidePairUnderMouse(_layout.get(), fvec2(ev->miX, ev->miY));
+  if(GUIDES_UNDER_MOUSE){
+    _clear = true;
+    return this;
+  }
+  _clear = false;
   for (auto& child : _children) {
     bool inside = child->IsEventInside(ev);
     if (inside) {
       auto child_target = child->routeUiEvent(ev);
       if (child_target and not child_target->_ignoreEvents) {
-        _clearColor = fvec4(0,0,0, 1.0);
+        //_clearColor = fvec4(0,0,0, 1.0);
         return child_target;
       }
     }
   }
   //
   if (IsEventInside(ev)){
-    _clearColor = fvec4(0.15,0.15,0.25, 1.0);
+    //_clearColor = fvec4(0.15,0.15,0.25, 1.0);
   }
-  return this;
+  return nullptr;
 }
 /////////////////////////////////////////////////////////////////////////
 }} // namespace ork::ui

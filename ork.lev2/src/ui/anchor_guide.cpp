@@ -467,22 +467,10 @@ static guide_ptr_t _findClosestDraggableGuide(const Layout* rootLayout, const fv
   for (const auto& guide : draggableGuides) {
     Line line = guide->line(Mode::Geometry);
 
-    // Transform guide coordinates to root space
-    // Mode::Geometry returns coordinates relative to the widget's parent
-    // We need to accumulate parent offsets to get root coordinates
-    Widget* widget = guide->_layout->_widget;
-    if (widget && widget->parent()) {
-      // Walk up the parent chain to accumulate offsets
-      Widget* parent = widget->parent();
-      while (parent) {
-        auto parent_geo = parent->geometry();
-        line._from.x += parent_geo._x;
-        line._from.y += parent_geo._y;
-        line._to.x += parent_geo._x;
-        line._to.y += parent_geo._y;
-        parent = parent->parent();
-      }
-    }
+    // The line from Mode::Geometry is already in the widget's parent coordinates
+    // Since all widgets are children of the root in this layout system,
+    // the geometry coordinates are already in root space
+    // No transformation needed
 
     float distance = _distanceFromPointToLine(mousePos, line._from, line._to);
 
@@ -490,6 +478,16 @@ static guide_ptr_t _findClosestDraggableGuide(const Layout* rootLayout, const fv
     // So if margin is 3, the draggable area is 3 pixels on each side = 6 pixels total
     // The distance check should be against the full margin size since distance is from the center line
     float threshold = float(guide->_margin);
+
+    // Debug logging for guides at different depths
+    if (distance <= threshold * 2.0f) {
+      Widget* widget = guide->_layout->_widget;
+      printf("check guide<%d> layout<%d> widget<%s> edge<%s> distance<%g> threshold<%g> line[%g,%g - %g,%g] mouse[%g,%g]\n",
+             guide->_name, guide->_layout->_name, widget->_name.c_str(),
+             edge2str(guide->_edge).c_str(), distance, threshold,
+             line._from.x, line._from.y, line._to.x, line._to.y,
+             mousePos.x, mousePos.y);
+    }
 
     if (distance <= threshold && distance < closestDistance) {
       closestDistance = distance;
@@ -500,11 +498,11 @@ static guide_ptr_t _findClosestDraggableGuide(const Layout* rootLayout, const fv
   return closestGuide;
 }
 /////////////////////////////////////////////////////////////////////////
-std::pair<guide_ptr_t, guide_ptr_t> findGuidePairUnderMouse(const Layout* rootLayout, const fvec2& mousePos) {
+guide_ptr_t findGuidePairUnderMouse(const Layout* rootLayout, const fvec2& mousePos) {
   // For compatibility, we now return the same guide twice if found
   // This signals that we found a draggable guide
   auto guide = _findClosestDraggableGuide(rootLayout, mousePos);
-  return {guide, guide};
+  return guide;
 }
 /////////////////////////////////////////////////////////////////////////
 static void _adjustGuidePositionVProportional(const guide_ptr_t& guide, float deltaX) {
@@ -581,18 +579,14 @@ static void _dragGuideV(const guide_ptr_t& guide, float deltaX) {
   }
 }
 /////////////////////////////////////////////////////////////////////////
-void dragGuidePairH(const std::pair<guide_ptr_t, guide_ptr_t>& pair, float deltaY) {
+void dragGuidePairH(guide_ptr_t guide, float deltaY) {
   // Now we just drag the single guide (first and second are the same)
-  if (!pair.first)
-    return;
-  _dragGuideH(pair.first, deltaY);
+  _dragGuideH(guide, deltaY);
 }
 /////////////////////////////////////////////////////////////////////////
-void dragGuidePairV(const std::pair<guide_ptr_t, guide_ptr_t>& pair, float deltaX) {
+void dragGuidePairV(guide_ptr_t guide, float deltaX) {
   // Now we just drag the single guide (first and second are the same)
-  if (!pair.first)
-    return;
-  _dragGuideV(pair.first, deltaX);
+  _dragGuideV(guide, deltaX);
 }
 /////////////////////////////////////////////////////////////////////////
 } // namespace ork::ui::anchor

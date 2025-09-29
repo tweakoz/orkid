@@ -21,48 +21,7 @@ Box::Box(
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Box::DoDraw(drawevent_constptr_t drwev) {
-
-  auto tgt    = drwev->GetTarget();
-  auto fbi    = tgt->FBI();
-  auto mtxi   = tgt->MTXI();
-  auto primi = tgt->PRI();
-  auto defmtl = lev2::defaultUIMaterial();
-
-  mtxi->PushUIMatrix();
-  {
-    int ix1, iy1, ix2, iy2;
-    LocalToRoot(0, 0, ix1, iy1);
-    ix2 = ix1 + _geometry._w;
-    iy2 = iy1 + _geometry._h;
-
-    if (0)
-      printf(
-          "drawbox<%s> xy1<%d,%d> xy2<%d,%d>\n", //
-          _name.c_str(),
-          ix1,
-          iy1,
-          ix2,
-          iy2);
-
-    defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::ALPHA);
-    defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
-    tgt->PushModColor(_color);
-    defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
-    primi->RenderQuadAtZ(
-        defmtl.get(),
-        ix1,  // x0
-        ix2,  // x1
-        iy1,  // y0
-        iy2,  // y1
-        0.0f, // z
-        0.0f,
-        1.0f, // u0, u1
-        0.0f,
-        1.0f // v0, v1
-    );
-    tgt->PopModColor();
-  }
-  mtxi->PopUIMatrix();
+  Widget::_drawColoredBox(drwev, _color);
 }
 ///////////////////////////////////////////////////////////////////////////////
 HandlerResult Box::DoOnUiEvent(event_constptr_t Ev) {

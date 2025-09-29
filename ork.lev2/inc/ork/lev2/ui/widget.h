@@ -142,6 +142,7 @@ public:
   void ExtDraw(lev2::Context* pTARG);
   virtual void draw(ui::drawevent_constptr_t drwev);
 
+  void _drawColoredBox(ui::drawevent_constptr_t drwev, const fvec4& color);
   bool IsKeyDepressed(int ch);
   bool IsHotKeyDepressed(const char* pact);
   bool IsHotKeyDepressed(const HotKey& hk);
