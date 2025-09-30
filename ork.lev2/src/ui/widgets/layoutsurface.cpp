@@ -52,19 +52,22 @@ void LayoutSurface::setVirtualSize(int w, int h) {
 /////////////////////////////////////////////////////////////////////////
 void LayoutSurface::setScrollPosition(int x, int y) {
   // Clamp scroll position to valid range
-  int maxScrollX = std::max(0, _virtualWidth - _geometry._w);
-  int maxScrollY = std::max(0, _virtualHeight - _geometry._h);
+  int vw = (_virtualWidth==0) ? _geometry._w : _virtualWidth;
+  int vh = (_virtualHeight==0) ? _geometry._h : _virtualHeight;
+
+  int maxScrollX = std::max(0, vw - _geometry._w);
+  int maxScrollY = std::max(0, vh - _geometry._h);
 
   _scrollX = std::clamp(x, 0, maxScrollX);
   _scrollY = std::clamp(y, 0, maxScrollY);
 
   // Update UV coordinates for the viewport
   // UV coordinates represent which part of the texture to show
-  if (_virtualWidth > 0 && _virtualHeight > 0) {
-    _u0 = float(_scrollX) / float(_virtualWidth);
-    _v0 = float(_scrollY) / float(_virtualHeight);
-    _u1 = float(_scrollX + _geometry._w) / float(_virtualWidth);
-    _v1 = float(_scrollY + _geometry._h) / float(_virtualHeight);
+  if (vw > 0 && vh > 0) {
+    _u0 = float(_scrollX) / float(vw);
+    _v0 = float(_scrollY) / float(vh);
+    _u1 = float(_scrollX + _geometry._w) / float(vw);
+    _v1 = float(_scrollY + _geometry._h) / float(vh);
 
     // Clamp to [0,1]
     _u1 = std::min(_u1, 1.0f);
@@ -76,13 +79,14 @@ void LayoutSurface::setScrollPosition(int x, int y) {
 void LayoutSurface::_updateRenderTarget() {
   int vw = (_virtualWidth==0) ? _geometry._w : _virtualWidth;
   int vh = (_virtualHeight==0) ? _geometry._h : _virtualHeight;
-    printf("LayoutSurface<%s> resizing rtgroup to %d x %d\n", _name.c_str(), vw, vh);
   if (_rtgroup and (vw > 0) and (vh > 0)) {
     // Only resize if dimensions changed
-   // if (_rtgroup->width() != _virtualWidth || _rtgroup->height() != _virtualHeight) {
-   _rtgroup->Resize(vw, vh);
-    mNeedsSurfaceRepaint = true;
-    //}
+    if (_rtgroup->width() != vw || _rtgroup->height() != vh) {
+      printf("LayoutSurface<%s> resizing rtgroup to %d x %d\n", _name.c_str(), vw, vh);
+      _rtgroup->Resize(vw, vh);
+      mNeedsSurfaceRepaint = true;
+      _layoutGroup->SetRect(0, 0, vw, vh);
+    }
   }
 }
 
@@ -164,7 +168,7 @@ void LayoutSurface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
   // Draw the entire LayoutGroup hierarchy
   // It renders to the full virtual size (the rtgroup size)
-  //_layoutGroup->draw(drwev);
+  _layoutGroup->draw(drwev);
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -176,12 +180,12 @@ void LayoutSurface::DoDraw(drawevent_constptr_t drwev) {
 
   mNeedsSurfaceRepaint = true; // TEMP
   // First, ensure rtgroup is the right size
+  int vw = (_virtualWidth==0) ? _geometry._w : _virtualWidth;
+  int vh = (_virtualHeight==0) ? _geometry._h : _virtualHeight;
   if (_rtgroup) {
     _updateRenderTarget();
   } else {
 
-    int vw = (_virtualWidth==0) ? _geometry._w : _virtualWidth;
-    int vh = (_virtualHeight==0) ? _geometry._h : _virtualHeight;
 
     _rtgroup = std::make_shared<lev2::RtGroup>(tgt, vw, vh, lev2::MsaaSamples::MSAA_1X);
     _rtgroup->_name = FormatString("ui::LayoutSurface<%p>", (void*)this);
@@ -213,7 +217,9 @@ void LayoutSurface::DoDraw(drawevent_constptr_t drwev) {
       int ix_root = 0;
       int iy_root = 0;
       LocalToRoot(0, 0, ix_root, iy_root);
-
+      _v0 = _scrollY / float((vh > 0) ? vh : 1);
+      _v1 = (_scrollY + _geometry._h) / float((vh > 0) ? vh : 1);
+      //printf("LayoutSurface<%s> scroll
       // Calculate UV rect for scrolling
       // Note: V coordinates are flipped for Vulkan
       float u_start = _u0;
@@ -225,7 +231,7 @@ void LayoutSurface::DoDraw(drawevent_constptr_t drwev) {
       dwi->quad2D(
           fvec4(ix_root, iy_root, _geometry._w, _geometry._h),  // QuadRect: widget bounds
           fvec4(u_start, v_start, u_range, v_range),  // UvRect: scrolled viewport into texture
-          fvec4(0, 0, 1, 1),  // UvRect2
+          fvec4(u_start, v_start, u_range, v_range),  // UvRect2
           0.0f  // depth
       );
       material->EndBlock(tgt);
@@ -234,21 +240,19 @@ void LayoutSurface::DoDraw(drawevent_constptr_t drwev) {
   }
 }
 
-/////////////////////////////////////////////////////////////////////////
-Widget* LayoutSurface::doRouteUiEvent(event_constptr_t ev) {
-  // Transform event coordinates from Surface space to LayoutGroup space
-  // Account for scrolling
-  if (_layoutGroup && IsEventInside(ev)) {
-    // Create a modified event with adjusted coordinates
-    auto localEv = std::make_shared<ui::Event>(*ev);
-    localEv->miX = ev->miX - _geometry._x + _scrollX;
-    localEv->miY = ev->miY - _geometry._y + _scrollY;
-
-    // Route to the LayoutGroup
-    return _layoutGroup->routeUiEvent(localEv);
-  }
-
-  return nullptr;
+///////////////////////////////////////////////////////////////////////////////
+HandlerResult LayoutSurface::DoOnUiEvent(event_constptr_t ev) {
+    switch (ev->_eventcode) {
+      case EventCode::MOUSEWHEEL: {
+        int offset = ev->miMWY;
+        _scrollY += offset*3; // Scroll speed factor
+        //printf("LayoutSurface<%s> scrollY<%d>\n", _name.c_str(), _scrollY);
+        break;
+      }
+      default:
+        break;
+      }
+  return HandlerResult();
 }
 
 /////////////////////////////////////////////////////////////////////////

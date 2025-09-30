@@ -52,13 +52,7 @@ int main(int argc, char** argv, char** envp) {
   w_lbox->_virtualWidth = 0;
   w_lbox->_virtualHeight = 1024;
   auto wllg = w_lbox->layoutGroup();
-  auto iwllg_0 = wllg->makeChild<EvTestBox>("lbox1", fvec4(1, 0, 0, 1));
-  auto wwllg_0 = iwllg_0.typedWidget();
-  auto lwllg_0 = iwllg_0._layout;
-  lwllg_0->top()->anchorTo(wllg->_layout->top());
-  lwllg_0->left()->anchorTo(wllg->_layout->left());
-  lwllg_0->bottom()->anchorTo(wllg->_layout->bottom());
-  lwllg_0->right()->anchorTo(wllg->_layout->right());
+  wllg->makeGridOfWidgets<EvTestBox>(3,9,"yo",fvec4(0, .3, .3, 1));
   //////////////////////////////////////
   w_4x4->makeGridOfWidgets<EvTestBox>(4,4,"yo",fvec4(0, 0, .3, 1));
   w_8x8->makeGridOfWidgets<EvTestBox>(8,8,"yo",fvec4(0.25, 0, 0.4, 1));

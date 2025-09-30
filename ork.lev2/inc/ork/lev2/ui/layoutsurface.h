@@ -44,10 +44,11 @@ struct LayoutSurface : public Surface {
   }
 
   // Override from Surface
-  void DoRePaintSurface(ui::drawevent_constptr_t drwev) override;
-  void DoDraw(drawevent_constptr_t drwev) override;
-  void _doOnResized() override;
-  Widget* doRouteUiEvent(event_constptr_t ev) override;
+  void DoRePaintSurface(ui::drawevent_constptr_t drwev) final;
+  void DoDraw(drawevent_constptr_t drwev) final;
+  void _doOnResized() final;
+  //Widget* doRouteUiEvent(event_constptr_t ev) final;
+  HandlerResult DoOnUiEvent(event_constptr_t Ev) final;
 
   void _updateRenderTarget();
 
