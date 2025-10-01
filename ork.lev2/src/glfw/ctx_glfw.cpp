@@ -549,6 +549,7 @@ void CtxGLFW::Show() {
     _needsInitialize = false;
   }
   if (not _appinitdata->_offscreen) {
+    glfwSetWindowAttrib(_glfwWindow, GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
     glfwShowWindow(_glfwWindow);
 
     // Re-apply position after window is shown for fullscreen mode
@@ -716,7 +717,10 @@ void CtxGLFW::onResize(int W, int H) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::_doEnqueueWindowResize(int w, int h) {
-  auto op = [=]() { glfwSetWindowSize(_glfwWindow, w, h); };
+  auto op = [=]() { 
+    glfwSetWindowSize(_glfwWindow, w, h);
+    glfwFocusWindow(_glfwWindow);
+ };
   opq::mainSerialQueue()->enqueue(op);
 }
 ///////////////////////////////////////////////////////////////////////////////

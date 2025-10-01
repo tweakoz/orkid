@@ -180,4 +180,8 @@ struct Image {
   mutable compressedmipchain_ptr_t _cmipchain;
 };
 
+struct ImageProvider {
+  using img_prov_fn_t = std::function<image_ptr_t()>;
+  img_prov_fn_t _func;
+};
 } // namespace ork::lev2

@@ -294,5 +294,47 @@ size_t TextureInitData::computeDstSize() const {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void TextureInterface::initTextureFromImage(Texture* ptex, image_ptr_t img) {
+  TextureInitData tid;
+  tid._w           = img->_width;
+  tid._h           = img->_height;
+  tid._d           = 1;
+  image_ptr_t img_to_use = img;
+  switch(img->_format) {
+    case EBufferFormat::R8:
+      img_to_use = std::make_shared<Image>();
+      img_to_use->convertFromImageToFormat(*img,EBufferFormat::RGBA8);
+      tid._src_format  = EBufferFormat::RGBA8;
+      tid._dst_format  = EBufferFormat::RGBA8;
+      break;
+    case EBufferFormat::RGB8:
+      img_to_use = std::make_shared<Image>();
+      img_to_use->convertFromImageToFormat(*img,EBufferFormat::RGBA8);
+      tid._src_format  = EBufferFormat::RGBA8;
+      tid._dst_format  = EBufferFormat::RGBA8;
+      break;
+    case EBufferFormat::RGBA8:
+      tid._src_format  = img->_format;
+      tid._dst_format  = img->_format;
+      break;
+    case EBufferFormat::BGR8:
+      img_to_use = std::make_shared<Image>();
+      img_to_use->convertFromImageToFormat(*img,EBufferFormat::RGBA8);
+      tid._src_format  = EBufferFormat::RGBA8;
+      tid._dst_format  = EBufferFormat::RGBA8;
+      break;
+      break;
+    default:
+      OrkAssert(false); // unsupported image format
+      break;
+  }
+  tid._autogenmips = false;
+  tid._allow_async = false;
+  tid._data        = (const void*) img_to_use->_data->data();
+  initTextureFromData(ptex, tid);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
 ///////////////////////////////////////////////////////////////////////////////

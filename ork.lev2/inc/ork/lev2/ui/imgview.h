@@ -16,20 +16,22 @@ namespace ork::ui {
 //  mostly used for testing, but if you need a colored box...
 ////////////////////////////////////////////////////////////////////
 
-struct LabelBox final : public Widget {
+struct ImageView final : public Widget {
 public:
-  LabelBox(
-      const std::string& name, //
-      fvec4 color,
-      std::string label);
-  fvec4 _color;
-  fvec4 _textcolor;
-  std::string _label;
-  std::string _font = "i14";
-  ETextAlignH _halign = ETextAlignH::CENTER;
-  ETextAlignV _valign = ETextAlignV::CENTER;
+  ImageView(
+      const std::string& name);
+  fvec4 _default_color;
+  lev2::image_provider_ptr_t _imgprovider;
+  lev2::image_ptr_t _pending_image;
+  lev2::image_ptr_t _active_image;
+  lev2::texture_ptr_t _texture;
+  lev2::uitexmaterial_ptr_t _tex_material;
+  bool _maintain_aspect_ratio = false;
+  void setImage(lev2::image_ptr_t img);
+  void setImageProvider(lev2::image_provider_ptr_t imgprovider);
 private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;
+
 };
 
 } // namespace ork::ui

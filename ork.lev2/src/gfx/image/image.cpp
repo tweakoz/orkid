@@ -51,6 +51,22 @@ void Image::initWithFormat(size_t w, size_t h, EBufferFormat fmt) {
   
   // Determine components and bytes per channel from format
   switch(fmt) {
+    case EBufferFormat::R8:
+      _numcomponents = 1;
+      _bytesPerChannel = 1;
+      break;
+    case EBufferFormat::R16UI:
+      _numcomponents = 1;
+      _bytesPerChannel = 2;
+      break;
+    case EBufferFormat::R32F:
+      _numcomponents = 1;
+      _bytesPerChannel = 4;
+      break;
+    case EBufferFormat::R32UI:
+      _numcomponents = 1;
+      _bytesPerChannel = 4;
+      break;
     case EBufferFormat::RGB8:
       _numcomponents = 3;
       _bytesPerChannel = 1;
@@ -65,10 +81,6 @@ void Image::initWithFormat(size_t w, size_t h, EBufferFormat fmt) {
       break;
     case EBufferFormat::RGBA32F:
       _numcomponents = 4;
-      _bytesPerChannel = 4;
-      break;
-    case EBufferFormat::R32F:
-      _numcomponents = 1;
       _bytesPerChannel = 4;
       break;
     case EBufferFormat::RG32F:

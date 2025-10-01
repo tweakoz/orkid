@@ -173,6 +173,9 @@ EFileErrCode File::OpenFile(const file::Path& fname, EFileMode eMode) {
 
 EFileErrCode File::Load(std::vector<uint8_t>& bytes) {
   OrkAssert(meFileMode & EFM_READ);
+  if(not IsOpen()){
+    fprintf(stderr,"File<%s> not open for read\n", msFileName.c_str());
+  }
   OrkAssert(IsOpen());
 
   EFileErrCode result = Open();

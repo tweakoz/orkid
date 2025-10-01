@@ -742,10 +742,10 @@ void FontMan::_gpuInit(Context* pTARG) {
   Inconsolata24.miCharWidth     = 24;
   Inconsolata24.miCharHeight    = 24;
   Inconsolata24.miCharOffsetX   = 9;
-  Inconsolata24.miCharOffsetY   = 0;
-  Inconsolata24.miYShift        = -5;
+  Inconsolata24.miCharOffsetY   = 3;
+  Inconsolata24.miYShift        = 1;
   Inconsolata24.miAdvanceWidth  = 11;
-  Inconsolata24.miAdvanceHeight = 20;
+  Inconsolata24.miAdvanceHeight = 26;
 
   /////////////////////////////////////////////////////////////
 

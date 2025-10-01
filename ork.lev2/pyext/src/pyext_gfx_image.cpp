@@ -18,8 +18,9 @@ void pyinit_gfx_image(py::module& module_lev2) {
   auto type_codec = python::pb11_typecodec_t::instance();
   auto image_type = //
       py::class_<Image, image_ptr_t>(module_lev2, "Image")
-      .def_static("createFromFile", [](const std::string& inpath) -> image_ptr_t {
-        auto datablock = ::ork::File::loadDatablock(inpath);
+      .def_static("createFromFile", [](py::object inpath) -> image_ptr_t {
+        auto as_str = py::cast<py::str>(inpath);
+        auto datablock = ::ork::File::loadDatablock(as_str.cast<std::string>());
         auto img = std::make_shared<Image>();
         img->initFromDataBlock(datablock);
         return img;
@@ -69,6 +70,14 @@ void pyinit_gfx_image(py::module& module_lev2) {
       })
       ;
   type_codec->registerStdCodec<image_ptr_t>(image_type);      
+  ///////////////////////////////////////////////////////
+  auto image_provider_type = //
+      py::class_<ImageProvider, image_provider_ptr_t>(module_lev2, "ImageProvider")
+      .def("__repr__", [](image_provider_ptr_t ip) {
+        return "<lev2.ImageProvider>";
+      });
+  type_codec->registerStdCodec<image_provider_ptr_t>(image_provider_type);      
+  ///////////////////////////////////////////////////////
 
 }
 

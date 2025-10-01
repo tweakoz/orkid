@@ -75,6 +75,7 @@ Widget* Widget::routeUiEvent(event_constptr_t ev) {
 }
 ///////////////////////////////////////////////////////////
 Widget* Widget::doRouteUiEvent(event_constptr_t ev) {
+  if(_ignoreEvents) return nullptr;
   bool inside    = IsEventInside(ev);
   Widget* target = inside ? this : nullptr;
   if (0)

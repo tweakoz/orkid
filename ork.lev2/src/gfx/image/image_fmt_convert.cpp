@@ -298,6 +298,57 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
       }
     }
   }
+  /////////////////////////////
+  else if (fmt == EBufferFormat::RGBA8 and inp._format == EBufferFormat::RGB8) {
+    init(inp._width, inp._height, 4, inp._bytesPerChannel);
+    auto outptr = (uint8_t*)_data->data();
+    auto inptr  = (const uint8_t*)inp._data->data();
+    for (int y = 0; y < inp._height; y++) {
+      for (int x = 0; x < inp._width; x++) {
+        int pixelindex           = y * inp._width + x;
+        int in_elembase          = pixelindex * 3;
+        int out_elembase         = pixelindex * 4;
+        outptr[out_elembase + 0] = inptr[in_elembase + 0];
+        outptr[out_elembase + 1] = inptr[in_elembase + 1];
+        outptr[out_elembase + 2] = inptr[in_elembase + 2];
+        outptr[out_elembase + 3] = 255;
+      }
+    }
+  }
+  /////////////////////////////
+  else if (fmt == EBufferFormat::RGB8 and inp._format == EBufferFormat::R8) {
+    init(inp._width, inp._height, 3, inp._bytesPerChannel);
+    auto outptr = (uint8_t*)_data->data();
+    auto inptr  = (const uint8_t*)inp._data->data();
+    for (int y = 0; y < inp._height; y++) {
+      for (int x = 0; x < inp._width; x++) {
+        int pixelindex       = y * inp._width + x;
+        int elembase         = pixelindex * 3;
+        uint8_t inppix          = inptr[pixelindex];
+        outptr[elembase + 0] = inppix;
+        outptr[elembase + 1] = inppix;
+        outptr[elembase + 2] = inppix;
+      }
+    }
+  }
+  /////////////////////////////
+  else if (fmt == EBufferFormat::RGBA8 and inp._format == EBufferFormat::R8) {
+    init(inp._width, inp._height, 4, inp._bytesPerChannel);
+    auto outptr = (uint8_t*)_data->data();
+    auto inptr  = (const uint8_t*)inp._data->data();
+    for (int y = 0; y < inp._height; y++) {
+      for (int x = 0; x < inp._width; x++) {
+        int pixelindex       = y * inp._width + x;
+        int elembase         = pixelindex * 4;
+        uint8_t inppix          = inptr[pixelindex];
+        outptr[elembase + 0] = inppix;
+        outptr[elembase + 1] = inppix;
+        outptr[elembase + 2] = inppix;
+        outptr[elembase + 3] = 255;
+      }
+    }
+  }
+  /////////////////////////////
   else {
     OrkAssert(false);
   }

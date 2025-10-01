@@ -19,7 +19,7 @@ public:
       int h = 0);
   fvec4 _color;
 
-private:
+  private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;
   HandlerResult DoOnUiEvent(event_constptr_t Ev) override;
 };

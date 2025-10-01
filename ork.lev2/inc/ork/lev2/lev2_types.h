@@ -92,11 +92,13 @@ struct Texture;
 struct IpcTexture;
 struct TextureInitData;
 struct TextureArrayInitData;
+struct ImageProvider;
 
 using texture_ptr_t          = std::shared_ptr<Texture>;
 using ipctexture_ptr_t       = std::shared_ptr<IpcTexture>;
 using image_ptr_t            = std::shared_ptr<Image>;
 using image_list_t           = std::vector<image_ptr_t>;
+using image_provider_ptr_t   = std::shared_ptr<ImageProvider>;
 using texture_list_t = std::vector<texture_ptr_t>;
 using texture_rawlist_t = std::vector<Texture*>;
 using compressedmipchain_ptr_t = std::shared_ptr<CompressedImageMipChain>;
@@ -250,7 +252,7 @@ using pbrmaterial_ptr_t = std::shared_ptr<PBRMaterial>;
 using pbrmaterial_constptr_t = std::shared_ptr<const PBRMaterial>;
 using freestyle_mtl_ptr_t = std::shared_ptr<FreestyleMaterial>;
 using test_mtl_ptr_t = std::shared_ptr<GfxMaterial3DSolid>;
-
+using uitexmaterial_ptr_t = std::shared_ptr<GfxMaterialUITextured>;
 ///////////////////////////////////////////////////////////////////////////////
 // Camera
 ///////////////////////////////////////////////////////////////////////////////

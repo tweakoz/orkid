@@ -32,6 +32,8 @@ struct Coordinate;
 struct Event;
 struct LabelBox;
 struct TextBox;
+struct TabWidget;
+struct ImageView;
 struct DrawEvent;
 struct MultiTouchPoint;
 struct IWidgetEventFilter;
@@ -52,7 +54,7 @@ using event_ptr_t       = std::shared_ptr<Event>;
 using event_constptr_t  = std::shared_ptr<const Event>;
 using labelbox_ptr_t    = std::shared_ptr<LabelBox>;
 using textbox_ptr_t    = std::shared_ptr<TextBox>;
-
+using imgview_ptr_t     = std::shared_ptr<ImageView>;
 ////////////////////////////////////////////////////////////////////////////////
 
 using evrouter_t  = std::function<Widget*(event_constptr_t ev)>;

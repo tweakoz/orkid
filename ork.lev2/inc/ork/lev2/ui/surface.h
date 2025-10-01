@@ -39,6 +39,7 @@ public:
     return _pickbuffer;
   }
 
+  bool _flipY = false;
   bool mbClear;
   fcolor3 _clearColor;
   F32 mfClearDepth;

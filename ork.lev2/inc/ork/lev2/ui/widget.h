@@ -205,8 +205,9 @@ public:
   Rect _prevGeometry;
   varmap::VarMap _uservars;
   bool _enableDraw = true;
-  
+
   virtual Widget* doRouteUiEvent(event_constptr_t Ev);
+  void disableEventRouting();
 
 private:
   friend struct ui::Context;

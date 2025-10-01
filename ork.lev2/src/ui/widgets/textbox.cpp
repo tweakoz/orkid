@@ -121,5 +121,4 @@ void TextBox::DoDraw(drawevent_constptr_t drwev) {
   }
   mtxi->PopUIMatrix();
 }
-
 } // namespace ork::ui

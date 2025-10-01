@@ -136,7 +136,7 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
   std::string debug_name = array->_tex->_debugName.empty() ? "texture_array" : array->_tex->_debugName;
   vktex->_imgobj         = std::make_shared<VulkanImageObject>(_contextVK, VKICI, debug_name);
 
-  printf("initTextureArray2DFromData: created image %p for array '%s'\n",
+  if(0)printf("initTextureArray2DFromData: created image %p for array '%s'\n",
          (void*)vktex->_imgobj->_vkimage,
          debug_name.c_str());
 

@@ -159,10 +159,6 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
     int iy_root = 0;
     LocalToRoot(0, 0, ix_root, iy_root);
     
-    // For Vulkan, we don't need to flip Y position since UI coordinates already use top-left origin
-    // Only the texture UV coordinates need flipping
-    int iy_flipped = iy_root;
-
     // printf( "Surface<%s>::Draw wx<%d> wy<%d> w<%d> h<%d>\n", _name.c_str(), ix_root, iy_root, _geometry._w, _geometry._h );
 
     if (_decouple_from_ui_size and _aspect_from_rtgroup) {
@@ -178,7 +174,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
 
       ui_material->BeginBlock(tgt);
       dwi->quad2D(
-          fvec4(ix_root, iy_flipped, _geometry._w, _geometry._h),  // QuadRect: x, y, width, height
+          fvec4(ix_root, iy_root, _geometry._w, _geometry._h),  // QuadRect: x, y, width, height
           fvec4(0.0f, 1.0f, 1.0f, -1.0f),  // UvRect - flip V coordinates for Vulkan
           fvec4(0, 0, 1, 1),  // UvRect2
           0.0f  // depth
@@ -191,7 +187,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
       float out_aspect = float(_geometry._w) / float(_geometry._h);
       float aspectt    = inp_aspect / out_aspect;
 
-      //printf("inp_aspect<%g> out_aspect<%g> aspectt<%g>\n", inp_aspect, out_aspect, aspectt);
+      printf("inp_aspect<%g> out_aspect<%g> aspectt<%g>\n", inp_aspect, out_aspect, aspectt);
   
       if (aspectt > 1.0) { // wider than UI (vertical letterbox)
 
@@ -203,10 +199,18 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
         int final_y = iy_root + oy0;
 
         material->BeginBlock(tgt);
+
+        fvec4 uvrect = _flipY //
+                     ? fvec4(u0, v0, u1 - u0, v1 - v0) //
+                     : fvec4(u0, v1, u1 - u0, v0 - v1);
+        fvec4 uvrect2 = _flipY //
+                      ? fvec4(0, 1, 1, -1) //
+                      : fvec4(0, 0, 1, 1);
+
         dwi->quad2D(
             fvec4(ix_root, final_y, _geometry._w, _geometry._h + oy1 - oy0),  // QuadRect
-            fvec4(u0, v0, u1 - u0, v1 - v0),  // UvRect - using flipped V coordinates
-            fvec4(0, 0, 1, 1),  // UvRect2
+            uvrect,  // UvRect - using flipped V coordinates
+            uvrect2,  // UvRect2
             0.0f  // depth
         );
         material->EndBlock(tgt);
@@ -220,10 +224,18 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
         int final_y = iy_root;
 
         material->BeginBlock(tgt);
+
+        fvec4 uvrect = _flipY //
+                      ? fvec4(u0, v0, u1 - u0, v1 - v0) //
+                      : fvec4(u0, v1, u1 - u0, v0 - v1);
+        fvec4 uvrect2 = _flipY //
+                      ? fvec4(0, 1, 1, -1) //
+                      : fvec4(0, 0, 1, 1);
+
         dwi->quad2D(
             fvec4(ix_root + ox0, final_y, _geometry._w + ox1 - ox0, _geometry._h),  // QuadRect
-            fvec4(u0, v0, u1 - u0, v1 - v0),  // UvRect - using flipped V coordinates
-            fvec4(0, 0, 1, 1),  // UvRect2
+            uvrect,  // UvRect - using flipped V coordinates
+            uvrect2,  // UvRect2
             0.0f  // depth
         );
         material->EndBlock(tgt);
@@ -234,10 +246,17 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
       tgt->debugPushGroup("Surface::Draw::2");
       
       material->BeginBlock(tgt);
+
+        fvec4 uvrect = _flipY //
+                      ? fvec4(0.0f, 1.0f, 1.0f, -1.0f) //
+                      : fvec4(0.0f, 0.0f, 1.0f, 1.0f);
+        fvec4 uvrect2 = _flipY //
+                      ? fvec4(0, 1, 1, -1) //
+                      : fvec4(0, 0, 1, 1);
       dwi->quad2D(
-          fvec4(ix_root, iy_flipped, _geometry._w, _geometry._h),  // QuadRect: x, y, width, height
-          fvec4(0.0f, 1.0f, 1.0f, -1.0f),  // UvRect - flip V coordinates for Vulkan
-          fvec4(0, 0, 1, 1),  // UvRect2
+          fvec4(ix_root, iy_root, _geometry._w, _geometry._h),  // QuadRect: x, y, width, height
+          uvrect,  // UvRect - flip V coordinates for Vulkan
+          uvrect2,  // UvRect2
           0.0f  // depth
       );
       material->EndBlock(tgt);
@@ -271,6 +290,7 @@ SRect VPRect( 0, 0, pIT->width(), pIT->height() );
 	pTARG->FBI()->pushViewport( VPRect );
 	pTARG->FBI()->pushScissor( VPRect );
 	{
+    printf( "Surface<%s>::Render lambda\n", _name.c_str());
 		render_lambda();
 	}
 	pTARG->FBI()->popScissor();

@@ -384,13 +384,13 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
 }
 /////////////////////////////////////////////////////////////////////////
 Widget* LayoutGroup::doRouteUiEvent(event_constptr_t ev) {
-  //
-  /*
+  ///////////////////////////
   GUIDES_UNDER_MOUSE = anchor::findGuidePairUnderMouse(_layout.get(), fvec2(ev->miX, ev->miY));
   if(GUIDES_UNDER_MOUSE){
     _highlightGuides = true;
     return this;
-  }*/
+  }
+  ///////////////////////////
   _highlightGuides = false;
   for (auto& child : _children) {
     bool inside = child->IsEventInside(ev);
@@ -401,10 +401,6 @@ Widget* LayoutGroup::doRouteUiEvent(event_constptr_t ev) {
         return child_target;
       }
     }
-  }
-  //
-  if (IsEventInside(ev)){
-    //_clearColor = fvec4(0.15,0.15,0.25, 1.0);
   }
   return this;
 }
