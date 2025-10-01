@@ -252,6 +252,13 @@ void pyinit_ui_box(py::module& uimodule) {
               [](ui::textbox_ptr_t box, fvec4 clr) { //
                 box->_textcolor = clr;
               })
+              .def_property("bgcolor",
+              [](ui::textbox_ptr_t box) -> fvec4 { //
+                return box->_color;
+              },
+              [](ui::textbox_ptr_t box, fvec4 clr) { //
+                box->_color = clr;
+              })
           .def("__repr__", [](ui::textbox_ptr_t box) {
             return FormatString("<TextBox name<%s> widget<%p>>", box->GetName().c_str(), (void*)box.get());
           });
