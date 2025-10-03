@@ -70,6 +70,8 @@ void AudioInputChunk::setNumChannels(size_t channel_count){
 
 ///////////////////////////////////////////////////////////////////////////////
 
+static audiodevice_ptr_t g_audio_device = nullptr;
+
 struct AudioDevFactory{
 
   AudioDevFactory(appinitdata_wkptr_t aid){
@@ -116,6 +118,8 @@ struct AudioDevFactory{
     if(nullptr == _device ){
       _device = std::make_shared<AudioDeviceNULL>(aid);
     }
+
+    g_audio_device = _device;
   }
 
   audiodevice_ptr_t _device;
@@ -126,6 +130,12 @@ using audiodevfactory_ptr_t = std::shared_ptr<AudioDevFactory>;
 audiodevice_ptr_t AudioDevice::createInstance(appinitdata_wkptr_t aid) {
   AudioDevFactory devf(aid);
   return devf._device;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+audiodevice_ptr_t AudioDevice::getInstance() {
+  return g_audio_device;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

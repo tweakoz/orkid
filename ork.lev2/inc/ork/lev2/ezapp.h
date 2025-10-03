@@ -211,6 +211,10 @@ struct OrkEzApp : public OrkEzAppBase {
 
   bool isExiting() const;
 
+  inline appinitdata_ptr_t appInitData() const {
+    return _initdata;
+  }
+  
   ///////////////////////////////////
   void enableMovieRecording(file::Path output_path);
   void finishMovieRecording();

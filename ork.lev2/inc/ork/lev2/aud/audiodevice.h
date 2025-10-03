@@ -59,6 +59,7 @@ struct StreamingAudioInputChunkSource : public AudioInputChunkSource {
 struct AudioDevice {
 
   static audiodevice_ptr_t createInstance(appinitdata_wkptr_t appinitd);
+  static audiodevice_ptr_t getInstance();
 
   AudioDevice(appinitdata_wkptr_t appinitd);
   virtual ~AudioDevice();

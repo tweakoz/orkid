@@ -137,8 +137,8 @@ OSStatus AuContext::Stop() {
   if (_outputDev) {
     err = AudioOutputUnitStop(_outputUnit);
     AuCheckErr(err);
-    exit(-1);
-    OrkAssertI(false, "TODO: force quit till we can get graceful shutdown working");
+      abort();
+      OrkAssertI(false, "TODO: force quit till we can get graceful shutdown working");
   }
 
   err = AUGraphStop(_graph);
