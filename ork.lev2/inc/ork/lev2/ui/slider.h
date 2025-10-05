@@ -42,6 +42,7 @@ public:
 
 private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;
+  void DoLayout() final;
 
   float _valToUnit(int val) const;
   int _unitToVal(float unit) const;
@@ -96,6 +97,7 @@ public:
 
 private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;
+  void DoLayout() final;
 
   float _valToUnit(float val) const;
   float _unitToVal(float unit) const;

@@ -75,7 +75,12 @@ class PackWidgets(object):
 
     sli_col = vec3(0.3,0.3,0.5)
     self.sli1 = self.vpack1.makeChild( uiclass=lev2.ui.IntSlider, args=["sli1  ",sli_col,0,100,50] )
+    self.sli2 = self.vpack1.makeChild( uiclass=lev2.ui.FloatSlider, args=["sli2  ",sli_col,0.0,100.0,50.0] )
+    self.sli2.onValueChanged = lambda x: print("sli2 value changed to ",x.value)
 
+    self.cb1 = self.vpack1.makeChild( uiclass=lev2.ui.ComboBox, args=["cbx1  ",sli_col,0,100,50] )
+    self.cb1.setItems(["zero","one","two","three","four","five","six","seven","eight","nine"])
+    
     ############################################
     
     def onCtrlC(signum, frame):

@@ -37,7 +37,10 @@ IntSlider::IntSlider(
     _max = _min + 1;
   }
 
+  _text_pos = 64;
+
   setValue(value);
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -50,6 +53,7 @@ void IntSlider::setValue(int val) {
   _value = val;
   _value_str = std::to_string(_value);
   _refresh();
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -78,20 +82,24 @@ int IntSlider::_unitToVal(float unit) const {
   return int(fval + 0.5f);
 }
 
+void IntSlider::DoLayout() {
+  _refresh();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void IntSlider::_refresh() {
   auto content = contentRect();
   float unit = _valToUnit(_value);
 
-  _indicator_pos = (unit * content._w);
+  _indicator_pos = (unit * (content._w-4));
 
   // Smart text positioning - avoid overlap with filled bar
   float text_unit = 0.0f;
   if (unit < 0.6f) {
     text_unit = 0.66f;
   } else {
-    text_unit = 0.16f;
+    text_unit = 0.36f;
   }
 
   _text_pos = (text_unit * content._w);
@@ -335,8 +343,13 @@ FloatSlider::FloatSlider(
   if (_max == _min) {
     _max = _min + 1.0f;
   }
+  _text_pos = 64;
 
   setValue(value);
+}
+
+void FloatSlider::DoLayout() {
+  _refresh();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -420,14 +433,14 @@ void FloatSlider::_refresh() {
   auto content = contentRect();
   float unit = _valToUnit(_value);
 
-  _indicator_pos = (unit * content._w);
+  _indicator_pos = (unit * (content._w-4));
 
   // Smart text positioning - avoid overlap with filled bar
   float text_unit = 0.0f;
   if (unit < 0.6f) {
     text_unit = 0.66f;
   } else {
-    text_unit = 0.16f;
+    text_unit = 0.36f;
   }
 
   _text_pos = (text_unit * content._w);

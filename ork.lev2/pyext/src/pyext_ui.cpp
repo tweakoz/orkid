@@ -19,6 +19,7 @@
 #include <ork/lev2/ui/button.h>
 #include <ork/lev2/ui/checkbox.h>
 #include <ork/lev2/ui/slider.h>
+#include <ork/lev2/ui/combobox.h>
 #include <ork/lev2/ui/imgview.h>
 #include <ork/lev2/ui/ged/ged_surface.h>
 #include <ork/lev2/ui/popups.inl>
@@ -1010,6 +1011,96 @@ void pyinit_ui(py::module& module_lev2) {
                 slider->setRange(min_val, max_val);
               });
   type_codec->registerStdCodec<ui::floatslider_ptr_t>(floatslider_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // ComboBox
+  auto combobox_type = //
+      py::class_<ui::ComboBox, ui::Widget, ui::combobox_ptr_t>(uimodule, "ComboBox")
+          .def_static(
+              "wfactory",
+              [type_codec](py::list py_args) -> ui::combobox_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto color        = decoded_args[1].get<fvec3>();
+                auto combo        = std::make_shared<ui::ComboBox>(name, color);
+                return combo;
+              })
+          .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto color        = decoded_args[1].get<fvec3>();
+                auto layoutitem   = lg->makeChild<ui::ComboBox>(name, color);
+                return layoutitem.as_shared();
+              })
+          .def(
+              "addItem",
+              [](ui::combobox_ptr_t combo, std::string item) { //
+                combo->addItem(item);
+              })
+          .def(
+              "setItems",
+              [](ui::combobox_ptr_t combo, py::list items) { //
+                std::vector<std::string> item_vec;
+                for (auto item : items) {
+                  item_vec.push_back(py::cast<std::string>(item));
+                }
+                combo->setItems(item_vec);
+              })
+          .def_property(
+              "selected_index",
+              [](ui::combobox_ptr_t combo) -> int { //
+                return combo->selectedIndex();
+              },
+              [](ui::combobox_ptr_t combo, int idx) { //
+                combo->setSelectedIndex(idx);
+              })
+          .def(
+              "selectedItem",
+              [](ui::combobox_ptr_t combo) -> std::string { //
+                return combo->selectedItem();
+              })
+          .def_property(
+              "onSelectionChanged",
+              [](ui::combobox_ptr_t combo) -> py::object { //
+                return py::none();
+              },
+              [](ui::combobox_ptr_t combo, py::object callback) { //
+                if (callback.is_none()) {
+                  combo->_onSelectionChanged = nullptr;
+                } else {
+                  auto pycb = std::make_shared<py::object>(callback);
+                  combo->_onSelectionChanged = [pycb, combo]() {
+                    py::gil_scoped_acquire acquire_gil;
+                    (*pycb)(combo);
+                  };
+                }
+              })
+          .def_property(
+              "fg_color",
+              [](ui::combobox_ptr_t combo) -> fvec3 { //
+                return combo->_fg_color;
+              },
+              [](ui::combobox_ptr_t combo, fvec3 c) { //
+                combo->_fg_color = c;
+              })
+          .def_property(
+              "bg_color",
+              [](ui::combobox_ptr_t combo) -> fvec3 { //
+                return combo->_bg_color;
+              },
+              [](ui::combobox_ptr_t combo, fvec3 c) { //
+                combo->_bg_color = c;
+              })
+          .def_property(
+              "button_color",
+              [](ui::combobox_ptr_t combo) -> fvec3 { //
+                return combo->_button_color;
+              },
+              [](ui::combobox_ptr_t combo, fvec3 c) { //
+                combo->_button_color = c;
+              });
+  type_codec->registerStdCodec<ui::combobox_ptr_t>(combobox_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto imgview_type = //
       py::class_<ui::ImageView, ui::Widget, ui::imgview_ptr_t>(uimodule, "ImageView")

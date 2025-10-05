@@ -39,6 +39,7 @@ struct Button;
 struct Checkbox;
 struct IntSlider;
 struct FloatSlider;
+struct ComboBox;
 struct DrawEvent;
 struct MultiTouchPoint;
 struct IWidgetEventFilter;
@@ -67,6 +68,7 @@ using button_ptr_t      = std::shared_ptr<Button>;
 using checkbox_ptr_t    = std::shared_ptr<Checkbox>;
 using intslider_ptr_t   = std::shared_ptr<IntSlider>;
 using floatslider_ptr_t = std::shared_ptr<FloatSlider>;
+using combobox_ptr_t    = std::shared_ptr<ComboBox>;
 using vpack_ptr_t       = std::shared_ptr<VerticalPack>;
 using hpack_ptr_t       = std::shared_ptr<HorizontalPack>;
 ////////////////////////////////////////////////////////////////////////////////
