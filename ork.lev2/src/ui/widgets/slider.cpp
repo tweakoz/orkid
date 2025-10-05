@@ -167,25 +167,50 @@ HandlerResult IntSlider::DoOnUiEvent(event_constptr_t cev) {
     }
 
     case EventCode::DOUBLECLICK: {
-      int sx = cev->miScreenPosX;
-      int sy = cev->miScreenPosY;
-      int W = _geometry._w;
-      int H = _geometry._h;
+      _text_editing = true;
+      _edit_buffer = _value_str;
+      rval.setHandled(this);
+      break;
+    }
 
-      std::string edittext = ui::popupLineEdit(_target, sx, sy, W, H, _value_str.c_str());
-      if (edittext.length()) {
-        try {
-          int new_val = std::stoi(edittext);
-          setValue(new_val);
-          if (_onValueChanged) {
-            _onValueChanged();
+    case EventCode::KEY_DOWN: {
+      if (_text_editing) {
+        int key = cev->miKeyCode;
+
+        // Enter key - commit value
+        if (key == 257) { // Qt::Key_Return or Qt::Key_Enter
+          try {
+            int new_val = std::stoi(_edit_buffer);
+            setValue(new_val);
+            if (_onValueChanged) {
+              _onValueChanged();
+            }
+          } catch (...) {
           }
-        } catch (...) {
-          // Invalid input, ignore
+          _text_editing = false;
+          _edit_buffer.clear();
+          rval.setHandled(this);
+        }
+        // Escape key - cancel
+        else if (key == 256) { // Qt::Key_Escape
+          _text_editing = false;
+          _edit_buffer.clear();
+          rval.setHandled(this);
+        }
+        // Backspace
+        else if (key == 259) { // Qt::Key_Backspace
+          if (!_edit_buffer.empty()) {
+            _edit_buffer.pop_back();
+          }
+          rval.setHandled(this);
+        }
+        // Numeric keys, minus
+        else if ((key >= 48 && key <= 57) ||  // 0-9
+                 key == 45) {                  // minus
+          _edit_buffer += char(key);
+          rval.setHandled(this);
         }
       }
-
-      rval.setHandled(this);
       break;
     }
 
@@ -294,15 +319,16 @@ void IntSlider::DoDraw(drawevent_constptr_t drwev) {
     ork::lev2::FontMan::PushFont(_label_font);
     tgt->PushModColor(_fg_color);
 
-    if(_value_str.empty())
-      _value_str = "0";
+    std::string display_text = _text_editing ? _edit_buffer + "_" : _value_str;
+    if(display_text.empty())
+      display_text = "0";
     int text_x = content_x1 + int(_text_pos);
-    lev2::FontMan::beginTextBlock(tgt, _value_str.length());
+    lev2::FontMan::beginTextBlock(tgt, display_text.length());
     lev2::FontMan::DrawText(
         tgt, //
         text_x,
         iyc - 6,
-        _value_str.c_str());
+        display_text.c_str());
     lev2::FontMan::endTextBlock(tgt);
 
     tgt->PopModColor();
@@ -511,25 +537,51 @@ HandlerResult FloatSlider::DoOnUiEvent(event_constptr_t cev) {
     }
 
     case EventCode::DOUBLECLICK: {
-      int sx = cev->miScreenPosX;
-      int sy = cev->miScreenPosY;
-      int W = _geometry._w;
-      int H = _geometry._h;
+      _text_editing = true;
+      _edit_buffer = _value_str;
+      rval.setHandled(this);
+      break;
+    }
 
-      std::string edittext = ui::popupLineEdit(_target, sx, sy, W, H, _value_str.c_str());
-      if (edittext.length()) {
-        try {
-          float new_val = std::stof(edittext);
-          setValue(new_val);
-          if (_onValueChanged) {
-            _onValueChanged();
+    case EventCode::KEY_DOWN: {
+      if (_text_editing) {
+        int key = cev->miKeyCode;
+
+        // Enter key - commit value
+        if (key == 257) { // Qt::Key_Return or Qt::Key_Enter
+          try {
+            float new_val = std::stof(_edit_buffer);
+            setValue(new_val);
+            if (_onValueChanged) {
+              _onValueChanged();
+            }
+          } catch (...) {
           }
-        } catch (...) {
-          // Invalid input, ignore
+          _text_editing = false;
+          _edit_buffer.clear();
+          rval.setHandled(this);
+        }
+        // Escape key - cancel
+        else if (key == 256) { // Qt::Key_Escape
+          _text_editing = false;
+          _edit_buffer.clear();
+          rval.setHandled(this);
+        }
+        // Backspace
+        else if (key == 259) { // Qt::Key_Backspace
+          if (!_edit_buffer.empty()) {
+            _edit_buffer.pop_back();
+          }
+          rval.setHandled(this);
+        }
+        // Numeric keys, minus, decimal point
+        else if ((key >= 48 && key <= 57) ||  // 0-9
+                 key == 45 ||                  // minus
+                 key == 46) {                  // decimal point
+          _edit_buffer += char(key);
+          rval.setHandled(this);
         }
       }
-
-      rval.setHandled(this);
       break;
     }
 
@@ -638,13 +690,16 @@ void FloatSlider::DoDraw(drawevent_constptr_t drwev) {
     ork::lev2::FontMan::PushFont(_label_font);
     tgt->PushModColor(_fg_color);
 
+    std::string display_text = _text_editing ? _edit_buffer + "_" : _value_str;
+    if(display_text.empty())
+      display_text = "0";
     int text_x = content_x1 + int(_text_pos);
-    lev2::FontMan::beginTextBlock(tgt, _value_str.length());
+    lev2::FontMan::beginTextBlock(tgt, display_text.length());
     lev2::FontMan::DrawText(
         tgt, //
         text_x,
         iyc - 6,
-        _value_str.c_str());
+        display_text.c_str());
     lev2::FontMan::endTextBlock(tgt);
 
     tgt->PopModColor();

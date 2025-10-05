@@ -52,6 +52,8 @@ private:
   float _text_pos = 0.0f;
   std::string _value_str;
   bool _dragging = false;
+  bool _text_editing = false;
+  std::string _edit_buffer;
 };
 
 using intslider_ptr_t = std::shared_ptr<IntSlider>;
@@ -107,6 +109,8 @@ private:
   float _text_pos = 0.0f;
   std::string _value_str;
   bool _dragging = false;
+  bool _text_editing = false;
+  std::string _edit_buffer;
 };
 
 using floatslider_ptr_t = std::shared_ptr<FloatSlider>;

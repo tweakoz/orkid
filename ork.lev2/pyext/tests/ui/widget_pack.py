@@ -82,8 +82,14 @@ class PackWidgets(object):
     self.cb1 = self.vpack1.makeChild( uiclass=lev2.ui.ComboBox, args=["cbx1  ",sli_col,0,100,50] )
     self.cb1.setItems(["zero","one","two","three","four","five","six","seven","eight","nine"])
     
-    self.tx1 = self.vpack1.makeChild( uiclass=lev2.ui.TextBox, args=["tex1  ",vec4(0.6,0,0,1),"nam"] )
+    self.tb1 = self.vpack1.makeChild( uiclass=lev2.ui.TabsWidget, args=["tab1  ",sli_col] )
+
+    self.tx1 = self.tb1.makeChild( uiclass=lev2.ui.TextBox, args=["tex1",vec4(0.6,0,0,1),"nam"] )
+    self.tx2 = self.tb1.makeChild( uiclass=lev2.ui.TextBox, args=["tex2",vec4(0.6,0,0.6,1),"nam"] )
+    self.tx3 = self.tb1.makeChild( uiclass=lev2.ui.TextBox, args=["tex3",vec4(0.6,0.6,0,1),"nam"] )
     self.tx1.setText("This is a TextBox.\n It can hold multiple lines of text.\nThe quick brown fox jumps over the lazy dog.\n0123456789")
+    self.tx2.setText("This is another TextBox.\n It can hold multiple lines of text.\nThe quick brown fox jumps over the lazy dog.\n0123456789")
+    self.tx3.setText("This is a third TextBox.\n It can hold multiple lines of text.\nThe quick brown fox jumps over the lazy dog.\n0123456789")
 
     ############################################
     
