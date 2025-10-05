@@ -51,7 +51,7 @@ hudpanel_ptr_t createProgramView(
 ///////////////////////////////////////////////////////////////////////////////
 ProgramView::ProgramView() //
     : ui::Surface("ProgramView", 0, 0, 32, 32, fvec3(), 1.0) {
-
+  _flipY = true;
   auto on_key = [this](
                     int note, //
                     int velocity,

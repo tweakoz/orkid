@@ -21,6 +21,8 @@ Surface::Surface(const std::string& name, int x, int y, int w, int h, fcolor3 co
     , mfClearDepth(depth)
     , mNeedsSurfaceRepaint(true)
     , _pickbuffer(nullptr) {
+
+  _flipY = true; // on vulkan we need to flip the UVs
 }
 
 ///////////////////////////////////////////////////////////////////////////////

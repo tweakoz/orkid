@@ -78,7 +78,6 @@ hudpanel_ptr_t createProfilerView(
 ///////////////////////////////////////////////////////////////////////////////
 ProfilerView::ProfilerView() //
     : ui::Surface("ProfilerView", 0, 0, 32, 32, fvec3(), 1.0) {
-
   auto on_prof = [this](const SynthProfilerFrame& profframe) { //
     _curprofframe = profframe;
     this->SetDirty();
