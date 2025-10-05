@@ -35,6 +35,8 @@ struct TextBox;
 struct TabWidget;
 struct ImageView;
 struct LineEdit;
+struct Button;
+struct Checkbox;
 struct DrawEvent;
 struct MultiTouchPoint;
 struct IWidgetEventFilter;
@@ -59,6 +61,8 @@ using labelbox_ptr_t    = std::shared_ptr<LabelBox>;
 using textbox_ptr_t     = std::shared_ptr<TextBox>;
 using imgview_ptr_t     = std::shared_ptr<ImageView>;
 using lineedit_ptr_t    = std::shared_ptr<LineEdit>;
+using button_ptr_t      = std::shared_ptr<Button>;
+using checkbox_ptr_t    = std::shared_ptr<Checkbox>;
 using vpack_ptr_t       = std::shared_ptr<VerticalPack>;
 using hpack_ptr_t       = std::shared_ptr<HorizontalPack>;
 ////////////////////////////////////////////////////////////////////////////////

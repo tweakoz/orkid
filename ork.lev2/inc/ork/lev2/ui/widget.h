@@ -185,6 +185,11 @@ public:
   }
   void setGeometry(Rect geo);
 
+  // Label support (uses _name as label text)
+  int labelWidth() const;
+  Rect contentRect() const;
+  void _drawLabel(ui::drawevent_constptr_t drwev);
+
   bool _needsinit        = true;
   bool _dirty            = true;
   bool mSizeDirty        = true;
@@ -205,6 +210,7 @@ public:
   Rect _prevGeometry;
   varmap::VarMap _uservars;
   bool _enableDraw = true;
+  bool _draw_label = false;
 
   virtual Widget* doRouteUiEvent(event_constptr_t Ev);
   void disableEventRouting();

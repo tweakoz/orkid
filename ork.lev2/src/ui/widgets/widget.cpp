@@ -488,4 +488,57 @@ Group* Widget::root() const {
   return nullptr;
 }
 /////////////////////////////////////////////////////////////////////////
+int Widget::labelWidth() const {
+  if (!_draw_label)
+    return 0;
+
+  ork::lev2::FontMan::PushFont("i14");
+  int sw = lev2::FontMan::stringWidth(_name.length());
+  int label_w = sw + 8;
+  ork::lev2::FontMan::PopFont();
+  return label_w;
+}
+/////////////////////////////////////////////////////////////////////////
+Rect Widget::contentRect() const {
+  Rect content = _geometry;
+  content._x = 0;
+  content._y = 0;
+
+  if (_draw_label) {
+    int lw = labelWidth();
+    content._x += lw;
+    content._w -= lw;
+  }
+
+  return content;
+}
+/////////////////////////////////////////////////////////////////////////
+void Widget::_drawLabel(ui::drawevent_constptr_t drwev) {
+  if (!_draw_label)
+    return;
+
+  auto tgt = drwev->GetTarget();
+
+  ork::lev2::FontMan::PushFont("i14");
+
+  int ix1, iy1, iyc;
+  LocalToRoot(0, 0, ix1, iy1);
+  iyc = iy1 + (_geometry._h >> 1);
+
+  tgt->PushModColor(fvec4(1, 1, 1, 1));
+
+  if (_name.length()) {
+    lev2::FontMan::beginTextBlock(tgt, _name.length());
+    lev2::FontMan::DrawText(
+        tgt, //
+        ix1 + 4,
+        iyc - 6,
+        _name.c_str());
+    lev2::FontMan::endTextBlock(tgt);
+  }
+
+  tgt->PopModColor();
+  ork::lev2::FontMan::PopFont();
+}
+/////////////////////////////////////////////////////////////////////////
 } // namespace ork::ui

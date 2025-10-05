@@ -16,6 +16,8 @@
 #include <ork/lev2/ui/tabs.h>
 #include <ork/lev2/ui/pack.h>
 #include <ork/lev2/ui/lineedit.h>
+#include <ork/lev2/ui/button.h>
+#include <ork/lev2/ui/checkbox.h>
 #include <ork/lev2/ui/imgview.h>
 #include <ork/lev2/ui/ged/ged_surface.h>
 #include <ork/lev2/ui/popups.inl>
@@ -669,6 +671,172 @@ void pyinit_ui(py::module& module_lev2) {
                 le->_bg_color = c;
               });
   type_codec->registerStdCodec<ui::lineedit_ptr_t>(lineedit_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // Button
+  auto button_type = //
+      py::class_<ui::Button, ui::Widget, ui::button_ptr_t>(uimodule, "Button")
+          .def_static(
+              "wfactory",
+              [type_codec](py::list py_args) -> ui::button_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto color        = decoded_args[1].get<fvec3>();
+                auto button       = std::make_shared<ui::Button>(name, color);
+                return button;
+              })
+          .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto color        = decoded_args[1].get<fvec3>();
+                auto layoutitem   = lg->makeChild<ui::Button>(name, color);
+                return layoutitem.as_shared();
+              })
+          .def_property(
+              "mode",
+              [](ui::button_ptr_t btn) -> crcstring_ptr_t { //
+                auto crc = std::make_shared<CrcString>(uint64_t(btn->mode()));
+                return crc;
+              },
+              [](ui::button_ptr_t btn, crcstring_ptr_t value) { //
+                btn->setMode(ui::ButtonMode(value->hashed()));
+              })
+          .def_property(
+              "toggled",
+              [](ui::button_ptr_t btn) -> bool { //
+                return btn->isToggled();
+              },
+              [](ui::button_ptr_t btn, bool val) { //
+                btn->setToggled(val);
+              })
+          .def_property(
+              "onPressed",
+              [](ui::button_ptr_t btn) -> py::object { //
+                return py::none();
+              },
+              [](ui::button_ptr_t btn, py::object callback) { //
+                if (callback.is_none()) {
+                  btn->_onPressed = nullptr;
+                } else {
+                  auto pycb = std::make_shared<py::object>(callback);
+                  btn->_onPressed = [pycb]() {
+                    (*pycb)();
+                  };
+                }
+              })
+          .def_property(
+              "onToggled",
+              [](ui::button_ptr_t btn) -> py::object { //
+                return py::none();
+              },
+              [](ui::button_ptr_t btn, py::object callback) { //
+                if (callback.is_none()) {
+                  btn->_onToggled = nullptr;
+                } else {
+                  auto pycb = std::make_shared<py::object>(callback);
+                  btn->_onToggled = [pycb,btn]() {
+                    py::gil_scoped_acquire acquire_gil;
+                    (*pycb)(btn);
+                  };
+                }
+              })
+          .def_property(
+              "fg_color",
+              [](ui::button_ptr_t btn) -> fvec3 { //
+                return btn->_fg_color;
+              },
+              [](ui::button_ptr_t btn, fvec3 c) { //
+                btn->_fg_color = c;
+              })
+          .def_property(
+              "bg_color",
+              [](ui::button_ptr_t btn) -> fvec3 { //
+                return btn->_bg_color;
+              },
+              [](ui::button_ptr_t btn, fvec3 c) { //
+                btn->_bg_color = c;
+              })
+          .def_property(
+              "check_color",
+              [](ui::button_ptr_t btn) -> fvec3 { //
+                return btn->_check_color;
+              },
+              [](ui::button_ptr_t btn, fvec3 c) { //
+                btn->_check_color = c;
+              });
+  type_codec->registerStdCodec<ui::button_ptr_t>(button_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // Checkbox
+  auto checkbox_type = //
+      py::class_<ui::Checkbox, ui::Widget, ui::checkbox_ptr_t>(uimodule, "Checkbox")
+          .def_static(
+              "wfactory",
+              [type_codec](py::list py_args) -> ui::checkbox_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto color        = decoded_args[1].get<fvec3>();
+                auto checkbox     = std::make_shared<ui::Checkbox>(name, color);
+                return checkbox;
+              })
+          .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto color        = decoded_args[1].get<fvec3>();
+                auto layoutitem   = lg->makeChild<ui::Checkbox>(name, color);
+                return layoutitem.as_shared();
+              })
+          .def_property(
+              "toggled",
+              [](ui::checkbox_ptr_t chk) -> bool { //
+                return chk->isToggled();
+              },
+              [](ui::checkbox_ptr_t chk, bool val) { //
+                chk->setToggled(val);
+              })
+          .def_property(
+              "onToggled",
+              [](ui::checkbox_ptr_t chk) -> py::object { //
+                return py::none();
+              },
+              [](ui::checkbox_ptr_t chk, py::object callback) { //
+                if (callback.is_none()) {
+                  chk->_onToggled = nullptr;
+                } else {
+                  auto pycb = std::make_shared<py::object>(callback);
+                  chk->_onToggled = [pycb,chk]() {
+                    py::gil_scoped_acquire acquire_gil;
+                    (*pycb)(chk);
+                  };
+                }
+              })
+          .def_property(
+              "fg_color",
+              [](ui::checkbox_ptr_t chk) -> fvec3 { //
+                return chk->_fg_color;
+              },
+              [](ui::checkbox_ptr_t chk, fvec3 c) { //
+                chk->_fg_color = c;
+              })
+          .def_property(
+              "bg_color",
+              [](ui::checkbox_ptr_t chk) -> fvec3 { //
+                return chk->_bg_color;
+              },
+              [](ui::checkbox_ptr_t chk, fvec3 c) { //
+                chk->_bg_color = c;
+              })
+          .def_property(
+              "check_color",
+              [](ui::checkbox_ptr_t chk) -> fvec3 { //
+                return chk->_check_color;
+              },
+              [](ui::checkbox_ptr_t chk, fvec3 c) { //
+                chk->_check_color = c;
+              });
+  type_codec->registerStdCodec<ui::checkbox_ptr_t>(checkbox_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto imgview_type = //
       py::class_<ui::ImageView, ui::Widget, ui::imgview_ptr_t>(uimodule, "ImageView")

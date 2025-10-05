@@ -19,6 +19,7 @@ LineEdit::LineEdit(
     : Widget(name, x, y, w, h)
     , _bg_color(color) {
       _fg_color = fvec4(1,1,1,1);
+      _draw_label = true;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void LineEdit::setValue(const std::string& val) {
@@ -91,9 +92,8 @@ void LineEdit::DoDraw(drawevent_constptr_t drwev) {
   auto primi = tgt->PRI();
   auto defmtl = lev2::defaultUIMaterial();
 
-  ork::lev2::FontMan::PushFont("i14");
-  int sw = lev2::FontMan::stringWidth(_name.length());
-  int label_w = sw + 8;
+  int label_w = labelWidth();
+  auto content = contentRect();
 
   mtxi->PushUIMatrix();
   {
@@ -161,24 +161,17 @@ void LineEdit::DoDraw(drawevent_constptr_t drwev) {
     tgt->PopModColor();
 
     ///////////////////////////////
-    // draw label 
+    // draw label (using Widget base class)
     ///////////////////////////////
 
-    tgt->PushModColor(_fg_color);
-
-    if (_name.length()) {
-      lev2::FontMan::beginTextBlock(tgt, _name.length());
-      lev2::FontMan::DrawText(
-          tgt, //
-          ix1 + 4,
-          iyc - 6,
-          _name.c_str());
-      lev2::FontMan::endTextBlock(tgt);
-    }
+    _drawLabel(drwev);
 
     ///////////////////////////////
     // draw text content
     ///////////////////////////////
+
+    ork::lev2::FontMan::PushFont("i14");
+    tgt->PushModColor(_fg_color);
 
     lev2::FontMan::beginTextBlock(tgt, _value.length());
     lev2::FontMan::DrawText(
@@ -188,11 +181,10 @@ void LineEdit::DoDraw(drawevent_constptr_t drwev) {
         _value.c_str());
     lev2::FontMan::endTextBlock(tgt);
 
-
     tgt->PopModColor();
+    ork::lev2::FontMan::PopFont();
   }
   mtxi->PopUIMatrix();
-  ork::lev2::FontMan::PopFont();
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::ui

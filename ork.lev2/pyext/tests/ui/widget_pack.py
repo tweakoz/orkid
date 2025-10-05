@@ -9,8 +9,10 @@
 
 import math, sys, os, signal
 from obt import path
-from orkengine.core import vec2, vec3, vec4, mtx4, quat, VarMap
+from orkengine.core import vec2, vec3, vec4, mtx4, quat, VarMap, CrcStringProxy
 from orkengine import lev2
+
+tokens = CrcStringProxy()
 
 ################################################################################
 
@@ -58,6 +60,18 @@ class PackWidgets(object):
     
     box4 = self.hpack1.makeChild( uiclass=lev2.ui.LineEdit, args=["box1  ","text",vec3(0.5,0.5,0.5)] )
     box5 = self.hpack1.makeChild( uiclass=lev2.ui.LineEdit, args=["box2  ","text",vec3(0.5,0.0,0.5)] )
+
+    self.hpack2 = self.vpack1.makeChild( uiclass=lev2.ui.HorizontalPack, args=["hpack2"])
+    self.hpack2.margin = 3
+    self.hpack2.item_width = 72
+    self.hpack2.fill = False
+    chk_col = vec3(0.25)
+    self.chk1 = self.hpack2.makeChild( uiclass=lev2.ui.Checkbox, args=["chk1  ",chk_col] )
+    self.chk2 = self.hpack2.makeChild( uiclass=lev2.ui.Checkbox, args=["chk2  ",chk_col] )
+    self.chk3 = self.hpack2.makeChild( uiclass=lev2.ui.Checkbox, args=["chk3  ",chk_col] )
+    self.chk4 = self.hpack2.makeChild( uiclass=lev2.ui.Checkbox, args=["chk4  ",chk_col] )
+    self.chk5 = self.hpack2.makeChild( uiclass=lev2.ui.Checkbox, args=["chk5  ",chk_col] )
+    self.chk5.onToggled = lambda x: print("chk5 toggled to ",x.toggled)
 
     ############################################
     
