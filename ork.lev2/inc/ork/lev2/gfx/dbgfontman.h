@@ -85,6 +85,7 @@ public:
 
   void enqueueCharacter(VtxWriter<SVtxV12C4T16>& vw, float fx, float fy, int iu, int iv, U32 ucolor) const;
   const FontDesc& description() const;
+  int stringWidth(int numchars) const;
 
   std::string msFileName;
   std::string msFontName;
@@ -139,7 +140,7 @@ struct FontMan { //: public NoRttiSingleton<FontMan> {
 
   //////////////////////////////////////////////////////
 
-  void _addFont(Context* pTARG, const FontDesc& fdesc);
+  void _addFont(const FontDesc& fdesc);
   void _gpuInit(Context* pTARG);
 
   void _beginTextBlockWithState(Context* pTARG, textblockstate_ptr_t tbstate);

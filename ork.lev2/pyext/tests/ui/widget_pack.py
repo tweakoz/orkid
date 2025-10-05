@@ -73,6 +73,9 @@ class PackWidgets(object):
     self.chk5 = self.hpack2.makeChild( uiclass=lev2.ui.Checkbox, args=["chk5  ",chk_col] )
     self.chk5.onToggled = lambda x: print("chk5 toggled to ",x.toggled)
 
+    sli_col = vec3(0.3,0.3,0.5)
+    self.sli1 = self.vpack1.makeChild( uiclass=lev2.ui.IntSlider, args=["sli1  ",sli_col,0,100,50] )
+
     ############################################
     
     def onCtrlC(signum, frame):

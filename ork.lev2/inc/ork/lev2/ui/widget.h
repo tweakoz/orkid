@@ -211,6 +211,7 @@ public:
   varmap::VarMap _uservars;
   bool _enableDraw = true;
   bool _draw_label = false;
+  const lev2::Font* _label_font = nullptr;
 
   virtual Widget* doRouteUiEvent(event_constptr_t Ev);
   void disableEventRouting();

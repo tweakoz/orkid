@@ -50,6 +50,163 @@ FontMan::FontMan() {
   _defaultTextBlockState = tbstate;
   _textBlockStateStack.push(tbstate);
   _currentTextBlockState = tbstate;
+
+
+  FontDesc Inconsolata12;
+  Inconsolata12.mFontName       = "i12";
+  Inconsolata12.mFontFile       = "lev2://textures/Inconsolata12";
+  Inconsolata12.miTexWidth      = 512;
+  Inconsolata12.miTexHeight     = 512;
+  Inconsolata12.miCellWidth     = (512 / 16);
+  Inconsolata12.miCellHeight    = (512 / 16);
+  Inconsolata12.miCharWidth     = 12;
+  Inconsolata12.miCharHeight    = 12;
+  Inconsolata12.miCharOffsetX   = 12;
+  Inconsolata12.miCharOffsetY   = 12;
+  Inconsolata12.miAdvanceWidth  = 6;
+  Inconsolata12.miAdvanceHeight = 12;
+
+  /////////////////////////////////////////////////////////////
+
+  FontDesc Inconsolata13;
+  Inconsolata13.mFontName       = "i13";
+  Inconsolata13.mFontFile       = "lev2://textures/Inconsolata13";
+  Inconsolata13.miTexWidth      = 512;
+  Inconsolata13.miTexHeight     = 512;
+  Inconsolata13.miCellWidth     = (512 / 16);
+  Inconsolata13.miCellHeight    = (512 / 16);
+  Inconsolata13.miCharWidth     = 13;
+  Inconsolata13.miCharHeight    = 13;
+  Inconsolata13.miCharOffsetX   = 11;
+  Inconsolata13.miCharOffsetY   = 11;
+  Inconsolata13.miAdvanceWidth  = 7;
+  Inconsolata13.miAdvanceHeight = 13;
+  Inconsolata13.miYShift        = -1;
+
+  /////////////////////////////////////////////////////////////
+
+  FontDesc Inconsolata14;
+  Inconsolata14.mFontName       = "i14";
+  Inconsolata14.mFontFile       = "lev2://textures/Inconsolata14";
+  Inconsolata14.miTexWidth      = 512;
+  Inconsolata14.miTexHeight     = 512;
+  Inconsolata14.miCellWidth     = (512 / 16);
+  Inconsolata14.miCellHeight    = (512 / 16);
+  Inconsolata14.miCharWidth     = 14;
+  Inconsolata14.miCharHeight    = 14;
+  Inconsolata14.miCharOffsetX   = 12;
+  Inconsolata14.miCharOffsetY   = 8;
+  Inconsolata14.miYShift        = -1;
+  Inconsolata14.miAdvanceWidth  = 7;
+  Inconsolata14.miAdvanceHeight = 12;
+  //
+  Inconsolata14._3d_char_width    = 7;
+  Inconsolata14._3d_char_height   = 8;
+  Inconsolata14._3d_char_u_offset = 12;
+  Inconsolata14._3d_char_v_offset = 9;
+  Inconsolata14._3d_char_u_width  = 8;
+  Inconsolata14._3d_char_v_height = 12;
+
+  /////////////////////////////////////////////////////////////
+
+  FontDesc Inconsolata16;
+  Inconsolata16.mFontName       = "i16";
+  Inconsolata16.mFontFile       = "lev2://textures/Inconsolata16";
+  Inconsolata16.miTexWidth      = 512;
+  Inconsolata16.miTexHeight     = 512;
+  Inconsolata16.miCellWidth     = (512 / 16);
+  Inconsolata16.miCellHeight    = (512 / 16);
+  Inconsolata16.miCharWidth     = 16;
+  Inconsolata16.miCharHeight    = 16;
+  Inconsolata16.miCharOffsetX   = 11;
+  Inconsolata16.miCharOffsetY   = 11;
+  Inconsolata16.miYShift        = 1;
+  Inconsolata16.miAdvanceWidth  = 8;
+  Inconsolata16.miAdvanceHeight = 12;
+
+  /////////////////////////////////////////////////////////////
+
+  FontDesc Inconsolata24;
+  Inconsolata24.mFontName       = "i24";
+  Inconsolata24.mFontFile       = "lev2://textures/Inconsolata24";
+  Inconsolata24.miTexWidth      = 512;
+  Inconsolata24.miTexHeight     = 512;
+  Inconsolata24.miCellWidth     = (512 / 16);
+  Inconsolata24.miCellHeight    = (512 / 16);
+  Inconsolata24.miCharWidth     = 24;
+  Inconsolata24.miCharHeight    = 24;
+  Inconsolata24.miCharOffsetX   = 9;
+  Inconsolata24.miCharOffsetY   = 3;
+  Inconsolata24.miYShift        = 1;
+  Inconsolata24.miAdvanceWidth  = 11;
+  Inconsolata24.miAdvanceHeight = 26;
+
+  /////////////////////////////////////////////////////////////
+
+  FontDesc Inconsolata32;
+  Inconsolata32.mFontName       = "i32";
+  Inconsolata32.mFontFile       = "lev2://textures/Inconsolata32";
+  Inconsolata32.miTexWidth      = 800;
+  Inconsolata32.miTexHeight     = 800;
+  Inconsolata32.miCellWidth     = (800 / 16);
+  Inconsolata32.miCellHeight    = (800 / 16);
+  Inconsolata32.miCharWidth     = 32;
+  Inconsolata32.miCharHeight    = 32;
+  Inconsolata32.miCharOffsetX   = 0;
+  Inconsolata32.miCharOffsetY   = 0;
+  Inconsolata32.miYShift        = -4;
+  Inconsolata32.miAdvanceWidth  = 16;
+  Inconsolata32.miAdvanceHeight = 24;
+
+  /////////////////////////////////////////////////////////////
+
+  FontDesc Inconsolata48;
+  Inconsolata48.mFontName       = "i48";
+  Inconsolata48.mFontFile       = "lev2://textures/Inconsolata48";
+  Inconsolata48.miTexWidth      = 800;
+  Inconsolata48.miTexHeight     = 800;
+  Inconsolata48.miCellWidth     = (800 / 16);
+  Inconsolata48.miCellHeight    = (800 / 16);
+  Inconsolata48.miCharWidth     = 48;
+  Inconsolata48.miCharHeight    = 48;
+  Inconsolata48.miCharOffsetX   = 0;
+  Inconsolata48.miCharOffsetY   = 0;
+  Inconsolata48.miYShift        = -7;
+  Inconsolata48.miAdvanceWidth  = 24;
+  Inconsolata48.miAdvanceHeight = 40;
+  //
+  Inconsolata48._3d_char_width    = 48;
+  Inconsolata48._3d_char_height   = 48;
+  Inconsolata48._3d_char_u_offset = 1;
+  Inconsolata48._3d_char_v_offset = 6;
+  Inconsolata48._3d_char_u_width  = 48;
+  Inconsolata48._3d_char_v_height = 48;
+
+  /////////////////////////////////////////////////////////////
+
+  FontDesc Transponder24;
+  Transponder24.mFontName       = "d24";
+  Transponder24.mFontFile       = "lev2://textures/transponder24";
+  Transponder24.miTexWidth      = 512;
+  Transponder24.miTexHeight     = 512;
+  Transponder24.miCellWidth     = (512 / 16);
+  Transponder24.miCellHeight    = (512 / 16);
+  Transponder24.miCharWidth     = 24;
+  Transponder24.miCharHeight    = 24;
+  Transponder24.miCharOffsetX   = 9;
+  Transponder24.miCharOffsetY   = 7;
+  Transponder24.miAdvanceWidth  = 16;
+  Transponder24.miAdvanceHeight = 24;
+
+   _addFont(Inconsolata12);
+  _addFont(Inconsolata13);
+  _addFont(Inconsolata14);
+  _addFont(Inconsolata16);
+  _addFont(Inconsolata24);
+  _addFont(Inconsolata32);
+  _addFont(Inconsolata48);
+  _addFont(Transponder24);
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -369,17 +526,13 @@ void FontMan::DrawCenteredText(Context* context, int iY, const char* pFmt, ...) 
 // Font Management
 ///////////////////////////////////////////////////////////////////////////////
 
-void FontMan::_addFont(Context* pTARG, const FontDesc& fdesc) {
-  Font* pFontAlreadyLoaded = OldStlSchoolFindValFromKey(mFontMap, fdesc.mFontName, (Font*)0);
-
-  if (0 == pFontAlreadyLoaded) {
+void FontMan::_addFont(const FontDesc& fdesc) {
+  auto it = mFontMap.find(fdesc.mFontName);
+  if (it == mFontMap.end()) {
     Font* pNewFont = new Font(fdesc.mFontName, fdesc.mFontFile);
-
-    pNewFont->LoadFromDisk(pTARG, fdesc);
-
     mFontVect.push_back(pNewFont);
-    OldStlSchoolMapInsert(mFontMap, fdesc.mFontName, pNewFont);
-    _bindFont(pNewFont);
+    mFontMap[fdesc.mFontName] = pNewFont;
+    pNewFont->mFontDesc = fdesc;
   }
 }
 
@@ -474,6 +627,10 @@ textblockstate_ptr_t FontMan::_topstate() {
 Font::Font(const std::string& fontname, const std::string& filename)
     : msFileName(filename)
     , msFontName(fontname) {
+}
+
+int Font::stringWidth(int numchars) const {
+  return mFontDesc.stringWidth(numchars);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -578,6 +735,7 @@ const FontDesc& Font::GetFontDesc() const {
 
 void Font::LoadFromDisk(Context* context, const FontDesc& fdesc) {
 
+  printf("Font<%s> LoadFromDisk<%s>\n", msFontName.c_str(), msFileName.c_str());
   auto FXI = context->FXI();
 
   //////////////////////////////////////////////////////////////////////
@@ -622,7 +780,6 @@ void Font::LoadFromDisk(Context* context, const FontDesc& fdesc) {
   mpMaterial->SetTexture(ETEXDEST_DIFFUSE, _texture.get());
   _texture->TexSamplingMode().presetPointAndClamp();
   //context->TXI()->ApplySamplingMode(_texture.get());
-  mFontDesc = fdesc;
 
   //_materialDeferred->_asset_texcolor = asset::AssetManager<lev2::TextureAsset>::load(apath);
   _materialDeferred->_texColor = _texture; //_materialDeferred->_asset_texcolor.GetTexture();
@@ -657,154 +814,6 @@ void FontMan::gpuInit(Context* pTARG) {
 void FontMan::_gpuInit(Context* pTARG) {
 
   /////////////////////////////////////////////////////////////
-
-  FontDesc Inconsolata12;
-  Inconsolata12.mFontName       = "i12";
-  Inconsolata12.mFontFile       = "lev2://textures/Inconsolata12";
-  Inconsolata12.miTexWidth      = 512;
-  Inconsolata12.miTexHeight     = 512;
-  Inconsolata12.miCellWidth     = (512 / 16);
-  Inconsolata12.miCellHeight    = (512 / 16);
-  Inconsolata12.miCharWidth     = 12;
-  Inconsolata12.miCharHeight    = 12;
-  Inconsolata12.miCharOffsetX   = 12;
-  Inconsolata12.miCharOffsetY   = 12;
-  Inconsolata12.miAdvanceWidth  = 6;
-  Inconsolata12.miAdvanceHeight = 12;
-
-  /////////////////////////////////////////////////////////////
-
-  FontDesc Inconsolata13;
-  Inconsolata13.mFontName       = "i13";
-  Inconsolata13.mFontFile       = "lev2://textures/Inconsolata13";
-  Inconsolata13.miTexWidth      = 512;
-  Inconsolata13.miTexHeight     = 512;
-  Inconsolata13.miCellWidth     = (512 / 16);
-  Inconsolata13.miCellHeight    = (512 / 16);
-  Inconsolata13.miCharWidth     = 13;
-  Inconsolata13.miCharHeight    = 13;
-  Inconsolata13.miCharOffsetX   = 11;
-  Inconsolata13.miCharOffsetY   = 11;
-  Inconsolata13.miAdvanceWidth  = 7;
-  Inconsolata13.miAdvanceHeight = 13;
-  Inconsolata13.miYShift        = -1;
-
-  /////////////////////////////////////////////////////////////
-
-  FontDesc Inconsolata14;
-  Inconsolata14.mFontName       = "i14";
-  Inconsolata14.mFontFile       = "lev2://textures/Inconsolata14";
-  Inconsolata14.miTexWidth      = 512;
-  Inconsolata14.miTexHeight     = 512;
-  Inconsolata14.miCellWidth     = (512 / 16);
-  Inconsolata14.miCellHeight    = (512 / 16);
-  Inconsolata14.miCharWidth     = 14;
-  Inconsolata14.miCharHeight    = 14;
-  Inconsolata14.miCharOffsetX   = 12;
-  Inconsolata14.miCharOffsetY   = 8;
-  Inconsolata14.miYShift        = -1;
-  Inconsolata14.miAdvanceWidth  = 7;
-  Inconsolata14.miAdvanceHeight = 12;
-  //
-  Inconsolata14._3d_char_width    = 7;
-  Inconsolata14._3d_char_height   = 8;
-  Inconsolata14._3d_char_u_offset = 12;
-  Inconsolata14._3d_char_v_offset = 9;
-  Inconsolata14._3d_char_u_width  = 8;
-  Inconsolata14._3d_char_v_height = 12;
-
-  /////////////////////////////////////////////////////////////
-
-  FontDesc Inconsolata16;
-  Inconsolata16.mFontName       = "i16";
-  Inconsolata16.mFontFile       = "lev2://textures/Inconsolata16";
-  Inconsolata16.miTexWidth      = 512;
-  Inconsolata16.miTexHeight     = 512;
-  Inconsolata16.miCellWidth     = (512 / 16);
-  Inconsolata16.miCellHeight    = (512 / 16);
-  Inconsolata16.miCharWidth     = 16;
-  Inconsolata16.miCharHeight    = 16;
-  Inconsolata16.miCharOffsetX   = 11;
-  Inconsolata16.miCharOffsetY   = 11;
-  Inconsolata16.miYShift        = 1;
-  Inconsolata16.miAdvanceWidth  = 8;
-  Inconsolata16.miAdvanceHeight = 12;
-
-  /////////////////////////////////////////////////////////////
-
-  FontDesc Inconsolata24;
-  Inconsolata24.mFontName       = "i24";
-  Inconsolata24.mFontFile       = "lev2://textures/Inconsolata24";
-  Inconsolata24.miTexWidth      = 512;
-  Inconsolata24.miTexHeight     = 512;
-  Inconsolata24.miCellWidth     = (512 / 16);
-  Inconsolata24.miCellHeight    = (512 / 16);
-  Inconsolata24.miCharWidth     = 24;
-  Inconsolata24.miCharHeight    = 24;
-  Inconsolata24.miCharOffsetX   = 9;
-  Inconsolata24.miCharOffsetY   = 3;
-  Inconsolata24.miYShift        = 1;
-  Inconsolata24.miAdvanceWidth  = 11;
-  Inconsolata24.miAdvanceHeight = 26;
-
-  /////////////////////////////////////////////////////////////
-
-  FontDesc Inconsolata32;
-  Inconsolata32.mFontName       = "i32";
-  Inconsolata32.mFontFile       = "lev2://textures/Inconsolata32";
-  Inconsolata32.miTexWidth      = 800;
-  Inconsolata32.miTexHeight     = 800;
-  Inconsolata32.miCellWidth     = (800 / 16);
-  Inconsolata32.miCellHeight    = (800 / 16);
-  Inconsolata32.miCharWidth     = 32;
-  Inconsolata32.miCharHeight    = 32;
-  Inconsolata32.miCharOffsetX   = 0;
-  Inconsolata32.miCharOffsetY   = 0;
-  Inconsolata32.miYShift        = -4;
-  Inconsolata32.miAdvanceWidth  = 16;
-  Inconsolata32.miAdvanceHeight = 24;
-
-  /////////////////////////////////////////////////////////////
-
-  FontDesc Inconsolata48;
-  Inconsolata48.mFontName       = "i48";
-  Inconsolata48.mFontFile       = "lev2://textures/Inconsolata48";
-  Inconsolata48.miTexWidth      = 800;
-  Inconsolata48.miTexHeight     = 800;
-  Inconsolata48.miCellWidth     = (800 / 16);
-  Inconsolata48.miCellHeight    = (800 / 16);
-  Inconsolata48.miCharWidth     = 48;
-  Inconsolata48.miCharHeight    = 48;
-  Inconsolata48.miCharOffsetX   = 0;
-  Inconsolata48.miCharOffsetY   = 0;
-  Inconsolata48.miYShift        = -7;
-  Inconsolata48.miAdvanceWidth  = 24;
-  Inconsolata48.miAdvanceHeight = 40;
-  //
-  Inconsolata48._3d_char_width    = 48;
-  Inconsolata48._3d_char_height   = 48;
-  Inconsolata48._3d_char_u_offset = 1;
-  Inconsolata48._3d_char_v_offset = 6;
-  Inconsolata48._3d_char_u_width  = 48;
-  Inconsolata48._3d_char_v_height = 48;
-
-  /////////////////////////////////////////////////////////////
-
-  FontDesc Transponder24;
-  Transponder24.mFontName       = "d24";
-  Transponder24.mFontFile       = "lev2://textures/transponder24";
-  Transponder24.miTexWidth      = 512;
-  Transponder24.miTexHeight     = 512;
-  Transponder24.miCellWidth     = (512 / 16);
-  Transponder24.miCellHeight    = (512 / 16);
-  Transponder24.miCharWidth     = 24;
-  Transponder24.miCharHeight    = 24;
-  Transponder24.miCharOffsetX   = 9;
-  Transponder24.miCharOffsetY   = 7;
-  Transponder24.miAdvanceWidth  = 16;
-  Transponder24.miAdvanceHeight = 24;
-
-  /////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////
 
@@ -812,14 +821,10 @@ void FontMan::_gpuInit(Context* pTARG) {
     pTARG->makeCurrentContext();
     //pTARG->debugPushGroup("FontMan::InitFonts");
 
-    _addFont(pTARG, Inconsolata12);
-    _addFont(pTARG, Inconsolata13);
-    _addFont(pTARG, Inconsolata14);
-    _addFont(pTARG, Inconsolata16);
-    _addFont(pTARG, Inconsolata24);
-    _addFont(pTARG, Inconsolata32);
-    _addFont(pTARG, Inconsolata48);
-    _addFont(pTARG, Transponder24);
+    for( auto font : mFontVect ){
+      font->LoadFromDisk(pTARG, font->mFontDesc);
+      _bindFont(font);
+    }
 
     _defaultTextBlockState->_font = _pushFont("i14");
 

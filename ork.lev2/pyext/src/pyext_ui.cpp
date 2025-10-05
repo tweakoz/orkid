@@ -18,6 +18,7 @@
 #include <ork/lev2/ui/lineedit.h>
 #include <ork/lev2/ui/button.h>
 #include <ork/lev2/ui/checkbox.h>
+#include <ork/lev2/ui/slider.h>
 #include <ork/lev2/ui/imgview.h>
 #include <ork/lev2/ui/ged/ged_surface.h>
 #include <ork/lev2/ui/popups.inl>
@@ -837,6 +838,178 @@ void pyinit_ui(py::module& module_lev2) {
                 chk->_check_color = c;
               });
   type_codec->registerStdCodec<ui::checkbox_ptr_t>(checkbox_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // IntSlider
+  auto intslider_type = //
+      py::class_<ui::IntSlider, ui::Widget, ui::intslider_ptr_t>(uimodule, "IntSlider")
+          .def_static(
+              "wfactory",
+              [type_codec](py::list py_args) -> ui::intslider_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto color        = decoded_args[1].get<fvec3>();
+                auto min_val      = decoded_args[2].get<int>();
+                auto max_val      = decoded_args[3].get<int>();
+                auto value        = decoded_args[4].get<int>();
+                auto slider       = std::make_shared<ui::IntSlider>(name, color, min_val, max_val, value);
+                return slider;
+              })
+          .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto color        = decoded_args[1].get<fvec3>();
+                auto min_val      = decoded_args[2].get<int>();
+                auto max_val      = decoded_args[3].get<int>();
+                auto value        = decoded_args[4].get<int>();
+                auto layoutitem   = lg->makeChild<ui::IntSlider>(name, color, min_val, max_val, value);
+                return layoutitem.as_shared();
+              })
+          .def_property(
+              "value",
+              [](ui::intslider_ptr_t slider) -> int { //
+                return slider->value();
+              },
+              [](ui::intslider_ptr_t slider, int val) { //
+                slider->setValue(val);
+              })
+          .def_property(
+              "onValueChanged",
+              [](ui::intslider_ptr_t slider) -> py::object { //
+                return py::none();
+              },
+              [](ui::intslider_ptr_t slider, py::object callback) { //
+                if (callback.is_none()) {
+                  slider->_onValueChanged = nullptr;
+                } else {
+                  auto pycb = std::make_shared<py::object>(callback);
+                  slider->_onValueChanged = [pycb, slider]() {
+                    py::gil_scoped_acquire acquire_gil;
+                    (*pycb)(slider);
+                  };
+                }
+              })
+          .def_property(
+              "fg_color",
+              [](ui::intslider_ptr_t slider) -> fvec3 { //
+                return slider->_fg_color;
+              },
+              [](ui::intslider_ptr_t slider, fvec3 c) { //
+                slider->_fg_color = c;
+              })
+          .def_property(
+              "bg_color",
+              [](ui::intslider_ptr_t slider) -> fvec3 { //
+                return slider->_bg_color;
+              },
+              [](ui::intslider_ptr_t slider, fvec3 c) { //
+                slider->_bg_color = c;
+              })
+          .def_property(
+              "fill_color",
+              [](ui::intslider_ptr_t slider) -> fvec3 { //
+                return slider->_fill_color;
+              },
+              [](ui::intslider_ptr_t slider, fvec3 c) { //
+                slider->_fill_color = c;
+              })
+          .def(
+              "setRange",
+              [](ui::intslider_ptr_t slider, int min_val, int max_val) { //
+                slider->setRange(min_val, max_val);
+              });
+  type_codec->registerStdCodec<ui::intslider_ptr_t>(intslider_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // FloatSlider
+  auto floatslider_type = //
+      py::class_<ui::FloatSlider, ui::Widget, ui::floatslider_ptr_t>(uimodule, "FloatSlider")
+          .def_static(
+              "wfactory",
+              [type_codec](py::list py_args) -> ui::floatslider_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto color        = decoded_args[1].get<fvec3>();
+                auto min_val      = decoded_args[2].get<float>();
+                auto max_val      = decoded_args[3].get<float>();
+                auto value        = decoded_args[4].get<float>();
+                auto slider       = std::make_shared<ui::FloatSlider>(name, color, min_val, max_val, value);
+                return slider;
+              })
+          .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto color        = decoded_args[1].get<fvec3>();
+                auto min_val      = decoded_args[2].get<float>();
+                auto max_val      = decoded_args[3].get<float>();
+                auto value        = decoded_args[4].get<float>();
+                auto layoutitem   = lg->makeChild<ui::FloatSlider>(name, color, min_val, max_val, value);
+                return layoutitem.as_shared();
+              })
+          .def_property(
+              "value",
+              [](ui::floatslider_ptr_t slider) -> float { //
+                return slider->value();
+              },
+              [](ui::floatslider_ptr_t slider, float val) { //
+                slider->setValue(val);
+              })
+          .def_property(
+              "log_mode",
+              [](ui::floatslider_ptr_t slider) -> bool { //
+                return slider->logMode();
+              },
+              [](ui::floatslider_ptr_t slider, bool log) { //
+                slider->setLogMode(log);
+              })
+          .def_property(
+              "onValueChanged",
+              [](ui::floatslider_ptr_t slider) -> py::object { //
+                return py::none();
+              },
+              [](ui::floatslider_ptr_t slider, py::object callback) { //
+                if (callback.is_none()) {
+                  slider->_onValueChanged = nullptr;
+                } else {
+                  auto pycb = std::make_shared<py::object>(callback);
+                  slider->_onValueChanged = [pycb, slider]() {
+                    py::gil_scoped_acquire acquire_gil;
+                    (*pycb)(slider);
+                  };
+                }
+              })
+          .def_property(
+              "fg_color",
+              [](ui::floatslider_ptr_t slider) -> fvec3 { //
+                return slider->_fg_color;
+              },
+              [](ui::floatslider_ptr_t slider, fvec3 c) { //
+                slider->_fg_color = c;
+              })
+          .def_property(
+              "bg_color",
+              [](ui::floatslider_ptr_t slider) -> fvec3 { //
+                return slider->_bg_color;
+              },
+              [](ui::floatslider_ptr_t slider, fvec3 c) { //
+                slider->_bg_color = c;
+              })
+          .def_property(
+              "fill_color",
+              [](ui::floatslider_ptr_t slider) -> fvec3 { //
+                return slider->_fill_color;
+              },
+              [](ui::floatslider_ptr_t slider, fvec3 c) { //
+                slider->_fill_color = c;
+              })
+          .def(
+              "setRange",
+              [](ui::floatslider_ptr_t slider, float min_val, float max_val) { //
+                slider->setRange(min_val, max_val);
+              });
+  type_codec->registerStdCodec<ui::floatslider_ptr_t>(floatslider_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto imgview_type = //
       py::class_<ui::ImageView, ui::Widget, ui::imgview_ptr_t>(uimodule, "ImageView")

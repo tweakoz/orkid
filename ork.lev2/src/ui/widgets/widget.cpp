@@ -32,6 +32,9 @@ Widget::Widget(const std::string& name, int x, int y, int w, int h)
   _prevGeometry = _geometry;
 
   pushEventFilter<ui::NopEventFilter>();
+
+  _label_font = lev2::FontMan::GetFont("i14");
+  OrkAssert(_label_font);
 }
 ///////////////////////////////////////////////////////////
 Widget::~Widget() {
@@ -492,10 +495,8 @@ int Widget::labelWidth() const {
   if (!_draw_label)
     return 0;
 
-  ork::lev2::FontMan::PushFont("i14");
-  int sw = lev2::FontMan::stringWidth(_name.length());
+  int sw = _label_font->stringWidth(_name.length());
   int label_w = sw + 8;
-  ork::lev2::FontMan::PopFont();
   return label_w;
 }
 /////////////////////////////////////////////////////////////////////////
@@ -519,7 +520,7 @@ void Widget::_drawLabel(ui::drawevent_constptr_t drwev) {
 
   auto tgt = drwev->GetTarget();
 
-  ork::lev2::FontMan::PushFont("i14");
+  ork::lev2::FontMan::PushFont(_label_font);
 
   int ix1, iy1, iyc;
   LocalToRoot(0, 0, ix1, iy1);

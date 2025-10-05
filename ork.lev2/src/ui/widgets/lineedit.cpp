@@ -170,7 +170,7 @@ void LineEdit::DoDraw(drawevent_constptr_t drwev) {
     // draw text content
     ///////////////////////////////
 
-    ork::lev2::FontMan::PushFont("i14");
+    ork::lev2::FontMan::PushFont(_label_font);
     tgt->PushModColor(_fg_color);
 
     lev2::FontMan::beginTextBlock(tgt, _value.length());

@@ -37,6 +37,8 @@ struct ImageView;
 struct LineEdit;
 struct Button;
 struct Checkbox;
+struct IntSlider;
+struct FloatSlider;
 struct DrawEvent;
 struct MultiTouchPoint;
 struct IWidgetEventFilter;
@@ -63,6 +65,8 @@ using imgview_ptr_t     = std::shared_ptr<ImageView>;
 using lineedit_ptr_t    = std::shared_ptr<LineEdit>;
 using button_ptr_t      = std::shared_ptr<Button>;
 using checkbox_ptr_t    = std::shared_ptr<Checkbox>;
+using intslider_ptr_t   = std::shared_ptr<IntSlider>;
+using floatslider_ptr_t = std::shared_ptr<FloatSlider>;
 using vpack_ptr_t       = std::shared_ptr<VerticalPack>;
 using hpack_ptr_t       = std::shared_ptr<HorizontalPack>;
 ////////////////////////////////////////////////////////////////////////////////
