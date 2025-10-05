@@ -47,6 +47,8 @@ struct LayoutGroup;
 struct HandlerResult;
 struct VerticalPack;
 struct HorizontalPack;
+struct HorizontalSplit;
+struct VerticalSplit;
 
 using context_ptr_t     = std::shared_ptr<Context>;
 using widget_ptr_t      = std::shared_ptr<Widget>;
@@ -71,6 +73,8 @@ using floatslider_ptr_t = std::shared_ptr<FloatSlider>;
 using combobox_ptr_t    = std::shared_ptr<ComboBox>;
 using vpack_ptr_t       = std::shared_ptr<VerticalPack>;
 using hpack_ptr_t       = std::shared_ptr<HorizontalPack>;
+using hsplit_ptr_t      = std::shared_ptr<HorizontalSplit>;
+using vsplit_ptr_t      = std::shared_ptr<VerticalSplit>;
 ////////////////////////////////////////////////////////////////////////////////
 
 using evrouter_t  = std::function<Widget*(event_constptr_t ev)>;

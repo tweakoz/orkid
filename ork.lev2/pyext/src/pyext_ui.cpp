@@ -15,6 +15,7 @@
 #include <ork/lev2/ui/anchor.h>
 #include <ork/lev2/ui/tabs.h>
 #include <ork/lev2/ui/pack.h>
+#include <ork/lev2/ui/split.h>
 #include <ork/lev2/ui/lineedit.h>
 #include <ork/lev2/ui/button.h>
 #include <ork/lev2/ui/checkbox.h>
@@ -646,6 +647,120 @@ void pyinit_ui(py::module& module_lev2) {
                 hpack->_uniform = b;
               });
   type_codec->registerStdCodec<ui::hpack_ptr_t>(hpack_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // HorizontalSplit
+  auto hsplit_type = //
+      py::class_<ui::HorizontalSplit, ui::Group, ui::hsplit_ptr_t>(uimodule, "HorizontalSplit")
+          .def_static(
+              "wfactory",
+              [type_codec](py::list py_args) -> ui::hsplit_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto split        = std::make_shared<ui::HorizontalSplit>(name);
+                return split;
+              })
+          .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto layoutitem   = lg->makeChild<ui::HorizontalSplit>(name);
+                return layoutitem.as_shared();
+              })
+          .def(
+              "makeChild",
+              [](ui::hsplit_ptr_t hsplit, py::kwargs kwargs) -> ui::widget_ptr_t { //
+                ui::widget_ptr_t rval;
+                if (kwargs) {
+                  py::list args;
+                  py::object wfactory;
+                  int args_parsed = 0;
+                  for (auto item : kwargs) {
+                    auto key = py::cast<std::string>(item.first);
+                    if (key == "uiclass") {
+                      auto uiclass_obj  = py::cast<py::object>(item.second);
+                      bool has_wfactory = py::hasattr(uiclass_obj, "wfactory");
+                      OrkAssert(has_wfactory);
+                      wfactory = uiclass_obj.attr("wfactory");
+                      args_parsed++;
+                    } else if (key == "args") {
+                      args = py::cast<py::list>(item.second);
+                      args_parsed++;
+                    }
+                  }
+                  OrkAssert(args_parsed == 2);
+                  rval = py::cast<ui::widget_ptr_t>(wfactory(args));
+                  hsplit->addChild(rval);
+                }
+                return rval;
+              })
+          .def_property(
+              "split_ratio",
+              [](ui::hsplit_ptr_t split) -> float { //
+                return split->_split_ratio;
+              },
+              [](ui::hsplit_ptr_t split, float ratio) { //
+                split->_split_ratio = ratio;
+                //split->ReLayout();
+              });
+  type_codec->registerStdCodec<ui::hsplit_ptr_t>(hsplit_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // VerticalSplit
+  auto vsplit_type = //
+      py::class_<ui::VerticalSplit, ui::Group, ui::vsplit_ptr_t>(uimodule, "VerticalSplit")
+          .def_static(
+              "wfactory",
+              [type_codec](py::list py_args) -> ui::vsplit_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto split        = std::make_shared<ui::VerticalSplit>(name);
+                return split;
+              })
+          .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto layoutitem   = lg->makeChild<ui::VerticalSplit>(name);
+                return layoutitem.as_shared();
+              })
+          .def(
+              "makeChild",
+              [](ui::vsplit_ptr_t vsplit, py::kwargs kwargs) -> ui::widget_ptr_t { //
+                ui::widget_ptr_t rval;
+                if (kwargs) {
+                  py::list args;
+                  py::object wfactory;
+                  int args_parsed = 0;
+                  for (auto item : kwargs) {
+                    auto key = py::cast<std::string>(item.first);
+                    if (key == "uiclass") {
+                      auto uiclass_obj  = py::cast<py::object>(item.second);
+                      bool has_wfactory = py::hasattr(uiclass_obj, "wfactory");
+                      OrkAssert(has_wfactory);
+                      wfactory = uiclass_obj.attr("wfactory");
+                      args_parsed++;
+                    } else if (key == "args") {
+                      args = py::cast<py::list>(item.second);
+                      args_parsed++;
+                    }
+                  }
+                  OrkAssert(args_parsed == 2);
+                  rval = py::cast<ui::widget_ptr_t>(wfactory(args));
+                  vsplit->addChild(rval);
+                }
+                return rval;
+              })
+          .def_property(
+              "split_ratio",
+              [](ui::vsplit_ptr_t split) -> float { //
+                return split->_split_ratio;
+              },
+              [](ui::vsplit_ptr_t split, float ratio) { //
+                split->_split_ratio = ratio;
+                //split->ReLayout();
+              });
+  type_codec->registerStdCodec<ui::vsplit_ptr_t>(vsplit_type);
   /////////////////////////////////////////////////////////////////////////////////
   // LineEdit
   auto lineedit_type = //

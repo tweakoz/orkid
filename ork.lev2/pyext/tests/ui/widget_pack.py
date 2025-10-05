@@ -101,6 +101,18 @@ class PackWidgets(object):
     self.tx2.setText("This is another TextBox.\n It can hold multiple lines of text.\nThe quick brown fox jumps over the lazy dog.\n0123456789")
     self.tx3.setText("This is a third TextBox.\n It can hold multiple lines of text.\nThe quick brown fox jumps over the lazy dog.\n0123456789")
 
+    sp1 = lg_group.makeChild( uiclass=lev2.ui.VerticalSplit, args=["spl1"])
+    self.lg_group.replaceChild( self.griditems[1].layout, sp1 )
+    sp1w = sp1.widget
+    self.x = sp1w.makeChild( uiclass=lev2.ui.EvTestBox, args=["evb1",vec4(0.3,0.3,0.3,1)] )
+    self.y = sp1w.makeChild( uiclass=lev2.ui.EvTestBox, args=["evb2",vec4(0.3,0.3,0.4,1)] )
+
+    sp2 = lg_group.makeChild( uiclass=lev2.ui.HorizontalSplit, args=["spl1"])
+    self.lg_group.replaceChild( self.griditems[2].layout, sp2 )
+    sp2w = sp2.widget
+    self.x2 = sp2w.makeChild( uiclass=lev2.ui.EvTestBox, args=["evb1",vec4(0.3,0.3,0.3,1)] )
+    self.y2 = sp2w.makeChild( uiclass=lev2.ui.EvTestBox, args=["evb2",vec4(0.3,0.3,0.4,1)] )
+
     ############################################
     
     def onCtrlC(signum, frame):
