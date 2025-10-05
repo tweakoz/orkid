@@ -74,6 +74,16 @@ class PackWidgets(object):
     self.chk5 = self.hpack2.makeChild( uiclass=lev2.ui.Checkbox, args=["chk5  ",chk_col] )
     self.chk5.onToggled = lambda x: print("chk5 toggled to ",x.toggled)
 
+    self.hpack3 = self.vpack1.makeChild( uiclass=lev2.ui.HorizontalPack, args=["hpack3"])
+    self.hpack3.margin = 3
+    self.hpack3.uniform = True
+    btn_col = vec3(0.3,0.5,0.3)
+    self.btn1 = self.hpack3.makeChild( uiclass=lev2.ui.Button, args=["btn1  ",btn_col] )
+    self.btn2 = self.hpack3.makeChild( uiclass=lev2.ui.Button, args=["btn2  ",btn_col] )
+    self.btn3 = self.hpack3.makeChild( uiclass=lev2.ui.Button, args=["btn3  ",btn_col] )
+    self.btn4 = self.hpack3.makeChild( uiclass=lev2.ui.Button, args=["btn4  ",btn_col] )
+    self.btn4.onPressed = lambda x: print("btn4 clicked")
+
     sli_col = vec3(0.3,0.3,0.5)
     self.sli1 = self.vpack1.makeChild( uiclass=lev2.ui.IntSlider, args=["sli1  ",sli_col,0,100,50] )
     self.sli2 = self.vpack1.makeChild( uiclass=lev2.ui.FloatSlider, args=["sli2  ",sli_col,0.0,100.0,50.0] )

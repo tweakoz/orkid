@@ -19,7 +19,7 @@ Button::Button(
     : Widget(name, x, y, w, h)
     , _bg_color(color) {
       _fg_color = fvec4(1,1,1,1);
-      _check_color = fvec4(0.2, 0.8, 0.2, 1);
+      _down_color = fvec4(color.xyz() * 0.5f, 1);
       _draw_label = true;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -28,36 +28,24 @@ HandlerResult Button::DoOnUiEvent(event_constptr_t cev) {
 
   switch (cev->_eventcode) {
     case EventCode::PUSH: {
-      //_highlight = true;
-
-      if (_mode == ButtonMode::TOGGLE) {
-        _toggled = !_toggled;
-        if (_onToggled) {
-          _onToggled();
-        }
-      } else {
-        if (_onPressed) {
-          _onPressed();
-        }
-      }
-
+      _pressed = true;
       rval.setHandled(this);
       break;
     }
 
     case EventCode::RELEASE: {
-      //_highlight = false;
-      rval.setHandled(this);
-      break;
-    }
-
-    case EventCode::MOUSE_ENTER: {
-      //_highlight = true;
+      if (_pressed) {
+        _pressed = false;
+        if (_onPressed) {
+          _onPressed();
+        }
+        rval.setHandled(this);
+      }
       break;
     }
 
     case EventCode::MOUSE_LEAVE: {
-      //_highlight = false;
+      _pressed = false;
       break;
     }
 
@@ -94,12 +82,13 @@ void Button::DoDraw(drawevent_constptr_t drwev) {
     int content_y1 = iy1 + 2;
     int content_y2 = iy2 - 2;
 
+    defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::ALPHA);
+    defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
+
     ///////////////////////////////
     // draw background
     ///////////////////////////////
 
-    defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::ALPHA);
-    defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
     tgt->PushModColor(_bg_color);
     defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
     primi->RenderQuadAtZ(
@@ -117,45 +106,48 @@ void Button::DoDraw(drawevent_constptr_t drwev) {
     tgt->PopModColor();
 
     ///////////////////////////////
-    // draw button/checkbox area
+    // draw button area (texture or color)
     ///////////////////////////////
 
-    defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
+    // Choose texture based on pressed state
+    lev2::texture_ptr_t active_texture = _pressed ? _down_texture : _up_texture;
 
-    // Highlight color when mouse over
-    fvec4 button_color = _highlight
-        ? fvec4(_bg_color.xyz() * 1.5, 1)
-        : fvec4(_bg_color.xyz() * 0.7, 1);
+    if (active_texture) {
+      // Draw with texture
+      defmtl->SetUIColorMode(lev2::UiColorMode::VTX);
+      //defmtl->setTexture(lev2::ETEXDEST_DIFFUSE, active_texture.get());
+      defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::ALPHA);
 
-    tgt->PushModColor(button_color);
-    primi->RenderQuadAtZ(
-        defmtl.get(),
-        content_x1,   // x0
-        content_x2,   // x1
-        content_y1,   // y0
-        content_y2,   // y1
-        0.0f,         // z
-        0.0f,
-        1.0f, // u0, u1
-        0.0f,
-        1.0f // v0, v1
-    );
-    tgt->PopModColor();
-
-    ///////////////////////////////
-    // draw checkmark if toggled
-    ///////////////////////////////
-
-    if (_mode == ButtonMode::TOGGLE && _toggled) {
-      int check_margin = 4;
-      tgt->PushModColor(_check_color);
+      tgt->PushModColor(fvec4(1, 1, 1, 1));
       primi->RenderQuadAtZ(
           defmtl.get(),
-          content_x1 + check_margin,   // x0
-          content_x2 - check_margin,   // x1
-          content_y1 + check_margin,   // y0
-          content_y2 - check_margin,   // y1
-          0.0f,                        // z
+          content_x1,   // x0
+          content_x2,   // x1
+          content_y1,   // y0
+          content_y2,   // y1
+          0.0f,         // z
+          0.0f,
+          1.0f, // u0, u1
+          0.0f,
+          1.0f // v0, v1
+      );
+      tgt->PopModColor();
+
+      //defmtl->setTexture(lev2::ETEXDEST_DIFFUSE, nullptr);
+    } else {
+      // Draw with color
+      defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
+
+      fvec4 button_color = _pressed ? _down_color : fvec4(_bg_color.xyz() * 0.7f, 1);
+
+      tgt->PushModColor(button_color);
+      primi->RenderQuadAtZ(
+          defmtl.get(),
+          content_x1,   // x0
+          content_x2,   // x1
+          content_y1,   // y0
+          content_y2,   // y1
+          0.0f,         // z
           0.0f,
           1.0f, // u0, u1
           0.0f,

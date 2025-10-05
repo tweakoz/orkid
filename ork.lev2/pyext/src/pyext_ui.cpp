@@ -719,22 +719,15 @@ void pyinit_ui(py::module& module_lev2) {
                 auto layoutitem   = lg->makeChild<ui::Button>(name, color);
                 return layoutitem.as_shared();
               })
-          .def_property(
-              "mode",
-              [](ui::button_ptr_t btn) -> crcstring_ptr_t { //
-                auto crc = std::make_shared<CrcString>(uint64_t(btn->mode()));
-                return crc;
-              },
-              [](ui::button_ptr_t btn, crcstring_ptr_t value) { //
-                btn->setMode(ui::ButtonMode(value->hashed()));
+          .def(
+              "setUpTexture",
+              [](ui::button_ptr_t btn, lev2::texture_ptr_t tex) { //
+                btn->setUpTexture(tex);
               })
-          .def_property(
-              "toggled",
-              [](ui::button_ptr_t btn) -> bool { //
-                return btn->isToggled();
-              },
-              [](ui::button_ptr_t btn, bool val) { //
-                btn->setToggled(val);
+          .def(
+              "setDownTexture",
+              [](ui::button_ptr_t btn, lev2::texture_ptr_t tex) { //
+                btn->setDownTexture(tex);
               })
           .def_property(
               "onPressed",
@@ -746,20 +739,7 @@ void pyinit_ui(py::module& module_lev2) {
                   btn->_onPressed = nullptr;
                 } else {
                   auto pycb       = std::make_shared<py::object>(callback);
-                  btn->_onPressed = [pycb]() { (*pycb)(); };
-                }
-              })
-          .def_property(
-              "onToggled",
-              [](ui::button_ptr_t btn) -> py::object { //
-                return py::none();
-              },
-              [](ui::button_ptr_t btn, py::object callback) { //
-                if (callback.is_none()) {
-                  btn->_onToggled = nullptr;
-                } else {
-                  auto pycb       = std::make_shared<py::object>(callback);
-                  btn->_onToggled = [pycb, btn]() {
+                  btn->_onPressed = [pycb, btn]() {
                     py::gil_scoped_acquire acquire_gil;
                     (*pycb)(btn);
                   };
@@ -782,12 +762,12 @@ void pyinit_ui(py::module& module_lev2) {
                 btn->_bg_color = c;
               })
           .def_property(
-              "check_color",
+              "down_color",
               [](ui::button_ptr_t btn) -> fvec3 { //
-                return btn->_check_color;
+                return btn->_down_color;
               },
               [](ui::button_ptr_t btn, fvec3 c) { //
-                btn->_check_color = c;
+                btn->_down_color = c;
               });
   type_codec->registerStdCodec<ui::button_ptr_t>(button_type);
   /////////////////////////////////////////////////////////////////////////////////
