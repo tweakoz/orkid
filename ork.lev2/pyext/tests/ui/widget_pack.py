@@ -64,8 +64,8 @@ class PackWidgets(object):
 
     self.hpack2 = self.vpack1.makeChild( uiclass=lev2.ui.HorizontalPack, args=["hpack2"])
     self.hpack2.margin = 3
-    self.hpack2.item_width = 72
-    self.hpack2.fill = False
+    #self.hpack2.item_width = 72
+    self.hpack2.uniform = True
     chk_col = vec3(0.25)
     self.chk1 = self.hpack2.makeChild( uiclass=lev2.ui.Checkbox, args=["chk1  ",chk_col] )
     self.chk2 = self.hpack2.makeChild( uiclass=lev2.ui.Checkbox, args=["chk2  ",chk_col] )

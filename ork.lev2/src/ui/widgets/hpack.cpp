@@ -25,18 +25,33 @@ void HorizontalPack::_doOnResized() {
 /////////////////////////////////////////////////////////////////////////
 void HorizontalPack::DoLayout() {
 
-  size_t X = 0;
-  // Layout all children horizontally
   size_t num_children = _children.size();
-  for( size_t i=0; i<num_children; i++ ){
-    auto child = _children[i];
-    if( _fill && (i==num_children-1) ){
-      int remaining_w = _geometry._w - X;
-      child->SetRect(X, 0, remaining_w, _geometry._h);
-      break;
+  if (num_children == 0) return;
+
+  if (_uniform) {
+    // Distribute children uniformly across width, respecting margin
+    int total_margin = _margin * (num_children - 1);
+    int available_width = _geometry._w - total_margin;
+    int child_width = available_width / num_children;
+    int x = 0;
+    for (size_t i = 0; i < num_children; i++) {
+      auto child = _children[i];
+      child->SetRect(x, 0, child_width, _geometry._h);
+      x += child_width + _margin;
     }
-    child->SetRect(X, 0, _item_width, _geometry._h);
-    X += _item_width + _margin;
+  } else {
+    // Original behavior: use _item_width and _margin
+    size_t X = 0;
+    for (size_t i = 0; i < num_children; i++) {
+      auto child = _children[i];
+      if (_fill && (i == num_children - 1)) {
+        int remaining_w = _geometry._w - X;
+        child->SetRect(X, 0, remaining_w, _geometry._h);
+        break;
+      }
+      child->SetRect(X, 0, _item_width, _geometry._h);
+      X += _item_width + _margin;
+    }
   }
 }
 
@@ -45,12 +60,34 @@ Widget* HorizontalPack::doRouteUiEvent(event_constptr_t ev) {
   // Convert event coordinates to local space
   int localX = ev->miX - _geometry._x;
   int localY = ev->miY - _geometry._y;
+
+  size_t num_children = _children.size();
+  if (num_children == 0) return nullptr;
+
   // find which child (if any) the event is inside
-  int child_index = localX / (_item_width + _margin);
-  if (child_index >= 0 && child_index < int(_children.size())) {
-    auto child = _children[child_index];
-    if (child->IsEventInside(ev)) {
-      return child->doRouteUiEvent(ev);
+  if (_uniform) {
+    int total_margin = _margin * (num_children - 1);
+    int available_width = _geometry._w - total_margin;
+    int child_width = available_width / num_children;
+    int x = 0;
+    for (size_t i = 0; i < num_children; i++) {
+      auto child = _children[i];
+      // Check if event is within this child's bounds
+      if (localX >= x && localX < x + child_width) {
+        if (child->IsEventInside(ev)) {
+          return child->doRouteUiEvent(ev);
+        }
+        break;
+      }
+      x += child_width + _margin;
+    }
+  } else {
+    int child_index = localX / (_item_width + _margin);
+    if (child_index >= 0 && child_index < int(num_children)) {
+      auto child = _children[child_index];
+      if (child->IsEventInside(ev)) {
+        return child->doRouteUiEvent(ev);
+      }
     }
   }
   return nullptr;

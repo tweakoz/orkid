@@ -67,6 +67,7 @@ struct HorizontalPack : public Group {
   int _margin = 0;
   int _item_width = 32;
   bool _fill = false;
+  bool _uniform = false;  // Distribute children uniformly across width
 
 protected:
   // Override from Widget

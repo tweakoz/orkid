@@ -636,6 +636,14 @@ void pyinit_ui(py::module& module_lev2) {
               },
               [](ui::hpack_ptr_t hpack, bool b) { //
                 hpack->_fill = b;
+              })
+          .def_property(
+              "uniform",
+              [](ui::hpack_ptr_t hpack) -> bool { //
+                return hpack->_uniform;
+              },
+              [](ui::hpack_ptr_t hpack, bool b) { //
+                hpack->_uniform = b;
               });
   type_codec->registerStdCodec<ui::hpack_ptr_t>(hpack_type);
   /////////////////////////////////////////////////////////////////////////////////
