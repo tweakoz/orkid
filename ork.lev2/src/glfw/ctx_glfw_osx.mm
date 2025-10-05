@@ -38,6 +38,22 @@ bool _HIDPI() {
   // determine if we are on a retina display
   return false;
 }
+void activateWindow(GLFWwindow *window) {
+   auto ctx = (CtxGLFW*)glfwGetWindowUserPointer(window);
+    //printf("MacOs Activate Window<%p> w<%d> h<%d>\n", window, ctx->_width, ctx->_height);
+    id nsWindow = glfwGetCocoaWindow(window);
+    //////////////////////
+    // we need to set the content view as first responder
+    // in order to get mouse and keyboard events
+    // on first focus
+    //////////////////////
+    auto contentView = (NSView *) [nsWindow contentView];
+    [NSApp activateIgnoringOtherApps:YES];
+    [nsWindow makeKeyAndOrderFront:nil];
+    [nsWindow makeFirstResponder:contentView];
+    [nsWindow makeKeyWindow];
+    [nsWindow makeMainWindow];
+}
 void setAlwaysOnTop(GLFWwindow *window) {
     id glfwWindow = glfwGetCocoaWindow(window);
     //id nsWindow = ((id(*)(id, SEL))objc_msgSend)(glfwWindow, sel_registerName("window"));

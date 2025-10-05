@@ -36,6 +36,8 @@ static logchannel_ptr_t logchan_glfw = logger()->configureChannel("GLFW", fvec3(
 void setAlwaysOnTop(GLFWwindow* window);
 void recomputeHIDPI(GLFWwindow* window);
 void windowToFront(GLFWwindow* window);
+void activateWindow(GLFWwindow *window);
+
 ///////////////////////////////////////////////////////////////////////////////
 static CtxGLFW* _gctx = nullptr;
 ///////////////////////////////////////////////////////////////////////////////
@@ -161,7 +163,7 @@ static void _glfw_callback_focusChanged(GLFWwindow* window, int focus) {
   ////////////////////////
   // ImGui_ImplGlfw_WindowFocusCallback(window, focus);
   ////////////////////////
-  // printf("fb focus<%p %d>", window, focus);
+  printf("fb focus<%p %d>", window, focus);
 }
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_keyboard(GLFWwindow* window, int key, int scancode, int action, int modifiers) {
@@ -223,6 +225,7 @@ void CtxGLFW::_on_callback_scroll(double xoffset, double yoffset) {
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_cursor(GLFWwindow* window, double xoffset, double yoffset) {
   auto ctxbase = (CtxGLFW*)glfwGetWindowUserPointer(window);
+  //printf("cursor<%p %d %d>\n", window, xoffset, yoffset);
   if (nullptr == ctxbase)
     return;
   auto sink = ctxbase->_eventSINK;
@@ -287,6 +290,7 @@ void fillEventCursor(
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_enterleave(GLFWwindow* window, int entered) {
   auto ctxbase = (CtxGLFW*)glfwGetWindowUserPointer(window);
+  //printf("enterleave<%p %d>\n", window, entered);
   if (nullptr == ctxbase)
     return;
   auto sink = ctxbase->_eventSINK;
@@ -465,8 +469,13 @@ void CtxGLFW::Show() {
     // Set window hints for offscreen mode to prevent focus stealing
     if (_appinitdata->_offscreen) {
       glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-      glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
-      glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
+      glfwWindowHint(GLFW_FOCUSED, GLFW_TRUE);
+      glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
+    }
+    else{
+      glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
+      glfwWindowHint(GLFW_FOCUSED, GLFW_TRUE);
+      glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
     }
 
     _glfwWindow = glfwCreateWindow(
@@ -484,7 +493,6 @@ void CtxGLFW::Show() {
       glfwSetWindowAttrib(_glfwWindow, GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
       // glfwSetInputMode(_glfwWindow, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
       // glfwSetInputMode(_glfwWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-      glfwFocusWindow(_glfwWindow);
     }
 
     glfwSetWindowRefreshCallback(_glfwWindow, _glfw_callback_refresh);
@@ -569,10 +577,13 @@ void CtxGLFW::Show() {
   }
 
 #ifdef __APPLE__
+  glfwPollEvents(); 
   if (not _appinitdata->_offscreen) {
     windowToFront(_glfwWindow);
+    activateWindow(_glfwWindow);
   }
 #endif
+
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::Hide() {
@@ -611,6 +622,8 @@ void CtxGLFW::_runloopBegin() {
     _target->gpuInit(); // Initialize Context GPU resources
     _onGpuInit(_target);
   }
+
+  activateWindow(_glfwWindow);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::_runloopIter() {
@@ -721,7 +734,7 @@ void CtxGLFW::_doEnqueueWindowResize(int w, int h) {
     glfwSetWindowSize(_glfwWindow, w, h);
     glfwFocusWindow(_glfwWindow);
  };
-  opq::mainSerialQueue()->enqueue(op);
+  //opq::mainSerialQueue()->enqueue(op);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::SlotRepaint() {
@@ -844,8 +857,8 @@ GLFWwindow* CtxGLFW::_apiInitGL() {
 
     // Prevent focus stealing for offscreen window
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-    glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
-    glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
+    glfwWindowHint(GLFW_FOCUSED, GLFW_TRUE);
+    glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
 
     offscreen_window = glfwCreateWindow(
         32,      //
@@ -882,8 +895,8 @@ GLFWwindow* CtxGLFW::_apiInitVK() {
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   // Hide the window and prevent focus for offscreen mode
   glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-  glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
-  glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
+  glfwWindowHint(GLFW_FOCUSED, GLFW_TRUE);
+  glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
   GLFWwindow* offscreen_window = glfwCreateWindow(
       32,      //
       32,      //
