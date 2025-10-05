@@ -14,7 +14,7 @@ from orkengine import lev2
 
 ################################################################################
 
-class LayoutTest(object):
+class PackWidgets(object):
 
   def __init__(self):
     super().__init__()
@@ -29,7 +29,6 @@ class LayoutTest(object):
     self.ezapp.topWidget.enableUiDraw()
 
     lg_group = self.ezapp.topLayoutGroup
-    #lg_group.margin = 4
 
     self.griditems = lg_group.makeGrid(
       width=2,
@@ -42,17 +41,38 @@ class LayoutTest(object):
     self.lg_group = lg_group
     lg_group.margin = 4
 
+    pk1 = lg_group.makeChild( uiclass=lev2.ui.VerticalPack, args=["vpack1"])
+    self.lg_group.replaceChild( self.griditems[0].layout, pk1 )
+    self.vpack1 = pk1.widget
+    self.vpack1.margin = 3
+    self.vpack1.item_height = 28
+
+    box1 = self.vpack1.makeChild( uiclass=lev2.ui.LineEdit, args=["box1  ","text",vec3(0.5,0.3,0.3)] )
+    box2 = self.vpack1.makeChild( uiclass=lev2.ui.LineEdit, args=["box2  ","text",vec3(0.3,0.5,0.3)] )
+    box3 = self.vpack1.makeChild( uiclass=lev2.ui.LineEdit, args=["box3  ","text",vec3(0.3,0.3,0.5)] )
+
+    self.hpack1 = self.vpack1.makeChild( uiclass=lev2.ui.HorizontalPack, args=["hpack1"])
+    self.hpack1.margin = 3
+    self.hpack1.item_width = 192
+    self.hpack1.fill = True
+    
+    box4 = self.hpack1.makeChild( uiclass=lev2.ui.LineEdit, args=["box1  ","text",vec3(0.5,0.5,0.5)] )
+    box5 = self.hpack1.makeChild( uiclass=lev2.ui.LineEdit, args=["box2  ","text",vec3(0.5,0.0,0.5)] )
+
+    ############################################
+    
     def onCtrlC(signum, frame):
       print("signalling EXIT to ezapp")
       self.ezapp.signalExit()
 
     signal.signal(signal.SIGINT, onCtrlC)
 
+
   ##############################################
 
   def onGpuInit(self,ctx):
     pass
-
+   
   ################################################
 
   def onUpdate(self,updinfo):
@@ -65,4 +85,4 @@ class LayoutTest(object):
 
 ###############################################################################
 
-LayoutTest().ezapp.mainThreadLoop()
+PackWidgets().ezapp.mainThreadLoop()

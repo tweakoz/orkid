@@ -35,6 +35,7 @@ struct Group : public Widget {
   Widget* doRouteUiEvent(event_constptr_t Ev) override;
   /////////////////////////////
   void drawChildren(ui::drawevent_constptr_t drwev);
+  size_t numChildren() const;
   /////////////////////////////
   std::set<Widget*> _snapped;
   std::vector<widget_ptr_t> _children;

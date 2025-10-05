@@ -34,11 +34,14 @@ struct LabelBox;
 struct TextBox;
 struct TabWidget;
 struct ImageView;
+struct LineEdit;
 struct DrawEvent;
 struct MultiTouchPoint;
 struct IWidgetEventFilter;
 struct LayoutGroup;
 struct HandlerResult;
+struct VerticalPack;
+struct HorizontalPack;
 
 using context_ptr_t     = std::shared_ptr<Context>;
 using widget_ptr_t      = std::shared_ptr<Widget>;
@@ -53,8 +56,11 @@ using eventfilter_ptr_t = std::shared_ptr<IWidgetEventFilter>;
 using event_ptr_t       = std::shared_ptr<Event>;
 using event_constptr_t  = std::shared_ptr<const Event>;
 using labelbox_ptr_t    = std::shared_ptr<LabelBox>;
-using textbox_ptr_t    = std::shared_ptr<TextBox>;
+using textbox_ptr_t     = std::shared_ptr<TextBox>;
 using imgview_ptr_t     = std::shared_ptr<ImageView>;
+using lineedit_ptr_t    = std::shared_ptr<LineEdit>;
+using vpack_ptr_t       = std::shared_ptr<VerticalPack>;
+using hpack_ptr_t       = std::shared_ptr<HorizontalPack>;
 ////////////////////////////////////////////////////////////////////////////////
 
 using evrouter_t  = std::function<Widget*(event_constptr_t ev)>;

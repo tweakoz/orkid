@@ -16,6 +16,10 @@ Group::Group(const std::string& name, int x, int y, int w, int h)
 Group::~Group() {
 }
 /////////////////////////////////////////////////////////////////////////
+size_t Group::numChildren() const {
+  return _children.size();
+}
+/////////////////////////////////////////////////////////////////////////
 void Group::visitHeirarchy(visit_fn_t vfn) {
   std::stack<Widget*> stk;
   stk.push(this);

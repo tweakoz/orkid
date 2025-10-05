@@ -26,6 +26,7 @@ public:
   fvec4 _fg_color;
   std::string _value;
   std::string _original_value;
+  bool _highlight = false;
   
 private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;

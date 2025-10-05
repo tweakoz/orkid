@@ -17,7 +17,8 @@ LineEdit::LineEdit(
     int w,
     int h)
     : Widget(name, x, y, w, h)
-    , _fg_color(color) {
+    , _bg_color(color) {
+      _fg_color = fvec4(1,1,1,1);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void LineEdit::setValue(const std::string& val) {
@@ -32,12 +33,14 @@ HandlerResult LineEdit::DoOnUiEvent(event_constptr_t cev) {
     case EventCode::KEY_REPEAT: {
       int key = cev->miKeyCode;
       printf("key<%d>\n", key);
+      if(_highlight)
       switch (key) {
         case 256: // esc
           _value = _original_value;
           break;
         case 257: // enter
           rval._widget_finished = true;
+          _highlight = false;
           break;
         case 259: // backspace
           if (_value.length())
@@ -53,10 +56,21 @@ HandlerResult LineEdit::DoOnUiEvent(event_constptr_t cev) {
       rval.setHandled(this);
       break;
     }
+    case EventCode::PUSH: {
+      _highlight = true;
+      break;
+    }
     case EventCode::DOUBLECLICK: {
         rval.setHandled(this);
         rval._widget_finished = true;
         break;
+    }
+    case EventCode::MOUSE_ENTER:{
+      break;
+    }
+    case EventCode::MOUSE_LEAVE:{
+      _highlight = false;
+      break;
     }
     case EventCode::PASTE_TEXT: {
       _value = cev->_paste_text;
@@ -77,6 +91,10 @@ void LineEdit::DoDraw(drawevent_constptr_t drwev) {
   auto primi = tgt->PRI();
   auto defmtl = lev2::defaultUIMaterial();
 
+  ork::lev2::FontMan::PushFont("i14");
+  int sw = lev2::FontMan::stringWidth(_name.length());
+  int label_w = sw + 8;
+
   mtxi->PushUIMatrix();
   {
     int ix1, iy1, ix2, iy2, ixc, iyc;
@@ -85,15 +103,6 @@ void LineEdit::DoDraw(drawevent_constptr_t drwev) {
     iy2 = iy1 + _geometry._h;
     ixc = ix1 + (_geometry._w >> 1);
     iyc = iy1 + (_geometry._h >> 1);
-
-    if (0)
-      printf(
-          "drawlineedit<%s> xy1<%d,%d> xy2<%d,%d>\n", //
-          _name.c_str(),
-          ix1,
-          iy1,
-          ix2,
-          iy2);
 
     defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::ALPHA);
     defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
@@ -113,20 +122,77 @@ void LineEdit::DoDraw(drawevent_constptr_t drwev) {
     );
     tgt->PopModColor();
 
+    ///////////////////////////////
+    // draw text content box
+    ///////////////////////////////
+
+    defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
+
+    if(_highlight){
+      tgt->PushModColor(fvec4(_bg_color.xyz()*2.0, 1));
+      primi->RenderQuadAtZ(
+          defmtl.get(),
+          ix1 + label_w,  // x0
+          ix2 - 2,          // x1
+          iy1 + 2,          // y0
+          iy2 - 2,          // y1
+          0.0f,             // z
+          0.0f,
+          1.0f, // u0, u1
+          0.0f,
+          1.0f // v0, v1
+      );
+      tgt->PopModColor();
+    }
+
+    tgt->PushModColor(fvec4(_bg_color.xyz()*0.5, 1));
+    primi->RenderQuadAtZ(
+        defmtl.get(),
+        ix1 + label_w+1,  // x0
+        ix2 - 3,         // x1
+        iy1 + 3,         // y0
+        iy2 - 3,         // y1
+        0.0f,            // z
+        0.0f,
+        1.0f, // u0, u1
+        0.0f,
+        1.0f // v0, v1
+    );
+    tgt->PopModColor();
+
+    ///////////////////////////////
+    // draw label 
+    ///////////////////////////////
+
     tgt->PushModColor(_fg_color);
-    ork::lev2::FontMan::PushFont("i14");
+
+    if (_name.length()) {
+      lev2::FontMan::beginTextBlock(tgt, _name.length());
+      lev2::FontMan::DrawText(
+          tgt, //
+          ix1 + 4,
+          iyc - 6,
+          _name.c_str());
+      lev2::FontMan::endTextBlock(tgt);
+    }
+
+    ///////////////////////////////
+    // draw text content
+    ///////////////////////////////
+
     lev2::FontMan::beginTextBlock(tgt, _value.length());
-    int sw = lev2::FontMan::stringWidth(_value.length());
     lev2::FontMan::DrawText(
         tgt, //
-        ixc - (sw >> 1),
+        ix1 + label_w + 4,
         iyc - 6,
         _value.c_str());
     lev2::FontMan::endTextBlock(tgt);
-    ork::lev2::FontMan::PopFont();
+
+
     tgt->PopModColor();
   }
   mtxi->PopUIMatrix();
+  ork::lev2::FontMan::PopFont();
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::ui

@@ -14,6 +14,8 @@
 #include <ork/lev2/ui/layoutgroup.inl>
 #include <ork/lev2/ui/anchor.h>
 #include <ork/lev2/ui/tabs.h>
+#include <ork/lev2/ui/pack.h>
+#include <ork/lev2/ui/lineedit.h>
 #include <ork/lev2/ui/imgview.h>
 #include <ork/lev2/ui/ged/ged_surface.h>
 #include <ork/lev2/ui/popups.inl>
@@ -456,6 +458,12 @@ void pyinit_ui(py::module& module_lev2) {
                 auto layoutitem   = lg->makeChild<ui::TabWidget>(name);
                 return layoutitem.as_shared();
               })
+              .def_static("wfactory", [type_codec](py::list py_args) -> ui::tabwidget_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto tabs          = std::make_shared<ui::TabWidget>(name);
+                return tabs;
+              })
           .def("makeChild", [](ui::tabwidget_ptr_t tabs, py::kwargs kwargs) -> ui::widget_ptr_t { //
             ui::widget_ptr_t rval;
             if (kwargs) {
@@ -483,24 +491,205 @@ void pyinit_ui(py::module& module_lev2) {
           });
   type_codec->registerStdCodec<ui::tabwidget_ptr_t>(tabsw_type);
   /////////////////////////////////////////////////////////////////////////////////
+  auto vpack_type = //
+      py::class_<ui::VerticalPack, ui::Group, ui::vpack_ptr_t>(uimodule, "VerticalPack")
+          .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto layoutitem   = lg->makeChild<ui::VerticalPack>(name);
+                return layoutitem.as_shared();
+              })
+              .def_static("wfactory", [type_codec](py::list py_args) -> ui::vpack_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto box          = std::make_shared<ui::VerticalPack>(name);
+                return box;
+              })
+          .def(
+              "makeChild",
+              [](ui::vpack_ptr_t tabs, py::kwargs kwargs) -> ui::widget_ptr_t { //
+                ui::widget_ptr_t rval;
+                if (kwargs) {
+                  py::list args;
+                  py::object wfactory;
+                  int args_parsed = 0;
+                  for (auto item : kwargs) {
+                    auto key = py::cast<std::string>(item.first);
+                    if (key == "uiclass") {
+                      auto uiclass_obj  = py::cast<py::object>(item.second);
+                      bool has_wfactory = py::hasattr(uiclass_obj, "wfactory");
+                      OrkAssert(has_wfactory);
+                      wfactory = uiclass_obj.attr("wfactory");
+                      args_parsed++;
+                    } else if (key == "args") {
+                      args = py::cast<py::list>(item.second);
+                      args_parsed++;
+                    }
+                  }
+                  OrkAssert(args_parsed == 2);
+                  rval = py::cast<ui::widget_ptr_t>(wfactory(args));
+                  tabs->addChild(rval);
+                }
+                return rval;
+              })
+          .def_property(
+              "margin",
+              [](ui::vpack_ptr_t vpack) -> int { //
+                return vpack->_margin;
+              },
+              [](ui::vpack_ptr_t vpack, int m) { //
+                vpack->_margin = m;
+              })
+          .def_property(
+              "item_height",
+              [](ui::vpack_ptr_t vpack) -> int { //
+                return vpack->_item_height;
+              },
+              [](ui::vpack_ptr_t vpack, int h) { //
+                vpack->_item_height = h;
+              });
+  type_codec->registerStdCodec<ui::vpack_ptr_t>(vpack_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto hpack_type = //
+      py::class_<ui::HorizontalPack, ui::Group, ui::hpack_ptr_t>(uimodule, "HorizontalPack")
+          .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto layoutitem   = lg->makeChild<ui::HorizontalPack>(name);
+                return layoutitem.as_shared();
+              })
+              .def_static("wfactory", [type_codec](py::list py_args) -> ui::hpack_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto box          = std::make_shared<ui::HorizontalPack>(name);
+                return box;
+              })
+          .def(
+              "makeChild",
+              [](ui::hpack_ptr_t hpack, py::kwargs kwargs) -> ui::widget_ptr_t { //
+                ui::widget_ptr_t rval;
+                if (kwargs) {
+                  py::list args;
+                  py::object wfactory;
+                  int args_parsed = 0;
+                  for (auto item : kwargs) {
+                    auto key = py::cast<std::string>(item.first);
+                    if (key == "uiclass") {
+                      auto uiclass_obj  = py::cast<py::object>(item.second);
+                      bool has_wfactory = py::hasattr(uiclass_obj, "wfactory");
+                      OrkAssert(has_wfactory);
+                      wfactory = uiclass_obj.attr("wfactory");
+                      args_parsed++;
+                    } else if (key == "args") {
+                      args = py::cast<py::list>(item.second);
+                      args_parsed++;
+                    }
+                  }
+                  OrkAssert(args_parsed == 2);
+                  rval = py::cast<ui::widget_ptr_t>(wfactory(args));
+                  hpack->addChild(rval);
+                }
+                return rval;
+              })
+          .def_property(
+              "margin",
+              [](ui::hpack_ptr_t hpack) -> int { //
+                return hpack->_margin;
+              },
+              [](ui::hpack_ptr_t hpack, int m) { //
+                hpack->_margin = m;
+              })
+          .def_property(
+              "item_width",
+              [](ui::hpack_ptr_t hpack) -> int { //
+                return hpack->_item_width;
+              },
+              [](ui::hpack_ptr_t hpack, int w) { //
+                hpack->_item_width = w;
+              })
+          .def_property("fill", [](ui::hpack_ptr_t hpack) -> bool { //
+                            return hpack->_fill;
+                          },
+                          [](ui::hpack_ptr_t hpack, bool b) { //
+                            hpack->_fill = b;
+                          });
+  type_codec->registerStdCodec<ui::hpack_ptr_t>(hpack_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // LineEdit
+  auto lineedit_type = //
+      py::class_<ui::LineEdit, ui::Widget, ui::lineedit_ptr_t>(uimodule, "LineEdit")
+          .def_static(
+              "wfactory",
+              [type_codec](py::list py_args) -> ui::lineedit_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto deftext      = decoded_args[1].get<std::string>();
+                auto color        = decoded_args[2].get<fvec3>();
+                auto le           = std::make_shared<ui::LineEdit>(name,color);
+                le->setValue(deftext);
+                return le;
+              })
+          .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto deftext      = decoded_args[1].get<std::string>();
+                auto color        = decoded_args[2].get<fvec3>();
+                auto layoutitem   = lg->makeChild<ui::LineEdit>(name,color);
+                layoutitem.typedWidget()->setValue(deftext);
+                return layoutitem.as_shared();
+              })
+          .def_property(
+              "text",
+              [](ui::lineedit_ptr_t le) -> std::string { //
+                return le->_value;
+              },
+              [](ui::lineedit_ptr_t le, std::string txt) { //
+                le->setValue(txt);
+              })
+              .def_property(
+              "fg_color",
+              [](ui::lineedit_ptr_t le) -> fvec3 { //
+                return le->_fg_color;
+              },
+              [](ui::lineedit_ptr_t le, fvec3 c) { //
+                le->_fg_color = c;
+              })
+          .def_property(
+              "bg_color", 
+              [](ui::lineedit_ptr_t le) -> fvec3 { //
+                return le->_bg_color;
+              },
+              [](ui::lineedit_ptr_t le, fvec3 c) { //
+                le->_bg_color = c;
+              });
+  type_codec->registerStdCodec<ui::lineedit_ptr_t>(lineedit_type);
+  /////////////////////////////////////////////////////////////////////////////////
   auto imgview_type = //
       py::class_<ui::ImageView, ui::Widget, ui::imgview_ptr_t>(uimodule, "ImageView")
           .def_static(
               "wfactory",
               [type_codec](py::list py_args) -> ui::imgview_ptr_t { //
-                auto decoded_args = type_codec->decodeList(py_args);
-                auto name         = decoded_args[0].get<std::string>();
-                auto defcolor     = decoded_args[1].get<fvec4>();
-                auto imgview      = std::make_shared<ui::ImageView>(name);
+                auto decoded_args       = type_codec->decodeList(py_args);
+                auto name               = decoded_args[0].get<std::string>();
+                auto defcolor           = decoded_args[1].get<fvec4>();
+                auto imgview            = std::make_shared<ui::ImageView>(name);
                 imgview->_default_color = defcolor;
                 return imgview;
               })
-          .def_static("uifactory", [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
-            auto decoded_args = type_codec->decodeList(py_args);
-            auto name         = decoded_args[0].get<std::string>();
-            auto layoutitem   = lg->makeChild<ui::ImageView>(name);
-            return layoutitem.as_shared();
-          })
+          .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto layoutitem   = lg->makeChild<ui::ImageView>(name);
+                return layoutitem.as_shared();
+              })
           .def_property(
               "default_color",
               [](ui::imgview_ptr_t imgview) -> fvec4 { //
@@ -509,7 +698,7 @@ void pyinit_ui(py::module& module_lev2) {
               [](ui::imgview_ptr_t imgview, fvec4 c) { //
                 imgview->_default_color = c;
               })
-              .def_property(
+          .def_property(
               "maintain_aspect_ratio",
               [](ui::imgview_ptr_t imgview) -> bool { //
                 return imgview->_maintain_aspect_ratio;
@@ -517,9 +706,11 @@ void pyinit_ui(py::module& module_lev2) {
               [](ui::imgview_ptr_t imgview, bool b) { //
                 imgview->_maintain_aspect_ratio = b;
               })
-          .def("setImage", [](ui::imgview_ptr_t imgview, image_ptr_t img) { //
-            imgview->setImage(img);
-          })
+          .def(
+              "setImage",
+              [](ui::imgview_ptr_t imgview, image_ptr_t img) { //
+                imgview->setImage(img);
+              })
           .def("setImageProvider", [](ui::imgview_ptr_t imgview, image_provider_ptr_t imgprov) { //
             imgview->setImageProvider(imgprov);
           });
