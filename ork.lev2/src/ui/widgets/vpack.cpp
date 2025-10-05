@@ -27,7 +27,14 @@ void VerticalPack::DoLayout() {
 
   size_t Y = 0;
   // Layout all children to fill the content area (but we'll only draw the active one)
-  for (auto& child : _children) {
+  size_t num_children = _children.size();
+  for( size_t i=0; i<num_children; i++ ){
+    auto child = _children[i];
+    if( _fill && (i==num_children-1) ){
+      int remaining_h = _geometry._h - Y;
+      child->SetRect(0, Y, _geometry._w, remaining_h);
+      break;
+    }
     child->SetRect(0, Y, _geometry._w, _item_height);
     Y += _item_height + _margin;
   }
@@ -89,7 +96,8 @@ void VerticalPack::DoDraw(drawevent_constptr_t drwev) {
   int scissor_x = _geometry._x;
   int scissor_y = _geometry._y;
   int scissor_w = _geometry._w;
-  int scissor_h = num_children*(_item_height+_margin);
+  int scissor_h = _geometry._h;
+  //int scissor_h = num_children*(_item_height+_margin);
   scissor_h = std::min(scissor_h, _geometry._h);
 
   ///////////////////////////////////

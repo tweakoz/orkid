@@ -110,9 +110,26 @@ HandlerResult ComboBox::DoOnUiEvent(event_constptr_t cev) {
       if (local_x < BUTTON_WIDTH) {
         _decrementSelection();
       }
-      // Right button (+) - increment
-      else if (local_x > content._w - BUTTON_WIDTH) {
+      // Second left button (+) - increment
+      else if (local_x >= BUTTON_WIDTH && local_x < BUTTON_WIDTH * 2) {
         _incrementSelection();
+      }
+      // Content area - start drag
+      else if (local_x >= BUTTON_WIDTH * 2 && _items.size() > 0) {
+        _dragging = true;
+        // Set selection based on proportional position
+        int text_area_width = content._w - (BUTTON_WIDTH * 2 + 4);
+        int text_area_x = local_x - (BUTTON_WIDTH * 2 + 4);
+        float unit = float(text_area_x) / float(text_area_width);
+        unit = std::clamp(unit, 0.0f, 1.0f);
+        int new_index = int(unit * (_items.size() - 1) + 0.5f);
+        if (new_index != _selected_index) {
+          _selected_index = new_index;
+          _scroll_pos = (_selected_index << 4);
+          if (_onSelectionChanged) {
+            _onSelectionChanged();
+          }
+        }
       }
 
       rval.setHandled(this);
@@ -135,6 +152,35 @@ HandlerResult ComboBox::DoOnUiEvent(event_constptr_t cev) {
         }
         rval.setHandled(this);
       }
+      break;
+    }
+
+    case EventCode::DRAG: {
+      if (_dragging && _items.size() > 0) {
+        auto content = contentRect();
+        int local_x = cev->miX - _geometry._x - content._x;
+
+        // Set selection based on proportional position
+        int text_area_width = content._w - (BUTTON_WIDTH * 2 + 4);
+        int text_area_x = local_x - (BUTTON_WIDTH * 2 + 4);
+        float unit = float(text_area_x) / float(text_area_width);
+        unit = std::clamp(unit, 0.0f, 1.0f);
+        int new_index = int(unit * (_items.size() - 1) + 0.5f);
+        if (new_index != _selected_index) {
+          _selected_index = new_index;
+          _scroll_pos = (_selected_index << 4);
+          if (_onSelectionChanged) {
+            _onSelectionChanged();
+          }
+        }
+        rval.setHandled(this);
+      }
+      break;
+    }
+
+    case EventCode::RELEASE: {
+      _dragging = false;
+      rval.setHandled(this);
       break;
     }
 
@@ -263,8 +309,8 @@ void ComboBox::DoDraw(drawevent_constptr_t drwev) {
     // draw inc button (+)
     ///////////////////////////////
 
-    int btn_inc_x2 = content_x2 - 2;
-    int btn_inc_x1 = btn_inc_x2 - BUTTON_WIDTH;
+    int btn_inc_x1 = btn_dec_x2 + 2;
+    int btn_inc_x2 = btn_inc_x1 + BUTTON_WIDTH;
 
     tgt->PushModColor(_button_color);
     primi->RenderQuadAtZ(
@@ -298,10 +344,10 @@ void ComboBox::DoDraw(drawevent_constptr_t drwev) {
     lev2::FontMan::DrawText(tgt, btn_inc_x1 + 5, iyc - 6, "+");
     lev2::FontMan::endTextBlock(tgt);
 
-    // Selected item text (center)
+    // Selected item text (after both buttons)
     std::string text = selectedItem();
     if (!text.empty()) {
-      int text_x = btn_dec_x2 + 8;
+      int text_x = btn_inc_x2 + 8;
       lev2::FontMan::beginTextBlock(tgt, text.length());
       lev2::FontMan::DrawText(tgt, text_x, iyc - 6, text.c_str());
       lev2::FontMan::endTextBlock(tgt);

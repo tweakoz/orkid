@@ -32,6 +32,7 @@ struct VerticalPack : public Group {
 
   int _margin = 0;
   int _item_height = 32;
+  bool _fill = false;
 
 protected:
   // Override from Widget

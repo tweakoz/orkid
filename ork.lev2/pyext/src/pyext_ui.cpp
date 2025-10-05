@@ -462,10 +462,12 @@ void pyinit_ui(py::module& module_lev2) {
                 auto layoutitem   = lg->makeChild<ui::TabWidget>(name);
                 return layoutitem.as_shared();
               })
-              .def_static("wfactory", [type_codec](py::list py_args) -> ui::tabwidget_ptr_t { //
+          .def_static(
+              "wfactory",
+              [type_codec](py::list py_args) -> ui::tabwidget_ptr_t { //
                 auto decoded_args = type_codec->decodeList(py_args);
                 auto name         = decoded_args[0].get<std::string>();
-                auto tabs          = std::make_shared<ui::TabWidget>(name);
+                auto tabs         = std::make_shared<ui::TabWidget>(name);
                 return tabs;
               })
           .def("makeChild", [](ui::tabwidget_ptr_t tabs, py::kwargs kwargs) -> ui::widget_ptr_t { //
@@ -505,7 +507,9 @@ void pyinit_ui(py::module& module_lev2) {
                 auto layoutitem   = lg->makeChild<ui::VerticalPack>(name);
                 return layoutitem.as_shared();
               })
-              .def_static("wfactory", [type_codec](py::list py_args) -> ui::vpack_ptr_t { //
+          .def_static(
+              "wfactory",
+              [type_codec](py::list py_args) -> ui::vpack_ptr_t { //
                 auto decoded_args = type_codec->decodeList(py_args);
                 auto name         = decoded_args[0].get<std::string>();
                 auto box          = std::make_shared<ui::VerticalPack>(name);
@@ -553,6 +557,14 @@ void pyinit_ui(py::module& module_lev2) {
               },
               [](ui::vpack_ptr_t vpack, int h) { //
                 vpack->_item_height = h;
+              })
+          .def_property(
+              "fill",
+              [](ui::vpack_ptr_t vpack) -> bool { //
+                return vpack->_fill;
+              },
+              [](ui::vpack_ptr_t vpack, bool b) { //
+                vpack->_fill = b;
               });
   type_codec->registerStdCodec<ui::vpack_ptr_t>(vpack_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -566,7 +578,9 @@ void pyinit_ui(py::module& module_lev2) {
                 auto layoutitem   = lg->makeChild<ui::HorizontalPack>(name);
                 return layoutitem.as_shared();
               })
-              .def_static("wfactory", [type_codec](py::list py_args) -> ui::hpack_ptr_t { //
+          .def_static(
+              "wfactory",
+              [type_codec](py::list py_args) -> ui::hpack_ptr_t { //
                 auto decoded_args = type_codec->decodeList(py_args);
                 auto name         = decoded_args[0].get<std::string>();
                 auto box          = std::make_shared<ui::HorizontalPack>(name);
@@ -615,12 +629,14 @@ void pyinit_ui(py::module& module_lev2) {
               [](ui::hpack_ptr_t hpack, int w) { //
                 hpack->_item_width = w;
               })
-          .def_property("fill", [](ui::hpack_ptr_t hpack) -> bool { //
-                            return hpack->_fill;
-                          },
-                          [](ui::hpack_ptr_t hpack, bool b) { //
-                            hpack->_fill = b;
-                          });
+          .def_property(
+              "fill",
+              [](ui::hpack_ptr_t hpack) -> bool { //
+                return hpack->_fill;
+              },
+              [](ui::hpack_ptr_t hpack, bool b) { //
+                hpack->_fill = b;
+              });
   type_codec->registerStdCodec<ui::hpack_ptr_t>(hpack_type);
   /////////////////////////////////////////////////////////////////////////////////
   // LineEdit
@@ -633,7 +649,7 @@ void pyinit_ui(py::module& module_lev2) {
                 auto name         = decoded_args[0].get<std::string>();
                 auto deftext      = decoded_args[1].get<std::string>();
                 auto color        = decoded_args[2].get<fvec3>();
-                auto le           = std::make_shared<ui::LineEdit>(name,color);
+                auto le           = std::make_shared<ui::LineEdit>(name, color);
                 le->setValue(deftext);
                 return le;
               })
@@ -644,7 +660,7 @@ void pyinit_ui(py::module& module_lev2) {
                 auto name         = decoded_args[0].get<std::string>();
                 auto deftext      = decoded_args[1].get<std::string>();
                 auto color        = decoded_args[2].get<fvec3>();
-                auto layoutitem   = lg->makeChild<ui::LineEdit>(name,color);
+                auto layoutitem   = lg->makeChild<ui::LineEdit>(name, color);
                 layoutitem.typedWidget()->setValue(deftext);
                 return layoutitem.as_shared();
               })
@@ -656,7 +672,7 @@ void pyinit_ui(py::module& module_lev2) {
               [](ui::lineedit_ptr_t le, std::string txt) { //
                 le->setValue(txt);
               })
-              .def_property(
+          .def_property(
               "fg_color",
               [](ui::lineedit_ptr_t le) -> fvec3 { //
                 return le->_fg_color;
@@ -665,7 +681,7 @@ void pyinit_ui(py::module& module_lev2) {
                 le->_fg_color = c;
               })
           .def_property(
-              "bg_color", 
+              "bg_color",
               [](ui::lineedit_ptr_t le) -> fvec3 { //
                 return le->_bg_color;
               },
@@ -721,10 +737,8 @@ void pyinit_ui(py::module& module_lev2) {
                 if (callback.is_none()) {
                   btn->_onPressed = nullptr;
                 } else {
-                  auto pycb = std::make_shared<py::object>(callback);
-                  btn->_onPressed = [pycb]() {
-                    (*pycb)();
-                  };
+                  auto pycb       = std::make_shared<py::object>(callback);
+                  btn->_onPressed = [pycb]() { (*pycb)(); };
                 }
               })
           .def_property(
@@ -736,8 +750,8 @@ void pyinit_ui(py::module& module_lev2) {
                 if (callback.is_none()) {
                   btn->_onToggled = nullptr;
                 } else {
-                  auto pycb = std::make_shared<py::object>(callback);
-                  btn->_onToggled = [pycb,btn]() {
+                  auto pycb       = std::make_shared<py::object>(callback);
+                  btn->_onToggled = [pycb, btn]() {
                     py::gil_scoped_acquire acquire_gil;
                     (*pycb)(btn);
                   };
@@ -807,8 +821,8 @@ void pyinit_ui(py::module& module_lev2) {
                 if (callback.is_none()) {
                   chk->_onToggled = nullptr;
                 } else {
-                  auto pycb = std::make_shared<py::object>(callback);
-                  chk->_onToggled = [pycb,chk]() {
+                  auto pycb       = std::make_shared<py::object>(callback);
+                  chk->_onToggled = [pycb, chk]() {
                     py::gil_scoped_acquire acquire_gil;
                     (*pycb)(chk);
                   };
@@ -884,7 +898,7 @@ void pyinit_ui(py::module& module_lev2) {
                 if (callback.is_none()) {
                   slider->_onValueChanged = nullptr;
                 } else {
-                  auto pycb = std::make_shared<py::object>(callback);
+                  auto pycb               = std::make_shared<py::object>(callback);
                   slider->_onValueChanged = [pycb, slider]() {
                     py::gil_scoped_acquire acquire_gil;
                     (*pycb)(slider);
@@ -915,11 +929,9 @@ void pyinit_ui(py::module& module_lev2) {
               [](ui::intslider_ptr_t slider, fvec3 c) { //
                 slider->_fill_color = c;
               })
-          .def(
-              "setRange",
-              [](ui::intslider_ptr_t slider, int min_val, int max_val) { //
-                slider->setRange(min_val, max_val);
-              });
+          .def("setRange", [](ui::intslider_ptr_t slider, int min_val, int max_val) { //
+            slider->setRange(min_val, max_val);
+          });
   type_codec->registerStdCodec<ui::intslider_ptr_t>(intslider_type);
   /////////////////////////////////////////////////////////////////////////////////
   // FloatSlider
@@ -974,7 +986,7 @@ void pyinit_ui(py::module& module_lev2) {
                 if (callback.is_none()) {
                   slider->_onValueChanged = nullptr;
                 } else {
-                  auto pycb = std::make_shared<py::object>(callback);
+                  auto pycb               = std::make_shared<py::object>(callback);
                   slider->_onValueChanged = [pycb, slider]() {
                     py::gil_scoped_acquire acquire_gil;
                     (*pycb)(slider);
@@ -1005,11 +1017,9 @@ void pyinit_ui(py::module& module_lev2) {
               [](ui::floatslider_ptr_t slider, fvec3 c) { //
                 slider->_fill_color = c;
               })
-          .def(
-              "setRange",
-              [](ui::floatslider_ptr_t slider, float min_val, float max_val) { //
-                slider->setRange(min_val, max_val);
-              });
+          .def("setRange", [](ui::floatslider_ptr_t slider, float min_val, float max_val) { //
+            slider->setRange(min_val, max_val);
+          });
   type_codec->registerStdCodec<ui::floatslider_ptr_t>(floatslider_type);
   /////////////////////////////////////////////////////////////////////////////////
   // ComboBox
@@ -1069,7 +1079,7 @@ void pyinit_ui(py::module& module_lev2) {
                 if (callback.is_none()) {
                   combo->_onSelectionChanged = nullptr;
                 } else {
-                  auto pycb = std::make_shared<py::object>(callback);
+                  auto pycb                  = std::make_shared<py::object>(callback);
                   combo->_onSelectionChanged = [pycb, combo]() {
                     py::gil_scoped_acquire acquire_gil;
                     (*pycb)(combo);

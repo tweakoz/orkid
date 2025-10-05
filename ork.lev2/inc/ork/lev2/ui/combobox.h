@@ -37,6 +37,7 @@ public:
   std::vector<std::string> _items;
   int _selected_index = 0;
   bool _active = false;
+  bool _dragging = false;
 
   fvec4 _bg_color;
   fvec4 _fg_color;

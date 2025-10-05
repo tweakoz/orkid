@@ -48,6 +48,7 @@ class PackWidgets(object):
     self.vpack1 = pk1.widget
     self.vpack1.margin = 3
     self.vpack1.item_height = 28
+    self.vpack1.fill = True
 
     box1 = self.vpack1.makeChild( uiclass=lev2.ui.LineEdit, args=["box1  ","text",vec3(0.5,0.3,0.3)] )
     box2 = self.vpack1.makeChild( uiclass=lev2.ui.LineEdit, args=["box2  ","text",vec3(0.3,0.5,0.3)] )
@@ -81,6 +82,9 @@ class PackWidgets(object):
     self.cb1 = self.vpack1.makeChild( uiclass=lev2.ui.ComboBox, args=["cbx1  ",sli_col,0,100,50] )
     self.cb1.setItems(["zero","one","two","three","four","five","six","seven","eight","nine"])
     
+    self.tx1 = self.vpack1.makeChild( uiclass=lev2.ui.TextBox, args=["tex1  ",vec4(0.6,0,0,1),"nam"] )
+    self.tx1.setText("This is a TextBox.\n It can hold multiple lines of text.\nThe quick brown fox jumps over the lazy dog.\n0123456789")
+
     ############################################
     
     def onCtrlC(signum, frame):
