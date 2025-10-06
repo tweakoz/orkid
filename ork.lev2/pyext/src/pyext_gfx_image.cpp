@@ -7,6 +7,7 @@
 
 #include "pyext.h"
 #include <ork/lev2/gfx/image.h>
+#include <ork/lev2/gfx/util/movie.inl>
 #include <ork/kernel/memcpy.inl>
 #include <iostream>
 
@@ -76,7 +77,43 @@ void pyinit_gfx_image(py::module& module_lev2) {
       .def("__repr__", [](image_provider_ptr_t ip) {
         return "<lev2.ImageProvider>";
       });
-  type_codec->registerStdCodec<image_provider_ptr_t>(image_provider_type);      
+  type_codec->registerStdCodec<image_provider_ptr_t>(image_provider_type);
+  ///////////////////////////////////////////////////////
+  auto movieplayback_type = //
+      py::class_<MoviePlaybackContext, movieplayback_ptr_t>(module_lev2, "MoviePlaybackContext")
+      .def(py::init<>())
+      .def("init", [](movieplayback_ptr_t ctx, const std::string& filename) {
+        ctx->init(filename);
+      })
+      .def("play", [](movieplayback_ptr_t ctx) {
+        ctx->play();
+      })
+      .def("pause", [](movieplayback_ptr_t ctx) {
+        ctx->pause();
+      })
+      .def("stop", [](movieplayback_ptr_t ctx) {
+        ctx->stop();
+      })
+      .def("restart", [](movieplayback_ptr_t ctx) {
+        ctx->restart();
+      })
+      .def("createImageProvider", [](movieplayback_ptr_t ctx) -> image_provider_ptr_t {
+        return ctx->createImageProvider();
+      })
+      .def_property_readonly("state", [](movieplayback_ptr_t ctx) -> crcstring_ptr_t {
+        auto crc = std::make_shared<CrcString>(uint64_t(ctx->_state));
+        return crc;
+      })
+      .def_property_readonly("fps", [](movieplayback_ptr_t ctx) -> double {
+        return ctx->_fps;
+      })
+      .def_property_readonly("width", [](movieplayback_ptr_t ctx) -> int {
+        return ctx->_video_codec_ctx ? ctx->_video_codec_ctx->width : 0;
+      })
+      .def_property_readonly("height", [](movieplayback_ptr_t ctx) -> int {
+        return ctx->_video_codec_ctx ? ctx->_video_codec_ctx->height : 0;
+      });
+  type_codec->registerStdCodec<movieplayback_ptr_t>(movieplayback_type);
   ///////////////////////////////////////////////////////
 
 }

@@ -104,8 +104,8 @@ class PackWidgets(object):
     sp1 = lg_group.makeChild( uiclass=lev2.ui.VerticalSplit, args=["spl1"])
     self.lg_group.replaceChild( self.griditems[1].layout, sp1 )
     sp1w = sp1.widget
-    self.x = sp1w.makeChild( uiclass=lev2.ui.EvTestBox, args=["evb1",vec4(0.3,0.3,0.3,1)] )
-    self.y = sp1w.makeChild( uiclass=lev2.ui.EvTestBox, args=["evb2",vec4(0.3,0.3,0.4,1)] )
+    self.imgview1 = sp1w.makeChild( uiclass=lev2.ui.ImageView, args=["evb1",vec4(0,0,0,1)] )
+    self.imgview2 = sp1w.makeChild( uiclass=lev2.ui.ImageView, args=["evb2",vec4(0.1,0.1,0.1,1)] )
 
     sp2 = lg_group.makeChild( uiclass=lev2.ui.HorizontalSplit, args=["spl1"])
     self.lg_group.replaceChild( self.griditems[2].layout, sp2 )

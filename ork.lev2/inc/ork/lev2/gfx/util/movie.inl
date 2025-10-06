@@ -55,4 +55,88 @@ struct MovieCaptureContext {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////
+
+struct MovieAudioFrame {
+  std::vector<float> _samples;  // interleaved samples
+  int _sample_rate = 0;
+  int _channels = 0;
+  double _pts = 0.0;  // presentation timestamp
+};
+
+using movieaudioframe_ptr_t = std::shared_ptr<MovieAudioFrame>;
+using audio_callback_t = std::function<void(movieaudioframe_ptr_t)>;
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+struct MoviePlaybackContext {
+
+  enum class State : crc_enum_t {
+    CrcEnum(STOPPED),
+    CrcEnum(PLAYING),
+    CrcEnum(PAUSED)
+  };
+
+  MoviePlaybackContext();
+  ~MoviePlaybackContext();
+
+  void init(const std::string& filename);
+  void play();
+  void pause();
+  void stop();
+  void restart();
+  image_provider_ptr_t createImageProvider();
+  void setAudioCallback(audio_callback_t cb);
+
+  /////////////////////////////////////////////////////////////////////////////////////////
+  // Playback state
+  State _state = State::STOPPED;
+  std::string _filename;
+
+  // FFmpeg decoding pipeline
+  AVFormatContext* _format_ctx = nullptr;
+  AVCodecContext* _video_codec_ctx = nullptr;
+  AVCodecContext* _audio_codec_ctx = nullptr;
+  const AVCodec* _video_codec = nullptr;
+  const AVCodec* _audio_codec = nullptr;
+  int _video_stream_idx = -1;
+  int _audio_stream_idx = -1;
+  struct SwsContext* _sws_context = nullptr;
+
+  // Threading
+  std::thread _decode_thread;
+  std::atomic<bool> _running{false};
+  std::mutex _queue_mutex;
+  std::condition_variable _queue_cv;
+
+  // Frame queue
+  std::deque<image_ptr_t> _frame_queue;
+  size_t _max_queue_size = 30;
+
+  // Timing
+  double _fps = 0.0;
+  double _frame_duration = 0.0;
+  std::chrono::high_resolution_clock::time_point _playback_start;
+  int64_t _current_frame_index = 0;
+
+  // Audio
+  audio_callback_t _audio_callback;
+  std::deque<movieaudioframe_ptr_t> _audio_queue;
+  std::mutex _audio_mutex;
+
+  // Image provider
+  image_provider_ptr_t _image_provider;
+  image_ptr_t _current_image;
+  std::mutex _image_mutex;
+
+  /////////////////////////////////////////////////////////////////////////////////////////
+private:
+  void _decodeThreadFunc();
+  void _cleanup();
+};
+
+using movieplayback_ptr_t = std::shared_ptr<MoviePlaybackContext>;
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
