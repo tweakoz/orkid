@@ -60,14 +60,14 @@ int main(int argc, char** argv, char** envp) {
 
   logchan_editor->log( "T1<%g>", timer.SecsSinceStart() );
 
-  std::shared_ptr<MovieContext> movie = nullptr;
+  std::shared_ptr<MovieCaptureContext> movie = nullptr;
   
   if(0){
     init_data->_top = 0;
     init_data->_left = 1440;
     init_data->_width = 1920;
     init_data->_height = 1080;
-    movie = std::make_shared<MovieContext>();
+    movie = std::make_shared<MovieCaptureContext>();
     movie->init(init_data->_width,init_data->_height);
   }
 
@@ -522,9 +522,8 @@ int main(int argc, char** argv, char** envp) {
         auto fbi = context->FBI();
         //fbi->capture(rtbuf_accum.get(),"demo://output.png");
         auto capbuf = std::make_shared<CaptureBuffer>();
-        auto future = fbi->captureAsFormat(nullptr, capbuf, EBufferFormat::RGB8, [capbuf, movie](){
-            movie->writeFrame(*capbuf);
-        });
+        auto future = fbi->captureAsFormat(nullptr, capbuf, EBufferFormat::RGB8);
+        movie->writeFrame(future);
 
     }
 

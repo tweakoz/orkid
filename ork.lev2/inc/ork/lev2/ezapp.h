@@ -246,7 +246,7 @@ public:
   eztopwidget_ptr_t _eztopwidget;
   ork::opq::opq_ptr_t _rthreadq;
   EzMainWin::onupdateexit_t _onAppEarlyTerminated = nullptr;
-  moviecontext_ptr_t _moviecontext;
+  moviecapcontext_ptr_t _moviecapcontext;
   float _timescale = 1.0f;
   void_lambda_t _onRunLoopIteration;
   void_lambda_t _onAppExit;

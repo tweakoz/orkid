@@ -51,7 +51,7 @@ int main(int argc, char** argv, char** envp) {
   lev2::initModule(init_data); // lev2 registration
   ecs::initModule(init_data); // ecs registration
 
-  std::shared_ptr<MovieContext> movie = nullptr;
+  std::shared_ptr<MovieCaptureContext> movie = nullptr;
   
   //init_data->_ssaa_samples = 16;
   //init_data->_msaa_samples = 16;
@@ -61,7 +61,7 @@ int main(int argc, char** argv, char** envp) {
     init_data->_left = 1440;
     init_data->_width = 1920;
     init_data->_height = 1080;
-    movie = std::make_shared<MovieContext>();
+    movie = std::make_shared<MovieCaptureContext>();
     movie->init(init_data->_width,init_data->_height);
   }
 
@@ -260,10 +260,9 @@ int main(int argc, char** argv, char** envp) {
         auto fbi = context->FBI();
         //fbi->capture(rtbuf_accum.get(),"demo://output.png");
         auto capbuf = std::make_shared<CaptureBuffer>();
-        auto future = fbi->captureAsFormat(nullptr, capbuf, EBufferFormat::RGB8, [capbuf, movie](){
-            movie->writeFrame(*capbuf);
-        });
-
+        auto future = fbi->captureAsFormat(nullptr, capbuf, EBufferFormat::RGB8);
+        movie->writeFrame(future);
+    
     }
 
     ///////////////////////////////////////////////////////////////////////

@@ -447,7 +447,7 @@ void OrkEzApp::onGpuExit(EzMainWin::ongpuexit_t cb) {
   if(_mainWindow){
     _mainWindow->_onGpuExit = cb;
   }
-  _moviecontext = nullptr;
+  _moviecapcontext = nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onUiEvent(EzMainWin::onuieventcallback_t cb) {
@@ -647,8 +647,8 @@ void OrkEzApp::_mainThreadLoopBegin() {
     if (_mainWindow->_onGpuInit) {
       _mainWindow->_onGpuInit(context);
 
-      if( _moviecontext ){
-        _moviecontext->init(_initdata->_width,_initdata->_height);
+      if( _moviecapcontext ){
+        _moviecapcontext->init(_initdata->_width,_initdata->_height);
       }
 
     }
@@ -684,8 +684,8 @@ void OrkEzApp::_mainThreadLoopBegin() {
 
   glfw_ctx->_onGpuExit = [this](lev2::Context* context) {
     joinUpdate();
-    if( _moviecontext ){
-      _moviecontext->terminate();
+    if( _moviecapcontext ){
+      _moviecapcontext->terminate();
     }
 
     if (_mainWindow->_onGpuExit) {
@@ -727,23 +727,23 @@ int OrkEzApp::mainThreadLoop() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::enableMovieRecording(file::Path output_path){
-    _moviecontext = std::make_shared<MovieContext>();
-    _moviecontext->_filename = output_path.toAbsolute().c_str();
+    _moviecapcontext = std::make_shared<MovieCaptureContext>();
+    _moviecapcontext->_filename = output_path.toAbsolute().c_str();
 
-    auto mctx = _moviecontext.get();
+    auto mctx = _moviecapcontext.get();
     _movie_record_frame_lambda = [mctx,this](lev2::Context* ctx){
         auto fbi = ctx->FBI();
         auto capbuf = std::make_shared<CaptureBuffer>();
         auto future = fbi->captureAsFormat(nullptr, capbuf, EBufferFormat::RGB8);
         bool ok = future && future->_completed;
-        mctx->writeFrame(*capbuf);
+        mctx->writeFrame(future);
         //int ircount = _render_count.load();
         //int iucount = _update_count.load();
         //printf( "movie write frame<%d> ircount<%d> iucount<%d>\n", mctx->_frame, ircount, iucount );
       };
 }
 void OrkEzApp::finishMovieRecording(){
-  _moviecontext->terminate();
+  _moviecapcontext->terminate();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::setRefreshPolicy(RefreshPolicyItem policy) {

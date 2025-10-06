@@ -582,8 +582,8 @@ using inputmanager_const_ptr_t = std::shared_ptr<const InputManager>;
 // Movie
 ///////////////////////////////////////////////////////////////////////////////
 
-struct MovieContext;
-using moviecontext_ptr_t = std::shared_ptr<MovieContext>;
+struct MovieCaptureContext;
+using moviecapcontext_ptr_t = std::shared_ptr<MovieCaptureContext>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // ImGui

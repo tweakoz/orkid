@@ -358,9 +358,9 @@ int main(int argc, char** argv, char** envp) {
   //////////////////////////////////////////////////////////
   openvdb::initialize();
   //////////////////////////////////////////////////////////
-  std::shared_ptr<MovieContext> movie = nullptr;
+  std::shared_ptr<MovieCaptureContext> movie = nullptr;
   if(do_movie){
-    movie = std::make_shared<MovieContext>();
+    movie = std::make_shared<MovieCaptureContext>();
     movie->init(init_data->_width,init_data->_height);
   }
   //////////////////////////////////////////////////////////
