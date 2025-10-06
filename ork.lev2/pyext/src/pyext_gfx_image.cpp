@@ -108,10 +108,16 @@ void pyinit_gfx_image(py::module& module_lev2) {
         return ctx->_fps;
       })
       .def_property_readonly("width", [](movieplayback_ptr_t ctx) -> int {
-        return ctx->_video_codec_ctx ? ctx->_video_codec_ctx->width : 0;
+        if (ctx->_format_ctx && ctx->_video_stream_idx >= 0) {
+          return ctx->_format_ctx->streams[ctx->_video_stream_idx]->codecpar->width;
+        }
+        return 0;
       })
       .def_property_readonly("height", [](movieplayback_ptr_t ctx) -> int {
-        return ctx->_video_codec_ctx ? ctx->_video_codec_ctx->height : 0;
+        if (ctx->_format_ctx && ctx->_video_stream_idx >= 0) {
+          return ctx->_format_ctx->streams[ctx->_video_stream_idx]->codecpar->height;
+        }
+        return 0;
       });
   type_codec->registerStdCodec<movieplayback_ptr_t>(movieplayback_type);
   ///////////////////////////////////////////////////////

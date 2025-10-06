@@ -106,6 +106,8 @@ class PackWidgets(object):
     sp1w = sp1.widget
     self.imgview1 = sp1w.makeChild( uiclass=lev2.ui.ImageView, args=["evb1",vec4(0,0,0,1)] )
     self.imgview2 = sp1w.makeChild( uiclass=lev2.ui.ImageView, args=["evb2",vec4(0.1,0.1,0.1,1)] )
+    self.imgview1.maintain_aspect_ratio = True
+    self.imgview2.maintain_aspect_ratio = True
 
     sp2 = lg_group.makeChild( uiclass=lev2.ui.HorizontalSplit, args=["spl1"])
     self.lg_group.replaceChild( self.griditems[2].layout, sp2 )
@@ -125,7 +127,21 @@ class PackWidgets(object):
   ##############################################
 
   def onGpuInit(self,ctx):
-    pass
+    # Setup movie playback for bunny.mp4
+    self.movie1 = lev2.MoviePlaybackContext()
+    movie1_path = str(path.stage()/"assetcache"/"movies"/"bunny.mp4")
+    self.movie1.init(movie1_path)
+    provider1 = self.movie1.createImageProvider()
+    self.imgview1.setImageProvider(provider1)
+    self.movie1.play()
+
+    # Setup movie playback for wipeout.mp4
+    self.movie2 = lev2.MoviePlaybackContext()
+    movie2_path = str(path.stage()/"assetcache"/"movies"/"wipeout.mp4")
+    self.movie2.init(movie2_path)
+    provider2 = self.movie2.createImageProvider()
+    self.imgview2.setImageProvider(provider2)
+    self.movie2.play()
    
   ################################################
 

@@ -85,21 +85,16 @@ void MoviePlaybackContext::init(const std::string& filename) {
   // Setup video timing
   AVStream* video_stream = _format_ctx->streams[_video_stream_idx];
   _fps = av_q2d(video_stream->r_frame_rate);
+  if (_fps <= 0) {
+    _fps = av_q2d(video_stream->avg_frame_rate);
+  }
+  if (_fps <= 0) {
+    _fps = 30.0; // fallback
+  }
   _frame_duration = 1.0 / _fps;
 
-  // Setup scaler for YUV to RGB conversion
-  _sws_context = sws_getContext(
-    _video_codec_ctx->width,
-    _video_codec_ctx->height,
-    _video_codec_ctx->pix_fmt,
-    _video_codec_ctx->width,
-    _video_codec_ctx->height,
-    AV_PIX_FMT_RGB24,
-    SWS_BILINEAR,
-    nullptr,
-    nullptr,
-    nullptr
-  );
+  // Note: we defer sws_context creation until we decode the first frame
+  // because codecpar dimensions may not be accurate for all codecs
 
   // Setup audio if available
   if (_audio_stream_idx >= 0) {
@@ -114,10 +109,9 @@ void MoviePlaybackContext::init(const std::string& filename) {
     }
   }
 
-  printf("Opened video: %s (%dx%d @ %.2f fps)\n",
+  printf("Opened video: %s (codec: %s, stream fps: %.2f)\n",
          filename.c_str(),
-         _video_codec_ctx->width,
-         _video_codec_ctx->height,
+         _video_codec->name,
          _fps);
 }
 
@@ -252,13 +246,7 @@ image_provider_ptr_t MoviePlaybackContext::createImageProvider() {
 void MoviePlaybackContext::_decodeThreadFunc() {
   AVPacket packet;
   AVFrame* frame = av_frame_alloc();
-  AVFrame* rgb_frame = av_frame_alloc();
-
-  // Allocate RGB frame buffer
-  int num_bytes = av_image_get_buffer_size(AV_PIX_FMT_RGB24, _video_codec_ctx->width, _video_codec_ctx->height, 1);
-  uint8_t* buffer = (uint8_t*)av_malloc(num_bytes * sizeof(uint8_t));
-  av_image_fill_arrays(rgb_frame->data, rgb_frame->linesize, buffer, AV_PIX_FMT_RGB24,
-                      _video_codec_ctx->width, _video_codec_ctx->height, 1);
+  AVFrame* rgb_frame = nullptr;
 
   while (_running) {
     // Pause if not playing
@@ -305,18 +293,59 @@ void MoviePlaybackContext::_decodeThreadFunc() {
           break;
         }
 
+        // Create scaler if not already created or if frame dimensions changed
+        if (!_sws_context ||
+            _video_codec_ctx->width != frame->width ||
+            _video_codec_ctx->height != frame->height) {
+          if (_sws_context) {
+            sws_freeContext(_sws_context);
+          }
+          _sws_context = sws_getContext(
+            frame->width,
+            frame->height,
+            (AVPixelFormat)frame->format,
+            frame->width,
+            frame->height,
+            AV_PIX_FMT_RGB24,
+            SWS_BILINEAR,
+            nullptr,
+            nullptr,
+            nullptr
+          );
+          if (!_sws_context) {
+            printf("ERROR: Could not create scaler context\n");
+            continue;
+          }
+        }
+
+        // Allocate RGB frame if not already allocated or if size changed
+        if (!rgb_frame || rgb_frame->width != frame->width || rgb_frame->height != frame->height) {
+          if (rgb_frame) {
+            av_frame_free(&rgb_frame);
+          }
+          rgb_frame = av_frame_alloc();
+          rgb_frame->format = AV_PIX_FMT_RGB24;
+          rgb_frame->width = frame->width;
+          rgb_frame->height = frame->height;
+          int alloc_ret = av_frame_get_buffer(rgb_frame, 1);
+          if (alloc_ret < 0) {
+            printf("ERROR: Could not allocate RGB frame buffer\n");
+            continue;
+          }
+        }
+
         // Convert YUV to RGB
-        sws_scale(_sws_context, frame->data, frame->linesize, 0, _video_codec_ctx->height,
+        sws_scale(_sws_context, frame->data, frame->linesize, 0, frame->height,
                  rgb_frame->data, rgb_frame->linesize);
 
         // Create image from RGB data
         auto img = std::make_shared<Image>();
-        img->_width = _video_codec_ctx->width;
-        img->_height = _video_codec_ctx->height;
+        img->_width = frame->width;
+        img->_height = frame->height;
         img->_format = EBufferFormat::RGB8;
         img->_data = std::make_shared<DataBlock>();
 
-        size_t data_size = _video_codec_ctx->width * _video_codec_ctx->height * 3;
+        size_t data_size = frame->width * frame->height * 3;
         img->_data->allocateBlock(data_size);
         memcpy(img->_data->_storage.data(), rgb_frame->data[0], data_size);
 
@@ -377,7 +406,6 @@ void MoviePlaybackContext::_decodeThreadFunc() {
     av_packet_unref(&packet);
   }
 
-  av_free(buffer);
   av_frame_free(&rgb_frame);
   av_frame_free(&frame);
 }
