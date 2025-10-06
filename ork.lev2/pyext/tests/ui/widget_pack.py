@@ -42,6 +42,7 @@ class PackWidgets(object):
     self.ezapp.topWidget.enableUiDraw()
 
     lg_group = self.ezapp.topLayoutGroup
+    lg_group.clearColorGuide = vec4(0.8,0.6,0.2,1)
 
     ############################################
     # start out with a 2x2 grid of boxes
