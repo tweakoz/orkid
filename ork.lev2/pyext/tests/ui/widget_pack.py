@@ -59,7 +59,7 @@ class PackWidgets(object):
     ############################################
 
     self.lg_group = lg_group
-    lg_group.margin = 4
+    lg_group.margin = 2
 
     ############################################
     # create a vertical pack widget in the upper-left grid cell
