@@ -2,6 +2,7 @@
 #include <chrono>
 #include <thread>
 #include <string.h>
+#include <cmath>
 
 extern "C" {
 #include <libavutil/imgutils.h>
@@ -27,6 +28,9 @@ MoviePlaybackContext::~MoviePlaybackContext() {
 
 void MoviePlaybackContext::init(const std::string& filename) {
   _filename = filename;
+
+  // Suppress swscaler warnings about no accelerated conversion
+  av_log_set_level(AV_LOG_ERROR);
 
   // Open video file
   if (avformat_open_input(&_format_ctx, filename.c_str(), nullptr, nullptr) < 0) {
@@ -84,13 +88,29 @@ void MoviePlaybackContext::init(const std::string& filename) {
 
   // Setup video timing
   AVStream* video_stream = _format_ctx->streams[_video_stream_idx];
-  _fps = av_q2d(video_stream->r_frame_rate);
-  if (_fps <= 0) {
+
+  // Try r_frame_rate first
+  if (video_stream->r_frame_rate.den > 0 && video_stream->r_frame_rate.num > 0) {
+    _fps = av_q2d(video_stream->r_frame_rate);
+  }
+
+  // Fall back to avg_frame_rate
+  if ((_fps <= 0 || std::isnan(_fps) || std::isinf(_fps)) &&
+      video_stream->avg_frame_rate.den > 0 && video_stream->avg_frame_rate.num > 0) {
     _fps = av_q2d(video_stream->avg_frame_rate);
   }
-  if (_fps <= 0) {
-    _fps = 30.0; // fallback
+
+  // Try time_base reciprocal
+  if ((_fps <= 0 || std::isnan(_fps) || std::isinf(_fps)) &&
+      video_stream->time_base.num > 0 && video_stream->time_base.den > 0) {
+    _fps = (double)video_stream->time_base.den / (double)video_stream->time_base.num;
   }
+
+  // Final fallback
+  if (_fps <= 0 || std::isnan(_fps) || std::isinf(_fps)) {
+    _fps = 30.0;
+  }
+
   _frame_duration = 1.0 / _fps;
 
   // Note: we defer sws_context creation until we decode the first frame
@@ -109,10 +129,12 @@ void MoviePlaybackContext::init(const std::string& filename) {
     }
   }
 
-  printf("Opened video: %s (codec: %s, stream fps: %.2f)\n",
+  printf("Opened video: %s (codec: %s, fps: %.2f, r_frame_rate: %d/%d, avg_frame_rate: %d/%d)\n",
          filename.c_str(),
          _video_codec->name,
-         _fps);
+         _fps,
+         video_stream->r_frame_rate.num, video_stream->r_frame_rate.den,
+         video_stream->avg_frame_rate.num, video_stream->avg_frame_rate.den);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////

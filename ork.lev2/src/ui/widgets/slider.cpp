@@ -119,7 +119,7 @@ HandlerResult IntSlider::DoOnUiEvent(event_constptr_t cev) {
 
     case EventCode::DRAG: {
       if (_dragging) {
-        _update_on_drag = cev->mbCTRL;
+        //_update_on_drag = cev->mbCTRL;
 
         auto content = contentRect();
         int local_x = cev->miX - _geometry._x - content._x;
@@ -486,7 +486,7 @@ HandlerResult FloatSlider::DoOnUiEvent(event_constptr_t cev) {
 
     case EventCode::DRAG: {
       if (_dragging) {
-        _update_on_drag = cev->mbCTRL;
+        //_update_on_drag = cev->mbCTRL;
 
         auto content = contentRect();
         int local_x = cev->miX - _geometry._x - content._x;

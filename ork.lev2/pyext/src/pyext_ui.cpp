@@ -701,7 +701,7 @@ void pyinit_ui(py::module& module_lev2) {
               },
               [](ui::hsplit_ptr_t split, float ratio) { //
                 split->_split_ratio = ratio;
-                //split->ReLayout();
+                // split->ReLayout();
               });
   type_codec->registerStdCodec<ui::hsplit_ptr_t>(hsplit_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -758,7 +758,7 @@ void pyinit_ui(py::module& module_lev2) {
               },
               [](ui::vsplit_ptr_t split, float ratio) { //
                 split->_split_ratio = ratio;
-                //split->ReLayout();
+                // split->ReLayout();
               });
   type_codec->registerStdCodec<ui::vsplit_ptr_t>(vsplit_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -1120,6 +1120,10 @@ void pyinit_ui(py::module& module_lev2) {
               [](ui::floatslider_ptr_t slider, fvec3 c) { //
                 slider->_fill_color = c;
               })
+          .def_property(
+              "update_on_drag",
+              [](ui::floatslider_ptr_t slider) -> bool { return slider->_update_on_drag; },
+              [](ui::floatslider_ptr_t slider, bool b) { slider->_update_on_drag = b; })
           .def("setRange", [](ui::floatslider_ptr_t slider, float min_val, float max_val) { //
             slider->setRange(min_val, max_val);
           });
