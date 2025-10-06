@@ -35,7 +35,7 @@ class PackWidgets(object):
     self.ezapp = lev2.OrkEzApp.create(self, 
                                       left=100, 
                                       top=100, 
-                                      width=900, 
+                                      width=1280, 
                                       height=900)
 
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
@@ -121,12 +121,14 @@ class PackWidgets(object):
     self.hpack3 = self.vpack1.makeChild( uiclass=lev2.ui.HorizontalPack, args=["hpack3"])
     self.hpack3.margin = 3
     self.hpack3.uniform = True
-    btn_col = vec3(0.3,0.5,0.3)
-    self.btn1 = self.hpack3.makeChild( uiclass=lev2.ui.Button, args=["btn1  ",btn_col] )
-    self.btn2 = self.hpack3.makeChild( uiclass=lev2.ui.Button, args=["btn2  ",btn_col] )
-    self.btn3 = self.hpack3.makeChild( uiclass=lev2.ui.Button, args=["btn3  ",btn_col] )
-    self.btn4 = self.hpack3.makeChild( uiclass=lev2.ui.Button, args=["btn4  ",btn_col] )
-    self.btn4.onPressed = lambda x: print("btn4 clicked")
+    btn_col1 = vec3(0.3,0.5,0.3)
+    btn_col2 = vec3(0.3,0.3,0.5)
+    btn_col3 = vec3(0.3,0.5,0.5)
+    self.btn1 = self.hpack3.makeChild( uiclass=lev2.ui.Button, args=["Pause",btn_col1] )
+    self.btn2 = self.hpack3.makeChild( uiclass=lev2.ui.Button, args=["Restart",btn_col1] )
+    self.btn3 = self.hpack3.makeChild( uiclass=lev2.ui.Button, args=["Pause",btn_col2] )
+    self.btn4 = self.hpack3.makeChild( uiclass=lev2.ui.Button, args=["Restart",btn_col2] )
+    self.btn5 = self.hpack3.makeChild( uiclass=lev2.ui.Button, args=["Swap",btn_col3] )
 
     ############################################
     # populate the vertical pack with some sliders
@@ -229,6 +231,47 @@ class PackWidgets(object):
     self.imgview2.setImageProvider(provider2)
     self.movie2.play()
    
+    ########################################################
+    # assign buttons to control movie playback
+    ########################################################
+
+    self.m1_playing = True
+    self.m2_playing = True
+    self.m_swap = False
+    def on_B1(x):
+      if self.m1_playing:
+        self.movie1.pause()
+        self.m1_playing = False
+      else:
+        self.movie1.play()
+        self.m1_playing = True
+    def on_B2(x):
+      self.movie1.restart()
+    def on_B3(x):
+      if self.m2_playing:
+        self.movie2.pause()
+        self.m2_playing = False
+      else:
+        self.movie2.play()
+        self.m2_playing = True
+    def on_B4(x):
+      self.movie2.restart()
+    def on_B5(x):
+      if self.m_swap:
+        self.imgview1.setImageProvider(provider1)
+        self.imgview2.setImageProvider(provider2)
+        self.m_swap = False
+      else:
+        self.imgview1.setImageProvider(provider2)
+        self.imgview2.setImageProvider(provider1)
+        self.m_swap = True
+
+    self.btn1.onPressed = on_B1
+    self.btn2.onPressed = on_B2
+    self.btn3.onPressed = on_B3
+    self.btn4.onPressed = on_B4
+    self.btn5.onPressed = on_B5
+
     ########################################################
     # shared geometry (for scenegraph viewport)
     ########################################################
