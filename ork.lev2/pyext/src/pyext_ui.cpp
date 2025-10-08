@@ -1262,7 +1262,14 @@ void pyinit_ui(py::module& module_lev2) {
               })
           .def("setImageProvider", [](ui::imgview_ptr_t imgview, image_provider_ptr_t imgprov) { //
             imgview->setImageProvider(imgprov);
-          });
+          })
+          .def_property_readonly("texture", [](ui::imgview_ptr_t imgview) -> lev2::texture_ptr_t { return imgview->_texture; })
+          .def_property("primitive", [](ui::imgview_ptr_t imgview) -> meshutil::rigidprim_V12N12B12T8C4_ptr_t { return imgview->_img_mesh; },
+                        [](ui::imgview_ptr_t imgview, meshutil::rigidprim_V12N12B12T8C4_ptr_t p) { imgview->_img_mesh = p; })
+          .def_property("pipeline", [](ui::imgview_ptr_t imgview) -> lev2::fxpipeline_ptr_t { return imgview->_pipeline_override; },
+                        [](ui::imgview_ptr_t imgview, lev2::fxpipeline_ptr_t p) { imgview->_pipeline_override = p; })
+          .def_property("invert_aspect", [](ui::imgview_ptr_t imgview) -> bool { return imgview->_invert_aspect; },
+                        [](ui::imgview_ptr_t imgview, bool p) { imgview->_invert_aspect = p; });
   type_codec->registerStdCodec<ui::imgview_ptr_t>(imgview_type);
   /////////////////////////////////////////////////////////////////////////////////
   pyinit_ui_layout(uimodule);

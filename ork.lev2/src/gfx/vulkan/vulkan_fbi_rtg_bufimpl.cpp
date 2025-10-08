@@ -21,7 +21,7 @@ VklRtBufferImpl::VklRtBufferImpl(vkcontext_rawptr_t ctxVK, VkRtGroupImpl* par, u
     , _usage(usage)
     , _vkfmt(fmt) { //
 
-  logchan_rtbi->log("VklRtBufferImpl constructor - usage=0x%zx (%zu)", _usage, _usage);
+  //logchan_rtbi->log("VklRtBufferImpl constructor - usage=0x%zx (%zu)", _usage, _usage);
 
   initializeVkStruct(_attachmentDesc);
 
@@ -126,7 +126,7 @@ void _vkCreateImageForBuffer(
   // Defensive check: convert usage=0 to "color"_crcu
   uint64_t effective_usage = options._usage;
   if (effective_usage == 0) {
-    logchan_rtbi->log("WARNING: _vkCreateImageForBuffer received usage=0, defaulting to 'color'");
+    //logchan_rtbi->log("WARNING: _vkCreateImageForBuffer received usage=0, defaulting to 'color'");
     effective_usage = "color"_crcu;
     // Also update the buffer's usage to the corrected value
     bufferimpl->_usage = effective_usage;
@@ -135,15 +135,15 @@ void _vkCreateImageForBuffer(
 
   switch (effective_usage) {
     case "depth"_crcu:
-      logchan_rtbi->log("_vkCreateImageForBuffer: DEPTH format=%d wh<%d %d>", options._format, w, h);
+      //logchan_rtbi->log("_vkCreateImageForBuffer: DEPTH format=%d wh<%d %d>", options._format, w, h);
       VKICI->usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT; // Allow rendering D/S to this image
       break;
     case "color"_crcu:
-      logchan_rtbi->log("_vkCreateImageForBuffer: COLOR format=%d wh<%d %d>", options._format, w, h);
+      //logchan_rtbi->log("_vkCreateImageForBuffer: COLOR format=%d wh<%d %d>", options._format, w, h);
       VKICI->usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; // Allow rendering Color to this image      
       break;
     case "swapchain"_crcu:
-      logchan_rtbi->log("_vkCreateImageForBuffer: SWAPCHAIN format=%d wh<%d %d>", options._format, w, h);
+      //logchan_rtbi->log("_vkCreateImageForBuffer: SWAPCHAIN format=%d wh<%d %d>", options._format, w, h);
       VKICI->usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; // Allow rendering Color to this image
       break;
     default:
@@ -172,7 +172,7 @@ void _vkCreateImageForBuffer(
   bufferimpl->_currentLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Reset layout to undefined after creation
   imgobj->_currentLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Also set on the image object
   ///////////////////////////////////////////////////
-  logchan_rtbi->log("IMAGE: Created image %p, initial layout %d", (void*)vkimage, bufferimpl->_currentLayout);
+  //logchan_rtbi->log("IMAGE: Created image %p, initial layout %d", (void*)vkimage, bufferimpl->_currentLayout);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

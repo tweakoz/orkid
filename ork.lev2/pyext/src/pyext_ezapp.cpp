@@ -208,6 +208,18 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               });
             }
             ////////////////////////////////////////////////////////////////////
+            if (py::hasattr(appinstance, "onGpuExit")) {
+              auto gpuexitfn //
+                  = py::cast<py::function>(appinstance.attr("onGpuExit"));
+              rval->_vars->makeValueForKey<py::function>("gpuexitfn") = gpuexitfn;
+              rval->onGpuExit([=](Context* ctx) { //
+                ctx->makeCurrentContext();
+                py::gil_scoped_acquire acquire;
+                auto pyfn = rval->_vars->typedValueForKey<py::function>("gpuexitfn");
+                pyfn.value()(ctx_t(ctx));
+              });
+            }
+            ////////////////////////////////////////////////////////////////////
             if (py::hasattr(appinstance, "onGpuUpdate")) {
               auto gpuupdatefn //
                   = py::cast<py::function>(appinstance.attr("onGpuUpdate"));
@@ -265,6 +277,38 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             } else {
             }
             ////////////////////////////////////////////////////////////////////
+            if (py::hasattr(appinstance, "onUpdateInit")) {
+              auto updfn //
+                  = py::cast<py::function>(appinstance.attr("onUpdateInit"));
+              rval->_vars->makeValueForKey<py::function>("updateinitfn") = updfn;
+              rval->onUpdateInit([=]() { //
+                py::gil_scoped_acquire acquire;
+                auto pyfn = rval->_vars->typedValueForKey<py::function>("updateinitfn");
+                try {
+                  pyfn.value()();
+                } catch (std::exception& e) {
+                  std::cerr << e.what();
+                  abort();
+                }
+              });
+            }
+            ////////////////////////////////////////////////////////////////////
+            if (py::hasattr(appinstance, "onUpdateExit")) {
+              auto updfn //
+                  = py::cast<py::function>(appinstance.attr("onUpdateExit"));
+              rval->_vars->makeValueForKey<py::function>("updateexitfn") = updfn;
+              rval->onUpdateExit([=]() { //
+                py::gil_scoped_acquire acquire;
+                auto pyfn = rval->_vars->typedValueForKey<py::function>("updateexitfn");
+                try {
+                  pyfn.value()();
+                } catch (std::exception& e) {
+                  std::cerr << e.what();
+                  abort();
+                }
+              });
+            }
+            ////////////////////////////////////////////////////////////////////
             if (py::hasattr(appinstance, "onUpdate")) {
               auto updfn //
                   = py::cast<py::function>(appinstance.attr("onUpdate"));
@@ -276,7 +320,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   pyfn.value()(updata);
                 } catch (std::exception& e) {
                   std::cerr << e.what();
-                  OrkAssert(false);
+                  abort();
                 }
               });
             }

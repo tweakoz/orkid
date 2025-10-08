@@ -365,59 +365,89 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
   type_codec->registerStdCodec<samplerdata_ptr_t>(sampler_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto streamer_type = py::class_<STREAMING_OSCILLATOR_DATA, DspBlockData, streamerdata_ptr_t>(singmodule, "StreamingOscillator")
-    .def_property("source",[](streamerdata_ptr_t streamer) -> lev2::audiostreaminginputchunk_source_ptr_t { //
-      return streamer->_source;
-    },[](streamerdata_ptr_t streamer, lev2::audiostreaminginputchunk_source_ptr_t src) { //
-      streamer->_source = src;
-    })
-    .def_property("low_watermark",[](streamerdata_ptr_t streamer) -> size_t { //
-      return streamer->_low_watermark;
-    },[](streamerdata_ptr_t streamer, size_t size) { //
-      streamer->_low_watermark = size;
-    })
-    .def_property("high_watermark",[](streamerdata_ptr_t streamer) -> size_t { //
-      return streamer->_high_watermark;
-    },[](streamerdata_ptr_t streamer, size_t size) { //
-      streamer->_high_watermark = size;
-    })
-    .def_property("target_latency_ms",[](streamerdata_ptr_t streamer) -> float { //
-      return streamer->_target_latency_ms;
-    },[](streamerdata_ptr_t streamer, float size) { //
-      streamer->_target_latency_ms = size;
-    })
-    .def_property("interpolate_dropouts",[](streamerdata_ptr_t streamer) -> bool { //
-      return streamer->_interpolate_dropouts;
-    },[](streamerdata_ptr_t streamer, bool val) { //
-      streamer->_interpolate_dropouts = val;
-    });
+                           .def_property(
+                               "source",
+                               [](streamerdata_ptr_t streamer) -> lev2::audiostreaminginputchunk_source_ptr_t { //
+                                 return streamer->_source;
+                               },
+                               [](streamerdata_ptr_t streamer, lev2::audiostreaminginputchunk_source_ptr_t src) { //
+                                 streamer->_source = src;
+                               })
+                           .def_property(
+                               "low_watermark",
+                               [](streamerdata_ptr_t streamer) -> size_t { //
+                                 return streamer->_low_watermark;
+                               },
+                               [](streamerdata_ptr_t streamer, size_t size) { //
+                                 streamer->_low_watermark = size;
+                               })
+                           .def_property(
+                               "high_watermark",
+                               [](streamerdata_ptr_t streamer) -> size_t { //
+                                 return streamer->_high_watermark;
+                               },
+                               [](streamerdata_ptr_t streamer, size_t size) { //
+                                 streamer->_high_watermark = size;
+                               })
+                           .def_property(
+                               "target_latency_ms",
+                               [](streamerdata_ptr_t streamer) -> float { //
+                                 return streamer->_target_latency_ms;
+                               },
+                               [](streamerdata_ptr_t streamer, float size) { //
+                                 streamer->_target_latency_ms = size;
+                               })
+                           .def_property(
+                               "interpolate_dropouts",
+                               [](streamerdata_ptr_t streamer) -> bool { //
+                                 return streamer->_interpolate_dropouts;
+                               },
+                               [](streamerdata_ptr_t streamer, bool val) { //
+                                 streamer->_interpolate_dropouts = val;
+                               });
   type_codec->registerStdCodec<streamerdata_ptr_t>(streamer_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto noisegate_type = py::class_<NOISEGATE_DATA, DspBlockData, noisegatedata_ptr_t>(singmodule, "NoiseGateData")
-    .def_property("threshold",[](noisegatedata_ptr_t noisegate) -> float { //
-      return noisegate->_threshold;
-    },[](noisegatedata_ptr_t noisegate, float val) { //
-      noisegate->_threshold = val;
-    })
-    .def_property("attack",[](noisegatedata_ptr_t noisegate) -> float { //
-      return noisegate->_attack;
-    },[](noisegatedata_ptr_t noisegate, float val) { //
-      noisegate->_attack = val;
-    })
-    .def_property("release",[](noisegatedata_ptr_t noisegate) -> float { //
-      return noisegate->_release;
-    },[](noisegatedata_ptr_t noisegate, float val) { //
-      noisegate->_release = val;
-    })
-    .def_property("input_gain",[](noisegatedata_ptr_t noisegate) -> float { //
-      return noisegate->_inputgain;
-    },[](noisegatedata_ptr_t noisegate, float val) { //
-      noisegate->_inputgain = val;
-    })
-    .def_property("output_gain",[](noisegatedata_ptr_t noisegate) -> float { //
-      return noisegate->_outputgain;
-    },[](noisegatedata_ptr_t noisegate, float val) { //
-      noisegate->_outputgain = val;
-    });
+                            .def_property(
+                                "threshold",
+                                [](noisegatedata_ptr_t noisegate) -> float { //
+                                  return noisegate->_threshold;
+                                },
+                                [](noisegatedata_ptr_t noisegate, float val) { //
+                                  noisegate->_threshold = val;
+                                })
+                            .def_property(
+                                "attack",
+                                [](noisegatedata_ptr_t noisegate) -> float { //
+                                  return noisegate->_attack;
+                                },
+                                [](noisegatedata_ptr_t noisegate, float val) { //
+                                  noisegate->_attack = val;
+                                })
+                            .def_property(
+                                "release",
+                                [](noisegatedata_ptr_t noisegate) -> float { //
+                                  return noisegate->_release;
+                                },
+                                [](noisegatedata_ptr_t noisegate, float val) { //
+                                  noisegate->_release = val;
+                                })
+                            .def_property(
+                                "input_gain",
+                                [](noisegatedata_ptr_t noisegate) -> float { //
+                                  return noisegate->_inputgain;
+                                },
+                                [](noisegatedata_ptr_t noisegate, float val) { //
+                                  noisegate->_inputgain = val;
+                                })
+                            .def_property(
+                                "output_gain",
+                                [](noisegatedata_ptr_t noisegate) -> float { //
+                                  return noisegate->_outputgain;
+                                },
+                                [](noisegatedata_ptr_t noisegate, float val) { //
+                                  noisegate->_outputgain = val;
+                                });
   type_codec->registerStdCodec<noisegatedata_ptr_t>(noisegate_type);
   /////////////////////////////////////////////////////////////////////////////////
   using pitchblk_ptr_t = std::shared_ptr<PITCH_DATA>;
@@ -1430,7 +1460,6 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                 convdata->_impulse_dataset = irset;
               });
   type_codec->registerStdCodec<spectralconvolveTDdata_ptr_t>(spectralConvolveTDData_type);
-  /////////////////////////////////////////////////////////////////////////////////
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

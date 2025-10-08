@@ -350,7 +350,7 @@ void VulkanBuffer::copyFromHost(const void* src, size_t length) {
     //logchan_vkbufmem->log("VulkanBuffer copyFromHost copied<%zu> total<%zu>", length, _numcopied);
     _prvnumcopied = _numcopied;
   }
-  memcpy_fast(dst, src, _length);
+  std::memcpy(dst, src, length);
   vkUnmapMemory(_ctxVK->_vkdevice, *_memory->_vkmem);
 }
 //////////////////////////////////////

@@ -12,12 +12,13 @@
 
 namespace ork::audio::singularity {
 
-static logchannel_ptr_t logchan_strsimpl = logger()->getChannel("PERF");
+static logchannel_ptr_t logchan_strsimpl = logger()->configureChannel("STRSIMPLE", fvec3(1, 0.6, .8), false);
 
 struct SimpleImpl {
 
   StreamingOscillatorBlock* _oscil;
   bool _is_primed = false;
+  size_t _exec_count = 0;
 
   ////////////////////////////////////////////////////////////////
 
@@ -61,6 +62,13 @@ struct SimpleImpl {
 
     // Process all available chunks
     lev2::audioinputchunk_ptr_t chunk;
+    bool was_reset = source->_was_reset;
+    if(was_reset){
+      logchan_strsimpl->log("SimpleImpl: Detected source reset, clearing ring buffer");
+      _oscil->_ringBuffer.clear();
+      source->_was_reset = false;
+      reset();
+    }
     while (source->_inputqueue.try_pop(chunk)) {
       auto& chan0        = chunk->_channels[0];
       size_t num_samples = chan0.size();
@@ -86,7 +94,7 @@ struct SimpleImpl {
     auto outputchan            = _oscil->getOutBuf(dspbuf, 0) + _oscil->_layer->_dspwritebase;
     int frames                 = _oscil->_layer->_dspwritecount; // Always 64 - immutable
     size_t current_buffer_size = _oscil->_ringBuffer.size();
-
+    int ecount = _exec_count++;
     ///////////////////////////////////////////////////////////////////
     // Use actual sample rate and consistent thresholds with hysteresis
     ///////////////////////////////////////////////////////////////////
@@ -145,12 +153,22 @@ struct SimpleImpl {
     // logging
     ///////////////////////////////////////////////////////////////////
 
-    if (1) {
+    if (0) {
       logchan_strsimpl->perfItem("SIMPL:BufferCur", int(current_buffer_size));
       logchan_strsimpl->perfItem("SIMPL:BufferTgt", int(target_level));
       logchan_strsimpl->perfItem("SIMPL:BufferHealth", buffer_health);
       logchan_strsimpl->perfItem("SIMPL:Consuming", int(should_consume_samples));
       logchan_strsimpl->perfItem("SIMPL:STRETCH", stretch_state);
+    }
+    else if (1){
+      if((ecount%256)==0){
+        logchan_strsimpl->log("SIMPL: BufCur:%d Tgt:%d Health:%.3f Consuming:%d STRETCH:%d",
+          int(current_buffer_size),
+          int(target_level),
+          buffer_health,
+          int(should_consume_samples),
+          stretch_state);
+      }
     }
 
     ///////////////////////////////////////////////////////////////////

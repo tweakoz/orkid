@@ -1587,13 +1587,13 @@ void PrimitivesInterface::RenderEMLQuadAtZV16T16C16(
   lev2::VtxWriter<SVtxV16T16C16> vw;
   vw.Lock(_context, vb, 6);
 
-  vw.AddVertex(SVtxV16T16C16(fvec4(fX1, fY1, fZ), fvec4(1, 1, 1, 1), fvec4(iminU, iminV, 0, 0)));
-  vw.AddVertex(SVtxV16T16C16(fvec4(fX2, fY1, fZ), fvec4(1, 1, 1, 1), fvec4(imaxU, iminV, 0, 0)));
-  vw.AddVertex(SVtxV16T16C16(fvec4(fX2, fY2, fZ), fvec4(1, 1, 1, 1), fvec4(imaxU, imaxV, 0, 0)));
+  vw.AddVertex(SVtxV16T16C16(fvec4(fX1, fY1, fZ), fvec4(iminU, iminV, 0, 0), fvec4(iminU, iminV, 0, 0)));
+  vw.AddVertex(SVtxV16T16C16(fvec4(fX2, fY1, fZ), fvec4(imaxU, iminV, 0, 0), fvec4(imaxU, iminV, 0, 0)));
+  vw.AddVertex(SVtxV16T16C16(fvec4(fX2, fY2, fZ), fvec4(imaxU, imaxV, 0, 0), fvec4(imaxU, imaxV, 0, 0)));
 
-  vw.AddVertex(SVtxV16T16C16(fvec4(fX1, fY1, fZ), fvec4(1, 1, 1, 1), fvec4(iminU, iminV, 0, 0)));
-  vw.AddVertex(SVtxV16T16C16(fvec4(fX2, fY2, fZ), fvec4(1, 1, 1, 1), fvec4(imaxU, imaxV, 0, 0)));
-  vw.AddVertex(SVtxV16T16C16(fvec4(fX1, fY2, fZ), fvec4(1, 1, 1, 1), fvec4(iminU, imaxV, 0, 0)));
+  vw.AddVertex(SVtxV16T16C16(fvec4(fX1, fY1, fZ), fvec4(iminU, iminV, 0, 0), fvec4(iminU, iminV, 0, 0)));
+  vw.AddVertex(SVtxV16T16C16(fvec4(fX2, fY2, fZ), fvec4(imaxU, imaxV, 0, 0), fvec4(imaxU, imaxV, 0, 0)));
+  vw.AddVertex(SVtxV16T16C16(fvec4(fX1, fY2, fZ), fvec4(iminU, imaxV, 0, 0), fvec4(iminU, imaxV, 0, 0)));
 
   vw.UnLock(_context);
 

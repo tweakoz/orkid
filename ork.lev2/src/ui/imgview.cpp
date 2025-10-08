@@ -6,6 +6,7 @@
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/gfx/pri.h>
 #include <ork/lev2/gfx/image.h>
+#include <ork/lev2/gfx/meshutil/rigid_primitive.inl>
 #include <ork/lev2/ui/imgview.h>
 
 namespace ork::ui {
@@ -65,16 +66,16 @@ void ImageView::DoDraw(drawevent_constptr_t drwev) {
   tgt->PushModColor(_default_color);
 
   pri->RenderQuadAtZ(
-      defmtl.get(),
-      ix1,  // x0
-      ix2,  // x1
-      iy1,  // y0
-      iy2,  // y1
-      0.0f, // z
-      0.0f,
-      1.0f, // u0, u1
-      0.0f,
-      1.0f // v0, v1
+    defmtl.get(),
+    ix1,  // x0
+    ix2,  // x1
+    iy1,  // y0
+    iy2,  // y1
+    0.0f, // z
+    0.0f,
+    1.0f, // u0, u1
+    0.0f,
+    1.0f // v0, v1
   );
 
   tgt->PopModColor();
@@ -89,6 +90,10 @@ void ImageView::DoDraw(drawevent_constptr_t drwev) {
   if(_active_image!=_pending_image){
     _active_image = _pending_image;
     if(_active_image){
+      //int w = _active_image->_width;
+      //int h = _active_image->_height;
+      //int numbytes = _active_image->_data->length();
+      //printf("ImageView<%s> set active image<%p> <%dx%d> numb<%d>\n", _name.c_str(), (void*)_active_image.get(), w, h, numbytes);
       txi->initTextureFromImage(_texture.get(),_active_image);
     }
   }
@@ -112,11 +117,19 @@ void ImageView::DoDraw(drawevent_constptr_t drwev) {
   //////////////////////////////////
 
   if(_maintain_aspect_ratio) {
+
+
+
     // letterbox (or pillarbox)
     float fw = float(_geometry._w);
     float fh = float(_geometry._h);
     float iw = float(_active_image->_width);
     float ih = float(_active_image->_height);
+
+    if(_invert_aspect){
+      std::swap(iw,ih);
+    }
+
     float fr = fw / fh;
     float ir = iw / ih;
     if(ir>fr){
@@ -143,18 +156,53 @@ void ImageView::DoDraw(drawevent_constptr_t drwev) {
   // draw textured quad
   //////////////////////////////////
 
-  pri->RenderQuadAtZ(
-      _tex_material.get(),
-      ix1,  // x0
-      ix2,  // x1
-      iy1,  // y0
-      iy2,  // y1
-      0.0f, // z
-      0.0f,
-      1.0f, // u0, u1
-      0.0f,
-      1.0f // v0, v1
-  );
+  if(_img_mesh){
+    auto rcfd = std::make_shared<lev2::RenderContextFrameData>(tgt);
+    auto rcid = std::make_shared<lev2::RenderContextInstData>(rcfd);
+    if(_pipeline_override){
+      _pipeline_override->wrappedDrawCall(*rcid,[&](){
+        _img_mesh->renderEML(tgt);
+      });
+    }
+    else{
+      _tex_material->BeginBlock(tgt,*rcid);
+      _img_mesh->renderEML(tgt);
+      _tex_material->EndBlock(tgt);
+    }
+  }
+  else {
+    if(_pipeline_override){
+      auto rcfd = std::make_shared<lev2::RenderContextFrameData>(tgt);
+      auto rcid = std::make_shared<lev2::RenderContextInstData>(rcfd);
+      _pipeline_override->wrappedDrawCall(*rcid,[&](){
+        pri->RenderEMLQuadAtZV16T16C16(
+          ix1,  // x0
+          ix2,  // x1
+          iy1,  // y0
+          iy2,  // y1
+          0.0f, // z
+          0.0f,
+          1.0f, // u0, u1
+          0.0f,
+          1.0f // v0, v1
+        );
+      });
+    }
+    else{
+      pri->RenderQuadAtZ(
+          _tex_material.get(),
+          ix1,  // x0
+          ix2,  // x1
+          iy1,  // y0
+          iy2,  // y1
+          0.0f, // z
+          0.0f,
+          1.0f, // u0, u1
+          0.0f,
+          1.0f // v0, v1
+      );
+    }
+  }
 
   //////////////////////////////////
 

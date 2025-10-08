@@ -29,6 +29,10 @@ public:
   bool _maintain_aspect_ratio = false;
   void setImage(lev2::image_ptr_t img);
   void setImageProvider(lev2::image_provider_ptr_t imgprovider);
+  meshutil::rigidprim_V12N12B12T8C4_ptr_t _img_mesh;
+  lev2::fxpipeline_ptr_t _pipeline_override;
+  bool _invert_aspect = false;
+
 private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;
 

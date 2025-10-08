@@ -55,6 +55,7 @@ void pyinit_midi(py::module& module_lev2);
 void pyinit_gfx_camera(py::module& module_lev2);
 void pyinit_gfx_openvdb(py::module& module_lev2);
 void pyinit_vr(py::module& module_lev2);
+void pyinit_movie(py::module& module_lev2);
 void pyinit_editor(py::module& module_lev2);
 void ClassInit();
 void GfxInit(const std::string& gfxlayer);
@@ -152,6 +153,7 @@ PYBIND11_MODULE(_lev2, module_lev2) {
   pyinit_radiance_maps_processor(module_lev2);
   pyinit_gfx_openvdb(module_lev2);
   pyinit_vr(module_lev2);
+  pyinit_movie(module_lev2);
   pyinit_editor(module_lev2);
   ::ork::audio::singularity::pyinit_aud_singularity(module_lev2);
   //////////////////////////////////////////////////////////////////////////////

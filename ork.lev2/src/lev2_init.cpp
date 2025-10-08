@@ -435,7 +435,7 @@ struct ClassToucher {
   }
 
   ~ClassToucher() {
-    logger()->defaultChannel()->log( "ork.lev2 classes unregistered...");
+    logger()->defaultChannel()->log( "\nork.lev2 classes unregistered...");
   }
 
 };

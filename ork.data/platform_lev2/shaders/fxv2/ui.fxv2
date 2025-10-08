@@ -21,6 +21,18 @@ vertex_interface iface_vdefault : push_constants {
     vec4 position : POSITION;
     vec4 vtxcolor : COLOR0;
     vec2 uv0 : TEXCOORD0;
+  }
+  outputs {
+    //vec4 frg_clr;
+    vec2 frg_uv;
+  }
+}
+///////////////////////////////////////////////////////////////
+vertex_interface vif_DUALUV : push_constants {
+  inputs {
+    vec4 position : POSITION;
+    vec4 vtxcolor : COLOR0;
+    vec2 uv0 : TEXCOORD0;
     vec2 uv1 : TEXCOORD1;
   }
   outputs {
@@ -156,6 +168,11 @@ technique ui_vtx {
     fragment_shader = ps_fragclr;
     state_block     = sb_default;
   }
+}
+///////////////////////////////////////////////////////////////
+technique ui_imgview {
+  fxconfig = fxcfg_default;
+  vf_pass = { vs_vtxcolor, ps_fragclr, sb_default }
 }
 ///////////////////////////////////////////////////////////////
 technique uidev_modcolor {

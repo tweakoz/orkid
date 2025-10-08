@@ -7,7 +7,6 @@
 
 #include "pyext.h"
 #include <ork/lev2/gfx/image.h>
-#include <ork/lev2/gfx/util/movie.inl>
 #include <ork/kernel/memcpy.inl>
 #include <iostream>
 
@@ -53,6 +52,18 @@ void pyinit_gfx_image(py::module& module_lev2) {
             //printf( "got good rgb8 bufferdata <%p>\n", data_ptr );
             break;
           }
+          case EBufferFormat::RGBA8:{
+            OrkAssert(info.format == py::format_descriptor<uint8_t>::format());
+            int data_len = info.size;
+            auto data_ptr = static_cast<uint8_t*>(info.ptr);
+            OrkAssert(data_len == (w*h*4));
+            img->init(w,h,4,1);
+            img->_format = format_code;
+            auto data_out = (void*) img->_data->data();
+            memcpy_fast(data_out,data_ptr,data_len);
+            //printf( "got good rgb8 bufferdata <%p>\n", data_ptr );
+            break;
+          }
           default:
             OrkAssert(false);
 
@@ -76,52 +87,18 @@ void pyinit_gfx_image(py::module& module_lev2) {
       py::class_<ImageProvider, image_provider_ptr_t>(module_lev2, "ImageProvider")
       .def("__repr__", [](image_provider_ptr_t ip) {
         return "<lev2.ImageProvider>";
+      })
+      .def_static("createFromLambda", [](py::function func) -> image_provider_ptr_t {
+        auto prov = std::make_shared<ImageProvider>();
+        prov->_func = [func]() -> image_ptr_t {
+          py::gil_scoped_acquire acquire;
+          auto img = func();
+          return img.cast<image_ptr_t>();
+        };
+        return prov;
       });
   type_codec->registerStdCodec<image_provider_ptr_t>(image_provider_type);
   ///////////////////////////////////////////////////////
-  auto movieplayback_type = //
-      py::class_<MoviePlaybackContext, movieplayback_ptr_t>(module_lev2, "MoviePlaybackContext")
-      .def(py::init<>())
-      .def("init", [](movieplayback_ptr_t ctx, const std::string& filename) {
-        ctx->init(filename);
-      })
-      .def("play", [](movieplayback_ptr_t ctx) {
-        ctx->play();
-      })
-      .def("pause", [](movieplayback_ptr_t ctx) {
-        ctx->pause();
-      })
-      .def("stop", [](movieplayback_ptr_t ctx) {
-        ctx->stop();
-      })
-      .def("restart", [](movieplayback_ptr_t ctx) {
-        ctx->restart();
-      })
-      .def("createImageProvider", [](movieplayback_ptr_t ctx) -> image_provider_ptr_t {
-        return ctx->createImageProvider();
-      })
-      .def_property_readonly("state", [](movieplayback_ptr_t ctx) -> crcstring_ptr_t {
-        auto crc = std::make_shared<CrcString>(uint64_t(ctx->_state));
-        return crc;
-      })
-      .def_property_readonly("fps", [](movieplayback_ptr_t ctx) -> double {
-        return ctx->_fps;
-      })
-      .def_property_readonly("width", [](movieplayback_ptr_t ctx) -> int {
-        if (ctx->_format_ctx && ctx->_video_stream_idx >= 0) {
-          return ctx->_format_ctx->streams[ctx->_video_stream_idx]->codecpar->width;
-        }
-        return 0;
-      })
-      .def_property_readonly("height", [](movieplayback_ptr_t ctx) -> int {
-        if (ctx->_format_ctx && ctx->_video_stream_idx >= 0) {
-          return ctx->_format_ctx->streams[ctx->_video_stream_idx]->codecpar->height;
-        }
-        return 0;
-      });
-  type_codec->registerStdCodec<movieplayback_ptr_t>(movieplayback_type);
-  ///////////////////////////////////////////////////////
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////

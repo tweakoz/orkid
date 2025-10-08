@@ -52,7 +52,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(const VkRtgCreateOp
   if (options._depthOptions._format != VK_FORMAT_UNDEFINED) {
     uint64_t USAGE  = "depth"_crcu;
     auto bufferimpl = std::make_shared<VklRtBufferImpl>(_contextVK, RTGIMPL.get(), USAGE, options._depthOptions._format);
-    printf("Creating depth buffer impl <%p> - w<%d> h<%d>\n", bufferimpl.get(), options._width,options._height );
+    //printf("Creating depth buffer impl <%p> - w<%d> h<%d>\n", bufferimpl.get(), options._width,options._height );
     RTGIMPL->_depth_buffer_impl = bufferimpl;
     _vkCreateImageForBuffer(_contextVK, bufferimpl, options._depthOptions);
     auto& adesc          = bufferimpl->_attachmentDesc;
@@ -68,7 +68,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(const VkRtgCreateOp
 
 vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rtgroup) {
   int inumtargets = rtgroup->numImageBuffers();
-  logchan_rtgroup->log("Creating RTG<%p> impl - inumtargets<%d>", rtgroup, inumtargets);
+  //logchan_rtgroup->log("Creating RTG<%p> impl - inumtargets<%d>", rtgroup, inumtargets);
   VkRtgCreateOptions options;
   options._rtgroup = rtgroup;
   options._width  = rtgroup->width();
@@ -82,7 +82,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rt
     color_option._usage        = rtb->_usage;
     color_option._format       = VkFormatConverter::convertBufferFormat(rtb->format());
     color_option._with_texture = (rtb->texture() != nullptr);
-    logchan_rtgroup->log("Creating RTB impl - buffer %d usage=0x%zx (%zu)", i, color_option._usage, color_option._usage);
+    //logchan_rtgroup->log("Creating RTB impl - buffer %d usage=0x%zx (%zu)", i, color_option._usage, color_option._usage);
     options._colorOptions.push_back(color_option);
   }
   ///////////////////////////////////////////////////

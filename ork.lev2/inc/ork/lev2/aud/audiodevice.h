@@ -52,6 +52,8 @@ struct StreamingAudioInputChunkSource : public AudioInputChunkSource {
   lev2::audioinputchunk_ptr_t getChunk() final;
   MpMcBoundedQueue<lev2::audioinputchunk_ptr_t,16> _inputqueue;
   svar64_t _impl;
+  int _chunk_index = 0;
+  bool _was_reset = true;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

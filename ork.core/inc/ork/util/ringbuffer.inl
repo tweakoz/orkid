@@ -111,6 +111,11 @@ public:
     T directAccess(size_t index) const {
       return _buffer[index];
     }
+    void clear() {
+        _read_index = 0;
+        _write_index = 0;
+        _count = 0;
+    }
 private:
     std::vector<T> _buffer;
     size_t _size;

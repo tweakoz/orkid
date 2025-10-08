@@ -69,6 +69,16 @@ using audio_callback_t = std::function<void(movieaudioframe_ptr_t)>;
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
+struct MovieAudioConfig {
+  int _sample_rate = 0;
+  int _num_channels = 0;
+  std::string _codec_name;
+  bool _valid = false;
+  void dump() const;
+};
+
+using movieaudioconfig_ptr_t = std::shared_ptr<MovieAudioConfig>;
+
 struct MoviePlaybackContext {
 
   enum class State : crc_enum_t {
@@ -128,6 +138,10 @@ struct MoviePlaybackContext {
   image_provider_ptr_t _image_provider;
   image_ptr_t _current_image;
   std::mutex _image_mutex;
+  svar64_t _audio_impl;
+
+  // Audio configuration (populated from first decoded frame)
+  movieaudioconfig_ptr_t _audio_config;
 
   /////////////////////////////////////////////////////////////////////////////////////////
 private:

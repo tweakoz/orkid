@@ -25,6 +25,66 @@ from lev2utils.scenegraph import createSceneGraph
 
 ################################################################################
 
+SHADER_TEXT = """
+uniform_set ub_ui {
+  vec4 modcolor;
+  mat4 mvp;
+  float time;
+}
+sampler_set ss_ui (descriptor_set 0) {
+  sampler2D ColorMap;
+}
+vertex_interface iface_vui : ub_ui {
+  inputs {
+    vec4 position : POSITION;
+    vec4 uv0 : TEXCOORD0;
+  }
+  outputs {
+  	vec4 frg_uv0;
+  }
+}
+fragment_interface iface_fui 
+  : iface_vui
+  : ub_ui
+	: ss_ui {
+  outputs {
+    layout(location = 0) vec4 out_color;
+  }
+}
+vertex_shader vs_x
+	: iface_vui {
+	gl_Position = mvp*position;
+	frg_uv0 = uv0;
+}
+fragment_shader fs_x
+	: iface_fui {
+  vec2 uvp = frg_uv0.xy - vec2(0.5,0.5);
+  float tscale = 2.5;
+  float timex = time*tscale;
+  vec2 uvr;
+  float angle = atan(uvp.y,uvp.x);
+  float oradius = length(uvp);
+  float radius = oradius + sin(20.0*oradius)*0.03;
+  angle += timex*0.1;
+  uvr.x = sin(angle)*radius;
+  uvr.y = cos(angle)*(radius*-1.0);   
+  uvr += vec2(0.5,0.5);
+  float mask = 1.0-smoothstep(0.45,0.5,oradius);
+
+  vec3 c = texture(ColorMap,uvr.xy).xyz*mask;
+  out_color = vec4(c,1);
+}
+state_block sb_x : default {
+  CullTest = OFF;
+}
+technique uix {
+	fxconfig=fxcfg_default;
+	vf_pass = { vs_x, fs_x, sb_x }
+}
+"""
+
+################################################################################
+
 class PackWidgets(object):
 
   def __init__(self):
@@ -32,11 +92,11 @@ class PackWidgets(object):
 
     self.box_height = 0.0
 
-    self.ezapp = lev2.OrkEzApp.create(self, 
-                                      left=100, 
-                                      top=100, 
-                                      width=1280, 
-                                      height=900)
+    self.ezapp = lev2.OrkEzApp.create(self,
+                                      fullscreen=False,
+                                      enable_audio=True,
+                                      enable_audio_output=True,
+                                      enable_audio_synth=True)
 
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()
@@ -195,6 +255,8 @@ class PackWidgets(object):
     self.x2 = sp2w.makeChild( uiclass=lev2.ui.EvTestBox, args=["evb1",vec4(0.3,0.3,0.3,1)] )
     self.y2 = sp2w.makeChild( uiclass=lev2.ui.EvTestBox, args=["evb2",vec4(0.3,0.3,0.4,1)] )
 
+    self.abstime = 0.0
+
     ############################################
     
     def onCtrlC(signum, frame):
@@ -203,10 +265,18 @@ class PackWidgets(object):
 
     signal.signal(signal.SIGINT, onCtrlC)
 
+  ##############################################
+
+  def onSynthInit(self,synth):
+    #self.audiodevice = singularity.device.instance()
+    self.synth = synth
+    assert(self.synth!=None)
+    #self.synth.system_tempo = 120.0
 
   ##############################################
 
   def onGpuInit(self,ctx):
+        
     ############################################
     # Setup movie playback for bunny.mp4
     #  assign the image provider to 1st imageview widget
@@ -218,7 +288,32 @@ class PackWidgets(object):
     provider1 = self.movie1.createImageProvider()
     self.imgview1.setImageProvider(provider1)
     self.movie1.play()
+    #self.imgview1.invert_aspect = True
+    self.prg1 = self.movie1.createAudioProgram(self.synth)
+    self.voice1 = self.synth.keyOn(0, 60, self.prg1, None)
+    self.voice1.gain = 0.0
+    self.movie1_tgt_gain = 0.0
+    ############################################
+    # Override shader for 1st imageview widget
+    ############################################
 
+    imp_mtl = lev2.FreestyleMaterial()
+    imp_mtl.gpuInitFromShaderText(ctx,"uix",SHADER_TEXT)
+    imp_mtl.rasterstate.setBlendingMacro(tokens.OFF)
+    imp_mtl.rasterstate.culltest = tokens.PASS_FRONT
+    imp_mtl.rasterstate.depthtest = tokens.LEQUALS
+    imp_permu = lev2.FxPipelinePermutation()
+    imp_permu.technique = imp_mtl.shader.technique("uix")
+    imp_pipeline = imp_mtl.fxcache.findPipeline(imp_permu)
+    imp_pipeline.name = "imppasspipe"
+    imp_pipeline.sharedMaterial = imp_mtl
+    self.imgview1.pipeline = imp_pipeline
+    p_mvp = imp_mtl.param("mvp")
+    p_tex = imp_mtl.param("ColorMap")
+    p_tim = imp_mtl.param("time")
+    imp_pipeline.bindParam(p_mvp, tokens.RCFD_Camera_MVP_Mono )
+    imp_pipeline.bindParam(p_tex, self.imgview1.texture )
+    imp_pipeline.bindParam(p_tim, lambda: self.abstime )
     ############################################
     # Setup movie playback for wipeout.mp4
     #  assign the image provider to 2nd imageview widget
@@ -231,6 +326,11 @@ class PackWidgets(object):
     self.imgview2.setImageProvider(provider2)
     self.movie2.play()
    
+    self.prg2 = self.movie2.createAudioProgram(self.synth)
+    self.voice2 = self.synth.keyOn(0, 60, self.prg2, None)
+    self.voice2.gain = -36.0
+    self.movie2_tgt_gain = -36.0
+
     ########################################################
     # assign buttons to control movie playback
     ########################################################
@@ -261,10 +361,14 @@ class PackWidgets(object):
         self.imgview1.setImageProvider(provider1)
         self.imgview2.setImageProvider(provider2)
         self.m_swap = False
+        self.movie1_tgt_gain = 0.0
+        self.movie2_tgt_gain = -18.0
       else:
         self.imgview1.setImageProvider(provider2)
         self.imgview2.setImageProvider(provider1)
         self.m_swap = True
+        self.movie1_tgt_gain = -18.0
+        self.movie2_tgt_gain = 0.0
 
     self.btn1.onPressed = on_B1
     self.btn2.onPressed = on_B2
@@ -294,9 +398,7 @@ class PackWidgets(object):
     sg_params.DiffuseIntensity = 1.0
     sg_params.SpecularIntensity = 1.0
     sg_params.AmbientLevel = vec3(.125)
-    #sg_params.preset = "DeferredPBR"
     sg_params.preset = "ForwardPBR"
-    #sg_params.dbufcontext = self.dbufcontext
 
     self.scenegraph = lev2.scenegraph.Scene(sg_params)
     self.layer = self.scenegraph.createLayer("std_forward")
@@ -339,7 +441,8 @@ class PackWidgets(object):
 
     abstime = updinfo.absolutetime
     self.sgv.setDirty()
-
+    self.abstime = abstime
+    
     self.cube_node.worldTransform.translation = vec3(0,-self.box_height,0)
 
     def genpos():
@@ -367,6 +470,9 @@ class PackWidgets(object):
     self.uicam.updateMatrices()
     self.camera.copyFrom( self.uicam.cameradata )
     self.scenegraph.updateScene(self.cameralut)
+
+    self.voice1.gain = (self.voice1.gain*0.98+self.movie1_tgt_gain*0.02)
+    self.voice2.gain = (self.voice2.gain*0.98+self.movie2_tgt_gain*0.02)
 
   ##############################################
 

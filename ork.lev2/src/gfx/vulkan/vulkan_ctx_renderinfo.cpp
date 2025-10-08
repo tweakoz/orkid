@@ -53,9 +53,9 @@ VulkanRenderInfo::VulkanRenderInfo(VkRtGroupImpl* rtgi) {
   _renderinfo.pStencilAttachment       = nullptr;
 
   auto dbuf_impl = rtgi->_depth_buffer_impl;
-  if(log) {
-    printf("rtgi->_width<%d> rtgi->_height<%d> dbuf_impl<%p>\n", rtgi->_width, rtgi->_height, (void*) dbuf_impl.get());
-  }
+  //if(log) {
+    //printf("rtgi->_width<%d> rtgi->_height<%d> dbuf_impl<%p>\n", rtgi->_width, rtgi->_height, (void*) dbuf_impl.get());
+  //}
   if (dbuf_impl) {
     initializeVkStruct(_rainfo_depth, VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO);
     // Use slice view from descriptor if available, otherwise use image view

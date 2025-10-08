@@ -312,6 +312,8 @@ struct STREAMING_OSCILLATOR_DATA : public DspBlockData {
   lev2::audiostreaminginputchunk_source_ptr_t _source;
 };
 
+using streaming_oscil_data_ptr_t = std::shared_ptr<STREAMING_OSCILLATOR_DATA>;
+
 class StreamingOscillatorBlock : public DspBlock {
 public:
   using dataclass_t = STREAMING_OSCILLATOR_DATA;
@@ -351,10 +353,9 @@ public:
   std::atomic<size_t> _chunks_received_total;
   double _last_chunk_time;
   std::deque<double> _chunk_intervals;
-  std::vector<float> _accumulator_buffer;
   svar64_t _enhancement_impl;
 
 };
 
-
+prgdata_ptr_t createStreamingOscillatorProgramFromSource( lev2::audiostreaminginputchunk_source_ptr_t src, float tgt_latency_ms=250.0f );
 } // namespace ork::audio::singularity
