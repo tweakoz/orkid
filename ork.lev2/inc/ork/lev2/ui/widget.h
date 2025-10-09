@@ -201,7 +201,8 @@ public:
   evhandler_t _evhandler = nullptr;
   bool _ignoreEvents = false;
   bool _clipEvents   = true;
-
+  int _fixed_width  = 0;
+  int _fixed_height = 0;
   std::string _name;
   uint64_t _userID = 0;
   drawevent_constptr_t _drawEvent;

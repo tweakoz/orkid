@@ -204,6 +204,9 @@ void pyinit_ui_layout(py::module& uimodule) {
   /////////////////////////////////////////////////////////////////////////////////
   auto layoutgroup_type = //
       py::class_<ui::LayoutGroup, ui::Group, uilayoutgroup_ptr_t>(uimodule, "LayoutGroup")
+          .def_static("create", [](std::string name) -> uilayoutgroup_ptr_t { //
+            return std::make_shared<ui::LayoutGroup>(name);
+          })
           .def_property(
               "clearColorStd",
               [](uilayoutgroup_ptr_t lgrp) -> fvec4 { //

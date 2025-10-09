@@ -78,6 +78,7 @@ class PackWidgets(object):
     self.prev_w = self.imv1w.width
     self.prev_h = self.imv1w.height
     self.prev_image = None
+    plt.style.use('dark_background')
     self.fig = plt.figure(figsize=(self.prev_w/100.0,self.prev_h/100.0), dpi=100)
     self.canvas = FigureCanvasAgg(self.fig)
     # Plot something
@@ -129,6 +130,11 @@ class PackWidgets(object):
     # grab the RGBA buffer from the figure
     ############################
     rgba_buf = np.asarray(self.canvas.buffer_rgba())
+    rgb = rgba_buf[:, :, :3].astype(np.float32)
+    magnitude = np.sqrt(np.sum(rgb**2, axis=2))
+    magnitude = np.clip(magnitude / (255 * np.sqrt(3)), 0, 1)  
+    rgba_buf[:, :, 3] = (magnitude * 255).astype(np.uint8)
+    
     ############################
     # create an ork image from the RGBA buffer
     ############################

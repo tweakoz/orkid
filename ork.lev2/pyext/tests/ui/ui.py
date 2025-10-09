@@ -20,13 +20,14 @@ class UiTestApp(object):
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()
     lg_group = self.ezapp.topLayoutGroup
-    lg_group.margin = 8
     griditems = lg_group.makeGrid( width = 2,
                                    height = 2,
                                    margin = 1,
                                    uiclass = ui.LambdaBox,
-                                   args = ["box",vec4(1,0,1,1)] )
+                                   args = ["box",vec4(0.5,0,0.5,1)] )
 
+    lg_group.margin = 4
+    lg_group.clearColorGuide = vec4(0.8,0.6,0.2,1)
     #print(griditems)
 
     griditems[0].widget.onPressed(lambda: print("GRIDITEM0 PUSHED"))

@@ -103,6 +103,8 @@ class PackWidgets(object):
 
     lg_group = self.ezapp.topLayoutGroup
     lg_group.clearColorGuide = vec4(0.8,0.6,0.2,1)
+    self.lg_group1 = lg_group
+    self.uictx1 = self.ezapp.uicontext
 
     ############################################
     # start out with a 2x2 grid of boxes
@@ -430,6 +432,15 @@ class PackWidgets(object):
     self.sgv.scenegraph = self.scenegraph
     self.sgv.forkDB()
     self.scenegraph.lightingmanager.gpuInit(ctx)
+
+  ################################################
+
+  def onGpuUpdate(self,ctx):
+    t = int(self.abstime*1.0)
+    #if t%2==0:
+    #  self.ezapp.uicontext = self.uictx1
+    #else:
+    #  self.ezapp.uicontext = self.uictx2
 
   ################################################
 

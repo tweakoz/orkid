@@ -386,12 +386,18 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
         return ezapp->_eztopwidget;
       })
       ///////////////////////////////////////////////////////
-      .def_property_readonly("topLayoutGroup", [](orkezapp_ptr_t ezapp) -> uilayoutgroup_ptr_t { //
+      .def_property("topLayoutGroup", [](orkezapp_ptr_t ezapp) -> uilayoutgroup_ptr_t { //
         return ezapp->_topLayoutGroup;
+      },
+      [](orkezapp_ptr_t ezapp, uilayoutgroup_ptr_t lg) { //
+        ezapp->_topLayoutGroup = lg;
       })
       ///////////////////////////////////////////////////////
-      .def_property_readonly("uicontext", [](orkezapp_ptr_t ezapp) -> ui::context_ptr_t { //
+      .def_property("uicontext", [](orkezapp_ptr_t ezapp) -> ui::context_ptr_t { //
         return ezapp->_uicontext;
+      },
+      [](orkezapp_ptr_t ezapp, ui::context_ptr_t ctx) { //
+        ezapp->_uicontext = ctx;
       })
       ///////////////////////////////////////////////////////
       .def(

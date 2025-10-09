@@ -39,6 +39,10 @@ struct TabWidget : public Group {
   void setTabBarHeight(int height) { _tabBarHeight = height; DoLayout(); }
   int getTabBarHeight() const { return _tabBarHeight; }
 
+  // Page mode - when true, tabs are hidden and widget acts as a page/stack container
+  void setShowTabs(bool show) { _showTabs = show; DoLayout(); }
+  bool getShowTabs() const { return _showTabs; }
+
 protected:
   // Override from Widget
   void DoDraw(drawevent_constptr_t drwev) override;
@@ -51,6 +55,7 @@ private:
   int _activeTabIndex = -1;
   int _tabBarHeight = 30;
   int _hoveredTabIndex = -1;
+  bool _showTabs = true;  // When false, acts as a page/stack widget
 
   // Tab colors
   fvec4 _tabColorActive = fvec4(0.35, 0.35, 0.4, 1.0);

@@ -46,9 +46,12 @@ void TabWidget::DoLayout() {
     _activeTabIndex = 0;
   }
 
+  // Effective tab bar height (0 when in page mode)
+  int effectiveTabBarHeight = _showTabs ? _tabBarHeight : 0;
+
   // Layout all children to fill the content area (but we'll only draw the active one)
   for (auto& child : _children) {
-    child->SetRect(0, _tabBarHeight, _geometry._w, std::max(0, _geometry._h - _tabBarHeight));
+    child->SetRect(0, effectiveTabBarHeight, _geometry._w, std::max(0, _geometry._h - effectiveTabBarHeight));
   }
 }
 
@@ -72,8 +75,11 @@ Widget* TabWidget::doRouteUiEvent(event_constptr_t ev) {
   int localX = ev->miX - _geometry._x;
   int localY = ev->miY - _geometry._y;
 
-  // Check if event is in tab bar area
-  if (localY < _tabBarHeight) {
+  // Effective tab bar height (0 when in page mode)
+  int effectiveTabBarHeight = _showTabs ? _tabBarHeight : 0;
+
+  // Check if event is in tab bar area (only if tabs are shown)
+  if (_showTabs && localY < effectiveTabBarHeight) {
     // Update hovered tab for visual feedback
     _hoveredTabIndex = _getTabIndexAt(localX, localY);
     // Route to self for tab selection
@@ -94,6 +100,11 @@ Widget* TabWidget::doRouteUiEvent(event_constptr_t ev) {
 /////////////////////////////////////////////////////////////////////////
 HandlerResult TabWidget::DoOnUiEvent(event_constptr_t ev) {
   HandlerResult result;
+
+  // Skip tab interaction if tabs are hidden (page mode)
+  if (!_showTabs) {
+    return result;
+  }
 
   // Convert to local coordinates
   int localX = ev->miX - _geometry._x;
@@ -139,6 +150,9 @@ HandlerResult TabWidget::DoOnUiEvent(event_constptr_t ev) {
 
 /////////////////////////////////////////////////////////////////////////
 void TabWidget::DoDraw(drawevent_constptr_t drwev) {
+  // Effective tab bar height (0 when in page mode)
+  int effectiveTabBarHeight = _showTabs ? _tabBarHeight : 0;
+
   // Draw content area background
   auto tgt = drwev->GetTarget();
   auto mtxi = tgt->MTXI();
@@ -148,9 +162,9 @@ void TabWidget::DoDraw(drawevent_constptr_t drwev) {
   mtxi->PushUIMatrix();
   {
     // Draw content background (area below tabs)
-    if (_geometry._h > _tabBarHeight) {
+    if (_geometry._h > effectiveTabBarHeight) {
       int x1, y1, x2, y2;
-      LocalToRoot(0, _tabBarHeight, x1, y1);
+      LocalToRoot(0, effectiveTabBarHeight, x1, y1);
       LocalToRoot(_geometry._w, _geometry._h, x2, y2);
 
       defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
@@ -164,8 +178,10 @@ void TabWidget::DoDraw(drawevent_constptr_t drwev) {
   }
   mtxi->PopUIMatrix();
 
-  // Draw tab bar
-  _drawTabBar(drwev);
+  // Draw tab bar (only if tabs are shown)
+  if (_showTabs) {
+    _drawTabBar(drwev);
+  }
 
   // Draw active child
   if (_activeTabIndex >= 0 && _activeTabIndex < _children.size()) {

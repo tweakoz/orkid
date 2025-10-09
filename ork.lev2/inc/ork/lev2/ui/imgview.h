@@ -21,11 +21,14 @@ public:
   ImageView(
       const std::string& name);
   fvec4 _default_color;
+
   lev2::image_provider_ptr_t _imgprovider;
   lev2::image_ptr_t _pending_image;
   lev2::image_ptr_t _active_image;
   lev2::texture_ptr_t _texture;
+
   lev2::uitexmaterial_ptr_t _tex_material;
+
   bool _maintain_aspect_ratio = false;
   void setImage(lev2::image_ptr_t img);
   void setImageProvider(lev2::image_provider_ptr_t imgprovider);

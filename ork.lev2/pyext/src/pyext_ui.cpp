@@ -74,7 +74,8 @@ void pyinit_ui(py::module& module_lev2) {
       });
   /////////////////////////////////////////////////////////////////////////////////
   auto uicontext_type = //
-      py::class_<ui::Context, ui::context_ptr_t>(module_lev2, "Context")
+      py::class_<ui::Context, ui::context_ptr_t>(uimodule, "Context")
+          .def(py::init<>())
           .def_property_readonly("hasKeyboardFocus", [](ui::context_ptr_t uictx) -> bool { return uictx->hasKeyboardFocus(); })
           .def("hasMouseFocus", [](ui::context_ptr_t uictx, uiwidget_ptr_t w) -> bool { return uictx->hasMouseFocus(w.get()); })
           .def("dumpWidgets", [](ui::context_ptr_t uictx, std::string label) { uictx->dumpWidgets(label); })
@@ -91,7 +92,7 @@ void pyinit_ui(py::module& module_lev2) {
   type_codec->registerStdCodec<ui::context_ptr_t>(uicontext_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto uievent_type = //
-      py::class_<ui::Event, ui::event_ptr_t>(module_lev2, "Event")
+      py::class_<ui::Event, ui::event_ptr_t>(uimodule, "Event")
           .def(
               "__repr__",
               [](ui::event_ptr_t ev) -> std::string { //
@@ -204,7 +205,7 @@ void pyinit_ui(py::module& module_lev2) {
           });
   type_codec->registerStdCodec<ui::event_ptr_t>(uievent_type);
   /////////////////////////////////////////////////////////////////////////////////
-  auto drwev_type = py::class_<ui::DrawEvent, uidrawevent_ptr_t>(module_lev2, "DrawEvent")       //
+  auto drwev_type = py::class_<ui::DrawEvent, uidrawevent_ptr_t>(uimodule, "DrawEvent")          //
                         .def_property_readonly("context", [](uidrawevent_ptr_t event) -> ctx_t { //
                           return ctx_t(event->GetTarget());
                         });
@@ -242,6 +243,22 @@ void pyinit_ui(py::module& module_lev2) {
                   }
                   return rval;
                 };
+              })
+          .def_property(
+              "fixed_width",
+              [](uiwidget_ptr_t widget) -> int { //
+                return widget->_fixed_width;
+              },
+              [](uiwidget_ptr_t widget, int fw) { //
+                widget->_fixed_width = fw;
+              })
+          .def_property(
+              "fixed_height",
+              [](uiwidget_ptr_t widget) -> int { //
+                return widget->_fixed_height;
+              },
+              [](uiwidget_ptr_t widget, int fh) { //
+                widget->_fixed_height = fh;
               })
           .def_property(
               "userID",
@@ -471,31 +488,56 @@ void pyinit_ui(py::module& module_lev2) {
                 auto tabs         = std::make_shared<ui::TabWidget>(name);
                 return tabs;
               })
-          .def("makeChild", [](ui::tabwidget_ptr_t tabs, py::kwargs kwargs) -> ui::widget_ptr_t { //
-            ui::widget_ptr_t rval;
-            if (kwargs) {
-              py::list args;
-              py::object wfactory;
-              int args_parsed = 0;
-              for (auto item : kwargs) {
-                auto key = py::cast<std::string>(item.first);
-                if (key == "uiclass") {
-                  auto uiclass_obj  = py::cast<py::object>(item.second);
-                  bool has_wfactory = py::hasattr(uiclass_obj, "wfactory");
-                  OrkAssert(has_wfactory);
-                  wfactory = uiclass_obj.attr("wfactory");
-                  args_parsed++;
-                } else if (key == "args") {
-                  args = py::cast<py::list>(item.second);
-                  args_parsed++;
+          .def(
+              "makeChild",
+              [](ui::tabwidget_ptr_t tabs, py::kwargs kwargs) -> ui::widget_ptr_t { //
+                ui::widget_ptr_t rval;
+                if (kwargs) {
+                  py::list args;
+                  py::object wfactory;
+                  int args_parsed = 0;
+                  for (auto item : kwargs) {
+                    auto key = py::cast<std::string>(item.first);
+                    if (key == "uiclass") {
+                      auto uiclass_obj  = py::cast<py::object>(item.second);
+                      bool has_wfactory = py::hasattr(uiclass_obj, "wfactory");
+                      OrkAssert(has_wfactory);
+                      wfactory = uiclass_obj.attr("wfactory");
+                      args_parsed++;
+                    } else if (key == "args") {
+                      args = py::cast<py::list>(item.second);
+                      args_parsed++;
+                    }
+                  }
+                  OrkAssert(args_parsed == 2);
+                  rval = py::cast<ui::widget_ptr_t>(wfactory(args));
+                  tabs->addChild(rval);
                 }
-              }
-              OrkAssert(args_parsed == 2);
-              rval = py::cast<ui::widget_ptr_t>(wfactory(args));
-              tabs->addChild(rval);
-            }
-            return rval;
-          });
+                return rval;
+              })
+          .def(
+              "setActiveTab",
+              [](ui::tabwidget_ptr_t tabs, int index) { //
+                tabs->setActiveTab(index);
+              })
+          .def(
+              "getActiveTab",
+              [](ui::tabwidget_ptr_t tabs) -> int { //
+                return tabs->getActiveTab();
+              })
+          .def(
+              "getTabCount",
+              [](ui::tabwidget_ptr_t tabs) -> int { //
+                return tabs->getTabCount();
+              })
+          .def_property(
+              "showTabs",
+              [](ui::tabwidget_ptr_t tabs) -> bool { //
+                return tabs->getShowTabs();
+              },
+              [](ui::tabwidget_ptr_t tabs, bool show) { //
+                tabs->setShowTabs(show);
+              });
   type_codec->registerStdCodec<ui::tabwidget_ptr_t>(tabsw_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto vpack_type = //
@@ -1260,16 +1302,24 @@ void pyinit_ui(py::module& module_lev2) {
               [](ui::imgview_ptr_t imgview, image_ptr_t img) { //
                 imgview->setImage(img);
               })
-          .def("setImageProvider", [](ui::imgview_ptr_t imgview, image_provider_ptr_t imgprov) { //
-            imgview->setImageProvider(imgprov);
-          })
+          .def(
+              "setImageProvider",
+              [](ui::imgview_ptr_t imgview, image_provider_ptr_t imgprov) { //
+                imgview->setImageProvider(imgprov);
+              })
           .def_property_readonly("texture", [](ui::imgview_ptr_t imgview) -> lev2::texture_ptr_t { return imgview->_texture; })
-          .def_property("primitive", [](ui::imgview_ptr_t imgview) -> meshutil::rigidprim_V12N12B12T8C4_ptr_t { return imgview->_img_mesh; },
-                        [](ui::imgview_ptr_t imgview, meshutil::rigidprim_V12N12B12T8C4_ptr_t p) { imgview->_img_mesh = p; })
-          .def_property("pipeline", [](ui::imgview_ptr_t imgview) -> lev2::fxpipeline_ptr_t { return imgview->_pipeline_override; },
-                        [](ui::imgview_ptr_t imgview, lev2::fxpipeline_ptr_t p) { imgview->_pipeline_override = p; })
-          .def_property("invert_aspect", [](ui::imgview_ptr_t imgview) -> bool { return imgview->_invert_aspect; },
-                        [](ui::imgview_ptr_t imgview, bool p) { imgview->_invert_aspect = p; });
+          .def_property(
+              "primitive",
+              [](ui::imgview_ptr_t imgview) -> meshutil::rigidprim_V12N12B12T8C4_ptr_t { return imgview->_img_mesh; },
+              [](ui::imgview_ptr_t imgview, meshutil::rigidprim_V12N12B12T8C4_ptr_t p) { imgview->_img_mesh = p; })
+          .def_property(
+              "pipeline",
+              [](ui::imgview_ptr_t imgview) -> lev2::fxpipeline_ptr_t { return imgview->_pipeline_override; },
+              [](ui::imgview_ptr_t imgview, lev2::fxpipeline_ptr_t p) { imgview->_pipeline_override = p; })
+          .def_property(
+              "invert_aspect",
+              [](ui::imgview_ptr_t imgview) -> bool { return imgview->_invert_aspect; },
+              [](ui::imgview_ptr_t imgview, bool p) { imgview->_invert_aspect = p; });
   type_codec->registerStdCodec<ui::imgview_ptr_t>(imgview_type);
   /////////////////////////////////////////////////////////////////////////////////
   pyinit_ui_layout(uimodule);
