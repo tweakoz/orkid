@@ -17,7 +17,7 @@
 namespace ork::lev2 {
 void pyinit_ui_box(py::module& uimodule) {
   auto type_codec = python::pb11_typecodec_t::instance();
-  auto box_type = //
+  auto box_type   = //
       py::class_<ui::Box, ui::Widget, uibox_ptr_t>(uimodule, "Box")
           .def_static(
               "wfactory",
@@ -70,6 +70,14 @@ void pyinit_ui_box(py::module& uimodule) {
                   rval.append(shitem);
                 }
                 return rval;
+              })
+          .def_property(
+              "pipeline",
+              [](uibox_ptr_t box) -> lev2::fxpipeline_ptr_t { //
+                return box->_pipeline_override;
+              },
+              [](uibox_ptr_t box, lev2::fxpipeline_ptr_t p) { //
+                box->_pipeline_override = p;
               })
           .def("__repr__", [](uibox_ptr_t box) {
             return FormatString("<Box name<%s> widget<%p>>", box->GetName().c_str(), (void*)box.get());
@@ -238,21 +246,24 @@ void pyinit_ui_box(py::module& uimodule) {
               [](ui::textbox_ptr_t box, crcstring_ptr_t c) { //
                 box->_valign = ui::ETextAlignV(c->hashed());
               })
-              .def_property("font",
+          .def_property(
+              "font",
               [](ui::textbox_ptr_t box) -> std::string { //
                 return box->_font;
               },
               [](ui::textbox_ptr_t box, std::string fnt) { //
                 box->_font = fnt;
               })
-              .def_property("textcolor",
+          .def_property(
+              "textcolor",
               [](ui::textbox_ptr_t box) -> fvec4 { //
                 return box->_textcolor;
               },
               [](ui::textbox_ptr_t box, fvec4 clr) { //
                 box->_textcolor = clr;
               })
-              .def_property("bgcolor",
+          .def_property(
+              "bgcolor",
               [](ui::textbox_ptr_t box) -> fvec4 { //
                 return box->_color;
               },
@@ -340,7 +351,6 @@ void pyinit_ui_box(py::module& uimodule) {
             };
           });
   type_codec->registerStdCodec<uilambdabox_ptr_t>(lambdabox_type);
-
 }
 ///////////////////////////////////////////////////////////////////////////////
-} //namespace ork::lev2 {
+} // namespace ork::lev2

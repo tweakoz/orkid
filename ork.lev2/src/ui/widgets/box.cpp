@@ -21,7 +21,35 @@ Box::Box(
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Box::DoDraw(drawevent_constptr_t drwev) {
-  Widget::_drawColoredBox(drwev, _color);
+  if(_pipeline_override){
+    auto tgt    = drwev->GetTarget();
+    auto mtxi   = tgt->MTXI();
+    auto pri = tgt->PRI();
+    auto rcfd = std::make_shared<lev2::RenderContextFrameData>(tgt);
+    auto rcid = std::make_shared<lev2::RenderContextInstData>(rcfd);
+    mtxi->PushUIMatrix();
+    int ix1, iy1;
+    LocalToRoot(0, 0, ix1, iy1);
+    int ix2 = ix1 + _geometry._w;
+    int iy2 = iy1 + _geometry._h;
+    _pipeline_override->wrappedDrawCall(*rcid,[&](){
+      pri->RenderEMLQuadAtZV16T16C16(
+        ix1,  // x0
+        ix2,  // x1
+        iy1,  // y0
+        iy2,  // y1
+        0.0f, // z
+        0.0f,
+        1.0f, // u0, u1
+        0.0f,
+        1.0f // v0, v1
+      );
+    });
+    mtxi->PopUIMatrix();
+  }
+  else{
+    Widget::_drawColoredBox(drwev, _color);
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 HandlerResult Box::DoOnUiEvent(event_constptr_t Ev) {

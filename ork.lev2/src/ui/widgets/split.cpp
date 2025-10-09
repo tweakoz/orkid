@@ -33,16 +33,38 @@ void HorizontalSplit::DoLayout() {
   if (_split_ratio < 0.0f) _split_ratio = 0.0f;
   if (_split_ratio > 1.0f) _split_ratio = 1.0f;
 
-  int split_x = int(_geometry._w * _split_ratio);
+  int split_x;
+  int left_width, right_width;
+
+  // Check for fixed width on children
+  bool child0_fixed = (_children.size() > 0) && (_children[0]->_fixed_width > 0);
+  bool child1_fixed = (_children.size() > 1) && (_children[1]->_fixed_width > 0);
+
+  if (child0_fixed && !child1_fixed) {
+    // First child fixed, second fills remaining
+    left_width = _children[0]->_fixed_width;
+    right_width = _geometry._w - left_width;
+    split_x = left_width;
+  } else if (!child0_fixed && child1_fixed) {
+    // Second child fixed, first fills remaining
+    right_width = _children[1]->_fixed_width;
+    left_width = _geometry._w - right_width;
+    split_x = left_width;
+  } else {
+    // Both fixed or neither fixed - use split_ratio
+    split_x = int(_geometry._w * _split_ratio);
+    left_width = split_x;
+    right_width = _geometry._w - split_x;
+  }
 
   // 0th child = left
   if (_children.size() > 0) {
-    _children[0]->SetRect(0, 0, split_x, _geometry._h);
+    _children[0]->SetRect(0, 0, left_width, _geometry._h);
   }
 
   // 1st child = right
   if (_children.size() > 1) {
-    _children[1]->SetRect(split_x, 0, _geometry._w - split_x, _geometry._h);
+    _children[1]->SetRect(split_x, 0, right_width, _geometry._h);
   }
 }
 
@@ -115,16 +137,38 @@ void VerticalSplit::DoLayout() {
   if (_split_ratio < 0.0f) _split_ratio = 0.0f;
   if (_split_ratio > 1.0f) _split_ratio = 1.0f;
 
-  int split_y = int(_geometry._h * _split_ratio);
+  int split_y;
+  int top_height, bottom_height;
+
+  // Check for fixed height on children
+  bool child0_fixed = (_children.size() > 0) && (_children[0]->_fixed_height > 0);
+  bool child1_fixed = (_children.size() > 1) && (_children[1]->_fixed_height > 0);
+
+  if (child0_fixed && !child1_fixed) {
+    // First child fixed, second fills remaining
+    top_height = _children[0]->_fixed_height;
+    bottom_height = _geometry._h - top_height;
+    split_y = top_height;
+  } else if (!child0_fixed && child1_fixed) {
+    // Second child fixed, first fills remaining
+    bottom_height = _children[1]->_fixed_height;
+    top_height = _geometry._h - bottom_height;
+    split_y = top_height;
+  } else {
+    // Both fixed or neither fixed - use split_ratio
+    split_y = int(_geometry._h * _split_ratio);
+    top_height = split_y;
+    bottom_height = _geometry._h - split_y;
+  }
 
   // 0th child = top
   if (_children.size() > 0) {
-    _children[0]->SetRect(0, 0, _geometry._w, split_y);
+    _children[0]->SetRect(0, 0, _geometry._w, top_height);
   }
 
   // 1st child = bottom
   if (_children.size() > 1) {
-    _children[1]->SetRect(0, split_y, _geometry._w, _geometry._h - split_y);
+    _children[1]->SetRect(0, split_y, _geometry._w, bottom_height);
   }
 }
 

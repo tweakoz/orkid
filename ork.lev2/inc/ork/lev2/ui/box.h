@@ -18,7 +18,7 @@ public:
       int w = 0,
       int h = 0);
   fvec4 _color;
-
+  lev2::fxpipeline_ptr_t _pipeline_override;
   private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;
   HandlerResult DoOnUiEvent(event_constptr_t Ev) override;

@@ -323,6 +323,9 @@ void pyinit_ui(py::module& module_lev2) {
               [](uiwidget_ptr_t widget, int w, int h) { //
                 widget->SetSize(w, h);
               })
+              .def_property_readonly("size", [](uiwidget_ptr_t widget) -> fvec2 { //
+                return fvec2(float(widget->width()), float(widget->height()));
+              })
           .def(
               "setRect",
               [](uiwidget_ptr_t widget, int x, int y, int w, int h) { //
