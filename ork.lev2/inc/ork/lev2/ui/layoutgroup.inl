@@ -76,47 +76,76 @@ struct LayoutGroup : public Group {
   template <typename T, typename... A> //
   std::vector<LayoutItem<T>> makeWidgetsRC(std::vector<int> rccounts, A&&... args) {
     std::vector<LayoutItem<T>> layout_items;
-    ui::anchor::guide_ptr_t gxa, gxb;
-    ui::anchor::guide_ptr_t gya, gyb;
     int h = rccounts.size();
-    for (int y = 0; y < h; y++) {
-      float fya = float(y) / float(h);
-      float fyb = float(y + 1) / float(h);
-      if (y == 0) {
-        gya          = _layout->proportionalHorizontalGuide(fya); // 23,27,31,35
-        // Margin inherited from layout
-      } else {
-        gya = gyb;
-      }
-      gyb          = _layout->proportionalHorizontalGuide(fyb); // 24,28,32,36
-      // Margin inherited from layout
-      _hguides.insert(gya);
-      _hguides.insert(gyb);
-      int w = rccounts[y];
-      for (int x = 0; x < w; x++) {
-        float fxa = float(x) / float(w);
-        float fxb = float(x + 1) / float(w);
-        if (x == 0) {
-          gxa          = _layout->proportionalVerticalGuide(fxa); // 25,29,33,37
-          // Margin inherited from layout
-        } else {
-          gxa = gxb;
-        }
-        gxb          = _layout->proportionalVerticalGuide(fxb); // 25,29,33,37
-        // Margin inherited from layout
-        _vguides.insert(gxa);
-        _vguides.insert(gxb);
-        auto name   = _name + FormatString("-ch-%d", (y * w + x));
-        auto chitem = this->makeChild<T>(std::forward<A>(args)...);
-        layout_items.push_back(chitem);
-        chitem._layout->setMargin(_margin);
-        chitem._layout->top()->anchorTo(gya);
-        chitem._layout->left()->anchorTo(gxa);
-        chitem._layout->bottom()->anchorTo(gyb);
-        chitem._layout->right()->anchorTo(gxb);
+
+    // Step 1: Create horizontal guides for row boundaries (on parent layout)
+    std::vector<ui::anchor::guide_ptr_t> hguides;
+    for (int y = 0; y <= h; y++) {
+      float fy = float(y) / float(h);
+      auto guide = _layout->proportionalHorizontalGuide(fy);
+      hguides.push_back(guide);
+      _hguides.insert(guide);
+
+      bool is_edge = (y == 0) || (y == h);
+      if (is_edge) {
+        guide->_locked = true;
       }
     }
-    return layout_items; 
+
+    // Step 2: For each row, create a row container with its own vertical guides
+    for (int y = 0; y < h; y++) {
+      int w = rccounts[y];
+
+      // Create invisible row container with parent's margin
+      auto row_name = _name + FormatString("-row-%d", y);
+      auto row_group = std::make_shared<LayoutGroup>(row_name, 0, 0, 0, 0, _margin);
+      row_group->_clear = false;  // Don't draw background
+      addChild(row_group);
+
+      // Anchor row container to horizontal guides (spans full width)
+      auto row_layout = row_group->_layout;
+      row_layout->top()->anchorTo(hguides[y]);
+      row_layout->bottom()->anchorTo(hguides[y + 1]);
+      row_layout->left()->anchorTo(_layout->left());
+      row_layout->right()->anchorTo(_layout->right());
+
+      // Create vertical guides within this row's layout
+      std::vector<ui::anchor::guide_ptr_t> row_vguides;
+      for (int x = 0; x <= w; x++) {
+        float fx = float(x) / float(w);
+        auto guide = row_layout->proportionalVerticalGuide(fx);
+        row_vguides.push_back(guide);
+        // Add to BOTH row's and parent's vguides so parent can detect/draw them
+        row_group->_vguides.insert(guide);
+        _vguides.insert(guide);
+
+        bool is_edge = (x == 0) || (x == w);
+        if (is_edge) {
+          guide->_locked = true;
+        }
+      }
+
+      // Create cells within this row
+      for (int x = 0; x < w; x++) {
+        auto name = _name + FormatString("-ch-%d", layout_items.size());
+        auto chitem = row_group->makeChild<T>(std::forward<A>(args)...);
+        layout_items.push_back(chitem);
+
+        chitem._layout->setMargin(_margin);
+        chitem._layout->top()->anchorTo(row_layout->top());
+        chitem._layout->bottom()->anchorTo(row_layout->bottom());
+        chitem._layout->left()->anchorTo(row_vguides[x]);
+        chitem._layout->right()->anchorTo(row_vguides[x + 1]);
+      }
+
+      // Update this row's layout geometry
+      row_layout->updateAll();
+    }
+
+    // Update parent layout geometry
+    _layout->updateAll();
+
+    return layout_items;
   }
   //////////////////////////////////////
   template <typename T, typename... A> //

@@ -29,8 +29,9 @@ class LayoutTest(object):
     self.ezapp.topWidget.enableUiDraw()
 
     lg_group = self.ezapp.topLayoutGroup
-    #lg_group.margin = 4
     rc = [3,2]
+
+    # Create cells using makeRowsColumns
     self.griditems = lg_group.makeRowsColumns(
       rccounts=rc,
       margin = 4,
@@ -38,8 +39,42 @@ class LayoutTest(object):
       args = ["label",vec4(0.1,0.1,0.3,1)],
     )
 
+    # Change colors after creation so we can see individual cells
+    colors = [
+      vec4(1.0, 0.2, 0.2, 1),  # Red
+      vec4(0.2, 1.0, 0.2, 1),  # Green
+      vec4(0.2, 0.2, 1.0, 1),  # Blue
+      vec4(1.0, 1.0, 0.2, 1),  # Yellow
+      vec4(1.0, 0.2, 1.0, 1),  # Magenta
+    ]
+    for idx, item in enumerate(self.griditems):
+      item.widget.color = colors[idx % len(colors)]
+
     self.lg_group = lg_group
-    lg_group.margin = 4
+
+    # Debug: dump layout structure
+    print("=" * 60)
+    print(f"Created layout with rc={rc}")
+    print(f"Number of items: {len(self.griditems)}")
+
+    # Print vertical guides
+    vguides = lg_group.vertical_guides
+    print(f"\nVertical guides ({len(vguides)}):")
+    for i, g in enumerate(sorted(vguides, key=lambda x: x.proportion)):
+      print(f"  Guide {i}: proportion={g.proportion:.4f}, locked={g.locked}")
+
+    # Print horizontal guides
+    hguides = lg_group.horizontal_guides
+    print(f"\nHorizontal guides ({len(hguides)}):")
+    for i, g in enumerate(sorted(hguides, key=lambda x: x.proportion)):
+      print(f"  Guide {i}: proportion={g.proportion:.4f}, locked={g.locked}")
+
+    # Print actual widget geometries
+    print("\nActual widget geometries:")
+    for idx, item in enumerate(self.griditems):
+      w = item.widget
+      print(f"  Cell {idx} ({w.name}): x={w.x}, y={w.y}, w={w.width}, h={w.height}")
+    print("=" * 60)
 
     def onCtrlC(signum, frame):
       print("signalling EXIT to ezapp")

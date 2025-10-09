@@ -62,6 +62,9 @@ void pyinit_ui_box(py::module& uimodule) {
                   int rc = py::cast<int>(rowcols[i]);
                   rccounts.push_back(rc);
                 }
+                // Set margin before calling makeWidgetsRC so it uses the correct value
+                lg->_margin = m;
+                lg->_layout->setMargin(m);
                 auto layoutitems = lg->makeWidgetsRC<ui::Box>(rccounts, name, color);
                 py::list rval;
                 for (auto item : layoutitems) {
@@ -78,6 +81,14 @@ void pyinit_ui_box(py::module& uimodule) {
               },
               [](uibox_ptr_t box, lev2::fxpipeline_ptr_t p) { //
                 box->_pipeline_override = p;
+              })
+              .def_property(
+              "color",
+              [](uibox_ptr_t box) -> fvec4 { //
+                return box->_color;
+              },
+              [](uibox_ptr_t box, fvec4 c) { //
+                box->_color = c;
               })
           .def("__repr__", [](uibox_ptr_t box) {
             return FormatString("<Box name<%s> widget<%p>>", box->GetName().c_str(), (void*)box.get());
@@ -131,6 +142,9 @@ void pyinit_ui_box(py::module& uimodule) {
                   int rc = py::cast<int>(rowcols[i]);
                   rccounts.push_back(rc);
                 }
+                // Set margin before calling makeWidgetsRC so it uses the correct value
+                lg->_margin = m;
+                lg->_layout->setMargin(m);
                 auto layoutitems = lg->makeWidgetsRC<ui::LabelBox>(rccounts, name, color, "");
                 py::list rval;
                 for (auto item : layoutitems) {
@@ -216,6 +230,9 @@ void pyinit_ui_box(py::module& uimodule) {
                   int rc = py::cast<int>(rowcols[i]);
                   rccounts.push_back(rc);
                 }
+                // Set margin before calling makeWidgetsRC so it uses the correct value
+                lg->_margin = m;
+                lg->_layout->setMargin(m);
                 auto layoutitems = lg->makeWidgetsRC<ui::TextBox>(rccounts, name, color, "");
                 py::list rval;
                 for (auto item : layoutitems) {
