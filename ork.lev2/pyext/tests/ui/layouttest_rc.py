@@ -61,13 +61,13 @@ class LayoutTest(object):
     vguides = lg_group.vertical_guides
     print(f"\nVertical guides ({len(vguides)}):")
     for i, g in enumerate(sorted(vguides, key=lambda x: x.proportion)):
-      print(f"  Guide {i}: proportion={g.proportion:.4f}, locked={g.locked}")
+      print(f"  Guide {i}: proportion={g.proportion:.4f}, locked={g.locked}, margin={g.margin}")
 
     # Print horizontal guides
     hguides = lg_group.horizontal_guides
     print(f"\nHorizontal guides ({len(hguides)}):")
     for i, g in enumerate(sorted(hguides, key=lambda x: x.proportion)):
-      print(f"  Guide {i}: proportion={g.proportion:.4f}, locked={g.locked}")
+      print(f"  Guide {i}: proportion={g.proportion:.4f}, locked={g.locked}, margin={g.margin}")
 
     # Print actual widget geometries
     print("\nActual widget geometries:")

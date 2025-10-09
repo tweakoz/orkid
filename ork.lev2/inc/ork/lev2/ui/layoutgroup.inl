@@ -96,9 +96,10 @@ struct LayoutGroup : public Group {
     for (int y = 0; y < h; y++) {
       int w = rccounts[y];
 
-      // Create invisible row container with parent's margin
+      // Create invisible row container with margin=0
+      // The guides themselves have the margin, we don't want to compound it
       auto row_name = _name + FormatString("-row-%d", y);
-      auto row_group = std::make_shared<LayoutGroup>(row_name, 0, 0, 0, 0, _margin);
+      auto row_group = std::make_shared<LayoutGroup>(row_name, 0, 0, 0, 0, 0);
       row_group->_clear = false;  // Don't draw background
       addChild(row_group);
 
@@ -110,19 +111,28 @@ struct LayoutGroup : public Group {
       row_layout->right()->anchorTo(_layout->right());
 
       // Create vertical guides within this row's layout
+      // Use parent's left/right edge guides instead of creating duplicates
       std::vector<ui::anchor::guide_ptr_t> row_vguides;
-      for (int x = 0; x <= w; x++) {
-        float fx = float(x) / float(w);
-        auto guide = row_layout->proportionalVerticalGuide(fx);
-        row_vguides.push_back(guide);
-        // Add to BOTH row's and parent's vguides so parent can detect/draw them
-        row_group->_vguides.insert(guide);
-        _vguides.insert(guide);
 
-        bool is_edge = (x == 0) || (x == w);
-        if (is_edge) {
-          guide->_locked = true;
+      for (int x = 0; x <= w; x++) {
+        ui::anchor::guide_ptr_t guide;
+
+        if (x == 0) {
+          // Use parent's left edge guide
+          guide = row_layout->left();
+        } else if (x == w) {
+          // Use parent's right edge guide
+          guide = row_layout->right();
+        } else {
+          // Create interior guide with explicit margin from parent
+          float fx = float(x) / float(w);
+          guide = row_layout->proportionalVerticalGuide(fx);
+          guide->_margin = _margin;  // Explicitly set margin from parent
+          row_group->_vguides.insert(guide);
+          _vguides.insert(guide);
         }
+
+        row_vguides.push_back(guide);
       }
 
       // Create cells within this row
@@ -131,6 +141,7 @@ struct LayoutGroup : public Group {
         auto chitem = row_group->makeChild<T>(std::forward<A>(args)...);
         layout_items.push_back(chitem);
 
+        // Set margin on cell layout - this creates the spacing when edges anchor to guides
         chitem._layout->setMargin(_margin);
         chitem._layout->top()->anchorTo(row_layout->top());
         chitem._layout->bottom()->anchorTo(row_layout->bottom());
