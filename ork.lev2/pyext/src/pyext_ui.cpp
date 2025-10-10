@@ -353,7 +353,13 @@ void pyinit_ui(py::module& module_lev2) {
               rval = type_codec->encode(widget->_uservars.valueForKey(key));
             }
             return rval;
-          });
+          })
+          .def_property("label_font", [](uiwidget_ptr_t widget) -> font_ptr_t { //
+                          return widget->_label_font;
+                        },
+                        [](uiwidget_ptr_t widget, font_ptr_t f) { //
+                          widget->_label_font = f;
+                        });
   type_codec->registerStdCodec<uiwidget_ptr_t>(widget_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto group_type = //
