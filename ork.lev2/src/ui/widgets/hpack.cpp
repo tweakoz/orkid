@@ -153,7 +153,6 @@ void HorizontalPack::DoDraw(drawevent_constptr_t drwev) {
   // create scissor for content area
   ///////////////////////////////////
 
-  size_t num_children = _children.size();
   int scissor_x = _geometry._x;
   int scissor_y = _geometry._y;
   int scissor_w = _geometry._w+_margin;
