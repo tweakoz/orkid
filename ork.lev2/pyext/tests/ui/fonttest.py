@@ -34,8 +34,8 @@ class LayoutTest(object):
     MARGIN = 4
     
     self.griditems = lg_group.makeGrid(
-      width=3,
-      height=3,
+      width=2,
+      height=4,
       margin = MARGIN,
       uiclass = lev2.ui.TextBox,
       args = ["label",vec4(.5,.5,.5,1),"Hello"],
@@ -54,9 +54,17 @@ class LayoutTest(object):
     self.griditems[3].widget.font = font_i16
     self.griditems[4].widget.font = font_i24
     self.griditems[5].widget.font = font_i32
-    self.griditems[7].widget.font = font_i48
-    self.griditems[8].widget.font = font_d24
-    
+    self.griditems[6].widget.font = font_i48
+    self.griditems[7].widget.font = font_d24
+    self.griditems[0].widget.setText("Font: i12")
+    self.griditems[1].widget.setText("Font: i13")
+    self.griditems[2].widget.setText("Font: i14")
+    self.griditems[3].widget.setText("Font: i16")
+    self.griditems[4].widget.setText("Font: i24")
+    self.griditems[5].widget.setText("Font: i32")
+    self.griditems[6].widget.setText("Font: i48")
+    self.griditems[7].widget.setText("Font: d24")
+        
     self.lg_group = lg_group
     lg_group.margin = MARGIN
 
