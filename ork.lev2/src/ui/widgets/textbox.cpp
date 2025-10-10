@@ -40,6 +40,7 @@ void TextBox::DoDraw(drawevent_constptr_t drwev) {
   auto primi = tgt->PRI();
   auto defmtl = lev2::defaultUIMaterial();
 
+  //pushScissor(fbi);
   mtxi->PushUIMatrix();
   {
     int ix1, iy1, ix2, iy2, ixc, iyc;
@@ -121,5 +122,90 @@ void TextBox::DoDraw(drawevent_constptr_t drwev) {
     tgt->PopModColor();
   }
   mtxi->PopUIMatrix();
+  //popScissor(fbi);
 }
+
+HandlerResult TextBox::DoOnUiEvent(event_constptr_t cev) {
+  HandlerResult result;
+  bool was_handled = false;
+  // Convert to local coordinates
+  int localX = 0;
+  int localY = 0;
+  RootToLocal(cev->miX, cev->miY, localX, localY);
+  switch (cev->_eventcode) {
+    case EventCode::PUSH: {
+      was_handled = true;
+      if(_onMousePush){
+        _onMousePush(cev);
+      }
+      break;
+    }
+    case EventCode::RELEASE: {
+      was_handled = true;
+      if(_onMouseRelease){
+        _onMouseRelease(cev);
+      }
+      break;
+    }
+    case EventCode::MOVE: {
+      if(_onMouseMove){
+        _onMouseMove(cev);
+      }
+      break;
+    }
+    case EventCode::DRAG: {
+      was_handled = true;
+      if(_onMouseDrag){
+        _onMouseDrag(cev);
+      }
+      break;
+    }
+    case EventCode::KEY_DOWN: {
+      was_handled = true;
+      if(_onKeyDown){
+        _onKeyDown(cev);
+      }
+      break;
+    }
+    case EventCode::KEY_UP: {
+      was_handled = true;
+      if(_onKeyUp){
+        _onKeyUp(cev);
+      }
+      break;
+    }
+    default:
+      break;
+  }
+  if(was_handled)
+    result.setHandled(this);
+  return result;
+}
+Widget* TextBox::doRouteUiEvent(event_constptr_t Ev) {
+  bool shouldRoute = false;
+  switch(Ev->_eventcode) {
+    case EventCode::PUSH:
+      shouldRoute = (_onMousePush!=nullptr);
+      break;
+    case EventCode::RELEASE:
+      shouldRoute = (_onMouseRelease!=nullptr);
+      break;
+    case EventCode::MOVE:
+      shouldRoute = (_onMouseMove!=nullptr);
+      break;
+    case EventCode::DRAG:
+      shouldRoute = (_onMouseDrag!=nullptr);
+      break;
+    case EventCode::KEY_DOWN:
+      shouldRoute = (_onKeyDown!=nullptr);
+      break;
+    case EventCode::KEY_UP:
+      shouldRoute = (_onKeyUp!=nullptr);
+      break;
+    default:
+      break;
+  }
+  return shouldRoute ? this : nullptr;
+}
+
 } // namespace ork::ui

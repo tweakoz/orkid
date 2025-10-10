@@ -257,10 +257,11 @@ class PackWidgets(object):
     sp2 = lg_group.makeChild( uiclass=lev2.ui.HorizontalSplit, args=["spl1"])
     self.lg_group.replaceChild( self.griditems[2].layout, sp2 )
     sp2w = sp2.widget
-    self.x2 = sp2w.makeChild( uiclass=lev2.ui.EvTestBox, args=["evb1",vec4(0.3,0.3,0.3,1)] )
+    self.x2 = sp2w.makeChild( uiclass=lev2.ui.Box, args=["evb1",vec4(0.3,0.3,0.3,1)] )
     self.y2 = sp2w.makeChild( uiclass=lev2.ui.EvTestBox, args=["evb2",vec4(0.3,0.3,0.4,1)] )
 
     self.abstime = 0.0
+    self.x2.ignoreEvents = True
 
     ############################################
     
@@ -482,6 +483,7 @@ class PackWidgets(object):
   ##############################################
 
   def onUiEvent(self,uievent):
+    print("onUiEvent: ",uievent)
     return lev2.ui.HandlerResult()
 
 ###############################################################################

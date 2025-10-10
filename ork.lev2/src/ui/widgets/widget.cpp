@@ -74,6 +74,8 @@ Widget* Widget::routeUiEvent(event_constptr_t ev) {
   EASY_BLOCK("uictx::RUIEV", profiler::colors::Red);
   auto ret = _evrouter ? _evrouter(ev) // lambda takes preference
                        : doRouteUiEvent(ev);
+  if (0)
+    printf("routeUiEvent target<%s>\n", ret ? ret->_name.c_str() : "null");
   return ret;
 }
 ///////////////////////////////////////////////////////////
@@ -309,6 +311,16 @@ void Widget::RootToLocal(int rx, int ry, int& lx, int& ly) const {
   }
 }
 /////////////////////////////////////////////////////////////////////////
+void Widget::pushScissor(lev2::FrameBufferInterface* fbi) const {
+  int scissor_x, scissor_y;
+  LocalToRoot(_geometry._x,_geometry._y,scissor_x,scissor_y);
+  fbi->pushScissor(scissor_x, scissor_y, _geometry._w,_geometry._h);
+}
+/////////////////////////////////////////////////////////////////////////
+void Widget::popScissor(lev2::FrameBufferInterface* fbi) const {
+  fbi->popScissor();
+}
+/////////////////////////////////////////////////////////////////////////
 void Widget::SetDirty() {
   _dirty = true;
   if (_parent)
@@ -528,12 +540,13 @@ void Widget::_drawLabel(ui::drawevent_constptr_t drwev) {
 
   tgt->PushModColor(fvec4(1, 1, 1, 1));
 
+  int text_y = _label_font->centerY(iyc);
   if (_name.length()) {
     lev2::FontMan::beginTextBlock(tgt, _name.length());
     lev2::FontMan::DrawText(
         tgt, //
         ix1 + 4,
-        iyc - 6,
+        text_y,
         _name.c_str());
     lev2::FontMan::endTextBlock(tgt);
   }

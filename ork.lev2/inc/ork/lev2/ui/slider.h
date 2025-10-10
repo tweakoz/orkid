@@ -35,10 +35,13 @@ public:
   int _min;
   int _max;
   bool _update_on_drag = false;
+  int _slider_x0 = 0;
+  int _slider_x1 = 0;
 
   fvec4 _bg_color;
   fvec4 _fg_color;
   fvec4 _fill_color;
+
 
 private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;
@@ -92,6 +95,8 @@ public:
   float _max;
   bool _log_mode = false;
   bool _update_on_drag = false;
+  int _slider_x0 = 0;
+  int _slider_x1 = 0;
 
   fvec4 _bg_color;
   fvec4 _fg_color;

@@ -86,6 +86,9 @@ public:
   void enqueueCharacter(VtxWriter<SVtxV12C4T16>& vw, float fx, float fy, int iu, int iv, U32 ucolor) const;
   const FontDesc& description() const;
   int stringWidth(int numchars) const;
+  int stringHeight(int numlines) const;
+  int charHeight() const;
+  int centerY(int c) const;
 
   std::string msFileName;
   std::string msFontName;

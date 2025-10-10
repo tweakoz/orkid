@@ -633,6 +633,16 @@ int Font::stringWidth(int numchars) const {
   return mFontDesc.stringWidth(numchars);
 }
 
+int Font::stringHeight(int numlines) const {
+  return numlines * mFontDesc.miAdvanceHeight;
+}
+int Font::charHeight() const {
+  return mFontDesc.miCharHeight;
+}
+int Font::centerY(int c) const {
+  return c - (mFontDesc.miCharHeight >> 1);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void Font::enqueueCharacter( FontMan::vtxwriter_t& vw, //

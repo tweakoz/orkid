@@ -417,13 +417,14 @@ Widget* LayoutGroup::doRouteUiEvent(event_constptr_t ev) {
     bool inside = child->IsEventInside(ev);
     if (inside) {
       auto child_target = child->routeUiEvent(ev);
-      if (child_target and not child_target->_ignoreEvents) {
+      if(child_target and child_target->_ignoreEvents) continue;
+      if (child_target) {
         //_clearColor = fvec4(0,0,0, 1.0);
         return child_target;
       }
     }
   }
-  return this;
+  return nullptr;
 }
 /////////////////////////////////////////////////////////////////////////
 }} // namespace ork::ui

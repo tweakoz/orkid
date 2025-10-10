@@ -92,7 +92,7 @@ void IntSlider::_refresh() {
   auto content = contentRect();
   float unit = _valToUnit(_value);
 
-  _indicator_pos = (unit * (content._w-4));
+  _indicator_pos = (unit * (_slider_x1-_slider_x0));
 
   // Smart text positioning - avoid overlap with filled bar
   float text_unit = 0.0f;
@@ -126,8 +126,8 @@ HandlerResult IntSlider::DoOnUiEvent(event_constptr_t cev) {
         //_update_on_drag = cev->mbCTRL;
 
         auto content = contentRect();
-
-        float unit = float(localX) / float(content._w);
+        float slx = float(localX - _slider_x0);
+        float unit = slx / float(_slider_x1-_slider_x0);
         if (unit < 0.0f)
           unit = 0.0f;
         else if (unit > 1.0f)
@@ -251,6 +251,9 @@ void IntSlider::DoDraw(drawevent_constptr_t drwev) {
     int content_y1 = iy1 + 2;
     int content_y2 = iy2 - 2;
 
+    _slider_x0 = content_x1 + 2;
+    _slider_x1 = content_x2 - 2;
+
     defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::ALPHA);
     defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
 
@@ -273,7 +276,7 @@ void IntSlider::DoDraw(drawevent_constptr_t drwev) {
         1.0f // v0, v1
     );
     tgt->PopModColor();
-
+    
     ///////////////////////////////
     // draw content background
     ///////////////////////////////
@@ -281,8 +284,8 @@ void IntSlider::DoDraw(drawevent_constptr_t drwev) {
     tgt->PushModColor(fvec4(_bg_color.xyz() * 0.5, 1));
     primi->RenderQuadAtZ(
         defmtl.get(),
-        content_x1 + 2, // x0
-        content_x2,     // x1
+        _slider_x0, // x0
+        _slider_x1,     // x1
         content_y1 + 1, // y0
         content_y2 - 1, // y1
         0.0f,           // z
@@ -297,12 +300,12 @@ void IntSlider::DoDraw(drawevent_constptr_t drwev) {
     // draw filled indicator
     ///////////////////////////////
 
-    int fill_x2 = content_x1 + int(_indicator_pos);
+    int fill_x2 = _slider_x0 + int(_indicator_pos);
     if (fill_x2 > content_x1 + 2) {
       tgt->PushModColor(_fill_color);
       primi->RenderQuadAtZ(
           defmtl.get(),
-          content_x1 + 2, // x0
+          _slider_x0, // x0
           fill_x2,        // x1
           content_y1 + 3, // y0
           content_y2 - 3, // y1
@@ -322,6 +325,7 @@ void IntSlider::DoDraw(drawevent_constptr_t drwev) {
     ork::lev2::FontMan::PushFont(_label_font);
     tgt->PushModColor(_fg_color);
 
+    int text_y = _label_font->centerY(iyc);
     std::string display_text = _text_editing ? _edit_buffer + "_" : _value_str;
     if(display_text.empty())
       display_text = "0";
@@ -330,7 +334,7 @@ void IntSlider::DoDraw(drawevent_constptr_t drwev) {
     lev2::FontMan::DrawText(
         tgt, //
         text_x,
-        iyc - 6,
+        text_y,
         display_text.c_str());
     lev2::FontMan::endTextBlock(tgt);
 
@@ -462,7 +466,7 @@ void FloatSlider::_refresh() {
   auto content = contentRect();
   float unit = _valToUnit(_value);
 
-  _indicator_pos = (unit * (content._w-4));
+  _indicator_pos = (unit * (_slider_x1-_slider_x0));
 
   // Smart text positioning - avoid overlap with filled bar
   float text_unit = 0.0f;
@@ -480,6 +484,10 @@ void FloatSlider::_refresh() {
 HandlerResult FloatSlider::DoOnUiEvent(event_constptr_t cev) {
   HandlerResult rval;
 
+  int localX = 0;
+  int localY = 0;
+  RootToLocal(cev->miX, cev->miY, localX, localY);
+
   switch (cev->_eventcode) {
     case EventCode::PUSH: {
       _dragging = true;
@@ -492,9 +500,9 @@ HandlerResult FloatSlider::DoOnUiEvent(event_constptr_t cev) {
         //_update_on_drag = cev->mbCTRL;
 
         auto content = contentRect();
-        int local_x = cev->miX - _geometry._x - content._x;
 
-        float unit = float(local_x) / float(content._w);
+        float slx = float(localX - _slider_x0);
+        float unit = slx / float(_slider_x1-_slider_x0);
         if (unit < 0.0f)
           unit = 0.0f;
         else if (unit > 1.0f)
@@ -693,6 +701,7 @@ void FloatSlider::DoDraw(drawevent_constptr_t drwev) {
     ork::lev2::FontMan::PushFont(_label_font);
     tgt->PushModColor(_fg_color);
 
+    int text_y = _label_font->centerY(iyc);
     std::string display_text = _text_editing ? _edit_buffer + "_" : _value_str;
     if(display_text.empty())
       display_text = "0";
@@ -701,7 +710,7 @@ void FloatSlider::DoDraw(drawevent_constptr_t drwev) {
     lev2::FontMan::DrawText(
         tgt, //
         text_x,
-        iyc - 6,
+        text_y,
         display_text.c_str());
     lev2::FontMan::endTextBlock(tgt);
 

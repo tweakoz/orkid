@@ -295,6 +295,48 @@ void pyinit_ui_box(py::module& uimodule) {
               [](ui::textbox_ptr_t box, fvec4 clr) { //
                 box->_color = clr;
               })
+              .def("onMousePush", [](ui::textbox_ptr_t tbox, py::object on_mouse_push) { //
+                tbox->_onMousePush = [=](ui::event_constptr_t ev) -> ui::HandlerResult {
+                  py::gil_scoped_acquire acquire;
+                  py::object rv = on_mouse_push(ev);
+                  return py::cast<ui::HandlerResult>(rv);
+                };
+              })
+              .def("onMouseRelease", [](ui::textbox_ptr_t tbox, py::object on_mouse_release) { //
+                tbox->_onMouseRelease = [=](ui::event_constptr_t ev) -> ui::HandlerResult {
+                  py::gil_scoped_acquire acquire;
+                  py::object rv = on_mouse_release(ev);
+                  return py::cast<ui::HandlerResult>(rv);
+                };
+              })
+              .def("onMouseMove", [](ui::textbox_ptr_t tbox, py::object on_mouse_move) { //
+                tbox->_onMouseMove = [=](ui::event_constptr_t ev) -> ui::HandlerResult {
+                  py::gil_scoped_acquire acquire;
+                  py::object rv = on_mouse_move(ev);
+                  return py::cast<ui::HandlerResult>(rv);
+                };
+              })
+              .def("onMouseDrag", [](ui::textbox_ptr_t tbox, py::object on_mouse_drag) { //
+                tbox->_onMouseDrag = [=](ui::event_constptr_t ev) -> ui::HandlerResult {
+                  py::gil_scoped_acquire acquire;
+                  py::object rv = on_mouse_drag(ev);
+                  return py::cast<ui::HandlerResult>(rv);
+                };
+              })
+              .def("onKeyDown", [](ui::textbox_ptr_t tbox, py::object on_key_down) { //
+                tbox->_onKeyDown = [=](ui::event_constptr_t ev) -> ui::HandlerResult {
+                  py::gil_scoped_acquire acquire;
+                  py::object rv = on_key_down(ev);
+                  return py::cast<ui::HandlerResult>(rv);
+                };
+              })
+              .def("onKeyUp", [](ui::textbox_ptr_t tbox, py::object on_key_up) { //
+                tbox->_onKeyUp = [=](ui::event_constptr_t ev) -> ui::HandlerResult {
+                  py::gil_scoped_acquire acquire;
+                  py::object rv = on_key_up(ev);
+                  return py::cast<ui::HandlerResult>(rv);
+                };
+              })
           .def("__repr__", [](ui::textbox_ptr_t box) {
             return FormatString("<TextBox name<%s> widget<%p>>", box->GetName().c_str(), (void*)box.get());
           });

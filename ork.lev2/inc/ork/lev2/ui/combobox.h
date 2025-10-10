@@ -44,6 +44,10 @@ public:
   fvec4 _button_color;
   int _scroll_pos = 0;
   static const int BUTTON_WIDTH = 20;
+  int _btn_dec_x1 = 0;
+  int _btn_dec_x2 = 0;
+  int _btn_inc_x1 = 0;
+  int _btn_inc_x2 = 0;
 
 private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;

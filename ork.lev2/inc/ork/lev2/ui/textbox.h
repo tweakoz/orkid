@@ -32,9 +32,18 @@ public:
   std::vector<std::string> _lines;
   size_t _numchars = 0;
   size_t _maxlinelen = 0;
+  event_lambda_t _onMousePush;
+  event_lambda_t _onMouseRelease;
+  event_lambda_t _onMouseMove;
+  event_lambda_t _onMouseDrag;
+  event_lambda_t _onKeyDown;
+  event_lambda_t _onKeyUp;
 
 private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;
+  HandlerResult DoOnUiEvent(event_constptr_t Ev) override;
+  Widget* doRouteUiEvent(event_constptr_t Ev) override;
+
 };
 
 } // namespace ork::ui

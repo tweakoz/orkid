@@ -109,19 +109,19 @@ HandlerResult ComboBox::DoOnUiEvent(event_constptr_t cev) {
       auto content = contentRect();
 
       // Left button (−) - decrement
-      if (localX < BUTTON_WIDTH) {
+      if (localX>_btn_dec_x1 && localX<_btn_dec_x2) {
         _decrementSelection();
       }
       // Second left button (+) - increment
-      else if (localX >= BUTTON_WIDTH && localX < BUTTON_WIDTH * 2) {
+      else if (localX>_btn_inc_x1 && localX<_btn_inc_x2) {
         _incrementSelection();
       }
       // Content area - start drag
-      else if (localX >= BUTTON_WIDTH * 2 && _items.size() > 0) {
+      else if ((localX > _btn_inc_x2) && _items.size() > 0) {
         _dragging = true;
         // Set selection based on proportional position
-        int text_area_width = content._w - (BUTTON_WIDTH * 2 + 4);
-        int text_area_x = localX - (BUTTON_WIDTH * 2 + 4);
+        int text_area_width = content._w - _btn_inc_x2;
+        int text_area_x = localX - _btn_inc_x2;
         float unit = float(text_area_x) / float(text_area_width);
         unit = std::clamp(unit, 0.0f, 1.0f);
         int new_index = int(unit * (_items.size() - 1) + 0.5f);
@@ -238,7 +238,7 @@ void ComboBox::DoDraw(drawevent_constptr_t drwev) {
     iyc = iy1 + (_geometry._h >> 1);
 
     int content_x1 = ix1 + label_w;
-    int content_x2 = ix2 - 2;
+    int content_x2 = ix2 - 3;
     int content_y1 = iy1 + 2;
     int content_y2 = iy2 - 2;
 
@@ -288,14 +288,14 @@ void ComboBox::DoDraw(drawevent_constptr_t drwev) {
     // draw dec button (−)
     ///////////////////////////////
 
-    int btn_dec_x1 = content_x1 + 2;
-    int btn_dec_x2 = btn_dec_x1 + BUTTON_WIDTH;
+    _btn_dec_x1 = content_x1 + 2;
+    _btn_dec_x2 = _btn_dec_x1 + BUTTON_WIDTH;
 
     tgt->PushModColor(_button_color);
     primi->RenderQuadAtZ(
         defmtl.get(),
-        btn_dec_x1,     // x0
-        btn_dec_x2,     // x1
+        _btn_dec_x1,     // x0
+        _btn_dec_x2,     // x1
         content_y1 + 2, // y0
         content_y2 - 2, // y1
         0.0f,           // z
@@ -310,14 +310,14 @@ void ComboBox::DoDraw(drawevent_constptr_t drwev) {
     // draw inc button (+)
     ///////////////////////////////
 
-    int btn_inc_x1 = btn_dec_x2 + 2;
-    int btn_inc_x2 = btn_inc_x1 + BUTTON_WIDTH;
+    _btn_inc_x1 = _btn_dec_x2 + 2;
+    _btn_inc_x2 = _btn_inc_x1 + BUTTON_WIDTH;
 
     tgt->PushModColor(_button_color);
     primi->RenderQuadAtZ(
         defmtl.get(),
-        btn_inc_x1,     // x0
-        btn_inc_x2,     // x1
+        _btn_inc_x1,     // x0
+        _btn_inc_x2,     // x1
         content_y1 + 2, // y0
         content_y2 - 2, // y1
         0.0f,           // z
@@ -332,30 +332,27 @@ void ComboBox::DoDraw(drawevent_constptr_t drwev) {
     // draw button symbols and text
     ///////////////////////////////
 
-    ork::lev2::FontMan::PushFont(_label_font);
+    int text_y = _label_font->centerY(iyc);
+    int sym_xo = 2;
     tgt->PushModColor(_fg_color);
 
-    // Dec button symbol (−)
-    lev2::FontMan::beginTextBlock(tgt, 1);
-    lev2::FontMan::DrawText(tgt, btn_dec_x1 + 6, iyc - 6, "-");
-    lev2::FontMan::endTextBlock(tgt);
+    std::string text = selectedItem();
 
-    // Inc button symbol (+)
-    lev2::FontMan::beginTextBlock(tgt, 1);
-    lev2::FontMan::DrawText(tgt, btn_inc_x1 + 5, iyc - 6, "+");
-    lev2::FontMan::endTextBlock(tgt);
+    // Dec button symbol (−)
+    ork::lev2::FontMan::PushFont(_label_font);
+    lev2::FontMan::beginTextBlock(tgt, text.length()+2);
+    lev2::FontMan::DrawText(tgt, _btn_dec_x1 + sym_xo, text_y, "-");
+    lev2::FontMan::DrawText(tgt, _btn_inc_x1 + sym_xo, text_y, "+");
 
     // Selected item text (after both buttons)
-    std::string text = selectedItem();
     if (!text.empty()) {
-      int text_x = btn_inc_x2 + 8;
-      lev2::FontMan::beginTextBlock(tgt, text.length());
-      lev2::FontMan::DrawText(tgt, text_x, iyc - 6, text.c_str());
-      lev2::FontMan::endTextBlock(tgt);
+      int text_x = _btn_inc_x2 + 8;
+      lev2::FontMan::DrawText(tgt, text_x, text_y, text.c_str());
     }
+    lev2::FontMan::endTextBlock(tgt);
+    ork::lev2::FontMan::PopFont();
 
     tgt->PopModColor();
-    ork::lev2::FontMan::PopFont();
 
     ///////////////////////////////
     // draw label

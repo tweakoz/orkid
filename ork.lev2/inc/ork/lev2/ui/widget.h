@@ -130,6 +130,9 @@ public:
   void LocalToRoot(int lx, int ly, int& rx, int& ry) const;
   void RootToLocal(int rx, int ry, int& lx, int& ly) const;
 
+  void pushScissor(lev2::FrameBufferInterface* fbi) const;
+  void popScissor(lev2::FrameBufferInterface* fbi) const;
+  
   void SetPos(int iX, int iY);
   void SetSize(int iW, int iH);
   void SetRect(int iX, int iY, int iW, int iH);

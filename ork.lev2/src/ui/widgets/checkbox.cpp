@@ -81,6 +81,7 @@ void Checkbox::DoDraw(drawevent_constptr_t drwev) {
     int content_x2 = ix2 - 2;
     int content_y1 = iy1 + 2;
     int content_y2 = iy2 - 2;
+    int H = content_y2 - content_y1;
 
     ///////////////////////////////
     // draw background
@@ -108,6 +109,11 @@ void Checkbox::DoDraw(drawevent_constptr_t drwev) {
     // draw checkbox area
     ///////////////////////////////
 
+    int chk_x0 = content_x2 - H - 2;
+    int chk_x1 = chk_x0 + H - 2;
+
+    ///////////////////////////////
+
     defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
 
     // Highlight color when mouse over
@@ -118,8 +124,8 @@ void Checkbox::DoDraw(drawevent_constptr_t drwev) {
     tgt->PushModColor(checkbox_color);
     primi->RenderQuadAtZ(
         defmtl.get(),
-        content_x1,   // x0
-        content_x2,   // x1
+        chk_x0,   // x0
+        chk_x1,   // x1
         content_y1,   // y0
         content_y2,   // y1
         0.0f,         // z
@@ -135,14 +141,14 @@ void Checkbox::DoDraw(drawevent_constptr_t drwev) {
     ///////////////////////////////
 
     if (_toggled) {
-      int check_margin = 1;
+      int check_margin = 2;
       tgt->PushModColor(_check_color);
       primi->RenderQuadAtZ(
           defmtl.get(),
-          content_x1 + check_margin,   // x0
-          content_x2 - check_margin,   // x1
+          chk_x0+check_margin,   // x0
+          chk_x1-(check_margin),   // x1
           content_y1 + check_margin,   // y0
-          content_y2 - check_margin,   // y1
+          content_y2 - (check_margin),   // y1
           0.0f,                        // z
           0.0f,
           1.0f, // u0, u1

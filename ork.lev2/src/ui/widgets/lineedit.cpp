@@ -170,6 +170,7 @@ void LineEdit::DoDraw(drawevent_constptr_t drwev) {
     // draw text content
     ///////////////////////////////
 
+    int text_y = _label_font->centerY(iyc);
     ork::lev2::FontMan::PushFont(_label_font);
     tgt->PushModColor(_fg_color);
 
@@ -177,7 +178,7 @@ void LineEdit::DoDraw(drawevent_constptr_t drwev) {
     lev2::FontMan::DrawText(
         tgt, //
         ix1 + label_w + 4,
-        iyc - 6,
+        text_y,
         _value.c_str());
     lev2::FontMan::endTextBlock(tgt);
 
