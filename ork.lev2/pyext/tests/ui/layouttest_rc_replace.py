@@ -56,8 +56,15 @@ class LayoutTest(object):
     lg_group.replaceChild(self.griditems[2].layout, replacement2)
 
     # Replace cell 4 (bottom-right) with a white box
-    replacement4 = lg_group.makeChild(uiclass=lev2.ui.EvTestBox, args=["replacement4", vec4(1.0, 1.0, 1.0, 1)])
+    replacement4 = lg_group.makeChild(uiclass=lev2.ui.TabsWidget, args=["replacement4", vec4(1.0, 1.0, 1.0, 1)])
     lg_group.replaceChild(self.griditems[4].layout, replacement4)
+    tabw = replacement4.widget
+    self.tab0 = tabw.makeChild( uiclass = lev2.ui.EvTestBox,
+                                args = ["tab0", vec4(0.5,0,0,1)] )
+    self.tab1 = tabw.makeChild( uiclass = lev2.ui.EvTestBox,
+                                args = ["tab1", vec4(0,0.5,0,1)] )
+    self.tab2 = tabw.makeChild( uiclass = lev2.ui.EvTestBox,
+                                args = ["tab2", vec4(0,0,0.5,1)] )
 
     print("=" * 60)
     print(f"Created layout with rc={rc}")
