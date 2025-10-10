@@ -293,11 +293,28 @@ void LayoutGroup::removeChild(anchor::layout_ptr_t ch) {
 }
 //////////////////////////////////////
 void LayoutGroup::replaceChild(anchor::layout_ptr_t ch, layoutitem_ptr_t rep) {
-  _layout->removeChild(rep->_layout);
-  Group::removeChild(ch->_widget);
-  Group::addChild(rep->_widget);
-  ch->_widget  = rep->_widget.get();
-  rep->_layout = ch;
+  // DON'T call _layout->removeChild(rep->_layout) here!
+  // That calls prune() which breaks ALL guide associations in the entire tree
+  // rep->_layout will be garbage collected when rep goes out of scope
+
+  // Find the actual parent group of the widget being replaced
+  auto old_widget = ch->_widget;
+  auto actual_parent = dynamic_cast<Group*>(old_widget->parent());
+
+  if (actual_parent) {
+    // Remove old widget from its actual parent (row-0 in hierarchical layouts)
+    actual_parent->removeChild(old_widget);
+    actual_parent->addChild(rep->_widget);
+  } else {
+    // Fallback: no parent found, operate on this group
+    Group::removeChild(ch->_widget);
+    Group::addChild(rep->_widget);
+  }
+
+  // Update layout-widget connection
+  // ch retains all its anchoring, just points to new widget
+  ch->_widget = rep->_widget.get();
+  rep->_layout = ch;  // rep now uses ch's layout (discarding rep's original layout)
 }
 //////////////////////////////////////
 const std::set<uiguide_ptr_t>& LayoutGroup::horizontalGuides() const {

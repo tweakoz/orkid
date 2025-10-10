@@ -41,17 +41,6 @@ class LayoutTest(object):
       args = ["label",vec4(0.1,0.1,0.3,1)],
     )
 
-    # Change colors so we can see individual cells
-    colors = [
-      vec4(1.0, 0.2, 0.2, 1),  # Red
-      vec4(0.2, 1.0, 0.2, 1),  # Green
-      vec4(0.2, 0.2, 1.0, 1),  # Blue
-      vec4(1.0, 1.0, 0.2, 1),  # Yellow
-      vec4(1.0, 0.2, 1.0, 1),  # Magenta
-    ]
-    for idx, item in enumerate(self.griditems):
-      item.widget.color = colors[idx % len(colors)]
-
     self.lg_group = lg_group
 
     ############################################
@@ -59,15 +48,15 @@ class LayoutTest(object):
     ############################################
 
     # Replace cell 0 (top-left) with a cyan box
-    replacement0 = lg_group.makeChild(uiclass=lev2.ui.Box, args=["replacement0", vec4(0.0, 1.0, 1.0, 1)])
+    replacement0 = lg_group.makeChild(uiclass=lev2.ui.EvTestBox, args=["replacement0", vec4(0.0, 1.0, 1.0, 1)])
     lg_group.replaceChild(self.griditems[0].layout, replacement0)
 
     # Replace cell 2 (top-right) with an orange box
-    replacement2 = lg_group.makeChild(uiclass=lev2.ui.Box, args=["replacement2", vec4(1.0, 0.5, 0.0, 1)])
+    replacement2 = lg_group.makeChild(uiclass=lev2.ui.EvTestBox, args=["replacement2", vec4(1.0, 0.5, 0.0, 1)])
     lg_group.replaceChild(self.griditems[2].layout, replacement2)
 
     # Replace cell 4 (bottom-right) with a white box
-    replacement4 = lg_group.makeChild(uiclass=lev2.ui.Box, args=["replacement4", vec4(1.0, 1.0, 1.0, 1)])
+    replacement4 = lg_group.makeChild(uiclass=lev2.ui.EvTestBox, args=["replacement4", vec4(1.0, 1.0, 1.0, 1)])
     lg_group.replaceChild(self.griditems[4].layout, replacement4)
 
     print("=" * 60)
