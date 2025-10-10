@@ -133,7 +133,7 @@ struct FontMan { //: public NoRttiSingleton<FontMan> {
   using vtxwriter_ptr_t  = std::shared_ptr<vtxwriter_t>;
   using vtxwriter_vect_t = std::vector<vtxwriter_ptr_t>;
 
-  static FontMan* instance();
+  static fontman_ptr_t instance();
   static FontMan& GetRef();
 
   ~FontMan();

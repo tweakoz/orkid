@@ -203,15 +203,23 @@ void pyinit_ui_box(py::module& uimodule) {
                 auto color        = decoded_args[1].get<fvec4>();
                 auto text         = decoded_args[2].get<std::string>();
                 auto layoutitem   = lg->makeChild<ui::TextBox>(name, color, text);
+                auto as_tbox = std::dynamic_pointer_cast<ui::TextBox>(layoutitem._widget);
+                as_tbox->setText(text);
                 return layoutitem.as_shared();
               })
           .def_static(
               "uigridfactory",
               [type_codec](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
+                std::string text;
                 auto decoded_args = type_codec->decodeList(py_args);
                 auto name         = decoded_args[0].get<std::string>();
                 auto color        = decoded_args[1].get<fvec4>();
-                auto layoutitems  = lg->makeGridOfWidgets<ui::TextBox>(grid_w, grid_h, name, color, "");
+                if( decoded_args.size()>=3 ){
+                  if (auto as_str = decoded_args[2].tryAs<std::string>()) {
+                    text = as_str.value();
+                  }
+                }
+                auto layoutitems  = lg->makeGridOfWidgets<ui::TextBox>(grid_w, grid_h, name, color, text);
                 py::list rval;
                 for (auto item : layoutitems) {
                   rval.append(item.as_shared());

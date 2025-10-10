@@ -34,28 +34,29 @@ void pyinit_gfx_font(py::module& module_lev2) {
                 ctx->MTXI()->PopMMatrix();
                 ctx->MTXI()->PopUIMatrix();
               })
-          .def_static("draw", [](ctx_t& ctx, int x, int y, std::string text) { FontMan::DrawText(ctx.get(), x, y, text.c_str()); });
+          .def_static("draw", [](ctx_t& ctx, int x, int y, std::string text) { FontMan::DrawText(ctx.get(), x, y, text.c_str()); })
+          .def_static("instance", []() -> fontman_ptr_t { return FontMan::instance(); })
+          .def_static("fontForId", [](const std::string& name) -> font_ptr_t { return FontMan::instance()->fontForId(name); });
   type_codec->registerStdCodec<fontman_ptr_t>(fontman_t);
 
   /////////////////////////////////////////////////////////////////////////////////
-  auto font_t =
-      py::class_<Font, font_ptr_t>(module_lev2, "Font")
-          .def(
-              "__repr__",
-              [](font_ptr_t font) -> std::string {
-                fxstring<256> fxs;
-                fxs.format("Font(\"%s\")", font->msFontName.c_str());
-                return fxs.c_str();
-              })
-          .def("bind", [](font_ptr_t font) { return FontMan::GetRef()._bindFont(font); })
-          .def_property_readonly("filename", [](font_ptr_t font) -> std::string { return font->msFileName; })
-          .def_property_readonly("fontname", [](font_ptr_t font) -> std::string { return font->msFontName; })
-          .def_property_readonly("charWidth", [](font_ptr_t font) -> int { return font->mFontDesc.miCharWidth; })
-          .def_property_readonly("charHeight", [](font_ptr_t font) -> int { return font->mFontDesc.miCharHeight; })
-          .def_property_readonly("cellWidth", [](font_ptr_t font) -> int { return font->mFontDesc.miCellWidth; })
-          .def_property_readonly("cellHeight", [](font_ptr_t font) -> int { return font->mFontDesc.miCellHeight; })
-          .def_property_readonly("advanceWidth", [](font_ptr_t font) -> int { return font->mFontDesc.miAdvanceWidth; })
-          .def_property_readonly("advanceHeight", [](font_ptr_t font) -> int { return font->mFontDesc.miAdvanceHeight; });
+  auto font_t = py::class_<Font, font_ptr_t>(module_lev2, "Font")
+                    .def(
+                        "__repr__",
+                        [](font_ptr_t font) -> std::string {
+                          fxstring<256> fxs;
+                          fxs.format("Font(\"%s\")", font->msFontName.c_str());
+                          return fxs.c_str();
+                        })
+                    .def("bind", [](font_ptr_t font) { return FontMan::GetRef()._bindFont(font); })
+                    .def_property_readonly("filename", [](font_ptr_t font) -> std::string { return font->msFileName; })
+                    .def_property_readonly("fontname", [](font_ptr_t font) -> std::string { return font->msFontName; })
+                    .def_property_readonly("charWidth", [](font_ptr_t font) -> int { return font->mFontDesc.miCharWidth; })
+                    .def_property_readonly("charHeight", [](font_ptr_t font) -> int { return font->mFontDesc.miCharHeight; })
+                    .def_property_readonly("cellWidth", [](font_ptr_t font) -> int { return font->mFontDesc.miCellWidth; })
+                    .def_property_readonly("cellHeight", [](font_ptr_t font) -> int { return font->mFontDesc.miCellHeight; })
+                    .def_property_readonly("advanceWidth", [](font_ptr_t font) -> int { return font->mFontDesc.miAdvanceWidth; })
+                    .def_property_readonly("advanceHeight", [](font_ptr_t font) -> int { return font->mFontDesc.miAdvanceHeight; });
   type_codec->registerStdCodec<font_ptr_t>(font_t);
 
 } // void pyinit_gfx_font(py::module& module_lev2) {
