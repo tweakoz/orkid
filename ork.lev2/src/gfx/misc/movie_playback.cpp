@@ -230,6 +230,22 @@ void MoviePlaybackContext::init(const std::string& filename) {
   av_dump_format(_format_ctx, 0, filename.c_str(), 0);
   fprintf(stderr, "=== End FFmpeg dump ===\n\n");
 
+  // Capture duration - try multiple sources
+  if (_format_ctx->duration != AV_NOPTS_VALUE) {
+    _duration = _format_ctx->duration / (double)AV_TIME_BASE;
+  }
+
+  // Sometimes format duration is wrong, try to get it from streams
+  for (unsigned i = 0; i < _format_ctx->nb_streams; i++) {
+    AVStream* stream = _format_ctx->streams[i];
+    if (stream->duration != AV_NOPTS_VALUE) {
+      double stream_duration = stream->duration * av_q2d(stream->time_base);
+      if (stream_duration > _duration) {
+        _duration = stream_duration;
+      }
+    }
+  }
+
   // Find video stream
   for (unsigned i = 0; i < _format_ctx->nb_streams; i++) {
     auto codec_type_str = av_get_media_type_string(_format_ctx->streams[i]->codecpar->codec_type);
@@ -278,15 +294,15 @@ void MoviePlaybackContext::init(const std::string& filename) {
   // Setup video timing
   AVStream* video_stream = _format_ctx->streams[_video_stream_idx];
 
-  // Try r_frame_rate first
-  if (video_stream->r_frame_rate.den > 0 && video_stream->r_frame_rate.num > 0) {
-    _fps = av_q2d(video_stream->r_frame_rate);
+  // Prefer avg_frame_rate - it's more reliable for actual playback rate
+  if (video_stream->avg_frame_rate.den > 0 && video_stream->avg_frame_rate.num > 0) {
+    _fps = av_q2d(video_stream->avg_frame_rate);
   }
 
-  // Fall back to avg_frame_rate
-  if ((_fps <= 0 || std::isnan(_fps) || std::isinf(_fps)) && video_stream->avg_frame_rate.den > 0 &&
-      video_stream->avg_frame_rate.num > 0) {
-    _fps = av_q2d(video_stream->avg_frame_rate);
+  // Fall back to r_frame_rate if avg not available
+  if ((_fps <= 0 || std::isnan(_fps) || std::isinf(_fps)) && video_stream->r_frame_rate.den > 0 &&
+      video_stream->r_frame_rate.num > 0) {
+    _fps = av_q2d(video_stream->r_frame_rate);
   }
 
   // Try time_base reciprocal
@@ -421,6 +437,48 @@ void MoviePlaybackContext::init(const std::string& filename) {
           }
         }
       }
+    }
+  }
+
+  // Probe first video frame to get actual dimensions
+  if (_video_stream_idx >= 0 && _video_codec_ctx) {
+    AVPacket packet;
+    AVFrame* probe_frame = av_frame_alloc();
+    bool found_video_dims = false;
+
+    // Save current position
+    int64_t original_pos = avio_tell(_format_ctx->pb);
+
+    // Read packets until we find a video frame
+    while (av_read_frame(_format_ctx, &packet) >= 0) {
+      if (packet.stream_index == _video_stream_idx) {
+        if (avcodec_send_packet(_video_codec_ctx, &packet) >= 0) {
+          if (avcodec_receive_frame(_video_codec_ctx, probe_frame) >= 0) {
+            // Got a frame! Extract dimensions
+            _video_width = probe_frame->width;
+            _video_height = probe_frame->height;
+            found_video_dims = true;
+            av_packet_unref(&packet);
+            break;
+          }
+        }
+      }
+      av_packet_unref(&packet);
+    }
+
+    av_frame_free(&probe_frame);
+
+    // Seek back to start and flush codec
+    av_seek_frame(_format_ctx, _video_stream_idx, 0, AVSEEK_FLAG_BACKWARD);
+    avcodec_flush_buffers(_video_codec_ctx);
+
+    if (found_video_dims) {
+      printf("Video dimensions: %dx%d (detected from frame)\n", _video_width, _video_height);
+    } else {
+      printf("WARNING: Could not detect video dimensions from frame\n");
+      // Fallback to codecpar if available
+      _video_width = video_codecpar->width;
+      _video_height = video_codecpar->height;
     }
   }
 

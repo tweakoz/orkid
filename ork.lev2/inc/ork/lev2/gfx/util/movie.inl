@@ -126,8 +126,13 @@ struct MoviePlaybackContext {
   // Timing
   double _fps = 0.0;
   double _frame_duration = 0.0;
+  double _duration = 0.0;  // Total duration in seconds
   std::chrono::high_resolution_clock::time_point _playback_start;
   int64_t _current_frame_index = 0;
+
+  // Video dimensions (populated from first decoded frame)
+  int _video_width = 0;
+  int _video_height = 0;
 
   // Audio
   audio_callback_t _audio_callback;
