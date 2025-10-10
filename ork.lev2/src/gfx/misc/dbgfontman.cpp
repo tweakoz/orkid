@@ -139,7 +139,7 @@ FontMan::FontMan() {
   Inconsolata24.miCharOffsetY   = 3;
   Inconsolata24.miYShift        = 1;
   Inconsolata24.miAdvanceWidth  = 11;
-  Inconsolata24.miAdvanceHeight = 26;
+  Inconsolata24.miAdvanceHeight = 24;
 
   /////////////////////////////////////////////////////////////
 

@@ -56,14 +56,14 @@ class LayoutTest(object):
     self.griditems[5].widget.font = font_i32
     self.griditems[6].widget.font = font_i48
     self.griditems[7].widget.font = font_d24
-    self.griditems[0].widget.setText("Font: i12")
-    self.griditems[1].widget.setText("Font: i13")
-    self.griditems[2].widget.setText("Font: i14")
-    self.griditems[3].widget.setText("Font: i16")
-    self.griditems[4].widget.setText("Font: i24")
-    self.griditems[5].widget.setText("Font: i32")
-    self.griditems[6].widget.setText("Font: i48")
-    self.griditems[7].widget.setText("Font: d24")
+    self.griditems[0].widget.setText("Font: i12\nWhat Up Yo")
+    self.griditems[1].widget.setText("Font: i13\nWhat Up Yo")
+    self.griditems[2].widget.setText("Font: i14\nWhat Up Yo")
+    self.griditems[3].widget.setText("Font: i16\nWhat Up Yo")
+    self.griditems[4].widget.setText("Font: i24\nWhat Up Yo")
+    self.griditems[5].widget.setText("Font: i32\nWhat Up Yo")
+    self.griditems[6].widget.setText("Font: i48\nWhat Up Yo")
+    self.griditems[7].widget.setText("Font: d24\nWhat Up Yo")
         
     self.lg_group = lg_group
     lg_group.margin = MARGIN
