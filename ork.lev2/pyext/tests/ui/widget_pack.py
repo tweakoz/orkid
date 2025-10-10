@@ -106,6 +106,7 @@ class PackWidgets(object):
     self.lg_group1 = lg_group
     self.uictx1 = self.ezapp.uicontext
 
+    MARGIN = 4
     ############################################
     # start out with a 2x2 grid of boxes
     ############################################
@@ -113,7 +114,7 @@ class PackWidgets(object):
     self.griditems = lg_group.makeGrid(
       width=2,
       height=2,
-      margin = 4,
+      margin = MARGIN,
       uiclass = lev2.ui.Box,
       args = ["label",vec4(0.1,0.1,0.3,1)],
     )
@@ -121,7 +122,7 @@ class PackWidgets(object):
     ############################################
 
     self.lg_group = lg_group
-    lg_group.margin = 2
+    lg_group.margin = MARGIN
 
     ############################################
     # create a vertical pack widget in the upper-left grid cell
@@ -134,7 +135,7 @@ class PackWidgets(object):
     pk1 = lg_group.makeChild( uiclass=lev2.ui.VerticalPack, args=["vpack1"])
     self.lg_group.replaceChild( self.griditems[0].layout, pk1 )
     self.vpack1 = pk1.widget
-    self.vpack1.margin = 3
+    self.vpack1.margin = MARGIN
     self.vpack1.item_height = 28
     self.vpack1.fill = True
 
@@ -153,7 +154,7 @@ class PackWidgets(object):
     ############################################
 
     self.hpack1 = self.vpack1.makeChild( uiclass=lev2.ui.HorizontalPack, args=["hpack1"])
-    self.hpack1.margin = 3
+    self.hpack1.margin = MARGIN
     self.hpack1.item_width = 192
     self.hpack1.fill = True
     
@@ -166,7 +167,7 @@ class PackWidgets(object):
     ############################################
 
     self.hpack2 = self.vpack1.makeChild( uiclass=lev2.ui.HorizontalPack, args=["hpack2"])
-    self.hpack2.margin = 3
+    self.hpack2.margin = MARGIN
     self.hpack2.uniform = True
     chk_col = vec3(0.25)
     self.chk1 = self.hpack2.makeChild( uiclass=lev2.ui.Checkbox, args=["chk1  ",chk_col] )
@@ -181,7 +182,7 @@ class PackWidgets(object):
     ############################################
 
     self.hpack3 = self.vpack1.makeChild( uiclass=lev2.ui.HorizontalPack, args=["hpack3"])
-    self.hpack3.margin = 3
+    self.hpack3.margin = MARGIN
     self.hpack3.uniform = True
     btn_col1 = vec3(0.3,0.5,0.3)
     btn_col2 = vec3(0.3,0.3,0.5)

@@ -156,8 +156,8 @@ void HorizontalPack::DoDraw(drawevent_constptr_t drwev) {
   size_t num_children = _children.size();
   int scissor_x = _geometry._x;
   int scissor_y = _geometry._y;
-  int scissor_w = _geometry._w;
-  int scissor_h = _geometry._h;
+  int scissor_w = _geometry._w+1;
+  int scissor_h = _geometry._h+_margin;
 
   ///////////////////////////////////
   fbi->pushScissor(scissor_x, scissor_y, scissor_w, scissor_h);

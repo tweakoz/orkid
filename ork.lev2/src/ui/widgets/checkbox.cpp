@@ -135,7 +135,7 @@ void Checkbox::DoDraw(drawevent_constptr_t drwev) {
     ///////////////////////////////
 
     if (_toggled) {
-      int check_margin = 4;
+      int check_margin = 1;
       tgt->PushModColor(_check_color);
       primi->RenderQuadAtZ(
           defmtl.get(),
