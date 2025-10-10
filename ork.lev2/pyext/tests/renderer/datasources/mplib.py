@@ -7,7 +7,7 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import math, sys, os, signal, random
+import math, sys, os, signal, random, threading, time
 import numpy as np
 from obt import path
 from orkengine.core import vec2, vec3, vec4, mtx4, quat, VarMap, CrcStringProxy
@@ -33,6 +33,7 @@ class PackWidgets(object):
   def __init__(self):
     super().__init__()
     self.done = False
+    self.abstime = 0.0
 
     self.box_height = 0.0
 
@@ -85,6 +86,8 @@ class PackWidgets(object):
     self.ax = self.fig.add_subplot(111)
     self.ax.plot([1, 2, 3, 4], [1, 4, 2, 3])
 
+    self.latest_image = None
+    
     ############################################
     
     def onCtrlC(signum, frame):
@@ -148,12 +151,6 @@ class PackWidgets(object):
   ##############################################
 
   def onGpuInit(self,ctx):         
-    ############################
-    # imgview1 widget gets its image 
-    #   from the matplotlib provider
-    ############################
-    prov = lev2.ImageProvider.createFromLambda( lambda: self.imageProviderMatPlotLib() )
-    self.imv1w.setImageProvider( prov )
 
     ########################################################
     # shared geometry (for scenegraph viewport)
@@ -210,6 +207,22 @@ class PackWidgets(object):
     self.sgvw.forkDB()
     self.scenegraph.lightingmanager.gpuInit(ctx)
     self.lg_group.replaceChild( self.griditems[1].layout, self.sgvl )
+
+    ############################
+    # imgview1 widget gets its image 
+    #   from the matplotlib provider
+    ############################
+    
+    def mpl_thread_func(xxx):
+      while True:
+        xxx.latest_image = self.imageProviderMatPlotLib()
+        time.sleep(1.0/60.0)
+
+    self.mpthr = threading.Thread(target=mpl_thread_func, args=(self,))
+    self.mpthr.start()
+    
+    prov = lev2.ImageProvider.createFromLambda( lambda: self.latest_image )
+    self.imv1w.setImageProvider( prov )
 
   ################################################
 
