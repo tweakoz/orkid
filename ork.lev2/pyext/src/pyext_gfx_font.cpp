@@ -55,8 +55,10 @@ void pyinit_gfx_font(py::module& module_lev2) {
                     .def_property_readonly("charHeight", [](font_ptr_t font) -> int { return font->mFontDesc.miCharHeight; })
                     .def_property_readonly("cellWidth", [](font_ptr_t font) -> int { return font->mFontDesc.miCellWidth; })
                     .def_property_readonly("cellHeight", [](font_ptr_t font) -> int { return font->mFontDesc.miCellHeight; })
-                    .def_property_readonly("advanceWidth", [](font_ptr_t font) -> int { return font->mFontDesc.miAdvanceWidth; })
-                    .def_property_readonly("advanceHeight", [](font_ptr_t font) -> int { return font->mFontDesc.miAdvanceHeight; });
+                    .def_property("advance_width", [](font_ptr_t font) -> int { return font->mFontDesc.miAdvanceWidth; },
+                                  [](font_ptr_t font, int w) { font->mFontDesc.miAdvanceWidth = w; })
+                    .def_property("advance_height", [](font_ptr_t font) -> int { return font->mFontDesc.miAdvanceHeight; },
+                                  [](font_ptr_t font, int h) { font->mFontDesc.miAdvanceHeight = h; });
   type_codec->registerStdCodec<font_ptr_t>(font_t);
 
 } // void pyinit_gfx_font(py::module& module_lev2) {
