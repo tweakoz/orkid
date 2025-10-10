@@ -13,7 +13,6 @@ from orkengine.core import vec2, vec3, vec4, mtx4, quat, VarMap
 from orkengine import lev2
 
 ################################################################################
-
 class LayoutTest(object):
 
   def __init__(self):
@@ -66,28 +65,11 @@ class LayoutTest(object):
     self.tab2 = tabw.makeChild( uiclass = lev2.ui.EvTestBox,
                                 args = ["tab2", vec4(0,0,0.5,1)] )
 
-    print("=" * 60)
-    print(f"Created layout with rc={rc}")
-    print(f"Number of items: {len(self.griditems)}")
-    print(f"Replaced cells 0, 2, and 4 with different colored boxes")
-    print("Try dragging the guides - replaced widgets should resize correctly!")
-    print("=" * 60)
-
     def onCtrlC(signum, frame):
       print("signalling EXIT to ezapp")
       self.ezapp.signalExit()
 
     signal.signal(signal.SIGINT, onCtrlC)
-
-  ##############################################
-
-  def onGpuInit(self,ctx):
-    pass
-
-  ################################################
-
-  def onUpdate(self,updinfo):
-    pass
 
   ##############################################
 

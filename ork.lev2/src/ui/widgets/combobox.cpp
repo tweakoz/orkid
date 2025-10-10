@@ -97,6 +97,9 @@ void ComboBox::_decrementSelection() {
 
 HandlerResult ComboBox::DoOnUiEvent(event_constptr_t cev) {
   HandlerResult rval;
+  int localX = 0;
+  int localY = 0;
+  RootToLocal(cev->miX, cev->miY, localX, localY);
 
   switch (cev->_eventcode) {
     case EventCode::PUSH: {
@@ -104,22 +107,21 @@ HandlerResult ComboBox::DoOnUiEvent(event_constptr_t cev) {
       _active = true;
 
       auto content = contentRect();
-      int local_x = cev->miX - _geometry._x - content._x;
 
       // Left button (−) - decrement
-      if (local_x < BUTTON_WIDTH) {
+      if (localX < BUTTON_WIDTH) {
         _decrementSelection();
       }
       // Second left button (+) - increment
-      else if (local_x >= BUTTON_WIDTH && local_x < BUTTON_WIDTH * 2) {
+      else if (localX >= BUTTON_WIDTH && localX < BUTTON_WIDTH * 2) {
         _incrementSelection();
       }
       // Content area - start drag
-      else if (local_x >= BUTTON_WIDTH * 2 && _items.size() > 0) {
+      else if (localX >= BUTTON_WIDTH * 2 && _items.size() > 0) {
         _dragging = true;
         // Set selection based on proportional position
         int text_area_width = content._w - (BUTTON_WIDTH * 2 + 4);
-        int text_area_x = local_x - (BUTTON_WIDTH * 2 + 4);
+        int text_area_x = localX - (BUTTON_WIDTH * 2 + 4);
         float unit = float(text_area_x) / float(text_area_width);
         unit = std::clamp(unit, 0.0f, 1.0f);
         int new_index = int(unit * (_items.size() - 1) + 0.5f);
@@ -158,11 +160,10 @@ HandlerResult ComboBox::DoOnUiEvent(event_constptr_t cev) {
     case EventCode::DRAG: {
       if (_dragging && _items.size() > 0) {
         auto content = contentRect();
-        int local_x = cev->miX - _geometry._x - content._x;
 
         // Set selection based on proportional position
         int text_area_width = content._w - (BUTTON_WIDTH * 2 + 4);
-        int text_area_x = local_x - (BUTTON_WIDTH * 2 + 4);
+        int text_area_x = localX - (BUTTON_WIDTH * 2 + 4);
         float unit = float(text_area_x) / float(text_area_width);
         unit = std::clamp(unit, 0.0f, 1.0f);
         int new_index = int(unit * (_items.size() - 1) + 0.5f);

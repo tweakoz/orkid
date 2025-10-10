@@ -71,8 +71,9 @@ void HorizontalSplit::DoLayout() {
 /////////////////////////////////////////////////////////////////////////
 
 Widget* HorizontalSplit::doRouteUiEvent(event_constptr_t ev) {
-  int localX = ev->miX - _geometry._x;
-  int localY = ev->miY - _geometry._y;
+  int localX = 0;
+  int localY = 0;
+  RootToLocal(ev->miX, ev->miY, localX, localY);
 
   int split_x = int(_geometry._w * _split_ratio);
 
@@ -175,8 +176,9 @@ void VerticalSplit::DoLayout() {
 /////////////////////////////////////////////////////////////////////////
 
 Widget* VerticalSplit::doRouteUiEvent(event_constptr_t ev) {
-  int localX = ev->miX - _geometry._x;
-  int localY = ev->miY - _geometry._y;
+  int localX = 0;
+  int localY = 0;
+  RootToLocal(ev->miX, ev->miY, localX, localY);
 
   int split_y = int(_geometry._h * _split_ratio);
 

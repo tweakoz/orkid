@@ -71,12 +71,14 @@ int TabWidget::_getTabIndexAt(int x, int y) const {
 
 /////////////////////////////////////////////////////////////////////////
 Widget* TabWidget::doRouteUiEvent(event_constptr_t ev) {
-  // Convert event coordinates to local space
-  int localX = ev->miX - _geometry._x;
-  int localY = ev->miY - _geometry._y;
+  // Convert event coordinates to local space (properly!)
+  int localX = 0;
+  int localY = 0;
+  RootToLocal(ev->miX, ev->miY, localX, localY);
 
   // Effective tab bar height (0 when in page mode)
   int effectiveTabBarHeight = _showTabs ? _tabBarHeight : 0;
+  //printf("TabWidget::doRouteUiEvent ev<%d %d> geo<%d %d> local<%d,%d> effh<%d>\n", ev->miX, ev->miY, _geometry._x, _geometry._y, localX, localY, effectiveTabBarHeight);
 
   // Check if event is in tab bar area (only if tabs are shown)
   if (_showTabs && localY < effectiveTabBarHeight) {
@@ -94,6 +96,10 @@ Widget* TabWidget::doRouteUiEvent(event_constptr_t ev) {
     }
   }
 
+  // If event is inside this widget, route to self
+  if (IsEventInside(ev))
+    return this;
+
   return nullptr;
 }
 
@@ -106,9 +112,10 @@ HandlerResult TabWidget::DoOnUiEvent(event_constptr_t ev) {
     return result;
   }
 
-  // Convert to local coordinates
-  int localX = ev->miX - _geometry._x;
-  int localY = ev->miY - _geometry._y;
+  // Convert to local coordinates (properly!)
+  int localX = 0;
+  int localY = 0;
+  RootToLocal(ev->miX, ev->miY, localX, localY);
 
   switch (ev->_eventcode) {
     case EventCode::PUSH: {

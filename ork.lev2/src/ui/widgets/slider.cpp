@@ -110,6 +110,10 @@ void IntSlider::_refresh() {
 HandlerResult IntSlider::DoOnUiEvent(event_constptr_t cev) {
   HandlerResult rval;
 
+  int localX = 0;
+  int localY = 0;
+  RootToLocal(cev->miX, cev->miY, localX, localY);
+
   switch (cev->_eventcode) {
     case EventCode::PUSH: {
       _dragging = true;
@@ -122,9 +126,8 @@ HandlerResult IntSlider::DoOnUiEvent(event_constptr_t cev) {
         //_update_on_drag = cev->mbCTRL;
 
         auto content = contentRect();
-        int local_x = cev->miX - _geometry._x - content._x;
 
-        float unit = float(local_x) / float(content._w);
+        float unit = float(localX) / float(content._w);
         if (unit < 0.0f)
           unit = 0.0f;
         else if (unit > 1.0f)

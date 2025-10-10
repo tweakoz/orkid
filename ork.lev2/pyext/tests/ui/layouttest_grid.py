@@ -29,7 +29,7 @@ class LayoutTest(object):
     self.ezapp.topWidget.enableUiDraw()
 
     lg_group = self.ezapp.topLayoutGroup
-    #lg_group.margin = 4
+    lg_group.clearColorGuide = vec4(0.8,0.6,0.2,1)
 
     self.griditems = lg_group.makeGrid(
       width=2,

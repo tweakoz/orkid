@@ -29,6 +29,7 @@ class LayoutTest(object):
     self.ezapp.topWidget.enableUiDraw()
 
     lg_group = self.ezapp.topLayoutGroup
+    lg_group.clearColorGuide = vec4(1,1,1,1)
     rc = [3,2]
 
     # Create cells using makeRowsColumns

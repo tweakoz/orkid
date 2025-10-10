@@ -89,8 +89,9 @@ void HorizontalPack::DoLayout() {
 /////////////////////////////////////////////////////////////////////////
 Widget* HorizontalPack::doRouteUiEvent(event_constptr_t ev) {
   // Convert event coordinates to local space
-  int localX = ev->miX - _geometry._x;
-  int localY = ev->miY - _geometry._y;
+  int localX = 0;
+  int localY = 0;
+  RootToLocal(ev->miX, ev->miY, localX, localY);
 
   size_t num_children = _children.size();
   if (num_children == 0) return nullptr;
@@ -120,8 +121,9 @@ HandlerResult HorizontalPack::DoOnUiEvent(event_constptr_t ev) {
   HandlerResult result;
 
   // Convert to local coordinates
-  int localX = ev->miX - _geometry._x;
-  int localY = ev->miY - _geometry._y;
+  int localX = 0;
+  int localY = 0;
+  RootToLocal(ev->miX, ev->miY, localX, localY);
 
   switch (ev->_eventcode) {
     case EventCode::PUSH: 
