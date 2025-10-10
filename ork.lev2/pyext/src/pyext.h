@@ -46,7 +46,6 @@ using gbi_t               = ork::python::unmanaged_ptr<GeometryBufferInterface>;
 using fxi_t               = ork::python::unmanaged_ptr<FxInterface>;
 using txi_t               = ork::python::unmanaged_ptr<TextureInterface>;
 using ci_t                = ork::python::unmanaged_ptr<ComputeInterface>;
-using font_t              = ork::python::unmanaged_ptr<Font>;
 using capbuf_t            = ork::python::unmanaged_ptr<CaptureBuffer>;
 using pyfxshader_ptr_t    = ork::python::unmanaged_const_ptr<FxShader>;
 using pyfxcomputeshader_ptr_t    = ork::python::unmanaged_const_ptr<FxComputeShader>;

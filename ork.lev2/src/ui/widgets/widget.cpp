@@ -33,7 +33,7 @@ Widget::Widget(const std::string& name, int x, int y, int w, int h)
 
   pushEventFilter<ui::NopEventFilter>();
 
-  _label_font = lev2::FontMan::GetFont("i14");
+  _label_font = lev2::FontMan::fontForId("i14");
   OrkAssert(_label_font);
 }
 ///////////////////////////////////////////////////////////

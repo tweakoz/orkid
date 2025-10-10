@@ -24,7 +24,7 @@ namespace ork::lev2::ged {
 GedSkin0::GedSkin0(ork::lev2::Context* ctx)
     : GedSkin(ctx) {
   gpuInit(ctx);
-  _font   = lev2::FontMan::GetFont("i14");
+  _font   = lev2::FontMan::fontForId("i14");
   _char_w = _font->GetFontDesc().miAdvanceWidth;
   _char_h = _font->GetFontDesc().miAdvanceHeight;
 }

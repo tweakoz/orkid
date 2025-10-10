@@ -93,7 +93,6 @@ struct AppInitData{
   bool _fullscreen = false;
   bool _offscreen = false;
   bool _canalwaysontop = false;
-  bool _imgui = false;
   int _top = 100;
   int _left = 100;
   int _width = 1280;
@@ -111,7 +110,6 @@ struct AppInitData{
   size_t _audio_output_numchannels = 2;
   std::string _monitor_id = "";
   std::string _application_name = "orkid_app";
-  ork::file::Path _default_imgui_path = "";
   std::multimap<uint64_t,void_lambda_t> _preinitoperations;
   std::multimap<uint64_t,void_lambda_t> _postinitoperations;
 };

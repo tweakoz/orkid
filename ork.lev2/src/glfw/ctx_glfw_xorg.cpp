@@ -14,7 +14,6 @@
 #include <GLFW/glfw3native.h>
 #include <ork/lev2/ui/viewport.h>
 #include <ork/lev2/ui/context.h>
-#include <ork/lev2/imgui/imgui_impl_glfw.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/kernel/msgrouter.inl>
 #include <ork/math/basicfilters.h>

@@ -85,14 +85,6 @@
 // #define WIIEMU
 ///////////////////////////////////////////////////////////////////////////////
 
-namespace ork::lev2::editor::imgui {
-void initModule(appinitdata_ptr_t initdata) {
-  initdata->_imgui = true;
-}
-void exitModule(appinitdata_ptr_t initdata) {
-}
-} // namespace ork::imgui
-
 namespace ork {
 void initModule(appinitdata_ptr_t init_data);
 void exitModule(appinitdata_ptr_t init_data);

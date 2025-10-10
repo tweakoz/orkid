@@ -204,7 +204,6 @@ int main(int argc, char** argv, char** envp) {
   //bool use_forward = vars["forward"].as<bool>();
   //bool use_vr = vars["usevr"].as<bool>();
   //////////////////////////////////////////////////////////
-  init_data->_imgui = false;
   init_data->_application_name = "ork.particletest1";
   //////////////////////////////////////////////////////////
   auto ezapp  = OrkEzApp::create(init_data);

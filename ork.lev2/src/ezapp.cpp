@@ -5,9 +5,6 @@
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/vr/vr.h>
-#include <ork/lev2/imgui/imgui.h>
-#include <ork/lev2/imgui/imgui_impl_glfw.h>
-#include <ork/lev2/imgui/imgui_impl_opengl3.h>
 #include <boost/program_options.hpp>
 #include <ork/kernel/environment.h>
 #include <ork/util/logger.h>
@@ -76,11 +73,6 @@ EzAppContext::EzAppContext(appinitdata_ptr_t initdata)
 ///////////////////////////////////////////////////////////////////////////////
 EzAppContext::~EzAppContext() {
 
-  if (_initdata->_imgui) {
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
-  }
-
   StringPoolStack::pop();
   ork::lev2::exitModule(_initdata);
   ork::exitModule(_initdata);
@@ -113,64 +105,7 @@ orkezapp_ptr_t OrkEzApp::create(appinitdata_ptr_t initdata) {
   // static auto& qti = qtinit(argc, argv, init);
   //  QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
   lev2::initModule(initdata);
-  if (initdata->_imgui) {
-    lev2::editor::imgui::initModule(initdata);
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO();
-
-    Environment env;
-    std::string home_out;
-    static file::Path imgui_ini_path;
-    if (env.get("OBT_STAGE", home_out)) {
-      auto base      = file::Path(home_out);
-      imgui_ini_path = base / FormatString(".%s-imgui.ini", initdata->_application_name.c_str());
-      logchan_ezapp->log("imgui_ini_path<%s>", imgui_ini_path.c_str());
-    } else {
-      OrkAssert(false); // HOME not set ???
-    }
-    if( not imgui_ini_path.doesPathExist() ){
-      file::Path try_this_path = file::Path(initdata->_default_imgui_path);
-      if( try_this_path.isFile() ){
-        // copy default imgui ini file
-        auto src = try_this_path.toAbsolute();
-        auto dst = imgui_ini_path.toAbsolute();
-        std::string cmd_str = FormatString("cp %s %s", src.c_str(), dst.c_str());
-        logchan_ezapp->log( "copying default imgui ini file <%s> to <%s>", src.c_str(), dst.c_str());
-        int ret = system(cmd_str.c_str());
-        OrkAssert(ret == 0);
-        OrkAssert(dst.doesPathExist());
-      }      
-    }
-    io.IniFilename = strdup(imgui_ini_path.c_str());
-
-    // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
-    // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Enable Docking
-    // io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
-    // io.ConfigViewportsNoAutoMerge = true;
-    // io.ConfigViewportsNoTaskBarIcon = true;
-    //  Setup Dear ImGui style
-    ImGui::StyleColorsDark();
-    io.ConfigWindowsMoveFromTitleBarOnly = true;
-    // ImGuiStyle& style = ImGui::GetStyle();
-    // if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-    //{
-    // style.WindowRounding = 0.0f;
-    // style.Colors[ImGuiCol_WindowBg].w = 1.0f;
-    //}
-  }
   auto ezapp = std::make_shared<OrkEzApp>(initdata);
-  if (initdata->_imgui) {
-    auto ezwin = ezapp->_mainWindow;
-    ImGui_ImplGlfw_InitForOpenGL(ezwin->_ctqt->_glfwWindow, true);
-#if defined(OPENGL_460)
-    ImGui_ImplOpenGL3_Init("#version 460 core");
-#elif defined(OPENGL_410)
-    ImGui_ImplOpenGL3_Init("#version 410 core");
-#else
-    ImGui_ImplOpenGL3_Init("#version 400 core");
-#endif
-  }
   return ezapp;
 }
 ///////////////////////////////////////////////////////////////////////////////

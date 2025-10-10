@@ -4,9 +4,6 @@
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/vr/vr.h>
-#include <ork/lev2/imgui/imgui.h>
-#include <ork/lev2/imgui/imgui_impl_glfw.h>
-#include <ork/lev2/imgui/imgui_impl_opengl3.h>
 #include <boost/program_options.hpp>
 #include <ork/kernel/environment.h>
 #include <ork/util/logger.h>

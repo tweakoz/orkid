@@ -17,6 +17,7 @@ TextBox::TextBox(
     , _color(color){
   setText(text);
   _textcolor = fvec4(1, 1, 1, 1);
+  _font = lev2::FontMan::fontForId("i14");
 }
 ///////////////////////////////////////////////////////////////////////////////
 void TextBox::setText(std::string txt) {

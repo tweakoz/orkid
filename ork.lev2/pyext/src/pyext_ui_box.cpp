@@ -265,11 +265,11 @@ void pyinit_ui_box(py::module& uimodule) {
               })
           .def_property(
               "font",
-              [](ui::textbox_ptr_t box) -> std::string { //
+              [](ui::textbox_ptr_t box) -> font_ptr_t { //
                 return box->_font;
               },
-              [](ui::textbox_ptr_t box, std::string fnt) { //
-                box->_font = fnt;
+              [](ui::textbox_ptr_t box, font_ptr_t font) { //
+                box->_font = font;
               })
           .def_property(
               "textcolor",

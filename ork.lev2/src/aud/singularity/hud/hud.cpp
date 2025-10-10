@@ -284,12 +284,7 @@ void drawtext(
   context->MTXI()->PushUIMatrix(w, h);
 
   auto fontman = FontMan::instance();
-
-  if (ork::lev2::_HIDPI()) {
-    fontman->SetCurrentFont("i32");
-  } else {
-    fontman->SetCurrentFont("i16");
-  }
+  fontman->setCurrentFont( ork::lev2::_HIDPI() ? "i32" : "i16" );
   context->PushModColor(fcolor4(r, g, b, 1));
 
   fontman->beginTextBlock(context, str.length());

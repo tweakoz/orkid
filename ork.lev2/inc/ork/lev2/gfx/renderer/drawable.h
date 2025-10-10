@@ -570,7 +570,7 @@ struct BillboardStringDrawableData : public DrawableData {
   fvec4 _color;
   bool _cameraRelativeOffset = false;
   BlendingMacro _blendmode = BlendingMacro::ALPHA_ADDITIVE;
-  lev2::font_rawconstptr_t _font = nullptr;
+  lev2::font_ptr_t _font = nullptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

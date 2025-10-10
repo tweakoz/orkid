@@ -372,14 +372,12 @@ struct StandardCompositorFrame {
   compositorimpl_ptr_t compositor;
   compositingpassdata_ptr_t passdata;
   irenderer_ptr_t renderer;
-  bool _use_imgui_docking = false;
   rendervar_usermap_t _userprops;
   bool _updrendersync = false;
 
   acqupdatebuffer_ptr_t _updatebuffer;
   acqdrawbuffer_ptr_t _drawbuffer;
   acqdrawbuffer_lambda_t onPreCompositorRender;
-  acqdrawbuffer_lambda_t onImguiRender;
   acqdrawbuffer_lambda_t onPostCompositorRender;
 };
 ///////////////////////////////////////////////////////////////////////////////

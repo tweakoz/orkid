@@ -212,9 +212,7 @@ FontMan::FontMan() {
 ///////////////////////////////////////////////////////////////////////////////
 
 FontMan::~FontMan() {
-  for (auto item : GetRef().mFontVect)
-    delete item;
-  GetRef().mFontMap.clear();
+  _fontmap.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -527,73 +525,75 @@ void FontMan::DrawCenteredText(Context* context, int iY, const char* pFmt, ...) 
 ///////////////////////////////////////////////////////////////////////////////
 
 void FontMan::_addFont(const FontDesc& fdesc) {
-  auto it = mFontMap.find(fdesc.mFontName);
-  if (it == mFontMap.end()) {
-    Font* pNewFont = new Font(fdesc.mFontName, fdesc.mFontFile);
-    mFontVect.push_back(pNewFont);
-    mFontMap[fdesc.mFontName] = pNewFont;
-    pNewFont->mFontDesc = fdesc;
+  auto it = _fontmap.find(fdesc.mFontName);
+  if (it == _fontmap.end()) {
+    auto new_font = std::make_shared<Font>(fdesc.mFontName, fdesc.mFontFile);
+    _fontvect.push_back(new_font);
+    _fontmap[fdesc.mFontName] = new_font;
+    new_font->mFontDesc = fdesc;
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const Font* FontMan::currentFont() {
+font_ptr_t FontMan::currentFont() {
   auto top_state = instance()->_currentTextBlockState;
   return top_state->_font;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const Font* FontMan::GetFont(const std::string& name) {
+font_ptr_t FontMan::fontForId(const std::string& name) {
   auto fontman = instance();
-  Font* pFont  = OldStlSchoolFindValFromKey(fontman->mFontMap, name, (Font*)0);
-  return pFont;
+  auto it = fontman->_fontmap.find(name);
+  if( it == fontman->_fontmap.end() ){
+    orkprintf( "FontMan::fontForId<%s> not found\n", name.c_str() );
+    return nullptr;
+  }
+  return it->second;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const Font* FontMan::SetCurrentFont(const std::string& name) {
+void FontMan::setCurrentFont(const std::string& name) {
   auto fontman      = instance();
-  const Font* pFont = OldStlSchoolFindValFromKey(fontman->mFontMap, name, (Font*)0);
-  OrkAssert(pFont);
+  font_ptr_t font = fontForId(name);
   auto top_state   = fontman->_currentTextBlockState;
-  top_state->_font = pFont;
-  return pFont;
+  top_state->_font = font;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void FontMan::PushFont(const Font* pFont) {
-  OrkAssert(pFont);
+void FontMan::PushFont(font_ptr_t font) {
+  OrkAssert(font);
   auto top_state = instance()->_currentTextBlockState;
   top_state->_fontstack.push(top_state->_font);
-  top_state->_font = pFont;
+  top_state->_font = font;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const Font* FontMan::PushFont(const std::string& name) {
+font_ptr_t FontMan::PushFont(const std::string& name) {
   return instance()->_pushFont(name);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const Font* FontMan::PopFont() {
+font_ptr_t FontMan::PopFont() {
   return instance()->_popFont();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void FontMan::_bindFont(const Font* pFont) {
+void FontMan::_bindFont(font_ptr_t pFont) {
   OrkAssert(pFont);
   _currentTextBlockState->_font = pFont;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const Font* FontMan::_pushFont(const std::string& name) {
-  auto the_font = OldStlSchoolFindValFromKey(mFontMap, name, (Font*)nullptr);
+font_ptr_t FontMan::_pushFont(const std::string& name) {
+  auto the_font = fontForId(name);
   if (the_font == nullptr) {
     printf("FontMan::_pushFont<%s> not found\n", name.c_str());
   }
@@ -607,7 +607,7 @@ const Font* FontMan::_pushFont(const std::string& name) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const Font* FontMan::_popFont() {
+font_ptr_t FontMan::_popFont() {
   auto top_state = _currentTextBlockState;
   top_state->_fontstack.pop();
   auto next_font = top_state->_fontstack.top();
@@ -821,7 +821,7 @@ void FontMan::_gpuInit(Context* pTARG) {
     pTARG->makeCurrentContext();
     //pTARG->debugPushGroup("FontMan::InitFonts");
 
-    for( auto font : mFontVect ){
+    for( auto font : _fontvect ){
       font->LoadFromDisk(pTARG, font->mFontDesc);
       _bindFont(font);
     }

@@ -1,7 +1,0 @@
-cmake_minimum_required (VERSION 3.13.4)
-include(orkid)
-project (ork.example.ecs.scenegraph-minimal CXX)
-file(GLOB srcs ./*.cpp)
-set( EXE_NAME ork.example.ecs.scenegraph-minimal.exe )
-setupEcsEXE(${EXE_NAME} ${srcs} )
-target_include_directories (${EXE_NAME} PRIVATE ${SRCD} )

@@ -173,7 +173,7 @@ class FixedSizeExample(object):
 
     self.vfbox2 = self.vpack2.makeChild(
         uiclass=lev2.ui.LabelBox,
-        args=["",vec4(0.4,0.5,0.3,1),"Fixed"]
+        args=["",vec4(0.4,0.5,0.3,1),"OvFixed"]
     )
     self.vfbox2.fixed_height = 60
 

@@ -38,7 +38,7 @@ struct Panel : public Group {
   std::string _title;
   bool _closeEnabled = true;
   bool _moveEnabled  = true;
-
+  lev2::font_ptr_t _font;
   fvec4 _stdcolor   = fvec4(1.0f, 0.0f, 1.0f, 0.4f);
   fvec4 _focuscolor = fvec4(1, 1, 1, 1);
 

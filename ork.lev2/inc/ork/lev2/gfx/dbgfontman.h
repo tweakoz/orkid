@@ -115,8 +115,8 @@ using textitem_vect = std::vector<TextItem>;
 
 struct TextBlockState {
   size_t _maxcharcount = 0;
-  const Font* _font    = nullptr;
-  std::stack<const Font*> _fontstack;
+  font_ptr_t _font    = nullptr;
+  std::stack<font_ptr_t> _fontstack;
   bool _stereo_3d_text = false;
   rcid_ptr_t _overrideRCID;
   BlendingMacro _blending = BlendingMacro::ALPHA_ADDITIVE;
@@ -173,16 +173,17 @@ struct FontMan { //: public NoRttiSingleton<FontMan> {
   // Font Management
   /////////////////////////////////////////////
 
-  void _bindFont(const Font* pFont);
-  const Font* _pushFont(const std::string& name);
-  const Font* _popFont();
+  void _bindFont(font_ptr_t pFont);
+  font_ptr_t _pushFont(const std::string& name);
+  font_ptr_t _popFont();
 
-  static const Font* GetFont(const std::string& name);
-  static const Font* currentFont();
-  static const Font* SetCurrentFont(const std::string& name);
-  static void PushFont(const Font* pFont);
-  static const Font* PushFont(const std::string& name);
-  static const Font* PopFont();
+  static font_ptr_t fontForId(const std::string& name);
+
+  static font_ptr_t currentFont();
+  static void setCurrentFont(const std::string& name);
+  static void PushFont(font_ptr_t pFont);
+  static font_ptr_t PushFont(const std::string& name);
+  static font_ptr_t PopFont();
   static void beginTextBlock(Context* pTARG, int imaxcharcount = 0);
   static void endTextBlock(Context* pTARG);
 
@@ -191,9 +192,9 @@ struct FontMan { //: public NoRttiSingleton<FontMan> {
 protected:
   /////////////////////////////////////////////
 
-  orkvector<Font*> mFontVect;
-  orkmap<std::string, Font*> mFontMap;
-  Font* mpDefaultFont;
+  orkvector<font_ptr_t> _fontvect;
+  std::unordered_map<std::string, font_ptr_t> _fontmap;
+  font_ptr_t mpDefaultFont;
   vtxwriter_t mTextWriter;
   CharDesc mCharDescriptions[256];
   vtxwriter_vect_t _writers;

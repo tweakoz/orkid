@@ -25,7 +25,6 @@
 #if defined(ENABLE_GLFW)
 #include <ork/lev2/glfw/ctx_glfw.h>
 #include <GLFW/glfw3native.h>
-#include <ork/lev2/imgui/imgui_impl_glfw.h>
 namespace ork::lev2 {
 int _g_post_swap_wait_time = 0;
 extern int GLFW_MODIFIER_OSCTRL;
@@ -158,11 +157,6 @@ static void _glfw_callback_contentScaleChanged(GLFWwindow* window, float sw, flo
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_focusChanged(GLFWwindow* window, int focus) {
   bool has_focus = (focus == GLFW_TRUE);
-  ////////////////////////
-  // TODO - resolve where to send input, IMGUI - or ork::lev2::ui ?
-  ////////////////////////
-  // ImGui_ImplGlfw_WindowFocusCallback(window, focus);
-  ////////////////////////
   printf("fb focus<%p %d>", window, focus);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -972,12 +966,6 @@ void CtxGLFW::_on_callback_mousebuttons(int button, int action, int modifiers) {
   // printf("_glfw_callback_mousebuttons<%p>", window);
 
   ////////////////////////
-  // TODO - resolve where to send input, IMGUI - or ork::lev2::ui ?
-  ////////////////////////
-
-  // ImGui_ImplGlfw_MouseButtonCallback(window, button, action, modifiers);
-
-  ////////////////////////
 
   auto uiev = this->uievent();
 
@@ -1065,8 +1053,6 @@ void CtxGLFW::_on_callback_cursor(double xoffset, double yoffset) {
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::_on_callback_enterleave(int entered) {
   // printf("_glfw_callback_enterleave<%p> entered<%d>", window, entered);
-
-  // ImGui_ImplGlfw_CursorEnterCallback(window, entered);
 
   bool was_entered = bool(entered);
 

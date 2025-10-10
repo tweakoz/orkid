@@ -17,7 +17,6 @@
 #include <ork/ecs/scene.h>
 #include <ork/ecs/system.h>
 #include <ork/ecs/entity.inl>
-#include <ork/lev2/imgui/imgui_ged.inl>
 
 template class ork::orklut<const ork::object::ObjectClass*, ork::ecs::systemdata_ptr_t>;
 
@@ -103,12 +102,7 @@ void SceneData::describeX(ObjectClass* clazz) {
   clazz->annotate("editor.object.props", "ScriptFile SceneObjects SystemData"s);
 
   /////////////////////
-  prophandler_t sohandler = [](const EditorContext& ctx, object_ptr_t obj, const reflect::ObjectProperty* prop){
-      using map_t = orkmap<PoolString, sceneobject_ptr_t>;
-      imgui::DirectObjectMapPropUI<map_t>(ctx, obj,prop);
-    };
-  clazz->directObjectMapProperty("SceneObjects", &SceneData::_sceneObjects)
-    ->annotate("editor.prop.handler",sohandler);
+  clazz->directObjectMapProperty("SceneObjects", &SceneData::_sceneObjects);
   /////////////////////
   clazz->directObjectMapProperty("SystemData", &SceneData::_systemDatas)
     ->annotate("editor.factorylistbase", "SystemData");

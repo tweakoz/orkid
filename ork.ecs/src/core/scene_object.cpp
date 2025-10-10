@@ -19,7 +19,6 @@
 #include <ork/reflect/properties/DirectTypedMap.hpp>
 
 #include <ork/reflect/properties/registerX.inl>
-#include <ork/lev2/imgui/imgui_ged.inl>
 
 ImplementReflectionX(ork::ecs::SceneObjectClass, "SceneObjectClass") ImplementReflectionX(ork::ecs::SceneObject, "EcsSceneObject");
 ImplementReflectionX(ork::ecs::SceneGroup, "EcsSceneGroup");
@@ -66,25 +65,7 @@ void SceneDagObject::describeX(SceneObjectClass* clazz) {
   clazz->annotate("editor.3dxfable", true);
   clazz->annotate("editor.3dxfinterface", ConstString("SceneDagObjectManipInterface"));
   clazz->directProperty("Parent", &SceneDagObject::_parentName);
-
-
-  /////////////////////
-  prophandler_t xfhandler = [](const EditorContext& ctx, //
-                                       object_ptr_t obj, //
-                                       const reflect::ObjectProperty* prop){
-
-      auto typed_prop = dynamic_cast<const reflect::DirectObjectBase*>(prop);
-
-      auto child = typed_prop->getObject(obj);
-
-      dagnodedata_ptr_t dnd = std::dynamic_pointer_cast<DagNodeData>(child);
-      xfnode_ptr_t xfn = dnd->_xfnode;
-
-      imgui::DirectTransformPropUI(ctx, xfn);
-    };
-
-  clazz->directObjectProperty("DagNodeData", &SceneDagObject::_dagnode)
-      ->annotate("editor.prop.handler",xfhandler);
+  clazz->directObjectProperty("DagNodeData", &SceneDagObject::_dagnode);
 
   //reflect::annotatePropertyForEditor<SceneDagObject>("DagNode", "editor.visible", "false");
   reflect::annotatePropertyForEditor<SceneDagObject>("Parent", "editor.visible", "false");

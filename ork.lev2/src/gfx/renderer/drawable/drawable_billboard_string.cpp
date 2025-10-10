@@ -128,7 +128,7 @@ BillboardStringDrawable::BillboardStringDrawable(const BillboardStringDrawableDa
   _color         = _data->_color;
 
   static auto tbstate  = std::make_shared<TextBlockState>();
-  tbstate->_font       = FontMan::GetFont("i48");
+  tbstate->_font       = FontMan::fontForId("i48");
   const auto& FONTDESC = tbstate->_font->description();
   int CHARW            = FONTDESC._3d_char_width;
   int CHARH            = FONTDESC._3d_char_height;

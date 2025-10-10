@@ -20,6 +20,8 @@ Panel::Panel(const std::string& name, int x, int y, int w, int h)
     : Group(name, x, y, w, h)
     , _child(nullptr)
     , mDockedAtTop(false) {
+
+  _font = lev2::FontMan::fontForId("i13");
 }
 
 Panel::~Panel() {
@@ -112,9 +114,7 @@ void Panel::DoDraw(ui::drawevent_constptr_t drwev) {
 
     if (_title.length()) {
       tgt->PushModColor(fcolor4::White());
-      auto font = lev2::FontMan::GetFont("i13");
-
-      lev2::FontMan::PushFont(font);
+      lev2::FontMan::PushFont(_font);
       lev2::FontMan::beginTextBlock(tgt);
       lev2::FontMan::DrawText(tgt, ixr + kpanelw + 2, iyr + 2, _title.c_str());
       lev2::FontMan::endTextBlock(tgt);

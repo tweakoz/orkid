@@ -25,7 +25,8 @@ public:
   void setText(std::string txt);
   fvec4 _color;
   fvec4 _textcolor;
-  std::string _font = "i14";
+  lev2::font_ptr_t _font;
+
   ETextAlignH _halign = ETextAlignH::CENTER;
   ETextAlignV _valign = ETextAlignV::CENTER;
   std::vector<std::string> _lines;

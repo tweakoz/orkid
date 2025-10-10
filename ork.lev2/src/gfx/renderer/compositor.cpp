@@ -25,12 +25,6 @@
 #include <ork/lev2/lev2_asset.h>
 #include <ork/lev2/ui/event.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/lev2/imgui/imgui.h>
-#include <ork/lev2/imgui/imgui_impl_glfw.h>
-#include <ork/lev2/imgui/imgui_impl_opengl3.h>
-#include <ork/lev2/imgui/ork_imgui_dockspace.inl>
-#include <ork/lev2/imgui/ImGuizmo.h>
-///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(ork::lev2::CompositingScene, "CompositingScene");
 ImplementReflectionX(ork::lev2::CompositingSceneItem, "CompositingSceneItem");
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::CompositingTechnique, "CompositingTechnique");
@@ -224,24 +218,6 @@ void StandardCompositorFrame::render() {
 
       /////////////////////////////////////////////
 
-      if (this->onImguiRender) {
-
-        /////////////////////////////////////
-
-        ImGui_ImplGlfw_NewFrame();
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui::NewFrame();
-
-        if (_use_imgui_docking) {
-          static bool docking_enable = true;
-          OrkidDockSpace(&docking_enable);
-        }
-
-        this->onImguiRender(_drawbuffer);
-
-        ImGui::Render();
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-      }
     }
 
     _drawbuffer->_RCFD->popCompositor();
