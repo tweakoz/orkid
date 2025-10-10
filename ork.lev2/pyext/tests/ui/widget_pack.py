@@ -106,7 +106,9 @@ class PackWidgets(object):
     self.lg_group1 = lg_group
     self.uictx1 = self.ezapp.uicontext
 
-    MARGIN = 4
+    MARGIN = 2
+    LAYOUT_MARGIN = 2
+    
     ############################################
     # start out with a 2x2 grid of boxes
     ############################################
@@ -122,7 +124,7 @@ class PackWidgets(object):
     ############################################
 
     self.lg_group = lg_group
-    lg_group.margin = MARGIN
+    lg_group.margin = LAYOUT_MARGIN
 
     ############################################
     # create a vertical pack widget in the upper-left grid cell
@@ -433,15 +435,6 @@ class PackWidgets(object):
     self.sgv.scenegraph = self.scenegraph
     self.sgv.forkDB()
     self.scenegraph.lightingmanager.gpuInit(ctx)
-
-  ################################################
-
-  def onGpuUpdate(self,ctx):
-    t = int(self.abstime*1.0)
-    #if t%2==0:
-    #  self.ezapp.uicontext = self.uictx1
-    #else:
-    #  self.ezapp.uicontext = self.uictx2
 
   ################################################
 
