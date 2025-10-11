@@ -10,6 +10,7 @@ import freetype
 from PIL import Image
 import json
 import os
+import argparse
 from dataclasses import dataclass
 from typing import List, Tuple, Dict, Optional
 
@@ -155,17 +156,24 @@ class FontAtlasGenerator:
         
         return atlas, metadata
     
-    def generate_f2i_style_atlas(self, grid_size: int = 16) -> Tuple[np.ndarray, Dict]:
+    def generate_f2i_style_atlas(self, grid_size: int = 16, ssaa: int = 1) -> Tuple[np.ndarray, Dict]:
         """
         Generate atlas in F2IBuilder style layout (16x16 grid)
-        
+
         Args:
             grid_size: Number of cells in grid (16 for 16x16 = 256 chars)
-            
+            ssaa: Supersampling factor (1, 4, 9, 16, 25 for 1x, 2x, 3x, 4x, 5x)
+
         Returns:
             Tuple of (atlas_image_array, metadata_dict)
         """
-        # Calculate cell size based on font metrics
+        # Validate SSAA value
+        valid_ssaa = [1, 4, 9, 16, 25]
+        if ssaa not in valid_ssaa:
+            raise ValueError(f"SSAA must be one of {valid_ssaa}, got {ssaa}")
+
+        ssaa_scale = int(np.sqrt(ssaa))  # 1, 2, 3, 4, or 5
+        # Calculate cell size based on font metrics at target resolution
         self.face.load_char('M', freetype.FT_LOAD_RENDER)
 
         # Get maximum dimensions from font metrics
@@ -175,10 +183,15 @@ class FontAtlasGenerator:
         # Use square cells with 12 pixels total margin (6 per side)
         cell_size = max(max_width, max_height) + 12
 
-        # Create atlas
+        # Create atlas at target resolution
         atlas_width = cell_size * grid_size
         atlas_height = cell_size * grid_size
         atlas = np.zeros((atlas_height, atlas_width), dtype=np.uint8)
+
+        # If SSAA enabled, temporarily scale up font size for rendering
+        original_pixel_size = self.pixel_size
+        if ssaa > 1:
+            self.face.set_pixel_sizes(0, self.pixel_size * ssaa_scale)
         
         metadata = {
             'font_size': self.pixel_size,
@@ -209,29 +222,59 @@ class FontAtlasGenerator:
                 bitmap = self.face.glyph.bitmap
 
                 if bitmap.width > 0 and bitmap.rows > 0:
+                    # Get bitmap buffer
+                    buffer = np.array(bitmap.buffer, dtype=np.uint8).reshape(bitmap.rows, bitmap.width)
+
+                    # If SSAA enabled, downsample with high-quality filter
+                    if ssaa > 1:
+                        # Convert to PIL Image for high-quality resampling
+                        img_hi = Image.fromarray(buffer, mode='L')
+                        target_width = bitmap.width // ssaa_scale
+                        target_height = bitmap.rows // ssaa_scale
+                        # Use LANCZOS for best quality downsampling
+                        img_lo = img_hi.resize((target_width, target_height), Image.LANCZOS)
+                        buffer = np.array(img_lo, dtype=np.uint8)
+
+                        # Adjust bearing for downsampled size
+                        bearing_x = self.face.glyph.bitmap_left // ssaa_scale
+                        bearing_y = self.face.glyph.bitmap_top // ssaa_scale
+                    else:
+                        bearing_x = self.face.glyph.bitmap_left
+                        bearing_y = self.face.glyph.bitmap_top
+
+                    final_width = buffer.shape[1]
+                    final_height = buffer.shape[0]
+
                     # Center glyph in cell with 6px margin on each side
-                    offset_x = (cell_size - bitmap.width) // 2 + self.face.glyph.bitmap_left
-                    offset_y = cell_size - (cell_size - bitmap.rows) // 2 - self.face.glyph.bitmap_top
+                    offset_x = (cell_size - final_width) // 2 + bearing_x
+                    offset_y = cell_size - (cell_size - final_height) // 2 - bearing_y
 
                     # Ensure we don't go out of bounds
-                    render_x = max(0, min(cell_x + offset_x, atlas_width - bitmap.width))
-                    render_y = max(0, min(cell_y + offset_y, atlas_height - bitmap.rows))
-                    
+                    render_x = max(0, min(cell_x + offset_x, atlas_width - final_width))
+                    render_y = max(0, min(cell_y + offset_y, atlas_height - final_height))
+
                     # Copy bitmap to atlas
-                    buffer = np.array(bitmap.buffer, dtype=np.uint8).reshape(bitmap.rows, bitmap.width)
-                    atlas[render_y:render_y+bitmap.rows, render_x:render_x+bitmap.width] = buffer
+                    atlas[render_y:render_y+final_height, render_x:render_x+final_width] = buffer
                     
+                    advance = (self.face.glyph.advance.x >> 6)
+                    if ssaa > 1:
+                        advance = advance // ssaa_scale
+
                     metadata['glyphs'][char] = {
                         'index': i,
                         'x': render_x,
                         'y': render_y,
-                        'width': bitmap.width,
-                        'height': bitmap.rows,
-                        'advance': self.face.glyph.advance.x >> 6
+                        'width': final_width,
+                        'height': final_height,
+                        'advance': advance
                     }
-            except:
+            except Exception as e:
                 pass  # Skip chars that can't be rendered
-                
+
+        # Restore original font size
+        if ssaa > 1:
+            self.face.set_pixel_sizes(0, original_pixel_size)
+
         return atlas, metadata
 
 def save_atlas(atlas: np.ndarray, metadata: Dict, output_prefix: str, 
@@ -275,38 +318,52 @@ def save_atlas(atlas: np.ndarray, metadata: Dict, output_prefix: str,
 
 # Example usage
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description='Generate font atlas textures with optional SSAA',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  %(prog)s                              # Generate with default settings
+  %(prog)s --ssaa 4                     # Generate with 2x SSAA
+  %(prog)s --ssaa 16 --pixel-size 24    # Generate 24px font with 4x SSAA
+  %(prog)s --font /path/to/font.ttf     # Use custom font
+        """
+    )
+
+    parser.add_argument('--font', type=str,
+                       default="/System/Library/Fonts/Helvetica.ttc",
+                       help='Path to font file (default: Helvetica.ttc)')
+    parser.add_argument('--pixel-size', type=int, default=16,
+                       help='Font size in pixels (default: 16)')
+    parser.add_argument('--ssaa', type=int, choices=[1, 4, 9, 16, 25], default=1,
+                       help='Supersampling anti-aliasing: 1=off, 4=2x, 9=3x, 16=4x, 25=5x (default: 1)')
+    parser.add_argument('--output', type=str, default="font_atlas_grid",
+                       help='Output file prefix (default: font_atlas_grid)')
+    parser.add_argument('--no-grid', action='store_true',
+                       help='Disable debug grid overlay')
+
+    args = parser.parse_args()
+
     # Standard ASCII charset
     ASCII_CHARSET = ''.join(chr(i) for i in range(32, 127))
-    
+
     # Extended charset with common symbols
     EXTENDED_CHARSET = ASCII_CHARSET + "©®™€£¥°±×÷√∞∑∏∫≈≠≤≥"
-    
-    # Path to font (update this to your font path)
-    # On Linux: often in /usr/share/fonts/
-    # On Mac: often in /System/Library/Fonts/ or /Library/Fonts/
-    font_path = "/System/Library/Fonts/Helvetica.ttc"  # Mac example
-    # font_path = "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf"  # Linux example
-    
+
     # Create generator
-    gen = FontAtlasGenerator(font_path, pixel_size=16, dpi=96)
-    
-    # Method 1: Generate F2IBuilder-style grid atlas
-    atlas, metadata = gen.generate_f2i_style_atlas(grid_size=16)
-    save_atlas(atlas, metadata, "font_atlas_grid", add_grid=True)
-    
-    # Method 2: Generate packed atlas (more efficient)
-    atlas2, metadata2 = gen.generate_atlas(
-        charset=EXTENDED_CHARSET,
-        atlas_width=512,
-        atlas_height=512,
-        padding=2,
-        render_mode=freetype.FT_RENDER_MODE_NORMAL,
-        enable_kerning=True
-    )
-    save_atlas(atlas2, metadata2, "font_atlas_packed")
-    
+    print(f"Generating font atlas:")
+    print(f"  Font: {args.font}")
+    print(f"  Size: {args.pixel_size}px")
+    print(f"  SSAA: {args.ssaa}x ({int(np.sqrt(args.ssaa))}x scale)" if args.ssaa > 1 else f"  SSAA: disabled")
+
+    gen = FontAtlasGenerator(args.font, pixel_size=args.pixel_size, dpi=96)
+
+    # Generate F2IBuilder-style grid atlas
+    atlas, metadata = gen.generate_f2i_style_atlas(grid_size=16, ssaa=args.ssaa)
+    save_atlas(atlas, metadata, args.output, add_grid=not args.no_grid)
+
     print("\nAtlas generation complete!")
-    print(f"Grid atlas: {len(metadata['glyphs'])} glyphs")
-    print(f"Packed atlas: {len(metadata2['glyphs'])} glyphs")
-    if metadata2.get('kerning'):
-        print(f"Kerning pairs: {len(metadata2['kerning'])}")
+    print(f"  Output: {args.output}.png / {args.output}.json")
+    print(f"  Glyphs: {len(metadata['glyphs'])}")
+    print(f"  Atlas size: {atlas.shape[1]}x{atlas.shape[0]}")
+    print(f"  Cell size: {metadata['cell_width']}x{metadata['cell_height']}")
