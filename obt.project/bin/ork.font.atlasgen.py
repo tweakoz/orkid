@@ -167,48 +167,52 @@ class FontAtlasGenerator:
         """
         # Calculate cell size based on font metrics
         self.face.load_char('M', freetype.FT_LOAD_RENDER)
-        
+
         # Get maximum dimensions from font metrics
-        max_width = (self.face.size.max_advance >> 6) + 2
-        max_height = (self.face.size.height >> 6) + 2
-        
+        max_width = (self.face.size.max_advance >> 6)
+        max_height = (self.face.size.height >> 6)
+
+        # Use square cells with 12 pixels total margin (6 per side)
+        cell_size = max(max_width, max_height) + 12
+
         # Create atlas
-        atlas_width = max_width * grid_size
-        atlas_height = max_height * grid_size
+        atlas_width = cell_size * grid_size
+        atlas_height = cell_size * grid_size
         atlas = np.zeros((atlas_height, atlas_width), dtype=np.uint8)
         
         metadata = {
             'font_size': self.pixel_size,
             'grid_size': grid_size,
-            'cell_width': max_width,
-            'cell_height': max_height,
+            'cell_width': cell_size,
+            'cell_height': cell_size,
             'glyphs': {}
         }
         
         # Render each ASCII character in grid position
         for i in range(256):
-            char = chr(i) if i >= 32 and i < 127 else ''  # Printable ASCII range
+            # Printable ASCII (32-126) + Latin-1 Supplement (160-255)
+            char = chr(i) if (i >= 32 and i < 127) or (i >= 160 and i < 256) else ''
             if not char:
                 continue
                 
             # Calculate grid position
             grid_x = i % grid_size
             grid_y = i // grid_size
-            
-            # Calculate pixel position (centered in cell)
-            cell_x = grid_x * max_width
-            cell_y = grid_y * max_height
-            
+
+            # Calculate pixel position (centered in cell with 6px margin)
+            cell_x = grid_x * cell_size
+            cell_y = grid_y * cell_size
+
             # Load and render character
             try:
                 self.face.load_char(char, freetype.FT_LOAD_RENDER | freetype.FT_LOAD_TARGET_NORMAL)
                 bitmap = self.face.glyph.bitmap
-                
+
                 if bitmap.width > 0 and bitmap.rows > 0:
-                    # Center glyph in cell
-                    offset_x = (max_width - bitmap.width) // 2 + self.face.glyph.bitmap_left
-                    offset_y = max_height - (max_height - bitmap.rows) // 2 - self.face.glyph.bitmap_top
-                    
+                    # Center glyph in cell with 6px margin on each side
+                    offset_x = (cell_size - bitmap.width) // 2 + self.face.glyph.bitmap_left
+                    offset_y = cell_size - (cell_size - bitmap.rows) // 2 - self.face.glyph.bitmap_top
+
                     # Ensure we don't go out of bounds
                     render_x = max(0, min(cell_x + offset_x, atlas_width - bitmap.width))
                     render_y = max(0, min(cell_y + offset_y, atlas_height - bitmap.rows))
