@@ -126,6 +126,23 @@ FontMan::FontMan() {
 
   /////////////////////////////////////////////////////////////
 
+  FontDesc Inconsolata17;
+  Inconsolata17.mFontName       = "i17";
+  Inconsolata17.mFontFile       = "lev2://textures/Inconsolata17";
+  Inconsolata17.miTexWidth      = 608;
+  Inconsolata17.miTexHeight     = 608;
+  Inconsolata17.miCellWidth     = 38;
+  Inconsolata17.miCellHeight    = 38;
+  Inconsolata17.miCharWidth     = 17;
+  Inconsolata17.miCharHeight    = 17;
+  Inconsolata17.miCharOffsetX   = 15;
+  Inconsolata17.miCharOffsetY   = 14;
+  Inconsolata17.miYShift        = 0;
+  Inconsolata17.miAdvanceWidth  = 8;
+  Inconsolata17.miAdvanceHeight = 17;
+
+  /////////////////////////////////////////////////////////////
+
   FontDesc Inconsolata24;
   Inconsolata24.mFontName       = "i24";
   Inconsolata24.mFontFile       = "lev2://textures/Inconsolata24";
@@ -198,10 +215,11 @@ FontMan::FontMan() {
   Transponder24.miAdvanceWidth  = 16;
   Transponder24.miAdvanceHeight = 24;
 
-   _addFont(Inconsolata12);
+  _addFont(Inconsolata12);
   _addFont(Inconsolata13);
   _addFont(Inconsolata14);
   _addFont(Inconsolata16);
+  _addFont(Inconsolata17);
   _addFont(Inconsolata24);
   _addFont(Inconsolata32);
   _addFont(Inconsolata48);

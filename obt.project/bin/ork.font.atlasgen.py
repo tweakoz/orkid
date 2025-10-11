@@ -10,7 +10,9 @@ import freetype
 from PIL import Image
 import json
 import os
+import sys
 import argparse
+from pathlib import Path
 from dataclasses import dataclass
 from typing import List, Tuple, Dict, Optional
 
@@ -192,12 +194,33 @@ class FontAtlasGenerator:
         original_pixel_size = self.pixel_size
         if ssaa > 1:
             self.face.set_pixel_sizes(0, self.pixel_size * ssaa_scale)
-        
+
+        # Calculate consistent baseline position in cell
+        # Use font metrics to determine where baseline should be
+        # This ensures all characters align properly
+        font_height = self.face.size.height >> 6
+        font_ascent = self.face.size.ascender >> 6
+        font_descent = abs(self.face.size.descender >> 6)
+
+        if ssaa > 1:
+            font_height = font_height // ssaa_scale
+            font_ascent = font_ascent // ssaa_scale
+            font_descent = font_descent // ssaa_scale
+
+        # Baseline is positioned so there's equal margin top and bottom
+        # with enough space for ascenders and descenders
+        baseline_y = (cell_size + font_ascent - font_descent) // 2
+
         metadata = {
             'font_size': self.pixel_size,
             'grid_size': grid_size,
+            'atlas_width': atlas_width,
+            'atlas_height': atlas_height,
             'cell_width': cell_size,
             'cell_height': cell_size,
+            'baseline_y': baseline_y,
+            'font_ascent': font_ascent,
+            'font_descent': font_descent,
             'glyphs': {}
         }
         
@@ -245,9 +268,13 @@ class FontAtlasGenerator:
                     final_width = buffer.shape[1]
                     final_height = buffer.shape[0]
 
-                    # Center glyph in cell with 6px margin on each side
-                    offset_x = (cell_size - final_width) // 2 + bearing_x
-                    offset_y = cell_size - (cell_size - final_height) // 2 - bearing_y
+                    # Horizontal: center glyph in cell
+                    offset_x = (cell_size - final_width) // 2
+
+                    # Vertical: align to consistent baseline
+                    # bearing_y is distance from baseline to top of glyph
+                    # So glyph top should be at: baseline_y - bearing_y
+                    offset_y = baseline_y - bearing_y
 
                     # Ensure we don't go out of bounds
                     render_x = max(0, min(cell_x + offset_x, atlas_width - final_width))
@@ -277,17 +304,85 @@ class FontAtlasGenerator:
 
         return atlas, metadata
 
-def save_atlas(atlas: np.ndarray, metadata: Dict, output_prefix: str, 
-               add_grid: bool = False, grid_color: Tuple[int, int, int] = (0, 255, 0)):
+def generate_fcpp_metadata(metadata: Dict, font_name: str, font_var_name: str,
+                          texture_path: str) -> str:
+    """
+    Generate C++ FontDesc metadata format
+
+    Args:
+        metadata: Atlas metadata dictionary
+        font_name: Short font name (e.g., "i24")
+        font_var_name: C++ variable name (e.g., "Inconsolata24")
+        texture_path: Texture path (e.g., "lev2://textures/Inconsolata24")
+
+    Returns:
+        String containing C++ code
+    """
+    # Get atlas dimensions
+    tex_width = metadata['atlas_width']
+    tex_height = metadata['atlas_height']
+    cell_width = metadata['cell_width']
+    cell_height = metadata['cell_height']
+
+    # Calculate typical character metrics from a sample character ('M' or 'A')
+    sample_char = None
+    for ch in ['M', 'A', 'W', 'a']:
+        if ch in metadata['glyphs']:
+            sample_char = metadata['glyphs'][ch]
+            break
+
+    if sample_char:
+        char_width = sample_char['width']
+        char_height = sample_char['height']
+        advance_width = sample_char['advance']
+    else:
+        # Fallback to cell size
+        char_width = cell_width
+        char_height = cell_height
+        advance_width = cell_width
+
+    # Calculate offsets (margin around character in cell)
+    char_offset_x = (cell_width - char_width) // 2
+    char_offset_y = (cell_height - char_height) // 2
+
+    # Y shift (typically small adjustment)
+    y_shift = 0
+
+    # Advance height (typically cell height or char height)
+    advance_height = cell_height
+
+    # Generate C++ code
+    cpp_code = f"""  FontDesc {font_var_name};
+  {font_var_name}.mFontName       = "{font_name}";
+  {font_var_name}.mFontFile       = "{texture_path}";
+  {font_var_name}.miTexWidth      = {tex_width};
+  {font_var_name}.miTexHeight     = {tex_height};
+  {font_var_name}.miCellWidth     = {cell_width};
+  {font_var_name}.miCellHeight    = {cell_height};
+  {font_var_name}.miCharWidth     = {char_width};
+  {font_var_name}.miCharHeight    = {char_height};
+  {font_var_name}.miCharOffsetX   = {char_offset_x};
+  {font_var_name}.miCharOffsetY   = {char_offset_y};
+  {font_var_name}.miYShift        = {y_shift};
+  {font_var_name}.miAdvanceWidth  = {advance_width};
+  {font_var_name}.miAdvanceHeight = {advance_height};
+"""
+    return cpp_code
+
+def save_atlas(atlas: np.ndarray, metadata: Dict, output_prefix: str,
+               add_grid: bool = False, grid_color: Tuple[int, int, int] = (0, 255, 0),
+               font_name: str = None, texture_path: str = None):
     """
     Save atlas image and metadata
-    
+
     Args:
         atlas: Numpy array of atlas image
         metadata: Dictionary of atlas metadata
         output_prefix: Prefix for output files (will create .png and .json)
         add_grid: Add debug grid overlay
         grid_color: RGB color for grid
+        font_name: Short font name for .fcpp output (e.g., "i24")
+        texture_path: Texture path for .fcpp output (e.g., "lev2://textures/Inconsolata24")
     """
     # Convert to RGBA for better compatibility
     img = Image.fromarray(atlas, mode='L').convert('RGBA')
@@ -309,12 +404,148 @@ def save_atlas(atlas: np.ndarray, metadata: Dict, output_prefix: str,
     
     # Save image
     img.save(f"{output_prefix}.png")
-    
-    # Save metadata
+
+    # Save JSON metadata
     with open(f"{output_prefix}.json", 'w') as f:
         json.dump(metadata, f, indent=2)
-    
-    print(f"Saved atlas to {output_prefix}.png and {output_prefix}.json")
+
+    # Save C++ metadata if font_name provided
+    if font_name and texture_path:
+        # Extract variable name from output prefix (last part of path)
+        var_name = Path(output_prefix).name
+        # Capitalize first letter for C++ convention
+        if var_name:
+            var_name = var_name[0].upper() + var_name[1:]
+
+        fcpp_code = generate_fcpp_metadata(metadata, font_name, var_name, texture_path)
+
+        with open(f"{output_prefix}.fcpp", 'w') as f:
+            f.write(fcpp_code)
+
+        print(f"Saved atlas to {output_prefix}.png, {output_prefix}.json, and {output_prefix}.fcpp")
+    else:
+        print(f"Saved atlas to {output_prefix}.png and {output_prefix}.json")
+
+def find_system_fonts() -> List[Path]:
+    """
+    Find all font files on the system
+
+    Returns:
+        List of Path objects to font files
+    """
+    font_paths = []
+
+    # Common font directories by platform
+    if sys.platform == 'darwin':  # macOS
+        search_dirs = [
+            '/System/Library/Fonts',
+            '/Library/Fonts',
+            Path.home() / 'Library' / 'Fonts',
+        ]
+    elif sys.platform.startswith('linux'):
+        search_dirs = [
+            '/usr/share/fonts',
+            '/usr/local/share/fonts',
+            Path.home() / '.fonts',
+            Path.home() / '.local' / 'share' / 'fonts',
+        ]
+    else:  # Windows
+        search_dirs = [
+            Path(os.environ.get('WINDIR', 'C:\\Windows')) / 'Fonts',
+        ]
+
+    # Font file extensions
+    font_extensions = {'.ttf', '.otf', '.ttc', '.otc', '.dfont'}
+
+    # Search directories
+    for search_dir in search_dirs:
+        if not Path(search_dir).exists():
+            continue
+        for ext in font_extensions:
+            font_paths.extend(Path(search_dir).rglob(f'*{ext}'))
+
+    return sorted(set(font_paths))
+
+def analyze_font(font_path: Path) -> Dict:
+    """
+    Analyze a font file and extract metadata
+
+    Args:
+        font_path: Path to font file
+
+    Returns:
+        Dictionary with font metadata
+    """
+    try:
+        face = freetype.Face(str(font_path))
+
+        # Determine if font is scalable (vector) or bitmap
+        is_scalable = bool(face.face_flags & freetype.FT_FACE_FLAG_SCALABLE)
+        font_type = "vector" if is_scalable else "bitmap"
+
+        # Determine if font is fixed-width (monospace)
+        is_fixed = bool(face.face_flags & freetype.FT_FACE_FLAG_FIXED_WIDTH)
+        spacing = "fixed" if is_fixed else "proportional"
+
+        # Get font family and style
+        family = face.family_name.decode('utf-8') if isinstance(face.family_name, bytes) else face.family_name
+        style = face.style_name.decode('utf-8') if isinstance(face.style_name, bytes) else face.style_name
+
+        # Get number of glyphs
+        num_glyphs = face.num_glyphs
+
+        return {
+            'path': font_path,
+            'family': family,
+            'style': style,
+            'type': font_type,
+            'spacing': spacing,
+            'num_glyphs': num_glyphs,
+            'success': True
+        }
+    except Exception as e:
+        return {
+            'path': font_path,
+            'error': str(e),
+            'success': False
+        }
+
+def list_fonts():
+    """
+    List all available fonts on the system with their properties
+    """
+    print("Scanning for fonts...\n")
+
+    fonts = find_system_fonts()
+
+    if not fonts:
+        print("No fonts found on system")
+        return
+
+    print(f"Found {len(fonts)} font files\n")
+    print(f"{'Family':<30} {'Style':<20} {'Type':<8} {'Spacing':<12} {'Glyphs':<8} Path")
+    print("=" * 140)
+
+    analyzed = []
+    for font_path in fonts:
+        info = analyze_font(font_path)
+        if info['success']:
+            analyzed.append(info)
+
+    # Sort by family, then style
+    analyzed.sort(key=lambda x: (x['family'].lower(), x['style'].lower()))
+
+    for info in analyzed:
+        family = info['family'][:28]
+        style = info['style'][:18]
+        font_type = info['type']
+        spacing = info['spacing']
+        num_glyphs = str(info['num_glyphs'])
+        path = str(info['path'])
+
+        print(f"{family:<30} {style:<20} {font_type:<8} {spacing:<12} {num_glyphs:<8} {path}")
+
+    print(f"\nTotal usable fonts: {len(analyzed)}")
 
 # Example usage
 if __name__ == "__main__":
@@ -323,10 +554,14 @@ if __name__ == "__main__":
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s                              # Generate with default settings
-  %(prog)s --ssaa 4                     # Generate with 2x SSAA
-  %(prog)s --ssaa 16 --pixel-size 24    # Generate 24px font with 4x SSAA
-  %(prog)s --font /path/to/font.ttf     # Use custom font
+  %(prog)s --list                                           # List all system fonts
+  %(prog)s                                                  # Generate with default settings
+  %(prog)s --ssaa 4                                         # Generate with 2x SSAA
+  %(prog)s --ssaa 16 --pixel-size 24 --output Inconsolata24 # Generate 24px font with 4x SSAA
+  %(prog)s --font /path/to/Inconsolata.ttf --pixel-size 24 \\
+           --output Inconsolata24 \\
+           --font-name "i24" \\
+           --texture-path "lev2://textures/Inconsolata24"   # Full example with C++ metadata
         """
     )
 
@@ -341,8 +576,19 @@ Examples:
                        help='Output file prefix (default: font_atlas_grid)')
     parser.add_argument('--no-grid', action='store_true',
                        help='Disable debug grid overlay')
+    parser.add_argument('--list', action='store_true',
+                       help='List all available system fonts and exit')
+    parser.add_argument('--font-name', type=str,
+                       help='Short font name for .fcpp output (e.g., "i24")')
+    parser.add_argument('--texture-path', type=str,
+                       help='Texture path for .fcpp output (e.g., "lev2://textures/Inconsolata24")')
 
     args = parser.parse_args()
+
+    # Handle --list option
+    if args.list:
+        list_fonts()
+        sys.exit(0)
 
     # Standard ASCII charset
     ASCII_CHARSET = ''.join(chr(i) for i in range(32, 127))
@@ -360,7 +606,8 @@ Examples:
 
     # Generate F2IBuilder-style grid atlas
     atlas, metadata = gen.generate_f2i_style_atlas(grid_size=16, ssaa=args.ssaa)
-    save_atlas(atlas, metadata, args.output, add_grid=not args.no_grid)
+    save_atlas(atlas, metadata, args.output, add_grid=not args.no_grid,
+               font_name=args.font_name, texture_path=args.texture_path)
 
     print("\nAtlas generation complete!")
     print(f"  Output: {args.output}.png / {args.output}.json")

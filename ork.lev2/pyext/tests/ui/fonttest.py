@@ -40,30 +40,16 @@ class LayoutTest(object):
       uiclass = lev2.ui.TextBox,
       args = ["label",vec4(.5,.5,.5,1),"Hello"],
     )
-    font_i12 = lev2.FontManager.fontForId("i12")
-    font_i13 = lev2.FontManager.fontForId("i13")
-    font_i14 = lev2.FontManager.fontForId("i14")
-    font_i16 = lev2.FontManager.fontForId("i16")
-    font_i24 = lev2.FontManager.fontForId("i24")
-    font_i32 = lev2.FontManager.fontForId("i32")
-    font_i48 = lev2.FontManager.fontForId("i48")
-    font_d24 = lev2.FontManager.fontForId("d24")
-    self.griditems[0].widget.font = font_i12
-    self.griditems[1].widget.font = font_i13
-    self.griditems[2].widget.font = font_i14
-    self.griditems[3].widget.font = font_i16
-    self.griditems[4].widget.font = font_i24
-    self.griditems[5].widget.font = font_i32
-    self.griditems[6].widget.font = font_i48
-    self.griditems[7].widget.font = font_d24
-    self.griditems[0].widget.setText("Font: i12\nWhat Up Yo")
-    self.griditems[1].widget.setText("Font: i13\nWhat Up Yo")
-    self.griditems[2].widget.setText("Font: i14\nWhat Up Yo")
-    self.griditems[3].widget.setText("Font: i16\nWhat Up Yo")
-    self.griditems[4].widget.setText("Font: i24\nWhat Up Yo")
-    self.griditems[5].widget.setText("Font: i32\nWhat Up Yo")
-    self.griditems[6].widget.setText("Font: i48\nWhat Up Yo")
-    self.griditems[7].widget.setText("Font: d24\nWhat Up Yo")
+    i_sizes = [12,13,14,16,17,24,32,48]
+
+    for size in i_sizes:
+      font = lev2.FontManager.fontForId("i%d"%size)    
+      assert(font)
+      gitem_index = i_sizes.index(size)
+      gitem = self.griditems[gitem_index]
+      gitem.widget.font = font
+      gitem.widget.setText("Font: i%d\nWhat Up Yo"%size)
+
         
     self.lg_group = lg_group
     lg_group.margin = MARGIN
