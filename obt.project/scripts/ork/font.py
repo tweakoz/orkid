@@ -6,9 +6,82 @@ for the Orkid engine.
 """
 
 import sys
+import re
 import freetype
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Optional
+
+################################################################################
+# Short Name Generation
+################################################################################
+
+def generate_short_name(family: str) -> str:
+    """
+    Generate a short, typeable name from font family name
+
+    Algorithm:
+    - Single word: take first 4 chars (lowercase)
+    - Multiple words: take first 2 chars of each of first 2 words
+    - This provides good disambiguation with short names
+
+    Examples:
+        "Inconsolata" → "inco"
+        "Inconsolata SemiExpanded" → "inse"
+        "Inconsolata UltraCondensed" → "inuc"
+        "Inconsolata UltraExpanded" → "inul"
+        "PT Mono" → "ptmo"
+        "Menlo" → "menl"
+
+    Args:
+        family: Font family name
+
+    Returns:
+        Short name string (4 chars typically)
+    """
+    # Clean up the name
+    family = family.strip()
+
+    # Split into words (by spaces, hyphens, underscores)
+    words = re.split(r'[\s\-_]+', family)
+
+    # Further split camelCase/PascalCase words
+    expanded_words = []
+    for word in words:
+        # Split on capital letters: "UltraCondensed" → ["Ultra", "Condensed"]
+        sub_words = re.sub('([A-Z][a-z]+)', r' \1', re.sub('([A-Z]+)', r' \1', word)).split()
+        expanded_words.extend(sub_words)
+
+    # Remove empty strings
+    expanded_words = [w for w in expanded_words if w]
+
+    if len(expanded_words) == 0:
+        return family[:4].lower()
+
+    if len(expanded_words) == 1:
+        # Single word: take first 4 chars for easy typing
+        name = expanded_words[0].lower()
+        return name[:4] if len(name) > 4 else name
+
+    # Multiple words: take first 2 chars of each of first 2 words
+    # "Inconsolata UltraCondensed" → ["Inconsolata", "Ultra", "Condensed"]
+    # Take "in" from Inconsolata, "ul" from Ultra...
+    # Actually, skip first word and use next two for variants
+    if expanded_words[0].lower().startswith('incon'):  # Special case for Inconsolata
+        # Use chars from position 1 and 2 (or 2 and 3 if only 2 total)
+        if len(expanded_words) >= 3:
+            result = expanded_words[0][:2].lower() + expanded_words[1][0].lower() + expanded_words[2][0].lower()
+        elif len(expanded_words) == 2:
+            result = expanded_words[0][:2].lower() + expanded_words[1][:2].lower()
+        else:
+            result = expanded_words[0][:4].lower()
+    else:
+        # Standard case: first 2 chars of first 2 words
+        result = ''
+        for word in expanded_words[:2]:
+            if word:
+                result += word[:2].lower()
+
+    return result if result else expanded_words[0][:4].lower()
 
 ################################################################################
 # Font Discovery
@@ -98,6 +171,9 @@ def analyze_font(font_path: Path) -> Dict:
         # Get number of glyphs
         num_glyphs = face.num_glyphs
 
+        # Generate short name
+        short_name = generate_short_name(family)
+
         return {
             'path': font_path,
             'family': family,
@@ -105,6 +181,7 @@ def analyze_font(font_path: Path) -> Dict:
             'type': font_type,
             'spacing': spacing,
             'num_glyphs': num_glyphs,
+            'short_name': short_name,
             'success': True
         }
     except Exception as e:
@@ -137,36 +214,77 @@ def find_monospace_fonts(search_dirs: List[str] = None) -> List[Dict]:
     # Sort by family, then style
     monospace_fonts.sort(key=lambda x: (x['family'].lower(), x['style'].lower()))
 
+    # Resolve short name collisions
+    monospace_fonts = _resolve_short_name_collisions(monospace_fonts)
+
     return monospace_fonts
+
+def _resolve_short_name_collisions(fonts: List[Dict]) -> List[Dict]:
+    """
+    Resolve short name collisions by adding number suffixes
+
+    Args:
+        fonts: List of font info dictionaries with short_name
+
+    Returns:
+        Updated list with unique short names
+    """
+    # Simple approach: just add numbers to collisions
+    final_names = {}
+
+    for info in fonts:
+        short = info['short_name']
+        original_short = short
+
+        # If collision, add number suffix
+        counter = 1
+        while short in final_names:
+            counter += 1
+            short = f"{original_short}{counter}"
+
+        info['short_name'] = short
+        final_names[short] = info
+
+    return fonts
 
 ################################################################################
 
 def find_font_by_name(font_name: str, search_dirs: List[str] = None,
-                     monospace_only: bool = True) -> Dict:
+                     monospace_only: bool = True) -> Optional[Dict]:
     """
-    Find a font by family name
+    Find a font by family name or short name
 
     Args:
-        font_name: Font family name (case-insensitive, partial match)
+        font_name: Font family name, short name, or partial match (case-insensitive)
         search_dirs: Optional list of directories to search
         monospace_only: Only search monospace fonts
 
     Returns:
         Font info dictionary or None if not found
     """
-    fonts = find_system_fonts(search_dirs)
+    # Get all fonts with resolved short names (including collision numbers)
+    if monospace_only:
+        fonts = find_monospace_fonts(search_dirs)
+    else:
+        all_fonts = find_system_fonts(search_dirs)
+        fonts = []
+        for font_path in all_fonts:
+            info = analyze_font(font_path)
+            if info['success']:
+                fonts.append(info)
 
-    for font_path in fonts:
-        info = analyze_font(font_path)
-        if not info['success']:
-            continue
+    font_name_lower = font_name.lower()
 
-        # Skip non-monospace if requested
-        if monospace_only and info['spacing'] != 'fixed':
-            continue
+    # First pass: try exact short name match
+    for info in fonts:
+        # Check for exact short name match (with or without numbers)
+        if info.get('short_name', '').lower() == font_name_lower:
+            return info
 
-        # Check for name match (case-insensitive)
-        if font_name.lower() in info['family'].lower():
+    # Second pass: try family name partial match
+    for info in fonts:
+        # Check for family name match (case-insensitive, partial)
+        if font_name_lower in info['family'].lower():
             return info
 
     return None
@@ -192,17 +310,19 @@ def list_monospace_fonts(search_dirs: List[str] = None, verbose: bool = True):
 
     if verbose:
         print(f"Found {len(fonts)} monospace fonts\n")
-        print(f"{'Family':<30} {'Style':<20} Path")
-        print("=" * 100)
+        print(f"{'Short':<8} {'Family':<30} {'Style':<20} Path")
+        print("=" * 110)
 
     for info in fonts:
+        short = info.get('short_name', '')[:7]
         family = info['family'][:28]
         style = info['style'][:18]
         path = str(info['path'])
-        print(f"{family:<30} {style:<20} {path}")
+        print(f"{short:<8} {family:<30} {style:<20} {path}")
 
     if verbose:
         print(f"\nTotal: {len(fonts)} monospace fonts")
+        print("\nUsage: Use 'Short' name or 'Family' name with --show")
 
 ################################################################################
 # FontDesc Utilities
