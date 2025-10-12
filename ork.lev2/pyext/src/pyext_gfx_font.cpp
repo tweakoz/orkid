@@ -34,12 +34,14 @@ void pyinit_gfx_font(py::module& module_lev2) {
                 ctx->MTXI()->PopMMatrix();
                 ctx->MTXI()->PopUIMatrix();
               })
+          .def_static("addFont", [](fontdesc_ptr_t fd) { FontMan::instance()->_addFont(fd); })
           .def_static("draw", [](ctx_t& ctx, int x, int y, std::string text) { FontMan::DrawText(ctx.get(), x, y, text.c_str()); })
           .def_static("instance", []() -> fontman_ptr_t { return FontMan::instance(); })
           .def_static("fontForId", [](const std::string& name) -> font_ptr_t { return FontMan::instance()->fontForId(name); });
   type_codec->registerStdCodec<fontman_ptr_t>(fontman_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto desc_t = py::class_<FontDesc,fontdesc_ptr_t>(module_lev2, "FontDesc")
+                    .def(py::init<>())
                     .def_property(
                         "fontname",
                         [](fontdesc_ptr_t fd) -> std::string { return fd->mFontName; },

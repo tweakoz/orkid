@@ -16,6 +16,9 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import List, Tuple, Dict, Optional
 
+# Import ork font utilities
+from ork import font as ork_font
+
 @dataclass
 class GlyphInfo:
     """Metadata for a single glyph in the atlas"""
@@ -425,97 +428,13 @@ def save_atlas(atlas: np.ndarray, metadata: Dict, output_prefix: str,
     else:
         print(f"Saved atlas to {output_prefix}.png and {output_prefix}.json")
 
-def find_system_fonts() -> List[Path]:
-    """
-    Find all font files on the system
-
-    Returns:
-        List of Path objects to font files
-    """
-    font_paths = []
-
-    # Common font directories by platform
-    if sys.platform == 'darwin':  # macOS
-        search_dirs = [
-            '/System/Library/Fonts',
-            '/Library/Fonts',
-            Path.home() / 'Library' / 'Fonts',
-        ]
-    elif sys.platform.startswith('linux'):
-        search_dirs = [
-            '/usr/share/fonts',
-            '/usr/local/share/fonts',
-            Path.home() / '.fonts',
-            Path.home() / '.local' / 'share' / 'fonts',
-        ]
-    else:  # Windows
-        search_dirs = [
-            Path(os.environ.get('WINDIR', 'C:\\Windows')) / 'Fonts',
-        ]
-
-    # Font file extensions
-    font_extensions = {'.ttf', '.otf', '.ttc', '.otc', '.dfont'}
-
-    # Search directories
-    for search_dir in search_dirs:
-        if not Path(search_dir).exists():
-            continue
-        for ext in font_extensions:
-            font_paths.extend(Path(search_dir).rglob(f'*{ext}'))
-
-    return sorted(set(font_paths))
-
-def analyze_font(font_path: Path) -> Dict:
-    """
-    Analyze a font file and extract metadata
-
-    Args:
-        font_path: Path to font file
-
-    Returns:
-        Dictionary with font metadata
-    """
-    try:
-        face = freetype.Face(str(font_path))
-
-        # Determine if font is scalable (vector) or bitmap
-        is_scalable = bool(face.face_flags & freetype.FT_FACE_FLAG_SCALABLE)
-        font_type = "vector" if is_scalable else "bitmap"
-
-        # Determine if font is fixed-width (monospace)
-        is_fixed = bool(face.face_flags & freetype.FT_FACE_FLAG_FIXED_WIDTH)
-        spacing = "fixed" if is_fixed else "proportional"
-
-        # Get font family and style
-        family = face.family_name.decode('utf-8') if isinstance(face.family_name, bytes) else face.family_name
-        style = face.style_name.decode('utf-8') if isinstance(face.style_name, bytes) else face.style_name
-
-        # Get number of glyphs
-        num_glyphs = face.num_glyphs
-
-        return {
-            'path': font_path,
-            'family': family,
-            'style': style,
-            'type': font_type,
-            'spacing': spacing,
-            'num_glyphs': num_glyphs,
-            'success': True
-        }
-    except Exception as e:
-        return {
-            'path': font_path,
-            'error': str(e),
-            'success': False
-        }
-
 def list_fonts():
     """
     List all available fonts on the system with their properties
     """
     print("Scanning for fonts...\n")
 
-    fonts = find_system_fonts()
+    fonts = ork_font.find_system_fonts()
 
     if not fonts:
         print("No fonts found on system")
@@ -527,7 +446,7 @@ def list_fonts():
 
     analyzed = []
     for font_path in fonts:
-        info = analyze_font(font_path)
+        info = ork_font.analyze_font(font_path)
         if info['success']:
             analyzed.append(info)
 
