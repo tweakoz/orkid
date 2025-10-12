@@ -13,6 +13,8 @@
 
 namespace ork::lev2 {
 
+using font_byname_map_t = std::unordered_map<std::string, font_ptr_t>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct FontDesc {
@@ -20,6 +22,7 @@ struct FontDesc {
   std::string mFontFile;
 
   int stringWidth(int numchars) const;
+  int stringHeight(int numlines) const;
 
   int miTexWidth;
   int miTexHeight;
@@ -76,11 +79,10 @@ public:
 
   static const int kMaxChars;
   U8 muaCurColor[4];
-
+  Font();
   Font(const std::string& fontname, const std::string& filename);
 
-  void LoadFromDisk(Context* pTARG, const FontDesc& fd);
-  const FontDesc& GetFontDesc() const;
+  void load(Context* pTARG, fontdesc_ptr_t fd);
   GfxMaterial* material() const;
 
   void enqueueCharacter(VtxWriter<SVtxV12C4T16>& vw, float fx, float fy, int iu, int iv, U32 ucolor) const;
@@ -99,7 +101,7 @@ public:
   pbrmaterial_ptr_t _materialDeferred;
   mutable bool _use_deferred = false;
   texture_ptr_t _texture;
-  FontDesc mFontDesc;
+  fontdesc_ptr_t _fontdesc;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -141,9 +143,11 @@ struct FontMan { //: public NoRttiSingleton<FontMan> {
 
   ~FontMan();
 
+  void installDefaults();
+
   //////////////////////////////////////////////////////
 
-  void _addFont(const FontDesc& fdesc);
+  void _addFont(fontdesc_ptr_t fdesc);
   void _gpuInit(Context* pTARG);
 
   void _beginTextBlockWithState(Context* pTARG, textblockstate_ptr_t tbstate);
@@ -195,8 +199,8 @@ struct FontMan { //: public NoRttiSingleton<FontMan> {
 protected:
   /////////////////////////////////////////////
 
+  LockedResource<font_byname_map_t> _fontmap;
   orkvector<font_ptr_t> _fontvect;
-  std::unordered_map<std::string, font_ptr_t> _fontmap;
   font_ptr_t mpDefaultFont;
   vtxwriter_t mTextWriter;
   CharDesc mCharDescriptions[256];

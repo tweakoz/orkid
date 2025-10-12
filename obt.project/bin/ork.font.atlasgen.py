@@ -323,6 +323,7 @@ def generate_fcpp_metadata(metadata: Dict, font_name: str, font_var_name: str,
     tex_height = metadata['atlas_height']
     cell_width = metadata['cell_width']
     cell_height = metadata['cell_height']
+    pixel_size = metadata['font_size']
 
     # Calculate typical character metrics from a sample character ('M' or 'A')
     sample_char = None
@@ -332,14 +333,15 @@ def generate_fcpp_metadata(metadata: Dict, font_name: str, font_var_name: str,
             break
 
     if sample_char:
-        char_width = sample_char['width']
-        char_height = sample_char['height']
         advance_width = sample_char['advance']
     else:
         # Fallback to cell size
-        char_width = cell_width
-        char_height = cell_height
         advance_width = cell_width
+
+    # Use pixel_size for character dimensions
+    char_width = pixel_size
+    char_height = pixel_size
+    advance_height = pixel_size
 
     # Calculate offsets (margin around character in cell)
     char_offset_x = (cell_width - char_width) // 2
@@ -347,9 +349,6 @@ def generate_fcpp_metadata(metadata: Dict, font_name: str, font_var_name: str,
 
     # Y shift (typically small adjustment)
     y_shift = 0
-
-    # Advance height (typically cell height or char height)
-    advance_height = cell_height
 
     # Generate C++ code
     cpp_code = f"""  FontDesc {font_var_name};

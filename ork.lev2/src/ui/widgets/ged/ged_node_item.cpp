@@ -265,7 +265,7 @@ geditemnode_ptr_t GedItemNode::child(int idx) const {
 int GedItemNode::propnameWidth() const {
   auto skin = _container->_activeSkin;
   int istrw                   = (int)strlen(_propname.c_str());
-  const lev2::FontDesc& fdesc = skin->_font->GetFontDesc();
+  const lev2::FontDesc& fdesc = skin->_font->description();
   int ilabw                   = fdesc.stringWidth(istrw);
   return ilabw;
 }
@@ -273,7 +273,7 @@ int GedItemNode::propnameWidth() const {
 int GedItemNode::contentWidth() const {
   auto skin = _container->_activeSkin;
   size_t istrw                = _content.length();
-  const lev2::FontDesc& fdesc = skin->_font->GetFontDesc();
+  const lev2::FontDesc& fdesc = skin->_font->description();
   int ilabw                   = fdesc.stringWidth(istrw);
   return ilabw;
 }

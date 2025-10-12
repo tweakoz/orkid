@@ -250,8 +250,8 @@ singularitybenchapp_ptr_t createBenchmarkApp(appinitdata_ptr_t initdata, prgdata
     app->_prev_time = app->_cur_time;
     app->_time_histogram.resize(histosize);
     app->_font  = lev2::FontMan::fontForId("i14");
-    app->_charw = app->_font->GetFontDesc().miAdvanceWidth;
-    app->_charh = app->_font->GetFontDesc().miAdvanceHeight;
+    app->_charw = app->_font->description().miAdvanceWidth;
+    app->_charh = app->_font->description().miAdvanceHeight;
   });
   //////////////////////////////////////////////////////////////////////////////
   app->onUpdate([=](ui::updatedata_ptr_t updata) {

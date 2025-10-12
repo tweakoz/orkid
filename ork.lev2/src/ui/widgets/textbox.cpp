@@ -70,7 +70,7 @@ void TextBox::DoDraw(drawevent_constptr_t drwev) {
 
     ETextAlignH HALIGN = _halign;
     ETextAlignV VALIGN = _valign;
-    int LINE_SPACING = _font->GetFontDesc().miAdvanceHeight;
+    int LINE_SPACING = _font->description().miAdvanceHeight;
 
     int numlines = _lines.size();
     tgt->PushModColor(_textcolor);
