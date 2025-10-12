@@ -27,11 +27,11 @@ void FontMan::installDefaults() {
   Inconsolata12->miCellWidth     = (512 / 16);
   Inconsolata12->miCellHeight    = (512 / 16);
   Inconsolata12->miCharWidth     = 12;
-  Inconsolata12->miCharHeight    = 12;
+  Inconsolata12->miCharHeight    = 13;
   Inconsolata12->miCharOffsetX   = 12;
-  Inconsolata12->miCharOffsetY   = 12;
+  Inconsolata12->miCharOffsetY   = 11;
   Inconsolata12->miAdvanceWidth  = 6;
-  Inconsolata12->miAdvanceHeight = 12;
+  Inconsolata12->miAdvanceHeight = 11;
 
   /////////////////////////////////////////////////////////////
 
@@ -46,9 +46,9 @@ void FontMan::installDefaults() {
   Inconsolata13->miCharHeight    = 13;
   Inconsolata13->miCharOffsetX   = 11;
   Inconsolata13->miCharOffsetY   = 11;
-  Inconsolata13->miAdvanceWidth  = 7;
-  Inconsolata13->miAdvanceHeight = 13;
   Inconsolata13->miYShift        = -1;
+  Inconsolata13->miAdvanceWidth  = 7;
+  Inconsolata13->miAdvanceHeight = 12;
 
   /////////////////////////////////////////////////////////////
 
@@ -65,7 +65,7 @@ void FontMan::installDefaults() {
   Inconsolata14->miCharOffsetY   = 8;
   Inconsolata14->miYShift        = -1;
   Inconsolata14->miAdvanceWidth  = 7;
-  Inconsolata14->miAdvanceHeight = 12;
+  Inconsolata14->miAdvanceHeight = 13;
   //
   Inconsolata14->_3d_char_width    = 7;
   Inconsolata14->_3d_char_height   = 8;
@@ -89,7 +89,7 @@ void FontMan::installDefaults() {
   Inconsolata16->miCharOffsetY   = 11;
   Inconsolata16->miYShift        = 2;
   Inconsolata16->miAdvanceWidth  = 8;
-  Inconsolata16->miAdvanceHeight = 12;
+  Inconsolata16->miAdvanceHeight = 15;
 
   /////////////////////////////////////////////////////////////
 
@@ -106,7 +106,7 @@ void FontMan::installDefaults() {
   Inconsolata17->miCharOffsetY   = 14;
   Inconsolata17->miYShift        = 0;
   Inconsolata17->miAdvanceWidth  = 8;
-  Inconsolata17->miAdvanceHeight = 13;
+  Inconsolata17->miAdvanceHeight = 15;
 
   /////////////////////////////////////////////////////////////
 
@@ -191,7 +191,7 @@ void FontMan::installDefaults() {
   Inconsolata26->miCharOffsetY   = 12;
   Inconsolata26->miYShift        = 0;
   Inconsolata26->miAdvanceWidth  = 13;
-  Inconsolata26->miAdvanceHeight = 26;
+  Inconsolata26->miAdvanceHeight = 25;
   
   /////////////////////////////////////////////////////////////
 
@@ -208,7 +208,7 @@ void FontMan::installDefaults() {
   Inconsolata28->miCharOffsetY   = 13;
   Inconsolata28->miYShift        = 0;
   Inconsolata28->miAdvanceWidth  = 14;
-  Inconsolata28->miAdvanceHeight = 28;
+  Inconsolata28->miAdvanceHeight = 27;
   
   /////////////////////////////////////////////////////////////
 
@@ -225,7 +225,7 @@ void FontMan::installDefaults() {
   Inconsolata30->miCharOffsetY   = 13;
   Inconsolata30->miYShift        = 0;
   Inconsolata30->miAdvanceWidth  = 15;
-  Inconsolata30->miAdvanceHeight = 30;
+  Inconsolata30->miAdvanceHeight = 27;
   
   /////////////////////////////////////////////////////////////
 
@@ -242,7 +242,7 @@ void FontMan::installDefaults() {
   Inconsolata32->miCharOffsetY   = 0;
   Inconsolata32->miYShift        = -1;
   Inconsolata32->miAdvanceWidth  = 16;
-  Inconsolata32->miAdvanceHeight = 23;
+  Inconsolata32->miAdvanceHeight = 29;
 
   /////////////////////////////////////////////////////////////
 
@@ -259,7 +259,7 @@ void FontMan::installDefaults() {
   Inconsolata34->miCharOffsetY   = 14;
   Inconsolata34->miYShift        = 0;
   Inconsolata34->miAdvanceWidth  = 17;
-  Inconsolata34->miAdvanceHeight = 34;
+  Inconsolata34->miAdvanceHeight = 31;
   
   /////////////////////////////////////////////////////////////
 
@@ -276,7 +276,7 @@ void FontMan::installDefaults() {
   Inconsolata36->miCharOffsetY   = 15;
   Inconsolata36->miYShift        = 0;
   Inconsolata36->miAdvanceWidth  = 18;
-  Inconsolata36->miAdvanceHeight = 36;
+  Inconsolata36->miAdvanceHeight = 33;
   
   /////////////////////////////////////////////////////////////
 
@@ -293,7 +293,7 @@ void FontMan::installDefaults() {
   Inconsolata38->miCharOffsetY   = 15;
   Inconsolata38->miYShift        = 0;
   Inconsolata38->miAdvanceWidth  = 19;
-  Inconsolata38->miAdvanceHeight = 38;
+  Inconsolata38->miAdvanceHeight = 35;
   
   /////////////////////////////////////////////////////////////
 
@@ -310,7 +310,7 @@ void FontMan::installDefaults() {
   Inconsolata40->miCharOffsetY   = 16;
   Inconsolata40->miYShift        = 0;
   Inconsolata40->miAdvanceWidth  = 20;
-  Inconsolata40->miAdvanceHeight = 40;
+  Inconsolata40->miAdvanceHeight = 37;
   
   /////////////////////////////////////////////////////////////
 
@@ -365,6 +365,10 @@ void FontMan::installDefaults() {
   _addFont(Inconsolata28);
   _addFont(Inconsolata30);
   _addFont(Inconsolata32);
+  _addFont(Inconsolata34);
+  _addFont(Inconsolata36);
+  _addFont(Inconsolata38);
+  _addFont(Inconsolata40);
   _addFont(Inconsolata48);
   _addFont(Transponder24);
 

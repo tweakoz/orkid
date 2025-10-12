@@ -35,12 +35,12 @@ class LayoutTest(object):
     
     self.griditems = lg_group.makeGrid(
       width=3,
-      height=4,
+      height=6,
       margin = MARGIN,
       uiclass = lev2.ui.TextBox,
       args = ["label",vec4(.5,.5,.5,1),"Hello"],
     )
-    i_sizes = [12,13,14,16,17,18,20,22,24,32,48]
+    i_sizes = [12,13,14,16,17,18,20,22,24,26,28,30,32,34,36,38,40,48]
 
     for size in i_sizes:
       font = lev2.FontManager.fontForId("i%d"%size)    
