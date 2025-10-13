@@ -349,8 +349,8 @@ def populate_fontdesc_from_metadata(desc, metadata: Dict, font_id: str,
     desc.tex_height = metadata['atlas_height']
     desc.cell_width = metadata['cell_width']
     desc.cell_height = metadata['cell_height']
-    desc.char_width = pixel_size
-    desc.char_height = pixel_size
+    desc.char_width = pixel_size+4
+    desc.char_height = pixel_size+4
     desc.char_offset_x = (metadata['cell_width'] - pixel_size) // 2
     desc.char_offset_y = (metadata['cell_height'] - pixel_size) // 2
     desc.y_shift = 0
@@ -361,6 +361,6 @@ def populate_fontdesc_from_metadata(desc, metadata: Dict, font_id: str,
     else:
         desc.advance_width = pixel_size
 
-    desc.advance_height = pixel_size
+    desc.advance_height = pixel_size+2
 
     return desc

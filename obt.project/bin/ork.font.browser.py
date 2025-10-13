@@ -13,11 +13,13 @@ from pathlib import Path
 from obt import path as obt_path
 
 # Import Orkid
-from orkengine.core import vec2, vec3, vec4
+from orkengine.core import vec2, vec3, vec4, CrcStringProxy
 from orkengine import lev2
 
 # Import ork font utilities
 from ork import font as ork_font
+
+tokens = CrcStringProxy()
 
 # Import font atlas generator
 sys.path.insert(0, str(Path(__file__).parent))
@@ -170,8 +172,10 @@ class FontBrowser:
                 size_str = ''.join(c for c in font_id if c.isdigit())
 
                 # Sample text: max 10 chars per line, 6 lines
-                sample_text = f"Font {size_str}pt\nABCDEFGHIJ\nabcdefghij\n0123456789\n!@#$%^&*()\n<>[]{{}}+-="
+                sample_text = f"Font  {size_str}pt\nABCDEFGHIJ\nabcdefghij\n0123456789\n!@#$%^&*()\n<>[]{{}}+-="
                 gitem.widget.setText(sample_text)
+                gitem.widget.valign = tokens.CENTER
+                gitem.widget.halign = tokens.CENTER_ALL
 
         self.lg_group = lg_group
         lg_group.margin = MARGIN
@@ -212,7 +216,7 @@ Examples:
                        help='Font family name to display')
     parser.add_argument('--sizes', type=str,
                        help='Comma-separated list of even sizes (default: 12-40 even)')
-    parser.add_argument('--ssaa', type=int, choices=[1, 4, 9, 16, 25], default=4,
+    parser.add_argument('--ssaa', type=int, choices=[1, 4, 9, 16, 25], default=25,
                        help='SSAA level: 1=off, 4=2x, 9=3x, 16=4x, 25=5x (default: 4)')
 
     args = parser.parse_args()

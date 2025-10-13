@@ -214,6 +214,17 @@ class FontAtlasGenerator:
         # with enough space for ascenders and descenders
         baseline_y = (cell_size + font_ascent - font_descent) // 2
 
+        # For monospace: get advance width (should be same for all glyphs)
+        # Load a reference character to get the advance
+        self.face.load_char('M', freetype.FT_LOAD_RENDER)
+        advance_width = (self.face.glyph.advance.x >> 6)
+        if ssaa > 1:
+            advance_width = advance_width // ssaa_scale
+
+        # Calculate pen position: center the advance width in cell
+        # All glyphs will be positioned relative to this pen position
+        pen_x_offset = (cell_size - advance_width) // 2
+
         metadata = {
             'font_size': self.pixel_size,
             'grid_size': grid_size,
@@ -271,8 +282,9 @@ class FontAtlasGenerator:
                     final_width = buffer.shape[1]
                     final_height = buffer.shape[0]
 
-                    # Horizontal: center glyph in cell
-                    offset_x = (cell_size - final_width) // 2
+                    # Horizontal: position relative to consistent pen position
+                    # This ensures monospace alignment like terminals
+                    offset_x = pen_x_offset + bearing_x
 
                     # Vertical: align to consistent baseline
                     # bearing_y is distance from baseline to top of glyph
