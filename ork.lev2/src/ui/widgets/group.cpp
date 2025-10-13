@@ -405,6 +405,8 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
 }
 /////////////////////////////////////////////////////////////////////////
 Widget* LayoutGroup::doRouteUiEvent(event_constptr_t ev) {
+  if(0)
+    printf("LayoutGroup<%s>::doRouteUiEvent\n", _name.c_str());
   ///////////////////////////
   GUIDES_UNDER_MOUSE = anchor::findGuidePairUnderMouse(_layout.get(), fvec2(ev->miX, ev->miY));
   if(GUIDES_UNDER_MOUSE){
@@ -424,7 +426,7 @@ Widget* LayoutGroup::doRouteUiEvent(event_constptr_t ev) {
       }
     }
   }
-  return nullptr;
+  return this;
 }
 /////////////////////////////////////////////////////////////////////////
 }} // namespace ork::ui

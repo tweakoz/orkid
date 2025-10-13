@@ -74,7 +74,7 @@ Widget* Widget::routeUiEvent(event_constptr_t ev) {
   EASY_BLOCK("uictx::RUIEV", profiler::colors::Red);
   auto ret = _evrouter ? _evrouter(ev) // lambda takes preference
                        : doRouteUiEvent(ev);
-  if (1)
+  if (0)
     printf("routeUiEvent target<%s>\n", ret ? ret->_name.c_str() : "null");
   return ret;
 }

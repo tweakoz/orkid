@@ -630,6 +630,9 @@ void FloatSlider::DoDraw(drawevent_constptr_t drwev) {
     int content_y1 = iy1 + 2;
     int content_y2 = iy2 - 2;
 
+    _slider_x0 = content_x1 + 2;
+    _slider_x1 = content_x2 - 2;
+
     defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::ALPHA);
     defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
 
@@ -660,8 +663,8 @@ void FloatSlider::DoDraw(drawevent_constptr_t drwev) {
     tgt->PushModColor(fvec4(_bg_color.xyz() * 0.5, 1));
     primi->RenderQuadAtZ(
         defmtl.get(),
-        content_x1 + 2, // x0
-        content_x2,     // x1
+        _slider_x0, // x0
+        _slider_x1,     // x1
         content_y1 + 1, // y0
         content_y2 - 1, // y1
         0.0f,           // z
@@ -676,12 +679,12 @@ void FloatSlider::DoDraw(drawevent_constptr_t drwev) {
     // draw filled indicator
     ///////////////////////////////
 
-    int fill_x2 = content_x1 + int(_indicator_pos);
+    int fill_x2 = _slider_x0 + int(_indicator_pos);
     if (fill_x2 > content_x1 + 2) {
       tgt->PushModColor(_fill_color);
       primi->RenderQuadAtZ(
           defmtl.get(),
-          content_x1 + 2, // x0
+          _slider_x0, // x0
           fill_x2,        // x1
           content_y1 + 3, // y0
           content_y2 - 3, // y1

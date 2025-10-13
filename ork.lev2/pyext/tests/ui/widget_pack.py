@@ -483,7 +483,7 @@ class PackWidgets(object):
   ##############################################
 
   def onUiEvent(self,uievent):
-    print("onUiEvent: ",uievent)
+    #print("onUiEvent: ",uievent)
     return lev2.ui.HandlerResult()
 
 ###############################################################################

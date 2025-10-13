@@ -150,6 +150,8 @@ void Panel::DoLayout() {
 /////////////////////////////////////////////////////////////////////////
 
 Widget* Panel::doRouteUiEvent(event_constptr_t ev) {
+  if(1)
+    printf("Panel<%s>::doRouteUiEvent\n", _name.c_str());
   Widget* target = nullptr;
   if (_child && _child->IsEventInside(ev) && mPanelUiState == 0) {
     target = _child->routeUiEvent(ev);
