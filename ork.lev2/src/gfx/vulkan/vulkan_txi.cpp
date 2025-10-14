@@ -72,9 +72,7 @@ void VkTextureInterface::ApplySamplingMode(Texture* ptex) {
     vktex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     vktex->_imgview_hash.init();
-    vktex->_imgview_hash.accumulateItem(vktex);
-    vktex->_imgview_hash.accumulateItem(vktex->_imgobj);
-    vktex->_imgview_hash.accumulateItem(vktex->_imgobj->_vkimageview);
+    vktex->_imgview_hash.accumulateItem(vktex->_imgobj->_serial_number);
     vktex->_imgview_hash.finish();
 
   }

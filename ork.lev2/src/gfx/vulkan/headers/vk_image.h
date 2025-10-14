@@ -13,6 +13,7 @@ struct VulkanImageObject {
   vkmemforimg_ptr_t _imgmem;
   VkFormat _format = VK_FORMAT_UNDEFINED;
   VkImageLayout _currentLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Track actual image layout
+  size_t _serial_number = 0; // Unique ID to prevent hash collisions from address/handle reuse
   bool _delete_image = true;
   bool _delete_imageview = true;
   static std::atomic<int> _imgobjcount;

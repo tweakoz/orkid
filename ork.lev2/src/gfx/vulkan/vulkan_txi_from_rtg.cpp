@@ -95,9 +95,7 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   rtb_impl->_teximpl = vk_tex;
 
   vk_tex->_imgview_hash.init();
-  vk_tex->_imgview_hash.accumulateItem(vk_tex);
-  vk_tex->_imgview_hash.accumulateItem(vk_tex->_imgobj);
-  vk_tex->_imgview_hash.accumulateItem(vk_tex->_imgobj->_vkimageview);
+  vk_tex->_imgview_hash.accumulateItem(vk_tex->_imgobj->_serial_number);
   vk_tex->_imgview_hash.finish();
 
   /////////////////////////////////////

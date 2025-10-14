@@ -245,10 +245,10 @@ VulkanImageObject::VulkanImageObject(vkcontext_rawptr_t ctx, vkimagecreateinfo_p
     _ctx->_setObjectDebugName(*(_imgmem->_vkmem), VK_OBJECT_TYPE_DEVICE_MEMORY, mem_name.c_str());
   }
   _format = cinfo->format;
-  int SN    = _imgobjSN.fetch_add(1);
+  _serial_number = _imgobjSN.fetch_add(1);
   int count = _imgobjcount.fetch_add(1);
-  if((SN&0xff)==0){
-    logchan_vkbufmem->log("VulkanImageObject<%p> SN<%d> numalive<%d>", (void*)this, SN, count );
+  if((_serial_number&0xff)==0){
+    logchan_vkbufmem->log("VulkanImageObject<%p> SN<%zu> numalive<%d>", (void*)this, _serial_number, count );
   }
 }
 VulkanImageObject::VulkanImageObject(vkcontext_rawptr_t ctx, VkImage img, VkImageView vkimgview, VkFormat fmt)
@@ -256,10 +256,10 @@ VulkanImageObject::VulkanImageObject(vkcontext_rawptr_t ctx, VkImage img, VkImag
     , _vkimage(img)
     , _vkimageview(vkimgview)
     , _format(fmt) {
-  int SN    = _imgobjSN.fetch_add(1);
+  _serial_number = _imgobjSN.fetch_add(1);
   int count = _imgobjcount.fetch_add(1);
-  if((SN&0xff)==0){
-    logchan_vkbufmem->log("VulkanImageObject<%p> SN<%d> numalive<%d>", (void*)this, SN, count );
+  if((_serial_number&0xff)==0){
+    logchan_vkbufmem->log("VulkanImageObject<%p> SN<%zu> numalive<%d>", (void*)this, _serial_number, count );
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
