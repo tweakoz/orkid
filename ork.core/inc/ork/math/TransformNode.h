@@ -29,6 +29,7 @@ using xfnode_const_ptr_t = std::shared_ptr<const TransformNode>;
 
 struct MatrixProvider {
   virtual fmtx4 get() const = 0;
+  virtual ~MatrixProvider() = default;
 };
 using matrix_provider_ptr_t = std::shared_ptr<MatrixProvider>;
 ///////////////////////////////////////////////////////////////////////////////
