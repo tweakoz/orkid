@@ -2,6 +2,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <zmq.hpp>
 #include <zmq_addon.hpp>
+#include <ork/kernel/netpacket_dyn.inl>
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::zeromq {
 ///////////////////////////////////////////////////////////////////////////////
@@ -50,7 +51,8 @@ struct Socket {
   void setReceiveHighWaterMark(int hwm);
   void setSendHighWaterMark(int hwm);
   void setHighWaterMark(int hwm);
-
+  bool sendDynPacket(dynamic_message_packet_ptr_t pkt, zmq::send_flags flags);
+  bool recvDynPacket(dynamic_message_packet_ptr_t pkt, zmq::recv_flags flags );
   impl_socket_ptr_t _impl;
   context_rawptr_t _context;
   bool _closed = true;
@@ -144,6 +146,21 @@ inline void Socket::setHighWaterMark(int hwm) {
   _impl->setsockopt(ZMQ_SNDHWM, hwm);
   _impl->setsockopt(ZMQ_RCVHWM, hwm);
 }
-
+inline bool Socket::sendDynPacket( dynamic_message_packet_ptr_t pkt, zmq::send_flags flags ) {
+  zmq::message_t msg( pkt->length() );
+  memcpy( msg.data(), pkt->data(), pkt->length() );
+  std::optional<unsigned long> status = _impl->send( msg, flags );
+  return status.has_value() and status.value() == pkt->length();
+}
+inline bool Socket::recvDynPacket(dynamic_message_packet_ptr_t pkt, zmq::recv_flags flags ) {
+  zmq::message_t msg;
+  std::optional<unsigned long> status = _impl->recv(msg, flags);
+  if(status.has_value()) {
+    pkt->clear();
+    pkt->writeDataInternal((const uint8_t*)msg.data(), msg.size());
+    return true;
+  }
+  return false;
+}
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::zeromq

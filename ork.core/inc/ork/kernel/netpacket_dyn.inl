@@ -48,23 +48,6 @@ struct DynamicMessagePacket final : public MessagePacketBase {
 
 };
 
-///////////////////////////////////////////////////////////////////////////////////////
-
-/*template <typename T> T DynamicMessagePacketIterator::readItem() {
-  T rval;
-  mMessage.read(rval, *this);
-  return rval;
-}
-
-  template <typename T> T DynamicMessagePacketIterator::readItemSwapped() {
-    T rval;
-    mMessage.read(rval, *this);
-    _swapBytesInPlace<T>(rval);
-    return rval;
-  }
-
-  inline bool DynamicMessagePacketIterator::valid() const {
-    return mireadIndex < mMessage.length();
-  }*/
+using dynamic_message_packet_ptr_t = std::shared_ptr<DynamicMessagePacket>;
 
 } // namespace ork
