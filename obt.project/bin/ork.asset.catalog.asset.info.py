@@ -83,13 +83,19 @@ def print_asset_info(cfgspc, catalog, fqid):
             print(f"  {deco.key('Encrypted MD5:')} {deco.val(enc_md5)}")
     if hasattr(asset_info, 'hash_algorithm') and asset_info.hash_algorithm:
         print(f"  {deco.key('Hash algorithm:')} {deco.val(asset_info.hash_algorithm)}")
-    
+
     # Check if asset has dependencies
     if hasattr(asset_info, 'dependencies') and asset_info.dependencies:
         print(f"  {deco.key('Dependencies:')}")
         for dep in asset_info.dependencies:
             print(f"    {deco.cyan('-')} {deco.val(dep)}")
-    
+
+    # Check cache status
+    if hasattr(asset_info, 'is_cached') and asset_info.is_cached:
+        print(f"  {deco.key('Cached:')} {deco.val('Yes')}")
+    else:
+        print(f"  {deco.key('Cached:')} {deco.val('No')}")
+
     # Check if asset is chunked
     if hasattr(asset_info, 'chunk_manifest') and asset_info.chunk_manifest:
         chunk_manifest = asset_info.chunk_manifest
@@ -114,36 +120,81 @@ def print_asset_info(cfgspc, catalog, fqid):
             if hasattr(chunk_manifest, 'is_encrypted'):
                 print(f"    {deco.key('Encrypted:')} {deco.val('Yes' if chunk_manifest.is_encrypted else 'No')}")
             
-            # Show first few and last chunk details
+            # Show compact chunk grid
             if num_chunks > 0:
                 print(f"    {deco.key('Chunk details:')}")
-                chunks_to_show = min(3, num_chunks)  # Show first 3 chunks
-                for i in range(chunks_to_show):
-                    chunk = chunk_manifest.chunks[i]
-                    print(f"      {deco.cyan(f'Chunk {i}:')}")
-                    print(f"        {deco.key('Offset:')} {deco.val(f'{chunk.offset:,} bytes')}")
-                    print(f"        {deco.key('Size:')} {deco.val(f'{chunk.size:,} bytes')}")
-                    if hasattr(chunk, 'compressed_size'):
-                        print(f"        {deco.key('Compressed size:')} {deco.val(f'{chunk.compressed_size:,} bytes')}")
-                    print(f"        {deco.key('Hash:')} {deco.val(str(chunk.hash))}")
-                
-                if num_chunks > chunks_to_show:
-                    print(f"      {deco.magenta(f'... and {num_chunks - chunks_to_show} more chunks')}")
-                    # Show last chunk
-                    last_chunk = chunk_manifest.chunks[-1]
-                    print(f"      {deco.cyan(f'Chunk {num_chunks-1} (last):')}")
-                    print(f"        {deco.key('Offset:')} {deco.val(f'{last_chunk.offset:,} bytes')}")
-                    print(f"        {deco.key('Size:')} {deco.val(f'{last_chunk.size:,} bytes')}")
-                    if hasattr(last_chunk, 'compressed_size'):
-                        print(f"        {deco.key('Compressed size:')} {deco.val(f'{last_chunk.compressed_size:,} bytes')}")
-                    print(f"        {deco.key('Hash:')} {deco.val(str(last_chunk.hash))}")
-    
-    # Check cache status
-    if hasattr(asset_info, 'is_cached') and asset_info.is_cached:
-        print(f"  {deco.key('Cached:')} {deco.val('Yes')}")
-    else:
-        print(f"  {deco.key('Cached:')} {deco.val('No')}")
-    
+
+                # Check which chunks exist and validate their hashes
+                cache_dir = catalog.cache_dir
+                chunks_dir = os.path.join(cache_dir, 'enc', 'chunks')
+                chunk_present = []
+                chunk_hash_ok = []
+
+                for i, chunk in enumerate(chunk_manifest.chunks):
+                    # Build chunk filename: {storage_hash}.chunk.{index:04d}
+                    chunk_filename = f"{asset_info.storage_hash}.chunk.{i:04d}"
+                    chunk_path = os.path.join(chunks_dir, chunk_filename)
+
+                    exists = os.path.exists(chunk_path)
+                    chunk_present.append(exists)
+
+                    # Verify hash if file exists
+                    hash_ok = False
+                    if exists:
+                        try:
+                            import xxhash
+                            with open(chunk_path, 'rb') as f:
+                                chunk_data = f.read()
+                            computed_hash = xxhash.xxh64(chunk_data).intdigest()
+                            hash_ok = (computed_hash == chunk.hash)
+                        except:
+                            hash_ok = False
+                    chunk_hash_ok.append(hash_ok)
+
+                # Format the grid - all chunks in a single row
+                # ROBUST SOLUTION: Every column is exactly 3 characters: " X "
+                # All labels are exactly 8 characters
+
+                # Build all rows with consistent 3-char columns
+                label_width = 8
+                col_width = 3  # Each column: space + content + space
+
+                # Print tens digit row if we have chunks >= 10
+                if num_chunks > 10:
+                    header_tens = " " * label_width
+                    for i in range(num_chunks):
+                        if i >= 10:
+                            header_tens += f" {i // 10} "
+                        else:
+                            header_tens += " " * col_width
+                    print(header_tens)
+
+                # Print ones digit row (chunk numbers)
+                header_ones = "chunk:  "  # Exactly 8 chars
+                for i in range(num_chunks):
+                    header_ones += f" {i % 10} "
+                print(header_ones)
+                print()  # Blank line
+
+                # Print present row
+                present_row = "present:"  # Exactly 8 chars
+                for i in range(num_chunks):
+                    symbol = deco.green('✓') if chunk_present[i] else deco.red('✗')
+                    present_row += f" {symbol} "
+                print(present_row)
+
+                # Print hash validation row
+                hashok_row = "HashOk: "  # Exactly 8 chars (HashOk: + 1 space)
+                for i in range(num_chunks):
+                    if not chunk_present[i]:
+                        symbol = deco.grey3('-')
+                    elif chunk_hash_ok[i]:
+                        symbol = deco.green('✓')
+                    else:
+                        symbol = deco.red('✗')
+                    hashok_row += f" {symbol} "
+                print(hashok_row)
+
     # Get the parent manifest info if available
     namespace_id = fqid.split('|')[0]
     
