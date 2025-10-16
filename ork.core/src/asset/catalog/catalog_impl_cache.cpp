@@ -43,7 +43,7 @@ file::Path CatalogImpl::getCachePathForAsset(assetfqid_ptr_t fqid) const {
 
 file::Path CatalogImpl::getCachePathForChunk(assetfqid_ptr_t fqid, size_t chunk_index) const {
   auto ainfo = fqid->_asset_info;
-  std::string chunk_filename = FormatString("%s.enc.chunk.%04zu", ainfo->_storage_hash.c_str(), chunk_index);
+  std::string chunk_filename = _catalog->getChunkFilename(ainfo->_storage_hash, chunk_index);
   return _catalog->_cache_dir / "enc" / "chunks" / chunk_filename;
 }
 

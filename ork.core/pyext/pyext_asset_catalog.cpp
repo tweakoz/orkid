@@ -11,6 +11,7 @@
 #include <ork/asset/catalog/config.h>
 #include <ork/asset/catalog/uploader.h>
 #include <ork/asset/catalog/request.h>
+#include <ork/util/xxhash.inl>
 
 namespace ork::asset::catalog {
 
@@ -238,6 +239,22 @@ void pyinit_asset_catalog(py::module& module_core) {
 
           .def("__repr__", [](assetcatalog_ptr_t catalog) -> std::string { return "AssetCatalog()"; });
   type_codec->registerStdCodec<assetcatalog_ptr_t>(catalog_type);
+
+  /////////////////////////////////////////////////////////////////////////////////
+  // Utility Functions - xxhash64 (same implementation as C++ download code)
+  /////////////////////////////////////////////////////////////////////////////////
+  module_core.def(
+      "xxhash64_chunk",
+      [](py::bytes data) -> uint64_t {
+        py::buffer_info info(py::buffer(data).request());
+        auto hasher = std::make_shared<XXH64HASH>();
+        hasher->init();
+        hasher->accumulate(static_cast<const uint8_t*>(info.ptr), info.size);
+        hasher->finish();
+        return hasher->result();
+      },
+      py::arg("data"),
+      "Compute XXH64 hash of data (same algorithm used for chunk verification)");
 
 } // void pyinit_asset_catalog(py::module& module_core) {
 } // namespace ork::asset::catalog

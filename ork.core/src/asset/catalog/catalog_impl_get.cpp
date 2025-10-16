@@ -494,8 +494,8 @@ bool CatalogImpl::_extractAssetPak(datablock_ptr_t _data, fetchrequest_ptr_t req
         if (!local_path.empty()) {
           local_path.ensureDirectoryExists();
           file::Path local_file = local_path / filename;
-          //saveToCacheFile(entry->data, local_file);
-          //logchan_catalog->log("Written to local: %s", local_file.c_str());
+          saveToCacheFile(entry->data, local_file);
+          logchan_catalog->log("Written to local: %s", local_file.c_str());
         }
       }
       auto local_manifest = std::make_shared<LocalManifest>();

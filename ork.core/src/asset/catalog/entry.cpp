@@ -283,10 +283,9 @@ void AssetEntry::repackage() {
   for (size_t i = 0; i < disassembly_result->_chunks.size(); ++i) {
     const auto& chunk_data = disassembly_result->_chunks[i];
     const auto& chunk_meta = _chunk_manifest->_chunks[i];
-    
-    // Chunk filename: {chunk_hash}.chunk.{index:04d}
-    std::string chunk_filename = FormatString("%llu.chunk.%04zu", //
-                                              chunk_meta._hash, i);
+
+    // Chunk filename: {storage_hash}.chunk.{index:04d}
+    std::string chunk_filename = catalog->getChunkFilename(_storage_hash, i);
     file::Path chunk_path = chunks_dir / chunk_filename;
     
     // Write chunk to disk
@@ -503,15 +502,15 @@ uploadreceipt_ptr_t AssetEntry::upload(
 
     const auto& chunk = _chunk_manifest->_chunks[chunk_idx];
 
-    auto chunk_path = catalog->getChunksDir() //
-                    / (std::to_string(chunk._hash) + ".chunk." + formatChunkIndex(chunk_idx));
-                    
-    OrkAssert(chunk_path.doesPathExist());    
-    
+    // Chunk filename: {storage_hash}.chunk.{index:04d}
+    std::string chunk_filename = catalog->getChunkFilename(_storage_hash, chunk_idx);
+    file::Path chunk_path = catalog->getChunksDir() / chunk_filename;
+
+    OrkAssert(chunk_path.doesPathExist());
+
     chunk_files.push_back(chunk_path);
-    
-    // Get the URL and extract just the path part we need
-    auto chunk_filename = catalog->getChunkFilename(_storage_hash, chunk_idx);
+
+    // Get the URL for upload
     URL chunk_url = location_info->_upload_url / chunk_filename;
     chunk_urls.push_back(chunk_url);
     

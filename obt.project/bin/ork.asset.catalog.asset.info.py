@@ -10,7 +10,7 @@ import obt.deco
 
 deco = obt.deco.Deco()
 
-def print_asset_info(cfgspc, catalog, fqid):
+def print_asset_info(cfgspc, catalog, fqid, verbose=False):
     """Print detailed information about a single asset"""
     asset_info = catalog.findAssetEntry(fqid)
     merged_cfg = cfgspc.merged_config
@@ -129,11 +129,13 @@ def print_asset_info(cfgspc, catalog, fqid):
                 chunks_dir = os.path.join(cache_dir, 'enc', 'chunks')
                 chunk_present = []
                 chunk_hash_ok = []
+                chunk_paths = []  # Store paths for verbose output
 
                 for i, chunk in enumerate(chunk_manifest.chunks):
                     # Build chunk filename: {storage_hash}.chunk.{index:04d}
                     chunk_filename = f"{asset_info.storage_hash}.chunk.{i:04d}"
                     chunk_path = os.path.join(chunks_dir, chunk_filename)
+                    chunk_paths.append(chunk_path)
 
                     exists = os.path.exists(chunk_path)
                     chunk_present.append(exists)
@@ -142,12 +144,13 @@ def print_asset_info(cfgspc, catalog, fqid):
                     hash_ok = False
                     if exists:
                         try:
-                            import xxhash
+                            from orkengine.core import xxhash64_chunk
                             with open(chunk_path, 'rb') as f:
                                 chunk_data = f.read()
-                            computed_hash = xxhash.xxh64(chunk_data).intdigest()
+                            computed_hash = xxhash64_chunk(chunk_data)
                             hash_ok = (computed_hash == chunk.hash)
-                        except:
+                        except Exception as e:
+                            # Silently fail - hash verification optional for display
                             hash_ok = False
                     chunk_hash_ok.append(hash_ok)
 
@@ -194,6 +197,26 @@ def print_asset_info(cfgspc, catalog, fqid):
                         symbol = deco.red('✗')
                     hashok_row += f" {symbol} "
                 print(hashok_row)
+
+                # Verbose chunk details
+                if verbose:
+                    print()
+                    print(f"    {deco.key('Verbose chunk details:')}")
+                    for i, chunk in enumerate(chunk_manifest.chunks):
+                        print()
+                        print(f"      {deco.cyan(f'Chunk {i}:')}")
+                        print(f"        {deco.key('Hash:')} {deco.val(str(chunk.hash))}")
+                        print(f"        {deco.key('Offset:')} {deco.val(f'{chunk.offset:,} bytes')}")
+                        print(f"        {deco.key('Size:')} {deco.val(f'{chunk.size:,} bytes')}")
+
+                        present_status = deco.green('Yes') if chunk_present[i] else deco.red('No')
+                        print(f"        {deco.key('Present:')} {present_status}")
+
+                        if chunk_present[i]:
+                            hash_status = deco.green('Valid') if chunk_hash_ok[i] else deco.red('Invalid')
+                            print(f"        {deco.key('Hash Valid:')} {hash_status}")
+
+                        print(f"        {deco.key('Cache path:')} {deco.val(chunk_paths[i])}")
 
     # Get the parent manifest info if available
     namespace_id = fqid.split('|')[0]
@@ -253,7 +276,8 @@ def main():
     parser = argparse.ArgumentParser(description='Get detailed information about an asset')
     parser.add_argument('asset_id', help='Fully qualified asset ID (namespace|asset_id)')
     parser.add_argument('--json', action='store_true', help='Output as JSON')
-    
+    parser.add_argument('--verbose', '-v', action='store_true', help='Show detailed chunk information')
+
     args = parser.parse_args()
     
     core.coreappinit()
@@ -265,7 +289,7 @@ def main():
     if args.json:
         success = print_json_info(cfgspc, catalog, args.asset_id)
     else:
-        success = print_asset_info(cfgspc, catalog, args.asset_id)
+        success = print_asset_info(cfgspc, catalog, args.asset_id, verbose=args.verbose)
     
     core.coreappexit()
     return 0 if success else 1

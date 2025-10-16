@@ -643,11 +643,9 @@ bool AssetUploaderAdapter::uploadAssetFile(
   auto chunks_dir = catalog->getChunksDir();
   
   for (size_t chunk_idx = 0; chunk_idx < chunk_manifest->_chunks.size(); ++chunk_idx) {
-    // Construct chunk filename
-    std::string chunk_filename = FormatString("%s.enc.chunk.%04zu", 
-                                             entry->_storage_hash.c_str(), 
-                                             chunk_idx);
-    
+    // Construct chunk filename: {storage_hash}.chunk.{index:04d}
+    std::string chunk_filename = catalog->getChunkFilename(entry->_storage_hash, chunk_idx);
+
     // Construct source path for chunk
     file::Path chunk_source = chunks_dir / chunk_filename;
     
