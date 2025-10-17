@@ -196,10 +196,29 @@ datablock_ptr_t CatalogImpl::_downloadAssetData(fetchrequest_ptr_t request) {
   }
 
   /////////////////////////////////////////////////
-  // Per-chunk retry configuration
+  // Per-chunk retry configuration (overridable via env vars)
   /////////////////////////////////////////////////
-  constexpr size_t MAX_CHUNK_RETRIES = 5;
-  constexpr size_t INITIAL_RETRY_DELAY_MS = 500;  // Start with 500ms delay
+  size_t MAX_CHUNK_RETRIES = 5;
+  size_t INITIAL_RETRY_DELAY_MS = 500;  // Start with 500ms delay
+
+  // Check for environment variable overrides
+  const char* max_retries_env = std::getenv("ORKID_CHUNK_MAX_RETRIES");
+  if (max_retries_env) {
+    size_t val = std::atoi(max_retries_env);
+    if (val > 0 && val <= 20) {  // Sanity check: 1-20 retries
+      MAX_CHUNK_RETRIES = val;
+      logchan_catalog->log("Using ORKID_CHUNK_MAX_RETRIES=%zu", MAX_CHUNK_RETRIES);
+    }
+  }
+
+  const char* retry_delay_env = std::getenv("ORKID_CHUNK_RETRY_DELAY_MS");
+  if (retry_delay_env) {
+    size_t val = std::atoi(retry_delay_env);
+    if (val >= 100 && val <= 10000) {  // Sanity check: 100ms-10s
+      INITIAL_RETRY_DELAY_MS = val;
+      logchan_catalog->log("Using ORKID_CHUNK_RETRY_DELAY_MS=%zu", INITIAL_RETRY_DELAY_MS);
+    }
+  }
 
   using chunk_map_t = std::map<size_t, datablock_ptr_t>;
   using wrapped_chunk_map_t = LockedResource<chunk_map_t>;

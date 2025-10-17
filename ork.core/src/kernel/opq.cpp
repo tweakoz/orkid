@@ -800,7 +800,18 @@ opq_ptr_t concurrentQueue() {
 }
 ///////////////////////////////////////////////////////////////////////
 opq_ptr_t ioQueue() {
-  static opq_ptr_t gioq = std::make_shared<OperationsQueue>(3, "ioQueue", EPerformaceProfile::IO);
+  static opq_ptr_t gioq = []() {
+    int num_threads = 3;  // Default
+    const char* env_val = std::getenv("ORKID_MAX_CONCURRENT_IOQ_OPS");
+    if (env_val) {
+      int val = std::atoi(env_val);
+      if (val > 0 && val <= 32) {  // Sanity check: 1-32 threads
+        num_threads = val;
+        printf("[OPQ] Using ORKID_MAX_CONCURRENT_IOQ_OPS=%d for ioQueue\n", num_threads);
+      }
+    }
+    return std::make_shared<OperationsQueue>(num_threads, "ioQueue", EPerformaceProfile::IO);
+  }();
   return gioq;
 }
 ///////////////////////////////////////////////////////////////////////
