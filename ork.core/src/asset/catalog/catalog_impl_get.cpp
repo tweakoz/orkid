@@ -198,7 +198,7 @@ datablock_ptr_t CatalogImpl::_downloadAssetData(fetchrequest_ptr_t request) {
   /////////////////////////////////////////////////
   // Per-chunk retry configuration (overridable via env vars)
   /////////////////////////////////////////////////
-  size_t MAX_CHUNK_RETRIES = 8;
+  size_t MAX_CHUNK_RETRIES = 12;
   size_t INITIAL_RETRY_DELAY_MS = 750;  // Start with 750ms delay
 
   // Check for environment variable overrides
@@ -353,8 +353,8 @@ datablock_ptr_t CatalogImpl::_downloadAssetData(fetchrequest_ptr_t request) {
       break; // All chunks downloaded successfully
     }
 
-    // Exponential backoff delay
-    size_t delay_ms = INITIAL_RETRY_DELAY_MS * (1 << (retry - 1));
+    // linear backoff delay
+    size_t delay_ms = INITIAL_RETRY_DELAY_MS * retry;
     logchan_catalog->log("  Retry %zu/%zu: %zu chunks failed, waiting %zums...",
                         retry, MAX_CHUNK_RETRIES, failed_chunks.size(), delay_ms);
     std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms));
