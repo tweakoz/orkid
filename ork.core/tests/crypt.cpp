@@ -11,6 +11,7 @@
 #include <ork/file/file.h>
 #include <ork/kernel/string/ArrayString.h>
 #include <random>
+#include <cstring>
 
 using namespace ork;
 using namespace ork::util::crypt;

@@ -29,8 +29,14 @@ extern "C" {
 #include <X11/Xatom.h>
 }
 ///////////////////////////////////////////////////////////////////////////////
-
+///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
+
+void activateWindow(GLFWwindow *window) {
+   auto ctx = (CtxGLFW*)glfwGetWindowUserPointer(window);
+}
+
+
 int GLFW_MODIFIER_OSCTRL = GLFW_MOD_CONTROL;
 
 using window_t = ::Window;

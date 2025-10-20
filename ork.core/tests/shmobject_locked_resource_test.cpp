@@ -13,6 +13,11 @@
 #include <random>
 #include <atomic>
 
+#if defined(LINUX)
+#include <sys/types.h>
+#include <sys/wait.h>
+#endif 
+
 using namespace ork;
 
 ////////////////////////////////////////////////////////////////

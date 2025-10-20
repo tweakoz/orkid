@@ -9,23 +9,23 @@ struct VulkanSemaphoreBase {
   VkSemaphore _vksema;
 };
 ///////////////////////////////////////////////////////////////////////////////
-struct VulkanBinarySemaphore : public VulkanSemaphoreBase {
+struct VulkanBinarySemaphore final : public VulkanSemaphoreBase {
   VulkanBinarySemaphore(vkcontext_rawptr_t ctxVK);
-  ~VulkanBinarySemaphore() final;
+  ~VulkanBinarySemaphore();
 };
 ///////////////////////////////////////////////////////////////////////////////
-struct VulkanTimelineSemaphore : public VulkanSemaphoreBase {
+struct VulkanTimelineSemaphore final : public VulkanSemaphoreBase {
   VulkanTimelineSemaphore(vkcontext_rawptr_t ctxVK);
-  ~VulkanTimelineSemaphore() final;
+  ~VulkanTimelineSemaphore();
   uint64_t hostQuery() const;
   bool hostWait(uint64_t value, uint64_t timeout_ns = UINT64_MAX) const;
   void hostSignal(uint64_t value);
   static std::atomic<int> _semaphorecount;
 };
 ///////////////////////////////////////////////////////////////////////////////
-struct VulkanCompletionSemaphore : public VulkanSemaphoreBase {
+struct VulkanCompletionSemaphore final : public VulkanSemaphoreBase {
   VulkanCompletionSemaphore(vkcontext_rawptr_t ctxVK);
-  ~VulkanCompletionSemaphore() final;
+  ~VulkanCompletionSemaphore();
   bool isSignalled() const;
   void_lambda_t _onComplete = nullptr;
 };

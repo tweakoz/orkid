@@ -19,7 +19,7 @@
 #endif
 
 #if defined(LINUX) and defined(ORK_ARCHITECTURE_X86_64)
-#define ENABLE_OPENVR
+//#define ENABLE_OPENVR
 #define ENABLE_ISPC
 #endif
 

@@ -8,6 +8,7 @@
 #include <utpp/UnitTest++.h>
 #include <ork/kernel/datablock.h>
 #include <random>
+#include <cstring>
 
 using namespace ork;
 

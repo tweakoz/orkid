@@ -131,7 +131,7 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
   auto FXI = context->FXI();
   auto CI  = context->CI();
 
-  _cu_vertex_io_buffer = CI->createStorageBuffer(8 << 20);
+  //_cu_vertex_io_buffer = CI->createStorageBuffer(8 << 20);
   _streakcu_shader           = _material->computeShader("compute_streaks");
   _spritecu_shader           = _material->computeShader("compute_sprites");
 
@@ -291,7 +291,7 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   auto FXI = context->FXI();
   auto CI  = context->CI();
 
-  _cu_vertex_io_buffer = CI->createStorageBuffer(8 << 20);
+  //_cu_vertex_io_buffer = CI->createStorageBuffer(8 << 20);
   _streakcu_shader           = _material->computeShader("compute_streaks");
   _spritecu_shader           = _material->computeShader("compute_sprites");
 
