@@ -78,15 +78,35 @@ def main():
     # Wait for the capture future to be realized
     print("Waiting for capture to complete...")
     done = False
+    start_time = time.time()
+    timeout = 5.0  # seconds
+
     while not done:
         ezapp.mainThreadIter()
         done = capture_future and capture_future.is_ready
+
+        # Check for timeout
+        elapsed = time.time() - start_time
+        if elapsed > timeout:
+            print("="*60)
+            print("ERROR: Capture timeout!")
+            print(f"Waited {elapsed:.2f} seconds but capture did not complete")
+            print(f"Expected output file: {output_path}")
+            print(f"Capture future is_ready: {capture_future.is_ready if capture_future else 'None'}")
+            print("="*60)
+            ezapp.mainThreadEnd()
+            return 1
+
         # Check if file was created
-        if done and output_path.exists:
+        if done:
+          if output_path.exists:
             file_size = os.path.getsize(str(output_path))
             print(f"Success! Captured image saved to {output_path} (size: {file_size} bytes)")
             print("Capture completed!")
-
+          else:
+            print("Capture future ready but file does not exist!")
+            time.sleep(1.0)
+            done = False
     
     print("Ending main thread...")
     ezapp.mainThreadEnd()

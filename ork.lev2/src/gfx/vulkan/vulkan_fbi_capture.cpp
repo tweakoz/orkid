@@ -12,6 +12,7 @@
 #include <ork/lev2/gfx/pickbuffer.h>
 
 namespace ork::lev2::vulkan {
+static logchannel_ptr_t logchan_vkcap = logger()->configureChannel("VKCAPTURE", fvec3(0.8, 0.2, 0.5), true);
 
 ////////////////////////////////////////////////////////////////
 
@@ -31,6 +32,14 @@ VkCaptureAsyncImpl::~VkCaptureAsyncImpl() {
 ///////////////////////////////////////////////////////
 
 captureasync_ptr_t VkFrameBufferInterface::capture(const RtBuffer* inpbuf, const file::Path& pth, void_lambda_t on_capture_complete) {
+
+  logchan_vkcap->log("VkFrameBufferInterface::capture inpbuf<%p> w<%d> h<%d> format<%d> to pth<%s>",
+      inpbuf,
+      inpbuf->_width,
+      inpbuf->_height,
+      int(inpbuf->format()),
+      pth.c_str());
+
   // For now, return a simple future that completes after one frame
   // The actual GPU transfer happens in captureAsFormat which records the commands
   // After endFrame submits the command buffer, the data will be available
@@ -44,12 +53,14 @@ captureasync_ptr_t VkFrameBufferInterface::capture(const RtBuffer* inpbuf, const
   auto capbuf = std::make_shared<CaptureBuffer>();
   if (!captureAsFormat(inpbuf, capbuf, EBufferFormat::RGBA8)) {
     future->_failed = true;
+    logchan_vkcap->log("VkFrameBufferInterface::capture failed: captureAsFormat failure");
     return future;
   }
   
   // Verify staging buffer was created
   if (!capbuf->_impl.isSet()) {
     future->_failed = true;
+    logchan_vkcap->log("VkFrameBufferInterface::capture failed: impl not set !");
     return future;
   }
   
@@ -68,7 +79,9 @@ captureasync_ptr_t VkFrameBufferInterface::capture(const RtBuffer* inpbuf, const
   // After one frame iteration, the command buffer will be submitted and executed
   // So we'll mark as ready after that
   _contextVK->_pending_captures.push_back(future);
-  
+
+  logchan_vkcap->log("VkFrameBufferInterface::capture VkCaptureAsyncImpl enqueued...");
+
   return future;
 }
 
