@@ -10,6 +10,7 @@
 #include <ork/util/logger.h>
 #include <ork/lev2/gfx/util/movie.inl>
 #include <ork/lev2/aud/audiodevice.h>
+#include <ork/lev2/aud/stream/audiodevice_stream.h>
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/profiling.inl>
 
@@ -473,26 +474,42 @@ void OrkEzApp::_mainThreadLoopBegin() {
     _appstate.fetch_or(KAPPSTATEFLAG_UPDRUNNING);
 
     ////////////////////////////////////////
+    // Determine mode: SYNC or ASYNC (realtime)
+    ////////////////////////////////////////
 
-    while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
+    bool synchronous_mode = _initdata->_synchronous;
+    float target_ups = _initdata->_target_ups;
+    float target_fps = _initdata->_target_fps;
 
-      EASY_BLOCK("UpdateIteration" );
-      double this_time = _update_timer.SecsSinceStart()*_timescale;
-      double raw_delta = this_time - _update_prevtime;
-      _update_prevtime = this_time;
-      _update_timeaccumulator += raw_delta;
-      double step = 1.0 / 400.0;
+    if (synchronous_mode) {
+      logchan_ezapp->log("SYNCHRONOUS MODE: UPS=%g FPS=%g", target_ups, target_fps);
 
-      if(_update_timeaccumulator >= step) {
+      ////////////////////////////////////////
+      // SYNCHRONOUS MODE: Virtual time, deterministic
+      ////////////////////////////////////////
 
+      double virtual_time = 0.0;
+      double frame_accumulator = 0.0;
+      double update_delta = 1.0 / target_ups;
+      double frame_delta = 1.0 / target_fps;
+
+      // Get StrAudioDevice if available
+      auto str_audio = std::dynamic_pointer_cast<StrAudioDevice>(_audiodevice);
+
+      while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
+        EASY_BLOCK("UpdateIteration_SYNC");
+
+        // Fixed time step per update
+        virtual_time += update_delta;
+        frame_accumulator += update_delta;
+
+        // Run update
         bool do_update = bool(_mainWindow->_onUpdate);
-
         if (do_update) {
-          _update_data->_dt = step;
-          _update_data->_abstime += step;
+          _update_data->_dt = update_delta;
+          _update_data->_abstime = virtual_time;
           _update_data->_counter = _update_count.load();
-          /////////////////////////////
-          /////////////////////////////
+
           if (not checkAppState(KAPPSTATEFLAG_JOINING)) {
             if(_mainWindow->_onUpdateInternal){
               _mainWindow->_onUpdateInternal(_update_data);
@@ -504,23 +521,86 @@ void OrkEzApp::_mainThreadLoopBegin() {
             }
             _update_count.fetch_add(1);
           }
-          /////////////////////////////
-          /////////////////////////////
+
           state_numiters += 1.0;
         }
 
-        _update_timeaccumulator -= step;
-        stats_timeaccum += step;
-        if (stats_timeaccum >= logchan_ezapp->_status_interval) {
-          logchan_ezapp->status("UPS", "<%g>", state_numiters / stats_timeaccum);
-          stats_timeaccum = 0.0;
-          state_numiters  = 0.0;
+        // Advance audio by update delta (tied to simulation time)
+        if (str_audio && str_audio->_mode == StrAudioDevice::Mode::SYNC_NONREALTIME) {
+          str_audio->advanceTime(update_delta);
         }
+
+        // Check if we should render a frame
+        if (frame_accumulator >= frame_delta) {
+          // TODO: Signal render thread or render inline if offscreen
+          frame_accumulator -= frame_delta;
+
+          stats_timeaccum += frame_delta;
+          if (stats_timeaccum >= logchan_ezapp->_status_interval) {
+            logchan_ezapp->status("UPS/FPS", "<%g/%g>", state_numiters / stats_timeaccum, 1.0 / frame_delta);
+            stats_timeaccum = 0.0;
+            state_numiters  = 0.0;
+          }
+        }
+
+        opq::updateSerialQueue()->Process();
+        // No sleep in sync mode - run as fast as possible
       }
-      opq::updateSerialQueue()->Process();
-      ork::usleep(100);
-      sched_yield();
-    } // while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
+
+    } else {
+      logchan_ezapp->log("ASYNCHRONOUS MODE: realtime, 400 Hz");
+
+      ////////////////////////////////////////
+      // ASYNCHRONOUS MODE: Wall clock, existing behavior
+      ////////////////////////////////////////
+      double step = 1.0 / _initdata->_target_ups;
+      while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
+
+        EASY_BLOCK("UpdateIteration" );
+        double this_time = _update_timer.SecsSinceStart()*_timescale;
+        double raw_delta = this_time - _update_prevtime;
+        _update_prevtime = this_time;
+        _update_timeaccumulator += raw_delta;
+
+        if(_update_timeaccumulator >= step) {
+
+          bool do_update = bool(_mainWindow->_onUpdate);
+
+          if (do_update) {
+            _update_data->_dt = step;
+            _update_data->_abstime += step;
+            _update_data->_counter = _update_count.load();
+            /////////////////////////////
+            /////////////////////////////
+            if (not checkAppState(KAPPSTATEFLAG_JOINING)) {
+              if(_mainWindow->_onUpdateInternal){
+                _mainWindow->_onUpdateInternal(_update_data);
+              }
+              if (_mainWindow->_onUpdate) {
+                _mainWindow->_onUpdate(_update_data);
+              } else if (_mainWindow->_onUpdateWithScene) {
+                _mainWindow->_onUpdateWithScene(_update_data, _mainWindow->_execscene);
+              }
+              _update_count.fetch_add(1);
+            }
+            /////////////////////////////
+            /////////////////////////////
+            state_numiters += 1.0;
+          }
+
+          _update_timeaccumulator -= step;
+          stats_timeaccum += step;
+          if (stats_timeaccum >= logchan_ezapp->_status_interval) {
+            logchan_ezapp->status("UPS", "<%g>", state_numiters / stats_timeaccum);
+            stats_timeaccum = 0.0;
+            state_numiters  = 0.0;
+          }
+        }
+        opq::updateSerialQueue()->Process();
+        ork::usleep(100);
+        sched_yield();
+      } // while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
+    } // end async mode
 
     //printf( "update_thread_impl loop exiting\n");
 

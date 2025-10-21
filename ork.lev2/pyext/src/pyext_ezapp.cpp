@@ -119,6 +119,12 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   appinitdata->_audio_output_numchannels = py::cast<int>(item.second);; // cant have synth without an audio dev output !
                 } else if (key == "audio_stream_sync") {
                   appinitdata->_audio_stream_sync = py::cast<bool>(item.second);; // cant have synth without an audio dev output !
+                } else if (key == "synchronous") {
+                  appinitdata->_synchronous = py::cast<bool>(item.second);
+                } else if (key == "target_ups") {
+                  appinitdata->_target_ups = py::cast<float>(item.second);
+                } else if (key == "target_fps") {
+                  appinitdata->_target_fps = py::cast<float>(item.second);
                 } else if (key == "offscreen") {
                   appinitdata->_offscreen = py::cast<bool>(item.second);
                 } else if (key == "ssaa") {
