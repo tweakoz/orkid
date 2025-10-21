@@ -8,6 +8,7 @@
 #include <ork/pch.h>
 #include <ork/lev2/aud/stream/audiodevice_stream.h>
 #include <ork/lev2/aud/singularity/synth.h>
+#include <ork/kernel/environment.h>
 #include <ork/util/logger.h>
 #include <chrono>
 #include <thread>
@@ -50,7 +51,7 @@ void StrAudioDevice::startup() {
   _num_channels = aid->_audio_output_numchannels > 0 ? aid->_audio_output_numchannels : 2;
 
   // Determine mode: SYNC for offscreen rendering, ASYNC for realtime
-  _mode = aid->_offscreen ? Mode::SYNC_NONREALTIME : Mode::ASYNC_REALTIME;
+  _mode = aid->_audio_stream_sync ? Mode::SYNC_NONREALTIME : Mode::ASYNC_REALTIME;
 
   logchan_straudio->log("StrAudioDevice::startup SR=%d CH=%d mode=%s",
                         _sample_rate, _num_channels,

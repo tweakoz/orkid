@@ -109,6 +109,7 @@ struct AppInitData{
   std::string _fullscreen_monitor = "none";
   size_t _audio_input_numchannels = 1;
   size_t _audio_output_numchannels = 2;
+  bool _audio_stream_sync = false;
   std::string _monitor_id = "";
   std::string _application_name = "orkid_app";
   std::multimap<uint64_t,void_lambda_t> _preinitoperations;

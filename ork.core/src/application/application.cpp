@@ -45,6 +45,11 @@ AppInitData::AppInitData(int argc, char** argv, char** envp) {
     genviron.get("ORKID_AUDIO_IOCLASS",audioioclass);
     _audio_ioclass = audioioclass;
   }
+  if( genviron.has("ORKID_AUDIO_STREAM_SYNC") ) {
+    std::string sync_enable_str;
+    genviron.get("ORKID_AUDIO_STREAM_SYNC",sync_enable_str);
+    _audio_stream_sync = (sync_enable_str == "1")||(sync_enable_str == "true");
+  }
   if (genviron.has("ORKID_DISABLE_ALWAYS_ON_TOP")) {
     _canalwaysontop = false;
   }
