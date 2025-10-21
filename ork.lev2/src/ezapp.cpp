@@ -201,62 +201,55 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
     fflush(stdout);
     _appstate    = 0;
 
-    if( _initdata->_offscreen ) { // offscreen
-      _uicontext = nullptr;
-      _mainWindow = nullptr;
-      _eztopwidget = nullptr;
-      _topLayoutGroup = nullptr;
+    _uicontext   = std::make_shared<ui::Context>();
+
+  //////////////////////////////////////////////
+
+    _mainWindow = std::make_shared<EzMainWin>(*this);
+
+    //////////////////////////////////////
+    // create leve gfxwindow
+    //////////////////////////////////////
+    _mainWindow->_appwin = std::make_shared<AppWindow>(nullptr);
+    _mainWindow->_appwin->miWidth = _initdata->_width;
+    _mainWindow->_appwin->miHeight = _initdata->_height;
+    GfxEnv::GetRef().RegisterWinContext(_mainWindow->_appwin.get());
+    //////////////////////////////////////
+    //////////////////////////////////////
+    _eztopwidget                       = std::make_shared<EzTopWidget>(_mainWindow.get());
+    if(initdata->_disableMouseCursor){
+      _eztopwidget->_clipEvents = false;
     }
-    else { // not offscreen
-      _uicontext   = std::make_shared<ui::Context>();
+    _eztopwidget->_uicontext           = _uicontext.get();
+    _mainWindow->_appwin->_rootWidget = _eztopwidget;
+    _eztopwidget->_topLayoutGroup =
+        _uicontext->makeTop<ui::LayoutGroup>("ezapp-top-layoutgroup", 0, 0, _initdata->_width, _initdata->_height);
+    _topLayoutGroup = _eztopwidget->_topLayoutGroup;
+    if(initdata->_disableMouseCursor){
+      _topLayoutGroup->_clipEvents = false;
+    }
+    _mainWindow->_ctqt = new CtxGLFW(_mainWindow->_appwin.get());
+    _mainWindow->_ctqt->initWithData(_initdata);
 
+    /////////////////////////////////////////////
+    // mainthread runloop callback
+    /////////////////////////////////////////////
+    _mainWindow->_ctqt->_onRunLoopIteration = [this]() {
+      //////////////////////////////
+      // handle main serialqueue
+      //////////////////////////////
+      opq::TrackCurrent opqtest(_mainq);
+      _mainq->Process();
+
+      if(this->_onRunLoopIteration){
+        this->_onRunLoopIteration();
+      }
+      //////////////////////////////
+    };
     //////////////////////////////////////////////
+    _mainWindow->_ctqt->pushRefreshPolicy(RefreshPolicyItem{EREFRESH_WHENDIRTY});
+    _mainWindow->_ctqt->Show();
 
-      _mainWindow = std::make_shared<EzMainWin>(*this);
-
-      //////////////////////////////////////
-      // create leve gfxwindow
-      //////////////////////////////////////
-      _mainWindow->_appwin = std::make_shared<AppWindow>(nullptr);
-      _mainWindow->_appwin->miWidth = _initdata->_width;
-      _mainWindow->_appwin->miHeight = _initdata->_height;
-      GfxEnv::GetRef().RegisterWinContext(_mainWindow->_appwin.get());
-      //////////////////////////////////////
-      //////////////////////////////////////
-      _eztopwidget                       = std::make_shared<EzTopWidget>(_mainWindow.get());
-      if(initdata->_disableMouseCursor){
-        _eztopwidget->_clipEvents = false;
-      }
-      _eztopwidget->_uicontext           = _uicontext.get();
-      _mainWindow->_appwin->_rootWidget = _eztopwidget;
-      _eztopwidget->_topLayoutGroup =
-          _uicontext->makeTop<ui::LayoutGroup>("ezapp-top-layoutgroup", 0, 0, _initdata->_width, _initdata->_height);
-      _topLayoutGroup = _eztopwidget->_topLayoutGroup;
-      if(initdata->_disableMouseCursor){
-        _topLayoutGroup->_clipEvents = false;
-      }
-      _mainWindow->_ctqt = new CtxGLFW(_mainWindow->_appwin.get());
-      _mainWindow->_ctqt->initWithData(_initdata);
-
-      /////////////////////////////////////////////
-      // mainthread runloop callback
-      /////////////////////////////////////////////
-      _mainWindow->_ctqt->_onRunLoopIteration = [this]() {
-        //////////////////////////////
-        // handle main serialqueue
-        //////////////////////////////
-        opq::TrackCurrent opqtest(_mainq);
-        _mainq->Process();
-
-        if(this->_onRunLoopIteration){
-          this->_onRunLoopIteration();
-        }
-        //////////////////////////////
-      };
-      //////////////////////////////////////////////
-      _mainWindow->_ctqt->pushRefreshPolicy(RefreshPolicyItem{EREFRESH_WHENDIRTY});
-      _mainWindow->_ctqt->Show();
-    } // not offscreen
     /////////////////////////////////////////////
     _rthreadq = std::make_shared<opq::OperationsQueue>(0, "renderSerialQueue");
     /////////////////////////////////////////////

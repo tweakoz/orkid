@@ -41,6 +41,8 @@
 #include "coreaudio/CoreAudioDevice.h"
 #endif
 ///////////////////////////////////////
+#include <ork/lev2/aud/stream/audiodevice_stream.h>
+///////////////////////////////////////
 
 bool gb_audio_filter = false;
 
@@ -72,7 +74,7 @@ void AudioInputChunk::setNumChannels(size_t channel_count){
 
 static audiodevice_ptr_t g_audio_device = nullptr;
 
-struct AudioDevFactory{
+struct AudioDevFactory {
 
   AudioDevFactory(appinitdata_wkptr_t aid){
 
@@ -81,43 +83,41 @@ struct AudioDevFactory{
     default_device_type = "COREAUDIO";
     #endif
 
-    auto stagedir = ork::file::Path::stage_dir();
-    auto orkconfig_path = stagedir / "orkid.json";
-    printf( "orkconfig_path<%s>\n", orkconfig_path.c_str());
-    if( orkconfig_path.doesPathExist() ){
-      ork::net::serdes::val_t out_val;
-      ork::net::serdes::valueFromJsonFile(out_val,orkconfig_path);
-      auto& orkconfig = out_val.get<ork::net::serdes::kvmap_t>();
-      auto it = orkconfig.find("AUDIODEVICE");
-      if( it != orkconfig.end() ){
-        default_device_type = it->second.get<std::string>();
+    std::string device_type = default_device_type;
+    if( auto appinitd = aid.lock() ){
+      if( appinitd->_audio_ioclass != "default" ){
+        device_type = appinitd->_audio_ioclass;
       }
     }
 
-#if defined(ENABLE_ALSA)
-    if( default_device_type == "ALSA" ){
+    #if defined(ENABLE_ALSA)
+    if( device_type == "ALSA" ){
       _device = std::make_shared<AudioDeviceAlsa>(aid);
     }
 #endif
 #if defined(ENABLE_CORE_AUDIO)
-    if( default_device_type == "COREAUDIO" ){
+    if( device_type == "COREAUDIO" ){
       _device = std::make_shared<ca::CoreAudioDevice>(aid);
     }
 #endif
 #if defined(ENABLE_PORTAUDIO)
-    if( default_device_type == "PORTAUDIO" ){
+    if( device_type == "PORTAUDIO" ){
       _device = std::make_shared<AudioDevicePa>(aid);
     }
 #endif
 #if defined(ENABLE_PIPEWIRE)
-    if( default_device_type == "PIPEWIRE" ){
+    if( device_type == "PIPEWIRE" ){
       _device = std::make_shared<pipewire::AudioDevicePipeWire>(aid);
     }
 #endif
-    
+    if( device_type == "STREAM" ){
+      _device = std::make_shared<StrAudioDevice>(aid);
+    }
+
     if(nullptr == _device ){
       _device = std::make_shared<AudioDeviceNULL>(aid);
     }
+    printf("AudioDevFactory: audio ioclass<%s>\n",device_type.c_str());
 
     g_audio_device = _device;
   }

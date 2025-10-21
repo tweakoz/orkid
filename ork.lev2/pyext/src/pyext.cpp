@@ -66,7 +66,7 @@ extern context_ptr_t gloadercontext;
 
 } // namespace ork::lev2
 
-ork::lev2::orkezapp_ptr_t pylev2appinit() {
+ork::lev2::orkezapp_ptr_t pylev2appinit(py::kwargs kwargs) {
   py::object python_exec = py::module_::import("sys").attr("executable");
   py::object argv_list = py::module_::import("sys").attr("argv");
   auto exec_as_str = py::cast<std::string>(python_exec);
@@ -89,6 +89,55 @@ ork::lev2::orkezapp_ptr_t pylev2appinit() {
 
   int argc      = init_data->_dynaargs_refs.size();
   char** argv = init_data->_dynaargs_refs.data();
+
+  // Process keyword arguments to configure AppInitData
+  if (kwargs) {
+    for (auto item : kwargs) {
+      auto key = py::cast<std::string>(item.first);
+      if (key == "left") {
+        init_data->_left = py::cast<int>(item.second);
+      } else if (key == "top") {
+        init_data->_top = py::cast<int>(item.second);
+      } else if (key == "width") {
+        init_data->_width = py::cast<int>(item.second);
+      } else if (key == "height") {
+        init_data->_height = py::cast<int>(item.second);
+      } else if (key == "fullscreen") {
+        init_data->_fullscreen = py::cast<bool>(item.second);
+      } else if (key == "fullscreen_monitor") {
+        init_data->_fullscreen_monitor = py::cast<std::string>(item.second);
+      } else if (key == "enable_always_on_top") {
+        init_data->_canalwaysontop = py::cast<bool>(item.second);
+      } else if (key == "enable_graphics") {
+        init_data->_enable_graphics = py::cast<bool>(item.second);
+      } else if (key == "enable_audio") {
+        init_data->_enable_audio = py::cast<bool>(item.second);
+      } else if (key == "enable_audio_input") {
+        init_data->_enable_audio_input = py::cast<bool>(item.second);
+      } else if (key == "enable_audio_output") {
+        init_data->_enable_audio_output = py::cast<bool>(item.second);
+      } else if (key == "enable_audio_synth") {
+        init_data->_enable_audio_synth = py::cast<bool>(item.second);
+        init_data->_enable_audio_output = true; // can't have synth without audio output
+      } else if (key == "audio_input_devname") {
+        init_data->_audio_input_devname = py::cast<std::string>(item.second);
+      } else if (key == "audio_output_devname") {
+        init_data->_audio_output_devname = py::cast<std::string>(item.second);
+      } else if (key == "audio_input_numchannels") {
+        init_data->_audio_input_numchannels = py::cast<int>(item.second);
+      } else if (key == "audio_output_numchannels") {
+        init_data->_audio_output_numchannels = py::cast<int>(item.second);
+      } else if (key == "offscreen") {
+        init_data->_offscreen = py::cast<bool>(item.second);
+      } else if (key == "ssaa") {
+        init_data->_ssaa_samples = py::cast<int>(item.second);
+      } else if (key == "disableMouseCursor") {
+        init_data->_disableMouseCursor = py::cast<bool>(item.second);
+      } else if (key == "msaa") {
+        init_data->_msaa_samples = py::cast<int>(item.second);
+      }
+    }
+  }
 
   return lev2appinit(init_data);
 }
@@ -161,6 +210,13 @@ PYBIND11_MODULE(_lev2, module_lev2) {
   //////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   auto type_codec = python::pb11_typecodec_t::instance();
+  /////////////////////////////////////////////////////////////////////////////////
+  // Register AppInitData
+  /////////////////////////////////////////////////////////////////////////////////
+  auto appinitdata_type = py::class_<AppInitData, appinitdata_ptr_t>(module_lev2, "AppInitData")
+      .def(py::init<>());
+  type_codec->registerStdCodec<appinitdata_ptr_t>(appinitdata_type);
+  /////////////////////////////////////////////////////////////////////////////////
   using namespace lev2::ged;
   auto gedto_type =                                                              //
       py::class_<TestObject,Object,testobject_ptr_t>(module_lev2, "GedTestObject") //

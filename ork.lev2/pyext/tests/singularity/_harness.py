@@ -39,10 +39,6 @@ class SingulTestApp(object):
   def __init__(self,enable_input=False):
     super().__init__()
     self.ezapp = OrkEzApp.create(self,
-                                 left=420, 
-                                 top=100, 
-                                 height=720,
-                                 width=1280,
                                  enable_audio_synth=True,
                                  enable_audio = True,
                                  enable_audio_output = True,
@@ -59,9 +55,6 @@ class SingulTestApp(object):
       uiclass = ui.TextBox,
       args = ["label",vec4(0.1,0.1,0.3,1)],
     )
-
-    for g in self.griditems:
-      g.widget.ignoreEvents = True
 
     ######################### 
 
@@ -84,6 +77,10 @@ class SingulTestApp(object):
     g0.setText(text)
     g0.halign = tokens.CENTER_ALL
     g0.valign = tokens.CENTER
+
+    self.ezapp.uicontext.debug_event_routing = True
+    g0.onKeyDown(lambda x: self._onKeyEvent(g0,x))
+    g0.onKeyUp(lambda x: self._onKeyEvent(g0,x))
 
     ######################### 
 
@@ -298,9 +295,8 @@ class SingulTestApp(object):
         trandclip.track.program = self.prog
         self.assignTRC(trandclip)
   #####################################
-  def onUiEvent(self,uievent):
+  def _onKeyEvent(self,widget,uievent):
     res = ui.HandlerResult()
-    res.setHandler( self.ezapp.topWidget )
     if uievent.code == tokens.KEY_REPEAT.hashed or uievent.code==tokens.KEY_DOWN.hashed:
       KC = uievent.keycode
       ###############  

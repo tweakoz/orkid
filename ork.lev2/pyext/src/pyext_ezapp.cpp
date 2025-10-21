@@ -369,7 +369,11 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
       })
       ///////////////////////////////////////////////////////
       .def_property_readonly("audio_synth", [](orkezapp_ptr_t ezapp) -> audio::singularity::synth_ptr_t { //
-        return ezapp->_synth;  
+        return ezapp->_synth;
+      })
+      ///////////////////////////////////////////////////////
+      .def_property_readonly("_appinit", [](orkezapp_ptr_t ezapp) -> appinitdata_ptr_t { //
+        return ezapp->_initdata;
       })
       ///////////////////////////////////////////////////////
       .def_property_readonly(

@@ -72,10 +72,22 @@ captureasync_ptr_t VkFrameBufferInterface::capture(const RtBuffer* inpbuf, const
   async_impl->height = inpbuf->_height;
   async_impl->format = EBufferFormat::RGBA8;
   async_impl->frame_submitted = false;
-  
+
   future->_impl.setShared<VkCaptureAsyncImpl>(async_impl);
-  future->_on_capture_complete = on_capture_complete;
-  
+
+  // Create a callback that writes the PNG when capture completes
+  auto write_callback = [capbuf, pth, on_capture_complete]() {
+    // Write the image data to PNG file
+    capbuf->_image->writeToFile(pth);
+
+    // Call user's callback if provided
+    if (on_capture_complete) {
+      on_capture_complete();
+    }
+  };
+
+  future->_on_capture_complete = write_callback;
+
   // After one frame iteration, the command buffer will be submitted and executed
   // So we'll mark as ready after that
   _contextVK->_pending_captures.push_back(future);

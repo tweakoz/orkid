@@ -87,7 +87,14 @@ void pyinit_ui(py::module& module_lev2) {
               },                                              //
               [](ui::context_ptr_t uictx, uiwidget_ptr_t w) { //
                 uictx->_overlayWidget = w;                    //
-              })                                              //
+              })   
+              .def_property("debug_event_routing",
+              [](ui::context_ptr_t uictx) -> bool {
+                return uictx->_debug_event_routing;
+              },
+              [](ui::context_ptr_t uictx, bool val) {
+                uictx->_debug_event_routing = val;
+              });
       ;
   type_codec->registerStdCodec<ui::context_ptr_t>(uicontext_type);
   /////////////////////////////////////////////////////////////////////////////////

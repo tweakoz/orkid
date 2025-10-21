@@ -77,6 +77,7 @@ struct Context {
   double _prev_dbl_click_time = 0.0;
   std::unordered_map<int,bool> _downkeys;
   bool _overlayHandledPrevious = false;
+  bool _debug_event_routing = false;
 };
 
 } // namespace ork::ui

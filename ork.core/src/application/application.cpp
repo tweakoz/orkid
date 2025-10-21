@@ -28,7 +28,8 @@ AppInitData::AppInitData(int argc, char** argv, char** envp) {
   _envp             = envp;
   _commandline_vars = std::make_shared<opts_var_map_t>();
   _fsinit           = std::make_shared<StdFileSystemInitalizer>(*this);
-  
+  _audio_ioclass = "default";
+
   if (genviron.has("ORKID_AUDIO_INPUT_DEVICE")) {
     std::string audioinputdev;
     genviron.get("ORKID_AUDIO_INPUT_DEVICE",audioinputdev);
@@ -38,6 +39,11 @@ AppInitData::AppInitData(int argc, char** argv, char** envp) {
     std::string audiooutputdev;
     genviron.get("ORKID_AUDIO_OUTPUT_DEVICE",audiooutputdev);
     _audio_output_devname = audiooutputdev;
+  }
+  if (genviron.has("ORKID_AUDIO_IOCLASS")) {
+    std::string audioioclass;
+    genviron.get("ORKID_AUDIO_IOCLASS",audioioclass);
+    _audio_ioclass = audioioclass;
   }
   if (genviron.has("ORKID_DISABLE_ALWAYS_ON_TOP")) {
     _canalwaysontop = false;

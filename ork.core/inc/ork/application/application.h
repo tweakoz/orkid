@@ -105,6 +105,7 @@ struct AppInitData{
   bool _disableMouseCursor = false;
   std::string _audio_input_devname = "default";
   std::string _audio_output_devname = "default";
+  std::string _audio_ioclass = "default";
   std::string _fullscreen_monitor = "none";
   size_t _audio_input_numchannels = 1;
   size_t _audio_output_numchannels = 2;
