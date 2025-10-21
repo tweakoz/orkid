@@ -57,5 +57,5 @@ class StrAudioTestApp(object):
         print("✅ Audio system initialized successfully")
 
 ################################################################################
-
-StrAudioTestApp().ezapp.mainThreadLoop()
+app = StrAudioTestApp()
+app.ezapp.mainThreadLoop(on_iter=lambda : False)

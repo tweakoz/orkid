@@ -463,8 +463,8 @@ void CtxGLFW::Show() {
     // Set window hints for offscreen mode to prevent focus stealing
     if (_appinitdata->_offscreen) {
       glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-      glfwWindowHint(GLFW_FOCUSED, GLFW_TRUE);
-      glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
+      glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
+      glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
     }
     else{
       glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
@@ -481,9 +481,9 @@ void CtxGLFW::Show() {
     );
 
     OrkAssert(_glfwWindow != nullptr);
-    glfwSetWindowUserPointer(_glfwWindow, (void*)this);
 
     if (not _appinitdata->_offscreen) {
+      glfwSetWindowUserPointer(_glfwWindow, (void*)this);
       glfwSetWindowAttrib(_glfwWindow, GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
       // glfwSetInputMode(_glfwWindow, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
       // glfwSetInputMode(_glfwWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -523,7 +523,7 @@ void CtxGLFW::Show() {
     _appinitdata->_width  = _width;
     _appinitdata->_height = _height;
 
-  } else {
+  } else if( not _appinitdata->_offscreen ) {
     logchan_glfw->log(
         "WINDOWEDMODE T<%d> L<%d> W<%d> H<%d>", //
         _appinitdata->_top,                     //
@@ -617,7 +617,9 @@ void CtxGLFW::_runloopBegin() {
     _onGpuInit(_target);
   }
 
-  activateWindow(_glfwWindow);
+  if(not _appinitdata->_offscreen ){
+    activateWindow(_glfwWindow);
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::_runloopIter() {

@@ -58,4 +58,5 @@ class StrAudioTestApp(object):
 
 ################################################################################
 
-StrAudioTestApp().ezapp.mainThreadLoop()
+app = StrAudioTestApp()
+app.ezapp.mainThreadLoop(on_iter=lambda : False)
