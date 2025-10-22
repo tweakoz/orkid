@@ -195,9 +195,17 @@ logchannel_ptr_t logerrchannel() {
 
 void default_log_fn(const LogChannel* chan, const std::string& str) {
   printf("%s[%s]\t%s%s\n", chan->_c1_prefix.c_str(), chan->_name.c_str(), str.c_str(),chan->_reset.c_str());
+  static bool check_flush = genviron.has("ORKID_LOG_ALWAYSFLUSH");
+  if (check_flush) {
+    fflush(stdout);
+  }
 }
 void default_status_fn(const LogChannel* chan, std::string subchannel, const std::string& str) {
   printf("%s[%s]\t%s : %s%s\n", chan->_c1_prefix.c_str(), chan->_name.c_str(), subchannel.c_str(), str.c_str(),chan->_reset.c_str());
+  static bool check_flush = genviron.has("ORKID_LOG_ALWAYSFLUSH");
+  if (check_flush) {
+    fflush(stdout);
+  }
 }
 
 static void default_perfitem(const LogChannel*, std::string subchannel, svar64_t& dd){
