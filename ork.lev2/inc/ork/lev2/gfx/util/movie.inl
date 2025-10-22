@@ -58,7 +58,7 @@ struct MovieCaptureContext {
   int _frame  = 0;
   std::string _filename;
   struct SwsContext* _swscontext = nullptr;
-  AVOutputFormat* _format  = nullptr;
+  const AVOutputFormat* _format  = nullptr;
   const AVCodec* _video_codec          = nullptr;
   AVCodecContext* _video_encoder       = nullptr;
   AVFormatContext* _muxer        = nullptr;

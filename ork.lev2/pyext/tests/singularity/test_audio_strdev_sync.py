@@ -11,6 +11,7 @@ from orkengine.core import vec2, vec3, vec4, mtx4, quat
 from orkengine import lev2
 
 os.environ["ORKID_AUDIO_IOCLASS"] = "STREAM"
+os.environ["ORKID_LOG_ALWAYSFLUSH"] = "1"
 
 ################################################################################
 
