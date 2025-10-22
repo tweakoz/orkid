@@ -110,7 +110,7 @@ struct AppInitData{
   size_t _audio_input_numchannels = 1;
   size_t _audio_output_numchannels = 2;
   bool _audio_stream_sync = false;
-  bool _synchronous = false;
+  bool _freerunning = true;
   float _target_ups = 480.0f;   // Updates per second (simulation tick rate)
   float _target_fps = 120.0f;   // Frames per second (render rate)
   std::string _monitor_id = "";

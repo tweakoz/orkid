@@ -230,6 +230,8 @@ public:
   ork::Timer _update_timer;
   double _update_prevtime        = 0;
   double _update_timeaccumulator = 0;
+  double _render_timeaccumulator = 0;
+  std::atomic<int> _lockstep_frame_requests = 0;
   ork::Thread _updateThread;
   ork::opq::opq_ptr_t _mainq;
   ork::opq::opq_ptr_t _updq;
@@ -250,7 +252,7 @@ public:
   int _updateCounter = 0;
   int _gpuFrameCounter = 0;
   int _gpuFrameCounterUP = 0;
-
+  size_t _total_samples_rendered = 0; // lockstep audio sync
   Thread::thread_lambda_t _update_thread_impl = nullptr;
   onsynfn_t _onSynthInit                    = nullptr;
   onauddevfn_t _onAudioInit                 = nullptr;

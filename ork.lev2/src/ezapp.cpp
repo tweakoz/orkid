@@ -389,8 +389,9 @@ void OrkEzApp::onUiEvent(EzMainWin::onuieventcallback_t cb) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onUpdate(EzMainWin::onupdate_t cb) {
-  if(_mainWindow)
+  if(_mainWindow){
     _mainWindow->_onUpdate = cb;
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onUpdateInit(EzMainWin::onupdateinit_t cb) {
@@ -477,81 +478,15 @@ void OrkEzApp::_mainThreadLoopBegin() {
     // Determine mode: SYNC or ASYNC (realtime)
     ////////////////////////////////////////
 
-    bool synchronous_mode = _initdata->_synchronous;
     float target_ups = _initdata->_target_ups;
     float target_fps = _initdata->_target_fps;
 
-    if (synchronous_mode) {
-      logchan_ezapp->log("SYNCHRONOUS MODE: UPS=%g FPS=%g", target_ups, target_fps);
+    if (_initdata->_freerunning) {
+
+      logchan_ezapp->log("FREERUNNING MODE: realtime, tgt UPS<%g> tgt FPS<%g>", target_ups, target_fps);
 
       ////////////////////////////////////////
-      // SYNCHRONOUS MODE: Virtual time, deterministic
-      ////////////////////////////////////////
-
-      double virtual_time = 0.0;
-      double frame_accumulator = 0.0;
-      double update_delta = 1.0 / target_ups;
-      double frame_delta = 1.0 / target_fps;
-
-      // Get StrAudioDevice if available
-      auto str_audio = std::dynamic_pointer_cast<StrAudioDevice>(_audiodevice);
-
-      while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
-        EASY_BLOCK("UpdateIteration_SYNC");
-
-        // Fixed time step per update
-        virtual_time += update_delta;
-        frame_accumulator += update_delta;
-
-        // Run update
-        bool do_update = bool(_mainWindow->_onUpdate);
-        if (do_update) {
-          _update_data->_dt = update_delta;
-          _update_data->_abstime = virtual_time;
-          _update_data->_counter = _update_count.load();
-
-          if (not checkAppState(KAPPSTATEFLAG_JOINING)) {
-            if(_mainWindow->_onUpdateInternal){
-              _mainWindow->_onUpdateInternal(_update_data);
-            }
-            if (_mainWindow->_onUpdate) {
-              _mainWindow->_onUpdate(_update_data);
-            } else if (_mainWindow->_onUpdateWithScene) {
-              _mainWindow->_onUpdateWithScene(_update_data, _mainWindow->_execscene);
-            }
-            _update_count.fetch_add(1);
-          }
-
-          state_numiters += 1.0;
-        }
-
-        // Advance audio by update delta (tied to simulation time)
-        if (str_audio && str_audio->_mode == StrAudioDevice::Mode::SYNC_NONREALTIME) {
-          str_audio->advanceTime(update_delta);
-        }
-
-        // Check if we should render a frame
-        if (frame_accumulator >= frame_delta) {
-          // TODO: Signal render thread or render inline if offscreen
-          frame_accumulator -= frame_delta;
-
-          stats_timeaccum += frame_delta;
-          if (stats_timeaccum >= logchan_ezapp->_status_interval) {
-            logchan_ezapp->status("UPS/FPS", "<%g/%g>", state_numiters / stats_timeaccum, 1.0 / frame_delta);
-            stats_timeaccum = 0.0;
-            state_numiters  = 0.0;
-          }
-        }
-
-        opq::updateSerialQueue()->Process();
-        // No sleep in sync mode - run as fast as possible
-      }
-
-    } else {
-      logchan_ezapp->log("ASYNCHRONOUS MODE: realtime, 400 Hz");
-
-      ////////////////////////////////////////
-      // ASYNCHRONOUS MODE: Wall clock, existing behavior
+      // FREERUNNING MODE: Wall clock, existing behavior
       ////////////////////////////////////////
       double step = 1.0 / _initdata->_target_ups;
       while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
@@ -601,6 +536,71 @@ void OrkEzApp::_mainThreadLoopBegin() {
         sched_yield();
       } // while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
     } // end async mode
+    else { // lockstep / sync mode
+
+      logchan_ezapp->log("LockStep/Synchronous MODE: UPS=%g FPS=%g", target_ups, target_fps);
+
+      ////////////////////////////////////////
+      // SYNCHRONOUS MODE: Virtual time, deterministic
+      ////////////////////////////////////////
+
+      double virtual_time = 0.0;
+      double update_delta = 1.0 / target_ups;
+      double frame_delta = 1.0 / target_fps;
+
+      // Get StrAudioDevice if available
+      auto str_audio = std::dynamic_pointer_cast<StrAudioDevice>(_audiodevice);
+
+      while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
+        EASY_BLOCK("UpdateIteration_SYNC");
+
+        // Fixed time step per update
+        virtual_time += update_delta;
+        _render_timeaccumulator += update_delta;
+
+        // Run update
+        bool do_update = bool(_mainWindow->_onUpdate);
+        if (do_update) {
+          _update_data->_dt = update_delta;
+          _update_data->_abstime = virtual_time;
+          _update_data->_counter = _update_count.load();
+          //printf( "OrkEzApp<%p> update dt<%g> abstime<%g> count<%d>\n", this, _update_data->_dt, _update_data->_abstime, (int) _update_data->_counter );
+          /////////////////////////////
+          if (not checkAppState(KAPPSTATEFLAG_JOINING)) {
+            if(_mainWindow->_onUpdateInternal){
+              _mainWindow->_onUpdateInternal(_update_data);
+            }
+            if (_mainWindow->_onUpdate) {
+              _mainWindow->_onUpdate(_update_data);
+            } else if (_mainWindow->_onUpdateWithScene) {
+              _mainWindow->_onUpdateWithScene(_update_data, _mainWindow->_execscene);
+            }
+            _update_count.fetch_add(1);
+          }
+
+          state_numiters += 1.0;
+        }
+
+        // Advance audio by update delta (tied to simulation time)
+        if (str_audio && str_audio->_mode == StrAudioDevice::Mode::SYNC_NONREALTIME) {
+          _total_samples_rendered = str_audio->advanceTime(update_delta);
+        }
+
+        // Check if we should render a frame
+        while (_render_timeaccumulator >= frame_delta) {
+          _lockstep_frame_requests.fetch_add(1);
+          _render_timeaccumulator -= frame_delta;
+        }
+        while( _lockstep_frame_requests.load() > 0 ) {
+          ::usleep(1000);
+        }
+
+        opq::updateSerialQueue()->Process();
+
+      } // while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
+
+    } // end sync mode
+
 
     //printf( "update_thread_impl loop exiting\n");
 
@@ -723,12 +723,23 @@ void OrkEzApp::_mainThreadLoopEnd(){
 }
 ///////////////////////////////////////////////////////////////////////////////
 int OrkEzApp::mainThreadLoop() {
-  _mainThreadLoopBegin();
-    if(_mainWindow){
-        auto glfw_ctx = _mainWindow->_ctqt;
-        while(glfw_ctx->_runstate==1){
-            glfw_ctx->_runloopIter();
+  _mainThreadLoopBegin();  
+  if(_mainWindow) {
+    auto glfw_ctx = _mainWindow->_ctqt;
+    if(_initdata->_freerunning) {
+      while(glfw_ctx->_runstate==1) {
+        glfw_ctx->_runloopIter();
+      }
+    }
+    else {
+      while(glfw_ctx->_runstate==1) {
+        while(_lockstep_frame_requests.load()) {
+          glfw_ctx->_runloopIter();
+          _lockstep_frame_requests.fetch_sub(1);
         }
+        ::usleep(1000);
+      }
+    }
   }
   _mainThreadLoopEnd();
   return 0;

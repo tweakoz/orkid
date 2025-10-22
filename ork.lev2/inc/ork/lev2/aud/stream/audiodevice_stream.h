@@ -54,7 +54,7 @@ public:
   //===========================================
   // SYNC MODE API (Deterministic/Non-realtime)
   //===========================================
-  void advanceTime(float dt_seconds);  // Generate audio for time interval
+  size_t advanceTime(float dt_seconds);  // Generate audio for time interval
 
   //===========================================
   // COMMON API
@@ -83,13 +83,13 @@ private:
   //===========================================
   double _simulated_time = 0.0;
   double _sample_accumulator = 0.0;  // For fractional samples
+  size_t _total_samples_rendered = 0;
 
   //===========================================
   // COMMON STATE
   //===========================================
   int _sample_rate = 48000;
   int _num_channels = 2;
-
   // Captured audio buffers
   mutable std::mutex _buffer_mutex;
   std::vector<float> _left_buffer;

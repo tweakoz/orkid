@@ -28,6 +28,7 @@ class StrAudioTestApp(object):
             audio_stream_sync=False,
             enable_graphics=True,
             offscreen=True,
+            freerun = True,
             width=640,
             height=480
         )

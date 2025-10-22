@@ -124,7 +124,7 @@ void StrAudioDevice::_audioThreadFunc() {
 // SYNC MODE: On-Demand Generation
 ///////////////////////////////////////////////////////////////////////////////
 
-void StrAudioDevice::advanceTime(float dt_seconds) {
+size_t StrAudioDevice::advanceTime(float dt_seconds) {
   OrkAssert(_mode == Mode::SYNC_NONREALTIME);
 
   // Calculate EXACTLY how many samples for this time interval
@@ -137,7 +137,7 @@ void StrAudioDevice::advanceTime(float dt_seconds) {
 
   // Generate on caller's thread (deterministic)
   _generateSamples(samples_to_generate);
-
+  _total_samples_rendered += samples_to_generate;
   // Advance virtual time
   _simulated_time += dt_seconds;
 
@@ -145,6 +145,7 @@ void StrAudioDevice::advanceTime(float dt_seconds) {
     logchan_straudio->log("advanceTime dt=%f exact_samples=%f generated=%d simtime=%f",
                           dt_seconds, exact_samples, samples_to_generate, _simulated_time);
   }
+  return _total_samples_rendered;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

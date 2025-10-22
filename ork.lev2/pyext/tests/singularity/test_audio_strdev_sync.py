@@ -28,13 +28,17 @@ class StrAudioTestApp(object):
             audio_stream_sync=True,
             enable_graphics=True,
             offscreen=True,
-            synchronous=True,
+            freerun=False,
+            target_ups = 60.0,
+            target_fps = 60.0,
             width=640,
             height=480
         )
 
         self.str_audio = None
         self.current_test = 0
+        self.updcount = 0
+        self.rencount = 0
 
     ##############################################
 
@@ -56,6 +60,30 @@ class StrAudioTestApp(object):
 
         #print(f"Device mode: {self.str_audio.mode}")
         print("✅ Audio system initialized successfully")
+    
+    ##############################################
+
+    def onUpdate(self,updinfo):
+      #print("onUpdate called")
+      self.updcount += 1
+
+    ##############################################
+            
+    def onGpuUpdate(self, ctx):
+      # Called after each frame is rendered
+      # In SYNC mode, this should be called in lockstep with audio processing
+      #print("onGpuUpdate called")
+      pass
+
+    ##############################################
+
+    def onGpuPostFrame(self, ctx):
+      self.rencount += 1
+      if(self.updcount%1200)==0:
+        tsr = self.ezapp.total_samples_rendered
+        tss = tsr/48000.0
+        print(f"onUpdate count: {self.updcount} render count: {self.rencount} tss={tss:.3f} tsr={tsr}")
+      pass
 
 ################################################################################
 

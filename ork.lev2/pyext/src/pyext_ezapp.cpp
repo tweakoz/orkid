@@ -119,8 +119,8 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   appinitdata->_audio_output_numchannels = py::cast<int>(item.second);; // cant have synth without an audio dev output !
                 } else if (key == "audio_stream_sync") {
                   appinitdata->_audio_stream_sync = py::cast<bool>(item.second);; // cant have synth without an audio dev output !
-                } else if (key == "synchronous") {
-                  appinitdata->_synchronous = py::cast<bool>(item.second);
+                } else if (key == "freerun") {
+                  appinitdata->_freerunning = py::cast<bool>(item.second);
                 } else if (key == "target_ups") {
                   appinitdata->_target_ups = py::cast<float>(item.second);
                 } else if (key == "target_fps") {
@@ -410,6 +410,10 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
       },
       [](orkezapp_ptr_t ezapp, ui::context_ptr_t ctx) { //
         ezapp->_uicontext = ctx;
+      })
+      ///////////////////////////////////////////////////////
+      .def_property_readonly("total_samples_rendered", [](orkezapp_ptr_t ezapp) -> size_t { //
+        return ezapp->_total_samples_rendered;
       })
       ///////////////////////////////////////////////////////
       .def(
