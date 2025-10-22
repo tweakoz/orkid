@@ -71,6 +71,10 @@ void Image::initWithFormat(size_t w, size_t h, EBufferFormat fmt) {
       _numcomponents = 3;
       _bytesPerChannel = 1;
       break;
+    case EBufferFormat::BGRA8:
+      _numcomponents = 4;
+      _bytesPerChannel = 1;
+    break;
     case EBufferFormat::RGBA8:
       _numcomponents = 4;
       _bytesPerChannel = 1;

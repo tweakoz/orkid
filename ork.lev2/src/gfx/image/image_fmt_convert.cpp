@@ -349,6 +349,22 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
     }
   }
   /////////////////////////////
+  else if (fmt == EBufferFormat::RGBA8 and inp._format == EBufferFormat::BGRA8) {
+    init(inp._width, inp._height, 4, inp._bytesPerChannel);
+    auto outptr = (uint8_t*)_data->data();
+    auto inptr  = (const uint8_t*)inp._data->data();
+    for (int y = 0; y < inp._height; y++) {
+      for (int x = 0; x < inp._width; x++) {
+        int pixelindex       = y * inp._width + x;
+        int elembase         = pixelindex * 4;
+        outptr[elembase + 0] = inptr[elembase + 2];
+        outptr[elembase + 1] = inptr[elembase + 1];
+        outptr[elembase + 2] = inptr[elembase + 0];
+        outptr[elembase + 3] = inptr[elembase + 3];
+      }
+    }
+  }
+  /////////////////////////////
   else {
     OrkAssert(false);
   }

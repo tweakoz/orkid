@@ -135,9 +135,14 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   appinitdata->_msaa_samples = py::cast<int>(item.second);
                 } else if( key == "rcfd" ) {
                   override_rcfd = py::cast<rcfd_ptr_t>(item.second);
+                } else if( key == "movie_output_path" ) {
+                  if( py::isinstance<py::str>( item.second ) ) {
+                    std::string mpath = py::cast<std::string>(item.second);
+                    appinitdata->_movie_output_path = file::Path(mpath);
+                  }
                 }
-              }
-            }
+              } // for (auto item : kwargs) {
+            } // if (kwargs) {
             /////////////////////////////
             ::ork::lev2::initModule(appinitdata);
             logchan_EZAPP->log("finalizeInitialization begin..");

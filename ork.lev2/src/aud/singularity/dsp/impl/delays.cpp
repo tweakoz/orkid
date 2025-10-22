@@ -15,11 +15,15 @@
 
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
+static std::atomic<int> dccounter = 0;
 
 DelayContext::DelayContext() {
   _buffer.resize(_maxdelay);
   _index   = 0;
   _bufdata = _buffer.channel(0);
+
+  //int c = dccounter.fetch_add(1);
+  //printf("DelayContext<%d> created\n", c);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

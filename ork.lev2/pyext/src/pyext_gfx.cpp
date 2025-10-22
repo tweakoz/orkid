@@ -107,7 +107,15 @@ void pyinit_gfx(py::module& module_lev2) {
           })
       .def(
           "captureToFile",
-          [](const fbi_t& fbi, rtbuffer_ptr_t rtb, const file::Path& pth) -> captureasync_ptr_t {
+          [](const fbi_t& fbi, rtbuffer_ptr_t rtb, py::object in_path) -> captureasync_ptr_t {
+            file::Path pth;
+            if(py::isinstance<file::Path>(in_path)) {
+              pth = in_path.cast<file::Path>();
+            }
+            else { // cast to str and convert
+              auto path_str = in_path.cast<py::str>();
+              pth = file::Path(path_str);
+            }
             return fbi.get()->capture(rtb.get(), pth);
           })
       .def(
@@ -126,6 +134,12 @@ void pyinit_gfx(py::module& module_lev2) {
             fbi.get()->PopRtGroup();
           })
       .def("rtGroupClear", [](const fbi_t& fbi, rtgroup_ptr_t rtg) { return fbi.get()->rtGroupClear(rtg.get()); })
+      .def_property_readonly("main_RTG", [](const fbi_t& fbi) -> rtgroup_ptr_t {
+        return fbi.get()->_main_rtg;
+      })
+      .def("ensureMainRTG", [](const fbi_t& fbi) -> rtgroup_ptr_t {
+        return fbi.get()->_ensureMainRtg();
+      })
       .def("__repr__", [](const fbi_t& fbi) -> std::string {
         fxstring<256> fxs;
         fxs.format("FBI(%p)", fbi.get());

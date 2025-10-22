@@ -17,30 +17,30 @@
 using namespace std::string_literals;
 
 namespace ork {
-  void initModule(ork::appinitdata_ptr_t init_data);
-  void exitModule(ork::appinitdata_ptr_t init_data);
-}
+void initModule(ork::appinitdata_ptr_t init_data);
+void exitModule(ork::appinitdata_ptr_t init_data);
+} // namespace ork
 
-namespace ork::lev2{
-  extern appinitdata_ptr_t _ginitdata;
-  void initModule(ork::appinitdata_ptr_t init_data);
-  void exitModule(ork::appinitdata_ptr_t init_data);
-}
+namespace ork::lev2 {
+extern appinitdata_ptr_t _ginitdata;
+void initModule(ork::appinitdata_ptr_t init_data);
+void exitModule(ork::appinitdata_ptr_t init_data);
+} // namespace ork::lev2
 
 namespace ork::lev2 {
 extern bool g_allow_HIDPI;
 extern context_ptr_t gloadercontext;
 
-static logchannel_ptr_t logchan_ezapp = logger()->configureChannel("EZAPP", fvec3(0.7, 0.7, 0.9),true);
+static logchannel_ptr_t logchan_ezapp = logger()->configureChannel("EZAPP", fvec3(0.7, 0.7, 0.9), true);
 
 ////////////////////////////////////////////////////////////////////////////////
 EzUiEventInterceptor::EzUiEventInterceptor()
-  : Widget("UiEventInterceptor",0,0,0,0){
+    : Widget("UiEventInterceptor", 0, 0, 0, 0) {
   _enableDraw = false;
-  _vars = std::make_shared<varmap::VarMap>();
+  _vars       = std::make_shared<varmap::VarMap>();
 }
 ui::HandlerResult EzUiEventInterceptor::DoOnUiEvent(ui::event_constptr_t ev) {
-  if(_onUiEventLambda){
+  if (_onUiEventLambda) {
     return _onUiEventLambda(ev);
   }
   return ui::HandlerResult();
@@ -53,7 +53,7 @@ ezappctx_ptr_t EzAppContext::get(appinitdata_ptr_t initdata) {
   if (nullptr == initdata) {
     initdata = std::make_shared<AppInitData>();
   }
-  //initModule(initdata);
+  // initModule(initdata);
   static auto app = std::shared_ptr<EzAppContext>(new EzAppContext(initdata));
   return app;
 }
@@ -84,20 +84,20 @@ boost::program_options::options_description_easy_init OrkEzApp::createDefaultOpt
 
   auto desc = init_data->commandLineOptions(appinfo.c_str());
 
-  auto rval = desc->add_options() //
-      ("help", "produce help message") //
-      ("msaa", po::value<int>()->default_value(1), "msaa samples(*1,4,9,16,25)") //
-      ("ssaa", po::value<int>()->default_value(1), "ssaa samples(*1,4,9,16,25)") //
-      ("forward", po::bool_switch()->default_value(false), "forward renderer") //
-      ("fullscreen", po::bool_switch()->default_value(false), "fullscreen mode") //
-      ("left", po::value<int>()->default_value(100), "left window offset") // 
-      ("top", po::value<int>()->default_value(100), "top window offset") //
-      ("width", po::value<int>()->default_value(1280), "window width") //
-      ("height", po::value<int>()->default_value(720), "window height")//
-      ("usevr", po::bool_switch()->default_value(false), "use vr output")
-      ("nvmfa", po::value<int>()->default_value(1), "max prerender frames (NVidia)")
-      ("nvsync", po::value<bool>()->default_value(true), "force vsync (NVidia)")
-      ("nvsport", po::value<int>()->default_value(0), "vsync port # (0..3 -> DFP-0..DFP-3) (NVidia)");
+  auto rval = desc->add_options()                                                        //
+              ("help", "produce help message")                                           //
+              ("msaa", po::value<int>()->default_value(1), "msaa samples(*1,4,9,16,25)") //
+              ("ssaa", po::value<int>()->default_value(1), "ssaa samples(*1,4,9,16,25)") //
+              ("forward", po::bool_switch()->default_value(false), "forward renderer")   //
+              ("fullscreen", po::bool_switch()->default_value(false), "fullscreen mode") //
+              ("left", po::value<int>()->default_value(100), "left window offset")       //
+              ("top", po::value<int>()->default_value(100), "top window offset")         //
+              ("width", po::value<int>()->default_value(1280), "window width")           //
+              ("height", po::value<int>()->default_value(720), "window height")          //
+              ("usevr", po::bool_switch()->default_value(false), "use vr output")(
+                  "nvmfa", po::value<int>()->default_value(1), "max prerender frames (NVidia)")(
+                  "nvsync", po::value<bool>()->default_value(true), "force vsync (NVidia)")(
+                  "nvsport", po::value<int>()->default_value(0), "vsync port # (0..3 -> DFP-0..DFP-3) (NVidia)");
 
   return rval;
 }
@@ -112,7 +112,7 @@ orkezapp_ptr_t OrkEzApp::create(appinitdata_ptr_t initdata) {
 ///////////////////////////////////////////////////////////////////////////////
 orkezapp_ptr_t OrkEzApp::createWithScene(varmap::varmap_ptr_t sceneparams) {
   auto initdata = std::make_shared<AppInitData>();
-  //initModule(initdata);
+  // initModule(initdata);
   auto rval                           = std::make_shared<OrkEzApp>(initdata);
   rval->_mainWindow->_execsceneparams = sceneparams;
   rval->_mainWindow->_onDraw          = [=](ui::drawevent_constptr_t drwev) { //
@@ -125,7 +125,7 @@ orkezapp_ptr_t OrkEzApp::createWithScene(varmap::varmap_ptr_t sceneparams) {
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OrkEzApp::enqueueWindowResize(int w, int h){
+void OrkEzApp::enqueueWindowResize(int w, int h) {
   if (_mainWindow) {
     _mainWindow->enqueueWindowResize(w, h);
   }
@@ -151,7 +151,7 @@ OrkEzAppBase::OrkEzAppBase(ezappctx_ptr_t ezapp) {
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::signalExit() {
   _onRunLoopIteration = nullptr;
-  if( _mainWindow and _mainWindow->_ctqt){
+  if (_mainWindow and _mainWindow->_ctqt) {
     _mainWindow->_ctqt->signalExit();
   }
 }
@@ -173,12 +173,12 @@ void atexit_app(void) {
 OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
     : OrkEzAppBase(EzAppContext::get(initdata))
     , _initdata(initdata)
-    , _mainWindow(0) 
+    , _mainWindow(0)
     , _updateThread("updatethread") {
   __priv_gapp.store(this);
   /////////////////////////////////////////////
   for (auto op_item : _initdata->_postinitoperations) {
-    int order = op_item.first;
+    int order      = op_item.first;
     auto operation = op_item.second;
     operation();
   }
@@ -192,41 +192,41 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
   //////////////////////////////////////////////////////////
 
   _update_data = std::make_shared<ui::UpdateData>();
-  _updq     = ork::opq::updateSerialQueue();
-  _conq     = ork::opq::concurrentQueue();
-  _mainq    = ork::opq::mainSerialQueue();
+  _updq        = ork::opq::updateSerialQueue();
+  _conq        = ork::opq::concurrentQueue();
+  _mainq       = ork::opq::mainSerialQueue();
 
-  if(_initdata->_enable_graphics){
+  if (_initdata->_enable_graphics) {
 
     logchan_ezapp->log("initializing graphics");
     fflush(stdout);
-    _appstate    = 0;
+    _appstate = 0;
 
-    _uicontext   = std::make_shared<ui::Context>();
+    _uicontext = std::make_shared<ui::Context>();
 
-  //////////////////////////////////////////////
+    //////////////////////////////////////////////
 
     _mainWindow = std::make_shared<EzMainWin>(*this);
 
     //////////////////////////////////////
     // create leve gfxwindow
     //////////////////////////////////////
-    _mainWindow->_appwin = std::make_shared<AppWindow>(nullptr);
-    _mainWindow->_appwin->miWidth = _initdata->_width;
+    _mainWindow->_appwin           = std::make_shared<AppWindow>(nullptr);
+    _mainWindow->_appwin->miWidth  = _initdata->_width;
     _mainWindow->_appwin->miHeight = _initdata->_height;
     GfxEnv::GetRef().RegisterWinContext(_mainWindow->_appwin.get());
     //////////////////////////////////////
     //////////////////////////////////////
-    _eztopwidget                       = std::make_shared<EzTopWidget>(_mainWindow.get());
-    if(initdata->_disableMouseCursor){
+    _eztopwidget = std::make_shared<EzTopWidget>(_mainWindow.get());
+    if (initdata->_disableMouseCursor) {
       _eztopwidget->_clipEvents = false;
     }
-    _eztopwidget->_uicontext           = _uicontext.get();
+    _eztopwidget->_uicontext          = _uicontext.get();
     _mainWindow->_appwin->_rootWidget = _eztopwidget;
     _eztopwidget->_topLayoutGroup =
         _uicontext->makeTop<ui::LayoutGroup>("ezapp-top-layoutgroup", 0, 0, _initdata->_width, _initdata->_height);
     _topLayoutGroup = _eztopwidget->_topLayoutGroup;
-    if(initdata->_disableMouseCursor){
+    if (initdata->_disableMouseCursor) {
       _topLayoutGroup->_clipEvents = false;
     }
     _mainWindow->_ctqt = new CtxGLFW(_mainWindow->_appwin.get());
@@ -242,7 +242,7 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
       opq::TrackCurrent opqtest(_mainq);
       _mainq->Process();
 
-      if(this->_onRunLoopIteration){
+      if (this->_onRunLoopIteration) {
         this->_onRunLoopIteration();
       }
       //////////////////////////////
@@ -263,11 +263,10 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
       };
       opq::setProgressHandler(handler);
     }
-  }
-  else { // no graphics
-    printf( "NO GRAPHICS ENABLED\n" );
+  } else { // no graphics
+    printf("NO GRAPHICS ENABLED\n");
     _mainWindow = nullptr;
-    if(_initdata->_enable_audio){
+    if (_initdata->_enable_audio) {
       logchan_ezapp->log("initializing audio");
       _audioInit();
     }
@@ -280,7 +279,7 @@ OrkEzApp::~OrkEzApp() {
   // printf( "OrkEzApp<%p> destructor - joining update thread...\n", this );
   // printf( "OrkEzApp<%p> destructor - joined update thread\n", this );
   // printf( "OrkEzApp<%p> terminating drawable buffers..\n", this );
-  if(_mainWindow){
+  if (_mainWindow) {
     DrawQueue::terminateAll();
   }
   __priv_gapp.store(nullptr);
@@ -294,18 +293,17 @@ void OrkEzApp::joinUpdate() {
   bool has_joined_already = bool(prevappsate & KAPPSTATEFLAG_JOINING);
   ////////////////////////////////////////////////
   if (not has_joined_already) {
-     logger()->defaultChannel()->log( "OrkEzApp<%p> joinUpdate:1", this );
+    logger()->defaultChannel()->log("OrkEzApp<%p> joinUpdate:1", this);
     while (checkAppState(KAPPSTATEFLAG_UPDRUNNING)) {
       opq::TrackCurrent opqtest(_mainq);
       _mainq->Process();
     }
-     logger()->defaultChannel()->log( "OrkEzApp<%p> joinUpdate:2", this );
+    logger()->defaultChannel()->log("OrkEzApp<%p> joinUpdate:2", this);
     _updq->drain();
     _updateThread.join();
-     logger()->defaultChannel()->log( "OrkEzApp<%p> joinUpdate:3", this );
+    logger()->defaultChannel()->log("OrkEzApp<%p> joinUpdate:3", this);
     DrawQueue::ClearAndSyncWriters();
-     logger()->defaultChannel()->log( "OrkEzApp<%p> joinUpdate:4", this );
-
+    logger()->defaultChannel()->log("OrkEzApp<%p> joinUpdate:4", this);
   }
   ////////////////////////////////////////////////
 }
@@ -323,84 +321,84 @@ void OrkEzApp::OnTimer() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onDraw(EzMainWin::drawcallback_t cb) {
-  if(_mainWindow)
+  if (_mainWindow)
     _mainWindow->_onDraw = cb;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onResize(EzMainWin::onresizecallback_t cb) {
-  if(_mainWindow)
+  if (_mainWindow)
     _mainWindow->_onResize = cb;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OrkEzApp::onAudioInit(onauddevfn_t callback){
+void OrkEzApp::onAudioInit(onauddevfn_t callback) {
   _onAudioInit = callback;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OrkEzApp::onAudioExit(onauddevfn_t callback){
+void OrkEzApp::onAudioExit(onauddevfn_t callback) {
   _onAudioExit = callback;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OrkEzApp::onSynthInit(onsynfn_t callback){
-    _onSynthInit = callback;
+void OrkEzApp::onSynthInit(onsynfn_t callback) {
+  _onSynthInit = callback;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OrkEzApp::onSynthExit(onsynfn_t callback){
+void OrkEzApp::onSynthExit(onsynfn_t callback) {
   _onSynthExit = callback;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OrkEzApp::onAppExit(void_lambda_t callback){
-    _onAppExit = callback;
+void OrkEzApp::onAppExit(void_lambda_t callback) {
+  _onAppExit = callback;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onGpuInit(EzMainWin::ongpuinit_t cb) {
-  if(_mainWindow)
+  if (_mainWindow)
     _mainWindow->_onGpuInit = cb;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onGpuUpdate(EzMainWin::ongpuupdate_t cb) {
-  if(_mainWindow)
+  if (_mainWindow)
     _mainWindow->_onGpuUpdate = cb;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onGpuPreFrame(EzMainWin::ongpupreframe_t cb) {
-  if(_mainWindow)
+  if (_mainWindow)
     _mainWindow->_onGpuPreFrame = cb;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onGpuPostFrame(EzMainWin::ongpupostframe_t cb) {
-  if(_mainWindow)
+  if (_mainWindow)
     _mainWindow->_onGpuPostFrame = cb;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onGpuExit(EzMainWin::ongpuexit_t cb) {
-  if(_mainWindow){
+  if (_mainWindow) {
     _mainWindow->_onGpuExit = cb;
   }
   _moviecapcontext = nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onUiEvent(EzMainWin::onuieventcallback_t cb) {
-  if(_eztopwidget){
+  if (_eztopwidget) {
     _eztopwidget->_topLayoutGroup->_evhandler = cb;
   }
-  //OrkBreak();
-  if(_mainWindow)
-    _mainWindow->_onUiEvent                  = cb;
+  // OrkBreak();
+  if (_mainWindow)
+    _mainWindow->_onUiEvent = cb;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onUpdate(EzMainWin::onupdate_t cb) {
-  if(_mainWindow){
+  if (_mainWindow) {
     _mainWindow->_onUpdate = cb;
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onUpdateInit(EzMainWin::onupdateinit_t cb) {
-  if(_mainWindow)
+  if (_mainWindow)
     _mainWindow->_onUpdateInit = cb;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onUpdateExit(EzMainWin::onupdateexit_t cb) {
-  if(_mainWindow)
+  if (_mainWindow)
     _mainWindow->_onUpdateExit = cb;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -408,40 +406,40 @@ filedevctx_ptr_t OrkEzApp::newFileDevContext(std::string uriproto, const file::P
   return FileEnv::createContextForUriBase(uriproto, basepath);
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool OrkEzApp::shouldUpdateThrottleOnGPU(){
-    bool current = _gpuFrameCounterUP == _gpuFrameCounter;
-    _gpuFrameCounterUP = _gpuFrameCounter;
-    return not current;
+bool OrkEzApp::shouldUpdateThrottleOnGPU() {
+  bool current       = _gpuFrameCounterUP == _gpuFrameCounter;
+  _gpuFrameCounterUP = _gpuFrameCounter;
+  return not current;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OrkEzApp::_audioInit(){
+void OrkEzApp::_audioInit() {
   logchan_ezapp->log("OrkEzApp::_audioInit");
   _audiodevice = AudioDevice::createInstance(_initdata);
   _initdata->_miscvars["audiodevice"].set<audiodevice_ptr_t>(_audiodevice);
-  if(_initdata->_enable_audio_synth){
+  if (_initdata->_enable_audio_synth) {
     audio::singularity::synth::bringUp();
     _synth = audio::singularity::synth::instance();
     _initdata->_miscvars["synth"].set<audio::singularity::synth_ptr_t>(_synth);
-    if(_synth){
+    if (_synth) {
       _synth->mainThreadHandler();
     }
-    if(_onSynthInit){
+    if (_onSynthInit) {
       _onSynthInit(_synth);
     }
   }
-  if(_onAudioInit){
+  if (_onAudioInit) {
     _onAudioInit(_audiodevice);
   }
   _audiodevice->startup();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OrkEzApp::_audioExit(){
+void OrkEzApp::_audioExit() {
   auto it_a = _initdata->_miscvars.find("audiodevice");
-  if(it_a != _initdata->_miscvars.end()){
+  if (it_a != _initdata->_miscvars.end()) {
     auto auddev = it_a->second.get<audiodevice_ptr_t>();
-    if(_audiodevice){
+    if (_audiodevice) {
       _audiodevice->shutdown();
-      if(_onAudioExit){
+      if (_onAudioExit) {
         _onAudioExit(auddev);
       }
     }
@@ -475,6 +473,12 @@ void OrkEzApp::_mainThreadLoopBegin() {
     _appstate.fetch_or(KAPPSTATEFLAG_UPDRUNNING);
 
     ////////////////////////////////////////
+
+    if (not _initdata->_movie_output_path.empty()) {
+      enableMovieRecording(_initdata->_movie_output_path);
+    }
+
+    ////////////////////////////////////////
     // Determine mode: SYNC or ASYNC (realtime)
     ////////////////////////////////////////
 
@@ -491,13 +495,13 @@ void OrkEzApp::_mainThreadLoopBegin() {
       double step = 1.0 / _initdata->_target_ups;
       while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
 
-        EASY_BLOCK("UpdateIteration" );
-        double this_time = _update_timer.SecsSinceStart()*_timescale;
+        EASY_BLOCK("UpdateIteration");
+        double this_time = _update_timer.SecsSinceStart() * _timescale;
         double raw_delta = this_time - _update_prevtime;
         _update_prevtime = this_time;
         _update_timeaccumulator += raw_delta;
 
-        if(_update_timeaccumulator >= step) {
+        if (_update_timeaccumulator >= step) {
 
           bool do_update = bool(_mainWindow->_onUpdate);
 
@@ -508,7 +512,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
             /////////////////////////////
             /////////////////////////////
             if (not checkAppState(KAPPSTATEFLAG_JOINING)) {
-              if(_mainWindow->_onUpdateInternal){
+              if (_mainWindow->_onUpdateInternal) {
                 _mainWindow->_onUpdateInternal(_update_data);
               }
               if (_mainWindow->_onUpdate) {
@@ -546,7 +550,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
 
       double virtual_time = 0.0;
       double update_delta = 1.0 / target_ups;
-      double frame_delta = 1.0 / target_fps;
+      double frame_delta  = 1.0 / target_fps;
 
       // Get StrAudioDevice if available
       auto str_audio = std::dynamic_pointer_cast<StrAudioDevice>(_audiodevice);
@@ -561,13 +565,14 @@ void OrkEzApp::_mainThreadLoopBegin() {
         // Run update
         bool do_update = bool(_mainWindow->_onUpdate);
         if (do_update) {
-          _update_data->_dt = update_delta;
+          _update_data->_dt      = update_delta;
           _update_data->_abstime = virtual_time;
           _update_data->_counter = _update_count.load();
-          //printf( "OrkEzApp<%p> update dt<%g> abstime<%g> count<%d>\n", this, _update_data->_dt, _update_data->_abstime, (int) _update_data->_counter );
+          // printf( "OrkEzApp<%p> update dt<%g> abstime<%g> count<%d>\n", this, _update_data->_dt, _update_data->_abstime, (int)
+          // _update_data->_counter );
           /////////////////////////////
           if (not checkAppState(KAPPSTATEFLAG_JOINING)) {
-            if(_mainWindow->_onUpdateInternal){
+            if (_mainWindow->_onUpdateInternal) {
               _mainWindow->_onUpdateInternal(_update_data);
             }
             if (_mainWindow->_onUpdate) {
@@ -591,7 +596,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
           _lockstep_frame_requests.fetch_add(1);
           _render_timeaccumulator -= frame_delta;
         }
-        while( _lockstep_frame_requests.load() > 0 ) {
+        while (_lockstep_frame_requests.load() > 0) {
           ::usleep(1000);
         }
 
@@ -601,26 +606,25 @@ void OrkEzApp::_mainThreadLoopBegin() {
 
     } // end sync mode
 
-
-    //printf( "update_thread_impl loop exiting\n");
+    // printf( "update_thread_impl loop exiting\n");
 
     _appstate.fetch_or(KAPPSTATEFLAG_JOINED);
     _appstate.fetch_and(~KAPPSTATEFLAG_UPDRUNNING);
 
     if (_mainWindow->_onUpdateExit) {
-      //printf( "running _onUpdateExit\n");
+      // printf( "running _onUpdateExit\n");
       _mainWindow->_onUpdateExit();
     }
 
     _audioExit();
-    //printf( "update_thread exited.....\n");
+    // printf( "update_thread exited.....\n");
   };
   EASY_PROFILER_ENABLE;
   EASY_MAIN_THREAD;
   profiler::startListen();
 
-  if(not _mainWindow){
-    while(this->_onRunLoopIteration){
+  if (not _mainWindow) {
+    while (this->_onRunLoopIteration) {
       opq::TrackCurrent opqtest(_mainq);
       _mainq->Process();
       this->_onRunLoopIteration();
@@ -632,33 +636,30 @@ void OrkEzApp::_mainThreadLoopBegin() {
 
   this->_gpuFrameCounter++;
 
-
   ///////////////////////////////
   // hookup on gpuinit callback
   //   ensuring _onGpuInit called before onUpdateInit
   ///////////////////////////////
 
   glfw_ctx->_onGpuInit = [this](lev2::Context* context) {
-
     context->beginPrimaryCommandBuffer();
-    logchan_ezapp->log("_initdata->_enable_audio<%d>", (int) _initdata->_enable_audio);
+    logchan_ezapp->log("_initdata->_enable_audio<%d>", (int)_initdata->_enable_audio);
 
-    if( _ginitdata->_disableMouseCursor ){
+    if (_ginitdata->_disableMouseCursor) {
       auto ctxbase = context->GetCtxBase();
       ctxbase->disableMouseCursor();
     }
 
-    if(_initdata->_enable_audio){
+    if (_initdata->_enable_audio) {
       _audioInit();
     }
 
     if (_mainWindow->_onGpuInit) {
       _mainWindow->_onGpuInit(context);
 
-      if( _moviecapcontext ){
-        _moviecapcontext->init(_initdata->_width,_initdata->_height);
+      if (_moviecapcontext) {
+        _moviecapcontext->init(_initdata->_width, _initdata->_height, _audiodevice);
       }
-
     }
     context->endPrimaryCommandBuffer();
 
@@ -692,7 +693,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
 
   glfw_ctx->_onGpuExit = [this](lev2::Context* context) {
     joinUpdate();
-    if( _moviecapcontext ){
+    if (_moviecapcontext) {
       _moviecapcontext->terminate();
     }
 
@@ -703,37 +704,34 @@ void OrkEzApp::_mainThreadLoopBegin() {
   glfw_ctx->_runloopBegin();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OrkEzApp::_mainThreadLoopIter(){
-  if(_mainWindow){
+void OrkEzApp::_mainThreadLoopIter() {
+  if (_mainWindow) {
     auto glfw_ctx = _mainWindow->_ctqt;
     glfw_ctx->_runloopIter();
-  }
-  else{
+  } else {
     gloadercontext->beginFrame(false);
-    gloadercontext->endFrame();    
+    gloadercontext->endFrame();
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OrkEzApp::_mainThreadLoopEnd(){
-    if(_mainWindow){
-        auto glfw_ctx = _mainWindow->_ctqt;
-        glfw_ctx->_runloopEnd();
-
-    }
+void OrkEzApp::_mainThreadLoopEnd() {
+  if (_mainWindow) {
+    auto glfw_ctx = _mainWindow->_ctqt;
+    glfw_ctx->_runloopEnd();
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 int OrkEzApp::mainThreadLoop() {
-  _mainThreadLoopBegin();  
-  if(_mainWindow) {
+  _mainThreadLoopBegin();
+  if (_mainWindow) {
     auto glfw_ctx = _mainWindow->_ctqt;
-    if(_initdata->_freerunning) {
-      while(glfw_ctx->_runstate==1) {
+    if (_initdata->_freerunning) {
+      while (glfw_ctx->_runstate == 1) {
         glfw_ctx->_runloopIter();
       }
-    }
-    else {
-      while(glfw_ctx->_runstate==1) {
-        while(_lockstep_frame_requests.load()) {
+    } else {
+      while (glfw_ctx->_runstate == 1) {
+        while (_lockstep_frame_requests.load()) {
           glfw_ctx->_runloopIter();
           _lockstep_frame_requests.fetch_sub(1);
         }
@@ -745,28 +743,33 @@ int OrkEzApp::mainThreadLoop() {
   return 0;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OrkEzApp::enableMovieRecording(file::Path output_path){
-    _moviecapcontext = std::make_shared<MovieCaptureContext>();
-    _moviecapcontext->_filename = output_path.toAbsolute().c_str();
+void OrkEzApp::enableMovieRecording(file::Path output_path) {
+  logchan_ezapp->log("Enabling movie recording to output path<%s>\n", output_path.toAbsolute().c_str());
+  _moviecapcontext            = std::make_shared<MovieCaptureContext>();
+  _moviecapcontext->_filename = output_path.toAbsolute().c_str();
 
-    auto mctx = _moviecapcontext.get();
-    _movie_record_frame_lambda = [mctx,this](lev2::Context* ctx){
-        auto fbi = ctx->FBI();
-        auto capbuf = std::make_shared<CaptureBuffer>();
-        auto future = fbi->captureAsFormat(nullptr, capbuf, EBufferFormat::RGB8);
-        bool ok = future && future->_completed;
-        mctx->writeFrame(future);
-        //int ircount = _render_count.load();
-        //int iucount = _update_count.load();
-        //printf( "movie write frame<%d> ircount<%d> iucount<%d>\n", mctx->_frame, ircount, iucount );
-      };
+  auto mctx                  = _moviecapcontext.get();
+  _movie_record_frame_lambda = [mctx, this](lev2::Context* ctx) {
+    auto fbi    = ctx->FBI();
+    auto capbuf = std::make_shared<CaptureBuffer>();
+    auto future = fbi->captureAsFormat(nullptr, capbuf, EBufferFormat::RGB8);
+
+    // Calculate expected audio samples for this frame
+    int expected_samples = (int)(_initdata->_target_fps > 0
+                                  ? (48000.0 / _initdata->_target_fps)
+                                  : 800);
+
+    // Queue for encoding thread (don't wait!)
+    int frame_num = _render_count.load();
+    mctx->queueFrame(future, capbuf, frame_num, expected_samples);
+  };
 }
-void OrkEzApp::finishMovieRecording(){
+void OrkEzApp::finishMovieRecording() {
   _moviecapcontext->terminate();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::setRefreshPolicy(RefreshPolicyItem policy) {
-  if(_mainWindow)
+  if (_mainWindow)
     _mainWindow->_ctqt->_setRefreshPolicy(policy);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -776,17 +779,15 @@ void OrkEzApp::setRefreshPolicy(RefreshPolicyItem policy) {
 ork::lev2::orkezapp_ptr_t lev2appinit(ork::appinitdata_ptr_t init_data) {
   ork::SetCurrentThreadName("main");
 
-  
   ork::genviron.init_from_global_env();
 
-
   static auto _init_data = init_data;
-  if( _init_data == nullptr ){    
+  if (_init_data == nullptr) {
     _init_data = std::make_shared<ork::AppInitData>();
   }
- 
+
   _init_data->_offscreen = true;
-  auto ezapp = ork::lev2::OrkEzApp::create(_init_data);
+  auto ezapp             = ork::lev2::OrkEzApp::create(_init_data);
 
   ork::lev2::initModule(init_data);
 

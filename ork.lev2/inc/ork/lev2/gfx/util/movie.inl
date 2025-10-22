@@ -4,6 +4,11 @@
 
 #include <ork/lev2/gfx/image.h>
 #include <ork/lev2/gfx/targetinterfaces.h>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <deque>
+#include <atomic>
 
 extern "C" {
 //#include <x264.h>
@@ -23,17 +28,30 @@ extern bool _macosUseHIDPI;
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
+struct CapturedMovieFrame {
+  captureasync_ptr_t capture_future;  // Async GPU capture
+  capturebuffer_ptr_t capture_buffer;  // The buffer being written to
+  int frame_number;                    // For PTS calculation
+  int expected_audio_samples;          // Samples to extract (e.g., 800 @ 60fps)
+  double virtual_time;                 // For debugging/validation
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////
+
 struct MovieCaptureContext {
 
   MovieCaptureContext();
-
-  void init(int width, int height);
-  /////////////////////////////////////////////////////////////////////////////////////////
   ~MovieCaptureContext();
-  /////////////////////////////////////////////////////////////////////////////////////////
-  bool encodeFrame(AVFrame* frame); // returns true if encoded and stream end reached
-  void writeFrame(captureasync_ptr_t capbuf);
+
+  void init(int width, int height, audiodevice_ptr_t audio_dev);
   void terminate();
+
+  // Called from render thread to queue frame
+  void queueFrame(captureasync_ptr_t future, capturebuffer_ptr_t buffer, int frame_num, int expected_samples);
+
+  /////////////////////////////////////////////////////////////////////////////////////////
+  // Video encoding members
   /////////////////////////////////////////////////////////////////////////////////////////
   int _width  = 0;
   int _height = 0;
@@ -41,16 +59,51 @@ struct MovieCaptureContext {
   std::string _filename;
   struct SwsContext* _swscontext = nullptr;
   AVOutputFormat* _format  = nullptr;
-  const AVCodec* _codec          = nullptr;
-  AVCodecContext* _encoder       = nullptr;
+  const AVCodec* _video_codec          = nullptr;
+  AVCodecContext* _video_encoder       = nullptr;
   AVFormatContext* _muxer        = nullptr;
-  AVStream* _stream              = nullptr;
+  AVStream* _video_stream              = nullptr;
   AVFrame* _rgb_pic              = nullptr;
   AVFrame* _yuv_pic              = nullptr;
-  int _got_output                = 0;
   int _fps                       = 60;
-  AVPacket _avpacket;
-  bool _terminated = false;
+
+  /////////////////////////////////////////////////////////////////////////////////////////
+  // Audio encoding members
+  /////////////////////////////////////////////////////////////////////////////////////////
+  const AVCodec* _audio_codec = nullptr;
+  AVCodecContext* _audio_encoder = nullptr;
+  AVStream* _audio_stream = nullptr;
+  AVFrame* _audio_frame = nullptr;  // Reusable frame
+
+  int _audio_sample_rate = 48000;
+  int _audio_channels = 2;
+  int64_t _audio_samples_written = 0;  // For PTS
+
+  /////////////////////////////////////////////////////////////////////////////////////////
+  // Encoding thread & queue
+  /////////////////////////////////////////////////////////////////////////////////////////
+  std::deque<CapturedMovieFrame> _frame_queue;
+  std::mutex _queue_mutex;
+  std::condition_variable _queue_cv;
+  size_t _max_queue_size = 30;  // ~0.5 sec @ 60fps
+
+  std::thread _encoding_thread;
+  std::atomic<bool> _encoding_running{false};
+  std::atomic<bool> _terminated{false};
+
+  audiodevice_ptr_t _audio_device;  // Reference to extract samples
+
+private:
+  void _initVideoStream();
+  void _initAudioStream();
+  void _startEncodingThread();
+  void _stopEncodingThread();
+
+  void _encodingThreadFunc();  // Main encoding loop
+
+  void _writeVideoFrame(capturebuffer_ptr_t buffer);
+  void _writeAudioSamples(const float* left, const float* right, int num_samples);
+  void _flushEncoders();
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////

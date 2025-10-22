@@ -117,6 +117,7 @@ struct AppInitData{
   std::string _application_name = "orkid_app";
   std::multimap<uint64_t,void_lambda_t> _preinitoperations;
   std::multimap<uint64_t,void_lambda_t> _postinitoperations;
+  file::Path _movie_output_path;
 };
 
 struct StringPoolContext {

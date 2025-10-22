@@ -681,7 +681,7 @@ public:
   
   std::vector<captureasync_ptr_t> _pending_captures;
   void _processPendingCaptures();
-  
+  void _processPixelFetch(captureasync_ptr_t capture);
   //////////////////////////////////////////////
   // Render pass suspension/resumption support
   //////////////////////////////////////////////

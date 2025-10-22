@@ -16,7 +16,7 @@ static logchannel_ptr_t logchan_vkcap = logger()->configureChannel("VKCAPTURE", 
 
 ////////////////////////////////////////////////////////////////
 
-VkCaptureAsyncImpl::VkCaptureAsyncImpl(vkcontext_rawptr_t ctx) 
+VkCaptureAsyncImpl::VkCaptureAsyncImpl(vkcontext_rawptr_t ctx)
     : _contextVK(ctx) {
 }
 
@@ -31,52 +31,54 @@ VkCaptureAsyncImpl::~VkCaptureAsyncImpl() {
 
 ///////////////////////////////////////////////////////
 
-captureasync_ptr_t VkFrameBufferInterface::capture(const RtBuffer* inpbuf, const file::Path& pth, void_lambda_t on_capture_complete) {
+captureasync_ptr_t
+VkFrameBufferInterface::capture(const RtBuffer* inpbuf, const file::Path& pth, void_lambda_t on_capture_complete) {
 
-  logchan_vkcap->log("VkFrameBufferInterface::capture inpbuf<%p> w<%d> h<%d> format<%d> to pth<%s>",
+  if(0)logchan_vkcap->log(
+      "VkFrameBufferInterface::capture inpbuf<%p> w<%d> h<%d> format<%d> to pth<%s>",
       inpbuf,
       inpbuf->_width,
       inpbuf->_height,
       int(inpbuf->format()),
       pth.c_str());
 
-  // For now, return a simple future that completes after one frame
-  // The actual GPU transfer happens in captureAsFormat which records the commands
-  // After endFrame submits the command buffer, the data will be available
-  
-  auto future = std::make_shared<CaptureAsync>();
-  future->_width = inpbuf->_width;
-  future->_height = inpbuf->_height;
-  future->_format = EBufferFormat::RGBA8;
-  
-  // Capture to a buffer (this records the GPU commands)
+  // Create a capture buffer for the GPU transfer
   auto capbuf = std::make_shared<CaptureBuffer>();
-  if (!captureAsFormat(inpbuf, capbuf, EBufferFormat::RGBA8)) {
-    future->_failed = true;
+
+  // Call captureAsFormat to perform the actual GPU capture work
+  // This creates the future, records GPU commands, and adds to _pending_captures
+  auto future = captureAsFormat(inpbuf, capbuf, EBufferFormat::RGBA8, nullptr);
+
+  // Check if capture setup failed
+  if (!future || future->_failed) {
     logchan_vkcap->log("VkFrameBufferInterface::capture failed: captureAsFormat failure");
     return future;
   }
-  
+
   // Verify staging buffer was created
   if (!capbuf->_impl.isSet()) {
     future->_failed = true;
     logchan_vkcap->log("VkFrameBufferInterface::capture failed: impl not set !");
     return future;
   }
-  
-  // Store capture data in the future's implementation using VkCaptureAsyncImpl
-  auto async_impl = std::make_shared<VkCaptureAsyncImpl>(_contextVK);
-  async_impl->capture_buffer = capbuf;
-  async_impl->path = pth;
-  async_impl->width = inpbuf->_width;
-  async_impl->height = inpbuf->_height;
-  async_impl->format = EBufferFormat::RGBA8;
-  async_impl->frame_submitted = false;
 
-  future->_impl.setShared<VkCaptureAsyncImpl>(async_impl);
+  // Get the async_impl that was already created by captureAsFormat
+  auto async_impl = future->_impl.getShared<VkCaptureAsyncImpl>();
+
+  // Store the path for this capture
+  async_impl->path            = pth;
+  async_impl->frame_submitted = false;
+  future->_capturePath        = pth;
 
   // Create a callback that writes the PNG when capture completes
-  auto write_callback = [capbuf, pth, on_capture_complete]() {
+  // Chain it with any existing callback from captureAsFormat
+  auto existing_callback = future->_on_capture_complete;
+  auto write_callback = [capbuf, pth, on_capture_complete, existing_callback]() {
+    // Call existing callback first (if any)
+    if (existing_callback) {
+      existing_callback();
+    }
+
     // Write the image data to PNG file
     capbuf->_image->writeToFile(pth);
 
@@ -88,81 +90,82 @@ captureasync_ptr_t VkFrameBufferInterface::capture(const RtBuffer* inpbuf, const
 
   future->_on_capture_complete = write_callback;
 
-  // After one frame iteration, the command buffer will be submitted and executed
-  // So we'll mark as ready after that
-  _contextVK->_pending_captures.push_back(future);
+  // Note: No need to add to _pending_captures - captureAsFormat already did that
 
-  logchan_vkcap->log("VkFrameBufferInterface::capture VkCaptureAsyncImpl enqueued...");
+  if(0)logchan_vkcap->log("VkFrameBufferInterface::capture VkCaptureAsyncImpl enqueued...");
 
   return future;
 }
 
 ///////////////////////////////////////////////////////
 
-captureasync_ptr_t VkFrameBufferInterface::captureToTexture(const RtBuffer* inpbuf, Texture& tex, void_lambda_t on_capture_complete) {
-  auto future = std::make_shared<CaptureAsync>();
-  future->_width = inpbuf->_width;
+captureasync_ptr_t
+VkFrameBufferInterface::captureToTexture(const RtBuffer* inpbuf, Texture& tex, void_lambda_t on_capture_complete) {
+  auto future     = std::make_shared<CaptureAsync>();
+  future->_width  = inpbuf->_width;
   future->_height = inpbuf->_height;
   future->_format = inpbuf->format();
-  
+
   // Create temporary capture buffer
   auto capbuf = std::make_shared<CaptureBuffer>();
-  
+
   // Use captureAsFormat to do the actual capture
   auto base_future = captureAsFormat(inpbuf, capbuf, inpbuf->format());
   if (!base_future || base_future->_failed) {
     future->_failed = true;
     return future;
   }
-  
+
   OrkAssert(false); // captureToTexture not implemented yet
-  
-  future->_captureTexture = nullptr;
-  future->_failed = true;
+
+  future->_captureTexture      = nullptr;
+  future->_failed              = true;
   future->_on_capture_complete = on_capture_complete;
-  
+
   return future;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::_processPendingCaptures() {
+
   if (_pending_captures.empty()) {
     return;
   }
-  
+
   // Process all pending captures
   auto captures_to_process = _pending_captures;
   _pending_captures.clear();
-  
+
   for (auto capture_async : captures_to_process) {
     auto async_impl = capture_async->_impl.getShared<VkCaptureAsyncImpl>();
-    
+
     // Get the capture buffer implementation
-    auto capbuf_impl = async_impl->capture_buffer->_impl.getShared<VkCaptureBufferImpl>();
+    auto capbuf_impl    = async_impl->capture_buffer->_impl.getShared<VkCaptureBufferImpl>();
     auto staging_buffer = capbuf_impl->staging_buffer;
-    
+
     // Determine if conversion is needed
     EBufferFormat source_format = VkFormatConverter::convertBufferFormat(capbuf_impl->_actual_format);
-    bool needs_conversion = (source_format != capbuf_impl->_desired_format);
-    
+    bool needs_conversion       = (source_format != capbuf_impl->_desired_format);
+
     if (needs_conversion) {
       // Copy to temp image for conversion
       // if same capturebuffer is reused for same RtBuffer, this avoids reallocation
-      
+
       auto temp_img = async_impl->capture_buffer->_raw_image;
       temp_img->initWithFormat(async_impl->width, async_impl->height, source_format);
       // Use actual buffer size from staging buffer (source format size)
       size_t bufsize = staging_buffer->_length;
+      OrkAssert(bufsize <= temp_img->_data->length());
       staging_buffer->copyToHost((void*)temp_img->_data->data(), bufsize);
-      
+
       // Do conversion async on opq
       opq::concurrentQueue()->enqueue([capture_async]() {
-        auto async_impl = capture_async->_impl.getShared<VkCaptureAsyncImpl>();
-        auto capbuf = async_impl->capture_buffer;
+        auto async_impl  = capture_async->_impl.getShared<VkCaptureAsyncImpl>();
+        auto capbuf      = async_impl->capture_buffer;
         auto capbuf_impl = capbuf->_impl.getShared<VkCaptureBufferImpl>();
         capbuf->_image->convertFromImageToFormat(*capbuf->_raw_image, capbuf_impl->_desired_format);
-        
+
         // Signal completion
         capture_async->_completed = true;
         if (capture_async->_on_capture_complete) {
@@ -172,178 +175,181 @@ void VkContext::_processPendingCaptures() {
     } else {
       // No conversion needed - copy directly to main image
       // if same capturebuffer is reused for same RtBuffer, this avoids reallocation
-      
+
       auto img = async_impl->capture_buffer->_image;
       img->initWithFormat(async_impl->width, async_impl->height, source_format);
       size_t bufsize = staging_buffer->_length;
       staging_buffer->copyToHost((void*)img->_data->data(), bufsize);
-      
+
       // Signal immediately
       capture_async->_completed = true;
       if (capture_async->_on_capture_complete) {
         capture_async->_on_capture_complete();
       }
     }
-    
-    // Store capture results in the future
-    capture_async->_captureBuffer = async_impl->capture_buffer;
-    capture_async->_captureTexture = async_impl->capture_texture;
-    capture_async->_capturePath = async_impl->path;
-    capture_async->_width = async_impl->width;
-    capture_async->_height = async_impl->height;
-    capture_async->_format = async_impl->format;
-    
-    // If this is a single pixel capture, populate the PixelFetchContext
+
     if (capture_async->_pixelFetchContext && capture_async->_width == 1 && capture_async->_height == 1) {
-      auto pixfetch_ctx = capture_async->_pixelFetchContext;
-      auto img = async_impl->capture_buffer->_image;
-      
-      if (img && img->_data && pixfetch_ctx->_pickvalues.size() > 0) {
-        // Get the usage mode for the first (and only) MRT
-        auto usage_mode = pixfetch_ctx->_usage.size() > 0 ? pixfetch_ctx->_usage[0] : PixelFetchContext::EPixelUsage::FVEC4;
-        
-        // Extract the pixel value based on format and usage mode
-        switch (usage_mode) {
-          case PixelFetchContext::EPixelUsage::SVARIANT: {
-            // Store raw data as svariant based on format
-            switch (capture_async->_format) {
-              case EBufferFormat::RGBA32F: {
-                auto pixel_data = reinterpret_cast<const float*>(img->_data->data());
-                fvec4 rgba(pixel_data[0], pixel_data[1], pixel_data[2], pixel_data[3]);
-                pixfetch_ctx->_pickvalues[0] = pixfetch_ctx->decodePixel(rgba);
-                break;
-              }
-              case EBufferFormat::RGBA16UI: {
-                auto pixel_data = reinterpret_cast<const uint16_t*>(img->_data->data());
-                // Pack as u32vec4 for decodePixel (will extend 16-bit to 32-bit)
-                u32vec4 value(pixel_data[0], pixel_data[1], pixel_data[2], pixel_data[3]);
-                pixfetch_ctx->_pickvalues[0] = pixfetch_ctx->decodePixel(value);
-                break;
-              }
-              case EBufferFormat::RGBA32UI: {
-                auto pixel_data = reinterpret_cast<const uint32_t*>(img->_data->data());
-                u32vec4 value(pixel_data[0], pixel_data[1], pixel_data[2], pixel_data[3]);
-                pixfetch_ctx->_pickvalues[0] = pixfetch_ctx->decodePixel(value);
-                break;
-              }
-              default:
-                pixfetch_ctx->_pickvalues[0] = nullptr;
-                break;
-            }
+      _processPixelFetch(capture_async);
+    }
+
+  } // for (auto capture_async : captures_to_process) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkContext::_processPixelFetch(captureasync_ptr_t capture_async) {
+
+  // Store capture results in the future
+  // If this is a single pixel capture, populate the PixelFetchContext
+  auto async_impl  = capture_async->_impl.getShared<VkCaptureAsyncImpl>();
+  auto pixfetch_ctx = capture_async->_pixelFetchContext;
+  auto img          = async_impl->capture_buffer->_image;
+
+  if (img && img->_data && pixfetch_ctx->_pickvalues.size() > 0) {
+    // Get the usage mode for the first (and only) MRT
+    auto usage_mode = pixfetch_ctx->_usage.size() > 0 ? pixfetch_ctx->_usage[0] : PixelFetchContext::EPixelUsage::FVEC4;
+
+    // Extract the pixel value based on format and usage mode
+    switch (usage_mode) {
+      case PixelFetchContext::EPixelUsage::SVARIANT: {
+        // Store raw data as svariant based on format
+        switch (capture_async->_format) {
+          case EBufferFormat::RGBA32F: {
+            auto pixel_data = reinterpret_cast<const float*>(img->_data->data());
+            fvec4 rgba(pixel_data[0], pixel_data[1], pixel_data[2], pixel_data[3]);
+            pixfetch_ctx->_pickvalues[0] = pixfetch_ctx->decodePixel(rgba);
             break;
           }
-          case PixelFetchContext::EPixelUsage::PTR64: {
-            // Pack data into 64-bit pointer
-            switch (capture_async->_format) {
-              case EBufferFormat::RGBA16UI: {
-                auto pixel_data = reinterpret_cast<const uint16_t*>(img->_data->data());
-                // Swizzle so hex appears as xxxxyyyyzzzzwwww (same as GL implementation)
-                uint64_t a = uint64_t(pixel_data[0]);
-                uint64_t b = uint64_t(pixel_data[1]);
-                uint64_t c = uint64_t(pixel_data[2]);
-                uint64_t d = uint64_t(pixel_data[3]);
-                uint64_t value = (d << 48) | (c << 32) | (b << 16) | a;
-                pixfetch_ctx->_pickvalues[0].set<uint64_t>(value);
-                break;
-              }
-              case EBufferFormat::RGBA32UI: {
-                auto pixel_data = reinterpret_cast<const uint32_t*>(img->_data->data());
-                // Pack two 32-bit values into 64-bit (using R and G channels)
-                uint64_t low = uint64_t(pixel_data[0]);
-                uint64_t high = uint64_t(pixel_data[1]);
-                uint64_t value = (high << 32) | low;
-                pixfetch_ctx->_pickvalues[0].set<uint64_t>(value);
-                break;
-              }
-              default:
-                pixfetch_ctx->_pickvalues[0].set<uint64_t>(0);
-                break;
-            }
+          case EBufferFormat::RGBA16UI: {
+            auto pixel_data = reinterpret_cast<const uint16_t*>(img->_data->data());
+            // Pack as u32vec4 for decodePixel (will extend 16-bit to 32-bit)
+            u32vec4 value(pixel_data[0], pixel_data[1], pixel_data[2], pixel_data[3]);
+            pixfetch_ctx->_pickvalues[0] = pixfetch_ctx->decodePixel(value);
             break;
           }
-          case PixelFetchContext::EPixelUsage::FVEC4:
-          default: {
-            // Convert to fvec4 (default behavior)
-            switch (capture_async->_format) {
-              case EBufferFormat::RGBA8: {
-                auto pixel_data = img->_data->data();
-                float r = pixel_data[0] / 255.0f;
-                float g = pixel_data[1] / 255.0f;
-                float b = pixel_data[2] / 255.0f;
-                float a = pixel_data[3] / 255.0f;
-                pixfetch_ctx->_pickvalues[0].set<fvec4>(fvec4(r, g, b, a));
-                break;
-              }
-              case EBufferFormat::RGBA16F: {
-                auto pixel_data = reinterpret_cast<const uint16_t*>(img->_data->data());
-                // Convert half-float to float using bit manipulation
-                auto half_to_float = [](uint16_t h) -> float {
-                  uint32_t sign = (h & 0x8000) << 16;
-                  uint32_t exponent = ((h & 0x7C00) >> 10);
-                  uint32_t mantissa = (h & 0x03FF) << 13;
-                  
-                  if (exponent == 0) {
-                    // Denormalized number or zero
-                    if (mantissa == 0) return 0.0f;
-                    // Convert denormalized half to normalized float
-                    exponent = 1;
-                    while (!(mantissa & 0x00800000)) {
-                      mantissa <<= 1;
-                      exponent--;
-                    }
-                    mantissa &= ~0x00800000;
-                    exponent += 127 - 15;
-                  } else if (exponent == 0x1F) {
-                    // Infinity or NaN
-                    exponent = 0xFF;
-                  } else {
-                    // Normalized number
-                    exponent += 127 - 15;
-                  }
-                  
-                  uint32_t result = sign | (exponent << 23) | mantissa;
-                  return *reinterpret_cast<float*>(&result);
-                };
-                
-                float r = half_to_float(pixel_data[0]);
-                float g = half_to_float(pixel_data[1]);
-                float b = half_to_float(pixel_data[2]);
-                float a = half_to_float(pixel_data[3]);
-                pixfetch_ctx->_pickvalues[0].set<fvec4>(fvec4(r, g, b, a));
-                break;
-              }
-              case EBufferFormat::RGBA32F: {
-                auto pixel_data = reinterpret_cast<const float*>(img->_data->data());
-                pixfetch_ctx->_pickvalues[0].set<fvec4>(fvec4(pixel_data[0], pixel_data[1], pixel_data[2], pixel_data[3]));
-                break;
-              }
-              case EBufferFormat::RGBA16UI: {
-                auto pixel_data = reinterpret_cast<const uint16_t*>(img->_data->data());
-                // Convert uint16 values to float
-                float r = static_cast<float>(pixel_data[0]);
-                float g = static_cast<float>(pixel_data[1]);
-                float b = static_cast<float>(pixel_data[2]);
-                float a = static_cast<float>(pixel_data[3]);
-                pixfetch_ctx->_pickvalues[0].set<fvec4>(fvec4(r, g, b, a));
-                break;
-              }
-              case EBufferFormat::RGBA32UI: {
-                auto pixel_data = reinterpret_cast<const uint32_t*>(img->_data->data());
-                // Convert uint32 values to float (note: may lose precision for large values)
-                float r = static_cast<float>(pixel_data[0]);
-                float g = static_cast<float>(pixel_data[1]);
-                float b = static_cast<float>(pixel_data[2]);
-                float a = static_cast<float>(pixel_data[3]);
-                pixfetch_ctx->_pickvalues[0].set<fvec4>(fvec4(r, g, b, a));
-                break;
-              }
-              default:
-                pixfetch_ctx->_pickvalues[0].set<fvec4>(fvec4(0, 0, 0, 0));
-                break;
-            }
+          case EBufferFormat::RGBA32UI: {
+            auto pixel_data = reinterpret_cast<const uint32_t*>(img->_data->data());
+            u32vec4 value(pixel_data[0], pixel_data[1], pixel_data[2], pixel_data[3]);
+            pixfetch_ctx->_pickvalues[0] = pixfetch_ctx->decodePixel(value);
             break;
           }
+          default:
+            pixfetch_ctx->_pickvalues[0] = nullptr;
+            break;
         }
+        break;
+      }
+      case PixelFetchContext::EPixelUsage::PTR64: {
+        // Pack data into 64-bit pointer
+        switch (capture_async->_format) {
+          case EBufferFormat::RGBA16UI: {
+            auto pixel_data = reinterpret_cast<const uint16_t*>(img->_data->data());
+            // Swizzle so hex appears as xxxxyyyyzzzzwwww (same as GL implementation)
+            uint64_t a     = uint64_t(pixel_data[0]);
+            uint64_t b     = uint64_t(pixel_data[1]);
+            uint64_t c     = uint64_t(pixel_data[2]);
+            uint64_t d     = uint64_t(pixel_data[3]);
+            uint64_t value = (d << 48) | (c << 32) | (b << 16) | a;
+            pixfetch_ctx->_pickvalues[0].set<uint64_t>(value);
+            break;
+          }
+          case EBufferFormat::RGBA32UI: {
+            auto pixel_data = reinterpret_cast<const uint32_t*>(img->_data->data());
+            // Pack two 32-bit values into 64-bit (using R and G channels)
+            uint64_t low   = uint64_t(pixel_data[0]);
+            uint64_t high  = uint64_t(pixel_data[1]);
+            uint64_t value = (high << 32) | low;
+            pixfetch_ctx->_pickvalues[0].set<uint64_t>(value);
+            break;
+          }
+          default:
+            pixfetch_ctx->_pickvalues[0].set<uint64_t>(0);
+            break;
+        }
+        break;
+      }
+      case PixelFetchContext::EPixelUsage::FVEC4:
+      default: {
+        // Convert to fvec4 (default behavior)
+        switch (capture_async->_format) {
+          case EBufferFormat::RGBA8: {
+            auto pixel_data = img->_data->data();
+            float r         = pixel_data[0] / 255.0f;
+            float g         = pixel_data[1] / 255.0f;
+            float b         = pixel_data[2] / 255.0f;
+            float a         = pixel_data[3] / 255.0f;
+            pixfetch_ctx->_pickvalues[0].set<fvec4>(fvec4(r, g, b, a));
+            break;
+          }
+          case EBufferFormat::RGBA16F: {
+            auto pixel_data = reinterpret_cast<const uint16_t*>(img->_data->data());
+            // Convert half-float to float using bit manipulation
+            auto half_to_float = [](uint16_t h) -> float {
+              uint32_t sign     = (h & 0x8000) << 16;
+              uint32_t exponent = ((h & 0x7C00) >> 10);
+              uint32_t mantissa = (h & 0x03FF) << 13;
+
+              if (exponent == 0) {
+                // Denormalized number or zero
+                if (mantissa == 0)
+                  return 0.0f;
+                // Convert denormalized half to normalized float
+                exponent = 1;
+                while (!(mantissa & 0x00800000)) {
+                  mantissa <<= 1;
+                  exponent--;
+                }
+                mantissa &= ~0x00800000;
+                exponent += 127 - 15;
+              } else if (exponent == 0x1F) {
+                // Infinity or NaN
+                exponent = 0xFF;
+              } else {
+                // Normalized number
+                exponent += 127 - 15;
+              }
+
+              uint32_t result = sign | (exponent << 23) | mantissa;
+              return *reinterpret_cast<float*>(&result);
+            };
+
+            float r = half_to_float(pixel_data[0]);
+            float g = half_to_float(pixel_data[1]);
+            float b = half_to_float(pixel_data[2]);
+            float a = half_to_float(pixel_data[3]);
+            pixfetch_ctx->_pickvalues[0].set<fvec4>(fvec4(r, g, b, a));
+            break;
+          }
+          case EBufferFormat::RGBA32F: {
+            auto pixel_data = reinterpret_cast<const float*>(img->_data->data());
+            pixfetch_ctx->_pickvalues[0].set<fvec4>(fvec4(pixel_data[0], pixel_data[1], pixel_data[2], pixel_data[3]));
+            break;
+          }
+          case EBufferFormat::RGBA16UI: {
+            auto pixel_data = reinterpret_cast<const uint16_t*>(img->_data->data());
+            // Convert uint16 values to float
+            float r = static_cast<float>(pixel_data[0]);
+            float g = static_cast<float>(pixel_data[1]);
+            float b = static_cast<float>(pixel_data[2]);
+            float a = static_cast<float>(pixel_data[3]);
+            pixfetch_ctx->_pickvalues[0].set<fvec4>(fvec4(r, g, b, a));
+            break;
+          }
+          case EBufferFormat::RGBA32UI: {
+            auto pixel_data = reinterpret_cast<const uint32_t*>(img->_data->data());
+            // Convert uint32 values to float (note: may lose precision for large values)
+            float r = static_cast<float>(pixel_data[0]);
+            float g = static_cast<float>(pixel_data[1]);
+            float b = static_cast<float>(pixel_data[2]);
+            float a = static_cast<float>(pixel_data[3]);
+            pixfetch_ctx->_pickvalues[0].set<fvec4>(fvec4(r, g, b, a));
+            break;
+          }
+          default:
+            pixfetch_ctx->_pickvalues[0].set<fvec4>(fvec4(0, 0, 0, 0));
+            break;
+        }
+        break;
       }
     }
   }
@@ -393,7 +399,7 @@ captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(
 
   // Suspend render pass if active - we need to do barriers and copies
   _contextVK->suspendRenderPass();
-  
+
   rtbi->_transitionToHostRead(cb);
 
   // printf("captureAsFormat w<%d> h<%d>\n", w, h);
@@ -672,38 +678,36 @@ captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(
   // glBindFramebuffer(GL_FRAMEBUFFER, 0);
   //   glReadBuffer( readbuffer ); // restore read buffer
   // GL_ERRORCHECK();
-  
+
   // Resume render pass after capture operations are recorded
   _contextVK->resumeRenderPass();
-  
+
   return future;
 }
 
 ////////////////////////////////////////////////////////////////
 
-captureasync_ptr_t VkFrameBufferInterface::capturePixelAsync(
-    pixelfetchctx_ptr_t pfc,
-    int x, 
-    int y, 
-    void_lambda_t on_capture_complete) {
-  
+captureasync_ptr_t
+VkFrameBufferInterface::capturePixelAsync(pixelfetchctx_ptr_t pfc, int x, int y, void_lambda_t on_capture_complete) {
+
   // Local struct to hold all data for composite capture
   struct CompositeFuture {
     std::atomic<int> pending_count;
     std::vector<captureasync_ptr_t> buffer_futures;
-    std::vector<int> buffer_indices;  // Maps future index to buffer index
+    std::vector<int> buffer_indices; // Maps future index to buffer index
     pixelfetchctx_ptr_t pixel_context;
     void_lambda_t completion_callback;
-    
-    CompositeFuture(int count, pixelfetchctx_ptr_t pfc, void_lambda_t cb) 
-      : pending_count(count)
-      , pixel_context(pfc)
-      , completion_callback(cb) {}
+
+    CompositeFuture(int count, pixelfetchctx_ptr_t pfc, void_lambda_t cb)
+        : pending_count(count)
+        , pixel_context(pfc)
+        , completion_callback(cb) {
+    }
   };
-  
+
   // Capture from all buffers for deep pixel support
   auto rtg = pfc->_rtgroup;
-  
+
   // Count how many buffers we need to capture
   int num_buffers = 0;
   for (int i = 0; i < 8; i++) { // Max 8 MRT buffers
@@ -713,83 +717,83 @@ captureasync_ptr_t VkFrameBufferInterface::capturePixelAsync(
       break;
     }
   }
-  
+
   if (num_buffers == 0) {
-    auto future = std::make_shared<CaptureAsync>();
+    auto future     = std::make_shared<CaptureAsync>();
     future->_failed = true;
     return future;
   }
-  
+
   // Create a composite future that will capture all buffers
-  auto main_future = std::make_shared<CaptureAsync>();
+  auto main_future                = std::make_shared<CaptureAsync>();
   main_future->_pixelFetchContext = pfc;
-  pfc->_rtgroup = rtg;
-  
+  pfc->_rtgroup                   = rtg;
+
   // Create composite future structure
   auto compfut = main_future->_impl.makeShared<CompositeFuture>(num_buffers, pfc, on_capture_complete);
-  
+
   // Capture from each buffer
   for (int buf_idx = 0; buf_idx < num_buffers; buf_idx++) {
     auto rtb = rtg->buffer(buf_idx);
-    if (!rtb) continue;
-    
+    if (!rtb)
+      continue;
+
     // Create a capture buffer for the single pixel
-    auto capbuf = std::make_shared<CaptureBuffer>();
+    auto capbuf       = std::make_shared<CaptureBuffer>();
     capbuf->_captureX = x;
     capbuf->_captureY = y;
     capbuf->_captureW = 1;
     capbuf->_captureH = 1;
-    
+
     // Create sub-future completion callback that will be called after pixel data is processed
     auto sub_complete = [main_future, compfut, buf_idx, pfc]() {
       // The sub-future has been processed by _processPendingCaptures
       // and its pixel data should be available. We need to extract it
       // and place it in the correct slot of the main PixelFetchContext
-      
+
       // Find the sub-future for this buffer
       for (size_t i = 0; i < compfut->buffer_indices.size(); i++) {
         if (compfut->buffer_indices[i] == buf_idx) {
           auto sub_future = compfut->buffer_futures[i];
           if (sub_future && sub_future->_pixelFetchContext) {
             // Copy the value from sub-future's PFC to main PFC at correct index
-            if (buf_idx < pfc->_pickvalues.size() && 
-                sub_future->_pixelFetchContext->_pickvalues.size() > 0) {
+            if (buf_idx < pfc->_pickvalues.size() && sub_future->_pixelFetchContext->_pickvalues.size() > 0) {
               pfc->_pickvalues[buf_idx] = sub_future->_pixelFetchContext->_pickvalues[0];
             }
           }
           break;
         }
       }
-      
+
       // Decrement the counter
       int remaining = compfut->pending_count.fetch_sub(1) - 1;
-      
+
       // If this was the last buffer, mark main future as complete
       if (remaining == 0) {
         main_future->_completed = true;
-        
+
         // Fire the main callback if provided
         if (compfut->completion_callback) {
           compfut->completion_callback();
         }
       }
     };
-    
+
     // Use captureAsFormat to do the actual capture of the 1x1 region
     auto future = captureAsFormat(rtb.get(), capbuf, rtb->format(), sub_complete);
     if (future && !future->_failed) {
       // Create a PixelFetchContext for this sub-future (single value)
       auto sub_pfc = std::make_shared<PixelFetchContext>();
       sub_pfc->_resize(1);
-      sub_pfc->_usage[0] = pfc->_usage[buf_idx];
+      sub_pfc->_usage[0]         = pfc->_usage[buf_idx];
       future->_pixelFetchContext = sub_pfc;
-      future->_width = 1;
-      future->_height = 1;
-      
+      future->_width             = 1;
+      future->_height            = 1;
+
       // Store this future for later processing
       compfut->buffer_futures.push_back(future);
       compfut->buffer_indices.push_back(buf_idx);
-      
+
       // Add sub-future to pending captures for normal processing
       _contextVK->_pending_captures.push_back(future);
     } else {
@@ -797,7 +801,7 @@ captureasync_ptr_t VkFrameBufferInterface::capturePixelAsync(
       compfut->pending_count.fetch_sub(1);
     }
   }
-  
+
   // Don't add main_future to _pending_captures - it will be marked complete
   // when all sub-futures complete via the atomic counter mechanism
   return main_future;
