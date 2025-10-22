@@ -473,12 +473,6 @@ void OrkEzApp::_mainThreadLoopBegin() {
     _appstate.fetch_or(KAPPSTATEFLAG_UPDRUNNING);
 
     ////////////////////////////////////////
-
-    if (not _initdata->_movie_output_path.empty()) {
-      enableMovieRecording(_initdata->_movie_output_path);
-    }
-
-    ////////////////////////////////////////
     // Determine mode: SYNC or ASYNC (realtime)
     ////////////////////////////////////////
 
@@ -641,6 +635,11 @@ void OrkEzApp::_mainThreadLoopBegin() {
   //   ensuring _onGpuInit called before onUpdateInit
   ///////////////////////////////
 
+  // Enable movie recording BEFORE GPU init if requested
+  if (not _initdata->_movie_output_path.empty()) {
+    enableMovieRecording(_initdata->_movie_output_path);
+  }
+
   glfw_ctx->_onGpuInit = [this](lev2::Context* context) {
     context->beginPrimaryCommandBuffer();
     logchan_ezapp->log("_initdata->_enable_audio<%d>", (int)_initdata->_enable_audio);
@@ -658,7 +657,10 @@ void OrkEzApp::_mainThreadLoopBegin() {
       _mainWindow->_onGpuInit(context);
 
       if (_moviecapcontext) {
+        logchan_ezapp->log("Initializing movie capture context (%dx%d)", _initdata->_width, _initdata->_height);
         _moviecapcontext->init(_initdata->_width, _initdata->_height, _audiodevice);
+      } else {
+        logchan_ezapp->log("No movie capture context to initialize");
       }
     }
     context->endPrimaryCommandBuffer();

@@ -213,12 +213,18 @@ void MovieCaptureContext::queueFrame(
     int frame_num,
     int expected_samples) {
 
-  if (_terminated) return;
+  if (_terminated) {
+    logchan_moviecap->log("queueFrame: TERMINATED, ignoring frame %d", frame_num);
+    return;
+  }
+
+  logchan_moviecap->log("queueFrame: Queueing frame %d (expected_samples=%d)", frame_num, expected_samples);
 
   // Wait if queue is full (backpressure)
   {
     std::unique_lock<std::mutex> lock(_queue_mutex);
     while (_frame_queue.size() >= _max_queue_size && _encoding_running) {
+      logchan_moviecap->log("queueFrame: Queue full (%zu), waiting...", _frame_queue.size());
       _queue_cv.wait(lock);
     }
   }
@@ -235,6 +241,7 @@ void MovieCaptureContext::queueFrame(
   {
     std::lock_guard<std::mutex> lock(_queue_mutex);
     _frame_queue.push_back(frame_data);
+    logchan_moviecap->log("queueFrame: Frame %d queued, queue size now: %zu", frame_num, _frame_queue.size());
   }
 
   _queue_cv.notify_one();  // Wake encoding thread
@@ -281,20 +288,28 @@ void MovieCaptureContext::_encodingThreadFunc() {
     {
       std::unique_lock<std::mutex> lock(_queue_mutex);
 
+      logchan_moviecap->log("_encodingThreadFunc: Waiting for frame (queue_size=%zu, running=%d)...",
+                            _frame_queue.size(), _encoding_running.load());
+
       _queue_cv.wait(lock, [this]{
         return !_frame_queue.empty() || !_encoding_running;
       });
 
       if (!_encoding_running && _frame_queue.empty()) {
+        logchan_moviecap->log("_encodingThreadFunc: Thread stopping (not running, queue empty)");
         break;  // Exit thread
       }
 
       if (_frame_queue.empty()) {
+        logchan_moviecap->log("_encodingThreadFunc: Spurious wakeup, continuing...");
         continue;  // Spurious wakeup
       }
 
       frame_data = _frame_queue.front();
       _frame_queue.pop_front();
+
+      logchan_moviecap->log("_encodingThreadFunc: Dequeued frame %d, queue size now: %zu",
+                            frame_data.frame_number, _frame_queue.size());
 
       _queue_cv.notify_all();  // Notify queueFrame if it was waiting
     }
@@ -306,6 +321,9 @@ void MovieCaptureContext::_encodingThreadFunc() {
     int timeout_ms = 5000;
     int waited_ms = 0;
 
+    logchan_moviecap->log("_encodingThreadFunc: Waiting for GPU capture completion for frame %d...",
+                          frame_data.frame_number);
+
     while (!future->_completed && waited_ms < timeout_ms) {
       usleep(1000);  // 1ms
       waited_ms++;
@@ -316,6 +334,9 @@ void MovieCaptureContext::_encodingThreadFunc() {
       continue;
     }
 
+    logchan_moviecap->log("_encodingThreadFunc: Frame %d capture complete (waited %d ms)",
+                          frame_data.frame_number, waited_ms);
+
     //=========================================
     // Extract audio samples from audio device
     //=========================================
@@ -325,10 +346,16 @@ void MovieCaptureContext::_encodingThreadFunc() {
         int available = str_audio->availableSamples();
         int to_extract = std::min(available, frame_data.expected_audio_samples);
 
+        logchan_moviecap->log("_encodingThreadFunc: Frame %d - audio available=%d, expected=%d, extracting=%d",
+                              frame_data.frame_number, available,
+                              frame_data.expected_audio_samples, to_extract);
+
         if (to_extract > 0) {
           auto audio_capture = str_audio->extractSamples(to_extract);
 
           if (audio_capture && audio_capture->_num_samples > 0) {
+            logchan_moviecap->log("_encodingThreadFunc: Frame %d - writing %d audio samples",
+                                  frame_data.frame_number, audio_capture->_num_samples);
             _writeAudioSamples(
               audio_capture->_left.data(),
               audio_capture->_right.data(),
@@ -342,7 +369,9 @@ void MovieCaptureContext::_encodingThreadFunc() {
     //=========================================
     // Encode video frame
     //=========================================
+    logchan_moviecap->log("_encodingThreadFunc: Frame %d - encoding video...", frame_data.frame_number);
     _writeVideoFrame(frame_data.capture_buffer);
+    logchan_moviecap->log("_encodingThreadFunc: Frame %d - video encoded", frame_data.frame_number);
 
     //=========================================
     // Progress logging
