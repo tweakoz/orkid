@@ -84,11 +84,8 @@ struct MovieCaptureContext {
   std::vector<float> _audio_buffer_right;
 
 private:
-  void _initVideoStream();
-  void _initAudioStream();
   void _startEncodingThread();
   void _stopEncodingThread();
-
   void _encodingThreadFunc();  // Main encoding loop
 };
 

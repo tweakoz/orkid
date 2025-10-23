@@ -13,8 +13,6 @@ extern "C" {
 }
 
 namespace ffmpeg_enc {
-constexpr uint64_t STREAM_DURATION     = 10.0;
-constexpr uint64_t STREAM_FRAME_RATE   = 25;                 /* 25 images/s */
 constexpr AVPixelFormat STREAM_PIX_FMT = AV_PIX_FMT_YUV420P; /* default pix_fmt */
 
 constexpr uint64_t SCALE_FLAGS = SWS_BICUBIC;
@@ -98,7 +96,7 @@ static AVFrame* _allocVideoFrame(AVPixelFormat pix_fmt, //
 
 struct Encoder {
 
-  Encoder(std::string fname, std::string preset_name, int w, int h);
+  Encoder(std::string fname, std::string preset_name, int w, int h, int fps);
   ~Encoder();
 
   void enqueueFrames(ork::lev2::capturebuffer_ptr_t video_buffer,
@@ -138,17 +136,19 @@ struct Encoder {
   std::string _filename = "output.mp4";
   int _width = 0;
   int _height = 0;
+  int _fps = 60;
   std::string _preset_name = "medium";
 };
 using encoder_ptr_t = std::shared_ptr<Encoder>;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-Encoder::Encoder(std::string fname, std::string preset_name, int w, int h) 
+Encoder::Encoder(std::string fname, std::string preset_name, int w, int h, int fps)
   : _filename(fname)
   , _preset_name(preset_name)
   , _width(w)
-  , _height(h) {
+  , _height(h)
+  , _fps(fps) {
 
   _video_stream = std::make_shared<OutputStream>();
   _audio_stream = std::make_shared<OutputStream>();
@@ -609,8 +609,8 @@ void Encoder::_add_stream( OutputStream* ost,         //
       // timebase: This is the fundamental unit of time (in seconds) in terms
       // of which frame timestamps are represented. For fixed-fps content,
       // timebase should be 1/framerate and timestamp increments should be
-      // identical to 1. 
-      ost->st->time_base = (AVRational){1, STREAM_FRAME_RATE};
+      // identical to 1.
+      ost->st->time_base = (AVRational){1, _fps};
       c->time_base       = ost->st->time_base;
 
       c->gop_size = 12; // emit one intra frame every twelve frames at most 
@@ -640,11 +640,12 @@ void Encoder::_add_stream( OutputStream* ost,         //
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-encoder_ptr_t createEncoder( std::string filename, 
+encoder_ptr_t createEncoder( std::string filename,
                              std::string preset_name,
-                             int width, 
-                             int height) {
-  auto enc = std::make_shared<Encoder>(filename, preset_name, width, height);
+                             int width,
+                             int height,
+                             int fps) {
+  auto enc = std::make_shared<Encoder>(filename, preset_name, width, height, fps);
   return enc->_valid ? enc : nullptr;
 }
 

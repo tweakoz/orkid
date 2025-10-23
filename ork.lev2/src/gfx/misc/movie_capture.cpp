@@ -48,23 +48,6 @@ void MovieCaptureContext::init(int width, int height, audiodevice_ptr_t audio_de
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
-// Video Stream Initialization - REMOVED
-///////////////////////////////////////////////////////////////////////////////////////////////
-
-void MovieCaptureContext::_initVideoStream() {
-
-  logchan_moviecap->log("Video stream initialization (no-op)");
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////
-// Audio Stream Initialization - REMOVED
-///////////////////////////////////////////////////////////////////////////////////////////////
-
-void MovieCaptureContext::_initAudioStream() {
-
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////
 // Queue Management: Called from render thread
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -146,9 +129,7 @@ void MovieCaptureContext::_stopEncodingThread() {
 void MovieCaptureContext::_encodingThreadFunc() {
   ork::SetCurrentThreadName("movie-encode");
 
-  _initVideoStream();
-
-  auto encoder = ffmpeg_enc::createEncoder(_filename,"default",_width,_height);
+  auto encoder = ffmpeg_enc::createEncoder(_filename,"default",_width,_height,_fps);
   if (!encoder) {
     logchan_moviecap->log("ERROR: Failed to create encoder");
     return;
