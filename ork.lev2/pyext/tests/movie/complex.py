@@ -94,7 +94,15 @@ class ComplexMovieApp(object):
     P = self.waveprog.program
     synth.programbus.uiprogram = P
     mods = None
-    self.v = synth.keyOn(24,127,P,mods)
+    self.v1 = synth.keyOn(24,127,P,mods)
+    time.sleep(0.1)
+    self.v2 = synth.keyOn(36,127,P,mods)
+    time.sleep(0.1)
+    self.v3 = synth.keyOn(12,127,P,mods)
+    time.sleep(0.1)
+    self.v4 = synth.keyOn(48,127,P,mods)
+    time.sleep(0.1)
+    self.v5 = synth.keyOn(60,127,P,mods)
 
   ##############################################
 
