@@ -50,30 +50,12 @@ struct MovieCaptureContext {
   // Called from render thread to queue frame
   size_t enqueueFrame(captureasync_ptr_t future, capturebuffer_ptr_t buffer, int frame_num, int expected_samples);
 
-  /////////////////////////////////////////////////////////////////////////////////////////
-  // Video encoding members
-  /////////////////////////////////////////////////////////////////////////////////////////
+  std::string _filename;
+
   int _width  = 0;
   int _height = 0;
   int _frame  = 0;
-  std::string _filename;
-  struct SwsContext* _swscontext = nullptr;
-  const AVOutputFormat* _format  = nullptr;
-  const AVCodec* _video_codec          = nullptr;
-  AVCodecContext* _video_encoder       = nullptr;
-  AVFormatContext* _muxer        = nullptr;
-  AVStream* _video_stream              = nullptr;
-  AVFrame* _rgb_pic              = nullptr;
-  AVFrame* _yuv_pic              = nullptr;
   int _fps                       = 60;
-
-  /////////////////////////////////////////////////////////////////////////////////////////
-  // Audio encoding members
-  /////////////////////////////////////////////////////////////////////////////////////////
-  const AVCodec* _audio_codec = nullptr;
-  AVCodecContext* _audio_encoder = nullptr;
-  AVStream* _audio_stream = nullptr;
-  AVFrame* _audio_frame = nullptr;  // Reusable frame
 
   int _audio_sample_rate = 48000;
   int _audio_channels = 2;
@@ -82,6 +64,7 @@ struct MovieCaptureContext {
   /////////////////////////////////////////////////////////////////////////////////////////
   // Encoding thread & queue
   /////////////////////////////////////////////////////////////////////////////////////////
+
   std::deque<CapturedMovieFrame> _frame_queue;
   std::mutex _queue_mutex;
   std::condition_variable _queue_cv;
@@ -92,7 +75,6 @@ struct MovieCaptureContext {
   std::atomic<bool> _terminated{false};
 
   audiodevice_ptr_t _audio_device;  // Reference to extract samples
-  void join();
   
 private:
   void _initVideoStream();
@@ -101,10 +83,6 @@ private:
   void _stopEncodingThread();
 
   void _encodingThreadFunc();  // Main encoding loop
-
-  void _writeVideoFrame(capturebuffer_ptr_t buffer);
-  void _writeAudioSamples(const float* left, const float* right, int num_samples);
-  void _flushEncoders();
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
