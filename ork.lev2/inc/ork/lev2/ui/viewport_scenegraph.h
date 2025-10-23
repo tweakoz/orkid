@@ -20,9 +20,10 @@ public:
   void DoRePaintSurface(ui::drawevent_constptr_t drwev) final;
   void _doGpuInit(lev2::Context* pTARG) final;
   void forkDB();
-
+  void bindSceneGraph(lev2::scenegraph::scene_ptr_t sg);
   lev2::scenegraph::scene_ptr_t _scenegraph;
   lev2::compositoroutnode_rtgroup_ptr_t _outputnode;
+  int _supersample = 1;
   std::string _cameraname = "spawncam";
   lev2::acqdrawbuffer_ptr_t _override_acqdbuf;
 

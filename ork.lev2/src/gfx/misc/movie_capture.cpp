@@ -158,7 +158,6 @@ void MovieCaptureContext::_encodingThreadFunc() {
                                 available_audio, expected_audio);
           continue;  // Try again on next iteration
         }
-        total_audio_samples += expected_audio;
       }
 
       // We have enough audio, dequeue the frame
@@ -174,14 +173,19 @@ void MovieCaptureContext::_encodingThreadFunc() {
 
       _queue_cv.notify_all();
     }
-    if(timer.SecsSinceStart()>5.0f){
+    if(timer.SecsSinceStart()>1.0f){
       size_t queue_size = _frame_queue.size();
       size_t frame_index = frame_data.frame_number;
       size_t num_frames_encoded = encoder->_num_frames_encoded;
-      logchan_moviecap->log("_encodingThreadFunc: enqueued<%zu> frameidx<%zu> numencoded<%zu>", //
+      float video_elapsed_secs = float(frame_index) / float(_settings->_fps);
+      float audio_elapsed_secs = float(total_audio_samples) / 48000.0f;
+      logchan_moviecap->log("_encodingThreadFunc: enqueued<%zu> frameidx<%zu> numencoded<%zu> total_audio_samples<%zu> audio_elapsed<%g> video_elapsed<%g>", //
                             queue_size,  //
                             frame_index,  //
-                            num_frames_encoded);
+                            num_frames_encoded,
+                            total_audio_samples,
+                            audio_elapsed_secs,
+                            video_elapsed_secs);
       timer.Start();
     }
 
@@ -250,6 +254,7 @@ void MovieCaptureContext::_encodingThreadFunc() {
       audio_for_encoder->_num_samples = codec_audio_frame_size;
       audio_for_encoder->_sample_rate = 48000;
       audio_for_encoder->_timestamp = frame_data.virtual_time;
+      total_audio_samples += codec_audio_frame_size;
 
       // Copy exactly codec_audio_frame_size samples
       audio_for_encoder->_left.assign(_audio_buffer_left.begin(),
@@ -263,17 +268,11 @@ void MovieCaptureContext::_encodingThreadFunc() {
       _audio_buffer_right.erase(_audio_buffer_right.begin(),
                                  _audio_buffer_right.begin() + codec_audio_frame_size);
 
-      /*if((frame_data.frame_number % 60) == 0) {
-        logchan_moviecap->log("Encoding frame %d with audio (%d samples), buffer remaining: %zu",
-                              frame_data.frame_number, codec_audio_frame_size, _audio_buffer_left.size());
-      }*/
-    } else {
-      // Not enough samples yet - encode video only
-      /*if((frame_data.frame_number % 60) == 0) {
-        logchan_moviecap->log("Encoding frame %d (video only), audio buffer: %zu/%d",
-                              frame_data.frame_number, _audio_buffer_left.size(), codec_audio_frame_size);
-      }*/
-    }
+      if((frame_data.frame_number % 60) == 0) {
+        logchan_moviecap->log("Encoding frame %d with audio (%d samples), buffer remaining: %zu expected<%zu>",
+                              frame_data.frame_number, codec_audio_frame_size, _audio_buffer_left.size(), frame_data.expected_audio_samples);
+      }
+    } 
 
     //=========================================
     // Encode video + optional audio

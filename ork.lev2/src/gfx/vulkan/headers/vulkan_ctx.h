@@ -669,6 +669,11 @@ public:
   LockedResource<vkcompsema_set_t> _pendingOneShotSemas;
   void onFenceCrossed(void_lambda_t op);
   //////////////////////////////////////////////
+  // Offscreen semaphore submission (amortized storage)
+  //////////////////////////////////////////////
+  std::vector<VkSemaphore> _offscreen_signalSemaphores;
+  std::vector<uint64_t> _offscreen_signalValues;
+  //////////////////////////////////////////////
 
   vkdwi_ptr_t _dwi;
   vkimi_ptr_t _imi;

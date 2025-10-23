@@ -26,7 +26,7 @@ namespace ork::lev2 {
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 static logchannel_ptr_t logchan_vkctx = logger()->configureChannel("VKCTX", fvec3(1,1,.9),false);
-static logchannel_ptr_t logchan_vkcap = logger()->configureChannel("VKCAPTURE", fvec3(1,1,.9),true);
+static logchannel_ptr_t logchan_vkcap = logger()->configureChannel("VKCAPTURE", fvec3(1,1,.9),false);
 
 void VkContext::describeX(class_t* clazz) {
 
@@ -654,35 +654,64 @@ void VkContext::_doSubmitPrimaryCommandBuffer(){
     // Process pending captures after swapchain frame completion
     _processPendingCaptures();
   } else {
-    // Offscreen rendering - just submit command buffers without presentation
-    // We need to submit the command buffer to complete the frame
+    // Offscreen rendering - handle completion semaphores
+    bool semas_empty = false;
+    _pendingOneShotSemas.atomicOp([&](vkcompsema_set_t& unlocked) {
+      semas_empty = unlocked.empty();
+    });
+
     VkSubmitInfo SI = {};
     initializeVkStruct(SI, VK_STRUCTURE_TYPE_SUBMIT_INFO);
     SI.commandBufferCount = 1;
     SI.pCommandBuffers = &_cmdbufcurpri_gfx->_vkcmdbuf;
-    
+
+    // Handle timeline semaphores for texture uploads, etc.
+    VkTimelineSemaphoreSubmitInfo timelineInfo{};
+
+    if (!semas_empty) {
+      // Clear and populate vectors (reuse storage)
+      _offscreen_signalSemaphores.clear();
+      _offscreen_signalValues.clear();
+
+      _pendingOneShotSemas.atomicOp([&](vkcompsema_set_t& unlocked) {
+        for (auto semaphore : unlocked) {
+          _offscreen_signalSemaphores.push_back(semaphore->_vksema);
+          _offscreen_signalValues.push_back(1);  // Signal to value 1
+        }
+      });
+
+      // Set up timeline semaphore info
+      timelineInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
+      timelineInfo.signalSemaphoreValueCount = _offscreen_signalValues.size();
+      timelineInfo.pSignalSemaphoreValues = _offscreen_signalValues.data();
+
+      SI.pNext = &timelineInfo;
+      SI.signalSemaphoreCount = _offscreen_signalSemaphores.size();
+      SI.pSignalSemaphores = _offscreen_signalSemaphores.data();
+    }
+
     // Create fence for captures if needed
     vkfence_obj_ptr_t capture_fence;
     if (!_pending_captures.empty()) {
       capture_fence = std::make_shared<VulkanFenceObject>(this);
       capture_fence->reset(); // Start unsignaled
-      
+
       // Associate fence with pending captures
       for (auto& capture : _pending_captures) {
         if (auto async_impl = capture->_impl.getShared<VkCaptureAsyncImpl>()) {
           async_impl->_fence = capture_fence;
         }
       }
-      
+
       vkQueueSubmit(_vkqueue_graphics, 1, &SI, capture_fence->_vkfence);
       capture_fence->wait(); // Wait for fence to be signaled
     } else {
       vkQueueSubmit(_vkqueue_graphics, 1, &SI, VK_NULL_HANDLE);
       vkQueueWaitIdle(_vkqueue_graphics);
     }
-    
+
     logchan_vkctx->log("Offscreen frame submitted");
-    
+
     // Process pending captures after offscreen frame completion
     _processPendingCaptures();
   }
@@ -697,7 +726,7 @@ vkpricmdbufimpl_ptr_t VkContext::primary_cb() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::_doPreBeginFrame() {
-  //logchan_vkctx->log("VkContext<%p> _doPreBeginFrame", (void*)this );
+  logchan_vkctx->log("VkContext<%p> _doPreBeginFrame", (void*)this );
 
   mpCurrentObject        = 0;
   mRenderContextInstData = 0;
@@ -705,6 +734,8 @@ void VkContext::_doPreBeginFrame() {
 
   /////////////////////////////////////////
   _pendingOneShotCommands.atomicOp([&](vkseccmdbufarray_t& unlocked) {
+    //size_t num_one_shot = unlocked.size();
+    //printf("VkContext<%p> executing %zu one-shot secondary command buffers\n", (void*)this, num_one_shot);
     for (auto one_shot : unlocked) {
       enqueueSecondaryCommandBuffer(one_shot);
     }  

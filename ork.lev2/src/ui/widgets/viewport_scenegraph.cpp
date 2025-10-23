@@ -33,6 +33,7 @@ void SceneGraphViewport::_doGpuInit(lev2::Context* context) {
   Viewport::_doGpuInit(context);
   _outputnode = std::make_shared<lev2::RtGroupOutputCompositingNode>(_rtgroup);
   _rtgroup->_name = FormatString("ui::SceneGraphViewport<%p>", (void*) this);
+  _outputnode->setSuperSample(_supersample);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -42,7 +43,19 @@ void SceneGraphViewport::forkDB(){
   _override_acqdbuf = std::make_shared<lev2::AcquiredDrawQueueForRendering>();
 }
 
-///////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////////
+
+void SceneGraphViewport::bindSceneGraph(lev2::scenegraph::scene_ptr_t sg) {
+  _scenegraph = sg;
+  if (sg->_params->hasKey("ssaa")) {
+    auto& ssaa = sg->_params->valueForKey("ssaa");
+    if (auto as_ssaa = ssaa.tryAs<int>()) {
+      _supersample = as_ssaa.value();
+    }
+  }
+}
+
+  ///////////////////////////////////////////////////////////////////////////////
 
 void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   

@@ -139,7 +139,7 @@ ScreenOutputCompositingNode::ScreenOutputCompositingNode()
 ScreenOutputCompositingNode::~ScreenOutputCompositingNode() {
 }
 void ScreenOutputCompositingNode::setSuperSample(int ss) {
-  //printf("setss<%d>\n", ss);
+  printf("ScreenOutputCompositingNode<%p> setss<%d>\n", this, ss);
   _supersample = ss;
 }
 void ScreenOutputCompositingNode::gpuInit(lev2::Context* pTARG, int iW, int iH) {

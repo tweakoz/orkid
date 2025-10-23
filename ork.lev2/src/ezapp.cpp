@@ -775,7 +775,7 @@ void OrkEzApp::enableMovieRecording(moviecapsettings_ptr_t settings) {
     bool fps_set = (_initdata->_target_fps > 0);
     // Calculate expected audio samples for this frame
     int expected_samples = fps_set                               //
-                         ? int(48000.0 / _initdata->_target_fps) //
+                         ? int(48000.0 / double(_initdata->_target_fps)) //
                          : int(800);
 
     // Queue for encoding thread (don't wait!)

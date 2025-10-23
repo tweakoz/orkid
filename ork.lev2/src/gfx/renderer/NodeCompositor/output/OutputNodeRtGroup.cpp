@@ -46,9 +46,9 @@ struct RTGIMPL {
       auto rtb = _outputRTG->createRenderTarget(EBufferFormat::RGBA32F);
     }
     if (_needsinit) {
-      _blit2screenmtl.gpuInit(ctx, "orkshader://solid");
-      _blit2screenmtl.gpuInit(ctx, "orkshader://solid");
-      _fxtechnique1x1 = _blit2screenmtl.technique("texcolor");
+      _blit2screenmtl.gpuInit(ctx, "orkshader://blit");
+      _blit2screenmtl._rasterstate->setCullTest(ECullTest::OFF);
+      _fxtechnique1x1 = _blit2screenmtl.technique("blit");
       _fxtechnique2x2 = _blit2screenmtl.technique("downsample_2x2");
       _fxtechnique3x3 = _blit2screenmtl.technique("downsample_3x3");
       _fxtechnique4x4 = _blit2screenmtl.technique("downsample_4x4");

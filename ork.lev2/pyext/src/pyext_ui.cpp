@@ -470,7 +470,9 @@ void pyinit_ui(py::module& module_lev2) {
               [](uisgviewport_ptr_t sgview) -> lev2::scenegraph::scene_ptr_t { //
                 return sgview->_scenegraph;
               },
-              [](uisgviewport_ptr_t sgview, lev2::scenegraph::scene_ptr_t sg) { return sgview->_scenegraph = sg; })
+              [](uisgviewport_ptr_t sgview, lev2::scenegraph::scene_ptr_t sg) { //
+                return sgview->bindSceneGraph(sg); 
+              })
           //////////////////////////////////
           .def_property(
               "cameraName",

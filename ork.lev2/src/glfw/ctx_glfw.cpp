@@ -724,7 +724,6 @@ void CtxGLFW::_doEnqueueWindowResize(int w, int h) {
 void CtxGLFW::SlotRepaint() {
   // OrkAssert(opq::TrackCurrent::is(opq::mainSerialQueue()));
 
-  // auto lamb = [&]() {
   if (not GfxEnv::initialized()){
     printf( "CtxGLFW::SlotRepaint() earlyret1\n" );
     return;
@@ -732,9 +731,6 @@ void CtxGLFW::SlotRepaint() {
 
   ork::PerfMarkerPush("ork.viewport.draw.begin");
 
-  // this->mDrawLock++;
-  // if (this->mDrawLock == 1) {
-  //  printf( "CtxGLFW::SlotRepaint() _target<%p>", _target );
   if (this->_target) {
     _target->makeCurrentContext();
     auto gfxwin        = _uievent->mpGfxWin;
@@ -753,13 +749,8 @@ void CtxGLFW::SlotRepaint() {
       _target->endFrame();
     }
   }
-  //}
-  // this->mDrawLock--;
   ork::PerfMarkerPush("ork.viewport.draw.end");
-  // glFinish();
-  //};
 
-  // lamb();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::_setRefreshPolicy(RefreshPolicyItem newpolicy) { // final
@@ -784,91 +775,7 @@ void error_callback(int error, const char* msg) {
   logchan_glfw->log("GLFW ERROR<%d:%s>", error, msg);
   OrkAssert(false);
 }
-///////////////////////////////////////////////////////////////////////////////
 
-GLFWwindow* CtxGLFW::_apiInitGL() {
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-
-  std::set<int> _try_minors;
-  _try_minors.insert(0);
-
-#if defined(OPENGL_46)
-  _try_minors.insert(6);
-  _try_minors.insert(5);
-  _try_minors.insert(3);
-#endif
-
-  _try_minors.insert(1);
-  _try_minors.insert(0);
-
-  glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
-  glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-#if defined(__APPLE__)
-  // wtf ?
-  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
-
-  // this can fail on nvidia aarch64 devices
-  //  see: https://github.com/isl-org/Open3D/issues/2549
-
-  GLFWwindow* offscreen_window = nullptr;
-
-  bool done = false;
-
-  auto it_minor = _try_minors.rbegin();
-
-  auto ctx_vars = std::make_shared<varmap::VarMap>();
-
-  int MINOR = 0;
-
-  while (not done) {
-
-    int this_minor = *it_minor;
-
-    ctx_vars->makeValueForKey<int>("GL_API_MAJOR_VERSION") = 4;
-    ctx_vars->makeValueForKey<int>("GL_API_MINOR_VERSION") = this_minor;
-
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, this_minor);
-    MINOR = this_minor;
-
-#if defined(__APPLE__)
-    glfwWindowHint(
-        GLFW_COCOA_RETINA_FRAMEBUFFER, //
-        _appinitdata->_allowHIDPI ? GLFW_TRUE : GLFW_FALSE);
-#endif
-
-    // Prevent focus stealing for offscreen window
-    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-    glfwWindowHint(GLFW_FOCUSED, GLFW_TRUE);
-    glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
-
-    offscreen_window = glfwCreateWindow(
-        32,      //
-        32,      //
-        "",      //
-        nullptr, //
-        nullptr);
-
-    it_minor++;
-    done |= (offscreen_window != nullptr);
-    done |= (it_minor == _try_minors.rend());
-
-    logchan_glfw->log("try<OpenGL-Core-4.%d> done<%d>", this_minor, int(done));
-  }
-
-  _gctx->_vars       = ctx_vars;
-  _gctx->_glfwWindow = offscreen_window;
-
-  int minor_api_version = _gctx->_vars->typedValueForKey<int>("GL_API_MINOR_VERSION").value();
-  logchan_glfw->log("GL: offscreen_window<%p>", offscreen_window);
-  logchan_glfw->log(
-      "GL: global_ctxbase<%p> vars<%p> minor version<%d : %d>", _gctx, (void*)ctx_vars.get(), MINOR, minor_api_version);
-  OrkAssert(offscreen_window != nullptr);
-  // glfwSetWindowAttrib(offscreen_window, GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-  return offscreen_window;
-}
 ///////////////////////////////////////////////////////////////////////////////
 
 GLFWwindow* CtxGLFW::_apiInitVK() {
@@ -930,13 +837,6 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
     GLFWwindow* offscreen_window = nullptr;
 
     switch (GRAPHICS_API) {
-      case "OPENGL"_crcu: {
-        if (_gctx->_appinitdata == nullptr) {
-          _gctx->_appinitdata = _ginitdata;
-        }
-        offscreen_window = _gctx->_apiInitGL();
-        break;
-      }
       case "VULKAN"_crcu: {
         offscreen_window = _gctx->_apiInitVK();
         break;

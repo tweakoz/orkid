@@ -33,7 +33,7 @@ class ComplexMovieApp(object):
     super().__init__()
 
     self.freerun = args.freerun
-    self.FPS = 60.0 # frames per second
+    self.FPS = 30.0 # frames per second
     self.LEN = 30.0  # seconds
     self.NUMFRAMES = int(self.FPS * self.LEN)
     self.NUMFRAMESP1 = self.NUMFRAMES + 1
@@ -50,8 +50,8 @@ class ComplexMovieApp(object):
         freerun=self.freerun,
         target_ups = self.FPS,
         target_fps = self.FPS,
-        width=1280,
-        height=720
+        width=1920,
+        height=1080
     )
     
     if not self.freerun:
@@ -102,11 +102,12 @@ class ComplexMovieApp(object):
     ########################################################
 
     sg_params = VarMap()
-    sg_params.SkyboxIntensity = 3.0
+    sg_params.SkyboxIntensity = 2.0
     sg_params.DiffuseIntensity = 1.0
     sg_params.SpecularIntensity = 1.0
     sg_params.AmbientLevel = vec3(.125)
     sg_params.preset = "ForwardPBR"
+    sg_params.ssaa = 4 # 4x4 SuperSample AntiAliasing
 
     ########################################################
     # create scenegraph / panels
@@ -152,13 +153,13 @@ class ComplexMovieApp(object):
           r = vec3(0)
           r.x = random.uniform(-20,20)
           r.z = random.uniform(-20,20)
-          r.y = random.uniform(  10,20)
+          r.y = random.uniform( 10,20)
           return r 
       
         if self.counter<=0:
           self.counter = int(random.uniform(1,500))
           self.dst_eye = genpos()
-          self.dst_tgt = vec3(0,random.uniform(  0,2),0)
+          self.dst_tgt = vec3(0,random.uniform(  1,10),0)
 
         self.cur_eye = self.cur_eye*0.9995 + self.dst_eye*0.0005
         self.cur_tgt = self.cur_tgt*0.9995 + self.dst_tgt*0.0005

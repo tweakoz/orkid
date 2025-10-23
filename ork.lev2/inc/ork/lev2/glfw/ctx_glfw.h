@@ -58,10 +58,7 @@ using eventsink_glfw_ptr_t = std::shared_ptr<EventSinkGLFW>;
 
 struct CtxGLFW : public CTXBASE {
 
-  GLFWwindow* _apiInitGL();
-#if defined(ENABLE_VULKAN)
   GLFWwindow* _apiInitVK();
-#endif
 
   static CtxGLFW* globalOffscreenContext();
 
