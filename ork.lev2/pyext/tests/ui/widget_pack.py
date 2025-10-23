@@ -405,6 +405,7 @@ class PackWidgets(object):
     sg_params.SpecularIntensity = 1.0
     sg_params.AmbientLevel = vec3(.125)
     sg_params.preset = "ForwardPBR"
+    sg_params.ssaa = 4 # 4x4 SuperSample AntiAliasing
 
     self.scenegraph = lev2.scenegraph.Scene(sg_params)
     self.layer = self.scenegraph.createLayer("std_forward")

@@ -32,8 +32,9 @@ class ComplexMovieApp(object):
   def __init__(self):
     super().__init__()
 
+    self.absolutetime = 0.0
     self.freerun = args.freerun
-    self.FPS = 30.0 # frames per second
+    self.FPS = 60.0 # frames per second
     self.LEN = 30.0  # seconds
     self.NUMFRAMES = int(self.FPS * self.LEN)
     self.NUMFRAMESP1 = self.NUMFRAMES + 1
@@ -41,6 +42,9 @@ class ComplexMovieApp(object):
     ########################################
     # lockstep mode ?, use STREAM audio device (for movie capture)
     ########################################
+
+    W = 1280 if self.freerun else 1920
+    H = 720  if self.freerun else 1080
 
     self.ezapp = lev2.OrkEzApp.create(
         self,
@@ -50,8 +54,8 @@ class ComplexMovieApp(object):
         freerun=self.freerun,
         target_ups = self.FPS,
         target_fps = self.FPS,
-        width=1920,
-        height=1080
+        width=W,
+        height=H
     )
     
     if not self.freerun:
@@ -98,18 +102,6 @@ class ComplexMovieApp(object):
     pipeline_mesh = createPipeline( app = self, ctx = ctx, rendermodel="FORWARD_PBR", techname="std_mono_fwd" )
 
     ########################################################
-    # scenegraph init data
-    ########################################################
-
-    sg_params = VarMap()
-    sg_params.SkyboxIntensity = 2.0
-    sg_params.DiffuseIntensity = 1.0
-    sg_params.SpecularIntensity = 1.0
-    sg_params.AmbientLevel = vec3(.125)
-    sg_params.preset = "ForwardPBR"
-    sg_params.ssaa = 4 # 4x4 SuperSample AntiAliasing
-
-    ########################################################
     # create scenegraph / panels
     ########################################################
 
@@ -123,6 +115,21 @@ class ComplexMovieApp(object):
         self.index = index
         self.camname = "Camera%d"%index
         #
+        sg_params = VarMap()
+        sg_params.SkyboxIntensity = 1.0
+        sg_params.DiffuseIntensity = 1.0
+        sg_params.SpecularIntensity = 1.0
+        sg_params.AmbientLevel = vec3(0.0)
+        sg_params.preset = "ForwardPBR"
+        sg_params.ssaa = 4 # 4x4 SuperSample AntiAliasing
+        match index:
+          case 1:
+            sg_params.SkyboxTexPathStr = "ork_envmaps|cold4k"
+          case 2:
+            sg_params.SkyboxTexPathStr = "ork_envmaps|nebula"
+          case 3:
+            sg_params.SkyboxTexPathStr = "ork_envmaps|futcity4k"
+        #
         self.scenegraph = scenegraph.Scene(sg_params)
         self.layer = self.scenegraph.createLayer("std_forward")
         self.grid_node = self.layer.createDrawableNodeFromData("grid",parent.grid_data)
@@ -131,7 +138,7 @@ class ComplexMovieApp(object):
         #
         self.cameralut = CameraDataLut()
         self.camera, self.uicam = setupUiCameraX( cameralut=self.cameralut, camname=self.camname )
-        self.cur_eye = vec3(0,0,0)
+        self.cur_eye = vec3(3,3,3)
         self.cur_tgt = vec3(0,0,1)
         self.dst_eye = vec3(0,0,0)
         self.dst_tgt = vec3(0,0,0)
@@ -151,15 +158,15 @@ class ComplexMovieApp(object):
       def update(self):
         def genpos():
           r = vec3(0)
-          r.x = random.uniform(-20,20)
-          r.z = random.uniform(-20,20)
-          r.y = random.uniform( 10,20)
+          r.x = random.uniform(-30,30)
+          r.z = random.uniform(-30,30)
+          r.y = random.uniform( -10,-20)
           return r 
       
         if self.counter<=0:
           self.counter = int(random.uniform(1,500))
           self.dst_eye = genpos()
-          self.dst_tgt = vec3(0,random.uniform(  1,10),0)
+          self.dst_tgt = vec3(0,random.uniform(  5,10),0)
 
         self.cur_eye = self.cur_eye*0.9995 + self.dst_eye*0.0005
         self.cur_tgt = self.cur_tgt*0.9995 + self.dst_tgt*0.0005
@@ -169,6 +176,11 @@ class ComplexMovieApp(object):
                           vec3(0,1,0))
 
         self.counter = self.counter-1
+        
+        y = math.sin(self.parent.absolutetime*self.index)*1.0
+        q = quat(vec3(0,1,0), self.parent.absolutetime*self.index*0.44)
+        self.cube_node.worldTransform.translation = vec3(0,y,0)
+        self.cube_node.worldTransform.orientation = q
 
         self.uicam.updateMatrices()
         self.camera.copyFrom( self.uicam.cameradata )
@@ -206,6 +218,7 @@ class ComplexMovieApp(object):
 
   def onUpdate(self,updinfo):
     abstime = updinfo.absolutetime
+    self.absolutetime = abstime
     cube_y = 0.4+math.sin(abstime)*0.2
     for panel in self.panels:
       panel.update()
