@@ -43,6 +43,7 @@ struct MovieCaptureSettings {
   int _height = 0;
   int _fps = 60;
   size_t _max_queue_size = 120;
+  bool _audio_test_tone = false;
   rtbuffer_ptr_t _rtbuffer = nullptr;
   audiodevice_ptr_t _audiodevice = nullptr;
   std::string _filename = "output.mp4";

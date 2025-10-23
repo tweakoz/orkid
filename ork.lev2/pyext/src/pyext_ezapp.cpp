@@ -490,6 +490,9 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 else if(key=="preset"){
                   settings->_preset_name = py::cast<std::string>(item.second);;
                 }
+                else if(key=="audio_test_tone"){
+                  settings->_audio_test_tone = py::cast<bool>(item.second);
+                }
               }
             }
             self->enableMovieRecording(settings);

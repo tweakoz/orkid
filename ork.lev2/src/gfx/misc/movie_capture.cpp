@@ -211,7 +211,7 @@ void MovieCaptureContext::_encodingThreadFunc() {
       OrkAssert(extracted->_num_samples == frame_data.expected_audio_samples);
 
       // Add debug tone
-      if(true) {
+      if(_settings->_audio_test_tone) {
         static float phaseL0 = 0.0f;
         static float phaseL1 = 0.0f;
         static float phaseR0 = 0.0f;

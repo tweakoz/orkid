@@ -597,6 +597,25 @@ void Encoder::_add_stream( OutputStream* ost,         //
       c->codec_id = codec_id;
 
       c->bit_rate = 6400000;
+      if(_settings->_preset_name=="low"){
+        c->bit_rate = 1000000;
+        av_opt_set(c->priv_data, "preset", "ultrafast", 0 );
+      } else if(_settings->_preset_name=="medium"){
+        c->bit_rate = 6400000;
+        av_opt_set(c->priv_data, "preset", "medium", 0 );
+      } else if(_settings->_preset_name=="default"){
+        c->bit_rate = 6400000;
+        av_opt_set(c->priv_data, "preset", "medium", 0 );
+      } else if(_settings->_preset_name=="high"){
+        c->bit_rate = 12800000;
+        av_opt_set(c->priv_data, "preset", "slow", 0 );
+      } else if(_settings->_preset_name=="ultra"){
+        c->bit_rate = 128000000;
+        // set additional params for ultra (high quality)
+        av_opt_set(c->priv_data, "preset", "veryslow", 0 );
+        av_opt_set(c->priv_data, "crf", "10", 0 );
+
+      }
       // Resolution must be a multiple of two. 
       OrkAssert((_settings->_width % 2) == 0);
       OrkAssert((_settings->_height % 2) == 0);

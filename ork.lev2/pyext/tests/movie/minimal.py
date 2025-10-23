@@ -7,6 +7,7 @@
 
 import sys, os, time, json, math, signal, argparse
 from pathlib import Path
+from obt import host
 from orkengine.core import vec2, vec3, vec4, mtx4, quat
 from orkengine import lev2
 
@@ -25,9 +26,12 @@ class StrAudioTestApp(object):
 
         self.freerun = args.freerun
         self.FPS = 60.0 # frames per second
+        self.LEN = 10.0  # seconds
+        self.NUMFRAMES = int(self.FPS * self.LEN)
+        self.NUMFRAMESP1 = self.NUMFRAMES + 1
         
         ########################################
-        # lockstep mode ?, use STREAM audio device
+        # lockstep mode ?, use STREAM audio device (for movie capture)
         ########################################
 
         if not self.freerun:          
@@ -49,8 +53,8 @@ class StrAudioTestApp(object):
             freerun=self.freerun,
             target_ups = self.FPS,
             target_fps = self.FPS,
-            width=1280,
-            height=720
+            width=1920,
+            height=1080
         )
 
         ########################################
@@ -127,8 +131,29 @@ class StrAudioTestApp(object):
       self.griditems[2].widget.color = vec4(r2,g2,b2,1)
       self.griditems[3].widget.color = vec4(r3,g3,b3,1)
 
+    ##############################################
+
+    def onGpuPostFrame(self, ctx):
+      self.rencount += 1
+      if self.freerun == False:
+        match self.rencount:
+          case 1:
+            self.mcc = self.ezapp.enableMovieRecording( output_path="/tmp/str_audio_test_movie.mp4",
+                                                        preset="ultra",
+                                                        fps=self.FPS,
+                                                        max_queue_size=180,
+                                                        audio_test_tone=True )
+          case self.NUMFRAMES:
+            self.ezapp.finishMovieRecording()
+          case self.NUMFRAMESP1:
+            self.ezapp.signalExit()
+
 ################################################################################
 
 app = StrAudioTestApp()
 app.ezapp.mainThreadLoop(on_iter=lambda : False)
 
+if host.IsOsx and not app.freerun:
+  time.sleep(1)
+  os.system("open /tmp/str_audio_test_movie.mp4")
+  
