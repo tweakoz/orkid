@@ -20,8 +20,8 @@ static logchannel_ptr_t logchan_moviecap =
 // Constructor / Destructor
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-MovieCaptureContext::MovieCaptureContext() {
-  _filename = "GeneratedVideo.mp4";
+MovieCaptureContext::MovieCaptureContext(moviecapsettings_ptr_t settings)
+    : _settings(settings) {
 }
 
 MovieCaptureContext::~MovieCaptureContext() {
@@ -32,14 +32,10 @@ MovieCaptureContext::~MovieCaptureContext() {
 // Init: Setup video and audio streams, start encoding thread
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-void MovieCaptureContext::init(int width, int height, audiodevice_ptr_t audio_dev) {
-  logchan_moviecap->log("MovieCaptureContext::init called with w=%d h=%d", width, height);
+void MovieCaptureContext::init() {
+  logchan_moviecap->log("MovieCaptureContext::init called with w=%d h=%d", _settings->_width, _settings->_height);
 
-  _width = width;
-  _height = height;
-  _audio_device = audio_dev;
-
-  logchan_moviecap->log("MovieCaptureContext::init _width=%d _height=%d fps=%d", _width, _height, _fps);
+  logchan_moviecap->log("MovieCaptureContext::init _width=%d _height=%d fps=%d", _settings->_width, _settings->_height, _settings->_fps);
 
   // Start encoding thread
   _startEncodingThread();
@@ -62,15 +58,11 @@ size_t MovieCaptureContext::enqueueFrame(
     return 0;
   }
 
-  if((frame_num%200)==0){
-    logchan_moviecap->log("enqueueFrame: Enqueueing frame %d (expected_samples=%d)", frame_num, expected_samples);
-  }
-
   // Wait if queue is full (backpressure)
   {
     std::unique_lock<std::mutex> lock(_queue_mutex);
-    while (_frame_queue.size() >= _max_queue_size && _encoding_running) {
-      logchan_moviecap->log("enqueueFrame: Queue full (%zu), waiting...", _frame_queue.size());
+    while (_frame_queue.size() >= _settings->_max_queue_size && _encoding_running) {
+      if(0)logchan_moviecap->log("enqueueFrame: Queue full (%zu), waiting...", _frame_queue.size());
       _queue_cv.wait(lock);
     }
   }
@@ -81,7 +73,7 @@ size_t MovieCaptureContext::enqueueFrame(
   frame_data.capture_buffer = buffer;
   frame_data.frame_number = frame_num;
   frame_data.expected_audio_samples = expected_samples;
-  frame_data.virtual_time = (double)frame_num / _fps;
+  frame_data.virtual_time = (double)frame_num / double(_settings->_fps);
 
   // Add to queue
   size_t queue_size = 0;
@@ -89,9 +81,6 @@ size_t MovieCaptureContext::enqueueFrame(
     std::lock_guard<std::mutex> lock(_queue_mutex);
     _frame_queue.push_back(frame_data);
     queue_size = _frame_queue.size();
-    if(queue_size%100==0){
-      logchan_moviecap->log("enqueueFrame: Frame %d queued, queue size now: %zu", frame_num, _frame_queue.size());
-    }
   }
 
   _queue_cv.notify_one();  // Wake encoding thread
@@ -129,7 +118,7 @@ void MovieCaptureContext::_stopEncodingThread() {
 void MovieCaptureContext::_encodingThreadFunc() {
   ork::SetCurrentThreadName("movie-encode");
 
-  auto encoder = ffmpeg_enc::createEncoder(_filename,"default",_width,_height,_fps);
+  auto encoder = ffmpeg_enc::createEncoder(_settings);
   if (!encoder) {
     logchan_moviecap->log("ERROR: Failed to create encoder");
     return;
@@ -138,6 +127,10 @@ void MovieCaptureContext::_encodingThreadFunc() {
   // Query codec's desired audio frame size (e.g., 1024 for AAC)
   int codec_audio_frame_size = encoder->getAudioFrameSize();
   logchan_moviecap->log("Encoding thread running - codec audio frame size: %d", codec_audio_frame_size);
+  ork::Timer timer;
+  timer.Start();
+  size_t total_audio_samples = 0;
+  auto str_audio = std::dynamic_pointer_cast<StrAudioDevice>(_settings->_audiodevice);
 
   while (_encoding_running or (not _frame_queue.empty())) {
     CapturedMovieFrame frame_data;
@@ -155,19 +148,17 @@ void MovieCaptureContext::_encodingThreadFunc() {
       }
 
       // Check audio availability BEFORE dequeuing
-      if (_audio_device) {
-        auto str_audio = std::dynamic_pointer_cast<StrAudioDevice>(_audio_device);
-        if (str_audio) {
-          int available_audio = str_audio->availableSamples();
-          int expected_audio = _frame_queue.front().expected_audio_samples;
+      if (str_audio) {
+        int available_audio = str_audio->availableSamples();
+        int expected_audio = _frame_queue.front().expected_audio_samples;
 
-          // Wait if not enough audio samples available
-          if (available_audio < expected_audio) {
-            logchan_moviecap->log("Waiting for audio: have %d, need %d",
-                                  available_audio, expected_audio);
-            continue;  // Try again on next iteration
-          }
+        // Wait if not enough audio samples available
+        if (available_audio < expected_audio) {
+          logchan_moviecap->log("Waiting for audio: have %d, need %d",
+                                available_audio, expected_audio);
+          continue;  // Try again on next iteration
         }
+        total_audio_samples += expected_audio;
       }
 
       // We have enough audio, dequeue the frame
@@ -183,16 +174,27 @@ void MovieCaptureContext::_encodingThreadFunc() {
 
       _queue_cv.notify_all();
     }
+    if(timer.SecsSinceStart()>5.0f){
+      size_t queue_size = _frame_queue.size();
+      size_t frame_index = frame_data.frame_number;
+      size_t num_frames_encoded = encoder->_num_frames_encoded;
+      logchan_moviecap->log("_encodingThreadFunc: enqueued<%zu> frameidx<%zu> numencoded<%zu>", //
+                            queue_size,  //
+                            frame_index,  //
+                            num_frames_encoded);
+      timer.Start();
+    }
+
 
     //=========================================
     // Wait for GPU capture completion
     //=========================================
     auto future = frame_data.capture_future;
-    int timeout_ms = 5000;
+    int timeout_ms = 10000;
     int waited_ms = 0;
 
     while (!future->isReady() && waited_ms < timeout_ms) {
-      usleep(1000);
+      usleep(500);
       waited_ms++;
     }
 
@@ -204,40 +206,37 @@ void MovieCaptureContext::_encodingThreadFunc() {
     //=========================================
     // Extract and accumulate audio samples
     //=========================================
-    if (_audio_device && frame_data.expected_audio_samples > 0) {
-      auto str_audio = std::dynamic_pointer_cast<StrAudioDevice>(_audio_device);
-      if (str_audio) {
-        auto extracted = str_audio->extractSamples(frame_data.expected_audio_samples);
-        OrkAssert(extracted->_num_samples == frame_data.expected_audio_samples);
+    if (str_audio && frame_data.expected_audio_samples > 0) {
+      auto extracted = str_audio->extractSamples(frame_data.expected_audio_samples);
+      OrkAssert(extracted->_num_samples == frame_data.expected_audio_samples);
 
-        // Add debug tone
-        if(true) {
-          static float phaseL0 = 0.0f;
-          static float phaseL1 = 0.0f;
-          static float phaseR0 = 0.0f;
-          static float phaseR1 = 0.0f;
-          for( int i=0; i<frame_data.expected_audio_samples; i++ ) {
-            float frqL = sinf( phaseL1 * 6.2831853f * 1.0 ) * 220.0f + 220.0f;
-            float sampL = sinf( phaseL0 * 6.2831853f ) * 0.1f;
-            float frqR = sinf( phaseR1 * 6.2831853f * 1.1 ) * 220.0f + 220.0f;
-            float sampR = sinf( phaseR0 * 6.2831853f ) * 0.1f;
-            extracted->_left[i] += sampL;
-            extracted->_right[i] += sampR;
-            phaseL0 += frqL / 48000.0f;
-            phaseL1 += 1.0f / 48000.0f;
-            phaseR0 += frqR / 48000.0f;
-            phaseR1 += 1.0f / 48000.0f;
-          }
+      // Add debug tone
+      if(true) {
+        static float phaseL0 = 0.0f;
+        static float phaseL1 = 0.0f;
+        static float phaseR0 = 0.0f;
+        static float phaseR1 = 0.0f;
+        for( int i=0; i<frame_data.expected_audio_samples; i++ ) {
+          float frqL = sinf( phaseL1 * 6.2831853f * 1.0 ) * 220.0f + 220.0f;
+          float sampL = sinf( phaseL0 * 6.2831853f ) * 0.1f;
+          float frqR = sinf( phaseR1 * 6.2831853f * 1.1 ) * 220.0f + 220.0f;
+          float sampR = sinf( phaseR0 * 6.2831853f ) * 0.1f;
+          extracted->_left[i] += sampL;
+          extracted->_right[i] += sampR;
+          phaseL0 += frqL / 48000.0f;
+          phaseL1 += 1.0f / 48000.0f;
+          phaseR0 += frqR / 48000.0f;
+          phaseR1 += 1.0f / 48000.0f;
         }
-
-        // Accumulate into buffer
-        _audio_buffer_left.insert(_audio_buffer_left.end(),
-                                   extracted->_left.begin(),
-                                   extracted->_left.end());
-        _audio_buffer_right.insert(_audio_buffer_right.end(),
-                                    extracted->_right.begin(),
-                                    extracted->_right.end());
       }
+
+      // Accumulate into buffer
+      _audio_buffer_left.insert(_audio_buffer_left.end(),
+                                 extracted->_left.begin(),
+                                 extracted->_left.end());
+      _audio_buffer_right.insert(_audio_buffer_right.end(),
+                                  extracted->_right.begin(),
+                                  extracted->_right.end());
     }
 
     //=========================================
@@ -264,16 +263,16 @@ void MovieCaptureContext::_encodingThreadFunc() {
       _audio_buffer_right.erase(_audio_buffer_right.begin(),
                                  _audio_buffer_right.begin() + codec_audio_frame_size);
 
-      if((frame_data.frame_number % 60) == 0) {
+      /*if((frame_data.frame_number % 60) == 0) {
         logchan_moviecap->log("Encoding frame %d with audio (%d samples), buffer remaining: %zu",
                               frame_data.frame_number, codec_audio_frame_size, _audio_buffer_left.size());
-      }
+      }*/
     } else {
       // Not enough samples yet - encode video only
-      if((frame_data.frame_number % 60) == 0) {
+      /*if((frame_data.frame_number % 60) == 0) {
         logchan_moviecap->log("Encoding frame %d (video only), audio buffer: %zu/%d",
                               frame_data.frame_number, _audio_buffer_left.size(), codec_audio_frame_size);
-      }
+      }*/
     }
 
     //=========================================
@@ -299,7 +298,7 @@ void MovieCaptureContext::_encodingThreadFunc() {
 void MovieCaptureContext::terminate() {
   while(not _frame_queue.empty()) {
     logchan_moviecap->log("MovieCaptureContext::terminate waiting for encoding to stop...");
-    usleep(100000);
+    usleep(1<<20);
   }
 
   if (_terminated.exchange(true)) {
@@ -311,7 +310,7 @@ void MovieCaptureContext::terminate() {
   // Stop encoding thread (will flush queue first)
   _stopEncodingThread();
 
-  logchan_moviecap->log("Wrote movie to file: %s", _filename.c_str());
+  logchan_moviecap->log("Wrote movie to file: %s", _settings->_filename.c_str());
 }
 
 } // namespace ork::lev2

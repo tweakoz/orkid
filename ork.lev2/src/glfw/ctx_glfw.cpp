@@ -622,7 +622,7 @@ void CtxGLFW::_runloopBegin() {
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void CtxGLFW::_runloopIter() {
+void CtxGLFW::_runloopIter(bool pollevents) {
 
   lev2::ThreadGfxContext l2ctx_track(_target);
 
@@ -631,7 +631,9 @@ void CtxGLFW::_runloopIter() {
   //////////////////////////////
 
   // glfwWaitEvents();
-  glfwPollEvents();
+  if(pollevents){
+    glfwPollEvents();
+  }
 
   //////////////////////////////
   // run main thread app logic
@@ -647,22 +649,8 @@ void CtxGLFW::_runloopIter() {
     _onGpuUpdate(_target);
   }
 
-  // EASY_BLOCK("ctx_glfw::render::gpupre", profiler::colors::Red);
-
-  if (_onGpuPreFrame) {
-    _onGpuPreFrame(_target);
-  }
-
-  // for( auto fn : _gpu_misc_updates ){
-  // fn(_target);
-  //}
-
   SlotRepaint();
 
-  // EASY_BLOCK("ctx_glfw::render::gpupos", profiler::colors::Red);
-  if (_onGpuPostFrame) {
-    _onGpuPostFrame(_target);
-  }
   //////////////////////////////
   // check for closed window
   //////////////////////////////

@@ -455,21 +455,45 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
       ///////////////////////////////////////////////////////
       .def(
           "enableMovieRecording",
-          [](orkezapp_ptr_t self, py::kwargs args ) { //
-            rtbuffer_ptr_t override_rtb = nullptr;
-            file::Path path;
+          [](orkezapp_ptr_t self, py::kwargs args ) -> moviecapcontext_ptr_t { //
+            auto settings = std::make_shared<MovieCaptureSettings>();
             if (args) {
               for (auto item : args) {
                 auto key = py::cast<std::string>(item.first);
                 if (key == "output_path") {
-                  std::string mpath = py::cast<std::string>(item.second);
-                  path = file::Path(mpath);
-                } else if (key == "override_rtb") {
-                  override_rtb = py::cast<rtbuffer_ptr_t>(item.second);
+                  if( py::isinstance<py::str>( item.second ) ) {
+                    std::string mpath = py::cast<std::string>(item.second);
+                    settings->_filename = mpath;
+                  }
+                  else{
+                    py::str pystr = py::cast<py::str>(item.second);
+                    std::string mpath = py::cast<std::string>(pystr);
+                    settings->_filename = mpath;
+                  }
+                }
+                else if (key == "override_rtb") {
+                  settings->_rtbuffer = py::cast<rtbuffer_ptr_t>(item.second);
+                }
+                else if(key=="fps") {
+                  if( py::isinstance<py::int_>( item.second ) ) {
+                    settings->_fps = py::cast<int>(item.second);;
+                  }
+                  else {
+                    py::float_ pyf = py::cast<py::float_>(item.second);
+                    float ffps = py::cast<float>(pyf);
+                    settings->_fps = int(ffps);
+                  }
+                }
+                else if(key=="max_queue_size") {
+                  settings->_max_queue_size = py::cast<int>(item.second);;
+                }
+                else if(key=="preset"){
+                  settings->_preset_name = py::cast<std::string>(item.second);;
                 }
               }
             }
-            self->enableMovieRecording(path,override_rtb);
+            self->enableMovieRecording(settings);
+            return self->_moviecapcontext;
           })
       ///////////////////////////////////////////////////////
       .def(
@@ -489,6 +513,11 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               num_enq = app->_moviecapcontext->enqueueFrame(future,capbuf,frame_index++,num_samples);
             }
             return num_enq;
+          })
+       .def_property_readonly(
+          "movie_capture_context",
+          [](orkezapp_ptr_t app) -> moviecapcontext_ptr_t { //
+              return app->_moviecapcontext;
           })
       ///////////////////////////////////////////////////////
       .def(

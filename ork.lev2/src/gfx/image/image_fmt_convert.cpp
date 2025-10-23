@@ -196,15 +196,23 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
       }
     } else if (inp._format == EBufferFormat::RGBA8) {
       auto inptr  = (const uint8_t*)inp._data->data();
+      std::atomic<int> linecounter = inp._height;
       for (int y = 0; y < inp._height; y++) {
-        for (int x = 0; x < inp._width; x++) {
-          int pixelindex           = y * inp._width + x;
-          int in_elembase          = pixelindex * 4;
-          int out_elembase         = pixelindex * 3;
-          outptr[out_elembase + 0] = inptr[in_elembase + 0];
-          outptr[out_elembase + 1] = inptr[in_elembase + 1];
-          outptr[out_elembase + 2] = inptr[in_elembase + 2];
-        }
+        auto op = [y,inptr,outptr,&inp,&linecounter](){
+          for (int x = 0; x < inp._width; x++) {
+            int pixelindex           = y * inp._width + x;
+            int in_elembase          = pixelindex * 4;
+            int out_elembase         = pixelindex * 3;
+            outptr[out_elembase + 0] = inptr[in_elembase + 0];
+            outptr[out_elembase + 1] = inptr[in_elembase + 1];
+            outptr[out_elembase + 2] = inptr[in_elembase + 2];
+          }
+          linecounter.fetch_sub(1);
+        };
+        opq::concurrentQueue()->enqueue(op);
+      }
+      while(linecounter.load()>0) {
+        std::this_thread::yield();
       }
     } else if (inp._format == EBufferFormat::RGB16) {
       auto inptr  = (const uint16_t*)inp._data->data();

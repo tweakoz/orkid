@@ -96,7 +96,7 @@ static AVFrame* _allocVideoFrame(AVPixelFormat pix_fmt, //
 
 struct Encoder {
 
-  Encoder(std::string fname, std::string preset_name, int w, int h, int fps);
+  Encoder(ork::lev2::moviecapsettings_ptr_t settings);
   ~Encoder();
 
   void enqueueFrames(ork::lev2::capturebuffer_ptr_t video_buffer,
@@ -124,6 +124,7 @@ struct Encoder {
   int _writeAudioFrame(ork::lev2::audioframecapture_ptr_t external_audio);
   AVFrame* _getAudioFrame( ork::lev2::audioframecapture_ptr_t external_audio);
 
+  ork::lev2::moviecapsettings_ptr_t _settings;
   outputstream_ptr_t _video_stream = nullptr;
   outputstream_ptr_t _audio_stream = nullptr;
   const AVOutputFormat* fmt  = nullptr;
@@ -133,22 +134,14 @@ struct Encoder {
   bool _valid                = false;
   bool _enable_video = 0;
   bool _enable_audio = 0;
-  std::string _filename = "output.mp4";
-  int _width = 0;
-  int _height = 0;
-  int _fps = 60;
-  std::string _preset_name = "medium";
+  size_t _num_frames_encoded = 0;
 };
 using encoder_ptr_t = std::shared_ptr<Encoder>;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-Encoder::Encoder(std::string fname, std::string preset_name, int w, int h, int fps)
-  : _filename(fname)
-  , _preset_name(preset_name)
-  , _width(w)
-  , _height(h)
-  , _fps(fps) {
+Encoder::Encoder(ork::lev2::moviecapsettings_ptr_t settings)
+  : _settings(settings) {
 
   _video_stream = std::make_shared<OutputStream>();
   _audio_stream = std::make_shared<OutputStream>();
@@ -158,10 +151,10 @@ Encoder::Encoder(std::string fname, std::string preset_name, int w, int h, int f
   // av_dict_set(&opt, argv[i]+1, argv[i+1], 0);
 
   /* allocate the output media context */
-  avformat_alloc_output_context2(&oc, NULL, NULL, _filename.c_str());
+  avformat_alloc_output_context2(&oc, NULL, NULL, _settings->_filename.c_str());
   if (!oc) {
     printf("Could not deduce output format from file extension: using MPEG.\n");
-    avformat_alloc_output_context2(&oc, NULL, "mpeg", _filename.c_str());
+    avformat_alloc_output_context2(&oc, NULL, "mpeg", _settings->_filename.c_str());
   }
   if (!oc)
     return;
@@ -187,13 +180,13 @@ Encoder::Encoder(std::string fname, std::string preset_name, int w, int h, int f
   if (_enable_audio)
     _openAudio(opt);
 
-  av_dump_format(oc, 0, _filename.c_str(), 1);
+  av_dump_format(oc, 0, _settings->_filename.c_str(), 1);
 
   /* open the output file, if needed */
   if (!(fmt->flags & AVFMT_NOFILE)) {
-    int chk = avio_open(&oc->pb, _filename.c_str(), AVIO_FLAG_WRITE);
+    int chk = avio_open(&oc->pb, _settings->_filename.c_str(), AVIO_FLAG_WRITE);
     if (chk < 0) {
-      fprintf(stderr, "Could not open '%s': %s\n", _filename.c_str(), av_err2str(chk));
+      fprintf(stderr, "Could not open '%s': %s\n", _settings->_filename.c_str(), av_err2str(chk));
       return;
     }
   }
@@ -371,7 +364,9 @@ AVFrame* Encoder::_getVideoFrame(ork::lev2::capturebuffer_ptr_t external_video) 
   auto src_pixels = (const uint8_t*)as_rgb8->_data->data();
   int width = as_rgb8->_width;
   int height = as_rgb8->_height;
-
+  //static int frame_count = 0;
+  //img->writeToFile(ork::FormatString("/tmp/ffmpeg_frame_%04d.png", frame_count++));
+  //as_rgb8->writeToFile(ork::FormatString("/tmp/ffmpeg_frame_%04db.png", frame_count++));
   // Setup RGB->YUV conversion context if needed
   if (!_video_stream->sws_ctx) {
     _video_stream->sws_ctx = sws_getContext(
@@ -468,6 +463,7 @@ int Encoder::_writeFrame(AVCodecContext* c, AVStream* st, AVFrame* frame, AVPack
 
 int Encoder::_writeVideoFrame(ork::lev2::capturebuffer_ptr_t external_buffer) {
     auto vfr = _getVideoFrame(external_buffer);
+    _num_frames_encoded++;
     return _writeFrame(_video_stream->enc, _video_stream->st, vfr, _video_stream->tmp_pkt);    
 }
 
@@ -602,15 +598,15 @@ void Encoder::_add_stream( OutputStream* ost,         //
 
       c->bit_rate = 6400000;
       // Resolution must be a multiple of two. 
-      OrkAssert((_width % 2) == 0);
-      OrkAssert((_height % 2) == 0);
-      c->width  = _width;
-      c->height = _height;
+      OrkAssert((_settings->_width % 2) == 0);
+      OrkAssert((_settings->_height % 2) == 0);
+      c->width  = _settings->_width;
+      c->height = _settings->_height;
       // timebase: This is the fundamental unit of time (in seconds) in terms
       // of which frame timestamps are represented. For fixed-fps content,
       // timebase should be 1/framerate and timestamp increments should be
       // identical to 1.
-      ost->st->time_base = (AVRational){1, _fps};
+      ost->st->time_base = (AVRational){1, _settings->_fps};
       c->time_base       = ost->st->time_base;
 
       c->gop_size = 12; // emit one intra frame every twelve frames at most 
@@ -640,12 +636,8 @@ void Encoder::_add_stream( OutputStream* ost,         //
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-encoder_ptr_t createEncoder( std::string filename,
-                             std::string preset_name,
-                             int width,
-                             int height,
-                             int fps) {
-  auto enc = std::make_shared<Encoder>(filename, preset_name, width, height, fps);
+encoder_ptr_t createEncoder( ork::lev2::moviecapsettings_ptr_t settings ) {
+  auto enc = std::make_shared<Encoder>(settings);
   return enc->_valid ? enc : nullptr;
 }
 

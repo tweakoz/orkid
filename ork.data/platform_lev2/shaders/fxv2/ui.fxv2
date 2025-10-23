@@ -85,26 +85,37 @@ state_block sb_additive : sb_default {
 ///////////////////////////////////////////////////////////////
 // shaders
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_uitext : iface_vdefault {
+vertex_interface vif_uitext : push_constants {
+  inputs {
+    vec4 position : POSITION;
+    vec4 vtxcolor : COLOR0;
+    vec2 uv0 : TEXCOORD0;
+  }
+  outputs {
+    vec2 frg_uv;
+  }
+}
+fragment_interface fif_uitext 
+  : vif_uitext
+  : push_constants
+  : samplers {
+  outputs {
+    vec4 out_clr;
+  }
+}vertex_shader vs_uitext : vif_uitext {
   gl_Position = mvp * position;
-  //frg_clr     = vtxcolor;
   frg_uv      = uv0;  
-  //frg_uv      = vec2(1,0);  
 
 }
-///////////////////////////////////////////////////////////////
-fragment_shader ps_uitext : iface_fmt {
+fragment_shader ps_uitext : fif_uitext {
   vec4 s = texture(ColorMap, frg_uv);
   float texa = pow(s.a*s.r,0.75);
   //out_clr = s; //vec4(texa,texa,texa,1);
   out_clr = vec4(ModColor.xyz, texa*ModColor.w);
 }
-///////////////////////////////////////////////////////////////
-fragment_shader ps_uitext_stereo : iface_fmt {
-  vec4 s = texture(ColorMap, frg_uv);
-  float texa = s.r; //ow(s.a*s.r,0.75);
-  //out_clr = vec4(ModColor.xyz, texa);
-  //if(texa < 0.005) discard;
+technique uitext {
+  fxconfig = fxcfg_default;
+  vf_pass = { vs_uitext, ps_uitext, sb_default }
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_uitextured : iface_fmt {
@@ -134,40 +145,22 @@ fragment_interface fif_VTXCOL
 vertex_shader vs_vtxcolor : vif_VTXCOL {
   gl_Position = mvp * position;
   frg_clr     = vec4(uv0,0,1);
-  //frg_uv      = uv0;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_fragclr : fif_VTXCOL {
   out_clr = frg_clr;
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_modclr : iface_fmt { out_clr = ModColor; }
-///////////////////////////////////////////////////////////////
-technique uitext {
-  fxconfig = fxcfg_default;
-  pass p0A {
-    vertex_shader   = vs_uitext;
-    fragment_shader = ps_uitext;
-    state_block     = sb_lerpblend;
-  }
-}
+fragment_shader ps_modclr : fif_VTXCOL { out_clr = ModColor; }
 ///////////////////////////////////////////////////////////////
 technique uitextured {
   fxconfig = fxcfg_default;
-  pass p0C {
-    vertex_shader   = vs_uitext;
-    fragment_shader = ps_uitextured;
-    state_block     = sb_default;
-  }
+  vf_pass = { vs_uitext, ps_uitextured, sb_default }
 }
 ///////////////////////////////////////////////////////////////
 technique ui_vtx {
   fxconfig = fxcfg_default;
-  pass p0D {
-    vertex_shader   = vs_vtxcolor;
-    fragment_shader = ps_fragclr;
-    state_block     = sb_default;
-  }
+  vf_pass = { vs_vtxcolor, ps_fragclr, sb_default }
 }
 ///////////////////////////////////////////////////////////////
 technique ui_imgview {
@@ -177,10 +170,6 @@ technique ui_imgview {
 ///////////////////////////////////////////////////////////////
 technique uidev_modcolor {
   fxconfig = fxcfg_default;
-  pass p0E {
-    vertex_shader   = vs_vtxcolor;
-    fragment_shader = ps_modclr;
-    state_block     = sb_default;
-  }
+  vf_pass = { vs_vtxcolor, ps_modclr, sb_default }
 }
 ///////////////////////////////////////////////////////////////

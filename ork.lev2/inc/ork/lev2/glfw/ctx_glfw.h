@@ -72,7 +72,7 @@ struct CtxGLFW : public CTXBASE {
 
   void _runloopBegin();
   void _runloopEnd();
-  void _runloopIter();
+  void _runloopIter(bool pollevents = true);
 
   int runloop();
 
@@ -123,8 +123,8 @@ struct CtxGLFW : public CTXBASE {
   using gpuupdfn_t = std::function<void(Context*)>;
   gpuupdfn_t _onGpuInit;
   gpuupdfn_t _onGpuUpdate;
-  gpuupdfn_t _onGpuPreFrame;
-  gpuupdfn_t _onGpuPostFrame;
+  //gpuupdfn_t _onGpuPreFrame;
+  //gpuupdfn_t _onGpuPostFrame;
   gpuupdfn_t _onGpuExit;
 
   GLFWmonitor* _glfwMonitor = nullptr;

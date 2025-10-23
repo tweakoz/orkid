@@ -584,7 +584,9 @@ using inputmanager_const_ptr_t = std::shared_ptr<const InputManager>;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct MovieCaptureContext;
+struct MovieCaptureSettings;
 using moviecapcontext_ptr_t = std::shared_ptr<MovieCaptureContext>;
+using moviecapsettings_ptr_t = std::shared_ptr<MovieCaptureSettings>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // EzApp

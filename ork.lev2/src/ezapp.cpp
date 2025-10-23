@@ -640,7 +640,12 @@ void OrkEzApp::_mainThreadLoopBegin() {
 
   // Enable movie recording BEFORE GPU init if requested
   if (not _initdata->_movie_output_path.empty()) {
-    enableMovieRecording(_initdata->_movie_output_path);
+    auto settings = std::make_shared<MovieCaptureSettings>();
+    settings->_filename = _initdata->_movie_output_path.toAbsolute().toStdString();
+    settings->_width    = _initdata->_width;
+    settings->_height   = _initdata->_height;
+    settings->_fps = _initdata->_target_fps > 0 ? _initdata->_target_fps : 30.0f;
+    enableMovieRecording(settings);
   }
 
   glfw_ctx->_onGpuInit = [this](lev2::Context* context) {
@@ -658,13 +663,6 @@ void OrkEzApp::_mainThreadLoopBegin() {
 
     if (_mainWindow->_onGpuInit) {
       _mainWindow->_onGpuInit(context);
-
-      if (_moviecapcontext) {
-        logchan_ezapp->log("Initializing movie capture context (%dx%d)", _initdata->_width, _initdata->_height);
-        _moviecapcontext->init(_initdata->_width, _initdata->_height, _audiodevice);
-      } else {
-        logchan_ezapp->log("No movie capture context to initialize");
-      }
     }
     context->endPrimaryCommandBuffer();
 
@@ -680,6 +678,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
       _mainWindow->_onGpuUpdate(context);
     }
   };
+  /*
   glfw_ctx->_onGpuPreFrame = [this](lev2::Context* context) {
     if (_mainWindow->_onGpuPreFrame) {
       _mainWindow->_onGpuPreFrame(context);
@@ -692,7 +691,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
     if( _movie_record_frame_lambda ) {
       _movie_record_frame_lambda( context );
     }
-  };
+  };*/
 
   ///////////////////////////////
   // hookup on gpuexit callback
@@ -735,12 +734,12 @@ int OrkEzApp::mainThreadLoop() {
     auto glfw_ctx = _mainWindow->_ctqt;
     if (_initdata->_freerunning) {
       while (glfw_ctx->_runstate == 1) {
-        glfw_ctx->_runloopIter();
+        glfw_ctx->_runloopIter(true);
       }
     } else {
       while (glfw_ctx->_runstate == 1) {
         while (_lockstep_frame_requests.load()) {
-          glfw_ctx->_runloopIter();
+          glfw_ctx->_runloopIter(false);
           _lockstep_frame_requests.fetch_sub(1);
         }
         ::usleep(1000);
@@ -751,18 +750,21 @@ int OrkEzApp::mainThreadLoop() {
   return 0;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OrkEzApp::enableMovieRecording(file::Path output_path,rtbuffer_ptr_t override_rtb) {
-  logchan_ezapp->log("Enabling movie recording to output path<%s>\n", output_path.toAbsolute().c_str());
-  _moviecapcontext            = std::make_shared<MovieCaptureContext>();
-  _moviecapcontext->_filename = output_path.toAbsolute().c_str();
+void OrkEzApp::enableMovieRecording(moviecapsettings_ptr_t settings) {
+  logchan_ezapp->log("Enabling movie recording to output path<%s> _audiodevice<%p>\n", settings->_filename.c_str(), (void*) _audiodevice.get());
+  settings->_audiodevice      = _audiodevice;
+  settings->_width            = _initdata->_width;
+  settings->_height           = _initdata->_height;
+  _moviecapcontext            = std::make_shared<MovieCaptureContext>(settings);
+  _moviecapcontext->init();
 
   auto mctx                  = _moviecapcontext.get();
   _movie_record_frame_lambda = [=](lev2::Context* ctx) {
     auto fbi    = ctx->FBI();
     auto rtg = fbi->_main_rtg;
     auto rtb = rtg->buffer(0);
-    if( override_rtb ) {
-      rtb = override_rtb;
+    if( settings->_rtbuffer ) {
+      rtb = settings->_rtbuffer;
     }
 
     auto capbuf = std::make_shared<CaptureBuffer>();
@@ -779,10 +781,6 @@ void OrkEzApp::enableMovieRecording(file::Path output_path,rtbuffer_ptr_t overri
     // Queue for encoding thread (don't wait!)
     int frame_num = _render_count.load();
     size_t enqueued = mctx->enqueueFrame(future, capbuf, frame_num, expected_samples);
-    if (enqueued > 30) {
-      ::usleep(1000*250);
-      printf( "MovieCaptureContext queue full (%zu frames), sleeping to catch up...\n", enqueued );
-    }
   };
 }
 void OrkEzApp::finishMovieRecording() {

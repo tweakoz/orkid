@@ -37,25 +37,34 @@ struct CapturedMovieFrame {
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
+
+struct MovieCaptureSettings {
+  int _width  = 0;
+  int _height = 0;
+  int _fps = 60;
+  size_t _max_queue_size = 120;
+  rtbuffer_ptr_t _rtbuffer = nullptr;
+  audiodevice_ptr_t _audiodevice = nullptr;
+  std::string _filename = "output.mp4";
+  std::string _preset_name = "medium";
+};
+
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 struct MovieCaptureContext {
 
-  MovieCaptureContext();
+  MovieCaptureContext(moviecapsettings_ptr_t settings);
   ~MovieCaptureContext();
 
-  void init(int width, int height, audiodevice_ptr_t audio_dev);
+  void init();
   void terminate();
 
   // Called from render thread to queue frame
   size_t enqueueFrame(captureasync_ptr_t future, capturebuffer_ptr_t buffer, int frame_num, int expected_samples);
 
-  std::string _filename;
+  moviecapsettings_ptr_t _settings;
 
-  int _width  = 0;
-  int _height = 0;
   int _frame  = 0;
-  int _fps                       = 60;
 
   int _audio_sample_rate = 48000;
   int _audio_channels = 2;
@@ -68,13 +77,10 @@ struct MovieCaptureContext {
   std::deque<CapturedMovieFrame> _frame_queue;
   std::mutex _queue_mutex;
   std::condition_variable _queue_cv;
-  size_t _max_queue_size = 30;  // ~0.5 sec @ 60fps
 
   std::thread _encoding_thread;
   std::atomic<bool> _encoding_running{false};
   std::atomic<bool> _terminated{false};
-
-  audiodevice_ptr_t _audio_device;  // Reference to extract samples
 
   /////////////////////////////////////////////////////////////////////////////////////////
   // Audio buffering (accumulate samples until codec frame size is reached)

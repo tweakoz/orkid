@@ -5,13 +5,16 @@
 # Tests audio generation, capture, and extraction
 ################################################################################
 
-import sys, os, time, json, math, signal
+import sys, os, time, json, math, signal, argparse
 from pathlib import Path
 from orkengine.core import vec2, vec3, vec4, mtx4, quat
 from orkengine import lev2
 
-os.environ["ORKID_AUDIO_IOCLASS"] = "STREAM"
 os.environ["ORKID_LOG_ALWAYSFLUSH"] = "1"
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--freerun', '-f', action='store_true', help='Enable freerun mode (async)')
+args = parser.parse_args()
 
 ################################################################################
 
@@ -19,8 +22,25 @@ class StrAudioTestApp(object):
 
     def __init__(self):
         super().__init__()
-        self.freerun = False
-        # Create EzApp with audio synth enabled in offscreen mode
+
+        self.freerun = args.freerun
+        self.FPS = 60.0 # frames per second
+        self.LEN = 30.0  # seconds
+        self.NUMFRAMES = int(self.FPS * self.LEN)
+        self.NUMFRAMESP1 = self.NUMFRAMES + 1
+        
+        ########################################
+        # lockstep mode ?, use STREAM audio device (for movie capture)
+        ########################################
+
+        if not self.freerun:          
+          os.environ["ORKID_AUDIO_IOCLASS"] = "STREAM"
+
+        ########################################
+        # Create EzApp with audio synth enabled 
+        # if lockstep, use offscreen mode
+        ########################################
+
         self.ezapp = lev2.OrkEzApp.create(
             self,
             enable_audio=True,
@@ -30,10 +50,10 @@ class StrAudioTestApp(object):
             enable_graphics=True,
             offscreen=not self.freerun,
             freerun=self.freerun,
-            target_ups = 60.0,
-            target_fps = 60.0,
-            width=640,
-            height=480
+            target_ups = self.FPS,
+            target_fps = self.FPS,
+            width=1920,
+            height=1080
         )
 
         ########################################
@@ -80,8 +100,6 @@ class StrAudioTestApp(object):
 
         #print(f"Device mode: {self.str_audio.mode}")
         print("✅ Audio system initialized successfully")
-        self.capture_set = []
-        self.ezapp.enableMovieRecording( output_path="/tmp/str_audio_test_movie.mp4" )
 
     ##############################################
 
@@ -94,7 +112,7 @@ class StrAudioTestApp(object):
             
     def onGpuUpdate(self, ctx):
       # Called before each frame is rendered
-      speed = 0.1
+      speed = 1.0
       r0 = math.sin(speed*self.abstime*1.0*math.pi)*0.5 + 0.5
       g0 = math.sin(speed*self.abstime*1.31*math.pi)*0.5 + 0.5
       b0 = math.sin(speed*self.abstime*1.51*math.pi)*0.5 + 0.5
@@ -116,12 +134,16 @@ class StrAudioTestApp(object):
 
     def onGpuPostFrame(self, ctx):
       self.rencount += 1
-      match self.rencount:
-        case 600:
-          self.ezapp.finishMovieRecording()
-        case 601:
-          self.ezapp.signalExit()
-
+      if self.freerun == False:
+        match self.rencount:
+          case 1:
+            self.mcc = self.ezapp.enableMovieRecording( output_path="/tmp/str_audio_test_movie.mp4",
+                                                        fps=self.FPS,
+                                                        max_queue_size=180 )
+          case self.NUMFRAMES:
+            self.ezapp.finishMovieRecording()
+          case self.NUMFRAMESP1:
+            self.ezapp.signalExit()
 
 ################################################################################
 
