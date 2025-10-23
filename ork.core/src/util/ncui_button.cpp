@@ -134,7 +134,7 @@ void Button::_doDraw() {
       // Ensure text stays within button bounds
       line_x = std::max(_x, std::min(line_x, _x + _width - (int)line.length()));
 
-      ncplane_putstr_yx(ctx->_stdplane, text_y + line_num, line_x, line.c_str());
+      //ncplane_putstr_yx(ctx->_stdplane, text_y + line_num, line_x, line.c_str());
       line_num++;
     }
   }

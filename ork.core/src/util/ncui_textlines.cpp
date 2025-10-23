@@ -226,10 +226,10 @@ void TextLines::_doDraw() {
       }
       if(i==0){
         //ncplane_putstr_yx(ctx->_stdplane, y, _x+4, dbgtxt.c_str());
-        ncplane_putstr_yx(ctx->_stdplane, y, _x, line.c_str());
+        //ncplane_putstr_yx(ctx->_stdplane, y, _x, line.c_str());
       }
       else{
-        ncplane_putstr_yx(ctx->_stdplane, y, _x, line.c_str());
+        //ncplane_putstr_yx(ctx->_stdplane, y, _x, line.c_str());
       }
     }
     

@@ -167,7 +167,7 @@ void OPQVisualizerWidget::_doDraw() {
   std::string title = "OPQ Performance Monitor";
   int title_length = title.length();
   int x = _x + (_width - title_length) / 2; //
-    ncplane_putstr_yx(ctx->_stdplane, _y, x, title.c_str());
+    //ncplane_putstr_yx(ctx->_stdplane, _y, x, title.c_str());
   _setColors(fvec3::White(), fvec3::Blue()*0.3f);
 
     if (_cached_perf_data) {
@@ -187,13 +187,13 @@ void OPQVisualizerWidget::_doDraw() {
       auto co_str = FormatString("Completed: %d", _target_opq->_numCompletedOperations.load());
       
       int y = _y + 1;
-      ncplane_putstr_yx(ctx->_stdplane, y++, _x + 1, name_str.c_str());
-      ncplane_putstr_yx(ctx->_stdplane, y++, _x + 1, tc_str.c_str());
-      ncplane_putstr_yx(ctx->_stdplane, y++, _x + 1, po_str.c_str());
-      ncplane_putstr_yx(ctx->_stdplane, y++, _x + 1, ops_str.c_str());
-      ncplane_putstr_yx(ctx->_stdplane, y++, _x + 1, lat_str.c_str());
-      ncplane_putstr_yx(ctx->_stdplane, y++, _x + 1, max_str.c_str());
-      ncplane_putstr_yx(ctx->_stdplane, y++, _x + 1, co_str.c_str());
+      //ncplane_putstr_yx(ctx->_stdplane, y++, _x + 1, name_str.c_str());
+      //ncplane_putstr_yx(ctx->_stdplane, y++, _x + 1, tc_str.c_str());
+      //ncplane_putstr_yx(ctx->_stdplane, y++, _x + 1, po_str.c_str());
+      //ncplane_putstr_yx(ctx->_stdplane, y++, _x + 1, ops_str.c_str());
+      //ncplane_putstr_yx(ctx->_stdplane, y++, _x + 1, lat_str.c_str());
+      //ncplane_putstr_yx(ctx->_stdplane, y++, _x + 1, max_str.c_str());
+      //ncplane_putstr_yx(ctx->_stdplane, y++, _x + 1, co_str.c_str());
     }
   }
 }

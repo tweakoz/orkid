@@ -9,6 +9,7 @@
 #include <ork/kernel/string/deco.inl>
 #include <ork/kernel/environment.h>
 #include <ork/lev2/ui/layoutgroup.inl>
+#include <ork/lev2/gfx/util/movie.inl>
 #include <ork/profiling.inl>
 #include <iostream>
 #include <ork/lev2/aud/audiodevice.h>
@@ -454,14 +455,40 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
       ///////////////////////////////////////////////////////
       .def(
           "enableMovieRecording",
-          [](orkezapp_ptr_t app, std::string path) { //
-              app->enableMovieRecording(path);
+          [](orkezapp_ptr_t self, py::kwargs args ) { //
+            rtbuffer_ptr_t override_rtb = nullptr;
+            file::Path path;
+            if (args) {
+              for (auto item : args) {
+                auto key = py::cast<std::string>(item.first);
+                if (key == "output_path") {
+                  std::string mpath = py::cast<std::string>(item.second);
+                  path = file::Path(mpath);
+                } else if (key == "override_rtb") {
+                  override_rtb = py::cast<rtbuffer_ptr_t>(item.second);
+                }
+              }
+            }
+            self->enableMovieRecording(path,override_rtb);
           })
       ///////////////////////////////////////////////////////
       .def(
           "finishMovieRecording",
           [](orkezapp_ptr_t app) { //
               app->finishMovieRecording();
+          })
+      ///////////////////////////////////////////////////////
+      .def(
+          "enqueueMovieCaptureFrame",
+          [](orkezapp_ptr_t app,captureasync_ptr_t future) -> size_t { //
+            size_t num_enq = 0;
+            if(app->_moviecapcontext){
+              auto capbuf = future->_captureBuffer;
+              static int frame_index = 0;
+              int num_samples = 48000.0/60.0;
+              num_enq = app->_moviecapcontext->enqueueFrame(future,capbuf,frame_index++,num_samples);
+            }
+            return num_enq;
           })
       ///////////////////////////////////////////////////////
       .def(

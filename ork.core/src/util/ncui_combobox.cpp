@@ -125,11 +125,11 @@ void ComboBox::_drawClosed() {
       selected_text = selected_text.substr(0, _width - 6) + "...";
     }
 
-    ncplane_putstr_yx(ctx->_stdplane, _y, _x + 1, selected_text.c_str());
+   //ncplane_putstr_yx(ctx->_stdplane, _y, _x + 1, selected_text.c_str());
   }
 
   // Draw dropdown arrow
-  ncplane_putstr_yx(ctx->_stdplane, _y, _x + _width - 2, "v");
+  //ncplane_putstr_yx(ctx->_stdplane, _y, _x + _width - 2, "v");
 }
 
 ////////////////////////////////////////////////////////////////
@@ -155,13 +155,13 @@ void ComboBox::_drawOpen() {
   uint32_t dropdown_bg = ((uint32_t)(_dropdown_bg_color.x * 255) << 16) | ((uint32_t)(_dropdown_bg_color.y * 255) << 8) |
                          ((uint32_t)(_dropdown_bg_color.z * 255));
 
-  ncplane_set_fg_rgb(ctx->_stdplane, dropdown_fg);
-  ncplane_set_bg_rgb(ctx->_stdplane, dropdown_bg);
+  //ncplane_set_fg_rgb(ctx->_stdplane, dropdown_fg);
+  //ncplane_set_bg_rgb(ctx->_stdplane, dropdown_bg);
 
   // Clear dropdown area
   for (int y = 0; y < dropdown_height; ++y) {
     for (int x = 0; x < _width; ++x) {
-      ncplane_putchar_yx(ctx->_stdplane, dropdown_y + y, _x + x, ' ');
+      //ncplane_putchar_yx(ctx->_stdplane, dropdown_y + y, _x + x, ' ');
     }
   }
 
@@ -213,7 +213,7 @@ void ComboBox::_drawDropdownItem(int item_index, int draw_y, bool is_hovered, bo
       item_text = item_text.substr(0, _width - 5) + "...";
     }
 
-    ncplane_putstr_yx(ctx->_stdplane, draw_y, _x + 1, item_text.c_str());
+    //ncplane_putstr_yx(ctx->_stdplane, draw_y, _x + 1, item_text.c_str());
   }
 }
 

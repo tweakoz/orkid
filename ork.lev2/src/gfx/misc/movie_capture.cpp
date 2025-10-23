@@ -9,6 +9,7 @@
 #include <ork/lev2/aud/stream/audiodevice_stream.h>
 #include <ork/kernel/string/deco.inl>
 #include <ork/util/logger.h>
+#include "_ffmpeg_enc.inl"
 
 namespace ork::lev2 {
 
@@ -40,12 +41,10 @@ void MovieCaptureContext::init(int width, int height, audiodevice_ptr_t audio_de
 
   logchan_moviecap->log("MovieCaptureContext::init _width=%d _height=%d fps=%d", _width, _height, _fps);
 
-  // ALL FFMPEG CODE REMOVED - keeping only queue/thread management
-
   // Start encoding thread
   _startEncodingThread();
 
-  logchan_moviecap->log("MovieCaptureContext initialized (no encoding)");
+  logchan_moviecap->log("MovieCaptureContext initialized successfully");
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -53,7 +52,8 @@ void MovieCaptureContext::init(int width, int height, audiodevice_ptr_t audio_de
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 void MovieCaptureContext::_initVideoStream() {
-  // ALL FFMPEG CODE REMOVED
+
+  logchan_moviecap->log("Video stream initialization (no-op)");
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -61,31 +61,33 @@ void MovieCaptureContext::_initVideoStream() {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 void MovieCaptureContext::_initAudioStream() {
-  // ALL FFMPEG CODE REMOVED
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // Queue Management: Called from render thread
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-void MovieCaptureContext::queueFrame(
+size_t MovieCaptureContext::enqueueFrame(
     captureasync_ptr_t future,
     capturebuffer_ptr_t buffer,
     int frame_num,
     int expected_samples) {
 
   if (_terminated) {
-    logchan_moviecap->log("queueFrame: TERMINATED, ignoring frame %d", frame_num);
-    return;
+    logchan_moviecap->log("enqueueFrame: TERMINATED, ignoring frame %d", frame_num);
+    return 0;
   }
 
-  logchan_moviecap->log("queueFrame: Queueing frame %d (expected_samples=%d)", frame_num, expected_samples);
+  if((frame_num%200)==0){
+    logchan_moviecap->log("enqueueFrame: Enqueueing frame %d (expected_samples=%d)", frame_num, expected_samples);
+  }
 
   // Wait if queue is full (backpressure)
   {
     std::unique_lock<std::mutex> lock(_queue_mutex);
     while (_frame_queue.size() >= _max_queue_size && _encoding_running) {
-      logchan_moviecap->log("queueFrame: Queue full (%zu), waiting...", _frame_queue.size());
+      logchan_moviecap->log("enqueueFrame: Queue full (%zu), waiting...", _frame_queue.size());
       _queue_cv.wait(lock);
     }
   }
@@ -99,13 +101,19 @@ void MovieCaptureContext::queueFrame(
   frame_data.virtual_time = (double)frame_num / _fps;
 
   // Add to queue
+  size_t queue_size = 0;
   {
     std::lock_guard<std::mutex> lock(_queue_mutex);
     _frame_queue.push_back(frame_data);
-    logchan_moviecap->log("queueFrame: Frame %d queued, queue size now: %zu", frame_num, _frame_queue.size());
+    queue_size = _frame_queue.size();
+    if(queue_size%100==0){
+      logchan_moviecap->log("enqueueFrame: Frame %d queued, queue size now: %zu", frame_num, _frame_queue.size());
+    }
   }
 
   _queue_cv.notify_one();  // Wake encoding thread
+
+  return queue_size;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -138,34 +146,55 @@ void MovieCaptureContext::_stopEncodingThread() {
 void MovieCaptureContext::_encodingThreadFunc() {
   ork::SetCurrentThreadName("movie-encode");
 
-  logchan_moviecap->log("Encoding thread running (NO ENCODING - just consuming queue)");
+  _initVideoStream();
 
-  while (_encoding_running || !_frame_queue.empty()) {
+  auto encoder = ffmpeg_enc::createEncoder(_filename,"default",_width,_height);
+  if (!encoder) {
+    logchan_moviecap->log("ERROR: Failed to create encoder");
+    return;
+  }
+  logchan_moviecap->log("Encoding thread running - processing frames");
+
+  while (_encoding_running or (not _frame_queue.empty())) {
     CapturedMovieFrame frame_data;
 
     //=========================================
-    // Pop from queue (blocking)
+    // Pop from queue
     //=========================================
     {
       std::unique_lock<std::mutex> lock(_queue_mutex);
 
-      _queue_cv.wait(lock, [this]{
-        return !_frame_queue.empty() || !_encoding_running;
-      });
-
-      if (!_encoding_running && _frame_queue.empty()) {
-        logchan_moviecap->log("_encodingThreadFunc: Thread stopping");
-        break;
-      }
-
+      // If queue is empty, no-op this iteration
       if (_frame_queue.empty()) {
+        //logchan_moviecap->log("_frame_queue.empty()");
         continue;
       }
 
+      // Check audio availability BEFORE dequeuing
+      if (_audio_device) {
+        auto str_audio = std::dynamic_pointer_cast<StrAudioDevice>(_audio_device);
+        if (str_audio) {
+          int available_audio = str_audio->availableSamples();
+          int expected_audio = _frame_queue.front().expected_audio_samples;
+
+          // Wait if not enough audio samples available
+          if (available_audio < expected_audio) {
+            logchan_moviecap->log("Waiting for audio: have %d, need %d",
+                                  available_audio, expected_audio);
+            continue;  // Try again on next iteration
+          }
+        }
+      }
+
+      // We have enough audio, dequeue the frame
       frame_data = _frame_queue.front();
+
+      if(frame_data.capture_future->isReady()==false){
+        continue;
+      }
       _frame_queue.pop_front();
 
-      logchan_moviecap->log("_encodingThreadFunc: Dequeued frame %d, queue size now: %zu",
+      if(0)logchan_moviecap->log("_encodingThreadFunc: Dequeued frame %d, queue size now: %zu",
                             frame_data.frame_number, _frame_queue.size());
 
       _queue_cv.notify_all();
@@ -178,43 +207,66 @@ void MovieCaptureContext::_encodingThreadFunc() {
     int timeout_ms = 5000;
     int waited_ms = 0;
 
-    while (!future->_completed && waited_ms < timeout_ms) {
+    while (!future->isReady() && waited_ms < timeout_ms) {
       usleep(1000);
       waited_ms++;
     }
 
-    if (!future->_completed) {
+    if (!future->isReady()) {
       logchan_moviecap->log("ERROR: Frame %d capture timeout!", frame_data.frame_number);
       continue;
     }
 
     //=========================================
-    // Extract audio samples (structure kept, not used)
+    // Extract audio samples
     //=========================================
-    if (_audio_device) {
+    audioframecapture_ptr_t audio_capture;
+    if (_audio_device && frame_data.expected_audio_samples > 0) {
       auto str_audio = std::dynamic_pointer_cast<StrAudioDevice>(_audio_device);
       if (str_audio) {
-        int available = str_audio->availableSamples();
-        int to_extract = std::min(available, frame_data.expected_audio_samples);
-
-        if (to_extract > 0) {
-          auto audio_capture = str_audio->extractSamples(to_extract);
-          // Would encode here
+        audio_capture = str_audio->extractSamples(frame_data.expected_audio_samples);
+        OrkAssert(audio_capture->_num_samples == frame_data.expected_audio_samples);
+        OrkAssert(audio_capture->_left.size() == frame_data.expected_audio_samples);
+        OrkAssert(audio_capture->_right.size() == frame_data.expected_audio_samples);
+        // debug tone generator
+        static float phase = 0.0f;
+        for( int i=0; i<frame_data.expected_audio_samples; i++ ) {
+          float samp = sinf( phase * 6.2831853f ) * 0.1f;
+          audio_capture->_left[i] += samp;
+          audio_capture->_right[i] += samp;
+          phase += 110.0f / 48000.0f;
         }
       }
     }
+    if( audio_capture == nullptr ) {
+      audio_capture = std::make_shared<AudioFrameCapture>();
+      audio_capture->_num_samples = frame_data.expected_audio_samples;
+      audio_capture->_left.resize( frame_data.expected_audio_samples, 0.0f );
+      audio_capture->_right.resize( frame_data.expected_audio_samples, 0.0f );
+      audio_capture->_sample_rate = 48000;
+      audio_capture->_timestamp = frame_data.virtual_time;
+    }
+
+    //=========================================
+    // Encode video + audio
+    //=========================================
+    encoder->enqueueFrames(frame_data.capture_buffer, audio_capture);
 
     //=========================================
     // Progress logging
     //=========================================
-    if ((frame_data.frame_number % 60) == 0) {
-      logchan_moviecap->log("Processed frame %d @ vtime %.2fs (no encoding)",
+    //if ((frame_data.frame_number % 60) == 0) {
+      if(0)logchan_moviecap->log("Encoded frame %d @ vtime %.2fs",
                             frame_data.frame_number,
                             frame_data.virtual_time);
-    }
-  }
+    //}
+  } // while (_encoding_running or (not _frame_queue.empty())) {
+  encoder = nullptr;
+  logchan_moviecap->log("Encoding thread exiting");
+}
 
-  logchan_moviecap->log("Encoding thread exiting (no encoding occurred)");
+void MovieCaptureContext::join() {
+  
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -239,11 +291,12 @@ void MovieCaptureContext::_writeAudioSamples(
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
-// Flush Encoders - REMOVED
+// Flush Encoders (send NULL frame to get remaining packets)
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 void MovieCaptureContext::_flushEncoders() {
   // ALL FFMPEG CODE REMOVED
+  logchan_moviecap->log("Flush encoders (no-op)");
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -251,6 +304,11 @@ void MovieCaptureContext::_flushEncoders() {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 void MovieCaptureContext::terminate() {
+  while(not _frame_queue.empty()) {
+    logchan_moviecap->log("MovieCaptureContext::terminate waiting for encoding to stop...");
+    usleep(100000);
+  }
+
   if (_terminated.exchange(true)) {
     return;  // Already terminated
   }
@@ -260,9 +318,7 @@ void MovieCaptureContext::terminate() {
   // Stop encoding thread (will flush queue first)
   _stopEncodingThread();
 
-  // ALL FFMPEG CLEANUP REMOVED
-
-  logchan_moviecap->log("Processed %d frames (no encoding occurred)", _frame);
+  logchan_moviecap->log("Wrote movie to file: %s", _filename.c_str());
 }
 
 } // namespace ork::lev2

@@ -87,18 +87,18 @@ struct NotCursesRAII {
       _render_fp = fopen("/dev/tty", "w");
     }
     
-    _nc = notcurses_init(&opts, _render_fp);
-    if (_nc and not NC_DEBUG_MODE) {
-      notcurses_mice_enable(_nc, NCMICE_ALL_EVENTS);
-    }
+    //_nc = notcurses_init(&opts, _render_fp);
+    //if (_nc and not NC_DEBUG_MODE) {
+      //notcurses_mice_enable(_nc, NCMICE_ALL_EVENTS);
+    //}
   }
 
   ~NotCursesRAII() {
     if (_nc) {
       if(not NC_DEBUG_MODE){
-        notcurses_mice_disable(_nc);
+       //notcurses_mice_disable(_nc);
       }
-      notcurses_stop(_nc);
+      //notcurses_stop(_nc);
 
       // Explicit terminal input mode reset
       fprintf(_render_fp,"\033[?1l");    // Disable application cursor keys
@@ -154,12 +154,12 @@ void clearRectangle(int x, int y, int width, int height) {
   if (!ctx || !ctx->_stdplane)
     return;
 
-  ncplane_set_bg_rgb(ctx->_stdplane, 0x000000);
-  ncplane_set_fg_rgb(ctx->_stdplane, 0x000000);
+  //ncplane_set_bg_rgb(ctx->_stdplane, 0x000000);
+  //ncplane_set_fg_rgb(ctx->_stdplane, 0x000000);
 
   for (int row = 0; row < height; ++row) {
     for (int col = 0; col < width; ++col) {
-      ncplane_putchar_yx(ctx->_stdplane, y + row, x + col, ' ');
+      //ncplane_putchar_yx(ctx->_stdplane, y + row, x + col, ' ');
     }
   }
 }
@@ -245,17 +245,17 @@ void Context::_init() {
 
   auto ncraii = _impl.makeShared<NotCursesRAII>(opts);
 
-  _stdplane = notcurses_stdplane(ncraii->get());
+  //_stdplane = notcurses_stdplane(ncraii->get());
 
-  ncplane_dim_yx(_stdplane, &_numrows, &_numcols);
-  ncplane_set_fg_rgb(_stdplane, 0xFFFFFF);
-  ncplane_set_bg_rgb(_stdplane, 0x000000);
+  //ncplane_dim_yx(_stdplane, &_numrows, &_numcols);
+  //ncplane_set_fg_rgb(_stdplane, 0xFFFFFF);
+  //ncplane_set_bg_rgb(_stdplane, 0x000000);
 
   // Use ncplane_set_base to set default cell
-  ncplane_set_base(_stdplane, " ", 0, NCCHANNELS_INITIALIZER(0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00));
+  //ncplane_set_base(_stdplane, " ", 0, NCCHANNELS_INITIALIZER(0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00));
 
   // Enable cursor to show standard arrow cursor even with mouse tracking
-  notcurses_cursor_enable(ncraii->get(), 0, 0);
+  //notcurses_cursor_enable(ncraii->get(), 0, 0);
 
   // Create root widget
   _root_widget = std::make_shared<RootWidget>();
@@ -308,14 +308,14 @@ void Context::_run() {
   auto ncraii = _impl.getShared<NotCursesRAII>();
   while (_running) {
     // Wait for input with timeout
-    uint32_t c = notcurses_get_nblock(ncraii->get(), &ni);
+    uint32_t c = 0;//notcurses_get_nblock(ncraii->get(), &ni);
 
     if (c == (uint32_t)-1) {
       // Timeout - check for updates
       std::unique_lock<std::mutex> lock(_ui_mutex);
       _cv.wait_for(lock, std::chrono::milliseconds(50));
     } else if (c == NCKEY_RESIZE) {
-      ncplane_dim_yx(_stdplane, &_numrows, &_numcols);
+      //ncplane_dim_yx(_stdplane, &_numrows, &_numcols);
       _root_widget->resize(_numcols, _numrows);
       need_full_redraw = true;
     } else {
@@ -362,12 +362,12 @@ void Context::_run() {
       std::lock_guard<std::mutex> lock(_ui_mutex);
       if (need_full_redraw) {
         // Force complete redraw
-        notcurses_refresh(ncraii->get(), nullptr, nullptr);
+        //notcurses_refresh(ncraii->get(), nullptr, nullptr);
         need_full_redraw = false;
       }
       _root_widget->draw();
       _drawSystemOverlay(); // Draw overlay on top
-      notcurses_render(ncraii->get()); // Move render inside mutex for atomicity
+      //notcurses_render(ncraii->get()); // Move render inside mutex for atomicity
     }
   }
 }
@@ -559,18 +559,18 @@ void Context::_createSystemOverlay() {
     .flags = 0
   };
   
-  _overlay_plane = ncplane_create(_stdplane, &overlay_opts);
+  _overlay_plane = nullptr;//ncplane_create(_stdplane, &overlay_opts);
   
   if (_overlay_plane) {
     // Set default styling for overlay plane
-    ncplane_set_fg_rgb(_overlay_plane, 0xffffff); // White text
-    ncplane_set_bg_rgb(_overlay_plane, 0x800000); // Dark red background
+    //ncplane_set_fg_rgb(_overlay_plane, 0xffffff); // White text
+    //ncplane_set_bg_rgb(_overlay_plane, 0x800000); // Dark red background
   }
 }
 
 void Context::_destroySystemOverlay() {
   if (_overlay_plane) {
-    ncplane_destroy(_overlay_plane);
+    //ncplane_destroy(_overlay_plane);
     _overlay_plane = nullptr;
   }
 }
@@ -579,17 +579,17 @@ void Context::_drawSystemOverlay() {
   if (!_overlay_plane) return;
   
   // Clear the overlay plane
-  ncplane_erase(_overlay_plane);
+  //ncplane_erase(_overlay_plane);
   
   // Set colors
-  ncplane_set_fg_rgb(_overlay_plane, 0xffffff); // White text  
-  ncplane_set_bg_rgb(_overlay_plane, 0x800000); // Dark red background
+  //ncplane_set_fg_rgb(_overlay_plane, 0xffffff); // White text  
+  //ncplane_set_bg_rgb(_overlay_plane, 0x800000); // Dark red background
   
   // Draw the quit button
-  ncplane_putstr_yx(_overlay_plane, 0, 0, "X");
+  //ncplane_putstr_yx(_overlay_plane, 0, 0, "X");
   
   // Always move overlay to top to ensure visibility
-  ncplane_move_top(_overlay_plane);
+  //ncplane_move_top(_overlay_plane);
 }
 
 ////////////////////////////////////////////////////////////////
@@ -721,8 +721,8 @@ void Widget::_setColors(const ork::fvec3& fg_color, const ork::fvec3& bg_color) 
   uint32_t fg = _colorToUint32(fg_color);
   uint32_t bg = _colorToUint32(bg_color);
   
-  ncplane_set_fg_rgb(ctx->_stdplane, fg);
-  ncplane_set_bg_rgb(ctx->_stdplane, bg);
+  //ncplane_set_fg_rgb(ctx->_stdplane, fg);
+  //ncplane_set_bg_rgb(ctx->_stdplane, bg);
 }
 
 ////////////////////////////////////////////////////////////////
@@ -734,13 +734,13 @@ void Widget::drawFilledBox(int x, int y, int w, int h, const ork::fvec3& color) 
   if (!ctx || !ctx->_stdplane) return;
   
   uint32_t color_uint = _colorToUint32(color);
-  ncplane_set_fg_rgb(ctx->_stdplane, color_uint);
-  ncplane_set_bg_rgb(ctx->_stdplane, color_uint);
+  //ncplane_set_fg_rgb(ctx->_stdplane, color_uint);
+  //ncplane_set_bg_rgb(ctx->_stdplane, color_uint);
   
   // Optimized filled rectangle - use string of spaces for better performance
   std::string spaces(w, ' ');
   for (int row = 0; row < h; ++row) {
-    ncplane_putstr_yx(ctx->_stdplane, y + row, x, spaces.c_str());
+    //ncplane_putstr_yx(ctx->_stdplane, y + row, x, spaces.c_str());
   }
 }
 
@@ -749,8 +749,8 @@ void Widget::drawOutlineBox(int x, int y, int w, int h, const ork::fvec3& color)
   if (!ctx || !ctx->_stdplane) return;
   
   uint32_t color_uint = _colorToUint32(color);
-  ncplane_set_fg_rgb(ctx->_stdplane, color_uint);
-  ncplane_set_bg_rgb(ctx->_stdplane, 0x000000); // Black background
+  //ncplane_set_fg_rgb(ctx->_stdplane, color_uint);
+  //ncplane_set_bg_rgb(ctx->_stdplane, 0x000000); // Black background
   
   if (w <= 0 || h <= 0) return;
   
@@ -763,6 +763,7 @@ void Widget::drawOutlineBox(int x, int y, int w, int h, const ork::fvec3& color)
   const char* vertical = "│";
   
   // Top border
+  /*
   ncplane_putstr_yx(ctx->_stdplane, y, x, top_left);
   for (int col = 1; col < w - 1; ++col) {
     ncplane_putstr_yx(ctx->_stdplane, y, x + col, horizontal);
@@ -788,14 +789,14 @@ void Widget::drawOutlineBox(int x, int y, int w, int h, const ork::fvec3& color)
     if (w > 1) {
       ncplane_putstr_yx(ctx->_stdplane, y + h - 1, x + w - 1, bottom_right);
     }
-  }
+  }*/
 }
 
 void Widget::drawOutlineCharBox(int x, int y, int w, int h, const ork::fvec3& bgcolor, const ork::fvec3& fgcolor, char cell) const {
   auto ctx = context();
   if (!ctx || !ctx->_stdplane) return;
   
-  ncplane_set_fg_rgb(ctx->_stdplane, _colorToUint32(fgcolor));
+  /*ncplane_set_fg_rgb(ctx->_stdplane, _colorToUint32(fgcolor));
   ncplane_set_bg_rgb(ctx->_stdplane, _colorToUint32(bgcolor)); // Black background  
   if (w <= 0 || h <= 0) return;
   
@@ -809,7 +810,7 @@ void Widget::drawOutlineCharBox(int x, int y, int w, int h, const ork::fvec3& bg
       }
     }
   }
-
+*/
 
 }
 
@@ -818,6 +819,7 @@ void Widget::drawLine(int x1, int y1, int x2, int y2, const ork::fvec3& color) c
   if (!ctx || !ctx->_stdplane) return;
   
   uint32_t color_uint = _colorToUint32(color);
+  /*
   ncplane_set_fg_rgb(ctx->_stdplane, color_uint);
   ncplane_set_bg_rgb(ctx->_stdplane, 0x000000); // Black background
   
@@ -857,6 +859,7 @@ void Widget::drawLine(int x1, int y1, int x2, int y2, const ork::fvec3& color) c
       y += y_step;
     }
   }
+    */
 }
 
 void Widget::drawHLine(int x, int y, int length, const ork::fvec3& color) const {
@@ -864,6 +867,7 @@ void Widget::drawHLine(int x, int y, int length, const ork::fvec3& color) const 
   if (!ctx || !ctx->_stdplane) return;
   
   uint32_t color_uint = _colorToUint32(color);
+  /*
   ncplane_set_fg_rgb(ctx->_stdplane, color_uint);
   ncplane_set_bg_rgb(ctx->_stdplane, 0x000000); // Black background
   
@@ -874,12 +878,13 @@ void Widget::drawHLine(int x, int y, int length, const ork::fvec3& color) const 
     line += "─";
   }
   ncplane_putstr_yx(ctx->_stdplane, y, x, line.c_str());
+  */
 }
 
 void Widget::drawVLine(int x, int y, int length, const ork::fvec3& color) const {
   auto ctx = context();
   if (!ctx || !ctx->_stdplane) return;
-  
+  /*
   uint32_t color_uint = _colorToUint32(color);
   ncplane_set_fg_rgb(ctx->_stdplane, color_uint);
   ncplane_set_bg_rgb(ctx->_stdplane, 0x000000); // Black background
@@ -888,6 +893,7 @@ void Widget::drawVLine(int x, int y, int length, const ork::fvec3& color) const 
   for (int i = 0; i < length; ++i) {
     ncplane_putstr_yx(ctx->_stdplane, y + i, x, "│");
   }
+    */
 }
 
 ////////////////////////////////////////////////////////////////

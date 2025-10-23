@@ -69,7 +69,7 @@ ork_std_target_opts(ork_lev2)
 set( libs ork_core )
 list(APPEND libs OpenImageIO OpenImageIO_Util )
 list(APPEND libs portaudio rtmidi  )
-list(APPEND libs avformat avcodec swscale avutil )
+list(APPEND libs avformat avcodec swscale swresample avutil )
 list(APPEND libs ConvexDecomposition Bullet3Geometry LinearMath )
 
 IF( "${ARCHITECTURE}" STREQUAL "x86_64" )

@@ -91,9 +91,9 @@ void EzTopWidget::enableUiDraw() {
     auto mutable_drwev      = std::const_pointer_cast<ui::DrawEvent>(drwev);
     mutable_drwev->_acqdbuf = draw_buffer;
     ////////////////////////////////////////////////////
-   if(ezapp->_mainWindow->_onGpuPreFrame){
+    /*if(ezapp->_mainWindow->_onGpuPreFrame){
       ezapp->_mainWindow->_onGpuPreFrame(context);
-    }
+    }*/
     ////////////////////////////////////////////////////
     lev2::UiViewportRenderTarget rt(nullptr);
     auto tgtrect        = context->mainSurfaceRectAtOrigin();
@@ -105,9 +105,9 @@ void EzTopWidget::enableUiDraw() {
     ezapp->_uicontext->draw(drwev);
     mtxi->PopUIMatrix();
 
-    if(ezapp->_mainWindow->_onGpuPostFrame){
+    /*if(ezapp->_mainWindow->_onGpuPostFrame){
       ezapp->_mainWindow->_onGpuPostFrame(context);
-    }
+    }*/
 
     //context->endFrame();
     rcfd->popCompositor();

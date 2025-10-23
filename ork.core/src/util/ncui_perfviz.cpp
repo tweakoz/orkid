@@ -208,7 +208,7 @@ void PerformanceVisualizerWidget::_doDraw() {
   if (!data_source) {
     // Draw empty state
     _setColors(text_color, background_color);
-    ncplane_putstr_yx(ctx->_stdplane, _y + 1, _x + 2, "No data source");
+    //ncplane_putstr_yx(ctx->_stdplane, _y + 1, _x + 2, "No data source");
     return;
   }
   
@@ -216,7 +216,7 @@ void PerformanceVisualizerWidget::_doDraw() {
   _setColors(title_color, border_color);
   int title_length = static_cast<int>(title.length());
   int title_x = _x + (_width - title_length) / 2;
-  ncplane_putstr_yx(ctx->_stdplane, _y, title_x, title.c_str());
+  //ncplane_putstr_yx(ctx->_stdplane, _y, title_x, title.c_str());
   
   // Draw data items
   _setColors(text_color, background_color);
@@ -272,7 +272,7 @@ void PerformanceVisualizerWidget::_doDraw() {
         break;
     }
     
-    ncplane_putstr_yx(ctx->_stdplane, current_y, _x + 1, line.c_str());
+    //ncplane_putstr_yx(ctx->_stdplane, current_y, _x + 1, line.c_str());
     current_y++;
   }
 }

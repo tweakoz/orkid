@@ -212,7 +212,7 @@ struct OrkEzApp : public OrkEzAppBase {
   }
   
   ///////////////////////////////////
-  void enableMovieRecording(file::Path output_path);
+  void enableMovieRecording(file::Path output_path,rtbuffer_ptr_t override_rtb=nullptr);
   void finishMovieRecording();
   gfxcontext_lambda_t _movie_record_frame_lambda;
   //void stdDraw(const StdDraw& DATA);

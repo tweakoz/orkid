@@ -34,7 +34,7 @@ TabGroup::~TabGroup() {
 
   // Clean up ncplane
   if (_tabbar) {
-    ncplane_destroy(_tabbar);
+    //ncplane_destroy(_tabbar);
     _tabbar = nullptr;
   }
 }
@@ -54,16 +54,16 @@ void TabGroup::_doDraw() {
     nopts.x               = _x;
     nopts.rows            = 3;
     nopts.cols            = _width;
-    _tabbar               = ncplane_create(ctx->_stdplane, &nopts);
+    //_tabbar               = ncplane_create(ctx->_stdplane, &nopts);
   }
 
   // Fill entire tab bar area with black background first
-  ncplane_erase(_tabbar);
-  ncplane_set_fg_rgb(_tabbar, 0xFFFFFF);
-  ncplane_set_bg_rgb(_tabbar, 0x000000);
+  //ncplane_erase(_tabbar);
+  //ncplane_set_fg_rgb(_tabbar, 0xFFFFFF);
+  //ncplane_set_bg_rgb(_tabbar, 0x000000);
   for (unsigned y = 0; y < 3; ++y) {
     for (unsigned x = 0; x < _width; ++x) {
-      ncplane_putchar_yx(_tabbar, y, x, ' ');
+      //ncplane_putchar_yx(_tabbar, y, x, ' ');
     }
   }
 
@@ -74,24 +74,24 @@ void TabGroup::_doDraw() {
 
     // Set colors based on active tab and channel color
     if (tab->_name == _active_tab) {
-      ncplane_set_fg_rgb(_tabbar, 0x000000);
-      ncplane_set_bg_rgb(_tabbar, 0xFFFFFF);
+      //ncplane_set_fg_rgb(_tabbar, 0x000000);
+      //ncplane_set_bg_rgb(_tabbar, 0xFFFFFF);
     } else {
       // Use channel color for inactive tabs
       auto color  = tab->_color;
       uint32_t fg = _colorToUint32(color);
-      ncplane_set_fg_rgb(_tabbar, fg);
-      ncplane_set_bg_rgb(_tabbar, 0x000000);
+      //ncplane_set_fg_rgb(_tabbar, fg);
+      //ncplane_set_bg_rgb(_tabbar, 0x000000);
     }
 
     std::string tab_text = " " + tab->_name + " ";
-    ncplane_putstr_yx(_tabbar, 1, x, tab_text.c_str());
+    //ncplane_putstr_yx(_tabbar, 1, x, tab_text.c_str());
     x += tab_text.length() + 1;
   }
 
   // Draw border using optimized method
-  ncplane_set_fg_rgb(_tabbar, 0xFFFFFF);
-  ncplane_set_bg_rgb(_tabbar, 0x000000);
+  //ncplane_set_fg_rgb(_tabbar, 0xFFFFFF);
+  //ncplane_set_bg_rgb(_tabbar, 0x000000);
   
   // Use optimized horizontal line drawing with Unicode
   std::string border_line;
@@ -99,7 +99,7 @@ void TabGroup::_doDraw() {
   for (unsigned i = 0; i < _width; ++i) {
     border_line += "─";
   }
-  ncplane_putstr_yx(_tabbar, 2, 0, border_line.c_str());
+  //ncplane_putstr_yx(_tabbar, 2, 0, border_line.c_str());
 
   // Clear content area before drawing new tab content
   clearContentArea();

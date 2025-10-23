@@ -30,7 +30,6 @@ class StrAudioTestApp(object):
             enable_graphics=True,
             offscreen=not self.freerun,
             freerun=self.freerun,
-            movie_output_path="/tmp/str_audio_test_movie.mp4",
             target_ups = 60.0,
             target_fps = 60.0,
             width=640,
@@ -82,7 +81,8 @@ class StrAudioTestApp(object):
         #print(f"Device mode: {self.str_audio.mode}")
         print("✅ Audio system initialized successfully")
         self.capture_set = []
-    
+        self.ezapp.enableMovieRecording( output_path="/tmp/str_audio_test_movie.mp4" )
+
     ##############################################
 
     def onUpdate(self,updinfo):
@@ -115,35 +115,13 @@ class StrAudioTestApp(object):
     ##############################################
 
     def onGpuPostFrame(self, ctx):
-      fbi = ctx.FBI
-      rtg = fbi.main_RTG
-
-      for item in self.capture_set:
-        if item.is_ready:
-          #print("Capture complete")
-          self.capture_set.remove(item)
-
-      if rtg is not None:
-        if not self.freerun:
-          rtb = rtg.buffer(0)
-          file_index = self.rencount%120
-          capture_future = fbi.captureToFile(rtb, f"/tmp/capx_{file_index}.png")
-          #print(f"Captured frame {self.rencount} to /tmp/capx_{self.rencount}.png")
-          self.capture_set.append(capture_future)
-
       self.rencount += 1
-      if(self.updcount%1200)==0:
-        tsr = self.ezapp.total_samples_rendered
-        tss = tsr/48000.0
-        print(f"onUpdate count: {self.updcount} render count: {self.rencount} tss={tss:.3f} tsr={tsr}")
+      match self.rencount:
+        case 600:
+          self.ezapp.finishMovieRecording()
+        case 601:
+          self.ezapp.signalExit()
 
-      # Exit after 600 frames
-      if self.rencount >= 600:
-        print(f"Reached {self.rencount} frames, sending SIGINT...")
-        os.kill(os.getpid(), signal.SIGINT)
-
-      #if not self.freerun:
-      #  time.sleep(0.1) # simulate some cpu work
 
 ################################################################################
 

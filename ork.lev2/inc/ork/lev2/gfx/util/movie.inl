@@ -48,7 +48,7 @@ struct MovieCaptureContext {
   void terminate();
 
   // Called from render thread to queue frame
-  void queueFrame(captureasync_ptr_t future, capturebuffer_ptr_t buffer, int frame_num, int expected_samples);
+  size_t enqueueFrame(captureasync_ptr_t future, capturebuffer_ptr_t buffer, int frame_num, int expected_samples);
 
   /////////////////////////////////////////////////////////////////////////////////////////
   // Video encoding members
@@ -92,7 +92,8 @@ struct MovieCaptureContext {
   std::atomic<bool> _terminated{false};
 
   audiodevice_ptr_t _audio_device;  // Reference to extract samples
-
+  void join();
+  
 private:
   void _initVideoStream();
   void _initAudioStream();

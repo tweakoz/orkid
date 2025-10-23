@@ -486,8 +486,6 @@ captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(
       //////////////////////////////////////
       // Set up image with format and preallocated data
       capbuf->_image->initWithFormat(w, h, destfmt);
-      // TODO: Implement RGB8 capture for Vulkan
-      OrkAssert(false);
       //////////////////////////////////////
       break;
     }

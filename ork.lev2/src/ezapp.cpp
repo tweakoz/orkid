@@ -151,6 +151,7 @@ OrkEzAppBase::OrkEzAppBase(ezappctx_ptr_t ezapp) {
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::signalExit() {
   _onRunLoopIteration = nullptr;
+  finishMovieRecording();
   if (_mainWindow and _mainWindow->_ctqt) {
     _mainWindow->_ctqt->signalExit();
   }
@@ -294,7 +295,8 @@ void OrkEzApp::joinUpdate() {
   ////////////////////////////////////////////////
   if (not has_joined_already) {
     logger()->defaultChannel()->log("OrkEzApp<%p> joinUpdate:1", this);
-    while (checkAppState(KAPPSTATEFLAG_UPDRUNNING)) {
+    for( int i=0; i<100; i++ ) {
+      //checkAppState(KAPPSTATEFLAG_UPDRUNNING)) {
       opq::TrackCurrent opqtest(_mainq);
       _mainq->Process();
     }
@@ -366,8 +368,9 @@ void OrkEzApp::onGpuPreFrame(EzMainWin::ongpupreframe_t cb) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onGpuPostFrame(EzMainWin::ongpupostframe_t cb) {
-  if (_mainWindow)
+  if (_mainWindow) {
     _mainWindow->_onGpuPostFrame = cb;
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onGpuExit(EzMainWin::ongpuexit_t cb) {
@@ -590,7 +593,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
           _lockstep_frame_requests.fetch_add(1);
           _render_timeaccumulator -= frame_delta;
         }
-        while (_lockstep_frame_requests.load() > 0) {
+        while ((not checkAppState(KAPPSTATEFLAG_JOINING)) and (_lockstep_frame_requests.load() > 0)) {
           ::usleep(1000);
         }
 
@@ -686,6 +689,9 @@ void OrkEzApp::_mainThreadLoopBegin() {
     if (_mainWindow->_onGpuPostFrame) {
       _mainWindow->_onGpuPostFrame(context);
     }
+    if( _movie_record_frame_lambda ) {
+      _movie_record_frame_lambda( context );
+    }
   };
 
   ///////////////////////////////
@@ -745,16 +751,21 @@ int OrkEzApp::mainThreadLoop() {
   return 0;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OrkEzApp::enableMovieRecording(file::Path output_path) {
+void OrkEzApp::enableMovieRecording(file::Path output_path,rtbuffer_ptr_t override_rtb) {
   logchan_ezapp->log("Enabling movie recording to output path<%s>\n", output_path.toAbsolute().c_str());
   _moviecapcontext            = std::make_shared<MovieCaptureContext>();
   _moviecapcontext->_filename = output_path.toAbsolute().c_str();
 
   auto mctx                  = _moviecapcontext.get();
-  _movie_record_frame_lambda = [mctx, this](lev2::Context* ctx) {
+  _movie_record_frame_lambda = [=](lev2::Context* ctx) {
     auto fbi    = ctx->FBI();
+    auto rtg = fbi->_main_rtg;
+    auto rtb = rtg->buffer(0);
+    if( override_rtb ) {
+      rtb = override_rtb;
+    }
     auto capbuf = std::make_shared<CaptureBuffer>();
-    auto future = fbi->captureAsFormat(nullptr, capbuf, EBufferFormat::RGB8);
+    auto future = fbi->captureAsFormat(rtb.get(), capbuf, EBufferFormat::RGBA8);
 
     // Calculate expected audio samples for this frame
     int expected_samples = (int)(_initdata->_target_fps > 0
@@ -763,11 +774,17 @@ void OrkEzApp::enableMovieRecording(file::Path output_path) {
 
     // Queue for encoding thread (don't wait!)
     int frame_num = _render_count.load();
-    mctx->queueFrame(future, capbuf, frame_num, expected_samples);
+    size_t enqueued = mctx->enqueueFrame(future, capbuf, frame_num, expected_samples);
+    if (enqueued > 30) {
+      ::usleep(1000*250);
+      printf( "MovieCaptureContext queue full (%zu frames), sleeping to catch up...\n", enqueued );
+    }
   };
 }
 void OrkEzApp::finishMovieRecording() {
-  _moviecapcontext->terminate();
+  if(_moviecapcontext){
+    _moviecapcontext->terminate();
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::setRefreshPolicy(RefreshPolicyItem policy) {

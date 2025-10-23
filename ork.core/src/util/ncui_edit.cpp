@@ -98,7 +98,7 @@ void TextEdit::_doDraw() {
   }
   
   // Draw text
-  ncplane_putstr_yx(ctx->_stdplane, _y, _x + 1, display_text.c_str());
+  //ncplane_putstr_yx(ctx->_stdplane, _y, _x + 1, display_text.c_str());
   
   // Draw cursor if focused
   if (_has_focus && _cursor_pos <= display_text.length()) {
@@ -106,7 +106,7 @@ void TextEdit::_doDraw() {
     if (cursor_x < _x + _width - 1) {
       char cursor_char = (_cursor_pos < _text.length()) ? _text[_cursor_pos] : ' ';
       _setColors(bg_color, fg_color); // Inverted colors for cursor
-      ncplane_putchar_yx(ctx->_stdplane, _y, cursor_x, cursor_char);
+      //ncplane_putchar_yx(ctx->_stdplane, _y, cursor_x, cursor_char);
     }
   }
 }
@@ -317,12 +317,12 @@ void BoolEdit::_doDraw() {
     display = display.substr(0, _width);
   }
   
-  ncplane_putstr_yx(ctx->_stdplane, _y, _x, display.c_str());
+  //ncplane_putstr_yx(ctx->_stdplane, _y, _x, display.c_str());
   
   // Highlight the checkbox part if checked
   if (_value) {
     _setColors(_checked_color, bg_color);
-    ncplane_putchar_yx(ctx->_stdplane, _y, _x + 1, 'X');
+    //ncplane_putchar_yx(ctx->_stdplane, _y, _x + 1, 'X');
   }
   
   // Draw focus indicator
