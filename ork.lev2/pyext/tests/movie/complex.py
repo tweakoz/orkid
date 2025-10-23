@@ -7,10 +7,14 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import sys, math, random, signal, numpy, obt.path, os
+import sys, math, time, random, signal, numpy, obt.path, os, argparse
+from obt import host
 from orkengine.core import *
 from orkengine.lev2 import *
-from PIL import Image
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--freerun', '-f', action='store_true', help='Enable freerun mode (async)')
+args = parser.parse_args()
 
 ################################################################################
 
@@ -23,18 +27,35 @@ from lev2utils.scenegraph import createSceneGraph
 
 ################################################################################
 
-save_images = False 
-do_offscreen = False 
-
-################################################################################
-
-class UiSgQuadViewTestApp(object):
+class ComplexMovieApp(object):
 
   def __init__(self):
     super().__init__()
 
-    self.ezapp = OrkEzApp.create(self, offscreen=do_offscreen)
-    self.ezapp.setRefreshPolicy(RefreshFixedFPS, 30)
+    self.freerun = args.freerun
+    self.FPS = 60.0 # frames per second
+    self.LEN = 30.0  # seconds
+    self.NUMFRAMES = int(self.FPS * self.LEN)
+    self.NUMFRAMESP1 = self.NUMFRAMES + 1
+
+    ########################################
+    # lockstep mode ?, use STREAM audio device (for movie capture)
+    ########################################
+
+    self.ezapp = lev2.OrkEzApp.create(
+        self,
+        enable_audio_synth=True,
+        audio_stream_sync=True,
+        enable_graphics=True,
+        freerun=self.freerun,
+        target_ups = self.FPS,
+        target_fps = self.FPS,
+        width=1280,
+        height=720
+    )
+    
+    if not self.freerun:
+      self.ezapp.setRefreshPolicy(RefreshFixedFPS, 30)
 
     # enable UI draw mode
     self.ezapp.topWidget.enableUiDraw()
@@ -114,7 +135,6 @@ class UiSgQuadViewTestApp(object):
         self.dst_eye = vec3(0,0,0)
         self.dst_tgt = vec3(0,0,0)
         self.counter = 0
-        self.use_event = False
 
         griditem = parent.griditems[index]
         
@@ -122,41 +142,6 @@ class UiSgQuadViewTestApp(object):
         griditem.widget.scenegraph = self.scenegraph
         griditem.widget.forkDB()
         self.scenegraph.lightingmanager.gpuInit(ctx)
-        ########################################### 
-        # route events to panels ui camera ?
-        ########################################### 
-
-        def onPanelEvent(index, event):
-          if event.code == tokens.KEY_DOWN.hashed or event.code == tokens.KEY_REPEAT.hashed:
-            if event.keycode == 32: # spacebar
-              self.use_event = not self.use_event
-
-          if self.use_event:
-            self.uicam.uiEventHandler(event)
-          
-          return ui.HandlerResult()
-
-        griditem.widget.evhandler = lambda ev: onPanelEvent(index,ev)
-
-        ########################################### 
-
-        if save_images:
-          self.capbuf = CaptureBuffer()
-          self.frame_index = 0
-
-          def _on_render():
-            rtgroup = griditem.widget.rtgroup
-            rtbuffer = rtgroup.buffer(0) #rtg's MRT buffer 0
-            FBI = ctx.FBI()
-            FBI.captureAsFormat(rtbuffer,self.capbuf,"RGBA8")
-            as_np = numpy.array(self.capbuf,dtype=numpy.uint8).reshape( rtgroup.height, rtgroup.width, 4 )
-            img = Image.fromarray(as_np, 'RGBA')
-            flipped = img.transpose(Image.FLIP_TOP_BOTTOM)
-            out_path = ork.path.temp()/("%s-%003d.png"%(camname,self.frame_index))
-            flipped.save(out_path)
-            self.frame_index += 1
-
-          griditem.widget.onPostRender(_on_render)
 
         self.griditem = griditem
 
@@ -165,23 +150,22 @@ class UiSgQuadViewTestApp(object):
       def update(self):
         def genpos():
           r = vec3(0)
-          r.x = random.uniform(-10,10)
-          r.z = random.uniform(-10,10)
-          r.y = random.uniform(  0,10)
+          r.x = random.uniform(-20,20)
+          r.z = random.uniform(-20,20)
+          r.y = random.uniform(  10,20)
           return r 
       
         if self.counter<=0:
-          self.counter = int(random.uniform(1,1000))
+          self.counter = int(random.uniform(1,500))
           self.dst_eye = genpos()
           self.dst_tgt = vec3(0,random.uniform(  0,2),0)
 
-        if not self.use_event:
-          self.cur_eye = self.cur_eye*0.9995 + self.dst_eye*0.0005
-          self.cur_tgt = self.cur_tgt*0.9995 + self.dst_tgt*0.0005
-          self.uicam.distance = 1
-          self.uicam.lookAt( self.cur_eye,
-                            self.cur_tgt,
-                            vec3(0,1,0))
+        self.cur_eye = self.cur_eye*0.9995 + self.dst_eye*0.0005
+        self.cur_tgt = self.cur_tgt*0.9995 + self.dst_tgt*0.0005
+        self.uicam.distance = 1
+        self.uicam.lookAt( self.cur_eye,
+                          self.cur_tgt,
+                          vec3(0,1,0))
 
         self.counter = self.counter-1
 
@@ -200,53 +184,56 @@ class UiSgQuadViewTestApp(object):
     
     ##########################################################################
 
-    self.panels[0].griditem.widget.decoupleFromUiSize(4096,4096)
-    self.panels[0].griditem.widget.aspect_from_rtgroup = True
+    lg_group = self.ezapp.topLayoutGroup
+    lg_group.margin = 4
+    item = lg_group.makeEvTestBox( w=100, #
+                                   h=100, #
+                                   x=100, #
+                                   y=100, #
+                                   color_normal=vec4(0.75,0.75,0.75,0.5), #
+                                   color_click=vec4(0.5,0.0,0.0,0.5), #
+                                   color_doubleclick=vec4(0.5,1.0,0.5,0.5), #
+                                   color_drag=vec4(0.5,0.5,1.0,0.5), #
+                                   name="testbox1")
+    lg_group.replaceChild(self.panels[0].griditem.layout,item)
+    self.uicontext.dumpWidgets("UI2")
+    lg_group.clearColorGuide = vec4(1,0,1,1)
 
-    if True: # try out widget replacement
-      lg_group = self.ezapp.topLayoutGroup
-      lg_group.margin = 4
-      item = lg_group.makeEvTestBox( w=100, #
-                                     h=100, #
-                                     x=100, #
-                                     y=100, #
-                                     color_normal=vec4(0.75,0.75,0.75,0.5), #
-                                     color_click=vec4(0.5,0.0,0.0,0.5), #
-                                     color_doubleclick=vec4(0.5,1.0,0.5,0.5), #
-                                     color_drag=vec4(0.5,0.5,1.0,0.5), #
-                                     name="testbox1")
-      #self.uicontext.dumpWidgets("UI1")
-      #lg_group.layout.dump()
-      #lg_group.removeChild(self.panels[0].griditem.layout)
-      lg_group.replaceChild(self.panels[0].griditem.layout,item)
-      self.uicontext.dumpWidgets("UI2")
-      #lg_group.layout.dump()
-      lg_group.clearColorGuide = vec4(1,0,1,1)
+    self.rencount = 0
 
   ################################################
 
   def onUpdate(self,updinfo):
-
     abstime = updinfo.absolutetime
-
     cube_y = 0.4+math.sin(abstime)*0.2
-    #self.cube_node1.worldTransform.translation = vec3(0,cube_y,0) 
-    #self.cube_node1.worldTransform.orientation = quat(vec3(0,1,0),abstime*90*constants.DTOR) 
-    #self.cube_node1.worldTransform.scale = 0.1
-
     for panel in self.panels:
       panel.update()
-
     for g in self.griditems:
       g.widget.setDirty()
     
 
+  ##############################################
+
+  def onGpuPostFrame(self, ctx):
+    self.rencount += 1
+    if self.freerun == False:
+      match self.rencount:
+        case 1:
+          self.mcc = self.ezapp.enableMovieRecording( output_path="/tmp/str_audio_test_movie.mp4",
+                                                      preset="ultra",
+                                                      fps=self.FPS,
+                                                      max_queue_size=180,
+                                                      audio_test_tone=True )
+        case self.NUMFRAMES:
+          self.ezapp.finishMovieRecording()
+        case self.NUMFRAMESP1:
+          self.ezapp.signalExit()
+
 ###############################################################################
 
-def onRunLoopIteration():
-  # we just need this in-python runloop iteration 
-  #  in order to catch ctrl-c from python
-  #  so the python signal handler can trigger it's designated callback
-  pass
+app = ComplexMovieApp()
+app.ezapp.mainThreadLoop(on_iter=lambda : False)
 
-UiSgQuadViewTestApp().ezapp.mainThreadLoop(on_iter=onRunLoopIteration)
+if host.IsOsx and not app.freerun:
+  time.sleep(1)
+  os.system("open /tmp/str_audio_test_movie.mp4")

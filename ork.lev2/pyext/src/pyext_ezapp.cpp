@@ -130,7 +130,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   appinitdata->_offscreen = py::cast<bool>(item.second);
                 } else if (key == "ssaa") {
                   appinitdata->_ssaa_samples = py::cast<int>(item.second);
-                } else if (key == "disableMouseCursor") {
+                } else if (key == "disable_mouse_cursor") {
                   appinitdata->_disableMouseCursor = py::cast<bool>(item.second);
                 } else if (key == "msaa") {
                   appinitdata->_msaa_samples = py::cast<int>(item.second);
@@ -143,6 +143,37 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   }
                 }
               } // for (auto item : kwargs) {
+              //////////////////////////////////////
+              // ensure flags make sense
+              //////////////////////////////////////
+              if(not appinitdata->_freerunning){
+                if( not appinitdata->_offscreen ){
+                  // if we are lockstep, force offscreen mode
+                  appinitdata->_offscreen = true;
+                  logchan_EZAPP->log("forcing offscreen mode for lockstep operation");
+                }
+                ork::genviron.set("ORKID_AUDIO_IOCLASS", "STREAM");
+                appinitdata->_audio_stream_sync = true;
+                logchan_EZAPP->log("forcing ORKID_AUDIO_IOCLASS to STREAM for lockstep operation");
+              }
+              if(appinitdata->_audio_stream_sync ){
+                ork::genviron.set("ORKID_AUDIO_IOCLASS", "STREAM");
+                appinitdata->_audio_ioclass = "STREAM";
+              }
+              if(appinitdata->_enable_audio_synth){
+                // if we have synth enabled, we need audio output
+                appinitdata->_enable_audio_output = true;
+              }
+              if(appinitdata->_enable_audio_output){
+                // if we have audio output, we need audio enabled
+                appinitdata->_enable_audio = true;
+              }
+              if(appinitdata->_enable_audio_input){
+                // if we have audio input, we need audio enabled
+                appinitdata->_enable_audio = true;
+              }
+              //////////////////////////////////////
+
             } // if (kwargs) {
             /////////////////////////////
             ::ork::lev2::initModule(appinitdata);

@@ -31,25 +31,15 @@ class StrAudioTestApp(object):
         self.NUMFRAMESP1 = self.NUMFRAMES + 1
         
         ########################################
-        # lockstep mode ?, use STREAM audio device (for movie capture)
-        ########################################
-
-        if not self.freerun:          
-          os.environ["ORKID_AUDIO_IOCLASS"] = "STREAM"
-
-        ########################################
         # Create EzApp with audio synth enabled 
         # if lockstep, use offscreen mode
         ########################################
 
         self.ezapp = lev2.OrkEzApp.create(
             self,
-            enable_audio=True,
-            enable_audio_output=True,
             enable_audio_synth=True,
             audio_stream_sync=True,
             enable_graphics=True,
-            offscreen=not self.freerun,
             freerun=self.freerun,
             target_ups = self.FPS,
             target_fps = self.FPS,

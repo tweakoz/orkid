@@ -27,13 +27,6 @@ class StrAudioTestApp(object):
         self.FPS = 60.0 # frames per second
         
         ########################################
-        # lockstep mode ?, use STREAM audio device
-        ########################################
-
-        if not self.freerun:          
-          os.environ["ORKID_AUDIO_IOCLASS"] = "STREAM"
-
-        ########################################
         # Create EzApp with audio synth enabled 
         # if lockstep, use offscreen mode
         ########################################

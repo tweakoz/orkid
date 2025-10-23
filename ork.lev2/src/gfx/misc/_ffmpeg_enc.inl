@@ -392,7 +392,8 @@ AVFrame* Encoder::_getVideoFrame(ork::lev2::capturebuffer_ptr_t external_video) 
   auto dest_buffer = _video_stream->tmp_frame->data[0];
   auto dest_linesize = _video_stream->tmp_frame->linesize[0];
   for (int y = 0; y < height; y++) {
-    size_t src_row_base = ((height - 1) - y) * width * 3;
+    //size_t src_row_base = ((height - 1) - y) * width * 3;
+    size_t src_row_base = y * width * 3;
     for (int x = 0; x < width; x++) {
       size_t src_pix_base = src_row_base + (x * 3);
       dest_buffer[y * dest_linesize + 3 * x + 0] = src_pixels[src_pix_base + 0]; // R
@@ -577,7 +578,17 @@ void Encoder::_add_stream( OutputStream* ost,         //
     case AVMEDIA_TYPE_AUDIO: {
     ///////////////////////////////////////////////////////
       c->sample_fmt  = (*codec)->sample_fmts ? (*codec)->sample_fmts[0] : AV_SAMPLE_FMT_FLTP;
-      c->bit_rate    = 320000;
+      if(_settings->_preset_name=="low"){
+        c->bit_rate = 320000;
+      } else if(_settings->_preset_name=="medium"){
+        c->bit_rate = 360000;
+      } else if(_settings->_preset_name=="default"){
+        c->bit_rate = 360000;
+      } else if(_settings->_preset_name=="high"){
+        c->bit_rate = 640000;
+      } else if(_settings->_preset_name=="ultra"){
+        c->bit_rate = 1280000;
+      }
       c->sample_rate = 48000;
       if ((*codec)->supported_samplerates) {
         c->sample_rate = (*codec)->supported_samplerates[0];
