@@ -118,13 +118,18 @@ class ComplexMovieApp(object):
     
     self.grid_data = createGridData()
     cube_prim = createCubePrim(ctx=ctx,size=2.0)
-    pipeline_cube = createPipeline( app = self, ctx = ctx, rendermodel="FORWARD_PBR", techname="std_mono_fwd" )
+    cube_mtl = createPbrMaterialWithColor( ctx=ctx, 
+                                           color=vec4(1,1,1,1), 
+                                           roughness=1.0, 
+                                           metallic=1.0)
+    permu = lev2.FxPipelinePermutation(rendermodel="FORWARD_PBR")
+    pipeline_cube = cube_mtl.fxcache.findPipeline(permu) 
     mesh = meshutil.Mesh()
     mesh.readFromWavefrontObj("data://tests/simple_obj/cone.obj")
     submesh = mesh.submesh_list[0]
     submesh_prim = RigidPrimitive(submesh,ctx)
     pipeline_mesh = createPipeline( app = self, ctx = ctx, rendermodel="FORWARD_PBR", techname="std_mono_fwd" )
-
+    self.cube_mtl = cube_mtl
     ########################################################
     # create scenegraph / panels
     ########################################################

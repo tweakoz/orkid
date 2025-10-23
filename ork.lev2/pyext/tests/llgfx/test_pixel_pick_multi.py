@@ -97,7 +97,7 @@ def createMultiPipeline(ctx, shadertext, shadername="multi_buffer"):
     
     # Create pipeline permutation
     permu = lev2.FxPipelinePermutation()
-    permu.rendering_model = "CUSTOM"
+    permu.rendermodel = "CUSTOM"
     permu.technique = material.shader.technique("tek_multi_buffer")
     
     # Find and configure pipeline

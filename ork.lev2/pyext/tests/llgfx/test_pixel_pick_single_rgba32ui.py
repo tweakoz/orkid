@@ -84,7 +84,7 @@ def createPipeline(ctx, shadertext, shadername="rgba32ui_pick"):
     
     # Create pipeline permutation
     permu = lev2.FxPipelinePermutation()
-    permu.rendering_model = "CUSTOM"
+    permu.rendermodel = "CUSTOM"
     permu.technique = material.shader.technique("tek_pick_rgba32ui")
     
     # Find and configure pipeline

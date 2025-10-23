@@ -249,8 +249,7 @@ class BasicUiCamSgApp(object):
         material.rasterstate.culltest = culltest
         material.rasterstate.depthtest = depthtest
         #
-        permu = FxPipelinePermutation()
-        permu.rendering_model = rendermodel
+        permu = FxPipelinePermutation(rendermodel = rendermodel)
         permu.technique = material.shader.technique(techname)
         #
         pipeline = material.fxcache.findPipeline(permu)
@@ -276,7 +275,7 @@ class BasicUiCamSgApp(object):
         #
         permu = FxPipelinePermutation()
         
-        permu.rendering_model = rendermodel
+        permu.rendermodel = rendermodel
         #permu.technique = material.shader.technique(techname)
         #
         pipeline = material.fxcache.findPipeline(permu)

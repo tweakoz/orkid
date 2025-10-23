@@ -30,9 +30,9 @@ def createPbrMaterialWithColor( ctx=None,
                                 metallic : float = 0.0,
                                 roughness : float = 1.0 ):
   material = lev2.PBRMaterial()
-  img_color = lev2.Image.createFromFile("src://effect_textures/white_64.dds") 
-  img_normal = lev2.Image.createFromFile("src://effect_textures/default_normal.dds")
-  img_mtlruf = lev2.Image.createFromFile("src://effect_textures/white_64.dds")
+  img_color = lev2.Image.createRGB8FromColor(64,64,vec3(1.0)) 
+  img_normal = lev2.Image.createRGB8FromColor(64,64,vec3(.5,1,.5))
+  img_mtlruf = lev2.Image.createRGB8FromColor(64,64,vec3(1.0))
   material.assignImages( ctx,
                          color=img_color,
                          normal=img_normal,
@@ -67,8 +67,7 @@ def createPipeline( app=None,
     material.rasterstate.culltest = culltest
     material.rasterstate.depthtest = depthtest
     #
-    permu = lev2.FxPipelinePermutation()
-    permu.rendering_model = rendermodel
+    permu = lev2.FxPipelinePermutation(rendermodel = rendermodel)
     permu.technique = material.shader.technique(techname)
     #
     pipeline = material.fxcache.findPipeline(permu) 

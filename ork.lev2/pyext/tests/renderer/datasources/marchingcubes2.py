@@ -26,7 +26,7 @@ from _boilerplate import BasicUiCamSgApp
 half_dim = 2  # Half-width of the sampling region
 resolution = 16  # Number of points in each dimension
 octaves = 4
-
+ok_to_quit = False
 ################################################################################
 # generate a vector field via PyVista
 #################################################################################
@@ -61,12 +61,6 @@ class MCUBES2(BasicUiCamSgApp):
 
 
     self.genthread.start()
-
-    def onCtrlC(signum, frame):
-      print("signalling EXIT to ezapp")
-      self.ezapp.signalExit()
-
-    signal.signal(signal.SIGINT, onCtrlC)
     
   ##############################################
 
@@ -104,8 +98,9 @@ class MCUBES2(BasicUiCamSgApp):
   ##############################################
 
   def genTreadImpl(self):
+    global ok_to_quit
     abstime = 0.0
-    while True:
+    while not ok_to_quit:
       verts,faces = self.genMesh(abstime)
       self.gencounter += 1
       abstime += 0.01     
@@ -125,16 +120,8 @@ class MCUBES2(BasicUiCamSgApp):
     if hasattr(self,"barysubmesh") and self.gpucounter<self.updcounter:
       self.node[1].fromSubMesh(self.barysubmesh,ctx)
       self.gpucounter = self.updcounter
-    
-  ##############################################
-
-def onRunLoopIteration():
-  # we just need this in-python runloop iteration 
-  #  in order to catch ctrl-c from python
-  #  so the python signal handler can trigger it's designated callback
-  pass
-
+        
 ###############################################################################
 
-MCUBES2().ezapp.mainThreadLoop(on_iter=onRunLoopIteration)
-
+MCUBES2().ezapp.mainThreadLoop(on_iter=lambda: False)
+ok_to_quit = True

@@ -62,8 +62,7 @@ RCFD.pushCompositor(compimpl)  # bind compositor to RCFD
 # create an pipeline (a graphics pipeline)
 ###################################
 
-permu = FxPipelinePermutation()
-permu.rendering_model = "FORWARD_UNLIT"
+permu = FxPipelinePermutation(rendermodel = "FORWARD_UNLIT")
 permu.technique = tek
 pipeline = material.fxcache.findPipeline(permu)
 pipeline.bindParam(par_mvp,tokens.RCFD_Camera_MVP_Mono)

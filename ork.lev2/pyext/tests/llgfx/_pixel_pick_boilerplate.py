@@ -96,7 +96,7 @@ class PixelPickTest:
         self.mtl = lev2.FreestyleMaterial()
         self.mtl.gpuInit(self.ctx, "orkshader://solid.fxv2")
         self.permu = lev2.FxPipelinePermutation()
-        self.permu.rendering_model = "CUSTOM"
+        self.permu.rendermodel = "CUSTOM"
         self.permu.technique = self.mtl.shader.technique("vtxcolor")
         self.pipeline = self.mtl.fxcache.findPipeline(self.permu)
         self.pipeline.name = "test_pattern"

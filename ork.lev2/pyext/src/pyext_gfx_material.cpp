@@ -136,8 +136,28 @@ void pyinit_gfx_material(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto pipelinepermu_type =                                                     //
       py::class_<FxPipelinePermutation, fxpipelinepermutation_ptr_t>(module_lev2, "FxPipelinePermutation") //
-          .def(py::init<>())
-          .def_property("rendering_model",
+          .def(py::init<>([](py::kwargs args) -> fxpipelinepermutation_ptr_t {
+            auto permu = std::make_shared<FxPipelinePermutation>();
+            if(args){
+              for (auto item : args) {
+                auto key = py::cast<std::string>(item.first);
+                if ((key == "rendermodel") or (key == "rendering_model")) {
+                  auto model = item.second.cast<std::string>();
+                  permu->_rendering_model = CrcString(model.c_str()).hashed();
+                }
+              }
+            }
+            return permu;
+          }))
+          .def_property("rendering_model", // old name: rendering_model
+              [](fxpipelinepermutation_ptr_t permu) -> uint32_t { //
+                return permu->_rendering_model;
+              },
+              [](fxpipelinepermutation_ptr_t permu, std::string model) { //
+                permu->_rendering_model = CrcString(model.c_str()).hashed();
+              }
+          )
+          .def_property("rendermodel", // new name: rendermodel
               [](fxpipelinepermutation_ptr_t permu) -> uint32_t { //
                 return permu->_rendering_model;
               },

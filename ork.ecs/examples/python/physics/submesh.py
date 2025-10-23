@@ -310,8 +310,7 @@ class ECS_MINIMAL(object):
     fstyle = material.freestyle
     fxcache = material.fxcache
 
-    permu = FxPipelinePermutation()
-    permu.rendering_model = "FORWARD_PBR"
+    permu = FxPipelinePermutation(rendermodel = "FORWARD_PBR")
     permu.instanced = False
     permu.skinned = False
     permu.is_picking = False

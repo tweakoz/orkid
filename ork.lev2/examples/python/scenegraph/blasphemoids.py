@@ -68,7 +68,7 @@ class Blasphemoids(_simsetup.SimApp):
     self.v4parref = vec4()
     #stereo_material_inst = material.createFxInstance()
     permu = FxPipelinePermutation()
-    permu.rendering_model = "FORWARD_PBR"
+    permu.rendermodel = "FORWARD_PBR"
     permu.technique = material.technique("std_stereo")
 
     pipeline = material.fxcache.findPipeline(permu) 
