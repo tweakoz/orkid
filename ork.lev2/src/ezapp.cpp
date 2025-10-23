@@ -764,13 +764,17 @@ void OrkEzApp::enableMovieRecording(file::Path output_path,rtbuffer_ptr_t overri
     if( override_rtb ) {
       rtb = override_rtb;
     }
-    auto capbuf = std::make_shared<CaptureBuffer>();
-    auto future = fbi->captureAsFormat(rtb.get(), capbuf, EBufferFormat::RGBA8);
 
+    auto capbuf = std::make_shared<CaptureBuffer>();
+
+    auto future = fbi->captureAsFormat( rtb.get(),                     //
+                                        capbuf, EBufferFormat::RGBA8);
+
+    bool fps_set = (_initdata->_target_fps > 0);
     // Calculate expected audio samples for this frame
-    int expected_samples = (int)(_initdata->_target_fps > 0
-                                  ? (48000.0 / _initdata->_target_fps)
-                                  : 800);
+    int expected_samples = fps_set                               //
+                         ? int(48000.0 / _initdata->_target_fps) //
+                         : int(800);
 
     // Queue for encoding thread (don't wait!)
     int frame_num = _render_count.load();

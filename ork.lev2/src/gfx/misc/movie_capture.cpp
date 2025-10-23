@@ -211,12 +211,23 @@ void MovieCaptureContext::_encodingThreadFunc() {
         OrkAssert(extracted->_num_samples == frame_data.expected_audio_samples);
 
         // Add debug tone
-        static float phase = 0.0f;
-        for( int i=0; i<frame_data.expected_audio_samples; i++ ) {
-          float samp = sinf( phase * 6.2831853f ) * 0.1f;
-          extracted->_left[i] += samp;
-          extracted->_right[i] += samp;
-          phase += 110.0f / 48000.0f;
+        if(true) {
+          static float phaseL0 = 0.0f;
+          static float phaseL1 = 0.0f;
+          static float phaseR0 = 0.0f;
+          static float phaseR1 = 0.0f;
+          for( int i=0; i<frame_data.expected_audio_samples; i++ ) {
+            float frqL = sinf( phaseL1 * 6.2831853f * 1.0 ) * 220.0f + 220.0f;
+            float sampL = sinf( phaseL0 * 6.2831853f ) * 0.1f;
+            float frqR = sinf( phaseR1 * 6.2831853f * 1.1 ) * 220.0f + 220.0f;
+            float sampR = sinf( phaseR0 * 6.2831853f ) * 0.1f;
+            extracted->_left[i] += sampL;
+            extracted->_right[i] += sampR;
+            phaseL0 += frqL / 48000.0f;
+            phaseL1 += 1.0f / 48000.0f;
+            phaseR0 += frqR / 48000.0f;
+            phaseR1 += 1.0f / 48000.0f;
+          }
         }
 
         // Accumulate into buffer
