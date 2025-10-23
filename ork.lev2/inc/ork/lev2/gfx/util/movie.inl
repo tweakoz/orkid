@@ -75,7 +75,14 @@ struct MovieCaptureContext {
   std::atomic<bool> _terminated{false};
 
   audiodevice_ptr_t _audio_device;  // Reference to extract samples
-  
+
+  /////////////////////////////////////////////////////////////////////////////////////////
+  // Audio buffering (accumulate samples until codec frame size is reached)
+  /////////////////////////////////////////////////////////////////////////////////////////
+
+  std::vector<float> _audio_buffer_left;
+  std::vector<float> _audio_buffer_right;
+
 private:
   void _initVideoStream();
   void _initAudioStream();

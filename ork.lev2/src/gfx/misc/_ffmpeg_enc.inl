@@ -104,6 +104,13 @@ struct Encoder {
   void enqueueFrames(ork::lev2::capturebuffer_ptr_t video_buffer,
                      ork::lev2::audioframecapture_ptr_t audio_capture);
 
+  int getAudioFrameSize() const {
+    if (_audio_stream && _audio_stream->enc) {
+      return _audio_stream->enc->frame_size;
+    }
+    return 0;
+  }
+
   void _closeStream(OutputStream* ost);
 
   void _add_stream( OutputStream* ost,         //
@@ -305,8 +312,8 @@ void Encoder::_openAudio(AVDictionary* opt_arg) {
   else
     nb_samples = c->frame_size;
 
-  _audio_stream->frame     = _allocAudioFrame(c->sample_fmt, &c->ch_layout, c->sample_rate, nb_samples);
-  _audio_stream->tmp_frame = _allocAudioFrame(AV_SAMPLE_FMT_S16, &c->ch_layout, c->sample_rate, nb_samples);
+  // Allocate frame in codec's native format (FLTP for AAC)
+  _audio_stream->frame = _allocAudioFrame(c->sample_fmt, &c->ch_layout, c->sample_rate, nb_samples);
 
   /* copy the stream parameters to the muxer */
   ret = avcodec_parameters_from_context(_audio_stream->st->codecpar, c);
@@ -315,26 +322,7 @@ void Encoder::_openAudio(AVDictionary* opt_arg) {
     exit(1);
   }
 
-  /* create resampler context */
-  _audio_stream->swr_ctx = swr_alloc();
-  if (!_audio_stream->swr_ctx) {
-    fprintf(stderr, "Could not allocate resampler context\n");
-    exit(1);
-  }
-
-  /* set options */
-  av_opt_set_chlayout(_audio_stream->swr_ctx, "in_chlayout", &c->ch_layout, 0);
-  av_opt_set_int(_audio_stream->swr_ctx, "in_sample_rate", c->sample_rate, 0);
-  av_opt_set_sample_fmt(_audio_stream->swr_ctx, "in_sample_fmt", AV_SAMPLE_FMT_S16, 0);
-  av_opt_set_chlayout(_audio_stream->swr_ctx, "out_chlayout", &c->ch_layout, 0);
-  av_opt_set_int(_audio_stream->swr_ctx, "out_sample_rate", c->sample_rate, 0);
-  av_opt_set_sample_fmt(_audio_stream->swr_ctx, "out_sample_fmt", c->sample_fmt, 0);
-
-  /* initialize the resampling context */
-  if ((ret = swr_init(_audio_stream->swr_ctx)) < 0) {
-    fprintf(stderr, "Failed to initialize the resampling context\n");
-    exit(1);
-  }
+  // No resampler needed - direct float to planar float conversion
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -489,45 +477,13 @@ int Encoder::_writeVideoFrame(ork::lev2::capturebuffer_ptr_t external_buffer) {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 int Encoder::_writeAudioFrame(ork::lev2::audioframecapture_ptr_t external_audio) {
-  AVCodecContext* c;
-  AVFrame* frame;
-  int ret;
-  int dst_nb_samples;
-
-  c = _audio_stream->enc;
-
-  frame = _getAudioFrame(external_audio);
+  auto frame = _getAudioFrame(external_audio);
 
   if (frame) {
-    ////////////////////////////////////////////////////////////////////////////////////////
-    // convert samples from native format to destination codec format, using the resampler 
-    // compute destination number of samples 
-    ////////////////////////////////////////////////////////////////////////////////////////
-    int delay = swr_get_delay( _audio_stream->swr_ctx, c->sample_rate);
-    dst_nb_samples = av_rescale_rnd( delay + frame->nb_samples, c->sample_rate, c->sample_rate, AV_ROUND_UP);
-    av_assert0(dst_nb_samples == frame->nb_samples);
-
-    // when we pass a frame to the encoder, it may keep a reference to it
-    // internally;
-    // make sure we do not overwrite it here
-    //
-    ret = av_frame_make_writable(_audio_stream->frame);
-    if (ret < 0)
-      exit(1);
-
-    // convert to destination format 
-    ret = swr_convert(_audio_stream->swr_ctx, _audio_stream->frame->data, dst_nb_samples, (const uint8_t**)frame->data, frame->nb_samples);
-    if (ret < 0) {
-      fprintf(stderr, "Error while converting\n");
-      exit(1);
-    }
-    frame = _audio_stream->frame;
-
-    frame->pts = av_rescale_q(_audio_stream->samples_count, (AVRational){1, c->sample_rate}, c->time_base);
-    _audio_stream->samples_count += dst_nb_samples;
+    _audio_stream->samples_count += frame->nb_samples;
   }
 
-  return _writeFrame(c, _audio_stream->st, frame, _audio_stream->tmp_pkt);
+  return _writeFrame(_audio_stream->enc, _audio_stream->st, frame, _audio_stream->tmp_pkt);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -535,11 +491,10 @@ int Encoder::_writeAudioFrame(ork::lev2::audioframecapture_ptr_t external_audio)
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 AVFrame* Encoder::_getAudioFrame( ork::lev2::audioframecapture_ptr_t external_audio) { //
-  AVFrame* frame = _audio_stream->tmp_frame;
-  auto q = (int16_t*) frame->data[0];
+  AVFrame* output_frame = _audio_stream->frame;
 
   ///////////////////////////////////////////////////////
-  // If no external audio provided, return nullptr (no more frames) 
+  // If no external audio provided, return nullptr (no more frames)
   ///////////////////////////////////////////////////////
 
   if (!external_audio || external_audio->_num_samples == 0)
@@ -549,26 +504,37 @@ AVFrame* Encoder::_getAudioFrame( ork::lev2::audioframecapture_ptr_t external_au
   int num_channels = _audio_stream->enc->ch_layout.nb_channels;
   OrkAssert(num_channels==2);
 
+  // Ensure frame is writable
+  if (av_frame_make_writable(output_frame) < 0)
+    return nullptr;
+
+  // ensure output_frame has enough samples
+  if (output_frame->nb_samples < num_samples) {
+    av_frame_free(&output_frame);
+    output_frame = _allocAudioFrame(_audio_stream->enc->sample_fmt,
+                                    &_audio_stream->enc->ch_layout,
+                                    _audio_stream->enc->sample_rate,
+                                    num_samples);
+    _audio_stream->frame = output_frame;
+  }
   ///////////////////////////////////////////////////////
-  // Copy external audio data (float) to frame (int16_t)
+  // Direct copy: float arrays -> planar float (FLTP)
+  // data[0] = left channel, data[1] = right channel
   ///////////////////////////////////////////////////////
 
-  for (int j = 0; j < num_samples; j++) {
-    float left_sample = external_audio->_left[j];
-    float right_sample = external_audio->_right[j];
+  auto left_out = (float*)output_frame->data[0];
+  auto right_out = (float*)output_frame->data[1];
 
-    // Clamp and convert float [-1.0, 1.0] to int16_t [-32768, 32767]
-    float clampL = std::max(-1.0f, std::min(1.0f, left_sample));
-    float clampR = std::max(-1.0f, std::min(1.0f, right_sample));
-    // Stereo (interleave)
-    *q++ = (int16_t)(clampL*32767.0f);
-    *q++ = (int16_t)(clampR*32767.0f);
+  for (int i = 0; i < num_samples; i++) {
+    left_out[i] = external_audio->_left[i];
+    right_out[i] = external_audio->_right[i];
   }
 
-  frame->pts = _audio_stream->next_pts;
+  output_frame->nb_samples = num_samples;
+  output_frame->pts = _audio_stream->next_pts;
   _audio_stream->next_pts += num_samples;
 
-  return frame;
+  return output_frame;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
