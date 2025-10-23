@@ -173,7 +173,7 @@ void MovieCaptureContext::_encodingThreadFunc() {
 
       _queue_cv.notify_all();
     }
-    if(timer.SecsSinceStart()>1.0f){
+    if(timer.SecsSinceStart()>4.0f){
       size_t queue_size = _frame_queue.size();
       size_t frame_index = frame_data.frame_number;
       size_t num_frames_encoded = encoder->_num_frames_encoded;

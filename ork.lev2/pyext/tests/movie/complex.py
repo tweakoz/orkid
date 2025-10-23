@@ -8,9 +8,10 @@
 ################################################################################
 
 import sys, math, time, random, signal, numpy, obt.path, os, argparse
-from obt import host
 from orkengine.core import *
 from orkengine.lev2 import *
+from obt import host
+from ork.singularity import testlib
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--freerun', '-f', action='store_true', help='Enable freerun mode (async)')
@@ -49,7 +50,7 @@ class ComplexMovieApp(object):
     self.ezapp = lev2.OrkEzApp.create(
         self,
         enable_audio_synth=True,
-        audio_stream_sync=True,
+        audio_stream_sync=not self.freerun,
         enable_graphics=True,
         freerun=self.freerun,
         target_ups = self.FPS,
@@ -74,11 +75,26 @@ class ComplexMovieApp(object):
                                         uiclass = ui.SceneGraphViewport,
                                         args = ["box",vec4(1,0,1,1)] )
 
+  ##############################################
+
     def onCtrlC(signum, frame):
       print("signalling EXIT to ezapp")
       self.ezapp.signalExit()
 
     signal.signal(signal.SIGINT, onCtrlC)
+
+  ##############################################
+
+  def onSynthInit(self,synth):
+    testlib.bindSynthToApp(synth,             # synth instance
+                           self,              # app instance
+                           initial_gain=0.0,  # initial gain in dB
+                           main_fx="ShifterChorus")  # main bus effect
+    self.waveprog = testlib.WaveformsProgram()
+    P = self.waveprog.program
+    synth.programbus.uiprogram = P
+    mods = None
+    self.v = synth.keyOn(24,127,P,mods)
 
   ##############################################
 
@@ -232,12 +248,12 @@ class ComplexMovieApp(object):
     self.rencount += 1
     if self.freerun == False:
       match self.rencount:
-        case 1:
+        case 2:
           self.mcc = self.ezapp.enableMovieRecording( output_path="/tmp/str_audio_test_movie.mp4",
                                                       preset="ultra",
                                                       fps=self.FPS,
                                                       max_queue_size=180,
-                                                      audio_test_tone=True )
+                                                      audio_test_tone=False )
         case self.NUMFRAMES:
           self.ezapp.finishMovieRecording()
         case self.NUMFRAMESP1:

@@ -33,7 +33,7 @@ def createLayer(program):
   ampblock.paramByName("gain").mods.src1 = ampenv
   ampblock.paramByName("gain").mods.src1scale = 1.0
   SOSCIL = dspstg.appendDspBlock("Sampler","soscil")
-  return newlyr, SOSCIL
+  return newlyr, SOSCIL, dspstg, ampstg
 
 def createSampleLayer(program,
                       multisample,
@@ -44,7 +44,7 @@ def createSampleLayer(program,
                       pan=7):
 
         
-  newlyr, SOSCIL = createLayer(program)
+  newlyr, SOSCIL, dspstg, ampstg = createLayer(program)
   newlyr.pan = pan
   keymap = S.KeyMapData("KMAP")
   the_sample = multisample.sampleByIndex(0)
@@ -58,4 +58,4 @@ def createSampleLayer(program,
     sample=the_sample)
   newlyr.keymap = keymap    
   SOSCIL.lowpassfreq = lowpass
-  return newlyr, SOSCIL
+  return newlyr, SOSCIL, dspstg, ampstg

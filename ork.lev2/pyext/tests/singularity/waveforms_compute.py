@@ -7,16 +7,15 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import numpy as np
+import numpy as np, math
 import sys, random
 from orkengine.core import *
 from orkengine.lev2 import *
 from orkengine.lev2 import singularity as S
-from _sampler import createLayer, createSampleLayer
+from ork.singularity import sampler
 
 ################################################################################
 sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
-from _boilerplate import *
 from singularity._harness import SingulTestApp, find_index
 tokens = CrcStringProxy()
 ################################################################################
@@ -45,7 +44,7 @@ class WaveformsApp(SingulTestApp):
     ############################
 
     if True:      
-      newlyr, SOSCIL = createLayer(newprog)
+      newlyr, SOSCIL = sampler.createLayer(newprog)
 
       #########################################
       # waveform data

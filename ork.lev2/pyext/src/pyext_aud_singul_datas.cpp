@@ -535,6 +535,13 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                 appendPitchChorus(layer, stgdata, wetness, cents, feedback);
               })
           .def("dspblock", [](dspstagedata_ptr_t stgdata, int index) -> dspblkdata_ptr_t { return stgdata->_blockdatas[index]; })
+          .def(
+              "dspblockByName",
+              [](dspstagedata_ptr_t stgdata, std::string named) -> dspblkdata_ptr_t {
+                auto it = stgdata->_namedblockdatas.find(named);
+                OrkAssert(it != stgdata->_namedblockdatas.end());
+                return it->second;
+              })
           .def("dump", [](dspstagedata_ptr_t stgdata) { stgdata->dump(); });
   type_codec->registerStdCodec<dspstagedata_ptr_t>(stgdata_type);
   /////////////////////////////////////////////////////////////////////////////////

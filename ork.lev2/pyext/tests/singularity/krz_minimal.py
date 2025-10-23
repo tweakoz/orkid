@@ -13,7 +13,7 @@ from collections import defaultdict
 import re
 from orkengine.core import *
 from orkengine.lev2 import *
-from _sampler import createSampleLayer
+from ork.singularity.sampler import createSampleLayer
 
 ################################################################################
 sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
