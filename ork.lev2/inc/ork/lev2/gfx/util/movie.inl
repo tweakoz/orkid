@@ -83,13 +83,6 @@ struct MovieCaptureContext {
   std::atomic<bool> _encoding_running{false};
   std::atomic<bool> _terminated{false};
 
-  /////////////////////////////////////////////////////////////////////////////////////////
-  // Audio buffering (accumulate samples until codec frame size is reached)
-  /////////////////////////////////////////////////////////////////////////////////////////
-
-  std::vector<float> _audio_buffer_left;
-  std::vector<float> _audio_buffer_right;
-
 private:
   void _startEncodingThread();
   void _stopEncodingThread();

@@ -133,101 +133,76 @@ void MovieCaptureContext::_encodingThreadFunc() {
   auto str_audio = std::dynamic_pointer_cast<StrAudioDevice>(_settings->_audiodevice);
 
   while (_encoding_running or (not _frame_queue.empty())) {
+
+
+    //=========================================
+    // 2. Determine what can be encoded (symmetric, like mux.c)
+    //=========================================
+    bool can_audio = str_audio && (str_audio->availableSamples() >= codec_audio_frame_size);
+    bool can_video = false;
     CapturedMovieFrame frame_data;
 
-    //=========================================
-    // Extract audio from device first (decoupled from video frame processing)
-    //=========================================
-    if (str_audio) {
-      std::unique_lock<std::mutex> lock(_queue_mutex);
-
-      if (!_frame_queue.empty()) {
-        int available_audio = str_audio->availableSamples();
-        int expected_audio = _frame_queue.front().expected_audio_samples;
-
-        // Extract audio if available
-        if (available_audio >= expected_audio) {
-          auto extracted = str_audio->extractSamples(expected_audio);
-          OrkAssert(extracted->_num_samples == expected_audio);
-
-          // Add debug tone if enabled
-          if(_settings->_audio_test_tone) {
-            static float phaseL0 = 0.0f;
-            static float phaseL1 = 0.0f;
-            static float phaseR0 = 0.0f;
-            static float phaseR1 = 0.0f;
-            for( int i=0; i<expected_audio; i++ ) {
-              float frqL = sinf( phaseL1 * 6.2831853f * 1.0 ) * 220.0f + 220.0f;
-              float sampL = sinf( phaseL0 * 6.2831853f ) * 0.1f;
-              float frqR = sinf( phaseR1 * 6.2831853f * 1.1 ) * 220.0f + 220.0f;
-              float sampR = sinf( phaseR0 * 6.2831853f ) * 0.1f;
-              extracted->_left[i] += sampL;
-              extracted->_right[i] += sampR;
-              phaseL0 += frqL / 48000.0f;
-              phaseL1 += 1.0f / 48000.0f;
-              phaseR0 += frqR / 48000.0f;
-              phaseR1 += 1.0f / 48000.0f;
-            }
-          }
-
-          // Accumulate into buffer
-          _audio_buffer_left.insert(_audio_buffer_left.end(),
-                                     extracted->_left.begin(),
-                                     extracted->_left.end());
-          _audio_buffer_right.insert(_audio_buffer_right.end(),
-                                      extracted->_right.begin(),
-                                      extracted->_right.end());
-        }
-      }
-    }
-
-    //=========================================
-    // Pop from queue if we have enough audio buffered
-    //=========================================
     {
       std::unique_lock<std::mutex> lock(_queue_mutex);
-
-      // If queue is empty, no-op this iteration
-      if (_frame_queue.empty()) {
-        continue;
+      if (!_frame_queue.empty()) {
+        frame_data = _frame_queue.front();
+        can_video = frame_data.capture_future->isReady();
       }
+    }
 
-      // Check if we have enough audio buffered to reach this frame's timestamp
-      if (str_audio) {
-        double target_video_time = (double)_frame_queue.front().frame_number / (double)_settings->_fps;
-        double current_audio_time = (double)total_audio_samples / 48000.0;
-        double audio_time_needed = target_video_time - current_audio_time;
+    // Calculate PTS for comparison
+    double video_pts = can_video ? ((double)frame_data.frame_number / (double)_settings->_fps) : 999999.0;
+    double audio_pts = (double)total_audio_samples / 48000.0;
 
-        if (audio_time_needed > 0) {
-          int samples_needed = (int)(audio_time_needed * 48000.0);
-          // Round up to next audio frame boundary
-          int audio_frames_needed = (samples_needed + codec_audio_frame_size - 1) / codec_audio_frame_size;
-          int total_samples_needed = audio_frames_needed * codec_audio_frame_size;
+    // Symmetric decision: encode whichever stream is behind
+    bool should_video = can_video && (!can_audio || video_pts <= audio_pts);
+    bool should_audio = can_audio && (!can_video || audio_pts < video_pts);
 
-          if (_audio_buffer_left.size() < (size_t)total_samples_needed) {
-            if ((_frame_queue.front().frame_number % 60) == 0) {
-              logchan_moviecap->log("Frame %d: Waiting for audio buffer: need %d samples for %.4fs, have %zu",
-                                    _frame_queue.front().frame_number, total_samples_needed,
-                                    audio_time_needed, _audio_buffer_left.size());
-            }
-            continue;  // Try again on next iteration
-          }
+    //=========================================
+    // 3. Encode video (if it should)
+    //=========================================
+    if (should_video) {
+      std::unique_lock<std::mutex> lock(_queue_mutex);
+      _frame_queue.pop_front();
+      _queue_cv.notify_all();
+      encoder->enqueueFrames(frame_data.capture_buffer, nullptr);
+    } else if (should_audio) {
+      //=========================================
+      // 4. Extract and encode audio directly
+      //=========================================
+      auto extracted = str_audio->extractSamples(codec_audio_frame_size);
+      OrkAssert(extracted->_num_samples == codec_audio_frame_size);
+
+      // Add debug tone if enabled
+      if(_settings->_audio_test_tone) {
+        static float phaseL0 = 0.0f;
+        static float phaseL1 = 0.0f;
+        static float phaseR0 = 0.0f;
+        static float phaseR1 = 0.0f;
+        for( int i=0; i<codec_audio_frame_size; i++ ) {
+          float frqL = sinf( phaseL1 * 6.2831853f * 1.0 ) * 220.0f + 220.0f;
+          float sampL = sinf( phaseL0 * 6.2831853f ) * 0.1f;
+          float frqR = sinf( phaseR1 * 6.2831853f * 1.1 ) * 220.0f + 220.0f;
+          float sampR = sinf( phaseR0 * 6.2831853f ) * 0.1f;
+          extracted->_left[i] += sampL;
+          extracted->_right[i] += sampR;
+          phaseL0 += frqL / 48000.0f;
+          phaseL1 += 1.0f / 48000.0f;
+          phaseR0 += frqR / 48000.0f;
+          phaseR1 += 1.0f / 48000.0f;
         }
       }
 
-      // We have enough audio, dequeue the frame
-      frame_data = _frame_queue.front();
+      extracted->_timestamp = audio_pts;
+      total_audio_samples += codec_audio_frame_size;
 
-      if(frame_data.capture_future->isReady()==false){
-        continue;
-      }
-      _frame_queue.pop_front();
-
-      if(0)logchan_moviecap->log("_encodingThreadFunc: Dequeued frame %d, queue size now: %zu",
-                            frame_data.frame_number, _frame_queue.size());
-
-      _queue_cv.notify_all();
+      encoder->enqueueFrames(nullptr, extracted);
+      continue;
+    } else {
+      continue; // Neither ready, try again
     }
+
+    // Only reach here if encoding video
     if(timer.SecsSinceStart()>4.0f){
       size_t queue_size = _frame_queue.size();
       size_t frame_index = frame_data.frame_number;
@@ -244,89 +219,7 @@ void MovieCaptureContext::_encodingThreadFunc() {
       timer.Start();
     }
 
-
-    //=========================================
-    // Wait for GPU capture completion
-    //=========================================
-    auto future = frame_data.capture_future;
-    int timeout_ms = 10000;
-    int waited_ms = 0;
-
-    while (!future->isReady() && waited_ms < timeout_ms) {
-      usleep(500);
-      waited_ms++;
-    }
-
-    if (!future->isReady()) {
-      logchan_moviecap->log("ERROR: Frame %d capture timeout!", frame_data.frame_number);
-      continue;
-    }
-
-    //=========================================
-    // Audio already extracted at top of loop
-    //=========================================
-
-    //=========================================
-    // Encode audio frames to catch up to current video frame's timestamp
-    // Key: Compare audio's encoded time vs THIS video frame's target time (from queue)
-    //=========================================
-    double target_video_time = (double)frame_data.frame_number / (double)_settings->_fps;
-    int audio_frames_encoded_this_iteration = 0;
-
-    if((frame_data.frame_number % 60) == 0) {
-      logchan_moviecap->log("Frame %d: target_video_time=%.4f buffer_samples=%zu",
-                            frame_data.frame_number, target_video_time, _audio_buffer_left.size());
-    }
-
-    while (_audio_buffer_left.size() >= codec_audio_frame_size && encoder->needsMoreAudio(target_video_time)) {
-      // Audio is behind - encode an audio frame
-      auto audio_for_encoder = std::make_shared<AudioFrameCapture>();
-      audio_for_encoder->_num_samples = codec_audio_frame_size;
-      audio_for_encoder->_sample_rate = 48000;
-      audio_for_encoder->_timestamp = frame_data.virtual_time;
-      total_audio_samples += codec_audio_frame_size;
-
-      // Copy exactly codec_audio_frame_size samples
-      audio_for_encoder->_left.assign(_audio_buffer_left.begin(),
-                                       _audio_buffer_left.begin() + codec_audio_frame_size);
-      audio_for_encoder->_right.assign(_audio_buffer_right.begin(),
-                                        _audio_buffer_right.begin() + codec_audio_frame_size);
-
-      // Remove consumed samples from buffer
-      _audio_buffer_left.erase(_audio_buffer_left.begin(),
-                                _audio_buffer_left.begin() + codec_audio_frame_size);
-      _audio_buffer_right.erase(_audio_buffer_right.begin(),
-                                 _audio_buffer_right.begin() + codec_audio_frame_size);
-
-      // Encode this audio frame (without video)
-      encoder->enqueueFrames(nullptr, audio_for_encoder);
-      audio_frames_encoded_this_iteration++;
-
-      if((frame_data.frame_number % 60) == 0) {
-        double audio_time = (double)total_audio_samples / 48000.0;
-        logchan_moviecap->log("  Encoded audio frame %d: audio_time=%.4f target=%.4f",
-                              audio_frames_encoded_this_iteration, audio_time, target_video_time);
-      }
-    }
-
-    if((frame_data.frame_number % 60) == 0) {
-      double audio_time = (double)total_audio_samples / 48000.0;
-      logchan_moviecap->log("Frame %d: encoded %d audio frames, audio_time=%.4f buffer_remaining=%zu expected=%zu",
-                            frame_data.frame_number, audio_frames_encoded_this_iteration,
-                            audio_time, _audio_buffer_left.size(), frame_data.expected_audio_samples);
-    }
-
-    //=========================================
-    // Encode video frame
-    //=========================================
-    encoder->enqueueFrames(frame_data.capture_buffer, nullptr);
-
   } // while (_encoding_running or (not _frame_queue.empty())) {
-
-  // Flush any remaining audio in buffer
-  if (_audio_buffer_left.size() > 0) {
-    logchan_moviecap->log("WARNING: %zu audio samples remaining in buffer at end", _audio_buffer_left.size());
-  }
 
   encoder = nullptr;
   logchan_moviecap->log("Encoding thread exiting");

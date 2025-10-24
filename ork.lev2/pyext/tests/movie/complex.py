@@ -182,7 +182,8 @@ class ComplexMovieApp(object):
 
       ####################################################################################
 
-      def update(self):
+      def update(self,updinfo):
+        dt = updinfo.deltatime
         def genpos():
           r = vec3(0)
           r.x = random.uniform(-30,30)
@@ -250,7 +251,7 @@ class ComplexMovieApp(object):
     self.absolutetime = abstime
     cube_y = 0.4+math.sin(abstime)*0.2
     for panel in self.panels:
-      panel.update()
+      panel.update(updinfo)
     for g in self.griditems:
       g.widget.setDirty()
     
