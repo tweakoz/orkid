@@ -15,6 +15,7 @@ from ork.singularity import testlib
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--freerun', '-f', action='store_true', help='Enable freerun mode (async)')
+parser.add_argument("--fps", "-F", type=float, default=60.0, help="Set target FPS")
 args = parser.parse_args()
 
 ################################################################################
@@ -35,8 +36,8 @@ class ComplexMovieApp(object):
 
     self.absolutetime = 0.0
     self.freerun = args.freerun
-    self.FPS = 60.0 # frames per second
-    self.LEN = 30.0  # seconds
+    self.FPS = args.fps # frames per second
+    self.LEN = 10.0  # seconds
     self.NUMFRAMES = int(self.FPS * self.LEN)
     self.NUMFRAMESP1 = self.NUMFRAMES + 1
 

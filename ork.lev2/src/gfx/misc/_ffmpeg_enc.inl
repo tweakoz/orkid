@@ -109,6 +109,20 @@ struct Encoder {
     return 0;
   }
 
+  // Returns true if audio is behind the target video frame time
+  // target_video_time: the timestamp (in seconds) of the video frame we're about to encode
+  bool needsMoreAudio(double target_video_time) const {
+    if (!_enable_video || !_enable_audio) {
+      return false;
+    }
+
+    // Calculate audio's current timestamp in seconds
+    double audio_time = (double)_audio_stream->next_pts / (double)_audio_stream->enc->sample_rate;
+
+    // Encode audio if it's behind the target video frame time
+    return audio_time < target_video_time;
+  }
+
   void _closeStream(OutputStream* ost);
 
   void _add_stream( OutputStream* ost,         //

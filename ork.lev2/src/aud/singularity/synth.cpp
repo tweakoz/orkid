@@ -665,7 +665,7 @@ void synth::keyOff(programInst* pinst) {
 
 void synth::resize(int numframes) {
   if (numframes > _numFrames) {
-    logchan_synth->log("RESIZE NUMFRAMES<%d>", numframes);
+    if(0)logchan_synth->log("RESIZE NUMFRAMES<%d>", numframes);
     _tempbus->resize(numframes);
     _ibuf.resize(numframes);
     _obuf.resize(numframes);
