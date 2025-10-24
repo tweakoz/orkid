@@ -178,7 +178,8 @@ Encoder::Encoder(ork::lev2::moviecapsettings_ptr_t settings)
   /* Add the audio and video streams using the default format codecs
    * and initialize the codecs. */
   if (fmt->video_codec != AV_CODEC_ID_NONE) {
-    _add_stream(_video_stream.get(), &video_codec, fmt->video_codec);
+    // Force H.264 codec for better quality and compatibility (instead of MPEG4)
+    _add_stream(_video_stream.get(), &video_codec, AV_CODEC_ID_H264);
     _enable_video = true;
   }
   if (fmt->audio_codec != AV_CODEC_ID_NONE) {
@@ -621,25 +622,39 @@ void Encoder::_add_stream( OutputStream* ost,         //
     ///////////////////////////////////////////////////////
       c->codec_id = codec_id;
 
-      c->bit_rate = 6400000;
-      if(_settings->_preset_name=="low"){
+      if(_settings->_preset_name=="fast"){
         c->bit_rate = 1000000;
+        #if defined (__APPLE__)
+        av_opt_set_int(c->priv_data, "prio_speed", 1, 0);  // prioritize speed
+        av_opt_set(c->priv_data, "profile", "baseline", 0);
+        #else
         av_opt_set(c->priv_data, "preset", "ultrafast", 0 );
-      } else if(_settings->_preset_name=="medium"){
+        #endif        
+      } else if(_settings->_preset_name=="medium" or _settings->_preset_name=="default" or _settings->_preset_name==""){
         c->bit_rate = 6400000;
+        #if defined (__APPLE__)
+        av_opt_set(c->priv_data, "profile", "main", 0);
+        #else
         av_opt_set(c->priv_data, "preset", "medium", 0 );
-      } else if(_settings->_preset_name=="default"){
-        c->bit_rate = 6400000;
-        av_opt_set(c->priv_data, "preset", "medium", 0 );
+        #endif        
       } else if(_settings->_preset_name=="high"){
         c->bit_rate = 12800000;
-        av_opt_set(c->priv_data, "preset", "slow", 0 );
+        #if defined (__APPLE__)
+        av_opt_set_int(c->priv_data, "prio_speed", 0, 0);  // prioritize quality
+        av_opt_set(c->priv_data, "profile", "high", 0);
+        av_opt_set(c->priv_data, "coder", "cabac", 0);  // better compression
+        #else
+        av_opt_set(c->priv_data, "preset", "high", 0 );
+        #endif        
       } else if(_settings->_preset_name=="ultra"){
         c->bit_rate = 128000000;
-        // set additional params for ultra (high quality)
+        #if defined (__APPLE__)
+        av_opt_set_int(c->priv_data, "prio_speed", 0, 0);
+        av_opt_set(c->priv_data, "profile", "high", 0);
+        av_opt_set(c->priv_data, "coder", "cabac", 0);
+        #else
         av_opt_set(c->priv_data, "preset", "veryslow", 0 );
-        av_opt_set(c->priv_data, "crf", "10", 0 );
-
+        #endif        
       }
       // Resolution must be a multiple of two. 
       OrkAssert((_settings->_width % 2) == 0);

@@ -113,6 +113,10 @@ struct AppInitData{
   bool _freerunning = true;
   float _target_ups = 480.0f;   // Updates per second (simulation tick rate)
   float _target_fps = 120.0f;   // Frames per second (render rate)
+  bool _log_freerun_ups = false;   // Enable real-time UPS logging in freerun mode
+  bool _log_freerun_fps = false;   // Enable real-time FPS logging in freerun mode
+  bool _log_lockstep_ups = false;  // Enable real-time UPS logging in lockstep mode
+  bool _log_lockstep_fps = false;  // Enable real-time FPS logging in lockstep mode
   std::string _monitor_id = "";
   std::string _application_name = "orkid_app";
   std::multimap<uint64_t,void_lambda_t> _preinitoperations;

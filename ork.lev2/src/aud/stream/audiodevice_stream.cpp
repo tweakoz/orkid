@@ -74,15 +74,17 @@ void StrAudioDevice::startup() {
 }
 
 void StrAudioDevice::shutdown() {
-  if (_mode == Mode::ASYNC_REALTIME) {
+  logchan_straudio->log("StrAudioDevice shutdown");
+  auto prev_mode = _mode;
+  _mode = Mode::INACTIVE;
+  if (prev_mode == Mode::ASYNC_REALTIME) {
     _stopAudioThread();
   }
-
   if (_the_synth) {
+    _the_synth = nullptr;
     synth::tearDown();
   }
 
-  logchan_straudio->log("StrAudioDevice shutdown");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -125,7 +127,10 @@ void StrAudioDevice::_audioThreadFunc() {
 ///////////////////////////////////////////////////////////////////////////////
 
 size_t StrAudioDevice::advanceTime(float dt_seconds) {
-  OrkAssert(_mode == Mode::SYNC_NONREALTIME);
+  if( _mode != Mode::SYNC_NONREALTIME ) {
+    logchan_straudio->log("advanceTime called in non-SYNC mode!");
+    return 0;
+  }
 
   // Calculate EXACTLY how many samples for this time interval
   // Use accumulator to handle fractional samples

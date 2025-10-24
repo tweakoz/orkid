@@ -33,8 +33,9 @@ using audioframecapture_ptr_t = std::shared_ptr<AudioFrameCapture>;
 class StrAudioDevice : public AudioDevice {
 public:
   enum class Mode {
-    ASYNC_REALTIME,     // Audio thread, realtime playback
-    SYNC_NONREALTIME    // On-demand, deterministic, for offline rendering
+    ASYNC_REALTIME,      // Audio thread, realtime playback
+    SYNC_NONREALTIME,    // On-demand, deterministic, for offline rendering
+    INACTIVE             // On-demand, deterministic, for offline rendering
   };
 
   //===========================================
@@ -49,7 +50,7 @@ public:
   //===========================================
   // MODE SELECTION
   //===========================================
-  Mode _mode = Mode::ASYNC_REALTIME;
+  Mode _mode = Mode::INACTIVE;
 
   //===========================================
   // SYNC MODE API (Deterministic/Non-realtime)

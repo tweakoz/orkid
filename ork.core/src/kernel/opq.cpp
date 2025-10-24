@@ -815,6 +815,13 @@ opq_ptr_t ioQueue() {
   return gioq;
 }
 ///////////////////////////////////////////////////////////////////////
+opq_ptr_t auxSerialQueue() {
+  static opq_ptr_t gioq = []() {
+    return std::make_shared<OperationsQueue>(1, "auxSerialQueue", EPerformaceProfile::IO);
+  }();
+  return gioq;
+}
+///////////////////////////////////////////////////////////////////////
 std::shared_ptr<OperationsQueue::InternalLock> OperationsQueue::scopedLock() {
   auto l = std::make_shared<InternalLock>(*this);
   return l;

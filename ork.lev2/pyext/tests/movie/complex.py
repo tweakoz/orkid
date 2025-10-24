@@ -14,8 +14,11 @@ from obt import host
 from ork.singularity import testlib
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--freerun', '-f', action='store_true', help='Enable freerun mode (async)')
+parser.add_argument('--freerun', '-f', action='store_true', help='Enable freerun mode (async), no movie generated..')
 parser.add_argument("--fps", "-F", type=float, default=60.0, help="Set target FPS")
+parser.add_argument("--length", "-l", type=float, default=10.0, help="length of movie in seconds")
+parser.add_argument("--preset", "-p", type=str, default="high", help="Encoder preset (fast, medium, high, ultra)")
+parser.add_argument("--outputpath", "-o", type=str, default="/tmp/str_audio_test_movie.mp4", help="Output path for movie")
 args = parser.parse_args()
 
 ################################################################################
@@ -36,8 +39,8 @@ class ComplexMovieApp(object):
 
     self.absolutetime = 0.0
     self.freerun = args.freerun
-    self.FPS = args.fps # frames per second
-    self.LEN = 10.0  # seconds
+    self.FPS = args.fps     # frames per second
+    self.LEN = args.length  # seconds
     self.NUMFRAMES = int(self.FPS * self.LEN)
     self.NUMFRAMESP1 = self.NUMFRAMES + 1
 
@@ -50,6 +53,10 @@ class ComplexMovieApp(object):
 
     self.ezapp = lev2.OrkEzApp.create(
         self,
+        enable_lockstep_ups = True,
+        enable_lockstep_fps = True,
+        enable_freerun_ups = True,
+        enable_freerun_fps = True,
         enable_audio_synth=True,
         audio_stream_sync=not self.freerun,
         enable_graphics=True,
@@ -89,7 +96,7 @@ class ComplexMovieApp(object):
   def onSynthInit(self,synth):
     testlib.bindSynthToApp(synth,             # synth instance
                            self,              # app instance
-                           initial_gain=0.0,  # initial gain in dB
+                           initial_gain=-12.0,  # initial gain in dB
                            main_fx="ShifterChorus")  # main bus effect
     self.waveprog = testlib.WaveformsProgram()
     P = self.waveprog.program
@@ -258,6 +265,7 @@ class ComplexMovieApp(object):
   def onUpdate(self,updinfo):
     abstime = updinfo.absolutetime
     self.absolutetime = abstime
+    #print("dt: %.3f at: %.3f sec"%(updinfo.deltatime,abstime))
     cube_y = 0.4+math.sin(abstime)*0.2
     for panel in self.panels:
       panel.update(updinfo)
@@ -269,16 +277,19 @@ class ComplexMovieApp(object):
 
   def onGpuPostFrame(self, ctx):
     self.rencount += 1
+    enable_movie = not self.freerun
     if self.freerun == False:
       match self.rencount:
         case 2:
-          self.mcc = self.ezapp.enableMovieRecording( output_path="/tmp/str_audio_test_movie.mp4",
-                                                      preset="ultra",
-                                                      fps=self.FPS,
-                                                      max_queue_size=180,
-                                                      audio_test_tone=False )
+          if enable_movie:
+            self.mcc = self.ezapp.enableMovieRecording( output_path=args.outputpath,
+                                                        preset=args.preset,
+                                                        fps=self.FPS,
+                                                        max_queue_size=300, # how far ahead can renderer get ahead of encoder ?
+                                                        audio_test_tone=False )
         case self.NUMFRAMES:
-          self.ezapp.finishMovieRecording()
+          if enable_movie:
+            self.ezapp.finishMovieRecording()
         case self.NUMFRAMESP1:
           self.ezapp.signalExit()
 
@@ -289,4 +300,4 @@ app.ezapp.mainThreadLoop(on_iter=lambda : False)
 
 if host.IsOsx and not app.freerun:
   time.sleep(1)
-  os.system("open /tmp/str_audio_test_movie.mp4")
+  os.system(f"open {args.outputpath}")

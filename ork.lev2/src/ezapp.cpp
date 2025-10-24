@@ -176,6 +176,9 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
     , _initdata(initdata)
     , _mainWindow(0)
     , _updateThread("updatethread") {
+
+  logchan_ezapp->_status_interval = 5.0f;
+
   __priv_gapp.store(this);
   /////////////////////////////////////////////
   for (auto op_item : _initdata->_postinitoperations) {
@@ -526,14 +529,13 @@ void OrkEzApp::_mainThreadLoopBegin() {
 
           _update_timeaccumulator -= step;
           stats_timeaccum += step;
-          if (stats_timeaccum >= logchan_ezapp->_status_interval) {
-            logchan_ezapp->status("UPS", "<%g>", state_numiters / stats_timeaccum);
+          if (_initdata->_log_freerun_ups && stats_timeaccum >= logchan_ezapp->_status_interval) {
+            logchan_ezapp->status("FREERUN_UPS", "<%g>", state_numiters / stats_timeaccum);
             stats_timeaccum = 0.0;
             state_numiters  = 0.0;
           }
         }
         opq::updateSerialQueue()->Process();
-        ork::usleep(100);
         sched_yield();
       } // while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
     } // end async mode
@@ -551,6 +553,12 @@ void OrkEzApp::_mainThreadLoopBegin() {
 
       // Get StrAudioDevice if available
       auto str_audio = std::dynamic_pointer_cast<StrAudioDevice>(_audiodevice);
+
+      // Wall-clock tracking for real-time performance
+      ork::Timer wallclock_timer;
+      wallclock_timer.Start();
+      double wallclock_accum = 0.0;
+      double wallclock_updates = 0.0;
 
       while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
         EASY_BLOCK("UpdateIteration_SYNC");
@@ -581,11 +589,28 @@ void OrkEzApp::_mainThreadLoopBegin() {
           }
 
           state_numiters += 1.0;
+          wallclock_updates += 1.0;
+        }
+
+        // Log real-time UPS performance
+        if (_initdata->_log_lockstep_ups) {
+          double elapsed = wallclock_timer.SecsSinceStart();
+          if (elapsed >= logchan_ezapp->_status_interval) {
+            double real_ups = wallclock_updates / elapsed;
+            double pct_of_target = (real_ups / target_ups) * 100.0;
+            logchan_ezapp->log("LOCKSTEP_UPS<%g> pct_of_tgtUPS<%g>", real_ups, pct_of_target);
+            wallclock_timer.Start();
+            wallclock_updates = 0.0;
+          }
         }
 
         // Advance audio by update delta (tied to simulation time)
         if (str_audio && str_audio->_mode == StrAudioDevice::Mode::SYNC_NONREALTIME) {
-          _total_samples_rendered = str_audio->advanceTime(update_delta);
+          auto op = [=](){
+            this->_total_samples_rendered = str_audio->advanceTime(update_delta);
+          };
+          //op();
+          opq::auxSerialQueue()->enqueue(op);
         }
 
         // Check if we should render a frame
@@ -594,7 +619,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
           _render_timeaccumulator -= frame_delta;
         }
         while ((not checkAppState(KAPPSTATEFLAG_JOINING)) and (_lockstep_frame_requests.load() > 0)) {
-          ::usleep(1000);
+          sched_yield();
         }
 
         opq::updateSerialQueue()->Process();
@@ -730,19 +755,50 @@ void OrkEzApp::_mainThreadLoopEnd() {
 ///////////////////////////////////////////////////////////////////////////////
 int OrkEzApp::mainThreadLoop() {
   _mainThreadLoopBegin();
+
+  // Wall-clock FPS tracking
+  ork::Timer fps_timer;
+  fps_timer.Start();
+  double frame_count = 0.0;
+
   if (_mainWindow) {
     auto glfw_ctx = _mainWindow->_ctqt;
     if (_initdata->_freerunning) {
       while (glfw_ctx->_runstate == 1) {
         glfw_ctx->_runloopIter(true);
+
+        // Track freerun FPS
+        if (_initdata->_log_freerun_fps) {
+          frame_count += 1.0;
+          double elapsed = fps_timer.SecsSinceStart();
+          if (elapsed >= logchan_ezapp->_status_interval) {
+            double real_fps = frame_count / elapsed;
+            logchan_ezapp->status("FREERUN_FPS", "<%g>", real_fps);
+            frame_count = 0.0;
+            fps_timer.Start();
+          }
+        }
       }
     } else {
       while (glfw_ctx->_runstate == 1) {
         while (_lockstep_frame_requests.load()) {
           glfw_ctx->_runloopIter(false);
           _lockstep_frame_requests.fetch_sub(1);
+
+          // Track lockstep FPS
+          if (_initdata->_log_lockstep_fps) {
+            frame_count += 1.0;
+            double elapsed = fps_timer.SecsSinceStart();
+            if (elapsed  >= logchan_ezapp->_status_interval) {
+              double real_fps = frame_count / elapsed;
+              double pct_of_target = (real_fps / _initdata->_target_fps) * 100.0;
+              logchan_ezapp->log("LOCKSTEP_FPS<%g> pct_of_tgtFPS<%g>", real_fps, pct_of_target);
+              frame_count = 0.0;
+              fps_timer.Start();
+            }
+          }
         }
-        ::usleep(1000);
+        sched_yield();
       }
     }
   }
@@ -769,8 +825,8 @@ void OrkEzApp::enableMovieRecording(moviecapsettings_ptr_t settings) {
 
     auto capbuf = std::make_shared<CaptureBuffer>();
 
-    auto future = fbi->captureAsFormat( rtb.get(),                     //
-                                        capbuf, EBufferFormat::RGBA8);
+    captureasync_ptr_t future;
+    future = fbi->captureAsFormat( rtb.get(), capbuf, EBufferFormat::RGBA8);
 
     bool fps_set = (_initdata->_target_fps > 0);
     // Calculate expected audio samples for this frame

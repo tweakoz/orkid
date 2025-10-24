@@ -140,6 +140,14 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                     std::string mpath = py::cast<std::string>(item.second);
                     appinitdata->_movie_output_path = file::Path(mpath);
                   }
+                } else if (key == "enable_freerun_ups") {
+                  appinitdata->_log_freerun_ups = py::cast<bool>(item.second);
+                } else if (key == "enable_freerun_fps") {
+                  appinitdata->_log_freerun_fps = py::cast<bool>(item.second);
+                } else if (key == "enable_lockstep_ups") {
+                  appinitdata->_log_lockstep_ups = py::cast<bool>(item.second);
+                } else if (key == "enable_lockstep_fps") {
+                  appinitdata->_log_lockstep_fps = py::cast<bool>(item.second);
                 }
               } // for (auto item : kwargs) {
               //////////////////////////////////////
@@ -518,7 +526,17 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   settings->_max_queue_size = py::cast<int>(item.second);;
                 }
                 else if(key=="preset"){
-                  settings->_preset_name = py::cast<std::string>(item.second);;
+                  std::string preset = py::cast<std::string>(item.second);
+                  if( preset != "fast" &&
+                      preset != "medium" &&
+                      preset != "default" &&
+                      preset != "high" &&
+                      preset != "ultra") {
+                    fprintf( stderr, "Invalid preset name<%s>\n", preset.c_str());
+                    fprintf( stderr, "Valid presets are: fast, medium, default, high, ultra\n");
+                    OrkAssert(false);
+                  }
+                  settings->_preset_name = preset;
                 }
                 else if(key=="audio_test_tone"){
                   settings->_audio_test_tone = py::cast<bool>(item.second);

@@ -142,6 +142,7 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
   _debugName = inp._debugName+"_converted";
   /////////////////////////////
   if (fmt == inp._format) {
+    printf( "convert (same fmt, just copy)\n");
     init(inp._width, inp._height, inp._numcomponents, inp._bytesPerChannel);
     auto outptr = (uint8_t*)_data->data();
     auto inptr  = (const uint8_t*)inp._data->data();
@@ -153,6 +154,7 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
   }
   /////////////////////////////
   else if (fmt == EBufferFormat::BGR8 and inp._format == EBufferFormat::RGB8) {
+    printf( "convert from RGB8 to BGR8\n");
     init(inp._width, inp._height, 3, inp._bytesPerChannel);
     auto outptr = (uint8_t*)_data->data();
     auto inptr  = (const uint8_t*)inp._data->data();
@@ -172,15 +174,33 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
     _format     = fmt;
     auto outptr = (uint8_t*)_data->data();
     if (inp._format == EBufferFormat::BGR8) {
+      //printf( "convert from BGR8 to RGB8\n");
       auto inptr  = (const uint8_t*)inp._data->data();
-      for (int y = 0; y < inp._height; y++) {
-        for (int x = 0; x < inp._width; x++) {
-          int pixelindex       = y * inp._width + x;
-          int elembase         = pixelindex * 3;
-          outptr[elembase + 0] = inptr[elembase + 2];
-          outptr[elembase + 1] = inptr[elembase + 1];
-          outptr[elembase + 2] = inptr[elembase + 0];
-        }
+
+      constexpr size_t chunk_size = 32;
+      size_t num_chunks = (inp._height + chunk_size - 1) / chunk_size; // Round up division
+      std::atomic<int> chunkcounter = num_chunks;
+
+      for (size_t chunk = 0; chunk < num_chunks; chunk++) {
+        auto op = [chunk, chunk_size, inptr, outptr, &inp, &chunkcounter](){
+          size_t y_start = chunk * chunk_size;
+          size_t y_end = std::min(y_start + chunk_size, size_t(inp._height));
+        
+          for (size_t y = y_start; y < y_end; y++) {
+            for (int x = 0; x < inp._width; x++) {
+              int pixelindex       = y * inp._width + x;
+              int elembase         = pixelindex * 3;
+              outptr[elembase + 0] = inptr[elembase + 2];
+              outptr[elembase + 1] = inptr[elembase + 1];
+              outptr[elembase + 2] = inptr[elembase + 0];
+            }
+          }
+          chunkcounter.fetch_sub(1);
+        };
+        opq::concurrentQueue()->enqueue(op);
+      }
+      while(chunkcounter.load() > 0) {
+        std::this_thread::yield();
       }
     } else if (inp._format == EBufferFormat::BGRA8) {
       printf( "convert from BGRA8 to RGB8\n");
@@ -195,26 +215,36 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
         }
       }
     } else if (inp._format == EBufferFormat::RGBA8) {
+      //printf( "convert from RGBA8 to RGB8\n");
       auto inptr  = (const uint8_t*)inp._data->data();
-      std::atomic<int> linecounter = inp._height;
-      for (int y = 0; y < inp._height; y++) {
-        auto op = [y,inptr,outptr,&inp,&linecounter](){
-          for (int x = 0; x < inp._width; x++) {
-            int pixelindex           = y * inp._width + x;
-            int in_elembase          = pixelindex * 4;
-            int out_elembase         = pixelindex * 3;
-            outptr[out_elembase + 0] = inptr[in_elembase + 0];
-            outptr[out_elembase + 1] = inptr[in_elembase + 1];
-            outptr[out_elembase + 2] = inptr[in_elembase + 2];
+      constexpr size_t chunk_size = 32;
+      size_t num_chunks = (inp._height + chunk_size - 1) / chunk_size; // Round up division
+      std::atomic<int> chunkcounter = num_chunks;
+
+      for (size_t chunk = 0; chunk < num_chunks; chunk++) {
+        auto op = [chunk, chunk_size, inptr, outptr, &inp, &chunkcounter](){
+          size_t y_start = chunk * chunk_size;
+          size_t y_end = std::min(y_start + chunk_size, size_t(inp._height));
+
+          for (size_t y = y_start; y < y_end; y++) {
+            for (int x = 0; x < inp._width; x++) {
+              int pixelindex           = y * inp._width + x;
+              int in_elembase          = pixelindex * 4;
+              int out_elembase         = pixelindex * 3;
+              outptr[out_elembase + 0] = inptr[in_elembase + 0];
+              outptr[out_elembase + 1] = inptr[in_elembase + 1];
+              outptr[out_elembase + 2] = inptr[in_elembase + 2];
+            }
           }
-          linecounter.fetch_sub(1);
+          chunkcounter.fetch_sub(1);
         };
         opq::concurrentQueue()->enqueue(op);
-      }
-      while(linecounter.load()>0) {
+      } // for each chunk
+      while(chunkcounter.load() > 0) {
         std::this_thread::yield();
       }
     } else if (inp._format == EBufferFormat::RGB16) {
+      printf( "convert from RGB16 to RGB8\n");
       auto inptr  = (const uint16_t*)inp._data->data();
       for (int y = 0; y < inp._height; y++) {
         for (int x = 0; x < inp._width; x++) {
@@ -235,14 +265,12 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
   }
   /////////////////////////////
   else if (fmt == EBufferFormat::BGRA8 and inp._format == EBufferFormat::RGBA8) {
+    printf( "convert from RGBA8 to BGRA8\n");
     init(inp._width, inp._height, 4, inp._bytesPerChannel);
   } 
   /////////////////////////////
-  else if (fmt == EBufferFormat::RGB16 and inp._format == EBufferFormat::RGB16) {
-    init(inp._width, inp._height, 3, inp._bytesPerChannel);
-  } 
-  /////////////////////////////
   else if (fmt == EBufferFormat::RGB16 and inp._format == EBufferFormat::RGB8) {
+    printf( "convert from RGB8 to RGB16\n");
     init(inp._width, inp._height, 3, 2);
     auto outptr = (uint16_t*)_data->data();
     auto inptr  = (const uint8_t*)inp._data->data();
@@ -258,6 +286,7 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
   }  
   /////////////////////////////
   else if (fmt == EBufferFormat::RGB16 and inp._format == EBufferFormat::RGBA8) {
+    printf( "convert from RGB16 to RGBA8\n");
     init(inp._width, inp._height, 3, 2);
     auto outptr = (uint16_t*)_data->data();
     auto inptr  = (const uint8_t*)inp._data->data();
@@ -274,6 +303,7 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
   }  
   /////////////////////////////
   else if (fmt == EBufferFormat::RGB16 and inp._format == EBufferFormat::RGBA16) {
+    printf( "convert from RGB16 to RGBA16\n");
     init(inp._width, inp._height, 3, 2);
     auto outptr = (uint16_t*)_data->data();
     auto inptr  = (const uint16_t*)inp._data->data();
@@ -290,6 +320,7 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
   }  
   /////////////////////////////
   else if (fmt == EBufferFormat::RGBA8 and inp._format == EBufferFormat::RGBA32F) {
+    printf( "convert from RGBA32F to RGBA8\n");
     // Convert from RGBA32F (float) to RGBA8 (8-bit)
     init(inp._width, inp._height, 4, 1);
     auto outptr = (uint8_t*)_data->data();
@@ -308,6 +339,7 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
   }
   /////////////////////////////
   else if (fmt == EBufferFormat::RGBA8 and inp._format == EBufferFormat::RGB8) {
+    printf( "convert from RGB8 to RGBA8\n");
     init(inp._width, inp._height, 4, inp._bytesPerChannel);
     auto outptr = (uint8_t*)_data->data();
     auto inptr  = (const uint8_t*)inp._data->data();
@@ -325,6 +357,7 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
   }
   /////////////////////////////
   else if (fmt == EBufferFormat::RGB8 and inp._format == EBufferFormat::R8) {
+    printf( "convert from R8 to RGB8\n");
     init(inp._width, inp._height, 3, inp._bytesPerChannel);
     auto outptr = (uint8_t*)_data->data();
     auto inptr  = (const uint8_t*)inp._data->data();
@@ -341,6 +374,7 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
   }
   /////////////////////////////
   else if (fmt == EBufferFormat::RGBA8 and inp._format == EBufferFormat::R8) {
+    printf( "convert from R8 to RGBA8\n");
     init(inp._width, inp._height, 4, inp._bytesPerChannel);
     auto outptr = (uint8_t*)_data->data();
     auto inptr  = (const uint8_t*)inp._data->data();
@@ -358,18 +392,37 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
   }
   /////////////////////////////
   else if (fmt == EBufferFormat::RGBA8 and inp._format == EBufferFormat::BGRA8) {
+    //printf( "convert from BGRA8 to RGBA8\n");
     init(inp._width, inp._height, 4, inp._bytesPerChannel);
     auto outptr = (uint8_t*)_data->data();
     auto inptr  = (const uint8_t*)inp._data->data();
-    for (int y = 0; y < inp._height; y++) {
-      for (int x = 0; x < inp._width; x++) {
-        int pixelindex       = y * inp._width + x;
-        int elembase         = pixelindex * 4;
-        outptr[elembase + 0] = inptr[elembase + 2];
-        outptr[elembase + 1] = inptr[elembase + 1];
-        outptr[elembase + 2] = inptr[elembase + 0];
-        outptr[elembase + 3] = inptr[elembase + 3];
-      }
+    
+    constexpr size_t chunk_size = 32;
+    size_t num_chunks = (inp._height + chunk_size - 1) / chunk_size; // Round up division
+    std::atomic<int> chunkcounter = num_chunks;
+    
+    for (size_t chunk = 0; chunk < num_chunks; chunk++) {
+      auto op = [chunk, chunk_size, inptr, outptr, &inp, &chunkcounter](){
+        size_t y_start = chunk * chunk_size;
+        size_t y_end = std::min(y_start + chunk_size, size_t(inp._height));
+        
+        for (size_t y = y_start; y < y_end; y++) {
+          for (int x = 0; x < inp._width; x++) {
+            int pixelindex       = y * inp._width + x;
+            int elembase         = pixelindex * 4;
+            outptr[elembase + 0] = inptr[elembase + 2]; // B -> R
+            outptr[elembase + 1] = inptr[elembase + 1]; // G -> G
+            outptr[elembase + 2] = inptr[elembase + 0]; // R -> B
+            outptr[elembase + 3] = inptr[elembase + 3]; // A -> A
+          }
+        }
+        chunkcounter--;
+      };
+      opq::concurrentQueue()->enqueue(op);
+    }
+    
+    while(chunkcounter.load() > 0) {
+      std::this_thread::yield();
     }
   }
   /////////////////////////////

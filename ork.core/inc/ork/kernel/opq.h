@@ -338,6 +338,7 @@ opq_ptr_t updateSerialQueue();
 opq_ptr_t mainSerialQueue();
 opq_ptr_t concurrentQueue();
 opq_ptr_t ioQueue();
+opq_ptr_t auxSerialQueue();
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::opq
