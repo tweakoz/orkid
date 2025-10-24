@@ -6,6 +6,7 @@ extern "C" {
 #include <libavutil/opt.h>
 #include <libavutil/mathematics.h>
 #include <libavutil/timestamp.h>
+#include <libavutil/frame.h>
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
@@ -81,7 +82,7 @@ static AVFrame* _allocVideoFrame(AVPixelFormat pix_fmt, //
   frame->format = pix_fmt;
   frame->width  = width;
   frame->height = height;
-
+                           
   /* allocate the buffers for the frame data */
   int ret = av_frame_get_buffer(frame, 0);
   if (ret < 0) {
@@ -429,6 +430,8 @@ AVFrame* Encoder::_getVideoFrame(ork::lev2::capturebuffer_ptr_t external_video) 
 
   _video_stream->frame->pts = _video_stream->next_pts++;
 
+  _video_stream->frame->color_range = AVCOL_RANGE_MPEG;
+
   return _video_stream->frame;
 }
 
@@ -680,6 +683,7 @@ void Encoder::_add_stream( OutputStream* ost,         //
         // the motion of the chroma plane does not match the luma plane. 
         c->mb_decision = 2;
       }
+      c->color_range = AVCOL_RANGE_MPEG;
       break;
     }
     ///////////////////////////////////////////////////////
