@@ -101,14 +101,22 @@ void VkContext::_doEnqueueSecondaryCommandBuffer(secondary_commandbuffer_ptr_t c
     printf("CB<%p:%s> impl<%p> not recorded!\n", (void*)cmdbuf.get(), cmdbuf->_debugName.c_str(), (void*)impl.get());
     OrkAssert(false);
   }
-  
+
+  auto pricb = primary_cb();
+
+  // Invoke pre-enqueue callback if set (pooled CBs add themselves to pending_cleanup)
+  if (impl->_onPreEnqueueCallback) {
+    impl->_onPreEnqueueCallback();
+  } else {
+    // Non-pooled CB: add to _secondary_cmdbuffers for lifecycle management
+    pricb->_secondary_cmdbuffers.push_back(cmdbuf);
+  }
+
   // DEBUG: Log when secondary command buffer is executed
-    auto pricb =primary_cb();
   logchan_vkcb->log("_doEnqueueSecondaryCommandBuffer: Executing secondary CB %p in primary CB %p",
                     (void*)impl->_vkcmdbuf, (void*)pricb->_vkcmdbuf);
-  
+
   vkCmdExecuteCommands(pricb->_vkcmdbuf, 1, &impl->_vkcmdbuf);
-    pricb->_secondary_cmdbuffers.push_back(cmdbuf);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

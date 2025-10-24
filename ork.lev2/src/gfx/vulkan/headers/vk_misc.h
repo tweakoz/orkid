@@ -76,6 +76,8 @@ struct VkPrimaryCommandBufferImpl {
   PrimaryCommandBuffer* _orkCB = nullptr;
 
   std::vector<secondary_commandbuffer_ptr_t> _secondary_cmdbuffers;
+  // Secondary CBs from previous use of this primary CB (waiting for reset before cleanup)
+  std::vector<secondary_commandbuffer_ptr_t> _secondary_cmdbuffers_pending_cleanup;
   static std::atomic<int> _cmdbufcount;
 };
 ///////////////////////////////////////////////////////////////////////////////
@@ -91,6 +93,10 @@ struct VkSecondaryCommandBufferImpl {
   static std::atomic<int> _cmdbufcount;
   // Optional timeline semaphore to signal when this command buffer completes
   vkcompletionsemaphore_ptr_t _completionSemaphore;
+  // Callback invoked just before enqueuing to primary CB (to capture primary CB reference)
+  void_lambda_t _onPreEnqueueCallback = nullptr;
+  // Callback invoked when clearing pending cleanup (e.g., to return pooled CB to pool)
+  void_lambda_t _onCleanupCallback = nullptr;
 };
 ///////////////////////////////////////////////////////////////////////////////
 } //namespace ork::lev2::vulkan {

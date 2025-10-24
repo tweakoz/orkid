@@ -65,7 +65,7 @@ InFlightTextureTransfer::~InFlightTextureTransfer(){
 
 SecCmdBufPoolAdapter::SecCmdBufPoolAdapter(vkcontext_rawptr_t ctxVK)
     : _contextVK(ctxVK) {
-    }
+}
 
 secondary_commandbuffer_ptr_t SecCmdBufPoolAdapter::allocFresh() {
   return _contextVK->beginRecordCommandBuffer("SecCmdBufPoolAdapter");
@@ -261,17 +261,27 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     vktex->_readyForSampling = false;
 
     /////////////////////////////////////
-    // Set up completion callback
+    // Set up completion and cleanup callbacks
     /////////////////////////////////////
 
     auto tlsema         = std::make_shared<VulkanCompletionSemaphore>(this->_contextVK);
     cmdbuf_impl->_completionSemaphore = tlsema;
+
+    // Pre-enqueue callback: capture primary CB and add to its pending_cleanup
+    cmdbuf_impl->_onPreEnqueueCallback = [command_buffer, ctx = this->_contextVK]() {
+      auto pricb = ctx->primary_cb();
+      pricb->_secondary_cmdbuffers_pending_cleanup.push_back(command_buffer);
+    };
+
+    // Cleanup callback: return CB to pool when primary CB is reset
+    cmdbuf_impl->_onCleanupCallback = [command_buffer, pool_ref = &_seccmdbufpool_xfer]() {
+      pool_ref->atomicOp([&](sseccmdbufpool_ptr_t& pool) { pool->returnItem(command_buffer); });
+    };
+
+    // Completion callback: cleanup transfer and staging buffer when GPU completes
     tlsema->_onComplete = [=]() {
       vktex->_inflight_transfers.erase(transfer);
       poolForSize->returnItem(staging_buffer);
-      _seccmdbufpool_xfer.atomicOp([&](sseccmdbufpool_ptr_t& pool) {
-        pool->returnItem(command_buffer);
-      });
       vktex->_readyForSampling = true;
       //printf("free stgbuf<%p>\n", (void*)staging_buffer.get());
     };
