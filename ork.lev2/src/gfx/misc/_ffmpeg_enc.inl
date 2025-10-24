@@ -1,5 +1,7 @@
 #pragma once
 
+#include <ork/kernel/opq.h>
+
 extern "C" {
 #include <libavutil/avassert.h>
 #include <libavutil/channel_layout.h>
@@ -407,15 +409,29 @@ AVFrame* Encoder::_getVideoFrame(ork::lev2::capturebuffer_ptr_t external_video) 
   // Copy RGB data to temp frame (with Y-flip for OpenGL/Vulkan coordinate system)
   auto dest_buffer = _video_stream->tmp_frame->data[0];
   auto dest_linesize = _video_stream->tmp_frame->linesize[0];
-  for (int y = 0; y < height; y++) {
-    //size_t src_row_base = ((height - 1) - y) * width * 3;
-    size_t src_row_base = y * width * 3;
-    for (int x = 0; x < width; x++) {
-      size_t src_pix_base = src_row_base + (x * 3);
-      dest_buffer[y * dest_linesize + 3 * x + 0] = src_pixels[src_pix_base + 0]; // R
-      dest_buffer[y * dest_linesize + 3 * x + 1] = src_pixels[src_pix_base + 1]; // G
-      dest_buffer[y * dest_linesize + 3 * x + 2] = src_pixels[src_pix_base + 2]; // B
-    }
+  constexpr size_t chunk_size = 32;
+  size_t num_chunks = (height + chunk_size - 1) / chunk_size; // Round up division
+  std::atomic<int> chunkcounter = num_chunks;
+  for (size_t chunk = 0; chunk < num_chunks; chunk++) {
+    auto op = [=, &chunkcounter](){
+      size_t y_start = chunk * chunk_size;
+      size_t y_end = std::min(y_start + chunk_size, size_t(height));
+      for (size_t y = y_start; y < y_end; y++) {
+        //size_t src_row_base = ((height - 1) - y) * width * 3;
+        size_t src_row_base = y * width * 3;
+        for (int x = 0; x < width; x++) {
+          size_t src_pix_base = src_row_base + (x * 3);
+          dest_buffer[y * dest_linesize + 3 * x + 0] = src_pixels[src_pix_base + 0]; // R
+          dest_buffer[y * dest_linesize + 3 * x + 1] = src_pixels[src_pix_base + 1]; // G
+          dest_buffer[y * dest_linesize + 3 * x + 2] = src_pixels[src_pix_base + 2]; // B
+        }
+      }
+      chunkcounter.fetch_sub(1);
+    };
+    ::ork::opq::concurrentQueue()->enqueue(op);
+  }
+  while(chunkcounter.load() > 0) {
+    std::this_thread::yield();
   }
 
   // Convert RGB to YUV
