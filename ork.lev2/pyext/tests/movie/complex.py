@@ -39,14 +39,18 @@ class ComplexMovieApp(object):
 
     self.absolutetime = 0.0
     self.freerun = args.freerun
-    self.FPS = args.fps     # frames per second
-    self.UPS = args.fps     # frames per second
-    self.LEN = args.length  # seconds
-    self.NUMFRAMES = int(self.FPS * self.LEN)
-    self.NUMFRAMESP1 = self.NUMFRAMES + 1
+
     if self.freerun:
       self.FPS = 120.0
       self.UPS = 360.0
+    else:
+      # these need to match for lockstep mode (for now)
+      self.FPS = args.fps     # frames per second
+      self.UPS = args.fps     # frames per second
+
+    self.LEN = args.length  # seconds
+    self.NUMFRAMES = int(self.FPS * self.LEN)
+    self.NUMFRAMESP1 = self.NUMFRAMES + 1
 
     ########################################
     # lockstep mode ?, use STREAM audio device (for movie capture)
@@ -85,9 +89,9 @@ class ComplexMovieApp(object):
   ##############################################
 
   def onSynthInit(self,synth):
-    testlib.bindSynthToApp(synth,             # synth instance
-                           self,              # app instance
-                           initial_gain=-12.0,  # initial gain in dB
+    testlib.bindSynthToApp(synth,                    # synth instance
+                           self,                     # app instance
+                           initial_gain=-12.0,       # initial gain in dB
                            main_fx="ShifterChorus")  # main bus effect
     self.waveprog = testlib.WaveformsProgram()
     P = self.waveprog.program
@@ -103,10 +107,13 @@ class ComplexMovieApp(object):
     time.sleep(0.1)
     self.v5 = synth.keyOn(60,127,P,mods)
 
+  ##############################################
+
   def onUpdateInit(self):
-    # seed update thread random
-    self.randgen = random.Random()
-    self.randgen.seed(123456)
+    # seed update thread random for determinism
+    # this random generator is used for update thread only
+    self.upd_randgen = random.Random()
+    self.upd_randgen.seed(123456)
 
   ##############################################
 
@@ -201,7 +208,7 @@ class ComplexMovieApp(object):
       def update(self,updinfo):
         dt = updinfo.deltatime
         at = updinfo.absolutetime
-        randgen = self.parent.randgen
+        randgen = self.parent.upd_randgen
         def genpos():
           r = vec3(0)
           r.x = randgen.uniform(-30,30)
