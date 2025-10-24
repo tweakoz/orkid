@@ -40,9 +40,13 @@ class ComplexMovieApp(object):
     self.absolutetime = 0.0
     self.freerun = args.freerun
     self.FPS = args.fps     # frames per second
+    self.UPS = args.fps     # frames per second
     self.LEN = args.length  # seconds
     self.NUMFRAMES = int(self.FPS * self.LEN)
     self.NUMFRAMESP1 = self.NUMFRAMES + 1
+    if self.freerun:
+      self.FPS = 120.0
+      self.UPS = 360.0
 
     ########################################
     # lockstep mode ?, use STREAM audio device (for movie capture)
@@ -61,27 +65,14 @@ class ComplexMovieApp(object):
         audio_stream_sync=not self.freerun,
         enable_graphics=True,
         freerun=self.freerun,
-        target_ups = self.FPS,
+        target_ups = self.UPS,
         target_fps = self.FPS,
         width=W,
         height=H
     )
     
-    if not self.freerun:
-      self.ezapp.setRefreshPolicy(RefreshFixedFPS, 30)
-
     # enable UI draw mode
     self.ezapp.topWidget.enableUiDraw()
-
-    # make a grid of scenegraph viewports
-
-    lg_group = self.ezapp.topLayoutGroup
-    lg_group.margin = 4
-    self.griditems = lg_group.makeGrid( width = 2,
-                                        height = 2,
-                                        margin = 4,
-                                        uiclass = ui.SceneGraphViewport,
-                                        args = ["box",vec4(1,0,1,1)] )
 
   ##############################################
 
@@ -112,6 +103,11 @@ class ComplexMovieApp(object):
     time.sleep(0.1)
     self.v5 = synth.keyOn(60,127,P,mods)
 
+  def onUpdateInit(self):
+    # seed update thread random
+    self.randgen = random.Random()
+    self.randgen.seed(123456)
+
   ##############################################
 
   def onGpuInit(self,ctx):
@@ -133,6 +129,16 @@ class ComplexMovieApp(object):
     permu = lev2.FxPipelinePermutation(rendermodel="FORWARD_PBR")
     pipeline_cube = cube_mtl.fxcache.findPipeline(permu) 
     self.cube_mtl = cube_mtl
+
+    # make a grid of scenegraph viewports
+
+    lg_group = self.ezapp.topLayoutGroup
+    self.griditems = lg_group.makeGrid( width = 2,
+                                        height = 2,
+                                        margin = 4,
+                                        uiclass = ui.SceneGraphViewport,
+                                        args = ["box",vec4(1,0,1,1)] )
+    lg_group.margin = 4
 
     ########################################################
     # create scenegraph / panels
@@ -195,21 +201,22 @@ class ComplexMovieApp(object):
       def update(self,updinfo):
         dt = updinfo.deltatime
         at = updinfo.absolutetime
+        randgen = self.parent.randgen
         def genpos():
           r = vec3(0)
-          r.x = random.uniform(-30,30)
-          r.z = random.uniform(-30,30)
-          r.y = random.uniform( 10,15)
+          r.x = randgen.uniform(-30,30)
+          r.z = randgen.uniform(-30,30)
+          r.y = randgen.uniform( 10,15)
           return r 
       
         if self.counter<=0:
-          self.counter = int(random.uniform(1,500))
+          self.counter = randgen.uniform(3.0,10.0)
           self.prv_eye = self.cur_eye
           self.prv_tgt = self.cur_tgt
           self.dst_eye = genpos()
-          Y = random.uniform(  0, self.dst_eye.y-3 )
+          Y = randgen.uniform(  0, self.dst_eye.y-3 )
           self.dst_tgt = vec3(0,Y,0)
-          self.cam_time = random.uniform(2.0,5.0)
+          self.cam_time = randgen.uniform(2.0,5.0)
           self.cam_time_base = at
         reltime = at - self.cam_time_base
         index = reltime / self.cam_time
@@ -220,7 +227,7 @@ class ComplexMovieApp(object):
                            self.cur_tgt,
                            vec3(0,1,0))
 
-        self.counter = self.counter-1
+        self.counter -= dt
         
         y = math.sin(self.parent.absolutetime*self.index)*0.85
         q = quat(vec3(0,1,0), self.parent.absolutetime*self.index*0.44)
@@ -228,7 +235,6 @@ class ComplexMovieApp(object):
         self.cube_node.worldTransform.orientation = q
         self.grid_node.worldTransform.translation = vec3(0)
 
-        self.uicam.updateMatrices()
         self.camera.copyFrom( self.uicam.cameradata )
         self.scenegraph.updateScene(self.cameralut)
 
