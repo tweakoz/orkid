@@ -47,7 +47,6 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineSKY(const FxPipelinePermutation& 
     auto context   = RCFD->GetTarget();
     auto FXI       = context->FXI();
     auto MTXI      = context->MTXI();
-    //auto RSI       = context->RSI();
     auto pbrcommon = RCFD->_pbrcommon;
     auto envtex    = pbrcommon->envSpecularTexture();
 
@@ -73,11 +72,11 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineSKY(const FxPipelinePermutation& 
     pipeline_stereo->addStateLambda(skybox_lambda);
     pipeline                   = pipeline_stereo;
   } else if (this->_tek_FWD_SKYBOX_MO) {
-    auto pipeline_stereo        = std::make_shared<FxPipeline>(permu);
-    pipeline_stereo->_technique = this->_tek_FWD_SKYBOX_MO;
-    pipeline_stereo->bindParam(this->_paramIVP, "RCFD_Camera_IVP_Mono"_crcsh);
-    pipeline_stereo->addStateLambda(skybox_lambda);
-    pipeline                   = pipeline_stereo;
+    auto pipeline_mono        = std::make_shared<FxPipeline>(permu);
+    pipeline_mono->_technique = this->_tek_FWD_SKYBOX_MO;
+    pipeline_mono->bindParam(this->_paramIVP, "RCFD_Camera_IVP_Mono"_crcsh);
+    pipeline_mono->addStateLambda(skybox_lambda);
+    pipeline                   = pipeline_mono;
   }
   if(pipeline){
     pipeline->_material_ptr = (GfxMaterial*) this;

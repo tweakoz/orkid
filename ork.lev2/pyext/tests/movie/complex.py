@@ -153,11 +153,11 @@ class ComplexMovieApp(object):
         sg_params.ssaa = 4 # 4x4 SuperSample AntiAliasing
         match index:
           case 1:
-            sg_params.SkyboxTexPathStr = "ork_envmaps|cold4k"
+            sg_params.SkyboxTexPathStr = "cold"
           case 2:
-            sg_params.SkyboxTexPathStr = "ork_envmaps|nebula"
+            sg_params.SkyboxTexPathStr = "nebula"
           case 3:
-            sg_params.SkyboxTexPathStr = "ork_envmaps|futcity4k"
+            sg_params.SkyboxTexPathStr = "futcity"
         #
         self.scenegraph = scenegraph.Scene(sg_params)
         self.layer = self.scenegraph.createLayer("std_forward")
@@ -189,13 +189,13 @@ class ComplexMovieApp(object):
           r = vec3(0)
           r.x = random.uniform(-30,30)
           r.z = random.uniform(-30,30)
-          r.y = random.uniform( -10,-20)
+          r.y = random.uniform( 10,20)
           return r 
       
         if self.counter<=0:
           self.counter = int(random.uniform(1,500))
           self.dst_eye = genpos()
-          self.dst_tgt = vec3(0,random.uniform(  5,10),0)
+          self.dst_tgt = vec3(0,random.uniform(  -15,-20),0)
 
         self.cur_eye = self.cur_eye*0.9995 + self.dst_eye*0.0005
         self.cur_tgt = self.cur_tgt*0.9995 + self.dst_tgt*0.0005

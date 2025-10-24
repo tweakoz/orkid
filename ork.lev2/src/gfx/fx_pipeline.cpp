@@ -598,6 +598,9 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
   } else if (auto as_texture = val.tryAs<texture_ptr_t>()) {
     auto texture = as_texture.value();
     FXI->bindParamTexture(param, texture.get());
+  } else if (auto as_texture_array = val.tryAs<texturearray_ptr_t>()) {
+    auto texture_array = as_texture_array.value();
+    FXI->bindParamTextureArray(param, texture_array.get());
   } else if (auto as_bool_ = val.tryAs<bool>()) {
     FXI->bindParamBool(param, as_bool_.value());
   } else if (auto as_int_ = val.tryAs<int>()) {
