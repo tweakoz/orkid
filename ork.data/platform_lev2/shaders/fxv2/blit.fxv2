@@ -16,9 +16,10 @@ uniform_set ublock_vtx {
 ///////////////////////////////////////////////////////////////
 uniform_block ublock_frg (descriptor_set 0) {
   vec4 modcolor;
-  int downsampledim;
-  float downsampleamp;
   vec2 ViewportDim;
+  int downsampledim;
+  int FlipY;
+  float downsampleamp;
 }
 ///////////////////////////////////////////////////////////////
 sampler_set samplers(descriptor_set 0) {
@@ -43,6 +44,9 @@ vertex_shader vs_blit : vif_PC : ublock_vtx {
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_blit : iface_fmt : samplers {
   vec2 uv = gl_FragCoord.xy;
+  if( FlipY == 1 ) {
+    uv.y = ViewportDim.y - uv.y;
+  }
   vec2 uvb = uv.xy - vec2(0.5, 0.5);
   vec3 texc = texelFetch(ColorMap, ivec2(uvb),0).xyz;
   out_clr   = vec4(texc, 1);
@@ -51,7 +55,9 @@ fragment_shader ps_blit : iface_fmt : samplers {
 fragment_shader ps_downsample2x2 : iface_fmt : samplers {
   const float kscale = 1.0 / 4.0;
   vec2 uv = gl_FragCoord.xy;
-  //uv.y = ViewportDim.y - uv.y;
+  if( FlipY == 1 ) {
+    uv.y = ViewportDim.y - uv.y;
+  }
   vec2 uvb           = uv.xy * 2 - vec2(0.5, 0.5);
   vec3 outc          = vec3(0);
   for (int iy = 0; iy < 2; iy++) {
@@ -66,7 +72,9 @@ fragment_shader ps_downsample2x2 : iface_fmt : samplers {
 fragment_shader ps_downsample3x3 : iface_fmt : samplers {
   const float kscale = 1.0 / 9.0;
   vec2 uv = gl_FragCoord.xy;
-  //uv.y = ViewportDim.y - uv.y;
+  if( FlipY == 1 ) {
+    uv.y = ViewportDim.y - uv.y;
+  }
   vec2 uvb           = uv * 3 - vec2(0.5, 0.5);
   vec3 outc          = vec3(0);
   for (int iy = 0; iy < 3; iy++) {
@@ -81,7 +89,9 @@ fragment_shader ps_downsample3x3 : iface_fmt : samplers {
 fragment_shader ps_downsample4x4 : iface_fmt : samplers {
   const float kscale = 1.0 / 16.0;
   vec2 uv = gl_FragCoord.xy;
-  //uv.y = ViewportDim.y - uv.y;
+  if( FlipY == 1 ) {
+    uv.y = ViewportDim.y - uv.y;
+  }
   vec2 uvb           = uv * 4 - vec2(0.5, 0.5);
   vec3 outc          = vec3(0);
   for (int iy = 0; iy < 4; iy++) {
@@ -96,7 +106,9 @@ fragment_shader ps_downsample4x4 : iface_fmt : samplers {
 fragment_shader ps_downsample5x5 : iface_fmt : samplers {
   const float kscale = 1.0 / 25.0;
   vec2 uv = gl_FragCoord.xy;
-  //uv.y = ViewportDim.y - uv.y;
+  if( FlipY == 1 ) {
+    uv.y = ViewportDim.y - uv.y;
+  }
   vec2 uvb           = uv * 5 + vec2(2, 2);
   vec3 outc          = vec3(0);
   float tot_w        = 0.0;
@@ -116,7 +128,9 @@ fragment_shader ps_downsample5x5 : iface_fmt : samplers {
 fragment_shader ps_downsample6x6 : iface_fmt : samplers {
   const float kscale = 1.0 / 36.0;
   vec2 uv = gl_FragCoord.xy;
-  //uv.y = ViewportDim.y - uv.y;
+  if( FlipY == 1 ) {
+    uv.y = ViewportDim.y - uv.y;
+  }
   vec2 uvb           = uv * 6 - vec2(0.5, 0.5);
   vec3 outc          = vec3(0);
   for (int iy = 0; iy < 6; iy++) {
@@ -130,7 +144,9 @@ fragment_shader ps_downsample6x6 : iface_fmt : samplers {
 }
 fragment_shader ps_downsample7x7 : iface_fmt : samplers {
   vec2 uv = gl_FragCoord.xy;
-  //uv.y = ViewportDim.y - uv.y;
+  if( FlipY == 1 ) {
+    uv.y = ViewportDim.y - uv.y;
+  }
   vec2 uvb    = uv * 7 + vec2(3, 3);
   vec3 outc   = vec3(0);
   float tot_w = 0.0;

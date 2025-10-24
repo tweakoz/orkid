@@ -109,7 +109,6 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   appinitdata->_enable_audio_output = py::cast<bool>(item.second);
                 } else if (key == "enable_audio_synth") {
                   appinitdata->_enable_audio_synth = py::cast<bool>(item.second);
-                  appinitdata->_enable_audio_output = true; // cant have synth without an audio dev output !
                 } else if (key == "audio_input_devname") {
                   appinitdata->_audio_input_devname = py::cast<std::string>(item.second);; // cant have synth without an audio dev output !
                 } else if (key == "audio_output_devname") {

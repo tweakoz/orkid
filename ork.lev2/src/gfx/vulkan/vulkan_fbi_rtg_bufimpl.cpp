@@ -207,17 +207,17 @@ static constexpr VkTransitionParams kToRenderTargetDepth = {
 static constexpr VkTransitionParams kToTextureColor = {
     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,      // layout
     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,          // srcAccess
-    VK_ACCESS_SHADER_READ_BIT,                     // dstAccess  
-    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // srcStage 
-    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT          // dstStage
+    VK_ACCESS_SHADER_READ_BIT,                     // dstAccess
+    VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,            // srcStage (wait for ALL graphics work including tile flush on TBDR/Metal)
+    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT  // dstStage
 };
 
 static constexpr VkTransitionParams kToTextureDepth = {
     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,      // layout
     VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,  // srcAccess
-    VK_ACCESS_SHADER_READ_BIT,                     // dstAccess  
-    VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,    // srcStage
-    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT          // dstStage
+    VK_ACCESS_SHADER_READ_BIT,                     // dstAccess
+    VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,  // srcStage
+    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT  // dstStage (conservative for MoltenVK)
 };
 
 static constexpr VkTransitionParams kToHostReadColor = {
@@ -241,7 +241,20 @@ void VklRtBufferImpl::_transitionImage(vkpricmdbufimpl_ptr_t cb, const VkTransit
 
     VkImage img = _imgobj->_vkimage;
     OrkAssert(img != VK_NULL_HANDLE);
-    
+
+    // CRITICAL: Cannot call vkCmdPipelineBarrier inside dynamic rendering on MoltenVK
+    // Skip transitions if we're inside an active render pass - layout will be managed by dynamic rendering
+    if(0)logchan_rtbi->log("IMAGE TRANSITION CHECK: img=%p, layout %d->%d, renderPassActive=%d",
+                      (void*)img, _currentLayout, p.layout, _contextVK->_renderPassActive);
+
+    if (_contextVK->_renderPassActive) {
+      if(0)logchan_rtbi->log("IMAGE: Skipping transition for image %p while render pass active (layout %d -> %d)",
+                        (void*)img, _currentLayout, p.layout);
+      // Update our tracking to match what dynamic rendering expects
+      setLayout(p.layout);
+      return;
+    }
+
     if(0)logchan_rtbi->log("IMAGE: Transition requested for image %p: current layout %d, target layout %d, CB %p", (void*)img, _currentLayout, p.layout, (void*)cb->_vkcmdbuf);
     if (_currentLayout == VK_IMAGE_LAYOUT_UNDEFINED || _currentLayout != p.layout) {
     if(0)logchan_rtbi->log("IMAGE: Performing transition for image %p from %d to %d", (void*)img, _currentLayout, p.layout);

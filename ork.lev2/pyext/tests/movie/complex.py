@@ -206,7 +206,7 @@ class ComplexMovieApp(object):
 
         self.counter = self.counter-1
         
-        y = math.sin(self.parent.absolutetime*self.index)*1.0
+        y = math.sin(self.parent.absolutetime*self.index)*0.85
         q = quat(vec3(0,1,0), self.parent.absolutetime*self.index*0.44)
         self.cube_node.worldTransform.translation = vec3(0,y,0)
         self.cube_node.worldTransform.orientation = q

@@ -56,7 +56,9 @@ struct RTGIMPL {
       _fxtechnique6x6 = _blit2screenmtl.technique("downsample_6x6");
       _fxtechnique7x7 = _blit2screenmtl.technique("downsample_7x7");
       _fxpMVP         = _blit2screenmtl.param("MatMVP");
-      _fxpColorMap   = _blit2screenmtl.param("ColorMap");
+      _fxpColorMap    = _blit2screenmtl.param("ColorMap");
+      _fxpFlipY       = _blit2screenmtl.param("FlipY");
+      _fxpVpDim       = _blit2screenmtl.param("ViewportDim");
       _needsinit      = false;
       int w           = ctx->mainSurfaceWidth();
       int h           = ctx->mainSurfaceHeight();
@@ -108,6 +110,8 @@ struct RTGIMPL {
   fxtechnique_constptr_t _fxtechnique7x7;
   fxparam_constptr_t     _fxpMVP;
   fxparam_constptr_t     _fxpColorMap;
+  fxparam_constptr_t     _fxpFlipY;
+  fxparam_constptr_t     _fxpVpDim;
   bool _needsinit = true;
   int _width      = 0;
   int _height     = 0;
@@ -201,10 +205,12 @@ void RtGroupOutputCompositingNode::composite(CompositorDrawData& drawdata) {
         }
         mtl.bindParamTexture(impl->_fxpColorMap, tex);
         mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
+        mtl.bindParamInt(impl->_fxpFlipY, _flipY ? 1 : 0);
+        mtl.bindParamVec2(impl->_fxpVpDim, fvec2(float(dstw), float(dsth)));
         ViewportRect extents(0, 0, dstw, dsth);
         fbi->pushViewport(extents);
         fbi->pushScissor(extents);
-        dwi->fullscreenQuad(); // full screen quad
+        dwi->fullscreenQuad(); 
         fbi->popViewport();
         fbi->popScissor();
         mtl.end(framedata);

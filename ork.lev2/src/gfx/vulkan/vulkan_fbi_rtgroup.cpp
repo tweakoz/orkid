@@ -246,8 +246,11 @@ void VkFrameBufferInterface::_popRtGroup() {
         (unsigned long long)finished_rtg->_usage,
         stack_impl ? stack_impl->_did_begin_rendering : 0);
 
-  // Only end rendering if we actually began it during push
-  if (stack_impl && stack_impl->_did_begin_rendering) {
+  // End rendering if there's an active render pass
+  // NOTE: We end based on _renderPassActive, not did_begin_rendering, because
+  // a redundant push (did_begin_rendering=false) might still have left a render pass active
+  if(0)logchan_rtgroup->log("PopRtGroup: BEFORE end, renderPassActive=%d", _contextVK->_renderPassActive);
+  if (_contextVK->_renderPassActive) {
     auto& CB = _contextVK->primary_cb()->_vkcmdbuf;
 
     //////////////////////////////////////////////

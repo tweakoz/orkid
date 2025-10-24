@@ -173,7 +173,7 @@ class UiSgQuadViewTestApp(object):
         if self.counter<=0:
           self.counter = int(random.uniform(1,1000))
           self.dst_eye = genpos()
-          self.dst_tgt = vec3(0,random.uniform(  0,2),0)
+          self.dst_tgt = vec3(0,random.uniform(  -2,-4),0)
 
         if not self.use_event:
           self.cur_eye = self.cur_eye*0.9995 + self.dst_eye*0.0005
