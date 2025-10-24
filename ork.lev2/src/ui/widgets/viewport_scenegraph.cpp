@@ -24,7 +24,7 @@ void SceneGraphViewport::Describe() {
 
 SceneGraphViewport::SceneGraphViewport(const std::string& name, int x, int y, int w, int h)
     : Viewport(name, x, y, w, h, fvec4(1,0,1,1), 1.0f) {
-
+  _flipY = false;
 } 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -32,7 +32,7 @@ SceneGraphViewport::SceneGraphViewport(const std::string& name, int x, int y, in
 void SceneGraphViewport::_doGpuInit(lev2::Context* context) {
   Viewport::_doGpuInit(context);
   _outputnode = std::make_shared<lev2::RtGroupOutputCompositingNode>(_rtgroup);
-  _outputnode->_flipY = true;
+  //_outputnode->_flipY = true;
   _rtgroup->_name = FormatString("ui::SceneGraphViewport<%p>", (void*) this);
   _outputnode->setSuperSample(_supersample);
 }

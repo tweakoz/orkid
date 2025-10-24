@@ -40,58 +40,32 @@ void OrkGlobalEnableMousePointer();
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void EzUiCam::lookAt(fvec3 eye, fvec3 tgt, fvec3 up ){
-    fmtx4 VMATRIX;
-    VMATRIX.lookAt(eye,tgt,up);
+void EzUiCam::lookAt(fvec3 eye, fvec3 tgt, fvec3 up) {
+    if(0)printf("EzUiCam<%p>::lookAt eye<%g %g %g> tgt<%g %g %g> up<%g %g %g>\n",
+        (void*) this,
+        eye.x, eye.y, eye.z,
+        tgt.x, tgt.y, tgt.z,
+        up.x, up.y, up.z);
 
-    if(false){ //_constrainZ){
-
-      VMATRIX = VMATRIX.inverse();
-      fvec3 znormal = VMATRIX.zNormal();
-
-      OrkAssert(up.dotWith(fvec3(0,1,0))>0.99); // in constrainZ, up should be up
-
-      /////////////////////////
-      // compute SIGNED/ORIENTED heading
-      /////////////////////////
-
-      auto heading_n = fvec3(znormal.x,0,znormal.z).normalized();
-      auto heading_ref = fvec3(0,0,-1);
-      auto hrXhn = heading_ref.crossWith(heading_n);
-      hrXhn.y = -fabs(hrXhn.y);
-      float heading = heading_ref.orientedAngle(heading_n,hrXhn);
-
-      /////////////////////////
-      // compute SIGNED/ORIENTED elevation
-      /////////////////////////
-
-      auto znXhn = znormal.crossWith(heading_n);
-      float elevation = znormal.orientedAngle(heading_n,znXhn);
-      bool is_up = (znormal.y >= 0);
-      elevation = fabs(elevation) * (is_up?-1:1);
-
-      /////////////////////////
-
-      QuatElevation.fromAxisAngle(fvec4(1,0,0,elevation));
-      QuatHeading.fromAxisAngle(fvec4(0,1,0,heading));
-      QuatC = QuatElevation.multiply(QuatHeading);
-    }
-    else{
-
-      fvec3 xnormal = VMATRIX.xNormal();
-      fvec3 ynormal = VMATRIX.yNormal();
-      fvec3 znormal = VMATRIX.zNormal();
-
-      fmtx4 matrot, imatrot;
-      matrot.fromNormalVectors(xnormal, ynormal, znormal);
-      imatrot.inverseOf(matrot);
-      QuatC.fromMatrix(imatrot);
-    }
-
-    mfLoc = (tgt-eye).magnitude();
-    mvCenter = tgt;
+    // Calculate view direction from eye to target
+    fvec3 forward = (tgt - eye).normalized();
+    fvec3 right = up.crossWith(forward).normalized();  // Note: up cross forward
+    fvec3 camera_up = forward.crossWith(right).normalized();
+    
+    // Build the WORLD orientation of the camera
+    // The camera looks down its local +Z axis in your system
+    // So forward maps to +Z, right to +X, up to +Y
+    fmtx4 world_orientation;
+    world_orientation.fromNormalVectors(right, camera_up, forward);
+    
+    // QuatC represents camera's orientation in world space
+    QuatC.fromMatrix(world_orientation);
+    
+    // Set camera parameters
+    mfLoc = (tgt - eye).magnitude();
+    mvCenter = tgt;  // Camera orbits around target
+    
     updateMatrices();
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -791,9 +765,11 @@ void EzUiCam::updateMatrices(void) {
 
   // printf("near<%g> far<%g> mfLoc<%g>\n", fnear, ffar, mfLoc);
   // printf("mvCenter<%g %g %g>\n", mvCenter.x, mvCenter.y, mvCenter.z);
-   //printf("veye<%g %g %g>\n", veye.x, veye.y, veye.z);
-   //printf("vtarget<%g %g %g>\n", vtarget.x, vtarget.y, vtarget.z);
-  // printf("vup<%g %g %g>\n", vup.x, vup.y, vup.z);
+   if(0){
+    printf("veye<%g %g %g>\n", veye.x, veye.y, veye.z);
+     printf("vtarget<%g %g %g>\n", vtarget.x, vtarget.y, vtarget.z);
+    printf("vup<%g %g %g>\n", vup.x, vup.y, vup.z);
+   }
 
   ///////////////////////////////////////////////////////////////
   // CameraMatrices ctx = _camcamdata->computeMatrices(ctx);

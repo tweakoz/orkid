@@ -124,12 +124,8 @@ class ComplexMovieApp(object):
                                            metallic=0.0)
     permu = lev2.FxPipelinePermutation(rendermodel="FORWARD_PBR")
     pipeline_cube = cube_mtl.fxcache.findPipeline(permu) 
-    mesh = meshutil.Mesh()
-    mesh.readFromWavefrontObj("data://tests/simple_obj/cone.obj")
-    submesh = mesh.submesh_list[0]
-    submesh_prim = RigidPrimitive(submesh,ctx)
-    pipeline_mesh = createPipeline( app = self, ctx = ctx, rendermodel="FORWARD_PBR", techname="std_mono_fwd" )
     self.cube_mtl = cube_mtl
+
     ########################################################
     # create scenegraph / panels
     ########################################################
@@ -162,15 +158,16 @@ class ComplexMovieApp(object):
         self.scenegraph = scenegraph.Scene(sg_params)
         self.layer = self.scenegraph.createLayer("std_forward")
         self.grid_node = self.layer.createDrawableNodeFromData("grid",parent.grid_data)
-        self.grid_node.sortkey = 1
+        self.grid_node.sortkey = 0
         self.cube_node = cube_prim.createNode("cube",self.layer,pipeline_cube)
+        self.cube_node.sortkey = 1
         #
         self.cameralut = CameraDataLut()
         self.camera, self.uicam = setupUiCameraX( cameralut=self.cameralut, camname=self.camname )
         self.cur_eye = vec3(3,3,3)
-        self.cur_tgt = vec3(0,0,1)
-        self.dst_eye = vec3(0,0,0)
-        self.dst_tgt = vec3(0,0,0)
+        self.cur_tgt = vec3(3,3,6)
+        self.dst_eye = self.cur_eye
+        self.dst_tgt = self.cur_tgt
         self.counter = 0
 
         griditem = parent.griditems[index]
@@ -189,20 +186,21 @@ class ComplexMovieApp(object):
           r = vec3(0)
           r.x = random.uniform(-30,30)
           r.z = random.uniform(-30,30)
-          r.y = random.uniform( 10,20)
+          r.y = random.uniform( 10,15)
           return r 
       
         if self.counter<=0:
           self.counter = int(random.uniform(1,500))
           self.dst_eye = genpos()
-          self.dst_tgt = vec3(0,random.uniform(  -15,-20),0)
+          Y = random.uniform(  0, self.dst_eye.y-3 )
+          self.dst_tgt = vec3(0,Y,0)
 
-        self.cur_eye = self.cur_eye*0.9995 + self.dst_eye*0.0005
-        self.cur_tgt = self.cur_tgt*0.9995 + self.dst_tgt*0.0005
-        self.uicam.distance = 1
+        self.cur_eye = (self.cur_eye*0.995) + (self.dst_eye*0.005)
+        self.cur_tgt = (self.cur_tgt*0.995) + (self.dst_tgt*0.005)
+        self.uicam.distance = 0.1
         self.uicam.lookAt( self.cur_eye,
-                          self.cur_tgt,
-                          vec3(0,1,0))
+                           self.cur_tgt,
+                           vec3(0,1,0))
 
         self.counter = self.counter-1
         
@@ -210,6 +208,7 @@ class ComplexMovieApp(object):
         q = quat(vec3(0,1,0), self.parent.absolutetime*self.index*0.44)
         self.cube_node.worldTransform.translation = vec3(0,y,0)
         self.cube_node.worldTransform.orientation = q
+        self.grid_node.worldTransform.translation = vec3(0)
 
         self.uicam.updateMatrices()
         self.camera.copyFrom( self.uicam.cameradata )

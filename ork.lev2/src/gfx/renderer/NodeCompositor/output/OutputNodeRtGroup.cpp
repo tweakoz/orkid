@@ -206,6 +206,7 @@ void RtGroupOutputCompositingNode::composite(CompositorDrawData& drawdata) {
         mtl.bindParamTexture(impl->_fxpColorMap, tex);
         mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
         mtl.bindParamInt(impl->_fxpFlipY, _flipY ? 1 : 0);
+        //printf("RtGroupOutputCompositingNode _flipY<%d>\n", _flipY ? 1 : 0);
         mtl.bindParamVec2(impl->_fxpVpDim, fvec2(float(dstw), float(dsth)));
         ViewportRect extents(0, 0, dstw, dsth);
         fbi->pushViewport(extents);
