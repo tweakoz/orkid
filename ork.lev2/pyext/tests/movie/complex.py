@@ -121,7 +121,7 @@ class ComplexMovieApp(object):
     cube_mtl = createPbrMaterialWithColor( ctx=ctx, 
                                            color=vec4(1,1,1,1), 
                                            roughness=1.0, 
-                                           metallic=1.0)
+                                           metallic=0.0)
     permu = lev2.FxPipelinePermutation(rendermodel="FORWARD_PBR")
     pipeline_cube = cube_mtl.fxcache.findPipeline(permu) 
     mesh = meshutil.Mesh()
