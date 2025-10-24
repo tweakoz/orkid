@@ -199,7 +199,9 @@ void MovieCaptureContext::_encodingThreadFunc() {
       encoder->enqueueFrames(nullptr, extracted);
       continue;
     } else {
-      continue; // Neither ready, try again
+      // Neither stream ready - yield CPU to other threads (GPU capture, audio generation)
+      usleep(100); // 0.1ms
+      continue;
     }
 
     // Only reach here if encoding video

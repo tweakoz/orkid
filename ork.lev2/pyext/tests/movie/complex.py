@@ -165,10 +165,13 @@ class ComplexMovieApp(object):
         #
         self.cameralut = CameraDataLut()
         self.camera, self.uicam = setupUiCameraX( cameralut=self.cameralut, camname=self.camname )
+        self.prv_eye = vec3(3,3,3)
+        self.prv_tgt = vec3(3,3,6)
         self.cur_eye = vec3(3,3,3)
         self.cur_tgt = vec3(3,3,6)
         self.dst_eye = self.cur_eye
         self.dst_tgt = self.cur_tgt
+        self.cam_time = 1.0
         self.counter = 0
 
         griditem = parent.griditems[index]
@@ -184,6 +187,7 @@ class ComplexMovieApp(object):
 
       def update(self,updinfo):
         dt = updinfo.deltatime
+        at = updinfo.absolutetime
         def genpos():
           r = vec3(0)
           r.x = random.uniform(-30,30)
@@ -193,12 +197,17 @@ class ComplexMovieApp(object):
       
         if self.counter<=0:
           self.counter = int(random.uniform(1,500))
+          self.prv_eye = self.cur_eye
+          self.prv_tgt = self.cur_tgt
           self.dst_eye = genpos()
           Y = random.uniform(  0, self.dst_eye.y-3 )
           self.dst_tgt = vec3(0,Y,0)
-
-        self.cur_eye = (self.cur_eye*0.995) + (self.dst_eye*0.005)
-        self.cur_tgt = (self.cur_tgt*0.995) + (self.dst_tgt*0.005)
+          self.cam_time = random.uniform(2.0,5.0)
+          self.cam_time_base = at
+        reltime = at - self.cam_time_base
+        index = reltime / self.cam_time
+        self.cur_eye = (self.prv_eye*(1.0-index)) + (self.dst_eye*index)
+        self.cur_tgt = (self.prv_tgt*(1.0-index)) + (self.dst_tgt*index)
         self.uicam.distance = 0.1
         self.uicam.lookAt( self.cur_eye,
                            self.cur_tgt,
