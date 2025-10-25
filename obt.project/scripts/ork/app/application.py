@@ -21,11 +21,12 @@ class ComponentizedApplication(object):
 
   ##################################################
 
-  def findComponentByClass(self,component_clazz):
+  def findComponentsByClass(self,component_clazz):
+    components = []
     for component in self.components_sorted:
       if isinstance(component,component_clazz):
-        return component
-    return None
+        components.append(component)
+    return components
 
   ##################################################
 
