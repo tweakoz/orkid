@@ -29,6 +29,7 @@ AppInitData::AppInitData(int argc, char** argv, char** envp) {
   _commandline_vars = std::make_shared<opts_var_map_t>();
   _fsinit           = std::make_shared<StdFileSystemInitalizer>(*this);
   _audio_ioclass = "default";
+  _misc_varmap = std::make_shared<varmap::VarMap>();
 
   if (genviron.has("ORKID_AUDIO_INPUT_DEVICE")) {
     std::string audioinputdev;

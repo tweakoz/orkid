@@ -184,6 +184,7 @@ struct OrkEzApp : public OrkEzAppBase {
   void onAudioExit(onauddevfn_t callback);
   void onSynthInit(onsynfn_t callback);
   void onSynthExit(onsynfn_t callback);
+  void onAppInit(void_lambda_t callback);
   void onAppExit(void_lambda_t callback);
 
   void _audioInit();
@@ -247,6 +248,7 @@ public:
   moviecapcontext_ptr_t _moviecapcontext;
   float _timescale = 1.0f;
   void_lambda_t _onRunLoopIteration;
+  void_lambda_t _onAppInit;
   void_lambda_t _onAppExit;
   rcfd_ptr_t _overrideRCFD;
   int _updateCounter = 0;

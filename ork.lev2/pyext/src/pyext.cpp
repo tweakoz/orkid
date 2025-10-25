@@ -91,6 +91,7 @@ ork::lev2::orkezapp_ptr_t pylev2appinit(py::kwargs kwargs) {
   char** argv = init_data->_dynaargs_refs.data();
 
   // Process keyword arguments to configure AppInitData
+
   if (kwargs) {
     for (auto item : kwargs) {
       auto key = py::cast<std::string>(item.first);
@@ -210,12 +211,6 @@ PYBIND11_MODULE(_lev2, module_lev2) {
   //////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   auto type_codec = python::pb11_typecodec_t::instance();
-  /////////////////////////////////////////////////////////////////////////////////
-  // Register AppInitData
-  /////////////////////////////////////////////////////////////////////////////////
-  auto appinitdata_type = py::class_<AppInitData, appinitdata_ptr_t>(module_lev2, "AppInitData")
-      .def(py::init<>());
-  type_codec->registerStdCodec<appinitdata_ptr_t>(appinitdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   using namespace lev2::ged;
   auto gedto_type =                                                              //

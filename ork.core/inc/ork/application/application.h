@@ -122,6 +122,7 @@ struct AppInitData{
   std::multimap<uint64_t,void_lambda_t> _preinitoperations;
   std::multimap<uint64_t,void_lambda_t> _postinitoperations;
   file::Path _movie_output_path;
+  varmap::varmap_ptr_t _misc_varmap;
 };
 
 struct StringPoolContext {

@@ -351,6 +351,10 @@ void OrkEzApp::onSynthExit(onsynfn_t callback) {
   _onSynthExit = callback;
 }
 ///////////////////////////////////////////////////////////////////////////////
+void OrkEzApp::onAppInit(void_lambda_t callback) {
+  _onAppInit = callback;
+}
+///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onAppExit(void_lambda_t callback) {
   _onAppExit = callback;
 }

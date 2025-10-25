@@ -200,6 +200,12 @@ PYBIND11_MODULE(_core, module_core) {
   /////////////////////////////////////////////////////////////////////////////////
   auto type_codec = python::pb11_typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
+  auto appinitdata_type = py::class_<AppInitData, appinitdata_ptr_t>(module_core, "AppInitData")
+      .def(py::init<>())
+      .def_property_readonly("misc_varmap", [](appinitdata_ptr_t aid) -> varmap::varmap_ptr_t  {
+        return aid->_misc_varmap;
+      });
+  type_codec->registerStdCodec<appinitdata_ptr_t>(appinitdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   using coreapp_ptr_t   = std::shared_ptr<CorePythonApplication>;
   auto application_type = py::class_<CorePythonApplication, coreapp_ptr_t>(module_core, "Application")

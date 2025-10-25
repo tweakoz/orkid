@@ -197,6 +197,39 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             rval->_vars->makeValueForKey<py::object>("appinstance")   = appinstance;
             rval->_overrideRCFD = override_rcfd;
             ////////////////////////////////////////////////////////////////////
+            if (py::hasattr(appinstance, "onAppInit")) {
+              logchan_EZAPP->log("REG onAppInit");
+              auto appinitfn //
+                  = py::cast<py::function>(appinstance.attr("onAppInit"));
+              rval->_vars->makeValueForKey<py::function>("appinitfn") = appinitfn;
+              rval->onAppInit([=]() { //
+                logchan_EZAPP->log("EXE onAppInit");
+                py::gil_scoped_acquire acquire;
+                auto pyfn = rval->_vars->typedValueForKey<py::function>("appinitfn");
+                auto initdata = appinitdata;
+                pyfn.value()(initdata);
+              });
+            }
+            else{
+              logchan_EZAPP->log("NO onAppInit");
+            }
+            ////////////////////////////////////////////////////////////////////
+            if (py::hasattr(appinstance, "onAppExit")) {
+              logchan_EZAPP->log("REG onAppExit");
+              auto appexitfn //
+                  = py::cast<py::function>(appinstance.attr("onAppExit"));
+              rval->_vars->makeValueForKey<py::function>("appexitfn") = appexitfn;
+              rval->onAppExit([=]() { //
+                logchan_EZAPP->log("EXE onAppExit");
+                py::gil_scoped_acquire acquire;
+                auto pyfn = rval->_vars->typedValueForKey<py::function>("appexitfn");
+                pyfn.value()();
+              });
+            }
+            else{
+              logchan_EZAPP->log("NO onAppExit");
+            }
+            ////////////////////////////////////////////////////////////////////
             if (py::hasattr(appinstance, "onAudioInit")) {
               logchan_EZAPP->log("REG onAudioInit");
               auto audinitfn //
@@ -580,6 +613,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
       .def(
           "mainThreadLoop",
           [=](orkezapp_ptr_t app,py::kwargs kwargs) -> int { //
+            
             if (kwargs) {
               for (auto item : kwargs) {
                 auto key = py::cast<std::string>(item.first);
@@ -601,6 +635,9 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               // The main thread is now owned by C++
               //  therefore the main thread has to let go of the GIL
               // it will be reacquired post-runloop()
+              if( app->_onAppInit ){
+                app->_onAppInit();
+              }
               auto RES = app->mainThreadLoop();
               if( app->_onAppExit ){
                 app->_onAppExit();
