@@ -1,6 +1,13 @@
 from orkengine.core import CrcString
 
 ###############################################################################
+# ComponentizedApplication
+#  an 'application level ECS'
+#
+# Copyright 1996-2023, Michael T. Mayers.
+# Distributed under the MIT License
+# see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
+################################################################################
 
 class ComponentizedApplication(object):
 
@@ -8,6 +15,14 @@ class ComponentizedApplication(object):
     self.app_components = {}
     self.components_sorted = []
 
+  ##############################################
+  # add an application component
+  # name : string name of component
+  # component_clazz : class of component to instantiate
+  # kwargs : keyword args to pass to component constructor
+  # return : component instance
+  # components are stored in a dict by name
+  # components are also stored in a sorted execution list
   ##############################################
 
   def addComponent(self,name,component_clazz,**kwargs):
@@ -19,6 +34,10 @@ class ComponentizedApplication(object):
     component.app = self
     return component 
 
+  ##############################################
+  # get components by class
+  # component_clazz : class of component to find
+  # return : list of component instances matching class
   ##################################################
 
   def findComponentsByClass(self,component_clazz):
@@ -29,6 +48,10 @@ class ComponentizedApplication(object):
     return components
 
   ##################################################
+  # get component by name
+  # name : string name of component
+  # return : component instance or None
+  ##################################################
 
   def findComponentByName(self,name):
     return self.app_components.get(name,None)
@@ -38,52 +61,76 @@ class ComponentizedApplication(object):
   ##############################################
 
   def onAppInit(self,initdata):
+    # invoked on main thread when the application is initialized
+    # immediately before the main loop starts
     for component in self.components_sorted:
       component.onAppInit(self,initdata)
   
   def onAppExit(self):
+    # invoked on main thread when the application is exiting
+    # immediately after main loop ends
     for component in self.components_sorted:
       component.onAppExit()
 
   def onGpuInit(self,ctx):
+    # invoked on main thread when the GPU context is initialized
+    # immediately before the main loop starts
     for component in self.components_sorted:
       component.onGpuInit(ctx)
       
   def onGpuExit(self,ctx):
+    # invoked on main thread when the GPU context is exiting
+    # immediately after the main loop ends
     for component in self.components_sorted:
       component.onGpuExit(ctx)
       
   def onGpuUpdate(self,ctx):
+    # invoked on main thread each frame to update GPU resources
+    # immediately before pre-frame
     for component in self.components_sorted:
       component.onGpuUpdate(ctx)
 
   def onGpuPreFrame(self,ctx):
+    # invoked on main thread each frame before rendering
+    # immediately before rendering
     for component in self.components_sorted:
       component.onGpuPreFrame(ctx)
 
   def onGpuPostFrame(self,ctx):
+    # invoked on main thread each frame after rendering
+    # immediately after rendering
     for component in self.components_sorted:
       component.onGpuPostFrame(ctx)
       
   def onAudioInit(self,audiodev):
+    # invoked on audio thread when the audio device is initialized
+    # immediately before audio processing starts
     for component in self.components_sorted:
       component.onAudioInit(audiodev)
       
   def onSynthInit(self,synth):
+    # invoked on audio thread when the synth is initialized
+    # immediately before audio processing starts
     for component in self.components_sorted:
       component.onSynthInit(synth)
 
   def onUpdateInit(self):
+    # invoked on update thread when the update loop is initialized
+    # immediately before the update loop starts
     for component in self.components_sorted:
       component.onUpdateInit()
       
+  def onUpdate(self,updinfo):
+    # invoked on update thread each update loop iteration
+    for component in self.components_sorted:
+      component.onUpdate(updinfo) 
+
   def onUpdateExit(self):
+    # invoked on update thread when the update loop is exiting
+    # immediately after the update loop ends
     for component in self.components_sorted:
       component.onUpdateExit()
 
-  def onUpdate(self,updinfo):
-    for component in self.components_sorted:
-      component.onUpdate(updinfo) 
       
   ##################################################
   # notify : notify all components of an event
@@ -93,7 +140,13 @@ class ComponentizedApplication(object):
     for component in self.components_sorted:
       component.onNotify(eventid,**kwargs)
 
-###############################################################################
+################################################################################
+# ApplicationComponent
+#  superclass for application components
+#  uses template method pattern
+#  application calls onXXXX methods
+#  subclasses override _onXXXX methods
+################################################################################
 
 class ApplicationComponent(object):
   def __init__(self):
