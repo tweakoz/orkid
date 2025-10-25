@@ -20,6 +20,7 @@ namespace ork::lev2 {
 class FxInterface {
 public:
   void BeginFrame();
+  void EndFrame();
 
   virtual int BeginBlock(
       const FxShaderTechnique* tek, //

@@ -25,6 +25,8 @@ VkFxInterface::VkFxInterface(vkcontext_rawptr_t ctx)
     _default_rasterstate->_frontface = FLIP_Y_LIKE_OPENGL 
                                      ? EFrontFace::CLOCKWISE 
                                      : EFrontFace::COUNTER_CLOCKWISE;
+
+    _default_rasterstate->_name = "vkdefault";
     
     // Dynamic UBO system will be initialized after Vulkan setup
 }
@@ -79,13 +81,27 @@ void VkFxInterface::_doEndFrame() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::_doPushRasterState(rasterstate_ptr_t rs) {
-  _rasterstate_stack.push(_rasterstate_top);
-  _rasterstate_top = rs;
+  _rasterstate_stack.push(rs);  // Push NEW value onto priority stack (not old top)
+  _rasterstate_top = rs;         // Update cached top
+  std::string name = "null";
+  if( rs ){
+    name = FormatString("%s-pri<%d>",
+                       rs->_name.c_str(),
+                       rs->_priority);
+  }
+  if(0) printf("PUSH rasterstate<%s> stack size: %zu\n", name.c_str(), _rasterstate_stack.size());
 }
 rasterstate_ptr_t VkFxInterface::_doPopRasterState() {
-  _rasterstate_top = _rasterstate_stack.top();
+  OrkAssert(!_rasterstate_stack.empty());
+  auto popped = _rasterstate_stack.top();  // Get what we're popping (for debug print)
   _rasterstate_stack.pop();
-  return _rasterstate_top;
+
+  std::string name = popped ? popped->_name : "null";
+  if(0) printf("POP  rasterstate<%s> stack size: %zu\n", name.c_str(), _rasterstate_stack.size());
+
+  // Don't call resolve() here - too slow (O(n) since pop invalidated cache)
+  // _fetchPipeline will call resolve() when actually needed
+  return popped;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -272,6 +272,7 @@ void Context::endFrame(void) {
   MTXI()->PopVMatrix();
   MTXI()->PopPMatrix();
   FBI()->EndFrame();
+  FXI()->EndFrame();
 
   PopModColor();
   mbPostInitializeContext = false;

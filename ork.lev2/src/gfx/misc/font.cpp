@@ -136,6 +136,8 @@ void Font::load(Context* context, fontdesc_ptr_t fdesc) {
   _materialDeferred->_texColor = _texture; //_materialDeferred->_asset_texcolor.GetTexture();
   //_materialDeferred->gpuInit(context);
 
+  _fs_material->_rasterstate->_name = "Font";
+
 #if defined(__APPLE__)
   /*if (_macosUseHIDPI) {
     _fontdesc->miCharWidth *= 2;

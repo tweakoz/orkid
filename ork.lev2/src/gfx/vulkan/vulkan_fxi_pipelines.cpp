@@ -107,13 +107,15 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
         vkrstate->_ork_rasterstate = effective_rasterstate.get();
   }
 
-  _rasterstate_stack.dump("STACK");
+  //_rasterstate_stack.dump("STACK");
+  /*
   if(effective_rasterstate){
-    printf("using rstate<%s> pri<%d>\n", effective_rasterstate->_name.c_str(), effective_rasterstate->_priority );
+    printf("using rasterstate<%s> pri<%d>\n", effective_rasterstate->_name.c_str(), effective_rasterstate->_priority );
   }
   else{
-    printf("using rstate<null>\n");
+    printf("using rasterstate<null>\n");
   }
+  */
 
   /////////////////////////////////////////////////////////////////////
   // compute pipeline bits (for hashing pipeline state)

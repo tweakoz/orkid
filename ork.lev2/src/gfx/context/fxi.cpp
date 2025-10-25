@@ -43,6 +43,10 @@ void FxInterface::BeginFrame() {
   _doBeginFrame();
 }
 
+void FxInterface::EndFrame() {
+  _doEndFrame();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void FxInterface::Reset() {
