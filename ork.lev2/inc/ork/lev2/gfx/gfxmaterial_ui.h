@@ -21,6 +21,8 @@ public:
   GfxMaterialUI(Context* pTarg = 0);
   ~GfxMaterialUI();
 
+  uimaterial_ptr_t clone() const;
+  
   void Update(void) override {
   }
 
@@ -69,8 +71,6 @@ protected:
   fvec4 PosBias;
   fvec4 Color;
 };
-
-using uimaterial_ptr_t = std::shared_ptr<GfxMaterialUI>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

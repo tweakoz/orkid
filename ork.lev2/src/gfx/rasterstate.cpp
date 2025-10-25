@@ -38,6 +38,7 @@ rasterstate_ptr_t RasterState::clone() const{
   rval->_blendFactorDstRGB = _blendFactorDstRGB;
   rval->_blendFactorSrcA = _blendFactorSrcA;
   rval->_blendFactorDstA = _blendFactorDstA;
+  rval->_blendingMacro = _blendingMacro;
   rval->_lineWidth = _lineWidth;
   rval->_polygonMode = _polygonMode;
   rval->_frontface = _frontface;
@@ -48,106 +49,159 @@ rasterstate_ptr_t RasterState::clone() const{
 
 /////////////////////////////////////////////////////////////////////////
 void RasterState::setDepthTest(EDepthTest dt){
+  if(dt != _depthtest){
+    _impl.clear();
+  }
   _depthtest = dt;
-  _impl.clear();
 }
 /////////////////////////////////////////////////////////////////////////
 void RasterState::setCullTest(ECullTest ct){
+  if(ct != _culltest){
+    _impl.clear();
+  }
   _culltest = ct;
-  _impl.clear();
 }
 /////////////////////////////////////////////////////////////////////////
 void RasterState::setWriteMaskZ(bool b){
+  if(b != _writemaskZ){
+    _impl.clear();
+  }
   _writemaskZ = b;
-  _impl.clear();
 }
 /////////////////////////////////////////////////////////////////////////
 void RasterState::setWriteMaskA(bool b){
+  if(b != _writemaskA){
+    _impl.clear();
+  }
   _writemaskA = b;
-  _impl.clear();
 }
 /////////////////////////////////////////////////////////////////////////
 void RasterState::setWriteMaskRGB(bool b){
+  if(b != _writemaskRGB){
+    _impl.clear();
+  }
   _writemaskRGB = b;
-  _impl.clear();
 }
 /////////////////////////////////////////////////////////////////////////
 void RasterState::setDepthBiasEnable(bool b){
+  if(b != _depthBiasEnable){
+    _impl.clear();
+  }
   _depthBiasEnable = b;
-  _impl.clear();
 }
 /////////////////////////////////////////////////////////////////////////
 void RasterState::setDepthBiasSlopeFactor(float f){
+  if(f != _depthBiasSlopeFactor){
+    _impl.clear();
+  }
   _depthBiasSlopeFactor = f;
-  _impl.clear();
 }
 /////////////////////////////////////////////////////////////////////////
 void RasterState::setDepthBiasConstantFactor(float f){
+  if(f != _depthBiasConstantFactor){
+    _impl.clear();
+  }
   _depthBiasConstantFactor = f;
-  _impl.clear();
 }
 /////////////////////////////////////////////////////////////////////////
 void RasterState::setDepthBiasClamp(float f){
+  if(f != _depthBiasClamp){
+    _impl.clear();
+  }
   _depthBiasClamp = f;
-  _impl.clear();
 }
 /////////////////////////////////////////////////////////////////////////
 void RasterState::setDepthClampEnable(bool b){
+  if(b != _depthClampEnable){
+    _impl.clear();
+  }
   _depthClampEnable = b;
-  _impl.clear();
 }
 /////////////////////////////////////////////////////////////////////////
 void RasterState::setRasterizerDiscard(bool b){
+  if(b != _rasterizerDiscard){
+    _impl.clear();
+  }
   _rasterizerDiscard = b;
-  _impl.clear();
 }
 /////////////////////////////////////////////////////////////////////////
 void RasterState::setBlendEnable(bool b){
+  _updateBlendingTechnique(false);
+  if(b != _blendEnable){
+    _impl.clear();
+  }
   _blendEnable = b;
-  _impl.clear();
 }
 /////////////////////////////////////////////////////////////////////////
 void RasterState::setBlendConstant(const fvec4& f){
+  _updateBlendingTechnique(false);
+  // Blend constants are dynamic state - no impl clear needed for value changes
   _blendConstant = f;
-  _impl.clear();
 }
 /////////////////////////////////////////////////////////////////////////
 void RasterState::setBlendFactorSrcRGB(BlendingFactor bf){
+  _updateBlendingTechnique(false);
+  if(bf != _blendFactorSrcRGB){
+    _impl.clear();
+  }
   _blendFactorSrcRGB = bf;
-  _impl.clear();
 }
 /////////////////////////////////////////////////////////////////////////
 void RasterState::setBlendFactorDstRGB(BlendingFactor bf){
+  _updateBlendingTechnique(false);
+  if(bf != _blendFactorDstRGB){
+    _impl.clear();
+  }
   _blendFactorDstRGB = bf;
-  _impl.clear();
 }
 /////////////////////////////////////////////////////////////////////////
 void RasterState::setBlendFactorSrcA(BlendingFactor bf){
+  _updateBlendingTechnique(false);
+  if(bf != _blendFactorSrcA){
+    _impl.clear();
+  }
   _blendFactorSrcA = bf;
-  _impl.clear();
 }
 /////////////////////////////////////////////////////////////////////////
 void RasterState::setBlendFactorDstA(BlendingFactor bf){
+  _updateBlendingTechnique(false);
+  if(bf != _blendFactorDstA){
+    _impl.clear();
+  }
   _blendFactorDstA = bf;
-  _impl.clear();
 }
 /////////////////////////////////////////////////////////////////////////
 void RasterState::setLineWidth(float f){
+  if(f != _lineWidth){
+    _impl.clear();
+  }
   _lineWidth = f;
-  _impl.clear();
 }
 /////////////////////////////////////////////////////////////////////////
 void RasterState::setPolygonMode(EPolygonMode pm){
+  if(pm != _polygonMode){
+    _impl.clear();
+  }
   _polygonMode = pm;
-  _impl.clear();
 }
 /////////////////////////////////////////////////////////////////////////
 void RasterState::setFrontFace(EFrontFace ff){
+  if(ff != _frontface){
+    _impl.clear();
+  }
   _frontface = ff;
-  _impl.clear();
 }
 /////////////////////////////////////////////////////////////////////////
 void RasterState::setBlendingMacro(BlendingMacro bm) {
+  bool is_macro = (bm != BlendingMacro::NONE);
+  _updateBlendingTechnique(is_macro);
+
+  // Also need to clear if changing between different macros
+  if(_blendingMacro != bm && is_macro && _blendingMacro != BlendingMacro::NONE){
+    _impl.clear();
+  }
+
+  _blendingMacro = bm;
   switch (bm) {
     case BlendingMacro::OFF: {
       _blendFactorSrcRGB = BlendingFactor::ONE;
@@ -239,13 +293,34 @@ void RasterState::setBlendingMacro(BlendingMacro bm) {
       _blendEnable       = true;
       break;
     }
+    case BlendingMacro::NONE: {
+      // Non-macro mode - blend state set individually via setters
+      break;
+    }
     default:
       OrkAssert(false);
       break;
   }
+}
+/////////////////////////////////////////////////////////////////////////
+void RasterState::_updateBlendingTechnique(bool is_macro) {
+  bool currently_macro = (_blendingMacro != BlendingMacro::NONE);
+
+  if(is_macro != currently_macro) {
+    // Mode transition detected - invalidate cached impl
+    _impl.clear();
+    if(!is_macro) {
+      // Transitioning to manual mode
+      _blendingMacro = BlendingMacro::NONE;
+    }
+    // Note: When transitioning to macro mode, caller sets the specific macro value
+  }
+}
+/////////////////////////////////////////////////////////////////////////
+void RasterState::invalidate() {
   _impl.clear();
 }
-
+/////////////////////////////////////////////////////////////////////////
 void RasterState::dump() const {
   printf("RASTERSTATE<%p:%s>\n", this, _name.c_str());
   printf("  LINEWIDTH<%f>\n", _lineWidth);

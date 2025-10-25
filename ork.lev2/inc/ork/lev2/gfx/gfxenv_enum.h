@@ -228,6 +228,7 @@ enum struct EPolygonMode : crc_enum_t {
 //////////////////////////////////////
 
 enum struct BlendingMacro : crc_enum_t {
+  CrcEnum(NONE),
   CrcEnum(OFF),
   CrcEnum(PREMA),             // (SrcClr) + (FBClr*(1-SrcAlpha))
   CrcEnum(ALPHA),             // (SrcClr*SrcAlpha) + (FBClr*(1-SrcAlpha))

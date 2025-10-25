@@ -122,6 +122,8 @@ public:
     return int(miNumPasses);
   }
 
+  void cloneStateFrom(const GfxMaterial& oth);
+
   virtual void Update(void) = 0;
 
   virtual void gpuInit(Context* context) = 0;

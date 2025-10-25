@@ -18,23 +18,6 @@
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/pch.h>
 
-namespace ork {
-static const std::string TexDestStrings[lev2::ETEXDEST_END + 2] =
-    {"ETEXDEST_AMBIENT", "ETEXDEST_DIFFUSE", "ETEXDEST_SPECULAR", "ETEXDEST_BUMP", "ETEXDEST_END", ""};
-template <> const EPropType PropType<lev2::ETextureDest>::meType   = EPROPTYPE_ENUM;
-template <> const char* PropType<lev2::ETextureDest>::mstrTypeName = "GfxEnv::ETextureDest";
-template <> lev2::ETextureDest PropType<lev2::ETextureDest>::FromString(const PropTypeString& String) {
-  return PropType::FindValFromStrings<lev2::ETextureDest>(String.c_str(), TexDestStrings, lev2::ETEXDEST_END);
-}
-template <> void PropType<lev2::ETextureDest>::ToString(const lev2::ETextureDest& e, PropTypeString& tstr) {
-  tstr.set(TexDestStrings[int(e)].c_str());
-}
-template <> void PropType<lev2::ETextureDest>::GetValueset(const std::string*& ValueStrings, int& NumStrings) {
-  NumStrings   = lev2::ETEXDEST_END + 1;
-  ValueStrings = TexDestStrings;
-}
-} // namespace ork
-
 /////////////////////////////////////////////////////////////////////////
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::GfxMaterial, "GfxMaterial")
@@ -107,6 +90,34 @@ void GfxMaterial::PopDebug() {
 }
 bool GfxMaterial::IsDebug() {
   return mDebug.top();
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+void GfxMaterial::cloneStateFrom(const GfxMaterial& oth) {
+
+  _rasterstate = oth._rasterstate->clone();
+  miNumPasses = oth.miNumPasses;
+  mMaterialName = oth.mMaterialName + ".clone";
+
+  mTextureMap[ETEXDEST_AMBIENT]  = oth.mTextureMap[ETEXDEST_AMBIENT];
+  mTextureMap[ETEXDEST_DIFFUSE]  = oth.mTextureMap[ETEXDEST_DIFFUSE];
+  mTextureMap[ETEXDEST_SPECULAR] = oth.mTextureMap[ETEXDEST_SPECULAR];
+  mTextureMap[ETEXDEST_BUMP]     = oth.mTextureMap[ETEXDEST_BUMP];
+
+  mfFogStart                     = oth.mfFogStart;
+  mfFogRange                     = oth.mfFogRange;
+
+  mSortingData                   = oth.mSortingData;
+  mDebug                        = oth.mDebug;
+  _doinit                        = oth._doinit;
+  mfParticleSize                 = oth.mfParticleSize;
+
+  _varmap                        = oth._varmap;
+  _bound_params                  = oth._bound_params;
+  _state_lambdas                 = oth._state_lambdas;
+
+  _variant                      = oth._variant;
 }
 
 /////////////////////////////////////////////////////////////////////////

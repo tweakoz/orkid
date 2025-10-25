@@ -58,6 +58,42 @@ GfxMaterialUI::GfxMaterialUI(Context* pTarg)
 
 /////////////////////////////////////////////////////////////////////////
 
+uimaterial_ptr_t GfxMaterialUI::clone() const {
+  auto newmat = std::make_shared<GfxMaterialUI>();
+
+  newmat->cloneStateFrom(*this);
+
+  newmat->_shaderasset = this->_shaderasset;
+  newmat->_shader = this->_shader;
+
+  newmat->_rasterstate = this->_rasterstate->clone();
+
+  newmat->hTekMod = this->hTekMod;
+  newmat->hTekVtx = this->hTekVtx;
+  newmat->hTekModVtx = this->hTekModVtx;
+  newmat->hTekCircle = this->hTekCircle;
+
+  newmat->hVPW = this->hVPW;
+  newmat->hBias = this->hBias;
+  newmat->hScale = this->hScale;
+  newmat->hTransform = this->hTransform;
+  newmat->hModColor = this->hModColor;
+  newmat->hColorMap = this->hColorMap;
+  newmat->hCircleInnerRadius = this->hCircleInnerRadius;
+  newmat->hCircleOuterRadius = this->hCircleOuterRadius;
+
+  newmat->meType = this->meType;
+  newmat->meUIColorMode = this->meUIColorMode;
+
+  newmat->PosScale = this->PosScale;
+  newmat->PosBias = this->PosBias;
+  newmat->Color = this->Color;
+
+  return newmat;
+}
+
+/////////////////////////////////////////////////////////////////////////
+
 void GfxMaterialUI::gpuInit(ork::lev2::Context* pTarg) {
   // printf( "_shader<%p>\n", _shader );
 
@@ -76,6 +112,10 @@ void GfxMaterialUI::gpuInit(ork::lev2::Context* pTarg) {
 
 int GfxMaterialUI::BeginBlock(Context* pTarg, const RenderContextInstData& MatCtx) {
   const FxShaderTechnique* htek = 0;
+
+  if(nullptr==hTekMod){
+    gpuInit(pTarg);
+  }
 
   htek = hTekMod;
   switch (meType) {

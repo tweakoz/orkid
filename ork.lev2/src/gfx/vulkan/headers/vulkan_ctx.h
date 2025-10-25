@@ -28,6 +28,7 @@ struct GLFWwindow;
 #include <ork/kernel/datablock.h>
 #include <ork/kernel/datacache.h>
 #include <ork/kernel/orkpool.inl>
+#include <ork/kernel/priority_stack.inl>
 #include <ork/file/chunkfile.inl>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/gfxenv.h>
@@ -432,8 +433,8 @@ struct VkFxInterface final : public FxInterface {
   std::map<AssetPath, vkfxsfile_ptr_t> _fxshaderfiles;
   std::unordered_map<uint64_t, vkpipeline_obj_ptr_t> _pipelines;
   shadlang::slpcache_ptr_t _slp_cache;
-  std::stack<rasterstate_ptr_t> _rasterstate_stack;
-  rasterstate_ptr_t _current_rasterstate;
+  priority_stack<rasterstate_ptr_t> _rasterstate_stack;
+  rasterstate_ptr_t _rasterstate_top;
   lev2::rasterstate_ptr_t _default_rasterstate;
   vkpipeline_obj_ptr_t _currentPipeline;
   std::unordered_map<uint64_t, int> _vk_vtxinterface_cache;

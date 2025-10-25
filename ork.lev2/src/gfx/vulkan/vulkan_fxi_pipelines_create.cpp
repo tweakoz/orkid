@@ -75,13 +75,17 @@ vkpipeline_obj_ptr_t VkFxInterface::_createPipeline(vkvtxbuf_ptr_t vb,          
   PIPE_CREATE_INFO.pInputAssemblyState = &primclass->_input_assembly_state;
 
   ////////////////////////////////////////////////////
-  // dynamic states (viewport, scissor)
+  // dynamic states (viewport, scissor, blend constants)
   ////////////////////////////////////////////////////
 
-  std::vector<VkDynamicState> dynamic_states    = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+  std::vector<VkDynamicState> dynamic_states    = {
+    VK_DYNAMIC_STATE_VIEWPORT,
+    VK_DYNAMIC_STATE_SCISSOR,
+    VK_DYNAMIC_STATE_BLEND_CONSTANTS
+  };
   VkPipelineDynamicStateCreateInfo dynamicState = {};
   initializeVkStruct(dynamicState, VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);
-  dynamicState.dynamicStateCount = dynamic_states.size(); // We have two dynamic states: viewport and scissor
+  dynamicState.dynamicStateCount = dynamic_states.size();
   dynamicState.pDynamicStates    = dynamic_states.data();
 
   PIPE_CREATE_INFO.pDynamicState = &dynamicState;

@@ -40,6 +40,9 @@ struct RasterState {
   void setFrontFace(EFrontFace ff);
   void setBlendingMacro(BlendingMacro bm);
 
+  // Invalidate cached implementation (call after direct member assignment)
+  void invalidate();
+
   // Render States
   
   bool _writemaskZ : 1 = true;
@@ -72,6 +75,8 @@ struct RasterState {
   BlendingFactor _blendFactorDstA = BlendingFactor::ZERO;
   BlendingOp _blendOpRGB = BlendingOp::ADD;
   BlendingOp _blendOpA = BlendingOp::ADD;
+
+  BlendingMacro _blendingMacro = BlendingMacro::NONE;
   int _priority = 0;
   // todo: logic ops
 
@@ -80,6 +85,13 @@ struct RasterState {
   /////////////////////////////
 
   svar16_t _impl;
+
+  /////////////////////////////
+
+private:
+
+  // Helper to handle macro/non-macro mode transitions
+  void _updateBlendingTechnique(bool is_macro);
 
 };
 

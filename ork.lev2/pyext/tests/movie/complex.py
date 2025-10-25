@@ -146,7 +146,7 @@ class ComplexMovieApp(ComponentizedApplication):
                              top=g_top2,
                              bottom=g_bot2)
     lg_panel3.widget.blendingBG = tokens.SUBTRACTIVE
-    lg_panel3.widget.blendingFG = tokens.ADDITIVE
+    lg_panel3.widget.blendingFG = tokens.ALPHA_SUBTRACTIVE
     lg_panel3.widget.normal_color = vec4(0.75,0.75,0.0,1)
     lg_panel3.widget.font_color = vec4(1,1,0,1)
     self.ezapp.uicontext.debug_event_routing = True

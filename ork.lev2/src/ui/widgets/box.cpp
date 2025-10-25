@@ -73,14 +73,7 @@ EvTestBox::EvTestBox(
     , _colorDrag(colordrag) {
     auto ctx = lev2::contextForCurrentThread();
     OrkAssert(ctx);
-    _material = std::make_shared<lev2::GfxMaterialUI>(ctx);
-    auto rs = _material->_rasterstate;
-    rs->_priority = 1;
-    rs->_depthtest = lev2::EDepthTest::ALWAYS;
-    rs->_culltest = lev2::ECullTest::OFF;
-    rs->_writemaskZ = false;
-    rs->setBlendEnable(true);
-    
+    _initMaterialState();    
 }
 ///////////////////////////////////////////////////////////////////////////////
 EvTestBox::EvTestBox(
@@ -98,6 +91,25 @@ EvTestBox::EvTestBox(
   _colorKeyDown     = fvec4(1, 1, 1, 0) - color;
   _fontColor = _colorKeyDown;
   _colorKeyDown.w   = color.w;
+  _initMaterialState();    
+}
+///////////////////////////////////////////////////////////////////////////////
+void EvTestBox::_initMaterialState() {
+  _material = lev2::defaultUIMaterial()->clone();
+  _rsBG = std::make_shared<lev2::RasterState>();
+  _rsFG = std::make_shared<lev2::RasterState>();
+  _rsBG->_priority = 1<<10;
+  _rsFG->_priority = 1<<10;
+  _rsBG->_culltest = lev2::ECullTest::OFF;
+  _rsFG->_culltest = lev2::ECullTest::OFF;
+  _rsBG->_depthtest = lev2::EDepthTest::ALWAYS;
+  _rsFG->_depthtest = lev2::EDepthTest::ALWAYS;
+  _rsBG->setBlendEnable(true);
+  _rsFG->setBlendEnable(true);
+  _rsBG->setBlendingMacro(_blendingBG);
+  _rsFG->setBlendingMacro(_blendingFG);
+  _rsBG->_name = "EvTestBox::BG";
+  _rsFG->_name = "EvTestBox::FG";
 }
 ///////////////////////////////////////////////////////////////////////////////
 HandlerResult EvTestBox::DoOnUiEvent(event_constptr_t Ev) {
@@ -112,18 +124,6 @@ void EvTestBox::DoDraw(drawevent_constptr_t drwev) {
   auto fxi    = tgt->FXI();
   auto mtxi   = tgt->MTXI();
   auto primi = tgt->PRI();
-  auto defmtl = lev2::defaultUIMaterial();
-  if(!_material) {
-    auto ctx = lev2::contextForCurrentThread();
-    OrkAssert(ctx);
-    _material = std::make_shared<lev2::GfxMaterialUI>(ctx);
-    auto rs = _material->_rasterstate;
-    rs->_priority = 1;
-    rs->_depthtest = lev2::EDepthTest::ALWAYS;
-    rs->_culltest = lev2::ECullTest::OFF;
-    rs->_writemaskZ = false;
-    rs->setBlendEnable(true);
-  }
 
   mtxi->PushUIMatrix();
   {
@@ -197,14 +197,15 @@ void EvTestBox::DoDraw(drawevent_constptr_t drwev) {
         break;
     }
 
-    _material->_rasterstate->setBlendingMacro(_blendingBG);
-    _material->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
-    ///////////////////////////////
     if (not hasMouseFocus()){
       color *= 0.8f;
       statename = "---";
     }
-    fxi->pushRasterState(_material->_rasterstate);
+
+    ///////////////////////////////
+
+    _rsBG->setBlendingMacro(_blendingBG);
+    fxi->pushRasterState(_rsBG);
     tgt->PushModColor(color);
     _material->SetUIColorMode(lev2::UiColorMode::MOD);
 
@@ -221,10 +222,13 @@ void EvTestBox::DoDraw(drawevent_constptr_t drwev) {
         1.0f // v0, v1
     );
     tgt->PopModColor();
+    fxi->popRasterState();
+
     ///////////////////////////////
 
     tgt->PushModColor(_fontColor);
-    _material->_rasterstate->setBlendingMacro(_blendingFG);
+    _rsFG->setBlendingMacro(_blendingFG);
+    fxi->pushRasterState(_rsFG);
     ork::lev2::FontMan::PushFont("i14");
     lev2::FontMan::beginTextBlock(tgt, 16);
     int sw = lev2::FontMan::stringWidth(statename.length());

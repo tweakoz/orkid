@@ -243,7 +243,7 @@ struct VkPipelineObject {
   
   vkviewporttracker_ptr_t _viewport;
   vkviewporttracker_ptr_t _scissor;
-  
+
   // Storage for merged resource descriptor set layouts
   std::vector<VkDescriptorSetLayout> _dset_layouts;
   

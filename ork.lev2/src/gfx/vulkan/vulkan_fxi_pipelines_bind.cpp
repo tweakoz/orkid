@@ -89,6 +89,20 @@ void VkFxInterface::_bindPipeline(VkCommandBuffer cmdbuf, vkpipeline_obj_ptr_t p
   }
 
   ////////////////////////////////////////
+  // set dynamic blend constants (always)
+  ////////////////////////////////////////
+
+  auto rasterstate = _rasterstate_stack.resolve();
+  fvec4 current_blend_constants = rasterstate ? rasterstate->_blendConstant : fvec4(0.0f, 0.0f, 0.0f, 0.0f);
+  float bc[4] = {
+    current_blend_constants.x,
+    current_blend_constants.y,
+    current_blend_constants.z,
+    current_blend_constants.w
+  };
+  vkCmdSetBlendConstants(cmdbuf, bc);
+
+  ////////////////////////////////////////
   // upload ubo data and push constants
   ////////////////////////////////////////
 

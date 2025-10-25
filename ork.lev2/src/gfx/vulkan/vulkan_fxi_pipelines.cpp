@@ -64,10 +64,14 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
 
   /////////////////////////////////////////////////////////////////////
   // resolve effective rasterstate
+  //   this is an interplay between:
+  //     - current rasterstate stack top
+  //     - pass stateblock rasterstate (if any)
+  //   higher priority state wins
   /////////////////////////////////////////////////////////////////////
 
-  rasterstate_ptr_t effective_rasterstate = _current_rasterstate;
-  int iraspri = _current_rasterstate->_priority;
+  rasterstate_ptr_t effective_rasterstate = _rasterstate_stack.resolve();
+  int iraspri = effective_rasterstate ? effective_rasterstate->_priority : 0;
   if (_currentVKPASS && _currentVKPASS->_stateblock_rasterstate) {
     // State block was pre-resolved at shader load time - just use it!
     auto try_rs = _currentVKPASS->_stateblock_rasterstate;

@@ -79,13 +79,13 @@ void VkFxInterface::_doEndFrame() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::_doPushRasterState(rasterstate_ptr_t rs) {
-  _rasterstate_stack.push(_current_rasterstate);
-  _current_rasterstate = rs;
+  _rasterstate_stack.push(_rasterstate_top);
+  _rasterstate_top = rs;
 }
 rasterstate_ptr_t VkFxInterface::_doPopRasterState() {
-  _current_rasterstate = _rasterstate_stack.top();
+  _rasterstate_top = _rasterstate_stack.top();
   _rasterstate_stack.pop();
-  return _current_rasterstate;
+  return _rasterstate_top;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -270,11 +270,12 @@ VkRasterState::VkRasterState(rasterstate_ptr_t rstate, int attachment_count, con
   
   _VKCBSI.attachmentCount = _attachment_count;
   _VKCBSI.pAttachments = (_attachment_count>0) ? _VKCBATT_array.data() : nullptr;
-  _VKCBSI.blendConstants[0] = rstate->_blendConstant.x; 
-  _VKCBSI.blendConstants[1] = rstate->_blendConstant.y; 
-  _VKCBSI.blendConstants[2] = rstate->_blendConstant.z; 
-  _VKCBSI.blendConstants[3] = rstate->_blendConstant.w; 
-  hasher.accumulateItem(rstate->_blendConstant);
+  _VKCBSI.blendConstants[0] = 0.0f;
+  _VKCBSI.blendConstants[1] = 0.0f;
+  _VKCBSI.blendConstants[2] = 0.0f;
+  _VKCBSI.blendConstants[3] = 0.0f;
+  // Blend constants are now dynamic state - not included in hash
+  // hasher.accumulateItem(rstate->_blendConstant);
   hasher.accumulateItem(_attachment_count); // Include attachment count in hash
 
   ////////////////////////////////////

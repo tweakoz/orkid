@@ -245,6 +245,7 @@ struct GfxMaterial;
 struct MaterialInstItem;
 struct GfxMaterial3DSolid;
 struct FreestyleMaterial;
+class GfxMaterialUI;
 class GfxMaterialUITextured;
 class PBRMaterial;
 using material_ptr_t           = std::shared_ptr<GfxMaterial>;
@@ -253,6 +254,7 @@ using pbrmaterial_ptr_t = std::shared_ptr<PBRMaterial>;
 using pbrmaterial_constptr_t = std::shared_ptr<const PBRMaterial>;
 using freestyle_mtl_ptr_t = std::shared_ptr<FreestyleMaterial>;
 using test_mtl_ptr_t = std::shared_ptr<GfxMaterial3DSolid>;
+using uimaterial_ptr_t = std::shared_ptr<GfxMaterialUI>;
 using uitexmaterial_ptr_t = std::shared_ptr<GfxMaterialUITextured>;
 ///////////////////////////////////////////////////////////////////////////////
 // Camera

@@ -52,6 +52,9 @@ public:
       int w = 0,
       int h = 0);
 
+
+  void _initMaterialState();
+        
   fvec4 _colorNormal;
   fvec4 _colorClick;
   fvec4 _colorDoubleClick;
@@ -62,6 +65,8 @@ public:
   lev2::BlendingMacro _blendingBG = lev2::BlendingMacro::OFF;
   lev2::BlendingMacro _blendingFG = lev2::BlendingMacro::ADDITIVE;
   lev2::uimaterial_ptr_t _material;
+  lev2::rasterstate_ptr_t _rsBG;
+  lev2::rasterstate_ptr_t _rsFG;
 private:
   HandlerResult DoOnUiEvent(event_constptr_t Ev) override;
   void DoDraw(ui::drawevent_constptr_t drwev) override;

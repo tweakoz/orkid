@@ -106,7 +106,7 @@ class MultiScene1Component(ApplicationComponent):
           case 0:
             sg_params.SkyboxTexPathStr = "arena"
           case 1:
-            sg_params.SkyboxTexPathStr = "pillars8k" if parent.u8kt else "pillars"
+            sg_params.SkyboxTexPathStr = "cold8k" if parent.u8kt else "cold"
           case 2:
             sg_params.SkyboxTexPathStr = "nebula"
           case 3:
