@@ -27,17 +27,19 @@ class MovieCaptureComponent(ApplicationComponent):
     self.rencount += 1
     enable_movie = not self.freerun
     if self.freerun == False:
+      self.np4 = self.numframes+4
+      self.np5 = self.np4+1
       match self.rencount:
-        case 2:
+        case 4:
           if enable_movie:
             self.mcc = self.ezapp.enableMovieRecording( output_path=self.output_path,
                                                         preset=self.preset,
                                                         fps=self.fps,
                                                         max_queue_size=300, # how far ahead can renderer get ahead of encoder ?
                                                         audio_test_tone=False )
-        case self.numframes:
+        case self.np4:
           if enable_movie:
             self.ezapp.finishMovieRecording()
-        case self.numframesp1:
+        case self.np5:
           self.ezapp.signalExit()
 

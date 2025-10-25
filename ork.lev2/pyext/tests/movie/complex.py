@@ -77,8 +77,8 @@ class ComplexMovieApp(ComponentizedApplication):
     # lockstep mode ?, use STREAM audio device (for movie capture)
     ########################################
 
-    W = 1600 if self.freerun else 1920
-    H = 900  if self.freerun else 1080
+    W = 1600 if self.freerun else 3840
+    H = 900  if self.freerun else 2160
 
     self.ezapp = lev2.OrkEzApp.create(
         self,
