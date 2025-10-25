@@ -50,19 +50,49 @@ inline void _init_crcstring(typename ADAPTER::module_t& module_core, typename AD
     }
   };
   using crcstrproxy_ptr_t = std::shared_ptr<CrcStringProxy>;
+
   auto crcstrproxy_type   =                                                            //
       clazz<ADAPTER, CrcStringProxy, crcstrproxy_ptr_t>(module_core, "CrcStringProxy") //
           .def(initor<ADAPTER>())
           .def(
               "__getattr__",                                                           //
-              [type_codec](crcstrproxy_ptr_t proxy, const std::string& key) -> typename ADAPTER::object_t { //
+              [type_codec](crcstrproxy_ptr_t proxy, typename ADAPTER::object_t key_obj) -> typename ADAPTER::object_t { //
+                // Flyweight cache: Meyer's singleton pattern
+                // Uses Python's cached string hash as key (fast, no string processing)
+                static std::unordered_map<size_t, crcstring_ptr_t> flyweight_cache;
+                static size_t cache_hits = 0;
+                static size_t cache_misses = 0;
+
+                // Use Python's cached hash for flyweight lookup (no string processing!)
+                auto str_obj = typename ADAPTER::str_t(key_obj);
+                size_t py_hash = ADAPTER::cached_hash(str_obj);
+
+                // Check flyweight cache first
+                auto it = flyweight_cache.find(py_hash);
+                if (it != flyweight_cache.end()) {
+                  cache_hits++;
+                  /*
+                  size_t total = cache_hits + cache_misses;
+                  if ((total % 1000) == 0) {
+                    printf("CrcStringProxy cache stats: hits=%zu misses=%zu total=%zu hit_rate=%.1f%%\n",
+                           cache_hits, cache_misses, total,
+                           100.0 * cache_hits / total);
+                  }*/
+                  return type_codec->encode(it->second);
+                }
+
+                // Cache miss - convert to string and create CrcString
+                cache_misses++;
+                std::string key = cast2ork<ADAPTER, std::string>(key_obj);
                 if(key.contains("__")){
                   return type_codec->encode(nullptr);
                 }
-                  if(key=="xxx"){
-                      printf( "xxx\n");
-                  }
+                if(1) {
+                  printf("CrcStringProxy cache miss: '%s' (hash=0x%zx) hits=%zu misses=%zu\n",
+                       key.c_str(), py_hash, cache_hits, cache_misses);
+                }
                 auto crc = std::make_shared<CrcString>(key.c_str());
+                flyweight_cache[py_hash] = crc;
                 return type_codec->encode(crc);
               });
   type_codec->template registerStdCodec<crcstrproxy_ptr_t>(crcstrproxy_type);

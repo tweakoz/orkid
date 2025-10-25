@@ -114,6 +114,16 @@ struct pybind11adapter {
 
   template <typename... Args> static auto init(Args&&... args);
 
+  // Get raw Python object pointer for flyweighting
+  static void* rawptr(const object_t& obj) {
+    return obj.ptr();
+  }
+
+  // Get Python's cached hash (fast, no string processing)
+  static size_t cached_hash(const str_t& str_obj) {
+    return (size_t)PyObject_Hash(str_obj.ptr());
+  }
+
   //////////////////////////////////
 
   template <typename type_, typename... options>           //
@@ -336,6 +346,16 @@ struct nanobindadapter {
   template <typename T> static bool isinstance(const object_t& inpval);
 
   template <typename... Args> static auto init(Args&&... args);
+
+  // Get raw Python object pointer for flyweighting
+  static void* rawptr(const object_t& obj) {
+    return obj.ptr();
+  }
+
+  // Get Python's cached hash (fast, no string processing)
+  static size_t cached_hash(const str_t& str_obj) {
+    return (size_t)PyObject_Hash(str_obj.ptr());
+  }
 
   //////////////////////////////////
 
