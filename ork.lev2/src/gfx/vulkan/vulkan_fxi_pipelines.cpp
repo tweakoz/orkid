@@ -88,9 +88,27 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
 
   if (auto try_vkrs = effective_rasterstate->_impl.tryAsShared<VkRasterState>()) {
     vkrstate = try_vkrs.value();
+
+    // Check if attachment count or formats changed (need to recreate if different)
+    bool invalidate = false;
+
     if (vkrstate->_attachment_count != attachment_count) {
-      // Check if attachment count matches (need to recreate if different)
-      // invalidate existing VkRasterState
+      invalidate = true;
+    }
+
+    // Check if formats match
+    if (!invalidate && vkrstate->_attachment_count == formats.size()) {
+      for (int i = 0; i < attachment_count; i++) {
+        if (vkrstate->_vkformats[i] != formats[i]) {
+          invalidate = true;
+          break;
+        }
+      }
+    } else if (!invalidate) {
+      invalidate = true; // Size mismatch
+    }
+
+    if (invalidate) {
       vkrstate = nullptr;
     }
   }
@@ -106,16 +124,6 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
         &formats);             //
         vkrstate->_ork_rasterstate = effective_rasterstate.get();
   }
-
-  //_rasterstate_stack.dump("STACK");
-  /*
-  if(effective_rasterstate){
-    printf("using rasterstate<%s> pri<%d>\n", effective_rasterstate->_name.c_str(), effective_rasterstate->_priority );
-  }
-  else{
-    printf("using rasterstate<null>\n");
-  }
-  */
 
   /////////////////////////////////////////////////////////////////////
   // compute pipeline bits (for hashing pipeline state)

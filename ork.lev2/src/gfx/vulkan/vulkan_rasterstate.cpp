@@ -18,6 +18,12 @@ LockedResource<VkRasterState::rsmap_t> VkRasterState::_global_rasterstate_map;
 
 VkRasterState::VkRasterState(rasterstate_ptr_t rstate, int attachment_count, const std::vector<VkFormat>* formats){
   _attachment_count = attachment_count;
+
+  // Store formats for cache invalidation comparison
+  if (formats) {
+    _vkformats = *formats;
+  }
+
   initializeVkStruct(_VKRSCI, VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO);
   initializeVkStruct(_VKDSSCI, VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO);
   initializeVkStruct(_VKCBSI, VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO);
@@ -191,7 +197,7 @@ VkRasterState::VkRasterState(rasterstate_ptr_t rstate, int attachment_count, con
       case BlendingOp::SUBTRACT:
         rval = VK_BLEND_OP_SUBTRACT;
         break;
-      case BlendingOp::REVSUBTRACT:
+      case BlendingOp::REVERSE_SUBTRACT:
         rval = VK_BLEND_OP_REVERSE_SUBTRACT;
         break;
       case BlendingOp::MIN:

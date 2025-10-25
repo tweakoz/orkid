@@ -63,7 +63,7 @@ public:
   fvec4 _fontColor;
   EventCode _colorsel = EventCode::UNKNOWN;
   lev2::BlendingMacro _blendingBG = lev2::BlendingMacro::OFF;
-  lev2::BlendingMacro _blendingFG = lev2::BlendingMacro::ADDITIVE;
+  lev2::BlendingMacro _blendingFG = lev2::BlendingMacro::ALPHA_ADDITIVE;
   lev2::uimaterial_ptr_t _material;
   lev2::rasterstate_ptr_t _rsBG;
   lev2::rasterstate_ptr_t _rsFG;

@@ -224,8 +224,8 @@ void RasterState::setBlendingMacro(BlendingMacro bm) {
       break;
     }
     case BlendingMacro::DSTALPHA: {
-      _blendFactorSrcRGB = BlendingFactor::ONE;
-      _blendFactorDstRGB = BlendingFactor::ZERO;
+      _blendFactorSrcRGB = BlendingFactor::DST_ALPHA;
+      _blendFactorDstRGB = BlendingFactor::ONE_MINUS_DST_ALPHA;
       _blendFactorSrcA   = BlendingFactor::DST_ALPHA;
       _blendFactorDstA   = BlendingFactor::ONE_MINUS_DST_ALPHA;
       _blendEnable       = true;
@@ -253,13 +253,26 @@ void RasterState::setBlendingMacro(BlendingMacro bm) {
       _blendEnable       = true;
       break;
     }
+    case BlendingMacro::DST_MINUS_SRC:
     case BlendingMacro::SUBTRACTIVE: {
-      _blendFactorSrcRGB = BlendingFactor::ZERO;
-      _blendFactorDstRGB = BlendingFactor::ONE_MINUS_SRC_COLOR;
-      _blendFactorSrcA   = BlendingFactor::ZERO;
-      _blendFactorDstA   = BlendingFactor::ONE_MINUS_SRC_ALPHA;
-      _blendOpRGB        = BlendingOp::ADD;
-      _blendOpA          = BlendingOp::ADD;
+      // dst - src
+      _blendFactorSrcRGB = BlendingFactor::ONE;
+      _blendFactorDstRGB = BlendingFactor::ONE;
+      _blendFactorSrcA   = BlendingFactor::ONE;
+      _blendFactorDstA   = BlendingFactor::ONE;
+      _blendOpRGB        = BlendingOp::REVERSE_SUBTRACT;
+      _blendOpA          = BlendingOp::REVERSE_SUBTRACT;
+      _blendEnable       = true;
+      break;
+    }
+    case BlendingMacro::SRC_MINUS_DST: {
+      // src - dst
+      _blendFactorSrcRGB = BlendingFactor::ONE;
+      _blendFactorDstRGB = BlendingFactor::ONE;
+      _blendFactorSrcA   = BlendingFactor::ONE;
+      _blendFactorDstA   = BlendingFactor::ONE;
+      _blendOpRGB        = BlendingOp::SUBTRACT;
+      _blendOpA          = BlendingOp::SUBTRACT;
       _blendEnable       = true;
       break;
     }
@@ -273,11 +286,124 @@ void RasterState::setBlendingMacro(BlendingMacro bm) {
       _blendEnable       = true;
       break;
     }
+    case BlendingMacro::INVERSE_SUBTRACTIVE: {
+      // src * (1-dst)
+      // Note: (1-dst) - src is not possible with Vulkan blend equation
+      _blendFactorSrcRGB = BlendingFactor::ONE_MINUS_DST_COLOR;
+      _blendFactorDstRGB = BlendingFactor::ZERO;
+      _blendFactorSrcA   = BlendingFactor::ONE_MINUS_DST_ALPHA;
+      _blendFactorDstA   = BlendingFactor::ZERO;
+      _blendOpRGB        = BlendingOp::ADD;
+      _blendOpA          = BlendingOp::ADD;
+      _blendEnable       = true;
+      break;
+    }
+    case BlendingMacro::SCREEN: {
+      // src + dst*(1-src) - Photoshop screen blend
+      _blendFactorSrcRGB = BlendingFactor::ONE;
+      _blendFactorDstRGB = BlendingFactor::ONE_MINUS_SRC_COLOR;
+      _blendFactorSrcA   = BlendingFactor::ONE;
+      _blendFactorDstA   = BlendingFactor::ONE_MINUS_SRC_ALPHA;
+      _blendOpRGB        = BlendingOp::ADD;
+      _blendOpA          = BlendingOp::ADD;
+      _blendEnable       = true;
+      break;
+    }
+    case BlendingMacro::DARKEN: {
+      // min(src, dst)
+      _blendFactorSrcRGB = BlendingFactor::ONE;
+      _blendFactorDstRGB = BlendingFactor::ONE;
+      _blendFactorSrcA   = BlendingFactor::ONE;
+      _blendFactorDstA   = BlendingFactor::ONE;
+      _blendOpRGB        = BlendingOp::MIN;
+      _blendOpA          = BlendingOp::MIN;
+      _blendEnable       = true;
+      break;
+    }
+    case BlendingMacro::LIGHTEN: {
+      // max(src, dst)
+      _blendFactorSrcRGB = BlendingFactor::ONE;
+      _blendFactorDstRGB = BlendingFactor::ONE;
+      _blendFactorSrcA   = BlendingFactor::ONE;
+      _blendFactorDstA   = BlendingFactor::ONE;
+      _blendOpRGB        = BlendingOp::MAX;
+      _blendOpA          = BlendingOp::MAX;
+      _blendEnable       = true;
+      break;
+    }
+    case BlendingMacro::MULTIPLY:
     case BlendingMacro::MODULATE: {
+      // src * dst
+      _blendFactorSrcRGB = BlendingFactor::DST_COLOR;
+      _blendFactorDstRGB = BlendingFactor::ZERO;
+      _blendFactorSrcA   = BlendingFactor::DST_ALPHA;
+      _blendFactorDstA   = BlendingFactor::ZERO;
+      _blendOpRGB        = BlendingOp::ADD;
+      _blendOpA          = BlendingOp::ADD;
+      _blendEnable       = true;
+      break;
+    }
+    case BlendingMacro::ALPHA_MODULATE: {
+      // dst * srcAlpha
       _blendFactorSrcRGB = BlendingFactor::ZERO;
-      _blendFactorDstRGB = BlendingFactor::SRC_COLOR;
+      _blendFactorDstRGB = BlendingFactor::SRC_ALPHA;
       _blendFactorSrcA   = BlendingFactor::ZERO;
       _blendFactorDstA   = BlendingFactor::SRC_ALPHA;
+      _blendOpRGB        = BlendingOp::ADD;
+      _blendOpA          = BlendingOp::ADD;
+      _blendEnable       = true;
+      break;
+    }
+    case BlendingMacro::UNDER: {
+      // src*(1-dstAlpha) + dst*1 - Porter-Duff UNDER
+      _blendFactorSrcRGB = BlendingFactor::ONE_MINUS_DST_ALPHA;
+      _blendFactorDstRGB = BlendingFactor::ONE;
+      _blendFactorSrcA   = BlendingFactor::ONE_MINUS_DST_ALPHA;
+      _blendFactorDstA   = BlendingFactor::ONE;
+      _blendOpRGB        = BlendingOp::ADD;
+      _blendOpA          = BlendingOp::ADD;
+      _blendEnable       = true;
+      break;
+    }
+    case BlendingMacro::ATOP: {
+      // src*dstAlpha + dst*(1-srcAlpha) - Porter-Duff ATOP
+      _blendFactorSrcRGB = BlendingFactor::DST_ALPHA;
+      _blendFactorDstRGB = BlendingFactor::ONE_MINUS_SRC_ALPHA;
+      _blendFactorSrcA   = BlendingFactor::DST_ALPHA;
+      _blendFactorDstA   = BlendingFactor::ONE_MINUS_SRC_ALPHA;
+      _blendOpRGB        = BlendingOp::ADD;
+      _blendOpA          = BlendingOp::ADD;
+      _blendEnable       = true;
+      break;
+    }
+    case BlendingMacro::XOR: {
+      // src*(1-dstAlpha) + dst*(1-srcAlpha) - Porter-Duff XOR
+      _blendFactorSrcRGB = BlendingFactor::ONE_MINUS_DST_ALPHA;
+      _blendFactorDstRGB = BlendingFactor::ONE_MINUS_SRC_ALPHA;
+      _blendFactorSrcA   = BlendingFactor::ONE_MINUS_DST_ALPHA;
+      _blendFactorDstA   = BlendingFactor::ONE_MINUS_SRC_ALPHA;
+      _blendOpRGB        = BlendingOp::ADD;
+      _blendOpA          = BlendingOp::ADD;
+      _blendEnable       = true;
+      break;
+    }
+    case BlendingMacro::ERASE: {
+      // dst*(1-srcAlpha) - Porter-Duff DST_OUT (erase)
+      _blendFactorSrcRGB = BlendingFactor::ZERO;
+      _blendFactorDstRGB = BlendingFactor::ONE_MINUS_SRC_ALPHA;
+      _blendFactorSrcA   = BlendingFactor::ZERO;
+      _blendFactorDstA   = BlendingFactor::ONE_MINUS_SRC_ALPHA;
+      _blendOpRGB        = BlendingOp::ADD;
+      _blendOpA          = BlendingOp::ADD;
+      _blendEnable       = true;
+      break;
+    }
+    case BlendingMacro::ALPHA_WEIGHTED: {
+      // src*srcAlpha + dst*dstAlpha - symmetrical alpha blend
+      _blendFactorSrcRGB = BlendingFactor::SRC_ALPHA;
+      _blendFactorDstRGB = BlendingFactor::DST_ALPHA;
+      _blendFactorSrcA   = BlendingFactor::SRC_ALPHA;
+      _blendFactorDstA   = BlendingFactor::DST_ALPHA;
       _blendOpRGB        = BlendingOp::ADD;
       _blendOpA          = BlendingOp::ADD;
       _blendEnable       = true;

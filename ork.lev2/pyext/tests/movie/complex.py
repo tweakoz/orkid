@@ -135,19 +135,19 @@ class ComplexMovieApp(ComponentizedApplication):
     g_bot = panel3_layout.bottom
     g_lft = panel3_layout.left
     g_rht = panel3_layout.right
-    g_top2 = panel3_layout.offsetHorizontalGuide(g_bot, -40, locked=True )
+    g_top2 = panel3_layout.offsetHorizontalGuide(g_bot, -256, locked=True )
     g_bot2 = panel3_layout.offsetHorizontalGuide(g_bot, -8, locked=True )    
     g_lft2 = panel3_layout.offsetVerticalGuide(g_lft, 8, locked=True )
-    g_rhr2 = panel3_layout.offsetVerticalGuide(g_lft, 128, locked=True )    
+    g_rhr2 = panel3_layout.offsetVerticalGuide(g_lft, 256, locked=True )    
     lg_panel3 = lg_group.makeChild( uiclass = lev2.ui.EvTestBox, args = ["PANEL3LG",vec4(1)] )
     #lg_panel3.layout.setProportionalRect(panel3_layout,0.25,0.25,0.25,0.25)
     lg_panel3.layout.setRect(left=g_lft2,
                              right=g_rhr2,
                              top=g_top2,
                              bottom=g_bot2)
-    lg_panel3.widget.blendingBG = tokens.SUBTRACTIVE
+    lg_panel3.widget.blendingBG = tokens.INVERSE_SUBTRACTIVE
     lg_panel3.widget.blendingFG = tokens.ALPHA
-    lg_panel3.widget.normal_color = vec4(0.75,0.75,0.0,1)
+    lg_panel3.widget.normal_color = vec4(0.75,0.75,0.75,1)
     lg_panel3.widget.font_color = vec4(1,1,1,1)
     self.ezapp.uicontext.debug_event_routing = True
 

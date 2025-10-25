@@ -44,13 +44,6 @@ GfxMaterialUI::GfxMaterialUI(Context* pTarg)
   _rasterstate->setWriteMaskA(true);
   _rasterstate->setCullTest(ECullTest::OFF);
 
-  auto mtl_load_req = std::make_shared<asset::LoadRequest>();
-  mtl_load_req->_asset_path = "orkshader://ui";
-  _shaderasset = asset::AssetManager<FxShaderAsset>::load(mtl_load_req);
-  _shader      = _shaderasset->GetFxShader();
-  // printf( "HMODFX<%p> pTarg<%p>\n", _shader, pTarg );
-  OrkAssertI(_shader != 0, "did you copy the shaders folder!\n");
-
   if (pTarg) {
     gpuInit(pTarg);
   }
@@ -96,6 +89,13 @@ uimaterial_ptr_t GfxMaterialUI::clone() const {
 
 void GfxMaterialUI::gpuInit(ork::lev2::Context* pTarg) {
   // printf( "_shader<%p>\n", _shader );
+
+    auto mtl_load_req = std::make_shared<asset::LoadRequest>();
+    mtl_load_req->_asset_path = "orkshader://ui";
+    _shaderasset = asset::AssetManager<FxShaderAsset>::load(mtl_load_req);
+    _shader      = _shaderasset->GetFxShader();
+    // printf( "HMODFX<%p> pTarg<%p>\n", _shader, pTarg );
+    OrkAssertI(_shader != 0, "did you copy the shaders folder!\n");
 
   hTekMod = pTarg->FXI()->technique(_shader, "uidev_modcolor");
 

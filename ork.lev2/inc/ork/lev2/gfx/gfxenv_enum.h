@@ -196,7 +196,7 @@ enum EAlphaTest {
 enum struct BlendingOp : crc_enum_t {
   CrcEnum(ADD),
   CrcEnum(SUBTRACT),
-  CrcEnum(REVSUBTRACT),
+  CrcEnum(REVERSE_SUBTRACT),
   CrcEnum(MIN),
   CrcEnum(MAX),
 };
@@ -230,14 +230,56 @@ enum struct EPolygonMode : crc_enum_t {
 enum struct BlendingMacro : crc_enum_t {
   CrcEnum(NONE),
   CrcEnum(OFF),
-  CrcEnum(PREMA),             // (SrcClr) + (FBClr*(1-SrcAlpha))
-  CrcEnum(ALPHA),             // (SrcClr*SrcAlpha) + (FBClr*(1-SrcAlpha))
-  CrcEnum(DSTALPHA),          // (SrcClr*FBAlpha) + (FBClr*(1-FBAlpha))
-  CrcEnum(ADDITIVE),          // (SrcClr*1) + (FBClr*1)
-  CrcEnum(ALPHA_ADDITIVE),    // (SrcClr*SrcAlpha) + (FBClr*1)
-  CrcEnum(SUBTRACTIVE),       // (SrcClr*0) + (FBClr*(1-SrcColor))
-  CrcEnum(ALPHA_SUBTRACTIVE), // (SrcClr*0) + (FBClr*(1-SrcAlpha))
-  CrcEnum(MODULATE),          // (SrcClr*0) + (FBClr*(1-SrcAlpha))
+
+  // Standard alpha blending
+  CrcEnum(PREMA),                // (SrcClr*1) + (FBClr*(1-SrcAlpha))
+                                 // Use: Premultiplied alpha blending
+  CrcEnum(ALPHA),                // (SrcClr*SrcAlpha) + (FBClr*(1-SrcAlpha))
+                                 // Use: Standard alpha transparency
+  CrcEnum(DSTALPHA),             // (SrcClr*FBAlpha) + (FBClr*(1-FBAlpha))
+                                 // Use: Blend based on destination alpha
+
+  // Additive blending
+  CrcEnum(ADDITIVE),             // (SrcClr*1) + (FBClr*1)
+                                 // Use: Lights, fire, energy effects
+  CrcEnum(ALPHA_ADDITIVE),       // (SrcClr*SrcAlpha) + (FBClr*1)
+                                 // Use: Alpha-controlled additive (soft glow)
+
+  // Subtractive blending
+  CrcEnum(DST_MINUS_SRC),        // (FBClr*1) - (SrcClr*1)  [dst - src]
+                                 // Use: Darkening, burn effects
+  CrcEnum(SUBTRACTIVE),          // alias for DST_MINUS_SRC
+  CrcEnum(SRC_MINUS_DST),        // (SrcClr*1) - (FBClr*1)  [src - dst]
+                                 // Use: Inverse darkening
+  CrcEnum(ALPHA_SUBTRACTIVE),    // (FBClr*(1-SrcAlpha)) + (SrcClr*0)
+                                 // Use: Alpha-based darkening
+  CrcEnum(INVERSE_SUBTRACTIVE),  // (SrcClr*(1-FBClr)) + (FBClr*0) [src * (1-dst)]
+                                 // Use: Inverse multiplicative blend
+
+  // Photoshop-style blending
+  CrcEnum(SCREEN),               // (SrcClr*1) + (FBClr*(1-SrcClr))
+                                 // Use: Brightening, glows, atmospheric effects
+  CrcEnum(DARKEN),               // min(SrcClr, FBClr)
+                                 // Use: Keep darker values, shadows
+  CrcEnum(LIGHTEN),              // max(SrcClr, FBClr)
+                                 // Use: Keep lighter values, highlights
+  CrcEnum(MULTIPLY),             // (SrcClr*FBClr) + (FBClr*0) [src * dst]
+                                 // Use: Multiplicative darkening, color tinting
+  CrcEnum(MODULATE),             // alias for MULTIPLY
+  CrcEnum(ALPHA_MODULATE),       // (FBClr*SrcAlpha) + (SrcClr*0) [dst * srcAlpha]
+                                 // Use: Fade/darken by source alpha
+
+  // Porter-Duff compositing modes
+  CrcEnum(UNDER),                // (SrcClr*(1-FBAlpha)) + (FBClr*1)
+                                 // Use: Draw source under destination, UI layers
+  CrcEnum(ATOP),                 // (SrcClr*FBAlpha) + (FBClr*(1-SrcAlpha))
+                                 // Use: Paint only on existing content
+  CrcEnum(XOR),                  // (SrcClr*(1-FBAlpha)) + (FBClr*(1-SrcAlpha))
+                                 // Use: Exclusive or, cutout/stencil effects
+  CrcEnum(ERASE),                // (FBClr*(1-SrcAlpha)) + (SrcClr*0)
+                                 // Use: Alpha masking, eraser tool
+  CrcEnum(ALPHA_WEIGHTED),       // (SrcClr*SrcAlpha) + (FBClr*FBAlpha)
+                                 // Use: Both scaled by own alphas, symmetrical blend
 };
 
 //////////////////////////////////////

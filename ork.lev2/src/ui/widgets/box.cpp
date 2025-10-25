@@ -102,14 +102,20 @@ void EvTestBox::_initMaterialState() {
   _rsFG->_priority = 1<<10;
   _rsBG->_culltest = lev2::ECullTest::OFF;
   _rsFG->_culltest = lev2::ECullTest::OFF;
-  _rsBG->_depthtest = lev2::EDepthTest::ALWAYS;
-  _rsFG->_depthtest = lev2::EDepthTest::ALWAYS;
+  _rsBG->_depthtest = lev2::EDepthTest::OFF;  // UI elements should not depth test
+  _rsFG->_depthtest = lev2::EDepthTest::OFF;
+  _rsBG->setWriteMaskZ(false);  // UI elements should not write depth
+  _rsFG->setWriteMaskZ(false);
   _rsBG->setBlendEnable(true);
   _rsFG->setBlendEnable(true);
   _rsBG->setBlendingMacro(_blendingBG);
   _rsFG->setBlendingMacro(_blendingFG);
   _rsBG->_name = "EvTestBox::BG";
   _rsFG->_name = "EvTestBox::FG";
+
+  _blendingBG = lev2::BlendingMacro::OFF;
+  _blendingFG = lev2::BlendingMacro::ALPHA;
+
 }
 ///////////////////////////////////////////////////////////////////////////////
 HandlerResult EvTestBox::DoOnUiEvent(event_constptr_t Ev) {
@@ -225,11 +231,10 @@ void EvTestBox::DoDraw(drawevent_constptr_t drwev) {
     fxi->popRasterState();
 
     ///////////////////////////////
-
-    tgt->PushModColor(_fontColor);
     _rsFG->setBlendingMacro(_blendingFG);
     fxi->pushRasterState(_rsFG);
-    ork::lev2::FontMan::PushFont("i14");
+    tgt->PushModColor(_fontColor);
+    ork::lev2::FontMan::PushFont("i16");
     lev2::FontMan::beginTextBlock(tgt, 16);
     int sw = lev2::FontMan::stringWidth(statename.length());
     lev2::FontMan::DrawText(

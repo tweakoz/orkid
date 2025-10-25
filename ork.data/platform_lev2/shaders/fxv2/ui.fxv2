@@ -85,20 +85,34 @@ state_block sb_additive : sb_default {
 ///////////////////////////////////////////////////////////////
 // shaders
 ///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+vertex_interface vif_UITEXT : push_constants {
+  inputs {
+    vec4 position : POSITION;
+    vec4 vtxcolor : COLOR0;
+    vec2 uv0 : TEXCOORD0;
+  }
+  outputs {
+    vec2 frg_uv;
+  }
+}
+fragment_interface fif_UITEXT
+  : vif_UITEXT {
+  outputs {
+    vec4 out_clr;
+  }
+}
 vertex_shader vs_uitext : iface_vdefault {
   gl_Position = mvp * position;
-  //frg_clr     = vtxcolor;
   frg_uv      = uv0;  
-  //frg_uv      = vec2(1,0);  
-
 }
-///////////////////////////////////////////////////////////////
 fragment_shader ps_uitext : iface_fmt {
   vec4 s = texture(ColorMap, frg_uv);
-  float texa = pow(s.a*s.r,0.75);
+  float texa = pow(s.r,0.5);
   //out_clr = s; //vec4(texa,texa,texa,1);
-  out_clr = vec4(ModColor.xyz, texa*ModColor.w);
+  out_clr = vec4(ModColor.xyz, texa);
 }
+///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_uitext_stereo : iface_fmt {
   vec4 s = texture(ColorMap, frg_uv);

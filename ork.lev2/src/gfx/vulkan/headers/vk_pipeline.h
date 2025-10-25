@@ -314,6 +314,7 @@ struct VkRasterState {
   VkPipelineColorBlendStateCreateInfo _VKCBSI;
   VkPipelineColorBlendAttachmentState _VKCBATT; // Base attachment state (for backward compat)
   std::vector<VkPipelineColorBlendAttachmentState> _VKCBATT_array; // Array for MRT
+  std::vector<VkFormat> _vkformats; // Store formats for cache invalidation
   int _pipeline_bits = -1;
   int _attachment_count = 1;
   RasterState* _ork_rasterstate = nullptr;
