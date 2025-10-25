@@ -278,7 +278,68 @@ void Layout::fill(Layout* other) {
   return;
 }
 /////////////////////////////////////////////////////////////////////////
+void Layout::setProportionalRect(Layout* parent, float x, float y, float w, float h, bool locked) {
+  if (!isAnchorAllowed(parent))
+    return;
+
+  // Find or create proportional guides at the specified positions
+  auto left_guide   = parent->proportionalVerticalGuide(x);
+  auto right_guide  = parent->proportionalVerticalGuide(x + w);
+  auto top_guide    = parent->proportionalHorizontalGuide(y);
+  auto bottom_guide = parent->proportionalHorizontalGuide(y + h);
+
+  // Lock guides if requested
+  if (locked) {
+    left_guide->lock();
+    right_guide->lock();
+    top_guide->lock();
+    bottom_guide->lock();
+  }
+
+  // Anchor this layout's edges to the guides
+  this->left()->anchorTo(left_guide);
+  this->right()->anchorTo(right_guide);
+  this->top()->anchorTo(top_guide);
+  this->bottom()->anchorTo(bottom_guide);
+}
+/////////////////////////////////////////////////////////////////////////
+void Layout::setFixedRect(Layout* parent, int x, int y, int w, int h, bool locked) {
+  if (!isAnchorAllowed(parent))
+    return;
+
+  // Find or create fixed guides at the specified positions
+  auto left_guide   = parent->fixedVerticalGuide(x);
+  auto right_guide  = parent->fixedVerticalGuide(x + w);
+  auto top_guide    = parent->fixedHorizontalGuide(y);
+  auto bottom_guide = parent->fixedHorizontalGuide(y + h);
+
+  // Lock guides if requested
+  if (locked) {
+    left_guide->lock();
+    right_guide->lock();
+    top_guide->lock();
+    bottom_guide->lock();
+  }
+
+  // Anchor this layout's edges to the guides
+  this->left()->anchorTo(left_guide);
+  this->right()->anchorTo(right_guide);
+  this->top()->anchorTo(top_guide);
+  this->bottom()->anchorTo(bottom_guide);
+}
+/////////////////////////////////////////////////////////////////////////
 guide_ptr_t Layout::proportionalHorizontalGuide(float proportion) {
+  // Check if a guide with this proportion already exists
+  const float epsilon = 0.0001f;
+  for (auto& existing : _customguides) {
+    if (existing->_type == GuideType::PROPORTIONAL &&
+        existing->_edge == Edge::CustomHorizontal &&
+        std::abs(existing->_proportion - proportion) < epsilon) {
+      return existing;
+    }
+  }
+
+  // Create new guide
   auto guide         = std::make_shared<Guide>(this, Edge::CustomHorizontal);
   guide->_proportion = proportion;
   guide->_type = GuideType::PROPORTIONAL;
@@ -289,6 +350,17 @@ guide_ptr_t Layout::proportionalHorizontalGuide(float proportion) {
 }
 /////////////////////////////////////////////////////////////////////////
 guide_ptr_t Layout::proportionalVerticalGuide(float proportion) {
+  // Check if a guide with this proportion already exists
+  const float epsilon = 0.0001f;
+  for (auto& existing : _customguides) {
+    if (existing->_type == GuideType::PROPORTIONAL &&
+        existing->_edge == Edge::CustomVertical &&
+        std::abs(existing->_proportion - proportion) < epsilon) {
+      return existing;
+    }
+  }
+
+  // Create new guide
   auto guide         = std::make_shared<Guide>(this, Edge::CustomVertical);
   guide->_proportion = proportion;
   guide->_type = GuideType::PROPORTIONAL;
@@ -299,6 +371,16 @@ guide_ptr_t Layout::proportionalVerticalGuide(float proportion) {
 }
 /////////////////////////////////////////////////////////////////////////
 guide_ptr_t Layout::fixedHorizontalGuide(int fixed) {
+  // Check if a guide with this fixed position already exists
+  for (auto& existing : _customguides) {
+    if (existing->_type == GuideType::FIXED &&
+        existing->_edge == Edge::CustomHorizontal &&
+        existing->_fixed == fixed) {
+      return existing;
+    }
+  }
+
+  // Create new guide
   auto guide    = std::make_shared<Guide>(this, Edge::CustomHorizontal);
   guide->_fixed = fixed;
   guide->_type = GuideType::FIXED;
@@ -309,6 +391,16 @@ guide_ptr_t Layout::fixedHorizontalGuide(int fixed) {
 }
 /////////////////////////////////////////////////////////////////////////
 guide_ptr_t Layout::fixedVerticalGuide(int fixed) {
+  // Check if a guide with this fixed position already exists
+  for (auto& existing : _customguides) {
+    if (existing->_type == GuideType::FIXED &&
+        existing->_edge == Edge::CustomVertical &&
+        existing->_fixed == fixed) {
+      return existing;
+    }
+  }
+
+  // Create new guide
   auto guide    = std::make_shared<Guide>(this, Edge::CustomVertical);
   guide->_fixed = fixed;
   guide->_type = GuideType::FIXED;
@@ -316,6 +408,74 @@ guide_ptr_t Layout::fixedVerticalGuide(int fixed) {
   guide->_margin = _margin;  // Inherit layout's margin
   _customguides.insert(guide);
   return guide;
+}
+/////////////////////////////////////////////////////////////////////////
+guide_ptr_t Layout::offsetHorizontalGuide(guide_ptr_t base, int offset) {
+  OrkAssert(base != nullptr);
+  OrkAssert(base->isHorizontal());
+
+  // Check if an offset guide with this base and offset already exists
+  for (auto& existing : _customguides) {
+    if (existing->_type == GuideType::OFFSET &&
+        existing->_edge == Edge::CustomHorizontal &&
+        existing->_offset_base == base.get() &&
+        existing->_offset == offset) {
+      return existing;
+    }
+  }
+
+  // Create new offset guide
+  auto guide = std::make_shared<Guide>(this, Edge::CustomHorizontal);
+  guide->_offset_base = base.get();
+  guide->_offset = offset;
+  guide->_type = GuideType::OFFSET;
+  guide->_locked = _locked;
+  guide->_margin = _margin;
+  _customguides.insert(guide);
+  return guide;
+}
+/////////////////////////////////////////////////////////////////////////
+guide_ptr_t Layout::offsetVerticalGuide(guide_ptr_t base, int offset) {
+  OrkAssert(base != nullptr);
+  OrkAssert(base->isVertical());
+
+  // Check if an offset guide with this base and offset already exists
+  for (auto& existing : _customguides) {
+    if (existing->_type == GuideType::OFFSET &&
+        existing->_edge == Edge::CustomVertical &&
+        existing->_offset_base == base.get() &&
+        existing->_offset == offset) {
+      return existing;
+    }
+  }
+
+  // Create new offset guide
+  auto guide = std::make_shared<Guide>(this, Edge::CustomVertical);
+  guide->_offset_base = base.get();
+  guide->_offset = offset;
+  guide->_type = GuideType::OFFSET;
+  guide->_locked = _locked;
+  guide->_margin = _margin;
+  _customguides.insert(guide);
+  return guide;
+}
+/////////////////////////////////////////////////////////////////////////
+void Layout::setRect(guide_ptr_t top, guide_ptr_t left, guide_ptr_t right, guide_ptr_t bottom) {
+  // Sanity checks
+  OrkAssert(top == nullptr || top->isHorizontal());
+  OrkAssert(left == nullptr || left->isVertical());
+  OrkAssert(right == nullptr || right->isVertical());
+  OrkAssert(bottom == nullptr || bottom->isHorizontal());
+
+  // Anchor to the provided guides
+  if (top)
+    this->top()->anchorTo(top);
+  if (left)
+    this->left()->anchorTo(left);
+  if (right)
+    this->right()->anchorTo(right);
+  if (bottom)
+    this->bottom()->anchorTo(bottom);
 }
 /////////////////////////////////////////////////////////////////////////
 bool Layout::isAnchorAllowed(guide_ptr_t guide) const {

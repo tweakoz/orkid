@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ork/lev2/ui/widget.h>
+#include <ork/lev2/gfx/gfxmaterial_ui.h>
 
 namespace ork::ui {
 
@@ -56,8 +57,11 @@ public:
   fvec4 _colorDoubleClick;
   fvec4 _colorDrag;
   fvec4 _colorKeyDown;
+  fvec4 _fontColor;
   EventCode _colorsel = EventCode::UNKNOWN;
-
+  lev2::BlendingMacro _blendingBG = lev2::BlendingMacro::OFF;
+  lev2::BlendingMacro _blendingFG = lev2::BlendingMacro::ADDITIVE;
+  lev2::uimaterial_ptr_t _material;
 private:
   HandlerResult DoOnUiEvent(event_constptr_t Ev) override;
   void DoDraw(ui::drawevent_constptr_t drwev) override;

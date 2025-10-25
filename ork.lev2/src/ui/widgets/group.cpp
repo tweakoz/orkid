@@ -618,7 +618,11 @@ Widget* LayoutGroup::doRouteUiEvent(event_constptr_t ev) {
   }
   ///////////////////////////
   _highlightGuides = false;
-  for (auto& child : _children) {
+  Widget* target_widget = nullptr;
+  size_t num_children = _children.size();
+  for( size_t i=0; i<num_children; i++ ){
+    size_t idx = num_children - 1 - i;
+    auto child = _children[idx];
     bool inside = child->IsEventInside(ev);
     if (inside) {
       auto child_target = child->routeUiEvent(ev);

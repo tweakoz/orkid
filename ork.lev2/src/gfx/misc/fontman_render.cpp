@@ -108,8 +108,9 @@ void FontMan::_endTextBlock(Context* context) {
         RSTATE->setCullTest(ECullTest::OFF);
         RSTATE->setDepthTest(EDepthTest::OFF);
         RSTATE->setBlendingMacro(top_state->_blending);
-        context->FXI()->applyRasterState(*RSTATE);
+        context->FXI()->pushRasterState(RSTATE);
         GBI->DrawPrimitiveEML(mTextWriter, PrimitiveType::TRIANGLES);
+        context->FXI()->popRasterState();
       });
     } else {
       auto material = the_font->material();
@@ -119,8 +120,9 @@ void FontMan::_endTextBlock(Context* context) {
       RSTATE->setCullTest(ECullTest::OFF);
       RSTATE->setDepthTest(EDepthTest::OFF);
       RSTATE->setBlendingMacro(top_state->_blending);
-      context->FXI()->applyRasterState(*RSTATE);
+        context->FXI()->pushRasterState(RSTATE);
       GBI->DrawPrimitiveEML(mTextWriter, PrimitiveType::TRIANGLES);
+        context->FXI()->popRasterState();
       material->EndBlock(context);
     }
   }

@@ -65,7 +65,7 @@ fragment_interface iface_fmt
 // StateBlocks
 ///////////////////////////////////////////////////////////////
 state_block sb_default : default {
-  DepthTest = OFF;
+  BlendMode = OFF;
   CullTest  = OFF;
   DepthTest = ALWAYS;
   DepthMask = OFF;

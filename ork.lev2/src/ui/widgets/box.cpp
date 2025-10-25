@@ -1,7 +1,6 @@
 #include <ork/pch.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/rtgroup.h>
-#include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/util/hotkey.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/gfx/pri.h>
@@ -72,6 +71,16 @@ EvTestBox::EvTestBox(
     , _colorClick(colorclick)
     , _colorDoubleClick(colordoubleclick)
     , _colorDrag(colordrag) {
+    auto ctx = lev2::contextForCurrentThread();
+    OrkAssert(ctx);
+    _material = std::make_shared<lev2::GfxMaterialUI>(ctx);
+    auto rs = _material->_rasterstate;
+    rs->_priority = 1;
+    rs->_depthtest = lev2::EDepthTest::ALWAYS;
+    rs->_culltest = lev2::ECullTest::OFF;
+    rs->_writemaskZ = false;
+    rs->setBlendEnable(true);
+    
 }
 ///////////////////////////////////////////////////////////////////////////////
 EvTestBox::EvTestBox(
@@ -87,6 +96,7 @@ EvTestBox::EvTestBox(
   _colorDoubleClick = (color * 0.5f);
   _colorDrag        = color * 0.25f;
   _colorKeyDown     = fvec4(1, 1, 1, 0) - color;
+  _fontColor = _colorKeyDown;
   _colorKeyDown.w   = color.w;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -99,9 +109,22 @@ HandlerResult EvTestBox::DoOnUiEvent(event_constptr_t Ev) {
 void EvTestBox::DoDraw(drawevent_constptr_t drwev) {
   auto tgt    = drwev->GetTarget();
   auto fbi    = tgt->FBI();
+  auto fxi    = tgt->FXI();
   auto mtxi   = tgt->MTXI();
   auto primi = tgt->PRI();
   auto defmtl = lev2::defaultUIMaterial();
+  if(!_material) {
+    auto ctx = lev2::contextForCurrentThread();
+    OrkAssert(ctx);
+    _material = std::make_shared<lev2::GfxMaterialUI>(ctx);
+    auto rs = _material->_rasterstate;
+    rs->_priority = 1;
+    rs->_depthtest = lev2::EDepthTest::ALWAYS;
+    rs->_culltest = lev2::ECullTest::OFF;
+    rs->_writemaskZ = false;
+    rs->setBlendEnable(true);
+  }
+
   mtxi->PushUIMatrix();
   {
     int ix1, iy1, ix2, iy2, ixc, iyc;
@@ -174,17 +197,19 @@ void EvTestBox::DoDraw(drawevent_constptr_t drwev) {
         break;
     }
 
-    defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
-    defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
+    _material->_rasterstate->setBlendingMacro(_blendingBG);
+    _material->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
     ///////////////////////////////
     if (not hasMouseFocus()){
       color *= 0.8f;
       statename = "---";
     }
+    fxi->pushRasterState(_material->_rasterstate);
     tgt->PushModColor(color);
-    defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
+    _material->SetUIColorMode(lev2::UiColorMode::MOD);
+
     primi->RenderQuadAtZ(
-        defmtl.get(),
+        _material.get(),
         ix1,  // x0
         ix2,  // x1
         iy1,  // y0
@@ -197,10 +222,9 @@ void EvTestBox::DoDraw(drawevent_constptr_t drwev) {
     );
     tgt->PopModColor();
     ///////////////////////////////
-    color   = fvec4(1, 1, 1, 1) - color;
-    color.w = 1.0f;
 
-    tgt->PushModColor(color);
+    tgt->PushModColor(_fontColor);
+    _material->_rasterstate->setBlendingMacro(_blendingFG);
     ork::lev2::FontMan::PushFont("i14");
     lev2::FontMan::beginTextBlock(tgt, 16);
     int sw = lev2::FontMan::stringWidth(statename.length());
@@ -212,6 +236,7 @@ void EvTestBox::DoDraw(drawevent_constptr_t drwev) {
     lev2::FontMan::endTextBlock(tgt);
     ork::lev2::FontMan::PopFont();
     tgt->PopModColor();
+    fxi->popRasterState();
   }
   mtxi->PopUIMatrix();
 }

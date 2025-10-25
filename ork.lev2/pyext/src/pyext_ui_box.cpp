@@ -374,8 +374,64 @@ void pyinit_ui_box(py::module& uimodule) {
                   rval.append(item.as_shared());
                 }
                 return rval;
+              })
+              .def_property("blendingBG",
+              [](uievtestbox_ptr_t box) -> crcstring_ptr_t { //
+                return std::make_shared<CrcString>((uint64_t)box->_blendingBG);
+              },
+              [](uievtestbox_ptr_t box, crcstring_ptr_t c) { //
+                box->_blendingBG = lev2::BlendingMacro(c->hashed());
+              })
+              .def_property("blendingFG",
+              [](uievtestbox_ptr_t box) -> crcstring_ptr_t { //
+                return std::make_shared<CrcString>((uint64_t)box->_blendingFG);
+              },
+              [](uievtestbox_ptr_t box, crcstring_ptr_t c) { //
+                box->_blendingFG = lev2::BlendingMacro(c->hashed());
+              })
+              .def_property("normal_color",
+              [](uievtestbox_ptr_t box) -> fvec4 { //
+                return box->_colorNormal;
+              },
+              [](uievtestbox_ptr_t box, fvec4 c) { //
+                box->_colorNormal = c;
+              })
+              .def_property("click_color",
+              [](uievtestbox_ptr_t box) -> fvec4 { //
+                return box->_colorClick;
+              },
+              [](uievtestbox_ptr_t box, fvec4 c) { //
+                box->_colorClick = c;
+              })
+              .def_property("doubleclick_color",
+              [](uievtestbox_ptr_t box) -> fvec4 { //
+                return box->_colorDoubleClick;
+              },
+              [](uievtestbox_ptr_t box, fvec4 c) { //
+                box->_colorDoubleClick = c;
+              })
+              .def_property("drag_color",
+              [](uievtestbox_ptr_t box) -> fvec4 { //
+                return box->_colorDrag;
+              },
+              [](uievtestbox_ptr_t box, fvec4 c) { //
+                box->_colorDrag = c;
+              })
+              .def_property("keydown_color",
+              [](uievtestbox_ptr_t box) -> fvec4 { //
+                return box->_colorKeyDown;
+              },
+              [](uievtestbox_ptr_t box, fvec4 c) { //
+                box->_colorKeyDown = c;
+              })
+              .def_property("font_color",
+              [](uievtestbox_ptr_t box) -> fvec4 { //
+                return box->_fontColor;
+              },
+              [](uievtestbox_ptr_t box, fvec4 c) { //
+                box->_fontColor = c;
               });
-  type_codec->registerStdCodec<uievtestbox_ptr_t>(evtestbox_type);
+              type_codec->registerStdCodec<uievtestbox_ptr_t>(evtestbox_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto lambdabox_type = //
       py::class_<ui::LambdaBox, ui::Widget, uilambdabox_ptr_t>(uimodule, "LambdaBox")

@@ -72,7 +72,7 @@ struct RasterState {
   BlendingFactor _blendFactorDstA = BlendingFactor::ZERO;
   BlendingOp _blendOpRGB = BlendingOp::ADD;
   BlendingOp _blendOpA = BlendingOp::ADD;
-
+  int _priority = 0;
   // todo: logic ops
 
   void dump() const;

@@ -87,15 +87,12 @@ void pyinit_ui(py::module& module_lev2) {
               },                                              //
               [](ui::context_ptr_t uictx, uiwidget_ptr_t w) { //
                 uictx->_overlayWidget = w;                    //
-              })   
-              .def_property("debug_event_routing",
-              [](ui::context_ptr_t uictx) -> bool {
-                return uictx->_debug_event_routing;
-              },
-              [](ui::context_ptr_t uictx, bool val) {
-                uictx->_debug_event_routing = val;
-              });
-      ;
+              })
+          .def_property(
+              "debug_event_routing",
+              [](ui::context_ptr_t uictx) -> bool { return uictx->_debug_event_routing; },
+              [](ui::context_ptr_t uictx, bool val) { uictx->_debug_event_routing = val; });
+  ;
   type_codec->registerStdCodec<ui::context_ptr_t>(uicontext_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto uievent_type = //
@@ -330,7 +327,9 @@ void pyinit_ui(py::module& module_lev2) {
               [](uiwidget_ptr_t widget, int w, int h) { //
                 widget->SetSize(w, h);
               })
-              .def_property_readonly("size", [](uiwidget_ptr_t widget) -> fvec2 { //
+          .def_property_readonly(
+              "size",
+              [](uiwidget_ptr_t widget) -> fvec2 { //
                 return fvec2(float(widget->width()), float(widget->height()));
               })
           .def(
@@ -354,25 +353,54 @@ void pyinit_ui(py::module& module_lev2) {
               [](uiwidget_ptr_t widget, bool x) { //
                 widget->_enableDraw = x;
               })
-          .def("getUserVar", [type_codec](uiwidget_ptr_t widget, std::string key) -> py::object { //
-            py::object rval;
-            if (widget->_uservars.hasKey(key)) {
-              rval = type_codec->encode(widget->_uservars.valueForKey(key));
-            }
-            return rval;
-          })
-          .def_property("label_font", [](uiwidget_ptr_t widget) -> font_ptr_t { //
-                          return widget->_label_font;
-                        },
-                        [](uiwidget_ptr_t widget, font_ptr_t f) { //
-                          widget->_label_font = f;
-                        });
+          .def(
+              "getUserVar",
+              [type_codec](uiwidget_ptr_t widget, std::string key) -> py::object { //
+                py::object rval;
+                if (widget->_uservars.hasKey(key)) {
+                  rval = type_codec->encode(widget->_uservars.valueForKey(key));
+                }
+                return rval;
+              })
+
+          .def_property(
+              "label_font",
+              [](uiwidget_ptr_t widget) -> font_ptr_t { //
+                return widget->_label_font;
+              },
+              [](uiwidget_ptr_t widget, font_ptr_t f) { //
+                widget->_label_font = f;
+              });
   type_codec->registerStdCodec<uiwidget_ptr_t>(widget_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto group_type = //
-      py::class_<ui::Group, ui::Widget, uigroup_ptr_t>(uimodule, "Group").def("updateLayout", [](uigroup_ptr_t grp) {
-        grp->DoLayout();
-      });
+      py::class_<ui::Group, ui::Widget, uigroup_ptr_t>(uimodule, "Group")
+          .def("updateLayout", [](uigroup_ptr_t grp) { grp->DoLayout(); })
+          .def("makeChild2", [](uigroup_ptr_t grp, py::kwargs kwargs) -> ui::widget_ptr_t { //
+            ui::widget_ptr_t rval;
+            if (kwargs) {
+              py::list args;
+              py::object wfactory;
+              int args_parsed = 0;
+              for (auto item : kwargs) {
+                auto key = py::cast<std::string>(item.first);
+                if (key == "uiclass") {
+                  auto uiclass_obj  = py::cast<py::object>(item.second);
+                  bool has_wfactory = py::hasattr(uiclass_obj, "wfactory");
+                  OrkAssert(has_wfactory);
+                  wfactory = uiclass_obj.attr("wfactory");
+                  args_parsed++;
+                } else if (key == "args") {
+                  args = py::cast<py::list>(item.second);
+                  args_parsed++;
+                }
+              }
+              OrkAssert(args_parsed == 2);
+              rval = py::cast<ui::widget_ptr_t>(wfactory(args));
+              grp->addChild(rval);
+            }
+            return rval;
+          });
   type_codec->registerStdCodec<uigroup_ptr_t>(group_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto surface_type = //
@@ -471,7 +499,7 @@ void pyinit_ui(py::module& module_lev2) {
                 return sgview->_scenegraph;
               },
               [](uisgviewport_ptr_t sgview, lev2::scenegraph::scene_ptr_t sg) { //
-                return sgview->bindSceneGraph(sg); 
+                return sgview->bindSceneGraph(sg);
               })
           //////////////////////////////////
           .def_property(

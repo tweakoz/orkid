@@ -339,20 +339,36 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
   }
   /////////////////////////////
   else if (fmt == EBufferFormat::RGBA8 and inp._format == EBufferFormat::RGB8) {
-    printf( "convert from RGB8 to RGBA8\n");
+    //printf( "convert from RGB8 to RGBA8\n");
     init(inp._width, inp._height, 4, inp._bytesPerChannel);
     auto outptr = (uint8_t*)_data->data();
     auto inptr  = (const uint8_t*)inp._data->data();
-    for (int y = 0; y < inp._height; y++) {
-      for (int x = 0; x < inp._width; x++) {
-        int pixelindex           = y * inp._width + x;
-        int in_elembase          = pixelindex * 3;
-        int out_elembase         = pixelindex * 4;
-        outptr[out_elembase + 0] = inptr[in_elembase + 0];
-        outptr[out_elembase + 1] = inptr[in_elembase + 1];
-        outptr[out_elembase + 2] = inptr[in_elembase + 2];
-        outptr[out_elembase + 3] = 255;
-      }
+    constexpr size_t chunk_size = 32;
+    size_t num_chunks = (inp._height + chunk_size - 1) / chunk_size; // Round up division
+    std::atomic<int> chunkcounter = num_chunks;
+
+    for (size_t chunk = 0; chunk < num_chunks; chunk++) {
+      auto op = [chunk, chunk_size, inptr, outptr, &inp, &chunkcounter](){
+        size_t y_start = chunk * chunk_size;
+        size_t y_end = std::min(y_start + chunk_size, size_t(inp._height));
+      
+        for (size_t y = y_start; y < y_end; y++) {
+          for (int x = 0; x < inp._width; x++) {
+            int pixelindex           = y * inp._width + x;
+            int in_elembase          = pixelindex * 3;
+            int out_elembase         = pixelindex * 4;
+            outptr[out_elembase + 0] = inptr[in_elembase + 0];
+            outptr[out_elembase + 1] = inptr[in_elembase + 1];
+            outptr[out_elembase + 2] = inptr[in_elembase + 2];
+            outptr[out_elembase + 3] = 255;
+          }
+        }
+        chunkcounter.fetch_sub(1);
+      };
+      opq::concurrentQueue()->enqueue(op);
+    }
+    while(chunkcounter.load() > 0) {
+      std::this_thread::yield();
     }
   }
   /////////////////////////////

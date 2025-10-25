@@ -107,6 +107,7 @@ void Font::load(Context* context, fontdesc_ptr_t fdesc) {
 
   _fs_material = std::make_shared<FreestyleMaterial>();
   _fs_material->gpuInit(context, "orkshader://ui");
+  _fs_material->_rasterstate->_priority = 128;
   _tek_stereo_text = _fs_material->technique("uitext_stereo");
   FxPipelinePermutation permu;
   permu._forced_technique = _tek_stereo_text;

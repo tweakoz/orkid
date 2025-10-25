@@ -64,6 +64,8 @@ struct Layout {
   bool isAnchorAllowed(guide_ptr_t guide) const;
   bool isAnchorAllowed(Layout* guide) const;
   void fill(Layout* other);
+  void setProportionalRect(Layout* parent, float x, float y, float w, float h, bool locked = false);
+  void setFixedRect(Layout* parent, int x, int y, int w, int h, bool locked = false);
 
   void updateAll();
 
@@ -80,6 +82,9 @@ struct Layout {
   guide_ptr_t proportionalVerticalGuide(float proportion);
   guide_ptr_t fixedHorizontalGuide(int fixed);
   guide_ptr_t fixedVerticalGuide(int fixed);
+  guide_ptr_t offsetHorizontalGuide(guide_ptr_t base, int offset);
+  guide_ptr_t offsetVerticalGuide(guide_ptr_t base, int offset);
+  void setRect(guide_ptr_t top, guide_ptr_t left, guide_ptr_t right, guide_ptr_t bottom);
   void lockAllGuides();
   void dump(int level=0);
   void prune();
@@ -121,6 +126,7 @@ struct Layout {
 enum class GuideType : crc_enum_t {
   CrcEnum(FIXED),
   CrcEnum(PROPORTIONAL),
+  CrcEnum(OFFSET),
   CrcEnum(NONE)
 };
 
@@ -167,9 +173,11 @@ struct Guide {
   int _sign         = 1; // sign of offset: -1 or 1
   float _proportion = 0.0f;
   int _fixed         = 0;
+  int _offset        = 0;  // offset in pixels from _offset_base (for OFFSET type)
   int _centerpos = 0;
   bool _locked = false;
   GuideType _type = GuideType::NONE;
+  Guide* _offset_base = nullptr;  // base guide for OFFSET type
 };
 
 /////////////////////////////////////////////////////////////////////////

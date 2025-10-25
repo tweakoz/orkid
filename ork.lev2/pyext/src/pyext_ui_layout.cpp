@@ -104,6 +104,22 @@ void pyinit_ui_layout(py::module& uimodule) {
               })
           //////////////////////////////////
           .def(
+              "offsetHorizontalGuide",
+              [](uilayout_ptr_t layout, uiguide_ptr_t base, int offset,bool locked) -> uiguide_ptr_t { //
+                auto guide = layout->offsetHorizontalGuide(base, offset);
+                if( locked ) guide->lock();
+                return guide;
+              }, py::arg("base"), py::arg("offset"), py::arg("locked")=false)
+          //////////////////////////////////
+          .def(
+              "offsetVerticalGuide",
+              [](uilayout_ptr_t layout, uiguide_ptr_t base, int offset,bool locked) -> uiguide_ptr_t { //
+                auto guide = layout->offsetVerticalGuide(base, offset);
+                if( locked ) guide->lock();
+                return guide;
+              }, py::arg("base"), py::arg("offset"), py::arg("locked")=false)
+          //////////////////////////////////
+          .def(
               "centerIn",
               [](uilayout_ptr_t layout, uilayout_ptr_t other_layout) { //
                 layout->centerIn(other_layout.get());
@@ -126,6 +142,29 @@ void pyinit_ui_layout(py::module& uimodule) {
               [](uilayout_ptr_t layout, uilayout_ptr_t other) { //
                 layout->fill(other.get());
               })
+          //////////////////////////////////
+          .def(
+              "setProportionalRect",
+              [](uilayout_ptr_t layout, uilayout_ptr_t parent, float x, float y, float w, float h, bool locked) { //
+                layout->setProportionalRect(parent.get(), x, y, w, h, locked);
+              },
+              py::arg("parent"), py::arg("x"), py::arg("y"), py::arg("w"), py::arg("h"), py::arg("locked") = false)
+          //////////////////////////////////
+          .def(
+              "setFixedRect",
+              [](uilayout_ptr_t layout, uilayout_ptr_t parent, int x, int y, int w, int h, bool locked) { //
+                layout->setFixedRect(parent.get(), x, y, w, h, locked);
+              },
+              py::arg("parent"), py::arg("x"), py::arg("y"), py::arg("w"), py::arg("h"), py::arg("locked") = false)
+          //////////////////////////////////
+          .def(
+              "setRect",
+              [](uilayout_ptr_t layout, uiguide_ptr_t top, uiguide_ptr_t left,
+                 uiguide_ptr_t right, uiguide_ptr_t bottom) { //
+                layout->setRect(top, left, right, bottom);
+              },
+              py::arg("top") = nullptr, py::arg("left") = nullptr,
+              py::arg("right") = nullptr, py::arg("bottom") = nullptr)
           //////////////////////////////////
           .def(
               "dump",
@@ -237,6 +276,22 @@ void pyinit_ui_layout(py::module& uimodule) {
           .def_static("create", [](std::string name) -> uilayoutgroup_ptr_t { //
             return std::make_shared<ui::LayoutGroup>(name);
           })
+          .def_static(
+              "wfactory",
+              [type_codec](py::list py_args) -> uilayoutgroup_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto lg          = std::make_shared<ui::LayoutGroup>(name);
+                return lg;
+              })
+          .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto layoutitem   = lg->makeChild<ui::LayoutGroup>(name);
+                return layoutitem.as_shared();
+              })
           .def_property(
               "clearColorStd",
               [](uilayoutgroup_ptr_t lgrp) -> fvec4 { //
@@ -459,6 +514,13 @@ void pyinit_ui_layout(py::module& uimodule) {
                 for (auto child : layout->_childlayouts) {
                   child->setMargin(m);
                 }
+              })
+              .def_property("clear",
+              [](uilayoutgroup_ptr_t lgrp) -> bool { //
+                return lgrp->_clear;
+              },
+              [](uilayoutgroup_ptr_t lgrp, bool b) { //
+                lgrp->_clear = b;
               });
   type_codec->registerStdCodec<uilayoutgroup_ptr_t>(layoutgroup_type);
 

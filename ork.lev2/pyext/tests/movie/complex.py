@@ -16,7 +16,10 @@ from ork.app.movie_capture import MovieCaptureComponent
 from ork.app.testlib.multiscene1 import MultiScene1Component
 from ork.app.testlib.lfodrone import LfoDroneComponent
 
-from orkengine import core, lev2
+from orkengine.core import vec3, vec4, CrcStringProxy
+from orkengine import lev2
+
+tokens = CrcStringProxy()
 
 ################################################################################
 
@@ -119,28 +122,52 @@ class ComplexMovieApp(ComponentizedApplication):
     panel0_layout = self.multiscene.panels[0].griditem.layout
     lg_group.replaceChild(panel0_layout,analyzer_lgroup)
 
-    # Get analyzer_layout AFTER replaceChild, since replaceChild changes analyzer_lgroup.layout
     analyzer_layout = analyzer_lgroup.layout
 
     panel1_layout = self.multiscene.panels[1].griditem.layout
-    panel3_layout = self.multiscene.panels[3].griditem.layout
-
-    #print("ANALYZER LAYOUT:",analyzer_layout, "ptr=", hex(id(analyzer_layout)))
-    #print("PANEL1 LAYOUT:",panel1_layout, "ptr=", hex(id(panel1_layout)))
-    #print("ANALYZER REDGE:",analyzer_layout.right)
-    #print("PANEL1 LEDGE:",panel1_layout.left)
-
-    # Dump the full hierarchy to understand the structure
-    #lg_group.dumpLayoutHierarchy()
-
-    # Also dump the analyzer_layout and panel1_layout hierarchies
-    #print("\n=== Analyzer Layout Dump ===")
-    #analyzer_layout.dump()
-    #print("\n=== Panel1 Layout Dump ===")
-    #panel1_layout.dump()
+    panel3 = self.multiscene.panels[3].griditem
+    panel3_layout = panel3.layout
 
     lg_group.findGuideBetween(analyzer_layout,panel1_layout).proportion = 0.65
     lg_group.findGuideBetween(panel3_layout,panel1_layout).proportion = 0.65
+
+    g_top = panel3_layout.top
+    g_bot = panel3_layout.bottom
+    g_lft = panel3_layout.left
+    g_rht = panel3_layout.right
+    g_top2 = panel3_layout.offsetHorizontalGuide(g_bot, -40, locked=True )
+    g_bot2 = panel3_layout.offsetHorizontalGuide(g_bot, -8, locked=True )    
+    g_lft2 = panel3_layout.offsetVerticalGuide(g_lft, 8, locked=True )
+    g_rhr2 = panel3_layout.offsetVerticalGuide(g_lft, 128, locked=True )    
+    lg_panel3 = lg_group.makeChild( uiclass = lev2.ui.EvTestBox, args = ["PANEL3LG",vec4(1)] )
+    #lg_panel3.layout.setProportionalRect(panel3_layout,0.25,0.25,0.25,0.25)
+    lg_panel3.layout.setRect(left=g_lft2,
+                             right=g_rhr2,
+                             top=g_top2,
+                             bottom=g_bot2)
+    lg_panel3.widget.blendingBG = tokens.SUBTRACTIVE
+    lg_panel3.widget.blendingFG = tokens.ADDITIVE
+    lg_panel3.widget.normal_color = vec4(0.75,0.75,0.0,1)
+    lg_panel3.widget.font_color = vec4(1,1,0,1)
+    self.ezapp.uicontext.debug_event_routing = True
+
+    #lg_panel3.widget.clear = False
+    #vpak = lg_panel3.widget.makeChild( uiclass=lev2.ui.VerticalPack,
+    #                            args=["VPACK"] )
+    #vpak.widget.item_height = 28
+    #cbox2 = vpak.widget.makeChild( uiclass = lev2.ui.Checkbox,
+    #                               args = ["CHK2",vec3(0.25,0.25,0.30)] )
+
+    #cbox1.layout.left.anchorTo(lg_panel3.layout.left)
+    #cbox1.layout.right.anchorTo(lg_panel3.layout.right)
+    #cbox1.layout.top.anchorTo(lg_panel3.layout.top)
+    #cbox1.layout.bottom.anchorTo(lg_panel3.layout.bottom)
+    #cbox1.layout
+    #cbox1.widget.setSize(96,24)
+    #cbox2.widget.setSize(96,24)
+    #cbox1.widget.setPos(8,8)
+    #cbox2.setPos(8,8+24+2)
+    
     
 ###############################################################################
 

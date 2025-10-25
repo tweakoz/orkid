@@ -313,13 +313,19 @@ Line Guide::line(Mode mode) const {
       outline._to   = fvec2(rect.x2(), rect.y2());
       break;
     case Edge::CustomHorizontal: {
-      if (_proportion != 0.0f) {
+      if (_type == GuideType::OFFSET && _offset_base) {
+        // Compute position from base guide + offset
+        auto base_line = _offset_base->line(mode);
+        float y = base_line._from.y + _offset;
+        outline._from = fvec2(rect._x, y);
+        outline._to   = fvec2(rect.x2(), y);
+      } else if (_proportion != 0.0f) {
         float y       = float(rect._y) + float(rect._h) * _proportion;
         outline._from = fvec2(rect._x, y);
         outline._to   = fvec2(rect.x2(), y);
       } else if (_fixed > 0) {
-        outline._from = fvec2(rect._x, _fixed);
-        outline._to   = fvec2(rect.x2(), _fixed);
+        outline._from = fvec2(rect._x, rect._y + _fixed);
+        outline._to   = fvec2(rect.x2(), rect._y + _fixed);
       } else if (_fixed < 0) {
         outline._from = fvec2(rect._x, rect._y + rect._h + _fixed);
         outline._to   = fvec2(rect.x2(), rect._y + rect._h + _fixed);
@@ -327,13 +333,19 @@ Line Guide::line(Mode mode) const {
       break;
     };
     case Edge::CustomVertical: {
-      if (_proportion != 0.0f) {
+      if (_type == GuideType::OFFSET && _offset_base) {
+        // Compute position from base guide + offset
+        auto base_line = _offset_base->line(mode);
+        float x = base_line._from.x + _offset;
+        outline._from = fvec2(x, rect._y);
+        outline._to   = fvec2(x, rect.y2());
+      } else if (_proportion != 0.0f) {
         float x       = float(rect._x) + float(rect._w) * _proportion;
         outline._from = fvec2(x, rect._y);
         outline._to   = fvec2(x, rect.y2());
       } else if (_fixed > 0) {
-        outline._from = fvec2(_fixed, rect._y);
-        outline._to   = fvec2(_fixed, rect.y2());
+        outline._from = fvec2(rect._x + _fixed, rect._y);
+        outline._to   = fvec2(rect._x + _fixed, rect.y2());
       } else if (_fixed < 0) {
         outline._from = fvec2(rect._x + rect._w + _fixed, rect._y);
         outline._to   = fvec2(rect._x + rect._w + _fixed, rect.y2());
@@ -504,8 +516,10 @@ static guide_ptr_t _findClosestDraggableGuide(const Layout* rootLayout, const fv
     }
 
     if (distance <= threshold && distance < closestDistance) {
-      closestDistance = distance;
-      closestGuide = guide;
+      if( not guide->_locked ){
+        closestDistance = distance;
+        closestGuide = guide;
+      }
     }
   }
 

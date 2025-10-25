@@ -266,6 +266,9 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
       tgt->debugPopGroup();
     }
   }
+
+  drawChildren(drwev);
+
   tgt->debugPopGroup();
   mtxi->PopUIMatrix();
   tgt->PopModColor();
