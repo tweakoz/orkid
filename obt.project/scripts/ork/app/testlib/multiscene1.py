@@ -77,8 +77,8 @@ class MultiScene1Component(ApplicationComponent):
                                         margin = 4,
                                         uiclass = lev2.ui.SceneGraphViewport,
                                         args = ["box",vec4(1,0,1,1)] )
-    lg_group.margin = 4
-    lg_group.clearColorGuide = vec4(1,0,1,1)    
+
+    lg_group.clearColorGuide = vec4(1,1,.5,1)    
     
 
     ########################################################

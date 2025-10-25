@@ -438,6 +438,13 @@ void pyinit_ui_layout(py::module& uimodule) {
                   }
                   OrkAssert(args_parsed == 5);
                   rval = uigrid_factory(lgrp, width, height, margin, args);
+
+                  // Apply margin to layout and all children
+                  auto layout = lgrp->_layout;
+                  layout->setMargin(margin);
+                  for (auto child : layout->_childlayouts) {
+                    child->setMargin(margin);
+                  }
                 }
                 return rval;
               })
