@@ -69,7 +69,8 @@ class ComplexMovieApp(ComponentizedApplication):
                                    OUTPATH = args.outputpath,
                                    LEN = args.length,  # seconds
                                    FPS = self.FPS,     # frames per second
-                                   NUMFRAMES = int(self.FPS * args.length))
+                                   NUMFRAMES = int(self.FPS * args.length),
+                                   PRESET = args.preset )
 
 
     ########################################

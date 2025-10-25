@@ -66,6 +66,8 @@ class ComponentizedApplication(object):
     # immediately before the main loop starts
     for component in self.components_sorted:
       component.onAppInit(self,initdata)
+    for component in self.components_sorted:
+      component.onAppLink(self,initdata)
   
   def onAppExit(self):
     # invoked on main thread when the application is exiting
@@ -84,12 +86,16 @@ class ComponentizedApplication(object):
     # onAudioInit is called before onGpuInit
     for component in self.components_sorted:
       component.onAudioInit(audiodev)
+    for component in self.components_sorted:
+      component.onAudioLink(audiodev)
       
   def onSynthInit(self,synth):
     # invoked on audio thread when the synth is initialized
     # immediately before audio processing starts
     for component in self.components_sorted:
       component.onSynthInit(synth)
+    for component in self.components_sorted:
+      component.onSynthLink(synth)
 
   #########
   # GPU / renderer broadcast handlers
@@ -100,6 +106,8 @@ class ComponentizedApplication(object):
     # immediately before the main loop starts
     for component in self.components_sorted:
       component.onGpuInit(ctx)
+    for component in self.components_sorted:
+      component.onGpuLink(ctx)
       
   def onGpuExit(self,ctx):
     # invoked on main thread when the GPU context is exiting
@@ -134,6 +142,8 @@ class ComponentizedApplication(object):
     # immediately before the update loop starts
     for component in self.components_sorted:
       component.onUpdateInit()
+    for component in self.components_sorted:
+      component.onUpdateLink()
       
   def onUpdate(self,updinfo):
     # invoked on update thread each update loop iteration
@@ -184,20 +194,20 @@ class ApplicationComponent(object):
   def _onAppInit(self,app,initdata):
     pass
 
+  def onAppLink(self,app,initdata):
+    self.app = app
+    self.initdata = initdata
+    self._onAppLink(app,initdata)
+
+  def _onAppLink(self,app,initdata):
+    pass
+
   ##############################################
 
   def onAppExit(self):
     self._onAppExit
 
   def _onAppExit(self):
-    pass
-
-  ##############################################
-
-  def onLink(self):
-    # where component link to other components
-    self._onLink()
-  def _onLink(self):
     pass
 
   ##############################################
@@ -213,6 +223,11 @@ class ApplicationComponent(object):
   def _onUpdateInit(self):
     pass
 
+  def onUpdateLink(self):
+    self._onUpdateLink()
+
+  def _onUpdateLink(self):
+    pass
 
   ##############################################
 
@@ -239,6 +254,12 @@ class ApplicationComponent(object):
   def _onAudioInit(self,audiodev):
     pass
 
+  def onAudioLink(self,audiodev):
+    self._onAudioLink(audiodev)
+
+  def _onAudioLink(self,audiodev):
+    pass
+
   ##############################################
 
   def onSynthInit(self,synth):
@@ -247,12 +268,24 @@ class ApplicationComponent(object):
   def _onSynthInit(self,synth):
     pass
 
+  def onSynthLink(self,synth):
+    self._onSynthLink(synth)
+    
+  def _onSynthLink(self,synth):
+    pass
+
   ##############################################
 
   def onGpuInit(self,ctx):
     self._onGpuInit(ctx)
 
   def _onGpuInit(self,ctx):
+    pass
+
+  def onGpuLink(self,ctx):
+    self._onGpuLink(ctx)
+
+  def _onGpuLink(self,ctx):
     pass
 
   ##############################################
