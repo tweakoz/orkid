@@ -26,6 +26,7 @@ parser.add_argument("--fps", "-F", type=float, default=60.0, help="Set target FP
 parser.add_argument("--length", "-l", type=float, default=10.0, help="length of movie in seconds")
 parser.add_argument("--preset", "-p", type=str, default="high", help="Encoder preset (fast, medium, high, ultra)")
 parser.add_argument("--outputpath", "-o", type=str, default="/tmp/str_audio_test_movie.mp4", help="Output path for movie")
+parser.add_argument("--hires", "-H", action='store_true', help="4K render, 8k textures")
 args = parser.parse_args()
 
 ################################################################################
@@ -51,7 +52,9 @@ class ComplexMovieApp(ComponentizedApplication):
     # multiscene component (4 viewports, 3 scenes, 1 ui)
     ########################################
 
-    self.multiscene = self.addComponent("multiscene1", MultiScene1Component )
+    self.multiscene = self.addComponent("multiscene1", 
+                                        MultiScene1Component,
+                                        use_8k_textures = args.hires )
 
     ########################################
     # lfo drone synth component (for audio test tone)
@@ -77,8 +80,8 @@ class ComplexMovieApp(ComponentizedApplication):
     # lockstep mode ?, use STREAM audio device (for movie capture)
     ########################################
 
-    W = 1600 if self.freerun else 3840
-    H = 900  if self.freerun else 2160
+    W = 1600 if self.freerun else (3840 if args.hires else 1920)
+    H = 900  if self.freerun else (2160 if args.hires else 1080)
 
     self.ezapp = lev2.OrkEzApp.create(
         self,
@@ -107,14 +110,37 @@ class ComplexMovieApp(ComponentizedApplication):
     mainbus = self.lfodrone.synth.outputBus("main")
     mainbus_source = mainbus.createScopeSource()
 
-    analyzer_layout = lg_group.makeChild( uiclass = lev2.singularity.SpectrumAnalyzer,
+    analyzer_lgroup = lg_group.makeChild( uiclass = lev2.singularity.SpectrumAnalyzer,
                                           args = ["MAINBUS"] )
 
     analyzer = lg_group.getUserVar("analyzers.MAINBUS")
     mainbus_source.connect(analyzer.sink)
 
     panel0_layout = self.multiscene.panels[0].griditem.layout
-    lg_group.replaceChild(panel0_layout,analyzer_layout)
+    lg_group.replaceChild(panel0_layout,analyzer_lgroup)
+
+    # Get analyzer_layout AFTER replaceChild, since replaceChild changes analyzer_lgroup.layout
+    analyzer_layout = analyzer_lgroup.layout
+
+    panel1_layout = self.multiscene.panels[1].griditem.layout
+    panel3_layout = self.multiscene.panels[3].griditem.layout
+
+    #print("ANALYZER LAYOUT:",analyzer_layout, "ptr=", hex(id(analyzer_layout)))
+    #print("PANEL1 LAYOUT:",panel1_layout, "ptr=", hex(id(panel1_layout)))
+    #print("ANALYZER REDGE:",analyzer_layout.right)
+    #print("PANEL1 LEDGE:",panel1_layout.left)
+
+    # Dump the full hierarchy to understand the structure
+    #lg_group.dumpLayoutHierarchy()
+
+    # Also dump the analyzer_layout and panel1_layout hierarchies
+    #print("\n=== Analyzer Layout Dump ===")
+    #analyzer_layout.dump()
+    #print("\n=== Panel1 Layout Dump ===")
+    #panel1_layout.dump()
+
+    lg_group.findGuideBetween(analyzer_layout,panel1_layout).proportion = 0.65
+    lg_group.findGuideBetween(panel3_layout,panel1_layout).proportion = 0.65
     
 ###############################################################################
 

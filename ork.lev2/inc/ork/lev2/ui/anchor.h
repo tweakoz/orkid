@@ -15,16 +15,16 @@ namespace ork::ui::anchor {
 
 /////////////////////////////////////////////////////////////////////////
 
-enum class Edge { //
-  BaseLine = 0,
-  Top,
-  Left,
-  Bottom,
-  Right,
-  HorizontalCenter,
-  VerticalCenter,
-  CustomHorizontal,
-  CustomVertical,
+enum class Edge : crc_enum_t {
+  CrcEnum(BaseLine),
+  CrcEnum(Top),
+  CrcEnum(Left),
+  CrcEnum(Bottom),
+  CrcEnum(Right),
+  CrcEnum(HorizontalCenter),
+  CrcEnum(VerticalCenter),
+  CrcEnum(CustomHorizontal),
+  CrcEnum(CustomVertical),
 };
 
 enum class Mode { //
@@ -84,6 +84,9 @@ struct Layout {
   void dump(int level=0);
   void prune();
 
+  // Find guide between two layouts (returns nullptr if not found or ambiguous)
+  guide_ptr_t findGuideBetween(layout_ptr_t layout_a, layout_ptr_t layout_b);
+
   using visit_fn_t = std::function<void(Layout* l)>;
   using guide_visit_fn = std::function<void(Guide* g)>;
 
@@ -115,10 +118,10 @@ struct Layout {
 
 /////////////////////////////////////////////////////////////////////////
 
-enum class GuideType : uint64_t {
-  FIXED = 0,
-  PROPORTIONAL,
-  NONE
+enum class GuideType : crc_enum_t {
+  CrcEnum(FIXED),
+  CrcEnum(PROPORTIONAL),
+  CrcEnum(NONE)
 };
 
 struct Guide {
@@ -140,6 +143,20 @@ struct Guide {
   void _associate(Guide* other);
   float sortKey() const;
   void dump(int level=0);
+
+  // Programmatic control API
+  void setProportion(float new_proportion);
+  void setFixed(int new_fixed);
+  void lock() { _locked = true; }
+  void unlock() { _locked = false; }
+
+  // Query API
+  float getProportion() const { return _proportion; }
+  int getFixed() const { return _fixed; }
+  GuideType getType() const { return _type; }
+  bool isLocked() const { return _locked; }
+  Edge getEdge() const { return _edge; }
+  int getMargin() const { return _margin; }
 
   std::set<Guide*> _associates;
   int _name         = -1;

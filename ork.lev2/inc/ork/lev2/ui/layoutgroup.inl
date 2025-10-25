@@ -214,6 +214,13 @@ struct LayoutGroup : public Group {
   void replaceChild(anchor::layout_ptr_t ch, layoutitem_ptr_t rep);
   const std::set<uiguide_ptr_t>& horizontalGuides() const;
   const std::set<uiguide_ptr_t>& verticalGuides() const;
+
+  // Find guide between two layouts (returns nullptr if not found or ambiguous)
+  anchor::guide_ptr_t findGuideBetween(anchor::layout_ptr_t layout_a, anchor::layout_ptr_t layout_b);
+
+  // Comprehensive dump of layout hierarchy and guides
+  void dumpLayoutHierarchy();
+
   HandlerResult OnUiEvent(event_constptr_t ev);
   //////////////////////////////////////
   anchor::layout_ptr_t _layout;

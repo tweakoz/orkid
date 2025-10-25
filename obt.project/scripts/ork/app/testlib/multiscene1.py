@@ -14,8 +14,9 @@ tokens = CrcStringProxy()
 
 class MultiScene1Component(ApplicationComponent):
 
-  def __init__(self):
-    pass
+  def __init__(self,use_8k_textures=False):
+    super().__init__()
+    self.u8kt = use_8k_textures
 
   ###############################################
 
@@ -105,11 +106,11 @@ class MultiScene1Component(ApplicationComponent):
           case 0:
             sg_params.SkyboxTexPathStr = "arena"
           case 1:
-            sg_params.SkyboxTexPathStr = "pillars8k"
+            sg_params.SkyboxTexPathStr = "pillars8k" if parent.u8kt else "pillars"
           case 2:
             sg_params.SkyboxTexPathStr = "nebula"
           case 3:
-            sg_params.SkyboxTexPathStr = "futcity8k"
+            sg_params.SkyboxTexPathStr = "futcity8k" if parent.u8kt else "futcity"
         #
         self.scenegraph = lev2.scenegraph.Scene(sg_params)
         self.layer = self.scenegraph.createLayer("std_forward")

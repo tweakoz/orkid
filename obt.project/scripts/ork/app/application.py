@@ -1,3 +1,4 @@
+import signal 
 from orkengine.core import CrcString
 
 ###############################################################################

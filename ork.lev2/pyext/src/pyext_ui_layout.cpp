@@ -133,6 +133,12 @@ void pyinit_ui_layout(py::module& uimodule) {
                 layout->dump();
               })
           //////////////////////////////////
+          .def(
+              "findGuideBetween",
+              [](uilayout_ptr_t layout, uilayout_ptr_t layout_a, uilayout_ptr_t layout_b) -> uiguide_ptr_t { //
+                return layout->findGuideBetween(layout_a, layout_b);
+              })
+          //////////////////////////////////
           .def_property(
               "locked",
               [](uilayout_ptr_t layout) -> bool { //
@@ -141,49 +147,73 @@ void pyinit_ui_layout(py::module& uimodule) {
               [](uilayout_ptr_t layout, bool locked) { //
                 layout->_locked = locked;
               });
+              
   //////////////////////////////////
   type_codec->registerStdCodec<uilayout_ptr_t>(layout_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto guide_type = //
       py::class_<ui::anchor::Guide, uiguide_ptr_t>(uimodule, "Guide")
-          .def_property_readonly(
-              "margin",
-              [](uiguide_ptr_t guide) -> int { //
-                return guide->_margin;
-              })
-          .def_property_readonly(
-              "sign",
-              [](uiguide_ptr_t guide) -> int { //
-                return guide->_sign;
-              })
-          .def_property_readonly(
-              "fixed",
-              [](uiguide_ptr_t guide) -> int { //
-                return guide->_fixed;
-              })
+          //////////////////////////////////
+          // Programmatic control API
+          //////////////////////////////////
+          .def("lock", [](uiguide_ptr_t guide) { guide->lock(); })
+          .def("unlock", [](uiguide_ptr_t guide) { guide->unlock(); })
+          //////////////////////////////////
+          // Query API (properties)
           //////////////////////////////////
           .def_property(
               "proportion",
               [](uiguide_ptr_t guide) -> float { //
-                return guide->_proportion;
+                return guide->getProportion();
               },
               [](uiguide_ptr_t guide, float prop) { //
-                guide->_proportion = prop;
+                guide->setProportion(prop);
               })
+          .def_property(
+              "fixed",
+              [](uiguide_ptr_t guide) -> int { //
+                return guide->getFixed();
+              },
+              [](uiguide_ptr_t guide, int fixed) { //
+                guide->setFixed(fixed);
+              })
+          .def_property_readonly(
+              "type",
+              [](uiguide_ptr_t guide) -> crcstring_ptr_t { //
+                return std::make_shared<CrcString>(static_cast<uint64_t>(guide->getType()));
+              })
+          .def_property_readonly(
+              "locked",
+              [](uiguide_ptr_t guide) -> bool { //
+                return guide->isLocked();
+              })
+          .def_property_readonly(
+              "edge",
+              [](uiguide_ptr_t guide) -> crcstring_ptr_t { //
+                return std::make_shared<CrcString>(static_cast<uint64_t>(guide->getEdge()));
+              })
+          .def_property_readonly(
+              "margin",
+              [](uiguide_ptr_t guide) -> int { //
+                return guide->getMargin();
+              })
+          .def_property_readonly(
+              "is_vertical",
+              [](uiguide_ptr_t guide) -> bool { //
+                return guide->isVertical();
+              })
+          .def_property_readonly(
+              "is_horizontal",
+              [](uiguide_ptr_t guide) -> bool { //
+                return guide->isHorizontal();
+              })
+          //////////////////////////////////
+          // Existing methods
           //////////////////////////////////
           .def(
               "anchorTo",
               [](uiguide_ptr_t guide, uiguide_ptr_t other_guide) { //
                 guide->anchorTo(other_guide);
-              })
-          //////////////////////////////////
-          .def_property(
-              "locked",
-              [](uiguide_ptr_t guide) -> bool { //
-                return guide->_locked;
-              },
-              [](uiguide_ptr_t guide, bool locked) { //
-                guide->_locked = locked;
               });
   type_codec->registerStdCodec<uiguide_ptr_t>(guide_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -268,6 +298,16 @@ void pyinit_ui_layout(py::module& uimodule) {
               "replaceChild",
               [](uilayoutgroup_ptr_t lgrp, uilayout_ptr_t ch, uilayoutitem_ptr_t rep) { //
                 lgrp->replaceChild(ch, rep);
+              })
+          .def(
+              "findGuideBetween",
+              [](uilayoutgroup_ptr_t lgrp, uilayout_ptr_t layout_a, uilayout_ptr_t layout_b) -> uiguide_ptr_t { //
+                return lgrp->findGuideBetween(layout_a, layout_b);
+              })
+          .def(
+              "dumpLayoutHierarchy",
+              [](uilayoutgroup_ptr_t lgrp) { //
+                lgrp->dumpLayoutHierarchy();
               })
           .def(
               "makeEvTestBox",

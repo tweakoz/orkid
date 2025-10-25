@@ -324,6 +324,209 @@ const std::set<uiguide_ptr_t>& LayoutGroup::horizontalGuides() const {
 const std::set<uiguide_ptr_t>& LayoutGroup::verticalGuides() const {
   return _vguides;
 }
+//////////////////////////////////////
+
+anchor::guide_ptr_t LayoutGroup::findGuideBetween(anchor::layout_ptr_t layout_a, anchor::layout_ptr_t layout_b) {
+  anchor::guide_ptr_t found_guide = nullptr;
+
+  // First check if layouts share an edge guide directly
+  if (layout_a->_right && layout_b->_left && layout_a->_right.get() == layout_b->_left.get()) {
+    return layout_a->_right;  // Side by side (a on left, b on right)
+  }
+  if (layout_a->_left && layout_b->_right && layout_a->_left.get() == layout_b->_right.get()) {
+    return layout_a->_left;  // Side by side (a on right, b on left)
+  }
+  if (layout_a->_bottom && layout_b->_top && layout_a->_bottom.get() == layout_b->_top.get()) {
+    return layout_a->_bottom;  // Stacked (a on top, b on bottom)
+  }
+  if (layout_a->_top && layout_b->_bottom && layout_a->_top.get() == layout_b->_bottom.get()) {
+    return layout_a->_top;  // Stacked (a on bottom, b on top)
+  }
+
+  // Search horizontal guides (looking for dividers only, not shared edges)
+  for (auto& guide : _hguides) {
+    anchor::Guide* layout_a_guide = nullptr;
+    anchor::Guide* layout_b_guide = nullptr;
+
+    for (auto* assoc : guide->_associates) {
+      if (assoc->_layout == layout_a.get()) layout_a_guide = assoc;
+      if (assoc->_layout == layout_b.get()) layout_b_guide = assoc;
+    }
+
+    if (layout_a_guide && layout_b_guide) {
+      // Check if this is a divider (opposite sides) or shared edge (same side)
+      bool is_divider = false;
+      if ((layout_a_guide->_edge == anchor::Edge::Top && layout_b_guide->_edge == anchor::Edge::Bottom) ||
+          (layout_a_guide->_edge == anchor::Edge::Bottom && layout_b_guide->_edge == anchor::Edge::Top)) {
+        is_divider = true;
+      }
+
+      if (is_divider) {
+        if (found_guide != nullptr) {
+          return nullptr;  // Ambiguous - multiple guides
+        }
+        found_guide = guide;
+      }
+    }
+  }
+
+  // Search vertical guides (looking for dividers only, not shared edges)
+  for (auto& guide : _vguides) {
+    anchor::Guide* layout_a_guide = nullptr;
+    anchor::Guide* layout_b_guide = nullptr;
+
+    for (auto* assoc : guide->_associates) {
+      if (assoc->_layout == layout_a.get()) {
+        layout_a_guide = assoc;
+      }
+      if (assoc->_layout == layout_b.get()) {
+        layout_b_guide = assoc;
+      }
+    }
+
+    if (layout_a_guide && layout_b_guide) {
+      // Check if this is a divider (opposite sides) or shared edge (same side)
+      bool is_divider = false;
+      if ((layout_a_guide->_edge == anchor::Edge::Left && layout_b_guide->_edge == anchor::Edge::Right) ||
+          (layout_a_guide->_edge == anchor::Edge::Right && layout_b_guide->_edge == anchor::Edge::Left)) {
+        is_divider = true;
+      }
+
+      if (is_divider) {
+        if (found_guide != nullptr) {
+          return nullptr;  // Ambiguous - multiple guides
+        }
+        found_guide = guide;
+      }
+    }
+  }
+
+  return found_guide;
+}
+//////////////////////////////////////
+void LayoutGroup::dumpLayoutHierarchy() {
+  printf("\n");
+  printf("================================================================================\n");
+  printf("  LAYOUT HIERARCHY DUMP\n");
+  printf("  LayoutGroup: %s <%p>\n", _name.c_str(), (void*)this);
+  printf("================================================================================\n\n");
+
+  std::unordered_set<void*> visited_guides;
+  std::unordered_map<void*, int> guide_ids;
+  int next_guide_id = 1;
+
+  // Helper to get/assign guide ID
+  auto get_guide_id = [&](void* ptr) -> int {
+    if (guide_ids.find(ptr) == guide_ids.end()) {
+      guide_ids[ptr] = next_guide_id++;
+    }
+    return guide_ids[ptr];
+  };
+
+  // Helper to dump a guide
+  auto dump_guide = [&](const char* label, anchor::guide_ptr_t guide, int indent, bool show_associates = true) {
+    if (!guide) return;
+
+    std::string ind(indent * 2, ' ');
+    void* guide_ptr = (void*)guide.get();
+    int gid = get_guide_id(guide_ptr);
+
+    const char* type_str = "UNKNOWN";
+    if (guide->_type == anchor::GuideType::PROPORTIONAL) type_str = "PROPORTIONAL";
+    else if (guide->_type == anchor::GuideType::FIXED) type_str = "FIXED";
+
+    const char* edge_str = "UNKNOWN";
+    if (guide->_edge == anchor::Edge::Top) edge_str = "Top";
+    else if (guide->_edge == anchor::Edge::Left) edge_str = "Left";
+    else if (guide->_edge == anchor::Edge::Bottom) edge_str = "Bottom";
+    else if (guide->_edge == anchor::Edge::Right) edge_str = "Right";
+    else if (guide->_edge == anchor::Edge::CustomVertical) edge_str = "CustomVert";
+    else if (guide->_edge == anchor::Edge::CustomHorizontal) edge_str = "CustomHorz";
+
+    printf("%s%-8s [G%d] <%p>\n", ind.c_str(), label, gid, guide_ptr);
+    printf("%s          edge=%-12s type=%-12s prop=%.3f fixed=%d locked=%d\n",
+           ind.c_str(), edge_str, type_str, guide->_proportion, guide->_fixed, guide->_locked);
+
+    // Show associates if not already visited
+    if (show_associates && visited_guides.find(guide_ptr) == visited_guides.end()) {
+      visited_guides.insert(guide_ptr);
+      if (!guide->_associates.empty()) {
+        printf("%s          associates (%zu):\n", ind.c_str(), guide->_associates.size());
+        for (auto* assoc : guide->_associates) {
+          int assoc_id = get_guide_id((void*)assoc);
+          printf("%s            -> [G%d] <%p> @ Layout <%p>\n",
+                 ind.c_str(), assoc_id, (void*)assoc, (void*)assoc->_layout);
+        }
+      }
+    }
+    printf("\n");
+  };
+
+  // Helper to dump a layout
+  std::function<void(anchor::layout_ptr_t, int)> dump_layout;
+  dump_layout = [&](anchor::layout_ptr_t layout, int indent) {
+    if (!layout) return;
+
+    std::string ind(indent * 2, ' ');
+    const char* widget_name = layout->_widget ? layout->_widget->_name.c_str() : "NULL";
+
+    printf("%s┌─ LAYOUT <%p>\n", ind.c_str(), (void*)layout.get());
+    printf("%s│  widget: %s <%p>\n", ind.c_str(), widget_name, (void*)layout->_widget);
+    printf("%s│  margin: %d  locked: %d\n", ind.c_str(), layout->_margin, layout->_locked);
+    printf("%s│\n", ind.c_str());
+
+    // Dump edge guides
+    printf("%s│  Edge Guides:\n", ind.c_str());
+    dump_guide("top", layout->_top, indent + 1, false);
+    dump_guide("left", layout->_left, indent + 1, false);
+    dump_guide("bottom", layout->_bottom, indent + 1, false);
+    dump_guide("right", layout->_right, indent + 1, false);
+    if (layout->_centerH) dump_guide("centerH", layout->_centerH, indent + 1, false);
+    if (layout->_centerV) dump_guide("centerV", layout->_centerV, indent + 1, false);
+
+    // Dump custom guides
+    if (!layout->_customguides.empty()) {
+      printf("%s│  Custom Guides: %zu\n", ind.c_str(), layout->_customguides.size());
+      for (auto& guide : layout->_customguides) {
+        dump_guide("custom", guide, indent + 1);
+      }
+    }
+
+    printf("%s└─────────────────────────────────────────\n\n", ind.c_str());
+
+    // Dump child layouts
+    for (auto& child : layout->_childlayouts) {
+      dump_layout(child, indent + 1);
+    }
+  };
+
+  // Dump main layout hierarchy
+  printf("LAYOUT TREE:\n");
+  printf("────────────────────────────────────────────────────────────────────────────────\n\n");
+  dump_layout(_layout, 0);
+
+  // Dump horizontal guides collection
+  printf("\n");
+  printf("HORIZONTAL GUIDES COLLECTION (_hguides): %zu\n", _hguides.size());
+  printf("────────────────────────────────────────────────────────────────────────────────\n");
+  for (auto& guide : _hguides) {
+    dump_guide("", guide, 0);
+  }
+
+  // Dump vertical guides collection
+  printf("\n");
+  printf("VERTICAL GUIDES COLLECTION (_vguides): %zu\n", _vguides.size());
+  printf("────────────────────────────────────────────────────────────────────────────────\n");
+  for (auto& guide : _vguides) {
+    dump_guide("", guide, 0);
+  }
+
+  printf("\n");
+  printf("================================================================================\n");
+  printf("  END LAYOUT HIERARCHY DUMP\n");
+  printf("================================================================================\n\n");
+}
+//////////////////////////////////////
 namespace anchor{
   guide_ptr_t findGuidePairUnderMouse(const Layout* rootLayout, const fvec2& mousePos);
   void dragGuidePairH(guide_ptr_t guide, float deltaY);

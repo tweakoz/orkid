@@ -380,4 +380,74 @@ std::vector<guide_ptr_t> Layout::getDraggableGuides() const {
   return guides;
 }
 /////////////////////////////////////////////////////////////////////////
+
+guide_ptr_t Layout::findGuideBetween(layout_ptr_t layout_a, layout_ptr_t layout_b) {
+  guide_ptr_t found_guide = nullptr;
+
+  // First check if layouts share an edge guide directly
+  if (layout_a->_right && layout_b->_left && layout_a->_right.get() == layout_b->_left.get()) {
+    return layout_a->_right;  // Side by side (a on left, b on right)
+  }
+  if (layout_a->_left && layout_b->_right && layout_a->_left.get() == layout_b->_right.get()) {
+    return layout_a->_left;  // Side by side (a on right, b on left)
+  }
+  if (layout_a->_bottom && layout_b->_top && layout_a->_bottom.get() == layout_b->_top.get()) {
+    return layout_a->_bottom;  // Stacked (a on top, b on bottom)
+  }
+  if (layout_a->_top && layout_b->_bottom && layout_a->_top.get() == layout_b->_bottom.get()) {
+    return layout_a->_top;  // Stacked (a on bottom, b on top)
+  }
+
+  // Search all custom guides in this layout (looking for dividers only, not shared edges)
+  for (auto& guide : _customguides) {
+    Guide* layout_a_guide = nullptr;
+    Guide* layout_b_guide = nullptr;
+
+    // Check if guide has associates from both layouts
+    for (auto* assoc : guide->_associates) {
+      if (assoc->_layout == layout_a.get()) layout_a_guide = assoc;
+      if (assoc->_layout == layout_b.get()) layout_b_guide = assoc;
+    }
+
+    // Guide is between them if both anchor to it from opposite sides
+    if (layout_a_guide && layout_b_guide) {
+      bool is_divider = false;
+
+      // Check for vertical divider (Left vs Right)
+      if ((layout_a_guide->_edge == Edge::Left && layout_b_guide->_edge == Edge::Right) ||
+          (layout_a_guide->_edge == Edge::Right && layout_b_guide->_edge == Edge::Left)) {
+        is_divider = true;
+      }
+
+      // Check for horizontal divider (Top vs Bottom)
+      if ((layout_a_guide->_edge == Edge::Top && layout_b_guide->_edge == Edge::Bottom) ||
+          (layout_a_guide->_edge == Edge::Bottom && layout_b_guide->_edge == Edge::Top)) {
+        is_divider = true;
+      }
+
+      if (is_divider) {
+        if (found_guide != nullptr) {
+          // Already found one - ambiguous case
+          return nullptr;
+        }
+        found_guide = guide;
+      }
+    }
+  }
+
+  // Recursively search child layouts
+  for (auto& child : _childlayouts) {
+    auto result = child->findGuideBetween(layout_a, layout_b);
+    if (result) {
+      if (found_guide != nullptr) {
+        // Found in multiple places - ambiguous
+        return nullptr;
+      }
+      found_guide = result;
+    }
+  }
+
+  return found_guide;  // nullptr if not found, guide_ptr if found exactly once
+}
+/////////////////////////////////////////////////////////////////////////
 } // namespace ork::ui::anchor

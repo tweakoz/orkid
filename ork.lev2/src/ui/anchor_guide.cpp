@@ -709,4 +709,117 @@ void dragGuidePairV(guide_ptr_t guide, float deltaX) {
   _dragGuideV(guide, deltaX);
 }
 /////////////////////////////////////////////////////////////////////////
+void Guide::setProportion(float new_proportion) {
+  if (_locked) return;  // Silently ignore if locked
+
+  // Convert to proportional type
+  _type = GuideType::PROPORTIONAL;
+
+  auto layout_dimensions = _layout->_widget->geometry();
+
+  // Find adjacent guides to prevent crossing
+  float min_proportion = 0.0f;
+  float max_proportion = 1.0f;
+
+  for (auto& other_guide : _layout->_customguides) {
+    if (other_guide.get() == this) continue;  // Skip self
+
+    // Only check guides of same orientation
+    if (isVertical() && other_guide->isVertical()) {
+      float other_prop = (other_guide->_type == GuideType::PROPORTIONAL)
+          ? other_guide->_proportion
+          : float(other_guide->_fixed) / float(layout_dimensions._w);
+
+      if (other_prop < _proportion && other_prop > min_proportion) {
+        min_proportion = other_prop;
+      }
+      if (other_prop > _proportion && other_prop < max_proportion) {
+        max_proportion = other_prop;
+      }
+    } else if (isHorizontal() && other_guide->isHorizontal()) {
+      float other_prop = (other_guide->_type == GuideType::PROPORTIONAL)
+          ? other_guide->_proportion
+          : float(other_guide->_fixed) / float(layout_dimensions._h);
+
+      if (other_prop < _proportion && other_prop > min_proportion) {
+        min_proportion = other_prop;
+      }
+      if (other_prop > _proportion && other_prop < max_proportion) {
+        max_proportion = other_prop;
+      }
+    }
+  }
+
+  // Add minimum spacing of 32 pixels between guides
+  if (isVertical()) {
+    float min_spacing = 32.0f / float(layout_dimensions._w);
+    min_proportion += min_spacing;
+    max_proportion -= min_spacing;
+  } else if (isHorizontal()) {
+    float min_spacing = 32.0f / float(layout_dimensions._h);
+    min_proportion += min_spacing;
+    max_proportion -= min_spacing;
+  }
+
+  // Clamp to valid range
+  new_proportion = std::max(min_proportion, std::min(max_proportion, new_proportion));
+
+  // Update and propagate changes
+  _proportion = new_proportion;
+  _layout->updateAll();
+}
+/////////////////////////////////////////////////////////////////////////
+void Guide::setFixed(int new_fixed) {
+  if (_locked) return;  // Silently ignore if locked
+
+  // Convert to fixed type
+  _type = GuideType::FIXED;
+
+  auto layout_dimensions = _layout->_widget->geometry();
+
+  // Find adjacent guides to prevent crossing
+  int min_pos = 0;
+  int max_pos = isVertical() ? layout_dimensions._w : layout_dimensions._h;
+
+  for (auto& other_guide : _layout->_customguides) {
+    if (other_guide.get() == this) continue;  // Skip self
+
+    // Only check guides of same orientation
+    if (isVertical() && other_guide->isVertical()) {
+      int other_pos = (other_guide->_type == GuideType::FIXED)
+          ? other_guide->_fixed
+          : int(other_guide->_proportion * float(layout_dimensions._w));
+
+      if (other_pos < _fixed && other_pos > min_pos) {
+        min_pos = other_pos;
+      }
+      if (other_pos > _fixed && other_pos < max_pos) {
+        max_pos = other_pos;
+      }
+    } else if (isHorizontal() && other_guide->isHorizontal()) {
+      int other_pos = (other_guide->_type == GuideType::FIXED)
+          ? other_guide->_fixed
+          : int(other_guide->_proportion * float(layout_dimensions._h));
+
+      if (other_pos < _fixed && other_pos > min_pos) {
+        min_pos = other_pos;
+      }
+      if (other_pos > _fixed && other_pos < max_pos) {
+        max_pos = other_pos;
+      }
+    }
+  }
+
+  // Add minimum spacing of 32 pixels between guides
+  min_pos += 32;
+  max_pos -= 32;
+
+  // Clamp to valid range
+  new_fixed = std::max(min_pos, std::min(max_pos, new_fixed));
+
+  // Update and propagate changes
+  _fixed = new_fixed;
+  _layout->updateAll();
+}
+/////////////////////////////////////////////////////////////////////////
 } // namespace ork::ui::anchor
