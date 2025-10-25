@@ -50,7 +50,7 @@ class ComplexMovieApp(ComponentizedApplication):
     # multiscene component (4 viewports, 3 scenes, 1 ui)
     ########################################
 
-    self.multiscene = self.addComponent("multiscene1", MultiScene1Component )
+    self.multiscene = self.addComponent("multiscene1", MultiScene1Component, show_ui_panel=True )
 
     ########################################
     # lfo drone synth component (for audio test tone)
