@@ -1,5 +1,5 @@
 import time 
-from ork.singularity import testlib
+from ork.singularity import testlib as synth_testlib
 from ork.app.application import ApplicationComponent
 
 ##############################################
@@ -14,13 +14,13 @@ class LfoDroneComponent(ApplicationComponent):
   ##############################################
 
   def _onSynthInit(self,synth):
+    self.synth = synth
+    synth_testlib.bindSynthToApp(synth,                    # synth instance
+                                 self,                     # app instance
+                                 initial_gain=-12.0,       # initial gain in dB
+                                 main_fx=self.fx_prog)     # main bus effect
 
-    testlib.bindSynthToApp(synth,                    # synth instance
-                           self,                     # app instance
-                           initial_gain=-12.0,       # initial gain in dB
-                           main_fx=self.fx_prog)     # main bus effect
-
-    self.waveprog = testlib.WaveformsProgram()
+    self.waveprog = synth_testlib.WaveformsProgram()
     P = self.waveprog.program
     synth.programbus.uiprogram = P
     mods = None

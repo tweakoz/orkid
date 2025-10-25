@@ -14,6 +14,7 @@ class ComponentizedApplication(object):
   def __init__(self):
     self.app_components = {}
     self.components_sorted = []
+    self.absolutetime = 0.0
 
   ##############################################
   # add an application component
@@ -56,9 +57,9 @@ class ComponentizedApplication(object):
   def findComponentByName(self,name):
     return self.app_components.get(name,None)
 
-  ##############################################
-  # broadcast handlers
-  ##############################################
+  #########
+  # application broadcast handlers
+  #########
 
   def onAppInit(self,initdata):
     # invoked on main thread when the application is initialized
@@ -71,6 +72,28 @@ class ComponentizedApplication(object):
     # immediately after main loop ends
     for component in self.components_sorted:
       component.onAppExit()
+
+  #########
+  # audio / synth broadcast handlers
+  #########
+
+  def onAudioInit(self,audiodev):
+    # invoked on audio thread when the audio device is initialized
+    # immediately before audio processing starts
+    # onAudioInit is called before onSynthInit
+    # onAudioInit is called before onGpuInit
+    for component in self.components_sorted:
+      component.onAudioInit(audiodev)
+      
+  def onSynthInit(self,synth):
+    # invoked on audio thread when the synth is initialized
+    # immediately before audio processing starts
+    for component in self.components_sorted:
+      component.onSynthInit(synth)
+
+  #########
+  # GPU / renderer broadcast handlers
+  #########
 
   def onGpuInit(self,ctx):
     # invoked on main thread when the GPU context is initialized
@@ -102,17 +125,9 @@ class ComponentizedApplication(object):
     for component in self.components_sorted:
       component.onGpuPostFrame(ctx)
       
-  def onAudioInit(self,audiodev):
-    # invoked on audio thread when the audio device is initialized
-    # immediately before audio processing starts
-    for component in self.components_sorted:
-      component.onAudioInit(audiodev)
-      
-  def onSynthInit(self,synth):
-    # invoked on audio thread when the synth is initialized
-    # immediately before audio processing starts
-    for component in self.components_sorted:
-      component.onSynthInit(synth)
+  #########
+  # simulation / update thread broadcast handlers
+  #########
 
   def onUpdateInit(self):
     # invoked on update thread when the update loop is initialized
@@ -122,6 +137,9 @@ class ComponentizedApplication(object):
       
   def onUpdate(self,updinfo):
     # invoked on update thread each update loop iteration
+
+    self.absolutetime = updinfo.absolutetime
+
     for component in self.components_sorted:
       component.onUpdate(updinfo) 
 

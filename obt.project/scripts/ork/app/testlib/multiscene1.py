@@ -14,14 +14,16 @@ tokens = CrcStringProxy()
 
 class MultiScene1Component(ApplicationComponent):
 
-  def __init__(self, show_ui_panel=False):
-    self.show_ui_panel = show_ui_panel
+  def __init__(self):
+    pass
 
   ###############################################
 
   def _onAppInit(self,app,initdata):
     self.ezapp = app.ezapp
     self.ezapp.topWidget.enableUiDraw()
+    lg_group = self.ezapp.topLayoutGroup
+    self.lg_group = lg_group
 
   ##############################################
 
@@ -68,12 +70,15 @@ class MultiScene1Component(ApplicationComponent):
     # make a grid of scenegraph viewports
 
     lg_group = self.ezapp.topLayoutGroup
+    self.lg_group = lg_group
     self.griditems = lg_group.makeGrid( width = 2,
                                         height = 2,
                                         margin = 4,
                                         uiclass = lev2.ui.SceneGraphViewport,
                                         args = ["box",vec4(1,0,1,1)] )
     lg_group.margin = 4
+    lg_group.clearColorGuide = vec4(1,0,1,1)    
+    
 
     ########################################################
     # create scenegraph / panels
@@ -186,22 +191,5 @@ class MultiScene1Component(ApplicationComponent):
     
     ##########################################################################
 
-    lg_group = self.ezapp.topLayoutGroup
-    lg_group.margin = 4
-    lg_group.clearColorGuide = vec4(1,0,1,1)
-
-    if self.show_ui_panel:
-      item = lg_group.makeEvTestBox( w=100, #
-                                     h=100, #
-                                     x=100, #
-                                     y=100, #
-                                     color_normal=vec4(0.75,0.75,0.75,0.5), #
-                                     color_click=vec4(0.5,0.0,0.0,0.5), #
-                                     color_doubleclick=vec4(0.5,1.0,0.5,0.5), #
-                                     color_drag=vec4(0.5,0.5,1.0,0.5), #
-                                     name="testbox1")
-      lg_group.replaceChild(self.panels[0].griditem.layout,item)
-    
-    
     self.uicontext.dumpWidgets("UI2")
     

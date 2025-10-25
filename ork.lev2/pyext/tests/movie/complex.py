@@ -1,7 +1,7 @@
 #!/usr/bin/env ork.python
 
 ################################################################################
-# lev2 sample which renders a UI with four views to the same scenegraph to a window
+# componentized application which captures a movie of a multi-scene setup with audio
 # Copyright 1996-2023, Michael T. Mayers.
 # Distributed under the MIT License
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
@@ -32,10 +32,11 @@ args = parser.parse_args()
 
 class ComplexMovieApp(ComponentizedApplication):
 
+  #########################################################
+  
   def __init__(self):
     super().__init__()
 
-    self.absolutetime = 0.0
     self.freerun = args.freerun
 
     if self.freerun:
@@ -50,7 +51,7 @@ class ComplexMovieApp(ComponentizedApplication):
     # multiscene component (4 viewports, 3 scenes, 1 ui)
     ########################################
 
-    self.multiscene = self.addComponent("multiscene1", MultiScene1Component, show_ui_panel=True )
+    self.multiscene = self.addComponent("multiscene1", MultiScene1Component )
 
     ########################################
     # lfo drone synth component (for audio test tone)
@@ -75,8 +76,8 @@ class ComplexMovieApp(ComponentizedApplication):
     # lockstep mode ?, use STREAM audio device (for movie capture)
     ########################################
 
-    W = 1280 if self.freerun else 1920
-    H = 720  if self.freerun else 1080
+    W = 1600 if self.freerun else 1920
+    H = 900  if self.freerun else 1080
 
     self.ezapp = lev2.OrkEzApp.create(
         self,
@@ -94,6 +95,25 @@ class ComplexMovieApp(ComponentizedApplication):
         height=H
     )
     
+  #########################################################
+  # hook up audio analyzer to main bus
+  #   and display in panel 0
+  #########################################################
+
+  def onGpuInit(self,ctx):
+    super().onGpuInit(ctx)
+    lg_group = self.multiscene.lg_group
+    mainbus = self.lfodrone.synth.outputBus("main")
+    mainbus_source = mainbus.createScopeSource()
+
+    analyzer_layout = lg_group.makeChild( uiclass = lev2.singularity.SpectrumAnalyzer,
+                                          args = ["MAINBUS"] )
+
+    analyzer = lg_group.getUserVar("analyzers.MAINBUS")
+    mainbus_source.connect(analyzer.sink)
+
+    panel0_layout = self.multiscene.panels[0].griditem.layout
+    lg_group.replaceChild(panel0_layout,analyzer_layout)
     
 ###############################################################################
 

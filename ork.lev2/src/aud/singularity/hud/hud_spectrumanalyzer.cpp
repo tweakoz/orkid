@@ -27,6 +27,7 @@ static auto lab2color                 = fvec3(0.5, 0.5, 0.9);
 static auto lab1color                 = fvec3(0.5, 0.5, 0.7);
 static auto gridcolor                 = fvec3(.1, .2, .4);
 static auto plotcolor                 = fvec3(.2, .4, 5);
+static constexpr float analyzer_fontscale = 0.75f;
 ///////////////////////////////////////////////////////////////////////////////
 struct FFT_Context {
   FFT_Context()
@@ -223,7 +224,7 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
         FormatString("%g dB", dB),
         ANA_X1 - 22,
         y - hud_lineheight() / 2,
-        fontscale,
+        analyzer_fontscale,
         gridcolor.x,
         gridcolor.y,
         gridcolor.z);
@@ -241,7 +242,7 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
       "midinote",
       ANA_X1 - 32,
       ycursor,
-      fontscale,
+      analyzer_fontscale,
       lab1color.x,
       lab1color.y,
       lab1color.z);
@@ -254,7 +255,7 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
       "frequency",
       ANA_X1 - 32,
       ycursor,
-      fontscale,
+      analyzer_fontscale,
       lab2color.x,
       lab2color.y,
       lab2color.z);
@@ -272,7 +273,7 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
         FormatString("%d", note),
         x - 8,
         ycursor,
-        fontscale,
+        analyzer_fontscale,
         lab1color.x,
         lab1color.y,
         lab1color.z);
@@ -285,7 +286,7 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
         FormatString("%d", int(f)),
         x - 8,
         ycursor,
-        fontscale,
+        analyzer_fontscale,
         lab2color.x,
         lab2color.y,
         lab2color.z);
