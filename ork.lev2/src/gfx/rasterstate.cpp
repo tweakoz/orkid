@@ -196,8 +196,8 @@ void RasterState::setBlendingMacro(BlendingMacro bm) {
   bool is_macro = (bm != BlendingMacro::NONE);
   _updateBlendingTechnique(is_macro);
 
-  // Also need to clear if changing between different macros
-  if(_blendingMacro != bm && is_macro && _blendingMacro != BlendingMacro::NONE){
+  // Clear impl if macro value is changing
+  if(_blendingMacro != bm){
     _impl.clear();
   }
 

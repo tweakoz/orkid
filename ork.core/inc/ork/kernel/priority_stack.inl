@@ -103,6 +103,18 @@ public:
     _invalidate_cache();
   }
 
+  ///////////////////////////////////////////////////////////////////////////////
+  // Debug: dump priorities in stack
+  ///////////////////////////////////////////////////////////////////////////////
+  void dump(const char* label = "") const {
+    printf("priority_stack<%s> size<%zu>: [", label, _stack.size());
+    for(size_t i = 0; i < _stack.size(); ++i) {
+      if(i > 0) printf(", ");
+      printf("%d", _stack[i]._priority);
+    }
+    printf("]\n");
+  }
+
 private:
 
   ///////////////////////////////////////////////////////////////////////////////
@@ -194,6 +206,19 @@ public:
   void clear() {
     _stack.clear();
     _invalidate_cache();
+  }
+
+  void dump(const char* label = "") const {
+    printf("priority_stack<%s> size<%zu>: [", label, _stack.size());
+    for(size_t i = 0; i < _stack.size(); ++i) {
+      if(i > 0) printf(", ");
+      if(_stack[i] != nullptr) {
+        printf("%d", _stack[i]->_priority);
+      } else {
+        printf("null");
+      }
+    }
+    printf("]\n");
   }
 
 private:
@@ -290,6 +315,19 @@ public:
   void clear() {
     _stack.clear();
     _invalidate_cache();
+  }
+
+  void dump(const char* label = "") const {
+    printf("priority_stack<%s> size<%zu>: [", label, _stack.size());
+    for(size_t i = 0; i < _stack.size(); ++i) {
+      if(i > 0) printf(", ");
+      if(_stack[i] != nullptr) {
+        printf("%d", _stack[i]->_priority);
+      } else {
+        printf("null");
+      }
+    }
+    printf("]\n");
   }
 
 private:
@@ -393,6 +431,20 @@ public:
   void clear() {
     _stack.clear();
     _invalidate_cache();
+  }
+
+  void dump(const char* label = "") const {
+    printf("priority_stack<%s> size<%zu>: [", label, _stack.size());
+    for(size_t i = 0; i < _stack.size(); ++i) {
+      if(i > 0) printf(", ");
+      auto locked = _stack[i].lock();
+      if(locked) {
+        printf("%d", locked->_priority);
+      } else {
+        printf("expired");
+      }
+    }
+    printf("]\n");
   }
 
 private:
