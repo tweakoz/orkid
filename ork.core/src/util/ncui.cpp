@@ -6,6 +6,8 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/util/ncui.h>
+#if defined(ENABLE_NOTCURSES_UI)
+
 #include <thread>
 #include <atomic>
 #include <cstdio>
@@ -913,3 +915,4 @@ void Group::_onInput(uint32_t c, struct ncinput ni) {
 
 
 } // namespace ork::notcurses
+#endif

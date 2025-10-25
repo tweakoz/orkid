@@ -13,6 +13,7 @@
 #include <ork/kernel/datacache.h>
 #include <ork/util/logger.h>
 #include <ork/util/shmobject.h>
+#include <ork/util/ncui.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 struct CorePythonApplication {
@@ -45,10 +46,14 @@ void pyinit_asset(py::module& module_core);
 void pyinit_opencl(py::module& module_core);
 void pyinit_ipcq(py::module& module_core);
 void pyinit_logger(py::module& module_core);
-void pyinit_ncui(py::module& module_core);
 void pyinit_opq(py::module& module_core);
 void pyinit_download(py::module& module_core);
 void pyinit_upload(py::module& module_core);
+
+#if defined(ENABLE_NOTCURSES_UI)
+void pyinit_ncui(py::module& module_core);
+#endif
+
 namespace asset::catalog {
   void pyinit_asset_catalog(py::module& module_core);
   void pyinit_asset_config(py::module& module_core);
@@ -476,10 +481,12 @@ PYBIND11_MODULE(_core, module_core) {
   ork::asset::catalog::pyinit_asset_catalog(module_core);
   ork::util::crypt::pyinit_crypt(module_core);
   
+  #if defined(ENABLE_NOTCURSES_UI)
   // Create ncui submodule
   auto ncui_module = module_core.def_submodule("ncui", "NotCurses UI Framework");
   pyinit_ncui(ncui_module);
-  
+  #endif
+
   /////////////////////////////////////////////////////////////////////////////////
   auto l2pedir = py::cast(_lev2pyexdir());
   module_core.attr("lev2_pyexdir") = l2pedir;

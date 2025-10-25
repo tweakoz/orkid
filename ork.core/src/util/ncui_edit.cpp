@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/util/ncui.h>
+#if defined(ENABLE_NOTCURSES_UI)
 #include <algorithm>
 #include <cctype>
 #include <sstream>
@@ -361,3 +362,4 @@ void BoolEdit::_toggle() {
 }
 
 } // namespace ork::notcurses 
+#endif

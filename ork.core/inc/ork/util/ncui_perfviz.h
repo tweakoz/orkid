@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ork/util/ncui.h>
+#if defined(ENABLE_NOTCURSES_UI)
 #include <ork/util/ringbuffer.inl>
 #include <ork/kernel/timer.h>
 #include <functional>
@@ -108,3 +109,4 @@ struct PerformanceVisualizerWidget : public Widget {
 using perfviz_ptr_t = std::shared_ptr<PerformanceVisualizerWidget>;
 
 } // namespace ork::notcurses 
+#endif

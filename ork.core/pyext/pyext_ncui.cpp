@@ -7,6 +7,7 @@
 
 #include "pyext.h"
 #include <ork/util/ncui.h>
+#if defined(ENABLE_NOTCURSES_UI)
 #include <ork/util/ncui_perfviz.h>
 #include <ork/kernel/opq.h>
 
@@ -734,3 +735,4 @@ void pyinit_ncui(py::module& ncui_module) {
 }
 
 } // namespace ork 
+#endif

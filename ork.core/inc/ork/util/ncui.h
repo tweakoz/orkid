@@ -1,5 +1,7 @@
 #pragma once 
+// #define ENABLE_NOTCURSES_UI
 
+#if defined(ENABLE_NOTCURSES_UI)
 #include <ork/math/cvector3.h>
 #include <ork/util/crc.h>
 #include <ork/kernel/svariant.h>
@@ -714,3 +716,4 @@ namespace ork::notcurses {
   context_ptr_t context();
 
 }
+#endif

@@ -7,6 +7,7 @@
 
 #include <ork/util/logger.h>
 #include <ork/util/ncui.h>
+#if defined(ENABLE_NOTCURSES_UI)
 #include <ork/util/ncui_perfviz.h>
 #include <ork/util/ringbuffer.inl>
 #include <thread>
@@ -574,3 +575,4 @@ void installNotCursesToBackend(LoggerBackend* backend) {
 
 ////////////////////////////////////////////////////////////////
 } // namespace ork
+#endif

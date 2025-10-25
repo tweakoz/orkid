@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/util/ncui.h>
+#if defined(ENABLE_NOTCURSES_UI)
 #include <thread>
 #include <atomic>
 #include <cstdio>
@@ -223,3 +224,4 @@ std::pair<int, int> Button::_calculateTextPosition() {
 }
 
 } // namespace ork::notcurses
+#endif

@@ -10,6 +10,7 @@
 #include <ork/kernel/timer.h>
 #include <cstdio>
 #include <unordered_set>
+#include <ork/util/ncui.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -22,6 +23,7 @@ namespace ork {
 bool _ENABLE_LOGGING = true;
 
 bool _ENABLE_NOTCURSES() {
+  #if defined(ENABLE_NOTCURSES_UI)
   static auto arg_set = get_args_set();
   std::string envvar;
   if (genviron.get("ORKID_LOG_NOTCURSES", envvar)) {
@@ -32,10 +34,13 @@ bool _ENABLE_NOTCURSES() {
   if (arg_set.find("--newlogger") != arg_set.end()) {
     return true;
   }
+  #endif
   return false;
 };
 
+#if defined(ENABLE_NOTCURSES_UI)
 void installNotCursesToBackend(LoggerBackend* backend);
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -244,9 +249,11 @@ Logger::Logger() {
     _backend->_on_perf_item      = nop_perfitem;
   }
   else{
+    #if defined(ENABLE_NOTCURSES_UI)
     if (_ENABLE_NOTCURSES()) {
       installNotCursesToBackend(_backend.get());
     }
+    #endif
   }
 
 

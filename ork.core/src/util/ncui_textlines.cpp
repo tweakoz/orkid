@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/util/ncui.h>
+#if defined(ENABLE_NOTCURSES_UI)
 #include <ork/util/logger.h>
 #include <thread>
 #include <atomic>
@@ -251,3 +252,4 @@ void TextLines::_onLayoutChanged() {
 /////////////////////////////////////////
 
 }
+#endif

@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/util/ncui.h>
+#if defined(ENABLE_NOTCURSES_UI)
 #include <thread>
 #include <atomic>
 #include <cstdio>
@@ -206,3 +207,4 @@ widget_vect_t VerticalPack::children() const {
 
 
 } // namespace ork::notcurses
+#endif

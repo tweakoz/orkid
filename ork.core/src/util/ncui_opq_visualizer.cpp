@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/util/ncui.h>
+#if defined(ENABLE_NOTCURSES_UI)
 #include <ork/kernel/opq.h>
 #include <ork/kernel/timer.h>
 #include <ork/kernel/string/deco.inl>
@@ -211,3 +212,4 @@ void OPQVisualizerWidget::_onInput(uint32_t c, struct ncinput ni) {
 }
 
 } // namespace ork::notcurses 
+#endif

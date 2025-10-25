@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/util/ncui_perfviz.h>
+#if defined(ENABLE_NOTCURSES_UI)
 #include <ork/kernel/string/deco.inl>
 #include <algorithm>
 #include <iomanip>
@@ -286,3 +287,4 @@ void PerformanceVisualizerWidget::_onInput(uint32_t c, struct ncinput ni) {
 }
 
 } // namespace ork::notcurses 
+#endif

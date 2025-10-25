@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/util/ncui.h>
+#if defined(ENABLE_NOTCURSES_UI)
 #include <thread>
 #include <atomic>
 #include <cstdio>
@@ -234,3 +235,4 @@ void VerticalSplit::setBottom(widget_ptr_t widget, widget_ptr_t parent_container
 
 
 } // namespace ork::notcurses
+#endif

@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/util/ncui_perfviz.h>
+#if defined(ENABLE_NOTCURSES_UI)
 #include <ork/kernel/string/deco.inl>
 #include <notcurses/notcurses.h>
 #include <algorithm>
@@ -102,3 +103,4 @@ std::vector<std::shared_ptr<Widget>> RootWidget::children() const {
 }
 
 } //namespace ork::notcurses {
+#endif

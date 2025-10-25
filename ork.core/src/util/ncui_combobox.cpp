@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/util/ncui.h>
+#if defined(ENABLE_NOTCURSES_UI)
 #include <thread>
 #include <atomic>
 #include <cstdio>
@@ -355,3 +356,4 @@ bool ComboBox::_isMouseInDropdown(int mouse_x, int mouse_y) const {
 
 ////////////////////////////////////////////////////////////////
 } // namespace ork::notcurses
+#endif
