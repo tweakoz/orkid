@@ -71,7 +71,7 @@ class BoilerplateSgApp(object):
     self.ezapp = OrkEzApp.create(self,ssaa=ssaa,fullscreen=fullscreen)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
-    setupUiCamera(app=self,tgt=vec3(0,0,0),eye=vec3(0,-3.5,-3.5))
+    setupUiCamera(app=self,tgt=vec3(0,0,0),eye=vec3(0,3.5,-3.5))
     self.modelinsts=[]
     self.ssaamode = False
     self.skybox = "nebula"

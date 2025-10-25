@@ -64,7 +64,7 @@ class SceneGraphApp(object):
     self.ezapp = lev2.OrkEzApp.create(self,ssaa=0,enable_always_on_top=False)
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.materials = set()
-    setupUiCamera(app=self,eye=vec3(0,-12,15),near=0.1,far=100)
+    setupUiCamera(app=self,eye=vec3(0,12,15),near=0.1,far=100)
     self.nodes=[]
     self.ssaomode = False
 

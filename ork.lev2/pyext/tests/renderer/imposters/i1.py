@@ -40,7 +40,7 @@ class ImposterApp(object):
       self.ezapp = extapp.ezapp
 
     self.extapp = extapp
-    setupUiCamera(app=self,eye=vec3(0,-1,1)*25,tgt=vec3(0,0,0))
+    setupUiCamera(app=self,eye=vec3(0,1,1)*25,tgt=vec3(0,0,0))
 
     self.is_stereo = is_stereo
     self.RENDERMODEL = "FWDPBRVRDM" if is_stereo else "ForwardPBR"
