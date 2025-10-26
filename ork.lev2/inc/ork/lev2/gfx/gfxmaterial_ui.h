@@ -147,6 +147,7 @@ protected:
 };
 
 uimaterial_ptr_t defaultUIMaterial();
+uitexmaterial_ptr_t defaultUITextureMaterial();
 
 ///////////////////////////////////////////////////////////////////////////////
 

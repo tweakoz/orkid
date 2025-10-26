@@ -18,6 +18,7 @@
 #include <ork/lev2/ui/split.h>
 #include <ork/lev2/ui/lineedit.h>
 #include <ork/lev2/ui/button.h>
+#include <ork/lev2/ui/imagebutton.h>
 #include <ork/lev2/ui/checkbox.h>
 #include <ork/lev2/ui/slider.h>
 #include <ork/lev2/ui/combobox.h>
@@ -999,6 +1000,158 @@ void pyinit_ui(py::module& module_lev2) {
                 btn->_down_color = c;
               });
   type_codec->registerStdCodec<ui::button_ptr_t>(button_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // ImageButton
+  auto imagebutton_type = //
+      py::class_<ui::ImageButton, ui::Widget, ui::imagebutton_ptr_t>(uimodule, "ImageButton")
+          .def_static(
+              "wfactory",
+              [type_codec](py::list py_args) -> ui::imagebutton_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto button       = std::make_shared<ui::ImageButton>(name);
+                return button;
+              })
+          .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto layoutitem   = lg->makeChild<ui::ImageButton>(name);
+                return layoutitem.as_shared();
+              })
+          .def_property(
+              "inactive_image",
+              [](ui::imagebutton_ptr_t btn) -> lev2::image_ptr_t { //
+                return btn->_inactive_image;
+              },
+              [](ui::imagebutton_ptr_t btn, lev2::image_ptr_t img) { //
+                btn->setInactiveImage(img);
+              })
+          .def_property(
+              "active_released_image",
+              [](ui::imagebutton_ptr_t btn) -> lev2::image_ptr_t { //
+                return btn->_active_released_image;
+              },
+              [](ui::imagebutton_ptr_t btn, lev2::image_ptr_t img) { //
+                btn->setActiveReleasedImage(img);
+              })
+          .def_property(
+              "active_pressed_image",
+              [](ui::imagebutton_ptr_t btn) -> lev2::image_ptr_t { //
+                return btn->_active_pressed_image;
+              },
+              [](ui::imagebutton_ptr_t btn, lev2::image_ptr_t img) { //
+                btn->setActivePressedImage(img);
+              })
+          .def_property(
+              "inactive_image_provider",
+              [](ui::imagebutton_ptr_t btn) -> py::object { //
+                return py::none();
+              },
+              [](ui::imagebutton_ptr_t btn, py::object provider) { //
+                if (provider.is_none()) {
+                  btn->setInactiveImageProvider(nullptr);
+                } else {
+                  auto pyprov = std::make_shared<py::object>(provider);
+                  btn->setInactiveImageProvider([pyprov]() -> lev2::image_ptr_t {
+                    py::gil_scoped_acquire acquire_gil;
+                    auto result = (*pyprov)();
+                    return result.cast<lev2::image_ptr_t>();
+                  });
+                }
+              })
+          .def_property(
+              "active_released_image_provider",
+              [](ui::imagebutton_ptr_t btn) -> py::object { //
+                return py::none();
+              },
+              [](ui::imagebutton_ptr_t btn, py::object provider) { //
+                if (provider.is_none()) {
+                  btn->setActiveReleasedImageProvider(nullptr);
+                } else {
+                  auto pyprov = std::make_shared<py::object>(provider);
+                  btn->setActiveReleasedImageProvider([pyprov]() -> lev2::image_ptr_t {
+                    py::gil_scoped_acquire acquire_gil;
+                    auto result = (*pyprov)();
+                    return result.cast<lev2::image_ptr_t>();
+                  });
+                }
+              })
+          .def_property(
+              "active_pressed_image_provider",
+              [](ui::imagebutton_ptr_t btn) -> py::object { //
+                return py::none();
+              },
+              [](ui::imagebutton_ptr_t btn, py::object provider) { //
+                if (provider.is_none()) {
+                  btn->setActivePressedImageProvider(nullptr);
+                } else {
+                  auto pyprov = std::make_shared<py::object>(provider);
+                  btn->setActivePressedImageProvider([pyprov]() -> lev2::image_ptr_t {
+                    py::gil_scoped_acquire acquire_gil;
+                    auto result = (*pyprov)();
+                    return result.cast<lev2::image_ptr_t>();
+                  });
+                }
+              })
+          .def_property(
+              "inactive_blend_mode",
+              [](ui::imagebutton_ptr_t btn) -> crcstring_ptr_t { //
+                return std::make_shared<CrcString>(uint64_t(btn->_inactive_blend_mode));
+              },
+              [](ui::imagebutton_ptr_t btn, crcstring_ptr_t bm) { //
+                btn->_inactive_blend_mode = lev2::BlendingMacro(bm->hashed());
+              })
+          .def_property(
+              "active_released_blend_mode",
+              [](ui::imagebutton_ptr_t btn) -> crcstring_ptr_t { //
+                return std::make_shared<CrcString>(uint64_t(btn->_active_released_blend_mode));
+              },
+              [](ui::imagebutton_ptr_t btn, crcstring_ptr_t bm) { //
+                btn->_active_released_blend_mode = lev2::BlendingMacro(bm->hashed());
+              })
+          .def_property(
+              "active_pressed_blend_mode",
+              [](ui::imagebutton_ptr_t btn) -> crcstring_ptr_t { //
+                return std::make_shared<CrcString>(uint64_t(btn->_active_pressed_blend_mode));
+              },
+              [](ui::imagebutton_ptr_t btn, crcstring_ptr_t bm) { //
+                btn->_active_pressed_blend_mode = lev2::BlendingMacro(bm->hashed());
+              })
+          .def_property(
+              "preserve_aspect_ratio",
+              [](ui::imagebutton_ptr_t btn) -> bool { //
+                return btn->_preserve_aspect_ratio;
+              },
+              [](ui::imagebutton_ptr_t btn, bool val) { //
+                btn->_preserve_aspect_ratio = val;
+              })
+          .def_property(
+              "bgcolor",
+              [](ui::imagebutton_ptr_t btn) -> fvec4 { //
+                return btn->_bgcolor;
+              },
+              [](ui::imagebutton_ptr_t btn, fvec4 c) { //
+                btn->_bgcolor = c;
+              })
+          .def_property(
+              "onPressed",
+              [](ui::imagebutton_ptr_t btn) -> py::object { //
+                return py::none();
+              },
+              [](ui::imagebutton_ptr_t btn, py::object callback) { //
+                if (callback.is_none()) {
+                  btn->_onPressed = nullptr;
+                } else {
+                  auto pycb       = std::make_shared<py::object>(callback);
+                  btn->_onPressed = [pycb, btn]() {
+                    py::gil_scoped_acquire acquire_gil;
+                    (*pycb)(btn);
+                  };
+                }
+              });
+  type_codec->registerStdCodec<ui::imagebutton_ptr_t>(imagebutton_type);
   /////////////////////////////////////////////////////////////////////////////////
   // Checkbox
   auto checkbox_type = //

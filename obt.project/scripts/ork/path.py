@@ -32,4 +32,6 @@ def __getattr__(name):
   	return obt_path.stage()/"cdntest"
   elif name == "singularity_data":
   	return obt_path.stage()/"share"/"singularity"
+  elif name == "effect_textures":
+  	return _root()/"ork.data"/"src"/"effect_textures"
   return None

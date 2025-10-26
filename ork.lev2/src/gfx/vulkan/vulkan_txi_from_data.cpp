@@ -83,9 +83,18 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   /////////////////////////////////////
   // Handle format conversion for macOS
   /////////////////////////////////////
-  
+
   EBufferFormat actual_dst_format = convertFormatForPlatform(tid._dst_format);
   bool needs_conversion = (actual_dst_format != tid._dst_format);
+
+  /////////////////////////////////////
+  // Calculate number of mip levels
+  /////////////////////////////////////
+
+  int num_mips = 1;
+  if (tid._autogenmips && tid._w > 1 && tid._h > 1 && !tid._initCubeTexture) {
+    num_mips = 1 + int(floor(log2(std::max(tid._w, tid._h))));
+  }
 
   /////////////////////////////////////
   // hash the image creation parameters
@@ -99,7 +108,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       tid._h,          //
       tid._d,          //
       actual_dst_format, // Use the actual format for hash
-      1,               // nummips
+      num_mips,        // nummips
       usage);          // usage
 
   /////////////////////////////////////
@@ -124,115 +133,93 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   }
 
   /////////////////////////////////////
-  // allocate a (cpuside) staging buffer
-  // this is used to copy data from the application
+  // Generate mip chain if requested
   /////////////////////////////////////
 
-  size_t src_size = tid.computeSrcSize();
-  size_t transfer_size = src_size;
-  
-  // Adjust transfer size for format conversion
-  if (needs_conversion) {
-    if (tid._dst_format == EBufferFormat::BGR8 || tid._dst_format == EBufferFormat::RGB8) {
-      // 3 components to 4 components (8-bit)
-      transfer_size = tid._w * tid._h * tid._d * 4;
-    } else if (tid._dst_format == EBufferFormat::RGB32F) {
-      // 3 components to 4 components (32-bit float)
-      transfer_size = tid._w * tid._h * tid._d * 4 * sizeof(float);
-    }
-  }
-  
-  auto poolForSize     = stagingBufferPoolForSrcOfSize(transfer_size);
-  auto staging_buffer  = poolForSize->borrowItem();
+  struct MipLevelData {
+    int width;
+    int height;
+    std::vector<uint8_t> data;
+  };
+  std::vector<MipLevelData> mip_levels;
 
-  /////////////////////////////////////
-  // asynchronously copy data from host to staging buffer
-  /////////////////////////////////////
+  if (tid._autogenmips && num_mips > 1) {
+    // Create base image from input data (after format conversion if needed)
+    auto base_image = std::make_shared<Image>();
 
-  // Debug logging for RGBA32F textures
-  if (tid._dst_format == EBufferFormat::RGBA32F && !ptex->_debugName.empty()) {
-    if(is_brdf)logchan_txidata->log("Uploading RGBA32F texture <%p:%s> size<%zux%zu> data<%p>", 
-                         (void*) ptex, ptex->_debugName.c_str(), tid._w, tid._h, tid._data);
-    // Verify data is not all zeros
-    const float* float_data = (const float*)tid._data;
-    float sum = 0.0f;
-    for (size_t i = 0; i < 16; i++) { // Check first 16 floats
-      sum += std::abs(float_data[i]);
-    }
-    if(is_brdf)logchan_txidata->log("  First 16 floats sum: %f", sum);
-  }
-
-  std::atomic<bool> staging_buffer_ready = false;
-  auto copy_op = [=,&staging_buffer_ready]() {
     if (needs_conversion) {
-      // Perform format conversion
-      void* staging_data = staging_buffer->map(0, transfer_size, 0);
-      const uint8_t* src_data = (const uint8_t*)tid._data;
-      
+      // Convert source data to platform format first
       if (tid._dst_format == EBufferFormat::BGR8) {
-        // BGR8 to BGRA8
-        uint8_t* dst = (uint8_t*)staging_data;
-        for (size_t i = 0; i < tid._w * tid._h * tid._d; i++) {
-          dst[i * 4 + 0] = src_data[i * 3 + 0]; // B
-          dst[i * 4 + 1] = src_data[i * 3 + 1]; // G
-          dst[i * 4 + 2] = src_data[i * 3 + 2]; // R
-          dst[i * 4 + 3] = 255;                 // A
+        base_image->initWithFormat(tid._w, tid._h, EBufferFormat::BGRA8);
+        const uint8_t* src = (const uint8_t*)tid._data;
+        auto dst = base_image->pixel8(0, 0);
+        for (size_t i = 0; i < tid._w * tid._h; i++) {
+          dst[i * 4 + 0] = src[i * 3 + 0]; // B
+          dst[i * 4 + 1] = src[i * 3 + 1]; // G
+          dst[i * 4 + 2] = src[i * 3 + 2]; // R
+          dst[i * 4 + 3] = 255;             // A
         }
       } else if (tid._dst_format == EBufferFormat::RGB8) {
-        // RGB8 to RGBA8
-        uint8_t* dst = (uint8_t*)staging_data;
-        for (size_t i = 0; i < tid._w * tid._h * tid._d; i++) {
-          dst[i * 4 + 0] = src_data[i * 3 + 0]; // R
-          dst[i * 4 + 1] = src_data[i * 3 + 1]; // G
-          dst[i * 4 + 2] = src_data[i * 3 + 2]; // B
-          dst[i * 4 + 3] = 255;                 // A
-        }
-      } else if (tid._dst_format == EBufferFormat::RGB32F) {
-        // RGB32F to RGBA32F
-        float* dst = (float*)staging_data;
-        const float* src = (const float*)src_data;
-        for (size_t i = 0; i < tid._w * tid._h * tid._d; i++) {
+        base_image->initWithFormat(tid._w, tid._h, EBufferFormat::RGBA8);
+        const uint8_t* src = (const uint8_t*)tid._data;
+        auto dst = base_image->pixel8(0, 0);
+        for (size_t i = 0; i < tid._w * tid._h; i++) {
           dst[i * 4 + 0] = src[i * 3 + 0]; // R
           dst[i * 4 + 1] = src[i * 3 + 1]; // G
           dst[i * 4 + 2] = src[i * 3 + 2]; // B
-          dst[i * 4 + 3] = 1.0f;           // A
+          dst[i * 4 + 3] = 255;             // A
         }
+      } else if (tid._dst_format == EBufferFormat::RGB32F) {
+        base_image->initWithFormat(tid._w, tid._h, EBufferFormat::RGBA32F);
+        const float* src = (const float*)tid._data;
+        auto dst = (float*)base_image->_data->data();
+        for (size_t i = 0; i < tid._w * tid._h; i++) {
+          dst[i * 4 + 0] = src[i * 3 + 0]; // R
+          dst[i * 4 + 1] = src[i * 3 + 1]; // G
+          dst[i * 4 + 2] = src[i * 3 + 2]; // B
+          dst[i * 4 + 3] = 1.0f;            // A
+        }
+      } else {
+        // Direct copy for formats that don't need conversion
+        base_image->initWithFormat(tid._w, tid._h, actual_dst_format);
+        std::memcpy((void*)base_image->_data->data(), tid._data, tid.computeSrcSize());
       }
-      else{
-        OrkAssert(false); // Unsupported conversion
-      }
-      staging_buffer->unmap();
     } else {
-      // Direct copy
-        if(is_brdf){
-          logchan_txidata->log(" _contextVK<%p> hash_changed<%d>  DIRECT COPY size<%zu>", (void*) _contextVK, int(hash_changed), transfer_size);
-        }
-      staging_buffer->copyFromHost(tid._data, transfer_size);
-      // Debug: verify copy for RGBA32F
-      if (tid._dst_format == EBufferFormat::RGBA32F && !ptex->_debugName.empty()) {
-        void* verify_data = staging_buffer->map(0, 64, 0); // Map first 64 bytes
-        const float* staged = (const float*)verify_data;
-        float sum = 0.0f;
-        for (size_t i = 0; i < 16; i++) {
-          sum += std::abs(staged[i]);
-        }
-        if(is_brdf)logchan_txidata->log("  Staging buffer verification sum: %f", sum);
-        staging_buffer->unmap();
+      // Direct copy - no conversion needed
+      base_image->initWithFormat(tid._w, tid._h, actual_dst_format);
+      std::memcpy((void*)base_image->_data->data(), tid._data, tid.computeSrcSize());
+    }
+
+    // Generate mip chain by downsampling
+    auto current_image = base_image;
+    for (int i = 0; i < num_mips; i++) {
+      MipLevelData level;
+      level.width = current_image->_width;
+      level.height = current_image->_height;
+      size_t data_size = current_image->_data->length();
+      level.data.resize(data_size);
+      memcpy(level.data.data(), current_image->_data->data(), data_size);
+      mip_levels.push_back(level);
+
+      // Generate next mip level if not the last
+      if (i < num_mips - 1) {
+        auto next_image = std::make_shared<Image>();
+        current_image->downsample(*next_image);
+        current_image = next_image;
       }
     }
-    staging_buffer_ready.store(true);
-  };
-  if(async){
-    ork::opq::concurrentQueue()->enqueue(copy_op);
   }
-  else{
-    copy_op();
-  }
- 
+
+  /////////////////////////////////////
+  // Setup command buffer
+  /////////////////////////////////////
 
   secondary_commandbuffer_ptr_t command_buffer;
   VkCommandBuffer vk_cmdbuf = VK_NULL_HANDLE;
   inflighttextrans_ptr_t transfer;
+
+  // Storage for staging buffers (need to keep them alive until transfer completes)
+  std::vector<vkbuffer_ptr_t> staging_buffers;
 
   /////////////////////////////////////////////////////////
   if(async){
@@ -246,45 +233,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       command_buffer = pool->borrowItem();
     });
 
-    /////////////////////////////////////
-    // create a transfer object
-    /////////////////////////////////////
-    vkseccmdbufimpl_ptr_t cmdbuf_impl;
-
-    transfer = std::make_shared<InFlightTextureTransfer>( _contextVK,     //
-                                                          staging_buffer, //
-                                                          command_buffer );
-    vktex->_inflight_transfers.insert(transfer);
-    cmdbuf_impl = command_buffer->_impl.getShared<VkSecondaryCommandBufferImpl>();
-    vk_cmdbuf = cmdbuf_impl->_vkcmdbuf;
-
     vktex->_readyForSampling = false;
-
-    /////////////////////////////////////
-    // Set up completion and cleanup callbacks
-    /////////////////////////////////////
-
-    auto tlsema         = std::make_shared<VulkanCompletionSemaphore>(this->_contextVK);
-    cmdbuf_impl->_completionSemaphore = tlsema;
-
-    // Pre-enqueue callback: capture primary CB and add to its pending_cleanup
-    cmdbuf_impl->_onPreEnqueueCallback = [command_buffer, ctx = this->_contextVK]() {
-      auto pricb = ctx->primary_cb();
-      pricb->_secondary_cmdbuffers_pending_cleanup.push_back(command_buffer);
-    };
-
-    // Cleanup callback: return CB to pool when primary CB is reset
-    cmdbuf_impl->_onCleanupCallback = [command_buffer, pool_ref = &_seccmdbufpool_xfer]() {
-      pool_ref->atomicOp([&](sseccmdbufpool_ptr_t& pool) { pool->returnItem(command_buffer); });
-    };
-
-    // Completion callback: cleanup transfer and staging buffer when GPU completes
-    tlsema->_onComplete = [=]() {
-      vktex->_inflight_transfers.erase(transfer);
-      poolForSize->returnItem(staging_buffer);
-      vktex->_readyForSampling = true;
-      //printf("free stgbuf<%p>\n", (void*)staging_buffer.get());
-    };
 
   }
   /////////////////////////////////////////////////////////
@@ -316,7 +265,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       array_layers = 6;
     }
 
-    auto VKICI   = makeVKICI(tid._w, tid._h, 1, actual_dst_format, 1); // depth is always 1 for 2D images
+    auto VKICI   = makeVKICI(tid._w, tid._h, 1, actual_dst_format, num_mips); // depth is always 1 for 2D images
     VKICI->usage = usage;
 
     // Fix the extent.depth and arrayLayers
@@ -356,6 +305,9 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
           VK_IMAGE_ASPECT_COLOR_BIT);
     }
 
+    // Set level count for all mip levels
+    IVCI->subresourceRange.levelCount = num_mips;
+
     initializeVkStruct(vktex->_imgobj->_vkimageview);
     VkResult ok = vkCreateImageView(_contextVK->_vkdevice, IVCI.get(), nullptr, &vktex->_imgobj->_vkimageview);
     OrkAssert(VK_SUCCESS == ok);
@@ -375,13 +327,13 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     ptex->_width     = tid._w;
     ptex->_height    = tid._h;
     ptex->_depth     = is_cube ? 6 : tid._d;  // Cube textures always have depth 6
-    ptex->_num_mips  = 1;
+    ptex->_num_mips  = num_mips;
 
   }
 
   /////////////////////////////////////
 
-  vktex->_vksampler = _contextVK->_sampler_base;
+  vktex->_vksampler = num_mips > 1 ? _contextVK->_sampler_per_maxlod[num_mips] : _contextVK->_sampler_base;
   vktex->_vkdescriptor_info.sampler     = vktex->_vksampler->_vksampler;
 
   vktex->_imgview_hash.init();
@@ -389,75 +341,185 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   vktex->_imgview_hash.finish();
 
   /////////////////////////////////////
-  // record transition to transfer destination (for copy)
+  // Upload each mip level
   /////////////////////////////////////
 
-  auto barrier = createImageBarrier(
-      vktex->_imgobj->_vkimage,
-      VK_IMAGE_LAYOUT_UNDEFINED,
-      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-      VkAccessFlagBits(0),
-      VK_ACCESS_TRANSFER_WRITE_BIT);
+  for (int ilevel = 0; ilevel < num_mips; ilevel++) {
+    int level_width = 0;
+    int level_height = 0;
+    const void* level_data = nullptr;
+    size_t level_data_size = 0;
 
-  // For cube textures, ensure all 6 layers are transitioned
-  if (tid._initCubeTexture) {
-    barrier->subresourceRange.layerCount = 6;
+    // Get data for this mip level
+    if (tid._autogenmips && num_mips > 1) {
+      // Use generated mip data
+      auto& mip = mip_levels[ilevel];
+      level_width = mip.width;
+      level_height = mip.height;
+      level_data = mip.data.data();
+      level_data_size = mip.data.size();
+    } else {
+      // Base level only - use original data (with conversion if needed)
+      level_width = tid._w;
+      level_height = tid._h;
+
+      if (needs_conversion) {
+        // For non-mipped textures with conversion, we still need to convert
+        // We'll use a temporary buffer
+        static thread_local std::vector<uint8_t> conversion_buffer;
+        if (tid._dst_format == EBufferFormat::BGR8) {
+          size_t pixel_count = tid._w * tid._h * tid._d;
+          conversion_buffer.resize(pixel_count * 4);
+          const uint8_t* src = (const uint8_t*)tid._data;
+          uint8_t* dst = conversion_buffer.data();
+          for (size_t i = 0; i < pixel_count; i++) {
+            dst[i * 4 + 0] = src[i * 3 + 0]; // B
+            dst[i * 4 + 1] = src[i * 3 + 1]; // G
+            dst[i * 4 + 2] = src[i * 3 + 2]; // R
+            dst[i * 4 + 3] = 255;             // A
+          }
+          level_data = conversion_buffer.data();
+          level_data_size = conversion_buffer.size();
+        } else if (tid._dst_format == EBufferFormat::RGB8) {
+          size_t pixel_count = tid._w * tid._h * tid._d;
+          conversion_buffer.resize(pixel_count * 4);
+          const uint8_t* src = (const uint8_t*)tid._data;
+          uint8_t* dst = conversion_buffer.data();
+          for (size_t i = 0; i < pixel_count; i++) {
+            dst[i * 4 + 0] = src[i * 3 + 0]; // R
+            dst[i * 4 + 1] = src[i * 3 + 1]; // G
+            dst[i * 4 + 2] = src[i * 3 + 2]; // B
+            dst[i * 4 + 3] = 255;             // A
+          }
+          level_data = conversion_buffer.data();
+          level_data_size = conversion_buffer.size();
+        } else if (tid._dst_format == EBufferFormat::RGB32F) {
+          size_t pixel_count = tid._w * tid._h * tid._d;
+          conversion_buffer.resize(pixel_count * 4 * sizeof(float));
+          const float* src = (const float*)tid._data;
+          float* dst = (float*)conversion_buffer.data();
+          for (size_t i = 0; i < pixel_count; i++) {
+            dst[i * 4 + 0] = src[i * 3 + 0]; // R
+            dst[i * 4 + 1] = src[i * 3 + 1]; // G
+            dst[i * 4 + 2] = src[i * 3 + 2]; // B
+            dst[i * 4 + 3] = 1.0f;            // A
+          }
+          level_data = conversion_buffer.data();
+          level_data_size = conversion_buffer.size();
+        } else {
+          level_data = tid._data;
+          level_data_size = tid.computeSrcSize();
+        }
+      } else {
+        level_data = tid._data;
+        level_data_size = tid.computeSrcSize();
+      }
+    }
+
+    // Allocate staging buffer for this mip level
+    auto poolForSize = stagingBufferPoolForSrcOfSize(level_data_size);
+    auto staging_buffer = poolForSize->borrowItem();
+    staging_buffer->copyFromHost(level_data, level_data_size);
+    staging_buffers.push_back(staging_buffer);
+
+    /////////////////////////////////////
+    // On first iteration: create transfer object and set up callbacks
+    /////////////////////////////////////
+    if (ilevel == 0 && async) {
+      vkseccmdbufimpl_ptr_t cmdbuf_impl;
+
+      transfer = std::make_shared<InFlightTextureTransfer>(_contextVK, staging_buffer, command_buffer);
+      vktex->_inflight_transfers.insert(transfer);
+      cmdbuf_impl = command_buffer->_impl.getShared<VkSecondaryCommandBufferImpl>();
+      vk_cmdbuf = cmdbuf_impl->_vkcmdbuf;
+
+      /////////////////////////////////////
+      // Set up completion and cleanup callbacks
+      /////////////////////////////////////
+
+      auto tlsema = std::make_shared<VulkanCompletionSemaphore>(this->_contextVK);
+      cmdbuf_impl->_completionSemaphore = tlsema;
+
+      // Pre-enqueue callback: capture primary CB and add to its pending_cleanup
+      cmdbuf_impl->_onPreEnqueueCallback = [command_buffer, ctx = this->_contextVK]() {
+        auto pricb = ctx->primary_cb();
+        pricb->_secondary_cmdbuffers_pending_cleanup.push_back(command_buffer);
+      };
+
+      // Cleanup callback: return CB to pool when primary CB is reset
+      cmdbuf_impl->_onCleanupCallback = [command_buffer, pool_ref = &_seccmdbufpool_xfer]() {
+        pool_ref->atomicOp([&](sseccmdbufpool_ptr_t& pool) { pool->returnItem(command_buffer); });
+      };
+
+      // Completion callback: cleanup transfer and staging buffers when GPU completes
+      tlsema->_onComplete = [=]() {
+        vktex->_inflight_transfers.erase(transfer);
+        // Return all staging buffers to their pools
+        for (auto& buf : staging_buffers) {
+          auto poolForSize = this->stagingBufferPoolForSrcOfSize(buf->_length);
+          poolForSize->returnItem(buf);
+        }
+        vktex->_readyForSampling = true;
+      };
+    }
+
+    // Transition this mip level to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+    auto barrier = createImageBarrier(
+        vktex->_imgobj->_vkimage,
+        VK_IMAGE_LAYOUT_UNDEFINED,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        VkAccessFlagBits(0),
+        VK_ACCESS_TRANSFER_WRITE_BIT);
+    barrier->subresourceRange.baseMipLevel = ilevel;
+    barrier->subresourceRange.levelCount = 1;
+    if (tid._initCubeTexture) {
+      barrier->subresourceRange.layerCount = 6;
+    }
+    vkCmdPipelineBarrier(
+        vk_cmdbuf,
+        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+        VK_PIPELINE_STAGE_TRANSFER_BIT,
+        0,
+        0, nullptr,
+        0, nullptr,
+        1, barrier.get());
+
+    // Copy staging buffer to this mip level
+    VkBufferImageCopy region{};
+    initializeVkStruct(region);
+    region.bufferOffset = 0;
+    region.bufferRowLength = 0;
+    region.bufferImageHeight = 0;
+    region.imageSubresource = {
+        VK_IMAGE_ASPECT_COLOR_BIT,
+        uint32_t(ilevel),
+        0,
+        tid._initCubeTexture ? 6u : uint32_t(tid._d)};
+    region.imageOffset = {0, 0, 0};
+    region.imageExtent = {uint32_t(level_width), uint32_t(level_height), 1};
+
+    vkCmdCopyBufferToImage(
+        vk_cmdbuf,
+        staging_buffer->_vkbuffer,
+        vktex->_imgobj->_vkimage,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        1,
+        &region);
+
+    // Transition this mip level to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+    barrier->oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    barrier->newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    barrier->srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    barrier->dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    vkCmdPipelineBarrier(
+        vk_cmdbuf,
+        VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+        0,
+        0, nullptr,
+        0, nullptr,
+        1, barrier.get());
   }
-
-  vkCmdPipelineBarrier(
-      vk_cmdbuf,                         //
-      VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, //
-      VK_PIPELINE_STAGE_TRANSFER_BIT,    //
-      0,                                 //
-      0,
-      nullptr, //
-      0,
-      nullptr, //
-      1,
-      barrier.get()); //
-
-  /////////////////////////////////////
-  // record transfer from staging mem to image
-  /////////////////////////////////////
-
-  VkBufferImageCopy region{};
-  initializeVkStruct(region);
-  region.bufferOffset      = 0;
-  region.bufferRowLength   = 0;
-  region.bufferImageHeight = 0;
-  region.imageSubresource  = {
-      VK_IMAGE_ASPECT_COLOR_BIT, //
-      0,
-      0,
-      tid._initCubeTexture ? 6u : uint32_t(tid._d)};  // For cube textures, copy all 6 faces
-  region.imageOffset = {0, 0, 0};
-  region.imageExtent = {uint32_t(tid._w), uint32_t(tid._h), 1};
-
-  vkCmdCopyBufferToImage(
-      vk_cmdbuf,                            //
-      staging_buffer->_vkbuffer,            //
-      vktex->_imgobj->_vkimage,             //
-      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, //
-      1,
-      &region); //
-
-  /////////////////////////////////////
-  // record transition to sampleable texture
-  /////////////////////////////////////
-
-  barrier->oldLayout     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-  barrier->newLayout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-  barrier->srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-  barrier->dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-  vkCmdPipelineBarrier(
-      vk_cmdbuf,
-      VK_PIPELINE_STAGE_TRANSFER_BIT,        // srcStageMask
-      VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, // dstStageMask
-      0, // dependencyFlags
-      0, nullptr, // memory barriers
-      0, nullptr, // buffer barriers
-      1, barrier.get()); // image barriers
 
   if(async){
     /////////////////////////////////////
@@ -465,14 +527,6 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     /////////////////////////////////////
 
     _contextVK->endRecordCommandBuffer(transfer->_command_buffer);
-
-    /////////////////////////////////////
-    // wait for the staging buffer to be ready
-    /////////////////////////////////////
-
-    while( not staging_buffer_ready.load()) {
-      std::this_thread::yield();
-    }
 
     /////////////////////////////////////
     // enqueue the command buffer for execution

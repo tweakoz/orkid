@@ -127,9 +127,7 @@ void VerticalPack::DoDraw(drawevent_constptr_t drwev) {
 
   ///////////////////////////////////
   fbi->pushScissor(scissor_x, scissor_y, scissor_w, scissor_h);
-  mtxi->PushUIMatrix();
   _drawColoredBox(drwev, _bgcolor);
-  mtxi->PopUIMatrix();
 
   for( auto c : _children ){
     c->draw(drwev);

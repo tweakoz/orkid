@@ -295,7 +295,7 @@ size_t TextureInitData::computeDstSize() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void TextureInterface::initTextureFromImage(Texture* ptex, image_ptr_t img) {
+void TextureInterface::initTextureFromImage(Texture* ptex, image_ptr_t img, bool autogenmips) {
   TextureInitData tid;
   tid._w           = img->_width;
   tid._h           = img->_height;
@@ -329,7 +329,7 @@ void TextureInterface::initTextureFromImage(Texture* ptex, image_ptr_t img) {
       OrkAssert(false); // unsupported image format
       break;
   }
-  tid._autogenmips = false;
+  tid._autogenmips = autogenmips;
   tid._allow_async = false;
   tid._data        = (const void*) img_to_use->_data->data();
   initTextureFromData(ptex, tid);

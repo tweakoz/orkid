@@ -20,6 +20,10 @@ uimaterial_ptr_t defaultUIMaterial() {
   static auto _g_uimaterial = std::make_shared<GfxMaterialUI>(lev2::contextForCurrentThread());
   return _g_uimaterial;
 }
+uitexmaterial_ptr_t defaultUITextureMaterial() {
+  static auto _g_uitexmaterial = std::make_shared<GfxMaterialUITextured>(lev2::contextForCurrentThread());
+  return _g_uitexmaterial;
+}
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -301,19 +305,10 @@ int GfxMaterialUITextured::BeginBlock(Context* pTarg, const RenderContextInstDat
   auto rcfd2 = pTarg->topRenderContextFrameData();
   OrkAssert(rcfd2);
   const auto& CPD = rcfd2->topCPD();
-  auto stereocams = CPD._stereo_cam_matrices;
-  int inumpasses = 0;
-  if(stereocams){
-    inumpasses = pTarg->FXI()->BeginBlock(hTekStereo, RCID);
-  }
-  else{
-    inumpasses = pTarg->FXI()->BeginBlock(hTek, RCID);
-  }
+  int inumpasses = pTarg->FXI()->BeginBlock(hTek, RCID);
   const fmtx4& MatMVP = pTarg->MTXI()->RefMVPMatrix();
-
   auto texture = GetTexture(ETEXDEST_DIFFUSE).mpTexture;
   OrkAssert(texture != nullptr);
-  
   pTarg->FXI()->bindParamMatrix(hTransform, MatMVP);
   pTarg->FXI()->bindParamTexture(hColorMap, texture);
   pTarg->FXI()->bindParamVect4(hModColor, pTarg->RefModColor());

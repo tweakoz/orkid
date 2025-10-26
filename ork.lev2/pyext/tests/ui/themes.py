@@ -9,7 +9,8 @@
 
 import argparse, time, os, math, sys, signal
 
-from obt import host, path
+from obt import host, path as obt_path
+from ork import path as ork_path
 
 from ork.app.application import ComponentizedApplication
 from ork.app.testlib.multiscene1 import MultiScene1Component
@@ -268,6 +269,40 @@ class ThemesTestApp(ComponentizedApplication):
 
     self.sg_picker = sg_picker_container.uservars.color_picker
     self.ui_picker = ui_picker_container.uservars.color_picker
+
+    ########################################
+    # Add button images
+    ########################################
+
+    self.button_hpack = vpack.makeChild(uiclass=lev2.ui.HorizontalPack, args=["button_images"])
+    self.button_hpack.margin = 2
+    self.button_hpack.uniform = True
+    self.button_hpack.fixed_height = 48
+    self.button_hpack.bg_color = vec4(0,0,0,1)
+    
+    button_names = ["close", "maximize", "minimize", "restore"]
+    for btn_name in button_names:
+      btn = self.button_hpack.makeChild(uiclass=lev2.ui.ImageButton, args=[f"btn_{btn_name}", btn_name])
+      match btn_name:
+        case "close":
+          btn.bgcolor = vec4(0.8, 0.2, 0.2, 1.0)
+          btn.inactive_image        = lev2.Image.createFromFile(ork_path.effect_textures/"uvmap_A.png")
+          btn.active_released_image = lev2.Image.createFromFile(ork_path.effect_textures/"uvmap_A.png")
+          btn.active_pressed_image  = lev2.Image.createFromFile(ork_path.effect_textures/"uvmap_A.png")
+        case "maximize":
+          btn.inactive_image        = lev2.Image.createFromFile(ork_path.effect_textures/"knob1.png")
+          btn.active_released_image = lev2.Image.createFromFile(ork_path.effect_textures/"knob1.png")
+          btn.active_pressed_image  = lev2.Image.createFromFile(ork_path.effect_textures/"knob1.png")
+          btn.bgcolor = vec4(0.2, 0.8, 0.2, 1.0)
+        case "minimize":
+          btn.inactive_image        = lev2.Image.createFromFile(ork_path.effect_textures/"knob2.png")
+          btn.active_released_image = lev2.Image.createFromFile(ork_path.effect_textures/"knob2.png")
+          btn.active_pressed_image  = lev2.Image.createFromFile(ork_path.effect_textures/"knob2.png")
+          btn.bgcolor = vec4(0.2, 0.2, 0.8, 1.0)
+        case "restore":
+          btn.bgcolor = vec4(0.8, 0.8, 0.2, 1.0)
+      #btn.theme = tokens.ui_tab
+    
 
     ########################################
     # Add tabs widget with themed boxes

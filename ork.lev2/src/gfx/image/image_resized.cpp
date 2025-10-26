@@ -137,6 +137,7 @@ void Image::resizedOf(const Image& inp, int w, int h) {
 
 void Image::downsample(Image& imgout) const {
   imgout.init(_width >> 1, _height >> 1, _numcomponents, _bytesPerChannel);
+  imgout._format = _format;
   for (size_t y = 0; y < imgout._height; y++) {
     size_t ya = y * 2;
     size_t yb = ya + 1;
