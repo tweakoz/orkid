@@ -50,7 +50,7 @@ class OverlayComponent(ApplicationComponent):
       top=grid_layout.offsetHorizontalGuide(g_top, 8, locked=True),
       bottom=grid_layout.offsetHorizontalGuide(g_bot, -8, locked=True),
       left=grid_layout.offsetVerticalGuide(g_lft, 8, locked=True),
-      right=grid_layout.offsetVerticalGuide(g_lft, 96, locked=True)
+      right=grid_layout.offsetVerticalGuide(g_lft, 64, locked=True)
     )
 
     left_overlay.widget.theme = tokens.sg_overlay
@@ -62,7 +62,7 @@ class OverlayComponent(ApplicationComponent):
     right_overlay.layout.setRect(
       top=grid_layout.offsetHorizontalGuide(g_top, 8, locked=True),
       bottom=grid_layout.offsetHorizontalGuide(g_bot, -8, locked=True),
-      left=grid_layout.offsetVerticalGuide(g_rht, -128, locked=True),
+      left=grid_layout.offsetVerticalGuide(g_rht, -64, locked=True),
       right=grid_layout.offsetVerticalGuide(g_rht, -8, locked=True)
     )
 
@@ -75,8 +75,8 @@ class OverlayComponent(ApplicationComponent):
     top_overlay.layout.setRect(
       top=grid_layout.offsetHorizontalGuide(g_top, 8, locked=True),
       bottom=grid_layout.offsetHorizontalGuide(g_top, 56, locked=True),
-      left=grid_layout.offsetVerticalGuide(g_lft, 104, locked=True),
-      right=grid_layout.offsetVerticalGuide(g_rht, -136, locked=True)
+      left=grid_layout.offsetVerticalGuide(g_lft, 72, locked=True),
+      right=grid_layout.offsetVerticalGuide(g_rht, -72, locked=True)
     )
 
     top_overlay.widget.theme = tokens.sg_overlay
@@ -86,10 +86,10 @@ class OverlayComponent(ApplicationComponent):
     bottom_overlay = self.lg_group.makeChild(uiclass=lev2.ui.EvTestBox, args=[f"bottom_{self.grid_index}", vec4(0.4, 0.4, 0.2, 0.9)])
 
     bottom_overlay.layout.setRect(
-      top=grid_layout.offsetHorizontalGuide(g_bot, -96, locked=True),
+      top=grid_layout.offsetHorizontalGuide(g_bot, -64, locked=True),
       bottom=grid_layout.offsetHorizontalGuide(g_bot, -8, locked=True),
-      left=grid_layout.offsetVerticalGuide(g_lft, 104, locked=True),
-      right=grid_layout.offsetVerticalGuide(g_rht, -136, locked=True)
+      left=grid_layout.offsetVerticalGuide(g_lft, 72, locked=True),
+      right=grid_layout.offsetVerticalGuide(g_rht, -72, locked=True)
     )
 
     bottom_overlay.widget.theme = tokens.sg_overlay

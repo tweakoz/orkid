@@ -31,6 +31,8 @@ Widget::Widget(const std::string& name, int x, int y, int w, int h)
   _geometry._h  = h;
   _prevGeometry = _geometry;
 
+  _uservars = std::make_shared<varmap::VarMap>();
+
   pushEventFilter<ui::NopEventFilter>();
 
   _label_font = lev2::FontMan::fontForId("i14");

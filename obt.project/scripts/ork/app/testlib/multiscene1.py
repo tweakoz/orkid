@@ -106,7 +106,7 @@ class MultiScene1Component(ApplicationComponent):
           case 0:
             sg_params.SkyboxTexPathStr = "arena"
           case 1:
-            sg_params.SkyboxTexPathStr = "cold8k" if parent.u8kt else "cold"
+            sg_params.SkyboxTexPathStr = "pillars8k" if parent.u8kt else "pillars"
           case 2:
             sg_params.SkyboxTexPathStr = "nebula"
           case 3:
@@ -129,7 +129,7 @@ class MultiScene1Component(ApplicationComponent):
         self.dst_tgt = self.cur_tgt
         self.cam_time = 1.0
         self.counter = 0
-
+        self.autocam = True
         griditem = parent.griditems[index]
         
         griditem.widget.cameraName = self.camname
@@ -144,31 +144,34 @@ class MultiScene1Component(ApplicationComponent):
       def update(self,updinfo):
         dt = updinfo.deltatime
         at = updinfo.absolutetime
+
         randgen = self.parent.upd_randgen
-        def genpos():
-          r = vec3(0)
-          r.x = randgen.uniform(-30,30)
-          r.z = randgen.uniform(-30,30)
-          r.y = randgen.uniform( 10,15)
-          return r 
-      
-        if self.counter<=0:
-          self.counter = randgen.uniform(3.0,10.0)
-          self.prv_eye = self.cur_eye
-          self.prv_tgt = self.cur_tgt
-          self.dst_eye = genpos()
-          Y = randgen.uniform(  0, self.dst_eye.y-3 )
-          self.dst_tgt = vec3(0,Y,0)
-          self.cam_time = randgen.uniform(2.0,5.0)
-          self.cam_time_base = at
-        reltime = at - self.cam_time_base
-        index = reltime / self.cam_time
-        self.cur_eye = (self.prv_eye*(1.0-index)) + (self.dst_eye*index)
-        self.cur_tgt = (self.prv_tgt*(1.0-index)) + (self.dst_tgt*index)
-        self.uicam.distance = 0.1
-        self.uicam.lookAt( self.cur_eye,
-                           self.cur_tgt,
-                           vec3(0,1,0))
+
+        if self.autocam:
+          def genpos():
+            r = vec3(0)
+            r.x = randgen.uniform(-30,30)
+            r.z = randgen.uniform(-30,30)
+            r.y = randgen.uniform( 10,15)
+            return r 
+        
+          if self.counter<=0:
+            self.counter = randgen.uniform(3.0,10.0)
+            self.prv_eye = self.cur_eye
+            self.prv_tgt = self.cur_tgt
+            self.dst_eye = genpos()
+            Y = randgen.uniform(  0, self.dst_eye.y-3 )
+            self.dst_tgt = vec3(0,Y,0)
+            self.cam_time = randgen.uniform(2.0,5.0)
+            self.cam_time_base = at
+          reltime = at - self.cam_time_base
+          index = reltime / self.cam_time
+          self.cur_eye = (self.prv_eye*(1.0-index)) + (self.dst_eye*index)
+          self.cur_tgt = (self.prv_tgt*(1.0-index)) + (self.dst_tgt*index)
+          self.uicam.distance = 0.1
+          self.uicam.lookAt( self.cur_eye,
+                             self.cur_tgt,
+                             vec3(0,1,0))
 
         self.counter -= dt
         

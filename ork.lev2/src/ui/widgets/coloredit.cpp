@@ -114,7 +114,9 @@ HandlerResult ColorEdit::DoOnUiEvent(event_constptr_t cev) {
     default:
       break;
   }
-
+  if(_onColorChanged){
+    _onColorChanged(_currentColor);
+  }
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////

@@ -14,6 +14,7 @@ from obt import host, path
 from ork.app.application import ComponentizedApplication
 from ork.app.testlib.multiscene1 import MultiScene1Component
 from _themes_overlay import OverlayComponent
+from ork.ui.color_picker import ColorPicker
 
 from orkengine.core import vec3, vec4, CrcStringProxy
 from orkengine import lev2
@@ -50,6 +51,18 @@ class ThemesTestApp(ComponentizedApplication):
 
     def on_changed(w):
       setattr(self, mode_attr, w.selected_index)
+    combo.onSelectionChanged = on_changed
+    return combo
+
+  def _createBlendCombo(self, parent, label, color, blend_attr):
+    """Helper to create a blend selection combobox"""
+    combo = parent.makeChild(uiclass=lev2.ui.ComboBox, args=[label, color, 0, 100, 0])
+    combo.setItems(["OFF", "ALPHA", "PREMA", "ADDITIVE", "ALPHA_ADDITIVE", "ALPHA_SUBTRACTIVE","INVERSE_SUBTRACTIVE","ALPHA_MODULATE","DST_MINUS_SRC"])
+    setattr(self, blend_attr, "ALPHA") 
+    combo.selected_index = 1
+
+    def on_changed(w):
+      setattr(self, blend_attr, w.selectedItem())
     combo.onSelectionChanged = on_changed
     return combo
 
@@ -147,7 +160,10 @@ class ThemesTestApp(ComponentizedApplication):
     self.custom_db.registerStyle(tokens.ui_tab, ui_tab_style)
     self.ui_tab_style = ui_tab_style
 
+    ########################################
     # Set custom theme on UI context
+    ########################################
+
     custom_theme = lev2.ui.ThemeEngine(self.custom_db)
     self.uicontext.theme_engine = custom_theme
 
@@ -157,7 +173,10 @@ class ThemesTestApp(ComponentizedApplication):
 
     lg_group = self.ezapp.topLayoutGroup
 
+    ########################################
     # Create vertical pack widget and replace top-left grid cell
+    ########################################
+
     pk1 = lg_group.makeChild(uiclass=lev2.ui.VerticalPack, args=["widget_pack"])
     grid0 = self.multiscene.griditems[0]
     lg_group.replaceChild(grid0.layout, pk1)
@@ -166,7 +185,10 @@ class ThemesTestApp(ComponentizedApplication):
     vpack.item_height = 24
     vpack.fill = True
 
+    ########################################
     # Radius sliders - SG on left, UI on right
+    ########################################
+
     hpack_radius = vpack.makeChild(uiclass=lev2.ui.HorizontalPack, args=["radius_sliders"])
     hpack_radius.margin = 2
     hpack_radius.uniform = True
@@ -177,7 +199,10 @@ class ThemesTestApp(ComponentizedApplication):
     self._createSlider(hpack_radius, "UI Radius", vec3(0.5, 0.3, 0.3), 0.0, 64.0, 16.0,
                        lambda w: setattr(self.ui_tab_style, 'corner_radius', int(w.value)))
 
+    ########################################
     # Border sliders - SG on left, UI on right
+    ########################################
+
     hpack_border = vpack.makeChild(uiclass=lev2.ui.HorizontalPack, args=["border_sliders"])
     hpack_border.margin = 2
     hpack_border.uniform = True
@@ -188,7 +213,10 @@ class ThemesTestApp(ComponentizedApplication):
     self._createSlider(hpack_border, "UI Border", vec3(0.5, 0.3, 0.3), 0.0, 10.0, 2.0,
                        lambda w: setattr(self.ui_tab_style, 'border_width', int(w.value)))
 
+    ########################################
     # Opacity sliders - SG on left, UI on right
+    ########################################
+
     hpack_opacity = vpack.makeChild(uiclass=lev2.ui.HorizontalPack, args=["opacity_sliders"])
     hpack_opacity.margin = 2
     hpack_opacity.uniform = True
@@ -199,52 +227,88 @@ class ThemesTestApp(ComponentizedApplication):
     self._createSlider(hpack_opacity, "UI Opacity", vec3(0.5, 0.3, 0.3), 0.0, 1.0, 0.9,
                        lambda w: setattr(self, 'ui_opacity', w.value))
 
-    # ColorEdit widgets - SG on left, UI on right
-    hpack_coloredit = vpack.makeChild(uiclass=lev2.ui.HorizontalPack, args=["color_edits"])
-    hpack_coloredit.margin = 2
-    hpack_coloredit.uniform = True
-    hpack_coloredit.fixed_height = 128
-
-    self.sg_coloredit = hpack_coloredit.makeChild(uiclass=lev2.ui.ColorEdit, args=["SG Color", vec4(0.2, 0.3, 0.4, 0.85)])
-    self.ui_coloredit = hpack_coloredit.makeChild(uiclass=lev2.ui.ColorEdit, args=["UI Color", vec4(0.5, 0.2, 0.3, 0.9)])
-
+    ########################################
     # Add comboboxes for theme mode selection
+    ########################################
+
     hpack_modes = vpack.makeChild(uiclass=lev2.ui.HorizontalPack, args=["modes"])
     hpack_modes.margin = 2
     hpack_modes.uniform = True
 
-    self._createModeCombo(hpack_modes, "SG Mode", vec3(0.3, 0.3, 0.5), "sg_mode")
-    self._createModeCombo(hpack_modes, "UI Mode", vec3(0.5, 0.3, 0.3), "ui_mode")
+    self._createModeCombo(hpack_modes, "SG Theme", vec3(0.3, 0.3, 0.5), "sg_mode")
+    self._createModeCombo(hpack_modes, "UI Theme", vec3(0.5, 0.3, 0.3), "ui_mode")
 
+    ########################################
+    # Add comboboxes for Blend Mode selection
+    ########################################
+
+    hpack_blend = vpack.makeChild(uiclass=lev2.ui.HorizontalPack, args=["modes"])
+    hpack_blend.margin = 2
+    hpack_blend.uniform = True
+
+    self._createBlendCombo(hpack_blend, "SG Blend", vec3(0.3, 0.3, 0.5), "sg_blend")
+    self._createBlendCombo(hpack_blend, "UI Blend", vec3(0.5, 0.3, 0.3), "ui_blend")
+
+    ########################################
+    # ColorPicker widgets - SG and UI (using makeChild, side-by-side)
+    ########################################
+
+    hpack_pickers = vpack.makeChild(uiclass=lev2.ui.HorizontalPack, args=["pickers"])
+    hpack_pickers.margin = 2
+    hpack_pickers.uniform = True
+    hpack_pickers.fixed_height = 160
+    hpack_pickers.bg_color = vec4(0,0,0, 1.0)
+
+    sg_picker_container = hpack_pickers.makeChild(uiclass=ColorPicker, args=["SG_Picker", vec3(0.3, 0.3, 0.5),vec4(0.2, 0.3, 0.4, 0.85)])
+    ui_picker_container = hpack_pickers.makeChild(uiclass=ColorPicker, args=["UI_Picker", vec3(0.5, 0.3, 0.3),vec4(0.5, 0.2, 0.3, 0.9)])
+
+    ########################################
+    # Get picker instances from container's uservars (widget.makeChild returns widget directly, not layout item)
+    ########################################
+
+    self.sg_picker = sg_picker_container.uservars.color_picker
+    self.ui_picker = ui_picker_container.uservars.color_picker
+
+    ########################################
     # Add tabs widget with themed boxes
+    ########################################
+
     tabs = vpack.makeChild(uiclass=lev2.ui.TabsWidget, args=["tabs", vec3(0.3, 0.3, 0.5)])
 
     self._createThemedTab(tabs, "Tab1", vec4(0.6, 0, 0, 1), tokens.ui_tab)
     self._createThemedTab(tabs, "Tab2", vec4(0, 0.6, 0, 1), tokens.ui_tab)
     self._createThemedTab(tabs, "Tab3", vec4(0.5, 0.5, 0, 1), tokens.ui_tab)
 
+    edit_panel = self.multiscene.panels[1]
+    edit_panel.autocam = False
+    edit_panel.griditem.widget.evhandler = lambda x: self.onCameraUiEvent(x)
+
   ##############################################
 
-  def _applyModeToStyle(self, style, mode, abstime, speed, opacity, coloredit):
+  def _applyModeToStyle(self, style, mode, blendmode, abstime, speed, opacity, picker):
     """Apply color mode to a style (mode: 0=anim, 1=light, 2=dark, 3=user)"""
     if mode == 0:  # anim
       t = (math.sin(abstime * speed) + 1.0) * 0.5
       style.bg_color = vec4(0.2 + t * 0.3, 0.3 + t * 0.2, 0.4, opacity)
       style.border_color = vec4(0.5 + t * 0.4, 0.6 + t * 0.3, 0.8, opacity)
       style.text_color = vec4(1.0, 1.0, 1.0, opacity)
+      style.blend_mode = getattr(tokens, blendmode)
     elif mode == 1:  # light
       style.bg_color = vec4(0.8, 0.8, 0.8, opacity)
       style.border_color = vec4(0.0, 0.0, 0.0, opacity)
       style.text_color = vec4(0.0, 0.0, 0.0, opacity)  # Black text on light background
+      style.blend_mode = getattr(tokens, blendmode)
     elif mode == 2:  # dark
       style.bg_color = vec4(0.2, 0.2, 0.2, opacity)
       style.border_color = vec4(1.0, 1.0, 0.0, opacity)
       style.text_color = vec4(1.0, 1.0, 0.0, opacity)  # Yellow text on dark background
+      style.blend_mode = getattr(tokens, blendmode)
     elif mode == 3:  # user
-      user_color = coloredit.currentColor
+      user_color = picker.current_color
       style.bg_color = vec4(user_color.x, user_color.y, user_color.z, opacity)
       style.border_color = vec4(user_color.x * 1.5, user_color.y * 1.5, user_color.z * 1.5, opacity)
       style.text_color = vec4(1.0, 1.0, 1.0, opacity)
+      style.blend_mode = getattr(tokens, blendmode)
 
   def onGpuUpdate(self, ctx):
     super().onGpuUpdate(ctx)
@@ -252,8 +316,19 @@ class ThemesTestApp(ComponentizedApplication):
     abstime = self.absolutetime
 
     # Update styles based on their modes, opacity, and user colors
-    self._applyModeToStyle(self.sg_overlay_style, self.sg_mode, abstime, 0.5, self.sg_opacity, self.sg_coloredit)
-    self._applyModeToStyle(self.ui_tab_style, self.ui_mode, abstime, 0.7, self.ui_opacity, self.ui_coloredit)
+    self._applyModeToStyle(self.sg_overlay_style, self.sg_mode, self.sg_blend, abstime, 0.5, self.sg_opacity, self.sg_picker)
+    self._applyModeToStyle(self.ui_tab_style, self.ui_mode, self.ui_blend, abstime, 0.7, self.ui_opacity, self.ui_picker)
+
+  ##############################################
+
+  def onCameraUiEvent(self, uievent):
+    panel = self.multiscene.panels[1]
+    uicam = panel.uicam
+    handled = uicam.uiEventHandler(uievent)
+    if handled:
+      uicam.updateMatrices()
+      panel.camera.copyFrom( uicam.cameradata )
+    return lev2.ui.HandlerResult()
 
   ##############################################
 

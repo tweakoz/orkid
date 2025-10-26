@@ -9,6 +9,8 @@ namespace ork::ui {
 //  mostly used for testing, but if you need a colored box...
 ////////////////////////////////////////////////////////////////////
 
+using coloredit_lambda_t = std::function<void(fvec4)>;
+
 struct ColorEdit final : public Widget {
 public:
   ColorEdit(const std::string& name, //
@@ -37,7 +39,8 @@ public:
   float _radiusWheelInner = 0.0f;
   float _radiusCurrentRingO = 0.0f;
   float _radiusCurrentRingI = 0.0f;
-
+  coloredit_lambda_t _onColorChanged = nullptr;
+  
   const ork::lev2::FxShaderTechnique* _tekvtxcolor = nullptr;
   const ork::lev2::FxShaderTechnique* _tekmodcolor = nullptr;
   const ork::lev2::FxShaderTechnique* _tekcolorwheel = nullptr;

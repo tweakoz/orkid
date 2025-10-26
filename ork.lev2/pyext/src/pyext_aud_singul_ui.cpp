@@ -61,7 +61,7 @@ void pyinit_aud_singularity_ui(py::module& singmodule) {
             auto proxy         = std::make_shared<OSCOPE_PROXY>();
             proxy->_instrument = instrument;
             // retain scope in layout group
-            lg->_uservars.makeValueForKey<oscope_ptr_t>("oscilloscopes." + name, proxy);
+            lg->_uservars->makeValueForKey<oscope_ptr_t>("oscilloscopes." + name, proxy);
             return instrument->_layoutitem;
           });
   type_codec->registerStdCodec<oscope_ptr_t>(analyzer_type);
@@ -84,7 +84,7 @@ void pyinit_aud_singularity_ui(py::module& singmodule) {
             auto proxy         = std::make_shared<ANALYZER_PROXY>();
             proxy->_instrument = instrument;
             // retain scope in layout group
-            lg->_uservars.makeValueForKey<analyzer_ptr_t>("analyzers." + name, proxy);
+            lg->_uservars->makeValueForKey<analyzer_ptr_t>("analyzers." + name, proxy);
             return instrument->_layoutitem;
           });
   type_codec->registerStdCodec<analyzer_ptr_t>(oscope_type);
@@ -110,7 +110,7 @@ void pyinit_aud_singularity_ui(py::module& singmodule) {
             auto proxy         = std::make_shared<PROGRAMVIEW_PROXY>();
             proxy->_instrument = instrument;
             // retain scope in layout group
-            lg->_uservars.makeValueForKey<pgmviewproxy_ptr_t>("programviews." + name, proxy);
+            lg->_uservars->makeValueForKey<pgmviewproxy_ptr_t>("programviews." + name, proxy);
             return instrument->_layoutitem;
           });
   type_codec->registerStdCodec<pgmviewproxy_ptr_t>(pgmview_type);
@@ -128,7 +128,7 @@ void pyinit_aud_singularity_ui(py::module& singmodule) {
             auto proxy         = std::make_shared<PROFILERVIEW_PROXY>();
             proxy->_instrument = instrument;
             // retain scope in layout group
-            lg->_uservars.makeValueForKey<profviewproxy_ptr_t>("profilerviews." + name, proxy);
+            lg->_uservars->makeValueForKey<profviewproxy_ptr_t>("profilerviews." + name, proxy);
             return instrument->_layoutitem;
           });
   type_codec->registerStdCodec<profviewproxy_ptr_t>(profview_type);

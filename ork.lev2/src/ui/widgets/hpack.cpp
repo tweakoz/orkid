@@ -146,20 +146,28 @@ void HorizontalPack::DoDraw(drawevent_constptr_t drwev) {
   auto fbi = tgt->FBI();
   auto defmtl = lev2::defaultUIMaterial();
 
-  mtxi->PushUIMatrix();
-  mtxi->PopUIMatrix();
 
   ///////////////////////////////////
   // create scissor for content area
   ///////////////////////////////////
 
-  int scissor_x = _geometry._x;
-  int scissor_y = _geometry._y;
+  int ix1, iy1;
+  LocalToRoot(0, 0, ix1, iy1);
+  int ix2 = ix1 + _geometry._w;
+  int iy2 = iy1 + _geometry._h;
+
+  size_t num_children = _children.size();
+  int scissor_x = ix1;
+  int scissor_y = iy1;
   int scissor_w = _geometry._w+_margin;
   int scissor_h = _geometry._h+_margin;
 
   ///////////////////////////////////
   fbi->pushScissor(scissor_x, scissor_y, scissor_w, scissor_h);
+  mtxi->PushUIMatrix();
+  _drawColoredBox(drwev, _bgcolor);
+  mtxi->PopUIMatrix();
+
   for( auto c : _children ){
     c->draw(drwev);
   }

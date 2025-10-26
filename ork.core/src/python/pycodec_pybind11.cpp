@@ -70,6 +70,8 @@ py::object PyCodecImpl::encode(const varval_t& val) const {
       return py::str(as_str.value());
     } else if (auto as_np = val.tryAs<std::nullptr_t>()) {
       return py::none();
+    } else if (auto as_pyobj = val.tryAs<std::shared_ptr<py::object>>()) {
+      return *(as_pyobj.value());
     } else if (auto as_reflcodec = val.tryAs<refl_codec_adapter_ptr_t>()) {
       return as_reflcodec.value()->encode();
     } else if (auto as_vmap = val.tryAs<varmap::VarMap>()) {
@@ -141,6 +143,8 @@ py::object PyCodecImpl::encode64(const svar64_t& val) const {
       return py::str(as_str.value());
     } else if (auto as_np = val.tryAs<std::nullptr_t>()) {
       return py::none();
+    } else if (auto as_pyobj = val.tryAs<std::shared_ptr<py::object>>()) {
+      return *(as_pyobj.value());
     } else if (auto as_reflcodec = val.tryAs<refl_codec_adapter_ptr_t>()) {
       return as_reflcodec.value()->encode();
     } else if (auto as_vmap = val.tryAs<varmap::VarMap>()) {
@@ -166,9 +170,10 @@ varval_t PyCodecImpl::decode(const py::object& val) const {
       return rval;
     }
   }
-  std::cout << "BadValue: " << val.cast<std::string>() << std::endl;
-  throw std::runtime_error("pycodec-decode: unregistered type");
-  OrkAssert(false); // unknown type!
+  // Fallback: wrap unregistered Python objects as opaque py::object
+  using pyobj_ptr_t = std::shared_ptr<py::object>;
+  auto wrapped_obj = std::make_shared<py::object>(val);
+  rval.set<pyobj_ptr_t>(wrapped_obj);
   return rval;
 }
 

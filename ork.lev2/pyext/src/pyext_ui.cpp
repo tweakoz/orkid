@@ -237,14 +237,14 @@ void pyinit_ui(py::module& module_lev2) {
                 return py::none();
               },
               [](uiwidget_ptr_t widget, py::object callback) { //
-                widget->_uservars.makeValueForKey<py::object>("_hold_ev_callback", callback);
+                widget->_uservars->makeValueForKey<py::object>("_hold_ev_callback", callback);
                 widget->_evhandler = [widget](ui::event_constptr_t ev) -> ui::HandlerResult {
                   ui::HandlerResult rval;
                   EASY_BLOCK("pyui::evh1", profiler::colors::Red);
                   py::gil_scoped_acquire acquire_gil;
                   EASY_END_BLOCK;
                   EASY_BLOCK("pyui::evh2", profiler::colors::Red);
-                  auto cb = widget->_uservars.typedValueForKey<py::object>("_hold_ev_callback").value();
+                  auto cb = widget->_uservars->typedValueForKey<py::object>("_hold_ev_callback").value();
                   if (cb) {
                     auto pyrval = cb(ev);
                     if (pyrval) {
@@ -363,8 +363,8 @@ void pyinit_ui(py::module& module_lev2) {
               "getUserVar",
               [type_codec](uiwidget_ptr_t widget, std::string key) -> py::object { //
                 py::object rval;
-                if (widget->_uservars.hasKey(key)) {
-                  rval = type_codec->encode(widget->_uservars.valueForKey(key));
+                if (widget->_uservars->hasKey(key)) {
+                  rval = type_codec->encode(widget->_uservars->valueForKey(key));
                 }
                 return rval;
               })
@@ -376,6 +376,11 @@ void pyinit_ui(py::module& module_lev2) {
               },
               [](uiwidget_ptr_t widget, font_ptr_t f) { //
                 widget->_label_font = f;
+              })
+          .def_property_readonly(
+              "uservars",
+              [](uiwidget_ptr_t widget) -> varmap::varmap_ptr_t { //
+                return widget->_uservars;
               });
   type_codec->registerStdCodec<uiwidget_ptr_t>(widget_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -415,10 +420,10 @@ void pyinit_ui(py::module& module_lev2) {
               "onPostRender",
               [](uisurface_ptr_t surface, py::object callback) { //
                 OrkAssert(py::hasattr(callback, "__call__"));
-                surface->_uservars.makeValueForKey<py::object>("_hold_postrender_callback", callback);
+                surface->_uservars->makeValueForKey<py::object>("_hold_postrender_callback", callback);
                 surface->_postRenderCallback = [surface]() {
                   py::gil_scoped_acquire acquire_gil;
-                  auto cb = surface->_uservars.typedValueForKey<py::object>("_hold_postrender_callback");
+                  auto cb = surface->_uservars->typedValueForKey<py::object>("_hold_postrender_callback");
                   cb.value()();
                 };
               })
@@ -660,6 +665,13 @@ void pyinit_ui(py::module& module_lev2) {
               },
               [](ui::vpack_ptr_t vpack, bool b) { //
                 vpack->_fill = b;
+              })
+              .def_property("bg_color",
+              [](ui::vpack_ptr_t vpack) -> fvec4 { //
+                return vpack->_bgcolor;
+              },
+              [](ui::vpack_ptr_t vpack, fvec4 b) { //
+                vpack->_bgcolor = b;
               });
   type_codec->registerStdCodec<ui::vpack_ptr_t>(vpack_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -739,6 +751,14 @@ void pyinit_ui(py::module& module_lev2) {
               },
               [](ui::hpack_ptr_t hpack, bool b) { //
                 hpack->_uniform = b;
+              })
+          .def_property(
+              "bg_color",
+              [](ui::hpack_ptr_t hpack) -> fvec4 { //
+                return hpack->_bgcolor;
+              },
+              [](ui::hpack_ptr_t hpack, fvec4 b) { //
+                hpack->_bgcolor = b;
               });
   type_codec->registerStdCodec<ui::hpack_ptr_t>(hpack_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -1360,11 +1380,14 @@ void pyinit_ui(py::module& module_lev2) {
               [](ui::coloredit_ptr_t ce) -> py::object { //
                 return py::none();
               },
-              [](ui::coloredit_ptr_t ce, py::object callback) { //
-                if (callback.is_none()) {
-                  ce->_uservars.makeValueForKey<py::object>("_color_callback", py::none());
-                } else {
-                  ce->_uservars.makeValueForKey<py::object>("_color_callback", callback);
+              [type_codec](ui::coloredit_ptr_t ce, py::object callback) { //
+                if ( not callback.is_none()) {
+                  auto pycb       = std::make_shared<py::object>(callback);
+                  ce->_onColorChanged = [pycb,type_codec](fvec4 newcolor) {
+                    py::gil_scoped_acquire acquire_gil;
+                    auto encoded = type_codec->encode(newcolor);
+                    (*pycb)(encoded);
+                  };
                 }
               });
   type_codec->registerStdCodec<ui::coloredit_ptr_t>(coloredit_type);
