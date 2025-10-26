@@ -48,4 +48,6 @@ private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;
 };
 
+using coloredit_ptr_t = std::shared_ptr<ColorEdit>;
+
 } //namespace ork::ui {

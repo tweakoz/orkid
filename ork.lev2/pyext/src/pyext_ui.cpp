@@ -21,6 +21,7 @@
 #include <ork/lev2/ui/checkbox.h>
 #include <ork/lev2/ui/slider.h>
 #include <ork/lev2/ui/combobox.h>
+#include <ork/lev2/ui/coloredit.h>
 #include <ork/lev2/ui/imgview.h>
 #include <ork/lev2/ui/ged/ged_surface.h>
 #include <ork/lev2/ui/popups.inl>
@@ -1311,6 +1312,62 @@ void pyinit_ui(py::module& module_lev2) {
                 combo->_button_color = c;
               });
   type_codec->registerStdCodec<ui::combobox_ptr_t>(combobox_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // ColorEdit
+  auto coloredit_type = //
+      py::class_<ui::ColorEdit, ui::Widget, ui::coloredit_ptr_t>(uimodule, "ColorEdit")
+          .def_static(
+              "wfactory",
+              [type_codec](py::list py_args) -> ui::coloredit_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto color        = decoded_args[1].get<fvec4>();
+                auto coloredit    = std::make_shared<ui::ColorEdit>(name, color);
+                return coloredit;
+              })
+          .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto color        = decoded_args[1].get<fvec4>();
+                auto layoutitem   = lg->makeChild<ui::ColorEdit>(name, color);
+                return layoutitem.as_shared();
+              })
+          .def_property(
+              "currentColor",
+              [](ui::coloredit_ptr_t ce) -> fvec4 { //
+                return ce->_currentColor;
+              },
+              [](ui::coloredit_ptr_t ce, fvec4 c) { //
+                ce->_currentColor = c;
+                auto hsv = c.xyz().convertRgbToHsv();
+                ce->_currentColorFullBright.setHSV(hsv.x, hsv.y, 1.0);
+                ce->_hue = hsv.x;
+                ce->_saturation = hsv.y;
+                ce->_intensity = hsv.z;
+              })
+          .def_property(
+              "originalColor",
+              [](ui::coloredit_ptr_t ce) -> fvec4 { //
+                return ce->_originalColor;
+              },
+              [](ui::coloredit_ptr_t ce, fvec4 c) { //
+                ce->_originalColor = c;
+              })
+          .def_property(
+              "onColorChanged",
+              [](ui::coloredit_ptr_t ce) -> py::object { //
+                return py::none();
+              },
+              [](ui::coloredit_ptr_t ce, py::object callback) { //
+                if (callback.is_none()) {
+                  ce->_uservars.makeValueForKey<py::object>("_color_callback", py::none());
+                } else {
+                  ce->_uservars.makeValueForKey<py::object>("_color_callback", callback);
+                }
+              });
+  type_codec->registerStdCodec<ui::coloredit_ptr_t>(coloredit_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto imgview_type = //
       py::class_<ui::ImageView, ui::Widget, ui::imgview_ptr_t>(uimodule, "ImageView")

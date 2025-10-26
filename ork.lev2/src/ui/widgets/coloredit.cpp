@@ -30,6 +30,16 @@ ColorEdit::ColorEdit(
 ///////////////////////////////////////////////////////////////////////////////
 HandlerResult ColorEdit::DoOnUiEvent(event_constptr_t cev) {
   HandlerResult rval;
+
+  // Convert event coordinates to local widget space
+  int localX = 0;
+  int localY = 0;
+  RootToLocal(cev->miX, cev->miY, localX, localY);
+
+  // Calculate position relative to center
+  float centerX = float(_geometry._w) * 0.5f;
+  float centerY = float(_geometry._h) * 0.5f;
+
   switch (cev->_eventcode) {
     case EventCode::KEY_DOWN: {
       int key = cev->miKeyCode;
@@ -49,8 +59,8 @@ HandlerResult ColorEdit::DoOnUiEvent(event_constptr_t cev) {
       break;
     }
     case EventCode::DOUBLECLICK: {
-      float fx     = float(cev->miX) - float(_geometry._w >> 1);
-      float fy     = float(cev->miY) - float(_geometry._h >> 1);
+      float fx     = float(localX) - centerX;
+      float fy     = float(localY) - centerY;
       auto pos    = fvec2(fx, fy);
       float radius = pos.length();
       if( radius < _radiusWheelInner ) {
@@ -65,8 +75,8 @@ HandlerResult ColorEdit::DoOnUiEvent(event_constptr_t cev) {
       break;
     }
     case EventCode::PUSH: {
-      float fx     = float(cev->miX) - float(_geometry._w >> 1);
-      float fy     = float(cev->miY) - float(_geometry._h >> 1);
+      float fx     = float(localX) - centerX;
+      float fy     = float(localY) - centerY;
       _push_pos    = fvec2(fx, fy);
       _push_angle  = atan2f(_push_pos.y, _push_pos.x);
       _push_radius = _push_pos.length();
@@ -78,8 +88,8 @@ HandlerResult ColorEdit::DoOnUiEvent(event_constptr_t cev) {
       break;
     }
     case EventCode::DRAG: {
-      float fx        = float(cev->miX) - float(_geometry._w >> 1);
-      float fy        = float(cev->miY) - float(_geometry._h >> 1);
+      float fx        = float(localX) - centerX;
+      float fy        = float(localY) - centerY;
       auto cur_pos    = fvec2(fx, fy);
       float cur_angle = atan2f(cur_pos.y, cur_pos.x);
       float radius    = cur_pos.length();
@@ -119,8 +129,6 @@ void ColorEdit::DoDraw(drawevent_constptr_t drwev) {
   using vtx_t  = lev2::SVtxV16T16C16;
   auto& VB     = lev2::GfxEnv::GetSharedDynamicV16T16C16();
   auto RCFD = std::make_shared<lev2::RenderContextFrameData>(context);
-  auto uiMatrix = mtxi->uiMatrix(_geometry._w, _geometry._h);
-
   if (nullptr == _material) {
     _material = std::make_shared<lev2::FreestyleMaterial>();
     _material->gpuInit(context, "orkshader://ui2");
@@ -132,26 +140,35 @@ void ColorEdit::DoDraw(drawevent_constptr_t drwev) {
     _material->dump();
   }
 
-  int ix1, iy1, ix2, iy2, ixc, iyc;
-  LocalToRoot(0, 0, ix1, iy1);
-  ix2 = ix1 + _geometry._w;
-  iy2 = iy1 + _geometry._h;
-  ixc = ix1 + (_geometry._w >> 1);
-  iyc = iy1 + (_geometry._h >> 1);
+  mtxi->PushUIMatrix();
+  int vp_w = context->mainSurfaceWidth();
+  int vp_h = context->mainSurfaceHeight();
+  auto uiMatrix = mtxi->uiMatrix(vp_w, vp_h);
+  {
+    // Convert to root coordinates (standard widget pattern)
+    int ix1, iy1, ix2, iy2, ixc, iyc;
+    LocalToRoot(0, 0, ix1, iy1);
+    ix2 = ix1 + _geometry._w;
+    iy2 = iy1 + _geometry._h;
+    ixc = ix1 + (_geometry._w >> 1);
+    iyc = iy1 + (_geometry._h >> 1);
 
-  _radiusIntensRingO = (0.5f * float(_geometry._w));
-  _radiusIntensRingI = _radiusIntensRingO * 0.8;
+    // Calculate radius based on smaller dimension to fit widget bounds
+    float maxRadius = std::min(float(_geometry._w), float(_geometry._h)) * 0.5f;
 
-  _radiusWheelOuter = _radiusIntensRingI*0.95;
-  _radiusWheelInner = _radiusWheelOuter * 0.5;
+    _radiusIntensRingO = maxRadius;
+    _radiusIntensRingI = _radiusIntensRingO * 0.8f;
 
-  _radiusCurrentRingO = _radiusWheelInner * 0.9;
-  _radiusCurrentRingI = 0.0;
+    _radiusWheelOuter = _radiusIntensRingI * 0.95f;
+    _radiusWheelInner = _radiusWheelOuter * 0.5f;
 
-  /////////////////////////////////////////////////////////////////
+    _radiusCurrentRingO = _radiusWheelInner * 0.9f;
+    _radiusCurrentRingI = 0.0f;
 
-  int numquads = 180;
-  fvec3 CTR(float(ixc), float(iyc), 0.0f);
+    /////////////////////////////////////////////////////////////////
+
+    int numquads = 180;
+    fvec3 CTR(float(ixc), float(iyc), 0.0f);
   float transparency = 0.0f;
 
   /////////////////////////////////////////////////////////////////
@@ -288,6 +305,8 @@ void ColorEdit::DoDraw(drawevent_constptr_t drwev) {
   gbi->DrawPrimitiveEML(vw2, lev2::PrimitiveType::TRIANGLES);
   _material->end(RCFD);
   ///////////////////////////////
+  }
+  mtxi->PopUIMatrix();
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::ui

@@ -35,8 +35,38 @@ class ThemesTestApp(ComponentizedApplication):
 
   #########################################################
 
+  def _createSlider(self, parent, label, color, min_val, max_val, default_val, callback):
+    """Helper to create a slider with callback"""
+    slider = parent.makeChild(uiclass=lev2.ui.FloatSlider, args=[label, color, min_val, max_val, default_val])
+    slider.update_on_drag = True
+    slider.onValueChanged = callback
+    return slider
+
+  def _createModeCombo(self, parent, label, color, mode_attr):
+    """Helper to create a mode selection combobox"""
+    combo = parent.makeChild(uiclass=lev2.ui.ComboBox, args=[label, color, 0, 100, 0])
+    combo.setItems(["anim", "light", "dark", "user"])
+    setattr(self, mode_attr, 0)  # 0=anim, 1=light, 2=dark, 3=user
+
+    def on_changed(w):
+      setattr(self, mode_attr, w.selected_index)
+    combo.onSelectionChanged = on_changed
+    return combo
+
+  def _createThemedTab(self, parent, name, color, theme):
+    """Helper to create a themed tab box"""
+    tab = parent.makeChild(uiclass=lev2.ui.EvTestBox, args=[name, color])
+    tab.theme = theme
+    return tab
+
+  #########################################################
+
   def __init__(self):
     super().__init__()
+
+    # Opacity values
+    self.sg_opacity = 0.85
+    self.ui_opacity = 0.9
 
     ########################################
     # multiscene component (4 SG viewports)
@@ -99,6 +129,7 @@ class ThemesTestApp(ComponentizedApplication):
     sg_overlay_style = lev2.ui.Style()
     sg_overlay_style.bg_color = vec4(0.2, 0.3, 0.4, 0.85)
     sg_overlay_style.border_color = vec4(0.6, 0.7, 0.8, 1.0)
+    sg_overlay_style.text_color = vec4(1.0, 1.0, 1.0, 1.0)
     sg_overlay_style.corner_radius = 16
     sg_overlay_style.border_width = 2
     sg_overlay_style.blend_mode = tokens.ALPHA
@@ -109,6 +140,7 @@ class ThemesTestApp(ComponentizedApplication):
     ui_tab_style = lev2.ui.Style()
     ui_tab_style.bg_color = vec4(0.5, 0.2, 0.3, 0.9)
     ui_tab_style.border_color = vec4(0.8, 0.5, 0.6, 1.0)
+    ui_tab_style.text_color = vec4(1.0, 1.0, 1.0, 1.0)
     ui_tab_style.corner_radius = 16
     ui_tab_style.border_width = 2
     ui_tab_style.blend_mode = tokens.ALPHA
@@ -130,8 +162,8 @@ class ThemesTestApp(ComponentizedApplication):
     grid0 = self.multiscene.griditems[0]
     lg_group.replaceChild(grid0.layout, pk1)
     vpack = pk1.widget
-    vpack.margin = 4
-    vpack.item_height = 32
+    vpack.margin = 1
+    vpack.item_height = 24
     vpack.fill = True
 
     # Radius sliders - SG on left, UI on right
@@ -139,111 +171,89 @@ class ThemesTestApp(ComponentizedApplication):
     hpack_radius.margin = 2
     hpack_radius.uniform = True
 
-    sg_radius_slider = hpack_radius.makeChild(uiclass=lev2.ui.FloatSlider, args=["SG Radius", vec3(0.3, 0.3, 0.5), 0.0, 64.0, 16.0])
-    sg_radius_slider.update_on_drag = True
+    self._createSlider(hpack_radius, "SG Radius", vec3(0.3, 0.3, 0.5), 0.0, 64.0, 16.0,
+                       lambda w: setattr(self.sg_overlay_style, 'corner_radius', int(w.value)))
 
-    def on_sg_radius(w):
-      self.sg_overlay_style.corner_radius = int(w.value)
-    sg_radius_slider.onValueChanged = on_sg_radius
-
-    ui_radius_slider = hpack_radius.makeChild(uiclass=lev2.ui.FloatSlider, args=["UI Radius", vec3(0.5, 0.3, 0.3), 0.0, 64.0, 16.0])
-    ui_radius_slider.update_on_drag = True
-
-    def on_ui_radius(w):
-      self.ui_tab_style.corner_radius = int(w.value)
-    ui_radius_slider.onValueChanged = on_ui_radius
+    self._createSlider(hpack_radius, "UI Radius", vec3(0.5, 0.3, 0.3), 0.0, 64.0, 16.0,
+                       lambda w: setattr(self.ui_tab_style, 'corner_radius', int(w.value)))
 
     # Border sliders - SG on left, UI on right
     hpack_border = vpack.makeChild(uiclass=lev2.ui.HorizontalPack, args=["border_sliders"])
     hpack_border.margin = 2
     hpack_border.uniform = True
 
-    sg_border_slider = hpack_border.makeChild(uiclass=lev2.ui.FloatSlider, args=["SG Border", vec3(0.3, 0.3, 0.5), 0.0, 10.0, 2.0])
-    sg_border_slider.update_on_drag = True
+    self._createSlider(hpack_border, "SG Border", vec3(0.3, 0.3, 0.5), 0.0, 10.0, 2.0,
+                       lambda w: setattr(self.sg_overlay_style, 'border_width', int(w.value)))
 
-    def on_sg_border(w):
-      self.sg_overlay_style.border_width = int(w.value)
-    sg_border_slider.onValueChanged = on_sg_border
+    self._createSlider(hpack_border, "UI Border", vec3(0.5, 0.3, 0.3), 0.0, 10.0, 2.0,
+                       lambda w: setattr(self.ui_tab_style, 'border_width', int(w.value)))
 
-    ui_border_slider = hpack_border.makeChild(uiclass=lev2.ui.FloatSlider, args=["UI Border", vec3(0.5, 0.3, 0.3), 0.0, 10.0, 2.0])
-    ui_border_slider.update_on_drag = True
+    # Opacity sliders - SG on left, UI on right
+    hpack_opacity = vpack.makeChild(uiclass=lev2.ui.HorizontalPack, args=["opacity_sliders"])
+    hpack_opacity.margin = 2
+    hpack_opacity.uniform = True
 
-    def on_ui_border(w):
-      self.ui_tab_style.border_width = int(w.value)
-    ui_border_slider.onValueChanged = on_ui_border
+    self._createSlider(hpack_opacity, "SG Opacity", vec3(0.3, 0.3, 0.5), 0.0, 1.0, 0.85,
+                       lambda w: setattr(self, 'sg_opacity', w.value))
+
+    self._createSlider(hpack_opacity, "UI Opacity", vec3(0.5, 0.3, 0.3), 0.0, 1.0, 0.9,
+                       lambda w: setattr(self, 'ui_opacity', w.value))
+
+    # ColorEdit widgets - SG on left, UI on right
+    hpack_coloredit = vpack.makeChild(uiclass=lev2.ui.HorizontalPack, args=["color_edits"])
+    hpack_coloredit.margin = 2
+    hpack_coloredit.uniform = True
+    hpack_coloredit.fixed_height = 128
+
+    self.sg_coloredit = hpack_coloredit.makeChild(uiclass=lev2.ui.ColorEdit, args=["SG Color", vec4(0.2, 0.3, 0.4, 0.85)])
+    self.ui_coloredit = hpack_coloredit.makeChild(uiclass=lev2.ui.ColorEdit, args=["UI Color", vec4(0.5, 0.2, 0.3, 0.9)])
 
     # Add comboboxes for theme mode selection
     hpack_modes = vpack.makeChild(uiclass=lev2.ui.HorizontalPack, args=["modes"])
     hpack_modes.margin = 2
     hpack_modes.uniform = True
 
-    # SG overlay mode selector
-    sg_mode_combo = hpack_modes.makeChild(uiclass=lev2.ui.ComboBox, args=["SG Mode", vec3(0.3, 0.3, 0.5), 0, 100, 0])
-    sg_mode_combo.setItems(["anim", "light", "dark"])
-    self.sg_mode = "anim"  # Default mode
+    self._createModeCombo(hpack_modes, "SG Mode", vec3(0.3, 0.3, 0.5), "sg_mode")
+    self._createModeCombo(hpack_modes, "UI Mode", vec3(0.5, 0.3, 0.3), "ui_mode")
 
-    def on_sg_mode_changed(w):
-      self.sg_mode = w.selectedItem
-    sg_mode_combo.onSelectionChanged = on_sg_mode_changed
-
-    # UI tab mode selector
-    ui_mode_combo = hpack_modes.makeChild(uiclass=lev2.ui.ComboBox, args=["UI Mode", vec3(0.5, 0.3, 0.3), 0, 100, 0])
-    ui_mode_combo.setItems(["anim", "light", "dark"])
-    self.ui_mode = "anim"  # Default mode
-
-    def on_ui_mode_changed(w):
-      self.ui_mode = w.selectedItem
-    ui_mode_combo.onSelectionChanged = on_ui_mode_changed
-
-    # Add tabs widget
+    # Add tabs widget with themed boxes
     tabs = vpack.makeChild(uiclass=lev2.ui.TabsWidget, args=["tabs", vec3(0.3, 0.3, 0.5)])
 
-    # Add themed test boxes to tabs (all use ui_tab theme)
-    tab1_box = tabs.makeChild(uiclass=lev2.ui.EvTestBox, args=["Tab1", vec4(0.6, 0, 0, 1)])
-    tab1_box.theme = tokens.ui_tab
-
-    tab2_box = tabs.makeChild(uiclass=lev2.ui.EvTestBox, args=["Tab2", vec4(0, 0.6, 0, 1)])
-    tab2_box.theme = tokens.ui_tab
-
-    tab3_box = tabs.makeChild(uiclass=lev2.ui.EvTestBox, args=["Tab3", vec4(0.5, 0.5, 0, 1)])
-    tab3_box.theme = tokens.ui_tab
+    self._createThemedTab(tabs, "Tab1", vec4(0.6, 0, 0, 1), tokens.ui_tab)
+    self._createThemedTab(tabs, "Tab2", vec4(0, 0.6, 0, 1), tokens.ui_tab)
+    self._createThemedTab(tabs, "Tab3", vec4(0.5, 0.5, 0, 1), tokens.ui_tab)
 
   ##############################################
+
+  def _applyModeToStyle(self, style, mode, abstime, speed, opacity, coloredit):
+    """Apply color mode to a style (mode: 0=anim, 1=light, 2=dark, 3=user)"""
+    if mode == 0:  # anim
+      t = (math.sin(abstime * speed) + 1.0) * 0.5
+      style.bg_color = vec4(0.2 + t * 0.3, 0.3 + t * 0.2, 0.4, opacity)
+      style.border_color = vec4(0.5 + t * 0.4, 0.6 + t * 0.3, 0.8, opacity)
+      style.text_color = vec4(1.0, 1.0, 1.0, opacity)
+    elif mode == 1:  # light
+      style.bg_color = vec4(0.8, 0.8, 0.8, opacity)
+      style.border_color = vec4(0.0, 0.0, 0.0, opacity)
+      style.text_color = vec4(0.0, 0.0, 0.0, opacity)  # Black text on light background
+    elif mode == 2:  # dark
+      style.bg_color = vec4(0.2, 0.2, 0.2, opacity)
+      style.border_color = vec4(1.0, 1.0, 0.0, opacity)
+      style.text_color = vec4(1.0, 1.0, 0.0, opacity)  # Yellow text on dark background
+    elif mode == 3:  # user
+      user_color = coloredit.currentColor
+      style.bg_color = vec4(user_color.x, user_color.y, user_color.z, opacity)
+      style.border_color = vec4(user_color.x * 1.5, user_color.y * 1.5, user_color.z * 1.5, opacity)
+      style.text_color = vec4(1.0, 1.0, 1.0, opacity)
 
   def onGpuUpdate(self, ctx):
     super().onGpuUpdate(ctx)
 
     abstime = self.absolutetime
 
-    # Update SG overlay style based on mode
-    if self.sg_mode == "anim":
-      # Animated colors
-      t = (math.sin(abstime * 0.5) + 1.0) * 0.5
-      self.sg_overlay_style.bg_color = vec4(0.2 + t * 0.3, 0.3 + t * 0.2, 0.4, 0.85)
-      self.sg_overlay_style.border_color = vec4(0.5 + t * 0.4, 0.6 + t * 0.3, 0.8, 1.0)
-    elif self.sg_mode == "light":
-      # Black on light grey
-      self.sg_overlay_style.bg_color = vec4(0.8, 0.8, 0.8, 0.9)
-      self.sg_overlay_style.border_color = vec4(0.0, 0.0, 0.0, 1.0)
-    elif self.sg_mode == "dark":
-      # Yellow on dark grey
-      self.sg_overlay_style.bg_color = vec4(0.2, 0.2, 0.2, 0.9)
-      self.sg_overlay_style.border_color = vec4(1.0, 1.0, 0.0, 1.0)
-
-    # Update UI tab style based on mode
-    if self.ui_mode == "anim":
-      # Animated colors
-      t = (math.sin(abstime * 0.7) + 1.0) * 0.5
-      self.ui_tab_style.bg_color = vec4(0.5 + t * 0.3, 0.2 + t * 0.2, 0.3, 0.9)
-      self.ui_tab_style.border_color = vec4(0.8 + t * 0.2, 0.5 + t * 0.3, 0.6, 1.0)
-    elif self.ui_mode == "light":
-      # Black on light grey
-      self.ui_tab_style.bg_color = vec4(0.8, 0.8, 0.8, 0.9)
-      self.ui_tab_style.border_color = vec4(0.0, 0.0, 0.0, 1.0)
-    elif self.ui_mode == "dark":
-      # Yellow on dark grey
-      self.ui_tab_style.bg_color = vec4(0.2, 0.2, 0.2, 0.9)
-      self.ui_tab_style.border_color = vec4(1.0, 1.0, 0.0, 1.0)
+    # Update styles based on their modes, opacity, and user colors
+    self._applyModeToStyle(self.sg_overlay_style, self.sg_mode, abstime, 0.5, self.sg_opacity, self.sg_coloredit)
+    self._applyModeToStyle(self.ui_tab_style, self.ui_mode, abstime, 0.7, self.ui_opacity, self.ui_coloredit)
 
   ##############################################
 
