@@ -317,6 +317,14 @@ Line Guide::line(Mode mode) const {
         // Compute position from base guide + offset
         auto base_line = _offset_base->line(mode);
         float y = base_line._from.y + _offset;
+
+        // Clamp to layout bounds if enabled
+        if (_clamped) {
+          float min_y = float(rect._y);
+          float max_y = float(rect._y + rect._h);
+          y = std::clamp(y, min_y, max_y);
+        }
+
         outline._from = fvec2(rect._x, y);
         outline._to   = fvec2(rect.x2(), y);
       } else if (_proportion != 0.0f) {
@@ -337,6 +345,14 @@ Line Guide::line(Mode mode) const {
         // Compute position from base guide + offset
         auto base_line = _offset_base->line(mode);
         float x = base_line._from.x + _offset;
+
+        // Clamp to layout bounds if enabled
+        if (_clamped) {
+          float min_x = float(rect._x);
+          float max_x = float(rect._x + rect._w);
+          x = std::clamp(x, min_x, max_x);
+        }
+
         outline._from = fvec2(x, rect._y);
         outline._to   = fvec2(x, rect.y2());
       } else if (_proportion != 0.0f) {

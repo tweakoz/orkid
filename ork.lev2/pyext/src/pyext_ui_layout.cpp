@@ -197,6 +197,8 @@ void pyinit_ui_layout(py::module& uimodule) {
           //////////////////////////////////
           .def("lock", [](uiguide_ptr_t guide) { guide->lock(); })
           .def("unlock", [](uiguide_ptr_t guide) { guide->unlock(); })
+          .def("clamp", [](uiguide_ptr_t guide) { guide->clamp(); })
+          .def("unclamp", [](uiguide_ptr_t guide) { guide->unclamp(); })
           //////////////////////////////////
           // Query API (properties)
           //////////////////////////////////
@@ -215,6 +217,14 @@ void pyinit_ui_layout(py::module& uimodule) {
               },
               [](uiguide_ptr_t guide, int fixed) { //
                 guide->setFixed(fixed);
+              })
+          .def_property(
+              "clamped",
+              [](uiguide_ptr_t guide) -> bool { //
+                return guide->isClamped();
+              },
+              [](uiguide_ptr_t guide, bool c) { //
+                if (c) guide->clamp(); else guide->unclamp();
               })
           .def_property_readonly(
               "type",

@@ -108,21 +108,30 @@ HandlerResult ComboBox::DoOnUiEvent(event_constptr_t cev) {
 
       auto content = contentRect();
 
+      // Calculate button positions in local coords
+      int btn_dec_x1 = content._x + 2;
+      int btn_dec_x2 = btn_dec_x1 + BUTTON_WIDTH;
+      int btn_inc_x1 = btn_dec_x2 + 2;
+      int btn_inc_x2 = btn_inc_x1 + BUTTON_WIDTH;
+
       // Left button (−) - decrement
-      if (localX>_btn_dec_x1 && localX<_btn_dec_x2) {
+      if (localX > btn_dec_x1 && localX < btn_dec_x2) {
         _decrementSelection();
       }
       // Second left button (+) - increment
-      else if (localX>_btn_inc_x1 && localX<_btn_inc_x2) {
+      else if (localX > btn_inc_x1 && localX < btn_inc_x2) {
         _incrementSelection();
       }
       // Content area - start drag
-      else if ((localX > _btn_inc_x2) && _items.size() > 0) {
+      else if ((localX > btn_inc_x2) && _items.size() > 0) {
         _dragging = true;
         // Set selection based on proportional position
-        int text_area_width = content._w - _btn_inc_x2;
-        int text_area_x = localX - _btn_inc_x2;
-        float unit = float(text_area_x) / float(text_area_width);
+        int text_area_x1 = btn_inc_x2;
+        int text_area_x2 = content._x + content._w;
+        int text_area_width = text_area_x2 - text_area_x1;
+        if (text_area_width <= 0) text_area_width = 1;
+
+        float unit = float(localX - text_area_x1) / float(text_area_width);
         unit = std::clamp(unit, 0.0f, 1.0f);
         int new_index = int(unit * (_items.size() - 1) + 0.5f);
         if (new_index != _selected_index) {
@@ -161,10 +170,14 @@ HandlerResult ComboBox::DoOnUiEvent(event_constptr_t cev) {
       if (_dragging && _items.size() > 0) {
         auto content = contentRect();
 
+        // Calculate text area bounds in local coords
+        int text_area_x1 = content._x + (BUTTON_WIDTH * 2 + 4);
+        int text_area_x2 = content._x + content._w;
+        int text_area_width = text_area_x2 - text_area_x1;
+        if (text_area_width <= 0) text_area_width = 1;
+
         // Set selection based on proportional position
-        int text_area_width = content._w - (BUTTON_WIDTH * 2 + 4);
-        int text_area_x = localX - (BUTTON_WIDTH * 2 + 4);
-        float unit = float(text_area_x) / float(text_area_width);
+        float unit = float(localX - text_area_x1) / float(text_area_width);
         unit = std::clamp(unit, 0.0f, 1.0f);
         int new_index = int(unit * (_items.size() - 1) + 0.5f);
         if (new_index != _selected_index) {

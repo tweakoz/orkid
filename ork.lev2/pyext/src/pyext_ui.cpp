@@ -34,6 +34,7 @@ namespace ork::lev2 {
 void pyinit_ui_ged(py::module& module_ui);
 void pyinit_ui_layout(py::module& module_ui);
 void pyinit_ui_box(py::module& module_ui);
+void pyinit_ui_style(py::module& module_ui);
 
 void pyinit_ui(py::module& module_lev2) {
   auto uimodule   = module_lev2.def_submodule("ui", "ui operations");
@@ -91,7 +92,11 @@ void pyinit_ui(py::module& module_lev2) {
           .def_property(
               "debug_event_routing",
               [](ui::context_ptr_t uictx) -> bool { return uictx->_debug_event_routing; },
-              [](ui::context_ptr_t uictx, bool val) { uictx->_debug_event_routing = val; });
+              [](ui::context_ptr_t uictx, bool val) { uictx->_debug_event_routing = val; })
+          .def_property(
+              "theme_engine",
+              [](ui::context_ptr_t uictx) -> ui::themeengine_ptr_t { return uictx->_theme_engine; },
+              [](ui::context_ptr_t uictx, ui::themeengine_ptr_t engine) { uictx->_theme_engine = engine; });
   ;
   type_codec->registerStdCodec<ui::context_ptr_t>(uicontext_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -1371,6 +1376,7 @@ void pyinit_ui(py::module& module_lev2) {
   pyinit_ui_layout(uimodule);
   pyinit_ui_ged(uimodule);
   pyinit_ui_box(uimodule);
+  pyinit_ui_style(uimodule);
 }
 
 } // namespace ork::lev2

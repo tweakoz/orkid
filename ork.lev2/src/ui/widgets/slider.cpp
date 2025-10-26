@@ -123,35 +123,21 @@ HandlerResult IntSlider::DoOnUiEvent(event_constptr_t cev) {
 
     case EventCode::DRAG: {
       if (_dragging) {
-        //_update_on_drag = cev->mbCTRL;
+        auto r = contentRect();                 // local track rect
+        float L   = float(r._x);
+        float R   = float(r._x + r._w);
+        float den = R - L;
+        if (den <= 0.0f) den = 1.0f;
 
-        auto content = contentRect();
-        float slx = float(localX - _slider_x0);
-        float unit = slx / float(_slider_x1-_slider_x0);
-        if (unit < 0.0f)
-          unit = 0.0f;
-        else if (unit > 1.0f)
-          unit = 1.0f;
+        float unit = (float(localX) - L) / den; // 0..1 across the bar
+        if (unit < 0.0f) unit = 0.0f;
+        else if (unit > 1.0f) unit = 1.0f;
 
-        int new_val = _unitToVal(unit);
+        float new_val = _unitToVal(unit);       // respects linear/log modes
+        setValue(new_val);
 
-        // Right button = smoothed value change
-        if (cev->IsButton2DownF()) {
-          new_val = int(float(_value) * 0.9f + float(new_val) * 0.1f);
-        }
-
-        _value = new_val;
-        if (_value < _min)
-          _value = _min;
-        if (_value > _max)
-          _value = _max;
-
-        _value_str = std::to_string(_value);
-        _refresh();
-
-        if (_update_on_drag && _onValueChanged) {
+        if (_update_on_drag && _onValueChanged)
           _onValueChanged();
-        }
 
         rval.setHandled(this);
       }
@@ -487,49 +473,29 @@ HandlerResult FloatSlider::DoOnUiEvent(event_constptr_t cev) {
   int localX = 0;
   int localY = 0;
   RootToLocal(cev->miX, cev->miY, localX, localY);
-
   switch (cev->_eventcode) {
     case EventCode::PUSH: {
       _dragging = true;
       rval.setHandled(this);
       break;
     }
-
     case EventCode::DRAG: {
       if (_dragging) {
-        //_update_on_drag = cev->mbCTRL;
+        auto r = contentRect();                 // local track rect
+        float L   = float(r._x);
+        float R   = float(r._x + r._w);
+        float den = R - L;
+        if (den <= 0.0f) den = 1.0f;
 
-        auto content = contentRect();
+        float unit = (float(localX) - L) / den; // 0..1 across the bar
+        if (unit < 0.0f) unit = 0.0f;
+        else if (unit > 1.0f) unit = 1.0f;
 
-        float slx = float(localX - _slider_x0);
-        float unit = slx / float(_slider_x1-_slider_x0);
-        if (unit < 0.0f)
-          unit = 0.0f;
-        else if (unit > 1.0f)
-          unit = 1.0f;
+        float new_val = _unitToVal(unit);       // respects linear/log modes
+        setValue(new_val);
 
-        float new_val = _unitToVal(unit);
-
-        // Right button = smoothed value change
-        if (cev->IsButton2DownF()) {
-          new_val = _value * 0.9f + new_val * 0.1f;
-        }
-
-        _value = new_val;
-        if (_value < _min)
-          _value = _min;
-        if (_value > _max)
-          _value = _max;
-
-        char buf[64];
-        snprintf(buf, sizeof(buf), "%.4g", _value);
-        _value_str = buf;
-
-        _refresh();
-
-        if (_update_on_drag && _onValueChanged) {
+        if (_update_on_drag && _onValueChanged)
           _onValueChanged();
-        }
 
         rval.setHandled(this);
       }

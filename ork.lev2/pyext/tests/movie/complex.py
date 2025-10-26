@@ -7,7 +7,7 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import argparse, time, os
+import argparse, time, os, math
 
 from obt import host
 
@@ -135,7 +135,7 @@ class ComplexMovieApp(ComponentizedApplication):
     g_bot = panel3_layout.bottom
     g_lft = panel3_layout.left
     g_rht = panel3_layout.right
-    g_top2 = panel3_layout.offsetHorizontalGuide(g_top, 8, locked=True )
+    g_top2 = panel3_layout.offsetHorizontalGuide(g_bot, -128, locked=True )
     g_bot2 = panel3_layout.offsetHorizontalGuide(g_bot, -8, locked=True )    
     g_lft2 = panel3_layout.offsetVerticalGuide(g_lft, 8, locked=True )
     g_rhr2 = panel3_layout.offsetVerticalGuide(g_lft, 256, locked=True )    
@@ -151,7 +151,10 @@ class ComplexMovieApp(ComponentizedApplication):
     lg_panel3.widget.font_color = vec4(1,1,1,1)
     lg_panel3.widget.theme = tokens.highc_box
     self.ezapp.uicontext.debug_event_routing = True
-
+    theme_engine = self.ezapp.uicontext.theme_engine
+    styledb = theme_engine.styledb
+    style = styledb.getStyle(tokens.highc_box)
+    self.style = style
     #lg_panel3.widget.clear = False
     #vpak = lg_panel3.widget.makeChild( uiclass=lev2.ui.VerticalPack,
     #                            args=["VPACK"] )
@@ -169,7 +172,37 @@ class ComplexMovieApp(ComponentizedApplication):
     #cbox1.widget.setPos(8,8)
     #cbox2.setPos(8,8+24+2)
     
+  def onGpuUpdate(self,ctx):
+    super().onGpuUpdate(ctx)
+    #self.style->_border_width = 12 + 8 * abs( math.sin( self.ezapp.timeSeconds() * 2.0 ) )
+    bw = 6 + 4 * abs( math.sin( self.absolutetime * 2.0 ) )
+    cr = 32 * abs( math.cos( self.absolutetime * 3.5 ) )
+    r = 0.5 + 0.5 * math.sin( self.absolutetime * 1.0 )
+    g = 0.5 + 0.5 * math.sin( self.absolutetime * 1.3 + 2.0 )
+    b = 0.5 + 0.5 * math.sin( self.absolutetime * 1.7 + 4.0 )
+    a = 0.5 + 0.5 * math.sin( self.absolutetime * 2.3 + 6.0 )
     
+    br = 0.5 + 0.5 * math.sin( self.absolutetime * 0.9 + 1.0 )
+    bg = 0.5 + 0.5 * math.sin( self.absolutetime * 1.1 + 3.0 )
+    bb = 0.5 + 0.5 * math.sin( self.absolutetime * 1.4 + 5.0 )
+    ba = 0.5 + 0.5 * math.sin( self.absolutetime * 1.9 + 7.0 )
+    blend = int((0.5 + 0.5 * math.sin( self.absolutetime * 0.7 )) * 4.0)
+    self.style.border_width = int(bw)
+    self.style.corner_radius = int(cr)   
+    self.style.bg_color = vec4(r,g,b,a)   
+    self.style.border_color = vec4(br,bg,bb,ba)
+    match blend:
+      case 0:
+        self.style.blend_mode = tokens.ALPHA
+      case 1:
+        self.style.blend_mode = tokens.ALPHA_ADDITIVE
+      case 2:
+        self.style.blend_mode = tokens.ALPHA_SUBTRACTIVE
+      case 3:
+        self.style.blend_mode = tokens.ALPHA_SUBTRACTIVE
+      case 4:
+        self.style.blend_mode = tokens.ALPHA_MODULATE
+        
 ###############################################################################
 
 app = ComplexMovieApp()

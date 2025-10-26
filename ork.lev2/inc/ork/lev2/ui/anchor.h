@@ -161,8 +161,13 @@ struct Guide {
   int getFixed() const { return _fixed; }
   GuideType getType() const { return _type; }
   bool isLocked() const { return _locked; }
+  bool isClamped() const { return _clamped; }
   Edge getEdge() const { return _edge; }
   int getMargin() const { return _margin; }
+
+  // Clamping control
+  void clamp() { _clamped = true; }
+  void unclamp() { _clamped = false; }
 
   std::set<Guide*> _associates;
   int _name         = -1;
@@ -176,6 +181,7 @@ struct Guide {
   int _offset        = 0;  // offset in pixels from _offset_base (for OFFSET type)
   int _centerpos = 0;
   bool _locked = false;
+  bool _clamped = true;  // clamp offset guides to layout bounds (default true)
   GuideType _type = GuideType::NONE;
   Guide* _offset_base = nullptr;  // base guide for OFFSET type
 };
