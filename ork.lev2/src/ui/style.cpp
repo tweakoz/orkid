@@ -17,6 +17,12 @@
 namespace ork::ui {
 
 ///////////////////////////////////////////////////////////////////////////////
+// Constants
+///////////////////////////////////////////////////////////////////////////////
+
+static constexpr int DEFAULT_CORNER_RADIUS = 16;
+
+///////////////////////////////////////////////////////////////////////////////
 // ThemeEngine Implementation
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -27,6 +33,7 @@ struct ThemeEngineImpl {
 
   // Cached parameter handles
   lev2::fxparam_constptr_t _param_mvp = nullptr;
+  lev2::fxparam_constptr_t _param_modcolor = nullptr;
   lev2::fxparam_constptr_t _param_box_size = nullptr;
   lev2::fxparam_constptr_t _param_box_pos = nullptr;
   lev2::fxparam_constptr_t _param_corner_radius = nullptr;
@@ -138,6 +145,7 @@ void ThemeEngine::gpuInit(lev2::Context* ctx) {
 
   // Cache parameter handles
   impl->_param_mvp = mtl->param("mvp");
+  impl->_param_modcolor = mtl->param("ModColor");
   impl->_param_box_size = mtl->param("box_size");
   impl->_param_box_pos = mtl->param("box_pos");
   impl->_param_corner_radius = mtl->param("corner_radius");
@@ -180,6 +188,7 @@ void ThemeEngine::drawBox(const Widget* w, drawevent_constptr_t drwev, const Sty
 
   fxi->BeginBlock(impl->_sdf_box_tek, RCID);
   mtl->bindParam( impl->_param_mvp, mvp_mtx );
+  mtl->bindParam( impl->_param_modcolor, fvec4(1.0f, 1.0f, 1.0f, 1.0f));
   mtl->bindParam( impl->_param_box_size, fvec2(w->width(), w->height()));
   mtl->bindParam( impl->_param_box_pos, fvec2(fx1, fy1));
   mtl->bindParam( impl->_param_corner_radius, (float)style->_corner_radius);
@@ -251,6 +260,7 @@ styledatabase_ptr_t createDefaultStyleDatabase() {
   box_style->_fg_color = fvec4(0.9, 0.9, 0.9, 1.0);
   box_style->_border_color = fvec4(0.4, 0.4, 0.4, 1.0);
   box_style->_text_color = fvec4(0.9, 0.9, 0.9, 1.0);
+  box_style->_corner_radius = DEFAULT_CORNER_RADIUS;
   box_style->_border_width = 1;
   box_style->_padding = 4;
   db->registerStyle("box"_crcu, box_style);
@@ -261,6 +271,7 @@ styledatabase_ptr_t createDefaultStyleDatabase() {
   slider_style->_fg_color = fvec4(0.3, 0.6, 0.8, 1.0);
   slider_style->_aux_color1 = fvec4(0.5, 0.7, 0.9, 1.0);  // highlight
   slider_style->_border_color = fvec4(0.4, 0.4, 0.4, 1.0);
+  slider_style->_corner_radius = DEFAULT_CORNER_RADIUS;
   slider_style->_border_width = 1;
   slider_style->_padding = 2;
   db->registerStyle("slider"_crcu, slider_style);
@@ -283,6 +294,7 @@ styledatabase_ptr_t createDarkStyleDatabase() {
   box_style->_fg_color = fvec4(0.95, 0.95, 0.95, 1.0);
   box_style->_border_color = fvec4(0.3, 0.3, 0.3, 1.0);
   box_style->_text_color = fvec4(0.95, 0.95, 0.95, 1.0);
+  box_style->_corner_radius = DEFAULT_CORNER_RADIUS;
   box_style->_border_width = 1;
   box_style->_padding = 4;
   db->registerStyle("box"_crcu, box_style);
@@ -293,6 +305,7 @@ styledatabase_ptr_t createDarkStyleDatabase() {
   slider_style->_fg_color = fvec4(0.2, 0.5, 0.7, 1.0);
   slider_style->_aux_color1 = fvec4(0.4, 0.6, 0.8, 1.0);  // highlight
   slider_style->_border_color = fvec4(0.3, 0.3, 0.3, 1.0);
+  slider_style->_corner_radius = DEFAULT_CORNER_RADIUS;
   slider_style->_border_width = 1;
   slider_style->_padding = 2;
   db->registerStyle("slider"_crcu, slider_style);
@@ -317,6 +330,7 @@ styledatabase_ptr_t createLightStyleDatabase() {
   box_style->_fg_color = fvec4(0.1, 0.1, 0.1, 1.0);
   box_style->_border_color = fvec4(0.7, 0.7, 0.7, 1.0);
   box_style->_text_color = fvec4(0.1, 0.1, 0.1, 1.0);
+  box_style->_corner_radius = DEFAULT_CORNER_RADIUS;
   box_style->_border_width = 1;
   box_style->_padding = 4;
   db->registerStyle("box"_crcu, box_style);
@@ -327,6 +341,7 @@ styledatabase_ptr_t createLightStyleDatabase() {
   slider_style->_fg_color = fvec4(0.3, 0.5, 0.7, 1.0);
   slider_style->_aux_color1 = fvec4(0.5, 0.7, 0.9, 1.0);  // highlight
   slider_style->_border_color = fvec4(0.7, 0.7, 0.7, 1.0);
+  slider_style->_corner_radius = DEFAULT_CORNER_RADIUS;
   slider_style->_border_width = 1;
   slider_style->_padding = 2;
   db->registerStyle("slider"_crcu, slider_style);

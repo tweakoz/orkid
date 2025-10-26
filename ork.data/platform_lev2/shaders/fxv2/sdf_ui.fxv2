@@ -62,33 +62,29 @@ vertex_shader vs_sdf_box : vif_sdf_box {
 
 fragment_shader ps_sdf_box : fif_sdf_box {
 
-
   // Signed distance field for rounded box
   // Returns negative inside, positive outside, zero at edge
   vec2 half_size = box_size * 0.5;
   vec2 q = abs(frg_pixel_pos) - half_size + corner_radius;
   float dist = min(max(q.x, q.y), 0.0) + length(max(q, vec2(0.0))) - corner_radius;
 
-  // Determine color based on distance
-  vec4 color;
-  if (dist > 0.0) {
-    // Outside the box - transparent
-    //discard;
-  } else if (dist > -border_width && border_width > 0.0) {
-    // On the border
-    color = border_color;
-  } else {
-    // Inside - fill color
-    color = fill_color;
-  }
-
   // Anti-aliasing using derivatives
   float aa = fwidth(dist) * 0.5;
-  float alpha = 1.0; //smoothstep(aa, -aa, dist);
+  float edge_alpha = 1.0 - smoothstep(-aa, aa, dist);
 
-  // Apply modulation color
-  out_clr.xyz = (color * ModColor).xyz;
-  out_clr.a = alpha;
+  // Determine color based on distance
+  vec4 final_color;
+  if (border_width > 0.0 && dist > -border_width && dist <= 0.0) {
+    // On the border
+    final_color = border_color;
+  } else {
+    // Inside - fill color
+    final_color = fill_color;
+  }
+
+  // Apply modulation and edge anti-aliasing
+  out_clr = final_color * ModColor;
+  out_clr.a = final_color.a * edge_alpha;
 }
 
 ///////////////////////////////////////////////////////////////
