@@ -2,6 +2,7 @@
 
 #include <ork/lev2/ui/widget.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
+#include <ork/lev2/ui/style.h>
 
 namespace ork::ui {
 

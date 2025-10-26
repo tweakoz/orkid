@@ -149,6 +149,7 @@ class ComplexMovieApp(ComponentizedApplication):
     lg_panel3.widget.blendingFG = tokens.ALPHA
     lg_panel3.widget.normal_color = vec4(0.75,0.75,0.75,1)
     lg_panel3.widget.font_color = vec4(1,1,1,1)
+    lg_panel3.widget.theme = tokens.slider
     self.ezapp.uicontext.debug_event_routing = True
 
     #lg_panel3.widget.clear = False

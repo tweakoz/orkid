@@ -10,6 +10,7 @@
 #include <ork/kernel/timer.h>
 #include <ork/util/fsm.h>
 #include <ork/lev2/ui/group.h>
+#include <ork/lev2/ui/style.h>
 #include <functional>
 
 namespace ork::ui {
@@ -63,6 +64,7 @@ struct Context {
 
   std::string _id;
   group_ptr_t _top;
+  themeengine_ptr_t _theme_engine;
   bool _hasKeyboardFocus             = false;
   Widget* _evdragtarget              = nullptr;
   const Widget* _mousefocuswidget    = nullptr;

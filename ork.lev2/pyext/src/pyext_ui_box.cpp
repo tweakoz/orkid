@@ -430,6 +430,13 @@ void pyinit_ui_box(py::module& uimodule) {
               },
               [](uievtestbox_ptr_t box, fvec4 c) { //
                 box->_fontColor = c;
+              })
+              .def_property("theme",
+              [](uievtestbox_ptr_t box) -> crcstring_ptr_t { //
+                return std::make_shared<CrcString>(box->_theme_tag);
+              },
+              [](uievtestbox_ptr_t box, crcstring_ptr_t c) { //
+                box->_theme_tag = c->hashed();
               });
               type_codec->registerStdCodec<uievtestbox_ptr_t>(evtestbox_type);
   /////////////////////////////////////////////////////////////////////////////////

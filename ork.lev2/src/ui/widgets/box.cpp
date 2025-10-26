@@ -5,6 +5,7 @@
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/gfx/pri.h>
 #include <ork/lev2/ui/box.h>
+#include <ork/lev2/ui/context.h>
 
 namespace ork::ui {
 ///////////////////////////////////////////////////////////////////////////////
@@ -125,6 +126,42 @@ HandlerResult EvTestBox::DoOnUiEvent(event_constptr_t Ev) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void EvTestBox::DoDraw(drawevent_constptr_t drwev) {
+  // Check if themed rendering is requested
+  if (_theme_tag != 0 && _uicontext && _uicontext->_theme_engine) {
+    auto style = _uicontext->_theme_engine->_styledb->getStyle(_theme_tag);
+    if (style) {
+      // Use themed rendering
+      _uicontext->_theme_engine->drawBox(this, drwev, style.get());
+
+      // Determine status text based on event
+      std::string statename = "";
+      switch (_colorsel) {
+        case EventCode::PUSH: statename = "PUSH"; break;
+        case EventCode::MOVE: statename = "MOVE"; break;
+        case EventCode::RELEASE: statename = "RELEASE"; break;
+        case EventCode::DOUBLECLICK: statename = "DOUBLECLICK"; break;
+        case EventCode::BEGIN_DRAG: statename = "BEGIN_DRAG"; break;
+        case EventCode::DRAG: statename = "DRAG"; break;
+        case EventCode::END_DRAG: statename = "END_DRAG"; break;
+        case EventCode::KEY_DOWN:
+        case EventCode::KEY_REPEAT: statename = "KEY"; break;
+        case EventCode::KEY_UP: statename = "KEYUP"; break;
+        case EventCode::MOUSEWHEEL: statename = "MOUSEWHEEL"; break;
+        case EventCode::MOUSE_ENTER: statename = "MOUSE_ENTER"; break;
+        case EventCode::MOUSE_LEAVE: statename = "MOUSE_LEAVE"; break;
+        default: statename = "---"; break;
+      }
+
+      if (not hasMouseFocus()) {
+        statename = "---";
+      }
+
+      _uicontext->_theme_engine->drawText(this, drwev, style.get(), statename);
+      return;
+    }
+  }
+
+  // Fall back to legacy rendering
   auto tgt    = drwev->GetTarget();
   auto fbi    = tgt->FBI();
   auto fxi    = tgt->FXI();

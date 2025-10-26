@@ -8,6 +8,10 @@ Context::Context() {
   _tempevent = std::make_shared<Event>();
   _uitimer.Start();
   _prevtime = 0.0;
+
+  // Initialize default theme engine
+  auto default_styledb = createDefaultStyleDatabase();
+  _theme_engine = std::make_shared<ThemeEngine>(default_styledb);
 }
 /////////////////////////////////////////////////////////////////////////
 bool Context::isKeyDown(int code) const {
@@ -209,6 +213,12 @@ bool Context::hasMouseFocus(const Widget* w) const {
 }
 //////////////////////////////////////
 void Context::draw(drawevent_constptr_t drwev) {
+  // Lazy init theme engine on first draw
+  if (_theme_engine && _theme_engine->_impl.isSet() == false) {
+    auto tgt = drwev->GetTarget();
+    _theme_engine->gpuInit(tgt);
+  }
+
   _top->draw(drwev);
   if (_overlayWidget) {
     _overlayWidget->draw(drwev);

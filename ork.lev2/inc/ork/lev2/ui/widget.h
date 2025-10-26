@@ -208,6 +208,7 @@ public:
   int _fixed_height = 0;
   std::string _name;
   uint64_t _userID = 0;
+  uint64_t _theme_tag = 0;  // Optional theming tag (0 = no theme)
   drawevent_constptr_t _drawEvent;
   Rect _geometry;
   std::stack<eventfilter_ptr_t> _eventfilterstack;

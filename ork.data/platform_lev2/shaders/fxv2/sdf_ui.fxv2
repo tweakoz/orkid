@@ -1,0 +1,105 @@
+///////////////////////////////////////////////////////////////
+// SDF-based UI rendering with rounded corners
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default { glsl_version = "150"; }
+///////////////////////////////////////////////////////////////
+// Uniforms
+///////////////////////////////////////////////////////////////
+
+uniform_set sdf_params { //
+  mat4 mvp;
+  vec4 ModColor;
+  vec2 box_size;          // width, height in pixels
+  vec2 box_pos;           // x, y position
+  float corner_radius;    // corner rounding in pixels
+  float border_width;     // outline thickness in pixels
+  vec4 fill_color;        // interior color
+  vec4 border_color;      // outline color
+}
+
+///////////////////////////////////////////////////////////////
+// Interfaces
+///////////////////////////////////////////////////////////////
+
+vertex_interface vif_sdf_box : sdf_params {
+  inputs {
+    vec4 position : POSITION;
+    vec2 uv0 : TEXCOORD0;
+  }
+  outputs {
+    vec2 frg_uv;
+    vec2 frg_pixel_pos;
+  }
+}
+
+fragment_interface fif_sdf_box : vif_sdf_box {
+  outputs {
+    vec4 out_clr;
+  }
+}
+
+///////////////////////////////////////////////////////////////
+// StateBlocks
+///////////////////////////////////////////////////////////////
+
+state_block sb_sdf_ui : default {
+  BlendMode = ALPHA;
+  CullTest  = OFF;
+  DepthTest = OFF;
+  DepthMask = OFF;
+}
+
+///////////////////////////////////////////////////////////////
+// Shaders
+///////////////////////////////////////////////////////////////
+
+vertex_shader vs_sdf_box : vif_sdf_box {
+  gl_Position = mvp * position;
+  frg_uv = uv0;
+  // Convert UV (0-1) to pixel coordinates centered at box center
+  frg_pixel_pos = (uv0 - vec2(0.5, 0.5)) * box_size;
+}
+
+fragment_shader ps_sdf_box : fif_sdf_box {
+
+
+  // Signed distance field for rounded box
+  // Returns negative inside, positive outside, zero at edge
+  vec2 half_size = box_size * 0.5;
+  vec2 q = abs(frg_pixel_pos) - half_size + corner_radius;
+  float dist = min(max(q.x, q.y), 0.0) + length(max(q, vec2(0.0))) - corner_radius;
+
+  // Determine color based on distance
+  vec4 color;
+  if (dist > 0.0) {
+    // Outside the box - transparent
+    //discard;
+  } else if (dist > -border_width && border_width > 0.0) {
+    // On the border
+    color = border_color;
+  } else {
+    // Inside - fill color
+    color = fill_color;
+  }
+
+  // Anti-aliasing using derivatives
+  float aa = fwidth(dist) * 0.5;
+  float alpha = 1.0; //smoothstep(aa, -aa, dist);
+
+  // Apply modulation color
+  out_clr.xyz = (color * ModColor).xyz;
+  out_clr.a = alpha;
+}
+
+///////////////////////////////////////////////////////////////
+// Techniques
+///////////////////////////////////////////////////////////////
+
+technique sdf_box {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_sdf_box;
+    fragment_shader = ps_sdf_box;
+    state_block     = sb_sdf_ui;
+  }
+}
