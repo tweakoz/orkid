@@ -133,6 +133,7 @@ void ThemeEngine::gpuInit(lev2::Context* ctx) {
   impl->_sdf_shader = mtl->_shader;
 
   auto rst = mtl->_rasterstate;
+  rst->_priority = 1<<24;
   rst->setCullTest(lev2::ECullTest::OFF);
   rst->setDepthTest(lev2::EDepthTest::OFF);
   rst->setWriteMaskRGB(true);
@@ -198,7 +199,7 @@ void ThemeEngine::drawBox(const Widget* w, drawevent_constptr_t drwev, const Sty
 
   // Set up raster state from style
   rst->setBlendingMacro(style->_blend_mode);
-
+  fxi->pushRasterState(rst);
   primi->RenderEMLQuadAtZV16T16C16(
       fx1, fx2,   // x0, x1
       fy1, fy2,   // y0, y1
@@ -206,6 +207,7 @@ void ThemeEngine::drawBox(const Widget* w, drawevent_constptr_t drwev, const Sty
       0.0f, 1.0f, // u0, u1
       0.0f, 1.0f  // v0, v1
   );
+  fxi->popRasterState();
   mtxi->PopUIMatrix();
   fxi->EndBlock( );
 }
@@ -281,6 +283,29 @@ styledatabase_ptr_t createDefaultStyleDatabase() {
   text_style->_text_color = fvec4(0.9, 0.9, 0.9, 1.0);
   text_style->_bg_color = fvec4(0.1, 0.1, 0.1, 1.0);
   db->registerStyle("text"_crcu, text_style);
+
+  // Create default box style
+  auto bbox_style = std::make_shared<Style>();
+  bbox_style->_bg_color = fvec4(0.7, 0.7, 0.7, 1.0);
+  bbox_style->_fg_color = fvec4(0.9, 0.9, 0.9, 1.0);
+  bbox_style->_border_color = fvec4(1, 1, 0, 1.0);
+  bbox_style->_text_color = fvec4(0.0, 0.0, 0.0, 1.0);
+  bbox_style->_corner_radius = DEFAULT_CORNER_RADIUS;
+  bbox_style->_border_width = 4;
+  bbox_style->_padding = 4;
+  db->registerStyle("bright_box"_crcu, bbox_style);  
+
+  // Create default box style
+  auto hcbox_style = std::make_shared<Style>();
+  hcbox_style->_bg_color = fvec4(0.5, 0.0, 0.5, 0.5);
+  hcbox_style->_fg_color = fvec4(0.9, 0.9, 0.9, 1.0);
+  hcbox_style->_border_color = fvec4(1, 1, 1, 1.0);
+  hcbox_style->_text_color = fvec4(0.0, 0.0, 0.0, 1.0);
+  hcbox_style->_corner_radius = DEFAULT_CORNER_RADIUS;
+  hcbox_style->_border_width = 6;
+  hcbox_style->_padding = 4;
+  hcbox_style->_blend_mode = lev2::BlendingMacro::ALPHA;
+  db->registerStyle("highc_box"_crcu, hcbox_style);  
 
   return db;
 }

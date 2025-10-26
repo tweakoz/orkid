@@ -6,15 +6,15 @@ fxconfig fxcfg_default { glsl_version = "150"; }
 // Uniforms
 ///////////////////////////////////////////////////////////////
 
-uniform_set sdf_params { //
+uniform_block sdf_params (descriptor_set 0) { //
   mat4 mvp;
   vec4 ModColor;
+  vec4 fill_color;        // interior color
+  vec4 border_color;      // outline color
   vec2 box_size;          // width, height in pixels
   vec2 box_pos;           // x, y position
   float corner_radius;    // corner rounding in pixels
   float border_width;     // outline thickness in pixels
-  vec4 fill_color;        // interior color
-  vec4 border_color;      // outline color
 }
 
 ///////////////////////////////////////////////////////////////
@@ -70,15 +70,18 @@ fragment_shader ps_sdf_box : fif_sdf_box {
 
   // Anti-aliasing using derivatives
   float aa = fwidth(dist) * 0.5;
-  float edge_alpha = 1.0 - smoothstep(-aa, aa, dist);
+  float naa = aa*-1.0;
+  float edge_alpha = 1.0 - smoothstep(naa, aa, dist);
 
-  // Determine color based on distance
+  // Determine color with anti-aliased border transition
   vec4 final_color;
-  if (border_width > 0.0 && dist > -border_width && dist <= 0.0) {
-    // On the border
-    final_color = border_color;
+  if (border_width > 0.0) {
+    float nborder_width = border_width*-1.0;
+    // Smoothly transition from fill to border at inner edge
+    float border_blend = smoothstep(nborder_width + naa, nborder_width + aa, dist);
+    final_color = mix(fill_color, border_color, border_blend);
   } else {
-    // Inside - fill color
+    // No border - just fill color
     final_color = fill_color;
   }
 

@@ -135,7 +135,7 @@ class ComplexMovieApp(ComponentizedApplication):
     g_bot = panel3_layout.bottom
     g_lft = panel3_layout.left
     g_rht = panel3_layout.right
-    g_top2 = panel3_layout.offsetHorizontalGuide(g_bot, -256, locked=True )
+    g_top2 = panel3_layout.offsetHorizontalGuide(g_top, 8, locked=True )
     g_bot2 = panel3_layout.offsetHorizontalGuide(g_bot, -8, locked=True )    
     g_lft2 = panel3_layout.offsetVerticalGuide(g_lft, 8, locked=True )
     g_rhr2 = panel3_layout.offsetVerticalGuide(g_lft, 256, locked=True )    
@@ -149,7 +149,7 @@ class ComplexMovieApp(ComponentizedApplication):
     lg_panel3.widget.blendingFG = tokens.ALPHA
     lg_panel3.widget.normal_color = vec4(0.75,0.75,0.75,1)
     lg_panel3.widget.font_color = vec4(1,1,1,1)
-    lg_panel3.widget.theme = tokens.slider
+    lg_panel3.widget.theme = tokens.highc_box
     self.ezapp.uicontext.debug_event_routing = True
 
     #lg_panel3.widget.clear = False
