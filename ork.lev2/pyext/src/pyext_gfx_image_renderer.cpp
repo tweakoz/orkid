@@ -116,6 +116,7 @@ void pyinit_gfx_image_renderer(py::module& module_lev2) {
               py::arg("corner_radius") = 0.0f)
           .def("fillCircle", &ImageRenderer::fillCircle)
           .def("fillArc", &ImageRenderer::fillArc)
+          .def("fillQuadraticBezier", &ImageRenderer::fillQuadraticBezier)
           // Stroked primitives
           .def("strokeLine", &ImageRenderer::strokeLine)
           .def(
@@ -127,6 +128,7 @@ void pyinit_gfx_image_renderer(py::module& module_lev2) {
               py::arg("corner_radius") = 0.0f)
           .def("strokeCircle", &ImageRenderer::strokeCircle)
           .def("strokeArc", &ImageRenderer::strokeArc)
+          .def("strokeQuadraticBezier", &ImageRenderer::strokeQuadraticBezier)
           // Distance field
           .def("exportDistanceField", &ImageRenderer::exportDistanceField);
   type_codec->registerStdCodec<image_renderer_ptr_t>(imagerenderer_type);

@@ -22,11 +22,13 @@ struct ImageBrush;
 struct ImagePen;
 struct ImageSampler;
 struct ImageRenderer;
+struct SDFBounds;
 
 using image_brush_ptr_t = std::shared_ptr<ImageBrush>;
 using image_pen_ptr_t = std::shared_ptr<ImagePen>;
 using image_sampler_ptr_t = std::shared_ptr<ImageSampler>;
 using image_renderer_ptr_t = std::shared_ptr<ImageRenderer>;
+using sdfbounds_ptr_t = std::shared_ptr<SDFBounds>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // ImageSampler - texture sampling with wrapping modes
@@ -86,6 +88,30 @@ struct ImagePen {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+// SDFBounds - Axis-aligned bounding box for spatial culling
+///////////////////////////////////////////////////////////////////////////////
+
+struct SDFBounds {
+  fvec2 min;
+  fvec2 max;
+
+  SDFBounds() : min(0, 0), max(0, 0) {}
+  SDFBounds(fvec2 center, float radius)
+    : min(center.x - radius, center.y - radius)
+    , max(center.x + radius, center.y + radius) {}
+  SDFBounds(fvec2 min_, fvec2 max_) : min(min_), max(max_) {}
+
+  void expand(float margin) {
+    min.x -= margin;
+    min.y -= margin;
+    max.x += margin;
+    max.y += margin;
+  }
+
+  void transform(const fmtx3& mtx);
+};
+
+///////////////////////////////////////////////////////////////////////////////
 // ImageRenderer - CPU-based AA drawing with SDF
 // Operates on RGBA32F images only
 // Maintains both color and distance field buffers
@@ -122,6 +148,7 @@ struct ImageRenderer {
   void fillBox(fvec2 center, fvec2 size, image_brush_ptr_t brush, float corner_radius = 0.0f);
   void fillCircle(fvec2 center, float radius, image_brush_ptr_t brush);
   void fillArc(fvec2 center, float radius, float start_angle, float end_angle, image_brush_ptr_t brush);
+  void fillQuadraticBezier(fvec2 A, fvec2 B, fvec2 C, image_brush_ptr_t brush);
 
   ///////////////////////////////////////////
   // Stroked primitives (use ImagePen)
@@ -131,6 +158,7 @@ struct ImageRenderer {
   void strokeBox(fvec2 center, fvec2 size, image_pen_ptr_t pen, float corner_radius = 0.0f);
   void strokeCircle(fvec2 center, float radius, image_pen_ptr_t pen);
   void strokeArc(fvec2 center, float radius, float start_angle, float end_angle, image_pen_ptr_t pen);
+  void strokeQuadraticBezier(fvec2 A, fvec2 B, fvec2 C, image_pen_ptr_t pen);
 
   ///////////////////////////////////////////
   // Distance field operations
@@ -157,12 +185,14 @@ private:
 
   void _rasterizeFilled(
     std::function<float(fvec2)> sdf_func,
-    image_brush_ptr_t brush
+    image_brush_ptr_t brush,
+    sdfbounds_ptr_t bounds
   );
 
   void _rasterizeStroked(
     std::function<float(fvec2)> sdf_func,
-    image_pen_ptr_t pen
+    image_pen_ptr_t pen,
+    sdfbounds_ptr_t bounds
   );
 
   // SDF primitive functions (return signed distance)
@@ -170,6 +200,7 @@ private:
   float _sdfBox(fvec2 point, fvec2 center, fvec2 size, float corner_radius);
   float _sdfCircle(fvec2 point, fvec2 center, float radius);
   float _sdfArc(fvec2 point, fvec2 center, float radius, float start_angle, float end_angle);
+  float _sdfQuadraticBezier(fvec2 point, fvec2 A, fvec2 B, fvec2 C);
 
   // AA coverage from distance
   float _coverage(float distance, float edge_width = 1.0f);

@@ -264,6 +264,39 @@ float ImageRenderer::_coverage(float distance, float edge_width) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// SDFBounds
+///////////////////////////////////////////////////////////////////////////////
+
+void SDFBounds::transform(const fmtx3& mtx) {
+  // Transform all 4 corners of the bounding box
+  fvec3 corners[4] = {
+    fvec3(min.x, min.y, 1.0f),
+    fvec3(max.x, min.y, 1.0f),
+    fvec3(min.x, max.y, 1.0f),
+    fvec3(max.x, max.y, 1.0f)
+  };
+
+  // Initialize with first corner
+  fvec3 tc0 = mtx * corners[0];
+  float new_min_x = tc0.x;
+  float new_max_x = tc0.x;
+  float new_min_y = tc0.y;
+  float new_max_y = tc0.y;
+
+  // Expand to include all corners
+  for (int i = 1; i < 4; i++) {
+    fvec3 tc = mtx * corners[i];
+    new_min_x = std::min(new_min_x, tc.x);
+    new_max_x = std::max(new_max_x, tc.x);
+    new_min_y = std::min(new_min_y, tc.y);
+    new_max_y = std::max(new_max_y, tc.y);
+  }
+
+  min = fvec2(new_min_x, new_min_y);
+  max = fvec2(new_max_x, new_max_y);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Distance field export
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -282,9 +315,10 @@ void ImageRenderer::exportDistanceField(image_ptr_t dest) {
 
 void ImageRenderer::_rasterizeFilled(
   std::function<float(fvec2)> sdf_func,
-  image_brush_ptr_t brush
+  image_brush_ptr_t brush,
+  sdfbounds_ptr_t bounds
 ) {
-  if (!brush) return;
+  if (!brush || !bounds) return;
 
   float* color_pixels = const_cast<float*>(reinterpret_cast<const float*>(_color_buffer->_data->data()));
   float* dist_pixels = const_cast<float*>(reinterpret_cast<const float*>(_distance_buffer->_data->data()));
@@ -294,18 +328,32 @@ void ImageRenderer::_rasterizeFilled(
 
   fmtx3 inv_transform = currentTransform().inverse();
 
-  // Parallelize by chunking rows
-  size_t num_chunks = (height + IMG_RENDER_CHUNK_SIZE - 1) / IMG_RENDER_CHUNK_SIZE;
+  // Transform bounds to screen space
+  bounds->transform(currentTransform());
+
+  // Clamp bounds to screen and convert to pixel indices
+  int x_min = std::max(0, int(std::floor(bounds->min.x)));
+  int y_min = std::max(0, int(std::floor(bounds->min.y)));
+  int x_max = std::min(width, int(std::ceil(bounds->max.x)));
+  int y_max = std::min(height, int(std::ceil(bounds->max.y)));
+
+  // Early exit if completely outside screen
+  if (x_min >= x_max || y_min >= y_max) return;
+
+  // Parallelize by chunking rows within bounds
+  size_t bounded_height = y_max - y_min;
+  size_t num_chunks = (bounded_height + IMG_RENDER_CHUNK_SIZE - 1) / IMG_RENDER_CHUNK_SIZE;
   std::atomic<int> chunkcounter = num_chunks;
 
   for (size_t chunk = 0; chunk < num_chunks; chunk++) {
     auto op = [chunk, this, sdf_func, brush, &chunkcounter,
-               color_pixels, dist_pixels, width, height, inv_transform]() {
-      size_t y_start = chunk * IMG_RENDER_CHUNK_SIZE;
-      size_t y_end = std::min(y_start + IMG_RENDER_CHUNK_SIZE, size_t(height));
+               color_pixels, dist_pixels, width, height, inv_transform,
+               x_min, x_max, y_min, y_max]() {
+      size_t y_start = y_min + chunk * IMG_RENDER_CHUNK_SIZE;
+      size_t y_end = std::min(y_start + IMG_RENDER_CHUNK_SIZE, size_t(y_max));
 
       for (size_t y = y_start; y < y_end; y++) {
-        for (int x = 0; x < width; x++) {
+        for (int x = x_min; x < x_max; x++) {
           // Transform pixel to shape space
           fvec2 pixel_pos(x + 0.5f, y + 0.5f);
           fvec3 transformed = inv_transform.transform(fvec3(pixel_pos.x, pixel_pos.y, 1.0f));
@@ -355,9 +403,10 @@ void ImageRenderer::_rasterizeFilled(
 
 void ImageRenderer::_rasterizeStroked(
   std::function<float(fvec2)> sdf_func,
-  image_pen_ptr_t pen
+  image_pen_ptr_t pen,
+  sdfbounds_ptr_t bounds
 ) {
-  if (!pen) return;
+  if (!pen || !bounds) return;
 
   float* color_pixels = const_cast<float*>(reinterpret_cast<const float*>(_color_buffer->_data->data()));
   float* dist_pixels = const_cast<float*>(reinterpret_cast<const float*>(_distance_buffer->_data->data()));
@@ -368,18 +417,32 @@ void ImageRenderer::_rasterizeStroked(
   fmtx3 inv_transform = currentTransform().inverse();
   float half_width = pen->_width * 0.5f;
 
-  // Parallelize by chunking rows
-  size_t num_chunks = (height + IMG_RENDER_CHUNK_SIZE - 1) / IMG_RENDER_CHUNK_SIZE;
+  // Transform bounds to screen space
+  bounds->transform(currentTransform());
+
+  // Clamp bounds to screen and convert to pixel indices
+  int x_min = std::max(0, int(std::floor(bounds->min.x)));
+  int y_min = std::max(0, int(std::floor(bounds->min.y)));
+  int x_max = std::min(width, int(std::ceil(bounds->max.x)));
+  int y_max = std::min(height, int(std::ceil(bounds->max.y)));
+
+  // Early exit if completely outside screen
+  if (x_min >= x_max || y_min >= y_max) return;
+
+  // Parallelize by chunking rows within bounds
+  size_t bounded_height = y_max - y_min;
+  size_t num_chunks = (bounded_height + IMG_RENDER_CHUNK_SIZE - 1) / IMG_RENDER_CHUNK_SIZE;
   std::atomic<int> chunkcounter = num_chunks;
 
   for (size_t chunk = 0; chunk < num_chunks; chunk++) {
     auto op = [chunk, this, sdf_func, pen, &chunkcounter,
-               color_pixels, dist_pixels, width, height, inv_transform, half_width]() {
-      size_t y_start = chunk * IMG_RENDER_CHUNK_SIZE;
-      size_t y_end = std::min(y_start + IMG_RENDER_CHUNK_SIZE, size_t(height));
+               color_pixels, dist_pixels, width, height, inv_transform, half_width,
+               x_min, x_max, y_min, y_max]() {
+      size_t y_start = y_min + chunk * IMG_RENDER_CHUNK_SIZE;
+      size_t y_end = std::min(y_start + IMG_RENDER_CHUNK_SIZE, size_t(y_max));
 
       for (size_t y = y_start; y < y_end; y++) {
-        for (int x = 0; x < width; x++) {
+        for (int x = x_min; x < x_max; x++) {
           // Transform pixel to shape space
           fvec2 pixel_pos(x + 0.5f, y + 0.5f);
           fvec3 transformed = inv_transform.transform(fvec3(pixel_pos.x, pixel_pos.y, 1.0f));
@@ -427,21 +490,28 @@ void ImageRenderer::fillBox(fvec2 center, fvec2 size, image_brush_ptr_t brush, f
   auto sdf = [this, center, size, corner_radius](fvec2 p) {
     return _sdfBox(p, center, size, corner_radius);
   };
-  _rasterizeFilled(sdf, brush);
+  auto bounds = std::make_shared<SDFBounds>(fvec2(center.x - size.x/2 - corner_radius, center.y - size.y/2 - corner_radius),
+                                              fvec2(center.x + size.x/2 + corner_radius, center.y + size.y/2 + corner_radius));
+  bounds->expand(2.0f);
+  _rasterizeFilled(sdf, brush, bounds);
 }
 
 void ImageRenderer::fillCircle(fvec2 center, float radius, image_brush_ptr_t brush) {
   auto sdf = [this, center, radius](fvec2 p) {
     return _sdfCircle(p, center, radius);
   };
-  _rasterizeFilled(sdf, brush);
+  auto bounds = std::make_shared<SDFBounds>(center, radius);
+  bounds->expand(2.0f);
+  _rasterizeFilled(sdf, brush, bounds);
 }
 
 void ImageRenderer::fillArc(fvec2 center, float radius, float start_angle, float end_angle, image_brush_ptr_t brush) {
   auto sdf = [this, center, radius, start_angle, end_angle](fvec2 p) {
     return _sdfArc(p, center, radius, start_angle, end_angle);
   };
-  _rasterizeFilled(sdf, brush);
+  auto bounds = std::make_shared<SDFBounds>(center, radius);
+  bounds->expand(2.0f);
+  _rasterizeFilled(sdf, brush, bounds);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -452,28 +522,114 @@ void ImageRenderer::strokeLine(fvec2 p0, fvec2 p1, image_pen_ptr_t pen) {
   auto sdf = [this, p0, p1](fvec2 p) {
     return _sdfLine(p, p0, p1);
   };
-  _rasterizeStroked(sdf, pen);
+  float minx = std::min(p0.x, p1.x);
+  float maxx = std::max(p0.x, p1.x);
+  float miny = std::min(p0.y, p1.y);
+  float maxy = std::max(p0.y, p1.y);
+  auto bounds = std::make_shared<SDFBounds>(fvec2(minx, miny), fvec2(maxx, maxy));
+  bounds->expand(pen->_width + 2.0f);
+  _rasterizeStroked(sdf, pen, bounds);
 }
 
 void ImageRenderer::strokeBox(fvec2 center, fvec2 size, image_pen_ptr_t pen, float corner_radius) {
   auto sdf = [this, center, size, corner_radius](fvec2 p) {
     return _sdfBox(p, center, size, corner_radius);
   };
-  _rasterizeStroked(sdf, pen);
+  auto bounds = std::make_shared<SDFBounds>(fvec2(center.x - size.x/2 - corner_radius, center.y - size.y/2 - corner_radius),
+                                              fvec2(center.x + size.x/2 + corner_radius, center.y + size.y/2 + corner_radius));
+  bounds->expand(pen->_width + 2.0f);
+  _rasterizeStroked(sdf, pen, bounds);
 }
 
 void ImageRenderer::strokeCircle(fvec2 center, float radius, image_pen_ptr_t pen) {
   auto sdf = [this, center, radius](fvec2 p) {
     return _sdfCircle(p, center, radius);
   };
-  _rasterizeStroked(sdf, pen);
+  auto bounds = std::make_shared<SDFBounds>(center, radius);
+  bounds->expand(pen->_width + 2.0f);
+  _rasterizeStroked(sdf, pen, bounds);
 }
 
 void ImageRenderer::strokeArc(fvec2 center, float radius, float start_angle, float end_angle, image_pen_ptr_t pen) {
   auto sdf = [this, center, radius, start_angle, end_angle](fvec2 p) {
     return _sdfArc(p, center, radius, start_angle, end_angle);
   };
-  _rasterizeStroked(sdf, pen);
+  auto bounds = std::make_shared<SDFBounds>(center, radius);
+  bounds->expand(pen->_width + 2.0f);
+  _rasterizeStroked(sdf, pen, bounds);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// SDF Bezier
+///////////////////////////////////////////////////////////////////////////////
+
+float ImageRenderer::_sdfQuadraticBezier(fvec2 point, fvec2 A, fvec2 B, fvec2 C) {
+  fvec2 a = B - A;
+  fvec2 b = A - fvec2(2.0f * B.x, 2.0f * B.y) + C;
+  fvec2 c = a * 2.0f;
+  fvec2 d = A - point;
+
+  float kk = 1.0f / fvec2(b.x, b.y).dotWith(b);
+  float kx = kk * fvec2(a.x, a.y).dotWith(b);
+  float ky = kk * (2.0f * fvec2(a.x, a.y).dotWith(a) + fvec2(d.x, d.y).dotWith(b)) / 3.0f;
+  float kz = kk * fvec2(d.x, d.y).dotWith(a);
+
+  float p = ky - kx * kx;
+  float q = kx * (2.0f * kx * kx - 3.0f * ky) + kz;
+  float p3 = p * p * p;
+  float q2 = q * q;
+  float h = q2 + 4.0f * p3;
+
+  float res;
+  if (h >= 0.0f) {
+    h = std::sqrt(h);
+    fvec2 x = fvec2(h - q, -h - q) / 2.0f;
+    fvec2 uv = fvec2(std::copysignf(std::pow(std::abs(x.x), 1.0f / 3.0f), x.x),
+                      std::copysignf(std::pow(std::abs(x.y), 1.0f / 3.0f), x.y));
+    float t = std::clamp(uv.x + uv.y - kx, 0.0f, 1.0f);
+    fvec2 q_val = d + (c + b * t) * t;
+    res = q_val.dotWith(q_val);
+  } else {
+    float z = std::sqrt(-p);
+    float v = std::acos(q / (p * z * 2.0f)) / 3.0f;
+    float m = std::cos(v);
+    float n = std::sin(v) * 1.732050808f;
+    fvec3 t = fvec3(m + m, -n - m, n - m) * z - fvec3(kx, kx, kx);
+    t = fvec3(std::clamp(t.x, 0.0f, 1.0f), std::clamp(t.y, 0.0f, 1.0f), std::clamp(t.z, 0.0f, 1.0f));
+    fvec2 qx = d + (c + b * t.x) * t.x;
+    float dx = qx.dotWith(qx);
+    fvec2 qy = d + (c + b * t.y) * t.y;
+    float dy = qy.dotWith(qy);
+    res = std::min(dx, dy);
+  }
+
+  return std::sqrt(res);
+}
+
+void ImageRenderer::fillQuadraticBezier(fvec2 A, fvec2 B, fvec2 C, image_brush_ptr_t brush) {
+  auto sdf = [this, A, B, C](fvec2 p) {
+    return _sdfQuadraticBezier(p, A, B, C);
+  };
+  float minx = std::min({A.x, B.x, C.x});
+  float maxx = std::max({A.x, B.x, C.x});
+  float miny = std::min({A.y, B.y, C.y});
+  float maxy = std::max({A.y, B.y, C.y});
+  auto bounds = std::make_shared<SDFBounds>(fvec2(minx, miny), fvec2(maxx, maxy));
+  bounds->expand(2.0f);
+  _rasterizeFilled(sdf, brush, bounds);
+}
+
+void ImageRenderer::strokeQuadraticBezier(fvec2 A, fvec2 B, fvec2 C, image_pen_ptr_t pen) {
+  auto sdf = [this, A, B, C](fvec2 p) {
+    return _sdfQuadraticBezier(p, A, B, C);
+  };
+  float minx = std::min({A.x, B.x, C.x});
+  float maxx = std::max({A.x, B.x, C.x});
+  float miny = std::min({A.y, B.y, C.y});
+  float maxy = std::max({A.y, B.y, C.y});
+  auto bounds = std::make_shared<SDFBounds>(fvec2(minx, miny), fvec2(maxx, maxy));
+  bounds->expand(pen->_width + 2.0f);
+  _rasterizeStroked(sdf, pen, bounds);
 }
 
 } // namespace ork::lev2

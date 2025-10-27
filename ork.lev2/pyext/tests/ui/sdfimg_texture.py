@@ -146,6 +146,128 @@ def renderTexturedImage(img_width=512, img_height=512):
   # Draw some stroked lines
   renderer.strokeLine(vec2(100, 400), vec2(412, 400), cyan_pen)
 
+  ###################################
+  # Draw fancy bezier glyphs
+  ###################################
+
+  # Helper function to draw multiple bezier curves from a list of points
+  # Points are grouped in sets of 3: [A, B, C] for each quadratic bezier
+  def draw_bezier_path(points, pen):
+    """Draw multiple bezier curves from a list of points (groups of 3)"""
+    for i in range(0, len(points) - 2, 3):
+      if i + 2 < len(points):
+        renderer.strokeQuadraticBezier(points[i], points[i+1], points[i+2], pen)
+
+  # Create gold brush for fancy glyphs
+  gold_brush = lev2.ImageBrush(vec4(1.0, 0.84, 0.0, 0.9))
+  gold_pen = lev2.ImagePen(vec4(1.0, 0.9, 0.3, 1.0), 4.0)
+
+  # Fancy OMEGA symbol (Ω) - elegant design with 9 bezier curves
+  # Centered horizontally, positioned below center
+  omega_cx = 256
+  omega_cy = 330
+  omega_scale = 30
+
+  omega_points = [
+    # Left decorative flourish at top (curve 1)
+    vec2(omega_cx - omega_scale * 1.1, omega_cy - omega_scale * 0.2),
+    vec2(omega_cx - omega_scale * 1.15, omega_cy - omega_scale * 0.5),
+    vec2(omega_cx - omega_scale, omega_cy - omega_scale * 0.4),
+
+    # Top left arc (curve 2)
+    vec2(omega_cx - omega_scale, omega_cy - omega_scale * 0.4),
+    vec2(omega_cx - omega_scale * 0.7, omega_cy - omega_scale * 1.3),
+    vec2(omega_cx - omega_scale * 0.3, omega_cy - omega_scale * 1.4),
+
+    # Top center arc (curve 3)
+    vec2(omega_cx - omega_scale * 0.3, omega_cy - omega_scale * 1.4),
+    vec2(omega_cx, omega_cy - omega_scale * 1.45),
+    vec2(omega_cx + omega_scale * 0.3, omega_cy - omega_scale * 1.4),
+
+    # Top right arc (curve 4)
+    vec2(omega_cx + omega_scale * 0.3, omega_cy - omega_scale * 1.4),
+    vec2(omega_cx + omega_scale * 0.7, omega_cy - omega_scale * 1.3),
+    vec2(omega_cx + omega_scale, omega_cy - omega_scale * 0.4),
+
+    # Right decorative flourish at top (curve 5)
+    vec2(omega_cx + omega_scale, omega_cy - omega_scale * 0.4),
+    vec2(omega_cx + omega_scale * 1.15, omega_cy - omega_scale * 0.5),
+    vec2(omega_cx + omega_scale * 1.1, omega_cy - omega_scale * 0.2),
+
+    # Left leg curving down (curve 6)
+    vec2(omega_cx - omega_scale, omega_cy - omega_scale * 0.2),
+    vec2(omega_cx - omega_scale * 0.85, omega_cy + omega_scale * 0.4),
+    vec2(omega_cx - omega_scale * 1.0, omega_cy + omega_scale * 0.9),
+
+    # Left foot turning out (curve 7)
+    vec2(omega_cx - omega_scale * 1.0, omega_cy + omega_scale * 0.9),
+    vec2(omega_cx - omega_scale * 1.1, omega_cy + omega_scale * 1.0),
+    vec2(omega_cx - omega_scale * 1.2, omega_cy + omega_scale * 0.95),
+
+    # Right leg curving down (curve 8)
+    vec2(omega_cx + omega_scale, omega_cy - omega_scale * 0.2),
+    vec2(omega_cx + omega_scale * 0.85, omega_cy + omega_scale * 0.4),
+    vec2(omega_cx + omega_scale * 1.0, omega_cy + omega_scale * 0.9),
+
+    # Right foot turning out (curve 9)
+    vec2(omega_cx + omega_scale * 1.0, omega_cy + omega_scale * 0.9),
+    vec2(omega_cx + omega_scale * 1.1, omega_cy + omega_scale * 1.0),
+    vec2(omega_cx + omega_scale * 1.2, omega_cy + omega_scale * 0.95),
+  ]
+
+  draw_bezier_path(omega_points, gold_pen)
+
+  # Fancy PHI symbol (Φ) - elegant circular design with 8 bezier curves
+  # Centered horizontally, positioned above center
+  phi_cx = 256
+  phi_cy = 180
+  phi_scale = 26
+
+  phi_points = [
+    # Top vertical extension with curve (curve 1)
+    vec2(phi_cx - phi_scale * 0.05, phi_cy - phi_scale * 1.9),
+    vec2(phi_cx, phi_cy - phi_scale * 1.6),
+    vec2(phi_cx, phi_cy - phi_scale * 1.1),
+
+    # Smooth oval - 6 curves for extra smoothness
+    # Upper left (curve 2)
+    vec2(phi_cx - phi_scale * 0.3, phi_cy - phi_scale * 1.0),
+    vec2(phi_cx - phi_scale * 0.9, phi_cy - phi_scale * 0.9),
+    vec2(phi_cx - phi_scale * 1.0, phi_cy - phi_scale * 0.5),
+
+    # Middle left (curve 3)
+    vec2(phi_cx - phi_scale * 1.0, phi_cy - phi_scale * 0.5),
+    vec2(phi_cx - phi_scale * 1.1, phi_cy),
+    vec2(phi_cx - phi_scale * 1.0, phi_cy + phi_scale * 0.5),
+
+    # Lower left (curve 4)
+    vec2(phi_cx - phi_scale * 1.0, phi_cy + phi_scale * 0.5),
+    vec2(phi_cx - phi_scale * 0.9, phi_cy + phi_scale * 0.9),
+    vec2(phi_cx - phi_scale * 0.3, phi_cy + phi_scale * 1.0),
+
+    # Lower right (curve 5)
+    vec2(phi_cx + phi_scale * 0.3, phi_cy + phi_scale * 1.0),
+    vec2(phi_cx + phi_scale * 0.9, phi_cy + phi_scale * 0.9),
+    vec2(phi_cx + phi_scale * 1.0, phi_cy + phi_scale * 0.5),
+
+    # Middle right (curve 6)
+    vec2(phi_cx + phi_scale * 1.0, phi_cy + phi_scale * 0.5),
+    vec2(phi_cx + phi_scale * 1.1, phi_cy),
+    vec2(phi_cx + phi_scale * 1.0, phi_cy - phi_scale * 0.5),
+
+    # Upper right (curve 7)
+    vec2(phi_cx + phi_scale * 1.0, phi_cy - phi_scale * 0.5),
+    vec2(phi_cx + phi_scale * 0.9, phi_cy - phi_scale * 0.9),
+    vec2(phi_cx + phi_scale * 0.3, phi_cy - phi_scale * 1.0),
+
+    # Bottom vertical extension with curve (curve 8)
+    vec2(phi_cx, phi_cy + phi_scale * 1.1),
+    vec2(phi_cx, phi_cy + phi_scale * 1.6),
+    vec2(phi_cx + phi_scale * 0.05, phi_cy + phi_scale * 1.9),
+  ]
+
+  draw_bezier_path(phi_points, gold_pen)
+
   # Return the rendered image
   return renderer.color_buffer
 
