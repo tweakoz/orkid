@@ -235,6 +235,7 @@ class ThemesTestApp(ComponentizedApplication):
     hpack_modes = vpack.makeChild(uiclass=lev2.ui.HorizontalPack, args=["modes"])
     hpack_modes.margin = 2
     hpack_modes.uniform = True
+    hpack_modes.draw_background = False
 
     self._createModeCombo(hpack_modes, "SG Theme", vec3(0.3, 0.3, 0.5), "sg_mode")
     self._createModeCombo(hpack_modes, "UI Theme", vec3(0.5, 0.3, 0.3), "ui_mode")
@@ -246,6 +247,7 @@ class ThemesTestApp(ComponentizedApplication):
     hpack_blend = vpack.makeChild(uiclass=lev2.ui.HorizontalPack, args=["modes"])
     hpack_blend.margin = 2
     hpack_blend.uniform = True
+    hpack_blend.draw_background = False
 
     self._createBlendCombo(hpack_blend, "SG Blend", vec3(0.3, 0.3, 0.5), "sg_blend")
     self._createBlendCombo(hpack_blend, "UI Blend", vec3(0.5, 0.3, 0.3), "ui_blend")
@@ -304,14 +306,16 @@ class ThemesTestApp(ComponentizedApplication):
 
     for btn_name in button_names:
       btn = self.button_hpack.makeChild(uiclass=lev2.ui.ImageButton, args=[f"btn_{btn_name}", btn_name])
-
+      #btn.margin = 2
 
       match btn_name:
         case "close":
           btn.bgcolor = vec4(0, 0, 0, 1.0)
+          uvmap2 = uvmap.rotated90cw
+          uvmap3 = uvmap.rotated90ccw
           btn.inactive_image        = uvmap
-          btn.active_released_image = uvmap
-          btn.active_pressed_image  = uvmap
+          btn.active_released_image = uvmap2
+          btn.active_pressed_image  = uvmap3
           btn.preserve_aspect_ratio = True
         case "maximize":
           btn.bgcolor = vec4(0, 0, 0, 1.0)
@@ -344,7 +348,22 @@ class ThemesTestApp(ComponentizedApplication):
 
     self._createThemedTab(tabs, "Tab1", vec4(0.6, 0, 0, 1), tokens.ui_tab)
     self._createThemedTab(tabs, "Tab2", vec4(0, 0.6, 0, 1), tokens.ui_tab)
-    self._createThemedTab(tabs, "Tab3", vec4(0.5, 0.5, 0, 1), tokens.ui_tab)
+
+    # Tab3 - AlignmentGroup test
+    alignment_group = tabs.makeChild(uiclass=lev2.ui.AlignmentGroup, args=["Tab3"])
+    alignment_group.alignment = tokens.CENTER
+    alignment_group.width_proportional = 1.0
+    alignment_group.height_proportional = 1.0
+    alignment_group.min_width_pixels = 90
+    alignment_group.max_width_pixels = 180*3
+    alignment_group.min_height_pixels = 32
+    alignment_group.max_height_pixels = 128
+    alignment_group.bg_color = vec4(0.1, 0.1, 0.2, 1.0)
+    alignment_group.draw_background = False
+    alignment_group.margin = 2
+
+    evtestbox = alignment_group.makeChild(uiclass=lev2.ui.EvTestBox, args=["TestBox", vec4(0.5, 0.5, 0, 1)])
+    evtestbox.theme = tokens.ui_tab
 
     edit_panel = self.multiscene.panels[1]
     edit_panel.autocam = False

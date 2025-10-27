@@ -84,10 +84,13 @@ fragment_shader ps_sdf_box : fif_sdf_box {
     // No border - just fill color
     final_color = fill_color;
   }
-
+  float out_alpha = final_color.a * edge_alpha;
+  if(out_alpha<0.01){
+    discard;
+  }
   // Apply modulation and edge anti-aliasing
   out_clr = final_color * ModColor;
-  out_clr.a = final_color.a * edge_alpha;
+  out_clr.a = out_alpha;
 }
 
 ///////////////////////////////////////////////////////////////

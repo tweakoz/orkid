@@ -15,6 +15,7 @@
 #include <ork/lev2/ui/anchor.h>
 #include <ork/lev2/ui/tabs.h>
 #include <ork/lev2/ui/pack.h>
+#include <ork/lev2/ui/alignmentgroup.h>
 #include <ork/lev2/ui/split.h>
 #include <ork/lev2/ui/lineedit.h>
 #include <ork/lev2/ui/button.h>
@@ -673,7 +674,11 @@ void pyinit_ui(py::module& module_lev2) {
               },
               [](ui::vpack_ptr_t vpack, fvec4 b) { //
                 vpack->_bgcolor = b;
-              });
+              })
+          .def_property(
+              "draw_background",
+              [](ui::vpack_ptr_t vpack) -> bool { return vpack->_draw_background; },
+              [](ui::vpack_ptr_t vpack, bool val) { vpack->_draw_background = val; });
   type_codec->registerStdCodec<ui::vpack_ptr_t>(vpack_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto hpack_type = //
@@ -760,8 +765,104 @@ void pyinit_ui(py::module& module_lev2) {
               },
               [](ui::hpack_ptr_t hpack, fvec4 b) { //
                 hpack->_bgcolor = b;
-              });
+              })
+          .def_property(
+              "draw_background",
+              [](ui::hpack_ptr_t hpack) -> bool { return hpack->_draw_background; },
+              [](ui::hpack_ptr_t hpack, bool val) { hpack->_draw_background = val; });
   type_codec->registerStdCodec<ui::hpack_ptr_t>(hpack_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // AlignmentGroup
+  auto alignmentgroup_type = //
+      py::class_<ui::AlignmentGroup, ui::Group, ui::alignmentgroup_ptr_t>(uimodule, "AlignmentGroup")
+          .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto layoutitem   = lg->makeChild<ui::AlignmentGroup>(name);
+                return layoutitem.as_shared();
+              })
+          .def_static(
+              "wfactory",
+              [type_codec](py::list py_args) -> ui::alignmentgroup_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto group        = std::make_shared<ui::AlignmentGroup>(name);
+                return group;
+              })
+          .def(
+              "makeChild",
+              [](ui::alignmentgroup_ptr_t group, py::kwargs kwargs) -> ui::widget_ptr_t { //
+                ui::widget_ptr_t rval;
+                if (kwargs) {
+                  py::list args;
+                  py::object wfactory;
+                  int args_parsed = 0;
+                  for (auto item : kwargs) {
+                    auto key = py::cast<std::string>(item.first);
+                    if (key == "uiclass") {
+                      auto uiclass_obj  = py::cast<py::object>(item.second);
+                      bool has_wfactory = py::hasattr(uiclass_obj, "wfactory");
+                      OrkAssert(has_wfactory);
+                      wfactory = uiclass_obj.attr("wfactory");
+                      args_parsed++;
+                    } else if (key == "args") {
+                      args = py::cast<py::list>(item.second);
+                      args_parsed++;
+                    }
+                  }
+                  OrkAssert(args_parsed == 2);
+                  rval = py::cast<ui::widget_ptr_t>(wfactory(args));
+                  group->addChild(rval);
+                }
+                return rval;
+              })
+          .def_property(
+              "alignment",
+              [](ui::alignmentgroup_ptr_t group) -> crcstring_ptr_t { //
+                return std::make_shared<CrcString>(uint64_t(group->_alignment));
+              },
+              [](ui::alignmentgroup_ptr_t group, crcstring_ptr_t align) { //
+                group->_alignment = ui::Alignment(align->hashed());
+              })
+          .def_property(
+              "width_proportional",
+              [](ui::alignmentgroup_ptr_t group) -> float { return group->_width_proportional; },
+              [](ui::alignmentgroup_ptr_t group, float val) { group->_width_proportional = val; })
+          .def_property(
+              "height_proportional",
+              [](ui::alignmentgroup_ptr_t group) -> float { return group->_height_proportional; },
+              [](ui::alignmentgroup_ptr_t group, float val) { group->_height_proportional = val; })
+          .def_property(
+              "min_width_pixels",
+              [](ui::alignmentgroup_ptr_t group) -> int { return group->_min_width_pixels; },
+              [](ui::alignmentgroup_ptr_t group, int val) { group->_min_width_pixels = val; })
+          .def_property(
+              "max_width_pixels",
+              [](ui::alignmentgroup_ptr_t group) -> int { return group->_max_width_pixels; },
+              [](ui::alignmentgroup_ptr_t group, int val) { group->_max_width_pixels = val; })
+          .def_property(
+              "min_height_pixels",
+              [](ui::alignmentgroup_ptr_t group) -> int { return group->_min_height_pixels; },
+              [](ui::alignmentgroup_ptr_t group, int val) { group->_min_height_pixels = val; })
+          .def_property(
+              "max_height_pixels",
+              [](ui::alignmentgroup_ptr_t group) -> int { return group->_max_height_pixels; },
+              [](ui::alignmentgroup_ptr_t group, int val) { group->_max_height_pixels = val; })
+          .def_property(
+              "margin",
+              [](ui::alignmentgroup_ptr_t group) -> int { return group->_margin; },
+              [](ui::alignmentgroup_ptr_t group, int val) { group->_margin = val; })
+          .def_property(
+              "bg_color",
+              [](ui::alignmentgroup_ptr_t group) -> fvec4 { return group->_bgcolor; },
+              [](ui::alignmentgroup_ptr_t group, fvec4 color) { group->_bgcolor = color; })
+          .def_property(
+              "draw_background",
+              [](ui::alignmentgroup_ptr_t group) -> bool { return group->_draw_background; },
+              [](ui::alignmentgroup_ptr_t group, bool val) { group->_draw_background = val; });
+  type_codec->registerStdCodec<ui::alignmentgroup_ptr_t>(alignmentgroup_type);
   /////////////////////////////////////////////////////////////////////////////////
   // HorizontalSplit
   auto hsplit_type = //

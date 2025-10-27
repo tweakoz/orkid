@@ -127,7 +127,10 @@ void VerticalPack::DoDraw(drawevent_constptr_t drwev) {
 
   ///////////////////////////////////
   fbi->pushScissor(scissor_x, scissor_y, scissor_w, scissor_h);
-  _drawColoredBox(drwev, _bgcolor);
+
+  if (_draw_background) {
+    _drawColoredBox(drwev, _bgcolor);
+  }
 
   for( auto c : _children ){
     c->draw(drwev);
