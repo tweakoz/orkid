@@ -134,6 +134,19 @@ struct ImageRenderer {
   image_ptr_t distanceBuffer() const { return _distance_buffer; }
 
   ///////////////////////////////////////////
+  // Rendering options
+  ///////////////////////////////////////////
+
+  bool _enable_bbox_optimization = true;  // Enable bounding box culling optimization
+
+  ///////////////////////////////////////////
+  // Buffers
+  ///////////////////////////////////////////
+
+  image_ptr_t _color_buffer;     // RGBA32F
+  image_ptr_t _distance_buffer;  // R32F (stored as RGBA32F, using R channel)
+
+  ///////////////////////////////////////////
   // Transform stack
   ///////////////////////////////////////////
 
@@ -149,6 +162,7 @@ struct ImageRenderer {
   void fillCircle(fvec2 center, float radius, image_brush_ptr_t brush);
   void fillArc(fvec2 center, float radius, float start_angle, float end_angle, image_brush_ptr_t brush);
   void fillQuadraticBezier(fvec2 A, fvec2 B, fvec2 C, image_brush_ptr_t brush);
+  void fillPolygon(const std::vector<std::vector<fvec2>>& contours, image_brush_ptr_t brush);
 
   ///////////////////////////////////////////
   // Stroked primitives (use ImagePen)
@@ -159,6 +173,8 @@ struct ImageRenderer {
   void strokeCircle(fvec2 center, float radius, image_pen_ptr_t pen);
   void strokeArc(fvec2 center, float radius, float start_angle, float end_angle, image_pen_ptr_t pen);
   void strokeQuadraticBezier(fvec2 A, fvec2 B, fvec2 C, image_pen_ptr_t pen);
+  void strokePolygon(const std::vector<std::vector<fvec2>>& contours, image_pen_ptr_t pen);
+  void fillAndStrokePolygon(const std::vector<std::vector<fvec2>>& contours, image_brush_ptr_t brush, image_pen_ptr_t pen);
 
   ///////////////////////////////////////////
   // Distance field operations
@@ -173,9 +189,6 @@ struct ImageRenderer {
   // void subtractShape(...)
 
 private:
-
-  image_ptr_t _color_buffer;     // RGBA32F
-  image_ptr_t _distance_buffer;  // R32F (stored as RGBA32F, using R channel)
 
   std::vector<fmtx3> _transform_stack;
 

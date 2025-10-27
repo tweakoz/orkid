@@ -57,7 +57,7 @@ class MCUBES2(BasicUiCamSgApp):
     self.gencounter = 0
     self.gpucounter = 0
     
-    self.genthread = threading.Thread(target=self.genTreadImpl)
+    self.genthread = threading.Thread(target=self.genThreadImpl)
 
 
     self.genthread.start()
@@ -97,7 +97,7 @@ class MCUBES2(BasicUiCamSgApp):
 
   ##############################################
 
-  def genTreadImpl(self):
+  def genThreadImpl(self):
     global ok_to_quit
     abstime = 0.0
     while not ok_to_quit:

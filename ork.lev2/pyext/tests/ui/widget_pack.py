@@ -241,12 +241,14 @@ class PackWidgets(object):
     imgview1w = imgview1.widget
     self.imgview1 = imgview1w
     self.imgview1.maintain_aspect_ratio = True
+    self.imgview1.generate_mipmaps = False
 
     imgview2 = lg_group.makeChild( uiclass=lev2.ui.ImageView, args=["imgv2",vec4()])
     self.lg_group.replaceChild( self.griditems[3].layout, imgview2 )
     imgview2w = imgview2.widget
     self.imgview2 = imgview2w
     self.imgview2.maintain_aspect_ratio = True
+    self.imgview2.generate_mipmaps = False
 
     ############################################
     # create a horizontal split widget in the lower-left grid cell

@@ -59,7 +59,10 @@ void SmoothingStage::enqueue(stage_ptr_t inp_stage,vdb_vec3grid_ptr_t colorgrid)
     opq::concurrentQueue()->enqueue(op);
   } else {
     auto op = [=]() {
-      inp_stage->mesh_inp->updateRigidPrim(inp_stage->prim, inp_stage->conn, colorgrid, ctx_t(inp_stage->context.get()));
+      if(inp_stage->prim){
+        inp_stage->mesh_inp->computeNormals();
+        inp_stage->mesh_inp->updateRigidPrim(inp_stage->prim, colorgrid, ctx_t(inp_stage->context.get()));
+      }
     };
     opq::mainSerialQueue()->enqueue(op);
   }
@@ -74,9 +77,49 @@ void pyinit_gfx_primitives_rigid(py::module& module_lev2) {
                             //////////////////////////////////////////////////
                             .def_static(
                                 "fromVertAndFaceLists",
-                                [](py::list vert_list, py::list face_list) -> micromesh_ptr_t {
-                                  return std::make_shared<MicroMesh>(vert_list, face_list);
-                                })
+                                [](py::object vert_data, py::list face_list) -> micromesh_ptr_t {
+                                  return std::make_shared<MicroMesh>(vert_data, face_list);
+                                },
+                                "Create mesh from vertices (list or numpy array) and faces",
+                                py::arg("vert_data"), py::arg("face_list"))
+                            //////////////////////////////////////////////////
+                            .def(
+                                "updateFromLists",
+                                [](micromesh_ptr_t mesh, py::object vert_data, py::list face_list) {
+                                  mesh->updateFromLists(vert_data, face_list);
+                                },
+                                "Update mesh vertices and faces, reusing existing storage. Vertices can be list or numpy array (N,3) float32",
+                                py::arg("vert_data"), py::arg("face_list"))
+                            //////////////////////////////////////////////////
+                            .def(
+                                "updateVertices",
+                                [](micromesh_ptr_t mesh, py::object vert_data) {
+                                  mesh->updateVertices(vert_data);
+                                },
+                                "Update only vertices (topology unchanged), reusing existing storage. Accepts list or numpy array (N,3) float32",
+                                py::arg("vert_data"))
+                            //////////////////////////////////////////////////
+                            .def(
+                                "updateConnectivity",
+                                [](micromesh_ptr_t mesh) {
+                                  mesh->updateConnectivity();
+                                },
+                                "Update internal connectivity data (recomputes vertex adjacency)")
+                            //////////////////////////////////////////////////
+                            .def(
+                                "updateNormals",
+                                [](micromesh_ptr_t mesh, py::object normal_data) {
+                                  mesh->updateNormals(normal_data);
+                                },
+                                "Update cached normals from pre-generated data. Accepts list or numpy array (N,3) float32",
+                                py::arg("normal_data"))
+                            //////////////////////////////////////////////////
+                            .def(
+                                "computeNormals",
+                                [](micromesh_ptr_t mesh) {
+                                  mesh->computeNormals();
+                                },
+                                "Compute and cache normals using internal connectivity")
                             //////////////////////////////////////////////////
                             .def_property_readonly(
                                 "vertices",
@@ -86,6 +129,16 @@ void pyinit_gfx_primitives_rigid(py::module& module_lev2) {
                                     verts.append(fvec3(vtx.x, vtx.y, vtx.z));
                                   }
                                   return verts;
+                                })
+                            //////////////////////////////////////////////////
+                            .def_property_readonly(
+                                "normals",
+                                [](micromesh_ptr_t mesh) -> py::list {
+                                  auto normals = py::list();
+                                  for (auto& nrm : mesh->_normals) {
+                                    normals.append(fvec3(nrm.x, nrm.y, nrm.z));
+                                  }
+                                  return normals;
                                 })
                             //////////////////////////////////////////////////
                             .def_property_readonly(
@@ -109,6 +162,34 @@ void pyinit_gfx_primitives_rigid(py::module& module_lev2) {
                                 })
                             //////////////////////////////////////////////////
                             .def_property_readonly(
+                                "num_verts",
+                                [](micromesh_ptr_t mesh) -> size_t {
+                                  return mesh->_vertices.size();
+                                },
+                                "Get number of vertices")
+                            //////////////////////////////////////////////////
+                            .def_property_readonly(
+                                "num_faces",
+                                [](micromesh_ptr_t mesh) -> size_t {
+                                  return mesh->_tris.size() + mesh->_quads.size();
+                                },
+                                "Get number of faces (tris + quads)")
+                            //////////////////////////////////////////////////
+                            .def_property_readonly(
+                                "num_tris",
+                                [](micromesh_ptr_t mesh) -> size_t {
+                                  return mesh->_tris.size();
+                                },
+                                "Get number of triangular faces")
+                            //////////////////////////////////////////////////
+                            .def_property_readonly(
+                                "num_quads",
+                                [](micromesh_ptr_t mesh) -> size_t {
+                                  return mesh->_quads.size();
+                                },
+                                "Get number of quad faces")
+                            //////////////////////////////////////////////////
+                            .def_property_readonly(
                                 "faces",
                                 [](micromesh_ptr_t mesh) -> py::list {
                                   auto faces = py::list();
@@ -128,10 +209,18 @@ void pyinit_gfx_primitives_rigid(py::module& module_lev2) {
                                 })
                             //////////////////////////////////////////////////
                             .def_property_readonly(
+                                "connectivity",
+                                [](micromesh_ptr_t mesh) -> micromesh_connectivity_ptr_t {
+                                  return mesh->getConnectivity();
+                                },
+                                "Get internal connectivity (lazy-evaluated, computed if dirty)")
+                            //////////////////////////////////////////////////
+                            .def_property_readonly(
                                 "vertexConnectivity",
                                 [](micromesh_ptr_t mesh) -> micromesh_connectivity_ptr_t {
-                                  return mesh->computeVertexConnectivity();
-                                })
+                                  return mesh->getConnectivity();
+                                },
+                                "Deprecated: Use 'connectivity' property instead")
                             //////////////////////////////////////////////////
                             .def_property_readonly(
                                 "smoothed",
@@ -145,15 +234,25 @@ void pyinit_gfx_primitives_rigid(py::module& module_lev2) {
                                 [](micromesh_ptr_t mesh,              //
                                    micromesh_connectivity_ptr_t conn, //
                                    int num_stages,                    //
-                                   umesh_rprim_ptr_t prim,
-                                   ctx_t context) { //
+                                   py::object prim,
+                                   py::object context) { //
 
                                   auto stage = std::make_shared<SmoothingStage>();
                                   stage->mesh_inp = mesh;
                                   stage->conn = conn;
-                                  stage->prim = prim;
-                                  stage->context.assign(context);
                                   stage->count = num_stages;
+                                  if( context.is_none() ){
+                                    stage->context = ctx_t();
+                                  }else{
+                                    auto as_ctx = py::cast<ctx_t>(context);
+                                    stage->context.assign(as_ctx);
+                                  }
+                                  if( prim.is_none() ){
+                                    stage->prim = nullptr;
+                                  }else{
+                                    OrkAssert( stage->context.get() != nullptr );
+                                    stage->prim = prim.cast<umesh_rprim_ptr_t>();
+                                  }
                                   SmoothingStage::enqueue(stage,nullptr);
                                 })
                             //////////////////////////////////////////////////
@@ -250,24 +349,24 @@ void pyinit_gfx_primitives_rigid(py::module& module_lev2) {
             prim->fromSubMesh(*submesh, context.get());
           })
       .def(
-          "fromMicroMesh",                                 //
+          "updateWithMicroMesh",                                 //
           [](meshutil::rigidprim_V12N12B12T8C4_ptr_t prim, //
-             meshutil::submesh_ptr_t submesh,              //
-             micromesh_connectivity_ptr_t conn,            //
+             micromesh_ptr_t micromesh,                    //
              ctx_t context) {                              //
-            // prim->fromSubMesh(*submesh, context.get());
+             micromesh->updateRigidPrim(prim, nullptr, context);
           })
       .def(
           "fromVertsAndFacesDict",                         //
           [](meshutil::rigidprim_V12N12B12T8C4_ptr_t prim, //
-             py::list verts,                               //
+             py::object verts,                             //
              py::list faces,                               //
              ctx_t context) {                              //
             ////////////////////////////////////////////
             auto micromesh = std::make_shared<MicroMesh>(verts, faces);
-            auto conn      = micromesh->computeVertexConnectivity();
-            micromesh->updateRigidPrim(prim, conn, nullptr, context);
-          })
+            micromesh->updateRigidPrim(prim, nullptr, context);
+          },
+          "Create rigid primitive from vertices (list or numpy array (N,3) float32) and faces",
+          py::arg("verts"), py::arg("faces"), py::arg("context"))
       .def("renderEML", [](meshutil::rigidprim_V12N12B12T8C4_ptr_t prim, ctx_t context) { //
         prim->renderEML(context.get());
       });

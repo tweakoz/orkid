@@ -362,6 +362,125 @@ void Image::gaussianBlur(Image& imgout, float kernel_size) const {
   group->join();
 }
 
+void Image::separableConvolve(Image& output, const std::vector<float>& kernel, fvec4 threshold) const {
+  if (kernel.empty() || (kernel.size() % 2) == 0) {
+    OrkAssert(false && "Kernel must have odd size");
+    return;
+  }
+
+  // Initialize output image
+  output.initWithFormat(_width, _height, _format);
+
+  int radius = int(kernel.size() / 2);
+
+  // Temporary buffer for horizontal pass
+  auto temp_data = std::make_shared<DataBlock>();
+  temp_data->allocateBlock(_width * _height * _numcomponents * sizeof(float));
+  float* temp = (float*)temp_data->data();
+
+  auto conq = opq::concurrentQueue();
+
+  // Horizontal pass
+  auto group_h = opq::createCompletionGroup(conq, "SeparableConvolveH");
+  for (size_t y = 0; y < _height; y++) {
+    group_h->enqueue([=](){
+      for (size_t x = 0; x < _width; x++) {
+        std::vector<float> sum(_numcomponents, 0.0f);
+        float total_weight = 0.0f;
+
+        // Convolve with neighbors that pass threshold
+        for (int k = -radius; k <= radius; k++) {
+          int sx = std::max(0, std::min(int(_width) - 1, int(x) + k));
+          const float* neighbor_pixel = pixel32f(sx, y);
+
+          // Check threshold on NEIGHBOR pixel - all components must be > threshold
+          bool neighbor_passes = true;
+          for (size_t c = 0; c < std::min(_numcomponents, size_t(4)); c++) {
+            if (neighbor_pixel[c] <= threshold[c]) {
+              neighbor_passes = false;
+              break;
+            }
+          }
+
+          if (neighbor_passes) {
+            float weight = kernel[k + radius];
+            total_weight += weight;
+
+            for (size_t c = 0; c < _numcomponents; c++) {
+              sum[c] += neighbor_pixel[c] * weight;
+            }
+          }
+        }
+
+        // Normalize by actual weight used and write to temp buffer
+        size_t idx = (y * _width + x) * _numcomponents;
+        if (total_weight > 0.0f) {
+          for (size_t c = 0; c < _numcomponents; c++) {
+            temp[idx + c] = sum[c] / total_weight;
+          }
+        } else {
+          // No neighbors passed threshold - copy original
+          const float* src_pixel = pixel32f(x, y);
+          for (size_t c = 0; c < _numcomponents; c++) {
+            temp[idx + c] = src_pixel[c];
+          }
+        }
+      }
+    });
+  }
+  group_h->join();
+
+  // Vertical pass
+  auto group_v = opq::createCompletionGroup(conq, "SeparableConvolveV");
+  for (size_t y = 0; y < _height; y++) {
+    group_v->enqueue([=, &output, &temp](){
+      for (size_t x = 0; x < _width; x++) {
+        std::vector<float> sum(_numcomponents, 0.0f);
+        float total_weight = 0.0f;
+
+        // Convolve with neighbors that pass threshold
+        for (int k = -radius; k <= radius; k++) {
+          int sy = std::max(0, std::min(int(_height) - 1, int(y) + k));
+          size_t neighbor_idx = (sy * _width + x) * _numcomponents;
+
+          // Check threshold on NEIGHBOR pixel - all components must be > threshold
+          bool neighbor_passes = true;
+          for (size_t c = 0; c < std::min(_numcomponents, size_t(4)); c++) {
+            if (temp[neighbor_idx + c] <= threshold[c]) {
+              neighbor_passes = false;
+              break;
+            }
+          }
+
+          if (neighbor_passes) {
+            float weight = kernel[k + radius];
+            total_weight += weight;
+
+            for (size_t c = 0; c < _numcomponents; c++) {
+              sum[c] += temp[neighbor_idx + c] * weight;
+            }
+          }
+        }
+
+        // Normalize by actual weight used and write to output
+        float* dst_pixel = output.pixel32f(x, y);
+        if (total_weight > 0.0f) {
+          for (size_t c = 0; c < _numcomponents; c++) {
+            dst_pixel[c] = sum[c] / total_weight;
+          }
+        } else {
+          // No neighbors passed threshold - copy from temp
+          size_t idx_src = (y * _width + x) * _numcomponents;
+          for (size_t c = 0; c < _numcomponents; c++) {
+            dst_pixel[c] = temp[idx_src + c];
+          }
+        }
+      }
+    });
+  }
+  group_v->join();
+}
+
 void Image::lerp(const Image& a, const Image& b, float index) {
   // Clamp interpolation index to [0,1]
   float t = std::max(0.0f, std::min(1.0f, index));

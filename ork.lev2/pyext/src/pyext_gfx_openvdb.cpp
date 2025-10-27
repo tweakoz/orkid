@@ -731,6 +731,54 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
                 result["faces"]    = indices;
                 return result;
               })
+          ///////////////////////////////////////////////////////
+          .def(
+              "toTriMeshNumpy",
+              [](vdb_floatgrid_ptr_t grid, float isovalue) -> py::dict {
+                std::vector<openvdb::Vec3s> points;
+                std::vector<openvdb::Vec4I> quads;
+                std::vector<openvdb::Vec3I> tris;
+                {
+                  py::gil_scoped_release release;
+                  openvdb::tools::volumeToMesh(*grid, points, quads, isovalue);
+                }
+
+                // Create numpy array for vertices (N, 3) float32
+                size_t num_verts = points.size();
+                std::vector<ssize_t> shape = {static_cast<ssize_t>(num_verts), 3};
+                auto vertices = py::array_t<float>(shape);
+                auto vert_buf = vertices.request();
+                float* vert_ptr = static_cast<float*>(vert_buf.ptr);
+
+                // Fill vertices directly into numpy buffer
+                for (size_t i = 0; i < num_verts; i++) {
+                  auto& point = points[i];
+                  auto world = grid->transform().indexToWorld(point);
+                  vert_ptr[i * 3 + 0] = point.x();
+                  vert_ptr[i * 3 + 1] = point.y();
+                  vert_ptr[i * 3 + 2] = point.z();
+                }
+
+                // Keep faces as list (still optimal, not performance critical)
+                auto indices = py::list();
+                for (auto& quad : quads) {
+                  indices.append(3);
+                  indices.append(quad[0]);
+                  indices.append(quad[2]);
+                  indices.append(quad[1]);
+
+                  indices.append(3);
+                  indices.append(quad[3]);
+                  indices.append(quad[2]);
+                  indices.append(quad[0]);
+                }
+
+                auto result        = py::dict();
+                result["vertices"] = vertices;  // numpy array (N, 3) float32
+                result["faces"]    = indices;   // list
+                return result;
+              },
+              "Convert VDB grid to triangle mesh with vertices as numpy array (N,3) float32 for fast memcpy path")
           .def("saveToVDB", [](vdb_floatgrid_ptr_t grid, py::object path) {
             auto as_str     = py::str(path);
             auto as_std_str = as_str.cast<std::string>();

@@ -467,6 +467,10 @@ void pyinit_math_la_t(
           .def(py::init<const mat3_t&>())
           .def(py::init<const quat_t&>())
           .def("setScale", (void(mat3_t::*)(T, T, T)) & mat3_t::setScale)
+          .def_property("translation", 
+            [](const mat3_t& mtx) -> vec2_t { return mtx.column(2).xy(); },
+            [](mat3_t& mtx, vec2_t t) { mtx.setColumn(2, vec3_t(t.x, t.y, 1.0f)); })
+          .def("transpose", &mat3_t::transpose)
           .def("setColumn", [](mat3_t& mtx, int icol, vec3_t c) { //
             OrkPyAssert(icol >= 0 && icol < 3);
             mtx.setColumn(icol, c);

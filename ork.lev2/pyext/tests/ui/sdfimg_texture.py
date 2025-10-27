@@ -7,26 +7,33 @@
 ################################################################################
 
 import math, sys, os, argparse
-from orkengine.core import vec2, vec3, vec4, CrcStringProxy, mtx3, coreappinit, coreappexit
+from orkengine.core import vec2, vec3, vec4, quat, CrcStringProxy, mtx3, coreappinit, coreappexit
 from orkengine import lev2
 from ork.app.application import ComponentizedApplication
+from ork.font.tools_freetype import extract_glyph_contours_freetype
 
 tokens = CrcStringProxy()
 ################################################################################
 
-def renderTexturedImage(img_width=512, img_height=512):
-  """Render a textured image using ImageRenderer and return it"""
+def renderTexturedImage(img_width=512, img_height=512, time=0.0):
+  """Render a textured image using ImageRenderer and return it
+
+  Args:
+    img_width: Output image width
+    img_height: Output image height
+    rotation: Rotation angle in radians for checkerboard patterns
+  """
 
   ###################################
   # Create test texture (checkerboard pattern)
   ###################################
 
-  tex_size = 128
+  tex_size = 512
   test_texture = lev2.Image()
   test_texture.initWithFormat(tex_size, tex_size, tokens.RGBA32F)
 
   # Fill with checkerboard pattern
-  checker_size = 16
+  checker_size = 64
   for y in range(tex_size):
     for x in range(tex_size):
       checker_x = (x // checker_size) % 2
@@ -64,10 +71,10 @@ def renderTexturedImage(img_width=512, img_height=512):
       t = min(dist / max_radius, 1.0)
 
       pixel = gradient_texture.pixel32f(x, y)
-      pixel[0] = 1.0 - t  # R (bright in center)
-      pixel[1] = 0.5      # G
-      pixel[2] = t        # B (bright at edges)
-      pixel[3] = 1.0      # A
+      pixel[0] = 0.0           # R (no red)
+      pixel[1] = 0.0           # G (no green)
+      pixel[2] = 0.3 + t * 0.5 # B (dark blue in center, brighter at edges)
+      pixel[3] = 1.0           # A
 
   ###################################
   # Create synthesized image using ImageRenderer with textures
@@ -78,6 +85,7 @@ def renderTexturedImage(img_width=512, img_height=512):
   abstract_height = 512.0
 
   renderer = lev2.ImageRenderer(img_width, img_height)
+  renderer.enable_bbox_optimization = False  # Disable bbox optimization for testing
 
   # Clear to dark background first
   renderer.clear(vec4(0.15, 0.15, 0.2, 1.0))
@@ -99,10 +107,26 @@ def renderTexturedImage(img_width=512, img_height=512):
   checker_brush.sampler = sampler
 
   # Set texture matrix to map abstract coordinates to texture coordinates
-  scale = 0.01  # Scale world coords to texture coords
-  tex_mtx = mtx3()
-  tex_mtx.setScale(scale, scale, 1.0)
-  checker_brush.texture_matrix = tex_mtx
+  # Rotate around center of coordinate space (256, 256)
+  scale = 0.006  # Scale world coords to texture coords
+  center_x = 256.0
+  center_y = 256.0
+
+  # Translate to center
+  t1 = mtx3()
+  t1.translation = vec2(-center_x, -center_y)
+
+  # Rotate
+  r = mtx3()
+  q = quat(vec3(0,0,1), time*4.0)
+  r.fromQuaternion(q)
+
+  # Scale
+  s = mtx3()
+  s.setScale(scale, scale, 1.0)
+
+  # Compose: Scale * Rotate * Translate
+  checker_brush.texture_matrix = s * r * t1
 
   # Create gradient brush
   gradient_brush = lev2.ImageBrush()
@@ -120,10 +144,12 @@ def renderTexturedImage(img_width=512, img_height=512):
 
   # Create solid brushes for comparison
   red_brush = lev2.ImageBrush(vec4(1.0, 0.2, 0.2, 1.0))
+  navy_brush = lev2.ImageBrush(vec4(0.0, 0.0, 0.5, 1.0))
 
   # Create pens (widths in abstract units)
   white_pen = lev2.ImagePen(vec4(1.0, 1.0, 1.0, 1.0), 3.0)
   cyan_pen = lev2.ImagePen(vec4(0.2, 1.0, 1.0, 1.0), 2.0)
+  hotpink_pen = lev2.ImagePen(vec4(1.0, 0.41, 0.71, 1.0), 2.0)
 
   # Draw in abstract coordinate space (same as original pixel coordinates)
   # The view transform will scale these to the actual output resolution
@@ -143,130 +169,135 @@ def renderTexturedImage(img_width=512, img_height=512):
   renderer.fillBox(vec2(150, 362), vec2(60, 60), red_brush, 8)
   renderer.strokeBox(vec2(150, 362), vec2(60, 60), cyan_pen, 8)
 
+  renderer.fillBox(vec2(362, 362), vec2(60, 60), navy_brush, 8)
+  renderer.strokeBox(vec2(362, 362), vec2(60, 60), hotpink_pen, 8)
+
   # Draw some stroked lines
-  renderer.strokeLine(vec2(100, 400), vec2(412, 400), cyan_pen)
+  renderer.strokeLine(vec2(100, 256), vec2(412, 256), cyan_pen)
 
   ###################################
-  # Draw fancy bezier glyphs
+  # Create dark checkerboard texture for glyph fill
   ###################################
 
-  # Helper function to draw multiple bezier curves from a list of points
-  # Points are grouped in sets of 3: [A, B, C] for each quadratic bezier
-  def draw_bezier_path(points, pen):
-    """Draw multiple bezier curves from a list of points (groups of 3)"""
-    for i in range(0, len(points) - 2, 3):
-      if i + 2 < len(points):
-        renderer.strokeQuadraticBezier(points[i], points[i+1], points[i+2], pen)
+  glyph_tex_size = 64
+  glyph_texture = lev2.Image()
+  glyph_texture.initWithFormat(glyph_tex_size, glyph_tex_size, tokens.RGBA32F)
 
-  # Create gold brush for fancy glyphs
-  gold_brush = lev2.ImageBrush(vec4(1.0, 0.84, 0.0, 0.9))
-  gold_pen = lev2.ImagePen(vec4(1.0, 0.9, 0.3, 1.0), 4.0)
+  # Fill with dark checkerboard pattern (rotated 45 degrees via sampling)
+  checker_size = 42  # 30% bigger than 32
+  for y in range(glyph_tex_size):
+    for x in range(glyph_tex_size):
+      # Rotate coordinates by 45 degrees for diagonal checkerboard
+      rx = x * 0.707 + y * 0.707
+      ry = -x * 0.707 + y * 0.707
+      checker_x = (int(rx) // checker_size) % 2
+      checker_y = (int(ry) // checker_size) % 2
+      is_black = (checker_x + checker_y) % 2 == 0
 
-  # Fancy OMEGA symbol (Ω) - elegant design with 9 bezier curves
+      pixel = glyph_texture.pixel32f(x, y)
+      if is_black:
+        pixel[0] = 0.05  # R (almost black)
+        pixel[1] = 0.05  # G
+        pixel[2] = 0.05  # B
+        pixel[3] = 1.0   # A
+      else:
+        pixel[0] = 0.3   # R (grey - 50% brighter)
+        pixel[1] = 0.3   # G
+        pixel[2] = 0.3   # B
+        pixel[3] = 1.0   # A
+
+  ###################################
+  # Draw fancy glyphs from font
+  ###################################
+
+  # Helper function to draw filled+outlined polygons from extracted font glyphs with glow
+  def draw_glyph_filled_outlined(contours, brush, pen):
+    """Draw filled and outlined polygon from glyph contours with glow effect using separable convolution"""
+    # Convert to list of lists of vec2
+    vec_contours = [[vec2(p[0], p[1]) for p in contour] for contour in contours]
+
+    # Fill first
+    renderer.fillPolygon(vec_contours, brush)
+    # Finally draw the sharp bright outline on top
+    renderer.strokePolygon(vec_contours, pen)
+
+  # Create checkerboard brush for glyph fill
+  glyph_brush = lev2.ImageBrush()
+  glyph_brush.use_texture = True
+  glyph_brush.texture = glyph_texture
+  glyph_brush.sampler = sampler
+
+  # Set texture matrix to map glyph coordinates to texture coordinates
+  # Use smaller scale for tighter checkerboard pattern with rotation around center
+  glyph_scale = 0.05
+
+  # Translate to center
+  t1_glyph = mtx3()
+  t1_glyph.translation = vec2(-center_x, -center_y)
+  t1_glyph2 = mtx3()
+  t1_glyph2.translation = vec2(center_x, center_y)
+
+  # Rotate
+  r_glyph = mtx3()
+  q = quat(vec3(0,0,1), time*3.0)
+  r_glyph.fromQuaternion(q)
+
+  # Scale
+  s_glyph = mtx3()
+  s_glyph.setScale(glyph_scale*0.3, glyph_scale*0.3, 1.0)
+
+  # Compose: Scale * Rotate * Translate
+  glyph_brush.texture_matrix = s_glyph * t1_glyph2 * r_glyph * t1_glyph
+
+  # Create brightest yellow pen for outline
+  yellow_pen = lev2.ImagePen(vec4(1.1, 1.1, 0.0, 1.0), 1.5)
+
+  # Extract omega (Ω) from Georgia font
   # Centered horizontally, positioned below center
   omega_cx = 256
   omega_cy = 330
-  omega_scale = 30
+  omega_scale = 0.04  # Scale factor to get nice size from font units
 
-  omega_points = [
-    # Left decorative flourish at top (curve 1)
-    vec2(omega_cx - omega_scale * 1.1, omega_cy - omega_scale * 0.2),
-    vec2(omega_cx - omega_scale * 1.15, omega_cy - omega_scale * 0.5),
-    vec2(omega_cx - omega_scale, omega_cy - omega_scale * 0.4),
+  font_path = "/System/Library/Fonts/Supplemental/Georgia.ttf"
+  omega_contours = extract_glyph_contours_freetype(font_path, 'Ω', scale=omega_scale, center_x=omega_cx, center_y=omega_cy)
+  draw_glyph_filled_outlined(omega_contours, glyph_brush, yellow_pen)
 
-    # Top left arc (curve 2)
-    vec2(omega_cx - omega_scale, omega_cy - omega_scale * 0.4),
-    vec2(omega_cx - omega_scale * 0.7, omega_cy - omega_scale * 1.3),
-    vec2(omega_cx - omega_scale * 0.3, omega_cy - omega_scale * 1.4),
-
-    # Top center arc (curve 3)
-    vec2(omega_cx - omega_scale * 0.3, omega_cy - omega_scale * 1.4),
-    vec2(omega_cx, omega_cy - omega_scale * 1.45),
-    vec2(omega_cx + omega_scale * 0.3, omega_cy - omega_scale * 1.4),
-
-    # Top right arc (curve 4)
-    vec2(omega_cx + omega_scale * 0.3, omega_cy - omega_scale * 1.4),
-    vec2(omega_cx + omega_scale * 0.7, omega_cy - omega_scale * 1.3),
-    vec2(omega_cx + omega_scale, omega_cy - omega_scale * 0.4),
-
-    # Right decorative flourish at top (curve 5)
-    vec2(omega_cx + omega_scale, omega_cy - omega_scale * 0.4),
-    vec2(omega_cx + omega_scale * 1.15, omega_cy - omega_scale * 0.5),
-    vec2(omega_cx + omega_scale * 1.1, omega_cy - omega_scale * 0.2),
-
-    # Left leg curving down (curve 6)
-    vec2(omega_cx - omega_scale, omega_cy - omega_scale * 0.2),
-    vec2(omega_cx - omega_scale * 0.85, omega_cy + omega_scale * 0.4),
-    vec2(omega_cx - omega_scale * 1.0, omega_cy + omega_scale * 0.9),
-
-    # Left foot turning out (curve 7)
-    vec2(omega_cx - omega_scale * 1.0, omega_cy + omega_scale * 0.9),
-    vec2(omega_cx - omega_scale * 1.1, omega_cy + omega_scale * 1.0),
-    vec2(omega_cx - omega_scale * 1.2, omega_cy + omega_scale * 0.95),
-
-    # Right leg curving down (curve 8)
-    vec2(omega_cx + omega_scale, omega_cy - omega_scale * 0.2),
-    vec2(omega_cx + omega_scale * 0.85, omega_cy + omega_scale * 0.4),
-    vec2(omega_cx + omega_scale * 1.0, omega_cy + omega_scale * 0.9),
-
-    # Right foot turning out (curve 9)
-    vec2(omega_cx + omega_scale * 1.0, omega_cy + omega_scale * 0.9),
-    vec2(omega_cx + omega_scale * 1.1, omega_cy + omega_scale * 1.0),
-    vec2(omega_cx + omega_scale * 1.2, omega_cy + omega_scale * 0.95),
-  ]
-
-  draw_bezier_path(omega_points, gold_pen)
-
-  # Fancy PHI symbol (Φ) - elegant circular design with 8 bezier curves
+  # Extract phi (Φ) from Georgia font
   # Centered horizontally, positioned above center
   phi_cx = 256
   phi_cy = 180
-  phi_scale = 26
+  phi_scale = 0.04  # Scale factor to get nice size from font units
 
-  phi_points = [
-    # Top vertical extension with curve (curve 1)
-    vec2(phi_cx - phi_scale * 0.05, phi_cy - phi_scale * 1.9),
-    vec2(phi_cx, phi_cy - phi_scale * 1.6),
-    vec2(phi_cx, phi_cy - phi_scale * 1.1),
+  phi_contours = extract_glyph_contours_freetype(font_path, 'Φ', scale=phi_scale, center_x=phi_cx, center_y=phi_cy)
+  draw_glyph_filled_outlined(phi_contours, glyph_brush, yellow_pen)
 
-    # Smooth oval - 6 curves for extra smoothness
-    # Upper left (curve 2)
-    vec2(phi_cx - phi_scale * 0.3, phi_cy - phi_scale * 1.0),
-    vec2(phi_cx - phi_scale * 0.9, phi_cy - phi_scale * 0.9),
-    vec2(phi_cx - phi_scale * 1.0, phi_cy - phi_scale * 0.5),
 
-    # Middle left (curve 3)
-    vec2(phi_cx - phi_scale * 1.0, phi_cy - phi_scale * 0.5),
-    vec2(phi_cx - phi_scale * 1.1, phi_cy),
-    vec2(phi_cx - phi_scale * 1.0, phi_cy + phi_scale * 0.5),
+  kernel_size = 15
+  sigma = 3.0  # Standard deviation
+  falloff_power = 1.0  # NEW: Controls nonlinearity (1.0 = normal Gaussian, >1.0 = sharper, <1.0 = softer)
 
-    # Lower left (curve 4)
-    vec2(phi_cx - phi_scale * 1.0, phi_cy + phi_scale * 0.5),
-    vec2(phi_cx - phi_scale * 0.9, phi_cy + phi_scale * 0.9),
-    vec2(phi_cx - phi_scale * 0.3, phi_cy + phi_scale * 1.0),
+  kernel = []
+  for i in range(kernel_size):
+    x = i - kernel_size // 2
+    # Generate Gaussian weight
+    weight = math.exp(-abs(x) / sigma)
 
-    # Lower right (curve 5)
-    vec2(phi_cx + phi_scale * 0.3, phi_cy + phi_scale * 1.0),
-    vec2(phi_cx + phi_scale * 0.9, phi_cy + phi_scale * 0.9),
-    vec2(phi_cx + phi_scale * 1.0, phi_cy + phi_scale * 0.5),
+    # Apply falloff power for nonlinear control
+    #weight = weight ** falloff_power
 
-    # Middle right (curve 6)
-    vec2(phi_cx + phi_scale * 1.0, phi_cy + phi_scale * 0.5),
-    vec2(phi_cx + phi_scale * 1.1, phi_cy),
-    vec2(phi_cx + phi_scale * 1.0, phi_cy - phi_scale * 0.5),
+    kernel.append(weight)
 
-    # Upper right (curve 7)
-    vec2(phi_cx + phi_scale * 1.0, phi_cy - phi_scale * 0.5),
-    vec2(phi_cx + phi_scale * 0.9, phi_cy - phi_scale * 0.9),
-    vec2(phi_cx + phi_scale * 0.3, phi_cy - phi_scale * 1.0),
+  # Normalize kernel
+  #kernel_sum = sum(kernel)
+  #kernel = [k / kernel_sum for k in kernel]
+  
+  # Apply separable convolution to blur the whole buffer
+  # Use threshold to only blur pixels with significant alpha (ignore RGB)
+  #threshold = vec4(0.75, 0.75, 0, 0)  # Only check alpha > 0.01
+  #blurred = renderer.color_buffer.separableConvolve(kernel, threshold)
 
-    # Bottom vertical extension with curve (curve 8)
-    vec2(phi_cx, phi_cy + phi_scale * 1.1),
-    vec2(phi_cx, phi_cy + phi_scale * 1.6),
-    vec2(phi_cx + phi_scale * 0.05, phi_cy + phi_scale * 1.9),
-  ]
-
-  draw_bezier_path(phi_points, gold_pen)
+  # Replace buffer with blurred version
+  #renderer.color_buffer = blurred
 
   # Return the rendered image
   return renderer.color_buffer
@@ -274,7 +305,7 @@ def renderTexturedImage(img_width=512, img_height=512):
 ################################################################################
 
 class SdfImageTestApp(ComponentizedApplication):
-  def __init__(self,w,h):
+  def __init__(self,w,h,animate=False):
     super().__init__()
     self.ezapp = lev2.OrkEzApp.create(self)
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
@@ -282,6 +313,8 @@ class SdfImageTestApp(ComponentizedApplication):
     self.root = self.ezapp.topLayoutGroup
     self.img_width = w
     self.img_height = h
+    self.animate = animate
+    self.rotation_angle = 0.0
 
   def onGpuInit(self, ctx):
     super().onGpuInit(ctx)
@@ -289,15 +322,25 @@ class SdfImageTestApp(ComponentizedApplication):
     root = self.root
 
     # Render the image
-    rendered_image = renderTexturedImage(img_width=self.img_width, img_height=self.img_height)
+    rendered_image = renderTexturedImage(img_width=self.img_width, img_height=self.img_height, time=0.0)
 
     # Create ImageView to display the rendered image
     img_view = root.makeChild(uiclass=lev2.ui.ImageView, args=["SdfTexturedImage", vec4(0)])
-    img_view_widget = img_view.widget
-    img_view_widget.generate_mipmaps = True
-    img_view_widget.image = rendered_image
-    img_view_widget.maintain_aspect_ratio = True
+    self.img_view_widget = img_view.widget
+    self.img_view_widget.generate_mipmaps = True
+    self.img_view_widget.image = rendered_image
+    self.img_view_widget.maintain_aspect_ratio = True
     img_view.layout.fill(root.layout)
+
+  def onUpdate(self, updinfo):
+    super().onUpdate(updinfo)
+    if self.animate:
+      # Increment rotation angle
+      self.rotation_angle += updinfo.deltatime * 0.5  # 0.5 radians per second
+
+      # Re-render with new rotation
+      rendered_image = renderTexturedImage(img_width=self.img_width, img_height=self.img_height, time=updinfo.absolutetime)
+      self.img_view_widget.image = rendered_image
 
 ################################################################################
 
@@ -307,6 +350,8 @@ def main():
                       help='Output PNG file path (headless mode - render and save without UI)')
   parser.add_argument('-d', '--dim', type=int, default=512,
                       help='Output dimensions (width and height, default: 512)')
+  parser.add_argument('-a', '--animate', action='store_true',
+                      help='Enable animation in headed mode (rotates checkerboards)')
   args = parser.parse_args()
 
   if args.output:
@@ -319,7 +364,7 @@ def main():
     coreappexit()
   else:
     # Interactive mode - show UI
-    SdfImageTestApp(args.dim, args.dim).ezapp.mainThreadLoop()
+    SdfImageTestApp(args.dim, args.dim, args.animate).ezapp.mainThreadLoop()
 
 if __name__ == "__main__":
   main()

@@ -96,12 +96,24 @@ void pyinit_gfx_image_renderer(py::module& module_lev2) {
           .def("resize", &ImageRenderer::resize)
           .def("clear", &ImageRenderer::clear, py::arg("color") = fvec4(0, 0, 0, 0))
           .def("clearDistance", &ImageRenderer::clearDistance, py::arg("distance") = 1e10f)
-          .def_property_readonly(
+          .def_property(
               "color_buffer",
-              [](image_renderer_ptr_t renderer) -> image_ptr_t { return renderer->colorBuffer(); })
+              [](image_renderer_ptr_t renderer) -> image_ptr_t { return renderer->colorBuffer(); },
+              [](image_renderer_ptr_t renderer, image_ptr_t new_buffer) {
+                auto current = renderer->colorBuffer();
+                // Validate same size
+                OrkAssert(new_buffer->_width == current->_width && "color_buffer replacement must have same width");
+                OrkAssert(new_buffer->_height == current->_height && "color_buffer replacement must have same height");
+                // Validate RGBA32F format
+                OrkAssert(new_buffer->_format == EBufferFormat::RGBA32F && "color_buffer replacement must be RGBA32F");
+                // Replace the buffer
+                renderer->_color_buffer = new_buffer;
+              })
           .def_property_readonly(
               "distance_buffer",
               [](image_renderer_ptr_t renderer) -> image_ptr_t { return renderer->distanceBuffer(); })
+          // Rendering options
+          .def_readwrite("enable_bbox_optimization", &ImageRenderer::_enable_bbox_optimization)
           // Transform stack
           .def("pushTransform", &ImageRenderer::pushTransform)
           .def("popTransform", &ImageRenderer::popTransform)
@@ -117,6 +129,7 @@ void pyinit_gfx_image_renderer(py::module& module_lev2) {
           .def("fillCircle", &ImageRenderer::fillCircle)
           .def("fillArc", &ImageRenderer::fillArc)
           .def("fillQuadraticBezier", &ImageRenderer::fillQuadraticBezier)
+          .def("fillPolygon", &ImageRenderer::fillPolygon)
           // Stroked primitives
           .def("strokeLine", &ImageRenderer::strokeLine)
           .def(
@@ -129,6 +142,8 @@ void pyinit_gfx_image_renderer(py::module& module_lev2) {
           .def("strokeCircle", &ImageRenderer::strokeCircle)
           .def("strokeArc", &ImageRenderer::strokeArc)
           .def("strokeQuadraticBezier", &ImageRenderer::strokeQuadraticBezier)
+          .def("strokePolygon", &ImageRenderer::strokePolygon)
+          .def("fillAndStrokePolygon", &ImageRenderer::fillAndStrokePolygon)
           // Distance field
           .def("exportDistanceField", &ImageRenderer::exportDistanceField);
   type_codec->registerStdCodec<image_renderer_ptr_t>(imagerenderer_type);

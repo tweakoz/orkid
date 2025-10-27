@@ -126,6 +126,16 @@ struct Image {
   void resizedOf(const Image& inp, int w, int h);
   void downsample(Image& imgout) const;
   void gaussianBlur(Image& imgout, float kernel_size) const;
+
+  // Separable convolution with optional threshold
+  // kernel should be symmetric (e.g., Gaussian)
+  // threshold: only process pixels where all components > threshold (default 0 = all pixels)
+  void separableConvolve(
+    Image& output,
+    const std::vector<float>& kernel,
+    fvec4 threshold = fvec4(0.0f, 0.0f, 0.0f, 0.0f)
+  ) const;
+
   void lerp(const Image& a, const Image& b, float index);
   void fullBlurOf(const Image& a);
   void invert(uint8_t channel_mask); // Bit 0=R, 1=G, 2=B, 3=A

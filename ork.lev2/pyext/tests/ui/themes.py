@@ -319,7 +319,7 @@ class ThemesTestApp(ComponentizedApplication):
           btn.active_released_image = uvmap2
           btn.active_pressed_image  = uvmap3
           btn.preserve_aspect_ratio = True
-        case "maximize":
+        case "restore":
           btn.bgcolor = vec4(0, 0, 0, 1.0)
           btn.inactive_image        = provider1
           btn.active_released_image = provider1
@@ -333,11 +333,11 @@ class ThemesTestApp(ComponentizedApplication):
           btn.inactive_blend_mode = tokens.DST_MINUS_SRC
           btn.active_released_blend_mode = tokens.SUBTRACTIVE
           btn.active_pressed_blend_mode = tokens.ADDITIVE
-        case "restore":
+        case "maximize":
           btn.inactive_image        = knob2
           btn.active_released_image = knob2
           btn.active_pressed_image  = knob2
-          btn.bgcolor = vec4(0.3, 0.5, 0.3, 1.0)
+          btn.bgcolor = vec4(0.3, 0.3, 0.5, 1.0)
           btn.inactive_blend_mode = tokens.ALPHA_ADDITIVE
           btn.active_released_blend_mode = tokens.ADDITIVE
           btn.active_pressed_blend_mode = tokens.SUBTRACTIVE    

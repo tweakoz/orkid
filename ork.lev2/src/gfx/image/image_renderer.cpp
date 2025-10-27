@@ -42,17 +42,64 @@ fvec4 ImageSampler::sample(image_ptr_t img, fvec2 coord) {
       break;
   }
 
-  // Convert to pixel coordinates
-  int x = int(u * (img->_width - 1));
-  int y = int(v * (img->_height - 1));
+  // Convert to pixel coordinates (center of pixels at 0.5, 1.5, etc.)
+  float fx = u * img->_width - 0.5f;
+  float fy = v * img->_height - 0.5f;
 
-  // Clamp to image bounds
-  x = std::clamp(x, 0, int(img->_width - 1));
-  y = std::clamp(y, 0, int(img->_height - 1));
+  int x0 = int(std::floor(fx));
+  int y0 = int(std::floor(fy));
 
-  // Sample pixel (RGBA32F = 4 floats per pixel)
-  const float* pixel = reinterpret_cast<const float*>(img->_data->data()) + (y * img->_width + x) * 4;
-  return fvec4(pixel[0], pixel[1], pixel[2], pixel[3]);
+  float tx = fx - x0;  // Fractional part
+  float ty = fy - y0;
+
+  // Catmull-Rom cubic kernel
+  auto cubic = [](float t) -> std::array<float, 4> {
+    float t2 = t * t;
+    float t3 = t2 * t;
+    return {
+      -0.5f * t3 + t2 - 0.5f * t,           // w-1
+      1.5f * t3 - 2.5f * t2 + 1.0f,          // w0
+      -1.5f * t3 + 2.0f * t2 + 0.5f * t,     // w1
+      0.5f * t3 - 0.5f * t2                  // w2
+    };
+  };
+
+  auto wx = cubic(tx);
+  auto wy = cubic(ty);
+
+  // Helper to get pixel with wrapping
+  auto getPixel = [&](int x, int y) -> fvec4 {
+    // Handle wrapping based on wrap mode
+    switch (_wrap_mode) {
+      case ImageSampler::WrapMode::CLAMP:
+        x = std::clamp(x, 0, int(img->_width - 1));
+        y = std::clamp(y, 0, int(img->_height - 1));
+        break;
+      case ImageSampler::WrapMode::REPEAT:
+        x = ((x % int(img->_width)) + img->_width) % img->_width;
+        y = ((y % int(img->_height)) + img->_height) % img->_height;
+        break;
+      case ImageSampler::WrapMode::MIRROR:
+        // TODO: Implement mirror wrapping
+        x = std::clamp(x, 0, int(img->_width - 1));
+        y = std::clamp(y, 0, int(img->_height - 1));
+        break;
+    }
+    const float* pixel = reinterpret_cast<const float*>(img->_data->data()) + (y * img->_width + x) * 4;
+    return fvec4(pixel[0], pixel[1], pixel[2], pixel[3]);
+  };
+
+  // Sample 4x4 grid and accumulate with cubic weights
+  fvec4 result(0, 0, 0, 0);
+  for (int j = 0; j < 4; j++) {
+    for (int i = 0; i < 4; i++) {
+      float weight = wx[i] * wy[j];
+      fvec4 sample = getPixel(x0 + i - 1, y0 + j - 1);
+      result = result + sample * weight;
+    }
+  }
+
+  return result;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -328,17 +375,27 @@ void ImageRenderer::_rasterizeFilled(
 
   fmtx3 inv_transform = currentTransform().inverse();
 
-  // Transform bounds to screen space
-  bounds->transform(currentTransform());
+  int x_min, y_min, x_max, y_max;
 
-  // Clamp bounds to screen and convert to pixel indices
-  int x_min = std::max(0, int(std::floor(bounds->min.x)));
-  int y_min = std::max(0, int(std::floor(bounds->min.y)));
-  int x_max = std::min(width, int(std::ceil(bounds->max.x)));
-  int y_max = std::min(height, int(std::ceil(bounds->max.y)));
+  if (_enable_bbox_optimization) {
+    // Transform bounds to screen space
+    bounds->transform(currentTransform());
 
-  // Early exit if completely outside screen
-  if (x_min >= x_max || y_min >= y_max) return;
+    // Clamp bounds to screen and convert to pixel indices
+    x_min = std::max(0, int(std::floor(bounds->min.x)));
+    y_min = std::max(0, int(std::floor(bounds->min.y)));
+    x_max = std::min(width, int(std::ceil(bounds->max.x)));
+    y_max = std::min(height, int(std::ceil(bounds->max.y)));
+
+    // Early exit if completely outside screen
+    if (x_min >= x_max || y_min >= y_max) return;
+  } else {
+    // Use full screen bounds
+    x_min = 0;
+    y_min = 0;
+    x_max = width;
+    y_max = height;
+  }
 
   // Parallelize by chunking rows within bounds
   size_t bounded_height = y_max - y_min;
@@ -417,17 +474,27 @@ void ImageRenderer::_rasterizeStroked(
   fmtx3 inv_transform = currentTransform().inverse();
   float half_width = pen->_width * 0.5f;
 
-  // Transform bounds to screen space
-  bounds->transform(currentTransform());
+  int x_min, y_min, x_max, y_max;
 
-  // Clamp bounds to screen and convert to pixel indices
-  int x_min = std::max(0, int(std::floor(bounds->min.x)));
-  int y_min = std::max(0, int(std::floor(bounds->min.y)));
-  int x_max = std::min(width, int(std::ceil(bounds->max.x)));
-  int y_max = std::min(height, int(std::ceil(bounds->max.y)));
+  if (_enable_bbox_optimization) {
+    // Transform bounds to screen space
+    bounds->transform(currentTransform());
 
-  // Early exit if completely outside screen
-  if (x_min >= x_max || y_min >= y_max) return;
+    // Clamp bounds to screen and convert to pixel indices
+    x_min = std::max(0, int(std::floor(bounds->min.x)));
+    y_min = std::max(0, int(std::floor(bounds->min.y)));
+    x_max = std::min(width, int(std::ceil(bounds->max.x)));
+    y_max = std::min(height, int(std::ceil(bounds->max.y)));
+
+    // Early exit if completely outside screen
+    if (x_min >= x_max || y_min >= y_max) return;
+  } else {
+    // Use full screen bounds
+    x_min = 0;
+    y_min = 0;
+    x_max = width;
+    y_max = height;
+  }
 
   // Parallelize by chunking rows within bounds
   size_t bounded_height = y_max - y_min;
@@ -619,6 +686,176 @@ void ImageRenderer::fillQuadraticBezier(fvec2 A, fvec2 B, fvec2 C, image_brush_p
   _rasterizeFilled(sdf, brush, bounds);
 }
 
+void ImageRenderer::fillPolygon(const std::vector<std::vector<fvec2>>& contours, image_brush_ptr_t brush) {
+  if (!brush || contours.empty()) return;
+
+  // Get current transform to apply to vertices
+  fmtx3 transform = currentTransform();
+  fmtx3 inv_transform = transform.inverse();
+
+  // Build edge list from all contours
+  struct Edge {
+    float y_min, y_max, x, dx_dy;
+    int direction;  // +1 for down, -1 for up
+  };
+  std::vector<Edge> edges;
+
+  float global_min_x = std::numeric_limits<float>::max();
+  float global_max_x = std::numeric_limits<float>::lowest();
+  float global_min_y = std::numeric_limits<float>::max();
+  float global_max_y = std::numeric_limits<float>::lowest();
+
+  for (const auto& contour : contours) {
+    size_t n = contour.size();
+    if (n < 3) continue;
+
+    for (size_t i = 0; i < n; i++) {
+      // Apply transform to vertices
+      fvec3 p1_h = transform.transform(fvec3(contour[i].x, contour[i].y, 1.0f));
+      fvec3 p2_h = transform.transform(fvec3(contour[(i + 1) % n].x, contour[(i + 1) % n].y, 1.0f));
+      fvec2 p1(p1_h.x, p1_h.y);
+      fvec2 p2(p2_h.x, p2_h.y);
+
+      // Update global bounds
+      global_min_x = std::min(global_min_x, std::min(p1.x, p2.x));
+      global_max_x = std::max(global_max_x, std::max(p1.x, p2.x));
+      global_min_y = std::min(global_min_y, std::min(p1.y, p2.y));
+      global_max_y = std::max(global_max_y, std::max(p1.y, p2.y));
+
+      // Skip horizontal edges
+      if (std::abs(p2.y - p1.y) < 0.001f) continue;
+
+      // Ensure y1 < y2
+      float x1 = p1.x, y1 = p1.y;
+      float x2 = p2.x, y2 = p2.y;
+      int direction = (p2.y > p1.y) ? 1 : -1;
+
+      if (y1 > y2) {
+        std::swap(x1, x2);
+        std::swap(y1, y2);
+      }
+
+      float dx_dy = (x2 - x1) / (y2 - y1);
+      edges.push_back({y1, y2, x1, dx_dy, direction});
+    }
+  }
+
+  if (edges.empty()) return;
+
+  // Get image dimensions
+  float* color_pixels = const_cast<float*>(reinterpret_cast<const float*>(_color_buffer->_data->data()));
+  int width = _color_buffer->_width;
+  int height = _color_buffer->_height;
+
+  // Determine y range
+  int y_min = std::max(0, int(std::floor(global_min_y)));
+  int y_max = std::min(height, int(std::ceil(global_max_y)) + 1);
+
+  if (y_min >= y_max) return;
+
+  // Parallelize by chunking scanlines
+  size_t scan_height = y_max - y_min;
+  size_t num_chunks = (scan_height + IMG_RENDER_CHUNK_SIZE - 1) / IMG_RENDER_CHUNK_SIZE;
+  std::atomic<int> chunkcounter = num_chunks;
+
+  for (size_t chunk = 0; chunk < num_chunks; chunk++) {
+    auto op = [chunk, this, &edges, brush, &chunkcounter,
+               color_pixels, width, height, inv_transform,
+               y_min, y_max, global_min_x, global_max_x]() {
+      int y_start = y_min + int(chunk * IMG_RENDER_CHUNK_SIZE);
+      int y_end = std::min(y_start + int(IMG_RENDER_CHUNK_SIZE), y_max);
+
+      for (int y = y_start; y < y_end; y++) {
+        // Find active edges for this scanline
+        std::vector<std::pair<float, int>> active_edges;  // (x, direction)
+
+        for (const auto& edge : edges) {
+          if (edge.y_min <= y && y < edge.y_max) {
+            float x = edge.x + (y - edge.y_min) * edge.dx_dy;
+            active_edges.push_back({x, edge.direction});
+          }
+        }
+
+        // Sort by x coordinate
+        std::sort(active_edges.begin(), active_edges.end(),
+                  [](const auto& a, const auto& b) { return a.first < b.first; });
+
+        // Fill spans using winding rule
+        int winding = 0;
+        size_t i = 0;
+
+        while (i < active_edges.size()) {
+          float start_x = 0;
+          bool filling = false;
+
+          while (i < active_edges.size()) {
+            if (winding == 0) {
+              start_x = active_edges[i].first;
+            }
+
+            winding += active_edges[i].second;
+            i++;
+
+            if (winding == 0 && start_x >= 0) {
+              // Fill this span with antialiasing
+              float end_x = active_edges[i - 1].first;
+              int x1 = std::max(0, int(std::floor(start_x)));
+              int x2 = std::min(width - 1, int(std::ceil(end_x)));
+
+              for (int x = x1; x <= x2; x++) {
+                // Compute antialiasing coverage
+                float coverage = 1.0f;
+                float pixel_left = float(x);
+                float pixel_right = float(x + 1);
+
+                // Left edge AA
+                if (x == x1 && start_x > pixel_left) {
+                  coverage *= std::min(1.0f, pixel_right - start_x);
+                }
+                // Right edge AA
+                if (x == x2 && end_x < pixel_right) {
+                  coverage *= std::min(1.0f, end_x - pixel_left);
+                }
+
+                if (coverage > 0.0f) {
+                  int pixel_index = (y * width + x) * 4;
+
+                  fvec4 fill_color;
+                  if (brush->_use_texture && brush->_texture) {
+                    // Transform pixel to shape space then to texture space
+                    fvec2 pixel_pos(x + 0.5f, y + 0.5f);
+                    fvec3 transformed = inv_transform.transform(fvec3(pixel_pos.x, pixel_pos.y, 1.0f));
+                    fvec2 shape_pos(transformed.x, transformed.y);
+                    fvec3 tex_transformed = brush->_texture_matrix.transform(fvec3(shape_pos.x, shape_pos.y, 1.0f));
+                    fvec2 tex_coord(tex_transformed.x, tex_transformed.y);
+                    fill_color = brush->_sampler->sample(brush->_texture, tex_coord);
+                  } else {
+                    fill_color = brush->_solid_color;
+                  }
+
+                  // Blend with existing color using coverage
+                  float alpha = fill_color.w * coverage;
+                  color_pixels[pixel_index + 0] = fill_color.x * alpha + color_pixels[pixel_index + 0] * (1.0f - alpha);
+                  color_pixels[pixel_index + 1] = fill_color.y * alpha + color_pixels[pixel_index + 1] * (1.0f - alpha);
+                  color_pixels[pixel_index + 2] = fill_color.z * alpha + color_pixels[pixel_index + 2] * (1.0f - alpha);
+                  color_pixels[pixel_index + 3] = alpha + color_pixels[pixel_index + 3] * (1.0f - alpha);
+                }
+              }
+              break;  // Move to next span
+            }
+          }
+        }
+      }
+      chunkcounter.fetch_sub(1);
+    };
+    opq::concurrentQueue()->enqueue(op);
+  }
+
+  while(chunkcounter.load() > 0) {
+    std::this_thread::yield();
+  }
+}
+
 void ImageRenderer::strokeQuadraticBezier(fvec2 A, fvec2 B, fvec2 C, image_pen_ptr_t pen) {
   auto sdf = [this, A, B, C](fvec2 p) {
     return _sdfQuadraticBezier(p, A, B, C);
@@ -630,6 +867,36 @@ void ImageRenderer::strokeQuadraticBezier(fvec2 A, fvec2 B, fvec2 C, image_pen_p
   auto bounds = std::make_shared<SDFBounds>(fvec2(minx, miny), fvec2(maxx, maxy));
   bounds->expand(pen->_width + 2.0f);
   _rasterizeStroked(sdf, pen, bounds);
+}
+
+void ImageRenderer::strokePolygon(const std::vector<std::vector<fvec2>>& contours, image_pen_ptr_t pen) {
+  if (!pen || contours.empty()) return;
+
+  // Stroke all edges of all contours
+  for (const auto& contour : contours) {
+    size_t n = contour.size();
+    if (n < 2) continue;
+
+    for (size_t i = 0; i < n; i++) {
+      fvec2 p0 = contour[i];
+      fvec2 p1 = contour[(i + 1) % n];
+      strokeLine(p0, p1, pen);
+    }
+  }
+}
+
+void ImageRenderer::fillAndStrokePolygon(const std::vector<std::vector<fvec2>>& contours, image_brush_ptr_t brush, image_pen_ptr_t pen) {
+  if (contours.empty()) return;
+
+  // Fill first
+  if (brush) {
+    fillPolygon(contours, brush);
+  }
+
+  // Then stroke on top
+  if (pen) {
+    strokePolygon(contours, pen);
+  }
 }
 
 } // namespace ork::lev2

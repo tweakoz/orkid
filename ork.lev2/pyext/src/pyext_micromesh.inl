@@ -7,6 +7,7 @@
 
 #include "pyext.h"
 
+#include <cstring>
 #include <ork/math/cvector3.h>
 #include <ork/lev2/gfx/meshutil/rigid_primitive.inl>
 #include "_vdb_impl.h"
@@ -24,6 +25,73 @@ using micromesh_connectivity_ptr_t = std::shared_ptr<MicroMeshConnectivity>;
 using indexlist_t = std::vector<int>;
 
 ///////////////////////////////////////
+// Helper functions for py::list or buffer protocol (numpy) support
+///////////////////////////////////////
+
+inline void loadVec3Data(std::vector<fvec3>& out_verts, py::object input) {
+  // Try buffer protocol first (numpy arrays, etc.)
+  if (py::isinstance<py::buffer>(input)) {
+    py::buffer_info info = input.cast<py::buffer>().request();
+
+    // Validate buffer format and shape
+    if (info.format != py::format_descriptor<float>::format()) {
+      throw std::runtime_error("Buffer must have float32 dtype");
+    }
+    if (info.ndim != 2 || info.shape[1] != 3) {
+      throw std::runtime_error("Buffer must have shape (N, 3)");
+    }
+
+    size_t num_verts = info.shape[0];
+    out_verts.reserve(num_verts);
+
+    float* ptr = static_cast<float*>(info.ptr);
+
+    // Check if we can use fast memcpy path:
+    // - C-contiguous layout (natural strides)
+    // - stride[0] == 3 * sizeof(float) (row stride is 3 floats)
+    // - stride[1] == sizeof(float) (column stride is 1 float)
+    bool is_c_contiguous = (info.strides[0] == 3 * sizeof(float)) &&
+                           (info.strides[1] == sizeof(float));
+
+    if (is_c_contiguous) {
+      // Fast path: direct memcpy
+      // Memory layout matches fvec3 array layout exactly
+      size_t num_floats = num_verts * 3;
+      size_t num_bytes = num_floats * sizeof(float);
+
+      // Resize vector to make room
+      out_verts.resize(num_verts);
+
+      // Single memcpy operation
+      std::memcpy(out_verts.data(), ptr, num_bytes);
+    }
+    else {
+      // Slow path: handle non-contiguous or transposed arrays
+      // This handles Fortran order, sliced views, custom strides, etc.
+      size_t stride0 = info.strides[0] / sizeof(float);
+      size_t stride1 = info.strides[1] / sizeof(float);
+
+      for (size_t i = 0; i < num_verts; i++) {
+        float x = ptr[i * stride0 + 0 * stride1];
+        float y = ptr[i * stride0 + 1 * stride1];
+        float z = ptr[i * stride0 + 2 * stride1];
+        out_verts.push_back(fvec3(x, y, z));
+      }
+    }
+  }
+  // Fall back to py::list
+  else if (py::isinstance<py::list>(input)) {
+    py::list vert_list = input.cast<py::list>();
+    for (const auto& vtx : vert_list) {
+      out_verts.push_back(vtx.cast<fvec3>());
+    }
+  }
+  else {
+    throw std::runtime_error("Input must be a list of vec3 or numpy array with shape (N, 3)");
+  }
+}
+
+///////////////////////////////////////
 
 struct MicroMeshConnectivity {
   std::unordered_map<int,indexlist_t> _connectivity;
@@ -35,27 +103,69 @@ using umesh_rprim_t = meshutil::rigidprim_V12N12B12T8C4_t;
 using umesh_rprim_ptr_t = std::shared_ptr<umesh_rprim_t>;
 struct MicroMesh {
   MicroMesh() {}
-  MicroMesh(py::list vert_list, py::list face_list);
-  micromesh_connectivity_ptr_t computeVertexConnectivity() const;
+  MicroMesh(py::object vert_data, py::list face_list);
+
+  // Update methods for reusing storage (support py::list or numpy arrays for vertex/normal data)
+  void updateVertices(py::object vert_data);  // Only update vertices (topology unchanged)
+  void updateFromLists(py::object vert_data, py::list face_list);  // Update everything
+  void updateConnectivity();  // Recompute internal connectivity
+  void updateNormals(py::object normal_data);  // Set normals from list or numpy array
+  void computeNormals();  // Compute normals using internal connectivity
+
+  micromesh_connectivity_ptr_t getConnectivity();  // Get connectivity (compute if needed)
   micromesh_ptr_t smoothed(micromesh_connectivity_ptr_t conn) const;
-  std::vector<fvec3> computeNormals(micromesh_connectivity_ptr_t conn) const;
-  void updateRigidPrim(umesh_rprim_ptr_t prim, 
-                       micromesh_connectivity_ptr_t conn,
-                       vdb_vec3grid_ptr_t colorgrid, 
+  void updateRigidPrim(umesh_rprim_ptr_t prim,
+                       vdb_vec3grid_ptr_t colorgrid,
                        ctx_t context) const;
+
   std::vector<fvec3> _vertices;
   std::vector<fvec3> _colors;
+  std::vector<fvec3> _normals;
   std::vector<indexlist_t> _tris;
   std::vector<indexlist_t> _quads;
+
+  micromesh_connectivity_ptr_t _connectivity;
+  bool _connectivity_dirty = true;
 };
 
 ///////////////////////////////////////
 
-inline MicroMesh::MicroMesh(py::list vert_list, py::list face_list) {
-  for( const auto& vtx : vert_list ){
-    _vertices.push_back(vtx.cast<fvec3>());
-    _colors.push_back(fvec3(1.0f,1.0f,1.0f));
-  }
+inline MicroMesh::MicroMesh(py::object vert_data, py::list face_list) {
+  updateFromLists(vert_data, face_list);
+}
+
+///////////////////////////////////////
+
+inline void MicroMesh::updateVertices(py::object vert_data) {
+  // Update only vertices, preserving topology
+  _vertices.clear();
+  _colors.clear();
+
+  // Load vertices using helper (supports py::list or numpy)
+  loadVec3Data(_vertices, vert_data);
+
+  // Initialize colors
+  _colors.resize(_vertices.size(), fvec3(1.0f, 1.0f, 1.0f));
+
+  // Topology unchanged, connectivity still valid
+}
+
+///////////////////////////////////////
+
+inline void MicroMesh::updateFromLists(py::object vert_data, py::list face_list) {
+  // Clear and reuse existing storage
+  _vertices.clear();
+  _colors.clear();
+  _tris.clear();
+  _quads.clear();
+
+  // Load vertices using helper (supports py::list or numpy)
+  loadVec3Data(_vertices, vert_data);
+
+  // Initialize colors
+  _colors.resize(_vertices.size(), fvec3(1.0f, 1.0f, 1.0f));
+
+  // Load faces
   bool done_with_faces     = false;
   int iidx                 = 0;
   size_t numface_values = face_list.size();
@@ -87,35 +197,58 @@ inline MicroMesh::MicroMesh(py::list vert_list, py::list face_list) {
       }
     }
   }
+
+  // Topology changed, mark connectivity dirty
+  _connectivity_dirty = true;
 }
 
 ///////////////////////////////////////
 
-inline micromesh_connectivity_ptr_t MicroMesh::computeVertexConnectivity() const {
-      auto conn = std::make_shared<MicroMeshConnectivity>();
-      for( size_t itri=0; itri<_tris.size(); itri++ ){
-        auto& tri = _tris[itri];
-        for( size_t iv=0; iv<tri.size(); iv++ ){
-          int iv0 = tri[(iv+0)%3];
-          int iv1 = tri[(iv+1)%3];
-          int iv2 = tri[(iv+2)%3];
-          conn->_connectivity[iv0].push_back(iv1);
-          conn->_connectivity[iv0].push_back(iv2);
-        }
-      }
-      for( size_t iquad=0; iquad<_quads.size(); iquad++ ){
-        auto& quad = _quads[iquad];
-        for( size_t iv=0; iv<quad.size(); iv++ ){
-          int iv0 = quad[(iv+0)%4];
-          int iv1 = quad[(iv+1)%4];
-          int iv2 = quad[(iv+2)%4];
-          int iv3 = quad[(iv+3)%4];
-          conn->_connectivity[iv0].push_back(iv1);
-          conn->_connectivity[iv0].push_back(iv2);
-          conn->_connectivity[iv0].push_back(iv3);
-        }
-      }
-      return conn;
+inline void MicroMesh::updateConnectivity() {
+  // Create if needed
+  if (!_connectivity) {
+    _connectivity = std::make_shared<MicroMeshConnectivity>();
+  }
+
+  // Clear existing connectivity and rebuild
+  _connectivity->_connectivity.clear();
+
+  // Build connectivity from triangles
+  for( size_t itri=0; itri<_tris.size(); itri++ ){
+    auto& tri = _tris[itri];
+    for( size_t iv=0; iv<tri.size(); iv++ ){
+      int iv0 = tri[(iv+0)%3];
+      int iv1 = tri[(iv+1)%3];
+      int iv2 = tri[(iv+2)%3];
+      _connectivity->_connectivity[iv0].push_back(iv1);
+      _connectivity->_connectivity[iv0].push_back(iv2);
+    }
+  }
+
+  // Build connectivity from quads
+  for( size_t iquad=0; iquad<_quads.size(); iquad++ ){
+    auto& quad = _quads[iquad];
+    for( size_t iv=0; iv<quad.size(); iv++ ){
+      int iv0 = quad[(iv+0)%4];
+      int iv1 = quad[(iv+1)%4];
+      int iv2 = quad[(iv+2)%4];
+      int iv3 = quad[(iv+3)%4];
+      _connectivity->_connectivity[iv0].push_back(iv1);
+      _connectivity->_connectivity[iv0].push_back(iv2);
+      _connectivity->_connectivity[iv0].push_back(iv3);
+    }
+  }
+
+  _connectivity_dirty = false;
+}
+
+///////////////////////////////////////
+
+inline micromesh_connectivity_ptr_t MicroMesh::getConnectivity() {
+  if (_connectivity_dirty || !_connectivity) {
+    updateConnectivity();
+  }
+  return _connectivity;
 }
 
 ///////////////////////////////////////
@@ -141,8 +274,7 @@ inline micromesh_ptr_t MicroMesh::smoothed(micromesh_connectivity_ptr_t conn) co
   return result;
 }
 
-void MicroMesh::updateRigidPrim(umesh_rprim_ptr_t prim, 
-                                micromesh_connectivity_ptr_t conn, 
+void MicroMesh::updateRigidPrim(umesh_rprim_ptr_t prim,
                                 vdb_vec3grid_ptr_t colorgrid,
                                 ctx_t context) const {
   ////////////////////////////////////////////
@@ -163,7 +295,8 @@ void MicroMesh::updateRigidPrim(umesh_rprim_ptr_t prim,
   PG->_idxbuffer = idxbuf;
   prim->_gpuClusters.push_back(cluster);
   //////////////////////////////////////////////////////////////
-  auto normals = computeNormals(conn);
+  // Use cached normals (must call updateNormals() before this)
+  const auto& normals = _normals;
   //////////////////////////////////////////////////////////////
   auto vtxptr            = GBI->LockVB(*vtxbuf.get(), 0, num_verts);
   auto typed_vertex_base = (SVtxV12N12B12T8C4*)vtxptr;
@@ -231,8 +364,23 @@ void MicroMesh::updateRigidPrim(umesh_rprim_ptr_t prim,
 
 ///////////////////////////////////////
 
-inline std::vector<fvec3> MicroMesh::computeNormals(micromesh_connectivity_ptr_t conn) const {
-  std::vector<fvec3> normals;
+inline void MicroMesh::updateNormals(py::object normal_data) {
+  // Update normals from pre-generated list or numpy array
+  _normals.clear();
+
+  // Load normals using helper (supports py::list or numpy)
+  loadVec3Data(_normals, normal_data);
+}
+
+///////////////////////////////////////
+
+inline void MicroMesh::computeNormals() {
+  // Ensure connectivity is up to date
+  auto conn = getConnectivity();
+
+  _normals.clear();
+  _normals.reserve(_vertices.size());
+
   for( size_t iv=0; iv<_vertices.size(); iv++ ){
     const auto& vtx = _vertices[iv];
     const auto& connlist = conn->_connectivity.at(iv);
@@ -245,10 +393,8 @@ inline std::vector<fvec3> MicroMesh::computeNormals(micromesh_connectivity_ptr_t
       auto edge1 = (_vertices[ivb] - vtx).normalized();
       sum += edge0.crossWith(edge1);
     }
-    fvec3 normal = normalize(sum);
-    normals.push_back(normal);
+    _normals.push_back(normalize(sum));
   }
-  return normals;
 }
 
 } //namespace ork::lev2 {

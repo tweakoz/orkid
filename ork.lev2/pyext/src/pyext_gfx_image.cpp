@@ -168,6 +168,11 @@ void pyinit_gfx_image(py::module& module_lev2) {
       .def("vFlip", [](image_ptr_t img) {
         img->vFlip();
       })
+      .def("separableConvolve", [](image_ptr_t img, const std::vector<float>& kernel, fvec4 threshold) -> image_ptr_t {
+        auto output = std::make_shared<Image>();
+        img->separableConvolve(*output, kernel, threshold);
+        return output;
+      }, py::arg("kernel"), py::arg("threshold") = fvec4(0.0f, 0.0f, 0.0f, 0.0f))
       ;
   type_codec->registerStdCodec<image_ptr_t>(image_type);      
   ///////////////////////////////////////////////////////

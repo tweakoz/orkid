@@ -106,11 +106,11 @@ class MultiScene1Component(ApplicationComponent):
           case 0:
             sg_params.SkyboxTexPathStr = "arena"
           case 1:
-            sg_params.SkyboxTexPathStr = "pillars8k" if parent.u8kt else "pillars"
+            sg_params.SkyboxTexPathStr = "ork_envmaps|pillars4k"
           case 2:
             sg_params.SkyboxTexPathStr = "nebula"
           case 3:
-            sg_params.SkyboxTexPathStr = "futcity8k" if parent.u8kt else "futcity"
+            sg_params.SkyboxTexPathStr = "futcity"
         #
         self.scenegraph = lev2.scenegraph.Scene(sg_params)
         self.layer = self.scenegraph.createLayer("std_forward")
