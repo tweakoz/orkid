@@ -7,7 +7,7 @@
 ################################################################################
 
 import math, sys, os, argparse
-from orkengine.core import vec2, vec3, vec4, CrcStringProxy, mtx3
+from orkengine.core import vec2, vec3, vec4, CrcStringProxy, mtx3, coreappinit, coreappexit
 from orkengine import lev2
 from ork.app.application import ComponentizedApplication
 
@@ -188,11 +188,13 @@ def main():
   args = parser.parse_args()
 
   if args.output:
+    coreappinit()
     # Headless mode - just render and save
     print(f"Rendering {args.dim}x{args.dim} image in headless mode...")
     rendered_image = renderTexturedImage(args.dim, args.dim)
     rendered_image.writeToFile(args.output)
     print(f"Rendered image written to: {args.output}")
+    coreappexit()
   else:
     # Interactive mode - show UI
     SdfImageTestApp(args.dim, args.dim).ezapp.mainThreadLoop()

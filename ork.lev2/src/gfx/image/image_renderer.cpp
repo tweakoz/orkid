@@ -299,7 +299,7 @@ void ImageRenderer::_rasterizeFilled(
   std::atomic<int> chunkcounter = num_chunks;
 
   for (size_t chunk = 0; chunk < num_chunks; chunk++) {
-    auto op = [chunk, this, &sdf_func, &brush, &chunkcounter,
+    auto op = [chunk, this, sdf_func, brush, &chunkcounter,
                color_pixels, dist_pixels, width, height, inv_transform]() {
       size_t y_start = chunk * IMG_RENDER_CHUNK_SIZE;
       size_t y_end = std::min(y_start + IMG_RENDER_CHUNK_SIZE, size_t(height));
@@ -373,7 +373,7 @@ void ImageRenderer::_rasterizeStroked(
   std::atomic<int> chunkcounter = num_chunks;
 
   for (size_t chunk = 0; chunk < num_chunks; chunk++) {
-    auto op = [chunk, this, &sdf_func, &pen, &chunkcounter,
+    auto op = [chunk, this, sdf_func, pen, &chunkcounter,
                color_pixels, dist_pixels, width, height, inv_transform, half_width]() {
       size_t y_start = chunk * IMG_RENDER_CHUNK_SIZE;
       size_t y_end = std::min(y_start + IMG_RENDER_CHUNK_SIZE, size_t(height));
