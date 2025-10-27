@@ -241,6 +241,35 @@ void Image::downsample(Image& imgout) const {
               }
               break;
             }
+            case RGBA32F:
+            case RGB32F: {
+              auto outpixel = imgout.pixel32f(x, y);
+
+              for (size_t c = 0; c < this->_numcomponents; c++) {
+                double sum = 0.0;
+
+                // Sample 4x4 region with weights
+                for (int ky = 0; ky < 4; ky++) {
+                  int sy = base_y + ky;
+                  // Clamp to image bounds
+                  if (sy < 0) sy = 0;
+                  if (sy >= int(this->_height)) sy = this->_height - 1;
+
+                  for (int kx = 0; kx < 4; kx++) {
+                    int sx = base_x + kx;
+                    // Clamp to image bounds
+                    if (sx < 0) sx = 0;
+                    if (sx >= int(this->_width)) sx = this->_width - 1;
+
+                    auto pixel = this->pixel32f(sx, sy);
+                    sum += double(pixel[c]) * kernel[ky][kx];
+                  }
+                }
+
+                outpixel[c] = float(sum);
+              }
+              break;
+            }
             default:
               auto fmt_str = EBufferFormatToName(this->_format);
               printf("UNKNOWN FORMAT<%s>\n", fmt_str.c_str());

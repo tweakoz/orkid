@@ -180,6 +180,8 @@ struct Image {
   const uint8_t* pixel8(int x, int y) const;
   uint16_t* pixel16(int x, int y);
   const uint16_t* pixel16(int x, int y) const;
+  float* pixel32f(int x, int y);
+  const float* pixel32f(int x, int y) const;
 
   //////////////////////////
 

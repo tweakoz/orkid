@@ -8,6 +8,7 @@
 #include "pyext.h"
 #include <ork/lev2/gfx/image.h>
 #include <ork/kernel/memcpy.inl>
+#include <pybind11/numpy.h>
 #include <iostream>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -18,6 +19,21 @@ void pyinit_gfx_image(py::module& module_lev2) {
   auto type_codec = python::pb11_typecodec_t::instance();
   auto image_type = //
       py::class_<Image, image_ptr_t>(module_lev2, "Image")
+      .def(py::init([]() -> image_ptr_t {
+        return std::make_shared<Image>();
+      }))
+      .def("initWithFormat", [](image_ptr_t img, int w, int h, crcstring_ptr_t fmt) {
+        img->initWithFormat(w, h, EBufferFormat(fmt->hashed()));
+      })
+      .def("pixel32f", [](image_ptr_t img, int x, int y) -> py::array_t<float> {
+        float* pixel = img->pixel32f(x, y);
+        return py::array_t<float>(
+          {img->_numcomponents},  // shape
+          {sizeof(float)},         // strides
+          pixel,                   // data pointer
+          py::cast(img)            // parent object to keep alive
+        );
+      })
       .def_static("createFromFile", [](py::object inpath) -> image_ptr_t {
         auto as_str = py::cast<py::str>(inpath);
         auto datablock = ::ork::File::loadDatablock(as_str.cast<std::string>());

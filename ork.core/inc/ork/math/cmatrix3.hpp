@@ -436,10 +436,26 @@ template <typename T> void Matrix33<T>::transpose() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Matrix33<T>::inverse() {
+template <typename T> void Matrix33<T>::invert() {
   Matrix33<T> out;
   out = glm::inverse(this->asGlmMat3());
   *this = out;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> Matrix33<T> Matrix33<T>::inverse() const {
+  Matrix33<T> out;
+  out = glm::inverse(this->asGlmMat3());
+  return out;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> Vector3<T> Matrix33<T>::transform(const Vector3<T>& vec) const {
+  auto glm_vec = glm::vec3(vec.x, vec.y, vec.z);
+  auto glm_result = this->asGlmMat3() * glm_vec;
+  return Vector3<T>(glm_result.x, glm_result.y, glm_result.z);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

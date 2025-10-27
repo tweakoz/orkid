@@ -30,6 +30,7 @@ public:
   lev2::uitexmaterial_ptr_t _tex_material;
 
   bool _maintain_aspect_ratio = false;
+  bool _generate_mipmaps = false;
   void setImage(lev2::image_ptr_t img);
   void setImageProvider(lev2::image_provider_ptr_t imgprovider);
   meshutil::rigidprim_V12N12B12T8C4_ptr_t _img_mesh;

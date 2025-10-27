@@ -121,8 +121,12 @@ template <typename T> struct Matrix33 final
 
   void transpose();
   void inverseTranspose();
-  void inverse();
+  void invert();  // Modifies this matrix in place
+  Matrix33<T> inverse() const;  // Returns inverse without modifying this
   void normalizeInPlace();
+
+  // Transform a 3D vector by this matrix
+  Vector3<T> transform(const Vector3<T>& vec) const;
 
   void correctionMatrix(const Matrix33<T>& from, const Matrix33<T>& to);
 

@@ -17,7 +17,7 @@ from ork.app.testlib.multiscene1 import MultiScene1Component
 from _themes_overlay import OverlayComponent
 from ork.ui.color_picker import ColorPicker
 
-from orkengine.core import vec3, vec4, CrcStringProxy
+from orkengine.core import vec2, vec3, vec4, CrcStringProxy
 from orkengine import lev2
 
 l2exdir = (lev2.lev2exdir()/"python").normalized.as_string
@@ -30,6 +30,12 @@ tokens = CrcStringProxy()
 
 parser = argparse.ArgumentParser()
 args = parser.parse_args()
+
+################################################################################
+
+uvmap = lev2.Image.createFromFile(ork_path.effect_textures/"uvmap_A.png")
+knob1 = lev2.Image.createFromFile(ork_path.effect_textures/"knob1.png")
+knob2 = lev2.Image.createFromFile(ork_path.effect_textures/"knob2.png")
 
 ################################################################################
 
@@ -284,10 +290,6 @@ class ThemesTestApp(ComponentizedApplication):
     
     button_names = ["close", "maximize", "minimize", "restore"]
 
-    uvmap = lev2.Image.createFromFile(ork_path.effect_textures/"uvmap_A.png")
-    knob1 = lev2.Image.createFromFile(ork_path.effect_textures/"knob1.png")
-    knob2 = lev2.Image.createFromFile(ork_path.effect_textures/"knob2.png")
-
     knob1i = knob1.inverted
     knob1i = knob1i.dualThresholded(0.2, 0.0, 1.0, 1.0,0x07) # RGB threshold
     knobi1 = knob1i.gammaed(0.01)
@@ -347,9 +349,53 @@ class ThemesTestApp(ComponentizedApplication):
     tabs = vpack.makeChild(uiclass=lev2.ui.TabsWidget, args=["tabs", vec3(0.3, 0.3, 0.5)])
 
     self._createThemedTab(tabs, "Tab1", vec4(0.6, 0, 0, 1), tokens.ui_tab)
-    self._createThemedTab(tabs, "Tab2", vec4(0, 0.6, 0, 1), tokens.ui_tab)
 
+    ########################################
+    # Tab2 - ImageRenderer SVG synthesis test
+    ########################################
+
+    # Create synthesized image using ImageRenderer
+    img_width = 512
+    img_height = 512
+    renderer = lev2.ImageRenderer(img_width, img_height)
+
+    # Clear to dark background
+    renderer.clear(vec4(0.15, 0.15, 0.2, 1.0))
+
+    # Create brushes and pens
+    red_brush = lev2.ImageBrush(vec4(1.0, 0.2, 0.2, 1.0))
+    blue_brush = lev2.ImageBrush(vec4(0.2, 0.4, 1.0, 1.0))
+    yellow_brush = lev2.ImageBrush(vec4(1.0, 0.9, 0.2, 1.0))
+
+    white_pen = lev2.ImagePen(vec4(1.0, 1.0, 1.0, 1.0), 3.0)
+    cyan_pen = lev2.ImagePen(vec4(0.2, 1.0, 1.0, 1.0), 2.0)
+
+    # Draw some shapes
+    renderer.fillCircle(vec2(256, 256), 180, blue_brush)
+    renderer.strokeCircle(vec2(256, 256), 180, white_pen)
+
+    renderer.fillBox(vec2(150, 150), vec2(80, 80), red_brush, 10)
+    renderer.strokeBox(vec2(150, 150), vec2(80, 80), white_pen, 10)
+
+    renderer.fillBox(vec2(362, 150), vec2(80, 80), yellow_brush, 10)
+    renderer.strokeBox(vec2(362, 150), vec2(80, 80), white_pen, 10)
+
+    # Draw some lines
+    import math
+    renderer.strokeLine(vec2(100, 400), vec2(412, 400), cyan_pen)
+    renderer.strokeLine(vec2(256, 300), vec2(256, 450), cyan_pen)
+
+    # Create ImageView to display the rendered image
+    img_view = tabs.makeChild(uiclass=lev2.ui.ImageView, args=["RenderedImage",vec4(0)])
+    img_view.generate_mipmaps = True
+    img_view.image = renderer.color_buffer
+    img_view.maintain_aspect_ratio = True
+    #img_view.theme = tokens.ui_tab
+
+    ########################################
     # Tab3 - AlignmentGroup test
+    ########################################
+
     alignment_group = tabs.makeChild(uiclass=lev2.ui.AlignmentGroup, args=["Tab3"])
     alignment_group.alignment = tokens.CENTER
     alignment_group.width_proportional = 1.0

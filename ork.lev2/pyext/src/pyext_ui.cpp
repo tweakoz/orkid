@@ -1697,6 +1697,14 @@ void pyinit_ui(py::module& module_lev2) {
               [](ui::imgview_ptr_t imgview, bool b) { //
                 imgview->_maintain_aspect_ratio = b;
               })
+          .def_property(
+              "generate_mipmaps",
+              [](ui::imgview_ptr_t imgview) -> bool { //
+                return imgview->_generate_mipmaps;
+              },
+              [](ui::imgview_ptr_t imgview, bool b) { //
+                imgview->_generate_mipmaps = b;
+              })
           .def(
               "setImage",
               [](ui::imgview_ptr_t imgview, image_ptr_t img) { //

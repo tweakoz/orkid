@@ -94,7 +94,7 @@ void ImageView::DoDraw(drawevent_constptr_t drwev) {
       //int h = _active_image->_height;
       //int numbytes = _active_image->_data->length();
       //printf("ImageView<%s> set active image<%p> <%dx%d> numb<%d>\n", _name.c_str(), (void*)_active_image.get(), w, h, numbytes);
-      txi->initTextureFromImage(_texture.get(),_active_image);
+      txi->initTextureFromImage(_texture.get(),_active_image,_generate_mipmaps);
     }
   }
 
