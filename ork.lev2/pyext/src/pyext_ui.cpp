@@ -1022,77 +1022,92 @@ void pyinit_ui(py::module& module_lev2) {
               })
           .def_property(
               "inactive_image",
-              [](ui::imagebutton_ptr_t btn) -> lev2::image_ptr_t { //
-                return btn->_inactive_image;
+              [](ui::imagebutton_ptr_t btn) -> py::object { //
+                if (btn->_inactive_image_provider) {
+                  return py::cast(btn->_inactive_image_provider);
+                } else if (btn->_inactive_image) {
+                  return py::cast(btn->_inactive_image);
+                }
+                return py::none();
               },
-              [](ui::imagebutton_ptr_t btn, lev2::image_ptr_t img) { //
-                btn->setInactiveImage(img);
+              [](ui::imagebutton_ptr_t btn, py::object obj) { //
+                if (obj.is_none()) {
+                  btn->setInactiveImage(nullptr);
+                  btn->setInactiveImageProvider(nullptr);
+                } else {
+                  // Try image_ptr_t first
+                  try {
+                    auto img = obj.cast<lev2::image_ptr_t>();
+                    btn->setInactiveImage(img);
+                    btn->setInactiveImageProvider(nullptr);
+                    return;
+                  } catch(...) {}
+                  // Try image_provider_ptr_t
+                  try {
+                    auto prov = obj.cast<lev2::image_provider_ptr_t>();
+                    btn->setInactiveImageProvider(prov);
+                    return;
+                  } catch(...) {}
+                }
               })
           .def_property(
               "active_released_image",
-              [](ui::imagebutton_ptr_t btn) -> lev2::image_ptr_t { //
-                return btn->_active_released_image;
+              [](ui::imagebutton_ptr_t btn) -> py::object { //
+                if (btn->_active_released_image_provider) {
+                  return py::cast(btn->_active_released_image_provider);
+                } else if (btn->_active_released_image) {
+                  return py::cast(btn->_active_released_image);
+                }
+                return py::none();
               },
-              [](ui::imagebutton_ptr_t btn, lev2::image_ptr_t img) { //
-                btn->setActiveReleasedImage(img);
+              [](ui::imagebutton_ptr_t btn, py::object obj) { //
+                if (obj.is_none()) {
+                  btn->setActiveReleasedImage(nullptr);
+                  btn->setActiveReleasedImageProvider(nullptr);
+                } else {
+                  // Try image_ptr_t first
+                  try {
+                    auto img = obj.cast<lev2::image_ptr_t>();
+                    btn->setActiveReleasedImage(img);
+                    btn->setActiveReleasedImageProvider(nullptr);
+                    return;
+                  } catch(...) {}
+                  // Try image_provider_ptr_t
+                  try {
+                    auto prov = obj.cast<lev2::image_provider_ptr_t>();
+                    btn->setActiveReleasedImageProvider(prov);
+                    return;
+                  } catch(...) {}
+                }
               })
           .def_property(
               "active_pressed_image",
-              [](ui::imagebutton_ptr_t btn) -> lev2::image_ptr_t { //
-                return btn->_active_pressed_image;
-              },
-              [](ui::imagebutton_ptr_t btn, lev2::image_ptr_t img) { //
-                btn->setActivePressedImage(img);
-              })
-          .def_property(
-              "inactive_image_provider",
               [](ui::imagebutton_ptr_t btn) -> py::object { //
-                return py::none();
-              },
-              [](ui::imagebutton_ptr_t btn, py::object provider) { //
-                if (provider.is_none()) {
-                  btn->setInactiveImageProvider(nullptr);
-                } else {
-                  auto pyprov = std::make_shared<py::object>(provider);
-                  btn->setInactiveImageProvider([pyprov]() -> lev2::image_ptr_t {
-                    py::gil_scoped_acquire acquire_gil;
-                    auto result = (*pyprov)();
-                    return result.cast<lev2::image_ptr_t>();
-                  });
+                if (btn->_active_pressed_image_provider) {
+                  return py::cast(btn->_active_pressed_image_provider);
+                } else if (btn->_active_pressed_image) {
+                  return py::cast(btn->_active_pressed_image);
                 }
-              })
-          .def_property(
-              "active_released_image_provider",
-              [](ui::imagebutton_ptr_t btn) -> py::object { //
                 return py::none();
               },
-              [](ui::imagebutton_ptr_t btn, py::object provider) { //
-                if (provider.is_none()) {
-                  btn->setActiveReleasedImageProvider(nullptr);
-                } else {
-                  auto pyprov = std::make_shared<py::object>(provider);
-                  btn->setActiveReleasedImageProvider([pyprov]() -> lev2::image_ptr_t {
-                    py::gil_scoped_acquire acquire_gil;
-                    auto result = (*pyprov)();
-                    return result.cast<lev2::image_ptr_t>();
-                  });
-                }
-              })
-          .def_property(
-              "active_pressed_image_provider",
-              [](ui::imagebutton_ptr_t btn) -> py::object { //
-                return py::none();
-              },
-              [](ui::imagebutton_ptr_t btn, py::object provider) { //
-                if (provider.is_none()) {
+              [](ui::imagebutton_ptr_t btn, py::object obj) { //
+                if (obj.is_none()) {
+                  btn->setActivePressedImage(nullptr);
                   btn->setActivePressedImageProvider(nullptr);
                 } else {
-                  auto pyprov = std::make_shared<py::object>(provider);
-                  btn->setActivePressedImageProvider([pyprov]() -> lev2::image_ptr_t {
-                    py::gil_scoped_acquire acquire_gil;
-                    auto result = (*pyprov)();
-                    return result.cast<lev2::image_ptr_t>();
-                  });
+                  // Try image_ptr_t first
+                  try {
+                    auto img = obj.cast<lev2::image_ptr_t>();
+                    btn->setActivePressedImage(img);
+                    btn->setActivePressedImageProvider(nullptr);
+                    return;
+                  } catch(...) {}
+                  // Try image_provider_ptr_t
+                  try {
+                    auto prov = obj.cast<lev2::image_provider_ptr_t>();
+                    btn->setActivePressedImageProvider(prov);
+                    return;
+                  } catch(...) {}
                 }
               })
           .def_property(
@@ -1603,7 +1618,36 @@ void pyinit_ui(py::module& module_lev2) {
           .def_property(
               "invert_aspect",
               [](ui::imgview_ptr_t imgview) -> bool { return imgview->_invert_aspect; },
-              [](ui::imgview_ptr_t imgview, bool p) { imgview->_invert_aspect = p; });
+              [](ui::imgview_ptr_t imgview, bool p) { imgview->_invert_aspect = p; })
+          .def_property(
+              "image",
+              [](ui::imgview_ptr_t imgview) -> py::object {
+                if (imgview->_imgprovider) {
+                  return py::cast(imgview->_imgprovider);
+                } else if (imgview->_active_image) {
+                  return py::cast(imgview->_active_image);
+                }
+                return py::none();
+              },
+              [](ui::imgview_ptr_t imgview, py::object obj) {
+                if (obj.is_none()) {
+                  imgview->setImage(nullptr);
+                  imgview->setImageProvider(nullptr);
+                } else {
+                  // Try image_ptr_t first
+                  try {
+                    auto img = obj.cast<lev2::image_ptr_t>();
+                    imgview->setImage(img);
+                    return;
+                  } catch(...) {}
+                  // Try image_provider_ptr_t
+                  try {
+                    auto prov = obj.cast<lev2::image_provider_ptr_t>();
+                    imgview->setImageProvider(prov);
+                    return;
+                  } catch(...) {}
+                }
+              });
   type_codec->registerStdCodec<ui::imgview_ptr_t>(imgview_type);
   /////////////////////////////////////////////////////////////////////////////////
   pyinit_ui_layout(uimodule);

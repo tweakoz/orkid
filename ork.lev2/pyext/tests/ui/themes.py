@@ -58,7 +58,7 @@ class ThemesTestApp(ComponentizedApplication):
   def _createBlendCombo(self, parent, label, color, blend_attr):
     """Helper to create a blend selection combobox"""
     combo = parent.makeChild(uiclass=lev2.ui.ComboBox, args=[label, color, 0, 100, 0])
-    combo.setItems(["OFF", "ALPHA", "PREMA", "ADDITIVE", "ALPHA_ADDITIVE", "ALPHA_SUBTRACTIVE","INVERSE_SUBTRACTIVE","ALPHA_MODULATE","DST_MINUS_SRC"])
+    combo.setItems(["OFF", "ALPHA", "PREMA", "ADDITIVE", "SUBTRACTIVE", "ALPHA_ADDITIVE", "ALPHA_SUBTRACTIVE","INVERSE_SUBTRACTIVE","ALPHA_MODULATE","SRC_MINUS_DST","DST_MINUS_SRC"])
     setattr(self, blend_attr, "ALPHA") 
     combo.selected_index = 1
 
@@ -281,28 +281,60 @@ class ThemesTestApp(ComponentizedApplication):
     self.button_hpack.bg_color = vec4(0,0,0,1)
     
     button_names = ["close", "maximize", "minimize", "restore"]
+
+    uvmap = lev2.Image.createFromFile(ork_path.effect_textures/"uvmap_A.png")
+    knob1 = lev2.Image.createFromFile(ork_path.effect_textures/"knob1.png")
+    knob2 = lev2.Image.createFromFile(ork_path.effect_textures/"knob2.png")
+
+    knob1i = knob1.inverted
+    knob1i = knob1i.dualThresholded(0.2, 0.0, 1.0, 1.0,0x07) # RGB threshold
+    knobi1 = knob1i.gammaed(0.01)
+    knobi1 = knobi1.contrasted(2, 0.5)
+    #knob1i = knobi1.rotated90cw
+    self.movie1 = lev2.MoviePlaybackContext()
+    movie1_path = ork_path.assetcache/"movies"/"bunny.mp4"
+    self.movie1.init(movie1_path)
+    provider1 = self.movie1.image_provider
+    self.movie1.play()
+    self.movie2 = lev2.MoviePlaybackContext()
+    movie2_path = ork_path.assetcache/"movies"/"wipeout.mp4"
+    self.movie2.init(movie2_path)
+    provider2 = self.movie2.image_provider
+    self.movie2.play()
+
     for btn_name in button_names:
       btn = self.button_hpack.makeChild(uiclass=lev2.ui.ImageButton, args=[f"btn_{btn_name}", btn_name])
+
+
       match btn_name:
         case "close":
-          btn.bgcolor = vec4(0.8, 0.2, 0.2, 1.0)
-          btn.inactive_image        = lev2.Image.createFromFile(ork_path.effect_textures/"uvmap_A.png")
-          btn.active_released_image = lev2.Image.createFromFile(ork_path.effect_textures/"uvmap_A.png")
-          btn.active_pressed_image  = lev2.Image.createFromFile(ork_path.effect_textures/"uvmap_A.png")
+          btn.bgcolor = vec4(0, 0, 0, 1.0)
+          btn.inactive_image        = uvmap
+          btn.active_released_image = uvmap
+          btn.active_pressed_image  = uvmap
+          btn.preserve_aspect_ratio = True
         case "maximize":
-          btn.inactive_image        = lev2.Image.createFromFile(ork_path.effect_textures/"knob1.png")
-          btn.active_released_image = lev2.Image.createFromFile(ork_path.effect_textures/"knob1.png")
-          btn.active_pressed_image  = lev2.Image.createFromFile(ork_path.effect_textures/"knob1.png")
-          btn.bgcolor = vec4(0.2, 0.8, 0.2, 1.0)
+          btn.bgcolor = vec4(0, 0, 0, 1.0)
+          btn.inactive_image        = provider1
+          btn.active_released_image = provider1
+          btn.active_pressed_image  = provider2
+          btn.preserve_aspect_ratio = True
         case "minimize":
-          btn.inactive_image        = lev2.Image.createFromFile(ork_path.effect_textures/"knob2.png")
-          btn.active_released_image = lev2.Image.createFromFile(ork_path.effect_textures/"knob2.png")
-          btn.active_pressed_image  = lev2.Image.createFromFile(ork_path.effect_textures/"knob2.png")
-          btn.bgcolor = vec4(0.2, 0.2, 0.8, 1.0)
+          btn.inactive_image        = knob1i
+          btn.active_released_image = knob1i
+          btn.active_pressed_image  = knob1i
+          btn.bgcolor = vec4(0.5, 0.3, 0.3, 1.0)
+          btn.inactive_blend_mode = tokens.DST_MINUS_SRC
+          btn.active_released_blend_mode = tokens.SUBTRACTIVE
+          btn.active_pressed_blend_mode = tokens.ADDITIVE
         case "restore":
-          btn.bgcolor = vec4(0.8, 0.8, 0.2, 1.0)
-      #btn.theme = tokens.ui_tab
-    
+          btn.inactive_image        = knob2
+          btn.active_released_image = knob2
+          btn.active_pressed_image  = knob2
+          btn.bgcolor = vec4(0.3, 0.5, 0.3, 1.0)
+          btn.inactive_blend_mode = tokens.ALPHA_ADDITIVE
+          btn.active_released_blend_mode = tokens.ADDITIVE
+          btn.active_pressed_blend_mode = tokens.SUBTRACTIVE    
 
     ########################################
     # Add tabs widget with themed boxes

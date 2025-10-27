@@ -12,8 +12,14 @@
 #include <ork/lev2/gfx/image.h>
 
 #include <math.h>
+#include <algorithm>
 
 namespace ork::lev2 {
+////////////////////////////////////////////////////////////////
+
+// Chunk size for parallelized image downsampling
+constexpr size_t IMG_DOWNSAMPLE_CHUNK_SIZE = 128;
+
 ////////////////////////////////////////////////////////////////
 
 void Image::resizedOf(const Image& inp, int w, int h) {
@@ -138,67 +144,120 @@ void Image::resizedOf(const Image& inp, int w, int h) {
 void Image::downsample(Image& imgout) const {
   imgout.init(_width >> 1, _height >> 1, _numcomponents, _bytesPerChannel);
   imgout._format = _format;
-  for (size_t y = 0; y < imgout._height; y++) {
-    size_t ya = y * 2;
-    size_t yb = ya + 1;
-    if (yb > (_height - 1))
-      yb = _height - 1;
-    for (size_t x = 0; x < imgout._width; x++) {
-      size_t xa = x * 2;
-      size_t xb = xa + 1;
-      if (xb > (_width - 1))
-        xb = _width - 1;
 
-      using enum EBufferFormat;
-      switch (_format) {
-        case R8:
-        case BGR8:
-        case RGB8:
-        case BGRA8:
-        case RGBA8: {
-          auto outpixel     = imgout.pixel8(x, y);
-          auto inppixelXAYA = pixel8(xa, ya);
-          auto inppixelXBYA = pixel8(xb, ya);
-          auto inppixelXAYB = pixel8(xa, yb);
-          auto inppixelXBYB = pixel8(xb, yb);
-          for (size_t c = 0; c < _numcomponents; c++) {
-            double xaya  = double(inppixelXAYA[c]);
-            double xbya  = double(inppixelXBYA[c]);
-            double xayb  = double(inppixelXAYB[c]);
-            double xbyb  = double(inppixelXBYB[c]);
-            double avg   = (xaya + xbya + xayb + xbyb) * 0.25;
-            uint8_t uavg = uint8_t(avg);
-            outpixel[c]  = uavg;
+  // 4x4 Gaussian-like kernel weights for high-quality 2x downsampling
+  // Layout:  1  2  2  1
+  //          2  4  4  2
+  //          2  4  4  2
+  //          1  2  2  1
+  // Total weight = 36
+  constexpr double kernel[4][4] = {
+    {1.0/36.0, 2.0/36.0, 2.0/36.0, 1.0/36.0},
+    {2.0/36.0, 4.0/36.0, 4.0/36.0, 2.0/36.0},
+    {2.0/36.0, 4.0/36.0, 4.0/36.0, 2.0/36.0},
+    {1.0/36.0, 2.0/36.0, 2.0/36.0, 1.0/36.0}
+  };
+
+  // Parallelize downsampling by chunking output rows
+  size_t num_chunks = (imgout._height + IMG_DOWNSAMPLE_CHUNK_SIZE - 1) / IMG_DOWNSAMPLE_CHUNK_SIZE;
+  std::atomic<int> chunkcounter = num_chunks;
+
+  using enum EBufferFormat;
+
+  for (size_t chunk = 0; chunk < num_chunks; chunk++) {
+    auto op = [chunk, this, &imgout, &chunkcounter, &kernel]() {
+      size_t y_start = chunk * IMG_DOWNSAMPLE_CHUNK_SIZE;
+      size_t y_end = std::min(y_start + IMG_DOWNSAMPLE_CHUNK_SIZE, imgout._height);
+
+      for (size_t y = y_start; y < y_end; y++) {
+        // Map output pixel to input 4x4 region
+        // Center of output pixel y corresponds to input pixels [y*2, y*2+1]
+        // We sample from [y*2-1 ... y*2+2] for the 4x4 kernel
+        int base_y = int(y) * 2 - 1;
+
+        for (size_t x = 0; x < imgout._width; x++) {
+          int base_x = int(x) * 2 - 1;
+
+          switch (this->_format) {
+            case R8:
+            case BGR8:
+            case RGB8:
+            case BGRA8:
+            case RGBA8: {
+              auto outpixel = imgout.pixel8(x, y);
+
+              for (size_t c = 0; c < this->_numcomponents; c++) {
+                double sum = 0.0;
+
+                // Sample 4x4 region with weights
+                for (int ky = 0; ky < 4; ky++) {
+                  int sy = base_y + ky;
+                  // Clamp to image bounds
+                  if (sy < 0) sy = 0;
+                  if (sy >= int(this->_height)) sy = this->_height - 1;
+
+                  for (int kx = 0; kx < 4; kx++) {
+                    int sx = base_x + kx;
+                    // Clamp to image bounds
+                    if (sx < 0) sx = 0;
+                    if (sx >= int(this->_width)) sx = this->_width - 1;
+
+                    auto pixel = this->pixel8(sx, sy);
+                    sum += double(pixel[c]) * kernel[ky][kx];
+                  }
+                }
+
+                outpixel[c] = uint8_t(sum);
+              }
+              break;
+            }
+            case R16UI:
+            case RGB16:
+            case RGBA16: {
+              auto outpixel = imgout.pixel16(x, y);
+
+              for (size_t c = 0; c < this->_numcomponents; c++) {
+                double sum = 0.0;
+
+                // Sample 4x4 region with weights
+                for (int ky = 0; ky < 4; ky++) {
+                  int sy = base_y + ky;
+                  // Clamp to image bounds
+                  if (sy < 0) sy = 0;
+                  if (sy >= int(this->_height)) sy = this->_height - 1;
+
+                  for (int kx = 0; kx < 4; kx++) {
+                    int sx = base_x + kx;
+                    // Clamp to image bounds
+                    if (sx < 0) sx = 0;
+                    if (sx >= int(this->_width)) sx = this->_width - 1;
+
+                    auto pixel = this->pixel16(sx, sy);
+                    sum += double(pixel[c]) * kernel[ky][kx];
+                  }
+                }
+
+                outpixel[c] = uint16_t(sum);
+              }
+              break;
+            }
+            default:
+              auto fmt_str = EBufferFormatToName(this->_format);
+              printf("UNKNOWN FORMAT<%s>\n", fmt_str.c_str());
+              OrkAssert(false);
+              break;
           }
-          break;
         }
-        case R16UI:
-        case RGB16:
-        case RGBA16: {
-          auto outpixel     = imgout.pixel16(x, y);
-          auto inppixelXAYA = pixel16(xa, ya);
-          auto inppixelXBYA = pixel16(xb, ya);
-          auto inppixelXAYB = pixel16(xa, yb);
-          auto inppixelXBYB = pixel16(xb, yb);
-          for (size_t c = 0; c < _numcomponents; c++) {
-            double xaya   = double(inppixelXAYA[c]);
-            double xbya   = double(inppixelXBYA[c]);
-            double xayb   = double(inppixelXAYB[c]);
-            double xbyb   = double(inppixelXBYB[c]);
-            double avg    = (xaya + xbya + xayb + xbyb) * 0.25;
-            uint16_t uavg = uint16_t(avg);
-            outpixel[c]   = uavg;
-          }
-          break;
-        }
-        default:
-          auto fmt_str = EBufferFormatToName(_format);
-          printf("UNKNOWN FORMAT<%s>\n", fmt_str.c_str());
-          OrkAssert(false);
-          break;
       }
-    }
+      chunkcounter.fetch_sub(1);
+    };
+    opq::concurrentQueue()->enqueue(op);
   }
+
+  while(chunkcounter.load() > 0) {
+    std::this_thread::yield();
+  }
+
   imgout._debugName = _debugName + "_ds";
   // auto pathr        = FormatString("%s.png", imgout._debugName.c_str());
   // auto path         = file::Path::temp_dir() / pathr;

@@ -71,14 +71,14 @@ void ImageButton::_updateTextures(lev2::Context* ctx) {
 
   // Update inactive state
   if (_inactive_image_provider) {
-    auto new_image = _inactive_image_provider();
+    auto new_image = _inactive_image_provider->_func();
     if (new_image != _inactive_image) {
       _inactive_image = new_image;
       if (_inactive_image) {
         if (!_inactive_texture) {
           _inactive_texture = std::make_shared<lev2::Texture>();
         }
-        txi->initTextureFromImage(_inactive_texture.get(), _inactive_image, true);
+        txi->initTextureFromImage(_inactive_texture.get(), _inactive_image, false);
       }
     }
   } else if (_inactive_image && !_inactive_texture) {
@@ -88,14 +88,14 @@ void ImageButton::_updateTextures(lev2::Context* ctx) {
 
   // Update active_released state
   if (_active_released_image_provider) {
-    auto new_image = _active_released_image_provider();
+    auto new_image = _active_released_image_provider->_func();
     if (new_image != _active_released_image) {
       _active_released_image = new_image;
       if (_active_released_image) {
         if (!_active_released_texture) {
           _active_released_texture = std::make_shared<lev2::Texture>();
         }
-        txi->initTextureFromImage(_active_released_texture.get(), _active_released_image, true);
+        txi->initTextureFromImage(_active_released_texture.get(), _active_released_image, false);
       }
     }
   } else if (_active_released_image && !_active_released_texture) {
@@ -105,14 +105,14 @@ void ImageButton::_updateTextures(lev2::Context* ctx) {
 
   // Update active_pressed state
   if (_active_pressed_image_provider) {
-    auto new_image = _active_pressed_image_provider();
+    auto new_image = _active_pressed_image_provider->_func();
     if (new_image != _active_pressed_image) {
       _active_pressed_image = new_image;
       if (_active_pressed_image) {
         if (!_active_pressed_texture) {
           _active_pressed_texture = std::make_shared<lev2::Texture>();
         }
-        txi->initTextureFromImage(_active_pressed_texture.get(), _active_pressed_image, true);
+        txi->initTextureFromImage(_active_pressed_texture.get(), _active_pressed_image, false);
       }
     }
   } else if (_active_pressed_image && !_active_pressed_texture) {
@@ -128,6 +128,7 @@ void ImageButton::DoDraw(drawevent_constptr_t drwev) {
   auto fbi    = tgt->FBI();
   auto mtxi   = tgt->MTXI();
   auto primi  = tgt->PRI();
+  auto fxi    = tgt->FXI();
   auto defmtl = lev2::defaultUITextureMaterial();
 
   _drawColoredBox(drwev, _bgcolor);
@@ -208,9 +209,12 @@ void ImageButton::DoDraw(drawevent_constptr_t drwev) {
     // Set blend mode, depth test, and texture
     tgt->PushModColor(fvec4(1, 1, 1, 1));
     defmtl->SetTexture(lev2::ETEXDEST_DIFFUSE, current_texture.get());
-    defmtl->_rasterstate->setBlendingMacro(current_blend_mode);
-    defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
-
+    auto rs = defmtl->_rasterstate;
+    rs->setBlendingMacro(current_blend_mode);
+    rs->setDepthTest(lev2::EDepthTest::OFF);
+    int prev_pri = rs->_priority;
+    rs->_priority = 1<<16; 
+    fxi->pushRasterState(rs);
     // Draw textured quad
     primi->RenderQuadAtZ(
         defmtl.get(),
@@ -224,6 +228,8 @@ void ImageButton::DoDraw(drawevent_constptr_t drwev) {
         0.0f,
         1.0f      // v0, v1
     );
+    fxi->popRasterState();
+    rs->_priority = prev_pri;
 
     tgt->PopModColor();
     defmtl->SetTexture(lev2::ETEXDEST_DIFFUSE, nullptr);

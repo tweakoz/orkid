@@ -292,7 +292,7 @@ class PackWidgets(object):
     movie1_path = str(path.stage()/"assetcache"/"movies"/"bunny.mp4")
     self.movie1.init(movie1_path)
     provider1 = self.movie1.createImageProvider()
-    self.imgview1.setImageProvider(provider1)
+    self.imgview1.image = provider1
     self.movie1.play()
     #self.imgview1.invert_aspect = True
     self.prg1 = self.movie1.createAudioProgram(self.synth)
@@ -329,7 +329,7 @@ class PackWidgets(object):
     movie2_path = str(path.stage()/"assetcache"/"movies"/"wipeout.mp4")
     self.movie2.init(movie2_path)
     provider2 = self.movie2.createImageProvider()
-    self.imgview2.setImageProvider(provider2)
+    self.imgview2.image = provider2
     self.movie2.play()
    
     self.prg2 = self.movie2.createAudioProgram(self.synth)

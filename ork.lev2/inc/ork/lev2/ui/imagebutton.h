@@ -39,9 +39,9 @@ public:
   // Image provider setters (dynamic)
   ///////////////////////////////////////////////
 
-  void setInactiveImageProvider(image_provider_t provider) { _inactive_image_provider = provider; }
-  void setActiveReleasedImageProvider(image_provider_t provider) { _active_released_image_provider = provider; }
-  void setActivePressedImageProvider(image_provider_t provider) { _active_pressed_image_provider = provider; }
+  void setInactiveImageProvider(lev2::image_provider_ptr_t provider) { _inactive_image_provider = provider; }
+  void setActiveReleasedImageProvider(lev2::image_provider_ptr_t provider) { _active_released_image_provider = provider; }
+  void setActivePressedImageProvider(lev2::image_provider_ptr_t provider) { _active_pressed_image_provider = provider; }
 
   ///////////////////////////////////////////////
   // Blend mode setters
@@ -73,19 +73,19 @@ public:
   // Inactive state
   lev2::image_ptr_t _inactive_image;
   lev2::texture_ptr_t _inactive_texture;
-  image_provider_t _inactive_image_provider;
+  lev2::image_provider_ptr_t _inactive_image_provider;
   lev2::BlendingMacro _inactive_blend_mode = lev2::BlendingMacro::OFF;
 
   // Active Released state (hovered but not pressed)
   lev2::image_ptr_t _active_released_image;
   lev2::texture_ptr_t _active_released_texture;
-  image_provider_t _active_released_image_provider;
+  lev2::image_provider_ptr_t _active_released_image_provider;
   lev2::BlendingMacro _active_released_blend_mode = lev2::BlendingMacro::OFF;
 
   // Active Pressed state (clicked down)
   lev2::image_ptr_t _active_pressed_image;
   lev2::texture_ptr_t _active_pressed_texture;
-  image_provider_t _active_pressed_image_provider;
+  lev2::image_provider_ptr_t _active_pressed_image_provider;
   lev2::BlendingMacro _active_pressed_blend_mode = lev2::BlendingMacro::OFF;
 
   private:

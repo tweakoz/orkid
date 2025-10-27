@@ -21,12 +21,16 @@ void pyinit_movie(py::module& module_lev2) {
   auto movieplayback_type = //
       py::class_<MoviePlaybackContext, movieplayback_ptr_t>(module_lev2, "MoviePlaybackContext")
           .def(py::init<>())
-          .def("init", [](movieplayback_ptr_t ctx, const std::string& filename) { ctx->init(filename); })
+          .def("init", [](movieplayback_ptr_t ctx, py::object filename) { //
+            auto as_str    = py::cast<py::str>(filename);
+            ctx->init(as_str.cast<std::string>());
+          }) 
           .def("play", [](movieplayback_ptr_t ctx) { ctx->play(); })
           .def("pause", [](movieplayback_ptr_t ctx) { ctx->pause(); })
           .def("stop", [](movieplayback_ptr_t ctx) { ctx->stop(); })
           .def("restart", [](movieplayback_ptr_t ctx) { ctx->restart(); })
           .def("createImageProvider", [](movieplayback_ptr_t ctx) -> image_provider_ptr_t { return ctx->createImageProvider(); })
+          .def_property_readonly("image_provider", [](movieplayback_ptr_t ctx) -> image_provider_ptr_t { return ctx->createImageProvider(); })
           .def(
               "createAudioProgram",
               [](movieplayback_ptr_t ctx, audio::singularity::synth_ptr_t synth) -> audio::singularity::prgdata_ptr_t {

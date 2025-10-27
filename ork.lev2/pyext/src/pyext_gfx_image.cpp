@@ -80,6 +80,78 @@ void pyinit_gfx_image(py::module& module_lev2) {
       .def("writeToFile", [](image_ptr_t img, const std::string& outpath) {
         img->writeToFile(file::Path(outpath));
       })
+      .def("invert", [](image_ptr_t img, uint8_t channel_mask) {
+        img->invert(channel_mask);
+      }, py::arg("channel_mask") = 0x0F) // Default: invert all channels (RGBA)
+      .def_property_readonly("inverted", [](image_ptr_t img) -> image_ptr_t {
+        auto result = std::make_shared<Image>(*img); // Copy constructor
+        result->invert(0x0F); // Invert all channels
+        return result;
+      })
+      .def("gamma", [](image_ptr_t img, float gamma_value, uint8_t channel_mask) {
+        img->gamma(gamma_value, channel_mask);
+      }, py::arg("gamma_value"), py::arg("channel_mask") = 0x0F)
+      .def("gammaed", [](image_ptr_t img, float gamma_value, uint8_t channel_mask) -> image_ptr_t {
+        auto result = std::make_shared<Image>(*img);
+        result->gamma(gamma_value, channel_mask);
+        return result;
+      }, py::arg("gamma_value"), py::arg("channel_mask") = 0x0F)
+      .def("gammaPerChannel", [](image_ptr_t img, float r, float g, float b, float a) {
+        img->gammaPerChannel(r, g, b, a);
+      }, py::arg("r"), py::arg("g"), py::arg("b"), py::arg("a"))
+      .def("gammaedPerChannel", [](image_ptr_t img, float r, float g, float b, float a) -> image_ptr_t {
+        auto result = std::make_shared<Image>(*img);
+        result->gammaPerChannel(r, g, b, a);
+        return result;
+      }, py::arg("r"), py::arg("g"), py::arg("b"), py::arg("a"))
+      .def("dualThreshold", [](image_ptr_t img, float low_threshold, float set_low, float high_threshold, float set_high, uint8_t channel_mask) {
+        img->dualThreshold(low_threshold, set_low, high_threshold, set_high, channel_mask);
+      }, py::arg("low_threshold"), py::arg("set_low"), py::arg("high_threshold"), py::arg("set_high"), py::arg("channel_mask") = 0x0F)
+      .def("dualThresholded", [](image_ptr_t img, float low_threshold, float set_low, float high_threshold, float set_high, uint8_t channel_mask) -> image_ptr_t {
+        auto result = std::make_shared<Image>(*img);
+        result->dualThreshold(low_threshold, set_low, high_threshold, set_high, channel_mask);
+        return result;
+      }, py::arg("low_threshold"), py::arg("set_low"), py::arg("high_threshold"), py::arg("set_high"), py::arg("channel_mask") = 0x0F)
+      .def("contrast", [](image_ptr_t img, float contrast_value, float midpoint, uint8_t channel_mask) {
+        img->contrast(contrast_value, midpoint, channel_mask);
+      }, py::arg("contrast_value"), py::arg("midpoint") = 0.5f, py::arg("channel_mask") = 0x0F)
+      .def("contrasted", [](image_ptr_t img, float contrast_value, float midpoint, uint8_t channel_mask) -> image_ptr_t {
+        auto result = std::make_shared<Image>(*img);
+        result->contrast(contrast_value, midpoint, channel_mask);
+        return result;
+      }, py::arg("contrast_value"), py::arg("midpoint") = 0.5f, py::arg("channel_mask") = 0x0F)
+      .def("combine", [](image_ptr_t img, fmtx4 matrix) {
+        img->combine(matrix);
+      }, py::arg("matrix"))
+      .def("combined", [](image_ptr_t img, fmtx4 matrix) -> image_ptr_t {
+        auto result = std::make_shared<Image>(*img);
+        result->combine(matrix);
+        return result;
+      }, py::arg("matrix"))
+      .def_property_readonly("rotated90cw", [](image_ptr_t img) -> image_ptr_t {
+        return img->rotated90cw();
+      })
+      .def_property_readonly("rotated90ccw", [](image_ptr_t img) -> image_ptr_t {
+        return img->rotated90ccw();
+      })
+      .def("rotate90cw", [](image_ptr_t img) {
+        img->rotate90cw();
+      })
+      .def("rotate90ccw", [](image_ptr_t img) {
+        img->rotate90ccw();
+      })
+      .def_property_readonly("hFlipped", [](image_ptr_t img) -> image_ptr_t {
+        return img->hFlipped();
+      })
+      .def_property_readonly("vFlipped", [](image_ptr_t img) -> image_ptr_t {
+        return img->vFlipped();
+      })
+      .def("hFlip", [](image_ptr_t img) {
+        img->hFlip();
+      })
+      .def("vFlip", [](image_ptr_t img) {
+        img->vFlip();
+      })
       ;
   type_codec->registerStdCodec<image_ptr_t>(image_type);      
   ///////////////////////////////////////////////////////

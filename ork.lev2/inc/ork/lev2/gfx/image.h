@@ -128,6 +128,22 @@ struct Image {
   void gaussianBlur(Image& imgout, float kernel_size) const;
   void lerp(const Image& a, const Image& b, float index);
   void fullBlurOf(const Image& a);
+  void invert(uint8_t channel_mask); // Bit 0=R, 1=G, 2=B, 3=A
+  void gamma(float gamma_value, uint8_t channel_mask = 0x0F);
+  void gammaPerChannel(float gamma_r, float gamma_g, float gamma_b, float gamma_a);
+  void dualThreshold(float low_threshold, float set_low, float high_threshold, float set_high, uint8_t channel_mask = 0x0F);
+  void contrast(float contrast_value, float midpoint = 0.5f, uint8_t channel_mask = 0x0F);
+  void combine(const fmtx4& matrix);
+
+  // Geometric transformations
+  image_ptr_t rotated90cw() const;
+  image_ptr_t rotated90ccw() const;
+  void rotate90cw();
+  void rotate90ccw();
+  image_ptr_t hFlipped() const;
+  image_ptr_t vFlipped() const;
+  void hFlip();
+  void vFlip();
 
   //////////////////////////
 
