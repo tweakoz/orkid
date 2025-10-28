@@ -1,6 +1,6 @@
 #!/usr/bin/env ork.python
 """
-Font Browser - View system monospace fonts at multiple sizes
+Font Browser 2 - View system monospace fonts with optional SDF rendering
 """
 
 import sys
@@ -8,6 +8,7 @@ import json
 import signal
 import argparse
 from pathlib import Path
+import freetype
 
 # Import OBT utilities
 from obt import path as obt_path
@@ -18,7 +19,7 @@ from orkengine import lev2
 
 # Import ork font utilities
 from ork import font as ork_font
-from ork.font.atlas import save_atlas
+from ork.font.atlas import generate_sdf_atlas, save_atlas
 
 tokens = CrcStringProxy()
 
@@ -47,17 +48,19 @@ def find_font_by_name(font_name):
 
 ################################################################################
 
-def generate_and_register_fonts(font_path, font_family, sizes, ssaa=4):
+def generate_and_register_fonts(font_path, font_family, sizes, ssaa=4, use_sdf=False):
     """Generate atlases for all sizes and register with FontManager"""
 
     # Create temp directory
     temp_dir = obt_path.stage() / "tempdir" / "fonttemp"
     temp_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f"\nGenerating font atlases:")
+    mode_str = "SDF" if use_sdf else "Bitmap"
+    print(f"\nGenerating {mode_str} font atlases:")
     print(f"  Font: {font_family}")
     print(f"  Sizes: {sizes}")
-    print(f"  SSAA: {ssaa}x")
+    if not use_sdf:
+        print(f"  SSAA: {ssaa}x")
     print(f"  Output: {temp_dir}\n")
 
     registered_fonts = []
@@ -68,20 +71,34 @@ def generate_and_register_fonts(font_path, font_family, sizes, ssaa=4):
         print(f"  Generating {font_id}...", end='', flush=True)
 
         try:
-            # Generate atlas
-            gen = FontAtlasGenerator(str(font_path), pixel_size=size, dpi=96)
-            atlas, metadata = gen.generate_f2i_style_atlas(grid_size=16, ssaa=ssaa)
+            if use_sdf:
+                # Generate SDF atlas
+                atlas_img, metadata = generate_sdf_atlas(font_path, size)
 
-            # Save to temp directory (without grid overlay for production)
-            output_path = temp_dir / font_id
-            save_atlas(atlas, metadata, str(output_path), add_grid=False)
+                # Save using lev2.Image
+                output_path = temp_dir / font_id
+                atlas_img.writeToFile(str(output_path) + ".png")
 
-            # Create FontDesc from JSON
+                # Save metadata JSON
+                json_path = temp_dir / f"{font_id}.json"
+                with open(json_path, 'w') as f:
+                    json.dump(metadata, f, indent=2)
+
+            else:
+                # Generate bitmap atlas (original method)
+                gen = FontAtlasGenerator(str(font_path), pixel_size=size, dpi=96)
+                atlas, metadata = gen.generate_f2i_style_atlas(grid_size=16, ssaa=ssaa)
+
+                # Save to temp directory
+                output_path = temp_dir / font_id
+                save_atlas(atlas, metadata, str(output_path), add_grid=False)
+
+            # Load metadata
             json_path = temp_dir / f"{font_id}.json"
             with open(json_path) as f:
                 meta = json.load(f)
 
-            # Create and populate FontDesc using ork.font utility
+            # Create and populate FontDesc
             desc = lev2.FontDesc()
             ork_font.populate_fontdesc_from_metadata(
                 desc, meta, font_id, str(output_path), size
@@ -95,6 +112,8 @@ def generate_and_register_fonts(font_path, font_family, sizes, ssaa=4):
 
         except Exception as e:
             print(f" ✗ ({e})")
+            import traceback
+            traceback.print_exc()
 
     print(f"\nRegistered {len(registered_fonts)} fonts\n")
     return registered_fonts
@@ -104,7 +123,7 @@ def generate_and_register_fonts(font_path, font_family, sizes, ssaa=4):
 class FontBrowser:
     """Font browser application"""
 
-    def __init__(self, font_name, sizes, ssaa):
+    def __init__(self, font_name, sizes, ssaa, use_sdf):
         self.font_name = font_name
         self.sizes = sizes
 
@@ -125,7 +144,8 @@ class FontBrowser:
             font_info['path'],
             font_info['family'].replace(" ", ""),  # Remove spaces for font ID
             sizes,
-            ssaa
+            ssaa,
+            use_sdf
         )
 
         # Create UI
@@ -199,14 +219,15 @@ class FontBrowser:
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Browse and view system monospace fonts',
+        description='Browse and view system monospace fonts (with optional SDF rendering)',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s --list                              # List all monospace fonts
-  %(prog)s --show Inconsolata                  # Show Inconsolata font
-  %(prog)s --show Monaco --sizes 14,18,24,32   # Custom sizes
-  %(prog)s --show "JetBrains Mono" --ssaa 16   # With 4x SSAA
+  %(prog)s --list                                # List all monospace fonts
+  %(prog)s --show Inconsolata                    # Show Inconsolata font (bitmap)
+  %(prog)s --show Inconsolata --sdf              # Show Inconsolata font (SDF)
+  %(prog)s --show Monaco --sizes 14,18,24,32     # Custom sizes
+  %(prog)s --show "JetBrains Mono" --ssaa 16     # Bitmap with 4x SSAA
         """
     )
 
@@ -217,7 +238,9 @@ Examples:
     parser.add_argument('--sizes', type=str,
                        help='Comma-separated list of even sizes (default: 12-40 even)')
     parser.add_argument('--ssaa', type=int, choices=[1, 4, 9, 16, 25], default=25,
-                       help='SSAA level: 1=off, 4=2x, 9=3x, 16=4x, 25=5x (default: 4)')
+                       help='SSAA level for bitmap mode: 1=off, 4=2x, 9=3x, 16=4x, 25=5x (default: 25)')
+    parser.add_argument('--sdf', '-S', action='store_true',
+                       help='Use SDF rendering instead of bitmap (ignores --ssaa)')
 
     args = parser.parse_args()
 
@@ -244,7 +267,7 @@ Examples:
             sizes = list(range(12, 42, 2))
 
         # Create and run browser
-        browser = FontBrowser(args.show, sizes, args.ssaa)
+        browser = FontBrowser(args.show, sizes, args.ssaa, args.sdf)
         browser.ezapp.mainThreadLoop()
     else:
         parser.print_help()

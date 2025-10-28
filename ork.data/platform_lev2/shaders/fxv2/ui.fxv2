@@ -107,10 +107,11 @@ vertex_shader vs_uitext : iface_vdefault {
   frg_uv      = uv0;  
 }
 fragment_shader ps_uitext : iface_fmt {
-  vec4 s = texture(ColorMap, frg_uv);
-  float texa = pow(s.r,0.5);
+  vec4 s = textureLod(ColorMap, frg_uv,0);
+  float texa = s.r; //pow(s.r,0.5);
   //out_clr = s; //vec4(texa,texa,texa,1);
   out_clr = vec4(ModColor.xyz, texa);
+  //out_clr = vec4(ModColor.xyz, texa);
 }
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////

@@ -18,6 +18,7 @@ from typing import List, Tuple, Dict, Optional
 
 # Import ork font utilities
 from ork import font as ork_font
+from ork.font.atlas import generate_fcpp_metadata, save_atlas
 
 @dataclass
 class GlyphInfo:
@@ -318,127 +319,6 @@ class FontAtlasGenerator:
             self.face.set_pixel_sizes(0, original_pixel_size)
 
         return atlas, metadata
-
-def generate_fcpp_metadata(metadata: Dict, font_name: str, font_var_name: str,
-                          texture_path: str) -> str:
-    """
-    Generate C++ FontDesc metadata format
-
-    Args:
-        metadata: Atlas metadata dictionary
-        font_name: Short font name (e.g., "i24")
-        font_var_name: C++ variable name (e.g., "Inconsolata24")
-        texture_path: Texture path (e.g., "lev2://textures/Inconsolata24")
-
-    Returns:
-        String containing C++ code
-    """
-    # Get atlas dimensions
-    tex_width = metadata['atlas_width']
-    tex_height = metadata['atlas_height']
-    cell_width = metadata['cell_width']
-    cell_height = metadata['cell_height']
-    pixel_size = metadata['font_size']
-
-    # Calculate typical character metrics from a sample character ('M' or 'A')
-    sample_char = None
-    for ch in ['M', 'A', 'W', 'a']:
-        if ch in metadata['glyphs']:
-            sample_char = metadata['glyphs'][ch]
-            break
-
-    if sample_char:
-        advance_width = sample_char['advance']
-    else:
-        # Fallback to cell size
-        advance_width = cell_width
-
-    # Use pixel_size for character dimensions
-    char_width = pixel_size
-    char_height = pixel_size
-    advance_height = pixel_size
-
-    # Calculate offsets (margin around character in cell)
-    char_offset_x = (cell_width - char_width) // 2
-    char_offset_y = (cell_height - char_height) // 2
-
-    # Y shift (typically small adjustment)
-    y_shift = 0
-
-    # Generate C++ code
-    cpp_code = f"""  FontDesc {font_var_name};
-  {font_var_name}.mFontName       = "{font_name}";
-  {font_var_name}.mFontFile       = "{texture_path}";
-  {font_var_name}.miTexWidth      = {tex_width};
-  {font_var_name}.miTexHeight     = {tex_height};
-  {font_var_name}.miCellWidth     = {cell_width};
-  {font_var_name}.miCellHeight    = {cell_height};
-  {font_var_name}.miCharWidth     = {char_width};
-  {font_var_name}.miCharHeight    = {char_height};
-  {font_var_name}.miCharOffsetX   = {char_offset_x};
-  {font_var_name}.miCharOffsetY   = {char_offset_y};
-  {font_var_name}.miYShift        = {y_shift};
-  {font_var_name}.miAdvanceWidth  = {advance_width};
-  {font_var_name}.miAdvanceHeight = {advance_height};
-"""
-    return cpp_code
-
-def save_atlas(atlas: np.ndarray, metadata: Dict, output_prefix: str,
-               add_grid: bool = False, grid_color: Tuple[int, int, int] = (0, 255, 0),
-               font_name: str = None, texture_path: str = None):
-    """
-    Save atlas image and metadata
-
-    Args:
-        atlas: Numpy array of atlas image
-        metadata: Dictionary of atlas metadata
-        output_prefix: Prefix for output files (will create .png and .json)
-        add_grid: Add debug grid overlay
-        grid_color: RGB color for grid
-        font_name: Short font name for .fcpp output (e.g., "i24")
-        texture_path: Texture path for .fcpp output (e.g., "lev2://textures/Inconsolata24")
-    """
-    # Convert to RGBA for better compatibility
-    img = Image.fromarray(atlas, mode='L').convert('RGBA')
-    
-    # Optionally add grid overlay (for debugging)
-    if add_grid and 'cell_width' in metadata and 'cell_height' in metadata:
-        import numpy as np
-        from PIL import ImageDraw
-        
-        draw = ImageDraw.Draw(img)
-        
-        # Draw vertical lines
-        for x in range(0, img.width, metadata['cell_width']):
-            draw.line([(x, 0), (x, img.height)], fill=grid_color + (128,), width=1)
-            
-        # Draw horizontal lines  
-        for y in range(0, img.height, metadata['cell_height']):
-            draw.line([(0, y), (img.width, y)], fill=grid_color + (128,), width=1)
-    
-    # Save image
-    img.save(f"{output_prefix}.png")
-
-    # Save JSON metadata
-    with open(f"{output_prefix}.json", 'w') as f:
-        json.dump(metadata, f, indent=2)
-
-    # Save C++ metadata if font_name provided
-    if font_name and texture_path:
-        # Extract variable name from output prefix (last part of path)
-        var_name = Path(output_prefix).name
-        # Capitalize first letter for C++ convention
-        if var_name:
-            var_name = var_name[0].upper() + var_name[1:]
-
-        fcpp_code = generate_fcpp_metadata(metadata, font_name, var_name, texture_path)
-
-        with open(f"{output_prefix}.fcpp", 'w') as f:
-            f.write(fcpp_code)
-
-        print(f"Saved atlas to {output_prefix}.png, {output_prefix}.json, and {output_prefix}.fcpp")
-    else:
-        print(f"Saved atlas to {output_prefix}.png and {output_prefix}.json")
 
 def list_fonts():
     """
