@@ -539,10 +539,6 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     vktex->_readyForSampling = true;
   }
 
-  if(not tid._allow_async){
-    // temp hack
-    vktex->_readyForSampling = true;
-  }
   /////////////////////////////////////
   // Apply sampling mode (default or user-specified)
   /////////////////////////////////////
