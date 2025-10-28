@@ -75,7 +75,7 @@ secondary_commandbuffer_ptr_t SecCmdBufPoolAdapter::allocFresh() {
 
 void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid) {
 
-  bool async = true; //tid._allow_async;
+  bool async = tid._allow_async;
 
   ptex->_source = ETextureSource::FROM_DATA;
   //ptex->_debugName = "VkTextureInterface::initTextureFromData";
@@ -221,6 +221,9 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   // Storage for staging buffers (need to keep them alive until transfer completes)
   std::vector<vkbuffer_ptr_t> staging_buffers;
 
+  // Track if we suspended a render pass for synchronous uploads
+  bool suspended_render_pass = false;
+
   /////////////////////////////////////////////////////////
   if(async){
   /////////////////////////////////////////////////////////
@@ -239,8 +242,14 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   /////////////////////////////////////////////////////////
   else { // synchronous path
   /////////////////////////////////////////////////////////
+    // Suspend render pass if active (so we can use barriers)
+    if (_contextVK->_renderPassActive) {
+      _contextVK->suspendRenderPass();
+      suspended_render_pass = true;
+    }
+
     vk_cmdbuf = _contextVK->primary_cb()->_vkcmdbuf;
-    vktex->_readyForSampling = true;
+    vktex->_readyForSampling = false; // Will be set to true after GPU completion
   }
 
   /////////////////////////////////////////////////////////
@@ -535,7 +544,17 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     _contextVK->enqueueDeferredOneShotCommand(transfer->_command_buffer);
   }
   else {
-    // synchronous path
+    // synchronous path - wait for GPU completion
+
+    // Wait for all commands on the graphics queue to complete
+    vkQueueWaitIdle(_contextVK->_vkqueue_graphics);
+
+    // Resume render pass if we suspended it
+    if (suspended_render_pass) {
+      _contextVK->resumeRenderPass();
+    }
+
+    // Now texture is guaranteed to be ready for sampling
     vktex->_readyForSampling = true;
   }
 

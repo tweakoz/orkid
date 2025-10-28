@@ -1372,11 +1372,14 @@ void VkContext::suspendRenderPass() {
     // No render pass to suspend
     return;
   }
-  
+
+  // Invariant: if render pass is active, RTG must be set
+  OrkAssert(_activeRenderPassRTG != nullptr);
+
   // End the current render pass
   auto& CB = primary_cb()->_vkcmdbuf;
   _vkCmdEndRenderingKHR(CB);
-  
+
   // Mark render pass as inactive but keep the RTG reference
   // so we know what to resume
   _renderPassActive = false;
