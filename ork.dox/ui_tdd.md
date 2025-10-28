@@ -1130,14 +1130,269 @@ right.layout.left.anchorTo(divider)
 divider.unlock()
 ```
 
-### Theme Tags
+### Theming System
 
-Widgets support optional theme tags for styling:
+![Theming Architecture](ui_theming.svg)
+
+The Orkid UI system provides a comprehensive theming architecture based on **Style**, **StyleDatabase**, and **ThemeEngine**. This system enables consistent, dynamic, and hierarchical styling of UI widgets.
+
+#### Architecture Components
+
+**Style** - Complete styling definition for a widget:
+```cpp
+struct Style {
+  // Colors
+  fvec4 _bg_color;         // Background color
+  fvec4 _fg_color;         // Foreground color
+  fvec4 _aux_color1;       // Auxiliary color 1 (e.g., highlight)
+  fvec4 _aux_color2;       // Auxiliary color 2
+  fvec4 _border_color;     // Border color
+  fvec4 _text_color;       // Text color
+
+  // Geometry
+  int _corner_radius;      // Corner radius in pixels
+  int _border_width;       // Border width in pixels
+  int _padding;            // Padding in pixels
+
+  // Rendering
+  BlendingMacro _blend_mode;  // Blend mode (ALPHA, ADDITIVE, etc.)
+  font_ptr_t _font;           // Font for text rendering
+};
+```
+
+**StyleDatabase** - Registry of named styles with hierarchical lookup:
+```cpp
+struct StyleDatabase {
+  // Register a style with a tag (crc64 token)
+  void registerStyle(uint64_t tag, style_ptr_t style);
+
+  // Lookup style by tag (searches parent chain if not found locally)
+  style_ptr_t getStyle(uint64_t tag) const;
+
+  // Create child database (inherits parent's styles)
+  static styledatabase_ptr_t createChild(styledatabase_ptr_t parent);
+
+private:
+  std::unordered_map<uint64_t, style_ptr_t> _styles;
+  styledatabase_weakptr_t _parent;  // Parent database for fallback
+};
+```
+
+**ThemeEngine** - Renders widgets using StyleDatabase:
+```cpp
+struct ThemeEngine {
+  ThemeEngine(styledatabase_ptr_t db);
+
+  void gpuInit(Context* ctx);
+
+  // Render methods
+  void drawBox(const Widget* w, drawevent_constptr_t drwev, const Style* style);
+  void drawText(const Widget* w, drawevent_constptr_t drwev, const Style* style, const std::string& text);
+
+  styledatabase_ptr_t _styledb;
+};
+```
+
+#### SDF-Based Rendering
+
+ThemeEngine uses **Signed Distance Field (SDF)** shaders for high-quality rendering:
+
+- **Shader**: `orkshader://sdf_ui`
+- **Technique**: `sdf_box`
+- **Benefits**:
+  - Smooth anti-aliasing at any scale
+  - Perfect rounded corners
+  - Sharp borders without aliasing artifacts
+  - GPU-accelerated
+  - Resolution-independent
+
+SDF rendering calculates the distance from each pixel to the box boundary in the fragment shader, producing mathematically perfect shapes with smooth gradients.
+
+#### Hierarchical Style Lookup
+
+StyleDatabase supports parent-child relationships for style inheritance:
+
+```
+BaseDB (createDefaultStyleDatabase)
+  ├─ "box" → default box style
+  ├─ "slider" → default slider style
+  └─ "text" → default text style
+      │
+      └─ CustomDB (child of BaseDB)
+           ├─ "ui_tab" → custom tab style (overrides)
+           └─ "sg_overlay" → custom overlay style (new)
+```
+
+**Lookup Algorithm:**
+1. Check local styles in current database
+2. If not found, check parent database
+3. Continue up chain until found or reach root
+4. Return `nullptr` if not found anywhere
+
+This enables **customization without duplication** - child databases override only what they need, inheriting the rest.
+
+#### Usage in C++
+
+**Setting Up Themes:**
+```cpp
+// Create base theme database
+auto base_db = createDefaultStyleDatabase();
+
+// Create child database for custom styles
+auto custom_db = StyleDatabase::createChild(base_db);
+
+// Create custom style
+auto tab_style = std::make_shared<Style>();
+tab_style->_bg_color = fvec4(0.5, 0.2, 0.3, 0.9);
+tab_style->_border_color = fvec4(0.8, 0.5, 0.6, 1.0);
+tab_style->_text_color = fvec4(1.0, 1.0, 1.0, 1.0);
+tab_style->_corner_radius = 16;
+tab_style->_border_width = 2;
+tab_style->_blend_mode = BlendingMacro::ALPHA;
+
+// Register style with tag
+custom_db->registerStyle("ui_tab"_crcu, tab_style);
+
+// Create theme engine
+auto theme = std::make_shared<ThemeEngine>(custom_db);
+theme->gpuInit(ctx);
+
+// Set as UIContext's global theme
+uicontext->_theme_engine = theme;
+```
+
+**Applying Theme to Widget:**
+```cpp
+// Set widget's theme tag
+widget->_theme_tag = "ui_tab"_crcu;
+
+// Widget will automatically use this style when rendered
+// ThemeEngine looks up the style and renders with SDF shader
+```
+
+#### Usage in Python
+
+**Creating Theme Database:**
+```python
+from orkengine.core import vec4, CrcStringProxy
+from orkengine import lev2
+
+tokens = CrcStringProxy()
+
+# Create base and custom databases
+base_db = lev2.ui.createDefaultStyleDatabase()
+custom_db = lev2.ui.StyleDatabase.createChild(base_db)
+
+# Create custom style
+sg_overlay_style = lev2.ui.Style()
+sg_overlay_style.bg_color = vec4(0.2, 0.3, 0.4, 0.85)
+sg_overlay_style.border_color = vec4(0.6, 0.7, 0.8, 1.0)
+sg_overlay_style.text_color = vec4(1.0, 1.0, 1.0, 1.0)
+sg_overlay_style.corner_radius = 16
+sg_overlay_style.border_width = 2
+sg_overlay_style.blend_mode = tokens.ALPHA
+
+# Register style
+custom_db.registerStyle(tokens.sg_overlay, sg_overlay_style)
+
+# Create and set theme engine
+custom_theme = lev2.ui.ThemeEngine(custom_db)
+uicontext.theme_engine = custom_theme
+```
+
+**Using Theme on Widget:**
+```python
+# Set widget's theme tag
+box = layout_group.makeChild(uiclass=lev2.ui.EvTestBox, args=["themed_box", vec4(0,0,0,1)])
+box.theme = tokens.sg_overlay  # Looks up "sg_overlay" style at render time
+```
+
+#### Dynamic Styling
+
+Styles can be modified at runtime for animations and state changes:
+
+```python
+def onUpdate(self):
+    abstime = self.absolutetime
+
+    # Animate colors based on time
+    t = (math.sin(abstime * 0.5) + 1.0) * 0.5
+    self.sg_overlay_style.bg_color = vec4(0.2 + t * 0.3, 0.3 + t * 0.2, 0.4, 0.85)
+    self.sg_overlay_style.border_color = vec4(0.5 + t * 0.4, 0.6 + t * 0.3, 0.8, 1.0)
+
+    # Animate geometry
+    self.ui_tab_style.corner_radius = int(16 + t * 16)  # 16-32 pixels
+```
+
+**Use Cases:**
+- **Animated UI Elements**: Smoothly transition colors, sizes, borders
+- **User Theme Customization**: Let users adjust colors and appearance
+- **State-Based Styling**: Change appearance based on hover, pressed, disabled states
+- **Dark/Light Mode**: Switch entire UI theme with database swap
+- **Per-Widget Animation**: Animate individual widgets independently
+
+#### Built-in Style Databases
+
+Three factory functions create pre-configured databases:
+
+**createDefaultStyleDatabase()** - Neutral dark theme:
+- Dark gray backgrounds
+- Light text
+- Subtle borders
+- Suitable for general-purpose UIs
+
+**createDarkStyleDatabase()** - High-contrast dark theme:
+- Very dark backgrounds (0.1, 0.1, 0.1)
+- Bright white text (0.95, 0.95, 0.95)
+- Darker UI elements
+- Better for low-light environments
+
+**createLightStyleDatabase()** - Light theme:
+- Light gray backgrounds (0.95, 0.95, 0.95)
+- Dark text (0.1, 0.1, 0.1)
+- Suitable for high-light environments
+
+Each database includes default styles for common widget types: `"box"`, `"slider"`, `"text"`, `"bright_box"`, `"highc_box"`.
+
+#### Theme Tags
+
+Widgets support optional theme tags for style lookup:
 
 ```cpp
 widget->_theme_tag = "primary_button"_crcu; // crcstring (token)
-// Theme system can apply custom styles based on tag
+// ThemeEngine.drawBox() looks up this tag in StyleDatabase
 ```
+
+**Tag Workflow:**
+1. Widget has `_theme_tag` set to a crc64 token
+2. During `DoDraw()`, widget calls `ThemeEngine::drawBox(widget, event, style)`
+3. ThemeEngine looks up `widget->_theme_tag` in `_styledb`
+4. If found, uses that style; otherwise uses widget's default colors
+5. Renders widget with SDF shader using the resolved style
+
+#### Performance Characteristics
+
+**Style Lookup:**
+- O(1) hash table lookup per widget per frame
+- Hierarchical lookup adds O(depth) in worst case
+- Styles are typically cached by widgets for repeated access
+
+**SDF Rendering:**
+- Single GPU draw call per widget
+- Fragment shader calculates distance fields in parallel
+- More expensive than simple textured quads, but produces higher quality
+- Excellent for UI where visual quality matters
+
+**Memory:**
+- Styles are shared pointers (lightweight copies)
+- StyleDatabase stores references, not duplicates
+- Single style instance can be used by thousands of widgets
+
+**Best Practices:**
+- Create base database once at startup
+- Create child databases for theme variants
+- Modify existing styles for animation rather than creating new ones
+- Use theme tags for semantic meaning (`"primary_button"`, `"panel_header"`) rather than visual properties
 
 ---
 

@@ -1,0 +1,176 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900">
+  <defs>
+    <style>
+      .box { fill: #2c3e50; stroke: #3498db; stroke-width: 2; }
+      .header { fill: #34495e; stroke: #3498db; stroke-width: 2; }
+      .text { fill: #ecf0f1; font-family: 'Monaco', 'Courier New', monospace; font-size: 14px; }
+      .title { fill: #3498db; font-family: 'Monaco', 'Courier New', monospace; font-size: 16px; font-weight: bold; }
+      .arrow { stroke: #e74c3c; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .arrow-label { fill: #e74c3c; font-family: 'Monaco', 'Courier New', monospace; font-size: 12px; }
+      .section-title { fill: #2ecc71; font-family: 'Monaco', 'Courier New', monospace; font-size: 18px; font-weight: bold; }
+      .code { fill: #95a5a6; font-family: 'Monaco', 'Courier New', monospace; font-size: 11px; }
+      .highlight { fill: #f39c12; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#e74c3c" />
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="600" y="30" text-anchor="middle" class="section-title">UI Theming System Architecture</text>
+
+  <!-- Style Definition (Top Left) -->
+  <rect x="50" y="60" width="320" height="280" class="box" rx="8"/>
+  <rect x="50" y="60" width="320" height="35" class="header" rx="8"/>
+  <text x="210" y="83" text-anchor="middle" class="title">Style</text>
+
+  <text x="60" y="115" class="text">Colors:</text>
+  <text x="70" y="135" class="code">• bg_color (background)</text>
+  <text x="70" y="150" class="code">• fg_color (foreground)</text>
+  <text x="70" y="165" class="code">• border_color</text>
+  <text x="70" y="180" class="code">• text_color</text>
+  <text x="70" y="195" class="code">• aux_color1, aux_color2</text>
+
+  <text x="60" y="220" class="text">Geometry:</text>
+  <text x="70" y="240" class="code">• corner_radius (pixels)</text>
+  <text x="70" y="255" class="code">• border_width (pixels)</text>
+  <text x="70" y="270" class="code">• padding (pixels)</text>
+
+  <text x="60" y="295" class="text">Rendering:</text>
+  <text x="70" y="315" class="code">• blend_mode (BlendingMacro)</text>
+  <text x="70" y="330" class="code">• font (font_ptr_t)</text>
+
+  <!-- StyleDatabase (Top Middle) -->
+  <rect x="440" y="60" width="320" height="280" class="box" rx="8"/>
+  <rect x="440" y="60" width="320" height="35" class="header" rx="8"/>
+  <text x="600" y="83" text-anchor="middle" class="title">StyleDatabase</text>
+
+  <text x="450" y="115" class="text">Registry with Hierarchy:</text>
+  <text x="460" y="135" class="code">map&lt;uint64_t, style_ptr_t&gt;</text>
+
+  <text x="450" y="165" class="text">Lookup by tag:</text>
+  <text x="460" y="185" class="code">"box"_crcu → Style*</text>
+  <text x="460" y="200" class="code">"slider"_crcu → Style*</text>
+  <text x="460" y="215" class="code">"ui_tab"_crcu → Style*</text>
+
+  <text x="450" y="245" class="text">Hierarchical Fallback:</text>
+  <text x="460" y="265" class="code">1. Check local styles</text>
+  <text x="460" y="280" class="code">2. Check parent DB</text>
+  <text x="460" y="295" class="code">3. Continue up chain</text>
+
+  <text x="450" y="320" class="text">Factories:</text>
+  <text x="460" y="335" class="code">createDefaultStyleDatabase()</text>
+
+  <!-- ThemeEngine (Top Right) -->
+  <rect x="830" y="60" width="320" height="280" class="box" rx="8"/>
+  <rect x="830" y="60" width="320" height="35" class="header" rx="8"/>
+  <text x="990" y="83" text-anchor="middle" class="title">ThemeEngine</text>
+
+  <text x="840" y="115" class="text">Renders widgets using:</text>
+  <text x="850" y="135" class="code">• SDF (Signed Distance Field)</text>
+  <text x="850" y="150" class="code">• shader: orkshader://sdf_ui</text>
+  <text x="850" y="165" class="code">• technique: sdf_box</text>
+
+  <text x="840" y="195" class="text">Methods:</text>
+  <text x="850" y="215" class="code">drawBox(widget, event, style)</text>
+  <text x="850" y="230" class="code">drawText(widget, event, style)</text>
+
+  <text x="840" y="260" class="text">SDF Rendering Features:</text>
+  <text x="850" y="280" class="code">• Smooth anti-aliasing</text>
+  <text x="850" y="295" class="code">• Perfect rounded corners</text>
+  <text x="850" y="310" class="code">• Sharp borders at any scale</text>
+  <text x="850" y="325" class="code">• GPU accelerated</text>
+
+  <!-- Arrows between top components -->
+  <path d="M 370 200 L 435 200" class="arrow"/>
+  <text x="385" y="195" class="arrow-label">stores</text>
+
+  <path d="M 760 200 L 825 200" class="arrow"/>
+  <text x="768" y="195" class="arrow-label">uses</text>
+
+  <!-- Widget Integration (Bottom Left) -->
+  <rect x="50" y="400" width="320" height="260" class="box" rx="8"/>
+  <rect x="50" y="400" width="320" height="35" class="header" rx="8"/>
+  <text x="210" y="423" text-anchor="middle" class="title">Widget Integration</text>
+
+  <text x="60" y="455" class="text">Each Widget has:</text>
+  <text x="70" y="475" class="code">uint64_t _theme_tag;</text>
+
+  <text x="60" y="505" class="text">Lookup style at render:</text>
+  <text x="70" y="525" class="code">1. widget._theme_tag set?</text>
+  <text x="70" y="540" class="code">2. uicontext.theme_engine</text>
+  <text x="70" y="555" class="code">3. theme.styledb.getStyle(tag)</text>
+  <text x="70" y="570" class="code">4. theme.drawBox(w, ev, style)</text>
+
+  <text x="60" y="600" class="text">Example:</text>
+  <text x="70" y="620" class="code">widget._theme_tag =</text>
+  <text x="85" y="635" class="code">"ui_tab"_crcu;</text>
+
+  <!-- UIContext (Bottom Middle) -->
+  <rect x="440" y="400" width="320" height="260" class="box" rx="8"/>
+  <rect x="440" y="400" width="320" height="35" class="header" rx="8"/>
+  <text x="600" y="423" text-anchor="middle" class="title">UIContext</text>
+
+  <text x="450" y="455" class="text">Global Theme:</text>
+  <text x="460" y="475" class="code">themeengine_ptr_t _theme_engine;</text>
+
+  <text x="450" y="505" class="text">Set application theme:</text>
+  <text x="460" y="525" class="code">auto db = createDarkStyleDB();</text>
+  <text x="460" y="540" class="code">auto theme = ThemeEngine(db);</text>
+  <text x="460" y="555" class="code">uicontext.theme_engine = theme;</text>
+
+  <text x="450" y="585" class="text">All widgets in this context</text>
+  <text x="450" y="600" class="text">use the same theme engine</text>
+  <text x="450" y="615" class="text">for consistent styling.</text>
+
+  <!-- Dynamic Styling (Bottom Right) -->
+  <rect x="830" y="400" width="320" height="260" class="box" rx="8"/>
+  <rect x="830" y="400" width="320" height="35" class="header" rx="8"/>
+  <text x="990" y="423" text-anchor="middle" class="title">Dynamic Styling</text>
+
+  <text x="840" y="455" class="text">Runtime Style Changes:</text>
+  <text x="850" y="475" class="code">style.bg_color = vec4(r,g,b,a);</text>
+  <text x="850" y="490" class="code">style.corner_radius = 24;</text>
+  <text x="850" y="505" class="code">style.blend_mode = ALPHA;</text>
+
+  <text x="840" y="535" class="text">Changes apply immediately</text>
+  <text x="840" y="550" class="text">on next draw cycle.</text>
+
+  <text x="840" y="580" class="text">Use Cases:</text>
+  <text x="850" y="600" class="code">• Animated UI elements</text>
+  <text x="850" y="615" class="code">• User theme customization</text>
+  <text x="850" y="630" class="code">• State-based appearance</text>
+  <text x="850" y="645" class="code">• Dark/Light mode switching</text>
+
+  <!-- Vertical arrows from top to bottom -->
+  <path d="M 210 350 L 210 395" class="arrow"/>
+  <text x="220" y="375" class="arrow-label">widget uses</text>
+
+  <path d="M 600 350 L 600 395" class="arrow"/>
+  <text x="610" y="375" class="arrow-label">context holds</text>
+
+  <path d="M 990 350 L 990 395" class="arrow"/>
+  <text x="1000" y="375" class="arrow-label">enables</text>
+
+  <!-- Database Hierarchy Example (Bottom) -->
+  <rect x="50" y="700" width="1100" height="170" class="box" rx="8"/>
+  <rect x="50" y="700" width="1100" height="35" class="header" rx="8"/>
+  <text x="600" y="723" text-anchor="middle" class="title">StyleDatabase Hierarchy Example</text>
+
+  <text x="80" y="760" class="text">Base DB (createDefaultStyleDatabase):</text>
+  <text x="90" y="780" class="code">"box" → dark gray bg, light border</text>
+  <text x="90" y="795" class="code">"slider" → darker bg, blue fg</text>
+
+  <text x="450" y="760" class="text">Custom DB (child of Base):</text>
+  <text x="460" y="780" class="code">"ui_tab" → custom pink bg, rounded</text>
+  <text x="460" y="795" class="code">"sg_overlay" → custom blue bg, transparent</text>
+
+  <text x="850" y="760" class="text">Lookup "ui_tab":</text>
+  <text x="860" y="780" class="code">1. Check Custom DB → FOUND</text>
+  <text x="860" y="795" class="code">2. Return custom style</text>
+
+  <text x="80" y="830" class="text" class="highlight">Lookup "slider":</text>
+  <text x="90" y="850" class="code" class="highlight">1. Check Custom DB → NOT FOUND</text>
+  <text x="460" y="850" class="code" class="highlight">2. Check Base DB → FOUND, return default slider style</text>
+
+</svg>
