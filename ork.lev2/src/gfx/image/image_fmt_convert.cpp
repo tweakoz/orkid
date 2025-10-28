@@ -261,7 +261,7 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
   }
   /////////////////////////////
   else if (fmt == EBufferFormat::BGR8 and inp._format == EBufferFormat::RGB8) {
-    printf( "convert from RGB8 to BGR8\n");
+    //printf( "convert from RGB8 to BGR8\n");
     init(inp._width, inp._height, 3, inp._bytesPerChannel);
     auto outptr = (uint8_t*)_data->data();
     auto inptr  = (const uint8_t*)inp._data->data();
@@ -325,7 +325,7 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
         std::this_thread::yield();
       }
     } else if (inp._format == EBufferFormat::BGRA8) {
-      printf( "convert from BGRA8 to RGB8\n");
+      //printf( "convert from BGRA8 to RGB8\n");
       auto inptr  = (const uint8_t*)inp._data->data();
 
       size_t num_chunks = (inp._height + IMG_CONVERT_CHUNK_SIZE - 1) / IMG_CONVERT_CHUNK_SIZE;
@@ -381,7 +381,7 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
         std::this_thread::yield();
       }
     } else if (inp._format == EBufferFormat::RGB16) {
-      printf( "convert from RGB16 to RGB8\n");
+      //printf( "convert from RGB16 to RGB8\n");
       auto inptr  = (const uint16_t*)inp._data->data();
 
       size_t num_chunks = (inp._height + IMG_CONVERT_CHUNK_SIZE - 1) / IMG_CONVERT_CHUNK_SIZE;
@@ -418,7 +418,7 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
   }
   /////////////////////////////
   else if (fmt == EBufferFormat::BGRA8 and inp._format == EBufferFormat::RGBA8) {
-    printf( "convert from RGBA8 to BGRA8\n");
+    printf( "convert from RGBA8 to BGRA8 (not supported)\n");
     init(inp._width, inp._height, 4, inp._bytesPerChannel);
   } 
   /////////////////////////////
@@ -455,7 +455,7 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
   }  
   /////////////////////////////
   else if (fmt == EBufferFormat::RGB16 and inp._format == EBufferFormat::RGBA8) {
-    printf( "convert from RGB16 to RGBA8\n");
+   // printf( "convert from RGB16 to RGBA8\n");
     init(inp._width, inp._height, 3, 2);
     auto outptr = (uint16_t*)_data->data();
     auto inptr  = (const uint8_t*)inp._data->data();
@@ -488,7 +488,7 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
   }  
   /////////////////////////////
   else if (fmt == EBufferFormat::RGB16 and inp._format == EBufferFormat::RGBA16) {
-    printf( "convert from RGB16 to RGBA16\n");
+    //printf( "convert from RGB16 to RGBA16\n");
     init(inp._width, inp._height, 3, 2);
     auto outptr = (uint16_t*)_data->data();
     auto inptr  = (const uint16_t*)inp._data->data();
@@ -521,7 +521,7 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
   }  
   /////////////////////////////
   else if (fmt == EBufferFormat::RGBA8 and inp._format == EBufferFormat::RGBA32F) {
-    printf( "convert from RGBA32F to RGBA8\n");
+    //printf( "convert from RGBA32F to RGBA8\n");
     // Convert from RGBA32F (float) to RGBA8 (8-bit)
     init(inp._width, inp._height, 4, 1);
     auto outptr = (uint8_t*)_data->data();
@@ -589,7 +589,7 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
   }
   /////////////////////////////
   else if (fmt == EBufferFormat::RGB8 and inp._format == EBufferFormat::R8) {
-    printf( "convert from R8 to RGB8\n");
+    //printf( "convert from R8 to RGB8\n");
     init(inp._width, inp._height, 3, inp._bytesPerChannel);
     auto outptr = (uint8_t*)_data->data();
     auto inptr  = (const uint8_t*)inp._data->data();
@@ -622,7 +622,7 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
   }
   /////////////////////////////
   else if (fmt == EBufferFormat::RGBA8 and inp._format == EBufferFormat::R8) {
-    printf( "convert from R8 to RGBA8\n");
+    //printf( "convert from R8 to RGBA8\n");
     init(inp._width, inp._height, 4, inp._bytesPerChannel);
     auto outptr = (uint8_t*)_data->data();
     auto inptr  = (const uint8_t*)inp._data->data();
