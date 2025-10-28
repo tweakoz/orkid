@@ -1,0 +1,198 @@
+<svg width="1200" height="800" viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1200" height="800" fill="#3a3a3a"/>
+
+  <!-- Title -->
+  <text x="600" y="30" font-family="Arial, sans-serif" font-size="18" fill="white" text-anchor="middle" font-weight="bold">UI Event Flow Through Widget Hierarchy</text>
+
+  <!-- Event Source -->
+  <g id="event-source">
+    <rect x="500" y="60" width="200" height="50" rx="6" fill="#5a3a3a" stroke="#8a5a5a" stroke-width="2"/>
+    <text x="600" y="85" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">OS/Windowing Event</text>
+    <text x="600" y="100" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Mouse Click at (250, 175)</text>
+  </g>
+
+  <!-- Arrow down -->
+  <path d="M 600 110 L 600 140" stroke="#8f8" stroke-width="3" marker-end="url(#arrowhead-green)"/>
+
+  <!-- Root Widget -->
+  <g id="root-widget">
+    <rect x="450" y="140" width="300" height="70" rx="6" fill="#3a4a5a" stroke="#5a6a8a" stroke-width="2"/>
+    <text x="600" y="165" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">Root Widget (Group)</text>
+    <text x="600" y="182" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Bounds: (0,0) - (800,600)</text>
+    <text x="600" y="197" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">✓ Event inside → Route to children</text>
+  </g>
+
+  <!-- Decision box -->
+  <rect x="470" y="225" width="260" height="35" rx="4" fill="#4a4a3a" stroke="#6a6a5a" stroke-width="1"/>
+  <text x="600" y="248" font-family="Arial, sans-serif" font-size="10" fill="#ff8" text-anchor="middle">Group::doRouteUiEvent() - Iterate children</text>
+
+  <!-- Arrow split -->
+  <path d="M 600 210 L 600 225" stroke="#8f8" stroke-width="3"/>
+  <path d="M 600 260 L 300 290" stroke="#8f8" stroke-width="2" marker-end="url(#arrowhead-green)"/>
+  <path d="M 600 260 L 600 290" stroke="#8f8" stroke-width="2" marker-end="url(#arrowhead-green)"/>
+  <path d="M 600 260 L 900 290" stroke="#888" stroke-width="2" stroke-dasharray="4,4"/>
+
+  <!-- Child 1: Toolbar (doesn't contain event) -->
+  <g id="toolbar-child">
+    <rect x="150" y="290" width="300" height="70" rx="6" fill="#4a3a5a" stroke="#6a5a7a" stroke-width="2"/>
+    <text x="300" y="315" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">Toolbar (Group)</text>
+    <text x="300" y="332" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Bounds: (0,0) - (800,40)</text>
+    <text x="300" y="349" font-family="Arial, sans-serif" font-size="9" fill="#f88" text-anchor="middle">✗ Event at (250,175) outside bounds</text>
+  </g>
+
+  <!-- Return null -->
+  <path d="M 300 360 L 300 380" stroke="#f88" stroke-width="2"/>
+  <rect x="240" y="380" width="120" height="30" rx="4" fill="#5a2a2a" stroke="#7a4a4a" stroke-width="1"/>
+  <text x="300" y="400" font-family="Arial, sans-serif" font-size="9" fill="#f88" text-anchor="middle">return nullptr</text>
+
+  <!-- Child 2: Content Area (contains event) -->
+  <g id="content-child">
+    <rect x="450" y="290" width="300" height="70" rx="6" fill="#3a5a4a" stroke="#5a7a6a" stroke-width="2"/>
+    <text x="600" y="315" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">Content (LayoutGroup)</text>
+    <text x="600" y="332" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Bounds: (0,40) - (800,600)</text>
+    <text x="600" y="349" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">✓ Event inside → Route to children</text>
+  </g>
+
+  <!-- Arrow down -->
+  <path d="M 600 360 L 600 390" stroke="#8f8" stroke-width="3" marker-end="url(#arrowhead-green)"/>
+
+  <!-- Decision box 2 -->
+  <rect x="470" y="390" width="260" height="35" rx="4" fill="#4a4a3a" stroke="#6a6a5a" stroke-width="1"/>
+  <text x="600" y="413" font-family="Arial, sans-serif" font-size="10" fill="#ff8" text-anchor="middle">Group::doRouteUiEvent() - Iterate children</text>
+
+  <!-- Arrow split to grandchildren -->
+  <path d="M 600 425 L 400 455" stroke="#888" stroke-width="2" stroke-dasharray="4,4"/>
+  <path d="M 600 425 L 600 455" stroke="#8f8" stroke-width="2" marker-end="url(#arrowhead-green)"/>
+
+  <!-- Grandchild 1: Sidebar (doesn't contain) -->
+  <g id="sidebar-grandchild">
+    <rect x="250" y="455" width="200" height="60" rx="6" fill="#4a6a5a" stroke="#6a8a7a" stroke-width="2"/>
+    <text x="350" y="478" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle" font-weight="bold">Sidebar (Widget)</text>
+    <text x="350" y="493" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Bounds: (0,40) - (200,600)</text>
+    <text x="350" y="508" font-family="Arial, sans-serif" font-size="9" fill="#f88" text-anchor="middle">✗ Event at (250,175) outside</text>
+  </g>
+
+  <!-- Return null -->
+  <path d="M 350 515 L 350 535" stroke="#f88" stroke-width="2"/>
+  <rect x="290" y="535" width="120" height="30" rx="4" fill="#5a2a2a" stroke="#7a4a4a" stroke-width="1"/>
+  <text x="350" y="555" font-family="Arial, sans-serif" font-size="9" fill="#f88" text-anchor="middle">return nullptr</text>
+
+  <!-- Grandchild 2: Main Panel (CONTAINS EVENT!) -->
+  <g id="main-grandchild">
+    <rect x="500" y="455" width="200" height="60" rx="6" fill="#4a7a5a" stroke="#6a9a7a" stroke-width="3"/>
+    <text x="600" y="478" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle" font-weight="bold">Main Panel (Widget)</text>
+    <text x="600" y="493" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Bounds: (200,40) - (800,600)</text>
+    <text x="600" y="508" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle" font-weight="bold">✓ Event at (250,175) INSIDE!</text>
+  </g>
+
+  <!-- Arrow down to event handler -->
+  <path d="M 600 515 L 600 545" stroke="#8f8" stroke-width="3" marker-end="url(#arrowhead-green)"/>
+
+  <!-- Event Handler -->
+  <g id="event-handler">
+    <rect x="450" y="545" width="300" height="60" rx="6" fill="#5a5a3a" stroke="#7a7a5a" stroke-width="2"/>
+    <text x="600" y="568" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">Widget::OnUiEvent()</text>
+    <text x="600" y="585" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Process click event</text>
+    <text x="600" y="598" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">return HandlerResult::CONSUMED</text>
+  </g>
+
+  <!-- Return path -->
+  <path d="M 600 605 L 600 635" stroke="#8f8" stroke-width="3" marker-end="url(#arrowhead-green)"/>
+
+  <!-- Result box -->
+  <rect x="450" y="635" width="300" height="50" rx="6" fill="#3a5a3a" stroke="#5a7a5a" stroke-width="2"/>
+  <text x="600" y="658" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">Event Consumed</text>
+  <text x="600" y="675" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">Target widget: Main Panel</text>
+
+  <!-- Right side: Algorithm explanation -->
+  <g id="algorithm-explanation">
+    <rect x="800" y="140" width="370" height="540" rx="8" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+    <text x="985" y="165" font-family="Arial, sans-serif" font-size="13" fill="white" text-anchor="middle" font-weight="bold">Event Routing Algorithm</text>
+
+    <!-- Step by step -->
+    <rect x="820" y="185" width="330" height="480" rx="4" fill="#3a3a3a" stroke="#5a5a5a" stroke-width="1"/>
+
+    <text x="830" y="205" font-family="Arial, sans-serif" font-size="10" fill="#ff8" text-anchor="start" font-weight="bold">1. Event Generation</text>
+    <text x="840" y="220" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="start">OS generates mouse/keyboard event</text>
+    <text x="840" y="235" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="start">Convert to UI coordinate space</text>
+
+    <text x="830" y="255" font-family="Arial, sans-serif" font-size="10" fill="#ff8" text-anchor="start" font-weight="bold">2. Root Entry</text>
+    <text x="840" y="270" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="start">Event enters at root widget</text>
+    <text x="840" y="285" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="start">Check if event is inside root bounds</text>
+
+    <text x="830" y="305" font-family="Arial, sans-serif" font-size="10" fill="#ff8" text-anchor="start" font-weight="bold">3. Group Routing</text>
+    <text x="840" y="320" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="start">Groups iterate children (reverse order)</text>
+    <text x="840" y="335" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="start">Front-to-back (reverse draw order)</text>
+    <text x="840" y="350" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="start">Check IsEventInside() for each child</text>
+
+    <text x="830" y="370" font-family="Arial, sans-serif" font-size="10" fill="#ff8" text-anchor="start" font-weight="bold">4. Recursive Descent</text>
+    <text x="840" y="385" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="start">If child is a Group, recurse</text>
+    <text x="840" y="400" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="start">Continue until leaf widget or no match</text>
+
+    <text x="830" y="420" font-family="Arial, sans-serif" font-size="10" fill="#ff8" text-anchor="start" font-weight="bold">5. Event Delivery</text>
+    <text x="840" y="435" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="start">Call target->OnUiEvent(event)</text>
+    <text x="840" y="450" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="start">Widget processes or ignores event</text>
+
+    <text x="830" y="470" font-family="Arial, sans-serif" font-size="10" fill="#ff8" text-anchor="start" font-weight="bold">6. Result Handling</text>
+    <text x="840" y="485" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="start">CONSUMED: Event handled, stop</text>
+    <text x="840" y="500" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="start">IGNORED: Try next sibling or parent</text>
+
+    <rect x="830" y="515" width="310" height="25" rx="3" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
+    <text x="985" y="532" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">✓ First widget that handles event wins</text>
+
+    <!-- Special cases -->
+    <text x="830" y="560" font-family="Arial, sans-serif" font-size="10" fill="#ff8" text-anchor="start" font-weight="bold">Special Cases:</text>
+
+    <text x="840" y="580" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="start">• Event Stealing (Modality)</text>
+    <text x="850" y="595" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="start">Group->_eventstealer bypasses routing</text>
+    <text x="850" y="608" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="start">All events go to modal dialog</text>
+
+    <text x="840" y="628" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="start">• Event Filters</text>
+    <text x="850" y="643" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="start">Stack of filters process before widget</text>
+    <text x="850" y="656" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="start">Example: 3-button mouse emulation</text>
+  </g>
+
+  <!-- Legend -->
+  <g id="legend">
+    <rect x="50" y="700" width="300" height="80" rx="6" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+    <text x="200" y="720" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">Legend</text>
+
+    <line x1="70" y1="735" x2="120" y2="735" stroke="#8f8" stroke-width="3"/>
+    <text x="130" y="740" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="start">Event matches, routing continues</text>
+
+    <line x1="70" y1="755" x2="120" y2="755" stroke="#f88" stroke-width="3"/>
+    <text x="130" y="760" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="start">Event doesn't match, return nullptr</text>
+
+    <line x1="70" y1="770" x2="120" y2="770" stroke="#888" stroke-width="2" stroke-dasharray="4,4"/>
+    <text x="130" y="775" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="start">Not shown (other children checked)</text>
+  </g>
+
+  <!-- Key Properties box -->
+  <g id="key-properties">
+    <rect x="370" y="700" width="460" height="80" rx="6" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+    <text x="600" y="720" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">Key Properties</text>
+
+    <text x="385" y="740" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="start">• O(depth) complexity - proportional to tree depth</text>
+    <text x="385" y="755" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="start">• Front-to-back iteration ensures overlapping widgets work correctly</text>
+    <text x="385" y="770" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="start">• Independent of layout strategy - works with any positioning</text>
+  </g>
+
+  <!-- Note about layout independence -->
+  <rect x="850" y="700" width="320" height="80" rx="6" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="2"/>
+  <text x="1010" y="720" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">Layout Independence</text>
+  <text x="865" y="740" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="start">Event routing uses widget hierarchy,</text>
+  <text x="865" y="755" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="start">not layout topology. This separation</text>
+  <text x="865" y="770" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="start">allows layouts to change without</text>
+  <text x="865" y="783" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="start">affecting event delivery.</text>
+
+  <!-- Arrow markers -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#888"/>
+    </marker>
+    <marker id="arrowhead-green" markerWidth="12" markerHeight="12" refX="11" refY="4" orient="auto">
+      <polygon points="0 0, 12 4, 0 8" fill="#8f8"/>
+    </marker>
+  </defs>
+</svg>
