@@ -247,7 +247,7 @@ void VkContext::_initVulkanCommon() {
   // create descriptor pool
   std::vector<VkDescriptorPoolSize> poolSizes;
 
-  constexpr size_t DESCRIPTORSET_COUNT = 4096;
+  constexpr size_t DESCRIPTORSET_COUNT = 262144;
 
   auto& poolsize_combsamplers           = poolSizes.emplace_back();
   poolsize_combsamplers.type            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
