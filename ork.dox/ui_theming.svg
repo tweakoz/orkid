@@ -169,8 +169,8 @@
   <text x="860" y="780" class="code">1. Check Custom DB → FOUND</text>
   <text x="860" y="795" class="code">2. Return custom style</text>
 
-  <text x="80" y="830" class="text" class="highlight">Lookup "slider":</text>
-  <text x="90" y="850" class="code" class="highlight">1. Check Custom DB → NOT FOUND</text>
-  <text x="460" y="850" class="code" class="highlight">2. Check Base DB → FOUND, return default slider style</text>
+  <text x="80" y="830" class="highlight">Lookup "slider":</text>
+  <text x="90" y="850" class="highlight">1. Check Custom DB → NOT FOUND</text>
+  <text x="460" y="850" class="highlight">2. Check Base DB → FOUND, return default slider style</text>
 
 </svg>
