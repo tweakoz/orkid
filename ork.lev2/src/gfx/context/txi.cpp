@@ -334,7 +334,7 @@ void TextureInterface::initTextureFromImage(Texture* ptex, image_ptr_t img, bool
       break;
   }
   tid._autogenmips = autogenmips;
-  tid._allow_async = false;
+  tid._allow_async = true;
   tid._data        = (const void*) img_to_use->_data->data();
   initTextureFromData(ptex, tid);
 }
