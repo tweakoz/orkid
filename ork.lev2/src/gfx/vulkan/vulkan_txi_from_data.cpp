@@ -113,14 +113,14 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   /////////////////////////////////////
 
-  bool hash_changed = false;
+  bool format_hash_changed = false;
 
   vktexobj_ptr_t vktex;
   if (auto existing = ptex->_impl.tryAsShared<VulkanTextureObject>()) {
     // Texture already exists - we're updating it
     vktex = existing.value();
-    hash_changed = (format_hash != vktex->_format_hash);
-    if(hash_changed){
+    format_hash_changed = (format_hash != vktex->_format_hash);
+    if(format_hash_changed){
       // Format changed - need to recreate
       _texobjs_pending_for_deletion.insert(vktex);
       vktex = ptex->_impl.makeShared<VulkanTextureObject>(this);
@@ -131,7 +131,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     // New texture
     vktex = ptex->_impl.makeShared<VulkanTextureObject>(this);
     vktex->_format_hash = format_hash;
-    hash_changed = true;
+    format_hash_changed = true;
   }
 
   /////////////////////////////////////
@@ -264,17 +264,18 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   // - sample_slot: what the GPU samples from (stays stable during async upload)
   /////////////////////////////////////
 
-  int write_slot = vktex->_update_index & 1;
-  int sample_slot = (vktex->_update_index + 1) & 1;
+  int cur_index = vktex->_update_index++;
+
+  int write_slot = cur_index & 1;
+  int sample_slot = (cur_index + 1) & 1;
 
   // Increment index NOW (not in completion callback) so next upload uses different slot
-  vktex->_update_index++;
 
   /////////////////////////////////////
   // Create new images if format/size changed or never created
   /////////////////////////////////////
 
-  bool creating_new_images = hash_changed || !vktex->_imgobj[0];
+  bool creating_new_images = format_hash_changed || !vktex->_imgobj[0];
 
   if (creating_new_images) {
 
@@ -348,10 +349,17 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       }
     }
 
-    // Update descriptor and texture properties
-    vktex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    vktex->_vkdescriptor_info.imageView   = vktex->_imgobj[write_slot]->_vkimageview;
-    OrkAssert(vktex->_imgobj[write_slot]->_vkimageview != VK_NULL_HANDLE);
+    // Create descriptor info for each ping-pong slot
+    // Each descriptor permanently points to its slot's imageView (decouples shader from buffering strategy)
+    for (int i = 0; i < 2; i++) {
+      vktex->_vkdescriptor_info[i] = std::make_shared<VkDescriptorImageInfo>();
+      vktex->_vkdescriptor_info[i]->imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+      vktex->_vkdescriptor_info[i]->imageView = vktex->_imgobj[i]->_vkimageview;
+      OrkAssert(vktex->_imgobj[i]->_vkimageview != VK_NULL_HANDLE);
+    }
+
+    // Initially use write_slot's descriptor (will switch to sample_slot in completion callback)
+    vktex->_descset_sampling = vktex->_vkdescriptor_info[write_slot];
 
     // Set image view hash (only when creating new images - represents format/size identity)
     // Use slot 0's serial number for consistency
@@ -371,7 +379,14 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   /////////////////////////////////////
 
   vktex->_vksampler = num_mips > 1 ? _contextVK->_sampler_per_maxlod[num_mips] : _contextVK->_sampler_base;
-  vktex->_vkdescriptor_info.sampler     = vktex->_vksampler->_vksampler;
+
+  // Set sampler on both descriptor infos (if they exist)
+  if (vktex->_vkdescriptor_info[0]) {
+    vktex->_vkdescriptor_info[0]->sampler = vktex->_vksampler->_vksampler;
+  }
+  if (vktex->_vkdescriptor_info[1]) {
+    vktex->_vkdescriptor_info[1]->sampler = vktex->_vksampler->_vksampler;
+  }
 
   // Determine which image object to upload to (write_slot)
   vkimageobj_ptr_t target_imgobj = vktex->_imgobj[write_slot];
@@ -502,15 +517,14 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
         // Use captured write_slot (not _update_index which has been incremented)
         auto& completed_img = vktex->_imgobj[write_slot];
 
-        // Update sampling image to point to the newly completed image (NOW ready to sample)
+        // Switch to the newly completed slot (updates both image and descriptor atomically)
         vktex->_img_sampling = completed_img;
+        vktex->_descset_sampling = vktex->_vkdescriptor_info[write_slot];
 
-        // Update descriptor to point to the newly completed image
-        vktex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        vktex->_vkdescriptor_info.imageView = completed_img->_vkimageview;
-
-        // NOTE: Do NOT update _imgview_hash here! It would invalidate descriptor set cache every frame.
-        // The hash represents texture format/size identity, not which ping-pong slot is active.
+        // Update hash to reflect which slot is active so descriptor sets get recreated
+        vktex->_imgview_hash.init();
+        vktex->_imgview_hash.accumulateItem(completed_img->_serial_number);
+        vktex->_imgview_hash.finish();
 
         // Update texture properties
         bool is_cube = tid._initCubeTexture;

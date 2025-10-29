@@ -233,10 +233,14 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
   /////////////////////////////////////
 
   // Temporarily set a default sampler - will be updated by ApplySamplingMode
-  vktex->_vksampler                     = _contextVK->_sampler_per_maxlod[num_mips];
-  vktex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-  vktex->_vkdescriptor_info.imageView   = vktex->_imgobj[0]->_vkimageview;
-  vktex->_vkdescriptor_info.sampler     = vktex->_vksampler->_vksampler;
+  vktex->_vksampler = _contextVK->_sampler_per_maxlod[num_mips];
+
+  // Load request textures only use slot [0] (no double-buffering needed)
+  vktex->_vkdescriptor_info[0] = std::make_shared<VkDescriptorImageInfo>();
+  vktex->_vkdescriptor_info[0]->imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  vktex->_vkdescriptor_info[0]->imageView = vktex->_imgobj[0]->_vkimageview;
+  vktex->_vkdescriptor_info[0]->sampler = vktex->_vksampler->_vksampler;
+  vktex->_descset_sampling = vktex->_vkdescriptor_info[0];
 
   vktex->_imgview_hash.init();
   vktex->_imgview_hash.accumulateItem(vktex->_imgobj[0]->_serial_number);

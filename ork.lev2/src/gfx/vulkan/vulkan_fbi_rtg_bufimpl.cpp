@@ -87,7 +87,9 @@ void VklRtBufferImpl::setLayout(VkImageLayout layout) {
   // Also update the associated texture's descriptor if it exists
   if (_teximpl.tryAsShared<VulkanTextureObject>()) {
     auto tex_impl = _teximpl.getShared<VulkanTextureObject>();
-    tex_impl->_vkdescriptor_info.imageLayout = layout;
+    if (tex_impl->_vkdescriptor_info[0]) {
+      tex_impl->_vkdescriptor_info[0]->imageLayout = layout;
+    }
   }
 }
 

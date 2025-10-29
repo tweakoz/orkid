@@ -54,7 +54,12 @@ struct VulkanTextureObject {
   int _maxmip = 0;
   vktxi_rawptr_t _txi;
   vksampler_obj_ptr_t _vksampler;
-  VkDescriptorImageInfo _vkdescriptor_info;
+
+  // Each slot has its own descriptor info permanently pointing to its imageView
+  using vkdescriptorinfo_ptr_t = std::shared_ptr<VkDescriptorImageInfo>;
+  vkdescriptorinfo_ptr_t _vkdescriptor_info[2];  // One per ping-pong slot
+  vkdescriptorinfo_ptr_t _descset_sampling;      // Points to active slot's descriptor (mirrors _img_sampling)
+
   secondary_commandbuffer_ptr_t _loadCB;
   uint64_t _format_hash = 0;
   boost::Crc64 _imgview_hash;

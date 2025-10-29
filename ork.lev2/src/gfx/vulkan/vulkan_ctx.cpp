@@ -428,10 +428,12 @@ void VkContext::_initDefaultTextures() {
     _endRecordCommandBuffer(cmdbuf);
     enqueueDeferredOneShotCommand(cmdbuf);
 
-    // Set up descriptor info
-    tex_obj->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    tex_obj->_vkdescriptor_info.imageView = tex_obj->_imgobj[0]->_vkimageview;
-    tex_obj->_vkdescriptor_info.sampler = _sampler_base->_vksampler;
+    // Set up descriptor info (default textures only use slot [0])
+    tex_obj->_vkdescriptor_info[0] = std::make_shared<VkDescriptorImageInfo>();
+    tex_obj->_vkdescriptor_info[0]->imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    tex_obj->_vkdescriptor_info[0]->imageView = tex_obj->_imgobj[0]->_vkimageview;
+    tex_obj->_vkdescriptor_info[0]->sampler = _sampler_base->_vksampler;
+    tex_obj->_descset_sampling = tex_obj->_vkdescriptor_info[0];
 
     tex_obj->_imgview_hash.init();
     tex_obj->_imgview_hash.accumulateItem(tex_obj->_imgobj[0]->_serial_number);

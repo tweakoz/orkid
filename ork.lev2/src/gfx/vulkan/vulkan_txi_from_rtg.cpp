@@ -85,9 +85,12 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   // create descriptor image info
   /////////////////////////////////////
 
-  vk_tex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-  vk_tex->_vkdescriptor_info.imageView   = vk_tex->_imgobj[0]->_vkimageview;
-  vk_tex->_vkdescriptor_info.sampler     = vk_tex->_vksampler->_vksampler;
+  // RTG textures only use slot [0] (no double-buffering)
+  vk_tex->_vkdescriptor_info[0] = std::make_shared<VkDescriptorImageInfo>();
+  vk_tex->_vkdescriptor_info[0]->imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  vk_tex->_vkdescriptor_info[0]->imageView = vk_tex->_imgobj[0]->_vkimageview;
+  vk_tex->_vkdescriptor_info[0]->sampler = vk_tex->_vksampler->_vksampler;
+  vk_tex->_descset_sampling = vk_tex->_vkdescriptor_info[0];
 
   auto rtb_impl        = rtbuffer->_impl.getShared<VklRtBufferImpl>();
   rtb_impl->_imgobj = vk_tex->_imgobj[0];

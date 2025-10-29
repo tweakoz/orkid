@@ -557,10 +557,11 @@ void VkFxInterface::bindParamTexture(const FxShaderParam* hpar, const Texture* p
     // Validate render target texture layout
     if (pTex->_source == ETextureSource::FROM_RTG) {
       // This texture comes from a render target - verify it's ready for shader use
-      auto& desc_info = vk_tex->_vkdescriptor_info;
+      auto desc_info = vk_tex->_descset_sampling;
 
       // The descriptor should expect VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-      OrkAssert(desc_info.imageView != VK_NULL_HANDLE);
+      OrkAssert(desc_info);
+      OrkAssert(desc_info->imageView != VK_NULL_HANDLE);
 
       // CRITICAL: Check if this is a swapchain texture - those should NEVER be used as textures!
       // Need to check the source RTBuffer to determine if it's from a swapchain
@@ -573,9 +574,9 @@ void VkFxInterface::bindParamTexture(const FxShaderParam* hpar, const Texture* p
       }
 
       // Assert if the actual image layout is wrong - this catches the problem at the source
-      if(actual_layout != desc_info.imageLayout ){
+      if(actual_layout != desc_info->imageLayout ){
         printf("DEBUG: Binding RTG texture '%s' ptr=%p, descriptor expects layout=%d, actual image layout=%d (expected %d)\n",
-             pTex->_debugName.c_str(), pTex, desc_info.imageLayout, actual_layout, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+             pTex->_debugName.c_str(), pTex, desc_info->imageLayout, actual_layout, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
       }
 
       if (actual_layout == VK_IMAGE_LAYOUT_UNDEFINED) {
@@ -593,10 +594,10 @@ void VkFxInterface::bindParamTexture(const FxShaderParam* hpar, const Texture* p
       }
 
       // Also check descriptor expectation matches
-      if (desc_info.imageLayout != VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+      if (desc_info->imageLayout != VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
         printf("WARNING: RTG texture descriptor has wrong layout expectation!\n");
         printf("  Texture: %s\n", pTex->_debugName.c_str());
-        printf("  Descriptor layout: %d\n", desc_info.imageLayout);
+        printf("  Descriptor layout: %d\n", desc_info->imageLayout);
         printf("  Should be: VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL (%d)\n", VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
       }
     }

@@ -174,11 +174,13 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
     _contextVK->_setObjectDebugName(vktex->_imgobj[0]->_vkimageview, VK_OBJECT_TYPE_IMAGE_VIEW, view_name.c_str());
   }
 
-  // Set to SHADER_READ_ONLY since we'll transition after upload
-  vktex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-  vktex->_vkdescriptor_info.imageView   = vktex->_imgobj[0]->_vkimageview;
-  vktex->_vksampler                     = _contextVK->_sampler_base;
-  vktex->_vkdescriptor_info.sampler     = vktex->_vksampler->_vksampler;
+  // Array textures only use slot [0] (no double-buffering)
+  vktex->_vkdescriptor_info[0] = std::make_shared<VkDescriptorImageInfo>();
+  vktex->_vkdescriptor_info[0]->imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  vktex->_vkdescriptor_info[0]->imageView = vktex->_imgobj[0]->_vkimageview;
+  vktex->_vksampler = _contextVK->_sampler_base;
+  vktex->_vkdescriptor_info[0]->sampler = vktex->_vksampler->_vksampler;
+  vktex->_descset_sampling = vktex->_vkdescriptor_info[0];
 
   ///////////////////////////
   // Set texture properties
@@ -416,7 +418,9 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
   _contextVK->enqueueDeferredOneShotCommand(transfer->_command_buffer);
 
   // Update descriptor to reflect new layout after transition
-  vktex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  if (vktex->_vkdescriptor_info[0]) {
+    vktex->_vkdescriptor_info[0]->imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  }
 
   // Apply sampling mode based on mip count
   // Only update filtering mode if mipmaps present, preserve address modes
@@ -620,11 +624,13 @@ void VkTextureInterface::_enqueueInitTextureArray2DOnCB(TextureArray* texture_ar
   VkResult ok = vkCreateImageView(_contextVK->_vkdevice, &viewInfo, nullptr, &vktex->_imgobj[0]->_vkimageview);
   OrkAssert(VK_SUCCESS == ok);
 
-  // Set descriptor to expect SHADER_READ_ONLY layout
-  vktex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-  vktex->_vkdescriptor_info.imageView   = vktex->_imgobj[0]->_vkimageview;
-  vktex->_vksampler                     = _contextVK->_sampler_base;
-  vktex->_vkdescriptor_info.sampler     = vktex->_vksampler->_vksampler;
+  // Array textures only use slot [0] (no double-buffering)
+  vktex->_vkdescriptor_info[0] = std::make_shared<VkDescriptorImageInfo>();
+  vktex->_vkdescriptor_info[0]->imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  vktex->_vkdescriptor_info[0]->imageView = vktex->_imgobj[0]->_vkimageview;
+  vktex->_vksampler = _contextVK->_sampler_base;
+  vktex->_vkdescriptor_info[0]->sampler = vktex->_vksampler->_vksampler;
+  vktex->_descset_sampling = vktex->_vkdescriptor_info[0];
 
   vktex->_imgview_hash.init();
   vktex->_imgview_hash.accumulateItem(vktex->_imgobj[0]->_serial_number);

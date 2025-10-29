@@ -448,10 +448,11 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
                 }
               }
 
-              // Create descriptor write
-              auto& desc_info = vk_tex->_vkdescriptor_info;
-              OrkAssert(desc_info.imageView != VK_NULL_HANDLE);
-              OrkAssert(desc_info.sampler != VK_NULL_HANDLE);
+              // Create descriptor write using active sampling descriptor
+              auto desc_info = vk_tex->_descset_sampling;
+              OrkAssert(desc_info);
+              OrkAssert(desc_info->imageView != VK_NULL_HANDLE);
+              OrkAssert(desc_info->sampler != VK_NULL_HANDLE);
 
               VkWriteDescriptorSet DWRITE = {};
               initializeVkStruct(DWRITE, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
@@ -459,7 +460,7 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
               DWRITE.dstBinding      = binding->binding_id;
               DWRITE.descriptorCount = 1;
               DWRITE.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-              DWRITE.pImageInfo      = &desc_info;
+              DWRITE.pImageInfo      = desc_info.get();
 
               descriptor_writes.push_back(DWRITE);
               break;

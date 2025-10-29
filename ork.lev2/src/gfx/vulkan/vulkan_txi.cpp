@@ -65,20 +65,16 @@ void VkTextureInterface::ApplySamplingMode(Texture* ptex) {
   // Update texture object
   vktex->_vksampler = new_sampler;
 
-  // Update descriptor sampler (always)
-  vktex->_vkdescriptor_info.sampler = new_sampler->_vksampler;
-
-  // Update descriptor imageView only if texture has an active sampling image
-  // (For loadreq textures before completion, descriptor is already set up with imgobj[0])
-  auto img = vktex->samplingImage();
-  if (img && img->_vkimageview) {
-    vktex->_vkdescriptor_info.imageView = img->_vkimageview;
-    vktex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  // Update sampler on both descriptor infos (if they exist)
+  if (vktex->_vkdescriptor_info[0]) {
+    vktex->_vkdescriptor_info[0]->sampler = new_sampler->_vksampler;
+  }
+  if (vktex->_vkdescriptor_info[1]) {
+    vktex->_vkdescriptor_info[1]->sampler = new_sampler->_vksampler;
   }
 
-  // NOTE: Don't update _imgview_hash here - it represents format/size identity
-  // and is only set during image creation. Changing sampler shouldn't invalidate
-  // descriptor set cache.
+  // NOTE: Don't update imageView here - each descriptor permanently points to its slot's imageView
+  // _descset_sampling already points to the correct descriptor for the active sampling slot
   
   // Special handling for depth textures
   if (ptex->_isDepthTexture) {
