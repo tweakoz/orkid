@@ -358,12 +358,13 @@ void VkContext::_initDefaultTextures() {
     }
     
     // Create the image object
-    tex_obj->_imgobj = std::make_shared<VulkanImageObject>(this, imageInfo, "default_texture");
-    
+    // Default textures use slot [0] only
+    tex_obj->_imgobj[0] = std::make_shared<VulkanImageObject>(this, imageInfo, "default_texture");
+
     // Create image view
     VkImageViewCreateInfo viewInfo = {};
     initializeVkStruct(viewInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
-    viewInfo.image = tex_obj->_imgobj->_vkimage;
+    viewInfo.image = tex_obj->_imgobj[0]->_vkimage;
     viewInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
     viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     viewInfo.subresourceRange.baseMipLevel = 0;
@@ -392,21 +393,21 @@ void VkContext::_initDefaultTextures() {
         OrkAssert(false);
     }
     
-    VkResult ok = vkCreateImageView(_vkdevice, &viewInfo, nullptr, &tex_obj->_imgobj->_vkimageview);
+    VkResult ok = vkCreateImageView(_vkdevice, &viewInfo, nullptr, &tex_obj->_imgobj[0]->_vkimageview);
     OrkAssert(VK_SUCCESS == ok);
-    
+
     // Initialize with black data (we'll need to transition and fill the texture)
     // For now, just transition to shader read optimal
     auto cmdbuf = _beginRecordCommandBuffer("init_default_texture", nullptr);
     auto cmdbuf_impl = cmdbuf->_impl.getShared<VkSecondaryCommandBufferImpl>();
-    
+
     VkImageMemoryBarrier barrier = {};
     initializeVkStruct(barrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
     barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.image = tex_obj->_imgobj->_vkimage;
+    barrier.image = tex_obj->_imgobj[0]->_vkimage;
     barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     barrier.subresourceRange.baseMipLevel = 0;
     barrier.subresourceRange.levelCount = num_mips;
@@ -426,15 +427,18 @@ void VkContext::_initDefaultTextures() {
     
     _endRecordCommandBuffer(cmdbuf);
     enqueueDeferredOneShotCommand(cmdbuf);
-    
+
     // Set up descriptor info
     tex_obj->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    tex_obj->_vkdescriptor_info.imageView = tex_obj->_imgobj->_vkimageview;
+    tex_obj->_vkdescriptor_info.imageView = tex_obj->_imgobj[0]->_vkimageview;
     tex_obj->_vkdescriptor_info.sampler = _sampler_base->_vksampler;
-    
+
     tex_obj->_imgview_hash.init();
-    tex_obj->_imgview_hash.accumulateItem(tex_obj->_imgobj->_serial_number);
+    tex_obj->_imgview_hash.accumulateItem(tex_obj->_imgobj[0]->_serial_number);
     tex_obj->_imgview_hash.finish();
+
+    // Default texture is now ready for sampling
+    tex_obj->_img_sampling = tex_obj->_imgobj[0];
     return tex_obj;
   };
   
@@ -1328,7 +1332,7 @@ vksampler_obj_ptr_t VkContext::_getOrCreateSampler(const TextureSamplingModeData
   sci->addressModeW = orkidWrapToVulkan(sampling_mode._texAddrModeR);
   
   // Anisotropy
-    float max_aniso = sampling_mode._maxAnisotropy;
+    float max_aniso = 1.0;//sampling_mode._maxAnisotropy;
   if (max_aniso > 1.0f) {
     sci->anisotropyEnable = VK_TRUE;
     sci->maxAnisotropy = max_aniso;

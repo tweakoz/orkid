@@ -66,24 +66,24 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
   auto imageInfo   = makeVKICI(iwidth, iheight, 1, dst_format, num_mips);
   imageInfo->usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
   std::string debug_name = ptex->_debugName.empty() ? "texture_loadreq" : ptex->_debugName;
-  vktex->_imgobj   = std::make_shared<VulkanImageObject>(_contextVK, imageInfo, debug_name);
+  // Load request textures use slot [0] only (no double-buffering needed)
+  vktex->_imgobj[0] = std::make_shared<VulkanImageObject>(_contextVK, imageInfo, debug_name);
 
   vktex->_loadCB   = _contextVK->beginRecordCommandBuffer("VkTextureInterface::_createFromLoadReq");
 
 
-  /////////////////////////////////////
-  // Set up completion callback
-  /////////////////////////////////////
-
-  vktex->_readyForSampling = false;
-
   auto cmdbuf_impl = vktex->_loadCB->_impl.getShared<VkSecondaryCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
+
+  /////////////////////////////////////
+  // Set up async completion callback
+  /////////////////////////////////////
 
   auto tlsema         = std::make_shared<VulkanCompletionSemaphore>(this->_contextVK);
   cmdbuf_impl->_completionSemaphore = tlsema;
   tlsema->_onComplete = [=]() {
-    vktex->_readyForSampling = true;
+    // Texture is now ready for sampling (async - after GPU upload completes)
+    vktex->_img_sampling = vktex->_imgobj[0];
   };
 
   /////////////////////////////////////
@@ -107,7 +107,7 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
 
     // Transition the mip level to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
     auto barrier = createImageBarrier(
-        vktex->_imgobj->_vkimage,
+        vktex->_imgobj[0]->_vkimage,
         VK_IMAGE_LAYOUT_UNDEFINED,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
         VkAccessFlagBits(0),
@@ -178,7 +178,7 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
     region.imageSubresource  = {VK_IMAGE_ASPECT_COLOR_BIT, uint32_t(ilevel), 0, 1};
     region.imageExtent       = {uint32_t(level_width), uint32_t(level_height), 1};
     vkCmdCopyBufferToImage(
-        vk_cmdbuf, staging_buffer->_vkbuffer, vktex->_imgobj->_vkimage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+        vk_cmdbuf, staging_buffer->_vkbuffer, vktex->_imgobj[0]->_vkimage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
     // Transition the mip level to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
     barrier->oldLayout     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     barrier->newLayout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -213,19 +213,19 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
   /////////////////////////////////////
 
   auto IVCI = createImageViewInfo2D(
-      vktex->_imgobj->_vkimage,                           //
+      vktex->_imgobj[0]->_vkimage,                        //
       VkFormatConverter::convertBufferFormat(dst_format), // Use converted format
       VK_IMAGE_ASPECT_COLOR_BIT);
   IVCI->subresourceRange.levelCount = num_mips;
 
-  initializeVkStruct(vktex->_imgobj->_vkimageview);
-  VkResult ok = vkCreateImageView(_contextVK->_vkdevice, IVCI.get(), nullptr, &vktex->_imgobj->_vkimageview);
+  initializeVkStruct(vktex->_imgobj[0]->_vkimageview);
+  VkResult ok = vkCreateImageView(_contextVK->_vkdevice, IVCI.get(), nullptr, &vktex->_imgobj[0]->_vkimageview);
   OrkAssert(VK_SUCCESS == ok);
-  
+
   // Set debug name for image view
   if (!ptex->_debugName.empty()) {
     std::string view_name = ptex->_debugName + "_view";
-    _contextVK->_setObjectDebugName(vktex->_imgobj->_vkimageview, VK_OBJECT_TYPE_IMAGE_VIEW, view_name.c_str());
+    _contextVK->_setObjectDebugName(vktex->_imgobj[0]->_vkimageview, VK_OBJECT_TYPE_IMAGE_VIEW, view_name.c_str());
   }
 
   /////////////////////////////////////
@@ -235,13 +235,16 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
   // Temporarily set a default sampler - will be updated by ApplySamplingMode
   vktex->_vksampler                     = _contextVK->_sampler_per_maxlod[num_mips];
   vktex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-  vktex->_vkdescriptor_info.imageView   = vktex->_imgobj->_vkimageview;
+  vktex->_vkdescriptor_info.imageView   = vktex->_imgobj[0]->_vkimageview;
   vktex->_vkdescriptor_info.sampler     = vktex->_vksampler->_vksampler;
 
   vktex->_imgview_hash.init();
-  vktex->_imgview_hash.accumulateItem(vktex->_imgobj->_serial_number);
+  vktex->_imgview_hash.accumulateItem(vktex->_imgobj[0]->_serial_number);
   vktex->_imgview_hash.finish();
 
+  /////////////////////////////////////
+  // NOTE: Do NOT set _img_sampling here!
+  // Texture will be marked ready in completion callback after GPU upload completes
   /////////////////////////////////////
 
   _contextVK->endRecordCommandBuffer(vktex->_loadCB);

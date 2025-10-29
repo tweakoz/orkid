@@ -42,8 +42,15 @@ struct VulkanTextureObject {
   VulkanTextureObject(vktxi_rawptr_t txi);
   ~VulkanTextureObject();
 
+  // Get the image object that should be used for sampling (the stable one, not being updated)
+  vkimageobj_ptr_t samplingImage() const {
+    return _img_sampling;
+  }
+
   std::unordered_set<vkbuffer_ptr_t> _staging_buffers;
-  vkimageobj_ptr_t _imgobj;
+  vkimageobj_ptr_t _imgobj[2];       // Double-buffer: ping-pong between two images for async uploads
+  vkimageobj_ptr_t _img_sampling;    // Points to the image currently being sampled (null = not ready)
+  int _update_index = 0;             // Which slot is being updated (0 or 1)
   int _maxmip = 0;
   vktxi_rawptr_t _txi;
   vksampler_obj_ptr_t _vksampler;
@@ -53,7 +60,6 @@ struct VulkanTextureObject {
   boost::Crc64 _imgview_hash;
   std::unordered_set<inflighttextrans_ptr_t> _inflight_transfers;
   std::atomic<uint64_t> _dataVersion{0};
-  bool _readyForSampling = false;
   static std::atomic<size_t> _vkto_count;
 };
 ///////////////////////////////////////////////////////////////////////////////

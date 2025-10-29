@@ -64,18 +64,21 @@ void VkTextureInterface::ApplySamplingMode(Texture* ptex) {
   
   // Update texture object
   vktex->_vksampler = new_sampler;
-  
-  // Update descriptor info for binding
-  if (vktex->_imgobj && vktex->_imgobj->_vkimageview) {
-    vktex->_vkdescriptor_info.sampler = new_sampler->_vksampler;
-    vktex->_vkdescriptor_info.imageView = vktex->_imgobj->_vkimageview;
+
+  // Update descriptor sampler (always)
+  vktex->_vkdescriptor_info.sampler = new_sampler->_vksampler;
+
+  // Update descriptor imageView only if texture has an active sampling image
+  // (For loadreq textures before completion, descriptor is already set up with imgobj[0])
+  auto img = vktex->samplingImage();
+  if (img && img->_vkimageview) {
+    vktex->_vkdescriptor_info.imageView = img->_vkimageview;
     vktex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-    vktex->_imgview_hash.init();
-    vktex->_imgview_hash.accumulateItem(vktex->_imgobj->_serial_number);
-    vktex->_imgview_hash.finish();
-
   }
+
+  // NOTE: Don't update _imgview_hash here - it represents format/size identity
+  // and is only set during image creation. Changing sampler shouldn't invalidate
+  // descriptor set cache.
   
   // Special handling for depth textures
   if (ptex->_isDepthTexture) {
@@ -148,7 +151,8 @@ void VkTextureInterface::generateMipMaps(Texture* ptex) {
   int32_t mipHeight = ptex->_height;
 
   bool keep_going = true;
-  auto image      = vktex->_imgobj;
+  // Use the sampling image for mipmap generation
+  auto image      = vktex->samplingImage();
   auto barrier    = createImageBarrier(
       image->_vkimage,
       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -285,7 +289,8 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
   auto cmdbuf_impl = vktex->_loadCB->_impl.getShared<VkSecondaryCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
 
-  auto image = vktex->_imgobj;
+  // Use slot [0] for mipchain loading
+  auto image = vktex->_imgobj[0];
 
   for (size_t l = 0; l < num_levels; l++) {
 
@@ -434,7 +439,9 @@ VulkanTextureObject::VulkanTextureObject(vktxi_rawptr_t txi) {
 
 VulkanTextureObject::~VulkanTextureObject() {
   _vkto_count.fetch_sub(1);
-  _imgobj = nullptr;
+  _imgobj[0] = nullptr;
+  _imgobj[1] = nullptr;
+  _img_sampling = nullptr;
   _loadCB = nullptr;
 }
 

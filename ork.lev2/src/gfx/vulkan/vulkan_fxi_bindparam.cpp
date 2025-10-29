@@ -538,20 +538,20 @@ void VkFxInterface::bindParamTexture(const FxShaderParam* hpar, const Texture* p
     vk_tex = as_to.value();
   }
 
-  if (vk_tex and vk_tex->_readyForSampling) {
+  auto sample_img = vk_tex ? vk_tex->samplingImage() : nullptr;
+
+  if (sample_img) {
 
     // Check for invalid/uninitialized texture
-    if (vk_tex->_imgobj) {
-      VkImage vkimg = vk_tex->_imgobj->_vkimage;
-      // Check for suspicious image handles that look like uninitialized memory
-      if (vkimg == VK_NULL_HANDLE) {
-        printf("ERROR: Attempting to bind invalid/uninitialized texture!\n");
-        printf("  Texture ptr: %p\n", pTex);
-        printf("  Texture name: %s\n", pTex->_debugName.c_str());
-        printf("  VkImage handle: 0x%llx\n", (unsigned long long)vkimg);
-        printf("  Texture source: %d\n", (int)pTex->_source);
-        OrkAssertI(false, "Invalid VkImage handle detected - likely uninitialized texture");
-      }
+    VkImage vkimg = sample_img->_vkimage;
+    // Check for suspicious image handles that look like uninitialized memory
+    if (vkimg == VK_NULL_HANDLE) {
+      printf("ERROR: Attempting to bind invalid/uninitialized texture!\n");
+      printf("  Texture ptr: %p\n", pTex);
+      printf("  Texture name: %s\n", pTex->_debugName.c_str());
+      printf("  VkImage handle: 0x%llx\n", (unsigned long long)vkimg);
+      printf("  Texture source: %d\n", (int)pTex->_source);
+      OrkAssertI(false, "Invalid VkImage handle detected - likely uninitialized texture");
     }
 
     // Validate render target texture layout
@@ -568,8 +568,8 @@ void VkFxInterface::bindParamTexture(const FxShaderParam* hpar, const Texture* p
 
       // Check the ACTUAL image layout, not just what the descriptor expects
       VkImageLayout actual_layout = VK_IMAGE_LAYOUT_UNDEFINED;
-      if (vk_tex->_imgobj) {
-        actual_layout = vk_tex->_imgobj->_currentLayout;
+      if (sample_img) {
+        actual_layout = sample_img->_currentLayout;
       }
 
       // Assert if the actual image layout is wrong - this catches the problem at the source

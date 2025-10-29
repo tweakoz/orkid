@@ -105,7 +105,7 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
   ///////////////////////////
 
   vktexobj_ptr_t vktex = array->_tex->_impl.makeShared<VulkanTextureObject>(this);
-  vktex->_readyForSampling = false;
+  // Don't clear _img_sampling - will be set when upload completes
 
   ///////////////////////////
   // Setup image creation parameters
@@ -134,10 +134,11 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
   VKICI->flags       = 0; // VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT only if from 3d image
 
   std::string debug_name = array->_tex->_debugName.empty() ? "texture_array" : array->_tex->_debugName;
-  vktex->_imgobj         = std::make_shared<VulkanImageObject>(_contextVK, VKICI, debug_name);
+  // Texture arrays use slot [0] only
+  vktex->_imgobj[0] = std::make_shared<VulkanImageObject>(_contextVK, VKICI, debug_name);
 
   if(0)printf("initTextureArray2DFromData: created image %p for array '%s'\n",
-         (void*)vktex->_imgobj->_vkimage,
+         (void*)vktex->_imgobj[0]->_vkimage,
          debug_name.c_str());
 
   if (0)
@@ -155,7 +156,7 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
 
   VkImageViewCreateInfo viewInfo{};
   initializeVkStruct(viewInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
-  viewInfo.image                           = vktex->_imgobj->_vkimage;
+  viewInfo.image                           = vktex->_imgobj[0]->_vkimage;
   viewInfo.viewType                        = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
   viewInfo.format                          = VkFormatConverter::convertBufferFormat(format);
   viewInfo.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -164,18 +165,18 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
   viewInfo.subresourceRange.baseArrayLayer = 0;
   viewInfo.subresourceRange.layerCount     = num_slices;
 
-  VkResult ok = vkCreateImageView(_contextVK->_vkdevice, &viewInfo, nullptr, &vktex->_imgobj->_vkimageview);
+  VkResult ok = vkCreateImageView(_contextVK->_vkdevice, &viewInfo, nullptr, &vktex->_imgobj[0]->_vkimageview);
   OrkAssert(VK_SUCCESS == ok);
 
   // Set debug name for image view
   if (!array->_tex->_debugName.empty()) {
     std::string view_name = array->_tex->_debugName + "_array_view";
-    _contextVK->_setObjectDebugName(vktex->_imgobj->_vkimageview, VK_OBJECT_TYPE_IMAGE_VIEW, view_name.c_str());
+    _contextVK->_setObjectDebugName(vktex->_imgobj[0]->_vkimageview, VK_OBJECT_TYPE_IMAGE_VIEW, view_name.c_str());
   }
 
   // Set to SHADER_READ_ONLY since we'll transition after upload
   vktex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-  vktex->_vkdescriptor_info.imageView   = vktex->_imgobj->_vkimageview;
+  vktex->_vkdescriptor_info.imageView   = vktex->_imgobj[0]->_vkimageview;
   vktex->_vksampler                     = _contextVK->_sampler_base;
   vktex->_vkdescriptor_info.sampler     = vktex->_vksampler->_vksampler;
 
@@ -243,7 +244,8 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
   tlsema->_onComplete = [=]() {
     vktex->_inflight_transfers.erase(transfer);
     poolForSize->returnItem(staging_buffer);
-    vktex->_readyForSampling = true;
+    // Texture array is now ready for sampling
+    vktex->_img_sampling = vktex->_imgobj[0];
   };
 
   ///////////////////////////
@@ -360,7 +362,7 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
   ///////////////////////////
 
   auto barrier = createImageBarrier(
-      vktex->_imgobj->_vkimage,
+      vktex->_imgobj[0]->_vkimage,
       VK_IMAGE_LAYOUT_UNDEFINED,
       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
       VkAccessFlagBits(0),
@@ -380,7 +382,7 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
   vkCmdCopyBufferToImage(
       vk_cmdbuf,
       staging_buffer->_vkbuffer,
-      vktex->_imgobj->_vkimage,
+      vktex->_imgobj[0]->_vkimage,
       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
       copy_regions.size(),
       copy_regions.data());
@@ -596,16 +598,17 @@ void VkTextureInterface::_enqueueInitTextureArray2DOnCB(TextureArray* texture_ar
   VKICI->arrayLayers = num_slices; // array layers specify the number of slices
   VKICI->imageType   = VK_IMAGE_TYPE_2D;
 
-  vktex->_imgobj = std::make_shared<VulkanImageObject>(_contextVK, VKICI);
+  // Texture arrays use slot [0] only
+  vktex->_imgobj[0] = std::make_shared<VulkanImageObject>(_contextVK, VKICI);
 
   printf("initTextureArray2D: created image %p for array '%s'\n",
-         (void*)vktex->_imgobj->_vkimage,
+         (void*)vktex->_imgobj[0]->_vkimage,
          texture_array->_tex->_debugName.c_str());
 
   // Create image view
   VkImageViewCreateInfo viewInfo{};
   initializeVkStruct(viewInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
-  viewInfo.image                         = vktex->_imgobj->_vkimage;
+  viewInfo.image                         = vktex->_imgobj[0]->_vkimage;
   viewInfo.viewType                      = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
   viewInfo.format                        = VkFormatConverter::convertBufferFormat(format);
   viewInfo.subresourceRange.aspectMask   = (format == EBufferFormat::Z32F) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
@@ -614,17 +617,17 @@ void VkTextureInterface::_enqueueInitTextureArray2DOnCB(TextureArray* texture_ar
   viewInfo.subresourceRange.baseArrayLayer = 0;
   viewInfo.subresourceRange.layerCount     = num_slices;
 
-  VkResult ok = vkCreateImageView(_contextVK->_vkdevice, &viewInfo, nullptr, &vktex->_imgobj->_vkimageview);
+  VkResult ok = vkCreateImageView(_contextVK->_vkdevice, &viewInfo, nullptr, &vktex->_imgobj[0]->_vkimageview);
   OrkAssert(VK_SUCCESS == ok);
 
   // Set descriptor to expect SHADER_READ_ONLY layout
   vktex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-  vktex->_vkdescriptor_info.imageView   = vktex->_imgobj->_vkimageview;
+  vktex->_vkdescriptor_info.imageView   = vktex->_imgobj[0]->_vkimageview;
   vktex->_vksampler                     = _contextVK->_sampler_base;
   vktex->_vkdescriptor_info.sampler     = vktex->_vksampler->_vksampler;
 
   vktex->_imgview_hash.init();
-  vktex->_imgview_hash.accumulateItem(vktex->_imgobj->_serial_number);
+  vktex->_imgview_hash.accumulateItem(vktex->_imgobj[0]->_serial_number);
   vktex->_imgview_hash.finish();
 
   texture_array->_tex->_impl = vktex;
@@ -646,7 +649,7 @@ void VkTextureInterface::_enqueueInitTextureArray2DOnCB(TextureArray* texture_ar
       break;
   }
   auto clear_barrier = createImageBarrier(
-      vktex->_imgobj->_vkimage,
+      vktex->_imgobj[0]->_vkimage,
       VK_IMAGE_LAYOUT_UNDEFINED,
       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
       VkAccessFlagBits(0),
@@ -669,7 +672,7 @@ void VkTextureInterface::_enqueueInitTextureArray2DOnCB(TextureArray* texture_ar
         0, static_cast<uint32_t>(num_levels),
         0, static_cast<uint32_t>(num_slices)
     };
-    vkCmdClearDepthStencilImage(vk_cmdbuf, vktex->_imgobj->_vkimage,
+    vkCmdClearDepthStencilImage(vk_cmdbuf, vktex->_imgobj[0]->_vkimage,
                                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear_value, 1, &range);
   } else {
     VkClearColorValue clear_color = {{0.0f, 0.0f, 0.0f, 0.0f}};
@@ -678,13 +681,13 @@ void VkTextureInterface::_enqueueInitTextureArray2DOnCB(TextureArray* texture_ar
         0, static_cast<uint32_t>(num_levels),
         0, static_cast<uint32_t>(num_slices)
     };
-    vkCmdClearColorImage(vk_cmdbuf, vktex->_imgobj->_vkimage,
+    vkCmdClearColorImage(vk_cmdbuf, vktex->_imgobj[0]->_vkimage,
                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear_color, 1, &range);
   }
 
   // Now transition to shader read-only
   auto read_barrier = createImageBarrier(
-      vktex->_imgobj->_vkimage,
+      vktex->_imgobj[0]->_vkimage,
       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
       VK_ACCESS_TRANSFER_WRITE_BIT,
@@ -699,7 +702,10 @@ void VkTextureInterface::_enqueueInitTextureArray2DOnCB(TextureArray* texture_ar
       VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
       0, 0, nullptr, 0, nullptr, 1, read_barrier.get());
 
-  vktex->_imgobj->_currentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  vktex->_imgobj[0]->_currentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+  // Texture array is now ready for sampling
+  vktex->_img_sampling = vktex->_imgobj[0];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -778,9 +784,9 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
     logchan_txia2d->log(
         "updateTextureArraySlice vktex<%p> imgobj<%p:%zx:%zx> staging_size<%zu> num_levels<%d>", //
         (void*)vktex.get(),                                                                      //
-        vktex->_imgobj.get(),                                                                    //
-        vktex->_imgobj->_vkimage,                                                                //
-        vktex->_imgobj->_vkimageview,                                                            //
+        vktex->_imgobj[0].get(),                                                                 //
+        vktex->_imgobj[0]->_vkimage,                                                             //
+        vktex->_imgobj[0]->_vkimageview,                                                         //
         staging_size,                                                                            //
         num_levels);
   }
@@ -889,7 +895,7 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
 
   // Transition image layout from shader read to transfer destination
   auto barrier = createImageBarrier(
-      vktex->_imgobj->_vkimage,
+      vktex->_imgobj[0]->_vkimage,
       VK_IMAGE_LAYOUT_GENERAL,
       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
       VkAccessFlagBits(VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT),
@@ -916,7 +922,7 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
   vkCmdCopyBufferToImage(
       vk_sec_cmdbuf,
       staging_buffer->_vkbuffer,
-      vktex->_imgobj->_vkimage,
+      vktex->_imgobj[0]->_vkimage,
       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
       regions.size(),
       regions.data());

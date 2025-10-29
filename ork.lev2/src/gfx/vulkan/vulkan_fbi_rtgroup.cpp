@@ -106,7 +106,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rt
     auto texture = rtb->texture();
     if (texture) {
       _contextVK->_txi->_initTextureFromRtBuffer(rtb.get());
-      rtbi->_imgobj = texture->_impl.getShared<VulkanTextureObject>()->_imgobj;
+      rtbi->_imgobj = texture->_impl.getShared<VulkanTextureObject>()->_imgobj[0];
     }
   }
   ///////////////////////////////////////////////////
@@ -120,7 +120,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rt
     auto texture = depth_buffer->texture();
     if (texture) {
       _contextVK->_txi->_initTextureFromRtBuffer(depth_buffer.get());
-      depth_impl->_imgobj = texture->_impl.getShared<VulkanTextureObject>()->_imgobj;
+      depth_impl->_imgobj = texture->_impl.getShared<VulkanTextureObject>()->_imgobj[0];
     }
   }
   ///////////////////////////////////////////////////

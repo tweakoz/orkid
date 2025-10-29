@@ -112,19 +112,21 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       usage);          // usage
 
   /////////////////////////////////////
-  
+
   bool hash_changed = false;
-  
+
   vktexobj_ptr_t vktex;
   if (auto existing = ptex->_impl.tryAsShared<VulkanTextureObject>()) {
     // Texture already exists - we're updating it
     vktex = existing.value();
     hash_changed = (format_hash != vktex->_format_hash);
     if(hash_changed){
+      // Format changed - need to recreate
       _texobjs_pending_for_deletion.insert(vktex);
       vktex = ptex->_impl.makeShared<VulkanTextureObject>(this);
       vktex->_format_hash = format_hash;
     }
+    // If same format, async, and ready - we'll use double-buffering (_imgobj_pending)
   } else {
     // New texture
     vktex = ptex->_impl.makeShared<VulkanTextureObject>(this);
@@ -236,7 +238,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       command_buffer = pool->borrowItem();
     });
 
-    vktex->_readyForSampling = false;
+    // Don't clear _img_sampling - it stays pointing to the old valid image until replaced
 
   }
   /////////////////////////////////////////////////////////
@@ -249,7 +251,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     }
 
     vk_cmdbuf = _contextVK->primary_cb()->_vkcmdbuf;
-    vktex->_readyForSampling = false; // Will be set to true after GPU completion
+    // Don't clear _img_sampling - will be replaced after GPU completion
   }
 
   /////////////////////////////////////////////////////////
@@ -257,13 +259,24 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
 
   /////////////////////////////////////
-  // if the image params have changed
-  //   (e.g. size, format, usage)
-  //   create a new VkImage and VkImageView
-  // otherwise, reuse the existing VkImage and VkImageView
+  // Determine ping-pong buffer indices
+  // - write_slot: where we upload the new texture data
+  // - sample_slot: what the GPU samples from (stays stable during async upload)
   /////////////////////////////////////
 
-  if (hash_changed) {
+  int write_slot = vktex->_update_index & 1;
+  int sample_slot = (vktex->_update_index + 1) & 1;
+
+  // Increment index NOW (not in completion callback) so next upload uses different slot
+  vktex->_update_index++;
+
+  /////////////////////////////////////
+  // Create new images if format/size changed or never created
+  /////////////////////////////////////
+
+  bool creating_new_images = hash_changed || !vktex->_imgobj[0];
+
+  if (creating_new_images) {
 
     // Check if this is a cube texture
     bool is_cube = tid._initCubeTexture;
@@ -286,56 +299,71 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       VKICI->flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
     }
 
-    std::string debug_name = ptex->_debugName.empty() 
-                           ? (is_cube?"texture_from_data(cube)":"texture_from_data") 
+    std::string debug_name = ptex->_debugName.empty()
+                           ? (is_cube?"texture_from_data(cube)":"texture_from_data")
                            : ptex->_debugName;
-    vktex->_imgobj = std::make_shared<VulkanImageObject>(_contextVK, VKICI, debug_name);
 
-    // Create the appropriate image view type
-    std::shared_ptr<VkImageViewCreateInfo> IVCI;
+    // Create both double-buffer slots with fresh images
+    auto new_imgobj_a = std::make_shared<VulkanImageObject>(_contextVK, VKICI, debug_name + "_a");
+    auto new_imgobj_b = std::make_shared<VulkanImageObject>(_contextVK, VKICI, debug_name + "_b");
+    vktex->_imgobj[0] = new_imgobj_a;
+    vktex->_imgobj[1] = new_imgobj_b;
+    vktex->_update_index = 0;
 
-    if (is_cube) {
-      // Create cube image view
-      IVCI = std::make_shared<VkImageViewCreateInfo>();
-      initializeVkStruct(*IVCI, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
-      IVCI->image = vktex->_imgobj->_vkimage;
-      IVCI->viewType = VK_IMAGE_VIEW_TYPE_CUBE;
-      IVCI->format = VkFormatConverter::convertBufferFormat(actual_dst_format);
-      IVCI->subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-      IVCI->subresourceRange.baseMipLevel = 0;
-      IVCI->subresourceRange.levelCount = 1;
-      IVCI->subresourceRange.baseArrayLayer = 0;
-      IVCI->subresourceRange.layerCount = 6;
-    } else {
-      // Keep existing 2D image view creation for non-cube textures
-      IVCI = createImageViewInfo2D(
-          vktex->_imgobj->_vkimage,
-          VkFormatConverter::convertBufferFormat(actual_dst_format),
-          VK_IMAGE_ASPECT_COLOR_BIT);
+    // Create image views for both images
+    for (int i = 0; i < 2; i++) {
+      std::shared_ptr<VkImageViewCreateInfo> IVCI;
+
+      if (is_cube) {
+        // Create cube image view
+        IVCI = std::make_shared<VkImageViewCreateInfo>();
+        initializeVkStruct(*IVCI, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
+        IVCI->image = vktex->_imgobj[i]->_vkimage;
+        IVCI->viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+        IVCI->format = VkFormatConverter::convertBufferFormat(actual_dst_format);
+        IVCI->subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        IVCI->subresourceRange.baseMipLevel = 0;
+        IVCI->subresourceRange.levelCount = 1;
+        IVCI->subresourceRange.baseArrayLayer = 0;
+        IVCI->subresourceRange.layerCount = 6;
+      } else {
+        // 2D image view
+        IVCI = createImageViewInfo2D(
+            vktex->_imgobj[i]->_vkimage,
+            VkFormatConverter::convertBufferFormat(actual_dst_format),
+            VK_IMAGE_ASPECT_COLOR_BIT);
+      }
+
+      // Set level count for all mip levels
+      IVCI->subresourceRange.levelCount = num_mips;
+
+      initializeVkStruct(vktex->_imgobj[i]->_vkimageview);
+      VkResult ok = vkCreateImageView(_contextVK->_vkdevice, IVCI.get(), nullptr, &vktex->_imgobj[i]->_vkimageview);
+      OrkAssert(VK_SUCCESS == ok);
+
+      // Set debug name for image view
+      if (!ptex->_debugName.empty()) {
+        std::string view_name = ptex->_debugName + (i == 0 ? "_view_a" : "_view_b");
+        _contextVK->_setObjectDebugName(vktex->_imgobj[i]->_vkimageview, VK_OBJECT_TYPE_IMAGE_VIEW, view_name.c_str());
+      }
     }
 
-    // Set level count for all mip levels
-    IVCI->subresourceRange.levelCount = num_mips;
-
-    initializeVkStruct(vktex->_imgobj->_vkimageview);
-    VkResult ok = vkCreateImageView(_contextVK->_vkdevice, IVCI.get(), nullptr, &vktex->_imgobj->_vkimageview);
-    OrkAssert(VK_SUCCESS == ok);
-
-    // Set debug name for image view
-    if (!ptex->_debugName.empty()) {
-      std::string view_name = ptex->_debugName + "_view";
-      _contextVK->_setObjectDebugName(vktex->_imgobj->_vkimageview, VK_OBJECT_TYPE_IMAGE_VIEW, view_name.c_str());
-    }
-
+    // Update descriptor and texture properties
     vktex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    vktex->_vkdescriptor_info.imageView   = vktex->_imgobj->_vkimageview;
-    OrkAssert(vktex->_imgobj->_vkimageview != VK_NULL_HANDLE);
+    vktex->_vkdescriptor_info.imageView   = vktex->_imgobj[write_slot]->_vkimageview;
+    OrkAssert(vktex->_imgobj[write_slot]->_vkimageview != VK_NULL_HANDLE);
+
+    // Set image view hash (only when creating new images - represents format/size identity)
+    // Use slot 0's serial number for consistency
+    vktex->_imgview_hash.init();
+    vktex->_imgview_hash.accumulateItem(vktex->_imgobj[0]->_serial_number);
+    vktex->_imgview_hash.finish();
 
     ptex->_impl  = vktex;
-    ptex->_texFormat = actual_dst_format; // Store the actual format
+    ptex->_texFormat = actual_dst_format;
     ptex->_width     = tid._w;
     ptex->_height    = tid._h;
-    ptex->_depth     = is_cube ? 6 : tid._d;  // Cube textures always have depth 6
+    ptex->_depth     = is_cube ? 6 : tid._d;
     ptex->_num_mips  = num_mips;
 
   }
@@ -345,9 +373,11 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   vktex->_vksampler = num_mips > 1 ? _contextVK->_sampler_per_maxlod[num_mips] : _contextVK->_sampler_base;
   vktex->_vkdescriptor_info.sampler     = vktex->_vksampler->_vksampler;
 
-  vktex->_imgview_hash.init();
-  vktex->_imgview_hash.accumulateItem(vktex->_imgobj->_serial_number);
-  vktex->_imgview_hash.finish();
+  // Determine which image object to upload to (write_slot)
+  vkimageobj_ptr_t target_imgobj = vktex->_imgobj[write_slot];
+
+  // NOTE: Don't set _imgview_hash here - it's only set during image creation to avoid
+  // invalidating descriptor set cache on every update
 
   /////////////////////////////////////
   // Upload each mip level
@@ -461,20 +491,40 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       };
 
       // Completion callback: cleanup transfer and staging buffers when GPU completes
-      tlsema->_onComplete = [=]() {
+      tlsema->_onComplete = [=, this]() {
         vktex->_inflight_transfers.erase(transfer);
         // Return all staging buffers to their pools
         for (auto& buf : staging_buffers) {
           auto poolForSize = this->stagingBufferPoolForSrcOfSize(buf->_length);
           poolForSize->returnItem(buf);
         }
-        vktex->_readyForSampling = true;
+
+        // Use captured write_slot (not _update_index which has been incremented)
+        auto& completed_img = vktex->_imgobj[write_slot];
+
+        // Update sampling image to point to the newly completed image (NOW ready to sample)
+        vktex->_img_sampling = completed_img;
+
+        // Update descriptor to point to the newly completed image
+        vktex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        vktex->_vkdescriptor_info.imageView = completed_img->_vkimageview;
+
+        // NOTE: Do NOT update _imgview_hash here! It would invalidate descriptor set cache every frame.
+        // The hash represents texture format/size identity, not which ping-pong slot is active.
+
+        // Update texture properties
+        bool is_cube = tid._initCubeTexture;
+        ptex->_texFormat = actual_dst_format;
+        ptex->_width = tid._w;
+        ptex->_height = tid._h;
+        ptex->_depth = is_cube ? 6 : tid._d;
+        ptex->_num_mips = num_mips;
       };
     }
 
     // Transition this mip level to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
     auto barrier = createImageBarrier(
-        vktex->_imgobj->_vkimage,
+        target_imgobj->_vkimage,
         VK_IMAGE_LAYOUT_UNDEFINED,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
         VkAccessFlagBits(0),
@@ -510,7 +560,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     vkCmdCopyBufferToImage(
         vk_cmdbuf,
         staging_buffer->_vkbuffer,
-        vktex->_imgobj->_vkimage,
+        target_imgobj->_vkimage,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
         1,
         &region);
@@ -555,7 +605,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     }
 
     // Now texture is guaranteed to be ready for sampling
-    vktex->_readyForSampling = true;
+    vktex->_img_sampling = target_imgobj;
   }
 
   /////////////////////////////////////

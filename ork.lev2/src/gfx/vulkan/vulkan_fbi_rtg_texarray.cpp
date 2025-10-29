@@ -43,8 +43,8 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_buildRtgImplFromTextureArraySlice(rtg
   }
   
   OrkAssert(vktex);
-  OrkAssert(vktex->_imgobj);
-  OrkAssert(vktex->_imgobj->_vkimage != VK_NULL_HANDLE);
+  OrkAssert(vktex->_imgobj[0]);
+  OrkAssert(vktex->_imgobj[0]->_vkimage != VK_NULL_HANDLE);
   
   /////////////////////////////////////////////
   // Create RTG implementation
@@ -67,7 +67,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_buildRtgImplFromTextureArraySlice(rtg
   /////////////////////////////////////////////
   VkImageViewCreateInfo viewInfo{};
   viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-  viewInfo.image = vktex->_imgobj->_vkimage;
+  viewInfo.image = vktex->_imgobj[0]->_vkimage;
   viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D; // Single layer 2D view
   viewInfo.format = vk_fmt;
   
@@ -107,7 +107,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_buildRtgImplFromTextureArraySlice(rtg
     rtb->_mipgen = RtBuffer::EMipGen::EMG_NONE;
     auto bufferimpl = std::make_shared<VklRtBufferImpl>(_contextVK, RTGIMPL.get(), usage, vk_fmt);
     rtb->_impl.setShared<VklRtBufferImpl>(bufferimpl);
-    bufferimpl->_imgobj = vktex->_imgobj;
+    bufferimpl->_imgobj = vktex->_imgobj[0];
     
     // Store the slice view in the descriptor info
     bufferimpl->_descriptorInfo.imageView = slice_view;
@@ -132,7 +132,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_buildRtgImplFromTextureArraySlice(rtg
     rtb->_mipgen = RtBuffer::EMipGen::EMG_NONE;
     auto bufferimpl = std::make_shared<VklRtBufferImpl>(_contextVK, RTGIMPL.get(), usage, vk_fmt);
     rtb->_impl.setShared<VklRtBufferImpl>(bufferimpl);
-    bufferimpl->_imgobj = vktex->_imgobj;
+    bufferimpl->_imgobj = vktex->_imgobj[0];
     
     // Store the slice view in the descriptor info
     bufferimpl->_descriptorInfo.imageView = slice_view;
