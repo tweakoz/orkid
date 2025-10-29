@@ -1328,7 +1328,7 @@ vksampler_obj_ptr_t VkContext::_getOrCreateSampler(const TextureSamplingModeData
   sci->addressModeW = orkidWrapToVulkan(sampling_mode._texAddrModeR);
   
   // Anisotropy
-    float max_aniso = 1.0;//sampling_mode._maxAnisotropy;
+    float max_aniso = sampling_mode._maxAnisotropy;
   if (max_aniso > 1.0f) {
     sci->anisotropyEnable = VK_TRUE;
     sci->maxAnisotropy = max_aniso;
