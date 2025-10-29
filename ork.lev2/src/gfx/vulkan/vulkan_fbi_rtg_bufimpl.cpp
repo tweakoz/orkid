@@ -51,20 +51,22 @@ VklRtBufferImpl::VklRtBufferImpl(vkcontext_rawptr_t ctxVK, VkRtGroupImpl* par, u
 
 VklRtBufferImpl::~VklRtBufferImpl() {
   // Capture resources that need cleanup
-  auto imgobj = _imgobj;
-  
-  if (imgobj) {
+  vkimageobj_ptr_t imgobj = _imgobj;
+  vktexobj_ptr_t impl = nullptr;
+  if (_teximpl.tryAsShared<VulkanTextureObject>()) {
+    impl = _teximpl.getShared<VulkanTextureObject>();
+  }
+  _imgobj = nullptr; // Clear the image object to avoid dangling pointers
+  _teximpl.clear(); // Clear the texture implementation variant
+
+  if (imgobj or impl) {
     // Enqueue cleanup to main thread with proper Vulkan context
     GfxEnv::GetRef().enqueueDeferredContextOp(
-      [=](Context* ctx) {
-        // Resources will be released when shared_ptr goes out of scope
-        // This ensures it happens on the main thread with valid Vulkan context
-        auto temp_img = imgobj;
-        _teximpl.clear(); // Clear the texture implementation variant
+      [=](Context* ctx) mutable {
+        imgobj = nullptr;
+        impl = nullptr;
       });
-  }
-  
-  _imgobj = nullptr; // Clear the image object to avoid dangling pointers
+  }  
 }
 
 ///////////////////////////////////////////////////////////////////////////////
