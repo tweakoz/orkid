@@ -76,6 +76,37 @@ void pyinit_ui(py::module& module_lev2) {
          std::string default_path) -> std::string { //
         return ui::popupFolderDialog(title, default_path);
       });
+  uimodule.def(
+      "popupFolderDialogAsync",
+      [](std::string title,           //
+         std::string default_path,    //
+         py::function callback) {     //
+        // Validate callback
+        if (callback.is_none()) {
+          throw std::runtime_error("popupFolderDialogAsync: callback cannot be None");
+        }
+
+        // Store Python callback in shared_ptr for thread-safe capture
+        auto callback_ptr = std::make_shared<py::function>(callback);
+
+        // Enqueue blocking tinyfd call to background thread
+        opq::concurrentQueue()->enqueue([title, default_path, callback_ptr]() {
+          // Call blocking tinyfd (GIL automatically released in C++ code)
+          std::string result = ui::popupFolderDialog(title, default_path);
+
+          // Enqueue callback to main thread
+          opq::mainSerialQueue()->enqueue([callback_ptr, result]() {
+            try {
+              // CRITICAL: Acquire GIL before calling Python
+              py::gil_scoped_acquire acquire;
+              (*callback_ptr)(result);
+            } catch (const std::exception& e) {
+              // Log Python callback errors
+              printf("popupFolderDialogAsync callback error: %s\n", e.what());
+            }
+          });
+        });
+      });
   /////////////////////////////////////////////////////////////////////////////////
   auto uicontext_type = //
       py::class_<ui::Context, ui::context_ptr_t>(uimodule, "Context")
