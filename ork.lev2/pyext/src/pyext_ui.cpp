@@ -90,21 +90,12 @@ void pyinit_ui(py::module& module_lev2) {
         auto callback_ptr = std::make_shared<py::function>(callback);
 
         // Enqueue blocking tinyfd call to background thread
-        opq::concurrentQueue()->enqueue([title, default_path, callback_ptr]() {
-          // Call blocking tinyfd (GIL automatically released in C++ code)
-          std::string result = ui::popupFolderDialog(title, default_path);
-
-          // Enqueue callback to main thread
-          opq::mainSerialQueue()->enqueue([callback_ptr, result]() {
-            try {
-              // CRITICAL: Acquire GIL before calling Python
-              py::gil_scoped_acquire acquire;
-              (*callback_ptr)(result);
-            } catch (const std::exception& e) {
-              // Log Python callback errors
-              printf("popupFolderDialogAsync callback error: %s\n", e.what());
-            }
-          });
+        py::gil_scoped_release release;
+        opq::concurrentQueue()->enqueue([title, default_path, callback_ptr]() mutable {
+            std::string result = ui::popupFolderDialog(title, default_path);
+            py::gil_scoped_acquire acquire;
+            (*callback_ptr)(result);
+            callback_ptr = nullptr;
         });
       });
   /////////////////////////////////////////////////////////////////////////////////
