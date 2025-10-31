@@ -108,6 +108,7 @@ class ImageViewStressTest(object):
 
   def createMatplotlibPlot(self, index, fm_params):
     """Create a matplotlib figure for a specific FM synthesis plot"""
+    # Start with small default size - will be resized to widget dimensions each frame
     fig = plt.figure(figsize=(3, 3), dpi=100)
     canvas = FigureCanvasAgg(fig)
     ax = fig.add_subplot(111)
@@ -126,11 +127,17 @@ class ImageViewStressTest(object):
 
   ##############################################
 
-  def renderMatplotlibPlot(self, index, fig, canvas, ax, fm_params):
+  def renderMatplotlibPlot(self, index, fig, canvas, ax, fm_params, widget):
     """Render matplotlib plot with FM synthesis - runs in thread"""
     while self.mpl_running:
       try:
         t = self.abstime
+
+        # Get widget dimensions and resize figure to match
+        w = widget.width
+        h = widget.height
+        if w > 0 and h > 0:
+          fig.set_size_inches(w / 100.0, h / 100.0, forward=True)
 
         # FM Synthesis equation
         x = np.linspace(0, 4 * np.pi, 200)
@@ -256,13 +263,16 @@ class ImageViewStressTest(object):
       })
 
     for plot_idx, (slot_idx, fm_config) in enumerate(zip(plot_slots, fm_configs)):
+      # Get the widget for this slot
+      widget = self.imageviews[slot_idx]
+
       # Create matplotlib plot
       fig, canvas, ax, params = self.createMatplotlibPlot(plot_idx, fm_config)
 
       # Start rendering thread
       thread = threading.Thread(
         target=self.renderMatplotlibPlot,
-        args=(plot_idx, fig, canvas, ax, params)
+        args=(plot_idx, fig, canvas, ax, params, widget)
       )
       thread.daemon = True
       thread.start()
@@ -272,7 +282,7 @@ class ImageViewStressTest(object):
       provider = lev2.ImageProvider.createFromLambda(
         lambda idx=plot_idx: self.imageProviderMatPlotLib(idx)
       )
-      self.imageviews[slot_idx].setImageProvider(provider)
+      widget.setImageProvider(provider)
 
       print(f"[Plot  {plot_idx}] Slot {slot_idx:2d}: {fm_config['title']}")
 
