@@ -2,14 +2,15 @@
 
 ################################################################################
 # ImageView/ImageProvider Stress Test
-# 4x4 grid (16 ImageViews) with mixed movie players and matplotlib plots
+# Variable NxN grid (default 4x4 = 16 ImageViews) with mixed movie players and matplotlib plots
 # Designed to stress test async texture uploads and reproduce ping-pong buffer bugs
+# Usage: ./imageview_stresstest.py [-g N]  (default: -g 4 for 4x4 grid)
 # Copyright 1996-2023, Michael T. Mayers.
 # Distributed under the MIT License
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import math, sys, os, signal, random, threading, time
+import math, sys, os, signal, random, threading, time, argparse
 import numpy as np
 from obt import path
 from orkengine.core import vec2, vec3, vec4, mtx4, quat, VarMap, CrcStringProxy
@@ -23,9 +24,11 @@ tokens = CrcStringProxy()
 
 class ImageViewStressTest(object):
 
-  def __init__(self):
+  def __init__(self, griddim=4):
     super().__init__()
     self.abstime = 0.0
+    self.griddim = griddim
+    self.total_cells = griddim * griddim
 
     self.ezapp = lev2.OrkEzApp.create(self,
                                       fullscreen=False,
@@ -42,12 +45,12 @@ class ImageViewStressTest(object):
     lg_group.margin = 4
 
     ############################################
-    # Create 4x4 grid of ImageViews
+    # Create NxN grid of ImageViews
     ############################################
 
     self.griditems = lg_group.makeGrid(
-      width=4,
-      height=4,
+      width=self.griddim,
+      height=self.griddim,
       margin=4,
       uiclass=lev2.ui.Box,
       args=["placeholder", vec4(0.1, 0.1, 0.1, 1)],
@@ -58,7 +61,7 @@ class ImageViewStressTest(object):
     ############################################
 
     self.imageviews = []
-    for i in range(16):
+    for i in range(self.total_cells):
       imv = lg_group.makeChild(uiclass=lev2.ui.ImageView, args=[f"imgview_{i}"])
       self.lg_group.replaceChild(self.griditems[i].layout, imv)
       imv_widget = imv.widget
@@ -78,10 +81,13 @@ class ImageViewStressTest(object):
     # Matplotlib state
     ############################################
 
+    # Allocate half the grid for plots
+    self.num_plots = self.total_cells // 2
+
     self.mpl_figures = []
     self.mpl_canvases = []
     self.mpl_axes = []
-    self.mpl_latest_images = [None] * 8
+    self.mpl_latest_images = [None] * self.num_plots
     self.mpl_threads = []
     self.mpl_running = True
 
@@ -172,26 +178,38 @@ class ImageViewStressTest(object):
   def onGpuInit(self, ctx):
 
     print("=" * 80)
-    print("ImageView Stress Test - 4x4 Grid")
-    print("8 Movie Players + 8 Matplotlib FM Plots")
+    print(f"ImageView Stress Test - {self.griddim}x{self.griddim} Grid")
+    print(f"{self.total_cells // 2} Movie Players + {self.total_cells // 2} Matplotlib FM Plots")
     print("=" * 80)
 
     ############################################
-    # Setup 8 Movie Players with Delayed Starts
-    # Layout: Movies in slots 0,1,4,5,8,9,12,13
+    # Generate movie and plot slots in checkerboard pattern
+    # Movies get even checkerboard positions, plots get odd positions
     ############################################
 
-    movie_configs = [
-      # (slot_index, movie_file, start_delay)
-      (0, "bunny.mp4", 0.0),
-      (1, "wipeout.mp4", 1.5),
-      (4, "bunny.mp4", 3.0),
-      (5, "wipeout.mp4", 4.5),
-      (8, "bunny.mp4", 6.0),
-      (9, "wipeout.mp4", 7.5),
-      (12, "bunny.mp4", 9.0),
-      (13, "wipeout.mp4", 10.5),
-    ]
+    movie_slots = []
+    plot_slots = []
+
+    for row in range(self.griddim):
+      for col in range(self.griddim):
+        slot_idx = row * self.griddim + col
+        # Checkerboard: (row + col) % 2 determines pattern
+        if (row + col) % 2 == 0:
+          movie_slots.append(slot_idx)
+        else:
+          plot_slots.append(slot_idx)
+
+    ############################################
+    # Setup Movie Players with Delayed Starts
+    ############################################
+
+    movies_to_use = ["bunny.mp4", "wipeout.mp4"]
+    movie_configs = []
+
+    for i, slot_idx in enumerate(movie_slots):
+      movie_file = movies_to_use[i % len(movies_to_use)]
+      start_delay = i * 1.5  # Stagger start times
+      movie_configs.append((slot_idx, movie_file, start_delay))
 
     for slot_idx, movie_file, start_delay in movie_configs:
       movie = lev2.MoviePlaybackContext()
@@ -207,116 +225,35 @@ class ImageViewStressTest(object):
       print(f"[Movie {len(self.movies)-1}] Slot {slot_idx:2d}: {movie_file:15s} (start @ {start_delay:.1f}s)")
 
     ############################################
-    # Setup 8 Matplotlib FM Synthesis Plots
-    # Layout: Plots in slots 2,3,6,7,10,11,14,15
+    # Setup Matplotlib FM Synthesis Plots
     ############################################
 
-    fm_configs = [
-      # Slot 2: Simple 2-modulator FM
-      {
-        'title': 'FM: 2-Mod Low',
-        'carrier_freq': 1.0,
-        'carrier_phase': 1.0,
-        'modulators': [
-          {'freq': 2.0, 'amplitude': 0.5, 'phase': 0.5, 'offset': 0},
-          {'freq': 3.5, 'amplitude': 0.3, 'phase': 1.0, 'offset': 0},
-        ],
-        'ylim': (-2, 2),
-        'color': 'cyan',
-      },
-      # Slot 3: Complex 3-modulator FM
-      {
-        'title': 'FM: 3-Mod Med',
-        'carrier_freq': 1.5,
-        'carrier_phase': 0.8,
-        'modulators': [
-          {'freq': 2.5, 'amplitude': 0.4, 'phase': 0.3, 'offset': 0},
-          {'freq': 4.0, 'amplitude': 0.35, 'phase': 0.6, 'offset': np.pi/4},
-          {'freq': 5.5, 'amplitude': 0.25, 'phase': 1.2, 'offset': np.pi/2},
-        ],
-        'ylim': (-2.5, 2.5),
-        'color': 'yellow',
-      },
-      # Slot 6: High frequency single modulator
-      {
-        'title': 'FM: 1-Mod High',
-        'carrier_freq': 2.0,
-        'carrier_phase': 1.5,
-        'modulators': [
-          {'freq': 8.0, 'amplitude': 0.8, 'phase': 2.0, 'offset': 0},
-        ],
-        'ylim': (-3, 3),
-        'color': 'magenta',
-      },
-      # Slot 7: 4-modulator chaos
-      {
-        'title': 'FM: 4-Mod Chaos',
-        'carrier_freq': 1.2,
-        'carrier_phase': 0.5,
-        'modulators': [
-          {'freq': 1.5, 'amplitude': 0.3, 'phase': 0.2, 'offset': 0},
-          {'freq': 3.3, 'amplitude': 0.25, 'phase': 0.7, 'offset': np.pi/3},
-          {'freq': 5.7, 'amplitude': 0.2, 'phase': 1.1, 'offset': np.pi/2},
-          {'freq': 7.1, 'amplitude': 0.15, 'phase': 1.5, 'offset': np.pi},
-        ],
-        'ylim': (-2, 2),
-        'color': 'orange',
-      },
-      # Slot 10: Phase-shifted 2-mod
-      {
-        'title': 'FM: 2-Mod Phase',
-        'carrier_freq': 1.3,
-        'carrier_phase': 2.0,
-        'modulators': [
-          {'freq': 2.6, 'amplitude': 0.6, 'phase': 0.4, 'offset': np.pi/6},
-          {'freq': 4.2, 'amplitude': 0.4, 'phase': 1.3, 'offset': 2*np.pi/3},
-        ],
-        'ylim': (-2.5, 2.5),
-        'color': 'green',
-      },
-      # Slot 11: Amplitude-modulated 3-mod
-      {
-        'title': 'FM: 3-Mod AmpMod',
-        'carrier_freq': 1.8,
-        'carrier_phase': 0.6,
-        'modulators': [
-          {'freq': 3.0, 'amplitude': 0.7, 'phase': 0.9, 'offset': 0},
-          {'freq': 4.5, 'amplitude': 0.5, 'phase': 1.4, 'offset': np.pi/4},
-          {'freq': 6.0, 'amplitude': 0.3, 'phase': 1.8, 'offset': np.pi/2},
-        ],
-        'ylim': (-3, 3),
-        'color': 'red',
-      },
-      # Slot 14: Asymmetric 2-mod
-      {
-        'title': 'FM: 2-Mod Asym',
-        'carrier_freq': 0.8,
-        'carrier_phase': 1.2,
-        'modulators': [
-          {'freq': 3.7, 'amplitude': 0.9, 'phase': 0.3, 'offset': 0},
-          {'freq': 1.3, 'amplitude': 0.4, 'phase': 2.1, 'offset': np.pi/5},
-        ],
-        'ylim': (-2.5, 2.5),
-        'color': 'lime',
-      },
-      # Slot 15: Complex 5-modulator
-      {
-        'title': 'FM: 5-Mod Complex',
-        'carrier_freq': 1.0,
-        'carrier_phase': 0.0,
-        'modulators': [
-          {'freq': 2.0, 'amplitude': 0.25, 'phase': 0.4, 'offset': 0},
-          {'freq': 3.0, 'amplitude': 0.2, 'phase': 0.8, 'offset': np.pi/5},
-          {'freq': 4.0, 'amplitude': 0.15, 'phase': 1.2, 'offset': 2*np.pi/5},
-          {'freq': 5.0, 'amplitude': 0.12, 'phase': 1.6, 'offset': 3*np.pi/5},
-          {'freq': 6.0, 'amplitude': 0.1, 'phase': 2.0, 'offset': 4*np.pi/5},
-        ],
-        'ylim': (-2, 2),
-        'color': 'white',
-      },
-    ]
+    colors = ['cyan', 'yellow', 'magenta', 'orange', 'green', 'red', 'lime', 'white', 'pink', 'purple', 'gold', 'coral', 'navy', 'teal', 'olive', 'maroon']
+    fm_configs = []
 
-    plot_slots = [2, 3, 6, 7, 10, 11, 14, 15]
+    for i in range(len(plot_slots)):
+      # Generate varied FM parameters for each plot
+      num_mods = 1 + (i % 4)  # 1-4 modulators
+      carrier_freq = 0.8 + (i * 0.2) % 2.0
+      carrier_phase = (i * 0.3) % 2.0
+
+      modulators = []
+      for m in range(num_mods):
+        modulators.append({
+          'freq': 2.0 + m * 1.5 + (i * 0.5) % 3.0,
+          'amplitude': 0.7 - m * 0.15,
+          'phase': m * 0.5 + (i * 0.2) % 2.0,
+          'offset': m * np.pi / num_mods
+        })
+
+      fm_configs.append({
+        'title': f'FM: {num_mods}-Mod #{i}',
+        'carrier_freq': carrier_freq,
+        'carrier_phase': carrier_phase,
+        'modulators': modulators,
+        'ylim': (-3, 3),
+        'color': colors[i % len(colors)],
+      })
 
     for plot_idx, (slot_idx, fm_config) in enumerate(zip(plot_slots, fm_configs)):
       # Create matplotlib plot
@@ -363,4 +300,16 @@ class ImageViewStressTest(object):
 
 ###############################################################################
 
-ImageViewStressTest().ezapp.mainThreadLoop()
+if __name__ == "__main__":
+  parser = argparse.ArgumentParser(description='ImageView Stress Test - Variable grid with mixed movie players and matplotlib plots')
+  parser.add_argument('-g', '--griddim', type=int, default=4, help='Grid dimension (NxN grid of ImageViews, default=4)')
+  args = parser.parse_args()
+
+  # Validate grid dimension
+  if args.griddim < 2:
+    print(f"Error: Grid dimension must be at least 2 (got {args.griddim})")
+    sys.exit(1)
+  if args.griddim > 8:
+    print(f"Warning: Grid dimension {args.griddim} is very large, may impact performance")
+
+  ImageViewStressTest(griddim=args.griddim).ezapp.mainThreadLoop()
