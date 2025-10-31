@@ -470,7 +470,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       }
     }
 
-    // Allocate staging buffer for this mip level
+    // Borrow staging buffer from pool for this mip level
     auto poolForSize = stagingBufferPoolForSrcOfSize(level_data_size);
     auto staging_buffer = poolForSize->borrowItem();
     staging_buffer->copyFromHost(level_data, level_data_size);
@@ -500,19 +500,36 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
         pricb->_secondary_cmdbuffers_pending_cleanup.push_back(command_buffer);
       };
 
-      // Cleanup callback: return CB to pool when primary CB is reset
-      cmdbuf_impl->_onCleanupCallback = [command_buffer, pool_ref = &_seccmdbufpool_xfer]() {
-        pool_ref->atomicOp([&](sseccmdbufpool_ptr_t& pool) { pool->returnItem(command_buffer); });
-      };
+      ///////////////////////////////////
+      // Cleanup callback: return CB AND staging buffers to pools 
+      //    (when primary CB that holds our update is reset)
+      ///////////////////////////////////
 
-      // Completion callback: cleanup transfer and staging buffers when GPU completes
-      tlsema->_onComplete = [=, this]() {
-        vktex->_inflight_transfers.erase(transfer);
-        // Return all staging buffers to their pools
+      cmdbuf_impl->_onCleanupCallback = [command_buffer, staging_buffers,
+                                          cb_pool_ref = &_seccmdbufpool_xfer,
+                                          this]() {
+
+        // Section: commandbuffers-lifecycle (Chapter 6 - Command Buffers)
+        // "Other than VkCommandPool objects, destroying or freeing any object or memory that may be accessed when the command buffer is accessed (e.g. an object bound to the command buffer) will transition the state of
+        // that command buffer to the invalid state."
+
+        // Return command buffer to pool
+        cb_pool_ref->atomicOp([&](sseccmdbufpool_ptr_t& pool) { pool->returnItem(command_buffer); });
+        // Return staging buffers to their respective pools
         for (auto& buf : staging_buffers) {
           auto poolForSize = this->stagingBufferPoolForSrcOfSize(buf->_length);
           poolForSize->returnItem(buf);
         }
+      };
+
+      ///////////////////////////////////
+      // Completion callback: cleanup transfer when GPU completes 
+      ///////////////////////////////////
+
+      tlsema->_onComplete = [=, this]() {
+        vktex->_inflight_transfers.erase(transfer);
+        // DON'T destroy staging buffers here - 
+        // they need to stay alive until command buffer cleanup
 
         // Use captured write_slot (not _update_index which has been incremented)
         auto& completed_img = vktex->_imgobj[write_slot];
