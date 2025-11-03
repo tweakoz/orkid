@@ -75,8 +75,7 @@ struct IMPL {
     targ->debugPushGroup("Forward::render");
     RtGroupRenderTarget rt(_rtg);
     {
-      _rtg->_clearColor = node->_clearColor;
-      _rtg->_clearDepth = 1.0f;
+      _rtg->buffer(0)->_clearColor = node->_clearColor;
       _rtg->_autoclear  = true;
       targ->FBI()->PushRtGroup(_rtg);
       targ->beginFrame();

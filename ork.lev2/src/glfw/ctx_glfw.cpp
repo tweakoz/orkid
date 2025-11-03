@@ -1171,7 +1171,7 @@ struct PopupImpl {
       auto plato_saved       = _parent_context->_impl;
       _parent_context->_impl = _cloned_plato;
       //_parent_context->bindPlatformHandle(_cloned_plato);
-      _rtgroup->_clearColor = fvec4(0, 0, 0, 0);
+      _rtgroup->buffer(0)->_clearColor = fvec4(0, 0, 0, 0);
 
       _parent_context->FBI()->pushViewport(0, 0, _w, _h);
       _parent_context->FBI()->pushScissor(0, 0, _w, _h);

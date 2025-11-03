@@ -132,7 +132,7 @@ struct CommonStuff : public ork::Object {
   float _depthFogPower        = 1.0f;
   float _roughnessPower       = 1.2f;
   fvec3 _ambientLevel;
-  fvec4 _clearColor;
+  fvec4 _clearcolor;
   int _ssaoNumSamples = 0;
   int _ssaoNumSteps = 4;
   float _ssaoRadius = 0.05;
@@ -144,6 +144,7 @@ struct CommonStuff : public ork::Object {
   bool _useFloatColorBuffer = false;
   uint64_t _brdftype = 0;
   float _dppZbias = 1.0e-3f;
+  bool _enable_skybox = true;
 
   texture_ptr_t _texCubeBlack;
   texture_ptr_t _texCubeWhite;

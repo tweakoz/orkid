@@ -47,7 +47,7 @@ static logchannel_ptr_t logchan_pbrcom = logger()->configureChannel("PBRCOM", fv
 CommonStuff::CommonStuff() {
 
   _radiance_maps = std::make_shared<RadianceMaps>();
-  _clearColor     = fvec4(0, 0, 0, 1);
+  _clearcolor     = fvec4(0, 0, 0, 1);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CommonStuff::assignEnvTexture(asset::asset_ptr_t texasset) {
@@ -222,7 +222,7 @@ void CommonStuff::setEnvTexturePath(file::Path path) {
 ///////////////////////////////////////////////////////////////////////////////
 void CommonStuff::describeX(class_t* c) {
   using namespace asset;
-  c->directProperty("ClearColor", &CommonStuff::_clearColor);
+  c->directProperty("ClearColor", &CommonStuff::_clearcolor);
   c->directProperty("AmbientLevel", &CommonStuff::_ambientLevel);
   c->floatProperty("EnvironmentIntensity", float_range{0, 100}, &CommonStuff::_environmentIntensity);
   c->floatProperty("EnvironmentMipBias", float_range{0, 12}, &CommonStuff::_environmentMipBias);

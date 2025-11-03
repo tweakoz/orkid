@@ -56,6 +56,7 @@ void ForwardPbrNodeImpl::_render_skybox(forward_pass_ptr_t fpass) {
   RCID._pipeline_cache = _skybox_fxcache;
   auto pipeline        = _skybox_fxcache->findPipeline(RCID);
   rtg_out->_autoclear = true;
+
   pipeline->_rasterstate->setWriteMaskZ(true);
   pipeline->_rasterstate->setWriteMaskRGB(true);
   pipeline->_rasterstate->setWriteMaskA(true);

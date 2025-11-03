@@ -164,10 +164,9 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     use_float_buffer = try_use_float_buffer.value();
   }
 
-  if (auto try_preset = params->typedValueForKey<std::string>("preset"))
+  if (auto try_preset = params->typedValueForKey<std::string>("preset")){
     preset = try_preset.value();
-  // if (auto try_output = params->typedValueForKey<std::string>("output"))
-  // output = try_output.value();
+  }
 
   if (auto try_rtgroup = params->typedValueForKey<rtgroup_ptr_t>("outputRTG")) {
     _renderPresetData->_outputGroup = try_rtgroup.value();
@@ -187,11 +186,26 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     auto outrnode     = nodetek->tryRenderNodeAs<compositor::UnlitNode>();
     _pbr_common       = nullptr;
   }
-  if (preset == "ForwardPBR") {
+  if (preset == "ForwardPBR" or preset == "FWDPBR") {
     _compositorPreset = _compositorData->presetForwardPBR(_renderPresetData);
     auto nodetek      = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outrnode     = nodetek->tryRenderNodeAs<pbr::ForwardNode>();
     _pbr_common     = outrnode->_pbrcommon;
+
+    if( auto try_enable_skybox = params->typedValueForKey<bool>("enable_skybox") ) {
+      bool enable_skybox = try_enable_skybox.value();
+      _pbr_common->_enable_skybox = enable_skybox;
+    }
+    if( auto try_clearcolor = params->typedValueForKey<fvec3>("clearcolor") ) {
+      fvec4 clearcolor = try_clearcolor.value();
+      _pbr_common->_clearcolor = clearcolor;
+    }
+    else if( auto try_clearcolor2 = params->typedValueForKey<fvec4>("clearcolor") ) {
+      fvec4 clearcolor = try_clearcolor2.value();
+      _pbr_common->_clearcolor = clearcolor;
+    }
+
+
   } else if (preset == "FWDPBRVR") {
     _compositorPreset = _compositorData->presetForwardPBRVR(_renderPresetData);
     auto nodetek      = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
@@ -214,6 +228,7 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
   } else {
     throw std::runtime_error("unknown compositor preset type");
   }
+
   //////////////////////////////////////////////
 
   if (_pbr_common) {

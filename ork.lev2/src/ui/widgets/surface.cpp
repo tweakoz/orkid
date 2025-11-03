@@ -113,8 +113,8 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
 
   if (mNeedsSurfaceRepaint || IsDirty()) {
     _rtgroup->_autoclear = true;
-    _rtgroup->_clearColor = _clearColor;
-    _rtgroup->_clearDepth = mfClearDepth;
+    _rtgroup->buffer(0)->_clearColor = _clearColor;
+    _rtgroup->buffer(0)->_clearDepth = mfClearDepth;
     fbi->PushRtGroup(_rtgroup.get());
     RePaintSurface(drwev);
     fbi->PopRtGroup();

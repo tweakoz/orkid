@@ -96,8 +96,6 @@ struct RtGroup final {
   MsaaSamples _msaa_samples;
   bool mbSizeDirty;
   svarshp_t _impl;
-  fvec4 _clearColor;
-  float _clearDepth = 1.0f;
   bool _needsDepth = true;
   bool _depthOnly = false;
   bool _autoclear  = true;

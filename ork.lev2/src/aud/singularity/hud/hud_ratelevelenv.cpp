@@ -126,7 +126,7 @@ void RateLevelSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
   // const float* _samples = scopebuf->_samples;
 
-  _rtgroup->_clearColor = _clearColor;
+  _rtgroup->buffer(0)->_clearColor = _clearColor;
   fbi->rtGroupClear(_rtgroup.get());
 
   hudlines_t lines;

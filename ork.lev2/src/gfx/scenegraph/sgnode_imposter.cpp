@@ -279,7 +279,7 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
     ////////////////////////////////////////////
 
     RTG->_autoclear  = true;
-    RTG->_clearColor = fvec4(0, 0, 0, 0);
+    RTG->buffer(0)->_clearColor = fvec4(0, 0, 0, 0);
     auto vprect_rtg  = RTG->viewportRect();
 
     FBI->pushScissor(vprect_rtg);
@@ -337,7 +337,7 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
       RTG->_clearMaskColor = true;
       RTG->_clearMaskDepth = true;
       RTG->_autoclear      = true;
-      RTG->_clearColor     = fvec4(0, 0, 0, 0);
+      RTG->buffer(0)->_clearColor     = fvec4(0, 0, 0, 0);
       auto vprect_rtg      = RTG->viewportRect();
       FBI->pushScissor(vprect_rtg);
       FBI->pushViewport(vprect_rtg);

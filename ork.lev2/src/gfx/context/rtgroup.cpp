@@ -139,7 +139,6 @@ rtgroup_ptr_t RtGroup::clone() const {
   rval->mbSizeDirty = _this->mbSizeDirty;
   rval->_impl       = _this->_impl;
   rval->_autoclear  = _this->_autoclear;
-  rval->_clearColor = _this->_clearColor;
   rval->_depthOnly  = _this->_depthOnly;
   return rval;
 }

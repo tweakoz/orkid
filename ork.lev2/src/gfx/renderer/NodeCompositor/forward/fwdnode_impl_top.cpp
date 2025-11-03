@@ -155,8 +155,7 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
 
   rtg_out->_clearMaskDepth = true;
   rtg_out->_clearMaskColor = true;
-  rtg_out->_clearDepth     = 1.0f;
-  rtg_out->_clearColor     = _node->_pbrcommon->_clearColor;
+  rtg_out->buffer(0)->_clearColor  = _node->_pbrcommon->_clearcolor;
   rtg_out->_autoclear      = true;
 
   FBI->setViewport(0,0,_currentWidth, _currentHeight);
@@ -207,7 +206,9 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
 
   //FBI->rtGroupClear(rtg_out.get()); // TODO: vulkan 
   FBI->PushRtGroup(rtg_out.get());
-  _render_skybox(fpass);
+  if(_node->_pbrcommon->_enable_skybox){
+    _render_skybox(fpass);
+  }
   _render_colorpass(fpass);
   FBI->PopRtGroup();
 
@@ -297,7 +298,7 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
   auto CPD               = CIMPL->topCPD();
   CPD._mono_cam_matrices = drawdata.property("defcammtx"_crcu).get<cameramatrices_ptr_t>();
   CPD.assignLayers("depth_prepass,std_forward,probe,depth_probe");
-  CPD._clearColor = _node->_pbrcommon->_clearColor;
+  CPD._clearColor = _node->_pbrcommon->_clearcolor;
   RtGroupRenderTarget rt(_rtg_primary.get());
   CPD._irendertarget = &rt;
   CPD.SetDstRect(ViewportRect(0, 0, _currentWidth, _currentHeight));

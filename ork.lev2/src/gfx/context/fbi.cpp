@@ -62,7 +62,6 @@ rtgroup_ptr_t FrameBufferInterface::_ensureMainRtg() {
   int h = tgt.miH;
   _main_rtg              = std::make_shared<RtGroup>(&tgt, w, h, MsaaSamples::MSAA_1X, rtg_usage);
   _main_rtg->_name       = "main_rtg";
-  _main_rtg->_clearColor = fcolor4::Black();
 
   // auto rtb_color = _main_rtg->createRenderTarget(EBufferFormat::SRGB_BGRA8, buffer_usage, false);
   auto rtb_color = _main_rtg->createRenderTarget(EBufferFormat::BGRA8, buffer_usage, false);

@@ -69,7 +69,7 @@ void ProgramView::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   auto vp      = syn->_hudvp;
   double time  = syn->_timeaccum;
 
-  _rtgroup->_clearColor = _clearColor;
+  _rtgroup->buffer(0)->_clearColor = _clearColor;
   fbi->rtGroupClear(_rtgroup.get());
 
   if (_curprogram) {

@@ -291,7 +291,7 @@ class PackWidgets(object):
     ############################################
 
     self.movie1 = lev2.MoviePlaybackContext()
-    movie1_path = str(path.stage()/"assetcache"/"movies"/"charge.webm")
+    movie1_path = str(path.stage()/"assetcache"/"movies"/"bunny.mp4")
     self.movie1.init(movie1_path)
     provider1 = self.movie1.createImageProvider()
     self.imgview1.image = provider1
@@ -408,6 +408,8 @@ class PackWidgets(object):
     sg_params.AmbientLevel = vec3(.125)
     sg_params.preset = "ForwardPBR"
     sg_params.ssaa = 4 # 4x4 SuperSample AntiAliasing
+    sg_params.enable_skybox = False
+    sg_params.clearcolor = vec3(0,0,0)
 
     self.scenegraph = lev2.scenegraph.Scene(sg_params)
     self.layer = self.scenegraph.createLayer("std_forward")
@@ -464,7 +466,7 @@ class PackWidgets(object):
     if self.counter<=0:
       self.counter = int(random.uniform(1,1000))
       self.dst_eye = genpos()
-      self.dst_tgt = vec3(0,0,0)
+      self.dst_tgt = vec3(0,10,0)
 
     if not self.use_event:
       self.cur_eye = self.cur_eye*0.9995 + self.dst_eye*0.0005

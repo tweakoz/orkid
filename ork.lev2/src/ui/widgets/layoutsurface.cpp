@@ -195,8 +195,8 @@ void LayoutSurface::DoDraw(drawevent_constptr_t drwev) {
   // Handle repainting if needed (renders LayoutGroup to texture)
   if (mNeedsSurfaceRepaint || IsDirty()) {
     _rtgroup->_autoclear = true;
-    _rtgroup->_clearColor = _clearColor;
-    _rtgroup->_clearDepth = mfClearDepth;
+    _rtgroup->buffer(0)->_clearColor = _clearColor;
+    _rtgroup->buffer(0)->_clearDepth = mfClearDepth;
     fbi->PushRtGroup(_rtgroup.get());
     DoRePaintSurface(drwev);
     fbi->PopRtGroup();
