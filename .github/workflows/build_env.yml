@@ -1,0 +1,34 @@
+name: Custom Build
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: self-hosted  # Or ubuntu-latest for GitHub-hosted
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Run Minimal Environment Build
+
+      run: |
+        # Create temp dir with timestamp for uniqueness
+        export TMPDIR="${{ runner.temp }}/build-$(date +%s)"
+        mkdir -p "$TMPDIR"
+        echo "BUILD_TMPDIR=$TMPDIR" >> $GITHUB_ENV
+        echo "Created temp dir: $TMPDIR"
+        python3 -m venv $TMPDIR/venv
+        source $TMPDIR/venv/bin/activate
+        pip install ork.build
+        obt.env.create.py --stagedir $TMPDIR/staging
+
+      run: |
+        source ${{ env.BUILD_TMPDIR }}/venv/bin/activate
+        obt.versions.py
+      env:
+        BUILD_CONFIG: ${{ matrix.config }}
+        TMPDIR: ${{ env.BUILD_TMPDIR }}
+    
+    # Optional: matrix builds
+    strategy:
+      matrix:
+        config: [debug, release, profile]
