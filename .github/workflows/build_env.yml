@@ -17,7 +17,7 @@ jobs:
         echo "Created temp dir: $TMPDIR"
         python3 -m venv $TMPDIR/venv
         source $TMPDIR/venv/bin/activate
-        pip install ork.build
+        pip install ork.build==0.0.287dev2
         obt.env.create.py --stagedir $TMPDIR/staging
 
     - name: Run Minimal Environment Build
