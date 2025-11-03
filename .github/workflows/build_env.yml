@@ -24,6 +24,7 @@ jobs:
       run: |
         source ${{ env.BUILD_TMPDIR }}/venv/bin/activate
         obt.versions.py
+        obt.env.launch.py --stagedir $TMPDIR/staging --command "obt.dep.build.py orkid"
       env:
         BUILD_CONFIG: ${{ matrix.config }}
         TMPDIR: ${{ env.BUILD_TMPDIR }}
@@ -31,4 +32,4 @@ jobs:
     # Optional: matrix builds
     strategy:
       matrix:
-        config: [debug, release, profile]
+        config: [release]
