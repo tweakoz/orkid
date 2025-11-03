@@ -2,10 +2,8 @@
 ![logo](https://github.com/tweakoz/orkid/blob/develop/ork.data/dox/doxylogo.png "OrkidLogo")
 
 
-### [BuildStatus](https://www.orkid-engine.dev:4431)
-
-* Ubuntu 22.04 [![CISTATUS](https://www.orkid-engine.dev:4431/orkid-ix-ub2204/develop/status.svg)](https://www.orkid-engine.dev:4431)
-* Ubuntu 20.04 [![CISTATUS](https://www.orkid-engine.dev:4431/orkid-ix-ub2004/develop/status.svg)](https://www.orkid-engine.dev:4431)
+### Build Status(Runner)
+![Build Status(Runner)](https://github.com/tweakoz/orkid/actions/workflows/build_env.yml/badge.svg)
 
 ### Description
 
