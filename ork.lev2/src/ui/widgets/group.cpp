@@ -265,7 +265,13 @@ void LayoutGroup::DoDraw(drawevent_constptr_t drwev) {
 
       defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
       defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
-      tgt->PushModColor(_clearColorGuide);
+
+      // Modulate color when actively dragging for visual feedback
+      auto guide_color = _isDraggingGuide //
+                       ? (_clearColorGuide*0.8+sinf(_animtimer.SecsSinceStart()*PI2*3.0)*0.2) //
+                       : _clearColorGuide;
+
+      tgt->PushModColor(guide_color);
       defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
       primi->RenderQuadAtZ(
           defmtl.get(),
@@ -545,11 +551,16 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
   switch (ev->_eventcode) {
     case ui::EventCode::PUSH: {
       was_handled = true;
+      if(_highlightGuides){
+        _isDraggingGuide       = true;
+        _animtimer.Start();
+      }
       break;
     }
     case ui::EventCode::RELEASE: {
       //_clearColor = fvec4(0, 0, 0, 1);
       was_handled = true;
+      _isDraggingGuide = false;
       break;
     }
     case ui::EventCode::BEGIN_DRAG: {
@@ -562,6 +573,7 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
     case ui::EventCode::END_DRAG: {
       was_handled       = true;
       result.mHoldFocus = false;
+      _isDraggingGuide  = false;
       //GUIDES_UNDER_MOUSE = std::pair<anchor::guide_ptr_t, anchor::guide_ptr_t>(nullptr,nullptr);
       break;
     }
@@ -599,6 +611,7 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
     case ui::EventCode::MOUSE_LEAVE: 
     default: {
       _highlightGuides = false;
+      _isDraggingGuide = false;
       break;
     }
   }

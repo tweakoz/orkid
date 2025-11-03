@@ -203,7 +203,7 @@ def build_assetpak(
     if not write_manifest:
         print(f"  Note: Manifest not written to disk (use write_manifest=True to save)")
         
-    print(f"\nTo upload this asset, use: ork.asset.catalog.upload.py --namespace {namespace}")
+    print(f"\nTo upload this asset, use: ork.catalog.upload.py --namespace {namespace}")
     
     return {
         'manifest_path': str(output_path),

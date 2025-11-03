@@ -230,6 +230,8 @@ struct LayoutGroup : public Group {
   fvec4 _clearColorStd;
   fvec4 _clearColorGuide;
   bool _highlightGuides = false;
+  bool _isDraggingGuide = false;
+  Timer _animtimer;
   Widget* doRouteUiEvent(event_constptr_t Ev) override;
 
 private:

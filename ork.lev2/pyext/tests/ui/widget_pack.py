@@ -291,7 +291,7 @@ class PackWidgets(object):
     ############################################
 
     self.movie1 = lev2.MoviePlaybackContext()
-    movie1_path = str(path.stage()/"assetcache"/"movies"/"bunny.mp4")
+    movie1_path = str(path.stage()/"assetcache"/"movies"/"charge.webm")
     self.movie1.init(movie1_path)
     provider1 = self.movie1.createImageProvider()
     self.imgview1.image = provider1

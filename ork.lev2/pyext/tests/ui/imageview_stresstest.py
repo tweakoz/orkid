@@ -31,6 +31,8 @@ class ImageViewStressTest(object):
     self.total_cells = griddim * griddim
 
     self.ezapp = lev2.OrkEzApp.create(self,
+                                      width = 1600,
+                                      height = 900,
                                       fullscreen=False,
                                       enable_audio=False,
                                       enable_audio_output=False,
@@ -42,7 +44,7 @@ class ImageViewStressTest(object):
     lg_group = self.ezapp.topLayoutGroup
     lg_group.clearColorGuide = vec4(1, 1, 0, 1)  # Bright yellow
     self.lg_group = lg_group
-    lg_group.margin = 4
+    lg_group.margin = 2
 
     ############################################
     # Create NxN grid of ImageViews
@@ -51,7 +53,7 @@ class ImageViewStressTest(object):
     self.griditems = lg_group.makeGrid(
       width=self.griddim,
       height=self.griddim,
-      margin=4,
+      margin=2,
       uiclass=lev2.ui.Box,
       args=["placeholder", vec4(0.1, 0.1, 0.1, 1)],
     )
@@ -109,7 +111,7 @@ class ImageViewStressTest(object):
   def createMatplotlibPlot(self, index, fm_params):
     """Create a matplotlib figure for a specific FM synthesis plot"""
     # Start with small default size - will be resized to widget dimensions each frame
-    fig = plt.figure(figsize=(3, 3), dpi=100)
+    fig = plt.figure(figsize=(3, 3), dpi=100, facecolor='#101010')
     canvas = FigureCanvasAgg(fig)
     ax = fig.add_subplot(111)
 
@@ -129,6 +131,7 @@ class ImageViewStressTest(object):
 
   def renderMatplotlibPlot(self, index, fig, canvas, ax, fm_params, widget):
     """Render matplotlib plot with FM synthesis - runs in thread"""
+    x = np.linspace(0, 4 * np.pi, 200)
     while self.mpl_running:
       try:
         t = self.abstime
@@ -140,7 +143,6 @@ class ImageViewStressTest(object):
           fig.set_size_inches(w / 100.0, h / 100.0, forward=True)
 
         # FM Synthesis equation
-        x = np.linspace(0, 4 * np.pi, 200)
         y = np.sin(fm_params['carrier_freq'] * x + t * fm_params['carrier_phase'])
 
         # Add modulators
@@ -174,7 +176,7 @@ class ImageViewStressTest(object):
         image = lev2.Image.createFromBuffer(w, h, tokens.RGBA8, rgba_buf)
         self.mpl_latest_images[index] = image
 
-        time.sleep(1.0 / 60.0)  # 60 fps
+        time.sleep(1.0 / 10.0)  # 60 fps
 
       except Exception as e:
         print(f"Matplotlib thread {index} error: {e}")
@@ -210,12 +212,12 @@ class ImageViewStressTest(object):
     # Setup Movie Players with Delayed Starts
     ############################################
 
-    movies_to_use = ["bunny.mp4", "wipeout.mp4"]
+    movies_to_use = ["bunny.mp4", "wipeout.mp4","fr-098.mp4","charge.mp4", "starstruck.mp4"]
     movie_configs = []
 
     for i, slot_idx in enumerate(movie_slots):
       movie_file = movies_to_use[i % len(movies_to_use)]
-      start_delay = i * 1.5  # Stagger start times
+      start_delay = i * 4  # Stagger start times
       movie_configs.append((slot_idx, movie_file, start_delay))
 
     for slot_idx, movie_file, start_delay in movie_configs:
