@@ -8,6 +8,10 @@
       "encryption_key": "orkid_rulez",
       "remote_location": "orkid_std"
     },
+    "ork_gltfmodels": {
+      "encryption_key": "orkid_rulez",
+      "remote_location": "orkid_std"
+    },
     "singularity": {
       "encryption_key": "singularity_rulez",
       "remote_location": "orkid_std"

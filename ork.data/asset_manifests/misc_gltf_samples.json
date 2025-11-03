@@ -1,0 +1,4078 @@
+{
+  "id": "ork_gltfmodels",
+  "uuid": "c3abc705-0bf2-4669-94d9-91017c5fe02a",
+  "namespace": "ork_gltfmodels",
+  "version": "1.0.0",
+  "assets": {
+    "DamagedHelmet": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "3361e32c5c1373b6fa14657db80ae991",
+      "storage_hash": "010c1fef0f677ebb1ebf0bc92b6f6afd",
+      "hash_algorithm": "md5",
+      "archive_size": 3774464,
+      "encrypted_size": 3478598,
+      "compressed_size": 3478570,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 3478598,
+        "file_hash": 16448374331441188571,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 3478598,
+            "hash": 16448374331441188571
+          }
+        ]
+      }
+    },
+    "RiggedFigure/RiggedFigure": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "f995f22b5024f6fb80666a4598535ae1",
+      "storage_hash": "382b6b4c3aed0db3fb5fd64228d876e3",
+      "hash_algorithm": "md5",
+      "archive_size": 100864,
+      "encrypted_size": 23235,
+      "compressed_size": 23207,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 23235,
+        "file_hash": 13715232412374625558,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 23235,
+            "hash": 13715232412374625558
+          }
+        ]
+      }
+    },
+    "animals/fish1": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "21ab315f88563107df9d75adc7960b79",
+      "storage_hash": "177e57dd914f91501b7c868381c655f7",
+      "hash_algorithm": "md5",
+      "archive_size": 37407232,
+      "encrypted_size": 31180818,
+      "compressed_size": 31180790,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 31180818,
+        "file_hash": 5299703053497225102,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 4375647469989832271
+          },
+          {
+            "offset": 16777216,
+            "size": 14403602,
+            "hash": 10291318223583009376
+          }
+        ]
+      }
+    },
+    "animals/turtle": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "b318c426c5c03208ef2d3bcf14e3263f",
+      "storage_hash": "741d0b00086b169e053572a0c24ae738",
+      "hash_algorithm": "md5",
+      "archive_size": 16579584,
+      "encrypted_size": 14710525,
+      "compressed_size": 14710497,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 14710525,
+        "file_hash": 593860645670215876,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 14710525,
+            "hash": 593860645670215876
+          }
+        ]
+      }
+    },
+    "art_and_sculpture/alienhead": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "fe7e5e260966db8adf9d7f6cbc85e882",
+      "storage_hash": "cdceedaafa0ddb054c0f13201c9287aa",
+      "hash_algorithm": "md5",
+      "archive_size": 14106112,
+      "encrypted_size": 12365174,
+      "compressed_size": 12365146,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 12365174,
+        "file_hash": 6972866517034278138,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 12365174,
+            "hash": 6972866517034278138
+          }
+        ]
+      }
+    },
+    "art_and_sculpture/ball1": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "74843cc26b1456389d857f14430ed4b3",
+      "storage_hash": "54b85e8ae5ce33fbcaa8b8a2253e9818",
+      "hash_algorithm": "md5",
+      "archive_size": 917504,
+      "encrypted_size": 806329,
+      "compressed_size": 806301,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 806329,
+        "file_hash": 3137290080753277120,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 806329,
+            "hash": 3137290080753277120
+          }
+        ]
+      }
+    },
+    "art_and_sculpture/bear": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "3235c2749cc799743e03ac0fd72812b5",
+      "storage_hash": "a64eb936874f697db06da5585255599a",
+      "hash_algorithm": "md5",
+      "archive_size": 8667648,
+      "encrypted_size": 7950284,
+      "compressed_size": 7950256,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 7950284,
+        "file_hash": 2279089879435693434,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 7950284,
+            "hash": 2279089879435693434
+          }
+        ]
+      }
+    },
+    "art_and_sculpture/crystal1": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "6b5850b57344be690e590bacbdbb8ce2",
+      "storage_hash": "60bf4ff09830b01d0dc6407cd007f58b",
+      "hash_algorithm": "md5",
+      "archive_size": 20675072,
+      "encrypted_size": 17976256,
+      "compressed_size": 17976228,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 17976256,
+        "file_hash": 830242968104055043,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 4794186483632277184
+          },
+          {
+            "offset": 16777216,
+            "size": 1199040,
+            "hash": 13396794955288680450
+          }
+        ]
+      }
+    },
+    "art_and_sculpture/crystal2": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "9dbe1c2a5fb7eab7293ec40e3773bfeb",
+      "storage_hash": "f40b82ff9646ab9f812543d88d25a013",
+      "hash_algorithm": "md5",
+      "archive_size": 17882624,
+      "encrypted_size": 15667274,
+      "compressed_size": 15667246,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 15667274,
+        "file_hash": 4367892563835523041,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 15667274,
+            "hash": 4367892563835523041
+          }
+        ]
+      }
+    },
+    "art_and_sculpture/dmask": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "c955f15d820717e659f3d332cb36a9b2",
+      "storage_hash": "c1f52b22e6f88ae8577ce0972d14939c",
+      "hash_algorithm": "md5",
+      "archive_size": 2907136,
+      "encrypted_size": 2608428,
+      "compressed_size": 2608400,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 2608428,
+        "file_hash": 6422172422634272250,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 2608428,
+            "hash": 6422172422634272250
+          }
+        ]
+      }
+    },
+    "art_and_sculpture/dragon_helm": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "cc08f0bd76406ce5031791d595db0b2d",
+      "storage_hash": "0483ebb84a24232be2867706e8eb5385",
+      "hash_algorithm": "md5",
+      "archive_size": 11116032,
+      "encrypted_size": 10385410,
+      "compressed_size": 10385382,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 10385410,
+        "file_hash": 12776098544719299958,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 10385410,
+            "hash": 12776098544719299958
+          }
+        ]
+      }
+    },
+    "art_and_sculpture/eagle": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "fd044377d470819cfd13093263a2ec81",
+      "storage_hash": "4bbc3fd104cb06a02a91c1e81d956504",
+      "hash_algorithm": "md5",
+      "archive_size": 39881216,
+      "encrypted_size": 33623897,
+      "compressed_size": 33623869,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 33623897,
+        "file_hash": 10410334933076217340,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 11336171393846972975
+          },
+          {
+            "offset": 16777216,
+            "size": 16777216,
+            "hash": 5273587315173783792
+          },
+          {
+            "offset": 33554432,
+            "size": 69465,
+            "hash": 8126892087532100450
+          }
+        ]
+      }
+    },
+    "art_and_sculpture/egg1": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "2cef3366f5fe7ca7047461bef100c573",
+      "storage_hash": "5d8a6f133c9f1d77790edf1a292650f7",
+      "hash_algorithm": "md5",
+      "archive_size": 66577920,
+      "encrypted_size": 49879671,
+      "compressed_size": 49879643,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 49879671,
+        "file_hash": 10793991371829260552,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 5158690203962311978
+          },
+          {
+            "offset": 16777216,
+            "size": 16777216,
+            "hash": 14429012789647904711
+          },
+          {
+            "offset": 33554432,
+            "size": 16325239,
+            "hash": 6701841580209403808
+          }
+        ]
+      }
+    },
+    "art_and_sculpture/egg2": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "7508e5f01baf87426e7c84dce67bd50d",
+      "storage_hash": "404f9de68b3fe6bf1b4f9cb69cf6e2c2",
+      "hash_algorithm": "md5",
+      "archive_size": 8734720,
+      "encrypted_size": 8591251,
+      "compressed_size": 8591223,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 8591251,
+        "file_hash": 5033356694774382173,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 8591251,
+            "hash": 5033356694774382173
+          }
+        ]
+      }
+    },
+    "art_and_sculpture/fracvase": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "e27ccd0cd21c3177327728d952863958",
+      "storage_hash": "e927db2012308e2b17d04b4897e8bca6",
+      "hash_algorithm": "md5",
+      "archive_size": 16862208,
+      "encrypted_size": 14586324,
+      "compressed_size": 14586296,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 14586324,
+        "file_hash": 14955579738911423838,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 14586324,
+            "hash": 14955579738911423838
+          }
+        ]
+      }
+    },
+    "art_and_sculpture/gaurdian": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "4b2b02d3e082acf52a01e0da23e0cde8",
+      "storage_hash": "2633499542272e3583c3f8e143f46df1",
+      "hash_algorithm": "md5",
+      "archive_size": 33154560,
+      "encrypted_size": 27654654,
+      "compressed_size": 27654626,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 27654654,
+        "file_hash": 6478418931473001741,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 16829191200987756175
+          },
+          {
+            "offset": 16777216,
+            "size": 10877438,
+            "hash": 16102114430548964746
+          }
+        ]
+      }
+    },
+    "art_and_sculpture/gothic_teapot": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "ae625358a752e6009ad6b3a030c8cb4e",
+      "storage_hash": "9b1a87fdeda85737a79154bd9cff08f4",
+      "hash_algorithm": "md5",
+      "archive_size": 40592896,
+      "encrypted_size": 33949997,
+      "compressed_size": 33949969,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 33949997,
+        "file_hash": 12411043793684485843,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 10273878213717697635
+          },
+          {
+            "offset": 16777216,
+            "size": 16777216,
+            "hash": 7226887505713079137
+          },
+          {
+            "offset": 33554432,
+            "size": 395565,
+            "hash": 5389237310649932792
+          }
+        ]
+      }
+    },
+    "art_and_sculpture/helmet1": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "097e72f278c491f5105113f63c96fb05",
+      "storage_hash": "f9b0c7105c0d5be5a14d2fa4dd91127d",
+      "hash_algorithm": "md5",
+      "archive_size": 40246272,
+      "encrypted_size": 32359897,
+      "compressed_size": 32359869,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 32359897,
+        "file_hash": 11949185931488103471,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 17153916490491424787
+          },
+          {
+            "offset": 16777216,
+            "size": 15582681,
+            "hash": 12037928265920849647
+          }
+        ]
+      }
+    },
+    "art_and_sculpture/helmet2": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "9ce85d2a7c70e3f42967f4d5677b1b90",
+      "storage_hash": "bb1976a72ae9390c7c6577ac37e51c9f",
+      "hash_algorithm": "md5",
+      "archive_size": 40806912,
+      "encrypted_size": 34336567,
+      "compressed_size": 34336539,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 34336567,
+        "file_hash": 12603527539781412745,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 8430632452205885720
+          },
+          {
+            "offset": 16777216,
+            "size": 16777216,
+            "hash": 14881339078463744865
+          },
+          {
+            "offset": 33554432,
+            "size": 782135,
+            "hash": 3827079909026699342
+          }
+        ]
+      }
+    },
+    "art_and_sculpture/lion": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "adb12597f9a35c14af7815c597fe7287",
+      "storage_hash": "2dea8d5be497e94a98468b91bc442f43",
+      "hash_algorithm": "md5",
+      "archive_size": 11174912,
+      "encrypted_size": 10958983,
+      "compressed_size": 10958955,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 10958983,
+        "file_hash": 12979176307111440467,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 10958983,
+            "hash": 12979176307111440467
+          }
+        ]
+      }
+    },
+    "art_and_sculpture/mask1": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "2bfe1af75d54616e5e920162423d3716",
+      "storage_hash": "4b0413b22836689e1b6256a901bfdc66",
+      "hash_algorithm": "md5",
+      "archive_size": 25741824,
+      "encrypted_size": 22190794,
+      "compressed_size": 22190766,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 22190794,
+        "file_hash": 13446860156002482709,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 6220984388010331082
+          },
+          {
+            "offset": 16777216,
+            "size": 5413578,
+            "hash": 380673601011569735
+          }
+        ]
+      }
+    },
+    "art_and_sculpture/mask2": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "93687d3d0829fab3e3e4628bd1d354c3",
+      "storage_hash": "c0c00018e50505f3ae29d515976c2153",
+      "hash_algorithm": "md5",
+      "archive_size": 11765760,
+      "encrypted_size": 11743763,
+      "compressed_size": 11743735,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 11743763,
+        "file_hash": 17405941982467395847,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 11743763,
+            "hash": 17405941982467395847
+          }
+        ]
+      }
+    },
+    "art_and_sculpture/obox": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "60c58a07eb22a4797c0b0317bd976675",
+      "storage_hash": "4efaa4ffb3ca834f64895da4c3905083",
+      "hash_algorithm": "md5",
+      "archive_size": 9886720,
+      "encrypted_size": 9696317,
+      "compressed_size": 9696289,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 9696317,
+        "file_hash": 14695530019834118165,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 9696317,
+            "hash": 14695530019834118165
+          }
+        ]
+      }
+    },
+    "art_and_sculpture/omask": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "9273f6289892da048ad0613c5f265beb",
+      "storage_hash": "b1e30735bea5e17153af12ac5633f4b7",
+      "hash_algorithm": "md5",
+      "archive_size": 13230080,
+      "encrypted_size": 12223527,
+      "compressed_size": 12223499,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 12223527,
+        "file_hash": 12908854492101283939,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 12223527,
+            "hash": 12908854492101283939
+          }
+        ]
+      }
+    },
+    "art_and_sculpture/orchid1": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "2ab0c2684d41507d8a69aea5dfa0f7a6",
+      "storage_hash": "2a440bd1845b4fb733e427d6fe30d909",
+      "hash_algorithm": "md5",
+      "archive_size": 29870592,
+      "encrypted_size": 25590413,
+      "compressed_size": 25590385,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 25590413,
+        "file_hash": 3835802591620065435,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 17766774254734225988
+          },
+          {
+            "offset": 16777216,
+            "size": 8813197,
+            "hash": 10889686198889203109
+          }
+        ]
+      }
+    },
+    "art_and_sculpture/pottery1": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "1d7e4fcc6f87984d67d50fe9182ac7c5",
+      "storage_hash": "d0237de6dc9b0a946726c6b3df7b92f3",
+      "hash_algorithm": "md5",
+      "archive_size": 8356864,
+      "encrypted_size": 7895624,
+      "compressed_size": 7895596,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 7895624,
+        "file_hash": 5014413873041515751,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 7895624,
+            "hash": 5014413873041515751
+          }
+        ]
+      }
+    },
+    "art_and_sculpture/pottery2": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "c83403f7207d98bc90eba974a81c6e2d",
+      "storage_hash": "af9cd606e17f21024df9cdd2e77d0497",
+      "hash_algorithm": "md5",
+      "archive_size": 8031232,
+      "encrypted_size": 7661274,
+      "compressed_size": 7661246,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 7661274,
+        "file_hash": 6273407899664393039,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 7661274,
+            "hash": 6273407899664393039
+          }
+        ]
+      }
+    },
+    "art_and_sculpture/pottery3": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "65bee8106a3a8340ccc480f67a71f232",
+      "storage_hash": "5793a4c3fba8eb93974300135e08ed46",
+      "hash_algorithm": "md5",
+      "archive_size": 19148800,
+      "encrypted_size": 16506660,
+      "compressed_size": 16506632,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 16506660,
+        "file_hash": 14592000247512759345,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16506660,
+            "hash": 14592000247512759345
+          }
+        ]
+      }
+    },
+    "art_and_sculpture/pottery4": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "9089ec5bf672bb4aca1eb80adb36d5b7",
+      "storage_hash": "f7dc302ba590aa55ea61922db5351da8",
+      "hash_algorithm": "md5",
+      "archive_size": 12834304,
+      "encrypted_size": 11359593,
+      "compressed_size": 11359565,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 11359593,
+        "file_hash": 1542303880527451880,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 11359593,
+            "hash": 1542303880527451880
+          }
+        ]
+      }
+    },
+    "art_and_sculpture/pottery5": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "8039dc325b1b6f99c0821c708655ab38",
+      "storage_hash": "9648ee7258dc05a308a8736bc42e31aa",
+      "hash_algorithm": "md5",
+      "archive_size": 19041792,
+      "encrypted_size": 16607968,
+      "compressed_size": 16607940,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 16607968,
+        "file_hash": 1165342482167108370,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16607968,
+            "hash": 1165342482167108370
+          }
+        ]
+      }
+    },
+    "art_and_sculpture/shrine1": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "af30b56dd440962797a61e210dbc0018",
+      "storage_hash": "99bb940b11c69e564550f9a484d39f1d",
+      "hash_algorithm": "md5",
+      "archive_size": 9267200,
+      "encrypted_size": 8228842,
+      "compressed_size": 8228814,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 8228842,
+        "file_hash": 5028155745277277270,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 8228842,
+            "hash": 5028155745277277270
+          }
+        ]
+      }
+    },
+    "art_and_sculpture/sitter": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "7a96bf7d7779ee402b36b5085338a8b7",
+      "storage_hash": "6f32f3f40b385d50844ed3178513b6ee",
+      "hash_algorithm": "md5",
+      "archive_size": 25490944,
+      "encrypted_size": 22519444,
+      "compressed_size": 22519416,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 22519444,
+        "file_hash": 18049993718050094602,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 16811379110799347085
+          },
+          {
+            "offset": 16777216,
+            "size": 5742228,
+            "hash": 2875323106455829239
+          }
+        ]
+      }
+    },
+    "art_and_sculpture/statue1": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "9b591367107c4dc158428b96a424ea17",
+      "storage_hash": "d905a263c81d603d331b2e1df21e8120",
+      "hash_algorithm": "md5",
+      "archive_size": 12045312,
+      "encrypted_size": 10661910,
+      "compressed_size": 10661882,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 10661910,
+        "file_hash": 4508846849059502242,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 10661910,
+            "hash": 4508846849059502242
+          }
+        ]
+      }
+    },
+    "art_and_sculpture/statue2": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "ab6556db2888dea389549b7d1a0a2646",
+      "storage_hash": "0bda95082ab51448aeed858fe4e6cffd",
+      "hash_algorithm": "md5",
+      "archive_size": 14949888,
+      "encrypted_size": 13163993,
+      "compressed_size": 13163965,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 13163993,
+        "file_hash": 1198160257968607147,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 13163993,
+            "hash": 1198160257968607147
+          }
+        ]
+      }
+    },
+    "art_and_sculpture/warhorn": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "2723943af577e1f082d097f331eedad0",
+      "storage_hash": "c1b455722c6bca66c80dae100d2a3ae3",
+      "hash_algorithm": "md5",
+      "archive_size": 11682816,
+      "encrypted_size": 11014171,
+      "compressed_size": 11014143,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 11014171,
+        "file_hash": 1992719440881991793,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 11014171,
+            "hash": 1992719440881991793
+          }
+        ]
+      }
+    },
+    "biped/Animation_Running_withSkin": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "ae84b21c4eab0ab59976d3622b209210",
+      "storage_hash": "cd54121f4aa5ad3974a8e5d9f7c4a2aa",
+      "hash_algorithm": "md5",
+      "archive_size": 4874240,
+      "encrypted_size": 4691130,
+      "compressed_size": 4691102,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 4691130,
+        "file_hash": 4572374601828091399,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 4691130,
+            "hash": 4572374601828091399
+          }
+        ]
+      }
+    },
+    "biped/Animation_Walking_withSkin": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "8a370a1fd65a105229494bdbea61acb2",
+      "storage_hash": "2ca76ae79420964846d7ac8db3c463ce",
+      "hash_algorithm": "md5",
+      "archive_size": 4878848,
+      "encrypted_size": 4695754,
+      "compressed_size": 4695726,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 4695754,
+        "file_hash": 11482539617329025849,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 4695754,
+            "hash": 11482539617329025849
+          }
+        ]
+      }
+    },
+    "biped2/Animation_360_Power_Spin_Jump_withSkin": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "f7e608e7c38376623d501bc26fa25228",
+      "storage_hash": "d16fd2aee509af66d7d7a4c36c10f7da",
+      "hash_algorithm": "md5",
+      "archive_size": 13067776,
+      "encrypted_size": 10872690,
+      "compressed_size": 10872662,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 10872690,
+        "file_hash": 11796476811792712647,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 10872690,
+            "hash": 11796476811792712647
+          }
+        ]
+      }
+    },
+    "biped2/Animation_Bubble_Dance_withSkin": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "1b92d383be91265ae95766af37ec0907",
+      "storage_hash": "81b82971627dc29f058a2f22ea093c34",
+      "hash_algorithm": "md5",
+      "archive_size": 13112320,
+      "encrypted_size": 10919674,
+      "compressed_size": 10919646,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 10919674,
+        "file_hash": 2872646419442646097,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 10919674,
+            "hash": 2872646419442646097
+          }
+        ]
+      }
+    },
+    "biped2/Animation_Chair_Sit_Idle_F_withSkin": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "2c46d69bc3159d88dacab4ec2e149cc5",
+      "storage_hash": "d24c96a03e94a46d1ba8405f74996491",
+      "hash_algorithm": "md5",
+      "archive_size": 13150208,
+      "encrypted_size": 10957000,
+      "compressed_size": 10956972,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 10957000,
+        "file_hash": 16349065216545325180,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 10957000,
+            "hash": 16349065216545325180
+          }
+        ]
+      }
+    },
+    "biped2/Animation_Dont_You_Dare_withSkin": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "5fb0d7d51e80ba71c68c8bf0c26985c7",
+      "storage_hash": "a5c7f60ea4e59e4a5a229ce869a888f3",
+      "hash_algorithm": "md5",
+      "archive_size": 13091328,
+      "encrypted_size": 10898548,
+      "compressed_size": 10898520,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 10898548,
+        "file_hash": 3351499001569161399,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 10898548,
+            "hash": 3351499001569161399
+          }
+        ]
+      }
+    },
+    "biped2/Animation_Handbag_Walk_withSkin": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "81e2d123888ad61060d2ffb553c3e434",
+      "storage_hash": "dbf88bd5d4403d716e29ea77d7175c27",
+      "hash_algorithm": "md5",
+      "archive_size": 13060608,
+      "encrypted_size": 10867477,
+      "compressed_size": 10867449,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 10867477,
+        "file_hash": 9670936076543927201,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 10867477,
+            "hash": 9670936076543927201
+          }
+        ]
+      }
+    },
+    "biped2/Animation_Love_You_Pop_Dance_withSkin": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "9fccea58ecd65ff54e769d9410c186c4",
+      "storage_hash": "691cc25e22e3dbd9c46af0570bfe41d5",
+      "hash_algorithm": "md5",
+      "archive_size": 13139456,
+      "encrypted_size": 10946896,
+      "compressed_size": 10946868,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 10946896,
+        "file_hash": 783307389530434511,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 10946896,
+            "hash": 783307389530434511
+          }
+        ]
+      }
+    },
+    "biped2/Animation_Quick_Walk_withSkin": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "ac65f8edf14bc87db5c7e66afff809f3",
+      "storage_hash": "c1219aa58ff3d99546ba4635277dd6dd",
+      "hash_algorithm": "md5",
+      "archive_size": 13052416,
+      "encrypted_size": 10855950,
+      "compressed_size": 10855922,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 10855950,
+        "file_hash": 3100884203434545034,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 10855950,
+            "hash": 3100884203434545034
+          }
+        ]
+      }
+    },
+    "biped2/Animation_Running_withSkin": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "da0a9a103a4a70ac4bf00e606347d746",
+      "storage_hash": "aed06d3f1a24bd64a9dffd58a7429a7d",
+      "hash_algorithm": "md5",
+      "archive_size": 13026816,
+      "encrypted_size": 10834079,
+      "compressed_size": 10834051,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 10834079,
+        "file_hash": 9746447093582692908,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 10834079,
+            "hash": 9746447093582692908
+          }
+        ]
+      }
+    },
+    "biped2/Animation_Sit_to_Stand_Transition_F_withSkin": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "58bfdf4495ea00a967f8ed83e8716484",
+      "storage_hash": "31339b9c9dfbd735fa4521dd9ad2b32a",
+      "hash_algorithm": "md5",
+      "archive_size": 13076480,
+      "encrypted_size": 10883222,
+      "compressed_size": 10883194,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 10883222,
+        "file_hash": 17875031203612048322,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 10883222,
+            "hash": 17875031203612048322
+          }
+        ]
+      }
+    },
+    "biped2/Animation_Superlove_Pop_Dance_withSkin": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "5ea63e50428c0ae8b965ed4e5f54762c",
+      "storage_hash": "39ce44ae8b67d7b9b823446a0a864a08",
+      "hash_algorithm": "md5",
+      "archive_size": 13121536,
+      "encrypted_size": 10928664,
+      "compressed_size": 10928636,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 10928664,
+        "file_hash": 10155347868349680051,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 10928664,
+            "hash": 10155347868349680051
+          }
+        ]
+      }
+    },
+    "biped2/Animation_Walking_Woman_withSkin": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "55b6c20422cdf6e7f26c68c7bb32c5ff",
+      "storage_hash": "80d78ee521b39147de09f9ed82bb6d22",
+      "hash_algorithm": "md5",
+      "archive_size": 13030400,
+      "encrypted_size": 10837973,
+      "compressed_size": 10837945,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 10837973,
+        "file_hash": 6618062971676251808,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 10837973,
+            "hash": 6618062971676251808
+          }
+        ]
+      }
+    },
+    "biped2/Animation_Walking_withSkin": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "5f67469bc170dfe9692a864370c83bd5",
+      "storage_hash": "5e05d292d93623d1195f28052c8b77b2",
+      "hash_algorithm": "md5",
+      "archive_size": 13031424,
+      "encrypted_size": 10838730,
+      "compressed_size": 10838702,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 10838730,
+        "file_hash": 9564177475905325041,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 10838730,
+            "hash": 9564177475905325041
+          }
+        ]
+      }
+    },
+    "biped2/Animation_jazz_danc_withSkin": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "47ea7dfb58a6d7f73b379292ca9519db",
+      "storage_hash": "d9a97d6ea94c96b20d7790e3766a5a8b",
+      "hash_algorithm": "md5",
+      "archive_size": 13052416,
+      "encrypted_size": 10859884,
+      "compressed_size": 10859856,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 10859884,
+        "file_hash": 425352380068415994,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 10859884,
+            "hash": 425352380068415994
+          }
+        ]
+      }
+    },
+    "characters/beastpiece": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "ad13358530d94fac133f9da5731e4222",
+      "storage_hash": "089448732c79bad456640e52928ae80c",
+      "hash_algorithm": "md5",
+      "archive_size": 25327616,
+      "encrypted_size": 24318083,
+      "compressed_size": 24318055,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 24318083,
+        "file_hash": 6703461022763921254,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 4158978254429596092
+          },
+          {
+            "offset": 16777216,
+            "size": 7540867,
+            "hash": 8416333796292359961
+          }
+        ]
+      }
+    },
+    "characters/berserker": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "fcf63185c5d4911a8b57b8939c72e138",
+      "storage_hash": "3e61f0c381154d7ff9d8854d5d13b9e3",
+      "hash_algorithm": "md5",
+      "archive_size": 48346112,
+      "encrypted_size": 40379075,
+      "compressed_size": 40379047,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 40379075,
+        "file_hash": 11903220514993941375,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 4860030587537795622
+          },
+          {
+            "offset": 16777216,
+            "size": 16777216,
+            "hash": 17159800358234290748
+          },
+          {
+            "offset": 33554432,
+            "size": 6824643,
+            "hash": 16661380738836570717
+          }
+        ]
+      }
+    },
+    "characters/bonewarden": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "1f916178ab98845685abdb547e08b1f6",
+      "storage_hash": "7c799599984c2e1423475d1748069368",
+      "hash_algorithm": "md5",
+      "archive_size": 39152640,
+      "encrypted_size": 32938773,
+      "compressed_size": 32938745,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 32938773,
+        "file_hash": 6941726797094796348,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 9093593135002828753
+          },
+          {
+            "offset": 16777216,
+            "size": 16161557,
+            "hash": 14811712611946331314
+          }
+        ]
+      }
+    },
+    "characters/cyberwarrior": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "b69000482ff6fcfe96b051c8b7040dad",
+      "storage_hash": "7088ed67a5992c61cd0c67cf1aed4abc",
+      "hash_algorithm": "md5",
+      "archive_size": 26727936,
+      "encrypted_size": 22585694,
+      "compressed_size": 22585666,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 22585694,
+        "file_hash": 4106255560693650542,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 719786832085131606
+          },
+          {
+            "offset": 16777216,
+            "size": 5808478,
+            "hash": 3451297574391491048
+          }
+        ]
+      }
+    },
+    "characters/demon": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "1d8be25680026edb0ad38e306d39861c",
+      "storage_hash": "3ff967b1c4c2567cbd92dfd2a46cacae",
+      "hash_algorithm": "md5",
+      "archive_size": 6344192,
+      "encrypted_size": 5526117,
+      "compressed_size": 5526089,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 5526117,
+        "file_hash": 3340035318680298966,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 5526117,
+            "hash": 3340035318680298966
+          }
+        ]
+      }
+    },
+    "characters/dknight": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "8eb25ef90260be8e3836b31d4637a099",
+      "storage_hash": "695d34c801125be7e07e8c572daf9b94",
+      "hash_algorithm": "md5",
+      "archive_size": 24734720,
+      "encrypted_size": 21282227,
+      "compressed_size": 21282199,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 21282227,
+        "file_hash": 3682568390838248170,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 6629399078494092551
+          },
+          {
+            "offset": 16777216,
+            "size": 4505011,
+            "hash": 10956730459153484696
+          }
+        ]
+      }
+    },
+    "characters/dqueen": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "88f004edf5fd6f338ef4088f00bb8103",
+      "storage_hash": "948296dfb02aef14aaac9d45118e1e7f",
+      "hash_algorithm": "md5",
+      "archive_size": 3148800,
+      "encrypted_size": 2773222,
+      "compressed_size": 2773194,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 2773222,
+        "file_hash": 2934888919337943239,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 2773222,
+            "hash": 2934888919337943239
+          }
+        ]
+      }
+    },
+    "characters/eldritchguardian": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "29dd4eeb5f324c4e9da491fc1faa9bbb",
+      "storage_hash": "97052dd14ab9cfd025d7ff5717cf26a8",
+      "hash_algorithm": "md5",
+      "archive_size": 7459840,
+      "encrypted_size": 6458719,
+      "compressed_size": 6458691,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 6458719,
+        "file_hash": 9636794682244021487,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 6458719,
+            "hash": 9636794682244021487
+          }
+        ]
+      }
+    },
+    "characters/enchantress1": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "ef2407e574621f14c8f7e193e46ece6d",
+      "storage_hash": "5e731b6512462c1f90d833e1fdf3aceb",
+      "hash_algorithm": "md5",
+      "archive_size": 36981760,
+      "encrypted_size": 30799734,
+      "compressed_size": 30799706,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 30799734,
+        "file_hash": 8672131130307270842,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 14954671502391240561
+          },
+          {
+            "offset": 16777216,
+            "size": 14022518,
+            "hash": 1191129181072496080
+          }
+        ]
+      }
+    },
+    "characters/eshvara": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "76efe92df036e7cb3eff6500dbbebc1b",
+      "storage_hash": "fa4b7a6a89d1aaca0d502b0d567efb5b",
+      "hash_algorithm": "md5",
+      "archive_size": 1792512,
+      "encrypted_size": 1577381,
+      "compressed_size": 1577353,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 1577381,
+        "file_hash": 16640263694945326836,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 1577381,
+            "hash": 16640263694945326836
+          }
+        ]
+      }
+    },
+    "characters/feline1": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "8bba142d69b2a1834a26f8345b8c49d6",
+      "storage_hash": "939792746c2c0fd2cc7abf3655587199",
+      "hash_algorithm": "md5",
+      "archive_size": 4116992,
+      "encrypted_size": 3623061,
+      "compressed_size": 3623033,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 3623061,
+        "file_hash": 5617199366015398622,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 3623061,
+            "hash": 5617199366015398622
+          }
+        ]
+      }
+    },
+    "characters/goblin1": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "fabd7afff63ab8529f2e3d7cbadbd084",
+      "storage_hash": "1cc6b55a306e49f869db0df14c073879",
+      "hash_algorithm": "md5",
+      "archive_size": 33648640,
+      "encrypted_size": 28113378,
+      "compressed_size": 28113350,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 28113378,
+        "file_hash": 13694324694881236859,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 4267665496975001321
+          },
+          {
+            "offset": 16777216,
+            "size": 11336162,
+            "hash": 9769956570231048455
+          }
+        ]
+      }
+    },
+    "characters/goblin_walk": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "a624a382431108941a53a12e200614f4",
+      "storage_hash": "0436d032f5f0c779c47e98d9f2e36df8",
+      "hash_algorithm": "md5",
+      "archive_size": 23675392,
+      "encrypted_size": 18338187,
+      "compressed_size": 18338159,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 18338187,
+        "file_hash": 5023479697347917442,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 17824738439294961592
+          },
+          {
+            "offset": 16777216,
+            "size": 1560971,
+            "hash": 7799505230536883356
+          }
+        ]
+      }
+    },
+    "characters/guardian": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "277dcbe9d091888b743e9bcac7744f73",
+      "storage_hash": "128f891ee642c0ed9240345290c62a0a",
+      "hash_algorithm": "md5",
+      "archive_size": 17168896,
+      "encrypted_size": 14423613,
+      "compressed_size": 14423585,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 14423613,
+        "file_hash": 18415960075917687910,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 14423613,
+            "hash": 18415960075917687910
+          }
+        ]
+      }
+    },
+    "characters/knight1": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "7c6c28e63b13cb2882e7f25be083d090",
+      "storage_hash": "fe50b01e3cafe4890f90175219f53737",
+      "hash_algorithm": "md5",
+      "archive_size": 23403008,
+      "encrypted_size": 20239506,
+      "compressed_size": 20239478,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 20239506,
+        "file_hash": 7090809548432637612,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 11519575676950797181
+          },
+          {
+            "offset": 16777216,
+            "size": 3462290,
+            "hash": 3804036691430556411
+          }
+        ]
+      }
+    },
+    "characters/lizardman": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "c8c1720b3d5aea6f71daf2f1736371c4",
+      "storage_hash": "db189d79327799313249beb289c32f39",
+      "hash_algorithm": "md5",
+      "archive_size": 39308800,
+      "encrypted_size": 32840590,
+      "compressed_size": 32840562,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 32840590,
+        "file_hash": 5412477513851533464,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 13135576959499708378
+          },
+          {
+            "offset": 16777216,
+            "size": 16063374,
+            "hash": 11066629454125147591
+          }
+        ]
+      }
+    },
+    "characters/ogre1": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "902628fa2791ffca5723f7bf05a4694c",
+      "storage_hash": "4f332f614a888633a492c1f82213f33e",
+      "hash_algorithm": "md5",
+      "archive_size": 2848256,
+      "encrypted_size": 2583196,
+      "compressed_size": 2583168,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 2583196,
+        "file_hash": 11429596407510351289,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 2583196,
+            "hash": 11429596407510351289
+          }
+        ]
+      }
+    },
+    "characters/orc1": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "7830a39c44d055fa78771e68963e8eab",
+      "storage_hash": "a54c45786dc66c82717766ef74eb8ac4",
+      "hash_algorithm": "md5",
+      "archive_size": 11902976,
+      "encrypted_size": 8173281,
+      "compressed_size": 8173253,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 8173281,
+        "file_hash": 10446478068794131266,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 8173281,
+            "hash": 10446478068794131266
+          }
+        ]
+      }
+    },
+    "characters/robot": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "aa0dd312034945a893aea44f1870f65b",
+      "storage_hash": "a325447edaaf41fadace73acd5136bc8",
+      "hash_algorithm": "md5",
+      "archive_size": 32794112,
+      "encrypted_size": 28149679,
+      "compressed_size": 28149651,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 28149679,
+        "file_hash": 13213368793373254218,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 618866952874644971
+          },
+          {
+            "offset": 16777216,
+            "size": 11372463,
+            "hash": 4615590362389210278
+          }
+        ]
+      }
+    },
+    "characters/robot2": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "89ecb1fa3d503be2f4059da3b8220398",
+      "storage_hash": "b6910180eae419dea44d728b19ccad6a",
+      "hash_algorithm": "md5",
+      "archive_size": 29325824,
+      "encrypted_size": 25100653,
+      "compressed_size": 25100625,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 25100653,
+        "file_hash": 4991532449617373539,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 5149971156938194419
+          },
+          {
+            "offset": 16777216,
+            "size": 8323437,
+            "hash": 11629241508935114284
+          }
+        ]
+      }
+    },
+    "characters/rockergitl": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "f8cfadce1bf456b477b124794741b5d0",
+      "storage_hash": "16ea1792702bf5c4b20ed7e2c1aa4bb3",
+      "hash_algorithm": "md5",
+      "archive_size": 14369792,
+      "encrypted_size": 12441958,
+      "compressed_size": 12441930,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 12441958,
+        "file_hash": 12206072638690953213,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 12441958,
+            "hash": 12206072638690953213
+          }
+        ]
+      }
+    },
+    "characters/scarlett": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "bb904bb3eee569be7faa50df06dfc65d",
+      "storage_hash": "cda478eee10e9780ad3b4510646f0e5d",
+      "hash_algorithm": "md5",
+      "archive_size": 39316480,
+      "encrypted_size": 32939310,
+      "compressed_size": 32939282,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 32939310,
+        "file_hash": 15663651036408559412,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 3137064996177655623
+          },
+          {
+            "offset": 16777216,
+            "size": 16162094,
+            "hash": 8687781407371641705
+          }
+        ]
+      }
+    },
+    "characters/shaman1": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "0f0d8ddaa4a809e4d0dd29af16fae576",
+      "storage_hash": "9f615f1f791c4bdd816c0cd26335e577",
+      "hash_algorithm": "md5",
+      "archive_size": 4815872,
+      "encrypted_size": 4348689,
+      "compressed_size": 4348661,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 4348689,
+        "file_hash": 9391276476936341805,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 4348689,
+            "hash": 9391276476936341805
+          }
+        ]
+      }
+    },
+    "characters/shaman2": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "e7b0343745b69567753af7ff3a218cb4",
+      "storage_hash": "99bb4c37fe37e238f8290255d0671693",
+      "hash_algorithm": "md5",
+      "archive_size": 4605952,
+      "encrypted_size": 4138557,
+      "compressed_size": 4138529,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 4138557,
+        "file_hash": 7548734623081772606,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 4138557,
+            "hash": 7548734623081772606
+          }
+        ]
+      }
+    },
+    "characters/shaman3": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "3fdb3f32082de5a08063c95a00e56d4c",
+      "storage_hash": "42828d642c25c30af452b63c942e6b86",
+      "hash_algorithm": "md5",
+      "archive_size": 4850176,
+      "encrypted_size": 4336090,
+      "compressed_size": 4336062,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 4336090,
+        "file_hash": 2793178850908404950,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 4336090,
+            "hash": 2793178850908404950
+          }
+        ]
+      }
+    },
+    "characters/suit": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "430165ea5dc9f1d9bfa84c7e60f43b98",
+      "storage_hash": "d8f4e6619e8b440af9456346e83703eb",
+      "hash_algorithm": "md5",
+      "archive_size": 11384320,
+      "encrypted_size": 10078787,
+      "compressed_size": 10078759,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 10078787,
+        "file_hash": 4614870121552470404,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 10078787,
+            "hash": 4614870121552470404
+          }
+        ]
+      }
+    },
+    "characters/titan": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "8ec5cd0420eaf3b515194ff678228eb2",
+      "storage_hash": "253bfbc515d04962912242cde9dd966e",
+      "hash_algorithm": "md5",
+      "archive_size": 34358784,
+      "encrypted_size": 29049845,
+      "compressed_size": 29049817,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 29049845,
+        "file_hash": 14970500654633803344,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 3456652357181475740
+          },
+          {
+            "offset": 16777216,
+            "size": 12272629,
+            "hash": 3248392465368774568
+          }
+        ]
+      }
+    },
+    "characters/traveler": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "fde7b5865acee9cfc1dbd074d471fdfe",
+      "storage_hash": "ac2e0483de1808f446c13750e052129b",
+      "hash_algorithm": "md5",
+      "archive_size": 64152576,
+      "encrypted_size": 49248596,
+      "compressed_size": 49248568,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 49248596,
+        "file_hash": 4488816005839063671,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 8109476170406345424
+          },
+          {
+            "offset": 16777216,
+            "size": 16777216,
+            "hash": 8300142027303894425
+          },
+          {
+            "offset": 33554432,
+            "size": 15694164,
+            "hash": 8077796938279730212
+          }
+        ]
+      }
+    },
+    "characters/urban_girl": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "f92618a1589df82ea45c7bdf5a1c665f",
+      "storage_hash": "27cfd7c4bf99d6ff4d0e692d288c3750",
+      "hash_algorithm": "md5",
+      "archive_size": 23764480,
+      "encrypted_size": 20330203,
+      "compressed_size": 20330175,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 20330203,
+        "file_hash": 11077557118276847356,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 738973968806189533
+          },
+          {
+            "offset": 16777216,
+            "size": 3552987,
+            "hash": 9365022315209800377
+          }
+        ]
+      }
+    },
+    "characters/warrelg": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "8a2e109a0f6ac7c4ee0d42c95cdd2a5f",
+      "storage_hash": "b242eee981f40a1bd6bf4a148d3081d3",
+      "hash_algorithm": "md5",
+      "archive_size": 9564160,
+      "encrypted_size": 9112816,
+      "compressed_size": 9112788,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 9112816,
+        "file_hash": 1615494747567081894,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 9112816,
+            "hash": 1615494747567081894
+          }
+        ]
+      }
+    },
+    "food/bread": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "6bfdcdfa1264beb954e7a6eb40c29db8",
+      "storage_hash": "820db6248506f9931ee5ed56fa9273e4",
+      "hash_algorithm": "md5",
+      "archive_size": 16628224,
+      "encrypted_size": 14557755,
+      "compressed_size": 14557727,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 14557755,
+        "file_hash": 7266755626674239123,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 14557755,
+            "hash": 7266755626674239123
+          }
+        ]
+      }
+    },
+    "food/burger": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "45234a5157390e60463549f44f062a71",
+      "storage_hash": "aad9a8044593cd970c0ff787af99d87c",
+      "hash_algorithm": "md5",
+      "archive_size": 63305216,
+      "encrypted_size": 50272180,
+      "compressed_size": 50272152,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 50272180,
+        "file_hash": 5834574634757338861,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 16912962704784502825
+          },
+          {
+            "offset": 16777216,
+            "size": 16777216,
+            "hash": 7508896111367952175
+          },
+          {
+            "offset": 33554432,
+            "size": 16717748,
+            "hash": 1080062793375253978
+          }
+        ]
+      }
+    },
+    "food/duck": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "5b9035772457176ea8b94f4de452ba14",
+      "storage_hash": "08b96ebb17638978aa647060e4a1ee45",
+      "hash_algorithm": "md5",
+      "archive_size": 7079424,
+      "encrypted_size": 6777646,
+      "compressed_size": 6777618,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 6777646,
+        "file_hash": 17820974842231899426,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 6777646,
+            "hash": 17820974842231899426
+          }
+        ]
+      }
+    },
+    "food/goblet1": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "12b1d525cd2ca5dca534607018e1de87",
+      "storage_hash": "b169c36c20ca19cbb517b5e034c9693b",
+      "hash_algorithm": "md5",
+      "archive_size": 10936320,
+      "encrypted_size": 10079562,
+      "compressed_size": 10079534,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 10079562,
+        "file_hash": 3430650015646939448,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 10079562,
+            "hash": 3430650015646939448
+          }
+        ]
+      }
+    },
+    "food/meat": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "1f16b2428ef36fbda57ae97324a77cb0",
+      "storage_hash": "17b8433551dd2853818c1d5ed49364ca",
+      "hash_algorithm": "md5",
+      "archive_size": 33279488,
+      "encrypted_size": 28187981,
+      "compressed_size": 28187953,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 28187981,
+        "file_hash": 13272116418003395480,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 264968212420641022
+          },
+          {
+            "offset": 16777216,
+            "size": 11410765,
+            "hash": 6512542814267910280
+          }
+        ]
+      }
+    },
+    "food/potion1": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "28c4f216581c94240a9032b81bf5391d",
+      "storage_hash": "7e54e1891e199cd60316830644b25572",
+      "hash_algorithm": "md5",
+      "archive_size": 5192704,
+      "encrypted_size": 5135942,
+      "compressed_size": 5135914,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 5135942,
+        "file_hash": 17827158812075057966,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 5135942,
+            "hash": 17827158812075057966
+          }
+        ]
+      }
+    },
+    "food/potion2": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "aef7544c27a7ef8bae84103f20f79b5b",
+      "storage_hash": "7db13f372a7b360995ff9b4025541cad",
+      "hash_algorithm": "md5",
+      "archive_size": 20257792,
+      "encrypted_size": 17962071,
+      "compressed_size": 17962043,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 17962071,
+        "file_hash": 12519027353214686838,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 3492947159696176069
+          },
+          {
+            "offset": 16777216,
+            "size": 1184855,
+            "hash": 11926987897747302053
+          }
+        ]
+      }
+    },
+    "food/potion3": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "7cbcf82cbfbdb11c30651f99993792d9",
+      "storage_hash": "018b90594a8fc7ccc725d044c1f1e19b",
+      "hash_algorithm": "md5",
+      "archive_size": 29488128,
+      "encrypted_size": 25213450,
+      "compressed_size": 25213422,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 25213450,
+        "file_hash": 11544329749712519197,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 17286251333360123722
+          },
+          {
+            "offset": 16777216,
+            "size": 8436234,
+            "hash": 17885355375902460271
+          }
+        ]
+      }
+    },
+    "food/potion4": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "251934e6cc5199c95df3eb080e6e054e",
+      "storage_hash": "9b18b9f84679e6fb0001ff31fe8c45fe",
+      "hash_algorithm": "md5",
+      "archive_size": 22313472,
+      "encrypted_size": 19112297,
+      "compressed_size": 19112269,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 19112297,
+        "file_hash": 7748341920240925725,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 6841366720514347011
+          },
+          {
+            "offset": 16777216,
+            "size": 2335081,
+            "hash": 3851681941243238470
+          }
+        ]
+      }
+    },
+    "food/spaghetti": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "44d8f42642fbc34c3134f8fc548c0976",
+      "storage_hash": "03de002d8196bcdbce1a708ba2496bf1",
+      "hash_algorithm": "md5",
+      "archive_size": 26877952,
+      "encrypted_size": 22840481,
+      "compressed_size": 22840453,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 22840481,
+        "file_hash": 9607665144409905026,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 5964610077005095867
+          },
+          {
+            "offset": 16777216,
+            "size": 6063265,
+            "hash": 15690158221476883500
+          }
+        ]
+      }
+    },
+    "food/teapot": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "2e4a64c98e49cc7ace4465975134bc0b",
+      "storage_hash": "8e758c2213a647e5b15e611f5fda8fc8",
+      "hash_algorithm": "md5",
+      "archive_size": 4078080,
+      "encrypted_size": 3543385,
+      "compressed_size": 3543357,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 3543385,
+        "file_hash": 4900127692858911273,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 3543385,
+            "hash": 4900127692858911273
+          }
+        ]
+      }
+    },
+    "food/teapot2": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "8809f0d51d14c0d1d6e6992e3e988d9f",
+      "storage_hash": "9f6a122d555f7148cabfb4432ed35dcc",
+      "hash_algorithm": "md5",
+      "archive_size": 16245760,
+      "encrypted_size": 13756124,
+      "compressed_size": 13756096,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 13756124,
+        "file_hash": 7518915570165646019,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 13756124,
+            "hash": 7518915570165646019
+          }
+        ]
+      }
+    },
+    "furnishings/anu": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "371f7aac483297d1888294889ef4aac0",
+      "storage_hash": "253e388cf9bcba8e7891325fb10c0416",
+      "hash_algorithm": "md5",
+      "archive_size": 11932160,
+      "encrypted_size": 10515031,
+      "compressed_size": 10515003,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 10515031,
+        "file_hash": 7805006753931695615,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 10515031,
+            "hash": 7805006753931695615
+          }
+        ]
+      }
+    },
+    "furnishings/anu1": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "4c574dc21775afb9c5c8ddf9e1f8175d",
+      "storage_hash": "47f6425b42f29dece0e468ae1f924eb0",
+      "hash_algorithm": "md5",
+      "archive_size": 16254464,
+      "encrypted_size": 15503085,
+      "compressed_size": 15503057,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 15503085,
+        "file_hash": 10666630032402721862,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 15503085,
+            "hash": 10666630032402721862
+          }
+        ]
+      }
+    },
+    "furnishings/barrel": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "f5cff1ba1d7782971808195a502bb9bc",
+      "storage_hash": "097a11313b337c68f47c33c4fd4198fe",
+      "hash_algorithm": "md5",
+      "archive_size": 9928192,
+      "encrypted_size": 9755567,
+      "compressed_size": 9755539,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 9755567,
+        "file_hash": 16955686297290426315,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 9755567,
+            "hash": 16955686297290426315
+          }
+        ]
+      }
+    },
+    "furnishings/chair1": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "9b10c1e0f890362124d87fcfba776485",
+      "storage_hash": "e8b0126e968e859f0d2c2c14344ec029",
+      "hash_algorithm": "md5",
+      "archive_size": 10650112,
+      "encrypted_size": 9636553,
+      "compressed_size": 9636525,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 9636553,
+        "file_hash": 271865922535087848,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 9636553,
+            "hash": 271865922535087848
+          }
+        ]
+      }
+    },
+    "furnishings/chair2": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "95a0ba1ffb16781e8f4910d6cbf44c90",
+      "storage_hash": "09c8c5646cb7b6f60297c285e7273cb4",
+      "hash_algorithm": "md5",
+      "archive_size": 19791360,
+      "encrypted_size": 17329233,
+      "compressed_size": 17329205,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 17329233,
+        "file_hash": 16720662594372139876,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 18247810963662325296
+          },
+          {
+            "offset": 16777216,
+            "size": 552017,
+            "hash": 805348545191118393
+          }
+        ]
+      }
+    },
+    "furnishings/chair3": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "30c0fcc9268add8dc905a68e526bf52a",
+      "storage_hash": "5a628725f887de1633c2b68bf812764e",
+      "hash_algorithm": "md5",
+      "archive_size": 13857280,
+      "encrypted_size": 12842388,
+      "compressed_size": 12842360,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 12842388,
+        "file_hash": 18304545862221680071,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 12842388,
+            "hash": 18304545862221680071
+          }
+        ]
+      }
+    },
+    "furnishings/chair4": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "21cc94216b62361cdd5ff01aea93c59d",
+      "storage_hash": "a0c52473fcface9616eae0cd50a3800b",
+      "hash_algorithm": "md5",
+      "archive_size": 21445632,
+      "encrypted_size": 19975467,
+      "compressed_size": 19975439,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 19975467,
+        "file_hash": 4551630226383906650,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 11377971662673025138
+          },
+          {
+            "offset": 16777216,
+            "size": 3198251,
+            "hash": 14787722937846564070
+          }
+        ]
+      }
+    },
+    "furnishings/chair5": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "1147145036d7cb1d0fae929d4ed65d66",
+      "storage_hash": "e81c7b1797475badd719c2965a4168bf",
+      "hash_algorithm": "md5",
+      "archive_size": 7024640,
+      "encrypted_size": 6845027,
+      "compressed_size": 6844999,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 6845027,
+        "file_hash": 11104301259324715778,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 6845027,
+            "hash": 11104301259324715778
+          }
+        ]
+      }
+    },
+    "furnishings/chair6": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "df02db33fb7ec28c9cc1879e935bc540",
+      "storage_hash": "9fc382b5bc2c8126fab195bff7649cb1",
+      "hash_algorithm": "md5",
+      "archive_size": 15844352,
+      "encrypted_size": 14082859,
+      "compressed_size": 14082831,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 14082859,
+        "file_hash": 9465561894539472859,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 14082859,
+            "hash": 9465561894539472859
+          }
+        ]
+      }
+    },
+    "furnishings/chair7": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "7ec859a8c267a8698e40b78f21a1236c",
+      "storage_hash": "a67cdaa0b9b96e497d0221aa628a6365",
+      "hash_algorithm": "md5",
+      "archive_size": 7682048,
+      "encrypted_size": 7560962,
+      "compressed_size": 7560934,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 7560962,
+        "file_hash": 13680710549042025342,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 7560962,
+            "hash": 13680710549042025342
+          }
+        ]
+      }
+    },
+    "furnishings/chest": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "35e98d27eba36c17ee15063ca9b29612",
+      "storage_hash": "3df9127ac24cc2c5629d2796cfd866b9",
+      "hash_algorithm": "md5",
+      "archive_size": 26520064,
+      "encrypted_size": 22580216,
+      "compressed_size": 22580188,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 22580216,
+        "file_hash": 11499837000013669298,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 9667570815095911254
+          },
+          {
+            "offset": 16777216,
+            "size": 5803000,
+            "hash": 5938356040626957392
+          }
+        ]
+      }
+    },
+    "furnishings/chest2": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "ccad8a83f2048aa61c675a04e0bab3da",
+      "storage_hash": "0e795b6b5ea425335650393942dd5fda",
+      "hash_algorithm": "md5",
+      "archive_size": 27580928,
+      "encrypted_size": 22546665,
+      "compressed_size": 22546637,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 22546665,
+        "file_hash": 7313570928362255657,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 2756579678051521248
+          },
+          {
+            "offset": 16777216,
+            "size": 5769449,
+            "hash": 11728087449534424169
+          }
+        ]
+      }
+    },
+    "furnishings/couch1": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "cf6df9829d2997034627b00db217b8ab",
+      "storage_hash": "6a39a6a251e05807da35fea75db47adc",
+      "hash_algorithm": "md5",
+      "archive_size": 5895680,
+      "encrypted_size": 5788593,
+      "compressed_size": 5788565,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 5788593,
+        "file_hash": 14358046772924121226,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 5788593,
+            "hash": 14358046772924121226
+          }
+        ]
+      }
+    },
+    "furnishings/couch2": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "6c17fffae8892eb0bad16fcbf7aa08c5",
+      "storage_hash": "2c7e05a39026fe6085574a534e429dd6",
+      "hash_algorithm": "md5",
+      "archive_size": 15439872,
+      "encrypted_size": 13785660,
+      "compressed_size": 13785632,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 13785660,
+        "file_hash": 1506950171344600453,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 13785660,
+            "hash": 1506950171344600453
+          }
+        ]
+      }
+    },
+    "furnishings/discoball": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "13774409cbe3cc74c1064c550f9f3b93",
+      "storage_hash": "57140e3e8fcc9d53f3db89b5425034e5",
+      "hash_algorithm": "md5",
+      "archive_size": 6729216,
+      "encrypted_size": 6615220,
+      "compressed_size": 6615192,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 6615220,
+        "file_hash": 610387219012507961,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 6615220,
+            "hash": 610387219012507961
+          }
+        ]
+      }
+    },
+    "furnishings/endtable1": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "e1a84ff8bc432e30c5a371220525fa35",
+      "storage_hash": "680ae80b5f99b27547335c4e647a9472",
+      "hash_algorithm": "md5",
+      "archive_size": 7942144,
+      "encrypted_size": 7870097,
+      "compressed_size": 7870069,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 7870097,
+        "file_hash": 7810841656532448240,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 7870097,
+            "hash": 7810841656532448240
+          }
+        ]
+      }
+    },
+    "furnishings/gothic_table": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "f7b0a3c1820cd4e17920a12f4979c56e",
+      "storage_hash": "ae50da927d1fe944f1b2d331677e3b1b",
+      "hash_algorithm": "md5",
+      "archive_size": 7115264,
+      "encrypted_size": 7042817,
+      "compressed_size": 7042789,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 7042817,
+        "file_hash": 10389387616148530826,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 7042817,
+            "hash": 10389387616148530826
+          }
+        ]
+      }
+    },
+    "furnishings/kitchen_table": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "15fc0fc8cc90b331518a8331f9a6efdc",
+      "storage_hash": "ad30ad3fbc966336b4906e5eded8a333",
+      "hash_algorithm": "md5",
+      "archive_size": 14954496,
+      "encrypted_size": 12191209,
+      "compressed_size": 12191181,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 12191209,
+        "file_hash": 16422171817890231587,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 12191209,
+            "hash": 16422171817890231587
+          }
+        ]
+      }
+    },
+    "furnishings/oillamp": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "38309c0523728a4310db30f9f5aa5195",
+      "storage_hash": "570e00e8844571b4fa4b1db11f59795e",
+      "hash_algorithm": "md5",
+      "archive_size": 14349824,
+      "encrypted_size": 12874963,
+      "compressed_size": 12874935,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 12874963,
+        "file_hash": 9699023192501842617,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 12874963,
+            "hash": 9699023192501842617
+          }
+        ]
+      }
+    },
+    "furnishings/ottoman1": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "67a29d75d16bd98c3b400f2f833ad313",
+      "storage_hash": "589995871e4c91aec6945f00db748b0d",
+      "hash_algorithm": "md5",
+      "archive_size": 15691776,
+      "encrypted_size": 14714461,
+      "compressed_size": 14714433,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 14714461,
+        "file_hash": 8739938229189115590,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 14714461,
+            "hash": 8739938229189115590
+          }
+        ]
+      }
+    },
+    "furnishings/pillow": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "bdb16bf6b74cafc88232d9dd2148dd7c",
+      "storage_hash": "8c08c44626675c9a13b8b42a55f0c5c3",
+      "hash_algorithm": "md5",
+      "archive_size": 17758208,
+      "encrypted_size": 15593016,
+      "compressed_size": 15592988,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 15593016,
+        "file_hash": 6880098654681427699,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 15593016,
+            "hash": 6880098654681427699
+          }
+        ]
+      }
+    },
+    "furnishings/table1": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "d33d5bcd5a8bb9bb8c4928bfd5869b9e",
+      "storage_hash": "5611a6ac6f500c149901ac8040426ff4",
+      "hash_algorithm": "md5",
+      "archive_size": 8382464,
+      "encrypted_size": 8108460,
+      "compressed_size": 8108432,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 8108460,
+        "file_hash": 2239367718590370598,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 8108460,
+            "hash": 2239367718590370598
+          }
+        ]
+      }
+    },
+    "furnishings/table2": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "ee1226a71338164682fe88c5466d08a5",
+      "storage_hash": "8e45c9c8ab7bf5a7ea314398e73ccbf1",
+      "hash_algorithm": "md5",
+      "archive_size": 9757696,
+      "encrypted_size": 9441938,
+      "compressed_size": 9441910,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 9441938,
+        "file_hash": 15004548056695169058,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 9441938,
+            "hash": 15004548056695169058
+          }
+        ]
+      }
+    },
+    "furnishings/throne": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "7ab1aef54f8a58288425165cfd5a5937",
+      "storage_hash": "ce77c4e78baeff6ce9700cb517969f76",
+      "hash_algorithm": "md5",
+      "archive_size": 21166080,
+      "encrypted_size": 17097673,
+      "compressed_size": 17097645,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 17097673,
+        "file_hash": 15986835924105847071,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 1765260622093242214
+          },
+          {
+            "offset": 16777216,
+            "size": 320457,
+            "hash": 9363253166555414562
+          }
+        ]
+      }
+    },
+    "furnishings/vases": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "01cfc10b47b9a87f7b1e12153817ec2e",
+      "storage_hash": "533015a78acc88b8afbf288a2fa569e5",
+      "hash_algorithm": "md5",
+      "archive_size": 3119104,
+      "encrypted_size": 2939015,
+      "compressed_size": 2938987,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 2939015,
+        "file_hash": 17574016828677767303,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 2939015,
+            "hash": 17574016828677767303
+          }
+        ]
+      }
+    },
+    "furnishings/wastebasket1": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "6978305998071d3fed9ae233a595b68c",
+      "storage_hash": "5cc8921e822f5fc94774eebd91af66a8",
+      "hash_algorithm": "md5",
+      "archive_size": 24981504,
+      "encrypted_size": 20794116,
+      "compressed_size": 20794088,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 20794116,
+        "file_hash": 17264418403289244317,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 15125463866152101374
+          },
+          {
+            "offset": 16777216,
+            "size": 4016900,
+            "hash": 1932185643788778465
+          }
+        ]
+      }
+    },
+    "misc/book1": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "831b30594f622086532a745f3c18e8c9",
+      "storage_hash": "e62dcc0232425baed711cfc048afcc44",
+      "hash_algorithm": "md5",
+      "archive_size": 22183936,
+      "encrypted_size": 19424361,
+      "compressed_size": 19424333,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 19424361,
+        "file_hash": 9365618311068830779,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 17694586959970848967
+          },
+          {
+            "offset": 16777216,
+            "size": 2647145,
+            "hash": 18050117429900135250
+          }
+        ]
+      }
+    },
+    "misc/hexbolt": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "323c1453f78c7183ba1efbea4e96b122",
+      "storage_hash": "2c7753da51a2e2d02cbfe16d6e6628af",
+      "hash_algorithm": "md5",
+      "archive_size": 21624320,
+      "encrypted_size": 18675137,
+      "compressed_size": 18675109,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 18675137,
+        "file_hash": 7424340021377808608,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 12434219742410762432
+          },
+          {
+            "offset": 16777216,
+            "size": 1897921,
+            "hash": 11323979563648033157
+          }
+        ]
+      }
+    },
+    "misc/necrobook": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "fb7c9386d980811b137b87a503ee498c",
+      "storage_hash": "9556314e4bd15a8703e0e63ef459a6c3",
+      "hash_algorithm": "md5",
+      "archive_size": 49034752,
+      "encrypted_size": 40947815,
+      "compressed_size": 40947787,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 40947815,
+        "file_hash": 10869149052822556424,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 1268270687659010252
+          },
+          {
+            "offset": 16777216,
+            "size": 16777216,
+            "hash": 2845565648909334610
+          },
+          {
+            "offset": 33554432,
+            "size": 7393383,
+            "hash": 13195872736514461555
+          }
+        ]
+      }
+    },
+    "plants/plant1": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "9d87f5e3958a942bc545bf30cd1b2533",
+      "storage_hash": "25a1e52be61570fdd551089de1a4455c",
+      "hash_algorithm": "md5",
+      "archive_size": 21031424,
+      "encrypted_size": 18343856,
+      "compressed_size": 18343828,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 18343856,
+        "file_hash": 4656257330198677444,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 8050793657114639937
+          },
+          {
+            "offset": 16777216,
+            "size": 1566640,
+            "hash": 13398693814384842239
+          }
+        ]
+      }
+    },
+    "plants/plant2": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "b70c57e8aa709d1bc4036beacfae2603",
+      "storage_hash": "2d9ee122359e280e97c67b1e22bab1e1",
+      "hash_algorithm": "md5",
+      "archive_size": 35548672,
+      "encrypted_size": 29953673,
+      "compressed_size": 29953645,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 29953673,
+        "file_hash": 18089363812765947809,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 13419453046720904450
+          },
+          {
+            "offset": 16777216,
+            "size": 13176457,
+            "hash": 16947719804712259937
+          }
+        ]
+      }
+    },
+    "plants/plant3": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "d97ad61886eacea254a055b963921b37",
+      "storage_hash": "2053c5649674ebd522a2d14215c7ce12",
+      "hash_algorithm": "md5",
+      "archive_size": 32974336,
+      "encrypted_size": 27081550,
+      "compressed_size": 27081522,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 27081550,
+        "file_hash": 340941730992978434,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 5991326128347506025
+          },
+          {
+            "offset": 16777216,
+            "size": 10304334,
+            "hash": 7036602997365464640
+          }
+        ]
+      }
+    },
+    "plants/plant4": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "7066ced23ab5e1bcf3c5443df7a20250",
+      "storage_hash": "6bc1b28196c7b9b4289f28aa50c90b38",
+      "hash_algorithm": "md5",
+      "archive_size": 9379840,
+      "encrypted_size": 9193662,
+      "compressed_size": 9193634,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 9193662,
+        "file_hash": 10721362805001272957,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 9193662,
+            "hash": 10721362805001272957
+          }
+        ]
+      }
+    },
+    "plants/plant5": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "1964db68557163ae7b0cda6196f317ea",
+      "storage_hash": "d84bb68fb36ad2da326cedc1cad2e287",
+      "hash_algorithm": "md5",
+      "archive_size": 25273344,
+      "encrypted_size": 21739261,
+      "compressed_size": 21739233,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 21739261,
+        "file_hash": 14854907066358940571,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 9053031897290310354
+          },
+          {
+            "offset": 16777216,
+            "size": 4962045,
+            "hash": 11740036038070302444
+          }
+        ]
+      }
+    },
+    "skull": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "bf3faeaeb4707f6f4c2bdae4734f04f5",
+      "storage_hash": "de0ee90e6ff4ea09a0f4686e6988ba7e",
+      "hash_algorithm": "md5",
+      "archive_size": 11102208,
+      "encrypted_size": 9735757,
+      "compressed_size": 9735729,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 9735757,
+        "file_hash": 13108969806814997222,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 9735757,
+            "hash": 13108969806814997222
+          }
+        ]
+      }
+    },
+    "vehicles/car": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "239a9007ae94a75b90dfb7bd060e24c6",
+      "storage_hash": "1df97e20a5c9104a275a7c9a9655a487",
+      "hash_algorithm": "md5",
+      "archive_size": 29798912,
+      "encrypted_size": 28344507,
+      "compressed_size": 28344479,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 28344507,
+        "file_hash": 4754559925845811664,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 1811629202304794919
+          },
+          {
+            "offset": 16777216,
+            "size": 11567291,
+            "hash": 1592086578693243774
+          }
+        ]
+      }
+    },
+    "vehicles/ship1": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "3f198e35f19eadd87e9e1cf1a06c68cd",
+      "storage_hash": "7f9ba46403fae6ff3f690ec5067323cb",
+      "hash_algorithm": "md5",
+      "archive_size": 9352704,
+      "encrypted_size": 9271751,
+      "compressed_size": 9271723,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 9271751,
+        "file_hash": 3615234459415893508,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 9271751,
+            "hash": 3615234459415893508
+          }
+        ]
+      }
+    },
+    "vehicles/truck": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "ea7a7d44cc1f303748a512db503af94d",
+      "storage_hash": "a1acdc4510a68036ce9e7f1813d7a139",
+      "hash_algorithm": "md5",
+      "archive_size": 31024128,
+      "encrypted_size": 25550655,
+      "compressed_size": 25550627,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 25550655,
+        "file_hash": 15603369824886546844,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 8382444184294265120
+          },
+          {
+            "offset": 16777216,
+            "size": 8773439,
+            "hash": 5064019610125053631
+          }
+        ]
+      }
+    },
+    "weapons/axe": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "dac788e58c63077f194480c3e575763f",
+      "storage_hash": "100fdf83c72cf192412428de97aba20a",
+      "hash_algorithm": "md5",
+      "archive_size": 12301824,
+      "encrypted_size": 11759516,
+      "compressed_size": 11759488,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 11759516,
+        "file_hash": 3316904048552272818,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 11759516,
+            "hash": 3316904048552272818
+          }
+        ]
+      }
+    },
+    "weapons/gun1": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "82bcb8e7932ea9ac35b457a3d91c4ebe",
+      "storage_hash": "932af5c8915b2321a3e28c3448c3e763",
+      "hash_algorithm": "md5",
+      "archive_size": 14400000,
+      "encrypted_size": 12786303,
+      "compressed_size": 12786275,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 12786303,
+        "file_hash": 4747876420483216572,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 12786303,
+            "hash": 4747876420483216572
+          }
+        ]
+      }
+    },
+    "weapons/shield": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "f6d500f361673790fc720f1773c61c70",
+      "storage_hash": "e78224e2da5fc27a0e72b919153a6bb4",
+      "hash_algorithm": "md5",
+      "archive_size": 9180672,
+      "encrypted_size": 8995023,
+      "compressed_size": 8994995,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 8995023,
+        "file_hash": 3851552764581930024,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 8995023,
+            "hash": 3851552764581930024
+          }
+        ]
+      }
+    },
+    "weapons/tank": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "d27a1f5ff598b8df23ca7f1268a2ad42",
+      "storage_hash": "2c3c55cf319da08c061a1f03408d5418",
+      "hash_algorithm": "md5",
+      "archive_size": 59746816,
+      "encrypted_size": 46671073,
+      "compressed_size": 46671045,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 46671073,
+        "file_hash": 13739044126350858384,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 16777216,
+            "hash": 4620781084461826997
+          },
+          {
+            "offset": 16777216,
+            "size": 16777216,
+            "hash": 7361381694113597731
+          },
+          {
+            "offset": 33554432,
+            "size": 13116641,
+            "hash": 12730452421057999386
+          }
+        ]
+      }
+    },
+    "weapons/warhammer": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "<stage>/assetcache/misc_gltf_models",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "1017bae7ba8f1525e4fc96afbb609b12",
+      "storage_hash": "a2e2b9fbb3a8b17f5972777f215dfcd4",
+      "hash_algorithm": "md5",
+      "archive_size": 9872896,
+      "encrypted_size": 8742306,
+      "compressed_size": 8742278,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 8742306,
+        "file_hash": 15527491463697083914,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 8742306,
+            "hash": 15527491463697083914
+          }
+        ]
+      }
+    }
+  }
+}
