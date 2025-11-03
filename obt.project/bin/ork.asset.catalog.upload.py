@@ -5,13 +5,14 @@
 # Uploads assets from catalog to configured remote locations using catalog APIs
 ################################################################################
 
-import argparse
-import os
-import json
+import argparse, os, json, signal, time
 from pathlib import Path
 from orkengine import core
 from ork import assets as ork_assets
 from obt import path as obt_path
+
+logger = core.Logger.instance()
+logchan = logger.configureChannel("UPLOADER",core.vec3(1,1,0),True)
 
 def print_upload_receipt(receipt, indent=""):
     """Pretty print an upload receipt"""
@@ -54,11 +55,11 @@ def upload_namespace(catalog, namespace_id, dry_run=False):
             print_upload_receipt(receipt)
             return receipt.success
         else:
-            print(f"✗ Upload failed - no receipt returned")
+            logchan.error(f"✗ Upload failed - no receipt returned")
             return False
             
     except Exception as e:
-        print(f"✗ Upload error: {e}")
+        logchan.error(f"✗ Upload error: {e}")
         return False
 
 def upload_all_namespaces(catalog, dry_run=False):
@@ -89,13 +90,13 @@ def upload_all_namespaces(catalog, dry_run=False):
                 if not receipt.success:
                     all_success = False
             else:
-                print("  ✗ No receipt for this namespace")
+                logchan.error("  ✗ No receipt for this namespace")
                 all_success = False
         
         return all_success
         
     except Exception as e:
-        print(f"✗ Upload error: {e}")
+        logchan.error(f"✗ Upload error: {e}")
         return False
 
 def upload_single_asset(catalog, asset_id, dry_run=False):
@@ -109,14 +110,23 @@ def upload_single_asset(catalog, asset_id, dry_run=False):
             # TODO: Add dry run support to the API
             return False
         
+        completed = False
+        def on_completed(r):
+          nonlocal completed
+          completed = True
+            
         # Use the catalog's uploadAsset method
-        receipt = catalog.uploadAsset(asset_id)
+        receipt = catalog.uploadAsset(asset_id,on_completed=on_completed )
+        
+        while not completed:
+          core.apppoll()
+          time.sleep(0.033)
         
         if receipt:
             print_upload_receipt(receipt, "  ")
             return receipt.success
         else:
-            print(f"✗ Upload failed - no receipt returned")
+            logchan.error(f"✗ Upload failed - no receipt returned")
             return False
             
     except Exception as e:
@@ -143,7 +153,7 @@ def main():
     args = parser.parse_args()
     
     # Initialize core FIRST
-    core.coreappinit()
+    core.appinit()
     
     # Create config space and catalog
     cfgspc, catalog = ork_assets.default_cfg_and_catalog()
@@ -163,7 +173,7 @@ def main():
     elif args.asset:
         # Upload single asset
         if '|' not in args.asset:
-            print(f"✗ Asset ID must be in format 'namespace|asset_id'")
+            logchan.error(f"✗ Asset ID must be in format 'namespace|asset_id'")
             success = False
         else:
             success = upload_single_asset(catalog, args.asset, args.dry_run)
@@ -180,10 +190,19 @@ def main():
                 json.dump({"message": "Receipt serialization not yet implemented"}, f, indent=2)
             print(f"\nReceipt saved to: {args.receipt_file}")
         except Exception as e:
-            print(f"\n✗ Failed to save receipt: {e}")
+            logchan.error(f"\n✗ Failed to save receipt: {e}")
     
-    core.coreappexit()
+    core.appexit()
     return 0 if success else 1
 
 if __name__ == "__main__":
-    exit(main())
+    def _signal_handler(sig, frame):
+        logchan.error("\nUpload interrupted by user")
+        core.appexit()
+        exit(1)
+    signal.signal(signal.SIGINT, _signal_handler)
+
+    core.appexit()
+    main()
+
+    

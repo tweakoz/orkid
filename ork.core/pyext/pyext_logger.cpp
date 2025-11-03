@@ -41,19 +41,27 @@ void pyinit_logger(py::module& module_core) {
       })
     .def_property_readonly("name", 
       [](logchannel_ptr_t chan) -> std::string { return chan->_name; })
-    .def("log", 
+    .def("log",
       [](logchannel_ptr_t chan, const std::string& msg) {
         chan->log("%s", msg.c_str());
       })
-    .def("log_begin", 
+    .def("log_begin",
       [](logchannel_ptr_t chan, const std::string& msg) {
         chan->log_begin("%s", msg.c_str());
       })
-    .def("log_continue", 
+    .def("log_continue",
       [](logchannel_ptr_t chan, const std::string& msg) {
         chan->log_continue("%s", msg.c_str());
       })
-    .def("status", 
+    .def("warn",
+      [](logchannel_ptr_t chan, const std::string& msg) {
+        chan->warn("%s", msg.c_str());
+      })
+    .def("error",
+      [](logchannel_ptr_t chan, const std::string& msg) {
+        chan->error("%s", msg.c_str());
+      })
+    .def("status",
       [](logchannel_ptr_t chan, const std::string& subchannel, const std::string& msg) {
         chan->status(subchannel, "%s", msg.c_str());
       })

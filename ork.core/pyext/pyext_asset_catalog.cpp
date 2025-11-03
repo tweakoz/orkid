@@ -150,9 +150,10 @@ void pyinit_asset_catalog(py::module& module_core) {
                                   })
                               .def("supports_current_platform", &AssetEntry::supportsCurrentPlatform)
                               .def("repackage", &AssetEntry::repackage)
-                              .def("upload", &AssetEntry::upload, 
-                                   py::arg("config"), 
-                                   py::arg("destination_id"))
+                              .def("upload", &AssetEntry::upload,
+                                   py::arg("config"),
+                                   py::arg("destination_id"),
+                                   py::arg("on_chunk_completed") = nullptr)
                               .def("__repr__", [](assetentry_ptr_t entry) -> std::string {
                                 return FormatString("AssetEntry(id='%s', size=%zu)", entry->_id.c_str(), entry->_archive_size);
                               });
@@ -206,8 +207,12 @@ void pyinit_asset_catalog(py::module& module_core) {
           .def(
               "fetch",
               [](assetcatalog_ptr_t catalog, const std::string& asset_id) -> fetchrequest_ptr_t {
-                //py::gil_scoped_release release;
-                return catalog->fetch(asset_id);
+                fetchrequest_ptr_t rval;
+                {
+                  py::gil_scoped_release release;
+                  rval = catalog->fetch(asset_id);
+                }
+                return rval;
               },
               py::arg("asset_id"))
           .def(
@@ -221,9 +226,62 @@ void pyinit_asset_catalog(py::module& module_core) {
           .def("list_assets", &AssetCatalog::listAssets, py::arg("pattern") = "*")
           
           // Upload Operations
-          .def("uploadNamespace", &AssetCatalog::uploadNamespace, py::arg("namespace_id"))
-          .def("uploadAsset", &AssetCatalog::uploadAsset, py::arg("fq_asset_id"))
-          .def("uploadAllNamespaces", &AssetCatalog::uploadAllNamespaces)
+          .def("uploadNamespace", [](assetcatalog_ptr_t catalog, const std::string& namespace_id, py::object on_asset_completed) {
+            asset::catalog::asset_completed_callback_t callback = nullptr;
+            if (!on_asset_completed.is_none()) {
+              asset::catalog::pysafe_asset_completed_callback_t pysafe_cb;
+              pysafe_cb._data.makeShared<py::function>(on_asset_completed.cast<py::function>());
+              pysafe_cb._item = [data = pysafe_cb._data](const std::string& asset_id) {
+                auto fn = data.getShared<py::function>();
+                py::gil_scoped_acquire acquire;
+                fn->operator()(asset_id);
+              };
+              callback = pysafe_cb._item;
+            }
+            py::gil_scoped_release release;
+            return catalog->uploadNamespace(namespace_id, callback);
+          }, py::arg("namespace_id"), py::arg("on_asset_completed") = py::none())
+
+          .def("uploadAsset", [](assetcatalog_ptr_t catalog, 
+                                 std::string fq_asset_id, 
+                                 py::object on_completed) {
+
+            auto oncompl_ptr = std::make_shared<py::object>(on_completed);
+            // Enqueue upload on concurrent queue for async execution
+            auto op = [catalog,fq_asset_id,oncompl_ptr]() mutable {
+              // Upload runs without GIL
+              auto receipt = catalog->uploadAsset(fq_asset_id, nullptr);
+              py::gil_scoped_acquire acquire;
+              // Invoke completion callback with GIL
+              if (!oncompl_ptr->is_none() && receipt) {
+                try {
+                  auto fn = oncompl_ptr->cast<py::function>();
+                  fn("");
+                } catch (const std::exception& e) {
+                  // Ignore callback errors
+                }
+              }
+              oncompl_ptr = nullptr;
+            };
+            py::gil_scoped_release release;
+            opq::concurrentQueue()->enqueue(op);
+          }, py::arg("fq_asset_id"), py::arg("on_completed") = py::none())
+
+          .def("uploadAllNamespaces", [](assetcatalog_ptr_t catalog, py::object on_namespace_completed) {
+            asset::catalog::namespace_completed_callback_t callback = nullptr;
+            if (!on_namespace_completed.is_none()) {
+              asset::catalog::pysafe_namespace_completed_callback_t pysafe_cb;
+              pysafe_cb._data.makeShared<py::function>(on_namespace_completed.cast<py::function>());
+              pysafe_cb._item = [data = pysafe_cb._data](const std::string& namespace_id) {
+                auto fn = data.getShared<py::function>();
+                py::gil_scoped_acquire acquire;
+                fn->operator()(namespace_id);
+              };
+              callback = pysafe_cb._item;
+            }
+            py::gil_scoped_release release;
+            return catalog->uploadAllNamespaces(callback);
+          }, py::arg("on_namespace_completed") = py::none())
           .def_property_readonly("config_space", &AssetCatalog::getConfigSpace)
           .def_property_readonly("merged_config", [](assetcatalog_ptr_t self) -> assetconfig_ptr_t {
             return self->getConfigSpace()->merged();

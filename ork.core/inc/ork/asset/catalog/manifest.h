@@ -84,7 +84,8 @@ struct AssetEntry {
   // Returns: upload receipt with results
   uploadreceipt_ptr_t upload(
     const AssetConfig& config,
-    locationinfo_ptr_t location) const;
+    locationinfo_ptr_t location,
+    chunk_completed_callback_t on_chunk_completed = nullptr) const;
   
   // Get resolved local path (with templates expanded)
   // Returns: local path with <stage>, <cache>, etc. resolved
@@ -194,7 +195,8 @@ struct AssetManifest {
   // Returns: upload receipt with results
   uploadreceipt_ptr_t upload(
     const AssetConfig& config,
-    locationinfo_ptr_t location) const;
+    locationinfo_ptr_t location,
+    asset_completed_callback_t on_asset_completed = nullptr) const;
   
   // Get parent catalog (for accessing cache directory, etc)
   assetcatalog_ptr_t getParentCatalog() const;

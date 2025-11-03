@@ -152,7 +152,7 @@ void AssetCatalog::loadFromGlobalManifests(assetcatalog_ptr_t self) {
     if (!files.empty()) {
       logchan_catalog->log("Loading manifests from %s:", dir.c_str());
       for (const auto& manifest_file : files) {
-        logchan_catalog->log("  - %s", manifest_file.getName().c_str());
+        //logchan_catalog->log("  - %s", manifest_file.getName().c_str());
         
         auto manifest = AssetManifest::loadFromFile(manifest_file);
         if (manifest) {

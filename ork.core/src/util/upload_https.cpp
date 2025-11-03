@@ -20,6 +20,9 @@
 
 namespace ork {
 
+// Maximum concurrent uploads (to avoid overwhelming the server)
+const int max_concurrent = 2;
+
 //////////////////////////////////////////////////////////////////////////////
 // CURL Callbacks for uploads
 //////////////////////////////////////////////////////////////////////////////
@@ -188,8 +191,6 @@ bool HttpsUploader::uploadFiles(
   std::vector<std::unique_ptr<UploadContext>> contexts;
   contexts.reserve(local_files.size());
   
-  // Maximum concurrent uploads (to avoid overwhelming the server)
-  const int max_concurrent = 3;
   size_t next_file_index = 0;
   int active_transfers = 0;
   

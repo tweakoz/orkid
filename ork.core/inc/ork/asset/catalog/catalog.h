@@ -149,11 +149,17 @@ struct AssetCatalog {
   //
   // Generation safety is built-in - if manifest changes during retrieval,
   // the operation either completes with old version or retries with new
-  fetchrequest_ptr_t fetch(const assetid_t& fq_asset_id, bool enable_cache = true);
-  
+  fetchrequest_ptr_t fetch(
+    const assetid_t& fq_asset_id,
+    bool enable_cache = true,
+    chunk_completed_callback_t on_chunk_completed = nullptr);
+
   // Async version - enqueue asset fetch and return future immediately
   // Allows parallel fetching of multiple assets
-  fetchrequest_ptr_t fetchAsync(const assetid_t& fq_asset_id, bool enable_cache = true);
+  fetchrequest_ptr_t fetchAsync(
+    const assetid_t& fq_asset_id,
+    bool enable_cache = true,
+    chunk_completed_callback_t on_chunk_completed = nullptr);
   
   // Check if asset exists without downloading
   bool hasAsset(const assetid_t& fq_asset_id) const;
@@ -229,15 +235,20 @@ struct AssetCatalog {
   
   // Upload a single namespace to its configured remote location
   // Returns: upload receipt for the namespace
-  uploadreceipt_ptr_t uploadNamespace(const namespaceid_t& namespace_id);
-  
+  uploadreceipt_ptr_t uploadNamespace(
+    const namespaceid_t& namespace_id,
+    asset_completed_callback_t on_asset_completed = nullptr);
+
   // Upload a single asset to its configured remote location
   // Returns: upload receipt for the asset
-  uploadreceipt_ptr_t uploadAsset(const assetid_t& fq_asset_id);
-  
+  uploadreceipt_ptr_t uploadAsset(
+    const assetid_t& fq_asset_id,
+    chunk_completed_callback_t on_chunk_completed = nullptr);
+
   // Upload all namespaces to their configured remote locations
   // Returns: map of namespace ID to upload receipt
-  upload_result_map_t uploadAllNamespaces();
+  upload_result_map_t uploadAllNamespaces(
+    namespace_completed_callback_t on_namespace_completed = nullptr);
   
   // Convert wildcard pattern to regex (utility function)
   static std::regex wildcardToRegex(const std::string& pattern);

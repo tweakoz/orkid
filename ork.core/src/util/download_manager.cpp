@@ -15,11 +15,16 @@
 #include <curlpp/Options.hpp>
 #include <curlpp/Exception.hpp>
 #include <curl/curl.h>
+#include <rapidjson/document.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/stringbuffer.h>
 #include <vector>
 #include <mutex>
 #include <condition_variable>
 #include <set>
 #include <fstream>
+#include <thread>
+#include <chrono>
 
 namespace ork {
 
@@ -479,6 +484,210 @@ bool DownloadManager::remoteFileExists(const URL& url, const std::map<std::strin
   curl_easy_cleanup(curl);
 
   return exists;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+chunkverifyresult_vect_t DownloadManager::verifyChunks(
+    const URL& verify_url,
+    const chunkverifyrequest_vect_t& chunks,
+    const std::map<std::string, std::string>& headers,
+    bool ignore_tls_errors) {
+
+  chunkverifyresult_vect_t results;
+
+  if (chunks.empty()) {
+    return results;
+  }
+
+  _impl->_logchan_download->log("Starting batch chunk verification: %zu chunks", chunks.size());
+
+  // Build JSON request body with ALL chunks
+  rapidjson::Document doc;
+  doc.SetObject();
+  auto& allocator = doc.GetAllocator();
+
+  rapidjson::Value chunks_array(rapidjson::kArrayType);
+  for (const auto& chunk : chunks) {
+    rapidjson::Value chunk_obj(rapidjson::kObjectType);
+    chunk_obj.AddMember("file", rapidjson::Value(chunk.filename.c_str(), allocator), allocator);
+    // Send hash as hex string to avoid JSON number precision issues and match xxhsum output
+    char hash_hex[17];
+    snprintf(hash_hex, sizeof(hash_hex), "%016llx", (unsigned long long)chunk.expected_hash);
+    chunk_obj.AddMember("expected_hash", rapidjson::Value(hash_hex, allocator), allocator);
+    chunks_array.PushBack(chunk_obj, allocator);
+  }
+  doc.AddMember("chunks", chunks_array, allocator);
+
+  rapidjson::StringBuffer buffer;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+  doc.Accept(writer);
+  std::string json_body = buffer.GetString();
+
+  // Setup curl for POST request
+  CURL* curl = curl_easy_init();
+  if (!curl) {
+    _impl->_logchan_download->log("ERROR: Failed to initialize curl for batch verification");
+    // Return failed results for all chunks
+    for (const auto& chunk : chunks) {
+      ChunkVerifyResult failed_result;
+      failed_result.filename = chunk.filename;
+      failed_result.present = false;
+      failed_result.hash_ok = false;
+      failed_result.error = "Failed to initialize curl";
+      results.push_back(failed_result);
+    }
+    return results;
+  }
+
+  // Response data
+  std::string response_body;
+  auto write_callback = [](char* ptr, size_t size, size_t nmemb, void* userdata) -> size_t {
+    std::string* str = static_cast<std::string*>(userdata);
+    str->append(ptr, size * nmemb);
+    return size * nmemb;
+  };
+
+  // Setup curl options
+  curl_easy_setopt(curl, CURLOPT_URL, verify_url.toString().c_str());
+  curl_easy_setopt(curl, CURLOPT_POST, 1L);
+  curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_body.c_str());
+  curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, json_body.size());
+  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, +write_callback);
+  curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_body);
+  curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+  curl_easy_setopt(curl, CURLOPT_TIMEOUT, 30L); // 30 second timeout for batch
+
+  if (ignore_tls_errors) {
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+  }
+
+  // Setup headers
+  struct curl_slist* curl_headers = nullptr;
+  curl_headers = curl_slist_append(curl_headers, "Content-Type: application/json");
+  for (const auto& [key, value] : headers) {
+    std::string header = key + ": " + value;
+    curl_headers = curl_slist_append(curl_headers, header.c_str());
+  }
+  if (curl_headers) {
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, curl_headers);
+  }
+
+  // Execute request
+  CURLcode res = curl_easy_perform(curl);
+  long http_code = 0;
+  curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+
+  // Cleanup
+  if (curl_headers) {
+    curl_slist_free_all(curl_headers);
+  }
+  curl_easy_cleanup(curl);
+
+  // Check for errors
+  if (res != CURLE_OK) {
+    _impl->_logchan_download->log("ERROR: Batch chunk verification failed: %s", curl_easy_strerror(res));
+    // Return failed results for all chunks
+    for (const auto& chunk : chunks) {
+      ChunkVerifyResult failed_result;
+      failed_result.filename = chunk.filename;
+      failed_result.present = false;
+      failed_result.hash_ok = false;
+      failed_result.error = curl_easy_strerror(res);
+      results.push_back(failed_result);
+    }
+    return results;
+  }
+
+  if (http_code != 200) {
+    _impl->_logchan_download->log("WARN: Batch chunk verification returned HTTP %ld", http_code);
+    // Return failed results for all chunks
+    for (const auto& chunk : chunks) {
+      ChunkVerifyResult failed_result;
+      failed_result.filename = chunk.filename;
+      failed_result.present = false;
+      failed_result.hash_ok = false;
+      failed_result.error = "HTTP " + std::to_string(http_code);
+      results.push_back(failed_result);
+    }
+    return results;
+  }
+
+  // Parse response
+  rapidjson::Document response_doc;
+  response_doc.Parse(response_body.c_str());
+
+  if (response_doc.HasParseError() || !response_doc.HasMember("results")) {
+    _impl->_logchan_download->log("ERROR: Failed to parse batch verification response");
+    // Return failed results for all chunks
+    for (const auto& chunk : chunks) {
+      ChunkVerifyResult failed_result;
+      failed_result.filename = chunk.filename;
+      failed_result.present = false;
+      failed_result.hash_ok = false;
+      failed_result.error = "Parse error";
+      results.push_back(failed_result);
+    }
+    return results;
+  }
+
+  const auto& results_array = response_doc["results"];
+  if (!results_array.IsArray()) {
+    _impl->_logchan_download->log("ERROR: Unexpected verification response format");
+    // Return failed results for all chunks
+    for (const auto& chunk : chunks) {
+      ChunkVerifyResult failed_result;
+      failed_result.filename = chunk.filename;
+      failed_result.present = false;
+      failed_result.hash_ok = false;
+      failed_result.error = "Invalid response format";
+      results.push_back(failed_result);
+    }
+    return results;
+  }
+
+  // Extract all results
+  for (rapidjson::SizeType i = 0; i < results_array.Size(); ++i) {
+    const auto& result_obj = results_array[i];
+    ChunkVerifyResult result;
+    result.filename = result_obj["file"].GetString();
+    result.present = result_obj["present"].GetBool();
+    result.hash_ok = result_obj["hash_ok"].GetBool();
+
+    // Optional fields
+    if (result_obj.HasMember("error")) {
+      result.error = result_obj["error"].GetString();
+    }
+    if (result_obj.HasMember("expected_hash")) {
+      // Hashes sent as hex strings to avoid JSON number precision loss
+      if (result_obj["expected_hash"].IsString()) {
+        result.expected_hash = std::stoull(result_obj["expected_hash"].GetString(), nullptr, 16);
+      }
+    }
+    if (result_obj.HasMember("computed_hash")) {
+      // Hashes sent as hex strings to avoid JSON number precision loss
+      if (result_obj["computed_hash"].IsString()) {
+        result.computed_hash = std::stoull(result_obj["computed_hash"].GetString(), nullptr, 16);
+      }
+    }
+
+    results.push_back(result);
+  }
+
+  // Log summary
+  size_t present_count = 0, hash_ok_count = 0;
+  for (const auto& r : results) {
+    if (r.present) present_count++;
+    if (r.hash_ok) hash_ok_count++;
+  }
+
+  _impl->_logchan_download->log(
+    "Batch verification complete: %zu chunks, %zu present, %zu valid",
+    results.size(), present_count, hash_ok_count
+  );
+
+  return results;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

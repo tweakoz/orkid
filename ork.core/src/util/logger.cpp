@@ -121,6 +121,32 @@ void LogChannel::log_continue(const char* pMsgFormat, ...) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void LogChannel::warn(const char* pMsgFormat, ...) {
+  if (_ENABLE_LOGGING and _enabled) {
+    va_list args;
+    va_start(args, pMsgFormat);
+    char buf[1024];
+    vsnprintf(buf, sizeof(buf), pMsgFormat, args);
+    va_end(args);
+    _logger->_backend->_warn(this, buf);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void LogChannel::error(const char* pMsgFormat, ...) {
+  if (_ENABLE_LOGGING and _enabled) {
+    va_list args;
+    va_start(args, pMsgFormat);
+    char buf[1024];
+    vsnprintf(buf, sizeof(buf), pMsgFormat, args);
+    va_end(args);
+    _logger->_backend->_error(this, buf);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void LogChannel::status_valist(const std::string& subchannel, const char* pMsgFormat, va_list args) {
   if (!_ENABLE_LOGGING || !_enabled)
     return;
@@ -212,6 +238,14 @@ void default_status_fn(const LogChannel* chan, std::string subchannel, const std
     fflush(stdout);
   }
 }
+void default_warn_fn(const LogChannel* chan, const std::string& str) {
+  fprintf(stderr, "\033[38;5;196m[%s]\t%s\033[0m\n", chan->_name.c_str(), str.c_str());
+  fflush(stderr);
+}
+void default_error_fn(const LogChannel* chan, const std::string& str) {
+  fprintf(stderr, "\033[38;5;196m[%s]\t%s\033[0m\n", chan->_name.c_str(), str.c_str());
+  fflush(stderr);
+}
 
 static void default_perfitem(const LogChannel*, std::string subchannel, svar64_t& dd){
 
@@ -220,6 +254,10 @@ static void default_perfitem(const LogChannel*, std::string subchannel, svar64_t
 void nop_log_fn(const LogChannel* chan, const std::string& str) {
 }
 void nop_status_fn(const LogChannel* chan, std::string subchannel, const std::string& str) {
+}
+void nop_warn_fn(const LogChannel* chan, const std::string& str) {
+}
+void nop_error_fn(const LogChannel* chan, const std::string& str) {
 }
 static void nop_perfitem(const LogChannel*, std::string subchannel, svar64_t& dd){
 
@@ -235,6 +273,8 @@ Logger::Logger() {
     _backend->_begin_log_line    = default_log_fn;
     _backend->_continue_log_line = default_log_fn;
     _backend->_end_log_line      = default_log_fn;
+    _backend->_warn              = default_warn_fn;
+    _backend->_error             = default_error_fn;
     _backend->_status            = default_status_fn;
     _backend->_on_perf_item      = default_perfitem;
   }
@@ -245,6 +285,8 @@ Logger::Logger() {
     _backend->_begin_log_line    = nop_log_fn;
     _backend->_continue_log_line = nop_log_fn;
     _backend->_end_log_line      = nop_log_fn;
+    _backend->_warn              = nop_warn_fn;
+    _backend->_error             = nop_error_fn;
     _backend->_status            = nop_status_fn;
     _backend->_on_perf_item      = nop_perfitem;
   }

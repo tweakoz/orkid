@@ -519,7 +519,9 @@ void AssetCatalog::repackage() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-uploadreceipt_ptr_t AssetCatalog::uploadNamespace(const namespaceid_t& namespace_id) {
+uploadreceipt_ptr_t AssetCatalog::uploadNamespace(
+    const namespaceid_t& namespace_id,
+    asset_completed_callback_t on_asset_completed) {
   logchan_catalog->log("Starting upload for namespace: %s", namespace_id.c_str());
   
   auto impl = _impl.getShared<CatalogImpl>();
@@ -581,7 +583,7 @@ uploadreceipt_ptr_t AssetCatalog::uploadNamespace(const namespaceid_t& namespace
     logchan_catalog->log("  Uploading manifest %zu/%zu: %s", i + 1, manifests_to_upload.size(), manifest->getManifestId().c_str());
     
     try {
-      auto manifest_receipt = manifest->upload(*config, upload_location);
+      auto manifest_receipt = manifest->upload(*config, upload_location, on_asset_completed);
       
       if (manifest_receipt) {
         // Aggregate results
@@ -622,7 +624,9 @@ uploadreceipt_ptr_t AssetCatalog::uploadNamespace(const namespaceid_t& namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 
-uploadreceipt_ptr_t AssetCatalog::uploadAsset(const assetid_t& fq_asset_id) {
+uploadreceipt_ptr_t AssetCatalog::uploadAsset(
+    const assetid_t& fq_asset_id,
+    chunk_completed_callback_t on_chunk_completed) {
   logchan_catalog->log("Starting upload for asset: %s", fq_asset_id.c_str());
   
   auto impl = _impl.getShared<CatalogImpl>();
@@ -698,7 +702,7 @@ uploadreceipt_ptr_t AssetCatalog::uploadAsset(const assetid_t& fq_asset_id) {
   
   try {
     // Upload the single asset using AssetEntry's upload method (same as manifest does)
-    auto upload_receipt = target_asset->upload(*config, upload_location);
+    auto upload_receipt = target_asset->upload(*config, upload_location, on_chunk_completed);
     
     if (upload_receipt) {
       // Copy results from upload receipt
@@ -715,16 +719,16 @@ uploadreceipt_ptr_t AssetCatalog::uploadAsset(const assetid_t& fq_asset_id) {
                            fq_asset_id.c_str(), receipt->bytes_uploaded);
       } else {
         receipt->status_message = "Failed to upload asset '" + fq_asset_id + "': " + upload_receipt->status_message;
-        logchan_catalog->log("ERROR: Asset upload FAILED - asset: %s, error: %s", 
-                           fq_asset_id.c_str(), upload_receipt->status_message.c_str());
+        logchan_catalog->error("Asset upload FAILED - asset: %s, error: %s",
+                               fq_asset_id.c_str(), upload_receipt->status_message.c_str());
       }
     } else {
       receipt->status_message = "Upload returned no receipt";
-      logchan_catalog->log("ERROR: Asset upload failed - no receipt returned");
+      logchan_catalog->error("Asset upload failed - no receipt returned");
     }
   } catch (const std::exception& e) {
     receipt->status_message = "Asset upload failed: " + std::string(e.what());
-    logchan_catalog->log("ERROR: Asset upload exception: %s", e.what());
+    logchan_catalog->error("Asset upload exception: %s", e.what());
   }
   
   logchan_catalog->log("Completed upload for asset: %s", fq_asset_id.c_str());
@@ -733,7 +737,8 @@ uploadreceipt_ptr_t AssetCatalog::uploadAsset(const assetid_t& fq_asset_id) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-upload_result_map_t AssetCatalog::uploadAllNamespaces() {
+upload_result_map_t AssetCatalog::uploadAllNamespaces(
+    namespace_completed_callback_t on_namespace_completed) {
   logchan_catalog->log("Starting upload for all namespaces");
   
   auto impl = _impl.getShared<CatalogImpl>();
@@ -755,13 +760,19 @@ upload_result_map_t AssetCatalog::uploadAllNamespaces() {
   // Upload each namespace
   for (const auto& namespace_id : namespace_ids) {
     logchan_catalog->log("Uploading namespace: %s", namespace_id.c_str());
-    
+
     try {
-      auto receipt = uploadNamespace(namespace_id);
+      // Pass nullptr for asset callback since we're tracking at namespace level
+      auto receipt = uploadNamespace(namespace_id, nullptr);
       results[namespace_id] = receipt;
-      
+
       if (receipt && receipt->success) {
         logchan_catalog->log("Namespace '%s' uploaded successfully", namespace_id.c_str());
+
+        // Invoke namespace completion callback
+        if (on_namespace_completed) {
+          on_namespace_completed(namespace_id);
+        }
       } else {
         logchan_catalog->log("ERROR: Namespace '%s' upload failed", namespace_id.c_str());
       }

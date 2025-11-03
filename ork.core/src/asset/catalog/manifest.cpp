@@ -86,7 +86,8 @@ AssetManifest::~AssetManifest() {
 
 uploadreceipt_ptr_t AssetManifest::upload(
     const AssetConfig& config,
-    locationinfo_ptr_t location_info) const {
+    locationinfo_ptr_t location_info,
+    asset_completed_callback_t on_asset_completed) const {
   
   logchan_catalog->log("Starting manifest upload - ID: %s, namespace: %s, destination: %s, assets: %zu",
                        getManifestId().c_str(), getNamespace().c_str(), location_info->_upload_url.toString().c_str(), getAssets().size());
@@ -106,15 +107,23 @@ uploadreceipt_ptr_t AssetManifest::upload(
   // Upload each asset in the manifest
   for (const auto& [_asset_id, asset_entry] : getAssets()) {
     logchan_catalog->log("Uploading asset: %s", _asset_id.c_str());
-    
+
     try {
-      auto asset_receipt = asset_entry->upload(config, location_info);
-      
+      // Note: AssetEntry::upload expects chunk callback, not asset callback
+      // So we pass nullptr here since we're at the asset level
+      auto asset_receipt = asset_entry->upload(config, location_info, nullptr);
+
       if (asset_receipt && asset_receipt->success) {
         // Asset upload successful
         successful_assets.push_back(_asset_id);
         manifest_receipt->total_files += asset_receipt->total_files;
         manifest_receipt->bytes_uploaded += asset_receipt->bytes_uploaded;
+
+        // Invoke asset completion callback
+        if (on_asset_completed) {
+          std::string fq_asset_id = getNamespace() + "|" + _asset_id;
+          on_asset_completed(fq_asset_id);
+        }
       } else {
         logchan_catalog->log("ERROR: Asset upload failed: %s%s", _asset_id.c_str(),
                              asset_receipt ? (" - " + asset_receipt->status_message).c_str() : "");

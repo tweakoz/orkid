@@ -154,49 +154,158 @@ def print_asset_info(cfgspc, catalog, fqid, verbose=False):
                             hash_ok = False
                     chunk_hash_ok.append(hash_ok)
 
-                # Format the grid - all chunks in a single row
+                # Check server-side status if asset has remote location
+                server_present = []
+                server_hash_ok = []
+                has_server_info = False
+                server_error = False
+
+                namespace_id = fqid.split('|')[0]
+                remote_loc = cfgspc.getNamespaceRemoteLocation(namespace_id)
+                if remote_loc and asset_info.storage_hash:
+                    merged = cfgspc.merged_config
+                    resolved_location = merged.resolveRemoteLocation(remote_loc)
+                    if resolved_location:
+                        # Build list of chunks with expected hashes
+                        import re
+                        chunk_requests = []
+                        for i, chunk in enumerate(chunk_manifest.chunks):
+                            chunk_filename = f"{asset_info.storage_hash}.chunk.{i:04d}"
+                            chunk_requests.append({
+                                'file': chunk_filename,
+                                'expected_hash': f"{chunk.hash:016x}"  # Send as 16-char hex string to avoid JSON precision loss
+                            })
+
+                        # Construct API URL from download URL
+                        # Download URL: https://cdn.example.com/std/download
+                        # API URL:      https://cdn.example.com/api/std/verify
+                        download_url = str(resolved_location.download_url)
+                        # Extract endpoint from download URL pattern: /endpoint/download
+                        endpoint_match = re.search(r'/([^/]+)/download/?$', download_url)
+                        if endpoint_match:
+                            endpoint = endpoint_match.group(1)
+                            base_url = download_url.rsplit('/', 2)[0]  # Remove /endpoint/download
+                            verify_url = f"{base_url}/api/{endpoint}/verify"
+
+                            headers = {'Content-Type': 'application/json'}
+                            if hasattr(resolved_location, 'api_key_read') and resolved_location.api_key_read:
+                                headers['X-API-Key'] = resolved_location.api_key_read
+
+                            try:
+                                import requests
+                                response = requests.post(
+                                    verify_url,
+                                    headers=headers,
+                                    json={'chunks': chunk_requests},
+                                    timeout=30,  # Longer timeout for batch verification
+                                    verify=not resolved_location.disable_cert_check
+                                )
+
+                                if response.status_code == 200:
+                                    verify_data = response.json()
+                                    has_server_info = True
+
+                                    # Build arrays from results (order should match request)
+                                    for result in verify_data['results']:
+                                        server_present.append(result['present'])
+                                        server_hash_ok.append(result['hash_ok'])
+
+                                    print(f"    {deco.key('Server verification:')} {deco.val('Success')} ({num_chunks} chunks)")
+                                else:
+                                    print(f"    {deco.key('Server verification:')} {deco.red('Failed')} (HTTP {response.status_code})")
+                                    # Show CDN rows with all failures
+                                    has_server_info = True
+                                    server_error = True
+                                    server_present = [False] * num_chunks
+                                    server_hash_ok = [False] * num_chunks
+                            except Exception as e:
+                                print(f"    {deco.key('Server verification:')} {deco.red('Error')} - {str(e)}")
+                                # Show CDN rows with all failures
+                                has_server_info = True
+                                server_error = True
+                                server_present = [False] * num_chunks
+                                server_hash_ok = [False] * num_chunks
+
+                # Format the grid - split into groups of 48 chunks vertically
                 # ROBUST SOLUTION: Every column is exactly 3 characters: " X "
-                # All labels are exactly 8 characters
+                # All labels are exactly 13 characters
 
-                # Build all rows with consistent 3-char columns
-                label_width = 8
+                label_width = 13
                 col_width = 3  # Each column: space + content + space
+                chunks_per_row = 48
 
-                # Print tens digit row if we have chunks >= 10
-                if num_chunks > 10:
-                    header_tens = " " * label_width
-                    for i in range(num_chunks):
-                        if i >= 10:
-                            header_tens += f" {i // 10} "
+                # Split chunks into groups of 48
+                for group_start in range(0, num_chunks, chunks_per_row):
+                    group_end = min(group_start + chunks_per_row, num_chunks)
+                    group_size = group_end - group_start
+
+                    # Print tens digit row if we have chunks >= 10 in this group
+                    needs_tens = any(i >= 10 for i in range(group_start, group_end))
+                    if needs_tens:
+                        header_tens = " " * label_width
+                        for i in range(group_start, group_end):
+                            if i >= 10:
+                                header_tens += f" {i // 10} "
+                            else:
+                                header_tens += " " * col_width
+                        print(header_tens)
+
+                    # Print ones digit row (chunk numbers)
+                    header_ones = "chunk:       "  # Exactly 13 chars
+                    for i in range(group_start, group_end):
+                        header_ones += f" {i % 10} "
+                    print(header_ones)
+
+                    # Print local present row
+                    present_row = "LOC Present :"  # Exactly 13 chars
+                    for i in range(group_start, group_end):
+                        symbol = deco.green('✓') if chunk_present[i] else deco.red('✗')
+                        present_row += f" {symbol} "
+                    print(present_row)
+
+                    # Print local hash validation row
+                    hashok_row = "LOC Hash    :"  # Exactly 13 chars
+                    for i in range(group_start, group_end):
+                        if not chunk_present[i]:
+                            symbol = deco.grey3('-')
+                        elif chunk_hash_ok[i]:
+                            symbol = deco.green('✓')
                         else:
-                            header_tens += " " * col_width
-                    print(header_tens)
+                            symbol = deco.red('✗')
+                        hashok_row += f" {symbol} "
+                    print(hashok_row)
 
-                # Print ones digit row (chunk numbers)
-                header_ones = "chunk:  "  # Exactly 8 chars
-                for i in range(num_chunks):
-                    header_ones += f" {i % 10} "
-                print(header_ones)
-                print()  # Blank line
+                    # Add server rows if we have server info
+                    if has_server_info:
+                        # Server present row
+                        label = "CDN Present :"
+                        if server_error:
+                            label = deco.red(label)
+                        srv_present_row = label  # Exactly 13 chars (before color codes)
+                        for i in range(group_start, group_end):
+                            symbol = deco.green('✓') if server_present[i] else deco.red('✗')
+                            srv_present_row += f" {symbol} "
+                        print(srv_present_row)
 
-                # Print present row
-                present_row = "present:"  # Exactly 8 chars
-                for i in range(num_chunks):
-                    symbol = deco.green('✓') if chunk_present[i] else deco.red('✗')
-                    present_row += f" {symbol} "
-                print(present_row)
+                        # Server hash OK row
+                        label = "CDN Hash    :"
+                        if server_error:
+                            label = deco.red(label)
+                        srv_hash_row = label  # Exactly 13 chars (before color codes)
+                        for i in range(group_start, group_end):
+                            if not server_present[i]:
+                                symbol = deco.grey3('-')
+                            elif server_hash_ok[i]:
+                                symbol = deco.green('✓')
+                            else:
+                                symbol = deco.red('✗')
+                            srv_hash_row += f" {symbol} "
+                        print(srv_hash_row)
 
-                # Print hash validation row
-                hashok_row = "HashOk: "  # Exactly 8 chars (HashOk: + 1 space)
-                for i in range(num_chunks):
-                    if not chunk_present[i]:
-                        symbol = deco.grey3('-')
-                    elif chunk_hash_ok[i]:
-                        symbol = deco.green('✓')
-                    else:
-                        symbol = deco.red('✗')
-                    hashok_row += f" {symbol} "
-                print(hashok_row)
+                    # Add spacing between groups (but not after the last group)
+                    if group_end < num_chunks:
+                        print()
+                        print()
 
                 # Verbose chunk details
                 if verbose:

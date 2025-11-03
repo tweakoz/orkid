@@ -28,6 +28,7 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <regex>
 #include <nlohmann/json.hpp>
 #include <ctime>
 #include <boost/uuid/uuid.hpp>
@@ -408,7 +409,8 @@ bool AssetEntry::isRepackaged() const {
 
 uploadreceipt_ptr_t AssetEntry::upload(
     const AssetConfig& config,
-    locationinfo_ptr_t location_info) const {
+    locationinfo_ptr_t location_info,
+    chunk_completed_callback_t on_chunk_completed) const {
   
   ////////////////////////////////////
   // Verify entry is repackaged
@@ -486,46 +488,154 @@ uploadreceipt_ptr_t AssetEntry::upload(
 
   receipt->_chunk_manifest = _chunk_manifest;
   
-  ////////////////////////////////////          
+  ////////////////////////////////////
   // Upload chunks using batch upload for concurrency
-  ////////////////////////////////////          
+  ////////////////////////////////////
 
-  logchan_catalog->log("Starting concurrent upload of %zu chunks", _chunk_manifest->_chunks.size());
-  
-  // Collect all chunk files and their remote paths
+  logchan_catalog->log("Starting upload of chunked asset: %zu total chunks", _chunk_manifest->_chunks.size());
+
+  ////////////////////////////////////
+  // Phase 1: Identify locally available chunks
+  ////////////////////////////////////
+
+  std::vector<size_t> available_chunk_indices;
+  std::vector<size_t> missing_local_indices;
+
+  for (size_t chunk_idx = 0; chunk_idx < _chunk_manifest->_chunks.size(); ++chunk_idx) {
+    std::string chunk_filename = catalog->getChunkFilename(_storage_hash, chunk_idx);
+    file::Path chunk_path = catalog->getChunksDir() / chunk_filename;
+
+    if (chunk_path.doesPathExist()) {
+      available_chunk_indices.push_back(chunk_idx);
+    } else {
+      missing_local_indices.push_back(chunk_idx);
+    }
+  }
+
+  logchan_catalog->log("  Local status: %zu available, %zu missing",
+                       available_chunk_indices.size(), missing_local_indices.size());
+
+  if (available_chunk_indices.empty()) {
+    logchan_catalog->log("ERROR: No chunks available locally for upload");
+    receipt->success = false;
+    receipt->status_message = "No chunks available locally";
+    return receipt;
+  }
+
+  ////////////////////////////////////
+  // Phase 2: Verify which chunks are already on server
+  ////////////////////////////////////
+
+  chunkverifyrequest_vect_t verify_requests;
+  for (size_t chunk_idx : available_chunk_indices) {
+    ChunkVerifyRequest req;
+    req.filename = catalog->getChunkFilename(_storage_hash, chunk_idx);
+    req.expected_hash = _chunk_manifest->_chunks[chunk_idx]._hash;
+    verify_requests.push_back(req);
+  }
+
+  // Build verify URL: /api/{endpoint}/verify
+  // Extract endpoint from upload URL pattern: /{endpoint}/upload/...
+  std::string upload_path = location_info->_upload_url._path;
+  std::regex endpoint_regex("^/([^/]+)/upload");
+  std::smatch match;
+  std::string endpoint = "std"; // Default
+  if (std::regex_search(upload_path, match, endpoint_regex)) {
+    endpoint = match[1];
+  }
+
+  URL verify_url = location_info->_upload_url;
+  verify_url._path = "/api/" + endpoint + "/verify";
+
+  // Setup headers for verification
+  std::map<std::string, std::string> verify_headers;
+  if (location_info->_api_key_read.has_value()) {
+    verify_headers["X-API-Key"] = location_info->_api_key_read.value();
+  } else if (location_info->_api_key_write.has_value()) {
+    // Fallback to write key if read key not available
+    verify_headers["X-API-Key"] = location_info->_api_key_write.value();
+  }
+
+  // Get download manager from catalog
+  auto impl = catalog->_impl.getShared<CatalogImpl>();
+  auto download_mgr = impl->_download_manager;
+
+  // Call verification
+  chunkverifyresult_vect_t verify_results;
+  if (download_mgr) {
+    verify_results = download_mgr->verifyChunks(
+      verify_url,
+      verify_requests,
+      verify_headers,
+      location_info->_disable_cert_check
+    );
+  }
+
+  ////////////////////////////////////
+  // Phase 3: Determine which chunks need upload
+  ////////////////////////////////////
+
+  std::vector<size_t> upload_indices;
+  std::vector<size_t> already_valid_indices;
+
+  if (verify_results.size() != available_chunk_indices.size()) {
+    logchan_catalog->log("WARNING: Verification returned %zu results for %zu chunks, uploading all",
+                         verify_results.size(), available_chunk_indices.size());
+    upload_indices = available_chunk_indices; // Upload everything if verification failed
+  } else {
+    for (size_t i = 0; i < verify_results.size(); ++i) {
+      size_t chunk_idx = available_chunk_indices[i];
+      const auto& result = verify_results[i];
+
+      if (result.present && result.hash_ok) {
+        already_valid_indices.push_back(chunk_idx);
+      } else {
+        upload_indices.push_back(chunk_idx);
+      }
+    }
+
+    logchan_catalog->log("  Server status: %zu already valid, %zu need upload",
+                         already_valid_indices.size(), upload_indices.size());
+  }
+
+  if (upload_indices.empty()) {
+    logchan_catalog->log("All chunks already present on server with valid hashes - nothing to upload");
+    receipt->success = true;
+    receipt->status_message = "All chunks already on server";
+    receipt->bytes_uploaded = 0;
+    return receipt;
+  }
+
+  ////////////////////////////////////
+  // Phase 4: Build upload lists (only for chunks that need upload)
+  ////////////////////////////////////
+
   std::vector<file::Path> chunk_files;
   std::vector<std::string> chunk_remote_paths;
   std::vector<URL> chunk_urls;
   std::vector<size_t> chunk_sizes;
-  
-  for (size_t chunk_idx = 0; chunk_idx < _chunk_manifest->_chunks.size(); ++chunk_idx) {
 
+  logchan_catalog->log("Uploading %zu chunks", upload_indices.size());
+
+  for (size_t chunk_idx : upload_indices) {
     const auto& chunk = _chunk_manifest->_chunks[chunk_idx];
 
-    // Chunk filename: {storage_hash}.chunk.{index:04d}
     std::string chunk_filename = catalog->getChunkFilename(_storage_hash, chunk_idx);
     file::Path chunk_path = catalog->getChunksDir() / chunk_filename;
 
-    OrkAssert(chunk_path.doesPathExist());
-
     chunk_files.push_back(chunk_path);
 
-    // Get the URL for upload
     URL chunk_url = location_info->_upload_url / chunk_filename;
     chunk_urls.push_back(chunk_url);
-    
-    // Extract relative path from URL for the uploader
-    // The URL path should be something like /upload/namespace/enc/chunks/hash.chunk.0000
-    // We need just the last part: hash.chunk.0000
+
     std::string url_path = chunk_url._path;
     size_t last_slash = url_path.rfind('/');
-    std::string remote_path = (last_slash != std::string::npos) 
+    std::string remote_path = (last_slash != std::string::npos)
                               ? url_path.substr(last_slash + 1)
                               : url_path;
     chunk_remote_paths.push_back(remote_path);
     chunk_sizes.push_back(chunk._size);
-
-  } // for each chunk
+  }
   
   ////////////////////////////////////          
   // Create HTTPS upload-config from location info
@@ -560,7 +670,14 @@ uploadreceipt_ptr_t AssetEntry::upload(
 
   HttpsUploader uploader(https_config);
   bool chunks_success = uploader.uploadFiles(chunk_files, chunk_remote_paths);
-  
+
+  // Invoke chunk completion callback for each successfully uploaded chunk
+  if (chunks_success && on_chunk_completed) {
+    for (size_t i = 0; i < chunk_remote_paths.size(); ++i) {
+      on_chunk_completed(chunk_remote_paths[i]);
+    }
+  }
+
   if (!chunks_success) {
     // Some or all chunks failed - add failure entries
     for (size_t i = 0; i < chunk_files.size(); ++i) {

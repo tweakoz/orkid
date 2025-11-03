@@ -68,7 +68,7 @@ SecureBuffer::SecureBuffer(const std::string& password, const std::string& salt)
     throw std::runtime_error("Key derivation failed");
   }
     
-  logchan_crypt->log("Derived key from password for context: %s", salt.c_str());
+  if(0)logchan_crypt->log("Derived key from password for context: %s", salt.c_str());
 }
 
 SecureBuffer::~SecureBuffer() {

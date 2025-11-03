@@ -22,6 +22,35 @@ struct DownloadGroup;
 using downloadmanager_ptr_t = std::shared_ptr<DownloadManager>;
 using download_group_ptr_t = std::shared_ptr<DownloadGroup>;
 
+////////////////////////////////////////////////////////////////////////////////
+// Chunk verification request/result types
+// Used for batch verification of chunks on CDN server via /api/{endpoint}/verify
+////////////////////////////////////////////////////////////////////////////////
+
+struct ChunkVerifyRequest;
+struct ChunkVerifyResult;
+
+using chunkverifyrequest_ptr_t = std::shared_ptr<ChunkVerifyRequest>;
+using chunkverifyresult_ptr_t = std::shared_ptr<ChunkVerifyResult>;
+using chunkverifyrequest_vect_t = std::vector<ChunkVerifyRequest>;
+using chunkverifyresult_vect_t = std::vector<ChunkVerifyResult>;
+
+struct ChunkVerifyRequest {
+  std::string filename;        // e.g., "abc123.chunk.0042"
+  uint64_t expected_hash;      // XXHash64 value
+};
+
+struct ChunkVerifyResult {
+  std::string filename;        // Echo back for correlation
+  bool present;                // File exists on server
+  bool hash_ok;                // Hash matches expected_hash
+
+  // Optional fields from server (for debugging)
+  std::string error;           // Error message if verification failed
+  uint64_t expected_hash;      // Echoed from request
+  uint64_t computed_hash;      // Actual hash computed by server (if present)
+};
+
 struct DownloadManager {
   //////////////////////////////////////////////////////////////////////////////
   // Public members
@@ -57,10 +86,21 @@ struct DownloadManager {
   //////////////////////////////////////////////////////////////////////////////
   // Check if a remote file exists using HEAD request
   // Returns true if file exists (HTTP 200), false otherwise
-  bool remoteFileExists(const URL& url, 
+  bool remoteFileExists(const URL& url,
                        const std::map<std::string, std::string>& headers = {},
                        bool ignore_tls_errors = false);
-  
+
+  // Verify chunks on CDN server
+  // POSTs chunk list to verify endpoint (e.g., /api/std/verify)
+  // Returns results in same order as request
+  // Returns empty vector on failure (with error logged)
+  chunkverifyresult_vect_t verifyChunks(
+    const URL& verify_url,                                 // e.g., https://cdn.example.com/api/std/verify
+    const chunkverifyrequest_vect_t& chunks,              // Chunks to verify
+    const std::map<std::string, std::string>& headers = {},  // e.g., {"X-API-Key": "..."}
+    bool ignore_tls_errors = false                         // For self-signed certs
+  );
+
   //////////////////////////////////////////////////////////////////////////////
   // Global retry configuration
   // These defaults are used if not overridden per-download

@@ -40,11 +40,12 @@ assetfqid_ptr_t AssetCatalog::findAsset(const assetid_t& fq_asset_id) const {
 ////////////////////////////////////////////////////////////////
 
 fetchrequest_ptr_t AssetCatalog::fetch( const assetid_t& fq_asset_id, //
-                                        bool enable_caching) {         //
+                                        bool enable_caching,
+                                        chunk_completed_callback_t on_chunk_completed) {         //
   ////////////////////////////////////////
   // async fetch
   ////////////////////////////////////////
-  auto request = fetchAsync(fq_asset_id,enable_caching);
+  auto request = fetchAsync(fq_asset_id, enable_caching, on_chunk_completed);
   if (!request) {
     return nullptr;
   }
@@ -60,7 +61,8 @@ fetchrequest_ptr_t AssetCatalog::fetch( const assetid_t& fq_asset_id, //
 ////////////////////////////////////////////////////////////////
 
 fetchrequest_ptr_t AssetCatalog::fetchAsync(const assetid_t& fq_asset_id, //
-                                            bool enable_caching) { //
+                                            bool enable_caching,
+                                            chunk_completed_callback_t on_chunk_completed) { //
   ////////////////////////////////////////
   // find asset from catalog
   ////////////////////////////////////////

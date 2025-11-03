@@ -10,6 +10,7 @@
 #include <ork/kernel/environment.h>
 #include <ork/event/Event.h>
 #include <ork/kernel/datablock.h>
+#include <ork/kernel/opq.h>
 #include <ork/kernel/datacache.h>
 #include <ork/util/logger.h>
 #include <ork/util/shmobject.h>
@@ -102,9 +103,10 @@ static void _coreappinit() {
   int argc    = _dynaargs_refs.size();
   char** argv = _dynaargs_refs.data();
 
+  /*
   for (int i = 0; i < argc; i++) {
     printf("dynarg<%d:%s>\n", i, argv[i]);
-  }
+  }*/
 
   gappinitdata = std::make_shared<AppInitData>(argc, argv);
 
@@ -123,6 +125,10 @@ static void _coreappexit() {
   ork::exitModule(gappinitdata);
   gappinitdata = nullptr;
   _core_initialized = false;
+}
+void _coreapppoll() {
+  while (ork::opq::mainSerialQueue()->Process()) {
+  }
 }
 
 static file::Path _thispath() {
@@ -190,8 +196,11 @@ PYBIND11_MODULE(_core, module_core) {
   logger()->defaultChannel()->log("initialize ork.core python bindings");
   module_core.doc() = "Orkid Core Library (math,kernel,reflection,ect..)";
   /////////////////////////////////////////////////////////////////////////////////
-  module_core.def("coreappinit", &_coreappinit);
-  module_core.def("coreappexit", &_coreappexit);
+  module_core.def("coreappinit", &_coreappinit); // legacy name
+  module_core.def("coreappexit", &_coreappexit); // legacy name
+  module_core.def("appinit", &_coreappinit);
+  module_core.def("appexit", &_coreappexit);
+  module_core.def("apppoll", &_coreapppoll);
   module_core.def("thispath", &_thispath);
   module_core.def("thisdir", &_thisdir);
   module_core.def("orkdir", &_orkdir);

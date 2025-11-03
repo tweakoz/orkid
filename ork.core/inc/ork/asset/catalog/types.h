@@ -286,6 +286,11 @@ using asset_request_progress_fn_t = std::function<void(size_t downloaded, size_t
 using asset_fetcher_progress_fn_t = std::function<void(const std::string&, size_t, size_t)>;
 using asset_fetcher_complete_fn_t = std::function<void(const std::string&, bool)>;
 
+// Upload/Download completion callbacks
+using chunk_completed_callback_t = std::function<void(const std::string& chunk_filename)>;
+using asset_completed_callback_t = std::function<void(const std::string& asset_id)>;
+using namespace_completed_callback_t = std::function<void(const std::string& namespace_id)>;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Python-safe callback type aliases
 // Using ItemAndData wrapper for GIL compatibility
@@ -316,6 +321,11 @@ using pysafe_packager_progress_t = ::ork::ItemAndData<packager_progress_callback
 using pysafe_asset_request_progress_t = ::ork::ItemAndData<asset_request_progress_fn_t>;
 using pysafe_asset_fetcher_progress_t = ::ork::ItemAndData<asset_fetcher_progress_fn_t>;
 using pysafe_asset_fetcher_complete_t = ::ork::ItemAndData<asset_fetcher_complete_fn_t>;
+
+// Upload/Download completion callbacks
+using pysafe_chunk_completed_callback_t = ::ork::ItemAndData<chunk_completed_callback_t>;
+using pysafe_asset_completed_callback_t = ::ork::ItemAndData<asset_completed_callback_t>;
+using pysafe_namespace_completed_callback_t = ::ork::ItemAndData<namespace_completed_callback_t>;
 
 // Asset catalog progress callbacks
 using asset_progress_callback_t = std::function<void(const std::string& asset_id, size_t downloaded, size_t total)>;

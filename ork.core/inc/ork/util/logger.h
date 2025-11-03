@@ -38,6 +38,8 @@ namespace ork {
     void log_begin(const char *pMsgFormat, ...);
     void log_continue_valist(const char *pMsgFormat, va_list args) const;
     void log_continue(const char *pMsgFormat, ...) const;
+    void warn(const char *pMsgFormat, ...);
+    void error(const char *pMsgFormat, ...);
 
     void status(const std::string& subchannel, const char *pMsgFormat, ...);
     void status_valist(const std::string& subchannel, const char *pMsgFormat, va_list args);
@@ -65,6 +67,8 @@ namespace ork {
     log_fn_t _begin_log_line = nullptr;
     log_fn_t _continue_log_line = nullptr;
     log_fn_t _end_log_line = nullptr;
+    log_fn_t _warn = nullptr;
+    log_fn_t _error = nullptr;
     status_fn_t _status = nullptr;
     perfitem_fn_t _on_perf_item = nullptr;
     svar64_t _impl;
