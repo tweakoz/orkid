@@ -8,8 +8,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Run Minimal Environment Build
-
+    - name: Setup Environment
       run: |
         # Create temp dir with timestamp for uniqueness
         export TMPDIR="${{ runner.temp }}/build-$(date +%s)"
@@ -21,6 +20,7 @@ jobs:
         pip install ork.build
         obt.env.create.py --stagedir $TMPDIR/staging
 
+    - name: Run Minimal Environment Build
       run: |
         source ${{ env.BUILD_TMPDIR }}/venv/bin/activate
         obt.versions.py
