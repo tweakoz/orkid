@@ -1,0 +1,79 @@
+name: Clean Build (Linux)
+on: [push, pull_request]
+
+env:
+  ACTIONS_RUNNER_DEBUG: false
+  ACTIONS_STEP_DEBUG: false
+
+jobs:
+  build:
+    if: github.repository == 'tweakoz/orkid'  # Limit to main repo
+    runs-on: [self-hosted, macOS, ARM64]  # Or ubuntu-latest for GitHub-hosted
+
+    steps:
+    - name: Pre-checkout Privacy
+      run: |
+        # Mask common paths and info before checkout
+        echo "::add-mask::${{ github.repository }}"
+        echo "::add-mask::${{ github.workspace }}"
+        echo "::add-mask::${{ runner.workspace }}"
+        echo "::add-mask::$(pwd)"
+        echo "::add-mask::$HOME"
+
+    - uses: actions/checkout@v4
+
+    - name: Set up base env
+      run: |
+
+        # mark sanitize script as executable
+        chmod +x .github/scripts/sanitize.py
+
+        # Create temp dir with timestamp for uniqueness
+        SAFE_TEMP="build-$(date +%s)"
+        echo "::add-mask::${{ runner.temp }}/$SAFE_TEMP"
+        echo "::add-mask::${{ runner.temp }}"
+        echo "::add-mask::$HOME"
+        echo "::add-mask::$USER"        
+
+        eval "export TMPDIR='${{ runner.temp }}/$SAFE_TEMP'"
+        mkdir -p "$TMPDIR"
+
+        # Save environment variables
+        echo "BUILD_TMPDIR=$TMPDIR" >> $GITHUB_ENV
+        echo "FILTER=${{ github.workspace }}/.github/scripts/sanitize.py" >> $GITHUB_ENV
+               
+        # Show sanitized output
+        echo "Created temp dir: /tmp/BUILD_DIR"
+
+    - name: Setup venv
+      run: |
+        # Create temp dir with timestamp for uniqueness
+        python3 ${{ env.FILTER }} "python3 -m venv ${{ env.BUILD_TMPDIR }}/venv"
+        #python3 -m venv $TMPDIR/venv
+        source $TMPDIR/venv/bin/activate
+        python3 ${{ env.FILTER }} "pip install ork.build==0.0.287dev4"
+      env:
+        TMPDIR: ${{ env.BUILD_TMPDIR }}
+
+    - name: Setup staging
+      run: |
+        source ${{ env.BUILD_TMPDIR }}/venv/bin/activate
+        obt.versions.py
+        python3 ${{ env.FILTER }} "obt.env.create.py --stagedir ${{ env.BUILD_TMPDIR }}/staging"
+      env:
+        BUILD_CONFIG: ${{ matrix.config }}
+        TMPDIR: ${{ env.BUILD_TMPDIR }}
+
+    - name: Build Orkid via dep builder (from new staging)
+      run: |
+        source ${{ env.BUILD_TMPDIR }}/venv/bin/activate
+        obt.versions.py
+        obt.env.launch.py --stagedir $TMPDIR/staging --command "obt.dep.build.py orkid"
+      env:
+        BUILD_CONFIG: ${{ matrix.config }}
+        TMPDIR: ${{ env.BUILD_TMPDIR }}
+    
+    # Optional: matrix builds
+    strategy:
+      matrix:
+        config: [release]

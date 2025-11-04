@@ -8,7 +8,7 @@ env:
 jobs:
   build:
     if: github.repository == 'tweakoz/orkid'  # Limit to main repo
-    runs-on: [self-hosted, macOS, ARM64]  # Or ubuntu-latest for GitHub-hosted
+    runs-on: [self-hosted, Linux, X64]  # Or ubuntu-latest for GitHub-hosted
 
     steps:
     - name: Pre-checkout Privacy
