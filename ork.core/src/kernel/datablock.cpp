@@ -252,6 +252,7 @@ datablock_ptr_t DataBlock::clone() const {
 //////////////////////////////////////////////////////////////////////
 
 datablock_ptr_t DataBlock::compressed(int level) const {
+#if !defined(ORK_IOS)
   if (_storage.empty()) {
     // Even for empty data, create proper LZ4 format with header
     auto output = std::make_shared<DataBlock>();
@@ -264,23 +265,23 @@ datablock_ptr_t DataBlock::compressed(int level) const {
 
   // Determine max compressed size
   int max_compressed_size = LZ4_compressBound(_storage.size());
-  
+
   // Create output datablock with header
   auto output = std::make_shared<DataBlock>();
   output->_name = _name + ".lz4";
-  
+
   // Reserve space for: magic(4) + uncompressed_size(8) + compressed_data
   output->reserve(4 + 8 + max_compressed_size);
-  
+
   // Write magic number
   output->addItem<uint32_t>(0x4C5A3434); // "LZ44"
-  
+
   // Write uncompressed size
   output->addItem<uint64_t>(_storage.size());
-  
+
   // Allocate space for compressed data
   uint8_t* compressed_buffer = static_cast<uint8_t*>(output->allocateBlock(max_compressed_size));
-  
+
   // Compress
   int compressed_size;
   if (level > 0) {
@@ -299,20 +300,25 @@ datablock_ptr_t DataBlock::compressed(int level) const {
       _storage.size(),
       max_compressed_size);
   }
-  
+
   if (compressed_size <= 0) {
     throw std::runtime_error("LZ4 compression failed");
   }
-  
+
   // Trim to actual compressed size
   output->_storage.resize(4 + 8 + compressed_size);
-  
+
   return output;
+#else
+  // iOS: compression not available, return copy
+  return std::make_shared<DataBlock>(*this);
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////
 
 datablock_ptr_t DataBlock::decompressed() const {
+#if !defined(ORK_IOS)
   if (_storage.size() < 12) { // magic(4) + size(8)
     throw std::runtime_error("DataBlock too small to be LZ4 compressed");
   }
@@ -358,8 +364,12 @@ datablock_ptr_t DataBlock::decompressed() const {
   if (decompressed_size < 0 || static_cast<size_t>(decompressed_size) != uncompressed_size) {
     throw std::runtime_error("LZ4 decompression failed or size mismatch");
   }
-  
+
   return output;
+#else
+  // iOS: decompression not available, return copy
+  return std::make_shared<DataBlock>(*this);
+#endif
 }
 
 datablock_ptr_t DataBlock::createFromRandom(size_t length) {

@@ -9,7 +9,9 @@
 #include <ork/asset/catalog/chunk_assembler.h>
 #include <ork/file/file.h>
 #include <ork/kernel/string/deco.inl>
+#if !defined(ORK_IOS)
 #include <ork/util/crypt.h>
+#endif
 #include <ork/util/tar.h>
 #include <ork/util/logger.h>
 #include <boost/filesystem.hpp>

@@ -54,6 +54,7 @@ template <> fmtx4 PropType<fmtx4>::FromString(const PropTypeString& String) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#if !defined(ORK_IOS)
 template <> Vector4<double> Matrix44<double>::eigenvalues() const {
 
   int n = 4;
@@ -102,7 +103,18 @@ template <> Vector4<float> Matrix44<float>::eigenvalues() const {
   return rval;
 
 }
+#else
+// iOS: eigenvalues not available (requires LAPACKE)
+template <> Vector4<double> Matrix44<double>::eigenvalues() const {
+  return Vector4<double>(0,0,0,0);
+}
 
+template <> Vector4<float> Matrix44<float>::eigenvalues() const {
+  return Vector4<float>(0,0,0,0);
+}
+#endif
+
+#if !defined(ORK_IOS)
 template <> Matrix44<double> Matrix44<double>::eigenvectors() const {
 
   int n = 4;
@@ -120,9 +132,9 @@ template <> Matrix44<double> Matrix44<double>::eigenvectors() const {
   if(status==0){
 
     for( int i=0; i<4; i++ ){
-      double norm = std::sqrt(vr[0+i]*vr[0+i] 
-                            + vr[4+i]*vr[4+i] 
-                            + vr[8+i]*vr[8+i] 
+      double norm = std::sqrt(vr[0+i]*vr[0+i]
+                            + vr[4+i]*vr[4+i]
+                            + vr[8+i]*vr[8+i]
                             + vr[12+i]*vr[12+i]);
       for( int j=0; j<4; j++ ){
         rval.setElemXY(i,j,vr[i*4+j]/norm);
@@ -154,12 +166,12 @@ template <> Matrix44<float> Matrix44<float>::eigenvectors() const {
   Matrix44<float> rval;
   if(status==0){
     for( int i=0; i<4; i++ ){
-      double norm = std::sqrt(vr[0+i]*vr[0+i] 
-                            + vr[4+i]*vr[4+i] 
-                            + vr[8+i]*vr[8+i] 
+      double norm = std::sqrt(vr[0+i]*vr[0+i]
+                            + vr[4+i]*vr[4+i]
+                            + vr[8+i]*vr[8+i]
                             + vr[12+i]*vr[12+i]);
       for( int j=0; j<4; j++ ){
-        rval.setElemXY(i,j,vr[i*4+j]/norm); 
+        rval.setElemXY(i,j,vr[i*4+j]/norm);
       }
     }
   }
@@ -171,6 +183,23 @@ template <> Matrix44<float> Matrix44<float>::eigenvectors() const {
   return rval;
 
 }
+#else
+template <> Matrix44<double> Matrix44<double>::eigenvectors() const {
+  Matrix44<double> rval;
+  for( int i=0; i<4; i++ )
+    for( int j=0; j<4; j++ )
+      rval.setElemXY(i,j,0);
+  return rval;
+}
+
+template <> Matrix44<float> Matrix44<float>::eigenvectors() const {
+  Matrix44<float> rval;
+  for( int i=0; i<4; i++ )
+    for( int j=0; j<4; j++ )
+      rval.setElemXY(i,j,0);
+  return rval;
+}
+#endif
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

@@ -11,7 +11,9 @@
 #include <ork/kernel/timer.h>
 #include <ork/util/logger.h>
 
+#if !defined(ORK_IOS)
 #include <libtar.h>
+#endif
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -445,6 +447,7 @@ bool TarArchive::isValid() const {
 // Impl Helper Methods
 ////////////////////////////////////////////////////////////////////////////////
 
+#if !defined(ORK_IOS)
 bool TarArchive_Impl::loadFromData(datablock_ptr_t data) {
   archive_data = data;
   entries.clear();
@@ -706,6 +709,20 @@ is_valid = true;
 logchan_tar->log("createFromEntries: success");
 return true;
 }
+#else
+// iOS stub implementations
+bool TarArchive_Impl::loadFromData(datablock_ptr_t data) {
+  last_error = "Tar archive support not available on iOS";
+  is_valid = false;
+  return false;
+}
+
+bool TarArchive_Impl::createFromEntries(const tar_entry_map_t& entries_input, const TarCreateOptions& options) {
+  last_error = "Tar archive creation not available on iOS";
+  is_valid = false;
+  return false;
+}
+#endif
 
 std::string TarArchive_Impl::formatLibtarError(const std::string& operation) {
   return FormatString("Tar operation '%s' failed", operation.c_str());

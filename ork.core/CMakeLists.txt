@@ -85,21 +85,25 @@ IF(BUILD_IOS_MINIMAL)
 
   message(STATUS "Configuring minimal iOS build for ork_core_ios")
 
-  # Minimal file set for iOS - core utilities only
+  # Math files for iOS
   file(GLOB src_math_ios
     ${SRCD}/math/cvector2_imp.cpp
     ${SRCD}/math/cvector3_imp.cpp
     ${SRCD}/math/cvector4_imp.cpp
     ${SRCD}/math/cmatrix3_imp.cpp
     ${SRCD}/math/cmatrix4_imp.cpp
-    ${SRCD}/math/quaternion.cpp
+    ${SRCD}/math/quaternion_imp.cpp
     ${SRCD}/math/misc_math.cpp
     ${SRCD}/math/plane_imp.cpp
     ${SRCD}/math/box.cpp
     ${SRCD}/math/frustum.cpp
     ${SRCD}/math/collision_test.cpp
+    ${SRCD}/math/TransformNode.cpp
+    ${SRCD}/math/gradient.cpp
+    ${SRCD}/math/MultiCurve.cpp
   )
 
+  # Kernel files for iOS
   file(GLOB_RECURSE src_kernel_ios
     ${SRCD}/kernel/opq.cpp
     ${SRCD}/kernel/string/*.cpp
@@ -111,11 +115,39 @@ IF(BUILD_IOS_MINIMAL)
     ${SRCD}/kernel/datacache.cpp
     ${SRCD}/kernel/environment.cpp
     ${SRCD}/kernel/debug.cpp
+    ${SRCD}/kernel/tempstring.cpp
+    ${SRCD}/kernel/timer.cpp
+    ${SRCD}/kernel/future.cpp
+    ${SRCD}/kernel/oldschool.cpp
+    ${SRCD}/kernel/semaphore.cpp
+    ${SRCD}/kernel/thread.cpp
+    ${SRCD}/kernel/error.cpp
   )
 
   file(GLOB src_file_ios
     ${SRCD}/file/path.cpp
     ${SRCD}/file/file.cpp
+    ${SRCD}/file/fileenv.cpp
+    ${SRCD}/file/filedev.cpp
+    ${SRCD}/file/filedevram.cpp
+    ${SRCD}/file/filestd.cpp
+  )
+
+  file(GLOB src_object_ios
+    ${SRCD}/object/connect.cpp
+    ${SRCD}/object/Object.cpp
+    ${SRCD}/object/ObjectClass.cpp
+    ${SRCD}/object/COM.cpp
+  )
+
+  file(GLOB src_rtti_ios
+    ${SRCD}/rtti/Category.cpp
+    ${SRCD}/rtti/Class.cpp
+    ${SRCD}/rtti/rtti.cpp
+  )
+
+  file(GLOB_RECURSE src_reflect_ios
+    ${SRCD}/reflect/*.cpp
   )
 
   file(GLOB_RECURSE src_util_ios
@@ -123,9 +155,68 @@ IF(BUILD_IOS_MINIMAL)
     ${SRCD}/util/crc64.cpp
     ${SRCD}/util/md5.cpp
     ${SRCD}/util/hexdump.cpp
+    ${SRCD}/util/xxhash.cpp
+    ${SRCD}/util/logger.cpp
+    ${SRCD}/util/logger_std.cpp
+    ${SRCD}/util/logger_redirector.cpp
+    ${SRCD}/util/endian.cpp
+    ${SRCD}/util/hotkey.cpp
+    ${SRCD}/util/URL.cpp
+    ${SRCD}/util/tar.cpp
+    ${SRCD}/util/download_manager_ios.cpp
+    ${SRCD}/util/download.cpp
+    ${SRCD}/util/download_group.cpp
+    ${SRCD}/util/upload_manager.cpp
+    ${SRCD}/util/upload.cpp
+    ${SRCD}/util/upload_https_ios.cpp
+    ${SRCD}/util/password_provider.cpp
+    ${SRCD}/util/dependency/Provider.cpp
+    ${SRCD}/util/dependency/Dependent.cpp
+    ${SRCD}/util/RingLink.cpp
   )
 
-  set(orksrcs_ios ${src_math_ios} ${src_kernel_ios} ${src_file_ios} ${src_util_ios})
+  file(GLOB src_application_ios
+    ${SRCD}/application/application.cpp
+  )
+
+  file(GLOB src_asset_ios
+    ${SRCD}/asset/Asset.cpp
+    ${SRCD}/asset/AssetLoader.cpp
+    ${SRCD}/asset/AssetSet.cpp
+    ${SRCD}/asset/AssetSetEntry.cpp
+    ${SRCD}/asset/NetAssetLoader.cpp
+    ${SRCD}/asset/catalog/catalog.cpp
+    ${SRCD}/asset/catalog/catalog_impl.cpp
+    ${SRCD}/asset/catalog/catalog_impl_cache.cpp
+    ${SRCD}/asset/catalog/catalog_impl_get.cpp
+    ${SRCD}/asset/catalog/catalog_crypt_ios.cpp
+    ${SRCD}/asset/catalog/catalog_dl.cpp
+    ${SRCD}/asset/catalog/catalog_manifests.cpp
+    ${SRCD}/asset/catalog/catalog_ns.cpp
+    ${SRCD}/asset/catalog/uploader.cpp
+    ${SRCD}/asset/catalog/chunk_assembler.cpp
+    ${SRCD}/asset/catalog/chunk_manifest.cpp
+    ${SRCD}/asset/catalog/config.cpp
+    ${SRCD}/asset/catalog/configspace.cpp
+    ${SRCD}/asset/catalog/entry.cpp
+    ${SRCD}/asset/catalog/manifest.cpp
+    ${SRCD}/asset/catalog/namespace.cpp
+    ${SRCD}/asset/catalog/request.cpp
+  )
+
+  file(GLOB src_dataflow_ios
+    ${SRCD}/dataflow/dataflow_context.cpp
+    ${SRCD}/dataflow/dataflow_sorter.cpp
+    ${SRCD}/dataflow/graph_data.cpp
+    ${SRCD}/dataflow/graph_inst.cpp
+    ${SRCD}/dataflow/module_data.cpp
+    ${SRCD}/dataflow/module_inst.cpp
+    ${SRCD}/dataflow/plug_data.cpp
+    ${SRCD}/dataflow/plug_inst.cpp
+    ${SRCD}/dataflow/scheduler.cpp
+  )
+
+  set(orksrcs_ios ${src_math_ios} ${src_kernel_ios} ${src_file_ios} ${src_object_ios} ${src_rtti_ios} ${src_reflect_ios} ${src_util_ios} ${src_application_ios} ${src_asset_ios} ${src_dataflow_ios})
 
   # Create shared library for iOS
   add_library(ork_core_ios SHARED ${orksrcs_ios})
@@ -144,6 +235,7 @@ IF(BUILD_IOS_MINIMAL)
     -DORK_IOS
     -DORK_CONFIG_IOS
     -DORK_ARCHITECTURE_ARM_64
+    -DKLEIN_ARCHITECTURE_ARM
     -DUSING_ORKID
   )
 
@@ -151,7 +243,14 @@ IF(BUILD_IOS_MINIMAL)
   target_include_directories(ork_core_ios PRIVATE ${INCD})
   target_include_directories(ork_core_ios PRIVATE $ENV{OBT_STAGE}/include)
 
+  # iOS is ARM64, use sse2neon to translate SSE to NEON (like macOS Apple Silicon)
+  target_include_directories(ork_core_ios PRIVATE $ENV{OBT_BUILDS}/sse2neon)
+
   # iOS frameworks and libraries (minimal dependencies)
+  # Use -iframework to specify iOS SDK framework path
+  target_link_options(ork_core_ios PRIVATE
+    "-F${CMAKE_OSX_SYSROOT}/System/Library/Frameworks"
+  )
   target_link_libraries(ork_core_ios LINK_PRIVATE
     "-framework Foundation"
     "-framework Accelerate"

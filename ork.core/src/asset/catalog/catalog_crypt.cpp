@@ -5,6 +5,8 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
+#if !defined(ORK_IOS)
+
 #include <ork/asset/catalog/catalog.h>
 #include <ork/asset/catalog/chunk_assembler.h>
 #include <ork/file/file.h>
@@ -72,3 +74,4 @@ void AssetCatalog::clearCodecs() {
 }
 
 } //  namespace ork::asset::catalog {
+#endif // ORK_IOS

@@ -115,20 +115,30 @@ void AppInitData::finalizeInitialization(){
 ///////////////////////////////////////////////////////////////////////////////
 
 AppInitData::opts_desc_ptr_t AppInitData::commandLineOptions(const char* header_text) {
+#if !defined(ORK_IOS)
   _commandline_desc = std::make_shared<opts_desc_t>(header_text);
   _commandline_vars = std::make_shared<opts_var_map_t>();
   return _commandline_desc;
+#else
+  return nullptr;
+#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 const po::variable_value& AppInitData::commandLineOption(const std::string& named) {
+#if !defined(ORK_IOS)
   return (*_commandline_vars)[named];
+#else
+  static po::variable_value stub;
+  return stub;
+#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 AppInitData::opts_var_map_ptr_t AppInitData::parse() {
+#if !defined(ORK_IOS)
   if (_commandline_desc) {
     auto cmdline = po::parse_command_line(_argc, _argv, *_commandline_desc);
     po::store(cmdline, *_commandline_vars);
@@ -187,6 +197,10 @@ AppInitData::opts_var_map_ptr_t AppInitData::parse() {
 
   //printf("_msaa_samples<%d>\n", this->_msaa_samples);
   return _commandline_vars;
+#else
+  // iOS: no command line parsing
+  return nullptr;
+#endif
 }
 
 StdFileSystemInitalizer::StdFileSystemInitalizer(const AppInitData& appinitdata)

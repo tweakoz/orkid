@@ -9,8 +9,10 @@
 #include <ork/file/file.h>
 #include <ork/kernel/string/deco.inl>
 #include <ork/kernel/timer.h>
+#if !defined(ORK_IOS)
 #include <curl/curl.h>
 #include <rapidjson/document.h>
+#endif
 #include <fstream>
 #include <atomic>
 #include <mutex>
@@ -23,6 +25,7 @@ namespace ork {
 // Maximum concurrent uploads (to avoid overwhelming the server)
 const int max_concurrent = 2;
 
+#if !defined(ORK_IOS)
 //////////////////////////////////////////////////////////////////////////////
 // CURL Callbacks for uploads
 //////////////////////////////////////////////////////////////////////////////
@@ -76,6 +79,7 @@ static int upload_progress_callback(void* clientp, curl_off_t dltotal, curl_off_
 // HttpsUploader
 ////////////////////////////////////////////////////////////////////////////////
 
+#if !defined(ORK_IOS)
 struct HttpsUploader::Impl {
   CURL* _curl_handle = nullptr;
   struct curl_slist* _headers = nullptr;
@@ -123,6 +127,12 @@ struct HttpsUploader::Impl {
     }
   }
 };
+#else
+// iOS stub Impl
+struct HttpsUploader::Impl {
+  ~Impl() = default;
+};
+#endif
 
 HttpsUploader::HttpsUploader(httpsuploaderconfig_ptr_t config)
     : _config(config) {
@@ -1017,12 +1027,52 @@ bool HttpsUploader::remoteFileMatchesLocal(const file::Path& local_file, const s
     
     // Compare MD5 hashes
     bool matches = exists && (local_md5 == remote_md5);
-    
+
     return matches;
-    
+
   } catch (const std::exception& e) {
     return false;
   }
 }
+#else
+// iOS stub implementations
+bool HttpsUploader::uploadFiles(
+    const std::vector<file::Path>& local_files,
+    const std::vector<std::string>& remote_paths) {
+  return false;  // Not supported on iOS
+}
+
+bool HttpsUploader::uploadFile(
+    const file::Path& local_file,
+    const std::string& remote_path) {
+  return false;  // Not supported on iOS
+}
+
+bool HttpsUploader::testConnection() {
+  return false;
+}
+
+bool HttpsUploader::remoteFileExists(const std::string& remote_path) {
+  return false;
+}
+
+bool HttpsUploader::deleteRemoteFile(const std::string& remote_path) {
+  return false;
+}
+
+void HttpsUploader::setCustomHeaders(const std::map<std::string, std::string>& headers) {
+}
+
+void HttpsUploader::setEndpointUrl(const URL& url) {
+  _config->endpoint_url = url;
+}
+
+void HttpsUploader::handleUploadProgress(size_t uploaded, size_t total) {
+}
+
+bool HttpsUploader::remoteFileMatchesLocal(const file::Path& local_file, const std::string& remote_path) {
+  return false;
+}
+#endif
 
 } //  namespace ork {

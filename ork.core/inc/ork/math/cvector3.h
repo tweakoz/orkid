@@ -43,7 +43,7 @@ template <typename T> struct Vector3 final
   static Vector3 fromScalar(T _x);
 
   Vector3(const base_t& vec);        
-  Vector3(const Vector3& vec);        
+  Vector3(const Vector3& vec);
   Vector3(const Vector4<T>& vec);
   Vector3(const Vector2<T>& vec);
 

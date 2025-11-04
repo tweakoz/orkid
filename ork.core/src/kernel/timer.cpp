@@ -11,7 +11,7 @@
 #include <ork/kernel/concurrent_queue.h>
 
 //////////////////////////////////////////////////////////////////////////////
-#if defined(ORK_OSX)
+#if defined(ORK_OSX) || defined(ORK_IOS)
 #include <mach/mach_time.h>
 #include <sys/types.h>
 #include <sys/sysctl.h>
@@ -103,7 +103,7 @@ void Timer::OnInterval( float interval, const void_lambda_t& oper ) {
 svar64_t Timer::_gimpl;
 
 ///////////////////////////////////////////////////////////////////////////////
-#if defined(ORK_OSX)
+#if defined(ORK_OSX) || defined(ORK_IOS)
 ///////////////////////////////////////////////////////////////////////////////
 struct TimerGlobalImpl {
 	mach_timebase_info_data_t _timebase_info;
@@ -136,7 +136,7 @@ void Timer::staticInit() {
 float Timer::get_sync_time() {
 	static auto gimpl = Timer::_gimpl.getShared<TimerGlobalImpl>();
 	////////////////////////////////
-	#if defined(ORK_OSX)
+	#if defined(ORK_OSX) || defined(ORK_IOS)
 	////////////////////////////////
 	uint64_t tms_now = mach_absolute_time();
 	uint64_t tms_del = tms_now-gimpl->_timebase;

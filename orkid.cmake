@@ -133,7 +133,8 @@ ENDIF()
 
 ################################################################################
 
-IF(${APPLE})
+IF(${APPLE} AND NOT IOS_BUILD)
+    # macOS-specific settings (don't override iOS toolchain settings)
     set(CMAKE_OSX_DEPLOYMENT_TARGET 14.5)
     set(CMAKE_OSX_SYSROOT $ENV{OBT_MACOS_SDK_DIR})
     set(CMAKE_MACOSX_RPATH 1)

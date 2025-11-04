@@ -11,7 +11,9 @@
 #include <ork/asset/catalog/request.h>
 #include <ork/file/file.h>
 #include <ork/kernel/string/deco.inl>
+#if !defined(ORK_IOS)
 #include <ork/util/crypt.h>
+#endif
 #include <ork/util/tar.h>
 #include <ork/util/logger.h>
 #include <ork/util/md5.h>
@@ -258,6 +260,7 @@ datablock_ptr_t CatalogImpl::_downloadAssetData(fetchrequest_ptr_t request) {
                          NUM_CHUNKS - chunks_to_download.size(), chunks_to_download.size());
   }
 
+#if !defined(ORK_IOS)
   /////////////////////////////////////////////////
   // Download all chunks with retry logic
   // Use SINGLE DownloadGroup to avoid counter confusion
@@ -454,6 +457,22 @@ datablock_ptr_t CatalogImpl::_downloadAssetData(fetchrequest_ptr_t request) {
   }
 
   logchan_catalog->log("All chunks downloaded successfully for %s", fqid->_original_fqid.c_str());
+#else
+  // iOS: Network downloads not supported
+  if (!chunks_to_download.empty()) {
+    logchan_catalog->log("ERROR: iOS does not support network chunk downloads (%zu chunks needed)",
+                        chunks_to_download.size());
+    return nullptr;
+  }
+
+  datablock_list_t chunks_array;
+  CHUNKS->atomicOp([&](const chunk_map_t& unlocked) {
+    chunks_array.resize(unlocked.size());
+    for (auto item : unlocked) {
+      chunks_array[item.first] = item.second;
+    }
+  });
+#endif
 
   //////////////////////////////////////////////
   // Assemble chunks

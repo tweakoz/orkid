@@ -13,7 +13,7 @@
 #include <ork/kernel/opq.h>
 
 //////////////////////////////////////////////////////////////////////////////
-#if defined(ORK_OSX)
+#if defined(ORK_OSX) || defined(ORK_IOS)
 #include <mach/mach_time.h>
 #include <sys/types.h>
 #include <sys/sysctl.h>

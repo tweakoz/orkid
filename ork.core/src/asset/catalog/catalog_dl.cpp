@@ -11,8 +11,12 @@
 #include <ork/asset/catalog/config.h>
 #include <ork/file/file.h>
 #include <ork/kernel/string/deco.inl>
+#if !defined(ORK_IOS)
 #include <ork/util/crypt.h>
+#endif
 #include <ork/util/tar.h>
+#include <ork/util/download.h>
+#include <ork/util/download_manager.h>
 #include <ork/util/logger.h>
 #include <ork/util/md5.h>
 #include <ork/util/xxhash.inl>

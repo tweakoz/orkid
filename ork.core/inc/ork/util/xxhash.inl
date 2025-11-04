@@ -1,8 +1,14 @@
-#pragma once 
+#pragma once
 
 #include <memory>
 #include <string>
+#include <vector>
+
+#if !defined(ORK_IOS)
 #include <xxhash.h>
+#else
+#include <ork/util/xxhash64_impl.inl>
+#endif
 
 namespace ork {
 
@@ -20,7 +26,11 @@ struct XXH64HASH {
     accumulate(&item, sizeof(T));
   }
 
+#if !defined(ORK_IOS)
   XXH64_state_t* _state = nullptr;
+#else
+  std::vector<uint8_t> _buffer; // Buffer for iOS incremental hashing
+#endif
   uint64_t _digest = 0xffffffffffffffff;
 };
 
@@ -40,7 +50,11 @@ struct XXH3HASH {
     accumulate(&item, sizeof(T));
   }
 
+#if !defined(ORK_IOS)
   XXH3_state_t* _state = nullptr;
+#else
+  std::vector<uint8_t> _buffer; // Buffer for iOS (uses XXH64 fallback)
+#endif
   uint64_t _digest = 0xffffffffffffffff;
 };
 

@@ -18,7 +18,9 @@
 #include <ork/rtti/RTTI.h>
 #include <ork/object/Object.h>
 
+#if !defined(ORK_IOS)
 #include <boost/program_options.hpp>
+#endif
 
 
 namespace ork {
@@ -32,7 +34,16 @@ struct AppInitData;
 using appinitdata_ptr_t = std::shared_ptr<AppInitData>;
 using appinitdata_wkptr_t = std::weak_ptr<AppInitData>;
 
+#if !defined(ORK_IOS)
 namespace po = ::boost::program_options;
+#else
+// Stub for iOS (no command line options)
+namespace po {
+  struct options_description {};
+  struct variables_map {};
+  struct variable_value {};
+}
+#endif
 
 struct StdFileSystemInitalizer {
   StdFileSystemInitalizer(const AppInitData& initdata);
