@@ -52,7 +52,6 @@ jobs:
         #python3 -m venv $TMPDIR/venv
         source $TMPDIR/venv/bin/activate
         python3 ${{ env.FILTER }} "pip install ork.build==0.0.287dev4"
-        python3 ${{ env.FILTER }} "obt.env.create.py --stagedir ${{ env.BUILD_TMPDIR }}/staging"
       env:
         TMPDIR: ${{ env.BUILD_TMPDIR }}
 
