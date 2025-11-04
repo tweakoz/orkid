@@ -18,10 +18,10 @@ class LogSanitizer:
         # Platform-specific paths
         if self.system == 'Darwin':  # macOS
             home_pattern = r'/Users/[^/\s]+'
-            home_replacement = '/Users/USER'
+            home_replacement = '***'
         else:  # Linux
             home_pattern = r'/home/[^/\s]+'
-            home_replacement = '/home/USER'
+            home_replacement = '***'
         
         self.replacements = [
             # Literal replacements
