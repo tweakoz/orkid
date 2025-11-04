@@ -15,18 +15,19 @@ jobs:
         chmod +x .github/scripts/sanitize.py
 
         # Create temp dir with timestamp for uniqueness
-        export TMPDIR="${{ runner.temp }}/build-$(date +%s)"
+        SAFE_TEMP="build-$(date +%s)"
+        echo "::add-mask::${{ runner.temp }}/$SAFE_TEMP"
+        echo "::add-mask::${{ runner.temp }}"
+        echo "::add-mask::$HOME"
+        echo "::add-mask::$USER"        
+
+        eval "export TMPDIR='${{ runner.temp }}/$SAFE_TEMP'"
         mkdir -p "$TMPDIR"
-        
+
         # Save environment variables
         echo "BUILD_TMPDIR=$TMPDIR" >> $GITHUB_ENV
         echo "FILTER=${{ github.workspace }}/.github/scripts/sanitize.py" >> $GITHUB_ENV
-        
-        # Mask sensitive values from GitHub logs
-        echo "::add-mask::$TMPDIR"
-        echo "::add-mask::$HOME"
-        echo "::add-mask::$USER"
-        
+               
         # Show sanitized output
         echo "Created temp dir: /tmp/BUILD_DIR"
 
