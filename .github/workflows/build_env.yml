@@ -1,11 +1,26 @@
 name: Clean Build (MacOs)
 on: [push, pull_request]
 
+env:
+  ACTIONS_RUNNER_DEBUG: false
+  ACTIONS_STEP_DEBUG: false
+
 jobs:
   build:
+    if: github.repository == 'tweakoz/orkid'  # Limit to main repo
     runs-on: [self-hosted, macOS, ARM64]  # Or ubuntu-latest for GitHub-hosted
-    
+
     steps:
+
+    - name: Pre-checkout Privacy
+      run: |
+        # Mask common paths and info before checkout
+        echo "::add-mask::${{ github.repository }}"
+        echo "::add-mask::${{ github.workspace }}"
+        echo "::add-mask::${{ runner.workspace }}"
+        echo "::add-mask::$(pwd)"
+        echo "::add-mask::$HOME"
+
     - uses: actions/checkout@v4
 
     - name: Set up base env
