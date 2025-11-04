@@ -1,4 +1,4 @@
-name: Clean Build (MacOs)
+name: Clean Build (Linux)
 on: [push, pull_request]
 
 env:
