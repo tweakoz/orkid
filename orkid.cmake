@@ -50,14 +50,18 @@ function(orkid_find_python)
 
 endfunction()
 
-orkid_find_python()
+IF(NOT IOS_BUILD)
+  orkid_find_python()
+ENDIF()
 
 #message(STATUS "CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
 
-find_package(ObtOpenBlas REQUIRED)
-IF(${APPLE})
-ELSE()
-find_package(ObtPipewire REQUIRED)
+IF(NOT IOS_BUILD)
+  find_package(ObtOpenBlas REQUIRED)
+  IF(${APPLE})
+  ELSE()
+  find_package(ObtPipewire REQUIRED)
+  ENDIF()
 ENDIF()
 
 ################################################################################
@@ -89,7 +93,14 @@ endfunction()
 #############################################################################################################
 
 SET(BUILD_SHARED_LIBS ON)
-find_package(Boost REQUIRED COMPONENTS system filesystem program_options)
+
+IF(IOS_BUILD)
+  # iOS only needs minimal Boost components
+  find_package(Boost REQUIRED COMPONENTS system filesystem)
+ELSE()
+  # Full build needs all components
+  find_package(Boost REQUIRED COMPONENTS system filesystem program_options)
+ENDIF()
 
 #############################################################################################################
 
@@ -98,6 +109,17 @@ set( ORK_CORE_INCD ${ORKROOT}/ork.core/inc )
 set( ORK_LEV2_INCD ${ORKROOT}/ork.lev2/inc )
 set( ORK_ECS_INCD ${ORKROOT}/ork.ecs/inc )
 set( ORK_ECS_SRCD ${ORKROOT}/ork.ecs/src )
+
+################################################################################
+# iOS Detection
+################################################################################
+
+IF(IOS_BUILD)
+  message(STATUS "iOS Build Detected")
+  set(ENABLE_PYTHON OFF CACHE BOOL "Disable Python for iOS" FORCE)
+  set(ENABLE_OPENCL OFF CACHE BOOL "Disable OpenCL for iOS" FORCE)
+  set(BUILD_IOS_MINIMAL ON CACHE BOOL "Build minimal iOS library" FORCE)
+ENDIF()
 
 ################################################################################
 
@@ -208,7 +230,9 @@ function(ork_std_target_set_defs the_target)
     MESSAGE( FATAL_ERROR "unsupported architecture ${ARCHITECTURE}")
   ENDIF()
 
-  if(${APPLE})
+  if(IOS_BUILD)
+    list(APPEND def_list -DORK_IOS -DORK_CONFIG_IOS)
+  elseif(${APPLE})
     list(APPEND def_list -DOSX -DORK_OSX )
   ELSE()
     list(APPEND def_list -DORK_CONFIG_IX -DLINUX -DGCC )
@@ -507,7 +531,15 @@ function(ork_std_target_opts_linker the_target)
   set( BOOST_LIBS "" )
   list(APPEND BOOST_LIBS ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY}  )
 
-  IF(${APPLE})
+  IF(IOS_BUILD)
+    # iOS-specific linking (no AppKit, use Foundation instead)
+    target_link_libraries(${the_target} LINK_PRIVATE m pthread )
+    target_link_libraries(${the_target} LINK_PRIVATE
+          "-framework Foundation"
+          "-framework Accelerate"
+    )
+    target_link_libraries(${the_target} LINK_PRIVATE objc ${BOOST_LIBS} )
+  ELSEIF(${APPLE})
     target_link_directories(${the_target} PUBLIC ${HOMEBREW_PREFIX}/lib )
     target_link_libraries(${the_target} LINK_PRIVATE m pthread )
     target_link_libraries(${the_target} LINK_PRIVATE
