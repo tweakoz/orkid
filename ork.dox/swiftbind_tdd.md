@@ -1,7 +1,7 @@
 # Swift Bindings & XCFramework Packaging Strategy for Orkid Engine
 
 **Date:** 2025-11-05
-**Status:** ✅ Implementation Ready - Reviewed and Validated (v12.0)
+**Status:** 🚧 Phase 1-4 Complete - Implementation In Progress (v12.1)
 **Target:** iOS Swift Developer Distribution with VarMap Support
 
 ---
@@ -2759,15 +2759,39 @@ All components reviewed and confirmed implementable. Critical issues have been f
 - ✅ CMake-based build (defer Xcode/SDK packaging to end)
 - ✅ Build incrementally - no big-bang integration
 
+### Current Progress (v12.1)
+
+**Completed Phases:**
+- ✅ **Phase 1:** C++ Foundation (TypeRegistry, OrkidHandle template, C bridge headers)
+- ✅ **Phase 2:** Basic C Bridge (Lifecycle functions, handle management, macOS app init)
+- ✅ **Phase 3:** Timer C Bridge (Complete Timer type with all operations)
+- ✅ **Phase 4:** Minimal Swift Test (Working test integrated into build system)
+
+**Next Steps:**
+- 🔜 **Phase 5:** Math Types (vec3 as representative type)
+- 📋 **Phase 6:** VarMap Foundation
+- 📋 **Phase 7:** Codec Infrastructure
+- 📋 **Phases 8-12:** Callbacks, iOS support, real-world tests, XCFramework
+
+**Key Implementation Achievements:**
+- Swift/C++ bridge working end-to-end
+- Automatic build integration via `ork.build.py`
+- Clean separation: macOS vs iOS builds
+- Type-safe handle system with runtime validation
+- Thread-safe error handling
+- Build artifacts organized in `~/.staging-sep26/subspace/macos_swift/`
+
 ---
 
-### Phase 1: C++ Foundation (CMake + C++ only)
+### Phase 1: C++ Foundation (CMake + C++ only) ✅ COMPLETED
+
+**Status:** ✅ Implemented and verified
 
 **Deliverables:**
-1. `ork.core/inc/ork/swift/orkid_handle.h` - Template handle architecture
-2. `ork.core/inc/ork/swift/orkid_swift_bridge.h` - C bridge header (declarations only)
-3. `ork.core/src/swift/orkid_handle.cpp` - TypeRegistry static members
-4. CMake integration in `ork.core/CMakeLists.txt`
+1. ✅ `ork.core/inc/ork/swift/orkid_handle.h` - Template handle architecture
+2. ✅ `ork.core/inc/ork/swift/orkid_swift_bridge.h` - C bridge header with stdint.h
+3. ✅ `ork.core/src/swift/orkid_handle.cpp` - TypeRegistry static members
+4. ✅ CMake integration in `ork.core/CMakeLists.txt`
 
 **Files to create:**
 ```
@@ -2793,21 +2817,28 @@ endif()
 
 **Verification:**
 ```bash
-cd build
-cmake .. -DORK_BUILD_SWIFT=ON
-make ork_core
-# Should compile without errors
+ork.build.py
+# Swift sources compile with ork_core
 ```
 
 **Success Criteria:** ✅ C++ compiles, TypeRegistry header exists
 
+**Implementation Notes:**
+- Added `#include <stdint.h>` to orkid_swift_bridge.h for Swift compatibility
+- CMake configured to include Swift sources only on `APPLE AND NOT BUILD_IOS_MINIMAL`
+- Files created in `ork.core/src/swift/` and `ork.core/inc/ork/swift/`
+- Template forward declaration pattern used to avoid circular dependencies
+
 ---
 
-### Phase 2: Basic C Bridge Implementation (C++ bridge functions)
+### Phase 2: Basic C Bridge Implementation (C++ bridge functions) ✅ COMPLETED
+
+**Status:** ✅ Implemented and verified
 
 **Deliverables:**
-1. `ork.core/src/swift/orkid_swift_bridge.cpp` - Core lifecycle + handle management only
-2. Implement: `orkid_swift_init()`, `orkid_swift_exit()`, `orkid_handle_release()`
+1. ✅ `ork.core/src/swift/orkid_swift_bridge.cpp` - Core lifecycle + handle management
+2. ✅ Implement: `orkid_swift_init()`, `orkid_swift_exit()`, `orkid_swift_poll()`, `orkid_handle_release()`
+3. ✅ macOS-specific app initialization in `ork.core/src/swift/macos/app_init.cpp`
 
 **Files to create:**
 ```
@@ -2846,21 +2877,29 @@ set(SRCS_SWIFT
 
 **Verification:**
 ```bash
-make ork_core
-# Should link successfully
-nm -g libork_core.a | grep orkid_swift_init
-# Should show: T _orkid_swift_init
+ork.build.py
+# Should link successfully with Swift bridge functions
 ```
 
 **Success Criteria:** ✅ C bridge functions exist in library
 
+**Implementation Notes:**
+- Created separate `macos/app_init.cpp` for platform-specific initialization
+- Used `extern "C"` linkage for all bridge functions to avoid name mangling
+- Implemented thread-local error handling with `g_last_error`
+- Added `orkid_swift_poll()` for main thread operation queue processing
+- Properly isolated from iOS build using `#if defined(__APPLE__) && !defined(ORK_IOS)`
+
 ---
 
-### Phase 3: Timer C Bridge (First complete type)
+### Phase 3: Timer C Bridge (First complete type) ✅ COMPLETED
+
+**Status:** ✅ Implemented and verified
 
 **Deliverables:**
-1. Add Timer bridge functions to `orkid_swift_bridge.cpp`
-2. Test from C++ (no Swift yet)
+1. ✅ Add Timer bridge functions to `orkid_swift_bridge.cpp`
+2. ✅ Registered Timer type in TypeRegistry
+3. ✅ All Timer operations working (create, start, end, query)
 
 **Code to add:**
 ```cpp
@@ -2919,28 +2958,31 @@ int main() {
 
 **Verification:**
 ```bash
-cd build
-cmake .. -DORK_BUILD_TESTS=ON -DORK_BUILD_SWIFT=ON
-make swift_bridge_test
-./swift_bridge_test
-# Expected output:
-# Timer created, refcount: 1
-# Timer type: ork::Timer
-# Elapsed: 0.1s (approximately)
+ork.build.py
+# Timer bridge functions compile and link
 ```
 
 **Success Criteria:** ✅ Timer works via C bridge, refcount correct, no crashes
 
+**Implementation Notes:**
+- Implemented `orkid_timer_create()`, `orkid_timer_start()`, `orkid_timer_end()`, `orkid_timer_secs_since_start()`
+- Added static method bridge: `orkid_timer_get_sync_time()`
+- All functions use safe type casting with `typedHandle<Timer>()`
+- Error handling integrated with thread-local `g_last_error`
+- Verified via Swift test (Phase 4)
+
 ---
 
-### Phase 4: Minimal Swift Test (macOS only)
+### Phase 4: Minimal Swift Test (macOS only) ✅ COMPLETED
+
+**Status:** ✅ Implemented, tested, and integrated into build system
 
 **Deliverables:**
-1. Simple Swift test program (no Package.swift yet)
-2. OrkidObject base class
-3. Timer Swift wrapper
-4. Module map for C bridge
-5. CMake integration to build Swift
+1. ✅ Swift test program (with Package.swift for reference)
+2. ✅ Direct C function calls (no OrkidObject wrapper yet - simplified approach)
+3. ✅ Timer validation test
+4. ✅ CMake integration via `ork_add_swift_test()` helper function
+5. ✅ Build output to `~/.staging-sep26/subspace/macos_swift/`
 
 **Files to create:**
 ```
@@ -3102,23 +3144,97 @@ endif()
 
 **Verification:**
 ```bash
-cd build
-make swift_test1
-./bin/swift_test1
+ork.build.py
+# Swift test builds automatically as part of main build
+~/.staging-sep26/subspace/macos_swift/ork.test.swift.test1
 
 # Expected output:
-# === Swift Timer Test ===
-# ✓ Timer created
-#   - Type name: ork::Timer
-#   - Use count: 1
-# ✓ Timer timing works
-#   - Elapsed: 0.100s (approximately)
-# ✓ Timer2 created (refcount: 1)
-# ✓ Timer2 destroyed (deinit called)
-# === All tests passed! ===
+# === Orkid Swift Bridge Test 1 ===
+# Initializing Orkid...
+# Orkid core initialized for macOS Swift
+# Orkid initialized successfully
+#
+# Creating Timer...
+# Timer created successfully
+#   Use count: 1
+#
+# Starting timer...
+# Timer started
+#
+# Sleeping for 0.5 seconds...
+# Elapsed time: 0.50386834 seconds
+#
+# ✓ Timer elapsed time is correct
+#
+# Ending timer...
+# Timer ended
+#
+# Releasing timer...
+#   Use count before release: 1
+# Timer released
+#
+# Shutting down Orkid...
+# Orkid core shutdown (macOS Swift)
+# Orkid shutdown complete
+#
+# === Test Complete ===
 ```
 
 **Success Criteria:** ✅ Swift test1 runs, Timer works from Swift, no crashes, clean deinit
+
+**Implementation Notes:**
+- Test located at `ork.core/tests/swift/macos/test1/test1/Sources/main.swift`
+- Uses direct C function calls with `@_silgen_name` (no Swift wrapper classes yet)
+- CMake helper function `ork_add_swift_test()` added to `orkid.cmake`
+- Separate CMake file: `ork.core/tests/swift/macos/CMakeLists.txt`
+- Build artifacts go to `~/.staging-sep26/subspace/macos_swift/`
+- Executable named: `ork.test.swift.test1`
+- Integrated into `ork.build.py` - builds automatically with `ALL` target
+- Standalone build script also provided: `build.sh`
+
+---
+
+### Summary of Files Created (Phases 1-4)
+
+**C++ Headers:**
+```
+ork.core/inc/ork/swift/
+├── orkid_handle.h           # TypeRegistry + OrkidHandleBase + OrkidHandle<T> templates
+└── orkid_swift_bridge.h     # C bridge function declarations (with stdint.h)
+```
+
+**C++ Implementation:**
+```
+ork.core/src/swift/
+├── orkid_handle.cpp         # TypeRegistry static member initialization
+├── orkid_swift_bridge.cpp   # C bridge implementations (lifecycle + Timer)
+└── macos/
+    └── app_init.cpp         # macOS-specific initialization (with extern "C")
+```
+
+**Swift Test:**
+```
+ork.core/tests/swift/macos/
+├── CMakeLists.txt           # Swift test configuration
+└── test1/test1/
+    ├── Sources/
+    │   └── main.swift       # Test program with direct C calls
+    ├── Package.swift        # Swift package manifest (reference)
+    └── build.sh             # Standalone build script
+```
+
+**Build System:**
+```
+orkid.cmake                  # Added ork_add_swift_test() helper function
+ork.core/CMakeLists.txt      # Swift source collection for macOS
+ork.core/tests/CMakeLists.txt # Include swift/macos/CMakeLists.txt
+```
+
+**Build Artifacts:**
+```
+~/.staging-sep26/subspace/macos_swift/
+└── ork.test.swift.test1     # Executable Swift test
+```
 
 ---
 
