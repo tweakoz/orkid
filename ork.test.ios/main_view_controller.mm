@@ -19,6 +19,7 @@ void runNlohmannTests();
 void runZmqTests();
 void runTarTests();
 void runHashTests();
+void runCryptoTests();
 
 @interface MainViewController ()
 @property (strong, nonatomic) UIScrollView *scrollView;
@@ -147,6 +148,20 @@ void runHashTests();
     UIButton *hashBtn = [self createTestButton:@"Hash" selector:@selector(runHashTestsTapped)];
     [testRow5 addArrangedSubview:tarBtn];
     [testRow5 addArrangedSubview:hashBtn];
+
+    // Row 6: Crypto and spacer
+    UIStackView *testRow6 = [[UIStackView alloc] init];
+    testRow6.axis = UILayoutConstraintAxisHorizontal;
+    testRow6.spacing = 10;
+    testRow6.alignment = UIStackViewAlignmentFill;
+    testRow6.distribution = UIStackViewDistributionFillEqually;
+    [testRow6.heightAnchor constraintEqualToConstant:50].active = YES;
+    [_testButtonStack addArrangedSubview:testRow6];
+
+    UIButton *cryptoBtn = [self createTestButton:@"Crypto" selector:@selector(runCryptoTestsTapped)];
+    UIView *spacer6 = [[UIView alloc] init];
+    [testRow6 addArrangedSubview:cryptoBtn];
+    [testRow6 addArrangedSubview:spacer6];
 
     // Section 2: Log Channels
     UILabel *logLabel = [[UILabel alloc] init];
@@ -370,6 +385,12 @@ void runHashTests();
 - (void)runHashTestsTapped {
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         runHashTests();
+    });
+}
+
+- (void)runCryptoTestsTapped {
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        runCryptoTests();
     });
 }
 

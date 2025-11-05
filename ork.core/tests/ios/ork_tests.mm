@@ -53,6 +53,9 @@
         [OrkTestInfo testWithName:@"Hash Tests"
                       description:@"Test MD5, CRC32, CRC64, XXHash64, and XXHash3"
                          function:runHashTests],
+        [OrkTestInfo testWithName:@"Crypto Tests"
+                      description:@"Test ChaCha20-Poly1305 encryption (CryptoKit)"
+                         function:runCryptoTests],
     ];
 }
 

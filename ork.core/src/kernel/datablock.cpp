@@ -252,7 +252,6 @@ datablock_ptr_t DataBlock::clone() const {
 //////////////////////////////////////////////////////////////////////
 
 datablock_ptr_t DataBlock::compressed(int level) const {
-#if !defined(ORK_IOS)
   if (_storage.empty()) {
     // Even for empty data, create proper LZ4 format with header
     auto output = std::make_shared<DataBlock>();
@@ -309,16 +308,11 @@ datablock_ptr_t DataBlock::compressed(int level) const {
   output->_storage.resize(4 + 8 + compressed_size);
 
   return output;
-#else
-  // iOS: compression not available, return copy
-  return std::make_shared<DataBlock>(*this);
-#endif
 }
 
 //////////////////////////////////////////////////////////////////////
 
 datablock_ptr_t DataBlock::decompressed() const {
-#if !defined(ORK_IOS)
   if (_storage.size() < 12) { // magic(4) + size(8)
     throw std::runtime_error("DataBlock too small to be LZ4 compressed");
   }
@@ -366,10 +360,6 @@ datablock_ptr_t DataBlock::decompressed() const {
   }
 
   return output;
-#else
-  // iOS: decompression not available, return copy
-  return std::make_shared<DataBlock>(*this);
-#endif
 }
 
 datablock_ptr_t DataBlock::createFromRandom(size_t length) {

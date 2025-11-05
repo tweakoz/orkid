@@ -164,6 +164,7 @@ IF(BUILD_IOS_MINIMAL)
     ${SRCD}/util/hotkey.cpp
     ${SRCD}/util/URL.cpp
     ${SRCD}/util/tar.cpp
+    ${SRCD}/util/crypt.cpp
     ${SRCD}/util/download_manager_ios.cpp
     ${SRCD}/util/download.cpp
     ${SRCD}/util/download_group.cpp
@@ -190,7 +191,8 @@ IF(BUILD_IOS_MINIMAL)
     ${SRCD}/asset/catalog/catalog_impl.cpp
     ${SRCD}/asset/catalog/catalog_impl_cache.cpp
     ${SRCD}/asset/catalog/catalog_impl_get.cpp
-    ${SRCD}/asset/catalog/catalog_crypt_ios.cpp
+    ${SRCD}/asset/catalog/catalog_crypt.cpp
+    ${SRCD}/asset/catalog/catalog_pak.cpp
     ${SRCD}/asset/catalog/catalog_dl.cpp
     ${SRCD}/asset/catalog/catalog_manifests.cpp
     ${SRCD}/asset/catalog/catalog_ns.cpp
@@ -278,6 +280,9 @@ IF(BUILD_IOS_MINIMAL)
   if(EXISTS "${CMAKE_INSTALL_PREFIX}/lib/libtar.a")
     target_link_libraries(ork_core_ios LINK_PRIVATE "${CMAKE_INSTALL_PREFIX}/lib/libtar.a")
   endif()
+  if(EXISTS "${CMAKE_INSTALL_PREFIX}/lib/libsodium.a")
+    target_link_libraries(ork_core_ios LINK_PRIVATE "${CMAKE_INSTALL_PREFIX}/lib/libsodium.a")
+  endif()
 
   # Install iOS library
   install(TARGETS ork_core_ios
@@ -317,6 +322,7 @@ IF(BUILD_IOS_MINIMAL)
     ${CMAKE_SOURCE_DIR}/ork.core/tests/ios/test_zmq.mm
     ${CMAKE_SOURCE_DIR}/ork.core/tests/ios/test_tar.mm
     ${CMAKE_SOURCE_DIR}/ork.core/tests/ios/test_hash.mm
+    ${CMAKE_SOURCE_DIR}/ork.core/tests/ios/test_crypto.mm
   )
 
   # App files
@@ -342,6 +348,7 @@ IF(BUILD_IOS_MINIMAL)
     "-framework Foundation"
     "-framework UIKit"
     "-framework QuartzCore"
+    "-framework CryptoKit"
   )
 
   # Link libcurl, lz4, zmq, and tar for test app
@@ -358,6 +365,9 @@ IF(BUILD_IOS_MINIMAL)
   endif()
   if(EXISTS "${CMAKE_INSTALL_PREFIX}/lib/libtar.a")
     target_link_libraries(ork_test_ios PRIVATE "${CMAKE_INSTALL_PREFIX}/lib/libtar.a")
+  endif()
+  if(EXISTS "${CMAKE_INSTALL_PREFIX}/lib/libsodium.a")
+    target_link_libraries(ork_test_ios PRIVATE "${CMAKE_INSTALL_PREFIX}/lib/libsodium.a")
   endif()
 
   # Include directories for the test app

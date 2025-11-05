@@ -10,15 +10,7 @@
 #include <ork/orkstd.h>
 #include <ork/orktypes.h>
 #include <ork/kernel/datablock.h>
-#if !defined(ORK_IOS)
 #include <ork/util/crypt.h>
-#else
-// Stub types for iOS (crypto not available)
-namespace ork::util::crypt {
-  struct EncryptionCodec {};
-  using encryptioncodec_ptr_t = std::shared_ptr<EncryptionCodec>;
-}
-#endif
 #include <ork/util/download_manager.h>
 #include <ork/util/upload_manager.h>
 #include <ork/asset/catalog/types.h>
