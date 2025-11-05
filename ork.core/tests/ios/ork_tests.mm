@@ -59,6 +59,9 @@
         [OrkTestInfo testWithName:@"OPQ Tests"
                       description:@"Test operation queue parallelism and throughput"
                          function:runOpqTests],
+        [OrkTestInfo testWithName:@"Catalog Tests"
+                      description:@"Test asset catalog initialization with bundled manifests"
+                         function:runCatalogTests],
     ];
 }
 

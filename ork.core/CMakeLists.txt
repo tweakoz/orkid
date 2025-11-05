@@ -336,6 +336,7 @@ IF(BUILD_IOS_MINIMAL)
     ${CMAKE_SOURCE_DIR}/ork.core/tests/ios/test_hash.mm
     ${CMAKE_SOURCE_DIR}/ork.core/tests/ios/test_crypto.mm
     ${CMAKE_SOURCE_DIR}/ork.core/tests/ios/test_opq.mm
+    ${CMAKE_SOURCE_DIR}/ork.core/tests/ios/test_catalog.mm
   )
 
   # App files
@@ -430,6 +431,32 @@ IF(BUILD_IOS_MINIMAL)
       "$<TARGET_FILE_DIR:ork_test_ios>/Frameworks/"
     COMMENT "Embedding libork_core_ios.dylib in app bundle"
   )
+
+  # Bundle asset manifests into app
+  set(MANIFEST_SOURCE_DIR "${PROJECT_SOURCE_DIR}/../ork.data/asset_manifests")
+
+  # Create manifests directory
+  add_custom_command(TARGET ork_test_ios POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+      "$<TARGET_FILE_DIR:ork_test_ios>/manifests"
+    COMMENT "Creating manifests directory in app bundle"
+  )
+
+  # Copy all JSON files from manifest directory
+  file(GLOB MANIFEST_FILES "${MANIFEST_SOURCE_DIR}/*.json")
+  if(MANIFEST_FILES)
+    message(STATUS "Found ${CMAKE_CURRENT_LIST_LENGTH} manifest files to bundle")
+    foreach(manifest_file ${MANIFEST_FILES})
+      add_custom_command(TARGET ork_test_ios POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          "${manifest_file}"
+          "$<TARGET_FILE_DIR:ork_test_ios>/manifests/"
+        COMMENT "Bundling manifest: ${manifest_file}"
+      )
+    endforeach()
+  else()
+    message(WARNING "No manifest files found in: ${MANIFEST_SOURCE_DIR}")
+  endif()
 
   message(STATUS "iOS test app ork_test_ios configured")
 

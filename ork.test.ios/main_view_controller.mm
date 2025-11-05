@@ -21,6 +21,7 @@ void runTarTests();
 void runHashTests();
 void runCryptoTests();
 void runOpqTests();
+void runCatalogTests();
 
 @interface MainViewController ()
 @property (strong, nonatomic) UIScrollView *scrollView;
@@ -163,6 +164,20 @@ void runOpqTests();
     UIButton *opqBtn = [self createTestButton:@"OPQ" selector:@selector(runOpqTestsTapped)];
     [testRow6 addArrangedSubview:cryptoBtn];
     [testRow6 addArrangedSubview:opqBtn];
+
+    // Row 7: Catalog (odd number - add spacer)
+    UIStackView *testRow7 = [[UIStackView alloc] init];
+    testRow7.axis = UILayoutConstraintAxisHorizontal;
+    testRow7.spacing = 10;
+    testRow7.alignment = UIStackViewAlignmentFill;
+    testRow7.distribution = UIStackViewDistributionFillEqually;
+    [testRow7.heightAnchor constraintEqualToConstant:50].active = YES;
+    [_testButtonStack addArrangedSubview:testRow7];
+
+    UIButton *catalogBtn = [self createTestButton:@"Catalog" selector:@selector(runCatalogTestsTapped)];
+    UIView *spacer = [[UIView alloc] init];  // Spacer for odd number
+    [testRow7 addArrangedSubview:catalogBtn];
+    [testRow7 addArrangedSubview:spacer];
 
     // Section 2: Log Channels
     UILabel *logLabel = [[UILabel alloc] init];
@@ -398,6 +413,12 @@ void runOpqTests();
 - (void)runOpqTestsTapped {
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         runOpqTests();
+    });
+}
+
+- (void)runCatalogTestsTapped {
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        runCatalogTests();
     });
 }
 
