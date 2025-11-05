@@ -18,7 +18,7 @@
 using namespace ork;
 
 void runMathTests(void) {
-    auto logchan = logchannel("MATH");
+    auto logchan = logger()->configureChannel("MATHTEST", fvec3(0.5f, 0.5f, 1.0f), true);
 
     logchan->log("========================================");
     logchan->log("Starting Math Tests");

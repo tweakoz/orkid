@@ -63,17 +63,41 @@ void runKernelTests();
     testLabel.textAlignment = NSTextAlignmentCenter;
     [_mainStack addArrangedSubview:testLabel];
 
+    // Create test button grid (2 columns)
     _testButtonStack = [[UIStackView alloc] init];
     _testButtonStack.axis = UILayoutConstraintAxisVertical;
     _testButtonStack.spacing = 10;
     _testButtonStack.alignment = UIStackViewAlignmentFill;
-    _testButtonStack.distribution = UIStackViewDistributionFillEqually;
+    _testButtonStack.distribution = UIStackViewDistributionFill;
     [_mainStack addArrangedSubview:_testButtonStack];
 
-    // Add test buttons
-    [self addTestButton:@"Math Tests" selector:@selector(runMathTestsTapped)];
-    [self addTestButton:@"Dataflow Tests" selector:@selector(runDataflowTestsTapped)];
-    [self addTestButton:@"Kernel Tests" selector:@selector(runKernelTestsTapped)];
+    // Row 1: Math and Dataflow
+    UIStackView *testRow1 = [[UIStackView alloc] init];
+    testRow1.axis = UILayoutConstraintAxisHorizontal;
+    testRow1.spacing = 10;
+    testRow1.alignment = UIStackViewAlignmentFill;
+    testRow1.distribution = UIStackViewDistributionFillEqually;
+    [testRow1.heightAnchor constraintEqualToConstant:50].active = YES;
+    [_testButtonStack addArrangedSubview:testRow1];
+
+    UIButton *mathBtn = [self createTestButton:@"Math" selector:@selector(runMathTestsTapped)];
+    UIButton *dataflowBtn = [self createTestButton:@"Dataflow" selector:@selector(runDataflowTestsTapped)];
+    [testRow1 addArrangedSubview:mathBtn];
+    [testRow1 addArrangedSubview:dataflowBtn];
+
+    // Row 2: Kernel and spacer
+    UIStackView *testRow2 = [[UIStackView alloc] init];
+    testRow2.axis = UILayoutConstraintAxisHorizontal;
+    testRow2.spacing = 10;
+    testRow2.alignment = UIStackViewAlignmentFill;
+    testRow2.distribution = UIStackViewDistributionFillEqually;
+    [testRow2.heightAnchor constraintEqualToConstant:50].active = YES;
+    [_testButtonStack addArrangedSubview:testRow2];
+
+    UIButton *kernelBtn = [self createTestButton:@"Kernel" selector:@selector(runKernelTestsTapped)];
+    UIView *spacer = [[UIView alloc] init];
+    [testRow2 addArrangedSubview:kernelBtn];
+    [testRow2 addArrangedSubview:spacer];
 
     // Section 2: Log Channels
     UILabel *logLabel = [[UILabel alloc] init];
@@ -98,29 +122,28 @@ void runKernelTests();
     ]];
 }
 
-- (void)addTestButton:(NSString*)title selector:(SEL)selector {
+- (UIButton*)createTestButton:(NSString*)title selector:(SEL)selector {
     UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
     [button setTitle:title forState:UIControlStateNormal];
-    button.titleLabel.font = [UIFont boldSystemFontOfSize:16];
+    button.titleLabel.font = [UIFont systemFontOfSize:14];
     [button setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
     button.backgroundColor = [UIColor colorWithRed:0.2 green:0.4 blue:0.8 alpha:1.0];
     button.layer.cornerRadius = 8;
     [button addTarget:self action:selector forControlEvents:UIControlEventTouchUpInside];
-    [button setContentEdgeInsets:UIEdgeInsetsMake(12, 20, 12, 20)];
-    [_testButtonStack addArrangedSubview:button];
+    return button;
 }
 
 - (void)addLogChannelButton:(NSString*)channelName withColor:(UIColor*)color viewController:(UIViewController*)vc {
-    // Store view controller
-    _channelViewControllers[channelName] = vc;
-
-    // Don't create duplicate buttons
-    if (_channelButtons[channelName]) {
-        return;
-    }
-
-    // Create button on main thread
+    // Create button and store view controller on main thread
     dispatch_async(dispatch_get_main_queue(), ^{
+        // Don't create duplicate buttons (check on main thread)
+        if (self.channelButtons[channelName]) {
+            return;
+        }
+
+        // Store view controller (on main thread)
+        self.channelViewControllers[channelName] = vc;
+
         UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
         [button setTitle:channelName forState:UIControlStateNormal];
         button.titleLabel.font = [UIFont systemFontOfSize:14];
@@ -149,6 +172,23 @@ void runKernelTests();
         [subview removeFromSuperview];
     }
 
+    // Create a vertical stack to hold rows
+    UIStackView *verticalStack = [[UIStackView alloc] init];
+    verticalStack.axis = UILayoutConstraintAxisVertical;
+    verticalStack.spacing = 10;
+    verticalStack.alignment = UIStackViewAlignmentFill;
+    verticalStack.distribution = UIStackViewDistributionFill;
+    verticalStack.translatesAutoresizingMaskIntoConstraints = NO;
+    [_logChannelGrid addSubview:verticalStack];
+
+    // Pin vertical stack to grid
+    [NSLayoutConstraint activateConstraints:@[
+        [verticalStack.topAnchor constraintEqualToAnchor:_logChannelGrid.topAnchor],
+        [verticalStack.leadingAnchor constraintEqualToAnchor:_logChannelGrid.leadingAnchor],
+        [verticalStack.trailingAnchor constraintEqualToAnchor:_logChannelGrid.trailingAnchor],
+        [verticalStack.bottomAnchor constraintEqualToAnchor:_logChannelGrid.bottomAnchor]
+    ]];
+
     // Create grid with 2 columns
     NSArray *channelNames = [_channelButtons.allKeys sortedArrayUsingSelector:@selector(compare:)];
 
@@ -163,8 +203,8 @@ void runKernelTests();
             currentRow.spacing = 10;
             currentRow.alignment = UIStackViewAlignmentFill;
             currentRow.distribution = UIStackViewDistributionFillEqually;
-            currentRow.translatesAutoresizingMaskIntoConstraints = NO;
-            [_logChannelGrid addSubview:currentRow];
+            [currentRow.heightAnchor constraintEqualToConstant:50].active = YES;
+            [verticalStack addArrangedSubview:currentRow];
         }
 
         UIButton *button = _channelButtons[channelName];
@@ -182,33 +222,28 @@ void runKernelTests();
         [currentRow addArrangedSubview:spacer];
     }
 
-    // Layout rows vertically
-    CGFloat yOffset = 0;
-    for (UIView *row in _logChannelGrid.subviews) {
-        [NSLayoutConstraint activateConstraints:@[
-            [row.topAnchor constraintEqualToAnchor:_logChannelGrid.topAnchor constant:yOffset],
-            [row.leadingAnchor constraintEqualToAnchor:_logChannelGrid.leadingAnchor],
-            [row.trailingAnchor constraintEqualToAnchor:_logChannelGrid.trailingAnchor],
-            [row.heightAnchor constraintEqualToConstant:50]
-        ]];
-        yOffset += 60; // 50 height + 10 spacing
+    // Restore highlights for unseen channels
+    for (NSString *unseenChannel in _unseenChannels) {
+        UIButton *button = _channelButtons[unseenChannel];
+        if (button) {
+            button.layer.borderWidth = 1.5;
+            button.layer.borderColor = [UIColor yellowColor].CGColor;
+        }
     }
-
-    // Set grid height
-    [_logChannelGrid.heightAnchor constraintEqualToConstant:yOffset].active = YES;
 }
 
 - (void)highlightLogChannel:(NSString*)channelName {
     dispatch_async(dispatch_get_main_queue(), ^{
+        // Always mark as unseen, even if button doesn't exist yet
+        [self.unseenChannels addObject:channelName];
+
+        // Apply highlight to button if it exists
         UIButton *button = self.channelButtons[channelName];
         if (button) {
-            // Mark as unseen
-            [self.unseenChannels addObject:channelName];
-
-            // Highlight with yellow border
-            button.layer.borderWidth = 3;
+            button.layer.borderWidth = 1.5;
             button.layer.borderColor = [UIColor yellowColor].CGColor;
         }
+        // If button doesn't exist yet, it will be highlighted when created in rebuildLogChannelGrid
     });
 }
 

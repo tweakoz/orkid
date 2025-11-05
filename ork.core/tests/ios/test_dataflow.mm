@@ -13,7 +13,7 @@ using namespace ork;
 using namespace ork::dataflow;
 
 void runDataflowTests(void) {
-    auto logchan = logchannel("DATAFLOW");
+    auto logchan = logger()->configureChannel("DFLOWTEST", fvec3(1.0f, 0.5f, 0.5f), true);
 
     logchan->log("========================================");
     logchan->log("Starting Dataflow Tests");

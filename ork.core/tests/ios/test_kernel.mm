@@ -18,7 +18,7 @@
 using namespace ork;
 
 void runKernelTests(void) {
-    auto logchan = logchannel("KERNEL");
+    auto logchan = logger()->configureChannel("KERNTEST", fvec3(0.5f, 1.0f, 0.5f), true);
 
     logchan->log("========================================");
     logchan->log("Starting Kernel Tests");
