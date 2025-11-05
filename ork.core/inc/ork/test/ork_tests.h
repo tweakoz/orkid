@@ -36,3 +36,4 @@ void runZmqTests(void);
 void runTarTests(void);
 void runHashTests(void);
 void runCryptoTests(void);
+void runOpqTests(void);

@@ -10,7 +10,6 @@
 #include <ork/file/file.h>
 #include <ork/kernel/timer.h>
 #include <ork/util/logger.h>
-#if !defined(ORK_IOS)
 #include <curlpp/cURLpp.hpp>
 #include <curlpp/Easy.hpp>
 #include <curlpp/Options.hpp>
@@ -19,7 +18,6 @@
 #include <rapidjson/document.h>
 #include <rapidjson/writer.h>
 #include <rapidjson/stringbuffer.h>
-#endif
 #include <vector>
 #include <mutex>
 #include <condition_variable>
@@ -51,10 +49,8 @@ struct DownloadManager::Impl {
   std::atomic<size_t> _queue_size{0};
 
   Impl() {
-#if !defined(ORK_IOS)
     // Initialize curl globally
     curl_global_init(CURL_GLOBAL_ALL);
-#endif
 
     // Initialize performance logging
     _logchan_download = logger()->configureChannel("DOWNLOAD", fvec3(0.9f, 0.6f, 1.0f), true); // Light blue
@@ -62,10 +58,8 @@ struct DownloadManager::Impl {
   }
 
   ~Impl() {
-#if !defined(ORK_IOS)
     // Cleanup curl
     curl_global_cleanup();
-#endif
   }
 
   size_t calculatePendingBytes() {
@@ -119,7 +113,6 @@ struct DownloadManager::Impl {
   }
 };
 
-#if !defined(ORK_IOS)
 //////////////////////////////////////////////////////////////////////////////
 // CURL Callbacks
 //////////////////////////////////////////////////////////////////////////////
@@ -159,7 +152,6 @@ static int progress_callback(void* clientp, curl_off_t dltotal, curl_off_t dlnow
   // Return 0 to continue, non-zero to abort
   return (download->_state == DownloadState::CANCELLED) ? 1 : 0;
 }
-#endif
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -243,11 +235,9 @@ void DownloadManager::processDownload(download_ptr_t dl) {
   dl->_state = DownloadState::DOWNLOADING;
 
   // Create parent directory if needed
-  // Create parent directory if needed
   auto parent_path = dl->_destination_path.toAbsolute();
   // TODO: Add directory creation logic
 
-#if !defined(ORK_IOS)
   // Setup CURL
   CURL* curl = curl_easy_init();
   if (!curl) {
@@ -388,17 +378,6 @@ void DownloadManager::processDownload(download_ptr_t dl) {
   _impl->emitPerfMetrics();
 
   updateActiveDownloads();
-#else
-  // iOS: CURL not supported
-  dl->_state         = DownloadState::FAILED;
-  dl->_error_message = "Network downloads not supported on iOS";
-  _impl->_failed_downloads++;
-  _impl->_queue_size--;
-  if (dl->_on_failure._item) {
-    dl->_on_failure._item(dl->_error_message);
-  }
-  updateActiveDownloads();
-#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -522,7 +501,6 @@ chunkverifyresult_vect_t DownloadManager::verifyChunks(
 
   _impl->_logchan_download->log("Starting batch chunk verification: %zu chunks", chunks.size());
 
-#if !defined(ORK_IOS)
   // Build JSON request body with ALL chunks
   rapidjson::Document doc;
   doc.SetObject();
@@ -707,17 +685,6 @@ chunkverifyresult_vect_t DownloadManager::verifyChunks(
     "Batch verification complete: %zu chunks, %zu present, %zu valid",
     results.size(), present_count, hash_ok_count
   );
-#else
-  // iOS: Network verification not supported, return all as failed
-  for (const auto& chunk : chunks) {
-    ChunkVerifyResult failed_result;
-    failed_result.filename = chunk.filename;
-    failed_result.present = false;
-    failed_result.hash_ok = false;
-    failed_result.error = "Network verification not supported on iOS";
-    results.push_back(failed_result);
-  }
-#endif
 
   return results;
 }

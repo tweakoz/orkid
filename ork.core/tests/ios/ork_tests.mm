@@ -54,8 +54,11 @@
                       description:@"Test MD5, CRC32, CRC64, XXHash64, and XXHash3"
                          function:runHashTests],
         [OrkTestInfo testWithName:@"Crypto Tests"
-                      description:@"Test ChaCha20-Poly1305 encryption (CryptoKit)"
+                      description:@"Test ChaCha20-Poly1305 encryption (libsodium)"
                          function:runCryptoTests],
+        [OrkTestInfo testWithName:@"OPQ Tests"
+                      description:@"Test operation queue parallelism and throughput"
+                         function:runOpqTests],
     ];
 }
 

@@ -20,6 +20,7 @@ void runZmqTests();
 void runTarTests();
 void runHashTests();
 void runCryptoTests();
+void runOpqTests();
 
 @interface MainViewController ()
 @property (strong, nonatomic) UIScrollView *scrollView;
@@ -149,7 +150,7 @@ void runCryptoTests();
     [testRow5 addArrangedSubview:tarBtn];
     [testRow5 addArrangedSubview:hashBtn];
 
-    // Row 6: Crypto and spacer
+    // Row 6: Crypto and OPQ
     UIStackView *testRow6 = [[UIStackView alloc] init];
     testRow6.axis = UILayoutConstraintAxisHorizontal;
     testRow6.spacing = 10;
@@ -159,9 +160,9 @@ void runCryptoTests();
     [_testButtonStack addArrangedSubview:testRow6];
 
     UIButton *cryptoBtn = [self createTestButton:@"Crypto" selector:@selector(runCryptoTestsTapped)];
-    UIView *spacer6 = [[UIView alloc] init];
+    UIButton *opqBtn = [self createTestButton:@"OPQ" selector:@selector(runOpqTestsTapped)];
     [testRow6 addArrangedSubview:cryptoBtn];
-    [testRow6 addArrangedSubview:spacer6];
+    [testRow6 addArrangedSubview:opqBtn];
 
     // Section 2: Log Channels
     UILabel *logLabel = [[UILabel alloc] init];
@@ -391,6 +392,12 @@ void runCryptoTests();
 - (void)runCryptoTestsTapped {
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         runCryptoTests();
+    });
+}
+
+- (void)runOpqTestsTapped {
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        runOpqTests();
     });
 }
 

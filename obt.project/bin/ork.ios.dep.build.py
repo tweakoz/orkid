@@ -184,6 +184,22 @@ all_dependencies = {
             "num_cores": obt.host.NumCores
         }
     },
+    "curlpp": {
+        "name": "curlpp",
+        "module": "ork.ios.curlpp",
+        "install_func": "build_curlpp_for_ios",
+        "params": lambda: {
+            "ios_subspace": ios_subspace,
+            "ios_builds_dir": ios_builds,
+            "ios_include_dir": ios_include,
+            "ios_lib_dir": ios_lib,
+            "is_simulator": is_simulator,
+            "manifest_dir": manifest_dir,
+            "force_rebuild": _args["clean"],
+            "verbose": _args["verbose"],
+            "num_cores": obt.host.NumCores
+        }
+    },
     "zmq": {
         "name": "zmq",
         "module": "ork.ios.zmq",

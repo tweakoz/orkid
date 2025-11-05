@@ -165,12 +165,12 @@ IF(BUILD_IOS_MINIMAL)
     ${SRCD}/util/URL.cpp
     ${SRCD}/util/tar.cpp
     ${SRCD}/util/crypt.cpp
-    ${SRCD}/util/download_manager_ios.cpp
+    ${SRCD}/util/download_manager.cpp
     ${SRCD}/util/download.cpp
     ${SRCD}/util/download_group.cpp
     ${SRCD}/util/upload_manager.cpp
     ${SRCD}/util/upload.cpp
-    ${SRCD}/util/upload_https_ios.cpp
+    ${SRCD}/util/upload_https.cpp
     ${SRCD}/util/password_provider.cpp
     ${SRCD}/util/dependency/Provider.cpp
     ${SRCD}/util/dependency/Dependent.cpp
@@ -270,9 +270,14 @@ IF(BUILD_IOS_MINIMAL)
     target_link_libraries(ork_core_ios LINK_PRIVATE Boost::filesystem Boost::system)
   endif()
 
-  # Link libcurl, lz4, and tar (iOS builds)
+  # Link libcurl, curlpp, lz4, and tar (iOS builds)
   if(EXISTS "${CMAKE_INSTALL_PREFIX}/lib/libcurl.a")
     target_link_libraries(ork_core_ios LINK_PRIVATE "${CMAKE_INSTALL_PREFIX}/lib/libcurl.a")
+    # libcurl needs zlib
+    target_link_libraries(ork_core_ios LINK_PRIVATE z)
+  endif()
+  if(EXISTS "${CMAKE_INSTALL_PREFIX}/lib/libcurlpp.a")
+    target_link_libraries(ork_core_ios LINK_PRIVATE "${CMAKE_INSTALL_PREFIX}/lib/libcurlpp.a")
   endif()
   if(EXISTS "${CMAKE_INSTALL_PREFIX}/lib/liblz4.a")
     target_link_libraries(ork_core_ios LINK_PRIVATE "${CMAKE_INSTALL_PREFIX}/lib/liblz4.a")
@@ -323,6 +328,7 @@ IF(BUILD_IOS_MINIMAL)
     ${CMAKE_SOURCE_DIR}/ork.core/tests/ios/test_tar.mm
     ${CMAKE_SOURCE_DIR}/ork.core/tests/ios/test_hash.mm
     ${CMAKE_SOURCE_DIR}/ork.core/tests/ios/test_crypto.mm
+    ${CMAKE_SOURCE_DIR}/ork.core/tests/ios/test_opq.mm
   )
 
   # App files
@@ -351,11 +357,14 @@ IF(BUILD_IOS_MINIMAL)
     "-framework CryptoKit"
   )
 
-  # Link libcurl, lz4, zmq, and tar for test app
+  # Link libcurl, curlpp, lz4, zmq, and tar for test app
   if(EXISTS "${CMAKE_INSTALL_PREFIX}/lib/libcurl.a")
     target_link_libraries(ork_test_ios PRIVATE "${CMAKE_INSTALL_PREFIX}/lib/libcurl.a")
     # libcurl needs zlib
     target_link_libraries(ork_test_ios PRIVATE z)
+  endif()
+  if(EXISTS "${CMAKE_INSTALL_PREFIX}/lib/libcurlpp.a")
+    target_link_libraries(ork_test_ios PRIVATE "${CMAKE_INSTALL_PREFIX}/lib/libcurlpp.a")
   endif()
   if(EXISTS "${CMAKE_INSTALL_PREFIX}/lib/liblz4.a")
     target_link_libraries(ork_test_ios PRIVATE "${CMAKE_INSTALL_PREFIX}/lib/liblz4.a")
