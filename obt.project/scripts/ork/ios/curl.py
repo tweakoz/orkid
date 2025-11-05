@@ -101,8 +101,13 @@ def build_curl_for_ios(
         "-DCMAKE_BUILD_TYPE=Release",
         f"-DIOS_SIMULATOR={'ON' if is_simulator else 'OFF'}",
         "-DARCHITECTURE=AARCH64",
-        # Disable features not needed/supported on iOS
-        "-DCURL_USE_OPENSSL=OFF",
+        # Enable OpenSSL for HTTPS support
+        "-DCURL_USE_OPENSSL=ON",
+        f"-DOPENSSL_ROOT_DIR={ios_subspace}",
+        f"-DOPENSSL_INCLUDE_DIR={ios_include_dir}",
+        f"-DOPENSSL_SSL_LIBRARY={ios_lib_dir}/libssl.a",
+        f"-DOPENSSL_CRYPTO_LIBRARY={ios_lib_dir}/libcrypto.a",
+        # Disable other features not needed
         "-DCURL_USE_LIBSSH2=OFF",
         "-DCURL_USE_LIBPSL=OFF",
         "-DUSE_LIBIDN2=OFF",
@@ -118,6 +123,7 @@ def build_curl_for_ios(
         "-DCURL_DISABLE_SMTP=ON",
         "-DCURL_DISABLE_GOPHER=ON",
         "-DCURL_DISABLE_MQTT=ON",
+        "-DCURL_DISABLE_NTLM=ON",  # OpenSSL 3.x doesn't support DES (required for NTLM)
         "-DBUILD_CURL_EXE=OFF",  # Don't build curl executable
         "-DBUILD_TESTING=OFF",
         str(curl_src_dir)
