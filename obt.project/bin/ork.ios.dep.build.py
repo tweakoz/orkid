@@ -22,7 +22,7 @@ import ork.path
 from ork.ios import device_manager
 
 parser = argparse.ArgumentParser(description='Build individual iOS dependency')
-parser.add_argument('dependency', help='Dependency name (boost, lz4, curl, zmq, glm, etc.)')
+parser.add_argument('dependency', help='Dependency name (boost, lz4, curl, zmq, libtar, glm, etc.)')
 parser.add_argument('--clean', action="store_true", help='force clean build')
 parser.add_argument('--verbose', action="store_true", help='verbose build')
 parser.add_argument('--simulator', action="store_true", help='force build for iOS Simulator')
@@ -188,6 +188,22 @@ all_dependencies = {
         "name": "zmq",
         "module": "ork.ios.zmq",
         "install_func": "build_zmq_for_ios",
+        "params": lambda: {
+            "ios_subspace": ios_subspace,
+            "ios_builds_dir": ios_builds,
+            "ios_include_dir": ios_include,
+            "ios_lib_dir": ios_lib,
+            "is_simulator": is_simulator,
+            "manifest_dir": manifest_dir,
+            "force_rebuild": _args["clean"],
+            "verbose": _args["verbose"],
+            "num_cores": obt.host.NumCores
+        }
+    },
+    "libtar": {
+        "name": "libtar",
+        "module": "ork.ios.libtar",
+        "install_func": "build_libtar_for_ios",
         "params": lambda: {
             "ios_subspace": ios_subspace,
             "ios_builds_dir": ios_builds,

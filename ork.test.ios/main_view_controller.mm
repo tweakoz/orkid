@@ -17,6 +17,8 @@ void runLZ4Tests();
 void runRapidJSONTests();
 void runNlohmannTests();
 void runZmqTests();
+void runTarTests();
+void runHashTests();
 
 @interface MainViewController ()
 @property (strong, nonatomic) UIScrollView *scrollView;
@@ -131,6 +133,20 @@ void runZmqTests();
     UIButton *zmqBtn = [self createTestButton:@"ZeroMQ" selector:@selector(runZmqTestsTapped)];
     [testRow4 addArrangedSubview:nlohmannBtn];
     [testRow4 addArrangedSubview:zmqBtn];
+
+    // Row 5: TAR and Hash
+    UIStackView *testRow5 = [[UIStackView alloc] init];
+    testRow5.axis = UILayoutConstraintAxisHorizontal;
+    testRow5.spacing = 10;
+    testRow5.alignment = UIStackViewAlignmentFill;
+    testRow5.distribution = UIStackViewDistributionFillEqually;
+    [testRow5.heightAnchor constraintEqualToConstant:50].active = YES;
+    [_testButtonStack addArrangedSubview:testRow5];
+
+    UIButton *tarBtn = [self createTestButton:@"TAR" selector:@selector(runTarTestsTapped)];
+    UIButton *hashBtn = [self createTestButton:@"Hash" selector:@selector(runHashTestsTapped)];
+    [testRow5 addArrangedSubview:tarBtn];
+    [testRow5 addArrangedSubview:hashBtn];
 
     // Section 2: Log Channels
     UILabel *logLabel = [[UILabel alloc] init];
@@ -342,6 +358,18 @@ void runZmqTests();
 - (void)runZmqTestsTapped {
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         runZmqTests();
+    });
+}
+
+- (void)runTarTestsTapped {
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        runTarTests();
+    });
+}
+
+- (void)runHashTestsTapped {
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        runHashTests();
     });
 }
 

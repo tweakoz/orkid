@@ -47,6 +47,12 @@
         [OrkTestInfo testWithName:@"ZeroMQ Tests"
                       description:@"Test ZeroMQ messaging patterns (TCP and inproc)"
                          function:runZmqTests],
+        [OrkTestInfo testWithName:@"TAR Tests"
+                      description:@"Test libtar archive creation and extraction"
+                         function:runTarTests],
+        [OrkTestInfo testWithName:@"Hash Tests"
+                      description:@"Test MD5 and XXHash hash functions"
+                         function:runHashTests],
     ];
 }
 
