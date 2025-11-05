@@ -6,10 +6,11 @@
 ////////////////////////////////////////////////////////////////
 
 #import "app_delegate.h"
-#import "test_list_view_controller.h"
+#import "main_view_controller.h"
 
 #include <ork/util/logger.h>
 #include <ork/util/logger_ios_ui.h>
+#include <ork/ios/app_init.h>
 
 @implementation AppDelegate
 
@@ -24,14 +25,35 @@
     self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
     self.window.backgroundColor = [UIColor blackColor];
 
-    // Create test list view controller as root
-    TestListViewController *testListVC = [[TestListViewController alloc] init];
-    UINavigationController *navController = [[UINavigationController alloc] initWithRootViewController:testListVC];
+    // Create main view controller
+    MainViewController *mainVC = [[MainViewController alloc] init];
+    UINavigationController *navController = [[UINavigationController alloc] initWithRootViewController:mainVC];
 
     self.window.rootViewController = navController;
     [self.window makeKeyAndVisible];
 
+    // Connect logger to main view controller
+    ork::setIOSUIMainViewController((__bridge void*)mainVC);
+
+    // Setup display link for per-frame polling
+    self.displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(onFrame:)];
+    [self.displayLink addToRunLoop:[NSRunLoop mainRunLoop] forMode:NSRunLoopCommonModes];
+
     return YES;
+}
+
+- (void)onFrame:(CADisplayLink *)displayLink {
+    // Poll Orkid core every frame on main thread
+    _coreapppoll();
+}
+
+- (void)applicationWillTerminate:(UIApplication *)application {
+    // Stop display link
+    [self.displayLink invalidate];
+    self.displayLink = nil;
+
+    // Shutdown Orkid core
+    _coreappexit();
 }
 
 @end

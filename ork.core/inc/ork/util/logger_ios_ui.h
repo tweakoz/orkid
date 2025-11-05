@@ -22,8 +22,8 @@ struct LoggerBackend;
 // Install the iOS UI logger backend
 void installIOSUIToBackend(LoggerBackend* backend);
 
-// Get the root view controller for embedding in your app
-UIViewController* getIOSLoggerRootViewController();
+// Set the main view controller (call after creating MainViewController)
+void setIOSUIMainViewController(void* mainVC);
 
 } // namespace ork
 

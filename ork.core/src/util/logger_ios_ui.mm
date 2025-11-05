@@ -105,21 +105,22 @@ using ork::LogChannel;
 @end
 
 ////////////////////////////////////////////////////////////////
-// Tab Bar Controller that manages all log channels
+// Log Channel Manager
 ////////////////////////////////////////////////////////////////
 
-@interface OrkLoggerTabBarController : UITabBarController
+@interface OrkLogChannelManager : NSObject
+@property (nonatomic, assign) void* mainViewController; // Store as void* to avoid ARC issues
 @property (nonatomic, strong) NSMutableDictionary<NSString*, OrkLogChannelViewController*>* channelViewControllers;
 - (OrkLogChannelViewController*)getOrCreateChannelViewController:(NSString*)channelName withColor:(fvec3)color;
 @end
 
-@implementation OrkLoggerTabBarController
+@implementation OrkLogChannelManager
 
 - (instancetype)init {
   self = [super init];
   if (self) {
     _channelViewControllers = [[NSMutableDictionary alloc] init];
-    self.tabBar.translucent = NO;
+    _mainViewController = nil;
   }
   return self;
 }
@@ -132,16 +133,30 @@ using ork::LogChannel;
     vc.channelColor = color;
     vc.title = channelName;
 
-    // Create tab bar item
-    vc.tabBarItem = [[UITabBarItem alloc] initWithTitle:channelName image:nil tag:0];
-
     // Store in dictionary
     _channelViewControllers[channelName] = vc;
 
-    // Add to tab bar controller
-    NSMutableArray* viewControllers = self.viewControllers ? [self.viewControllers mutableCopy] : [[NSMutableArray alloc] init];
-    [viewControllers addObject:vc];
-    self.viewControllers = viewControllers;
+    // Notify main view controller on main thread
+    if (_mainViewController) {
+      id mainVC = (__bridge id)_mainViewController;
+      dispatch_async(dispatch_get_main_queue(), ^{
+        UIColor* uiColor = [UIColor colorWithRed:color.x green:color.y blue:color.z alpha:1.0f];
+
+        // Call via NSInvocation to avoid forward declaration issues
+        SEL selector = NSSelectorFromString(@"addLogChannelButton:withColor:viewController:");
+        if ([mainVC respondsToSelector:selector]) {
+          NSMethodSignature *signature = [mainVC methodSignatureForSelector:selector];
+          NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:signature];
+          [invocation setSelector:selector];
+          [invocation setTarget:mainVC];
+          // Arguments start at index 2 (0 is self, 1 is _cmd)
+          [invocation setArgument:(void*)&channelName atIndex:2];
+          [invocation setArgument:(void*)&uiColor atIndex:3];
+          [invocation setArgument:(void*)&vc atIndex:4];
+          [invocation invoke];
+        }
+      });
+    }
   }
 
   return vc;
@@ -177,18 +192,32 @@ struct IOSLoggerUI {
   ////////////////////////////////////////////
 
   IOSLoggerUI() {
-    // Create tab bar controller on main thread
-    dispatch_sync(dispatch_get_main_queue(), ^{
-      _tab_controller = [[OrkLoggerTabBarController alloc] init];
-    });
+    // Create channel manager on main thread
+    if ([NSThread isMainThread]) {
+      _channel_manager = [[OrkLogChannelManager alloc] init];
+    } else {
+      dispatch_sync(dispatch_get_main_queue(), ^{
+        _channel_manager = [[OrkLogChannelManager alloc] init];
+      });
+    }
   }
 
   ////////////////////////////////////////////
 
   ~IOSLoggerUI() {
-    dispatch_sync(dispatch_get_main_queue(), ^{
-      _tab_controller = nil;
-    });
+    if ([NSThread isMainThread]) {
+      _channel_manager = nil;
+    } else {
+      dispatch_async(dispatch_get_main_queue(), ^{
+        _channel_manager = nil;
+      });
+    }
+  }
+
+  ////////////////////////////////////////////
+
+  void setMainViewController(void* mainVC) {
+    _channel_manager.mainViewController = mainVC;
   }
 
   ////////////////////////////////////////////
@@ -198,13 +227,22 @@ struct IOSLoggerUI {
 
     // Convert to NSString
     NSString* nsLine = [NSString stringWithUTF8String:line.c_str()];
+    NSString* channelName = [NSString stringWithUTF8String:channel->_name.c_str()];
 
     // Marshal to main thread
     dispatch_async(dispatch_get_main_queue(), ^{
-      OrkLogChannelViewController* vc = [_tab_controller getOrCreateChannelViewController:
-        [NSString stringWithUTF8String:channel->_name.c_str()]
-        withColor:channel->_color];
+      OrkLogChannelViewController* vc = [_channel_manager getOrCreateChannelViewController:channelName
+                                                                                  withColor:channel->_color];
       [vc appendLogLine:nsLine];
+
+      // Highlight the channel button in main view
+      if (_channel_manager.mainViewController) {
+        id mainVC = (__bridge id)_channel_manager.mainViewController;
+        SEL selector = NSSelectorFromString(@"highlightLogChannel:");
+        if ([mainVC respondsToSelector:selector]) {
+          [mainVC performSelector:selector withObject:channelName];
+        }
+      }
 
       // Store reference in impl if not already set
       if (!impl->view_controller) {
@@ -228,19 +266,13 @@ struct IOSLoggerUI {
 
   ////////////////////////////////////////////
 
-  UIViewController* getRootViewController() {
-    return _tab_controller;
-  }
-
-  ////////////////////////////////////////////
-
   bool isReady() const {
-    return _tab_controller != nil;
+    return _channel_manager != nil;
   }
 
   ////////////////////////////////////////////
 
-  OrkLoggerTabBarController* __strong _tab_controller;
+  OrkLogChannelManager* __strong _channel_manager;
   LoggerBackend* _backend = nullptr;
 };
 
@@ -340,9 +372,11 @@ void installIOSUIToBackend(LoggerBackend* backend) {
 
 ////////////////////////////////////////////////////////////////
 
-UIViewController* getIOSLoggerRootViewController() {
+void setIOSUIMainViewController(void* mainVC) {
   auto ui = ios_logger_ui();
-  return ui ? ui->getRootViewController() : nil;
+  if (ui) {
+    ui->setMainViewController(mainVC);
+  }
 }
 
 ////////////////////////////////////////////////////////////////

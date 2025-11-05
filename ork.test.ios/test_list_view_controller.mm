@@ -19,15 +19,15 @@
     self = [super initWithStyle:UITableViewStylePlain];
     if (self) {
         self.title = @"Orkid Tests";
-
-        // Get available tests
-        _tests = [OrkTests availableTests];
     }
     return self;
 }
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+
+    // Get available tests - do this in viewDidLoad to ensure proper initialization
+    self.tests = [OrkTests availableTests];
 
     // Register cell class
     [self.tableView registerClass:[UITableViewCell class] forCellReuseIdentifier:@"TestCell"];
@@ -44,7 +44,7 @@
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    return _tests.count;
+    return _tests ? _tests.count : 0;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {

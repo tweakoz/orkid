@@ -35,17 +35,8 @@
 
     self.view.backgroundColor = [UIColor blackColor];
 
-    // Get the logger root view controller
-    _loggerViewController = ork::getIOSLoggerRootViewController();
-
-    if (_loggerViewController) {
-        // Embed logger view controller
-        [self addChildViewController:_loggerViewController];
-        _loggerViewController.view.frame = self.view.bounds;
-        _loggerViewController.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-        [self.view addSubview:_loggerViewController.view];
-        [_loggerViewController didMoveToParentViewController:self];
-    }
+    // Note: Logger view is now managed by MainViewController
+    // This view controller is no longer used in the new UI design
 
     // Create run button at bottom
     _runButton = [UIButton buttonWithType:UIButtonTypeSystem];

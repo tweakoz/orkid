@@ -7,9 +7,13 @@
 
 #import <UIKit/UIKit.h>
 #import "app_delegate.h"
+#include <ork/ios/app_init.h>
 
 int main(int argc, char * argv[]) {
     @autoreleasepool {
+        // Initialize Orkid core before UI starts
+        _coreappinit(argc, argv);
+
         return UIApplicationMain(argc, argv, nil, NSStringFromClass([AppDelegate class]));
     }
 }

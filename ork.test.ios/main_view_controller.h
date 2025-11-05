@@ -6,9 +6,13 @@
 ////////////////////////////////////////////////////////////////
 
 #import <UIKit/UIKit.h>
-#import <QuartzCore/QuartzCore.h>
 
-@interface AppDelegate : UIResponder <UIApplicationDelegate>
-@property (strong, nonatomic) UIWindow *window;
-@property (strong, nonatomic) CADisplayLink *displayLink;
+@interface MainViewController : UIViewController
+
+// Called when a new log channel is created
+- (void)addLogChannelButton:(NSString*)channelName withColor:(UIColor*)color viewController:(UIViewController*)vc;
+
+// Called when log channel receives new output
+- (void)highlightLogChannel:(NSString*)channelName;
+
 @end

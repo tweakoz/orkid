@@ -217,7 +217,11 @@ IF(BUILD_IOS_MINIMAL)
     ${SRCD}/dataflow/scheduler.cpp
   )
 
-  set(orksrcs_ios ${src_math_ios} ${src_kernel_ios} ${src_file_ios} ${src_object_ios} ${src_rtti_ios} ${src_reflect_ios} ${src_util_ios} ${src_application_ios} ${src_asset_ios} ${src_dataflow_ios})
+  file(GLOB src_ios_ios
+    ${SRCD}/ios/app_init.cpp
+  )
+
+  set(orksrcs_ios ${src_math_ios} ${src_kernel_ios} ${src_file_ios} ${src_object_ios} ${src_rtti_ios} ${src_reflect_ios} ${src_util_ios} ${src_application_ios} ${src_asset_ios} ${src_dataflow_ios} ${src_ios_ios})
 
   # Create shared library for iOS
   add_library(ork_core_ios SHARED ${orksrcs_ios})
@@ -301,6 +305,7 @@ IF(BUILD_IOS_MINIMAL)
   file(GLOB src_ios_app
     ${CMAKE_SOURCE_DIR}/ork.test.ios/main.mm
     ${CMAKE_SOURCE_DIR}/ork.test.ios/app_delegate.mm
+    ${CMAKE_SOURCE_DIR}/ork.test.ios/main_view_controller.mm
     ${CMAKE_SOURCE_DIR}/ork.test.ios/test_list_view_controller.mm
     ${CMAKE_SOURCE_DIR}/ork.test.ios/test_detail_view_controller.mm
   )
@@ -318,6 +323,7 @@ IF(BUILD_IOS_MINIMAL)
   target_link_libraries(ork_test_ios PRIVATE
     "-framework Foundation"
     "-framework UIKit"
+    "-framework QuartzCore"
   )
 
   # Include directories for the test app

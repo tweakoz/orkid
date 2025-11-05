@@ -115,7 +115,10 @@ set( ORK_ECS_SRCD ${ORKROOT}/ork.ecs/src )
 ################################################################################
 
 IF(IOS_BUILD)
-  message(STATUS "iOS Build Detected")
+  IF(NOT IOS_BUILD_MSG_PRINTED)
+    message(STATUS "iOS Build Detected")
+    set(IOS_BUILD_MSG_PRINTED TRUE CACHE INTERNAL "iOS build message already printed")
+  ENDIF()
   set(ENABLE_PYTHON OFF CACHE BOOL "Disable Python for iOS" FORCE)
   set(ENABLE_OPENCL OFF CACHE BOOL "Disable OpenCL for iOS" FORCE)
   set(BUILD_IOS_MINIMAL ON CACHE BOOL "Build minimal iOS library" FORCE)

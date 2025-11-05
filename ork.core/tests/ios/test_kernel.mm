@@ -75,19 +75,21 @@ void runKernelTests(void) {
     auto opq = opq::concurrentQueue();
     logchan->log("Created concurrent operation queue");
 
-    std::atomic<int> counter{0};
     const int num_ops = 10;
+    std::atomic<int> remaining{num_ops};
 
     for (int i = 0; i < num_ops; i++) {
-        opq->enqueue([&counter, i, logchan]() {
-            counter++;
-            logchan->log("Operation %d executed, counter = %d", i, counter.load());
+        opq->enqueue([&remaining, i, num_ops, logchan]() {
+            logchan->log("Operation %d executed", i);
+            remaining--;
         });
     }
 
-    // Wait for operations to complete
-    opq->sync();
-    logchan->log("All %d operations completed, final counter = %d", num_ops, counter.load());
+    // Wait for operations to complete by polling the atomic counter
+    while (remaining.load() > 0) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+    logchan->log("All %d operations completed", num_ops);
 
     // Hexdump test
     logchan->log("");
