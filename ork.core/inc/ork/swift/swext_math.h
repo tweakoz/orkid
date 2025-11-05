@@ -46,6 +46,26 @@ float orkid_fvec4_length(const OrkidHandleBase* handle);
 OrkidHandleBase* orkid_fvec4_normalized(const OrkidHandleBase* handle);
 float orkid_fvec4_dot(const OrkidHandleBase* a, const OrkidHandleBase* b);
 
+// ================================================================
+// Math - mat4 (Matrix44)
+// ================================================================
+
+OrkidHandleBase* orkid_fmtx4_create_identity(void);
+OrkidHandleBase* orkid_fmtx4_create_translation(float x, float y, float z);
+OrkidHandleBase* orkid_fmtx4_create_scale(float x, float y, float z);
+OrkidHandleBase* orkid_fmtx4_create_rotation_x(float radians);
+OrkidHandleBase* orkid_fmtx4_create_rotation_y(float radians);
+OrkidHandleBase* orkid_fmtx4_create_rotation_z(float radians);
+
+void orkid_fmtx4_get_translation(const OrkidHandleBase* handle, float* out_x, float* out_y, float* out_z);
+void orkid_fmtx4_set_translation(OrkidHandleBase* handle, float x, float y, float z);
+
+OrkidHandleBase* orkid_fmtx4_multiply(const OrkidHandleBase* a, const OrkidHandleBase* b);
+OrkidHandleBase* orkid_fmtx4_inverse(const OrkidHandleBase* handle);
+OrkidHandleBase* orkid_fmtx4_transpose(const OrkidHandleBase* handle);
+
+OrkidHandleBase* orkid_fmtx4_transform_vec4(const OrkidHandleBase* mtx, const OrkidHandleBase* vec);
+
 #ifdef __cplusplus
 }
 #endif

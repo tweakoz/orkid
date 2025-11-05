@@ -465,4 +465,227 @@ float orkid_fvec4_dot(const OrkidHandleBase* a, const OrkidHandleBase* b) {
     }
 }
 
+// ================================================================
+// mat4 (Matrix44) Functions
+// ================================================================
+
+OrkidHandleBase* orkid_fmtx4_create_identity() {
+    try {
+        auto handle = OrkidHandle<fmtx4>::makeShared();
+        handle->get()->setToIdentity();
+        g_last_error.clear();
+        return handle;
+    } catch (const std::exception& e) {
+        g_last_error = std::string("fmtx4 creation failed: ") + e.what();
+        return nullptr;
+    }
+}
+
+OrkidHandleBase* orkid_fmtx4_create_translation(float x, float y, float z) {
+    try {
+        auto handle = OrkidHandle<fmtx4>::makeShared();
+        handle->get()->setToIdentity();
+        handle->get()->setTranslation(x, y, z);
+        g_last_error.clear();
+        return handle;
+    } catch (const std::exception& e) {
+        g_last_error = std::string("fmtx4 create_translation failed: ") + e.what();
+        return nullptr;
+    }
+}
+
+OrkidHandleBase* orkid_fmtx4_create_scale(float x, float y, float z) {
+    try {
+        auto handle = OrkidHandle<fmtx4>::makeShared();
+        handle->get()->setToIdentity();
+        handle->get()->setScale(x, y, z);
+        g_last_error.clear();
+        return handle;
+    } catch (const std::exception& e) {
+        g_last_error = std::string("fmtx4 create_scale failed: ") + e.what();
+        return nullptr;
+    }
+}
+
+OrkidHandleBase* orkid_fmtx4_create_rotation_x(float radians) {
+    try {
+        auto handle = OrkidHandle<fmtx4>::makeShared();
+        handle->get()->setToIdentity();
+        handle->get()->setRotateX(radians);
+        g_last_error.clear();
+        return handle;
+    } catch (const std::exception& e) {
+        g_last_error = std::string("fmtx4 create_rotation_x failed: ") + e.what();
+        return nullptr;
+    }
+}
+
+OrkidHandleBase* orkid_fmtx4_create_rotation_y(float radians) {
+    try {
+        auto handle = OrkidHandle<fmtx4>::makeShared();
+        handle->get()->setToIdentity();
+        handle->get()->setRotateY(radians);
+        g_last_error.clear();
+        return handle;
+    } catch (const std::exception& e) {
+        g_last_error = std::string("fmtx4 create_rotation_y failed: ") + e.what();
+        return nullptr;
+    }
+}
+
+OrkidHandleBase* orkid_fmtx4_create_rotation_z(float radians) {
+    try {
+        auto handle = OrkidHandle<fmtx4>::makeShared();
+        handle->get()->setToIdentity();
+        handle->get()->setRotateZ(radians);
+        g_last_error.clear();
+        return handle;
+    } catch (const std::exception& e) {
+        g_last_error = std::string("fmtx4 create_rotation_z failed: ") + e.what();
+        return nullptr;
+    }
+}
+
+void orkid_fmtx4_get_translation(const OrkidHandleBase* handle, float* out_x, float* out_y, float* out_z) {
+    if (!handle) {
+        g_last_error = "Null fmtx4 handle in orkid_fmtx4_get_translation";
+        return;
+    }
+
+    auto typed = const_cast<OrkidHandleBase*>(handle)->typedHandle<fmtx4>();
+    if (!typed) {
+        g_last_error = "Invalid fmtx4 handle type";
+        return;
+    }
+
+    try {
+        fvec3 trans = typed->get()->translation();
+        if (out_x) *out_x = trans.x;
+        if (out_y) *out_y = trans.y;
+        if (out_z) *out_z = trans.z;
+        g_last_error.clear();
+    } catch (const std::exception& e) {
+        g_last_error = std::string("fmtx4 get_translation failed: ") + e.what();
+    }
+}
+
+void orkid_fmtx4_set_translation(OrkidHandleBase* handle, float x, float y, float z) {
+    if (!handle) {
+        g_last_error = "Null fmtx4 handle in orkid_fmtx4_set_translation";
+        return;
+    }
+
+    auto typed = handle->typedHandle<fmtx4>();
+    if (!typed) {
+        g_last_error = "Invalid fmtx4 handle type";
+        return;
+    }
+
+    try {
+        typed->get()->setTranslation(x, y, z);
+        g_last_error.clear();
+    } catch (const std::exception& e) {
+        g_last_error = std::string("fmtx4 set_translation failed: ") + e.what();
+    }
+}
+
+OrkidHandleBase* orkid_fmtx4_multiply(const OrkidHandleBase* a, const OrkidHandleBase* b) {
+    if (!a || !b) {
+        g_last_error = "Null fmtx4 handle in orkid_fmtx4_multiply";
+        return nullptr;
+    }
+
+    auto typed_a = const_cast<OrkidHandleBase*>(a)->typedHandle<fmtx4>();
+    auto typed_b = const_cast<OrkidHandleBase*>(b)->typedHandle<fmtx4>();
+
+    if (!typed_a || !typed_b) {
+        g_last_error = "Invalid fmtx4 handle type in orkid_fmtx4_multiply";
+        return nullptr;
+    }
+
+    try {
+        fmtx4 result = typed_a->get()->multiply_rtol(*typed_b->get());
+        auto handle = OrkidHandle<fmtx4>::makeShared();
+        *handle->get() = result;
+        g_last_error.clear();
+        return handle;
+    } catch (const std::exception& e) {
+        g_last_error = std::string("fmtx4 multiply failed: ") + e.what();
+        return nullptr;
+    }
+}
+
+OrkidHandleBase* orkid_fmtx4_inverse(const OrkidHandleBase* handle) {
+    if (!handle) {
+        g_last_error = "Null fmtx4 handle in orkid_fmtx4_inverse";
+        return nullptr;
+    }
+
+    auto typed = const_cast<OrkidHandleBase*>(handle)->typedHandle<fmtx4>();
+    if (!typed) {
+        g_last_error = "Invalid fmtx4 handle type";
+        return nullptr;
+    }
+
+    try {
+        fmtx4 result = typed->get()->inverse();
+        auto result_handle = OrkidHandle<fmtx4>::makeShared();
+        *result_handle->get() = result;
+        g_last_error.clear();
+        return result_handle;
+    } catch (const std::exception& e) {
+        g_last_error = std::string("fmtx4 inverse failed: ") + e.what();
+        return nullptr;
+    }
+}
+
+OrkidHandleBase* orkid_fmtx4_transpose(const OrkidHandleBase* handle) {
+    if (!handle) {
+        g_last_error = "Null fmtx4 handle in orkid_fmtx4_transpose";
+        return nullptr;
+    }
+
+    auto typed = const_cast<OrkidHandleBase*>(handle)->typedHandle<fmtx4>();
+    if (!typed) {
+        g_last_error = "Invalid fmtx4 handle type";
+        return nullptr;
+    }
+
+    try {
+        fmtx4 result = typed->get()->transposed();
+        auto result_handle = OrkidHandle<fmtx4>::makeShared();
+        *result_handle->get() = result;
+        g_last_error.clear();
+        return result_handle;
+    } catch (const std::exception& e) {
+        g_last_error = std::string("fmtx4 transpose failed: ") + e.what();
+        return nullptr;
+    }
+}
+
+OrkidHandleBase* orkid_fmtx4_transform_vec4(const OrkidHandleBase* mtx, const OrkidHandleBase* vec) {
+    if (!mtx || !vec) {
+        g_last_error = "Null handle in orkid_fmtx4_transform_vec4";
+        return nullptr;
+    }
+
+    auto typed_mtx = const_cast<OrkidHandleBase*>(mtx)->typedHandle<fmtx4>();
+    auto typed_vec = const_cast<OrkidHandleBase*>(vec)->typedHandle<fvec4>();
+
+    if (!typed_mtx || !typed_vec) {
+        g_last_error = "Invalid handle type in orkid_fmtx4_transform_vec4";
+        return nullptr;
+    }
+
+    try {
+        fvec4 result = typed_vec->get()->transform(*typed_mtx->get());
+        auto result_handle = OrkidHandle<fvec4>::makeShared(result.x, result.y, result.z, result.w);
+        g_last_error.clear();
+        return result_handle;
+    } catch (const std::exception& e) {
+        g_last_error = std::string("fmtx4 transform_vec4 failed: ") + e.what();
+        return nullptr;
+    }
+}
+
 } // extern "C"
