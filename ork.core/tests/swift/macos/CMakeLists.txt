@@ -1,0 +1,39 @@
+###################################
+# Swift Tests for macOS
+###################################
+
+message(STATUS "Configuring Swift tests for macOS")
+
+# Get absolute paths - CMAKE_CURRENT_LIST_DIR points to the directory containing this file
+get_filename_component(SWIFT_TESTS_DIR "${CMAKE_CURRENT_LIST_DIR}" ABSOLUTE)
+get_filename_component(ORK_CORE_DIR "${SWIFT_TESTS_DIR}/../../.." ABSOLUTE)
+
+set(SWIFT_BRIDGE_HEADER ${ORK_CORE_DIR}/inc/ork/swift/orkid_swift_bridge.h)
+set(SWIFT_INCLUDE_DIR ${ORK_CORE_DIR}/inc)
+
+# Debug output
+message(STATUS "SWIFT_TESTS_DIR: ${SWIFT_TESTS_DIR}")
+message(STATUS "ORK_CORE_DIR: ${ORK_CORE_DIR}")
+message(STATUS "SWIFT_BRIDGE_HEADER: ${SWIFT_BRIDGE_HEADER}")
+message(STATUS "SWIFT_INCLUDE_DIR: ${SWIFT_INCLUDE_DIR}")
+
+# Find swiftc compiler
+find_program(SWIFTC swiftc)
+if(NOT SWIFTC)
+  message(WARNING "swiftc not found - Swift tests will not be built")
+  return()
+endif()
+
+message(STATUS "Found swiftc: ${SWIFTC}")
+
+# test1 - use absolute path
+set(TEST1_SOURCE_DIR ${SWIFT_TESTS_DIR}/test1/test1/Sources)
+message(STATUS "TEST1_SOURCE_DIR: ${TEST1_SOURCE_DIR}")
+
+ork_add_swift_test(
+  NAME test1
+  SOURCE_DIR ${TEST1_SOURCE_DIR}
+  MAIN_SOURCE main.swift
+  BRIDGE_HEADER ${SWIFT_BRIDGE_HEADER}
+  INCLUDE_DIR ${SWIFT_INCLUDE_DIR}
+)

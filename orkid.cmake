@@ -618,3 +618,85 @@ function(gen_ispc_object_list
   set(${ISPC_OUTPUT_OBJECT_LIST} ${_INTERNAL_ISPC_OUTPUT_OBJECT_LIST} PARENT_SCOPE)
 endfunction()
 
+#############################################################################################################
+# Swift Test Build Helper
+#############################################################################################################
+
+function(ork_add_swift_test)
+  # Parse arguments
+  set(options "")
+  set(oneValueArgs NAME SOURCE_DIR MAIN_SOURCE BRIDGE_HEADER INCLUDE_DIR)
+  set(multiValueArgs "")
+  cmake_parse_arguments(SWIFT_TEST "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+  # Validate required arguments
+  if(NOT SWIFT_TEST_NAME)
+    message(FATAL_ERROR "ork_add_swift_test: NAME argument is required")
+  endif()
+  if(NOT SWIFT_TEST_SOURCE_DIR)
+    message(FATAL_ERROR "ork_add_swift_test: SOURCE_DIR argument is required")
+  endif()
+  if(NOT SWIFT_TEST_MAIN_SOURCE)
+    message(FATAL_ERROR "ork_add_swift_test: MAIN_SOURCE argument is required")
+  endif()
+  if(NOT SWIFT_TEST_BRIDGE_HEADER)
+    message(FATAL_ERROR "ork_add_swift_test: BRIDGE_HEADER argument is required")
+  endif()
+  if(NOT SWIFT_TEST_INCLUDE_DIR)
+    message(FATAL_ERROR "ork_add_swift_test: INCLUDE_DIR argument is required")
+  endif()
+
+  # Set paths - use absolute paths to avoid CMake variable expansion issues
+  set(SWIFT_OUTPUT_DIR $ENV{HOME}/.staging-sep26/subspace/macos_swift)
+  set(SWIFT_BUILD_DIR ${CMAKE_BINARY_DIR}/swift_build)
+  file(MAKE_DIRECTORY ${SWIFT_BUILD_DIR})
+  set(SWIFT_OBJ_FILE ${SWIFT_BUILD_DIR}/${SWIFT_TEST_NAME}.o)
+  set(SWIFT_EXECUTABLE ${SWIFT_OUTPUT_DIR}/ork.test.swift.${SWIFT_TEST_NAME})
+  set(SWIFT_SOURCE ${SWIFT_TEST_SOURCE_DIR}/${SWIFT_TEST_MAIN_SOURCE})
+
+  # Create output directory
+  file(MAKE_DIRECTORY ${SWIFT_OUTPUT_DIR})
+
+  message(STATUS "Swift test '${SWIFT_TEST_NAME}': ${SWIFT_EXECUTABLE}")
+  message(STATUS "  SOURCE_DIR: ${SWIFT_TEST_SOURCE_DIR}")
+  message(STATUS "  SWIFT_SOURCE: ${SWIFT_SOURCE}")
+
+  # Compile Swift source to object file
+  add_custom_command(
+    OUTPUT ${SWIFT_OBJ_FILE}
+    COMMAND ${SWIFTC}
+      -c ${SWIFT_SOURCE}
+      -o ${SWIFT_OBJ_FILE}
+      -import-objc-header ${SWIFT_TEST_BRIDGE_HEADER}
+      -I ${SWIFT_TEST_INCLUDE_DIR}
+      -Xcc -I${SWIFT_TEST_INCLUDE_DIR}
+    DEPENDS ${SWIFT_SOURCE} ${SWIFT_TEST_BRIDGE_HEADER} ork_core
+    COMMENT "Compiling Swift test: ${SWIFT_TEST_NAME}"
+    VERBATIM
+  )
+
+  # Link Swift executable
+  add_custom_command(
+    OUTPUT ${SWIFT_EXECUTABLE}
+    COMMAND ${SWIFTC}
+      ${SWIFT_OBJ_FILE}
+      -o ${SWIFT_EXECUTABLE}
+      -L ${CMAKE_INSTALL_PREFIX}/lib
+      -lork_core
+      -Xlinker -rpath -Xlinker ${CMAKE_INSTALL_PREFIX}/lib
+    DEPENDS ${SWIFT_OBJ_FILE} ork_core
+    COMMENT "Linking Swift test: ${SWIFT_TEST_NAME}"
+    VERBATIM
+  )
+
+  # Create custom target
+  add_custom_target(ork.test.swift.${SWIFT_TEST_NAME} ALL
+    DEPENDS ${SWIFT_EXECUTABLE}
+  )
+
+  # Install to subspace
+  install(PROGRAMS ${SWIFT_EXECUTABLE}
+          DESTINATION ${SWIFT_OUTPUT_DIR})
+
+endfunction()
+

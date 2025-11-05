@@ -16,3 +16,11 @@ ork_std_target_opts_core(ork.test.core.exe)
 ork_std_target_opts_utpp(ork.test.core.exe)
 
 install(TARGETS ork.test.core.exe DESTINATION $ENV{OBT_SUBSPACE_BIN_DIR} )
+
+###################################
+# Swift Tests (macOS only)
+###################################
+
+IF(APPLE AND NOT BUILD_IOS_MINIMAL)
+  include(swift/macos/CMakeLists.txt)
+ENDIF()

@@ -25,11 +25,23 @@ file(GLOB_RECURSE src_opencl ${SRCD}/opencl/*.cpp)
 file(GLOB_RECURSE src_python ${SRCD}/python/*.cpp)
 file(GLOB_RECURSE src_test ${SRCD}/test/*.cpp)
 
+###################################
+# Swift bindings (Apple platforms only)
+###################################
+
+IF(APPLE AND NOT BUILD_IOS_MINIMAL)
+    file(GLOB_RECURSE src_swift ${SRCD}/swift/*.cpp)
+ENDIF()
+
 set( orksrcs ${src_application} ${src_asset} ${src_dataflow} )
 list( APPEND orksrcs ${src_event} ${src_file} ${src_kernel} )
 list( APPEND orksrcs ${src_math} ${src_object} ${src_reflect} )
 list( APPEND orksrcs ${src_rtti} ${src_stream} ${src_util} )
 list( APPEND orksrcs ${src_gfx} ${src_hdl} ${src_opencl} ${src_python} ${src_test} )
+
+IF(APPLE AND NOT BUILD_IOS_MINIMAL)
+    list( APPEND orksrcs ${src_swift} )
+ENDIF()
 
 ###################################
 # ISPC files (intel specific)

@@ -7,9 +7,8 @@
 
 #include <ork/pch.h>
 
-#if defined(ORK_IOS)
+#if defined(__APPLE__) && !defined(ORK_IOS)
 
-#include <ork/ios/app_init.h>
 #include <ork/application/application.h>
 #include <ork/kernel/string/StringPool.h>
 #include <ork/file/path.h>
@@ -20,14 +19,14 @@
 using namespace ork;
 
 ///////////////////////////////////////////////////////////////////////////////
-// iOS Core Application - manages StringPool lifecycle
+// macOS Swift Core Application - manages StringPool lifecycle
 ///////////////////////////////////////////////////////////////////////////////
-struct CoreIOSApplication {
-  CoreIOSApplication() {
+struct CoreMacOSApplication {
+  CoreMacOSApplication() {
     _stringpoolctx = std::make_shared<ork::StringPoolContext>();
     StringPoolStack::push(_stringpoolctx);
   }
-  ~CoreIOSApplication() {
+  ~CoreMacOSApplication() {
     StringPoolStack::pop();
   }
   stringpoolctx_ptr_t _stringpoolctx;
@@ -48,7 +47,12 @@ static appinitdata_ptr_t gappinitdata = nullptr;
 static bool _core_initialized = false;
 
 ///////////////////////////////////////////////////////////////////////////////
-// iOS Core Initialization (call once on main thread at startup)
+// C API for Swift Bridge
+///////////////////////////////////////////////////////////////////////////////
+extern "C" {
+
+///////////////////////////////////////////////////////////////////////////////
+// macOS Swift Core Initialization (call once on main thread at startup)
 ///////////////////////////////////////////////////////////////////////////////
 void _coreappinit(int argc, char** argv) {
   // Check if already initialized
@@ -68,7 +72,7 @@ void _coreappinit(int argc, char** argv) {
   gappinitdata = std::make_shared<AppInitData>(argc, argv);
 
   // Create core application (manages StringPool)
-  static CoreIOSApplication the_app;
+  static CoreMacOSApplication the_app;
 
   // Setup file system context
   static auto WorkingDirContext = std::make_shared<FileDevContext>();
@@ -77,11 +81,11 @@ void _coreappinit(int argc, char** argv) {
   // Initialize Orkid core module
   ork::initModule(gappinitdata);
 
-  printf("Orkid core initialized for iOS\n");
+  printf("Orkid core initialized for macOS Swift\n");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// iOS Core Shutdown (call at app exit)
+// macOS Swift Core Shutdown (call at app exit)
 ///////////////////////////////////////////////////////////////////////////////
 void _coreappexit() {
   if (!_core_initialized) {
@@ -94,11 +98,11 @@ void _coreappexit() {
   gappinitdata = nullptr;
   _core_initialized = false;
 
-  printf("Orkid core shutdown (iOS)\n");
+  printf("Orkid core shutdown (macOS Swift)\n");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// iOS Core Poll (call every frame on main thread)
+// macOS Swift Core Poll (call every frame on main thread)
 ///////////////////////////////////////////////////////////////////////////////
 void _coreapppoll() {
   // Process main serial queue operations
@@ -107,4 +111,6 @@ void _coreapppoll() {
   }
 }
 
-#endif // ORK_IOS
+} // extern "C"
+
+#endif // __APPLE__ && !ORK_IOS
