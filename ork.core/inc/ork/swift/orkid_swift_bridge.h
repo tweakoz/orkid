@@ -47,30 +47,13 @@ void orkid_swift_exit(void);
 void orkid_swift_poll(void);
 const char* orkid_get_last_error(void);
 
-// ================================================================
-// Timer
-// ================================================================
-
-OrkidHandleBase* orkid_timer_create(void);
-void orkid_timer_start(OrkidHandleBase* timer);
-void orkid_timer_end(OrkidHandleBase* timer);
-float orkid_timer_secs_since_start(const OrkidHandleBase* timer);
-float orkid_timer_get_sync_time(void);
-
-// ================================================================
-// Math - vec3
-// ================================================================
-
-OrkidHandleBase* orkid_fvec3_create(float x, float y, float z);
-float orkid_fvec3_get_x(const OrkidHandleBase* handle);
-float orkid_fvec3_get_y(const OrkidHandleBase* handle);
-float orkid_fvec3_get_z(const OrkidHandleBase* handle);
-void orkid_fvec3_set_x(OrkidHandleBase* handle, float value);
-void orkid_fvec3_set_y(OrkidHandleBase* handle, float value);
-void orkid_fvec3_set_z(OrkidHandleBase* handle, float value);
-float orkid_fvec3_length(const OrkidHandleBase* handle);
-OrkidHandleBase* orkid_fvec3_normalized(const OrkidHandleBase* handle);
-
 #ifdef __cplusplus
 }
 #endif
+
+// ================================================================
+// Module Headers
+// ================================================================
+
+#include <ork/swift/swext_timer.h>
+#include <ork/swift/swext_math.h>

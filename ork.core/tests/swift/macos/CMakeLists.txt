@@ -37,3 +37,12 @@ ork_add_swift_test(
   BRIDGE_HEADER ${SWIFT_BRIDGE_HEADER}
   INCLUDE_DIR ${SWIFT_INCLUDE_DIR}
 )
+
+# test3_vec4 - Math types test (vec4)
+ork_add_swift_test(
+  NAME test3_vec4
+  SOURCE_DIR ${SWIFT_TESTS_DIR}/test3_vec4/test3_vec4/Sources
+  MAIN_SOURCE main.swift
+  BRIDGE_HEADER ${SWIFT_BRIDGE_HEADER}
+  INCLUDE_DIR ${SWIFT_INCLUDE_DIR}
+)

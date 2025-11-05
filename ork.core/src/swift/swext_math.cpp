@@ -219,4 +219,250 @@ OrkidHandleBase* orkid_fvec3_normalized(const OrkidHandleBase* handle) {
     }
 }
 
+// ================================================================
+// vec4 Functions
+// ================================================================
+
+OrkidHandleBase* orkid_fvec4_create(float x, float y, float z, float w) {
+    try {
+        auto handle = OrkidHandle<fvec4>::makeShared(x, y, z, w);
+        g_last_error.clear();
+        return handle;
+    } catch (const std::exception& e) {
+        g_last_error = std::string("fvec4 creation failed: ") + e.what();
+        return nullptr;
+    }
+}
+
+float orkid_fvec4_get_x(const OrkidHandleBase* handle) {
+    if (!handle) {
+        g_last_error = "Null fvec4 handle in orkid_fvec4_get_x";
+        return 0.0f;
+    }
+
+    auto typed = const_cast<OrkidHandleBase*>(handle)->typedHandle<fvec4>();
+    if (!typed) {
+        g_last_error = "Invalid fvec4 handle type";
+        return 0.0f;
+    }
+
+    try {
+        g_last_error.clear();
+        return typed->get()->x;
+    } catch (const std::exception& e) {
+        g_last_error = std::string("fvec4 get_x failed: ") + e.what();
+        return 0.0f;
+    }
+}
+
+float orkid_fvec4_get_y(const OrkidHandleBase* handle) {
+    if (!handle) {
+        g_last_error = "Null fvec4 handle in orkid_fvec4_get_y";
+        return 0.0f;
+    }
+
+    auto typed = const_cast<OrkidHandleBase*>(handle)->typedHandle<fvec4>();
+    if (!typed) {
+        g_last_error = "Invalid fvec4 handle type";
+        return 0.0f;
+    }
+
+    try {
+        g_last_error.clear();
+        return typed->get()->y;
+    } catch (const std::exception& e) {
+        g_last_error = std::string("fvec4 get_y failed: ") + e.what();
+        return 0.0f;
+    }
+}
+
+float orkid_fvec4_get_z(const OrkidHandleBase* handle) {
+    if (!handle) {
+        g_last_error = "Null fvec4 handle in orkid_fvec4_get_z";
+        return 0.0f;
+    }
+
+    auto typed = const_cast<OrkidHandleBase*>(handle)->typedHandle<fvec4>();
+    if (!typed) {
+        g_last_error = "Invalid fvec4 handle type";
+        return 0.0f;
+    }
+
+    try {
+        g_last_error.clear();
+        return typed->get()->z;
+    } catch (const std::exception& e) {
+        g_last_error = std::string("fvec4 get_z failed: ") + e.what();
+        return 0.0f;
+    }
+}
+
+float orkid_fvec4_get_w(const OrkidHandleBase* handle) {
+    if (!handle) {
+        g_last_error = "Null fvec4 handle in orkid_fvec4_get_w";
+        return 0.0f;
+    }
+
+    auto typed = const_cast<OrkidHandleBase*>(handle)->typedHandle<fvec4>();
+    if (!typed) {
+        g_last_error = "Invalid fvec4 handle type";
+        return 0.0f;
+    }
+
+    try {
+        g_last_error.clear();
+        return typed->get()->w;
+    } catch (const std::exception& e) {
+        g_last_error = std::string("fvec4 get_w failed: ") + e.what();
+        return 0.0f;
+    }
+}
+
+void orkid_fvec4_set_x(OrkidHandleBase* handle, float value) {
+    if (!handle) {
+        g_last_error = "Null fvec4 handle in orkid_fvec4_set_x";
+        return;
+    }
+
+    auto typed = handle->typedHandle<fvec4>();
+    if (!typed) {
+        g_last_error = "Invalid fvec4 handle type";
+        return;
+    }
+
+    try {
+        typed->get()->x = value;
+        g_last_error.clear();
+    } catch (const std::exception& e) {
+        g_last_error = std::string("fvec4 set_x failed: ") + e.what();
+    }
+}
+
+void orkid_fvec4_set_y(OrkidHandleBase* handle, float value) {
+    if (!handle) {
+        g_last_error = "Null fvec4 handle in orkid_fvec4_set_y";
+        return;
+    }
+
+    auto typed = handle->typedHandle<fvec4>();
+    if (!typed) {
+        g_last_error = "Invalid fvec4 handle type";
+        return;
+    }
+
+    try {
+        typed->get()->y = value;
+        g_last_error.clear();
+    } catch (const std::exception& e) {
+        g_last_error = std::string("fvec4 set_y failed: ") + e.what();
+    }
+}
+
+void orkid_fvec4_set_z(OrkidHandleBase* handle, float value) {
+    if (!handle) {
+        g_last_error = "Null fvec4 handle in orkid_fvec4_set_z";
+        return;
+    }
+
+    auto typed = handle->typedHandle<fvec4>();
+    if (!typed) {
+        g_last_error = "Invalid fvec4 handle type";
+        return;
+    }
+
+    try {
+        typed->get()->z = value;
+        g_last_error.clear();
+    } catch (const std::exception& e) {
+        g_last_error = std::string("fvec4 set_z failed: ") + e.what();
+    }
+}
+
+void orkid_fvec4_set_w(OrkidHandleBase* handle, float value) {
+    if (!handle) {
+        g_last_error = "Null fvec4 handle in orkid_fvec4_set_w";
+        return;
+    }
+
+    auto typed = handle->typedHandle<fvec4>();
+    if (!typed) {
+        g_last_error = "Invalid fvec4 handle type";
+        return;
+    }
+
+    try {
+        typed->get()->w = value;
+        g_last_error.clear();
+    } catch (const std::exception& e) {
+        g_last_error = std::string("fvec4 set_w failed: ") + e.what();
+    }
+}
+
+float orkid_fvec4_length(const OrkidHandleBase* handle) {
+    if (!handle) {
+        g_last_error = "Null fvec4 handle in orkid_fvec4_length";
+        return 0.0f;
+    }
+
+    auto typed = const_cast<OrkidHandleBase*>(handle)->typedHandle<fvec4>();
+    if (!typed) {
+        g_last_error = "Invalid fvec4 handle type";
+        return 0.0f;
+    }
+
+    try {
+        g_last_error.clear();
+        return typed->get()->magnitude();
+    } catch (const std::exception& e) {
+        g_last_error = std::string("fvec4 length failed: ") + e.what();
+        return 0.0f;
+    }
+}
+
+OrkidHandleBase* orkid_fvec4_normalized(const OrkidHandleBase* handle) {
+    if (!handle) {
+        g_last_error = "Null fvec4 handle in orkid_fvec4_normalized";
+        return nullptr;
+    }
+
+    auto typed = const_cast<OrkidHandleBase*>(handle)->typedHandle<fvec4>();
+    if (!typed) {
+        g_last_error = "Invalid fvec4 handle type";
+        return nullptr;
+    }
+
+    try {
+        fvec4 normalized = typed->get()->normalized();
+        auto result = OrkidHandle<fvec4>::makeShared(normalized.x, normalized.y, normalized.z, normalized.w);
+        g_last_error.clear();
+        return result;
+    } catch (const std::exception& e) {
+        g_last_error = std::string("fvec4 normalized failed: ") + e.what();
+        return nullptr;
+    }
+}
+
+float orkid_fvec4_dot(const OrkidHandleBase* a, const OrkidHandleBase* b) {
+    if (!a || !b) {
+        g_last_error = "Null fvec4 handle in orkid_fvec4_dot";
+        return 0.0f;
+    }
+
+    auto typed_a = const_cast<OrkidHandleBase*>(a)->typedHandle<fvec4>();
+    auto typed_b = const_cast<OrkidHandleBase*>(b)->typedHandle<fvec4>();
+
+    if (!typed_a || !typed_b) {
+        g_last_error = "Invalid fvec4 handle type in orkid_fvec4_dot";
+        return 0.0f;
+    }
+
+    try {
+        g_last_error.clear();
+        return typed_a->get()->dotWith(*typed_b->get());
+    } catch (const std::exception& e) {
+        g_last_error = std::string("fvec4 dot failed: ") + e.what();
+        return 0.0f;
+    }
+}
+
 } // extern "C"
