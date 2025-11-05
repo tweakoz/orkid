@@ -36,18 +36,21 @@ void runCurlTests(void) {
     }
 
     logchan->log("");
-    logchan->log("--- HTTP GET Test ---");
-    logchan->log("Fetching: http://example.com/");
+    logchan->log("--- HTTPS GET Test ---");
+    logchan->log("Fetching: https://example.com/");
 
     std::string responseData;
     CURLcode res;
 
     // Set curl options
-    curl_easy_setopt(curl, CURLOPT_URL, "http://example.com/");
+    curl_easy_setopt(curl, CURLOPT_URL, "https://example.com/");
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &responseData);
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(curl, CURLOPT_TIMEOUT, 30L);
+    // Enable SSL/TLS verification
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
 
     // Perform the request
     res = curl_easy_perform(curl);
