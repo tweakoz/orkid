@@ -11,7 +11,6 @@
 #include <ork/kernel/timer.h>
 #include <ork/kernel/environment.h>
 #include <ork/file/path.h>
-#include <ork/util/crc.h>
 #include <ork/util/hexdump.inl>
 #include <ork/util/logger.h>
 
@@ -58,11 +57,6 @@ void runKernelTests(void) {
 
     float elapsed_ms = timer.SecsSinceStart() * 1000.0f;
     logchan->log("Timer test: %.4f ms elapsed", elapsed_ms);
-
-    // CRC tests
-    logchan->log("");
-    logchan->log("--- CRC Tests ---");
-    logchan->log("CRC32 and CRC64 utilities available in ork.core");
 
     // Environment tests
     logchan->log("");

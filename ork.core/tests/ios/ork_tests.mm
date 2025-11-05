@@ -51,7 +51,7 @@
                       description:@"Test libtar archive creation and extraction"
                          function:runTarTests],
         [OrkTestInfo testWithName:@"Hash Tests"
-                      description:@"Test MD5 and XXHash hash functions"
+                      description:@"Test MD5, CRC32, CRC64, XXHash64, and XXHash3"
                          function:runHashTests],
     ];
 }

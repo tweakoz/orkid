@@ -9,6 +9,8 @@
 #include <ork/util/logger.h>
 #include <ork/util/md5.h>
 #include <ork/util/xxhash.inl>
+#include <ork/util/crc.h>
+#include <ork/util/crc64.h>
 #include <string>
 #include <vector>
 #include <cstring>
@@ -38,7 +40,8 @@ void runHashTests(void) {
     auto logchan = logger()->configureChannel("HASH", fvec3(0.6f, 0.8f, 0.2f), true);
 
     logchan->log("========================================");
-    logchan->log("Starting Hash Tests (MD5 and XXHash)");
+    logchan->log("Starting Hash Tests");
+    logchan->log("MD5, CRC32, CRC64, XXHash64, XXHash3");
     logchan->log("========================================");
 
     // Test 1: MD5 Test
@@ -107,7 +110,129 @@ void runHashTests(void) {
         logchan->log("  MD5: %s", hex.c_str());
     }
 
-    // Test 2: XXHash64 Tests
+    // Test 2: CRC32 Tests
+    logchan->log("");
+    logchan->log("--- CRC32 Tests ---");
+
+    // Test CRC32 with known string
+    {
+        std::string test_str = "The quick brown fox jumps over the lazy dog";
+        uint64_t crc = Crc32::HashMemory(test_str.c_str(), test_str.length());
+
+        logchan->log("✓ CRC32 string test completed");
+        logchan->log("  Input: '%s'", test_str.c_str());
+        logchan->log("  CRC32: 0x%08x", (uint32_t)(crc & 0xFFFFFFFF));
+    }
+
+    // Test CRC32 with empty string
+    {
+        std::string test_str = "";
+        uint64_t crc = Crc32::HashMemory(test_str.c_str(), test_str.length());
+
+        logchan->log("✓ CRC32 empty string test completed");
+        logchan->log("  CRC32: 0x%08x", (uint32_t)(crc & 0xFFFFFFFF));
+    }
+
+    // Test CRC32 with 8MB binary data
+    {
+        logchan->log("");
+        logchan->log("Testing CRC32 with 8MB binary data...");
+        auto test_data = generateHashTestData(8 * 1024 * 1024, 0x42);
+
+        uint64_t crc = Crc32::HashMemory(test_data.data(), test_data.size());
+
+        logchan->log("✓ CRC32 8MB binary data test completed");
+        logchan->log("  Size: %.2f MB", test_data.size() / (1024.0 * 1024.0));
+        logchan->log("  CRC32: 0x%08x", (uint32_t)(crc & 0xFFFFFFFF));
+    }
+
+    // Test 3: CRC64 Tests
+    logchan->log("");
+    logchan->log("--- CRC64 Tests ---");
+
+    // Test CRC64 with known string
+    {
+        std::string test_str = "The quick brown fox jumps over the lazy dog";
+        boost::Crc64 crc64;
+        crc64.init();
+        crc64.accumulateString(test_str);
+        crc64.finish();
+        uint64_t hash = crc64.result();
+
+        logchan->log("✓ CRC64 string test completed");
+        logchan->log("  Input: '%s'", test_str.c_str());
+        logchan->log("  CRC64: 0x%016llx", hash);
+    }
+
+    // Test CRC64 with empty string
+    {
+        std::string test_str = "";
+        boost::Crc64 crc64;
+        crc64.init();
+        crc64.accumulateString(test_str);
+        crc64.finish();
+        uint64_t hash = crc64.result();
+
+        logchan->log("✓ CRC64 empty string test completed");
+        logchan->log("  CRC64: 0x%016llx", hash);
+    }
+
+    // Test CRC64 with 8MB binary data
+    {
+        logchan->log("");
+        logchan->log("Testing CRC64 with 8MB binary data...");
+        auto test_data = generateHashTestData(8 * 1024 * 1024, 0x42);
+
+        boost::Crc64 crc64;
+        crc64.init();
+        crc64.accumulate(test_data.data(), test_data.size());
+        crc64.finish();
+        uint64_t hash = crc64.result();
+
+        logchan->log("✓ CRC64 8MB binary data test completed");
+        logchan->log("  Size: %.2f MB", test_data.size() / (1024.0 * 1024.0));
+        logchan->log("  CRC64: 0x%016llx", hash);
+    }
+
+    // Test CRC64 incremental hashing
+    {
+        logchan->log("");
+        logchan->log("Testing CRC64 incremental hashing...");
+
+        // Generate 4MB of data
+        auto full_data = generateHashTestData(4 * 1024 * 1024, 0x99);
+
+        // Hash all at once
+        boost::Crc64 crc64a;
+        crc64a.init();
+        crc64a.accumulate(full_data.data(), full_data.size());
+        crc64a.finish();
+        uint64_t hash_full = crc64a.result();
+
+        // Hash in 1MB chunks
+        boost::Crc64 crc64b;
+        crc64b.init();
+        size_t chunk_size = 1024 * 1024;
+        for (size_t offset = 0; offset < full_data.size(); offset += chunk_size) {
+            size_t remaining = full_data.size() - offset;
+            size_t to_hash = (remaining < chunk_size) ? remaining : chunk_size;
+            crc64b.accumulate(full_data.data() + offset, to_hash);
+        }
+        crc64b.finish();
+        uint64_t hash_incremental = crc64b.result();
+
+        if (hash_full == hash_incremental) {
+            logchan->log("✓ CRC64 incremental hashing test passed");
+            logchan->log("  Full hash:        0x%016llx", hash_full);
+            logchan->log("  Incremental hash: 0x%016llx", hash_incremental);
+        } else {
+            logchan->log("✗ CRC64 incremental hashing test FAILED");
+            logchan->log("  Full hash:        0x%016llx", hash_full);
+            logchan->log("  Incremental hash: 0x%016llx", hash_incremental);
+        }
+    }
+
+    // Test 4: XXHash64 Tests
     logchan->log("");
     logchan->log("--- XXHash64 Tests ---");
 
@@ -193,7 +318,7 @@ void runHashTests(void) {
         }
     }
 
-    // Test 3: XXHash3 Tests (if available)
+    // Test 5: XXHash3 Tests (if available)
     logchan->log("");
     logchan->log("--- XXHash3 Tests ---");
 
@@ -228,7 +353,7 @@ void runHashTests(void) {
         logchan->log("  XXHash3: 0x%016llx", hash);
     }
 
-    // Test 4: Hash Consistency Test
+    // Test 6: Hash Consistency Test
     logchan->log("");
     logchan->log("--- Hash Consistency Test ---");
 
@@ -250,6 +375,35 @@ void runHashTests(void) {
             logchan->log("✓ MD5 consistency test passed");
         } else {
             logchan->log("✗ MD5 consistency test FAILED");
+        }
+
+        // CRC32 consistency
+        uint64_t crc32_hash1 = Crc32::HashMemory(test_data.data(), test_data.size());
+        uint64_t crc32_hash2 = Crc32::HashMemory(test_data.data(), test_data.size());
+
+        if (crc32_hash1 == crc32_hash2) {
+            logchan->log("✓ CRC32 consistency test passed");
+        } else {
+            logchan->log("✗ CRC32 consistency test FAILED");
+        }
+
+        // CRC64 consistency
+        boost::Crc64 crc64a;
+        crc64a.init();
+        crc64a.accumulate(test_data.data(), test_data.size());
+        crc64a.finish();
+        uint64_t crc64_hash1 = crc64a.result();
+
+        boost::Crc64 crc64b;
+        crc64b.init();
+        crc64b.accumulate(test_data.data(), test_data.size());
+        crc64b.finish();
+        uint64_t crc64_hash2 = crc64b.result();
+
+        if (crc64_hash1 == crc64_hash2) {
+            logchan->log("✓ CRC64 consistency test passed");
+        } else {
+            logchan->log("✗ CRC64 consistency test FAILED");
         }
 
         // XXHash64 consistency
