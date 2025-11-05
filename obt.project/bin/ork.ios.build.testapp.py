@@ -35,16 +35,13 @@ this_dir = os.path.dirname(this_dir)
 
 os.environ["ORKID_WORKSPACE_DIR"] = this_dir
 
-# Import OBT modules
-sys.path.insert(0, os.path.join(this_dir, "obt.project", "python"))
-sys.path.insert(0, os.path.join(this_dir, "obt.project", "scripts"))
-
 from ork.ios import device_manager
+import ork.path
 
 print(f"Orkid iOS Test App Quick Build")
 
 # Setup build directory
-stage_dir = Path(os.path.abspath(str(obt.path.stage())))
+stage_dir = obt.path.stage()
 selection_file = stage_dir / "ios_device_selection.json"
 
 # Determine target from saved selection or args
@@ -63,6 +60,14 @@ if not is_device and not is_simulator:
         is_simulator = True
         print("No saved selection found, defaulting to simulator")
 
+# Setup iOS subspace paths based on target
+if is_simulator:
+    ios_builds = ork.path.iossim_builds
+    print("Building for: iOS Simulator")
+else:
+    ios_builds = ork.path.ios_builds
+    print("Building for: iOS Device")
+
 # Determine build type
 if _args["release"]:
     is_debug = False
@@ -72,16 +77,11 @@ else:
     # Default to debug
     is_debug = True
 
-if is_simulator:
-    build_dest = stage_dir / "orkid-ios-simulator"
-    print("Building for: iOS Simulator")
-else:
-    build_dest = stage_dir / "orkid-ios"
-    print("Building for: iOS Device")
+build_dest = ios_builds / "orkid"
 
 if not build_dest.exists():
     print(f"ERROR: Build directory not found: {build_dest}")
-    print("Run ork.ios.build.py first to configure and build the iOS library")
+    print("Run ork.ios.build.lib.py first to configure and build the iOS library")
     sys.exit(-1)
 
 build_type = "Debug" if is_debug else "Release"

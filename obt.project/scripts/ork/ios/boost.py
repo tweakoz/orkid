@@ -77,6 +77,7 @@ def build_boost_for_ios(
     boost_src_dir,
     boost_install_dir,
     is_simulator,
+    ios_include_dir=None,
     manifest_dir=None,
     force_rebuild=False,
     verbose=False,
@@ -89,6 +90,7 @@ def build_boost_for_ios(
         boost_src_dir: Path to Boost source directory
         boost_install_dir: Path where Boost will be installed
         is_simulator: True to build for simulator, False for device
+        ios_include_dir: Path to iOS subspace include directory (optional, for header symlink)
         manifest_dir: Directory for storing build manifests (optional)
         force_rebuild: Force rebuild even if manifest exists
         verbose: Enable verbose build output
@@ -100,6 +102,8 @@ def build_boost_for_ios(
     """
     boost_src_dir = Path(boost_src_dir)
     boost_install_dir = Path(boost_install_dir)
+    if ios_include_dir:
+        ios_include_dir = Path(ios_include_dir)
 
     print("\n=== Building Boost for iOS ===")
 
@@ -207,6 +211,26 @@ using clang : ios
     if result.returncode != 0:
         print("\n✗ Boost iOS build failed")
         return False
+
+    # Symlink Boost headers to iOS subspace include directory
+    if ios_include_dir:
+        boost_headers_src = boost_install_dir / "include" / "boost"
+        boost_headers_dest = ios_include_dir / "boost"
+
+        if boost_headers_src.exists():
+            print(f"\nSymlinking Boost headers to {boost_headers_dest}...")
+            ios_include_dir.mkdir(parents=True, exist_ok=True)
+
+            # Remove existing symlink or directory
+            if boost_headers_dest.exists() or boost_headers_dest.is_symlink():
+                if boost_headers_dest.is_symlink():
+                    boost_headers_dest.unlink()
+                else:
+                    shutil.rmtree(boost_headers_dest)
+
+            # Create symlink
+            boost_headers_dest.symlink_to(boost_headers_src, target_is_directory=True)
+            print(f"  ✓ Symlinked: {boost_headers_dest} -> {boost_headers_src}")
 
     # Create manifest file to mark successful build
     if manifest_dir:

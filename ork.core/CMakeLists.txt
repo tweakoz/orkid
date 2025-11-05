@@ -246,7 +246,7 @@ IF(BUILD_IOS_MINIMAL)
 
   # Include directories
   target_include_directories(ork_core_ios PRIVATE ${INCD})
-  target_include_directories(ork_core_ios PRIVATE $ENV{OBT_STAGE}/include)
+  target_include_directories(ork_core_ios PRIVATE $ENV{OBT_STAGE}/subspaces/ios/include)
 
   # iOS is ARM64, use sse2neon to translate SSE to NEON (like macOS Apple Silicon)
   target_include_directories(ork_core_ios PRIVATE $ENV{OBT_BUILDS}/sse2neon)
@@ -329,7 +329,7 @@ IF(BUILD_IOS_MINIMAL)
   # Include directories for the test app
   target_include_directories(ork_test_ios PRIVATE ${INCD})
   target_include_directories(ork_test_ios PRIVATE ${CMAKE_SOURCE_DIR}/ork.test.ios)
-  target_include_directories(ork_test_ios PRIVATE $ENV{OBT_STAGE}/include)
+  target_include_directories(ork_test_ios PRIVATE $ENV{OBT_STAGE}/subspaces/ios/include)
 
   # iOS-specific definitions
   target_compile_definitions(ork_test_ios PRIVATE

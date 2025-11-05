@@ -34,4 +34,22 @@ def __getattr__(name):
   	return obt_path.stage()/"share"/"singularity"
   elif name == "effect_textures":
   	return _root()/"ork.data"/"src"/"effect_textures"
+  # iOS Device subspace
+  elif name == "ios_subspace":
+  	return obt_path.stage()/"subspaces"/"ios"
+  elif name == "ios_builds":
+  	return obt_path.stage()/"subspaces"/"ios"/"builds"
+  elif name == "ios_include":
+  	return obt_path.stage()/"subspaces"/"ios"/"include"
+  elif name == "ios_lib":
+  	return obt_path.stage()/"subspaces"/"ios"/"lib"
+  # iOS Simulator subspace
+  elif name == "iossim_subspace":
+  	return obt_path.stage()/"subspaces"/"iossim"
+  elif name == "iossim_builds":
+  	return obt_path.stage()/"subspaces"/"iossim"/"builds"
+  elif name == "iossim_include":
+  	return obt_path.stage()/"subspaces"/"iossim"/"include"
+  elif name == "iossim_lib":
+  	return obt_path.stage()/"subspaces"/"iossim"/"lib"
   return None

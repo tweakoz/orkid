@@ -21,14 +21,14 @@ import obt.host
 import obt.path
 from obt.command import Command
 
-# Add ork.ios module to path
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))), "obt.project", "scripts"))
-from ork.ios import boost as ios_boost
+from ork.ios import device_manager
+import ork.path
 
 parser = argparse.ArgumentParser(description='orkid iOS build')
 parser.add_argument('--clean', action="store_true", help='force clean build')
 parser.add_argument('--verbose', action="store_true", help='verbose build')
-parser.add_argument('--simulator', action="store_true", help='build for iOS Simulator instead of device')
+parser.add_argument('--simulator', action="store_true", help='force build for iOS Simulator')
+parser.add_argument('--device', action="store_true", help='force build for iOS Device')
 parser.add_argument('--debug', action="store_true", help='debug build')
 parser.add_argument('--rebuild-boost', action="store_true", help='force rebuild of Boost for iOS')
 
@@ -46,66 +46,214 @@ print(f"Project root: {this_dir}")
 # Set environment
 os.environ["ORKID_WORKSPACE_DIR"] = this_dir
 
-# Setup build directory
-stage_dir = obt.path.Path(os.path.abspath(str(obt.path.stage())))
+# Determine target from saved selection or args
+stage_dir = obt.path.stage()
+selection_file = stage_dir / "ios_device_selection.json"
+is_device = _args["device"]
 is_simulator = _args["simulator"]
 
+if not is_device and not is_simulator:
+    # No explicit target specified, use saved selection
+    saved_selection = device_manager.load_device_selection(selection_file)
+    if saved_selection:
+        is_simulator = (saved_selection["type"] == "simulator")
+        is_device = (saved_selection["type"] == "device")
+        print(f"Using saved selection: {saved_selection['name']} ({saved_selection['type']})")
+    else:
+        # Default to simulator
+        is_simulator = True
+        print("No saved selection found, defaulting to simulator")
+
+# Setup iOS subspace directory structure based on target
 if is_simulator:
-    build_dest = stage_dir / "orkid-ios-simulator"
-    boost_ios_dir = stage_dir / "builds" / "boost-ios-simulator"
+    ios_subspace = ork.path.iossim_subspace
+    ios_builds = ork.path.iossim_builds
+    ios_include = ork.path.iossim_include
+    ios_lib = ork.path.iossim_lib
     print("Building for iOS Simulator")
 else:
-    build_dest = stage_dir / "orkid-ios"
-    boost_ios_dir = stage_dir / "builds" / "boost-ios"
+    ios_subspace = ork.path.ios_subspace
+    ios_builds = ork.path.ios_builds
+    ios_include = ork.path.ios_include
+    ios_lib = ork.path.ios_lib
     print("Building for iOS Device")
 
+# Create iOS subspace directories
+ios_builds.mkdir(parents=True, exist_ok=True)
+ios_include.mkdir(parents=True, exist_ok=True)
+ios_lib.mkdir(parents=True, exist_ok=True)
+
+build_dest = ios_builds / "orkid"
 build_dest.mkdir(parents=True, exist_ok=True)
-boost_ios_dir.mkdir(parents=True, exist_ok=True)
+boost_ios_dir = ios_builds / "boost"
 
 os.environ["ORKID_BUILD_DEST"] = str(build_dest)
 
 prj_root = obt.path.Path(os.environ["ORKID_WORKSPACE_DIR"])
 
+print(f"iOS subspace: {ios_subspace}")
 print(f"Build destination: {build_dest}")
-print(f"Boost iOS destination: {boost_ios_dir}")
+print(f"Boost destination: {boost_ios_dir}")
+print(f"Include directory: {ios_include}")
+print(f"Lib directory: {ios_lib}")
 
 ######################################################################
-# Build Boost for iOS (using ork.ios.boost module)
+# Install iOS dependencies using provider modules
 ######################################################################
 
-# Determine Boost source directory
-boost_base_dir = stage_dir / "builds" / "boost"
+manifest_dir = ios_subspace / "manifests"
+manifest_dir.mkdir(parents=True, exist_ok=True)
 
-# Check if boost directory exists
-if not boost_base_dir.exists():
-    print(f"ERROR: Boost base directory not found at {boost_base_dir}")
-    print("Please ensure host Orkid has been built first: ork.build.py")
-    sys.exit(-1)
+# Define dependencies to install
+ios_dependencies = [
+    {
+        "name": "boost",
+        "module": "ork.ios.boost",
+        "install_func": "build_boost_for_ios",
+        "params": lambda: {
+            "boost_src_dir": _find_boost_source(),
+            "boost_install_dir": boost_ios_dir,
+            "is_simulator": is_simulator,
+            "ios_include_dir": ios_include,
+            "manifest_dir": manifest_dir,
+            "force_rebuild": _args["rebuild_boost"],
+            "verbose": _args["verbose"],
+            "num_cores": obt.host.NumCores,
+            "ios_deployment_target": "15.0"
+        }
+    },
+    {
+        "name": "glm",
+        "module": "ork.ios.glm",
+        "install_func": "install_glm_for_ios",
+        "params": lambda: {
+            "host_include_dir": stage_dir / "include",
+            "ios_include_dir": ios_include,
+            "manifest_dir": manifest_dir,
+            "force_rebuild": False
+        }
+    },
+    {
+        "name": "lz4",
+        "module": "ork.ios.lz4",
+        "install_func": "install_lz4_for_ios",
+        "params": lambda: {
+            "host_include_dir": stage_dir / "include",
+            "ios_include_dir": ios_include,
+            "manifest_dir": manifest_dir,
+            "force_rebuild": False
+        }
+    },
+    {
+        "name": "klein",
+        "module": "ork.ios.klein",
+        "install_func": "install_klein_for_ios",
+        "params": lambda: {
+            "host_include_dir": stage_dir / "include",
+            "ios_include_dir": ios_include,
+            "manifest_dir": manifest_dir,
+            "force_rebuild": False
+        }
+    },
+    {
+        "name": "openblas",
+        "module": "ork.ios.openblas",
+        "install_func": "install_openblas_for_ios",
+        "params": lambda: {
+            "host_include_dir": stage_dir / "include",
+            "ios_include_dir": ios_include,
+            "manifest_dir": manifest_dir,
+            "force_rebuild": False
+        }
+    },
+    {
+        "name": "easyprof",
+        "module": "ork.ios.easyprof",
+        "install_func": "install_easyprof_for_ios",
+        "params": lambda: {
+            "host_include_dir": stage_dir / "include",
+            "ios_include_dir": ios_include,
+            "manifest_dir": manifest_dir,
+            "force_rebuild": False
+        }
+    },
+    {
+        "name": "rapidjson",
+        "module": "ork.ios.rapidjson",
+        "install_func": "install_rapidjson_for_ios",
+        "params": lambda: {
+            "host_include_dir": stage_dir / "include",
+            "ios_include_dir": ios_include,
+            "manifest_dir": manifest_dir,
+            "force_rebuild": False
+        }
+    },
+    {
+        "name": "sigslot",
+        "module": "ork.ios.sigslot",
+        "install_func": "install_sigslot_for_ios",
+        "params": lambda: {
+            "host_include_dir": stage_dir / "include",
+            "ios_include_dir": ios_include,
+            "manifest_dir": manifest_dir,
+            "force_rebuild": False
+        }
+    },
+    {
+        "name": "curl",
+        "module": "ork.ios.curl",
+        "install_func": "install_curl_for_ios",
+        "params": lambda: {
+            "host_include_dir": stage_dir / "include",
+            "ios_include_dir": ios_include,
+            "manifest_dir": manifest_dir,
+            "force_rebuild": False
+        }
+    },
+    {
+        "name": "nlohmann",
+        "module": "ork.ios.nlohmann",
+        "install_func": "install_nlohmann_for_ios",
+        "params": lambda: {
+            "host_include_dir": stage_dir / "include",
+            "ios_include_dir": ios_include,
+            "manifest_dir": manifest_dir,
+            "force_rebuild": False
+        }
+    }
+]
 
-# Find the actual Boost source directory using the module
-boost_src_dir = ios_boost.find_boost_source(boost_base_dir)
-if boost_src_dir:
-    print(f"Found Boost source: {boost_src_dir.name}")
-else:
-    print(f"ERROR: Boost source directory not found in {boost_base_dir}")
-    print("Expected boost-X.Y.Z subdirectory with bootstrap.sh")
-    sys.exit(-1)
+# Helper function for Boost source lookup
+def _find_boost_source():
+    boost_base_dir = stage_dir / "builds" / "boost"
+    if not boost_base_dir.exists():
+        print(f"ERROR: Boost base directory not found at {boost_base_dir}")
+        print("Please ensure host Orkid has been built first: ork.build.py")
+        sys.exit(-1)
 
-# Build Boost for iOS using the module
-manifest_dir = stage_dir / "manifests"
-success = ios_boost.build_boost_for_ios(
-    boost_src_dir=boost_src_dir,
-    boost_install_dir=boost_ios_dir,
-    is_simulator=is_simulator,
-    manifest_dir=manifest_dir,
-    force_rebuild=_args["rebuild_boost"],
-    verbose=_args["verbose"],
-    num_cores=obt.host.NumCores,
-    ios_deployment_target="15.0"
-)
+    import importlib
+    boost_module = importlib.import_module("ork.ios.boost")
+    boost_src_dir = boost_module.find_boost_source(boost_base_dir)
+    if boost_src_dir:
+        print(f"Found Boost source: {boost_src_dir.name}")
+    else:
+        print(f"ERROR: Boost source directory not found in {boost_base_dir}")
+        print("Expected boost-X.Y.Z subdirectory with bootstrap.sh")
+        sys.exit(-1)
+    return boost_src_dir
 
-if not success:
-    sys.exit(-1)
+# Install each dependency
+for dep in ios_dependencies:
+    import importlib
+    dep_module = importlib.import_module(dep["module"])
+    install_func = getattr(dep_module, dep["install_func"])
+
+    params = dep["params"]()
+    success = install_func(**params)
+
+    if not success:
+        print(f"ERROR: Failed to install {dep['name']} for iOS")
+        sys.exit(-1)
 
 ######################################################################
 # Configure CMake for iOS
@@ -138,9 +286,13 @@ else:
 # Architecture
 cmd += ["-DARCHITECTURE=AARCH64"]
 
-# Install prefix
-ios_install_prefix = stage_dir / "ios-sdk"
-cmd += [f"-DCMAKE_INSTALL_PREFIX={ios_install_prefix}"]
+# Install prefix - use iOS subspace
+cmd += [f"-DCMAKE_INSTALL_PREFIX={ios_subspace}"]
+cmd += [f"-DCMAKE_INSTALL_INCLUDEDIR=include"]
+cmd += [f"-DCMAKE_INSTALL_LIBDIR=lib"]
+
+# Add iOS include directory to header search path
+cmd += [f"-DCMAKE_INCLUDE_PATH={ios_include}"]
 
 # Point to iOS-specific Boost
 cmd += [f"-DBOOST_ROOT={boost_ios_dir}"]
@@ -202,7 +354,9 @@ if rval == 0:
     print("\n✓ iOS build successful!")
     print(f"Build output: {build_dest}")
     print(f"\nTo install: cd {build_dest} && make install")
-    print(f"Install location: {ios_install_prefix}")
+    print(f"Install location: {ios_subspace}")
+    print(f"  Headers: {ios_include}")
+    print(f"  Libraries: {ios_lib}")
     print(f"\nBoost iOS libraries: {boost_ios_dir}/lib")
 else:
     print("\n✗ iOS build failed")
