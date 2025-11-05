@@ -159,6 +159,7 @@ IF(BUILD_IOS_MINIMAL)
     ${SRCD}/util/logger.cpp
     ${SRCD}/util/logger_std.cpp
     ${SRCD}/util/logger_redirector.cpp
+    ${SRCD}/util/logger_ios_ui.mm
     ${SRCD}/util/endian.cpp
     ${SRCD}/util/hotkey.cpp
     ${SRCD}/util/URL.cpp
@@ -254,6 +255,7 @@ IF(BUILD_IOS_MINIMAL)
   target_link_libraries(ork_core_ios LINK_PRIVATE
     "-framework Foundation"
     "-framework Accelerate"
+    "-framework UIKit"
   )
 
   # Only link Boost filesystem if available
@@ -282,6 +284,81 @@ IF(BUILD_IOS_MINIMAL)
   )
 
   message(STATUS "iOS target ork_core_ios configured")
+
+  ###################################
+  # iOS Test App Target
+  ###################################
+
+  # Test files
+  file(GLOB src_ios_tests
+    ${CMAKE_SOURCE_DIR}/ork.core/tests/ios/ork_tests.mm
+    ${CMAKE_SOURCE_DIR}/ork.core/tests/ios/test_math.mm
+    ${CMAKE_SOURCE_DIR}/ork.core/tests/ios/test_dataflow.mm
+    ${CMAKE_SOURCE_DIR}/ork.core/tests/ios/test_kernel.mm
+  )
+
+  # App files
+  file(GLOB src_ios_app
+    ${CMAKE_SOURCE_DIR}/ork.test.ios/main.mm
+    ${CMAKE_SOURCE_DIR}/ork.test.ios/app_delegate.mm
+    ${CMAKE_SOURCE_DIR}/ork.test.ios/test_list_view_controller.mm
+    ${CMAKE_SOURCE_DIR}/ork.test.ios/test_detail_view_controller.mm
+  )
+
+  # Create the iOS test app bundle
+  add_executable(ork_test_ios MACOSX_BUNDLE
+    ${src_ios_tests}
+    ${src_ios_app}
+  )
+
+  # Link with ork_core_ios
+  target_link_libraries(ork_test_ios PRIVATE ork_core_ios)
+
+  # App-specific frameworks
+  target_link_libraries(ork_test_ios PRIVATE
+    "-framework Foundation"
+    "-framework UIKit"
+  )
+
+  # Include directories for the test app
+  target_include_directories(ork_test_ios PRIVATE ${INCD})
+  target_include_directories(ork_test_ios PRIVATE ${CMAKE_SOURCE_DIR}/ork.test.ios)
+  target_include_directories(ork_test_ios PRIVATE $ENV{OBT_STAGE}/include)
+
+  # iOS-specific definitions
+  target_compile_definitions(ork_test_ios PRIVATE
+    -DORK_IOS
+    -DORK_CONFIG_IOS
+    -DORK_ARCHITECTURE_ARM_64
+    -DUSING_ORKID
+  )
+
+  # Set bundle properties
+  set_target_properties(ork_test_ios PROPERTIES
+    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/ork.test.ios/Info.plist
+    MACOSX_BUNDLE_BUNDLE_NAME "OrkidTest"
+    MACOSX_BUNDLE_GUI_IDENTIFIER "com.tweakoz.orkid.test"
+    MACOSX_BUNDLE_BUNDLE_VERSION "1.0"
+    MACOSX_BUNDLE_SHORT_VERSION_STRING "1.0"
+    XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.tweakoz.orkid.test"
+    XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2" # iPhone and iPad
+    XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "iPhone Developer"
+    XCODE_ATTRIBUTE_DEVELOPMENT_TEAM ""
+    BUILD_WITH_INSTALL_RPATH TRUE
+    INSTALL_RPATH "@executable_path/Frameworks"
+  )
+
+  # Embed the dylib in the app bundle
+  add_custom_command(TARGET ork_test_ios POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+      "$<TARGET_FILE_DIR:ork_test_ios>/Frameworks"
+    COMMAND ${CMAKE_COMMAND} -E copy
+      "$<TARGET_FILE:ork_core_ios>"
+      "$<TARGET_FILE_DIR:ork_test_ios>/Frameworks/"
+    COMMENT "Embedding libork_core_ios.dylib in app bundle"
+  )
+
+  message(STATUS "iOS test app ork_test_ios configured")
 
 ENDIF()
 

@@ -115,22 +115,28 @@ def build_boost_for_ios(boost_src_dir, boost_install_dir, is_simulator, verbose,
 
     # Architecture settings
     if is_simulator:
-        # Simulator can be x86_64 or arm64
-        archs = ["x86_64", "arm64"]
-        arch_flags = "-arch x86_64 -arch arm64"
+        # Simulator: arm64 only (Apple Silicon)
+        archs = ["arm64"]
+        arch_flags = "-arch arm64"
     else:
         # Device is arm64 only
         archs = ["arm64"]
         arch_flags = "-arch arm64"
 
     # Create user-config.jam for iOS cross-compilation
+    # For simulator, we need to explicitly set the target triple
+    if is_simulator:
+        target_flag = "-target arm64-apple-ios15.0-simulator"
+    else:
+        target_flag = "-target arm64-apple-ios15.0"
+
     user_config_content = f"""
 using clang : ios
 :
 /usr/bin/clang++
 :
-<compileflags>"-isysroot {ios_sdk_path} {arch_flags} -mios-version-min=15.0 -fPIC"
-<linkflags>"-isysroot {ios_sdk_path} {arch_flags} -mios-version-min=15.0"
+<compileflags>"-isysroot {ios_sdk_path} {target_flag} -fPIC"
+<linkflags>"-isysroot {ios_sdk_path} {target_flag}"
 ;
 """
 
@@ -158,6 +164,17 @@ using clang : ios
     # Build Boost for iOS
     os.chdir(boost_src_dir)
 
+    # Set environment variables for iOS build
+    build_env = os.environ.copy()
+    if is_simulator:
+        build_env["CFLAGS"] = f"-isysroot {ios_sdk_path} -target arm64-apple-ios15.0-simulator"
+        build_env["CXXFLAGS"] = f"-isysroot {ios_sdk_path} -target arm64-apple-ios15.0-simulator"
+        build_env["LDFLAGS"] = f"-isysroot {ios_sdk_path} -target arm64-apple-ios15.0-simulator"
+    else:
+        build_env["CFLAGS"] = f"-isysroot {ios_sdk_path} -target arm64-apple-ios15.0"
+        build_env["CXXFLAGS"] = f"-isysroot {ios_sdk_path} -target arm64-apple-ios15.0"
+        build_env["LDFLAGS"] = f"-isysroot {ios_sdk_path} -target arm64-apple-ios15.0"
+
     b2_cmd = [
         str(b2_path),
         f"--user-config={user_config_path}",
@@ -179,7 +196,8 @@ using clang : ios
     print("\nBuilding Boost libraries for iOS...")
     print(" ".join(b2_cmd))
 
-    result = Command(b2_cmd).exec()
+    result = subprocess.run(b2_cmd, env=build_env)
+    result = result.returncode
 
     if result != 0:
         print("\n✗ Boost iOS build failed")

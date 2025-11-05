@@ -63,7 +63,7 @@ if(IOS_SIMULATOR)
 
   if(IOS_SIM_SDK_PATH)
     set(CMAKE_OSX_SYSROOT ${IOS_SIM_SDK_PATH})
-    set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64")  # Intel + Apple Silicon Macs
+    set(CMAKE_OSX_ARCHITECTURES "arm64")  # Apple Silicon only
   endif()
 endif()
 

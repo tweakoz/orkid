@@ -57,7 +57,7 @@ The build script automatically handles Boost cross-compilation for iOS. On first
 
 ```bash
 cd /path/to/orkid
-ork.build.ios.py
+ork.ios.build.py
 ```
 
 This will:
@@ -71,7 +71,7 @@ This will:
 ### Build for iOS Simulator
 
 ```bash
-ork.build.ios.py --simulator
+ork.ios.build.py --simulator
 ```
 
 Builds for iOS Simulator (x86_64 + arm64). Boost will be built separately at `$OBT_STAGE/builds/boost-ios-simulator`.
@@ -79,19 +79,19 @@ Builds for iOS Simulator (x86_64 + arm64). Boost will be built separately at `$O
 ### Debug Build
 
 ```bash
-ork.build.ios.py --debug
+ork.ios.build.py --debug
 ```
 
 ### Clean Build
 
 ```bash
-ork.build.ios.py --clean
+ork.ios.build.py --clean
 ```
 
 ### Force Rebuild Boost
 
 ```bash
-ork.build.ios.py --rebuild-boost
+ork.ios.build.py --rebuild-boost
 ```
 
 Force rebuild of Boost libraries for iOS even if the manifest exists. This ignores the `$OBT_STAGE/manifests/boost_ios_device` (or `boost_ios_simulator`) marker.
@@ -106,7 +106,7 @@ rm $OBT_STAGE/manifests/boost_ios_simulator
 ### Verbose Output
 
 ```bash
-ork.build.ios.py --verbose
+ork.ios.build.py --verbose
 ```
 
 ## Build Output

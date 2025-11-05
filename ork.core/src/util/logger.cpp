@@ -224,6 +224,12 @@ logchannel_ptr_t logerrchannel() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+logchannel_ptr_t logchannel(const std::string& named) {
+  return logger()->getChannel(named);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void default_log_fn(const LogChannel* chan, const std::string& str) {
   printf("%s[%s]\t%s%s\n", chan->_c1_prefix.c_str(), chan->_name.c_str(), str.c_str(),chan->_reset.c_str());
   static bool check_flush = genviron.has("ORKID_LOG_ALWAYSFLUSH");
