@@ -11,9 +11,7 @@
 #include <ork/orktypes.h>
 #include <ork/asset/catalog/types.h>
 #include <ork/asset/catalog/manifest.h>
-#if !defined(ORK_IOS)
 #include <ork/util/crypt.h>
-#endif
 #include <memory>
 #include <map>
 #include <vector>

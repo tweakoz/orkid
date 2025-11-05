@@ -10,11 +10,9 @@
 #include <ork/orkstd.h>
 #include <ork/orktypes.h>
 #include <ork/kernel/datablock.h>
-#if !defined(ORK_IOS)
 #include <ork/util/crypt.h>
 #include <ork/util/download_manager.h>
 #include <ork/util/upload_manager.h>
-#endif
 #include <ork/asset/catalog/types.h>
 #include <ork/asset/catalog/manifest.h>
 #include <ork/asset/catalog/namespace.h>

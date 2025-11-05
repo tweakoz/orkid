@@ -529,7 +529,6 @@ uploadreceipt_ptr_t AssetEntry::upload(
   std::vector<size_t> upload_indices;
   std::vector<size_t> already_valid_indices;
 
-#if !defined(ORK_IOS)
   chunkverifyrequest_vect_t verify_requests;
   for (size_t chunk_idx : available_chunk_indices) {
     ChunkVerifyRequest req;
@@ -606,12 +605,6 @@ uploadreceipt_ptr_t AssetEntry::upload(
     receipt->bytes_uploaded = 0;
     return receipt;
   }
-#else
-  // iOS: Network verification not supported, upload all available chunks
-  logchan_catalog->log("  iOS: Skipping server verification, will upload all %zu chunks",
-                       available_chunk_indices.size());
-  upload_indices = available_chunk_indices;
-#endif
 
   ////////////////////////////////////
   // Phase 4: Build upload lists (only for chunks that need upload)

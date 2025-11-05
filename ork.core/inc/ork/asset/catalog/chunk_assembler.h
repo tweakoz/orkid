@@ -10,9 +10,7 @@
 #include <ork/orkstd.h>
 #include <ork/orktypes.h>
 #include <ork/kernel/datablock.h>
-#if !defined(ORK_IOS)
 #include <ork/util/crypt.h>
-#endif
 #include <ork/asset/catalog/types.h>
 #include <ork/asset/catalog/chunk_manifest.h>
 #include <ork/file/path.h>

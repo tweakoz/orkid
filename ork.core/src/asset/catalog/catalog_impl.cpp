@@ -4,9 +4,7 @@
 #include <ork/asset/catalog/request.h>
 #include <ork/file/file.h>
 #include <ork/kernel/string/deco.inl>
-#if !defined(ORK_IOS)
 #include <ork/util/crypt.h>
-#endif
 #include <ork/util/tar.h>
 #include <ork/util/logger.h>
 #include <ork/util/md5.h>
@@ -69,13 +67,11 @@ CatalogImpl::CatalogImpl(AssetCatalog* catalog) //
   _root_namespace             = std::make_shared<AssetNamespace>("");
   _root_namespace->_full_path = "";
 
-#if !defined(ORK_IOS)
   // Initialize download manager with default concurrent queue
   _download_manager = std::make_shared<DownloadManager>(opq::ioQueue());
 
   // Initialize upload manager with default concurrent queue
   _upload_manager = std::make_shared<UploadManager>(opq::ioQueue());
-#endif
 }
 
 ////////////////////////////////////////////////////////////////

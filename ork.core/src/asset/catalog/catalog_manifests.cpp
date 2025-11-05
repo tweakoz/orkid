@@ -10,9 +10,7 @@
 #include <ork/asset/catalog/config.h>
 #include <ork/file/file.h>
 #include <ork/kernel/string/deco.inl>
-#if !defined(ORK_IOS)
 #include <ork/util/crypt.h>
-#endif
 #include <ork/util/tar.h>
 #include <ork/util/logger.h>
 #include <boost/filesystem.hpp>
@@ -80,7 +78,12 @@ void AssetCatalog::loadFromGlobalManifests(assetcatalog_ptr_t self) {
   // Get ORKID_ASSET_MANIFEST_DIRS environment variable
   const char* manifest_dirs_env = getenv("ORKID_ASSET_MANIFEST_DIRS");
   if (!manifest_dirs_env || strlen(manifest_dirs_env) == 0) {
+#if defined(ORK_IOS)
+    logchan_catalog->log("ORKID_ASSET_MANIFEST_DIRS not set (iOS - environment variables not reliably supported)");
+    logchan_catalog->log("Use loadManifestsFromPath() to load manifests from specific paths instead");
+#else
     logchan_catalog->log("ORKID_ASSET_MANIFEST_DIRS not set");
+#endif
     return;
   }
 
