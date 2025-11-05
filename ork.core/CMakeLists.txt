@@ -246,7 +246,7 @@ IF(BUILD_IOS_MINIMAL)
 
   # Include directories
   target_include_directories(ork_core_ios PRIVATE ${INCD})
-  target_include_directories(ork_core_ios PRIVATE $ENV{OBT_STAGE}/subspaces/ios/include)
+  target_include_directories(ork_core_ios PRIVATE ${CMAKE_INSTALL_PREFIX}/include)
 
   # iOS is ARM64, use sse2neon to translate SSE to NEON (like macOS Apple Silicon)
   target_include_directories(ork_core_ios PRIVATE $ENV{OBT_BUILDS}/sse2neon)
@@ -311,6 +311,7 @@ IF(BUILD_IOS_MINIMAL)
     ${CMAKE_SOURCE_DIR}/ork.core/tests/ios/test_lz4.mm
     ${CMAKE_SOURCE_DIR}/ork.core/tests/ios/test_rapidjson.mm
     ${CMAKE_SOURCE_DIR}/ork.core/tests/ios/test_nlohmann.mm
+    ${CMAKE_SOURCE_DIR}/ork.core/tests/ios/test_zmq.mm
   )
 
   # App files
@@ -338,7 +339,7 @@ IF(BUILD_IOS_MINIMAL)
     "-framework QuartzCore"
   )
 
-  # Link libcurl and lz4 for test app
+  # Link libcurl, lz4, and zmq for test app
   if(EXISTS "${CMAKE_INSTALL_PREFIX}/lib/libcurl.a")
     target_link_libraries(ork_test_ios PRIVATE "${CMAKE_INSTALL_PREFIX}/lib/libcurl.a")
     # libcurl needs zlib
@@ -347,11 +348,14 @@ IF(BUILD_IOS_MINIMAL)
   if(EXISTS "${CMAKE_INSTALL_PREFIX}/lib/liblz4.a")
     target_link_libraries(ork_test_ios PRIVATE "${CMAKE_INSTALL_PREFIX}/lib/liblz4.a")
   endif()
+  if(EXISTS "${CMAKE_INSTALL_PREFIX}/lib/libzmq.a")
+    target_link_libraries(ork_test_ios PRIVATE "${CMAKE_INSTALL_PREFIX}/lib/libzmq.a")
+  endif()
 
   # Include directories for the test app
   target_include_directories(ork_test_ios PRIVATE ${INCD})
   target_include_directories(ork_test_ios PRIVATE ${CMAKE_SOURCE_DIR}/ork.test.ios)
-  target_include_directories(ork_test_ios PRIVATE $ENV{OBT_STAGE}/subspaces/ios/include)
+  target_include_directories(ork_test_ios PRIVATE ${CMAKE_INSTALL_PREFIX}/include)
 
   # iOS-specific definitions
   target_compile_definitions(ork_test_ios PRIVATE

@@ -179,6 +179,22 @@ ios_dependencies = [
             "num_cores": obt.host.NumCores
         }
     },
+    {
+        "name": "zmq",
+        "module": "ork.ios.zmq",
+        "install_func": "build_zmq_for_ios",
+        "params": lambda: {
+            "ios_subspace": ios_subspace,
+            "ios_builds_dir": ios_builds,
+            "ios_include_dir": ios_include,
+            "ios_lib_dir": ios_lib,
+            "is_simulator": is_simulator,
+            "manifest_dir": manifest_dir,
+            "force_rebuild": False,
+            "verbose": _args["verbose"],
+            "num_cores": obt.host.NumCores
+        }
+    },
     # Add all header-only libraries
     *[header_only_dependency(name) for name in header_only_libs]
 ]

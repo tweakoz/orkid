@@ -32,3 +32,4 @@ void runCurlTests(void);
 void runLZ4Tests(void);
 void runRapidJSONTests(void);
 void runNlohmannTests(void);
+void runZmqTests(void);

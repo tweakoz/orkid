@@ -44,6 +44,9 @@
         [OrkTestInfo testWithName:@"Nlohmann Tests"
                       description:@"Test nlohmann/json parsing and serialization"
                          function:runNlohmannTests],
+        [OrkTestInfo testWithName:@"ZeroMQ Tests"
+                      description:@"Test ZeroMQ messaging patterns (TCP and inproc)"
+                         function:runZmqTests],
     ];
 }
 

@@ -16,6 +16,7 @@ void runCurlTests();
 void runLZ4Tests();
 void runRapidJSONTests();
 void runNlohmannTests();
+void runZmqTests();
 
 @interface MainViewController ()
 @property (strong, nonatomic) UIScrollView *scrollView;
@@ -117,7 +118,7 @@ void runNlohmannTests();
     [testRow3 addArrangedSubview:lz4Btn];
     [testRow3 addArrangedSubview:jsonBtn];
 
-    // Row 4: Nlohmann and spacer
+    // Row 4: Nlohmann and ZMQ
     UIStackView *testRow4 = [[UIStackView alloc] init];
     testRow4.axis = UILayoutConstraintAxisHorizontal;
     testRow4.spacing = 10;
@@ -127,9 +128,9 @@ void runNlohmannTests();
     [_testButtonStack addArrangedSubview:testRow4];
 
     UIButton *nlohmannBtn = [self createTestButton:@"Nlohmann" selector:@selector(runNlohmannTestsTapped)];
-    UIView *spacer = [[UIView alloc] init];
+    UIButton *zmqBtn = [self createTestButton:@"ZeroMQ" selector:@selector(runZmqTestsTapped)];
     [testRow4 addArrangedSubview:nlohmannBtn];
-    [testRow4 addArrangedSubview:spacer];
+    [testRow4 addArrangedSubview:zmqBtn];
 
     // Section 2: Log Channels
     UILabel *logLabel = [[UILabel alloc] init];
@@ -335,6 +336,12 @@ void runNlohmannTests();
 - (void)runNlohmannTestsTapped {
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         runNlohmannTests();
+    });
+}
+
+- (void)runZmqTestsTapped {
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        runZmqTests();
     });
 }
 
