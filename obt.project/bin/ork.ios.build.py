@@ -21,6 +21,10 @@ import obt.host
 import obt.path
 from obt.command import Command
 
+# Add ork.ios module to path
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))), "obt.project", "scripts"))
+from ork.ios import boost as ios_boost
+
 parser = argparse.ArgumentParser(description='orkid iOS build')
 parser.add_argument('--clean', action="store_true", help='force clean build')
 parser.add_argument('--verbose', action="store_true", help='verbose build')
@@ -66,154 +70,8 @@ print(f"Build destination: {build_dest}")
 print(f"Boost iOS destination: {boost_ios_dir}")
 
 ######################################################################
-# Build Boost for iOS
+# Build Boost for iOS (using ork.ios.boost module)
 ######################################################################
-
-def get_ios_sdk_path(is_simulator):
-    """Get the iOS SDK path using xcrun"""
-    sdk_type = "iphonesimulator" if is_simulator else "iphoneos"
-    try:
-        result = subprocess.run(
-            ["xcrun", "--sdk", sdk_type, "--show-sdk-path"],
-            capture_output=True,
-            text=True,
-            check=True
-        )
-        return result.stdout.strip()
-    except subprocess.CalledProcessError:
-        print(f"ERROR: Could not find {sdk_type} SDK")
-        sys.exit(-1)
-
-def build_boost_for_ios(boost_src_dir, boost_install_dir, is_simulator, verbose, stage_dir):
-    """Build Boost for iOS using b2"""
-
-    print("\n=== Building Boost for iOS ===")
-
-    # Check if Boost source exists
-    if not boost_src_dir.exists():
-        print(f"ERROR: Boost source not found at {boost_src_dir}")
-        print("Please ensure Boost is built for the host first")
-        sys.exit(-1)
-
-    # Setup manifest file for tracking builds
-    manifest_dir = stage_dir / "manifests"
-    manifest_dir.mkdir(parents=True, exist_ok=True)
-
-    manifest_name = "boost_ios_simulator" if is_simulator else "boost_ios_device"
-    manifest_file = manifest_dir / manifest_name
-
-    # Check if already built (unless rebuild requested)
-    if manifest_file.exists() and not _args["rebuild_boost"]:
-        print(f"✓ Boost for iOS already built (manifest: {manifest_name})")
-        print(f"  Install location: {boost_install_dir}")
-        print("  Use --rebuild-boost to force rebuild")
-        return
-
-    # Get iOS SDK path
-    ios_sdk_path = get_ios_sdk_path(is_simulator)
-    print(f"iOS SDK: {ios_sdk_path}")
-
-    # Architecture settings
-    if is_simulator:
-        # Simulator: arm64 only (Apple Silicon)
-        archs = ["arm64"]
-        arch_flags = "-arch arm64"
-    else:
-        # Device is arm64 only
-        archs = ["arm64"]
-        arch_flags = "-arch arm64"
-
-    # Create user-config.jam for iOS cross-compilation
-    # For simulator, we need to explicitly set the target triple
-    if is_simulator:
-        target_flag = "-target arm64-apple-ios15.0-simulator"
-    else:
-        target_flag = "-target arm64-apple-ios15.0"
-
-    user_config_content = f"""
-using clang : ios
-:
-/usr/bin/clang++
-:
-<compileflags>"-isysroot {ios_sdk_path} {target_flag} -fPIC"
-<linkflags>"-isysroot {ios_sdk_path} {target_flag}"
-;
-"""
-
-    user_config_path = boost_src_dir / "user-config-ios.jam"
-    with open(user_config_path, 'w') as f:
-        f.write(user_config_content)
-
-    print(f"Created user-config.jam at {user_config_path}")
-
-    # Bootstrap if needed
-    b2_path = boost_src_dir / "b2"
-    if not b2_path.exists():
-        print("Bootstrapping Boost build system...")
-        bootstrap_script = boost_src_dir / "bootstrap.sh"
-        if bootstrap_script.exists():
-            os.chdir(boost_src_dir)
-            result = Command(["./bootstrap.sh"]).exec()
-            if result != 0:
-                print("ERROR: Boost bootstrap failed")
-                sys.exit(-1)
-        else:
-            print("ERROR: bootstrap.sh not found in Boost directory")
-            sys.exit(-1)
-
-    # Build Boost for iOS
-    os.chdir(boost_src_dir)
-
-    # Set environment variables for iOS build
-    build_env = os.environ.copy()
-    if is_simulator:
-        build_env["CFLAGS"] = f"-isysroot {ios_sdk_path} -target arm64-apple-ios15.0-simulator"
-        build_env["CXXFLAGS"] = f"-isysroot {ios_sdk_path} -target arm64-apple-ios15.0-simulator"
-        build_env["LDFLAGS"] = f"-isysroot {ios_sdk_path} -target arm64-apple-ios15.0-simulator"
-    else:
-        build_env["CFLAGS"] = f"-isysroot {ios_sdk_path} -target arm64-apple-ios15.0"
-        build_env["CXXFLAGS"] = f"-isysroot {ios_sdk_path} -target arm64-apple-ios15.0"
-        build_env["LDFLAGS"] = f"-isysroot {ios_sdk_path} -target arm64-apple-ios15.0"
-
-    b2_cmd = [
-        str(b2_path),
-        f"--user-config={user_config_path}",
-        "--with-system",
-        "--with-filesystem",
-        "--prefix=" + str(boost_install_dir),
-        "toolset=clang-ios",
-        "target-os=iphone",
-        "link=static",          # iOS prefers static libs for Boost
-        "variant=release",
-        "threading=multi",
-        f"-j{obt.host.NumCores}",
-        "install"
-    ]
-
-    if verbose:
-        b2_cmd.append("-d+2")  # Verbose output
-
-    print("\nBuilding Boost libraries for iOS...")
-    print(" ".join(b2_cmd))
-
-    result = subprocess.run(b2_cmd, env=build_env)
-    result = result.returncode
-
-    if result != 0:
-        print("\n✗ Boost iOS build failed")
-        sys.exit(-1)
-
-    # Create manifest file to mark successful build
-    with open(manifest_file, 'w') as f:
-        f.write(f"# Boost iOS build completed\n")
-        f.write(f"# Date: {datetime.datetime.now()}\n")
-        f.write(f"# Simulator: {is_simulator}\n")
-        f.write(f"# Install: {boost_install_dir}\n")
-        f.write(f"# Source: {boost_src_dir}\n")
-
-    print(f"\n✓ Boost for iOS built successfully")
-    print(f"  Install location: {boost_install_dir}")
-    print(f"  Manifest: {manifest_file}")
 
 # Determine Boost source directory
 boost_base_dir = stage_dir / "builds" / "boost"
@@ -224,26 +82,30 @@ if not boost_base_dir.exists():
     print("Please ensure host Orkid has been built first: ork.build.py")
     sys.exit(-1)
 
-# Find the actual Boost source directory (e.g., boost-1.81.0)
-boost_src_dir = None
-if boost_base_dir.exists():
-    # Check for direct boost source
-    if (boost_base_dir / "bootstrap.sh").exists():
-        boost_src_dir = boost_base_dir
-    else:
-        # Look for versioned subdirectory (e.g., boost-1.81.0)
-        boost_versions = list(boost_base_dir.glob("boost-*"))
-        if boost_versions:
-            boost_src_dir = boost_versions[0]  # Use first found version
-            print(f"Found Boost source: {boost_src_dir.name}")
-
-if not boost_src_dir or not boost_src_dir.exists():
+# Find the actual Boost source directory using the module
+boost_src_dir = ios_boost.find_boost_source(boost_base_dir)
+if boost_src_dir:
+    print(f"Found Boost source: {boost_src_dir.name}")
+else:
     print(f"ERROR: Boost source directory not found in {boost_base_dir}")
     print("Expected boost-X.Y.Z subdirectory with bootstrap.sh")
     sys.exit(-1)
 
-# Build Boost for iOS
-build_boost_for_ios(boost_src_dir, boost_ios_dir, is_simulator, _args["verbose"], stage_dir)
+# Build Boost for iOS using the module
+manifest_dir = stage_dir / "manifests"
+success = ios_boost.build_boost_for_ios(
+    boost_src_dir=boost_src_dir,
+    boost_install_dir=boost_ios_dir,
+    is_simulator=is_simulator,
+    manifest_dir=manifest_dir,
+    force_rebuild=_args["rebuild_boost"],
+    verbose=_args["verbose"],
+    num_cores=obt.host.NumCores,
+    ios_deployment_target="15.0"
+)
+
+if not success:
+    sys.exit(-1)
 
 ######################################################################
 # Configure CMake for iOS
