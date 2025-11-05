@@ -20,10 +20,19 @@ endif()
 
 message(STATUS "Found swiftc: ${SWIFTC}")
 
-# test1
+# test1 - Timer test
 ork_add_swift_test(
   NAME test1
   SOURCE_DIR ${SWIFT_TESTS_DIR}/test1/test1/Sources
+  MAIN_SOURCE main.swift
+  BRIDGE_HEADER ${SWIFT_BRIDGE_HEADER}
+  INCLUDE_DIR ${SWIFT_INCLUDE_DIR}
+)
+
+# test2_math - Math types test (vec3)
+ork_add_swift_test(
+  NAME test2_math
+  SOURCE_DIR ${SWIFT_TESTS_DIR}/test2_math/test2_math/Sources
   MAIN_SOURCE main.swift
   BRIDGE_HEADER ${SWIFT_BRIDGE_HEADER}
   INCLUDE_DIR ${SWIFT_INCLUDE_DIR}

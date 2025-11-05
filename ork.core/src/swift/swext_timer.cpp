@@ -13,78 +13,23 @@
 using namespace ork;
 using namespace ork::swift;
 
-// Forward declare core app functions (implemented in swift/macos/app_init.cpp)
+namespace ork::swift {
+    extern thread_local std::string g_last_error;
+}
+
+// ================================================================
+// Timer Type Registration
+// ================================================================
+
+void swext_timer_register_types() {
+    TypeRegistry::registerType<Timer>("ork::Timer");
+}
+
+// ================================================================
+// Timer C API Implementation
+// ================================================================
+
 extern "C" {
-    void _coreappinit(int argc, char** argv);
-    void _coreappexit();
-    void _coreapppoll();
-}
-
-static thread_local std::string g_last_error;
-
-// ================================================================
-// C API Implementation
-// ================================================================
-
-extern "C" {
-
-// ================================================================
-// Handle Management
-// ================================================================
-
-void orkid_handle_release(OrkidHandleBase* handle) {
-    delete handle;  // Virtual dtor properly cleans up OrkidHandle<T>
-}
-
-int32_t orkid_handle_use_count(const OrkidHandleBase* handle) {
-    return handle->useCount();
-}
-
-uint64_t orkid_handle_type_crc(const OrkidHandleBase* handle) {
-    return handle->typeCRC();
-}
-
-const char* orkid_handle_type_name(const OrkidHandleBase* handle) {
-    return handle->typeName();
-}
-
-// ================================================================
-// Core Lifecycle - Register All Types Here!
-// ================================================================
-
-void orkid_swift_init(int argc, char** argv) {
-    try {
-        // Initialize Orkid core
-        _coreappinit(argc, argv);
-
-        // Register ONLY Timer for now (Phase 2 - minimal)
-        TypeRegistry::registerType<Timer>("ork::Timer");
-
-        g_last_error.clear();
-    } catch (const std::exception& e) {
-        g_last_error = std::string("Init failed: ") + e.what();
-    }
-}
-
-void orkid_swift_exit() {
-    try {
-        _coreappexit();
-    } catch (...) {
-        // Swallow exceptions during shutdown
-    }
-}
-
-void orkid_swift_poll() {
-    _coreapppoll();
-}
-
-const char* orkid_get_last_error() {
-    return g_last_error.c_str();
-}
-
-// ================================================================
-// Timer Functions
-// ================================================================
 
 OrkidHandleBase* orkid_timer_create() {
     try {
