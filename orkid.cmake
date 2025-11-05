@@ -658,8 +658,6 @@ function(ork_add_swift_test)
   file(MAKE_DIRECTORY ${SWIFT_OUTPUT_DIR})
 
   message(STATUS "Swift test '${SWIFT_TEST_NAME}': ${SWIFT_EXECUTABLE}")
-  message(STATUS "  SOURCE_DIR: ${SWIFT_TEST_SOURCE_DIR}")
-  message(STATUS "  SWIFT_SOURCE: ${SWIFT_SOURCE}")
 
   # Compile Swift source to object file
   add_custom_command(
