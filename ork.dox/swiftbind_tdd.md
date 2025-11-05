@@ -2745,3 +2745,867 @@ All components reviewed and confirmed implementable. Critical issues have been f
 **Last Updated:** 2025-11-05
 **Architecture:** Type Registry + Safe Casting + C++-Only Codec + Dual Binding Patterns + Multi-Arg Variant Callbacks
 **Status:** ✅ Implementation Ready - Reviewed and Validated
+
+---
+
+## Implementation Roadmap: Baby Steps
+
+**Goal:** Complete implementation today with incremental verification at each step.
+
+**Strategy:**
+- ✅ Small, verifiable pieces
+- ✅ Test each phase before moving forward
+- ✅ Primary testing on macOS (keep iOS working)
+- ✅ CMake-based build (defer Xcode/SDK packaging to end)
+- ✅ Build incrementally - no big-bang integration
+
+---
+
+### Phase 1: C++ Foundation (CMake + C++ only)
+
+**Deliverables:**
+1. `ork.core/inc/ork/swift/orkid_handle.h` - Template handle architecture
+2. `ork.core/inc/ork/swift/orkid_swift_bridge.h` - C bridge header (declarations only)
+3. `ork.core/src/swift/orkid_handle.cpp` - TypeRegistry static members
+4. CMake integration in `ork.core/CMakeLists.txt`
+
+**Files to create:**
+```
+ork.core/inc/ork/swift/
+  ├── orkid_handle.h           (TypeRegistry + OrkidHandleBase + OrkidHandle<T>)
+  └── orkid_swift_bridge.h     (C function declarations)
+
+ork.core/src/swift/
+  └── orkid_handle.cpp         (TypeRegistry static member initialization)
+```
+
+**CMake changes:**
+```cmake
+# In ork.core/CMakeLists.txt
+set(SRCS_SWIFT
+    src/swift/orkid_handle.cpp
+)
+
+if(APPLE)
+    list(APPEND SRCS_CORE ${SRCS_SWIFT})
+endif()
+```
+
+**Verification:**
+```bash
+cd build
+cmake .. -DORK_BUILD_SWIFT=ON
+make ork_core
+# Should compile without errors
+```
+
+**Success Criteria:** ✅ C++ compiles, TypeRegistry header exists
+
+---
+
+### Phase 2: Basic C Bridge Implementation (C++ bridge functions)
+
+**Deliverables:**
+1. `ork.core/src/swift/orkid_swift_bridge.cpp` - Core lifecycle + handle management only
+2. Implement: `orkid_swift_init()`, `orkid_swift_exit()`, `orkid_handle_release()`
+
+**Files to create:**
+```
+ork.core/src/swift/
+  └── orkid_swift_bridge.cpp   (Lifecycle + handle release only)
+```
+
+**Code scope (minimal):**
+```cpp
+// orkid_swift_bridge.cpp - MINIMAL version for Phase 2
+
+void orkid_swift_init(int argc, char** argv) {
+    _coreappinit(argc, argv);
+
+    // Register ONLY Timer for now (simplest type)
+    TypeRegistry::registerType<Timer>("ork::Timer");
+
+    g_last_error.clear();
+}
+
+void orkid_swift_exit() { _coreappexit(); }
+void orkid_handle_release(OrkidHandleBase* handle) { delete handle; }
+int32_t orkid_handle_use_count(const OrkidHandleBase* h) { return h->useCount(); }
+uint64_t orkid_handle_type_crc(const OrkidHandleBase* h) { return h->typeCRC(); }
+const char* orkid_handle_type_name(const OrkidHandleBase* h) { return h->typeName(); }
+const char* orkid_get_last_error() { return g_last_error.c_str(); }
+```
+
+**CMake update:**
+```cmake
+set(SRCS_SWIFT
+    src/swift/orkid_handle.cpp
+    src/swift/orkid_swift_bridge.cpp  # NEW
+)
+```
+
+**Verification:**
+```bash
+make ork_core
+# Should link successfully
+nm -g libork_core.a | grep orkid_swift_init
+# Should show: T _orkid_swift_init
+```
+
+**Success Criteria:** ✅ C bridge functions exist in library
+
+---
+
+### Phase 3: Timer C Bridge (First complete type)
+
+**Deliverables:**
+1. Add Timer bridge functions to `orkid_swift_bridge.cpp`
+2. Test from C++ (no Swift yet)
+
+**Code to add:**
+```cpp
+// Add to orkid_swift_bridge.cpp
+
+OrkidHandleBase* orkid_timer_create() {
+    return OrkidHandle<Timer>::makeShared();
+}
+
+void orkid_timer_start(OrkidHandleBase* timer) {
+    auto typed = timer->typedHandle<Timer>();
+    if (typed) typed->get()->Start();
+}
+
+void orkid_timer_end(OrkidHandleBase* timer) {
+    auto typed = timer->typedHandle<Timer>();
+    if (typed) typed->get()->End();
+}
+
+float orkid_timer_secs_since_start(const OrkidHandleBase* timer) {
+    auto typed = timer->typedHandle<Timer>();
+    return typed ? typed->get()->SecsSinceStart() : 0.0f;
+}
+
+float orkid_timer_get_sync_time() {
+    return Timer::GetSyncTime();
+}
+```
+
+**Test program (C++):**
+```cpp
+// ork.core/tests/swift_bridge_test.cpp
+#include <ork/swift/orkid_swift_bridge.h>
+#include <iostream>
+
+int main() {
+    char* argv[] = {(char*)"test"};
+    orkid_swift_init(1, argv);
+
+    auto timer = orkid_timer_create();
+    std::cout << "Timer created, refcount: " << orkid_handle_use_count(timer) << std::endl;
+    std::cout << "Timer type: " << orkid_handle_type_name(timer) << std::endl;
+
+    orkid_timer_start(timer);
+    // Sleep for 100ms
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    float elapsed = orkid_timer_secs_since_start(timer);
+    std::cout << "Elapsed: " << elapsed << "s" << std::endl;
+
+    orkid_handle_release(timer);
+
+    orkid_swift_exit();
+    return 0;
+}
+```
+
+**Verification:**
+```bash
+cd build
+cmake .. -DORK_BUILD_TESTS=ON -DORK_BUILD_SWIFT=ON
+make swift_bridge_test
+./swift_bridge_test
+# Expected output:
+# Timer created, refcount: 1
+# Timer type: ork::Timer
+# Elapsed: 0.1s (approximately)
+```
+
+**Success Criteria:** ✅ Timer works via C bridge, refcount correct, no crashes
+
+---
+
+### Phase 4: Minimal Swift Test (macOS only)
+
+**Deliverables:**
+1. Simple Swift test program (no Package.swift yet)
+2. OrkidObject base class
+3. Timer Swift wrapper
+4. Module map for C bridge
+5. CMake integration to build Swift
+
+**Files to create:**
+```
+ork.core/tests/swift/test1/
+  ├── OrkidObject.swift    (Base class)
+  ├── Timer.swift          (Timer wrapper)
+  ├── main.swift           (Test program)
+  └── module.modulemap     (Bridge to C headers)
+```
+
+**OrkidObject.swift:**
+```swift
+// ork.core/tests/swift/test1/OrkidObject.swift
+import Foundation
+import OrkidCore
+
+public class OrkidObject {
+    internal let handle: OpaquePointer
+    private var ownsHandle: Bool
+
+    internal init(handle: OpaquePointer, owned: Bool = true) {
+        self.handle = handle
+        self.ownsHandle = owned
+    }
+
+    deinit {
+        if ownsHandle {
+            orkid_handle_release(handle)
+        }
+    }
+
+    public var typeName: String {
+        return String(cString: orkid_handle_type_name(handle))
+    }
+
+    public var useCount: Int32 {
+        return orkid_handle_use_count(handle)
+    }
+}
+```
+
+**Timer.swift:**
+```swift
+// ork.core/tests/swift/test1/Timer.swift
+import Foundation
+import OrkidCore
+
+public final class Timer: OrkidObject {
+
+    public init() {
+        super.init(handle: orkid_timer_create()!)
+    }
+
+    public func start() {
+        orkid_timer_start(handle)
+    }
+
+    public func end() {
+        orkid_timer_end(handle)
+    }
+
+    public var secsSinceStart: Float {
+        return orkid_timer_secs_since_start(handle)
+    }
+
+    public static var syncTime: Float {
+        return orkid_timer_get_sync_time()
+    }
+}
+```
+
+**main.swift:**
+```swift
+// ork.core/tests/swift/test1/main.swift
+import Foundation
+import OrkidCore
+
+// Initialize Orkid
+var args = ["test"]
+args.withUnsafeMutableBufferPointer { buffer in
+    let argv = buffer.baseAddress!
+    orkid_swift_init(1, argv)
+}
+
+print("=== Swift Timer Test ===")
+
+// Test 1: Timer creation
+let timer = Timer()
+print("✓ Timer created")
+print("  - Type name: \(timer.typeName)")
+print("  - Use count: \(timer.useCount)")
+
+assert(timer.typeName == "ork::Timer", "Timer type mismatch")
+assert(timer.useCount == 1, "Timer refcount should be 1")
+
+// Test 2: Timer timing
+timer.start()
+Thread.sleep(forTimeInterval: 0.1)
+let elapsed = timer.secsSinceStart
+print("✓ Timer timing works")
+print("  - Elapsed: \(elapsed)s")
+
+assert(elapsed > 0.09 && elapsed < 0.15, "Timer elapsed time out of range")
+
+// Test 3: Reference counting
+do {
+    let timer2 = Timer()
+    print("✓ Timer2 created (refcount: \(timer2.useCount))")
+    // timer2 should be released here
+}
+print("✓ Timer2 destroyed (deinit called)")
+
+// Cleanup
+orkid_swift_exit()
+
+print("=== All tests passed! ===")
+```
+
+**module.modulemap:**
+```
+// ork.core/tests/swift/test1/module.modulemap
+module OrkidCore {
+    header "../../../inc/ork/swift/orkid_swift_bridge.h"
+    export *
+}
+```
+
+**CMake update:**
+```cmake
+# In ork.core/CMakeLists.txt
+
+if(APPLE)
+    option(ORK_BUILD_SWIFT "Build Swift bindings" ON)
+
+    if(ORK_BUILD_SWIFT)
+        # Swift test 1
+        set(SWIFT_TEST1_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests/swift/test1)
+        set(SWIFT_TEST1_SOURCES
+            ${SWIFT_TEST1_DIR}/OrkidObject.swift
+            ${SWIFT_TEST1_DIR}/Timer.swift
+            ${SWIFT_TEST1_DIR}/main.swift
+        )
+
+        add_custom_target(swift_test1
+            COMMAND swiftc
+                -I ${SWIFT_TEST1_DIR}
+                -I ${CMAKE_CURRENT_SOURCE_DIR}/inc
+                -L ${CMAKE_BINARY_DIR}/lib
+                -lork_core
+                -o ${CMAKE_BINARY_DIR}/bin/swift_test1
+                ${SWIFT_TEST1_SOURCES}
+            WORKING_DIRECTORY ${SWIFT_TEST1_DIR}
+            DEPENDS ork_core
+            COMMENT "Building Swift test1"
+        )
+    endif()
+endif()
+```
+
+**Verification:**
+```bash
+cd build
+make swift_test1
+./bin/swift_test1
+
+# Expected output:
+# === Swift Timer Test ===
+# ✓ Timer created
+#   - Type name: ork::Timer
+#   - Use count: 1
+# ✓ Timer timing works
+#   - Elapsed: 0.100s (approximately)
+# ✓ Timer2 created (refcount: 1)
+# ✓ Timer2 destroyed (deinit called)
+# === All tests passed! ===
+```
+
+**Success Criteria:** ✅ Swift test1 runs, Timer works from Swift, no crashes, clean deinit
+
+---
+
+### Phase 5: Math Types - vec3 (Representative type)
+
+**Deliverables:**
+1. Add vec3 bridge functions to `orkid_swift_bridge.cpp`
+2. Add vec3.swift wrapper
+3. Test from Swift
+
+**C++ bridge additions:**
+```cpp
+// Add to orkid_swift_bridge.cpp
+
+// In orkid_swift_init():
+TypeRegistry::registerType<fvec3>("ork::fvec3");
+
+// Add bridge functions:
+OrkidHandleBase* orkid_fvec3_create(float x, float y, float z) {
+    return OrkidHandle<fvec3>::makeShared(x, y, z);
+}
+
+float orkid_fvec3_get_x(const OrkidHandleBase* h) {
+    auto typed = h->typedHandle<fvec3>();
+    return typed ? typed->get()->x : 0.0f;
+}
+
+// ... (y, z getters, setters, length, normalized)
+```
+
+**vec3.swift:**
+```swift
+public final class vec3: OrkidObject {
+    public init(x: Float, y: Float, z: Float) {
+        super.init(handle: orkid_fvec3_create(x, y, z)!)
+    }
+
+    public var x: Float {
+        get { orkid_fvec3_get_x(handle) }
+        set { orkid_fvec3_set_x(handle, newValue) }
+    }
+
+    // ... y, z, length(), normalized()
+}
+```
+
+**Test:**
+```swift
+func testVec3() {
+    let v = vec3(x: 3, y: 4, z: 0)
+    XCTAssertEqual(v.length(), 5.0, accuracy: 0.001)
+}
+```
+
+**Verification:**
+```bash
+swift test
+# New vec3 test should pass
+```
+
+**Success Criteria:** ✅ vec3 works, math operations correct
+
+---
+
+### Phase 6: VarMap Foundation (No codec yet)
+
+**Deliverables:**
+1. Add VarMap bridge functions (basic operations only)
+2. Add VarMap.swift wrapper
+3. Test basic operations (no type conversion yet)
+
+**C++ bridge:**
+```cpp
+// In orkid_swift_init():
+TypeRegistry::registerType<varmap::VarMap>("ork::varmap::VarMap");
+TypeRegistry::registerType<svar128_t>("ork::svar128_t");
+
+// Add VarMap functions:
+OrkidHandleBase* orkid_varmap_create() {
+    return OrkidHandle<varmap::VarMap>::makeShared();
+}
+
+bool orkid_varmap_contains(OrkidHandleBase* vmap_h, const char* key) {
+    auto typed = vmap_h->typedHandle<varmap::VarMap>();
+    return typed ? typed->get()->hasKey(key) : false;
+}
+
+// ... keys, size, clear, etc.
+```
+
+**VarMap.swift:**
+```swift
+public final class VarMap: OrkidObject {
+    public init() {
+        super.init(handle: orkid_varmap_create()!)
+    }
+
+    public func contains(_ key: String) -> Bool {
+        return orkid_varmap_contains(handle, key)
+    }
+
+    public var count: Int {
+        return Int(orkid_varmap_size(handle))
+    }
+
+    // Keys, clear, etc. (NO subscript yet - no codec)
+}
+```
+
+**Test:**
+```swift
+func testVarMapBasics() {
+    let vmap = VarMap()
+    XCTAssertEqual(vmap.count, 0)
+    XCTAssertFalse(vmap.contains("foo"))
+}
+```
+
+**Verification:**
+```bash
+swift test
+```
+
+**Success Criteria:** ✅ VarMap basic operations work (without codec)
+
+---
+
+### Phase 7: Codec Infrastructure
+
+**Deliverables:**
+1. `ork.core/src/swift/orkid_swift_codec.cpp` - Codec implementation
+2. Register Timer and vec3 in codec
+3. Add VarMap get/set with codec
+4. Test VarMap with Timer and vec3
+
+**Files to create:**
+```
+ork.core/src/swift/
+  └── orkid_swift_codec.cpp    (SwiftCodecImpl + registerSwiftType<T>())
+```
+
+**Update orkid_swift_init():**
+```cpp
+void orkid_swift_init(int argc, char** argv) {
+    _coreappinit(argc, argv);
+
+    // TypeRegistry
+    TypeRegistry::registerType<Timer>("ork::Timer");
+    TypeRegistry::registerType<fvec3>("ork::fvec3");
+    TypeRegistry::registerType<varmap::VarMap>("ork::varmap::VarMap");
+    TypeRegistry::registerType<svar128_t>("ork::svar128_t");
+
+    // Codec registration
+    registerSwiftType<Timer>();
+    registerSwiftType<fvec3>();
+    registerSwiftType<varmap::VarMap>();
+
+    g_last_error.clear();
+}
+```
+
+**Update VarMap bridge:**
+```cpp
+OrkidHandleBase* orkid_varmap_get(OrkidHandleBase* vmap_h, const char* key) {
+    auto typed_vmap = vmap_h->typedHandle<varmap::VarMap>();
+    if (!typed_vmap) return nullptr;
+
+    auto vmap = typed_vmap->get();
+    if (!vmap->hasKey(key)) return nullptr;
+
+    const auto& variant = vmap->valueForKey(key);
+    return g_swift_codec.encode(variant);  // Use codec!
+}
+
+void orkid_varmap_set(OrkidHandleBase* vmap_h, const char* key, OrkidHandleBase* val_h) {
+    auto typed_vmap = vmap_h->typedHandle<varmap::VarMap>();
+    if (!typed_vmap) return;
+
+    auto variant = g_swift_codec.decode(val_h);  // Use codec!
+    typed_vmap->get()->setValueForKey(key, variant);
+}
+```
+
+**Update VarMap.swift with subscript:**
+```swift
+public subscript(key: String) -> OrkidObject? {
+    get {
+        guard let handle = orkid_varmap_get(handle, key) else { return nil }
+        return OrkidObject(handle: handle)
+    }
+    set {
+        if let value = newValue {
+            orkid_varmap_set(handle, key, value.handle)
+        } else {
+            orkid_varmap_remove(handle, key)
+        }
+    }
+}
+```
+
+**Test:**
+```swift
+func testVarMapWithTimer() {
+    let vmap = VarMap()
+    let timer = Timer()
+
+    vmap["myTimer"] = timer
+    XCTAssertTrue(vmap.contains("myTimer"))
+
+    let retrieved = vmap["myTimer"]
+    XCTAssertNotNil(retrieved)
+    XCTAssertEqual(retrieved?.typeName, "ork::Timer")
+}
+
+func testVarMapWithVec3() {
+    let vmap = VarMap()
+    let v = vec3(x: 1, y: 2, z: 3)
+
+    vmap["position"] = v
+    let retrieved = vmap["position"] as? vec3
+    XCTAssertEqual(retrieved?.x, 1.0)
+}
+```
+
+**Verification:**
+```bash
+swift test
+```
+
+**Success Criteria:** ✅ VarMap stores/retrieves Timer and vec3 via codec
+
+---
+
+### Phase 8: Simple Callbacks
+
+**Deliverables:**
+1. `ork.core/src/swift/orkid_swift_callback.cpp` - Callback infrastructure
+2. SwiftCallback.swift, SwiftCallbackManager.swift
+3. Test callback with no args
+
+**C++ bridge:**
+```cpp
+// orkid_swift_callback.cpp
+
+OrkidHandleBase* orkid_swiftcallback_create() {
+    auto holder = std::make_shared<SwiftCallbackHolder>();
+    holder->_callback_id = g_next_callback_id.fetch_add(1);
+    return OrkidHandle<SwiftCallbackHolder>::assign(holder);
+}
+
+uint64_t orkid_swiftcallback_get_id(OrkidHandleBase* h) {
+    auto typed = h->typedHandle<SwiftCallbackHolder>();
+    return typed ? typed->get()->_callback_id : 0;
+}
+
+// Declared in bridge.h, implemented in Swift:
+extern "C" void orkid_swift_invoke_callback(uint64_t, OrkidHandleBase*);
+```
+
+**Swift side:**
+```swift
+// SwiftCallback.swift, SwiftCallbackManager.swift (as in TDD)
+
+// Test callback bridge function
+@_cdecl("orkid_swift_invoke_callback")
+func orkid_swift_invoke_callback(callback_id: UInt64, args: OpaquePointer?) {
+    SwiftCallbackManager.shared.invoke(id: callback_id, argsHandle: args)
+}
+```
+
+**Test:**
+```swift
+func testSimpleCallback() {
+    var called = false
+    let callback = SwiftCallback {
+        called = true
+    }
+
+    // Simulate C++ invoking callback
+    orkid_swift_invoke_callback(callback.callbackId, nil)
+    XCTAssertTrue(called)
+}
+```
+
+**Verification:**
+```bash
+swift test
+```
+
+**Success Criteria:** ✅ Callback invoked from C++, no memory leaks
+
+---
+
+### Phase 9: Multi-Arg Callbacks
+
+**Deliverables:**
+1. SwiftCallback1, SwiftCallback2, SwiftCallback3
+2. `orkid_svar_list_get()` bridge function
+3. Test with String and Int args
+
+**C++ bridge addition:**
+```cpp
+OrkidHandleBase* orkid_svar_list_get(OrkidHandleBase* list_h, size_t idx) {
+    auto typed = list_h->typedHandle<std::vector<svar128_t>>();
+    if (!typed || idx >= typed->get()->size()) return nullptr;
+
+    auto elem_var = OrkidHandle<svar128_t>::makeShared();
+    *elem_var->typedHandle<svar128_t>()->get() = (*typed->get())[idx];
+    return elem_var;
+}
+```
+
+**Test:**
+```swift
+func testCallback2Args() {
+    var receivedStr = ""
+    var receivedInt = 0
+
+    let callback = SwiftCallback2<String, Int>(
+        closure: { str, num in
+            receivedStr = str
+            receivedInt = num
+        },
+        unwrapper1: { /* string unwrapper */ },
+        unwrapper2: { /* int unwrapper */ }
+    )
+
+    // Simulate C++ packing 2 args into vector and calling
+    // ... (test helper needed)
+
+    XCTAssertEqual(receivedStr, "hello")
+    XCTAssertEqual(receivedInt, 42)
+}
+```
+
+**Verification:**
+```bash
+swift test
+```
+
+**Success Criteria:** ✅ Multi-arg callbacks work, args unwrapped correctly
+
+---
+
+### Phase 10: iOS Support (CMake multi-platform)
+
+**Deliverables:**
+1. Update CMake to build for iOS
+2. Test on iOS simulator
+3. Verify both macOS and iOS work
+
+**CMake additions:**
+```cmake
+# In ork.core/CMakeLists.txt
+
+if(APPLE)
+    if(IOS)
+        set(CMAKE_OSX_ARCHITECTURES "arm64")
+        set(CMAKE_OSX_SYSROOT "iphoneos")
+    else()
+        set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64")
+    endif()
+endif()
+```
+
+**Build for iOS:**
+```bash
+cmake .. -DORK_BUILD_SWIFT=ON -DIOS=ON -DCMAKE_TOOLCHAIN_FILE=../cmake/ios.toolchain.cmake
+make
+```
+
+**Swift Package.swift update:**
+```swift
+platforms: [.macOS(.v13), .iOS(.v16)],
+```
+
+**Verification:**
+```bash
+# macOS
+swift test
+
+# iOS Simulator (requires xcodebuild)
+swift test --enable-code-coverage --destination 'platform=iOS Simulator,name=iPhone 15'
+```
+
+**Success Criteria:** ✅ Tests pass on both macOS and iOS
+
+---
+
+### Phase 11: Real-World Integration Test
+
+**Deliverables:**
+1. Complete example app (macOS command-line)
+2. Uses Timer, vec3, VarMap, callbacks together
+3. Demonstrates full workflow
+
+**Example app:**
+```swift
+// ork.core/swift/Examples/CompleteDemo.swift
+
+import Orkid
+
+func main() {
+    // Initialize Orkid
+    var args = ["demo"]
+    args.withUnsafeMutableBufferPointer { buffer in
+        orkid_swift_init(1, buffer.baseAddress!)
+    }
+
+    // Create scene config in VarMap
+    let config = VarMap()
+
+    // Add timer
+    let timer = Timer()
+    timer.start()
+    config["sceneTimer"] = timer
+
+    // Add camera position
+    let camPos = vec3(x: 0, y: 5, z: 10)
+    config["cameraPosition"] = camPos
+
+    // Callback for frame completion
+    let frameCallback = SwiftCallback1<Float> { fps in
+        print("Frame rendered at \(fps) FPS")
+    }
+    config["frameCallback"] = frameCallback
+
+    // Retrieve and verify
+    if let retrievedTimer = config["sceneTimer"] {
+        print("Timer type: \(retrievedTimer.typeName)")
+        print("Elapsed: \(timer.secsSinceStart)s")
+    }
+
+    if let retrievedPos = config["cameraPosition"] {
+        print("Camera type: \(retrievedPos.typeName)")
+    }
+
+    orkid_swift_exit()
+}
+
+main()
+```
+
+**Verification:**
+```bash
+cd ork.core/swift/Examples
+swift run CompleteDemo
+# Should print types, elapsed time, no crashes or leaks
+```
+
+**Success Criteria:** ✅ All components work together, no crashes, no leaks
+
+---
+
+### Phase 12: XCFramework Packaging (Defer to end)
+
+**Deliverables:**
+1. Script to build XCFramework
+2. Package for distribution
+3. SPM manifest for consumers
+
+**Deferred** - Only do this after all core functionality tested and working.
+
+---
+
+## Summary: Implementation Order
+
+| Phase | Focus | Verification | Time Estimate |
+|-------|-------|--------------|---------------|
+| 1 | C++ Foundation | Compiles | 30 min |
+| 2 | Basic C Bridge | Links, symbols exist | 30 min |
+| 3 | Timer C Bridge | C++ test passes | 45 min |
+| 4 | Minimal Swift Test | swift_test1 runs | 45 min |
+| 5 | vec3 Math Type | Math tests pass | 45 min |
+| 6 | VarMap Foundation | Basic ops work | 30 min |
+| 7 | Codec Infrastructure | VarMap stores typed objects | 1 hour |
+| 8 | Simple Callbacks | Callback fires | 45 min |
+| 9 | Multi-Arg Callbacks | Args unwrap correctly | 1 hour |
+| 10 | iOS Support | Tests pass on iOS sim | 1 hour |
+| 11 | Integration Test | Complete demo works | 30 min |
+| 12 | XCFramework | SDK packaging | Defer |
+
+**Total estimated time:** ~7.75 hours (achievable in one focused day)
+
+**Key Principles:**
+- ✅ Each phase independently verifiable
+- ✅ Can stop at any phase with working partial system
+- ✅ CMake-driven until final SDK packaging
+- ✅ Test coverage increases incrementally
+- ✅ No big-bang integration risks
