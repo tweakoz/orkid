@@ -268,6 +268,14 @@ IF(BUILD_IOS_MINIMAL)
     target_link_libraries(ork_core_ios LINK_PRIVATE Boost::filesystem Boost::system)
   endif()
 
+  # Link libcurl and lz4 (iOS builds)
+  if(EXISTS "${CMAKE_INSTALL_PREFIX}/lib/libcurl.a")
+    target_link_libraries(ork_core_ios LINK_PRIVATE "${CMAKE_INSTALL_PREFIX}/lib/libcurl.a")
+  endif()
+  if(EXISTS "${CMAKE_INSTALL_PREFIX}/lib/liblz4.a")
+    target_link_libraries(ork_core_ios LINK_PRIVATE "${CMAKE_INSTALL_PREFIX}/lib/liblz4.a")
+  endif()
+
   # Install iOS library
   install(TARGETS ork_core_ios
     LIBRARY DESTINATION lib
@@ -299,6 +307,10 @@ IF(BUILD_IOS_MINIMAL)
     ${CMAKE_SOURCE_DIR}/ork.core/tests/ios/test_math.mm
     ${CMAKE_SOURCE_DIR}/ork.core/tests/ios/test_dataflow.mm
     ${CMAKE_SOURCE_DIR}/ork.core/tests/ios/test_kernel.mm
+    ${CMAKE_SOURCE_DIR}/ork.core/tests/ios/test_curl.mm
+    ${CMAKE_SOURCE_DIR}/ork.core/tests/ios/test_lz4.mm
+    ${CMAKE_SOURCE_DIR}/ork.core/tests/ios/test_rapidjson.mm
+    ${CMAKE_SOURCE_DIR}/ork.core/tests/ios/test_nlohmann.mm
   )
 
   # App files
@@ -325,6 +337,16 @@ IF(BUILD_IOS_MINIMAL)
     "-framework UIKit"
     "-framework QuartzCore"
   )
+
+  # Link libcurl and lz4 for test app
+  if(EXISTS "${CMAKE_INSTALL_PREFIX}/lib/libcurl.a")
+    target_link_libraries(ork_test_ios PRIVATE "${CMAKE_INSTALL_PREFIX}/lib/libcurl.a")
+    # libcurl needs zlib
+    target_link_libraries(ork_test_ios PRIVATE z)
+  endif()
+  if(EXISTS "${CMAKE_INSTALL_PREFIX}/lib/liblz4.a")
+    target_link_libraries(ork_test_ios PRIVATE "${CMAKE_INSTALL_PREFIX}/lib/liblz4.a")
+  endif()
 
   # Include directories for the test app
   target_include_directories(ork_test_ios PRIVATE ${INCD})

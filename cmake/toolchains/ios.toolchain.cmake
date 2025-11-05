@@ -44,8 +44,11 @@ set(CMAKE_CXX_FLAGS_INIT "-mios-version-min=15.0")
 # set(CMAKE_C_FLAGS_INIT "${CMAKE_C_FLAGS_INIT} -fembed-bitcode")
 # set(CMAKE_CXX_FLAGS_INIT "${CMAKE_CXX_FLAGS_INIT} -fembed-bitcode")
 
-# Set library type to shared by default
-set(BUILD_SHARED_LIBS ON CACHE BOOL "Build shared libraries" FORCE)
+# Allow BUILD_SHARED_LIBS to be controlled by caller
+# (default to static for iOS which is more common)
+if(NOT DEFINED BUILD_SHARED_LIBS)
+  set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries")
+endif()
 
 # Skip trying to link executables during configuration
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)

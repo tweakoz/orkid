@@ -32,6 +32,18 @@
         [OrkTestInfo testWithName:@"Kernel Tests"
                       description:@"Test operation queues, strings, and utilities"
                          function:runKernelTests],
+        [OrkTestInfo testWithName:@"Curl Tests"
+                      description:@"Test HTTP requests with libcurl"
+                         function:runCurlTests],
+        [OrkTestInfo testWithName:@"LZ4 Tests"
+                      description:@"Test LZ4 compression and decompression"
+                         function:runLZ4Tests],
+        [OrkTestInfo testWithName:@"RapidJSON Tests"
+                      description:@"Test JSON parsing and serialization"
+                         function:runRapidJSONTests],
+        [OrkTestInfo testWithName:@"Nlohmann Tests"
+                      description:@"Test nlohmann/json parsing and serialization"
+                         function:runNlohmannTests],
     ];
 }
 

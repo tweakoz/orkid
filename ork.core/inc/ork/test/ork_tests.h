@@ -28,3 +28,7 @@ typedef void (*OrkTestFunction)(void);
 void runMathTests(void);
 void runDataflowTests(void);
 void runKernelTests(void);
+void runCurlTests(void);
+void runLZ4Tests(void);
+void runRapidJSONTests(void);
+void runNlohmannTests(void);

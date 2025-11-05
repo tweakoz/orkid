@@ -4,39 +4,53 @@
 # Distributed under the MIT License.
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################
-# iOS curl Provider
-# Copies curl headers from host staging to iOS subspace
+# iOS libcurl Provider
+# Builds libcurl from source for iOS using its existing CMakeLists.txt
 ################################################################
 
 import datetime
-import shutil
+import os
+import subprocess
+import obt.path
 from pathlib import Path
 
 ######################################################################
-# curl iOS Provider
+# libcurl iOS Provider
 ######################################################################
 
-def install_curl_for_ios(
-    host_include_dir,
+def build_curl_for_ios(
+    ios_subspace,
+    ios_builds_dir,
     ios_include_dir,
+    ios_lib_dir,
+    is_simulator,
     manifest_dir=None,
-    force_rebuild=False
+    force_rebuild=False,
+    verbose=False,
+    num_cores=8
 ):
-    """Install curl headers for iOS by copying from host staging
+    """Build libcurl for iOS from source using existing CMakeLists.txt
 
     Args:
-        host_include_dir: Path to host staging include directory
-        ios_include_dir: Path to iOS subspace include directory
+        ios_subspace: iOS subspace root directory
+        ios_builds_dir: iOS builds directory
+        ios_include_dir: iOS include directory
+        ios_lib_dir: iOS library directory
+        is_simulator: True for simulator, False for device
         manifest_dir: Directory for storing build manifests (optional)
-        force_rebuild: Force reinstall even if manifest exists
+        force_rebuild: Force rebuild even if manifest exists
+        verbose: Enable verbose build output
+        num_cores: Number of parallel build jobs
 
     Returns:
         True if successful, False otherwise
     """
-    host_include_dir = Path(host_include_dir)
+    ios_subspace = Path(ios_subspace)
+    ios_builds_dir = Path(ios_builds_dir)
     ios_include_dir = Path(ios_include_dir)
+    ios_lib_dir = Path(ios_lib_dir)
 
-    print("\n=== Installing curl for iOS ===")
+    print("\n=== Building libcurl for iOS ===")
 
     # Check manifest
     if manifest_dir:
@@ -45,47 +59,120 @@ def install_curl_for_ios(
 
         manifest_file = manifest_dir / "curl"
 
-        # Check if already installed (unless rebuild requested)
+        # Check if already built (unless rebuild requested)
         if manifest_file.exists() and not force_rebuild:
-            print(f"✓ curl for iOS already installed (manifest: curl)")
-            print(f"  Location: {ios_include_dir}/curl")
+            print(f"✓ libcurl for iOS already built (manifest: curl)")
+            print(f"  Location: {ios_lib_dir}/libcurl.a")
             return True
 
-    # Check if host curl exists
-    host_curl_dir = host_include_dir / "curl"
-    if not host_curl_dir.exists():
-        print(f"ERROR: curl not found in host staging at {host_curl_dir}")
+    # libcurl source location
+    stage_dir = obt.path.stage()
+    curl_src_dir = stage_dir / "builds" / "libcurl"
+
+    if not curl_src_dir.exists():
+        print(f"ERROR: libcurl source not found at {curl_src_dir}")
         print("Please ensure host Orkid has been built first")
         return False
 
-    # Create iOS include directory
-    ios_include_dir.mkdir(parents=True, exist_ok=True)
+    # Build directory
+    build_dir = ios_builds_dir / "curl"
+    build_dir.mkdir(parents=True, exist_ok=True)
 
-    # Copy curl headers to iOS subspace
-    ios_curl_dir = ios_include_dir / "curl"
+    # Clean if requested
+    if force_rebuild and build_dir.exists():
+        import shutil
+        print(f"Cleaning build directory: {build_dir}")
+        shutil.rmtree(build_dir)
+        build_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f"Copying curl headers from {host_curl_dir} to {ios_curl_dir}...")
+    # Toolchain file
+    prj_root = Path(os.environ["ORKID_WORKSPACE_DIR"])
+    toolchain_file = prj_root / "cmake" / "toolchains" / "ios.toolchain.cmake"
 
-    # Remove existing if present
-    if ios_curl_dir.exists():
-        shutil.rmtree(ios_curl_dir)
+    # Configure with CMake
+    print(f"\nConfiguring libcurl for iOS...")
 
-    # Copy directory tree
-    shutil.copytree(host_curl_dir, ios_curl_dir)
+    cmake_cmd = [
+        "cmake",
+        f"-DCMAKE_TOOLCHAIN_FILE={toolchain_file}",
+        f"-DCMAKE_INSTALL_PREFIX={ios_subspace}",
+        "-DBUILD_SHARED_LIBS=OFF",  # Static library
+        "-DBUILD_STATIC_LIBS=ON",   # Explicitly enable static
+        "-DCMAKE_BUILD_TYPE=Release",
+        f"-DIOS_SIMULATOR={'ON' if is_simulator else 'OFF'}",
+        "-DARCHITECTURE=AARCH64",
+        # Disable features not needed/supported on iOS
+        "-DCURL_USE_OPENSSL=OFF",
+        "-DCURL_USE_LIBSSH2=OFF",
+        "-DCURL_USE_LIBPSL=OFF",
+        "-DUSE_LIBIDN2=OFF",
+        "-DCURL_DISABLE_LDAP=ON",
+        "-DCURL_DISABLE_LDAPS=ON",
+        "-DCURL_DISABLE_TELNET=ON",
+        "-DCURL_DISABLE_DICT=ON",
+        "-DCURL_DISABLE_FILE=ON",
+        "-DCURL_DISABLE_TFTP=ON",
+        "-DCURL_DISABLE_RTSP=ON",
+        "-DCURL_DISABLE_POP3=ON",
+        "-DCURL_DISABLE_IMAP=ON",
+        "-DCURL_DISABLE_SMTP=ON",
+        "-DCURL_DISABLE_GOPHER=ON",
+        "-DCURL_DISABLE_MQTT=ON",
+        "-DBUILD_CURL_EXE=OFF",  # Don't build curl executable
+        "-DBUILD_TESTING=OFF",
+        str(curl_src_dir)
+    ]
 
-    # Create manifest file to mark successful install
+    result = subprocess.run(cmake_cmd, cwd=build_dir, capture_output=True, text=True)
+    if result.returncode != 0:
+        print(f"✗ CMake configuration failed for libcurl (return code: {result.returncode})")
+        if result.stdout:
+            print("STDOUT:", result.stdout)
+        if result.stderr:
+            print("STDERR:", result.stderr)
+        return False
+    else:
+        # Always print output to see what's configured
+        if result.stdout:
+            print(result.stdout)
+
+    # Build
+    print(f"\nBuilding libcurl...")
+
+    build_cmd = ["cmake", "--build", str(build_dir), "--parallel", str(num_cores)]
+    if verbose:
+        build_cmd.append("--verbose")
+
+    result = subprocess.run(build_cmd, capture_output=not verbose)
+    if result.returncode != 0:
+        print(f"✗ Build failed for libcurl")
+        return False
+
+    # Install
+    print(f"\nInstalling libcurl...")
+
+    install_cmd = ["cmake", "--install", str(build_dir)]
+    result = subprocess.run(install_cmd, capture_output=not verbose)
+    if result.returncode != 0:
+        print(f"✗ Install failed for libcurl")
+        return False
+
+    # Create manifest file to mark successful build
     if manifest_dir:
         with open(manifest_file, 'w') as f:
-            f.write(f"# curl iOS install completed\n")
+            f.write(f"# libcurl iOS build completed\n")
             f.write(f"# Date: {datetime.datetime.now()}\n")
-            f.write(f"# Source: {host_curl_dir}\n")
-            f.write(f"# Destination: {ios_curl_dir}\n")
+            f.write(f"# Source: {curl_src_dir}\n")
+            f.write(f"# Build: {build_dir}\n")
+            f.write(f"# Install: {ios_subspace}\n")
 
-        print(f"\n✓ curl for iOS installed successfully")
-        print(f"  Location: {ios_curl_dir}")
+        print(f"\n✓ libcurl for iOS built successfully")
+        print(f"  Library: {ios_lib_dir}/libcurl.a")
+        print(f"  Headers: {ios_include_dir}/curl/")
         print(f"  Manifest: {manifest_file}")
     else:
-        print(f"\n✓ curl for iOS installed successfully")
-        print(f"  Location: {ios_curl_dir}")
+        print(f"\n✓ libcurl for iOS built successfully")
+        print(f"  Library: {ios_lib_dir}/libcurl.a")
+        print(f"  Headers: {ios_include_dir}/curl/")
 
     return True

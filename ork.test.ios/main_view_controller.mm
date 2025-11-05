@@ -12,6 +12,10 @@
 void runMathTests();
 void runDataflowTests();
 void runKernelTests();
+void runCurlTests();
+void runLZ4Tests();
+void runRapidJSONTests();
+void runNlohmannTests();
 
 @interface MainViewController ()
 @property (strong, nonatomic) UIScrollView *scrollView;
@@ -85,7 +89,7 @@ void runKernelTests();
     [testRow1 addArrangedSubview:mathBtn];
     [testRow1 addArrangedSubview:dataflowBtn];
 
-    // Row 2: Kernel and spacer
+    // Row 2: Kernel and Curl
     UIStackView *testRow2 = [[UIStackView alloc] init];
     testRow2.axis = UILayoutConstraintAxisHorizontal;
     testRow2.spacing = 10;
@@ -95,9 +99,37 @@ void runKernelTests();
     [_testButtonStack addArrangedSubview:testRow2];
 
     UIButton *kernelBtn = [self createTestButton:@"Kernel" selector:@selector(runKernelTestsTapped)];
-    UIView *spacer = [[UIView alloc] init];
+    UIButton *curlBtn = [self createTestButton:@"Curl" selector:@selector(runCurlTestsTapped)];
     [testRow2 addArrangedSubview:kernelBtn];
-    [testRow2 addArrangedSubview:spacer];
+    [testRow2 addArrangedSubview:curlBtn];
+
+    // Row 3: LZ4 and RapidJSON
+    UIStackView *testRow3 = [[UIStackView alloc] init];
+    testRow3.axis = UILayoutConstraintAxisHorizontal;
+    testRow3.spacing = 10;
+    testRow3.alignment = UIStackViewAlignmentFill;
+    testRow3.distribution = UIStackViewDistributionFillEqually;
+    [testRow3.heightAnchor constraintEqualToConstant:50].active = YES;
+    [_testButtonStack addArrangedSubview:testRow3];
+
+    UIButton *lz4Btn = [self createTestButton:@"LZ4" selector:@selector(runLZ4TestsTapped)];
+    UIButton *jsonBtn = [self createTestButton:@"RapidJSON" selector:@selector(runRapidJSONTestsTapped)];
+    [testRow3 addArrangedSubview:lz4Btn];
+    [testRow3 addArrangedSubview:jsonBtn];
+
+    // Row 4: Nlohmann and spacer
+    UIStackView *testRow4 = [[UIStackView alloc] init];
+    testRow4.axis = UILayoutConstraintAxisHorizontal;
+    testRow4.spacing = 10;
+    testRow4.alignment = UIStackViewAlignmentFill;
+    testRow4.distribution = UIStackViewDistributionFillEqually;
+    [testRow4.heightAnchor constraintEqualToConstant:50].active = YES;
+    [_testButtonStack addArrangedSubview:testRow4];
+
+    UIButton *nlohmannBtn = [self createTestButton:@"Nlohmann" selector:@selector(runNlohmannTestsTapped)];
+    UIView *spacer = [[UIView alloc] init];
+    [testRow4 addArrangedSubview:nlohmannBtn];
+    [testRow4 addArrangedSubview:spacer];
 
     // Section 2: Log Channels
     UILabel *logLabel = [[UILabel alloc] init];
@@ -279,6 +311,30 @@ void runKernelTests();
 - (void)runKernelTestsTapped {
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         runKernelTests();
+    });
+}
+
+- (void)runCurlTestsTapped {
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        runCurlTests();
+    });
+}
+
+- (void)runLZ4TestsTapped {
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        runLZ4Tests();
+    });
+}
+
+- (void)runRapidJSONTestsTapped {
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        runRapidJSONTests();
+    });
+}
+
+- (void)runNlohmannTestsTapped {
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        runNlohmannTests();
     });
 }
 

@@ -6,31 +6,27 @@
 # Distributed under the MIT License.
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################
-# iOS Build Script
-# Builds minimal ork.core for iOS platform
-# Includes automatic Boost cross-compilation for iOS
+# iOS Dependency Builder
+# Build individual iOS dependencies with optional clean
 ################################################################
 
 import sys
 import os
 import argparse
-import subprocess
-import glob
-import datetime
+import importlib
 import obt.host
 import obt.path
-from obt.command import Command
+from pathlib import Path
 
-from ork.ios import device_manager
 import ork.path
+from ork.ios import device_manager
 
-parser = argparse.ArgumentParser(description='orkid iOS build')
+parser = argparse.ArgumentParser(description='Build individual iOS dependency')
+parser.add_argument('dependency', help='Dependency name (boost, lz4, curl, glm, etc.)')
 parser.add_argument('--clean', action="store_true", help='force clean build')
 parser.add_argument('--verbose', action="store_true", help='verbose build')
 parser.add_argument('--simulator', action="store_true", help='force build for iOS Simulator')
 parser.add_argument('--device', action="store_true", help='force build for iOS Device')
-parser.add_argument('--debug', action="store_true", help='debug build')
-parser.add_argument('--rebuild-boost', action="store_true", help='force rebuild of Boost for iOS')
 
 _args = vars(parser.parse_args())
 
@@ -40,8 +36,9 @@ this_dir = os.path.dirname(this_path)
 this_dir = os.path.dirname(this_dir)
 this_dir = os.path.dirname(this_dir)
 
-print(f"Orkid iOS Build")
+print(f"iOS Dependency Builder")
 print(f"Project root: {this_dir}")
+print(f"Building: {_args['dependency']}")
 
 # Set environment
 os.environ["ORKID_WORKSPACE_DIR"] = this_dir
@@ -83,26 +80,14 @@ ios_builds.mkdir(parents=True, exist_ok=True)
 ios_include.mkdir(parents=True, exist_ok=True)
 ios_lib.mkdir(parents=True, exist_ok=True)
 
-build_dest = ios_builds / "orkid"
-build_dest.mkdir(parents=True, exist_ok=True)
-boost_ios_dir = ios_builds / "boost"
-
-os.environ["ORKID_BUILD_DEST"] = str(build_dest)
+manifest_dir = ios_subspace / "manifests"
+manifest_dir.mkdir(parents=True, exist_ok=True)
 
 prj_root = obt.path.Path(os.environ["ORKID_WORKSPACE_DIR"])
 
 print(f"iOS subspace: {ios_subspace}")
-print(f"Build destination: {build_dest}")
-print(f"Boost destination: {boost_ios_dir}")
 print(f"Include directory: {ios_include}")
 print(f"Lib directory: {ios_lib}")
-
-######################################################################
-# Install iOS dependencies using provider modules
-######################################################################
-
-manifest_dir = ios_subspace / "manifests"
-manifest_dir.mkdir(parents=True, exist_ok=True)
 
 ######################################################################
 # Dependency Helper Functions
@@ -118,72 +103,10 @@ def header_only_dependency(name):
             "host_include_dir": stage_dir / "include",
             "ios_include_dir": ios_include,
             "manifest_dir": manifest_dir,
-            "force_rebuild": False
+            "force_rebuild": _args["clean"]
         }
     }
 
-######################################################################
-# iOS Dependencies
-######################################################################
-
-# Header-only libraries
-header_only_libs = ["glm", "klein", "openblas", "easyprof", "rapidjson", "sigslot", "nlohmann"]
-
-# Define dependencies to install
-ios_dependencies = [
-    {
-        "name": "boost",
-        "module": "ork.ios.boost",
-        "install_func": "build_boost_for_ios",
-        "params": lambda: {
-            "boost_src_dir": _find_boost_source(),
-            "boost_install_dir": boost_ios_dir,
-            "is_simulator": is_simulator,
-            "ios_include_dir": ios_include,
-            "manifest_dir": manifest_dir,
-            "force_rebuild": _args["rebuild_boost"],
-            "verbose": _args["verbose"],
-            "num_cores": obt.host.NumCores,
-            "ios_deployment_target": "15.0"
-        }
-    },
-    {
-        "name": "lz4",
-        "module": "ork.ios.lz4",
-        "install_func": "build_lz4_for_ios",
-        "params": lambda: {
-            "ios_subspace": ios_subspace,
-            "ios_builds_dir": ios_builds,
-            "ios_include_dir": ios_include,
-            "ios_lib_dir": ios_lib,
-            "is_simulator": is_simulator,
-            "manifest_dir": manifest_dir,
-            "force_rebuild": False,
-            "verbose": _args["verbose"],
-            "num_cores": obt.host.NumCores
-        }
-    },
-    {
-        "name": "curl",
-        "module": "ork.ios.curl",
-        "install_func": "build_curl_for_ios",
-        "params": lambda: {
-            "ios_subspace": ios_subspace,
-            "ios_builds_dir": ios_builds,
-            "ios_include_dir": ios_include,
-            "ios_lib_dir": ios_lib,
-            "is_simulator": is_simulator,
-            "manifest_dir": manifest_dir,
-            "force_rebuild": False,
-            "verbose": _args["verbose"],
-            "num_cores": obt.host.NumCores
-        }
-    },
-    # Add all header-only libraries
-    *[header_only_dependency(name) for name in header_only_libs]
-]
-
-# Helper function for Boost source lookup
 def _find_boost_source():
     boost_base_dir = stage_dir / "builds" / "boost"
     if not boost_base_dir.exists():
@@ -202,124 +125,103 @@ def _find_boost_source():
         sys.exit(-1)
     return boost_src_dir
 
-# Install each dependency
-for dep in ios_dependencies:
-    import importlib
-    dep_module = importlib.import_module(dep["module"])
-    install_func = getattr(dep_module, dep["install_func"])
-
-    params = dep["params"]()
-    success = install_func(**params)
-
-    if not success:
-        print(f"ERROR: Failed to install {dep['name']} for iOS")
-        sys.exit(-1)
-
 ######################################################################
-# Configure CMake for iOS
+# Dependency Configurations
 ######################################################################
 
-build_dest.chdir()
+# Header-only libraries
+header_only_libs = ["glm", "klein", "openblas", "easyprof", "rapidjson", "sigslot", "nlohmann"]
 
-cmd = ["cmake"]
+boost_ios_dir = ios_builds / "boost"
 
-# Use iOS toolchain
-toolchain_file = prj_root / "cmake/toolchains/ios.toolchain.cmake"
-cmd += [f"-DCMAKE_TOOLCHAIN_FILE={toolchain_file}"]
+# All dependency configurations
+all_dependencies = {
+    "boost": {
+        "name": "boost",
+        "module": "ork.ios.boost",
+        "install_func": "build_boost_for_ios",
+        "params": lambda: {
+            "boost_src_dir": _find_boost_source(),
+            "boost_install_dir": boost_ios_dir,
+            "is_simulator": is_simulator,
+            "ios_include_dir": ios_include,
+            "manifest_dir": manifest_dir,
+            "force_rebuild": _args["clean"],
+            "verbose": _args["verbose"],
+            "num_cores": obt.host.NumCores,
+            "ios_deployment_target": "15.0"
+        }
+    },
+    "lz4": {
+        "name": "lz4",
+        "module": "ork.ios.lz4",
+        "install_func": "build_lz4_for_ios",
+        "params": lambda: {
+            "ios_subspace": ios_subspace,
+            "ios_builds_dir": ios_builds,
+            "ios_include_dir": ios_include,
+            "ios_lib_dir": ios_lib,
+            "is_simulator": is_simulator,
+            "manifest_dir": manifest_dir,
+            "force_rebuild": _args["clean"],
+            "verbose": _args["verbose"],
+            "num_cores": obt.host.NumCores
+        }
+    },
+    "curl": {
+        "name": "curl",
+        "module": "ork.ios.curl",
+        "install_func": "build_curl_for_ios",
+        "params": lambda: {
+            "ios_subspace": ios_subspace,
+            "ios_builds_dir": ios_builds,
+            "ios_include_dir": ios_include,
+            "ios_lib_dir": ios_lib,
+            "is_simulator": is_simulator,
+            "manifest_dir": manifest_dir,
+            "force_rebuild": _args["clean"],
+            "verbose": _args["verbose"],
+            "num_cores": obt.host.NumCores
+        }
+    }
+}
 
-# Build type
-if _args["debug"]:
-    cmd += ["-DCMAKE_BUILD_TYPE=Debug"]
-else:
-    cmd += ["-DCMAKE_BUILD_TYPE=Release"]
+# Add header-only libraries
+for name in header_only_libs:
+    all_dependencies[name] = header_only_dependency(name)
 
-# iOS-specific options
-cmd += ["-DBUILD_IOS_MINIMAL=ON"]
-cmd += ["-DIOS_BUILD=ON"]
+######################################################################
+# Build requested dependency
+######################################################################
 
-# Simulator mode
-if is_simulator:
-    cmd += ["-DIOS_SIMULATOR=ON"]
-else:
-    cmd += ["-DIOS_SIMULATOR=OFF"]
+dep_name = _args["dependency"]
 
-# Architecture
-cmd += ["-DARCHITECTURE=AARCH64"]
-
-# Install prefix - use iOS subspace
-cmd += [f"-DCMAKE_INSTALL_PREFIX={ios_subspace}"]
-cmd += [f"-DCMAKE_INSTALL_INCLUDEDIR=include"]
-cmd += [f"-DCMAKE_INSTALL_LIBDIR=lib"]
-
-# Add iOS include directory to header search path
-cmd += [f"-DCMAKE_INCLUDE_PATH={ios_include}"]
-
-# Point to iOS-specific Boost
-cmd += [f"-DBOOST_ROOT={boost_ios_dir}"]
-cmd += [f"-DBoost_INCLUDE_DIR={boost_ios_dir}/include"]
-cmd += [f"-DBoost_LIBRARY_DIR={boost_ios_dir}/lib"]
-cmd += ["-DBoost_USE_STATIC_LIBS=ON"]
-cmd += ["-DBoost_NO_SYSTEM_PATHS=ON"]
-
-# Disable components not needed for iOS
-cmd += ["-DENABLE_PYTHON=OFF"]
-cmd += ["-DENABLE_OPENCL=OFF"]
-
-# Warning suppression
-cmd += ["-Wno-dev"]
-
-# Project root
-cmd += [str(prj_root)]
-
-print("\n=== CMake Configuration ===")
-print(" ".join(cmd))
-print("===========================\n")
-
-ok = (Command(cmd).exec() == 0)
-
-if not ok:
-    print("ERROR: CMake configuration failed")
+if dep_name not in all_dependencies:
+    print(f"\nERROR: Unknown dependency '{dep_name}'")
+    print(f"\nAvailable dependencies:")
+    for name in sorted(all_dependencies.keys()):
+        print(f"  - {name}")
     sys.exit(-1)
 
-######################################################################
-# Build
-######################################################################
+dep = all_dependencies[dep_name]
 
-build_dest.chdir()
+print(f"\n{'='*60}")
+print(f"Building {dep_name} for iOS")
+print(f"{'='*60}\n")
 
-if _args["clean"]:
-    print("Cleaning previous build...")
-    ok = (Command(["make", "clean"]).exec() == 0)
-    if not ok:
-        sys.exit(-1)
+# Import and call the dependency installer
+dep_module = importlib.import_module(dep["module"])
+install_func = getattr(dep_module, dep["install_func"])
 
-cmd = ["make"]
+params = dep["params"]()
+success = install_func(**params)
 
-if _args["verbose"]:
-    cmd += ["VERBOSE=1"]
+if not success:
+    print(f"\n✗ Failed to build {dep_name} for iOS")
+    sys.exit(-1)
 
-# Parallel build
-cmd += ["-j", str(obt.host.NumCores)]
-
-# Build only ork_core_ios target
-cmd += ["ork_core_ios"]
-
-print("\n=== Building Orkid iOS ===")
-print(" ".join(cmd))
-print("==========================\n")
-
-rval = Command(cmd).exec()
-
-if rval == 0:
-    print("\n✓ iOS build successful!")
-    print(f"Build output: {build_dest}")
-    print(f"\nTo install: cd {build_dest} && make install")
-    print(f"Install location: {ios_subspace}")
-    print(f"  Headers: {ios_include}")
-    print(f"  Libraries: {ios_lib}")
-    print(f"\nBoost iOS libraries: {boost_ios_dir}/lib")
-else:
-    print("\n✗ iOS build failed")
-    sys.exit(rval)
+print(f"\n{'='*60}")
+print(f"✓ {dep_name} built successfully for iOS")
+print(f"{'='*60}")
 
 sys.exit(0)

@@ -44,6 +44,7 @@ sys.path.insert(0, os.path.join(this_dir, "obt.project", "python"))
 sys.path.insert(0, os.path.join(this_dir, "obt.project", "scripts"))
 
 import obt.path
+import ork.path
 from ork.ios import device_manager, app_launcher, xcode_debug
 
 stage_dir = Path(os.path.abspath(str(obt.path.stage())))
@@ -73,17 +74,17 @@ def build_ios_test_app(is_simulator, is_debug):
     print(f"\n=== Building iOS Test App ===")
 
     if is_simulator:
-        build_dest = stage_dir / "orkid-ios-simulator"
+        build_dest = ork.path.iossim_builds / "orkid"
         print("Building for iOS Simulator")
     else:
-        build_dest = stage_dir / "orkid-ios"
+        build_dest = ork.path.ios_builds / "orkid"
         print("Building for iOS Device")
 
     # Run the iOS build script first
     print("Running iOS build script...")
     build_cmd = [
         "python3",
-        os.path.join(this_dir, "obt.project", "bin", "ork.ios.build.py")
+        os.path.join(this_dir, "obt.project", "bin", "ork.ios.build.lib.py")
     ]
     if is_simulator:
         build_cmd.append("--simulator")
@@ -134,9 +135,9 @@ def find_existing_app(is_simulator, is_debug):
     """
     build_type = "Debug" if is_debug else "Release"
     if is_simulator:
-        build_dest = stage_dir / "orkid-ios-simulator"
+        build_dest = ork.path.iossim_builds / "orkid"
     else:
-        build_dest = stage_dir / "orkid-ios"
+        build_dest = ork.path.ios_builds / "orkid"
 
     app_path = build_dest / build_type / f"{APP_NAME}.app"
     if app_path.exists():
