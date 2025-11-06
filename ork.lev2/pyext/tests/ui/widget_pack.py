@@ -236,14 +236,14 @@ class PackWidgets(object):
     # create 2 imageview widgets
     ############################################
 
-    imgview1 = lg_group.makeChild( uiclass=lev2.ui.ImageView, args=["imgv1",vec4()])
+    imgview1 = lg_group.makeChild( uiclass=lev2.ui.ImageView, args=["imgv1",vec4(0.7,0.7,1,1)])
     self.lg_group.replaceChild( self.griditems[1].layout, imgview1 )
     imgview1w = imgview1.widget
     self.imgview1 = imgview1w
     self.imgview1.maintain_aspect_ratio = True
     self.imgview1.generate_mipmaps = False
 
-    imgview2 = lg_group.makeChild( uiclass=lev2.ui.ImageView, args=["imgv2",vec4()])
+    imgview2 = lg_group.makeChild( uiclass=lev2.ui.ImageView, args=["imgv2",vec4(.7,.2,.1,1)])
     self.lg_group.replaceChild( self.griditems[3].layout, imgview2 )
     imgview2w = imgview2.widget
     self.imgview2 = imgview2w

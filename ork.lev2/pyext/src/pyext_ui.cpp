@@ -1700,7 +1700,12 @@ void pyinit_ui(py::module& module_lev2) {
               [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
                 auto decoded_args = type_codec->decodeList(py_args);
                 auto name         = decoded_args[0].get<std::string>();
+                fvec4 defcolor;
+                if(decoded_args.size()>1) {
+                  defcolor     = decoded_args[1].get<fvec4>();
+                }
                 auto layoutitem   = lg->makeChild<ui::ImageView>(name);
+                layoutitem.typedWidget()->_default_color = defcolor;
                 return layoutitem.as_shared();
               })
           .def_property(
