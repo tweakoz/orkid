@@ -1,7 +1,7 @@
 # Swift Bindings & XCFramework Packaging Strategy for Orkid Engine
 
-**Date:** 2025-11-05
-**Status:** 🚧 Phase 1-4 Complete - Implementation In Progress (v12.1)
+**Date:** 2025-11-06
+**Status:** 🚧 Phase 1-8 Complete - Multi-Arg Callbacks Working (v13.0)
 **Target:** iOS Swift Developer Distribution with VarMap Support
 
 ---
@@ -2759,19 +2759,23 @@ All components reviewed and confirmed implementable. Critical issues have been f
 - ✅ CMake-based build (defer Xcode/SDK packaging to end)
 - ✅ Build incrementally - no big-bang integration
 
-### Current Progress (v12.1)
+### Current Progress (v13.0)
 
 **Completed Phases:**
 - ✅ **Phase 1:** C++ Foundation (TypeRegistry, OrkidHandle template, C bridge headers)
 - ✅ **Phase 2:** Basic C Bridge (Lifecycle functions, handle management, macOS app init)
 - ✅ **Phase 3:** Timer C Bridge (Complete Timer type with all operations)
 - ✅ **Phase 4:** Minimal Swift Test (Working test integrated into build system)
+- ✅ **Phase 5:** Math Types (vec3, vec4, mat4 with full operations and tests)
+- ✅ **Phase 6:** VarMap Foundation (Complete dictionary operations, subscript access)
+- ✅ **Phase 7:** Codec Infrastructure (Primitive encoding/decoding, OrkidObject registry, handle sharing)
+- ✅ **Phase 8:** Callbacks with Arguments (0-arg, 1-arg, 2-arg, 3-arg callbacks with 13 comprehensive tests)
 
 **Next Steps:**
-- 🔜 **Phase 5:** Math Types (vec3 as representative type)
-- 📋 **Phase 6:** VarMap Foundation
-- 📋 **Phase 7:** Codec Infrastructure
-- 📋 **Phases 8-12:** Callbacks, iOS support, real-world tests, XCFramework
+- 🔜 **Phase 9:** (Optional) Multi-Arg Callback Refinements
+- 📋 **Phase 10:** iOS Support
+- 📋 **Phase 11:** Real-World Integration Test
+- 📋 **Phase 12:** XCFramework Packaging
 
 **Key Implementation Achievements:**
 - Swift/C++ bridge working end-to-end
@@ -3238,12 +3242,15 @@ ork.core/tests/CMakeLists.txt # Include swift/macos/CMakeLists.txt
 
 ---
 
-### Phase 5: Math Types - vec3 (Representative type)
+### Phase 5: Math Types - vec3, vec4, mat4 ✅ COMPLETED
+
+**Status:** ✅ Implemented and verified
 
 **Deliverables:**
-1. Add vec3 bridge functions to `orkid_swift_bridge.cpp`
-2. Add vec3.swift wrapper
-3. Test from Swift
+1. ✅ vec3, vec4, mat4 bridge functions in C++
+2. ✅ Swift wrapper classes (vec3.swift, vec4.swift, mat4.swift)
+3. ✅ Comprehensive tests for all math operations
+4. ✅ Type registry integration for proper casting
 
 **C++ bridge additions:**
 ```cpp
@@ -3299,12 +3306,15 @@ swift test
 
 ---
 
-### Phase 6: VarMap Foundation (No codec yet)
+### Phase 6: VarMap Foundation ✅ COMPLETED
+
+**Status:** ✅ Implemented and verified
 
 **Deliverables:**
-1. Add VarMap bridge functions (basic operations only)
-2. Add VarMap.swift wrapper
-3. Test basic operations (no type conversion yet)
+1. ✅ VarMap bridge functions (create, get, set, remove, contains, keys, size, clear, clone)
+2. ✅ VarMap.swift wrapper with subscript access
+3. ✅ Full Dictionary-like API with iteration support
+4. ✅ Type-safe operations with codec integration
 
 **C++ bridge:**
 ```cpp
@@ -3362,13 +3372,16 @@ swift test
 
 ---
 
-### Phase 7: Codec Infrastructure
+### Phase 7: Codec Infrastructure ✅ COMPLETED
+
+**Status:** ✅ Implemented and verified
 
 **Deliverables:**
-1. `ork.core/src/swift/orkid_swift_codec.cpp` - Codec implementation
-2. Register Timer and vec3 in codec
-3. Add VarMap get/set with codec
-4. Test VarMap with Timer and vec3
+1. ✅ Primitive encoding/decoding (Int, Float, Double, String)
+2. ✅ OrkidObject registry system for type-safe casting
+3. ✅ Handle sharing via `orkid_handle_retain()` for proper refcounting
+4. ✅ Integrated with VarMap for type-safe storage/retrieval
+5. ✅ Tested with Timer, vec3, vec4, mat4
 
 **Files to create:**
 ```
@@ -3468,12 +3481,20 @@ swift test
 
 ---
 
-### Phase 8: Simple Callbacks
+### Phase 8: Callbacks with Arguments ✅ COMPLETED
+
+**Status:** ✅ Implemented and verified (13 comprehensive tests)
 
 **Deliverables:**
-1. `ork.core/src/swift/orkid_swift_callback.cpp` - Callback infrastructure
-2. SwiftCallback.swift, SwiftCallbackManager.swift
-3. Test callback with no args
+1. ✅ `ork.core/src/swift/orkid_swift_callback.cpp` - Callback infrastructure
+2. ✅ SwiftCallback.swift - 0-arg, 1-arg, 2-arg, 3-arg callback classes
+3. ✅ SwiftCallbackManager.swift - Global callback registry with thread-safe storage
+4. ✅ Automatic closure type detection in VarMap subscript setter
+5. ✅ Shared argument decoder for all callback types (DRY principle)
+6. ✅ Support for primitive arguments (Int, Float, Double, String)
+7. ✅ Support for OrkidObject arguments (Timer, vec3, etc.)
+8. ✅ VarMap.invokeNamedCallback() with 0-3 argument overloads
+9. ✅ 13 comprehensive tests covering all callback scenarios
 
 **C++ bridge:**
 ```cpp
@@ -3521,19 +3542,67 @@ func testSimpleCallback() {
 
 **Verification:**
 ```bash
-swift test
+ork.test.swift.core.callback.exe
 ```
 
-**Success Criteria:** ✅ Callback invoked from C++, no memory leaks
+**Success Criteria:** ✅ All 13 tests pass, callbacks invoked from C++, no memory leaks
+
+**Implementation Notes:**
+- Test file: `ork.core/tests/swift/macos/callback/src/main.swift`
+- Architecture: Function pointer registration pattern to break circular dependency between C++ and Swift
+- Separate invoker functions for each arity (0, 1, 2, 3 args)
+- Arguments passed individually (not packed in vector) for better type safety
+- Shared `decodeCallbackArgument()` function eliminates code duplication
+- VarMap subscript setter automatically detects closure type: `() -> Void`, `(Any) -> Void`, `(Any, Any) -> Void`, `(Any, Any, Any) -> Void`
+- Registry-based OrkidObject wrapping ensures correct Swift subclass (vec3, Timer, etc.)
+- Proper refcounting via `orkid_handle_retain()` when passing objects across boundary
+
+**Test Coverage (13 tests):**
+1. Basic callback invocation (0-arg)
+2. Multiple callbacks with different keys
+3. Callback with captured variables
+4. Callback persistence in VarMap
+5. Callback cleanup when removed
+6. Type verification
+7. Raw closure syntax (auto-wrapping)
+8. Callback with Int argument
+9. Callback with String argument
+10. Callback with Timer (OrkidObject)
+11. Callback with vec3 (OrkidObject with casting)
+12. Callback with 2 arguments (Int, String)
+13. Callback with 3 arguments (Int, Float, vec3)
+
+**Key Files:**
+```
+ork.core/inc/ork/swift/
+├── orkid_swift_callback.h       # C++ callback holder and invoker registration
+
+ork.core/src/swift/
+├── orkid_swift_callback.cpp     # SwiftCallbackHolder, invoker function pointers
+└── swext_varmap.cpp             # VarMap invoke functions (0-3 args)
+
+ork.core/swext/src/
+├── SwiftCallback.swift          # SwiftCallback, SwiftCallback1/2/3 classes
+├── SwiftCallbackManager.swift   # Global callback registry
+├── VarMap.swift                 # invokeNamedCallback() overloads, closure detection
+└── CBridge.swift                # C function declarations
+```
 
 ---
 
-### Phase 9: Multi-Arg Callbacks
+### Phase 9: Multi-Arg Callbacks ✅ MERGED INTO PHASE 8
 
-**Deliverables:**
-1. SwiftCallback1, SwiftCallback2, SwiftCallback3
-2. `orkid_svar_list_get()` bridge function
-3. Test with String and Int args
+**Status:** ✅ Completed as part of Phase 8
+
+**Note:** Originally planned as separate phase, but implemented together with Phase 8 for better architecture.
+
+**Completed Features:**
+- ✅ SwiftCallback (0-arg)
+- ✅ SwiftCallback1 (1-arg with typed support)
+- ✅ SwiftCallback2 (2-arg)
+- ✅ SwiftCallback3 (3-arg)
+- ✅ Argument passing without `svar_list` (args passed directly as separate handles)
+- ✅ Tests with Int, Float, String, and OrkidObject arguments
 
 **C++ bridge addition:**
 ```cpp
@@ -3702,22 +3771,22 @@ swift run CompleteDemo
 
 ## Summary: Implementation Order
 
-| Phase | Focus | Verification | Time Estimate |
-|-------|-------|--------------|---------------|
-| 1 | C++ Foundation | Compiles | 30 min |
-| 2 | Basic C Bridge | Links, symbols exist | 30 min |
-| 3 | Timer C Bridge | C++ test passes | 45 min |
-| 4 | Minimal Swift Test | swift_test1 runs | 45 min |
-| 5 | vec3 Math Type | Math tests pass | 45 min |
-| 6 | VarMap Foundation | Basic ops work | 30 min |
-| 7 | Codec Infrastructure | VarMap stores typed objects | 1 hour |
-| 8 | Simple Callbacks | Callback fires | 45 min |
-| 9 | Multi-Arg Callbacks | Args unwrap correctly | 1 hour |
-| 10 | iOS Support | Tests pass on iOS sim | 1 hour |
-| 11 | Integration Test | Complete demo works | 30 min |
-| 12 | XCFramework | SDK packaging | Defer |
+| Phase | Focus | Status | Verification |
+|-------|-------|--------|--------------|
+| 1 | C++ Foundation | ✅ COMPLETE | Compiles |
+| 2 | Basic C Bridge | ✅ COMPLETE | Links, symbols exist |
+| 3 | Timer C Bridge | ✅ COMPLETE | Timer test passes |
+| 4 | Minimal Swift Test | ✅ COMPLETE | swift_test1 runs |
+| 5 | Math Types (vec3, vec4, mat4) | ✅ COMPLETE | Math tests pass |
+| 6 | VarMap Foundation | ✅ COMPLETE | VarMap operations work |
+| 7 | Codec Infrastructure | ✅ COMPLETE | Encode/decode with registry |
+| 8 | Callbacks (0-3 args) | ✅ COMPLETE | 13 tests pass |
+| 9 | Multi-Arg Callbacks | ✅ MERGED INTO 8 | Covered by Phase 8 |
+| 10 | iOS Support | 📋 TODO | Tests pass on iOS sim |
+| 11 | Integration Test | 📋 TODO | Complete demo works |
+| 12 | XCFramework | 📋 DEFERRED | SDK packaging |
 
-**Total estimated time:** ~7.75 hours (achievable in one focused day)
+**Progress:** Phases 1-8 complete (9 merged into 8). Ready for iOS support or integration testing.
 
 **Key Principles:**
 - ✅ Each phase independently verifiable
