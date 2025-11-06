@@ -1,77 +1,34 @@
 #!/usr/bin/env swift
 
 import Foundation
+import OrkCore
 
-// Import the C bridge (we'll need to configure search paths)
-// For now, we'll declare the C functions directly as a proof of concept
+// ========================================
+// MAIN TEST
+// ========================================
 
-// Opaque handle type
-typealias OrkidHandleBase = OpaquePointer
+print("=== Orkid Swift Timer Test (OrkCore Module) ===\n")
 
-// C function declarations
-@_silgen_name("orkid_swift_init")
-func orkid_swift_init(_ argc: Int32, _ argv: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?)
-
-@_silgen_name("orkid_swift_exit")
-func orkid_swift_exit()
-
-@_silgen_name("orkid_get_last_error")
-func orkid_get_last_error() -> UnsafePointer<CChar>?
-
-@_silgen_name("orkid_timer_create")
-func orkid_timer_create() -> OrkidHandleBase?
-
-@_silgen_name("orkid_timer_start")
-func orkid_timer_start(_ handle: OrkidHandleBase)
-
-@_silgen_name("orkid_timer_end")
-func orkid_timer_end(_ handle: OrkidHandleBase)
-
-@_silgen_name("orkid_timer_secs_since_start")
-func orkid_timer_secs_since_start(_ handle: OrkidHandleBase) -> Float
-
-@_silgen_name("orkid_handle_release")
-func orkid_handle_release(_ handle: OrkidHandleBase)
-
-@_silgen_name("orkid_handle_use_count")
-func orkid_handle_use_count(_ handle: OrkidHandleBase) -> Int32
-
-// Helper to get last error as String
-func getLastError() -> String {
-    if let cstr = orkid_get_last_error() {
-        return String(cString: cstr)
-    }
-    return ""
-}
-
-// Main test
-print("=== Orkid Swift Bridge Test 1 ===\n")
-
-// Initialize Orkid
+// Initialize Orkid (automatic via singleton)
 print("Initializing Orkid...")
-var args = CommandLine.unsafeArgv
-orkid_swift_init(CommandLine.argc, args)
+_ = Orkid.shared
 
-let error = getLastError()
-if !error.isEmpty {
-    print("ERROR during init: \(error)")
+if !Orkid.lastError.isEmpty {
+    print("ERROR during init: \(Orkid.lastError)")
     exit(1)
 }
 print("Orkid initialized successfully\n")
 
-// Create a Timer
+// Create a Timer using OrkCore module
 print("Creating Timer...")
-guard let timer = orkid_timer_create() else {
-    print("ERROR: Failed to create timer: \(getLastError())")
-    orkid_swift_exit()
-    exit(1)
-}
+let timer = OrkCore.Timer()
 print("Timer created successfully")
-print("  Use count: \(orkid_handle_use_count(timer))\n")
+print("  Type: \(timer.typeName)")
+print("  Use count: \(timer.useCount)\n")
 
 // Start the timer
 print("Starting timer...")
-orkid_timer_start(timer)
+timer.start()
 print("Timer started\n")
 
 // Sleep for a bit
@@ -79,8 +36,9 @@ print("Sleeping for 0.5 seconds...")
 usleep(500_000)  // 500ms
 
 // Check elapsed time
-let elapsed = orkid_timer_secs_since_start(timer)
-print("Elapsed time: \(elapsed) seconds\n")
+let elapsed = timer.secsSinceStart
+print("Elapsed time: \(elapsed) seconds")
+print("Timer description: \(timer)\n")
 
 // Verify elapsed time is reasonable (between 0.4 and 0.6 seconds)
 if elapsed >= 0.4 && elapsed <= 0.6 {
@@ -91,18 +49,30 @@ if elapsed >= 0.4 && elapsed <= 0.6 {
 
 // End the timer
 print("Ending timer...")
-orkid_timer_end(timer)
+timer.end()
 print("Timer ended\n")
 
-// Release the timer
-print("Releasing timer...")
-print("  Use count before release: \(orkid_handle_use_count(timer))")
-orkid_handle_release(timer)
-print("Timer released\n")
+// Test measure() convenience method
+print("Testing measure() convenience method...")
+let measureTime = timer.measure {
+    usleep(100_000)  // 100ms
+}
+print("  Measured time: \(measureTime) seconds")
+if measureTime >= 0.09 && measureTime <= 0.15 {
+    print("✓ Measure method works correctly\n")
+} else {
+    print("✗ Measure method incorrect (expected ~0.1, got \(measureTime))\n")
+}
+
+// Check use count before automatic cleanup
+print("Use count before scope exit: \(timer.useCount)")
+print("Timer will be automatically released via deinit when scope ends\n")
+
+// Timer will be automatically released here when it goes out of scope
 
 // Shutdown Orkid
 print("Shutting down Orkid...")
-orkid_swift_exit()
+Orkid.exit()
 print("Orkid shutdown complete\n")
 
 print("=== Test Complete ===")

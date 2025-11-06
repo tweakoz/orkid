@@ -10,6 +10,7 @@ get_filename_component(ORK_CORE_DIR "${SWIFT_TESTS_DIR}/../../.." ABSOLUTE)
 
 set(SWIFT_BRIDGE_HEADER ${ORK_CORE_DIR}/inc/ork/swift/orkid_swift_bridge.h)
 set(SWIFT_INCLUDE_DIR ${ORK_CORE_DIR}/inc)
+set(SWIFT_MODULE_SRC_DIR ${ORK_CORE_DIR}/swext/src)
 
 # Find swiftc compiler
 find_program(SWIFTC swiftc)
@@ -19,6 +20,16 @@ if(NOT SWIFTC)
 endif()
 
 message(STATUS "Found swiftc: ${SWIFTC}")
+
+# Build OrkCore Swift module
+file(GLOB ORKCORE_SWIFT_SOURCES "${SWIFT_MODULE_SRC_DIR}/*.swift")
+ork_build_swift_module(
+  NAME OrkCore
+  MODULE_DIR ${SWIFT_MODULE_SRC_DIR}
+  SOURCES ${ORKCORE_SWIFT_SOURCES}
+  BRIDGE_HEADER ${SWIFT_BRIDGE_HEADER}
+  INCLUDE_DIR ${SWIFT_INCLUDE_DIR}
+)
 
 # test1 - Timer test
 ork_add_swift_test(

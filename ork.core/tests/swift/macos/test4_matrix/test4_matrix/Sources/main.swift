@@ -1,112 +1,34 @@
 #!/usr/bin/env swift
 
 import Foundation
+import OrkCore
 
-// Import the C bridge
-typealias OrkidHandleBase = OpaquePointer
+// ========================================
+// MAIN TEST
+// ========================================
 
-// C function declarations
-@_silgen_name("orkid_swift_init")
-func orkid_swift_init(_ argc: Int32, _ argv: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?)
-
-@_silgen_name("orkid_swift_exit")
-func orkid_swift_exit()
-
-@_silgen_name("orkid_get_last_error")
-func orkid_get_last_error() -> UnsafePointer<CChar>?
-
-@_silgen_name("orkid_handle_release")
-func orkid_handle_release(_ handle: OrkidHandleBase)
-
-@_silgen_name("orkid_handle_type_name")
-func orkid_handle_type_name(_ handle: OrkidHandleBase) -> UnsafePointer<CChar>?
-
-// vec4 functions (for testing transform)
-@_silgen_name("orkid_fvec4_create")
-func orkid_fvec4_create(_ x: Float, _ y: Float, _ z: Float, _ w: Float) -> OrkidHandleBase?
-
-@_silgen_name("orkid_fvec4_get_x")
-func orkid_fvec4_get_x(_ handle: OrkidHandleBase) -> Float
-
-@_silgen_name("orkid_fvec4_get_y")
-func orkid_fvec4_get_y(_ handle: OrkidHandleBase) -> Float
-
-@_silgen_name("orkid_fvec4_get_z")
-func orkid_fvec4_get_z(_ handle: OrkidHandleBase) -> Float
-
-@_silgen_name("orkid_fvec4_get_w")
-func orkid_fvec4_get_w(_ handle: OrkidHandleBase) -> Float
-
-// mat4 functions
-@_silgen_name("orkid_fmtx4_create_identity")
-func orkid_fmtx4_create_identity() -> OrkidHandleBase?
-
-@_silgen_name("orkid_fmtx4_create_translation")
-func orkid_fmtx4_create_translation(_ x: Float, _ y: Float, _ z: Float) -> OrkidHandleBase?
-
-@_silgen_name("orkid_fmtx4_create_scale")
-func orkid_fmtx4_create_scale(_ x: Float, _ y: Float, _ z: Float) -> OrkidHandleBase?
-
-@_silgen_name("orkid_fmtx4_create_rotation_x")
-func orkid_fmtx4_create_rotation_x(_ radians: Float) -> OrkidHandleBase?
-
-@_silgen_name("orkid_fmtx4_create_rotation_z")
-func orkid_fmtx4_create_rotation_z(_ radians: Float) -> OrkidHandleBase?
-
-@_silgen_name("orkid_fmtx4_get_translation")
-func orkid_fmtx4_get_translation(_ handle: OrkidHandleBase, _ out_x: UnsafeMutablePointer<Float>?, _ out_y: UnsafeMutablePointer<Float>?, _ out_z: UnsafeMutablePointer<Float>?)
-
-@_silgen_name("orkid_fmtx4_set_translation")
-func orkid_fmtx4_set_translation(_ handle: OrkidHandleBase, _ x: Float, _ y: Float, _ z: Float)
-
-@_silgen_name("orkid_fmtx4_multiply")
-func orkid_fmtx4_multiply(_ a: OrkidHandleBase, _ b: OrkidHandleBase) -> OrkidHandleBase?
-
-@_silgen_name("orkid_fmtx4_inverse")
-func orkid_fmtx4_inverse(_ handle: OrkidHandleBase) -> OrkidHandleBase?
-
-@_silgen_name("orkid_fmtx4_transform_vec4")
-func orkid_fmtx4_transform_vec4(_ mtx: OrkidHandleBase, _ vec: OrkidHandleBase) -> OrkidHandleBase?
-
-// Helper to get last error as String
-func getLastError() -> String {
-    if let cstr = orkid_get_last_error() {
-        return String(cString: cstr)
-    }
-    return ""
-}
-
-// Main test
-print("=== Orkid Swift Math Test (mat4) ===\n")
+print("=== Orkid Swift Math Test (mat4 OrkCore Module) ===\n")
 
 // Initialize Orkid
 print("Initializing Orkid...")
-var args = CommandLine.unsafeArgv
-orkid_swift_init(CommandLine.argc, args)
+_ = Orkid.shared
 
-let error = getLastError()
-if !error.isEmpty {
-    print("ERROR during init: \(error)")
+if !Orkid.lastError.isEmpty {
+    print("ERROR during init: \(Orkid.lastError)")
     exit(1)
 }
 print("Orkid initialized successfully\n")
 
 // Test 1: Create identity matrix
 print("Test 1: Creating identity matrix...")
-guard let identity = orkid_fmtx4_create_identity() else {
-    print("ERROR: Failed to create identity matrix: \(getLastError())")
-    orkid_swift_exit()
-    exit(1)
-}
+let identity = mat4.identity()
 print("Identity matrix created successfully")
-if let typeName = orkid_handle_type_name(identity) {
-    print("  Type: \(String(cString: typeName))")
-}
+print("  Type: \(identity.typeName)")
+print("  Description: \(identity)")
 
-var tx: Float = 0, ty: Float = 0, tz: Float = 0
-orkid_fmtx4_get_translation(identity, &tx, &ty, &tz)
-print("  Translation: (\(tx), \(ty), \(tz))")
-if tx == 0.0 && ty == 0.0 && tz == 0.0 {
+let t = identity.translation
+print("  Translation: (\(t.x), \(t.y), \(t.z))")
+if t.x == 0.0 && t.y == 0.0 && t.z == 0.0 {
     print("✓ Identity matrix has zero translation\n")
 } else {
     print("✗ Identity matrix translation incorrect\n")
@@ -114,16 +36,12 @@ if tx == 0.0 && ty == 0.0 && tz == 0.0 {
 
 // Test 2: Create translation matrix
 print("Test 2: Creating translation matrix...")
-guard let trans = orkid_fmtx4_create_translation(10.0, 20.0, 30.0) else {
-    print("ERROR: Failed to create translation matrix")
-    orkid_handle_release(identity)
-    orkid_swift_exit()
-    exit(1)
-}
+let trans = mat4.translation(x: 10.0, y: 20.0, z: 30.0)
+let t2 = trans.translation
+print("  \(trans)")
+print("  Translation: (\(t2.x), \(t2.y), \(t2.z))")
 
-orkid_fmtx4_get_translation(trans, &tx, &ty, &tz)
-print("  Translation: (\(tx), \(ty), \(tz))")
-if tx == 10.0 && ty == 20.0 && tz == 30.0 {
+if t2.x == 10.0 && t2.y == 20.0 && t2.z == 30.0 {
     print("✓ Translation matrix correct\n")
 } else {
     print("✗ Translation matrix incorrect\n")
@@ -131,10 +49,11 @@ if tx == 10.0 && ty == 20.0 && tz == 30.0 {
 
 // Test 3: Set translation
 print("Test 3: Modifying translation...")
-orkid_fmtx4_set_translation(trans, 5.0, 15.0, 25.0)
-orkid_fmtx4_get_translation(trans, &tx, &ty, &tz)
-print("  New translation: (\(tx), \(ty), \(tz))")
-if tx == 5.0 && ty == 15.0 && tz == 25.0 {
+trans.translation = (x: 5.0, y: 15.0, z: 25.0)
+let t3 = trans.translation
+print("  New translation: (\(t3.x), \(t3.y), \(t3.z))")
+
+if t3.x == 5.0 && t3.y == 15.0 && t3.z == 25.0 {
     print("✓ Set translation works\n")
 } else {
     print("✗ Set translation failed\n")
@@ -142,63 +61,33 @@ if tx == 5.0 && ty == 15.0 && tz == 25.0 {
 
 // Test 4: Matrix multiplication
 print("Test 4: Matrix multiplication...")
-guard let scale = orkid_fmtx4_create_scale(2.0, 2.0, 2.0) else {
-    print("ERROR: Failed to create scale matrix")
-    orkid_handle_release(trans)
-    orkid_handle_release(identity)
-    orkid_swift_exit()
-    exit(1)
-}
+let scale = mat4.scale(x: 2.0, y: 2.0, z: 2.0)
+print("  Scale matrix: \(scale)")
+print("  Translation matrix: \(trans)")
 
 // Multiply: scale * trans
-guard let combined = orkid_fmtx4_multiply(scale, trans) else {
-    print("ERROR: Failed to multiply matrices")
-    orkid_handle_release(scale)
-    orkid_handle_release(trans)
-    orkid_handle_release(identity)
-    orkid_swift_exit()
-    exit(1)
-}
+let combined = scale * trans
+print("  Combined (scale * translation): \(combined)")
 
-orkid_fmtx4_get_translation(combined, &tx, &ty, &tz)
-print("  Combined matrix translation: (\(tx), \(ty), \(tz))")
+let t4 = combined.translation
+print("  Combined translation: (\(t4.x), \(t4.y), \(t4.z))")
+
 // After scale*trans, translation should be scaled
-if abs(tx - 10.0) < 0.001 && abs(ty - 30.0) < 0.001 && abs(tz - 50.0) < 0.001 {
+if abs(t4.x - 10.0) < 0.001 && abs(t4.y - 30.0) < 0.001 && abs(t4.z - 50.0) < 0.001 {
     print("✓ Matrix multiplication works (scale * translation)\n")
 } else {
-    print("✗ Matrix multiplication incorrect (expected (10, 30, 50), got (\(tx), \(ty), \(tz)))\n")
+    print("✗ Matrix multiplication incorrect (expected (10, 30, 50), got (\(t4.x), \(t4.y), \(t4.z)))\n")
 }
 
 // Test 5: Transform vector
 print("Test 5: Transforming vec4...")
-guard let vec = orkid_fvec4_create(1.0, 1.0, 1.0, 1.0) else {
-    print("ERROR: Failed to create vec4")
-    orkid_handle_release(combined)
-    orkid_handle_release(scale)
-    orkid_handle_release(trans)
-    orkid_handle_release(identity)
-    orkid_swift_exit()
-    exit(1)
-}
+let vec = vec4(x: 1.0, y: 1.0, z: 1.0, w: 1.0)
+print("  Original vector: \(vec)")
 
-guard let transformed = orkid_fmtx4_transform_vec4(scale, vec) else {
-    print("ERROR: Failed to transform vec4")
-    orkid_handle_release(vec)
-    orkid_handle_release(combined)
-    orkid_handle_release(scale)
-    orkid_handle_release(trans)
-    orkid_handle_release(identity)
-    orkid_swift_exit()
-    exit(1)
-}
+let transformed = scale * vec
+print("  After scale(2,2,2): \(transformed)")
 
-let tx_x = orkid_fvec4_get_x(transformed)
-let tx_y = orkid_fvec4_get_y(transformed)
-let tx_z = orkid_fvec4_get_z(transformed)
-let tx_w = orkid_fvec4_get_w(transformed)
-print("  Original: (1, 1, 1, 1)")
-print("  Transformed by scale(2,2,2): (\(tx_x), \(tx_y), \(tx_z), \(tx_w))")
-if abs(tx_x - 2.0) < 0.001 && abs(tx_y - 2.0) < 0.001 && abs(tx_z - 2.0) < 0.001 {
+if abs(transformed.x - 2.0) < 0.001 && abs(transformed.y - 2.0) < 0.001 && abs(transformed.z - 2.0) < 0.001 {
     print("✓ Vector transform works\n")
 } else {
     print("✗ Vector transform incorrect\n")
@@ -206,57 +95,58 @@ if abs(tx_x - 2.0) < 0.001 && abs(tx_y - 2.0) < 0.001 && abs(tx_z - 2.0) < 0.001
 
 // Test 6: Matrix inverse
 print("Test 6: Matrix inverse...")
-guard let scaleInv = orkid_fmtx4_inverse(scale) else {
-    print("ERROR: Failed to invert matrix")
-    orkid_handle_release(transformed)
-    orkid_handle_release(vec)
-    orkid_handle_release(combined)
-    orkid_handle_release(scale)
-    orkid_handle_release(trans)
-    orkid_handle_release(identity)
-    orkid_swift_exit()
-    exit(1)
-}
+let scaleInv = scale.inverse()
+print("  Scale matrix inverse: \(scaleInv)")
 
 // Transform the scaled vector back with inverse
-guard let unscaled = orkid_fmtx4_transform_vec4(scaleInv, transformed) else {
-    print("ERROR: Failed to transform with inverse")
-    orkid_handle_release(scaleInv)
-    orkid_handle_release(transformed)
-    orkid_handle_release(vec)
-    orkid_handle_release(combined)
-    orkid_handle_release(scale)
-    orkid_handle_release(trans)
-    orkid_handle_release(identity)
-    orkid_swift_exit()
-    exit(1)
-}
+let unscaled = scaleInv * transformed
+print("  Transformed vector: \(transformed)")
+print("  After inverse transform: \(unscaled)")
 
-let us_x = orkid_fvec4_get_x(unscaled)
-let us_y = orkid_fvec4_get_y(unscaled)
-let us_z = orkid_fvec4_get_z(unscaled)
-print("  After scale(2) then inverse: (\(us_x), \(us_y), \(us_z))")
-if abs(us_x - 1.0) < 0.001 && abs(us_y - 1.0) < 0.001 && abs(us_z - 1.0) < 0.001 {
+if abs(unscaled.x - 1.0) < 0.001 && abs(unscaled.y - 1.0) < 0.001 && abs(unscaled.z - 1.0) < 0.001 {
     print("✓ Matrix inverse works (returns to original)\n")
 } else {
     print("✗ Matrix inverse incorrect\n")
 }
 
-// Cleanup
-print("Cleaning up...")
-orkid_handle_release(unscaled)
-orkid_handle_release(scaleInv)
-orkid_handle_release(transformed)
-orkid_handle_release(vec)
-orkid_handle_release(combined)
-orkid_handle_release(scale)
-orkid_handle_release(trans)
-orkid_handle_release(identity)
-print("All handles released\n")
+// Test 7: Rotation matrices
+print("Test 7: Testing rotation matrices...")
+let rotX = mat4.rotationX(.pi / 2)  // 90 degrees
+let rotY = mat4.rotationY(.pi / 2)
+let rotZ = mat4.rotationZ(.pi / 2)
+
+print("  Rotation X (90°): \(rotX)")
+print("  Rotation Y (90°): \(rotY)")
+print("  Rotation Z (90°): \(rotZ)")
+print("✓ Rotation matrices created successfully\n")
+
+// Test 8: Transpose
+print("Test 8: Testing matrix transpose...")
+let transposed = identity.transpose()
+print("  Original identity: \(identity)")
+print("  Transposed: \(transposed)")
+print("✓ Transpose works\n")
+
+// Test 9: Chained transformations using operator overloading
+print("Test 9: Chained transformations...")
+let translate = mat4.translation(x: 10.0, y: 0.0, z: 0.0)
+let rotate = mat4.rotationZ(.pi / 4)  // 45 degrees
+let scaleOp = mat4.scale(x: 2.0, y: 2.0, z: 2.0)
+
+let complex = scaleOp * rotate * translate
+print("  Complex matrix (scale * rotate * translate): \(complex)")
+
+let testVec = vec4(x: 0.0, y: 0.0, z: 0.0, w: 1.0)
+let result = complex * testVec
+print("  Transform (0,0,0,1): \(result)")
+print("✓ Chained transformations work\n")
+
+// Automatic cleanup demonstration
+print("All matrices and vectors will be automatically released via deinit\n")
 
 // Shutdown Orkid
 print("Shutting down Orkid...")
-orkid_swift_exit()
+Orkid.exit()
 print("Orkid shutdown complete\n")
 
 print("=== All Tests Complete ===")

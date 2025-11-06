@@ -619,6 +619,80 @@ function(gen_ispc_object_list
 endfunction()
 
 #############################################################################################################
+# Swift Module Build Helper
+#############################################################################################################
+
+function(ork_build_swift_module)
+  # Parse arguments
+  set(options "")
+  set(oneValueArgs NAME MODULE_DIR BRIDGE_HEADER INCLUDE_DIR)
+  set(multiValueArgs SOURCES)
+  cmake_parse_arguments(SWIFT_MOD "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+  # Validate required arguments
+  if(NOT SWIFT_MOD_NAME)
+    message(FATAL_ERROR "ork_build_swift_module: NAME argument is required")
+  endif()
+  if(NOT SWIFT_MOD_MODULE_DIR)
+    message(FATAL_ERROR "ork_build_swift_module: MODULE_DIR argument is required")
+  endif()
+  if(NOT SWIFT_MOD_SOURCES)
+    message(FATAL_ERROR "ork_build_swift_module: SOURCES argument is required")
+  endif()
+  if(NOT SWIFT_MOD_BRIDGE_HEADER)
+    message(FATAL_ERROR "ork_build_swift_module: BRIDGE_HEADER argument is required")
+  endif()
+  if(NOT SWIFT_MOD_INCLUDE_DIR)
+    message(FATAL_ERROR "ork_build_swift_module: INCLUDE_DIR argument is required")
+  endif()
+
+  # Set paths
+  set(SWIFT_MODULE_OUTPUT_DIR ${CMAKE_INSTALL_PREFIX}/lib/swift)
+  set(SWIFT_BUILD_DIR ${CMAKE_BINARY_DIR}/swift_modules)
+  file(MAKE_DIRECTORY ${SWIFT_BUILD_DIR})
+
+  set(SWIFT_MODULE_FILE ${SWIFT_BUILD_DIR}/${SWIFT_MOD_NAME}.swiftmodule)
+  set(SWIFT_MODULE_DOC ${SWIFT_BUILD_DIR}/${SWIFT_MOD_NAME}.swiftdoc)
+  set(SWIFT_MODULE_DYLIB ${SWIFT_BUILD_DIR}/lib${SWIFT_MOD_NAME}.dylib)
+
+  message(STATUS "Swift module '${SWIFT_MOD_NAME}': ${SWIFT_BUILD_DIR}")
+
+  # Compile Swift module
+  add_custom_command(
+    OUTPUT ${SWIFT_MODULE_FILE} ${SWIFT_MODULE_DOC} ${SWIFT_MODULE_DYLIB}
+    COMMAND ${SWIFTC}
+      ${SWIFT_MOD_SOURCES}
+      -module-name ${SWIFT_MOD_NAME}
+      -emit-module
+      -emit-module-path ${SWIFT_MODULE_FILE}
+      -emit-library
+      -o ${SWIFT_MODULE_DYLIB}
+      -import-objc-header ${SWIFT_MOD_BRIDGE_HEADER}
+      -I ${SWIFT_MOD_INCLUDE_DIR}
+      -Xcc -I${SWIFT_MOD_INCLUDE_DIR}
+      -L ${CMAKE_INSTALL_PREFIX}/lib
+      -lork_core
+      -Xlinker -rpath -Xlinker ${CMAKE_INSTALL_PREFIX}/lib
+      -Xlinker -install_name -Xlinker @rpath/lib${SWIFT_MOD_NAME}.dylib
+    DEPENDS ${SWIFT_MOD_SOURCES} ${SWIFT_MOD_BRIDGE_HEADER} ork_core
+    COMMENT "Building Swift module: ${SWIFT_MOD_NAME}"
+    VERBATIM
+  )
+
+  # Create custom target
+  add_custom_target(swift_module_${SWIFT_MOD_NAME} ALL
+    DEPENDS ${SWIFT_MODULE_FILE} ${SWIFT_MODULE_DYLIB}
+  )
+
+  # Install module files to lib/swift/ and dylib to lib/
+  install(FILES ${SWIFT_MODULE_FILE} ${SWIFT_MODULE_DOC}
+          DESTINATION ${SWIFT_MODULE_OUTPUT_DIR})
+  install(FILES ${SWIFT_MODULE_DYLIB}
+          DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+
+endfunction()
+
+#############################################################################################################
 # Swift Test Build Helper
 #############################################################################################################
 
@@ -649,6 +723,7 @@ function(ork_add_swift_test)
   # Set paths - use absolute paths to avoid CMake variable expansion issues
   set(SWIFT_OUTPUT_DIR $ENV{HOME}/.staging-sep26/subspace/macos_swift)
   set(SWIFT_BUILD_DIR ${CMAKE_BINARY_DIR}/swift_build)
+  set(SWIFT_MODULE_DIR ${CMAKE_BINARY_DIR}/swift_modules)
   file(MAKE_DIRECTORY ${SWIFT_BUILD_DIR})
   set(SWIFT_OBJ_FILE ${SWIFT_BUILD_DIR}/${SWIFT_TEST_NAME}.o)
   set(SWIFT_EXECUTABLE ${SWIFT_OUTPUT_DIR}/ork.test.swift.${SWIFT_TEST_NAME})
@@ -665,10 +740,11 @@ function(ork_add_swift_test)
     COMMAND ${SWIFTC}
       -c ${SWIFT_SOURCE}
       -o ${SWIFT_OBJ_FILE}
+      -I ${SWIFT_MODULE_DIR}
       -import-objc-header ${SWIFT_TEST_BRIDGE_HEADER}
       -I ${SWIFT_TEST_INCLUDE_DIR}
       -Xcc -I${SWIFT_TEST_INCLUDE_DIR}
-    DEPENDS ${SWIFT_SOURCE} ${SWIFT_TEST_BRIDGE_HEADER} ork_core
+    DEPENDS ${SWIFT_SOURCE} ${SWIFT_TEST_BRIDGE_HEADER} ork_core swift_module_OrkCore
     COMMENT "Compiling Swift test: ${SWIFT_TEST_NAME}"
     VERBATIM
   )
@@ -679,10 +755,14 @@ function(ork_add_swift_test)
     COMMAND ${SWIFTC}
       ${SWIFT_OBJ_FILE}
       -o ${SWIFT_EXECUTABLE}
+      -I ${SWIFT_MODULE_DIR}
       -L ${CMAKE_INSTALL_PREFIX}/lib
+      -L ${SWIFT_MODULE_DIR}
       -lork_core
+      -lOrkCore
       -Xlinker -rpath -Xlinker ${CMAKE_INSTALL_PREFIX}/lib
-    DEPENDS ${SWIFT_OBJ_FILE} ork_core
+      -Xlinker -rpath -Xlinker ${SWIFT_MODULE_DIR}
+    DEPENDS ${SWIFT_OBJ_FILE} ork_core swift_module_OrkCore
     COMMENT "Linking Swift test: ${SWIFT_TEST_NAME}"
     VERBATIM
   )
