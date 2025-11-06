@@ -18,6 +18,9 @@ func orkid_get_last_error() -> UnsafePointer<CChar>?
 @_silgen_name("orkid_handle_release")
 func orkid_handle_release(_ handle: OrkidHandleBase)
 
+@_silgen_name("orkid_handle_retain")
+func orkid_handle_retain(_ handle: OrkidHandleBase) -> OrkidHandleBase
+
 @_silgen_name("orkid_handle_use_count")
 func orkid_handle_use_count(_ handle: OrkidHandleBase) -> Int32
 
@@ -176,6 +179,15 @@ func orkid_varmap_clone(_ vmap: OrkidHandleBase) -> OrkidHandleBase?
 @_silgen_name("orkid_varmap_invoke_callback")
 func orkid_varmap_invoke_callback(_ vmap: OrkidHandleBase, _ key: UnsafePointer<CChar>)
 
+@_silgen_name("orkid_varmap_invoke_callback_1arg")
+func orkid_varmap_invoke_callback_1arg(_ vmap: OrkidHandleBase, _ key: UnsafePointer<CChar>, _ arg: OrkidHandleBase)
+
+@_silgen_name("orkid_varmap_invoke_callback_2arg")
+func orkid_varmap_invoke_callback_2arg(_ vmap: OrkidHandleBase, _ key: UnsafePointer<CChar>, _ arg1: OrkidHandleBase, _ arg2: OrkidHandleBase)
+
+@_silgen_name("orkid_varmap_invoke_callback_3arg")
+func orkid_varmap_invoke_callback_3arg(_ vmap: OrkidHandleBase, _ key: UnsafePointer<CChar>, _ arg1: OrkidHandleBase, _ arg2: OrkidHandleBase, _ arg3: OrkidHandleBase)
+
 // SwiftCallback
 @_silgen_name("orkid_swiftcallback_create")
 func orkid_swiftcallback_create() -> OrkidHandleBase?
@@ -185,6 +197,37 @@ func orkid_swiftcallback_get_id(_ handle: OrkidHandleBase) -> UInt64
 
 @_silgen_name("orkid_register_swift_callback_invoker")
 func orkid_register_swift_callback_invoker(_ invoker: @convention(c) (UInt64, OpaquePointer?) -> Void)
+
+@_silgen_name("orkid_register_swift_callback_invoker_2arg")
+func orkid_register_swift_callback_invoker_2arg(_ invoker: @convention(c) (UInt64, OpaquePointer?, OpaquePointer?) -> Void)
+
+@_silgen_name("orkid_register_swift_callback_invoker_3arg")
+func orkid_register_swift_callback_invoker_3arg(_ invoker: @convention(c) (UInt64, OpaquePointer?, OpaquePointer?, OpaquePointer?) -> Void)
+
+// Codec - primitive encoding/decoding
+@_silgen_name("orkid_encode_int")
+func orkid_encode_int(_ value: Int32) -> OrkidHandleBase?
+
+@_silgen_name("orkid_encode_float")
+func orkid_encode_float(_ value: Float) -> OrkidHandleBase?
+
+@_silgen_name("orkid_encode_double")
+func orkid_encode_double(_ value: Double) -> OrkidHandleBase?
+
+@_silgen_name("orkid_encode_string")
+func orkid_encode_string(_ value: UnsafePointer<CChar>) -> OrkidHandleBase?
+
+@_silgen_name("orkid_try_decode_int")
+func orkid_try_decode_int(_ handle: OrkidHandleBase, _ out_value: UnsafeMutablePointer<Int32>) -> Bool
+
+@_silgen_name("orkid_try_decode_float")
+func orkid_try_decode_float(_ handle: OrkidHandleBase, _ out_value: UnsafeMutablePointer<Float>) -> Bool
+
+@_silgen_name("orkid_try_decode_double")
+func orkid_try_decode_double(_ handle: OrkidHandleBase, _ out_value: UnsafeMutablePointer<Double>) -> Bool
+
+@_silgen_name("orkid_try_decode_string")
+func orkid_try_decode_string(_ handle: OrkidHandleBase) -> UnsafePointer<CChar>?
 
 // Helper to get last error
 func getLastError() -> String {

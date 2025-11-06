@@ -48,6 +48,10 @@ void orkid_handle_release(OrkidHandleBase* handle) {
     delete handle;  // Virtual dtor properly cleans up OrkidHandle<T>
 }
 
+OrkidHandleBase* orkid_handle_retain(OrkidHandleBase* handle) {
+    return handle->share();  // Create new handle sharing same shared_ptr
+}
+
 int32_t orkid_handle_use_count(const OrkidHandleBase* handle) {
     return handle->useCount();
 }

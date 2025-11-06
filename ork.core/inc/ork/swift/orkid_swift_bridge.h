@@ -29,6 +29,9 @@ typedef struct OrkidHandleBase OrkidHandleBase;  // Opaque to C/Swift
 /// Release handle (virtual dtor properly cleans up derived class)
 void orkid_handle_release(OrkidHandleBase* handle);
 
+/// Retain handle (creates new handle sharing the same std::shared_ptr)
+OrkidHandleBase* orkid_handle_retain(OrkidHandleBase* handle);
+
 /// Get shared_ptr use count (for debugging)
 int32_t orkid_handle_use_count(const OrkidHandleBase* handle);
 

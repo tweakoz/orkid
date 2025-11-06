@@ -44,11 +44,15 @@ OrkidHandleBase* orkid_swiftcallback_create(void);
 // Get callback ID for Swift lookup
 uint64_t orkid_swiftcallback_get_id(OrkidHandleBase* handle);
 
-// Register Swift callback invoker (called by Swift during init)
+// Register Swift callback invokers (called by Swift during init)
 void orkid_register_swift_callback_invoker(void (*invoker)(uint64_t, OrkidHandleBase*));
+void orkid_register_swift_callback_invoker_2arg(void (*invoker)(uint64_t, OrkidHandleBase*, OrkidHandleBase*));
+void orkid_register_swift_callback_invoker_3arg(void (*invoker)(uint64_t, OrkidHandleBase*, OrkidHandleBase*, OrkidHandleBase*));
 
-// C++ calls this to invoke Swift callbacks (uses registered invoker)
+// C++ calls these to invoke Swift callbacks (uses registered invokers)
 void orkid_invoke_swift_callback(uint64_t callback_id, OrkidHandleBase* args);
+void orkid_invoke_swift_callback_2arg(uint64_t callback_id, OrkidHandleBase* arg1, OrkidHandleBase* arg2);
+void orkid_invoke_swift_callback_3arg(uint64_t callback_id, OrkidHandleBase* arg1, OrkidHandleBase* arg2, OrkidHandleBase* arg3);
 
 #ifdef __cplusplus
 }

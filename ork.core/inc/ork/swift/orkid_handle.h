@@ -66,6 +66,7 @@ public:
     virtual uint64_t typeCRC() const = 0;
     virtual const char* typeName() const = 0;
     virtual std::type_index typeIndex() const = 0;
+    virtual OrkidHandleBase* share() const = 0;  // Create new handle sharing same shared_ptr
 
     /// Safe typed cast with validation (returns nullptr if invalid)
     /// Defined after OrkidHandle<T> is complete
@@ -114,6 +115,10 @@ public:
 
     std::shared_ptr<T> get() const {
         return _ptr;
+    }
+
+    OrkidHandleBase* share() const override {
+        return new OrkidHandle<T>(_ptr);  // New handle, same shared_ptr
     }
 
 private:

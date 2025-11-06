@@ -33,6 +33,9 @@ int32_t orkid_varmap_size(OrkidHandleBase* vmap);
 void orkid_varmap_clear(OrkidHandleBase* vmap);
 OrkidHandleBase* orkid_varmap_clone(OrkidHandleBase* vmap);
 void orkid_varmap_invoke_callback(OrkidHandleBase* vmap, const char* key);
+void orkid_varmap_invoke_callback_1arg(OrkidHandleBase* vmap, const char* key, OrkidHandleBase* arg);
+void orkid_varmap_invoke_callback_2arg(OrkidHandleBase* vmap, const char* key, OrkidHandleBase* arg1, OrkidHandleBase* arg2);
+void orkid_varmap_invoke_callback_3arg(OrkidHandleBase* vmap, const char* key, OrkidHandleBase* arg1, OrkidHandleBase* arg2, OrkidHandleBase* arg3);
 
 #ifdef __cplusplus
 }

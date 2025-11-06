@@ -251,3 +251,111 @@ svar128_t swiftCodecDecode(OrkidHandleBase* handle) {
 }
 
 } // namespace ork::swift
+
+////////////////////////////////////////////////////////////////
+// Primitive encoding functions (C bridge for Swift)
+////////////////////////////////////////////////////////////////
+
+extern "C" {
+
+using namespace ork::swift;
+
+OrkidHandleBase* orkid_encode_int(int32_t value) {
+    svar128_t var;
+    var.set<int>(value);
+    return swiftCodecEncode(var);
+}
+
+OrkidHandleBase* orkid_encode_float(float value) {
+    svar128_t var;
+    var.set<float>(value);
+    return swiftCodecEncode(var);
+}
+
+OrkidHandleBase* orkid_encode_double(double value) {
+    svar128_t var;
+    var.set<double>(value);
+    return swiftCodecEncode(var);
+}
+
+OrkidHandleBase* orkid_encode_string(const char* value) {
+    svar128_t var;
+    var.set<std::string>(std::string(value));
+    return swiftCodecEncode(var);
+}
+
+int32_t orkid_decode_int(OrkidHandleBase* handle) {
+    svar128_t var = swiftCodecDecode(handle);
+    if (!var.isA<int>()) {
+        printf("orkid_decode_int ERROR: expected int, got type '%s'\n", var.typeName());
+        OrkAssert(false);
+    }
+    return var.get<int>();
+}
+
+float orkid_decode_float(OrkidHandleBase* handle) {
+    svar128_t var = swiftCodecDecode(handle);
+    if (!var.isA<float>()) {
+        printf("orkid_decode_float ERROR: expected float, got type '%s'\n", var.typeName());
+        OrkAssert(false);
+    }
+    return var.get<float>();
+}
+
+double orkid_decode_double(OrkidHandleBase* handle) {
+    svar128_t var = swiftCodecDecode(handle);
+    if (!var.isA<double>()) {
+        printf("orkid_decode_double ERROR: expected double, got type '%s'\n", var.typeName());
+        OrkAssert(false);
+    }
+    return var.get<double>();
+}
+
+const char* orkid_decode_string(OrkidHandleBase* handle) {
+    svar128_t var = swiftCodecDecode(handle);
+    if (!var.isA<std::string>()) {
+        printf("orkid_decode_string ERROR: expected string, got type '%s'\n", var.typeName());
+        OrkAssert(false);
+    }
+    // WARNING: Returns pointer to internal string - copy immediately in Swift
+    return var.get<std::string>().c_str();
+}
+
+// Try decode functions (for type probing)
+bool orkid_try_decode_int(OrkidHandleBase* handle, int32_t* out_value) {
+    svar128_t var = swiftCodecDecode(handle);
+    if (var.isA<int>()) {
+        *out_value = var.get<int>();
+        return true;
+    }
+    return false;
+}
+
+bool orkid_try_decode_float(OrkidHandleBase* handle, float* out_value) {
+    svar128_t var = swiftCodecDecode(handle);
+    if (var.isA<float>()) {
+        *out_value = var.get<float>();
+        return true;
+    }
+    return false;
+}
+
+bool orkid_try_decode_double(OrkidHandleBase* handle, double* out_value) {
+    svar128_t var = swiftCodecDecode(handle);
+    if (var.isA<double>()) {
+        *out_value = var.get<double>();
+        return true;
+    }
+    return false;
+}
+
+const char* orkid_try_decode_string(OrkidHandleBase* handle) {
+    svar128_t var = swiftCodecDecode(handle);
+    if (var.isA<std::string>()) {
+        // WARNING: Returns pointer to internal string - copy immediately in Swift
+        return var.get<std::string>().c_str();
+    }
+    return nullptr;
+}
+
+} // extern "C"

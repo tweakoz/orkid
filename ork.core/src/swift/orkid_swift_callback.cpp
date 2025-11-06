@@ -19,8 +19,10 @@ namespace ork::swift {
 // Simple ID generator
 static std::atomic<uint64_t> g_next_callback_id{1};
 
-// Function pointer for Swift callback invoker (set by Swift at runtime)
+// Function pointers for Swift callback invokers (set by Swift at runtime)
 static std::function<void(uint64_t, OrkidHandleBase*)> g_swift_callback_invoker = nullptr;
+static std::function<void(uint64_t, OrkidHandleBase*, OrkidHandleBase*)> g_swift_callback_invoker_2arg = nullptr;
+static std::function<void(uint64_t, OrkidHandleBase*, OrkidHandleBase*, OrkidHandleBase*)> g_swift_callback_invoker_3arg = nullptr;
 
 extern thread_local std::string g_last_error;
 
@@ -53,17 +55,41 @@ uint64_t orkid_swiftcallback_get_id(OrkidHandleBase* handle) {
     return typed->get()->_callback_id;
 }
 
-// Register Swift callback invoker (called by Swift during init)
+// Register Swift callback invokers (called by Swift during init)
 void orkid_register_swift_callback_invoker(void (*invoker)(uint64_t, OrkidHandleBase*)) {
     g_swift_callback_invoker = invoker;
 }
 
-// C++ can call this to invoke Swift callbacks
+void orkid_register_swift_callback_invoker_2arg(void (*invoker)(uint64_t, OrkidHandleBase*, OrkidHandleBase*)) {
+    g_swift_callback_invoker_2arg = invoker;
+}
+
+void orkid_register_swift_callback_invoker_3arg(void (*invoker)(uint64_t, OrkidHandleBase*, OrkidHandleBase*, OrkidHandleBase*)) {
+    g_swift_callback_invoker_3arg = invoker;
+}
+
+// C++ can call these to invoke Swift callbacks
 void orkid_invoke_swift_callback(uint64_t callback_id, OrkidHandleBase* args) {
     if (g_swift_callback_invoker) {
         g_swift_callback_invoker(callback_id, args);
     } else {
         g_last_error = "Swift callback invoker not registered";
+    }
+}
+
+void orkid_invoke_swift_callback_2arg(uint64_t callback_id, OrkidHandleBase* arg1, OrkidHandleBase* arg2) {
+    if (g_swift_callback_invoker_2arg) {
+        g_swift_callback_invoker_2arg(callback_id, arg1, arg2);
+    } else {
+        g_last_error = "Swift callback 2-arg invoker not registered";
+    }
+}
+
+void orkid_invoke_swift_callback_3arg(uint64_t callback_id, OrkidHandleBase* arg1, OrkidHandleBase* arg2, OrkidHandleBase* arg3) {
+    if (g_swift_callback_invoker_3arg) {
+        g_swift_callback_invoker_3arg(callback_id, arg1, arg2, arg3);
+    } else {
+        g_last_error = "Swift callback 3-arg invoker not registered";
     }
 }
 

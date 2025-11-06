@@ -35,8 +35,42 @@ public final class VarMap: OrkidObject {
                 if let obj = value as? OrkidObject {
                     // Direct OrkidObject storage
                     orkid_varmap_set(handle, key, obj.handle)
+                } else if let closure = value as? (Int) -> Void {
+                    // Typed closure: (Int) -> Void
+                    orkid_varmap_set(handle, key, SwiftCallback1(closure: { arg in
+                        closure(arg as! Int)  // Asserts in C++ decode if wrong type
+                    }).handle)
+                } else if let closure = value as? (Float) -> Void {
+                    // Typed closure: (Float) -> Void
+                    orkid_varmap_set(handle, key, SwiftCallback1(closure: { arg in
+                        closure(arg as! Float)
+                    }).handle)
+                } else if let closure = value as? (Double) -> Void {
+                    // Typed closure: (Double) -> Void
+                    orkid_varmap_set(handle, key, SwiftCallback1(closure: { arg in
+                        closure(arg as! Double)
+                    }).handle)
+                } else if let closure = value as? (String) -> Void {
+                    // Typed closure: (String) -> Void
+                    orkid_varmap_set(handle, key, SwiftCallback1(closure: { arg in
+                        closure(arg as! String)
+                    }).handle)
+                } else if let closure = value as? (OrkidObject) -> Void {
+                    // Typed closure: (OrkidObject) -> Void (handles Timer, vec3, etc.)
+                    orkid_varmap_set(handle, key, SwiftCallback1(closure: { arg in
+                        closure(arg as! OrkidObject)
+                    }).handle)
+                } else if let closure = value as? (Any) -> Void {
+                    // Generic 1-arg closure: (Any) -> Void
+                    orkid_varmap_set(handle, key, SwiftCallback1(closure: closure).handle)
+                } else if let closure = value as? (Any, Any) -> Void {
+                    // Generic 2-arg closure: (Any, Any) -> Void
+                    orkid_varmap_set(handle, key, SwiftCallback2(closure: closure).handle)
+                } else if let closure = value as? (Any, Any, Any) -> Void {
+                    // Generic 3-arg closure: (Any, Any, Any) -> Void
+                    orkid_varmap_set(handle, key, SwiftCallback3(closure: closure).handle)
                 } else if let closure = value as? () -> Void {
-                    // Auto-wrap closure in SwiftCallback
+                    // 0-arg closure: () -> Void
                     orkid_varmap_set(handle, key, SwiftCallback(closure: closure).handle)
                 }
                 // Ignore other types
@@ -98,10 +132,52 @@ public final class VarMap: OrkidObject {
         return VarMap(handle: orkid_varmap_clone(handle)!)
     }
 
-    /// Invoke a callback stored in the VarMap by key
+    /// Invoke a callback stored in the VarMap by key (no arguments)
     /// The value at the key must be a SwiftCallback
     public func invokeNamedCallback(_ key: String) {
         orkid_varmap_invoke_callback(handle, key)
+    }
+
+    /// Invoke a callback with 1 argument
+    /// The value at the key must be a SwiftCallback1
+    /// Argument can be: primitives (Int, Float, String), OrkidObjects (Timer, vec3, etc.)
+    public func invokeNamedCallback(_ key: String, _ arg: Any) {
+        let encoded = encodeSwiftValue(arg)
+        orkid_varmap_invoke_callback_1arg(handle, key, encoded)
+    }
+
+    /// Invoke a callback with 2 arguments
+    /// The value at the key must be a SwiftCallback2
+    public func invokeNamedCallback(_ key: String, _ arg1: Any, _ arg2: Any) {
+        let encoded1 = encodeSwiftValue(arg1)
+        let encoded2 = encodeSwiftValue(arg2)
+        orkid_varmap_invoke_callback_2arg(handle, key, encoded1, encoded2)
+    }
+
+    /// Invoke a callback with 3 arguments
+    /// The value at the key must be a SwiftCallback3
+    public func invokeNamedCallback(_ key: String, _ arg1: Any, _ arg2: Any, _ arg3: Any) {
+        let encoded1 = encodeSwiftValue(arg1)
+        let encoded2 = encodeSwiftValue(arg2)
+        let encoded3 = encodeSwiftValue(arg3)
+        orkid_varmap_invoke_callback_3arg(handle, key, encoded1, encoded2, encoded3)
+    }
+
+    /// Helper to encode Swift values to OrkidHandleBase*
+    private func encodeSwiftValue(_ value: Any) -> OpaquePointer {
+        if let obj = value as? OrkidObject {
+            return obj.handle
+        } else if let intVal = value as? Int {
+            return orkid_encode_int(Int32(intVal))!
+        } else if let floatVal = value as? Float {
+            return orkid_encode_float(floatVal)!
+        } else if let doubleVal = value as? Double {
+            return orkid_encode_double(doubleVal)!
+        } else if let strVal = value as? String {
+            return orkid_encode_string(strVal)!
+        }
+        // Fallback: return null handle (will assert in C++)
+        fatalError("Cannot encode type \(type(of: value)) - not a supported primitive or OrkidObject")
     }
 }
 

@@ -184,6 +184,84 @@ void orkid_varmap_invoke_callback(OrkidHandleBase* vmap_handle, const char* key)
     orkid_invoke_swift_callback(callback_id, nullptr);
 }
 
+void orkid_varmap_invoke_callback_1arg(OrkidHandleBase* vmap_handle, const char* key, OrkidHandleBase* arg_handle) {
+    auto typed_vmap = vmap_handle->typedHandle<varmap::VarMap>();
+    if (!typed_vmap) {
+        g_last_error = "Invalid VarMap handle in varmap_invoke_callback_1arg";
+        return;
+    }
+
+    auto vmap = typed_vmap->get();
+    if (!vmap->hasKey(key)) {
+        g_last_error = FormatString("Key '%s' not found in VarMap", key);
+        return;
+    }
+
+    // Get the variant
+    const auto& variant = vmap->valueForKey(key);
+
+    // Try to extract SwiftCallbackHolder shared_ptr
+    auto callback_ptr_opt = variant.tryAsShared<SwiftCallbackHolder>();
+    if (!callback_ptr_opt) {
+        g_last_error = FormatString("Value at key '%s' is not a SwiftCallback", key);
+        return;
+    }
+
+    // Get callback ID and invoke through Swift bridge with argument
+    uint64_t callback_id = callback_ptr_opt.value()->_callback_id;
+
+    // Pass the argument handle directly to Swift
+    orkid_invoke_swift_callback(callback_id, arg_handle);
+}
+
+void orkid_varmap_invoke_callback_2arg(OrkidHandleBase* vmap_handle, const char* key, OrkidHandleBase* arg1_handle, OrkidHandleBase* arg2_handle) {
+    auto typed_vmap = vmap_handle->typedHandle<varmap::VarMap>();
+    if (!typed_vmap) {
+        g_last_error = "Invalid VarMap handle in varmap_invoke_callback_2arg";
+        return;
+    }
+
+    auto vmap = typed_vmap->get();
+    if (!vmap->hasKey(key)) {
+        g_last_error = FormatString("Key '%s' not found in VarMap", key);
+        return;
+    }
+
+    const auto& variant = vmap->valueForKey(key);
+    auto callback_ptr_opt = variant.tryAsShared<SwiftCallbackHolder>();
+    if (!callback_ptr_opt) {
+        g_last_error = FormatString("Value at key '%s' is not a SwiftCallback", key);
+        return;
+    }
+
+    uint64_t callback_id = callback_ptr_opt.value()->_callback_id;
+    orkid_invoke_swift_callback_2arg(callback_id, arg1_handle, arg2_handle);
+}
+
+void orkid_varmap_invoke_callback_3arg(OrkidHandleBase* vmap_handle, const char* key, OrkidHandleBase* arg1_handle, OrkidHandleBase* arg2_handle, OrkidHandleBase* arg3_handle) {
+    auto typed_vmap = vmap_handle->typedHandle<varmap::VarMap>();
+    if (!typed_vmap) {
+        g_last_error = "Invalid VarMap handle in varmap_invoke_callback_3arg";
+        return;
+    }
+
+    auto vmap = typed_vmap->get();
+    if (!vmap->hasKey(key)) {
+        g_last_error = FormatString("Key '%s' not found in VarMap", key);
+        return;
+    }
+
+    const auto& variant = vmap->valueForKey(key);
+    auto callback_ptr_opt = variant.tryAsShared<SwiftCallbackHolder>();
+    if (!callback_ptr_opt) {
+        g_last_error = FormatString("Value at key '%s' is not a SwiftCallback", key);
+        return;
+    }
+
+    uint64_t callback_id = callback_ptr_opt.value()->_callback_id;
+    orkid_invoke_swift_callback_3arg(callback_id, arg1_handle, arg2_handle, arg3_handle);
+}
+
 } // extern "C"
 
 ////////////////////////////////////////////////////////////////
