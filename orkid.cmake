@@ -670,8 +670,7 @@ function(ork_build_swift_module)
       -import-objc-header ${SWIFT_MOD_BRIDGE_HEADER}
       -I ${SWIFT_MOD_INCLUDE_DIR}
       -Xcc -I${SWIFT_MOD_INCLUDE_DIR}
-      -L ${CMAKE_INSTALL_PREFIX}/lib
-      -lork_core
+      $<TARGET_FILE:ork_core>
       -Xlinker -rpath -Xlinker ${CMAKE_INSTALL_PREFIX}/lib
       -Xlinker -install_name -Xlinker @rpath/lib${SWIFT_MOD_NAME}.dylib
     DEPENDS ${SWIFT_MOD_SOURCES} ${SWIFT_MOD_BRIDGE_HEADER} ork_core
@@ -756,10 +755,9 @@ function(ork_add_swift_test)
       ${SWIFT_OBJ_FILE}
       -o ${SWIFT_EXECUTABLE}
       -I ${SWIFT_MODULE_DIR}
-      -L ${CMAKE_INSTALL_PREFIX}/lib
       -L ${SWIFT_MODULE_DIR}
-      -lork_core
-      -lOrkCore
+      $<TARGET_FILE:ork_core>
+      ${SWIFT_MODULE_DIR}/libOrkCore.dylib
       -Xlinker -rpath -Xlinker ${CMAKE_INSTALL_PREFIX}/lib
       -Xlinker -rpath -Xlinker ${SWIFT_MODULE_DIR}
     DEPENDS ${SWIFT_OBJ_FILE} ork_core swift_module_OrkCore

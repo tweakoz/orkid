@@ -34,7 +34,7 @@ ork_build_swift_module(
 # Timer test
 ork_add_swift_test(
   NAME timer
-  SOURCE_DIR ${SWIFT_TESTS_DIR}/test1/test1/Sources
+  SOURCE_DIR ${SWIFT_TESTS_DIR}/timer/src
   MAIN_SOURCE main.swift
   BRIDGE_HEADER ${SWIFT_BRIDGE_HEADER}
   INCLUDE_DIR ${SWIFT_INCLUDE_DIR}
@@ -43,7 +43,7 @@ ork_add_swift_test(
 # Math types test (vec3)
 ork_add_swift_test(
   NAME vec3
-  SOURCE_DIR ${SWIFT_TESTS_DIR}/test2_math/test2_math/Sources
+  SOURCE_DIR ${SWIFT_TESTS_DIR}/vec3/src
   MAIN_SOURCE main.swift
   BRIDGE_HEADER ${SWIFT_BRIDGE_HEADER}
   INCLUDE_DIR ${SWIFT_INCLUDE_DIR}
@@ -52,7 +52,7 @@ ork_add_swift_test(
 # Math types test (vec4)
 ork_add_swift_test(
   NAME vec4
-  SOURCE_DIR ${SWIFT_TESTS_DIR}/test3_vec4/test3_vec4/Sources
+  SOURCE_DIR ${SWIFT_TESTS_DIR}/vec4/src
   MAIN_SOURCE main.swift
   BRIDGE_HEADER ${SWIFT_BRIDGE_HEADER}
   INCLUDE_DIR ${SWIFT_INCLUDE_DIR}
@@ -61,7 +61,16 @@ ork_add_swift_test(
 # Math types test (mat4)
 ork_add_swift_test(
   NAME mat4
-  SOURCE_DIR ${SWIFT_TESTS_DIR}/test4_matrix/test4_matrix/Sources
+  SOURCE_DIR ${SWIFT_TESTS_DIR}/mat4/src
+  MAIN_SOURCE main.swift
+  BRIDGE_HEADER ${SWIFT_BRIDGE_HEADER}
+  INCLUDE_DIR ${SWIFT_INCLUDE_DIR}
+)
+
+# VarMap test
+ork_add_swift_test(
+  NAME varmap
+  SOURCE_DIR ${SWIFT_TESTS_DIR}/varmap/src
   MAIN_SOURCE main.swift
   BRIDGE_HEADER ${SWIFT_BRIDGE_HEADER}
   INCLUDE_DIR ${SWIFT_INCLUDE_DIR}

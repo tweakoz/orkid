@@ -57,3 +57,5 @@ const char* orkid_get_last_error(void);
 
 #include <ork/swift/swext_timer.h>
 #include <ork/swift/swext_math.h>
+#include <ork/swift/swext_varmap.h>
+#include <ork/swift/swext_codec.h>
