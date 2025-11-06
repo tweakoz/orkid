@@ -142,6 +142,50 @@ func orkid_fmtx4_transpose(_ handle: OrkidHandleBase) -> OrkidHandleBase?
 @_silgen_name("orkid_fmtx4_transform_vec4")
 func orkid_fmtx4_transform_vec4(_ mtx: OrkidHandleBase, _ vec: OrkidHandleBase) -> OrkidHandleBase?
 
+// VarMap
+@_silgen_name("orkid_varmap_create")
+func orkid_varmap_create() -> OrkidHandleBase?
+
+@_silgen_name("orkid_varmap_get")
+func orkid_varmap_get(_ vmap: OrkidHandleBase, _ key: UnsafePointer<CChar>) -> OrkidHandleBase?
+
+@_silgen_name("orkid_varmap_set")
+func orkid_varmap_set(_ vmap: OrkidHandleBase, _ key: UnsafePointer<CChar>, _ value: OrkidHandleBase)
+
+@_silgen_name("orkid_varmap_remove")
+func orkid_varmap_remove(_ vmap: OrkidHandleBase, _ key: UnsafePointer<CChar>)
+
+@_silgen_name("orkid_varmap_contains")
+func orkid_varmap_contains(_ vmap: OrkidHandleBase, _ key: UnsafePointer<CChar>) -> Bool
+
+@_silgen_name("orkid_varmap_keys")
+func orkid_varmap_keys(_ vmap: OrkidHandleBase, _ out_count: UnsafeMutablePointer<Int32>) -> UnsafePointer<UnsafePointer<CChar>?>?
+
+@_silgen_name("orkid_varmap_free_keys")
+func orkid_varmap_free_keys(_ keys: UnsafePointer<UnsafePointer<CChar>?>, _ count: Int32)
+
+@_silgen_name("orkid_varmap_size")
+func orkid_varmap_size(_ vmap: OrkidHandleBase) -> Int32
+
+@_silgen_name("orkid_varmap_clear")
+func orkid_varmap_clear(_ vmap: OrkidHandleBase)
+
+@_silgen_name("orkid_varmap_clone")
+func orkid_varmap_clone(_ vmap: OrkidHandleBase) -> OrkidHandleBase?
+
+@_silgen_name("orkid_varmap_invoke_callback")
+func orkid_varmap_invoke_callback(_ vmap: OrkidHandleBase, _ key: UnsafePointer<CChar>)
+
+// SwiftCallback
+@_silgen_name("orkid_swiftcallback_create")
+func orkid_swiftcallback_create() -> OrkidHandleBase?
+
+@_silgen_name("orkid_swiftcallback_get_id")
+func orkid_swiftcallback_get_id(_ handle: OrkidHandleBase) -> UInt64
+
+@_silgen_name("orkid_register_swift_callback_invoker")
+func orkid_register_swift_callback_invoker(_ invoker: @convention(c) (UInt64, OpaquePointer?) -> Void)
+
 // Helper to get last error
 func getLastError() -> String {
     if let cstr = orkid_get_last_error() {

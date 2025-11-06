@@ -11,10 +11,10 @@ print("=== Orkid Swift Math Test (mat4 OrkCore Module) ===\n")
 
 // Initialize Orkid
 print("Initializing Orkid...")
-_ = Orkid.shared
+OrkCore.initialize()
 
-if !Orkid.lastError.isEmpty {
-    print("ERROR during init: \(Orkid.lastError)")
+if !OrkCore.lastError.isEmpty {
+    print("ERROR during init: \(OrkCore.lastError)")
     exit(1)
 }
 print("Orkid initialized successfully\n")
@@ -146,7 +146,7 @@ print("All matrices and vectors will be automatically released via deinit\n")
 
 // Shutdown Orkid
 print("Shutting down Orkid...")
-Orkid.exit()
+OrkCore.exit()
 print("Orkid shutdown complete\n")
 
 print("=== All Tests Complete ===")

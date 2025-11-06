@@ -17,8 +17,13 @@ public final class VarMap: OrkidObject {
 
     // MARK: - Subscript Access
 
-    /// Get/set values by key using subscript syntax: vmap["key"] = timer
-    public subscript(key: String) -> OrkidObject? {
+    /// Get/set values by key using subscript syntax
+    /// Getter returns OrkidObject (cast as needed)
+    /// Setter accepts OrkidObject or raw closures (auto-wrapped)
+    /// Usage:
+    ///   vmap["timer"] = Timer()
+    ///   vmap["callback"] = { print("Clicked!") }
+    public subscript(key: String) -> Any? {
         get {
             guard let valueHandle = orkid_varmap_get(handle, key) else {
                 return nil
@@ -27,7 +32,14 @@ public final class VarMap: OrkidObject {
         }
         set {
             if let value = newValue {
-                orkid_varmap_set(handle, key, value.handle)
+                if let obj = value as? OrkidObject {
+                    // Direct OrkidObject storage
+                    orkid_varmap_set(handle, key, obj.handle)
+                } else if let closure = value as? () -> Void {
+                    // Auto-wrap closure in SwiftCallback
+                    orkid_varmap_set(handle, key, SwiftCallback(closure: closure).handle)
+                }
+                // Ignore other types
             } else {
                 orkid_varmap_remove(handle, key)
             }
@@ -85,6 +97,12 @@ public final class VarMap: OrkidObject {
     public func clone() -> VarMap {
         return VarMap(handle: orkid_varmap_clone(handle)!)
     }
+
+    /// Invoke a callback stored in the VarMap by key
+    /// The value at the key must be a SwiftCallback
+    public func invokeNamedCallback(_ key: String) {
+        orkid_varmap_invoke_callback(handle, key)
+    }
 }
 
 // MARK: - CustomStringConvertible
@@ -111,7 +129,7 @@ public struct VarMapIterator: IteratorProtocol {
         self.varmap = varmap
     }
 
-    public mutating func next() -> (key: String, value: OrkidObject?)? {
+    public mutating func next() -> (key: String, value: Any?)? {
         guard index < keys.count else { return nil }
         let key = keys[index]
         let value = varmap[key]

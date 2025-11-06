@@ -1,29 +1,39 @@
-// Orkid - Main singleton for engine lifecycle management
+// OrkCore Module - Engine lifecycle management
 import Foundation
 
-public final class Orkid {
+private var _initialized = false
 
-    public static let shared = Orkid()
+/// Initialize Orkid engine (must be called on main thread)
+public func initialize() {
+    dispatchPrecondition(condition: .onQueue(.main))
 
-    private init() {
-        // Initialize C++ layer (type registration happens here in C++)
-        let args = CommandLine.unsafeArgv
-        orkid_swift_init(CommandLine.argc, args)
+    guard !_initialized else {
+        print("Warning: initialize() called multiple times")
+        return
     }
 
-    public static func poll() {
-        orkid_swift_poll()
-    }
+    // Initialize C++ layer (type registration happens here in C++)
+    let args = CommandLine.unsafeArgv
+    orkid_swift_init(CommandLine.argc, args)
+    _initialized = true
+}
 
-    public static func exit() {
-        orkid_swift_exit()
-    }
+/// Poll engine (must be called on main thread)
+public func poll() {
+    dispatchPrecondition(condition: .onQueue(.main))
+    orkid_swift_poll()
+}
 
-    /// Get the last error message from C++ layer
-    public static var lastError: String {
-        if let cstr = orkid_get_last_error() {
-            return String(cString: cstr)
-        }
-        return ""
+/// Exit engine (must be called on main thread)
+public func exit() {
+    dispatchPrecondition(condition: .onQueue(.main))
+    orkid_swift_exit()
+}
+
+/// Get the last error message from C++ layer
+public var lastError: String {
+    if let cstr = orkid_get_last_error() {
+        return String(cString: cstr)
     }
+    return ""
 }

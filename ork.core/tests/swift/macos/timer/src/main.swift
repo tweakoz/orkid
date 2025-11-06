@@ -9,12 +9,12 @@ import OrkCore
 
 print("=== Orkid Swift Timer Test (OrkCore Module) ===\n")
 
-// Initialize Orkid (automatic via singleton)
+// Initialize Orkid
 print("Initializing Orkid...")
-_ = Orkid.shared
+OrkCore.initialize()
 
-if !Orkid.lastError.isEmpty {
-    print("ERROR during init: \(Orkid.lastError)")
+if !OrkCore.lastError.isEmpty {
+    print("ERROR during init: \(OrkCore.lastError)")
     exit(1)
 }
 print("Orkid initialized successfully\n")
@@ -72,7 +72,7 @@ print("Timer will be automatically released via deinit when scope ends\n")
 
 // Shutdown Orkid
 print("Shutting down Orkid...")
-Orkid.exit()
+OrkCore.exit()
 print("Orkid shutdown complete\n")
 
 print("=== Test Complete ===")

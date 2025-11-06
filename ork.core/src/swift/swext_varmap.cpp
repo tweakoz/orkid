@@ -7,6 +7,7 @@
 
 #include "ork/swift/orkid_handle.h"
 #include "ork/swift/orkid_swift_bridge.h"
+#include "ork/swift/orkid_swift_callback.h"
 #include "ork/swift/swext_codec.h"
 #include "ork/kernel/varmap.inl"
 #include <vector>
@@ -151,6 +152,36 @@ OrkidHandleBase* orkid_varmap_clone(OrkidHandleBase* vmap_handle) {
     *cloned = *typed_vmap->get();  // Copy operator
 
     return OrkidHandle<varmap::VarMap>::assign(cloned);
+}
+
+void orkid_varmap_invoke_callback(OrkidHandleBase* vmap_handle, const char* key) {
+    auto typed_vmap = vmap_handle->typedHandle<varmap::VarMap>();
+    if (!typed_vmap) {
+        g_last_error = "Invalid VarMap handle in varmap_invoke_callback";
+        return;
+    }
+
+    auto vmap = typed_vmap->get();
+    if (!vmap->hasKey(key)) {
+        g_last_error = FormatString("Key '%s' not found in VarMap", key);
+        return;
+    }
+
+    // Get the variant
+    const auto& variant = vmap->valueForKey(key);
+
+    // Try to extract SwiftCallbackHolder shared_ptr
+    auto callback_ptr_opt = variant.tryAsShared<SwiftCallbackHolder>();
+    if (!callback_ptr_opt) {
+        g_last_error = FormatString("Value at key '%s' is not a SwiftCallback", key);
+        return;
+    }
+
+    // Get callback ID and invoke through Swift bridge
+    uint64_t callback_id = callback_ptr_opt.value()->_callback_id;
+
+    // Use the registered Swift callback invoker
+    orkid_invoke_swift_callback(callback_id, nullptr);
 }
 
 } // extern "C"

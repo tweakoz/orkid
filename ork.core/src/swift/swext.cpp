@@ -23,6 +23,7 @@ extern "C" {
 void swext_timer_register_types();
 void swext_math_register_types();
 void swext_varmap_register_types();
+void swext_callback_register_types();
 
 // Forward declare codec registration (from swext_codec.cpp)
 namespace ork::swift {
@@ -72,6 +73,7 @@ void orkid_swift_init(int argc, char** argv) {
         swext_timer_register_types();
         swext_math_register_types();
         swext_varmap_register_types();
+        swext_callback_register_types();
 
         // Register codec (must come after type registration)
         ork::swift::registerSwiftCodec();

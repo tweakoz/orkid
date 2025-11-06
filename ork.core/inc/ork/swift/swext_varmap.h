@@ -32,6 +32,7 @@ void orkid_varmap_free_keys(const char** keys, int32_t count);
 int32_t orkid_varmap_size(OrkidHandleBase* vmap);
 void orkid_varmap_clear(OrkidHandleBase* vmap);
 OrkidHandleBase* orkid_varmap_clone(OrkidHandleBase* vmap);
+void orkid_varmap_invoke_callback(OrkidHandleBase* vmap, const char* key);
 
 #ifdef __cplusplus
 }

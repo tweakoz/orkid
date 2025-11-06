@@ -7,6 +7,7 @@
 
 #include "ork/swift/orkid_handle.h"
 #include "ork/swift/orkid_swift_bridge.h"
+#include "ork/swift/orkid_swift_callback.h"
 #include "ork/kernel/varmap.inl"
 #include "ork/kernel/timer.h"
 #include "ork/math/cvector3.h"
@@ -91,7 +92,15 @@ OrkidHandleBase* SwiftCodecImpl::encode(const svar128_t& val) const {
         return var;
     }
 
+    // Unknown type - print diagnostics and assert
+    printf("SwiftCodec::encode ERROR: unregistered type '%s' (hash=%llx)\n",
+           val.typeName(), orktypeid._hashed);
+    printf("  Available encoders:\n");
+    for (const auto& kv : _encoders) {
+        printf("    hash=%llx\n", kv.first);
+    }
     g_last_error = FormatString("SwiftCodec::encode: unregistered type %s", val.typeName());
+    OrkAssert(false);
     return nullptr;
 }
 
@@ -116,7 +125,16 @@ svar128_t SwiftCodecImpl::decode(OrkidHandleBase* handle) const {
         return *typed_var->get();
     }
 
+    // Unknown type - print diagnostics and assert
+    const char* type_name = handle->typeName();
+    printf("SwiftCodec::decode ERROR: unregistered type '%s' (CRC=%llx)\n",
+           type_name, typeCRC);
+    printf("  Available decoders:\n");
+    for (const auto& kv : _decoders) {
+        printf("    CRC=%llx\n", kv.first);
+    }
     g_last_error = FormatString("SwiftCodec::decode: unregistered type CRC %llx", typeCRC);
+    OrkAssert(false);
     return svar128_t();
 }
 
@@ -217,6 +235,7 @@ void registerSwiftCodec() {
     // Register object types (variant stores shared_ptr, Swift uses shared_ptr)
     registerSwiftObjectType<Timer>();
     registerSwiftObjectType<varmap::VarMap>();
+    registerSwiftObjectType<SwiftCallbackHolder>();
 }
 
 ////////////////////////////////////////////////////////////////

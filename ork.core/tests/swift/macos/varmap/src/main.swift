@@ -11,10 +11,10 @@ print("=== Orkid Swift VarMap Test (OrkCore Module) ===\n")
 
 // Initialize Orkid
 print("Initializing Orkid...")
-_ = Orkid.shared
+OrkCore.initialize()
 
-if !Orkid.lastError.isEmpty {
-    print("ERROR during init: \(Orkid.lastError)")
+if !OrkCore.lastError.isEmpty {
+    print("ERROR during init: \(OrkCore.lastError)")
     exit(1)
 }
 print("Orkid initialized successfully\n")
@@ -51,7 +51,7 @@ if vmap.contains("myTimer") && vmap.count == 1 {
 
 // Test 3: Retrieve Timer
 print("Test 3: Retrieving Timer from VarMap...")
-if let retrieved = vmap["myTimer"] {
+if let retrieved = vmap["myTimer"] as? OrkidObject {
     print("  Retrieved object type: \(retrieved.typeName)")
     if retrieved.typeName == "ork::Timer" {
         print("✓ Timer retrieved successfully\n")
@@ -77,7 +77,7 @@ if vmap.contains("position") && vmap.count == 2 {
 
 // Test 5: Retrieve vec3 (note: returns OrkidObject, would need casting in production)
 print("Test 5: Retrieving vec3 from VarMap...")
-if let retrieved = vmap["position"] {
+if let retrieved = vmap["position"] as? OrkidObject {
     print("  Retrieved object type: \(retrieved.typeName)")
     if retrieved.typeName == "ork::fvec3" {
         print("✓ vec3 retrieved successfully\n")
@@ -166,7 +166,11 @@ if cloned.count == vmap.count && cloned.contains("a") && cloned.contains("b") {
 print("Test 12: For-in iteration...")
 print("  Iterating over VarMap:")
 for (key, value) in vmap {
-    print("    \(key): \(value?.typeName ?? "nil")")
+    if let obj = value as? OrkidObject {
+        print("    \(key): \(obj.typeName)")
+    } else {
+        print("    \(key): nil")
+    }
 }
 print("✓ For-in iteration works\n")
 
@@ -175,7 +179,7 @@ print("All objects will be automatically released via deinit\n")
 
 // Shutdown Orkid
 print("Shutting down Orkid...")
-Orkid.exit()
+OrkCore.exit()
 print("Orkid shutdown complete\n")
 
 print("=== All Tests Complete ===")

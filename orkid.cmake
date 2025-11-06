@@ -743,7 +743,9 @@ function(ork_add_swift_test)
       -import-objc-header ${SWIFT_TEST_BRIDGE_HEADER}
       -I ${SWIFT_TEST_INCLUDE_DIR}
       -Xcc -I${SWIFT_TEST_INCLUDE_DIR}
-    DEPENDS ${SWIFT_SOURCE} ${SWIFT_TEST_BRIDGE_HEADER} ork_core swift_module_OrkCore
+    DEPENDS ${SWIFT_SOURCE} ${SWIFT_TEST_BRIDGE_HEADER} ork_core
+            ${SWIFT_MODULE_DIR}/OrkCore.swiftmodule
+            ${SWIFT_MODULE_DIR}/libOrkCore.dylib
     COMMENT "Compiling Swift test: ${SWIFT_TEST_NAME}"
     VERBATIM
   )
@@ -760,7 +762,8 @@ function(ork_add_swift_test)
       ${SWIFT_MODULE_DIR}/libOrkCore.dylib
       -Xlinker -rpath -Xlinker ${CMAKE_INSTALL_PREFIX}/lib
       -Xlinker -rpath -Xlinker ${SWIFT_MODULE_DIR}
-    DEPENDS ${SWIFT_OBJ_FILE} ork_core swift_module_OrkCore
+    DEPENDS ${SWIFT_OBJ_FILE} ork_core
+            ${SWIFT_MODULE_DIR}/libOrkCore.dylib
     COMMENT "Linking Swift test: ${SWIFT_TEST_NAME}"
     VERBATIM
   )

@@ -75,3 +75,12 @@ ork_add_swift_test(
   BRIDGE_HEADER ${SWIFT_BRIDGE_HEADER}
   INCLUDE_DIR ${SWIFT_INCLUDE_DIR}
 )
+
+# Callback test
+ork_add_swift_test(
+  NAME callback
+  SOURCE_DIR ${SWIFT_TESTS_DIR}/callback/src
+  MAIN_SOURCE main.swift
+  BRIDGE_HEADER ${SWIFT_BRIDGE_HEADER}
+  INCLUDE_DIR ${SWIFT_INCLUDE_DIR}
+)
