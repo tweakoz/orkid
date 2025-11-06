@@ -31,36 +31,36 @@ ork_build_swift_module(
   INCLUDE_DIR ${SWIFT_INCLUDE_DIR}
 )
 
-# test1 - Timer test
+# Timer test
 ork_add_swift_test(
-  NAME test1
+  NAME timer
   SOURCE_DIR ${SWIFT_TESTS_DIR}/test1/test1/Sources
   MAIN_SOURCE main.swift
   BRIDGE_HEADER ${SWIFT_BRIDGE_HEADER}
   INCLUDE_DIR ${SWIFT_INCLUDE_DIR}
 )
 
-# test2_math - Math types test (vec3)
+# Math types test (vec3)
 ork_add_swift_test(
-  NAME test2_math
+  NAME vec3
   SOURCE_DIR ${SWIFT_TESTS_DIR}/test2_math/test2_math/Sources
   MAIN_SOURCE main.swift
   BRIDGE_HEADER ${SWIFT_BRIDGE_HEADER}
   INCLUDE_DIR ${SWIFT_INCLUDE_DIR}
 )
 
-# test3_vec4 - Math types test (vec4)
+# Math types test (vec4)
 ork_add_swift_test(
-  NAME test3_vec4
+  NAME vec4
   SOURCE_DIR ${SWIFT_TESTS_DIR}/test3_vec4/test3_vec4/Sources
   MAIN_SOURCE main.swift
   BRIDGE_HEADER ${SWIFT_BRIDGE_HEADER}
   INCLUDE_DIR ${SWIFT_INCLUDE_DIR}
 )
 
-# test4_matrix - Math types test (mat4)
+# Math types test (mat4)
 ork_add_swift_test(
-  NAME test4_matrix
+  NAME mat4
   SOURCE_DIR ${SWIFT_TESTS_DIR}/test4_matrix/test4_matrix/Sources
   MAIN_SOURCE main.swift
   BRIDGE_HEADER ${SWIFT_BRIDGE_HEADER}

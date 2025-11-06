@@ -36,7 +36,7 @@ if t.x == 0.0 && t.y == 0.0 && t.z == 0.0 {
 
 // Test 2: Create translation matrix
 print("Test 2: Creating translation matrix...")
-let trans = mat4.translation(x: 10.0, y: 20.0, z: 30.0)
+let trans = mat4.translation(10.0, 20.0, 30.0)
 let t2 = trans.translation
 print("  \(trans)")
 print("  Translation: (\(t2.x), \(t2.y), \(t2.z))")
@@ -61,7 +61,7 @@ if t3.x == 5.0 && t3.y == 15.0 && t3.z == 25.0 {
 
 // Test 4: Matrix multiplication
 print("Test 4: Matrix multiplication...")
-let scale = mat4.scale(x: 2.0, y: 2.0, z: 2.0)
+let scale = mat4.scale(2.0, 2.0, 2.0)
 print("  Scale matrix: \(scale)")
 print("  Translation matrix: \(trans)")
 
@@ -81,7 +81,7 @@ if abs(t4.x - 10.0) < 0.001 && abs(t4.y - 30.0) < 0.001 && abs(t4.z - 50.0) < 0.
 
 // Test 5: Transform vector
 print("Test 5: Transforming vec4...")
-let vec = vec4(x: 1.0, y: 1.0, z: 1.0, w: 1.0)
+let vec = vec4(1.0, 1.0, 1.0, 1.0)
 print("  Original vector: \(vec)")
 
 let transformed = scale * vec
@@ -129,14 +129,14 @@ print("✓ Transpose works\n")
 
 // Test 9: Chained transformations using operator overloading
 print("Test 9: Chained transformations...")
-let translate = mat4.translation(x: 10.0, y: 0.0, z: 0.0)
+let translate = mat4.translation(10.0, 0.0, 0.0)
 let rotate = mat4.rotationZ(.pi / 4)  // 45 degrees
-let scaleOp = mat4.scale(x: 2.0, y: 2.0, z: 2.0)
+let scaleOp = mat4.scale(2.0, 2.0, 2.0)
 
 let complex = scaleOp * rotate * translate
 print("  Complex matrix (scale * rotate * translate): \(complex)")
 
-let testVec = vec4(x: 0.0, y: 0.0, z: 0.0, w: 1.0)
+let testVec = vec4(0.0, 0.0, 0.0, 1.0)
 let result = complex * testVec
 print("  Transform (0,0,0,1): \(result)")
 print("✓ Chained transformations work\n")

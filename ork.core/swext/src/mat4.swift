@@ -14,11 +14,11 @@ public final class mat4: OrkidObject {
         return mat4()
     }
 
-    public static func translation(x: Float, y: Float, z: Float) -> mat4 {
+    public static func translation(_ x: Float, _ y: Float, _ z: Float) -> mat4 {
         return mat4(handle: orkid_fmtx4_create_translation(x, y, z)!)
     }
 
-    public static func scale(x: Float, y: Float, z: Float) -> mat4 {
+    public static func scale(_ x: Float, _ y: Float, _ z: Float) -> mat4 {
         return mat4(handle: orkid_fmtx4_create_scale(x, y, z)!)
     }
 

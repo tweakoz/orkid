@@ -6,11 +6,11 @@ public final class vec4: OrkidObject {
 
     // MARK: - Public Initialization (Swift can create!)
 
-    public init(x: Float = 0, y: Float = 0, z: Float = 0, w: Float = 0) {
+    public init(_ x: Float = 0, _ y: Float = 0, _ z: Float = 0, _ w: Float = 0) {
         super.init(handle: orkid_fvec4_create(x, y, z, w)!)
     }
 
-    public init(_ vec3: vec3, w: Float = 0) {
+    public init(_ vec3: vec3, _ w: Float = 0) {
         super.init(handle: orkid_fvec4_create(vec3.x, vec3.y, vec3.z, w)!)
     }
 
@@ -57,7 +57,7 @@ public final class vec4: OrkidObject {
 
     /// Convert to vec3 (drops w component)
     public var xyz: vec3 {
-        return vec3(x: x, y: y, z: z)
+        return vec3(x, y, z)
     }
 }
 

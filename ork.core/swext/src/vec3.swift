@@ -6,7 +6,7 @@ public final class vec3: OrkidObject {
 
     // MARK: - Public Initialization (Swift can create!)
 
-    public init(x: Float = 0, y: Float = 0, z: Float = 0) {
+    public init(_ x: Float = 0, _ y: Float = 0, _ z: Float = 0) {
         super.init(handle: orkid_fvec3_create(x, y, z)!)
     }
 

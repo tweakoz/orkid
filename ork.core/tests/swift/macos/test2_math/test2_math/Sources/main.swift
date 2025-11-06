@@ -20,8 +20,8 @@ if !Orkid.lastError.isEmpty {
 print("Orkid initialized successfully\n")
 
 // Test 1: Create a vec3
-print("Test 1: Creating vec3(x: 3, y: 4, z: 0)...")
-let vec = vec3(x: 3.0, y: 4.0, z: 0.0)
+print("Test 1: Creating vec3(3, 4, 0)...")
+let vec = vec3(3.0, 4.0, 0.0)
 print("vec3 created successfully")
 print("  Type: \(vec.typeName)")
 print("  Use count: \(vec.useCount)")
@@ -82,7 +82,7 @@ if abs(normalized.length - 1.0) < 0.001 {
 
 // Test 6: Another length test with different vector
 print("Test 6: Testing with different vector...")
-let vec2 = vec3(x: 1.0, y: 1.0, z: 1.0)
+let vec2 = vec3(1.0, 1.0, 1.0)
 print("  \(vec2)")
 
 let length2 = vec2.length

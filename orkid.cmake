@@ -721,12 +721,12 @@ function(ork_add_swift_test)
   endif()
 
   # Set paths - use absolute paths to avoid CMake variable expansion issues
-  set(SWIFT_OUTPUT_DIR $ENV{HOME}/.staging-sep26/subspace/macos_swift)
+  set(SWIFT_OUTPUT_DIR ${CMAKE_INSTALL_PREFIX}/bin)
   set(SWIFT_BUILD_DIR ${CMAKE_BINARY_DIR}/swift_build)
   set(SWIFT_MODULE_DIR ${CMAKE_BINARY_DIR}/swift_modules)
   file(MAKE_DIRECTORY ${SWIFT_BUILD_DIR})
   set(SWIFT_OBJ_FILE ${SWIFT_BUILD_DIR}/${SWIFT_TEST_NAME}.o)
-  set(SWIFT_EXECUTABLE ${SWIFT_OUTPUT_DIR}/ork.test.swift.${SWIFT_TEST_NAME})
+  set(SWIFT_EXECUTABLE ${SWIFT_OUTPUT_DIR}/ork.test.swift.core.${SWIFT_TEST_NAME}.exe)
   set(SWIFT_SOURCE ${SWIFT_TEST_SOURCE_DIR}/${SWIFT_TEST_MAIN_SOURCE})
 
   # Create output directory
@@ -772,9 +772,9 @@ function(ork_add_swift_test)
     DEPENDS ${SWIFT_EXECUTABLE}
   )
 
-  # Install to subspace
+  # Install to bin directory
   install(PROGRAMS ${SWIFT_EXECUTABLE}
-          DESTINATION ${SWIFT_OUTPUT_DIR})
+          DESTINATION bin)
 
 endfunction()
 

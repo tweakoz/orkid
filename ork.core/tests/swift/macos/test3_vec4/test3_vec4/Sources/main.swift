@@ -20,8 +20,8 @@ if !Orkid.lastError.isEmpty {
 print("Orkid initialized successfully\n")
 
 // Test 1: Create a vec4
-print("Test 1: Creating vec4(x: 1, y: 2, z: 3, w: 4)...")
-let vec = vec4(x: 1.0, y: 2.0, z: 3.0, w: 4.0)
+print("Test 1: Creating vec4(1, 2, 3, 4)...")
+let vec = vec4(1.0, 2.0, 3.0, 4.0)
 print("vec4 created successfully")
 print("  Type: \(vec.typeName)")
 print("  Use count: \(vec.useCount)")
@@ -84,8 +84,8 @@ if abs(normalized.length - 1.0) < 0.001 {
 
 // Test 6: Dot product
 print("Test 6: Testing dot product...")
-let a = vec4(x: 1.0, y: 0.0, z: 0.0, w: 0.0)
-let b = vec4(x: 0.0, y: 1.0, z: 0.0, w: 0.0)
+let a = vec4(1.0, 0.0, 0.0, 0.0)
+let b = vec4(0.0, 1.0, 0.0, 0.0)
 let dotAB = a.dot(b)
 print("  \(a) · \(b) = \(dotAB)")
 
@@ -95,8 +95,8 @@ if abs(dotAB) < 0.001 {
     print("✗ Dot product incorrect (expected 0)\n")
 }
 
-let c = vec4(x: 1.0, y: 2.0, z: 3.0, w: 4.0)
-let d = vec4(x: 2.0, y: 3.0, z: 4.0, w: 5.0)
+let c = vec4(1.0, 2.0, 3.0, 4.0)
+let d = vec4(2.0, 3.0, 4.0, 5.0)
 let dotCD = c.dot(d)
 let expectedDot: Float = 40.0  // 1*2 + 2*3 + 3*4 + 4*5
 print("  \(c) · \(d) = \(dotCD)")
@@ -110,7 +110,7 @@ if abs(dotCD - expectedDot) < 0.001 {
 
 // Test 7: vec3 conversion
 print("Test 7: Testing xyz property (vec4 → vec3)...")
-let vec4Value = vec4(x: 5.0, y: 6.0, z: 7.0, w: 8.0)
+let vec4Value = vec4(5.0, 6.0, 7.0, 8.0)
 let vec3Value = vec4Value.xyz
 print("  vec4: \(vec4Value)")
 print("  xyz (vec3): \(vec3Value)")
@@ -123,8 +123,8 @@ if vec3Value.x == 5.0 && vec3Value.y == 6.0 && vec3Value.z == 7.0 {
 
 // Test 8: Create vec4 from vec3
 print("Test 8: Creating vec4 from vec3...")
-let vec3Base = vec3(x: 1.0, y: 2.0, z: 3.0)
-let vec4Fromvec3 = vec4(vec3Base, w: 10.0)
+let vec3Base = vec3(1.0, 2.0, 3.0)
+let vec4Fromvec3 = vec4(vec3Base, 10.0)
 print("  vec3: \(vec3Base)")
 print("  vec4: \(vec4Fromvec3)")
 
