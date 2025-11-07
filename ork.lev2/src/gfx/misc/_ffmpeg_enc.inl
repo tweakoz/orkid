@@ -258,7 +258,7 @@ void Encoder::_closeStream(OutputStream* ost) {
 
 void Encoder::_openVideo(AVDictionary* opt_arg) {
   int ret;
-  
+
   AVCodecContext* c = _video_stream->enc;
   AVDictionary* opt = NULL;
 
@@ -267,9 +267,69 @@ void Encoder::_openVideo(AVDictionary* opt_arg) {
   /* open the codec */
   ret = avcodec_open2(c, video_codec, &opt);
   av_dict_free(&opt);
+
+#ifdef __linux__
+  // On Linux, fallback to mpeg4 if h264 fails (e.g., no hardware encoder in headless mode)
+  if (ret < 0 && c->codec_id == AV_CODEC_ID_H264) {
+    fprintf(stderr, "Could not open H.264 video codec: %s\n", av_err2str(ret));
+    fprintf(stderr, "Attempting fallback to MPEG4 codec for Linux...\n");
+
+    // Find mpeg4 codec
+    const AVCodec* mpeg4_codec = avcodec_find_encoder(AV_CODEC_ID_MPEG4);
+    if (!mpeg4_codec) {
+      fprintf(stderr, "FATAL: MPEG4 codec not found\n");
+      abort();
+    }
+
+    // Free the h264 codec context and allocate a fresh one for mpeg4
+    // (h264-specific options are incompatible with mpeg4)
+    int width = c->width;
+    int height = c->height;
+    AVRational time_base = c->time_base;
+    int64_t bit_rate = c->bit_rate;
+    int gop_size = c->gop_size;
+    AVPixelFormat pix_fmt = c->pix_fmt;
+    AVColorRange color_range = c->color_range;
+    int flags = c->flags;
+
+    avcodec_free_context(&c);
+    c = avcodec_alloc_context3(mpeg4_codec);
+    if (!c) {
+      fprintf(stderr, "FATAL: Could not allocate MPEG4 codec context\n");
+      abort();
+    }
+
+    // Restore basic settings
+    c->codec_id = AV_CODEC_ID_MPEG4;
+    c->width = width;
+    c->height = height;
+    c->time_base = time_base;
+    // MPEG4 is ~2x less efficient than H.264, so double the bitrate to maintain quality
+    c->bit_rate = bit_rate * 2;
+    c->gop_size = gop_size;
+    c->pix_fmt = pix_fmt;
+    c->color_range = color_range;
+    c->flags = flags;
+
+    // Update encoder and codec
+    _video_stream->enc = c;
+    video_codec = mpeg4_codec;
+
+    // Try opening with mpeg4
+    av_dict_copy(&opt, opt_arg, 0);
+    ret = avcodec_open2(c, video_codec, &opt);
+    av_dict_free(&opt);
+
+    if (ret >= 0) {
+      fprintf(stderr, "Successfully using MPEG4 codec\n");
+    }
+  }
+#endif
+
   if (ret < 0) {
     fprintf(stderr, "Could not open video codec: %s\n", av_err2str(ret));
-    exit(1);
+    fprintf(stderr, "FATAL: Movie encoding initialization failed - aborting\n");
+    abort();
   }
 
   /* allocate and init a re-usable frame */
