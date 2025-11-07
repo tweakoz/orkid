@@ -502,7 +502,10 @@ void CtxGLFW::Show() {
   }
   if (selected_monitor == nullptr) {
     selected_monitor = monitorForWindow(_glfwWindow);
-    recomputeHIDPI(_glfwWindow);
+    // In headless/offscreen mode, skip HIDPI computation (requires display server)
+    if (not _appinitdata->_offscreen) {
+      recomputeHIDPI(_glfwWindow);
+    }
     // OrkAssert(selected_monitor != nullptr);
   }
   _glfwMonitor = selected_monitor;
@@ -812,6 +815,19 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
     _gctx = new CtxGLFW(nullptr);
 
     printf("<<<glfwInit>>> HERE!!!\n");
+
+#if defined(LINUX) || defined(ORK_CONFIG_IX)
+    // On Linux, if no display server is available, use GLFW NULL platform for headless operation
+    // This allows Vulkan-based offscreen rendering without X11/Wayland
+    // Headed operation (with DISPLAY or WAYLAND_DISPLAY set) remains unchanged
+    const char* display = getenv("DISPLAY");
+    const char* wayland = getenv("WAYLAND_DISPLAY");
+    if ((display == nullptr || display[0] == '\0') &&
+        (wayland == nullptr || wayland[0] == '\0')) {
+      logchan_glfw->log("No display server detected, using GLFW NULL platform for headless operation");
+      glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_NULL);
+    }
+#endif
 
     bool ok = glfwInit();
     assert(ok);

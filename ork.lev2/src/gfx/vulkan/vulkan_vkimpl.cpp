@@ -157,7 +157,18 @@ VulkanInstance::VulkanInstance() {
   for(size_t i=0; i<layer_props.size(); i++){
    printf("layer<%d:%s>\n", i, layer_props[i].layerName);
   }
-    _debugEnabled    = _enable_debug and _hasLayer(layer_props, validation_layers[0]);
+
+  // Check if validation layer is available when debug is enabled
+  if(_enable_debug && _enable_validate){
+    _debugEnabled = _hasLayer(layer_props, "VK_LAYER_KHRONOS_validation");
+    if(_debugEnabled){
+      deco::printf(yel, "VK_LAYER_KHRONOS_validation found and enabled\n");
+    } else {
+      deco::printf(yel, "WARNING: VK_LAYER_KHRONOS_validation requested but not available\n");
+    }
+  } else {
+    _debugEnabled = false;
+  }
 
   initializeVkStruct(_appdata,VK_STRUCTURE_TYPE_APPLICATION_INFO);
   _appdata.pApplicationName   = "Orkid";
@@ -447,11 +458,10 @@ VkFormatConverter::VkFormatConverter() {
     _inv_fmtmap[vk_fmt] = ork_fmt;
   };
 
+  // S3TC compression formats are widely supported on desktop GPUs
   #if ! defined(__APPLE__)
-  do_format(EBufferFormat::RGB8, VK_FORMAT_R8G8B8_UNORM);
   do_format(EBufferFormat::S3TC_DXT1, VK_FORMAT_BC1_RGBA_UNORM_BLOCK);
   do_format(EBufferFormat::S3TC_DXT3, VK_FORMAT_BC2_UNORM_BLOCK);
-  do_format(EBufferFormat::BGR8, VK_FORMAT_B8G8R8_UNORM);
   #endif
 
   do_format(EBufferFormat::SRGB_BGRA8, VK_FORMAT_B8G8R8A8_SRGB);

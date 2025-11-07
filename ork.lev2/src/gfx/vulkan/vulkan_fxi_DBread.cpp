@@ -10,10 +10,6 @@
 #include "../shadlang/shadlang_backend_spirv.h"
 #include <ork/file/chunkfile.inl>
 
-#if defined(__APPLE__)
-// #include <MoltenVK/mvk_vulkan.h>
-#endif
-
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 constexpr size_t MAX_PUSH_CONSTANT_SIZE = 4096; // Vulkan spec limit

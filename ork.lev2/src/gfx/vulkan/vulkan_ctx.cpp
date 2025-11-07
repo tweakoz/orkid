@@ -98,11 +98,21 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
   // create device
   ////////////////////////////
 
-  _device_extensions.push_back("VK_KHR_swapchain");
+  // Only request swapchain extension for windowed (non-offscreen) rendering
+  // In headless/offscreen mode, swapchain is not needed and may not be available
+  bool is_offscreen = (_ginitdata && _ginitdata->_offscreen);
+  if (!is_offscreen) {
+    _device_extensions.push_back("VK_KHR_swapchain");
+  }
   if (_GVI->_debugEnabled) {
     _device_extensions.push_back("VK_EXT_debug_marker");
   }
+
+  // VK_KHR_portability_subset is macOS/MoltenVK specific
+#if defined(__APPLE__)
   _device_extensions.push_back("VK_KHR_portability_subset");
+#endif
+
   _device_extensions.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
 
   VkDeviceCreateInfo DCI = {};
@@ -128,7 +138,17 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
   dynrenderfeat.pNext = (void*) nullptr;
 
 
-  vkCreateDevice(_vkphysicaldevice, &DCI, nullptr, &_vkdevice);
+  VkResult result = vkCreateDevice(_vkphysicaldevice, &DCI, nullptr, &_vkdevice);
+  if (result != VK_SUCCESS) {
+    printf("vkCreateDevice FAILED with result: %d\n", result);
+    printf("is_offscreen: %d\n", int(is_offscreen));
+    printf("device extensions count: %zu\n", _device_extensions.size());
+    for(size_t i = 0; i < _device_extensions.size(); i++) {
+      printf("  ext[%zu]: %s\n", i, _device_extensions[i]);
+    }
+    logchan_vkctx->log("vkCreateDevice FAILED with result: %d", result);
+    OrkAssert(false);
+  }
 
   vkGetDeviceQueue(
       _vkdevice,        //

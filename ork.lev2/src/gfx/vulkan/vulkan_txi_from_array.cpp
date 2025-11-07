@@ -78,7 +78,6 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
   // Handle RGB8 to RGBA8 conversion on macOS
   ///////////////////////////
   bool needs_conversion = false;
-#if defined(__APPLE__)
   if (format == EBufferFormat::RGB8) {
     format           = EBufferFormat::RGBA8;
     needs_conversion = true;
@@ -96,7 +95,6 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
     needs_conversion = true;
     logchan_txia2d->log("Converting RGB32F to RGBA32F for macOS");
   }
-#endif
 
   array->_tex->_texFormat = format;
 
@@ -535,7 +533,6 @@ void VkTextureInterface::_enqueueInitTextureArray2DOnCB(TextureArray* texture_ar
   OrkAssert(num_slices > 0);
 
   // Handle RGB8 conversion on macOS
-#if defined(__APPLE__)
   if (format == EBufferFormat::RGB8) {
     format = EBufferFormat::RGBA8;
   } else if (format == EBufferFormat::BGR8) {
@@ -543,7 +540,6 @@ void VkTextureInterface::_enqueueInitTextureArray2DOnCB(TextureArray* texture_ar
   } else if (format == EBufferFormat::RGB32F) {
     format = EBufferFormat::RGBA32F;
   }
-#endif
 
   texture_array->_tex->_texType   = ETEXTYPE_2D_ARRAY;
   texture_array->_tex->_texFormat = format;
@@ -723,7 +719,6 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
 
   // Check if we need format conversion
   bool needs_conversion = false;
-#if defined(__APPLE__)
   if (mipc->_format == EBufferFormat::RGB8 && array->_tex->_texFormat == EBufferFormat::RGBA8) {
     needs_conversion = true;
     if (DEBUG_TEXARRAY2D) {
@@ -740,7 +735,6 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
       logchan_txia2d->log("Converting RGB32F to RGBA32F for slice %d update", slice_index);
     }
   }
-#endif
 
   auto vktex = array->_tex->_impl.getShared<VulkanTextureObject>();
   vktex->_dataVersion++;
@@ -976,7 +970,6 @@ void VkTextureInterface::updateTextureArraySlice(TextureArraySliceRef* slice_ref
 
   // Check original format before conversion
   auto expected_format = array->_tex->_texFormat;
-#if defined(__APPLE__)
   // On macOS, 3-component images are valid if the array format is the 4-component equivalent
   if (expected_format == EBufferFormat::RGBA8 && img->_format == EBufferFormat::RGB8) {
     ok &= true; // This is OK, we'll convert during copy
@@ -984,9 +977,7 @@ void VkTextureInterface::updateTextureArraySlice(TextureArraySliceRef* slice_ref
     ok &= true; // This is OK, we'll convert during copy
   } else if (expected_format == EBufferFormat::RGBA32F && img->_format == EBufferFormat::RGB32F) {
     ok &= true; // This is OK, we'll convert during copy
-  } else
-#endif
-  {
+  } else {
     ok &= (img->_format == expected_format);
   }
 

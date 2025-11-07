@@ -18,7 +18,6 @@ namespace ork::lev2::vulkan {
 ////////////////////////////////////////////////////////////////////////////////
 
 EBufferFormat VkTextureInterface::convertFormatForPlatform(EBufferFormat format) {
-#if defined(__APPLE__)
   switch(format) {
     case EBufferFormat::BGR8:
       return EBufferFormat::BGRA8;
@@ -31,9 +30,6 @@ EBufferFormat VkTextureInterface::convertFormatForPlatform(EBufferFormat format)
     default:
       return format;
   }
-#else
-  return format;
-#endif
 }
 
 } // namespace ork::lev2::vulkan
