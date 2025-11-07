@@ -3,6 +3,7 @@
 #include <ork/math/misc_math.h>
 #include <ork/kernel/opq.h>
 #include <cmath>
+#include <cstring>
 
 namespace ork::lev2 {
 

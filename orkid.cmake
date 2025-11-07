@@ -9,6 +9,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED on)
 set(CMAKE_CXX_SCAN_FOR_MODULES off)
 
 ################################################################################
+# Set default build type flags
+################################################################################
+
+IF(NOT DEFINED IOS_BUILD)
+  set(IOS_BUILD OFF)
+ENDIF()
+
+################################################################################
 
 set(CMAKE_INSTALL_RPATH "$ENV{OBT_SUBSPACE_LIB_DIR}")
 set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
@@ -58,7 +66,7 @@ ENDIF()
 
 IF(NOT IOS_BUILD)
   find_package(ObtOpenBlas REQUIRED)
-  IF(${APPLE})
+  IF(APPLE)
   ELSE()
   find_package(ObtPipewire REQUIRED)
   ENDIF()
@@ -126,7 +134,7 @@ ENDIF()
 
 ################################################################################
 
-IF(${APPLE})
+IF(APPLE)
   IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
     set( HOMEBREW_PREFIX  /usr/local )
   ELSEIF( "${ARCHITECTURE}" STREQUAL "AARCH64" )
@@ -136,7 +144,7 @@ ENDIF()
 
 ################################################################################
 
-IF(${APPLE} AND NOT IOS_BUILD)
+IF(APPLE AND NOT IOS_BUILD)
     # macOS-specific settings (don't override iOS toolchain settings)
     set(CMAKE_OSX_DEPLOYMENT_TARGET 14.5)
     set(CMAKE_OSX_SYSROOT $ENV{OBT_MACOS_SDK_DIR})
@@ -187,7 +195,7 @@ function(ork_std_target_set_incdirs the_target)
     set_property( TARGET ${the_target} APPEND PROPERTY TGT_INCLUDE_PATHS $ENV{OBT_BUILDS}/igl/include )
     set_property( TARGET ${the_target} APPEND PROPERTY TGT_INCLUDE_PATHS $ENV{OBT_BUILDS}/igl/external/triangle )
 
-    IF(${APPLE})
+    IF(APPLE)
     ELSE()
       set_property( TARGET ${the_target} APPEND PROPERTY TGT_INCLUDE_PATHS /usr/include/libdrm )
     ENDIF()
@@ -196,7 +204,7 @@ function(ork_std_target_set_incdirs the_target)
   ENDIF()
 
   # use homebrew last
-  IF(${APPLE})
+  IF(APPLE)
     set_property( TARGET ${the_target} APPEND PROPERTY TGT_INCLUDE_PATHS ${HOMEBREW_PREFIX}/include)
   ENDIF()
 
@@ -278,7 +286,7 @@ function(ork_std_target_set_opts the_target)
 endfunction()
 
 #############################################################################################################
-IF(${APPLE})
+IF(APPLE)
   function(ork_torch_opts the_target)
   set(TORCHLIB_DIR $ENV{OBT_PYPKG}/torch/lib )
   target_include_directories(${the_target} SYSTEM PRIVATE $ENV{OBT_PYPKG}/torch/include $ENV{OBT_PYPKG}/torch/include/torch/csrc/api/include )
@@ -286,7 +294,7 @@ IF(${APPLE})
   target_link_libraries(${the_target} LINK_PRIVATE ${TORCHLIB_DIR}/libtorch_python.dylib)
   target_link_libraries(${the_target} LINK_PRIVATE ${TORCHLIB_DIR}/libc10.dylib )
   endfunction()
-ELSEIF(${UNIX})
+ELSEIF(UNIX)
   function(ork_torch_opts the_target)
   set(TORCHLIB_DIR $ENV{OBT_PYPKG}/torch/lib )
   target_include_directories(${the_target} SYSTEM PRIVATE $ENV{OBT_PYPKG}/torch/include $ENV{OBT_PYPKG}/torch/include/torch/csrc/api/include )
@@ -364,7 +372,7 @@ function(ork_lev2_target_opts_linker the_target)
   target_link_libraries(${the_target} LINK_PRIVATE ork_lev2 )
   target_link_libraries(${the_target} LINK_PRIVATE Boost::system )
   set_target_properties(${the_target} PROPERTIES LINKER_LANGUAGE CXX)
-  IF(${APPLE})
+  IF(APPLE)
     set_target_properties(${the_target} PROPERTIES
       INSTALL_RPATH "$ENV{OBT_STAGE}/lib;$ENV{OBT_PYPKG}/torch/lib"
       BUILD_WITH_INSTALL_RPATH TRUE
@@ -543,7 +551,7 @@ function(ork_std_target_opts_linker the_target)
           "-framework Accelerate"
     )
     target_link_libraries(${the_target} LINK_PRIVATE objc ${BOOST_LIBS} )
-  ELSEIF(${APPLE})
+  ELSEIF(APPLE)
     target_link_directories(${the_target} PUBLIC ${HOMEBREW_PREFIX}/lib )
     target_link_libraries(${the_target} LINK_PRIVATE m pthread )
     target_link_libraries(${the_target} LINK_PRIVATE
@@ -552,7 +560,7 @@ function(ork_std_target_opts_linker the_target)
           "-framework Accelerate"
     )
     target_link_libraries(${the_target} LINK_PRIVATE objc ${BOOST_LIBS} )
-  ELSEIF(${UNIX})
+  ELSEIF(UNIX)
     target_link_libraries(${the_target} LINK_PRIVATE rt dl pthread ${BOOST_LIBS} )
   ENDIF()
 
