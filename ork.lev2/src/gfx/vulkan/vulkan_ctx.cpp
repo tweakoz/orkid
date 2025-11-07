@@ -863,8 +863,24 @@ void VkContext::_onGpuPostInit() {
 
   printf("VkContext::_onGpuPostInit: Submitting gpuPreInit command buffer\n");
 
-  // Submit the command buffer and wait for completion
-  _doSubmitPrimaryCommandBuffer();
+  // During init, we haven't started a frame yet, so we can't use the swapchain submit path
+  // Do a simple direct submit without presentation semaphores
+
+  VkSubmitInfo SI = {};
+  initializeVkStruct(SI, VK_STRUCTURE_TYPE_SUBMIT_INFO);
+  SI.commandBufferCount = 1;
+  SI.pCommandBuffers = &_cmdbufcurpri_gfx->_vkcmdbuf;
+
+  // Create fence to wait for completion
+  VkFenceCreateInfo fenceInfo{};
+  fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+  VkFence fence;
+  vkCreateFence(_vkdevice, &fenceInfo, nullptr, &fence);
+
+  // Submit and wait
+  vkQueueSubmit(_vkqueue_graphics, 1, &SI, fence);
+  vkWaitForFences(_vkdevice, 1, &fence, VK_TRUE, UINT64_MAX);
+  vkDestroyFence(_vkdevice, fence, nullptr);
 
   // Clear the command buffer pointers
   // The pool will reuse this command buffer on the next beginFrame

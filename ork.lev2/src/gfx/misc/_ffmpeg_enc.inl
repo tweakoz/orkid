@@ -269,20 +269,11 @@ void Encoder::_openVideo(AVDictionary* opt_arg) {
   av_dict_free(&opt);
 
 #ifdef __linux__
-  // On Linux, fallback to mpeg4 if h264 fails (e.g., no hardware encoder in headless mode)
+  // On Linux, try fallback chain for h264 hardware encoders, then software fallback
   if (ret < 0 && c->codec_id == AV_CODEC_ID_H264) {
-    fprintf(stderr, "Could not open H.264 video codec: %s\n", av_err2str(ret));
-    fprintf(stderr, "Attempting fallback to MPEG4 codec for Linux...\n");
+    fprintf(stderr, "Could not open initial H.264 video codec: %s\n", av_err2str(ret));
 
-    // Find mpeg4 codec
-    const AVCodec* mpeg4_codec = avcodec_find_encoder(AV_CODEC_ID_MPEG4);
-    if (!mpeg4_codec) {
-      fprintf(stderr, "FATAL: MPEG4 codec not found\n");
-      abort();
-    }
-
-    // Free the h264 codec context and allocate a fresh one for mpeg4
-    // (h264-specific options are incompatible with mpeg4)
+    // Save original settings for fallback attempts
     int width = c->width;
     int height = c->height;
     AVRational time_base = c->time_base;
@@ -292,36 +283,92 @@ void Encoder::_openVideo(AVDictionary* opt_arg) {
     AVColorRange color_range = c->color_range;
     int flags = c->flags;
 
-    avcodec_free_context(&c);
-    c = avcodec_alloc_context3(mpeg4_codec);
-    if (!c) {
-      fprintf(stderr, "FATAL: Could not allocate MPEG4 codec context\n");
-      abort();
+    // Try h264 hardware encoders in order: nvenc (NVIDIA) -> vaapi (AMD/Intel) -> v4l2m2m (misc)
+    const char* h264_encoders[] = {"h264_nvenc", "h264_vaapi", "h264_v4l2m2m"};
+
+    for (int i = 0; i < 3 && ret < 0; i++) {
+      const AVCodec* fallback_codec = avcodec_find_encoder_by_name(h264_encoders[i]);
+      if (!fallback_codec) {
+        continue; // Encoder not available, try next
+      }
+
+      fprintf(stderr, "Attempting fallback to %s...\n", h264_encoders[i]);
+
+      // Allocate fresh context for this encoder
+      avcodec_free_context(&c);
+      c = avcodec_alloc_context3(fallback_codec);
+      if (!c) {
+        fprintf(stderr, "Could not allocate context for %s\n", h264_encoders[i]);
+        continue;
+      }
+
+      // Restore h264 settings
+      c->codec_id = AV_CODEC_ID_H264;
+      c->width = width;
+      c->height = height;
+      c->time_base = time_base;
+      c->bit_rate = bit_rate;
+      c->gop_size = gop_size;
+      c->pix_fmt = pix_fmt;
+      c->color_range = color_range;
+      c->flags = flags;
+
+      _video_stream->enc = c;
+      video_codec = fallback_codec;
+
+      // Try opening this encoder
+      av_dict_copy(&opt, opt_arg, 0);
+      ret = avcodec_open2(c, video_codec, &opt);
+      av_dict_free(&opt);
+
+      if (ret >= 0) {
+        fprintf(stderr, "Successfully using %s codec\n", h264_encoders[i]);
+        break;
+      } else {
+        fprintf(stderr, "Failed to open %s: %s\n", h264_encoders[i], av_err2str(ret));
+      }
     }
 
-    // Restore basic settings
-    c->codec_id = AV_CODEC_ID_MPEG4;
-    c->width = width;
-    c->height = height;
-    c->time_base = time_base;
-    // MPEG4 is ~2x less efficient than H.264, so double the bitrate to maintain quality
-    c->bit_rate = bit_rate * 2;
-    c->gop_size = gop_size;
-    c->pix_fmt = pix_fmt;
-    c->color_range = color_range;
-    c->flags = flags;
+    // If all h264 encoders failed, fall back to mpeg4 software encoder
+    if (ret < 0) {
+      fprintf(stderr, "All H.264 encoders failed, attempting MPEG4 software fallback...\n");
 
-    // Update encoder and codec
-    _video_stream->enc = c;
-    video_codec = mpeg4_codec;
+      const AVCodec* mpeg4_codec = avcodec_find_encoder(AV_CODEC_ID_MPEG4);
+      if (!mpeg4_codec) {
+        fprintf(stderr, "FATAL: MPEG4 codec not found\n");
+        abort();
+      }
 
-    // Try opening with mpeg4
-    av_dict_copy(&opt, opt_arg, 0);
-    ret = avcodec_open2(c, video_codec, &opt);
-    av_dict_free(&opt);
+      avcodec_free_context(&c);
+      c = avcodec_alloc_context3(mpeg4_codec);
+      if (!c) {
+        fprintf(stderr, "FATAL: Could not allocate MPEG4 codec context\n");
+        abort();
+      }
 
-    if (ret >= 0) {
-      fprintf(stderr, "Successfully using MPEG4 codec\n");
+      // Restore basic settings
+      c->codec_id = AV_CODEC_ID_MPEG4;
+      c->width = width;
+      c->height = height;
+      c->time_base = time_base;
+      // MPEG4 is ~2x less efficient than H.264, so double the bitrate to maintain quality
+      c->bit_rate = bit_rate * 2;
+      c->gop_size = gop_size;
+      c->pix_fmt = pix_fmt;
+      c->color_range = color_range;
+      c->flags = flags;
+
+      _video_stream->enc = c;
+      video_codec = mpeg4_codec;
+
+      // Try opening mpeg4
+      av_dict_copy(&opt, opt_arg, 0);
+      ret = avcodec_open2(c, video_codec, &opt);
+      av_dict_free(&opt);
+
+      if (ret >= 0) {
+        fprintf(stderr, "Successfully using MPEG4 codec\n");
+      }
     }
   }
 #endif
