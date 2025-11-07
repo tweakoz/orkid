@@ -436,22 +436,7 @@ void GfxEnv::initializeWithContext(context_ptr_t target) {
   auto op = [target]() {
     if (not GetRef()._initialized) {
       target->makeCurrentContext();
-
-      // PrimitivesInterface initialization moved to Context::gpuInit()
       ThreadGfxContext ctx_tracker(target.get());
-
-/////////////////////////////////////
-#if !defined(__APPLE__)
-// target->beginFrame();
-#endif
-/////////////////////////////////////
-// target->debugPushGroup("GfxEnv.Lateinit");
-// target->debugPopGroup();
-/////////////////////////////////////
-#if !defined(__APPLE__)
-// target->endFrame();
-#endif
-      /////////////////////////////////////
       GfxEnv::GetRef()._initialized = true;
     }
   };

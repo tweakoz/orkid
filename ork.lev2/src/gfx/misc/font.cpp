@@ -65,12 +65,6 @@ int Font::centerY(int c) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#if defined(__APPLE__)
-extern bool _macosUseHIDPI;
-#endif
-
-///////////////////////////////////////////////////////////////////////////////
-
 GfxMaterial* Font::material() const {
   return _use_deferred ? _materialDeferred.get() : mpMaterial;
 }
@@ -138,17 +132,6 @@ void Font::load(Context* context, fontdesc_ptr_t fdesc) {
 
   _fs_material->_rasterstate->_name = "Font";
 
-#if defined(__APPLE__)
-  /*if (_macosUseHIDPI) {
-    _fontdesc->miCharWidth *= 2;
-    _fontdesc->miCharHeight *= 2;
-    _fontdesc->miCharOffsetX *= 2;
-    _fontdesc->miCharOffsetY *= 2;
-    _fontdesc->miYShift *= 2;
-    _fontdesc->miAdvanceWidth *= 2;
-    _fontdesc->miAdvanceHeight *= 2;
-  }*/
-#endif
 }
 
 } //namespace ork::lev2 {

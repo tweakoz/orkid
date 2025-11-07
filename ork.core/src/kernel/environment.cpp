@@ -11,9 +11,7 @@
 #include <string.h>
 #include <unordered_set>
 
-// #if defined(__APPLE__)
 extern char** environ;
-// #endif
 
 namespace ork {
 

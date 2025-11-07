@@ -114,7 +114,6 @@ bool TextureInterface::_loadImageTexture(texture_ptr_t ptex, datablock_ptr_t src
       img._debugName = ptex->_debugName;
       xtx_datablock  = std::make_shared<DataBlock>();
       ////////////////////////////
-      #if defined(__APPLE__)
       switch(image_fmt){
         case EBufferFormat::BGR8:
           // force to BGRA8 because metal does not support BGR8
@@ -126,7 +125,6 @@ bool TextureInterface::_loadImageTexture(texture_ptr_t ptex, datablock_ptr_t src
           break;
         default:
       }
-      #endif
       ////////////////////////////
       switch (forced_format) {
         //////////////////////////////

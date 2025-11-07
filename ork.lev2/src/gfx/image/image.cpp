@@ -244,7 +244,7 @@ void Image::initRGBA8WithNormalizedFloatBuffer(size_t w, size_t h, size_t numc, 
 ///////////////////////////////////////////////////////////////////////////////
 
 void Image::compressDefault(CompressedImage& imgout) const {
-#if defined(__APPLE__) or defined(ORK_ARCHITECTURE_ARM_64)
+#if 1 //defined(__APPLE__) or defined(ORK_ARCHITECTURE_ARM_64)
   uncompressed(imgout);
 #else
   if (GfxEnv::supportsBC7()) {

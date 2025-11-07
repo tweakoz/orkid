@@ -49,13 +49,8 @@ struct Resources {
 
     auto create_image = [this](const std::string& name) {
       auto img = std::make_shared<Image>();
-#if defined(__APPLE__)
       img->_format = EBufferFormat::RGBA8;
       img->init(TEX_SIZE, TEX_SIZE, 4, 1);
-#else
-      img->_format = EBufferFormat::RGB8;
-      img->init(TEX_SIZE, TEX_SIZE, 3, 1);
-#endif
       img->_debugName = name;
       return img;
     };
@@ -74,9 +69,7 @@ struct Resources {
         pixel[0]     = uint8_t(stripe * 255); // R
         pixel[1]     = 0;                     // G
         pixel[2]     = 0;                     // B
-#if defined(__APPLE__)
         pixel[3] = 255; // A
-#endif
       }
     }
     stripe_width = 512;
@@ -87,9 +80,7 @@ struct Resources {
         pixel[0]     = 0;                     // R
         pixel[1]     = uint8_t(stripe * 255); // G
         pixel[2]     = 0;                     // B
-#if defined(__APPLE__)
         pixel[3] = 255; // A
-#endif
       }
     }
     stripe_width = 1024;
@@ -101,9 +92,7 @@ struct Resources {
         pixel[0]     = 0;                     // R
         pixel[1]     = 0;                     // G
         pixel[2]     = uint8_t(stripe * 255); // B
-#if defined(__APPLE__)
         pixel[3] = 255; // A
-#endif
       }
     }
     stripe_width = 64;
@@ -115,9 +104,7 @@ struct Resources {
         pixel[0]      = uint8_t(checker * 255); // R
         pixel[1]      = uint8_t(checker * 255); // G
         pixel[2]      = uint8_t(checker * 255); // B
-#if defined(__APPLE__)
         pixel[3] = 255; // A
-#endif
       }
     }
 
@@ -235,11 +222,9 @@ struct Resources {
 
       // Determine bytes per pixel
       int bytes_per_pixel = 3;
-#if defined(__APPLE__)
       if (image->_format == EBufferFormat::RGBA8) {
         bytes_per_pixel = 4;
       }
-#endif
 
       for (int y = 0; y < TEX_SIZE; y += ROWS_PER_CHUNK) {
         int chunk_start = y;

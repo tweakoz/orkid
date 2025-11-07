@@ -573,8 +573,8 @@ void CtxGLFW::Show() {
     setAlwaysOnTop(_glfwWindow);
   }
 
-#ifdef __APPLE__
   glfwPollEvents(); 
+#ifdef __APPLE__
   if (not _appinitdata->_offscreen) {
     windowToFront(_glfwWindow);
     activateWindow(_glfwWindow);

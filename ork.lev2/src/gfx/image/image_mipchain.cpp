@@ -150,7 +150,7 @@ void CompressedImageMipChain::initWithPrecompressedMipLevels(miplevels_t levels)
 ///////////////////////////////////////////////////////////////////////////////
 
 CompressedImageMipChain Image::compressedMipChainDefault_b() const {
-#if defined(__APPLE__) or defined(ORK_ARCHITECTURE_ARM_64)
+#if 1 //defined(__APPLE__) or defined(ORK_ARCHITECTURE_ARM_64)
   return uncompressedMipChain_b();
 #else
   if (GfxEnv::supportsBC7()) {
@@ -164,7 +164,7 @@ CompressedImageMipChain Image::compressedMipChainDefault_b() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 compressedmipchain_ptr_t Image::compressedMipChainDefault() const {
-#if defined(__APPLE__) or defined(ORK_ARCHITECTURE_ARM_64)
+#if 1 //defined(__APPLE__) or defined(ORK_ARCHITECTURE_ARM_64)
   return uncompressedMipChain();
 #else
   if (GfxEnv::supportsBC7()) {
