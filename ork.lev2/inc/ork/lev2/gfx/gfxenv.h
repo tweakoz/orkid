@@ -215,8 +215,9 @@ public:
     return _primitives_interface.get();
   } // Primitives Interface
   
-  void gpuInit(); // Initialize GPU-dependent resources
-  
+  void gpuPreInit(); // Initialize GPU-dependent resources
+  void gpuPostInit();
+
   ///////////////////////////////////////////////////////////////////////
   void triggerFrameDebugCapture();
   virtual void _doTriggerFrameDebugCapture() {
@@ -476,7 +477,8 @@ private:
 
   void _processBeginFrameBlockers();
   void _loadingPhaseOperations();
-
+  virtual void _onGpuPreInit() {}
+  virtual void _onGpuPostInit() {}
   virtual void _doPreBeginFrame() {}
   virtual void _doBeginFrame() = 0;
   virtual void _doEndFrame()   = 0;

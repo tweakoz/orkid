@@ -349,11 +349,16 @@ Context::~Context() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Context::gpuInit() {
+void Context::gpuPreInit() {
+  _onGpuPreInit();
   // Initialize GPU-dependent resources
   if (_primitives_interface) {
     _primitives_interface->gpuInit();
   }
+}
+
+void Context::gpuPostInit() {
+  _onGpuPostInit();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

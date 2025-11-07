@@ -495,9 +495,15 @@ void VkTextureInterface::initTextureArray2D(TextureArray* texture_array) { // fi
   // Initialize texture array on primary command buffer
   /////////////////////////////////////////////////////
 
-  auto vk_cmdbuf = _contextVK->primary_cb()->_vkcmdbuf;
+  auto primary_cb = _contextVK->primary_cb();
+  auto vk_cmdbuf = primary_cb->_vkcmdbuf;
+
+  printf("initTextureArray2D: array='%s' vk_cmdbuf=%p primary_cb=%p\n",
+         texture_array->_tex->_debugName.c_str(), (void*)vk_cmdbuf,
+         (void*)primary_cb.get());
+
   _enqueueInitTextureArray2DOnCB(texture_array,vk_cmdbuf);
-  
+
   /////////////////////////////////
   // Update the image object's tracked layout
   /////////////////////////////////
@@ -698,6 +704,9 @@ void VkTextureInterface::_enqueueInitTextureArray2DOnCB(TextureArray* texture_ar
   read_barrier->subresourceRange.levelCount = num_levels;
   read_barrier->subresourceRange.layerCount = num_slices;
 
+  printf("  Transitioning image %p to SHADER_READ_ONLY_OPTIMAL (is_depth=%d)\n",
+         (void*)vktex->_imgobj[0]->_vkimage, is_depth);
+
   vkCmdPipelineBarrier(
       vk_cmdbuf,
       VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -705,6 +714,7 @@ void VkTextureInterface::_enqueueInitTextureArray2DOnCB(TextureArray* texture_ar
       0, 0, nullptr, 0, nullptr, 1, read_barrier.get());
 
   vktex->_imgobj[0]->_currentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  printf("  Transition recorded, _currentLayout set to SHADER_READ_ONLY_OPTIMAL\n");
 
   // Texture array is now ready for sampling
   vktex->_img_sampling = vktex->_imgobj[0];

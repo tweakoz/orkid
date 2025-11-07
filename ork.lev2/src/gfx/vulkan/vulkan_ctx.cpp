@@ -850,6 +850,33 @@ void VkContext::_doBeginFrame() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void VkContext::_onGpuPreInit() {
+  // Called before application gpuInit
+  // Currently nothing special needed here
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkContext::_onGpuPostInit() {
+  // Submit the primary command buffer that was recorded during gpuPreInit
+  // This ensures all texture array transitions are executed before first frame
+
+  printf("VkContext::_onGpuPostInit: Submitting gpuPreInit command buffer\n");
+
+  // Submit the command buffer and wait for completion
+  _doSubmitPrimaryCommandBuffer();
+
+  // Clear the command buffer pointers
+  // The pool will reuse this command buffer on the next beginFrame
+  _defaultCommandBuffer = nullptr;
+  _defaultCommandBufferImpl = nullptr;
+  _cmdbufcurpri_gfx = nullptr;
+
+  printf("VkContext::_onGpuPostInit: gpuPreInit transitions complete\n");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void VkContext::_doEndFrame() {
   
   auto main_rtg = _fbi->_ensureMainRtg();

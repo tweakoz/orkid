@@ -512,7 +512,8 @@ public:
   void _doBeginPrimaryCommandBuffer() final;
   void _doEndPrimaryCommandBuffer() final;
   void _doSubmitPrimaryCommandBuffer() final;
-
+  void _onGpuPreInit() final;
+  void _onGpuPostInit() final;
   //////////////////////////////////////////////
 
   secondary_commandbuffer_ptr_t _beginRecordCommandBuffer(std::string name, rtgroup_rawptr_t rtg) final;

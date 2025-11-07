@@ -616,8 +616,9 @@ void CtxGLFW::_runloopBegin() {
 
   if (_onGpuInit) {
     FontMan::gpuInit(_target);
-    _target->gpuInit(); // Initialize Context GPU resources
+    _target->gpuPreInit(); // Initialize Context GPU resources
     _onGpuInit(_target);
+    _target->gpuPostInit(); // Initialize Context GPU resources
   }
 
   if(not _appinitdata->_offscreen ){

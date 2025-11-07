@@ -626,6 +626,8 @@ void LightManager::Clear() {
 }
 
 void LightManager::gpuInit(Context* ctx) {
+  printf("LightManager::gpuInit this=%p color_array=%p depth_array=%p\n",
+         (void*)this, (void*)_cookies_spot_color.get(), (void*)_cookies_spot_depth.get());
   ctx->TXI()->updateTextureArray(_cookies_spot_color.get());
   ctx->TXI()->updateTextureArray(_cookies_spot_depth.get());
 }

@@ -678,6 +678,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
   }
 
   glfw_ctx->_onGpuInit = [this](lev2::Context* context) {
+    logchan_ezapp->log("BEGIN OrkEzApp::_onGpuInit");
     context->beginPrimaryCommandBuffer();
     logchan_ezapp->log("_initdata->_enable_audio<%d>", (int)_initdata->_enable_audio);
 
@@ -695,7 +696,10 @@ void OrkEzApp::_mainThreadLoopBegin() {
     }
     context->endPrimaryCommandBuffer();
 
+    logchan_ezapp->log("END OrkEzApp::_onGpuInit");
+    logchan_ezapp->log("starting update thread...");
     _updateThread.start(_update_thread_impl);
+    // Note: gpuPostInit() will be called by the framework (CtxGLFW::_runloopBegin)
   };
 
   ///////////////////////////////
