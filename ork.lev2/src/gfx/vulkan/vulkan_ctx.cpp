@@ -216,12 +216,45 @@ void VkContext::_initVulkanForOffscreen(DisplayBuffer* pBuf) {
   // we need a method to choose the same device as the display device
   //  without having a surface already...
   OrkAssert(_GVI != nullptr);
-  if (nullptr == _GVI->_preferred) {
-    _GVI->_preferred = _GVI->_device_infos.front();
+
+  // UGLY!!!
+  if(_GVI->_contexts.size()>=1){
+    auto context0 = *_GVI->_contexts.begin();
+    _vkdevice = context0->_vkdevice;
+    _vkdeviceinfo = context0->_vkdeviceinfo;
+    _vkphysicaldevice = context0->_vkphysicaldevice;
+    _vkqueue_graphics = context0->_vkqueue_graphics;
+    _vkqfid_graphics = context0->_vkqfid_graphics;
+    _vkqfid_transfer = context0->_vkqfid_transfer;
+    _vkqfid_compute = context0->_vkqfid_compute;
+    _vkSetDebugUtilsObjectName = context0->_vkSetDebugUtilsObjectName;
+    _vkCmdDebugMarkerBeginEXT = context0->_vkCmdDebugMarkerBeginEXT;
+    _vkCmdDebugMarkerEndEXT = context0->_vkCmdDebugMarkerEndEXT;
+    _vkCmdDebugMarkerInsertEXT = context0->_vkCmdDebugMarkerInsertEXT;
+    _vkCmdBeginRenderingKHR = context0->_vkCmdBeginRenderingKHR;
+    _vkCmdEndRenderingKHR = context0->_vkCmdEndRenderingKHR;
+    _device_extensions = context0->_device_extensions;
+    _num_queue_types = context0->_num_queue_types;
+    _DQCIs = context0->_DQCIs;
+    _initVulkanCommon();
   }
-  auto vk_devinfo = _GVI->_preferred;
-  _initVulkanForDevInfo(vk_devinfo);
-  _initVulkanCommon();
+  else{
+    if (nullptr == _GVI->_preferred) {
+      // Prefer discrete GPU if available
+      vkdeviceinfo_ptr_t discrete_device = nullptr;
+      for (auto devinfo : _GVI->_device_infos) {
+        if (devinfo->_is_discrete) {
+          discrete_device = devinfo;
+          break;
+        }
+      }
+      // Use discrete GPU if found, otherwise fall back to first device
+      _GVI->_preferred = discrete_device ? discrete_device : _GVI->_device_infos.front();
+    }
+    auto vk_devinfo = _GVI->_preferred;
+    _initVulkanForDevInfo(vk_devinfo);
+    _initVulkanCommon();
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

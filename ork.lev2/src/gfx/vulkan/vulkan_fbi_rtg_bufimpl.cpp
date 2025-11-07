@@ -25,6 +25,11 @@ VklRtBufferImpl::VklRtBufferImpl(vkcontext_rawptr_t ctxVK, VkRtGroupImpl* par, u
 
   initializeVkStruct(_attachmentDesc);
 
+  // Initialize descriptor info to VK_NULL_HANDLE to avoid garbage values
+  _descriptorInfo.sampler = VK_NULL_HANDLE;
+  _descriptorInfo.imageView = VK_NULL_HANDLE;
+  _descriptorInfo.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
   _attachmentDesc.samples       = VK_SAMPLE_COUNT_1_BIT;        // No multisampling for this example.
   _attachmentDesc.loadOp        = VK_ATTACHMENT_LOAD_OP_CLEAR;  // Clear the color/depth buffer before rendering.
   _attachmentDesc.storeOp       = VK_ATTACHMENT_STORE_OP_STORE; // Store the rendered color/depth for presentation.

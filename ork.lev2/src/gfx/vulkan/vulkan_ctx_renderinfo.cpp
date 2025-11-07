@@ -27,8 +27,8 @@ VulkanRenderInfo::VulkanRenderInfo(VkRtGroupImpl* rtgi) {
     VkRenderingAttachmentInfo rai;
     initializeVkStruct(rai, VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO);
     // Use slice view from descriptor if available, otherwise use image view
-    rai.imageView   = bufimpl->_descriptorInfo.imageView != VK_NULL_HANDLE 
-                      ? bufimpl->_descriptorInfo.imageView 
+    rai.imageView   = bufimpl->_descriptorInfo.imageView != VK_NULL_HANDLE
+                      ? bufimpl->_descriptorInfo.imageView
                       : bufimpl->_imgobj->_vkimageview;
     rai.imageLayout = bufimpl->_currentLayout;
     rai.resolveMode = VK_RESOLVE_MODE_NONE;
@@ -53,9 +53,6 @@ VulkanRenderInfo::VulkanRenderInfo(VkRtGroupImpl* rtgi) {
   _renderinfo.pStencilAttachment       = nullptr;
 
   auto dbuf_impl = rtgi->_depth_buffer_impl;
-  //if(log) {
-    //printf("rtgi->_width<%d> rtgi->_height<%d> dbuf_impl<%p>\n", rtgi->_width, rtgi->_height, (void*) dbuf_impl.get());
-  //}
   if (dbuf_impl) {
     initializeVkStruct(_rainfo_depth, VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO);
     // Use slice view from descriptor if available, otherwise use image view
