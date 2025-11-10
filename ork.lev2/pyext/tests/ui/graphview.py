@@ -89,8 +89,9 @@ class GraphViewTest(object):
 
     # Configure max samples (ring buffer size)
     for series in [self.sine_series, self.cosine_series, self.square_series, self.sawtooth_series]:
-      series.setMaxSamples(200)
+      series.setMaxSamples(16000)  # Large buffer for extensive history
       series.auto_range = True
+      series.window_size = 1000  # Moving window: show only most recent 1000 samples
 
     # Animation state
     self.time = 0.0

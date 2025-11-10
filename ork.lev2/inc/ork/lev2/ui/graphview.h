@@ -45,6 +45,9 @@ struct GraphSeries {
   float _max_value = 1.0f;
   bool _auto_range = true;
 
+  // Moving window display (0 = show all samples, >0 = show only most recent N)
+  size_t _window_size = 0;
+
 private:
   void _updateRange();
 };

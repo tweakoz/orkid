@@ -138,17 +138,45 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
     case ui::EventCode::PUSH:
     case ui::EventCode::DOUBLECLICK: {
       _dragging       = false;
-      int numchannels = _channelmap.size();
-      if (numchannels) {
-        int maxy = numchannels * 16 + _kbasechanlaby + 16;
+
+      // Count total number of series across all channels
+      int total_series = 0;
+      for (auto channel : _channelmap) {
+        if (!channel->_series.empty()) {
+          total_series += channel->_series.size();
+        } else {
+          total_series += 1; // Lambda-based channel gets one entry
+        }
+      }
+
+      if (total_series) {
+        int maxy = total_series * 16 + _kbasechanlaby + 16;
         if (ilocx > (width() - 64) and ilocy < maxy) {
-          int ichannel = (ilocy - 16) >> 4;
-          printf("ilocy<%d> ichannel<%d> numchannels<%d>\n", ilocy, ichannel, numchannels);
-          if (ichannel < numchannels) {
-            graphchannel_ptr_t channel = _channelmap[ichannel];
-            channel->_visible          = not channel->_visible;
-            printf("channel<%s>\n", channel->_name.c_str());
+          int iseries_index = (ilocy - 16) >> 4;
+          printf("ilocy<%d> iseries_index<%d> total_series<%d>\n", ilocy, iseries_index, total_series);
+
+          // Find which series was clicked
+          int current_index = 0;
+          for (auto channel : _channelmap) {
+            if (!channel->_series.empty()) {
+              for (auto& series : channel->_series) {
+                if (current_index == iseries_index) {
+                  series->_visible = not series->_visible;
+                  printf("series<%s> visible<%d>\n", series->_name.c_str(), series->_visible);
+                  goto done;
+                }
+                current_index++;
+              }
+            } else {
+              if (current_index == iseries_index) {
+                channel->_visible = not channel->_visible;
+                printf("channel<%s> visible<%d>\n", channel->_name.c_str(), channel->_visible);
+                goto done;
+              }
+              current_index++;
+            }
           }
+          done:;
         }
       } else {
         float fx    = float(ilocx) * gscaleX / float(width());
@@ -319,90 +347,159 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
         }
 
         ///////////////////////////////////////////////////
-        // draw channel name labels/toggleboxes
+        // draw series labels/toggleboxes (one per series)
         ///////////////////////////////////////////////////
 
-        int sw             = lev2::FontMan::stringWidth(channel->_name.length());
-        tgt->RefModColor() = channel->_color;
-        lev2::FontMan::beginTextBlock(tgt, 128);
-        lev2::FontMan::DrawText(
-            tgt, //
-            ix2 - (sw + 16),
-            ichanlaby,
-            channel->_name.c_str());
-        lev2::FontMan::endTextBlock(tgt);
-
-        if (channel->_visible) {
-
-          ///////////////////////////////////////////////////
-          // draw current value
-          ///////////////////////////////////////////////////
-
-          if (numpoints) {
-            float value = 0.0f;
-            if (has_series && !channel->_series.empty()) {
-              value = channel->_series[0]->getSample(numpoints - 1);
-            } else if (has_lambdas) {
-              value = channel->_getPoint(numpoints - 1).y;
-            }
-
-            auto valstr        = FormatString("%0.5g", value);
-            int sw2            = lev2::FontMan::stringWidth(valstr.length());
-            tgt->RefModColor() = channel->_color;
+        if (has_series) {
+          // Draw a label/button for each series
+          for (auto& series : channel->_series) {
+            int sw = lev2::FontMan::stringWidth(series->_name.length());
+            tgt->RefModColor() = series->_color;
             lev2::FontMan::beginTextBlock(tgt, 128);
             lev2::FontMan::DrawText(
-                tgt, //
-                ix2 - (sw + 16) - (sw2 + 16),
+                tgt,
+                ix2 - (sw + 16),
                 ichanlaby,
-                valstr.c_str());
+                series->_name.c_str());
             lev2::FontMan::endTextBlock(tgt);
+
+            if (series->_visible) {
+              ///////////////////////////////////////////////////
+              // draw current value
+              ///////////////////////////////////////////////////
+              size_t series_count = series->sampleCount();
+              if (series_count > 0) {
+                float value = series->getSample(series_count - 1);
+                auto valstr = FormatString("%0.5g", value);
+                int sw2 = lev2::FontMan::stringWidth(valstr.length());
+                tgt->RefModColor() = series->_color;
+                lev2::FontMan::beginTextBlock(tgt, 128);
+                lev2::FontMan::DrawText(
+                    tgt,
+                    ix2 - (sw + 16) - (sw2 + 16),
+                    ichanlaby,
+                    valstr.c_str());
+                lev2::FontMan::endTextBlock(tgt);
+              }
+
+              ///////////////////////////////////////////////////
+              // draw toggle box
+              ///////////////////////////////////////////////////
+              int x1 = ix2 - (sw + 16);
+              int x2 = x1 + sw;
+              int y1 = ichanlaby;
+              int y2 = ichanlaby + 16;
+
+              lev2::VtxWriter<vtx_t> vw;
+              vw.Lock(tgt, vbuf.get(), 8);
+              vw.AddVertex(vtx_t(fvec3(x1, y1, 0), fvec4(), series->_color));
+              vw.AddVertex(vtx_t(fvec3(x2, y1, 0), fvec4(), series->_color));
+              vw.AddVertex(vtx_t(fvec3(x2, y1, 0), fvec4(), series->_color));
+              vw.AddVertex(vtx_t(fvec3(x2, y2, 0), fvec4(), series->_color));
+              vw.AddVertex(vtx_t(fvec3(x2, y2, 0), fvec4(), series->_color));
+              vw.AddVertex(vtx_t(fvec3(x1, y2, 0), fvec4(), series->_color));
+              vw.AddVertex(vtx_t(fvec3(x1, y2, 0), fvec4(), series->_color));
+              vw.AddVertex(vtx_t(fvec3(x1, y1, 0), fvec4(), series->_color));
+              vw.UnLock(tgt);
+
+              mtxi->PushUIMatrix(width(), height());
+              mtl->begin(tek, RCFD);
+              mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
+              mtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
+              gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::LINES);
+              mtl->end(RCFD);
+              mtxi->PopUIMatrix();
+            }
+
+            ichanlaby += 16;
+          }
+        } else {
+          // Lambda-based: draw one button for the channel
+          int sw = lev2::FontMan::stringWidth(channel->_name.length());
+          tgt->RefModColor() = channel->_color;
+          lev2::FontMan::beginTextBlock(tgt, 128);
+          lev2::FontMan::DrawText(
+              tgt,
+              ix2 - (sw + 16),
+              ichanlaby,
+              channel->_name.c_str());
+          lev2::FontMan::endTextBlock(tgt);
+
+          if (channel->_visible) {
+            ///////////////////////////////////////////////////
+            // draw current value
+            ///////////////////////////////////////////////////
+            if (numpoints) {
+              float value = channel->_getPoint(numpoints - 1).y;
+              auto valstr = FormatString("%0.5g", value);
+              int sw2 = lev2::FontMan::stringWidth(valstr.length());
+              tgt->RefModColor() = channel->_color;
+              lev2::FontMan::beginTextBlock(tgt, 128);
+              lev2::FontMan::DrawText(
+                  tgt,
+                  ix2 - (sw + 16) - (sw2 + 16),
+                  ichanlaby,
+                  valstr.c_str());
+              lev2::FontMan::endTextBlock(tgt);
+            }
+
+            ///////////////////////////////////////////////////
+            // draw toggle box
+            ///////////////////////////////////////////////////
+            int x1 = ix2 - (sw + 16);
+            int x2 = x1 + sw;
+            int y1 = ichanlaby;
+            int y2 = ichanlaby + 16;
+
+            lev2::VtxWriter<vtx_t> vw;
+            vw.Lock(tgt, vbuf.get(), 8);
+            vw.AddVertex(vtx_t(fvec3(x1, y1, 0), fvec4(), channel->_color));
+            vw.AddVertex(vtx_t(fvec3(x2, y1, 0), fvec4(), channel->_color));
+            vw.AddVertex(vtx_t(fvec3(x2, y1, 0), fvec4(), channel->_color));
+            vw.AddVertex(vtx_t(fvec3(x2, y2, 0), fvec4(), channel->_color));
+            vw.AddVertex(vtx_t(fvec3(x2, y2, 0), fvec4(), channel->_color));
+            vw.AddVertex(vtx_t(fvec3(x1, y2, 0), fvec4(), channel->_color));
+            vw.AddVertex(vtx_t(fvec3(x1, y2, 0), fvec4(), channel->_color));
+            vw.AddVertex(vtx_t(fvec3(x1, y1, 0), fvec4(), channel->_color));
+            vw.UnLock(tgt);
+
+            mtxi->PushUIMatrix(width(), height());
+            mtl->begin(tek, RCFD);
+            mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
+            mtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
+            gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::LINES);
+            mtl->end(RCFD);
+            mtxi->PopUIMatrix();
           }
 
-          ///////////////////////////////////////////////////
-          // draw toggle box
-          ///////////////////////////////////////////////////
-
-          int x1 = ix2 - (sw + 16);
-          int x2 = x1 + sw;
-          int y1 = ichanlaby;
-          int y2 = ichanlaby + 16;
-
-          lev2::VtxWriter<vtx_t> vw;
-          vw.Lock(tgt, vbuf.get(), 8);
-          vw.AddVertex(vtx_t(fvec3(x1, y1, 0), fvec4(), channel->_color));
-          vw.AddVertex(vtx_t(fvec3(x2, y1, 0), fvec4(), channel->_color));
-          vw.AddVertex(vtx_t(fvec3(x2, y1, 0), fvec4(), channel->_color));
-          vw.AddVertex(vtx_t(fvec3(x2, y2, 0), fvec4(), channel->_color));
-          vw.AddVertex(vtx_t(fvec3(x2, y2, 0), fvec4(), channel->_color));
-          vw.AddVertex(vtx_t(fvec3(x1, y2, 0), fvec4(), channel->_color));
-          vw.AddVertex(vtx_t(fvec3(x1, y2, 0), fvec4(), channel->_color));
-          vw.AddVertex(vtx_t(fvec3(x1, y1, 0), fvec4(), channel->_color));
-          vw.UnLock(tgt);
-
-          mtxi->PushUIMatrix(width(), height());
-          mtl->begin(tek, RCFD);
-          mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
-          mtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
-          gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::LINES);
-          mtl->end(RCFD);
-          mtxi->PopUIMatrix();
+          ichanlaby += 16;
         }
-
-        ichanlaby += 16;
 
         ///////////////////////////////////////////////////
 
-        if (not channel->_visible) {
+        // For lambda-based channels, check channel visibility
+        if (has_lambdas && not channel->_visible) {
           continue;
         }
 
         // Calculate range (series-based or lambda-based)
         fvec2 hrange, vrange;
         if (has_series && !channel->_series.empty()) {
-          // Use series auto-range
-          auto& first_series = channel->_series[0];
-          hrange = fvec2(0, float(numpoints));
-          vrange = fvec2(first_series->_min_value, first_series->_max_value);
+          // Use series auto-range - find first visible series
+          graphseries_ptr_t first_visible_series = nullptr;
+          for (auto& series : channel->_series) {
+            if (series->_visible && series->sampleCount() > 0) {
+              first_visible_series = series;
+              break;
+            }
+          }
+          if (first_visible_series) {
+            hrange = fvec2(-50, 50);  // Centered on origin - samples will be scaled to fit
+            vrange = fvec2(first_visible_series->_min_value, first_visible_series->_max_value);
+          } else {
+            hrange = fvec2(-50, 50);  // Centered on origin
+            vrange = fvec2(0, 1);
+          }
         } else if (has_lambdas && channel->_getHorizontalRange && channel->_getVerticalRange) {
           hrange = channel->_getHorizontalRange();
           vrange = channel->_getVerticalRange();
@@ -415,11 +512,10 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
         int h = this->height();
 
         if (numpoints) {
-          if (channel->_visible) {
-            ///////////////////////////////////////////////////
-            // Render series-based data
-            ///////////////////////////////////////////////////
-            if (has_series) {
+          ///////////////////////////////////////////////////
+          // Render series-based data
+          ///////////////////////////////////////////////////
+          if (has_series) {
               for (auto& series : channel->_series) {
                 if (!series->_visible)
                   continue;
@@ -428,22 +524,32 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
                 if (series_count == 0)
                   continue;
 
-                lev2::VtxWriter<vtx_t> vw;
-                vw.Lock(tgt, vbuf.get(), series_count * 2);
+                // Calculate moving window - which samples to display
+                size_t display_count = series_count;
+                size_t start_index = 0;
 
-                float x_scale = (hrange.y - hrange.x) / float(series_count > 1 ? series_count - 1 : 1);
+                if (series->_window_size > 0 && series->_window_size < series_count) {
+                  display_count = series->_window_size;
+                  start_index = series_count - display_count;  // Show most recent N samples
+                }
+
+                lev2::VtxWriter<vtx_t> vw;
+                vw.Lock(tgt, vbuf.get(), display_count * 2);
+
+                float x_scale = (hrange.y - hrange.x) / float(display_count > 1 ? display_count - 1 : 1);
                 float y_scale = vrange.y - vrange.x;
                 if (y_scale < 0.001f) y_scale = 0.001f;
 
-                for (size_t i = 0; i < series_count; i++) {
+                for (size_t i = 0; i < display_count; i++) {
+                  size_t sample_index = start_index + i;
                   float x = hrange.x + float(i) * x_scale;
-                  float y = series->getSample(i);
+                  float y = series->getSample(sample_index);
 
                   fvec3 point(x, y, 0);
 
                   if (i > 0) {
                     float prev_x = hrange.x + float(i - 1) * x_scale;
-                    float prev_y = series->getSample(i - 1);
+                    float prev_y = series->getSample(start_index + i - 1);
                     fvec3 prev_point(prev_x, prev_y, 0);
 
                     vw.AddVertex(vtx_t(prev_point, fvec4(), series->_color));
@@ -494,7 +600,6 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
               mtxi->PopVMatrix();
               mtxi->PopMMatrix();
             }
-          }
           ///////////////////////////////////////////////////
         }
       }
