@@ -2,7 +2,8 @@
 ![logo](https://github.com/tweakoz/orkid/blob/develop/ork.data/dox/doxylogo.png "OrkidLogo")
 
 
-### Build Status(Runner)
+### Build Status
+
 ![Build Status(Macos)](https://github.com/tweakoz/orkid/actions/workflows/build_macos.yml/badge.svg)
 
 ![Build Status(Linux)](https://github.com/tweakoz/orkid/actions/workflows/build_linux.yml/badge.svg)
