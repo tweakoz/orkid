@@ -18,7 +18,7 @@ namespace ork { namespace ui {
 
 struct Surface : public Group {
 public:
-  Surface(const std::string& name, int x, int y, int w, int h, fcolor3 color, F32 depth);
+  Surface(const std::string& name, int x, int y, int w, int h, fcolor4 color, F32 depth);
 
   void SurfaceRender(lev2::RenderContextFrameData& fd, const std::function<void()>& l);
 
@@ -41,7 +41,7 @@ public:
 
   bool _flipY = false;
   bool mbClear;
-  fcolor3 _clearColor;
+  fcolor4 _clearColor;
   F32 mfClearDepth;
   lev2::rtgroup_ptr_t _rtgroup;
   bool mNeedsSurfaceRepaint;

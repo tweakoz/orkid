@@ -17,8 +17,100 @@
 namespace ork::ui {
 static constexpr int _kbasechanlaby = 16;
 /////////////////////////////////////////////////////////////////////////
+// GraphSeries Implementation
+/////////////////////////////////////////////////////////////////////////
+GraphSeries::GraphSeries(const std::string& name, fvec3 color)
+    : _name(name)
+    , _color(color) {
+}
+/////////////////////////////////////////////////////////////////////////
+void GraphSeries::addSample(float value) {
+  _samples.push_back(value);
+
+  // Maintain ring buffer size
+  while (_samples.size() > _max_samples) {
+    _samples.pop_front();
+  }
+
+  // Update range if auto-ranging
+  if (_auto_range) {
+    _updateRange();
+  }
+}
+/////////////////////////////////////////////////////////////////////////
+void GraphSeries::clearSamples() {
+  _samples.clear();
+  _min_value = 0.0f;
+  _max_value = 1.0f;
+}
+/////////////////////////////////////////////////////////////////////////
+void GraphSeries::setMaxSamples(size_t count) {
+  _max_samples = count;
+
+  // Trim if needed
+  while (_samples.size() > _max_samples) {
+    _samples.pop_front();
+  }
+}
+/////////////////////////////////////////////////////////////////////////
+float GraphSeries::getSample(size_t index) const {
+  if (index < _samples.size()) {
+    return _samples[index];
+  }
+  return 0.0f;
+}
+/////////////////////////////////////////////////////////////////////////
+void GraphSeries::_updateRange() {
+  if (_samples.empty()) {
+    _min_value = 0.0f;
+    _max_value = 1.0f;
+    return;
+  }
+
+  _min_value = _samples[0];
+  _max_value = _samples[0];
+
+  for (float val : _samples) {
+    _min_value = std::min(_min_value, val);
+    _max_value = std::max(_max_value, val);
+  }
+
+  // Add 10% padding to range
+  float range = _max_value - _min_value;
+  if (range < 0.001f) range = 0.001f;  // Avoid div by zero
+  _min_value -= range * 0.1f;
+  _max_value += range * 0.1f;
+}
+/////////////////////////////////////////////////////////////////////////
+// GraphChannel Implementation
+/////////////////////////////////////////////////////////////////////////
+graphseries_ptr_t GraphChannel::addSeries(const std::string& name, fvec3 color) {
+  auto series = std::make_shared<GraphSeries>(name, color);
+  _series.push_back(series);
+  return series;
+}
+/////////////////////////////////////////////////////////////////////////
+void GraphChannel::removeSeries(const std::string& name) {
+  _series.erase(
+    std::remove_if(_series.begin(), _series.end(),
+      [&name](const graphseries_ptr_t& s) { return s->_name == name; }),
+    _series.end()
+  );
+}
+/////////////////////////////////////////////////////////////////////////
+graphseries_ptr_t GraphChannel::getSeries(const std::string& name) {
+  for (auto& series : _series) {
+    if (series->_name == name) {
+      return series;
+    }
+  }
+  return nullptr;
+}
+/////////////////////////////////////////////////////////////////////////
+// GraphView Implementation
+/////////////////////////////////////////////////////////////////////////
 GraphView::GraphView()
-    : Surface("GraphView", 0, 0, 32, 32, fvec3(1, 0, 0), 1.0)
+    : Surface("GraphView", 0, 0, 32, 32, fvec4(1, 0, 0, 1), 1.0)
     , _lockX(false)
     , _lockY(false)
     , _lockYZOOM(false)
@@ -29,6 +121,7 @@ GraphView::GraphView()
 }
 /////////////////////////////////////////////////////////////////////////
 void GraphView::_doGpuInit(lev2::Context* pTARG) {
+  Surface::_doGpuInit(pTARG);
 }
 /////////////////////////////////////////////////////////////////////////
 HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
@@ -213,7 +306,17 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
       int ichanlaby = _kbasechanlaby;
       for (auto channel : _channelmap) {
         const std::string& name = channel->_name;
-        size_t numpoints        = channel->_getCount();
+
+        // Check if using series-based or lambda-based system
+        bool has_series = !channel->_series.empty();
+        bool has_lambdas = (channel->_getCount != nullptr);
+
+        size_t numpoints = 0;
+        if (has_series && !channel->_series.empty()) {
+          numpoints = channel->_series[0]->sampleCount();
+        } else if (has_lambdas) {
+          numpoints = channel->_getCount();
+        }
 
         ///////////////////////////////////////////////////
         // draw channel name labels/toggleboxes
@@ -236,7 +339,13 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
           ///////////////////////////////////////////////////
 
           if (numpoints) {
-            float value        = channel->_getPoint(numpoints - 1).y;
+            float value = 0.0f;
+            if (has_series && !channel->_series.empty()) {
+              value = channel->_series[0]->getSample(numpoints - 1);
+            } else if (has_lambdas) {
+              value = channel->_getPoint(numpoints - 1).y;
+            }
+
             auto valstr        = FormatString("%0.5g", value);
             int sw2            = lev2::FontMan::stringWidth(valstr.length());
             tgt->RefModColor() = channel->_color;
@@ -287,8 +396,20 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
           continue;
         }
 
-        fvec2 hrange = channel->_getHorizontalRange();
-        fvec2 vrange = channel->_getVerticalRange();
+        // Calculate range (series-based or lambda-based)
+        fvec2 hrange, vrange;
+        if (has_series && !channel->_series.empty()) {
+          // Use series auto-range
+          auto& first_series = channel->_series[0];
+          hrange = fvec2(0, float(numpoints));
+          vrange = fvec2(first_series->_min_value, first_series->_max_value);
+        } else if (has_lambdas && channel->_getHorizontalRange && channel->_getVerticalRange) {
+          hrange = channel->_getHorizontalRange();
+          vrange = channel->_getVerticalRange();
+        } else {
+          hrange = fvec2(0, 100);
+          vrange = fvec2(0, 1);
+        }
 
         int w = this->width();
         int h = this->height();
@@ -296,33 +417,83 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
         if (numpoints) {
           if (channel->_visible) {
             ///////////////////////////////////////////////////
-            // points -> vertex buffer
+            // Render series-based data
             ///////////////////////////////////////////////////
-            lev2::VtxWriter<vtx_t> vw;
-            vw.Lock(tgt, vbuf.get(), numpoints * 2);
-            auto prev_point = channel->_getPoint(0);
-            for (size_t i = 0; i < numpoints; i++) {
-              auto next_point = channel->_getPoint(i);
-              vw.AddVertex(vtx_t(fvec3(prev_point), fvec4(), channel->_color));
-              vw.AddVertex(vtx_t(fvec3(next_point), fvec4(), channel->_color));
+            if (has_series) {
+              for (auto& series : channel->_series) {
+                if (!series->_visible)
+                  continue;
 
-              prev_point = next_point;
+                size_t series_count = series->sampleCount();
+                if (series_count == 0)
+                  continue;
+
+                lev2::VtxWriter<vtx_t> vw;
+                vw.Lock(tgt, vbuf.get(), series_count * 2);
+
+                float x_scale = (hrange.y - hrange.x) / float(series_count > 1 ? series_count - 1 : 1);
+                float y_scale = vrange.y - vrange.x;
+                if (y_scale < 0.001f) y_scale = 0.001f;
+
+                for (size_t i = 0; i < series_count; i++) {
+                  float x = hrange.x + float(i) * x_scale;
+                  float y = series->getSample(i);
+
+                  fvec3 point(x, y, 0);
+
+                  if (i > 0) {
+                    float prev_x = hrange.x + float(i - 1) * x_scale;
+                    float prev_y = series->getSample(i - 1);
+                    fvec3 prev_point(prev_x, prev_y, 0);
+
+                    vw.AddVertex(vtx_t(prev_point, fvec4(), series->_color));
+                    vw.AddVertex(vtx_t(point, fvec4(), series->_color));
+                  }
+                }
+                vw.UnLock(tgt);
+
+                // Draw series
+                mtxi->PushPMatrix(_grid._mtxOrtho);
+                mtxi->PushVMatrix(fmtx4::Identity());
+                mtxi->PushMMatrix(fmtx4::Identity());
+                mtl->begin(tek, RCFD);
+                mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
+                mtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
+                gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::LINES);
+                mtl->end(RCFD);
+                mtxi->PopPMatrix();
+                mtxi->PopVMatrix();
+                mtxi->PopMMatrix();
+              }
             }
-            vw.UnLock(tgt);
             ///////////////////////////////////////////////////
-            // draw vertex buffer
+            // Render lambda-based data (backward compat)
             ///////////////////////////////////////////////////
-            mtxi->PushPMatrix(_grid._mtxOrtho);
-            mtxi->PushVMatrix(fmtx4::Identity());
-            mtxi->PushMMatrix(fmtx4::Identity());
-            mtl->begin(tek, RCFD);
-            mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
-            mtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
-            gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::LINES);
-            mtl->end(RCFD);
-            mtxi->PopPMatrix();
-            mtxi->PopVMatrix();
-            mtxi->PopMMatrix();
+            else if (has_lambdas) {
+              lev2::VtxWriter<vtx_t> vw;
+              vw.Lock(tgt, vbuf.get(), numpoints * 2);
+              auto prev_point = channel->_getPoint(0);
+              for (size_t i = 0; i < numpoints; i++) {
+                auto next_point = channel->_getPoint(i);
+                vw.AddVertex(vtx_t(fvec3(prev_point), fvec4(), channel->_color));
+                vw.AddVertex(vtx_t(fvec3(next_point), fvec4(), channel->_color));
+
+                prev_point = next_point;
+              }
+              vw.UnLock(tgt);
+
+              mtxi->PushPMatrix(_grid._mtxOrtho);
+              mtxi->PushVMatrix(fmtx4::Identity());
+              mtxi->PushMMatrix(fmtx4::Identity());
+              mtl->begin(tek, RCFD);
+              mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
+              mtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
+              gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::LINES);
+              mtl->end(RCFD);
+              mtxi->PopPMatrix();
+              mtxi->PopVMatrix();
+              mtxi->PopMMatrix();
+            }
           }
           ///////////////////////////////////////////////////
         }

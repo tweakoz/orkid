@@ -14,7 +14,7 @@ constexpr bool DEBUG_BLIT = false;
 
 /////////////////////////////////////////////////////////////////////////
 
-Surface::Surface(const std::string& name, int x, int y, int w, int h, fcolor3 color, F32 depth)
+Surface::Surface(const std::string& name, int x, int y, int w, int h, fcolor4 color, F32 depth)
     : Group(name, x, y, w, h)
     , mbClear(true)
     , _clearColor(color)

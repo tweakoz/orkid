@@ -25,6 +25,7 @@
 #include <ork/lev2/ui/combobox.h>
 #include <ork/lev2/ui/coloredit.h>
 #include <ork/lev2/ui/imgview.h>
+#include <ork/lev2/ui/graphview.h>
 #include <ork/lev2/ui/ged/ged_surface.h>
 #include <ork/lev2/ui/popups.inl>
 #include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
@@ -483,6 +484,65 @@ void pyinit_ui(py::module& module_lev2) {
   auto viewport_type = //
       py::class_<ui::Viewport, ui::Surface, uiviewport_ptr_t>(uimodule, "Viewport");
   type_codec->registerStdCodec<uiviewport_ptr_t>(viewport_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // GraphSeries - data storage for graph plots
+  /////////////////////////////////////////////////////////////////////////////////
+  auto graphseries_type = //
+      py::class_<ui::GraphSeries, ui::graphseries_ptr_t>(uimodule, "GraphSeries")
+          .def("addSample", &ui::GraphSeries::addSample)
+          .def("clearSamples", &ui::GraphSeries::clearSamples)
+          .def("setMaxSamples", &ui::GraphSeries::setMaxSamples)
+          .def("sampleCount", &ui::GraphSeries::sampleCount)
+          .def("getSample", &ui::GraphSeries::getSample)
+          .def_readwrite("name", &ui::GraphSeries::_name)
+          .def_readwrite("color", &ui::GraphSeries::_color)
+          .def_readwrite("visible", &ui::GraphSeries::_visible)
+          .def_readwrite("auto_range", &ui::GraphSeries::_auto_range)
+          .def_readwrite("min_value", &ui::GraphSeries::_min_value)
+          .def_readwrite("max_value", &ui::GraphSeries::_max_value);
+  type_codec->registerStdCodec<ui::graphseries_ptr_t>(graphseries_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // GraphChannel - contains multiple series
+  /////////////////////////////////////////////////////////////////////////////////
+  auto graphchannel_type = //
+      py::class_<ui::GraphChannel, ui::graphchannel_ptr_t>(uimodule, "GraphChannel")
+          .def("addSeries", &ui::GraphChannel::addSeries)
+          .def("removeSeries", &ui::GraphChannel::removeSeries)
+          .def("getSeries", &ui::GraphChannel::getSeries)
+          .def_readwrite("name", &ui::GraphChannel::_name)
+          .def_readwrite("color", &ui::GraphChannel::_color)
+          .def_readwrite("visible", &ui::GraphChannel::_visible);
+  type_codec->registerStdCodec<ui::graphchannel_ptr_t>(graphchannel_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // GraphView - widget for plotting time-series data
+  /////////////////////////////////////////////////////////////////////////////////
+  auto graphview_type = //
+      py::class_<ui::GraphView, ui::Surface, ui::graphview_ptr_t>(uimodule, "GraphView")
+          .def_static(
+              "wfactory",
+              [type_codec](py::list py_args) -> ui::graphview_ptr_t { //
+                auto graphview = std::make_shared<ui::GraphView>();
+                return graphview;
+              })
+          .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+                auto layoutitem = lg->makeChild<ui::GraphView>();
+                return layoutitem.as_shared();
+              })
+          .def_static(
+              "uigridfactory",
+              [type_codec](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
+                auto layoutitems = lg->makeGridOfWidgets<ui::GraphView>(grid_w, grid_h);
+                py::list rval;
+                for (auto item : layoutitems) {
+                  rval.append(item.as_shared());
+                }
+                return rval;
+              })
+          .def("channel", &ui::GraphView::channel)
+          .def_readwrite("clear_color", &ui::GraphView::_clearColor);
+  type_codec->registerStdCodec<ui::graphview_ptr_t>(graphview_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto sgviewport_type = //
       py::class_<ui::SceneGraphViewport, ui::Viewport, uisgviewport_ptr_t>(uimodule, "SceneGraphViewport")
