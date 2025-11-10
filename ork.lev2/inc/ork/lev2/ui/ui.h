@@ -49,6 +49,7 @@ struct VerticalPack;
 struct HorizontalPack;
 struct HorizontalSplit;
 struct VerticalSplit;
+struct DynaGrid;
 
 using context_ptr_t     = std::shared_ptr<Context>;
 using widget_ptr_t      = std::shared_ptr<Widget>;
@@ -75,6 +76,7 @@ using vpack_ptr_t       = std::shared_ptr<VerticalPack>;
 using hpack_ptr_t       = std::shared_ptr<HorizontalPack>;
 using hsplit_ptr_t      = std::shared_ptr<HorizontalSplit>;
 using vsplit_ptr_t      = std::shared_ptr<VerticalSplit>;
+using dynagrid_ptr_t    = std::shared_ptr<DynaGrid>;
 ////////////////////////////////////////////////////////////////////////////////
 
 using evrouter_t  = std::function<Widget*(event_constptr_t ev)>;

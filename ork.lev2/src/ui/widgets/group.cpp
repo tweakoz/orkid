@@ -206,7 +206,34 @@ void LayoutGroup::DoLayout() {
   if (_layout){
     _layout->updateAll();
   }
+  // Position overlay if present
+  if (_overlay_widget) {
+    _positionOverlay();
+  }
   //
+}
+//////////////////////////////////////
+void LayoutGroup::_positionOverlay() {
+  if (!_overlay_widget)
+    return;
+
+  // Get this LayoutGroup's geometry
+  int x = _geometry._x;
+  int y = _geometry._y;
+  int w = _geometry._w;
+  int h = _geometry._h;
+
+  // Apply 10% margin on all sides
+  float margin_percent = 0.10f;
+  int margin_w = w * margin_percent;
+  int margin_h = h * margin_percent;
+
+  int overlay_x = x + margin_w;
+  int overlay_y = y + margin_h;
+  int overlay_w = w - (2 * margin_w);  // 80% of width
+  int overlay_h = h - (2 * margin_h);  // 80% of height
+
+  _overlay_widget->SetRect(overlay_x, overlay_y, overlay_w, overlay_h);
 }
 /////////////////////////////////////////////////////////////////////////
 void LayoutGroup::DoDraw(drawevent_constptr_t drwev) {
@@ -219,6 +246,11 @@ void LayoutGroup::DoDraw(drawevent_constptr_t drwev) {
     Widget::_drawColoredBox(drwev,  _clearColorStd);
   }
   drawChildren(drwev);
+
+  // Draw overlay on top (if enabled)
+  if (_overlay_widget && _overlay_enabled) {
+    _overlay_widget->draw(drwev);
+  }
 
   // Draw highlighted guide if one is under the mouse
   if (GUIDES_UNDER_MOUSE) {
@@ -409,6 +441,7 @@ anchor::guide_ptr_t LayoutGroup::findGuideBetween(anchor::layout_ptr_t layout_a,
 
   return found_guide;
 }
+//////////////////////////////////////
 //////////////////////////////////////
 void LayoutGroup::dumpLayoutHierarchy() {
   printf("\n");
@@ -623,6 +656,30 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
 Widget* LayoutGroup::doRouteUiEvent(event_constptr_t ev) {
   if(0)
     printf("LayoutGroup<%s>::doRouteUiEvent\n", _name.c_str());
+
+  ///////////////////////////
+  // Check for overlay toggle hotkey
+  ///////////////////////////
+  if (ev->_eventcode == ui::EventCode::KEY_DOWN) {
+    if (ev->miKeyCode == '~' || ev->miKeyCode == '`') {
+      if (_overlay_widget) {
+        _overlay_enabled = !_overlay_enabled;
+        SetDirty();
+        return this;  // Consume event
+      }
+    }
+  }
+
+  ///////////////////////////
+  // If overlay is enabled, route events to it first (modal behavior)
+  ///////////////////////////
+  if (_overlay_widget && _overlay_enabled) {
+    auto result = _overlay_widget->routeUiEvent(ev);
+    if (result) {
+      return result;  // Overlay handled the event
+    }
+  }
+
   ///////////////////////////
   GUIDES_UNDER_MOUSE = anchor::findGuidePairUnderMouse(_layout.get(), fvec2(ev->miX, ev->miY));
   if(GUIDES_UNDER_MOUSE){

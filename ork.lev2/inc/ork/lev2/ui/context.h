@@ -69,7 +69,6 @@ struct Context {
   Widget* _evdragtarget              = nullptr;
   const Widget* _mousefocuswidget    = nullptr;
   const Widget* _keyboardFocusWidget = nullptr;
-  widget_ptr_t _overlayWidget        = nullptr;
   std::unordered_map<Widget*,tick_lambda_t> _tickSubscribers;
   Event _prevevent;
   event_ptr_t _tempevent;
@@ -78,7 +77,6 @@ struct Context {
   double _prev_click_time = 0.0;
   double _prev_dbl_click_time = 0.0;
   std::unordered_map<int,bool> _downkeys;
-  bool _overlayHandledPrevious = false;
   bool _debug_event_routing = false;
 };
 

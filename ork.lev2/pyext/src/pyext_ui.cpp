@@ -38,6 +38,7 @@ void pyinit_ui_ged(py::module& module_ui);
 void pyinit_ui_layout(py::module& module_ui);
 void pyinit_ui_box(py::module& module_ui);
 void pyinit_ui_style(py::module& module_ui);
+void pyinit_ui_dynagrid(py::module& module_ui);
 
 void pyinit_ui(py::module& module_lev2) {
   auto uimodule   = module_lev2.def_submodule("ui", "ui operations");
@@ -106,14 +107,6 @@ void pyinit_ui(py::module& module_lev2) {
           .def("hasMouseFocus", [](ui::context_ptr_t uictx, uiwidget_ptr_t w) -> bool { return uictx->hasMouseFocus(w.get()); })
           .def("dumpWidgets", [](ui::context_ptr_t uictx, std::string label) { uictx->dumpWidgets(label); })
           .def("isKeyDown", [](ui::context_ptr_t uictx, int keycode) -> bool { return uictx->isKeyDown(keycode); })
-          .def_property(
-              "overlayWidget",                                //
-              [](ui::context_ptr_t uictx) -> uiwidget_ptr_t { //
-                return uictx->_overlayWidget;                 //
-              },                                              //
-              [](ui::context_ptr_t uictx, uiwidget_ptr_t w) { //
-                uictx->_overlayWidget = w;                    //
-              })
           .def_property(
               "debug_event_routing",
               [](ui::context_ptr_t uictx) -> bool { return uictx->_debug_event_routing; },
@@ -1785,6 +1778,7 @@ void pyinit_ui(py::module& module_lev2) {
   pyinit_ui_ged(uimodule);
   pyinit_ui_box(uimodule);
   pyinit_ui_style(uimodule);
+  pyinit_ui_dynagrid(uimodule);
 }
 
 } // namespace ork::lev2

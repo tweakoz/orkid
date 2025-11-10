@@ -222,7 +222,7 @@ struct LayoutGroup : public Group {
   void dumpLayoutHierarchy();
 
   HandlerResult OnUiEvent(event_constptr_t ev);
-  //////////////////////////////////////
+
   anchor::layout_ptr_t _layout;
 
   int _margin = 2;
@@ -234,10 +234,14 @@ struct LayoutGroup : public Group {
   Timer _animtimer;
   Widget* doRouteUiEvent(event_constptr_t Ev) override;
 
+  widget_ptr_t _overlay_widget = nullptr;  // Overlay widget (e.g., LoggerGroup)
+  bool _overlay_enabled = false;           // Whether overlay is currently visible
+
 private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;
   void _doOnResized() override;
   void DoLayout() override;
+  void _positionOverlay();  // Position overlay with 10% margin
   std::set<uiguide_ptr_t> _hguides;
   std::set<uiguide_ptr_t> _vguides;
 };
