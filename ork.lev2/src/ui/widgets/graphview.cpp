@@ -305,8 +305,6 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
 
   _grid.updateMatrices(tgt, _geometry._w, _geometry._h);
 
-  _grid.Render(tgt, _geometry._w, _geometry._h);
-
   mtxi->PushUIMatrix();
   {
     int ix1, iy1, ix2, iy2, ixc, iyc;
@@ -495,6 +493,39 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
         int h = this->height();
 
         if (numpoints) {
+          // Create ortho matrix using hrange/vrange (computed once, shared for axes and all series)
+          auto custom_ortho = mtxi->Ortho(hrange.x, hrange.y, vrange.y, vrange.x, 0.0f, 1.0f);
+
+          // Push matrix stack once for all rendering
+          mtxi->PushPMatrix(custom_ortho);
+          mtxi->PushVMatrix(fmtx4::Identity());
+          mtxi->PushMMatrix(fmtx4::Identity());
+
+          ///////////////////////////////////////////////////
+          // Draw X and Y axis lines in plot coordinates
+          ///////////////////////////////////////////////////
+          {
+            lev2::VtxWriter<vtx_t> vw;
+            vw.Lock(tgt, vbuf.get(), 4);
+
+            U32 axis_color = 0xff4d4d4d; // gray color
+
+            // X axis (horizontal line at Y=0)
+            vw.AddVertex(vtx_t(fvec3(hrange.x, 0.0f, 0), fvec4(), axis_color));
+            vw.AddVertex(vtx_t(fvec3(hrange.y, 0.0f, 0), fvec4(), axis_color));
+
+            // Y axis (vertical line at X=0)
+            vw.AddVertex(vtx_t(fvec3(0.0f, vrange.x, 0), fvec4(), axis_color));
+            vw.AddVertex(vtx_t(fvec3(0.0f, vrange.y, 0), fvec4(), axis_color));
+
+            vw.UnLock(tgt);
+
+            mtl->begin(tek, RCFD);
+            mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
+            mtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
+            gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::LINES);
+            mtl->end(RCFD);
+          }
           ///////////////////////////////////////////////////
           // Render series-based data
           ///////////////////////////////////////////////////
@@ -541,23 +572,19 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
                 }
                 vw.UnLock(tgt);
 
-                // Create custom ortho matrix for this series using vrange
-                auto custom_ortho = mtxi->Ortho(hrange.x, hrange.y, vrange.y, vrange.x, 0.0f, 1.0f);
-
-                // Draw series
-                mtxi->PushPMatrix(custom_ortho);
-                mtxi->PushVMatrix(fmtx4::Identity());
-                mtxi->PushMMatrix(fmtx4::Identity());
+                // Draw series (reusing matrix stack)
                 mtl->begin(tek, RCFD);
                 mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
                 mtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
                 gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::LINES);
                 mtl->end(RCFD);
-                mtxi->PopPMatrix();
-                mtxi->PopVMatrix();
-                mtxi->PopMMatrix();
               }
             }
+
+          // Pop matrix stack once at the end
+          mtxi->PopPMatrix();
+          mtxi->PopVMatrix();
+          mtxi->PopMMatrix();
           ///////////////////////////////////////////////////
         }
       }
