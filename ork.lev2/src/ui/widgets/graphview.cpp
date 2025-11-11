@@ -536,25 +536,18 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
             lev2::VtxWriter<vtx_t> vw;
             vw.Lock(tgt, vbuf.get(), display_count * 2);
 
-            float x_scale = (hrange.y - hrange.x) / float(display_count > 1 ? display_count - 1 : 1);
-            float y_scale = vrange.y - vrange.x;
-            if (y_scale < 0.001f)
-              y_scale = 0.001f;
-
             for (size_t i = 0; i < display_count; i++) {
               size_t sample_index = start_index + i;
-              float x             = hrange.x + float(i) * x_scale;
-              float y             = series->getSample(sample_index);
-
-              fvec3 point(x, y, 0);
+              float x = float(sample_index);  // Sample index IS the X coordinate in data space
+              float y = series->getSample(sample_index);
 
               if (i > 0) {
-                float prev_x = hrange.x + float(i - 1) * x_scale;
-                float prev_y = series->getSample(start_index + i - 1);
-                fvec3 prev_point(prev_x, prev_y, 0);
+                size_t prev_sample_index = start_index + i - 1;
+                float prev_x = float(prev_sample_index);
+                float prev_y = series->getSample(prev_sample_index);
 
-                vw.AddVertex(vtx_t(prev_point, fvec4(), series->_color));
-                vw.AddVertex(vtx_t(point, fvec4(), series->_color));
+                vw.AddVertex(vtx_t(fvec3(prev_x, prev_y, 0), fvec4(), series->_color));
+                vw.AddVertex(vtx_t(fvec3(x, y, 0), fvec4(), series->_color));
               }
             }
             vw.UnLock(tgt);
