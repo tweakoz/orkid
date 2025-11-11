@@ -538,7 +538,17 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
           }
           if (first_visible_series) {
             hrange = fvec2(-50, 50);  // Centered on origin - samples will be scaled to fit
-            vrange = fvec2(first_visible_series->_min_value, first_visible_series->_max_value);
+
+            // Vertical range depends on mode
+            if (_vscale_mode == VerticalScaleMode::AUTO) {
+              // AUTO mode: use series auto-calculated range
+              vrange = fvec2(first_visible_series->_min_value, first_visible_series->_max_value);
+            } else {
+              // MANUAL mode: use grid zoom/center
+              float vcenter = _grid._center.y;
+              float vextent = _grid._extent * _grid._aspect / _grid._zoomY;
+              vrange = fvec2(vcenter - vextent/2, vcenter + vextent/2);
+            }
           } else {
             hrange = fvec2(-50, 50);  // Centered on origin
             vrange = fvec2(0, 1);
@@ -601,8 +611,11 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
                 }
                 vw.UnLock(tgt);
 
+                // Create custom ortho matrix for this series using vrange
+                auto custom_ortho = mtxi->Ortho(hrange.x, hrange.y, vrange.y, vrange.x, 0.0f, 1.0f);
+
                 // Draw series
-                mtxi->PushPMatrix(_grid._mtxOrtho);
+                mtxi->PushPMatrix(custom_ortho);
                 mtxi->PushVMatrix(fmtx4::Identity());
                 mtxi->PushMMatrix(fmtx4::Identity());
                 mtl->begin(tek, RCFD);
