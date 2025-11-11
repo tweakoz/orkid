@@ -25,7 +25,7 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_vkctx = logger()->configureChannel("VKCTX", fvec3(1,1,.9),true);
+static logchannel_ptr_t logchan_vkctx = logger()->configureChannel("VKCTX", fvec3(1,1,.9),false);
 static logchannel_ptr_t logchan_vkcap = logger()->configureChannel("VKCAPTURE", fvec3(1,1,.9),false);
 
 void VkContext::describeX(class_t* clazz) {
@@ -603,7 +603,7 @@ void VkContext::_doBeginPrimaryCommandBuffer() {
 
   // Invoke cleanup callbacks (e.g., return pooled CBs to pool) before clearing
   // Safe now because vkBeginCommandBuffer will reset the VkCommandBuffer handle
-  printf( "BEGIN priCB<%p> impl<%p> vkhandle<%p> pending_cleanup=%zu\n",
+  if(0)printf( "BEGIN priCB<%p> impl<%p> vkhandle<%p> pending_cleanup=%zu\n",
     (void*)_defaultCommandBuffer.get(),
     (void*)_defaultCommandBufferImpl.get(),
     (void*)_cmdbufcurpri_gfx->_vkcmdbuf,
@@ -611,10 +611,9 @@ void VkContext::_doBeginPrimaryCommandBuffer() {
   for (auto& cb : _cmdbufcurpri_gfx->_secondary_cmdbuffers_pending_cleanup) {
     auto impl = cb->_impl.getShared<VkSecondaryCommandBufferImpl>();
 
-    printf( "  cleanup CB<%p> cleanupCB<%p>\n", (void*)cb.get(), (void*)impl->_onCleanupCallback.target<void>() );
+    if(0)printf( "  cleanup CB<%p> cleanupCB<%p>\n", (void*)cb.get(), (void*)impl->_onCleanupCallback.target<void>() );
 
     if (impl->_onCleanupCallback) {
-      OrkAssert(false);
       impl->_onCleanupCallback();
     }
   }
@@ -633,7 +632,7 @@ void VkContext::_doBeginPrimaryCommandBuffer() {
 
 void VkContext::_doEndPrimaryCommandBuffer() {
   auto CB = primary_cb();
-  printf( "END priCB<%p> impl<%p> vkhandle<%p>\n", (void*)_defaultCommandBuffer.get(), (void*)CB.get(), (void*)CB->_vkcmdbuf );
+  if(0)printf( "END priCB<%p> impl<%p> vkhandle<%p>\n", (void*)_defaultCommandBuffer.get(), (void*)CB.get(), (void*)CB->_vkcmdbuf );
   CB->_recorded = true;
   vkEndCommandBuffer(CB->_vkcmdbuf);
 }
@@ -851,12 +850,17 @@ void VkContext::_doEndFrame() {
     _cmdbufcurpri_gfx->_secondary_cmdbuffers_pending_cleanup.size());
 
   ////////////////////////
-  // Move secondary command buffers to pending cleanup
+  // Append secondary command buffers to pending cleanup
   // They will be destroyed when this primary CB is reallocated and reset
-  // (4 frames later due to pool size 4)
+  // (3 frames later due to pool size 3 in practice)
   ////////////////////////
 
-  _cmdbufcurpri_gfx->_secondary_cmdbuffers_pending_cleanup = std::move(_cmdbufcurpri_gfx->_secondary_cmdbuffers);
+  // APPEND to pending_cleanup, don't replace! Multiple frames may add to it.
+  _cmdbufcurpri_gfx->_secondary_cmdbuffers_pending_cleanup.insert(
+    _cmdbufcurpri_gfx->_secondary_cmdbuffers_pending_cleanup.end(),
+    std::make_move_iterator(_cmdbufcurpri_gfx->_secondary_cmdbuffers.begin()),
+    std::make_move_iterator(_cmdbufcurpri_gfx->_secondary_cmdbuffers.end())
+  );
   _cmdbufcurpri_gfx->_secondary_cmdbuffers.clear();
 
   _pri_cmdbuf_pool.deallocate(_defaultCommandBuffer);

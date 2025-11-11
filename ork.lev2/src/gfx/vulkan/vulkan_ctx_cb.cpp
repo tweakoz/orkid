@@ -114,7 +114,7 @@ void VkContext::_doEnqueueSecondaryCommandBuffer(secondary_commandbuffer_ptr_t c
   }
 
   // DEBUG: Log when secondary command buffer is executed
-  logchan_vkcb->log("DOENQSECCB: exec secCB<%p:%s> in priCB<%p> preenqCB<%d> cleanupCB<%d>",
+  if(0)logchan_vkcb->log("DOENQSECCB: exec secCB<%p:%s> in priCB<%p> preenqCB<%d> cleanupCB<%d>",
                     (void*)impl->_vkcmdbuf, 
                     cmdbuf->_debugName.c_str(),
                     (void*)pricb.get(),
