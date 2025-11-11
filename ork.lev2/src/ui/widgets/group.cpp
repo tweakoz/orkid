@@ -247,7 +247,6 @@ void LayoutGroup::DoDraw(drawevent_constptr_t drwev) {
   }
   drawChildren(drwev);
 
-  // Draw overlay on top (if enabled)
   if (_overlay_widget && _overlay_enabled) {
     _overlay_widget->draw(drwev);
   }

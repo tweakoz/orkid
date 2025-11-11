@@ -14,6 +14,7 @@
 #include <ork/lev2/ui/layoutgroup.inl>
 #include <ork/kernel/string/deco.inl>
 #include <sstream>
+#include <regex>
 
 namespace ork::ui {
 
@@ -36,6 +37,26 @@ loggergroup_ptr_t LoggerGroup::create(
 ) {
   auto group = std::make_shared<LoggerGroup>(name);
   group->_allowed_channels = allowed_channels;
+
+  // Compile regex patterns from channel names/patterns
+  for (const auto& pattern : allowed_channels) {
+    try {
+      group->_channel_patterns.push_back(std::regex(pattern));
+    } catch (const std::regex_error& e) {
+      // If pattern is invalid, treat it as a literal string
+      // Escape special regex characters
+      std::string escaped;
+      for (char c : pattern) {
+        if (c == '.' || c == '*' || c == '+' || c == '?' || c == '|' ||
+            c == '(' || c == ')' || c == '[' || c == ']' || c == '{' || c == '}' ||
+            c == '^' || c == '$' || c == '\\') {
+          escaped += '\\';
+        }
+        escaped += c;
+      }
+      group->_channel_patterns.push_back(std::regex(escaped));
+    }
+  }
 
   // Create internal decoupled layout
   group->_internal_layout = std::make_shared<LayoutGroup>("logger_internal_layout");
@@ -72,23 +93,11 @@ void LoggerGroup::unregisterFromBackend(loggergroup_ptr_t group, logger_backend_
 ///////////////////////////////////////////////////////////////////////////////
 
 void LoggerGroup::_doGpuInit(lev2::Context* pt) {
-  // Initialize UI for each allowed channel
-  for (const auto& channel_name : _allowed_channels) {
-    addChannel(channel_name, pt);
-  }
+  // Store context for dynamic channel creation
+  _gpu_context = pt;
 
-  // Create tab widget for channels if multiple channels
-  if (_allowed_channels.size() > 1) {
-    _tab_widget = std::make_shared<TabWidget>("logger_tabs", 0, 0, width(), height());
-    addChild(_tab_widget);
-    _tab_widget->gpuInit(pt);
-
-    for (auto& [name, view] : _channel_views) {
-      if (view._container) {
-        _tab_widget->addChild(view._container);
-      }
-    }
-  }
+  // Don't create channels for wildcard patterns here
+  // Channels will be created dynamically when messages arrive
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -97,6 +106,8 @@ void LoggerGroup::addChannel(const std::string& name, lev2::Context* pt) {
   if (_channel_views.find(name) != _channel_views.end()) {
     return; // Already exists
   }
+
+  printf("LoggerGroup<%s>::addChannel(%s)\n", _name.c_str(), name.c_str());
 
   ChannelView view;
 
@@ -137,6 +148,17 @@ void LoggerGroup::addChannel(const std::string& name, lev2::Context* pt) {
   _channel_views[name] = view;
 }
 
+void LoggerGroup::DoDraw(drawevent_constptr_t drwev) {
+  // Draw semi-transparent dark background
+  fvec4 bg_color(0.1f, 0.1f, 0.15f, 0.9f);  // Dark blue-grey with 90% opacity
+  Widget::_drawColoredBox(drwev, bg_color);
+
+  // Draw children
+  drawChildren(drwev);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void LoggerGroup::DoLayout() {
   Group::DoLayout();
 
@@ -174,7 +196,13 @@ void LoggerGroup::removeChannel(const std::string& name) {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool LoggerGroup::hasChannel(const std::string& name) const {
-  return _allowed_channels.find(name) != _allowed_channels.end();
+  // Check if any of the precompiled patterns match
+  for (const auto& pattern : _channel_patterns) {
+    if (std::regex_match(name, pattern)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -238,6 +266,13 @@ void LoggerGroup::processQueuedMessages() {
   }
 
   for (const auto& msg : local_queue) {
+    // Dynamically create channel view if it doesn't exist yet
+    if (_channel_views.find(msg.channel) == _channel_views.end() && _gpu_context) {
+      printf("LoggerGroup<%s>::processQueuedMessages() - creating new channel tab for <%s>\n",
+             _name.c_str(), msg.channel.c_str());
+      addChannel(msg.channel, _gpu_context);
+    }
+
     switch (msg.type) {
       case PendingMessage::LOG:
         _appendLogToUI(msg.channel, msg.message);

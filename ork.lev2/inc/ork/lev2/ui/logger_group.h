@@ -39,7 +39,7 @@ struct LoggerGroup : public Group {
   // Channel management
   void addChannel(const std::string& name, lev2::Context* pt);
   void removeChannel(const std::string& name);
-  bool hasChannel(const std::string& name) const;
+  bool hasChannel(const std::string& name) const;  // Uses regex pattern matching
 
   // Message handling (called from backend, any thread)
   void onLogMessage(const std::string& channel, const std::string& msg);
@@ -53,9 +53,14 @@ struct LoggerGroup : public Group {
 
 private:
   void _doGpuInit(lev2::Context* pt) override;
+  void DoDraw(ui::drawevent_constptr_t drwev) override;
 
   // Channel filtering
   std::set<std::string> _allowed_channels;
+  std::vector<std::regex> _channel_patterns;  // Precompiled regex patterns
+
+  // GPU context for dynamic channel creation
+  lev2::Context* _gpu_context = nullptr;
 
   // Internal layout (decoupled from parent)
   layoutgroup_ptr_t _internal_layout;
