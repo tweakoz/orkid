@@ -158,6 +158,12 @@ class GraphViewTest(object):
     self.time = 0.0
     self.time_speed = 0.05
 
+    # Phase accumulators for smooth frequency changes
+    self.sine_phase = 0.0
+    self.cosine_phase = 0.0
+    self.square_phase = 0.0
+    self.sawtooth_phase = 0.0
+
     ############################################
     # Signal handling
     ############################################
@@ -182,16 +188,22 @@ class GraphViewTest(object):
     self.square_freq_current += (self.square_freq_target - self.square_freq_current) * self.freq_smoothing
     self.sawtooth_freq_current += (self.sawtooth_freq_target - self.sawtooth_freq_current) * self.freq_smoothing
 
-    # Generate new samples for each waveform using smoothed frequency controls
-    self.sine_series.addSample(math.sin(self.time * self.sine_freq_current))
-    self.cosine_series.addSample(math.cos(self.time * self.cosine_freq_current))
+    # Increment phase accumulators by frequency (prevents phase jumps when frequency changes)
+    self.sine_phase += self.sine_freq_current * self.time_speed
+    self.cosine_phase += self.cosine_freq_current * self.time_speed
+    self.square_phase += self.square_freq_current * self.time_speed
+    self.sawtooth_phase += self.sawtooth_freq_current * self.time_speed
+
+    # Generate new samples for each waveform using phase accumulators
+    self.sine_series.addSample(math.sin(self.sine_phase))
+    self.cosine_series.addSample(math.cos(self.cosine_phase))
 
     # Square wave: alternates between -1 and 1
-    square_val = 1.0 if math.sin(self.time * self.square_freq_current) >= 0 else -1.0
+    square_val = 1.0 if math.sin(self.square_phase) >= 0 else -1.0
     self.square_series.addSample(square_val)
 
     # Sawtooth wave: linear ramp from -1 to 1
-    sawtooth_val = ((self.time * self.sawtooth_freq_current) % (2 * math.pi)) / math.pi - 1.0
+    sawtooth_val = (self.sawtooth_phase % (2 * math.pi)) / math.pi - 1.0
     self.sawtooth_series.addSample(sawtooth_val)
 
     self.time += self.time_speed

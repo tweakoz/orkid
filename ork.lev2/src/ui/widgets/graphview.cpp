@@ -117,6 +117,17 @@ GraphView::GraphView()
 
   _grid._baseColor   = fvec3(0.2, 0, 0.2);
   _grid._hiliteColor = fvec3(0.3, 0, 0.3);
+
+  // Default zoom all the way out
+  _grid._zoomX = 0.1f;
+  _grid._zoomY = 0.1f;
+
+  // Position horizontal pan so origin is on left side of viewport
+  // hrange = [center - extent/zoom/2, center + extent/zoom/2]
+  // To have left edge at 0: center = extent/zoom/2
+  float hextent = _grid._extent / _grid._zoomX;
+  _grid._center.x = hextent / 2.0f;
+  _grid._center.y = 0.0f;
 }
 /////////////////////////////////////////////////////////////////////////
 void GraphView::_doGpuInit(lev2::Context* pTARG) {
