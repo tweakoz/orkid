@@ -234,8 +234,8 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
       int key = ev->miKeyCode;
       printf("GraphView<%s> keydown<%c>\n", _name.c_str(), key);
 
-      // 'v' key toggles between AUTO and MANUAL vertical scale modes
-      if (key == 'v' || key == 'V') {
+      // 'm' key toggles between AUTO and MANUAL vertical scale modes
+      if (key == 'm' || key == 'M') {
         if (_vscale_mode == VerticalScaleMode::AUTO) {
           _vscale_mode = VerticalScaleMode::MANUAL;
           printf("  Vertical scale mode: AUTO -> MANUAL\n");
