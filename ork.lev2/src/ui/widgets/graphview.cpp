@@ -150,9 +150,11 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
       }
 
       if (total_series) {
-        int maxy = total_series * 16 + _kbasechanlaby + 16;
-        if (ilocx > (width() - 64) and ilocy < maxy) {
-          int iseries_index = (ilocy - 16) >> 4;
+        int row_height = 16 + _label_spacing;
+        int maxy = total_series * row_height + _kbasechanlaby + 16;
+        // Check if click is in the label region (right side)
+        if (ilocx > (width() - 150) and ilocy < maxy) {
+          int iseries_index = (ilocy - 16) / row_height;
           printf("ilocy<%d> iseries_index<%d> total_series<%d>\n", ilocy, iseries_index, total_series);
 
           // Find which series was clicked
@@ -331,6 +333,21 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
       auto tek = mtl->technique("vtxcolor");
       auto RCFD = std::make_shared<lev2::RenderContextFrameData>(tgt);
       auto par_mvp  = mtl->param("MatMVP");
+
+      // Calculate maximum label width for alignment
+      int max_label_width = 0;
+      for (auto channel : _channelmap) {
+        if (!channel->_series.empty()) {
+          for (auto& series : channel->_series) {
+            int sw = lev2::FontMan::stringWidth(series->_name.length());
+            max_label_width = std::max(max_label_width, sw);
+          }
+        } else {
+          int sw = lev2::FontMan::stringWidth(channel->_name.length());
+          max_label_width = std::max(max_label_width, sw);
+        }
+      }
+
       int ichanlaby = _kbasechanlaby;
       for (auto channel : _channelmap) {
         const std::string& name = channel->_name;
@@ -358,7 +375,7 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
             lev2::FontMan::beginTextBlock(tgt, 128);
             lev2::FontMan::DrawText(
                 tgt,
-                ix2 - (sw + 16),
+                ix2 - (max_label_width + 16),
                 ichanlaby,
                 series->_name.c_str());
             lev2::FontMan::endTextBlock(tgt);
@@ -376,7 +393,7 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
                 lev2::FontMan::beginTextBlock(tgt, 128);
                 lev2::FontMan::DrawText(
                     tgt,
-                    ix2 - (sw + 16) - (sw2 + 16),
+                    ix2 - (max_label_width + 16) - (sw2 + 16),
                     ichanlaby,
                     valstr.c_str());
                 lev2::FontMan::endTextBlock(tgt);
@@ -385,8 +402,8 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
               ///////////////////////////////////////////////////
               // draw toggle box
               ///////////////////////////////////////////////////
-              int x1 = ix2 - (sw + 16);
-              int x2 = x1 + sw;
+              int x1 = ix2 - (max_label_width + 28);  // ~12 pixels left margin (1 char width)
+              int x2 = ix2 - 16;  // 16 pixels right margin
               int y1 = ichanlaby;
               int y2 = ichanlaby + 16;
 
@@ -411,7 +428,7 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
               mtxi->PopUIMatrix();
             }
 
-            ichanlaby += 16;
+            ichanlaby += 16 + _label_spacing;
           }
         } else {
           // Lambda-based: draw one button for the channel
@@ -420,7 +437,7 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
           lev2::FontMan::beginTextBlock(tgt, 128);
           lev2::FontMan::DrawText(
               tgt,
-              ix2 - (sw + 16),
+              ix2 - (max_label_width + 16),
               ichanlaby,
               channel->_name.c_str());
           lev2::FontMan::endTextBlock(tgt);
@@ -437,7 +454,7 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
               lev2::FontMan::beginTextBlock(tgt, 128);
               lev2::FontMan::DrawText(
                   tgt,
-                  ix2 - (sw + 16) - (sw2 + 16),
+                  ix2 - (max_label_width + 16) - (sw2 + 16),
                   ichanlaby,
                   valstr.c_str());
               lev2::FontMan::endTextBlock(tgt);
@@ -446,8 +463,8 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
             ///////////////////////////////////////////////////
             // draw toggle box
             ///////////////////////////////////////////////////
-            int x1 = ix2 - (sw + 16);
-            int x2 = x1 + sw;
+            int x1 = ix2 - (max_label_width + 28);  // ~12 pixels left margin (1 char width)
+            int x2 = ix2 - 16;  // 16 pixels right margin
             int y1 = ichanlaby;
             int y2 = ichanlaby + 16;
 
@@ -472,7 +489,7 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
             mtxi->PopUIMatrix();
           }
 
-          ichanlaby += 16;
+          ichanlaby += 16 + _label_spacing;
         }
 
         ///////////////////////////////////////////////////

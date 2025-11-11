@@ -95,6 +95,8 @@ struct GraphView : public ui::Surface {
   bool _lockY;
   bool _lockYZOOM;
   bool _dragging;
+
+  int _label_spacing = 2;  // Margin between series label boxes
 };
 using graphview_ptr_t = std::shared_ptr<GraphView>;
 
