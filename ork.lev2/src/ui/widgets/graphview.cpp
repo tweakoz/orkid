@@ -378,15 +378,12 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
       for (auto channel : _channelmap) {
         const std::string& name = channel->_name;
 
-        // Check if using series-based or lambda-based system
+        // Check if using series-based system
         bool has_series = !channel->_series.empty();
-        bool has_lambdas = (channel->_getCount != nullptr);
 
         size_t numpoints = 0;
         if (has_series && !channel->_series.empty()) {
           numpoints = channel->_series[0]->sampleCount();
-        } else if (has_lambdas) {
-          numpoints = channel->_getCount();
         }
 
         ///////////////////////////////////////////////////
@@ -520,12 +517,7 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
 
         ///////////////////////////////////////////////////
 
-        // For lambda-based channels, check channel visibility
-        if (has_lambdas && not channel->_visible) {
-          continue;
-        }
-
-        // Calculate range (series-based or lambda-based)
+        // Calculate range (series-based only)
         fvec2 hrange, vrange;
         if (has_series && !channel->_series.empty()) {
           // Use series auto-range - find first visible series
@@ -553,10 +545,8 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
             hrange = fvec2(-50, 50);  // Centered on origin
             vrange = fvec2(0, 1);
           }
-        } else if (has_lambdas && channel->_getHorizontalRange && channel->_getVerticalRange) {
-          hrange = channel->_getHorizontalRange();
-          vrange = channel->_getVerticalRange();
         } else {
+          // No valid series data
           hrange = fvec2(0, 100);
           vrange = fvec2(0, 1);
         }
@@ -627,34 +617,6 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
                 mtxi->PopVMatrix();
                 mtxi->PopMMatrix();
               }
-            }
-            ///////////////////////////////////////////////////
-            // Render lambda-based data (backward compat)
-            ///////////////////////////////////////////////////
-            else if (has_lambdas) {
-              lev2::VtxWriter<vtx_t> vw;
-              vw.Lock(tgt, vbuf.get(), numpoints * 2);
-              auto prev_point = channel->_getPoint(0);
-              for (size_t i = 0; i < numpoints; i++) {
-                auto next_point = channel->_getPoint(i);
-                vw.AddVertex(vtx_t(fvec3(prev_point), fvec4(), channel->_color));
-                vw.AddVertex(vtx_t(fvec3(next_point), fvec4(), channel->_color));
-
-                prev_point = next_point;
-              }
-              vw.UnLock(tgt);
-
-              mtxi->PushPMatrix(_grid._mtxOrtho);
-              mtxi->PushVMatrix(fmtx4::Identity());
-              mtxi->PushMMatrix(fmtx4::Identity());
-              mtl->begin(tek, RCFD);
-              mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
-              mtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
-              gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::LINES);
-              mtl->end(RCFD);
-              mtxi->PopPMatrix();
-              mtxi->PopVMatrix();
-              mtxi->PopMMatrix();
             }
           ///////////////////////////////////////////////////
         }
