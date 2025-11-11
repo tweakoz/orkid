@@ -77,7 +77,8 @@ void GraphSeries::_updateRange() {
 
   // Add 10% padding to range
   float range = _max_value - _min_value;
-  if (range < 0.001f) range = 0.001f;  // Avoid div by zero
+  if (range < 0.001f)
+    range = 0.001f; // Avoid div by zero
   _min_value -= range * 0.1f;
   _max_value += range * 0.1f;
 }
@@ -92,10 +93,8 @@ graphseries_ptr_t GraphChannel::addSeries(const std::string& name, fvec3 color) 
 /////////////////////////////////////////////////////////////////////////
 void GraphChannel::removeSeries(const std::string& name) {
   _series.erase(
-    std::remove_if(_series.begin(), _series.end(),
-      [&name](const graphseries_ptr_t& s) { return s->_name == name; }),
-    _series.end()
-  );
+      std::remove_if(_series.begin(), _series.end(), [&name](const graphseries_ptr_t& s) { return s->_name == name; }),
+      _series.end());
 }
 /////////////////////////////////////////////////////////////////////////
 graphseries_ptr_t GraphChannel::getSeries(const std::string& name) {
@@ -137,7 +136,7 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
   switch (filtev._eventcode) {
     case ui::EventCode::PUSH:
     case ui::EventCode::DOUBLECLICK: {
-      _dragging       = false;
+      _dragging          = false;
       bool handled_click = false;
 
       // Count total number of series across all channels
@@ -152,7 +151,7 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
 
       if (total_series) {
         int row_height = 16 + _label_spacing;
-        int maxy = total_series * row_height + _kbasechanlaby + 16;
+        int maxy       = total_series * row_height + _kbasechanlaby + 16;
         // Check if click is in the label region (right side)
         if (ilocx > (width() - 150) and ilocy < maxy) {
           int iseries_index = (ilocy - 16) / row_height;
@@ -181,7 +180,7 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
               current_index++;
             }
           }
-          done:;
+        done:;
         }
       }
 
@@ -299,355 +298,330 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
   auto fbi    = tgt->FBI();
   auto gbi    = tgt->GBI();
   auto mtxi   = tgt->MTXI();
-  auto primi = tgt->PRI();
+  auto primi  = tgt->PRI();
   auto defmtl = lev2::defaultUIMaterial();
   auto vbuf   = get_vertexbuffer(tgt);
 
   _grid.updateMatrices(tgt, _geometry._w, _geometry._h);
 
-  mtxi->PushUIMatrix();
+  int ix1, iy1, ix2, iy2, ixc, iyc;
+  LocalToRoot(0, 0, ix1, iy1);
+  ix2 = ix1 + _geometry._w;
+  iy2 = iy1 + _geometry._h;
+  ixc = ix1 + (_geometry._w >> 1);
+  iyc = iy1 + (_geometry._h >> 1);
+
+  if (0)
+    printf(
+        "drawbox<%s> xy1<%d,%d> xy2<%d,%d>\n", //
+        _name.c_str(),
+        ix1,
+        iy1,
+        ix2,
+        iy2);
+
+  fvec4 color(0.2, 0, 0.2, 1);
+
+  if (not hasMouseFocus())
+    color *= 0.9f;
+
+  ork::lev2::FontMan::PushFont("i14");
   {
-    int ix1, iy1, ix2, iy2, ixc, iyc;
-    LocalToRoot(0, 0, ix1, iy1);
-    ix2 = ix1 + _geometry._w;
-    iy2 = iy1 + _geometry._h;
-    ixc = ix1 + (_geometry._w >> 1);
-    iyc = iy1 + (_geometry._h >> 1);
+    ///////////////////////////////
+    // render channels
+    ///////////////////////////////
+    auto mtl     = hud_material(tgt);
+    auto tek     = mtl->technique("vtxcolor");
+    auto RCFD    = std::make_shared<lev2::RenderContextFrameData>(tgt);
+    auto par_mvp = mtl->param("MatMVP");
 
-    if (0)
-      printf(
-          "drawbox<%s> xy1<%d,%d> xy2<%d,%d>\n", //
-          _name.c_str(),
-          ix1,
-          iy1,
-          ix2,
-          iy2);
-
-    fvec4 color(0.2, 0, 0.2, 1);
-
-    if (not hasMouseFocus())
-      color *= 0.9f;
-
-    if (0) { // alphabg
-      defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::ALPHA);
-      defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
-      ///////////////////////////////
-      tgt->PushModColor(color);
-      defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
-      primi->RenderQuadAtZ(
-          defmtl.get(),
-          ix1,  // x0
-          ix2,  // x1
-          iy1,  // y0
-          iy2,  // y1
-          0.0f, // z
-          0.0f,
-          1.0f, // u0, u1
-          0.0f,
-          1.0f // v0, v1
-      );
-      tgt->PopModColor();
-    }
-    ork::lev2::FontMan::PushFont("i14");
-    {
-      ///////////////////////////////
-      // render channels
-      ///////////////////////////////
-      auto mtl = hud_material(tgt);
-      auto tek = mtl->technique("vtxcolor");
-      auto RCFD = std::make_shared<lev2::RenderContextFrameData>(tgt);
-      auto par_mvp  = mtl->param("MatMVP");
-
-      // Calculate maximum label width for alignment
-      int max_label_width = 0;
-      for (auto channel : _channelmap) {
-        if (!channel->_series.empty()) {
-          for (auto& series : channel->_series) {
-            int sw = lev2::FontMan::stringWidth(series->_name.length());
-            max_label_width = std::max(max_label_width, sw);
-          }
-        } else {
-          int sw = lev2::FontMan::stringWidth(channel->_name.length());
+    // Calculate maximum label width for alignment
+    int max_label_width = 0;
+    for (auto channel : _channelmap) {
+      if (!channel->_series.empty()) {
+        for (auto& series : channel->_series) {
+          int sw          = lev2::FontMan::stringWidth(series->_name.length());
           max_label_width = std::max(max_label_width, sw);
         }
+      } else {
+        int sw          = lev2::FontMan::stringWidth(channel->_name.length());
+        max_label_width = std::max(max_label_width, sw);
+      }
+    }
+
+    int ichanlaby = _kbasechanlaby;
+    for (auto channel : _channelmap) {
+      const std::string& name = channel->_name;
+
+      // Check if using series-based system
+      bool has_series = !channel->_series.empty();
+
+      size_t numpoints = 0;
+      if (has_series && !channel->_series.empty()) {
+        numpoints = channel->_series[0]->sampleCount();
       }
 
-      int ichanlaby = _kbasechanlaby;
-      for (auto channel : _channelmap) {
-        const std::string& name = channel->_name;
+      ///////////////////////////////////////////////////
+      // draw series labels/toggleboxes (one per series)
+      ///////////////////////////////////////////////////
 
-        // Check if using series-based system
-        bool has_series = !channel->_series.empty();
+      if (has_series) {
+        // Draw a label/button for each series
+        for (auto& series : channel->_series) {
+          int sw             = lev2::FontMan::stringWidth(series->_name.length());
+          tgt->RefModColor() = series->_color;
+          mtxi->PushUIMatrix(width(), height());
+          lev2::FontMan::beginTextBlock(tgt, 128);
+          lev2::FontMan::DrawText(tgt, ix2 - (max_label_width + 16), ichanlaby, series->_name.c_str());
+          lev2::FontMan::endTextBlock(tgt);
+          mtxi->PopUIMatrix();
 
-        size_t numpoints = 0;
-        if (has_series && !channel->_series.empty()) {
-          numpoints = channel->_series[0]->sampleCount();
-        }
-
-        ///////////////////////////////////////////////////
-        // draw series labels/toggleboxes (one per series)
-        ///////////////////////////////////////////////////
-
-        if (has_series) {
-          // Draw a label/button for each series
-          for (auto& series : channel->_series) {
-            int sw = lev2::FontMan::stringWidth(series->_name.length());
-            tgt->RefModColor() = series->_color;
-            lev2::FontMan::beginTextBlock(tgt, 128);
-            lev2::FontMan::DrawText(
-                tgt,
-                ix2 - (max_label_width + 16),
-                ichanlaby,
-                series->_name.c_str());
-            lev2::FontMan::endTextBlock(tgt);
-
-            if (series->_visible) {
-              ///////////////////////////////////////////////////
-              // draw current value
-              ///////////////////////////////////////////////////
-              size_t series_count = series->sampleCount();
-              if (series_count > 0) {
-                float value = series->getSample(series_count - 1);
-                auto valstr = FormatString("%0.5g", value);
-                int sw2 = lev2::FontMan::stringWidth(valstr.length());
-                tgt->RefModColor() = series->_color;
-                lev2::FontMan::beginTextBlock(tgt, 128);
-                lev2::FontMan::DrawText(
-                    tgt,
-                    ix2 - (max_label_width + 16) - (sw2 + 16),
-                    ichanlaby,
-                    valstr.c_str());
-                lev2::FontMan::endTextBlock(tgt);
-              }
-
-              ///////////////////////////////////////////////////
-              // draw toggle box
-              ///////////////////////////////////////////////////
-              int x1 = ix2 - (max_label_width + 28);  // ~12 pixels left margin (1 char width)
-              int x2 = ix2 - 16;  // 16 pixels right margin
-              int y1 = ichanlaby;
-              int y2 = ichanlaby + 16;
-
-              lev2::VtxWriter<vtx_t> vw;
-              vw.Lock(tgt, vbuf.get(), 8);
-              vw.AddVertex(vtx_t(fvec3(x1, y1, 0), fvec4(), series->_color));
-              vw.AddVertex(vtx_t(fvec3(x2, y1, 0), fvec4(), series->_color));
-              vw.AddVertex(vtx_t(fvec3(x2, y1, 0), fvec4(), series->_color));
-              vw.AddVertex(vtx_t(fvec3(x2, y2, 0), fvec4(), series->_color));
-              vw.AddVertex(vtx_t(fvec3(x2, y2, 0), fvec4(), series->_color));
-              vw.AddVertex(vtx_t(fvec3(x1, y2, 0), fvec4(), series->_color));
-              vw.AddVertex(vtx_t(fvec3(x1, y2, 0), fvec4(), series->_color));
-              vw.AddVertex(vtx_t(fvec3(x1, y1, 0), fvec4(), series->_color));
-              vw.UnLock(tgt);
-
+          if (series->_visible) {
+            ///////////////////////////////////////////////////
+            // draw current value
+            ///////////////////////////////////////////////////
+            size_t series_count = series->sampleCount();
+            if (series_count > 0) {
+              float value        = series->getSample(series_count - 1);
+              auto valstr        = FormatString("%0.5g", value);
+              int sw2            = lev2::FontMan::stringWidth(valstr.length());
+              tgt->RefModColor() = series->_color;
               mtxi->PushUIMatrix(width(), height());
-              mtl->begin(tek, RCFD);
-              mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
-              mtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
-              gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::LINES);
-              mtl->end(RCFD);
+              lev2::FontMan::beginTextBlock(tgt, 128);
+              lev2::FontMan::DrawText(tgt, ix2 - (max_label_width + 16) - (sw2 + 16), ichanlaby, valstr.c_str());
+              lev2::FontMan::endTextBlock(tgt);
               mtxi->PopUIMatrix();
             }
 
-            ichanlaby += 16 + _label_spacing;
-          }
-        }
+            ///////////////////////////////////////////////////
+            // draw toggle box
+            ///////////////////////////////////////////////////
+            int x1 = ix2 - (max_label_width + 28); // ~12 pixels left margin (1 char width)
+            int x2 = ix2 - 16;                     // 16 pixels right margin
+            int y1 = ichanlaby;
+            int y2 = ichanlaby + 16;
 
-        ///////////////////////////////////////////////////
-
-        // Calculate range (series-based only)
-        fvec2 hrange, vrange;
-        if (has_series && !channel->_series.empty()) {
-          // Use series auto-range - find first visible series
-          graphseries_ptr_t first_visible_series = nullptr;
-          for (auto& series : channel->_series) {
-            if (series->_visible && series->sampleCount() > 0) {
-              first_visible_series = series;
-              break;
-            }
-          }
-          if (first_visible_series) {
-            // Horizontal range: use grid zoom/center (same pattern as vertical)
-            float hcenter = _grid._center.x;
-            float hextent = _grid._extent / _grid._zoomX;
-            hrange = fvec2(hcenter - hextent/2, hcenter + hextent/2);
-
-            // Vertical range depends on mode
-            if (_vscale_mode == VerticalScaleMode::AUTO) {
-              // AUTO mode: use series auto-calculated range
-              vrange = fvec2(first_visible_series->_min_value, first_visible_series->_max_value);
-            } else {
-              // MANUAL mode: use grid zoom/center
-              float vcenter = _grid._center.y;
-              float vextent = _grid._extent * _grid._aspect / _grid._zoomY;
-              vrange = fvec2(vcenter - vextent/2, vcenter + vextent/2);
-            }
-          } else {
-            hrange = fvec2(-50, 50);  // Centered on origin
-            vrange = fvec2(0, 1);
-          }
-        } else {
-          // No valid series data
-          hrange = fvec2(0, 100);
-          vrange = fvec2(0, 1);
-        }
-
-        int w = this->width();
-        int h = this->height();
-
-        if (numpoints) {
-          // Create ortho matrix using hrange/vrange (computed once, shared for axes and all series)
-          auto custom_ortho = mtxi->Ortho(hrange.x, hrange.y, vrange.y, vrange.x, 0.0f, 1.0f);
-
-          // Push matrix stack once for all rendering
-          mtxi->PushPMatrix(custom_ortho);
-          mtxi->PushVMatrix(fmtx4::Identity());
-          mtxi->PushMMatrix(fmtx4::Identity());
-
-          ///////////////////////////////////////////////////
-          // Draw X and Y axis lines in plot coordinates
-          ///////////////////////////////////////////////////
-          {
             lev2::VtxWriter<vtx_t> vw;
-            vw.Lock(tgt, vbuf.get(), 4);
-
-            U32 axis_color = 0xff4d4d4d; // gray color
-
-            // X axis (horizontal line at Y=0)
-            vw.AddVertex(vtx_t(fvec3(hrange.x, 0.0f, 0), fvec4(), axis_color));
-            vw.AddVertex(vtx_t(fvec3(hrange.y, 0.0f, 0), fvec4(), axis_color));
-
-            // Y axis (vertical line at X=0)
-            vw.AddVertex(vtx_t(fvec3(0.0f, vrange.x, 0), fvec4(), axis_color));
-            vw.AddVertex(vtx_t(fvec3(0.0f, vrange.y, 0), fvec4(), axis_color));
-
+            vw.Lock(tgt, vbuf.get(), 8);
+            vw.AddVertex(vtx_t(fvec3(x1, y1, 0), fvec4(), series->_color));
+            vw.AddVertex(vtx_t(fvec3(x2, y1, 0), fvec4(), series->_color));
+            vw.AddVertex(vtx_t(fvec3(x2, y1, 0), fvec4(), series->_color));
+            vw.AddVertex(vtx_t(fvec3(x2, y2, 0), fvec4(), series->_color));
+            vw.AddVertex(vtx_t(fvec3(x2, y2, 0), fvec4(), series->_color));
+            vw.AddVertex(vtx_t(fvec3(x1, y2, 0), fvec4(), series->_color));
+            vw.AddVertex(vtx_t(fvec3(x1, y2, 0), fvec4(), series->_color));
+            vw.AddVertex(vtx_t(fvec3(x1, y1, 0), fvec4(), series->_color));
             vw.UnLock(tgt);
 
+            mtxi->PushUIMatrix(width(), height());
+            mtl->begin(tek, RCFD);
+            mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
+            mtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
+            gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::LINES);
+            mtl->end(RCFD);
+            mtxi->PopUIMatrix();
+          }
+
+          ichanlaby += 16 + _label_spacing;
+        }
+      }
+
+      ///////////////////////////////////////////////////
+
+      // Calculate range (series-based only)
+      fvec2 hrange, vrange;
+      if (has_series && !channel->_series.empty()) {
+        // Use series auto-range - find first visible series
+        graphseries_ptr_t first_visible_series = nullptr;
+        for (auto& series : channel->_series) {
+          if (series->_visible && series->sampleCount() > 0) {
+            first_visible_series = series;
+            break;
+          }
+        }
+        if (first_visible_series) {
+          // Horizontal range: use grid zoom/center (same pattern as vertical)
+          float hcenter = _grid._center.x;
+          float hextent = _grid._extent / _grid._zoomX;
+          hrange        = fvec2(hcenter - hextent / 2, hcenter + hextent / 2);
+
+          // Vertical range depends on mode
+          if (_vscale_mode == VerticalScaleMode::AUTO) {
+            // AUTO mode: use series auto-calculated range
+            vrange = fvec2(first_visible_series->_min_value, first_visible_series->_max_value);
+          } else {
+            // MANUAL mode: use grid zoom/center
+            float vcenter = _grid._center.y;
+            float vextent = _grid._extent * _grid._aspect / _grid._zoomY;
+            vrange        = fvec2(vcenter - vextent / 2, vcenter + vextent / 2);
+          }
+        } else {
+          hrange = fvec2(-50, 50); // Centered on origin
+          vrange = fvec2(0, 1);
+        }
+      } else {
+        // No valid series data
+        hrange = fvec2(0, 100);
+        vrange = fvec2(0, 1);
+      }
+
+      int w = this->width();
+      int h = this->height();
+
+      if (numpoints) {
+        // Create ortho matrix using hrange/vrange (computed once, shared for axes and all series)
+        auto custom_ortho = mtxi->Ortho(hrange.x, hrange.y, vrange.y, vrange.x, 0.0f, 1.0f);
+
+        // Push matrix stack once for all rendering
+        mtxi->PushPMatrix(custom_ortho);
+        mtxi->PushVMatrix(fmtx4::Identity());
+        mtxi->PushMMatrix(fmtx4::Identity());
+
+        ///////////////////////////////////////////////////
+        // Draw X and Y axis lines in plot coordinates
+        ///////////////////////////////////////////////////
+        {
+          lev2::VtxWriter<vtx_t> vw;
+          vw.Lock(tgt, vbuf.get(), 4);
+
+          U32 axis_color = 0xff4d4d4d; // gray color
+
+          // X axis (horizontal line at Y=0)
+          vw.AddVertex(vtx_t(fvec3(hrange.x, 0.0f, 0), fvec4(), axis_color));
+          vw.AddVertex(vtx_t(fvec3(hrange.y, 0.0f, 0), fvec4(), axis_color));
+
+          // Y axis (vertical line at X=0)
+          vw.AddVertex(vtx_t(fvec3(0.0f, vrange.x, 0), fvec4(), axis_color));
+          vw.AddVertex(vtx_t(fvec3(0.0f, vrange.y, 0), fvec4(), axis_color));
+
+          vw.UnLock(tgt);
+
+          mtl->begin(tek, RCFD);
+          mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
+          mtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
+          gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::LINES);
+          mtl->end(RCFD);
+        }
+        ///////////////////////////////////////////////////
+        // Render series-based data
+        ///////////////////////////////////////////////////
+        if (has_series) {
+          for (auto& series : channel->_series) {
+            if (!series->_visible)
+              continue;
+
+            size_t series_count = series->sampleCount();
+            if (series_count == 0)
+              continue;
+
+            // Calculate moving window - which samples to display
+            size_t display_count = series_count;
+            size_t start_index   = 0;
+
+            if (series->_window_size > 0 && series->_window_size < series_count) {
+              display_count = series->_window_size;
+              start_index   = series_count - display_count; // Show most recent N samples
+            }
+
+            lev2::VtxWriter<vtx_t> vw;
+            vw.Lock(tgt, vbuf.get(), display_count * 2);
+
+            float x_scale = (hrange.y - hrange.x) / float(display_count > 1 ? display_count - 1 : 1);
+            float y_scale = vrange.y - vrange.x;
+            if (y_scale < 0.001f)
+              y_scale = 0.001f;
+
+            for (size_t i = 0; i < display_count; i++) {
+              size_t sample_index = start_index + i;
+              float x             = hrange.x + float(i) * x_scale;
+              float y             = series->getSample(sample_index);
+
+              fvec3 point(x, y, 0);
+
+              if (i > 0) {
+                float prev_x = hrange.x + float(i - 1) * x_scale;
+                float prev_y = series->getSample(start_index + i - 1);
+                fvec3 prev_point(prev_x, prev_y, 0);
+
+                vw.AddVertex(vtx_t(prev_point, fvec4(), series->_color));
+                vw.AddVertex(vtx_t(point, fvec4(), series->_color));
+              }
+            }
+            vw.UnLock(tgt);
+
+            // Draw series (reusing matrix stack)
             mtl->begin(tek, RCFD);
             mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
             mtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
             gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::LINES);
             mtl->end(RCFD);
           }
-          ///////////////////////////////////////////////////
-          // Render series-based data
-          ///////////////////////////////////////////////////
-          if (has_series) {
-              for (auto& series : channel->_series) {
-                if (!series->_visible)
-                  continue;
-
-                size_t series_count = series->sampleCount();
-                if (series_count == 0)
-                  continue;
-
-                // Calculate moving window - which samples to display
-                size_t display_count = series_count;
-                size_t start_index = 0;
-
-                if (series->_window_size > 0 && series->_window_size < series_count) {
-                  display_count = series->_window_size;
-                  start_index = series_count - display_count;  // Show most recent N samples
-                }
-
-                lev2::VtxWriter<vtx_t> vw;
-                vw.Lock(tgt, vbuf.get(), display_count * 2);
-
-                float x_scale = (hrange.y - hrange.x) / float(display_count > 1 ? display_count - 1 : 1);
-                float y_scale = vrange.y - vrange.x;
-                if (y_scale < 0.001f) y_scale = 0.001f;
-
-                for (size_t i = 0; i < display_count; i++) {
-                  size_t sample_index = start_index + i;
-                  float x = hrange.x + float(i) * x_scale;
-                  float y = series->getSample(sample_index);
-
-                  fvec3 point(x, y, 0);
-
-                  if (i > 0) {
-                    float prev_x = hrange.x + float(i - 1) * x_scale;
-                    float prev_y = series->getSample(start_index + i - 1);
-                    fvec3 prev_point(prev_x, prev_y, 0);
-
-                    vw.AddVertex(vtx_t(prev_point, fvec4(), series->_color));
-                    vw.AddVertex(vtx_t(point, fvec4(), series->_color));
-                  }
-                }
-                vw.UnLock(tgt);
-
-                // Draw series (reusing matrix stack)
-                mtl->begin(tek, RCFD);
-                mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
-                mtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
-                gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::LINES);
-                mtl->end(RCFD);
-              }
-            }
-
-          // Pop matrix stack once at the end
-          mtxi->PopPMatrix();
-          mtxi->PopVMatrix();
-          mtxi->PopMMatrix();
-          ///////////////////////////////////////////////////
         }
+
+        // Pop matrix stack once at the end
+        mtxi->PopPMatrix();
+        mtxi->PopVMatrix();
+        mtxi->PopMMatrix();
+        ///////////////////////////////////////////////////
       }
-      ///////////////////////////////
-      // draw misc labels
-      ///////////////////////////////
-      tgt->RefModColor() = fvec3(1, 1, 1);
-      lev2::FontMan::beginTextBlock(tgt, 48);
-      int iy = 16;
-      lev2::FontMan::DrawText(
-          tgt, //
-          16,
-          iy += 16,
-          "pan: left-drag");
-      lev2::FontMan::DrawText(
-          tgt, //
-          16,
-          iy += 16,
-          "zoom: mouse-wheel");
-      lev2::FontMan::endTextBlock(tgt);
-      ///////////////////////////////
-      tgt->RefModColor() = fvec3(0, 1, 0);
-      lev2::FontMan::beginTextBlock(tgt, 128);
-      lev2::FontMan::DrawText(
-          tgt, //
-          16,
-          iy += 16,
-          "center<%g %g>",
-          _grid._center.x,
-          _grid._center.y);
-      lev2::FontMan::DrawText(
-          tgt, //
-          16,
-          iy += 16,
-          "zoomfactorX<%g>",
-          _grid._zoomX);
-      lev2::FontMan::DrawText(
-          tgt, //
-          16,
-          iy += 16,
-          "zoomfactorY<%g>",
-          _grid._zoomY);
-      lev2::FontMan::endTextBlock(tgt);
-      ///////////////////////////////
-      if (_name.length()) {
-        tgt->RefModColor() = fvec3(1, 0.5, 0);
-        lev2::FontMan::beginTextBlock(tgt, 32);
-        int sw = lev2::FontMan::stringWidth(_name.length());
-        lev2::FontMan::DrawText(
-            tgt, //
-            ixc - (sw >> 1),
-            16,
-            _name.c_str());
-        lev2::FontMan::endTextBlock(tgt);
-      }
-      ///////////////////////////////
     }
-    ork::lev2::FontMan::PopFont();
+    ///////////////////////////////
+    // draw misc labels in UI pixel space
+    ///////////////////////////////
+    mtxi->PushUIMatrix(width(), height());
+    tgt->RefModColor() = fvec3(1, 1, 1);
+    lev2::FontMan::beginTextBlock(tgt, 48);
+    int iy = 16;
+    lev2::FontMan::DrawText(
+        tgt, //
+        16,
+        iy += 16,
+        "pan: left-drag");
+    lev2::FontMan::DrawText(
+        tgt, //
+        16,
+        iy += 16,
+        "zoom: mouse-wheel");
+    lev2::FontMan::endTextBlock(tgt);
+    ///////////////////////////////
+    tgt->RefModColor() = fvec3(0, 1, 0);
+    lev2::FontMan::beginTextBlock(tgt, 128);
+    lev2::FontMan::DrawText(
+        tgt, //
+        16,
+        iy += 16,
+        "center<%g %g>",
+        _grid._center.x,
+        _grid._center.y);
+    lev2::FontMan::DrawText(
+        tgt, //
+        16,
+        iy += 16,
+        "zoomfactorX<%g>",
+        _grid._zoomX);
+    lev2::FontMan::DrawText(
+        tgt, //
+        16,
+        iy += 16,
+        "zoomfactorY<%g>",
+        _grid._zoomY);
+    lev2::FontMan::endTextBlock(tgt);
+    ///////////////////////////////
+    if (_name.length()) {
+      tgt->RefModColor() = fvec3(1, 0.5, 0);
+      lev2::FontMan::beginTextBlock(tgt, 32);
+      int sw = lev2::FontMan::stringWidth(_name.length());
+      lev2::FontMan::DrawText(
+          tgt, //
+          ixc - (sw >> 1),
+          16,
+          _name.c_str());
+      lev2::FontMan::endTextBlock(tgt);
+    }
+    ///////////////////////////////
+    mtxi->PopUIMatrix(); // Pop UI matrix for text rendering
   }
-  mtxi->PopUIMatrix();
+  ork::lev2::FontMan::PopFont();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void GraphPanel::setRect(int iX, int iY, int iW, int iH, bool snap) {
