@@ -65,7 +65,7 @@ class GraphViewTest(object):
     ############################################
 
     # Create horizontal guide at 75% down
-    hguide = lg_group.layout.proportionalHorizontalGuide(0.75)
+    hguide = lg_group.layout.fixedHorizontalGuide(-128)
 
     # Create GraphView on top
     graphview_item = lg_group.makeChild(
@@ -79,16 +79,61 @@ class GraphViewTest(object):
     self.graphview = graphview_item.widget
     self.graphview.clear_color = vec4(0, 0, 0, 1)
 
-    # Create TextBox on bottom
-    textbox_item = lg_group.makeChild(
-      uiclass=lev2.ui.TextBox,
-      args=["setting",vec4(0.2,0.2,0.2,1),"X"]
+    # Create VerticalPack on bottom for frequency sliders
+    vpack_item = lg_group.makeChild(
+      uiclass=lev2.ui.VerticalPack,
+      args=["frequency_controls"]
     )
-    textbox_item.layout.top.anchorTo(hguide)
-    textbox_item.layout.bottom.anchorTo(lg_group.layout.bottom)
-    textbox_item.layout.left.anchorTo(lg_group.layout.left)
-    textbox_item.layout.right.anchorTo(lg_group.layout.right)
-    self.textbox = textbox_item.widget
+    vpack_item.layout.top.anchorTo(hguide)
+    vpack_item.layout.bottom.anchorTo(lg_group.layout.bottom)
+    vpack_item.layout.left.anchorTo(lg_group.layout.left)
+    vpack_item.layout.right.anchorTo(lg_group.layout.right)
+    vpack = vpack_item.widget
+    vpack.margin = 2
+    vpack.item_height = 24
+    vpack.fill = False
+
+    # Frequency control variables (target and current for smooth interpolation)
+    self.sine_freq_target = 0.1
+    self.cosine_freq_target = 0.1
+    self.square_freq_target = 0.1
+    self.sawtooth_freq_target = 0.1
+
+    self.sine_freq_current = 0.1
+    self.cosine_freq_current = 0.1
+    self.square_freq_current = 0.1
+    self.sawtooth_freq_current = 0.1
+
+    self.freq_smoothing = 0.05  # Smoothing factor (0 = no smoothing, 1 = instant)
+
+    # Create sliders for each waveform frequency
+    sine_slider = vpack.makeChild(
+      uiclass=lev2.ui.FloatSlider,
+      args=["Sine Freq", vec3(1.0, 0.3, 0.3), 0.01, 1.0, 0.1]
+    )
+    sine_slider.update_on_drag = True
+    sine_slider.onValueChanged = lambda w: setattr(self, 'sine_freq_target', w.value)
+
+    cosine_slider = vpack.makeChild(
+      uiclass=lev2.ui.FloatSlider,
+      args=["Cosine Freq", vec3(0.3, 1.0, 0.3), 0.01, 1.0, 0.1]
+    )
+    cosine_slider.update_on_drag = True
+    cosine_slider.onValueChanged = lambda w: setattr(self, 'cosine_freq_target', w.value)
+
+    square_slider = vpack.makeChild(
+      uiclass=lev2.ui.FloatSlider,
+      args=["Square Freq", vec3(0.3, 0.3, 1.0), 0.01, 1.0, 0.1]
+    )
+    square_slider.update_on_drag = True
+    square_slider.onValueChanged = lambda w: setattr(self, 'square_freq_target', w.value)
+
+    sawtooth_slider = vpack.makeChild(
+      uiclass=lev2.ui.FloatSlider,
+      args=["Sawtooth Freq", vec3(1.0, 1.0, 0.3), 0.01, 1.0, 0.1]
+    )
+    sawtooth_slider.update_on_drag = True
+    sawtooth_slider.onValueChanged = lambda w: setattr(self, 'sawtooth_freq_target', w.value)
 
     ############################################
     # Create channel and add multiple series
@@ -105,7 +150,7 @@ class GraphViewTest(object):
 
     # Configure max samples (ring buffer size)
     for series in [self.sine_series, self.cosine_series, self.square_series, self.sawtooth_series]:
-      series.setMaxSamples(16000)  # Large buffer for extensive history
+      series.setMaxSamples(1000)  # Large buffer for extensive history
       series.auto_range = True
       series.window_size = 1000  # Moving window: show only most recent 1000 samples
 
@@ -131,16 +176,22 @@ class GraphViewTest(object):
   ##############################################
 
   def onUpdate(self,updinfo):
-    # Generate new samples for each waveform
-    self.sine_series.addSample(math.sin(self.time))
-    self.cosine_series.addSample(math.cos(self.time))
+    # Smoothly interpolate current frequencies toward target frequencies
+    self.sine_freq_current += (self.sine_freq_target - self.sine_freq_current) * self.freq_smoothing
+    self.cosine_freq_current += (self.cosine_freq_target - self.cosine_freq_current) * self.freq_smoothing
+    self.square_freq_current += (self.square_freq_target - self.square_freq_current) * self.freq_smoothing
+    self.sawtooth_freq_current += (self.sawtooth_freq_target - self.sawtooth_freq_current) * self.freq_smoothing
+
+    # Generate new samples for each waveform using smoothed frequency controls
+    self.sine_series.addSample(math.sin(self.time * self.sine_freq_current))
+    self.cosine_series.addSample(math.cos(self.time * self.cosine_freq_current))
 
     # Square wave: alternates between -1 and 1
-    square_val = 1.0 if math.sin(self.time) >= 0 else -1.0
+    square_val = 1.0 if math.sin(self.time * self.square_freq_current) >= 0 else -1.0
     self.square_series.addSample(square_val)
 
     # Sawtooth wave: linear ramp from -1 to 1
-    sawtooth_val = (self.time % (2 * math.pi)) / math.pi - 1.0
+    sawtooth_val = ((self.time * self.sawtooth_freq_current) % (2 * math.pi)) / math.pi - 1.0
     self.sawtooth_series.addSample(sawtooth_val)
 
     self.time += self.time_speed

@@ -431,15 +431,16 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
       // Calculate range (series-based only)
       fvec2 hrange, vrange;
       if (has_series && !channel->_series.empty()) {
-        // Use series auto-range - find first visible series
-        graphseries_ptr_t first_visible_series = nullptr;
+        // Check if any visible series exist
+        bool has_visible_series = false;
         for (auto& series : channel->_series) {
           if (series->_visible && series->sampleCount() > 0) {
-            first_visible_series = series;
+            has_visible_series = true;
             break;
           }
         }
-        if (first_visible_series) {
+
+        if (has_visible_series) {
           // Horizontal range: use grid zoom/center (same pattern as vertical)
           float hcenter = _grid._center.x;
           float hextent = _grid._extent / _grid._zoomX;
@@ -447,8 +448,17 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
 
           // Vertical range depends on mode
           if (_vscale_mode == VerticalScaleMode::AUTO) {
-            // AUTO mode: use series auto-calculated range
-            vrange = fvec2(first_visible_series->_min_value, first_visible_series->_max_value);
+            // AUTO mode: find min/max across ALL visible series
+            float global_min = std::numeric_limits<float>::max();
+            float global_max = std::numeric_limits<float>::lowest();
+
+            for (auto& series : channel->_series) {
+              if (series->_visible && series->sampleCount() > 0) {
+                global_min = std::min(global_min, series->_min_value);
+                global_max = std::max(global_max, series->_max_value);
+              }
+            }
+            vrange = fvec2(global_min, global_max);
           } else {
             // MANUAL mode: use grid zoom/center
             float vcenter = _grid._center.y;
