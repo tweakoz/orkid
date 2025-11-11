@@ -453,66 +453,6 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
 
             ichanlaby += 16 + _label_spacing;
           }
-        } else {
-          // Lambda-based: draw one button for the channel
-          int sw = lev2::FontMan::stringWidth(channel->_name.length());
-          tgt->RefModColor() = channel->_color;
-          lev2::FontMan::beginTextBlock(tgt, 128);
-          lev2::FontMan::DrawText(
-              tgt,
-              ix2 - (max_label_width + 16),
-              ichanlaby,
-              channel->_name.c_str());
-          lev2::FontMan::endTextBlock(tgt);
-
-          if (channel->_visible) {
-            ///////////////////////////////////////////////////
-            // draw current value
-            ///////////////////////////////////////////////////
-            if (numpoints) {
-              float value = channel->_getPoint(numpoints - 1).y;
-              auto valstr = FormatString("%0.5g", value);
-              int sw2 = lev2::FontMan::stringWidth(valstr.length());
-              tgt->RefModColor() = channel->_color;
-              lev2::FontMan::beginTextBlock(tgt, 128);
-              lev2::FontMan::DrawText(
-                  tgt,
-                  ix2 - (max_label_width + 16) - (sw2 + 16),
-                  ichanlaby,
-                  valstr.c_str());
-              lev2::FontMan::endTextBlock(tgt);
-            }
-
-            ///////////////////////////////////////////////////
-            // draw toggle box
-            ///////////////////////////////////////////////////
-            int x1 = ix2 - (max_label_width + 28);  // ~12 pixels left margin (1 char width)
-            int x2 = ix2 - 16;  // 16 pixels right margin
-            int y1 = ichanlaby;
-            int y2 = ichanlaby + 16;
-
-            lev2::VtxWriter<vtx_t> vw;
-            vw.Lock(tgt, vbuf.get(), 8);
-            vw.AddVertex(vtx_t(fvec3(x1, y1, 0), fvec4(), channel->_color));
-            vw.AddVertex(vtx_t(fvec3(x2, y1, 0), fvec4(), channel->_color));
-            vw.AddVertex(vtx_t(fvec3(x2, y1, 0), fvec4(), channel->_color));
-            vw.AddVertex(vtx_t(fvec3(x2, y2, 0), fvec4(), channel->_color));
-            vw.AddVertex(vtx_t(fvec3(x2, y2, 0), fvec4(), channel->_color));
-            vw.AddVertex(vtx_t(fvec3(x1, y2, 0), fvec4(), channel->_color));
-            vw.AddVertex(vtx_t(fvec3(x1, y2, 0), fvec4(), channel->_color));
-            vw.AddVertex(vtx_t(fvec3(x1, y1, 0), fvec4(), channel->_color));
-            vw.UnLock(tgt);
-
-            mtxi->PushUIMatrix(width(), height());
-            mtl->begin(tek, RCFD);
-            mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
-            mtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
-            gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::LINES);
-            mtl->end(RCFD);
-            mtxi->PopUIMatrix();
-          }
-
-          ichanlaby += 16 + _label_spacing;
         }
 
         ///////////////////////////////////////////////////
