@@ -467,7 +467,10 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
             }
           }
           if (first_visible_series) {
-            hrange = fvec2(-50, 50);  // Centered on origin - samples will be scaled to fit
+            // Horizontal range: use grid zoom/center (same pattern as vertical)
+            float hcenter = _grid._center.x;
+            float hextent = _grid._extent / _grid._zoomX;
+            hrange = fvec2(hcenter - hextent/2, hcenter + hextent/2);
 
             // Vertical range depends on mode
             if (_vscale_mode == VerticalScaleMode::AUTO) {
