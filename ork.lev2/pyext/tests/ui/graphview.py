@@ -56,23 +56,39 @@ class GraphViewTest(object):
 
     lg_group = self.ezapp.topLayoutGroup
     lg_group.margin = 4
-    lg_group.clearColorGuide = vec4(0.1, 0.1, 0.15, 1)
+    lg_group.clearColorStd = vec4(0.5, 0.4, 0.15, 1)
+    lg_group.clearColorGuide = vec4(0.7, 0.6, 0.15, 1)
 
     ############################################
-    # Create GraphView as direct child of layout group
+    # Create horizontal split
+    # Top: GraphView, Bottom: TextBox
     ############################################
 
+    # Create horizontal guide at 75% down
+    hguide = lg_group.layout.proportionalHorizontalGuide(0.75)
+
+    # Create GraphView on top
     graphview_item = lg_group.makeChild(
       uiclass=lev2.ui.GraphView,
       args=[]
     )
-
-    # Apply full-window bounds
-    graphview_item.layout.fill(lg_group.layout)
+    graphview_item.layout.top.anchorTo(lg_group.layout.top)
+    graphview_item.layout.bottom.anchorTo(hguide)
+    graphview_item.layout.left.anchorTo(lg_group.layout.left)
+    graphview_item.layout.right.anchorTo(lg_group.layout.right)
     self.graphview = graphview_item.widget
-
-    # Set black background
     self.graphview.clear_color = vec4(0, 0, 0, 1)
+
+    # Create TextBox on bottom
+    textbox_item = lg_group.makeChild(
+      uiclass=lev2.ui.TextBox,
+      args=["setting",vec4(0.2,0.2,0.2,1),"X"]
+    )
+    textbox_item.layout.top.anchorTo(hguide)
+    textbox_item.layout.bottom.anchorTo(lg_group.layout.bottom)
+    textbox_item.layout.left.anchorTo(lg_group.layout.left)
+    textbox_item.layout.right.anchorTo(lg_group.layout.right)
+    self.textbox = textbox_item.widget
 
     ############################################
     # Create channel and add multiple series
