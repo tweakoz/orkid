@@ -32,6 +32,7 @@
 #include <ork/lev2/ui/popups.inl>
 #include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
 #include <ork/lev2/gfx/image.h>
+#include <ork/util/logger.h>
 #include <ork/profiling.inl>
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1846,7 +1847,12 @@ void pyinit_ui(py::module& module_lev2) {
               []() -> logger_backend_ptr_t { //
                 return ui::LoggerUIBackend::create();
               })
-          .def("registerGroup", &ui::LoggerUIBackend::registerGroup)
+          .def("registerGroup", [](ui::loggeruibackend_ptr_t backend, ui::loggergroup_ptr_t group) { //
+            printf("LoggerUIBackend::registerGroup() called\n");
+            printf("  backend ptr<%p>\n", (void*)backend.get());
+            printf("  group <%p>\n", (void*) group.get());
+            //backend->registerGroup(group);
+          })
           .def("unregisterGroup", &ui::LoggerUIBackend::unregisterGroup);
   type_codec->registerStdCodec<ui::loggeruibackend_ptr_t>(loggerbackend_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -1906,7 +1912,13 @@ void pyinit_ui(py::module& module_lev2) {
           .def("addChannel", &ui::LoggerGroup::addChannel)
           .def("removeChannel", &ui::LoggerGroup::removeChannel)
           .def("hasChannel", &ui::LoggerGroup::hasChannel)
-          .def("processQueuedMessages", &ui::LoggerGroup::processQueuedMessages);
+          .def("processQueuedMessages", &ui::LoggerGroup::processQueuedMessages)
+          .def("registerOnBackend", [](ui::loggergroup_ptr_t group, logger_backend_ptr_t backend) {
+            ui::LoggerGroup::registerOnBackend(group, backend);
+          })
+          .def("unregisterFromBackend", [](ui::loggergroup_ptr_t group, logger_backend_ptr_t backend) {
+            ui::LoggerGroup::unregisterFromBackend(group, backend);
+          });
   type_codec->registerStdCodec<ui::loggergroup_ptr_t>(loggergroup_type);
   /////////////////////////////////////////////////////////////////////////////////
   pyinit_ui_layout(uimodule);

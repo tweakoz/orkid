@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/lev2/ui/logger_group.h>
+#include <ork/lev2/ui/logger_ui_backend.h>
 #include <ork/lev2/ui/textbox.h>
 #include <ork/lev2/ui/tabs.h>
 #include <ork/lev2/ui/graphview.h>
@@ -44,33 +45,55 @@ loggergroup_ptr_t LoggerGroup::create(
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void LoggerGroup::registerOnBackend(loggergroup_ptr_t group, logger_backend_ptr_t backend) {
+  if (!group || !backend)
+    return;
+
+  auto impl_var = backend->_impl;
+  if (impl_var.isA<loggeruibackend_ptr_t>()) {
+    auto impl = impl_var.get<loggeruibackend_ptr_t>();
+    impl->registerGroup(group);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void LoggerGroup::unregisterFromBackend(loggergroup_ptr_t group, logger_backend_ptr_t backend) {
+  if (!group || !backend)
+    return;
+
+  auto impl_var = backend->_impl;
+  if (impl_var.isA<loggeruibackend_ptr_t>()) {
+    auto impl = impl_var.get<loggeruibackend_ptr_t>();
+    impl->unregisterGroup(group);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void LoggerGroup::_doGpuInit(lev2::Context* pt) {
   // Initialize UI for each allowed channel
   for (const auto& channel_name : _allowed_channels) {
-    addChannel(channel_name);
+    addChannel(channel_name, pt);
   }
 
   // Create tab widget for channels if multiple channels
   if (_allowed_channels.size() > 1) {
     _tab_widget = std::make_shared<TabWidget>("logger_tabs", 0, 0, width(), height());
+    addChild(_tab_widget);
+    _tab_widget->gpuInit(pt);
+
     for (auto& [name, view] : _channel_views) {
       if (view._container) {
         _tab_widget->addChild(view._container);
       }
-    }
-    addChild(_tab_widget);
-  } else if (_allowed_channels.size() == 1 && !_channel_views.empty()) {
-    // If only one channel, add container directly
-    auto& view = _channel_views.begin()->second;
-    if (view._container) {
-      addChild(view._container);
     }
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void LoggerGroup::addChannel(const std::string& name) {
+void LoggerGroup::addChannel(const std::string& name, lev2::Context* pt) {
   if (_channel_views.find(name) != _channel_views.end()) {
     return; // Already exists
   }
@@ -79,6 +102,8 @@ void LoggerGroup::addChannel(const std::string& name) {
 
   // Create container group for this channel
   view._container = std::make_shared<Group>(name, 0, 0, width(), height());
+  addChild(view._container);
+  view._container->gpuInit(pt);
 
   // Status area at top (shows current status lines)
   view._status_area = std::make_shared<TextBox>(
@@ -90,10 +115,12 @@ void LoggerGroup::addChannel(const std::string& name) {
   view._status_area->_halign = ETextAlignH::LEFT;
   view._status_area->_valign = ETextAlignV::TOP;
   view._container->addChild(view._status_area);
+  view._status_area->gpuInit(pt);
 
   // Performance graphs grid in middle
   view._perf_grid = std::make_shared<DynaGrid>(name + "_perf_grid", 0, 0, width(), 200);
   view._container->addChild(view._perf_grid);
+  view._perf_grid->gpuInit(pt);
 
   // Log area at bottom (scrolling log text)
   view._log_area = std::make_shared<TextBox>(
@@ -105,6 +132,7 @@ void LoggerGroup::addChannel(const std::string& name) {
   view._log_area->_halign = ETextAlignH::LEFT;
   view._log_area->_valign = ETextAlignV::BOTTOM;
   view._container->addChild(view._log_area);
+  view._log_area->gpuInit(pt);
 
   _channel_views[name] = view;
 }

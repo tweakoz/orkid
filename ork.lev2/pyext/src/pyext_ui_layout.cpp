@@ -531,6 +531,25 @@ void pyinit_ui_layout(py::module& uimodule) {
               },
               [](uilayoutgroup_ptr_t lgrp, bool b) { //
                 lgrp->_clear = b;
+              })
+          .def_property(
+              "overlay_widget",
+              [](uilayoutgroup_ptr_t lgrp) -> uiwidget_ptr_t { //
+                return lgrp->_overlay_widget;
+              },
+              [](uilayoutgroup_ptr_t lgrp, uiwidget_ptr_t w) { //
+                lgrp->_overlay_widget = w;
+                if (w) {
+                  lgrp->addChild(w);
+                }
+              })
+          .def_property(
+              "overlay_enabled",
+              [](uilayoutgroup_ptr_t lgrp) -> bool { //
+                return lgrp->_overlay_enabled;
+              },
+              [](uilayoutgroup_ptr_t lgrp, bool enabled) { //
+                lgrp->_overlay_enabled = enabled;
               });
   type_codec->registerStdCodec<uilayoutgroup_ptr_t>(layoutgroup_type);
 

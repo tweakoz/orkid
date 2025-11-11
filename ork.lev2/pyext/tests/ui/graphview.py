@@ -35,7 +35,7 @@
 
 import signal
 import math
-from orkengine.core import vec3, vec4
+from orkengine.core import vec3, vec4, logger
 from orkengine import lev2
 
 ################################################################################
@@ -58,6 +58,26 @@ class GraphViewTest(object):
     lg_group.margin = 4
     lg_group.clearColorStd = vec4(0.5, 0.4, 0.15, 1)
     lg_group.clearColorGuide = vec4(0.7, 0.6, 0.15, 1)
+
+    ############################################
+    # Setup logger UI backend
+    ############################################
+
+    # Create UI backend for logger
+    self.logger_backend = lev2.ui.LoggerUIBackend.create()
+    logger().setBackend(self.logger_backend)
+    print("LoggerUIBackend created and set")
+
+    # Create LoggerGroup widget
+    self.logger_group = lev2.ui.LoggerGroup.create("logger_ui", ["APP", "PERF"])
+    print("LoggerGroup created")
+    print(self.logger_group)
+    # Register logger group with backend
+    self.logger_group.registerOnBackend(self.logger_backend)
+    print("LoggerGroup registered with backend")
+
+    # Add logger group as overlay
+    lg_group.overlay_widget = self.logger_group
 
     ############################################
     # Create horizontal split

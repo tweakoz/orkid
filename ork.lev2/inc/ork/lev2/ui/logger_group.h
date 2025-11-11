@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <ork/util/logger.h>
 #include <ork/lev2/ui/group.h>
 #include <ork/lev2/ui/layoutgroup.inl>
 #include <ork/lev2/ui/viewport.h>
@@ -31,8 +32,12 @@ struct LoggerGroup : public Group {
     const std::set<std::string>& allowed_channels
   );
 
+  // Backend registration
+  static void registerOnBackend(loggergroup_ptr_t group, logger_backend_ptr_t backend);
+  static void unregisterFromBackend(loggergroup_ptr_t group, logger_backend_ptr_t backend);
+
   // Channel management
-  void addChannel(const std::string& name);
+  void addChannel(const std::string& name, lev2::Context* pt);
   void removeChannel(const std::string& name);
   bool hasChannel(const std::string& name) const;
 

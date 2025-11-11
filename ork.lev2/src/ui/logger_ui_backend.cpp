@@ -41,24 +41,7 @@ void LoggerUIBackend::registerGroup(loggergroup_ptr_t group) {
 void LoggerUIBackend::unregisterGroup(loggergroup_ptr_t group) {
   std::lock_guard<std::mutex> lock(_groups_mutex);
   _registered_groups.erase(
-    std::remove_if(_registered_groups.begin(), _registered_groups.end(),
-      [&group](const loggergroup_wkptr_t& wk) {
-        auto ptr = wk.lock();
-        return !ptr || ptr == group;
-      }),
-    _registered_groups.end()
-  );
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void LoggerUIBackend::_cleanupStaleGroups() {
-  // Remove expired weak_ptrs
-  _registered_groups.erase(
-    std::remove_if(_registered_groups.begin(), _registered_groups.end(),
-      [](const loggergroup_wkptr_t& wk) {
-        return wk.expired();
-      }),
+    std::remove(_registered_groups.begin(), _registered_groups.end(), group),
     _registered_groups.end()
   );
 }
@@ -67,12 +50,9 @@ void LoggerUIBackend::_cleanupStaleGroups() {
 
 void LoggerUIBackend::_broadcast(std::function<void(loggergroup_ptr_t)> fn) {
   std::lock_guard<std::mutex> lock(_groups_mutex);
-  _cleanupStaleGroups();
 
-  for (auto& wk : _registered_groups) {
-    if (auto group = wk.lock()) {
-      fn(group);
-    }
+  for (auto& group : _registered_groups) {
+    fn(group);
   }
 }
 

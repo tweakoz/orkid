@@ -35,10 +35,9 @@ struct LoggerUIBackend {
 
 private:
   std::mutex _groups_mutex;
-  std::vector<loggergroup_wkptr_t> _registered_groups;
+  std::vector<loggergroup_ptr_t> _registered_groups;
 
   void _broadcast(std::function<void(loggergroup_ptr_t)> fn);
-  void _cleanupStaleGroups();
 };
 
 using loggeruibackend_ptr_t = std::shared_ptr<LoggerUIBackend>;
