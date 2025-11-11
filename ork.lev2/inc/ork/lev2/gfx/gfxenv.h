@@ -859,12 +859,12 @@ struct PrimaryCommandBuffer {
 };
 
 struct SecondaryCommandBuffer {
-  SecondaryCommandBuffer(std::string name = "---")
-      : _debugName(name) {
-  }
+  SecondaryCommandBuffer(std::string name = "---");
+  ~SecondaryCommandBuffer();
   svarshp_t _impl;
   std::string _debugName;
   bool _no_draw    = false;
+  static std::atomic<int> _num_alive;
 };
 
 /// ////////////////////////////////////////////////////////////////////////////

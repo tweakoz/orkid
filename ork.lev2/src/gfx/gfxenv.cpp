@@ -43,6 +43,20 @@ ork::lev2::Context* ork::lev2::contextForCurrentThread() {
 
 namespace ork::lev2 {
 
+std::atomic<int> SecondaryCommandBuffer::_num_alive = 0;
+
+SecondaryCommandBuffer::SecondaryCommandBuffer(std::string name)
+    : _debugName(name) {
+  int count = _num_alive.fetch_add(1);
+  _debugName = FormatString("%s<%d>", name.c_str(), count );
+  //printf("CREATE SecondaryCommandBuffer<%p> name<%s> alive<%d>\n", (void*)this, _debugName.c_str(), count);
+}
+
+SecondaryCommandBuffer::~SecondaryCommandBuffer() {
+  int count = _num_alive.fetch_sub(1);
+  printf("DESTROY SecondaryCommandBuffer<%p> name<%s> alive<%d>\n", (void*)this, _debugName.c_str(), count);
+}
+
 bool GfxEnv::_bc7Disabled = false;
 
 bool GfxEnv::supportsBC7() {

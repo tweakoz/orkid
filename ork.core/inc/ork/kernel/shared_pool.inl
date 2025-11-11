@@ -40,8 +40,8 @@ public:
 	pointer_t allocate() {
 		pointer_t p = nullptr;
 		if(_free.size() > 0) {
-			p = _free[_free.size() - 1];
-			_free.pop_back();
+			p = _free[0];  // Take from FRONT for FIFO (round-robin)
+			_free.erase(_free.begin());
 			_used.push_back(p);
 		}
 		return p;

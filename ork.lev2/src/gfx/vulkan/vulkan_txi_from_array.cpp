@@ -236,6 +236,7 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
     auto pricb = ctx->primary_cb();
     pricb->_secondary_cmdbuffers_pending_cleanup.push_back(command_buffer);
   };
+  command_buffer->_debugName = FormatString("texupl.array_%s", array->_tex->_debugName.c_str());
 
   // Cleanup callback: return CB to pool when primary CB is reset
   cmdbuf_impl->_onCleanupCallback = [command_buffer, pool_ref = &_seccmdbufpool_xfer]() {

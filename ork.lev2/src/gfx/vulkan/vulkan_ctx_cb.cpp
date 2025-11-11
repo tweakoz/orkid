@@ -10,7 +10,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_vkcb = logger()->configureChannel("VKCB", fvec3(1, 1, .9), false);
+static logchannel_ptr_t logchan_vkcb = logger()->configureChannel("VKCB", fvec3(1, 1, .9), true);
 
 void VkContext::_beginRecordCommandBuffer(secondary_commandbuffer_ptr_t cbuf) {
   
@@ -77,7 +77,7 @@ secondary_commandbuffer_ptr_t VkContext::_beginRecordCommandBuffer(std::string n
 
   vkBeginCommandBuffer(vkcmdbuf->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
 
-  logchan_vkcb->log("vkBeginCommandBuffer: %s CB %p", "secondary", (void*)vkcmdbuf->_vkcmdbuf);
+  if(0)logchan_vkcb->log("vkBeginCommandBuffer: %s CB %p", "secondary", (void*)vkcmdbuf->_vkcmdbuf);
 
   return cmdbuf;
 }
@@ -89,13 +89,13 @@ void VkContext::_endRecordCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf) {
   vkcmdbuf->_recorded  = true;
   vkEndCommandBuffer(vkcmdbuf->_vkcmdbuf);
   //logchan_vkcb->log("_endRecordCommandBuffer<%p:%s>", (void*)cmdbuf.get(), cmdbuf->_debugName.c_str());
-  logchan_vkcb->log("vkEndCommandBuffer: %s CB %p", "secondary", (void*)vkcmdbuf->_vkcmdbuf);
+  if(0)logchan_vkcb->log("vkEndCommandBuffer: %s CB %p", "secondary", (void*)vkcmdbuf->_vkcmdbuf);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::_doEnqueueSecondaryCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf) {
-  //logchan_vkcb->log("_doEnqueueSecondaryCommandBuffer<%p:%s>", (void*)cmdbuf.get(), cmdbuf->_debugName.c_str());
+  if(0)logchan_vkcb->log("_doEnqueueSecondaryCommandBuffer<%p:%s>", (void*)cmdbuf.get(), cmdbuf->_debugName.c_str());
   auto impl = cmdbuf->_impl.getShared<VkSecondaryCommandBufferImpl>();
   if (not impl->_recorded) {
     printf("CB<%p:%s> impl<%p> not recorded!\n", (void*)cmdbuf.get(), cmdbuf->_debugName.c_str(), (void*)impl.get());
@@ -106,6 +106,7 @@ void VkContext::_doEnqueueSecondaryCommandBuffer(secondary_commandbuffer_ptr_t c
 
   // Invoke pre-enqueue callback if set (pooled CBs add themselves to pending_cleanup)
   if (impl->_onPreEnqueueCallback) {
+
     impl->_onPreEnqueueCallback();
   } else {
     // Non-pooled CB: add to _secondary_cmdbuffers for lifecycle management
@@ -113,8 +114,13 @@ void VkContext::_doEnqueueSecondaryCommandBuffer(secondary_commandbuffer_ptr_t c
   }
 
   // DEBUG: Log when secondary command buffer is executed
-  logchan_vkcb->log("_doEnqueueSecondaryCommandBuffer: Executing secondary CB %p in primary CB %p",
-                    (void*)impl->_vkcmdbuf, (void*)pricb->_vkcmdbuf);
+  logchan_vkcb->log("DOENQSECCB: exec secCB<%p:%s> in priCB<%p> preenqCB<%d> cleanupCB<%d>",
+                    (void*)impl->_vkcmdbuf, 
+                    cmdbuf->_debugName.c_str(),
+                    (void*)pricb.get(),
+                    int(impl->_onPreEnqueueCallback != nullptr),
+                    int(impl->_onCleanupCallback != nullptr)
+                    );
 
   vkCmdExecuteCommands(pricb->_vkcmdbuf, 1, &impl->_vkcmdbuf);
 }

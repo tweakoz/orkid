@@ -11,7 +11,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
-static auto logchan_swapchain = logger()->configureChannel("VKSWAP", fvec3(0.5, 0.5, 0.5), false);
+static auto logchan_swapchain = logger()->configureChannel("VKSWAP", fvec3(0.5, 0.5, 0.5), true);
 
 VkSwapChain::VkSwapChain(vkcontext_rawptr_t ctxVK)
     : _contextVK(ctxVK) {
@@ -514,12 +514,18 @@ void VkSwapChain::_submitFrameWithSemaphores(vkcontext_rawptr_t ctxVK) {
   timelineInfo.waitSemaphoreValueCount = _allWaitValues.size();
   timelineInfo.pWaitSemaphoreValues = _allWaitValues.data();
   
+  auto CB = ctxVK->primary_cb();
+  logchan_swapchain->log("SUBMIT priCB<%p> vkimpl<%p> with %zu wait semaphores and %zu signalsemas",
+         (void*)CB.get(),
+         (void*)CB->_vkcmdbuf,
+         _allWaitSemaphores.size(),
+         _allSignalSemaphores.size());
   // Submit info
   VkSubmitInfo submitInfo{};
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
   submitInfo.pNext = &timelineInfo;
   submitInfo.commandBufferCount = 1;
-  submitInfo.pCommandBuffers = &(ctxVK->primary_cb()->_vkcmdbuf);
+  submitInfo.pCommandBuffers = &(CB->_vkcmdbuf);
   submitInfo.signalSemaphoreCount = _allSignalSemaphores.size();
   submitInfo.pSignalSemaphores = _allSignalSemaphores.data();
   
