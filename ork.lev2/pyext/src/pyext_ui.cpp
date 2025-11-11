@@ -26,6 +26,8 @@
 #include <ork/lev2/ui/coloredit.h>
 #include <ork/lev2/ui/imgview.h>
 #include <ork/lev2/ui/graphview.h>
+#include <ork/lev2/ui/logger_group.h>
+#include <ork/lev2/ui/logger_ui_backend.h>
 #include <ork/lev2/ui/ged/ged_surface.h>
 #include <ork/lev2/ui/popups.inl>
 #include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
@@ -1834,6 +1836,78 @@ void pyinit_ui(py::module& module_lev2) {
                 }
               });
   type_codec->registerStdCodec<ui::imgview_ptr_t>(imgview_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // LoggerUIBackend - routes log messages to UI widgets
+  /////////////////////////////////////////////////////////////////////////////////
+  auto loggerbackend_type = //
+      py::class_<ui::LoggerUIBackend, ui::loggeruibackend_ptr_t>(uimodule, "LoggerUIBackend")
+          .def_static(
+              "create",
+              []() -> logger_backend_ptr_t { //
+                return ui::LoggerUIBackend::create();
+              })
+          .def("registerGroup", &ui::LoggerUIBackend::registerGroup)
+          .def("unregisterGroup", &ui::LoggerUIBackend::unregisterGroup);
+  type_codec->registerStdCodec<ui::loggeruibackend_ptr_t>(loggerbackend_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // LoggerGroup - UI widget for displaying logs, status, and performance data
+  /////////////////////////////////////////////////////////////////////////////////
+  auto loggergroup_type = //
+      py::class_<ui::LoggerGroup, ui::Group, ui::loggergroup_ptr_t>(uimodule, "LoggerGroup")
+          .def_static(
+              "create",
+              [](const std::string& name, py::list py_channels) -> ui::loggergroup_ptr_t { //
+                std::set<std::string> channels;
+                for (auto item : py_channels) {
+                  channels.insert(item.cast<std::string>());
+                }
+                return ui::LoggerGroup::create(name, channels);
+              })
+          .def_static(
+              "wfactory",
+              [type_codec](py::list py_args) -> ui::loggergroup_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                std::set<std::string> channels;
+
+                // Handle second argument as Python list
+                if (decoded_args.size() > 1 && py_args.size() > 1) {
+                  py::list channel_list = py_args[1];
+                  for (auto item : channel_list) {
+                    channels.insert(item.cast<std::string>());
+                  }
+                }
+                return ui::LoggerGroup::create(name, channels);
+              })
+          .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                std::set<std::string> channels;
+
+                // Handle second argument as Python list
+                if (decoded_args.size() > 1 && py_args.size() > 1) {
+                  py::list channel_list = py_args[1];
+                  for (auto item : channel_list) {
+                    channels.insert(item.cast<std::string>());
+                  }
+                }
+
+                auto logger_group = ui::LoggerGroup::create(name, channels);
+                lg->addChild(logger_group);
+
+                // Create layout item manually since LoggerGroup isn't created via makeChild
+                auto layoutitem = std::make_shared<ui::LayoutItem<ui::LoggerGroup>>();
+                layoutitem->_widget = logger_group;
+                layoutitem->_layout = lg->_layout->childLayout(logger_group.get());
+                return layoutitem;
+              })
+          .def("addChannel", &ui::LoggerGroup::addChannel)
+          .def("removeChannel", &ui::LoggerGroup::removeChannel)
+          .def("hasChannel", &ui::LoggerGroup::hasChannel)
+          .def("processQueuedMessages", &ui::LoggerGroup::processQueuedMessages);
+  type_codec->registerStdCodec<ui::loggergroup_ptr_t>(loggergroup_type);
   /////////////////////////////////////////////////////////////////////////////////
   pyinit_ui_layout(uimodule);
   pyinit_ui_ged(uimodule);

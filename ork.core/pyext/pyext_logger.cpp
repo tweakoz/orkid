@@ -65,8 +65,21 @@ void pyinit_logger(py::module& module_core) {
       [](logchannel_ptr_t chan, const std::string& subchannel, const std::string& msg) {
         chan->status(subchannel, "%s", msg.c_str());
       })
+    .def("perfItem",
+      [](logchannel_ptr_t chan, const std::string& name, py::object value) {
+        svar64_t val;
+        // Try to convert Python object to appropriate type
+        if (py::isinstance<py::float_>(value)) {
+          val.set<float>(value.cast<float>());
+        } else if (py::isinstance<py::int_>(value)) {
+          val.set<int64_t>(value.cast<int64_t>());
+        } else {
+          val.set<double>(value.cast<double>());
+        }
+        chan->perfItem(name, val);
+      })
     .def("__repr__", [](logchannel_ptr_t chan) -> std::string {
-      return FormatString("LogChannel(%s, enabled=%s)", 
+      return FormatString("LogChannel(%s, enabled=%s)",
         chan->_name.c_str(), chan->_enabled ? "true" : "false");
     });
   type_codec->registerStdCodec<logchannel_ptr_t>(logchannel_type);
@@ -85,9 +98,17 @@ void pyinit_logger(py::module& module_core) {
       [](logger_ptr_t logger, const std::string& name) -> logchannel_ptr_t {
         return logger->getChannel(name);
       })
-    .def_property_readonly("defaultChannel", 
+    .def_property_readonly("defaultChannel",
       [](logger_ptr_t logger) -> logchannel_ptr_t {
         return logger->defaultChannel();
+      })
+    .def("setBackend",
+      [](logger_ptr_t logger, logger_backend_ptr_t backend) {
+        logger->setBackend(backend);
+      })
+    .def("channel",
+      [](logger_ptr_t logger, const std::string& name) -> logchannel_ptr_t {
+        return logger->getChannel(name);
       })
     #if defined(ENABLE_NOTCURSES_UI)
     .def("enableNotCurses", 

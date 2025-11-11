@@ -83,6 +83,10 @@ namespace ork {
     logchannel_ptr_t configureChannel(std::string named, ork::fvec3 color, bool enabled=true);
     logchannel_ptr_t getChannel(std::string named);
     logchannel_ptr_t defaultChannel() const;
+
+    // Backend management
+    void setBackend(logger_backend_ptr_t backend);
+
 		using channel_map_t = std::map<std::string,logchannel_ptr_t>;
 		ork::LockedResource<channel_map_t> _channels;
     logchannel_ptr_t _default_channel;

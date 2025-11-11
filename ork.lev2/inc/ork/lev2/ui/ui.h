@@ -50,6 +50,8 @@ struct HorizontalPack;
 struct HorizontalSplit;
 struct VerticalSplit;
 struct DynaGrid;
+struct GraphView;
+struct LoggerGroup;
 
 using context_ptr_t     = std::shared_ptr<Context>;
 using widget_ptr_t      = std::shared_ptr<Widget>;
@@ -77,6 +79,9 @@ using hpack_ptr_t       = std::shared_ptr<HorizontalPack>;
 using hsplit_ptr_t      = std::shared_ptr<HorizontalSplit>;
 using vsplit_ptr_t      = std::shared_ptr<VerticalSplit>;
 using dynagrid_ptr_t    = std::shared_ptr<DynaGrid>;
+using graphview_ptr_t   = std::shared_ptr<GraphView>;
+using loggergroup_ptr_t = std::shared_ptr<LoggerGroup>;
+using loggergroup_wkptr_t = std::weak_ptr<LoggerGroup>;
 ////////////////////////////////////////////////////////////////////////////////
 
 using evrouter_t  = std::function<Widget*(event_constptr_t ev)>;
