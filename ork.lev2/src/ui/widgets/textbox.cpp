@@ -36,6 +36,7 @@ void TextBox::DoDraw(drawevent_constptr_t drwev) {
 
   auto tgt    = drwev->GetTarget();
   auto fbi    = tgt->FBI();
+  auto fxi    = tgt->FXI();
   auto mtxi   = tgt->MTXI();
   auto primi = tgt->PRI();
   auto defmtl = lev2::defaultUIMaterial();
@@ -50,9 +51,15 @@ void TextBox::DoDraw(drawevent_constptr_t drwev) {
     ixc = ix1 + (_geometry._w >> 1);
     iyc = iy1 + (_geometry._h >> 1);
 
-    defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::ALPHA);
-    defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
+    auto rs = defmtl->_rasterstate;
+    auto omacro = rs->_blendingMacro;
+    auto omode = defmtl->meUIColorMode;
+    rs->setBlendingMacro(_blending);
+    rs->setDepthTest(lev2::EDepthTest::OFF);
     tgt->PushModColor(_color);
+    int prev_pri = rs->_priority;
+    rs->_priority = 1<<16; 
+    fxi->pushRasterState(rs);
     defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
     primi->RenderQuadAtZ(
         defmtl.get(),
@@ -66,6 +73,10 @@ void TextBox::DoDraw(drawevent_constptr_t drwev) {
         0.0f,
         1.0f // v0, v1
     );
+    fxi->popRasterState();
+    rs->_priority = prev_pri;
+    rs->_blendingMacro = omacro;
+    defmtl->meUIColorMode = omode;
     tgt->PopModColor();
 
     ETextAlignH HALIGN = _halign;

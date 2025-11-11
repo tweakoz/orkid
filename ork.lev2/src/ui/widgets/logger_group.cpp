@@ -11,6 +11,7 @@
 #include <ork/lev2/ui/tabs.h>
 #include <ork/lev2/ui/graphview.h>
 #include <ork/lev2/ui/dynagrid.h>
+#include <ork/lev2/ui/pack.h>
 #include <ork/lev2/ui/layoutgroup.inl>
 #include <ork/kernel/string/deco.inl>
 #include <sstream>
@@ -38,11 +39,16 @@ loggergroup_ptr_t LoggerGroup::create(
   auto group = std::make_shared<LoggerGroup>(name);
   group->_allowed_channels = allowed_channels;
 
+  printf("LoggerGroup::create(%s) with %zu patterns:\n", name.c_str(), allowed_channels.size());
+
   // Compile regex patterns from channel names/patterns
   for (const auto& pattern : allowed_channels) {
+    printf("  Compiling pattern: '%s'\n", pattern.c_str());
     try {
       group->_channel_patterns.push_back(std::regex(pattern));
+      printf("    -> compiled successfully\n");
     } catch (const std::regex_error& e) {
+      printf("    -> regex error: %s, escaping as literal\n", e.what());
       // If pattern is invalid, treat it as a literal string
       // Escape special regex characters
       std::string escaped;
@@ -54,6 +60,7 @@ loggergroup_ptr_t LoggerGroup::create(
         }
         escaped += c;
       }
+      printf("    -> escaped to: '%s'\n", escaped.c_str());
       group->_channel_patterns.push_back(std::regex(escaped));
     }
   }
@@ -93,12 +100,13 @@ void LoggerGroup::unregisterFromBackend(loggergroup_ptr_t group, logger_backend_
 ///////////////////////////////////////////////////////////////////////////////
 
 void LoggerGroup::_doGpuInit(lev2::Context* pt) {
-  // Store context for dynamic channel creation
-  _gpu_context = pt;
+  //printf("LoggerGroup<%s>::_doGpuInit pt<%p>\n", _name.c_str(), (void*)pt);
 
   // Don't create channels for wildcard patterns here
-  // Channels will be created dynamically when messages arrive
-}
+  _tab_widget = std::make_shared<TabWidget>("logger_tabs", 0, 0, width(), height());
+  addChild(_tab_widget);
+  _tab_widget->gpuInit(pt);
+  }
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -112,46 +120,61 @@ void LoggerGroup::addChannel(const std::string& name, lev2::Context* pt) {
   ChannelView view;
 
   // Create container group for this channel
-  view._container = std::make_shared<Group>(name, 0, 0, width(), height());
-  addChild(view._container);
+  auto vpack = std::make_shared<VerticalPack>(name, 0, 0, width(), height());
+  view._container = vpack;
+  _tab_widget->addChild(view._container);
   view._container->gpuInit(pt);
-
+  vpack->_draw_background = false;
   // Status area at top (shows current status lines)
-  view._status_area = std::make_shared<TextBox>(
+  auto statusarea = std::make_shared<TextBox>(
     name + "_status",
     fvec4(0.15f, 0.15f, 0.2f, 1.0f),  // Dark background
     ""
   );
+  statusarea->_fixed_height = 80;
+  statusarea->_blending = lev2::BlendingMacro::ALPHA;
+  view._status_area = statusarea;
+  view._status_area->_color = fvec4(0.8f, 0.8f, 1.0f, 0.5f);
   view._status_area->_textcolor = fvec4(0.8f, 0.8f, 1.0f, 1.0f);
   view._status_area->_halign = ETextAlignH::LEFT;
   view._status_area->_valign = ETextAlignV::TOP;
-  view._container->addChild(view._status_area);
+  vpack->addChild(view._status_area);
   view._status_area->gpuInit(pt);
 
   // Performance graphs grid in middle
-  view._perf_grid = std::make_shared<DynaGrid>(name + "_perf_grid", 0, 0, width(), 200);
-  view._container->addChild(view._perf_grid);
+  auto dynagrid = std::make_shared<DynaGrid>(name + "_perf_grid", 0, 0, width(), 200);
+  view._perf_grid = dynagrid;
+  vpack->addChild(view._perf_grid);
   view._perf_grid->gpuInit(pt);
+  dynagrid->_fixed_height = 200;
 
   // Log area at bottom (scrolling log text)
-  view._log_area = std::make_shared<TextBox>(
+  auto log_area = std::make_shared<TextBox>(
     name + "_log",
-    fvec4(0.1f, 0.1f, 0.15f, 1.0f),   // Darker background
+    fvec4(0.1f, 0.1f, 0.15f, 0.5f),   // Darker background
     ""
   );
-  view._log_area->_textcolor = fvec4(0.9f, 0.9f, 0.9f, 1.0f);
+  log_area->_blending = lev2::BlendingMacro::ALPHA;
+  view._log_area = log_area;
+  view._log_area->_textcolor = fvec4(0.9f, 0.9f, 0.9f, 0.5f);
   view._log_area->_halign = ETextAlignH::LEFT;
   view._log_area->_valign = ETextAlignV::BOTTOM;
-  view._container->addChild(view._log_area);
+  vpack->addChild(view._log_area);
   view._log_area->gpuInit(pt);
 
   _channel_views[name] = view;
 }
 
 void LoggerGroup::DoDraw(drawevent_constptr_t drwev) {
+
+  // Process queued messages on UI/render thread
+  auto ctx = drwev->GetTarget();
+  processQueuedMessages(ctx);
+
   // Draw semi-transparent dark background
-  fvec4 bg_color(0.1f, 0.1f, 0.15f, 0.9f);  // Dark blue-grey with 90% opacity
-  Widget::_drawColoredBox(drwev, bg_color);
+  Widget::_drawColoredBox(drwev, _background_color, lev2::BlendingMacro::ALPHA);
+
+  _tab_widget->_contentBackground = _background_color;
 
   // Draw children
   drawChildren(drwev);
@@ -163,6 +186,7 @@ void LoggerGroup::DoLayout() {
   Group::DoLayout();
 
   // Layout each channel view
+  /*
   for (auto& [name, view] : _channel_views) {
     if (!view._container)
       continue;
@@ -184,7 +208,7 @@ void LoggerGroup::DoLayout() {
     if (view._log_area) {
       view._log_area->SetRect(0, 288, w, h - 288);
     }
-  }
+  }*/
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -197,18 +221,26 @@ void LoggerGroup::removeChannel(const std::string& name) {
 
 bool LoggerGroup::hasChannel(const std::string& name) const {
   // Check if any of the precompiled patterns match
-  for (const auto& pattern : _channel_patterns) {
-    if (std::regex_match(name, pattern)) {
+  if(0)printf("LoggerGroup::hasChannel('%s') checking against %zu patterns\n", name.c_str(), _channel_patterns.size());
+  for (size_t i = 0; i < _channel_patterns.size(); i++) {
+    bool matches = std::regex_match(name, _channel_patterns[i]);
+    if(0)printf("  pattern[%zu]: matches=%d\n", i, matches);
+    if (matches) {
       return true;
     }
   }
+  if(0)printf("  -> no match found\n");
   return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void LoggerGroup::onLogMessage(const std::string& channel, const std::string& msg) {
-  if (!hasChannel(channel))
+  bool matches = hasChannel(channel);
+  if(0)printf("LoggerGroup<%s>::onLogMessage channel<%s> matches<%d>\n",
+         _name.c_str(), channel.c_str(), matches);
+
+  if (!matches)
     return;
 
   std::lock_guard<std::mutex> lock(_message_mutex);
@@ -220,6 +252,7 @@ void LoggerGroup::onLogMessage(const std::string& channel, const std::string& ms
     "",
     svar64_t()
   });
+  if(0)printf("  -> queued message, total pending<%zu>\n", _pending_messages.size());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -258,7 +291,7 @@ void LoggerGroup::onPerfItem(const std::string& channel, const std::string& name
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void LoggerGroup::processQueuedMessages() {
+void LoggerGroup::processQueuedMessages(lev2::Context* pt) {
   std::vector<PendingMessage> local_queue;
   {
     std::lock_guard<std::mutex> lock(_message_mutex);
@@ -267,10 +300,10 @@ void LoggerGroup::processQueuedMessages() {
 
   for (const auto& msg : local_queue) {
     // Dynamically create channel view if it doesn't exist yet
-    if (_channel_views.find(msg.channel) == _channel_views.end() && _gpu_context) {
-      printf("LoggerGroup<%s>::processQueuedMessages() - creating new channel tab for <%s>\n",
-             _name.c_str(), msg.channel.c_str());
-      addChannel(msg.channel, _gpu_context);
+    bool channel_exists = (_channel_views.find(msg.channel) != _channel_views.end());
+
+    if (!channel_exists && pt) {
+      addChannel(msg.channel, pt);
     }
 
     switch (msg.type) {

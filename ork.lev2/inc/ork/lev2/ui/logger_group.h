@@ -47,10 +47,11 @@ struct LoggerGroup : public Group {
   void onPerfItem(const std::string& channel, const std::string& name, svar64_t value);
 
   // Process queued messages (called from UI thread)
-  void processQueuedMessages();
+  void processQueuedMessages(lev2::Context* pt);
 
   void DoLayout() override;
 
+  fvec4 _background_color;
 private:
   void _doGpuInit(lev2::Context* pt) override;
   void DoDraw(ui::drawevent_constptr_t drwev) override;
@@ -58,9 +59,6 @@ private:
   // Channel filtering
   std::set<std::string> _allowed_channels;
   std::vector<std::regex> _channel_patterns;  // Precompiled regex patterns
-
-  // GPU context for dynamic channel creation
-  lev2::Context* _gpu_context = nullptr;
 
   // Internal layout (decoupled from parent)
   layoutgroup_ptr_t _internal_layout;

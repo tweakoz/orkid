@@ -48,7 +48,6 @@ public:
 
   //////////////////////////////////////////////////////////////////////////////
 
-protected:
   fxshaderasset_ptr_t _shaderasset;
   FxShader* _shader                       = nullptr;
   const FxShaderTechnique* hTekMod        = nullptr;

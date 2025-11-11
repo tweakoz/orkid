@@ -356,11 +356,12 @@ void Widget::draw(ui::drawevent_constptr_t drwev) {
   _drawEvent = nullptr;
 }
 /////////////////////////////////////////////////////////////////////////
-void Widget::_drawColoredBox(ui::drawevent_constptr_t drwev, const fvec4& color){
+void Widget::_drawColoredBox(ui::drawevent_constptr_t drwev, const fvec4& color, lev2::BlendingMacro eblend){
   auto tgt    = drwev->GetTarget();
   auto fbi    = tgt->FBI();
   auto mtxi   = tgt->MTXI();
   auto primi = tgt->PRI();
+  auto fxi = tgt->FXI();
   auto defmtl = lev2::defaultUIMaterial();
 
   mtxi->PushUIMatrix();
@@ -379,10 +380,16 @@ void Widget::_drawColoredBox(ui::drawevent_constptr_t drwev, const fvec4& color)
           ix2,
           iy2);
 
-    defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
-    defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
+    auto rs = defmtl->_rasterstate;
+    auto omacro = rs->_blendingMacro;
+    auto omode = defmtl->meUIColorMode;
+    rs->setBlendingMacro(eblend);
+    rs->setDepthTest(lev2::EDepthTest::OFF);
     tgt->PushModColor(color);
     defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
+    int prev_pri = rs->_priority;
+    rs->_priority = 1<<16; 
+    fxi->pushRasterState(rs);
     primi->RenderQuadAtZ(
         defmtl.get(),
         ix1,  // x0
@@ -395,6 +402,10 @@ void Widget::_drawColoredBox(ui::drawevent_constptr_t drwev, const fvec4& color)
         0.0f,
         1.0f // v0, v1
     );
+    fxi->popRasterState();
+    rs->_blendingMacro = omacro; 
+    rs->_priority = prev_pri;
+    defmtl->meUIColorMode = omode;
     tgt->PopModColor();
   }
   mtxi->PopUIMatrix();

@@ -1918,7 +1918,15 @@ void pyinit_ui(py::module& module_lev2) {
           })
           .def("unregisterFromBackend", [](ui::loggergroup_ptr_t group, logger_backend_ptr_t backend) {
             ui::LoggerGroup::unregisterFromBackend(group, backend);
-          });
+          })
+          .def_property(
+              "background_color",
+              [](ui::loggergroup_ptr_t group) -> fvec4 { //
+                return group->_background_color;
+              },
+              [](ui::loggergroup_ptr_t group, fvec4 c) { //
+                group->_background_color = c;
+              });
   type_codec->registerStdCodec<ui::loggergroup_ptr_t>(loggergroup_type);
   /////////////////////////////////////////////////////////////////////////////////
   pyinit_ui_layout(uimodule);

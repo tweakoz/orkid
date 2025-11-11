@@ -164,6 +164,7 @@ void TabWidget::DoDraw(drawevent_constptr_t drwev) {
   auto tgt = drwev->GetTarget();
   auto mtxi = tgt->MTXI();
   auto primi = tgt->PRI();
+  auto fxi = tgt->FXI();
   auto defmtl = lev2::defaultUIMaterial();
 
   mtxi->PushUIMatrix();
@@ -174,12 +175,22 @@ void TabWidget::DoDraw(drawevent_constptr_t drwev) {
       LocalToRoot(0, effectiveTabBarHeight, x1, y1);
       LocalToRoot(_geometry._w, _geometry._h, x2, y2);
 
-      defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
-      defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
+      auto rs = defmtl->_rasterstate;
+      auto omacro = rs->_blendingMacro;
+      auto omode = defmtl->meUIColorMode;
+      rs->setBlendingMacro(lev2::BlendingMacro::ALPHA);
+      rs->setDepthTest(lev2::EDepthTest::OFF);
+      int prev_pri = rs->_priority;
+      rs->_priority = 1<<16; 
+      fxi->pushRasterState(rs);
       tgt->PushModColor(_contentBackground);
       defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
       primi->RenderQuadAtZ(defmtl.get(), x1, x2, y1, y2, 0.0f,
                             0.0f, 1.0f, 0.0f, 1.0f);
+      fxi->popRasterState();
+      rs->_priority = prev_pri;
+      rs->_blendingMacro = omacro;
+      defmtl->meUIColorMode = omode;
       tgt->PopModColor();
     }
   }
@@ -206,15 +217,19 @@ void TabWidget::_drawTabBar(drawevent_constptr_t drwev) {
   auto defmtl = lev2::defaultUIMaterial();
   auto fontman = lev2::FontMan::instance();
 
+  int x1, y1, x2, y2;
+  LocalToRoot(0, 0, x1, y1);
+  LocalToRoot(_geometry._w, _tabBarHeight, x2, y2);
+
   mtxi->PushUIMatrix();
   {
     // Draw tab bar background
-    int x1, y1, x2, y2;
-    LocalToRoot(0, 0, x1, y1);
-    LocalToRoot(_geometry._w, _tabBarHeight, x2, y2);
 
-    defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
-    defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
+    auto rs = defmtl->_rasterstate;
+    auto omacro = rs->_blendingMacro;
+    auto omode = defmtl->meUIColorMode;
+    rs->setBlendingMacro(lev2::BlendingMacro::OFF);
+    rs->setDepthTest(lev2::EDepthTest::OFF);
     tgt->PushModColor(_tabBarBackground);
     defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
     primi->RenderQuadAtZ(defmtl.get(), x1, x2, y1, y2, 0.0f,
@@ -226,8 +241,6 @@ void TabWidget::_drawTabBar(drawevent_constptr_t drwev) {
 
     // Draw individual tabs
     int tabIndex = 0;
-    ork::lev2::FontMan::PushFont("i14");
-    fontman->beginTextBlock(tgt);
     for (const auto& child : _children) {
       // Calculate tab position
       int tab_x1 = tabIndex * tabWidth;
@@ -257,14 +270,39 @@ void TabWidget::_drawTabBar(drawevent_constptr_t drwev) {
                             0.0f, 1.0f, 0.0f, 1.0f);
       tgt->PopModColor();
 
+
+      tabIndex++;
+    }
+    ork::lev2::FontMan::PushFont("i14");
+    fontman->beginTextBlock(tgt);
+    tabIndex = 0;
+    for (const auto& child : _children) {
+      int tab_x1 = tabIndex * tabWidth;
+      int tab_x2 = (tabIndex == _children.size() - 1) ? _geometry._w : (tabIndex + 1) * tabWidth;
+      LocalToRoot(tab_x1, 0, x1, y1);
+      LocalToRoot(tab_x2, _tabBarHeight, x2, y2);
+      // Add small margin between tabs
+      x1 += 1;
+      x2 -= 1;
       // Draw tab text (using child's name)
       if (fontman && !child->_name.empty()) {
         int textX = x1 + 5;  // 5 pixel padding from left
         int textY = y1 + (_tabBarHeight / 2);  // Center vertically
 
-        fontman->DrawText(tgt, textX, textY, child->_name.c_str());
-      }
+        // Determine tab color
+        fvec4 tabColor;
+        if (tabIndex == _activeTabIndex) {
+          tabColor = _tabColorActive;
+        } else if (tabIndex == _hoveredTabIndex) {
+          tabColor = _tabColorHover;
+        } else {
+          tabColor = _tabColorInactive;
+        }
 
+        tgt->PushModColor(tabColor);
+        fontman->DrawText(tgt, textX, textY, child->_name.c_str());
+        tgt->PopModColor();
+      }
       tabIndex++;
     }
     fontman->endTextBlock(tgt);

@@ -65,6 +65,8 @@ void LoggerUIBackend::add_log_line(const ork::LogChannel* channel, const std::st
   auto impl_var = channel->_logger->_backend->_impl;
   if (impl_var.isA<loggeruibackend_ptr_t>()) {
     auto impl = impl_var.get<loggeruibackend_ptr_t>();
+    if(0)printf("LoggerUIBackend::add_log_line channel<%s> msg<%s> groups<%zu>\n",
+           channel->_name.c_str(), msg.c_str(), impl->_registered_groups.size());
     impl->_broadcast([&](loggergroup_ptr_t group) {
       group->onLogMessage(channel->_name, msg);
     });

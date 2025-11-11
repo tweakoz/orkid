@@ -43,7 +43,14 @@ struct TabWidget : public Group {
   void setShowTabs(bool show) { _showTabs = show; DoLayout(); }
   bool getShowTabs() const { return _showTabs; }
 
-protected:
+  // Tab colors
+  fvec4 _tabColorActive = fvec4(0.35, 0.35, 0.4, 1.0);
+  fvec4 _tabColorInactive = fvec4(0.25, 0.25, 0.3, 1.0);
+  fvec4 _tabColorHover = fvec4(0.3, 0.3, 0.35, 1.0);
+  fvec4 _tabBarBackground = fvec4(0.2, 0.2, 0.25, 1.0);
+  fvec4 _contentBackground = fvec4(0.15, 0.15, 0.2, 1.0);
+
+  protected:
   // Override from Widget
   void DoDraw(drawevent_constptr_t drwev) override;
   void DoLayout() override;
@@ -57,12 +64,6 @@ private:
   int _hoveredTabIndex = -1;
   bool _showTabs = true;  // When false, acts as a page/stack widget
 
-  // Tab colors
-  fvec4 _tabColorActive = fvec4(0.35, 0.35, 0.4, 1.0);
-  fvec4 _tabColorInactive = fvec4(0.25, 0.25, 0.3, 1.0);
-  fvec4 _tabColorHover = fvec4(0.3, 0.3, 0.35, 1.0);
-  fvec4 _tabBarBackground = fvec4(0.2, 0.2, 0.25, 1.0);
-  fvec4 _contentBackground = fvec4(0.15, 0.15, 0.2, 1.0);
 
   int _getTabIndexAt(int x, int y) const;
   void _drawTabBar(drawevent_constptr_t drwev);

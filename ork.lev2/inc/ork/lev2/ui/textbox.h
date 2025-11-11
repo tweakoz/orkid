@@ -29,6 +29,8 @@ public:
 
   ETextAlignH _halign = ETextAlignH::CENTER;
   ETextAlignV _valign = ETextAlignV::CENTER;
+  lev2::BlendingMacro _blending = lev2::BlendingMacro::OFF;
+
   std::vector<std::string> _lines;
   size_t _numchars = 0;
   size_t _maxlinelen = 0;

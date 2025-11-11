@@ -69,11 +69,12 @@ class GraphViewTest(object):
     print("LoggerUIBackend created and set")
 
     # Create LoggerGroup widget
-    self.logger_group = lev2.ui.LoggerGroup.create("logger_ui", ["A*"])
+    self.logger_group = lev2.ui.LoggerGroup.create("logger_ui", [".*"])
     print("LoggerGroup created")
     print(self.logger_group)
     # Register logger group with backend
     self.logger_group.registerOnBackend(self.logger_backend)
+    self.logger_group.background_color = vec4(0.0, 0.0, 0.0, 0.5)
     print("LoggerGroup registered with backend")
 
     # Add logger group as overlay
