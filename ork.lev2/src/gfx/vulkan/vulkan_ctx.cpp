@@ -25,7 +25,7 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_vkctx = logger()->configureChannel("VKCTX", fvec3(1,1,.9),false);
+static logchannel_ptr_t logchan_vkctx = logger()->configureChannel("VKCTX", fvec3(1,1,.9),true);
 static logchannel_ptr_t logchan_vkcap = logger()->configureChannel("VKCAPTURE", fvec3(1,1,.9),false);
 
 void VkContext::describeX(class_t* clazz) {
@@ -44,6 +44,9 @@ bool VkContext::HaveExtension(const std::string& extname) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
+
+  logchan_vkctx->log("VkContext: using device <%s>", vk_devinfo->_devprops.deviceName);
+
   _vkphysicaldevice = vk_devinfo->_phydev;
   _vkdeviceinfo     = vk_devinfo;
 
@@ -781,7 +784,7 @@ void VkContext::_doSubmitPrimaryCommandBuffer(){
       vkQueueWaitIdle(_vkqueue_graphics);
     }
 
-    logchan_vkctx->log("Offscreen frame submitted");
+    if(0)logchan_vkctx->log("Offscreen frame submitted");
 
     // Process pending captures after offscreen frame completion
     _processPendingCaptures();
@@ -797,7 +800,7 @@ vkpricmdbufimpl_ptr_t VkContext::primary_cb() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::_doPreBeginFrame() {
-  logchan_vkctx->log("VkContext<%p> _doPreBeginFrame", (void*)this );
+  if(0)logchan_vkctx->log("VkContext<%p> _doPreBeginFrame", (void*)this );
 
   mpCurrentObject        = 0;
   mRenderContextInstData = 0;
@@ -861,7 +864,7 @@ void VkContext::_onGpuPostInit() {
   // Submit the primary command buffer that was recorded during gpuPreInit
   // This ensures all texture array transitions are executed before first frame
 
-  printf("VkContext::_onGpuPostInit: Submitting gpuPreInit command buffer\n");
+  //printf("VkContext::_onGpuPostInit: Submitting gpuPreInit command buffer\n");
 
   // During init, we haven't started a frame yet, so we can't use the swapchain submit path
   // Do a simple direct submit without presentation semaphores
@@ -888,7 +891,7 @@ void VkContext::_onGpuPostInit() {
   _defaultCommandBufferImpl = nullptr;
   _cmdbufcurpri_gfx = nullptr;
 
-  printf("VkContext::_onGpuPostInit: gpuPreInit transitions complete\n");
+  //printf("VkContext::_onGpuPostInit: gpuPreInit transitions complete\n");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -905,7 +908,7 @@ void VkContext::_doEndFrame() {
 
   // Only transition to present for window targets with swapchain
   // For offscreen, transition to texture-readable state
-  logchan_vkctx->log("_doEndFrame: meTargetType=%d (WINDOW=%d), buffer usage=0x%zx", (int)meTargetType, (int)TargetType::WINDOW, main_rtbi->_usage);
+  if(0)logchan_vkctx->log("_doEndFrame: meTargetType=%d (WINDOW=%d), buffer usage=0x%zx", (int)meTargetType, (int)TargetType::WINDOW, main_rtbi->_usage);
   if (meTargetType == TargetType::WINDOW) {
     main_rtbi->_transitionToPresent(primary_cb());
   } else {
@@ -932,7 +935,7 @@ void VkContext::_doEndFrame() {
 
   ///////////////////////////////////////////////////////
 
-  logchan_vkctx->log("CMDBUF: _doEndFrame: clearing primary CB (was %p)", _cmdbufcurpri_gfx ? (void*)_cmdbufcurpri_gfx->_vkcmdbuf : nullptr);
+  if(0)logchan_vkctx->log("CMDBUF: _doEndFrame: clearing primary CB (was %p)", _cmdbufcurpri_gfx ? (void*)_cmdbufcurpri_gfx->_vkcmdbuf : nullptr);
 
   ////////////////////////
   // Move secondary command buffers to pending cleanup
