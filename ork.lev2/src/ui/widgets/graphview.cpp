@@ -138,6 +138,7 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
     case ui::EventCode::PUSH:
     case ui::EventCode::DOUBLECLICK: {
       _dragging       = false;
+      bool handled_click = false;
 
       // Count total number of series across all channels
       int total_series = 0;
@@ -165,6 +166,7 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
                 if (current_index == iseries_index) {
                   series->_visible = not series->_visible;
                   printf("series<%s> visible<%d>\n", series->_name.c_str(), series->_visible);
+                  handled_click = true;
                   goto done;
                 }
                 current_index++;
@@ -173,6 +175,7 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
               if (current_index == iseries_index) {
                 channel->_visible = not channel->_visible;
                 printf("channel<%s> visible<%d>\n", channel->_name.c_str(), channel->_visible);
+                handled_click = true;
                 goto done;
               }
               current_index++;
@@ -180,7 +183,10 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
           }
           done:;
         }
-      } else {
+      }
+
+      // If click wasn't handled by series toggle, start drag
+      if (!handled_click) {
         float fx    = float(ilocx) * gscaleX / float(width());
         float fy    = float(ilocy) * gscaleY / float(height());
         _downPos    = fvec2(fx, fy);
@@ -222,6 +228,26 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
       _grid._zoomY         = clamp(_grid._zoomY, 0.1f, 10.0f);
       mNeedsSurfaceRepaint = true;
       return HandlerResult(this);
+      break;
+    }
+    case ui::EventCode::KEY_DOWN: {
+      int key = ev->miKeyCode;
+      printf("GraphView<%s> keydown<%c>\n", _name.c_str(), key);
+
+      // 'v' key toggles between AUTO and MANUAL vertical scale modes
+      if (key == 'v' || key == 'V') {
+        if (_vscale_mode == VerticalScaleMode::AUTO) {
+          _vscale_mode = VerticalScaleMode::MANUAL;
+          printf("  Vertical scale mode: AUTO -> MANUAL\n");
+        } else {
+          _vscale_mode = VerticalScaleMode::AUTO;
+          printf("  Vertical scale mode: MANUAL -> AUTO\n");
+        }
+        mNeedsSurfaceRepaint = true;
+        SetDirty();
+        return HandlerResult(this);
+      }
+
       break;
     }
     default:

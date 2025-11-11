@@ -53,6 +53,11 @@ private:
 };
 using graphseries_ptr_t = std::shared_ptr<GraphSeries>;
 ///////////////////////////////////////////////////////////////////////////////
+enum class VerticalScaleMode : uint64_t {
+  CrcEnum(AUTO),    // Auto-range (dynamically fits visible data)
+  CrcEnum(MANUAL)   // Manual zoom (user-controlled via mouse wheel)
+};
+///////////////////////////////////////////////////////////////////////////////
 // GraphChannel: Can use either lambda-based or series-based data
 // Lambda mode: backward compatible with existing code
 // Series mode: new simplified API with internal data storage
@@ -97,6 +102,7 @@ struct GraphView : public ui::Surface {
   bool _dragging;
 
   int _label_spacing = 2;  // Margin between series label boxes
+  VerticalScaleMode _vscale_mode = VerticalScaleMode::AUTO;  // Default to auto-range
 };
 using graphview_ptr_t = std::shared_ptr<GraphView>;
 
