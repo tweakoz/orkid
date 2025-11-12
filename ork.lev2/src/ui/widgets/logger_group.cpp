@@ -13,6 +13,8 @@
 #include <ork/lev2/ui/dynagrid.h>
 #include <ork/lev2/ui/pack.h>
 #include <ork/lev2/ui/layoutgroup.inl>
+#include <ork/lev2/ui/context.h>
+#include <ork/lev2/ui/style.h>
 #include <ork/kernel/string/deco.inl>
 #include <sstream>
 #include <regex>
@@ -117,6 +119,34 @@ void LoggerGroup::addChannel(const std::string& name, lev2::Context* pt) {
 
   printf("LoggerGroup<%s>::addChannel(%s)\n", _name.c_str(), name.c_str());
 
+  // Assign channel-specific color (simple hash-based color generation)
+  // TODO: Make this configurable per channel
+  uint64_t hash = 0;
+  for (char c : name) {
+    hash = hash * 31 + c;
+  }
+  float hue = (hash % 360) / 360.0f;
+  // Convert HSV to RGB (simple approximation)
+  float r = std::abs(std::sin(hue * 6.28f));
+  float g = std::abs(std::sin((hue + 0.33f) * 6.28f));
+  float b = std::abs(std::sin((hue + 0.67f) * 6.28f));
+  fvec4 channel_color(r * 0.8f + 0.2f, g * 0.8f + 0.2f, b * 0.8f + 0.2f, 1.0f);
+
+  // Create per-channel tab style using CSS-style derivation
+  if (_uicontext && _uicontext->_theme_engine) {
+    auto base_tab_style = _uicontext->_theme_engine->_styledb->getStyle("tab"_crcu);
+    if (base_tab_style) {
+      auto channel_tab_style = Style::derive(base_tab_style);
+      channel_tab_style->_border_color = channel_color;        // Tab outline = channel color
+      channel_tab_style->_bg_color = channel_color * 0.4f;     // Tab bg = channel color * 0.4
+
+      // Register this derived style in the theme database
+      std::string style_name = "tab:" + name;
+      uint64_t style_tag = CrcString(style_name.c_str()).hashed();
+      _uicontext->_theme_engine->_styledb->registerStyle(style_tag, channel_tab_style);
+    }
+  }
+
   ChannelView view;
 
   // Create container group for this channel
@@ -125,17 +155,26 @@ void LoggerGroup::addChannel(const std::string& name, lev2::Context* pt) {
   _tab_widget->addChild(view._container);
   view._container->gpuInit(pt);
   vpack->_draw_background = false;
+
+  // Apply the channel-specific tab style
+  if (_uicontext && _uicontext->_theme_engine) {
+    std::string style_name = "tab:" + name;
+    uint64_t style_tag = CrcString(style_name.c_str()).hashed();
+    _tab_widget->_per_tab_style_tags[view._container] = style_tag;
+  }
+
   // Status area at top (shows current status lines)
+  // bg = channel_color * 0.2, text = channel_color
   auto statusarea = std::make_shared<TextBox>(
     name + "_status",
-    fvec4(0.15f, 0.15f, 0.2f, 1.0f),  // Dark background
+    channel_color * 0.2f,  // Background = channel color * 0.2
     ""
   );
   statusarea->_fixed_height = 80;
   statusarea->_blending = lev2::BlendingMacro::ALPHA;
   view._status_area = statusarea;
-  view._status_area->_color = fvec4(0.8f, 0.8f, 1.0f, 0.65f);
-  view._status_area->_textcolor = fvec4(0.8f, 0.8f, 1.0f, 1.0f);
+  view._status_area->_color = channel_color * 0.2f;
+  view._status_area->_textcolor = channel_color;  // Text = channel color
   view._status_area->_halign = ETextAlignH::LEFT;
   view._status_area->_valign = ETextAlignV::TOP;
   vpack->addChild(view._status_area);
@@ -149,14 +188,15 @@ void LoggerGroup::addChannel(const std::string& name, lev2::Context* pt) {
   dynagrid->_fixed_height = 200;
 
   // Log area at bottom (scrolling log text)
+  // bg = black, text = channel_color
   auto log_area = std::make_shared<TextBox>(
     name + "_log",
-    fvec4(0.1f, 0.1f, 0.15f, 0.65f),   // Darker background
+    fvec4(0.0f, 0.0f, 0.0f, 1.0f),  // Black background
     ""
   );
   log_area->_blending = lev2::BlendingMacro::ALPHA;
   view._log_area = log_area;
-  view._log_area->_textcolor = fvec4(0.9f, 0.9f, 0.9f, 0.65f);
+  view._log_area->_textcolor = channel_color;  // Text = channel color
   view._log_area->_halign = ETextAlignH::LEFT;
   view._log_area->_valign = ETextAlignV::TOP;  // Use TOP instead of BOTTOM for consistent positioning
   view._log_area->_enable_scrolling = true;  // Enable mouse wheel scrolling

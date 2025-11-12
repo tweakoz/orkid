@@ -311,7 +311,10 @@ void TabWidget::_drawTabBar(drawevent_constptr_t drwev) {
 
       // Draw tab text (using child's name)
       if (fontman && !child->_name.empty()) {
-        int textX = x1 + 5;  // 5 pixel padding from left
+        // Center text horizontally in tab
+        int text_width = fontman->stringWidth(child->_name.length());
+        int tab_width = x2 - x1;
+        int textX = x1 + (tab_width - text_width) / 2;  // Center horizontally
         int textY = y1 + (_tabBarHeight / 2);  // Center vertically
 
         // Get style for text color

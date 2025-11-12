@@ -54,7 +54,35 @@ style_ptr_t Style::clone() const {
   // Copy typography
   new_style->_font = _font;
 
+  // Note: parent and sub-styles NOT copied (shallow clone)
+
   return new_style;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+style_ptr_t Style::derive(style_ptr_t parent) {
+  auto derived = std::make_shared<Style>();
+
+  if (parent) {
+    // Copy all values from parent style
+    derived->_bg_color = parent->_bg_color;
+    derived->_fg_color = parent->_fg_color;
+    derived->_aux_color1 = parent->_aux_color1;
+    derived->_aux_color2 = parent->_aux_color2;
+    derived->_border_color = parent->_border_color;
+    derived->_text_color = parent->_text_color;
+    derived->_corner_radius = parent->_corner_radius;
+    derived->_border_width = parent->_border_width;
+    derived->_padding = parent->_padding;
+    derived->_blend_mode = parent->_blend_mode;
+    derived->_font = parent->_font;
+
+    // Set parent for CSS-like cascade
+    derived->_parent = parent;
+  }
+
+  return derived;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -299,12 +327,12 @@ styledatabase_ptr_t createDefaultStyleDatabase() {
   hcbox_style->_blend_mode = lev2::BlendingMacro::ALPHA;
   db->registerStyle("highc_box"_crcu, hcbox_style);
 
-  // Create default tab styles
+  // Create default tab styles (rounder corners for modern look)
   auto tab_style = std::make_shared<Style>();
   tab_style->_bg_color = fvec4(0.25, 0.25, 0.3, 1.0);
   tab_style->_text_color = fvec4(0.9, 0.9, 0.9, 1.0);
   tab_style->_border_color = fvec4(0.4, 0.4, 0.4, 1.0);
-  tab_style->_corner_radius = 8;
+  tab_style->_corner_radius = 12;  // More rounded for modern UI
   tab_style->_border_width = 1;
   tab_style->_blend_mode = lev2::BlendingMacro::ALPHA;
   db->registerStyle("tab"_crcu, tab_style);
@@ -313,7 +341,7 @@ styledatabase_ptr_t createDefaultStyleDatabase() {
   tab_active_style->_bg_color = fvec4(0.35, 0.35, 0.4, 1.0);
   tab_active_style->_text_color = fvec4(1.0, 1.0, 1.0, 1.0);
   tab_active_style->_border_color = fvec4(0.5, 0.5, 0.5, 1.0);
-  tab_active_style->_corner_radius = 8;
+  tab_active_style->_corner_radius = 12;
   tab_active_style->_border_width = 2;
   tab_active_style->_blend_mode = lev2::BlendingMacro::ALPHA;
   db->registerStyle("tab_active"_crcu, tab_active_style);
@@ -322,7 +350,7 @@ styledatabase_ptr_t createDefaultStyleDatabase() {
   tab_hover_style->_bg_color = fvec4(0.3, 0.3, 0.35, 1.0);
   tab_hover_style->_text_color = fvec4(0.95, 0.95, 0.95, 1.0);
   tab_hover_style->_border_color = fvec4(0.45, 0.45, 0.45, 1.0);
-  tab_hover_style->_corner_radius = 8;
+  tab_hover_style->_corner_radius = 12;
   tab_hover_style->_border_width = 1;
   tab_hover_style->_blend_mode = lev2::BlendingMacro::ALPHA;
   db->registerStyle("tab_hover"_crcu, tab_hover_style);
