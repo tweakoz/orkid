@@ -23,6 +23,7 @@ public:
       fvec4 color,
       std::string text);
   void setText(std::string txt);
+  void scrollToBottom();  // Scroll to show the bottom-most content
   fvec4 _color;
   fvec4 _textcolor;
   lev2::font_ptr_t _font;

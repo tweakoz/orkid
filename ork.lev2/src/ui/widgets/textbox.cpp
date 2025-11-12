@@ -30,6 +30,20 @@ void TextBox::setText(std::string txt) {
     _numchars += linelen;
 
   }
+
+  // Auto-scroll to bottom when new text is added
+  if (_enable_scrolling) {
+    scrollToBottom();
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+void TextBox::scrollToBottom() {
+  if (!_font) return;
+
+  int LINE_SPACING = _font->description().miAdvanceHeight;
+  int total_content_height = _lines.size() * LINE_SPACING;
+  int max_scroll = std::max(0, total_content_height - _geometry._h);
+  _scroll_offset = max_scroll;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void TextBox::DoDraw(drawevent_constptr_t drwev) {
@@ -48,6 +62,7 @@ void TextBox::DoDraw(drawevent_constptr_t drwev) {
 
   mtxi->PushUIMatrix();
   {
+    // Background coordinates (never scroll)
     int ix1, iy1, ix2, iy2, ixc, iyc;
     LocalToRoot(0, 0, ix1, iy1);
     ix2 = ix1 + _geometry._w;
@@ -55,13 +70,7 @@ void TextBox::DoDraw(drawevent_constptr_t drwev) {
     ixc = ix1 + (_geometry._w >> 1);
     iyc = iy1 + (_geometry._h >> 1);
 
-    // Apply scroll offset if scrolling is enabled
-    if (_enable_scrolling) {
-      iy1 -= _scroll_offset;
-      iy2 -= _scroll_offset;
-      iyc -= _scroll_offset;
-    }
-
+    // Draw background (always at fixed position)
     auto rs = defmtl->_rasterstate;
     auto omacro = rs->_blendingMacro;
     auto omode = defmtl->meUIColorMode;
@@ -69,7 +78,7 @@ void TextBox::DoDraw(drawevent_constptr_t drwev) {
     rs->setDepthTest(lev2::EDepthTest::OFF);
     tgt->PushModColor(_color);
     int prev_pri = rs->_priority;
-    rs->_priority = 1<<16; 
+    rs->_priority = 1<<16;
     fxi->pushRasterState(rs);
     defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
     primi->RenderQuadAtZ(
@@ -90,6 +99,20 @@ void TextBox::DoDraw(drawevent_constptr_t drwev) {
     defmtl->meUIColorMode = omode;
     tgt->PopModColor();
 
+    // Text coordinates (apply scroll offset for text only)
+    int text_ix1 = ix1;
+    int text_iy1 = iy1;
+    int text_ix2 = ix2;
+    int text_iy2 = iy2;
+    int text_ixc = ixc;
+    int text_iyc = iyc;
+
+    if (_enable_scrolling) {
+      text_iy1 -= _scroll_offset;
+      text_iy2 -= _scroll_offset;
+      text_iyc -= _scroll_offset;
+    }
+
     ETextAlignH HALIGN = _halign;
     ETextAlignV VALIGN = _valign;
     int LINE_SPACING = _font->description().miAdvanceHeight;
@@ -103,34 +126,34 @@ void TextBox::DoDraw(drawevent_constptr_t drwev) {
         auto line = _lines[iline];
         int linelen = line.length();
         int sw = lev2::FontMan::stringWidth(linelen);
-        int sx = ix1;
-        int sy = iy1 + (iline * LINE_SPACING);
+        int sx = text_ix1;
+        int sy = text_iy1 + (iline * LINE_SPACING);
         switch( HALIGN ) {
           case ETextAlignH::LEFT:
-            sx = ix1;
+            sx = text_ix1;
             break;
           case ETextAlignH::CENTER:
-            sx = ixc - (sw>>1);
+            sx = text_ixc - (sw>>1);
             break;
           case ETextAlignH::CENTER_ALL:{
             sw = lev2::FontMan::stringWidth(_maxlinelen);
-            sx = ixc - (sw>>1);
+            sx = text_ixc - (sw>>1);
             break;
           }
           case ETextAlignH::RIGHT:
-            sx = ix2 - sw;
+            sx = text_ix2 - sw;
             break;
           default:
-            sx = ix1;
+            sx = text_ix1;
             break;
         }
         if( VALIGN==ETextAlignV::CENTER ) {
           int totalh = numlines*LINE_SPACING;
-          int ycenter = iyc - (totalh>>1);
+          int ycenter = text_iyc - (totalh>>1);
           sy = ycenter + (iline*LINE_SPACING);
         } else if( VALIGN==ETextAlignV::BOTTOM ) {
           int totalh = numlines*LINE_SPACING;
-          sy = iy2 - totalh + (iline*LINE_SPACING);
+          sy = text_iy2 - totalh + (iline*LINE_SPACING);
         }
         lev2::FontMan::DrawText(
             tgt, //
@@ -244,6 +267,10 @@ Widget* TextBox::doRouteUiEvent(event_constptr_t Ev) {
       break;
     case EventCode::KEY_UP:
       shouldRoute = (_onKeyUp!=nullptr);
+      break;
+    case EventCode::MOUSEWHEEL:
+      // Always route mousewheel events when scrolling is enabled
+      shouldRoute = _enable_scrolling;
       break;
     default:
       break;

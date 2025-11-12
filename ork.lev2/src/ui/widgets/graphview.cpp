@@ -563,12 +563,25 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
             }
             vw.UnLock(tgt);
 
-            // Draw series (reusing matrix stack)
+            // Draw series (reusing matrix stack) with additive blending
+            auto rs = mtl->_rasterstate;
+            auto omacro = rs->_blendingMacro;
+            int prev_pri = rs->_priority;
+            rs->setBlendingMacro(lev2::BlendingMacro::ADDITIVE);
+            rs->setDepthTest(lev2::EDepthTest::OFF);
+            rs->setWriteMaskZ(false);
+            rs->_priority = 1<<16;
+            auto fxi = tgt->FXI();
+            fxi->pushRasterState(rs);
+
             mtl->begin(tek, RCFD);
             mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
-            mtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
             gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::LINES);
             mtl->end(RCFD);
+
+            fxi->popRasterState();
+            rs->_priority = prev_pri;
+            rs->_blendingMacro = omacro;
           }
         }
 
