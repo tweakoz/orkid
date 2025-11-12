@@ -54,7 +54,7 @@ SecondaryCommandBuffer::SecondaryCommandBuffer(std::string name)
 
 SecondaryCommandBuffer::~SecondaryCommandBuffer() {
   int count = _num_alive.fetch_sub(1);
-  printf("DESTROY SecondaryCommandBuffer<%p> name<%s> alive<%d>\n", (void*)this, _debugName.c_str(), count);
+  if(0)printf("DESTROY SecondaryCommandBuffer<%p> name<%s> alive<%d>\n", (void*)this, _debugName.c_str(), count);
 }
 
 bool GfxEnv::_bc7Disabled = false;
