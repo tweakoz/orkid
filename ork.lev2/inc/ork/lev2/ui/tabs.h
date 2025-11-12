@@ -43,10 +43,15 @@ struct TabWidget : public Group {
   void setShowTabs(bool show) { _showTabs = show; DoLayout(); }
   bool getShowTabs() const { return _showTabs; }
 
-  // Tab colors
-  fvec4 _tabColorActive = fvec4(0.35, 0.35, 0.4, 1.0);
-  fvec4 _tabColorInactive = fvec4(0.25, 0.25, 0.3, 1.0);
-  fvec4 _tabColorHover = fvec4(0.3, 0.3, 0.35, 1.0);
+  // Style system integration
+  uint64_t _default_tab_style_tag = "tab"_crcu;  // Default tab style
+  uint64_t _tab_active_style_tag = "tab_active"_crcu;
+  uint64_t _tab_hover_style_tag = "tab_hover"_crcu;
+
+  // Per-tab style overrides (keyed by widget pointer)
+  std::unordered_map<widget_ptr_t, uint64_t> _per_tab_style_tags;
+
+  // Widget-level colors
   fvec4 _tabBarBackground = fvec4(0.2, 0.2, 0.25, 1.0);
   fvec4 _contentBackground = fvec4(0.15, 0.15, 0.2, 1.0);
 

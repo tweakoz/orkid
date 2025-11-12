@@ -398,6 +398,56 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   // Upload each mip level
   /////////////////////////////////////
 
+  // Async setup: create transfer object before loop
+  vkseccmdbufimpl_ptr_t cmdbuf_impl;
+  vkcompletionsemaphore_ptr_t tlsema;
+
+  if (async) {
+    transfer = std::make_shared<InFlightTextureTransfer>(_contextVK, nullptr, command_buffer);
+    vktex->_inflight_transfers.insert(transfer);
+    cmdbuf_impl = command_buffer->_impl.getShared<VkSecondaryCommandBufferImpl>();
+    vk_cmdbuf = cmdbuf_impl->_vkcmdbuf;
+    command_buffer->_debugName = FormatString("texupl.data.async.%s", ptex->_debugName.c_str());
+
+    tlsema = std::make_shared<VulkanCompletionSemaphore>(this->_contextVK);
+    cmdbuf_impl->_completionSemaphore = tlsema;
+
+    // Pre-enqueue callback: capture primary CB and add to its pending_cleanup
+    cmdbuf_impl->_onPreEnqueueCallback = [command_buffer, ctx = this->_contextVK]() {
+      auto pricb = ctx->primary_cb();
+      pricb->_secondary_cmdbuffers_pending_cleanup.push_back(command_buffer);
+    };
+
+    ///////////////////////////////////
+    // Completion callback: cleanup transfer when GPU completes
+    ///////////////////////////////////
+    tlsema->_onComplete = [=, this]() {
+      vktex->_inflight_transfers.erase(transfer);
+      // DON'T destroy staging buffers here -
+      // they need to stay alive until command buffer cleanup
+
+      // Use captured write_slot (not _update_index which has been incremented)
+      auto& completed_img = vktex->_imgobj[write_slot];
+
+      // Switch to the newly completed slot (updates both image and descriptor atomically)
+      vktex->_img_sampling = completed_img;
+      vktex->_descset_sampling = vktex->_vkdescriptor_info[write_slot];
+
+      // Update hash to reflect which slot is active so descriptor sets get recreated
+      vktex->_imgview_hash.init();
+      vktex->_imgview_hash.accumulateItem(completed_img->_serial_number);
+      vktex->_imgview_hash.finish();
+
+      // Update texture properties
+      bool is_cube = tid._initCubeTexture;
+      ptex->_texFormat = actual_dst_format;
+      ptex->_width = tid._w;
+      ptex->_height = tid._h;
+      ptex->_depth = is_cube ? 6 : tid._d;
+      ptex->_num_mips = num_mips;
+    };
+  }
+
   for (int ilevel = 0; ilevel < num_mips; ilevel++) {
     int level_width = 0;
     int level_height = 0;
@@ -476,83 +526,6 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     staging_buffer->copyFromHost(level_data, level_data_size);
     staging_buffers.push_back(staging_buffer);
 
-    /////////////////////////////////////
-    // On first iteration: create transfer object and set up callbacks
-    /////////////////////////////////////
-    if (ilevel == 0 && async) {
-      vkseccmdbufimpl_ptr_t cmdbuf_impl;
-
-      transfer = std::make_shared<InFlightTextureTransfer>(_contextVK, staging_buffer, command_buffer);
-      vktex->_inflight_transfers.insert(transfer);
-      cmdbuf_impl = command_buffer->_impl.getShared<VkSecondaryCommandBufferImpl>();
-      vk_cmdbuf = cmdbuf_impl->_vkcmdbuf;
-
-      /////////////////////////////////////
-      // Set up completion and cleanup callbacks
-      /////////////////////////////////////
-
-      auto tlsema = std::make_shared<VulkanCompletionSemaphore>(this->_contextVK);
-      cmdbuf_impl->_completionSemaphore = tlsema;
-
-      // Pre-enqueue callback: capture primary CB and add to its pending_cleanup
-      cmdbuf_impl->_onPreEnqueueCallback = [command_buffer, ctx = this->_contextVK]() {
-        auto pricb = ctx->primary_cb();
-        pricb->_secondary_cmdbuffers_pending_cleanup.push_back(command_buffer);
-      };
-
-      ///////////////////////////////////
-      // Cleanup callback: return CB AND staging buffers to pools 
-      //    (when primary CB that holds our update is reset)
-      ///////////////////////////////////
-
-      cmdbuf_impl->_onCleanupCallback = [command_buffer, staging_buffers,
-                                          cb_pool_ref = &_seccmdbufpool_xfer,
-                                          this]() {
-
-        // Section: commandbuffers-lifecycle (Chapter 6 - Command Buffers)
-        // "Other than VkCommandPool objects, destroying or freeing any object or memory that may be accessed when the command buffer is accessed (e.g. an object bound to the command buffer) will transition the state of
-        // that command buffer to the invalid state."
-
-        // Return command buffer to pool
-        cb_pool_ref->atomicOp([&](sseccmdbufpool_ptr_t& pool) { pool->returnItem(command_buffer); });
-        // Return staging buffers to their respective pools
-        for (auto& buf : staging_buffers) {
-          auto poolForSize = this->stagingBufferPoolForSrcOfSize(buf->_length);
-          poolForSize->returnItem(buf);
-        }
-      };
-
-      ///////////////////////////////////
-      // Completion callback: cleanup transfer when GPU completes 
-      ///////////////////////////////////
-
-      tlsema->_onComplete = [=, this]() {
-        vktex->_inflight_transfers.erase(transfer);
-        // DON'T destroy staging buffers here - 
-        // they need to stay alive until command buffer cleanup
-
-        // Use captured write_slot (not _update_index which has been incremented)
-        auto& completed_img = vktex->_imgobj[write_slot];
-
-        // Switch to the newly completed slot (updates both image and descriptor atomically)
-        vktex->_img_sampling = completed_img;
-        vktex->_descset_sampling = vktex->_vkdescriptor_info[write_slot];
-
-        // Update hash to reflect which slot is active so descriptor sets get recreated
-        vktex->_imgview_hash.init();
-        vktex->_imgview_hash.accumulateItem(completed_img->_serial_number);
-        vktex->_imgview_hash.finish();
-
-        // Update texture properties
-        bool is_cube = tid._initCubeTexture;
-        ptex->_texFormat = actual_dst_format;
-        ptex->_width = tid._w;
-        ptex->_height = tid._h;
-        ptex->_depth = is_cube ? 6 : tid._d;
-        ptex->_num_mips = num_mips;
-      };
-    }
-
     // Transition this mip level to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
     auto barrier = createImageBarrier(
         target_imgobj->_vkimage,
@@ -612,6 +585,28 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   }
 
   if(async){
+    /////////////////////////////////////
+    // Set cleanup callback AFTER loop completes
+    // (now staging_buffers vector contains all mip level buffers)
+    /////////////////////////////////////
+
+    cmdbuf_impl->_onCleanupCallback = [command_buffer, staging_buffers,
+                                        cb_pool_ref = &_seccmdbufpool_xfer,
+                                        this]() {
+
+      // Section: commandbuffers-lifecycle (Chapter 6 - Command Buffers)
+      // "Other than VkCommandPool objects, destroying or freeing any object or memory that may be accessed when the command buffer is accessed (e.g. an object bound to the command buffer) will transition the state of
+      // that command buffer to the invalid state."
+
+      // Return command buffer to pool
+      cb_pool_ref->atomicOp([&](sseccmdbufpool_ptr_t& pool) { pool->returnItem(command_buffer); });
+      // Return staging buffers to their respective pools
+      for (auto& buf : staging_buffers) {
+        auto poolForSize = this->stagingBufferPoolForSrcOfSize(buf->_length);
+        poolForSize->returnItem(buf);
+      }
+    };
+
     /////////////////////////////////////
     // enqueue recorded texture update cmdbuf
     /////////////////////////////////////

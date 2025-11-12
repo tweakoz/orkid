@@ -13,8 +13,10 @@ uniform_block sdf_params (descriptor_set 0) { //
   vec4 border_color;      // outline color
   vec2 box_size;          // width, height in pixels
   vec2 box_pos;           // x, y position
-  float corner_radius;    // corner rounding in pixels
+  float corner_radius;    // corner rounding in pixels (uniform)
   float border_width;     // outline thickness in pixels
+  vec4 corner_radii;      // per-corner radii: TL, TR, BR, BL
+  float shape_param;      // multipurpose: circle radius, capsule axis, etc.
 }
 
 ///////////////////////////////////////////////////////////////
@@ -102,6 +104,212 @@ technique sdf_box {
   pass p0 {
     vertex_shader   = vs_sdf_box;
     fragment_shader = ps_sdf_box;
+    state_block     = sb_sdf_ui;
+  }
+}
+
+///////////////////////////////////////////////////////////////
+// Per-Corner Rounded Box (for tabs with different corner radii)
+///////////////////////////////////////////////////////////////
+
+fragment_shader ps_sdf_box_per_corner : fif_sdf_box {
+
+  // Per-corner rounded box SDF
+  // corner_radii: x=TL, y=TR, z=BR, w=BL
+  vec2 half_size = box_size * 0.5;
+  vec2 p = frg_pixel_pos;
+
+  // Select corner radius based on quadrant
+  float r;
+  if (p.x < 0.0 && p.y < 0.0) {
+    r = corner_radii.x;  // Top-left
+  } else if (p.x >= 0.0 && p.y < 0.0) {
+    r = corner_radii.y;  // Top-right
+  } else if (p.x >= 0.0 && p.y >= 0.0) {
+    r = corner_radii.z;  // Bottom-right
+  } else {
+    r = corner_radii.w;  // Bottom-left
+  }
+
+  vec2 q = abs(p) - half_size + r;
+  float dist = min(max(q.x, q.y), 0.0) + length(max(q, vec2(0.0))) - r;
+
+  // Anti-aliasing and border (same as sdf_box)
+  float aa = fwidth(dist) * 0.5;
+  float naa = aa * -1.0;
+  float edge_alpha = 1.0 - smoothstep(naa, aa, dist);
+
+  vec4 final_color;
+  if (border_width > 0.0) {
+    float nborder_width = border_width * -1.0;
+    float border_blend = smoothstep(nborder_width + naa, nborder_width + aa, dist);
+    final_color = mix(fill_color, border_color, border_blend);
+  } else {
+    final_color = fill_color;
+  }
+
+  float out_alpha = final_color.a * edge_alpha;
+  if (out_alpha < 0.01) {
+    discard;
+  }
+
+  out_clr = final_color * ModColor;
+  out_clr.a = out_alpha;
+}
+
+technique sdf_box_per_corner {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_sdf_box;
+    fragment_shader = ps_sdf_box_per_corner;
+    state_block     = sb_sdf_ui;
+  }
+}
+
+///////////////////////////////////////////////////////////////
+// Circle (for buttons, indicators, dots)
+///////////////////////////////////////////////////////////////
+
+fragment_shader ps_sdf_circle : fif_sdf_box {
+
+  // Circle SDF - shape_param is the radius
+  float radius = shape_param;
+  float dist = length(frg_pixel_pos) - radius;
+
+  // Anti-aliasing and border
+  float aa = fwidth(dist) * 0.5;
+  float naa = aa * -1.0;
+  float edge_alpha = 1.0 - smoothstep(naa, aa, dist);
+
+  vec4 final_color;
+  if (border_width > 0.0) {
+    float nborder_width = border_width * -1.0;
+    float border_blend = smoothstep(nborder_width + naa, nborder_width + aa, dist);
+    final_color = mix(fill_color, border_color, border_blend);
+  } else {
+    final_color = fill_color;
+  }
+
+  float out_alpha = final_color.a * edge_alpha;
+  if (out_alpha < 0.01) {
+    discard;
+  }
+
+  out_clr = final_color * ModColor;
+  out_clr.a = out_alpha;
+}
+
+technique sdf_circle {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_sdf_box;
+    fragment_shader = ps_sdf_circle;
+    state_block     = sb_sdf_ui;
+  }
+}
+
+///////////////////////////////////////////////////////////////
+// Capsule/Pill (rectangle with rounded ends)
+///////////////////////////////////////////////////////////////
+
+fragment_shader ps_sdf_capsule : fif_sdf_box {
+
+  // Capsule SDF - shape_param: 0=horizontal, 1=vertical
+  float axis = shape_param;
+  vec2 half_size = box_size * 0.5;
+
+  // Calculate capsule radius (smaller dimension / 2)
+  float cap_radius = min(half_size.x, half_size.y);
+
+  // Offset for capsule line segment
+  vec2 p = frg_pixel_pos;
+  float h;
+  if (axis < 0.5) {
+    // Horizontal capsule
+    h = clamp(p.x, -half_size.x + cap_radius, half_size.x - cap_radius);
+    p.x = h;
+  } else {
+    // Vertical capsule
+    h = clamp(p.y, -half_size.y + cap_radius, half_size.y - cap_radius);
+    p.y = h;
+  }
+
+  float dist = length(frg_pixel_pos - p) - cap_radius;
+
+  // Anti-aliasing and border
+  float aa = fwidth(dist) * 0.5;
+  float naa = aa * -1.0;
+  float edge_alpha = 1.0 - smoothstep(naa, aa, dist);
+
+  vec4 final_color;
+  if (border_width > 0.0) {
+    float nborder_width = border_width * -1.0;
+    float border_blend = smoothstep(nborder_width + naa, nborder_width + aa, dist);
+    final_color = mix(fill_color, border_color, border_blend);
+  } else {
+    final_color = fill_color;
+  }
+
+  float out_alpha = final_color.a * edge_alpha;
+  if (out_alpha < 0.01) {
+    discard;
+  }
+
+  out_clr = final_color * ModColor;
+  out_clr.a = out_alpha;
+}
+
+technique sdf_capsule {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_sdf_box;
+    fragment_shader = ps_sdf_capsule;
+    state_block     = sb_sdf_ui;
+  }
+}
+
+///////////////////////////////////////////////////////////////
+// Ring/Donut (for progress indicators, badges)
+///////////////////////////////////////////////////////////////
+
+fragment_shader ps_sdf_ring : fif_sdf_box {
+
+  // Ring SDF - shape_param is inner radius (outer is determined by box_size)
+  float inner_radius = shape_param;
+  float outer_radius = min(box_size.x, box_size.y) * 0.5;
+  float dist_center = length(frg_pixel_pos);
+
+  // Distance to ring (positive outside, negative inside ring band)
+  float dist = abs(dist_center - (outer_radius + inner_radius) * 0.5) - (outer_radius - inner_radius) * 0.5;
+
+  // Anti-aliasing and border
+  float aa = fwidth(dist) * 0.5;
+  float naa = aa * -1.0;
+  float edge_alpha = 1.0 - smoothstep(naa, aa, dist);
+
+  vec4 final_color;
+  if (border_width > 0.0) {
+    float nborder_width = border_width * -1.0;
+    float border_blend = smoothstep(nborder_width + naa, nborder_width + aa, dist);
+    final_color = mix(fill_color, border_color, border_blend);
+  } else {
+    final_color = fill_color;
+  }
+
+  float out_alpha = final_color.a * edge_alpha;
+  if (out_alpha < 0.01) {
+    discard;
+  }
+
+  out_clr = final_color * ModColor;
+  out_clr.a = out_alpha;
+}
+
+technique sdf_ring {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_sdf_box;
+    fragment_shader = ps_sdf_ring;
     state_block     = sb_sdf_ui;
   }
 }

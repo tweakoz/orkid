@@ -41,7 +41,11 @@ void TextBox::DoDraw(drawevent_constptr_t drwev) {
   auto primi = tgt->PRI();
   auto defmtl = lev2::defaultUIMaterial();
 
-  //pushScissor(fbi);
+  // Enable scissor for scrolling
+  if (_enable_scrolling) {
+    fbi->pushScissor(lev2::ViewportRect(_geometry._x, _geometry._y, _geometry._w, _geometry._h));
+  }
+
   mtxi->PushUIMatrix();
   {
     int ix1, iy1, ix2, iy2, ixc, iyc;
@@ -50,6 +54,13 @@ void TextBox::DoDraw(drawevent_constptr_t drwev) {
     iy2 = iy1 + _geometry._h;
     ixc = ix1 + (_geometry._w >> 1);
     iyc = iy1 + (_geometry._h >> 1);
+
+    // Apply scroll offset if scrolling is enabled
+    if (_enable_scrolling) {
+      iy1 -= _scroll_offset;
+      iy2 -= _scroll_offset;
+      iyc -= _scroll_offset;
+    }
 
     auto rs = defmtl->_rasterstate;
     auto omacro = rs->_blendingMacro;
@@ -133,7 +144,11 @@ void TextBox::DoDraw(drawevent_constptr_t drwev) {
     tgt->PopModColor();
   }
   mtxi->PopUIMatrix();
-  //popScissor(fbi);
+
+  // Pop scissor if scrolling is enabled
+  if (_enable_scrolling) {
+    fbi->popScissor();
+  }
 }
 
 HandlerResult TextBox::DoOnUiEvent(event_constptr_t cev) {
@@ -182,6 +197,23 @@ HandlerResult TextBox::DoOnUiEvent(event_constptr_t cev) {
       was_handled = true;
       if(_onKeyUp){
         _onKeyUp(cev);
+      }
+      break;
+    }
+    case EventCode::MOUSEWHEEL: {
+      if (_enable_scrolling) {
+        int delta = cev->miMWY;
+        int scroll_speed = 20;  // pixels per wheel notch
+        _scroll_offset -= delta * scroll_speed;
+
+        // Clamp scroll offset to valid range
+        int LINE_SPACING = _font->description().miAdvanceHeight;
+        int total_content_height = _lines.size() * LINE_SPACING;
+        int max_scroll = std::max(0, total_content_height - _geometry._h);
+        _scroll_offset = std::clamp(_scroll_offset, 0, max_scroll);
+
+        was_handled = true;
+        SetDirty();
       }
       break;
     }

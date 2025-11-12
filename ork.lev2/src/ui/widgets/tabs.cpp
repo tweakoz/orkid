@@ -5,6 +5,8 @@
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/ui/tabs.h>
 #include <ork/lev2/ui/event.h>
+#include <ork/lev2/ui/style.h>
+#include <ork/lev2/ui/context.h>
 
 namespace ork::ui {
 
@@ -217,6 +219,12 @@ void TabWidget::_drawTabBar(drawevent_constptr_t drwev) {
   auto defmtl = lev2::defaultUIMaterial();
   auto fontman = lev2::FontMan::instance();
 
+  // Get theme engine
+  auto theme_engine = _uicontext ? _uicontext->_theme_engine : nullptr;
+  if (!theme_engine) {
+    return;  // Can't render without theme engine
+  }
+
   int x1, y1, x2, y2;
   LocalToRoot(0, 0, x1, y1);
   LocalToRoot(_geometry._w, _tabBarHeight, x2, y2);
@@ -224,7 +232,6 @@ void TabWidget::_drawTabBar(drawevent_constptr_t drwev) {
   mtxi->PushUIMatrix();
   {
     // Draw tab bar background
-
     auto rs = defmtl->_rasterstate;
     auto omacro = rs->_blendingMacro;
     auto omode = defmtl->meUIColorMode;
@@ -235,44 +242,60 @@ void TabWidget::_drawTabBar(drawevent_constptr_t drwev) {
     primi->RenderQuadAtZ(defmtl.get(), x1, x2, y1, y2, 0.0f,
                           0.0f, 1.0f, 0.0f, 1.0f);
     tgt->PopModColor();
+    rs->_blendingMacro = omacro;
+    defmtl->meUIColorMode = omode;
 
     // Calculate tab width
     int tabWidth = _geometry._w / _children.size();
 
-    // Draw individual tabs
+    // Draw individual tabs using theme engine
     int tabIndex = 0;
     for (const auto& child : _children) {
       // Calculate tab position
       int tab_x1 = tabIndex * tabWidth;
       int tab_x2 = (tabIndex == _children.size() - 1) ? _geometry._w : (tabIndex + 1) * tabWidth;
 
-      // Determine tab color
-      fvec4 tabColor;
-      if (tabIndex == _activeTabIndex) {
-        tabColor = _tabColorActive;
-      } else if (tabIndex == _hoveredTabIndex) {
-        tabColor = _tabColorHover;
+      // Add small margin between tabs
+      tab_x1 += 1;
+      tab_x2 -= 1;
+
+      // Convert to absolute coordinates
+      int abs_x1, abs_y1;
+      LocalToRoot(tab_x1, 0, abs_x1, abs_y1);
+
+      // Calculate tab dimensions
+      int tab_w = tab_x2 - tab_x1;
+      int tab_h = _tabBarHeight;
+
+      // Determine which style to use based on state
+      uint64_t style_tag;
+
+      // Check for per-tab override first
+      auto it = _per_tab_style_tags.find(child);
+      if (it != _per_tab_style_tags.end()) {
+        style_tag = it->second;
       } else {
-        tabColor = _tabColorInactive;
+        // Use state-based default styles
+        if (tabIndex == _activeTabIndex) {
+          style_tag = _tab_active_style_tag;
+        } else if (tabIndex == _hoveredTabIndex) {
+          style_tag = _tab_hover_style_tag;
+        } else {
+          style_tag = _default_tab_style_tag;
+        }
       }
 
-      // Draw tab button
-      LocalToRoot(tab_x1, 0, x1, y1);
-      LocalToRoot(tab_x2, _tabBarHeight, x2, y2);
-
-      // Add small margin between tabs
-      x1 += 1;
-      x2 -= 1;
-
-      tgt->PushModColor(tabColor);
-      defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
-      primi->RenderQuadAtZ(defmtl.get(), x1, x2, y1, y2, 0.0f,
-                            0.0f, 1.0f, 0.0f, 1.0f);
-      tgt->PopModColor();
-
+      // Get style from theme database
+      auto style = theme_engine->_styledb->getStyle(style_tag);
+      if (style) {
+        // Draw tab using theme engine with geometry directly
+        theme_engine->drawTab(abs_x1, abs_y1, tab_w, tab_h, drwev, style.get());
+      }
 
       tabIndex++;
     }
+
+    // Draw tab text
     ork::lev2::FontMan::PushFont("i14");
     fontman->beginTextBlock(tgt);
     tabIndex = 0;
@@ -281,25 +304,35 @@ void TabWidget::_drawTabBar(drawevent_constptr_t drwev) {
       int tab_x2 = (tabIndex == _children.size() - 1) ? _geometry._w : (tabIndex + 1) * tabWidth;
       LocalToRoot(tab_x1, 0, x1, y1);
       LocalToRoot(tab_x2, _tabBarHeight, x2, y2);
+
       // Add small margin between tabs
       x1 += 1;
       x2 -= 1;
+
       // Draw tab text (using child's name)
       if (fontman && !child->_name.empty()) {
         int textX = x1 + 5;  // 5 pixel padding from left
         int textY = y1 + (_tabBarHeight / 2);  // Center vertically
 
-        // Determine tab color
-        fvec4 tabColor;
-        if (tabIndex == _activeTabIndex) {
-          tabColor = _tabColorActive;
-        } else if (tabIndex == _hoveredTabIndex) {
-          tabColor = _tabColorHover;
+        // Get style for text color
+        uint64_t style_tag;
+        auto it = _per_tab_style_tags.find(child);
+        if (it != _per_tab_style_tags.end()) {
+          style_tag = it->second;
         } else {
-          tabColor = _tabColorInactive;
+          if (tabIndex == _activeTabIndex) {
+            style_tag = _tab_active_style_tag;
+          } else if (tabIndex == _hoveredTabIndex) {
+            style_tag = _tab_hover_style_tag;
+          } else {
+            style_tag = _default_tab_style_tag;
+          }
         }
 
-        tgt->PushModColor(tabColor);
+        auto style = theme_engine->_styledb->getStyle(style_tag);
+        fvec4 text_color = style ? style->_text_color : fvec4(1, 1, 1, 1);
+
+        tgt->PushModColor(text_color);
         fontman->DrawText(tgt, textX, textY, child->_name.c_str());
         tgt->PopModColor();
       }

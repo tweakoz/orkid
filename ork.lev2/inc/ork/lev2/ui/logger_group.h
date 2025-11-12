@@ -54,6 +54,7 @@ struct LoggerGroup : public Group {
   fvec4 _background_color;
 private:
   void _doGpuInit(lev2::Context* pt) override;
+  void _doOnResized() override;
   void DoDraw(ui::drawevent_constptr_t drwev) override;
 
   // Channel filtering

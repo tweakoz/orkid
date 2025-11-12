@@ -134,7 +134,7 @@ void LoggerGroup::addChannel(const std::string& name, lev2::Context* pt) {
   statusarea->_fixed_height = 80;
   statusarea->_blending = lev2::BlendingMacro::ALPHA;
   view._status_area = statusarea;
-  view._status_area->_color = fvec4(0.8f, 0.8f, 1.0f, 0.5f);
+  view._status_area->_color = fvec4(0.8f, 0.8f, 1.0f, 0.65f);
   view._status_area->_textcolor = fvec4(0.8f, 0.8f, 1.0f, 1.0f);
   view._status_area->_halign = ETextAlignH::LEFT;
   view._status_area->_valign = ETextAlignV::TOP;
@@ -151,14 +151,15 @@ void LoggerGroup::addChannel(const std::string& name, lev2::Context* pt) {
   // Log area at bottom (scrolling log text)
   auto log_area = std::make_shared<TextBox>(
     name + "_log",
-    fvec4(0.1f, 0.1f, 0.15f, 0.5f),   // Darker background
+    fvec4(0.1f, 0.1f, 0.15f, 0.65f),   // Darker background
     ""
   );
   log_area->_blending = lev2::BlendingMacro::ALPHA;
   view._log_area = log_area;
-  view._log_area->_textcolor = fvec4(0.9f, 0.9f, 0.9f, 0.5f);
+  view._log_area->_textcolor = fvec4(0.9f, 0.9f, 0.9f, 0.65f);
   view._log_area->_halign = ETextAlignH::LEFT;
-  view._log_area->_valign = ETextAlignV::BOTTOM;
+  view._log_area->_valign = ETextAlignV::TOP;  // Use TOP instead of BOTTOM for consistent positioning
+  view._log_area->_enable_scrolling = true;  // Enable mouse wheel scrolling
   vpack->addChild(view._log_area);
   view._log_area->gpuInit(pt);
 
@@ -178,6 +179,18 @@ void LoggerGroup::DoDraw(drawevent_constptr_t drwev) {
 
   // Draw children
   drawChildren(drwev);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void LoggerGroup::_doOnResized() {
+  // Resize tab widget to match LoggerGroup's size
+  if (_tab_widget) {
+    _tab_widget->SetRect(0, 0, width(), height());
+  }
+
+  // Call base class to propagate to children
+  Group::_doOnResized();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

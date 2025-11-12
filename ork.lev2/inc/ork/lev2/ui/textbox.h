@@ -34,6 +34,10 @@ public:
   std::vector<std::string> _lines;
   size_t _numchars = 0;
   size_t _maxlinelen = 0;
+
+  // Scrolling support
+  int _scroll_offset = 0;  // Vertical scroll offset in pixels (positive = scrolled down)
+  bool _enable_scrolling = false;
   event_lambda_t _onMousePush;
   event_lambda_t _onMouseRelease;
   event_lambda_t _onMouseMove;

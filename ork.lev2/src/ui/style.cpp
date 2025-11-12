@@ -26,21 +26,7 @@ static constexpr int DEFAULT_CORNER_RADIUS = 16;
 // ThemeEngine Implementation
 ///////////////////////////////////////////////////////////////////////////////
 
-struct ThemeEngineImpl {
-  lev2::freestyle_mtl_ptr_t _sdf_material;
-  lev2::fxshader_ptr_t _sdf_shader;
-  lev2::fxtechnique_constptr_t _sdf_box_tek;
-
-  // Cached parameter handles
-  lev2::fxparam_constptr_t _param_mvp = nullptr;
-  lev2::fxparam_constptr_t _param_modcolor = nullptr;
-  lev2::fxparam_constptr_t _param_box_size = nullptr;
-  lev2::fxparam_constptr_t _param_box_pos = nullptr;
-  lev2::fxparam_constptr_t _param_corner_radius = nullptr;
-  lev2::fxparam_constptr_t _param_border_width = nullptr;
-  lev2::fxparam_constptr_t _param_fill_color = nullptr;
-  lev2::fxparam_constptr_t _param_border_color = nullptr;
-};
+#include "style_impl.inl"
 
 ///////////////////////////////////////////////////////////////////////////////
 // Style implementation
@@ -140,11 +126,15 @@ void ThemeEngine::gpuInit(lev2::Context* ctx) {
   rst->setWriteMaskA(true);
   rst->setWriteMaskZ(false);
 
-  // Get the technique
+  // Get all techniques
   auto fxi = ctx->FXI();
   impl->_sdf_box_tek = fxi->technique(impl->_sdf_shader, "sdf_box");
+  impl->_sdf_box_per_corner_tek = fxi->technique(impl->_sdf_shader, "sdf_box_per_corner");
+  impl->_sdf_circle_tek = fxi->technique(impl->_sdf_shader, "sdf_circle");
+  impl->_sdf_capsule_tek = fxi->technique(impl->_sdf_shader, "sdf_capsule");
+  impl->_sdf_ring_tek = fxi->technique(impl->_sdf_shader, "sdf_ring");
 
-  // Cache parameter handles
+  // Cache parameter handles (shared across all techniques)
   impl->_param_mvp = mtl->param("mvp");
   impl->_param_modcolor = mtl->param("ModColor");
   impl->_param_box_size = mtl->param("box_size");
@@ -153,6 +143,8 @@ void ThemeEngine::gpuInit(lev2::Context* ctx) {
   impl->_param_border_width = mtl->param("border_width");
   impl->_param_fill_color = mtl->param("fill_color");
   impl->_param_border_color = mtl->param("border_color");
+  impl->_param_corner_radii = mtl->param("corner_radii");
+  impl->_param_shape_param = mtl->param("shape_param");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -305,7 +297,35 @@ styledatabase_ptr_t createDefaultStyleDatabase() {
   hcbox_style->_border_width = 6;
   hcbox_style->_padding = 4;
   hcbox_style->_blend_mode = lev2::BlendingMacro::ALPHA;
-  db->registerStyle("highc_box"_crcu, hcbox_style);  
+  db->registerStyle("highc_box"_crcu, hcbox_style);
+
+  // Create default tab styles
+  auto tab_style = std::make_shared<Style>();
+  tab_style->_bg_color = fvec4(0.25, 0.25, 0.3, 1.0);
+  tab_style->_text_color = fvec4(0.9, 0.9, 0.9, 1.0);
+  tab_style->_border_color = fvec4(0.4, 0.4, 0.4, 1.0);
+  tab_style->_corner_radius = 8;
+  tab_style->_border_width = 1;
+  tab_style->_blend_mode = lev2::BlendingMacro::ALPHA;
+  db->registerStyle("tab"_crcu, tab_style);
+
+  auto tab_active_style = std::make_shared<Style>();
+  tab_active_style->_bg_color = fvec4(0.35, 0.35, 0.4, 1.0);
+  tab_active_style->_text_color = fvec4(1.0, 1.0, 1.0, 1.0);
+  tab_active_style->_border_color = fvec4(0.5, 0.5, 0.5, 1.0);
+  tab_active_style->_corner_radius = 8;
+  tab_active_style->_border_width = 2;
+  tab_active_style->_blend_mode = lev2::BlendingMacro::ALPHA;
+  db->registerStyle("tab_active"_crcu, tab_active_style);
+
+  auto tab_hover_style = std::make_shared<Style>();
+  tab_hover_style->_bg_color = fvec4(0.3, 0.3, 0.35, 1.0);
+  tab_hover_style->_text_color = fvec4(0.95, 0.95, 0.95, 1.0);
+  tab_hover_style->_border_color = fvec4(0.45, 0.45, 0.45, 1.0);
+  tab_hover_style->_corner_radius = 8;
+  tab_hover_style->_border_width = 1;
+  tab_hover_style->_blend_mode = lev2::BlendingMacro::ALPHA;
+  db->registerStyle("tab_hover"_crcu, tab_hover_style);
 
   return db;
 }

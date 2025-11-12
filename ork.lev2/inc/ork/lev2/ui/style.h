@@ -99,6 +99,13 @@ struct ThemeEngine {
 
   // Widget rendering methods
   void drawBox(const Widget* w, drawevent_constptr_t drwev, const Style* style);
+
+  // SDF primitive rendering methods (geometry-based)
+  void drawTab(int x, int y, int w, int h, drawevent_constptr_t drwev, const Style* style);  // Applies style corner_radius to top corners, sharp bottom
+  void drawBoxPerCorner(int x, int y, int w, int h, drawevent_constptr_t drwev, const Style* style, const fvec4& corner_radii);
+  void drawCircle(int x, int y, int w, int h, drawevent_constptr_t drwev, const Style* style, float radius);
+  void drawCapsule(int x, int y, int w, int h, drawevent_constptr_t drwev, const Style* style, bool horizontal = true);
+  void drawRing(int x, int y, int w, int h, drawevent_constptr_t drwev, const Style* style, float inner_radius);
   void drawText(const Widget* w, drawevent_constptr_t drwev, const Style* style, const std::string& text);
 
   styledatabase_ptr_t _styledb;

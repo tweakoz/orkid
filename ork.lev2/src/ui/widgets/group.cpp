@@ -224,7 +224,7 @@ void LayoutGroup::_positionOverlay() {
   int h = _geometry._h;
 
   // Apply 10% margin on all sides
-  float margin_percent = 0.10f;
+  float margin_percent = 0.0125f;
   int margin_w = w * margin_percent;
   int margin_h = h * margin_percent;
 

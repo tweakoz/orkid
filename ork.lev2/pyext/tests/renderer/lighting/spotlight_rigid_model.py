@@ -35,7 +35,7 @@ class StereoApp1(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = lev2.OrkEzApp.create(self,ssaa=3,fullscreen=True)
+    self.ezapp = lev2.OrkEzApp.create(self,ssaa=1,fullscreen=True)
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.materials = set()
     setupUiCamera(app=self,eye=vec3(0,12,15))
