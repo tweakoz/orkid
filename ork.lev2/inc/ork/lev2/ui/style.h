@@ -118,6 +118,8 @@ struct StyleGraph {
 
 struct Style {
 
+  Style();
+
   style_ptr_t clone() const;
 
   // CSS-style derivation: create a new style inheriting from parent
@@ -125,20 +127,20 @@ struct Style {
   static style_ptr_t derive(style_ptr_t parent);
 
   // Colors
-  fvec4 _bg_color          = fvec4(0.2, 0.2, 0.2, 1.0);
-  fvec4 _fg_color          = fvec4(0.9, 0.9, 0.9, 1.0);
-  fvec4 _aux_color1        = fvec4(0.3, 0.6, 0.8, 1.0);
-  fvec4 _aux_color2        = fvec4(0.5, 0.5, 0.5, 1.0);
-  fvec4 _border_color      = fvec4(0.4, 0.4, 0.4, 1.0);
-  fvec4 _text_color        = fvec4(0.9, 0.9, 0.9, 1.0);
+  fvec4 _bg_color;
+  fvec4 _fg_color;
+  fvec4 _aux_color1;
+  fvec4 _aux_color2;
+  fvec4 _border_color;
+  fvec4 _text_color;
 
   // Geometry
-  int _corner_radius       = 0;           // pixels
-  int _border_width        = 0;           // pixels
-  int _padding             = 4;           // pixels
+  int _corner_radius;       // pixels
+  int _border_width;        // pixels
+  int _padding;             // pixels
 
   // Rendering
-  lev2::BlendingMacro _blend_mode = lev2::BlendingMacro::ALPHA;
+  lev2::BlendingMacro _blend_mode;
 
   // Typography
   lev2::font_ptr_t _font;

@@ -11,10 +11,105 @@
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/gfx/pri.h>
+#include <ork/lev2/gfx/dbgfontman.h>
 
 namespace ork::ui {
 
 #include "style_impl.inl"
+
+///////////////////////////////////////////////////////////////////////////////
+
+void ThemeEngine::drawBox(const Widget* w, drawevent_constptr_t drwev, const Style* style) {
+  auto impl = _impl.getShared<ThemeEngineImpl>();
+  auto tgt = drwev->GetTarget();
+  auto mtxi = tgt->MTXI();
+  auto primi = tgt->PRI();
+  auto fxi = tgt->FXI();
+  if(nullptr==impl->_sdf_material){
+    gpuInit(tgt);
+  }
+
+  // Use SDF shader
+
+  auto mtl = impl->_sdf_material;
+  auto rst = mtl->_rasterstate;
+  mtxi->PushUIMatrix();
+
+  // Get widget position and size
+  int ix1, iy1;
+  w->LocalToRoot(0, 0, ix1, iy1);
+  float fx1 = (float)ix1;
+  float fy1 = (float)iy1;
+  float fx2 = fx1 + (float)w->width();
+  float fy2 = fy1 + (float)w->height();
+
+  // Bind parameters using cached handles
+  auto rcfd = std::make_shared<lev2::RenderContextFrameData>(tgt);
+  lev2::RenderContextInstData RCID(rcfd);
+
+  const fmtx4& mvp_mtx = mtxi->RefMVPMatrix();
+
+  fxi->BeginBlock(impl->_sdf_box_tek, RCID);
+  mtl->bindParam( impl->_param_mvp, mvp_mtx );
+  mtl->bindParam( impl->_param_modcolor, fvec4(1.0f, 1.0f, 1.0f, 1.0f));
+  mtl->bindParam( impl->_param_box_size, fvec2(w->width(), w->height()));
+  mtl->bindParam( impl->_param_box_pos, fvec2(fx1, fy1));
+  mtl->bindParam( impl->_param_corner_radius, (float)style->_corner_radius);
+  mtl->bindParam( impl->_param_border_width, (float)style->_border_width);
+  mtl->bindParam( impl->_param_fill_color, style->_bg_color);
+  mtl->bindParam( impl->_param_border_color, style->_border_color);
+
+  // Set up raster state from style
+  rst->setBlendingMacro(style->_blend_mode);
+  fxi->pushRasterState(rst);
+  primi->RenderEMLQuadAtZV16T16C16(
+      fx1, fx2,   // x0, x1
+      fy1, fy2,   // y0, y1
+      0.0f,       // z
+      0.0f, 1.0f, // u0, u1
+      0.0f, 1.0f  // v0, v1
+  );
+  fxi->popRasterState();
+  mtxi->PopUIMatrix();
+  fxi->EndBlock( );
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void ThemeEngine::drawText(const Widget* w, drawevent_constptr_t drwev, const Style* style, const std::string& text) {
+  auto tgt = drwev->GetTarget();
+  auto mtxi = tgt->MTXI();
+
+  mtxi->PushUIMatrix();
+  {
+    int ix1, iy1;
+    w->LocalToRoot(0, 0, ix1, iy1);
+    int ixc = ix1 + (w->width() >> 1);
+    int iyc = iy1 + (w->height() >> 1);
+
+    tgt->PushModColor(style->_text_color);
+
+    // Use style font if available, otherwise use default
+    if (style->_font) {
+      lev2::FontMan::PushFont(style->_font);
+    } else {
+      lev2::FontMan::PushFont("i14");
+    }
+
+    lev2::FontMan::beginTextBlock(tgt, 16);
+    int sw = lev2::FontMan::stringWidth(text.length());
+    lev2::FontMan::DrawText(
+        tgt,
+        ixc - (sw >> 1),
+        iyc - 6,
+        text.c_str());
+    lev2::FontMan::endTextBlock(tgt);
+    lev2::FontMan::PopFont();
+
+    tgt->PopModColor();
+  }
+  mtxi->PopUIMatrix();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Tab Shape - Applies style's corner_radius to top corners, sharp bottom
@@ -67,6 +162,7 @@ void ThemeEngine::drawBoxPerCorner(
   lev2::RenderContextInstData RCID(rcfd);
   const fmtx4& mvp_mtx = mtxi->RefMVPMatrix();
 
+  //printf("corner_radii: %f %f %f %f\n", corner_radii.x, corner_radii.y, corner_radii.z, corner_radii.w);
   fxi->BeginBlock(impl->_sdf_box_per_corner_tek, RCID);
   mtl->bindParam(impl->_param_mvp, mvp_mtx);
   mtl->bindParam(impl->_param_modcolor, fvec4(1.0f, 1.0f, 1.0f, 1.0f));

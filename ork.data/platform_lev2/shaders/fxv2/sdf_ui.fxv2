@@ -11,11 +11,11 @@ uniform_block sdf_params (descriptor_set 0) { //
   vec4 ModColor;
   vec4 fill_color;        // interior color
   vec4 border_color;      // outline color
+  vec4 corner_radii;      // per-corner radii: TL, TR, BR, BL
   vec2 box_size;          // width, height in pixels
   vec2 box_pos;           // x, y position
   float corner_radius;    // corner rounding in pixels (uniform)
   float border_width;     // outline thickness in pixels
-  vec4 corner_radii;      // per-corner radii: TL, TR, BR, BL
   float shape_param;      // multipurpose: circle radius, capsule axis, etc.
 }
 

@@ -239,8 +239,8 @@ void TabWidget::_drawTabBar(drawevent_constptr_t drwev) {
     rs->setDepthTest(lev2::EDepthTest::OFF);
     tgt->PushModColor(_tabBarBackground);
     defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
-    primi->RenderQuadAtZ(defmtl.get(), x1, x2, y1, y2, 0.0f,
-                          0.0f, 1.0f, 0.0f, 1.0f);
+    //primi->RenderQuadAtZ(defmtl.get(), x1, x2, y1, y2, 0.0f,
+      //                    0.0f, 1.0f, 0.0f, 1.0f);
     tgt->PopModColor();
     rs->_blendingMacro = omacro;
     defmtl->meUIColorMode = omode;
