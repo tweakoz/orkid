@@ -668,13 +668,34 @@ void pyinit_ui(py::module& module_lev2) {
               [](ui::tabwidget_ptr_t tabs) -> int { //
                 return tabs->getTabCount();
               })
+          .def_property("tabbar_background_color",
+              [](ui::tabwidget_ptr_t tabs) -> fvec4 { //
+                return tabs->_tabBarBackground;
+              },
+              [](ui::tabwidget_ptr_t tabs, fvec4 c) { //
+                tabs->_tabBarBackground = c;
+              })
+              .def_property("content_background",
+              [](ui::tabwidget_ptr_t tabs) -> fvec4 { //
+                return tabs->_contentBackground;
+              },
+              [](ui::tabwidget_ptr_t tabs, fvec4 c) { //
+                tabs->_contentBackground = c;
+              })
           .def_property(
-              "showTabs",
+              "draw_tabs",
               [](ui::tabwidget_ptr_t tabs) -> bool { //
                 return tabs->getShowTabs();
               },
               [](ui::tabwidget_ptr_t tabs, bool show) { //
                 tabs->setShowTabs(show);
+              })
+              .def_property("draw_background",
+              [](ui::tabwidget_ptr_t tabs) -> bool { //
+                return tabs->_draw_background;
+              },
+              [](ui::tabwidget_ptr_t tabs, bool b) { //
+                tabs->_draw_background = b;
               });
   type_codec->registerStdCodec<ui::tabwidget_ptr_t>(tabsw_type);
   /////////////////////////////////////////////////////////////////////////////////

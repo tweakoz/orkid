@@ -71,6 +71,10 @@ int FontMan::stringWidth(int numchars) {
   auto font = currentFont();
   return font->_fontdesc->stringWidth(numchars);
 }
+int FontMan::stringHeight(int numlines) {
+  auto font = currentFont();
+  return font->_fontdesc->stringHeight(numlines);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Font Management

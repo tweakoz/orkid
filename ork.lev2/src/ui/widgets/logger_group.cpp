@@ -21,6 +21,7 @@
 
 namespace ork::ui {
 
+  constexpr float BASE_ALPHA = 0.95f;
 ///////////////////////////////////////////////////////////////////////////////
 
 LoggerGroup::LoggerGroup(const std::string& name)
@@ -107,6 +108,10 @@ void LoggerGroup::_doGpuInit(lev2::Context* pt) {
   // Don't create channels for wildcard patterns here
   _tab_widget = std::make_shared<TabWidget>("logger_tabs", 0, 0, width(), height());
   addChild(_tab_widget);
+
+  _tab_widget->_tabBarBackground = fvec4(0.1, 0.1, 0.2, BASE_ALPHA);
+  _tab_widget->_contentBackground = fvec4(0.1, 0.1, 0.2, BASE_ALPHA);
+  _tab_widget->_draw_background = false;
   _tab_widget->gpuInit(pt);
   }
 
@@ -130,15 +135,15 @@ void LoggerGroup::addChannel(const std::string& name, lev2::Context* pt) {
   float r = std::abs(std::sin(hue * 6.28f));
   float g = std::abs(std::sin((hue + 0.33f) * 6.28f));
   float b = std::abs(std::sin((hue + 0.67f) * 6.28f));
-  fvec4 channel_color(r * 0.8f + 0.2f, g * 0.8f + 0.2f, b * 0.8f + 0.2f, 1.0f);
+  fvec3 channel_color(r * 0.8f + 0.2f, g * 0.8f + 0.2f, b * 0.8f + 0.2f);
 
   // Create per-channel tab style using CSS-style derivation
   if (_uicontext && _uicontext->_theme_engine) {
     auto base_tab_style = _uicontext->_theme_engine->_styledb->getStyle("tab"_crcu);
     if (base_tab_style) {
       auto channel_tab_style = Style::derive(base_tab_style);
-      channel_tab_style->_border_color = channel_color;        // Tab outline = channel color
-      channel_tab_style->_bg_color = channel_color * 0.4f;     // Tab bg = channel color * 0.4
+      channel_tab_style->_border_color = fvec4(channel_color,1);        // Tab outline = channel color
+      channel_tab_style->_bg_color = fvec4(channel_color * 0.4f,BASE_ALPHA);     // Tab bg = channel color * 0.4
 
       // Register this derived style in the theme database
       std::string style_name = "tab:" + name;
@@ -155,6 +160,8 @@ void LoggerGroup::addChannel(const std::string& name, lev2::Context* pt) {
   _tab_widget->addChild(view._container);
   view._container->gpuInit(pt);
   vpack->_draw_background = false;
+  vpack->_fill = true;  // Distribute remaining space to children without fixed height
+  vpack->_margin = 2;   // Small margin between sections for visual separation
 
   // Apply the channel-specific tab style
   if (_uicontext && _uicontext->_theme_engine) {
@@ -167,36 +174,39 @@ void LoggerGroup::addChannel(const std::string& name, lev2::Context* pt) {
   // bg = channel_color * 0.2, text = channel_color
   auto statusarea = std::make_shared<TextBox>(
     name + "_status",
-    channel_color * 0.2f,  // Background = channel color * 0.2
+    fvec4(channel_color* 0.75f, BASE_ALPHA),  // Background = channel color * 0.2
     ""
   );
-  statusarea->_fixed_height = 80;
+  statusarea->_fixed_height = 28;  // Start small, will grow with content
   statusarea->_blending = lev2::BlendingMacro::ALPHA;
   view._status_area = statusarea;
-  view._status_area->_color = channel_color * 0.2f;
-  view._status_area->_textcolor = channel_color;  // Text = channel color
+  view._status_area->_color = fvec4(channel_color * 0.25f,BASE_ALPHA);
+  view._status_area->_textcolor = fvec4(1,1,1,1);  // Text = channel color
   view._status_area->_halign = ETextAlignH::LEFT;
   view._status_area->_valign = ETextAlignV::TOP;
   vpack->addChild(view._status_area);
   view._status_area->gpuInit(pt);
 
   // Performance graphs grid in middle
-  auto dynagrid = std::make_shared<DynaGrid>(name + "_perf_grid", 0, 0, width(), 200);
+  // bg = channel_color * 0.1 (between status 0.2 and log 0.0)
+  auto dynagrid = std::make_shared<DynaGrid>(name + "_perf_grid", 0, 0, width(), 100);
   view._perf_grid = dynagrid;
   vpack->addChild(view._perf_grid);
   view._perf_grid->gpuInit(pt);
-  dynagrid->_fixed_height = 200;
+  dynagrid->_fixed_height = 100;  // Start small, will grow with content
+  dynagrid->_bgcolor = fvec4(channel_color * 0.3f,BASE_ALPHA);  // Background = channel color * 0.1
+  dynagrid->_draw_background = true;
 
   // Log area at bottom (scrolling log text)
   // bg = black, text = channel_color
   auto log_area = std::make_shared<TextBox>(
     name + "_log",
-    fvec4(0.0f, 0.0f, 0.0f, 1.0f),  // Black background
+    fvec4(channel_color*0.2, 0.75f),  // Black background
     ""
   );
   log_area->_blending = lev2::BlendingMacro::ALPHA;
   view._log_area = log_area;
-  view._log_area->_textcolor = channel_color;  // Text = channel color
+  view._log_area->_textcolor = fvec4(channel_color,1);  // Text = channel color
   view._log_area->_halign = ETextAlignH::LEFT;
   view._log_area->_valign = ETextAlignV::TOP;  // Use TOP instead of BOTTOM for consistent positioning
   view._log_area->_enable_scrolling = true;  // Enable mouse wheel scrolling
@@ -213,9 +223,9 @@ void LoggerGroup::DoDraw(drawevent_constptr_t drwev) {
   processQueuedMessages(ctx);
 
   // Draw semi-transparent dark background
-  Widget::_drawColoredBox(drwev, _background_color, lev2::BlendingMacro::ALPHA);
+  //Widget::_drawColoredBox(drwev, _background_color, lev2::BlendingMacro::ALPHA);
 
-  _tab_widget->_contentBackground = _background_color;
+  //_tab_widget->_contentBackground = _background_color;
 
   // Draw children
   drawChildren(drwev);
@@ -423,6 +433,18 @@ void LoggerGroup::_updateStatusUI(const std::string& channel, const std::string&
       oss << key << ": " << value << "\n";
     }
     view._status_area->setText(oss.str());
+
+    // Content-based sizing: Update height based on number of status lines
+    const int line_height = 20;  // Approximate height per line
+    const int padding = 10;      // Top + bottom padding
+    int num_lines = view._status_lines.size();
+    int new_height = std::max(40, num_lines * line_height + padding);  // Minimum 40px
+    view._status_area->_fixed_height = new_height;
+
+    // Trigger layout update
+    if (view._container) {
+      view._container->DoLayout();
+    }
   }
 }
 
@@ -477,6 +499,23 @@ void LoggerGroup::_updatePerfGraphUI(const std::string& channel, const std::stri
   if (channel_ptr && !channel_ptr->_series.empty()) {
     auto series = channel_ptr->_series[0];
     series->addSample(float_value);
+  }
+
+  // Content-based sizing: Update perf grid height based on number of graphs
+  // Assume grid will arrange in rows, each graph needs ~100-150px height
+  int num_graphs = view._perf_graphs.size();
+  if (num_graphs > 0) {
+    const int graph_height = 120;  // Approximate height per graph row
+    const int padding = 20;         // Extra padding
+    // Assume 2 columns max, so rows = ceil(num_graphs / 2)
+    int num_rows = (num_graphs + 1) / 2;
+    int new_height = std::max(100, num_rows * graph_height + padding);  // Minimum 100px
+    view._perf_grid->_fixed_height = new_height;
+
+    // Trigger layout update
+    if (view._container) {
+      view._container->DoLayout();
+    }
   }
 }
 

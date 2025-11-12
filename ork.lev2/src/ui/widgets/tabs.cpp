@@ -13,6 +13,8 @@ namespace ork::ui {
 /////////////////////////////////////////////////////////////////////////
 TabWidget::TabWidget(const std::string& name, int x, int y, int w, int h)
     : Group(name, x, y, w, h) {
+  _tabBarBackground = fvec4(0.2, 0.2, 0.25, 1.0);
+  _contentBackground = fvec4(0.15, 0.15, 0.2, 1.0);
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -170,7 +172,7 @@ void TabWidget::DoDraw(drawevent_constptr_t drwev) {
   auto defmtl = lev2::defaultUIMaterial();
 
   mtxi->PushUIMatrix();
-  {
+  if(_draw_background){
     // Draw content background (area below tabs)
     if (_geometry._h > effectiveTabBarHeight) {
       int x1, y1, x2, y2;
@@ -183,11 +185,11 @@ void TabWidget::DoDraw(drawevent_constptr_t drwev) {
       rs->setBlendingMacro(lev2::BlendingMacro::ALPHA);
       rs->setDepthTest(lev2::EDepthTest::OFF);
       int prev_pri = rs->_priority;
-      rs->_priority = 1<<16; 
+      rs->_priority = 1<<17; 
       fxi->pushRasterState(rs);
       tgt->PushModColor(_contentBackground);
       defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
-      primi->RenderQuadAtZ(defmtl.get(), x1, x2, y1, y2, 0.0f,
+      if(0)primi->RenderQuadAtZ(defmtl.get(), x1, x2, y1, y2, 0.0f,
                             0.0f, 1.0f, 0.0f, 1.0f);
       fxi->popRasterState();
       rs->_priority = prev_pri;
@@ -313,9 +315,10 @@ void TabWidget::_drawTabBar(drawevent_constptr_t drwev) {
       if (fontman && !child->_name.empty()) {
         // Center text horizontally in tab
         int text_width = fontman->stringWidth(child->_name.length());
+        int text_height = fontman->stringHeight(1);
         int tab_width = x2 - x1;
         int textX = x1 + (tab_width - text_width) / 2;  // Center horizontally
-        int textY = y1 + (_tabBarHeight / 2);  // Center vertically
+        int textY = y1 + (_tabBarHeight-text_height) / 2;  // Center vertically
 
         // Get style for text color
         uint64_t style_tag;

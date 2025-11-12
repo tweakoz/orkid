@@ -52,8 +52,9 @@ struct TabWidget : public Group {
   std::unordered_map<widget_ptr_t, uint64_t> _per_tab_style_tags;
 
   // Widget-level colors
-  fvec4 _tabBarBackground = fvec4(0.2, 0.2, 0.25, 1.0);
-  fvec4 _contentBackground = fvec4(0.15, 0.15, 0.2, 1.0);
+  fvec4 _tabBarBackground;
+  fvec4 _contentBackground;
+  bool _draw_background = true;
 
   protected:
   // Override from Widget

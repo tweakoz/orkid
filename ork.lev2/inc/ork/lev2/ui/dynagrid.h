@@ -40,6 +40,10 @@ struct DynaGrid : public Group {
   float _aspect_min = 0.0f;  // Minimum cell aspect ratio (0.0 = ignore)
   float _aspect_max = 0.0f;  // Maximum cell aspect ratio (0.0 = ignore)
 
+  // Visual style
+  fvec4 _bgcolor = fvec4(0.0f, 0.0f, 0.0f, 0.0f);  // Background color (transparent by default)
+  bool _draw_background = false;
+
 private:
   void DoLayout() override;
   void _doOnResized() override;

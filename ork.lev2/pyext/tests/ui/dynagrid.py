@@ -85,7 +85,7 @@ class DynaGridTest(object):
     )
     self.tabsw = tabs.widget
     lg_group.replaceChild(self.griditems[0].layout, tabs)
-    self.tabsw.showTabs = True
+    self.tabsw.draw_tabs = True
 
     ############################################
     # Create color palette for items

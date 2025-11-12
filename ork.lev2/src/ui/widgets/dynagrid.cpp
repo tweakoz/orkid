@@ -29,6 +29,10 @@ void DynaGrid::_doOnResized() {
 }
 /////////////////////////////////////////////////////////////////////////
 void DynaGrid::DoDraw(drawevent_constptr_t drwev) {
+  // Draw background if enabled
+  if (_draw_background) {
+    Widget::_drawColoredBox(drwev, _bgcolor, lev2::BlendingMacro::ALPHA);
+  }
   drawChildren(drwev);
 }
 /////////////////////////////////////////////////////////////////////////

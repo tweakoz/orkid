@@ -70,7 +70,7 @@ class PageWidgetExample(object):
     ############################################
     # Set initial page
     ############################################
-    self.tabsw.showTabs = False
+    self.tabsw.draw_tabs = False
     self.tabsw.setActiveTab(0)
 
     ############################################

@@ -74,7 +74,7 @@ class GraphViewTest(object):
     print(self.logger_group)
     # Register logger group with backend
     self.logger_group.registerOnBackend(self.logger_backend)
-    self.logger_group.background_color = vec4(0.0, 0.0, 0.0, 0.5)
+    self.logger_group.background_color = vec4(1.0, 0.0, 0.0, 0.25)
     print("LoggerGroup registered with backend")
 
     # Add logger group as overlay
