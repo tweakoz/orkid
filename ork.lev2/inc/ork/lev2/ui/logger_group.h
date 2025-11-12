@@ -93,7 +93,7 @@ private:
   // UI update helpers (must be called on UI thread)
   void _appendLogToUI(const std::string& channel, const std::string& msg);
   void _updateStatusUI(const std::string& channel, const std::string& subchan, const std::string& msg);
-  void _updatePerfGraphUI(const std::string& channel, const std::string& name, svar64_t value);
+  void _updatePerfGraphUI(const std::string& channel, const std::string& name, svar64_t value, lev2::Context* pt);
 };
 
 ///////////////////////////////////////////////////////////////////////////////

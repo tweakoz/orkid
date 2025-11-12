@@ -109,7 +109,7 @@ graphseries_ptr_t GraphChannel::getSeries(const std::string& name) {
 // GraphView Implementation
 /////////////////////////////////////////////////////////////////////////
 GraphView::GraphView()
-    : Surface("GraphView", 0, 0, 32, 32, fvec4(1, 0, 0, 1), 1.0)
+    : Surface("GraphView", 0, 0, 32, 32, fvec4(0, 0, 0, 1), 1.0)
     , _lockX(false)
     , _lockY(false)
     , _lockYZOOM(false)
@@ -383,7 +383,7 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
           tgt->RefModColor() = series->_color;
           mtxi->PushUIMatrix(width(), height());
           lev2::FontMan::beginTextBlock(tgt, 128);
-          lev2::FontMan::DrawText(tgt, ix2 - (max_label_width + 16), ichanlaby, series->_name.c_str());
+          lev2::FontMan::DrawText(tgt, width() - (max_label_width + 16), ichanlaby, series->_name.c_str());
           lev2::FontMan::endTextBlock(tgt);
           mtxi->PopUIMatrix();
 
@@ -399,7 +399,7 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
               tgt->RefModColor() = series->_color;
               mtxi->PushUIMatrix(width(), height());
               lev2::FontMan::beginTextBlock(tgt, 128);
-              lev2::FontMan::DrawText(tgt, ix2 - (max_label_width + 16) - (sw2 + 16), ichanlaby, valstr.c_str());
+              lev2::FontMan::DrawText(tgt, width() - (max_label_width + 16) - (sw2 + 16), ichanlaby, valstr.c_str());
               lev2::FontMan::endTextBlock(tgt);
               mtxi->PopUIMatrix();
             }
@@ -407,8 +407,8 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
             ///////////////////////////////////////////////////
             // draw toggle box
             ///////////////////////////////////////////////////
-            int x1 = ix2 - (max_label_width + 28); // ~12 pixels left margin (1 char width)
-            int x2 = ix2 - 16;                     // 16 pixels right margin
+            int x1 = width() - (max_label_width + 28); // ~12 pixels left margin (1 char width)
+            int x2 = width() - 16;                     // 16 pixels right margin
             int y1 = ichanlaby;
             int y2 = ichanlaby + 16;
 
@@ -637,11 +637,10 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
     if (_name.length()) {
       tgt->RefModColor() = fvec3(1, 0.5, 0);
       lev2::FontMan::beginTextBlock(tgt, 32);
-      int sw = lev2::FontMan::stringWidth(_name.length());
       lev2::FontMan::DrawText(
           tgt, //
-          ixc - (sw >> 1),
-          16,
+          16,  // Top-left with 16px left margin
+          16,  // Top with 16px top margin
           _name.c_str());
       lev2::FontMan::endTextBlock(tgt);
     }

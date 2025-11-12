@@ -377,7 +377,7 @@ void LoggerGroup::processQueuedMessages(lev2::Context* pt) {
         _updateStatusUI(msg.channel, msg.subchan, msg.message);
         break;
       case PendingMessage::PERF:
-        _updatePerfGraphUI(msg.channel, msg.perf_name, msg.perf_value);
+        _updatePerfGraphUI(msg.channel, msg.perf_name, msg.perf_value, pt);
         break;
     }
   }
@@ -450,7 +450,7 @@ void LoggerGroup::_updateStatusUI(const std::string& channel, const std::string&
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void LoggerGroup::_updatePerfGraphUI(const std::string& channel, const std::string& name, svar64_t value) {
+void LoggerGroup::_updatePerfGraphUI(const std::string& channel, const std::string& name, svar64_t value, lev2::Context* pt) {
   auto it = _channel_views.find(channel);
   if (it == _channel_views.end())
     return;
@@ -470,9 +470,17 @@ void LoggerGroup::_updatePerfGraphUI(const std::string& channel, const std::stri
     view._perf_grid->addChild(graph);
     view._perf_graphs[name] = graph;
 
+    // Initialize GPU resources if needed
+    if (pt && graph->_needsinit) {
+      graph->gpuInit(pt);
+    }
+
     // Create channel and series for this perf metric
     auto channel_ptr = graph->channel(name);
     channel_ptr->addSeries(name, fvec3(0.3f, 0.8f, 1.0f)); // Cyan color
+
+    // Mark as needing initial paint
+    graph->MarkSurfaceDirty();
   } else {
     graph = graph_it->second;
   }
@@ -499,6 +507,8 @@ void LoggerGroup::_updatePerfGraphUI(const std::string& channel, const std::stri
   if (channel_ptr && !channel_ptr->_series.empty()) {
     auto series = channel_ptr->_series[0];
     series->addSample(float_value);
+    // Mark GraphView surface as needing repaint
+    graph->MarkSurfaceDirty();
   }
 
   // Content-based sizing: Update perf grid height based on number of graphs

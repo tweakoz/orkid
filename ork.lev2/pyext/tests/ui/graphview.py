@@ -68,6 +68,10 @@ class GraphViewTest(object):
     logger().setBackend(self.logger_backend)
     print("LoggerUIBackend created and set")
 
+    # Configure GVIEW channel for perfItem testing
+    self.gview_channel = logger().configureChannel("GVIEW", vec3(0.3, 1.0, 0.8), True)
+    print(f"GVIEW channel configured: {self.gview_channel}")
+
     # Create LoggerGroup widget
     self.logger_group = lev2.ui.LoggerGroup.create("logger_ui", [".*"])
     print("LoggerGroup created")
@@ -185,6 +189,12 @@ class GraphViewTest(object):
     self.square_phase = 0.0
     self.sawtooth_phase = 0.0
 
+    # FM synthesis parameters for perfItem test
+    self.fm_carrier_freq = 0.2
+    self.fm_modulator_freq = 0.05
+    self.fm_modulation_index = 3.0
+    self.fm_phase = 0.0
+
     ############################################
     # Signal handling
     ############################################
@@ -203,6 +213,13 @@ class GraphViewTest(object):
   ##############################################
 
   def onUpdate(self,updinfo):
+    # Log messages every 120 frames (~2 seconds at 60fps)
+    frame_count = int(self.time / self.time_speed)
+    if frame_count % 120 == 0:
+      self.gview_channel.log(f"Frame {frame_count}: FM synthesis running")
+      self.gview_channel.status("synthesis", f"Carrier: {self.fm_carrier_freq:.3f} Hz, Mod: {self.fm_modulator_freq:.3f} Hz")
+      self.gview_channel.status("modulation", f"Index: {self.fm_modulation_index:.2f}")
+
     # Smoothly interpolate current frequencies toward target frequencies
     self.sine_freq_current += (self.sine_freq_target - self.sine_freq_current) * self.freq_smoothing
     self.cosine_freq_current += (self.cosine_freq_target - self.cosine_freq_current) * self.freq_smoothing
@@ -228,6 +245,19 @@ class GraphViewTest(object):
     self.sawtooth_series.addSample(sawtooth_val)
 
     self.time += self.time_speed
+
+    # Send synthetic perfItems to GVIEW channel
+    # FM synthesis: carrier modulated by sine wave
+    modulator = math.sin(self.fm_phase * self.fm_modulator_freq) * self.fm_modulation_index
+    fm_wave = math.sin(self.fm_phase * self.fm_carrier_freq + modulator)
+
+    # Send multiple perfItems to test multiple GraphViews in DynaGrid
+    self.gview_channel.perfItem("fm_wave", fm_wave)
+    self.gview_channel.perfItem("carrier", math.sin(self.fm_phase * self.fm_carrier_freq))
+    self.gview_channel.perfItem("modulator", modulator / self.fm_modulation_index)  # Normalize
+    self.gview_channel.perfItem("modulator_raw", modulator)
+
+    self.fm_phase += self.time_speed
 
     # Mark graphview as needing repaint
     self.graphview.setDirty()

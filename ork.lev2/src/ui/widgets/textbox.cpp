@@ -55,21 +55,21 @@ void TextBox::DoDraw(drawevent_constptr_t drwev) {
   auto primi = tgt->PRI();
   auto defmtl = lev2::defaultUIMaterial();
 
-  // Enable scissor for scrolling
+  // Background coordinates (never scroll)
+  int ix1, iy1, ix2, iy2, ixc, iyc;
+  LocalToRoot(0, 0, ix1, iy1);
+  ix2 = ix1 + _geometry._w;
+  iy2 = iy1 + _geometry._h;
+  ixc = ix1 + (_geometry._w >> 1);
+  iyc = iy1 + (_geometry._h >> 1);
+
+  // Enable scissor for scrolling (must use root coordinates)
   if (_enable_scrolling) {
-    fbi->pushScissor(lev2::ViewportRect(_geometry._x, _geometry._y, _geometry._w, _geometry._h));
+    fbi->pushScissor(lev2::ViewportRect(ix1, iy1, _geometry._w, _geometry._h));
   }
 
   mtxi->PushUIMatrix();
   {
-    // Background coordinates (never scroll)
-    int ix1, iy1, ix2, iy2, ixc, iyc;
-    LocalToRoot(0, 0, ix1, iy1);
-    ix2 = ix1 + _geometry._w;
-    iy2 = iy1 + _geometry._h;
-    ixc = ix1 + (_geometry._w >> 1);
-    iyc = iy1 + (_geometry._h >> 1);
-
     // Draw background (always at fixed position)
     auto rs = defmtl->_rasterstate;
     auto omacro = rs->_blendingMacro;
