@@ -23,6 +23,28 @@ libblock lib_sdf2dtools {
       vec2 q = abs(p) - b + r;
       return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - r;
   }
+  ///////////////////////////////
+  float sdPentagram(in vec2 p, in float r) {
+      const float k1x = 0.809016994; // cos(π/ 5) = ¼(√5+1)
+      const float k2x = 0.309016994; // sin(π/10) = ¼(√5-1)
+      const float k1y = 0.587785252; // sin(π/ 5) = ¼√(10-2√5)
+      const float k2y = 0.951056516; // cos(π/10) = ¼√(10+2√5)
+      const float k1z = 0.726542528; // tan(π/ 5) = √(5-2√5)
+      float nk1x = k1x*-1.0;
+      float nk1y = k1y*-1.0;
+      float nk2y = k2y*-1.0;
+      const vec2  v1  = vec2( k1x,nk1y);
+      const vec2  v2  = vec2(nk1x,nk1y);
+      const vec2  v3  = vec2( k2x,nk2y);
+
+      p.x = abs(p.x);
+      p -= 2.0*max(dot(v1,p),0.0)*v1;
+      p -= 2.0*max(dot(v2,p),0.0)*v2;
+      p.x = abs(p.x);
+      p.y -= r;
+      return length(p-v3*clamp(dot(p,v3),0.0,k1z*r))
+             * sign(p.y*v3.x-p.x*v3.y);
+  }
 }
 libblock lib_sdftools {
 

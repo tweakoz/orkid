@@ -230,7 +230,7 @@ fragment_shader ps_sdf_triangle
   );
 
   // Calculate triangle SDF with radius 0.85 (fits well in unit square)
-  float radius = 0.78;
+  float radius = 0.707;
   float dist = sdEquilateralTriangle(rotated, radius);
 
   // Apply corner rounding if requested
@@ -419,6 +419,73 @@ technique sdf_pause {
   pass p0 {
     vertex_shader   = vs_sdf_box;
     fragment_shader = ps_sdf_pause;
+    state_block     = sb_sdf_ui;
+  }
+}
+
+///////////////////////////////////////////////////////////////
+// Star/Pentagram (for ratings, decorations)
+///////////////////////////////////////////////////////////////
+
+fragment_shader ps_sdf_star
+  : fif_sdf_box
+  : lib_sdf2dtools {
+
+  // Convert to normalized space (-1 to 1)
+  vec2 nspace = frg_uv * 2.0 - vec2(1.0, 1.0);
+
+  // Apply rotation (shape_param is rotation angle in radians)
+  float rotation = shape_param;
+  float c = cos(rotation);
+  float s = sin(rotation);
+  vec2 rotated = vec2(
+    nspace.x * c - nspace.y * s,
+    nspace.x * s + nspace.y * c
+  );
+
+  // Calculate star SDF with radius that fits well in unit square
+  float radius = 0.707;
+  float dist = sdPentagram(rotated, radius);
+
+  // Anti-aliasing using derivatives
+  float aa = fwidth(dist) * 0.5;
+  float neg1 = -1.0;
+  //float naa = aa * -1.0;
+  float naa = aa * neg1;
+  float edge_alpha = 1.0 - smoothstep(naa, aa, dist);
+
+  // Determine color with anti-aliased border transition
+  vec4 final_color;
+  if (border_width > 0.0) {
+    // Convert border_width from pixels to normalized space
+    vec2 half_size = box_size * 0.5;
+    float min_size = min(half_size.x, half_size.y);
+    float normalized_border = (border_width / min_size) * radius;
+    float nborder = normalized_border * neg1;
+
+    // Smoothly transition from fill to border at inner edge
+    float border_blend = smoothstep(nborder + naa, nborder + aa, dist);
+    final_color = mix(fill_color, border_color, border_blend);
+  } else {
+    // No border - just fill color
+    final_color = fill_color;
+  }
+
+  float out_alpha = final_color.a * edge_alpha;
+  if (out_alpha < 0.01) {
+    discard;
+  }
+
+  // Apply modulation and edge anti-aliasing
+  out_clr = final_color * ModColor;
+  out_clr.a = out_alpha;
+}
+
+technique sdf_star {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_sdf_box;
+    fragment_shader = ps_sdf_star;
     state_block     = sb_sdf_ui;
   }
 }

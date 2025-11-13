@@ -425,4 +425,59 @@ void ThemeEngine::drawPause(
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Star/Pentagram (for ratings, decorations)
+///////////////////////////////////////////////////////////////////////////////
+
+void ThemeEngine::drawStar(
+    int x, int y, int w, int h,
+    drawevent_constptr_t drwev,
+    const Style* style,
+    float rotation) {
+
+  auto impl = _impl.getShared<ThemeEngineImpl>();
+  auto tgt = drwev->GetTarget();
+  auto mtxi = tgt->MTXI();
+  auto primi = tgt->PRI();
+  auto fxi = tgt->FXI();
+
+  if (nullptr == impl->_sdf_material) {
+    gpuInit(tgt);
+  }
+
+  auto mtl = impl->_sdf_material;
+  auto rst = mtl->_rasterstate;
+  mtxi->PushUIMatrix();
+
+  float fx1 = (float)x;
+  float fy1 = (float)y;
+  float fx2 = fx1 + (float)w;
+  float fy2 = fy1 + (float)h;
+
+  auto rcfd = std::make_shared<lev2::RenderContextFrameData>(tgt);
+  lev2::RenderContextInstData RCID(rcfd);
+  const fmtx4& mvp_mtx = mtxi->RefMVPMatrix();
+
+  fxi->BeginBlock(impl->_sdf_star_tek, RCID);
+  mtl->bindParam(impl->_param_mvp, mvp_mtx);
+  mtl->bindParam(impl->_param_modcolor, fvec4(1.0f, 1.0f, 1.0f, 1.0f));
+  mtl->bindParam(impl->_param_box_size, fvec2((float)w, (float)h));
+  mtl->bindParam(impl->_param_box_pos, fvec2(fx1, fy1));
+  mtl->bindParam(impl->_param_corner_radius, (float)style->_corner_radius);
+  mtl->bindParam(impl->_param_shape_param, rotation);
+  mtl->bindParam(impl->_param_border_width, (float)style->_border_width);
+  mtl->bindParam(impl->_param_fill_color, style->_bg_color);
+  mtl->bindParam(impl->_param_border_color, style->_border_color);
+
+  rst->setBlendingMacro(style->_blend_mode);
+  fxi->pushRasterState(rst);
+  primi->RenderEMLQuadAtZV16T16C16(
+      fx1, fx2, fy1, fy2, 0.0f,
+      0.0f, 1.0f, 0.0f, 1.0f
+  );
+  fxi->popRasterState();
+  mtxi->PopUIMatrix();
+  fxi->EndBlock();
+}
+
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::ui

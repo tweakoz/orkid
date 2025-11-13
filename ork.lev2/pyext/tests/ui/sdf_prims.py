@@ -38,8 +38,9 @@ class SDFPrimsTest(object):
 
     self.ezapp.topWidget.enableUiDraw()
 
-    # Store triangle shapes for animation
+    # Store triangle and star shapes for animation
     self.triangle_shapes = []
+    self.star_shapes = []
 
   ############################################################################
 
@@ -302,12 +303,19 @@ class SDFPrimsTest(object):
     grid = self.tabsw.makeChild(uiclass=lev2.ui.DynaGrid, args=["Special"])
     grid.margin = 4
 
+    import math
     variations = [
       # Pause icon variations (shape_param = spacing between bars)
       ("Narrow\nGap\ns=0.6", "pause", 4, 2, vec4(0.4, 0.5, 0.6, 0.9), "ALPHA", {"shape_param": 0.6}),
       ("Medium\nGap\ns=0.8", "pause", 4, 2, vec4(0.5, 0.4, 0.6, 0.9), "ALPHA", {"shape_param": 0.8}),
       ("Wide\nGap\ns=1.0", "pause", 8, 3, vec4(0.6, 0.4, 0.5, 0.9), "ALPHA", {"shape_param": 1.0}),
       ("Rounded\nPause\nr=8", "pause", 8, 2, vec4(0.4, 0.6, 0.5, 0.9), "ALPHA", {"shape_param": 0.8}),
+
+      # Star variations (shape_param = rotation angle in radians)
+      ("Star\nUp\n0°", "star", 4, 2, vec4(0.9, 0.8, 0.2, 0.9), "ALPHA", {"shape_param": 0.0}),
+      ("Star\nRotate\n36°", "star", 4, 2, vec4(0.9, 0.8, 0.2, 0.9), "ALPHA", {"shape_param": math.pi/5}),
+      ("Star\nBorder\nw=4", "star", 4, 4, vec4(0.8, 0.6, 0.2, 0.9), "ALPHA", {"shape_param": 0.0}),
+      ("Glow\nStar\nAdditive", "star", 4, 2, vec4(1.0, 0.8, 0.3, 0.9), "ADDITIVE", {"shape_param": 0.0}),
     ]
 
     self._populateGrid(grid, variations, "special")
@@ -378,21 +386,31 @@ class SDFPrimsTest(object):
       # Apply theme to shape
       shape_widget.theme = getattr(tokens, style_tag)
 
-      # Store triangle shapes for animation
+      # Store triangle and star shapes for animation
       if shape_type == "triangle":
         self.triangle_shapes.append(shape_widget)
+      elif shape_type == "star":
+        self.star_shapes.append(shape_widget)
 
   ############################################################################
 
   def onUpdate(self, updinfo):
-    # Animate all triangles with rotation
+    # Animate all triangles and stars with rotation
     import math
     time = updinfo.absolutetime
 
+    # Animate triangles
     for idx, shape in enumerate(self.triangle_shapes):
       # Each triangle rotates at a different speed
       rotation_speed = 0.5 + (idx * 0.2)  # Different speeds for variety
       shape.shape_param = time * rotation_speed
+
+    # Animate stars (slower rotation for better visibility)
+    for idx, shape in enumerate(self.star_shapes):
+      # Stars rotate slower and in alternating directions
+      rotation_speed = 0.3 + (idx * 0.15)
+      direction = 1.0 if (idx % 2 == 0) else -1.0  # Alternate directions
+      shape.shape_param = time * rotation_speed * direction
 
   def onUiEvent(self, uievent):
     return lev2.ui.HandlerResult()

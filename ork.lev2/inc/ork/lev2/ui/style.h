@@ -197,6 +197,7 @@ struct ThemeEngine {
   void drawTriangle(int x, int y, int w, int h, drawevent_constptr_t drwev, const Style* style, float rotation = 0.0f);
   void drawRing(int x, int y, int w, int h, drawevent_constptr_t drwev, const Style* style, float inner_radius);
   void drawPause(int x, int y, int w, int h, drawevent_constptr_t drwev, const Style* style, float spacing = 0.3f);
+  void drawStar(int x, int y, int w, int h, drawevent_constptr_t drwev, const Style* style, float rotation = 0.0f);
   void drawText(const Widget* w, drawevent_constptr_t drwev, const Style* style, const std::string& text);
 
   styledatabase_ptr_t _styledb;

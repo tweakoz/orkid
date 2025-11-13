@@ -84,6 +84,13 @@ void SdfShape::DoDraw(ui::drawevent_constptr_t drwev) {
       break;
     }
 
+    case "star"_crcu: {
+      // shape_param is rotation angle in radians
+      float rotation = _shape_param;
+      theme->drawStar(ix1, iy1, w, h, drwev, style.get(), rotation);
+      break;
+    }
+
     default:
       // Unknown shape type - fall back to box
       theme->drawBox(this, drwev, style.get());
