@@ -118,11 +118,29 @@ void TextBox::DoDraw(drawevent_constptr_t drwev) {
     int LINE_SPACING = _font->description().miAdvanceHeight;
 
     int numlines = _lines.size();
+
+    // Calculate visible line range for scrolling optimization
+    int first_visible_line = 0;
+    int last_visible_line = numlines;
+
+    if (_enable_scrolling && LINE_SPACING > 0) {
+      // Calculate which lines are actually visible in the viewport
+      first_visible_line = std::max(0, (_scroll_offset - LINE_SPACING) / LINE_SPACING);
+      last_visible_line = std::min(numlines, (_scroll_offset + _geometry._h + LINE_SPACING) / LINE_SPACING + 1);
+    }
+
     tgt->PushModColor(_textcolor);
     ork::lev2::FontMan::PushFont(_font);
-    lev2::FontMan::beginTextBlock(tgt, _numchars);
+
+    // Only allocate space for visible characters
+    size_t visible_chars = 0;
+    for(int iline = first_visible_line; iline < last_visible_line; iline++) {
+      visible_chars += _lines[iline].length();
+    }
+    lev2::FontMan::beginTextBlock(tgt, visible_chars);
+
     if (numlines) {
-      for( int iline=0; iline<numlines; iline++ ){
+      for( int iline=first_visible_line; iline<last_visible_line; iline++ ){
         auto line = _lines[iline];
         int linelen = line.length();
         int sw = lev2::FontMan::stringWidth(linelen);

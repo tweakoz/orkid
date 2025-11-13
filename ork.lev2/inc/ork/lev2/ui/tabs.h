@@ -69,7 +69,7 @@ private:
   int _tabBarHeight = 30;
   int _hoveredTabIndex = -1;
   bool _showTabs = true;  // When false, acts as a page/stack widget
-
+  float _pulsation_phase = 0.0f;  // Phase accumulator for active tab pulsation
 
   int _getTabIndexAt(int x, int y) const;
   void _drawTabBar(drawevent_constptr_t drwev);

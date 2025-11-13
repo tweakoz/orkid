@@ -49,7 +49,9 @@ class GraphViewTest(object):
                                       left=100,
                                       top=100,
                                       width=1200,
-                                      height=900)
+                                      height=900,
+                                      enable_freerun_ups=True,
+                                      enable_freerun_fps=True)
 
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()
@@ -63,15 +65,17 @@ class GraphViewTest(object):
     # Setup logger UI backend
     ############################################
 
+    LOGGER = logger()
+    
     # Create UI backend for logger
     self.logger_backend = lev2.ui.LoggerUIBackend.create()
-    logger().setBackend(self.logger_backend)
+    LOGGER.setBackend(self.logger_backend)
     print("LoggerUIBackend created and set")
 
     # Configure GVIEW channel for perfItem testing
-    self.gview_channel = logger().configureChannel("GVIEW", vec3(0.3, 1.0, 0.8), True)
+    self.gview_channel = LOGGER.configureChannel("GVIEW", vec3(0.3, 1.0, 0.8), True)
     print(f"GVIEW channel configured: {self.gview_channel}")
-
+    LOGGER.channel("EZAPP").status_interval = 0.1
     # Create LoggerGroup widget
     self.logger_group = lev2.ui.LoggerGroup.create("logger_ui", [".*"])
     print("LoggerGroup created")

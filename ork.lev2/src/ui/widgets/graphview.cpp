@@ -22,6 +22,8 @@ static constexpr int _kbasechanlaby = 16;
 GraphSeries::GraphSeries(const std::string& name, fvec3 color)
     : _name(name)
     , _color(color) {
+    _max_samples = 1000;
+
 }
 /////////////////////////////////////////////////////////////////////////
 void GraphSeries::addSample(float value) {
@@ -64,23 +66,48 @@ void GraphSeries::_updateRange() {
   if (_samples.empty()) {
     _min_value = 0.0f;
     _max_value = 1.0f;
+    _historical_min = 0.0f;
+    _historical_max = 1.0f;
     return;
   }
 
-  _min_value = _samples[0];
-  _max_value = _samples[0];
+  // Calculate current buffer min/max
+  float current_min = _samples[0];
+  float current_max = _samples[0];
 
   for (float val : _samples) {
-    _min_value = std::min(_min_value, val);
-    _max_value = std::max(_max_value, val);
+    current_min = std::min(current_min, val);
+    current_max = std::max(current_max, val);
   }
 
-  // Add 10% padding to range
-  float range = _max_value - _min_value;
+  // Add 10% padding to current range
+  float range = current_max - current_min;
   if (range < 0.001f)
     range = 0.001f; // Avoid div by zero
-  _min_value -= range * 0.1f;
-  _max_value += range * 0.1f;
+  current_min -= range * 0.1f;
+  current_max += range * 0.1f;
+
+  // Initialize historical values on first update
+  if (_range_update_counter == 0) {
+    _historical_min = current_min;
+    _historical_max = current_max;
+  }
+
+  // Apply inertia/momentum:
+  // - Expand immediately when current range exceeds historical range
+  // - Decay slowly toward current range (max 1% change per second at 60fps)
+  _historical_min = std::min(_historical_min, current_min);  // Expand down immediately
+  _historical_max = std::max(_historical_max, current_max);  // Expand up immediately
+
+  // Decay toward current range slowly (lerp)
+  _historical_min = _historical_min * _range_decay_rate + current_min * (1.0f - _range_decay_rate);
+  _historical_max = _historical_max * _range_decay_rate + current_max * (1.0f - _range_decay_rate);
+
+  // Use historical range as display range
+  _min_value = _historical_min;
+  _max_value = _historical_max;
+
+  _range_update_counter++;
 }
 /////////////////////////////////////////////////////////////////////////
 // GraphChannel Implementation
@@ -122,11 +149,11 @@ GraphView::GraphView()
   _grid._zoomX = 0.1f;
   _grid._zoomY = 0.1f;
 
-  // Position horizontal pan so origin is on left side of viewport
+  // Position horizontal pan so x=0 (current sample) is on RIGHT side of viewport
   // hrange = [center - extent/zoom/2, center + extent/zoom/2]
-  // To have left edge at 0: center = extent/zoom/2
+  // To have right edge at 0: center + extent/zoom/2 = 0 → center = -extent/zoom/2
   float hextent = _grid._extent / _grid._zoomX;
-  _grid._center.x = hextent / 2.0f;
+  _grid._center.x = -hextent / 2.0f;  // Negative center puts x=0 on right edge
   _grid._center.y = 0.0f;
 }
 /////////////////////////////////////////////////////////////////////////
@@ -234,8 +261,8 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
         if (not _lockYZOOM)
           _grid._zoomY *= 1.0f / 1.1f;
       }
-      _grid._zoomX         = clamp(_grid._zoomX, 0.1f, 10.0f);
-      _grid._zoomY         = clamp(_grid._zoomY, 0.1f, 10.0f);
+      _grid._zoomX         = clamp(_grid._zoomX, 0.02f, 10.0f);  // 0.02 = 5x more zoom out than 0.1
+      _grid._zoomY         = clamp(_grid._zoomY, 0.02f, 10.0f);
       mNeedsSurfaceRepaint = true;
       return HandlerResult(this);
       break;
@@ -549,12 +576,13 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
 
             for (size_t i = 0; i < display_count; i++) {
               size_t sample_index = start_index + i;
-              float x = float(sample_index);  // Sample index IS the X coordinate in data space
+              // Current sample (most recent) at x=0, older samples at negative X
+              float x = float(sample_index) - float(series_count - 1);
               float y = series->getSample(sample_index);
 
               if (i > 0) {
                 size_t prev_sample_index = start_index + i - 1;
-                float prev_x = float(prev_sample_index);
+                float prev_x = float(prev_sample_index) - float(series_count - 1);
                 float prev_y = series->getSample(prev_sample_index);
 
                 vw.AddVertex(vtx_t(fvec3(prev_x, prev_y, 0), fvec4(), series->_color));

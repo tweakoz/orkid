@@ -65,6 +65,13 @@ void pyinit_logger(py::module& module_core) {
       [](logchannel_ptr_t chan, const std::string& subchannel, const std::string& msg) {
         chan->status(subchannel, "%s", msg.c_str());
       })
+      .def_property("status_interval",
+      [](logchannel_ptr_t chan) -> float {
+        return chan->_status_interval;
+      },
+      [](logchannel_ptr_t chan, float interval) {
+        chan->_status_interval = interval;
+      })
     .def("perfItem",
       [](logchannel_ptr_t chan, const std::string& name, py::object value) {
         svar64_t val;

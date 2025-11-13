@@ -7,6 +7,7 @@
 #include <ork/lev2/ui/event.h>
 #include <ork/lev2/ui/style.h>
 #include <ork/lev2/ui/context.h>
+#include <cmath>
 
 namespace ork::ui {
 
@@ -161,6 +162,9 @@ HandlerResult TabWidget::DoOnUiEvent(event_constptr_t ev) {
 
 /////////////////////////////////////////////////////////////////////////
 void TabWidget::DoDraw(drawevent_constptr_t drwev) {
+  // Update pulsation phase for active tab animation
+  _pulsation_phase += 0.01f;
+
   // Effective tab bar height (0 when in page mode)
   int effectiveTabBarHeight = _showTabs ? _tabBarHeight : 0;
 
@@ -290,8 +294,22 @@ void TabWidget::_drawTabBar(drawevent_constptr_t drwev) {
       // Get style from theme database
       auto style = theme_engine->_styledb->getStyle(style_tag);
       if (style) {
-        // Draw tab using theme engine with geometry directly
-        theme_engine->drawTab(abs_x1, abs_y1, tab_w, tab_h, drwev, style.get());
+        Style pulsating_style = *style;
+        // Apply pulsation to active tab outline
+        if (tabIndex == _activeTabIndex) {
+          // Calculate pulsation multiplier (1.0 ± 0.3)
+          float pulsation = 0.85f + 0.15f * sinf(_pulsation_phase);
+
+          // Create a modified style with pulsating border color
+          pulsating_style._border_color = style->_border_color * pulsation;
+
+          // Draw tab with pulsating outline
+          theme_engine->drawTab(abs_x1, abs_y1, tab_w, tab_h, drwev, &pulsating_style);
+        } else {
+          // Draw tab normally
+          pulsating_style._border_color = style->_border_color * 0.7;
+          theme_engine->drawTab(abs_x1, abs_y1, tab_w, tab_h, drwev, &pulsating_style);
+        }
       }
 
       tabIndex++;

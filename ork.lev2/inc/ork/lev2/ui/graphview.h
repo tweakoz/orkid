@@ -36,7 +36,7 @@ struct GraphSeries {
 
   std::string _name;
   std::deque<float> _samples;
-  size_t _max_samples = 100;
+  size_t _max_samples;
   fvec3 _color;
   bool _visible = true;
 
@@ -47,6 +47,12 @@ struct GraphSeries {
 
   // Moving window display (0 = show all samples, >0 = show only most recent N)
   size_t _window_size = 0;
+
+  // Range inertia/momentum (prevents jittery auto-scaling)
+  float _range_decay_rate = 0.9998f;  // Decay rate: 0.9998^60 ≈ 0.99 (1% change per second at 60fps)
+  float _historical_min = 0.0f;       // Historical min that decays toward current min
+  float _historical_max = 1.0f;       // Historical max that decays toward current max
+  size_t _range_update_counter = 0;   // Track updates for initialization
 
 private:
   void _updateRange();
