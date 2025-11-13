@@ -6,10 +6,11 @@
 # Distributed under the MIT License
 #
 # Demonstrates:
-#   - All 5 SDF primitive types (box, tab, circle, ring, box_per_corner)
+#   - All 6 SDF primitive types (box, tab, circle, triangle, ring, box_per_corner)
 #   - Corner radius variations
 #   - Border width variations
 #   - Blend mode variations
+#   - Rotation/orientation (triangles)
 #   - Color theming
 #   - TabWidget + DynaGrid organization
 ################################################################################
@@ -92,6 +93,7 @@ class SDFPrimsTest(object):
     self._createBoxesTab()
     self._createTabsTab()
     self._createCirclesTab()
+    self._createTrianglesTab()
     self._createRingsTab()
     self._createPerCornerTab()
 
@@ -185,7 +187,36 @@ class SDFPrimsTest(object):
     self._populateGrid(grid, variations, "circles")
 
   ############################################################################
-  # TAB 4: Rings
+  # TAB 4: Triangles
+  ############################################################################
+
+  def _createTrianglesTab(self):
+    """Equilateral triangles (for arrows, indicators)"""
+
+    import math
+    grid = self.tabsw.makeChild(uiclass=lev2.ui.DynaGrid, args=["Triangles"])
+    grid.margin = 4
+
+    variations = [
+      # Rotation variations (shape_param = rotation angle in radians)
+      ("Point\nUp\n0°", "triangle", 8, 2, vec4(0.5, 0.4, 0.3, 0.9), "ALPHA", {"shape_param": 0.0}),
+      ("Rotate\n60°\nCW", "triangle", 8, 2, vec4(0.5, 0.4, 0.3, 0.9), "ALPHA", {"shape_param": math.pi/3}),
+      ("Rotate\n120°\nCW", "triangle", 8, 2, vec4(0.5, 0.4, 0.3, 0.9), "ALPHA", {"shape_param": 2*math.pi/3}),
+      ("Point\nDown\n180°", "triangle", 8, 2, vec4(0.5, 0.4, 0.3, 0.9), "ALPHA", {"shape_param": math.pi}),
+
+      # Corner radius variations
+      ("Sharp\nCorners\nr=0", "triangle", 0, 2, vec4(0.4, 0.5, 0.3, 0.9), "ALPHA", {"shape_param": 0.0}),
+      ("Round\nCorners\nr=12", "triangle", 12, 2, vec4(0.4, 0.5, 0.3, 0.9), "ALPHA", {"shape_param": 0.0}),
+
+      # Border variations
+      ("Thick\nBorder\nw=6", "triangle", 8, 6, vec4(0.3, 0.4, 0.5, 0.9), "ALPHA", {"shape_param": 0.0}),
+      ("Glow\nTriangle\nAdditive", "triangle", 8, 2, vec4(0.8, 0.5, 0.2, 0.8), "ADDITIVE", {"shape_param": 0.0}),
+    ]
+
+    self._populateGrid(grid, variations, "triangles")
+
+  ############################################################################
+  # TAB 5: Rings
   ############################################################################
 
   def _createRingsTab(self):
@@ -213,7 +244,7 @@ class SDFPrimsTest(object):
     self._populateGrid(grid, variations, "rings")
 
   ############################################################################
-  # TAB 5: Per-Corner Boxes
+  # TAB 6: Per-Corner Boxes
   ############################################################################
 
   def _createPerCornerTab(self):
@@ -271,7 +302,7 @@ class SDFPrimsTest(object):
       alignment = grid.makeChild(uiclass=lev2.ui.AlignmentGroup, args=[f"align_{idx}"])
       alignment.alignment = tokens.CENTER
       alignment.width_proportional = 0.9
-      alignment.height_proportional = 0.5
+      alignment.height_proportional = 0.75
       alignment.draw_background = False
       alignment.margin = 4
 
@@ -287,7 +318,15 @@ class SDFPrimsTest(object):
       label_widget.draw_background = False
 
       # SdfShape below label
-      shape_widget = vpack.makeChild(uiclass=lev2.ui.SdfShape, args=[f"shape_{idx}"])
+      alignment2 = vpack.makeChild(uiclass=lev2.ui.AlignmentGroup, args=[f"align2_{idx}"])
+      alignment2.alignment = tokens.CENTER
+      alignment2.width_proportional = 1.0
+      alignment2.height_proportional = 1.0
+      alignment2.draw_background = True
+      alignment2.margin = 0
+      alignment2.maintain_aspect_ratio = 1.0
+
+      shape_widget = alignment2.makeChild(uiclass=lev2.ui.SdfShape, args=[f"shape_{idx}"])
 
       # Configure shape
       shape_widget.shape_type = getattr(tokens, shape_type)

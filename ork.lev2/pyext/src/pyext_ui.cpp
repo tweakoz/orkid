@@ -952,6 +952,10 @@ void pyinit_ui(py::module& module_lev2) {
               [](ui::alignmentgroup_ptr_t group) -> int { return group->_max_height_pixels; },
               [](ui::alignmentgroup_ptr_t group, int val) { group->_max_height_pixels = val; })
           .def_property(
+              "maintain_aspect_ratio",
+              [](ui::alignmentgroup_ptr_t group) -> float { return group->_maintain_aspect_ratio; },
+              [](ui::alignmentgroup_ptr_t group, float val) { group->_maintain_aspect_ratio = val; })
+          .def_property(
               "margin",
               [](ui::alignmentgroup_ptr_t group) -> int { return group->_margin; },
               [](ui::alignmentgroup_ptr_t group, int val) { group->_margin = val; })

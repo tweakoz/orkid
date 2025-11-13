@@ -60,6 +60,13 @@ void SdfShape::DoDraw(ui::drawevent_constptr_t drwev) {
       break;
     }
 
+    case "triangle"_crcu: {
+      // shape_param is rotation angle in radians
+      float rotation = _shape_param;
+      theme->drawTriangle(ix1, iy1, w, h, drwev, style.get(), rotation);
+      break;
+    }
+
     case "ring"_crcu: {
       float inner_radius = _shape_param;
       if (inner_radius <= 0.0f) {

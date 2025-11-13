@@ -209,6 +209,66 @@ technique sdf_circle {
 }
 
 ///////////////////////////////////////////////////////////////
+// Equilateral Triangle (for arrows, indicators, patterns)
+///////////////////////////////////////////////////////////////
+
+fragment_shader ps_sdf_triangle : fif_sdf_box {
+
+  // Distance from center in pixel space for circles
+  float dist = length(frg_pixel_pos);
+
+  // Create concentric circles every 10 pixels
+  float band = floor(dist / 10.0);
+  float alternate = mod(band, 2.0);
+
+  // White and black stripes
+  vec3 color = mix(vec3(0.0), vec3(1.0), alternate);
+
+  // Triangle in unit space
+  vec2 half_size = box_size * 0.5;
+  vec2 p = frg_pixel_pos / half_size;
+
+  // Apply rotation
+  float rotation = shape_param;
+  float c = cos(rotation);
+  float s = sin(rotation);
+  p = vec2(
+    p.x * c - p.y * s,
+    p.x * s + p.y * c
+  );
+
+  // Equilateral triangle SDF centered at origin with radius 1
+  const float k = sqrt(3.0);
+
+  // Shift p down to move centroid to origin
+  // For equilateral triangle, centroid is 1/3 height from base
+  vec2 q = p;
+  q.y = q.y + 0.5;  // Empirical offset to center
+
+  q.x = abs(q.x) - 1.0;
+  q.y = q.y + 1.0/k;
+  if (q.x + k*q.y > 0.0) {
+    q = vec2(q.x - k*q.y, -k*q.x - q.y) / 2.0;
+  }
+  q.x -= clamp(q.x, -2.0, 0.0);
+  float tri_dist = -length(q) * sign(q.y);
+
+  // Modulate circles with triangle (inside = show, outside = hide)
+  float mask = step(tri_dist, 0.0);
+
+  out_clr = vec4(color * mask, mask);
+}
+
+technique sdf_triangle {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_sdf_box;
+    fragment_shader = ps_sdf_triangle;
+    state_block     = sb_sdf_ui;
+  }
+}
+
+///////////////////////////////////////////////////////////////
 // Ring/Donut (for progress indicators, badges)
 ///////////////////////////////////////////////////////////////
 

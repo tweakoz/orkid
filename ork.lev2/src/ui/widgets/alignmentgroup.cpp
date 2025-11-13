@@ -82,6 +82,43 @@ void AlignmentGroup::DoLayout() {
   }
 
   ///////////////////////////////////////////////
+  // Maintain aspect ratio if requested
+  ///////////////////////////////////////////////
+  if (_maintain_aspect_ratio > 0.0f) {
+    float desired_ratio = _maintain_aspect_ratio;
+
+    // Start with current calculated dimensions
+    int ideal_width = child_width;
+    int ideal_height = (int)(ideal_width / desired_ratio);
+
+    // Apply HARD max constraints
+    if (_max_width_pixels >= 0 && ideal_width > _max_width_pixels) {
+      ideal_width = _max_width_pixels;
+      ideal_height = (int)(ideal_width / desired_ratio);
+    }
+    if (_max_height_pixels >= 0 && ideal_height > _max_height_pixels) {
+      ideal_height = _max_height_pixels;
+      ideal_width = (int)(ideal_height * desired_ratio);
+    }
+
+    // Apply HARD available space constraint
+    if (ideal_width > available_width || ideal_height > available_height) {
+      // Scale down to fit, maintaining ratio
+      float width_scale = (float)available_width / ideal_width;
+      float height_scale = (float)available_height / ideal_height;
+      float scale = std::min(width_scale, height_scale);
+
+      ideal_width = (int)(ideal_width * scale);
+      ideal_height = (int)(ideal_height * scale);
+    }
+
+    child_width = ideal_width;
+    child_height = ideal_height;
+
+    // Note: min constraints are NOT re-applied - they can be violated
+  }
+
+  ///////////////////////////////////////////////
   // Calculate child position based on alignment
   ///////////////////////////////////////////////
   int child_x = _margin;

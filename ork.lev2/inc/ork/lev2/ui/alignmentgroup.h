@@ -59,6 +59,11 @@ struct AlignmentGroup : public Group {
   int _min_height_pixels = -1;
   int _max_height_pixels = -1;
 
+  // Aspect ratio maintenance (0 = disabled, >0 = width/height ratio)
+  // Maintains ratio while respecting max constraints and available space
+  // May violate min constraints to maintain ratio
+  float _maintain_aspect_ratio = 0.0f;
+
   // Styling
   int _margin = 0;
   fvec4 _bgcolor = fvec4(0.1f, 0.1f, 0.1f, 1.0f);
