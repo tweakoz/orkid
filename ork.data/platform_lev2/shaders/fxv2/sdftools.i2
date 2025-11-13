@@ -5,6 +5,20 @@ typeblock typ_sdftools {
     bool _was_hit;
   };
 }
+
+libblock lib_sdf2dtools {
+  float sdEquilateralTriangle( in vec2 p, in float r ) {
+      const float k = sqrt(3.0);
+      const float negk = k * -1.0;
+      const float neg2 = -2.0;
+
+      p.x = abs(p.x) - r;
+      p.y = p.y + (r/k);
+      if( p.x+k*p.y>0.0 ) p = vec2(p.x-(k*p.y),(p.x*negk)-p.y)/2.0;
+      p.x -= clamp( p.x, r*neg2, 0.0 );
+      return length(p)*sign(p.y)*-1;
+  }  
+}
 libblock lib_sdftools {
 
   vec3 permute(vec3 x) {
