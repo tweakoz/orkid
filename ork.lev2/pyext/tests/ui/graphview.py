@@ -94,6 +94,24 @@ class GraphViewTest(application.ComponentizedApplication):
 
   ##############################################
 
+  def _onAppLink(self):
+    """Called after all components initialized - configure channels here"""
+    # Get logger component (backend now exists after component.onAppInit)
+    logger_comp = self.findComponentByName("logger")
+
+    # Configure GVIEW channel for perfItem testing
+    self.gview_channel = logger_comp.configureChannel(
+        "GVIEW",
+        vec3(0.3, 1.0, 0.8),
+        enable_perfgraph=True
+    )
+    print(f"GVIEW channel configured: {self.gview_channel}")
+
+    # Configure EZAPP channel with status interval
+    logger_comp.configureChannel("EZAPP", vec3(0.5, 0.5, 1.0), status_interval=0.1)
+
+  ##############################################
+
   def _onUiInit(self):
     """Initialize main UI layout and widgets"""
     lg_group = self.ezapp.topLayoutGroup
@@ -147,24 +165,6 @@ class GraphViewTest(application.ComponentizedApplication):
 
     # Create series for all waveforms
     self.waveforms.createSeries(channel, max_samples=1000, auto_range=True, window_size=1000)
-
-  ##############################################
-
-  def _onAppLink(self):
-    """Called after all components initialized - configure channels here"""
-    # Get logger component (backend now exists after component.onAppInit)
-    logger_comp = self.findComponentByName("logger")
-
-    # Configure GVIEW channel for perfItem testing
-    self.gview_channel = logger_comp.configureChannel(
-        "GVIEW",
-        vec3(0.3, 1.0, 0.8),
-        enable_perfgraph=True
-    )
-    print(f"GVIEW channel configured: {self.gview_channel}")
-
-    # Configure EZAPP channel with status interval
-    logger_comp.configureChannel("EZAPP", vec3(0.5, 0.5, 1.0), status_interval=0.1)
 
   ##############################################
 

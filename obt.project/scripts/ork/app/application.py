@@ -10,45 +10,237 @@ from orkengine.core import CrcString
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 #
 ################################################################################
-# Canonical Initialization Sequence:
+# Canonical Initialization, Update, and Exit Sequence
 #
-#  1. Application.__init__()
-#     - Add components via addComponent()
-#     - Set ezapp_args for window configuration
+# This documents the complete lifecycle of an OrkEzApp application, including:
+# - Exact sequence order of all callbacks
+# - Which thread each callback runs on
+# - GIL (Global Interpreter Lock) behavior for Python parallelism
+# - Threading interactions and synchronization points
 #
-#  2. Application.createEzApp()
-#     - Creates OrkEzApp with merged args (defaults + ezapp_args)
-#     - Broadcasts to components: onEzAppCreated(app, ezapp)
-#       * Components can set up early UI (overlays, etc) before enableUiDraw()
-#     - Calls setRefreshPolicy(RefreshFastest, 0)
-#     - Calls enableUiDraw()
-#     - Calls app template method: _onEzAppCreated()
-#       * Default implementation calls _onUiInit()
-#     - App overrides _onUiInit() to set up UI widgets
+# Reference: ork.lev2/pyext/src/pyext_ezapp.cpp, ork.lev2/src/ezapp.cpp
 #
-#  3. [C++ Engine calls following during mainThreadLoop startup]
+################################################################################
+# INITIALIZATION SEQUENCE
+################################################################################
 #
-#  4. Application.onAppInit(initdata)
-#     - Broadcasts to components: onAppInit(app, initdata)
-#       * Components initialize backends, resources
-#     - Calls onAppLink() [see next]
+# 1. Application.__init__() [PYTHON MAIN THREAD, GIL HELD]
+#    - Add components via addComponent()
+#    - Set ezapp_args for window configuration
+#    - User code setup
 #
-#  5. Application.onAppLink()
-#     - Broadcasts to components: onAppLink(app, initdata)
-#       * Components connect to other components, configure channels
-#     - Calls app template method: _onAppLink()
-#       * App configures component channels, connections
+# 2. Application.createEzApp() [PYTHON MAIN THREAD, GIL HELD]
+#    - Creates OrkEzApp with merged args (defaults + ezapp_args)
+#    - Broadcasts to components: onEzAppCreated(app, ezapp)
+#      * Components can set up early UI (overlays, etc) before enableUiDraw()
+#    - Calls setRefreshPolicy(RefreshFastest, 0)
+#    - Calls enableUiDraw()
+#    - Calls app template method: _onEzAppCreated()
+#      * Default implementation calls _onUiInit()
+#    - App overrides _onUiInit() to set up UI widgets
 #
-#  6. Application.onGpuInit(ctx)
-#     - Broadcasts to components: onGpuInit(app, ctx), onGpuLink(app, ctx)
-#     - Calls app template method: _onGpuInit(ctx)
+# 3. ezapp.mainThreadLoop() [PYTHON RELEASES GIL HERE]
+#    Python releases GIL for C++ engine main loop (py::gil_scoped_release)
+#    All subsequent callbacks re-acquire GIL individually
+#    This allows UPDATE THREAD to run Python code in parallel with MAIN THREAD
 #
-#  7. Application.onUpdateInit()
+# 4. Application.onAppInit(initdata) [MAIN THREAD, GIL ACQUIRED]
+#    - First C++ engine callback after GIL release
+#    - Broadcasts to components: onAppInit(app, initdata)
+#      * Components initialize backends, resources
+#    - Calls onAppLink() [see next]
+#
+# 5. Application.onAppLink() [MAIN THREAD, GIL ACQUIRED]
+#    - Broadcasts to components: onAppLink(app, initdata)
+#      * Components connect to other components, configure channels
+#    - Calls app template method: _onAppLink()
+#      * App configures component channels, connections
+#
+# 6. Application.onGpuInit(ctx) [MAIN/GPU THREAD, GIL ACQUIRED]
+#    - Called from CtxGLFW::_runloopBegin()
+#    - GPU context made current: ctx->makeCurrentContext()
+#    - FontMan::gpuInit() called before user callback
+#    - Broadcasts to components: onGpuInit(app, ctx), onGpuLink(app, ctx)
+#    - Calls app template method: _onGpuInit(ctx)
+#    - CRITICAL: Must complete before onUpdateInit (enforced by engine)
+#
+# 7. Application.onAudioInit(audiodev) [MAIN THREAD, GIL ACQUIRED]
+#    - Called during GPU init phase if audio enabled
+#    - Audio system bringup: audio::singularity::synth::bringUp()
+#    - onSynthInit() called first (if set)
+#    - Then onAudioInit() called
+#    - Finally audiodevice->startup()
+#
+# 8. Application.onSynthInit(synth) [MAIN THREAD, GIL ACQUIRED]
+#    - Called before onAudioInit during audio initialization
+#    - Synth instance created and ready
+#
+# 9. [UPDATE THREAD SPAWNED HERE]
+#    Separate C++ thread for update loop, runs concurrently with main thread
+#    Thread name: "update"
+#
+# 10. Application.onUpdateInit() [UPDATE THREAD, GIL ACQUIRED]
+#     - First callback in update thread
+#     - Called AFTER onGpuInit completes (guaranteed by engine)
 #     - Broadcasts to components: onUpdateInit(), onUpdateLink()
+#     - App state flag set: KAPPSTATEFLAG_UPDRUNNING
 #
-#  8. [Main Loop Running]
-#     - onUpdate(updinfo) - called each frame
-#     - onGpuUpdate(ctx), onGpuPreFrame(ctx), onGpuPostFrame(ctx)
+################################################################################
+# MAIN LOOP (Running Concurrently)
+################################################################################
+#
+# MAIN/GPU THREAD LOOP [MAIN THREAD]:
+#   Per iteration of CtxGLFW::_runloopIter():
+#
+#   A. Application.onGpuUpdate(ctx) [MAIN/GPU THREAD, GIL ACQUIRED]
+#      - Called each render iteration
+#      - GPU frame counter incremented
+#      - Use for GPU resource updates
+#
+#   B. Application.onDraw(ctx) [MAIN/GPU THREAD, GIL ACQUIRED]
+#      - Called from CtxGLFW::SlotRepaint()
+#      - Main serial queue processed before execution
+#      - Use for custom rendering
+#
+#   C. Application.onGpuPreFrame(ctx) [MAIN/GPU THREAD, GIL ACQUIRED]
+#      - Currently disabled in engine (commented out)
+#      - Would run before frame rendering
+#
+#   D. Application.onGpuPostFrame(ctx) [MAIN/GPU THREAD, GIL ACQUIRED]
+#      - Currently disabled in engine (commented out)
+#      - Would run after frame rendering (for movie capture, etc.)
+#
+# UPDATE THREAD LOOP [UPDATE THREAD]:
+#   While not KAPPSTATEFLAG_JOINING:
+#
+#   E. Application.onUpdate(updinfo) [UPDATE THREAD, GIL ACQUIRED]
+#      - Called per logical update frame
+#      - May run multiple times per render frame (or vice versa)
+#      - Two execution modes:
+#        * Async/Freerunning: Runs at target UPS (updates per second)
+#        * Sync/Lockstep: Runs at fixed virtual time (deterministic)
+#      - Broadcasts to components: onUpdate(updinfo)
+#      - Calls app template method: _onUpdate(updinfo)
+#      - Parameters: updinfo contains dt, abstime, frame counter
+#
+# EVENT THREAD (Event-driven) [MAIN/EVENT THREAD]:
+#
+#   F. Application.onUiEvent(event) [MAIN/EVENT THREAD, GIL ACQUIRED]
+#      - Not time-based, triggered by UI events
+#      - Must return ui::HandlerResult
+#
+################################################################################
+# GIL AND PARALLELISM
+################################################################################
+#
+# Python GIL Behavior:
+#   1. mainThreadLoop() releases GIL (py::gil_scoped_release)
+#   2. Each callback individually acquires GIL (py::gil_scoped_acquire)
+#   3. GIL released again when callback returns
+#   4. joinUpdate() releases GIL (py::gil_scoped_release)
+#
+# Maximizing Parallelism:
+#   - MAIN THREAD and UPDATE THREAD can run Python code in parallel
+#   - Each thread acquires GIL only when executing Python callbacks
+#   - Keep callbacks short to maximize concurrent execution
+#   - Use C++ queues (_mainq, _updq, _conq) for inter-thread communication
+#
+# Thread-GIL Interactions:
+#   MAIN THREAD:
+#     - Initially owns GIL (Python thread)
+#     - Releases GIL for mainThreadLoop
+#     - Re-acquires GIL for each callback
+#     - Callbacks: onAppInit, onGpuInit, onGpuUpdate, onDraw, onGpuExit
+#
+#   UPDATE THREAD:
+#     - Spawned from C++, never initially owns GIL
+#     - Acquires GIL only for Python callbacks
+#     - Releases immediately after callback
+#     - Callbacks: onUpdateInit, onUpdate, onUpdateExit
+#
+#   GPU CONTEXT:
+#     - Tracked via ThreadGfxContext RAII wrapper
+#     - makeCurrentContext() called before GPU operations
+#
+# State Synchronization:
+#   - App state flags (atomic): KAPPSTATEFLAG_UPDRUNNING, KAPPSTATEFLAG_JOINING
+#   - Serial queues: _mainq (main), _updq (update), _rthreadq (render)
+#   - Concurrent queue: _conq (thread-safe)
+#
+################################################################################
+# EXIT SEQUENCE
+################################################################################
+#
+# Exit triggered by: window close, signalExit(), or Ctrl-C
+#
+# 1. Application state flag set: KAPPSTATEFLAG_JOINING [MAIN THREAD]
+#    - Signals UPDATE THREAD to stop looping
+#
+# 2. Application.onUpdateExit() [UPDATE THREAD, GIL ACQUIRED]
+#    - Last callback in update thread
+#    - Broadcasts to components: onUpdateExit()
+#    - Called when KAPPSTATEFLAG_JOINING detected
+#
+# 3. Application.onAudioExit() [UPDATE THREAD, GIL ACQUIRED]
+#    - Called after onUpdateExit in update thread context
+#    - Audio system shutdown
+#
+# 4. Application.onSynthExit() [UPDATE THREAD, GIL ACQUIRED]
+#    - Called during audio exit
+#    - Synth cleanup
+#
+# 5. [UPDATE THREAD JOIN] [MAIN THREAD, GIL RELEASED]
+#    Update thread joins back to main thread
+#    joinUpdate() called with GIL released for C++ synchronization
+#    CRITICAL: Ensures onUpdateExit completes before onGpuExit
+#
+# 6. Application.onGpuExit(ctx) [MAIN/GPU THREAD, GIL ACQUIRED]
+#    - Called from CtxGLFW::_runloopEnd()
+#    - Called AFTER update thread joins (guaranteed by engine)
+#    - GPU context made current
+#    - Broadcasts to components: onGpuExit(ctx)
+#    - Calls app template method: _onGpuExit(ctx)
+#    - glfwDestroyWindow() called after user callback
+#
+# 7. Application.onAppExit() [MAIN THREAD, GIL ACQUIRED]
+#    - Last callback, after everything shuts down
+#    - mainThreadLoop() has completed
+#    - Broadcasts to components: onAppExit()
+#    - Final cleanup
+#
+# 8. [MAIN THREAD RETURNS] [PYTHON MAIN THREAD, GIL HELD]
+#    GIL fully reacquired, control returns to Python
+#    Python interpreter can safely exit
+#
+################################################################################
+# CRITICAL SEQUENCING CONSTRAINTS
+################################################################################
+#
+# These orderings are enforced by the C++ engine:
+#
+# 1. onGpuInit MUST complete before onUpdateInit
+#    - Update thread spawn deferred until after GPU init
+#
+# 2. onUpdateExit MUST complete before onGpuExit
+#    - joinUpdate() called before CtxGLFW::_runloopEnd()
+#
+# 3. Audio initialization order: onSynthInit -> onAudioInit -> startup()
+#
+# 4. Audio shutdown in update thread context (after onUpdateExit)
+#
+################################################################################
+# THREAD EXECUTION SUMMARY
+################################################################################
+#
+# MAIN THREAD (Process origin, Python relinquishes to C++, GPU context):
+#   onAppInit, onGpuInit, onAudioInit, onSynthInit
+#   [LOOP] onGpuUpdate, onDraw, onUiEvent
+#   onGpuExit, onAppExit
+#
+# UPDATE THREAD (C++ spawned, simulation):
+#   onUpdateInit
+#   [LOOP] onUpdate
+#   onUpdateExit, onAudioExit, onSynthExit
 #
 ################################################################################
 
