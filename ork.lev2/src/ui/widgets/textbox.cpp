@@ -63,10 +63,7 @@ void TextBox::DoDraw(drawevent_constptr_t drwev) {
   ixc = ix1 + (_geometry._w >> 1);
   iyc = iy1 + (_geometry._h >> 1);
 
-  // Enable scissor for scrolling (must use root coordinates)
-  if (_enable_scrolling) {
-    fbi->pushScissor(lev2::ViewportRect(ix1, iy1, _geometry._w, _geometry._h));
-  }
+  fbi->pushScissor(lev2::ViewportRect(ix1, iy1, _geometry._w, _geometry._h));
 
   mtxi->PushUIMatrix();
   {
@@ -186,10 +183,7 @@ void TextBox::DoDraw(drawevent_constptr_t drwev) {
   }
   mtxi->PopUIMatrix();
 
-  // Pop scissor if scrolling is enabled
-  if (_enable_scrolling) {
-    fbi->popScissor();
-  }
+  fbi->popScissor();
 }
 
 HandlerResult TextBox::DoOnUiEvent(event_constptr_t cev) {
