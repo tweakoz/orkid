@@ -33,64 +33,120 @@
 #
 ################################################################################
 
-import signal
 import math
 from orkengine.core import vec3, vec4, logger
 from orkengine import lev2
+from ork.app import application, loggerui
 
 ################################################################################
 
-class GraphViewTest(object):
+class GraphViewTest(application.ComponentizedApplication):
 
   def __init__(self):
     super().__init__()
 
-    self.ezapp = lev2.OrkEzApp.create(self,
-                                      left=100,
-                                      top=100,
-                                      width=1200,
-                                      height=900,
-                                      enable_freerun_ups=True,
-                                      enable_freerun_fps=True)
+    ############################################
+    # Setup logger UI component
+    ############################################
 
+    self.addComponent("logger", loggerui.LoggerUIComponent,
+                      overlay=True,
+                      filter_regex=[".*"],
+                      background_color=vec4(1.0, 0.0, 0.0, 0.25))
+
+    ############################################
+    # Configure EzApp creation args
+    ############################################
+
+    self.ezapp_args = {
+      'left': 100,
+      'top': 100,
+      'width': 1200,
+      'height': 900,
+      'enable_freerun_ups': True,
+      'enable_freerun_fps': True
+    }
+
+    ############################################
+    # Create EzApp and initialize
+    ############################################
+
+    self.createEzApp()
+
+    # Animation state
+    self.time = 0.0
+    self.time_speed = 0.05
+
+    # Phase accumulators for smooth frequency changes
+    self.sine_phase = 0.0
+    self.cosine_phase = 0.0
+    self.square_phase = 0.0
+    self.sawtooth_phase = 0.0
+
+    # FM synthesis parameters for perfItem test
+    self.fm_carrier_freq = 0.2
+    self.fm_modulator_freq = 0.05
+    self.fm_modulation_index = 3.0
+    self.fm_phase = 0.0
+
+    # Frequency control variables (target and current for smooth interpolation)
+    self.sine_freq_target = 0.1
+    self.cosine_freq_target = 0.1
+    self.square_freq_target = 0.1
+    self.sawtooth_freq_target = 0.1
+
+    self.sine_freq_current = 0.1
+    self.cosine_freq_current = 0.1
+    self.square_freq_current = 0.1
+    self.sawtooth_freq_current = 0.1
+
+    self.freq_smoothing = 0.05  # Smoothing factor (0 = no smoothing, 1 = instant)
+
+  ##############################################
+
+  def _onEzAppCreated(self):
+    """Called after ezapp is created - setup UI and components"""
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()
 
+    # Initialize logger first (creates overlay before other widgets)
+    self.initLogger()
+
+    # Initialize main UI
+    self.initUI()
+
+  ##############################################
+
+  def initLogger(self):
+    """Initialize logger component early (before other UI widgets)"""
+    lg_group = self.ezapp.topLayoutGroup
+
+    # Initialize logger component widgets early (before other widgets)
+    logger_comp = self.findComponentByName("logger")
+    if logger_comp and logger_comp.overlay:
+        # Force early backend and widget creation
+        if not logger_comp.logger_backend:
+            logger_comp._logger = logger()
+            logger_comp.logger_backend = lev2.ui.LoggerUIBackend.create()
+            logger_comp._logger.setBackend(logger_comp.logger_backend)
+
+        logger_comp.logger_group = lev2.ui.LoggerGroup.create("logger_ui", logger_comp.filter_regex)
+        logger_comp.logger_group.registerOnBackend(logger_comp.logger_backend)
+        logger_comp.logger_group.background_color = logger_comp.background_color
+        lg_group.overlay_widget = logger_comp.logger_group
+
+  ##############################################
+
+  def initUI(self):
+    """Initialize main UI layout and widgets"""
     lg_group = self.ezapp.topLayoutGroup
     lg_group.margin = 4
     lg_group.clearColorStd = vec4(0.5, 0.4, 0.15, 1)
     lg_group.clearColorGuide = vec4(0.7, 0.6, 0.15, 1)
 
     ############################################
-    # Setup logger UI backend
-    ############################################
-
-    LOGGER = logger()
-    
-    # Create UI backend for logger
-    self.logger_backend = lev2.ui.LoggerUIBackend.create()
-    LOGGER.setBackend(self.logger_backend)
-    print("LoggerUIBackend created and set")
-
-    # Configure GVIEW channel for perfItem testing
-    self.gview_channel = LOGGER.configureChannel("GVIEW", vec3(0.3, 1.0, 0.8), True)
-    print(f"GVIEW channel configured: {self.gview_channel}")
-    LOGGER.channel("EZAPP").status_interval = 0.1
-    # Create LoggerGroup widget
-    self.logger_group = lev2.ui.LoggerGroup.create("logger_ui", [".*"])
-    print("LoggerGroup created")
-    print(self.logger_group)
-    # Register logger group with backend
-    self.logger_group.registerOnBackend(self.logger_backend)
-    self.logger_group.background_color = vec4(1.0, 0.0, 0.0, 0.25)
-    print("LoggerGroup registered with backend")
-
-    # Add logger group as overlay
-    lg_group.overlay_widget = self.logger_group
-
-    ############################################
     # Create horizontal split
-    # Top: GraphView, Bottom: TextBox
+    # Top: GraphView, Bottom: Frequency Sliders
     ############################################
 
     # Create horizontal guide at 75% down
@@ -121,19 +177,6 @@ class GraphViewTest(object):
     vpack.margin = 2
     vpack.item_height = 24
     vpack.fill = False
-
-    # Frequency control variables (target and current for smooth interpolation)
-    self.sine_freq_target = 0.1
-    self.cosine_freq_target = 0.1
-    self.square_freq_target = 0.1
-    self.sawtooth_freq_target = 0.1
-
-    self.sine_freq_current = 0.1
-    self.cosine_freq_current = 0.1
-    self.square_freq_current = 0.1
-    self.sawtooth_freq_current = 0.1
-
-    self.freq_smoothing = 0.05  # Smoothing factor (0 = no smoothing, 1 = instant)
 
     # Create sliders for each waveform frequency
     sine_slider = vpack.makeChild(
@@ -183,40 +226,27 @@ class GraphViewTest(object):
       series.auto_range = True
       series.window_size = 1000  # Moving window: show only most recent 1000 samples
 
-    # Animation state
-    self.time = 0.0
-    self.time_speed = 0.05
+  ##############################################
 
-    # Phase accumulators for smooth frequency changes
-    self.sine_phase = 0.0
-    self.cosine_phase = 0.0
-    self.square_phase = 0.0
-    self.sawtooth_phase = 0.0
+  def _onAppLink(self):
+    """Called after all components initialized - configure channels here"""
+    # Get logger component (backend now exists after component.onAppInit)
+    logger_comp = self.findComponentByName("logger")
 
-    # FM synthesis parameters for perfItem test
-    self.fm_carrier_freq = 0.2
-    self.fm_modulator_freq = 0.05
-    self.fm_modulation_index = 3.0
-    self.fm_phase = 0.0
+    # Configure GVIEW channel for perfItem testing
+    self.gview_channel = logger_comp.configureChannel(
+        "GVIEW",
+        vec3(0.3, 1.0, 0.8),
+        enable_perfgraph=True
+    )
+    print(f"GVIEW channel configured: {self.gview_channel}")
 
-    ############################################
-    # Signal handling
-    ############################################
-
-    def onCtrlC(signum, frame):
-      print("signalling EXIT to ezapp")
-      self.ezapp.signalExit()
-
-    signal.signal(signal.SIGINT, onCtrlC)
+    # Configure EZAPP channel with status interval
+    logger_comp.configureChannel("EZAPP", vec3(0.5, 0.5, 1.0), status_interval=0.1)
 
   ##############################################
 
-  def onGpuInit(self,ctx):
-    pass
-
-  ##############################################
-
-  def onUpdate(self,updinfo):
+  def _onUpdate(self, updinfo):
     # Log messages every 120 frames (~2 seconds at 60fps)
     frame_count = int(self.time / self.time_speed)
     if frame_count % 120 == 0:

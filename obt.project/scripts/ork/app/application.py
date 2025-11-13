@@ -16,6 +16,14 @@ class ComponentizedApplication(object):
     self.app_components = {}
     self.components_sorted = []
     self.absolutetime = 0.0
+    self.ezapp = None # will be set later
+    self.initdata = None # will be set in onAppInit
+    self.ezapp_args = {} # kwargs for OrkEzApp.create()
+    def onCtrlC(signum, frame):
+      print("signalling EXIT to ezapp")
+      self.ezapp.signalExit()
+
+    signal.signal(signal.SIGINT, onCtrlC)
 
   ##############################################
   # add an application component
@@ -58,6 +66,41 @@ class ComponentizedApplication(object):
   def findComponentByName(self,name):
     return self.app_components.get(name,None)
 
+  ##################################################
+  # create ezapp
+  # Creates OrkEzApp with stored ezapp_args
+  # Subclasses can override to customize creation
+  ##################################################
+
+  def createEzApp(self):
+    # import here to avoid circular dependency
+    from orkengine import lev2
+
+    # Set reasonable defaults
+    default_args = {
+      'left': 100,
+      'top': 100,
+      'width': 1280,
+      'height': 720,
+      'enable_freerun_ups': True,
+      'enable_freerun_fps': True
+    }
+
+    # Merge user args with defaults (user args take precedence)
+    args = {**default_args, **self.ezapp_args}
+
+    # Create ezapp
+    self.ezapp = lev2.OrkEzApp.create(self, **args)
+
+    # Call template method for subclass customization
+    self._onEzAppCreated()
+
+    return self.ezapp
+
+  def _onEzAppCreated(self):
+    """Template method called after ezapp is created"""
+    pass
+
   #########
   # application broadcast handlers
   #########
@@ -65,11 +108,24 @@ class ComponentizedApplication(object):
   def onAppInit(self,initdata):
     # invoked on main thread when the application is initialized
     # immediately before the main loop starts
+    self.initdata = initdata
     for component in self.components_sorted:
       component.onAppInit(self,initdata)
+    # after all components initialized, call onAppLink
+    self.onAppLink()
+
+  def onAppLink(self):
+    # invoked after all components have been initialized
+    # broadcast to components first, then call app-level template method
     for component in self.components_sorted:
-      component.onAppLink(self,initdata)
-  
+      component.onAppLink(self,self.initdata)
+    # call app-level template method for subclass override
+    self._onAppLink()
+
+  def _onAppLink(self):
+    # template method for subclasses to override
+    pass
+
   def onAppExit(self):
     # invoked on main thread when the application is exiting
     # immediately after main loop ends
@@ -109,7 +165,11 @@ class ComponentizedApplication(object):
       component.onGpuInit(ctx)
     for component in self.components_sorted:
       component.onGpuLink(ctx)
-      
+    self._onGpuInit(ctx)    
+
+  def _onGpuInit(self,ctx):
+    pass 
+
   def onGpuExit(self,ctx):
     # invoked on main thread when the GPU context is exiting
     # immediately after the main loop ends
@@ -154,6 +214,11 @@ class ComponentizedApplication(object):
     for component in self.components_sorted:
       component.onUpdate(updinfo) 
 
+    self._onUpdate(updinfo)
+
+  def _onUpdate(self,updinfo):
+    pass
+
   def onUpdateExit(self):
     # invoked on update thread when the update loop is exiting
     # immediately after the update loop ends
@@ -178,12 +243,9 @@ class ComponentizedApplication(object):
 ################################################################################
 
 class ApplicationComponent(object):
-  def __init__(self):
-    def onCtrlC(signum, frame):
-      print("signalling EXIT to ezapp")
-      self.ezapp.signalExit()
 
-    signal.signal(signal.SIGINT, onCtrlC)
+  def __init__(self):
+    pass
 
   ##############################################
 

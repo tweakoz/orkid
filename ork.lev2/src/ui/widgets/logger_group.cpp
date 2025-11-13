@@ -21,7 +21,7 @@
 
 namespace ork::ui {
 
-  constexpr float BASE_ALPHA = 0.95f;
+  constexpr float BASE_ALPHA = 0.975f;
 ///////////////////////////////////////////////////////////////////////////////
 
 LoggerGroup::LoggerGroup(const std::string& name)
