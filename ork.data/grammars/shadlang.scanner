@@ -58,8 +58,8 @@ CARET               <| "\^" |>
 QUESTION_MARK       <| "\?" |>
 
 HEX_INTEGER         <| "0[xX][a-fA-F\d]+(u?)" |>
-INTEGER             <| "-?(\d+)u?" |>
-FLOATING_POINT      <| "-?(\d*\.?)(\d+)([eE][-+]?\d+)?" |>
+INTEGER             <| "(\d+)u?" |>
+FLOATING_POINT      <| "(\d*\.?)(\d+)([eE][-+]?\d+)?" |>
 
 KW_FLOAT            <| "float" |>
 KW_UINT             <| "uint" |>

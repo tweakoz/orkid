@@ -6,17 +6,18 @@ typeblock typ_sdftools {
   };
 }
 
+
+
+
 libblock lib_sdf2dtools {
   float sdEquilateralTriangle( in vec2 p, in float r ) {
       const float k = sqrt(3.0);
-      const float negk = k * -1.0;
-      const float neg2 = -2.0;
 
       p.x = abs(p.x) - r;
       p.y = p.y + (r/k);
-      if( p.x+k*p.y>0.0 ) p = vec2(p.x-(k*p.y),(p.x*negk)-p.y)/2.0;
-      p.x -= clamp( p.x, r*neg2, 0.0 );
-      return length(p)*sign(p.y)*-1;
+      if( p.x+k*p.y>0.0 ) p = vec2(p.x-(k*p.y),(p.x*-k)-p.y)/2.0;
+      p.x -= clamp( p.x, r*-2.0, 0.0 );
+      return length(p)*sign(p.y)*-1.0;
   }
   ///////////////////////////////
   float sdRoundedBox(vec2 p, vec2 b, float r) {
@@ -30,12 +31,9 @@ libblock lib_sdf2dtools {
       const float k1y = 0.587785252; // sin(π/ 5) = ¼√(10-2√5)
       const float k2y = 0.951056516; // cos(π/10) = ¼√(10+2√5)
       const float k1z = 0.726542528; // tan(π/ 5) = √(5-2√5)
-      float nk1x = k1x*-1.0;
-      float nk1y = k1y*-1.0;
-      float nk2y = k2y*-1.0;
-      const vec2  v1  = vec2( k1x,nk1y);
-      const vec2  v2  = vec2(nk1x,nk1y);
-      const vec2  v3  = vec2( k2x,nk2y);
+      const vec2  v1  = vec2( k1x, -k1y);
+      const vec2  v2  = vec2(-k1x, -k1y);
+      const vec2  v3  = vec2( k2x, -k2y);
 
       p.x = abs(p.x);
       p -= 2.0*max(dot(v1,p),0.0)*v1;

@@ -672,6 +672,10 @@ GLFX1Backend::GLFX1Backend() {
     auto oper = ro_node->template typedValueForKey<std::string>("operator").value();
     emitContinueLine(" %s ", oper.c_str());
   });
+  registerAstPreCB<UnaryOperator>([=](auto uo_node) {
+    auto oper = uo_node->template typedValueForKey<std::string>("operator").value();
+    emitContinueLine("%s", oper.c_str());
+  });
   registerAstPreCB<MemberAccessOperator>([=](auto mo_node) {
     emitContinueLine(".");
   });

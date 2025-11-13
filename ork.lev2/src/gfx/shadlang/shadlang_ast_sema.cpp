@@ -667,6 +667,20 @@ void _semaNameAssignmentOperators(impl::ShadLangParser* slp, astnode_ptr_t top) 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+void _semaNameUnaryOperators(impl::ShadLangParser* slp, astnode_ptr_t top) {
+  auto nodes = AstNode::collectNodesOfType<UnaryOperator>(top);
+  for (auto uo_node : nodes) {
+    auto match     = slp->matchForAstNode(uo_node);
+    auto sel       = match->asShared<OneOf>()->_selected;
+    auto cm        = sel->asShared<ClassMatch>();
+    auto name      = cm->_token->text;
+    uo_node->_name = FormatString("UnaryOperator: %s", name.c_str());
+    uo_node->setValueForKey<std::string>("operator", name);
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
 void _semaNameInheritListItems(impl::ShadLangParser* slp, astnode_ptr_t top) {
   auto nodes = AstNode::collectNodesOfType<InheritListItem>(top);
   for (auto ili_node : nodes) {
@@ -1808,6 +1822,7 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
     _semaNameEqualityOperators(this, top);
     _semaNameShiftOperators(this, top);
     _semaNameAssignmentOperators(this, top);
+    _semaNameUnaryOperators(this, top);
     _semaNameInheritListItems(this, top);
     _semaResolvePrimaryExpressions(this, top);
     _semaResolveIdentifierCalls(this, top);
