@@ -259,14 +259,40 @@
 ################################################################################
 #
 # MAIN THREAD (Process origin, Python relinquishes to C++, GPU context):
-#   onAppInit, onGpuInit, onAudioInit, onSynthInit
-#   [LOOP] onGpuUpdate, onDraw, onUiEvent
-#   onGpuExit, onAppExit
+#   INIT PHASE:
+#     onAppInit → onAppLink
+#     onGpuInit → onGpuLink
+#     onSynthInit → onSynthLink
+#     onAudioInit → onAudioLink
+#   [LOOP] onGpuUpdate, onGpuPreFrame, onGpuPostFrame, onUiEvent
+#   EXIT PHASE:
+#     onGpuExit → onAppExit
 #
 # UPDATE THREAD (C++ spawned, simulation):
-#   onUpdateInit
+#   INIT PHASE:
+#     onUpdateInit → onUpdateLink
 #   [LOOP] onUpdate
-#   onUpdateExit, onAudioExit, onSynthExit
+#   EXIT PHASE:
+#     onUpdateExit → onAudioExit → onSynthExit
+#
+################################################################################
+# INIT/LINK PATTERN
+################################################################################
+#
+# Each subsystem follows the Init→Link two-phase pattern:
+#   - Init: Create resources, allocate memory, set up state
+#   - Link: Connect resources, establish references, configure relationships
+#   - This approximated the pattern established in Orkid's C++ Entity-Component Systems (ECS)
+#   - https://github.com/tweakoz/orkid/blob/develop/ork.dox/ecs.md
+#
+# This two-phase pattern ensures all resources exist before cross-referencing:
+#   Component A Init → Component B Init → Component A Link → Component B Link
+#
+# Example: Logger component needs to exist (Init) before app configures
+#          channels (Link). Both Init phases complete before any Link phase.
+#
+# All component Init callbacks complete before any Link callbacks begin.
+# This is enforced by the ComponentizedApplication broadcast pattern.
 #
 ################################################################################
 
