@@ -37,6 +37,7 @@ import math
 from orkengine.core import vec3, vec4, logger
 from orkengine import lev2
 from ork.app import application, loggerui
+from _graphview_waveforms import WaveformSet
 
 ################################################################################
 
@@ -49,30 +50,19 @@ class GraphViewTest(application.ComponentizedApplication):
     self.time = 0.0
     self.time_speed = 0.05
 
-    # Phase accumulators for smooth frequency changes
-    self.sine_phase = 0.0
-    self.cosine_phase = 0.0
-    self.square_phase = 0.0
-    self.sawtooth_phase = 0.0
+    # Waveform set with definitions: name -> (color, initial_freq)
+    self.waveforms = WaveformSet({
+      'sine': (vec3(1.0, 0.3, 0.3), 0.1),      # Red
+      'cosine': (vec3(0.3, 1.0, 0.3), 0.1),    # Green
+      'square': (vec3(0.3, 0.3, 1.0), 0.1),    # Blue
+      'sawtooth': (vec3(1.0, 1.0, 0.3), 0.1)   # Yellow
+    })
 
     # FM synthesis parameters for perfItem test
     self.fm_carrier_freq = 0.2
     self.fm_modulator_freq = 0.05
     self.fm_modulation_index = 3.0
     self.fm_phase = 0.0
-
-    # Frequency control variables (target and current for smooth interpolation)
-    self.sine_freq_target = 0.1
-    self.cosine_freq_target = 0.1
-    self.square_freq_target = 0.1
-    self.sawtooth_freq_target = 0.1
-
-    self.sine_freq_current = 0.1
-    self.cosine_freq_current = 0.1
-    self.square_freq_current = 0.1
-    self.sawtooth_freq_current = 0.1
-
-    self.freq_smoothing = 0.05  # Smoothing factor (0 = no smoothing, 1 = instant)
 
     ############################################
     # Setup logger UI component
@@ -145,34 +135,8 @@ class GraphViewTest(application.ComponentizedApplication):
     vpack.item_height = 24
     vpack.fill = False
 
-    # Create sliders for each waveform frequency
-    sine_slider = vpack.makeChild(
-      uiclass=lev2.ui.FloatSlider,
-      args=["Sine Freq", vec3(1.0, 0.3, 0.3), 0.01, 1.0, 0.1]
-    )
-    sine_slider.update_on_drag = True
-    sine_slider.onValueChanged = lambda w: setattr(self, 'sine_freq_target', w.value)
-
-    cosine_slider = vpack.makeChild(
-      uiclass=lev2.ui.FloatSlider,
-      args=["Cosine Freq", vec3(0.3, 1.0, 0.3), 0.01, 1.0, 0.1]
-    )
-    cosine_slider.update_on_drag = True
-    cosine_slider.onValueChanged = lambda w: setattr(self, 'cosine_freq_target', w.value)
-
-    square_slider = vpack.makeChild(
-      uiclass=lev2.ui.FloatSlider,
-      args=["Square Freq", vec3(0.3, 0.3, 1.0), 0.01, 1.0, 0.1]
-    )
-    square_slider.update_on_drag = True
-    square_slider.onValueChanged = lambda w: setattr(self, 'square_freq_target', w.value)
-
-    sawtooth_slider = vpack.makeChild(
-      uiclass=lev2.ui.FloatSlider,
-      args=["Sawtooth Freq", vec3(1.0, 1.0, 0.3), 0.01, 1.0, 0.1]
-    )
-    sawtooth_slider.update_on_drag = True
-    sawtooth_slider.onValueChanged = lambda w: setattr(self, 'sawtooth_freq_target', w.value)
+    # Create frequency control sliders
+    self.waveforms.createSliders(vpack, min_freq=0.01, max_freq=1.0)
 
     ############################################
     # Create channel and add multiple series
@@ -181,17 +145,8 @@ class GraphViewTest(application.ComponentizedApplication):
     channel = self.graphview.channel("Waveforms")
     channel.color = vec3(1, 1, 1)
 
-    # Create 4 different waveform series
-    self.sine_series = channel.addSeries("sine", vec3(1.0, 0.3, 0.3))       # Red
-    self.cosine_series = channel.addSeries("cosine", vec3(0.3, 1.0, 0.3))   # Green
-    self.square_series = channel.addSeries("square", vec3(0.3, 0.3, 1.0))   # Blue
-    self.sawtooth_series = channel.addSeries("sawtooth", vec3(1.0, 1.0, 0.3))  # Yellow
-
-    # Configure max samples (ring buffer size)
-    for series in [self.sine_series, self.cosine_series, self.square_series, self.sawtooth_series]:
-      series.setMaxSamples(1000)  # Large buffer for extensive history
-      series.auto_range = True
-      series.window_size = 1000  # Moving window: show only most recent 1000 samples
+    # Create series for all waveforms
+    self.waveforms.createSeries(channel, max_samples=1000, auto_range=True, window_size=1000)
 
   ##############################################
 
@@ -221,29 +176,8 @@ class GraphViewTest(application.ComponentizedApplication):
       self.gview_channel.status("synthesis", f"Carrier: {self.fm_carrier_freq:.3f} Hz, Mod: {self.fm_modulator_freq:.3f} Hz")
       self.gview_channel.status("modulation", f"Index: {self.fm_modulation_index:.2f}")
 
-    # Smoothly interpolate current frequencies toward target frequencies
-    self.sine_freq_current += (self.sine_freq_target - self.sine_freq_current) * self.freq_smoothing
-    self.cosine_freq_current += (self.cosine_freq_target - self.cosine_freq_current) * self.freq_smoothing
-    self.square_freq_current += (self.square_freq_target - self.square_freq_current) * self.freq_smoothing
-    self.sawtooth_freq_current += (self.sawtooth_freq_target - self.sawtooth_freq_current) * self.freq_smoothing
-
-    # Increment phase accumulators by frequency (prevents phase jumps when frequency changes)
-    self.sine_phase += self.sine_freq_current * self.time_speed
-    self.cosine_phase += self.cosine_freq_current * self.time_speed
-    self.square_phase += self.square_freq_current * self.time_speed
-    self.sawtooth_phase += self.sawtooth_freq_current * self.time_speed
-
-    # Generate new samples for each waveform using phase accumulators
-    self.sine_series.addSample(math.sin(self.sine_phase))
-    self.cosine_series.addSample(math.cos(self.cosine_phase))
-
-    # Square wave: alternates between -1 and 1
-    square_val = 1.0 if math.sin(self.square_phase) >= 0 else -1.0
-    self.square_series.addSample(square_val)
-
-    # Sawtooth wave: linear ramp from -1 to 1
-    sawtooth_val = (self.sawtooth_phase % (2 * math.pi)) / math.pi - 1.0
-    self.sawtooth_series.addSample(sawtooth_val)
+    # Update waveforms
+    self.waveforms.update(self.time_speed)
 
     self.time += self.time_speed
 
