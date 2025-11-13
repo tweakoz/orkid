@@ -22,6 +22,7 @@ struct ThemeEngineImpl {
   lev2::fxtechnique_constptr_t _sdf_circle_tek;
   lev2::fxtechnique_constptr_t _sdf_triangle_tek;
   lev2::fxtechnique_constptr_t _sdf_ring_tek;
+  lev2::fxtechnique_constptr_t _sdf_pause_tek;
 
   // Cached parameter handles (shared across all techniques)
   lev2::fxparam_constptr_t _param_mvp = nullptr;

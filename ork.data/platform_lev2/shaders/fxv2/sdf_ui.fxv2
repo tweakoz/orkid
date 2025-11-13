@@ -328,3 +328,97 @@ technique sdf_ring {
     state_block     = sb_sdf_ui;
   }
 }
+
+///////////////////////////////////////////////////////////////
+// Pause Icon (two vertical bars)
+///////////////////////////////////////////////////////////////
+
+fragment_shader ps_sdf_pause
+  : fif_sdf_box
+  : lib_sdf2dtools {
+
+  // Convert to normalized space (-1 to 1)
+  vec2 nspace = frg_uv * 2.0 - vec2(1.0, 1.0);
+
+  // shape_param is spacing between bars (default 0.3)
+  float spacing = (shape_param > 0.0) ? shape_param : 0.3;
+
+  // Enforce spacing constraints
+  spacing = clamp(spacing, 0.1, 1.2);  // Min 10%, max 120% of width
+
+  // Fixed bar width proportion
+  float bar_width_prop = 0.25;  // 25% of total width per bar
+
+  // Calculate margin from spacing
+  // Total space: margin*2 + bar_width*2 + spacing = 2.0
+  // Therefore: margin = (2.0 - bar_width*2 - spacing) / 2
+  float margin = (2.0 - (bar_width_prop * 2.0) - spacing) * 0.5;
+
+  // Enforce minimum margin
+  margin = max(margin, 0.05);
+
+  // Recalculate spacing if margin was clamped to ensure valid layout
+  // spacing = 2.0 - margin*2 - bar_width*2
+  float actual_spacing = 2.0 - (margin * 2.0) - (bar_width_prop * 2.0);
+
+  // corner_radius from pixels to normalized space
+  vec2 half_size = box_size * 0.5;
+  float min_size = min(half_size.x, half_size.y);
+  float norm_corner_radius = (corner_radius / min_size);
+
+  // Left bar position (in normalized space -1 to 1)
+  float left_bar_center = -1.0 + margin + bar_width_prop;
+  // Right bar position
+  float right_bar_center = 1.0 - margin - bar_width_prop;
+
+  // Bar dimensions in normalized space
+  vec2 bar_half_size = vec2(bar_width_prop, 0.8);  // 80% height
+
+  // Left bar SDF (centered rounded rectangle)
+  vec2 p_left = abs(nspace - vec2(left_bar_center, 0.0)) - bar_half_size;
+  float dist_left = sdRoundedBox(nspace - vec2(left_bar_center, 0.0), bar_half_size, norm_corner_radius);
+
+  // Right bar SDF (centered rounded rectangle)
+  float dist_right = sdRoundedBox(nspace - vec2(right_bar_center, 0.0), bar_half_size, norm_corner_radius);
+
+  // Combine both bars (minimum distance = union)
+  float dist = min(dist_left, dist_right);
+
+  // Anti-aliasing using derivatives
+  float aa = fwidth(dist) * 0.5;
+  float naa = aa * -1.0;
+  float edge_alpha = 1.0 - smoothstep(naa, aa, dist);
+
+  // Determine color with anti-aliased border transition
+  vec4 final_color;
+  if (border_width > 0.0) {
+    // Convert border_width from pixels to normalized space
+    float normalized_border = (border_width / min_size);
+    float nborder = normalized_border * -1.0;
+
+    // Smoothly transition from fill to border at inner edge
+    float border_blend = smoothstep(nborder + naa, nborder + aa, dist);
+    final_color = mix(fill_color, border_color, border_blend);
+  } else {
+    // No border - just fill color
+    final_color = fill_color;
+  }
+
+  float out_alpha = final_color.a * edge_alpha;
+  if (out_alpha < 0.01) {
+    discard;
+  }
+
+  // Apply modulation and edge anti-aliasing
+  out_clr = final_color * ModColor;
+  out_clr.a = out_alpha;
+}
+
+technique sdf_pause {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_sdf_box;
+    fragment_shader = ps_sdf_pause;
+    state_block     = sb_sdf_ui;
+  }
+}

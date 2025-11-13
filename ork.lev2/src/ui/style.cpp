@@ -176,6 +176,7 @@ void ThemeEngine::gpuInit(lev2::Context* ctx) {
   impl->_sdf_circle_tek = fxi->technique(impl->_sdf_shader, "sdf_circle");
   impl->_sdf_triangle_tek = fxi->technique(impl->_sdf_shader, "sdf_triangle");
   impl->_sdf_ring_tek = fxi->technique(impl->_sdf_shader, "sdf_ring");
+  impl->_sdf_pause_tek = fxi->technique(impl->_sdf_shader, "sdf_pause");
 
   // Cache parameter handles (shared across all techniques)
   impl->_param_mvp = mtl->param("mvp");

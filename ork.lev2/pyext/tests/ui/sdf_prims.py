@@ -6,11 +6,12 @@
 # Distributed under the MIT License
 #
 # Demonstrates:
-#   - All 6 SDF primitive types (box, tab, circle, triangle, ring, box_per_corner)
+#   - All 7 SDF primitive types (box, tab, circle, triangle, ring, box_per_corner, pause)
 #   - Corner radius variations
 #   - Border width variations
 #   - Blend mode variations
 #   - Rotation/orientation (triangles)
+#   - Shape parameters (bar widths, radii)
 #   - Color theming
 #   - TabWidget + DynaGrid organization
 ################################################################################
@@ -99,6 +100,7 @@ class SDFPrimsTest(object):
     self._createTrianglesTab()
     self._createRingsTab()
     self._createPerCornerTab()
+    self._createSpecialTab()
 
   ############################################################################
   # TAB 1: Boxes
@@ -289,6 +291,26 @@ class SDFPrimsTest(object):
     ]
 
     self._populateGrid(grid, variations, "percorner")
+
+  ############################################################################
+  # TAB 7: Special Icons
+  ############################################################################
+
+  def _createSpecialTab(self):
+    """Special icons (pause, play, etc.)"""
+
+    grid = self.tabsw.makeChild(uiclass=lev2.ui.DynaGrid, args=["Special"])
+    grid.margin = 4
+
+    variations = [
+      # Pause icon variations (shape_param = spacing between bars)
+      ("Narrow\nGap\ns=0.6", "pause", 4, 2, vec4(0.4, 0.5, 0.6, 0.9), "ALPHA", {"shape_param": 0.6}),
+      ("Medium\nGap\ns=0.8", "pause", 4, 2, vec4(0.5, 0.4, 0.6, 0.9), "ALPHA", {"shape_param": 0.8}),
+      ("Wide\nGap\ns=1.0", "pause", 8, 3, vec4(0.6, 0.4, 0.5, 0.9), "ALPHA", {"shape_param": 1.0}),
+      ("Rounded\nPause\nr=8", "pause", 8, 2, vec4(0.4, 0.6, 0.5, 0.9), "ALPHA", {"shape_param": 0.8}),
+    ]
+
+    self._populateGrid(grid, variations, "special")
 
   ############################################################################
   # Helper: Populate grid with shape variations

@@ -77,6 +77,13 @@ void SdfShape::DoDraw(ui::drawevent_constptr_t drwev) {
       break;
     }
 
+    case "pause"_crcu: {
+      // shape_param is spacing between bars (default 0.3)
+      float spacing = (_shape_param > 0.0f) ? _shape_param : 0.3f;
+      theme->drawPause(ix1, iy1, w, h, drwev, style.get(), spacing);
+      break;
+    }
+
     default:
       // Unknown shape type - fall back to box
       theme->drawBox(this, drwev, style.get());
