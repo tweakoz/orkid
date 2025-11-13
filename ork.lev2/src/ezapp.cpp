@@ -432,9 +432,9 @@ void OrkEzApp::_audioInit() {
     _initdata->_miscvars["synth"].set<audio::singularity::synth_ptr_t>(_synth);
     if (_synth) {
       _synth->mainThreadHandler();
-    }
-    if (_onSynthInit) {
-      _onSynthInit(_synth);
+      if (_onSynthInit) {
+        _onSynthInit(_synth);
+      }
     }
   }
   if (_onAudioInit) {
@@ -451,6 +451,9 @@ void OrkEzApp::_audioExit() {
       _audiodevice->shutdown();
       if (_onAudioExit) {
         _onAudioExit(auddev);
+      }
+      if (_onSynthExit and _synth) {
+        _onSynthExit(_synth);
       }
     }
     _initdata->_miscvars.erase(it_a);

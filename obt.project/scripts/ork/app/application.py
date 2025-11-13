@@ -48,8 +48,10 @@
 #    - Calls onAppLink() [see next]
 #
 # 5. Application.onAppLink() [MAIN THREAD, GIL ACQUIRED]
+#    - Called immediately after onAppInit
 #    - Broadcasts to components: onAppLink(app, initdata)
 #      * Components connect to other components, configure channels
+#      * "Link" phase allows components to reference each other after Init
 #    - Calls app template method: _onAppLink()
 #      * App configures component channels, connections
 #
@@ -57,35 +59,63 @@
 #    - Called from CtxGLFW::_runloopBegin()
 #    - GPU context made current: ctx->makeCurrentContext()
 #    - FontMan::gpuInit() called before user callback
-#    - Broadcasts to components: onGpuInit(app, ctx), onGpuLink(app, ctx)
+#    - Broadcasts to components: onGpuInit(app, ctx)
+#      * Components create GPU resources (textures, buffers, shaders)
 #    - Calls app template method: _onGpuInit(ctx)
 #    - CRITICAL: Must complete before onUpdateInit (enforced by engine)
 #
-# 7. Application.onSynthInit(synth) [MAIN THREAD, GIL ACQUIRED]
-#    - Called during GPU init phase if synrh enabled
+# 7. Application.onGpuLink(ctx) [MAIN/GPU THREAD, GIL ACQUIRED]
+#    - Called immediately after onGpuInit
+#    - Broadcasts to components: onGpuLink(app, ctx)
+#      * Components link GPU resources to each other
+#      * "Link" phase allows GPU resource cross-referencing after Init
+#
+# 8. Application.onSynthInit(synth) [MAIN THREAD, GIL ACQUIRED]
+#    - Called during GPU init phase if synth enabled
 #    - Called before onAudioInit during audio initialization
 #    - Synth instance created and ready
+#    - Broadcasts to components: onSynthInit(synth)
+#      * Components set up synthesis graphs, instruments
 #
-# 8. Application.onAudioInit(audiodev) [MAIN THREAD, GIL ACQUIRED]
-#    - Called during GPU init phase if audio enabled
-#    - Audio system bringup: audio::singularity::synth::bringUp()
-#    - onSynthInit() called first (if set)
-#    - Then onAudioInit() called
-#    - Finally audiodevice->startup()
+# 9. Application.onSynthLink(synth) [MAIN THREAD, GIL ACQUIRED]
+#    - Called immediately after onSynthInit
+#    - Broadcasts to components: onSynthLink(synth)
+#      * Components link synthesis modules to each other
+#      * "Link" phase allows synth resource cross-referencing after Init
 #
-# 9. [AUDIO/SYNTH THREADS SPAWNED HERE]
-#    Separate C++ threads for audio and syntheeizer, runs concurrently with other threads
-#    Thread name: "macos: CoreAudioThread"
+# 10. Application.onAudioInit(audiodev) [MAIN THREAD, GIL ACQUIRED]
+#     - Called after onSynthInit/onSynthLink if audio enabled
+#     - Audio system bringup: audio::singularity::synth::bringUp()
+#     - Broadcasts to components: onAudioInit(audiodev)
+#       * Components initialize audio I/O, routing
+#     - Finally audiodevice->startup()
 #
-# 10. [UPDATE THREAD SPAWNED HERE]
-#    Separate C++ thread for update loop, runs concurrently with main thread
-#    Thread name: "update"
+# 11. Application.onAudioLink(audiodev) [MAIN THREAD, GIL ACQUIRED]
+#     - Called immediately after onAudioInit
+#     - Broadcasts to components: onAudioLink(audiodev)
+#       * Components link audio streams, configure routing
+#       * "Link" phase allows audio resource cross-referencing after Init
 #
-# 11. Application.onUpdateInit() [UPDATE THREAD, GIL ACQUIRED]
+# 12. [AUDIO/SYNTH THREADS SPAWNED HERE]
+#     Separate C++ threads for audio and synthesizer, runs concurrently with other threads
+#     Thread name: "macos: CoreAudioThread"
+#
+# 13. [UPDATE THREAD SPAWNED HERE]
+#     Separate C++ thread for update loop, runs concurrently with main thread
+#     Thread name: "update"
+#
+# 14. Application.onUpdateInit() [UPDATE THREAD, GIL ACQUIRED]
 #     - First callback in update thread
 #     - Called AFTER onGpuInit completes (guaranteed by engine)
-#     - Broadcasts to components: onUpdateInit(), onUpdateLink()
+#     - Broadcasts to components: onUpdateInit()
+#       * Components initialize simulation state, physics, etc.
 #     - App state flag set: KAPPSTATEFLAG_UPDRUNNING
+#
+# 15. Application.onUpdateLink() [UPDATE THREAD, GIL ACQUIRED]
+#     - Called immediately after onUpdateInit
+#     - Broadcasts to components: onUpdateLink()
+#       * Components link simulation systems to each other
+#       * "Link" phase allows simulation resource cross-referencing after Init
 #
 ################################################################################
 # MAIN LOOP (Running Concurrently)
@@ -188,6 +218,7 @@
 #    Update thread joins back to main thread
 #    joinUpdate() called with GIL released for C++ synchronization
 #    CRITICAL: Ensures onUpdateExit completes before onGpuExit
+#    CRITICAL: Ensures update thread terminated before onGpuExit
 #
 # 6. Application.onGpuExit(ctx) [MAIN/GPU THREAD, GIL ACQUIRED]
 #    - Called from CtxGLFW::_runloopEnd()
