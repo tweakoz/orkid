@@ -6,7 +6,7 @@
 # Distributed under the MIT License
 #
 # Demonstrates:
-#   - All 6 SDF primitive types (box, tab, circle, capsule, ring, box_per_corner)
+#   - All 5 SDF primitive types (box, tab, circle, ring, box_per_corner)
 #   - Corner radius variations
 #   - Border width variations
 #   - Blend mode variations
@@ -92,7 +92,6 @@ class SDFPrimsTest(object):
     self._createBoxesTab()
     self._createTabsTab()
     self._createCirclesTab()
-    self._createCapsulesTab()
     self._createRingsTab()
     self._createPerCornerTab()
 
@@ -186,33 +185,7 @@ class SDFPrimsTest(object):
     self._populateGrid(grid, variations, "circles")
 
   ############################################################################
-  # TAB 4: Capsules
-  ############################################################################
-
-  def _createCapsulesTab(self):
-    """Pill/capsule shapes"""
-
-    grid = self.tabsw.makeChild(uiclass=lev2.ui.DynaGrid, args=["Capsules"])
-    grid.margin = 4
-
-    variations = [
-      # Horizontal capsules
-      ("Horizontal\nDefault\nw=2", "capsule", 8, 2, vec4(0.3, 0.5, 0.5, 0.9), "ALPHA", {"horizontal": True}),
-      ("Horizontal\nThin\nw=1", "capsule", 8, 1, vec4(0.3, 0.5, 0.5, 0.9), "ALPHA", {"horizontal": True}),
-      ("Horizontal\nThick\nw=4", "capsule", 8, 4, vec4(0.3, 0.5, 0.5, 0.9), "ALPHA", {"horizontal": True}),
-      ("Horizontal\nXL\nw=8", "capsule", 8, 8, vec4(0.3, 0.5, 0.5, 0.9), "ALPHA", {"horizontal": True}),
-
-      # Vertical capsules
-      ("Vertical\nDefault\nw=2", "capsule", 8, 2, vec4(0.5, 0.3, 0.5, 0.9), "ALPHA", {"horizontal": False}),
-      ("Vertical\nThin\nw=1", "capsule", 8, 1, vec4(0.5, 0.3, 0.5, 0.9), "ALPHA", {"horizontal": False}),
-      ("Vertical\nThick\nw=4", "capsule", 8, 4, vec4(0.5, 0.3, 0.5, 0.9), "ALPHA", {"horizontal": False}),
-      ("Vertical\nXL\nw=8", "capsule", 8, 8, vec4(0.5, 0.3, 0.5, 0.9), "ALPHA", {"horizontal": False}),
-    ]
-
-    self._populateGrid(grid, variations, "capsules")
-
-  ############################################################################
-  # TAB 5: Rings
+  # TAB 4: Rings
   ############################################################################
 
   def _createRingsTab(self):
@@ -240,7 +213,7 @@ class SDFPrimsTest(object):
     self._populateGrid(grid, variations, "rings")
 
   ############################################################################
-  # TAB 6: Per-Corner Boxes
+  # TAB 5: Per-Corner Boxes
   ############################################################################
 
   def _createPerCornerTab(self):

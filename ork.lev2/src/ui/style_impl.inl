@@ -20,7 +20,6 @@ struct ThemeEngineImpl {
   lev2::fxtechnique_constptr_t _sdf_box_tek;
   lev2::fxtechnique_constptr_t _sdf_box_per_corner_tek;
   lev2::fxtechnique_constptr_t _sdf_circle_tek;
-  lev2::fxtechnique_constptr_t _sdf_capsule_tek;
   lev2::fxtechnique_constptr_t _sdf_ring_tek;
 
   // Cached parameter handles (shared across all techniques)

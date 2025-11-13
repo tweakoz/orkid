@@ -60,10 +60,6 @@ void SdfShape::DoDraw(ui::drawevent_constptr_t drwev) {
       break;
     }
 
-    case "capsule"_crcu:
-      theme->drawCapsule(ix1, iy1, w, h, drwev, style.get(), _horizontal);
-      break;
-
     case "ring"_crcu: {
       float inner_radius = _shape_param;
       if (inner_radius <= 0.0f) {
