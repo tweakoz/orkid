@@ -337,6 +337,7 @@ void pyinit_ui_box(py::module& uimodule) {
                   return py::cast<ui::HandlerResult>(rv);
                 };
               })
+          .def_readwrite("draw_background", &ui::TextBox::_draw_background)
           .def("__repr__", [](ui::textbox_ptr_t box) {
             return FormatString("<TextBox name<%s> widget<%p>>", box->GetName().c_str(), (void*)box.get());
           });

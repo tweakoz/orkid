@@ -39,6 +39,7 @@ public:
   // Scrolling support
   int _scroll_offset = 0;  // Vertical scroll offset in pixels (positive = scrolled down)
   bool _enable_scrolling = false;
+  bool _draw_background = true;
   event_lambda_t _onMousePush;
   event_lambda_t _onMouseRelease;
   event_lambda_t _onMouseMove;

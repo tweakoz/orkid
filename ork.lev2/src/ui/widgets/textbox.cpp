@@ -68,33 +68,35 @@ void TextBox::DoDraw(drawevent_constptr_t drwev) {
   mtxi->PushUIMatrix();
   {
     // Draw background (always at fixed position)
-    auto rs = defmtl->_rasterstate;
-    auto omacro = rs->_blendingMacro;
-    auto omode = defmtl->meUIColorMode;
-    rs->setBlendingMacro(_blending);
-    rs->setDepthTest(lev2::EDepthTest::OFF);
-    tgt->PushModColor(_color);
-    int prev_pri = rs->_priority;
-    rs->_priority = 1<<16;
-    fxi->pushRasterState(rs);
-    defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
-    primi->RenderQuadAtZ(
-        defmtl.get(),
-        ix1,  // x0
-        ix2,  // x1
-        iy1,  // y0
-        iy2,  // y1
-        0.0f, // z
-        0.0f,
-        1.0f, // u0, u1
-        0.0f,
-        1.0f // v0, v1
-    );
-    fxi->popRasterState();
-    rs->_priority = prev_pri;
-    rs->_blendingMacro = omacro;
-    defmtl->meUIColorMode = omode;
-    tgt->PopModColor();
+    if (_draw_background) {
+      auto rs = defmtl->_rasterstate;
+      auto omacro = rs->_blendingMacro;
+      auto omode = defmtl->meUIColorMode;
+      rs->setBlendingMacro(_blending);
+      rs->setDepthTest(lev2::EDepthTest::OFF);
+      tgt->PushModColor(_color);
+      int prev_pri = rs->_priority;
+      rs->_priority = 1<<16;
+      fxi->pushRasterState(rs);
+      defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
+      primi->RenderQuadAtZ(
+          defmtl.get(),
+          ix1,  // x0
+          ix2,  // x1
+          iy1,  // y0
+          iy2,  // y1
+          0.0f, // z
+          0.0f,
+          1.0f, // u0, u1
+          0.0f,
+          1.0f // v0, v1
+      );
+      fxi->popRasterState();
+      rs->_priority = prev_pri;
+      rs->_blendingMacro = omacro;
+      defmtl->meUIColorMode = omode;
+      tgt->PopModColor();
+    }
 
     // Text coordinates (apply scroll offset for text only)
     int text_ix1 = ix1;

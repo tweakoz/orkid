@@ -225,13 +225,13 @@ fragment_shader ps_sdf_capsule : fif_sdf_box {
   vec2 p = frg_pixel_pos;
   float h;
   if (axis < 0.5) {
-    // Horizontal capsule
-    h = clamp(p.x, -half_size.x + cap_radius, half_size.x - cap_radius);
-    p.x = h;
-  } else {
-    // Vertical capsule
+    // Horizontal capsule - clamp Y to create horizontal line segment
     h = clamp(p.y, -half_size.y + cap_radius, half_size.y - cap_radius);
     p.y = h;
+  } else {
+    // Vertical capsule - clamp X to create vertical line segment
+    h = clamp(p.x, -half_size.x + cap_radius, half_size.x - cap_radius);
+    p.x = h;
   }
 
   float dist = length(frg_pixel_pos - p) - cap_radius;
