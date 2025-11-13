@@ -127,7 +127,7 @@ class SDFPrimsTest(object):
       ("Modulate\n(tint)\n0.75", "box", 12, 2, vec4(0.7, 0.4, 0.5, 0.75), "ALPHA_MODULATE", {}),
     ]
 
-    self._populateGrid(grid, variations)
+    self._populateGrid(grid, variations, "boxes")
 
   ############################################################################
   # TAB 2: Tabs
@@ -155,7 +155,7 @@ class SDFPrimsTest(object):
       ("Active\nTab\nBright", "tab", 12, 2, vec4(0.4, 0.4, 0.45, 0.95), "ALPHA", {}),
     ]
 
-    self._populateGrid(grid, variations)
+    self._populateGrid(grid, variations, "tabs")
 
   ############################################################################
   # TAB 3: Circles
@@ -183,7 +183,7 @@ class SDFPrimsTest(object):
       ("Soft\nCircle\nPremul", "circle", 8, 2, vec4(0.5, 0.3, 0.6, 0.7), "PREMA", {"shape_param": 0.0}),
     ]
 
-    self._populateGrid(grid, variations)
+    self._populateGrid(grid, variations, "circles")
 
   ############################################################################
   # TAB 4: Capsules
@@ -209,7 +209,7 @@ class SDFPrimsTest(object):
       ("Vertical\nXL\nw=8", "capsule", 8, 8, vec4(0.5, 0.3, 0.5, 0.9), "ALPHA", {"horizontal": False}),
     ]
 
-    self._populateGrid(grid, variations)
+    self._populateGrid(grid, variations, "capsules")
 
   ############################################################################
   # TAB 5: Rings
@@ -237,7 +237,7 @@ class SDFPrimsTest(object):
       ("Soft\nRing\nAlpha", "ring", 8, 2, vec4(0.3, 0.6, 0.5, 0.7), "ALPHA", {"shape_param": 25.0}),
     ]
 
-    self._populateGrid(grid, variations)
+    self._populateGrid(grid, variations, "rings")
 
   ############################################################################
   # TAB 6: Per-Corner Boxes
@@ -281,13 +281,13 @@ class SDFPrimsTest(object):
        {"corner_radii": vec4(4, 12, 20, 8)}),
     ]
 
-    self._populateGrid(grid, variations)
+    self._populateGrid(grid, variations, "percorner")
 
   ############################################################################
   # Helper: Populate grid with shape variations
   ############################################################################
 
-  def _populateGrid(self, grid, variations):
+  def _populateGrid(self, grid, variations, tab_name=""):
     """
     variations = list of tuples:
       (label, shape_type, radius, border_width, color, blend_mode, extra_params)
@@ -335,7 +335,7 @@ class SDFPrimsTest(object):
       style.border_color = vec4(color.x * 1.5, color.y * 1.5, color.z * 1.5, 1.0)
       style.blend_mode = getattr(tokens, blend)
 
-      style_tag = f"shape_{idx}_style"
+      style_tag = f"{tab_name}_shape_{idx}_style"
       self.custom_db.registerStyle(getattr(tokens, style_tag), style)
 
       # Apply theme to shape
