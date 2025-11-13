@@ -103,7 +103,7 @@ class GraphViewTest(application.ComponentizedApplication):
     self.gview_channel = logger_comp.configureChannel(
         "GVIEW",
         vec3(0.3, 1.0, 0.8),
-        enable_perfgraph=True
+        enable_channel=True
     )
     print(f"GVIEW channel configured: {self.gview_channel}")
 

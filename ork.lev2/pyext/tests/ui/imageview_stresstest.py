@@ -15,6 +15,7 @@ import numpy as np
 from obt import path
 from orkengine.core import vec2, vec3, vec4, mtx4, quat, VarMap, CrcStringProxy
 from orkengine import lev2
+from ork.app import application, loggerui
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 
@@ -22,28 +23,68 @@ tokens = CrcStringProxy()
 
 ################################################################################
 
-class ImageViewStressTest(object):
+class ImageViewStressTest(application.ComponentizedApplication):
 
   def __init__(self, griddim=4):
     super().__init__()
-    self.abstime = 0.0
+
+    # Grid configuration
     self.griddim = griddim
     self.total_cells = griddim * griddim
 
-    self.ezapp = lev2.OrkEzApp.create(self,
-                                      width = 1600,
-                                      height = 900,
-                                      fullscreen=False,
-                                      enable_audio=False,
-                                      enable_audio_output=False,
-                                      enable_audio_synth=False)
+    # Movie state tracking
+    self.movies = []
+    self.movie_start_times = []
+    self.movie_started = []
 
-    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
-    self.ezapp.topWidget.enableUiDraw()
+    # Matplotlib state
+    self.num_plots = self.total_cells // 2
+    self.mpl_figures = []
+    self.mpl_canvases = []
+    self.mpl_axes = []
+    self.mpl_latest_images = [None] * self.num_plots
+    self.mpl_threads = []
+    self.mpl_running = True
 
+    # Matplotlib setup
+    plt.style.use('dark_background')
+
+    ############################################
+    # Setup logger UI component
+    ############################################
+
+    self.addComponent("logger", loggerui.LoggerUIComponent,
+                      overlay=True,
+                      filter_regex=[".*"],
+                      background_color=vec4(0.2, 0.2, 0.2, 0.8))
+
+    ############################################
+    # Configure EzApp creation args
+    ############################################
+
+    self.ezapp_args = {
+      'width': 1600,
+      'height': 900,
+      'fullscreen': False,
+      'enable_audio': False,
+      'enable_audio_output': False,
+      'enable_audio_synth': False,
+      'enable_freerun_ups': True,
+      'enable_freerun_fps': True
+    }
+
+    ############################################
+    # Create EzApp and initialize
+    ############################################
+
+    self.createEzApp()
+
+  ##############################################
+
+  def _onUiInit(self):
+    """Initialize UI layout and widgets"""
     lg_group = self.ezapp.topLayoutGroup
     lg_group.clearColorGuide = vec4(1, 1, 0, 1)  # Bright yellow
-    self.lg_group = lg_group
     lg_group.margin = 2
 
     ############################################
@@ -65,46 +106,11 @@ class ImageViewStressTest(object):
     self.imageviews = []
     for i in range(self.total_cells):
       imv = lg_group.makeChild(uiclass=lev2.ui.ImageView, args=[f"imgview_{i}"])
-      self.lg_group.replaceChild(self.griditems[i].layout, imv)
+      lg_group.replaceChild(self.griditems[i].layout, imv)
       imv_widget = imv.widget
       imv_widget.maintain_aspect_ratio = True
       imv_widget.generate_mipmaps = False
       self.imageviews.append(imv_widget)
-
-    ############################################
-    # Movie state tracking
-    ############################################
-
-    self.movies = []
-    self.movie_start_times = []
-    self.movie_started = []
-
-    ############################################
-    # Matplotlib state
-    ############################################
-
-    # Allocate half the grid for plots
-    self.num_plots = self.total_cells // 2
-
-    self.mpl_figures = []
-    self.mpl_canvases = []
-    self.mpl_axes = []
-    self.mpl_latest_images = [None] * self.num_plots
-    self.mpl_threads = []
-    self.mpl_running = True
-
-    ############################################
-
-    plt.style.use('dark_background')
-
-    ############################################
-
-    def onCtrlC(signum, frame):
-      print("signalling EXIT to ezapp")
-      self.mpl_running = False
-      self.ezapp.signalExit()
-
-    signal.signal(signal.SIGINT, onCtrlC)
 
   ##############################################
 
@@ -134,7 +140,7 @@ class ImageViewStressTest(object):
     x = np.linspace(0, 4 * np.pi, 200)
     while self.mpl_running:
       try:
-        t = self.abstime
+        t = self.absolutetime
 
         # Get widget dimensions and resize figure to match
         w = widget.width
@@ -184,12 +190,39 @@ class ImageViewStressTest(object):
 
   ##############################################
 
-  def onGpuInit(self, ctx):
+  def _onAppLink(self):
+    """Configure logger channels after component initialization"""
+    logger_comp = self.findComponentByName("logger")
 
-    print("=" * 80)
-    print(f"ImageView Stress Test - {self.griddim}x{self.griddim} Grid")
-    print(f"{self.total_cells // 2} Movie Players + {self.total_cells // 2} Matplotlib FM Plots")
-    print("=" * 80)
+    # Configure STRESS channel for stress test events
+    self.stress_channel = logger_comp.configureChannel(
+        "STRESS",
+        vec3(1.0, 0.5, 0.0),  # Orange
+        enable_channel=True
+    )
+
+    # Configure MOVIE channel for movie playback events
+    self.movie_channel = logger_comp.configureChannel(
+        "MOVIE",
+        vec3(0.3, 0.8, 1.0),  # Cyan
+        enable_channel=True
+    )
+
+    # Configure PLOT channel for matplotlib events
+    self.plot_channel = logger_comp.configureChannel(
+        "PLOT",
+        vec3(1.0, 0.3, 0.8),  # Magenta
+        enable_channel=True
+    )
+
+  ##############################################
+
+  def _onGpuInit(self, ctx):
+    """Initialize GPU resources - movies and matplotlib plots"""
+    self.stress_channel.log("=" * 80)
+    self.stress_channel.log(f"ImageView Stress Test - {self.griddim}x{self.griddim} Grid")
+    self.stress_channel.log(f"{self.total_cells // 2} Movie Players + {self.total_cells // 2} Matplotlib FM Plots")
+    self.stress_channel.log("=" * 80)
 
     ############################################
     # Generate movie and plot slots in checkerboard pattern
@@ -231,7 +264,7 @@ class ImageViewStressTest(object):
       self.movie_start_times.append(start_delay)
       self.movie_started.append(False)
 
-      print(f"[Movie {len(self.movies)-1}] Slot {slot_idx:2d}: {movie_file:15s} (start @ {start_delay:.1f}s)")
+      self.movie_channel.log(f"[Movie {len(self.movies)-1}] Slot {slot_idx:2d}: {movie_file:15s} (start @ {start_delay:.1f}s)")
 
     ############################################
     # Setup Matplotlib FM Synthesis Plots
@@ -286,29 +319,24 @@ class ImageViewStressTest(object):
       )
       widget.setImageProvider(provider)
 
-      print(f"[Plot  {plot_idx}] Slot {slot_idx:2d}: {fm_config['title']}")
+      self.plot_channel.log(f"[Plot  {plot_idx}] Slot {slot_idx:2d}: {fm_config['title']}")
 
-    print("=" * 80)
-    print(f"Total: {len(self.movies)} movies + {len(self.mpl_figures)} plots = {len(self.movies) + len(self.mpl_figures)} image sources")
-    print("=" * 80)
+    self.stress_channel.log("=" * 80)
+    self.stress_channel.log(f"Total: {len(self.movies)} movies + {len(self.mpl_figures)} plots = {len(self.movies) + len(self.mpl_figures)} image sources")
+    self.stress_channel.log("=" * 80)
 
   ##############################################
 
-  def onUpdate(self, updinfo):
-    self.abstime = updinfo.absolutetime
-
+  def _onUpdate(self, updinfo):
+    """Update logic - handle delayed movie starts"""
     # Handle delayed movie starts
+    abstime = updinfo.absolutetime
     for i, (movie, start_time, started) in enumerate(zip(
         self.movies, self.movie_start_times, self.movie_started)):
-      if not started and self.abstime >= start_time:
+      if not started and abstime >= start_time:
         movie.play()
         self.movie_started[i] = True
-        print(f"[T={self.abstime:.2f}s] Started movie {i} (delay={start_time:.1f}s)")
-
-  ##############################################
-
-  def onUiEvent(self, uievent):
-    return lev2.ui.HandlerResult()
+        self.movie_channel.log(f"[T={abstime:.2f}s] Started movie {i} (delay={start_time:.1f}s)")
 
 ###############################################################################
 
@@ -324,4 +352,6 @@ if __name__ == "__main__":
   if args.griddim > 8:
     print(f"Warning: Grid dimension {args.griddim} is very large, may impact performance")
 
-  ImageViewStressTest(griddim=args.griddim).ezapp.mainThreadLoop()
+  # Create and run the ComponentizedApplication
+  app = ImageViewStressTest(griddim=args.griddim)
+  app.ezapp.mainThreadLoop()

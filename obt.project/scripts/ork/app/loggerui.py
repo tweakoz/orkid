@@ -34,7 +34,7 @@ Usage:
             self.my_channel = self.logger_component.configureChannel(
                 "MYCHANNEL",
                 vec3(0.3, 1.0, 0.8),
-                enable_perfgraph=True
+                enable_channel=True
             )
 """
 
@@ -56,7 +56,7 @@ class LoggerUIComponent(ApplicationComponent):
 
     Customization:
         Apps should configure channels in their _onAppLink() using:
-            logger_component.configureChannel(name, color, enable_perfgraph)
+            logger_component.configureChannel(name, color, enable_channel)
     """
 
     def __init__(self,
@@ -122,7 +122,7 @@ class LoggerUIComponent(ApplicationComponent):
     # Public API for apps
     ##############################################
 
-    def configureChannel(self, name, color, enable_perfgraph=False, status_interval=None):
+    def configureChannel(self, name, color, enable_channel=False, status_interval=None):
         """
         Configure a logger channel.
 
@@ -131,13 +131,13 @@ class LoggerUIComponent(ApplicationComponent):
         Args:
             name: Channel name (e.g., "GVIEW", "PHYSICS")
             color: Channel color as vec3 (R, G, B in 0-1 range)
-            enable_perfgraph: If True, perfItems go to GraphView
+            enable_channel: If True, perfItems go to GraphView
             status_interval: Optional status update interval in seconds
 
         Returns:
             Configured channel object
         """
-        channel = self._logger.configureChannel(name, color, enable_perfgraph)
+        channel = self._logger.configureChannel(name, color, enable_channel)
         if status_interval is not None:
             channel.status_interval = status_interval
         return channel
