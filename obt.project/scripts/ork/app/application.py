@@ -1,6 +1,3 @@
-import signal 
-from orkengine.core import CrcString
-
 ###############################################################################
 # ComponentizedApplication
 #  an 'application level ECS'
@@ -64,22 +61,27 @@ from orkengine.core import CrcString
 #    - Calls app template method: _onGpuInit(ctx)
 #    - CRITICAL: Must complete before onUpdateInit (enforced by engine)
 #
-# 7. Application.onAudioInit(audiodev) [MAIN THREAD, GIL ACQUIRED]
+# 7. Application.onSynthInit(synth) [MAIN THREAD, GIL ACQUIRED]
+#    - Called during GPU init phase if synrh enabled
+#    - Called before onAudioInit during audio initialization
+#    - Synth instance created and ready
+#
+# 8. Application.onAudioInit(audiodev) [MAIN THREAD, GIL ACQUIRED]
 #    - Called during GPU init phase if audio enabled
 #    - Audio system bringup: audio::singularity::synth::bringUp()
 #    - onSynthInit() called first (if set)
 #    - Then onAudioInit() called
 #    - Finally audiodevice->startup()
 #
-# 8. Application.onSynthInit(synth) [MAIN THREAD, GIL ACQUIRED]
-#    - Called before onAudioInit during audio initialization
-#    - Synth instance created and ready
+# 9. [AUDIO/SYNTH THREADS SPAWNED HERE]
+#    Separate C++ threads for audio and syntheeizer, runs concurrently with other threads
+#    Thread name: "macos: CoreAudioThread"
 #
-# 9. [UPDATE THREAD SPAWNED HERE]
+# 10. [UPDATE THREAD SPAWNED HERE]
 #    Separate C++ thread for update loop, runs concurrently with main thread
 #    Thread name: "update"
 #
-# 10. Application.onUpdateInit() [UPDATE THREAD, GIL ACQUIRED]
+# 11. Application.onUpdateInit() [UPDATE THREAD, GIL ACQUIRED]
 #     - First callback in update thread
 #     - Called AFTER onGpuInit completes (guaranteed by engine)
 #     - Broadcasts to components: onUpdateInit(), onUpdateLink()
@@ -97,23 +99,16 @@ from orkengine.core import CrcString
 #      - GPU frame counter incremented
 #      - Use for GPU resource updates
 #
-#   B. Application.onDraw(ctx) [MAIN/GPU THREAD, GIL ACQUIRED]
-#      - Called from CtxGLFW::SlotRepaint()
-#      - Main serial queue processed before execution
-#      - Use for custom rendering
-#
-#   C. Application.onGpuPreFrame(ctx) [MAIN/GPU THREAD, GIL ACQUIRED]
-#      - Currently disabled in engine (commented out)
+#   B. Application.onGpuPreFrame(ctx) [MAIN/GPU THREAD, GIL ACQUIRED]
 #      - Would run before frame rendering
 #
-#   D. Application.onGpuPostFrame(ctx) [MAIN/GPU THREAD, GIL ACQUIRED]
-#      - Currently disabled in engine (commented out)
-#      - Would run after frame rendering (for movie capture, etc.)
+#   C. Application.onGpuPostFrame(ctx) [MAIN/GPU THREAD, GIL ACQUIRED]
+#      - Would run after frame rendering (for image capture, etc.)
 #
 # UPDATE THREAD LOOP [UPDATE THREAD]:
 #   While not KAPPSTATEFLAG_JOINING:
 #
-#   E. Application.onUpdate(updinfo) [UPDATE THREAD, GIL ACQUIRED]
+#   D. Application.onUpdate(updinfo) [UPDATE THREAD, GIL ACQUIRED]
 #      - Called per logical update frame
 #      - May run multiple times per render frame (or vice versa)
 #      - Two execution modes:
@@ -125,7 +120,7 @@ from orkengine.core import CrcString
 #
 # EVENT THREAD (Event-driven) [MAIN/EVENT THREAD]:
 #
-#   F. Application.onUiEvent(event) [MAIN/EVENT THREAD, GIL ACQUIRED]
+#   E. Application.onUiEvent(event) [MAIN/EVENT THREAD, GIL ACQUIRED]
 #      - Not time-based, triggered by UI events
 #      - Must return ui::HandlerResult
 #
@@ -140,9 +135,9 @@ from orkengine.core import CrcString
 #   4. joinUpdate() releases GIL (py::gil_scoped_release)
 #
 # Maximizing Parallelism:
-#   - MAIN THREAD and UPDATE THREAD can run Python code in parallel
-#   - Each thread acquires GIL only when executing Python callbacks
-#   - Keep callbacks short to maximize concurrent execution
+#   - MAIN THREAD and UPDATE THREAD can run C++ code in parallel
+#   - Each C++ thread acquires GIL only when executing Python callbacks
+#   - Keep callbacks short or in C++ to maximize concurrent execution
 #   - Use C++ queues (_mainq, _updq, _conq) for inter-thread communication
 #
 # Thread-GIL Interactions:
@@ -203,7 +198,7 @@ from orkengine.core import CrcString
 #    - glfwDestroyWindow() called after user callback
 #
 # 7. Application.onAppExit() [MAIN THREAD, GIL ACQUIRED]
-#    - Last callback, after everything shuts down
+#    - Last callback, after everything else shuts down
 #    - mainThreadLoop() has completed
 #    - Broadcasts to components: onAppExit()
 #    - Final cleanup
@@ -244,6 +239,10 @@ from orkengine.core import CrcString
 #
 ################################################################################
 
+import signal 
+from orkengine.core import CrcString
+
+################################################################################
 class ComponentizedApplication(object):
 
   def __init__(self):
