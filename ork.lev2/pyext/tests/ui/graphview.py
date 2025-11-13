@@ -45,34 +45,6 @@ class GraphViewTest(application.ComponentizedApplication):
   def __init__(self):
     super().__init__()
 
-    ############################################
-    # Setup logger UI component
-    ############################################
-
-    self.addComponent("logger", loggerui.LoggerUIComponent,
-                      overlay=True,
-                      filter_regex=[".*"],
-                      background_color=vec4(1.0, 0.0, 0.0, 0.25))
-
-    ############################################
-    # Configure EzApp creation args
-    ############################################
-
-    self.ezapp_args = {
-      'left': 100,
-      'top': 100,
-      'width': 1200,
-      'height': 900,
-      'enable_freerun_ups': True,
-      'enable_freerun_fps': True
-    }
-
-    ############################################
-    # Create EzApp and initialize
-    ############################################
-
-    self.createEzApp()
-
     # Animation state
     self.time = 0.0
     self.time_speed = 0.05
@@ -102,42 +74,37 @@ class GraphViewTest(application.ComponentizedApplication):
 
     self.freq_smoothing = 0.05  # Smoothing factor (0 = no smoothing, 1 = instant)
 
-  ##############################################
+    ############################################
+    # Setup logger UI component
+    ############################################
 
-  def _onEzAppCreated(self):
-    """Called after ezapp is created - setup UI and components"""
-    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
-    self.ezapp.topWidget.enableUiDraw()
+    self.addComponent("logger", loggerui.LoggerUIComponent,
+                      overlay=True,
+                      filter_regex=[".*"],
+                      background_color=vec4(1.0, 0.0, 0.0, 0.25))
 
-    # Initialize logger first (creates overlay before other widgets)
-    self.initLogger()
+    ############################################
+    # Configure EzApp creation args
+    ############################################
 
-    # Initialize main UI
-    self.initUI()
+    self.ezapp_args = {
+      'left': 100,
+      'top': 100,
+      'width': 1200,
+      'height': 900,
+      'enable_freerun_ups': True,
+      'enable_freerun_fps': True
+    }
 
-  ##############################################
+    ############################################
+    # Create EzApp and initialize
+    ############################################
 
-  def initLogger(self):
-    """Initialize logger component early (before other UI widgets)"""
-    lg_group = self.ezapp.topLayoutGroup
-
-    # Initialize logger component widgets early (before other widgets)
-    logger_comp = self.findComponentByName("logger")
-    if logger_comp and logger_comp.overlay:
-        # Force early backend and widget creation
-        if not logger_comp.logger_backend:
-            logger_comp._logger = logger()
-            logger_comp.logger_backend = lev2.ui.LoggerUIBackend.create()
-            logger_comp._logger.setBackend(logger_comp.logger_backend)
-
-        logger_comp.logger_group = lev2.ui.LoggerGroup.create("logger_ui", logger_comp.filter_regex)
-        logger_comp.logger_group.registerOnBackend(logger_comp.logger_backend)
-        logger_comp.logger_group.background_color = logger_comp.background_color
-        lg_group.overlay_widget = logger_comp.logger_group
+    self.createEzApp()
 
   ##############################################
 
-  def initUI(self):
+  def _onUiInit(self):
     """Initialize main UI layout and widgets"""
     lg_group = self.ezapp.topLayoutGroup
     lg_group.margin = 4
@@ -295,11 +262,6 @@ class GraphViewTest(application.ComponentizedApplication):
 
     # Mark graphview as needing repaint
     self.graphview.setDirty()
-
-  ##############################################
-
-  def onUiEvent(self,uievent):
-    return lev2.ui.HandlerResult()
 
 ###############################################################################
 

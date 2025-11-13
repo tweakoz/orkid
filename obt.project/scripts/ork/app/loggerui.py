@@ -50,11 +50,12 @@ class LoggerUIComponent(ApplicationComponent):
 
     Lifecycle:
         1. __init__() - Configure overlay, filters, colors
-        2. onAppInit() - Create backend, set on global logger
-        3. onAppLink() - Create widget, attach to layout (after ezapp ready)
+        2. onEzAppCreated() - Create backend, widget, set overlay (before enableUiDraw)
+        3. onAppInit() - Backend and widget already ready
+        4. onAppLink() - Ready for channel configuration
 
     Customization:
-        Apps should configure channels in their onAppInit() using:
+        Apps should configure channels in their _onAppLink() using:
             logger_component.configureChannel(name, color, enable_perfgraph)
     """
 
@@ -90,23 +91,32 @@ class LoggerUIComponent(ApplicationComponent):
     # Lifecycle hooks (called by ComponentizedApplication)
     ##############################################
 
-    def _onAppInit(self, app, initdata):
-        """Create backend and set on global logger (if not already created)"""
+    def _onEzAppCreated(self, app, ezapp):
+        """Early initialization - create backend, widget, and set overlay before enableUiDraw()"""
+        # Create backend and set on global logger
         if not self.logger_backend:
             self._logger = logger()
             self.logger_backend = lev2.ui.LoggerUIBackend.create()
             self._logger.setBackend(self.logger_backend)
 
-    def _onAppLink(self, app, initdata):
-        """Create widget and attach to layout (if not already created)"""
+        # Create widget and register with backend
         if not self.logger_group:
             self.logger_group = lev2.ui.LoggerGroup.create("logger_ui", self.filter_regex)
             self.logger_group.registerOnBackend(self.logger_backend)
             self.logger_group.background_color = self.background_color
 
+            # Set overlay BEFORE enableUiDraw() is called
             if self.overlay:
-                lg_group = app.ezapp.topLayoutGroup
+                lg_group = ezapp.topLayoutGroup
                 lg_group.overlay_widget = self.logger_group
+
+    def _onAppInit(self, app, initdata):
+        """Called during app init - backend and widget already created in _onEzAppCreated"""
+        pass
+
+    def _onAppLink(self, app, initdata):
+        """Called after all components initialized - ready for channel configuration"""
+        pass
 
     ##############################################
     # Public API for apps

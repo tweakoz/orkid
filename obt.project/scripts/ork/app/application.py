@@ -8,6 +8,48 @@ from orkengine.core import CrcString
 # Copyright 1996-2023, Michael T. Mayers.
 # Distributed under the MIT License
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
+#
+################################################################################
+# Canonical Initialization Sequence:
+#
+#  1. Application.__init__()
+#     - Add components via addComponent()
+#     - Set ezapp_args for window configuration
+#
+#  2. Application.createEzApp()
+#     - Creates OrkEzApp with merged args (defaults + ezapp_args)
+#     - Broadcasts to components: onEzAppCreated(app, ezapp)
+#       * Components can set up early UI (overlays, etc) before enableUiDraw()
+#     - Calls setRefreshPolicy(RefreshFastest, 0)
+#     - Calls enableUiDraw()
+#     - Calls app template method: _onEzAppCreated()
+#       * Default implementation calls _onUiInit()
+#     - App overrides _onUiInit() to set up UI widgets
+#
+#  3. [C++ Engine calls following during mainThreadLoop startup]
+#
+#  4. Application.onAppInit(initdata)
+#     - Broadcasts to components: onAppInit(app, initdata)
+#       * Components initialize backends, resources
+#     - Calls onAppLink() [see next]
+#
+#  5. Application.onAppLink()
+#     - Broadcasts to components: onAppLink(app, initdata)
+#       * Components connect to other components, configure channels
+#     - Calls app template method: _onAppLink()
+#       * App configures component channels, connections
+#
+#  6. Application.onGpuInit(ctx)
+#     - Broadcasts to components: onGpuInit(app, ctx), onGpuLink(app, ctx)
+#     - Calls app template method: _onGpuInit(ctx)
+#
+#  7. Application.onUpdateInit()
+#     - Broadcasts to components: onUpdateInit(), onUpdateLink()
+#
+#  8. [Main Loop Running]
+#     - onUpdate(updinfo) - called each frame
+#     - onGpuUpdate(ctx), onGpuPreFrame(ctx), onGpuPostFrame(ctx)
+#
 ################################################################################
 
 class ComponentizedApplication(object):
@@ -92,13 +134,29 @@ class ComponentizedApplication(object):
     # Create ezapp
     self.ezapp = lev2.OrkEzApp.create(self, **args)
 
-    # Call template method for subclass customization
+    # Broadcast to components (for early UI setup like overlays)
+    for component in self.components_sorted:
+      component.onEzAppCreated(self, self.ezapp)
+
+    # Standard setup (refresh policy and UI draw)
+    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
+    self.ezapp.topWidget.enableUiDraw()
+
+    # Call template method for subclass UI initialization
     self._onEzAppCreated()
 
     return self.ezapp
 
   def _onEzAppCreated(self):
-    """Template method called after ezapp is created"""
+    """Template method called after ezapp is created and configured
+
+    This is where apps should call _onUiInit() to set up their UI widgets.
+    """
+    # Call UI initialization template method
+    self._onUiInit()
+
+  def _onUiInit(self):
+    """Template method for UI initialization - override in subclasses"""
     pass
 
   #########
@@ -245,6 +303,16 @@ class ComponentizedApplication(object):
 class ApplicationComponent(object):
 
   def __init__(self):
+    pass
+
+  ##############################################
+
+  def onEzAppCreated(self,app,ezapp):
+    self.app = app
+    self.ezapp = ezapp
+    self._onEzAppCreated(app,ezapp)
+
+  def _onEzAppCreated(self,app,ezapp):
     pass
 
   ##############################################
