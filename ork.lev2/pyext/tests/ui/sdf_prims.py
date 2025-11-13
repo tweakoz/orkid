@@ -37,6 +37,9 @@ class SDFPrimsTest(object):
 
     self.ezapp.topWidget.enableUiDraw()
 
+    # Store triangle shapes for animation
+    self.triangle_shapes = []
+
   ############################################################################
 
   def onGpuInit(self, ctx):
@@ -353,10 +356,21 @@ class SDFPrimsTest(object):
       # Apply theme to shape
       shape_widget.theme = getattr(tokens, style_tag)
 
+      # Store triangle shapes for animation
+      if shape_type == "triangle":
+        self.triangle_shapes.append(shape_widget)
+
   ############################################################################
 
-  def onGpuUpdate(self, ctx):
-    pass
+  def onUpdate(self, updinfo):
+    # Animate all triangles with rotation
+    import math
+    time = updinfo.absolutetime
+
+    for idx, shape in enumerate(self.triangle_shapes):
+      # Each triangle rotates at a different speed
+      rotation_speed = 0.5 + (idx * 0.2)  # Different speeds for variety
+      shape.shape_param = time * rotation_speed
 
   def onUiEvent(self, uievent):
     return lev2.ui.HandlerResult()
