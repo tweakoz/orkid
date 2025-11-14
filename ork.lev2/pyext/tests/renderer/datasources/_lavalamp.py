@@ -1,0 +1,279 @@
+#!/usr/bin/env ork.python
+
+import math, threading, time
+import numpy as np
+from collections import deque
+from orkengine.core import vec2, vec3, CrcStringProxy, Logger
+from orkengine.lev2 import vdb as ork_vdb, primitives, RigidPrimitive, MicroMesh
+from ork.app.application import ApplicationComponent
+from shaders import createPipeline
+
+tokens = CrcStringProxy()
+
+#############################
+# VDB Lavalamp Component
+#############################
+
+class LavalampComponent(ApplicationComponent):
+  """Component that manages VDB-based lavalamp effect with mesh generation"""
+
+  def __init__(self):
+    super().__init__()
+
+    # VDB sphere parameters
+    self.RADIUS1 = 5.0
+    self.VOXEL_SIZE = self.RADIUS1/14.0
+    self.WIDTH = 4.0/self.VOXEL_SIZE
+    self.RADIUS2 = 10.0
+    self.ISO_PARM = 0.87
+    self.TIME_RATE = 1.0
+    self.SMOOTHING_PASSES = 2
+
+    # Create levelset sphere
+    self.sphere = ork_vdb.FloatGrid.createLevelSetSphere(
+      "a", self.RADIUS1, vec3(0,0,0), self.VOXEL_SIZE, self.WIDTH)
+    self.outside = self.sphere.background
+
+    # Logger channels
+    self.LOGGER = Logger.instance()
+    self.logchan = self.LOGGER.configureChannel("LAVA.GEOM", vec3(1,1,0), True)
+    self.perfchan = self.LOGGER.configureChannel("LAVA.PERF", vec3(1,.5,0), True)
+
+    # AX voxel shader
+    voxel_shader = """
+vec3f@pos = getvoxelpws();
+vec3f@timeshift = { 0,f$time*-1.0,0 };
+
+vec3f@pos_a = vec3f@pos * 0.1 * f$freq + vec3f@timeshift * 1.0;
+vec3f@pos_b = vec3f@pos * 0.17 * f$freq + vec3f@timeshift * 0.7;
+vec3f@pos_c = vec3f@pos * 0.37 * f$freq + vec3f@timeshift * 0.46;
+vec3f@pos_d = vec3f@pos * 0.57 * f$freq + vec3f@timeshift * 0.27;
+
+f@a  = simplexnoise(vec3f@pos_a)*1.0;
+f@a += simplexnoise(vec3f@pos_b)*0.5;
+f@a += simplexnoise(vec3f@pos_c)*0.25;
+f@a += simplexnoise(vec3f@pos_d)*0.125;
+"""
+
+    self.cdata = ork_vdb.ax.CustomData()
+    self.ve = ork_vdb.ax.VolumeExecutable.compile(voxel_shader, self.cdata)
+
+    # Mesh shader
+    self.SHADERTEXT = """
+////////////////////////////////////////
+fxconfig fxcfg_default { glsl_version = "330"; }
+////////////////////////////////////////
+uniform_set ublock_vtx {
+  mat4 mvp;
+  float pointsize;
+}
+////////////////////////////////////////
+uniform_set ublock_frg {
+  vec4 modcolor;
+}
+////////////////////////////////////////
+vertex_interface vif_x : ublock_vtx {
+  inputs {
+    vec4 pos : POSITION;
+    vec4 nrm : NORMAL;
+  }
+  outputs {
+    vec3 frg_col;
+    vec3 frg_nrm;
+  }
+}
+////////////////////////////////////////
+fragment_interface fif_x : vif_x : ublock_frg {
+  outputs { layout(location = 0) vec4 out_clr; }
+}
+////////////////////////////////////////
+vertex_shader vs_x : vif_x {
+
+  frg_col = normalize(pos.xyz);
+  frg_nrm = normalize(nrm.xyz);
+  gl_Position = mvp * vec4(pos.x,pos.y,pos.z,1);
+  gl_PointSize = pointsize;
+}
+////////////////////////////////////////
+fragment_shader fs_x : fif_x {
+  vec3 normal=normalize(frg_nrm)*-1.0;
+  normal = normal * 0.5 + 0.5;
+  out_clr = vec4(normal.xyz, 1);
+}
+////////////////////////////////////////
+technique tek_x {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_x;
+    fragment_shader = fs_x;
+    state_block     = default;
+  }
+}
+"""
+
+    # Thread control
+    self.next_sphere = None
+    self.this_sphere = None
+    self.ok_to_exit = False
+    self.next_trimesh = None
+    self.thr = None
+
+    # Moving average tracking for mesh stats (last ~180 samples at 60fps = ~3 seconds)
+    self.verts_history = deque(maxlen=180)
+    self.faces_history = deque(maxlen=180)
+    self.tris_history = deque(maxlen=180)
+    self.quads_history = deque(maxlen=180)
+    self.last_print_time = time.time()
+
+    # Performance tracking - count calls
+    self.frame_count = 0
+    self.update_count = 0
+    self.vdb_count = 0
+    self.last_perf_print_time = time.time()
+
+    # Will be initialized in onGpuInit
+    self.points_prim = None
+    self.mesh_prim = None
+    self.mesh_pipe = None
+    self.next_umesh = None
+    self._umesh = None
+    self.phi = 0.0
+
+  ################################################
+  # GPU initialization
+  ################################################
+
+  def _onGpuInit(self, ctx):
+    """Initialize GPU resources"""
+
+    # Create points primitive
+    self.points_prim = primitives.PointsPrimitiveV12C4.create(40<<20)
+    self.points_prim.updateWithVdbFloatGrid(self.sphere, ctx)
+
+    # Create mesh primitive
+    self.mesh_pipe = createPipeline(
+      app = self.app,
+      ctx = ctx,
+      rendermodel = "ForwardPBR",
+      shadertext = self.SHADERTEXT,
+      techname = "tek_x",
+    )
+
+    self.mesh_prim = RigidPrimitive()
+    self._umesh = MicroMesh.fromVertAndFaceLists([], [])
+
+    # Start VDB update thread
+    def upd_sphere_fn():
+      while not self.ok_to_exit:
+        self.cdata.set("freq", float(2.0 + math.sin(self.phi * 0.25) * 1.0))
+        self.cdata.set("time", self.phi * 0.5)
+        self.ve.executeOnGrid(self.sphere)
+
+        mesh_dict = self.sphere.toTriMeshNumpy(self.ISO_PARM)
+        num_verts = len(mesh_dict["vertices"])
+        num_faces = len(mesh_dict["faces"])
+
+        if (num_verts > 0) and (num_faces > 0):
+          self.next_trimesh = mesh_dict
+        else:
+          self.next_trimesh = None
+        self.next_sphere = self.sphere
+
+        # Increment VDB count
+        self.vdb_count += 1
+
+        time.sleep(0.01666)
+
+    self.thr = threading.Thread(target=upd_sphere_fn)
+    self.thr.start()
+
+  ################################################
+  # Update (runs on update thread)
+  ################################################
+
+  def _onUpdate(self, updinfo):
+    """Process mesh updates on update thread"""
+
+    # Increment update count
+    self.update_count += 1
+
+    self.phi = updinfo.absolutetime * self.TIME_RATE
+
+    if self.next_trimesh != None:
+      v = self.next_trimesh["vertices"]
+      f = self.next_trimesh["faces"]
+      self._umesh.updateFromLists(v, f)
+      conn = self._umesh.vertexConnectivity
+      self._umesh.asyncSmoothed(conn, self.SMOOTHING_PASSES, None, None)
+      self._umesh.computeNormals()
+      self.next_umesh = self._umesh
+      self.next_trimesh = None
+
+  ################################################
+  # GPU update (runs on GPU/draw thread)
+  ################################################
+
+  def _onGpuUpdate(self, ctx):
+    """Update GPU primitives on draw thread"""
+
+    # Increment frame count
+    self.frame_count += 1
+
+    # Track moving average of mesh stats
+    num_verts = self._umesh.num_verts
+    num_faces = self._umesh.num_faces
+    num_tris = self._umesh.num_tris
+    num_quads = self._umesh.num_quads
+    self.verts_history.append(num_verts)
+    self.faces_history.append(num_faces)
+    self.tris_history.append(num_tris)
+    self.quads_history.append(num_quads)
+
+    # Print stats every 3 seconds
+    current_time = time.time()
+    if current_time - self.last_print_time >= 3.0:
+      avg_verts = sum(self.verts_history) / len(self.verts_history) if self.verts_history else 0
+      avg_faces = sum(self.faces_history) / len(self.faces_history) if self.faces_history else 0
+      avg_tris = sum(self.tris_history) / len(self.tris_history) if self.tris_history else 0
+      avg_quads = sum(self.quads_history) / len(self.quads_history) if self.quads_history else 0
+      self.logchan.log(f"avg_verts<{avg_verts:.1f}>  avg_tris<{avg_tris:.1f}>  avg_quads<{avg_quads:.1f}>  avg_faces<{avg_faces:.1f}>")
+      self.last_print_time = current_time
+
+    # Print performance stats every 3 seconds
+    if current_time - self.last_perf_print_time >= 3.0:
+      elapsed = current_time - self.last_perf_print_time
+      fps = self.frame_count / elapsed
+      ups = self.update_count / elapsed
+      vps = self.vdb_count / elapsed
+      self.perfchan.log(f"FPS<{fps:.1f}>  UPS<{ups:.1f}>  VPS<{vps:.1f}>")
+      # Reset counters
+      self.frame_count = 0
+      self.update_count = 0
+      self.vdb_count = 0
+      self.last_perf_print_time = current_time
+
+    # Update points primitive if new VDB sphere is available
+    if self.next_sphere != None:
+      self.points_prim.updateWithVdbFloatGrid(self.next_sphere, ctx)
+      self.next_sphere = None
+
+    # Update mesh primitive if new smoothed micromesh is available
+    if self.next_umesh != None:
+      self.mesh_prim.updateWithMicroMesh(self.next_umesh, ctx)
+      self.next_umesh = None
+
+  ################################################
+  # Cleanup
+  ################################################
+
+  def _onGpuExit(self, ctx):
+    """Cleanup GPU resources"""
+    self.ok_to_exit = True
+    if self.thr:
+      self.thr.join()
+
+  def _onUpdateExit(self):
+    """Cleanup update thread resources"""
+    self.ok_to_exit = True
+    if self.thr:
+      self.thr.join()
