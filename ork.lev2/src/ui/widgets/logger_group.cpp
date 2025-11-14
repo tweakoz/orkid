@@ -161,7 +161,7 @@ void LoggerGroup::addChannel(const std::string& name, lev2::Context* pt) {
   view._container->gpuInit(pt);
   vpack->_draw_background = false;
   vpack->_fill = true;  // Distribute remaining space to children without fixed height
-  vpack->_margin = 2;   // Small margin between sections for visual separation
+  vpack->_margin = 0;   // Small margin between sections for visual separation
 
   // Apply the channel-specific tab style
   if (_uicontext && _uicontext->_theme_engine) {

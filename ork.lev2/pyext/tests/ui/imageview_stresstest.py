@@ -54,7 +54,6 @@ class ImageViewStressTest(application.ComponentizedApplication):
     ############################################
 
     self.addComponent("logger", loggerui.LoggerUIComponent,
-                      overlay=True,
                       filter_regex=[".*"],
                       background_color=vec4(0.2, 0.2, 0.2, 0.8))
 

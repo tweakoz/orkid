@@ -69,7 +69,6 @@ class GraphViewTest(application.ComponentizedApplication):
     ############################################
 
     self.addComponent("logger", loggerui.LoggerUIComponent,
-                      overlay=True,
                       filter_regex=[".*"],
                       background_color=vec4(1.0, 0.0, 0.0, 0.25))
 

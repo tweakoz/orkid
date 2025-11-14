@@ -11,6 +11,7 @@ LoggerUIComponent - Generic logger UI backend with overlay widget
 
 Provides logger UI backend integration for ComponentizedApplications.
 Allows apps to configure custom channels during initialization.
+Logger starts hidden - toggle visibility with backtick (`) key.
 
 Usage:
     from ork.app import application, loggerui
@@ -19,19 +20,17 @@ Usage:
         def __init__(self):
             super().__init__()
 
-            # Register logger component
-            self.logger_component = loggerui.LoggerUIComponent(
-                overlay=True,
-                filter_regex=[".*"],
-                background_color=vec4(1.0, 0.0, 0.0, 0.25)
-            )
-            self.addComponent("logger", loggerui.LoggerUIComponent)
+            # Register logger component (always renders as overlay)
+            self.addComponent("logger", loggerui.LoggerUIComponent,
+                             filter_regex=[".*"],
+                             background_color=vec4(1.0, 0.0, 0.0, 0.25))
 
-            self.ezapp = lev2.OrkEzApp.create(self, ...)
+            self.createEzApp()
 
-        def onAppInit(self, initdata):
+        def _onAppLink(self):
             # Configure app-specific channels
-            self.my_channel = self.logger_component.configureChannel(
+            logger_comp = self.findComponentByName("logger")
+            self.my_channel = logger_comp.configureChannel(
                 "MYCHANNEL",
                 vec3(0.3, 1.0, 0.8),
                 enable_channel=True
@@ -60,17 +59,16 @@ class LoggerUIComponent(ApplicationComponent):
     """
 
     def __init__(self,
-                 overlay=True,
                  filter_regex=None,
                  background_color=None):
         """
         Args:
-            overlay: If True, logger floats over UI. If False, app must embed manually.
             filter_regex: List of regex patterns for log filtering (default: [".*"])
             background_color: Widget background color (default: semi-transparent gray)
+
+        Note: Logger is always rendered as an overlay. Toggle visibility with ` key (handled by C++).
         """
         super().__init__()
-        self.overlay = overlay
 
         # Normalize filter_regex to list
         if filter_regex is None:
@@ -106,10 +104,9 @@ class LoggerUIComponent(ApplicationComponent):
             self.logger_group.registerOnBackend(self.logger_backend)
             self.logger_group.background_color = self.background_color
 
-            # Set overlay BEFORE enableUiDraw() is called
-            if self.overlay:
-                lg_group = ezapp.topLayoutGroup
-                lg_group.overlay_widget = self.logger_group
+            # Set as overlay widget
+            lg_group = ezapp.topLayoutGroup
+            lg_group.overlay_widget = self.logger_group
 
 
     def _onAppInit(self, app, initdata):

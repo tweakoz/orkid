@@ -89,7 +89,7 @@ class ThemesTestApp(ComponentizedApplication):
     self.sg_opacity = 0.85
     self.ui_opacity = 0.9
 
-    self.addComponent("loggerui", LoggerUIComponent, overlay=True, filter_regex=[".*"] ) 
+    self.addComponent("loggerui", LoggerUIComponent, filter_regex=[".*"]) 
 
     ########################################
     # multiscene component (4 SG viewports)

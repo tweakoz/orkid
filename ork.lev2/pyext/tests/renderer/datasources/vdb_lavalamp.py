@@ -10,6 +10,7 @@ from primitives import createGridData
 from scenegraph import createSceneGraph
 from _lavalamp import LavalampComponent
 from ork.app.application import ComponentizedApplication
+from ork.app.loggerui import LoggerUIComponent
 ################################################################################
 
 class PointsPrimApp(ComponentizedApplication):
@@ -21,7 +22,7 @@ class PointsPrimApp(ComponentizedApplication):
 
     # Add lavalamp component
     self.lavalamp = self.addComponent("lavalamp", LavalampComponent)
-    #self.addComponent("loggerui", LoggerUIComponent, overlay=True, filter_regex=[".*"] ) 
+    self.addComponent("loggerui", LoggerUIComponent, filter_regex=[".*"]) 
 
     ############################################
     # Configure EzApp creation args
@@ -31,14 +32,6 @@ class PointsPrimApp(ComponentizedApplication):
       'ssaa': 1
     }
     self.createEzApp()
-
-  ################################################
-  # App-level initialization after component init
-  ################################################
-
-  def _onAppLink(self):
-    """Setup UI camera after app is initialized"""
-    setupUiCamera(app=self, eye=vec3(6,6,6), constrainZ=True, up=vec3(0,1,0))
 
   ################################################
   # GPU initialization - called after component onGpuInit
@@ -57,6 +50,7 @@ class PointsPrimApp(ComponentizedApplication):
     }
 
     createSceneGraph(app=self, rendermodel="ForwardPBR", params_dict=sg_params)
+    setupUiCamera(app=self, eye=vec3(6,6,6), constrainZ=True, up=vec3(0,1,0))
 
     ###################################
     # create grid
