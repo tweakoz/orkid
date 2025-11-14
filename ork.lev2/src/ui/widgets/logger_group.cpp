@@ -201,7 +201,7 @@ void LoggerGroup::addChannel(const std::string& name, lev2::Context* pt) {
   // bg = black, text = channel_color
   auto log_area = std::make_shared<TextBox>(
     name + "_log",
-    fvec4(channel_color*0.2, 0.75f),  // Black background
+    fvec4(channel_color*0.2, BASE_ALPHA),  // Black background
     ""
   );
   log_area->_blending = lev2::BlendingMacro::ALPHA;

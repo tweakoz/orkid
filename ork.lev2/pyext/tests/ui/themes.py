@@ -13,6 +13,7 @@ from obt import host, path as obt_path
 from ork import path as ork_path
 
 from ork.app.application import ComponentizedApplication
+from ork.app.loggerui import LoggerUIComponent
 from ork.app.testlib.multiscene1 import MultiScene1Component
 from _themes_overlay import OverlayComponent
 from ork.ui.color_picker import ColorPicker
@@ -88,6 +89,8 @@ class ThemesTestApp(ComponentizedApplication):
     self.sg_opacity = 0.85
     self.ui_opacity = 0.9
 
+    self.addComponent("loggerui", LoggerUIComponent, overlay=True, filter_regex=[".*"] ) 
+
     ########################################
     # multiscene component (4 SG viewports)
     ########################################
@@ -108,28 +111,26 @@ class ThemesTestApp(ComponentizedApplication):
     # create application
     ########################################
 
-    self.ezapp = lev2.OrkEzApp.create(
-        self,
-        enable_lockstep_ups = False,
-        enable_lockstep_fps = False,
-        enable_freerun_ups = True,
-        enable_freerun_fps = True,
-        enable_audio_synth=False,
-        enable_graphics=True,
-        freerun=True,
-        target_ups = 400,
-        target_fps = 120,
-        width = 1600,
-        height = 900,
-        fullscreen = False,
-        msaa_samples=1)
+    ############################################
+    # Configure EzApp creation args
+    ############################################
 
-    self.ezapp.topWidget.enableUiDraw()
+    self.ezapp_args = {
+      'width': 1600,
+      'height': 900,
+      'enable_freerun_ups': True,
+      'enable_freerun_fps': True
+    }
 
+    ############################################
+    # Create EzApp and initialize
+    ############################################
+
+    self.createEzApp()
+    
   ##############################################
 
-  def onGpuInit(self,ctx):
-    super().onGpuInit(ctx)
+  def _onGpuInit(self,ctx):
 
     self.uicontext = self.ezapp.uicontext
 
@@ -442,8 +443,7 @@ class ThemesTestApp(ComponentizedApplication):
       style.text_color = vec4(1.0, 1.0, 1.0, opacity)
       style.blend_mode = getattr(tokens, blendmode)
 
-  def onGpuUpdate(self, ctx):
-    super().onGpuUpdate(ctx)
+  def _onGpuUpdate(self, ctx):
 
     abstime = self.absolutetime
 
@@ -460,11 +460,6 @@ class ThemesTestApp(ComponentizedApplication):
     if handled:
       uicam.updateMatrices()
       panel.camera.copyFrom( uicam.cameradata )
-    return lev2.ui.HandlerResult()
-
-  ##############################################
-
-  def onUiEvent(self, uievent):
     return lev2.ui.HandlerResult()
 
 ###############################################################################

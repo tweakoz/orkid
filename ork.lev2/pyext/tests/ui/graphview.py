@@ -107,9 +107,6 @@ class GraphViewTest(application.ComponentizedApplication):
     )
     print(f"GVIEW channel configured: {self.gview_channel}")
 
-    # Configure EZAPP channel with status interval
-    logger_comp.configureChannel("EZAPP", vec3(0.5, 0.5, 1.0), status_interval=0.1)
-
   ##############################################
 
   def _onUiInit(self):

@@ -98,6 +98,7 @@ class LoggerUIComponent(ApplicationComponent):
             self._logger = logger()
             self.logger_backend = lev2.ui.LoggerUIBackend.create()
             self._logger.setBackend(self.logger_backend)
+            self.configureChannel("EZAPP", vec3(0.5, 0.5, 1.0), status_interval=0.1)
 
         # Create widget and register with backend
         if not self.logger_group:
@@ -110,12 +111,14 @@ class LoggerUIComponent(ApplicationComponent):
                 lg_group = ezapp.topLayoutGroup
                 lg_group.overlay_widget = self.logger_group
 
+
     def _onAppInit(self, app, initdata):
         """Called during app init - backend and widget already created in _onEzAppCreated"""
         pass
 
     def _onAppLink(self, app, initdata):
         """Called after all components initialized - ready for channel configuration"""
+        # Configure EZAPP channel with status interval
         pass
 
     ##############################################
