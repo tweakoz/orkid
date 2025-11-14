@@ -150,7 +150,7 @@ technique tek_x {
     self.points_prim = primitives.PointsPrimitiveV12C4.create(40<<20)
     self.points_prim.updateWithVdbFloatGrid(self.sphere, ctx)
 
-    # Create mesh primitive
+    # Create mesh primitive and pipeline
     self.mesh_pipe = createPipeline(
       app = self.app,
       ctx = ctx,
@@ -161,6 +161,24 @@ technique tek_x {
 
     self.mesh_prim = RigidPrimitive()
     self._umesh = MicroMesh.fromVertAndFaceLists([], [])
+
+    # Create points pipeline
+    from orkengine.core import CrcStringProxy
+    tokens = CrcStringProxy()
+    from shaders import POINTCLOUD_SHADERTEXT
+
+    self.points_pipeline = createPipeline(
+      app = self.app,
+      ctx = ctx,
+      shadertext = POINTCLOUD_SHADERTEXT,
+      blending = tokens.OFF,
+      depthtest = tokens.LESS,
+      techname = "tek_points_fwd",
+      rendermodel = "ForwardPBR"
+    )
+
+    pointsize_param = self.points_pipeline.sharedMaterial.param("pointsize")
+    self.points_pipeline.bindParam(pointsize_param, 1.0)
 
     # Start VDB update thread
     def upd_sphere_fn():
@@ -186,6 +204,21 @@ technique tek_x {
 
     self.thr = threading.Thread(target=upd_sphere_fn)
     self.thr.start()
+
+  ################################################
+  # GPU link - create scene graph nodes
+  ################################################
+
+  def _onGpuLink(self, ctx):
+    """Create scene graph nodes after app scene graph is ready"""
+
+    # Create mesh scene graph node
+    self.mesh_node = self.mesh_prim.createNode("mesh-node", self.app.layer1, self.mesh_pipe)
+    self.mesh_node.sortkey = 2
+
+    # Create points scene graph node
+    self.points_node = self.points_prim.createNode("points-node", self.app.layer1, self.points_pipeline)
+    self.points_node.sortkey = 2
 
   ################################################
   # Update (runs on update thread)

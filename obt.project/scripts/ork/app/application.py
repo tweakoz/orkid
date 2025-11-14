@@ -373,7 +373,9 @@ class ComponentizedApplication(object):
       'width': 1280,
       'height': 720,
       'enable_freerun_ups': True,
-      'enable_freerun_fps': True
+      'enable_freerun_fps': True,
+      'msaa': 0,      
+      'ssaa': 0   
     }
 
     # Merge user args with defaults (user args take precedence)
@@ -469,11 +471,14 @@ class ComponentizedApplication(object):
     # immediately before the main loop starts
     for component in self.components_sorted:
       component.onGpuInit(ctx)
+    self._onGpuInit(ctx)    
     for component in self.components_sorted:
       component.onGpuLink(ctx)
-    self._onGpuInit(ctx)    
+    self._onGpuLink(ctx)    
 
   def _onGpuInit(self,ctx):
+    pass 
+  def _onGpuLink(self,ctx):
     pass 
 
   def onGpuExit(self,ctx):
@@ -520,6 +525,15 @@ class ComponentizedApplication(object):
     for component in self.components_sorted:
       component.onUpdate(updinfo) 
 
+    ##############
+    # standard scene graph application update ?
+    ##############
+
+    if hasattr(self, 'scene') and hasattr(self, 'cameralut'):
+       self.scene.updateScene(self.cameralut)  # update and enqueue all scenenodes
+
+    ##############
+
     self._onUpdate(updinfo)
 
   def _onUpdate(self,updinfo):
@@ -539,6 +553,19 @@ class ComponentizedApplication(object):
   def notify(self,eventid: CrcString,**kwargs):
     for component in self.components_sorted:
       component.onNotify(eventid,**kwargs)
+
+  ##################################################
+
+  def onUiEvent(self, uievent):
+    if hasattr(self, 'uicam') and hasattr(self, 'camera'):
+      handled = self.uicam.uiEventHandler(uievent)
+      if handled:
+        self.camera.copyFrom(self.uicam.cameradata)
+    return self._onUiEvent(uievent)
+
+  def _onUiEvent(self, uievent):
+    from orkengine.lev2 import ui
+    return ui.HandlerResult()
 
 ################################################################################
 # ApplicationComponent
