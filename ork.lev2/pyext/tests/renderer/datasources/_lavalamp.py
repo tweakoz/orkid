@@ -217,13 +217,13 @@ technique tek_x {
 
   def _onGpuLink(self, ctx):
     """Create scene graph nodes after app scene graph is ready"""
-
+    SGC = self.app.findComponentByName("std_scenegraph")
     # Create mesh scene graph node
-    self.mesh_node = self.mesh_prim.createNode("mesh-node", self.app.layer1, self.mesh_pipe)
+    self.mesh_node = self.mesh_prim.createNode("mesh-node", SGC.layer1, self.mesh_pipe)
     self.mesh_node.sortkey = 2
 
     # Create points scene graph node
-    self.points_node = self.points_prim.createNode("points-node", self.app.layer1, self.points_pipeline)
+    self.points_node = self.points_prim.createNode("points-node", SGC.layer1, self.points_pipeline)
     self.points_node.sortkey = 2
 
   ################################################

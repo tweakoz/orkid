@@ -383,14 +383,14 @@ class ComponentizedApplication(object):
 
     # Create ezapp
     self.ezapp = lev2.OrkEzApp.create(self, **args)
+    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 30)
+    # Standard setup (refresh policy and UI draw)
+    self.ezapp.topWidget.enableUiDraw()
 
     # Broadcast to components (for early UI setup like overlays)
     for component in self.components_sorted:
       component.onEzAppCreated(self, self.ezapp)
 
-    # Standard setup (refresh policy and UI draw)
-    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
-    self.ezapp.topWidget.enableUiDraw()
 
     # Call template method for subclass UI initialization
     self._onEzAppCreated()
@@ -404,6 +404,8 @@ class ComponentizedApplication(object):
     """
     # Call UI initialization template method
     self._onUiInit()
+
+  ##################################################
 
   def _onUiInit(self):
     """Template method for UI initialization - override in subclasses"""
@@ -422,6 +424,8 @@ class ComponentizedApplication(object):
     # after all components initialized, call onAppLink
     self.onAppLink()
 
+  ##################################################
+
   def onAppLink(self):
     # invoked after all components have been initialized
     # broadcast to components first, then call app-level template method
@@ -433,6 +437,8 @@ class ComponentizedApplication(object):
   def _onAppLink(self):
     # template method for subclasses to override
     pass
+
+  ##################################################
 
   def onAppExit(self):
     # invoked on main thread when the application is exiting
@@ -454,6 +460,8 @@ class ComponentizedApplication(object):
     for component in self.components_sorted:
       component.onAudioLink(audiodev)
       
+  ##################################################
+
   def onSynthInit(self,synth):
     # invoked on audio thread when the synth is initialized
     # immediately before audio processing starts
@@ -476,10 +484,14 @@ class ComponentizedApplication(object):
       component.onGpuLink(ctx)
     self._onGpuLink(ctx)    
 
+  ##################################################
+
   def _onGpuInit(self,ctx):
     pass 
   def _onGpuLink(self,ctx):
     pass 
+
+  ##################################################
 
   def onGpuExit(self,ctx):
     # invoked on main thread when the GPU context is exiting
@@ -487,17 +499,23 @@ class ComponentizedApplication(object):
     for component in self.components_sorted:
       component.onGpuExit(ctx)
       
+  ##################################################
+
   def onGpuUpdate(self,ctx):
     # invoked on main thread each frame to update GPU resources
     # immediately before pre-frame
     for component in self.components_sorted:
       component.onGpuUpdate(ctx)
 
+  ##################################################
+
   def onGpuPreFrame(self,ctx):
     # invoked on main thread each frame before rendering
     # immediately before rendering
     for component in self.components_sorted:
       component.onGpuPreFrame(ctx)
+
+  ##################################################
 
   def onGpuPostFrame(self,ctx):
     # invoked on main thread each frame after rendering
@@ -517,6 +535,8 @@ class ComponentizedApplication(object):
     for component in self.components_sorted:
       component.onUpdateLink()
       
+  ##################################################
+
   def onUpdate(self,updinfo):
     # invoked on update thread each update loop iteration
 
@@ -531,13 +551,14 @@ class ComponentizedApplication(object):
   def _onUpdate(self,updinfo):
     pass
 
+  ##################################################
+
   def onUpdateExit(self):
     # invoked on update thread when the update loop is exiting
     # immediately after the update loop ends
     for component in self.components_sorted:
       component.onUpdateExit()
 
-      
   ##################################################
   # notify : notify all components of an event
   ##################################################
@@ -736,7 +757,7 @@ class ApplicationComponent(object):
   ##############################################
 
   def onUiEvent(self, uievent):
-    self._onUiEvent(uievent)
+    return self._onUiEvent(uievent)
 
   def _onUiEvent(self, uievent):
     return None

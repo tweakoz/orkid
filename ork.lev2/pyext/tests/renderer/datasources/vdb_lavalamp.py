@@ -18,42 +18,35 @@ class LavaLampApp(ComponentizedApplication):
   def __init__(self):
     super().__init__()
 
-    self.addComponent("loggerui", LoggerUIComponent, filter_regex=[".*"]) 
-    self.sg_component = self.addComponent("std_scenegraph", StandardSceneGraphComponent)
+    ############################################
+
+    self.SGC = self.addComponent("std_scenegraph", StandardSceneGraphComponent)
+    self.LUI = self.addComponent("loggerui", LoggerUIComponent, filter_regex=[".*"]) 
+    self.LLA = self.addComponent("lavalamp", LavalampComponent)
+
+    ############################################
+
+    self.createEzApp()
+
+    ############################################
+
 
     # Add lavalamp component
-    #self.lavalamp = self.addComponent("lavalamp", LavalampComponent)
 
-    ############################################
-    # Configure EzApp creation args
-    ############################################
-
-    self.ezapp_args = {
-      'ssaa': 1
-    }
-    self.createEzApp()
 
   ################################################
   # GPU initialization - called after component onGpuInit
   ################################################
 
-  def _onGpuInit(self, ctx):
+  def _onGpuLink(self, ctx):
     ###########################
-    lg_group = self.ezapp.topLayoutGroup
-    self.griditems = lg_group.makeGrid(
-      width=1,
-      height=1,
-      margin = 4,
-      uiclass = lev2.ui.SceneGraphViewport,
-      args = ["label",vec4(0.1,0.1,0.3,1)],
-    )
-    ###########################
-    SGC = self.sg_component
+    SGC = self.SGC
     SG = SGC.scenegraph
-    SGVP = self.griditems[0]
+    SGVP = SGC.griditems[0]
     SGVPW = SGVP.widget
     SGVPW.cameraName = SGC.camname
     SGVPW.scenegraph = SG
+    SGVPW.evhandler = lambda x: SGC._onCameraUiEvent(x)
     #SGVPW.forkDB()
     ###########################
     self.SGVP = SGVP 
@@ -62,7 +55,6 @@ class LavaLampApp(ComponentizedApplication):
 
   def _onUpdate(self, updinfo):
     self.SGVP.widget.setDirty()
-
   
   ###############################################################################
 

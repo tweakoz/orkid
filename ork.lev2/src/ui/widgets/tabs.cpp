@@ -316,7 +316,7 @@ void TabWidget::_drawTabBar(drawevent_constptr_t drwev) {
     }
 
     // Draw tab text
-    ork::lev2::FontMan::PushFont("i14");
+    ork::lev2::FontMan::PushFont("i16");
     fontman->beginTextBlock(tgt);
     tabIndex = 0;
     for (const auto& child : _children) {
