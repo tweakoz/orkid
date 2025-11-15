@@ -45,12 +45,8 @@ class StandardSceneGraphComponent(ApplicationComponent):
     sg_params.AmbientLevel = vec3(.125)
     sg_params.preset = "ForwardPBR"
     sg_params.SkyboxTexPathStr = "nebula"
-    sg_params.dbufcontext = self.dbufcontext
     self.sg_params = sg_params
 
-    #createSceneGraph(app=self, rendermodel="ForwardPBR", params_dict=sg_params)
-    #setupUiCamera(app=self, eye=vec3(6,6,6), constrainZ=True, up=vec3(0,1,0))
-    #SG = self.ezapp.createScene(sg_params)
     SG = lev2.scenegraph.Scene(sg_params)
     self.layer1 = SG.createLayer("std_forward")
     self.layer_std = self.layer1
@@ -58,7 +54,6 @@ class StandardSceneGraphComponent(ApplicationComponent):
     self.scenegraph = SG 
 
     self.camname = "Camera0"
-    #self.cameralut = lev2.CameraDataLut()
     self.camera, self.uicam = setupUiCameraX( cameralut=self.cameralut, 
                                               camname=self.camname )
 
@@ -69,15 +64,27 @@ class StandardSceneGraphComponent(ApplicationComponent):
     self.grid_data = createGridData()
     self.grid_node = self.layer1.createDrawableNodeFromData("grid", self.grid_data)
     self.grid_node.sortkey = 1
-    #self.scenegraph.lightingmanager.gpuInit(ctx)
+    self.scenegraph.lightingmanager.gpuInit(ctx)
+
+  ##################################################
+
+  def _onGpuLink(self, ctx):
+    ###########################
+    SG = self.scenegraph
+    SGVP = self.griditems[0]
+    SGVPW = SGVP.widget
+    SGVPW.cameraName = self.camname
+    SGVPW.scenegraph = SG
+    SGVPW.evhandler = lambda x: self._onCameraUiEvent(x)
+    SGVPW.forkDB()
+    self.SGVP = SGVP
 
   ##################################################
 
   def _onUpdate(self,updinfo):
-   #self.uicam.updateMatrices()
-   #self.camera.copyFrom( self.uicam.cameradata )
    self.scenegraph.updateScene(self.cameralut)  # update and enqueue all scenenodes
-
+   self.SGVP.widget.setDirty()
+ 
   def _onGpuUpdate(self,ctx):
     pass 
 

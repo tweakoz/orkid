@@ -477,9 +477,9 @@ class ComponentizedApplication(object):
   def onGpuInit(self,ctx):
     # invoked on main thread when the GPU context is initialized
     # immediately before the main loop starts
+    self._onGpuInit(ctx)    
     for component in self.components_sorted:
       component.onGpuInit(ctx)
-    self._onGpuInit(ctx)    
     for component in self.components_sorted:
       component.onGpuLink(ctx)
     self._onGpuLink(ctx)    
@@ -506,6 +506,11 @@ class ComponentizedApplication(object):
     # immediately before pre-frame
     for component in self.components_sorted:
       component.onGpuUpdate(ctx)
+
+    self._onGpuUpdate(ctx)
+
+  def _onGpuUpdate(self,ctx):
+    pass
 
   ##################################################
 
@@ -544,7 +549,6 @@ class ComponentizedApplication(object):
 
     for component in self.components_sorted:
       component.onUpdate(updinfo) 
-
 
     self._onUpdate(updinfo)
 

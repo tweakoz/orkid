@@ -19,42 +19,11 @@ class LavaLampApp(ComponentizedApplication):
     super().__init__()
 
     ############################################
-
     self.SGC = self.addComponent("std_scenegraph", StandardSceneGraphComponent)
     self.LUI = self.addComponent("loggerui", LoggerUIComponent, filter_regex=[".*"]) 
     self.LLA = self.addComponent("lavalamp", LavalampComponent)
-
     ############################################
-
     self.createEzApp()
-
-    ############################################
-
-
-    # Add lavalamp component
-
-
-  ################################################
-  # GPU initialization - called after component onGpuInit
-  ################################################
-
-  def _onGpuLink(self, ctx):
-    ###########################
-    SGC = self.SGC
-    SG = SGC.scenegraph
-    SGVP = SGC.griditems[0]
-    SGVPW = SGVP.widget
-    SGVPW.cameraName = SGC.camname
-    SGVPW.scenegraph = SG
-    SGVPW.evhandler = lambda x: SGC._onCameraUiEvent(x)
-    #SGVPW.forkDB()
-    ###########################
-    self.SGVP = SGVP 
-
-  ################################################
-
-  def _onUpdate(self, updinfo):
-    self.SGVP.widget.setDirty()
   
   ###############################################################################
 
