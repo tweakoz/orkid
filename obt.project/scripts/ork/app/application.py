@@ -525,14 +525,6 @@ class ComponentizedApplication(object):
     for component in self.components_sorted:
       component.onUpdate(updinfo) 
 
-    ##############
-    # standard scene graph application update ?
-    ##############
-
-    if hasattr(self, 'scene') and hasattr(self, 'cameralut'):
-       self.scene.updateScene(self.cameralut)  # update and enqueue all scenenodes
-
-    ##############
 
     self._onUpdate(updinfo)
 
@@ -557,11 +549,13 @@ class ComponentizedApplication(object):
   ##################################################
 
   def onUiEvent(self, uievent):
-    if hasattr(self, 'uicam') and hasattr(self, 'camera'):
-      handled = self.uicam.uiEventHandler(uievent)
-      if handled:
-        self.camera.copyFrom(self.uicam.cameradata)
+    for component in self.components_sorted:
+      rv = component.onUiEvent(uievent)
+      if rv != None:
+        return rv
     return self._onUiEvent(uievent)
+
+  ##################################################
 
   def _onUiEvent(self, uievent):
     from orkengine.lev2 import ui
@@ -600,6 +594,8 @@ class ApplicationComponent(object):
   def _onAppInit(self,app,initdata):
     pass
 
+  ##############################################
+
   def onAppLink(self,app,initdata):
     self.app = app
     self.initdata = initdata
@@ -617,17 +613,14 @@ class ApplicationComponent(object):
     pass
 
   ##############################################
-  def onStart(self,app):
-    # where component link to other components
-    pass
-
-  ##############################################
 
   def onUpdateInit(self):
     self._onUpdateInit()
 
   def _onUpdateInit(self):
     pass
+
+  ##############################################
 
   def onUpdateLink(self):
     self._onUpdateLink()
@@ -660,6 +653,8 @@ class ApplicationComponent(object):
   def _onAudioInit(self,audiodev):
     pass
 
+  ##############################################
+
   def onAudioLink(self,audiodev):
     self._onAudioLink(audiodev)
 
@@ -674,6 +669,8 @@ class ApplicationComponent(object):
   def _onSynthInit(self,synth):
     pass
 
+  ##############################################
+
   def onSynthLink(self,synth):
     self._onSynthLink(synth)
     
@@ -687,6 +684,8 @@ class ApplicationComponent(object):
 
   def _onGpuInit(self,ctx):
     pass
+
+  ##############################################
 
   def onGpuLink(self,ctx):
     self._onGpuLink(ctx)
@@ -733,3 +732,13 @@ class ApplicationComponent(object):
     
   def _onNotify(self, eventid: str, **kwargs):
     pass
+
+  ##############################################
+
+  def onUiEvent(self, uievent):
+    self._onUiEvent(uievent)
+
+  def _onUiEvent(self, uievent):
+    return None
+
+  ##############################################

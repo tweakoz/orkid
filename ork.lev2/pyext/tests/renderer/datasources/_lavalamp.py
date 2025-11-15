@@ -1,12 +1,18 @@
 #!/usr/bin/env ork.python
 
-import math, threading, time
+import math, threading, time, sys
 import numpy as np
 from collections import deque
-from orkengine.core import vec2, vec3, CrcStringProxy, Logger
+from ork import path as ork_path
+from orkengine.core import vec2, vec3, CrcStringProxy, Logger, lev2_pyexdir
 from orkengine.lev2 import vdb as ork_vdb, primitives, RigidPrimitive, MicroMesh
 from ork.app.application import ApplicationComponent
+
+sys.path.append(str(ork_path.py_lev2utils)) # add parent dir to path
+lev2_pyexdir.addToSysPath()
+
 from shaders import createPipeline
+
 
 tokens = CrcStringProxy()
 

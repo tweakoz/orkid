@@ -14,6 +14,7 @@
 #include <iostream>
 #include <ork/lev2/aud/audiodevice.h>
 #include <ork/lev2/aud/singularity/synth.h>
+#include <pybind11/embed.h>  // if using embedded interpreter
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -26,6 +27,27 @@ namespace ork::lev2 {
 
 namespace ork::lev2 {
 static logchannel_ptr_t logchan_EZAPP = logger()->getChannel("EZAPP");
+
+void ezapp_python_traceback(py::error_already_set& e) {
+    // Import traceback module
+    py::object traceback = py::module::import("traceback");
+    py::object sys = py::module::import("sys");
+    
+    // Get exception info
+    py::object exc_type = py::reinterpret_borrow<py::object>(e.type());
+    py::object exc_value = py::reinterpret_borrow<py::object>(e.value());
+    py::object exc_tb = py::reinterpret_borrow<py::object>(e.trace());
+    
+    // Format the traceback
+    py::object format_exception = traceback.attr("format_exception");
+    py::list tb_lines = format_exception(exc_type, exc_value, exc_tb);
+    
+    // Print each line
+    for (auto line : tb_lines) {
+        auto decoed = deco::string(py::str(line).cast<std::string>(), 255, 100, 0);
+        std::cout << decoed;
+    }
+}
 
 void pyinit_gfx_qtez(py::module& module_lev2) {
   auto type_codec = python::pb11_typecodec_t::instance();
@@ -207,7 +229,18 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars->typedValueForKey<py::function>("appinitfn");
                 auto initdata = appinitdata;
-                pyfn.value()(initdata);
+                try {
+                  pyfn.value()(initdata);
+                } catch (py::error_already_set& e) {
+                  ezapp_python_traceback(e);
+                  printf( "\n\npython exception in onAppInit\n\n");
+                  e.restore();
+                  PyErr_Print();
+                  OrkAssert(false);
+                } catch (std::exception& e) {
+                  std::cerr << e.what();
+                  OrkAssert(false);
+                }
               });
             }
             else{
@@ -223,7 +256,18 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 logchan_EZAPP->log("EXE onAppExit");
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars->typedValueForKey<py::function>("appexitfn");
-                pyfn.value()();
+                try {
+                  pyfn.value()();
+                } catch (py::error_already_set& e) {
+                  ezapp_python_traceback(e);
+                  printf( "\n\npython exception in onAppExit\n\n");
+                  e.restore();
+                  PyErr_Print();
+                  OrkAssert(false);
+                } catch (std::exception& e) {
+                  std::cerr << e.what();
+                  OrkAssert(false);
+                }
               });
             }
             else{
@@ -239,7 +283,18 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 logchan_EZAPP->log("EXE onAudioInit");
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars->typedValueForKey<py::function>("audinitfn");
-                pyfn.value()(adev);
+                try {
+                  pyfn.value()(adev);
+                } catch (py::error_already_set& e) {
+                  ezapp_python_traceback(e);
+                  printf( "\n\npython exception in onAudioInit\n\n");
+                  e.restore();
+                  PyErr_Print();
+                  OrkAssert(false);
+                } catch (std::exception& e) {
+                  std::cerr << e.what();
+                  OrkAssert(false);
+                }
               });
             }
             else{
@@ -253,7 +308,18 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               rval->onAudioExit([=](audiodevice_ptr_t adev) { //
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars->typedValueForKey<py::function>("audinitfn");
-                pyfn.value()(adev);
+                try {
+                  pyfn.value()(adev);
+                } catch (py::error_already_set& e) {
+                  ezapp_python_traceback(e);
+                  printf( "\n\npython exception in onAudioExit\n\n");
+                  e.restore();
+                  PyErr_Print();
+                  OrkAssert(false);
+                } catch (std::exception& e) {
+                  std::cerr << e.what();
+                  OrkAssert(false);
+                }
               });
             }
             ////////////////////////////////////////////////////////////////////
@@ -266,7 +332,18 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 logchan_EZAPP->log("EXE onSynthInit");
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars->typedValueForKey<py::function>("syninitfn");
-                pyfn.value()(syn);
+                try {
+                  pyfn.value()(syn);
+                } catch (py::error_already_set& e) {
+                  ezapp_python_traceback(e);
+                  printf( "\n\npython exception in onSynthInit\n\n");
+                  e.restore();
+                  PyErr_Print();
+                  OrkAssert(false);
+                } catch (std::exception& e) {
+                  std::cerr << e.what();
+                  OrkAssert(false);
+                }
               });
             }
             ////////////////////////////////////////////////////////////////////
@@ -277,7 +354,18 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               rval->onSynthExit([=](audio::singularity::synth_ptr_t syn) { //
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars->typedValueForKey<py::function>("synexitfn");
-                pyfn.value()(syn);
+                try {
+                  pyfn.value()(syn);
+                } catch (py::error_already_set& e) {
+                  ezapp_python_traceback(e);
+                  printf( "\n\npython exception in onSynthExit\n\n");
+                  e.restore();
+                  PyErr_Print();
+                  OrkAssert(false);
+                } catch (std::exception& e) {
+                  std::cerr << e.what();
+                  OrkAssert(false);
+                }
               });
             }
             ////////////////////////////////////////////////////////////////////
@@ -288,8 +376,19 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               rval->onGpuInit([=](Context* ctx) { //
                 ctx->makeCurrentContext();
                 py::gil_scoped_acquire acquire;
-                auto pyfn = rval->_vars->typedValueForKey<py::function>("gpuinitfn");
-                pyfn.value()(ctx_t(ctx));
+                try {
+                  auto pyfn = rval->_vars->typedValueForKey<py::function>("gpuinitfn");
+                  pyfn.value()(ctx_t(ctx));
+                } catch (py::error_already_set& e) {
+                  ezapp_python_traceback(e);
+                  printf( "\n\npython exception in onGpuInit\n\n");
+                  e.restore();
+                  PyErr_Print();
+                  OrkAssert(false);
+                } catch (std::exception& e) {
+                  std::cerr << e.what();
+                  OrkAssert(false);
+                }
               });
             }
             ////////////////////////////////////////////////////////////////////
@@ -301,7 +400,18 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 ctx->makeCurrentContext();
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars->typedValueForKey<py::function>("gpuexitfn");
-                pyfn.value()(ctx_t(ctx));
+                try {
+                  pyfn.value()(ctx_t(ctx));
+                } catch (py::error_already_set& e) {
+                  ezapp_python_traceback(e);
+                  printf( "\n\npython exception in onGpuExit\n\n");
+                  e.restore();
+                  PyErr_Print();
+                  OrkAssert(false);
+                } catch (std::exception& e) {
+                  std::cerr << e.what();
+                  OrkAssert(false);
+                }
               });
             }
             ////////////////////////////////////////////////////////////////////
@@ -313,7 +423,18 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 ctx->makeCurrentContext();
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars->typedValueForKey<py::function>("gpuupdatefn");
-                pyfn.value()(ctx_t(ctx));
+                try {
+                  pyfn.value()(ctx_t(ctx));
+                } catch (py::error_already_set& e) {
+                  ezapp_python_traceback(e);
+                  printf( "\n\npython exception in onGpuUpdate\n\n");
+                  e.restore();
+                  PyErr_Print();
+                  OrkAssert(false);
+                } catch (std::exception& e) {
+                  std::cerr << e.what();
+                  OrkAssert(false);
+                }
               });
             }
             ////////////////////////////////////////////////////////////////////
@@ -325,7 +446,18 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 ctx->makeCurrentContext();
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars->typedValueForKey<py::function>("gpupreframefn");
-                pyfn.value()(ctx_t(ctx));
+                try {
+                  pyfn.value()(ctx_t(ctx));
+                } catch (py::error_already_set& e) {
+                  ezapp_python_traceback(e);
+                  printf( "\n\npython exception in onGpuPreFrame\n\n");
+                  e.restore();
+                  PyErr_Print();
+                  OrkAssert(false);
+                } catch (std::exception& e) {
+                  std::cerr << e.what();
+                  OrkAssert(false);
+                }
               });
             }
             ////////////////////////////////////////////////////////////////////
@@ -337,7 +469,18 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 ctx->makeCurrentContext();
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars->typedValueForKey<py::function>("gpupostframefn");
-                pyfn.value()(ctx_t(ctx));
+                try {
+                  pyfn.value()(ctx_t(ctx));
+                } catch (py::error_already_set& e) {
+                  ezapp_python_traceback(e);
+                  printf( "\n\npython exception in onGpuPostFrame\n\n");
+                  e.restore();
+                  PyErr_Print();
+                  OrkAssert(false);
+                } catch (std::exception& e) {
+                  std::cerr << e.what();
+                  OrkAssert(false);
+                }
               });
             }
             ////////////////////////////////////////////////////////////////////
@@ -354,6 +497,12 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 *mydrev.value() = *drwev;
                 try {
                   pyfn.value()(drwev);
+                } catch (py::error_already_set& e) {
+                  ezapp_python_traceback(e);
+                  printf( "\n\npython exception in onDraw\n\n");
+                  e.restore();
+                  PyErr_Print();
+                  OrkAssert(false);
                 } catch (std::exception& e) {
                   std::cerr << e.what();
                   OrkAssert(false);
@@ -371,6 +520,12 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 auto pyfn = rval->_vars->typedValueForKey<py::function>("updateinitfn");
                 try {
                   pyfn.value()();
+                } catch (py::error_already_set& e) {
+                  ezapp_python_traceback(e);
+                  printf( "\n\npython exception in onUpdateInit\n\n");
+                  e.restore();
+                  PyErr_Print();
+                  OrkAssert(false);
                 } catch (std::exception& e) {
                   std::cerr << e.what();
                   abort();
@@ -387,6 +542,12 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 auto pyfn = rval->_vars->typedValueForKey<py::function>("updateexitfn");
                 try {
                   pyfn.value()();
+                } catch (py::error_already_set& e) {
+                  ezapp_python_traceback(e);
+                  printf( "\n\npython exception in onUpdateExit\n\n");
+                  e.restore();
+                  PyErr_Print();
+                  OrkAssert(false);
                 } catch (std::exception& e) {
                   std::cerr << e.what();
                   abort();
@@ -403,9 +564,18 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 auto pyfn = rval->_vars->typedValueForKey<py::function>("updatefn");
                 try {
                   pyfn.value()(updata);
+                } catch (py::error_already_set& e) {
+                  ezapp_python_traceback(e);
+                  printf( "\n\npython exception in onUpdate\n\n");
+                  e.restore();
+                  PyErr_Print();
+                  OrkAssert(false);
                 } catch (std::exception& e) {
                   std::cerr << e.what();
                   abort();
+                }
+                catch (...) {
+                  printf( "onUpdate unknown exception\n" );
                 }
               });
             }
@@ -427,6 +597,12 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                     res = rval->_topLayoutGroup->OnUiEvent(ev);
                   }
                   return res;
+                } catch (py::error_already_set& e) {
+                  ezapp_python_traceback(e);
+                  printf( "\n\npython exception in onGpuInit\n\n");
+                  e.restore();
+                  PyErr_Print();
+                  OrkAssert(false);
                 } catch (std::exception& e) {
                   printf( "onUiEvent exception (probably HandlerResult)\n" );
                   std::cerr << e.what() << std::endl;

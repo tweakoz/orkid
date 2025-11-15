@@ -2,27 +2,27 @@
 
 import sys
 from ork import path as ork_path
-from orkengine.core import vec3, lev2_pyexdir
-sys.path.append(str(ork_path.py_lev2utils)) # add parent dir to path
-lev2_pyexdir.addToSysPath()
-from cameras import *
-from primitives import createGridData
-from scenegraph import createSceneGraph
+from orkengine.core import vec3, vec4, lev2_pyexdir, VarMap
+from orkengine import lev2
+#sys.path.append(str(ork_path.py_lev2utils)) # add parent dir to path
+#lev2_pyexdir.addToSysPath()
+#from scenegraph import createSceneGraph
 from _lavalamp import LavalampComponent
 from ork.app.application import ComponentizedApplication
+from ork.app.std_scenegraph import StandardSceneGraphComponent
 from ork.app.loggerui import LoggerUIComponent
 ################################################################################
 
-class PointsPrimApp(ComponentizedApplication):
+class LavaLampApp(ComponentizedApplication):
 
   def __init__(self):
     super().__init__()
 
-    self.materials = set()
+    self.addComponent("loggerui", LoggerUIComponent, filter_regex=[".*"]) 
+    self.sg_component = self.addComponent("std_scenegraph", StandardSceneGraphComponent)
 
     # Add lavalamp component
-    self.lavalamp = self.addComponent("lavalamp", LavalampComponent)
-    self.addComponent("loggerui", LoggerUIComponent, filter_regex=[".*"]) 
+    #self.lavalamp = self.addComponent("lavalamp", LavalampComponent)
 
     ############################################
     # Configure EzApp creation args
@@ -38,28 +38,33 @@ class PointsPrimApp(ComponentizedApplication):
   ################################################
 
   def _onGpuInit(self, ctx):
-    """Initialize scene graph"""
+    ###########################
+    lg_group = self.ezapp.topLayoutGroup
+    self.griditems = lg_group.makeGrid(
+      width=1,
+      height=1,
+      margin = 4,
+      uiclass = lev2.ui.SceneGraphViewport,
+      args = ["label",vec4(0.1,0.1,0.3,1)],
+    )
+    ###########################
+    SGC = self.sg_component
+    SG = SGC.scenegraph
+    SGVP = self.griditems[0]
+    SGVPW = SGVP.widget
+    SGVPW.cameraName = SGC.camname
+    SGVPW.scenegraph = SG
+    #SGVPW.forkDB()
+    ###########################
+    self.SGVP = SGVP 
 
-    ###################################
-    # create scenegraph
-    ###################################
+  ################################################
 
-    sg_params = {
-      "SkyboxIntensity": 1.0,
-      "DiffuseIntensity": 6.0,
-    }
+  def _onUpdate(self, updinfo):
+    self.SGVP.widget.setDirty()
 
-    createSceneGraph(app=self, rendermodel="ForwardPBR", params_dict=sg_params)
-    setupUiCamera(app=self, eye=vec3(6,6,6), constrainZ=True, up=vec3(0,1,0))
+  
+  ###############################################################################
 
-    ###################################
-    # create grid
-    ###################################
-
-    self.grid_data = createGridData()
-    self.grid_node = self.layer1.createDrawableNodeFromData("grid", self.grid_data)
-    self.grid_node.sortkey = 1
-
-###############################################################################
-
-PointsPrimApp().ezapp.mainThreadLoop(on_iter=lambda: None)
+llapp = LavaLampApp()
+llapp.ezapp.mainThreadLoop(on_iter=lambda: None)

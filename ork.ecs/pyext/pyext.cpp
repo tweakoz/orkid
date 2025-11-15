@@ -90,8 +90,18 @@ ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance, py::kwargs kwargs
     rval->onGpuInit([=](lev2::Context* ctx) { //
       ctx->makeCurrentContext();
       py::gil_scoped_acquire acquire;
-      auto pyfn = rval->_vars->typedValueForKey<py::function>("gpuinitfn");
-      pyfn.value()(ctx_t(ctx));
+      try {
+        auto pyfn = rval->_vars->typedValueForKey<py::function>("gpuinitfn");
+        pyfn.value()(ctx_t(ctx));
+      } catch (py::error_already_set& e) {
+        printf( "\n\npython exception in onUpdate\n\n");
+        e.restore();
+        PyErr_Print();
+        OrkAssert(false);
+      } catch (std::exception& e) {
+        std::cerr << e.what();
+        OrkAssert(false);
+      }
     });
   }
   ////////////////////////////////////////////////////////////////////
