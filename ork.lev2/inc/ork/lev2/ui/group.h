@@ -21,9 +21,9 @@ struct Group : public Widget {
   Group(const std::string& name, int x = 0, int y = 0, int w = 0, int h = 0);
   ~Group();
   /////////////////////////////
-  void addChild(widget_ptr_t w);
-  void removeChild(widget_ptr_t w);
-  void removeChild(Widget* w);
+  void addChild(widget_ptr_t w, bool relayout = true);
+  void removeChild(widget_ptr_t w, bool relayout = true);
+  void removeChild(Widget* w, bool relayout = true);
   void visitHeirarchy(visit_fn_t vfn);
   /////////////////////////////
   void dumpTopology(int depth = 0);

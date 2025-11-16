@@ -48,16 +48,18 @@ void Group::dumpTopology(int depth) {
   }
 }
 /////////////////////////////////////////////////////////////////////////
-void Group::addChild(widget_ptr_t w) {
+void Group::addChild(widget_ptr_t w, bool relayout) {
   if (w->parent()) {
     w->parent()->removeChild(w);
   }
   _children.push_back(w);
   w->setParent(this);
-  DoLayout();
+  if (relayout) {
+    DoLayout();
+  }
 }
 /////////////////////////////////////////////////////////////////////////
-void Group::removeChild(widget_ptr_t w) {
+void Group::removeChild(widget_ptr_t w, bool relayout) {
   _children.erase(
       std::remove_if(
           _children.begin(),
@@ -68,10 +70,12 @@ void Group::removeChild(widget_ptr_t w) {
           }),
       _children.end());
 
-  DoLayout();
+  if (relayout) {
+    DoLayout();
+  }
 }
 /////////////////////////////////////////////////////////////////////////
-void Group::removeChild(Widget* w) {
+void Group::removeChild(Widget* w, bool relayout) {
   _children.erase(
       std::remove_if(
           _children.begin(),
@@ -82,7 +86,9 @@ void Group::removeChild(Widget* w) {
           }),
       _children.end());
 
-  DoLayout();
+  if (relayout) {
+    DoLayout();
+  }
 }
 /////////////////////////////////////////////////////////////////////////
 void Group::drawChildren(ui::drawevent_constptr_t drwev) {
@@ -408,9 +414,6 @@ layoutgroup_ptr_t LayoutGroup::splitVertical(anchor::layout_ptr_t target_layout,
   }
   OrkAssert(target_widget_ptr != nullptr);
 
-  // Remove target widget from this group (but keep the shared_ptr alive)
-  //Group::removeChild(target_widget_ptr);
-
   // Remove target layout from parent's child layouts
   auto& parent_children = parent_layout->_childlayouts;
   parent_children.erase(
@@ -418,8 +421,11 @@ layoutgroup_ptr_t LayoutGroup::splitVertical(anchor::layout_ptr_t target_layout,
     parent_children.end()
   );
 
-  // Add container to this group
-  addChild(container);
+  // Remove target widget from this group (but keep the shared_ptr alive, no relayout)
+  Group::removeChild(target_widget_ptr, false);
+
+  // Add container to this group (without triggering DoLayout yet - state is incomplete)
+  addChild(container, false);
 
   // Anchor container to the target's original guides (spans same area as target did)
   auto container_layout = container->_layout;
@@ -428,10 +434,12 @@ layoutgroup_ptr_t LayoutGroup::splitVertical(anchor::layout_ptr_t target_layout,
   container_layout->left()->anchorTo(target_left_guide);
   container_layout->right()->anchorTo(target_right_guide);
 
-  // Add target widget to container (making target_layout a child of container_layout)
-  container->addChild(target_widget_ptr);
-  // Re-parent target_layout properly
+  // Add target widget to container's children (directly, without DoLayout)
+  // and re-parent target_layout to container_layout
+  container->_children.push_back(target_widget_ptr);
+  target_widget_ptr->setParent(container.get());
   target_layout->_parent = container_layout.get();
+  container_layout->_childlayouts.push_back(target_layout);
 
   // Create a new layout for the new widget (widget will be assigned by binding layer)
   auto new_layout = container_layout->childLayout(nullptr);  // widget is nullptr for now

@@ -416,7 +416,7 @@ void pyinit_ui_layout(py::module& uimodule) {
 
                 // Assign widget to the layout
                 new_layout->_widget = new_widget.get();
-                new_lgroup->addChild(new_widget); // this will retain the widget
+                new_lgroup->addChild(new_widget,false); // this will retain the widget
 
                 // Now that widget is assigned and added, update the layouts
                 new_layout->updateAll();
