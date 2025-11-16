@@ -361,41 +361,6 @@ onUpdateExit() → onAudioExit() → onSynthExit()
 
 ---
 
-## Memory Management
-
-### Ownership Model
-
-- **EzApp**: Created by application, owned as `shared_ptr`
-- **Components**: Owned by application in sorted vector
-- **InitData**: Created by EzApp, shared via `shared_ptr`
-- **Resources**: Component-owned, RAII cleanup in destructors
-
-### RAII Everywhere
-
-Components should use RAII for cleanup:
-
-```python
-class MyComponent(ApplicationComponent):
-    def _onGpuInit(self, ctx):
-        self.texture = lev2.Texture.load("image.png")
-        # No explicit cleanup needed - Python GC handles it
-
-    def _onGpuExit(self, ctx):
-        # Explicit cleanup if needed for C++ resources
-        self.texture = None
-```
-
-### No Shared-From-This
-
-The application framework explicitly avoids `shared_from_this` pattern:
-
-- Static factory methods receive parent as parameter
-- No circular reference issues
-- Clear ownership semantics
-- Easier debugging
-
----
-
 ## Component Communication Patterns
 
 ### During Init: Forbidden
@@ -418,12 +383,23 @@ def _onGpuLink(self, ctx):
 ### During Runtime: Via Notify
 
 ```python
-# Component A
-self.app.notify(CrcString("event_happened"), data=value)
+# From Component A
+a = self.app.findComponentByName("A") # this can, and probably should be cached at link time
+a.notify(tokens.event_happened, data=value) # this is a direct notification to a component
 
 # Component B
 def _onNotify(self, eventid, **kwargs):
-    if eventid == "event_happened":
+    if eventid == tokens.event_happened:
+        self.handle_event(kwargs['data'])
+```
+
+```python
+# From Component A
+self.app.notify(tokens.event_happened, data=value) # this is a broadcast to all components
+
+# Component B
+def _onNotify(self, eventid, **kwargs):
+    if eventid == tokens.event_happened:
         self.handle_event(kwargs['data'])
 ```
 
