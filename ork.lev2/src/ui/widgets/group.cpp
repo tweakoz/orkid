@@ -365,17 +365,20 @@ layoutgroup_ptr_t LayoutGroup::splitVertical(anchor::layout_ptr_t target_layout,
 
   /////////////////////
   // PLAN:
+  //. capture the EXACT guides that target_layout is currently anchored to (top/bottom/left/right)
+  //. create a new LayoutGroup "container"
   //. remove target_layout as direct child of its parent layout (this->_layout)
-  //.  (target_layout's widget remains a child of this target_layout->_widget)
-  //  create a new LayoutGroup container that spans the target_layout's bounds
-  //. add the container as child of this LayoutGroup (this->_layout)
-  //. add target_layout as child of container's layout
+  //. remove target_widget from this LayoutGroup's _children (widget hierarchy)
+  //. add the container as child of this LayoutGroup (both widget and layout hierarchy)
+  //. anchor container's layout to the EXACT SAME guides that target_layout was using
+  //.   (container becomes drop-in replacement for target_layout in parent's guide topology)
+  //. add target_widget as child of container (widget hierarchy)
+  //. add target_layout as child of container's layout (layout hierarchy)
   //. create a new layout as child of container's layout (for new widget)
   //. create a horizontal guide on container's layout at 'proportion'
-  //. anchor target_layout and new layout to the guide according to 'half'
-  //. ensure all guides and associates are properly setup to match current topology
-  //. this may require some guide re-anchoring and cleaning up of prior now invalid guides/associations
-  //. return the new layoutgroup (container) to the caller                                          
+  //. anchor target_layout and new_layout to container's edges and split guide according to 'half'
+  //.   (both layouts span full width of container, split vertically by the guide)
+  //. return the new layoutgroup (container) to the caller
   //.  the caller is responsible for creating the new widget and assigning it to the new layout/layoutgroup
   /////////////////////
 
