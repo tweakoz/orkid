@@ -45,6 +45,7 @@ class SplitLayoutApp(object):
       layout=grid_items[0].layout,      # Split this existing layout
       proportion=0.5,                    # Split at 50% from top
       half=tokens.BOTTOM,                # Create new widget in bottom half (token)
+      margin=5,
       uiclass=lev2.ui.Box,
       args=["bottom-green", vec4(0, 1, 0, 1)]  # Green box in bottom
     )

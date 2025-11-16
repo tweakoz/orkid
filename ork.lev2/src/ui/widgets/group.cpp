@@ -371,33 +371,39 @@ void LayoutGroup::splitVertical(anchor::layout_ptr_t target_layout, float propor
   new_item->_layout->_parent = parent_layout;
   parent_layout->_childlayouts.push_back(new_item->_layout);
 
-  // Create a proportional horizontal guide on the PARENT layout
-  // The proportion needs to be calculated relative to parent's coordinate space
-  // For now, use the provided proportion directly (0.5 for 50% split)
-  auto split_guide = parent_layout->proportionalHorizontalGuide(proportion);
-  split_guide->setMargin(_margin);
-  _hguides.insert(split_guide);
-
-  // Add the new widget to this group
-  addChild(new_item->_widget);
-
   // Get the guides that target is currently anchored to
   auto target_top_guide = target_layout->_top->_relative;
   auto target_bottom_guide = target_layout->_bottom->_relative;
   auto target_left_guide = target_layout->_left->_relative;
   auto target_right_guide = target_layout->_right->_relative;
 
+  // Calculate the proportion for the split guide based on the target's bounds
+  // Assume the guides are proportional (as created by makeGrid)
+  float top_proportion = target_top_guide->getProportion();
+  float bottom_proportion = target_bottom_guide->getProportion();
+  float split_proportion = top_proportion + (bottom_proportion - top_proportion) * proportion;
+
+  // Create a proportional horizontal guide on the parent layout
+  auto split_guide = parent_layout->proportionalHorizontalGuide(split_proportion);
+  split_guide->_locked = false;  // Explicitly unlock like makeGrid does for interior guides
+  _hguides.insert(split_guide);
+
+  // Add the new widget to this group
+  addChild(new_item->_widget);
+
+  // Set margins on both layouts (like makeGrid does)
+  target_layout->setMargin(_margin);
+  new_item->_layout->setMargin(_margin);
+
   // Anchor new widget's layout based on which half it occupies
   if (half == anchor::ELayoutSplitHalf::BOTTOM) {
     // New widget goes in bottom half
-    // Top edge anchors to split guide, bottom to where target's bottom was
     new_item->_layout->top()->anchorTo(split_guide);
     new_item->_layout->bottom()->anchorTo(target_bottom_guide);
     new_item->_layout->left()->anchorTo(target_left_guide);
     new_item->_layout->right()->anchorTo(target_right_guide);
 
     // Existing widget (target) goes in top half
-    // Bottom edge anchors to split guide, top stays where it was
     target_layout->bottom()->anchorTo(split_guide);
   } else if (half == anchor::ELayoutSplitHalf::TOP) {
     // New widget goes in top half
@@ -410,7 +416,6 @@ void LayoutGroup::splitVertical(anchor::layout_ptr_t target_layout, float propor
     target_layout->top()->anchorTo(split_guide);
   }
 
-  new_item->_layout->setMargin(_margin);
   _layout->updateAll();
 }
 //////////////////////////////////////
