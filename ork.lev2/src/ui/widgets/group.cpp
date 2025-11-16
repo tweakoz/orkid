@@ -359,6 +359,61 @@ void LayoutGroup::replaceChild(anchor::layout_ptr_t ch, layoutitem_ptr_t rep) {
   rep->_layout = ch;  // rep now uses ch's layout (discarding rep's original layout)
 }
 //////////////////////////////////////
+void LayoutGroup::splitVertical(anchor::layout_ptr_t target_layout, float proportion,
+                                 anchor::ELayoutSplitHalf half,
+                                 layoutitem_ptr_t new_item) {
+  // The new_item->_layout was created as a child of the top-level layout
+  // We need to re-parent it to be a sibling of target_layout
+  auto parent_layout = target_layout->_parent;
+  OrkAssert(parent_layout != nullptr);
+
+  // Re-parent the new layout to be a child of target's parent
+  new_item->_layout->_parent = parent_layout;
+  parent_layout->_childlayouts.push_back(new_item->_layout);
+
+  // Create a proportional horizontal guide on the PARENT layout
+  // The proportion needs to be calculated relative to parent's coordinate space
+  // For now, use the provided proportion directly (0.5 for 50% split)
+  auto split_guide = parent_layout->proportionalHorizontalGuide(proportion);
+  split_guide->setMargin(_margin);
+  _hguides.insert(split_guide);
+
+  // Add the new widget to this group
+  addChild(new_item->_widget);
+
+  // Get the guides that target is currently anchored to
+  auto target_top_guide = target_layout->_top->_relative;
+  auto target_bottom_guide = target_layout->_bottom->_relative;
+  auto target_left_guide = target_layout->_left->_relative;
+  auto target_right_guide = target_layout->_right->_relative;
+
+  // Anchor new widget's layout based on which half it occupies
+  if (half == anchor::ELayoutSplitHalf::BOTTOM) {
+    // New widget goes in bottom half
+    // Top edge anchors to split guide, bottom to where target's bottom was
+    new_item->_layout->top()->anchorTo(split_guide);
+    new_item->_layout->bottom()->anchorTo(target_bottom_guide);
+    new_item->_layout->left()->anchorTo(target_left_guide);
+    new_item->_layout->right()->anchorTo(target_right_guide);
+
+    // Existing widget (target) goes in top half
+    // Bottom edge anchors to split guide, top stays where it was
+    target_layout->bottom()->anchorTo(split_guide);
+  } else if (half == anchor::ELayoutSplitHalf::TOP) {
+    // New widget goes in top half
+    new_item->_layout->top()->anchorTo(target_top_guide);
+    new_item->_layout->bottom()->anchorTo(split_guide);
+    new_item->_layout->left()->anchorTo(target_left_guide);
+    new_item->_layout->right()->anchorTo(target_right_guide);
+
+    // Existing widget (target) goes in bottom half
+    target_layout->top()->anchorTo(split_guide);
+  }
+
+  new_item->_layout->setMargin(_margin);
+  _layout->updateAll();
+}
+//////////////////////////////////////
 const std::set<uiguide_ptr_t>& LayoutGroup::horizontalGuides() const {
   return _hguides;
 }

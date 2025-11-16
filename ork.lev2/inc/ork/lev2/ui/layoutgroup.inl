@@ -212,6 +212,9 @@ struct LayoutGroup : public Group {
   anchor::layout_ptr_t layoutAndAddChild(widget_ptr_t w);
   void removeChild(anchor::layout_ptr_t ch);
   void replaceChild(anchor::layout_ptr_t ch, layoutitem_ptr_t rep);
+  void splitVertical(anchor::layout_ptr_t target_layout, float proportion,
+                     anchor::ELayoutSplitHalf half,
+                     layoutitem_ptr_t new_item);
   const std::set<uiguide_ptr_t>& horizontalGuides() const;
   const std::set<uiguide_ptr_t>& verticalGuides() const;
 
