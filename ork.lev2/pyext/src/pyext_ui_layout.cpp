@@ -408,26 +408,29 @@ void pyinit_ui_layout(py::module& uimodule) {
                 // Cast token to enum
                 auto half_enum = static_cast<ui::anchor::ELayoutSplitHalf>(half_token);
 
-                // Call C++ method - creates container and new layout, returns the layout
-                auto new_lgroup = lgrp->splitVertical(target_layout, proportion, half_enum);
-                auto new_layout = new_lgroup->_layout;
+                // Call C++ method - creates container and new layout, returns LayoutItem
+                // The LayoutItem contains: _widget = container, _layout = new child layout
+                auto layout_item = lgrp->splitVertical(target_layout, proportion, half_enum);
+
+                // Get the container (which is a LayoutGroup) and the new layout
+                auto container = std::dynamic_pointer_cast<ui::LayoutGroup>(layout_item->_widget);
+                auto new_layout = layout_item->_layout;
+
                 // Create the widget via wfactory (returns raw widget without layout)
                 auto new_widget = py::cast<ui::widget_ptr_t>(wfactory(args));
 
                 // Assign widget to the layout
                 new_layout->_widget = new_widget.get();
-                new_lgroup->addChild(new_widget,false); // this will retain the widget
+                container->addChild(new_widget, false); // this will retain the widget
 
                 // Now that widget is assigned and added, update the layouts
                 printf("=== DUMP in binding BEFORE updateAll ===\n");
                 lgrp->dumpLayoutHierarchy();
                 new_layout->updateAll();
 
-                // Create a LayoutItem to return
-                auto result = std::make_shared<ui::LayoutItemBase>();
-                result->_widget = new_widget;
-                result->_layout = new_layout;
-                return result;
+                // Return the layout item with the new widget
+                layout_item->_widget = new_widget;
+                return layout_item;
               })
           .def(
               "dumpLayoutHierarchy",

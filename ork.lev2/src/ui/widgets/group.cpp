@@ -365,9 +365,9 @@ void LayoutGroup::replaceChild(anchor::layout_ptr_t ch, layoutitem_ptr_t rep) {
   rep->_layout = ch;  // rep now uses ch's layout (discarding rep's original layout)
 }
 //////////////////////////////////////
-layoutgroup_ptr_t LayoutGroup::splitVertical(anchor::layout_ptr_t target_layout,
-                                             float proportion,
-                                             anchor::ELayoutSplitHalf half) {
+layoutitem_ptr_t LayoutGroup::splitVertical(anchor::layout_ptr_t target_layout,
+                                            float proportion,
+                                            anchor::ELayoutSplitHalf half) {
 
   /////////////////////
   // PLAN:
@@ -430,8 +430,12 @@ layoutgroup_ptr_t LayoutGroup::splitVertical(anchor::layout_ptr_t target_layout,
   // Add container to this group (without triggering DoLayout yet - state is incomplete)
   addChild(container, false);
 
-  // Anchor container to the target's original guides (spans same area as target did)
+  // Add container's layout to parent layout's children (layout hierarchy)
   auto container_layout = container->_layout;
+  parent_layout->_childlayouts.push_back(container_layout);
+  container_layout->_parent = parent_layout;
+
+  // Anchor container to the target's original guides (spans same area as target did)
   container_layout->top()->anchorTo(target_top_guide);
   container_layout->bottom()->anchorTo(target_bottom_guide);
   container_layout->left()->anchorTo(target_left_guide);
@@ -494,7 +498,11 @@ layoutgroup_ptr_t LayoutGroup::splitVertical(anchor::layout_ptr_t target_layout,
   printf("=== DUMP at end of splitVertical ===\n");
   dumpLayoutHierarchy();
 
-  return container;
+  // Create and return a LayoutItem containing the container and new_layout
+  auto result = std::make_shared<ui::LayoutItemBase>();
+  result->_widget = container;
+  result->_layout = new_layout;
+  return result;
 }
 //////////////////////////////////////
 const std::set<uiguide_ptr_t>& LayoutGroup::horizontalGuides() const {
