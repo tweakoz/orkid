@@ -198,7 +198,7 @@ This pattern is applied at every subsystem level:
 
 ### Benefits
 
-1. **Eliminates Race Conditions**: No component can access another during Init
+1. **Eliminates a specific class of race conditions**: No component can access another during Init
 2. **Clear Dependencies**: Link phase makes cross-component dependencies explicit
 3. **Predictable Order**: Alphabetical component sorting ensures deterministic execution
 4. **Testability**: Each component can be initialized in isolation
