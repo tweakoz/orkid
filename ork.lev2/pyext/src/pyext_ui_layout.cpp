@@ -372,12 +372,11 @@ void pyinit_ui_layout(py::module& uimodule) {
           .def(
               "splitVertical",
               [](uilayoutgroup_ptr_t lgrp, py::kwargs kwargs) -> uilayoutitem_ptr_t { //
-                // Parse kwargs following makeChild pattern
                 uilayout_ptr_t target_layout;
                 float proportion = 0.5f;
-                uint64_t half_token = 0;  // CRC token for "TOP" or "BOTTOM"
+                uint64_t half_token = 0;
                 py::list args;
-                py::object uifactory;
+                py::object wfactory;
                 int args_parsed = 0;
 
                 for (auto item : kwargs) {
@@ -389,15 +388,14 @@ void pyinit_ui_layout(py::module& uimodule) {
                     proportion = py::cast<float>(item.second);
                     args_parsed++;
                   } else if (key == "half") {
-                    // CrcString token from Python -> extract hash value
                     auto crcstr = py::cast<crcstring_ptr_t>(item.second);
                     half_token = crcstr->hashed();
                     args_parsed++;
                   } else if (key == "uiclass") {
                     auto uiclass_obj = py::cast<py::object>(item.second);
-                    bool has_uifactory = py::hasattr(uiclass_obj, "uifactory");
-                    OrkAssert(has_uifactory);
-                    uifactory = uiclass_obj.attr("uifactory");
+                    bool has_wfactory = py::hasattr(uiclass_obj, "wfactory");
+                    OrkAssert(has_wfactory);
+                    wfactory = uiclass_obj.attr("wfactory");
                     args_parsed++;
                   } else if (key == "args") {
                     args = py::cast<py::list>(item.second);
@@ -407,14 +405,27 @@ void pyinit_ui_layout(py::module& uimodule) {
 
                 OrkAssert(args_parsed == 5);
 
-                // Create the new widget via factory (like makeChild does)
-                auto new_item = py::cast<uilayoutitem_ptr_t>(uifactory(lgrp, args));
-
-                // Cast token to enum and call the C++ implementation
+                // Cast token to enum
                 auto half_enum = static_cast<ui::anchor::ELayoutSplitHalf>(half_token);
-                lgrp->splitVertical(target_layout, proportion, half_enum, new_item);
 
-                return new_item;
+                // Call C++ method - creates container and new layout, returns the layout
+                auto new_lgroup = lgrp->splitVertical(target_layout, proportion, half_enum);
+                auto new_layout = new_lgroup->_layout;
+                // Create the widget via wfactory (returns raw widget without layout)
+                auto new_widget = py::cast<ui::widget_ptr_t>(wfactory(args));
+
+                // Assign widget to the layout
+                new_layout->_widget = new_widget.get();
+                new_lgroup->addChild(new_widget); // this will retain the widget
+
+                // Now that widget is assigned and added, update the layouts
+                new_layout->updateAll();
+
+                // Create a LayoutItem to return
+                auto result = std::make_shared<ui::LayoutItemBase>();
+                result->_widget = new_widget;
+                result->_layout = new_layout;
+                return result;
               })
           .def(
               "dumpLayoutHierarchy",

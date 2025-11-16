@@ -359,17 +359,28 @@ void LayoutGroup::replaceChild(anchor::layout_ptr_t ch, layoutitem_ptr_t rep) {
   rep->_layout = ch;  // rep now uses ch's layout (discarding rep's original layout)
 }
 //////////////////////////////////////
-void LayoutGroup::splitVertical(anchor::layout_ptr_t target_layout, float proportion,
-                                 anchor::ELayoutSplitHalf half,
-                                 layoutitem_ptr_t new_item) {
-  // The new_item->_layout was created as a child of the top-level layout
-  // We need to re-parent it to be a sibling of target_layout
+layoutgroup_ptr_t LayoutGroup::splitVertical(anchor::layout_ptr_t target_layout,
+                                             float proportion,
+                                             anchor::ELayoutSplitHalf half) {
+
+  /////////////////////
+  // PLAN:
+  //. remove target_layout as direct child of its parent layout (this->_layout)
+  //.  (target_layout's widget remains a child of this target_layout->_widget)
+  //  create a new LayoutGroup container that spans the target_layout's bounds
+  //. add the container as child of this LayoutGroup (this->_layout)
+  //. add target_layout as child of container's layout
+  //. create a new layout as child of container's layout (for new widget)
+  //. create a horizontal guide on container's layout at 'proportion'
+  //. anchor target_layout and new layout to the guide according to 'half'
+  //. ensure all guides and associates are properly setup to match current topology
+  //. this may require some guide re-anchoring and cleaning up of prior now invalid guides/associations
+  //. return the new layoutgroup (container) to the caller                                          
+  //.  the caller is responsible for creating the new widget and assigning it to the new layout/layoutgroup
+  /////////////////////
+
   auto parent_layout = target_layout->_parent;
   OrkAssert(parent_layout != nullptr);
-
-  // Re-parent the new layout to be a child of target's parent
-  new_item->_layout->_parent = parent_layout;
-  parent_layout->_childlayouts.push_back(new_item->_layout);
 
   // Get the guides that target is currently anchored to
   auto target_top_guide = target_layout->_top->_relative;
@@ -377,46 +388,96 @@ void LayoutGroup::splitVertical(anchor::layout_ptr_t target_layout, float propor
   auto target_left_guide = target_layout->_left->_relative;
   auto target_right_guide = target_layout->_right->_relative;
 
-  // Calculate the proportion for the split guide based on the target's bounds
-  // Assume the guides are proportional (as created by makeGrid)
-  float top_proportion = target_top_guide->getProportion();
-  float bottom_proportion = target_bottom_guide->getProportion();
-  float split_proportion = top_proportion + (bottom_proportion - top_proportion) * proportion;
+  // Create a container LayoutGroup that spans the target's current bounds
+  // This container will own the horizontal split guide, limiting its span (T-junction)
+  auto container_name = _name + "-split-container";
+  auto container = std::make_shared<LayoutGroup>(container_name, 0, 0, 0, 0, 0);
 
-  // Create a proportional horizontal guide on the parent layout
-  auto split_guide = parent_layout->proportionalHorizontalGuide(split_proportion);
-  split_guide->_locked = false;  // Explicitly unlock like makeGrid does for interior guides
+  container->_clear = false;  // Don't draw background (like makeWidgetsRC row containers)
+
+  // Find the target widget in our _children and get its shared_ptr
+  widget_ptr_t target_widget_ptr;
+  for (auto& child : _children) {
+    if (child.get() == target_layout->_widget) {
+      target_widget_ptr = child;
+      break;
+    }
+  }
+  OrkAssert(target_widget_ptr != nullptr);
+
+  // Remove target widget from this group (but keep the shared_ptr alive)
+  //Group::removeChild(target_widget_ptr);
+
+  // Remove target layout from parent's child layouts
+  auto& parent_children = parent_layout->_childlayouts;
+  parent_children.erase(
+    std::remove(parent_children.begin(), parent_children.end(), target_layout),
+    parent_children.end()
+  );
+
+  // Add container to this group
+  addChild(container);
+
+  // Anchor container to the target's original guides (spans same area as target did)
+  auto container_layout = container->_layout;
+  container_layout->top()->anchorTo(target_top_guide);
+  container_layout->bottom()->anchorTo(target_bottom_guide);
+  container_layout->left()->anchorTo(target_left_guide);
+  container_layout->right()->anchorTo(target_right_guide);
+
+  // Add target widget to container (making target_layout a child of container_layout)
+  container->addChild(target_widget_ptr);
+  // Re-parent target_layout properly
+  target_layout->_parent = container_layout.get();
+
+  // Create a new layout for the new widget (widget will be assigned by binding layer)
+  auto new_layout = container_layout->childLayout(nullptr);  // widget is nullptr for now
+
+  // Create the horizontal split guide on the container's layout
+  // This guide will span from container's left to container's right (T-junction)
+  auto split_guide = container_layout->proportionalHorizontalGuide(proportion);
+  split_guide->_locked = false;  // Explicitly unlock for dragging
+  split_guide->_margin = _margin;
+
+  // Add to BOTH container's guides AND top-level guides (like makeWidgetsRC does)
+  container->_hguides.insert(split_guide);
   _hguides.insert(split_guide);
 
-  // Add the new widget to this group
-  addChild(new_item->_widget);
-
-  // Set margins on both layouts (like makeGrid does)
+  // Set margins
   target_layout->setMargin(_margin);
-  new_item->_layout->setMargin(_margin);
+  new_layout->setMargin(_margin);
 
-  // Anchor new widget's layout based on which half it occupies
+  // Anchor both layouts within the container
   if (half == anchor::ELayoutSplitHalf::BOTTOM) {
-    // New widget goes in bottom half
-    new_item->_layout->top()->anchorTo(split_guide);
-    new_item->_layout->bottom()->anchorTo(target_bottom_guide);
-    new_item->_layout->left()->anchorTo(target_left_guide);
-    new_item->_layout->right()->anchorTo(target_right_guide);
+    // New layout goes in bottom half
+    new_layout->top()->anchorTo(split_guide);
+    new_layout->bottom()->anchorTo(container_layout->bottom());
+    new_layout->left()->anchorTo(container_layout->left());
+    new_layout->right()->anchorTo(container_layout->right());
 
-    // Existing widget (target) goes in top half
+    // Target layout goes in top half
+    target_layout->top()->anchorTo(container_layout->top());
     target_layout->bottom()->anchorTo(split_guide);
+    target_layout->left()->anchorTo(container_layout->left());
+    target_layout->right()->anchorTo(container_layout->right());
   } else if (half == anchor::ELayoutSplitHalf::TOP) {
-    // New widget goes in top half
-    new_item->_layout->top()->anchorTo(target_top_guide);
-    new_item->_layout->bottom()->anchorTo(split_guide);
-    new_item->_layout->left()->anchorTo(target_left_guide);
-    new_item->_layout->right()->anchorTo(target_right_guide);
+    // New layout goes in top half
+    new_layout->top()->anchorTo(container_layout->top());
+    new_layout->bottom()->anchorTo(split_guide);
+    new_layout->left()->anchorTo(container_layout->left());
+    new_layout->right()->anchorTo(container_layout->right());
 
-    // Existing widget (target) goes in bottom half
+    // Target layout goes in bottom half
     target_layout->top()->anchorTo(split_guide);
+    target_layout->bottom()->anchorTo(container_layout->bottom());
+    target_layout->left()->anchorTo(container_layout->left());
+    target_layout->right()->anchorTo(container_layout->right());
   }
 
-  _layout->updateAll();
+  // Don't update layouts yet - the widget hasn't been assigned
+  // The binding layer will assign the widget and then update
+
+  return container;
 }
 //////////////////////////////////////
 const std::set<uiguide_ptr_t>& LayoutGroup::horizontalGuides() const {
