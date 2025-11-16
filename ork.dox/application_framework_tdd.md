@@ -148,14 +148,6 @@ Ordered shutdown ensuring Update thread exits before GPU cleanup, preventing res
 
 ---
 
-## Thread Coordination and Synchronization
-
-Multiple threads execute concurrently during the main loop, with careful synchronization at startup and shutdown.
-
-![Thread Coordination](application_thread_coordination.svg)
-
----
-
 ## Two-Phase Initialization Pattern
 
 ### Rationale
