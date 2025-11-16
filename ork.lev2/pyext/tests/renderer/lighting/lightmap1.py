@@ -7,103 +7,42 @@
 # see http://www.boost.org/LICENSE_1_0.txt
 ################################################################################
 
-import math, random, argparse, sys, os
-from obt import path
-from orkengine.core import *
-from orkengine.lev2 import *
+import math
+from orkengine.core import vec2, vec3, vec4, quat, mtx4
+from orkengine import lev2 
+from ork.app.application import ComponentizedApplication
+from ork.app.std_scenegraph import StandardSceneGraphComponent
 
 ################################################################################
-lev2pyex_dir = lev2pyexdir()
-sys.path.append(str(lev2pyex_dir)) # add parent dir to path
-################################################################################
-
-thisdir = path.directoryOfInvokingModule()
-
 modelpath = "data://tests/environ/roomtest_lightmaps.glb"
-lightintens = float(1)
-specuintens = float(1)
-diffuintens = float(1)
-ambiuintens = float(0)
-camdist = 1.0
-envmap = "ork_envmaps|blender_night"
-oshader = None
-ssaa = 0
-ssao = 0
-ocolor = None
-#ssaa = args["ssaa"]
-#ssao = args["ssao"]
-lightmap = "a"
-rendermodel = "forward"
-showgrid = False
-
 ################################################################################
-
-# make sure env vars are set before importing the engine...
-
-def trace_imports(frame, event, arg):
-    if event == "import":
-        module_name = arg
-        print(f"Importing module: {module_name}")
-    return trace_imports
-
-sys.settrace(trace_imports) 
-from lev2utils.cameras import *
-from lev2utils.shaders import *
-from lev2utils.primitives import createGridData
-from lev2utils.scenegraph import createSceneGraph
-
-################################################################################
-
-#assert(False)
-
-class SceneGraphApp(object):
+class SceneGraphApp(ComponentizedApplication):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=ssaa)
-    self.ezapp.setRefreshPolicy(RefreshFastest, 0)
-    self.materials = set()
-    setupUiCamera(app=self,eye=vec3(0,0.5,3))
-    self.modelinsts=[]
-    self.ssaamode = False
-    if ssao>0:
-      self.ssaamode = True
+    self.SGC = self.addComponent("std_scenegraph",
+                                 StandardSceneGraphComponent,
+                                 eye=vec3(0,20,20),
+                                 grid_variant=None)
+    self.createEzApp(ssaa=1)
+
   ##############################################
 
-  def onGpuInit(self,ctx):
+  def _onGpuInit(self,ctx):
 
-    params_dict = {
-      "SkyboxIntensity": float(0.0),
-      "AmbientLight": vec3(ambiuintens),
-      "DiffuseIntensity": diffuintens,
-      "SpecularIntensity": specuintens,
-      "depthFogDistance": float(10000),
-      "SSAONumSamples": ssao,
-      "SSAONumSteps": 2,
-      "SSAOBias": -1.0e-5,
-      "SSAORadius": 2.0*25.4/1000.0,
-      "SSAOWeight": 0.75,
-      "SSAOPower": 0.75,
-    }
+    SGC = self.SGC
+    SG = SGC.scenegraph
 
-    if envmap != "":
-      params_dict["SkyboxTexPathStr"] = envmap
+    # Apply custom scene parameters
+    SG.pbr_common.skyboxLevel = float(0.0)
+    SG.pbr_common.ambientLevel = vec3(0.0)
+    SG.pbr_common.diffuseLevel = float(0.0)
+    SG.pbr_common.specularLevel = float(0.0)
+    SG.pbr_common.depthFogDistance = float(10000)
 
-    #rendermodel = "DeferredPBR"
-    global rendermodel
-    if rendermodel == "deferred":
-      rendermodel = "DeferredPBR"
-    elif rendermodel == "forward":
-      rendermodel="ForwardPBR"
-
-
-    createSceneGraph( app=self,
-                      params_dict=params_dict,
-                      rendermodel=rendermodel )
-
-    self.model = XgmModel(modelpath)
-    self.sgnode = self.model.createNode("node",self.layer1)
-    self.pbr_common = self.scene.pbr_common
+    self.model = lev2.XgmModel(modelpath)
+    self.sgnode = self.model.createNode("node",SGC.layer1)
+    self.pbr_common = SG.pbr_common
     
     ######################
     # override shader ?
@@ -111,79 +50,25 @@ class SceneGraphApp(object):
 
     self.modelinst = self.sgnode.user.pyext_retain_modelinst
 
-    ######################
-
-    center = self.model.boundingCenter
-    radius = self.model.boundingRadius*2.5
-
-    if camdist!=0.0:
-      radius = camdist
-
-    self.uicam.lookAt( center-vec3(0,0,radius), 
-                       center, 
-                       vec3(0,1,0) )
-
-    #self.uicam.base_zmoveamt = radius*0.01 
-
-    self.camera.copyFrom( self.uicam.cameradata )
-
     ###################################
-
-    if showgrid:
-      self.grid_data = createGridData()
-      if rendermodel == "ForwardPBR":
-        self.grid_data.shader_suffix = "_V3"
-      self.grid_node = self.layer1.createDrawableNodeFromData("grid",self.grid_data)
-      self.grid_node.sortkey = 1
 
     self.lmap_materials = []
     for m in self.model.meshes:
       for s in m.submeshes:
         mtl = s.material
         self.lmap_materials += [mtl]
-
-  ##############################################
-
-  def onUiEvent(self,uievent):
-    res = ui.HandlerResult()
-    if uievent.code == tokens.KEY_DOWN.hashed:
-      if uievent.keycode == ord("A"):
-        if self.ssaamode == True:
-          self.ssaamode = False
-        else:
-          self.ssaamode = True
-        print("SSAO MODE",self.ssaamode)
-        return res
-    handled = self.uicam.uiEventHandler(uievent)
-    if handled:
-      self.camera.copyFrom( self.uicam.cameradata )
-    else:
-      handled = ui.HandlerResult()
-    return res
-
-  ################################################
-
-  def onUpdate(self,updinfo):
-
-    if self.ssaamode:
-      self.pbr_common.ssaoNumSamples = ssao 
-    else:
-      self.pbr_common.ssaoNumSamples = 0 
-    self.scene.updateScene(self.cameralut) 
-
-    self.abstime = updinfo.absolutetime
     
   ################################################
 
-  def onGpuUpdate(self,ctx):
+  def _onGpuUpdate(self,ctx):
 
     for mtl in self.lmap_materials:
-      phnx = math.pi*0.00+self.abstime*1.0
-      phpx = math.pi*1.0+self.abstime*1.0
-      phpz = math.pi*0.5+self.abstime*1.0
-      phnz = math.pi*1.5+self.abstime*1.0
-      phpy = math.pi*1.0+self.abstime*0.3
-      phny = math.pi*0.5+self.abstime*0.6
+      phnx = math.pi*0.00+self.absolutetime*1.0
+      phpx = math.pi*1.0+self.absolutetime*1.0
+      phpz = math.pi*0.5+self.absolutetime*1.0
+      phnz = math.pi*1.5+self.absolutetime*1.0
+      phpy = math.pi*1.0+self.absolutetime*0.3
+      phny = math.pi*0.5+self.absolutetime*0.6
       phnx = 0.5 + 0.5*math.sin(phnx)
       phnz = 0.5 + 0.5*math.sin(phnz)
       phpx = 0.5 + 0.5*math.sin(phpx)
@@ -199,5 +84,4 @@ class SceneGraphApp(object):
 
 ###############################################################################
 
-print("XXXX")
 SceneGraphApp().ezapp.mainThreadLoop()

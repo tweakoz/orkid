@@ -95,7 +95,7 @@ class StandardSceneGraphComponent(ApplicationComponent):
   ###############################################
 
   def __init__(self, 
-               grid_variant=None,
+               grid_variant="_V4",
                eye=vec3(0,0,5),
                tgt=vec3(0),
                up=vec3(0,1,0)):
@@ -159,11 +159,12 @@ class StandardSceneGraphComponent(ApplicationComponent):
     # create grid
     ###################################
 
-    self.grid_data = createGridData()
-    if self.grid_variant:
+    if self.grid_variant != None:
+      self.grid_data = createGridData()
       self.grid_data.shader_suffix = self.grid_variant
-    self.grid_node = self.layer1.createDrawableNodeFromData("grid", self.grid_data)
-    self.grid_node.sortkey = 1
+      self.grid_node = self.layer1.createDrawableNodeFromData("grid", self.grid_data)
+      self.grid_node.sortkey = 1
+    
     #self.scenegraph.lightingmanager.gpuInit(ctx)
 
   ##################################################
