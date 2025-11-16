@@ -68,9 +68,9 @@ class GraphViewTest(application.ComponentizedApplication):
     # Setup logger UI component
     ############################################
 
-    self.addComponent("logger", loggerui.LoggerUIComponent,
-                      filter_regex=[".*"],
-                      background_color=vec4(1.0, 0.0, 0.0, 0.25))
+    self.logger = self.addComponent("logger", loggerui.LoggerUIComponent,
+                                    filter_regex=[".*"],
+                                    background_color=vec4(1.0, 0.0, 0.0, 0.25))
 
     ############################################
     # Configure EzApp creation args
@@ -95,11 +95,8 @@ class GraphViewTest(application.ComponentizedApplication):
 
   def _onAppLink(self):
     """Called after all components initialized - configure channels here"""
-    # Get logger component (backend now exists after component.onAppInit)
-    logger_comp = self.findComponentByName("logger")
-
     # Configure GVIEW channel for perfItem testing
-    self.gview_channel = logger_comp.configureChannel(
+    self.gview_channel = self.logger.configureChannel(
         "GVIEW",
         vec3(0.3, 1.0, 0.8),
         enable_channel=True

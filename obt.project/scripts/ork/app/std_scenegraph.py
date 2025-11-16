@@ -1,19 +1,109 @@
-import sys 
+import sys, math
 from ork import path as ork_path
 from ork.app.application import ApplicationComponent
-from orkengine.core import vec3, vec4, VarMap, lev2_pyexdir
+from orkengine.core import vec3, vec4, quat, VarMap, lev2_pyexdir
 from orkengine import lev2 
 sys.path.append(str(ork_path.py_lev2utils)) # add parent dir to path
 lev2_pyexdir.addToSysPath()
 from cameras import setupUiCameraX
 from primitives import createGridData
 
+#from orkengine.core import *
+#from orkengine.lev2 import *
+
+###############################################################################
+
+class MyCookie: 
+  def __init__(self,path):
+    self.path = path
+    self.tex = lev2.Texture.load(path)
+    self.irr = lev2.PbrCommon.requestRadianceMaps(path)    
+
+###############################################################################
+
+class StdSpotLight:
+  def __init__( self,
+                SGC=None,
+                index=0,
+                model=None,
+                frq=1.0,
+                color=vec3(1),
+                cookie=None,
+                depth_cookie=None,
+                fovbase=20.0,
+                fovamp=20.0,
+                voffset=1,
+                vscale=1,
+                bias=1e-5,
+                dim=2048,
+                range=100.0,
+                radius=12):
+          
+    self.radius = radius
+    self.voffset = voffset
+    self.vscale = vscale
+    self.frequency = frq
+    self.fovamp = fovamp
+    self.fovbase = fovbase
+    self.drawable_model = model.createDrawable()
+    self.modelnode = SGC.scenegraph.createDrawableNodeOnLayers( [SGC.layer_fwd],     # layers
+                                                                "model-node",        # node name
+                                                                self.drawable_model) # drawable
+    self.modelnode.worldTransform.scale = 0.25
+    self.modelnode.worldTransform.translation = vec3(0)
+    self.spot_light = lev2.DynamicSpotLight()
+    self.spot_light.data.color = color
+    self.spot_light.data.fovy = math.radians(45)
+    self.spot_light.lookAt(
+      vec3(0,2,1)*4, # eye
+      vec3(0,0,0), # tgt 
+      vec3(0,1,0)) # up
+    self.spot_light.data.range = range
+    self.spot_light.data.shadowBias = bias
+    self.spot_light.data.shadowMapSize = dim
+    self.spot_light.colorCookie = cookie
+    self.spot_light.depthCookie = depth_cookie
+    #self.spot_light.RadianceCookie = cookie.irr
+    self.spot_light.shadowCaster = True
+    #print(self.spot_light.shadowMatrix)
+    self.lnode = SGC.layer_fwd.createLightNode("spotlight%d"%index,self.spot_light)
+    pass
+  def update(self,abstime):
+    phase = abstime*self.frequency
+    ########################################
+    x = math.sin(phase)
+    y = math.sin(phase*self.frequency*2.0)*self.vscale
+    ty = math.sin(phase*2.0)
+    z = math.cos(phase)
+    fovy = self.fovbase+(1.0+math.sin(phase*3.5))*self.fovamp*0.5
+    self.spot_light.data.fovy = math.radians(fovy)
+    LPOS =       vec3(x*self.radius,self.voffset+y,z*self.radius)
+
+    self.spot_light.lookAt(
+      LPOS, # eye
+      vec3(0,ty+1,0), # tgt 
+      vec3(0,1,0)) # up
+    
+    self.modelnode.worldTransform.translation = LPOS
+    self.modelnode.worldTransform.orientation = quat(vec3(1,1,1).normalized,  # axis
+                                                     phase*self.frequency*16) # angle
+
+###############################################################################
+
 class StandardSceneGraphComponent(ApplicationComponent):
 
   ###############################################
 
-  def __init__(self):
-    pass
+  def __init__(self, 
+               grid_variant=None,
+               eye=vec3(0,0,5),
+               tgt=vec3(0),
+               up=vec3(0,1,0)):
+    super().__init__()
+    self.grid_variant = grid_variant
+    self.initial_eye = eye
+    self.initial_tgt = tgt
+    self.initial_up = up
 
   ###############################################
 
@@ -50,21 +140,31 @@ class StandardSceneGraphComponent(ApplicationComponent):
     SG = lev2.scenegraph.Scene(sg_params)
     self.layer1 = SG.createLayer("std_forward")
     self.layer_std = self.layer1
+    self.layer_fwd = self.layer1
     self.layer_dpp = SG.createLayer("depth_prepass")
     self.scenegraph = SG 
+    self.fwd_layers = [self.layer_fwd,self.layer_dpp]
 
     self.camname = "Camera0"
     self.camera, self.uicam = setupUiCameraX( cameralut=self.cameralut, 
-                                              camname=self.camname )
+                                              camname=self.camname,
+                                              eye=self.initial_eye,
+                                              tgt=self.initial_tgt,
+                                              up=self.initial_up )
+
+    self.pbr_common = SG.pbr_common
+    self.pbr_common.useDepthPrepass = True
 
     ###################################
     # create grid
     ###################################
 
     self.grid_data = createGridData()
+    if self.grid_variant:
+      self.grid_data.shader_suffix = self.grid_variant
     self.grid_node = self.layer1.createDrawableNodeFromData("grid", self.grid_data)
     self.grid_node.sortkey = 1
-    self.scenegraph.lightingmanager.gpuInit(ctx)
+    #self.scenegraph.lightingmanager.gpuInit(ctx)
 
   ##################################################
 

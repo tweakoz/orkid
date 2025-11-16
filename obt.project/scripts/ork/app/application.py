@@ -367,7 +367,7 @@ class ComponentizedApplication(object):
   # Subclasses can override to customize creation
   ##################################################
 
-  def createEzApp(self):
+  def createEzApp(self,**kwargs):
     # import here to avoid circular dependency
     from orkengine import lev2
 
@@ -385,6 +385,8 @@ class ComponentizedApplication(object):
 
     # Merge user args with defaults (user args take precedence)
     args = {**default_args, **self.ezapp_args}
+    args = {**args, **kwargs}
+
 
     # Create ezapp
     self.ezapp = lev2.OrkEzApp.create(self, **args)

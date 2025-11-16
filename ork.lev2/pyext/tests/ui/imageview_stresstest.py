@@ -58,25 +58,17 @@ class ImageViewStressTest(application.ComponentizedApplication):
                       background_color=vec4(0.2, 0.2, 0.2, 0.8))
 
     ############################################
-    # Configure EzApp creation args
-    ############################################
-
-    self.ezapp_args = {
-      'width': 1600,
-      'height': 900,
-      'fullscreen': False,
-      'enable_audio': False,
-      'enable_audio_output': False,
-      'enable_audio_synth': False,
-      'enable_freerun_ups': True,
-      'enable_freerun_fps': True
-    }
-
-    ############################################
     # Create EzApp and initialize
     ############################################
 
-    self.createEzApp()
+    self.createEzApp(width=1600, 
+                     height=900,
+                     fullscreen=False,
+                     enable_audio=False,
+                     enable_audio_output=False,
+                     enable_audio_synth=False,
+                     enable_freerun_ups=True,
+                     enable_freerun_fps=True)
 
   ##############################################
 
