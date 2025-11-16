@@ -82,7 +82,7 @@ Each subsystem follows a two-phase initialization pattern:
 ### Essential Capabilities
 
 - **Component Lifecycle Management**
-  - Sorted execution order (alphabetically by component name)
+  - Sorted execution order (alphabetically by component name, more sorting methods pending..)
   - Broadcast pattern ensures all components initialized before linking
   - Template methods for app-level customization
   - Clean component addition/removal API
