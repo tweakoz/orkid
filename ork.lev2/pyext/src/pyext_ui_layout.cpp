@@ -419,6 +419,8 @@ void pyinit_ui_layout(py::module& uimodule) {
                 new_lgroup->addChild(new_widget,false); // this will retain the widget
 
                 // Now that widget is assigned and added, update the layouts
+                printf("=== DUMP in binding BEFORE updateAll ===\n");
+                lgrp->dumpLayoutHierarchy();
                 new_layout->updateAll();
 
                 // Create a LayoutItem to return

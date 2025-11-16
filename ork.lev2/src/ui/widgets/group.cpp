@@ -388,6 +388,9 @@ layoutgroup_ptr_t LayoutGroup::splitVertical(anchor::layout_ptr_t target_layout,
   //.  the caller is responsible for creating the new widget and assigning it to the new layout/layoutgroup
   /////////////////////
 
+  printf("=== DUMP at START of splitVertical ===\n");
+  dumpLayoutHierarchy();
+
   auto parent_layout = target_layout->_parent;
   OrkAssert(parent_layout != nullptr);
 
@@ -487,6 +490,9 @@ layoutgroup_ptr_t LayoutGroup::splitVertical(anchor::layout_ptr_t target_layout,
 
   // Don't update layouts yet - the widget hasn't been assigned
   // The binding layer will assign the widget and then update
+
+  printf("=== DUMP at end of splitVertical ===\n");
+  dumpLayoutHierarchy();
 
   return container;
 }
@@ -700,6 +706,7 @@ void LayoutGroup::dumpLayoutHierarchy() {
   printf("================================================================================\n");
   printf("  END LAYOUT HIERARCHY DUMP\n");
   printf("================================================================================\n\n");
+  fflush(stdout);
 }
 //////////////////////////////////////
 namespace anchor{
