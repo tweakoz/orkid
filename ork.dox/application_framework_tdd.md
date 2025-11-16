@@ -65,7 +65,7 @@ Each subsystem follows a two-phase initialization pattern:
 - Loop: onGpuUpdate, onGpuPreFrame, onGpuPostFrame, onUiEvent
 - Shutdown: onGpuExit → onAppExit
 
-**UPDATE Thread**: Simulation and logic, spawned from C++
+**UPDATE Thread**: Simulation, Physics and logic, spawned from C++
 - Initialization: onUpdateInit (waits for GPU init to complete)
 - Loop: onUpdate (freerun or lockstep)
 - Shutdown: onUpdateExit → onAudioExit → onSynthExit
