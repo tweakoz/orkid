@@ -12,6 +12,7 @@ from orkengine.core import vec2, vec3, vec4, quat, mtx4
 from orkengine import lev2 
 from ork.app.application import ComponentizedApplication
 from ork.app.std_scenegraph import StandardSceneGraphComponent
+from ork.app.loggerui import LoggerUIComponent
 
 ################################################################################
 modelpath = "data://tests/environ/roomtest_lightmaps.glb"
@@ -24,6 +25,7 @@ class SceneGraphApp(ComponentizedApplication):
                                  StandardSceneGraphComponent,
                                  eye=vec3(0,20,20),
                                  grid_variant=None)
+    self.LUI = self.addComponent("loggerui", LoggerUIComponent, filter_regex=[".*"]) 
     self.createEzApp(ssaa=1)
 
   ##############################################
