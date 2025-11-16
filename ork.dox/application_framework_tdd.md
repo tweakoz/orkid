@@ -42,7 +42,7 @@ Base class for reusable application components:
 - Public `onXxx()` methods called by framework
 - Protected `_onXxx()` methods overridden by subclasses
 - No direct interaction with other components during Init phase
-- Cross-component communication happens during Link phase
+- Cross-component init-time communication happens during Link phase
 
 ### Lifecycle Phases
 
