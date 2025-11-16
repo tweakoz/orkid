@@ -1,0 +1,227 @@
+<svg width="1400" height="800" viewBox="0 0 1400 800" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1400" height="800" fill="#3a3a3a"/>
+
+  <!-- Title -->
+  <text x="700" y="30" font-family="Arial, sans-serif" font-size="18" fill="white" text-anchor="middle" font-weight="bold">Application Framework Architecture</text>
+
+  <!-- Application Layer -->
+  <g id="application-layer">
+    <rect x="50" y="60" width="450" height="280" rx="8" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+    <text x="275" y="85" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">Application Layer</text>
+
+    <!-- User App -->
+    <rect x="70" y="110" width="410" height="80" rx="6" fill="#5a4a3a" stroke="#8a6a4a" stroke-width="1"/>
+    <text x="275" y="135" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">MyApp(ComponentizedApplication)</text>
+    <text x="275" y="155" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• __init__(): Add components</text>
+    <text x="275" y="172" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">• _onGpuInit(), _onUpdate(), etc: Template methods</text>
+
+    <!-- Components -->
+    <rect x="70" y="210" width="200" height="110" rx="6" fill="#3a4a5a" stroke="#5a6a8a" stroke-width="1"/>
+    <text x="170" y="230" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">LoggerUIComponent</text>
+    <text x="170" y="248" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">_onEzAppCreated()</text>
+    <text x="170" y="263" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">_onAppLink()</text>
+    <text x="170" y="278" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">_onGpuInit()</text>
+    <text x="170" y="293" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">configureChannel()</text>
+
+    <rect x="280" y="210" width="200" height="110" rx="6" fill="#4a3a5a" stroke="#6a5a7a" stroke-width="1"/>
+    <text x="380" y="230" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">StandardSceneGraphComponent</text>
+    <text x="380" y="248" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">_onGpuInit()</text>
+    <text x="380" y="263" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">_onUpdate()</text>
+    <text x="380" y="278" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">_onCameraUiEvent()</text>
+  </g>
+
+  <!-- Framework Layer -->
+  <g id="framework-layer">
+    <rect x="50" y="360" width="450" height="280" rx="8" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+    <text x="275" y="385" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">Framework Layer (Python)</text>
+
+    <!-- ComponentizedApplication -->
+    <rect x="70" y="410" width="200" height="140" rx="6" fill="#5a5a3a" stroke="#7a7a5a" stroke-width="1"/>
+    <text x="170" y="430" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">ComponentizedApplication</text>
+    <text x="170" y="450" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">• addComponent()</text>
+    <text x="170" y="465" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">• createEzApp()</text>
+    <text x="170" y="480" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">• onGpuInit() [broadcast]</text>
+    <text x="170" y="495" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">• onUpdate() [broadcast]</text>
+    <text x="170" y="510" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">• components_sorted[]</text>
+    <text x="170" y="530" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">Orchestrates lifecycle</text>
+
+    <!-- ApplicationComponent -->
+    <rect x="280" y="410" width="200" height="140" rx="6" fill="#5a5a3a" stroke="#7a7a5a" stroke-width="1"/>
+    <text x="380" y="430" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">ApplicationComponent</text>
+    <text x="380" y="450" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">• onGpuInit() [public]</text>
+    <text x="380" y="465" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">• _onGpuInit() [template]</text>
+    <text x="380" y="480" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">• onUpdate() [public]</text>
+    <text x="380" y="495" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">• _onUpdate() [template]</text>
+    <text x="380" y="510" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">• app reference</text>
+    <text x="380" y="530" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">Template method base</text>
+
+    <!-- Init/Link Pattern -->
+    <rect x="70" y="570" width="410" height="50" rx="6" fill="#4a5a4a" stroke="#6a7a6a" stroke-width="1"/>
+    <text x="275" y="590" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">Two-Phase Init Pattern</text>
+    <text x="275" y="608" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">All Init() phases → All Link() phases</text>
+  </g>
+
+  <!-- C++ Engine Layer -->
+  <g id="engine-layer">
+    <rect x="50" y="660" width="450" height="120" rx="8" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+    <text x="275" y="685" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">C++ Engine Layer</text>
+
+    <!-- OrkEzApp -->
+    <rect x="70" y="710" width="140" height="50" rx="6" fill="#5a3a3a" stroke="#8a5a5a" stroke-width="1"/>
+    <text x="140" y="730" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">OrkEzApp</text>
+    <text x="140" y="748" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Main loop</text>
+
+    <!-- Threads -->
+    <rect x="230" y="710" width="100" height="50" rx="6" fill="#5a3a5a" stroke="#8a5a5a" stroke-width="1"/>
+    <text x="280" y="730" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">Threads</text>
+    <text x="280" y="748" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Main/Update</text>
+
+    <!-- Context -->
+    <rect x="350" y="710" width="130" height="50" rx="6" fill="#5a3a5a" stroke="#8a5a5a" stroke-width="1"/>
+    <text x="415" y="730" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">GfxContext</text>
+    <text x="415" y="748" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">GPU resources</text>
+  </g>
+
+  <!-- Lifecycle Phases -->
+  <g id="lifecycle-phases">
+    <rect x="550" y="60" width="800" height="720" rx="8" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+    <text x="950" y="85" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">Lifecycle Phases</text>
+
+    <!-- Initialization -->
+    <g id="initialization">
+      <rect x="570" y="110" width="760" height="200" rx="6" fill="#3a4a5a" stroke="#5a6a8a" stroke-width="1"/>
+      <text x="950" y="130" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">INITIALIZATION</text>
+
+      <!-- Python Setup -->
+      <rect x="590" y="150" width="180" height="140" rx="4" fill="#2a3a4a" stroke="#4a5a6a" stroke-width="1"/>
+      <text x="680" y="168" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle" font-weight="bold">Python Setup</text>
+      <text x="680" y="186" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">1. __init__()</text>
+      <text x="680" y="202" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">2. addComponent()</text>
+      <text x="680" y="218" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">3. createEzApp()</text>
+      <text x="680" y="234" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">4. onEzAppCreated()</text>
+      <text x="680" y="250" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">5. _onUiInit()</text>
+      <text x="680" y="270" font-family="Arial, sans-serif" font-size="8" fill="#8f8" text-anchor="middle">[GIL HELD]</text>
+
+      <!-- App Init/Link -->
+      <rect x="790" y="150" width="160" height="140" rx="4" fill="#2a3a4a" stroke="#4a5a6a" stroke-width="1"/>
+      <text x="870" y="168" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle" font-weight="bold">App Init/Link</text>
+      <text x="870" y="186" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">onAppInit()</text>
+      <text x="870" y="202" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">  ↓ all components</text>
+      <text x="870" y="218" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">onAppLink()</text>
+      <text x="870" y="234" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">  ↓ all components</text>
+      <text x="870" y="250" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">_onAppLink()</text>
+      <text x="870" y="270" font-family="Arial, sans-serif" font-size="8" fill="#8f8" text-anchor="middle">[MAIN THREAD]</text>
+
+      <!-- GPU Init/Link -->
+      <rect x="970" y="150" width="160" height="140" rx="4" fill="#2a3a4a" stroke="#4a5a6a" stroke-width="1"/>
+      <text x="1050" y="168" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle" font-weight="bold">GPU Init/Link</text>
+      <text x="1050" y="186" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">onGpuInit()</text>
+      <text x="1050" y="202" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">  ↓ all components</text>
+      <text x="1050" y="218" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">_onGpuInit()</text>
+      <text x="1050" y="234" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">onGpuLink()</text>
+      <text x="1050" y="250" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">_onGpuLink()</text>
+      <text x="1050" y="270" font-family="Arial, sans-serif" font-size="8" fill="#8f8" text-anchor="middle">[MAIN THREAD]</text>
+
+      <!-- Update Init/Link -->
+      <rect x="1150" y="150" width="160" height="140" rx="4" fill="#2a3a4a" stroke="#4a5a6a" stroke-width="1"/>
+      <text x="1230" y="168" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle" font-weight="bold">Update Init/Link</text>
+      <text x="1230" y="186" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">onUpdateInit()</text>
+      <text x="1230" y="202" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">  ↓ all components</text>
+      <text x="1230" y="218" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">onUpdateLink()</text>
+      <text x="1230" y="234" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">  ↓ all components</text>
+      <text x="1230" y="260" font-family="Arial, sans-serif" font-size="8" fill="#f88" text-anchor="middle">[UPDATE THREAD]</text>
+      <text x="1230" y="275" font-family="Arial, sans-serif" font-size="8" fill="#8f8" text-anchor="middle">Waits for GPU Init</text>
+
+      <!-- Arrows -->
+      <path d="M 770 220 L 790 220" stroke="#888" stroke-width="2" marker-end="url(#arrowhead)"/>
+      <path d="M 950 220 L 970 220" stroke="#888" stroke-width="2" marker-end="url(#arrowhead)"/>
+      <path d="M 1130 220 L 1150 220" stroke="#888" stroke-width="2" marker-end="url(#arrowhead)"/>
+    </g>
+
+    <!-- Main Loop -->
+    <g id="main-loop">
+      <rect x="570" y="330" width="760" height="160" rx="6" fill="#4a5a4a" stroke="#6a7a6a" stroke-width="1"/>
+      <text x="950" y="350" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">MAIN LOOP (Concurrent)</text>
+
+      <!-- Main Thread Loop -->
+      <rect x="590" y="370" width="360" height="100" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
+      <text x="770" y="388" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle" font-weight="bold">Main/GPU Thread</text>
+      <text x="770" y="408" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">onGpuUpdate(ctx)</text>
+      <text x="770" y="424" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">onGpuPreFrame(ctx)</text>
+      <text x="770" y="440" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">onGpuPostFrame(ctx)</text>
+      <text x="770" y="456" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">onUiEvent(event)</text>
+
+      <!-- Update Thread Loop -->
+      <rect x="970" y="370" width="340" height="100" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
+      <text x="1140" y="388" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle" font-weight="bold">Update Thread</text>
+      <text x="1140" y="408" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">onUpdate(updinfo)</text>
+      <text x="1140" y="424" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">  dt, abstime, frame</text>
+      <text x="1140" y="450" font-family="Arial, sans-serif" font-size="8" fill="#8f8" text-anchor="middle">Runs in parallel with Main thread</text>
+
+      <!-- Parallel indicator -->
+      <text x="950" y="510" font-family="Arial, sans-serif" font-size="10" fill="#8f8" text-anchor="middle">← Both threads run C++ concurrently (GIL released) →</text>
+    </g>
+
+    <!-- Shutdown -->
+    <g id="shutdown">
+      <rect x="570" y="510" width="760" height="250" rx="6" fill="#5a4a4a" stroke="#7a6a6a" stroke-width="1"/>
+      <text x="950" y="530" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">SHUTDOWN (Ordered)</text>
+
+      <!-- Update Exit -->
+      <rect x="590" y="550" width="180" height="90" rx="4" fill="#4a3a3a" stroke="#6a5a5a" stroke-width="1"/>
+      <text x="680" y="568" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle" font-weight="bold">Update Exit</text>
+      <text x="680" y="586" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">onUpdateExit()</text>
+      <text x="680" y="602" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">  ↓ all components</text>
+      <text x="680" y="625" font-family="Arial, sans-serif" font-size="8" fill="#f88" text-anchor="middle">[UPDATE THREAD]</text>
+
+      <!-- Audio/Synth Exit -->
+      <rect x="790" y="550" width="180" height="90" rx="4" fill="#4a3a3a" stroke="#6a5a5a" stroke-width="1"/>
+      <text x="880" y="568" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle" font-weight="bold">Audio/Synth Exit</text>
+      <text x="880" y="586" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">onAudioExit()</text>
+      <text x="880" y="602" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">onSynthExit()</text>
+      <text x="880" y="625" font-family="Arial, sans-serif" font-size="8" fill="#f88" text-anchor="middle">[UPDATE THREAD]</text>
+
+      <!-- Thread Join -->
+      <rect x="590" y="660" width="180" height="80" rx="4" fill="#4a3a3a" stroke="#6a5a5a" stroke-width="1"/>
+      <text x="680" y="678" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle" font-weight="bold">Thread Join</text>
+      <text x="680" y="696" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">joinUpdate()</text>
+      <text x="680" y="712" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">_updateThread.join()</text>
+      <text x="680" y="730" font-family="Arial, sans-serif" font-size="8" fill="#8f8" text-anchor="middle">[MAIN THREAD]</text>
+
+      <!-- GPU Exit -->
+      <rect x="790" y="660" width="180" height="80" rx="4" fill="#4a3a3a" stroke="#6a5a5a" stroke-width="1"/>
+      <text x="880" y="678" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle" font-weight="bold">GPU Exit</text>
+      <text x="880" y="696" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">onGpuExit(ctx)</text>
+      <text x="880" y="712" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">_onGpuExit(ctx)</text>
+      <text x="880" y="730" font-family="Arial, sans-serif" font-size="8" fill="#8f8" text-anchor="middle">[MAIN THREAD]</text>
+
+      <!-- App Exit -->
+      <rect x="990" y="660" width="180" height="80" rx="4" fill="#4a3a3a" stroke="#6a5a5a" stroke-width="1"/>
+      <text x="1080" y="678" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle" font-weight="bold">App Exit</text>
+      <text x="1080" y="696" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">onAppExit()</text>
+      <text x="1080" y="712" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">  ↓ all components</text>
+      <text x="1080" y="730" font-family="Arial, sans-serif" font-size="8" fill="#8f8" text-anchor="middle">[MAIN THREAD]</text>
+
+      <!-- Arrows -->
+      <path d="M 770 595 L 790 595" stroke="#888" stroke-width="2" marker-end="url(#arrowhead)"/>
+      <path d="M 770 700 L 790 700" stroke="#888" stroke-width="2" marker-end="url(#arrowhead)"/>
+      <path d="M 970 700 L 990 700" stroke="#888" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+      <!-- Critical constraint -->
+      <path d="M 680 640 L 680 660" stroke="#f88" stroke-width="3" stroke-dasharray="5,5"/>
+      <text x="680" y="653" font-family="Arial, sans-serif" font-size="8" fill="#f88" text-anchor="middle">Must complete first</text>
+    </g>
+  </g>
+
+  <!-- GIL indicator -->
+  <rect x="50" y="10" width="220" height="30" rx="4" fill="#5a5a3a" stroke="#7a7a5a" stroke-width="1"/>
+  <text x="160" y="28" font-family="Arial, sans-serif" font-size="10" fill="#8f8" text-anchor="middle">GIL: Released during main loop, acquired per callback</text>
+
+  <!-- Arrow markers -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#888"/>
+    </marker>
+  </defs>
+</svg>

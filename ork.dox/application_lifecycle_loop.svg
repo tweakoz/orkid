@@ -1,0 +1,139 @@
+<svg width="1400" height="600" viewBox="0 0 1400 600" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1400" height="600" fill="#3a3a3a"/>
+
+  <!-- Title -->
+  <text x="700" y="30" font-family="Arial, sans-serif" font-size="18" fill="white" text-anchor="middle" font-weight="bold">Application Lifecycle - Main Execution Loop</text>
+
+  <!-- Thread Lanes -->
+  <!-- Python Main Thread Lane -->
+  <rect x="50" y="70" width="320" height="480" rx="4" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+  <text x="210" y="95" font-family="Arial, sans-serif" font-size="13" fill="white" text-anchor="middle" font-weight="bold">Python Main Thread</text>
+  <text x="210" y="110" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">[GIL HELD - waiting]</text>
+
+  <!-- C++ Main/GPU Thread Lane -->
+  <rect x="390" y="70" width="320" height="480" rx="4" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+  <text x="550" y="95" font-family="Arial, sans-serif" font-size="13" fill="white" text-anchor="middle" font-weight="bold">C++ Main/GPU Thread</text>
+  <text x="550" y="110" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">[GIL per callback]</text>
+
+  <!-- C++ Update Thread Lane -->
+  <rect x="730" y="70" width="320" height="480" rx="4" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+  <text x="890" y="95" font-family="Arial, sans-serif" font-size="13" fill="white" text-anchor="middle" font-weight="bold">C++ Update Thread</text>
+  <text x="890" y="110" font-family="Arial, sans-serif" font-size="9" fill="#f88" text-anchor="middle">[GIL per callback]</text>
+
+  <!-- C++ Audio/Synth Threads Lane -->
+  <rect x="1070" y="70" width="160" height="480" rx="4" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+  <text x="1150" y="95" font-family="Arial, sans-serif" font-size="13" fill="white" text-anchor="middle" font-weight="bold">Audio/Synth</text>
+  <text x="1150" y="110" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">[No GIL needed]</text>
+
+  <!-- ConQ Thread Pool Lane -->
+  <rect x="1250" y="70" width="130" height="480" rx="4" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+  <text x="1315" y="95" font-family="Arial, sans-serif" font-size="13" fill="white" text-anchor="middle" font-weight="bold">ConQ Pool</text>
+  <text x="1315" y="110" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">[N workers]</text>
+
+  <!-- Entry from init -->
+  <line x1="30" y1="140" x2="1370" y2="140" stroke="#8f8" stroke-width="2" stroke-dasharray="5,5"/>
+  <text x="20" y="155" font-family="Arial, sans-serif" font-size="10" fill="#8f8" text-anchor="end" font-weight="bold">FROM</text>
+  <text x="20" y="170" font-family="Arial, sans-serif" font-size="10" fill="#8f8" text-anchor="end" font-weight="bold">INIT</text>
+
+  <!-- Python waiting state -->
+  <rect x="90" y="180" width="240" height="330" rx="6" fill="#3a3a3a" stroke="#666" stroke-width="2" stroke-dasharray="5,5"/>
+  <text x="210" y="210" font-family="Arial, sans-serif" font-size="11" fill="#aaa" text-anchor="middle" font-style="italic">mainThreadLoop() blocking</text>
+  <text x="210" y="230" font-family="Arial, sans-serif" font-size="10" fill="#aaa" text-anchor="middle">C++ owns main thread</text>
+  <text x="210" y="250" font-family="Arial, sans-serif" font-size="10" fill="#aaa" text-anchor="middle">Python waits for return</text>
+
+  <!-- Main/GPU Thread Loop -->
+  <rect x="410" y="180" width="260" height="165" rx="6" fill="#4a5a4a" stroke="#6a7a6a" stroke-width="3"/>
+  <text x="540" y="200" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">MAIN LOOP</text>
+  <text x="540" y="216" font-family="Arial, sans-serif" font-size="8" fill="#ddd" text-anchor="middle">glfwPollEvents()</text>
+  <text x="540" y="228" font-family="Arial, sans-serif" font-size="8" fill="#8f8" text-anchor="middle">← GIL ACQUIRED →</text>
+  <text x="540" y="240" font-family="Arial, sans-serif" font-size="8" fill="#ddd" text-anchor="middle">onRunLoopIteration()</text>
+  <text x="540" y="252" font-family="Arial, sans-serif" font-size="8" fill="#f88" text-anchor="middle">← GIL RELEASED →</text>
+  <text x="540" y="264" font-family="Arial, sans-serif" font-size="8" fill="#8f8" text-anchor="middle">← GIL ACQUIRED →</text>
+  <text x="540" y="276" font-family="Arial, sans-serif" font-size="8" fill="#ddd" text-anchor="middle">onGpuUpdate(ctx)</text>
+  <text x="540" y="288" font-family="Arial, sans-serif" font-size="8" fill="#ddd" text-anchor="middle">onGpuPreFrame(ctx)</text>
+  <text x="540" y="300" font-family="Arial, sans-serif" font-size="8" fill="#f88" text-anchor="middle">← GIL RELEASED →</text>
+  <text x="540" y="312" font-family="Arial, sans-serif" font-size="8" fill="#ddd" text-anchor="middle">UI drawing</text>
+  <text x="540" y="324" font-family="Arial, sans-serif" font-size="8" fill="#8f8" text-anchor="middle">← GIL ACQUIRED →</text>
+  <text x="540" y="336" font-family="Arial, sans-serif" font-size="8" fill="#ddd" text-anchor="middle">onGpuPostFrame(ctx)</text>
+  <text x="540" y="348" font-family="Arial, sans-serif" font-size="8" fill="#f88" text-anchor="middle">← GIL RELEASED →</text>
+
+  <!-- Loop back for Main thread -->
+  <path d="M 410 255 C 360 255 360 255 410 255" stroke="#8f8" stroke-width="3" fill="none" marker-end="url(#arrowhead-green)"/>
+  <text x="345" y="215" font-family="Arial, sans-serif" font-size="10" fill="#8f8" text-anchor="end" font-weight="bold">Loop</text>
+  <text x="345" y="230" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="end">Target FPS</text>
+  <text x="345" y="245" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="end">or freerun</text>
+
+  <!-- Update Thread Loop -->
+  <rect x="750" y="180" width="260" height="165" rx="6" fill="#4a5a4a" stroke="#6a7a6a" stroke-width="3"/>
+  <text x="880" y="200" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">UPDATE LOOP</text>
+  <text x="880" y="216" font-family="Arial, sans-serif" font-size="8" fill="#ddd" text-anchor="middle">Time accumulation</text>
+  <text x="880" y="228" font-family="Arial, sans-serif" font-size="8" fill="#8f8" text-anchor="middle">← GIL ACQUIRED →</text>
+  <text x="880" y="240" font-family="Arial, sans-serif" font-size="8" fill="#ddd" text-anchor="middle">_onUpdateInternal()</text>
+  <text x="880" y="252" font-family="Arial, sans-serif" font-size="8" fill="#ddd" text-anchor="middle">onUpdate(updinfo)</text>
+  <text x="880" y="267" font-family="Arial, sans-serif" font-size="8" fill="#f88" text-anchor="middle">← GIL RELEASED →</text>
+  <text x="880" y="279" font-family="Arial, sans-serif" font-size="8" fill="#ddd" text-anchor="middle">updateSerialQueue()</text>
+  <text x="880" y="291" font-family="Arial, sans-serif" font-size="8" fill="#ddd" text-anchor="middle">Process()</text>
+
+  <!-- Loop back for Update thread -->
+  <path d="M 750 255 C 700 255 700 255 750 255" stroke="#8f8" stroke-width="3" fill="none" marker-end="url(#arrowhead-green)"/>
+  <text x="685" y="215" font-family="Arial, sans-serif" font-size="10" fill="#8f8" text-anchor="end" font-weight="bold">Loop</text>
+  <text x="685" y="230" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="end">Target UPS</text>
+  <text x="685" y="245" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="end">or freerun</text>
+
+  <!-- Audio Thread Loop -->
+  <rect x="1080" y="180" width="140" height="150" rx="6" fill="#4a5a4a" stroke="#6a7a6a" stroke-width="3"/>
+  <text x="1150" y="205" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">AUDIO LOOP</text>
+  <text x="1150" y="228" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Real-time</text>
+  <text x="1150" y="243" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">audio/synth</text>
+  <text x="1150" y="263" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">No Python</text>
+  <text x="1150" y="278" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">callbacks</text>
+  <text x="1150" y="298" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Pure C++</text>
+
+  <!-- Loop back for Audio thread -->
+  <path d="M 1080 255 C 1040 255 1040 255 1080 255" stroke="#8f8" stroke-width="2" fill="none" marker-end="url(#arrowhead-green)"/>
+  <text x="1030" y="235" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="end" font-weight="bold">Loop</text>
+  <text x="1030" y="250" font-family="Arial, sans-serif" font-size="8" fill="#8f8" text-anchor="end">Real-time</text>
+  <text x="1030" y="263" font-family="Arial, sans-serif" font-size="8" fill="#8f8" text-anchor="end">rate</text>
+
+  <!-- ConQ Worker Pool -->
+  <rect x="1260" y="180" width="110" height="150" rx="6" fill="#4a5a4a" stroke="#6a7a6a" stroke-width="3"/>
+  <text x="1315" y="205" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">WORKERS</text>
+  <text x="1315" y="228" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Async task</text>
+  <text x="1315" y="243" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">execution</text>
+  <text x="1315" y="263" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Background</text>
+  <text x="1315" y="278" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">thread pool</text>
+
+  <!-- ConQ work dispatched from other threads -->
+  <path d="M 670 255 L 1260 255" stroke="#888" stroke-width="1" stroke-dasharray="3,3"/>
+  <text x="965" y="250" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">Tasks enqueued →</text>
+
+  <!-- Parallel execution visualization -->
+  <line x1="390" y1="360" x2="1370" y2="360" stroke="#8f8" stroke-width="3" stroke-dasharray="10,5"/>
+  <text x="880" y="380" font-family="Arial, sans-serif" font-size="11" fill="#8f8" text-anchor="middle" font-weight="bold">← PARALLEL EXECUTION →</text>
+  <text x="880" y="395" font-family="Arial, sans-serif" font-size="10" fill="#8f8" text-anchor="middle">Main, Update, Audio, and ConQ worker threads run simultaneously</text>
+  <text x="880" y="410" font-family="Arial, sans-serif" font-size="10" fill="#8f8" text-anchor="middle">GIL acquired only for Python callbacks (minimal blocking)</text>
+
+  <!-- UI Events (asynchronous) -->
+  <rect x="410" y="365" width="260" height="55" rx="6" fill="#5a4a5a" stroke="#7a6a7a" stroke-width="2" stroke-dasharray="3,3"/>
+  <text x="540" y="388" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">UI EVENTS (async)</text>
+  <text x="540" y="405" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">onUiEvent(event)</text>
+  <text x="540" y="418" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">Triggered by user input</text>
+
+  <!-- Exit trigger -->
+  <line x1="30" y1="545" x2="1370" y2="545" stroke="#f88" stroke-width="2" stroke-dasharray="5,5"/>
+  <text x="20" y="560" font-family="Arial, sans-serif" font-size="10" fill="#f88" text-anchor="end" font-weight="bold">TO</text>
+  <text x="20" y="575" font-family="Arial, sans-serif" font-size="10" fill="#f88" text-anchor="end" font-weight="bold">EXIT</text>
+  <text x="700" y="565" font-family="Arial, sans-serif" font-size="10" fill="#f88" text-anchor="middle" font-weight="bold">signalExit() or window close triggers shutdown</text>
+
+  <!-- Key insights -->
+  <rect x="50" y="40" width="800" height="20" rx="4" fill="#5a5a3a" stroke="#7a7a5a" stroke-width="1"/>
+  <text x="450" y="53" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">Main and Update threads run in parallel, acquiring GIL only for Python callbacks</text>
+
+  <!-- Arrow markers -->
+  <defs>
+    <marker id="arrowhead-green" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#8f8"/>
+    </marker>
+  </defs>
+</svg>

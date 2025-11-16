@@ -59,63 +59,47 @@
 #    - Called from CtxGLFW::_runloopBegin()
 #    - GPU context made current: ctx->makeCurrentContext()
 #    - FontMan::gpuInit() called before user callback
-#    - Broadcasts to components: onGpuInit(app, ctx)
-#      * Components create GPU resources (textures, buffers, shaders)
-#    - Calls app template method: _onGpuInit(ctx)
+#
+#    **INSIDE GPU INIT CALLBACK (ezapp.cpp:683-706):**
+#
+#    FIRST: _audioInit() is called (if audio enabled):
+#      - Application.onSynthInit(synth) [MAIN THREAD, GIL ACQUIRED]
+#        * Synth instance created and ready
+#        * Broadcasts to components: onSynthInit(synth)
+#      - Application.onSynthLink(synth) [MAIN THREAD, GIL ACQUIRED]
+#        * Broadcasts to components: onSynthLink(synth)
+#      - Application.onAudioInit(audiodev) [MAIN THREAD, GIL ACQUIRED]
+#        * Audio system bringup: audio::singularity::synth::bringUp()
+#        * Broadcasts to components: onAudioInit(audiodev)
+#        * Finally audiodevice->startup()
+#      - Application.onAudioLink(audiodev) [MAIN THREAD, GIL ACQUIRED]
+#        * Broadcasts to components: onAudioLink(audiodev)
+#      - **[AUDIO/SYNTH THREADS SPAWNED]** during audiodevice->startup()
+#
+#    THEN: User GPU callbacks:
+#      - Broadcasts to components: onGpuInit(app, ctx)
+#        * Components create GPU resources (textures, buffers, shaders)
+#      - Calls app template method: _onGpuInit(ctx)
+#      - Broadcasts to components: onGpuLink(app, ctx)
+#        * Components link GPU resources to each other
+#      - Calls app template method: _onGpuLink(ctx)
+#
+#    FINALLY: **[UPDATE THREAD SPAWNED]** at end of GPU init (ezapp.cpp:704)
+#
 #    - CRITICAL: Must complete before onUpdateInit (enforced by engine)
 #
-# 7. Application.onGpuLink(ctx) [MAIN/GPU THREAD, GIL ACQUIRED]
-#    - Called immediately after onGpuInit
-#    - Broadcasts to components: onGpuLink(app, ctx)
-#      * Components link GPU resources to each other
-#      * "Link" phase allows GPU resource cross-referencing after Init
+# 7. Application.onUpdateInit() [UPDATE THREAD, GIL ACQUIRED]
+#    - First callback in update thread
+#    - Called AFTER onGpuInit completes (guaranteed by engine)
+#    - Broadcasts to components: onUpdateInit()
+#      * Components initialize simulation state, physics, etc.
+#    - App state flag set: KAPPSTATEFLAG_UPDRUNNING
 #
-# 8. Application.onSynthInit(synth) [MAIN THREAD, GIL ACQUIRED]
-#    - Called during GPU init phase if synth enabled
-#    - Called before onAudioInit during audio initialization
-#    - Synth instance created and ready
-#    - Broadcasts to components: onSynthInit(synth)
-#      * Components set up synthesis graphs, instruments
-#
-# 9. Application.onSynthLink(synth) [MAIN THREAD, GIL ACQUIRED]
-#    - Called immediately after onSynthInit
-#    - Broadcasts to components: onSynthLink(synth)
-#      * Components link synthesis modules to each other
-#      * "Link" phase allows synth resource cross-referencing after Init
-#
-# 10. Application.onAudioInit(audiodev) [MAIN THREAD, GIL ACQUIRED]
-#     - Called after onSynthInit/onSynthLink if audio enabled
-#     - Audio system bringup: audio::singularity::synth::bringUp()
-#     - Broadcasts to components: onAudioInit(audiodev)
-#       * Components initialize audio I/O, routing
-#     - Finally audiodevice->startup()
-#
-# 11. Application.onAudioLink(audiodev) [MAIN THREAD, GIL ACQUIRED]
-#     - Called immediately after onAudioInit
-#     - Broadcasts to components: onAudioLink(audiodev)
-#       * Components link audio streams, configure routing
-#       * "Link" phase allows audio resource cross-referencing after Init
-#
-# 12. [AUDIO/SYNTH THREADS SPAWNED HERE]
-#     Separate C++ threads for audio and synthesizer, runs concurrently with other threads
-#     Thread name: "macos: CoreAudioThread"
-#
-# 13. [UPDATE THREAD SPAWNED HERE]
-#     Separate C++ thread for update loop, runs concurrently with main thread
-#     Thread name: "update"
-#
-# 14. Application.onUpdateInit() [UPDATE THREAD, GIL ACQUIRED]
-#     - First callback in update thread
-#     - Called AFTER onGpuInit completes (guaranteed by engine)
-#     - Broadcasts to components: onUpdateInit()
-#       * Components initialize simulation state, physics, etc.
-#     - App state flag set: KAPPSTATEFLAG_UPDRUNNING
-#
-# 15. Application.onUpdateLink() [UPDATE THREAD, GIL ACQUIRED]
-#     - Called immediately after onUpdateInit
-#     - Broadcasts to components: onUpdateLink()
-#       * Components link simulation systems to each other
-#       * "Link" phase allows simulation resource cross-referencing after Init
+# 8. Application.onUpdateLink() [UPDATE THREAD, GIL ACQUIRED]
+#    - Called immediately after onUpdateInit
+#    - Broadcasts to components: onUpdateLink()
+#      * Components link simulation systems to each other
+#      * "Link" phase allows simulation resource cross-referencing after Init
 #
 ################################################################################
 # MAIN LOOP (Running Concurrently)
@@ -208,10 +192,12 @@
 #
 # 3. Application.onAudioExit() [UPDATE THREAD, GIL ACQUIRED]
 #    - Called after onUpdateExit in update thread context
+#    - Broadcasts to components: onAudioExit()
 #    - Audio system shutdown
 #
 # 4. Application.onSynthExit() [UPDATE THREAD, GIL ACQUIRED]
 #    - Called during audio exit
+#    - Broadcasts to components: onSynthExit()
 #    - Synth cleanup
 #
 # 5. [UPDATE THREAD JOIN] [MAIN THREAD, GIL RELEASED]
@@ -242,17 +228,34 @@
 # CRITICAL SEQUENCING CONSTRAINTS
 ################################################################################
 #
-# These orderings are enforced by the C++ engine:
+# These orderings are enforced by the C++ engine to prevent resource corruption:
 #
 # 1. onGpuInit MUST complete before onUpdateInit
-#    - Update thread spawn deferred until after GPU init
+#    - Rationale: Update thread actively schedules mutations to GPU resources
+#      (via DrawQueue, _mainq). GPU context must be fully initialized before
+#      Update thread can schedule work.
+#    - Enforcement: Update thread spawn deferred until after GPU init completes
 #
 # 2. onUpdateExit MUST complete before onGpuExit
-#    - joinUpdate() called before CtxGLFW::_runloopEnd()
+#    - Rationale: Update thread actively schedules mutations to GPU resources
+#      (via DrawQueue, _mainq). Must guarantee Update thread CANNOT schedule work
+#      during GPU shutdown. Thread join ensures Update has fully stopped before
+#      GPU cleanup begins.
+#    - Enforcement: joinUpdate() called inside _onGpuExit callback before user
+#      GPU cleanup
 #
 # 3. Audio initialization order: onSynthInit -> onAudioInit -> startup()
+#    - Rationale: Audio device needs synthesizer instance for routing. Synth must
+#      exist before audio startup.
+#    - Enforcement: Sequenced in OrkEzApp::_audioInit()
 #
 # 4. Audio shutdown in update thread context (after onUpdateExit)
+#    - Rationale: Update thread may schedule mutations to audio resources (synth
+#      parameters, samples). Audio shutdown in Update thread context guarantees
+#      no racing mutations during teardown. Additionally, audio shutdown is I/O
+#      bound (device close, driver teardown) - keeping it off Main thread prevents
+#      rendering stalls.
+#    - Enforcement: _audioExit() called from update thread after onUpdateExit()
 #
 ################################################################################
 # THREAD EXECUTION SUMMARY
@@ -261,9 +264,10 @@
 # MAIN THREAD (Process origin, Python relinquishes to C++, GPU context):
 #   INIT PHASE:
 #     onAppInit → onAppLink
-#     onGpuInit → onGpuLink
-#     onSynthInit → onSynthLink
-#     onAudioInit → onAudioLink
+#     onGpuInit (which internally calls):
+#       _audioInit: onSynthInit → onSynthLink → onAudioInit → onAudioLink
+#       Then: onGpuInit (components) → onGpuLink (components)
+#       Finally: spawns Update thread
 #   [LOOP] onGpuUpdate, onGpuPreFrame, onGpuPostFrame, onUiEvent
 #   EXIT PHASE:
 #     onGpuExit → onAppExit
@@ -273,7 +277,8 @@
 #     onUpdateInit → onUpdateLink
 #   [LOOP] onUpdate
 #   EXIT PHASE:
-#     onUpdateExit → onAudioExit → onSynthExit
+#     onUpdateExit
+#     onAudioExit → onSynthExit (during audio shutdown)
 #
 ################################################################################
 # INIT/LINK PATTERN
@@ -451,9 +456,9 @@ class ComponentizedApplication(object):
   #########
 
   def onAudioInit(self,audiodev):
-    # invoked on audio thread when the audio device is initialized
+    # invoked on main thread when the audio device is initialized
     # immediately before audio processing starts
-    # onAudioInit is called before onSynthInit
+    # onAudioInit is called after onSynthInit
     # onAudioInit is called before onGpuInit
     for component in self.components_sorted:
       component.onAudioInit(audiodev)
@@ -463,12 +468,28 @@ class ComponentizedApplication(object):
   ##################################################
 
   def onSynthInit(self,synth):
-    # invoked on audio thread when the synth is initialized
+    # invoked on main thread when the synth is initialized
     # immediately before audio processing starts
     for component in self.components_sorted:
       component.onSynthInit(synth)
     for component in self.components_sorted:
       component.onSynthLink(synth)
+
+  ##################################################
+
+  def onAudioExit(self):
+    # invoked on update thread when the audio device is exiting
+    # called after onUpdateExit in update thread context
+    for component in self.components_sorted:
+      component.onAudioExit()
+
+  ##################################################
+
+  def onSynthExit(self):
+    # invoked on update thread during audio exit
+    # called after onAudioExit
+    for component in self.components_sorted:
+      component.onSynthExit()
 
   #########
   # GPU / renderer broadcast handlers
@@ -477,9 +498,9 @@ class ComponentizedApplication(object):
   def onGpuInit(self,ctx):
     # invoked on main thread when the GPU context is initialized
     # immediately before the main loop starts
-    self._onGpuInit(ctx)    
     for component in self.components_sorted:
       component.onGpuInit(ctx)
+    self._onGpuInit(ctx)    
     for component in self.components_sorted:
       component.onGpuLink(ctx)
     self._onGpuLink(ctx)    
@@ -498,7 +519,11 @@ class ComponentizedApplication(object):
     # immediately after the main loop ends
     for component in self.components_sorted:
       component.onGpuExit(ctx)
-      
+    self._onGpuExit(ctx)
+
+  def _onGpuExit(self,ctx):
+    pass
+
   ##################################################
 
   def onGpuUpdate(self,ctx):
@@ -698,8 +723,24 @@ class ApplicationComponent(object):
 
   def onSynthLink(self,synth):
     self._onSynthLink(synth)
-    
+
   def _onSynthLink(self,synth):
+    pass
+
+  ##############################################
+
+  def onAudioExit(self):
+    self._onAudioExit()
+
+  def _onAudioExit(self):
+    pass
+
+  ##############################################
+
+  def onSynthExit(self):
+    self._onSynthExit()
+
+  def _onSynthExit(self):
     pass
 
   ##############################################

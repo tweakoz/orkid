@@ -1,0 +1,136 @@
+<svg width="1400" height="700" viewBox="0 0 1400 700" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1400" height="700" fill="#3a3a3a"/>
+
+  <!-- Title -->
+  <text x="700" y="30" font-family="Arial, sans-serif" font-size="18" fill="white" text-anchor="middle" font-weight="bold">Application Lifecycle - Initialization Sequence</text>
+
+  <!-- Thread Lanes -->
+  <!-- Python Main Thread Lane -->
+  <rect x="50" y="70" width="320" height="580" rx="4" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+  <text x="210" y="95" font-family="Arial, sans-serif" font-size="13" fill="white" text-anchor="middle" font-weight="bold">Python Main Thread</text>
+  <text x="210" y="110" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">[GIL HELD]</text>
+
+  <!-- C++ Main/GPU Thread Lane -->
+  <rect x="390" y="70" width="320" height="580" rx="4" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+  <text x="550" y="95" font-family="Arial, sans-serif" font-size="13" fill="white" text-anchor="middle" font-weight="bold">C++ Main/GPU Thread</text>
+  <text x="550" y="110" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">[GIL per callback]</text>
+
+  <!-- C++ Update Thread Lane -->
+  <rect x="730" y="70" width="320" height="580" rx="4" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+  <text x="890" y="95" font-family="Arial, sans-serif" font-size="13" fill="white" text-anchor="middle" font-weight="bold">C++ Update Thread</text>
+  <text x="890" y="110" font-family="Arial, sans-serif" font-size="9" fill="#f88" text-anchor="middle">[GIL per callback]</text>
+
+  <!-- C++ Audio/Synth Threads Lane -->
+  <rect x="1070" y="70" width="280" height="580" rx="4" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+  <text x="1210" y="95" font-family="Arial, sans-serif" font-size="13" fill="white" text-anchor="middle" font-weight="bold">Audio/Synth Threads</text>
+  <text x="1210" y="110" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">[No GIL needed]</text>
+
+  <!-- Timeline markers -->
+  <text x="20" y="150" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="end">t=0</text>
+  <line x1="30" y1="145" x2="1370" y2="145" stroke="#444" stroke-width="1" stroke-dasharray="2,2"/>
+
+  <!-- Initial State -->
+  <circle cx="210" cy="160" r="15" fill="#000" stroke="#888" stroke-width="2"/>
+  <text x="145" y="165" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="end">START</text>
+
+  <!-- 1. CONSTRUCTING -->
+  <rect x="90" y="190" width="240" height="55" rx="6" fill="#5a4a3a" stroke="#8a6a4a" stroke-width="2"/>
+  <text x="210" y="213" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">CONSTRUCTING</text>
+  <text x="210" y="228" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">__init__(), addComponent()</text>
+
+  <!-- 2. EZAPP_CREATING -->
+  <rect x="90" y="260" width="240" height="55" rx="6" fill="#5a4a3a" stroke="#8a6a4a" stroke-width="2"/>
+  <text x="210" y="283" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">EZAPP_CREATING</text>
+  <text x="210" y="298" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">createEzApp(), onEzAppCreated()</text>
+
+  <!-- 3. UI_READY -->
+  <rect x="90" y="330" width="240" height="55" rx="6" fill="#5a4a3a" stroke="#8a6a4a" stroke-width="2"/>
+  <text x="210" y="353" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">UI_READY</text>
+  <text x="210" y="368" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">_onUiInit() - UI widgets created</text>
+
+  <!-- Transfer to C++ -->
+  <path d="M 330 357 L 410 410" stroke="#f88" stroke-width="4" marker-end="url(#arrowhead-red)"/>
+  <text x="370" y="378" font-family="Arial, sans-serif" font-size="10" fill="#f88" text-anchor="middle" font-weight="bold">mainThreadLoop()</text>
+  <text x="370" y="392" font-family="Arial, sans-serif" font-size="9" fill="#f88" text-anchor="middle">GIL released</text>
+  <text x="370" y="405" font-family="Arial, sans-serif" font-size="8" fill="#f88" text-anchor="middle">Control → C++</text>
+
+  <!-- 4. APP_INIT -->
+  <rect x="410" y="405" width="260" height="55" rx="6" fill="#3a4a5a" stroke="#5a6a8a" stroke-width="2"/>
+  <text x="540" y="428" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">APP_INIT</text>
+  <text x="540" y="443" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">onAppInit() → onAppLink()</text>
+
+  <!-- 5. GPU_INIT (contains Audio init) -->
+  <rect x="410" y="475" width="260" height="110" rx="6" fill="#4a3a5a" stroke="#6a5a7a" stroke-width="3"/>
+  <text x="540" y="498" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">GPU_INIT</text>
+  <text x="540" y="516" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">_audioInit() called first:</text>
+  <text x="540" y="531" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">  onSynthInit() → onAudioInit()</text>
+  <text x="540" y="546" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">  audiodevice→startup()</text>
+  <text x="540" y="564" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Then user callbacks:</text>
+  <text x="540" y="579" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">  onGpuInit() → onGpuLink()</text>
+
+  <!-- Audio threads spawn -->
+  <path d="M 670 520 L 1090 520" stroke="#f88" stroke-width="3" stroke-dasharray="5,5" marker-end="url(#arrowhead-red)"/>
+  <text x="880" y="510" font-family="Arial, sans-serif" font-size="9" fill="#f88" text-anchor="middle" font-weight="bold">Audio threads spawn</text>
+  <text x="880" y="523" font-family="Arial, sans-serif" font-size="8" fill="#f88" text-anchor="middle">during GPU init</text>
+
+  <!-- Audio running annotation -->
+  <rect x="1090" y="538" width="240" height="50" rx="6" fill="#4a5a4a" stroke="#6a7a6a" stroke-width="2"/>
+  <text x="1210" y="558" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle" font-weight="bold">Audio Running</text>
+  <text x="1210" y="574" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Real-time processing started</text>
+
+  <!-- Synchronization point -->
+  <line x1="670" y1="600" x2="750" y2="600" stroke="#f88" stroke-width="2"/>
+  <text x="710" y="595" font-family="Arial, sans-serif" font-size="9" fill="#f88" text-anchor="middle" font-weight="bold">SYNC POINT</text>
+  <text x="710" y="615" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">Update thread must wait</text>
+  <text x="710" y="628" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">for GPU init to complete</text>
+
+  <!-- Update thread spawn -->
+  <path d="M 670 572 L 750 545" stroke="#f88" stroke-width="3" stroke-dasharray="5,5" marker-end="url(#arrowhead-red)"/>
+  <text x="710" y="553" font-family="Arial, sans-serif" font-size="9" fill="#f88" text-anchor="middle" font-weight="bold">Update thread spawn</text>
+  <text x="710" y="566" font-family="Arial, sans-serif" font-size="8" fill="#f88" text-anchor="middle">_updateThread.start()</text>
+
+  <!-- 7. UPDATE_INIT -->
+  <rect x="750" y="515" width="260" height="55" rx="6" fill="#5a4a5a" stroke="#7a6a7a" stroke-width="2"/>
+  <text x="880" y="538" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">UPDATE_INIT</text>
+  <text x="880" y="553" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">onUpdateInit() → onUpdateLink()</text>
+
+  <!-- All threads initialized marker -->
+  <line x1="30" y1="595" x2="1370" y2="595" stroke="#8f8" stroke-width="2" stroke-dasharray="5,5"/>
+  <text x="20" y="615" font-family="Arial, sans-serif" font-size="10" fill="#8f8" text-anchor="end" font-weight="bold">INIT</text>
+  <text x="20" y="630" font-family="Arial, sans-serif" font-size="10" fill="#8f8" text-anchor="end" font-weight="bold">DONE</text>
+
+  <!-- Status boxes -->
+  <rect x="90" y="605" width="240" height="35" rx="4" fill="#3a5a3a" stroke="#5a7a5a" stroke-width="1"/>
+  <text x="210" y="628" font-family="Arial, sans-serif" font-size="10" fill="#8f8" text-anchor="middle">Python waiting in</text>
+  <text x="210" y="638" font-family="Arial, sans-serif" font-size="10" fill="#8f8" text-anchor="middle">mainThreadLoop()</text>
+
+  <rect x="410" y="605" width="260" height="35" rx="4" fill="#3a5a3a" stroke="#5a7a5a" stroke-width="1"/>
+  <text x="540" y="628" font-family="Arial, sans-serif" font-size="10" fill="#8f8" text-anchor="middle">Ready for main loop</text>
+
+  <rect x="750" y="575" width="260" height="35" rx="4" fill="#3a5a3a" stroke="#5a7a5a" stroke-width="1"/>
+  <text x="880" y="598" font-family="Arial, sans-serif" font-size="10" fill="#8f8" text-anchor="middle">Ready for update loop</text>
+
+  <rect x="1090" y="575" width="240" height="35" rx="4" fill="#3a5a3a" stroke="#5a7a5a" stroke-width="1"/>
+  <text x="1210" y="598" font-family="Arial, sans-serif" font-size="10" fill="#8f8" text-anchor="middle">Audio processing active</text>
+
+  <!-- Sequential flow arrows -->
+  <path d="M 210 175 L 210 190" stroke="#888" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <path d="M 210 245 L 210 260" stroke="#888" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <path d="M 210 315 L 210 330" stroke="#888" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <path d="M 540 460 L 540 475" stroke="#888" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+  <!-- Key insights -->
+  <rect x="50" y="40" width="900" height="20" rx="4" fill="#5a5a3a" stroke="#7a7a5a" stroke-width="1"/>
+  <text x="500" y="53" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">Initialization sequence: App → GPU (which calls Audio internally) → Update. Audio init happens INSIDE GPU init callback.</text>
+
+  <!-- Arrow markers -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#888"/>
+    </marker>
+    <marker id="arrowhead-red" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#f88"/>
+    </marker>
+  </defs>
+</svg>

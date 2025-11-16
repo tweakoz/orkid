@@ -1,0 +1,164 @@
+<svg width="1400" height="700" viewBox="0 0 1400 700" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1400" height="700" fill="#3a3a3a"/>
+
+  <!-- Title -->
+  <text x="700" y="30" font-family="Arial, sans-serif" font-size="18" fill="white" text-anchor="middle" font-weight="bold">Application Lifecycle - Shutdown Sequence</text>
+
+  <!-- Thread Lanes -->
+  <!-- Python Main Thread Lane -->
+  <rect x="50" y="70" width="320" height="580" rx="4" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+  <text x="210" y="95" font-family="Arial, sans-serif" font-size="13" fill="white" text-anchor="middle" font-weight="bold">Python Main Thread</text>
+  <text x="210" y="110" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">[GIL HELD]</text>
+
+  <!-- C++ Main/GPU Thread Lane -->
+  <rect x="390" y="70" width="320" height="580" rx="4" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+  <text x="550" y="95" font-family="Arial, sans-serif" font-size="13" fill="white" text-anchor="middle" font-weight="bold">C++ Main/GPU Thread</text>
+  <text x="550" y="110" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">[GIL per callback]</text>
+
+  <!-- C++ Update Thread Lane -->
+  <rect x="730" y="70" width="320" height="580" rx="4" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+  <text x="890" y="95" font-family="Arial, sans-serif" font-size="13" fill="white" text-anchor="middle" font-weight="bold">C++ Update Thread</text>
+  <text x="890" y="110" font-family="Arial, sans-serif" font-size="9" fill="#f88" text-anchor="middle">[GIL per callback]</text>
+
+  <!-- C++ Audio/Synth Threads Lane -->
+  <rect x="1070" y="70" width="280" height="580" rx="4" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+  <text x="1210" y="95" font-family="Arial, sans-serif" font-size="13" fill="white" text-anchor="middle" font-weight="bold">Audio/Synth Threads</text>
+  <text x="1210" y="110" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">[No GIL needed]</text>
+
+  <!-- Entry from loop -->
+  <line x1="30" y1="140" x2="1370" y2="140" stroke="#f88" stroke-width="2" stroke-dasharray="5,5"/>
+  <text x="20" y="155" font-family="Arial, sans-serif" font-size="10" fill="#f88" text-anchor="end" font-weight="bold">FROM</text>
+  <text x="20" y="170" font-family="Arial, sans-serif" font-size="10" fill="#f88" text-anchor="end" font-weight="bold">LOOP</text>
+
+  <!-- 1. Exit Signal -->
+  <rect x="410" y="180" width="260" height="55" rx="6" fill="#5a3a3a" stroke="#8a5a5a" stroke-width="3"/>
+  <text x="540" y="203" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">EXIT SIGNAL</text>
+  <text x="540" y="220" font-family="Arial, sans-serif" font-size="9" fill="#f88" text-anchor="middle">KAPPSTATEFLAG_JOINING set</text>
+  <text x="540" y="233" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">signalExit() or window close</text>
+
+  <!-- Signal propagation -->
+  <path d="M 670 207 L 750 260" stroke="#f88" stroke-width="3" stroke-dasharray="5,5" marker-end="url(#arrowhead-red)"/>
+  <text x="710" y="230" font-family="Arial, sans-serif" font-size="9" fill="#f88" text-anchor="middle" font-weight="bold">Flag detected</text>
+
+  <!-- 2. UPDATE_EXIT -->
+  <rect x="750" y="255" width="260" height="55" rx="6" fill="#5a3a3a" stroke="#8a5a5a" stroke-width="2"/>
+  <text x="880" y="278" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">UPDATE_EXIT</text>
+  <text x="880" y="293" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">onUpdateExit() [GIL acquired]</text>
+  <text x="880" y="305" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">Components clean up simulation state</text>
+
+  <!-- 3. AUDIO_EXIT (called from Update thread context) -->
+  <rect x="1090" y="330" width="240" height="70" rx="6" fill="#5a3a3a" stroke="#8a5a5a" stroke-width="2"/>
+  <text x="1210" y="355" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">AUDIO_EXIT</text>
+  <text x="1210" y="372" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">onAudioExit() [GIL acquired]</text>
+  <text x="1210" y="387" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">onSynthExit() [GIL acquired]</text>
+  <text x="1210" y="398" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">audiodevice→shutdown()</text>
+
+  <!-- Call from Update thread to Audio -->
+  <path d="M 880 310 L 1090 365" stroke="#888" stroke-width="2" stroke-dasharray="3,3" marker-end="url(#arrowhead)"/>
+  <text x="985" y="330" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Called from</text>
+  <text x="985" y="343" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Update thread</text>
+  <text x="985" y="356" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">context</text>
+
+  <!-- Audio threads terminate -->
+  <rect x="1090" y="415" width="240" height="40" rx="6" fill="#3a3a3a" stroke="#666" stroke-width="2" stroke-dasharray="5,5"/>
+  <text x="1210" y="440" font-family="Arial, sans-serif" font-size="10" fill="#aaa" text-anchor="middle" font-style="italic">Audio threads terminated</text>
+
+  <!-- Critical synchronization point -->
+  <line x1="670" y1="340" x2="750" y2="340" stroke="#f88" stroke-width="3"/>
+  <circle cx="710" cy="340" r="8" fill="#f88"/>
+  <text x="710" y="330" font-family="Arial, sans-serif" font-size="9" fill="#f88" text-anchor="middle" font-weight="bold">SYNC POINT 1</text>
+  <text x="710" y="360" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">Main thread waits</text>
+  <text x="710" y="373" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">for Update exit</text>
+
+  <!-- 4. Thread Join -->
+  <path d="M 750 340 L 670 400" stroke="#f88" stroke-width="4" marker-end="url(#arrowhead-red)"/>
+  <text x="710" y="365" font-family="Arial, sans-serif" font-size="10" fill="#f88" text-anchor="middle" font-weight="bold">joinUpdate()</text>
+  <text x="710" y="380" font-family="Arial, sans-serif" font-size="9" fill="#f88" text-anchor="middle">_updateThread.join()</text>
+
+  <!-- Update thread terminated -->
+  <rect x="750" y="390" width="260" height="40" rx="6" fill="#3a3a3a" stroke="#666" stroke-width="2" stroke-dasharray="5,5"/>
+  <text x="880" y="415" font-family="Arial, sans-serif" font-size="10" fill="#aaa" text-anchor="middle" font-style="italic">Update thread terminated</text>
+
+  <!-- Main thread continues after join -->
+  <rect x="410" y="395" width="260" height="55" rx="6" fill="#4a3a5a" stroke="#6a5a7a" stroke-width="2"/>
+  <text x="540" y="418" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">THREAD JOIN COMPLETE</text>
+  <text x="540" y="433" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Update thread safely joined</text>
+  <text x="540" y="445" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">Safe to destroy GPU resources</text>
+
+  <!-- 5. GPU_EXIT -->
+  <rect x="410" y="465" width="260" height="55" rx="6" fill="#5a3a3a" stroke="#8a5a5a" stroke-width="2"/>
+  <text x="540" y="488" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">GPU_EXIT</text>
+  <text x="540" y="503" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">onGpuExit(ctx) [GIL acquired]</text>
+  <text x="540" y="515" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">Components clean up GPU resources</text>
+
+  <!-- 6. Return to Python -->
+  <path d="M 410 492 L 350 580" stroke="#f88" stroke-width="4" marker-end="url(#arrowhead-red)"/>
+  <text x="380" y="530" font-family="Arial, sans-serif" font-size="10" fill="#f88" text-anchor="middle" font-weight="bold">Return from</text>
+  <text x="380" y="545" font-family="Arial, sans-serif" font-size="10" fill="#f88" text-anchor="middle" font-weight="bold">mainThreadLoop()</text>
+  <text x="380" y="560" font-family="Arial, sans-serif" font-size="9" fill="#f88" text-anchor="middle">Control → Python</text>
+
+  <!-- 7. APP_EXIT -->
+  <rect x="90" y="575" width="240" height="55" rx="6" fill="#5a3a3a" stroke="#8a5a5a" stroke-width="2"/>
+  <text x="210" y="598" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">APP_EXIT</text>
+  <text x="210" y="613" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">onAppExit() [GIL held]</text>
+  <text x="210" y="625" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">Final application cleanup</text>
+
+  <!-- Final State -->
+  <circle cx="210" cy="660" r="20" fill="#000" stroke="#888" stroke-width="2"/>
+  <circle cx="210" cy="660" r="15" fill="#888"/>
+  <text x="250" y="665" font-family="Arial, sans-serif" font-size="10" fill="#aaa" text-anchor="start">END - Python can exit safely</text>
+
+  <!-- Sequential flow arrows -->
+  <path d="M 540 235 L 540 255" stroke="#f88" stroke-width="2" marker-end="url(#arrowhead-red)"/>
+  <path d="M 540 450 L 540 465" stroke="#888" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <path d="M 210 630 L 210 640" stroke="#888" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+  <!-- Main thread waiting during Update exit -->
+  <rect x="410" y="255" width="260" height="125" rx="6" fill="#3a3a3a" stroke="#666" stroke-width="2" stroke-dasharray="5,5"/>
+  <text x="540" y="285" font-family="Arial, sans-serif" font-size="10" fill="#aaa" text-anchor="middle" font-style="italic">Main thread blocked</text>
+  <text x="540" y="305" font-family="Arial, sans-serif" font-size="10" fill="#aaa" text-anchor="middle">in joinUpdate()</text>
+  <text x="540" y="330" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Processing _mainq</text>
+  <text x="540" y="345" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Draining _updq</text>
+  <text x="540" y="360" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Waiting for thread join</text>
+
+  <!-- Python still waiting -->
+  <rect x="90" y="180" width="240" height="380" rx="6" fill="#3a3a3a" stroke="#666" stroke-width="2" stroke-dasharray="5,5"/>
+  <text x="210" y="210" font-family="Arial, sans-serif" font-size="11" fill="#aaa" text-anchor="middle" font-style="italic">mainThreadLoop() still blocking</text>
+  <text x="210" y="230" font-family="Arial, sans-serif" font-size="10" fill="#aaa" text-anchor="middle">Python waiting for C++ to finish</text>
+
+  <!-- Ordering constraints annotations -->
+  <rect x="50" y="470" width="320" height="90" rx="6" fill="#3a3a4a" stroke="#5a5a6a" stroke-width="1"/>
+  <text x="210" y="490" font-family="Arial, sans-serif" font-size="11" fill="#f88" text-anchor="middle" font-weight="bold">Critical Ordering</text>
+  <text x="210" y="510" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">1. Update exits first</text>
+  <text x="210" y="525" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">2. Audio exits (from Update context)</text>
+  <text x="210" y="540" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">3. Thread join completes</text>
+  <text x="210" y="555" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">4. GPU exits (Update fully stopped)</text>
+
+  <!-- Rationale -->
+  <rect x="750" y="470" width="580" height="160" rx="6" fill="#3a3a4a" stroke="#5a5a6a" stroke-width="1"/>
+  <text x="1040" y="490" font-family="Arial, sans-serif" font-size="11" fill="#8f8" text-anchor="middle" font-weight="bold">Rationale for Ordering</text>
+
+  <text x="1040" y="510" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle" font-weight="bold">Why Update exits before GPU:</text>
+  <text x="1040" y="528" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Update thread actively schedules mutations to GPU resources (via DrawQueue, _mainq).</text>
+  <text x="1040" y="543" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Must guarantee update thread CANNOT schedule work during GPU shutdown.</text>
+
+  <text x="1040" y="565" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle" font-weight="bold">Why Audio exits before Update thread join:</text>
+  <text x="1040" y="583" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Update thread may schedule mutations to audio resources (synth parameters, samples).</text>
+  <text x="1040" y="598" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Audio shutdown in Update context guarantees no racing mutations during teardown.</text>
+  <text x="1040" y="613" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Update thread's final act before exit - safe, I/O-bound cleanup off Main thread.</text>
+
+  <!-- Key insights -->
+  <rect x="50" y="40" width="900" height="20" rx="4" fill="#5a5a3a" stroke="#7a7a5a" stroke-width="1"/>
+  <text x="500" y="53" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">Shutdown is ordered: Update exits → Audio/Synth cleanup → Thread join → GPU cleanup → App cleanup</text>
+
+  <!-- Arrow markers -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#888"/>
+    </marker>
+    <marker id="arrowhead-red" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#f88"/>
+    </marker>
+  </defs>
+</svg>
