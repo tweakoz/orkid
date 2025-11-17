@@ -79,7 +79,7 @@ const FontDesc& Font::description() const {
 
 void Font::load(Context* context, fontdesc_ptr_t fdesc) {
 
-  printf("Font<%s> load<%s>\n", msFontName.c_str(), msFileName.c_str());
+  //printf("Font<%s> load<%s>\n", msFontName.c_str(), msFileName.c_str());
   auto FXI = context->FXI();
 
   //////////////////////////////////////////////////////////////////////

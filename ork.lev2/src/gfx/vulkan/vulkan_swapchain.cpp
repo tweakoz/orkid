@@ -113,7 +113,7 @@ void VkSwapChain::_buildup() {
 
   if (dimensions_changed) {
 
-    printf("Swap chain dimensions: requested=%dx%d, clamped=%ux%u\n", width, height, uint32_t(width), uint32_t(height));
+    if(0)printf("Swap chain dimensions: requested=%dx%d, clamped=%ux%u\n", width, height, uint32_t(width), uint32_t(height));
     if(0)printf(
         "Surface caps: min=%ux%u, max=%ux%u, current=%ux%u\n",
         caps.minImageExtent.width,

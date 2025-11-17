@@ -467,6 +467,7 @@ void LoggerGroup::_updatePerfGraphUI(const std::string& channel, const std::stri
     // Create new graph
     graph = std::make_shared<GraphView>();
     graph->_name = name;
+    graph->_show_stats = false;
     view._perf_grid->addChild(graph);
     view._perf_graphs[name] = graph;
 
@@ -477,7 +478,8 @@ void LoggerGroup::_updatePerfGraphUI(const std::string& channel, const std::stri
 
     // Create channel and series for this perf metric
     auto channel_ptr = graph->channel(name);
-    channel_ptr->addSeries(name, fvec3(0.3f, 0.8f, 1.0f)); // Cyan color
+    auto series = channel_ptr->addSeries(name, fvec3(0.3f, 0.8f, 1.0f)); // Cyan color
+    series->setMaxSamples(50);
 
     // Mark as needing initial paint
     graph->MarkSurfaceDirty();

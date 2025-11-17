@@ -106,6 +106,7 @@ struct GraphView : public ui::Surface {
   bool _lockY;
   bool _lockYZOOM;
   bool _dragging;
+  bool _show_stats = true;
 
   int _label_spacing = 2;  // Margin between series label boxes
   VerticalScaleMode _vscale_mode = VerticalScaleMode::AUTO;  // Default to auto-range

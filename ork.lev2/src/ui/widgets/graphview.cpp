@@ -623,54 +623,58 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
     ///////////////////////////////
     // draw misc labels in UI pixel space
     ///////////////////////////////
+
+
     mtxi->PushUIMatrix(width(), height());
     tgt->RefModColor() = fvec3(1, 1, 1);
-    lev2::FontMan::beginTextBlock(tgt, 48);
-    int iy = 16;
-    lev2::FontMan::DrawText(
-        tgt, //
-        16,
-        iy += 16,
-        "pan: left-drag");
-    lev2::FontMan::DrawText(
-        tgt, //
-        16,
-        iy += 16,
-        "zoom: mouse-wheel");
-    lev2::FontMan::endTextBlock(tgt);
-    ///////////////////////////////
-    tgt->RefModColor() = fvec3(0, 1, 0);
-    lev2::FontMan::beginTextBlock(tgt, 128);
-    lev2::FontMan::DrawText(
-        tgt, //
-        16,
-        iy += 16,
-        "center<%g %g>",
-        _grid._center.x,
-        _grid._center.y);
-    lev2::FontMan::DrawText(
-        tgt, //
-        16,
-        iy += 16,
-        "zoomfactorX<%g>",
-        _grid._zoomX);
-    lev2::FontMan::DrawText(
-        tgt, //
-        16,
-        iy += 16,
-        "zoomfactorY<%g>",
-        _grid._zoomY);
-    lev2::FontMan::endTextBlock(tgt);
-    ///////////////////////////////
-    if (_name.length()) {
-      tgt->RefModColor() = fvec3(1, 0.5, 0);
-      lev2::FontMan::beginTextBlock(tgt, 32);
+    if(_show_stats){
+      lev2::FontMan::beginTextBlock(tgt, 48);
+      int iy = 16;
       lev2::FontMan::DrawText(
           tgt, //
-          16,  // Top-left with 16px left margin
-          16,  // Top with 16px top margin
-          _name.c_str());
+          16,
+          iy += 16,
+          "pan: left-drag");
+      lev2::FontMan::DrawText(
+          tgt, //
+          16,
+          iy += 16,
+          "zoom: mouse-wheel");
       lev2::FontMan::endTextBlock(tgt);
+      ///////////////////////////////
+      tgt->RefModColor() = fvec3(0, 1, 0);
+      lev2::FontMan::beginTextBlock(tgt, 128);
+      lev2::FontMan::DrawText(
+          tgt, //
+          16,
+          iy += 16,
+          "center<%g %g>",
+          _grid._center.x,
+          _grid._center.y);
+      lev2::FontMan::DrawText(
+          tgt, //
+          16,
+          iy += 16,
+          "zoomfactorX<%g>",
+          _grid._zoomX);
+      lev2::FontMan::DrawText(
+          tgt, //
+          16,
+          iy += 16,
+          "zoomfactorY<%g>",
+          _grid._zoomY);
+      lev2::FontMan::endTextBlock(tgt);
+      ///////////////////////////////
+      if (_name.length()) {
+        tgt->RefModColor() = fvec3(1, 0.5, 0);
+        lev2::FontMan::beginTextBlock(tgt, 32);
+        lev2::FontMan::DrawText(
+            tgt, //
+            16,  // Top-left with 16px left margin
+            16,  // Top with 16px top margin
+            _name.c_str());
+        lev2::FontMan::endTextBlock(tgt);
+      }
     }
     ///////////////////////////////
     mtxi->PopUIMatrix(); // Pop UI matrix for text rendering

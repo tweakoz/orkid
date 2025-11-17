@@ -279,12 +279,15 @@ technique tek_x {
       self.last_print_time = current_time
 
     # Print performance stats every 3 seconds
-    if current_time - self.last_perf_print_time >= 3.0:
+    if current_time - self.last_perf_print_time >= 0.25:
       elapsed = current_time - self.last_perf_print_time
       fps = self.frame_count / elapsed
       ups = self.update_count / elapsed
       vps = self.vdb_count / elapsed
-      self.perfchan.log(f"FPS<{fps:.1f}>  UPS<{ups:.1f}>  VPS<{vps:.1f}>")
+      #self.perfchan.log(f"FPS<{fps:.1f}>  UPS<{ups:.1f}>  VPS<{vps:.1f}>")
+      self.perfchan.perfItem("FPS", fps)
+      self.perfchan.perfItem("UPS", ups)
+      self.perfchan.perfItem("VPS", vps)
       # Reset counters
       self.frame_count = 0
       self.update_count = 0
