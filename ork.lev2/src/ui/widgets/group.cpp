@@ -401,8 +401,8 @@ layoutitem_ptr_t LayoutGroup::split(anchor::layout_ptr_t target_layout,
   //.  the caller is responsible for creating the new widget and assigning it to the new layout/layoutgroup
   /////////////////////
 
-  printf("=== DUMP at START of splitVertical ===\n");
-  dumpLayoutHierarchy();
+  //printf("=== DUMP at START of splitVertical ===\n");
+  //dumpLayoutHierarchy();
 
   auto parent_layout = target_layout->_parent;
   OrkAssert(parent_layout != nullptr);
@@ -410,9 +410,9 @@ layoutitem_ptr_t LayoutGroup::split(anchor::layout_ptr_t target_layout,
   // Inherit margin from top layout group if not specified
   if (margin == -1) {
     margin = _margin;
-    printf("split() inheriting margin from LayoutGroup: %d\n", margin);
+    //printf("split() inheriting margin from LayoutGroup: %d\n", margin);
   } else {
-    printf("split() using explicit margin: %d\n", margin);
+    //printf("split() using explicit margin: %d\n", margin);
   }
 
   // Get the guides that target is currently anchored to
@@ -557,8 +557,8 @@ layoutitem_ptr_t LayoutGroup::split(anchor::layout_ptr_t target_layout,
   // Don't update layouts yet - the widget hasn't been assigned
   // The binding layer will assign the widget and then update
 
-  printf("=== DUMP at end of splitVertical ===\n");
-  dumpLayoutHierarchy();
+  //printf("=== DUMP at end of splitVertical ===\n");
+  //dumpLayoutHierarchy();
 
   // Create and return a LayoutItem containing the container and new_layout
   auto result = std::make_shared<ui::LayoutItemBase>();

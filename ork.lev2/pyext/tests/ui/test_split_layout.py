@@ -21,10 +21,8 @@ class SplitLayoutApp(object):
     self.ezapp.topWidget.enableUiDraw()
 
     lg_group = self.ezapp.topLayoutGroup
-    print(f"lg_group type: {type(lg_group)}")
-    print(f"lg_group.margin before: {lg_group.margin}")
     lg_group.margin = 5
-    print(f"lg_group.margin after: {lg_group.margin}")
+    lg_group.clearColorGuide = vec4(1, 1, 0, 1)
 
     # Create tabs widget at the top
     print("Creating tabs widget...")
@@ -41,125 +39,132 @@ class SplitLayoutApp(object):
     self.create_polish_flag(tabs)
     self.create_dutch_flag(tabs)
     self.create_austrian_flag(tabs)
+    self.create_sevenway(tabs)
+    
+    tabs.setActiveTab(0)
 
     print("All flag tabs created!")
+
+  def _create_striped_flag(self, tabs, name, stripes):
+    """Helper to create a flag with colored stripes.
+
+    Args:
+      tabs: TabsWidget to add the flag to
+      name: Name of the flag tab
+      stripes: List of (placement, color) tuples where:
+        - placement: tokens.RIGHT, tokens.BOTTOM, etc.
+        - color: vec4(r, g, b, a)
+    """
+    tab_group = tabs.makeChild(uiclass=lev2.ui.LayoutGroup, args=[name])
+    tab_group.margin = 3
+
+    # Start with first stripe as 1x1 grid
+    base = tab_group.makeGrid(width=1, height=1,
+                              uiclass=lev2.ui.Box,
+                              args=[f"stripe-0", stripes[0][1]])
+
+    # Add remaining stripes
+    prev = base[0]
+    for i, (placement, color) in enumerate(stripes[1:], 1):
+      # For equal stripes: first split at 1/n, then each subsequent at 1/2
+      proportion = 1.0 / (len(stripes) - i + 1) if i == 1 else 0.5
+      prev = tab_group.split(layout=prev.layout, proportion=proportion,
+                            placement=placement,
+                            uiclass=lev2.ui.Box,
+                            args=[f"stripe-{i}", color])
 
   def create_french_flag(self, tabs):
     """French flag: Blue | White | Red (vertical stripes)"""
     print("Creating French flag tab...")
-
-    # Create tab with a LayoutGroup - makeChild returns the widget directly
-    tab_group = tabs.makeChild(uiclass=lev2.ui.LayoutGroup, args=["France"])
-    print(f"tab_group type: {type(tab_group)}")
-    tab_group.margin = 3  # Set margin for the tab group
-    print(f"tab_group.margin after setting: {tab_group.margin}")
-
-    # Start with 1x1 grid (single box)
-    base = tab_group.makeGrid(width=1, height=1, margin=3,
-                              uiclass=lev2.ui.Box,
-                              args=["base", vec4(0, 0, 1, 1)])  # Blue
-
-    # Split RIGHT to add white stripe (1/3 of total) - margin inherited from tab_group
-    white = tab_group.split(layout=base[0].layout, proportion=0.333,
-                            placement=tokens.RIGHT,
-                            uiclass=lev2.ui.Box,
-                            args=["white", vec4(1, 1, 1, 1)])
-
-    # Split the white stripe RIGHT to add red stripe (1/2 of remaining = 1/3 of total)
-    red = tab_group.split(layout=white.layout, proportion=0.5,
-                          placement=tokens.RIGHT,
-                          uiclass=lev2.ui.Box,
-                          args=["red", vec4(1, 0, 0, 1)])
+    self._create_striped_flag(tabs, "France", [
+      (None, vec4(0, 0, 1, 1)),        # Blue (base)
+      (tokens.RIGHT, vec4(1, 1, 1, 1)), # White
+      (tokens.RIGHT, vec4(1, 0, 0, 1))  # Red
+    ])
 
   def create_german_flag(self, tabs):
     """German flag: Black / Red / Yellow (horizontal stripes)"""
     print("Creating German flag tab...")
-
-    tab_group = tabs.makeChild(uiclass=lev2.ui.LayoutGroup, args=["Germany"])
-    tab_group.margin = 3  # Set margin for the tab group
-
-    # Start with black stripe
-    base = tab_group.makeGrid(width=1, height=1, margin=3,
-                               uiclass=lev2.ui.Box,
-                               args=["black", vec4(0, 0, 0, 1)])
-
-    # Split BOTTOM to add red stripe (1/3 of total)
-    red = tab_group.split(layout=base[0].layout, proportion=0.333,
-                          placement=tokens.BOTTOM, 
-                          uiclass=lev2.ui.Box,
-                          args=["red", vec4(1, 0, 0, 1)])
-
-    # Split the red stripe BOTTOM to add yellow stripe (1/2 of remaining = 1/3 of total)
-    yellow = tab_group.split(layout=red.layout, proportion=0.5,
-                             placement=tokens.BOTTOM, 
-                             uiclass=lev2.ui.Box,
-                             args=["yellow", vec4(1, 0.8, 0, 1)])
+    self._create_striped_flag(tabs, "Germany", [
+      (None, vec4(0, 0, 0, 1)),          # Black (base)
+      (tokens.BOTTOM, vec4(1, 0, 0, 1)),  # Red
+      (tokens.BOTTOM, vec4(1, 0.8, 0, 1)) # Yellow
+    ])
 
   def create_polish_flag(self, tabs):
     """Polish flag: White / Red (horizontal stripes)"""
     print("Creating Polish flag tab...")
-
-    tab_group = tabs.makeChild(uiclass=lev2.ui.LayoutGroup, args=["Poland"])
-    tab_group.margin = 3  # Set margin for the tab group
-
-    # Start with white stripe
-    base = tab_group.makeGrid(width=1, height=1, margin=3,
-                               uiclass=lev2.ui.Box,
-                               args=["white", vec4(1, 1, 1, 1)])
-
-    # Split BOTTOM to add red stripe
-    red = tab_group.split(layout=base[0].layout, proportion=0.5,
-                          placement=tokens.BOTTOM,
-                          uiclass=lev2.ui.Box,
-                          args=["red", vec4(0.86, 0.12, 0.20, 1)])
+    self._create_striped_flag(tabs, "Poland", [
+      (None, vec4(1, 1, 1, 1)),               # White (base)
+      (tokens.BOTTOM, vec4(0.86, 0.12, 0.20, 1)) # Red
+    ])
 
   def create_dutch_flag(self, tabs):
     """Dutch flag: Red / White / Blue (horizontal stripes)"""
     print("Creating Dutch flag tab...")
-
-    tab_group = tabs.makeChild(uiclass=lev2.ui.LayoutGroup, args=["Netherlands"])
-    tab_group.margin = 3  # Set margin for the tab group
-
-    # Start with red stripe
-    base = tab_group.makeGrid(width=1, height=1, margin=3,
-                               uiclass=lev2.ui.Box,
-                               args=["red", vec4(0.68, 0.11, 0.18, 1)])
-
-    # Split BOTTOM to add white stripe (1/3 of total)
-    white = tab_group.split(layout=base[0].layout, proportion=0.333,
-                            placement=tokens.BOTTOM, 
-                            uiclass=lev2.ui.Box,
-                            args=["white", vec4(1, 1, 1, 1)])
-
-    # Split the white stripe BOTTOM to add blue stripe (1/2 of remaining = 1/3 of total)
-    blue = tab_group.split(layout=white.layout, proportion=0.5,
-                           placement=tokens.BOTTOM, 
-                           uiclass=lev2.ui.Box,
-                           args=["blue", vec4(0.13, 0.29, 0.58, 1)])
+    self._create_striped_flag(tabs, "Netherlands", [
+      (None, vec4(0.68, 0.11, 0.18, 1)),  # Red (base)
+      (tokens.BOTTOM, vec4(1, 1, 1, 1)),   # White
+      (tokens.BOTTOM, vec4(0.13, 0.29, 0.58, 1)) # Blue
+    ])
 
   def create_austrian_flag(self, tabs):
     """Austrian flag: Red / White / Red (horizontal stripes)"""
     print("Creating Austrian flag tab...")
+    self._create_striped_flag(tabs, "Austria", [
+      (None, vec4(0.93, 0.16, 0.22, 1)),  # Red (base)
+      (tokens.BOTTOM, vec4(1, 1, 1, 1)),   # White
+      (tokens.BOTTOM, vec4(0.93, 0.16, 0.22, 1)) # Red
+    ])
 
-    tab_group = tabs.makeChild(uiclass=lev2.ui.LayoutGroup, args=["Austria"])
-    tab_group.margin = 3  # Set margin for the tab group
+  def create_sevenway(self, tabs):
+    print("Misc Split Test tab...")
 
-    # Start with red stripe
-    base = tab_group.makeGrid(width=1, height=1, margin=3,
-                               uiclass=lev2.ui.Box,
-                               args=["red-top", vec4(0.93, 0.16, 0.22, 1)])
+    tab_group = tabs.makeChild(uiclass=lev2.ui.LayoutGroup, args=["7-WAY"])
+    tab_group.margin = 3
+    tab_group.clearColorStd = vec4(0, 0, 0.1, 1)
 
-    # Split BOTTOM to add white stripe (1/3 of total)
-    white = tab_group.split(layout=base[0].layout, proportion=0.333,
-                            placement=tokens.BOTTOM, 
-                            uiclass=lev2.ui.Box,
-                            args=["white", vec4(1, 1, 1, 1)])
+    red = vec4(1,0,0, 1)    
+    blk = vec4(0,0,0, 1)
+    blu = vec4(0,0,1, 1)   
+    mag = vec4(1,0,1, 1)   
+    cyn = vec4(0,1,1, 1)   
 
-    # Split the white stripe BOTTOM to add red stripe (1/2 of remaining = 1/3 of total)
-    red = tab_group.split(layout=white.layout, proportion=0.5,
-                          placement=tokens.BOTTOM, 
-                          uiclass=lev2.ui.Box,
-                          args=["red-bottom", vec4(0.93, 0.16, 0.22, 1)])
+    top_left = tab_group.makeGrid(width=1, height=1,
+                                  uiclass=lev2.ui.Box,
+                                  args=["stripe-0", mag])
+
+    middle = tab_group.split(layout=top_left[0].layout, proportion=0.1,
+                             placement=tokens.BOTTOM,
+                             uiclass=lev2.ui.Box,
+                             args=[f"stripe-x", blk])
+
+
+    bottom_left = tab_group.split(layout=middle.layout, proportion=0.9,
+                             placement=tokens.BOTTOM,
+                             uiclass=lev2.ui.Box,
+                             args=[f"stripe-y", cyn])
+
+    top_right = tab_group.split(layout=top_left[0].layout, proportion=0.333,
+                             placement=tokens.RIGHT,
+                             uiclass=lev2.ui.Box,
+                             args=[f"stripe-z1", mag])
+    
+    top_middle = tab_group.split(layout=top_right.layout, proportion=0.5,
+                             placement=tokens.LEFT,
+                             uiclass=lev2.ui.Box,
+                             args=[f"stripe-z2", red])
+
+    bottom_middle = tab_group.split(layout=bottom_left.layout, proportion=0.333,
+                             placement=tokens.RIGHT,
+                             uiclass=lev2.ui.Box,
+                             args=[f"stripe-z1", blu])
+    
+    bottom_right = tab_group.split(layout=bottom_middle.layout, proportion=0.5,
+                                   placement=tokens.RIGHT,
+                                   uiclass=lev2.ui.Box,
+                                   args=[f"stripe-z2", cyn])
+
 
   def onGpuInit(self, ctx):
     pass

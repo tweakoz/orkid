@@ -204,6 +204,9 @@ void pyinit_ui_layout(py::module& uimodule) {
           .def("unlock", [](uiguide_ptr_t guide) { guide->unlock(); })
           .def("clamp", [](uiguide_ptr_t guide) { guide->clamp(); })
           .def("unclamp", [](uiguide_ptr_t guide) { guide->unclamp(); })
+          .def("opposingLayout", [](uiguide_ptr_t guide, uilayout_ptr_t lo) -> uilayout_ptr_t { //
+            return nullptr;
+          })
           //////////////////////////////////
           // Query API (properties)
           //////////////////////////////////
@@ -547,7 +550,7 @@ void pyinit_ui_layout(py::module& uimodule) {
                 if (kwargs) {
                   int width  = 0;
                   int height = 0;
-                  int margin = 0;
+                  int margin = -1;  // Default -1 to inherit from LayoutGroup
                   py::list args;
                   py::object uigrid_factory;
                   int args_parsed = 0;
@@ -573,7 +576,12 @@ void pyinit_ui_layout(py::module& uimodule) {
                       args_parsed++;
                     }
                   }
-                  OrkAssert(args_parsed == 5);
+                  OrkAssert(args_parsed >= 4 && args_parsed <= 5);  // margin is optional
+
+                  // Inherit margin from LayoutGroup if not specified
+                  if (margin == -1) {
+                    margin = lgrp->_margin;
+                  }
                   rval = uigrid_factory(lgrp, width, height, margin, args);
 
                   // Apply margin to layout and all children
