@@ -230,7 +230,6 @@ struct LayoutGroup : public Group {
 
   anchor::layout_ptr_t _layout;
 
-  int _margin = 2;
   bool _clear = true;
   fvec4 _clearColorStd;
   fvec4 _clearColorGuide;

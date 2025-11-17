@@ -21,6 +21,9 @@ struct Group : public Widget {
   Group(const std::string& name, int x = 0, int y = 0, int w = 0, int h = 0);
   ~Group();
   /////////////////////////////
+  void setMargin(int margin);
+  int margin() const;
+  /////////////////////////////
   void addChild(widget_ptr_t w, bool relayout = true);
   void removeChild(widget_ptr_t w, bool relayout = true);
   void removeChild(Widget* w, bool relayout = true);
@@ -40,6 +43,7 @@ struct Group : public Widget {
   std::set<Widget*> _snapped;
   std::vector<widget_ptr_t> _children;
   Widget* _eventstealer = nullptr;
+  int _margin = 2;
 };
 
 } // namespace ork::ui

@@ -65,7 +65,6 @@ struct AlignmentGroup : public Group {
   float _maintain_aspect_ratio = 0.0f;
 
   // Styling
-  int _margin = 0;
   fvec4 _bgcolor = fvec4(0.1f, 0.1f, 0.1f, 1.0f);
   bool _draw_background = true;
 

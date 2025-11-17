@@ -375,7 +375,7 @@ void pyinit_ui_layout(py::module& uimodule) {
                 uilayout_ptr_t target_layout;
                 float proportion = 0.5f;
                 uint64_t placement_token = 0;
-                int margin = 0;
+                int margin = -1;  // Default to -1 to inherit from parent LayoutGroup
                 py::list args;
                 py::object wfactory;
                 int args_parsed = 0;
@@ -407,7 +407,7 @@ void pyinit_ui_layout(py::module& uimodule) {
                   }
                 }
 
-                OrkAssert(args_parsed == 6);
+                OrkAssert(args_parsed >= 5 && args_parsed <= 6);  // margin is optional
 
                 // Cast token to enum
                 auto placement_enum = static_cast<ui::anchor::ELayoutSplitPlacement>(placement_token);

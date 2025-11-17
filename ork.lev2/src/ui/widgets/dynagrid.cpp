@@ -36,11 +36,6 @@ void DynaGrid::DoDraw(drawevent_constptr_t drwev) {
   drawChildren(drwev);
 }
 /////////////////////////////////////////////////////////////////////////
-void DynaGrid::setMargin(int margin) {
-  _margin = margin;
-  DoLayout();
-}
-/////////////////////////////////////////////////////////////////////////
 void DynaGrid::_calculateGrid(int item_count, float container_aspect) {
   if (item_count <= 0) {
     _rows = 1;

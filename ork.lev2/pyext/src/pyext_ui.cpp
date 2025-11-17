@@ -409,6 +409,14 @@ void pyinit_ui(py::module& module_lev2) {
   auto group_type = //
       py::class_<ui::Group, ui::Widget, uigroup_ptr_t>(uimodule, "Group")
           .def("updateLayout", [](uigroup_ptr_t grp) { grp->DoLayout(); })
+          .def_property(
+              "margin",
+              [](ui::dynagrid_ptr_t grid) -> int { //
+                return grid->margin();
+              },
+              [](ui::dynagrid_ptr_t grid, int m) { //
+                grid->setMargin(m);
+              })
           .def("makeChild2", [](uigroup_ptr_t grp, py::kwargs kwargs) -> ui::widget_ptr_t { //
             ui::widget_ptr_t rval;
             if (kwargs) {
@@ -746,14 +754,6 @@ void pyinit_ui(py::module& module_lev2) {
                 return rval;
               })
           .def_property(
-              "margin",
-              [](ui::vpack_ptr_t vpack) -> int { //
-                return vpack->_margin;
-              },
-              [](ui::vpack_ptr_t vpack, int m) { //
-                vpack->_margin = m;
-              })
-          .def_property(
               "item_height",
               [](ui::vpack_ptr_t vpack) -> int { //
                 return vpack->_item_height;
@@ -826,14 +826,6 @@ void pyinit_ui(py::module& module_lev2) {
                   hpack->addChild(rval);
                 }
                 return rval;
-              })
-          .def_property(
-              "margin",
-              [](ui::hpack_ptr_t hpack) -> int { //
-                return hpack->_margin;
-              },
-              [](ui::hpack_ptr_t hpack, int m) { //
-                hpack->_margin = m;
               })
           .def_property(
               "item_width",
@@ -955,10 +947,6 @@ void pyinit_ui(py::module& module_lev2) {
               "maintain_aspect_ratio",
               [](ui::alignmentgroup_ptr_t group) -> float { return group->_maintain_aspect_ratio; },
               [](ui::alignmentgroup_ptr_t group, float val) { group->_maintain_aspect_ratio = val; })
-          .def_property(
-              "margin",
-              [](ui::alignmentgroup_ptr_t group) -> int { return group->_margin; },
-              [](ui::alignmentgroup_ptr_t group, int val) { group->_margin = val; })
           .def_property(
               "bg_color",
               [](ui::alignmentgroup_ptr_t group) -> fvec4 { return group->_bgcolor; },

@@ -32,10 +32,6 @@ struct DynaGrid : public Group {
   // Static factory
   static dynagrid_ptr_t create(group_ptr_t parent);
 
-  // Configuration
-  void setMargin(int margin);
-  int margin() const { return _margin; }
-
   // Public members for aspect ratio constraints
   float _aspect_min = 0.0f;  // Minimum cell aspect ratio (0.0 = ignore)
   float _aspect_max = 0.0f;  // Maximum cell aspect ratio (0.0 = ignore)
@@ -52,7 +48,6 @@ private:
 
   int _rows = 1;
   int _cols = 1;
-  int _margin = 4;  // Pixels between cells
 };
 
 } // namespace ork::ui

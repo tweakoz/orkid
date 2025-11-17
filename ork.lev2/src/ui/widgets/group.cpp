@@ -110,6 +110,14 @@ void Group::_doOnResized() {
   }
 }
 /////////////////////////////////////////////////////////////////////////
+void Group::setMargin(int margin) {
+  _margin = margin;
+  DoLayout();
+}
+int Group::margin() const {
+  return _margin;
+}
+/////////////////////////////////////////////////////////////////////////
 void Group::DoLayout() {
   if (0) {
     const auto& g = _geometry;
@@ -154,8 +162,8 @@ void Group::_doOnPreDestroy() {
 }
 /////////////////////////////////////////////////////////////////////////
 LayoutGroup::LayoutGroup(const std::string& name, int x, int y, int w, int h, int margin)
-    : Group(name, x, y, w, h)
-    , _margin(margin) {
+    : Group(name, x, y, w, h) {
+  _margin = margin;  // Set margin (inherited from Group)
   _clearColorStd = fvec4(0.0, 0.0, 0.0, 1);
   _clearColorGuide = fvec4(0.3, 0.0, 0.3, 1);
   _layout = std::make_shared<anchor::Layout>(this);
@@ -399,6 +407,14 @@ layoutitem_ptr_t LayoutGroup::split(anchor::layout_ptr_t target_layout,
   auto parent_layout = target_layout->_parent;
   OrkAssert(parent_layout != nullptr);
 
+  // Inherit margin from top layout group if not specified
+  if (margin == -1) {
+    margin = _margin;
+    printf("split() inheriting margin from LayoutGroup: %d\n", margin);
+  } else {
+    printf("split() using explicit margin: %d\n", margin);
+  }
+
   // Get the guides that target is currently anchored to
   auto target_top_guide = target_layout->_top->_relative;
   auto target_bottom_guide = target_layout->_bottom->_relative;
@@ -413,9 +429,16 @@ layoutitem_ptr_t LayoutGroup::split(anchor::layout_ptr_t target_layout,
   container->_clear = false;  // Don't draw background (like makeWidgetsRC row containers)
   container->_layout->setMargin(0);  // Container layout has no margin, guides have the margin
 
-  // Find the target widget in our _children and get its shared_ptr
+  // Find the actual LayoutGroup that owns the target widget
+  // This might not be 'this' if target was already split before
+  auto parent_widget = parent_layout->_widget;
+  OrkAssert(parent_widget != nullptr);
+  auto parent_group = dynamic_cast<LayoutGroup*>(parent_widget);
+  OrkAssert(parent_group != nullptr);
+
+  // Find the target widget in the parent group's _children and get its shared_ptr
   widget_ptr_t target_widget_ptr;
-  for (auto& child : _children) {
+  for (auto& child : parent_group->_children) {
     if (child.get() == target_layout->_widget) {
       target_widget_ptr = child;
       break;
@@ -430,11 +453,11 @@ layoutitem_ptr_t LayoutGroup::split(anchor::layout_ptr_t target_layout,
     parent_children.end()
   );
 
-  // Remove target widget from this group (but keep the shared_ptr alive, no relayout)
-  Group::removeChild(target_widget_ptr, false);
+  // Remove target widget from parent group (but keep the shared_ptr alive, no relayout)
+  parent_group->Group::removeChild(target_widget_ptr, false);
 
-  // Add container to this group (without triggering DoLayout yet - state is incomplete)
-  addChild(container, false);
+  // Add container to parent group (without triggering DoLayout yet - state is incomplete)
+  parent_group->addChild(container, false);
 
   // Add container's layout to parent layout's children (layout hierarchy)
   auto container_layout = container->_layout;
@@ -463,11 +486,11 @@ layoutitem_ptr_t LayoutGroup::split(anchor::layout_ptr_t target_layout,
   if (is_horizontal_split) {
     split_guide = container_layout->proportionalHorizontalGuide(proportion);
     container->_hguides.insert(split_guide);
-    _hguides.insert(split_guide);
+    parent_group->_hguides.insert(split_guide);
   } else {
     split_guide = container_layout->proportionalVerticalGuide(proportion);
     container->_vguides.insert(split_guide);
-    _vguides.insert(split_guide);
+    parent_group->_vguides.insert(split_guide);
   }
   split_guide->_locked = false;  // Explicitly unlock for dragging
   split_guide->_margin = margin;

@@ -62,14 +62,6 @@ void pyinit_ui_dynagrid(py::module& uimodule) {
                 }
                 return rval;
               })
-          .def_property(
-              "margin",
-              [](ui::dynagrid_ptr_t grid) -> int { //
-                return grid->margin();
-              },
-              [](ui::dynagrid_ptr_t grid, int m) { //
-                grid->setMargin(m);
-              })
           .def_readwrite("aspect_min", &ui::DynaGrid::_aspect_min)
           .def_readwrite("aspect_max", &ui::DynaGrid::_aspect_max);
   type_codec->registerStdCodec<ui::dynagrid_ptr_t>(dynagrid_type);

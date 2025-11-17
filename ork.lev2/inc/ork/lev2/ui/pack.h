@@ -30,7 +30,6 @@ struct VerticalPack : public Group {
     return child;
   }
 
-  int _margin = 0;
   int _item_height = 32;
   bool _fill = false;
   fvec4 _bgcolor = fvec4(0.1f, 0.1f, 0.1f, 1.0f);
@@ -66,7 +65,6 @@ struct HorizontalPack : public Group {
     return child;
   }
 
-  int _margin = 0;
   int _item_width = 32;
   bool _fill = false;
   bool _uniform = false;  // Distribute children uniformly across width
