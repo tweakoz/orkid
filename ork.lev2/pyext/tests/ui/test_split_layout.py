@@ -7,19 +7,32 @@
 import sys
 from orkengine.core import vec3, vec4, CrcStringProxy
 from orkengine import lev2
+from ork.app import application, loggerui
 
 tokens = CrcStringProxy()
 
 ################################################################################
 
-class SplitLayoutApp(object):
+class SplitLayoutApp(application.ComponentizedApplication):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = lev2.OrkEzApp.create(self)
-    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
-    self.ezapp.topWidget.enableUiDraw()
+    
+    ############################################
+    # Setup logger UI component
+    ############################################
 
+    self.addComponent("logger", loggerui.LoggerUIComponent,
+                      filter_regex=[".*"],
+                      background_color=vec4(0.2, 0.2, 0.2, 0.8))
+
+
+    self.createEzApp(fullscreen=True)
+
+    
+  #################################################################
+
+  def _onUiInit(self):
     lg_group = self.ezapp.topLayoutGroup
     lg_group.margin = 5
     lg_group.clearColorGuide = vec4(1, 1, 0, 1)
@@ -34,16 +47,36 @@ class SplitLayoutApp(object):
     tabs_item.layout.fill(lg_group.layout)
 
     # Add multiple flag tabs
-    self.create_french_flag(tabs)
-    self.create_german_flag(tabs)
-    self.create_polish_flag(tabs)
-    self.create_dutch_flag(tabs)
-    self.create_austrian_flag(tabs)
+    self._create_striped_flag(tabs, "France", [
+      (None, vec4(0, 0, 1, 1)),        # Blue (base)
+      (tokens.RIGHT, vec4(1, 1, 1, 1)), # White
+      (tokens.RIGHT, vec4(1, 0, 0, 1))  # Red
+    ])
+    self._create_striped_flag(tabs, "Germany", [
+      (None, vec4(0, 0, 0, 1)),          # Black (base)
+      (tokens.BOTTOM, vec4(1, 0, 0, 1)),  # Red
+      (tokens.BOTTOM, vec4(1, 0.8, 0, 1)) # Yellow
+    ])
+    self._create_striped_flag(tabs, "Poland", [
+      (None, vec4(1, 1, 1, 1)),               # White (base)
+      (tokens.BOTTOM, vec4(0.86, 0.12, 0.20, 1)) # Red
+    ])
+    self._create_striped_flag(tabs, "Netherlands", [
+      (None, vec4(0.68, 0.11, 0.18, 1)),  # Red (base)
+      (tokens.BOTTOM, vec4(1, 1, 1, 1)),   # White
+      (tokens.BOTTOM, vec4(0.13, 0.29, 0.58, 1)) # Blue
+    ])
+    self._create_striped_flag(tabs, "Austria", [
+      (None, vec4(0.93, 0.16, 0.22, 1)),  # Red (base)
+      (tokens.BOTTOM, vec4(1, 1, 1, 1)),   # White
+      (tokens.BOTTOM, vec4(0.93, 0.16, 0.22, 1)) # Red
+    ])
+
     self.create_sevenway(tabs)
     
     tabs.setActiveTab(0)
 
-    print("All flag tabs created!")
+  #################################################################
 
   def _create_striped_flag(self, tabs, name, stripes):
     """Helper to create a flag with colored stripes.
@@ -73,49 +106,7 @@ class SplitLayoutApp(object):
                             uiclass=lev2.ui.Box,
                             args=[f"stripe-{i}", color])
 
-  def create_french_flag(self, tabs):
-    """French flag: Blue | White | Red (vertical stripes)"""
-    print("Creating French flag tab...")
-    self._create_striped_flag(tabs, "France", [
-      (None, vec4(0, 0, 1, 1)),        # Blue (base)
-      (tokens.RIGHT, vec4(1, 1, 1, 1)), # White
-      (tokens.RIGHT, vec4(1, 0, 0, 1))  # Red
-    ])
-
-  def create_german_flag(self, tabs):
-    """German flag: Black / Red / Yellow (horizontal stripes)"""
-    print("Creating German flag tab...")
-    self._create_striped_flag(tabs, "Germany", [
-      (None, vec4(0, 0, 0, 1)),          # Black (base)
-      (tokens.BOTTOM, vec4(1, 0, 0, 1)),  # Red
-      (tokens.BOTTOM, vec4(1, 0.8, 0, 1)) # Yellow
-    ])
-
-  def create_polish_flag(self, tabs):
-    """Polish flag: White / Red (horizontal stripes)"""
-    print("Creating Polish flag tab...")
-    self._create_striped_flag(tabs, "Poland", [
-      (None, vec4(1, 1, 1, 1)),               # White (base)
-      (tokens.BOTTOM, vec4(0.86, 0.12, 0.20, 1)) # Red
-    ])
-
-  def create_dutch_flag(self, tabs):
-    """Dutch flag: Red / White / Blue (horizontal stripes)"""
-    print("Creating Dutch flag tab...")
-    self._create_striped_flag(tabs, "Netherlands", [
-      (None, vec4(0.68, 0.11, 0.18, 1)),  # Red (base)
-      (tokens.BOTTOM, vec4(1, 1, 1, 1)),   # White
-      (tokens.BOTTOM, vec4(0.13, 0.29, 0.58, 1)) # Blue
-    ])
-
-  def create_austrian_flag(self, tabs):
-    """Austrian flag: Red / White / Red (horizontal stripes)"""
-    print("Creating Austrian flag tab...")
-    self._create_striped_flag(tabs, "Austria", [
-      (None, vec4(0.93, 0.16, 0.22, 1)),  # Red (base)
-      (tokens.BOTTOM, vec4(1, 1, 1, 1)),   # White
-      (tokens.BOTTOM, vec4(0.93, 0.16, 0.22, 1)) # Red
-    ])
+  #################################################################
 
   def create_sevenway(self, tabs):
     print("Misc Split Test tab...")
