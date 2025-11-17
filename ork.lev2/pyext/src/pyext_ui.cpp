@@ -411,10 +411,10 @@ void pyinit_ui(py::module& module_lev2) {
           .def("updateLayout", [](uigroup_ptr_t grp) { grp->DoLayout(); })
           .def_property(
               "margin",
-              [](ui::dynagrid_ptr_t grid) -> int { //
+              [](uigroup_ptr_t grid) -> int { //
                 return grid->margin();
               },
-              [](ui::dynagrid_ptr_t grid, int m) { //
+              [](uigroup_ptr_t grid, int m) { //
                 grid->setMargin(m);
               })
           .def("makeChild2", [](uigroup_ptr_t grp, py::kwargs kwargs) -> ui::widget_ptr_t { //

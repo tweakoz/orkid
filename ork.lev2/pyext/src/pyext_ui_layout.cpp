@@ -71,7 +71,12 @@ void pyinit_ui_layout(py::module& uimodule) {
               [](uilayout_ptr_t layout) -> int { //
                 return layout->_margin;
               },
-              [](uilayout_ptr_t layout, int m) { layout->setMargin(m); })
+              [](uilayout_ptr_t layout, int m) { //
+                layout->setMargin(m);
+                for (auto child : layout->_childlayouts) {
+                  child->setMargin(m);
+                }
+              })
           //////////////////////////////////
           .def(
               "updateAll",
@@ -579,18 +584,6 @@ void pyinit_ui_layout(py::module& uimodule) {
                   }
                 }
                 return rval;
-              })
-          .def_property(
-              "margin",
-              [](uilayoutgroup_ptr_t lgrp) -> int { //
-                return lgrp->_margin;
-              },
-              [](uilayoutgroup_ptr_t lgrp, int m) { //
-                auto layout = lgrp->_layout;
-                layout->setMargin(m);
-                for (auto child : layout->_childlayouts) {
-                  child->setMargin(m);
-                }
               })
               .def_property("clear",
               [](uilayoutgroup_ptr_t lgrp) -> bool { //
