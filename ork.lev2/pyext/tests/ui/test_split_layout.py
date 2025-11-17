@@ -36,15 +36,15 @@ class SplitLayoutApp(object):
     for i, item in enumerate(grid_items):
       print(f"  Item {i}: widget={item.widget}, layout={item.layout}")
 
-    # Now split the left box vertically - ONE API CALL
+    # Now split the left box - ONE API CALL
     # Split at 50%, create GREEN box in BOTTOM half
     # The existing blue box becomes the TOP half
-    print("\nTesting splitVertical on left box...")
+    print("\nTesting split on left box...")
 
-    new_item = lg_group.splitVertical(
+    new_item = lg_group.split(
       layout=grid_items[0].layout,      # Split this existing layout
       proportion=0.5,                    # Split at 50% from top
-      half=tokens.BOTTOM,                # Create new widget in bottom half (token)
+      placement=tokens.BOTTOM,           # Create new widget in bottom half (token)
       margin=5,
       uiclass=lev2.ui.Box,
       args=["bottom-green", vec4(0, 1, 0, 1)]  # Green box in bottom

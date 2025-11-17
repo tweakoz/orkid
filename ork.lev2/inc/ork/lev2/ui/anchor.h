@@ -27,7 +27,7 @@ enum class Edge : crc_enum_t {
   CrcEnum(CustomVertical),
 };
 
-enum class ELayoutSplitHalf : crc_enum_t {
+enum class ELayoutSplitPlacement : crc_enum_t {
   CrcEnum(TOP),
   CrcEnum(BOTTOM),
   CrcEnum(LEFT),

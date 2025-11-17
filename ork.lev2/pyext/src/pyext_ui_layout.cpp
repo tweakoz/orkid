@@ -370,11 +370,11 @@ void pyinit_ui_layout(py::module& uimodule) {
                 return lgrp->findGuideBetween(layout_a, layout_b);
               })
           .def(
-              "splitVertical",
+              "split",
               [](uilayoutgroup_ptr_t lgrp, py::kwargs kwargs) -> uilayoutitem_ptr_t { //
                 uilayout_ptr_t target_layout;
                 float proportion = 0.5f;
-                uint64_t half_token = 0;
+                uint64_t placement_token = 0;
                 int margin = 0;
                 py::list args;
                 py::object wfactory;
@@ -388,9 +388,9 @@ void pyinit_ui_layout(py::module& uimodule) {
                   } else if (key == "proportion") {
                     proportion = py::cast<float>(item.second);
                     args_parsed++;
-                  } else if (key == "half") {
+                  } else if (key == "placement") {
                     auto crcstr = py::cast<crcstring_ptr_t>(item.second);
-                    half_token = crcstr->hashed();
+                    placement_token = crcstr->hashed();
                     args_parsed++;
                   } else if (key == "margin") {
                     margin = py::cast<int>(item.second);
@@ -410,11 +410,11 @@ void pyinit_ui_layout(py::module& uimodule) {
                 OrkAssert(args_parsed == 6);
 
                 // Cast token to enum
-                auto half_enum = static_cast<ui::anchor::ELayoutSplitHalf>(half_token);
+                auto placement_enum = static_cast<ui::anchor::ELayoutSplitPlacement>(placement_token);
 
                 // Call C++ method - creates container and new layout, returns LayoutItem
                 // The LayoutItem contains: _widget = container, _layout = new child layout
-                auto layout_item = lgrp->splitVertical(target_layout, proportion, half_enum, margin);
+                auto layout_item = lgrp->split(target_layout, proportion, placement_enum, margin);
 
                 // Get the container (which is a LayoutGroup) and the new layout
                 auto container = std::dynamic_pointer_cast<ui::LayoutGroup>(layout_item->_widget);

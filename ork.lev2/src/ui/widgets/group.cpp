@@ -365,10 +365,14 @@ void LayoutGroup::replaceChild(anchor::layout_ptr_t ch, layoutitem_ptr_t rep) {
   rep->_layout = ch;  // rep now uses ch's layout (discarding rep's original layout)
 }
 //////////////////////////////////////
-layoutitem_ptr_t LayoutGroup::splitVertical(anchor::layout_ptr_t target_layout,
-                                            float proportion,
-                                            anchor::ELayoutSplitHalf half,
-                                            int margin) {
+layoutitem_ptr_t LayoutGroup::split(anchor::layout_ptr_t target_layout,
+                                    float proportion,
+                                    anchor::ELayoutSplitPlacement placement,
+                                    int margin) {
+
+  // Determine if this is a horizontal or vertical split based on placement
+  bool is_horizontal_split = (placement == anchor::ELayoutSplitPlacement::TOP ||
+                               placement == anchor::ELayoutSplitPlacement::BOTTOM);
 
   /////////////////////
   // PLAN:
@@ -453,45 +457,78 @@ layoutitem_ptr_t LayoutGroup::splitVertical(anchor::layout_ptr_t target_layout,
   // Create a new layout for the new widget (widget will be assigned by binding layer)
   auto new_layout = container_layout->childLayout(nullptr);  // widget is nullptr for now
 
-  // Create the horizontal split guide on the container's layout
-  // This guide will span from container's left to container's right (T-junction)
-  auto split_guide = container_layout->proportionalHorizontalGuide(proportion);
+  // Create the split guide on the container's layout (horizontal or vertical depending on placement)
+  // This guide will span across the container creating a T-junction
+  anchor::guide_ptr_t split_guide;
+  if (is_horizontal_split) {
+    split_guide = container_layout->proportionalHorizontalGuide(proportion);
+    container->_hguides.insert(split_guide);
+    _hguides.insert(split_guide);
+  } else {
+    split_guide = container_layout->proportionalVerticalGuide(proportion);
+    container->_vguides.insert(split_guide);
+    _vguides.insert(split_guide);
+  }
   split_guide->_locked = false;  // Explicitly unlock for dragging
   split_guide->_margin = margin;
-
-  // Add to BOTH container's guides AND top-level guides (like makeWidgetsRC does)
-  container->_hguides.insert(split_guide);
-  _hguides.insert(split_guide);
 
   // Set margins
   target_layout->setMargin(margin);
   new_layout->setMargin(margin);
 
-  // Anchor both layouts within the container
-  if (half == anchor::ELayoutSplitHalf::BOTTOM) {
-    // New layout goes in bottom half
-    new_layout->top()->anchorTo(split_guide);
-    new_layout->bottom()->anchorTo(container_layout->bottom());
-    new_layout->left()->anchorTo(container_layout->left());
-    new_layout->right()->anchorTo(container_layout->right());
+  // Anchor both layouts within the container based on placement
+  switch (placement) {
+    case anchor::ELayoutSplitPlacement::BOTTOM:
+      // New layout goes in bottom half (horizontal split)
+      new_layout->top()->anchorTo(split_guide);
+      new_layout->bottom()->anchorTo(container_layout->bottom());
+      new_layout->left()->anchorTo(container_layout->left());
+      new_layout->right()->anchorTo(container_layout->right());
+      // Target layout goes in top half
+      target_layout->top()->anchorTo(container_layout->top());
+      target_layout->bottom()->anchorTo(split_guide);
+      target_layout->left()->anchorTo(container_layout->left());
+      target_layout->right()->anchorTo(container_layout->right());
+      break;
 
-    // Target layout goes in top half
-    target_layout->top()->anchorTo(container_layout->top());
-    target_layout->bottom()->anchorTo(split_guide);
-    target_layout->left()->anchorTo(container_layout->left());
-    target_layout->right()->anchorTo(container_layout->right());
-  } else if (half == anchor::ELayoutSplitHalf::TOP) {
-    // New layout goes in top half
-    new_layout->top()->anchorTo(container_layout->top());
-    new_layout->bottom()->anchorTo(split_guide);
-    new_layout->left()->anchorTo(container_layout->left());
-    new_layout->right()->anchorTo(container_layout->right());
+    case anchor::ELayoutSplitPlacement::TOP:
+      // New layout goes in top half (horizontal split)
+      new_layout->top()->anchorTo(container_layout->top());
+      new_layout->bottom()->anchorTo(split_guide);
+      new_layout->left()->anchorTo(container_layout->left());
+      new_layout->right()->anchorTo(container_layout->right());
+      // Target layout goes in bottom half
+      target_layout->top()->anchorTo(split_guide);
+      target_layout->bottom()->anchorTo(container_layout->bottom());
+      target_layout->left()->anchorTo(container_layout->left());
+      target_layout->right()->anchorTo(container_layout->right());
+      break;
 
-    // Target layout goes in bottom half
-    target_layout->top()->anchorTo(split_guide);
-    target_layout->bottom()->anchorTo(container_layout->bottom());
-    target_layout->left()->anchorTo(container_layout->left());
-    target_layout->right()->anchorTo(container_layout->right());
+    case anchor::ELayoutSplitPlacement::RIGHT:
+      // New layout goes in right half (vertical split)
+      new_layout->left()->anchorTo(split_guide);
+      new_layout->right()->anchorTo(container_layout->right());
+      new_layout->top()->anchorTo(container_layout->top());
+      new_layout->bottom()->anchorTo(container_layout->bottom());
+      // Target layout goes in left half
+      target_layout->left()->anchorTo(container_layout->left());
+      target_layout->right()->anchorTo(split_guide);
+      target_layout->top()->anchorTo(container_layout->top());
+      target_layout->bottom()->anchorTo(container_layout->bottom());
+      break;
+
+    case anchor::ELayoutSplitPlacement::LEFT:
+      // New layout goes in left half (vertical split)
+      new_layout->left()->anchorTo(container_layout->left());
+      new_layout->right()->anchorTo(split_guide);
+      new_layout->top()->anchorTo(container_layout->top());
+      new_layout->bottom()->anchorTo(container_layout->bottom());
+      // Target layout goes in right half
+      target_layout->left()->anchorTo(split_guide);
+      target_layout->right()->anchorTo(container_layout->right());
+      target_layout->top()->anchorTo(container_layout->top());
+      target_layout->bottom()->anchorTo(container_layout->bottom());
+      break;
   }
 
   // Don't update layouts yet - the widget hasn't been assigned
