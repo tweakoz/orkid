@@ -1764,6 +1764,10 @@ void pyinit_ui(py::module& module_lev2) {
               [](ui::imgview_ptr_t imgview) -> bool { return imgview->_invert_aspect; },
               [](ui::imgview_ptr_t imgview, bool p) { imgview->_invert_aspect = p; })
           .def_property(
+              "image_rot_180",
+              [](ui::imgview_ptr_t imgview) -> bool { return imgview->_image_rot_180; },
+              [](ui::imgview_ptr_t imgview, bool p) { imgview->_image_rot_180 = p; })
+          .def_property(
               "image",
               [](ui::imgview_ptr_t imgview) -> py::object {
                 if (imgview->_imgprovider) {
