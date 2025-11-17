@@ -683,6 +683,14 @@ void pyinit_ui(py::module& module_lev2) {
                 vpack->_item_height = h;
               })
           .def_property(
+              "uniform",
+              [](ui::vpack_ptr_t vpack) -> bool { //
+                return vpack->_uniform;
+              },
+              [](ui::vpack_ptr_t vpack, bool b) { //
+                vpack->_uniform = b;
+              })
+          .def_property(
               "fill",
               [](ui::vpack_ptr_t vpack) -> bool { //
                 return vpack->_fill;
