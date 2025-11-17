@@ -459,36 +459,48 @@ void LoggerGroup::_updatePerfGraphUI(const std::string& channel, const std::stri
   if (!view._perf_grid)
     return;
 
-  // Find or create graph for this perf item
-  auto graph_it = view._perf_graphs.find(name);
-  graphview_ptr_t graph;
-
-  if (graph_it == view._perf_graphs.end()) {
-    // Create new graph
-    graph = std::make_shared<GraphView>();
-    graph->_name = name;
-    graph->_show_stats = false;
-    view._perf_grid->addChild(graph);
-    view._perf_graphs[name] = graph;
+  // Create shared graph if it doesn't exist
+  if (!view._shared_graph) {
+    view._shared_graph = std::make_shared<GraphView>();
+    view._shared_graph->_name = channel + "_perf";
+    view._shared_graph->_show_stats = false;
+    view._perf_grid->addChild(view._shared_graph);
 
     // Initialize GPU resources if needed
-    if (pt && graph->_needsinit) {
-      graph->gpuInit(pt);
+    if (pt && view._shared_graph->_needsinit) {
+      view._shared_graph->gpuInit(pt);
     }
 
-    // Create channel and series for this perf metric
-    auto channel_ptr = graph->channel(name);
-    auto series = channel_ptr->addSeries(name, fvec3(0.3f, 0.8f, 1.0f)); // Cyan color
-    series->setMaxSamples(50);
+    // Set fixed height for the shared graph
+    view._perf_grid->_fixed_height = 200;
 
-    // Mark as needing initial paint
-    graph->MarkSurfaceDirty();
-  } else {
-    graph = graph_it->second;
+    // Trigger layout update
+    if (view._container) {
+      view._container->DoLayout();
+    }
   }
 
-  if (!graph)
-    return;
+  // Get or create the channel for this perf item
+  auto graph_channel = view._shared_graph->channel(name);
+
+  // Check if series already exists for this perf item
+  auto series = graph_channel->getSeries(name);
+  if (!series) {
+    // Generate color based on perf item name (similar to channel color generation)
+    uint64_t hash = 0;
+    for (char c : name) {
+      hash = hash * 31 + c;
+    }
+    float hue = (hash % 360) / 360.0f;
+    float r = std::abs(std::sin(hue * 6.28f));
+    float g = std::abs(std::sin((hue + 0.33f) * 6.28f));
+    float b = std::abs(std::sin((hue + 0.67f) * 6.28f));
+    fvec3 series_color(r * 0.8f + 0.2f, g * 0.8f + 0.2f, b * 0.8f + 0.2f);
+
+    // Create new series
+    series = graph_channel->addSeries(name, series_color);
+    series->setMaxSamples(100);
+  }
 
   // Convert value to float
   float float_value = 0.0f;
@@ -504,31 +516,11 @@ void LoggerGroup::_updatePerfGraphUI(const std::string& channel, const std::stri
     float_value = static_cast<float>(value.get<uint64_t>());
   }
 
-  // Add sample to graph
-  auto channel_ptr = graph->channel(name);
-  if (channel_ptr && !channel_ptr->_series.empty()) {
-    auto series = channel_ptr->_series[0];
-    series->addSample(float_value);
-    // Mark GraphView surface as needing repaint
-    graph->MarkSurfaceDirty();
-  }
+  // Add sample to series
+  series->addSample(float_value);
 
-  // Content-based sizing: Update perf grid height based on number of graphs
-  // Assume grid will arrange in rows, each graph needs ~100-150px height
-  int num_graphs = view._perf_graphs.size();
-  if (num_graphs > 0) {
-    const int graph_height = 120;  // Approximate height per graph row
-    const int padding = 20;         // Extra padding
-    // Assume 2 columns max, so rows = ceil(num_graphs / 2)
-    int num_rows = (num_graphs + 1) / 2;
-    int new_height = std::max(100, num_rows * graph_height + padding);  // Minimum 100px
-    view._perf_grid->_fixed_height = new_height;
-
-    // Trigger layout update
-    if (view._container) {
-      view._container->DoLayout();
-    }
-  }
+  // Mark GraphView surface as needing repaint
+  view._shared_graph->MarkSurfaceDirty();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

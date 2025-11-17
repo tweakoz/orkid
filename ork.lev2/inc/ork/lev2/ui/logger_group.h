@@ -70,7 +70,7 @@ private:
     textbox_ptr_t _status_area;
     textbox_ptr_t _log_area;
     dynagrid_ptr_t _perf_grid;       // Grid for performance graphs
-    std::map<std::string, graphview_ptr_t> _perf_graphs;
+    graphview_ptr_t _shared_graph;   // Shared graph for all perf items in this channel
     std::map<std::string, std::string> _status_lines;
   };
 
