@@ -91,19 +91,19 @@ assetfqid_ptr_t CatalogImpl::locateAsset(const assetid_t& fq_asset_id) const {
       assetmanifest_ptr_t manifest = it->second->_manifest;
       assetentry_ptr_t entry       = it->second->_entry;
 
-      if(1)printf("fqid<%s> ns<%s> asset<%s> manifest<%p>\n",
+      if(0)printf("fqid<%s> ns<%s> asset<%s> manifest<%p>\n",
              fq_asset_id.c_str(),
              namespace_id.c_str(),
              entry->_id.c_str(),
              (void*)manifest.get());
-      if(1)printf("_local_loc<%s>\n", entry->_local_loc.c_str());
-      if(1)printf("_tar_root<%s>\n", entry->_tar_root.c_str());
-      if(1)printf("_relative_path<%s>\n", entry->_relative_path.c_str());
-      if(1)printf("_storage_hash<%s>\n", entry->_storage_hash.c_str());
-      if(1)printf("_content_hash<%s>\n", entry->_content_hash.c_str());
-      if(1)printf("_archive_size<%zu>\n", entry->_archive_size);
-      if(1)printf("_encrypted_size<%zu>\n", entry->_encrypted_size);
-      if(1)printf("_compressed_size<%zu>\n", entry->_compressed_size);
+      if(0)printf("_local_loc<%s>\n", entry->_local_loc.c_str());
+      if(0)printf("_tar_root<%s>\n", entry->_tar_root.c_str());
+      if(0)printf("_relative_path<%s>\n", entry->_relative_path.c_str());
+      if(0)printf("_storage_hash<%s>\n", entry->_storage_hash.c_str());
+      if(0)printf("_content_hash<%s>\n", entry->_content_hash.c_str());
+      if(0)printf("_archive_size<%zu>\n", entry->_archive_size);
+      if(0)printf("_encrypted_size<%zu>\n", entry->_encrypted_size);
+      if(0)printf("_compressed_size<%zu>\n", entry->_compressed_size);
 
       result                = std::make_shared<AssetFqIdentifier>();
       result->_original_fqid = fq_asset_id;

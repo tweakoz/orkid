@@ -155,7 +155,7 @@ template <typename vtx_t> struct RigidPrimitive : public RigidPrimitiveBase {
   lev2::callback_drawable_ptr_t createDrawable(lev2::fxpipeline_ptr_t pipeline) final {
 
     OrkAssert(pipeline != nullptr);
-    printf("DEBUG: Pipeline<%p> technique<%p>\n", (void*)pipeline.get(), (void*)pipeline->_technique);
+    if(0)printf("DEBUG: Pipeline<%p> technique<%p>\n", (void*)pipeline.get(), (void*)pipeline->_technique);
     if(pipeline->_technique==nullptr){
       printf( "Bad Pipeline! Pipeline exists but technique is null\n");
       pipeline->dump();
