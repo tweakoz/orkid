@@ -367,7 +367,8 @@ void LayoutGroup::replaceChild(anchor::layout_ptr_t ch, layoutitem_ptr_t rep) {
 //////////////////////////////////////
 layoutitem_ptr_t LayoutGroup::splitVertical(anchor::layout_ptr_t target_layout,
                                             float proportion,
-                                            anchor::ELayoutSplitHalf half) {
+                                            anchor::ELayoutSplitHalf half,
+                                            int margin) {
 
   /////////////////////
   // PLAN:
@@ -403,9 +404,10 @@ layoutitem_ptr_t LayoutGroup::splitVertical(anchor::layout_ptr_t target_layout,
   // Create a container LayoutGroup that spans the target's current bounds
   // This container will own the horizontal split guide, limiting its span (T-junction)
   auto container_name = _name + "-split-container";
-  auto container = std::make_shared<LayoutGroup>(container_name, 0, 0, 0, 0, 0);
+  auto container = std::make_shared<LayoutGroup>(container_name, 0, 0, 0, 0, margin);
 
   container->_clear = false;  // Don't draw background (like makeWidgetsRC row containers)
+  container->_layout->setMargin(0);  // Container layout has no margin, guides have the margin
 
   // Find the target widget in our _children and get its shared_ptr
   widget_ptr_t target_widget_ptr;
@@ -455,15 +457,15 @@ layoutitem_ptr_t LayoutGroup::splitVertical(anchor::layout_ptr_t target_layout,
   // This guide will span from container's left to container's right (T-junction)
   auto split_guide = container_layout->proportionalHorizontalGuide(proportion);
   split_guide->_locked = false;  // Explicitly unlock for dragging
-  split_guide->_margin = _margin;
+  split_guide->_margin = margin;
 
   // Add to BOTH container's guides AND top-level guides (like makeWidgetsRC does)
   container->_hguides.insert(split_guide);
   _hguides.insert(split_guide);
 
   // Set margins
-  target_layout->setMargin(_margin);
-  new_layout->setMargin(_margin);
+  target_layout->setMargin(margin);
+  new_layout->setMargin(margin);
 
   // Anchor both layouts within the container
   if (half == anchor::ELayoutSplitHalf::BOTTOM) {
@@ -633,8 +635,8 @@ void LayoutGroup::dumpLayoutHierarchy() {
     else if (guide->_edge == anchor::Edge::CustomHorizontal) edge_str = "CustomHorz";
 
     printf("%s%-8s [G%d] <%p>\n", ind.c_str(), label, gid, guide_ptr);
-    printf("%s          edge=%-12s type=%-12s prop=%.3f fixed=%d locked=%d\n",
-           ind.c_str(), edge_str, type_str, guide->_proportion, guide->_fixed, guide->_locked);
+    printf("%s          edge=%-12s type=%-12s prop=%.3f fixed=%d locked=%d margin=%d\n",
+           ind.c_str(), edge_str, type_str, guide->_proportion, guide->_fixed, guide->_locked, guide->_margin);
 
     // Show associates if not already visited
     if (show_associates && visited_guides.find(guide_ptr) == visited_guides.end()) {

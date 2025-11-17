@@ -211,7 +211,8 @@ struct LayoutGroup : public Group {
   //////////////////////////////////////
   layoutitem_ptr_t splitVertical(anchor::layout_ptr_t target_layout,
                                  float proportion,
-                                 anchor::ELayoutSplitHalf half);
+                                 anchor::ELayoutSplitHalf half,
+                                 int margin);
   //////////////////////////////////////
   anchor::layout_ptr_t layoutAndAddChild(widget_ptr_t w);
   void removeChild(anchor::layout_ptr_t ch);

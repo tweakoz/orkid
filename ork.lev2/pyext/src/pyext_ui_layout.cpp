@@ -375,6 +375,7 @@ void pyinit_ui_layout(py::module& uimodule) {
                 uilayout_ptr_t target_layout;
                 float proportion = 0.5f;
                 uint64_t half_token = 0;
+                int margin = 0;
                 py::list args;
                 py::object wfactory;
                 int args_parsed = 0;
@@ -391,6 +392,9 @@ void pyinit_ui_layout(py::module& uimodule) {
                     auto crcstr = py::cast<crcstring_ptr_t>(item.second);
                     half_token = crcstr->hashed();
                     args_parsed++;
+                  } else if (key == "margin") {
+                    margin = py::cast<int>(item.second);
+                    args_parsed++;
                   } else if (key == "uiclass") {
                     auto uiclass_obj = py::cast<py::object>(item.second);
                     bool has_wfactory = py::hasattr(uiclass_obj, "wfactory");
@@ -403,14 +407,14 @@ void pyinit_ui_layout(py::module& uimodule) {
                   }
                 }
 
-                OrkAssert(args_parsed == 5);
+                OrkAssert(args_parsed == 6);
 
                 // Cast token to enum
                 auto half_enum = static_cast<ui::anchor::ELayoutSplitHalf>(half_token);
 
                 // Call C++ method - creates container and new layout, returns LayoutItem
                 // The LayoutItem contains: _widget = container, _layout = new child layout
-                auto layout_item = lgrp->splitVertical(target_layout, proportion, half_enum);
+                auto layout_item = lgrp->splitVertical(target_layout, proportion, half_enum, margin);
 
                 // Get the container (which is a LayoutGroup) and the new layout
                 auto container = std::dynamic_pointer_cast<ui::LayoutGroup>(layout_item->_widget);
