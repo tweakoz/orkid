@@ -16,6 +16,7 @@ TabWidget::TabWidget(const std::string& name, int x, int y, int w, int h)
     : Group(name, x, y, w, h) {
   _tabBarBackground = fvec4(0.2, 0.2, 0.25, 1.0);
   _contentBackground = fvec4(0.15, 0.15, 0.2, 1.0);
+  _tab_font = lev2::FontMan::fontForId("i14");
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -23,20 +24,74 @@ TabWidget::~TabWidget() {
 }
 
 /////////////////////////////////////////////////////////////////////////
+void TabWidget::_onChildrenChanged() {
+  _needs_layout_recalc = true;
+}
+
+/////////////////////////////////////////////////////////////////////////
+void TabWidget::_ensureSorted() {
+  if (!_needs_layout_recalc) return;
+
+  // Sort _children alphabetically by name
+  std::sort(_children.begin(), _children.end(),
+    [](const widget_ptr_t& a, const widget_ptr_t& b) {
+      return a->_name < b->_name;
+    });
+
+  // Active tab pointer is still valid - no adjustment needed!
+}
+
+/////////////////////////////////////////////////////////////////////////
+void TabWidget::_recalculateTabLayout() {
+  if (!_needs_layout_recalc) return;
+
+  _tab_widths.clear();
+  _tab_positions.clear();
+
+  auto fontman = lev2::FontMan::instance();
+
+  int current_x = 0;
+  for (const auto& child : _children) {
+    // Measure label width
+    int label_width = 0;
+    if (fontman && _tab_font) {
+      label_width = _tab_font->stringWidth(child->_name.length());
+    } else {
+      // Fallback estimate
+      label_width = child->_name.length() * 8;
+    }
+
+    int tab_width = label_width + _tab_padding;
+
+    _tab_widths.push_back(tab_width);
+    _tab_positions.push_back(current_x);
+    current_x += tab_width;
+  }
+
+  _needs_layout_recalc = false;
+}
+
+/////////////////////////////////////////////////////////////////////////
 void TabWidget::setActiveTab(int index) {
   if (index >= 0 && index < _children.size()) {
-    _activeTabIndex = index;
+    _active_tab = _children[index];  // Index refers to sorted order
     DoLayout();
   }
 }
 
 /////////////////////////////////////////////////////////////////////////
 int TabWidget::getActiveTab() const {
-  // If no tab is active but we have children, return 0 (first tab)
-  if (_activeTabIndex < 0 && !_children.empty()) {
-    return 0;
+  if (!_active_tab && !_children.empty()) {
+    return 0;  // Default to first tab (sorted)
   }
-  return _activeTabIndex;
+
+  // Find index of active tab in sorted children
+  auto it = std::find(_children.begin(), _children.end(), _active_tab);
+  if (it != _children.end()) {
+    return std::distance(_children.begin(), it);
+  }
+
+  return -1;
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -46,9 +101,21 @@ void TabWidget::_doOnResized() {
 
 /////////////////////////////////////////////////////////////////////////
 void TabWidget::DoLayout() {
-  // Ensure we have an active tab if there are children
-  if (_activeTabIndex < 0 && !_children.empty()) {
-    _activeTabIndex = 0;
+  // Ensure sorted and layout calculated
+  _ensureSorted();
+  _recalculateTabLayout();
+
+  // Ensure we have an active tab
+  if (!_active_tab && !_children.empty()) {
+    _active_tab = _children[0];  // Default to first (alphabetically)
+  }
+
+  // Validate active tab is still a child
+  if (_active_tab) {
+    auto it = std::find(_children.begin(), _children.end(), _active_tab);
+    if (it == _children.end()) {
+      _active_tab = _children.empty() ? nullptr : _children[0];
+    }
   }
 
   // Effective tab bar height (0 when in page mode)
@@ -65,12 +132,16 @@ int TabWidget::_getTabIndexAt(int x, int y) const {
   if (y >= _tabBarHeight) return -1;
   if (_children.empty()) return -1;
 
-  int tabWidth = _geometry._w / _children.size();
-  int index = x / tabWidth;
+  // Find which tab was clicked using cached positions
+  for (size_t i = 0; i < _tab_positions.size(); i++) {
+    int tab_x1 = _tab_positions[i];
+    int tab_x2 = tab_x1 + _tab_widths[i];
 
-  if (index >= 0 && index < _children.size()) {
-    return index;
+    if (x >= tab_x1 && x < tab_x2) {
+      return i;  // Return index in sorted order
+    }
   }
+
   return -1;
 }
 
@@ -83,22 +154,19 @@ Widget* TabWidget::doRouteUiEvent(event_constptr_t ev) {
 
   // Effective tab bar height (0 when in page mode)
   int effectiveTabBarHeight = _showTabs ? _tabBarHeight : 0;
-  //printf("TabWidget::doRouteUiEvent ev<%d %d> geo<%d %d> local<%d,%d> effh<%d>\n", ev->miX, ev->miY, _geometry._x, _geometry._y, localX, localY, effectiveTabBarHeight);
 
   // Check if event is in tab bar area (only if tabs are shown)
   if (_showTabs && localY < effectiveTabBarHeight) {
     // Update hovered tab for visual feedback
-    _hoveredTabIndex = _getTabIndexAt(localX, localY);
+    int tabIndex = _getTabIndexAt(localX, localY);
+    _hovered_tab = (tabIndex >= 0) ? _children[tabIndex] : nullptr;
     // Route to self for tab selection
     return this;
   }
 
-  // Route to active child if it exists and is visible
-  if (_activeTabIndex >= 0 && _activeTabIndex < _children.size()) {
-    auto& child = _children[_activeTabIndex];
-    if (child->IsEventInside(ev)) {
-      return child->routeUiEvent(ev);
-    }
+  // Route to active child if it exists
+  if (_active_tab && _active_tab->IsEventInside(ev)) {
+    return _active_tab->routeUiEvent(ev);
   }
 
   // If event is inside this widget, route to self
@@ -126,7 +194,7 @@ HandlerResult TabWidget::DoOnUiEvent(event_constptr_t ev) {
     case EventCode::PUSH: {
       if (localY < _tabBarHeight) {
         int tabIndex = _getTabIndexAt(localX, localY);
-        if (tabIndex >= 0 && tabIndex != _activeTabIndex) {
+        if (tabIndex >= 0 && _children[tabIndex] != _active_tab) {
           setActiveTab(tabIndex);
           result.setHandled(this);
         }
@@ -137,9 +205,10 @@ HandlerResult TabWidget::DoOnUiEvent(event_constptr_t ev) {
     case EventCode::MOVE: {
       // Update hover state
       if (localY < _tabBarHeight) {
-        int oldHovered = _hoveredTabIndex;
-        _hoveredTabIndex = _getTabIndexAt(localX, localY);
-        if (oldHovered != _hoveredTabIndex) {
+        int tabIndex = _getTabIndexAt(localX, localY);
+        widget_ptr_t old_hovered = _hovered_tab;
+        _hovered_tab = (tabIndex >= 0) ? _children[tabIndex] : nullptr;
+        if (old_hovered != _hovered_tab) {
           // Trigger redraw for hover effect
           // Note: In real implementation, would mark dirty
         }
@@ -149,7 +218,7 @@ HandlerResult TabWidget::DoOnUiEvent(event_constptr_t ev) {
 
     case EventCode::MOUSE_ENTER:
     case EventCode::MOUSE_LEAVE: {
-      _hoveredTabIndex = -1;
+      _hovered_tab = nullptr;
       break;
     }
 
@@ -210,14 +279,18 @@ void TabWidget::DoDraw(drawevent_constptr_t drwev) {
   }
 
   // Draw active child
-  if (_activeTabIndex >= 0 && _activeTabIndex < _children.size()) {
-    _children[_activeTabIndex]->draw(drwev);
+  if (_active_tab) {
+    _active_tab->draw(drwev);
   }
 }
 
 /////////////////////////////////////////////////////////////////////////
 void TabWidget::_drawTabBar(drawevent_constptr_t drwev) {
   if (_children.empty()) return;
+
+  // Ensure sorted and layout calculated
+  const_cast<TabWidget*>(this)->_ensureSorted();
+  const_cast<TabWidget*>(this)->_recalculateTabLayout();
 
   auto tgt = drwev->GetTarget();
   auto mtxi = tgt->MTXI();
@@ -251,29 +324,25 @@ void TabWidget::_drawTabBar(drawevent_constptr_t drwev) {
     rs->_blendingMacro = omacro;
     defmtl->meUIColorMode = omode;
 
-    // Calculate tab width
-    int tabWidth = _geometry._w / _children.size();
+    // Draw individual tabs using cached layout (in sorted order)
+    for (size_t i = 0; i < _children.size(); i++) {
+      auto& child = _children[i];
 
-    // Draw individual tabs using theme engine
-    int tabIndex = 0;
-    for (const auto& child : _children) {
-      // Calculate tab position
-      int tab_x1 = tabIndex * tabWidth;
-      int tab_x2 = (tabIndex == _children.size() - 1) ? _geometry._w : (tabIndex + 1) * tabWidth;
+      // Get cached tab position and width
+      int tab_x1 = _tab_positions[i];
+      int tab_w = _tab_widths[i];
 
       // Add small margin between tabs
       tab_x1 += 1;
-      tab_x2 -= 1;
+      tab_w -= 2;
 
       // Convert to absolute coordinates
       int abs_x1, abs_y1;
       LocalToRoot(tab_x1, 0, abs_x1, abs_y1);
 
-      // Calculate tab dimensions
-      int tab_w = tab_x2 - tab_x1;
       int tab_h = _tabBarHeight;
 
-      // Determine which style to use based on state
+      // Determine which style to use based on state (pointer comparison)
       uint64_t style_tag;
 
       // Check for per-tab override first
@@ -281,10 +350,10 @@ void TabWidget::_drawTabBar(drawevent_constptr_t drwev) {
       if (it != _per_tab_style_tags.end()) {
         style_tag = it->second;
       } else {
-        // Use state-based default styles
-        if (tabIndex == _activeTabIndex) {
+        // Use state-based default styles (compare pointers)
+        if (child == _active_tab) {
           style_tag = _tab_active_style_tag;
-        } else if (tabIndex == _hoveredTabIndex) {
+        } else if (child == _hovered_tab) {
           style_tag = _tab_hover_style_tag;
         } else {
           style_tag = _default_tab_style_tag;
@@ -296,7 +365,7 @@ void TabWidget::_drawTabBar(drawevent_constptr_t drwev) {
       if (style) {
         Style pulsating_style = *style;
         // Apply pulsation to active tab outline
-        if (tabIndex == _activeTabIndex) {
+        if (child == _active_tab) {
           // Calculate pulsation multiplier (1.0 ± 0.3)
           float pulsation = 0.85f + 0.15f * sinf(_pulsation_phase);
 
@@ -311,42 +380,43 @@ void TabWidget::_drawTabBar(drawevent_constptr_t drwev) {
           theme_engine->drawTab(abs_x1, abs_y1, tab_w, tab_h, drwev, &pulsating_style);
         }
       }
-
-      tabIndex++;
     }
 
-    // Draw tab text
-    ork::lev2::FontMan::PushFont("i16");
+    // Draw tab text (in sorted order using cached layout)
+    ork::lev2::FontMan::PushFont(_tab_font);
     fontman->beginTextBlock(tgt);
-    tabIndex = 0;
-    for (const auto& child : _children) {
-      int tab_x1 = tabIndex * tabWidth;
-      int tab_x2 = (tabIndex == _children.size() - 1) ? _geometry._w : (tabIndex + 1) * tabWidth;
-      LocalToRoot(tab_x1, 0, x1, y1);
-      LocalToRoot(tab_x2, _tabBarHeight, x2, y2);
+    for (size_t i = 0; i < _children.size(); i++) {
+      auto& child = _children[i];
+
+      // Get cached tab position and width
+      int tab_x1 = _tab_positions[i];
+      int tab_w = _tab_widths[i];
 
       // Add small margin between tabs
-      x1 += 1;
-      x2 -= 1;
+      tab_x1 += 1;
+      tab_w -= 2;
+
+      LocalToRoot(tab_x1, 0, x1, y1);
+      int x2 = x1 + tab_w;
+      int y2 = y1 + _tabBarHeight;
 
       // Draw tab text (using child's name)
       if (fontman && !child->_name.empty()) {
         // Center text horizontally in tab
-        int text_width = fontman->stringWidth(child->_name.length());
-        int text_height = fontman->stringHeight(1);
-        int tab_width = x2 - x1;
-        int textX = x1 + (tab_width - text_width) / 2;  // Center horizontally
-        int textY = y1 + (_tabBarHeight-text_height) / 2;  // Center vertically
+        int text_width = _tab_font->stringWidth(child->_name.length());
+        int text_height = _tab_font->stringHeight(1);
+        int textX = x1 + (tab_w - text_width) / 2;  // Center horizontally
+        int textY = y1 + (_tabBarHeight - text_height) / 2;  // Center vertically
 
-        // Get style for text color
+        // Get style for text color (pointer comparison)
         uint64_t style_tag;
         auto it = _per_tab_style_tags.find(child);
         if (it != _per_tab_style_tags.end()) {
           style_tag = it->second;
         } else {
-          if (tabIndex == _activeTabIndex) {
+          if (child == _active_tab) {
             style_tag = _tab_active_style_tag;
-          } else if (tabIndex == _hoveredTabIndex) {
+          } else if (child == _hovered_tab) {
             style_tag = _tab_hover_style_tag;
           } else {
             style_tag = _default_tab_style_tag;
@@ -360,7 +430,6 @@ void TabWidget::_drawTabBar(drawevent_constptr_t drwev) {
         fontman->DrawText(tgt, textX, textY, child->_name.c_str());
         tgt->PopModColor();
       }
-      tabIndex++;
     }
     fontman->endTextBlock(tgt);
     ork::lev2::FontMan::PopFont();

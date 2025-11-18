@@ -84,9 +84,9 @@ void pyinit_ui(py::module& module_lev2) {
       });
   uimodule.def(
       "popupFolderDialogAsync",
-      [](std::string title,           //
-         std::string default_path,    //
-         py::function callback) {     //
+      [](std::string title,        //
+         std::string default_path, //
+         py::function callback) {  //
         // Validate callback
         if (callback.is_none()) {
           throw std::runtime_error("popupFolderDialogAsync: callback cannot be None");
@@ -98,10 +98,10 @@ void pyinit_ui(py::module& module_lev2) {
         // Enqueue blocking tinyfd call to background thread
         py::gil_scoped_release release;
         opq::concurrentQueue()->enqueue([title, default_path, callback_ptr]() mutable {
-            std::string result = ui::popupFolderDialog(title, default_path);
-            py::gil_scoped_acquire acquire;
-            (*callback_ptr)(result);
-            callback_ptr = nullptr;
+          std::string result = ui::popupFolderDialog(title, default_path);
+          py::gil_scoped_acquire acquire;
+          (*callback_ptr)(result);
+          callback_ptr = nullptr;
         });
       });
   /////////////////////////////////////////////////////////////////////////////////
@@ -677,14 +677,16 @@ void pyinit_ui(py::module& module_lev2) {
               [](ui::tabwidget_ptr_t tabs) -> int { //
                 return tabs->getTabCount();
               })
-          .def_property("tabbar_background_color",
+          .def_property(
+              "tabbar_background_color",
               [](ui::tabwidget_ptr_t tabs) -> fvec4 { //
                 return tabs->_tabBarBackground;
               },
               [](ui::tabwidget_ptr_t tabs, fvec4 c) { //
                 tabs->_tabBarBackground = c;
               })
-              .def_property("content_background",
+          .def_property(
+              "content_background",
               [](ui::tabwidget_ptr_t tabs) -> fvec4 { //
                 return tabs->_contentBackground;
               },
@@ -699,12 +701,21 @@ void pyinit_ui(py::module& module_lev2) {
               [](ui::tabwidget_ptr_t tabs, bool show) { //
                 tabs->setShowTabs(show);
               })
-              .def_property("draw_background",
+          .def_property(
+              "draw_background",
               [](ui::tabwidget_ptr_t tabs) -> bool { //
                 return tabs->_draw_background;
               },
               [](ui::tabwidget_ptr_t tabs, bool b) { //
                 tabs->_draw_background = b;
+              })
+          .def_property(
+              "font",
+              [](ui::tabwidget_ptr_t tabs) -> lev2::font_ptr_t { //
+                return tabs->_tab_font;
+              },
+              [](ui::tabwidget_ptr_t tabs, lev2::font_ptr_t f) { //
+                tabs->_tab_font = f;
               });
   type_codec->registerStdCodec<ui::tabwidget_ptr_t>(tabsw_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -777,7 +788,8 @@ void pyinit_ui(py::module& module_lev2) {
               [](ui::vpack_ptr_t vpack, bool b) { //
                 vpack->_fill = b;
               })
-              .def_property("bg_color",
+          .def_property(
+              "bg_color",
               [](ui::vpack_ptr_t vpack) -> fvec4 { //
                 return vpack->_bgcolor;
               },
@@ -1243,13 +1255,15 @@ void pyinit_ui(py::module& module_lev2) {
                     btn->setInactiveImage(img);
                     btn->setInactiveImageProvider(nullptr);
                     return;
-                  } catch(...) {}
+                  } catch (...) {
+                  }
                   // Try image_provider_ptr_t
                   try {
                     auto prov = obj.cast<lev2::image_provider_ptr_t>();
                     btn->setInactiveImageProvider(prov);
                     return;
-                  } catch(...) {}
+                  } catch (...) {
+                  }
                 }
               })
           .def_property(
@@ -1273,13 +1287,15 @@ void pyinit_ui(py::module& module_lev2) {
                     btn->setActiveReleasedImage(img);
                     btn->setActiveReleasedImageProvider(nullptr);
                     return;
-                  } catch(...) {}
+                  } catch (...) {
+                  }
                   // Try image_provider_ptr_t
                   try {
                     auto prov = obj.cast<lev2::image_provider_ptr_t>();
                     btn->setActiveReleasedImageProvider(prov);
                     return;
-                  } catch(...) {}
+                  } catch (...) {
+                  }
                 }
               })
           .def_property(
@@ -1303,13 +1319,15 @@ void pyinit_ui(py::module& module_lev2) {
                     btn->setActivePressedImage(img);
                     btn->setActivePressedImageProvider(nullptr);
                     return;
-                  } catch(...) {}
+                  } catch (...) {
+                  }
                   // Try image_provider_ptr_t
                   try {
                     auto prov = obj.cast<lev2::image_provider_ptr_t>();
                     btn->setActivePressedImageProvider(prov);
                     return;
-                  } catch(...) {}
+                  } catch (...) {
+                  }
                 }
               })
           .def_property(
@@ -1731,11 +1749,11 @@ void pyinit_ui(py::module& module_lev2) {
               },
               [](ui::coloredit_ptr_t ce, fvec4 c) { //
                 ce->_currentColor = c;
-                auto hsv = c.xyz().convertRgbToHsv();
+                auto hsv          = c.xyz().convertRgbToHsv();
                 ce->_currentColorFullBright.setHSV(hsv.x, hsv.y, 1.0);
-                ce->_hue = hsv.x;
+                ce->_hue        = hsv.x;
                 ce->_saturation = hsv.y;
-                ce->_intensity = hsv.z;
+                ce->_intensity  = hsv.z;
               })
           .def_property(
               "originalColor",
@@ -1751,9 +1769,9 @@ void pyinit_ui(py::module& module_lev2) {
                 return py::none();
               },
               [type_codec](ui::coloredit_ptr_t ce, py::object callback) { //
-                if ( not callback.is_none()) {
-                  auto pycb       = std::make_shared<py::object>(callback);
-                  ce->_onColorChanged = [pycb,type_codec](fvec4 newcolor) {
+                if (not callback.is_none()) {
+                  auto pycb           = std::make_shared<py::object>(callback);
+                  ce->_onColorChanged = [pycb, type_codec](fvec4 newcolor) {
                     py::gil_scoped_acquire acquire_gil;
                     auto encoded = type_codec->encode(newcolor);
                     (*pycb)(encoded);
@@ -1780,10 +1798,10 @@ void pyinit_ui(py::module& module_lev2) {
                 auto decoded_args = type_codec->decodeList(py_args);
                 auto name         = decoded_args[0].get<std::string>();
                 fvec4 defcolor;
-                if(decoded_args.size()>1) {
-                  defcolor     = decoded_args[1].get<fvec4>();
+                if (decoded_args.size() > 1) {
+                  defcolor = decoded_args[1].get<fvec4>();
                 }
-                auto layoutitem   = lg->makeChild<ui::ImageView>(name);
+                auto layoutitem                          = lg->makeChild<ui::ImageView>(name);
                 layoutitem.typedWidget()->_default_color = defcolor;
                 return layoutitem.as_shared();
               })
@@ -1858,13 +1876,15 @@ void pyinit_ui(py::module& module_lev2) {
                     auto img = obj.cast<lev2::image_ptr_t>();
                     imgview->setImage(img);
                     return;
-                  } catch(...) {}
+                  } catch (...) {
+                  }
                   // Try image_provider_ptr_t
                   try {
                     auto prov = obj.cast<lev2::image_provider_ptr_t>();
                     imgview->setImageProvider(prov);
                     return;
-                  } catch(...) {}
+                  } catch (...) {
+                  }
                 }
               });
   type_codec->registerStdCodec<ui::imgview_ptr_t>(imgview_type);
@@ -1878,12 +1898,14 @@ void pyinit_ui(py::module& module_lev2) {
               []() -> logger_backend_ptr_t { //
                 return ui::LoggerUIBackend::create();
               })
-          .def("registerGroup", [](ui::loggeruibackend_ptr_t backend, ui::loggergroup_ptr_t group) { //
-            printf("LoggerUIBackend::registerGroup() called\n");
-            printf("  backend ptr<%p>\n", (void*)backend.get());
-            printf("  group <%p>\n", (void*) group.get());
-            //backend->registerGroup(group);
-          })
+          .def(
+              "registerGroup",
+              [](ui::loggeruibackend_ptr_t backend, ui::loggergroup_ptr_t group) { //
+                printf("LoggerUIBackend::registerGroup() called\n");
+                printf("  backend ptr<%p>\n", (void*)backend.get());
+                printf("  group <%p>\n", (void*)group.get());
+                // backend->registerGroup(group);
+              })
           .def("unregisterGroup", &ui::LoggerUIBackend::unregisterGroup);
   type_codec->registerStdCodec<ui::loggeruibackend_ptr_t>(loggerbackend_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -1935,7 +1957,7 @@ void pyinit_ui(py::module& module_lev2) {
                 lg->addChild(logger_group);
 
                 // Create layout item manually since LoggerGroup isn't created via makeChild
-                auto layoutitem = std::make_shared<ui::LayoutItem<ui::LoggerGroup>>();
+                auto layoutitem     = std::make_shared<ui::LayoutItem<ui::LoggerGroup>>();
                 layoutitem->_widget = logger_group;
                 layoutitem->_layout = lg->_layout->childLayout(logger_group.get());
                 return layoutitem;
@@ -1944,12 +1966,14 @@ void pyinit_ui(py::module& module_lev2) {
           .def("removeChannel", &ui::LoggerGroup::removeChannel)
           .def("hasChannel", &ui::LoggerGroup::hasChannel)
           .def("processQueuedMessages", &ui::LoggerGroup::processQueuedMessages)
-          .def("registerOnBackend", [](ui::loggergroup_ptr_t group, logger_backend_ptr_t backend) {
-            ui::LoggerGroup::registerOnBackend(group, backend);
-          })
-          .def("unregisterFromBackend", [](ui::loggergroup_ptr_t group, logger_backend_ptr_t backend) {
-            ui::LoggerGroup::unregisterFromBackend(group, backend);
-          })
+          .def(
+              "registerOnBackend",
+              [](ui::loggergroup_ptr_t group, logger_backend_ptr_t backend) { ui::LoggerGroup::registerOnBackend(group, backend); })
+          .def(
+              "unregisterFromBackend",
+              [](ui::loggergroup_ptr_t group, logger_backend_ptr_t backend) {
+                ui::LoggerGroup::unregisterFromBackend(group, backend);
+              })
           .def_property(
               "background_color",
               [](ui::loggergroup_ptr_t group) -> fvec4 { //

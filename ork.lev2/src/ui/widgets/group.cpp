@@ -54,6 +54,7 @@ void Group::addChild(widget_ptr_t w, bool relayout) {
   }
   _children.push_back(w);
   w->setParent(this);
+  _onChildrenChanged();  // Notify subclasses
   if (relayout) {
     DoLayout();
   }
@@ -70,6 +71,7 @@ void Group::removeChild(widget_ptr_t w, bool relayout) {
           }),
       _children.end());
 
+  _onChildrenChanged();  // Notify subclasses
   if (relayout) {
     DoLayout();
   }
@@ -86,6 +88,7 @@ void Group::removeChild(Widget* w, bool relayout) {
           }),
       _children.end());
 
+  _onChildrenChanged();  // Notify subclasses
   if (relayout) {
     DoLayout();
   }

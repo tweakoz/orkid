@@ -55,6 +55,10 @@ struct TabWidget : public Group {
   fvec4 _tabBarBackground;
   fvec4 _contentBackground;
   bool _draw_background = true;
+  lev2::font_ptr_t _tab_font;
+
+  // Tab layout configuration
+  int _tab_padding = 16;  // Constant padding around label text
 
   protected:
   // Override from Widget
@@ -64,13 +68,27 @@ struct TabWidget : public Group {
   Widget* doRouteUiEvent(event_constptr_t ev) override;
   HandlerResult DoOnUiEvent(event_constptr_t ev) override;
 
+  // Override from Group
+  void _onChildrenChanged() override;
+
 private:
-  int _activeTabIndex = -1;
+  // Pointer-based tracking (stable across sorts)
+  widget_ptr_t _active_tab;
+  widget_ptr_t _hovered_tab;
+
+  // Cached layout data
+  std::vector<int> _tab_widths;     // Width of each tab (in current sorted order)
+  std::vector<int> _tab_positions;  // X position of each tab (in current sorted order)
+  bool _needs_layout_recalc = true;
+
+  // Legacy members
   int _tabBarHeight = 30;
-  int _hoveredTabIndex = -1;
   bool _showTabs = true;  // When false, acts as a page/stack widget
   float _pulsation_phase = 0.0f;  // Phase accumulator for active tab pulsation
 
+  // Private methods
+  void _ensureSorted();
+  void _recalculateTabLayout();
   int _getTabIndexAt(int x, int y) const;
   void _drawTabBar(drawevent_constptr_t drwev);
 };

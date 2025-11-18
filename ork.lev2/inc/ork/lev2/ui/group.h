@@ -40,6 +40,10 @@ struct Group : public Widget {
   void drawChildren(ui::drawevent_constptr_t drwev);
   size_t numChildren() const;
   /////////////////////////////
+protected:
+  virtual void _onChildrenChanged() {}  // Hook for subclasses to respond to child add/remove
+  /////////////////////////////
+public:
   std::set<Widget*> _snapped;
   std::vector<widget_ptr_t> _children;
   Widget* _eventstealer = nullptr;
