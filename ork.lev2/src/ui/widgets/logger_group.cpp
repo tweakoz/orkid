@@ -480,26 +480,35 @@ void LoggerGroup::_updatePerfGraphUI(const std::string& channel, const std::stri
     }
   }
 
-  // Get or create the channel for this perf item
-  auto graph_channel = view._shared_graph->channel(name);
+  // Get or create the GraphView channel (one per logger channel, e.g., "GVIEW")
+  // All perf items within this logger channel share the same GraphView channel
+  auto graph_channel = view._shared_graph->channel(channel);
 
   // Check if series already exists for this perf item
   auto series = graph_channel->getSeries(name);
   if (!series) {
-    // Generate color based on perf item name (similar to channel color generation)
-    uint64_t hash = 0;
-    for (char c : name) {
-      hash = hash * 31 + c;
-    }
-    float hue = (hash % 360) / 360.0f;
-    float r = std::abs(std::sin(hue * 6.28f));
-    float g = std::abs(std::sin((hue + 0.33f) * 6.28f));
-    float b = std::abs(std::sin((hue + 0.67f) * 6.28f));
-    fvec3 series_color(r * 0.8f + 0.2f, g * 0.8f + 0.2f, b * 0.8f + 0.2f);
+    // Generate well-distributed colors using HSV color wheel
+    // Count existing series to determine color index
+    size_t series_index = graph_channel->_series.size();
+
+    // Use golden ratio to distribute hues evenly around color wheel
+    // This ensures maximum color separation between series
+    const float golden_ratio_conjugate = 0.618033988749895f;
+    float hue = std::fmod(series_index * golden_ratio_conjugate, 1.0f);
+
+    // Vary saturation and value slightly based on series index to add more variety
+    // Keep saturation high (0.8-1.0) for vibrant colors
+    // Keep value high (0.85-1.0) for brightness
+    float sat = 0.85f + 0.15f * std::fmod(series_index * 0.13f, 1.0f);
+    float val = 0.85f + 0.15f * std::fmod(series_index * 0.17f, 1.0f);
+
+    // Convert HSV to RGB using existing fvec3::setHSV method
+    fvec3 series_color;
+    series_color.setHSV(hue, sat, val);
 
     // Create new series
     series = graph_channel->addSeries(name, series_color);
-    series->setMaxSamples(100);
+    series->setMaxSamples(1000);
   }
 
   // Convert value to float

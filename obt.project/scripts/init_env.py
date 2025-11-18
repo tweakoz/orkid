@@ -84,18 +84,17 @@ def setup():
   ##############################################
 
   obt.env.append("OBT_SEARCH_EXTLIST", ".cpp:.c:.cc:.h:.hpp:.inl")
-  obt.env.append("OBT_SEARCH_EXTLIST", ".qml:.m:.mm:.py")
-  obt.env.append("OBT_SEARCH_EXTLIST", ".txt:.md:.glfx:.ini")
+  obt.env.append("OBT_SEARCH_EXTLIST", ".qml:.m:.mm:.py:.swift")
+  obt.env.append("OBT_SEARCH_EXTLIST", ".txt:.md:.fxv2:.ini")
 
   ##############################################
 
 def extend_bashrc():
-  return ["ork.goto.orkid() { cd ${ORKID_WORKSPACE_DIR}; };\n"] \
-       + ["ork.goto.data_root() { cd ${ORKID_WORKSPACE_DIR}/ork.data; };\n"] \
+  return ["ork.goto.root() { cd ${ORKID_WORKSPACE_DIR}; };\n"] \
+       + ["ork.goto.orkid() { cd ${ORKID_WORKSPACE_DIR}; };\n"] \
+       + ["ork.goto.data() { cd ${ORKID_WORKSPACE_DIR}/ork.data; };\n"] \
        + ["ork.goto.asset_cache() { cd ${OBT_STAGE}/assetcache; };\n"] \
        + ["ork.goto.data_src() { cd ${ORKID_WORKSPACE_DIR}/ork.data/src; };\n"] \
        + ["ork.goto.data_test() { cd ${ORKID_WORKSPACE_DIR}/ork.data/src; };\n"] \
-       + ["ork.goto.data_lev2() { cd ${ORKID_WORKSPACE_DIR}/ork.data/platform_lev2; };\n"] \
-       + ["ork.use.vulkan() { " + ORKID_SETUP_VULKAN_FN + "};\n"] \
-       + ["ork.use.opengl() { " + ORKID_SETUP_OPENGL_FN + "};\n"] 
+       + ["ork.goto.data_lev2() { cd ${ORKID_WORKSPACE_DIR}/ork.data/platform_lev2; };\n"]
        

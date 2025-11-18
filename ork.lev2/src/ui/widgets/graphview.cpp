@@ -22,7 +22,7 @@ static constexpr int _kbasechanlaby = 16;
 GraphSeries::GraphSeries(const std::string& name, fvec3 color)
     : _name(name)
     , _color(color) {
-    _max_samples = 1000;
+    _max_samples = 4000;
 
 }
 /////////////////////////////////////////////////////////////////////////
@@ -238,11 +238,13 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
         float fx       = float(ilocx) * gscaleX / float(width());
         float fy       = float(ilocy) * gscaleY / float(height());
         fvec2 delta    = fvec2(fx, fy) - _downPos;
-        float newctr_x = _downCenter.x - (delta.x / _grid._zoomX);
+        // Removed horizontal panning - X axis is fixed at Y-axis position
+        // float newctr_x = _downCenter.x - (delta.x / _grid._zoomX);
         float newctr_y = _downCenter.y + (delta.y / _grid._zoomY);
 
-        if (not _lockX)
-          _grid._center.x = newctr_x;
+        // Horizontal panning disabled (Y-axis is fixed)
+        // if (not _lockX)
+        //   _grid._center.x = newctr_x;
         if (not _lockY)
           _grid._center.y = newctr_y;
 
@@ -252,14 +254,18 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
     }
     case EventCode::MOUSEWHEEL: {
       int idelta = ev->miMWY;
+      // Very fine zoom rate for precise control
+      // (1.01 = 1% change per tick)
+      const float zoom_rate = 1.01f;
+
       if (idelta > 0) {
-        _grid._zoomX *= 1.1f;
+        _grid._zoomX *= zoom_rate;
         if (not _lockYZOOM)
-          _grid._zoomY *= 1.1f;
+          _grid._zoomY *= zoom_rate;
       } else if (idelta < 0) {
-        _grid._zoomX *= 1.0f / 1.1f;
+        _grid._zoomX *= 1.0f / zoom_rate;
         if (not _lockYZOOM)
-          _grid._zoomY *= 1.0f / 1.1f;
+          _grid._zoomY *= 1.0f / zoom_rate;
       }
       _grid._zoomX         = clamp(_grid._zoomX, 0.02f, 10.0f);  // 0.02 = 5x more zoom out than 0.1
       _grid._zoomY         = clamp(_grid._zoomY, 0.02f, 10.0f);
@@ -436,6 +442,7 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
 
       if (has_series) {
         // Draw a label/button for each series
+        size_t num_series = channel->_series.size();
         for (auto& series : channel->_series) {
           int sw             = lev2::FontMan::stringWidth(series->_name.length());
           tgt->RefModColor() = series->_color;
@@ -499,9 +506,15 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
 
       // Calculate range (series-based only)
       fvec2 hrange, vrange;
+      bool has_visible_series = false;
+
+      // Calculate Y-axis pixel position (FIXED position, independent of changing value strings)
+      // Reserve a fixed width for value text (e.g., 80 pixels for up to ~10 characters)
+      const int value_text_reserved_width = 80;
+      int y_axis_pixel_x = width() - (max_label_width + 16) - value_text_reserved_width - 32;
+
       if (has_series && !channel->_series.empty()) {
         // Check if any visible series exist
-        bool has_visible_series = false;
         for (auto& series : channel->_series) {
           if (series->_visible && series->sampleCount() > 0) {
             has_visible_series = true;
@@ -510,10 +523,18 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
         }
 
         if (has_visible_series) {
-          // Horizontal range: use grid zoom/center (same pattern as vertical)
-          float hcenter = _grid._center.x;
+          // Horizontal range: Fixed Y-axis at X=0, positioned at y_axis_pixel_x
+          // The horizontal range is calculated so that X=0 maps to y_axis_pixel_x in screen space
+          // and the range extends from X=0 leftward (negative X values)
           float hextent = _grid._extent / _grid._zoomX;
-          hrange        = fvec2(hcenter - hextent / 2, hcenter + hextent / 2);
+          float pixels_left_of_axis = y_axis_pixel_x;  // Pixels from left edge to Y-axis
+          float pixels_total = width();
+
+          // Calculate how much of the data space is to the left of X=0 (the Y-axis)
+          // Proportion: pixels_left_of_axis / pixels_total = data_left / hextent
+          float data_left = hextent * (pixels_left_of_axis / pixels_total);
+
+          hrange = fvec2(-data_left, hextent - data_left);
 
           // Vertical range depends on mode
           if (_vscale_mode == VerticalScaleMode::AUTO) {
@@ -547,7 +568,7 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
       int w = this->width();
       int h = this->height();
 
-      if (numpoints) {
+      if (numpoints && has_visible_series) {
         // Create ortho matrix using hrange/vrange (computed once, shared for axes and all series)
         auto custom_ortho = mtxi->Ortho(hrange.x, hrange.y, vrange.y, vrange.x, 0.0f, 1.0f);
 
@@ -558,6 +579,7 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
 
         ///////////////////////////////////////////////////
         // Draw X and Y axis lines in plot coordinates
+        // Only render axes if there are visible series
         ///////////////////////////////////////////////////
         {
           lev2::VtxWriter<vtx_t> vw;
@@ -585,6 +607,7 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
         // Render series-based data
         ///////////////////////////////////////////////////
         if (has_series) {
+          size_t num_series = channel->_series.size();
           for (auto& series : channel->_series) {
             if (!series->_visible)
               continue;

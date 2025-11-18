@@ -59,9 +59,9 @@ class GraphViewTest(application.ComponentizedApplication):
     })
 
     # FM synthesis parameters for perfItem test
-    self.fm_carrier_freq = 0.2
-    self.fm_modulator_freq = 0.05
-    self.fm_modulation_index = 3.0
+    self.fm_carrier_freq = 0.1
+    self.fm_modulator_freq = 0.2
+    self.fm_modulation_index = 16.0
     self.fm_phase = 0.0
 
     ############################################
@@ -183,7 +183,7 @@ class GraphViewTest(application.ComponentizedApplication):
     self.gview_channel.perfItem("fm_wave", fm_wave)
     self.gview_channel.perfItem("carrier", math.sin(self.fm_phase * self.fm_carrier_freq))
     self.gview_channel.perfItem("modulator", modulator / self.fm_modulation_index)  # Normalize
-    self.gview_channel.perfItem("modulator_raw", modulator)
+    #self.gview_channel.perfItem("modulator_raw", modulator)
 
     self.fm_phase += self.time_speed
 
