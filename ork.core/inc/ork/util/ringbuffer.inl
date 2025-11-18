@@ -102,6 +102,18 @@ public:
         _count -= count;
     }
 
+    void peek_many(T* values, size_t count) const {
+        if (count > _count) {
+            throw std::runtime_error("Not enough data in RingBuffer to peek");
+        }
+        size_t first_chunk = std::min(count, _size - _read_index);
+        std::copy(_buffer.begin() + _read_index, _buffer.begin() + _read_index + first_chunk, values);
+        size_t second_chunk = count - first_chunk;
+        if (second_chunk > 0) {
+            std::copy(_buffer.begin(), _buffer.begin() + second_chunk, values + first_chunk);
+        }
+    }
+
     size_t size() const {
         return _count;
     }

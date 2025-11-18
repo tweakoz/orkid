@@ -32,6 +32,7 @@ struct TabWidget : public Group {
   }
 
   void setActiveTab(int index);
+  void setActiveTabByName(const std::string& name);  // Find first tab with this name
   int getActiveTab() const;
   int getTabCount() const { return _children.size(); }
 

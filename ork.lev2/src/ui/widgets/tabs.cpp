@@ -80,6 +80,18 @@ void TabWidget::setActiveTab(int index) {
 }
 
 /////////////////////////////////////////////////////////////////////////
+void TabWidget::setActiveTabByName(const std::string& name) {
+  // Find first child with matching name
+  for (const auto& child : _children) {
+    if (child->_name == name) {
+      _active_tab = child;
+      DoLayout();
+      return;
+    }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////
 int TabWidget::getActiveTab() const {
   if (!_active_tab && !_children.empty()) {
     return 0;  // Default to first tab (sorted)

@@ -108,7 +108,7 @@ void StrAudioDevice::_stopAudioThread() {
 void StrAudioDevice::_audioThreadFunc() {
   // Similar to portaudio callback, but we drive it ourselves
   const int chunk_size = 256;  // ~5ms at 48kHz
-  const int sleep_ms = (chunk_size * 1000) / _sample_rate;
+  const int sleep_ms = ((chunk_size * 1000) / _sample_rate);
 
   logchan_straudio->log("Audio thread running: chunk_size=%d sleep_ms=%d", chunk_size, sleep_ms);
 

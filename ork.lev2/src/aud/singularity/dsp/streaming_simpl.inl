@@ -12,13 +12,14 @@
 
 namespace ork::audio::singularity {
 
-static logchannel_ptr_t logchan_strsimpl = logger()->configureChannel("STRSIMPLE", fvec3(1, 0.6, .8), false);
+static logchannel_ptr_t logchan_strsimpl = logger()->configureChannel("STRSIMPLE", fvec3(1, 0.6, .8), true);
 
 struct SimpleImpl {
 
   StreamingOscillatorBlock* _oscil;
   bool _is_primed = false;
   size_t _exec_count = 0;
+  float _read_position = 0.0f;  // Fractional sample position for interpolation
 
   ////////////////////////////////////////////////////////////////
 
@@ -30,10 +31,32 @@ struct SimpleImpl {
 
   void reset() {
     _is_primed = false;
+    _read_position = 0.0f;
   }
 
   ////////////////////////////////////////////////////////////////
   // Emergency buffer drain when severely overfull
+  ////////////////////////////////////////////////////////////////
+
+  float computePlaybackRate(float buffer_health) {
+    float deviation = buffer_health - 1.0f;
+
+    // Tighter dead zone ±2% (reduced from 5%)
+    static constexpr float DEAD_ZONE = 0.02f;
+    if (fabsf(deviation) < DEAD_ZONE) {
+      return 1.0f;  // Normal playback
+    }
+
+    // Stronger correction - max ±1.0% pitch deviation (increased from 0.5%)
+    static constexpr float MAX_CORRECTION = 0.001f;
+
+    // Stronger proportional control (increased from 0.1 to 0.3)
+    float correction = -deviation * 0.3f;  // 30% feedback strength
+    correction = std::clamp(correction, -MAX_CORRECTION, MAX_CORRECTION);
+
+    return 1.0f - correction;
+  }
+
   ////////////////////////////////////////////////////////////////
 
   void emergencyDrain() {
@@ -130,87 +153,67 @@ struct SimpleImpl {
     float buffer_health = float(current_buffer_size) / float(target_level);
 
     ///////////////////////////////////////////////////////////////////
-    // compute stretch factor
+    // compute playback rate for interpolation
     ///////////////////////////////////////////////////////////////////
 
-    float deviation = buffer_health - 1.0f;
-
-    // Add dead zone around target level - no stretching within ±5% of target
-    static constexpr float DEAD_ZONE = 0.05f; // 5% dead zone
-    int stretch_state = 0; // -1, 0, or 1 (sign of deviation)
-    if (fabsf(deviation) < DEAD_ZONE) {
-      stretch_state = 0;
-    } else {
-      // Reduce effective deviation by dead zone amount
-      if (deviation > 0) {
-        stretch_state = -1; // Buffer is overfull, stretch down
-      } else {
-        stretch_state = 1; // Buffer is underfull, stretch up
-      }
-    }
+    float playback_rate = computePlaybackRate(buffer_health);
 
     ///////////////////////////////////////////////////////////////////
     // logging
     ///////////////////////////////////////////////////////////////////
 
-    if (0) {
-      logchan_strsimpl->perfItem("SIMPL:BufferCur", int(current_buffer_size));
-      logchan_strsimpl->perfItem("SIMPL:BufferTgt", int(target_level));
-      logchan_strsimpl->perfItem("SIMPL:BufferHealth", buffer_health);
-      logchan_strsimpl->perfItem("SIMPL:Consuming", int(should_consume_samples));
-      logchan_strsimpl->perfItem("SIMPL:STRETCH", stretch_state);
-    }
-    else if (1){
-      if((ecount%256)==0){
-        logchan_strsimpl->log("SIMPL: BufCur:%d Tgt:%d Health:%.3f Consuming:%d STRETCH:%d",
-          int(current_buffer_size),
-          int(target_level),
-          buffer_health,
-          int(should_consume_samples),
-          stretch_state);
+    if (1){
+      if((ecount%128)==0){
+        logchan_strsimpl->perfItem("BufCur",int(current_buffer_size));
+        logchan_strsimpl->perfItem("BufTgt",int(target_level));
+        logchan_strsimpl->perfItem("BufHealth",buffer_health);
+        logchan_strsimpl->perfItem("Consuming",int(should_consume_samples));
+        logchan_strsimpl->perfItem("PlaybackRate",playback_rate);
       }
     }
 
     ///////////////////////////////////////////////////////////////////
-    // GENERATE FIXED 64-FRAME OUTPUT
+    // GENERATE FIXED 64-FRAME OUTPUT WITH INTERPOLATION
     ///////////////////////////////////////////////////////////////////
 
     if (should_consume_samples) {
 
-      constexpr int stretch_count = 1;
-      static float discard_samples[stretch_count];
+      // Calculate samples needed for interpolation
+      size_t samples_needed = size_t(frames * playback_rate) + 2;  // +2 for interpolation safety
 
-      if(stretch_state == -1){ // Buffer is overfull, stretch down
-        stretch_state = (current_buffer_size-stretch_count) > frames ? -1 : 0; // Only stretch if we have enough samples
-      }
+      if (current_buffer_size >= samples_needed) {
+        // Pre-fetch buffer data for interpolation
+        std::vector<float> temp_buffer(samples_needed);
+        _oscil->_ringBuffer.peek_many(temp_buffer.data(), samples_needed);
 
-      // Direct copy mode (no stretching)
-      if (current_buffer_size >= size_t(frames)) {
-        switch(stretch_state){
-          case -1: // Buffer is overfull, stretch down
-            // this means discard a few samples 
-            //   (assuning we have more than frames+discard amout)
-            _oscil->_ringBuffer.pop_many(discard_samples, stretch_count);
-            _oscil->_ringBuffer.pop_many(outputchan, frames);
-            break;
-          case 1: { // Buffer is underfull, stretch up
-            // this means we need to repeat some samples
-            // by pulling fewer samples than we need
-            // and then repeating the last sample
-            size_t to_pull = frames-stretch_count;
-            _oscil->_ringBuffer.pop_many(outputchan, to_pull);
-            for(int i=0; i<stretch_count; i++){
-              outputchan[to_pull+i] = outputchan[to_pull-1]; // Repeat last sample
-            }
-            break;
-          }
-          default: // No stretching needed
-            _oscil->_ringBuffer.pop_many(outputchan, frames);
-            break;
+        // Generate output with linear interpolation
+        for (int i = 0; i < frames; i++) {
+          float read_pos = _read_position + i * playback_rate;
+
+          int index = int(read_pos);
+          float frac = read_pos - float(index);
+
+          // Linear interpolation
+          float sample0 = temp_buffer[index];
+          float sample1 = temp_buffer[index + 1];
+          outputchan[i] = sample0 + frac * (sample1 - sample0);
         }
+
+        // Advance read position
+        _read_position += frames * playback_rate;
+
+        // Consume integer samples from ring buffer
+        int samples_consumed = int(_read_position);
+        if (samples_consumed > 0) {
+          std::vector<float> discard(samples_consumed);
+          _oscil->_ringBuffer.pop_many(discard.data(), samples_consumed);
+          _read_position -= float(samples_consumed);  // Keep fractional part
+        }
+
       } else {
+        // Underrun
         memset(outputchan, 0, frames * sizeof(float));
-        logchan_strsimpl->log("SimpleImpl: Underrun - buffer:%zu needed:%d", current_buffer_size, frames);
+        logchan_strsimpl->log("SimpleImpl: Underrun - buffer:%zu needed:%zu", current_buffer_size, samples_needed);
       }
     } else {
       // Output silence (priming or no data)

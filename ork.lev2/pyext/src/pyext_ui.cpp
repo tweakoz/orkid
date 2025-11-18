@@ -668,6 +668,11 @@ void pyinit_ui(py::module& module_lev2) {
                 tabs->setActiveTab(index);
               })
           .def(
+              "setActiveTabByName",
+              [](ui::tabwidget_ptr_t tabs, const std::string& name) { //
+                tabs->setActiveTabByName(name);
+              })
+          .def(
               "getActiveTab",
               [](ui::tabwidget_ptr_t tabs) -> int { //
                 return tabs->getActiveTab();
@@ -1965,6 +1970,7 @@ void pyinit_ui(py::module& module_lev2) {
           .def("addChannel", &ui::LoggerGroup::addChannel)
           .def("removeChannel", &ui::LoggerGroup::removeChannel)
           .def("hasChannel", &ui::LoggerGroup::hasChannel)
+          .def("setActiveTabByName", &ui::LoggerGroup::setActiveTabByName)
           .def("processQueuedMessages", &ui::LoggerGroup::processQueuedMessages)
           .def(
               "registerOnBackend",
@@ -1981,6 +1987,11 @@ void pyinit_ui(py::module& module_lev2) {
               },
               [](ui::loggergroup_ptr_t group, fvec4 c) { //
                 group->_background_color = c;
+              })
+          .def_property_readonly(
+              "tab_widget",
+              [](ui::loggergroup_ptr_t group) -> ui::tabwidget_ptr_t { //
+                return group->_tab_widget;
               });
   type_codec->registerStdCodec<ui::loggergroup_ptr_t>(loggergroup_type);
   /////////////////////////////////////////////////////////////////////////////////

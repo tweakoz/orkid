@@ -41,6 +41,9 @@ struct LoggerGroup : public Group {
   void removeChannel(const std::string& name);
   bool hasChannel(const std::string& name) const;  // Uses regex pattern matching
 
+  // Tab management - defers activation until channel exists
+  void setActiveTabByName(const std::string& name);
+
   // Message handling (called from backend, any thread)
   void onLogMessage(const std::string& channel, const std::string& msg);
   void onStatus(const std::string& channel, const std::string& subchan, const std::string& msg);
@@ -53,6 +56,8 @@ struct LoggerGroup : public Group {
   void DoLayout() override;
 
   fvec4 _background_color;
+  tabwidget_ptr_t _tab_widget;  // Public access to tab widget
+
 private:
   void _doGpuInit(lev2::Context* pt) override;
   void _doOnResized() override;
@@ -76,7 +81,6 @@ private:
     double _last_perf_sample_time = 0.0;  // Time of last lambda sample for this channel
   };
 
-  std::shared_ptr<TabWidget> _tab_widget;
   std::map<std::string, ChannelView> _channel_views;
 
   // Thread-safe message queue
@@ -94,6 +98,9 @@ private:
 
   // Timer for periodic lambda sampling
   ork::Timer _sample_timer;
+
+  // Pending active tab (if set before channel exists)
+  std::string _pending_active_tab_name;
 
   // UI update helpers (must be called on UI thread)
   void _appendLogToUI(const std::string& channel, const std::string& msg);

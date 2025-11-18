@@ -215,6 +215,12 @@ void LoggerGroup::addChannel(const std::string& name, lev2::Context* pt) {
   view._log_area->gpuInit(pt);
 
   _channel_views[name] = view;
+
+  // Check if this channel matches a pending active tab request
+  if (!_pending_active_tab_name.empty() && _pending_active_tab_name == name) {
+    _tab_widget->setActiveTabByName(name);
+    _pending_active_tab_name.clear();  // Clear once applied
+  }
 }
 
 void LoggerGroup::DoDraw(drawevent_constptr_t drwev) {
@@ -282,6 +288,19 @@ void LoggerGroup::DoLayout() {
 
 void LoggerGroup::removeChannel(const std::string& name) {
   _channel_views.erase(name);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void LoggerGroup::setActiveTabByName(const std::string& name) {
+  // Check if channel already exists
+  if (_channel_views.find(name) != _channel_views.end()) {
+    // Channel exists, activate immediately
+    _tab_widget->setActiveTabByName(name);
+  } else {
+    // Channel doesn't exist yet, defer activation
+    _pending_active_tab_name = name;
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
