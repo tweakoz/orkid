@@ -272,20 +272,51 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
       printf("GraphView<%s> keydown<%c>\n", _name.c_str(), key);
 
       // 'm' key toggles between AUTO and MANUAL vertical scale modes
-      if (key == 'm' || key == 'M') {
-        if (_vscale_mode == VerticalScaleMode::AUTO) {
-          _vscale_mode = VerticalScaleMode::MANUAL;
-          printf("  Vertical scale mode: AUTO -> MANUAL\n");
-        } else {
-          _vscale_mode = VerticalScaleMode::AUTO;
-          printf("  Vertical scale mode: MANUAL -> AUTO\n");
+      switch (key) {
+        case 'M': {
+          if (_vscale_mode == VerticalScaleMode::AUTO) {
+            _vscale_mode = VerticalScaleMode::MANUAL;
+            printf("  Vertical scale mode: AUTO -> MANUAL\n");
+          } else {
+            _vscale_mode = VerticalScaleMode::AUTO;
+            printf("  Vertical scale mode: MANUAL -> AUTO\n");
+          }
+          mNeedsSurfaceRepaint = true;
+          SetDirty();
+          return HandlerResult(this);
         }
-        mNeedsSurfaceRepaint = true;
-        SetDirty();
-        return HandlerResult(this);
+        break;
+        case ',': {
+          // increase num of samples
+          for (auto channel : _channelmap) {
+            for (auto& series : channel->_series) {
+              size_t curr_max = series->sampleCount();
+              curr_max /= 2;
+              series->setMaxSamples(curr_max);
+              printf("  Series<%s> max samples increased to %zu\n", series->_name.c_str(), curr_max);
+            } 
+          }
+          mNeedsSurfaceRepaint = true;
+          SetDirty();
+          return HandlerResult(this);
+        }
+        break;
+        case '.': {
+          // increase num of samples
+          for (auto channel : _channelmap) {
+            for (auto& series : channel->_series) {
+              size_t curr_max = series->sampleCount();
+              curr_max *= 2;
+              series->setMaxSamples(curr_max);
+              printf("  Series<%s> max samples increased to %zu\n", series->_name.c_str(), curr_max);
+            } 
+          }
+          mNeedsSurfaceRepaint = true;
+          SetDirty();
+          return HandlerResult(this);
+        }
+        break;
       }
-
-      break;
     }
     default:
       break;
