@@ -26,6 +26,7 @@ namespace ork::ui {
 
 LoggerGroup::LoggerGroup(const std::string& name)
   : Group(name, 0, 0, 0, 0) {
+  _sample_timer.Start();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -217,6 +218,9 @@ void LoggerGroup::addChannel(const std::string& name, lev2::Context* pt) {
 }
 
 void LoggerGroup::DoDraw(drawevent_constptr_t drwev) {
+
+  // Sample pull-based perfItems at their configured interval
+  samplePerfLambdas();
 
   // Process queued messages on UI/render thread
   auto ctx = drwev->GetTarget();
@@ -530,6 +534,53 @@ void LoggerGroup::_updatePerfGraphUI(const std::string& channel, const std::stri
 
   // Mark GraphView surface as needing repaint
   view._shared_graph->MarkSurfaceDirty();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void LoggerGroup::samplePerfLambdas() {
+  // Get current time from our timer
+  double current_time = _sample_timer.SecsSinceStart();
+
+  // Get logger instance
+  auto the_logger = ork::logger();
+  if (!the_logger)
+    return;
+
+  // Iterate through our channel views
+  for (auto& [channel_name, view] : _channel_views) {
+    // Get the LogChannel
+    auto log_channel = the_logger->getChannel(channel_name);
+    if (!log_channel)
+      continue;
+
+    // Check if it's time to sample based on perf_interval
+    double elapsed = current_time - view._last_perf_sample_time;
+
+    if (elapsed >= log_channel->_perf_interval) {
+      // Time to sample!
+      view._last_perf_sample_time = current_time;
+
+      // Sample all lambdas for this channel
+      for (const auto& perf_lambda : log_channel->_perf_lambdas) {
+        const std::string& name = perf_lambda.name;
+        const svar64_t& lambda = perf_lambda.lambda;
+
+        // Call lambda and get value
+        if (lambda.isA<float_lambda_t>()) {
+          auto fn = lambda.get<float_lambda_t>();
+          float value = fn();
+          // Queue the perfItem with the sampled value
+          onPerfItem(channel_name, name, svar64_t(value));
+        } else if (lambda.isA<int_lambda_t>()) {
+          auto fn = lambda.get<int_lambda_t>();
+          int value = fn();
+          // Queue the perfItem with the sampled value
+          onPerfItem(channel_name, name, svar64_t(value));
+        }
+      }
+    }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

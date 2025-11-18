@@ -72,18 +72,76 @@ void pyinit_logger(py::module& module_core) {
       [](logchannel_ptr_t chan, float interval) {
         chan->_status_interval = interval;
       })
+    .def_property("perf_interval",
+      [](logchannel_ptr_t chan) -> float {
+        return chan->_perf_interval;
+      },
+      [](logchannel_ptr_t chan, float interval) {
+        chan->_perf_interval = interval;
+      })
     .def("perfItem",
-      [](logchannel_ptr_t chan, const std::string& name, py::object value) {
-        svar64_t val;
-        // Try to convert Python object to appropriate type
-        if (py::isinstance<py::float_>(value)) {
-          val.set<float>(value.cast<float>());
-        } else if (py::isinstance<py::int_>(value)) {
-          val.set<int64_t>(value.cast<int64_t>());
+      [](logchannel_ptr_t chan, const std::string& name, py::object value_or_callable) {
+
+        // Check if it's a callable (Python lambda or function)
+        if (py::hasattr(value_or_callable, "__call__")) {
+
+          // Test call to determine return type (with GIL already acquired)
+          py::object test_result = value_or_callable();
+
+          // Determine type and create appropriate C++ lambda with runtime type checking
+          if (py::isinstance<py::float_>(test_result)) {
+            // Create float_lambda_t with type validation
+            auto pycb = std::make_shared<py::object>(value_or_callable);
+            float_lambda_t cpp_lambda = [pycb, name]() -> float {
+              py::gil_scoped_acquire acquire_gil;
+              py::object result = (*pycb)();
+
+              // Validate type consistency (allow int->float promotion)
+              if (!py::isinstance<py::float_>(result) && !py::isinstance<py::int_>(result)) {
+                throw std::runtime_error(
+                  "perfItem '" + name + "': callable return type changed from float"
+                );
+              }
+              return result.cast<float>();
+            };
+            chan->perfItem(name, svar64_t(cpp_lambda));
+
+          } else if (py::isinstance<py::int_>(test_result)) {
+            // Create int_lambda_t with type validation
+            auto pycb = std::make_shared<py::object>(value_or_callable);
+            int_lambda_t cpp_lambda = [pycb, name]() -> int {
+              py::gil_scoped_acquire acquire_gil;
+              py::object result = (*pycb)();
+
+              // Validate type consistency
+              if (!py::isinstance<py::int_>(result)) {
+                throw std::runtime_error(
+                  "perfItem '" + name + "': callable return type changed from int"
+                );
+              }
+              return result.cast<int>();
+            };
+            chan->perfItem(name, svar64_t(cpp_lambda));
+
+          } else {
+            throw std::runtime_error(
+              "perfItem callable must return float or int, got: " +
+              std::string(py::str(test_result.get_type()))
+            );
+          }
+
         } else {
-          val.set<double>(value.cast<double>());
+          // Immediate value - original behavior
+          svar64_t val;
+          if (py::isinstance<py::float_>(value_or_callable)) {
+            val.set<float>(value_or_callable.cast<float>());
+          } else if (py::isinstance<py::int_>(value_or_callable)) {
+            val.set<int64_t>(value_or_callable.cast<int64_t>());
+          } else {
+            val.set<double>(value_or_callable.cast<double>());
+          }
+          chan->perfItem(name, val);
         }
-        chan->perfItem(name, val);
       })
     .def("__repr__", [](logchannel_ptr_t chan) -> std::string {
       return FormatString("LogChannel(%s, enabled=%s)",

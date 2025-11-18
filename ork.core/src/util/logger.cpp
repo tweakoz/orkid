@@ -158,7 +158,26 @@ void LogChannel::status_valist(const std::string& subchannel, const char* pMsgFo
 ///////////////////////////////////////////////////////////////////////////////
 
 void LogChannel::perfItem(const std::string& subchannel, svar64_t dd) {
-  _logger->_backend->_on_perf_item(this, subchannel, dd);
+  // Check if this is a lambda (pull-based) or immediate value (push-based)
+  if (dd.isA<float_lambda_t>() || dd.isA<int_lambda_t>()) {
+    // Store lambda for periodic sampling
+    // Check if lambda with this name already exists
+    bool found = false;
+    for (auto& item : _perf_lambdas) {
+      if (item.name == subchannel) {
+        item.lambda = dd;  // Update existing lambda
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      // Add new lambda
+      _perf_lambdas.push_back({subchannel, dd});
+    }
+  } else {
+    // Immediate value - forward to backend immediately
+    _logger->_backend->_on_perf_item(this, subchannel, dd);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

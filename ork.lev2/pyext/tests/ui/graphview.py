@@ -101,7 +101,18 @@ class GraphViewTest(application.ComponentizedApplication):
         vec3(0.3, 1.0, 0.8),
         enable_channel=True
     )
+
+    # Set sampling rate to 400 samples/sec (0.0025 second interval)
+    self.gview_channel.perf_interval = 0.0025
+
+    # Register pull-based perfItems (lambdas) - sampled at perf_interval rate
+    # These will be automatically sampled at 100 Hz
+    self.gview_channel.perfItem("fm_wave", lambda: self._getFmWave())
+    self.gview_channel.perfItem("carrier", lambda: self._getCarrier())
+    self.gview_channel.perfItem("modulator", lambda: self._getModulator())
+
     print(f"GVIEW channel configured: {self.gview_channel}")
+    print(f"GVIEW sampling rate: {1.0/self.gview_channel.perf_interval} Hz")
 
   ##############################################
 
@@ -160,6 +171,24 @@ class GraphViewTest(application.ComponentizedApplication):
     self.waveforms.createSeries(channel, max_samples=1000, auto_range=True, window_size=1000)
 
   ##############################################
+  # Pull-based perfItem helpers (called by lambdas at perf_interval rate)
+  ##############################################
+
+  def _getFmWave(self):
+    """FM synthesis: carrier modulated by sine wave"""
+    modulator = math.sin(self.fm_phase * self.fm_modulator_freq) * self.fm_modulation_index
+    return math.sin(self.fm_phase * self.fm_carrier_freq + modulator)
+
+  def _getCarrier(self):
+    """Pure carrier wave"""
+    return math.sin(self.fm_phase * self.fm_carrier_freq)
+
+  def _getModulator(self):
+    """Normalized modulator signal"""
+    modulator = math.sin(self.fm_phase * self.fm_modulator_freq) * self.fm_modulation_index
+    return modulator / self.fm_modulation_index
+
+  ##############################################
 
   def _onUpdate(self, updinfo):
     # Log messages every 120 frames (~2 seconds at 60fps)
@@ -174,18 +203,11 @@ class GraphViewTest(application.ComponentizedApplication):
 
     self.time += self.time_speed
 
-    # Send synthetic perfItems to GVIEW channel
-    # FM synthesis: carrier modulated by sine wave
-    modulator = math.sin(self.fm_phase * self.fm_modulator_freq) * self.fm_modulation_index
-    fm_wave = math.sin(self.fm_phase * self.fm_carrier_freq + modulator)
-
-    # Send multiple perfItems to test multiple GraphViews in DynaGrid
-    self.gview_channel.perfItem("fm_wave", fm_wave)
-    self.gview_channel.perfItem("carrier", math.sin(self.fm_phase * self.fm_carrier_freq))
-    self.gview_channel.perfItem("modulator", modulator / self.fm_modulation_index)  # Normalize
-    #self.gview_channel.perfItem("modulator_raw", modulator)
-
+    # Update FM phase (used by pull-based perfItem lambdas)
     self.fm_phase += self.time_speed
+
+    # Note: perfItems are now pull-based (lambdas) - sampled automatically at 100 Hz
+    # No need to call perfItem() here anymore!
 
     # Mark graphview as needing repaint
     self.graphview.setDirty()

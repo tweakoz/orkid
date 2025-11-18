@@ -52,9 +52,18 @@ namespace ork {
     bool _enabled;
     file_ptr_t _file; // if not null, log to file
     float _status_interval = 5.0f;
+    float _perf_interval = 1.0f;  // Sampling rate for pull-based perfItems (in seconds)
     Logger* _logger = nullptr; // Backpointer to logger for this channel
-    
+
     mutable svar64_t _backend_impl;
+
+    // Pull-based perfItem lambdas (sampled at _perf_interval rate)
+    // Store lambda in svar64_t - check with isA<float_lambda_t> or isA<int_lambda_t>
+    struct PerfItemLambda {
+      std::string name;
+      svar64_t lambda;  // Can hold float_lambda_t or int_lambda_t
+    };
+    std::vector<PerfItemLambda> _perf_lambdas;
   };
 
   using logchannel_ptr_t = std::shared_ptr<LogChannel>;

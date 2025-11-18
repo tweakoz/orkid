@@ -31,6 +31,8 @@ template <typename T> typename std::enable_if<std::is_enum<T>::value, void>::typ
 }
 
 typedef std::function<void()> void_lambda_t;
+typedef std::function<float()> float_lambda_t;
+typedef std::function<int()> int_lambda_t;
 
 template <typename T> T minimum(T a, T b) {
   return (a < b) ? a : b;

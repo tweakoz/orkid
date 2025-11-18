@@ -48,6 +48,7 @@ struct LoggerGroup : public Group {
 
   // Process queued messages (called from UI thread)
   void processQueuedMessages(lev2::Context* pt);
+  void samplePerfLambdas();  // Sample pull-based perfItems
 
   void DoLayout() override;
 
@@ -72,6 +73,7 @@ private:
     dynagrid_ptr_t _perf_grid;       // Grid for performance graphs
     graphview_ptr_t _shared_graph;   // Shared graph for all perf items in this channel
     std::map<std::string, std::string> _status_lines;
+    double _last_perf_sample_time = 0.0;  // Time of last lambda sample for this channel
   };
 
   std::shared_ptr<TabWidget> _tab_widget;
@@ -89,6 +91,9 @@ private:
 
   std::mutex _message_mutex;
   std::vector<PendingMessage> _pending_messages;
+
+  // Timer for periodic lambda sampling
+  ork::Timer _sample_timer;
 
   // UI update helpers (must be called on UI thread)
   void _appendLogToUI(const std::string& channel, const std::string& msg);
