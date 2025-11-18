@@ -175,32 +175,63 @@ void ImageView::DoDraw(drawevent_constptr_t drwev) {
       auto rcfd = std::make_shared<lev2::RenderContextFrameData>(tgt);
       auto rcid = std::make_shared<lev2::RenderContextInstData>(rcfd);
       _pipeline_override->wrappedDrawCall(*rcid,[&](){
-        pri->RenderEMLQuadAtZV16T16C16(
-          ix1,  // x0
-          ix2,  // x1
-          iy1,  // y0
-          iy2,  // y1
+        if( _image_rot_180 ){
+          pri->RenderEMLQuadAtZV16T16C16(
+            ix2,  // x0
+            ix1,  // x1
+            iy2,  // y0
+            iy1,  // y1
+            0.0f, // z
+            0.0f,
+            1.0f, // u0, u1
+            0.0f,
+            1.0f // v0, v1
+          );
+        }
+        else {
+          pri->RenderEMLQuadAtZV16T16C16(
+            ix1,  // x0
+            ix2,  // x1
+            iy1,  // y0
+            iy2,  // y1
+            0.0f, // z
+            0.0f,
+            1.0f, // u0, u1
+            0.0f,
+            1.0f // v0, v1
+          );
+        }
+      });
+    }
+    else {
+      if( _image_rot_180 ){
+        pri->RenderQuadAtZ(
+          _tex_material.get(),
+          ix2,  // x0
+          ix1,  // x1
+          iy2,  // y0
+          iy1,  // y1
           0.0f, // z
           0.0f,
           1.0f, // u0, u1
           0.0f,
           1.0f // v0, v1
         );
-      });
-    }
-    else{
-      pri->RenderQuadAtZ(
-          _tex_material.get(),
-          ix1,  // x0
-          ix2,  // x1
-          iy1,  // y0
-          iy2,  // y1
-          0.0f, // z
-          0.0f,
-          1.0f, // u0, u1
-          0.0f,
-          1.0f // v0, v1
-      );
+      }
+      else {
+        pri->RenderQuadAtZ(
+            _tex_material.get(),
+            ix1,  // x0
+            ix2,  // x1
+            iy1,  // y0
+            iy2,  // y1
+            0.0f, // z
+            0.0f,
+            1.0f, // u0, u1
+            0.0f,
+            1.0f // v0, v1
+        );
+      }
     }
   }
 

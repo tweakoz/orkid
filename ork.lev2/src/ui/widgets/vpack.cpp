@@ -25,30 +25,64 @@ void VerticalPack::_doOnResized() {
 /////////////////////////////////////////////////////////////////////////
 void VerticalPack::DoLayout() {
 
-  size_t Y = 0;
-  // Layout all children to fill the content area
   size_t num_children = _children.size();
-  for( size_t i=0; i<num_children; i++ ){
-    auto child = _children[i];
+  if (num_children == 0) return;
 
-    // Determine child height
-    int child_height;
-    if (child->_fixed_height) {
-      // Use fixed height value
-      child_height = child->_fixed_height;
-    } else if (_fill && (i == num_children - 1)) {
-      // Last child fills remaining space
-      child_height = _geometry._h - Y;
-    } else {
-      // Use item_height
-      child_height = _item_height;
+  if (_uniform) {
+    // Distribute children uniformly across width, respecting fixed widths
+    int total_margin = _margin * (num_children - 1);
+    int available_height = _geometry._h - total_margin;
+
+    // First pass: count non-fixed children and sum fixed widths
+    int num_non_fixed = 0;
+    int total_fixed_height = 0;
+    for (size_t i = 0; i < num_children; i++) {
+      auto child = _children[i];
+      if (child->_fixed_height) {
+        total_fixed_height += child->_fixed_height;
+      } else {
+        num_non_fixed++;
+      }
     }
 
-    child->SetRect(0, Y, _geometry._w, child_height);
-    Y += child_height + _margin;
+    // Calculate height for uniform (non-fixed) children
+    int remaining_height = available_height - total_fixed_height;
+    int uniform_height = num_non_fixed > 0 ? remaining_height / num_non_fixed : 0;
 
-    if (_fill && (i == num_children - 1)) {
-      break;
+    // Second pass: layout children
+    int y = 0;
+    for (size_t i = 0; i < num_children; i++) {
+      auto child = _children[i];
+      int h = child->_fixed_height ? child->_fixed_height : uniform_height;
+      child->SetRect(0, y, _geometry._w, h);
+      y += h + _margin;
+    }
+  } else {
+      size_t Y = 0;
+    // Layout all children to fill the content area
+    size_t num_children = _children.size();
+    for( size_t i=0; i<num_children; i++ ){
+      auto child = _children[i];
+
+      // Determine child height
+      int child_height;
+      if (child->_fixed_height) {
+        // Use fixed height value
+        child_height = child->_fixed_height;
+      } else if (_fill && (i == num_children - 1)) {
+        // Last child fills remaining space
+        child_height = _geometry._h - Y;
+      } else {
+        // Use item_height
+        child_height = _item_height;
+      }
+
+      child->SetRect(0, Y, _geometry._w, child_height);
+      Y += child_height + _margin;
+
+      if (_fill && (i == num_children - 1)) {
+        break;
+      }
     }
   }
 }

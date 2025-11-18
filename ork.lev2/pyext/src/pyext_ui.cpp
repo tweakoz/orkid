@@ -762,6 +762,14 @@ void pyinit_ui(py::module& module_lev2) {
                 vpack->_item_height = h;
               })
           .def_property(
+              "uniform",
+              [](ui::vpack_ptr_t vpack) -> bool { //
+                return vpack->_uniform;
+              },
+              [](ui::vpack_ptr_t vpack, bool b) { //
+                vpack->_uniform = b;
+              })
+          .def_property(
               "fill",
               [](ui::vpack_ptr_t vpack) -> bool { //
                 return vpack->_fill;
@@ -1826,6 +1834,10 @@ void pyinit_ui(py::module& module_lev2) {
               "invert_aspect",
               [](ui::imgview_ptr_t imgview) -> bool { return imgview->_invert_aspect; },
               [](ui::imgview_ptr_t imgview, bool p) { imgview->_invert_aspect = p; })
+          .def_property(
+              "image_rot_180",
+              [](ui::imgview_ptr_t imgview) -> bool { return imgview->_image_rot_180; },
+              [](ui::imgview_ptr_t imgview, bool p) { imgview->_image_rot_180 = p; })
           .def_property(
               "image",
               [](ui::imgview_ptr_t imgview) -> py::object {
