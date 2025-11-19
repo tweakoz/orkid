@@ -57,6 +57,7 @@ struct LoggerGroup : public Group {
 
   fvec4 _background_color;
   tabwidget_ptr_t _tab_widget;  // Public access to tab widget
+  bool _normalize_series = false;  // Normalize each series independently to [0,1]
 
 private:
   void _doGpuInit(lev2::Context* pt) override;

@@ -54,6 +54,16 @@ struct GraphSeries {
   float _historical_max = 1.0f;       // Historical max that decays toward current max
   size_t _range_update_counter = 0;   // Track updates for initialization
 
+  // Display normalization (visual only, doesn't affect stored data)
+  bool _normalize_for_display = false;  // Normalize to [0,1] range for display
+
+  // Per-series vertical scale and offset (visual only)
+  float _vertical_scale = 1.0f;   // Multiplier for Y values (zoom)
+  float _vertical_offset = 0.0f;  // Offset added to Y values (pan)
+  bool _freeze_auto_range = false;  // True to freeze this series' range (disable auto-range)
+  float _frozen_min = 0.0f;  // Frozen min value when auto-range is disabled
+  float _frozen_max = 1.0f;  // Frozen max value when auto-range is disabled
+
 private:
   void _updateRange();
 };
@@ -102,6 +112,8 @@ struct GraphView : public ui::Surface {
   lev2::Grid2d _grid;
   fvec2 _downPos;
   fvec2 _downCenter;
+  int _downPixelY;  // Starting Y pixel position for drag
+  float _downSeriesOffset;  // Starting offset of selected series when drag began
   bool _lockX;
   bool _lockY;
   bool _lockYZOOM;
@@ -110,6 +122,22 @@ struct GraphView : public ui::Surface {
 
   int _label_spacing = 2;  // Margin between series label boxes
   VerticalScaleMode _vscale_mode = VerticalScaleMode::AUTO;  // Default to auto-range
+
+  // Selected series for per-series scale/offset control
+  graphseries_ptr_t _selected_series = nullptr;
+  graphseries_ptr_t _hovered_series = nullptr;  // Series under mouse cursor
+
+  // Key state tracking
+  bool _v_key_down = false;  // True when 'v' key is held down
+
+private:
+  // Helper functions for event handling
+  graphseries_ptr_t _findSeriesAtPoint(int x, int y);
+  void _freezeSeriesAutoRange(graphseries_ptr_t series);
+  float _getSeriesVerticalRange(graphseries_ptr_t series);
+  void _adjustSeriesOffset(int pixel_delta_y);
+  void _adjustSeriesScale(int wheel_delta);
+  void _adjustGlobalZoom(int wheel_delta);
 };
 using graphview_ptr_t = std::shared_ptr<GraphView>;
 

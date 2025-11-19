@@ -44,14 +44,17 @@ struct SimpleImpl {
     // Tighter dead zone ±2% (reduced from 5%)
     static constexpr float DEAD_ZONE = 0.02f;
     if (fabsf(deviation) < DEAD_ZONE) {
-      return 1.0f;  // Normal playback
+      //return 1.0f;  // Normal playback
     }
 
     // Stronger correction - max ±1.0% pitch deviation (increased from 0.5%)
-    static constexpr float MAX_CORRECTION = 0.001f;
+    static constexpr float MAX_CORRECTION = 0.005f;
 
     // Stronger proportional control (increased from 0.1 to 0.3)
-    float correction = -deviation * 0.3f;  // 30% feedback strength
+    float correction = -deviation * 0.03f;  // 30% feedback strength
+
+    logchan_strsimpl->perfItem("deviation", deviation);
+    logchan_strsimpl->perfItem("correction", correction);
     correction = std::clamp(correction, -MAX_CORRECTION, MAX_CORRECTION);
 
     return 1.0f - correction;
@@ -62,16 +65,29 @@ struct SimpleImpl {
   void emergencyDrain() {
     size_t current_size = _oscil->_ringBuffer.size();
     size_t target_size  = _oscil->_dynamic_target_level;
+    size_t drain_threshold  = size_t(target_size*1.5);                  // Exit priming at target level
+    if (current_size > drain_threshold) { // More aggressive trigger
 
-    if (current_size > target_size * 1.5) { // More aggressive trigger
       size_t excess   = current_size - target_size;
       size_t to_drain = std::min(excess, size_t(16384)); // Drain max 16K samples at once
 
       std::vector<float> temp_drain(to_drain);
       _oscil->_ringBuffer.pop_many(temp_drain.data(), to_drain);
 
+      logchan_strsimpl->perfItem("ED.current_size", current_size);
+      logchan_strsimpl->perfItem("ED.ts*1.5", (target_size*1.5f));
+      logchan_strsimpl->perfItem("ED.excess", int(excess));
+      logchan_strsimpl->perfItem("ED.to_drain", int(to_drain));
+
+
       logchan_strsimpl->log(
-          "EMERGENCY DRAIN: Removed %zu samples, buffer now %zu (target %zu)", to_drain, _oscil->_ringBuffer.size(), target_size);
+          "EDRAIN: cursize<%zu> thresh<%zu> excess<%zu> target<%zu> removing %zu samples, buffer now %zu", 
+          current_size,
+          drain_threshold, 
+          excess,
+          target_size,
+          to_drain,
+          _oscil->_ringBuffer.size());
       logchan_strsimpl->perfItem("SIMPL:DrainedSamples", int(to_drain));
     }
   }
@@ -102,6 +118,7 @@ struct SimpleImpl {
       size_t to_push         = std::min(available_space, num_samples);
 
       if (to_push > 0) {
+        logchan_strsimpl->perfItem("PUSH", int(to_push));
         _oscil->_ringBuffer.push_many(src, to_push);
       }
 
@@ -176,6 +193,8 @@ struct SimpleImpl {
     // GENERATE FIXED 64-FRAME OUTPUT WITH INTERPOLATION
     ///////////////////////////////////////////////////////////////////
 
+    size_t popped = 0;
+
     if (should_consume_samples) {
 
       // Calculate samples needed for interpolation
@@ -206,6 +225,7 @@ struct SimpleImpl {
         int samples_consumed = int(_read_position);
         if (samples_consumed > 0) {
           std::vector<float> discard(samples_consumed);
+          popped = size_t(samples_consumed);
           _oscil->_ringBuffer.pop_many(discard.data(), samples_consumed);
           _read_position -= float(samples_consumed);  // Keep fractional part
         }
@@ -215,6 +235,7 @@ struct SimpleImpl {
         memset(outputchan, 0, frames * sizeof(float));
         logchan_strsimpl->log("SimpleImpl: Underrun - buffer:%zu needed:%zu", current_buffer_size, samples_needed);
       }
+      logchan_strsimpl->perfItem("POP", (int)popped);
     } else {
       // Output silence (priming or no data)
       memset(outputchan, 0, frames * sizeof(float));

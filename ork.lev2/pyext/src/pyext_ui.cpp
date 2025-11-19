@@ -1992,6 +1992,14 @@ void pyinit_ui(py::module& module_lev2) {
               "tab_widget",
               [](ui::loggergroup_ptr_t group) -> ui::tabwidget_ptr_t { //
                 return group->_tab_widget;
+              })
+          .def_property(
+              "normalize_series",
+              [](ui::loggergroup_ptr_t group) -> bool { //
+                return group->_normalize_series;
+              },
+              [](ui::loggergroup_ptr_t group, bool normalize) { //
+                group->_normalize_series = normalize;
               });
   type_codec->registerStdCodec<ui::loggergroup_ptr_t>(loggergroup_type);
   /////////////////////////////////////////////////////////////////////////////////

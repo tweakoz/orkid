@@ -210,9 +210,9 @@ static void _glfw_callback_scroll(GLFWwindow* window, double xoffset, double yof
 void CtxGLFW::_on_callback_scroll(double xoffset, double yoffset) {
   auto uiev        = this->uievent();
   uiev->_eventcode = ui::EventCode::MOUSEWHEEL;
-
-  uiev->miMWY = int(yoffset);
-  uiev->miMWX = int(xoffset);
+  printf("scroll xoffset<%f> yoffset<%f>\n", xoffset, yoffset);
+  uiev->miMWY = int(yoffset*10.0);
+  uiev->miMWX = int(xoffset*10.0);
 
   _fire_ui_event();
 }
@@ -1105,7 +1105,7 @@ struct PopupImpl {
     eventSINK->_on_callback_scroll = [=](double xoffset, double yoffset) {
       auto uiev        = std::make_shared<ui::Event>();
       uiev->_eventcode = ui::EventCode::MOUSEWHEEL;
-
+      
       uiev->miMWY = int(yoffset);
       uiev->miMWX = int(xoffset);
 

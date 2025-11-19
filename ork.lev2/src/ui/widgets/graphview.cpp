@@ -174,155 +174,130 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
   switch (filtev._eventcode) {
     case ui::EventCode::PUSH:
     case ui::EventCode::DOUBLECLICK: {
-      _dragging          = false;
-      bool handled_click = false;
+      auto clicked_series = _findSeriesAtPoint(ilocx, ilocy);
 
-      // Count total number of series across all channels
-      int total_series = 0;
-      for (auto channel : _channelmap) {
-        if (!channel->_series.empty()) {
-          total_series += channel->_series.size();
+      if (clicked_series) {
+        // Toggle selection
+        if (_selected_series == clicked_series) {
+          _selected_series = nullptr;
+          printf("series<%s> deselected\n", clicked_series->_name.c_str());
         } else {
-          total_series += 1; // Lambda-based channel gets one entry
+          _selected_series = clicked_series;
+          printf("series<%s> selected (scale=%.3f, offset=%.3f)\n",
+                 _selected_series->_name.c_str(), _selected_series->_vertical_scale,
+                 _selected_series->_vertical_offset);
         }
-      }
-
-      if (total_series) {
-        int row_height = 16 + _label_spacing;
-        int maxy       = total_series * row_height + _kbasechanlaby + 16;
-        // Check if click is in the label region (right side)
-        if (ilocx > (width() - 150) and ilocy < maxy) {
-          int iseries_index = (ilocy - 16) / row_height;
-          printf("ilocy<%d> iseries_index<%d> total_series<%d>\n", ilocy, iseries_index, total_series);
-
-          // Find which series was clicked
-          int current_index = 0;
-          for (auto channel : _channelmap) {
-            if (!channel->_series.empty()) {
-              for (auto& series : channel->_series) {
-                if (current_index == iseries_index) {
-                  series->_visible = not series->_visible;
-                  printf("series<%s> visible<%d>\n", series->_name.c_str(), series->_visible);
-                  handled_click = true;
-                  goto done;
-                }
-                current_index++;
-              }
-            } else {
-              if (current_index == iseries_index) {
-                channel->_visible = not channel->_visible;
-                printf("channel<%s> visible<%d>\n", channel->_name.c_str(), channel->_visible);
-                handled_click = true;
-                goto done;
-              }
-              current_index++;
-            }
-          }
-        done:;
+      } else {
+        // Start drag (only for series offset adjustment if selected)
+        _downPixelY = ilocy;
+        _downSeriesOffset = _selected_series ? _selected_series->_vertical_offset : 0.0f;
+        _dragging = true;
+        if (_selected_series) {
+          printf("DRAG START: series<%s> offset=%.3f\n",
+                 _selected_series->_name.c_str(), _downSeriesOffset);
         }
-      }
-
-      // If click wasn't handled by series toggle, start drag
-      if (!handled_click) {
-        float fx    = float(ilocx) * gscaleX / float(width());
-        float fy    = float(ilocy) * gscaleY / float(height());
-        _downPos    = fvec2(fx, fy);
-        _downCenter = _grid._center;
-        _dragging   = true;
       }
       mNeedsSurfaceRepaint = true;
       break;
     }
+    case ui::EventCode::MOVE: {
+      _hovered_series = _findSeriesAtPoint(ilocx, ilocy);
+      break;
+    }
     case ui::EventCode::DRAG: {
-      if (_dragging) {
-        float fx       = float(ilocx) * gscaleX / float(width());
-        float fy       = float(ilocy) * gscaleY / float(height());
-        fvec2 delta    = fvec2(fx, fy) - _downPos;
-        // Removed horizontal panning - X axis is fixed at Y-axis position
-        // float newctr_x = _downCenter.x - (delta.x / _grid._zoomX);
-        float newctr_y = _downCenter.y + (delta.y / _grid._zoomY);
-
-        // Horizontal panning disabled (Y-axis is fixed)
-        // if (not _lockX)
-        //   _grid._center.x = newctr_x;
-        if (not _lockY)
-          _grid._center.y = newctr_y;
-
+      if (_dragging && _selected_series) {
+        int pixel_delta_y = ilocy - _downPixelY;
+        _adjustSeriesOffset(pixel_delta_y);
         mNeedsSurfaceRepaint = true;
       }
       break;
     }
     case EventCode::MOUSEWHEEL: {
-      int idelta = ev->miMWY;
-      // Very fine zoom rate for precise control
-      // (1.01 = 1% change per tick)
-      const float zoom_rate = 1.01f;
+      int wheel_delta = ev->miMWY;
 
-      if (idelta > 0) {
-        _grid._zoomX *= zoom_rate;
-        if (not _lockYZOOM)
-          _grid._zoomY *= zoom_rate;
-      } else if (idelta < 0) {
-        _grid._zoomX *= 1.0f / zoom_rate;
-        if (not _lockYZOOM)
-          _grid._zoomY *= 1.0f / zoom_rate;
+      if (_selected_series) {
+        _adjustSeriesScale(wheel_delta);
+      } else {
+        _adjustGlobalZoom(wheel_delta);
       }
-      _grid._zoomX         = clamp(_grid._zoomX, 0.02f, 10.0f);  // 0.02 = 5x more zoom out than 0.1
-      _grid._zoomY         = clamp(_grid._zoomY, 0.02f, 10.0f);
+
       mNeedsSurfaceRepaint = true;
       return HandlerResult(this);
-      break;
     }
     case ui::EventCode::KEY_DOWN: {
       int key = ev->miKeyCode;
-      printf("GraphView<%s> keydown<%c>\n", _name.c_str(), key);
 
-      // 'm' key toggles between AUTO and MANUAL vertical scale modes
-      switch (key) {
-        case 'M': {
-          if (_vscale_mode == VerticalScaleMode::AUTO) {
-            _vscale_mode = VerticalScaleMode::MANUAL;
-            printf("  Vertical scale mode: AUTO -> MANUAL\n");
-          } else {
-            _vscale_mode = VerticalScaleMode::AUTO;
-            printf("  Vertical scale mode: MANUAL -> AUTO\n");
-          }
-          mNeedsSurfaceRepaint = true;
-          SetDirty();
-          return HandlerResult(this);
-        }
-        break;
-        case ',': {
-          // increase num of samples
-          for (auto channel : _channelmap) {
-            for (auto& series : channel->_series) {
-              size_t curr_max = series->sampleCount();
-              curr_max /= 2;
-              series->setMaxSamples(curr_max);
-              printf("  Series<%s> max samples increased to %zu\n", series->_name.c_str(), curr_max);
-            } 
-          }
-          mNeedsSurfaceRepaint = true;
-          SetDirty();
-          return HandlerResult(this);
-        }
-        break;
-        case '.': {
-          // increase num of samples
-          for (auto channel : _channelmap) {
-            for (auto& series : channel->_series) {
-              size_t curr_max = series->sampleCount();
-              curr_max *= 2;
-              series->setMaxSamples(curr_max);
-              printf("  Series<%s> max samples increased to %zu\n", series->_name.c_str(), curr_max);
-            } 
-          }
-          mNeedsSurfaceRepaint = true;
-          SetDirty();
-          return HandlerResult(this);
-        }
-        break;
+      if (key == 'V') {
+        _v_key_down = true;
       }
+
+      switch (key) {
+        case ' ':
+          if (_hovered_series) {
+            _hovered_series->_visible = !_hovered_series->_visible;
+            printf("series<%s> visible<%d>\n", _hovered_series->_name.c_str(),
+                   _hovered_series->_visible);
+            mNeedsSurfaceRepaint = true;
+            return HandlerResult(this);
+          }
+          break;
+
+        case 'R':
+          if (_selected_series) {
+            _selected_series->_vertical_scale = 1.0f;
+            _selected_series->_vertical_offset = 0.0f;
+            _selected_series->_freeze_auto_range = false;
+            printf("series<%s> RESET\n", _selected_series->_name.c_str());
+            mNeedsSurfaceRepaint = true;
+            return HandlerResult(this);
+          }
+          break;
+
+        case 'N':
+          if (_selected_series) {
+            _selected_series->_normalize_for_display = !_selected_series->_normalize_for_display;
+            printf("series<%s> normalize=%d\n", _selected_series->_name.c_str(),
+                   _selected_series->_normalize_for_display);
+            mNeedsSurfaceRepaint = true;
+            return HandlerResult(this);
+          }
+          break;
+
+        case 'M':
+          _vscale_mode = (_vscale_mode == VerticalScaleMode::AUTO)
+                         ? VerticalScaleMode::MANUAL
+                         : VerticalScaleMode::AUTO;
+          printf("Vertical scale mode: %s\n",
+                 _vscale_mode == VerticalScaleMode::AUTO ? "AUTO" : "MANUAL");
+          mNeedsSurfaceRepaint = true;
+          return HandlerResult(this);
+
+        case ',':
+          for (auto channel : _channelmap) {
+            for (auto& series : channel->_series) {
+              series->setMaxSamples(series->sampleCount() / 2);
+            }
+          }
+          mNeedsSurfaceRepaint = true;
+          return HandlerResult(this);
+
+        case '.':
+          for (auto channel : _channelmap) {
+            for (auto& series : channel->_series) {
+              series->setMaxSamples(series->sampleCount() * 2);
+            }
+          }
+          mNeedsSurfaceRepaint = true;
+          return HandlerResult(this);
+      }
+      break;
+    }
+    case ui::EventCode::KEY_UP: {
+      int key = ev->miKeyCode;
+      if (key == 'V') {
+        _v_key_down = false;
+      }
+      break;
     }
     default:
       break;
@@ -445,7 +420,18 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
         size_t num_series = channel->_series.size();
         for (auto& series : channel->_series) {
           int sw             = lev2::FontMan::stringWidth(series->_name.length());
-          tgt->RefModColor() = series->_color;
+
+          // Pulse selected series label
+          fvec3 label_color = series->_color;
+          if (_selected_series == series) {
+            // Pulse between 0.75 and 1.0 brightness at 2 Hz
+            float time = _uicontext->_uitimer.SecsSinceStart();
+            float pulse = 0.875f + 0.125f * sinf(time * 2.0f * 3.14159f * 2.0f);
+            label_color = label_color * pulse;
+            mNeedsSurfaceRepaint = true;  // Keep repainting for animation
+          }
+
+          tgt->RefModColor() = label_color;
           mtxi->PushUIMatrix(width(), height());
           lev2::FontMan::beginTextBlock(tgt, 128);
           lev2::FontMan::DrawText(tgt, width() - (max_label_width + 16), ichanlaby, series->_name.c_str());
@@ -538,17 +524,31 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
 
           // Vertical range depends on mode
           if (_vscale_mode == VerticalScaleMode::AUTO) {
-            // AUTO mode: find min/max across ALL visible series
-            float global_min = std::numeric_limits<float>::max();
-            float global_max = std::numeric_limits<float>::lowest();
-
+            // Check if any visible series has normalization enabled
+            bool any_normalized = false;
             for (auto& series : channel->_series) {
-              if (series->_visible && series->sampleCount() > 0) {
-                global_min = std::min(global_min, series->_min_value);
-                global_max = std::max(global_max, series->_max_value);
+              if (series->_visible && series->_normalize_for_display) {
+                any_normalized = true;
+                break;
               }
             }
-            vrange = fvec2(global_min, global_max);
+
+            if (any_normalized) {
+              // If normalization is enabled, show [0,1] range
+              vrange = fvec2(0.0f, 1.0f);
+            } else {
+              // AUTO mode: find min/max across ALL visible series
+              float global_min = std::numeric_limits<float>::max();
+              float global_max = std::numeric_limits<float>::lowest();
+
+              for (auto& series : channel->_series) {
+                if (series->_visible && series->sampleCount() > 0) {
+                  global_min = std::min(global_min, series->_min_value);
+                  global_max = std::max(global_max, series->_max_value);
+                }
+              }
+              vrange = fvec2(global_min, global_max);
+            }
           } else {
             // MANUAL mode: use grid zoom/center
             float vcenter = _grid._center.y;
@@ -569,108 +569,139 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
       int h = this->height();
 
       if (numpoints && has_visible_series) {
-        // Create ortho matrix using hrange/vrange (computed once, shared for axes and all series)
-        auto custom_ortho = mtxi->Ortho(hrange.x, hrange.y, vrange.y, vrange.x, 0.0f, 1.0f);
-
-        // Push matrix stack once for all rendering
-        mtxi->PushPMatrix(custom_ortho);
-        mtxi->PushVMatrix(fmtx4::Identity());
-        mtxi->PushMMatrix(fmtx4::Identity());
-
         ///////////////////////////////////////////////////
-        // Draw X and Y axis lines in plot coordinates
-        // Only render axes if there are visible series
-        ///////////////////////////////////////////////////
-        {
-          lev2::VtxWriter<vtx_t> vw;
-          vw.Lock(tgt, vbuf.get(), 4);
-
-          U32 axis_color = 0xff4d4d4d; // gray color
-
-          // X axis (horizontal line at Y=0)
-          vw.AddVertex(vtx_t(fvec3(hrange.x, 0.0f, 0), fvec4(), axis_color));
-          vw.AddVertex(vtx_t(fvec3(hrange.y, 0.0f, 0), fvec4(), axis_color));
-
-          // Y axis (vertical line at X=0)
-          vw.AddVertex(vtx_t(fvec3(0.0f, vrange.x, 0), fvec4(), axis_color));
-          vw.AddVertex(vtx_t(fvec3(0.0f, vrange.y, 0), fvec4(), axis_color));
-
-          vw.UnLock(tgt);
-
-          mtl->begin(tek, RCFD);
-          mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
-          mtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
-          gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::LINES);
-          mtl->end(RCFD);
-        }
-        ///////////////////////////////////////////////////
-        // Render series-based data
+        // Render series-based data - each in its own track
         ///////////////////////////////////////////////////
         if (has_series) {
-          size_t num_series = channel->_series.size();
+          // Count visible series to calculate track height
+          size_t num_visible_series = 0;
           for (auto& series : channel->_series) {
-            if (!series->_visible)
-              continue;
-
-            size_t series_count = series->sampleCount();
-            if (series_count == 0)
-              continue;
-
-            // Calculate moving window - which samples to display
-            size_t display_count = series_count;
-            size_t start_index   = 0;
-
-            if (series->_window_size > 0 && series->_window_size < series_count) {
-              display_count = series->_window_size;
-              start_index   = series_count - display_count; // Show most recent N samples
+            if (series->_visible && series->sampleCount() > 0) {
+              num_visible_series++;
             }
+          }
 
-            lev2::VtxWriter<vtx_t> vw;
-            vw.Lock(tgt, vbuf.get(), display_count * 2);
+          if (num_visible_series > 0) {
+            float track_height = float(h) / float(num_visible_series);
+            size_t track_index = 0;
 
-            for (size_t i = 0; i < display_count; i++) {
-              size_t sample_index = start_index + i;
-              // Current sample (most recent) at x=0, older samples at negative X
-              float x = float(sample_index) - float(series_count - 1);
-              float y = series->getSample(sample_index);
+            for (auto& series : channel->_series) {
+              if (!series->_visible)
+                continue;
 
-              if (i > 0) {
-                size_t prev_sample_index = start_index + i - 1;
-                float prev_x = float(prev_sample_index) - float(series_count - 1);
-                float prev_y = series->getSample(prev_sample_index);
+              size_t series_count = series->sampleCount();
+              if (series_count == 0)
+                continue;
 
-                vw.AddVertex(vtx_t(fvec3(prev_x, prev_y, 0), fvec4(), series->_color));
-                vw.AddVertex(vtx_t(fvec3(x, y, 0), fvec4(), series->_color));
+              // Calculate moving window - which samples to display
+              size_t display_count = series_count;
+              size_t start_index   = 0;
+
+              if (series->_window_size > 0 && series->_window_size < series_count) {
+                display_count = series->_window_size;
+                start_index   = series_count - display_count; // Show most recent N samples
               }
+
+              // Calculate current min/max from samples
+              float current_min = std::numeric_limits<float>::max();
+              float current_max = std::numeric_limits<float>::lowest();
+              for (size_t i = 0; i < series_count; i++) {
+                float val = series->getSample(i);
+                current_min = std::min(current_min, val);
+                current_max = std::max(current_max, val);
+              }
+
+              // Blend min/max smoothly: approach new value at 1% per frame
+              series->_min_value = series->_min_value * 0.99f + current_min * 0.01f;
+              series->_max_value = series->_max_value * 0.99f + current_max * 0.01f;
+
+              float series_min = series->_min_value;
+              float series_max = series->_max_value;
+              float series_range = series_max - series_min;
+
+              // If range is too small (constant value), add padding around center
+              const float min_range = 0.1f;
+              if (series_range < min_range) {
+                float center = (series_min + series_max) / 2.0f;
+                series_min = center - min_range / 2.0f;
+                series_max = center + min_range / 2.0f;
+                series_range = min_range;
+              }
+
+              // Calculate this series' vertical pixel range (from top, since screen Y goes down)
+              float track_y_top_pixel = float(track_index) * track_height;
+              float track_y_bottom_pixel = track_y_top_pixel + track_height;
+
+              // Create a composite transformation:
+              // 1. Data X range -> screen X
+              // 2. Data Y (series_min to series_max) -> track pixels (track_y_top to track_y_bottom)
+              // The Ortho call maps: (left, right, bottom, top) in data space to screen
+              // For Y: we want series_max at top of track, series_min at bottom of track
+
+              // We need to use a viewport + ortho approach
+              // Set viewport to this track's pixel region
+              tgt->FBI()->pushViewport(0, int(track_y_top_pixel), w, int(track_height));
+
+              // Now create ortho that maps data range to normalized viewport
+              auto track_ortho = mtxi->Ortho(
+                hrange.x, hrange.y,           // X: shared horizontal range
+                series_min, series_max,       // Y: this series' data range (min at bottom, max at top)
+                0.0f, 1.0f);
+
+              mtxi->PushPMatrix(track_ortho);
+              mtxi->PushVMatrix(fmtx4::Identity());
+              mtxi->PushMMatrix(fmtx4::Identity());
+
+              lev2::VtxWriter<vtx_t> vw;
+              vw.Lock(tgt, vbuf.get(), display_count * 2);
+
+              for (size_t i = 0; i < display_count; i++) {
+                size_t sample_index = start_index + i;
+                float x = float(sample_index) - float(series_count - 1);
+                float y = series->getSample(sample_index);
+
+                if (i > 0) {
+                  size_t prev_sample_index = start_index + i - 1;
+                  float prev_x = float(prev_sample_index) - float(series_count - 1);
+                  float prev_y = series->getSample(prev_sample_index);
+
+                  vw.AddVertex(vtx_t(fvec3(prev_x, prev_y, 0), fvec4(), series->_color));
+                  vw.AddVertex(vtx_t(fvec3(x, y, 0), fvec4(), series->_color));
+                }
+              }
+              vw.UnLock(tgt);
+
+              // Draw series with additive blending
+              auto rs = mtl->_rasterstate;
+              auto omacro = rs->_blendingMacro;
+              int prev_pri = rs->_priority;
+              rs->setBlendingMacro(lev2::BlendingMacro::ADDITIVE);
+              rs->setDepthTest(lev2::EDepthTest::OFF);
+              rs->setWriteMaskZ(false);
+              rs->_priority = 1<<16;
+              auto fxi = tgt->FXI();
+              fxi->pushRasterState(rs);
+
+              mtl->begin(tek, RCFD);
+              mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
+              gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::LINES);
+              mtl->end(RCFD);
+
+              fxi->popRasterState();
+              rs->_priority = prev_pri;
+              rs->_blendingMacro = omacro;
+
+              mtxi->PopPMatrix();
+              mtxi->PopVMatrix();
+              mtxi->PopMMatrix();
+
+              // Restore viewport
+              tgt->FBI()->popViewport();
+
+              track_index++;
             }
-            vw.UnLock(tgt);
-
-            // Draw series (reusing matrix stack) with additive blending
-            auto rs = mtl->_rasterstate;
-            auto omacro = rs->_blendingMacro;
-            int prev_pri = rs->_priority;
-            rs->setBlendingMacro(lev2::BlendingMacro::ADDITIVE);
-            rs->setDepthTest(lev2::EDepthTest::OFF);
-            rs->setWriteMaskZ(false);
-            rs->_priority = 1<<16;
-            auto fxi = tgt->FXI();
-            fxi->pushRasterState(rs);
-
-            mtl->begin(tek, RCFD);
-            mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
-            gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::LINES);
-            mtl->end(RCFD);
-
-            fxi->popRasterState();
-            rs->_priority = prev_pri;
-            rs->_blendingMacro = omacro;
           }
         }
-
-        // Pop matrix stack once at the end
-        mtxi->PopPMatrix();
-        mtxi->PopVMatrix();
-        mtxi->PopMMatrix();
         ///////////////////////////////////////////////////
       }
     }
@@ -734,6 +765,150 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
     mtxi->PopUIMatrix(); // Pop UI matrix for text rendering
   }
   ork::lev2::FontMan::PopFont();
+}
+///////////////////////////////////////////////////////////////////////////////
+// GraphView Helper Functions
+///////////////////////////////////////////////////////////////////////////////
+graphseries_ptr_t GraphView::_findSeriesAtPoint(int x, int y) {
+  int total_series = 0;
+  for (auto channel : _channelmap) {
+    if (!channel->_series.empty()) {
+      total_series += channel->_series.size();
+    } else {
+      total_series += 1;
+    }
+  }
+
+  if (total_series == 0) return nullptr;
+
+  int row_height = 16 + _label_spacing;
+  int maxy = total_series * row_height + _kbasechanlaby + 16;
+
+  if (x <= (width() - 150) || y >= maxy) return nullptr;
+
+  int iseries_index = (y - 16) / row_height;
+  int current_index = 0;
+
+  for (auto channel : _channelmap) {
+    if (!channel->_series.empty()) {
+      for (auto& series : channel->_series) {
+        if (current_index == iseries_index) return series;
+        current_index++;
+      }
+    } else {
+      current_index++;
+    }
+  }
+  return nullptr;
+}
+/////////////////////////////////////////////////////////////////////////
+void GraphView::_freezeSeriesAutoRange(graphseries_ptr_t series) {
+  if (_vscale_mode != VerticalScaleMode::AUTO) return;
+  if (series->_freeze_auto_range) return;
+
+  series->_freeze_auto_range = true;
+  series->_frozen_min = series->_min_value;
+  series->_frozen_max = series->_max_value;
+  printf("series<%s> FROZE auto-range: min=%.3f max=%.3f\n",
+         series->_name.c_str(), series->_frozen_min, series->_frozen_max);
+}
+/////////////////////////////////////////////////////////////////////////
+float GraphView::_getSeriesVerticalRange(graphseries_ptr_t series) {
+  if (_vscale_mode == VerticalScaleMode::AUTO) {
+    float vrange;
+    if (series->_freeze_auto_range) {
+      vrange = series->_frozen_max - series->_frozen_min;
+    } else {
+      vrange = series->_max_value - series->_min_value;
+    }
+    return (vrange < 0.001f) ? 1.0f : vrange;
+  }
+  return _grid._extent * _grid._aspect / _grid._zoomY;
+}
+/////////////////////////////////////////////////////////////////////////
+void GraphView::_adjustSeriesOffset(int pixel_delta_y) {
+  _freezeSeriesAutoRange(_selected_series);
+
+  // For perfect 1:1 pixel tracking, we need to use the GLOBAL vrange
+  // (same as rendering uses - min/max across ALL visible series)
+  // not just the selected series' range
+  float vrange_height;
+
+  if (_vscale_mode == VerticalScaleMode::AUTO) {
+    // Calculate global range across all visible series (same as rendering)
+    float global_min = std::numeric_limits<float>::max();
+    float global_max = std::numeric_limits<float>::lowest();
+
+    for (auto channel : _channelmap) {
+      for (auto& series : channel->_series) {
+        if (series->_visible && series->sampleCount() > 0) {
+          if (series->_freeze_auto_range) {
+            global_min = std::min(global_min, series->_frozen_min);
+            global_max = std::max(global_max, series->_frozen_max);
+          } else {
+            global_min = std::min(global_min, series->_min_value);
+            global_max = std::max(global_max, series->_max_value);
+          }
+        }
+      }
+    }
+    vrange_height = global_max - global_min;
+    if (vrange_height < 0.001f) vrange_height = 1.0f;
+  } else {
+    // MANUAL mode
+    vrange_height = _grid._extent * _grid._aspect / _grid._zoomY;
+  }
+
+  // Now calculate offset for 1:1 pixel tracking
+  float delta = -(float(pixel_delta_y) / float(height())) * vrange_height / _selected_series->_vertical_scale;
+  _selected_series->_vertical_offset = _downSeriesOffset + delta;
+
+  printf("series<%s> offset=%.6f (pixel_delta=%d, global_vrange=%.6f, scale=%.3f)\n",
+         _selected_series->_name.c_str(), _selected_series->_vertical_offset,
+         pixel_delta_y, vrange_height, _selected_series->_vertical_scale);
+}
+/////////////////////////////////////////////////////////////////////////
+void GraphView::_adjustSeriesScale(int wheel_delta) {
+  _freezeSeriesAutoRange(_selected_series);
+
+  const float zoom_rate = 1.01f;
+
+  // Apply zoom
+  if (wheel_delta > 0) {
+    _selected_series->_vertical_scale *= zoom_rate;
+  } else {
+    _selected_series->_vertical_scale /= zoom_rate;
+  }
+  _selected_series->_vertical_scale = clamp(_selected_series->_vertical_scale, 0.001f, 1000.0f);
+
+  printf("series<%s> scale=%.6f (wheel_delta=%d)\n",
+         _selected_series->_name.c_str(),
+         _selected_series->_vertical_scale,
+         wheel_delta);
+}
+/////////////////////////////////////////////////////////////////////////
+void GraphView::_adjustGlobalZoom(int wheel_delta) {
+  const float zoom_rate = 1.01f;
+
+  if (_v_key_down) {
+    // V key down: vertical zoom only
+    if (!_lockYZOOM) {
+      if (wheel_delta > 0) {
+        _grid._zoomY *= zoom_rate;
+      } else {
+        _grid._zoomY /= zoom_rate;
+      }
+      _grid._zoomY = clamp(_grid._zoomY, 0.02f, 10.0f);
+    }
+  } else {
+    // V key up: horizontal zoom only
+    if (wheel_delta > 0) {
+      _grid._zoomX *= zoom_rate;
+    } else {
+      _grid._zoomX /= zoom_rate;
+    }
+    _grid._zoomX = clamp(_grid._zoomX, 0.02f, 10.0f);
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void GraphPanel::setRect(int iX, int iY, int iW, int iH, bool snap) {

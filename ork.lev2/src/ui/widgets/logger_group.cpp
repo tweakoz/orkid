@@ -194,7 +194,7 @@ void LoggerGroup::addChannel(const std::string& name, lev2::Context* pt) {
   view._perf_grid = dynagrid;
   vpack->addChild(view._perf_grid);
   view._perf_grid->gpuInit(pt);
-  dynagrid->_fixed_height = 100;  // Start small, will grow with content
+  dynagrid->_fixed_height = 200;  // Start small, will grow with content
   dynagrid->_bgcolor = fvec4(channel_color * 0.3f,BASE_ALPHA);  // Background = channel color * 0.1
   dynagrid->_draw_background = true;
 
@@ -495,7 +495,7 @@ void LoggerGroup::_updatePerfGraphUI(const std::string& channel, const std::stri
     }
 
     // Set fixed height for the shared graph
-    view._perf_grid->_fixed_height = 200;
+    view._perf_grid->_fixed_height = 400;
 
     // Trigger layout update
     if (view._container) {
@@ -532,6 +532,7 @@ void LoggerGroup::_updatePerfGraphUI(const std::string& channel, const std::stri
     // Create new series
     series = graph_channel->addSeries(name, series_color);
     series->setMaxSamples(1000);
+    series->_normalize_for_display = _normalize_series;
   }
 
   // Convert value to float
