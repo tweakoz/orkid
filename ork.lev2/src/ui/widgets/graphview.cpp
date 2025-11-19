@@ -33,11 +33,6 @@ void GraphSeries::addSample(float value) {
   while (_samples.size() > _max_samples) {
     _samples.pop_front();
   }
-
-  // Update range if auto-ranging
-  if (_auto_range) {
-    _updateRange();
-  }
 }
 /////////////////////////////////////////////////////////////////////////
 void GraphSeries::clearSamples() {
@@ -60,54 +55,6 @@ float GraphSeries::getSample(size_t index) const {
     return _samples[index];
   }
   return 0.0f;
-}
-/////////////////////////////////////////////////////////////////////////
-void GraphSeries::_updateRange() {
-  if (_samples.empty()) {
-    _min_value = 0.0f;
-    _max_value = 1.0f;
-    _historical_min = 0.0f;
-    _historical_max = 1.0f;
-    return;
-  }
-
-  // Calculate current buffer min/max
-  float current_min = _samples[0];
-  float current_max = _samples[0];
-
-  for (float val : _samples) {
-    current_min = std::min(current_min, val);
-    current_max = std::max(current_max, val);
-  }
-
-  // Add 10% padding to current range
-  float range = current_max - current_min;
-  if (range < 0.001f)
-    range = 0.001f; // Avoid div by zero
-  current_min -= range * 0.1f;
-  current_max += range * 0.1f;
-
-  // Initialize historical values on first update
-  if (_range_update_counter == 0) {
-    _historical_min = current_min;
-    _historical_max = current_max;
-  }
-
-  // Apply inertia/momentum:
-  // - Expand immediately when current range exceeds historical range
-  // - Decay slowly toward current range (max 1% change per second at 60fps)
-  _historical_min = std::min(_historical_min, current_min);  // Expand down immediately
-  _historical_max = std::max(_historical_max, current_max);  // Expand up immediately
-
-  // Decay toward current range slowly (lerp)
-  _historical_min = _historical_min * _range_decay_rate + current_min * (1.0f - _range_decay_rate);
-  _historical_max = _historical_max * _range_decay_rate + current_max * (1.0f - _range_decay_rate);
-
-  // Use historical range as display range
-  _min_value = _historical_min;
-  _max_value = _historical_max;
-
-  _range_update_counter++;
 }
 /////////////////////////////////////////////////////////////////////////
 // GraphChannel Implementation
@@ -183,18 +130,8 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
           printf("series<%s> deselected\n", clicked_series->_name.c_str());
         } else {
           _selected_series = clicked_series;
-          printf("series<%s> selected (scale=%.3f, offset=%.3f)\n",
-                 _selected_series->_name.c_str(), _selected_series->_vertical_scale,
-                 _selected_series->_vertical_offset);
-        }
-      } else {
-        // Start drag (only for series offset adjustment if selected)
-        _downPixelY = ilocy;
-        _downSeriesOffset = _selected_series ? _selected_series->_vertical_offset : 0.0f;
-        _dragging = true;
-        if (_selected_series) {
-          printf("DRAG START: series<%s> offset=%.3f\n",
-                 _selected_series->_name.c_str(), _downSeriesOffset);
+          printf("series<%s> selected (scale=%.3f)\n",
+                 _selected_series->_name.c_str(), _selected_series->_vertical_scale);
         }
       }
       mNeedsSurfaceRepaint = true;
@@ -202,14 +139,6 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
     }
     case ui::EventCode::MOVE: {
       _hovered_series = _findSeriesAtPoint(ilocx, ilocy);
-      break;
-    }
-    case ui::EventCode::DRAG: {
-      if (_dragging && _selected_series) {
-        int pixel_delta_y = ilocy - _downPixelY;
-        _adjustSeriesOffset(pixel_delta_y);
-        mNeedsSurfaceRepaint = true;
-      }
       break;
     }
     case EventCode::MOUSEWHEEL: {
@@ -245,9 +174,7 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
         case 'R':
           if (_selected_series) {
             _selected_series->_vertical_scale = 1.0f;
-            _selected_series->_vertical_offset = 0.0f;
-            _selected_series->_freeze_auto_range = false;
-            printf("series<%s> RESET\n", _selected_series->_name.c_str());
+            printf("series<%s> RESET scale\n", _selected_series->_name.c_str());
             mNeedsSurfaceRepaint = true;
             return HandlerResult(this);
           }
@@ -262,15 +189,6 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
             return HandlerResult(this);
           }
           break;
-
-        case 'M':
-          _vscale_mode = (_vscale_mode == VerticalScaleMode::AUTO)
-                         ? VerticalScaleMode::MANUAL
-                         : VerticalScaleMode::AUTO;
-          printf("Vertical scale mode: %s\n",
-                 _vscale_mode == VerticalScaleMode::AUTO ? "AUTO" : "MANUAL");
-          mNeedsSurfaceRepaint = true;
-          return HandlerResult(this);
 
         case ',':
           for (auto channel : _channelmap) {
@@ -469,23 +387,26 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
           }
 
           ///////////////////////////////////////////////////
-          // draw toggle box (always draw, filled if visible)
+          // draw toggle box (always draw, dimmed if not visible)
           ///////////////////////////////////////////////////
           int x1 = width() - (max_label_width + 28); // ~12 pixels left margin (1 char width)
           int x2 = width() - 16;                     // 16 pixels right margin
           int y1 = label_y;
           int y2 = label_y + 16;
 
+          // Dim the box color if not visible
+          fvec3 box_color = series->_visible ? series->_color : series->_color * 0.3f;
+
           lev2::VtxWriter<vtx_t> vw;
           vw.Lock(tgt, vbuf.get(), 8);
-          vw.AddVertex(vtx_t(fvec3(x1, y1, 0), fvec4(), series->_color));
-          vw.AddVertex(vtx_t(fvec3(x2, y1, 0), fvec4(), series->_color));
-          vw.AddVertex(vtx_t(fvec3(x2, y1, 0), fvec4(), series->_color));
-          vw.AddVertex(vtx_t(fvec3(x2, y2, 0), fvec4(), series->_color));
-          vw.AddVertex(vtx_t(fvec3(x2, y2, 0), fvec4(), series->_color));
-          vw.AddVertex(vtx_t(fvec3(x1, y2, 0), fvec4(), series->_color));
-          vw.AddVertex(vtx_t(fvec3(x1, y2, 0), fvec4(), series->_color));
-          vw.AddVertex(vtx_t(fvec3(x1, y1, 0), fvec4(), series->_color));
+          vw.AddVertex(vtx_t(fvec3(x1, y1, 0), fvec4(), box_color));
+          vw.AddVertex(vtx_t(fvec3(x2, y1, 0), fvec4(), box_color));
+          vw.AddVertex(vtx_t(fvec3(x2, y1, 0), fvec4(), box_color));
+          vw.AddVertex(vtx_t(fvec3(x2, y2, 0), fvec4(), box_color));
+          vw.AddVertex(vtx_t(fvec3(x2, y2, 0), fvec4(), box_color));
+          vw.AddVertex(vtx_t(fvec3(x1, y2, 0), fvec4(), box_color));
+          vw.AddVertex(vtx_t(fvec3(x1, y2, 0), fvec4(), box_color));
+          vw.AddVertex(vtx_t(fvec3(x1, y1, 0), fvec4(), box_color));
           vw.UnLock(tgt);
 
           mtxi->PushUIMatrix(width(), height());
@@ -533,40 +454,6 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
           float data_left = hextent * (pixels_left_of_axis / pixels_total);
 
           hrange = fvec2(-data_left, hextent - data_left);
-
-          // Vertical range depends on mode
-          if (_vscale_mode == VerticalScaleMode::AUTO) {
-            // Check if any visible series has normalization enabled
-            bool any_normalized = false;
-            for (auto& series : channel->_series) {
-              if (series->_visible && series->_normalize_for_display) {
-                any_normalized = true;
-                break;
-              }
-            }
-
-            if (any_normalized) {
-              // If normalization is enabled, show [0,1] range
-              vrange = fvec2(0.0f, 1.0f);
-            } else {
-              // AUTO mode: find min/max across ALL visible series
-              float global_min = std::numeric_limits<float>::max();
-              float global_max = std::numeric_limits<float>::lowest();
-
-              for (auto& series : channel->_series) {
-                if (series->_visible && series->sampleCount() > 0) {
-                  global_min = std::min(global_min, series->_min_value);
-                  global_max = std::max(global_max, series->_max_value);
-                }
-              }
-              vrange = fvec2(global_min, global_max);
-            }
-          } else {
-            // MANUAL mode: use grid zoom/center
-            float vcenter = _grid._center.y;
-            float vextent = _grid._extent * _grid._aspect / _grid._zoomY;
-            vrange        = fvec2(vcenter - vextent / 2, vcenter + vextent / 2);
-          }
         } else {
           hrange = fvec2(-50, 50); // Centered on origin
           vrange = fvec2(0, 1);
@@ -614,7 +501,7 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
                 current_max = std::max(current_max, val);
               }
 
-              // Blend min/max smoothly: approach new value at 1% per frame
+              // Blend min/max smoothly: approach new value at 3% per frame
               series->_min_value = series->_min_value * 0.99f + current_min * 0.01f;
               series->_max_value = series->_max_value * 0.99f + current_max * 0.01f;
 
@@ -797,75 +684,7 @@ graphseries_ptr_t GraphView::_findSeriesAtPoint(int x, int y) {
   return nullptr;
 }
 /////////////////////////////////////////////////////////////////////////
-void GraphView::_freezeSeriesAutoRange(graphseries_ptr_t series) {
-  if (_vscale_mode != VerticalScaleMode::AUTO) return;
-  if (series->_freeze_auto_range) return;
-
-  series->_freeze_auto_range = true;
-  series->_frozen_min = series->_min_value;
-  series->_frozen_max = series->_max_value;
-  printf("series<%s> FROZE auto-range: min=%.3f max=%.3f\n",
-         series->_name.c_str(), series->_frozen_min, series->_frozen_max);
-}
-/////////////////////////////////////////////////////////////////////////
-float GraphView::_getSeriesVerticalRange(graphseries_ptr_t series) {
-  if (_vscale_mode == VerticalScaleMode::AUTO) {
-    float vrange;
-    if (series->_freeze_auto_range) {
-      vrange = series->_frozen_max - series->_frozen_min;
-    } else {
-      vrange = series->_max_value - series->_min_value;
-    }
-    return (vrange < 0.001f) ? 1.0f : vrange;
-  }
-  return _grid._extent * _grid._aspect / _grid._zoomY;
-}
-/////////////////////////////////////////////////////////////////////////
-void GraphView::_adjustSeriesOffset(int pixel_delta_y) {
-  _freezeSeriesAutoRange(_selected_series);
-
-  // For perfect 1:1 pixel tracking, we need to use the GLOBAL vrange
-  // (same as rendering uses - min/max across ALL visible series)
-  // not just the selected series' range
-  float vrange_height;
-
-  if (_vscale_mode == VerticalScaleMode::AUTO) {
-    // Calculate global range across all visible series (same as rendering)
-    float global_min = std::numeric_limits<float>::max();
-    float global_max = std::numeric_limits<float>::lowest();
-
-    for (auto channel : _channelmap) {
-      for (auto& series : channel->_series) {
-        if (series->_visible && series->sampleCount() > 0) {
-          if (series->_freeze_auto_range) {
-            global_min = std::min(global_min, series->_frozen_min);
-            global_max = std::max(global_max, series->_frozen_max);
-          } else {
-            global_min = std::min(global_min, series->_min_value);
-            global_max = std::max(global_max, series->_max_value);
-          }
-        }
-      }
-    }
-    vrange_height = global_max - global_min;
-    if (vrange_height < 0.001f) vrange_height = 1.0f;
-  } else {
-    // MANUAL mode
-    vrange_height = _grid._extent * _grid._aspect / _grid._zoomY;
-  }
-
-  // Now calculate offset for 1:1 pixel tracking
-  float delta = -(float(pixel_delta_y) / float(height())) * vrange_height / _selected_series->_vertical_scale;
-  _selected_series->_vertical_offset = _downSeriesOffset + delta;
-
-  printf("series<%s> offset=%.6f (pixel_delta=%d, global_vrange=%.6f, scale=%.3f)\n",
-         _selected_series->_name.c_str(), _selected_series->_vertical_offset,
-         pixel_delta_y, vrange_height, _selected_series->_vertical_scale);
-}
-/////////////////////////////////////////////////////////////////////////
 void GraphView::_adjustSeriesScale(int wheel_delta) {
-  _freezeSeriesAutoRange(_selected_series);
-
   const float zoom_rate = 1.01f;
 
   // Apply zoom

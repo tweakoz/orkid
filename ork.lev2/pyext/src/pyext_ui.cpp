@@ -509,10 +509,10 @@ void pyinit_ui(py::module& module_lev2) {
           .def_readwrite("name", &ui::GraphSeries::_name)
           .def_readwrite("color", &ui::GraphSeries::_color)
           .def_readwrite("visible", &ui::GraphSeries::_visible)
-          .def_readwrite("auto_range", &ui::GraphSeries::_auto_range)
           .def_readwrite("min_value", &ui::GraphSeries::_min_value)
           .def_readwrite("max_value", &ui::GraphSeries::_max_value)
-          .def_readwrite("window_size", &ui::GraphSeries::_window_size);
+          .def_readwrite("window_size", &ui::GraphSeries::_window_size)
+          .def_readwrite("vertical_scale", &ui::GraphSeries::_vertical_scale);
   type_codec->registerStdCodec<ui::graphseries_ptr_t>(graphseries_type);
   /////////////////////////////////////////////////////////////////////////////////
   // GraphChannel - contains multiple series

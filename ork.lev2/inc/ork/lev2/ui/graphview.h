@@ -40,39 +40,20 @@ struct GraphSeries {
   fvec3 _color;
   bool _visible = true;
 
-  // Auto-range tracking
+  // Auto-range tracking (blended at 3% per frame)
   float _min_value = 0.0f;
   float _max_value = 1.0f;
-  bool _auto_range = true;
 
   // Moving window display (0 = show all samples, >0 = show only most recent N)
   size_t _window_size = 0;
 
-  // Range inertia/momentum (prevents jittery auto-scaling)
-  float _range_decay_rate = 0.9998f;  // Decay rate: 0.9998^60 ≈ 0.99 (1% change per second at 60fps)
-  float _historical_min = 0.0f;       // Historical min that decays toward current min
-  float _historical_max = 1.0f;       // Historical max that decays toward current max
-  size_t _range_update_counter = 0;   // Track updates for initialization
-
   // Display normalization (visual only, doesn't affect stored data)
   bool _normalize_for_display = false;  // Normalize to [0,1] range for display
 
-  // Per-series vertical scale and offset (visual only)
+  // Per-series vertical scale (visual only)
   float _vertical_scale = 1.0f;   // Multiplier for Y values (zoom)
-  float _vertical_offset = 0.0f;  // Offset added to Y values (pan)
-  bool _freeze_auto_range = false;  // True to freeze this series' range (disable auto-range)
-  float _frozen_min = 0.0f;  // Frozen min value when auto-range is disabled
-  float _frozen_max = 1.0f;  // Frozen max value when auto-range is disabled
-
-private:
-  void _updateRange();
 };
 using graphseries_ptr_t = std::shared_ptr<GraphSeries>;
-///////////////////////////////////////////////////////////////////////////////
-enum class VerticalScaleMode : uint64_t {
-  CrcEnum(AUTO),    // Auto-range (dynamically fits visible data)
-  CrcEnum(MANUAL)   // Manual zoom (user-controlled via mouse wheel)
-};
 ///////////////////////////////////////////////////////////////////////////////
 // GraphChannel: Can use either lambda-based or series-based data
 // Lambda mode: backward compatible with existing code
@@ -112,8 +93,6 @@ struct GraphView : public ui::Surface {
   lev2::Grid2d _grid;
   fvec2 _downPos;
   fvec2 _downCenter;
-  int _downPixelY;  // Starting Y pixel position for drag
-  float _downSeriesOffset;  // Starting offset of selected series when drag began
   bool _lockX;
   bool _lockY;
   bool _lockYZOOM;
@@ -121,9 +100,8 @@ struct GraphView : public ui::Surface {
   bool _show_stats = true;
 
   int _label_spacing = 2;  // Margin between series label boxes
-  VerticalScaleMode _vscale_mode = VerticalScaleMode::AUTO;  // Default to auto-range
 
-  // Selected series for per-series scale/offset control
+  // Selected series for per-series scale control
   graphseries_ptr_t _selected_series = nullptr;
   graphseries_ptr_t _hovered_series = nullptr;  // Series under mouse cursor
 
@@ -133,9 +111,6 @@ struct GraphView : public ui::Surface {
 private:
   // Helper functions for event handling
   graphseries_ptr_t _findSeriesAtPoint(int x, int y);
-  void _freezeSeriesAutoRange(graphseries_ptr_t series);
-  float _getSeriesVerticalRange(graphseries_ptr_t series);
-  void _adjustSeriesOffset(int pixel_delta_y);
   void _adjustSeriesScale(int wheel_delta);
   void _adjustGlobalZoom(int wheel_delta);
 };
