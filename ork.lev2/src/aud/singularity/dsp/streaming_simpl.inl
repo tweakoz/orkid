@@ -25,6 +25,7 @@ struct SimpleImpl {
   float _deviation = 0.0f;
   float _correction = 0.0f;
   int _push_count = 0;
+  int _chunkindex = 0;
   int _pop_count = 0;
   int _drained_samples = 0;
   int _buf_current = 0;
@@ -47,6 +48,7 @@ struct SimpleImpl {
       // Register lambda-based perfItems
       logchan_strsimpl->perfItem("deviation", (float_lambda_t) [this]() -> float { return _deviation; });
       logchan_strsimpl->perfItem("correction", (float_lambda_t) [this]() -> float { return _correction; });
+      logchan_strsimpl->perfItem("CIDX", (int_lambda_t) [this]() -> int { return _chunkindex; });
       logchan_strsimpl->perfItem("PUSH", (int_lambda_t) [this]() -> int { return _push_count; });
       logchan_strsimpl->perfItem("POP", (int_lambda_t)[this]() -> int { return _pop_count; });
       logchan_strsimpl->perfItem("SIMPL:DrainedSamples", [this]() -> int { return _drained_samples; });
@@ -140,6 +142,7 @@ struct SimpleImpl {
       reset();
     }
     while (source->_inputqueue.try_pop(chunk)) {
+      _chunkindex = source->_chunk_index;
       auto& chan0        = chunk->_channels[0];
       size_t num_samples = chan0.size();
       const float* src   = chan0.data();
@@ -149,7 +152,8 @@ struct SimpleImpl {
       size_t to_push         = std::min(available_space, num_samples);
 
       if (to_push > 0) {
-        _push_count += int(to_push);
+        //_push_count += int(to_push);
+        _push_count ++;
         _oscil->_ringBuffer.push_many(src, to_push);
       }
 
@@ -262,7 +266,7 @@ struct SimpleImpl {
         memset(outputchan, 0, frames * sizeof(float));
         logchan_strsimpl->log("SimpleImpl: Underrun - buffer:%zu needed:%zu", current_buffer_size, samples_needed);
       }
-      _pop_count += int(popped);
+      _pop_count ++;// int(popped);
     } else {
       // Output silence (priming or no data)
       memset(outputchan, 0, frames * sizeof(float));
