@@ -103,7 +103,7 @@ class GraphViewTest(application.ComponentizedApplication):
     )
 
     # Set sampling rate to 400 samples/sec (0.0025 second interval)
-    self.gview_channel.perf_interval = 0.0025
+    self.gview_channel.perf_interval = 0.0001
 
     # Register pull-based perfItems (lambdas) - sampled at perf_interval rate
     # These will be automatically sampled at 100 Hz

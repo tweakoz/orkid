@@ -502,8 +502,11 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
               }
 
               // Blend min/max smoothly: approach new value at 3% per frame
-              series->_min_value = series->_min_value * 0.99f + current_min * 0.01f;
-              series->_max_value = series->_max_value * 0.99f + current_max * 0.01f;
+              float b = series->_blend_rate;
+              float inb = 1.0f - b;
+              series->_min_value = series->_min_value * inb + current_min * b;
+              series->_max_value = series->_max_value * inb + current_max * b;
+              series->_blend_rate = std::max(0.01f, series->_blend_rate - 0.001f); // slow up blending over time
 
               float series_min = series->_min_value;
               float series_max = series->_max_value;
@@ -522,35 +525,39 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
               float lane_y_top_pixel = float(lane_index) * lane_height;
               float lane_y_bottom_pixel = lane_y_top_pixel + lane_height;
 
-              // Set viewport to this lane's pixel region
-              tgt->FBI()->pushViewport(0, int(lane_y_top_pixel), w, int(lane_height));
-
-              // Create ortho that maps data range to the lane's viewport
-              // Data will be centered in the lane (scale factor of 1.0 for now)
-              auto track_ortho = mtxi->Ortho(
-                hrange.x, hrange.y,           // X: shared horizontal range
-                series_min, series_max,       // Y: this series' data range (min at bottom, max at top)
-                0.0f, 1.0f);
-
-              mtxi->PushPMatrix(track_ortho);
-              mtxi->PushVMatrix(fmtx4::Identity());
-              mtxi->PushMMatrix(fmtx4::Identity());
+              // Use same UI matrix as labels
+              mtxi->PushUIMatrix(w, h);
 
               lev2::VtxWriter<vtx_t> vw;
               vw.Lock(tgt, vbuf.get(), display_count * 2);
 
+              // Calculate scaling factors to map data to screen coordinates
+              float x_scale = float(w) / (hrange.y - hrange.x);
+              float y_scale = lane_height / (series_max - series_min) * series->_vertical_scale;
+
+              // Calculate centers
+              float data_center_y = (series_min + series_max) / 2.0f;
+              float lane_center_y = lane_y_top_pixel + lane_height / 2.0f;
+
               for (size_t i = 0; i < display_count; i++) {
                 size_t sample_index = start_index + i;
-                float x = float(sample_index) - float(series_count - 1);
-                float y = series->getSample(sample_index);
+                float data_x = float(sample_index) - float(series_count - 1);
+                float data_y = series->getSample(sample_index);
+
+                // Transform to screen coordinates: center data in lane
+                float screen_x = (data_x - hrange.x) * x_scale;
+                float screen_y = lane_center_y - (data_y - data_center_y) * y_scale;
 
                 if (i > 0) {
                   size_t prev_sample_index = start_index + i - 1;
-                  float prev_x = float(prev_sample_index) - float(series_count - 1);
-                  float prev_y = series->getSample(prev_sample_index);
+                  float prev_data_x = float(prev_sample_index) - float(series_count - 1);
+                  float prev_data_y = series->getSample(prev_sample_index);
 
-                  vw.AddVertex(vtx_t(fvec3(prev_x, prev_y, 0), fvec4(), series->_color));
-                  vw.AddVertex(vtx_t(fvec3(x, y, 0), fvec4(), series->_color));
+                  float prev_screen_x = (prev_data_x - hrange.x) * x_scale;
+                  float prev_screen_y = lane_center_y - (prev_data_y - data_center_y) * y_scale;
+
+                  vw.AddVertex(vtx_t(fvec3(prev_screen_x, prev_screen_y, 0), fvec4(), series->_color));
+                  vw.AddVertex(vtx_t(fvec3(screen_x, screen_y, 0), fvec4(), series->_color));
                 }
               }
               vw.UnLock(tgt);
@@ -575,12 +582,7 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
               rs->_priority = prev_pri;
               rs->_blendingMacro = omacro;
 
-              mtxi->PopPMatrix();
-              mtxi->PopVMatrix();
-              mtxi->PopMMatrix();
-
-              // Restore viewport
-              tgt->FBI()->popViewport();
+              mtxi->PopUIMatrix();
             }
 
             // Increment lane index for ALL series (visible or not) to maintain fixed positions
@@ -702,27 +704,13 @@ void GraphView::_adjustSeriesScale(int wheel_delta) {
 }
 /////////////////////////////////////////////////////////////////////////
 void GraphView::_adjustGlobalZoom(int wheel_delta) {
-  const float zoom_rate = 1.01f;
-
-  if (_v_key_down) {
-    // V key down: vertical zoom only
-    if (!_lockYZOOM) {
-      if (wheel_delta > 0) {
-        _grid._zoomY *= zoom_rate;
-      } else {
-        _grid._zoomY /= zoom_rate;
-      }
-      _grid._zoomY = clamp(_grid._zoomY, 0.02f, 10.0f);
-    }
+  const float zoom_rate = 1.001f;
+  if (wheel_delta > 0) {
+    _grid._zoomX *= zoom_rate;
   } else {
-    // V key up: horizontal zoom only
-    if (wheel_delta > 0) {
-      _grid._zoomX *= zoom_rate;
-    } else {
-      _grid._zoomX /= zoom_rate;
-    }
-    _grid._zoomX = clamp(_grid._zoomX, 0.02f, 10.0f);
+    _grid._zoomX /= zoom_rate;
   }
+  _grid._zoomX = clamp(_grid._zoomX, 0.02f, 10.0f);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void GraphPanel::setRect(int iX, int iY, int iW, int iH, bool snap) {

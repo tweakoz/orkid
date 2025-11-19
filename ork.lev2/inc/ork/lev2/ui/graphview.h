@@ -43,6 +43,7 @@ struct GraphSeries {
   // Auto-range tracking (blended at 3% per frame)
   float _min_value = 0.0f;
   float _max_value = 1.0f;
+  float _blend_rate = 0.5f;
 
   // Moving window display (0 = show all samples, >0 = show only most recent N)
   size_t _window_size = 0;

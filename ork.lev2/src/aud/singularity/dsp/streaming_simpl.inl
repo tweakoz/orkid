@@ -97,7 +97,7 @@ struct SimpleImpl {
   void emergencyDrain() {
     size_t current_size = _oscil->_ringBuffer.size();
     size_t target_size  = _oscil->_dynamic_target_level;
-    size_t drain_threshold  = size_t(target_size*1.5);                  // Exit priming at target level
+    size_t drain_threshold  = size_t(target_size*4.5);                  // Exit priming at target level
     if (current_size > drain_threshold) { // More aggressive trigger
 
       size_t excess   = current_size - target_size;
@@ -107,7 +107,7 @@ struct SimpleImpl {
       _oscil->_ringBuffer.pop_many(temp_drain.data(), to_drain);
 
       _ed_current_size = float(current_size);
-      _ed_ts_1_5 = target_size * 1.5f;
+      _ed_ts_1_5 = drain_threshold;
       _ed_excess = int(excess);
       _ed_to_drain = int(to_drain);
 
@@ -149,7 +149,7 @@ struct SimpleImpl {
       size_t to_push         = std::min(available_space, num_samples);
 
       if (to_push > 0) {
-        _push_count = int(to_push);
+        _push_count += int(to_push);
         _oscil->_ringBuffer.push_many(src, to_push);
       }
 
@@ -262,7 +262,7 @@ struct SimpleImpl {
         memset(outputchan, 0, frames * sizeof(float));
         logchan_strsimpl->log("SimpleImpl: Underrun - buffer:%zu needed:%zu", current_buffer_size, samples_needed);
       }
-      _pop_count = int(popped);
+      _pop_count += int(popped);
     } else {
       // Output silence (priming or no data)
       memset(outputchan, 0, frames * sizeof(float));
