@@ -21,10 +21,44 @@ struct SimpleImpl {
   size_t _exec_count = 0;
   float _read_position = 0.0f;  // Fractional sample position for interpolation
 
+  // Stored values for lambda-based perfItems
+  float _deviation = 0.0f;
+  float _correction = 0.0f;
+  int _push_count = 0;
+  int _pop_count = 0;
+  int _drained_samples = 0;
+  int _buf_current = 0;
+  int _buf_target = 0;
+  float _buf_health = 0.0f;
+  int _consuming = 0;
+  float _playback_rate = 1.0f;
+  float _ed_current_size = 0.0f;
+  float _ed_ts_1_5 = 0.0f;
+  int _ed_excess = 0;
+  int _ed_to_drain = 0;
+
   ////////////////////////////////////////////////////////////////
 
   SimpleImpl(StreamingOscillatorBlock* osc)
       : _oscil(osc) {
+
+      logchan_strsimpl->_perf_interval = 0.001f;
+
+      // Register lambda-based perfItems
+      logchan_strsimpl->perfItem("deviation", (float_lambda_t) [this]() -> float { return _deviation; });
+      logchan_strsimpl->perfItem("correction", (float_lambda_t) [this]() -> float { return _correction; });
+      logchan_strsimpl->perfItem("PUSH", (int_lambda_t) [this]() -> int { return _push_count; });
+      logchan_strsimpl->perfItem("POP", (int_lambda_t)[this]() -> int { return _pop_count; });
+      logchan_strsimpl->perfItem("SIMPL:DrainedSamples", [this]() -> int { return _drained_samples; });
+      logchan_strsimpl->perfItem("BufCur", (int_lambda_t)[this]() -> int { return _buf_current; });
+      logchan_strsimpl->perfItem("BufTgt", (int_lambda_t)[this]() -> int { return _buf_target; });
+      logchan_strsimpl->perfItem("BufHealth", (float_lambda_t) [this]() -> float { return _buf_health; });
+      logchan_strsimpl->perfItem("Consuming", (int_lambda_t)[this]() -> int { return _consuming; });
+      logchan_strsimpl->perfItem("PlaybackRate", (float_lambda_t) [this]() -> float { return _playback_rate; });
+      logchan_strsimpl->perfItem("ED.current_size", (float_lambda_t) [this]() -> float { return _ed_current_size; });
+      logchan_strsimpl->perfItem("ED.ts*1.5", (float_lambda_t) [this]() -> float { return _ed_ts_1_5; });
+      logchan_strsimpl->perfItem("ED.excess", (int_lambda_t)[this]() -> int { return _ed_excess; });
+      logchan_strsimpl->perfItem("ED.to_drain", (int_lambda_t)[this]() -> int { return _ed_to_drain; });
   }
 
   ////////////////////////////////////////////////////////////////
@@ -39,11 +73,11 @@ struct SimpleImpl {
   ////////////////////////////////////////////////////////////////
 
   float computePlaybackRate(float buffer_health) {
-    float deviation = buffer_health - 1.0f;
+    _deviation = buffer_health - 1.0f;
 
     // Tighter dead zone ±2% (reduced from 5%)
     static constexpr float DEAD_ZONE = 0.02f;
-    if (fabsf(deviation) < DEAD_ZONE) {
+    if (fabsf(_deviation) < DEAD_ZONE) {
       //return 1.0f;  // Normal playback
     }
 
@@ -51,13 +85,11 @@ struct SimpleImpl {
     static constexpr float MAX_CORRECTION = 0.005f;
 
     // Stronger proportional control (increased from 0.1 to 0.3)
-    float correction = -deviation * 0.03f;  // 30% feedback strength
+    _correction = -_deviation * 0.03f;  // 30% feedback strength
 
-    logchan_strsimpl->perfItem("deviation", deviation);
-    logchan_strsimpl->perfItem("correction", correction);
-    correction = std::clamp(correction, -MAX_CORRECTION, MAX_CORRECTION);
+    _correction = std::clamp(_correction, -MAX_CORRECTION, MAX_CORRECTION);
 
-    return 1.0f - correction;
+    return 1.0f - _correction;
   }
 
   ////////////////////////////////////////////////////////////////
@@ -74,21 +106,20 @@ struct SimpleImpl {
       std::vector<float> temp_drain(to_drain);
       _oscil->_ringBuffer.pop_many(temp_drain.data(), to_drain);
 
-      logchan_strsimpl->perfItem("ED.current_size", current_size);
-      logchan_strsimpl->perfItem("ED.ts*1.5", (target_size*1.5f));
-      logchan_strsimpl->perfItem("ED.excess", int(excess));
-      logchan_strsimpl->perfItem("ED.to_drain", int(to_drain));
-
+      _ed_current_size = float(current_size);
+      _ed_ts_1_5 = target_size * 1.5f;
+      _ed_excess = int(excess);
+      _ed_to_drain = int(to_drain);
 
       logchan_strsimpl->log(
-          "EDRAIN: cursize<%zu> thresh<%zu> excess<%zu> target<%zu> removing %zu samples, buffer now %zu", 
+          "EDRAIN: cursize<%zu> thresh<%zu> excess<%zu> target<%zu> removing %zu samples, buffer now %zu",
           current_size,
-          drain_threshold, 
+          drain_threshold,
           excess,
           target_size,
           to_drain,
           _oscil->_ringBuffer.size());
-      logchan_strsimpl->perfItem("SIMPL:DrainedSamples", int(to_drain));
+      _drained_samples = int(to_drain);
     }
   }
 
@@ -118,7 +149,7 @@ struct SimpleImpl {
       size_t to_push         = std::min(available_space, num_samples);
 
       if (to_push > 0) {
-        logchan_strsimpl->perfItem("PUSH", int(to_push));
+        _push_count = int(to_push);
         _oscil->_ringBuffer.push_many(src, to_push);
       }
 
@@ -176,18 +207,14 @@ struct SimpleImpl {
     float playback_rate = computePlaybackRate(buffer_health);
 
     ///////////////////////////////////////////////////////////////////
-    // logging
+    // Update perfItem values
     ///////////////////////////////////////////////////////////////////
 
-    if (1){
-      if((ecount%128)==0){
-        logchan_strsimpl->perfItem("BufCur",int(current_buffer_size));
-        logchan_strsimpl->perfItem("BufTgt",int(target_level));
-        logchan_strsimpl->perfItem("BufHealth",buffer_health);
-        logchan_strsimpl->perfItem("Consuming",int(should_consume_samples));
-        logchan_strsimpl->perfItem("PlaybackRate",playback_rate);
-      }
-    }
+    _buf_current = int(current_buffer_size);
+    _buf_target = int(target_level);
+    _buf_health = buffer_health;
+    _consuming = int(should_consume_samples);
+    _playback_rate = playback_rate;
 
     ///////////////////////////////////////////////////////////////////
     // GENERATE FIXED 64-FRAME OUTPUT WITH INTERPOLATION
@@ -235,7 +262,7 @@ struct SimpleImpl {
         memset(outputchan, 0, frames * sizeof(float));
         logchan_strsimpl->log("SimpleImpl: Underrun - buffer:%zu needed:%zu", current_buffer_size, samples_needed);
       }
-      logchan_strsimpl->perfItem("POP", (int)popped);
+      _pop_count = int(popped);
     } else {
       // Output silence (priming or no data)
       memset(outputchan, 0, frames * sizeof(float));

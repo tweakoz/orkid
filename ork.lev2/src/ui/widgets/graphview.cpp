@@ -416,10 +416,17 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
       ///////////////////////////////////////////////////
 
       if (has_series) {
-        // Draw a label/button for each series
-        size_t num_series = channel->_series.size();
+        // Draw labels for ALL series, positioned evenly across height
+        size_t total_series = channel->_series.size();
+        float label_spacing_height = total_series > 0 ? float(height()) / float(total_series) : float(height());
+        size_t label_index = 0;
+
         for (auto& series : channel->_series) {
-          int sw             = lev2::FontMan::stringWidth(series->_name.length());
+          // Calculate vertical center for this label position
+          float label_center_y = (float(label_index) + 0.5f) * label_spacing_height;
+          int label_y = int(label_center_y) - 8;  // Center the 16-pixel label box
+
+          int sw = lev2::FontMan::stringWidth(series->_name.length());
 
           // Pulse selected series label
           fvec3 label_color = series->_color;
@@ -431,17 +438,22 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
             mNeedsSurfaceRepaint = true;  // Keep repainting for animation
           }
 
+          // Dim the label if not visible
+          if (!series->_visible) {
+            label_color = label_color * 0.3f;
+          }
+
           tgt->RefModColor() = label_color;
           mtxi->PushUIMatrix(width(), height());
           lev2::FontMan::beginTextBlock(tgt, 128);
-          lev2::FontMan::DrawText(tgt, width() - (max_label_width + 16), ichanlaby, series->_name.c_str());
+          lev2::FontMan::DrawText(tgt, width() - (max_label_width + 16), label_y, series->_name.c_str());
           lev2::FontMan::endTextBlock(tgt);
           mtxi->PopUIMatrix();
 
+          ///////////////////////////////////////////////////
+          // draw current value (only if visible and has data)
+          ///////////////////////////////////////////////////
           if (series->_visible) {
-            ///////////////////////////////////////////////////
-            // draw current value
-            ///////////////////////////////////////////////////
             size_t series_count = series->sampleCount();
             if (series_count > 0) {
               float value        = series->getSample(series_count - 1);
@@ -450,41 +462,41 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
               tgt->RefModColor() = series->_color;
               mtxi->PushUIMatrix(width(), height());
               lev2::FontMan::beginTextBlock(tgt, 128);
-              lev2::FontMan::DrawText(tgt, width() - (max_label_width + 16) - (sw2 + 16), ichanlaby, valstr.c_str());
+              lev2::FontMan::DrawText(tgt, width() - (max_label_width + 16) - (sw2 + 16), label_y, valstr.c_str());
               lev2::FontMan::endTextBlock(tgt);
               mtxi->PopUIMatrix();
             }
-
-            ///////////////////////////////////////////////////
-            // draw toggle box
-            ///////////////////////////////////////////////////
-            int x1 = width() - (max_label_width + 28); // ~12 pixels left margin (1 char width)
-            int x2 = width() - 16;                     // 16 pixels right margin
-            int y1 = ichanlaby;
-            int y2 = ichanlaby + 16;
-
-            lev2::VtxWriter<vtx_t> vw;
-            vw.Lock(tgt, vbuf.get(), 8);
-            vw.AddVertex(vtx_t(fvec3(x1, y1, 0), fvec4(), series->_color));
-            vw.AddVertex(vtx_t(fvec3(x2, y1, 0), fvec4(), series->_color));
-            vw.AddVertex(vtx_t(fvec3(x2, y1, 0), fvec4(), series->_color));
-            vw.AddVertex(vtx_t(fvec3(x2, y2, 0), fvec4(), series->_color));
-            vw.AddVertex(vtx_t(fvec3(x2, y2, 0), fvec4(), series->_color));
-            vw.AddVertex(vtx_t(fvec3(x1, y2, 0), fvec4(), series->_color));
-            vw.AddVertex(vtx_t(fvec3(x1, y2, 0), fvec4(), series->_color));
-            vw.AddVertex(vtx_t(fvec3(x1, y1, 0), fvec4(), series->_color));
-            vw.UnLock(tgt);
-
-            mtxi->PushUIMatrix(width(), height());
-            mtl->begin(tek, RCFD);
-            mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
-            mtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
-            gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::LINES);
-            mtl->end(RCFD);
-            mtxi->PopUIMatrix();
           }
 
-          ichanlaby += 16 + _label_spacing;
+          ///////////////////////////////////////////////////
+          // draw toggle box (always draw, filled if visible)
+          ///////////////////////////////////////////////////
+          int x1 = width() - (max_label_width + 28); // ~12 pixels left margin (1 char width)
+          int x2 = width() - 16;                     // 16 pixels right margin
+          int y1 = label_y;
+          int y2 = label_y + 16;
+
+          lev2::VtxWriter<vtx_t> vw;
+          vw.Lock(tgt, vbuf.get(), 8);
+          vw.AddVertex(vtx_t(fvec3(x1, y1, 0), fvec4(), series->_color));
+          vw.AddVertex(vtx_t(fvec3(x2, y1, 0), fvec4(), series->_color));
+          vw.AddVertex(vtx_t(fvec3(x2, y1, 0), fvec4(), series->_color));
+          vw.AddVertex(vtx_t(fvec3(x2, y2, 0), fvec4(), series->_color));
+          vw.AddVertex(vtx_t(fvec3(x2, y2, 0), fvec4(), series->_color));
+          vw.AddVertex(vtx_t(fvec3(x1, y2, 0), fvec4(), series->_color));
+          vw.AddVertex(vtx_t(fvec3(x1, y2, 0), fvec4(), series->_color));
+          vw.AddVertex(vtx_t(fvec3(x1, y1, 0), fvec4(), series->_color));
+          vw.UnLock(tgt);
+
+          mtxi->PushUIMatrix(width(), height());
+          mtl->begin(tek, RCFD);
+          mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
+          mtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
+          gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::LINES);
+          mtl->end(RCFD);
+          mtxi->PopUIMatrix();
+
+          label_index++;
         }
       }
 
@@ -570,28 +582,19 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
 
       if (numpoints && has_visible_series) {
         ///////////////////////////////////////////////////
-        // Render series-based data - each in its own track
+        // Render series-based data - each in its own fixed lane
         ///////////////////////////////////////////////////
         if (has_series) {
-          // Count visible series to calculate track height
-          size_t num_visible_series = 0;
+          // Calculate lane height based on total series count (not just visible)
+          size_t total_series = channel->_series.size();
+          float lane_height = total_series > 0 ? float(h) / float(total_series) : float(h);
+          size_t lane_index = 0;
+
           for (auto& series : channel->_series) {
-            if (series->_visible && series->sampleCount() > 0) {
-              num_visible_series++;
-            }
-          }
+            // Each series has a fixed lane, but only render if visible
+            size_t series_count = series->sampleCount();
 
-          if (num_visible_series > 0) {
-            float track_height = float(h) / float(num_visible_series);
-            size_t track_index = 0;
-
-            for (auto& series : channel->_series) {
-              if (!series->_visible)
-                continue;
-
-              size_t series_count = series->sampleCount();
-              if (series_count == 0)
-                continue;
+            if (series->_visible && series_count > 0) {
 
               // Calculate moving window - which samples to display
               size_t display_count = series_count;
@@ -628,21 +631,15 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
                 series_range = min_range;
               }
 
-              // Calculate this series' vertical pixel range (from top, since screen Y goes down)
-              float track_y_top_pixel = float(track_index) * track_height;
-              float track_y_bottom_pixel = track_y_top_pixel + track_height;
+              // Calculate this series' fixed lane pixel range (from top, since screen Y goes down)
+              float lane_y_top_pixel = float(lane_index) * lane_height;
+              float lane_y_bottom_pixel = lane_y_top_pixel + lane_height;
 
-              // Create a composite transformation:
-              // 1. Data X range -> screen X
-              // 2. Data Y (series_min to series_max) -> track pixels (track_y_top to track_y_bottom)
-              // The Ortho call maps: (left, right, bottom, top) in data space to screen
-              // For Y: we want series_max at top of track, series_min at bottom of track
+              // Set viewport to this lane's pixel region
+              tgt->FBI()->pushViewport(0, int(lane_y_top_pixel), w, int(lane_height));
 
-              // We need to use a viewport + ortho approach
-              // Set viewport to this track's pixel region
-              tgt->FBI()->pushViewport(0, int(track_y_top_pixel), w, int(track_height));
-
-              // Now create ortho that maps data range to normalized viewport
+              // Create ortho that maps data range to the lane's viewport
+              // Data will be centered in the lane (scale factor of 1.0 for now)
               auto track_ortho = mtxi->Ortho(
                 hrange.x, hrange.y,           // X: shared horizontal range
                 series_min, series_max,       // Y: this series' data range (min at bottom, max at top)
@@ -697,9 +694,10 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
 
               // Restore viewport
               tgt->FBI()->popViewport();
-
-              track_index++;
             }
+
+            // Increment lane index for ALL series (visible or not) to maintain fixed positions
+            lane_index++;
           }
         }
         ///////////////////////////////////////////////////
@@ -770,35 +768,32 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
 // GraphView Helper Functions
 ///////////////////////////////////////////////////////////////////////////////
 graphseries_ptr_t GraphView::_findSeriesAtPoint(int x, int y) {
-  int total_series = 0;
+  // Check if click is in label/toggle region (right side of screen)
+  if (x <= (width() - 150)) return nullptr;
+
+  // Count total series for label spacing
+  size_t total_series = 0;
   for (auto channel : _channelmap) {
-    if (!channel->_series.empty()) {
-      total_series += channel->_series.size();
-    } else {
-      total_series += 1;
-    }
+    total_series += channel->_series.size();
   }
 
   if (total_series == 0) return nullptr;
 
-  int row_height = 16 + _label_spacing;
-  int maxy = total_series * row_height + _kbasechanlaby + 16;
+  // Calculate which label the click is in (ALL series have labels)
+  float label_spacing_height = float(height()) / float(total_series);
+  int label_index = int(float(y) / label_spacing_height);
 
-  if (x <= (width() - 150) || y >= maxy) return nullptr;
+  if (label_index < 0 || label_index >= int(total_series)) return nullptr;
 
-  int iseries_index = (y - 16) / row_height;
+  // Find the series at this label index (counting ALL series)
   int current_index = 0;
-
   for (auto channel : _channelmap) {
-    if (!channel->_series.empty()) {
-      for (auto& series : channel->_series) {
-        if (current_index == iseries_index) return series;
-        current_index++;
-      }
-    } else {
+    for (auto& series : channel->_series) {
+      if (current_index == label_index) return series;
       current_index++;
     }
   }
+
   return nullptr;
 }
 /////////////////////////////////////////////////////////////////////////
