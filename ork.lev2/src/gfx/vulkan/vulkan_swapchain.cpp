@@ -684,28 +684,36 @@ void VkSwapChain::waitPresentFrame(vkcontext_rawptr_t ctxVK) {
 
   if (fence) {
     // Check if fence has been submitted (signaled or in-flight)
-    // After a reinit, fences are reset but not submitted, so we shouldn't wait
     VkResult fence_status = vkGetFenceStatus(ctxVK->_vkdevice, fence->_vkfence);
 
     if (fence_status == VK_SUCCESS) {
-      // Fence is signaled - it was submitted with previous frame work
-      // DEBUG: Log fence waiting
-      if(0)logchan_swapchain->log("waitPresentFrame: waiting for fence %p (frame %zu, sub_index %zu)",
-                            (void*)fence->_vkfence, _currentFrame, sub_index);
-
-      // printf("  VkSwapChain<%p> Waiting for fence from frame %zu...\n", (void*) this, _currentFrame);
-      fence->wait();
-
-      if(0)logchan_swapchain->log("waitPresentFrame: fence %p wait complete, resetting fence", (void*)fence->_vkfence);
+      // Fence is already signaled - previous frame work is complete
+      // Just reset it, no need to wait (wait would return immediately anyway)
+      if(0)logchan_swapchain->log("waitPresentFrame: fence %p already signaled, resetting", (void*)fence->_vkfence);
       fence->reset();
-
-      if(0)logchan_swapchain->log("waitPresentFrame: fence %p reset complete", (void*)fence->_vkfence);
     } else if (fence_status == VK_NOT_READY) {
-      // Fence is not signaled - likely freshly reset after reinit or still in-flight
-      // Don't wait to avoid potential hang on unsignaled fence that was never submitted
-      logchan_swapchain->log("waitPresentFrame: fence %p not signaled (likely after reinit), skipping wait", (void*)fence->_vkfence);
+      // Fence is not yet signaled - could be in-flight OR never submitted (after reinit)
+      // Only skip wait if we're in the first MAX_FRAMES_IN_FLIGHT frames after reinit
+      // where fences haven't been cycled through yet
+      bool early_after_reinit = (_currentFrame < MAX_FRAMES_IN_FLIGHT);
+
+      if (early_after_reinit) {
+        // Fence was likely never submitted yet, safe to skip wait
+        if(0)logchan_swapchain->log("waitPresentFrame: fence %p not ready (early frame %zu), skipping wait",
+                              (void*)fence->_vkfence, _currentFrame);
+      } else {
+        // Fence should have been submitted MAX_FRAMES_IN_FLIGHT frames ago
+        // It's in-flight, wait for it
+        if(0)logchan_swapchain->log("waitPresentFrame: fence %p in-flight, waiting", (void*)fence->_vkfence);
+        fence->wait();
+        fence->reset();
+      }
     } else {
-      logchan_swapchain->log("waitPresentFrame: WARNING - fence %p in unexpected state: %d", (void*)fence->_vkfence, fence_status);
+      // VK_ERROR_DEVICE_LOST (-4) or other error
+      logchan_swapchain->log("waitPresentFrame: ERROR - fence %p in error state: %d (device lost?)",
+                            (void*)fence->_vkfence, fence_status);
+      // Device is lost, cannot recover - this is fatal
+      // Log it but don't try to reset (would fail anyway)
     }
   } else {
     logchan_swapchain->log("waitPresentFrame: WARNING - no fence for sub_index %zu", sub_index);

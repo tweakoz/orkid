@@ -820,7 +820,7 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
 #if defined(LINUX) || defined(ORK_CONFIG_IX)
     // On Linux, if no display server is available, use GLFW NULL platform for headless operation
     // This allows Vulkan-based offscreen rendering without X11/Wayland
-    // Headed operation (with DISPLAY or WAYLAND_DISPLAY set) remains unchanged
+    // Otherwise, let GLFW auto-detect the available platform (X11, Wayland, etc.)
     const char* display = getenv("DISPLAY");
     const char* wayland = getenv("WAYLAND_DISPLAY");
     if ((display == nullptr || display[0] == '\0') &&
@@ -828,10 +828,23 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
       logchan_glfw->log("No display server detected, using GLFW NULL platform for headless operation");
       glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_NULL);
     }
+    // Otherwise let GLFW auto-select between X11/Wayland based on availability
 #endif
 
     bool ok = glfwInit();
     assert(ok);
+
+    // Log which platform GLFW is using
+    int platform = glfwGetPlatform();
+    const char* platform_name = "UNKNOWN";
+    switch(platform) {
+      case GLFW_PLATFORM_WIN32: platform_name = "WIN32"; break;
+      case GLFW_PLATFORM_COCOA: platform_name = "COCOA"; break;
+      case GLFW_PLATFORM_WAYLAND: platform_name = "WAYLAND"; break;
+      case GLFW_PLATFORM_X11: platform_name = "X11"; break;
+      case GLFW_PLATFORM_NULL: platform_name = "NULL"; break;
+    }
+    logchan_glfw->log("GLFW platform: %s", platform_name);
 
     auto primary_monitor = glfwGetPrimaryMonitor();
     if (primary_monitor) {

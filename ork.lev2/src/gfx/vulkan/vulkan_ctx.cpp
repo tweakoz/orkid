@@ -1184,30 +1184,91 @@ void VkContext::initializeLoaderContext() {
   plato->_ctxbase   = global_plato()->_ctxbase;
   plato->_needsInit = false;
 
-  // Initialize Vulkan device for loader context (always offscreen)
-  // Create headless surface
-  VkHeadlessSurfaceCreateInfoEXT headlessInfo = {};
-  headlessInfo.sType = VK_STRUCTURE_TYPE_HEADLESS_SURFACE_CREATE_INFO_EXT;
-  headlessInfo.pNext = nullptr;
-  headlessInfo.flags = 0;
-  
-  auto vkCreateHeadlessSurfaceEXT = (PFN_vkCreateHeadlessSurfaceEXT)
-    vkGetInstanceProcAddr(_GVI->_instance, "vkCreateHeadlessSurfaceEXT");
-  
-  if (vkCreateHeadlessSurfaceEXT) {
-    VkResult OK = vkCreateHeadlessSurfaceEXT(
-      _GVI->_instance, 
-      &headlessInfo, 
-      nullptr, 
-      &_vkpresentationsurface
-    );
-    OrkAssert(OK == VK_SUCCESS);
+  // Initialize Vulkan device for loader context
+  // In headed mode (X11/Wayland available), we need to select a device that supports presentation
+  // so that resources loaded here can be used by the window context (like OpenGL share groups)
+
+  VkSurfaceKHR temp_surface = VK_NULL_HANDLE;
+  GLFWwindow* temp_window = nullptr;
+  bool is_headed = false;
+
+#if defined(LINUX)
+  // Check if we're in a headed environment
+  const char* display = getenv("DISPLAY");
+  const char* wayland = getenv("WAYLAND_DISPLAY");
+  is_headed = (display && display[0] != '\0') || (wayland && wayland[0] != '\0');
+
+  if (is_headed) {
+    // Create temporary GLFW window to get a surface for device selection
+    // This ensures loader context uses a device that supports presentation
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+    temp_window = glfwCreateWindow(32, 32, "", nullptr, nullptr);
+    if (temp_window) {
+      VkResult result = glfwCreateWindowSurface(_GVI->_instance, temp_window, nullptr, &temp_surface);
+      if (result == VK_SUCCESS) {
+        logchan_vkctx->log("Loader context: Created temporary surface for presentation-capable device selection");
+      }
+    }
   }
-  
-  // Initialize device without requiring surface support
-  auto vk_devinfo = _GVI->_preferred ? _GVI->_preferred : _GVI->_device_infos[0];
+#endif
+
+  // If no temp surface (headless mode), create headless surface
+  if (temp_surface == VK_NULL_HANDLE) {
+    VkHeadlessSurfaceCreateInfoEXT headlessInfo = {};
+    headlessInfo.sType = VK_STRUCTURE_TYPE_HEADLESS_SURFACE_CREATE_INFO_EXT;
+    headlessInfo.pNext = nullptr;
+    headlessInfo.flags = 0;
+
+    auto vkCreateHeadlessSurfaceEXT = (PFN_vkCreateHeadlessSurfaceEXT)
+      vkGetInstanceProcAddr(_GVI->_instance, "vkCreateHeadlessSurfaceEXT");
+
+    if (vkCreateHeadlessSurfaceEXT) {
+      VkResult OK = vkCreateHeadlessSurfaceEXT(
+        _GVI->_instance,
+        &headlessInfo,
+        nullptr,
+        &temp_surface
+      );
+      OrkAssert(OK == VK_SUCCESS);
+    }
+  }
+
+  // Select device based on surface support (if headed) or discrete GPU (if headless)
+  if (nullptr == _GVI->_preferred) {
+    if (is_headed && temp_surface != VK_NULL_HANDLE) {
+      // Find device that supports presentation (for share group compatibility)
+      auto vk_devinfo = _GVI->findDeviceForSurface(temp_surface);
+      if (vk_devinfo) {
+        _GVI->_preferred = vk_devinfo;
+        logchan_vkctx->log("Loader context: Selected presentation-capable device for share group");
+      }
+    }
+
+    // Fallback: prefer discrete GPU
+    if (nullptr == _GVI->_preferred) {
+      vkdeviceinfo_ptr_t discrete_device = nullptr;
+      for (auto devinfo : _GVI->_device_infos) {
+        if (devinfo->_is_discrete) {
+          discrete_device = devinfo;
+          break;
+        }
+      }
+      _GVI->_preferred = discrete_device ? discrete_device : _GVI->_device_infos.front();
+    }
+  }
+
+  auto vk_devinfo = _GVI->_preferred;
   _initVulkanForDevInfo(vk_devinfo);
   _initVulkanCommon();
+
+  // Clean up temporary surface and window (device is created, no longer needed)
+  if (temp_surface != VK_NULL_HANDLE) {
+    vkDestroySurfaceKHR(_GVI->_instance, temp_surface, nullptr);
+  }
+  if (temp_window) {
+    glfwDestroyWindow(temp_window);
+  }
 
   _defaultRTG  = new RtGroup(this, miW, miH, MsaaSamples::MSAA_1X);
   auto rtb     = _defaultRTG->createRenderTarget(EBufferFormat::RGBA8);

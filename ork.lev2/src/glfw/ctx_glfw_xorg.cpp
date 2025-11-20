@@ -55,6 +55,13 @@ float _currentDPI() {
   return _hakCurrentDPI;
 }
 void setAlwaysOnTop(GLFWwindow *window) {
+    // Check platform - only X11 supports this X11-specific operation
+    int platform = glfwGetPlatform();
+    if (platform != GLFW_PLATFORM_X11) {
+        // TODO: Implement for other platforms if needed
+        return;
+    }
+
     Display *display = glfwGetX11Display();
     auto x11window = glfwGetX11Window(window);
 
@@ -80,6 +87,20 @@ void setAlwaysOnTop(GLFWwindow *window) {
 
 #if 1
 void recomputeHIDPI(GLFWwindow *glfw_window) {
+
+  ///////////////////////
+  // Check which platform GLFW is using (X11, Wayland, NULL, etc.)
+  int platform = glfwGetPlatform();
+
+  // Only perform X11-specific HIDPI computation on X11 platform
+  if (platform != GLFW_PLATFORM_X11) {
+    // On non-X11 platforms (Wayland, NULL/headless, etc.), skip X11-specific HIDPI computation
+    // TODO: Implement platform-specific HIDPI detection for Wayland if needed
+    _hakHIDPI = false;
+    _hakMixedDPI = false;
+    _hakCurrentDPI = 96.0f;
+    return;
+  }
 
   ///////////////////////
   Display *display = glfwGetX11Display();
