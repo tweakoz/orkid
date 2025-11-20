@@ -40,18 +40,22 @@ void VkSwapChain::_buildup() {
   _semasOkToRender.resize(1);
   _waitOnPipelineStages.resize(1);
   _semasOkToPresent.resize(1);
-  _imageAcquiredSemaphores.clear();
-  _renderCompleteSemaphores.clear();
-  _frameFences.clear();
-  for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 
-    auto bin_sema_imgacq = std::make_shared<VulkanBinarySemaphore>(_contextVK);
-    auto bin_sema_rencom = std::make_shared<VulkanBinarySemaphore>(_contextVK);
-    auto fence           = std::make_shared<VulkanFenceObject>(_contextVK);
-    _imageAcquiredSemaphores.push_back(bin_sema_imgacq);
-    _renderCompleteSemaphores.push_back(bin_sema_rencom);
-    _frameFences.push_back(fence);
-    fence->reset();
+  // NOTE: Synchronization objects are now cleared in _teardown() after proper waiting
+  // Only create new ones if the vectors are empty (first time or after teardown)
+  if (_frameFences.empty()) {
+    logchan_swapchain->log("_buildup: Creating synchronization objects");
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+      auto bin_sema_imgacq = std::make_shared<VulkanBinarySemaphore>(_contextVK);
+      auto bin_sema_rencom = std::make_shared<VulkanBinarySemaphore>(_contextVK);
+      auto fence           = std::make_shared<VulkanFenceObject>(_contextVK);
+      _imageAcquiredSemaphores.push_back(bin_sema_imgacq);
+      _renderCompleteSemaphores.push_back(bin_sema_rencom);
+      _frameFences.push_back(fence);
+      fence->reset();
+    }
+  } else {
+    logchan_swapchain->log("_buildup: Reusing existing synchronization objects");
   }
 
   VkSurfaceFormatKHR surfaceFormat = pres_caps->_formats[0];
@@ -300,8 +304,39 @@ void VkSwapChain::_teardown() {
     if(nullptr==_contextVK->_vkdevice){
         return;
     }
+
+  // CRITICAL: Wait for all in-flight frames before destroying synchronization primitives
+  // This prevents destroying semaphores/fences that are still in use on Linux
+  logchan_swapchain->log("_teardown: Waiting for all fences before swapchain teardown");
+  for (size_t i = 0; i < _frameFences.size(); i++) {
+    auto& fence = _frameFences[i];
+    if (fence) {
+      // Check fence status first - if present failed, fence may not be signaled
+      VkResult status = vkGetFenceStatus(_contextVK->_vkdevice, fence->_vkfence);
+      if (status == VK_SUCCESS) {
+        // Fence already signaled, safe to proceed
+        logchan_swapchain->log("  Fence %zu already signaled", i);
+      } else if (status == VK_NOT_READY) {
+        // Fence not signaled, wait with timeout to avoid infinite hang
+        logchan_swapchain->log("  Fence %zu not ready, waiting with timeout...", i);
+        VkResult wait_result = vkWaitForFences(_contextVK->_vkdevice, 1, &fence->_vkfence, VK_TRUE, 1000000000); // 1 second timeout
+        if (wait_result == VK_TIMEOUT) {
+          logchan_swapchain->log("  WARNING: Fence %zu timed out (likely due to failed present), resetting", i);
+          // Fence never signaled (probably due to OUT_OF_DATE), reset it manually
+          vkResetFences(_contextVK->_vkdevice, 1, &fence->_vkfence);
+        } else if (wait_result == VK_SUCCESS) {
+          logchan_swapchain->log("  Fence %zu signaled after wait", i);
+        }
+      } else {
+        logchan_swapchain->log("  WARNING: Fence %zu in unexpected state: %d", i, status);
+      }
+    }
+  }
+
+  // Now safe to wait for device/queue idle
   vkDeviceWaitIdle(_contextVK->_vkdevice);
   vkQueueWaitIdle(_contextVK->_vkqueue_graphics);
+
   if (_vkSwapChain != VK_NULL_HANDLE) {
 
     // Clean up image views
@@ -315,6 +350,14 @@ void VkSwapChain::_teardown() {
     vkDestroySwapchainKHR(_contextVK->_vkdevice, _vkSwapChain, nullptr);
   }
   _vkSwapChain = VK_NULL_HANDLE;
+
+  // Explicitly clear synchronization objects AFTER everything is idle
+  // The shared_ptr destructors will properly destroy the Vulkan objects
+  logchan_swapchain->log("_teardown: Clearing synchronization objects");
+  _frameFences.clear();
+  _imageAcquiredSemaphores.clear();
+  _renderCompleteSemaphores.clear();
+  logchan_swapchain->log("_teardown: Complete");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -589,7 +632,7 @@ void VkSwapChain::enqueuePresentFrame(vkcontext_rawptr_t ctxVK) {
       logchan_swapchain->log("enqueuePresentFrame: VK_ERROR_OUT_OF_DATE_KHR - Swap chain needs recreation");
       printf("VK_ERROR_OUT_OF_DATE_KHR: Swap chain needs recreation\n");
       // Need to recreate swap chain immediately
-      vkDeviceWaitIdle(ctxVK->_vkdevice);
+      // Note: _reinit() will properly wait for fences/device idle before tearing down
       ctxVK->_fbi->_swapchain->_reinit();
       break;
     }
@@ -640,17 +683,30 @@ void VkSwapChain::waitPresentFrame(vkcontext_rawptr_t ctxVK) {
   ctxVK->_prev_time             = pre_time;
 
   if (fence) {
-    // DEBUG: Log fence waiting
-    if(0)logchan_swapchain->log("waitPresentFrame: waiting for fence %p (frame %zu, sub_index %zu)", 
-                          (void*)fence->_vkfence, _currentFrame, sub_index);
-    
-    // printf("  VkSwapChain<%p> Waiting for fence from frame %zu...\n", (void*) this, _currentFrame);
-    fence->wait();
-    
-    if(0)logchan_swapchain->log("waitPresentFrame: fence %p wait complete, resetting fence", (void*)fence->_vkfence);
-    fence->reset();
-    
-    if(0)logchan_swapchain->log("waitPresentFrame: fence %p reset complete", (void*)fence->_vkfence);
+    // Check if fence has been submitted (signaled or in-flight)
+    // After a reinit, fences are reset but not submitted, so we shouldn't wait
+    VkResult fence_status = vkGetFenceStatus(ctxVK->_vkdevice, fence->_vkfence);
+
+    if (fence_status == VK_SUCCESS) {
+      // Fence is signaled - it was submitted with previous frame work
+      // DEBUG: Log fence waiting
+      if(0)logchan_swapchain->log("waitPresentFrame: waiting for fence %p (frame %zu, sub_index %zu)",
+                            (void*)fence->_vkfence, _currentFrame, sub_index);
+
+      // printf("  VkSwapChain<%p> Waiting for fence from frame %zu...\n", (void*) this, _currentFrame);
+      fence->wait();
+
+      if(0)logchan_swapchain->log("waitPresentFrame: fence %p wait complete, resetting fence", (void*)fence->_vkfence);
+      fence->reset();
+
+      if(0)logchan_swapchain->log("waitPresentFrame: fence %p reset complete", (void*)fence->_vkfence);
+    } else if (fence_status == VK_NOT_READY) {
+      // Fence is not signaled - likely freshly reset after reinit or still in-flight
+      // Don't wait to avoid potential hang on unsignaled fence that was never submitted
+      logchan_swapchain->log("waitPresentFrame: fence %p not signaled (likely after reinit), skipping wait", (void*)fence->_vkfence);
+    } else {
+      logchan_swapchain->log("waitPresentFrame: WARNING - fence %p in unexpected state: %d", (void*)fence->_vkfence, fence_status);
+    }
   } else {
     logchan_swapchain->log("waitPresentFrame: WARNING - no fence for sub_index %zu", sub_index);
   }
