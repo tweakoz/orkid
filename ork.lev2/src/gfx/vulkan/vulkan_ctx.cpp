@@ -187,6 +187,33 @@ void VkContext::_initVulkanForWindow(VkSurfaceKHR surface) {
   // UGLY!!!
   if(_GVI->_contexts.size()>=1){
     auto context0 = *_GVI->_contexts.begin();
+
+    // Validate that the existing device can present to this surface
+    // This is critical for multi-GPU systems and when loader context was created first
+    bool can_present = false;
+    auto devinfo = context0->_vkdeviceinfo;
+    if (devinfo) {
+      for (uint32_t qf = 0; qf < devinfo->_queueprops.size(); qf++) {
+        VkBool32 support = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(context0->_vkphysicaldevice, qf, surface, &support);
+        if (support) {
+          can_present = true;
+          break;
+        }
+      }
+    }
+
+    if (!can_present) {
+      // Reused device can't present to this surface, need to create new device
+      logchan_vkctx->log("Existing device cannot present to surface, creating new device for window");
+      OrkAssert(vk_devinfo != nullptr);
+      _initVulkanForDevInfo(vk_devinfo);
+      _initVulkanCommon();
+      return;
+    }
+
+    // Existing device is compatible, reuse it
+    logchan_vkctx->log("Reusing existing device for window (validated presentation support)");
     _vkdevice = context0->_vkdevice;
     _vkdeviceinfo = context0->_vkdeviceinfo;
     _vkphysicaldevice = context0->_vkphysicaldevice;
@@ -1067,12 +1094,23 @@ void VkContext::initializeWindowContext(
   } else {
     // Original path for windowed rendering
     _initVulkanForWindow(_vkpresentationsurface);
-    
+
+    // Validate presentation support on queue families
+    bool has_presentation_support = false;
     for (uint32_t i = 0; i < _num_queue_types; i++) {
       VkBool32 presentSupport = VK_FALSE;
       vkGetPhysicalDeviceSurfaceSupportKHR(_vkphysicaldevice, i, _vkpresentationsurface, &presentSupport);
       logchan_vkctx->log("Qfamily<%u> on surface supports presentation<%d>", i, int(presentSupport));
+      if (presentSupport) {
+        has_presentation_support = true;
+      }
     }
+
+    if (!has_presentation_support) {
+      logchan_vkctx->log("ERROR: No queue family supports presentation on device %s", _vkdeviceinfo->_devprops.deviceName);
+      logchan_vkctx->log("       This should not happen if device selection is correct.");
+    }
+    OrkAssert(has_presentation_support);
   }
 
   // Only get presentation capabilities if we have a surface
@@ -1330,6 +1368,11 @@ vkswapchaincaps_ptr_t VkContext::_swapChainCapsForSurface(VkSurfaceKHR surface) 
   }
   VkBool32 presentSupport = false;
   vkGetPhysicalDeviceSurfaceSupportKHR(_vkphysicaldevice, _vkqfid_graphics, surface, &presentSupport);
+  if (!presentSupport) {
+    logchan_vkctx->log("ERROR: Graphics queue family %u does not support presentation to this surface!", _vkqfid_graphics);
+    logchan_vkctx->log("       Device: %s", _vkdeviceinfo->_devprops.deviceName);
+    logchan_vkctx->log("       This indicates device selection or queue family selection is incorrect.");
+  }
   OrkAssert(presentSupport);
 
   return rval;

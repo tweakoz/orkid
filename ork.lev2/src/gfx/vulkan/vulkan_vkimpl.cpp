@@ -89,10 +89,14 @@ void VulkanInstance::_setupDebugMessenger() {
 
 vkdeviceinfo_ptr_t VulkanInstance::findDeviceForSurface(VkSurfaceKHR surface){
   for( auto devinfo : _device_infos ){
-    VkBool32 presentSupport = false;
-    vkGetPhysicalDeviceSurfaceSupportKHR(devinfo->_phydev, 0, surface, &presentSupport);
-    if(presentSupport){
-      return devinfo;
+    // Check all queue families, not just queue family 0
+    // Many GPUs (especially on Linux) don't support presentation on queue family 0
+    for (uint32_t qf_index = 0; qf_index < devinfo->_queueprops.size(); qf_index++) {
+      VkBool32 presentSupport = false;
+      vkGetPhysicalDeviceSurfaceSupportKHR(devinfo->_phydev, qf_index, surface, &presentSupport);
+      if(presentSupport){
+        return devinfo;
+      }
     }
   }
   return nullptr;
