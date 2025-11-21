@@ -9,21 +9,16 @@
 
 import math, random, argparse, sys, colorsys
 from orkengine.core import vec3, vec4, quat, mtx4, mathconstants
-from orkengine.core import dfrustum, dvec4, fmtx4_to_dmtx4 
-from orkengine.core import lev2_pyexdir, Transform
-from orkengine.core import CrcStringProxy, thisdir, VarMap
+from orkengine.core import Transform
+from orkengine.core import CrcStringProxy
 from orkengine import lev2
+
+from ork.app.application import ComponentizedApplication
+from ork.app.std_scenegraph import StandardSceneGraphComponent
+from ork.app.loggerui import LoggerUIComponent
 
 constants = mathconstants()
 tokens = CrcStringProxy()
-
-################################################################################
-
-lev2_pyexdir.addToSysPath()
-from lev2utils.cameras import setupUiCamera
-from lev2utils.primitives import createGridData
-from lev2utils.scenegraph import createSceneGraph
-from lev2utils.lighting import MySpotLight, MyCookie
 
 ################################################################################
 
@@ -57,44 +52,38 @@ class NODE(object):
 
 ################################################################################
 
-class SceneGraphApp(object):
+class SceneGraphApp(ComponentizedApplication):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = lev2.OrkEzApp.create(self,ssaa=0,fullscreen=False)
-    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.materials = set()
     self.nodes=[]
-    self.camera = lev2.CameraData()
-    self.cameralut = lev2.CameraDataLut()
-    self.cameralut.addCamera("spawncam",self.camera)
     self.seed = 12
     self.ambient = ambient
     self.specular = specular
     self.diffuse = diffuse
 
-  ##############################################
-
-  def onGpuInit(self,ctx):
-
-    params_dict = {
+    sg_params = {
       "SkyboxIntensity": skybox,
       "SpecularIntensity": specular,
       "DiffuseIntensity": diffuse,
-      "AmbientLight": vec3(ambient),
-      "DepthFogDistance": float(10000)
+      "AmbientLevel": vec3(ambient),
+      "DepthFogDistance": float(10000),
+      "SkyboxTexPathStr": envmap if envmap != "" else "ork_envmaps|blender_night"
     }
-    if envmap != "":
-      params_dict["SkyboxTexPathStr"] = envmap
-    else:
-      params_dict["SkyboxTexPathStr"] = "ork_envmaps|blender_night"
 
-    createSceneGraph(app=self,
-                     #rendermodel="DeferredPBR",
-#                    rendermodel="ForwardPBR",
-                     params_dict=params_dict)
+    self.SGC = self.addComponent("std_scenegraph",
+                                 StandardSceneGraphComponent,
+                                 enable_ui_camera=False,
+                                 eye=vec3(0,20,20),
+                                 sg_params=sg_params )
+    self.createEzApp(ssaa=1)
 
-    self.pbrcommon = self.scene.pbr_common
+  ##############################################
+
+  def _onGpuInit(self,ctx):
+    SGC = self.SGC
+    SG = SGC.scenegraph
 
     ###################################
 
@@ -116,7 +105,7 @@ class SceneGraphApp(object):
 
     random.seed(self.seed)
     for i in range(81):
-      node = NODE(model,self.layer1,i)
+      node = NODE(model,SGC.layer_fwd,i)
 
       x = (i % 9)
       z = int(i/9)
@@ -145,12 +134,6 @@ class SceneGraphApp(object):
 
     self.regenColors()
 
-    ###################################
-
-    self.grid_data = createGridData()
-    self.grid_node = self.layer1.createDrawableNodeFromData("grid",self.grid_data)
-    self.grid_node.sortkey = 1
-
   ################################################
 
   def regenColors(self):
@@ -172,16 +155,15 @@ class SceneGraphApp(object):
 
   ################################################
 
-  def onUpdate(self,updinfo):
+  def _onUpdate(self,updinfo):
     phase = updinfo.absolutetime * 0.2
     x =  math.sin(phase)*10    
     z = -math.cos(phase)*10    
     ###################################
-    self.camera.perspective(0.1, 50.0, 35.0*constants.DTOR)
-    self.camera.lookAt(vec3(x,5,z)*2.5, # eye
-                       vec3(0, 0, 0), # tgt
-                       vec3(0, 1, 0)) # up
-    self.scene.updateScene(self.cameralut) 
+    self.SGC.camera.perspective(0.1, 50.0, 35.0*constants.DTOR)
+    self.SGC.camera.lookAt(vec3(x,5,z)*2.5, # eye
+                           vec3(0, 0, 0), # tgt
+                           vec3(0, 1, 0)) # up
 
   ##############################################
 

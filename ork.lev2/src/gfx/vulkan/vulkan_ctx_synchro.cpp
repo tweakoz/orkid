@@ -114,6 +114,17 @@ VulkanCompletionSemaphore::VulkanCompletionSemaphore(vkcontext_rawptr_t ctxVK)
   SCI.pNext = &STCI;
 
   VkResult OK = vkCreateSemaphore(_ctxVK->_vkdevice, &SCI, nullptr, &_vksema);
+  if (OK != VK_SUCCESS) {
+    const char* error_str = nullptr;
+    switch(OK) {
+      case VK_ERROR_OUT_OF_HOST_MEMORY: error_str = "VK_ERROR_OUT_OF_HOST_MEMORY"; break;
+      case VK_ERROR_OUT_OF_DEVICE_MEMORY: error_str = "VK_ERROR_OUT_OF_DEVICE_MEMORY"; break;
+      case VK_ERROR_TOO_MANY_OBJECTS: error_str = "VK_ERROR_TOO_MANY_OBJECTS"; break;
+      case VK_ERROR_DEVICE_LOST: error_str = "VK_ERROR_DEVICE_LOST"; break;
+      default: error_str = "UNKNOWN"; break;
+    }
+    printf("ERROR: vkCreateSemaphore (VulkanCompletionSemaphore) failed: %s (code=%d)\n", error_str, OK);
+  }
   OrkAssert(OK == VK_SUCCESS);
 }
 

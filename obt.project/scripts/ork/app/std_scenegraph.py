@@ -95,15 +95,29 @@ class StandardSceneGraphComponent(ApplicationComponent):
   ###############################################
 
   def __init__(self, 
+               enable_ui_camera = True,
                grid_variant="_V4",
                eye=vec3(0,0,5),
                tgt=vec3(0),
-               up=vec3(0,1,0)):
+               up=vec3(0,1,0),
+               sg_params=None):
     super().__init__()
+    self.enable_ui_camera = enable_ui_camera
     self.grid_variant = grid_variant
     self.initial_eye = eye
     self.initial_tgt = tgt
     self.initial_up = up
+    sgparam_vm = VarMap()
+    sgparam_vm.SkyboxIntensity = 1.0
+    sgparam_vm.DiffuseIntensity = 1.0
+    sgparam_vm.SpecularIntensity = 1.0
+    sgparam_vm.AmbientLevel = vec3(.125)
+    sgparam_vm.preset = "ForwardPBR"
+    sgparam_vm.SkyboxTexPathStr = "nebula"
+    if sg_params != None:
+      for k,v in sg_params.items():
+        setattr(sgparam_vm, k, v)
+    self.sg_params = sgparam_vm
 
   ###############################################
 
@@ -128,14 +142,7 @@ class StandardSceneGraphComponent(ApplicationComponent):
   ##################################################
 
   def _onGpuInit(self,ctx):
-    sg_params = VarMap()
-    sg_params.SkyboxIntensity = 1.0
-    sg_params.DiffuseIntensity = 1.0
-    sg_params.SpecularIntensity = 1.0
-    sg_params.AmbientLevel = vec3(.125)
-    sg_params.preset = "ForwardPBR"
-    sg_params.SkyboxTexPathStr = "nebula"
-    self.sg_params = sg_params
+    sg_params = self.sg_params
 
     SG = lev2.scenegraph.Scene(sg_params)
     self.layer1 = SG.createLayer("std_forward")
@@ -180,7 +187,8 @@ class StandardSceneGraphComponent(ApplicationComponent):
     SGVPW = SGVP.widget
     SGVPW.cameraName = self.camname
     SGVPW.scenegraph = SG
-    SGVPW.evhandler = lambda x: self._onCameraUiEvent(x)
+    if self.enable_ui_camera:
+      SGVPW.evhandler = lambda x: self._onCameraUiEvent(x)
     SGVPW.forkDB()
     self.SGVP = SGVP
 

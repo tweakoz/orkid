@@ -542,6 +542,25 @@ void CtxGLFW::Show() {
         _glfwWindow,
         _appinitdata->_width, //
         _appinitdata->_height);
+
+    // Query actual framebuffer size (may be clamped by monitor)
+    int actual_fb_w, actual_fb_h;
+    glfwGetFramebufferSize(_glfwWindow, &actual_fb_w, &actual_fb_h);
+    if (actual_fb_w != _appinitdata->_width || actual_fb_h != _appinitdata->_height) {
+      logchan_glfw->log("Framebuffer size clamped by monitor: requested %dx%d, actual %dx%d",
+                        _appinitdata->_width, _appinitdata->_height, actual_fb_w, actual_fb_h);
+      _width = actual_fb_w;
+      _height = actual_fb_h;
+      _appinitdata->_width = actual_fb_w;
+      _appinitdata->_height = actual_fb_h;
+
+      // Also update the Window object dimensions
+      if (_orkwindow) {
+        _orkwindow->miWidth = actual_fb_w;
+        _orkwindow->miHeight = actual_fb_h;
+        logchan_glfw->log("Updated Window object dimensions to %dx%d", actual_fb_w, actual_fb_h);
+      }
+    }
   }
 
   if (_needsInitialize) {

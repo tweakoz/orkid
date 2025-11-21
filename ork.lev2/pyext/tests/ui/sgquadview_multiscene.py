@@ -21,7 +21,7 @@ class UiSgQuadViewTestApp(ComponentizedApplication):
     super().__init__()
 
     self.ezapp = OrkEzApp.create(self)
-    self.multiscene = self.addComponent("multiscene1", MultiScene1Component, show_ui_panel=True )
+    self.multiscene = self.addComponent("multiscene1", MultiScene1Component )
     
 ###############################################################################
 
