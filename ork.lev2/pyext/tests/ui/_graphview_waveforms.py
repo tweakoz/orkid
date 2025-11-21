@@ -80,7 +80,7 @@ class WaveformSet:
       slider.update_on_drag = True
       slider.onValueChanged = lambda w, n=name: self.freq_target.__setitem__(n, w.value)
 
-  def createSeries(self, channel, max_samples=1000, auto_range=True, window_size=None):
+  def createSeries(self, channel, max_samples=1000, window_size=None):
     """
     Create GraphView series for all waveforms.
 
@@ -96,7 +96,6 @@ class WaveformSet:
     for name, (color, _) in self.waveform_defs.items():
       series = self.series[name] = channel.addSeries(name, color)
       series.setMaxSamples(max_samples)
-      series.auto_range = auto_range
       series.window_size = window_size
 
   def update(self, time_speed):

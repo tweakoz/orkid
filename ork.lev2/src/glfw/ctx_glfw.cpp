@@ -543,22 +543,49 @@ void CtxGLFW::Show() {
         _appinitdata->_width, //
         _appinitdata->_height);
 
-    // Query actual framebuffer size (may be clamped by monitor)
+    // Query actual window and framebuffer sizes
+    // On HiDPI displays (Retina), framebuffer != window size
+    int actual_win_w, actual_win_h;
     int actual_fb_w, actual_fb_h;
+    glfwGetWindowSize(_glfwWindow, &actual_win_w, &actual_win_h);
     glfwGetFramebufferSize(_glfwWindow, &actual_fb_w, &actual_fb_h);
-    if (actual_fb_w != _appinitdata->_width || actual_fb_h != _appinitdata->_height) {
-      logchan_glfw->log("Framebuffer size clamped by monitor: requested %dx%d, actual %dx%d",
-                        _appinitdata->_width, _appinitdata->_height, actual_fb_w, actual_fb_h);
-      _width = actual_fb_w;
-      _height = actual_fb_h;
-      _appinitdata->_width = actual_fb_w;
-      _appinitdata->_height = actual_fb_h;
 
-      // Also update the Window object dimensions
-      if (_orkwindow) {
-        _orkwindow->miWidth = actual_fb_w;
-        _orkwindow->miHeight = actual_fb_h;
-        logchan_glfw->log("Updated Window object dimensions to %dx%d", actual_fb_w, actual_fb_h);
+    // Detect if we have HiDPI scaling
+    bool has_hidpi_scaling = (actual_fb_w != actual_win_w) || (actual_fb_h != actual_win_h);
+
+    if (has_hidpi_scaling) {
+      // HiDPI display (e.g., MacOS Retina): Use window size for UI layout, framebuffer for rendering
+      // The window size is the logical size we should use for UI dimensions
+      if (actual_win_w != _appinitdata->_width || actual_win_h != _appinitdata->_height) {
+        logchan_glfw->log("HiDPI: Window size clamped by monitor: requested %dx%d, actual window %dx%d (framebuffer %dx%d)",
+                          _appinitdata->_width, _appinitdata->_height, actual_win_w, actual_win_h, actual_fb_w, actual_fb_h);
+        _width = actual_win_w;
+        _height = actual_win_h;
+        _appinitdata->_width = actual_win_w;
+        _appinitdata->_height = actual_win_h;
+
+        if (_orkwindow) {
+          _orkwindow->miWidth = actual_win_w;
+          _orkwindow->miHeight = actual_win_h;
+          logchan_glfw->log("Updated Window object dimensions to %dx%d (window coordinates)", actual_win_w, actual_win_h);
+        }
+      }
+    } else {
+      // Non-HiDPI display (e.g., Linux): Window size == framebuffer size
+      // Use framebuffer size which may have been clamped by monitor constraints
+      if (actual_fb_w != _appinitdata->_width || actual_fb_h != _appinitdata->_height) {
+        logchan_glfw->log("Framebuffer size clamped by monitor: requested %dx%d, actual %dx%d",
+                          _appinitdata->_width, _appinitdata->_height, actual_fb_w, actual_fb_h);
+        _width = actual_fb_w;
+        _height = actual_fb_h;
+        _appinitdata->_width = actual_fb_w;
+        _appinitdata->_height = actual_fb_h;
+
+        if (_orkwindow) {
+          _orkwindow->miWidth = actual_fb_w;
+          _orkwindow->miHeight = actual_fb_h;
+          logchan_glfw->log("Updated Window object dimensions to %dx%d", actual_fb_w, actual_fb_h);
+        }
       }
     }
   }

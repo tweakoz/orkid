@@ -103,7 +103,7 @@ class GraphViewTest(application.ComponentizedApplication):
     )
 
     # Set sampling rate to 400 samples/sec (0.0025 second interval)
-    self.gview_channel.perf_interval = 0.0001
+    self.gview_channel.perf_interval = 0.001
 
     # Register pull-based perfItems (lambdas) - sampled at perf_interval rate
     # These will be automatically sampled at 100 Hz
@@ -168,7 +168,7 @@ class GraphViewTest(application.ComponentizedApplication):
     channel.color = vec3(1, 1, 1)
 
     # Create series for all waveforms
-    self.waveforms.createSeries(channel, max_samples=1000, auto_range=True, window_size=1000)
+    self.waveforms.createSeries(channel, max_samples=1000, window_size=1000)
 
   ##############################################
   # Pull-based perfItem helpers (called by lambdas at perf_interval rate)
