@@ -305,37 +305,59 @@ void VkSwapChain::_teardown() {
         return;
     }
 
-  // CRITICAL: Wait for all in-flight frames before destroying synchronization primitives
-  // This prevents destroying semaphores/fences that are still in use on Linux
-  logchan_swapchain->log("_teardown: Waiting for all fences before swapchain teardown");
+  // Wait ONLY for fences that protect swapchain images - no device idle needed!
+  logchan_swapchain->log("_teardown: Checking fences for swapchain teardown");
+
+  // Collect all unsignaled fences
+  std::vector<VkFence> unsignaled_fences;
   for (size_t i = 0; i < _frameFences.size(); i++) {
     auto& fence = _frameFences[i];
     if (fence) {
-      // Check fence status first - if present failed, fence may not be signaled
       VkResult status = vkGetFenceStatus(_contextVK->_vkdevice, fence->_vkfence);
       if (status == VK_SUCCESS) {
-        // Fence already signaled, safe to proceed
-        logchan_swapchain->log("  Fence %zu already signaled", i);
+        // Already signaled, just reset
+        logchan_swapchain->log("  Fence %zu already signaled, resetting", i);
+        fence->reset();
       } else if (status == VK_NOT_READY) {
-        // Fence not signaled, wait with timeout to avoid infinite hang
-        logchan_swapchain->log("  Fence %zu not ready, waiting with timeout...", i);
-        VkResult wait_result = vkWaitForFences(_contextVK->_vkdevice, 1, &fence->_vkfence, VK_TRUE, 1000000000); // 1 second timeout
-        if (wait_result == VK_TIMEOUT) {
-          logchan_swapchain->log("  WARNING: Fence %zu timed out (likely due to failed present), resetting", i);
-          // Fence never signaled (probably due to OUT_OF_DATE), reset it manually
-          vkResetFences(_contextVK->_vkdevice, 1, &fence->_vkfence);
-        } else if (wait_result == VK_SUCCESS) {
-          logchan_swapchain->log("  Fence %zu signaled after wait", i);
-        }
+        // In-flight or never submitted - add to wait list
+        logchan_swapchain->log("  Fence %zu not ready, will wait", i);
+        unsignaled_fences.push_back(fence->_vkfence);
       } else {
         logchan_swapchain->log("  WARNING: Fence %zu in unexpected state: %d", i, status);
       }
     }
   }
 
-  // Now safe to wait for device/queue idle
-  vkDeviceWaitIdle(_contextVK->_vkdevice);
-  vkQueueWaitIdle(_contextVK->_vkqueue_graphics);
+  // Wait for all unsignaled fences at once with short timeout
+  // At 60 FPS with 2 frames in flight, should take ~33ms max
+  if (!unsignaled_fences.empty()) {
+    logchan_swapchain->log("_teardown: Waiting for %zu unsignaled fences", unsignaled_fences.size());
+    // 50ms timeout - plenty for 2 frames at 60fps (33ms)
+    VkResult wait_result = vkWaitForFences(
+        _contextVK->_vkdevice,
+        unsignaled_fences.size(),
+        unsignaled_fences.data(),
+        VK_TRUE,  // Wait for all
+        50000000  // 50ms in nanoseconds
+    );
+
+    if (wait_result == VK_SUCCESS) {
+      logchan_swapchain->log("_teardown: All fences signaled");
+      // Reset all fences now that they're signaled
+      for (auto& fence : _frameFences) {
+        if (fence) fence->reset();
+      }
+    } else if (wait_result == VK_TIMEOUT) {
+      logchan_swapchain->log("_teardown: Fence timeout - fences likely never submitted, resetting manually");
+      // Fences never submitted (present failed), safe to reset
+      vkResetFences(_contextVK->_vkdevice, unsignaled_fences.size(), unsignaled_fences.data());
+    } else {
+      logchan_swapchain->log("_teardown: WARNING - fence wait returned error: %d", wait_result);
+    }
+  }
+
+  // NO vkDeviceWaitIdle() - completely unnecessary!
+  // The fences already guaranteed swapchain images aren't in use
 
   if (_vkSwapChain != VK_NULL_HANDLE) {
 
