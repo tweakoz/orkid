@@ -305,59 +305,58 @@ void VkSwapChain::_teardown() {
         return;
     }
 
-  // Wait ONLY for fences that protect swapchain images - no device idle needed!
-  logchan_swapchain->log("_teardown: Checking fences for swapchain teardown");
+  // Wait ONLY for in-flight fences - do NOT reset them!
+  // Let waitPresentFrame() handle fence resets before the next submit
+  logchan_swapchain->log("_teardown: Waiting for in-flight fences");
 
-  // Collect all unsignaled fences
-  std::vector<VkFence> unsignaled_fences;
+  // Collect fences that are in-flight (NOT_READY = submitted but not signaled yet)
+  std::vector<VkFence> inflight_fences;
   for (size_t i = 0; i < _frameFences.size(); i++) {
     auto& fence = _frameFences[i];
     if (fence) {
       VkResult status = vkGetFenceStatus(_contextVK->_vkdevice, fence->_vkfence);
       if (status == VK_SUCCESS) {
-        // Already signaled, just reset
-        logchan_swapchain->log("  Fence %zu already signaled, resetting", i);
-        fence->reset();
+        // Already signaled - GPU work done, safe to destroy
+        logchan_swapchain->log("  Fence %zu already signaled (GPU idle)", i);
+        // DO NOT RESET - leave it signaled for next frame to handle
       } else if (status == VK_NOT_READY) {
-        // In-flight or never submitted - add to wait list
-        logchan_swapchain->log("  Fence %zu not ready, will wait", i);
-        unsignaled_fences.push_back(fence->_vkfence);
+        // In-flight - GPU still working on it
+        logchan_swapchain->log("  Fence %zu in-flight, will wait", i);
+        inflight_fences.push_back(fence->_vkfence);
       } else {
-        logchan_swapchain->log("  WARNING: Fence %zu in unexpected state: %d", i, status);
+        logchan_swapchain->log("  WARNING: Fence %zu in error state: %d", i, status);
       }
     }
   }
 
-  // Wait for all unsignaled fences at once with short timeout
+  // Wait for in-flight fences to complete (GPU work using old swapchain images)
   // At 60 FPS with 2 frames in flight, should take ~33ms max
-  if (!unsignaled_fences.empty()) {
-    logchan_swapchain->log("_teardown: Waiting for %zu unsignaled fences", unsignaled_fences.size());
+  if (!inflight_fences.empty()) {
+    logchan_swapchain->log("_teardown: Waiting for %zu in-flight fences", inflight_fences.size());
     // 50ms timeout - plenty for 2 frames at 60fps (33ms)
     VkResult wait_result = vkWaitForFences(
         _contextVK->_vkdevice,
-        unsignaled_fences.size(),
-        unsignaled_fences.data(),
+        inflight_fences.size(),
+        inflight_fences.data(),
         VK_TRUE,  // Wait for all
         50000000  // 50ms in nanoseconds
     );
 
     if (wait_result == VK_SUCCESS) {
-      logchan_swapchain->log("_teardown: All fences signaled");
-      // Reset all fences now that they're signaled
-      for (auto& fence : _frameFences) {
-        if (fence) fence->reset();
-      }
+      logchan_swapchain->log("_teardown: All in-flight fences signaled, GPU work complete");
+      // DO NOT RESET - fences are now signaled, leave them for next frame
     } else if (wait_result == VK_TIMEOUT) {
-      logchan_swapchain->log("_teardown: Fence timeout - fences likely never submitted, resetting manually");
-      // Fences never submitted (present failed), safe to reset
-      vkResetFences(_contextVK->_vkdevice, unsignaled_fences.size(), unsignaled_fences.data());
+      logchan_swapchain->log("_teardown: WARNING - Fence wait timed out after 50ms");
+      // Fences still in-flight after 50ms - this shouldn't happen normally
+      // Don't reset, let validation layers catch issues if any
     } else {
-      logchan_swapchain->log("_teardown: WARNING - fence wait returned error: %d", wait_result);
+      logchan_swapchain->log("_teardown: ERROR - fence wait returned error: %d", wait_result);
     }
   }
 
   // NO vkDeviceWaitIdle() - completely unnecessary!
-  // The fences already guaranteed swapchain images aren't in use
+  // NO fence resets - let waitPresentFrame() handle that before next submit
+  // The fences guaranteed swapchain images aren't in use
 
   if (_vkSwapChain != VK_NULL_HANDLE) {
 
