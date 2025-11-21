@@ -586,6 +586,9 @@ public:
   lightmanagerdata_constptr_t _data;
   texturearray_ptr_t _cookies_spot_color;
   texturearray_ptr_t _cookies_spot_depth;
+  texturearray_ptr_t _cookies_spot_color_default;
+  texturearray_ptr_t _cookies_spot_depth_default;
+  bool _needs_gpu_init = true;
 };
 
 using lightmanager_ptr_t = std::shared_ptr<LightManager>;

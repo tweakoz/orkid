@@ -58,6 +58,8 @@ or
 * ```git lfs fetch --all``` # just in case original orkid clone did not do the lfs fetch for you (may require git lfs install)
 * ```ork.asset.process.py``` # preprocess some assets, wait until see asset_count<11>, then ctrl-c 
 
+* Building with profiling: uncomment #define BUILD_WITH_EASY_PROFILER in profiling.inl
+
 # Test ORKID
 
 * ```obt.goto.orkid``` # goto orkid directory

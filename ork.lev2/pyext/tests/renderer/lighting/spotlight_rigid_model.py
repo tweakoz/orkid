@@ -36,7 +36,7 @@ class SpotlightApp(ComponentizedApplication):
                                  grid_variant="_V4",
                                  eye=vec3(0,12,15))
     #self.LUI = self.addComponent("loggerui", LoggerUIComponent, filter_regex=[".*"]) 
-    self.createEzApp(ssaa=1, fullscreen=True)
+    self.createEzApp(ssaa=1, fullscreen=False)
 
   ##############################################
 
@@ -71,12 +71,10 @@ class SpotlightApp(ComponentizedApplication):
     # setup spotlights / cookies
     ###################################
 
-    lmgr = SG.lightingmanager
-    color_cookies = lmgr.spot_cookies_color
-    depth_cookies = lmgr.spot_cookies_depth
+
+    color_cookies = lev2.TextureArray(w=1024,h=1024,slices=4,fmt=tokens.RGB8,mipmapped=True)
+    depth_cookies = lev2.TextureArray(w=1024,h=1024,slices=4,fmt=tokens.Z32F,mipmapped=True)
     color_cookies.needsRadianceCache = False
-    color_cookies.resize(1024,1024,4,tokens.RGB8,True)
-    depth_cookies.resize(1024,1024,4,tokens.Z32F,True)
 
     cookie1 = color_cookies.load("src://effect_textures/L0D.png")
     cookie2 = color_cookies.load("lev2://textures/transponder24.png")
@@ -96,6 +94,10 @@ class SpotlightApp(ComponentizedApplication):
     self.spotlight2 = StdSpotLight(index=1,SGC=SGC,model=model,frq=0.37*speed_scale,color=vec3(5000,0,0)*intens_scale,cookie=cookie2,depth_cookie=depth2,fovbase=60.0,fovamp=20.0,voffset=15,vscale=13,bias=shadow_bias,dim=shadow_size,radius=12)
     self.spotlight3 = StdSpotLight(index=2,SGC=SGC,model=model,frq=0.57*speed_scale,color=vec3(800)*intens_scale,cookie=cookie3,depth_cookie=depth3,fovbase=60.0,fovamp=20.0,voffset=15,vscale=13,bias=shadow_bias,dim=shadow_size,radius=12)
     self.spotlight4 = StdSpotLight(index=3,SGC=SGC,model=model,frq=0.97*speed_scale,color=vec3(0,0,600)*intens_scale,cookie=cookie4,depth_cookie=depth4,fovbase=70.0,fovamp=20.0,voffset=3,vscale=2,bias=shadow_bias,dim=shadow_size,radius=7)
+
+    lmgr = SG.lightingmanager
+    lmgr.spot_cookies_color = color_cookies
+    lmgr.spot_cookies_depth = depth_cookies
 
   ################################################
 

@@ -353,6 +353,7 @@ endfunction()
 function(ork_core_target_opts_linker the_target)
   target_link_libraries(${the_target} LINK_PRIVATE ork_core )
   target_include_directories (${the_target} PRIVATE ${ORKROOT}/ork.core/inc )
+  target_link_libraries(${the_target} LINK_PRIVATE easy_profiler )
 endfunction()
 
 function(ork_std_target_opts_core the_target)
@@ -566,7 +567,7 @@ function(ork_std_target_opts_linker the_target)
 
   target_link_libraries(${the_target} LINK_PUBLIC ${ObtOpenBlas_LIBRARIES} )
 
-  #target_link_libraries(${the_target} LINK_PUBLIC easy_profiler )
+  target_link_libraries(${the_target} LINK_PUBLIC easy_profiler )
 
   
   endfunction()

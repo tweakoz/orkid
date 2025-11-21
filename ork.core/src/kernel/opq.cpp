@@ -464,7 +464,7 @@ bool OperationsQueue::Process() {
         }
       });
       if (got_one) {
-        EASY_BLOCK("opq", profiler::colors::Magenta);
+        //EASY_BLOCK("opq", profiler::colors::Magenta);
         
         // Measure latency if performance tracking is enabled
         if (_perf_tracking_active && the_op._enqueueTime > 0.0) {

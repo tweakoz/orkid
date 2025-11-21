@@ -649,8 +649,8 @@ void OrkEzApp::_mainThreadLoopBegin() {
     // printf( "update_thread exited.....\n");
   };
   EASY_PROFILER_ENABLE;
-  EASY_MAIN_THREAD;
-  profiler::startListen();
+  //EASY_MAIN_THREAD;
+  //profiler::startListen();
 
   if (not _mainWindow) {
     while (this->_onRunLoopIteration) {
@@ -762,6 +762,8 @@ void OrkEzApp::_mainThreadLoopEnd() {
     auto glfw_ctx = _mainWindow->_ctqt;
     glfw_ctx->_runloopEnd();
   }
+  size_t num_prof_blocks = profiler::dumpBlocksToFile("test_profile.prof");
+  printf( "Dumped %zu profiler blocks to test_profile.prof\n", num_prof_blocks);
 }
 ///////////////////////////////////////////////////////////////////////////////
 int OrkEzApp::mainThreadLoop() {

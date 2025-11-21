@@ -685,11 +685,31 @@ void pyinit_gfx(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto texarray_t = py::class_<TextureArray, texturearray_ptr_t>(module_lev2, "TextureArray");
   texarray_t
-      .def(py::init([](size_t w, size_t h, size_t maxslices) -> texturearray_ptr_t {
+      .def(py::init([](py::kwargs kwargs) -> texturearray_ptr_t {
         auto rval        = std::make_shared<TextureArray>();
-        rval->_width     = w;
-        rval->_height    = h;
-        rval->_maxslices = maxslices;
+        size_t w         = 1;
+        size_t h         = 1;
+        size_t maxslices = 1;
+        crcstring_ptr_t fmt = std::make_shared<CrcString>("RGB8"_crcu);
+        bool needs_mips = false;
+        if (kwargs.contains("w")) {
+          w = kwargs["w"].cast<size_t>();
+        }
+        if (kwargs.contains("h")) {
+          h = kwargs["h"].cast<size_t>();
+        }
+        if (kwargs.contains("slices")) {
+          maxslices = kwargs["slices"].cast<size_t>();
+        }
+        if (kwargs.contains("fmt")) {
+          fmt = kwargs["fmt"].cast<crcstring_ptr_t>();
+        }
+        if (kwargs.contains("mipmapped")) {
+          needs_mips = kwargs["mipmapped"].cast<bool>();
+        }
+        auto efmt      = EBufferFormat(fmt->hashed());
+        rval->_requires_mips = needs_mips;
+        rval->resize(w, h, maxslices, efmt);
         return rval;
       }))
       .def(
@@ -705,19 +725,6 @@ void pyinit_gfx(py::module& module_lev2) {
         return texarray->_conform(fmt); 
       })
       .def("slice", [](texturearray_ptr_t texarray, size_t index) -> texturearraysliceref_ptr_t { return texarray->slice(index); })
-      /*.def("createRtGroup", [](texturearray_ptr_t texarray, ctx_t context) -> rtgroup_ptr_t {
-        auto rtg = std::make_shared<RtGroup>(context.get(),texarray->_width, texarray->_height);
-        texarray->_rtg = rtg;
-        rtg->_textureArray = texarray.get();
-        rtg->_name = "TextureArray:"+texarray->_debugName;
-        for(size_t islice=0; islice<texarray->_maxslices; islice++) {
-          auto slice = texarray->slice(islice);
-          uint64_t usage = "texarray"_crcu;
-          auto rtb = rtg->createRenderTarget(texarray->_format,usage);
-          rtb->_ta_slice = slice;
-        }
-        return rtg;
-      })*/
       .def_property(
           "needsRadianceCache",
           [](texturearray_ptr_t texarray) -> bool { //

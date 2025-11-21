@@ -73,6 +73,7 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
 
     auto lmgr = CIMPL->_lightmgr;
     OrkAssert(lmgr);
+    OrkAssert(lmgr->_needs_gpu_init==false);
 
     ///////////////////////////////////////////////////////////////////////////
     // bind lighting UBO
@@ -96,11 +97,19 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
     // bind spotlight cookies
     ///////////////////////////////////////////////////////////////////////////
  
-     if (mtl->_parTexSpotLightsCount) {
+    if (mtl->_parTexSpotLightsCount) {
       FXI->bindParamInt(mtl->_parTexSpotLightsCount, enumlights->_num_active_texspotlights);
-      FXI->bindParamTextureArray(mtl->_parLightDepthCookies, lmgr->_cookies_spot_depth.get() );
-      FXI->bindParamTextureArray(mtl->_parLightColorCookies, lmgr->_cookies_spot_color.get() );
     }
+    else {
+      FXI->bindParamInt(mtl->_parTexSpotLightsCount, 0 );
+    }
+    FXI->bindParamTextureArray(mtl->_parLightDepthCookies, lmgr->_cookies_spot_depth.get() );
+    FXI->bindParamTextureArray(mtl->_parLightColorCookies, lmgr->_cookies_spot_color.get() );
+
+    ///////////////////////////////////////////////////////////////////////////
+    // bind Color/Normal/Metallic/Roughness/AO Texture Array
+    ///////////////////////////////////////////////////////////////////////////
+
     FXI->bindParamTextureArray( mtl->_paramMapCNMREA, mtl->_texArrayCNMREA.get() );
 
     ///////////////////////////////////////////////////////////////////////////

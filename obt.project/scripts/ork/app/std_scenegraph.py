@@ -165,7 +165,11 @@ class StandardSceneGraphComponent(ApplicationComponent):
       self.grid_node = self.layer1.createDrawableNodeFromData("grid", self.grid_data)
       self.grid_node.sortkey = 1
     
-    #self.scenegraph.lightingmanager.gpuInit(ctx)
+    ###################################
+    # initialize lighting
+    ###################################
+
+    SG.lightingmanager.gpuInit(ctx)
 
   ##################################################
 

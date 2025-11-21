@@ -25,7 +25,7 @@ class SceneGraphApp(ComponentizedApplication):
                                  StandardSceneGraphComponent,
                                  eye=vec3(0,20,20),
                                  grid_variant=None)
-    self.LUI = self.addComponent("loggerui", LoggerUIComponent, filter_regex=[".*"]) 
+    #self.LUI = self.addComponent("loggerui", LoggerUIComponent, filter_regex=[".*"]) 
     self.createEzApp(ssaa=1)
 
   ##############################################
@@ -60,6 +60,7 @@ class SceneGraphApp(ComponentizedApplication):
         mtl = s.material
         self.lmap_materials += [mtl]
     
+
   ################################################
 
   def _onGpuUpdate(self,ctx):

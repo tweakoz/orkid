@@ -10,6 +10,8 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdefaulted-function-deleted"
 
+//#define BUILD_WITH_EASY_PROFILER
+
 #include <easy/profiler.h>
 #include <easy/reader.h>
 #include <easy/arbitrary_value.h>

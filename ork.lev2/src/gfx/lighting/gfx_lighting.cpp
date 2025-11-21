@@ -626,10 +626,16 @@ void LightManager::Clear() {
 }
 
 void LightManager::gpuInit(Context* ctx) {
-  printf("LightManager::gpuInit this=%p color_array=%p depth_array=%p\n",
-         (void*)this, (void*)_cookies_spot_color.get(), (void*)_cookies_spot_depth.get());
-  ctx->TXI()->updateTextureArray(_cookies_spot_color.get());
-  ctx->TXI()->updateTextureArray(_cookies_spot_depth.get());
+  if(_needs_gpu_init){
+    printf("LightManager::gpuInit this=%p color_array=%p depth_array=%p\n",
+          (void*)this, (void*)_cookies_spot_color_default.get(), (void*)_cookies_spot_depth_default.get());
+    ctx->TXI()->updateTextureArray(_cookies_spot_color_default.get());
+    ctx->TXI()->updateTextureArray(_cookies_spot_depth_default.get());
+    _needs_gpu_init = false;
+  }
+  else {
+    printf("LightManager::gpuInit this=%p already initialized\n", (void*)this);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -691,23 +697,26 @@ LightingGroup::LightingGroup()
 
 LightManager::LightManager(lightmanagerdata_constptr_t lmd)
     : _data(lmd) {
-  _cookies_spot_color                   = std::make_shared<TextureArray>();
-  _cookies_spot_depth                   = std::make_shared<TextureArray>();
-  _cookies_spot_color->_tex->_debugName = "cookies_spot_color";
-  _cookies_spot_depth->_tex->_debugName = "cookies_spot_depth";
+  _cookies_spot_color_default                   = std::make_shared<TextureArray>();
+  _cookies_spot_depth_default                   = std::make_shared<TextureArray>();
+  _cookies_spot_color_default->_tex->_debugName = "cookies_spot_color";
+  _cookies_spot_depth_default->_tex->_debugName = "cookies_spot_depth";
 
-  _cookies_spot_color->resize(256, 256, 1, EBufferFormat::RGBA8);
-  _cookies_spot_depth->resize(256, 256, 1, EBufferFormat::Z32F);
+  _cookies_spot_color_default->resize(256, 256, 1, EBufferFormat::RGBA8);
+  _cookies_spot_depth_default->resize(256, 256, 1, EBufferFormat::Z32F);
 
   // Set depth texture to use clamp-to-edge for proper shadow mapping
-  _cookies_spot_depth->_tex->mTexSampleMode._texAddrModeS = TextureAddressMode::CLAMP;
-  _cookies_spot_depth->_tex->mTexSampleMode._texAddrModeT = TextureAddressMode::CLAMP;
-  _cookies_spot_depth->_tex->mTexSampleMode._texAddrModeR = TextureAddressMode::CLAMP;
+  _cookies_spot_depth_default->_tex->mTexSampleMode._texAddrModeS = TextureAddressMode::CLAMP;
+  _cookies_spot_depth_default->_tex->mTexSampleMode._texAddrModeT = TextureAddressMode::CLAMP;
+  _cookies_spot_depth_default->_tex->mTexSampleMode._texAddrModeR = TextureAddressMode::CLAMP;
 
   // Color cookies might also benefit from clamping to avoid wrapping artifacts
-  _cookies_spot_color->_tex->mTexSampleMode._texAddrModeS = TextureAddressMode::CLAMP;
-  _cookies_spot_color->_tex->mTexSampleMode._texAddrModeT = TextureAddressMode::CLAMP;
-  _cookies_spot_color->_tex->mTexSampleMode._texAddrModeR = TextureAddressMode::CLAMP;
+  _cookies_spot_color_default->_tex->mTexSampleMode._texAddrModeS = TextureAddressMode::CLAMP;
+  _cookies_spot_color_default->_tex->mTexSampleMode._texAddrModeT = TextureAddressMode::CLAMP;
+  _cookies_spot_color_default->_tex->mTexSampleMode._texAddrModeR = TextureAddressMode::CLAMP;
+
+  _cookies_spot_color = _cookies_spot_color_default;
+  _cookies_spot_depth = _cookies_spot_depth_default;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

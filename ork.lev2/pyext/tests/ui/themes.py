@@ -34,12 +34,6 @@ args = parser.parse_args()
 
 ################################################################################
 
-uvmap = lev2.Image.createFromFile(ork_path.effect_textures/"uvmap_A.png")
-knob1 = lev2.Image.createFromFile(ork_path.effect_textures/"knob1.png")
-knob2 = lev2.Image.createFromFile(ork_path.effect_textures/"knob2.png")
-
-################################################################################
-
 class ThemesTestApp(ComponentizedApplication):
 
   #########################################################
@@ -127,11 +121,15 @@ class ThemesTestApp(ComponentizedApplication):
     ############################################
 
     self.createEzApp()
-    
+ 
   ##############################################
 
   def _onGpuInit(self,ctx):
-
+    
+    self.uvmap = lev2.Image.createFromFile(ork_path.effect_textures/"uvmap_A.png")
+    self.knob1 = lev2.Image.createFromFile(ork_path.effect_textures/"knob1.png")
+    self.knob2 = lev2.Image.createFromFile(ork_path.effect_textures/"knob2.png")
+   
     self.uicontext = self.ezapp.uicontext
 
     ########################################
@@ -291,7 +289,7 @@ class ThemesTestApp(ComponentizedApplication):
     
     button_names = ["close", "maximize", "minimize", "restore"]
 
-    knob1i = knob1.inverted
+    knob1i = self.knob1.inverted
     knob1i = knob1i.dualThresholded(0.2, 0.0, 1.0, 1.0,0x07) # RGB threshold
     knobi1 = knob1i.gammaed(0.01)
     knobi1 = knobi1.contrasted(2, 0.5)
@@ -314,9 +312,9 @@ class ThemesTestApp(ComponentizedApplication):
       match btn_name:
         case "close":
           btn.bgcolor = vec4(0, 0, 0, 1.0)
-          uvmap2 = uvmap.rotated90cw
-          uvmap3 = uvmap.rotated90ccw
-          btn.inactive_image        = uvmap
+          uvmap2 = self.uvmap.rotated90cw
+          uvmap3 = self.uvmap.rotated90ccw
+          btn.inactive_image        = self.uvmap
           btn.active_released_image = uvmap2
           btn.active_pressed_image  = uvmap3
           btn.preserve_aspect_ratio = True
@@ -335,9 +333,9 @@ class ThemesTestApp(ComponentizedApplication):
           btn.active_released_blend_mode = tokens.SUBTRACTIVE
           btn.active_pressed_blend_mode = tokens.ADDITIVE
         case "maximize":
-          btn.inactive_image        = knob2
-          btn.active_released_image = knob2
-          btn.active_pressed_image  = knob2
+          btn.inactive_image        = self.knob2
+          btn.active_released_image = self.knob2
+          btn.active_pressed_image  = self.knob2
           btn.bgcolor = vec4(0.3, 0.3, 0.5, 1.0)
           btn.inactive_blend_mode = tokens.ALPHA_ADDITIVE
           btn.active_released_blend_mode = tokens.ADDITIVE
