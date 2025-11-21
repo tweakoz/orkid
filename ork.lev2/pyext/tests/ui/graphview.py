@@ -89,7 +89,7 @@ class GraphViewTest(application.ComponentizedApplication):
     # Create EzApp and initialize
     ############################################
 
-    self.createEzApp()
+    self.createEzApp(name="UiTestGraphView")
 
   ##############################################
 

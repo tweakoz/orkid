@@ -162,6 +162,8 @@ class StandardSceneGraphComponent(ApplicationComponent):
     self.pbr_common = SG.pbr_common
     self.pbr_common.useDepthPrepass = True
 
+    self.rendernode = SG.compositorrendernode
+    
     ###################################
     # create grid
     ###################################

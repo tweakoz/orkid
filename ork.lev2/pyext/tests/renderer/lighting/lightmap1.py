@@ -26,7 +26,7 @@ class SceneGraphApp(ComponentizedApplication):
                                  eye=vec3(0,20,20),
                                  grid_variant=None)
     #self.LUI = self.addComponent("loggerui", LoggerUIComponent, filter_regex=[".*"]) 
-    self.createEzApp(ssaa=1)
+    self.createEzApp(name="RenderTestLightMap1", ssaa=1)
 
   ##############################################
 

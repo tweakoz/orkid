@@ -120,7 +120,7 @@ class ThemesTestApp(ComponentizedApplication):
     # Create EzApp and initialize
     ############################################
 
-    self.createEzApp()
+    self.createEzApp(name="UiTestThemes")
  
   ##############################################
 

@@ -27,7 +27,7 @@ class SplitLayoutApp(application.ComponentizedApplication):
                       background_color=vec4(0.2, 0.2, 0.2, 0.8))
 
 
-    self.createEzApp(fullscreen=True)
+    self.createEzApp(name="UiTestLayoutSplit",fullscreen=False)
 
     
   #################################################################

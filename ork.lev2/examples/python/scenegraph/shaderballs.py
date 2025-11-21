@@ -13,6 +13,9 @@ from orkengine.core import dfrustum, dvec4, fmtx4_to_dmtx4
 from orkengine.core import lev2_pyexdir, Transform
 from orkengine.core import CrcStringProxy, thisdir, VarMap
 from orkengine import lev2
+from ork.app.application import ComponentizedApplication
+from ork.app.std_scenegraph import StandardSceneGraphComponent, StdSpotLight
+from ork.app.loggerui import LoggerUIComponent
 
 tokens = CrcStringProxy()
 
@@ -47,31 +50,25 @@ class NODE(object):
   def __init__(self,model,app, index):
 
     super().__init__()
+    SGC = app.SGC
+    SG = SGC.scenegraph
     self.model = model
     self.drawable_model = model.createDrawable()
     self.modelinst = self.drawable_model.modelinst
-    self.sgnode = app.scene.createDrawableNodeOnLayers(app.fwd_layers,"model-node-%d"%index,self.drawable_model)
+    self.sgnode = SG.createDrawableNodeOnLayers(SGC.fwd_layers,"model-node-%d"%index,self.drawable_model)
     self.sgnode.worldTransform.scale = 1
     self.sgnode.worldTransform.translation = vec3(0)
     #self.sgnode = model.createNode("node%d"%index,layer)
 
 ################################################################################
 
-class SceneGraphApp(object):
+class SceneGraphApp(ComponentizedApplication):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = lev2.OrkEzApp.create(self,ssaa=0,enable_always_on_top=False)
-    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.materials = set()
-    setupUiCamera(app=self,eye=vec3(0,12,15),near=0.1,far=100)
     self.nodes=[]
     self.ssaomode = False
-
-  ##############################################
-
-  def onGpuInit(self,ctx):
-
     params_dict = {
       "SkyboxIntensity": float(inten),
       "SpecularIntensity": float(1),
@@ -85,28 +82,32 @@ class SceneGraphApp(object):
       "SSAOWeight": 0.25,
       "SSAOPower": 0.125,
       "SSAOFeedback": 1.0/16.0,
+      "SkyboxTexPathStr": envmap if envmap != "" else "ork_envmaps|blender_night"
     }
+    self.SGC = self.addComponent("std_scenegraph",
+                                 StandardSceneGraphComponent,
+                                 enable_ui_camera=True,
+                                 eye=vec3(0,20,20),
+                                 sg_params=params_dict )
+    self.createEzApp(name="ShaderBalls", ssaa=1)
 
-    if envmap != "":
-      params_dict["SkyboxTexPathStr"] = envmap
-    else:
-      params_dict["SkyboxTexPathStr"] = "ork_envmaps|blender_night"
+  ##############################################
 
-    createSceneGraph(app=self,
-                     rendermodel="ForwardPBR",
-                     params_dict=params_dict)
+  def _onGpuInit(self,ctx):
+    SGC = self.SGC
+    SG = SGC.scenegraph
 
-    self.layer_donly = self.scene.createLayer("depth_prepass")
-    self.layer_fwd = self.layer1
-    self.fwd_layers = [self.layer_fwd,self.layer_donly]
-    self.pbr_common = self.scene.pbr_common
-    self.pbr_common.useFloatColorBuffer = True
-    self.pbr_common.useDepthPrepass = True
-    self.pbr_common.dppZBias = 1.0e-4
+    #self.layer_donly = self.scene.createLayer("depth_prepass")
+    #self.layer_fwd = self.layer1
+    #self.fwd_layers = [self.layer_fwd,self.layer_donly]
+    pbr_common = SG.pbr_common
+    pbr_common.useFloatColorBuffer = True
+    pbr_common.useDepthPrepass = True
+    pbr_common.dppZBias = 1.0e-4
 
-    self.rendernode.debugRenderingModel = tokens.DEPTH_PREPASS # NONE ALL FORWARD_PBR
-    self.rendernode.debugPassID = tokens.SHADOW # PROBE MAIN
-    self.rendernode.debugSubPassID = tokens.ALL # tokens.FORWARD_PBR
+    SGC.rendernode.debugRenderingModel = tokens.DEPTH_PREPASS # NONE ALL FORWARD_PBR
+    SGC.rendernode.debugPassID = tokens.SHADOW # PROBE MAIN
+    SGC.rendernode.debugSubPassID = tokens.ALL # tokens.FORWARD_PBR
 
     ###################################
 
@@ -163,47 +164,33 @@ class SceneGraphApp(object):
 
     self.nodes += [node]
 
-    lmgr = self.scene.lightingmanager
-    color_cookies = lmgr.spot_cookies_color
-    depth_cookies = lmgr.spot_cookies_depth
-    color_cookies.needsRadianceCache = False
-    COOKIE_DIM = 2048
-    color_cookies.resize(COOKIE_DIM,COOKIE_DIM,1,tokens.RGB8,True)
-    depth_cookies.resize(COOKIE_DIM,COOKIE_DIM,1,tokens.Z32F,True)
+    if False:
+      lmgr = SG.lightingmanager
+      COOKIE_DIM = 2048
+      color_cookies = lev2.TextureArray(w=COOKIE_DIM,h=COOKIE_DIM,slices=4,fmt=tokens.RGB8,mipmapped=True)
+      depth_cookies = lev2.TextureArray(w=COOKIE_DIM,h=COOKIE_DIM,slices=4,fmt=tokens.Z32F,mipmapped=True)
+      color_cookies.needsRadianceCache = False
 
-    cookie1 = color_cookies.load("src://effect_textures/knob2.png")
-    ctx.TXI.updateTextureArray(color_cookies)
+      cookie1 = color_cookies.load("src://effect_textures/knob2.png")
+      ctx.TXI.updateTextureArray(color_cookies)
+      depth_cookie1 = depth_cookies.slice(0)
 
-
-    depth_cookie1 = depth_cookies.slice(0)
-
-    self.spotlight1 = MySpotLight( index=0,
-                                   app=self,
-                                   model=model,
-                                   frq=0.17,
-                                   color=vec3(1000,800,500),
-                                   cookie=cookie1,
-                                   depth_cookie=depth_cookie1, 
-                                   dim=COOKIE_DIM,
-                                   radius=24,
-                                   voffset=10,
-                                   fovbase=25)
-
-    print("LMGR",lmgr)
-    #assert(False)
-    ###################################
-
-    self.grid_data = createGridData()
-    self.grid_data.shader_suffix = "_V4"
-    self.grid_data.modcolor = vec3(0.5)
-    self.grid_draw = self.grid_data.createDrawable()
-    self.grid_node = self.scene.createDrawableNodeOnLayers(self.fwd_layers,"grid",self.grid_draw)
-    #self.grid_node = self.layer1.createDrawableNodeFromData("grid",self.grid_data)
-    self.grid_node.sortkey = 1
+      self.spotlight1 = StdSpotLight( index=0,
+                                      SGC=SGC,
+                                      model=model,
+                                      frq=0.17,
+                                      color=vec3(1000,800,500),
+                                      cookie=cookie1,
+                                      depth_cookie=depth_cookie1, 
+                                      dim=COOKIE_DIM,
+                                      radius=24,
+                                      voffset=10,
+                                      fovbase=25)
 
   ################################################
 
   def onUiEvent(self,uievent):
+    pbrc = self.SGC.pbr_common
     res = lev2.ui.HandlerResult()
     if uievent.code == tokens.KEY_DOWN.hashed:
       if uievent.keycode == ord("A"):
@@ -214,33 +201,33 @@ class SceneGraphApp(object):
         print("SSAO MODE",self.ssaomode)
         return res
       if uievent.keycode == ord("-"):
-        self.pbr_common.roughnessPower *= 0.95
-        print("ROUGHNESS POWER",self.pbr_common.roughnessPower)
+        pbrc.roughnessPower *= 0.95
+        print("ROUGHNESS POWER",pbrc.roughnessPower)
       if uievent.keycode == ord("="):
-        self.pbr_common.roughnessPower *= 1.05
-        print("ROUGHNESS POWER",self.pbr_common.roughnessPower)
-    handled = self.uicam.uiEventHandler(uievent)
-    if handled:
-      self.camera.copyFrom( self.uicam.cameradata )
-    else:
-      handled = lev2.ui.HandlerResult()
+        pbrc.roughnessPower *= 1.05
+        print("ROUGHNESS POWER",pbrc.roughnessPower)
+    #handled = self.uicam.uiEventHandler(uievent)
+    #if handled:
+      #self.camera.copyFrom( self.uicam.cameradata )
+    #else:
+    #  handled = lev2.ui.HandlerResult()
     return res
 
   ################################################
 
-  def onGpuUpdate(self,ctx):
-    self.spotlight1.update(self.lighttime)
-    pass 
+  def _onGpuUpdate(self,ctx):
+    if hasattr(self,"spotlight1"):
+      self.spotlight1.update(self.lighttime)
 
   ################################################
 
-  def onUpdate(self,updinfo):
+  def _onUpdate(self,updinfo):
+    pbrc = self.SGC.pbr_common
     if self.ssaomode == True:
-      self.pbr_common.ssaoNumSamples = SSAO_NUM_SAMPLES
+      pbrc.ssaoNumSamples = SSAO_NUM_SAMPLES
     else:
-      self.pbr_common.ssaoNumSamples = 0
+      pbrc.ssaoNumSamples = 0
     self.lighttime = updinfo.absolutetime
-    self.scene.updateScene(self.cameralut) 
 
 ###############################################################################
 

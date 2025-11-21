@@ -61,7 +61,8 @@ class ImageViewStressTest(application.ComponentizedApplication):
     # Create EzApp and initialize
     ############################################
 
-    self.createEzApp(width=1600, 
+    self.createEzApp(name="UiTestImageViewStress",
+                     width=1600, 
                      height=900,
                      fullscreen=False,
                      enable_audio=False,

@@ -106,7 +106,9 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             if (kwargs) {
               for (auto item : kwargs) {
                 auto key = py::cast<std::string>(item.first);
-                if (key == "left") {
+                if (key == "name") {
+                  appinitdata->_application_name = py::cast<std::string>(item.second);
+                } else if (key == "left") {
                   appinitdata->_left = py::cast<int>(item.second);
                 } else if (key == "top") {
                   appinitdata->_top = py::cast<int>(item.second);

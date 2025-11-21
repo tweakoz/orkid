@@ -475,7 +475,7 @@ void CtxGLFW::Show() {
     _glfwWindow = glfwCreateWindow(
         _width,             //
         _height,            //
-        "OrkWindow",        //
+        _appinitdata->_application_name.c_str(),        //
         fullscreen_monitor, // monitor
         global->_glfwWindow // sharegroup
     );
