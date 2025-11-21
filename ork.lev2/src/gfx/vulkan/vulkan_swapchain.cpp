@@ -346,15 +346,16 @@ void VkSwapChain::_teardown() {
       logchan_swapchain->log("_teardown: All in-flight fences signaled, GPU work complete");
       // DO NOT RESET - fences are now signaled, leave them for next frame
     } else if (wait_result == VK_TIMEOUT) {
-      logchan_swapchain->log("_teardown: WARNING - Fence wait timed out after 50ms");
-      // Fences still in-flight after 50ms - this shouldn't happen normally
-      // Don't reset, let validation layers catch issues if any
+      logchan_swapchain->log("_teardown: WARNING - Fence wait timed out after 50ms, forcing device wait");
+      // Fences still in-flight after 50ms - must ensure GPU idle before destroying resources
+      vkDeviceWaitIdle(_contextVK->_vkdevice);
+      logchan_swapchain->log("_teardown: Device idle after timeout");
     } else {
-      logchan_swapchain->log("_teardown: ERROR - fence wait returned error: %d", wait_result);
+      logchan_swapchain->log("_teardown: ERROR - fence wait returned error: %d, forcing device wait", wait_result);
+      vkDeviceWaitIdle(_contextVK->_vkdevice);
     }
   }
 
-  // NO vkDeviceWaitIdle() - completely unnecessary!
   // NO fence resets - let waitPresentFrame() handle that before next submit
   // The fences guaranteed swapchain images aren't in use
 
@@ -604,6 +605,7 @@ void VkSwapChain::_submitFrameWithSemaphores(vkcontext_rawptr_t ctxVK) {
   submitInfo.pWaitDstStageMask = _allWaitStages.data();
   
   auto fence = _frameFences[sub_index];
+  fence->reset();
   vkQueueSubmit(ctxVK->_vkqueue_graphics, 1, &submitInfo, fence->_vkfence);
 
   if(0)logchan_swapchain->log("vkQueueSubmit: CB %p", (void*)ctxVK->primary_cb()->_vkcmdbuf);
