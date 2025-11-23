@@ -172,6 +172,14 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   appinitdata->_log_lockstep_ups = py::cast<bool>(item.second);
                 } else if (key == "enable_lockstep_fps") {
                   appinitdata->_log_lockstep_fps = py::cast<bool>(item.second);
+                } else if (key == "drm_mode_id") {
+                  if (py::isinstance<py::str>(item.second)) {
+                    appinitdata->_drm_mode = py::cast<std::string>(item.second);
+                    appinitdata->_use_drm = true;
+                    printf("USING DRM: mode=%s\n", appinitdata->_drm_mode.c_str());
+                  } else {
+                    OrkAssert(false);
+                  }
                 }
               } // for (auto item : kwargs) {
               //////////////////////////////////////

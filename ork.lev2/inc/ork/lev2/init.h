@@ -13,6 +13,8 @@
 
 namespace ork::lev2 {
 
+extern appinitdata_ptr_t _ginitdata;  // Global init data accessible during initialization
+
 void initModule(appinitdata_ptr_t init_data);
 
 } // namespace ork::lev2

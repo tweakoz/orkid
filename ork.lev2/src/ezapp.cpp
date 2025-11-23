@@ -687,7 +687,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
     return;
   }
 
-  auto glfw_ctx = _mainWindow->_ctqt;
+  auto ctx = _mainWindow->_ctqt;
 
   this->_gpuFrameCounter++;
 
@@ -706,7 +706,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
     enableMovieRecording(settings);
   }
 
-  glfw_ctx->_onGpuInit = [this](lev2::Context* context) {
+  ctx->_onGpuInit = [this](lev2::Context* context) {
     logchan_ezapp->log("BEGIN OrkEzApp::_onGpuInit");
     context->beginPrimaryCommandBuffer();
     logchan_ezapp->log("_initdata->_enable_audio<%d>", (int)_initdata->_enable_audio);
@@ -733,7 +733,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
 
   ///////////////////////////////
 
-  glfw_ctx->_onGpuUpdate = [this](lev2::Context* context) {
+  ctx->_onGpuUpdate = [this](lev2::Context* context) {
     this->_gpuFrameCounter++;
 
     if (_mainWindow->_onGpuUpdate) {
@@ -741,12 +741,12 @@ void OrkEzApp::_mainThreadLoopBegin() {
     }
   };
   /*
-  glfw_ctx->_onGpuPreFrame = [this](lev2::Context* context) {
+  ctx->_onGpuPreFrame = [this](lev2::Context* context) {
     if (_mainWindow->_onGpuPreFrame) {
       _mainWindow->_onGpuPreFrame(context);
     }
   };
-  glfw_ctx->_onGpuPostFrame = [this](lev2::Context* context) {
+  ctx->_onGpuPostFrame = [this](lev2::Context* context) {
     if (_mainWindow->_onGpuPostFrame) {
       _mainWindow->_onGpuPostFrame(context);
     }
@@ -760,7 +760,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
   //   ensuring onGpuExit called after onUpdateExit
   ///////////////////////////////
 
-  glfw_ctx->_onGpuExit = [this](lev2::Context* context) {
+  ctx->_onGpuExit = [this](lev2::Context* context) {
     joinUpdate();
     if (_moviecapcontext) {
       _moviecapcontext->terminate();
@@ -770,13 +770,13 @@ void OrkEzApp::_mainThreadLoopBegin() {
       _mainWindow->_onGpuExit(context);
     }
   };
-  glfw_ctx->_runloopBegin();
+  ctx->_runloopBegin();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::_mainThreadLoopIter() {
   if (_mainWindow) {
-    auto glfw_ctx = _mainWindow->_ctqt;
-    glfw_ctx->_runloopIter();
+    auto ctx = _mainWindow->_ctqt;
+    ctx->_runloopIter();
   } else {
     gloadercontext->beginFrame(false);
     gloadercontext->endFrame();
@@ -785,8 +785,8 @@ void OrkEzApp::_mainThreadLoopIter() {
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::_mainThreadLoopEnd() {
   if (_mainWindow) {
-    auto glfw_ctx = _mainWindow->_ctqt;
-    glfw_ctx->_runloopEnd();
+    auto ctx = _mainWindow->_ctqt;
+    ctx->_runloopEnd();
   }
   size_t num_prof_blocks = profiler::dumpBlocksToFile("test_profile.prof");
   printf( "Dumped %zu profiler blocks to test_profile.prof\n", num_prof_blocks);
@@ -801,10 +801,10 @@ int OrkEzApp::mainThreadLoop() {
   double frame_count = 0.0;
 
   if (_mainWindow) {
-    auto glfw_ctx = _mainWindow->_ctqt;
+    auto ctx = _mainWindow->_ctqt;
     if (_initdata->_freerunning) {
-      while (glfw_ctx->_runstate == 1) {
-        glfw_ctx->_runloopIter(true);
+      while (ctx->_runstate == 1) {
+        ctx->_runloopIter(true);
 
         // Track freerun FPS
         if (_initdata->_log_freerun_fps) {
@@ -819,9 +819,9 @@ int OrkEzApp::mainThreadLoop() {
         }
       }
     } else {
-      while (glfw_ctx->_runstate == 1) {
+      while (ctx->_runstate == 1) {
         while (_lockstep_frame_requests.load()) {
-          glfw_ctx->_runloopIter(false);
+          ctx->_runloopIter(false);
           _lockstep_frame_requests.fetch_sub(1);
 
           // Track lockstep FPS

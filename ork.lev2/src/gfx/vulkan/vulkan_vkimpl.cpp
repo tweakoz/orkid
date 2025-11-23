@@ -10,6 +10,7 @@
 #include <ork/kernel/environment.h>
 #include <ork/lev2/lev2_asset.h>
 #include <ork/asset/Asset.inl>
+#include <ork/lev2/init.h>
 #if defined(ENABLE_VULKAN)
 #include "headers/vulkan_ctx.h"
 #import <ork/lev2/glfw/ctx_glfw.h>
@@ -129,8 +130,17 @@ VulkanInstance::VulkanInstance() {
 
 // printf( "VulkanInstance::VulkanInstance() HERE!!!\n");
 
+  // Check if we're using DRM mode (direct rendering without GLFW)
+  bool use_drm = (lev2::_ginitdata && lev2::_ginitdata->_use_drm);
+
   uint32_t glfwExtensionCount = 0;
-  const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+  const char** glfwExtensions = nullptr;
+
+  if (!use_drm) {
+    // GLFW mode: initialize GLFW and get required extensions
+    static auto gctx = CtxGLFW::globalOffscreenContext();
+    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+  }
 
   auto yel = fvec3::Yellow();
 
@@ -199,23 +209,27 @@ VulkanInstance::VulkanInstance() {
   _instance_extensions.push_back("VK_EXT_debug_report");
  //_instance_extensions.push_back("VK_KHR_dynamic_rendering");
 
-  for( size_t i=0; i<glfwExtensionCount; i++ ){
-    _instance_extensions.push_back(glfwExtensions[i]);
-  }
+  if (!use_drm) {
+    // GLFW mode: add GLFW required extensions
+    for( size_t i=0; i<glfwExtensionCount; i++ ){
+      _instance_extensions.push_back(glfwExtensions[i]);
+    }
 
-  _instance_extensions.push_back("VK_KHR_surface");
-  _instance_extensions.push_back("VK_EXT_swapchain_colorspace");
-  
+    _instance_extensions.push_back("VK_KHR_surface");
+    _instance_extensions.push_back("VK_EXT_swapchain_colorspace");
+
 #if defined(__APPLE__)
-  _instance_extensions.push_back("VK_MVK_macos_surface");
-  _instance_extensions.push_back("VK_EXT_metal_surface");
-  _instance_extensions.push_back("VK_EXT_headless_surface");
-  _instance_extensions.push_back("VK_KHR_portability_enumeration");
-  _instancedata.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
- #else 
-  _instance_extensions.push_back("VK_KHR_xcb_surface");
-  _instance_extensions.push_back("VK_EXT_headless_surface");
+    _instance_extensions.push_back("VK_MVK_macos_surface");
+    _instance_extensions.push_back("VK_EXT_metal_surface");
+    _instance_extensions.push_back("VK_EXT_headless_surface");
+    _instance_extensions.push_back("VK_KHR_portability_enumeration");
+    _instancedata.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+#else
+    _instance_extensions.push_back("VK_KHR_xcb_surface");
+    _instance_extensions.push_back("VK_EXT_headless_surface");
 #endif
+  }
+  // DRM mode: no surface extensions needed (direct display)
 
   _instancedata.enabledExtensionCount   = _instance_extensions.size();
   _instancedata.ppEnabledExtensionNames = _instance_extensions.data();
@@ -413,7 +427,8 @@ VulkanInstance::VulkanInstance() {
   if (_debugEnabled)
     _setupDebugMessenger();
 
-      static auto gctx = CtxGLFW::globalOffscreenContext();
+  // Note: globalOffscreenContext() is now called conditionally at the start of constructor
+  // based on use_drm flag (line 141)
 
 }
 

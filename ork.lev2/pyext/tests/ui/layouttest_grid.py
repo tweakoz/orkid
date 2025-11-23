@@ -7,10 +7,16 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import math, sys, os, signal
+import math, sys, os, signal, argparse
 from obt import path
 from orkengine.core import vec2, vec3, vec4, mtx4, quat, VarMap
 from orkengine import lev2
+
+################################################################################
+
+parser = argparse.ArgumentParser(description='Layout Grid Test')
+parser.add_argument('-m', '--drm-mode', type=str, default=None, help='DRM mode ID (enables DRM mode if specified, e.g., a0)')
+args = parser.parse_args()
 
 ################################################################################
 
@@ -19,11 +25,12 @@ class LayoutTest(object):
   def __init__(self):
     super().__init__()
 
-    self.ezapp = lev2.OrkEzApp.create(self, 
-                                      left=100, 
-                                      top=100, 
-                                      width=900, 
-                                      height=900)
+    self.ezapp = lev2.OrkEzApp.create(self,
+                                      left=100,
+                                      top=100,
+                                      width=900,
+                                      height=900,
+                                      drm_mode_id=args.drm_mode)
 
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()
