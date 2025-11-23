@@ -177,7 +177,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                     appinitdata->_drm_mode = py::cast<std::string>(item.second);
                     appinitdata->_use_drm = true;
                     printf("USING DRM: mode=%s\n", appinitdata->_drm_mode.c_str());
-                  } else {
+                  } else if (!item.second.is_none()) {
                     OrkAssert(false);
                   }
                 }

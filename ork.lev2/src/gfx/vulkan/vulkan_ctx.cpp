@@ -1227,12 +1227,16 @@ void VkContext::initializeWindowContext(
     //  OrkAssert( _vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR) );
 
     _fbi->_swapchain = std::make_shared<VkSwapChain>(this);
+#if defined(__linux__)
     _fbi->_swapchain_drm = nullptr;  // No DRM swapchain for GLFW
+#endif
     logchan_vkctx->log("Swapchain created for onscreen rendering");
   } else {
     // For offscreen, we'll render to framebuffer objects instead
     _fbi->_swapchain = nullptr;
+#if defined(__linux__)
     _fbi->_swapchain_drm = nullptr;
+#endif
     logchan_vkctx->log("Offscreen mode: no swapchain created");
   }
 
