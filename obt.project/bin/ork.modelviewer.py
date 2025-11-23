@@ -249,6 +249,8 @@ class SceneGraphApp(object):
       self.grid_node = self.layer_fwd.createGridNode("grid",self.grid_data)
       self.grid_node.sortkey = 1
 
+    self.scene.lightingmanager.gpuInit(ctx)
+
   ##############################################
 
   def onUiEvent(self,uievent):
