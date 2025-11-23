@@ -56,6 +56,9 @@ struct GLFWwindow;
 #include "vk_synchro.h"
 #include "vk_pipeline.h"
 #include "vk_merged_resources.h"
+#if defined(__linux__)
+#include "vk_swapchain_drm.h"
+#endif
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 
@@ -294,6 +297,9 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
 
   vkswapchain_ptr_t _swapchain;
   std::unordered_set<vkswapchain_ptr_t> _old_swapchains;
+#if defined(__linux__)
+  vkswapchaindrm_ptr_t _swapchain_drm;
+#endif
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VkTextureInterface final : public TextureInterface {

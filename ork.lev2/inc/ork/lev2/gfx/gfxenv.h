@@ -145,7 +145,7 @@ struct DisplayMode {
 
 using sticky_cb_t = std::function<bool()>;
 using load_token_t = svar32_t;
-using ctx_platform_handle_t = svar32_t;
+using ctx_platform_handle_t = svar64_t;
 
 struct DebugGroup {
   DebugGroup(Context*);

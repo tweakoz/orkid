@@ -40,6 +40,7 @@ using monitor_constptr_t = std::shared_ptr<const Monitor>;
 using monitor_vect_t = std::vector<monitor_ptr_t>;
 
 using drm_context_ptr_t = std::shared_ptr<DRMContext>;
+using drm_context_rawptr_t = DRMContext*;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Display mode information

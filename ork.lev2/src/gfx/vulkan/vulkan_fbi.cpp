@@ -70,6 +70,11 @@ void VkFrameBufferInterface::_doBeginFrame() {
   if (_swapchain) {
     _swapchain->_update();
   }
+#if defined(__linux__)
+  else if (_swapchain_drm) {
+    _swapchain_drm->acquireImage(_contextVK);
+  }
+#endif
   _ensureMainRtg().get();    // ensure main rtgroup is created
   _active_rtgroup = nullptr; // ensure main rtgroup is pushed on first use
 }

@@ -68,7 +68,7 @@ struct VkPlatformObject {
 #if defined(__linux__)
 struct VkPlatformObjectDRM {
   CtxDRM* _ctxbase = nullptr;
-  drm::drm_context_ptr_t _drmctx;
+  drm::drm_context_rawptr_t _drmctx = nullptr;
   bool _needsInit       = true;
   void_lambda_t _bindop = []() {};
 };

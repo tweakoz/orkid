@@ -66,6 +66,9 @@ struct VkPrimaryCommandBufferImpl;
 struct VkSecondaryCommandBufferImpl;
 struct VkSwapChainCaps;
 struct VkSwapChain;
+#if defined(__linux__)
+struct VkSwapChainDRM;
+#endif
 struct VkMsaaState;
 struct VkRasterState;
 struct VkBufferLayout;
@@ -116,6 +119,9 @@ using vkgeometryinterfaceinput_ptr_t = std::shared_ptr<VulkanGeometryInterfaceIn
 using vkgeometryinterface_ptr_t      = std::shared_ptr<VulkanGeometryInterface>;
 using vkviewporttracker_ptr_t = std::shared_ptr<VkViewportTracker>;
 using vkplatformobject_ptr_t = std::shared_ptr<VkPlatformObject>;
+#if defined(__linux__)
+using vkplatformobject_drm_ptr_t = std::shared_ptr<VkPlatformObjectDRM>;
+#endif
 using vertex_strconfig_item_ptr_t = std::shared_ptr<VertexStreamConfigItem>;
 using vertex_strconfig_ptr_t = std::shared_ptr<VertexStreamConfig>;
 using vkfence_obj_ptr_t = std::shared_ptr<VulkanFenceObject>;
@@ -193,6 +199,10 @@ using vkpricmdbufimpl_ptr_t     = std::shared_ptr<VkPrimaryCommandBufferImpl>;
 using vkseccmdbufimpl_ptr_t     = std::shared_ptr<VkSecondaryCommandBufferImpl>;
 using vkswapchaincaps_ptr_t     = std::shared_ptr<VkSwapChainCaps>;
 using vkswapchain_ptr_t         = std::shared_ptr<VkSwapChain>;
+#if defined(__linux__)
+using vkswapchaindrm_ptr_t      = std::shared_ptr<VkSwapChainDRM>;
+using vkswapchaindrm_rawptr_t   = VkSwapChainDRM*;
+#endif
 using vkmsaastate_ptr_t         = std::shared_ptr<VkMsaaState>;
 using vkrasterstate_ptr_t       = std::shared_ptr<VkRasterState>;
 

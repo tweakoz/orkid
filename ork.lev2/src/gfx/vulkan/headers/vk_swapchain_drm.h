@@ -19,7 +19,7 @@ namespace ork::lev2::vulkan {
 
 struct VkSwapChainDRM {
 
-    VkSwapChainDRM(vkcontext_rawptr_t ctxVK, drm::drm_context_ptr_t drmctx);
+    VkSwapChainDRM(vkcontext_rawptr_t ctxVK, drm::drm_context_rawptr_t drmctx);
     ~VkSwapChainDRM();
 
     void _buildup();
@@ -35,7 +35,7 @@ struct VkSwapChainDRM {
     void _exportImagesToDRM();
 
     vkcontext_rawptr_t _contextVK = nullptr;
-    drm::drm_context_ptr_t _drmContext = nullptr;
+    drm::drm_context_rawptr_t _drmContext = nullptr;
 
     // Swap chain configuration
     static constexpr uint32_t SWAP_CHAIN_SIZE = 3;  // Triple buffering

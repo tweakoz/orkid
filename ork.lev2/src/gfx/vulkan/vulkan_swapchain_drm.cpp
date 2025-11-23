@@ -29,7 +29,7 @@ static logchannel_ptr_t logchan_vkdrm = logger()->configureChannel("VKDRM", fvec
 // Constructor
 ///////////////////////////////////////////////////////////////////////////////
 
-VkSwapChainDRM::VkSwapChainDRM(vkcontext_rawptr_t ctxVK, drm::drm_context_ptr_t drmctx)
+VkSwapChainDRM::VkSwapChainDRM(vkcontext_rawptr_t ctxVK, drm::drm_context_rawptr_t drmctx)
     : _contextVK(ctxVK)
     , _drmContext(drmctx) {
 
@@ -439,7 +439,7 @@ void VkSwapChainDRM::waitPresentFrame(vkcontext_rawptr_t ctxVK) {
 
     int ret = drmModePageFlip(_drmContext->drm_fd, _drmContext->crtc_id,
                               _drmContext->fb_ids[_currentImage],
-                              DRM_MODE_PAGE_FLIP_EVENT, _drmContext.get());
+                              DRM_MODE_PAGE_FLIP_EVENT, _drmContext);
     if (ret < 0) {
         logchan_vkdrm->log("ERROR: drmModePageFlip failed (ret=%d)", ret);
         throw std::runtime_error("Page flip failed");
