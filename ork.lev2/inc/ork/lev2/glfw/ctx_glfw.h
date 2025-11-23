@@ -110,19 +110,9 @@ struct CtxGLFW : public CTXBASE {
   int _width       = 32;
   int _height      = 32;
   int mDrawLock    = 0;
-  int _runstate    = 0;
   int _buttonState = 0;
 
-  ui::event_ptr_t _uievent;
-  void_lambda_t _onRunLoopIteration;
   appinitdata_ptr_t _appinitdata;
-
-  using gpuupdfn_t = std::function<void(Context*)>;
-  gpuupdfn_t _onGpuInit;
-  gpuupdfn_t _onGpuUpdate;
-  //gpuupdfn_t _onGpuPreFrame;
-  //gpuupdfn_t _onGpuPostFrame;
-  gpuupdfn_t _onGpuExit;
 
   GLFWmonitor* _glfwMonitor = nullptr;
   eventsink_glfw_ptr_t _eventSINK;

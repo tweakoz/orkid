@@ -65,6 +65,15 @@ struct VkPlatformObject {
   void_lambda_t _bindop = []() {};
 };
 ///////////////////////////////////////////////////////////////////////////////
+#if defined(__linux__)
+struct VkPlatformObjectDRM {
+  CtxDRM* _ctxbase = nullptr;
+  drm::drm_context_ptr_t _drmctx;
+  bool _needsInit       = true;
+  void_lambda_t _bindop = []() {};
+};
+#endif
+///////////////////////////////////////////////////////////////////////////////
 struct VkPrimaryCommandBufferImpl {
 
   VkPrimaryCommandBufferImpl(vkcontext_rawptr_t ctxVK);

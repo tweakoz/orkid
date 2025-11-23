@@ -157,6 +157,20 @@ AppInitData::opts_var_map_ptr_t AppInitData::parse() {
     this->_offscreen  = vars["offscreen"].as<bool>();
     this->_fullscreen = false;
   }
+#if defined(__linux__)
+  // DRM mode (Linux only)
+  if (_commandline_vars->count("drm-list")) {
+    if (vars["drm-list"].as<bool>()) {
+      this->_miscvars["drm-list"].set<bool>(true);
+    }
+  }
+  if (_commandline_vars->count("drm")) {
+    this->_use_drm = true;
+    this->_drm_mode = vars["drm"].as<std::string>();
+    this->_fullscreen = false;
+    this->_offscreen = false;
+  }
+#endif
   if (_commandline_vars->count("enable_audio")) {
     this->_enable_audio = vars["enable_audio"].as<bool>();
   }

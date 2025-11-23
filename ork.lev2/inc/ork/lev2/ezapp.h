@@ -90,7 +90,7 @@ public:
   bool _update_rendersync                   = false;
   Context* _curframecontext                 = nullptr;
   appwindow_ptr_t _appwin                   = nullptr;
-  CtxGLFW* _ctqt                            = nullptr;
+  CTXBASE* _ctqt                            = nullptr;
   drawcallback_t _onDraw                    = nullptr;
   onresizecallback_t _onResize              = nullptr;
   onuieventcallback_t _onUiEvent            = nullptr;

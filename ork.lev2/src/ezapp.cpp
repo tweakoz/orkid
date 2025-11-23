@@ -13,6 +13,10 @@
 #include <ork/lev2/aud/stream/audiodevice_stream.h>
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/profiling.inl>
+#if defined(__linux__)
+#include <ork/lev2/drm/drm_types.h>
+#include <ork/lev2/drm/ctx_drm.h>
+#endif
 
 using namespace std::string_literals;
 
@@ -94,7 +98,9 @@ boost::program_options::options_description_easy_init OrkEzApp::createDefaultOpt
               ("top", po::value<int>()->default_value(100), "top window offset")         //
               ("width", po::value<int>()->default_value(1280), "window width")           //
               ("height", po::value<int>()->default_value(720), "window height")          //
-              ("usevr", po::bool_switch()->default_value(false), "use vr output")(
+              ("usevr", po::bool_switch()->default_value(false), "use vr output")        //
+              ("drm", po::value<std::string>(), "DRM mode (e.g., a0, b2, c1) [Linux only]") //
+              ("drm-list", po::bool_switch()->default_value(false), "List DRM displays and exit [Linux only]")(
                   "nvmfa", po::value<int>()->default_value(1), "max prerender frames (NVidia)")(
                   "nvsync", po::value<bool>()->default_value(true), "force vsync (NVidia)")(
                   "nvsport", po::value<int>()->default_value(0), "vsync port # (0..3 -> DFP-0..DFP-3) (NVidia)");
@@ -202,6 +208,16 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
 
   if (_initdata->_enable_graphics) {
 
+#if defined(__linux__)
+    // Handle --drm-list option
+    if (_initdata->_miscvars.find("drm-list") != _initdata->_miscvars.end()) {
+      auto& drm_list_var = _initdata->_miscvars.at("drm-list");
+      if (drm_list_var.isA<bool>() && drm_list_var.get<bool>()) {
+        drm::DRMContext::listMonitorsAndExit();
+      }
+    }
+#endif
+
     logchan_ezapp->log("initializing graphics");
     fflush(stdout);
     _appstate = 0;
@@ -233,7 +249,17 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
     if (initdata->_disableMouseCursor) {
       _topLayoutGroup->_clipEvents = false;
     }
-    _mainWindow->_ctqt = new CtxGLFW(_mainWindow->_appwin.get());
+
+    // Create platform-specific context
+#if defined(__linux__)
+    if (_initdata->_use_drm) {
+      logchan_ezapp->log("Creating DRM context (mode: %s)", _initdata->_drm_mode.c_str());
+      _mainWindow->_ctqt = new CtxDRM(_mainWindow->_appwin.get());
+    } else
+#endif
+    {
+      _mainWindow->_ctqt = new CtxGLFW(_mainWindow->_appwin.get());
+    }
     _mainWindow->_ctqt->initWithData(_initdata);
 
     /////////////////////////////////////////////

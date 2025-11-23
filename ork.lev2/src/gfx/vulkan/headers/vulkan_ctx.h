@@ -42,6 +42,10 @@ struct GLFWwindow;
 #define GLFW_INCLUDE_VULKAN
 #import <ork/lev2/glfw/ctx_glfw.h>
 #include <GLFW/glfw3native.h>
+#if defined(__linux__)
+#include <ork/lev2/drm/drm_types.h>
+#include <ork/lev2/drm/ctx_drm.h>
+#endif
 ///////////////////////////////////////////////////////////////////////////////
 #include "vk_protos.h"
 #include "vk_geom.h"

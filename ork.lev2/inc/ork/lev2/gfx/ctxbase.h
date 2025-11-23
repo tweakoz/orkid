@@ -26,6 +26,11 @@
 #include <ork/lev2/ui/event.h>
 
 ///////////////////////////////////////////////////////////////////////////////
+namespace ork {
+struct AppInitData;
+using appinitdata_ptr_t = std::shared_ptr<AppInitData>;
+}
+///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -69,7 +74,7 @@ public:
   Window* GetWindow() const;
   void setContext(Context* ctx);
   void SetWindow(Window* pw);
-  
+
   virtual void SlotRepaint(void) {
   }
   virtual void _setRefreshPolicy(RefreshPolicyItem policy) {
@@ -84,6 +89,13 @@ public:
     return v;
   }
   virtual void _doEnqueueWindowResize( int w, int h ) {}
+
+  // Platform-specific runloop methods
+  virtual void initWithData(appinitdata_ptr_t aid) {}
+  virtual void signalExit() {}
+  virtual void _runloopBegin() {}
+  virtual void _runloopEnd() {}
+  virtual void _runloopIter(bool pollevents = true) {}
 
   RefreshPolicyItem currentRefreshPolicy() const;
 
@@ -100,6 +112,14 @@ public:
   object::autoslot_ptr_t _slotRepaint;
   float _contentScaleX = 1.0f;
   float _contentScaleY = 1.0f;
+
+  // Platform-specific members
+  int _runstate = 0;
+  void_lambda_t _onRunLoopIteration;
+  using gpuupdfn_t = std::function<void(Context*)>;
+  gpuupdfn_t _onGpuInit;
+  gpuupdfn_t _onGpuUpdate;
+  gpuupdfn_t _onGpuExit;
 
   protected:
     void onSharedCreate(std::shared_ptr<CTXBASE> this_shared);

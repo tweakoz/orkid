@@ -30,13 +30,15 @@ file(GLOB src_lev2 ${SRCD}/*.cpp)
 
 IF(${APPLE})
   file(GLOB src_apple ${SRCD}/gfx/gl/*.mm)
+  set( src_drm )
 ELSE()
   set( src_apple )
+  file(GLOB_RECURSE src_drm ${SRCD}/drm/*.cpp)
 ENDIF()
 
 set( orksrcs ${src_aud} ${src_midi} ${src_gfx} ${src_input} )
 list( APPEND orksrcs ${src_glfw} ${src_ui} ${src_lev2} )
-list( APPEND orksrcs ${src_apple} ${src_ovr} ${src_editor} )
+list( APPEND orksrcs ${src_apple} ${src_ovr} ${src_editor} ${src_drm} )
 list( APPEND orksrcs ${INCD}/ork/lev2/ezapp.h )
 
 ###################################
@@ -101,11 +103,11 @@ ELSEIF(${UNIX})
 
     set(ENV{LD_LIBRARY_PATH}=$ENV{LD_LIBRARY_PATH}:${OBT_VULKAN_ROOT}/lib)
 
-    list(APPEND libs GL Xrandr glfw )
+    list(APPEND libs GL Xrandr glfw drm )
     target_include_directories (ork_lev2 PRIVATE ${ObtPipewireSpaInclude_DIR} ${ObtPipewireInclude_DIR} )
     target_link_libraries(ork_lev2 LINK_PRIVATE ${ObtPipewire_LIBRARIES} )
     target_link_directories (ork_lev2 PRIVATE $ENV{OBT_VULKAN_ROOT}/lib)
-    
+
     list(APPEND libs vulkan )
     IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
       list(APPEND libs openvr_api )

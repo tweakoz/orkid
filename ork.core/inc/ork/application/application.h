@@ -103,6 +103,7 @@ struct AppInitData{
 
   bool _fullscreen = false;
   bool _offscreen = false;
+  bool _use_drm = false;  // Use DRM direct rendering (Linux only)
   bool _canalwaysontop = false;
   int _top = 100;
   int _left = 100;
@@ -118,6 +119,7 @@ struct AppInitData{
   std::string _audio_output_devname = "default";
   std::string _audio_ioclass = "default";
   std::string _fullscreen_monitor = "none";
+  std::string _drm_mode = "a0";  // DRM device + mode (e.g., "b0", "c2")
   size_t _audio_input_numchannels = 1;
   size_t _audio_output_numchannels = 2;
   bool _audio_stream_sync = false;

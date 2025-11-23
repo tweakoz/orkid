@@ -84,6 +84,9 @@ struct VulkanGeometryInterface;
 struct VulkanGeometryInterfaceInput;
 struct VkViewportTracker;
 struct VkPlatformObject;
+#if defined(__linux__)
+struct VkPlatformObjectDRM;
+#endif
 struct VertexStreamConfigItem;
 struct VertexStreamConfig;
 struct VkFxShaderDescriptorSetItem;
