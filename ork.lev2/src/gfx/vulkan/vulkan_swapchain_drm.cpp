@@ -674,6 +674,22 @@ void VkSwapChainDRM::waitPresentFrame(vkcontext_rawptr_t ctxVK) {
     auto t_after_vblank = std::chrono::high_resolution_clock::now();
     time_vblank_wait = std::chrono::duration<float, std::milli>(t_after_vblank - t_start).count();
 
+    // CRITICAL: Wait for GPU to finish rendering THIS image before we flip it
+    // The fence was signaled by enqueueFrame() when GPU completes
+    size_t fence_index = _currentImage;
+    if (fence_index < _frameFences.size()) {
+        auto& fence = _frameFences[fence_index];
+        VkResult status = vkGetFenceStatus(ctxVK->_vkdevice, fence->_vkfence);
+
+        if (status == VK_NOT_READY) {
+            // GPU still rendering - must wait before flipping
+            if (frame_count < 30) {
+                printf("[waitPresent] GPU NOT DONE for image %u, WAITING...\n", _currentImage);
+            }
+            fence->wait();
+        }
+    }
+
     // Display via DRM (first frame uses SetCrtc, subsequent use PageFlip)
     if (_firstFrame) {
         // First frame: establish the mode
