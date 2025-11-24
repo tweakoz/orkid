@@ -158,10 +158,12 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
 
     switch (rtgroup->_usage) {
       case "swapchain"_crcu:
-        if (rtgroup->_impl.isShared<VkRtGroupImpl>()) {
-          RTGIMPL = rtgroup->_impl.getShared<VkRtGroupImpl>();
+        if (auto as_impl = rtgroup->_impl.tryAsShared<VkRtGroupImpl>()) {
+          RTGIMPL = as_impl.value();
         } else {
-          RTGIMPL = rtgroup->_impl.getShared<VkRtGroupImpl>();
+          // First time - create the RTG impl
+          logchan_rtgroup->log("Creating swapchain RTG impl for first time");
+          RTGIMPL = _createRtGroupImpl(rtgroup);
         }
         RTGIMPL->_updateClearParams(rtgroup);
         RTGIMPL->_updateMainSurface(this);

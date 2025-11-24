@@ -72,6 +72,7 @@ void VkFrameBufferInterface::_doBeginFrame() {
   }
 #if defined(__linux__)
   else if (_swapchain_drm) {
+    logchan_fbi->log("DRM: _doBeginFrame - calling acquireImage and enqueueFrame");
     _swapchain_drm->acquireImage(_contextVK);
     _swapchain_drm->enqueueFrame(_contextVK);
   }
@@ -86,6 +87,7 @@ void VkFrameBufferInterface::_doEndFrame() {
   //logchan_fbi->log("_doEndFrame()");
 #if defined(__linux__)
   if (_swapchain_drm) {
+    logchan_fbi->log("DRM: _doEndFrame - calling waitPresentFrame");
     _swapchain_drm->waitPresentFrame(_contextVK);
   }
 #endif

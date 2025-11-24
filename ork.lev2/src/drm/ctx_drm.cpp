@@ -12,6 +12,8 @@
 #include <ork/lev2/drm/ctx_drm.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/dbgfontman.h>
+#include <ork/lev2/ui/viewport.h>
+#include <ork/lev2/ui/context.h>
 #include <ork/util/logger.h>
 #include <ork/kernel/string/string.h>
 #include <ork/application/application.h>
@@ -154,7 +156,26 @@ void CtxDRM::Hide() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void CtxDRM::SlotRepaint() {
-    // No-op for DRM (vblank-driven)
+    if (not GfxEnv::initialized()) {
+        return;
+    }
+
+    if (this->_target) {
+        _target->makeCurrentContext();
+        auto gfxwin = _uievent->mpGfxWin;
+        _uievent->mpGfxWin = (Window*)_target->FBI()->GetThisBuffer();
+        auto drwev = std::make_shared<ui::DrawEvent>(this->_target);
+
+        auto widget = gfxwin ? gfxwin->GetRootWidget() : nullptr;
+
+        if (widget) {
+            widget->draw(drwev);
+        }
+        else {
+            _target->beginFrame(false);  // false = non-visual frame
+            _target->endFrame();
+        }
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

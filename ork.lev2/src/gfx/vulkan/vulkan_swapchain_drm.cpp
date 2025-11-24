@@ -67,6 +67,31 @@ void VkSwapChainDRM::_buildup() {
     _createImageViews();
     _createFramebuffers();
 
+    ///////////////////////////////////////////////////
+    // Create/Update render target group impl for swapchain
+    ///////////////////////////////////////////////////
+
+    VkRtbCreateOption depth_option;
+    depth_option._format       = VK_FORMAT_D32_SFLOAT;
+    depth_option._usage        = "depth"_crcu;
+    depth_option._with_texture = false;
+
+    auto rtg = _contextVK->_fbi->_ensureMainRtg();
+
+    vkrtgrpimpl_ptr_t rtg_impl;
+    if (auto existing = rtg->_impl.tryAsShared<VkRtGroupImpl>()) {
+        rtg_impl = existing.value();
+        logchan_vkdrm->log("DRM: Using existing RTG impl");
+    } else {
+        // First time creation
+        logchan_vkdrm->log("DRM: Creating RTG impl for main rtg");
+        rtg_impl = _contextVK->_fbi->_createRtGroupImpl(rtg.get());
+        rtg_impl->_width = _width;
+        rtg_impl->_height = _height;
+        VkRtGroupImpl::assignToRtGroup(rtg_impl, rtg.get());
+        _vkCreateImageForBuffer(_contextVK, rtg_impl->_depth_buffer_impl, depth_option);
+    }
+
     logchan_vkdrm->log("DRM swapchain ready: %dx%d, %u images", _width, _height, SWAP_CHAIN_SIZE);
 }
 
