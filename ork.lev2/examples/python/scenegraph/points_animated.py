@@ -7,7 +7,7 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import math, sys, os, random, numpy
+import math, sys, os, random, numpy, argparse
 from numba import jit, prange
 from pathlib import Path
 from orkengine.core import *
@@ -17,6 +17,12 @@ from lev2utils.cameras import *
 from lev2utils.shaders import *
 from lev2utils.primitives import createPointsPrimV12C4, createGridData
 from lev2utils.scenegraph import createSceneGraph
+
+################################################################################
+
+parser = argparse.ArgumentParser(description='Animated Points Demo')
+parser.add_argument('-m', '--drm-mode', type=str, default=None, help='DRM mode ID (enables DRM mode if specified, e.g., a0)')
+args = parser.parse_args()
 
 ################################################################################
 
@@ -80,7 +86,7 @@ class PointsPrimApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self)
+    self.ezapp = OrkEzApp.create(self, drm_mode_id=args.drm_mode)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
     setupUiCamera( app=self, eye = vec3(6,6,6), constrainZ=True, up=vec3(0,1,0))
@@ -172,6 +178,7 @@ class PointsPrimApp(object):
     self.primnode = self.points_prim.createNode("node1",self.layer1,pipeline)
     self.primnode.sortkey = 2;
 
+    self.scene.lightingmanager.gpuInit(ctx)
 
   ################################################
 

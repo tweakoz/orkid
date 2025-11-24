@@ -30,6 +30,13 @@ extern "C" {
 #include <stdlib.h>
 }
 
+// Global state for async-signal-safe terminal cleanup
+static struct {
+    std::atomic<bool> termios_saved{false};
+    struct termios original_termios;
+    int stdin_fd = STDIN_FILENO;
+} g_terminal_state;
+
 // Global pointer for signal handler
 static ork::lev2::CtxDRM* g_ctxdrm_for_signal = nullptr;
 
@@ -41,13 +48,38 @@ static logchannel_ptr_t logchan_ctxdrm = logger()->configureChannel("CTXDRM", fv
 
 ///////////////////////////////////////////////////////////////////////////////
 
-// Signal handler for Ctrl-C
+// Async-signal-safe terminal cleanup (ONLY uses async-signal-safe functions)
+// Can be called from signal handlers, atexit, or normal code
+static void restore_terminal_async_safe() {
+    if (g_terminal_state.termios_saved.load(std::memory_order_relaxed)) {
+        // Restore terminal settings (async-signal-safe)
+        tcsetattr(g_terminal_state.stdin_fd, TCSANOW, &g_terminal_state.original_termios);
+
+        // Flush stdin (async-signal-safe)
+        tcflush(g_terminal_state.stdin_fd, TCIFLUSH);
+
+        // Mark as restored (prevent double-restore)
+        g_terminal_state.termios_saved.store(false, std::memory_order_relaxed);
+    }
+}
+
+// atexit handler for normal program exit
+static void atexit_restore_terminal() {
+    restore_terminal_async_safe();
+}
+
+// Signal handler for Ctrl-C (ASYNC-SIGNAL-SAFE)
 static void drm_signal_handler(int signum) {
     if (signum == SIGINT || signum == SIGTERM) {
-        logchan_ctxdrm->log("Signal %d received (Ctrl-C), requesting exit", signum);
+        // Restore terminal FIRST (async-signal-safe)
+        restore_terminal_async_safe();
+
+        // Write message using async-signal-safe write()
+        const char msg[] = "\nSignal received, exiting...\n";
+        write(STDERR_FILENO, msg, sizeof(msg) - 1);
+
+        // Signal exit to main loop
         if (g_ctxdrm_for_signal) {
-            // Restore terminal IMMEDIATELY before exiting
-            g_ctxdrm_for_signal->_shutdownTerminalInput();
             g_ctxdrm_for_signal->signalExit();
         }
     }
@@ -412,21 +444,12 @@ void CtxDRM::_initTerminalInput() {
 
     _stdin_fd = STDIN_FILENO;
 
-    // Allocate termios struct
-    _original_termios = malloc(sizeof(struct termios));
-    if (!_original_termios) {
-        logchan_ctxdrm->log("ERROR: Failed to allocate termios struct");
-        return;
-    }
-
-    struct termios* orig_termios = static_cast<struct termios*>(_original_termios);
-
-    // Save original terminal settings
-    if (tcgetattr(_stdin_fd, orig_termios) == 0) {
+    // Save original terminal settings to global state (async-signal-safe access)
+    if (tcgetattr(_stdin_fd, &g_terminal_state.original_termios) == 0) {
         _termios_saved = true;
 
         // Set terminal to raw mode
-        struct termios raw = *orig_termios;
+        struct termios raw = g_terminal_state.original_termios;
 
         // Disable canonical mode, echo, signals
         raw.c_lflag &= ~(ICANON | ECHO | ISIG);
@@ -443,6 +466,17 @@ void CtxDRM::_initTerminalInput() {
             int flags = fcntl(_stdin_fd, F_GETFL, 0);
             fcntl(_stdin_fd, F_SETFL, flags | O_NONBLOCK);
 
+            // Mark global state as saved (for async-signal-safe cleanup)
+            g_terminal_state.termios_saved.store(true, std::memory_order_relaxed);
+
+            // Register atexit handler (runs on normal exit)
+            static bool atexit_registered = false;
+            if (!atexit_registered) {
+                atexit(atexit_restore_terminal);
+                atexit_registered = true;
+                logchan_ctxdrm->log("Registered atexit handler for terminal restoration");
+            }
+
             _using_terminal_input = true;
             logchan_ctxdrm->log("Terminal input initialized successfully (ESC, Ctrl-C, Ctrl-D, or 'q' to exit)");
         } else {
@@ -451,25 +485,17 @@ void CtxDRM::_initTerminalInput() {
         }
     } else {
         logchan_ctxdrm->log("ERROR: Failed to get terminal attributes");
-        free(_original_termios);
-        _original_termios = nullptr;
     }
 }
 
 void CtxDRM::_shutdownTerminalInput() {
-    if (_termios_saved && _original_termios) {
+    if (_termios_saved) {
         logchan_ctxdrm->log("Restoring terminal settings");
-        struct termios* orig_termios = static_cast<struct termios*>(_original_termios);
-        tcsetattr(_stdin_fd, TCSANOW, orig_termios);
 
-        // Flush stdin to clear any pending input
-        tcflush(_stdin_fd, TCIFLUSH);
+        // Use async-signal-safe cleanup function
+        restore_terminal_async_safe();
 
         _termios_saved = false;
-    }
-    if (_original_termios) {
-        free(_original_termios);
-        _original_termios = nullptr;
     }
     _using_terminal_input = false;
 }

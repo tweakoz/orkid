@@ -58,10 +58,10 @@ private:
     void* _libinput = nullptr;
     int _libinput_fd = -1;
 
-    // Terminal input state (SSH mode - use void* to avoid exposing C structs)
+    // Terminal input state (SSH mode)
+    // NOTE: Original termios stored in global state for async-signal-safe cleanup
     bool _using_terminal_input = false;
     int _stdin_fd = -1;
-    void* _original_termios = nullptr;  // Actually struct termios*
     bool _termios_saved = false;
 };
 
