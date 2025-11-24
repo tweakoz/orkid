@@ -12,6 +12,7 @@
 #include "headers/vulkan_ctx.h"
 #include "headers/vk_swapchain_drm.h"
 #include <ork/util/logger.h>
+#include <ork/kernel/timer.h>
 
 extern "C" {
 #include <xf86drm.h>
@@ -564,23 +565,30 @@ void VkSwapChainDRM::_createFramebuffers() {
 ///////////////////////////////////////////////////////////////////////////////
 
 VkResult VkSwapChainDRM::acquireImage(vkcontext_rawptr_t ctxVK) {
-    // Connect the RTG's color buffer to the current DRM swapchain image
-    // Following GLFW pattern: use pre-created VulkanImageObject wrappers
+    // Match drmvk reference: wait for THIS image's fence before using it
+    // This ensures the image is not in-flight from a previous use
+    size_t fence_index = _currentImage;
+    if (fence_index < _frameFences.size()) {
+        auto& fence = _frameFences[fence_index];
+        // Wait for fence (like drmvk line 92)
+        fence->wait();
+        fence->reset();
+    }
 
+    // Connect the RTG's color buffer to the current image
     auto rtg = _contextVK->_fbi->_ensureMainRtg();
     auto rtg_impl = rtg->_impl.getShared<VkRtGroupImpl>();
     auto rtb_color = rtg->buffer(0);
     auto rtb_impl = rtb_color->_impl.getShared<VklRtBufferImpl>();
     rtb_impl->_is_surface = true;
 
-    // Use pre-created image wrapper (created during _buildup)
     auto imgobj = _swapChainImages[_currentImage];
     rtb_impl->_replaceImage(imgobj);
 
     static int log_count = 0;
     if (log_count < 10) {
-        logchan_vkdrm->log("acquireImage[%u]: Connecting RTB to image=%p view=%p",
-                           _currentImage, imgobj->_vkimage, imgobj->_vkimageview);
+        logchan_vkdrm->log("acquireImage[%u]: Using image %u",
+                           log_count, _currentImage);
         log_count++;
     }
 
@@ -602,16 +610,10 @@ void VkSwapChainDRM::_submitFrameWithSemaphores(vkcontext_rawptr_t ctxVK) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkSwapChainDRM::enqueueFrame(vkcontext_rawptr_t ctxVK) {
-    // Submit command buffer to GPU (like GLFW swapchain does)
-    // DRM doesn't use semaphores (no VkSwapchainKHR), just fences
+    // Match drmvk reference: submit with fence (like drmvk line 166)
+    // Fence was already reset in acquireImage
 
-    size_t sub_index = _currentFrame;
-
-    // Wait for this frame slot to be available
-    if (sub_index < _frameFences.size()) {
-        _frameFences[sub_index]->wait();
-        _frameFences[sub_index]->reset();
-    }
+    size_t fence_index = _currentImage;
 
     // Submit command buffer
     VkSubmitInfo SI = {};
@@ -619,9 +621,9 @@ void VkSwapChainDRM::enqueueFrame(vkcontext_rawptr_t ctxVK) {
     SI.commandBufferCount = 1;
     SI.pCommandBuffers = &ctxVK->_cmdbufcurpri_gfx->_vkcmdbuf;
 
-    // Submit with fence for synchronization
-    if (sub_index < _frameFences.size()) {
-        auto& fence = _frameFences[sub_index];
+    // Submit with fence for THIS image
+    if (fence_index < _frameFences.size()) {
+        auto& fence = _frameFences[fence_index];
         vkQueueSubmit(ctxVK->_vkqueue_graphics, 1, &SI, fence->_vkfence);
     } else {
         vkQueueSubmit(ctxVK->_vkqueue_graphics, 1, &SI, VK_NULL_HANDLE);
@@ -634,6 +636,29 @@ void VkSwapChainDRM::enqueueFrame(vkcontext_rawptr_t ctxVK) {
 
 void VkSwapChainDRM::waitPresentFrame(vkcontext_rawptr_t ctxVK) {
     static int frame_count = 0;
+    static ork::Timer fps_timer;
+    static bool timer_started = false;
+
+    // Start timer on first frame
+    if (!timer_started) {
+        fps_timer.Start();
+        timer_started = true;
+        _lastFrameTime = fps_timer.SecsSinceStart();
+    }
+
+    // Timing breakdown for performance analysis
+    float time_vblank_wait = 0.0f;
+    float time_pageflip = 0.0f;
+    auto t_start = std::chrono::high_resolution_clock::now();
+
+    // Match drmvk reference: Wait for previous vblank FIRST (like drmvk main.cpp line 231)
+    // This ensures the previous page flip completed before we queue the next one
+    if (!_firstFrame) {
+        _drmContext->waitForVblank();
+    }
+
+    auto t_after_vblank = std::chrono::high_resolution_clock::now();
+    time_vblank_wait = std::chrono::duration<float, std::milli>(t_after_vblank - t_start).count();
 
     // Display via DRM (first frame uses SetCrtc, subsequent use PageFlip)
     if (_firstFrame) {
@@ -657,7 +682,7 @@ void VkSwapChainDRM::waitPresentFrame(vkcontext_rawptr_t ctxVK) {
         _drmContext->displayingImage = _currentImage;
         logchan_vkdrm->log("Initial mode set complete, display active");
     } else {
-        // Subsequent frames: page flip with vblank event
+        // Subsequent frames: page flip (like drmvk line 181)
         if (frame_count < 10) {
             logchan_vkdrm->log("FRAME[%d] Page flip to image %u (fb_id=%u)",
                                frame_count, _currentImage, _drmContext->fb_ids[_currentImage]);
@@ -675,26 +700,52 @@ void VkSwapChainDRM::waitPresentFrame(vkcontext_rawptr_t ctxVK) {
 
         _drmContext->flipPending = true;
         _drmContext->displayingImage = _currentImage;
-
-        // Wait for vblank
-        _drmContext->waitForVblank();
     }
 
-    // Advance to next image
+    auto t_after_pageflip = std::chrono::high_resolution_clock::now();
+    time_pageflip = std::chrono::duration<float, std::milli>(t_after_pageflip - t_after_vblank).count();
+
+    // Advance to next image (like drmvk line 192)
     _currentImage = (_currentImage + 1) % SWAP_CHAIN_SIZE;
 
-    // Advance to next frame
-    _currentFrame = (_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-
     frame_count++;
+
+    // FPS measurement: Calculate frame time and average FPS
+    float current_time = fps_timer.SecsSinceStart();
+    float frame_time = current_time - _lastFrameTime;
+    _lastFrameTime = current_time;
+
+    // Store frame time in rolling buffer
+    _frameTimes[_frameTimeIndex] = frame_time;
+    _frameTimeIndex = (_frameTimeIndex + 1) % 10;
+    _totalFrameCount++;
+
+    // Print FPS every 10 frames
+    if (_totalFrameCount % 10 == 0) {
+        // Calculate average frame time over last 10 frames
+        float total_time = 0.0f;
+        for (int i = 0; i < 10; i++) {
+            total_time += _frameTimes[i];
+        }
+        float avg_frame_time = total_time / 10.0f;
+        float avg_fps = (avg_frame_time > 0.0f) ? (1.0f / avg_frame_time) : 0.0f;
+
+        // Print to console with timing breakdown
+        float waitPresent_total = time_vblank_wait + time_pageflip;
+        float unaccounted = (avg_frame_time * 1000.0f) - waitPresent_total;
+        printf("DRM FPS: %.2f | Frame: %.1fms (waitPresent: %.1fms [vblank:%.1fms, flip:%.1fms], app: %.1fms)\n",
+               avg_fps, avg_frame_time * 1000.0f,
+               waitPresent_total, time_vblank_wait, time_pageflip, unaccounted);
+        fflush(stdout);
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Get current sub-index (frame-in-flight)
+// Get current sub-index (image index, used for fence tracking)
 ///////////////////////////////////////////////////////////////////////////////
 
 size_t VkSwapChainDRM::subIndex() const {
-    return _currentFrame;
+    return _currentImage;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

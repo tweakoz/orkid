@@ -57,16 +57,22 @@ struct VkSwapChainDRM {
     // Render pass (shared across all images)
     VkRenderPass _renderPass = VK_NULL_HANDLE;
 
-    // Synchronization (one per frame-in-flight, 2 for double-buffering CPU/GPU)
-    static constexpr size_t MAX_FRAMES_IN_FLIGHT = 2;
-    std::vector<vkfence_obj_ptr_t> _frameFences;  // Fences for GPU work completion
+    // Synchronization (one per image to prevent reuse while in-flight)
+    // CRITICAL: Must match SWAP_CHAIN_SIZE to track each image's fence
+    static constexpr size_t MAX_FRAMES_IN_FLIGHT = SWAP_CHAIN_SIZE;
+    std::vector<vkfence_obj_ptr_t> _frameFences;  // Fences for GPU work completion (one per image)
 
     // Frame management
-    size_t _currentFrame = 0;          // Which frame-in-flight (0 or 1)
-    uint32_t _currentImage = 0;        // Which swap image (0, 1, or 2)
+    uint32_t _currentImage = 0;        // Current swap image index (0, 1, or 2)
     bool _firstFrame = true;           // First frame uses SetCrtc, rest use PageFlip
     int _width = 0;
     int _height = 0;
+
+    // FPS measurement (for debugging performance)
+    float _frameTimes[10] = {0};       // Rolling buffer of last 10 frame times
+    int _frameTimeIndex = 0;           // Current position in buffer
+    int _totalFrameCount = 0;          // Total frames rendered
+    float _lastFrameTime = 0.0f;       // Time of last frame
 };
 
 using vkswapchaindrm_ptr_t = std::shared_ptr<VkSwapChainDRM>;

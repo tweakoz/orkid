@@ -273,12 +273,16 @@ void DRMContext::emergencyCleanup(DRMContext* drm) {
 void DRMContext::waitForVblank() {
     static drmEventContext evctx = {};
     static bool initialized = false;
+    static int frame_count = 0;
 
     if (!initialized) {
         evctx.version = DRM_EVENT_CONTEXT_VERSION;
         evctx.page_flip_handler = DRMContext::pageFlipHandler;
         initialized = true;
     }
+
+    // Timing measurement
+    auto start_time = std::chrono::high_resolution_clock::now();
 
     // Maximum wait time: 100ms (should be ~16ms at 60Hz)
     int max_iterations = 100;
@@ -298,6 +302,16 @@ void DRMContext::waitForVblank() {
 
         iterations++;
     }
+
+    auto end_time = std::chrono::high_resolution_clock::now();
+    float wait_ms = std::chrono::duration<float, std::milli>(end_time - start_time).count();
+
+    // Print vblank wait time every 10 frames
+    if (frame_count % 10 == 0 && frame_count < 50) {
+        printf("Vblank wait: %.2fms (%d iterations)\n", wait_ms, iterations);
+        fflush(stdout);
+    }
+    frame_count++;
 
     if (flipPending) {
         logchan_drm->log("WARNING: vblank wait timed out after %dms - page flip may have failed", max_iterations);
