@@ -11,9 +11,18 @@
 
 #include <ork/lev2/drm/ctx_drm.h>
 #include <ork/lev2/gfx/gfxenv.h>
+#include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/util/logger.h>
 #include <ork/kernel/string/string.h>
 #include <ork/application/application.h>
+
+extern "C" {
+#include <libudev.h>
+#include <libinput.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <linux/input-event-codes.h>
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
@@ -32,6 +41,7 @@ CtxDRM::CtxDRM(Window* pwin)
 
 CtxDRM::~CtxDRM() {
     logchan_ctxdrm->log("CtxDRM destructor");
+    _shutdownInput();
     // DRM context will clean up automatically (RAII)
 }
 
@@ -72,12 +82,27 @@ void CtxDRM::initWithData(appinitdata_ptr_t aid) {
         logchan_ctxdrm->log("ERROR: Failed to create DRM context: %s", e.what());
         throw;
     }
+
+    // Initialize input
+    _initInput();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void CtxDRM::Show() {
     logchan_ctxdrm->log("CtxDRM::Show");
+
+    if (_orkwindow) {
+        _orkwindow->SetDirty(true);
+
+        if (_needsInitialize) {
+            logchan_ctxdrm->log("Initializing graphics context");
+            _orkwindow->initContext();
+            _orkwindow->OnShow();
+            _needsInitialize = false;
+        }
+    }
+
     // DRM mode will be set when first frame is rendered (drmModeSetCrtc)
 }
 
@@ -99,6 +124,208 @@ void CtxDRM::SlotRepaint() {
 fvec2 CtxDRM::MapCoordToGlobal(const fvec2& v) const {
     // DRM is fullscreen, no coordinate mapping needed
     return v;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void CtxDRM::signalExit() {
+    logchan_ctxdrm->log("CtxDRM::signalExit");
+    _runstate = 2;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void CtxDRM::_runloopBegin() {
+    logchan_ctxdrm->log("CtxDRM::_runloopBegin");
+    OrkAssert(_target);
+
+    lev2::ThreadGfxContext l2ctx_track(_target);
+
+    _target->makeCurrentContext();
+
+    if (_onGpuInit) {
+        FontMan::gpuInit(_target);
+        _target->gpuPreInit(); // Initialize Context GPU resources
+        _onGpuInit(_target);
+        _target->gpuPostInit(); // Initialize Context GPU resources
+    }
+
+    _runstate = 1;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void CtxDRM::_runloopIter(bool pollevents) {
+    lev2::ThreadGfxContext l2ctx_track(_target);
+
+    //////////////////////////////
+    // poll input events (keyboard, etc.)
+    //////////////////////////////
+
+    if (pollevents) {
+        _pollInput();
+    }
+
+    //////////////////////////////
+    // run main thread app logic
+    //////////////////////////////
+
+    _onRunLoopIteration();
+
+    //////////////////////////////
+    // redraw
+    //////////////////////////////
+
+    if (_onGpuUpdate) {
+        _onGpuUpdate(_target);
+    }
+
+    SlotRepaint();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void CtxDRM::_runloopEnd() {
+    logchan_ctxdrm->log("CtxDRM::_runloopEnd");
+
+    lev2::ThreadGfxContext l2ctx_track(_target);
+
+    //////////////////////////////
+
+    if (_onGpuExit) {
+        _onGpuExit(_target);
+    }
+
+    //////////////////////////////
+    // DRM context will restore CRTC automatically (RAII)
+    //////////////////////////////
+
+    _runstate = 3;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Input handling with libinput
+///////////////////////////////////////////////////////////////////////////////
+
+static int _libinput_open_restricted(const char* path, int flags, void* user_data) {
+    int fd = open(path, flags);
+    if (fd < 0) {
+        logchan_ctxdrm->log("Failed to open input device: %s", path);
+    }
+    return fd;
+}
+
+static void _libinput_close_restricted(int fd, void* user_data) {
+    close(fd);
+}
+
+static const struct libinput_interface _libinput_interface = {
+    .open_restricted = _libinput_open_restricted,
+    .close_restricted = _libinput_close_restricted,
+};
+
+void CtxDRM::_initInput() {
+    logchan_ctxdrm->log("Initializing libinput");
+
+    // Create udev context
+    struct udev* udev = udev_new();
+    if (!udev) {
+        logchan_ctxdrm->log("ERROR: Failed to create udev context");
+        return;
+    }
+    _udev = udev;
+
+    // Create libinput context
+    struct libinput* libinput = libinput_udev_create_context(&_libinput_interface, nullptr, udev);
+    if (!libinput) {
+        logchan_ctxdrm->log("ERROR: Failed to create libinput context");
+        udev_unref(udev);
+        _udev = nullptr;
+        return;
+    }
+    _libinput = libinput;
+
+    // Assign seat (default seat0)
+    if (libinput_udev_assign_seat(libinput, "seat0") != 0) {
+        logchan_ctxdrm->log("ERROR: Failed to assign libinput seat");
+        libinput_unref(libinput);
+        _libinput = nullptr;
+        udev_unref(udev);
+        _udev = nullptr;
+        return;
+    }
+
+    // Get libinput file descriptor for polling
+    _libinput_fd = libinput_get_fd(libinput);
+    if (_libinput_fd < 0) {
+        logchan_ctxdrm->log("ERROR: Failed to get libinput file descriptor");
+        libinput_unref(libinput);
+        _libinput = nullptr;
+        udev_unref(udev);
+        _udev = nullptr;
+        return;
+    }
+
+    // Set non-blocking mode
+    int flags = fcntl(_libinput_fd, F_GETFL, 0);
+    fcntl(_libinput_fd, F_SETFL, flags | O_NONBLOCK);
+
+    logchan_ctxdrm->log("libinput initialized successfully");
+}
+
+void CtxDRM::_shutdownInput() {
+    if (_libinput) {
+        logchan_ctxdrm->log("Shutting down libinput");
+        libinput_unref(static_cast<struct libinput*>(_libinput));
+        _libinput = nullptr;
+        _libinput_fd = -1;
+    }
+    if (_udev) {
+        udev_unref(static_cast<struct udev*>(_udev));
+        _udev = nullptr;
+    }
+}
+
+void CtxDRM::_pollInput() {
+    if (!_libinput) return;
+
+    struct libinput* libinput = static_cast<struct libinput*>(_libinput);
+
+    // Dispatch events
+    libinput_dispatch(libinput);
+
+    // Process all available events
+    struct libinput_event* event;
+    while ((event = libinput_get_event(libinput)) != nullptr) {
+        auto event_type = libinput_event_get_type(event);
+
+        switch (event_type) {
+            case LIBINPUT_EVENT_KEYBOARD_KEY:
+                _processKeyboardEvent(event);
+                break;
+            default:
+                // Ignore other event types for now
+                break;
+        }
+
+        libinput_event_destroy(event);
+    }
+}
+
+void CtxDRM::_processKeyboardEvent(void* event_ptr) {
+    struct libinput_event* event = static_cast<struct libinput_event*>(event_ptr);
+    auto keyboard_event = libinput_event_get_keyboard_event(event);
+    uint32_t key = libinput_event_keyboard_get_key(keyboard_event);
+    auto key_state = libinput_event_keyboard_get_key_state(keyboard_event);
+
+    // Only process key presses
+    if (key_state == LIBINPUT_KEY_STATE_PRESSED) {
+        // ESC key hardwired to exit
+        if (key == KEY_ESC) {
+            logchan_ctxdrm->log("ESC key pressed - exiting");
+            signalExit();
+        }
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -30,9 +30,27 @@ struct CtxDRM : public CTXBASE {
     void SlotRepaint() override;
     fvec2 MapCoordToGlobal(const fvec2& v) const override;
 
+    // Runloop methods
+    void signalExit() override;
+    void _runloopBegin() override;
+    void _runloopEnd() override;
+    void _runloopIter(bool pollevents = true) override;
+
+    // Input handling
+    void _initInput();
+    void _shutdownInput();
+    void _pollInput();
+    void _processKeyboardEvent(void* event);
+
     // No input for now (future: libinput)
     void disableMouseCursor() final {}
     void hideMouseCursor() final {}
+
+private:
+    // libinput state (use void* to avoid exposing C structs in header)
+    void* _udev = nullptr;
+    void* _libinput = nullptr;
+    int _libinput_fd = -1;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -12,6 +12,9 @@
 #include <ork/lev2/gfx/rtgroup.h>
 
 #include <ork/lev2/glfw/ctx_glfw.h>
+#if defined(__linux__)
+#include <ork/lev2/drm/ctx_drm.h>
+#endif
 #include <ork/kernel/prop.h>
 #include <ork/lev2/ui/ui.h>
 #include <ork/lev2/ui/viewport.h>
@@ -112,7 +115,18 @@ void Window::initContext() {
   _sharedcontext = std::dynamic_pointer_cast<Context>(ctxclazz->createShared());
   if (mpCTXBASE) {
     mpCTXBASE->setContext(_sharedcontext.get());
-    // Check if we're in offscreen mode
+
+    // Check if we're in DRM mode
+#if defined(__linux__)
+    auto ctxdrm = dynamic_cast<CtxDRM*>(mpCTXBASE);
+    if (ctxdrm) {
+      // DRM uses offscreen context (no window surface needed)
+      _sharedcontext->initializeOffscreenContext(this);
+      return;
+    }
+#endif
+
+    // Check if we're in GLFW offscreen mode
     auto ctxglfw = dynamic_cast<CtxGLFW*>(mpCTXBASE);
     if (ctxglfw && ctxglfw->_appinitdata && ctxglfw->_appinitdata->_offscreen) {
       // Use offscreen context for offscreen mode

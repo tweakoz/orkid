@@ -103,7 +103,7 @@ ELSEIF(${UNIX})
 
     set(ENV{LD_LIBRARY_PATH}=$ENV{LD_LIBRARY_PATH}:${OBT_VULKAN_ROOT}/lib)
 
-    list(APPEND libs GL Xrandr glfw drm )
+    list(APPEND libs GL Xrandr glfw drm input udev )
     target_include_directories (ork_lev2 PRIVATE ${ObtPipewireSpaInclude_DIR} ${ObtPipewireInclude_DIR} )
     target_link_libraries(ork_lev2 LINK_PRIVATE ${ObtPipewire_LIBRARIES} )
     target_link_directories (ork_lev2 PRIVATE $ENV{OBT_VULKAN_ROOT}/lib)
