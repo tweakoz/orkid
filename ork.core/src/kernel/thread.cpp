@@ -86,7 +86,9 @@ void Thread::start( const thread_lambda_t& l )
 
 bool Thread::join()
 {
-	_threadh->join();
+	if(_threadh){
+		_threadh->join();
+	}
 	return true;
 }
 
