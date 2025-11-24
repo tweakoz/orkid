@@ -86,6 +86,12 @@ class PointsPrimApp(object):
 
   def __init__(self):
     super().__init__()
+
+    # DRM mode will override windowing system (left/top/width/height)
+    #  the left and top are irrelevant in DRM mode (its full screen)
+    #  and width and height will be set to the DRM mode resolution
+    #  and refresh rate is always the native mode refresh rate
+
     self.ezapp = OrkEzApp.create(self, drm_mode_id=args.drm_mode)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()

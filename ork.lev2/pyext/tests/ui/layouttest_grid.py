@@ -25,12 +25,17 @@ class LayoutTest(object):
   def __init__(self):
     super().__init__()
 
+    # DRM mode will override windowing system (left/top/width/height)
+    #  the left and top are irrelevant in DRM mode (its full screen)
+    #  and width and height will be set to the DRM mode resolution
+    #  and refresh rate is always the native mode refresh rate
+
     self.ezapp = lev2.OrkEzApp.create(self,
                                       left=100,
                                       top=100,
                                       width=900,
                                       height=900,
-                                      drm_mode_id=args.drm_mode)
+                                      drm_mode_id=args.drm_mode) 
 
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()
