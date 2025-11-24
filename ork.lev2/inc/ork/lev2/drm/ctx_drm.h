@@ -42,6 +42,7 @@ struct CtxDRM : public CTXBASE {
     void _pollInput();
     void _processKeyboardEvent(void* event);
     void _processPointerMotionEvent(void* event);
+    void _processPointerMotionAbsoluteEvent(void* event);
     void _processPointerButtonEvent(void* event);
     void _processPointerAxisEvent(void* event);
 

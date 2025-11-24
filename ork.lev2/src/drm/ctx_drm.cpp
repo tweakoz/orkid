@@ -419,9 +419,16 @@ void CtxDRM::_pollInput() {
             case LIBINPUT_EVENT_POINTER_MOTION:
                 motion_event_count++;
                 if (motion_event_count < 5) {
-                    logchan_ctxdrm->log("Received POINTER_MOTION event #%d", motion_event_count);
+                    logchan_ctxdrm->log("Received POINTER_MOTION (relative) event #%d", motion_event_count);
                 }
                 _processPointerMotionEvent(event);
+                break;
+            case LIBINPUT_EVENT_POINTER_MOTION_ABSOLUTE:
+                motion_event_count++;
+                if (motion_event_count < 5) {
+                    logchan_ctxdrm->log("Received POINTER_MOTION_ABSOLUTE event #%d", motion_event_count);
+                }
+                _processPointerMotionAbsoluteEvent(event);
                 break;
             case LIBINPUT_EVENT_POINTER_BUTTON:
                 _processPointerButtonEvent(event);
@@ -505,6 +512,62 @@ void CtxDRM::_processPointerMotionEvent(void* event_ptr) {
 
     logchan_ctxdrm->log("Mouse motion: dx=%.2f dy=%.2f pos=(%d,%d) unitXY=(%.3f,%.3f) %s",
                         dx, dy, _mouseX, _mouseY, uiev->mfUnitX, uiev->mfUnitY,
+                        (_buttonState == 0) ? "MOVE" : "DRAG");
+
+    _fire_ui_event();
+}
+
+void CtxDRM::_processPointerMotionAbsoluteEvent(void* event_ptr) {
+    struct libinput_event* event = static_cast<struct libinput_event*>(event_ptr);
+    auto pointer_event = libinput_event_get_pointer_event(event);
+
+    // Get screen dimensions for coordinate transformation
+    uint32_t screen_width = 1920;
+    uint32_t screen_height = 1080;
+    if (_drmctx) {
+        screen_width = _drmctx->imageExtent.width;
+        screen_height = _drmctx->imageExtent.height;
+    }
+
+    // Get absolute coordinates transformed to screen dimensions
+    double abs_x = libinput_event_pointer_get_absolute_x_transformed(pointer_event, screen_width);
+    double abs_y = libinput_event_pointer_get_absolute_y_transformed(pointer_event, screen_height);
+
+    // Update mouse position directly (already in screen coordinates)
+    _mouseX = int(abs_x);
+    _mouseY = int(abs_y);
+
+    // Clamp to screen bounds
+    if (_mouseX < 0) _mouseX = 0;
+    if (_mouseY < 0) _mouseY = 0;
+    if (_mouseX >= int(screen_width)) _mouseX = screen_width - 1;
+    if (_mouseY >= int(screen_height)) _mouseY = screen_height - 1;
+
+    // Fill UI event
+    auto uiev = _uievent;
+    uiev->miLastX = uiev->miX;
+    uiev->miLastY = uiev->miY;
+    uiev->miX = _mouseX;
+    uiev->miY = _mouseY;
+
+    float w = float(screen_width);
+    float h = float(screen_height);
+    uiev->mfLastUnitX = uiev->mfUnitX;
+    uiev->mfLastUnitY = uiev->mfUnitY;
+    uiev->mfUnitX = float(_mouseX) / w;
+    uiev->mfUnitY = float(_mouseY) / h;
+    uiev->miScreenWidth = int(w);
+    uiev->miScreenHeight = int(h);
+
+    // Set event code based on button state
+    if (_buttonState == 0) {
+        uiev->_eventcode = ui::EventCode::MOVE;
+    } else {
+        uiev->_eventcode = ui::EventCode::DRAG;
+    }
+
+    logchan_ctxdrm->log("Mouse abs motion: pos=(%d,%d) unitXY=(%.3f,%.3f) %s",
+                        _mouseX, _mouseY, uiev->mfUnitX, uiev->mfUnitY,
                         (_buttonState == 0) ? "MOVE" : "DRAG");
 
     _fire_ui_event();
