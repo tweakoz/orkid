@@ -96,7 +96,7 @@ class PointsPrimApp(object):
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
     setupUiCamera( app=self, eye = vec3(6,6,6), constrainZ=True, up=vec3(0,1,0))
-    self.NUMPOINTS = 16384
+    self.NUMPOINTS = 8192
 
   def updatePoints(self,context, abstime):
 

@@ -28,6 +28,17 @@ extern "C" {
 #include <signal.h>
 #include <sys/select.h>
 #include <stdlib.h>
+
+// Mouse button codes from linux/input-event-codes.h
+#ifndef BTN_LEFT
+#define BTN_LEFT 0x110
+#endif
+#ifndef BTN_RIGHT
+#define BTN_RIGHT 0x111
+#endif
+#ifndef BTN_MIDDLE
+#define BTN_MIDDLE 0x112
+#endif
 }
 
 // Global state for async-signal-safe terminal cleanup
@@ -159,13 +170,12 @@ void CtxDRM::initWithData(appinitdata_ptr_t aid) {
     logchan_ctxdrm->log("DRM: Overriding appinitdata dimensions to actual mode: %dx%d",
                         aid->_width, aid->_height);
 
-    // Initialize input (only works on physical console, not SSH)
-    if (getenv("SSH_TTY") == nullptr) {
-        logchan_ctxdrm->log("Physical console detected, enabling libinput");
-        _initInput();
-    } else {
-        logchan_ctxdrm->log("SSH session detected, using terminal input (ESC/Ctrl-C/q to exit)");
-        _initTerminalInput();
+    // Initialize both input methods simultaneously
+    // This allows SSH keyboard while using physical mouse
+    _initInput();  // libinput (physical mouse/keyboard)
+    if (getenv("SSH_TTY") != nullptr) {
+        logchan_ctxdrm->log("SSH session detected, enabling terminal keyboard input");
+        _initTerminalInput();  // Terminal keyboard (SSH)
     }
 }
 
@@ -398,6 +408,7 @@ void CtxDRM::_pollInput() {
 
     // Process all available events
     struct libinput_event* event;
+    static int motion_event_count = 0;
     while ((event = libinput_get_event(libinput)) != nullptr) {
         auto event_type = libinput_event_get_type(event);
 
@@ -405,8 +416,21 @@ void CtxDRM::_pollInput() {
             case LIBINPUT_EVENT_KEYBOARD_KEY:
                 _processKeyboardEvent(event);
                 break;
+            case LIBINPUT_EVENT_POINTER_MOTION:
+                motion_event_count++;
+                if (motion_event_count < 5) {
+                    logchan_ctxdrm->log("Received POINTER_MOTION event #%d", motion_event_count);
+                }
+                _processPointerMotionEvent(event);
+                break;
+            case LIBINPUT_EVENT_POINTER_BUTTON:
+                _processPointerButtonEvent(event);
+                break;
+            case LIBINPUT_EVENT_POINTER_AXIS:
+                _processPointerAxisEvent(event);
+                break;
             default:
-                // Ignore other event types for now
+                // Ignore other event types
                 break;
         }
 
@@ -432,6 +456,136 @@ void CtxDRM::_processKeyboardEvent(void* event_ptr) {
             signalExit();
             logchan_ctxdrm->log("signalExit() called, _runstate=%d", _runstate);
         }
+    }
+}
+
+void CtxDRM::_processPointerMotionEvent(void* event_ptr) {
+    struct libinput_event* event = static_cast<struct libinput_event*>(event_ptr);
+    auto pointer_event = libinput_event_get_pointer_event(event);
+
+    // Get relative motion (dx, dy)
+    double dx = libinput_event_pointer_get_dx(pointer_event);
+    double dy = libinput_event_pointer_get_dy(pointer_event);
+
+    // Update absolute mouse position (clamped to screen bounds)
+    _mouseX += int(dx);
+    _mouseY += int(dy);
+
+    if (_mouseX < 0) _mouseX = 0;
+    if (_mouseY < 0) _mouseY = 0;
+    if (_drmctx) {
+        if (_mouseX >= int(_drmctx->imageExtent.width)) _mouseX = _drmctx->imageExtent.width - 1;
+        if (_mouseY >= int(_drmctx->imageExtent.height)) _mouseY = _drmctx->imageExtent.height - 1;
+    }
+
+    // Fill UI event
+    auto uiev = _uievent;
+    uiev->miLastX = uiev->miX;
+    uiev->miLastY = uiev->miY;
+    uiev->miX = _mouseX;
+    uiev->miY = _mouseY;
+
+    if (_drmctx) {
+        float w = float(_drmctx->imageExtent.width);
+        float h = float(_drmctx->imageExtent.height);
+        uiev->mfLastUnitX = uiev->mfUnitX;
+        uiev->mfLastUnitY = uiev->mfUnitY;
+        uiev->mfUnitX = float(_mouseX) / w;
+        uiev->mfUnitY = float(_mouseY) / h;
+        uiev->miScreenWidth = int(w);
+        uiev->miScreenHeight = int(h);
+    }
+
+    // Set event code based on button state
+    if (_buttonState == 0) {
+        uiev->_eventcode = ui::EventCode::MOVE;
+    } else {
+        uiev->_eventcode = ui::EventCode::DRAG;
+    }
+
+    logchan_ctxdrm->log("Mouse motion: dx=%.2f dy=%.2f pos=(%d,%d) unitXY=(%.3f,%.3f) %s",
+                        dx, dy, _mouseX, _mouseY, uiev->mfUnitX, uiev->mfUnitY,
+                        (_buttonState == 0) ? "MOVE" : "DRAG");
+
+    _fire_ui_event();
+}
+
+void CtxDRM::_processPointerButtonEvent(void* event_ptr) {
+    struct libinput_event* event = static_cast<struct libinput_event*>(event_ptr);
+    auto pointer_event = libinput_event_get_pointer_event(event);
+
+    uint32_t button = libinput_event_pointer_get_button(pointer_event);
+    auto button_state = libinput_event_pointer_get_button_state(pointer_event);
+
+    bool DOWN = (button_state == LIBINPUT_BUTTON_STATE_PRESSED);
+    const char* state_str = DOWN ? "PRESSED" : "RELEASED";
+
+    auto uiev = _uievent;
+
+    // Map Linux button codes to Orkid button flags
+    // BTN_LEFT = 0x110, BTN_RIGHT = 0x111, BTN_MIDDLE = 0x112
+    const char* button_name = "UNKNOWN";
+    switch (button) {
+        case BTN_LEFT:  // 0x110
+            button_name = "LEFT";
+            uiev->mbLeftButton = DOWN;
+            _buttonState = (_buttonState & 6) | int(DOWN);
+            break;
+        case BTN_MIDDLE:  // 0x112
+            button_name = "MIDDLE";
+            uiev->mbMiddleButton = DOWN;
+            _buttonState = (_buttonState & 5) | (int(DOWN) << 1);
+            break;
+        case BTN_RIGHT:  // 0x111
+            button_name = "RIGHT";
+            uiev->mbRightButton = DOWN;
+            _buttonState = (_buttonState & 3) | (int(DOWN) << 2);
+            break;
+    }
+
+    uiev->_eventcode = DOWN ? ui::EventCode::PUSH : ui::EventCode::RELEASE;
+
+    logchan_ctxdrm->log("Mouse button: %s (%s) buttonState=0x%x", button_name, state_str, _buttonState);
+
+    _fire_ui_event();
+}
+
+void CtxDRM::_processPointerAxisEvent(void* event_ptr) {
+    struct libinput_event* event = static_cast<struct libinput_event*>(event_ptr);
+    auto pointer_event = libinput_event_get_pointer_event(event);
+
+    // Check if we have vertical scroll
+    if (libinput_event_pointer_has_axis(pointer_event, LIBINPUT_POINTER_AXIS_SCROLL_VERTICAL)) {
+        double value = libinput_event_pointer_get_axis_value(pointer_event, LIBINPUT_POINTER_AXIS_SCROLL_VERTICAL);
+        auto uiev = _uievent;
+        uiev->_eventcode = ui::EventCode::MOUSEWHEEL;
+        // libinput gives ~15 units per wheel detent, GLFW expects ~1.0 per detent (then *10 = 10 final)
+        // So scale libinput by (10/15) = 0.667 to match GLFW's output
+        uiev->miMWY = value * (1.0 / 150.0);
+        uiev->miMWX = 0;
+        logchan_ctxdrm->log("Mouse scroll: VERTICAL raw=%.2f scaled=%d", value, uiev->miMWY);
+        //_fire_ui_event();
+    }
+
+    // Check if we have horizontal scroll
+    /*if (libinput_event_pointer_has_axis(pointer_event, LIBINPUT_POINTER_AXIS_SCROLL_HORIZONTAL)) {
+        double value = libinput_event_pointer_get_axis_value(pointer_event, LIBINPUT_POINTER_AXIS_SCROLL_HORIZONTAL);
+        auto uiev = _uievent;
+        uiev->_eventcode = ui::EventCode::MOUSEWHEEL;
+        uiev->miMWX = value * (1.0 / 150.0);
+        logchan_ctxdrm->log("Mouse scroll: HORIZONTAL raw=%.2f scaled=%d", value, uiev->miMWX);
+        _fire_ui_event();
+    }*/
+}
+
+void CtxDRM::_fire_ui_event() {
+    auto uiev = _uievent;
+    auto gfxwin = uiev->mpGfxWin;
+    auto root = gfxwin ? gfxwin->GetRootWidget() : nullptr;
+    uiev->_uicontext = root ? root->_uicontext : nullptr;
+    if (root) {
+        uiev->setvpDim(root);
+        ui::Event::sendToContext(uiev);
     }
 }
 
