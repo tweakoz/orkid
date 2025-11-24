@@ -73,6 +73,7 @@ void VkFrameBufferInterface::_doBeginFrame() {
 #if defined(__linux__)
   else if (_swapchain_drm) {
     _swapchain_drm->acquireImage(_contextVK);
+    _swapchain_drm->enqueueFrame(_contextVK);
   }
 #endif
   _ensureMainRtg().get();    // ensure main rtgroup is created
@@ -83,6 +84,11 @@ void VkFrameBufferInterface::_doBeginFrame() {
 
 void VkFrameBufferInterface::_doEndFrame() {
   //logchan_fbi->log("_doEndFrame()");
+#if defined(__linux__)
+  if (_swapchain_drm) {
+    _swapchain_drm->waitPresentFrame(_contextVK);
+  }
+#endif
 }
 
 ///////////////////////////////////////////////////////

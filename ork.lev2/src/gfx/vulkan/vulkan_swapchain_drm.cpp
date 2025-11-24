@@ -63,6 +63,9 @@ void VkSwapChainDRM::_buildup() {
 
     _createExportableImages();
     _exportImagesToDRM();
+    _createRenderPass();
+    _createImageViews();
+    _createFramebuffers();
 
     logchan_vkdrm->log("DRM swapchain ready: %dx%d, %u images", _width, _height, SWAP_CHAIN_SIZE);
 }
@@ -396,6 +399,128 @@ void VkSwapChainDRM::_exportImagesToDRM() {
     }
 
     logchan_vkdrm->log("Successfully exported all images to DRM");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Create render pass
+///////////////////////////////////////////////////////////////////////////////
+
+void VkSwapChainDRM::_createRenderPass() {
+    logchan_vkdrm->log("Creating DRM render pass");
+
+    VkDevice device = _contextVK->_vkdevice;
+
+    // Single color attachment
+    VkAttachmentDescription colorAttachment = {};
+    colorAttachment.format = _imageFormat;
+    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    VkAttachmentReference colorAttachmentRef = {};
+    colorAttachmentRef.attachment = 0;
+    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    VkSubpassDescription subpass = {};
+    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.colorAttachmentCount = 1;
+    subpass.pColorAttachments = &colorAttachmentRef;
+
+    // Subpass dependency for layout transition
+    VkSubpassDependency dependency = {};
+    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependency.dstSubpass = 0;
+    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.srcAccessMask = 0;
+    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+    VkRenderPassCreateInfo renderPassInfo = {};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    renderPassInfo.attachmentCount = 1;
+    renderPassInfo.pAttachments = &colorAttachment;
+    renderPassInfo.subpassCount = 1;
+    renderPassInfo.pSubpasses = &subpass;
+    renderPassInfo.dependencyCount = 1;
+    renderPassInfo.pDependencies = &dependency;
+
+    VkResult result = vkCreateRenderPass(device, &renderPassInfo, nullptr, &_renderPass);
+    if (result != VK_SUCCESS) {
+        logchan_vkdrm->log("ERROR: Failed to create render pass (result=%d)", result);
+        throw std::runtime_error("Failed to create DRM render pass");
+    }
+
+    logchan_vkdrm->log("DRM render pass created successfully");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Create image views
+///////////////////////////////////////////////////////////////////////////////
+
+void VkSwapChainDRM::_createImageViews() {
+    logchan_vkdrm->log("Creating image views for %u swap images", SWAP_CHAIN_SIZE);
+
+    VkDevice device = _contextVK->_vkdevice;
+
+    for (uint32_t i = 0; i < SWAP_CHAIN_SIZE; i++) {
+        VkImageViewCreateInfo viewInfo = {};
+        viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        viewInfo.image = _images[i];
+        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        viewInfo.format = _imageFormat;
+        viewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+        viewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+        viewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+        viewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+        viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        viewInfo.subresourceRange.baseMipLevel = 0;
+        viewInfo.subresourceRange.levelCount = 1;
+        viewInfo.subresourceRange.baseArrayLayer = 0;
+        viewInfo.subresourceRange.layerCount = 1;
+
+        VkResult result = vkCreateImageView(device, &viewInfo, nullptr, &_imageViews[i]);
+        if (result != VK_SUCCESS) {
+            logchan_vkdrm->log("ERROR: Failed to create image view %u (result=%d)", i, result);
+            throw std::runtime_error("Failed to create DRM image view");
+        }
+    }
+
+    logchan_vkdrm->log("Successfully created %u image views", SWAP_CHAIN_SIZE);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Create framebuffers
+///////////////////////////////////////////////////////////////////////////////
+
+void VkSwapChainDRM::_createFramebuffers() {
+    logchan_vkdrm->log("Creating framebuffers for %u swap images", SWAP_CHAIN_SIZE);
+
+    VkDevice device = _contextVK->_vkdevice;
+
+    for (uint32_t i = 0; i < SWAP_CHAIN_SIZE; i++) {
+        VkImageView attachments[] = {_imageViews[i]};
+
+        VkFramebufferCreateInfo framebufferInfo = {};
+        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebufferInfo.renderPass = _renderPass;
+        framebufferInfo.attachmentCount = 1;
+        framebufferInfo.pAttachments = attachments;
+        framebufferInfo.width = _width;
+        framebufferInfo.height = _height;
+        framebufferInfo.layers = 1;
+
+        VkResult result = vkCreateFramebuffer(device, &framebufferInfo, nullptr, &_framebuffers[i]);
+        if (result != VK_SUCCESS) {
+            logchan_vkdrm->log("ERROR: Failed to create framebuffer %u (result=%d)", i, result);
+            throw std::runtime_error("Failed to create DRM framebuffer");
+        }
+    }
+
+    logchan_vkdrm->log("Successfully created %u framebuffers", SWAP_CHAIN_SIZE);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

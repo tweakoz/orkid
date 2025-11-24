@@ -33,6 +33,9 @@ struct VkSwapChainDRM {
     void _submitFrameWithSemaphores(vkcontext_rawptr_t ctxVK);
     void _createExportableImages();
     void _exportImagesToDRM();
+    void _createRenderPass();
+    void _createImageViews();
+    void _createFramebuffers();
 
     vkcontext_rawptr_t _contextVK = nullptr;
     drm::drm_context_rawptr_t _drmContext = nullptr;
