@@ -48,6 +48,7 @@ struct VkSwapChainDRM {
     VkDeviceMemory _imageMemories[SWAP_CHAIN_SIZE] = {VK_NULL_HANDLE};
     VkImageView _imageViews[SWAP_CHAIN_SIZE] = {VK_NULL_HANDLE};
     VkFramebuffer _framebuffers[SWAP_CHAIN_SIZE] = {VK_NULL_HANDLE};
+    std::vector<vkimageobj_ptr_t> _swapChainImages;  // Wrapped image objects for RTG
 
     VkFormat _imageFormat = VK_FORMAT_B8G8R8A8_UNORM;
     VkSubresourceLayout _imageLayouts[SWAP_CHAIN_SIZE];

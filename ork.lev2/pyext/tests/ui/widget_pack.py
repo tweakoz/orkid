@@ -7,12 +7,18 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import math, sys, os, signal, random
+import math, sys, os, signal, random, argparse
 from obt import path
 from orkengine.core import vec2, vec3, vec4, mtx4, quat, VarMap, CrcStringProxy
 from orkengine import lev2
 
 tokens = CrcStringProxy()
+
+################################################################################
+
+parser = argparse.ArgumentParser(description='Widget Pack Test')
+parser.add_argument('-m', '--drm-mode', type=str, default=None, help='DRM mode ID (enables DRM mode if specified, e.g., a0)')
+args = parser.parse_args()
 
 ################################################################################
 
@@ -96,7 +102,8 @@ class PackWidgets(object):
                                       fullscreen=False,
                                       enable_audio=True,
                                       enable_audio_output=True,
-                                      enable_audio_synth=True)
+                                      enable_audio_synth=True,
+                                      drm_mode_id=args.drm_mode)
 
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()

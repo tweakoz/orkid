@@ -1087,6 +1087,11 @@ void VkContext::initializeWindowContext(
     _impl.setShared<VkPlatformObjectDRM>(plato_drm);
     plato_drm->_bindop(); // Call bind operation directly for DRM
     _fbi->SetThisBuffer(pWin);
+
+    // CRITICAL: Use actual DRM mode dimensions, not window request size
+    miW = ctxdrm->_drmctx->imageExtent.width;
+    miH = ctxdrm->_drmctx->imageExtent.height;
+    logchan_vkctx->log("DRM: Overriding context dimensions to actual mode: %dx%d", miW, miH);
     // DRM-specific initialization will continue below
   } else
 #endif

@@ -46,6 +46,8 @@ static void drm_signal_handler(int signum) {
     if (signum == SIGINT || signum == SIGTERM) {
         logchan_ctxdrm->log("Signal %d received (Ctrl-C), requesting exit", signum);
         if (g_ctxdrm_for_signal) {
+            // Restore terminal IMMEDIATELY before exiting
+            g_ctxdrm_for_signal->_shutdownTerminalInput();
             g_ctxdrm_for_signal->signalExit();
         }
     }
@@ -116,6 +118,14 @@ void CtxDRM::initWithData(appinitdata_ptr_t aid) {
         logchan_ctxdrm->log("ERROR: Failed to create DRM context: %s", e.what());
         throw;
     }
+
+    // CRITICAL: Override appinitdata dimensions with actual DRM mode size
+    // The user may have requested 900x900, but the actual display mode is 640x480
+    // Everything needs to use the actual mode dimensions
+    aid->_width = _drmctx->imageExtent.width;
+    aid->_height = _drmctx->imageExtent.height;
+    logchan_ctxdrm->log("DRM: Overriding appinitdata dimensions to actual mode: %dx%d",
+                        aid->_width, aid->_height);
 
     // Initialize input (only works on physical console, not SSH)
     if (getenv("SSH_TTY") == nullptr) {

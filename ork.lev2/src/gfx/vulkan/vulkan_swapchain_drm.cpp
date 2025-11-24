@@ -444,7 +444,7 @@ void VkSwapChainDRM::_createRenderPass() {
     colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_GENERAL;  // DRM needs GENERAL layout for scanout
 
     VkAttachmentReference colorAttachmentRef = {};
     colorAttachmentRef.attachment = 0;
@@ -512,6 +512,17 @@ void VkSwapChainDRM::_createImageViews() {
             logchan_vkdrm->log("ERROR: Failed to create image view %u (result=%d)", i, result);
             throw std::runtime_error("Failed to create DRM image view");
         }
+
+        // Create VulkanImageObject wrapper (like GLFW swapchain does)
+        auto imgobj = std::make_shared<VulkanImageObject>(
+            _contextVK,
+            _images[i],
+            _imageViews[i],
+            _imageFormat);
+        imgobj->_delete_image = false;     // Image managed by DRM
+        imgobj->_delete_imageview = false; // ImageView managed by DRM
+        _swapChainImages.push_back(imgobj);
+        logchan_vkdrm->log("Created VulkanImageObject[%u]: image=%p view=%p", i, _images[i], _imageViews[i]);
     }
 
     logchan_vkdrm->log("Successfully created %u image views", SWAP_CHAIN_SIZE);
@@ -553,9 +564,26 @@ void VkSwapChainDRM::_createFramebuffers() {
 ///////////////////////////////////////////////////////////////////////////////
 
 VkResult VkSwapChainDRM::acquireImage(vkcontext_rawptr_t ctxVK) {
-    // For DRM, we manually manage the image index
-    // Just advance to next image in the triple buffer
-    // Actual synchronization happens in waitPresentFrame()
+    // Connect the RTG's color buffer to the current DRM swapchain image
+    // Following GLFW pattern: use pre-created VulkanImageObject wrappers
+
+    auto rtg = _contextVK->_fbi->_ensureMainRtg();
+    auto rtg_impl = rtg->_impl.getShared<VkRtGroupImpl>();
+    auto rtb_color = rtg->buffer(0);
+    auto rtb_impl = rtb_color->_impl.getShared<VklRtBufferImpl>();
+    rtb_impl->_is_surface = true;
+
+    // Use pre-created image wrapper (created during _buildup)
+    auto imgobj = _swapChainImages[_currentImage];
+    rtb_impl->_replaceImage(imgobj);
+
+    static int log_count = 0;
+    if (log_count < 10) {
+        logchan_vkdrm->log("acquireImage[%u]: Connecting RTB to image=%p view=%p",
+                           _currentImage, imgobj->_vkimage, imgobj->_vkimageview);
+        log_count++;
+    }
+
     return VK_SUCCESS;
 }
 
@@ -574,10 +602,30 @@ void VkSwapChainDRM::_submitFrameWithSemaphores(vkcontext_rawptr_t ctxVK) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkSwapChainDRM::enqueueFrame(vkcontext_rawptr_t ctxVK) {
-    // TODO: Wait for the fence from the previous use of this frame slot
-    // Skipping for now since we don't submit GPU work yet
-    // _frameFences[_currentFrame]->wait();
-    // _frameFences[_currentFrame]->reset();
+    // Submit command buffer to GPU (like GLFW swapchain does)
+    // DRM doesn't use semaphores (no VkSwapchainKHR), just fences
+
+    size_t sub_index = _currentFrame;
+
+    // Wait for this frame slot to be available
+    if (sub_index < _frameFences.size()) {
+        _frameFences[sub_index]->wait();
+        _frameFences[sub_index]->reset();
+    }
+
+    // Submit command buffer
+    VkSubmitInfo SI = {};
+    SI.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    SI.commandBufferCount = 1;
+    SI.pCommandBuffers = &ctxVK->_cmdbufcurpri_gfx->_vkcmdbuf;
+
+    // Submit with fence for synchronization
+    if (sub_index < _frameFences.size()) {
+        auto& fence = _frameFences[sub_index];
+        vkQueueSubmit(ctxVK->_vkqueue_graphics, 1, &SI, fence->_vkfence);
+    } else {
+        vkQueueSubmit(ctxVK->_vkqueue_graphics, 1, &SI, VK_NULL_HANDLE);
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -585,10 +633,13 @@ void VkSwapChainDRM::enqueueFrame(vkcontext_rawptr_t ctxVK) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkSwapChainDRM::waitPresentFrame(vkcontext_rawptr_t ctxVK) {
+    static int frame_count = 0;
+
     // Display via DRM (first frame uses SetCrtc, subsequent use PageFlip)
     if (_firstFrame) {
         // First frame: establish the mode
-        logchan_vkdrm->log("First frame: SetCrtc with image %u (fb_id=%u)", _currentImage, _drmContext->fb_ids[_currentImage]);
+        logchan_vkdrm->log("FRAME[%d] First frame: SetCrtc with image %u (fb_id=%u)",
+                           frame_count, _currentImage, _drmContext->fb_ids[_currentImage]);
 
         int ret = drmModeSetCrtc(_drmContext->drm_fd,
                                  _drmContext->crtc_id,
@@ -607,7 +658,10 @@ void VkSwapChainDRM::waitPresentFrame(vkcontext_rawptr_t ctxVK) {
         logchan_vkdrm->log("Initial mode set complete, display active");
     } else {
         // Subsequent frames: page flip with vblank event
-        logchan_vkdrm->log("Page flip to image %u (fb_id=%u)", _currentImage, _drmContext->fb_ids[_currentImage]);
+        if (frame_count < 10) {
+            logchan_vkdrm->log("FRAME[%d] Page flip to image %u (fb_id=%u)",
+                               frame_count, _currentImage, _drmContext->fb_ids[_currentImage]);
+        }
 
         int ret = drmModePageFlip(_drmContext->drm_fd,
                                   _drmContext->crtc_id,
@@ -631,6 +685,8 @@ void VkSwapChainDRM::waitPresentFrame(vkcontext_rawptr_t ctxVK) {
 
     // Advance to next frame
     _currentFrame = (_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+
+    frame_count++;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
