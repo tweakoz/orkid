@@ -280,17 +280,28 @@ void DRMContext::waitForVblank() {
         initialized = true;
     }
 
-    while (flipPending) {
+    // Maximum wait time: 100ms (should be ~16ms at 60Hz)
+    int max_iterations = 100;
+    int iterations = 0;
+
+    while (flipPending && iterations < max_iterations) {
         fd_set fds;
         FD_ZERO(&fds);
         FD_SET(drm_fd, &fds);
 
-        struct timeval timeout = {0, 1000};  // 1ms timeout
+        struct timeval timeout = {0, 1000};  // 1ms timeout per iteration
         int ret = ::select(drm_fd + 1, &fds, nullptr, nullptr, &timeout);
 
         if (ret > 0) {
             drmHandleEvent(drm_fd, &evctx);
         }
+
+        iterations++;
+    }
+
+    if (flipPending) {
+        logchan_drm->log("WARNING: vblank wait timed out after %dms - page flip may have failed", max_iterations);
+        flipPending = false;  // Force reset to prevent infinite hang
     }
 }
 

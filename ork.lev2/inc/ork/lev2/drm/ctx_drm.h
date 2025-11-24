@@ -42,6 +42,12 @@ struct CtxDRM : public CTXBASE {
     void _pollInput();
     void _processKeyboardEvent(void* event);
 
+    // Terminal input (SSH mode)
+    void _initTerminalInput();
+    void _shutdownTerminalInput();
+    void _pollTerminalInput();
+    void _processTerminalInput(const char* buf, ssize_t len);
+
     // No input for now (future: libinput)
     void disableMouseCursor() final {}
     void hideMouseCursor() final {}
@@ -51,6 +57,12 @@ private:
     void* _udev = nullptr;
     void* _libinput = nullptr;
     int _libinput_fd = -1;
+
+    // Terminal input state (SSH mode - use void* to avoid exposing C structs)
+    bool _using_terminal_input = false;
+    int _stdin_fd = -1;
+    void* _original_termios = nullptr;  // Actually struct termios*
+    bool _termios_saved = false;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

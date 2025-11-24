@@ -21,8 +21,11 @@ extern "C" {
 #include <libinput.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <termios.h>
 #include <linux/input-event-codes.h>
 #include <signal.h>
+#include <sys/select.h>
+#include <stdlib.h>
 }
 
 // Global pointer for signal handler
@@ -70,6 +73,7 @@ CtxDRM::~CtxDRM() {
     }
 
     _shutdownInput();
+    _shutdownTerminalInput();
     // DRM context will clean up automatically (RAII)
 }
 
@@ -116,7 +120,8 @@ void CtxDRM::initWithData(appinitdata_ptr_t aid) {
         logchan_ctxdrm->log("Physical console detected, enabling libinput");
         _initInput();
     } else {
-        logchan_ctxdrm->log("SSH session detected, libinput disabled (use Ctrl-C to exit)");
+        logchan_ctxdrm->log("SSH session detected, using terminal input (ESC/Ctrl-C/q to exit)");
+        _initTerminalInput();
     }
 }
 
@@ -196,7 +201,8 @@ void CtxDRM::_runloopIter(bool pollevents) {
     //////////////////////////////
 
     if (pollevents) {
-        _pollInput();
+        _pollInput();           // Try libinput (physical console)
+        _pollTerminalInput();   // Try terminal input (SSH)
     }
 
     //////////////////////////////
@@ -362,6 +368,144 @@ void CtxDRM::_processKeyboardEvent(void* event_ptr) {
             logchan_ctxdrm->log("ESC key pressed - calling signalExit()");
             signalExit();
             logchan_ctxdrm->log("signalExit() called, _runstate=%d", _runstate);
+        }
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Terminal input (SSH mode)
+///////////////////////////////////////////////////////////////////////////////
+
+void CtxDRM::_initTerminalInput() {
+    logchan_ctxdrm->log("Initializing terminal input (SSH mode)");
+
+    _stdin_fd = STDIN_FILENO;
+
+    // Allocate termios struct
+    _original_termios = malloc(sizeof(struct termios));
+    if (!_original_termios) {
+        logchan_ctxdrm->log("ERROR: Failed to allocate termios struct");
+        return;
+    }
+
+    struct termios* orig_termios = static_cast<struct termios*>(_original_termios);
+
+    // Save original terminal settings
+    if (tcgetattr(_stdin_fd, orig_termios) == 0) {
+        _termios_saved = true;
+
+        // Set terminal to raw mode
+        struct termios raw = *orig_termios;
+
+        // Disable canonical mode, echo, signals
+        raw.c_lflag &= ~(ICANON | ECHO | ISIG);
+
+        // Disable special processing of CR/NL
+        raw.c_iflag &= ~(ICRNL | INLCR);
+
+        // Set non-blocking read with minimal char return
+        raw.c_cc[VMIN] = 0;   // Return immediately
+        raw.c_cc[VTIME] = 0;  // No timeout
+
+        if (tcsetattr(_stdin_fd, TCSANOW, &raw) == 0) {
+            // Set stdin to non-blocking mode
+            int flags = fcntl(_stdin_fd, F_GETFL, 0);
+            fcntl(_stdin_fd, F_SETFL, flags | O_NONBLOCK);
+
+            _using_terminal_input = true;
+            logchan_ctxdrm->log("Terminal input initialized successfully (ESC, Ctrl-C, Ctrl-D, or 'q' to exit)");
+        } else {
+            logchan_ctxdrm->log("ERROR: Failed to set terminal raw mode");
+            _termios_saved = false;
+        }
+    } else {
+        logchan_ctxdrm->log("ERROR: Failed to get terminal attributes");
+        free(_original_termios);
+        _original_termios = nullptr;
+    }
+}
+
+void CtxDRM::_shutdownTerminalInput() {
+    if (_termios_saved && _original_termios) {
+        logchan_ctxdrm->log("Restoring terminal settings");
+        struct termios* orig_termios = static_cast<struct termios*>(_original_termios);
+        tcsetattr(_stdin_fd, TCSANOW, orig_termios);
+        _termios_saved = false;
+    }
+    if (_original_termios) {
+        free(_original_termios);
+        _original_termios = nullptr;
+    }
+    _using_terminal_input = false;
+}
+
+void CtxDRM::_pollTerminalInput() {
+    if (!_using_terminal_input) return;
+
+    // Check if stdin has data available
+    fd_set readfds;
+    FD_ZERO(&readfds);
+    FD_SET(_stdin_fd, &readfds);
+
+    struct timeval timeout = {0, 0};  // Non-blocking check
+    int ret = ::select(_stdin_fd + 1, &readfds, nullptr, nullptr, &timeout);
+
+    if (ret > 0 && FD_ISSET(_stdin_fd, &readfds)) {
+        char buf[64];
+        ssize_t n = read(_stdin_fd, buf, sizeof(buf));
+
+        if (n > 0) {
+            _processTerminalInput(buf, n);
+        }
+    }
+}
+
+void CtxDRM::_processTerminalInput(const char* buf, ssize_t len) {
+    for (ssize_t i = 0; i < len; i++) {
+        unsigned char ch = buf[i];
+
+        // ESC key (ASCII 27)
+        if (ch == 27) {
+            // Check if this is a lone ESC or start of escape sequence
+            if (i + 1 < len && buf[i + 1] == '[') {
+                // This is an escape sequence (arrow keys, etc.)
+                // Skip for now, could parse if needed
+                continue;
+            } else {
+                logchan_ctxdrm->log("ESC key pressed (terminal input) - calling signalExit()");
+                signalExit();
+                return;
+            }
+        }
+
+        // Ctrl-C (ASCII 3)
+        else if (ch == 3) {
+            logchan_ctxdrm->log("Ctrl-C pressed (terminal input) - calling signalExit()");
+            signalExit();
+            return;
+        }
+
+        // Ctrl-D (ASCII 4) - common Unix EOF signal
+        else if (ch == 4) {
+            logchan_ctxdrm->log("Ctrl-D pressed (terminal input) - calling signalExit()");
+            signalExit();
+            return;
+        }
+
+        // 'q' or 'Q' to quit (nice fallback)
+        else if (ch == 'q' || ch == 'Q') {
+            logchan_ctxdrm->log("'%c' key pressed (terminal input) - calling signalExit()", ch);
+            signalExit();
+            return;
+        }
+
+        // Log other keys for debugging (optional, can be removed)
+        if (0) {  // Disabled by default to reduce log noise
+            if (ch >= 32 && ch <= 126) {
+                logchan_ctxdrm->log("Terminal key pressed: '%c' (ASCII %d)", ch, ch);
+            } else {
+                logchan_ctxdrm->log("Terminal key pressed: ASCII %d", ch);
+            }
         }
     }
 }
