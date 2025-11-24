@@ -92,17 +92,8 @@ void VkFrameBufferInterface::_doBeginFrame() {
 ///////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::_doEndFrame() {
-  static int frame_log_count = 0;
-
-#if defined(__linux__)
-  if (_swapchain_drm) {
-    if (frame_log_count < 10) {
-      logchan_fbi->log("DRM: _doEndFrame[%d] - calling waitPresentFrame", frame_log_count);
-      frame_log_count++;
-    }
-    _swapchain_drm->waitPresentFrame(_contextVK);
-  }
-#endif
+  // NOTE: DRM's waitPresentFrame is called in _doSubmitPrimaryCommandBuffer,
+  // not here, to match GLFW flow
 }
 
 ///////////////////////////////////////////////////////

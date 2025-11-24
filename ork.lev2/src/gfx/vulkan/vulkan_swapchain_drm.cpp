@@ -568,12 +568,33 @@ VkResult VkSwapChainDRM::acquireImage(vkcontext_rawptr_t ctxVK) {
     // Match drmvk reference: wait for THIS image's fence before using it
     // This ensures the image is not in-flight from a previous use
     size_t fence_index = _currentImage;
+
+    static int log_count = 0;
+    bool did_wait = false;
+
     if (fence_index < _frameFences.size()) {
         auto& fence = _frameFences[fence_index];
-        // Wait for fence (like drmvk line 92)
-        fence->wait();
+
+        // Check fence status before waiting
+        VkResult status = vkGetFenceStatus(ctxVK->_vkdevice, fence->_vkfence);
+
+        if (log_count < 30) {
+            printf("[acquireImage] Image %u, fence status=%d\n", _currentImage, status);
+        }
+
+        if (status == VK_NOT_READY) {
+            // GPU still working - wait for it
+            if (log_count < 30) {
+                printf("  -> WAITING for fence\n");
+            }
+            fence->wait();
+            did_wait = true;
+        }
+
         fence->reset();
     }
+
+    log_count++;
 
     // Connect the RTG's color buffer to the current image
     auto rtg = _contextVK->_fbi->_ensureMainRtg();
@@ -584,13 +605,6 @@ VkResult VkSwapChainDRM::acquireImage(vkcontext_rawptr_t ctxVK) {
 
     auto imgobj = _swapChainImages[_currentImage];
     rtb_impl->_replaceImage(imgobj);
-
-    static int log_count = 0;
-    if (log_count < 10) {
-        logchan_vkdrm->log("acquireImage[%u]: Using image %u",
-                           log_count, _currentImage);
-        log_count++;
-    }
 
     return VK_SUCCESS;
 }
@@ -706,7 +720,13 @@ void VkSwapChainDRM::waitPresentFrame(vkcontext_rawptr_t ctxVK) {
     time_pageflip = std::chrono::duration<float, std::milli>(t_after_pageflip - t_after_vblank).count();
 
     // Advance to next image (like drmvk line 192)
+    uint32_t old_image = _currentImage;
     _currentImage = (_currentImage + 1) % SWAP_CHAIN_SIZE;
+
+    if (frame_count < 30) {
+        printf("[waitPresent] Flipped image %u, advancing %u -> %u\n",
+               old_image, old_image, _currentImage);
+    }
 
     frame_count++;
 
