@@ -22,7 +22,11 @@ extern "C" {
 #include <fcntl.h>
 #include <unistd.h>
 #include <linux/input-event-codes.h>
+#include <signal.h>
 }
+
+// Global pointer for signal handler
+static ork::lev2::CtxDRM* g_ctxdrm_for_signal = nullptr;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
@@ -32,15 +36,39 @@ static logchannel_ptr_t logchan_ctxdrm = logger()->configureChannel("CTXDRM", fv
 
 ///////////////////////////////////////////////////////////////////////////////
 
+// Signal handler for Ctrl-C
+static void drm_signal_handler(int signum) {
+    if (signum == SIGINT || signum == SIGTERM) {
+        logchan_ctxdrm->log("Signal %d received (Ctrl-C), requesting exit", signum);
+        if (g_ctxdrm_for_signal) {
+            g_ctxdrm_for_signal->signalExit();
+        }
+    }
+}
+
 CtxDRM::CtxDRM(Window* pwin)
     : CTXBASE(pwin) {
     logchan_ctxdrm->log("CtxDRM constructor");
+
+    // Set up signal handlers for Ctrl-C
+    g_ctxdrm_for_signal = this;
+    signal(SIGINT, drm_signal_handler);
+    signal(SIGTERM, drm_signal_handler);
+    logchan_ctxdrm->log("Signal handlers installed (Ctrl-C will exit)");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 CtxDRM::~CtxDRM() {
     logchan_ctxdrm->log("CtxDRM destructor");
+
+    // Clear signal handler
+    if (g_ctxdrm_for_signal == this) {
+        g_ctxdrm_for_signal = nullptr;
+        signal(SIGINT, SIG_DFL);
+        signal(SIGTERM, SIG_DFL);
+    }
+
     _shutdownInput();
     // DRM context will clean up automatically (RAII)
 }
@@ -83,8 +111,13 @@ void CtxDRM::initWithData(appinitdata_ptr_t aid) {
         throw;
     }
 
-    // Initialize input
-    _initInput();
+    // Initialize input (only works on physical console, not SSH)
+    if (getenv("SSH_TTY") == nullptr) {
+        logchan_ctxdrm->log("Physical console detected, enabling libinput");
+        _initInput();
+    } else {
+        logchan_ctxdrm->log("SSH session detected, libinput disabled (use Ctrl-C to exit)");
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -318,12 +351,17 @@ void CtxDRM::_processKeyboardEvent(void* event_ptr) {
     uint32_t key = libinput_event_keyboard_get_key(keyboard_event);
     auto key_state = libinput_event_keyboard_get_key_state(keyboard_event);
 
+    // Debug: log all key events
+    const char* state_str = (key_state == LIBINPUT_KEY_STATE_PRESSED) ? "PRESSED" : "RELEASED";
+    logchan_ctxdrm->log("Keyboard event: key=%u (%s)", key, state_str);
+
     // Only process key presses
     if (key_state == LIBINPUT_KEY_STATE_PRESSED) {
-        // ESC key hardwired to exit
+        // ESC key hardwired to exit (KEY_ESC = 1)
         if (key == KEY_ESC) {
-            logchan_ctxdrm->log("ESC key pressed - exiting");
+            logchan_ctxdrm->log("ESC key pressed - calling signalExit()");
             signalExit();
+            logchan_ctxdrm->log("signalExit() called, _runstate=%d", _runstate);
         }
     }
 }

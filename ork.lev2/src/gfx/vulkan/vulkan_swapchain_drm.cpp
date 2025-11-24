@@ -549,9 +549,10 @@ void VkSwapChainDRM::_submitFrameWithSemaphores(vkcontext_rawptr_t ctxVK) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkSwapChainDRM::enqueueFrame(vkcontext_rawptr_t ctxVK) {
-    // Wait for the fence from the previous use of this frame slot
-    _frameFences[_currentFrame]->wait();
-    _frameFences[_currentFrame]->reset();
+    // TODO: Wait for the fence from the previous use of this frame slot
+    // Skipping for now since we don't submit GPU work yet
+    // _frameFences[_currentFrame]->wait();
+    // _frameFences[_currentFrame]->reset();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
