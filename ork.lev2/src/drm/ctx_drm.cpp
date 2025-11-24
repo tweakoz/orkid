@@ -430,6 +430,10 @@ void CtxDRM::_shutdownTerminalInput() {
         logchan_ctxdrm->log("Restoring terminal settings");
         struct termios* orig_termios = static_cast<struct termios*>(_original_termios);
         tcsetattr(_stdin_fd, TCSANOW, orig_termios);
+
+        // Flush stdin to clear any pending input
+        tcflush(_stdin_fd, TCIFLUSH);
+
         _termios_saved = false;
     }
     if (_original_termios) {

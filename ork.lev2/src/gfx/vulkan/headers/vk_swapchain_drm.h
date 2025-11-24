@@ -63,6 +63,7 @@ struct VkSwapChainDRM {
     // Frame management
     size_t _currentFrame = 0;          // Which frame-in-flight (0 or 1)
     uint32_t _currentImage = 0;        // Which swap image (0, 1, or 2)
+    bool _firstFrame = true;           // First frame uses SetCrtc, rest use PageFlip
     int _width = 0;
     int _height = 0;
 };

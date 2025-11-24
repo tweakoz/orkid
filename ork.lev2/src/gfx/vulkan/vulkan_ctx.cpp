@@ -1060,9 +1060,14 @@ void VkContext::initializeWindowContext(
   meTargetType = TargetType::WINDOW;
   ///////////////////////
 
+  logchan_vkctx->log("initializeWindowContext called: pctxbase=%p, type=%s",
+                     pctxbase, pctxbase ? typeid(*pctxbase).name() : "null");
+
 #if defined(__linux__)
   // Check if using DRM
-  if (auto ctxdrm = dynamic_cast<CtxDRM*>(pctxbase)) {
+  auto ctxdrm = dynamic_cast<CtxDRM*>(pctxbase);
+  logchan_vkctx->log("dynamic_cast<CtxDRM*> result: %p", ctxdrm);
+  if (ctxdrm) {
     logchan_vkctx->log("Detected DRM context, using VkPlatformObjectDRM");
     vkplatformobject_drm_ptr_t plato_drm = std::make_shared<VkPlatformObjectDRM>();
     plato_drm->_ctxbase = ctxdrm;
@@ -1076,6 +1081,7 @@ void VkContext::initializeWindowContext(
 #endif
   {
     // Original GLFW path
+    logchan_vkctx->log("Using GLFW path (not DRM) - dynamic_cast failed or not Linux");
     auto glfw_container = (CtxGLFW*)pctxbase;
     auto glfw_window    = glfw_container->_glfwWindow;
     vkplatformobject_ptr_t plato = std::make_shared<VkPlatformObject>();
@@ -1088,10 +1094,14 @@ void VkContext::initializeWindowContext(
 
   bool is_drm = false;
 #if defined(__linux__)
-  is_drm = _impl.isA<VkPlatformObjectDRM>();
+  is_drm = _impl.isShared<VkPlatformObjectDRM>();
+  logchan_vkctx->log("After setup: is_drm=%d (_impl.isShared<VkPlatformObjectDRM>()=%d)",
+                     is_drm, _impl.isShared<VkPlatformObjectDRM>());
 #endif
 
   bool is_offscreen = (_ginitdata && _ginitdata->_offscreen);
+
+  logchan_vkctx->log("Checking surface creation: is_drm=%d, is_offscreen=%d", is_drm, is_offscreen);
 
   if (is_drm) {
 #if defined(__linux__)
@@ -1211,8 +1221,8 @@ void VkContext::initializeWindowContext(
   if (is_drm) {
 #if defined(__linux__)
     // Create DRM swapchain
-    auto& drm_plato = _impl.get<VkPlatformObjectDRM>();
-    _fbi->_swapchain_drm = std::make_shared<VkSwapChainDRM>(this, drm_plato._drmctx);
+    auto drm_plato = _impl.getShared<VkPlatformObjectDRM>();
+    _fbi->_swapchain_drm = std::make_shared<VkSwapChainDRM>(this, drm_plato->_drmctx);
     _fbi->_swapchain_drm->_buildup();
     _fbi->_swapchain = nullptr;  // No traditional swapchain for DRM
     logchan_vkctx->log("DRM swapchain created");

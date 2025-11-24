@@ -120,8 +120,9 @@ void Window::initContext() {
 #if defined(__linux__)
     auto ctxdrm = dynamic_cast<CtxDRM*>(mpCTXBASE);
     if (ctxdrm) {
-      // DRM uses offscreen context (no window surface needed)
-      _sharedcontext->initializeOffscreenContext(this);
+      // DRM uses window context (direct to display, no VkSurface)
+      // This will detect DRM and create VkPlatformObjectDRM + DRM swapchain
+      _sharedcontext->initializeWindowContext(this, mpCTXBASE);
       return;
     }
 #endif

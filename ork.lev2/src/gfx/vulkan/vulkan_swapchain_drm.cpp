@@ -560,19 +560,46 @@ void VkSwapChainDRM::enqueueFrame(vkcontext_rawptr_t ctxVK) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkSwapChainDRM::waitPresentFrame(vkcontext_rawptr_t ctxVK) {
-    // Page flip to the current image
-    logchan_vkdrm->log("Page flip to image %u (fb_id=%u)", _currentImage, _drmContext->fb_ids[_currentImage]);
+    // Display via DRM (first frame uses SetCrtc, subsequent use PageFlip)
+    if (_firstFrame) {
+        // First frame: establish the mode
+        logchan_vkdrm->log("First frame: SetCrtc with image %u (fb_id=%u)", _currentImage, _drmContext->fb_ids[_currentImage]);
 
-    int ret = drmModePageFlip(_drmContext->drm_fd, _drmContext->crtc_id,
-                              _drmContext->fb_ids[_currentImage],
-                              DRM_MODE_PAGE_FLIP_EVENT, _drmContext);
-    if (ret < 0) {
-        logchan_vkdrm->log("ERROR: drmModePageFlip failed (ret=%d)", ret);
-        throw std::runtime_error("Page flip failed");
+        int ret = drmModeSetCrtc(_drmContext->drm_fd,
+                                 _drmContext->crtc_id,
+                                 _drmContext->fb_ids[_currentImage],
+                                 0, 0,  // x, y offset
+                                 &_drmContext->connector_id,
+                                 1,     // connector count
+                                 &_drmContext->mode);
+        if (ret < 0) {
+            logchan_vkdrm->log("ERROR: drmModeSetCrtc failed (ret=%d)", ret);
+            throw std::runtime_error("SetCrtc failed");
+        }
+
+        _firstFrame = false;
+        _drmContext->displayingImage = _currentImage;
+        logchan_vkdrm->log("Initial mode set complete, display active");
+    } else {
+        // Subsequent frames: page flip with vblank event
+        logchan_vkdrm->log("Page flip to image %u (fb_id=%u)", _currentImage, _drmContext->fb_ids[_currentImage]);
+
+        int ret = drmModePageFlip(_drmContext->drm_fd,
+                                  _drmContext->crtc_id,
+                                  _drmContext->fb_ids[_currentImage],
+                                  DRM_MODE_PAGE_FLIP_EVENT,
+                                  _drmContext);
+        if (ret < 0) {
+            logchan_vkdrm->log("ERROR: drmModePageFlip failed (ret=%d)", ret);
+            throw std::runtime_error("Page flip failed");
+        }
+
+        _drmContext->flipPending = true;
+        _drmContext->displayingImage = _currentImage;
+
+        // Wait for vblank
+        _drmContext->waitForVblank();
     }
-
-    // Wait for vblank
-    _drmContext->waitForVblank();
 
     // Advance to next image
     _currentImage = (_currentImage + 1) % SWAP_CHAIN_SIZE;
