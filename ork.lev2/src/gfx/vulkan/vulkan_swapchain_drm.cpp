@@ -635,6 +635,30 @@ void VkSwapChainDRM::enqueueFrame(vkcontext_rawptr_t ctxVK) {
     SI.commandBufferCount = 1;
     SI.pCommandBuffers = &ctxVK->_cmdbufcurpri_gfx->_vkcmdbuf;
 
+    // Handle timeline semaphores for async texture uploads
+    // This matches the offscreen pattern in vulkan_ctx.cpp
+    VkTimelineSemaphoreSubmitInfo timelineInfo{};
+    timelineInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
+
+    // Clear and populate vectors (reuse storage to avoid allocation)
+    _signalSemaphores.clear();
+    _signalValues.clear();
+
+    ctxVK->_pendingOneShotSemas.atomicOp([&](vkcompsema_set_t& unlocked) {
+        for (auto semaphore : unlocked) {
+            _signalSemaphores.push_back(semaphore->_vksema);
+            _signalValues.push_back(1);  // Signal to value 1
+        }
+    });
+
+    if (!_signalSemaphores.empty()) {
+        timelineInfo.signalSemaphoreValueCount = _signalValues.size();
+        timelineInfo.pSignalSemaphoreValues = _signalValues.data();
+        SI.pNext = &timelineInfo;
+        SI.signalSemaphoreCount = _signalSemaphores.size();
+        SI.pSignalSemaphores = _signalSemaphores.data();
+    }
+
     // Submit with fence for THIS image
     if (fence_index < _frameFences.size()) {
         auto& fence = _frameFences[fence_index];

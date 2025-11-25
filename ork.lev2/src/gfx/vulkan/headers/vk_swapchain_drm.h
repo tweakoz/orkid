@@ -73,6 +73,10 @@ struct VkSwapChainDRM {
     int _frameTimeIndex = 0;           // Current position in buffer
     int _totalFrameCount = 0;          // Total frames rendered
     float _lastFrameTime = 0.0f;       // Time of last frame
+
+    // Timeline semaphore storage for async texture uploads (reused each frame)
+    std::vector<VkSemaphore> _signalSemaphores;
+    std::vector<uint64_t> _signalValues;
 };
 
 using vkswapchaindrm_ptr_t = std::shared_ptr<VkSwapChainDRM>;
