@@ -578,7 +578,7 @@ VkResult VkSwapChainDRM::acquireImage(vkcontext_rawptr_t ctxVK) {
         // Check fence status before waiting
         VkResult status = vkGetFenceStatus(ctxVK->_vkdevice, fence->_vkfence);
 
-        if (log_count < 30) {
+        if (false and log_count < 30) {
             printf("[acquireImage] Image %u, fence status=%d\n", _currentImage, status);
         }
 
@@ -707,7 +707,7 @@ void VkSwapChainDRM::waitPresentFrame(vkcontext_rawptr_t ctxVK) {
 
         if (status == VK_NOT_READY) {
             // GPU still rendering - must wait before flipping
-            if (frame_count < 30) {
+            if (false and frame_count < 30) {
                 printf("[waitPresent] GPU NOT DONE for image %u, WAITING...\n", _currentImage);
             }
             fence->wait();
@@ -737,7 +737,7 @@ void VkSwapChainDRM::waitPresentFrame(vkcontext_rawptr_t ctxVK) {
         logchan_vkdrm->log("Initial mode set complete, display active");
     } else {
         // Subsequent frames: page flip (like drmvk line 181)
-        if (frame_count < 10) {
+        if ( false and frame_count < 10) {
             logchan_vkdrm->log("FRAME[%d] Page flip to image %u (fb_id=%u)",
                                frame_count, _currentImage, _drmContext->fb_ids[_currentImage]);
         }
@@ -763,7 +763,7 @@ void VkSwapChainDRM::waitPresentFrame(vkcontext_rawptr_t ctxVK) {
     uint32_t old_image = _currentImage;
     _currentImage = (_currentImage + 1) % SWAP_CHAIN_SIZE;
 
-    if (frame_count < 30) {
+    if (false and frame_count < 30) {
         printf("[waitPresent] Flipped image %u, advancing %u -> %u\n",
                old_image, old_image, _currentImage);
     }
@@ -781,7 +781,7 @@ void VkSwapChainDRM::waitPresentFrame(vkcontext_rawptr_t ctxVK) {
     _totalFrameCount++;
 
     // Print FPS every 10 frames
-    if (_totalFrameCount % 10 == 0) {
+    if (false and _totalFrameCount % 180 == 0) {
         // Calculate average frame time over last 10 frames
         float total_time = 0.0f;
         for (int i = 0; i < 10; i++) {

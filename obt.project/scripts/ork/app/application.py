@@ -1,3 +1,6 @@
+import signal, os
+from orkengine.core import CrcString
+
 ###############################################################################
 # ComponentizedApplication
 #  an 'application level ECS'
@@ -301,10 +304,6 @@
 #
 ################################################################################
 
-import signal 
-from orkengine.core import CrcString
-
-################################################################################
 class ComponentizedApplication(object):
 
   def __init__(self):
@@ -383,9 +382,13 @@ class ComponentizedApplication(object):
       'ssaa': 0   
     }
 
+    if os.environ.get("ORKID_DRM_MODE","") != "":
+      default_args['drm_mode_id'] = os.environ["ORKID_DRM_MODE"]
+
     # Merge user args with defaults (user args take precedence)
     args = {**default_args, **self.ezapp_args}
     args = {**args, **kwargs}
+
 
 
     # Create ezapp
