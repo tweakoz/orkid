@@ -160,8 +160,8 @@ class SceneGraphApp(ComponentizedApplication):
     x =  math.sin(phase)*10    
     z = -math.cos(phase)*10    
     ###################################
-    self.SGC.camera.perspective(0.1, 50.0, 35.0*constants.DTOR)
-    self.SGC.camera.lookAt(vec3(x,5,z)*2.5, # eye
+    self.SGC.camera.perspective(0.1, 150.0, 35.0*constants.DTOR)
+    self.SGC.camera.lookAt(vec3(x,1.5,z)*3.5, # eye
                            vec3(0, 0, 0), # tgt
                            vec3(0, 1, 0)) # up
 
