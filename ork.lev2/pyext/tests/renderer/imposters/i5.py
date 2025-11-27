@@ -35,8 +35,16 @@ class ImposterApp(boilerplate.ImposterBaseApp):
     grid_data.intensityD = 0
     grid_data.lineWidth = 0.025
 
+    postNode = lev2.PostFxNodeHSVG()
+    postNode.hue = 0.0
+    postNode.saturation = 0.5
+    postNode.value = 1.0
+    postNode.gamma = 0.8
+    self.post_node = postNode
+
     super().__init__(ssaa=1,
                      grid_data=grid_data,
+                     post_nodes = [self.post_node],
                      sg_params = {
                         "SkyboxTexPathStr": envmap,
                         "SkyboxIntensity": 0.5,
@@ -53,28 +61,6 @@ class ImposterApp(boilerplate.ImposterBaseApp):
 
     SGC = self.findComponentsByClass(StandardSceneGraphComponent)[0]
     SG = SGC.scenegraph      
-
-    ###################################
-    # post fx node
-    ###################################
-
-    """
-    postNode = lev2.PostFxNodeHSVG()
-    postNode.hue = 0.0
-    postNode.saturation = 0.7
-    postNode.value = 1.0
-    postNode.gamma = 0.8
-    postNode.gpuInit(ctx,8,8);
-    postNode.addToSceneVars(sceneparams,"PostFxChain")
-    self.post_node = postNode
-
-    self.scene = self.ezapp.createScene(sceneparams)
-    self.layer_donly = self.scene.createLayer("depth_prepass")
-    self.layer_fwd = self.scene.createLayer("std_forward")
-    self.fwd_layers = [self.layer_fwd,self.layer_donly]
-    self.pbr_common = self.scene.pbr_common
-    self.pbr_common.useFloatColorBuffer = True
-    """
 
     ###################################
     # create model
@@ -138,9 +124,9 @@ class ImposterApp(boilerplate.ImposterBaseApp):
     speed_scale = 0.5
     ctx.TXI.updateTextureArray(color_cookies)
     self.spotlight1 = StdSpotLight(index=0,SGC=SGC,model=spotmodel,frq=0.17*speed_scale,color=vec3(0,150,0)*intens_scale,cookie=cookie1,depth_cookie=depth1,fovbase=60.0,fovamp=20.0,voffset=10,vscale=5,bias=shadow_bias,dim=shadow_size,radius=1.2)
-    self.spotlight2 = StdSpotLight(index=1,SGC=SGC,model=spotmodel,frq=0.37*speed_scale,color=vec3(300,0,0)*intens_scale,cookie=cookie2,depth_cookie=depth2,fovbase=60.0,fovamp=20.0,voffset=10,vscale=5,bias=shadow_bias,dim=shadow_size,radius=1.5)
+    self.spotlight2 = StdSpotLight(index=1,SGC=SGC,model=spotmodel,frq=0.37*speed_scale,color=vec3(200,0,0)*intens_scale,cookie=cookie2,depth_cookie=depth2,fovbase=60.0,fovamp=20.0,voffset=10,vscale=5,bias=shadow_bias,dim=shadow_size,radius=1.5)
     self.spotlight3 = StdSpotLight(index=2,SGC=SGC,model=spotmodel,frq=0.57*speed_scale,color=vec3(100)*intens_scale,cookie=cookie3,depth_cookie=depth3,fovbase=60.0,fovamp=20.0,voffset=10,vscale=5,bias=shadow_bias,dim=shadow_size,radius=2.0)
-    self.spotlight4 = StdSpotLight(index=3,SGC=SGC,model=spotmodel,frq=0.97*speed_scale,color=vec3(0,0,200)*intens_scale,cookie=cookie4,depth_cookie=depth4,fovbase=70.0,fovamp=20.0,voffset=3,vscale=2,bias=shadow_bias,dim=shadow_size,radius=7)
+    self.spotlight4 = StdSpotLight(index=3,SGC=SGC,model=spotmodel,frq=0.97*speed_scale,color=vec3(0,0,100)*intens_scale,cookie=cookie4,depth_cookie=depth4,fovbase=70.0,fovamp=20.0,voffset=3,vscale=2,bias=shadow_bias,dim=shadow_size,radius=7)
     lmgr.spot_cookies_color = color_cookies
     lmgr.spot_cookies_depth = depth_cookies
     lmgr.gpuInit(ctx)

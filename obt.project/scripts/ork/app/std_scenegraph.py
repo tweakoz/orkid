@@ -101,7 +101,8 @@ class StandardSceneGraphComponent(ApplicationComponent):
                eye=vec3(0,0,5),
                tgt=vec3(0),
                up=vec3(0,1,0),
-               sg_params=None):
+               sg_params=None,
+               post_nodes=None):
     super().__init__()
     self.enable_ui_camera = enable_ui_camera
     self.grid_variant = grid_variant
@@ -120,6 +121,11 @@ class StandardSceneGraphComponent(ApplicationComponent):
       for k,v in sg_params.items():
         setattr(sgparam_vm, k, v)
     self.sg_params = sgparam_vm
+    self.post_nodes = post_nodes
+    if post_nodes is not None:
+      for item in post_nodes:
+        print(f"adding postfx node {item} to scenevars")
+        item.addToSceneVars(sgparam_vm,"PostFxChain")
 
   ###############################################
 
@@ -145,6 +151,9 @@ class StandardSceneGraphComponent(ApplicationComponent):
 
   def _onGpuInit(self,ctx):
     sg_params = self.sg_params
+
+    for item in self.post_nodes:
+      item.gpuInit(ctx,8,8)
 
     SG = lev2.scenegraph.Scene(sg_params)
     self.layer1 = SG.createLayer("std_forward")

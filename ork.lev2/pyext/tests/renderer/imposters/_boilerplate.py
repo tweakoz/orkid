@@ -16,6 +16,7 @@ tokens = CrcStringProxy()
 class ImposterBaseApp(ComponentizedApplication):
   def __init__(self,
                ssaa=1,
+               post_nodes=None,
                grid_data=None, 
                eye=vec3(0,12,15), 
                sg_params=None):
@@ -26,7 +27,8 @@ class ImposterBaseApp(ComponentizedApplication):
                                   StandardSceneGraphComponent, 
                                   eye=eye, 
                                   sg_params=sg_params, 
-                                  grid_data=grid_data )
+                                  grid_data=grid_data,
+                                  post_nodes=post_nodes )
 
     self.LUI = self.addComponent( "LUI", 
                                   LoggerUIComponent )
