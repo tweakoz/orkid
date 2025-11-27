@@ -567,9 +567,18 @@ class ComponentizedApplication(object):
     # immediately before the update loop starts
     for component in self.components_sorted:
       component.onUpdateInit()
+    self._onUpdateInit()
+
     for component in self.components_sorted:
       component.onUpdateLink()
+    self._onUpdateLink()
+
       
+  def _onUpdateInit(self):
+    pass
+  def _onUpdateLink(self):
+    pass
+
   ##################################################
 
   def onUpdate(self,updinfo):
