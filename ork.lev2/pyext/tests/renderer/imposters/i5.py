@@ -7,28 +7,18 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import math, random, argparse, sys, signal
-from orkengine.core import vec3, vec4, quat, mtx4, dfrustum, dvec4, fmtx4_to_dmtx4, CrcStringProxy, VarMap
-from orkengine.core import lev2_pyexdir, Transform, thisdir
+import math
+import _boilerplate as boilerplate
+from orkengine.core import vec3, CrcStringProxy, thisdir
 from orkengine import lev2
 from ork.app.std_scenegraph import StandardSceneGraphComponent, StdSpotLight
+from ork.app.std_imposter import createImposter
+from ork.app.std_grid import createGridData
 
 ################################################################################
-
-lev2_pyexdir.addToSysPath()
-this_dir = thisdir()
-this_dir.addToSysPath()
-
-import _boilerplate as boilerplate
-
-from lev2utils.cameras import setupUiCamera
-from lev2utils.primitives import createGridData, createImposter
-from lev2utils.scenegraph import createSceneGraph
-from lev2utils.lighting import MySpotLight, MyCookie
 
 tokens = CrcStringProxy()
 IMP_DIM = 768
-################################################################################
 
 ################################################################################
 
@@ -92,9 +82,6 @@ class ImposterApp(boilerplate.ImposterBaseApp):
 
     if True:
       model = lev2.XgmModel("data://tests/misc_gltf_samples/art_and_sculpture/lion.glb")
-      #model.debugRenderingModel = tokens.ALL if self.statedebug else tokens.NONE
-      #model.debugPassID = tokens.PRIMARY if self.statedebug else tokens.NONE
-      #model.debugSubPassID = tokens.ALL if self.statedebug else tokens.NONE
       self.drawable_model = model.createDrawable()
       self.modelnode = SG.createDrawableNodeOnLayers(SGC.fwd_layers,"model-node",self.drawable_model)
       self.modelnode.worldTransform.scale = 1.5
@@ -110,7 +97,7 @@ class ImposterApp(boilerplate.ImposterBaseApp):
                                  filtertype=tokens.BILINEAR,
                                  filterradius=3.0, 
                                  detail=3,
-                                 shaderpath=this_dir/"i5.fxv2",
+                                 shaderpath=thisdir()/"i5.fxv2",
                                  shadertek="tek_imp",
                                  layer=SGC.layer_fwd,
                                  DIM = IMP_DIM,
@@ -124,10 +111,6 @@ class ImposterApp(boilerplate.ImposterBaseApp):
       imposter.installStandardBlit()
 
       self.imposter = imposter
-
-    # debug shader state ?      
-    #imposter.impdata.imp_pass.debug_shaderstate = True
-    #imposter.impdata.blit_pass.debug_shaderstate = True
 
     ###################################
     # create spotlights
@@ -165,18 +148,13 @@ class ImposterApp(boilerplate.ImposterBaseApp):
   ################################################
 
   def _onGpuUpdate(self,ctx):
-    super()._onGpuUpdate(ctx)
-    if hasattr(self,"imposter"):
-      self.imposter.onGpuUpdate(ctx)
-      z = math.sin(self.imposter.frame_index*0.003)*2.0
-      self.imposter.sgnode.worldTransform.translation = vec3(0,0.1,z)
-      if hasattr(self,"spotlight1"):
-        self.spotlight1.update(self.lighttime)
-        self.spotlight2.update(self.lighttime)
-        self.spotlight3.update(self.lighttime)
-        self.spotlight4.update(self.lighttime)
-    if hasattr(self,"sgnode_frustum"):
-      self.layer_fwd.removeDrawableNode(self.sgnode_frustum )
+    self.imposter.onGpuUpdate(ctx)
+    z = math.sin(self.imposter.frame_index*0.003)*2.0
+    self.imposter.sgnode.worldTransform.translation = vec3(0,0.1,z)
+    self.spotlight1.update(self.lighttime)
+    self.spotlight2.update(self.lighttime)
+    self.spotlight3.update(self.lighttime)
+    self.spotlight4.update(self.lighttime)
 
 ###############################################################################
 

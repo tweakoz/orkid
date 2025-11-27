@@ -175,12 +175,12 @@ class StandardSceneGraphComponent(ApplicationComponent):
 
     if self.grid_data == None:
       if self.grid_variant != None:     
-        self.grid_data = createGridData(extent=self.grid_extent)
+        self.grid_data = createGridData(extent=100.0)
         self.grid_data.shader_suffix = self.grid_variant
-        self.grid_node.sortkey = 1
 
     if self.grid_data != None:
       self.grid_node = self.layer1.createDrawableNodeFromData("grid", self.grid_data)
+      self.grid_node.sortkey = 1
     
     ###################################
     # initialize lighting
