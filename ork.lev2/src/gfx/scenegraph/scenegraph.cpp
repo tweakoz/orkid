@@ -380,6 +380,9 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     if (auto try_ssao = params->tryKeyAsNumber("SSAOPower")) {
       _pbr_common->_ssaoPower = try_ssao.value();
     }
+    if (auto try_usef32 = params->typedValueForKey<bool>("use_float_color_buffer")) {
+      _pbr_common->_useFloatColorBuffer = try_usef32.value();
+    }
   }
   //////////////////////////////////////////////
 

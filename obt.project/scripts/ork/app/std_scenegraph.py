@@ -97,6 +97,7 @@ class StandardSceneGraphComponent(ApplicationComponent):
   def __init__(self, 
                enable_ui_camera = True,
                grid_variant="_V4",
+               grid_data=None,
                eye=vec3(0,0,5),
                tgt=vec3(0),
                up=vec3(0,1,0),
@@ -104,6 +105,7 @@ class StandardSceneGraphComponent(ApplicationComponent):
     super().__init__()
     self.enable_ui_camera = enable_ui_camera
     self.grid_variant = grid_variant
+    self.grid_data = grid_data
     self.initial_eye = eye
     self.initial_tgt = tgt
     self.initial_up = up
@@ -157,7 +159,8 @@ class StandardSceneGraphComponent(ApplicationComponent):
                                               camname=self.camname,
                                               eye=self.initial_eye,
                                               tgt=self.initial_tgt,
-                                              up=self.initial_up )
+                                              up=self.initial_up,
+                                              far=10000.0)
 
     self.pbr_common = SG.pbr_common
     self.pbr_common.useDepthPrepass = True
@@ -170,11 +173,14 @@ class StandardSceneGraphComponent(ApplicationComponent):
     # create grid
     ###################################
 
-    if self.grid_variant != None:
-      self.grid_data = createGridData()
-      self.grid_data.shader_suffix = self.grid_variant
+    if self.grid_data == None:
+      if self.grid_variant != None:     
+        self.grid_data = createGridData(extent=self.grid_extent)
+        self.grid_data.shader_suffix = self.grid_variant
+        self.grid_node.sortkey = 1
+
+    if self.grid_data != None:
       self.grid_node = self.layer1.createDrawableNodeFromData("grid", self.grid_data)
-      self.grid_node.sortkey = 1
     
     ###################################
     # initialize lighting
