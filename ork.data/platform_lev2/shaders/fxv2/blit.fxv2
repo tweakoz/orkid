@@ -52,6 +52,15 @@ fragment_shader ps_blit : iface_fmt : samplers {
   out_clr   = vec4(texc, 1);
 }
 ///////////////////////////////////////////////////////////////
+vertex_shader vs_blituv : vif_PT : ublock_vtx {
+  gl_Position = MatMVP * position;
+  frg_uv0     = uv0;
+}
+fragment_shader ps_blituv : fif_T : samplers {
+  vec4 texc = texture(ColorMap, frg_uv0);
+  out_clr   = vec4(texc.xyz, 1);
+}
+///////////////////////////////////////////////////////////////
 fragment_shader ps_downsample2x2 : iface_fmt : samplers {
   const float kscale = 1.0 / 4.0;
   vec2 uv = gl_FragCoord.xy;
@@ -175,6 +184,14 @@ technique blit {
   pass p0 {
     vertex_shader   = vs_blit;
     fragment_shader = ps_blit;
+    state_block     = sb_blit;
+  }
+}
+technique blituv {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_blituv;
+    fragment_shader = ps_blituv;
     state_block     = sb_blit;
   }
 }

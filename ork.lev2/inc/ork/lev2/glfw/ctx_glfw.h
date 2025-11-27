@@ -67,9 +67,9 @@ struct CtxGLFW : public CTXBASE {
 
   void SlotRepaint() final;
 
-  void _runloopBegin();
-  void _runloopEnd();
-  void _runloopIter(bool pollevents = true);
+  void _runloopBegin() final;
+  void _runloopEnd() final;
+  void _runloopIter(bool pollevents = true) final;
 
   int runloop();
 
@@ -79,14 +79,14 @@ struct CtxGLFW : public CTXBASE {
   void _setRefreshPolicy(RefreshPolicyItem epolicy) final;
 
   CtxGLFW(Window* pwin);
-  void initWithData(appinitdata_ptr_t aid);
+  void initWithData(appinitdata_ptr_t aid) final;
   ~CtxGLFW();
 
   void onResize(int W, int H);
   void SetAlwaysRun(bool brun);
   fvec2 MapCoordToGlobal(const fvec2& v) const override;
   void present();
-  void signalExit();
+  void signalExit() final;
   void pollEvents();
   void _doEnqueueWindowResize( int w, int h ) final;
 

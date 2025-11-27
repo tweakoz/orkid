@@ -140,6 +140,8 @@ struct Device {
   fmtx4 _rotMatrix;
   fmtx4 _baseMatrix;
   fmtx4 _outputViewOffsetMatrix;
+  fvec2 _centerH;
+  fvec2 _centerV;
 
   VrProjFrustumPar _frustumLeft;
   VrProjFrustumPar _frustumCenter;

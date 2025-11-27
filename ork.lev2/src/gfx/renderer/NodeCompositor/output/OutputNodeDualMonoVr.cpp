@@ -41,9 +41,9 @@ struct DMVRIMPL {
       int width  = orkidvr::device()->_width * 2 * (_vrnode->supersample() + 1);
       int height = orkidvr::device()->_height * (_vrnode->supersample() + 1);
 
-      _blit2screenmtl.gpuInit(context, "orkshader://solid");
+      _blit2screenmtl.gpuInit(context, "orkshader://blit");
       _blit2screenmtl._rasterstate->setCullTest(ECullTest::OFF);
-      _fxtechnique_downsample[0] = _blit2screenmtl.technique("texcolor");
+      _fxtechnique_downsample[0] = _blit2screenmtl.technique("blituv");
       _fxtechnique_downsample[1] = _blit2screenmtl.technique("downsample_2x2");
       _fxtechnique_downsample[2] = _blit2screenmtl.technique("downsample_3x3");
       _fxtechnique_downsample[3] = _blit2screenmtl.technique("downsample_4x4");
@@ -196,6 +196,10 @@ struct DMVRIMPL {
     OrkAssert(ssaa >= 0 and ssaa <= 3);
 
     auto tek = _fxtechnique_downsample[ssaa];
+    if(tek==nullptr){
+      printf("WTF: tek is null for ssaa<%d>\n", ssaa);
+      OrkAssert(false);
+    }
     context->debugPushGroup("ScreenCompositingNode::to_screen<%d>", ssaa);
 
     mtl.begin(tek, framedata);
@@ -337,8 +341,9 @@ void DualMonoVrOutputNode::composite(CompositorDrawData& drawdata) {
   Context* context = drawdata.context();
   auto fbi         = context->FBI();
   auto gbi         = context->GBI();
-
+  
   if (auto try_final = drawdata._properties["final_out"_crcu].tryAs<RtBuffer*>()) {
+    auto vrdev     = orkidvr::device();
     auto buffer = try_final.value();
     if (buffer) {
       assert(buffer != nullptr);
@@ -351,14 +356,13 @@ void DualMonoVrOutputNode::composite(CompositorDrawData& drawdata) {
         /////////////////////////////////////////////////////////////////////////////
         drawdata.context()->debugPushGroup("DualMonoVrOutputNode::to_screen");
 
-        const auto& vrdev     = orkidvr::device();
         auto& mtl             = impl->_blit2screenmtl;
         auto inp_rtg          = drawdata._properties["final_outgroup"_crcu].get<rtgroup_ptr_t>();
         auto this_buf         = context->FBI()->GetThisBuffer();
         auto tek_nodownsample = impl->_fxtechnique_downsample[0];
 
         /////////////////////////////////////////////////////
-        if (_distorion_lambda) { // Lens distortion ?
+        if (_distortion_lambda) { // Lens distortion ?
         /////////////////////////////////////////////////////
           drawdata.context()->debugPushGroup("DualMonoVrOutputNode::distortion_lambda");
           int out_surface_width  = context->mainSurfaceWidth();
@@ -368,14 +372,16 @@ void DualMonoVrOutputNode::composite(CompositorDrawData& drawdata) {
           DistortionRect drectL = {
               impl->_ssaadownsamplebufferL->texture(0).get(),
               SRect(wd2, 0, wd2*2, h),
+              'L'
           };
           DistortionRect drectR = {
               impl->_ssaadownsamplebufferR->texture(0).get(),
               SRect(0, 0, wd2, h),
+              'R'
           };
           //printf("out_surface_width<%d> out_surface_height<%d>\n", out_surface_width, out_surface_height);
-          _distorion_lambda(framedata, drectL);
-          _distorion_lambda(framedata, drectR);
+          _distortion_lambda(framedata, drectL);
+          _distortion_lambda(framedata, drectR);
           drawdata.context()->debugPopGroup();
         /////////////////////////////////////////////////////
         } else { // no lens distortion

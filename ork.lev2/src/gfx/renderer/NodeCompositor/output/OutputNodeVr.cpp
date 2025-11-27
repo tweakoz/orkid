@@ -360,9 +360,9 @@ void VrOutputNode::composite(CompositorDrawData& drawdata) {
 
         }
 
-        if (_distorion_lambda and (not _monoviewer)) {
+        if (_distortion_lambda and (not _monoviewer)) {
           drawdata.context()->debugPushGroup("VrOutputNode::distortion_lambda");
-          //_distorion_lambda(framedata, tex);
+          //_distortion_lambda(framedata, tex);
           OrkAssert(false);
           drawdata.context()->debugPopGroup();
         } else {

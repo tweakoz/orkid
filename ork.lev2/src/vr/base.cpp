@@ -206,6 +206,9 @@ void Device::_updatePosesCommon() {
   _hmdinputgroup->setChannel("ceye.matrix").as<fmtx4>(cmv);
   _hmdinputgroup->setChannel("reye.matrix").as<fmtx4>(rmv);
 
+  //lmv.dump("lmv");
+  //rmv.dump("rmv");
+
   _leftcamera->setCustomView(lmv);
   _leftcamera->setCustomProjection(_posemap["projl"]);
   _rightcamera->setCustomView(rmv);

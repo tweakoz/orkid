@@ -20,6 +20,7 @@ namespace ork::lev2 {
 struct DistortionRect {
   Texture* _inp_tex;
   SRect _out_vprect;
+  char _eye = 0; //'L' or 'R'
 };
 
 using distortion_lambda_t = std::function<void(rcfd_ptr_t RCFD,DistortionRect drect)>;
@@ -32,7 +33,7 @@ public:
   ~VrOutputNode() final ;
 
   void setDistortionLambda(distortion_lambda_t l){
-    _distorion_lambda = l;
+    _distortion_lambda = l;
   }
   int supersample() const {
     return _supersample;
@@ -51,7 +52,7 @@ private:
   void composite(CompositorDrawData& drawdata) final;
 
   svar256_t _impl;
-  distortion_lambda_t _distorion_lambda;
+  distortion_lambda_t _distortion_lambda;
   int _supersample = 0;
 };
 
@@ -66,7 +67,7 @@ public:
   ~DualMonoVrOutputNode() final ;
 
   void setDistortionLambda(distortion_lambda_t l){
-    _distorion_lambda = l;
+    _distortion_lambda = l;
   }
   int supersample() const {
     return _supersample;
@@ -82,7 +83,7 @@ private:
   void composite(CompositorDrawData& drawdata) final;
 
   svar256_t _impl;
-  distortion_lambda_t _distorion_lambda;
+  distortion_lambda_t _distortion_lambda;
   int _supersample = 0;
 };
 
