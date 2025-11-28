@@ -39,6 +39,15 @@ public:
 
   BlendingMacro _blendMode = BlendingMacro::ALPHA;
   bool _doubleSided = false;
+
+  //////////////////////////////////////////////////////////////
+  // Anti-aliasing for minification (no mipmaps)
+  // Adaptive supersampling up to NxN grid based on texel footprint
+  // Default 4.0 = up to 4x4 (16 samples) for 16:1 minification
+  // Set to 8.0 for up to 8x8 (64 samples) for 64:1 minification
+  //////////////////////////////////////////////////////////////
+
+  float _maxSamplesPerAxis = 4.0f;
 };
 
 using uisurfaceprimitivedata_ptr_t = std::shared_ptr<UISurfacePrimitiveData>;

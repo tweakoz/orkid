@@ -132,7 +132,7 @@ void FrameBufferInterface::PushRtGroup(RtGroup* rtg_top) {
 
   ViewportRect r(0, 0, iw, ih);
 
-  printf("FrameBufferInterface::PushRtGroup rtgcount<%zu> iw<%d> ih<%d>\n", rtg_count, iw, ih);
+  //printf("FrameBufferInterface::PushRtGroup rtgcount<%zu> iw<%d> ih<%d>\n", rtg_count, iw, ih);
   pushScissor(r);
   pushViewport(r);
 }
@@ -141,8 +141,8 @@ void FrameBufferInterface::PushRtGroup(RtGroup* rtg_top) {
 
 void FrameBufferInterface::PopRtGroup() {
   // Note: stack pop is now handled in _popRtGroup implementation
-  size_t rtg_count = mRtGroupStack.size();
-  printf("FrameBufferInterface::PopRtGroup rtgcount<%zu>\n", rtg_count);
+  //size_t rtg_count = mRtGroupStack.size();
+  //printf("FrameBufferInterface::PopRtGroup rtgcount<%zu>\n", rtg_count);
   _popRtGroup();
   popViewport();
   popScissor();

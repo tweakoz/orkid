@@ -514,7 +514,11 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
           .def_property(
               "doubleSided",
               [](uisurfaceprimitivedata_ptr_t data) -> bool { return data->_doubleSided; },
-              [](uisurfaceprimitivedata_ptr_t data, bool ds) { data->_doubleSided = ds; });
+              [](uisurfaceprimitivedata_ptr_t data, bool ds) { data->_doubleSided = ds; })
+          .def_property(
+              "max_samples_per_axis",
+              [](uisurfaceprimitivedata_ptr_t data) -> float { return data->_maxSamplesPerAxis; },
+              [](uisurfaceprimitivedata_ptr_t data, float s) { data->_maxSamplesPerAxis = s; });
   type_codec->registerStdCodec<uisurfaceprimitivedata_ptr_t>(uisurface_primdata_type);
 }
 /////////////////////////////////////////////////////////////////////////////////

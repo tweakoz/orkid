@@ -34,15 +34,15 @@ class UISurface3DApp(ComponentizedApplication):
 
   def _onUiInit(self):
     # Create LayoutSurface (256x256 pixels)
-    self.layout_surface = lev2.ui.LayoutSurface("test_surface", w=256, h=256, margin=8)
-    self.layout_surface.setVirtualSize(256, 256)
+    self.layout_surface = lev2.ui.LayoutSurface("test_surface", w=512, h=512, margin=8)
+    self.layout_surface.setVirtualSize(512, 512)
 
     # Add a single colored test box
     lg = self.layout_surface.layoutGroup
     self.test_items = lg.makeGrid(
-      width=2,
-      height=2,
-      margin=8,
+      width=4,
+      height=4,
+      margin=2,
       uiclass=lev2.ui.EvTestBox,
       args=["box", vec4(0.2, 0.5, 0.8, 1)]
     )
@@ -60,6 +60,7 @@ class UISurface3DApp(ComponentizedApplication):
     self.ui_prim_data.size = 1.0  # 1 meter square
     self.ui_prim_data.blendMode = tokens.ALPHA
     self.ui_prim_data.doubleSided = True
+    self.ui_prim_data.max_samples_per_axis = 4
 
     # Create drawable and node
     self.ui_drawable = self.ui_prim_data.createDrawable()

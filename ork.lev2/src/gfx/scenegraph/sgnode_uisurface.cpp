@@ -21,6 +21,8 @@ fxconfig fxcfg_default {
 }
 uniform_set ublock {
   mat4 mvp;
+  vec2 texDim;      // texture dimensions (width, height)
+  float maxSamples; // max samples per axis (e.g., 4 = 4x4 grid, 8 = 8x8 grid)
 }
 sampler_set sset (descriptor_set 0) {
   sampler2D ColorMap;
@@ -51,7 +53,43 @@ vertex_shader vs_uisurface : iface_vtx {
   frg_clr = vtxcolor;
 }
 fragment_shader fs_uisurface : iface_frg {
-  out_color = texture(ColorMap, frg_uv) * frg_clr;
+  // Compute screen-space derivatives of UV (in texel units)
+  vec2 uvTexels = frg_uv * texDim;
+  vec2 duvdx = dFdx(uvTexels);
+  vec2 duvdy = dFdy(uvTexels);
+
+  // Compute the texel footprint size (how many texels per pixel)
+  float footprintX = length(vec2(duvdx.x, duvdy.x));
+  float footprintY = length(vec2(duvdx.y, duvdy.y));
+  float footprint = max(footprintX, footprintY);
+
+  // Determine sample count based on footprint, clamped to maxSamples
+  // For footprint <= 1, use 1 sample; for footprint >= maxSamples, use maxSamples
+  int samplesPerAxis = clamp(int(ceil(footprint)), 1, int(maxSamples));
+
+  // Early out for 1:1 or magnification - single sample
+  if (samplesPerAxis <= 1) {
+    out_color = texture(ColorMap, frg_uv) * frg_clr;
+    return;
+  }
+
+  // Compute sample step in UV space
+  vec2 texelSize = 1.0 / texDim;
+  float fSamples = float(samplesPerAxis);
+
+  // Sample grid centered on the pixel
+  vec4 accumColor = vec4(0.0);
+  float halfSpan = (fSamples - 1.0) * 0.5;
+
+  for (int y = 0; y < samplesPerAxis; y++) {
+    for (int x = 0; x < samplesPerAxis; x++) {
+      vec2 offset = vec2(float(x) - halfSpan, float(y) - halfSpan) / fSamples;
+      vec2 sampleUV = frg_uv + offset * texelSize * footprint;
+      accumColor += texture(ColorMap, sampleUV);
+    }
+  }
+
+  out_color = (accumColor / (fSamples * fSamples)) * frg_clr;
 }
 technique tek_uisurface {
   fxconfig = fxcfg_default;
@@ -92,6 +130,8 @@ struct UISurfaceRenderImpl {
     _technique = _material->technique("tek_uisurface");
     _param_mvp = _material->param("mvp");
     _param_colormap = _material->param("ColorMap");
+    _param_texdim = _material->param("texDim");
+    _param_maxsamples = _material->param("maxSamples");
 
     _material->_rasterstate->setBlendingMacro(_data->_blendMode);
     _material->_rasterstate->setCullTest(
@@ -300,6 +340,8 @@ struct UISurfaceRenderImpl {
     _material->begin(_technique, RCFD);
     _material->bindParamMatrix(_param_mvp, MVP);
     _material->bindParamTexture(_param_colormap, texture);
+    _material->bindParamVec2(_param_texdim, fvec2(surface->width(), surface->height()));
+    _material->bindParamFloat(_param_maxsamples, _data->_maxSamplesPerAxis);
     ctx->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
     _material->end(RCFD);
   }
@@ -319,6 +361,8 @@ struct UISurfaceRenderImpl {
   const FxShaderTechnique* _technique = nullptr;
   const FxShaderParam* _param_mvp = nullptr;
   const FxShaderParam* _param_colormap = nullptr;
+  const FxShaderParam* _param_texdim = nullptr;
+  const FxShaderParam* _param_maxsamples = nullptr;
   ui::context_ptr_t _uiContext;
 };
 
@@ -346,7 +390,8 @@ UISurfacePrimitiveData::UISurfacePrimitiveData()
     : _center(0, 0, 0)
     , _size(1.0f)
     , _blendMode(BlendingMacro::ALPHA)
-    , _doubleSided(false) {
+    , _doubleSided(false)
+    , _maxSamplesPerAxis(4.0f) {  // Default 4x4 = 16 samples for 16:1 minification
 }
 
 ///////////////////////////////////////////////////////////////////////////////
