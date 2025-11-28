@@ -122,27 +122,23 @@ void LogChannel::log_continue(const char* pMsgFormat, ...) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void LogChannel::warn(const char* pMsgFormat, ...) {
-  if (_ENABLE_LOGGING and _enabled) {
-    va_list args;
-    va_start(args, pMsgFormat);
-    char buf[1024];
-    vsnprintf(buf, sizeof(buf), pMsgFormat, args);
-    va_end(args);
-    _logger->_backend->_warn(this, buf);
-  }
+  va_list args;
+  va_start(args, pMsgFormat);
+  char buf[1024];
+  vsnprintf(buf, sizeof(buf), pMsgFormat, args);
+  va_end(args);
+  _logger->_backend->_warn(this, buf);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void LogChannel::error(const char* pMsgFormat, ...) {
-  if (_ENABLE_LOGGING and _enabled) {
-    va_list args;
-    va_start(args, pMsgFormat);
-    char buf[1024];
-    vsnprintf(buf, sizeof(buf), pMsgFormat, args);
-    va_end(args);
-    _logger->_backend->_error(this, buf);
-  }
+  va_list args;
+  va_start(args, pMsgFormat);
+  char buf[1024];
+  vsnprintf(buf, sizeof(buf), pMsgFormat, args);
+  va_end(args);
+  _logger->_backend->_error(this, buf);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

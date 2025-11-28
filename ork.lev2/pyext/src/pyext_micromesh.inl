@@ -95,6 +95,11 @@ inline void loadVec3Data(std::vector<fvec3>& out_verts, py::object input) {
 
 struct MicroMeshConnectivity {
   std::unordered_map<int,indexlist_t> _connectivity;
+
+  // Copy constructor for thread-safe cloning
+  MicroMeshConnectivity() = default;
+  MicroMeshConnectivity(const MicroMeshConnectivity& other)
+    : _connectivity(other._connectivity) {}
 };
 
 ///////////////////////////////////////
@@ -114,6 +119,7 @@ struct MicroMesh {
 
   micromesh_connectivity_ptr_t getConnectivity();  // Get connectivity (compute if needed)
   micromesh_ptr_t smoothed(micromesh_connectivity_ptr_t conn) const;
+  bool validate() const;  // Validate mesh integrity, log issues, return false if invalid
   void updateRigidPrim(umesh_rprim_ptr_t prim,
                        vdb_vec3grid_ptr_t colorgrid,
                        ctx_t context) const;
@@ -126,6 +132,9 @@ struct MicroMesh {
 
   micromesh_connectivity_ptr_t _connectivity;
   bool _connectivity_dirty = true;
+
+  // Queue for pending async smoothing operations (thread-safe)
+  LockedResource<void_lambda_list_t> _async_operations;
 };
 
 ///////////////////////////////////////
@@ -253,6 +262,135 @@ inline micromesh_connectivity_ptr_t MicroMesh::getConnectivity() {
 
 ///////////////////////////////////////
 
+inline bool MicroMesh::validate() const {
+  bool is_valid = true;
+  size_t num_verts = _vertices.size();
+  size_t num_tris = _tris.size();
+  size_t num_quads = _quads.size();
+
+  // Check for empty mesh
+  if (num_verts == 0) {
+    printf("MicroMesh::validate ERROR: Mesh has zero vertices\n");
+    is_valid = false;
+  }
+
+  if (num_tris == 0 && num_quads == 0) {
+    printf("MicroMesh::validate WARNING: Mesh has no faces (tris=%zu, quads=%zu)\n", num_tris, num_quads);
+  }
+
+  // Check color/normal array sizes match vertex count
+  if (_colors.size() != num_verts) {
+    printf("MicroMesh::validate WARNING: Color count mismatch: vertices=%zu, colors=%zu\n", num_verts, _colors.size());
+  }
+
+  if (_normals.size() > 0 && _normals.size() != num_verts) {
+    printf("MicroMesh::validate WARNING: Normal count mismatch: vertices=%zu, normals=%zu\n", num_verts, _normals.size());
+  }
+
+  // Track which vertices are referenced by faces
+  std::unordered_set<int> referenced_verts;
+
+  // Validate triangle indices
+  for (size_t itri = 0; itri < num_tris; itri++) {
+    const auto& tri = _tris[itri];
+    if (tri.size() != 3) {
+      printf("MicroMesh::validate ERROR: Triangle %zu has %zu indices (expected 3)\n", itri, tri.size());
+      is_valid = false;
+      continue;
+    }
+    for (size_t i = 0; i < 3; i++) {
+      int idx = tri[i];
+      if (idx < 0 || idx >= (int)num_verts) {
+        printf("MicroMesh::validate ERROR: Triangle %zu index[%zu]=%d out of range [0,%zu)\n", itri, i, idx, num_verts);
+        is_valid = false;
+      } else {
+        referenced_verts.insert(idx);
+      }
+    }
+  }
+
+  // Validate quad indices
+  for (size_t iquad = 0; iquad < num_quads; iquad++) {
+    const auto& quad = _quads[iquad];
+    if (quad.size() != 4) {
+      printf("MicroMesh::validate ERROR: Quad %zu has %zu indices (expected 4)\n", iquad, quad.size());
+      is_valid = false;
+      continue;
+    }
+    for (size_t i = 0; i < 4; i++) {
+      int idx = quad[i];
+      if (idx < 0 || idx >= (int)num_verts) {
+        printf("MicroMesh::validate ERROR: Quad %zu index[%zu]=%d out of range [0,%zu)\n", iquad, i, idx, num_verts);
+        is_valid = false;
+      } else {
+        referenced_verts.insert(idx);
+      }
+    }
+  }
+
+  // Check for unreferenced (orphaned) vertices
+  size_t num_orphaned = num_verts - referenced_verts.size();
+  if (num_orphaned > 0) {
+    printf("MicroMesh::validate WARNING: Mesh has %zu unreferenced vertices (out of %zu total)\n", num_orphaned, num_verts);
+
+    // Log first few orphaned vertex indices for debugging
+    size_t logged_count = 0;
+    const size_t max_log = 10;
+    for (size_t iv = 0; iv < num_verts && logged_count < max_log; iv++) {
+      if (referenced_verts.find(iv) == referenced_verts.end()) {
+        printf("MicroMesh::validate WARNING:   Orphaned vertex index: %zu\n", iv);
+        logged_count++;
+      }
+    }
+    if (num_orphaned > max_log) {
+      printf("MicroMesh::validate WARNING:   ... and %zu more orphaned vertices\n", num_orphaned - max_log);
+    }
+  }
+
+  // Validate connectivity if it exists and is not dirty
+  if (_connectivity && !_connectivity_dirty) {
+    size_t conn_size = _connectivity->_connectivity.size();
+
+    // Check that all referenced vertices have connectivity entries
+    for (int vidx : referenced_verts) {
+      auto it = _connectivity->_connectivity.find(vidx);
+      if (it == _connectivity->_connectivity.end()) {
+        printf("MicroMesh::validate ERROR: Referenced vertex %d missing from connectivity map\n", vidx);
+        is_valid = false;
+      }
+    }
+
+    // Warn if connectivity has more entries than referenced vertices (orphans)
+    if (conn_size != referenced_verts.size()) {
+      printf("MicroMesh::validate WARNING: Connectivity size mismatch: conn_entries=%zu, referenced_verts=%zu\n",
+                  conn_size, referenced_verts.size());
+    }
+  }
+
+  // Check for degenerate faces (duplicate indices)
+  for (size_t itri = 0; itri < num_tris; itri++) {
+    const auto& tri = _tris[itri];
+    if (tri.size() == 3 && (tri[0] == tri[1] || tri[1] == tri[2] || tri[0] == tri[2])) {
+      printf("MicroMesh::validate WARNING: Degenerate triangle %zu: indices [%d,%d,%d]\n", itri, tri[0], tri[1], tri[2]);
+    }
+  }
+
+  for (size_t iquad = 0; iquad < num_quads; iquad++) {
+    const auto& quad = _quads[iquad];
+    if (quad.size() == 4) {
+      std::unordered_set<int> unique_indices(quad.begin(), quad.end());
+      if (unique_indices.size() < 4) {
+        printf("MicroMesh::validate WARNING: Degenerate quad %zu: indices [%d,%d,%d,%d]\n",
+                    iquad, quad[0], quad[1], quad[2], quad[3]);
+      }
+    }
+  }
+
+  return is_valid;
+}
+
+///////////////////////////////////////
+
 inline micromesh_ptr_t MicroMesh::smoothed(micromesh_connectivity_ptr_t conn) const {
   auto result = std::make_shared<MicroMesh>();
   size_t num_verts = _vertices.size();
@@ -260,14 +398,20 @@ inline micromesh_ptr_t MicroMesh::smoothed(micromesh_connectivity_ptr_t conn) co
   result->_colors.reserve(num_verts);
   for( size_t iv=0; iv<_vertices.size(); iv++ ){
     const auto& vtx = _vertices[iv];
-    const auto& connlist = conn->_connectivity.at(iv);
-    fvec3 sum;
-    for( auto ivc : connlist ){
-      sum += _vertices[ivc];
+    const auto it = conn->_connectivity.find(iv);
+    if(it != conn->_connectivity.end()) {
+      const auto& connlist = it->second;
+      fvec3 sum;
+      for( auto ivc : connlist ){
+        sum += _vertices[ivc];
+      }
+      fvec3 avg = sum / float(connlist.size());
+      result->_vertices.push_back(avg);
+      result->_colors.push_back(_colors[iv]);
+    } else {
+      result->_vertices.push_back(vtx);
+      result->_colors.push_back(_colors[iv]);
     }
-    fvec3 avg = sum / float(connlist.size());
-    result->_vertices.push_back(avg);
-    result->_colors.push_back(_colors[iv]);
   }
   result->_tris = _tris;
   result->_quads = _quads;

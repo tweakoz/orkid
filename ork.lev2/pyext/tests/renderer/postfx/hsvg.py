@@ -101,7 +101,7 @@ class HSVGAPP(object):
     self.modelnode.worldTransform.scale = 35
     self.modelnode.worldTransform.translation = vec3(0,28,0)
     #######################################
-
+    self.scene.lightingmanager.gpuInit(ctx)
 
   ################################################
 

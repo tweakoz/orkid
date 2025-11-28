@@ -103,6 +103,7 @@ class StandardSceneGraphComponent(ApplicationComponent):
                up=vec3(0,1,0),
                sg_params=None,
                post_nodes=None):
+    print(eye)
     super().__init__()
     self.enable_ui_camera = enable_ui_camera
     self.grid_variant = grid_variant

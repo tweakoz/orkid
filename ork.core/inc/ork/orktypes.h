@@ -30,9 +30,11 @@ struct use_custom_serdes { //
 template <typename T> typename std::enable_if<std::is_enum<T>::value, void>::type bar2(T t) {
 }
 
-typedef std::function<void()> void_lambda_t;
-typedef std::function<float()> float_lambda_t;
-typedef std::function<int()> int_lambda_t;
+using void_lambda_t = std::function<void()>;
+using float_lambda_t = std::function<float()>;
+using int_lambda_t = std::function<int()>;
+
+using void_lambda_list_t = std::vector<void_lambda_t>;
 
 template <typename T> T minimum(T a, T b) {
   return (a < b) ? a : b;

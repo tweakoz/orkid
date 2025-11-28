@@ -87,6 +87,7 @@ struct VkPrimaryCommandBufferImpl {
   std::vector<secondary_commandbuffer_ptr_t> _secondary_cmdbuffers;
   // Secondary CBs from previous use of this primary CB (waiting for reset before cleanup)
   std::vector<secondary_commandbuffer_ptr_t> _secondary_cmdbuffers_pending_cleanup;
+  std::vector<vkbuffer_ptr_t> _vkbuffers_pending_cleanup;
   static std::atomic<int> _cmdbufcount;
 };
 ///////////////////////////////////////////////////////////////////////////////

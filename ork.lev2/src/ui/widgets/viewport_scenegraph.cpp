@@ -23,9 +23,9 @@ void SceneGraphViewport::Describe() {
 ///////////////////////////////////////////////////////////////////////////////
 
 SceneGraphViewport::SceneGraphViewport(const std::string& name, int x, int y, int w, int h)
-    : Viewport(name, x, y, w, h, fvec4(1,0,1,1), 1.0f) {
+    : Viewport(name, x, y, w, h, fvec4(1, 0, 1, 1), 1.0f) {
   _flipY = false;
-} 
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -33,18 +33,18 @@ void SceneGraphViewport::_doGpuInit(lev2::Context* context) {
   Viewport::_doGpuInit(context);
   _outputnode = std::make_shared<lev2::RtGroupOutputCompositingNode>(_rtgroup);
   //_outputnode->_flipY = true;
-  _rtgroup->_name = FormatString("ui::SceneGraphViewport<%p>", (void*) this);
+  _rtgroup->_name = FormatString("ui::SceneGraphViewport<%p>", (void*)this);
   _outputnode->setSuperSample(_supersample);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SceneGraphViewport::forkDB(){
+void SceneGraphViewport::forkDB() {
 
   _override_acqdbuf = std::make_shared<lev2::AcquiredDrawQueueForRendering>();
 }
 
-  ///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
 void SceneGraphViewport::bindSceneGraph(lev2::scenegraph::scene_ptr_t sg) {
   _scenegraph = sg;
@@ -56,11 +56,11 @@ void SceneGraphViewport::bindSceneGraph(lev2::scenegraph::scene_ptr_t sg) {
   }
 }
 
-  ///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
 void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
-  
-  if(_scenegraph){
+
+  if (_scenegraph) {
 
     ////////////////////////////////////////////////////
     // in this case we already have a AcquiredDrawQueueForRendering!
@@ -69,44 +69,47 @@ void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
     auto acqbuf = drwev->_acqdbuf;
 
-    if(_override_acqdbuf){
-      auto DB = _scenegraph->_dbufcontext_SG->acquireForReadLocked();
-      auto WDB = (lev2::DrawQueue*) DB;
-      WDB->setUserProperty("vpID"_crcu,_userID);
-      auto RCFD = drwev->_acqdbuf->_RCFD;
+    if (_override_acqdbuf) {
+      const lev2::DrawQueue* DB = nullptr;
+      while (nullptr == DB) {
+        DB = _scenegraph->_dbufcontext_SG->acquireForReadLocked();
+        if(DB==nullptr){
+            ::usleep(100);
+        }
+      }
+      auto WDB = (lev2::DrawQueue*)DB;
+      WDB->setUserProperty("vpID"_crcu, _userID);
+      auto RCFD                = drwev->_acqdbuf->_RCFD;
       _override_acqdbuf->_RCFD = RCFD;
-      _override_acqdbuf->_DB = DB;
-      acqbuf = _override_acqdbuf;
+      _override_acqdbuf->_DB   = DB;
+      acqbuf                   = _override_acqdbuf;
     }
 
-    auto cimpl = _scenegraph->_compositorImpl;
+    auto cimpl          = _scenegraph->_compositorImpl;
     cimpl->_camera_name = _cameraname;
-    if(_decouple_from_ui_size){
-      cimpl->_compcontext->Resize(_decoupled_width,_decoupled_height);
-    }
-    else{
-      cimpl->_compcontext->Resize(width(),height());
+    if (_decouple_from_ui_size) {
+      cimpl->_compcontext->Resize(_decoupled_width, _decoupled_height);
+    } else {
+      cimpl->_compcontext->Resize(width(), height());
     }
     auto comptek = _scenegraph->_compositorTechnique;
 
-    auto orig_onode = comptek->_outputNode;
-    comptek->_renderNode->_bufferKey = (uint64_t) this;
-    
+    auto orig_onode                  = comptek->_outputNode;
+    comptek->_renderNode->_bufferKey = (uint64_t)this;
+
     comptek->_outputNode = _outputnode;
-    
+
     _scenegraph->_renderWithAcquiredDrawQueueForRendering(acqbuf);
 
     comptek->_outputNode = orig_onode;
 
     ////////////////////////////////////////////////////
-    if(_override_acqdbuf){
+    if (_override_acqdbuf) {
       _scenegraph->_dbufcontext_SG->releaseFromReadLocked(_override_acqdbuf->_DB);
       _override_acqdbuf->_DB = nullptr;
     }
     ////////////////////////////////////////////////////
-
   }
-
 }
 // Surface::DoDraw()
 

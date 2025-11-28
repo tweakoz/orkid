@@ -7,6 +7,7 @@ from ork import path as ork_path
 from orkengine.core import vec2, vec3, CrcStringProxy, Logger, lev2_pyexdir
 from orkengine.lev2 import vdb as ork_vdb, primitives, RigidPrimitive, MicroMesh
 from ork.app.application import ApplicationComponent
+from concurrent.futures import ThreadPoolExecutor
 
 sys.path.append(str(ork_path.py_lev2utils)) # add parent dir to path
 lev2_pyexdir.addToSysPath()
@@ -15,6 +16,9 @@ from shaders import createPipeline
 
 
 tokens = CrcStringProxy()
+geoexec_st1 = ThreadPoolExecutor(max_workers=1)
+geoexec_st2 = ThreadPoolExecutor(max_workers=1)
+geoexec_st3 = ThreadPoolExecutor(max_workers=1)
 
 #############################
 # VDB Lavalamp Component
@@ -33,7 +37,6 @@ class LavalampComponent(ApplicationComponent):
     self.RADIUS2 = 10.0
     self.ISO_PARM = 0.87
     self.TIME_RATE = 1.0
-    self.SMOOTHING_PASSES = 2
 
     # Create levelset sphere
     self.sphere = ork_vdb.FloatGrid.createLevelSetSphere(
@@ -47,75 +50,75 @@ class LavalampComponent(ApplicationComponent):
 
     # AX voxel shader
     voxel_shader = """
-vec3f@pos = getvoxelpws();
-vec3f@timeshift = { 0,f$time*-1.0,0 };
+    vec3f@pos = getvoxelpws();
+    vec3f@timeshift = { 0,f$time*-1.0,0 };
 
-vec3f@pos_a = vec3f@pos * 0.1 * f$freq + vec3f@timeshift * 1.0;
-vec3f@pos_b = vec3f@pos * 0.17 * f$freq + vec3f@timeshift * 0.7;
-vec3f@pos_c = vec3f@pos * 0.37 * f$freq + vec3f@timeshift * 0.46;
-vec3f@pos_d = vec3f@pos * 0.57 * f$freq + vec3f@timeshift * 0.27;
+    vec3f@pos_a = vec3f@pos * 0.1 * f$freq + vec3f@timeshift * 1.0;
+    vec3f@pos_b = vec3f@pos * 0.17 * f$freq + vec3f@timeshift * 0.7;
+    vec3f@pos_c = vec3f@pos * 0.37 * f$freq + vec3f@timeshift * 0.46;
+    vec3f@pos_d = vec3f@pos * 0.57 * f$freq + vec3f@timeshift * 0.27;
 
-f@a  = simplexnoise(vec3f@pos_a)*1.0;
-f@a += simplexnoise(vec3f@pos_b)*0.5;
-f@a += simplexnoise(vec3f@pos_c)*0.25;
-f@a += simplexnoise(vec3f@pos_d)*0.125;
-"""
+    f@a  = simplexnoise(vec3f@pos_a)*1.0;
+    f@a += simplexnoise(vec3f@pos_b)*0.5;
+    f@a += simplexnoise(vec3f@pos_c)*0.25;
+    f@a += simplexnoise(vec3f@pos_d)*0.125;
+    """
 
     self.cdata = ork_vdb.ax.CustomData()
     self.ve = ork_vdb.ax.VolumeExecutable.compile(voxel_shader, self.cdata)
 
     # Mesh shader
     self.SHADERTEXT = """
-////////////////////////////////////////
-fxconfig fxcfg_default { glsl_version = "330"; }
-////////////////////////////////////////
-uniform_set ublock_vtx {
-  mat4 mvp;
-  float pointsize;
-}
-////////////////////////////////////////
-uniform_set ublock_frg {
-  vec4 modcolor;
-}
-////////////////////////////////////////
-vertex_interface vif_x : ublock_vtx {
-  inputs {
-    vec4 pos : POSITION;
-    vec4 nrm : NORMAL;
-  }
-  outputs {
-    vec3 frg_col;
-    vec3 frg_nrm;
-  }
-}
-////////////////////////////////////////
-fragment_interface fif_x : vif_x : ublock_frg {
-  outputs { layout(location = 0) vec4 out_clr; }
-}
-////////////////////////////////////////
-vertex_shader vs_x : vif_x {
+      ////////////////////////////////////////
+      fxconfig fxcfg_default { glsl_version = "330"; }
+      ////////////////////////////////////////
+      uniform_set ublock_vtx {
+        mat4 mvp;
+        float pointsize;
+      }
+      ////////////////////////////////////////
+      uniform_set ublock_frg {
+        vec4 modcolor;
+      }
+      ////////////////////////////////////////
+      vertex_interface vif_x : ublock_vtx {
+        inputs {
+          vec4 pos : POSITION;
+          vec4 nrm : NORMAL;
+        }
+        outputs {
+          vec3 frg_col;
+          vec3 frg_nrm;
+        }
+      }
+      ////////////////////////////////////////
+      fragment_interface fif_x : vif_x : ublock_frg {
+        outputs { layout(location = 0) vec4 out_clr; }
+      }
+      ////////////////////////////////////////
+      vertex_shader vs_x : vif_x {
 
-  frg_col = normalize(pos.xyz);
-  frg_nrm = normalize(nrm.xyz);
-  gl_Position = mvp * vec4(pos.x,pos.y,pos.z,1);
-  gl_PointSize = pointsize;
-}
-////////////////////////////////////////
-fragment_shader fs_x : fif_x {
-  vec3 normal=normalize(frg_nrm)*-1.0;
-  normal = normal * 0.5 + 0.5;
-  out_clr = vec4(normal.xyz, 1);
-}
-////////////////////////////////////////
-technique tek_x {
-  fxconfig = fxcfg_default;
-  pass p0 {
-    vertex_shader   = vs_x;
-    fragment_shader = fs_x;
-    state_block     = default;
-  }
-}
-"""
+        frg_col = normalize(pos.xyz);
+        frg_nrm = normalize(nrm.xyz);
+        gl_Position = mvp * vec4(pos.x,pos.y,pos.z,1);
+        gl_PointSize = pointsize;
+      }
+      ////////////////////////////////////////
+      fragment_shader fs_x : fif_x {
+        vec3 normal=normalize(frg_nrm)*-1.0;
+        normal = normal * 0.5 + 0.5;
+        out_clr = vec4(normal.xyz, 1);
+      }
+      ////////////////////////////////////////
+      technique tek_x {
+        fxconfig = fxcfg_default;
+        pass p0 {
+          vertex_shader   = vs_x;
+          fragment_shader = fs_x;
+          state_block     = default;
+        }
+      }
+    """
 
     # Thread control
     self.next_sphere = None
@@ -206,7 +209,33 @@ technique tek_x {
         # Increment VDB count
         self.vdb_count += 1
 
+        if self.next_trimesh != None:
+          def _st1(v,f):
+            def _st2(st1_mesh):
+              def _st3(st2_mesh):
+                st2_mesh.computeNormals()
+                self.next_umesh = st2_mesh
+              ###############################
+              # stage 3
+              ###############################
+              conn_st2 = st1_mesh.vertexConnectivity
+              geoexec_st3.submit(_st3, st1_mesh.smooth(conn_st2) )
+            #################################
+            # stage 2
+            #################################
+            umesh_st1 = MicroMesh.fromVertAndFaceLists(v,f)
+            conn_st1 = umesh_st1.vertexConnectivity
+            geoexec_st2.submit(_st2, umesh_st1.smooth(conn_st1) )
+          ###################################
+          # stage 1
+          ###################################
+          v = self.next_trimesh["vertices"]
+          f = self.next_trimesh["faces"]
+          geoexec_st1.submit(_st1, v, f)
+          self.next_trimesh = None
+
         time.sleep(0.01666)
+        
 
     self.thr = threading.Thread(target=upd_sphere_fn)
     self.thr.start()
@@ -237,16 +266,6 @@ technique tek_x {
     self.update_count += 1
 
     self.phi = updinfo.absolutetime * self.TIME_RATE
-
-    if self.next_trimesh != None:
-      v = self.next_trimesh["vertices"]
-      f = self.next_trimesh["faces"]
-      self._umesh.updateFromLists(v, f)
-      conn = self._umesh.vertexConnectivity
-      self._umesh.asyncSmoothed(conn, self.SMOOTHING_PASSES, None, None)
-      self._umesh.computeNormals()
-      self.next_umesh = self._umesh
-      self.next_trimesh = None
 
   ################################################
   # GPU update (runs on GPU/draw thread)
@@ -301,8 +320,9 @@ technique tek_x {
 
     # Update mesh primitive if new smoothed micromesh is available
     if self.next_umesh != None:
-      self.mesh_prim.updateWithMicroMesh(self.next_umesh, ctx)
+      um = self.next_umesh
       self.next_umesh = None
+      self.mesh_prim.updateWithMicroMesh(um, ctx)
 
   ################################################
   # Cleanup

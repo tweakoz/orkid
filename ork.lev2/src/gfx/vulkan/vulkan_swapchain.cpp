@@ -476,8 +476,13 @@ VkResult VkSwapChain::acquireImage(vkcontext_rawptr_t ctxVK) {
         return status;
         break;
       }
+      case VK_ERROR_DEVICE_LOST:{
+        logchan_swapchain->error("acquireImage: VK_ERROR_DEVICE_LOST");
+        OrkAssert(false);
+        break;
+      }
       default:
-        logchan_swapchain->log("acquireImage: UNEXPECTED STATUS %d", status);
+        logchan_swapchain->error("acquireImage: UNEXPECTED STATUS %d", status);
         OrkAssert(false);
         break;
     }

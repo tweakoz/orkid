@@ -714,6 +714,12 @@ void VkContext::_doBeginPrimaryCommandBuffer() {
   _cmdbufcurpri_gfx->_secondary_cmdbuffers_pending_cleanup.clear();
 
   ////////////////////////
+  // cleanup _vkbuffers_pending_cleanup
+  ////////////////////////
+
+  _cmdbufcurpri_gfx->_vkbuffers_pending_cleanup.clear();
+
+  ////////////////////////
   VkCommandBufferBeginInfo CBBI_GFX = {};
   initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
   CBBI_GFX.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;

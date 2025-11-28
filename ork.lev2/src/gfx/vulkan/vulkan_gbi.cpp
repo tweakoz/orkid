@@ -73,6 +73,7 @@ VulkanVertexBuffer::VulkanVertexBuffer(vkcontext_rawptr_t ctx, VertexBufferBase&
 ///////////////////////////////////////////////////////////////////////////////
 
 VulkanVertexBuffer::~VulkanVertexBuffer() {
+  _ctx->primary_cb()->_vkbuffers_pending_cleanup.push_back( _vkbuffer );
   _vkbuffer = nullptr;
 }
 
@@ -86,6 +87,7 @@ VulkanIndexBuffer::VulkanIndexBuffer(vkcontext_rawptr_t ctx, size_t length) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 VulkanIndexBuffer::~VulkanIndexBuffer() {
+  _ctx->primary_cb()->_vkbuffers_pending_cleanup.push_back( _vkbuffer );
   _vkbuffer = nullptr;
 }
 

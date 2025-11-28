@@ -39,6 +39,7 @@ struct SmoothingStage {
   umesh_rprim_ptr_t prim;
   ctx_t context;
   size_t count = 0;
+  bool _validate = false;
   static void enqueue(stage_ptr_t inp_stage,vdb_vec3grid_ptr_t colorgrid);
 };
 
@@ -48,23 +49,42 @@ void SmoothingStage::enqueue(stage_ptr_t inp_stage,vdb_vec3grid_ptr_t colorgrid)
   if (inp_stage->count > 0) {
     auto op = [=]() {
       auto mesh_out = inp_stage->mesh_inp->smoothed(inp_stage->conn);
+      if (inp_stage->_validate) {
+        printf("SmoothingStage: Validating mesh after stage (remaining=%zu)\n", inp_stage->count - 1);
+        mesh_out->validate();
+      }
       auto next_stage = std::make_shared<SmoothingStage>();
       next_stage->mesh_inp = mesh_out;
-      next_stage->conn = inp_stage->conn;
+      // Clone connectivity for thread safety - each stage gets its own copy
+      next_stage->conn = std::make_shared<MicroMeshConnectivity>(*inp_stage->conn);
       next_stage->prim = inp_stage->prim;
       next_stage->context.assign(inp_stage->context);
       next_stage->count = inp_stage->count - 1;
+      next_stage->_validate = inp_stage->_validate;
       enqueue(next_stage,colorgrid);
     };
-    opq::concurrentQueue()->enqueue(op);
+
+    // Enqueue operation to mesh's async queue
+    inp_stage->mesh_inp->_async_operations.atomicOp([op](void_lambda_list_t& ops) {
+      ops.push_back(op);
+    });
+
   } else {
     auto op = [=]() {
       if(inp_stage->prim){
+        if (inp_stage->_validate) {
+          printf("SmoothingStage: Validating mesh before computeNormals (final stage)\n");
+          inp_stage->mesh_inp->validate();
+        }
         inp_stage->mesh_inp->computeNormals();
         inp_stage->mesh_inp->updateRigidPrim(inp_stage->prim, colorgrid, ctx_t(inp_stage->context.get()));
       }
     };
-    opq::mainSerialQueue()->enqueue(op);
+
+    // Enqueue final operation to mesh's async queue
+    inp_stage->mesh_inp->_async_operations.atomicOp([op](void_lambda_list_t& ops) {
+      ops.push_back(op);
+    });
   }
 }
 
@@ -120,6 +140,21 @@ void pyinit_gfx_primitives_rigid(py::module& module_lev2) {
                                   mesh->computeNormals();
                                 },
                                 "Compute and cache normals using internal connectivity")
+                            //////////////////////////////////////////////////
+                            .def(
+                                "validate",
+                                [](micromesh_ptr_t mesh) -> bool {
+                                  return mesh->validate();
+                                },
+                                "Validate mesh integrity. Returns True if valid, False otherwise. Logs detailed diagnostics.")
+                            //////////////////////////////////////////////////
+                            .def(
+                                "smooth",
+                                [](micromesh_ptr_t mesh, 
+                                   micromesh_connectivity_ptr_t conn) -> micromesh_ptr_t {
+                                  py::gil_scoped_release release;
+                                  return mesh->smoothed(conn);
+                                })
                             //////////////////////////////////////////////////
                             .def_property_readonly(
                                 "vertices",
@@ -218,16 +253,14 @@ void pyinit_gfx_primitives_rigid(py::module& module_lev2) {
                             .def_property_readonly(
                                 "vertexConnectivity",
                                 [](micromesh_ptr_t mesh) -> micromesh_connectivity_ptr_t {
-                                  return mesh->getConnectivity();
+                                  micromesh_connectivity_ptr_t conn;
+                                  {
+                                    py::gil_scoped_release release;
+                                    conn = mesh->getConnectivity();
+                                  }
+                                  return conn;
                                 },
                                 "Deprecated: Use 'connectivity' property instead")
-                            //////////////////////////////////////////////////
-                            .def_property_readonly(
-                                "smoothed",
-                                [](micromesh_ptr_t mesh, micromesh_connectivity_ptr_t conn) -> micromesh_ptr_t {
-                                  py::gil_scoped_release release;
-                                  return mesh->smoothed(conn);
-                                })
                             //////////////////////////////////////////////////
                             .def(
                                 "asyncSmoothed",
@@ -235,12 +268,15 @@ void pyinit_gfx_primitives_rigid(py::module& module_lev2) {
                                    micromesh_connectivity_ptr_t conn, //
                                    int num_stages,                    //
                                    py::object prim,
-                                   py::object context) { //
+                                   py::object context,
+                                   bool validate = false) { //
 
                                   auto stage = std::make_shared<SmoothingStage>();
                                   stage->mesh_inp = mesh;
-                                  stage->conn = conn;
+                                  // Clone connectivity at entry point so each smoothing chain is isolated
+                                  stage->conn = std::make_shared<MicroMeshConnectivity>(*conn);
                                   stage->count = num_stages;
+                                  stage->_validate = validate;
                                   if( context.is_none() ){
                                     stage->context = ctx_t();
                                   }else{
@@ -254,7 +290,12 @@ void pyinit_gfx_primitives_rigid(py::module& module_lev2) {
                                     stage->prim = prim.cast<umesh_rprim_ptr_t>();
                                   }
                                   SmoothingStage::enqueue(stage,nullptr);
-                                })
+                                },
+                                py::arg("conn"),
+                                py::arg("num_stages"),
+                                py::arg("prim")=py::none(),
+                                py::arg("context")=py::none(),
+                                py::arg("validate") = false)
                             //////////////////////////////////////////////////
                             .def(
                                 "asyncSmoothedWithColorGrid",
@@ -263,16 +304,25 @@ void pyinit_gfx_primitives_rigid(py::module& module_lev2) {
                                    vdb_vec3grid_ptr_t colorgrid,      //
                                    int num_stages,                    //
                                    umesh_rprim_ptr_t prim,
-                                   ctx_t context) { //
+                                   ctx_t context,
+                                   bool validate = false) { //
 
                                   auto stage = std::make_shared<SmoothingStage>();
                                   stage->mesh_inp = mesh;
-                                  stage->conn = conn;
+                                  // Clone connectivity at entry point so each smoothing chain is isolated
+                                  stage->conn = std::make_shared<MicroMeshConnectivity>(*conn);
                                   stage->prim = prim;
                                   stage->context.assign(context);
                                   stage->count = num_stages;
+                                  stage->_validate = validate;
                                   SmoothingStage::enqueue(stage,colorgrid);
-                                });
+                                },
+                                py::arg("conn"),
+                                py::arg("colorgrid"),
+                                py::arg("num_stages"),
+                                py::arg("prim"),
+                                py::arg("context"),
+                                py::arg("validate") = false);
   /////////////////////////////////////////////////////////////////////////////////
   auto micromesh_conn_type = py::class_<MicroMeshConnectivity, micromesh_connectivity_ptr_t>(module_lev2, "MicroMeshConnectivity");
   /////////////////////////////////////////////////////////////////////////////////
