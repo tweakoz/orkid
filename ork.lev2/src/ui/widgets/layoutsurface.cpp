@@ -1,6 +1,7 @@
 #include <ork/pch.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/rtgroup.h>
+#include <ork/lev2/gfx/renderer/rendercontext.h>
 #include <ork/lev2/ui/layoutsurface.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/lev2/gfx/pri.h>
@@ -11,7 +12,7 @@ namespace ork::ui {
 LayoutSurface::LayoutSurface(const std::string& name, int x, int y, int w, int h, int margin)
     : Surface(name, x, y, w, h, fcolor3(0.2f, 0.2f, 0.2f), 1.0f) {
   // Create internal LayoutGroup
-  _layoutGroup = std::make_shared<LayoutGroup>("content", 0, 0, w, h, margin);
+  _layoutGroup = std::make_shared<LayoutGroup>("content", 0, 0, 8, 8, margin);
 
   // Start with virtual size same as widget size
   _virtualWidth = w;
@@ -110,18 +111,15 @@ void LayoutSurface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   int vw = (_virtualWidth==0) ? _geometry._w : _virtualWidth;
   int vh = (_virtualHeight==0) ? _geometry._h : _virtualHeight;
 
-  //_layoutGroup->SetSize(_virtualWidth, _virtualHeight);
-  int lgw = _layoutGroup->_geometry._w;
-  int lgh = _layoutGroup->_geometry._h;
   //
-
+  fbi->pushViewport(0, 0, vw, vh);
+  fbi->pushScissor(0, 0, vw, vh);
   auto uimtx = mtxi->uiMatrix(vw, vh);
   mtxi->PushMMatrix(fmtx4::Identity());
   mtxi->PushVMatrix(fmtx4::Identity());
   mtxi->PushPMatrix(uimtx);
   {
     int ix1, iy1, ix2, iy2;
-    //LocalToRoot(0, 0, ix1, iy1);
     ix1 = 0;
     iy1 = 0;
     ix2 = vw;
@@ -129,7 +127,6 @@ void LayoutSurface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
     defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
     defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
-    //tgt->PushModColor(color);
     defmtl->SetUIColorMode(lev2::UiColorMode::VTX);
     primi->RenderQuadAtZ(
         defmtl.get(),
@@ -143,32 +140,15 @@ void LayoutSurface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
         0.0f,
         1.0f // v0, v1
     );
-    //tgt->PopModColor();
+
+    // Draw the entire LayoutGroup hierarchy within the same matrix context
+    _layoutGroup->draw(drwev);
   }
   mtxi->PopPMatrix();
   mtxi->PopVMatrix();
   mtxi->PopMMatrix();
-
-  if(0)printf("LayoutSurface::DoRePaintSurface wx<%d> wy<%d> w<%d> h<%d> vw<%d> vh<%d> lgw<%d> lgh<%d>\n",
-          _geometry._x, 
-          _geometry._y, 
-          _geometry._w, 
-          _geometry._h, 
-          vw, 
-          vh,
-          lgw, lgh);
-
-
-          
-
-  // The rtgroup is already set as the current render target by Surface::DoDraw
-  // We just need to render our LayoutGroup hierarchy into it
-
-  // Clear is handled by the rtgroup autoclear settings
-
-  // Draw the entire LayoutGroup hierarchy
-  // It renders to the full virtual size (the rtgroup size)
-  _layoutGroup->draw(drwev);
+  fbi->popScissor();
+  fbi->popViewport();
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -253,6 +233,109 @@ HandlerResult LayoutSurface::DoOnUiEvent(event_constptr_t ev) {
         break;
       }
   return HandlerResult();
+}
+
+/////////////////////////////////////////////////////////////////////////
+// 3D Embedding Support
+/////////////////////////////////////////////////////////////////////////
+
+void LayoutSurface::updateTextureIfNeeded(lev2::Context* ctx) {
+  // Ensure rtgroup exists
+  int vw = (_virtualWidth == 0) ? _geometry._w : _virtualWidth;
+  int vh = (_virtualHeight == 0) ? _geometry._h : _virtualHeight;
+
+  if (!_rtgroup) {
+    _rtgroup = std::make_shared<lev2::RtGroup>(ctx, 8, 8, lev2::MsaaSamples::MSAA_1X);
+    _rtgroup->_name = FormatString("ui::LayoutSurface<%p>", (void*)this);
+    _rtgroup->createRenderTarget(lev2::EBufferFormat::RGBA8);
+  }
+
+  // Check if resize needed
+  if (_rtgroup->width() != vw || _rtgroup->height() != vh) {
+    _rtgroup->Resize(vw, vh);
+    _layoutGroup->SetRect(0, 0, vw, vh);
+    mNeedsSurfaceRepaint = true;
+  }
+
+  // Always repaint for now (debugging)
+  {
+    auto fbi = ctx->FBI();
+
+    _rtgroup->_autoclear = true;
+    _rtgroup->buffer(0)->_clearColor = _clearColor;
+    _rtgroup->buffer(0)->_clearDepth = mfClearDepth;
+
+    // Push isolated RCFD WITHOUT compositor so PushUIMatrix() uses viewport dimensions
+    // instead of compositor's CPD (which has window dimensions)
+    auto rcfd = std::make_shared<lev2::RenderContextFrameData>(ctx);
+    ctx->pushRenderContextFrameData(rcfd);
+
+    fbi->PushRtGroup(_rtgroup.get()); // pushes viewport/scissor
+    {
+      auto drwev = std::make_shared<DrawEvent>(ctx);
+      DoRePaintSurface(drwev);
+    }
+    fbi->PopRtGroup();
+
+    ctx->popRenderContextFrameData();
+
+    mNeedsSurfaceRepaint = false;
+    _dirty = false;
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+fvec2 LayoutSurface::localToPixel(const fvec2& local) const {
+  // Input: local coords in [-0.5, 0.5] range
+  // Output: pixel coords in [0, width] x [0, height]
+  float u = local.x + 0.5f;  // → [0, 1]
+  float v = local.y + 0.5f;  // → [0, 1]
+
+  int w = (_virtualWidth > 0) ? _virtualWidth : _geometry._w;
+  int h = (_virtualHeight > 0) ? _virtualHeight : _geometry._h;
+
+  return fvec2(u * w, v * h);
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+fvec2 LayoutSurface::pixelToLocal(const fvec2& pixel) const {
+  // Input: pixel coords in [0, width] x [0, height]
+  // Output: local coords in [-0.5, 0.5] range
+
+  int w = (_virtualWidth > 0) ? _virtualWidth : _geometry._w;
+  int h = (_virtualHeight > 0) ? _virtualHeight : _geometry._h;
+
+  float u = pixel.x / float(w);  // → [0, 1]
+  float v = pixel.y / float(h);  // → [0, 1]
+
+  return fvec2(u - 0.5f, v - 0.5f);
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+HandlerResult LayoutSurface::handleTransformedInput(
+    const fvec2& surfacePixelCoords,
+    EventCode eventCode,
+    uint32_t buttonState,
+    uint32_t modifierKeys) {
+
+  // Create standard 2D UI event
+  auto ev = std::make_shared<Event>();
+  ev->_eventcode = eventCode;
+  ev->miX = int(surfacePixelCoords.x);
+  ev->miY = int(surfacePixelCoords.y);
+  ev->mbLeftButton = (buttonState & 0x1) != 0;
+  ev->mbMiddleButton = (buttonState & 0x2) != 0;
+  ev->mbRightButton = (buttonState & 0x4) != 0;
+  ev->mbSHIFT = (modifierKeys & 0x1) != 0;
+  ev->mbCTRL = (modifierKeys & 0x2) != 0;
+  ev->mbALT = (modifierKeys & 0x4) != 0;
+  ev->mbSUPER = (modifierKeys & 0x8) != 0;
+
+  // Route through normal UI event system
+  return handleUiEvent(ev);
 }
 
 /////////////////////////////////////////////////////////////////////////

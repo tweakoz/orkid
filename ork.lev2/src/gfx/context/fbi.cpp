@@ -109,7 +109,8 @@ PickBuffer* FrameBufferInterface::currentPickBuffer() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void FrameBufferInterface::PushRtGroup(RtGroup* rtg_top) {
-  bool first_push = mRtGroupStack.size() == 0;
+  size_t rtg_count = mRtGroupStack.size();
+  bool first_push = rtg_count == 0;
   bool pushing_main = (rtg_top==_main_rtg.get());
   bool pushing_same = (rtg_top==_active_rtgroup);
   //OrkAssert(not pushing_same);
@@ -131,6 +132,7 @@ void FrameBufferInterface::PushRtGroup(RtGroup* rtg_top) {
 
   ViewportRect r(0, 0, iw, ih);
 
+  printf("FrameBufferInterface::PushRtGroup rtgcount<%zu> iw<%d> ih<%d>\n", rtg_count, iw, ih);
   pushScissor(r);
   pushViewport(r);
 }
@@ -139,6 +141,8 @@ void FrameBufferInterface::PushRtGroup(RtGroup* rtg_top) {
 
 void FrameBufferInterface::PopRtGroup() {
   // Note: stack pop is now handled in _popRtGroup implementation
+  size_t rtg_count = mRtGroupStack.size();
+  printf("FrameBufferInterface::PopRtGroup rtgcount<%zu>\n", rtg_count);
   _popRtGroup();
   popViewport();
   popScissor();

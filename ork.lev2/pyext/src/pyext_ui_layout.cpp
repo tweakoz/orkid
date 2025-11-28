@@ -12,6 +12,7 @@
 #include <ork/lev2/ui/viewport.h>
 #include <ork/lev2/ui/viewport_scenegraph.h>
 #include <ork/lev2/ui/layoutgroup.inl>
+#include <ork/lev2/ui/layoutsurface.h>
 #include <ork/lev2/ui/anchor.h>
 #include <ork/lev2/ui/box.h>
 #include <ork/lev2/ui/ged/ged_surface.h>
@@ -620,7 +621,41 @@ void pyinit_ui_layout(py::module& uimodule) {
                 lgrp->_overlay_enabled = enabled;
               });
   type_codec->registerStdCodec<uilayoutgroup_ptr_t>(layoutgroup_type);
-
+  /////////////////////////////////////////////////////////////////////////////////
+  auto layoutsurface_type = //
+      py::class_<ui::LayoutSurface, ui::Surface, ui::layoutsurface_ptr_t>(uimodule, "LayoutSurface")
+          .def(py::init<>([](std::string name, int w, int h, int margin) -> ui::layoutsurface_ptr_t {
+            return std::make_shared<ui::LayoutSurface>(name, 0, 0, w, h, margin);
+          }), py::arg("name"), py::arg("w") = 0, py::arg("h") = 0, py::arg("margin") = 0)
+          .def_property(
+              "virtualWidth",
+              [](ui::layoutsurface_ptr_t surf) -> int { return surf->getVirtualWidth(); },
+              [](ui::layoutsurface_ptr_t surf, int w) { surf->setVirtualSize(w, surf->getVirtualHeight()); })
+          .def_property(
+              "virtualHeight",
+              [](ui::layoutsurface_ptr_t surf) -> int { return surf->getVirtualHeight(); },
+              [](ui::layoutsurface_ptr_t surf, int h) { surf->setVirtualSize(surf->getVirtualWidth(), h); })
+          .def(
+              "setVirtualSize",
+              [](ui::layoutsurface_ptr_t surf, int w, int h) { surf->setVirtualSize(w, h); })
+          .def_property(
+              "scrollX",
+              [](ui::layoutsurface_ptr_t surf) -> int { return surf->getScrollX(); },
+              [](ui::layoutsurface_ptr_t surf, int x) { surf->setScrollPosition(x, surf->getScrollY()); })
+          .def_property(
+              "scrollY",
+              [](ui::layoutsurface_ptr_t surf) -> int { return surf->getScrollY(); },
+              [](ui::layoutsurface_ptr_t surf, int y) { surf->setScrollPosition(surf->getScrollX(), y); })
+          .def(
+              "setScrollPosition",
+              [](ui::layoutsurface_ptr_t surf, int x, int y) { surf->setScrollPosition(x, y); })
+          .def_property_readonly(
+              "layoutGroup",
+              [](ui::layoutsurface_ptr_t surf) -> uilayoutgroup_ptr_t { return surf->layoutGroup(); })
+          .def_property_readonly(
+              "layout",
+              [](ui::layoutsurface_ptr_t surf) -> uilayout_ptr_t { return surf->layout(); });
+  type_codec->registerStdCodec<ui::layoutsurface_ptr_t>(layoutsurface_type);
 
 }
 

@@ -256,10 +256,18 @@ void LayoutGroup::_positionOverlay() {
 }
 /////////////////////////////////////////////////////////////////////////
 void LayoutGroup::DoDraw(drawevent_constptr_t drwev) {
+  auto tgt    = drwev->GetTarget();
+  auto fbi    = tgt->FBI();
+  auto mtxi   = tgt->MTXI();
+  auto primi  = tgt->PRI();
+  auto defmtl = lev2::defaultUIMaterial();
+
   int x = _geometry._x;
   int y = _geometry._y;
   int w = _geometry._w;
   int h = _geometry._h;
+  mtxi->PushUIMatrix(w,h);
+
   //printf("LayoutGroup<%s>::DoDraw xywh<%d %d %d %d> clear<%d>\n", _name.c_str(), x, y, w, h, int(_clear));
   if(_clear){
     Widget::_drawColoredBox(drwev,  _clearColorStd);
@@ -275,13 +283,7 @@ void LayoutGroup::DoDraw(drawevent_constptr_t drwev) {
 
   // Draw highlighted guide if one is under the mouse
   if (GUIDES_UNDER_MOUSE) {
-    auto tgt    = drwev->GetTarget();
-    auto fbi    = tgt->FBI();
-    auto mtxi   = tgt->MTXI();
-    auto primi  = tgt->PRI();
-    auto defmtl = lev2::defaultUIMaterial();
 
-    mtxi->PushUIMatrix();
     {
       // Get the guide's line in geometry space
       auto line = GUIDES_UNDER_MOUSE->line(anchor::Mode::Geometry);
@@ -336,8 +338,8 @@ void LayoutGroup::DoDraw(drawevent_constptr_t drwev) {
       );
       tgt->PopModColor();
     }
-    mtxi->PopUIMatrix();
   }
+  mtxi->PopUIMatrix();
 }
 //////////////////////////////////////
 anchor::layout_ptr_t LayoutGroup::layoutAndAddChild(widget_ptr_t w) {

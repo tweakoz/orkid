@@ -52,6 +52,31 @@ struct LayoutSurface : public Surface {
 
   void _updateRenderTarget();
 
+  //////////////////////////////////////////////////////////////
+  // 3D Embedding Support
+  //////////////////////////////////////////////////////////////
+
+  // Ensure texture is current before 3D rendering
+  // Called by external renderers (e.g., UISurfaceRenderImpl)
+  void updateTextureIfNeeded(lev2::Context* ctx);
+
+  // Convert surface-local coordinates to pixel coordinates
+  // Input: local coords in [-0.5, 0.5] range (center = origin)
+  // Output: pixel coords in [0, width] x [0, height]
+  fvec2 localToPixel(const fvec2& local) const;
+
+  // Convert pixel coordinates to surface-local coordinates
+  // Inverse of localToPixel()
+  fvec2 pixelToLocal(const fvec2& pixel) const;
+
+  // Handle input that has been transformed to surface pixel space
+  // Creates a 2D Event and routes through normal UI system
+  HandlerResult handleTransformedInput(
+      const fvec2& surfacePixelCoords,
+      EventCode eventCode,
+      uint32_t buttonState,
+      uint32_t modifierKeys);
+
   std::shared_ptr<LayoutGroup> _layoutGroup;
 
   // Virtual dimensions (texture size)

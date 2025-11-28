@@ -15,6 +15,7 @@
 #include <ork/lev2/gfx/scenegraph/sgnode_billboard.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_groundplane.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_geoclipmap.h>
+#include <ork/lev2/gfx/scenegraph/sgnode_uisurface.h>
 #include <ork/lev2/gfx/particle/drawable_data.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/meshutil/rigid_primitive.inl>
@@ -486,6 +487,35 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
               [](meshutil::rigidprimitive_drawdata_ptr_t dd) { return dd->_primitive; },
               [](meshutil::rigidprimitive_drawdata_ptr_t dd, meshutil::rigidprimitive_ptr_t prim) { dd->_primitive = prim; });
   type_codec->registerStdCodec<meshutil::rigidprimitive_drawdata_ptr_t>(rprimddata_t);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto uisurface_primdata_type = //
+      py::class_<UISurfacePrimitiveData, DrawableData, uisurfaceprimitivedata_ptr_t>(module_lev2, "UISurfacePrimitiveData")
+          .def(py::init<>())
+          .def_property(
+              "layoutSurface",
+              [](uisurfaceprimitivedata_ptr_t data) -> ui::layoutsurface_ptr_t { return data->_layoutSurface; },
+              [](uisurfaceprimitivedata_ptr_t data, ui::layoutsurface_ptr_t surf) { data->_layoutSurface = surf; })
+          .def_property(
+              "center",
+              [](uisurfaceprimitivedata_ptr_t data) -> fvec3 { return data->_center; },
+              [](uisurfaceprimitivedata_ptr_t data, fvec3 c) { data->_center = c; })
+          .def_property(
+              "size",
+              [](uisurfaceprimitivedata_ptr_t data) -> float { return data->_size; },
+              [](uisurfaceprimitivedata_ptr_t data, float s) { data->_size = s; })
+          .def_property(
+              "blendMode",
+              [](uisurfaceprimitivedata_ptr_t data) -> crcstring_ptr_t {
+                return std::make_shared<CrcString>(uint64_t(data->_blendMode));
+              },
+              [](uisurfaceprimitivedata_ptr_t data, crcstring_ptr_t mode) {
+                data->_blendMode = BlendingMacro(mode->hashed());
+              })
+          .def_property(
+              "doubleSided",
+              [](uisurfaceprimitivedata_ptr_t data) -> bool { return data->_doubleSided; },
+              [](uisurfaceprimitivedata_ptr_t data, bool ds) { data->_doubleSided = ds; });
+  type_codec->registerStdCodec<uisurfaceprimitivedata_ptr_t>(uisurface_primdata_type);
 }
 /////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

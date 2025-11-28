@@ -1,0 +1,359 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2023, Michael T. Mayers.
+// Distributed under the MIT License.
+// see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
+////////////////////////////////////////////////////////////////
+
+#include <ork/lev2/gfx/scenegraph/sgnode_uisurface.h>
+#include <ork/lev2/gfx/gfxmaterial_ui.h>
+#include <ork/lev2/gfx/material_freestyle.h>
+#include <ork/lev2/gfx/renderer/renderer.h>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
+#include <ork/lev2/gfx/gfxenv.h>
+#include <ork/lev2/gfx/rtgroup.h>
+#include <ork/lev2/ui/context.h>
+#include <ork/math/plane.hpp>
+
+static const char* UISURFACE_SHADER = R"(
+fxconfig fxcfg_default {
+  glsl_version = "330";
+}
+uniform_set ublock {
+  mat4 mvp;
+}
+sampler_set sset (descriptor_set 0) {
+  sampler2D ColorMap;
+}
+vertex_interface iface_vtx : ublock {
+  inputs {
+    vec4 position : POSITION;
+    vec2 uv : TEXCOORD0;
+    vec4 vtxcolor : COLOR0;
+  }
+  outputs {
+    vec2 frg_uv;
+    vec4 frg_clr;
+  }
+}
+fragment_interface iface_frg : ublock : sset {
+  inputs {
+    vec2 frg_uv;
+    vec4 frg_clr;
+  }
+  outputs {
+    layout(location = 0) vec4 out_color;
+  }
+}
+vertex_shader vs_uisurface : iface_vtx {
+  gl_Position = mvp * position;
+  frg_uv = uv;
+  frg_clr = vtxcolor;
+}
+fragment_shader fs_uisurface : iface_frg {
+  out_color = texture(ColorMap, frg_uv) * frg_clr;
+}
+technique tek_uisurface {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader = vs_uisurface;
+    fragment_shader = fs_uisurface;
+    state_block = default;
+  }
+}
+)";
+
+///////////////////////////////////////////////////////////////////////////////
+using namespace ork::lev2;
+ImplementReflectionX(ork::lev2::UISurfacePrimitiveData, "UISurfacePrimitiveData");
+
+namespace ork::lev2 {
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct UISurfaceRenderImpl {
+
+  UISurfaceRenderImpl(const UISurfacePrimitiveData* data)
+      : _data(data) {
+    // Create UIContext for the embedded surface
+    _uiContext = std::make_shared<ui::Context>();
+  }
+
+  ~UISurfaceRenderImpl() {
+  }
+
+  //////////////////////////////////////////////////////////////
+  // GPU Initialization
+  //////////////////////////////////////////////////////////////
+
+  void gpuInit(Context* ctx) {
+    _material = std::make_shared<FreestyleMaterial>();
+    _material->gpuInitFromShaderText(ctx, "uisurface_shader", UISURFACE_SHADER);
+    _technique = _material->technique("tek_uisurface");
+    _param_mvp = _material->param("mvp");
+    _param_colormap = _material->param("ColorMap");
+
+    _material->_rasterstate->setBlendingMacro(_data->_blendMode);
+    _material->_rasterstate->setCullTest(
+        _data->_doubleSided ? ECullTest::OFF : ECullTest::PASS_BACK);
+    _material->_rasterstate->setDepthTest(EDepthTest::LEQUALS);
+    _material->_rasterstate->setWriteMaskZ(true);
+
+    // Set up UIContext with the LayoutSurface as top
+    if (_data->_layoutSurface) {
+      _uiContext->_top = _data->_layoutSurface->layoutGroup();
+      _data->_layoutSurface->_uicontext = _uiContext.get();
+    }
+
+    _initted = true;
+  }
+
+  //////////////////////////////////////////////////////////////
+  // Billboard Computation
+  //////////////////////////////////////////////////////////////
+
+  static void computeBillboardAxes(
+      const CameraMatrices& camMtx,
+      const fvec3& center,
+      fvec3& right_out,
+      fvec3& up_out,
+      fvec3& normal_out) {
+
+    const CameraData& cdata = camMtx._camdat;
+    fvec3 camPos = cdata.mEye;
+    fvec3 camUp = cdata.mUp;
+
+    // Billboard faces camera
+    normal_out = (camPos - center).normalized();
+    right_out = camUp.crossWith(normal_out).normalized();
+    up_out = normal_out.crossWith(right_out).normalized();
+  }
+
+  void computeQuadCorners(
+      const CameraMatrices& camMtx,
+      fvec3& corner00_out,
+      fvec3& corner10_out,
+      fvec3& corner11_out,
+      fvec3& corner01_out) const {
+
+    fvec3 right, up, normal;
+    computeBillboardAxes(camMtx, _data->_center, right, up, normal);
+
+    auto surface = _data->_layoutSurface;
+    float aspectRatio = float(surface->width()) / float(surface->height());
+    float halfH = _data->_size * 0.5f;
+    float halfW = halfH * aspectRatio;
+
+    corner00_out = _data->_center - right * halfW - up * halfH;  // bottom-left
+    corner10_out = _data->_center + right * halfW - up * halfH;  // bottom-right
+    corner11_out = _data->_center + right * halfW + up * halfH;  // top-right
+    corner01_out = _data->_center - right * halfW + up * halfH;  // top-left
+  }
+
+  fmtx4 computeWorldToSurface(const CameraMatrices& camMtx) const {
+    fvec3 right, up, normal;
+    computeBillboardAxes(camMtx, _data->_center, right, up, normal);
+
+    auto surface = _data->_layoutSurface;
+    float aspectRatio = float(surface->width()) / float(surface->height());
+    float halfH = _data->_size * 0.5f;
+    float halfW = halfH * aspectRatio;
+
+    // Build surface-to-world matrix
+    // Surface local space: origin at center, X = right, Y = up
+    // Coordinates in [-0.5, 0.5] range
+    fmtx4 surfaceToWorld;
+    surfaceToWorld.setColumn(0, fvec4(right * halfW * 2.0f, 0));
+    surfaceToWorld.setColumn(1, fvec4(up * halfH * 2.0f, 0));
+    surfaceToWorld.setColumn(2, fvec4(normal, 0));
+    surfaceToWorld.setColumn(3, fvec4(_data->_center, 1));
+
+    return surfaceToWorld.inverse();
+  }
+
+  //////////////////////////////////////////////////////////////
+  // Hit Testing
+  //////////////////////////////////////////////////////////////
+
+  bool rayIntersect(
+      const fray3& worldRay,
+      const CameraMatrices& camMtx,
+      fvec2& uv_out,
+      fvec3& worldHitPos_out) const {
+
+    fvec3 right, up, normal;
+    computeBillboardAxes(camMtx, _data->_center, right, up, normal);
+
+    // Create plane from billboard
+    fplane3 billboardPlane(normal, _data->_center);
+
+    // Ray-plane intersection
+    float t;
+    if (!billboardPlane.Intersect(worldRay, t, worldHitPos_out)) {
+      return false;
+    }
+
+    // Check if intersection is in front of ray origin
+    if (t < 0) return false;
+
+    // Compute world-to-surface transform
+    fmtx4 worldToSurface = computeWorldToSurface(camMtx);
+
+    // Transform world hit position to surface local space
+    fvec4 localHit = worldToSurface * fvec4(worldHitPos_out, 1.0f);
+
+    // Local coordinates are in [-0.5, 0.5] range
+    // Convert to UV [0, 1] range
+    float u = localHit.x + 0.5f;
+    float v = localHit.y + 0.5f;
+
+    // Check if within quad bounds
+    if (u < 0.0f || u > 1.0f || v < 0.0f || v > 1.0f) {
+      return false;
+    }
+
+    uv_out = fvec2(u, v);
+    return true;
+  }
+
+  //////////////////////////////////////////////////////////////
+  // Rendering
+  //////////////////////////////////////////////////////////////
+
+  void _render(const RenderContextInstData& RCID) {
+    auto ctx = RCID.context();
+    auto surface = _data->_layoutSurface;
+
+    if (!surface) {
+      return;
+    }
+
+    // Lazy GPU init
+    if (!_initted) {
+      gpuInit(ctx);
+    }
+
+    // Get camera matrices
+    auto RCFD = ctx->topRenderContextFrameData();
+    const auto& CPD = RCFD->topCPD();
+    auto cmtcs = CPD.cameraMatrices();
+
+    // Compute billboard axes on-demand
+    fvec3 right, up, normal;
+    computeBillboardAxes(*cmtcs, _data->_center, right, up, normal);
+
+    // Compute quad corners on-demand
+    fvec3 corner00, corner10, corner11, corner01;
+    computeQuadCorners(*cmtcs, corner00, corner10, corner11, corner01);
+
+    // Ensure UI texture is current
+    surface->updateTextureIfNeeded(ctx);
+
+    // Debug: log layoutGroup geometry
+    auto lg = surface->layoutGroup();
+    static bool dumped = false;
+    if (!dumped) {
+      lg->dumpLayoutHierarchy();
+      dumped = true;
+    }
+
+    // Get texture
+    if (!surface->_rtgroup) {
+      return;
+    }
+
+    auto texture = surface->_rtgroup->buffer(0)->texture();
+    if (!texture) {
+      return;
+    }
+
+    // Build vertex data using SVtxV16T16C16 (position, texcoord, color)
+    using vtx_t = SVtxV16T16C16;
+    auto& VB = GfxEnv::GetSharedDynamicV16T16C16();
+    VtxWriter<vtx_t> vw;
+    vw.Lock(ctx, &VB, 6);
+
+    fvec4 white(1, 1, 1, 1);
+
+    // UV coordinates (note Y-flip for texture orientation)
+    // corner00 = bottom-left in world, UV (0, 1)
+    // corner11 = top-right in world, UV (1, 0)
+
+    // Triangle 1: bottom-left, top-right, bottom-right (flipped winding)
+    vw.AddVertex(vtx_t(corner00, fvec4(0, 1, 0, 0), white));
+    vw.AddVertex(vtx_t(corner11, fvec4(1, 0, 0, 0), white));
+    vw.AddVertex(vtx_t(corner10, fvec4(1, 1, 0, 0), white));
+
+    // Triangle 2: bottom-left, top-left, top-right (flipped winding)
+    vw.AddVertex(vtx_t(corner00, fvec4(0, 1, 0, 0), white));
+    vw.AddVertex(vtx_t(corner01, fvec4(0, 0, 0, 0), white));
+    vw.AddVertex(vtx_t(corner11, fvec4(1, 0, 0, 0), white));
+
+    vw.UnLock(ctx);
+
+    // Compute MVP from camera
+    const auto& V = cmtcs->_vmatrix;
+    const auto& P = cmtcs->_pmatrix;
+    fmtx4 MVP = P * V;  // Model is identity since corners are in world space
+
+    // Draw with freestyle material
+    _material->begin(_technique, RCFD);
+    _material->bindParamMatrix(_param_mvp, MVP);
+    _material->bindParamTexture(_param_colormap, texture);
+    ctx->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
+    _material->end(RCFD);
+  }
+
+  static void renderCallback(RenderContextInstData& RCID) {
+    auto renderable = dynamic_cast<const CallbackRenderable*>(RCID._irenderable);
+    renderable->GetDrawableDataA().getShared<UISurfaceRenderImpl>()->_render(RCID);
+  }
+
+  //////////////////////////////////////////////////////////////
+  // Data
+  //////////////////////////////////////////////////////////////
+
+  const UISurfacePrimitiveData* _data;
+  bool _initted = false;
+  std::shared_ptr<FreestyleMaterial> _material;
+  const FxShaderTechnique* _technique = nullptr;
+  const FxShaderParam* _param_mvp = nullptr;
+  const FxShaderParam* _param_colormap = nullptr;
+  ui::context_ptr_t _uiContext;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+void UISurfacePrimitiveData::describeX(class_t* c) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+drawable_ptr_t UISurfacePrimitiveData::createDrawable() const {
+  auto impl = std::make_shared<UISurfaceRenderImpl>(this);
+  auto rval = std::make_shared<CallbackDrawable>(nullptr);
+
+  rval->SetRenderCallback(UISurfaceRenderImpl::renderCallback);
+  rval->SetUserDataA(impl);
+  rval->_sortkey = 10000;  // Render after opaque geometry
+
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+UISurfacePrimitiveData::UISurfacePrimitiveData()
+    : _center(0, 0, 0)
+    , _size(1.0f)
+    , _blendMode(BlendingMacro::ALPHA)
+    , _doubleSided(false) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+UISurfacePrimitiveData::~UISurfacePrimitiveData() {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+} // namespace ork::lev2
+///////////////////////////////////////////////////////////////////////////////
