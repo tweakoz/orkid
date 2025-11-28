@@ -35,6 +35,9 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras, on_enqueue_fn_t on_en
 
   EASY_BLOCK("Scene::enqueueToRenderer", 0xffa02020);
 
+  // Store camera lut for UI event routing
+  _cameralut = cameras;
+
   if (_synchro) {
     bool OK = _synchro->beginUpdate();
     if (not OK) {

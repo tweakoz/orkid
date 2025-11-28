@@ -291,10 +291,22 @@ struct Scene {
 
   asset::loadsynchro_ptr_t _loadSynchro;
   bool okToRender() const;
+
+  // UI Surface drawables for event routing (auto-registered)
+  void _registerUISurface(drawable_ptr_t drawable);
+  void _unregisterUISurface(drawable_ptr_t drawable);
+  const std::vector<drawable_ptr_t>& uiSurfaces() const { return _uiSurfaces; }
+
+  // Camera lookup table (updated each frame via enqueueToRenderer)
+  cameradatalut_ptr_t _cameralut;
+
   struct DrawItem{
     ork::lev2::DrawQueueLayer * _layer;
     drawable_node_ptr_t _drwnode;
   };
+
+private:
+  std::vector<drawable_ptr_t> _uiSurfaces;
 
   std::vector<DrawItem> _nodes2draw;
   bool _enable_pick_hud = false;

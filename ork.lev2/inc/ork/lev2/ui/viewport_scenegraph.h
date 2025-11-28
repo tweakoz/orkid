@@ -10,6 +10,7 @@
 #include <ork/lev2/ui/ui.h>
 #include <ork/lev2/ui/viewport.h>
 #include <ork/lev2/gfx/scenegraph/scenegraph.h>
+#include <ork/lev2/gfx/scenegraph/sgnode_uisurface.h>
 
 namespace ork { namespace ui {
 
@@ -21,12 +22,15 @@ public:
   void _doGpuInit(lev2::Context* pTARG) final;
   void forkDB();
   void bindSceneGraph(lev2::scenegraph::scene_ptr_t sg);
+
   lev2::scenegraph::scene_ptr_t _scenegraph;
   lev2::compositoroutnode_rtgroup_ptr_t _outputnode;
   int _supersample = 1;
   std::string _cameraname = "spawncam";
   lev2::acqdrawbuffer_ptr_t _override_acqdbuf;
 
+protected:
+  HandlerResult DoOnUiEvent(event_constptr_t ev) override;
 };
 
 }} // namespace ork::ui

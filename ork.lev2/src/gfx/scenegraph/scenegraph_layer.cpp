@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/lev2/gfx/scenegraph/scenegraph.h>
+#include <ork/lev2/gfx/scenegraph/sgnode_uisurface.h>
 #include <ork/lev2/ui/event.h>
 #include <ork/application/application.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
@@ -57,6 +58,13 @@ drawable_node_ptr_t Layer::createDrawableNode(std::string named, drawable_ptr_t 
         rval.get());                                                    //
   }
   drawable->_pickID.set<object_ptr_t>(rval);
+
+  // Auto-register UI surface drawables for event routing
+  auto uiSurfaceImpl = getUISurfaceRenderImpl(drawable);
+  if (uiSurfaceImpl) {
+    _scene->_registerUISurface(drawable);
+  }
+
   return rval;
 }
 

@@ -93,6 +93,21 @@ Scene::~Scene() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void Scene::_registerUISurface(drawable_ptr_t drawable) {
+  _uiSurfaces.push_back(drawable);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Scene::_unregisterUISurface(drawable_ptr_t drawable) {
+  auto it = std::find(_uiSurfaces.begin(), _uiSurfaces.end(), drawable);
+  if (it != _uiSurfaces.end()) {
+    _uiSurfaces.erase(it);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void Scene::gpuInit(Context* ctx) {
   _sgpickbuffer = std::make_shared<SgPickBuffer>(ctx, *this);
   _dogpuinit    = false;

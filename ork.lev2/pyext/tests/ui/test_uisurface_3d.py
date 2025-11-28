@@ -60,7 +60,7 @@ class UISurface3DApp(ComponentizedApplication):
     self.ui_prim_data.size = 1.0  # 1 meter square
     self.ui_prim_data.blendMode = tokens.ALPHA
     self.ui_prim_data.doubleSided = True
-    self.ui_prim_data.max_samples_per_axis = 4
+    self.ui_prim_data.max_samples_per_axis = 8
 
     # Create drawable and node
     self.ui_drawable = self.ui_prim_data.createDrawable()

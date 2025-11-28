@@ -113,6 +113,41 @@ void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 }
 // Surface::DoDraw()
 
+///////////////////////////////////////////////////////////////////////////////
+
+HandlerResult SceneGraphViewport::DoOnUiEvent(event_constptr_t ev) {
+  // First, try to route to any registered UI surfaces
+  if (_scenegraph) {
+    const auto& uiSurfaces = _scenegraph->uiSurfaces();
+    if (!uiSurfaces.empty()) {
+      // Get camera matrices from the scenegraph's camera
+      auto cameralut = _scenegraph->_cameralut;
+      if (cameralut) {
+        auto camera = cameralut->find(_cameraname);
+        if (camera) {
+          float aspect = (height() > 0) ? float(width()) / float(height()) : 1.0f;
+          auto camMtx = camera->computeMatrices(aspect);
+
+          // Check each UI surface for hit
+          for (auto& drawable : uiSurfaces) {
+            auto impl = lev2::getUISurfaceRenderImpl(drawable);
+            if (impl) {
+              auto result = impl->routeUiEvent(width(), height(), camMtx, ev);
+              if (result.mHandler != nullptr) {
+                return result;  // Event was consumed by UI surface
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // No UI surface consumed the event - return empty result
+  // The widget's _evhandler will be called by the base class
+  return HandlerResult();
+}
+
 /////////////////////////////////////////////////////////////////////////
 
 }} // namespace ork::ui
