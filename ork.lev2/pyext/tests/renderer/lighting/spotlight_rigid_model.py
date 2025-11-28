@@ -35,7 +35,7 @@ class SpotlightApp(ComponentizedApplication):
                                  StandardSceneGraphComponent, 
                                  grid_variant="_V4",
                                  eye=vec3(0,12,15))
-    #self.LUI = self.addComponent("loggerui", LoggerUIComponent, filter_regex=[".*"]) 
+    self.LUI = self.addComponent("loggerui", LoggerUIComponent, filter_regex=[".*"]) 
     self.createEzApp(name="RenderTestSpotLightRigidModel", ssaa=1, fullscreen=False)
 
   ##############################################
