@@ -234,8 +234,10 @@ struct LayoutGroup : public Group {
   fvec4 _clearColorStd;
   fvec4 _clearColorGuide;
   bool _highlightGuides = false;
-  bool _isDraggingGuide = false;
   Timer _animtimer;
+
+  anchor::guide_ptr_t _guide_being_dragged = nullptr;
+
   Widget* doRouteUiEvent(event_constptr_t Ev) override;
 
   widget_ptr_t _overlay_widget = nullptr;  // Overlay widget (e.g., LoggerGroup)

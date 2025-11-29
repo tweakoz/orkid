@@ -8,7 +8,6 @@
 #include <ork/lev2/gfx/pri.h>
 
 namespace ork { namespace ui {
-static anchor::guide_ptr_t GUIDES_UNDER_MOUSE;
 /////////////////////////////////////////////////////////////////////////
 Group::Group(const std::string& name, int x, int y, int w, int h)
     : Widget(name, x, y, w, h) {
@@ -284,9 +283,9 @@ void LayoutGroup::DoDraw(drawevent_constptr_t drwev) {
 
   // Draw highlighted guide if one is under the mouse
   // Only render if the guide belongs to this LayoutGroup's hierarchy
-  if (GUIDES_UNDER_MOUSE) {
+  if (_guide_being_dragged) {
     // Check if the guide's widget is a descendant of this LayoutGroup
-    Widget* guide_widget = GUIDES_UNDER_MOUSE->_layout->_widget;
+    Widget* guide_widget = _guide_being_dragged->_layout->_widget;
     bool is_descendant = false;
     Widget* check = guide_widget;
     while (check) {
@@ -299,11 +298,11 @@ void LayoutGroup::DoDraw(drawevent_constptr_t drwev) {
 
     if (is_descendant) {
       // Get the guide's line in geometry space
-      auto line = GUIDES_UNDER_MOUSE->line(anchor::Mode::Geometry);
+      auto line = _guide_being_dragged->line(anchor::Mode::Geometry);
 
       // Transform to root space (same as in guide detection)
       // Stop at Surface boundaries since they render to their own coordinate system
-      Widget* widget = GUIDES_UNDER_MOUSE->_layout->_widget;
+      Widget* widget = _guide_being_dragged->_layout->_widget;
       Widget* current = widget->parent();
       while (current && current->parent()) {
         // Stop if we hit a Surface - it's the root of its own coordinate system
@@ -319,10 +318,10 @@ void LayoutGroup::DoDraw(drawevent_constptr_t drwev) {
       }
 
       // Calculate the box around the guide based on its margin
-      int margin = GUIDES_UNDER_MOUSE->_margin;
+      int margin = _guide_being_dragged->_margin;
       int ix1, iy1, ix2, iy2;
 
-      if (GUIDES_UNDER_MOUSE->isVertical()) {
+      if (_guide_being_dragged->isVertical()) {
         // Vertical guide - draw a vertical box
         ix1 = line._from.x - margin;
         ix2 = line._from.x + margin;
@@ -340,7 +339,7 @@ void LayoutGroup::DoDraw(drawevent_constptr_t drwev) {
       defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
 
       // Modulate color when actively dragging for visual feedback
-      auto guide_color = _isDraggingGuide //
+      auto guide_color = _guide_being_dragged //
                        ? (_clearColorGuide*0.8+sinf(_animtimer.SecsSinceStart()*PI2*3.0)*0.2) //
                        : _clearColorGuide;
 
@@ -821,7 +820,6 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
     case ui::EventCode::PUSH: {
       was_handled = true;
       if(_highlightGuides){
-        _isDraggingGuide       = true;
         _animtimer.Start();
       }
       break;
@@ -829,7 +827,7 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
     case ui::EventCode::RELEASE: {
       //_clearColor = fvec4(0, 0, 0, 1);
       was_handled = true;
-      _isDraggingGuide = false;
+      _guide_being_dragged = nullptr;
       break;
     }
     case ui::EventCode::BEGIN_DRAG: {
@@ -842,8 +840,8 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
     case ui::EventCode::END_DRAG: {
       was_handled       = true;
       result.mHoldFocus = false;
-      _isDraggingGuide  = false;
-      //GUIDES_UNDER_MOUSE = std::pair<anchor::guide_ptr_t, anchor::guide_ptr_t>(nullptr,nullptr);
+      _guide_being_dragged  = nullptr;
+      //_guide_being_dragged = std::pair<anchor::guide_ptr_t, anchor::guide_ptr_t>(nullptr,nullptr);
       break;
     }
     case ui::EventCode::MOVE: {
@@ -853,7 +851,7 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
     case ui::EventCode::DRAG: {
       result.mHoldFocus = true;
       was_handled       = true;
-      auto g1 = GUIDES_UNDER_MOUSE;
+      auto g1 = _guide_being_dragged;
       int dx           = ev->miX - lastx;
       int dy           = ev->miY - lasty;
       if(g1){
@@ -881,7 +879,7 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
       break;
     default: {
       _highlightGuides = false;
-      _isDraggingGuide = false;
+      _guide_being_dragged = nullptr;
       break;
     }
   }
@@ -918,8 +916,8 @@ Widget* LayoutGroup::doRouteUiEvent(event_constptr_t ev) {
   }
 
   ///////////////////////////
-  GUIDES_UNDER_MOUSE = anchor::findGuidePairUnderMouse(_layout.get(), fvec2(ev->miX, ev->miY));
-  if(GUIDES_UNDER_MOUSE){
+  _guide_being_dragged = anchor::findGuidePairUnderMouse(_layout.get(), fvec2(ev->miX, ev->miY));
+  if(_guide_being_dragged){
     _highlightGuides = true;
     return this;
   }
