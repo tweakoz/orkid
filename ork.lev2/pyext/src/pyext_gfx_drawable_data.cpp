@@ -491,14 +491,12 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
   auto uisurface_primdata_type = //
       py::class_<UISurfacePrimitiveData, DrawableData, uisurfaceprimitivedata_ptr_t>(module_lev2, "UISurfacePrimitiveData")
           .def(py::init<>())
-          .def_property(
-              "layoutSurface",
-              [](uisurfaceprimitivedata_ptr_t data) -> ui::layoutsurface_ptr_t { return data->_layoutSurface; },
-              [](uisurfaceprimitivedata_ptr_t data, ui::layoutsurface_ptr_t surf) { data->_layoutSurface = surf; })
-          .def_property(
-              "center",
-              [](uisurfaceprimitivedata_ptr_t data) -> fvec3 { return data->_center; },
-              [](uisurfaceprimitivedata_ptr_t data, fvec3 c) { data->_center = c; })
+          .def(
+              "createDrawable",
+              [](uisurfaceprimitivedata_ptr_t data, ui::layoutsurface_ptr_t surface) -> drawable_ptr_t {
+                return data->createDrawable(surface);
+              },
+              py::arg("surface"))
           .def_property(
               "size",
               [](uisurfaceprimitivedata_ptr_t data) -> float { return data->_size; },

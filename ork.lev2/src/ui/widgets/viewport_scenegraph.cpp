@@ -10,6 +10,7 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
 #include <ork/lev2/ui/viewport_scenegraph.h>
 #include <ork/lev2/ui/event.h>
+#include <ork/lev2/ui/group.h>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::ui::SceneGraphViewport, "ui::SceneGraphViewport");
 
@@ -25,6 +26,12 @@ void SceneGraphViewport::Describe() {
 SceneGraphViewport::SceneGraphViewport(const std::string& name, int x, int y, int w, int h)
     : Viewport(name, x, y, w, h, fvec4(1, 0, 1, 1), 1.0f) {
   _flipY = false;
+
+  // Create embedded UI context for 3D UI surfaces
+  _embeddedUiContext = std::make_shared<Context>();
+  _embeddedUiContext->_id = "sgvp_embedded";
+  // The context needs a top group to route events through
+  _embeddedUiContext->makeTop<Group>("embedded_root", 0, 0, 1, 1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -115,36 +122,98 @@ void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-HandlerResult SceneGraphViewport::DoOnUiEvent(event_constptr_t ev) {
-  // First, try to route to any registered UI surfaces
-  if (_scenegraph) {
-    const auto& uiSurfaces = _scenegraph->uiSurfaces();
-    if (!uiSurfaces.empty()) {
-      // Get camera matrices from the scenegraph's camera
-      auto cameralut = _scenegraph->_cameralut;
-      if (cameralut) {
-        auto camera = cameralut->find(_cameraname);
-        if (camera) {
-          float aspect = (height() > 0) ? float(width()) / float(height()) : 1.0f;
-          auto camMtx = camera->computeMatrices(aspect);
+HandlerResult SceneGraphViewport::_routeToEmbeddedUiSurfaces(event_constptr_t ev) {
+  if (!_scenegraph) {
+    return HandlerResult();
+  }
 
-          // Check each UI surface for hit
-          for (auto& drawable : uiSurfaces) {
-            auto impl = lev2::getUISurfaceRenderImpl(drawable);
-            if (impl) {
-              auto result = impl->routeUiEvent(width(), height(), camMtx, ev);
-              if (result.mHandler != nullptr) {
-                return result;  // Event was consumed by UI surface
-              }
-            }
-          }
-        }
+  const auto& uiSurfaces = _scenegraph->uiSurfaces();
+  if (uiSurfaces.empty()) {
+    return HandlerResult();
+  }
+
+  auto cameralut = _scenegraph->_cameralut;
+  if (!cameralut) {
+    return HandlerResult();
+  }
+
+  auto camera = cameralut->find(_cameraname);
+  if (!camera) {
+    return HandlerResult();
+  }
+
+  float aspect = (height() > 0) ? float(width()) / float(height()) : 1.0f;
+  auto camMtx = camera->computeMatrices(aspect);
+
+  // Generate world-space ray from screen coordinates
+  float nx = (2.0f * ev->miX / float(width())) - 1.0f;
+  float ny = 1.0f - (2.0f * ev->miY / float(height()));
+
+  fvec4 nearNDC(nx, ny, -1.0f, 1.0f);
+  fvec4 farNDC(nx, ny, 1.0f, 1.0f);
+
+  auto invVP = (camMtx._pmatrix * camMtx._vmatrix).inverse();
+  fvec4 nearWorld4 = nearNDC.transform(invVP);
+  fvec4 farWorld4 = farNDC.transform(invVP);
+
+  fvec3 nearWorld = nearWorld4.xyz() / nearWorld4.w;
+  fvec3 farWorld = farWorld4.xyz() / farWorld4.w;
+  fvec3 rayDir = (farWorld - nearWorld).normalized();
+  fray3 worldRay(nearWorld, rayDir);
+
+  // Test each UI surface for intersection
+  for (auto& drawable : uiSurfaces) {
+    auto impl = lev2::getUISurfaceRenderImpl(drawable);
+    if (!impl) continue;
+
+    // Check if layoutSurface is valid before ray testing
+    auto layoutSurface = impl->_layoutSurface;
+    if (!layoutSurface) continue;
+
+    fvec2 surfaceUV;
+    fvec3 worldHitPos;
+
+    if (impl->rayIntersect(worldRay, camMtx, surfaceUV, worldHitPos)) {
+      // Hit! Transform UV [0,1] to LayoutSurface pixel coordinates
+
+      int surfaceW = layoutSurface->width();
+      int surfaceH = layoutSurface->height();
+
+      // Create transformed event with surface-local coordinates
+      auto transformedEv = std::make_shared<Event>();
+      *transformedEv = *ev;
+      transformedEv->miX = int(surfaceUV.x * surfaceW);
+      transformedEv->miY = int(surfaceUV.y * surfaceH);
+
+      // Route through the LayoutSurface's widget tree
+      auto result = layoutSurface->handleUiEvent(transformedEv);
+      if (result.wasHandled()) {
+        return result;
       }
     }
   }
 
-  // No UI surface consumed the event - return empty result
-  // The widget's _evhandler will be called by the base class
+  return HandlerResult();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+HandlerResult SceneGraphViewport::DoOnUiEvent(event_constptr_t ev) {
+  // 1. Try embedded UI surfaces first
+  auto result = _routeToEmbeddedUiSurfaces(ev);
+  if (result.wasHandled()) {
+    return result;
+  }
+
+  // 2. Camera handler (e.g., EzUiCam)
+  if (_camera_evhandler) {
+    result = _camera_evhandler(ev);
+    if (result.wasHandled()) {
+      return result;
+    }
+  }
+
+  // 3. Default: not handled
   return HandlerResult();
 }
 

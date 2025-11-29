@@ -210,7 +210,7 @@ class StandardSceneGraphComponent(ApplicationComponent):
     SGVPW.cameraName = self.camname
     SGVPW.scenegraph = SG
     if self.enable_ui_camera:
-      SGVPW.evhandler = lambda x: self._onCameraUiEvent(x)
+      SGVPW.camera_evhandler = lambda x: self._onCameraUiEvent(x)
     SGVPW.forkDB()
     self.SGVP = SGVP
 

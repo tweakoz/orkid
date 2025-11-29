@@ -26,7 +26,7 @@ using uisurfaceprimitivedata_ptr_t = std::shared_ptr<UISurfacePrimitiveData>;
 
 struct UISurfaceRenderImpl {
 
-  UISurfaceRenderImpl(const UISurfacePrimitiveData* data);
+  UISurfaceRenderImpl(const UISurfacePrimitiveData* data, ui::layoutsurface_ptr_t surface);
   ~UISurfaceRenderImpl();
 
   //////////////////////////////////////////////////////////////
@@ -89,6 +89,8 @@ struct UISurfaceRenderImpl {
   //////////////////////////////////////////////////////////////
 
   const UISurfacePrimitiveData* _data = nullptr;
+  ui::layoutsurface_ptr_t _layoutSurface;  // The UI surface to render (set at creation)
+  decompxf_ptr_t _worldTransform;          // World transform (set from node for hit testing)
   bool _initted = false;
   std::shared_ptr<FreestyleMaterial> _material;
   const FxShaderTechnique* _technique = nullptr;
@@ -117,13 +119,12 @@ public:
   ~UISurfacePrimitiveData();
 
   drawable_ptr_t createDrawable() const final;
+  drawable_ptr_t createDrawable(ui::layoutsurface_ptr_t surface) const;
 
   //////////////////////////////////////////////////////////////
   // Configuration
   //////////////////////////////////////////////////////////////
 
-  ui::layoutsurface_ptr_t _layoutSurface;  // The UI surface to render
-  fvec3 _center;                            // Position in 3D world
   float _size = 1.0f;                       // Height of quad in world units
                                             // Width = _size * aspectRatio
 

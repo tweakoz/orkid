@@ -55,22 +55,21 @@ class UISurface3DApp(ComponentizedApplication):
 
     # Create UISurfacePrimitiveData
     self.ui_prim_data = lev2.UISurfacePrimitiveData()
-    self.ui_prim_data.layoutSurface = self.layout_surface
-    self.ui_prim_data.center = vec3(0, 2, 0)  # 2 meters above origin
     self.ui_prim_data.size = 1.0  # 1 meter square
     self.ui_prim_data.blendMode = tokens.ALPHA
     self.ui_prim_data.doubleSided = True
     self.ui_prim_data.max_samples_per_axis = 8
 
     # Create drawable and node
-    self.ui_drawable = self.ui_prim_data.createDrawable()
+    self.ui_drawable = self.ui_prim_data.createDrawable(surface=self.layout_surface)
     self.ui_node = SG.createDrawableNodeOnLayers(
       SGC.fwd_layers,
       "uisurface-node",
       self.ui_drawable
     )
     self.ui_node.sortkey = 100
-
+    self.ui_node.worldTransform.translation = vec3(0, 4, 0) 
+    
 ###############################################################################
 
 UISurface3DApp().ezapp.mainThreadLoop()

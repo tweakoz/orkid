@@ -9,6 +9,7 @@
 
 #include <ork/lev2/ui/ui.h>
 #include <ork/lev2/ui/viewport.h>
+#include <ork/lev2/ui/context.h>
 #include <ork/lev2/gfx/scenegraph/scenegraph.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_uisurface.h>
 
@@ -29,8 +30,18 @@ public:
   std::string _cameraname = "spawncam";
   lev2::acqdrawbuffer_ptr_t _override_acqdbuf;
 
+  // Camera event handler (set by user, e.g., for EzUiCam)
+  evhandler_t _camera_evhandler = nullptr;
+
+  // Private ui::Context for embedded UI surfaces (LayoutSurfaces in 3D)
+  context_ptr_t _embeddedUiContext;
+
 protected:
   HandlerResult DoOnUiEvent(event_constptr_t ev) override;
+
+private:
+  // Route event to embedded UI surfaces, returns true if consumed
+  HandlerResult _routeToEmbeddedUiSurfaces(event_constptr_t ev);
 };
 
 }} // namespace ork::ui

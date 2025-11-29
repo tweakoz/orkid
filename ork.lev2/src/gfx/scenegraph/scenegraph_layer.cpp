@@ -62,6 +62,8 @@ drawable_node_ptr_t Layer::createDrawableNode(std::string named, drawable_ptr_t 
   // Auto-register UI surface drawables for event routing
   auto uiSurfaceImpl = getUISurfaceRenderImpl(drawable);
   if (uiSurfaceImpl) {
+    // Set the world transform reference so hit testing can access position
+    uiSurfaceImpl->_worldTransform = rval->_dqxfdata._worldTransform;
     _scene->_registerUISurface(drawable);
   }
 

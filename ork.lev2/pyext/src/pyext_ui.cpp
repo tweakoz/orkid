@@ -614,6 +614,28 @@ void pyinit_ui(py::module& module_lev2) {
               "outputnode",
               [](uisgviewport_ptr_t sgview) -> lev2::compositoroutnode_rtgroup_ptr_t { //
                 return sgview->_outputnode;
+              })
+          //////////////////////////////////
+          // Camera event handler - for EzUiCam and similar
+          .def_property(
+              "camera_evhandler",
+              [](uisgviewport_ptr_t sgview) -> py::object { //
+                return py::none();
+              },
+              [](uisgviewport_ptr_t sgview, py::object callback) { //
+                sgview->_uservars->makeValueForKey<py::object>("_hold_camera_ev_callback", callback);
+                sgview->_camera_evhandler = [sgview](ui::event_constptr_t ev) -> ui::HandlerResult {
+                  ui::HandlerResult rval;
+                  py::gil_scoped_acquire acquire_gil;
+                  auto cb = sgview->_uservars->typedValueForKey<py::object>("_hold_camera_ev_callback").value();
+                  if (cb) {
+                    auto pyrval = cb(ev);
+                    if (pyrval) {
+                      rval = py::cast<ui::HandlerResult>(pyrval);
+                    }
+                  }
+                  return rval;
+                };
               });
   type_codec->registerStdCodec<uisgviewport_ptr_t>(sgviewport_type);
   /////////////////////////////////////////////////////////////////////////////////

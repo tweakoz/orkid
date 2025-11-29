@@ -111,8 +111,9 @@ namespace ork::lev2 {
 // UISurfaceRenderImpl implementation
 ///////////////////////////////////////////////////////////////////////////////
 
-UISurfaceRenderImpl::UISurfaceRenderImpl(const UISurfacePrimitiveData* data)
-    : _data(data) {
+UISurfaceRenderImpl::UISurfaceRenderImpl(const UISurfacePrimitiveData* data, ui::layoutsurface_ptr_t surface)
+    : _data(data)
+    , _layoutSurface(surface) {
   _uiContext = std::make_shared<ui::Context>();
 }
 
@@ -137,9 +138,9 @@ void UISurfaceRenderImpl::gpuInit(Context* ctx) {
   _material->_rasterstate->setWriteMaskZ(true);
 
   // Set up UIContext with the LayoutSurface as top
-  if (_data->_layoutSurface) {
-    _uiContext->_top = _data->_layoutSurface->layoutGroup();
-    _data->_layoutSurface->_uicontext = _uiContext.get();
+  if (_layoutSurface) {
+    _uiContext->_top = _layoutSurface->layoutGroup();
+    _layoutSurface->_uicontext = _uiContext.get();
   }
 
   _initted = true;
@@ -173,28 +174,28 @@ void UISurfaceRenderImpl::computeQuadCorners(
     fvec3& corner11_out,
     fvec3& corner01_out) const {
 
+  fvec3 center = _worldTransform ? _worldTransform->_translation : fvec3(0);
   fvec3 right, up, normal;
-  computeBillboardAxes(camMtx, _data->_center, right, up, normal);
+  computeBillboardAxes(camMtx, center, right, up, normal);
 
-  auto surface = _data->_layoutSurface;
-  float aspectRatio = float(surface->width()) / float(surface->height());
+  float aspectRatio = float(_layoutSurface->width()) / float(_layoutSurface->height());
   float halfH = _data->_size * 0.5f;
   float halfW = halfH * aspectRatio;
 
-  corner00_out = _data->_center - right * halfW - up * halfH;  // bottom-left
-  corner10_out = _data->_center + right * halfW - up * halfH;  // bottom-right
-  corner11_out = _data->_center + right * halfW + up * halfH;  // top-right
-  corner01_out = _data->_center - right * halfW + up * halfH;  // top-left
+  corner00_out = center - right * halfW - up * halfH;  // bottom-left
+  corner10_out = center + right * halfW - up * halfH;  // bottom-right
+  corner11_out = center + right * halfW + up * halfH;  // top-right
+  corner01_out = center - right * halfW + up * halfH;  // top-left
 }
 
 //////////////////////////////////////////////////////////////
 
 fmtx4 UISurfaceRenderImpl::computeWorldToSurface(const CameraMatrices& camMtx) const {
+  fvec3 center = _worldTransform ? _worldTransform->_translation : fvec3(0);
   fvec3 right, up, normal;
-  computeBillboardAxes(camMtx, _data->_center, right, up, normal);
+  computeBillboardAxes(camMtx, center, right, up, normal);
 
-  auto surface = _data->_layoutSurface;
-  float aspectRatio = float(surface->width()) / float(surface->height());
+  float aspectRatio = float(_layoutSurface->width()) / float(_layoutSurface->height());
   float halfH = _data->_size * 0.5f;
   float halfW = halfH * aspectRatio;
 
@@ -205,7 +206,7 @@ fmtx4 UISurfaceRenderImpl::computeWorldToSurface(const CameraMatrices& camMtx) c
   surfaceToWorld.setColumn(0, fvec4(right * halfW * 2.0f, 0));
   surfaceToWorld.setColumn(1, fvec4(up * halfH * 2.0f, 0));
   surfaceToWorld.setColumn(2, fvec4(normal, 0));
-  surfaceToWorld.setColumn(3, fvec4(_data->_center, 1));
+  surfaceToWorld.setColumn(3, fvec4(center, 1));
 
   return surfaceToWorld.inverse();
 }
@@ -218,11 +219,12 @@ bool UISurfaceRenderImpl::rayIntersect(
     fvec2& uv_out,
     fvec3& worldHitPos_out) const {
 
+  fvec3 center = _worldTransform ? _worldTransform->_translation : fvec3(0);
   fvec3 right, up, normal;
-  computeBillboardAxes(camMtx, _data->_center, right, up, normal);
+  computeBillboardAxes(camMtx, center, right, up, normal);
 
   // Create plane from billboard
-  fplane3 billboardPlane(normal, _data->_center);
+  fplane3 billboardPlane(normal, center);
 
   // Ray-plane intersection
   float t;
@@ -262,8 +264,7 @@ ui::HandlerResult UISurfaceRenderImpl::routeUiEvent(
     ui::event_constptr_t ev) {
 
   ui::HandlerResult result;
-  auto surface = _data->_layoutSurface;
-  if (!surface) {
+  if (!_layoutSurface) {
     return result;
   }
 
@@ -293,17 +294,17 @@ ui::HandlerResult UISurfaceRenderImpl::routeUiEvent(
     // Generate MOUSE_ENTER event
     auto enterEv = std::make_shared<ui::Event>(*ev);
     enterEv->_eventcode = ui::EventCode::MOUSE_ENTER;
-    int pixelX = int(uv.x * surface->width());
-    int pixelY = int((1.0f - uv.y) * surface->height());  // Flip Y
+    int pixelX = int(uv.x * _layoutSurface->width());
+    int pixelY = int((1.0f - uv.y) * _layoutSurface->height());  // Flip Y
     enterEv->miX = pixelX;
     enterEv->miY = pixelY;
-    surface->handleUiEvent(enterEv);
+    _layoutSurface->handleUiEvent(enterEv);
   } else if (!hit && _mouseInside) {
     _mouseInside = false;
     // Generate MOUSE_LEAVE event
     auto leaveEv = std::make_shared<ui::Event>(*ev);
     leaveEv->_eventcode = ui::EventCode::MOUSE_LEAVE;
-    surface->handleUiEvent(leaveEv);
+    _layoutSurface->handleUiEvent(leaveEv);
     return result;
   }
 
@@ -312,8 +313,8 @@ ui::HandlerResult UISurfaceRenderImpl::routeUiEvent(
   }
 
   // Transform event coordinates to surface pixel space
-  int pixelX = int(uv.x * surface->width());
-  int pixelY = int((1.0f - uv.y) * surface->height());  // Flip Y for UI coords
+  int pixelX = int(uv.x * _layoutSurface->width());
+  int pixelY = int((1.0f - uv.y) * _layoutSurface->height());  // Flip Y for UI coords
 
   // Create transformed event
   auto surfaceEv = std::make_shared<ui::Event>(*ev);
@@ -321,8 +322,8 @@ ui::HandlerResult UISurfaceRenderImpl::routeUiEvent(
   surfaceEv->miY = pixelY;
 
   // Route to the layout surface
-  result = surface->handleUiEvent(surfaceEv);
-  result.mHandler = surface.get();
+  result = _layoutSurface->handleUiEvent(surfaceEv);
+  result.mHandler = _layoutSurface.get();
 
   return result;
 }
@@ -331,11 +332,14 @@ ui::HandlerResult UISurfaceRenderImpl::routeUiEvent(
 
 void UISurfaceRenderImpl::render(const RenderContextInstData& RCID) {
   auto ctx = RCID.context();
-  auto surface = _data->_layoutSurface;
 
-  if (!surface) {
+  if (!_layoutSurface) {
     return;
   }
+
+  // Get world transform from RCID (set by the drawable node)
+  fmtx4 worldMtx = RCID.worldMatrix();
+  fvec3 center(worldMtx.elemXY(3, 0), worldMtx.elemXY(3, 1), worldMtx.elemXY(3, 2));
 
   // Lazy GPU init
   if (!_initted) {
@@ -349,17 +353,25 @@ void UISurfaceRenderImpl::render(const RenderContextInstData& RCID) {
 
   // Compute billboard axes on-demand
   fvec3 right, up, normal;
-  computeBillboardAxes(*cmtcs, _data->_center, right, up, normal);
+  computeBillboardAxes(*cmtcs, center, right, up, normal);
 
-  // Compute quad corners on-demand
+  // Compute quad corners - need to set _worldTransform temporarily for this call
+  // Create a temporary DecompTransform with the center position
+  auto tempXf = std::make_shared<DecompTransform>();
+  tempXf->_translation = center;
+  auto savedXf = _worldTransform;
+  const_cast<UISurfaceRenderImpl*>(this)->_worldTransform = tempXf;
+
   fvec3 corner00, corner10, corner11, corner01;
   computeQuadCorners(*cmtcs, corner00, corner10, corner11, corner01);
 
+  const_cast<UISurfaceRenderImpl*>(this)->_worldTransform = savedXf;
+
   // Ensure UI texture is current
-  surface->updateTextureIfNeeded(ctx);
+  _layoutSurface->updateTextureIfNeeded(ctx);
 
   // Debug: log layoutGroup geometry
-  auto lg = surface->layoutGroup();
+  auto lg = _layoutSurface->layoutGroup();
   static bool dumped = false;
   if (!dumped) {
     lg->dumpLayoutHierarchy();
@@ -367,11 +379,11 @@ void UISurfaceRenderImpl::render(const RenderContextInstData& RCID) {
   }
 
   // Get texture
-  if (!surface->_rtgroup) {
+  if (!_layoutSurface->_rtgroup) {
     return;
   }
 
-  auto texture = surface->_rtgroup->buffer(0)->texture();
+  auto texture = _layoutSurface->_rtgroup->buffer(0)->texture();
   if (!texture) {
     return;
   }
@@ -409,7 +421,7 @@ void UISurfaceRenderImpl::render(const RenderContextInstData& RCID) {
   _material->begin(_technique, RCFD);
   _material->bindParamMatrix(_param_mvp, MVP);
   _material->bindParamTexture(_param_colormap, texture);
-  _material->bindParamVec2(_param_texdim, fvec2(surface->width(), surface->height()));
+  _material->bindParamVec2(_param_texdim, fvec2(_layoutSurface->width(), _layoutSurface->height()));
   _material->bindParamFloat(_param_maxsamples, _data->_maxSamplesPerAxis);
   ctx->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
   _material->end(RCFD);
@@ -428,7 +440,7 @@ void UISurfaceRenderImpl::renderCallback(RenderContextInstData& RCID) {
 
 uisurface_renderimpl_ptr_t getUISurfaceRenderImpl(drawable_ptr_t drawable) {
   auto cbdrawable = std::dynamic_pointer_cast<CallbackDrawable>(drawable);
-  if (cbdrawable) {
+  if (cbdrawable && cbdrawable->GetUserDataA().isShared<UISurfaceRenderImpl>()) {
     return cbdrawable->GetUserDataA().getShared<UISurfaceRenderImpl>();
   }
   return nullptr;
@@ -442,7 +454,14 @@ void UISurfacePrimitiveData::describeX(class_t* c) {
 ///////////////////////////////////////////////////////////////////////////////
 
 drawable_ptr_t UISurfacePrimitiveData::createDrawable() const {
-  auto impl = std::make_shared<UISurfaceRenderImpl>(this);
+  // Default implementation with no surface - caller must set surface via the impl
+  return createDrawable(nullptr);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+drawable_ptr_t UISurfacePrimitiveData::createDrawable(ui::layoutsurface_ptr_t surface) const {
+  auto impl = std::make_shared<UISurfaceRenderImpl>(this, surface);
   auto rval = std::make_shared<CallbackDrawable>(nullptr);
 
   rval->SetRenderCallback(UISurfaceRenderImpl::renderCallback);
@@ -455,8 +474,7 @@ drawable_ptr_t UISurfacePrimitiveData::createDrawable() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 UISurfacePrimitiveData::UISurfacePrimitiveData()
-    : _center(0, 0, 0)
-    , _size(1.0f)
+    : _size(1.0f)
     , _blendMode(BlendingMacro::ALPHA)
     , _doubleSided(false)
     , _maxSamplesPerAxis(4.0f) {  // Default 4x4 = 16 samples for 16:1 minification

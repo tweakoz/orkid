@@ -20,6 +20,7 @@ namespace ork {
 
 struct TransformNode;
 struct DecompTransform;
+using decompxf_wkptr_t = std::weak_ptr<DecompTransform>;
 using decompxf_ptr_t = std::shared_ptr<DecompTransform>;
 using xfnode_ptr_t = std::shared_ptr<TransformNode>;
 using decompxf_const_ptr_t = std::shared_ptr<const DecompTransform>;
