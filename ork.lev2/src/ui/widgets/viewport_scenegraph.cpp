@@ -219,9 +219,12 @@ HandlerResult SceneGraphViewport::_routeToEmbeddedUiSurfaces(event_constptr_t ev
       // Route through the LayoutSurface's widget tree
       auto result = layoutSurface->handleUiEvent(transformedEv);
       printf("  handleUiEvent returned: handled=%d\n", result.wasHandled());
-      if (result.wasHandled()) {
-        return result;
-      }
+
+      // Always block camera events when ray hits the surface,
+      // even if no widget handled the event
+      HandlerResult hitResult;
+      hitResult.setHandled(layoutSurface.get());
+      return hitResult;
     }
   }
 

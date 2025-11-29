@@ -2,6 +2,7 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/ui/event.h>
 #include <ork/lev2/ui/layoutgroup.inl>
+#include <ork/lev2/ui/surface.h>
 #include <ork/profiling.inl>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/lev2/gfx/pri.h>
@@ -282,16 +283,33 @@ void LayoutGroup::DoDraw(drawevent_constptr_t drwev) {
   }
 
   // Draw highlighted guide if one is under the mouse
+  // Only render if the guide belongs to this LayoutGroup's hierarchy
   if (GUIDES_UNDER_MOUSE) {
+    // Check if the guide's widget is a descendant of this LayoutGroup
+    Widget* guide_widget = GUIDES_UNDER_MOUSE->_layout->_widget;
+    bool is_descendant = false;
+    Widget* check = guide_widget;
+    while (check) {
+      if (check == this) {
+        is_descendant = true;
+        break;
+      }
+      check = check->parent();
+    }
 
-    {
+    if (is_descendant) {
       // Get the guide's line in geometry space
       auto line = GUIDES_UNDER_MOUSE->line(anchor::Mode::Geometry);
 
       // Transform to root space (same as in guide detection)
+      // Stop at Surface boundaries since they render to their own coordinate system
       Widget* widget = GUIDES_UNDER_MOUSE->_layout->_widget;
       Widget* current = widget->parent();
       while (current && current->parent()) {
+        // Stop if we hit a Surface - it's the root of its own coordinate system
+        if (dynamic_cast<Surface*>(current)) {
+          break;
+        }
         auto geo = current->geometry();
         line._from.x += geo._x;
         line._from.y += geo._y;
@@ -337,7 +355,7 @@ void LayoutGroup::DoDraw(drawevent_constptr_t drwev) {
           0.0f, 1.0f  // v0, v1
       );
       tgt->PopModColor();
-    }
+    } // end if (is_descendant)
   }
   mtxi->PopUIMatrix();
 }
@@ -860,6 +878,7 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
       break;
     }
     case ui::EventCode::MOUSE_LEAVE: 
+      break;
     default: {
       _highlightGuides = false;
       _isDraggingGuide = false;
