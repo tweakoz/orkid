@@ -199,16 +199,32 @@ fmtx4 UISurfaceRenderImpl::computeWorldToSurface(const CameraMatrices& camMtx) c
   float halfH = _data->_size * 0.5f;
   float halfW = halfH * aspectRatio;
 
-  // Build surface-to-world matrix
-  // Surface local space: origin at center, X = right, Y = up
-  // Coordinates in [-0.5, 0.5] range
-  fmtx4 surfaceToWorld;
-  surfaceToWorld.setColumn(0, fvec4(right * halfW * 2.0f, 0));
-  surfaceToWorld.setColumn(1, fvec4(up * halfH * 2.0f, 0));
-  surfaceToWorld.setColumn(2, fvec4(normal, 0));
-  surfaceToWorld.setColumn(3, fvec4(center, 1));
+  // To transform world -> surface local:
+  // 1. Translate so center is at origin
+  // 2. Project onto billboard axes and scale to [-0.5, 0.5]
+  //
+  // For a point P in world space:
+  //   localX = dot(P - center, right) / (halfW * 2)
+  //   localY = dot(P - center, up) / (halfH * 2)
+  //
+  // This gives us coordinates in [-0.5, 0.5] when on the billboard
 
-  return surfaceToWorld.inverse();
+  // Build world-to-surface matrix directly
+  // Row 0: right / (halfW * 2), with translation component
+  // Row 1: up / (halfH * 2), with translation component
+  // Row 2: normal (for completeness)
+  // Row 3: 0, 0, 0, 1
+
+  fvec3 scaledRight = right / (halfW * 2.0f);
+  fvec3 scaledUp = up / (halfH * 2.0f);
+
+  fmtx4 worldToSurface;
+  worldToSurface.setRow(0, fvec4(scaledRight.x, scaledRight.y, scaledRight.z, -center.dotWith(scaledRight)));
+  worldToSurface.setRow(1, fvec4(scaledUp.x, scaledUp.y, scaledUp.z, -center.dotWith(scaledUp)));
+  worldToSurface.setRow(2, fvec4(normal.x, normal.y, normal.z, -center.dotWith(normal)));
+  worldToSurface.setRow(3, fvec4(0, 0, 0, 1));
+
+  return worldToSurface;
 }
 
 //////////////////////////////////////////////////////////////
@@ -220,6 +236,12 @@ bool UISurfaceRenderImpl::rayIntersect(
     fvec3& worldHitPos_out) const {
 
   fvec3 center = _worldTransform ? _worldTransform->_translation : fvec3(0);
+  printf("rayIntersect: _worldTransform=%p center=(%f,%f,%f)\n",
+         _worldTransform.get(), center.x, center.y, center.z);
+  printf("  ray origin=(%f,%f,%f) dir=(%f,%f,%f)\n",
+         worldRay.mOrigin.x, worldRay.mOrigin.y, worldRay.mOrigin.z,
+         worldRay.mDirection.x, worldRay.mDirection.y, worldRay.mDirection.z);
+
   fvec3 right, up, normal;
   computeBillboardAxes(camMtx, center, right, up, normal);
 
@@ -229,11 +251,17 @@ bool UISurfaceRenderImpl::rayIntersect(
   // Ray-plane intersection
   float t;
   if (!billboardPlane.Intersect(worldRay, t, worldHitPos_out)) {
+    printf("  plane intersection failed\n");
     return false;
   }
 
+  printf("  plane t=%f hitPos=(%f,%f,%f)\n", t, worldHitPos_out.x, worldHitPos_out.y, worldHitPos_out.z);
+
   // Check if intersection is in front of ray origin
-  if (t < 0) return false;
+  if (t < 0) {
+    printf("  t < 0, behind camera\n");
+    return false;
+  }
 
   // Compute world-to-surface transform
   fmtx4 worldToSurface = computeWorldToSurface(camMtx);
@@ -241,13 +269,18 @@ bool UISurfaceRenderImpl::rayIntersect(
   // Transform world hit position to surface local space
   fvec4 localHit = worldToSurface * fvec4(worldHitPos_out, 1.0f);
 
+  printf("  localHit=(%f,%f,%f,%f)\n", localHit.x, localHit.y, localHit.z, localHit.w);
+
   // Local coordinates are in [-0.5, 0.5] range
-  // Convert to UV [0, 1] range
+  // Convert to UV [0, 1] range, flip V for Vulkan convention
   float u = localHit.x + 0.5f;
-  float v = localHit.y + 0.5f;
+  float v = 1.0f - (localHit.y + 0.5f);
+
+  printf("  uv=(%f,%f)\n", u, v);
 
   // Check if within quad bounds
   if (u < 0.0f || u > 1.0f || v < 0.0f || v > 1.0f) {
+    printf("  uv out of bounds\n");
     return false;
   }
 

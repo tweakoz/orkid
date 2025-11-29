@@ -124,21 +124,25 @@ void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
 HandlerResult SceneGraphViewport::_routeToEmbeddedUiSurfaces(event_constptr_t ev) {
   if (!_scenegraph) {
+    printf("_routeToEmbeddedUiSurfaces: no scenegraph\n");
     return HandlerResult();
   }
 
   const auto& uiSurfaces = _scenegraph->uiSurfaces();
   if (uiSurfaces.empty()) {
+    printf("_routeToEmbeddedUiSurfaces: no uiSurfaces\n");
     return HandlerResult();
   }
 
   auto cameralut = _scenegraph->_cameralut;
   if (!cameralut) {
+    printf("_routeToEmbeddedUiSurfaces: no cameralut\n");
     return HandlerResult();
   }
 
   auto camera = cameralut->find(_cameraname);
   if (!camera) {
+    printf("_routeToEmbeddedUiSurfaces: camera '%s' not found\n", _cameraname.c_str());
     return HandlerResult();
   }
 
@@ -146,34 +150,59 @@ HandlerResult SceneGraphViewport::_routeToEmbeddedUiSurfaces(event_constptr_t ev
   auto camMtx = camera->computeMatrices(aspect);
 
   // Generate world-space ray from screen coordinates
+  // Screen coords: (0,0) is top-left, (width,height) is bottom-right
+  // Vulkan NDC: Y is flipped compared to OpenGL
+  // NDC Y: -1 = top, +1 = bottom (Vulkan convention)
   float nx = (2.0f * ev->miX / float(width())) - 1.0f;
-  float ny = 1.0f - (2.0f * ev->miY / float(height()));
+  float ny = (2.0f * ev->miY / float(height())) - 1.0f;
 
+  // Unproject near plane point (z=-1 in NDC) to get ray origin on near plane
   fvec4 nearNDC(nx, ny, -1.0f, 1.0f);
-  fvec4 farNDC(nx, ny, 1.0f, 1.0f);
 
-  auto invVP = (camMtx._pmatrix * camMtx._vmatrix).inverse();
+  // For column vectors: clip = P * V * worldPos
+  // So to unproject: worldPos = inv(P*V) * clip
+  auto VP = camMtx._pmatrix * camMtx._vmatrix;
+  auto invVP = VP.inverse();
   fvec4 nearWorld4 = nearNDC.transform(invVP);
-  fvec4 farWorld4 = farNDC.transform(invVP);
-
   fvec3 nearWorld = nearWorld4.xyz() / nearWorld4.w;
-  fvec3 farWorld = farWorld4.xyz() / farWorld4.w;
-  fvec3 rayDir = (farWorld - nearWorld).normalized();
-  fray3 worldRay(nearWorld, rayDir);
+
+  // Get camera position from inverse view matrix (translation component)
+  auto invV = camMtx._vmatrix.inverse();
+  fvec3 camPos(invV.elemXY(3, 0), invV.elemXY(3, 1), invV.elemXY(3, 2));
+
+  // Ray goes from camera through the near plane point
+  fvec3 rayDir = (nearWorld - camPos).normalized();
+  fray3 worldRay(camPos, rayDir);
+
+  printf("  ray: camPos=(%f,%f,%f) nearWorld=(%f,%f,%f) dir=(%f,%f,%f)\n",
+         camPos.x, camPos.y, camPos.z,
+         nearWorld.x, nearWorld.y, nearWorld.z,
+         rayDir.x, rayDir.y, rayDir.z);
+
+  printf("_routeToEmbeddedUiSurfaces: testing %zu surfaces\n", uiSurfaces.size());
 
   // Test each UI surface for intersection
   for (auto& drawable : uiSurfaces) {
     auto impl = lev2::getUISurfaceRenderImpl(drawable);
-    if (!impl) continue;
+    if (!impl) {
+      printf("  drawable has no impl\n");
+      continue;
+    }
 
     // Check if layoutSurface is valid before ray testing
     auto layoutSurface = impl->_layoutSurface;
-    if (!layoutSurface) continue;
+    if (!layoutSurface) {
+      printf("  impl has no layoutSurface\n");
+      continue;
+    }
 
     fvec2 surfaceUV;
     fvec3 worldHitPos;
 
-    if (impl->rayIntersect(worldRay, camMtx, surfaceUV, worldHitPos)) {
+    bool hit = impl->rayIntersect(worldRay, camMtx, surfaceUV, worldHitPos);
+    printf("  rayIntersect: hit=%d uv=(%f,%f)\n", hit, surfaceUV.x, surfaceUV.y);
+
+    if (hit) {
       // Hit! Transform UV [0,1] to LayoutSurface pixel coordinates
 
       int surfaceW = layoutSurface->width();
@@ -185,8 +214,11 @@ HandlerResult SceneGraphViewport::_routeToEmbeddedUiSurfaces(event_constptr_t ev
       transformedEv->miX = int(surfaceUV.x * surfaceW);
       transformedEv->miY = int(surfaceUV.y * surfaceH);
 
+      printf("  routing to surface at (%d,%d)\n", transformedEv->miX, transformedEv->miY);
+
       // Route through the LayoutSurface's widget tree
       auto result = layoutSurface->handleUiEvent(transformedEv);
+      printf("  handleUiEvent returned: handled=%d\n", result.wasHandled());
       if (result.wasHandled()) {
         return result;
       }
@@ -199,6 +231,7 @@ HandlerResult SceneGraphViewport::_routeToEmbeddedUiSurfaces(event_constptr_t ev
 ///////////////////////////////////////////////////////////////////////////////
 
 HandlerResult SceneGraphViewport::DoOnUiEvent(event_constptr_t ev) {
+  printf("SceneGraphViewport::DoOnUiEvent called\n");
   // 1. Try embedded UI surfaces first
   auto result = _routeToEmbeddedUiSurfaces(ev);
   if (result.wasHandled()) {
