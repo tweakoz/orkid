@@ -114,7 +114,10 @@ namespace ork::lev2 {
 UISurfaceRenderImpl::UISurfaceRenderImpl(const UISurfacePrimitiveData* data, ui::layoutsurface_ptr_t surface)
     : _data(data)
     , _layoutSurface(surface) {
-  _uiContext = std::make_shared<ui::Context>();
+  // Use the LayoutSurface's owned context (it creates its own in constructor)
+  if (_layoutSurface) {
+    _uiContext = _layoutSurface->_ownedContext;
+  }
 }
 
 UISurfaceRenderImpl::~UISurfaceRenderImpl() {
@@ -137,11 +140,7 @@ void UISurfaceRenderImpl::gpuInit(Context* ctx) {
   _material->_rasterstate->setDepthTest(EDepthTest::LEQUALS);
   _material->_rasterstate->setWriteMaskZ(true);
 
-  // Set up UIContext with the LayoutSurface as top
-  if (_layoutSurface) {
-    _uiContext->_top = _layoutSurface->layoutGroup();
-    _layoutSurface->_uicontext = _uiContext.get();
-  }
+  // UIContext setup is done in LayoutSurface constructor
 
   _initted = true;
 }

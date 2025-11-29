@@ -3,6 +3,7 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/renderer/rendercontext.h>
 #include <ork/lev2/ui/layoutsurface.h>
+#include <ork/lev2/ui/context.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/lev2/gfx/pri.h>
 
@@ -11,8 +12,18 @@ namespace ork::ui {
 /////////////////////////////////////////////////////////////////////////
 LayoutSurface::LayoutSurface(const std::string& name, int x, int y, int w, int h, int margin)
     : Surface(name, x, y, w, h, fcolor3(0.2f, 0.2f, 0.2f), 1.0f) {
+  // LayoutSurface owns its own UIContext since it's a self-contained surface
+  _ownedContext = std::make_shared<Context>();
+  _uicontext = _ownedContext.get();
+
   // Create internal LayoutGroup
   _layoutGroup = std::make_shared<LayoutGroup>("content", 0, 0, 8, 8, margin);
+
+  // Set up context's top widget
+  _ownedContext->_top = _layoutGroup;
+
+  // Set parent so _uicontext propagates through normal widget hierarchy
+  _layoutGroup->setParent(this);
 
   // Start with virtual size same as widget size
   _virtualWidth = w;
@@ -233,6 +244,16 @@ HandlerResult LayoutSurface::DoOnUiEvent(event_constptr_t ev) {
         break;
       }
   return HandlerResult();
+}
+
+/////////////////////////////////////////////////////////////////////////
+Widget* LayoutSurface::doRouteUiEvent(event_constptr_t ev) {
+  // Route events to the internal LayoutGroup
+  if (_layoutGroup) {
+    printf("LayoutSurface<%s>::doRouteUiEvent routing to _layoutGroup\n", _name.c_str());
+    return _layoutGroup->routeUiEvent(ev);
+  }
+  return nullptr;
 }
 
 /////////////////////////////////////////////////////////////////////////

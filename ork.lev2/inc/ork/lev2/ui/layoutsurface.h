@@ -47,7 +47,7 @@ struct LayoutSurface : public Surface {
   void DoRePaintSurface(ui::drawevent_constptr_t drwev) final;
   void DoDraw(drawevent_constptr_t drwev) final;
   void _doOnResized() final;
-  //Widget* doRouteUiEvent(event_constptr_t ev) final;
+  Widget* doRouteUiEvent(event_constptr_t ev) final;
   HandlerResult DoOnUiEvent(event_constptr_t Ev) final;
 
   void _updateRenderTarget();
@@ -78,6 +78,7 @@ struct LayoutSurface : public Surface {
       uint32_t modifierKeys);
 
   std::shared_ptr<LayoutGroup> _layoutGroup;
+  context_ptr_t _ownedContext;  // LayoutSurface owns its own UIContext
 
   // Virtual dimensions (texture size)
   int _virtualWidth = 0;
