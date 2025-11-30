@@ -53,7 +53,7 @@ struct UISurfaceRenderImpl {
       fvec3& corner11_out,
       fvec3& corner01_out) const;
 
-  fmtx4 computeWorldToSurface(const CameraMatrices& camMtx) const;
+  fmtx4 computeWorldToSurface(const CameraMatrices& camMtx, const fvec3& center) const;
 
   //////////////////////////////////////////////////////////////
   // Hit Testing

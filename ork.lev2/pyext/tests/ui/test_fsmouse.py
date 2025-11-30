@@ -44,7 +44,7 @@ class Fullscreen3DMouseApp(ComponentizedApplication):
     self.test_items = lg.makeGrid(
       width=4,
       height=4,
-      margin=2,
+      margin=8,
       uiclass=lev2.ui.EvTestBox,
       args=["box", vec4(0.2, 0.5, 0.8, 1)]
     )
@@ -59,7 +59,7 @@ class Fullscreen3DMouseApp(ComponentizedApplication):
     # Create UISurfacePrimitiveData
     self.ui_prim_data = lev2.UISurfacePrimitiveData()
     self.ui_prim_data.size = 1.0  # 1 meter square
-    self.ui_prim_data.blendMode = tokens.ALPHA
+    self.ui_prim_data.blendMode = tokens.ADDITIVE
     self.ui_prim_data.doubleSided = True
     self.ui_prim_data.max_samples_per_axis = 8
 
@@ -71,8 +71,8 @@ class Fullscreen3DMouseApp(ComponentizedApplication):
       self.ui_drawable
     )
     self.ui_node.sortkey = 100
-    self.ui_node.worldTransform.translation = vec3(-4, 2, -8)
-    self.ui_node.view_relative = True 
+    self.ui_node.worldTransform.translation = vec3(+4, 2, -8)
+    self.ui_node.view_relative = False 
 
 ###############################################################################
 

@@ -189,8 +189,7 @@ void UISurfaceRenderImpl::computeQuadCorners(
 
 //////////////////////////////////////////////////////////////
 
-fmtx4 UISurfaceRenderImpl::computeWorldToSurface(const CameraMatrices& camMtx) const {
-  fvec3 center = _worldTransform ? _worldTransform->_translation : fvec3(0);
+fmtx4 UISurfaceRenderImpl::computeWorldToSurface(const CameraMatrices& camMtx, const fvec3& center) const {
   fvec3 right, up, normal;
   computeBillboardAxes(camMtx, center, right, up, normal);
 
@@ -234,8 +233,8 @@ bool UISurfaceRenderImpl::rayIntersect(
     fvec2& uv_out,
     fvec3& worldHitPos_out) const {
 
-  fvec3 center = _worldTransform ? _worldTransform->_translation : fvec3(0);
-  bool view_relative = _worldTransform && _worldTransform->_view_relative;
+  fvec3 center =  _worldTransform->_translation;
+  bool view_relative = _worldTransform->_view_relative;
   if(view_relative) {
     auto vmtx = camMtx.GetIVMatrix();
     center = center.transform(vmtx).xyz();
@@ -273,7 +272,7 @@ bool UISurfaceRenderImpl::rayIntersect(
   }
 
   // Compute world-to-surface transform
-  fmtx4 worldToSurface = computeWorldToSurface(camMtx);
+  fmtx4 worldToSurface = computeWorldToSurface(camMtx, center);
 
   // Transform hit position to surface local space
   fvec4 localHit = worldToSurface * fvec4(hitPos, 1.0f);
@@ -384,7 +383,7 @@ void UISurfaceRenderImpl::render(const RenderContextInstData& RCID) {
 
   // Get world transform from RCID (set by the drawable node)
   fmtx4 worldMtx = RCID.worldMatrix();
-  fvec3 center = worldMtx.translation();
+  fvec3 center = _worldTransform->_translation;
 
 
   // Lazy GPU init
