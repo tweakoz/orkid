@@ -139,6 +139,7 @@ void UISurfaceRenderImpl::gpuInit(Context* ctx) {
       _data->_doubleSided ? ECullTest::OFF : ECullTest::PASS_BACK);
   _material->_rasterstate->setDepthTest(EDepthTest::LEQUALS);
   _material->_rasterstate->setWriteMaskZ(true);
+  _material->_rasterstate->_priority = 1<<10;
 
   // UIContext setup is done in LayoutSurface constructor
 
@@ -376,6 +377,7 @@ ui::HandlerResult UISurfaceRenderImpl::routeUiEvent(
 
 void UISurfaceRenderImpl::render(const RenderContextInstData& RCID) {
   auto ctx = RCID.context();
+  auto fxi = ctx->FXI();
 
   if (!_layoutSurface) {
     return;
@@ -469,6 +471,8 @@ void UISurfaceRenderImpl::render(const RenderContextInstData& RCID) {
   fmtx4 MVP = P * V;  // Model is identity since corners are in world space
 
   // Draw with freestyle material
+
+  fxi->pushRasterState(_material->_rasterstate);
   _material->begin(_technique, RCFD);
   _material->bindParamMatrix(_param_mvp, MVP);
   _material->bindParamTexture(_param_colormap, texture);
@@ -476,6 +480,7 @@ void UISurfaceRenderImpl::render(const RenderContextInstData& RCID) {
   _material->bindParamFloat(_param_maxsamples, _data->_maxSamplesPerAxis);
   ctx->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
   _material->end(RCFD);
+  fxi->popRasterState();
 }
 
 //////////////////////////////////////////////////////////////

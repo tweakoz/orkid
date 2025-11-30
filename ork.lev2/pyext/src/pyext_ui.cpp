@@ -1832,6 +1832,23 @@ void pyinit_ui(py::module& module_lev2) {
                 layoutitem.typedWidget()->_default_color = defcolor;
                 return layoutitem.as_shared();
               })
+          .def_static(
+              "uigridfactory",
+              [type_codec](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                fvec4 defcolor;
+                if (decoded_args.size() > 1) {
+                  defcolor = decoded_args[1].get<fvec4>();
+                }
+                auto layoutitems = lg->makeGridOfWidgets<ui::ImageView>(grid_w, grid_h, name);
+                py::list rval;
+                for (auto& item : layoutitems) {
+                  item.typedWidget()->_default_color = defcolor;
+                  rval.append(item.as_shared());
+                }
+                return rval;
+              })
           .def_property(
               "default_color",
               [](ui::imgview_ptr_t imgview) -> fvec4 { //
