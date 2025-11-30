@@ -146,7 +146,7 @@ class StandardSceneGraphComponent(ApplicationComponent):
       height=1,
       margin = 4,
       uiclass = lev2.ui.SceneGraphViewport,
-      args = ["label",vec4(0.1,0.1,0.3,1)],
+      args = ["SGVP",vec4(0.1,0.1,0.3,1)],
     )
 
   ##################################################

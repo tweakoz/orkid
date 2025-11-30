@@ -17,7 +17,7 @@ LayoutSurface::LayoutSurface(const std::string& name, int x, int y, int w, int h
   _uicontext = _ownedContext.get();
 
   // Create internal LayoutGroup
-  _layoutGroup = std::make_shared<LayoutGroup>("content", 0, 0, 8, 8, margin);
+  _layoutGroup = std::make_shared<LayoutGroup>("LOSURF.LG", 0, 0, 8, 8, margin);
 
   // Set up context's top widget
   _ownedContext->_top = _layoutGroup;

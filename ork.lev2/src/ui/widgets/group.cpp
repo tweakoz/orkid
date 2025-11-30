@@ -183,6 +183,9 @@ LayoutGroup::LayoutGroup(const std::string& name, int x, int y, int w, int h, in
       case ui::EventCode::RELEASE: 
       case ui::EventCode::BEGIN_DRAG: 
       case ui::EventCode::END_DRAG: 
+      case ui::EventCode::MOUSE_ENTER: 
+      case ui::EventCode::MOUSE_LEAVE: 
+      case ui::EventCode::MOVE: 
       case ui::EventCode::DRAG: {
         result = LayoutGroup::OnUiEvent(ev);
         was_handled = (result.mHandler!=nullptr);
@@ -196,6 +199,8 @@ LayoutGroup::LayoutGroup(const std::string& name, int x, int y, int w, int h, in
       result.setHandled(this);
     return result;
   };
+  _animtimer.Start();
+
 }
 /////////////////////////////////////////////////////////////////////////
 LayoutGroup::~LayoutGroup() {
@@ -282,9 +287,14 @@ void LayoutGroup::DoDraw(drawevent_constptr_t drwev) {
 
   // Draw highlighted guide if one is under the mouse
   // Only render if the guide belongs to this LayoutGroup's hierarchy
-  if (_guide_being_dragged) {
+
+  auto hlguide = _guide_highlite;
+  if(hlguide==nullptr){
+    hlguide = _guide_being_dragged;
+  }
+  if (hlguide) {
     // Check if the guide's widget is a descendant of this LayoutGroup
-    Widget* guide_widget = _guide_being_dragged->_layout->_widget;
+    Widget* guide_widget = hlguide->_layout->_widget;
     bool is_descendant = false;
     Widget* check = guide_widget;
     while (check) {
@@ -297,11 +307,11 @@ void LayoutGroup::DoDraw(drawevent_constptr_t drwev) {
 
     if (is_descendant) {
       // Get the guide's line in geometry space
-      auto line = _guide_being_dragged->line(anchor::Mode::Geometry);
+      auto line = hlguide->line(anchor::Mode::Geometry);
 
       // Transform to root space (same as in guide detection)
       // Stop at Surface boundaries since they render to their own coordinate system
-      Widget* widget = _guide_being_dragged->_layout->_widget;
+      Widget* widget = hlguide->_layout->_widget;
       Widget* current = widget->parent();
       while (current && current->parent()) {
         // Stop if we hit a Surface - it's the root of its own coordinate system
@@ -317,10 +327,10 @@ void LayoutGroup::DoDraw(drawevent_constptr_t drwev) {
       }
 
       // Calculate the box around the guide based on its margin
-      int margin = _guide_being_dragged->_margin;
+      int margin = hlguide->_margin;
       int ix1, iy1, ix2, iy2;
 
-      if (_guide_being_dragged->isVertical()) {
+      if (hlguide->isVertical()) {
         // Vertical guide - draw a vertical box
         ix1 = line._from.x - margin;
         ix2 = line._from.x + margin;
@@ -341,8 +351,13 @@ void LayoutGroup::DoDraw(drawevent_constptr_t drwev) {
         defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
 
         // Modulate color when actively dragging for visual feedback
-        auto guide_color = _guide_being_dragged //
-                         ? (_clearColorGuide*0.8+sinf(_animtimer.SecsSinceStart()*PI2*3.0)*0.2) //
+
+        float modcolor = 1.0;
+        if(hlguide == _guide_being_dragged){
+          modcolor = 0.8+sinf(_animtimer.SecsSinceStart()*PI2*3.0)*0.2;
+        }
+        auto guide_color = hlguide //
+                         ? (_clearColorGuide*modcolor) //
                          : _clearColorGuide;
 
         tgt->PushModColor(guide_color);
@@ -814,7 +829,7 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
   // ev->mFilteredEvent.Reset();
   static int counter = 0;
   int count = counter++;
-  //printf("LayoutGroup<%p>::OnUiEvent count<%d>\n", this, count);
+  printf("LayoutGroup<%p>::OnUiEvent count<%d>\n", this, count);
   ui::HandlerResult result;
   bool was_handled = false;
   static int lastx = ev->miX;
@@ -823,15 +838,14 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
     case ui::EventCode::PUSH: {
       was_handled = true;
       _guide_being_dragged = anchor::findGuidePairUnderMouse(_layout.get(), fvec2(ev->miX, ev->miY));
-      if(_highlightGuides){
-        _animtimer.Start();
-      }
+      _guide_highlite = nullptr;
       break;
     }
     case ui::EventCode::RELEASE: {
       //_clearColor = fvec4(0, 0, 0, 1);
       was_handled = true;
       _guide_being_dragged = nullptr;
+      _guide_highlite = nullptr;
       break;
     }
     case ui::EventCode::BEGIN_DRAG: {
@@ -850,6 +864,11 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
     }
     case ui::EventCode::MOVE: {
       //_clearColor = fvec4(0.1,0.1,0.2, 1);
+      printf("LayoutGroup<%s>::OnUiEvent MOVE mx<%d> my<%d>\n", _name.c_str(), ev->miX, ev->miY);
+      _guide_highlite = anchor::findGuidePairUnderMouse(_layout.get(), fvec2(ev->miX, ev->miY));
+      if(_guide_highlite){
+        printf("HIGHLITE GUIDE PAIR <%p>\n", (void*)_guide_highlite.get());
+      }
       break;
     }
     case ui::EventCode::DRAG: {
@@ -881,8 +900,8 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
     }
     case ui::EventCode::MOUSE_LEAVE: 
     default: {
-      _highlightGuides = false;
       _guide_being_dragged = nullptr;
+      _guide_highlite = nullptr;
       break;
     }
   }
@@ -892,7 +911,7 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
 }
 /////////////////////////////////////////////////////////////////////////
 Widget* LayoutGroup::doRouteUiEvent(event_constptr_t ev) {
-  if(0)
+  if(1)
     printf("LayoutGroup<%s>::doRouteUiEvent\n", _name.c_str());
 
   ///////////////////////////
@@ -903,6 +922,7 @@ Widget* LayoutGroup::doRouteUiEvent(event_constptr_t ev) {
       if (_overlay_widget) {
         _overlay_enabled = !_overlay_enabled;
         SetDirty();
+        //printf("KC\n");
         return this;  // Consume event
       }
     }
@@ -914,6 +934,8 @@ Widget* LayoutGroup::doRouteUiEvent(event_constptr_t ev) {
   if (_overlay_widget && _overlay_enabled) {
     auto result = _overlay_widget->routeUiEvent(ev);
     if (result) {
+      //printf("OVL\n");
+      _guide_highlite = nullptr;
       return result;  // Overlay handled the event
     }
   }
@@ -922,11 +944,11 @@ Widget* LayoutGroup::doRouteUiEvent(event_constptr_t ev) {
   // Only search for a new guide if we're not already dragging one
   // Once grabbed, the guide stays grabbed until RELEASE or END_DRAG
   if(_guide_being_dragged){
-    _highlightGuides = true;
+    //printf("GBG\n");
+    _guide_highlite = nullptr;
     return this;
   }
   ///////////////////////////
-  _highlightGuides = false;
   Widget* target_widget = nullptr;
   size_t num_children = _children.size();
   for( size_t i=0; i<num_children; i++ ){
@@ -937,11 +959,14 @@ Widget* LayoutGroup::doRouteUiEvent(event_constptr_t ev) {
       auto child_target = child->routeUiEvent(ev);
       if(child_target and child_target->_ignoreEvents) continue;
       if (child_target) {
+        //printf("CHILD <%p>\n", (void*) child_target);
         //_clearColor = fvec4(0,0,0, 1.0);
+        _guide_highlite = nullptr;
         return child_target;
       }
     }
   }
+  //printf("FALLTHRU\n");
   return this;
 }
 /////////////////////////////////////////////////////////////////////////

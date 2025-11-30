@@ -1022,9 +1022,9 @@ void CtxGLFW::_on_callback_keyboard(int key, int scancode, int action, int modif
 }
 void CtxGLFW::_on_callback_cursor(double xoffset, double yoffset) {
   auto uiev = this->uievent();
-  // printf( "_width<%d> _height<%d>\n", _width, _height);
   fillEventCursor(uiev, _glfwWindow, _glfwMonitor, xoffset, yoffset, _width, _height);
   if (this->_buttonState == 0) {
+    printf( "move _width<%d> _height<%d>\n", int(xoffset), int(yoffset));
     uiev->_eventcode = ui::EventCode::MOVE; //
     _fire_ui_event();
   } else {

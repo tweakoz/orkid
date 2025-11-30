@@ -42,11 +42,13 @@ class UISurface3DApp(ComponentizedApplication):
     self.test_items = lg.makeGrid(
       width=4,
       height=4,
-      margin=2,
+      margin=8,
       uiclass=lev2.ui.EvTestBox,
       args=["box", vec4(0.2, 0.5, 0.8, 1)]
     )
-
+    lg.clearColorGuide = vec4(0.8,0.6,0.2,1)
+    self.ezapp.uicontext.debug_event_routing = True
+    self.layout_surface.uicontext.debug_event_routing = True
   ##############################################
 
   def _onGpuInit(self, ctx):

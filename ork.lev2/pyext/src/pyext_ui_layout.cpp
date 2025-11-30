@@ -654,7 +654,11 @@ void pyinit_ui_layout(py::module& uimodule) {
               [](ui::layoutsurface_ptr_t surf) -> uilayoutgroup_ptr_t { return surf->layoutGroup(); })
           .def_property_readonly(
               "layout",
-              [](ui::layoutsurface_ptr_t surf) -> uilayout_ptr_t { return surf->layout(); });
+              [](ui::layoutsurface_ptr_t surf) -> uilayout_ptr_t { return surf->layout(); })
+              .def_property_readonly("uicontext",
+              [](ui::layoutsurface_ptr_t surf) -> ui::context_ptr_t {
+                return surf->_ownedContext;
+              });
   type_codec->registerStdCodec<ui::layoutsurface_ptr_t>(layoutsurface_type);
 
 }

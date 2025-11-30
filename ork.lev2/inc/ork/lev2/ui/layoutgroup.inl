@@ -233,10 +233,10 @@ struct LayoutGroup : public Group {
   bool _clear = true;
   fvec4 _clearColorStd;
   fvec4 _clearColorGuide;
-  bool _highlightGuides = false;
   Timer _animtimer;
 
   anchor::guide_ptr_t _guide_being_dragged = nullptr;
+  anchor::guide_ptr_t _guide_highlite = nullptr;
 
   Widget* doRouteUiEvent(event_constptr_t Ev) override;
 

@@ -67,8 +67,9 @@ void Widget::setGeometry(Rect newgeo) {
 ///////////////////////////////////////////////////////////
 HandlerResult Widget::handleUiEvent(event_constptr_t ev) {
   Widget* target = doRouteUiEvent(ev);
-  if (0)
+  if (_uicontext->_debug_event_routing){
     printf("handleuiev target<%s>\n", target ? target->_name.c_str() : "none");
+  }
   return target ? target->OnUiEvent(ev) : HandlerResult();
 }
 ///////////////////////////////////////////////////////////
