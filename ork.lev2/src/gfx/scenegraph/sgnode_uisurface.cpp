@@ -236,8 +236,14 @@ bool UISurfaceRenderImpl::rayIntersect(
 
   fvec3 center = _worldTransform ? _worldTransform->_translation : fvec3(0);
   bool view_relative = _worldTransform && _worldTransform->_view_relative;
-
+  if(view_relative) {
+    auto vmtx = camMtx.GetIVMatrix();
+    center = center.transform(vmtx).xyz();
+  }
   fray3 ray = worldRay;
+
+
+
   if(0)printf("rayIntersect: _worldTransform=%p center=(%f,%f,%f)\n",
          _worldTransform.get(), center.x, center.y, center.z);
   if(0)printf("  ray origin=(%f,%f,%f) dir=(%f,%f,%f)\n",
@@ -320,11 +326,11 @@ ui::HandlerResult UISurfaceRenderImpl::routeUiEvent(
 
   fvec3 rayOrigin = nearPt.xyz();
   fvec3 rayDir = (farPt.xyz() - rayOrigin).normalized();
-  fray3 worldRay(rayOrigin, rayDir);
 
   // Hit test
   fvec2 uv;
   fvec3 worldHitPos;
+  fray3 worldRay(rayOrigin, rayDir);
   bool hit = rayIntersect(worldRay, camMtx, uv, worldHitPos);
 
   // Handle enter/leave
