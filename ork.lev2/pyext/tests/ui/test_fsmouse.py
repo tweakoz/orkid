@@ -72,7 +72,7 @@ class Fullscreen3DMouseApp(ComponentizedApplication):
     )
     self.ui_node.sortkey = 100
     self.ui_node.worldTransform.translation = vec3(+4, 2, -8)
-    self.ui_node.view_relative = False 
+    self.ui_node.view_relative = True 
 
 ###############################################################################
 

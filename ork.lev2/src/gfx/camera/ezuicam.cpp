@@ -471,7 +471,8 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
       on_begin();
       break;
     }
-    case EventCode::RELEASE: {
+    case EventCode::RELEASE:
+    case EventCode::MOUSE_LEAVE: {
       on_end();
       break;
     }

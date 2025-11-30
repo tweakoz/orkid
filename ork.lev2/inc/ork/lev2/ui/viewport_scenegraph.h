@@ -33,6 +33,9 @@ public:
   // Camera event handler (set by user, e.g., for EzUiCam)
   evhandler_t _camera_evhandler = nullptr;
 
+  // Track when mouse is over an embedded UI surface
+  bool _overUiSurface = false;
+
   // Private ui::Context for embedded UI surfaces (LayoutSurfaces in 3D)
   context_ptr_t _embeddedUiContext;
 

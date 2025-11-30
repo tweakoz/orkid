@@ -284,6 +284,14 @@ HandlerResult SceneGraphViewport::_routeToEmbeddedUiSurfaces(event_constptr_t ev
 
       if(0)printf("  routing to surface at (%d,%d)\n", transformedEv->miX, transformedEv->miY);
 
+      // On transition from viewport to UI surface, send MOUSE_LEAVE to camera
+      if (!_overUiSurface && _camera_evhandler) {
+        auto leaveEv = std::make_shared<Event>(*ev);
+        leaveEv->mFilteredEvent._eventcode = EventCode::MOUSE_LEAVE;
+        _camera_evhandler(leaveEv);
+      }
+      _overUiSurface = true;
+
       // Route through the LayoutSurface's widget tree
       auto result = layoutSurface->handleUiEvent(transformedEv);
       if(0)printf("  handleUiEvent returned: handled=%d\n", result.wasHandled());
@@ -296,6 +304,8 @@ HandlerResult SceneGraphViewport::_routeToEmbeddedUiSurfaces(event_constptr_t ev
     }
   }
 
+  // No UI surface hit - clear the flag
+  _overUiSurface = false;
   return HandlerResult();
 }
 
