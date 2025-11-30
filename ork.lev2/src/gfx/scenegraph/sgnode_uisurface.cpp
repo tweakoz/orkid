@@ -235,9 +235,9 @@ bool UISurfaceRenderImpl::rayIntersect(
     fvec3& worldHitPos_out) const {
 
   fvec3 center = _worldTransform ? _worldTransform->_translation : fvec3(0);
-  printf("rayIntersect: _worldTransform=%p center=(%f,%f,%f)\n",
+  if(0)printf("rayIntersect: _worldTransform=%p center=(%f,%f,%f)\n",
          _worldTransform.get(), center.x, center.y, center.z);
-  printf("  ray origin=(%f,%f,%f) dir=(%f,%f,%f)\n",
+  if(0)printf("  ray origin=(%f,%f,%f) dir=(%f,%f,%f)\n",
          worldRay.mOrigin.x, worldRay.mOrigin.y, worldRay.mOrigin.z,
          worldRay.mDirection.x, worldRay.mDirection.y, worldRay.mDirection.z);
 
@@ -250,15 +250,15 @@ bool UISurfaceRenderImpl::rayIntersect(
   // Ray-plane intersection
   float t;
   if (!billboardPlane.Intersect(worldRay, t, worldHitPos_out)) {
-    printf("  plane intersection failed\n");
+    if(0)printf("  plane intersection failed\n");
     return false;
   }
 
-  printf("  plane t=%f hitPos=(%f,%f,%f)\n", t, worldHitPos_out.x, worldHitPos_out.y, worldHitPos_out.z);
+  if(0)printf("  plane t=%f hitPos=(%f,%f,%f)\n", t, worldHitPos_out.x, worldHitPos_out.y, worldHitPos_out.z);
 
   // Check if intersection is in front of ray origin
   if (t < 0) {
-    printf("  t < 0, behind camera\n");
+    if(0)printf("  t < 0, behind camera\n");
     return false;
   }
 
@@ -268,18 +268,18 @@ bool UISurfaceRenderImpl::rayIntersect(
   // Transform world hit position to surface local space
   fvec4 localHit = worldToSurface * fvec4(worldHitPos_out, 1.0f);
 
-  printf("  localHit=(%f,%f,%f,%f)\n", localHit.x, localHit.y, localHit.z, localHit.w);
+  if(0)printf("  localHit=(%f,%f,%f,%f)\n", localHit.x, localHit.y, localHit.z, localHit.w);
 
   // Local coordinates are in [-0.5, 0.5] range
   // Convert to UV [0, 1] range, flip V for Vulkan convention
   float u = localHit.x + 0.5f;
   float v = 1.0f - (localHit.y + 0.5f);
 
-  printf("  uv=(%f,%f)\n", u, v);
+  if(0)printf("  uv=(%f,%f)\n", u, v);
 
   // Check if within quad bounds
   if (u < 0.0f || u > 1.0f || v < 0.0f || v > 1.0f) {
-    printf("  uv out of bounds\n");
+    if(0)printf("  uv out of bounds\n");
     return false;
   }
 

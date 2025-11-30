@@ -192,25 +192,25 @@ void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
 HandlerResult SceneGraphViewport::_routeToEmbeddedUiSurfaces(event_constptr_t ev) {
   if (!_scenegraph) {
-    printf("_routeToEmbeddedUiSurfaces: no scenegraph\n");
+    if(0)printf("_routeToEmbeddedUiSurfaces: no scenegraph\n");
     return HandlerResult();
   }
 
   const auto& uiSurfaces = _scenegraph->uiSurfaces();
   if (uiSurfaces.empty()) {
-    printf("_routeToEmbeddedUiSurfaces: no uiSurfaces\n");
+    if(0)printf("_routeToEmbeddedUiSurfaces: no uiSurfaces\n");
     return HandlerResult();
   }
 
   auto cameralut = _scenegraph->_cameralut;
   if (!cameralut) {
-    printf("_routeToEmbeddedUiSurfaces: no cameralut\n");
+    if(0)printf("_routeToEmbeddedUiSurfaces: no cameralut\n");
     return HandlerResult();
   }
 
   auto camera = cameralut->find(_cameraname);
   if (!camera) {
-    printf("_routeToEmbeddedUiSurfaces: camera '%s' not found\n", _cameraname.c_str());
+    if(0)printf("_routeToEmbeddedUiSurfaces: camera '%s' not found\n", _cameraname.c_str());
     return HandlerResult();
   }
 
@@ -242,25 +242,25 @@ HandlerResult SceneGraphViewport::_routeToEmbeddedUiSurfaces(event_constptr_t ev
   fvec3 rayDir = (nearWorld - camPos).normalized();
   fray3 worldRay(camPos, rayDir);
 
-  printf("  ray: camPos=(%f,%f,%f) nearWorld=(%f,%f,%f) dir=(%f,%f,%f)\n",
+  if(0)printf("  ray: camPos=(%f,%f,%f) nearWorld=(%f,%f,%f) dir=(%f,%f,%f)\n",
          camPos.x, camPos.y, camPos.z,
          nearWorld.x, nearWorld.y, nearWorld.z,
          rayDir.x, rayDir.y, rayDir.z);
 
-  printf("_routeToEmbeddedUiSurfaces: testing %zu surfaces\n", uiSurfaces.size());
+  if(0)printf("_routeToEmbeddedUiSurfaces: testing %zu surfaces\n", uiSurfaces.size());
 
   // Test each UI surface for intersection
   for (auto& drawable : uiSurfaces) {
     auto impl = lev2::getUISurfaceRenderImpl(drawable);
     if (!impl) {
-      printf("  drawable has no impl\n");
+      if(0)printf("  drawable has no impl\n");
       continue;
     }
 
     // Check if layoutSurface is valid before ray testing
     auto layoutSurface = impl->_layoutSurface;
     if (!layoutSurface) {
-      printf("  impl has no layoutSurface\n");
+      if(0)printf("  impl has no layoutSurface\n");
       continue;
     }
 
@@ -268,7 +268,7 @@ HandlerResult SceneGraphViewport::_routeToEmbeddedUiSurfaces(event_constptr_t ev
     fvec3 worldHitPos;
 
     bool hit = impl->rayIntersect(worldRay, camMtx, surfaceUV, worldHitPos);
-    printf("  rayIntersect: hit=%d uv=(%f,%f)\n", hit, surfaceUV.x, surfaceUV.y);
+    if(0)printf("  rayIntersect: hit=%d uv=(%f,%f)\n", hit, surfaceUV.x, surfaceUV.y);
 
     if (hit) {
       // Hit! Transform UV [0,1] to LayoutSurface pixel coordinates
@@ -282,11 +282,11 @@ HandlerResult SceneGraphViewport::_routeToEmbeddedUiSurfaces(event_constptr_t ev
       transformedEv->miX = int(surfaceUV.x * surfaceW);
       transformedEv->miY = int(surfaceUV.y * surfaceH);
 
-      printf("  routing to surface at (%d,%d)\n", transformedEv->miX, transformedEv->miY);
+      if(0)printf("  routing to surface at (%d,%d)\n", transformedEv->miX, transformedEv->miY);
 
       // Route through the LayoutSurface's widget tree
       auto result = layoutSurface->handleUiEvent(transformedEv);
-      printf("  handleUiEvent returned: handled=%d\n", result.wasHandled());
+      if(0)printf("  handleUiEvent returned: handled=%d\n", result.wasHandled());
 
       // Always block camera events when ray hits the surface,
       // even if no widget handled the event
@@ -302,7 +302,7 @@ HandlerResult SceneGraphViewport::_routeToEmbeddedUiSurfaces(event_constptr_t ev
 ///////////////////////////////////////////////////////////////////////////////
 
 HandlerResult SceneGraphViewport::DoOnUiEvent(event_constptr_t ev) {
-  printf("SceneGraphViewport::DoOnUiEvent called\n");
+  //printf("SceneGraphViewport::DoOnUiEvent called\n");
   // 1. Try embedded UI surfaces first
   auto result = _routeToEmbeddedUiSurfaces(ev);
   if (result.wasHandled()) {

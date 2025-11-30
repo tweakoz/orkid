@@ -250,7 +250,7 @@ HandlerResult LayoutSurface::DoOnUiEvent(event_constptr_t ev) {
 Widget* LayoutSurface::doRouteUiEvent(event_constptr_t ev) {
   // Route events to the internal LayoutGroup
   if (_layoutGroup) {
-    printf("LayoutSurface<%s>::doRouteUiEvent routing to _layoutGroup\n", _name.c_str());
+    if(0)printf("LayoutSurface<%s>::doRouteUiEvent routing to _layoutGroup\n", _name.c_str());
     return _layoutGroup->routeUiEvent(ev);
   }
   return nullptr;
