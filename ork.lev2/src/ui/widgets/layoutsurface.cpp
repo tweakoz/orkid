@@ -2,6 +2,7 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/renderer/rendercontext.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/ui/layoutsurface.h>
 #include <ork/lev2/ui/context.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
@@ -38,6 +39,8 @@ LayoutSurface::LayoutSurface(const std::string& name, int x, int y, int w, int h
   _v0 = 0.0f;
   _u1 = 1.0f;
   _v1 = 1.0f;
+
+
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -293,8 +296,14 @@ void LayoutSurface::updateTextureIfNeeded(lev2::Context* ctx) {
 
     fbi->PushRtGroup(_rtgroup.get()); // pushes viewport/scissor
     {
-      auto drwev = std::make_shared<DrawEvent>(ctx);
-      DoRePaintSurface(drwev);
+      if(nullptr==_drwev){
+        _drwev = std::make_shared<DrawEvent>(ctx);
+        _acqdbuf = std::make_shared<lev2::AcquiredDrawQueueForRendering>();
+        _drwev->_acqdbuf = _acqdbuf;
+      }
+
+      _acqdbuf->_RCFD = rcfd;
+      DoRePaintSurface(_drwev);
     }
     fbi->PopRtGroup();
 

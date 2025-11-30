@@ -117,7 +117,7 @@ class StandardSceneGraphComponent(ApplicationComponent):
     sgparam_vm.SpecularIntensity = 1.0
     sgparam_vm.AmbientLevel = vec3(.125)
     sgparam_vm.preset = "ForwardPBR"
-    sgparam_vm.SkyboxTexPathStr = "nebula"
+    sgparam_vm.SkyboxTexPathStr = "cold"
     if sg_params != None:
       for k,v in sg_params.items():
         setattr(sgparam_vm, k, v)

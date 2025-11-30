@@ -91,6 +91,9 @@ struct LayoutSurface : public Surface {
   // Cached UV coordinates for viewport
   float _u0 = 0.0f, _v0 = 0.0f;
   float _u1 = 1.0f, _v1 = 1.0f;
+
+  lev2::acqdrawbuffer_ptr_t _acqdbuf;
+  uidrawevent_ptr_t _drwev;
 };
 
 using layoutsurface_ptr_t = std::shared_ptr<LayoutSurface>;

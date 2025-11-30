@@ -23,6 +23,7 @@ namespace ork {
   }
   namespace ui {
     struct DrawEvent;
+    using drawevent_ptr_t = std::shared_ptr<DrawEvent>;
     using drawevent_constptr_t = std::shared_ptr<const DrawEvent>;
   }
 }
