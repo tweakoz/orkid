@@ -67,12 +67,12 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 node->_enabled = ena;
               })
           .def_property(
-              "viewRelative",               //
+              "view_relative",               //
               [](node_ptr_t node) -> bool { //
-                return node->_viewRelative;
+                return node->_view_relative;
               },
               [](node_ptr_t node, bool ena) { //
-                node->_viewRelative = ena;
+                node->_view_relative = ena;
               })
 
           .def_property(

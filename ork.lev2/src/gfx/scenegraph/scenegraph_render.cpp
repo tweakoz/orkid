@@ -112,8 +112,8 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras, on_enqueue_fn_t on_en
       n->_dqxfdata._modcolor     = n->_modcolor;
       n->_dqxfdata._use_modcolor = true;
       // printf( "modcolor<%g %g %g %g>\n", n->_modcolor.x, n->_modcolor.y, n->_modcolor.z, n->_modcolor.w );
-      if (n->_viewRelative) {
-        n->_dqxfdata._worldTransform->_viewRelative = true;
+      if (n->_view_relative) {
+        n->_dqxfdata._worldTransform->_view_relative = true;
       }
       n->_drawable->enqueueOnLayer(n->_dqxfdata, *drawable_layer);
     }

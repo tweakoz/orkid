@@ -235,11 +235,14 @@ bool UISurfaceRenderImpl::rayIntersect(
     fvec3& worldHitPos_out) const {
 
   fvec3 center = _worldTransform ? _worldTransform->_translation : fvec3(0);
+  bool view_relative = _worldTransform && _worldTransform->_view_relative;
+
+  fray3 ray = worldRay;
   if(0)printf("rayIntersect: _worldTransform=%p center=(%f,%f,%f)\n",
          _worldTransform.get(), center.x, center.y, center.z);
   if(0)printf("  ray origin=(%f,%f,%f) dir=(%f,%f,%f)\n",
-         worldRay.mOrigin.x, worldRay.mOrigin.y, worldRay.mOrigin.z,
-         worldRay.mDirection.x, worldRay.mDirection.y, worldRay.mDirection.z);
+         ray.mOrigin.x, ray.mOrigin.y, ray.mOrigin.z,
+         ray.mDirection.x, ray.mDirection.y, ray.mDirection.z);
 
   fvec3 right, up, normal;
   computeBillboardAxes(camMtx, center, right, up, normal);
@@ -247,14 +250,15 @@ bool UISurfaceRenderImpl::rayIntersect(
   // Create plane from billboard
   fplane3 billboardPlane(normal, center);
 
-  // Ray-plane intersection
+  // Ray-plane intersection (in view space if view_relative, else world space)
+  fvec3 hitPos;
   float t;
-  if (!billboardPlane.Intersect(worldRay, t, worldHitPos_out)) {
+  if (!billboardPlane.Intersect(ray, t, hitPos)) {
     if(0)printf("  plane intersection failed\n");
     return false;
   }
 
-  if(0)printf("  plane t=%f hitPos=(%f,%f,%f)\n", t, worldHitPos_out.x, worldHitPos_out.y, worldHitPos_out.z);
+  if(0)printf("  plane t=%f hitPos=(%f,%f,%f)\n", t, hitPos.x, hitPos.y, hitPos.z);
 
   // Check if intersection is in front of ray origin
   if (t < 0) {
@@ -265,8 +269,8 @@ bool UISurfaceRenderImpl::rayIntersect(
   // Compute world-to-surface transform
   fmtx4 worldToSurface = computeWorldToSurface(camMtx);
 
-  // Transform world hit position to surface local space
-  fvec4 localHit = worldToSurface * fvec4(worldHitPos_out, 1.0f);
+  // Transform hit position to surface local space
+  fvec4 localHit = worldToSurface * fvec4(hitPos, 1.0f);
 
   if(0)printf("  localHit=(%f,%f,%f,%f)\n", localHit.x, localHit.y, localHit.z, localHit.w);
 
@@ -284,6 +288,9 @@ bool UISurfaceRenderImpl::rayIntersect(
   }
 
   uv_out = fvec2(u, v);
+
+  worldHitPos_out = hitPos;
+
   return true;
 }
 
@@ -371,7 +378,8 @@ void UISurfaceRenderImpl::render(const RenderContextInstData& RCID) {
 
   // Get world transform from RCID (set by the drawable node)
   fmtx4 worldMtx = RCID.worldMatrix();
-  fvec3 center(worldMtx.elemXY(3, 0), worldMtx.elemXY(3, 1), worldMtx.elemXY(3, 2));
+  fvec3 center = worldMtx.translation();
+
 
   // Lazy GPU init
   if (!_initted) {
@@ -382,6 +390,12 @@ void UISurfaceRenderImpl::render(const RenderContextInstData& RCID) {
   auto RCFD = ctx->topRenderContextFrameData();
   const auto& CPD = RCFD->topCPD();
   auto cmtcs = CPD.cameraMatrices();
+
+  if(_worldTransform->_view_relative) {
+    fmtx4 vmatrix = cmtcs->GetIVMatrix();
+    center = center.transform(vmatrix).xyz();
+  }
+
 
   // Compute billboard axes on-demand
   fvec3 right, up, normal;

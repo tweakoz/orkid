@@ -92,7 +92,7 @@ void CallbackDrawable::enqueueToRenderQueue(drawqueueitem_constptr_t item, lev2:
 
   // auto str                             = matrix.dump4x3cn();
   // printf("XFX: %s\n", str.c_str());
-  renderable._viewRelative = DQDATA._worldTransform->_viewRelative;
+  renderable._view_relative = DQDATA._worldTransform->_view_relative;
   renderable.SetMatrix(matrix);
   renderable._pickID = _pickID;
   renderable.SetRenderCallback(mRenderCallback);

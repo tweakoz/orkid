@@ -62,7 +62,7 @@ public:
   varmap::varmap_ptr_t _userdata;
   bool _enabled = true;
   bool _pickable = true;
-  bool _viewRelative = false;
+  bool _view_relative = false;
   std::unordered_set<Layer*> _layers;
 };
 
