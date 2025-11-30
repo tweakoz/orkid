@@ -40,6 +40,8 @@ UiTestApp::~UiTestApp() {
 uitestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
   //AppInitData init_data{._envp=envp};
   lev2::initModule(init_data);
+  init_data->finalizeInitialization();
+
   //////////////////////////////////////////////////////////////////////////////
   // boot up debug HUD
   //////////////////////////////////////////////////////////////////////////////

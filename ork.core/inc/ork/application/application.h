@@ -115,6 +115,7 @@ struct AppInitData{
   bool _update_rendersync = false;
   bool _allowHIDPI = false;
   bool _disableMouseCursor = false;
+  bool _fsMouseMode = false;  // Fullscreen mouse mode: hide HW cursor, render virtual
   std::string _audio_input_devname = "default";
   std::string _audio_output_devname = "default";
   std::string _audio_ioclass = "default";

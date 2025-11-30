@@ -266,7 +266,6 @@ void LayoutGroup::DoDraw(drawevent_constptr_t drwev) {
   int y = _geometry._y;
   int w = _geometry._w;
   int h = _geometry._h;
-  mtxi->PushUIMatrix(w,h);
 
   //printf("LayoutGroup<%s>::DoDraw xywh<%d %d %d %d> clear<%d>\n", _name.c_str(), x, y, w, h, int(_clear));
   if(_clear){
@@ -335,28 +334,32 @@ void LayoutGroup::DoDraw(drawevent_constptr_t drwev) {
         iy2 = line._from.y + margin;
       }
 
-      defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
-      defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
+      // Use viewport-based UI matrix since coordinates are in root/window space
+      mtxi->PushUIMatrix();
+      {
+        defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
+        defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
 
-      // Modulate color when actively dragging for visual feedback
-      auto guide_color = _guide_being_dragged //
-                       ? (_clearColorGuide*0.8+sinf(_animtimer.SecsSinceStart()*PI2*3.0)*0.2) //
-                       : _clearColorGuide;
+        // Modulate color when actively dragging for visual feedback
+        auto guide_color = _guide_being_dragged //
+                         ? (_clearColorGuide*0.8+sinf(_animtimer.SecsSinceStart()*PI2*3.0)*0.2) //
+                         : _clearColorGuide;
 
-      tgt->PushModColor(guide_color);
-      defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
-      primi->RenderQuadAtZ(
-          defmtl.get(),
-          ix1, ix2,  // x0, x1
-          iy1, iy2,  // y0, y1
-          0.0f,      // z
-          0.0f, 1.0f, // u0, u1
-          0.0f, 1.0f  // v0, v1
-      );
-      tgt->PopModColor();
+        tgt->PushModColor(guide_color);
+        defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
+        primi->RenderQuadAtZ(
+            defmtl.get(),
+            ix1, ix2,  // x0, x1
+            iy1, iy2,  // y0, y1
+            0.0f,      // z
+            0.0f, 1.0f, // u0, u1
+            0.0f, 1.0f  // v0, v1
+        );
+        tgt->PopModColor();
+      }
+      mtxi->PopUIMatrix();
     } // end if (is_descendant)
   }
-  mtxi->PopUIMatrix();
 }
 //////////////////////////////////////
 anchor::layout_ptr_t LayoutGroup::layoutAndAddChild(widget_ptr_t w) {
@@ -819,6 +822,7 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
   switch (ev->_eventcode) {
     case ui::EventCode::PUSH: {
       was_handled = true;
+      _guide_being_dragged = anchor::findGuidePairUnderMouse(_layout.get(), fvec2(ev->miX, ev->miY));
       if(_highlightGuides){
         _animtimer.Start();
       }
@@ -876,7 +880,6 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
       break;
     }
     case ui::EventCode::MOUSE_LEAVE: 
-      break;
     default: {
       _highlightGuides = false;
       _guide_being_dragged = nullptr;
@@ -916,7 +919,8 @@ Widget* LayoutGroup::doRouteUiEvent(event_constptr_t ev) {
   }
 
   ///////////////////////////
-  _guide_being_dragged = anchor::findGuidePairUnderMouse(_layout.get(), fvec2(ev->miX, ev->miY));
+  // Only search for a new guide if we're not already dragging one
+  // Once grabbed, the guide stays grabbed until RELEASE or END_DRAG
   if(_guide_being_dragged){
     _highlightGuides = true;
     return this;

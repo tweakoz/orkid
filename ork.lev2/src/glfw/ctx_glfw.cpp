@@ -58,6 +58,12 @@ void CtxGLFW::disableMouseCursor() {
 void CtxGLFW::hideMouseCursor() {
   glfwSetInputMode(_glfwWindow, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 }
+void CtxGLFW::showMouseCursor() {
+  glfwSetInputMode(_glfwWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+}
+void CtxGLFW::warpCursor(int x, int y) {
+  glfwSetCursorPos(_glfwWindow, double(x), double(y));
+}
 ///////////////////////////////////////////////////////////////////////////////
 ui::event_constptr_t CtxGLFW::uievent() const {
   return _uievent;
@@ -525,6 +531,16 @@ void CtxGLFW::Show() {
     glfwGetWindowSize(_glfwWindow, &_width, &_height);
     _appinitdata->_width  = _width;
     _appinitdata->_height = _height;
+
+    // Check for fullscreen mouse mode (hide hardware cursor, render virtual)
+    // Can be enabled via kwarg fsmouse=True or env var ORKID_FSMOUSEMODE=1
+    const char* fsmousemode_env = getenv("ORKID_FSMOUSEMODE");
+    bool fsmousemode_envvar = fsmousemode_env && std::string(fsmousemode_env) == "1";
+    if (_appinitdata->_fsMouseMode || fsmousemode_envvar) {
+      _fsMouseMode = true;
+      hideMouseCursor();
+      logchan_glfw->log("Fullscreen mouse mode enabled: hardware cursor hidden");
+    }
 
   } else if( not _appinitdata->_offscreen ) {
     logchan_glfw->log(

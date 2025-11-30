@@ -11,6 +11,11 @@
 #include <ork/lev2/ui/viewport_scenegraph.h>
 #include <ork/lev2/ui/event.h>
 #include <ork/lev2/ui/group.h>
+#include <ork/lev2/gfx/gfxmaterial_ui.h>
+#include <ork/lev2/gfx/pri.h>
+#if defined(ENABLE_GLFW)
+#include <ork/lev2/glfw/ctx_glfw.h>
+#endif
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::ui::SceneGraphViewport, "ui::SceneGraphViewport");
 
@@ -110,6 +115,69 @@ void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
     comptek->_outputNode = orig_onode;
 
+    ////////////////////////////////////////////////////
+    // Render virtual cursor if in fullscreen mouse mode
+    ////////////////////////////////////////////////////
+#if defined(ENABLE_GLFW)
+    auto tgt = drwev->GetTarget();
+    auto ctxbase = dynamic_cast<lev2::CtxGLFW*>(tgt->mCtxBase);
+    if (ctxbase && ctxbase->_fsMouseMode) {
+      auto uiev = ctxbase->uievent();
+      int cursorX = uiev->miX;
+      // Flip Y: GLFW reports (0,0) at top-left, UI matrix has (0,0) at bottom-left
+      int cursorY = height() - uiev->miY;
+
+      // Render a simple crosshair cursor
+      auto fbi = tgt->FBI();
+      auto mtxi = tgt->MTXI();
+      auto primi = tgt->PRI();
+      auto defmtl = lev2::defaultUIMaterial();
+
+      int w = width();
+      int h = height();
+      int cursorSize = 4;
+      int cursorThickness = 2;
+
+      fbi->pushViewport(0, 0, w, h);
+      fbi->pushScissor(0, 0, w, h);
+      auto uimtx = mtxi->uiMatrix(w, h);
+      mtxi->PushMMatrix(fmtx4::Identity());
+      mtxi->PushVMatrix(fmtx4::Identity());
+      mtxi->PushPMatrix(uimtx);
+      {
+        defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::ALPHA);
+        defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
+        tgt->PushModColor(fvec4(1, 1, 1, 0.9f));
+        defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
+
+        // Horizontal bar
+        primi->RenderQuadAtZ(
+            defmtl.get(),
+            cursorX - cursorSize, cursorX + cursorSize,  // x0, x1
+            cursorY - cursorThickness/2, cursorY + cursorThickness/2,  // y0, y1
+            0.0f,
+            0.0f, 1.0f,
+            0.0f, 1.0f
+        );
+        // Vertical bar
+        primi->RenderQuadAtZ(
+            defmtl.get(),
+            cursorX - cursorThickness/2, cursorX + cursorThickness/2,  // x0, x1
+            cursorY - cursorSize, cursorY + cursorSize,  // y0, y1
+            0.0f,
+            0.0f, 1.0f,
+            0.0f, 1.0f
+        );
+
+        tgt->PopModColor();
+      }
+      mtxi->PopPMatrix();
+      mtxi->PopVMatrix();
+      mtxi->PopMMatrix();
+      fbi->popScissor();
+      fbi->popViewport();
+    }
+#endif
     ////////////////////////////////////////////////////
     if (_override_acqdbuf) {
       _scenegraph->_dbufcontext_SG->releaseFromReadLocked(_override_acqdbuf->_DB);

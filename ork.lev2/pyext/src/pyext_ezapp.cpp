@@ -155,6 +155,8 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   appinitdata->_ssaa_samples = py::cast<int>(item.second);
                 } else if (key == "disable_mouse_cursor") {
                   appinitdata->_disableMouseCursor = py::cast<bool>(item.second);
+                } else if (key == "fsmouse") {
+                  appinitdata->_fsMouseMode = py::cast<bool>(item.second);
                 } else if (key == "msaa") {
                   appinitdata->_msaa_samples = py::cast<int>(item.second);
                 } else if( key == "rcfd" ) {
