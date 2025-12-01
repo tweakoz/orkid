@@ -134,6 +134,38 @@ IF(${APPLE})
         endif()
     endmacro(ADD_OSX_FRAMEWORK)
 
+    ############################################################################
+    # ADD_STAGED_FRAMEWORK - Link against a framework installed in staging lib
+    #
+    # For frameworks installed via obt.macos.install_framework_to_stage(),
+    # which have install names using @rpath/xxx.framework/...
+    #
+    # Usage: ADD_STAGED_FRAMEWORK(xxx my_target)
+    ############################################################################
+    function(ADD_STAGED_FRAMEWORK fwname target)
+        set(FW_BASE "$ENV{OBT_STAGE}/lib/${fwname}.framework")
+        set(FW_HEADERS "${FW_BASE}/Headers")
+        set(FW_BINARY "${FW_BASE}/${fwname}")
+
+        # Verify framework exists
+        if(NOT EXISTS "${FW_BASE}")
+            message(FATAL_ERROR "Staged framework not found: ${FW_BASE}")
+        endif()
+
+        # Add header search path
+        target_include_directories(${target} PRIVATE "${FW_HEADERS}")
+
+        # Link against the framework binary
+        target_link_libraries(${target} PRIVATE "${FW_BINARY}")
+
+        # Ensure RPATH includes staging lib for @rpath resolution
+        # This should already be set globally, but ensure it for this target
+        set_property(TARGET ${target} APPEND PROPERTY BUILD_RPATH "$ENV{OBT_STAGE}/lib")
+        set_property(TARGET ${target} APPEND PROPERTY INSTALL_RPATH "$ENV{OBT_STAGE}/lib")
+
+        message(STATUS "Staged framework ${fwname} added from ${FW_BASE}")
+    endfunction()
+
     set(CMAKE_MACOSX_RPATH 1)
     LIST(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "$ENV{OBT_STAGE}/lib" isSystemDir)
     IF("${isSystemDir}" STREQUAL "-1")
