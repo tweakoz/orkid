@@ -545,7 +545,7 @@ static guide_ptr_t _findClosestDraggableGuide(const Layout* rootLayout, const fv
     // So if margin is 3, the draggable area is 3 pixels on each side = 6 pixels total
     // The distance check should be against the full margin size since distance is from the center line
     float threshold = float(guide->_margin);
-    if(1)printf("check guide<%d> layout<%d> widget<%s> depth<%d> edge<%s> distance<%g> threshold<%g> line[%g,%g - %g,%g] mouse[%g,%g]\n",
+    if(0)printf("check guide<%d> layout<%d> widget<%s> depth<%d> edge<%s> distance<%g> threshold<%g> line[%g,%g - %g,%g] mouse[%g,%g]\n",
            guide->_name, guide->_layout->_name, widget->_name.c_str(), depth,
            edge2str(guide->_edge).c_str(), distance, threshold,
            line._from.x, line._from.y, line._to.x, line._to.y,

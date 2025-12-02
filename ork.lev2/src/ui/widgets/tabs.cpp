@@ -8,8 +8,47 @@
 #include <ork/lev2/ui/style.h>
 #include <ork/lev2/ui/context.h>
 #include <cmath>
+#include <cctype>
 
 namespace ork::ui {
+
+/////////////////////////////////////////////////////////////////////////
+// Natural sort comparison - handles embedded numbers correctly
+// "item2" < "item10", "a1b2" < "a1b10", etc.
+/////////////////////////////////////////////////////////////////////////
+static bool naturalSortCompare(const std::string& a, const std::string& b) {
+  size_t i = 0, j = 0;
+  while (i < a.size() && j < b.size()) {
+    if (std::isdigit(a[i]) && std::isdigit(b[j])) {
+      // Both are digits - compare numerically
+      size_t num_start_a = i, num_start_b = j;
+      while (i < a.size() && std::isdigit(a[i])) i++;
+      while (j < b.size() && std::isdigit(b[j])) j++;
+
+      // Extract numeric substrings
+      std::string num_a = a.substr(num_start_a, i - num_start_a);
+      std::string num_b = b.substr(num_start_b, j - num_start_b);
+
+      // Compare by length first (longer = larger), then lexicographically
+      if (num_a.size() != num_b.size()) {
+        return num_a.size() < num_b.size();
+      }
+      if (num_a != num_b) {
+        return num_a < num_b;
+      }
+      // Numbers are equal, continue comparing rest of string
+    } else {
+      // At least one is not a digit - compare as characters
+      if (a[i] != b[j]) {
+        return a[i] < b[j];
+      }
+      i++;
+      j++;
+    }
+  }
+  // Shorter string comes first if one is prefix of other
+  return a.size() < b.size();
+}
 
 /////////////////////////////////////////////////////////////////////////
 TabWidget::TabWidget(const std::string& name, int x, int y, int w, int h)
@@ -32,10 +71,10 @@ void TabWidget::_onChildrenChanged() {
 void TabWidget::_ensureSorted() {
   if (!_needs_layout_recalc) return;
 
-  // Sort _children alphabetically by name
+  // Sort _children using natural sort order (1, 2, 10 instead of 1, 10, 2)
   std::sort(_children.begin(), _children.end(),
     [](const widget_ptr_t& a, const widget_ptr_t& b) {
-      return a->_name < b->_name;
+      return naturalSortCompare(a->_name, b->_name);
     });
 
   // Active tab pointer is still valid - no adjustment needed!

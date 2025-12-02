@@ -830,7 +830,7 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
   // ev->mFilteredEvent.Reset();
   static int counter = 0;
   int count = counter++;
-  printf("LayoutGroup<%s>::OnUiEvent eventcode<%d>\n", _name.c_str(), int(ev->_eventcode));
+  //printf("LayoutGroup<%s>::OnUiEvent eventcode<%d>\n", _name.c_str(), int(ev->_eventcode));
   ui::HandlerResult result;
   bool was_handled = false;
   static int lastx = ev->miX;
@@ -909,11 +909,11 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
 }
 /////////////////////////////////////////////////////////////////////////
 Widget* LayoutGroup::doRouteUiEvent(event_constptr_t ev) {
-  printf("LayoutGroup<%s>::doRouteUiEvent _ignoreEvents<%d>\n", _name.c_str(), int(_ignoreEvents));
+  //printf("LayoutGroup<%s>::doRouteUiEvent _ignoreEvents<%d>\n", _name.c_str(), int(_ignoreEvents));
 
   // Check if this widget should ignore events (e.g., split/grid row containers)
   if (_ignoreEvents) {
-    printf("  -> returning nullptr (ignoreEvents)\n");
+    //printf("  -> returning nullptr (ignoreEvents)\n");
     return nullptr;
   }
 
@@ -925,7 +925,7 @@ Widget* LayoutGroup::doRouteUiEvent(event_constptr_t ev) {
       if (_overlay_widget) {
         _overlay_enabled = !_overlay_enabled;
         SetDirty();
-        printf("KC\n");
+        //printf("KC\n");
         return this;  // Consume event
       }
     }
@@ -937,7 +937,7 @@ Widget* LayoutGroup::doRouteUiEvent(event_constptr_t ev) {
   if (_overlay_widget && _overlay_enabled) {
     auto result = _overlay_widget->routeUiEvent(ev);
     if (result) {
-      printf("OVL\n");
+      //printf("OVL\n");
       _guide_highlite = nullptr;
       return result;  // Overlay handled the event
     }
@@ -947,7 +947,7 @@ Widget* LayoutGroup::doRouteUiEvent(event_constptr_t ev) {
   // Only search for a new guide if we're not already dragging one
   // Once grabbed, the guide stays grabbed until RELEASE or END_DRAG
   if(_guide_being_dragged){
-    printf("GBG\n");
+    //printf("GBG\n");
     _guide_highlite = nullptr;
     return this;
   }
@@ -962,14 +962,14 @@ Widget* LayoutGroup::doRouteUiEvent(event_constptr_t ev) {
       auto child_target = child->routeUiEvent(ev);
       if(child_target and child_target->_ignoreEvents) continue;
       if (child_target and child_target!=_overlay_widget.get()) {
-        printf("CHILD <%p:%s>\n", (void*) child_target, child_target->_name.c_str());
+        //printf("CHILD <%p:%s>\n", (void*) child_target, child_target->_name.c_str());
         //_clearColor = fvec4(0,0,0, 1.0);
         _guide_highlite = nullptr;
         return child_target;
       }
     }
   }
-  printf("FALLTHRU\n");
+  //printf("FALLTHRU\n");
   return this;
 }
 /////////////////////////////////////////////////////////////////////////
