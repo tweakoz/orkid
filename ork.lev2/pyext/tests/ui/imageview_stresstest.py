@@ -70,6 +70,8 @@ class ImageViewStressTest(application.ComponentizedApplication):
                      enable_audio_synth=False,
                      enable_freerun_ups=True,
                      enable_freerun_fps=True)
+    
+    self.ezapp.uicontext.debug_event_routing = False
 
   ##############################################
 
@@ -77,7 +79,6 @@ class ImageViewStressTest(application.ComponentizedApplication):
     """Initialize UI layout and widgets"""
     lg_group = self.ezapp.topLayoutGroup
     lg_group.clearColorGuide = vec4(1, 1, 0, 1)  # Bright yellow
-    lg_group.margin = 2
 
     ############################################
     # Create NxN grid of ImageViews
@@ -86,10 +87,11 @@ class ImageViewStressTest(application.ComponentizedApplication):
     self.griditems = lg_group.makeGrid(
       width=self.griddim,
       height=self.griddim,
-      margin=2,
+      margin=4,
       uiclass=lev2.ui.Box,
       args=["placeholder", vec4(0.1, 0.1, 0.1, 1)],
     )
+    lg_group.margin = 4
 
     ############################################
     # Replace each grid cell with an ImageView

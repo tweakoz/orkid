@@ -78,7 +78,7 @@ struct LayoutGroup : public Group {
     std::vector<LayoutItem<T>> layout_items;
     int h = rccounts.size();
 
-    // Step 1: Create horizontal guides for row boundaries (on parent layout)
+    // Step 1: Create horizontal guides for row boundaries (on root layout)
     std::vector<ui::anchor::guide_ptr_t> hguides;
     for (int y = 0; y <= h; y++) {
       float fy = float(y) / float(h);
@@ -92,69 +92,59 @@ struct LayoutGroup : public Group {
       }
     }
 
-    // Step 2: For each row, create a row container with its own vertical guides
+    // Step 2: For each row, create vertical guides and cells directly on root layout
+    // Each row can have different column counts, so vertical guides are per-row
+    // but they're created on the root layout and span only their row's vertical range
     for (int y = 0; y < h; y++) {
       int w = rccounts[y];
 
-      // Create invisible row container with margin=0
-      // The guides themselves have the margin, we don't want to compound it
-      auto row_name = _name + FormatString("-row-%d", y);
-      auto row_group = std::make_shared<LayoutGroup>(row_name, 0, 0, 0, 0, 0);
-      row_group->_clear = false;  // Don't draw background
-      row_group->_ignoreEvents = true;  // Don't intercept events - let root LayoutGroup handle guide dragging
-      addChild(row_group);
-
-      // Anchor row container to horizontal guides (spans full width)
-      auto row_layout = row_group->_layout;
-      row_layout->top()->anchorTo(hguides[y]);
-      row_layout->bottom()->anchorTo(hguides[y + 1]);
-      row_layout->left()->anchorTo(_layout->left());
-      row_layout->right()->anchorTo(_layout->right());
-
-      // Create vertical guides within this row's layout
-      // Use parent's left/right edge guides instead of creating duplicates
+      // Create vertical guides for this row on the root layout
+      // These guides span from hguides[y] to hguides[y+1]
       std::vector<ui::anchor::guide_ptr_t> row_vguides;
 
       for (int x = 0; x <= w; x++) {
         ui::anchor::guide_ptr_t guide;
 
         if (x == 0) {
-          // Use parent's left edge guide
-          guide = row_layout->left();
+          // Use root layout's left edge guide
+          guide = _layout->left();
         } else if (x == w) {
-          // Use parent's right edge guide
-          guide = row_layout->right();
+          // Use root layout's right edge guide
+          guide = _layout->right();
         } else {
-          // Create interior guide with explicit margin from parent
+          // Create interior vertical guide on root layout
           float fx = float(x) / float(w);
-          guide = row_layout->proportionalVerticalGuide(fx);
-          guide->_margin = _margin;  // Explicitly set margin from parent
-          row_group->_vguides.insert(guide);
+          guide = _layout->proportionalVerticalGuide(fx);
+          guide->_margin = _margin;
+          // Set extent guides so vertical guide only spans this row
+          guide->_extentMin = hguides[y];      // top of row
+          guide->_extentMax = hguides[y + 1];  // bottom of row
+          // Set constraint group so guides only constrain within same row
+          guide->_constraintGroup = uint64_t(1) << y;
           _vguides.insert(guide);
         }
 
         row_vguides.push_back(guide);
       }
 
-      // Create cells within this row
+      // Create cells directly as children of this LayoutGroup
       for (int x = 0; x < w; x++) {
         auto name = _name + FormatString("-ch-%d", layout_items.size());
-        auto chitem = row_group->makeChild<T>(std::forward<A>(args)...);
+        auto chitem = this->makeChild<T>(std::forward<A>(args)...);
         layout_items.push_back(chitem);
 
-        // Set margin on cell layout - this creates the spacing when edges anchor to guides
+        // Set margin on cell layout
         chitem._layout->setMargin(_margin);
-        chitem._layout->top()->anchorTo(row_layout->top());
-        chitem._layout->bottom()->anchorTo(row_layout->bottom());
+        // Anchor to horizontal guides for row bounds
+        chitem._layout->top()->anchorTo(hguides[y]);
+        chitem._layout->bottom()->anchorTo(hguides[y + 1]);
+        // Anchor to vertical guides for column bounds
         chitem._layout->left()->anchorTo(row_vguides[x]);
         chitem._layout->right()->anchorTo(row_vguides[x + 1]);
       }
-
-      // Update this row's layout geometry
-      row_layout->updateAll();
     }
 
-    // Update parent layout geometry
+    // Update layout geometry
     _layout->updateAll();
 
     return layout_items;

@@ -114,7 +114,7 @@ class SplitLayoutApp(application.ComponentizedApplication):
     print("Misc Split Test tab...")
 
     tab_group = tabs.makeChild(uiclass=lev2.ui.LayoutGroup, args=["7-WAY"])
-    tab_group.margin = 3
+    tab_group.margin = 8
     tab_group.clearColorStd = vec4(0, 0, 0.1, 1)
     tab_group.clearColorGuide = vec4(1, 1, 0, 1)
 

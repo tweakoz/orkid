@@ -313,6 +313,18 @@ Line Guide::line(Mode mode) const {
       outline._to   = fvec2(rect.x2(), rect.y2());
       break;
     case Edge::CustomHorizontal: {
+      // Compute X extent from extent guides if available
+      float x_min = float(rect._x);
+      float x_max = float(rect.x2());
+      if (_extentMin) {
+        auto min_line = _extentMin->line(mode);
+        x_min = min_line._from.x;
+      }
+      if (_extentMax) {
+        auto max_line = _extentMax->line(mode);
+        x_max = max_line._from.x;
+      }
+
       if (_type == GuideType::OFFSET && _offset_base) {
         // Compute position from base guide + offset
         auto base_line = _offset_base->line(mode);
@@ -325,22 +337,34 @@ Line Guide::line(Mode mode) const {
           y = std::clamp(y, min_y, max_y);
         }
 
-        outline._from = fvec2(rect._x, y);
-        outline._to   = fvec2(rect.x2(), y);
+        outline._from = fvec2(x_min, y);
+        outline._to   = fvec2(x_max, y);
       } else if (_proportion != 0.0f) {
         float y       = float(rect._y) + float(rect._h) * _proportion;
-        outline._from = fvec2(rect._x, y);
-        outline._to   = fvec2(rect.x2(), y);
+        outline._from = fvec2(x_min, y);
+        outline._to   = fvec2(x_max, y);
       } else if (_fixed > 0) {
-        outline._from = fvec2(rect._x, rect._y + _fixed);
-        outline._to   = fvec2(rect.x2(), rect._y + _fixed);
+        outline._from = fvec2(x_min, rect._y + _fixed);
+        outline._to   = fvec2(x_max, rect._y + _fixed);
       } else if (_fixed < 0) {
-        outline._from = fvec2(rect._x, rect._y + rect._h + _fixed);
-        outline._to   = fvec2(rect.x2(), rect._y + rect._h + _fixed);
+        outline._from = fvec2(x_min, rect._y + rect._h + _fixed);
+        outline._to   = fvec2(x_max, rect._y + rect._h + _fixed);
       }
       break;
     };
     case Edge::CustomVertical: {
+      // Compute Y extent from extent guides if available
+      float y_min = float(rect._y);
+      float y_max = float(rect.y2());
+      if (_extentMin) {
+        auto min_line = _extentMin->line(mode);
+        y_min = min_line._from.y;
+      }
+      if (_extentMax) {
+        auto max_line = _extentMax->line(mode);
+        y_max = max_line._from.y;
+      }
+
       if (_type == GuideType::OFFSET && _offset_base) {
         // Compute position from base guide + offset
         auto base_line = _offset_base->line(mode);
@@ -353,18 +377,18 @@ Line Guide::line(Mode mode) const {
           x = std::clamp(x, min_x, max_x);
         }
 
-        outline._from = fvec2(x, rect._y);
-        outline._to   = fvec2(x, rect.y2());
+        outline._from = fvec2(x, y_min);
+        outline._to   = fvec2(x, y_max);
       } else if (_proportion != 0.0f) {
         float x       = float(rect._x) + float(rect._w) * _proportion;
-        outline._from = fvec2(x, rect._y);
-        outline._to   = fvec2(x, rect.y2());
+        outline._from = fvec2(x, y_min);
+        outline._to   = fvec2(x, y_max);
       } else if (_fixed > 0) {
-        outline._from = fvec2(rect._x + _fixed, rect._y);
-        outline._to   = fvec2(rect._x + _fixed, rect.y2());
+        outline._from = fvec2(rect._x + _fixed, y_min);
+        outline._to   = fvec2(rect._x + _fixed, y_max);
       } else if (_fixed < 0) {
-        outline._from = fvec2(rect._x + rect._w + _fixed, rect._y);
-        outline._to   = fvec2(rect._x + rect._w + _fixed, rect.y2());
+        outline._from = fvec2(rect._x + rect._w + _fixed, y_min);
+        outline._to   = fvec2(rect._x + rect._w + _fixed, y_max);
       }
       break;
     };
@@ -521,7 +545,7 @@ static guide_ptr_t _findClosestDraggableGuide(const Layout* rootLayout, const fv
     // So if margin is 3, the draggable area is 3 pixels on each side = 6 pixels total
     // The distance check should be against the full margin size since distance is from the center line
     float threshold = float(guide->_margin);
-    if(0)printf("check guide<%d> layout<%d> widget<%s> depth<%d> edge<%s> distance<%g> threshold<%g> line[%g,%g - %g,%g] mouse[%g,%g]\n",
+    if(1)printf("check guide<%d> layout<%d> widget<%s> depth<%d> edge<%s> distance<%g> threshold<%g> line[%g,%g - %g,%g] mouse[%g,%g]\n",
            guide->_name, guide->_layout->_name, widget->_name.c_str(), depth,
            edge2str(guide->_edge).c_str(), distance, threshold,
            line._from.x, line._from.y, line._to.x, line._to.y,
@@ -556,9 +580,14 @@ static void _adjustGuidePositionVProportional(const guide_ptr_t& guide, float de
     float min_proportion = 0.0f;
     float max_proportion = 1.0f;
 
-    // Get all custom guides from the same layout
+    // Get all custom guides from the same layout that share constraint group
     for (auto& other_guide : guide->_layout->_customguides) {
         if (other_guide->isVertical() && other_guide != guide) {
+            // Skip if constraint groups don't overlap (unless one is 0 = unconstrained)
+            if (guide->_constraintGroup != 0 && other_guide->_constraintGroup != 0 &&
+                (guide->_constraintGroup & other_guide->_constraintGroup) == 0) {
+                continue;
+            }
             float other_prop = other_guide->_proportion;
             // Find the closest guide on the left (smaller proportion)
             if (other_prop < guide->_proportion && other_prop > min_proportion) {
@@ -593,9 +622,14 @@ static void _adjustGuidePositionVFixed(const guide_ptr_t& guide, float deltaX) {
     int min_pos = 0;
     int max_pos = layout_dimensions._w;
 
-    // Get all custom guides from the same layout
+    // Get all custom guides from the same layout that share constraint group
     for (auto& other_guide : guide->_layout->_customguides) {
         if (other_guide->isVertical() && other_guide != guide) {
+            // Skip if constraint groups don't overlap (unless one is 0 = unconstrained)
+            if (guide->_constraintGroup != 0 && other_guide->_constraintGroup != 0 &&
+                (guide->_constraintGroup & other_guide->_constraintGroup) == 0) {
+                continue;
+            }
             int other_pos = (other_guide->_type == GuideType::FIXED)
                 ? other_guide->_fixed
                 : static_cast<int>(other_guide->_proportion * layout_dimensions._w);
@@ -632,9 +666,14 @@ static void _adjustGuidePositionHProportional(const guide_ptr_t& guide, float de
     float min_proportion = 0.0f;
     float max_proportion = 1.0f;
 
-    // Get all custom guides from the same layout
+    // Get all custom guides from the same layout that share constraint group
     for (auto& other_guide : guide->_layout->_customguides) {
         if (other_guide->isHorizontal() && other_guide != guide) {
+            // Skip if constraint groups don't overlap (unless one is 0 = unconstrained)
+            if (guide->_constraintGroup != 0 && other_guide->_constraintGroup != 0 &&
+                (guide->_constraintGroup & other_guide->_constraintGroup) == 0) {
+                continue;
+            }
             float other_prop = other_guide->_proportion;
             // Find the closest guide above (smaller proportion)
             if (other_prop < guide->_proportion && other_prop > min_proportion) {
@@ -669,9 +708,14 @@ static void _adjustGuidePositionHFixed(const guide_ptr_t& guide, float deltaY) {
     int min_pos = 0;
     int max_pos = layout_dimensions._h;
 
-    // Get all custom guides from the same layout
+    // Get all custom guides from the same layout that share constraint group
     for (auto& other_guide : guide->_layout->_customguides) {
         if (other_guide->isHorizontal() && other_guide != guide) {
+            // Skip if constraint groups don't overlap (unless one is 0 = unconstrained)
+            if (guide->_constraintGroup != 0 && other_guide->_constraintGroup != 0 &&
+                (guide->_constraintGroup & other_guide->_constraintGroup) == 0) {
+                continue;
+            }
             int other_pos = (other_guide->_type == GuideType::FIXED)
                 ? other_guide->_fixed
                 : static_cast<int>(other_guide->_proportion * layout_dimensions._h);

@@ -191,6 +191,17 @@ struct Guide {
   bool _clamped = true;  // clamp offset guides to layout bounds (default true)
   GuideType _type = GuideType::NONE;
   Guide* _offset_base = nullptr;  // base guide for OFFSET type
+
+  // Extent guides - for clipping guide line rendering
+  // For vertical guides: _extentMin/_extentMax are horizontal guides (top/bottom bounds)
+  // For horizontal guides: _extentMin/_extentMax are vertical guides (left/right bounds)
+  // If null, guide spans full layout extent
+  guide_ptr_t _extentMin = nullptr;
+  guide_ptr_t _extentMax = nullptr;
+
+  // Constraint group - guides only constrain against other guides with matching bits
+  // 0 means no constraint group (constrains against all guides)
+  uint64_t _constraintGroup = 0;
 };
 
 /////////////////////////////////////////////////////////////////////////
