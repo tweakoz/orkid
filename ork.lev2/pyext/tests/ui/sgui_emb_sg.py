@@ -129,8 +129,8 @@ class RecursiveFsmouseApp(ComponentizedApplication):
     ############################################
 
     self.ui_prim_data = lev2.UISurfacePrimitiveData()
-    self.ui_prim_data.size = 1.0
-    self.ui_prim_data.blendMode = tokens.ADDITIVE
+    self.ui_prim_data.size = 2.0
+    self.ui_prim_data.blendMode = tokens.OFF
     self.ui_prim_data.doubleSided = True
     self.ui_prim_data.max_samples_per_axis = 8
 
@@ -141,7 +141,7 @@ class RecursiveFsmouseApp(ComponentizedApplication):
       self.ui_drawable
     )
     self.ui_node.sortkey = 100
-    self.ui_node.worldTransform.translation = vec3(+4, 2, -8)
+    self.ui_node.worldTransform.translation = vec3(+3.75, 1.75, -8)
     self.ui_node.view_relative = True
 
   ##############################################
