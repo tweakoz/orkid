@@ -499,7 +499,7 @@ void VkTextureInterface::initTextureArray2D(TextureArray* texture_array) { // fi
   auto primary_cb = _contextVK->primary_cb();
   auto vk_cmdbuf = primary_cb->_vkcmdbuf;
 
-  printf("initTextureArray2D: array='%s' vk_cmdbuf=%p primary_cb=%p\n",
+  if(0)printf("initTextureArray2D: array='%s' vk_cmdbuf=%p primary_cb=%p\n",
          texture_array->_tex->_debugName.c_str(), (void*)vk_cmdbuf,
          (void*)primary_cb.get());
 
@@ -608,7 +608,7 @@ void VkTextureInterface::_enqueueInitTextureArray2DOnCB(TextureArray* texture_ar
   // Texture arrays use slot [0] only
   vktex->_imgobj[0] = std::make_shared<VulkanImageObject>(_contextVK, VKICI);
 
-  printf("initTextureArray2D: created image %p for array '%s'\n",
+  if(0)printf("initTextureArray2D: created image %p for array '%s'\n",
          (void*)vktex->_imgobj[0]->_vkimage,
          texture_array->_tex->_debugName.c_str());
 
@@ -705,7 +705,7 @@ void VkTextureInterface::_enqueueInitTextureArray2DOnCB(TextureArray* texture_ar
   read_barrier->subresourceRange.levelCount = num_levels;
   read_barrier->subresourceRange.layerCount = num_slices;
 
-  printf("  Transitioning image %p to SHADER_READ_ONLY_OPTIMAL (is_depth=%d)\n",
+  if(0)printf("  Transitioning image %p to SHADER_READ_ONLY_OPTIMAL (is_depth=%d)\n",
          (void*)vktex->_imgobj[0]->_vkimage, is_depth);
 
   vkCmdPipelineBarrier(
@@ -715,7 +715,7 @@ void VkTextureInterface::_enqueueInitTextureArray2DOnCB(TextureArray* texture_ar
       0, 0, nullptr, 0, nullptr, 1, read_barrier.get());
 
   vktex->_imgobj[0]->_currentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-  printf("  Transition recorded, _currentLayout set to SHADER_READ_ONLY_OPTIMAL\n");
+  if(0)printf("  Transition recorded, _currentLayout set to SHADER_READ_ONLY_OPTIMAL\n");
 
   // Texture array is now ready for sampling
   vktex->_img_sampling = vktex->_imgobj[0];

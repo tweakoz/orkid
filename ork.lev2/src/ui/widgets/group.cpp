@@ -829,7 +829,7 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
   // ev->mFilteredEvent.Reset();
   static int counter = 0;
   int count = counter++;
-  printf("LayoutGroup<%p>::OnUiEvent count<%d>\n", this, count);
+  //printf("LayoutGroup<%p>::OnUiEvent count<%d>\n", this, count);
   ui::HandlerResult result;
   bool was_handled = false;
   static int lastx = ev->miX;
@@ -864,11 +864,8 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
     }
     case ui::EventCode::MOVE: {
       //_clearColor = fvec4(0.1,0.1,0.2, 1);
-      printf("LayoutGroup<%s>::OnUiEvent MOVE mx<%d> my<%d>\n", _name.c_str(), ev->miX, ev->miY);
+      //printf("LayoutGroup<%s>::OnUiEvent MOVE mx<%d> my<%d>\n", _name.c_str(), ev->miX, ev->miY);
       _guide_highlite = anchor::findGuidePairUnderMouse(_layout.get(), fvec2(ev->miX, ev->miY));
-      if(_guide_highlite){
-        printf("HIGHLITE GUIDE PAIR <%p>\n", (void*)_guide_highlite.get());
-      }
       break;
     }
     case ui::EventCode::DRAG: {
@@ -911,7 +908,7 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
 }
 /////////////////////////////////////////////////////////////////////////
 Widget* LayoutGroup::doRouteUiEvent(event_constptr_t ev) {
-  if(1)
+  if(0)
     printf("LayoutGroup<%s>::doRouteUiEvent\n", _name.c_str());
 
   ///////////////////////////
@@ -958,8 +955,8 @@ Widget* LayoutGroup::doRouteUiEvent(event_constptr_t ev) {
     if (inside) {
       auto child_target = child->routeUiEvent(ev);
       if(child_target and child_target->_ignoreEvents) continue;
-      if (child_target) {
-        //printf("CHILD <%p>\n", (void*) child_target);
+      if (child_target and child_target!=_overlay_widget.get()) {
+        //printf("CHILD <%p:%s>\n", (void*) child_target, child_target->_name.c_str());
         //_clearColor = fvec4(0,0,0, 1.0);
         _guide_highlite = nullptr;
         return child_target;

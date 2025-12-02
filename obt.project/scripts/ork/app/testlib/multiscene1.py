@@ -79,6 +79,7 @@ class MultiScene1Component(ApplicationComponent):
                                         args = [f"sgview",vec4(1,0,1,1)] )
 
     lg_group.clearColorGuide = vec4(1,1,.5,1)    
+    lg_group.margin = 4
     
 
     ########################################################
@@ -195,5 +196,5 @@ class MultiScene1Component(ApplicationComponent):
     
     ##########################################################################
 
-    self.uicontext.dumpWidgets("UI2")
+    #self.uicontext.dumpWidgets("UI2")
     

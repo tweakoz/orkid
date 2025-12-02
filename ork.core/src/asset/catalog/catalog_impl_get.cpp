@@ -555,7 +555,7 @@ bool CatalogImpl::_extractAssetPak(datablock_ptr_t _data, fetchrequest_ptr_t req
   md5_content.update(_data->data(), _data->length());
   md5_content.finalize();
   auto computed_hash = md5_content.Result().hex_digest();  
-  printf("[DEBUG CatalogImpl::_extractAssetPak] computed_hash<%s>\n", computed_hash.c_str());
+  //printf("[DEBUG CatalogImpl::_extractAssetPak] computed_hash<%s>\n", computed_hash.c_str());
 
   // Extract tar contents
   auto archive = util::TarArchive::loadFromMemory(_data);

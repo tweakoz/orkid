@@ -139,7 +139,7 @@ void ColorEdit::DoDraw(drawevent_constptr_t drwev) {
     _tekcolorwheel = _material->technique("ui_colorwheel");
     _parmvp        = _material->param("mvp");
     _parmodcolor   = _material->param("modcolor");
-    _material->dump();
+    //_material->dump();
   }
 
   mtxi->PushUIMatrix();

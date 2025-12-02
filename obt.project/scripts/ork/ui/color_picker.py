@@ -20,9 +20,9 @@ class ColorPicker:
     ###########################################################################
 
     def __init__(self, container, name, initial_color,bg_color):
-        print("container:", container)
-        print("name:", name)
-        print("initial_color:", initial_color)
+        #print("container:", container)
+        #print("name:", name)
+        #print("initial_color:", initial_color)
 
         self.container = container
         self.name = name

@@ -87,7 +87,7 @@ inline void _init_crcstring(typename ADAPTER::module_t& module_core, typename AD
                 if(key.contains("__")){
                   return type_codec->encode(nullptr);
                 }
-                if(1) {
+                if(0) {
                   printf("CrcStringProxy cache miss: '%s' (hash=0x%zx) hits=%zu misses=%zu\n",
                        key.c_str(), py_hash, cache_hits, cache_misses);
                 }

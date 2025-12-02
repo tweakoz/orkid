@@ -163,7 +163,7 @@ static void _glfw_callback_contentScaleChanged(GLFWwindow* window, float sw, flo
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_focusChanged(GLFWwindow* window, int focus) {
   bool has_focus = (focus == GLFW_TRUE);
-  printf("fb focus<%p %d>", window, focus);
+  //printf("fb focus<%p %d>", window, focus);
 }
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_keyboard(GLFWwindow* window, int key, int scancode, int action, int modifiers) {
@@ -1024,7 +1024,7 @@ void CtxGLFW::_on_callback_cursor(double xoffset, double yoffset) {
   auto uiev = this->uievent();
   fillEventCursor(uiev, _glfwWindow, _glfwMonitor, xoffset, yoffset, _width, _height);
   if (this->_buttonState == 0) {
-    printf( "move _width<%d> _height<%d>\n", int(xoffset), int(yoffset));
+    if(0)printf( "move _width<%d> _height<%d>\n", int(xoffset), int(yoffset));
     uiev->_eventcode = ui::EventCode::MOVE; //
     _fire_ui_event();
   } else {

@@ -250,7 +250,7 @@ void MoviePlaybackContext::init(const std::string& filename) {
   for (unsigned i = 0; i < _format_ctx->nb_streams; i++) {
     auto codec_type_str = av_get_media_type_string(_format_ctx->streams[i]->codecpar->codec_type);
     auto codec_name     = avcodec_get_name(_format_ctx->streams[i]->codecpar->codec_id);
-    printf( "Stream %d: codec_type=%d:%s:%s\n", i, _format_ctx->streams[i]->codecpar->codec_type, codec_type_str,codec_name);
+    //printf( "Stream %d: codec_type=%d:%s:%s\n", i, _format_ctx->streams[i]->codecpar->codec_type, codec_type_str,codec_name);
     if (_format_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && _video_stream_idx < 0) {
       _video_stream_idx = i;
     }
@@ -427,7 +427,7 @@ void MoviePlaybackContext::init(const std::string& filename) {
           avcodec_flush_buffers(_audio_codec_ctx);
 
           if (found_audio_params) {
-            printf(
+            if(0)printf(
                 "Audio stream: codec=%s, sample_rate=%d Hz, channels=%d (detected from frame)\n",
                 _audio_config->_codec_name.c_str(),
                 _audio_config->_sample_rate,
@@ -473,7 +473,7 @@ void MoviePlaybackContext::init(const std::string& filename) {
     avcodec_flush_buffers(_video_codec_ctx);
 
     if (found_video_dims) {
-      printf("Video dimensions: %dx%d (detected from frame)\n", _video_width, _video_height);
+      //printf("Video dimensions: %dx%d (detected from frame)\n", _video_width, _video_height);
     } else {
       printf("WARNING: Could not detect video dimensions from frame\n");
       // Fallback to codecpar if available
@@ -482,7 +482,7 @@ void MoviePlaybackContext::init(const std::string& filename) {
     }
   }
 
-  printf(
+  if(0)printf(
       "Opened video: %s (codec: %s, fps: %.2f, r_frame_rate: %d/%d, avg_frame_rate: %d/%d)\n",
       filename.c_str(),
       _video_codec->name,

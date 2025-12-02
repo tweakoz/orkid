@@ -121,6 +121,7 @@ class ThemesTestApp(ComponentizedApplication):
     ############################################
 
     self.createEzApp(name="UiTestThemes")
+    self.ezapp.uicontext.debug_event_routing = False
  
   ##############################################
 

@@ -43,14 +43,14 @@ loggergroup_ptr_t LoggerGroup::create(
   auto group = std::make_shared<LoggerGroup>(name);
   group->_allowed_channels = allowed_channels;
 
-  printf("LoggerGroup::create(%s) with %zu patterns:\n", name.c_str(), allowed_channels.size());
+  //printf("LoggerGroup::create(%s) with %zu patterns:\n", name.c_str(), allowed_channels.size());
 
   // Compile regex patterns from channel names/patterns
   for (const auto& pattern : allowed_channels) {
-    printf("  Compiling pattern: '%s'\n", pattern.c_str());
+    //printf("  Compiling pattern: '%s'\n", pattern.c_str());
     try {
       group->_channel_patterns.push_back(std::regex(pattern));
-      printf("    -> compiled successfully\n");
+      //printf("    -> compiled successfully\n");
     } catch (const std::regex_error& e) {
       printf("    -> regex error: %s, escaping as literal\n", e.what());
       // If pattern is invalid, treat it as a literal string
@@ -123,7 +123,7 @@ void LoggerGroup::addChannel(const std::string& name, lev2::Context* pt) {
     return; // Already exists
   }
 
-  printf("LoggerGroup<%s>::addChannel(%s)\n", _name.c_str(), name.c_str());
+  //printf("LoggerGroup<%s>::addChannel(%s)\n", _name.c_str(), name.c_str());
 
   // Assign channel-specific color (simple hash-based color generation)
   // TODO: Make this configurable per channel
