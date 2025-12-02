@@ -78,6 +78,7 @@ class PointsPrimApp(object):
     self.primnode = frustum_prim.createNode("node1",self.layer1,pipeline)
     self.primnode.sortkey = 2;
 
+    self.scene.lightingmanager.gpuInit(ctx)
 
   ################################################
 

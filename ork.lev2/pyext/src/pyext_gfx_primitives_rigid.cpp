@@ -326,9 +326,15 @@ void pyinit_gfx_primitives_rigid(py::module& module_lev2) {
                                       stage->count = num_stages;
                                       stage->_validate = validate;
                                       auto resmesh = SmoothingStage::synchronous(stage,colorgrid);
-                                      context->scheduleOnBeginFrame([=]() {
-                                        resmesh->updateRigidPrim(prim, colorgrid, context);
-                                      });
+                                      ////////////////////////////////
+                                      // todo: reduce latency here...
+                                      ////////////////////////////////
+                                      auto gfxop = [=]() {
+                                        context->scheduleOnBeginFrame([=]() {
+                                          resmesh->updateRigidPrim(prim, colorgrid, context);
+                                        });
+                                      };
+                                      opq::mainSerialQueue()->enqueue(gfxop);
                                     };
                                     opq::concurrentQueue()->enqueue(op);
                                 },

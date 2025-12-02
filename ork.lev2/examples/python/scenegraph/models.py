@@ -63,7 +63,7 @@ class SceneGraphApp(BoilerplateSgApp):
       "ork_envmaps|blender_forest",   # forest (soft)
     ]
     self.skybox_cache = dict()
-    self.skybox = "cold8k"     # gothic club (dark)
+    self.skybox = "cold"     # gothic club (dark)
     self.skybox_intensity = 1.0 # skybox intensity multiplier
     self.skybox_index = -1
   ##############################################
@@ -183,6 +183,8 @@ class SceneGraphApp(BoilerplateSgApp):
     #self.grid_node = self.layer_fwd.createDrawableNodeFromData("grid",self.grid_data)
     #self.grid_node.sortkey = 1
 
+    self.scene.lightingmanager.gpuInit(ctx)
+    
   ################################################
 
   def onUpdate(self,updinfo):

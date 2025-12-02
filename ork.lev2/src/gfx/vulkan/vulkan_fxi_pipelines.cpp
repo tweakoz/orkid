@@ -185,6 +185,8 @@ uint64_t VkFxShaderProgram::samplersHash() {
   the_crc.init();
   for (auto& it : _textures_by_orkparam) {
     auto as_vktex  = it.second;
+    // Include texture object pointer to guarantee uniqueness per texture instance
+    the_crc.accumulateItem(reinterpret_cast<uintptr_t>(as_vktex.get()));
     the_crc.accumulateItem(as_vktex->_format_hash);
     the_crc.accumulateItem(as_vktex->_imgview_hash.result());
   }

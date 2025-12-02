@@ -93,6 +93,8 @@ class UiCamera(object):
     self.grid_data = createGridData()
     self.grid_node = self.layer1.createDrawableNodeFromData("grid",self.grid_data)
     self.grid_node.sortkey = 1
+    
+    self.scene.lightingmanager.gpuInit(ctx)
 
   ##############################################
 

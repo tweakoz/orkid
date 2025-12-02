@@ -59,7 +59,8 @@ class StereoApp1(object):
     
     params_dict = {
       "SkyboxIntensity" : float(1.5),
-      "DiffuseIntensity" : float(6),
+      "DiffuseIntensity" : float(1),
+      "SkyboxTexPathStr": "nebula"
     }     
     createSceneGraph(app=self,rendermodel="FWDPBRVRDM",params_dict=params_dict)    
     onode = self.outputnode # created by createSceneGraph
@@ -84,6 +85,7 @@ class StereoApp1(object):
       self.grid_data.shader_suffix = "_V4"
     self.grid_node = self.layer1.createDrawableNodeFromData("grid",self.grid_data)
     self.grid_node.sortkey = 1
+    self.scene.lightingmanager.gpuInit(ctx)
 
   ##############################################
 

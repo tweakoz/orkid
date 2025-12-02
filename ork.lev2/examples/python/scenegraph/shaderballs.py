@@ -97,13 +97,12 @@ class SceneGraphApp(ComponentizedApplication):
     SGC = self.SGC
     SG = SGC.scenegraph
 
-    #self.layer_donly = self.scene.createLayer("depth_prepass")
-    #self.layer_fwd = self.layer1
-    #self.fwd_layers = [self.layer_fwd,self.layer_donly]
-    pbr_common = SG.pbr_common
-    pbr_common.useFloatColorBuffer = True
-    pbr_common.useDepthPrepass = True
-    pbr_common.dppZBias = 1.0e-4
+    SGC.grid_data.extent = 10
+
+    PBRC = SG.pbr_common
+    PBRC.useFloatColorBuffer = True
+    PBRC.useDepthPrepass = True
+    PBRC.dppZBias = 1.0e-4
 
     SGC.rendernode.debugRenderingModel = tokens.DEPTH_PREPASS # NONE ALL FORWARD_PBR
     SGC.rendernode.debugPassID = tokens.SHADOW # PROBE MAIN
@@ -164,28 +163,32 @@ class SceneGraphApp(ComponentizedApplication):
 
     self.nodes += [node]
 
-    if False:
-      lmgr = SG.lightingmanager
-      COOKIE_DIM = 2048
-      color_cookies = lev2.TextureArray(w=COOKIE_DIM,h=COOKIE_DIM,slices=4,fmt=tokens.RGB8,mipmapped=True)
-      depth_cookies = lev2.TextureArray(w=COOKIE_DIM,h=COOKIE_DIM,slices=4,fmt=tokens.Z32F,mipmapped=True)
-      color_cookies.needsRadianceCache = False
+    lmgr = SG.lightingmanager
+    COOKIE_DIM = 2048
+    color_cookies = lev2.TextureArray(w=COOKIE_DIM,h=COOKIE_DIM,slices=4,fmt=tokens.RGB8,mipmapped=True)
+    depth_cookies = lev2.TextureArray(w=COOKIE_DIM,h=COOKIE_DIM,slices=4,fmt=tokens.Z32F,mipmapped=True)
+    color_cookies.needsRadianceCache = False
 
-      cookie1 = color_cookies.load("src://effect_textures/knob2.png")
-      ctx.TXI.updateTextureArray(color_cookies)
-      depth_cookie1 = depth_cookies.slice(0)
+    cookie1 = color_cookies.load("src://effect_textures/knob2.png")
+    ctx.TXI.updateTextureArray(color_cookies)
+    depth_cookie1 = depth_cookies.slice(0)
 
-      self.spotlight1 = StdSpotLight( index=0,
-                                      SGC=SGC,
-                                      model=model,
-                                      frq=0.17,
-                                      color=vec3(1000,800,500),
-                                      cookie=cookie1,
-                                      depth_cookie=depth_cookie1, 
-                                      dim=COOKIE_DIM,
-                                      radius=24,
-                                      voffset=10,
-                                      fovbase=25)
+    self.spotlight1 = StdSpotLight( index=0,
+                                    SGC=SGC,
+                                    model=model,
+                                    frq=0.17,
+                                    color=vec3(1000,800,500),
+                                    cookie=cookie1,
+                                    depth_cookie=depth_cookie1, 
+                                    dim=COOKIE_DIM,
+                                    radius=24,
+                                    voffset=10,
+                                    fovbase=25)
+
+    lmgr.spot_cookies_color = color_cookies
+    lmgr.spot_cookies_depth = depth_cookies
+
+    lmgr.gpuInit(ctx)
 
   ################################################
 

@@ -169,6 +169,7 @@ class ParticlesApp(object):
   def onGpuInit(self,ctx):
     createSceneGraph(app=self,rendermodel="ForwardPBR")
     self.ptc = EllipticalParticleSystem(self)
+    self.scene.lightingmanager.gpuInit(ctx)
 
   def onGpuUpdate(self,ctx):
     # just need a mainthread python callback
