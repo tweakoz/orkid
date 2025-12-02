@@ -22,9 +22,9 @@ class SplitLayoutApp(application.ComponentizedApplication):
     # Setup logger UI component
     ############################################
 
-    self.addComponent("logger", loggerui.LoggerUIComponent,
-                      filter_regex=[".*"],
-                      background_color=vec4(0.2, 0.2, 0.2, 0.8))
+    #self.addComponent("logger", loggerui.LoggerUIComponent,
+    #                  filter_regex=[".*"],
+    #                  background_color=vec4(0.2, 0.2, 0.2, 0.8))
 
 
     self.createEzApp(name="UiTestLayoutSplit",fullscreen=False)
@@ -90,6 +90,8 @@ class SplitLayoutApp(application.ComponentizedApplication):
     """
     tab_group = tabs.makeChild(uiclass=lev2.ui.LayoutGroup, args=[name])
     tab_group.margin = 3
+    tab_group.clearColorGuide = vec4(1, 1, 0, 1)
+    #tab_group.clearColorGuide = vec4(1, 1, 0, 1)
 
     # Start with first stripe as 1x1 grid
     base = tab_group.makeGrid(width=1, height=1,
@@ -114,6 +116,7 @@ class SplitLayoutApp(application.ComponentizedApplication):
     tab_group = tabs.makeChild(uiclass=lev2.ui.LayoutGroup, args=["7-WAY"])
     tab_group.margin = 3
     tab_group.clearColorStd = vec4(0, 0, 0.1, 1)
+    tab_group.clearColorGuide = vec4(1, 1, 0, 1)
 
     red = vec4(1,0,0, 1)    
     blk = vec4(0,0,0, 1)
@@ -156,7 +159,8 @@ class SplitLayoutApp(application.ComponentizedApplication):
                                    uiclass=lev2.ui.Box,
                                    args=[f"stripe-z2", cyn])
 
-
+    #tab_group.layout.dump()
+    
   def onGpuInit(self, ctx):
     pass
 

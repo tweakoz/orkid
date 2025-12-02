@@ -101,6 +101,7 @@ struct LayoutGroup : public Group {
       auto row_name = _name + FormatString("-row-%d", y);
       auto row_group = std::make_shared<LayoutGroup>(row_name, 0, 0, 0, 0, 0);
       row_group->_clear = false;  // Don't draw background
+      row_group->_ignoreEvents = true;  // Don't intercept events - let root LayoutGroup handle guide dragging
       addChild(row_group);
 
       // Anchor row container to horizontal guides (spans full width)

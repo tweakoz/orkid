@@ -27,6 +27,7 @@ class LayoutTest(object):
 
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()
+    self.ezapp.uicontext.debug_event_routing = True
 
     lg_group = self.ezapp.topLayoutGroup
     lg_group.clearColorGuide = vec4(1,1,1,1)

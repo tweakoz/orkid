@@ -545,8 +545,7 @@ static guide_ptr_t _findClosestDraggableGuide(const Layout* rootLayout, const fv
 guide_ptr_t findGuidePairUnderMouse(const Layout* rootLayout, const fvec2& mousePos) {
   // For compatibility, we now return the same guide twice if found
   // This signals that we found a draggable guide
-  auto guide = _findClosestDraggableGuide(rootLayout, mousePos);
-  return guide;
+  return _findClosestDraggableGuide(rootLayout, mousePos);
 }
 /////////////////////////////////////////////////////////////////////////
 static void _adjustGuidePositionVProportional(const guide_ptr_t& guide, float deltaX) {

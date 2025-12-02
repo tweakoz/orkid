@@ -467,6 +467,7 @@ layoutitem_ptr_t LayoutGroup::split(anchor::layout_ptr_t target_layout,
   auto container = std::make_shared<LayoutGroup>(container_name, 0, 0, 0, 0, margin);
 
   container->_clear = false;  // Don't draw background (like makeWidgetsRC row containers)
+  container->_ignoreEvents = true;  // Don't intercept events - let root LayoutGroup handle guide dragging
   container->_layout->setMargin(0);  // Container layout has no margin, guides have the margin
 
   // Find the actual LayoutGroup that owns the target widget
@@ -864,8 +865,8 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
     }
     case ui::EventCode::MOVE: {
       //_clearColor = fvec4(0.1,0.1,0.2, 1);
-      //printf("LayoutGroup<%s>::OnUiEvent MOVE mx<%d> my<%d>\n", _name.c_str(), ev->miX, ev->miY);
       _guide_highlite = anchor::findGuidePairUnderMouse(_layout.get(), fvec2(ev->miX, ev->miY));
+      //printf("LayoutGroup<%s>::OnUiEvent MOVE mx<%d> my<%d> _guide_highlite<%p>\n", _name.c_str(), ev->miX, ev->miY, (void*)_guide_highlite.get());
       break;
     }
     case ui::EventCode::DRAG: {
