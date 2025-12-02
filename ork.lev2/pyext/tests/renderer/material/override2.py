@@ -77,13 +77,15 @@ class SceneGraphApp(ComponentizedApplication):
                                  enable_ui_camera=False,
                                  eye=vec3(0,20,20),
                                  sg_params=sg_params )
-    self.createEzApp(ssaa=1)
+    self.createEzApp(ssaa=1,name="MaterialOverride2")
 
   ##############################################
 
   def _onGpuInit(self,ctx):
     SGC = self.SGC
     SG = SGC.scenegraph
+
+    self.pbr_common = SGC.pbr_common
 
     ###################################
 
@@ -184,14 +186,14 @@ class SceneGraphApp(ComponentizedApplication):
         self.specular += 0.05
         print("SPECULAR",self.specular)
       if uievent.keycode == ord(","):
-        self.pbrcommon.roughnessPower *= 0.95
-        print("ROUGHNESS POWER",self.pbrcommon.roughnessPower)
+        self.pbr_common.roughnessPower *= 0.95
+        print("ROUGHNESS POWER",self.pbr_common.roughnessPower)
       if uievent.keycode == ord("."):
-        self.pbrcommon.roughnessPower *= 1.05
-        print("ROUGHNESS POWER",self.pbrcommon.roughnessPower)
+        self.pbr_common.roughnessPower *= 1.05
+        print("ROUGHNESS POWER",self.pbr_common.roughnessPower)
       ##############################
-      self.pbrcommon.specularLevel = self.specular
-      self.pbrcommon.ambientLevel = vec3(self.ambient)
+      self.pbr_common.specularLevel = self.specular
+      self.pbr_common.ambientLevel = vec3(self.ambient)
     return lev2.ui.HandlerResult()
 
 ###############################################################################

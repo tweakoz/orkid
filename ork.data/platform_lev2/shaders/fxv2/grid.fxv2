@@ -239,7 +239,7 @@ fragment_shader ps_grid_forward_lit_mono_V4                         //
   vec3 oc = _forward_lightingZ(
     vec3(1,1,1), // modcolor
     gout.xyz,    // albedo
-    vec3(1,0,0), // rufmtlamb
+    vec3(0,1,0), // ambrufmtl
     vec3(0,0,0), // emission
     EyePostion,  // eye
     vec3(0,1,0), // normal
