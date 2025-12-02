@@ -163,7 +163,8 @@ class UiSgQuadViewTestApp(object):
     
     self.panels[0].griditem.widget.decoupleFromUiSize(256,256)
     self.panels[0].griditem.widget.aspect_from_rtgroup = True
-
+    self.scenegraph.lightingmanager.gpuInit(ctx)
+    
   ################################################
 
   def onUpdate(self,updinfo):
