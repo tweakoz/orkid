@@ -120,8 +120,8 @@ void Scene::gpuInit(Context* ctx) {
     }
     return false;
   };
-
-  ctx->_beginFrameBlockers.push_back(op);
+  op();
+  //ctx->_beginFrameBlockers.push_back(op);
 
 }
 

@@ -111,6 +111,12 @@ template <typename T> struct attempt_cast {
     OrkAssert(_data != nullptr);
     return *_data;
   }
+  T& value_or(const T& def) const {
+    if (_data)
+      return *_data;
+    else
+      return (T&)def;
+  }
   T* _data;
 };
 
@@ -124,6 +130,12 @@ template <typename T> struct attempt_cast_const {
   const T& value() const {
     OrkAssert(_data != nullptr);
     return *_data;
+  }
+  const T& value_or(const T& def) const {
+    if (_data)
+      return *_data;
+    else
+      return def;
   }
   const T* _data;
 };

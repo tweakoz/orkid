@@ -199,15 +199,17 @@ void StandardCompositorFrame::render() {
 
       context->pushRenderContextFrameData(_drawbuffer->_RCFD);
 
-      CompositorDrawData drawdata(_drawbuffer->_RCFD);
-      drawdata._properties["primarycamindex"_crcu].set<int>(0);
-      drawdata._properties["cullcamindex"_crcu].set<int>(0);
-      drawdata._properties["irenderer"_crcu].set<lev2::IRenderer*>(this->renderer.get());
-      drawdata._properties["simrunning"_crcu].set<bool>(true);
-      drawdata._properties["DB"_crcu].set<const DrawQueue*>(_drawbuffer->_DB);
-      drawdata._cimpl = this->compositor;
-      this->compositor->assemble(drawdata);
-      this->compositor->composite(drawdata);
+      auto CDD = std::make_shared<CompositorDrawData>(_drawbuffer->_RCFD);
+      _drawbuffer->_RCFD->setUserProperty("cdd"_crc, CDD);
+
+      CDD->_properties["primarycamindex"_crcu].set<int>(0);
+      CDD->_properties["cullcamindex"_crcu].set<int>(0);
+      CDD->_properties["irenderer"_crcu].set<lev2::IRenderer*>(this->renderer.get());
+      CDD->_properties["simrunning"_crcu].set<bool>(true);
+      CDD->_properties["DB"_crcu].set<const DrawQueue*>(_drawbuffer->_DB);
+      CDD->_cimpl = this->compositor;
+      this->compositor->assemble(*CDD);
+      this->compositor->composite(*CDD);
       this->compositor->popCPD();
       context->popRenderContextFrameData();
 
@@ -218,6 +220,12 @@ void StandardCompositorFrame::render() {
 
       /////////////////////////////////////////////
 
+      CDD->_RCFD = nullptr;
+      CDD->_properties.clear();
+      CDD->_cimpl = nullptr;
+      CDD = nullptr;
+      _drawbuffer->_RCFD->setUserProperty("cdd"_crc, nullptr);
+
     }
 
     _drawbuffer->_RCFD->popCompositor();
@@ -225,6 +233,8 @@ void StandardCompositorFrame::render() {
     /////////////////////////////////////////////
 
     _dbufcontextSFRAME->releaseFromReadLocked(DB);
+
+
   }
 }
 

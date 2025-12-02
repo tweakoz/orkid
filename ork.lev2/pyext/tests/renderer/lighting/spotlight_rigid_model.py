@@ -36,7 +36,7 @@ class SpotlightApp(ComponentizedApplication):
                                  grid_variant="_V4",
                                  eye=vec3(0,12,15))
     self.LUI = self.addComponent("loggerui", LoggerUIComponent, filter_regex=[".*"]) 
-    self.createEzApp(name="RenderTestSpotLightRigidModel", ssaa=1, fullscreen=False)
+    self.createEzApp(name="RenderTestSpotLightRigidModel", ssaa=0, fullscreen=True, fsmouse=True)
 
   ##############################################
 
@@ -98,6 +98,20 @@ class SpotlightApp(ComponentizedApplication):
     lmgr = SG.lightingmanager
     lmgr.spot_cookies_color = color_cookies
     lmgr.spot_cookies_depth = depth_cookies
+
+    cursor_data = lev2.CursorDrawableData()
+    cursor_data.color = vec4(1, 1, 1, 0.9)  # white, 90% alpha
+    cursor_data.size = 0.01                  # crosshair arm length in meters
+    cursor_data.thickness = 0.005            # bar thickness in meters
+    cursor_data.depth = 2.0                  # depth in front of camera
+    cursor_data.autopos = True
+    self.cursor_data = cursor_data
+    
+    # Create drawable and add to scenegraph layer
+    cursor_drawable = cursor_data.createDrawable()
+    self.cnode = SGC.layer_std.createDrawableNode("cursor", cursor_drawable)
+    self.cnode.sortkey = 100
+
 
   ################################################
 

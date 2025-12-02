@@ -157,6 +157,7 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
 
     target->debugMarker(FormatString("defcammtx<%p>", _defaultCameraMatrices.get()));
     ddprops["defcammtx"_crcu].set<cameramatrices_ptr_t>(_defaultCameraMatrices);
+    ddprops["centercam"_crcu].set<cameramatrices_ptr_t>(_defaultCameraMatrices);
 
     if (the_camera and the_camera->getUiCamera()) {
       target->debugMarker(FormatString("seleditcam<%p>", (void*) the_camera.get() ));

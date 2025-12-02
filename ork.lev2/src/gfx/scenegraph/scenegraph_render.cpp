@@ -203,17 +203,24 @@ void Scene::_renderIMPL(Context* context, rcfd_ptr_t RCFD) {
 
     EASY_BLOCK("sg::Scene::_renderIMPL::draw", profiler::colors::Red);
 
+    auto CDD = std::make_shared<CompositorDrawData>(RCFD);
     CompositorDrawData drawdata(RCFD);
-    drawdata._properties["primarycamindex"_crcu].set<int>(0);
-    drawdata._properties["cullcamindex"_crcu].set<int>(0);
-    drawdata._properties["irenderer"_crcu].set<lev2::IRenderer*>(_renderer.get());
-    drawdata._properties["simrunning"_crcu].set<bool>(true);
-    drawdata._properties["DB"_crcu].set<const DrawQueue*>(DB);
-    drawdata._cimpl = _compositorImpl;
-    _compositorImpl->assemble(drawdata);
-    _compositorImpl->composite(drawdata);
+    RCFD->setUserProperty("cdd"_crc, CDD);
+    CDD->_properties["primarycamindex"_crcu].set<int>(0);
+    CDD->_properties["cullcamindex"_crcu].set<int>(0);
+    CDD->_properties["irenderer"_crcu].set<lev2::IRenderer*>(_renderer.get());
+    CDD->_properties["simrunning"_crcu].set<bool>(true);
+    CDD->_properties["DB"_crcu].set<const DrawQueue*>(DB);
+    CDD->_cimpl = _compositorImpl;
+    _compositorImpl->assemble(*CDD);
+    _compositorImpl->composite(*CDD);
     _compositorImpl->popCPD();
     context->popRenderContextFrameData();
+    CDD->_RCFD = nullptr;
+    CDD->_properties.clear();
+    CDD->_cimpl = nullptr;
+    CDD = nullptr;
+    RCFD->setUserProperty("cdd"_crc, nullptr);
 
     if (_on_render_complete) {
       _on_render_complete(context);
@@ -354,15 +361,22 @@ void Scene::_renderWithAcquiredDrawQueueForRendering(acqdrawbuffer_constptr_t ac
     fbi->SetClearColor(fvec4(0, 0, 0, 1));
     fbi->setViewport(tgtrect);
     fbi->setScissor(tgtrect);
-    CompositorDrawData drawdata(rcfd);
-    drawdata._properties["primarycamindex"_crcu].set<int>(0);
-    drawdata._properties["cullcamindex"_crcu].set<int>(0);
-    drawdata._properties["irenderer"_crcu].set<lev2::IRenderer*>(_renderer.get());
-    drawdata._properties["simrunning"_crcu].set<bool>(true);
-    drawdata._properties["DB"_crcu].set<const DrawQueue*>(DB);
-    drawdata._cimpl = _compositorImpl;
-    _compositorImpl->assemble(drawdata);
-    _compositorImpl->composite(drawdata);
+    auto CDD = std::make_shared<CompositorDrawData>(rcfd);
+    rcfd->setUserProperty("cdd"_crc, CDD);
+    CDD->_properties["primarycamindex"_crcu].set<int>(0);
+    CDD->_properties["cullcamindex"_crcu].set<int>(0);
+    CDD->_properties["irenderer"_crcu].set<lev2::IRenderer*>(_renderer.get());
+    CDD->_properties["simrunning"_crcu].set<bool>(true);
+    CDD->_properties["DB"_crcu].set<const DrawQueue*>(DB);
+    CDD->_cimpl = _compositorImpl;
+    _compositorImpl->assemble(*CDD);
+    _compositorImpl->composite(*CDD);
+    CDD->_RCFD = nullptr;
+    CDD->_properties.clear();
+    CDD->_cimpl = nullptr;
+    CDD = nullptr;
+    rcfd->setUserProperty("cdd"_crc, nullptr);
+
   }
   _compositorImpl->popCPD();
   context->popRenderContextFrameData();

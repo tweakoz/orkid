@@ -16,6 +16,7 @@
 #include <ork/lev2/gfx/scenegraph/sgnode_groundplane.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_geoclipmap.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_uisurface.h>
+#include <ork/lev2/gfx/scenegraph/sgnode_cursor.h>
 #include <ork/lev2/gfx/particle/drawable_data.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/meshutil/rigid_primitive.inl>
@@ -213,6 +214,31 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
               [](griddrawabledataptr_t drw) -> std::string { return drw->_shader_suffix; },
               [](griddrawabledataptr_t drw, std::string val) { drw->_shader_suffix = val; });
   type_codec->registerStdCodec<griddrawabledataptr_t>(griddrawdata_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto cursordrawdata_type = //
+      py::class_<CursorDrawableData, DrawableData, cursordrawabledata_ptr_t>(module_lev2, "CursorDrawableData")
+          .def(py::init<>())
+          .def_property(
+              "color",
+              [](cursordrawabledata_ptr_t drw) -> fvec4 { return drw->_color; },
+              [](cursordrawabledata_ptr_t drw, fvec4 val) { drw->_color = val; })
+          .def_property(
+              "size",
+              [](cursordrawabledata_ptr_t drw) -> float { return drw->_size; },
+              [](cursordrawabledata_ptr_t drw, float val) { drw->_size = val; })
+          .def_property(
+              "thickness",
+              [](cursordrawabledata_ptr_t drw) -> float { return drw->_thickness; },
+              [](cursordrawabledata_ptr_t drw, float val) { drw->_thickness = val; })
+          .def_property(
+              "depth",
+              [](cursordrawabledata_ptr_t drw) -> float { return drw->_depth; },
+              [](cursordrawabledata_ptr_t drw, float val) { drw->_depth = val; })
+          .def_property(
+              "autopos",
+              [](cursordrawabledata_ptr_t drw) -> bool { return drw->_autopos; },
+              [](cursordrawabledata_ptr_t drw, bool val) { drw->_autopos = val; });
+  type_codec->registerStdCodec<cursordrawabledata_ptr_t>(cursordrawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto bbdrawdata_type = //
       py::class_<BillboardDrawableData, DrawableData, billboarddrawabledataptr_t>(module_lev2, "BillboardDrawableData")
