@@ -192,6 +192,8 @@ class StereoApp1(object):
                                  fovbase=75,
                                  voffset=20,
                                  vscale=10)
+    
+    self.scene.lightingmanager.gpuInit(ctx)
 
   ##############################################
 

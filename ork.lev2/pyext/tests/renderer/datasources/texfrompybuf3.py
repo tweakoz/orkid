@@ -212,6 +212,8 @@ class TestApp(object):
     self.localpose = self.modelinst.localpose
     self.worldpose = self.modelinst.worldpose
 
+    self.scene.lightingmanager.gpuInit(ctx)
+
   ##############################################
 
   def onUiEvent(self,uievent):

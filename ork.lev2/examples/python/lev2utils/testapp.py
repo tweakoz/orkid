@@ -30,11 +30,11 @@ class TestSystem(object):
     pass
   def onGpuExit(self,ctx):
     pass
-  def onUpdateInit(self,ctx):
+  def onUpdateInit(self):
     pass
   def onUpdate(self,updinfo):
     pass
-  def onUpdateExit(self,ctx):
+  def onUpdateExit(self):
     pass
 
 ###############################################################################

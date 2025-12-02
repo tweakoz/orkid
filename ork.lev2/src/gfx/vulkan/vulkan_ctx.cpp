@@ -720,6 +720,17 @@ void VkContext::_doBeginPrimaryCommandBuffer() {
   _cmdbufcurpri_gfx->_vkbuffers_pending_cleanup.clear();
 
   ////////////////////////
+  // Move context-level pending cleanup to CB (buffers destroyed when no CB was active)
+  ////////////////////////
+  {
+    std::lock_guard<std::mutex> lock(_vkbuffers_pending_cleanup_mutex);
+    for (auto& buf : _vkbuffers_pending_cleanup) {
+      _cmdbufcurpri_gfx->_vkbuffers_pending_cleanup.push_back(std::move(buf));
+    }
+    _vkbuffers_pending_cleanup.clear();
+  }
+
+  ////////////////////////
   VkCommandBufferBeginInfo CBBI_GFX = {};
   initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
   CBBI_GFX.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;

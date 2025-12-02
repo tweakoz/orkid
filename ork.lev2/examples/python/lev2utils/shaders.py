@@ -30,6 +30,7 @@ def createPbrMaterialWithColor( ctx=None,
                                 metallic : float = 0.0,
                                 roughness : float = 1.0 ):
   material = lev2.PBRMaterial()
+  material.name = "X"
   img_color = lev2.Image.createRGB8FromColor(64,64,vec3(1.0)) 
   img_normal = lev2.Image.createRGB8FromColor(64,64,vec3(.5,1,.5))
   img_mtlruf = lev2.Image.createRGB8FromColor(64,64,vec3(1.0))

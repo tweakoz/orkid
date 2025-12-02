@@ -660,6 +660,11 @@ public:
   PFN_vkCmdEndRendering _vkCmdEndRenderingKHR                 = nullptr;
   PFN_vkCmdInsertDebugUtilsLabelEXT _vkCmdInsertDebugUtilsLabelEXT = nullptr;
   //////////////////////////////////////////////
+  // Buffers pending cleanup - accumulated when no primary CB is active
+  // Moved to primary CB's cleanup list when a new primary CB begins
+  std::vector<vkbuffer_ptr_t> _vkbuffers_pending_cleanup;
+  std::mutex _vkbuffers_pending_cleanup_mutex;
+  //////////////////////////////////////////////
   void* mhHWND;
   vkcontext_ptr_t _parentTarget;
   std::stack<void*> mDCStack;

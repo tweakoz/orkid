@@ -150,6 +150,8 @@ class StereoApp1(object):
     self.ball_model = lev2.XgmModel("data://tests/pbr_calib.glb")
     self.cookie1 = MyCookie("src://effect_textures/knob2.png")
 
+    self.scene.lightingmanager.gpuInit(ctx)
+
   ##############################################
 
   def onUiEvent(self,uievent):

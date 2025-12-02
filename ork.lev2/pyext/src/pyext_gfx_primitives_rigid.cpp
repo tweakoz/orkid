@@ -41,6 +41,7 @@ struct SmoothingStage {
   size_t count = 0;
   bool _validate = false;
   static void enqueue(stage_ptr_t inp_stage,vdb_vec3grid_ptr_t colorgrid);
+  static micromesh_ptr_t synchronous(stage_ptr_t inp_stage,vdb_vec3grid_ptr_t colorgrid);
 };
 
 /////////////////////////////////////////////////
@@ -86,6 +87,15 @@ void SmoothingStage::enqueue(stage_ptr_t inp_stage,vdb_vec3grid_ptr_t colorgrid)
       ops.push_back(op);
     });
   }
+}
+
+micromesh_ptr_t SmoothingStage::synchronous(stage_ptr_t inp_stage,vdb_vec3grid_ptr_t colorgrid) {
+  micromesh_ptr_t current_mesh = inp_stage->mesh_inp;
+  for (size_t i = 0; i < inp_stage->count; i++) {
+    current_mesh = current_mesh->smoothed(inp_stage->conn);
+  }
+  current_mesh->computeNormals();
+  return current_mesh;
 }
 
 /////////////////////////////////////////////////
@@ -306,7 +316,38 @@ void pyinit_gfx_primitives_rigid(py::module& module_lev2) {
                                    umesh_rprim_ptr_t prim,
                                    ctx_t context,
                                    bool validate = false) { //
-
+                                    auto op = [=]() {
+                                      auto stage = std::make_shared<SmoothingStage>();
+                                      stage->mesh_inp = mesh;
+                                      // Clone connectivity at entry point so each smoothing chain is isolated
+                                      stage->conn = std::make_shared<MicroMeshConnectivity>(*conn);
+                                      //stage->prim = prim;
+                                      stage->context.assign(context);
+                                      stage->count = num_stages;
+                                      stage->_validate = validate;
+                                      auto resmesh = SmoothingStage::synchronous(stage,colorgrid);
+                                      context->scheduleOnBeginFrame([=]() {
+                                        resmesh->updateRigidPrim(prim, colorgrid, context);
+                                      });
+                                    };
+                                    opq::concurrentQueue()->enqueue(op);
+                                },
+                                py::arg("conn"),
+                                py::arg("colorgrid"),
+                                py::arg("num_stages"),
+                                py::arg("prim"),
+                                py::arg("context"),
+                                py::arg("validate") = false)
+                            //////////////////////////////////////////////////
+                            .def(
+                                "smoothedWithColorGrid",
+                                [](micromesh_ptr_t mesh,              //
+                                   micromesh_connectivity_ptr_t conn, //
+                                   vdb_vec3grid_ptr_t colorgrid,      //
+                                   int num_stages,                    //
+                                   umesh_rprim_ptr_t prim,
+                                   ctx_t context,
+                                   bool validate = false) { //
                                   auto stage = std::make_shared<SmoothingStage>();
                                   stage->mesh_inp = mesh;
                                   // Clone connectivity at entry point so each smoothing chain is isolated
@@ -315,7 +356,7 @@ void pyinit_gfx_primitives_rigid(py::module& module_lev2) {
                                   stage->context.assign(context);
                                   stage->count = num_stages;
                                   stage->_validate = validate;
-                                  SmoothingStage::enqueue(stage,colorgrid);
+                                  SmoothingStage::synchronous(stage,colorgrid);
                                 },
                                 py::arg("conn"),
                                 py::arg("colorgrid"),

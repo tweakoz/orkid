@@ -330,6 +330,56 @@ vertex_shader vs_forward_test
   frg_clr         = vec4(1,1,1,1); //vtxcolor
   frg_modcolor    = vec4(1,1,1,1); //modcolor
 }
+///////////////////////////////////////////////////////////////
+vertex_interface vif_FWDTESTVC : ub_std_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec3 normal : NORMAL;
+    vec3 binormal : BINORMAL;
+    vec4 vtxcolor : COLOR0;
+  }
+  outputs {
+    vec4 frg_wpos;
+    vec4 frg_clr;
+    vec2 frg_uv0;
+    mat3 frg_tbn;
+    float frg_camdist;
+    vec3 frg_camz;
+    vec4 frg_modcolor;
+  }
+}
+fragment_interface fif_FWDTESTVC
+  : vif_FWDTESTVC
+  : ub_frg_fwd 
+  : storage_fwd_lighting 
+  : ss_frg_fwd {
+  outputs {
+    layout(location = 0) vec4 out_color;
+  }
+}
+vertex_shader vs_forward_test_vtxcol 
+  : vif_FWDTESTVC 
+  : lib_pbr_vtx 
+  : ublk_std_matrices {
+
+  // frg_wpos, frg_tbn, frg_camz, frg_camdist
+  vs_common(position, normal, binormal); 
+
+  gl_Position = mvp * position;
+  frg_uv0         = vec2(1,1);
+  frg_clr         = vtxcolor;
+  frg_modcolor    = vec4(1,1,1,1); //modcolor
+}
+//////////////////////////////////////
+fragment_shader ps_forward_test_vtxcol //
+    : fif_FWDTESTVC             //
+    : lib_math                  //
+    : lib_brdf                  //
+    : lib_def                   //
+    : lib_fwd
+    : std_forward_all {   
+  out_color = vec4(forward_lighting_ntex(frg_clr.xyz), 1);
+}
 //////////////////////////////////////
 fragment_shader ps_forward_test //
     : fif_FWDTEST             //

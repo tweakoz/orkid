@@ -73,7 +73,14 @@ VulkanVertexBuffer::VulkanVertexBuffer(vkcontext_rawptr_t ctx, VertexBufferBase&
 ///////////////////////////////////////////////////////////////////////////////
 
 VulkanVertexBuffer::~VulkanVertexBuffer() {
-  _ctx->primary_cb()->_vkbuffers_pending_cleanup.push_back( _vkbuffer );
+  auto cb = _ctx->primary_cb();
+  if (cb) {
+    cb->_vkbuffers_pending_cleanup.push_back(_vkbuffer);
+  } else {
+    // No active primary CB - queue on context for later cleanup
+    std::lock_guard<std::mutex> lock(_ctx->_vkbuffers_pending_cleanup_mutex);
+    _ctx->_vkbuffers_pending_cleanup.push_back(_vkbuffer);
+  }
   _vkbuffer = nullptr;
 }
 
@@ -87,7 +94,14 @@ VulkanIndexBuffer::VulkanIndexBuffer(vkcontext_rawptr_t ctx, size_t length) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 VulkanIndexBuffer::~VulkanIndexBuffer() {
-  _ctx->primary_cb()->_vkbuffers_pending_cleanup.push_back( _vkbuffer );
+  auto cb = _ctx->primary_cb();
+  if (cb) {
+    cb->_vkbuffers_pending_cleanup.push_back(_vkbuffer);
+  } else {
+    // No active primary CB - queue on context for later cleanup
+    std::lock_guard<std::mutex> lock(_ctx->_vkbuffers_pending_cleanup_mutex);
+    _ctx->_vkbuffers_pending_cleanup.push_back(_vkbuffer);
+  }
   _vkbuffer = nullptr;
 }
 

@@ -204,6 +204,7 @@ class PointsPrimApp(object):
                                               roughness = 0.0 )
     self.mesh_prim = RigidPrimitive()
     self.mesh_node = self.mesh_prim.createNode("mesh-node",self.layer1, mtl)
+    self.mesh_node.enabled = True 
     
     ##################
     # create shading pipeline
@@ -233,6 +234,8 @@ class PointsPrimApp(object):
     self.modelnode = self.scene.createDrawableNodeOnLayers([self.layer1],"model-node",self.drawable_model)
     self.modelnode.enabled = False
 
+    self.scene.lightingmanager.gpuInit(ctx)
+    
   ################################################
 
   def onUpdate(self,updinfo):
@@ -251,10 +254,8 @@ class PointsPrimApp(object):
       if self.next_submesh is not None:
         v = self.next_submesh["vertices"]
         f = self.next_submesh["faces"]
-        #self.mesh_prim.fromVertsAndFacesDict(v,f,context)
         as_micromesh = MicroMesh.fromVertAndFaceLists(v,f)
         conn = as_micromesh.vertexConnectivity
-        #as_micromesh.asyncSmoothed(conn,SMOOTHING_PASSES,self.mesh_prim,context)
         as_micromesh.asyncSmoothedWithColorGrid(conn,self.next_colorgrid,self.smoothing_passes,self.mesh_prim,context)
       self.this_submesh = self.next_submesh
       self.this_sphere = self.next_sphere
@@ -312,9 +313,4 @@ class PointsPrimApp(object):
 
 ###############################################################################
 
-def onRunLoopIteration():
-  pass
-
-###############################################################################
-
-PointsPrimApp().ezapp.mainThreadLoop(on_iter=onRunLoopIteration)
+PointsPrimApp().ezapp.mainThreadLoop(on_iter=lambda: None)

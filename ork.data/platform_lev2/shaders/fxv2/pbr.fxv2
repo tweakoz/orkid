@@ -9,6 +9,10 @@ state_block sb_no_cull : sb_default {
 	CullTest = OFF;
 }
 ///////////////////////////////////////////////////////////////
+state_block sb_cullcw : sb_default {
+	CullTest = PASS_BACK;
+}
+///////////////////////////////////////////////////////////////
 technique PIK_RI_NI {
 	fxconfig=fxcfg_default;
 	vf_pass={vs_forward_test,ps_forward_test,sb_default}
@@ -33,6 +37,11 @@ technique FWD_CV_EMI_RI_NI_MO {
 technique FWD_CT_NM_RI_NI_MO { 
 	fxconfig=fxcfg_default;
 	vf_pass={vs_forward_test,ps_forward_test,sb_default}
+}
+///////////////////////////////////////////////////////////////
+technique FWD_CV_NM_RI_NI_MO { 
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_test_vtxcol,ps_forward_test_vtxcol,sb_cullcw}
 }
 ///////////////////////////////////////////////////////////////
 technique FWD_CT_NM_RI_IN_MO {
