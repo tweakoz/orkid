@@ -124,7 +124,6 @@ class RecursiveFsmouseApp(ComponentizedApplication):
     self.nested_sgvp.scenegraph = self.nested_sg
     self.nested_sgvp.camera_evhandler = lambda ev: self._onNestedCameraEvent(ev)
     self.nested_sgvp.forkDB()
-    self.nested_sgvp.cursor_depth = 0.5
 
     ############################################
     # Create the outer UI surface node
@@ -145,11 +144,6 @@ class RecursiveFsmouseApp(ComponentizedApplication):
     self.ui_node.sortkey = 100
     self.ui_node.worldTransform.translation = vec3(+3.75, 1.75, -8)
     self.ui_node.view_relative = True
-
-  ##############################################
-
-  def _onGpuLink(self, ctx):
-    self.SGC.SGVP.widget.cursor_depth = 3.0
 
   ##############################################
 
