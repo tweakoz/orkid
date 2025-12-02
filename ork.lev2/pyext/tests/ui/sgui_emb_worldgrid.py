@@ -27,7 +27,7 @@ class UISurface3DApp(ComponentizedApplication):
     self.SGC = self.addComponent("std_scenegraph",
                                  StandardSceneGraphComponent,
                                  grid_variant="_V4",
-                                 eye=vec3(0, 3, 8))
+                                 eye=vec3(0, 4, 12))
     self.createEzApp(name="UISurface3DTest", ssaa=1, fullscreen=False)
 
   ##############################################

@@ -608,9 +608,7 @@ void pyinit_ui_layout(py::module& uimodule) {
               },
               [](uilayoutgroup_ptr_t lgrp, uiwidget_ptr_t w) { //
                 lgrp->_overlay_widget = w;
-                /*if (w) {
-                  lgrp->addChild(w);
-                }*/
+                w->_uicontext = lgrp->_uicontext;
               })
           .def_property(
               "overlay_enabled",
