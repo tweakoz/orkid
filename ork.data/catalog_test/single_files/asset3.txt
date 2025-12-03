@@ -1,0 +1,1 @@
+Test asset 3 - for single file pak mode

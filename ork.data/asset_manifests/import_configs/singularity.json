@@ -1,0 +1,17 @@
+{
+  "namespace": "singularity",
+  "source_dir": "<stage>/share",
+  "local_loc": "<stage>/share",
+  "manifest": "${ORKID_WORKSPACE_DIR}/ork.data/asset_manifests/singularity.json",
+  "encryption_key": "singularity_rulez",
+  "platforms": ["mac", "linux"],
+
+  "assets": [
+    { "id": "casiocz",   "include": "singularity/casioCZ/*" },
+    { "id": "irs",       "include": "singularity/IRs/*" },
+    { "id": "kurzweil",  "include": "singularity/kurzweil/*.krz" },
+    { "id": "midifiles", "include": "singularity/midifiles/*.mid" },
+    { "id": "tx81z",     "include": "singularity/tx81z/*" },
+    { "id": "wavs",      "include": "singularity/wavs/*" }
+  ]
+}

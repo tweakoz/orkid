@@ -1,5 +1,17 @@
 {
   "namespaces": {
+    "test_single": {
+      "encryption_key": "test_key_123",
+      "remote_location": "orkid_std"
+    },
+    "test_batched": {
+      "encryption_key": "test_key_123",
+      "remote_location": "orkid_std"
+    },
+    "test_hierarchical": {
+      "encryption_key": "test_key_123",
+      "remote_location": "orkid_std"
+    },
     "ork_envmaps": {
       "encryption_key": "orkid_rulez",
       "remote_location": "orkid_std"

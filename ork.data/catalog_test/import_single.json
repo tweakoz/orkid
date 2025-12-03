@@ -1,0 +1,13 @@
+{
+  "namespace": "test_single",
+  "source_dir": "<stage>/assetcache/catalogtest/single_files",
+  "local_loc": "<stage>/assetcache/catalogtest/single_files",
+  "manifest": "${ORKID_WORKSPACE_DIR}/ork.data/asset_manifests/test_single.json",
+  "encryption_key": "test_key_123",
+  "platforms": ["mac", "linux"],
+
+  "auto": {
+    "include": "*.txt",
+    "id_from": "stem"
+  }
+}

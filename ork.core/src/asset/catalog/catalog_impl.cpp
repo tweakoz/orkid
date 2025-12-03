@@ -116,6 +116,23 @@ assetfqid_ptr_t CatalogImpl::locateAsset(const assetid_t& fq_asset_id) const {
       // Build location info from namespace configuration
       auto merged = _config_space->merged();
       result->_location_info = merged->getRemoteLocationForNamespace(namespace_id);
+      if (!result->_location_info) {
+        logerrchannel()->log(
+            "FATAL: Namespace '%s' not found in any config.json in $ORKID_ASSET_MANIFEST_DIRS.\n"
+            "  Asset ID: %s\n"
+            "  Please add namespace configuration to your config.json:\n"
+            "  {\n"
+            "    \"namespaces\": {\n"
+            "      \"%s\": {\n"
+            "        \"encryption_key\": \"your_key\",\n"
+            "        \"remote_location\": \"your_location\"\n"
+            "      }\n"
+            "    }\n"
+            "  }\n",
+            namespace_id.c_str(),
+            fq_asset_id.c_str(),
+            namespace_id.c_str());
+      }
       OrkAssert(result->_location_info);
       auto linfo = result->_location_info;
       if(0)printf("location_info<%p>\n", (void*)linfo.get());

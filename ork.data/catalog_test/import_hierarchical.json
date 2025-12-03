@@ -1,0 +1,14 @@
+{
+  "namespace": "test_hierarchical",
+  "source_dir": "<stage>/assetcache/catalogtest/hierarchical",
+  "local_loc": "<stage>/assetcache/catalogtest/hierarchical",
+  "manifest": "${ORKID_WORKSPACE_DIR}/ork.data/asset_manifests/test_hierarchical.json",
+  "encryption_key": "test_key_123",
+  "platforms": ["mac", "linux"],
+
+  "auto": {
+    "include": ["*.glb", "*.dds"],
+    "recursive": true,
+    "id_from": "relative_stem"
+  }
+}
