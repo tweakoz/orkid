@@ -1,0 +1,92 @@
+{
+  "id": "test_single",
+  "uuid": "e3b34011-c6a2-4842-a8d0-78a947da8a81",
+  "namespace": "test_single",
+  "version": "1.0.0",
+  "assets": {
+    "asset1": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "/Users/michael/.staging-nov07/assetcache/catalogtest/single_files",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "c484512b73bbd1cd3c91c06362f927c8",
+      "storage_hash": "8a62e837d6761fd261f8113841612352",
+      "hash_algorithm": "md5",
+      "archive_size": 1024,
+      "encrypted_size": 178,
+      "compressed_size": 150,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 178,
+        "file_hash": 10362418651621374148,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 178,
+            "hash": 10362418651621374148
+          }
+        ]
+      }
+    },
+    "asset2": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "/Users/michael/.staging-nov07/assetcache/catalogtest/single_files",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "56cb817d2985654a7905a597f97e6a1b",
+      "storage_hash": "ac51a217606e2ebff8d161334fb809c7",
+      "hash_algorithm": "md5",
+      "archive_size": 1024,
+      "encrypted_size": 178,
+      "compressed_size": 150,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 178,
+        "file_hash": 15848211860547208559,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 178,
+            "hash": 15848211860547208559
+          }
+        ]
+      }
+    },
+    "asset3": {
+      "type": "asset_pak",
+      "priority": 0,
+      "local_loc": "/Users/michael/.staging-nov07/assetcache/catalogtest/single_files",
+      "platforms": [
+        "mac",
+        "linux"
+      ],
+      "dependencies": [],
+      "content_hash": "c5941fb7b207dac4cdc344873a4c21a4",
+      "storage_hash": "6339c5675324f19f4154d2f0c9b51f6c",
+      "hash_algorithm": "md5",
+      "archive_size": 1024,
+      "encrypted_size": 178,
+      "compressed_size": 150,
+      "chunks": {
+        "chunk_size": 16777216,
+        "total_size": 178,
+        "file_hash": 13396053147860545582,
+        "chunks": [
+          {
+            "offset": 0,
+            "size": 178,
+            "hash": 13396053147860545582
+          }
+        ]
+      }
+    }
+  }
+}
