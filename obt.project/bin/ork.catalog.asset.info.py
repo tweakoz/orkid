@@ -239,13 +239,24 @@ def print_asset_info(cfgspc, catalog, fqid, verbose=False):
                     group_end = min(group_start + chunks_per_row, num_chunks)
                     group_size = group_end - group_start
 
+                    # Print hundreds digit row if we have chunks >= 100 in this group
+                    needs_hundreds = any(i >= 100 for i in range(group_start, group_end))
+                    if needs_hundreds:
+                        header_hundreds = " " * label_width
+                        for i in range(group_start, group_end):
+                            if i >= 100:
+                                header_hundreds += f" {i // 100} "
+                            else:
+                                header_hundreds += " " * col_width
+                        print(header_hundreds)
+
                     # Print tens digit row if we have chunks >= 10 in this group
                     needs_tens = any(i >= 10 for i in range(group_start, group_end))
                     if needs_tens:
                         header_tens = " " * label_width
                         for i in range(group_start, group_end):
                             if i >= 10:
-                                header_tens += f" {i // 10} "
+                                header_tens += f" {(i // 10) % 10} "
                             else:
                                 header_tens += " " * col_width
                         print(header_tens)

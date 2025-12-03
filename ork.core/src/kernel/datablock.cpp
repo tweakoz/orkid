@@ -251,14 +251,50 @@ datablock_ptr_t DataBlock::clone() const {
 
 //////////////////////////////////////////////////////////////////////
 
+static constexpr uint32_t MAGIC_LZ44 = 0x4C5A3434; // "LZ44" - LZ4 compressed
+static constexpr uint32_t MAGIC_NONE = 0x4E4F4E45; // "NONE" - uncompressed (too large for LZ4)
+
 datablock_ptr_t DataBlock::compressed(int level) const {
   if (_storage.empty()) {
     // Even for empty data, create proper LZ4 format with header
     auto output = std::make_shared<DataBlock>();
     output->_name = _name + ".lz4";
-    output->addItem<uint32_t>(0x4C5A3434); // "LZ44"
+    output->addItem<uint32_t>(MAGIC_LZ44);
     output->addItem<uint64_t>(0); // uncompressed size = 0
     // No compressed data to add
+    return output;
+  }
+
+  // Check if already compressed (idempotent) - need at least 4 bytes for magic
+  if (_storage.size() >= 4) {
+    uint32_t maybe_magic = *reinterpret_cast<const uint32_t*>(_storage.data());
+    if (maybe_magic == MAGIC_LZ44 || maybe_magic == MAGIC_NONE) {
+      // Already has compression header, return copy as-is
+      auto output = std::make_shared<DataBlock>();
+      output->_name = _name;
+      output->_storage = _storage;
+      return output;
+    }
+  }
+
+  // Check if data exceeds LZ4 max input size - store uncompressed with NONE header
+  if (_storage.size() > LZ4_MAX_INPUT_SIZE) {
+    auto output = std::make_shared<DataBlock>();
+    output->_name = _name + ".lz4"; // still use .lz4 extension for consistency
+
+    // Reserve space for: magic(4) + uncompressed_size(8) + raw_data
+    output->reserve(4 + 8 + _storage.size());
+
+    // Write NONE magic number
+    output->addItem<uint32_t>(MAGIC_NONE);
+
+    // Write uncompressed size
+    output->addItem<uint64_t>(_storage.size());
+
+    // Copy raw data
+    uint8_t* raw_buffer = static_cast<uint8_t*>(output->allocateBlock(_storage.size()));
+    std::memcpy(raw_buffer, _storage.data(), _storage.size());
+
     return output;
   }
 
@@ -273,7 +309,7 @@ datablock_ptr_t DataBlock::compressed(int level) const {
   output->reserve(4 + 8 + max_compressed_size);
 
   // Write magic number
-  output->addItem<uint32_t>(0x4C5A3434); // "LZ44"
+  output->addItem<uint32_t>(MAGIC_LZ44);
 
   // Write uncompressed size
   output->addItem<uint64_t>(_storage.size());
@@ -313,48 +349,68 @@ datablock_ptr_t DataBlock::compressed(int level) const {
 //////////////////////////////////////////////////////////////////////
 
 datablock_ptr_t DataBlock::decompressed() const {
+  // Check if data has no header (idempotent - already uncompressed)
   if (_storage.size() < 12) { // magic(4) + size(8)
-    throw std::runtime_error("DataBlock too small to be LZ4 compressed");
+    // Too small for header, assume already uncompressed - return copy
+    auto output = std::make_shared<DataBlock>();
+    output->_name = _name;
+    output->_storage = _storage;
+    return output;
   }
-  
+
   DataBlockInputStream stream(std::make_shared<const DataBlock>(*this));
-  
+
   // Check magic number
   uint32_t magic = stream.getItem<uint32_t>();
-  if (magic != 0x4C5A3434) { // "LZ44"
-    throw std::runtime_error("DataBlock does not have LZ4 magic header");
+
+  // If no recognized magic, assume already uncompressed (idempotent)
+  if (magic != MAGIC_LZ44 && magic != MAGIC_NONE) {
+    auto output = std::make_shared<DataBlock>();
+    output->_name = _name;
+    output->_storage = _storage;
+    return output;
   }
-  
+
   // Read uncompressed size
   uint64_t uncompressed_size = stream.getItem<uint64_t>();
-    
+
   // Create output datablock
   auto output = std::make_shared<DataBlock>();
   output->_name = _name;
   if (output->_name.ends_with(".lz4")) {
     output->_name = output->_name.substr(0, output->_name.length() - 4);
   }
-  
+
   // Handle empty data case
   if (uncompressed_size == 0) {
     return output; // Return empty datablock
   }
-  
+
+  // Handle NONE magic - data is uncompressed, just strip header
+  if (magic == MAGIC_NONE) {
+    output->reserve(uncompressed_size);
+    uint8_t* raw_buffer = static_cast<uint8_t*>(output->allocateBlock(uncompressed_size));
+    const uint8_t* src_data = _storage.data() + 12; // skip header
+    std::memcpy(raw_buffer, src_data, uncompressed_size);
+    return output;
+  }
+
+  // Handle LZ44 magic - LZ4 compressed data
   output->reserve(uncompressed_size);
-  
+
   // Allocate decompression buffer
   uint8_t* decompressed_buffer = static_cast<uint8_t*>(output->allocateBlock(uncompressed_size));
-  
+
   // Decompress
   const uint8_t* compressed_data = _storage.data() + 12; // skip header
   size_t compressed_size = _storage.size() - 12;
-  
+
   int decompressed_size = LZ4_decompress_safe(
     reinterpret_cast<const char*>(compressed_data),
     reinterpret_cast<char*>(decompressed_buffer),
     compressed_size,
     uncompressed_size);
-  
+
   if (decompressed_size < 0 || static_cast<size_t>(decompressed_size) != uncompressed_size) {
     throw std::runtime_error("LZ4 decompression failed or size mismatch");
   }

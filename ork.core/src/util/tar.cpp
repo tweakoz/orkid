@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <cstring>
+#include <climits>
 #include <algorithm>
 #include <boost/filesystem.hpp>
 
@@ -640,7 +641,9 @@ for (const auto& [name, entry] : sorted_entries) {
     const uint8_t* data_ptr = entry->data->data();
 
     while (remaining > 0) {
-      ssize_t written = write(tar_handle->fd, data_ptr, remaining);
+      // Chunk writes to avoid exceeding INT_MAX (write() fails with EINVAL if nbyte > INT_MAX)
+      size_t chunk_size = std::min(remaining, static_cast<size_t>(INT_MAX));
+      ssize_t written = write(tar_handle->fd, data_ptr, chunk_size);
       if (written <= 0) {
         tar_close(tar_handle);
         unlink(temp_template);

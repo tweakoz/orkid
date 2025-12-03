@@ -1,0 +1,13 @@
+{
+  "namespace": "test_large",
+  "source_dir": "/tmp/catalog_test_large",
+  "local_loc": "/tmp/catalog_test_large",
+  "manifest": "${ORKID_WORKSPACE_DIR}/ork.data/asset_manifests/test_large.json",
+  "encryption_key": "test_key_123",
+  "platforms": ["mac", "linux"],
+
+  "auto": {
+    "include": "*.bin",
+    "id_from": "stem"
+  }
+}
