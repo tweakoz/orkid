@@ -12,6 +12,11 @@ import os
 import tempfile
 import shutil
 
+def get_stage_dir():
+    """Get the stage directory from OBT."""
+    from obt import path as obt_path
+    return str(obt_path.stage())
+
 def main():
     parser = argparse.ArgumentParser(description='Test large file catalog import')
     parser.add_argument('--sizemib', type=int, default=2500,
@@ -22,7 +27,9 @@ def main():
                         help='Local only - do not upload to CDN')
     args = parser.parse_args()
 
-    test_dir = '/tmp/catalog_test_large'
+    # Use <stage>/assetcache/ORKTEST for portability
+    stage_dir = get_stage_dir()
+    test_dir = os.path.join(stage_dir, 'assetcache', 'ORKTEST')
     test_file = os.path.join(test_dir, 'large_test.bin')
 
     # Get paths
