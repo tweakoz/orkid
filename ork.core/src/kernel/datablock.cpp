@@ -10,6 +10,7 @@
 #include <ork/util/crc.h>
 #include <ork/util/xxhash.inl>
 #include <random>
+#include <cstring>
 
 #define LZ4_DISABLE_DEPRECATE_WARNINGS
 #include <lz4.h>
