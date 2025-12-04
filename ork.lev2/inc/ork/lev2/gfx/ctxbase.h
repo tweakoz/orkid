@@ -60,8 +60,17 @@ class CTXBASE : public ork::Object {
 
 public:
 
+  // Mouse cursor control (for fullscreen mouse mode)
   virtual void disableMouseCursor() {}
   virtual void hideMouseCursor() {}
+  virtual void showMouseCursor() {}
+
+  // Fullscreen mouse mode accessor
+  bool fsMouseMode() const { return _fsMouseMode; }
+
+  // UI event accessors
+  ui::event_ptr_t uievent() { return _uievent; }
+  ui::event_constptr_t uievent() const { return _uievent; }
 
   bool isGlobal() const;
 
@@ -120,6 +129,9 @@ public:
   gpuupdfn_t _onGpuInit;
   gpuupdfn_t _onGpuUpdate;
   gpuupdfn_t _onGpuExit;
+
+  // Fullscreen mouse mode (hardware cursor hidden, virtual cursor rendered)
+  bool _fsMouseMode = false;
 
   protected:
     void onSharedCreate(std::shared_ptr<CTXBASE> this_shared);

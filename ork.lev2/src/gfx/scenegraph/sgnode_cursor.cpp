@@ -9,9 +9,7 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/gfx/gfxvtxbuf.inl>
-#if defined(ENABLE_GLFW)
-#include <ork/lev2/glfw/ctx_glfw.h>
-#endif
+#include <ork/lev2/gfx/ctxbase.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 using namespace ork::lev2;
@@ -99,10 +97,10 @@ void CursorDrawableImpl::_render(const RenderContextInstData& RCID) {
   float cursorNdcX = _cursorX;
   float cursorNdcY = _cursorY;
 
-  // If autopos, get cursor position from GLFW context
+  // If autopos, get cursor position from context base (works with GLFW, DRM, etc.)
   if (_data->_autopos) {
-    auto ctxbase = dynamic_cast<CtxGLFW*>(context->mCtxBase);
-    if (ctxbase && ctxbase->_fsMouseMode) {
+    auto ctxbase = context->mCtxBase;
+    if (ctxbase && ctxbase->fsMouseMode()) {
       auto uiev = ctxbase->uievent();
       int w = context->mainSurfaceWidth();
       int h = context->mainSurfaceHeight();

@@ -64,7 +64,7 @@ struct CtxGLFW : public CTXBASE {
 
   void disableMouseCursor() final;
   void hideMouseCursor() final;
-  void showMouseCursor();
+  void showMouseCursor() final;
   void warpCursor(int x, int y);  // Teleport cursor to position
 
   void SlotRepaint() final;
@@ -113,10 +113,6 @@ struct CtxGLFW : public CTXBASE {
   int _height      = 32;
   int mDrawLock    = 0;
   int _buttonState = 0;
-
-  // Fullscreen mouse mode (ORKID_FSMOUSEMODE=1)
-  // Hardware cursor hidden, virtual cursor rendered by SceneGraphViewport
-  bool _fsMouseMode = false;
 
   appinitdata_ptr_t _appinitdata;
 
