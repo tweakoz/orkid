@@ -664,28 +664,38 @@ void CtxDRM::_processPointerAxisEvent(void* event_ptr) {
     struct libinput_event* event = static_cast<struct libinput_event*>(event_ptr);
     auto pointer_event = libinput_event_get_pointer_event(event);
 
+    auto uiev = _uievent;
+    uiev->_eventcode = ui::EventCode::MOUSEWHEEL;
+    uiev->miMWX = 0;
+    uiev->miMWY = 0;
+
+    bool has_scroll = false;
+
+    // libinput gives ~15 units per wheel detent
+    // GLFW gives ~1.0 per detent, then multiplies by 10 -> ~10 per detent
+    // Empirically tuned to match macOS responsiveness (was 10x too fast)
+    // Negate Y to match macOS/GLFW scroll direction convention
+    constexpr double LIBINPUT_TO_GLFW_SCALE = 1.0 / 15.0;
+
     // Check if we have vertical scroll
     if (libinput_event_pointer_has_axis(pointer_event, LIBINPUT_POINTER_AXIS_SCROLL_VERTICAL)) {
         double value = libinput_event_pointer_get_axis_value(pointer_event, LIBINPUT_POINTER_AXIS_SCROLL_VERTICAL);
-        auto uiev = _uievent;
-        uiev->_eventcode = ui::EventCode::MOUSEWHEEL;
-        // libinput gives ~15 units per wheel detent, GLFW expects ~1.0 per detent (then *10 = 10 final)
-        // So scale libinput by (10/15) = 0.667 to match GLFW's output
-        uiev->miMWY = value * (1.0 / 150.0);
-        uiev->miMWX = 0;
+        uiev->miMWY = int(-value * LIBINPUT_TO_GLFW_SCALE);  // Negate for natural scrolling
+        has_scroll = true;
         logchan_ctxdrm->log("Mouse scroll: VERTICAL raw=%.2f scaled=%d", value, uiev->miMWY);
-        //_fire_ui_event();
     }
 
     // Check if we have horizontal scroll
-    /*if (libinput_event_pointer_has_axis(pointer_event, LIBINPUT_POINTER_AXIS_SCROLL_HORIZONTAL)) {
+    if (libinput_event_pointer_has_axis(pointer_event, LIBINPUT_POINTER_AXIS_SCROLL_HORIZONTAL)) {
         double value = libinput_event_pointer_get_axis_value(pointer_event, LIBINPUT_POINTER_AXIS_SCROLL_HORIZONTAL);
-        auto uiev = _uievent;
-        uiev->_eventcode = ui::EventCode::MOUSEWHEEL;
-        uiev->miMWX = value * (1.0 / 150.0);
+        uiev->miMWX = int(value * LIBINPUT_TO_GLFW_SCALE);
+        has_scroll = true;
         logchan_ctxdrm->log("Mouse scroll: HORIZONTAL raw=%.2f scaled=%d", value, uiev->miMWX);
+    }
+
+    if (has_scroll) {
         _fire_ui_event();
-    }*/
+    }
 }
 
 void CtxDRM::_fire_ui_event() {
