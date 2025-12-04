@@ -420,7 +420,7 @@ class AssetImporter:
                 source_dir=str(self._resolved_source_dir),
                 filters=filters,
                 priority=self.config.priority,
-                local_loc=self._resolved_local_loc,
+                local_loc=self.config.local_loc,  # Use unexpanded path for portability
                 key=self._resolved_key,
                 platforms=self.config.platforms,
                 write_manifest=True

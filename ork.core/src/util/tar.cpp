@@ -470,16 +470,24 @@ bool TarArchive_Impl::loadFromData(datablock_ptr_t data) {
     return false;
   }
 
-  // Write data to temp file
-  ssize_t written = write(temp_fd, data->data(), data->length());
-  logchan_tar->log("loadFromData: wrote %zd bytes (expected %zu)", written, data->length());
-  if (written != static_cast<ssize_t>(data->length())) {
-    close(temp_fd);
-    unlink(temp_template);
-    last_error = formatLibtarError("Failed to write data to temporary file");
-    logchan_tar->log("loadFromData: write failed");
-    return false;
+  // Write data to temp file - chunk writes to avoid INT_MAX limit
+  size_t total_to_write = data->length();
+  size_t total_written = 0;
+  const uint8_t* write_ptr = data->data();
+
+  while (total_written < total_to_write) {
+    size_t chunk_size = std::min(total_to_write - total_written, static_cast<size_t>(INT_MAX));
+    ssize_t written = write(temp_fd, write_ptr + total_written, chunk_size);
+    if (written <= 0) {
+      close(temp_fd);
+      unlink(temp_template);
+      last_error = formatLibtarError("Failed to write data to temporary file");
+      logchan_tar->log("loadFromData: write failed at offset %zu", total_written);
+      return false;
+    }
+    total_written += written;
   }
+  logchan_tar->log("loadFromData: wrote %zu bytes (expected %zu)", total_written, total_to_write);
 
   // Rewind to beginning
   lseek(temp_fd, 0, SEEK_SET);
