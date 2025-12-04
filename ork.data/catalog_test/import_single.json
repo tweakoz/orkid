@@ -6,8 +6,7 @@
   "encryption_key": "test_key_123",
   "platforms": ["mac", "linux"],
 
-  "auto": {
-    "include": "*.txt",
-    "id_from": "stem"
-  }
+  "assets": [
+    { "id": "test_files", "include": "*.txt" }
+  ]
 }

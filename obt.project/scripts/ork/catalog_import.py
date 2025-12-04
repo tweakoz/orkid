@@ -32,19 +32,6 @@ class AssetDefinition:
             self.include = [self.include]
 
 @dataclass
-class AutoConfig:
-    """Auto-generate assets from files (one pak per file)."""
-    include: Union[str, List[str]]
-    exclude: List[str] = field(default_factory=list)
-    recursive: bool = False
-    id_from: str = "stem"  # "stem", "relative_stem", "relative_path"
-
-    def __post_init__(self):
-        # Normalize include to list
-        if isinstance(self.include, str):
-            self.include = [self.include]
-
-@dataclass
 class ImportConfig:
     """Complete import configuration."""
     namespace: str
@@ -57,9 +44,8 @@ class ImportConfig:
     platforms: List[str] = field(default_factory=lambda: ["mac", "linux"])
     priority: int = 0
 
-    # One of these (mutually exclusive)
+    # Asset definitions
     assets: List[AssetDefinition] = field(default_factory=list)
-    auto: Optional[AutoConfig] = None
 
 @dataclass
 class ImportResult:
@@ -117,17 +103,6 @@ def load_config(path: str) -> ImportConfig:
                 exclude=asset_data.get('exclude', [])
             ))
 
-    # Build auto config if present
-    auto_config = None
-    if 'auto' in data:
-        auto_data = data['auto']
-        auto_config = AutoConfig(
-            include=auto_data['include'],
-            exclude=auto_data.get('exclude', []),
-            recursive=auto_data.get('recursive', False),
-            id_from=auto_data.get('id_from', 'stem')
-        )
-
     return ImportConfig(
         namespace=data['namespace'],
         source_dir=data['source_dir'],
@@ -136,13 +111,11 @@ def load_config(path: str) -> ImportConfig:
         encryption_key=data.get('encryption_key'),
         platforms=data.get('platforms', ['mac', 'linux']),
         priority=data.get('priority', 0),
-        assets=assets_list,
-        auto=auto_config
+        assets=assets_list
     )
 
 def config_from_args(args) -> ImportConfig:
     """Build ImportConfig from argparse namespace."""
-    # Build assets list if --asset provided
     assets_list = []
     if args.asset:
         for asset_id, pattern in args.asset:
@@ -152,16 +125,6 @@ def config_from_args(args) -> ImportConfig:
                 exclude=args.exclude or []
             ))
 
-    # Build auto config if --include provided
-    auto_config = None
-    if args.include:
-        auto_config = AutoConfig(
-            include=args.include,
-            exclude=args.exclude or [],
-            recursive=args.recursive,
-            id_from=args.id_from
-        )
-
     return ImportConfig(
         namespace=args.namespace,
         source_dir=args.source_dir,
@@ -170,8 +133,7 @@ def config_from_args(args) -> ImportConfig:
         encryption_key=args.key,
         platforms=args.platforms,
         priority=0,
-        assets=assets_list,
-        auto=auto_config
+        assets=assets_list
     )
 
 def export_config(config: ImportConfig, path: str):
@@ -191,7 +153,7 @@ def export_config(config: ImportConfig, path: str):
     if config.priority != 0:
         data["priority"] = config.priority
 
-    # Assets or auto (mutually exclusive)
+    # Assets
     if config.assets:
         data["assets"] = []
         for a in config.assets:
@@ -199,15 +161,6 @@ def export_config(config: ImportConfig, path: str):
             if a.exclude:
                 asset_data["exclude"] = a.exclude
             data["assets"].append(asset_data)
-    elif config.auto:
-        auto_data = {"include": config.auto.include}
-        if config.auto.exclude:
-            auto_data["exclude"] = config.auto.exclude
-        if config.auto.recursive:
-            auto_data["recursive"] = True
-        if config.auto.id_from != "stem":
-            auto_data["id_from"] = config.auto.id_from
-        data["auto"] = auto_data
 
     with open(path, 'w') as f:
         json.dump(data, f, indent=2)
@@ -333,54 +286,11 @@ class AssetImporter:
             env_key = f"ORKID_KEY_{self.config.namespace.upper()}"
             self._resolved_key = os.environ.get(env_key)
 
-    def expand_auto_to_assets(self) -> List[AssetDefinition]:
-        """Convert auto config to explicit asset definitions."""
-        if not self.config.auto:
-            return []
-
-        auto = self.config.auto
-        base_dir = self._resolved_source_dir
-
-        files = enumerate_files(
-            base_dir,
-            auto.include,
-            auto.exclude,
-            auto.recursive
-        )
-
-        asset_defs = []
-        for f in files:
-            rel_path = f.relative_to(base_dir)
-
-            # Derive asset ID based on id_from setting
-            if auto.id_from == "stem":
-                asset_id = f.stem
-            elif auto.id_from == "relative_stem":
-                asset_id = str(rel_path.with_suffix(''))
-            elif auto.id_from == "relative_path":
-                asset_id = str(rel_path)
-            else:
-                asset_id = f.stem
-
-            # Normalize path separators in asset ID
-            asset_id = asset_id.replace(os.sep, '/')
-
-            asset_defs.append(AssetDefinition(
-                id=asset_id,
-                include=str(rel_path),
-                exclude=[]
-            ))
-
-        return asset_defs
-
     def get_asset_definitions(self) -> List[AssetDefinition]:
-        """Get final list of assets to import (explicit or auto-expanded)."""
-        if self.config.assets:
-            return self.config.assets
-        elif self.config.auto:
-            return self.expand_auto_to_assets()
-        else:
-            raise ValueError("Config must have 'assets' or 'auto'")
+        """Get list of assets to import."""
+        if not self.config.assets:
+            raise ValueError("Config must have 'assets' list")
+        return self.config.assets
 
     def enumerate_asset_files(self, asset_def: AssetDefinition) -> List[Path]:
         """Get files matching an asset definition's include/exclude."""

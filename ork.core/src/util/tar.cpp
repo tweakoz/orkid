@@ -11,7 +11,8 @@
 #include <ork/kernel/timer.h>
 #include <ork/util/logger.h>
 
-#include <libtar.h>
+#include <archive.h>
+#include <archive_entry.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -22,10 +23,10 @@
 
 namespace ork::util {
 
-static logchannel_ptr_t logchan_tar = logger()->configureChannel("TAR", fvec3(0.0f, 1.0f, 1.0f), false);
+static logchannel_ptr_t logchan_tar = logger()->configureChannel("TAR", fvec3(0.0f, 1.0f, 1.0f), true);
 
 ////////////////////////////////////////////////////////////////////////////////
-// Internal implementation using libtar
+// Internal implementation using libarchive
 ////////////////////////////////////////////////////////////////////////////////
 
 struct TarArchive_Impl {
@@ -37,7 +38,7 @@ struct TarArchive_Impl {
   // Internal helpers
   bool loadFromData(datablock_ptr_t data);
   bool createFromEntries(const tar_entry_map_t& entries, const TarCreateOptions& options);
-  static std::string formatLibtarError(const std::string& operation);
+  static std::string formatArchiveError(struct archive* a, const std::string& operation);
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -460,62 +461,35 @@ bool TarArchive_Impl::loadFromData(datablock_ptr_t data) {
     return false;
   }
 
-  // Create a temporary file from memory for libtar
-  char temp_template[] = "/tmp/orktar_XXXXXX";
-  int temp_fd          = mkstemp(temp_template);
-  logchan_tar->log("loadFromData: created temp file %s, fd=%d", temp_template, temp_fd);
-  if (temp_fd == -1) {
-    last_error = formatLibtarError("Failed to create temporary file");
-    logchan_tar->log("loadFromData: failed to create temp file");
+  // Create archive reader
+  struct archive* a = archive_read_new();
+  archive_read_support_format_tar(a);
+  archive_read_support_format_gnutar(a);
+
+  // Open from memory
+  int r = archive_read_open_memory(a, data->data(), data->length());
+  if (r != ARCHIVE_OK) {
+    last_error = formatArchiveError(a, "Failed to open archive from memory");
+    logchan_tar->log("loadFromData: archive_read_open_memory failed: %s", archive_error_string(a));
+    archive_read_free(a);
     return false;
   }
 
-  // Write data to temp file - chunk writes to avoid INT_MAX limit
-  size_t total_to_write = data->length();
-  size_t total_written = 0;
-  const uint8_t* write_ptr = data->data();
-
-  while (total_written < total_to_write) {
-    size_t chunk_size = std::min(total_to_write - total_written, static_cast<size_t>(INT_MAX));
-    ssize_t written = write(temp_fd, write_ptr + total_written, chunk_size);
-    if (written <= 0) {
-      close(temp_fd);
-      unlink(temp_template);
-      last_error = formatLibtarError("Failed to write data to temporary file");
-      logchan_tar->log("loadFromData: write failed at offset %zu", total_written);
-      return false;
-    }
-    total_written += written;
-  }
-  logchan_tar->log("loadFromData: wrote %zu bytes (expected %zu)", total_written, total_to_write);
-
-  // Rewind to beginning
-  lseek(temp_fd, 0, SEEK_SET);
-
-  // Open tar archive
-  TAR* tar_handle = nullptr;
-  logchan_tar->log("loadFromData: opening tar archive with libtar");
-  if (tar_fdopen(&tar_handle, temp_fd, temp_template, nullptr, O_RDONLY, 0644, TAR_GNU) != 0) {
-    close(temp_fd);
-    unlink(temp_template);
-    last_error = formatLibtarError("Failed to open tar archive");
-    logchan_tar->log("loadFromData: tar_fdopen failed");
-    return false;
-  }
+  logchan_tar->log("loadFromData: reading tar entries");
 
   // Read entries
-  logchan_tar->log("loadFromData: reading tar entries");
+  struct archive_entry* ae;
   int entry_count = 0;
-  while (th_read(tar_handle) == 0) {
-    std::string entry_name = th_get_pathname(tar_handle);
+  while (archive_read_next_header(a, &ae) == ARCHIVE_OK) {
+    std::string entry_name = archive_entry_pathname(ae);
     logchan_tar->log("loadFromData: found entry '%s'", entry_name.c_str());
 
     auto entry          = std::make_shared<TarEntry>();
     entry->name         = entry_name;
-    entry->size         = th_get_size(tar_handle);
-    entry->mtime        = th_get_mtime(tar_handle);
-    entry->mode         = th_get_mode(tar_handle);
-    entry->is_directory = TH_ISDIR(tar_handle);
+    entry->size         = archive_entry_size(ae);
+    entry->mtime        = archive_entry_mtime(ae);
+    entry->mode         = archive_entry_mode(ae);
+    entry->is_directory = archive_entry_filetype(ae) == AE_IFDIR;
 
     logchan_tar->log("loadFromData: entry size=%zu, is_dir=%d", entry->size, entry->is_directory);
 
@@ -526,37 +500,21 @@ bool TarArchive_Impl::loadFromData(datablock_ptr_t data) {
       entry->data->reserve(entry->size);
       entry->data->_storage.resize(entry->size);
 
-      // Read file data directly from tar stream
-      size_t bytes_to_read = entry->size;
-      size_t bytes_read    = 0;
-      char* data_ptr       = reinterpret_cast<char*>(const_cast<uint8_t*>(entry->data->data()));
-
-      while (bytes_read < bytes_to_read) {
-        ssize_t chunk_size = read(tar_handle->fd, data_ptr + bytes_read, bytes_to_read - bytes_read);
-        logchan_tar->log("loadFromData: read chunk %zd bytes (total %zu/%zu)", chunk_size, bytes_read + chunk_size, bytes_to_read);
-        if (chunk_size <= 0) {
-          tar_close(tar_handle);
-          unlink(temp_template);
-          last_error = formatLibtarError("Failed to read file data: " + entry_name);
-          logchan_tar->log("loadFromData: read failed");
-          return false;
-        }
-        bytes_read += chunk_size;
+      // Read file data
+      la_ssize_t bytes_read = archive_read_data(a,
+                                                 const_cast<uint8_t*>(entry->data->data()),
+                                                 entry->size);
+      if (bytes_read < 0) {
+        last_error = formatArchiveError(a, "Failed to read file data: " + entry_name);
+        logchan_tar->log("loadFromData: archive_read_data failed: %s", archive_error_string(a));
+        archive_read_free(a);
+        return false;
+      }
+      if (static_cast<size_t>(bytes_read) != entry->size) {
+        logchan_tar->log("loadFromData: warning - read %zd bytes, expected %zu", bytes_read, entry->size);
       }
 
-      // Debug: print first few bytes of read data
-      std::string preview;
-      for (size_t i = 0; i < std::min(entry->size, (size_t)15); i++) {
-        preview += data_ptr[i];
-      }
-      logchan_tar->log("loadFromData: first 15 bytes: '%s'", preview.c_str());
-
-      // Skip padding to next 512-byte boundary
-      size_t padding = (512 - (entry->size % 512)) % 512;
-      if (padding > 0) {
-        logchan_tar->log("loadFromData: skipping %zu padding bytes", padding);
-        lseek(tar_handle->fd, padding, SEEK_CUR);
-      }
+      logchan_tar->log("loadFromData: read %zd bytes for '%s'", bytes_read, entry_name.c_str());
     }
 
     entries[entry_name] = entry;
@@ -566,8 +524,7 @@ bool TarArchive_Impl::loadFromData(datablock_ptr_t data) {
   logchan_tar->log("loadFromData: loaded %d entries total", entry_count);
 
   // Clean up
-  tar_close(tar_handle);
-  unlink(temp_template);
+  archive_read_free(a);
 
   is_valid = true;
   logchan_tar->log("loadFromData: success");
@@ -587,139 +544,128 @@ bool TarArchive_Impl::createFromEntries(const tar_entry_map_t& entries_input, co
     return false;
   }
 
-  // Create a temporary file for tar creation
-  char temp_template[] = "/tmp/orktar_create_XXXXXX";
-  int temp_fd          = mkstemp(temp_template);
-  if (temp_fd == -1) {
-    last_error = formatLibtarError("Failed to create temporary file");
-    return false;
-  }
+  // Create archive writer to memory
+  struct archive* a = archive_write_new();
+  archive_write_set_format_pax(a);  // PAX format supports large files (>8GB)
 
-  // Open tar archive for writing
-  TAR* tar_handle = nullptr;
-  if (tar_fdopen(&tar_handle, temp_fd, temp_template, nullptr, O_WRONLY | O_CREAT | O_TRUNC, 0644, TAR_GNU) != 0) {
-    close(temp_fd);
-    unlink(temp_template);
-    last_error = formatLibtarError("Failed to open tar archive for writing");
-    return false;
-  }
+  // We'll write to a growing buffer
+  std::vector<uint8_t> buffer;
+  buffer.reserve(1024 * 1024);  // Start with 1MB
+
+  // Use callback-based writing to memory
+  archive_write_open(a, &buffer,
+    // open callback
+    [](struct archive*, void*) -> int { return ARCHIVE_OK; },
+    // write callback
+    [](struct archive*, void* client_data, const void* buff, size_t length) -> la_ssize_t {
+      auto* vec = static_cast<std::vector<uint8_t>*>(client_data);
+      const uint8_t* src = static_cast<const uint8_t*>(buff);
+      vec->insert(vec->end(), src, src + length);
+      return static_cast<la_ssize_t>(length);
+    },
+    // close callback
+    [](struct archive*, void*) -> int { return ARCHIVE_OK; }
+  );
 
   // Add each entry to the archive
   logchan_tar->log("createFromEntries: adding entries to archive");
 
-// Create a sorted vector of entries for deterministic processing
-std::vector<std::pair<std::string, tarentry_ptr_t>> sorted_entries;
-for (const auto& entry_pair : entries) {
-  sorted_entries.push_back(entry_pair);
-}
+  // Create a sorted vector of entries for deterministic processing
+  std::vector<std::pair<std::string, tarentry_ptr_t>> sorted_entries;
+  for (const auto& entry_pair : entries) {
+    sorted_entries.push_back(entry_pair);
+  }
 
-if (options._deterministic) {
-  std::sort(sorted_entries.begin(), sorted_entries.end(), [](const auto& a, const auto& b) {
-    return a.first < b.first; // Sort by entry name
-  });
-}
-
-for (const auto& [name, entry] : sorted_entries) {
-  logchan_tar->log("createFromEntries: processing entry '%s', size=%zu", name.c_str(), entry->size);
-
-  // Set header information
-  th_set_type(tar_handle, entry->is_directory ? DIRTYPE : REGTYPE);
-  th_set_path(tar_handle, const_cast<char*>(entry->name.c_str()));
-  th_set_mode(tar_handle, entry->mode);
-  th_set_size(tar_handle, entry->size);
-  th_set_mtime(tar_handle, entry->mtime);
-
-  // Set deterministic ownership if requested
   if (options._deterministic) {
-    th_set_user(tar_handle, options._fixed_uid);
-    th_set_group(tar_handle, options._fixed_gid);
+    std::sort(sorted_entries.begin(), sorted_entries.end(), [](const auto& a, const auto& b) {
+      return a.first < b.first; // Sort by entry name
+    });
   }
 
-  // Write header
-  if (th_write(tar_handle) != 0) {
-    tar_close(tar_handle);
-    unlink(temp_template);
-    last_error = formatLibtarError("Failed to write header for: " + entry->name);
-    return false;
-  }
+  for (const auto& [name, entry] : sorted_entries) {
+    logchan_tar->log("createFromEntries: processing entry '%s', size=%zu", name.c_str(), entry->size);
 
-  // Write file data if not a directory and has data
-  if (!entry->is_directory && entry->data && entry->data->length() > 0) {
-    size_t remaining        = entry->data->length();
-    const uint8_t* data_ptr = entry->data->data();
+    struct archive_entry* ae = archive_entry_new();
 
-    while (remaining > 0) {
-      // Chunk writes to avoid exceeding INT_MAX (write() fails with EINVAL if nbyte > INT_MAX)
-      size_t chunk_size = std::min(remaining, static_cast<size_t>(INT_MAX));
-      ssize_t written = write(tar_handle->fd, data_ptr, chunk_size);
-      if (written <= 0) {
-        tar_close(tar_handle);
-        unlink(temp_template);
-        last_error = formatLibtarError("Failed to write data for: " + entry->name);
-        return false;
-      }
-      data_ptr += written;
-      remaining -= written;
+    // Set entry metadata
+    archive_entry_set_pathname(ae, entry->name.c_str());
+    archive_entry_set_size(ae, entry->size);
+    archive_entry_set_mtime(ae, entry->mtime, 0);
+    archive_entry_set_perm(ae, entry->mode & 0777);
+
+    if (entry->is_directory) {
+      archive_entry_set_filetype(ae, AE_IFDIR);
+    } else {
+      archive_entry_set_filetype(ae, AE_IFREG);
     }
 
-    // Pad to 512-byte boundary
-    size_t padding = (512 - (entry->data->length() % 512)) % 512;
-    if (padding > 0) {
-      char zero_buffer[512] = {0};
-      if (write(tar_handle->fd, zero_buffer, padding) != static_cast<ssize_t>(padding)) {
-        tar_close(tar_handle);
-        unlink(temp_template);
-        last_error = formatLibtarError("Failed to write padding for: " + entry->name);
-        return false;
+    // Set deterministic ownership if requested
+    if (options._deterministic) {
+      archive_entry_set_uid(ae, options._fixed_uid);
+      archive_entry_set_gid(ae, options._fixed_gid);
+      archive_entry_set_uname(ae, "root");
+      archive_entry_set_gname(ae, "root");
+    }
+
+    // Write header
+    int r = archive_write_header(a, ae);
+    if (r != ARCHIVE_OK) {
+      last_error = formatArchiveError(a, "Failed to write header for: " + entry->name);
+      logchan_tar->log("createFromEntries: archive_write_header failed: %s", archive_error_string(a));
+      archive_entry_free(ae);
+      archive_write_free(a);
+      return false;
+    }
+
+    // Write file data if not a directory and has data
+    if (!entry->is_directory && entry->data && entry->data->length() > 0) {
+      // Write in chunks to handle large files (>2GB)
+      const size_t chunk_size = 128 * 1024 * 1024; // 128MB chunks
+      const uint8_t* data_ptr = entry->data->data();
+      size_t remaining = entry->data->length();
+      size_t total_written = 0;
+
+      while (remaining > 0) {
+        size_t to_write = std::min(remaining, chunk_size);
+        la_ssize_t written = archive_write_data(a, data_ptr + total_written, to_write);
+        if (written < 0 || static_cast<size_t>(written) != to_write) {
+          last_error = formatArchiveError(a, "Failed to write data for: " + entry->name);
+          logchan_tar->log("createFromEntries: archive_write_data failed: %s", archive_error_string(a));
+          archive_entry_free(ae);
+          archive_write_free(a);
+          return false;
+        }
+        total_written += written;
+        remaining -= written;
       }
+    }
+
+    archive_entry_free(ae);
+
+    // Progress callback
+    if (options.progress) {
+      options.progress(entry->name, entry->size, entry->size);
     }
   }
 
-  // Progress callback
-  if (options.progress) {
-    options.progress(entry->name, entry->size, entry->size);
-  }
+  // Close archive
+  archive_write_close(a);
+  archive_write_free(a);
+
+  // Copy buffer to archive_data
+  logchan_tar->log("createFromEntries: created archive size: %zu bytes", buffer.size());
+  archive_data = std::make_shared<DataBlock>();
+  archive_data->reserve(buffer.size());
+  archive_data->addData(buffer.data(), buffer.size());
+
+  is_valid = true;
+  logchan_tar->log("createFromEntries: success");
+  return true;
 }
 
-// Close archive (writes end-of-archive blocks)
-if (tar_close(tar_handle) != 0) {
-  unlink(temp_template);
-  last_error = formatLibtarError("Failed to close tar archive");
-  return false;
-}
-
-// Read the created archive back into memory
-logchan_tar->log("createFromEntries: reading created archive back");
-File archive_file(temp_template, EFM_READ);
-if (!archive_file.IsOpen()) {
-  unlink(temp_template);
-  last_error = "Failed to read created archive";
-  logchan_tar->log("createFromEntries: failed to open created archive");
-  return false;
-}
-
-size_t archive_size = 0;
-archive_file.GetLength(archive_size);
-logchan_tar->log("createFromEntries: created archive size: %zu bytes", archive_size);
-
-archive_data = std::make_shared<DataBlock>();
-archive_data->reserve(archive_size);
-archive_data->_storage.resize(archive_size);
-
-if (archive_size > 0) {
-  archive_file.Read(const_cast<uint8_t*>(archive_data->data()), archive_size);
-}
-
-// Clean up temporary file
-unlink(temp_template);
-
-is_valid = true;
-logchan_tar->log("createFromEntries: success");
-return true;
-}
-
-std::string TarArchive_Impl::formatLibtarError(const std::string& operation) {
-  return FormatString("Tar operation '%s' failed", operation.c_str());
+std::string TarArchive_Impl::formatArchiveError(struct archive* a, const std::string& operation) {
+  const char* err = archive_error_string(a);
+  return FormatString("Tar operation '%s' failed: %s", operation.c_str(), err ? err : "unknown error");
 }
 
 ////////////////////////////////////////////////////////////////////////////////

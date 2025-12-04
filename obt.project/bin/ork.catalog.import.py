@@ -3,9 +3,8 @@
 Import assets into the Orkid asset catalog.
 
 Usage:
-    ork.catalog.import.py -c import.json [-u] [-n] [-l]
-    ork.catalog.import.py -N ns -s DIR -L LOC -m FILE ...
-    ork.catalog.import.py -N ns -s DIR ... -e out.json
+    ork.catalog.import.py -c import.json [-u] [-n] [-l] [-v]
+    ork.catalog.import.py -N ns -s DIR -L LOC -m FILE -a ID PATTERN ...
 """
 
 import sys
@@ -31,20 +30,15 @@ Examples:
   # Dry run
   ork.catalog.import.py -c models.json -n
 
-  # CLI with explicit assets (singularity-style)
+  # CLI with explicit assets
   ork.catalog.import.py -N singularity -s "<stage>/share" -L "<stage>/share" \\
       -m '${ORKID_WORKSPACE_DIR}/ork.data/asset_manifests/singularity.json' \\
       -a casiocz "singularity/casioCZ/*" \\
       -a irs "singularity/IRs/*"
 
-  # CLI with auto mode (one pak per file)
-  ork.catalog.import.py -N ork_envmaps -s "<stage>/envmaps" -L "<stage>/envmaps" \\
-      -m '${ORKID_WORKSPACE_DIR}/ork.data/asset_manifests/envmaps.json' \\
-      -i "*.xir"
-
   # Export CLI args to config file
-  ork.catalog.import.py -N ork_models -s /path/to/models -L "<stage>/models" \\
-      -m models.json -i "*.glb" -r -I relative_stem -e models_import.json
+  ork.catalog.import.py -N singularity -s "<stage>/share" -L "<stage>/share" \\
+      -m singularity.json -a casiocz "singularity/casioCZ/*" -e singularity_import.json
 """
     )
 
@@ -69,14 +63,7 @@ Examples:
     # Asset specification (for CLI mode)
     parser.add_argument('-a', '--asset', nargs=2, action='append',
                         metavar=('ID', 'PATTERN'),
-                        help='Explicit asset: -a casiocz "singularity/casioCZ/*"')
-    parser.add_argument('-i', '--include', nargs='+',
-                        help='Auto mode: include patterns')
-    parser.add_argument('-I', '--id-from', choices=['stem', 'relative_stem', 'relative_path'],
-                        default='stem',
-                        help='Auto mode: how to derive asset ID (default: stem)')
-    parser.add_argument('-r', '--recursive', action='store_true',
-                        help='Auto mode: recurse into subdirectories')
+                        help='Asset definition: -a casiocz "singularity/casioCZ/*"')
     parser.add_argument('-x', '--exclude', nargs='+',
                         help='Exclude patterns')
 
@@ -111,13 +98,12 @@ def main():
     else:
         # Validate required args for CLI mode
         required_for_cli = [args.namespace, args.source_dir, args.local_loc, args.manifest]
-        has_asset_spec = args.asset or args.include
 
         if not args.export_config:
             if not all(required_for_cli):
                 parser.error("Without --config, requires: --namespace (-N), --source-dir (-s), --local-loc (-L), --manifest (-m)")
-            if not has_asset_spec:
-                parser.error("Without --config, requires either --asset (-a) or --include (-i)")
+            if not args.asset:
+                parser.error("Without --config, requires at least one --asset (-a)")
 
         config = catalog_import.config_from_args(args)
 
