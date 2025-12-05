@@ -39,6 +39,14 @@ void pyinit_scenegraph(py::module& module_lev2) {
               [](node_ptr_t node, decompxf_ptr_t mtx) { //
                 node->_dqxfdata._worldTransform = mtx;
               })
+          .def_property(
+              "world_transform",                       //
+              [](node_ptr_t node) -> decompxf_ptr_t { //
+                return node->_dqxfdata._worldTransform;
+              },
+              [](node_ptr_t node, decompxf_ptr_t mtx) { //
+                node->_dqxfdata._worldTransform = mtx;
+              })
           .def_property_readonly(
               "name",
               [](node_ptr_t node) -> std::string { //
@@ -228,7 +236,8 @@ void pyinit_scenegraph(py::module& module_lev2) {
                  drawabledata_ptr_t drawable_data) -> node_ptr_t { //
                 auto drawable = drawable_data->createDrawable();
                 return layer->createDrawableNode(named, drawable);
-              })
+              },py::arg("named"), py::arg("drawable_data"))
+              
           .def(
               "createBillboardNode",
               [](layer_ptr_t layer, //

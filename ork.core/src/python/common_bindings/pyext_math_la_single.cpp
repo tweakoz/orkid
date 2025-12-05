@@ -75,6 +75,13 @@ void init_math_la_float(py::module& module_core,python::pb11_typecodec_ptr_t typ
                 dcxf->_directmatrix    = inp;
                 dcxf->_usedirectmatrix = true;
               })
+          .def_property(
+              "direct_matrix",
+              [](decompxf_const_ptr_t dcxf) -> fmtx4 { return dcxf->_directmatrix; },
+              [](decompxf_ptr_t dcxf, fmtx4 inp) {
+                dcxf->_directmatrix    = inp;
+                dcxf->_usedirectmatrix = true;
+              })
               .def_property(
               "provider",
               [](decompxf_const_ptr_t dcxf) -> matrix_provider_ptr_t { return dcxf->_matrix_provider; },
