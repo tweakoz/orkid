@@ -22,8 +22,8 @@ struct InstancedIndexedPrimitive {
 
   //////////////////////////////////////////////////////////////////////////////
 
-  int _num_instances;
-  int _capacity;
+  size_t _num_instances;
+  size_t _capacity;
   PrimitiveType _prim_type;
   instance_vb_ptr_t _instance_vb;
   idxbufferbase_ptr_t _base_ib;
@@ -35,7 +35,7 @@ struct InstancedIndexedPrimitive {
     Context* ctx,
     std::vector<uint16_t> baseIndices,
     PrimitiveType prim_type,
-    int max_instances
+    size_t max_instances
   ) {
     _num_instances = max_instances;
     _prim_type = prim_type;
@@ -64,14 +64,17 @@ struct InstancedIndexedPrimitive {
 
   //////////////////////////////////////////////////////////////////////////////
 
-  inline instance_t* lock(Context* context, int num_instances=0) {
+  inline instance_t* lock(Context* context, size_t num_instances=0) {
     if(0==num_instances){
       _num_instances = _capacity;
       num_instances = _capacity;
     }
     else{
       _num_instances = num_instances;
-      OrkAssert(num_instances<=_capacity);
+      if(num_instances>_capacity){
+        printf("InstancedIndexedPrimitive::lock overflow cap<%zu> numi<%zu>!\n", _capacity, num_instances);
+        OrkAssert(false); // TODO: resize
+      }
     }
     _locked_data = (instance_t*) context->GBI()->LockVB(*_instance_vb, 0, _num_instances);
     return _locked_data;
