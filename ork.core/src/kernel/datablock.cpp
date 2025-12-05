@@ -10,6 +10,7 @@
 #include <ork/util/crc.h>
 #include <ork/util/xxhash.inl>
 #include <random>
+#include <cstring>
 
 #define LZ4_DISABLE_DEPRECATE_WARNINGS
 #include <lz4.h>
@@ -388,8 +389,6 @@ datablock_ptr_t DataBlock::decompressed() const {
 
   // Handle NONE magic - data is uncompressed, just strip header
   if (magic == MAGIC_NONE) {
-    printf("[DEBUG decompressed] NONE magic detected: storage_size=%zu, uncompressed_size=%llu\n",
-           _storage.size(), (unsigned long long)uncompressed_size);
     output->reserve(uncompressed_size);
     uint8_t* raw_buffer = static_cast<uint8_t*>(output->allocateBlock(uncompressed_size));
     const uint8_t* src_data = _storage.data() + 12; // skip header

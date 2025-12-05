@@ -52,9 +52,10 @@ struct CtxDRM : public CTXBASE {
     void _pollTerminalInput();
     void _processTerminalInput(const char* buf, ssize_t len);
 
-    // Mouse cursor control (stub for now)
-    void disableMouseCursor() final {}
-    void hideMouseCursor() final {}
+    // Mouse cursor control (DRM has no system cursor, these are no-ops)
+    void disableMouseCursor() final;
+    void hideMouseCursor() final;
+    void showMouseCursor() final;
 
     // UI event firing
     void _fire_ui_event();
@@ -75,6 +76,12 @@ private:
     int _mouseX = 0;
     int _mouseY = 0;
     int _buttonState = 0;  // Bitmask: bit 0=left, bit 1=middle, bit 2=right
+
+    // Keyboard modifier state tracking
+    bool _shiftDown = false;
+    bool _ctrlDown = false;
+    bool _altDown = false;
+    bool _superDown = false;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -548,14 +548,21 @@ datablock_ptr_t CatalogImpl::_decompressData(datablock_ptr_t _data, CompressionT
 bool CatalogImpl::_extractAssetPak(datablock_ptr_t _data, fetchrequest_ptr_t request) {
 
   auto fqid = request->_fqid;
-
+  auto expected_hash = fqid->_asset_info->_content_hash;
 
   // Verify content hash
   CMD5 md5_content;
   md5_content.update(_data->data(), _data->length());
   md5_content.finalize();
-  auto computed_hash = md5_content.Result().hex_digest();  
-  //printf("[DEBUG CatalogImpl::_extractAssetPak] computed_hash<%s>\n", computed_hash.c_str());
+  auto computed_hash = md5_content.Result().hex_digest();
+
+  if (computed_hash != expected_hash) {
+    logchan_catalog->log("ERROR: Content hash mismatch for %s: expected %s, got %s",
+                         fqid->_original_fqid.c_str(), expected_hash.c_str(), computed_hash.c_str());
+    request->_status = AssetStatus::CHECKSUM;
+    request->_error_detail = "Content hash mismatch: expected " + expected_hash + ", got " + computed_hash;
+    return false;
+  }
 
   // Extract tar contents
   auto archive = util::TarArchive::loadFromMemory(_data);
@@ -568,6 +575,7 @@ bool CatalogImpl::_extractAssetPak(datablock_ptr_t _data, fetchrequest_ptr_t req
   // Extract all entries to memory
   util::TarExtractOptions extract_options;
   auto extracted_entries = archive->extractToMemory(extract_options);
+  printf("[DEBUG _extractAssetPak] extracted_entries.size()=%zu\n", extracted_entries.size());
   if (extracted_entries.empty()) {
     request->_status       = AssetStatus::DECOMPRESS_FAILED;
     request->_error_detail = "No entries found in tar archive";
@@ -577,6 +585,9 @@ bool CatalogImpl::_extractAssetPak(datablock_ptr_t _data, fetchrequest_ptr_t req
   // AUTO-UNWRAP: If single file, return it directly
   if (extracted_entries.size() == 1) {
     auto& [filename, entry] = *extracted_entries.begin();
+    printf("[DEBUG _extractAssetPak] single file: filename='%s', entry=%p, entry->data=%p, data_len=%zu\n",
+           filename.c_str(), (void*)entry.get(), entry ? (void*)entry->data.get() : nullptr,
+           (entry && entry->data) ? entry->data->length() : 0);
     if (entry && entry->data) {
       
       // Set the data directly (auto-unwrap)

@@ -156,8 +156,7 @@ bool File::IsOpen() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 EFileErrCode File::Open() {
-  float ftime = ork::OldSchool::GetRef().GetLoResRelTime();
-
+  //float ftime = ork::OldSchool::GetRef().GetLoResRelTime();
   //	std::string filename = ork::CreateFormattedString(
   //		"Time<%f> Opening<%s>\n", ftime, this->msFileName.c_str() );
   //	orkprintf( filename.c_str() );

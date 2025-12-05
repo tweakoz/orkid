@@ -17,6 +17,7 @@
 #include <ork/util/logger.h>
 #include <ork/kernel/string/string.h>
 #include <ork/application/application.h>
+#include <GLFW/glfw3.h>  // For GLFW keycodes (unified keycode system)
 
 extern "C" {
 #include <libudev.h>
@@ -41,6 +42,12 @@ extern "C" {
 #endif
 }
 
+// Save Linux KEY_DOWN/KEY_UP values before undefining (they conflict with ui::EventCode)
+static constexpr uint32_t LINUX_KEY_DOWN = KEY_DOWN;
+static constexpr uint32_t LINUX_KEY_UP = KEY_UP;
+#undef KEY_DOWN
+#undef KEY_UP
+
 // Global state for async-signal-safe terminal cleanup
 static struct {
     std::atomic<bool> termios_saved{false};
@@ -56,6 +63,9 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 static logchannel_ptr_t logchan_ctxdrm = logger()->configureChannel("CTXDRM", fvec3(0.8, 0.4, 0.2), true);
+
+// Forward declaration (defined later in file)
+static int linux_to_glfw_keycode(uint32_t linux_key);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -99,6 +109,9 @@ static void drm_signal_handler(int signum) {
 CtxDRM::CtxDRM(Window* pwin)
     : CTXBASE(pwin) {
     logchan_ctxdrm->log("CtxDRM constructor");
+
+    // DRM always uses fullscreen mouse mode (no system cursor)
+    _fsMouseMode = true;
 
     // Set up signal handlers for Ctrl-C
     g_ctxdrm_for_signal = this;
@@ -448,22 +461,56 @@ void CtxDRM::_pollInput() {
 void CtxDRM::_processKeyboardEvent(void* event_ptr) {
     struct libinput_event* event = static_cast<struct libinput_event*>(event_ptr);
     auto keyboard_event = libinput_event_get_keyboard_event(event);
-    uint32_t key = libinput_event_keyboard_get_key(keyboard_event);
+    uint32_t linux_key = libinput_event_keyboard_get_key(keyboard_event);
     auto key_state = libinput_event_keyboard_get_key_state(keyboard_event);
 
-    // Debug: log all key events
-    const char* state_str = (key_state == LIBINPUT_KEY_STATE_PRESSED) ? "PRESSED" : "RELEASED";
-    logchan_ctxdrm->log("Keyboard event: key=%u (%s)", key, state_str);
+    bool pressed = (key_state == LIBINPUT_KEY_STATE_PRESSED);
+    const char* state_str = pressed ? "PRESSED" : "RELEASED";
 
-    // Only process key presses
-    if (key_state == LIBINPUT_KEY_STATE_PRESSED) {
-        // ESC key hardwired to exit (KEY_ESC = 1)
-        if (key == KEY_ESC) {
-            logchan_ctxdrm->log("ESC key pressed - calling signalExit()");
-            signalExit();
-            logchan_ctxdrm->log("signalExit() called, _runstate=%d", _runstate);
-        }
+    // Convert Linux keycode to GLFW keycode for unified handling
+    int glfw_key = linux_to_glfw_keycode(linux_key);
+
+    logchan_ctxdrm->log("Keyboard event: linux_key=%u glfw_key=%d (%s)", linux_key, glfw_key, state_str);
+
+    // ESC key hardwired to exit (works on both press states for safety)
+    if (pressed && linux_key == KEY_ESC) {
+        logchan_ctxdrm->log("ESC key pressed - calling signalExit()");
+        signalExit();
+        logchan_ctxdrm->log("signalExit() called, _runstate=%d", _runstate);
+        return;
     }
+
+    auto uiev = _uievent;
+
+    // Update modifier state (track in both member var and uievent)
+    switch (linux_key) {
+        case KEY_LEFTSHIFT:
+        case KEY_RIGHTSHIFT:
+            _shiftDown = pressed;
+            uiev->mbSHIFT = _shiftDown;
+            break;
+        case KEY_LEFTCTRL:
+        case KEY_RIGHTCTRL:
+            _ctrlDown = pressed;
+            uiev->mbCTRL = _ctrlDown;
+            break;
+        case KEY_LEFTALT:
+        case KEY_RIGHTALT:
+            _altDown = pressed;
+            uiev->mbALT = _altDown;
+            break;
+        case KEY_LEFTMETA:
+        case KEY_RIGHTMETA:
+            _superDown = pressed;
+            uiev->mbSUPER = _superDown;
+            break;
+    }
+
+    // Fire UI keyboard event
+    uiev->_eventcode = pressed ? ui::EventCode::KEY_DOWN : ui::EventCode::KEY_UP;
+    uiev->miKeyCode = glfw_key;
+
+    _fire_ui_event();
 }
 
 void CtxDRM::_processPointerMotionEvent(void* event_ptr) {
@@ -617,28 +664,38 @@ void CtxDRM::_processPointerAxisEvent(void* event_ptr) {
     struct libinput_event* event = static_cast<struct libinput_event*>(event_ptr);
     auto pointer_event = libinput_event_get_pointer_event(event);
 
+    auto uiev = _uievent;
+    uiev->_eventcode = ui::EventCode::MOUSEWHEEL;
+    uiev->miMWX = 0;
+    uiev->miMWY = 0;
+
+    bool has_scroll = false;
+
+    // libinput gives ~15 units per wheel detent
+    // GLFW gives ~1.0 per detent, then multiplies by 10 -> ~10 per detent
+    // Empirically tuned to match macOS responsiveness (was 10x too fast)
+    // Negate Y to match macOS/GLFW scroll direction convention
+    constexpr double LIBINPUT_TO_GLFW_SCALE = 1.0 / 15.0;
+
     // Check if we have vertical scroll
     if (libinput_event_pointer_has_axis(pointer_event, LIBINPUT_POINTER_AXIS_SCROLL_VERTICAL)) {
         double value = libinput_event_pointer_get_axis_value(pointer_event, LIBINPUT_POINTER_AXIS_SCROLL_VERTICAL);
-        auto uiev = _uievent;
-        uiev->_eventcode = ui::EventCode::MOUSEWHEEL;
-        // libinput gives ~15 units per wheel detent, GLFW expects ~1.0 per detent (then *10 = 10 final)
-        // So scale libinput by (10/15) = 0.667 to match GLFW's output
-        uiev->miMWY = value * (1.0 / 150.0);
-        uiev->miMWX = 0;
+        uiev->miMWY = int(-value * LIBINPUT_TO_GLFW_SCALE);  // Negate for natural scrolling
+        has_scroll = true;
         logchan_ctxdrm->log("Mouse scroll: VERTICAL raw=%.2f scaled=%d", value, uiev->miMWY);
-        //_fire_ui_event();
     }
 
     // Check if we have horizontal scroll
-    /*if (libinput_event_pointer_has_axis(pointer_event, LIBINPUT_POINTER_AXIS_SCROLL_HORIZONTAL)) {
+    if (libinput_event_pointer_has_axis(pointer_event, LIBINPUT_POINTER_AXIS_SCROLL_HORIZONTAL)) {
         double value = libinput_event_pointer_get_axis_value(pointer_event, LIBINPUT_POINTER_AXIS_SCROLL_HORIZONTAL);
-        auto uiev = _uievent;
-        uiev->_eventcode = ui::EventCode::MOUSEWHEEL;
-        uiev->miMWX = value * (1.0 / 150.0);
+        uiev->miMWX = int(value * LIBINPUT_TO_GLFW_SCALE);
+        has_scroll = true;
         logchan_ctxdrm->log("Mouse scroll: HORIZONTAL raw=%.2f scaled=%d", value, uiev->miMWX);
+    }
+
+    if (has_scroll) {
         _fire_ui_event();
-    }*/
+    }
 }
 
 void CtxDRM::_fire_ui_event() {
@@ -649,6 +706,157 @@ void CtxDRM::_fire_ui_event() {
     if (root) {
         uiev->setvpDim(root);
         ui::Event::sendToContext(uiev);
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Cursor methods (no-ops for DRM - no system cursor)
+///////////////////////////////////////////////////////////////////////////////
+
+void CtxDRM::disableMouseCursor() {
+    // DRM has no system cursor to disable
+}
+
+void CtxDRM::hideMouseCursor() {
+    // DRM has no system cursor to hide
+}
+
+void CtxDRM::showMouseCursor() {
+    // DRM has no system cursor to show
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Linux evdev keycode to GLFW keycode mapping
+///////////////////////////////////////////////////////////////////////////////
+
+static int linux_to_glfw_keycode(uint32_t linux_key) {
+    // Map Linux evdev keycodes (from linux/input-event-codes.h) to GLFW keycodes
+    // This allows applications to use a unified keycode system
+    switch (linux_key) {
+        // Function keys
+        case KEY_ESC:       return GLFW_KEY_ESCAPE;
+        case KEY_F1:        return GLFW_KEY_F1;
+        case KEY_F2:        return GLFW_KEY_F2;
+        case KEY_F3:        return GLFW_KEY_F3;
+        case KEY_F4:        return GLFW_KEY_F4;
+        case KEY_F5:        return GLFW_KEY_F5;
+        case KEY_F6:        return GLFW_KEY_F6;
+        case KEY_F7:        return GLFW_KEY_F7;
+        case KEY_F8:        return GLFW_KEY_F8;
+        case KEY_F9:        return GLFW_KEY_F9;
+        case KEY_F10:       return GLFW_KEY_F10;
+        case KEY_F11:       return GLFW_KEY_F11;
+        case KEY_F12:       return GLFW_KEY_F12;
+
+        // Number row
+        case KEY_GRAVE:     return GLFW_KEY_GRAVE_ACCENT;
+        case KEY_1:         return GLFW_KEY_1;
+        case KEY_2:         return GLFW_KEY_2;
+        case KEY_3:         return GLFW_KEY_3;
+        case KEY_4:         return GLFW_KEY_4;
+        case KEY_5:         return GLFW_KEY_5;
+        case KEY_6:         return GLFW_KEY_6;
+        case KEY_7:         return GLFW_KEY_7;
+        case KEY_8:         return GLFW_KEY_8;
+        case KEY_9:         return GLFW_KEY_9;
+        case KEY_0:         return GLFW_KEY_0;
+        case KEY_MINUS:     return GLFW_KEY_MINUS;
+        case KEY_EQUAL:     return GLFW_KEY_EQUAL;
+        case KEY_BACKSPACE: return GLFW_KEY_BACKSPACE;
+
+        // Tab and letters
+        case KEY_TAB:       return GLFW_KEY_TAB;
+        case KEY_Q:         return GLFW_KEY_Q;
+        case KEY_W:         return GLFW_KEY_W;
+        case KEY_E:         return GLFW_KEY_E;
+        case KEY_R:         return GLFW_KEY_R;
+        case KEY_T:         return GLFW_KEY_T;
+        case KEY_Y:         return GLFW_KEY_Y;
+        case KEY_U:         return GLFW_KEY_U;
+        case KEY_I:         return GLFW_KEY_I;
+        case KEY_O:         return GLFW_KEY_O;
+        case KEY_P:         return GLFW_KEY_P;
+        case KEY_LEFTBRACE: return GLFW_KEY_LEFT_BRACKET;
+        case KEY_RIGHTBRACE:return GLFW_KEY_RIGHT_BRACKET;
+        case KEY_BACKSLASH: return GLFW_KEY_BACKSLASH;
+
+        // Caps lock and more letters
+        case KEY_CAPSLOCK:  return GLFW_KEY_CAPS_LOCK;
+        case KEY_A:         return GLFW_KEY_A;
+        case KEY_S:         return GLFW_KEY_S;
+        case KEY_D:         return GLFW_KEY_D;
+        case KEY_F:         return GLFW_KEY_F;
+        case KEY_G:         return GLFW_KEY_G;
+        case KEY_H:         return GLFW_KEY_H;
+        case KEY_J:         return GLFW_KEY_J;
+        case KEY_K:         return GLFW_KEY_K;
+        case KEY_L:         return GLFW_KEY_L;
+        case KEY_SEMICOLON: return GLFW_KEY_SEMICOLON;
+        case KEY_APOSTROPHE:return GLFW_KEY_APOSTROPHE;
+        case KEY_ENTER:     return GLFW_KEY_ENTER;
+
+        // Shift row
+        case KEY_LEFTSHIFT: return GLFW_KEY_LEFT_SHIFT;
+        case KEY_Z:         return GLFW_KEY_Z;
+        case KEY_X:         return GLFW_KEY_X;
+        case KEY_C:         return GLFW_KEY_C;
+        case KEY_V:         return GLFW_KEY_V;
+        case KEY_B:         return GLFW_KEY_B;
+        case KEY_N:         return GLFW_KEY_N;
+        case KEY_M:         return GLFW_KEY_M;
+        case KEY_COMMA:     return GLFW_KEY_COMMA;
+        case KEY_DOT:       return GLFW_KEY_PERIOD;
+        case KEY_SLASH:     return GLFW_KEY_SLASH;
+        case KEY_RIGHTSHIFT:return GLFW_KEY_RIGHT_SHIFT;
+
+        // Bottom row
+        case KEY_LEFTCTRL:  return GLFW_KEY_LEFT_CONTROL;
+        case KEY_LEFTMETA:  return GLFW_KEY_LEFT_SUPER;
+        case KEY_LEFTALT:   return GLFW_KEY_LEFT_ALT;
+        case KEY_SPACE:     return GLFW_KEY_SPACE;
+        case KEY_RIGHTALT:  return GLFW_KEY_RIGHT_ALT;
+        case KEY_RIGHTMETA: return GLFW_KEY_RIGHT_SUPER;
+        case KEY_RIGHTCTRL: return GLFW_KEY_RIGHT_CONTROL;
+
+        // Arrow keys (using saved constants since KEY_DOWN/KEY_UP are undef'd)
+        case LINUX_KEY_UP:   return GLFW_KEY_UP;
+        case LINUX_KEY_DOWN: return GLFW_KEY_DOWN;
+        case KEY_LEFT:       return GLFW_KEY_LEFT;
+        case KEY_RIGHT:      return GLFW_KEY_RIGHT;
+
+        // Navigation cluster
+        case KEY_INSERT:    return GLFW_KEY_INSERT;
+        case KEY_DELETE:    return GLFW_KEY_DELETE;
+        case KEY_HOME:      return GLFW_KEY_HOME;
+        case KEY_END:       return GLFW_KEY_END;
+        case KEY_PAGEUP:    return GLFW_KEY_PAGE_UP;
+        case KEY_PAGEDOWN:  return GLFW_KEY_PAGE_DOWN;
+
+        // Numpad
+        case KEY_NUMLOCK:   return GLFW_KEY_NUM_LOCK;
+        case KEY_KPSLASH:   return GLFW_KEY_KP_DIVIDE;
+        case KEY_KPASTERISK:return GLFW_KEY_KP_MULTIPLY;
+        case KEY_KPMINUS:   return GLFW_KEY_KP_SUBTRACT;
+        case KEY_KP7:       return GLFW_KEY_KP_7;
+        case KEY_KP8:       return GLFW_KEY_KP_8;
+        case KEY_KP9:       return GLFW_KEY_KP_9;
+        case KEY_KPPLUS:    return GLFW_KEY_KP_ADD;
+        case KEY_KP4:       return GLFW_KEY_KP_4;
+        case KEY_KP5:       return GLFW_KEY_KP_5;
+        case KEY_KP6:       return GLFW_KEY_KP_6;
+        case KEY_KP1:       return GLFW_KEY_KP_1;
+        case KEY_KP2:       return GLFW_KEY_KP_2;
+        case KEY_KP3:       return GLFW_KEY_KP_3;
+        case KEY_KPENTER:   return GLFW_KEY_KP_ENTER;
+        case KEY_KP0:       return GLFW_KEY_KP_0;
+        case KEY_KPDOT:     return GLFW_KEY_KP_DECIMAL;
+
+        // Other keys
+        case KEY_PRINT:     return GLFW_KEY_PRINT_SCREEN;
+        case KEY_SCROLLLOCK:return GLFW_KEY_SCROLL_LOCK;
+        case KEY_PAUSE:     return GLFW_KEY_PAUSE;
+
+        default:            return GLFW_KEY_UNKNOWN;
     }
 }
 
