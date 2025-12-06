@@ -15,7 +15,8 @@ class LavaLampApp(ComponentizedApplication):
     ############################################
     self.SGC = self.addComponent("std_scenegraph", 
                                  StandardSceneGraphComponent,
-                                 eye=vec3(0,20,20) )
+                                 eye=vec3(0,20,20),
+                                 grid_variant=None)
     self.LUI = self.addComponent("loggerui", LoggerUIComponent, filter_regex=[".*"]) 
     self.LLA = self.addComponent("lavalamp", LavalampComponent)
     ############################################

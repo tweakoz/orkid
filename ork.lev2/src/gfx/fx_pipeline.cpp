@@ -373,8 +373,8 @@ FxPipelineNamedParamProviders::FxPipelineNamedParamProviders() {
       ppc._fxi->bindParamMatrix(param, monocams->_vmatrix * worldmatrix);
     } else {
       auto MTXI        = ppc._rcfd->GetTarget()->MTXI();
-      auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix());
-      ppc._fxi->bindParamMatrix(param, MVP);
+      auto MV = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVMatrix());
+      ppc._fxi->bindParamMatrix(param, MV);
     }
   };
   /////////////////////////////////////////////////////////////////
@@ -412,6 +412,12 @@ FxPipelineNamedParamProviders::FxPipelineNamedParamProviders() {
     }
   };
   /////////////////////////////////////////////////////////////////
+  _providers["RCFD_Camera_IM_Mono"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto monocams = ppc._topCPD._mono_cam_matrices;
+    auto worldmatrix = ppc._rcid.worldMatrix();
+    ppc._fxi->bindParamMatrix(param, worldmatrix.inverse());
+  };
+  /////////////////////////////////////////////////////////////////
   _providers["RCFD_Camera_IV_Mono"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
     auto monocams = ppc._topCPD._mono_cam_matrices;
     auto worldmatrix = ppc._rcid.worldMatrix();
@@ -436,6 +442,19 @@ FxPipelineNamedParamProviders::FxPipelineNamedParamProviders() {
     }
   };
   /////////////////////////////////////////////////////////////////
+  _providers["RCFD_Camera_IMV_Mono"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto monocams = ppc._topCPD._mono_cam_matrices;
+    auto worldmatrix = ppc._rcid.worldMatrix();
+    if (monocams) {
+      // printf( "RCFD_Camera_MVP_Mono: monocams<%p>\n", (void*)monocams );
+      ppc._fxi->bindParamMatrix(param, (monocams->_vmatrix * worldmatrix).inverse());
+    } else {
+      auto MTXI        = ppc._rcfd->GetTarget()->MTXI();
+      auto MV = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVMatrix());
+      ppc._fxi->bindParamMatrix(param, MV.inverse());
+    }
+  };
+  /////////////////////////////////////////////////////////////////
   _providers["RCFD_Camera_IVP_Mono"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
     auto monocams = ppc._topCPD._mono_cam_matrices;
     auto worldmatrix = ppc._rcid.worldMatrix();
@@ -448,6 +467,21 @@ FxPipelineNamedParamProviders::FxPipelineNamedParamProviders() {
       auto MTXI        = ppc._rcfd->GetTarget()->MTXI();
       auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix().inverse());
       ppc._fxi->bindParamMatrix(param, MVP);
+    }
+  };
+  /////////////////////////////////////////////////////////////////
+  _providers["RCFD_Camera_IMVP_Mono"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto monocams = ppc._topCPD._mono_cam_matrices;
+    auto worldmatrix = ppc._rcid.worldMatrix();
+    if (monocams) {
+      auto MVP  = monocams->MVPMONO(worldmatrix);
+      auto IMVP = MVP.inverse();
+      // IVP.dump("IVP");
+      ppc._fxi->bindParamMatrix(param, IMVP);
+    } else {
+      auto MTXI        = ppc._rcfd->GetTarget()->MTXI();
+      auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix());
+      ppc._fxi->bindParamMatrix(param, MVP.inverse());
     }
   };
   /////////////////////////////////////////////////////////////////
