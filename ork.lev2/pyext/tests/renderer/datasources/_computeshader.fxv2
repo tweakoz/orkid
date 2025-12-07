@@ -1,0 +1,195 @@
+////////////////////////////////////////
+import "orkshader://mathtools.i2";
+////////////////////////////////////////
+fxconfig fxcfg_default {}
+////////////////////////////////////////
+uniform_block ublock_vtx (descriptor_set 0) {
+  mat4 mvp;
+  float pointsize;
+  float grid_scale;
+  int grid_dim;
+  int ping_pong;  // 0 = read A, 1 = read B
+}
+////////////////////////////////////////
+// Storage interface - minimal, positions derived from vertex ID
+storage_interface sif_water (descriptor_set 0) {
+  buffer layout(std430) water_data {
+    float heights_A[$$$NUMPOINTS];   // ping buffer
+    float heights_B[$$$NUMPOINTS];   // pong buffer
+    float velocities[$$$NUMPOINTS];
+    vec4 sim_params;  // x=time, y=frame, z=seed, w=ping_pong
+  };
+}
+////////////////////////////////////////
+vertex_interface iface_vtx_water //
+  : ublock_vtx    //
+  : sif_water { //
+  outputs {
+    vec3 frg_normal;
+    vec3 frg_worldpos;
+    float frg_height;
+  }
+}
+////////////////////////////////////////
+fragment_interface iface_frg_water {
+  inputs {
+    vec3 frg_normal;
+    vec3 frg_worldpos;
+    float frg_height;
+  }
+  outputs { layout(location = 0) vec4 out_clr; }
+}
+////////////////////////////////////////
+vertex_shader vs_water : iface_vtx_water {
+  // Derive grid position from vertex ID
+  int xi = gl_VertexID % grid_dim;
+  int yi = gl_VertexID / grid_dim;
+  float fx = (float(xi) / float(grid_dim - 1) - 0.5) * 2.0;
+  float fy = (float(yi) / float(grid_dim - 1) - 0.5) * 2.0;
+
+  // Read height from appropriate buffer (render uses latest written)
+  float height = (ping_pong == 0) ? heights_B[gl_VertexID] : heights_A[gl_VertexID];
+  // Guard against bad height values
+  if (isnan(height) || isinf(height)) height = 0.0;
+  height = clamp(height, -100.0, 100.0);
+
+  // Sample neighbor heights for normal computation
+  int left_idx  = (xi > 0) ? gl_VertexID - 1 : gl_VertexID;
+  int right_idx = (xi < grid_dim - 1) ? gl_VertexID + 1 : gl_VertexID;
+  int up_idx    = (yi > 0) ? gl_VertexID - grid_dim : gl_VertexID;
+  int down_idx  = (yi < grid_dim - 1) ? gl_VertexID + grid_dim : gl_VertexID;
+
+  float h_left  = (ping_pong == 0) ? heights_B[left_idx]  : heights_A[left_idx];
+  float h_right = (ping_pong == 0) ? heights_B[right_idx] : heights_A[right_idx];
+  float h_up    = (ping_pong == 0) ? heights_B[up_idx]    : heights_A[up_idx];
+  float h_down  = (ping_pong == 0) ? heights_B[down_idx]  : heights_A[down_idx];
+
+  // Compute normal from height gradient (with clamping to prevent numerical issues)
+  float grid_spacing = (grid_scale * 2.0) / float(grid_dim - 1);
+  float dhdx = clamp((h_right - h_left) / (2.0 * grid_spacing), -10.0, 10.0);
+  float dhdz = clamp((h_down - h_up) / (2.0 * grid_spacing), -10.0, 10.0);
+  vec3 normal = normalize(vec3(-dhdx, 1.0, -dhdz));
+
+  vec3 pos = vec3(fx * grid_scale, height, fy * grid_scale);
+  gl_PointSize = pointsize;
+  gl_Position = mvp * vec4(pos, 1.0);
+
+  frg_normal = normal;
+  frg_worldpos = pos;
+  frg_height = height;
+}
+////////////////////////////////////////
+fragment_shader ps_water : iface_frg_water {
+  // Bias normal from [-1,1] to [0,1] range for visualization
+  vec3 normal_color = frg_normal * 0.5 + 0.5;
+  out_clr = vec4(normal_color, 1.0);
+}
+////////////////////////////////////////
+technique tek_water_fwd {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_water;
+    fragment_shader = ps_water;
+    state_block     = default;
+  }
+}
+////////////////////////////////////////
+// Compute interface for water simulation
+compute_interface iface_compute {
+  storage { sif_water }
+  inputs {
+    layout(local_size_x = 64, local_size_y = 1, local_size_z = 1);
+  }
+}
+////////////////////////////////////////
+// Initialize water surface to flat
+compute_shader cs_init_water : iface_compute {
+  int index = int(gl_GlobalInvocationID.x);
+  if (index >= $$$NUMPOINTS) return;
+
+  heights_A[index] = 0.0;
+  heights_B[index] = 0.0;
+  velocities[index] = 0.0;
+}
+////////////////////////////////////////
+// Damped 2D spring mesh simulation with rain drops
+// Reads from one height buffer, writes to the other (ping-pong)
+compute_shader cs_simulate_water : iface_compute : lib_math {
+  int index = int(gl_GlobalInvocationID.x);
+  if (index >= $$$NUMPOINTS) return;
+
+  int xi = index % $$$GRID_DIM;
+  int yi = index / $$$GRID_DIM;
+
+  float time = sim_params.x;
+  float frame = sim_params.y;
+  float seed = sim_params.z;
+  int ping_pong = int(sim_params.w);
+
+  // Spring mesh parameters
+  float spring_k = $$$SPRING_K;      // Spring stiffness (lower = slower propagation)
+  float damping = $$$DAMPING;       // Velocity damping (higher = waves travel further)
+  float dt = 1.0;
+
+  // Read from current buffer (ping_pong: 0=read A, 1=read B)
+  float height = (ping_pong == 0) ? heights_A[index] : heights_B[index];
+  float vel = velocities[index];
+
+  // Sample neighbor heights (reflect at boundaries for wave bounce)
+  int left  = (xi > 0) ? index - 1 : index + 1;
+  int right = (xi < $$$GRID_DIM - 1) ? index + 1 : index - 1;
+  int up    = (yi > 0) ? index - $$$GRID_DIM : index + $$$GRID_DIM;
+  int down  = (yi < $$$GRID_DIM - 1) ? index + $$$GRID_DIM : index - $$$GRID_DIM;
+
+  float h_left  = (ping_pong == 0) ? heights_A[left]  : heights_B[left];
+  float h_right = (ping_pong == 0) ? heights_A[right] : heights_B[right];
+  float h_up    = (ping_pong == 0) ? heights_A[up]    : heights_B[up];
+  float h_down  = (ping_pong == 0) ? heights_A[down]  : heights_B[down];
+
+  // Spring force from 4 neighbors (each pulls toward neighbor height)
+  float force = (h_left - height) + (h_right - height) + (h_up - height) + (h_down - height);
+  force *= spring_k;
+
+  // Update velocity with spring force
+  vel += force * dt;
+
+  // Apply damping
+  vel *= damping;
+
+  // Rain drop spawning - deterministic based on frame
+  for (int drop = 0; drop < 3; drop++) {
+    float drop_hash = hash1(frame * 7.0 + float(drop) * 13.0 + seed);
+
+    if (drop_hash < 0.015) {
+      float dx = hash1(frame * 11.0 + float(drop) * 17.0 + seed);
+      float dy = hash1(frame * 23.0 + float(drop) * 31.0 + seed);
+
+      int drop_x = int(dx * float($$$GRID_DIM));
+      int drop_y = int(dy * float($$$GRID_DIM));
+
+      int dist_x = abs(xi - drop_x);
+      int dist_y = abs(yi - drop_y);
+      float dist = sqrt(float(dist_x * dist_x + dist_y * dist_y));
+
+      if (dist < 24.0) {
+        float splash = (1.0 - dist / 24.0) * 0.1;
+        vel += splash;  // Push up (raindrop splash from above)
+      }
+    }
+  }
+
+  // Update height
+  height += vel * dt;
+
+  // Clamp to prevent numerical instability
+  height = clamp(height, -100.0, 100.0);
+  vel = clamp(vel, -1.0, 1.0);
+
+  // Write to opposite buffer
+  if (ping_pong == 0) {
+    heights_B[index] = height;
+  } else {
+    heights_A[index] = height;
+  }
+  velocities[index] = vel;
+}
