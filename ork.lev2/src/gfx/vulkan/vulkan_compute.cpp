@@ -268,6 +268,40 @@ VkComputeInterface::VkComputeInterface(vkcontext_rawptr_t ctx)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void VkComputeInterface::beginDispatchPhase() {
+  if (_inDispatchPhase) {
+    return; // Already in dispatch phase
+  }
+
+  // Check if render pass is active and suspend if needed
+  _didSuspendRenderPass = _contextVK->_renderPassActive;
+  if (_didSuspendRenderPass) {
+    _contextVK->suspendRenderPass();
+    logchan_vkcomp->log("beginDispatchPhase: suspended render pass");
+  }
+
+  _inDispatchPhase = true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkComputeInterface::endDispatchPhase() {
+  if (!_inDispatchPhase) {
+    return; // Not in dispatch phase
+  }
+
+  // Resume render pass if we suspended it
+  if (_didSuspendRenderPass) {
+    _contextVK->resumeRenderPass();
+    logchan_vkcomp->log("endDispatchPhase: resumed render pass");
+  }
+
+  _inDispatchPhase = false;
+  _didSuspendRenderPass = false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void VkComputeInterface::dispatchCompute(
     const FxComputeShader* shader,
     uint32_t numgroups_x,

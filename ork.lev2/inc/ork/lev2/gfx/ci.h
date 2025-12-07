@@ -12,7 +12,11 @@ struct ComputeInterface {
 
   ComputeInterface() {}
   virtual ~ComputeInterface() {}
-  
+
+  // Dispatch phase management - suspends render pass if active, resumes on end
+  virtual void beginDispatchPhase() {}
+  virtual void endDispatchPhase() {}
+
   virtual void dispatchCompute( const FxComputeShader* shader,
                                 uint32_t numgroups_x,
                                 uint32_t numgroups_y,

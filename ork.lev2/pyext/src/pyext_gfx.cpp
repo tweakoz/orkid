@@ -278,6 +278,12 @@ void pyinit_gfx(py::module& module_lev2) {
             ci.get()->copyTensorIntoStorageBuffer(buffer.get(), tensor, dest_offset);
           })
 #endif
+      .def("beginDispatchPhase", [](ci_t& ci) {
+        ci.get()->beginDispatchPhase();
+      })
+      .def("endDispatchPhase", [](ci_t& ci) {
+        ci.get()->endDispatchPhase();
+      })
       .def("dispatch", [](ci_t& ci, pyfxcomputeshader_ptr_t csh, uint32_t numx, uint32_t numy, uint32_t numz) {
         ci.get()->dispatchCompute(csh.get(), numx, numy, numz);
       })

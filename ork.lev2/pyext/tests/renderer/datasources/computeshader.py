@@ -294,6 +294,9 @@ class ComputeShaderApp(object):
     CI = ctx.CI
     num_workgroups = (NUMPOINTS + 63) // 64  # Round up to cover all points
 
+    # Begin dispatch phase (suspends render pass if active)
+    CI.beginDispatchPhase()
+
     # Initialize points on first frame
     if not self.initialized:
       CI.bindStorageBuffer(self.cs_init, 0, self.ssbo)
@@ -304,6 +307,9 @@ class ComputeShaderApp(object):
     # Animate points with compute shader
     CI.bindStorageBuffer(self.cs_animate, 0, self.ssbo)
     CI.dispatch(self.cs_animate, num_workgroups, 1, 1)
+
+    # End dispatch phase (resumes render pass if suspended)
+    CI.endDispatchPhase()
 
 ###############################################################################
 

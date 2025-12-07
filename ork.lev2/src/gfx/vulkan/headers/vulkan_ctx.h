@@ -470,6 +470,9 @@ struct VkComputeInterface : public ComputeInterface {
 
   VkComputeInterface(vkcontext_rawptr_t ctx);
 
+  void beginDispatchPhase() final;
+  void endDispatchPhase() final;
+
   void dispatchCompute(const FxComputeShader* shader, uint32_t numgroups_x, uint32_t numgroups_y, uint32_t numgroups_z) final;
 
   void dispatchComputeIndirect(const FxComputeShader* shader, int32_t* indirect) final;
@@ -490,6 +493,8 @@ struct VkComputeInterface : public ComputeInterface {
   // PipelineCompute* _currentComputePipeline = nullptr;
   vkcontext_rawptr_t _contextVK;
   vkfxi_ptr_t _fxi;
+  bool _inDispatchPhase = false;
+  bool _didSuspendRenderPass = false;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
