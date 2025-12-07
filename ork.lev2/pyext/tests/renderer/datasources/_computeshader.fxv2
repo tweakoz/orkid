@@ -7,7 +7,7 @@ uniform_block ublock_vtx (descriptor_set 0) {
   mat4 mvp;
   float pointsize;
   float grid_scale;
-  int grid_dim;
+  int grid_dim;   //
   int ping_pong;  // 0 = read A, 1 = read B
 }
 ////////////////////////////////////////
