@@ -18,7 +18,7 @@ using namespace ork;
 namespace ork::lev2::scenegraph {
 ///////////////////////////////////////////////////////////////////////////////
 static constexpr bool RENDER_DEBUG_LOG   = false;
-static logchannel_ptr_t logchan_sgrender = logger()->configureChannel("SGRENDER", fvec3(0.9, 0.2, 0.9));
+static logchannel_ptr_t logchan_sgrender = logger()->configureChannel("SGRENDER", fvec3(0.9, 0.2, 0.9), false);
 
 ///////////////////////////////////////////////////////////////////////////////
 // enqueue scenegraph to renderer (update thread)
@@ -33,7 +33,7 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras, on_enqueue_fn_t on_en
   if (not okToRender())
     return;
 
-  EASY_BLOCK("Scene::enqueueToRenderer", 0xffa02020);
+    EASY_BLOCK("Scene::enqueueToRenderer", 0xffa02020);
 
   // Store camera lut for UI event routing
   _cameralut = cameras;
@@ -176,7 +176,7 @@ void Scene::_renderIMPL(Context* context, rcfd_ptr_t RCFD) {
 
     RCFD->pushCompositor(_compositorImpl);
 
-    _renderer->setContext(context);
+    _currentRenderer()->setContext(context);
 
     context->pushRenderContextFrameData(RCFD);
     auto fbi  = context->FBI();  // FrameBufferInterface
@@ -208,7 +208,7 @@ void Scene::_renderIMPL(Context* context, rcfd_ptr_t RCFD) {
     RCFD->setUserProperty("cdd"_crc, CDD);
     CDD->_properties["primarycamindex"_crcu].set<int>(0);
     CDD->_properties["cullcamindex"_crcu].set<int>(0);
-    CDD->_properties["irenderer"_crcu].set<lev2::IRenderer*>(_renderer.get());
+    CDD->_properties["irenderer"_crcu].set<lev2::IRenderer*>(_currentRenderer().get());
     CDD->_properties["simrunning"_crcu].set<bool>(true);
     CDD->_properties["DB"_crcu].set<const DrawQueue*>(DB);
     CDD->_cimpl = _compositorImpl;
@@ -321,9 +321,17 @@ void Scene::_renderIMPL(Context* context, rcfd_ptr_t RCFD) {
   if (_synchro) {
     _synchro->endRender();
   }
+
+  _renderer_idx++;
+
 }
 
-///////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////////
+  irenderer_ptr_t Scene::_currentRenderer() {
+    return _renderers[_renderer_idx % K_NUMRENDERERS];
+  }
+
+  ///////////////////////////////////////////////////////////////////////////////
 
 void Scene::_renderWithAcquiredDrawQueueForRendering(acqdrawbuffer_constptr_t acqbuf) {
   if (not okToRender())
@@ -337,7 +345,7 @@ void Scene::_renderWithAcquiredDrawQueueForRendering(acqdrawbuffer_constptr_t ac
   rcfd->setUserProperty("DB"_crc, lev2::rendervar_t(DB));
   rcfd->setUserProperty("time"_crc, _currentTime);
   rcfd->pushCompositor(_compositorImpl);
-  _renderer->setContext(context);
+  _currentRenderer()->setContext(context);
   context->pushRenderContextFrameData(rcfd);
   auto fbi  = context->FBI();  // FrameBufferInterface
   auto fxi  = context->FXI();  // FX Interface
@@ -365,7 +373,7 @@ void Scene::_renderWithAcquiredDrawQueueForRendering(acqdrawbuffer_constptr_t ac
     rcfd->setUserProperty("cdd"_crc, CDD);
     CDD->_properties["primarycamindex"_crcu].set<int>(0);
     CDD->_properties["cullcamindex"_crcu].set<int>(0);
-    CDD->_properties["irenderer"_crcu].set<lev2::IRenderer*>(_renderer.get());
+    CDD->_properties["irenderer"_crcu].set<lev2::IRenderer*>(_currentRenderer().get());
     CDD->_properties["simrunning"_crcu].set<bool>(true);
     CDD->_properties["DB"_crcu].set<const DrawQueue*>(DB);
     CDD->_cimpl = _compositorImpl;
@@ -397,9 +405,9 @@ void Scene::renderWithStandardCompositorFrame(standardcompositorframe_ptr_t sfra
     gpuInit(context);
   }
 
-  _renderer->setContext(context);
+  _currentRenderer()->setContext(context);
   sframe->compositor = _compositorImpl;
-  sframe->renderer   = _renderer;
+  sframe->renderer   = _currentRenderer();
   sframe->passdata   = _topCPD;
   sframe->render();
 }

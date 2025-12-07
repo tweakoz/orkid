@@ -134,6 +134,7 @@ void VkFxInterface::bindParamInt(const FxShaderParam* hpar, const int ival) {
     param_set._vk_param = as_uniset_item.value();
     param_set._ork_param = param_set._vk_param->_orkparam.get();
     param_set._value.set<int32_t>(ival);
+    //printf("bindParamInt(uniset) param<%s> val<%d>\n", hpar->_name.c_str(), ival);
   }
   else if (auto as_uniblk_item = hpar->_impl.tryAs<VkFxShaderUniformBlkItem*>()) {
     auto block = as_uniblk_item.value()->_parent_block;
@@ -141,6 +142,10 @@ void VkFxInterface::bindParamInt(const FxShaderParam* hpar, const int ival) {
     memcpy(block->_shadow_buffer.data() + offset, &ival, 4);
     block->addDirtyRange(offset, 4);
     _currentVKPASS->_dirty_uniform_blocks.insert(block);
+    //printf("bindParamInt(uniblk) param<%s> val<%d> offset<%zu>\n", hpar->_name.c_str(), ival, offset);
+  }
+  else {
+    printf("bindParamInt FAILED - param<%s> has unknown impl type\n", hpar->_name.c_str());
   }
 }
 

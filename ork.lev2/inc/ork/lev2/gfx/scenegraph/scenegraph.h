@@ -259,11 +259,13 @@ struct Scene {
 
   void enablePickHud();
 
+  constexpr static int K_NUMRENDERERS = 8;
+  irenderer_ptr_t _currentRenderer();
 
   render_preset_data_ptr_t _renderPresetData;
   pbr::commonstuff_ptr_t _pbr_common;
   dbufcontext_ptr_t _dbufcontext_SG;
-  irenderer_ptr_t _renderer;
+  irenderer_ptr_t _renderers[K_NUMRENDERERS];
   lightmanager_ptr_t _lightManager;
   lightmanagerdata_ptr_t _lightManagerData;
   compositorimpl_ptr_t _compositorImpl;
@@ -282,7 +284,7 @@ struct Scene {
   uint32_t _pickFormat = 0;
   bool _doResizeFromMainSurface = false;
   using layer_map_t = std::map<std::string, layer_ptr_t>;
-
+  size_t _renderer_idx = 0;
   LockedResource<layer_map_t> _layers;
   varmap::varmap_ptr_t _userdata;
   varmap::varmap_ptr_t _params;

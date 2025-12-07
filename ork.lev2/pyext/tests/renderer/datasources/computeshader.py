@@ -10,7 +10,7 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import math, sys, signal
+import math, sys, signal, time
 from orkengine.core import vec3, vec4, quat, mtx4, Transform, VarMap
 from orkengine.core import CrcStringProxy, lev2_pyexdir
 from orkengine import lev2
@@ -22,14 +22,17 @@ lev2_pyexdir.addToSysPath()
 from lev2utils.cameras import setupUiCamera, setupUiCameraX
 from lev2utils.shaders import createPipeline
 from lev2utils.primitives import createPointsPrimSSBO
+from ork.app.application import ComponentizedApplication, ApplicationComponent
+from ork.app.std_scenegraph import StandardSceneGraphComponent, StdSpotLight
+from ork.app.loggerui import LoggerUIComponent
 
 ################################################################################
 # Configuration constants
 ################################################################################
 
-GRID_DIM = 512              # Grid resolution (GRID_DIM x GRID_DIM points)
+GRID_DIM = 2048              # Grid resolution (GRID_DIM x GRID_DIM points)
 GRID_SCALE = 8.0            # World space size of the grid
-POINT_SIZE = 3.0            # Size of rendered points
+POINT_SIZE = 4.0            # Size of rendered points
 
 ################################################################################
 # Derived constants
@@ -51,8 +54,149 @@ SIM_OFFSET = VEL_OFFSET + NUMPOINTS * SIZEOF_FLOAT
 SSBO_SIZE = SIM_OFFSET + SIZEOF_VEC4F
 
 ################################################################################
-# Shader source with compute shaders for water simulation
+
+class WaterSimComponent(ApplicationComponent):
+  
+  ##############################################
+
+  def __init__(self, shadertext=None):
+    super().__init__()
+    self.SHADERTEXT = shadertext
+    self.frame = 0
+    self.ping_pong = 0
+    self.initialized = False
+
+  ##############################################
+
+  def _onGpuInit(self, ctx):
+
+    SGC = self.app.SGC
+    SG = SGC.scenegraph
+
+    ###################################
+    # Create SSBO for water simulation data
+    ###################################
+
+    self.ssbo = ctx.FXI.createShaderStorageBufferWithLength(SSBO_SIZE)
+
+    ###################################
+    # Create shader pipeline
+    ###################################
+
+    self.pipeline = createPipeline(
+      app=self,
+      ctx=ctx,
+      shadertext=self.SHADERTEXT,
+      blending=tokens.OFF,
+      depthtest=tokens.LEQUALS,
+      techname="tek_water_fwd",
+      rendermodel="Unlit"
+    )
+
+    freestylemtl = self.pipeline.sharedMaterial
+
+    ###################################
+    # Grid params for vertex shader
+    ###################################
+
+    param_pntsize = freestylemtl.param("pointsize")
+    param_mvp = freestylemtl.param("mvp")
+    param_grid_scale = freestylemtl.param("grid_scale")
+    param_grid_dim = freestylemtl.param("grid_dim")
+    self.param_ping_pong = freestylemtl.param("ping_pong")
+    self.gfx_storage_block = freestylemtl.storage("sif_water")
+
+    ###################################
+    # Get compute shaders
+    ###################################
+
+    self.cs_init = freestylemtl.computeShader("cs_init_water")
+    self.cs_simulate = freestylemtl.computeShader("cs_simulate_water")
+
+    ###################################
+    # bind graphics parameters
+    ###################################
+
+    self.pipeline.bindParam(param_pntsize, float(POINT_SIZE))
+    self.pipeline.bindParam(param_mvp, tokens.RCFD_Camera_MVP_Mono)
+    self.pipeline.bindParam(param_grid_scale, float(GRID_SCALE))
+    self.pipeline.bindParam(param_grid_dim, int(GRID_DIM))
+    self.pipeline.bindParam(self.param_ping_pong, lambda: int(self.ping_pong))
+    self.pipeline.bindStorage(self.gfx_storage_block, self.ssbo)
+
+    ###################################
+    # Create points primitive using SSBO
+    ###################################
+
+    self.points_prim = createPointsPrimSSBO(ctx=ctx, numpoints=NUMPOINTS, ssbo=self.ssbo)
+    self.points_node = self.points_prim.createNode("water_points", SGC.layer_fwd, self.pipeline)
+    self.points_node.sortkey = 2
+    self.points_node.worldTransform.translation = vec3(0, 0, 0)
+    self.points_node.worldTransform.orientation = quat(vec3(0, 1, 0), 0)
+    self.points_node.worldTransform.scale = 1.0
+
+  ##############################################
+
+  def _onGpuUpdate(self, ctx):
+
+    self.frame += 1
+    time_val = self.frame / 60.0
+
+    CI = ctx.CI
+    FXI = ctx.FXI
+    num_workgroups = (NUMPOINTS + 63) // 64  # Round up to cover all points
+
+    # Write sim_params to SSBO: [time, frame, seed, ping_pong]
+    sim_params = [time_val, float(self.frame), 12345.0, float(self.ping_pong)]
+    FXI.copyDataIntoShaderStorageBuffer(sim_params, self.ssbo, SIM_OFFSET)
+
+    # Update vertex shader ping_pong uniform (reads opposite buffer from compute)
+
+    # Begin dispatch phase (uses dedicated compute command buffer)
+    CI.beginDispatchPhase()
+
+    # Initialize water surface on first frame
+    if not self.initialized:
+      CI.bindStorageBuffer(self.cs_init, 0, self.ssbo)
+      CI.dispatch(self.cs_init, num_workgroups, 1, 1)
+      self.initialized = True
+      print("Initialized water surface via compute shader")
+
+    # Run water simulation
+    CI.bindStorageBuffer(self.cs_simulate, 0, self.ssbo)
+    CI.dispatch(self.cs_simulate, num_workgroups, 1, 1)
+
+    # End dispatch phase (submits compute CB and waits for completion)
+    CI.endDispatchPhase()
+  
+
+    # Toggle ping-pong for next frame
+    self.ping_pong = 1 - self.ping_pong
+
 ################################################################################
+################################################################################
+################################################################################
+
+class WaterSimApp(ComponentizedApplication):
+
+  def __init__(self,SHADERTEXT):
+    super().__init__()
+    sg_params = {
+      "preset": "UNLIT"
+    }
+    self.SGC = self.addComponent("std_scenegraph", 
+                                 StandardSceneGraphComponent, 
+                                 grid_variant=None,
+                                 sg_params=sg_params,
+                                 eye=vec3(0,12,15))
+    #self.LUI = self.addComponent("loggerui", LoggerUIComponent, filter_regex=[".*"]) 
+    self.WSC = self.addComponent("water_sim", 
+                                 WaterSimComponent, 
+                                 shadertext = SHADERTEXT)
+    self.createEzApp(name="WaterSimApp", ssaa=0, fullscreen=True, fsmouse=True)
+
+
+###############################################################################
 
 SHADERTEXT = f"""
 ////////////////////////////////////////
@@ -60,16 +204,12 @@ import "orkshader://mathtools.i2";
 ////////////////////////////////////////
 fxconfig fxcfg_default {{}}
 ////////////////////////////////////////
-uniform_set ublock_vtx {{
+uniform_block ublock_vtx (descriptor_set 0) {{
   mat4 mvp;
   float pointsize;
   float grid_scale;
   int grid_dim;
   int ping_pong;  // 0 = read A, 1 = read B
-}}
-////////////////////////////////////////
-uniform_set ublock_frg {{
-  vec4 modcolor;
 }}
 ////////////////////////////////////////
 // Storage interface - minimal, positions derived from vertex ID
@@ -92,7 +232,7 @@ vertex_interface iface_vtx_water //
   }}
 }}
 ////////////////////////////////////////
-fragment_interface iface_frg_water : ublock_frg {{
+fragment_interface iface_frg_water {{
   inputs {{
     vec3 frg_normal;
     vec3 frg_worldpos;
@@ -112,7 +252,7 @@ vertex_shader vs_water : iface_vtx_water {{
   float height = (ping_pong == 0) ? heights_B[gl_VertexID] : heights_A[gl_VertexID];
   // Guard against bad height values
   if (isnan(height) || isinf(height)) height = 0.0;
-  height = clamp(height, -2.0, 2.0);
+  height = clamp(height, -100.0, 100.0);
 
   // Sample neighbor heights for normal computation
   int left_idx  = (xi > 0) ? gl_VertexID - 1 : gl_VertexID;
@@ -141,8 +281,9 @@ vertex_shader vs_water : iface_vtx_water {{
 }}
 ////////////////////////////////////////
 fragment_shader ps_water : iface_frg_water {{
-  // DEBUG: constant color to isolate flashing issue
-  out_clr = vec4(0.1, 0.3, 0.5, 1.0);
+  // Bias normal from [-1,1] to [0,1] range for visualization
+  vec3 normal_color = frg_normal * 0.5 + 0.5;
+  out_clr = vec4(normal_color, 1.0);
 }}
 ////////////////////////////////////////
 technique tek_water_fwd {{
@@ -187,8 +328,8 @@ compute_shader cs_simulate_water : iface_compute : lib_math {{
   int ping_pong = int(sim_params.w);
 
   // Spring mesh parameters
-  float spring_k = 0.053;      // Spring stiffness (lower = slower propagation)
-  float damping = 0.997;       // Velocity damping (higher = waves travel further)
+  float spring_k = 0.4;      // Spring stiffness (lower = slower propagation)
+  float damping = 0.9965;       // Velocity damping (higher = waves travel further)
   float dt = 1.0;
 
   // Read from current buffer (ping_pong: 0=read A, 1=read B)
@@ -231,8 +372,8 @@ compute_shader cs_simulate_water : iface_compute : lib_math {{
       int dist_y = abs(yi - drop_y);
       float dist = sqrt(float(dist_x * dist_x + dist_y * dist_y));
 
-      if (dist < 4.0) {{
-        float splash = (1.0 - dist / 4.0) * 0.3;
+      if (dist < 24.0) {{
+        float splash = (1.0 - dist / 24.0) * 0.1;
         vel += splash;  // Push up (raindrop splash from above)
       }}
     }}
@@ -242,7 +383,7 @@ compute_shader cs_simulate_water : iface_compute : lib_math {{
   height += vel * dt;
 
   // Clamp to prevent numerical instability
-  height = clamp(height, -2.0, 2.0);
+  height = clamp(height, -100.0, 100.0);
   vel = clamp(vel, -1.0, 1.0);
 
   // Write to opposite buffer
@@ -255,186 +396,5 @@ compute_shader cs_simulate_water : iface_compute : lib_math {{
 }}
 """
 
-################################################################################
-
-class WaterSimApp(object):
-
-  def __init__(self):
-    super().__init__()
-    self.ezapp = lev2.OrkEzApp.create(self)
-    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
-
-    # Enable UI draw mode for onGpuPreFrame support
-    self.ezapp.topWidget.enableUiDraw()
-
-    # Create a single SceneGraphViewport
-    lg_group = self.ezapp.topLayoutGroup
-    self.griditems = lg_group.makeGrid(
-      width=1,
-      height=1,
-      margin=1,
-      uiclass=lev2.ui.SceneGraphViewport,
-      args=["waterview", vec4(1, 0, 1, 1)]
-    )
-
-    self.materials = set()
-
-    def onCtrlC(signum, frame):
-      print("signalling EXIT to ezapp")
-      self.ezapp.signalExit()
-
-    signal.signal(signal.SIGINT, onCtrlC)
-    self.frame = 0
-    self.ping_pong = 0
-    self.initialized = False
-
-  ##############################################
-
-  def onGpuInit(self, ctx):
-    # Get draw buffer context from ezapp vars
-    self.dbufcontext = self.ezapp.vars.dbufcontext
-    self.cameralut = self.ezapp.vars.cameras
-
-    ###################################
-    # Create scenegraph with Unlit preset
-    ###################################
-    sg_params = VarMap()
-    sg_params.preset = "UNLIT"
-    sg_params.dbufcontext = self.dbufcontext
-
-    self.scenegraph = scenegraph.Scene(sg_params)
-    self.layer1 = self.scenegraph.createLayer("std_forward")
-
-    ###################################
-    # Setup camera - looking down at water surface
-    ###################################
-    self.camera, self.uicam = setupUiCameraX(
-      cameralut=self.cameralut,
-      camname="maincam",
-      eye=vec3(12, 15, 12),
-      tgt=vec3(0, 0, 0),
-      up=vec3(0, 1, 0),
-      constrainZ=True
-    )
-
-    # Assign scenegraph and camera to viewport
-    self.griditems[0].widget.cameraName = "maincam"
-    self.griditems[0].widget.scenegraph = self.scenegraph
-    self.griditems[0].widget.evhandler = lambda ev: self.onViewportUiEvent(ev)
-
-    ###################################
-    # Create SSBO for water simulation data
-    ###################################
-    self.ssbo = ctx.FXI.createShaderStorageBufferWithLength(SSBO_SIZE)
-    print(f"Created SSBO: {self.ssbo} with size {SSBO_SIZE} bytes")
-    print(f"Grid: {GRID_DIM}x{GRID_DIM} = {NUMPOINTS} points")
-
-    ###################################
-    # Create shader pipeline
-    ###################################
-    self.pipeline = createPipeline(
-      app=self,
-      ctx=ctx,
-      shadertext=SHADERTEXT,
-      blending=tokens.OFF,
-      depthtest=tokens.LEQUALS,
-      techname="tek_water_fwd",
-      rendermodel="Unlit"
-    )
-
-    freestylemtl = self.pipeline.sharedMaterial
-
-    param_pntsize = freestylemtl.param("pointsize")
-    param_mvp = freestylemtl.param("mvp")
-
-    self.pipeline.bindParam(param_pntsize, float(POINT_SIZE))
-    self.pipeline.bindParam(param_mvp, tokens.RCFD_Camera_MVP_Mono)
-
-    # Grid params for vertex shader
-    param_grid_scale = freestylemtl.param("grid_scale")
-    param_grid_dim = freestylemtl.param("grid_dim")
-    self.param_ping_pong = freestylemtl.param("ping_pong")
-
-    self.pipeline.bindParam(param_grid_scale, float(GRID_SCALE))
-    self.pipeline.bindParam(param_grid_dim, int(GRID_DIM))
-
-    ###################################
-    # Get compute shaders
-    ###################################
-    self.cs_init = freestylemtl.computeShader("cs_init_water")
-    self.cs_simulate = freestylemtl.computeShader("cs_simulate_water")
-    print(f"Init compute shader: {self.cs_init}")
-    print(f"Simulate compute shader: {self.cs_simulate}")
-
-    ###################################
-    # Get storage block and bind SSBO for graphics shader
-    ###################################
-    self.storage_block = freestylemtl.storage("sif_water")
-    print(f"Storage block: {self.storage_block}")
-    ctx.FXI.bindStorageBuffer(self.storage_block, self.ssbo)
-
-    ###################################
-    # Create points primitive using SSBO
-    ###################################
-    self.points_prim = createPointsPrimSSBO(ctx=ctx, numpoints=NUMPOINTS, ssbo=self.ssbo)
-    self.points_node = self.points_prim.createNode("water_points", self.layer1, self.pipeline)
-    self.points_node.sortkey = 2
-    self.points_node.worldTransform.translation = vec3(0, 0, 0)
-    self.points_node.worldTransform.orientation = quat()
-    self.points_node.worldTransform.scale = 1.0
-
-  ##############################################
-
-  def onUpdate(self, updinfo):
-    self.scenegraph.updateScene(self.cameralut)
-    self.griditems[0].widget.setDirty()
-
-  ##############################################
-
-  def onViewportUiEvent(self, uievent):
-    handled = self.uicam.uiEventHandler(uievent)
-    if handled:
-      self.uicam.updateMatrices()
-      self.camera.copyFrom(self.uicam.cameradata)
-    return lev2.ui.HandlerResult()
-
-  ##############################################
-
-  def onGpuUpdate(self, ctx):
-    self.frame += 1
-    time_val = self.frame / 60.0
-
-    CI = ctx.CI
-    FXI = ctx.FXI
-    num_workgroups = (NUMPOINTS + 63) // 64  # Round up to cover all points
-
-    # Write sim_params to SSBO: [time, frame, seed, ping_pong]
-    sim_params = [time_val, float(self.frame), 12345.0, float(self.ping_pong)]
-    FXI.copyDataIntoShaderStorageBuffer(sim_params, self.ssbo, SIM_OFFSET)
-
-    # Update vertex shader ping_pong uniform (reads opposite buffer from compute)
-    self.pipeline.bindParam(self.param_ping_pong, int(self.ping_pong))
-
-    # Begin dispatch phase (uses dedicated compute command buffer)
-    CI.beginDispatchPhase()
-
-    # Initialize water surface on first frame
-    if not self.initialized:
-      CI.bindStorageBuffer(self.cs_init, 0, self.ssbo)
-      CI.dispatch(self.cs_init, num_workgroups, 1, 1)
-      self.initialized = True
-      print("Initialized water surface via compute shader")
-
-    # Run water simulation
-    CI.bindStorageBuffer(self.cs_simulate, 0, self.ssbo)
-    CI.dispatch(self.cs_simulate, num_workgroups, 1, 1)
-
-    # End dispatch phase (submits compute CB and waits for completion)
-    CI.endDispatchPhase()
-
-    # Toggle ping-pong for next frame
-    self.ping_pong = 1 - self.ping_pong
-
-###############################################################################
-
-WaterSimApp().ezapp.mainThreadLoop()
+WSA = WaterSimApp(SHADERTEXT)
+WSA.ezapp.mainThreadLoop()

@@ -204,7 +204,7 @@ void StandardCompositorFrame::render() {
 
       CDD->_properties["primarycamindex"_crcu].set<int>(0);
       CDD->_properties["cullcamindex"_crcu].set<int>(0);
-      CDD->_properties["irenderer"_crcu].set<lev2::IRenderer*>(this->renderer.get());
+      CDD->_properties["irenderer"_crcu].set<lev2::IRenderer*>(renderer.get());
       CDD->_properties["simrunning"_crcu].set<bool>(true);
       CDD->_properties["DB"_crcu].set<const DrawQueue*>(_drawbuffer->_DB);
       CDD->_cimpl = this->compositor;

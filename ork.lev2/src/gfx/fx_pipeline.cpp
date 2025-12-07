@@ -159,7 +159,10 @@ void FxPipeline::_set_storage(const RenderContextInstData& RCID, fxparamstorageb
   auto context = RCID.rcfd()->GetTarget();
   auto RCFD    = RCID.rcfd();
   auto FXI     = context->FXI();
-  if (auto as_crcstr = val.tryAs<crcstring_ptr_t>()) {
+  if (auto as_ssbo = val.tryAs<storagebufferptr_t>()) {
+    FXI->bindStorageBuffer(p, as_ssbo.value());
+  }
+  else if (auto as_crcstr = val.tryAs<crcstring_ptr_t>()) {
     const auto& crcstr = *as_crcstr.value().get();
     switch (crcstr.hashed()) {
       case "LMGR_LIGHTING_STORAGE"_crcu: {

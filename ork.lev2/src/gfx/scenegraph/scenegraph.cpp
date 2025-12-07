@@ -37,7 +37,9 @@ void DrawableDataKvPair::describeX(object::ObjectClass* clazz) {
 
 void Scene::__common_init() {
   _userdata                        = std::make_shared<varmap::VarMap>();
-  _renderer                        = std::make_shared<IRenderer>();
+  for (int i = 0; i < K_NUMRENDERERS; i++){
+    _renderers[i] = std::make_shared<IRenderer>();
+  }
   _lightManagerData                = std::make_shared<LightManagerData>();
   _lightManager                    = std::make_shared<LightManager>(_lightManagerData);
   _compositorData                  = std::make_shared<CompositingData>();
@@ -131,7 +133,9 @@ void Scene::gpuExit(Context* ctx) {
   _sgpickbuffer     = nullptr;
   _compositorImpl   = nullptr;
   _compositorData   = nullptr;
-  _renderer         = nullptr;
+  for (int i = 0; i < K_NUMRENDERERS; i++) {
+    _renderers[i] = nullptr;
+  }
   _lightManager     = nullptr;
   _lightManagerData = nullptr;
   _topCPD           = nullptr;

@@ -128,7 +128,8 @@ class StandardSceneGraphComponent(ApplicationComponent):
       for item in post_nodes:
         print(f"adding postfx node {item} to scenevars")
         item.addToSceneVars(sgparam_vm,"PostFxChain")
-
+    self.using_pbr = sgparam_vm.preset in ["ForwardPBR", "FWDPBR", "FWDPBRVRDM"]
+    self.using_unlit = sgparam_vm.preset in ["UNLIT"]
   ###############################################
 
   def _onAppInit(self,app,initdata):
@@ -173,13 +174,14 @@ class StandardSceneGraphComponent(ApplicationComponent):
                                               tgt=self.initial_tgt,
                                               up=self.initial_up,
                                               far=10000.0)
-
-    self.pbr_common = SG.pbr_common
-    self.pbr_common.useDepthPrepass = True
+    if self.using_pbr:
+      self.pbr_common = SG.pbr_common
+      self.pbr_common.useDepthPrepass = True
 
     self.rendernode = SG.compositorrendernode
     self.outputnode = SG.compositoroutputnode
-    self.pbrcommon  = SG.pbr_common
+    if self.using_pbr:
+      self.pbrcommon  = SG.pbr_common
 
     ###################################
     # create grid
@@ -198,7 +200,8 @@ class StandardSceneGraphComponent(ApplicationComponent):
     # initialize lighting
     ###################################
 
-    SG.lightingmanager.gpuInit(ctx)
+    if self.using_pbr:
+      SG.lightingmanager.gpuInit(ctx)
 
   ##################################################
 

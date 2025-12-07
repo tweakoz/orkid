@@ -71,6 +71,7 @@ void IRenderer::drawEnqueuedRenderables(bool reset_after) {
   }
 
   if (renderQueueSize == 0) {
+    //printf("IRenderer::drawEnqueuedRenderables empty queue\n");
     _target->debugPopGroup();
     if(reset_after){
       resetQueue();

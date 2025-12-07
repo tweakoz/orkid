@@ -112,9 +112,9 @@ void DrawQueue::enqueueLayerToRenderQueue(const std::string& LayerName, lev2::IR
         int(Match)));
 
     if (do_all || (Match && topCPD.HasLayer(TestLayerName))) {
+      do_layer(player);
       //printf( "layer<%s> count<%d>\n", TestLayerName.c_str(), player->_itemIndex );
       target->debugMarker(FormatString("DrawQueue::enqueueLayerToRenderQueue layer itemcount<%d>", player->_itemIndex + 1));
-      do_layer(player);
     }
   }
 

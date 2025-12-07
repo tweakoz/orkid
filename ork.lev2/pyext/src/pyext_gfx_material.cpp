@@ -256,6 +256,11 @@ void pyinit_gfx_material(py::module& module_lev2) {
                 if( py::isinstance<CrcString>(inp_value) ){
                   pipeline->bindStorage(storage.get(),py::cast<crcstring_ptr_t>(inp_value));
                 }
+                else if(auto as_ssbo = py::isinstance<fxshaderstoragebuffer_ptr_t>(inp_value)){
+                  auto ssbo = py::cast<fxshaderstoragebuffer_ptr_t>(inp_value);
+                  storagebufferptr_t raw_ssbo = ssbo.get();
+                  pipeline->bindStorage(storage.get(),raw_ssbo);
+                }
               })
               .def(
               "bindParam",                                                                    //

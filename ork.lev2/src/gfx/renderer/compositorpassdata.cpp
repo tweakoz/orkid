@@ -128,6 +128,7 @@ const fvec3& CompositingPassData::monoCamZnormal() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void CompositingPassData::assignLayers(const std::string& layers) {
+  //printf("CPD<%p>::assignLayers layers<%s>\n", (void*) this, layers.c_str());
   if (layers.length()) {
     _layernames = SplitString(layers, ',');
   } else {
@@ -156,6 +157,10 @@ void CompositingPassData::AddLayer(const std::string& layername) {
   _layernameset.insert(layername);
 }
 bool CompositingPassData::HasLayer(const std::string& layername) const {
+  //printf("CPD<%p> Checking for layer<%s> in layers: \n", (void*) this, layername.c_str());
+  //for (auto lname : _layernames) {
+    //printf("  layername<%s>\n", lname.c_str());
+  //}
   return (_layernameset.find(layername) != _layernameset.end());
 }
 
