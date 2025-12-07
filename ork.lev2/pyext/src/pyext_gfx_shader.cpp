@@ -13,6 +13,19 @@ namespace ork::lev2 {
 void pyinit_gfx_shader(py::module& module_lev2) {
   auto type_codec = python::pb11_typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
+  // FxShader - direct shader handle (for inline/compute shaders)
+  auto shader_type = //
+      py::class_<pyfxshader_ptr_t>(module_lev2, "FxShader")
+          .def_property_readonly("name", [](pyfxshader_ptr_t& p) -> std::string { return p->mName; })
+          .def("__repr__", [](pyfxshader_ptr_t& p) -> std::string {
+            if (p.get()) {
+              return FormatString("FxShader(%p:%s)", p.get(), p->mName.c_str());
+            }
+            return FormatString("FxShader(nil)");
+          });
+  type_codec->registerStdCodec<pyfxshader_ptr_t>(shader_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // FxShaderAsset - flyweighted shader wrapper (for file-loaded shaders)
   auto shaderasset_type = //
       py::class_<FxShaderAsset, fxshaderasset_ptr_t>(module_lev2, "FxShaderAsset")
           .def_property_readonly(

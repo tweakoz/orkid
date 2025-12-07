@@ -386,6 +386,25 @@ void InheritanceTracker::fetchInheritances(astnode_ptr_t parent_node) {
       OrkAssert(as_ext);
       _processNode(as_ext); // non-recursive
     }
+    //////////////////////////////////////////////////////////////////////
+    // Handle InterfaceStorageRefs (storage { name } blocks in compute interfaces)
+    // This populates _inherited_storage for database tracking only.
+    // GLSL emission is handled by _inheritIO when processing InterfaceStorageRefs.
+    else if (auto as_storagerefs = std::dynamic_pointer_cast<InterfaceStorageRefs>(c)) {
+      auto storage_ids = AstNode::collectNodesOfType<SemaIdentifier>(as_storagerefs);
+      for (auto storage_id : storage_ids) {
+        auto id_name = storage_id->typedValueForKey<std::string>("identifier_name").value();
+        auto sto_if = _translation_unit->find<StorageInterface>(id_name);
+        if (sto_if) {
+          auto INHID = sto_if->typedValueForKey<std::string>("object_name").value();
+          auto it = _set_inherited_storage.find(INHID);
+          if (it == _set_inherited_storage.end()) {
+            _set_inherited_storage.insert(INHID);
+            _inherited_storage.push_back(sto_if);
+          }
+        }
+      }
+    }
   }
   _stack_depth--;
 }

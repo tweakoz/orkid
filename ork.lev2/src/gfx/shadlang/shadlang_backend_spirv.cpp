@@ -975,7 +975,10 @@ void SpirvCompiler::_inheritStorageInterface(
   // Emit the GLSL storage buffer declaration
   auto header = FormatString("// Storage interface: %s", storage_name.c_str());
   _appendText(_uniforms_group, header.c_str());
-  bool is_readonly = true; // TODO: change grammar, parse from AST
+  // Compute shaders need read/write access to SSBOs for output
+  // VF pipelines typically use SSBOs as read-only data sources
+  bool is_compute_shader = (std::dynamic_pointer_cast<ComputeShader>(_shader) != nullptr);
+  bool is_readonly = !is_compute_shader;
   
   auto layout_line = FormatString(
       "layout(set=%zu, binding=%d, std430) %s buffer %s {",
@@ -1271,7 +1274,10 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
           _binding_id++;
         }
         /////////////////
-        bool is_readonly = true; // TODO: change grammar, parse from AST
+        // Compute shaders need read/write access to SSBOs for output
+        // VF pipelines typically use SSBOs as read-only data sources
+        bool is_compute_shader = (std::dynamic_pointer_cast<ComputeShader>(_shader) != nullptr);
+        bool is_readonly = !is_compute_shader;
         /////////////////
         auto layout_line = FormatString(
             "layout(set=%d, binding=%d) %s buffer %s {", //

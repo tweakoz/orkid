@@ -185,33 +185,20 @@ const FxComputeShader* VkFxInterface::computeShader(FxShader* pshader, const std
   OrkAssert(it != vkshfile->_vk_shaderobjects.end());
   auto sh_obj = it->second;
   OrkAssert(sh_obj->_STAGE == "compute"_crcu);
-  auto vk_program        = std::make_shared<VkFxShaderProgram>(vkshfile.get());
-  vk_program->_comshader = sh_obj;
-  
-  // Populate program's UBO map from compute shader
-  vk_program->_vk_uniformblks.clear();
-  if (sh_obj && sh_obj->_uniblk_refs) {
-    for (const auto& [name, ubo] : sh_obj->_uniblk_refs->_uniblks) {
-      vk_program->_vk_uniformblks[name] = ubo;
-      //printf("UBO_POPULATE: Program collected UBO<%s> from compute shader\n", name.c_str());
-    }
-  }
 
-  // Populate program's SSBO map from compute shader
-  vk_program->_vk_ssbo_blocks.clear();
-  if (sh_obj && sh_obj->_ssbo_refs) {
-    for (const auto& [name, ssbo] : sh_obj->_ssbo_refs->_ssbo_blocks) {
-      vk_program->_vk_ssbo_blocks[name] = ssbo;
-      //printf("SSBO_POPULATE: Program collected SSBO<%s> from compute shader\n", name.c_str());
-    }
-  }
+  // Create compute pipeline object
+  auto compute_pipeline = std::make_shared<VkComputePipelineObject>(_contextVK);
+  bool success = compute_pipeline->createPipeline(sh_obj);
+  OrkAssert(success && "Failed to create compute pipeline");
 
-  auto cushader          = new FxComputeShader;
-  cushader->_impl.set<vkfxsprg_ptr_t>(vk_program);
-  static int prog_index          = 128;
-  vk_program->_pipeline_bits_prg = prog_index;
-  prog_index++;
-  OrkAssert(prog_index < 256);
+  // Create FxComputeShader and store the pipeline
+  auto cushader = new FxComputeShader;
+  cushader->_name = name;
+  cushader->_impl.set<vkcompute_pipeline_ptr_t>(compute_pipeline);
+
+  // Register with shader
+  pshader->addComputeShader(cushader);
+
   return cushader;
 }
 const FxShaderStorageBlock* VkFxInterface::storageBlock(FxShader* pshader, const std::string& name) {

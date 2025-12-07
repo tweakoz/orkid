@@ -146,6 +146,23 @@ void pyinit_gfx(py::module& module_lev2) {
         return fxs.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////
+  // FxShaderStorageBufferMapping must be defined before FxInterface uses it
+  auto storagebufmapping_type = //
+      py::class_<FxShaderStorageBufferMapping,storagebuffermappingptr_t>(module_lev2, "FxShaderStorageBufferMapping")
+          .def_property_readonly("length", [](storagebuffermappingptr_t m) -> size_t { return m->_length; })
+          .def_property_readonly("offset", [](storagebuffermappingptr_t m) -> size_t { return m->_offset; })
+          .def_property_readonly(
+              "data",
+              [](storagebuffermappingptr_t m) -> py::bytes {
+                return py::bytes(reinterpret_cast<const char*>(m->_mappedaddr), m->_length);
+              })
+          .def("__repr__", [](storagebuffermappingptr_t m) -> std::string {
+            fxstring<256> fxs;
+            fxs.format("FxShaderStorageBufferMapping(%p, len=%zu)", m.get(), m->_length);
+            return fxs.c_str();
+          });
+  type_codec->registerStdCodec<storagebuffermappingptr_t>(storagebufmapping_type);
+  /////////////////////////////////////////////////////////////////////////////////
   py::class_<fxi_t>(module_lev2, "FxInterface")
       .def(
           "__repr__",
@@ -172,6 +189,26 @@ void pyinit_gfx(py::module& module_lev2) {
               printf("copyDataIntoShaderStorageBuffer unknown type<%s>\n", type_str.c_str());
               OrkAssert(false);
             }
+          })
+      .def(
+          "shaderFromShaderText",
+          [](fxi_t& fxi, std::string name, std::string shadertext) -> pyfxshader_ptr_t {
+            return pyfxshader_ptr_t(fxi.get()->shaderFromShaderText(name, shadertext));
+          })
+      .def(
+          "computeShader",
+          [](fxi_t& fxi, pyfxshader_ptr_t shader, std::string name) -> pyfxcomputeshader_ptr_t {
+            return pyfxcomputeshader_ptr_t(fxi.get()->computeShader(shader.get(), name));
+          })
+      .def(
+          "mapStorageBuffer",
+          [](fxi_t& fxi, fxshaderstoragebuffer_ptr_t buffer, size_t base, size_t length) -> storagebuffermappingptr_t {
+            return fxi.get()->mapStorageBuffer(buffer.get(), base, length);
+          })
+      .def(
+          "unmapStorageBuffer",
+          [](fxi_t& fxi, storagebuffermappingptr_t mapping) {
+            fxi.get()->unmapStorageBuffer(mapping.get());
           });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<gbi_t>(module_lev2, "GeometryBufferInterface")
@@ -238,6 +275,9 @@ void pyinit_gfx(py::module& module_lev2) {
 #endif
       .def("dispatch", [](ci_t& ci, pyfxcomputeshader_ptr_t csh, uint32_t numx, uint32_t numy, uint32_t numz) {
         ci.get()->dispatchCompute(csh.get(), numx, numy, numz);
+      })
+      .def("bindStorageBuffer", [](ci_t& ci, pyfxcomputeshader_ptr_t csh, uint32_t binding_index, fxshaderstoragebuffer_ptr_t buffer) {
+        ci.get()->bindStorageBuffer(csh.get(), binding_index, buffer.get());
       });
 
   /////////////////////////////////////////////////////////////////////////////////

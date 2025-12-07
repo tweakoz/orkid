@@ -307,6 +307,38 @@ struct VulkanGeometryInterface {
   uint64_t _hash     = 0;
 };
 ///////////////////////////////////////////////////////////////////////////////
+struct VkComputePipelineObject {
+
+  VkComputePipelineObject(vkcontext_rawptr_t ctx);
+  ~VkComputePipelineObject();
+
+  bool createPipeline(vkfxsobj_ptr_t computeShader);
+  void bindStorageBuffer(uint32_t binding_index, VkBuffer buffer, VkDeviceSize size);
+  void updateDescriptorSet();
+
+  vkcontext_rawptr_t _contextVK = nullptr;
+  vkfxsobj_ptr_t _computeShader;              // VulkanFxShaderObject with SPIR-V
+
+  VkPipeline _pipeline = VK_NULL_HANDLE;
+  VkPipelineLayout _pipelineLayout = VK_NULL_HANDLE;
+  VkDescriptorSetLayout _descriptorSetLayout = VK_NULL_HANDLE;
+  VkDescriptorSet _descriptorSet = VK_NULL_HANDLE;
+  VkDescriptorPool _descriptorPool = VK_NULL_HANDLE;  // Per-pipeline pool for simplicity
+
+  // Storage buffer bindings (binding_id -> buffer info)
+  struct StorageBufferBinding {
+    VkBuffer buffer = VK_NULL_HANDLE;
+    VkDeviceSize offset = 0;
+    VkDeviceSize size = 0;
+  };
+  std::map<uint32_t, StorageBufferBinding> _ssbo_bindings;
+
+  // Track if descriptor set needs update
+  bool _descriptors_dirty = true;
+
+  std::string _name;
+};
+///////////////////////////////////////////////////////////////////////////////
 struct VkRasterState {
   VkRasterState(rasterstate_ptr_t rstate, int attachment_count = 1, const std::vector<VkFormat>* formats = nullptr);
   VkPipelineRasterizationStateCreateInfo _VKRSCI;

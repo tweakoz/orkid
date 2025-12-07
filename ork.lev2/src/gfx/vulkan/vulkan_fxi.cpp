@@ -38,35 +38,7 @@ VkFxInterface::~VkFxInterface(){
 }
 
 // SSBO implementations moved to vulkan_fxi_buffer.cpp
-
-///////////////////////////////////////////////////////////////////////////////
-
-void VkComputeInterface::bindStorageBuffer(const FxComputeShader* shader, uint32_t binding_index, FxShaderStorageBuffer* buffer) {
-  if (!shader || !buffer) {
-    return;
-  }
-
-  auto vk_program = shader->_impl.get<vkfxsprg_ptr_t>();
-  if (!vk_program) {
-    return;
-  }
-
-  auto vk_buffer = buffer->_impl.getShared<VulkanBuffer>();
-  if (!vk_buffer) {
-    return;
-  }
-
-  // Find the SSBO block by binding index in the compute shader program
-  // Note: This assumes the binding index corresponds to the descriptor set binding
-  // In a more complete implementation, we'd need to track the binding ID per SSBO
-  for (auto& [name, ssbo_block] : vk_program->_vk_ssbo_blocks) {
-    // For now, bind to all SSBOs (compute shaders typically have one SSBO)
-    // A more sophisticated approach would track binding IDs
-    ssbo_block->_bound_buffer = vk_buffer;
-    ssbo_block->_bound_ssbo = buffer;
-    // TODO: Match by actual binding index when that info is available
-  }
-}
+// VkComputeInterface implementations moved to vulkan_compute.cpp
 
 ///////////////////////////////////////////////////////////////////////////////
 
