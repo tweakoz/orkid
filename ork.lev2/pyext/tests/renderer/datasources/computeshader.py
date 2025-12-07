@@ -110,6 +110,9 @@ vertex_shader vs_water : iface_vtx_water {{
 
   // Read height from appropriate buffer (render uses latest written)
   float height = (ping_pong == 0) ? heights_B[gl_VertexID] : heights_A[gl_VertexID];
+  // Guard against bad height values
+  if (isnan(height) || isinf(height)) height = 0.0;
+  height = clamp(height, -2.0, 2.0);
 
   // Sample neighbor heights for normal computation
   int left_idx  = (xi > 0) ? gl_VertexID - 1 : gl_VertexID;
@@ -122,10 +125,10 @@ vertex_shader vs_water : iface_vtx_water {{
   float h_up    = (ping_pong == 0) ? heights_B[up_idx]    : heights_A[up_idx];
   float h_down  = (ping_pong == 0) ? heights_B[down_idx]  : heights_A[down_idx];
 
-  // Compute normal from height gradient
+  // Compute normal from height gradient (with clamping to prevent numerical issues)
   float grid_spacing = (grid_scale * 2.0) / float(grid_dim - 1);
-  float dhdx = (h_right - h_left) / (2.0 * grid_spacing);
-  float dhdz = (h_down - h_up) / (2.0 * grid_spacing);
+  float dhdx = clamp((h_right - h_left) / (2.0 * grid_spacing), -10.0, 10.0);
+  float dhdz = clamp((h_down - h_up) / (2.0 * grid_spacing), -10.0, 10.0);
   vec3 normal = normalize(vec3(-dhdx, 1.0, -dhdz));
 
   vec3 pos = vec3(fx * grid_scale, height, fy * grid_scale);
@@ -138,45 +141,8 @@ vertex_shader vs_water : iface_vtx_water {{
 }}
 ////////////////////////////////////////
 fragment_shader ps_water : iface_frg_water {{
-  vec3 N = normalize(frg_normal);
-
-  // Procedural sky colors
-  vec3 sky_zenith = vec3(0.3, 0.5, 0.9);    // Blue sky overhead
-  vec3 sky_horizon = vec3(0.7, 0.8, 0.95);  // Lighter at horizon
-  vec3 ground_color = vec3(0.2, 0.15, 0.1); // Brown ground
-
-  // Sun direction
-  vec3 sun_dir = normalize(vec3(0.5, 0.7, 0.3));
-  vec3 sun_color = vec3(1.0, 0.95, 0.8);
-
-  // Hemisphere lighting from procedural sky
-  float sky_factor = N.y * 0.5 + 0.5;  // 0 = down, 1 = up
-  vec3 sky_light = mix(ground_color, mix(sky_horizon, sky_zenith, sky_factor), sky_factor);
-
-  // Diffuse sun lighting
-  float sun_diffuse = max(dot(N, sun_dir), 0.0);
-
-  // Fresnel effect (subtle, based on normal pointing away from up)
-  float fresnel = pow(1.0 - abs(N.y), 2.0) * 0.3;
-
-  // Water base color
-  vec3 deep_water = vec3(0.02, 0.1, 0.3);
-  vec3 shallow_water = vec3(0.1, 0.4, 0.6);
-  float depth_factor = clamp(frg_height * 10.0 + 0.5, 0.0, 1.0);
-  vec3 water_color = mix(deep_water, shallow_water, depth_factor);
-
-  // Combine lighting
-  vec3 ambient = sky_light * 0.4;
-  vec3 diffuse = sun_color * sun_diffuse * 0.6;
-  vec3 reflection = mix(sky_horizon, sky_zenith, N.y * 0.5 + 0.5) * fresnel * 0.5;
-
-  vec3 final_color = water_color * (ambient + diffuse) + reflection;
-
-  // Slight foam on peaks
-  float foam = clamp(abs(frg_height) * 15.0, 0.0, 0.3);
-  final_color = mix(final_color, vec3(0.95, 0.98, 1.0), foam);
-
-  out_clr = vec4(final_color, 1.0);
+  // DEBUG: constant color to isolate flashing issue
+  out_clr = vec4(0.1, 0.3, 0.5, 1.0);
 }}
 ////////////////////////////////////////
 technique tek_water_fwd {{
@@ -221,7 +187,7 @@ compute_shader cs_simulate_water : iface_compute : lib_math {{
   int ping_pong = int(sim_params.w);
 
   // Spring mesh parameters
-  float spring_k = 0.033;      // Spring stiffness (lower = slower propagation)
+  float spring_k = 0.053;      // Spring stiffness (lower = slower propagation)
   float damping = 0.997;       // Velocity damping (higher = waves travel further)
   float dt = 1.0;
 
@@ -274,6 +240,10 @@ compute_shader cs_simulate_water : iface_compute : lib_math {{
 
   // Update height
   height += vel * dt;
+
+  // Clamp to prevent numerical instability
+  height = clamp(height, -2.0, 2.0);
+  vel = clamp(vel, -1.0, 1.0);
 
   // Write to opposite buffer
   if (ping_pong == 0) {{
@@ -409,13 +379,15 @@ class WaterSimApp(object):
     self.points_prim = createPointsPrimSSBO(ctx=ctx, numpoints=NUMPOINTS, ssbo=self.ssbo)
     self.points_node = self.points_prim.createNode("water_points", self.layer1, self.pipeline)
     self.points_node.sortkey = 2
+    self.points_node.worldTransform.translation = vec3(0, 0, 0)
+    self.points_node.worldTransform.orientation = quat()
+    self.points_node.worldTransform.scale = 1.0
 
   ##############################################
 
   def onUpdate(self, updinfo):
     self.scenegraph.updateScene(self.cameralut)
-    for g in self.griditems:
-      g.widget.setDirty()
+    self.griditems[0].widget.setDirty()
 
   ##############################################
 
@@ -428,7 +400,7 @@ class WaterSimApp(object):
 
   ##############################################
 
-  def onGpuPreFrame(self, ctx):
+  def onGpuUpdate(self, ctx):
     self.frame += 1
     time_val = self.frame / 60.0
 
@@ -443,7 +415,7 @@ class WaterSimApp(object):
     # Update vertex shader ping_pong uniform (reads opposite buffer from compute)
     self.pipeline.bindParam(self.param_ping_pong, int(self.ping_pong))
 
-    # Begin dispatch phase (suspends render pass if active)
+    # Begin dispatch phase (uses dedicated compute command buffer)
     CI.beginDispatchPhase()
 
     # Initialize water surface on first frame
@@ -457,7 +429,7 @@ class WaterSimApp(object):
     CI.bindStorageBuffer(self.cs_simulate, 0, self.ssbo)
     CI.dispatch(self.cs_simulate, num_workgroups, 1, 1)
 
-    # End dispatch phase (resumes render pass if suspended)
+    # End dispatch phase (submits compute CB and waits for completion)
     CI.endDispatchPhase()
 
     # Toggle ping-pong for next frame
@@ -465,7 +437,4 @@ class WaterSimApp(object):
 
 ###############################################################################
 
-def onRunLoopIteration():
-  pass
-
-WaterSimApp().ezapp.mainThreadLoop(on_iter=onRunLoopIteration)
+WaterSimApp().ezapp.mainThreadLoop()

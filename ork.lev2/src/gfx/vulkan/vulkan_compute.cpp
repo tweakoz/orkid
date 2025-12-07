@@ -273,13 +273,41 @@ void VkComputeInterface::beginDispatchPhase() {
     return; // Already in dispatch phase
   }
 
-  // Check if render pass is active and suspend if needed
-  _didSuspendRenderPass = _contextVK->_renderPassActive;
-  if (_didSuspendRenderPass) {
-    _contextVK->suspendRenderPass();
-    logchan_vkcomp->log("beginDispatchPhase: suspended render pass");
+  // Allocate compute command buffer if needed
+  if (_computeCmdBuf == VK_NULL_HANDLE) {
+    VkCommandBufferAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.commandPool = _contextVK->_vkcmdpool_graphics;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandBufferCount = 1;
+    vkAllocateCommandBuffers(_contextVK->_vkdevice, &allocInfo, &_computeCmdBuf);
   }
 
+  // Reset and begin the compute command buffer
+  vkResetCommandBuffer(_computeCmdBuf, 0);
+
+  VkCommandBufferBeginInfo beginInfo{};
+  beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+  vkBeginCommandBuffer(_computeCmdBuf, &beginInfo);
+
+  // Insert memory barrier: ensure any host writes are complete before compute reads
+  VkMemoryBarrier memoryBarrier{};
+  memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+  memoryBarrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+  memoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+
+  vkCmdPipelineBarrier(
+      _computeCmdBuf,
+      VK_PIPELINE_STAGE_HOST_BIT,
+      VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+      0,
+      1, &memoryBarrier,
+      0, nullptr,
+      0, nullptr
+  );
+
+  _dispatchCount = 0;
   _inDispatchPhase = true;
 }
 
@@ -290,14 +318,45 @@ void VkComputeInterface::endDispatchPhase() {
     return; // Not in dispatch phase
   }
 
-  // Resume render pass if we suspended it
-  if (_didSuspendRenderPass) {
-    _contextVK->resumeRenderPass();
-    logchan_vkcomp->log("endDispatchPhase: resumed render pass");
+  // Insert memory barrier: ensure compute writes are complete before vertex shader reads
+  VkMemoryBarrier memoryBarrier{};
+  memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+  memoryBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+  memoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
+
+  vkCmdPipelineBarrier(
+      _computeCmdBuf,
+      VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+      VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+      0, 1, &memoryBarrier, 0, nullptr, 0, nullptr
+  );
+
+  // End the compute command buffer
+  vkEndCommandBuffer(_computeCmdBuf);
+
+  // Only submit if we actually dispatched something
+  if (_dispatchCount > 0) {
+    // Create fence for this submission
+    VkFenceCreateInfo fenceInfo{};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    VkFence fence;
+    vkCreateFence(_contextVK->_vkdevice, &fenceInfo, nullptr, &fence);
+
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &_computeCmdBuf;
+
+    vkQueueSubmit(_contextVK->_vkqueue_graphics, 1, &submitInfo, fence);
+
+    // Wait for compute to complete before returning
+    vkWaitForFences(_contextVK->_vkdevice, 1, &fence, VK_TRUE, UINT64_MAX);
+    vkDestroyFence(_contextVK->_vkdevice, fence, nullptr);
+
+    logchan_vkcomp->log("endDispatchPhase: submitted and completed %u dispatches", _dispatchCount);
   }
 
   _inDispatchPhase = false;
-  _didSuspendRenderPass = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -328,19 +387,20 @@ void VkComputeInterface::dispatchCompute(
     return;
   }
 
-  // Get command buffer
-  auto& cmdbuf = _contextVK->primary_cb()->_vkcmdbuf;
+  // Use dedicated compute command buffer
+  OrkAssert(_inDispatchPhase && "Must call beginDispatchPhase before dispatch");
+  OrkAssert(_computeCmdBuf != VK_NULL_HANDLE);
 
   // Update descriptor set if dirty
   pipeline->updateDescriptorSet();
 
   // Bind compute pipeline
-  vkCmdBindPipeline(cmdbuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline->_pipeline);
+  vkCmdBindPipeline(_computeCmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline->_pipeline);
 
   // Bind descriptor sets
   if (pipeline->_descriptorSet != VK_NULL_HANDLE) {
     vkCmdBindDescriptorSets(
-        cmdbuf,
+        _computeCmdBuf,
         VK_PIPELINE_BIND_POINT_COMPUTE,
         pipeline->_pipelineLayout,
         0,  // first set
@@ -352,23 +412,8 @@ void VkComputeInterface::dispatchCompute(
   }
 
   // Dispatch compute work
-  vkCmdDispatch(cmdbuf, numgroups_x, numgroups_y, numgroups_z);
-
-  // Insert memory barrier: compute shader write -> vertex shader read (or other)
-  VkMemoryBarrier memoryBarrier{};
-  memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
-  memoryBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-  memoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
-
-  vkCmdPipelineBarrier(
-      cmdbuf,
-      VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-      VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
-      0,
-      1, &memoryBarrier,
-      0, nullptr,
-      0, nullptr
-  );
+  vkCmdDispatch(_computeCmdBuf, numgroups_x, numgroups_y, numgroups_z);
+  _dispatchCount++;
 
   logchan_vkcomp->log("dispatchCompute: dispatched %u x %u x %u work groups", numgroups_x, numgroups_y, numgroups_z);
 }

@@ -202,7 +202,7 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     auto outrnode     = nodetek->tryRenderNodeAs<compositor::UnlitNode>();
     _pbr_common       = nullptr;
   }
-  else if (preset == "FORWARDPBR" or preset == "FWDPBR") {
+  else if (preset_upper == "FORWARDPBR" or preset_upper == "FWDPBR") {
     _compositorPreset = _compositorData->presetForwardPBR(_renderPresetData);
     auto nodetek      = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outrnode     = nodetek->tryRenderNodeAs<pbr::ForwardNode>();
@@ -222,23 +222,23 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     }
 
 
-  } else if (preset == "FWDPBRVR") {
+  } else if (preset_upper == "FWDPBRVR") {
     _compositorPreset = _compositorData->presetForwardPBRVR(_renderPresetData);
     auto nodetek      = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outrnode     = nodetek->tryRenderNodeAs<pbr::ForwardNode>();
     _pbr_common     = outrnode->_pbrcommon;
-  } else if (preset == "FWDPBRVRDM") {
+  } else if (preset_upper == "FWDPBRVRDM") {
     _compositorPreset = _compositorData->presetForwardPBRVRDM(_renderPresetData);
     auto nodetek      = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outrnode     = nodetek->tryRenderNodeAs<pbr::ForwardNode>();
     _pbr_common     = outrnode->_pbrcommon;
     OrkAssert(_pbr_common);
-  } else if (preset == "PICKTEST") {
+  } else if (preset_upper == "PICKTEST") {
     auto cdata = std::make_shared<CompositingData>();
     cdata->presetPickingDebug();
     _compositorData = cdata;
     _pbr_common     = nullptr;
-  } else if (preset == "USER") {
+  } else if (preset_upper == "USER") {
     _compositorData = params->typedValueForKey<compositordata_ptr_t>("compositordata").value();
     _pbr_common     = nullptr;
   } else {

@@ -495,6 +495,10 @@ struct VkComputeInterface : public ComputeInterface {
   vkfxi_ptr_t _fxi;
   bool _inDispatchPhase = false;
   bool _didSuspendRenderPass = false;
+
+  // Dedicated compute command buffer
+  VkCommandBuffer _computeCmdBuf = VK_NULL_HANDLE;
+  uint32_t _dispatchCount = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
