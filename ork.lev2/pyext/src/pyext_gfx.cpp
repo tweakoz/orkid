@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include "pyext.h"
+#include <pybind11/numpy.h>
 #include <ork/lev2/input/inputdevice.h>
 #include <ork/lev2/gfx/terrain/terrain_drawable.h>
 #include <ork/lev2/gfx/gfxvtxbuf.inl>
@@ -180,14 +181,44 @@ void pyinit_gfx(py::module& module_lev2) {
           "copyDataIntoShaderStorageBuffer",
           [](fxi_t& fxi, py::object data, fxshaderstoragebuffer_ptr_t buffer, size_t dest_offset) { //
             if (py::isinstance<py::float_>(data)) {
+              // Single float
               auto as_float  = data.cast<py::float_>();
               auto datablock = std::make_shared<DataBlock>();
               datablock->addItem<float>(as_float);
               fxi.get()->copyBufferIntoStorageBuffer(buffer.get(), datablock->_storage, dest_offset);
+            } else if (py::isinstance<py::int_>(data)) {
+              // Single int
+              auto as_int  = data.cast<py::int_>();
+              auto datablock = std::make_shared<DataBlock>();
+              datablock->addItem<int32_t>(as_int);
+              fxi.get()->copyBufferIntoStorageBuffer(buffer.get(), datablock->_storage, dest_offset);
+            } else if (py::hasattr(data, "__iter__") && !py::isinstance<py::str>(data)) {
+              // Iterable (list, tuple) of numbers
+              auto datablock = std::make_shared<DataBlock>();
+              for (auto item : data) {
+                if (py::isinstance<py::float_>(item)) {
+                  datablock->addItem<float>(item.cast<float>());
+                } else if (py::isinstance<py::int_>(item)) {
+                  datablock->addItem<float>(float(item.cast<int>()));
+                }
+              }
+              fxi.get()->copyBufferIntoStorageBuffer(buffer.get(), datablock->_storage, dest_offset);
             } else {
+              // Check for numpy array
               auto type_str = data.get_type().attr("__name__").cast<std::string>();
-              printf("copyDataIntoShaderStorageBuffer unknown type<%s>\n", type_str.c_str());
-              OrkAssert(false);
+              if (type_str == "ndarray") {
+                auto numpy = py::module::import("numpy");
+                auto arr = data.attr("astype")(numpy.attr("float32")).attr("flatten")();
+                auto buffer_info = py::cast<py::array_t<float>>(arr).request();
+                float* ptr = static_cast<float*>(buffer_info.ptr);
+                size_t num_bytes = buffer_info.size * sizeof(float);
+                std::vector<uint8_t> vec(num_bytes);
+                memcpy(vec.data(), ptr, num_bytes);
+                fxi.get()->copyBufferIntoStorageBuffer(buffer.get(), vec, dest_offset);
+              } else {
+                printf("copyDataIntoShaderStorageBuffer unknown type<%s>\n", type_str.c_str());
+                OrkAssert(false);
+              }
             }
           })
       .def(

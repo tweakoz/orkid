@@ -1,8 +1,9 @@
 #!/usr/bin/env ork.python
 
 ################################################################################
-# Compute shader visual test
-# Renders a grid of points whose colors are animated by a compute shader
+# Compute shader water simulation
+# Renders a water surface with rain drops creating ripples
+# Uses 2D wave equation for realistic wave propagation
 # All computation stays on the GPU (no GPU->CPU->GPU transfers)
 # Copyright 1996-2025, Michael T. Mayers.
 # Distributed under the MIT License
@@ -23,140 +24,270 @@ from lev2utils.shaders import createPipeline
 from lev2utils.primitives import createPointsPrimSSBO
 
 ################################################################################
+# Configuration constants
+################################################################################
 
-# Grid dimensions for point cloud
-DIM = 128
-NUMPOINTS = DIM * DIM
+GRID_DIM = 512              # Grid resolution (GRID_DIM x GRID_DIM points)
+GRID_SCALE = 8.0            # World space size of the grid
+POINT_SIZE = 3.0            # Size of rendered points
+
+################################################################################
+# Derived constants
+################################################################################
+
+NUMPOINTS = GRID_DIM * GRID_DIM
 SIZEOF_FLOAT = 4
 SIZEOF_VEC4F = 4 * SIZEOF_FLOAT
 
-# SSBO layout: positions (vec4 * NUMPOINTS) + colors (vec4 * NUMPOINTS) + time (float)
-POS_OFFSET = 0
-COL_OFFSET = POS_OFFSET + NUMPOINTS * SIZEOF_VEC4F
-TIM_OFFSET = COL_OFFSET + NUMPOINTS * SIZEOF_VEC4F
-SSBO_SIZE = TIM_OFFSET + SIZEOF_FLOAT
+# SSBO layout (minimal - positions derived from vertex ID):
+#   heights_A[NUMPOINTS]  - float (ping buffer)
+#   heights_B[NUMPOINTS]  - float (pong buffer)
+#   velocities[NUMPOINTS] - float (vertical velocity)
+#   sim_params            - vec4 (time, frame, ping_pong, unused)
+HGT_A_OFFSET = 0
+HGT_B_OFFSET = HGT_A_OFFSET + NUMPOINTS * SIZEOF_FLOAT
+VEL_OFFSET = HGT_B_OFFSET + NUMPOINTS * SIZEOF_FLOAT
+SIM_OFFSET = VEL_OFFSET + NUMPOINTS * SIZEOF_FLOAT
+SSBO_SIZE = SIM_OFFSET + SIZEOF_VEC4F
 
 ################################################################################
-# Shader source with compute shader
+# Shader source with compute shaders for water simulation
 ################################################################################
 
 SHADERTEXT = f"""
+////////////////////////////////////////
+import "orkshader://mathtools.i2";
 ////////////////////////////////////////
 fxconfig fxcfg_default {{}}
 ////////////////////////////////////////
 uniform_set ublock_vtx {{
   mat4 mvp;
   float pointsize;
+  float grid_scale;
+  int grid_dim;
+  int ping_pong;  // 0 = read A, 1 = read B
 }}
 ////////////////////////////////////////
 uniform_set ublock_frg {{
   vec4 modcolor;
 }}
 ////////////////////////////////////////
-// Storage interface for compute shader data
-storage_interface sif_points (descriptor_set 0) {{
-  buffer layout(std430) point_data {{
-    vec4 positions[{NUMPOINTS}];
-    vec4 colors[{NUMPOINTS}];
-    float time;
+// Storage interface - minimal, positions derived from vertex ID
+storage_interface sif_water (descriptor_set 0) {{
+  buffer layout(std430) water_data {{
+    float heights_A[{NUMPOINTS}];   // ping buffer
+    float heights_B[{NUMPOINTS}];   // pong buffer
+    float velocities[{NUMPOINTS}];
+    vec4 sim_params;  // x=time, y=frame, z=seed, w=ping_pong
   }};
 }}
 ////////////////////////////////////////
-vertex_interface iface_vtx_points //
+vertex_interface iface_vtx_water //
   : ublock_vtx    //
-  : sif_points {{ //
+  : sif_water {{ //
   outputs {{
-    vec3 frg_col;
+    vec3 frg_normal;
+    vec3 frg_worldpos;
+    float frg_height;
   }}
 }}
 ////////////////////////////////////////
-fragment_interface iface_frg_points : ublock_frg {{
+fragment_interface iface_frg_water : ublock_frg {{
   inputs {{
-    vec3 frg_col;
+    vec3 frg_normal;
+    vec3 frg_worldpos;
+    float frg_height;
   }}
   outputs {{ layout(location = 0) vec4 out_clr; }}
 }}
 ////////////////////////////////////////
-vertex_shader vs_points : iface_vtx_points {{
-  vec3 posv3   = positions[gl_VertexID].xyz;
-  vec4 posv4   = vec4(posv3.xyz, 1);
-  frg_col      = colors[gl_VertexID].xyz;
+vertex_shader vs_water : iface_vtx_water {{
+  // Derive grid position from vertex ID
+  int xi = gl_VertexID % grid_dim;
+  int yi = gl_VertexID / grid_dim;
+  float fx = (float(xi) / float(grid_dim - 1) - 0.5) * 2.0;
+  float fy = (float(yi) / float(grid_dim - 1) - 0.5) * 2.0;
+
+  // Read height from appropriate buffer (render uses latest written)
+  float height = (ping_pong == 0) ? heights_B[gl_VertexID] : heights_A[gl_VertexID];
+
+  // Sample neighbor heights for normal computation
+  int left_idx  = (xi > 0) ? gl_VertexID - 1 : gl_VertexID;
+  int right_idx = (xi < grid_dim - 1) ? gl_VertexID + 1 : gl_VertexID;
+  int up_idx    = (yi > 0) ? gl_VertexID - grid_dim : gl_VertexID;
+  int down_idx  = (yi < grid_dim - 1) ? gl_VertexID + grid_dim : gl_VertexID;
+
+  float h_left  = (ping_pong == 0) ? heights_B[left_idx]  : heights_A[left_idx];
+  float h_right = (ping_pong == 0) ? heights_B[right_idx] : heights_A[right_idx];
+  float h_up    = (ping_pong == 0) ? heights_B[up_idx]    : heights_A[up_idx];
+  float h_down  = (ping_pong == 0) ? heights_B[down_idx]  : heights_A[down_idx];
+
+  // Compute normal from height gradient
+  float grid_spacing = (grid_scale * 2.0) / float(grid_dim - 1);
+  float dhdx = (h_right - h_left) / (2.0 * grid_spacing);
+  float dhdz = (h_down - h_up) / (2.0 * grid_spacing);
+  vec3 normal = normalize(vec3(-dhdx, 1.0, -dhdz));
+
+  vec3 pos = vec3(fx * grid_scale, height, fy * grid_scale);
   gl_PointSize = pointsize;
-  gl_Position  = mvp * posv4;
+  gl_Position = mvp * vec4(pos, 1.0);
+
+  frg_normal = normal;
+  frg_worldpos = pos;
+  frg_height = height;
 }}
 ////////////////////////////////////////
-fragment_shader ps_points : iface_frg_points {{
-  out_clr = vec4(frg_col, 1);
+fragment_shader ps_water : iface_frg_water {{
+  vec3 N = normalize(frg_normal);
+
+  // Procedural sky colors
+  vec3 sky_zenith = vec3(0.3, 0.5, 0.9);    // Blue sky overhead
+  vec3 sky_horizon = vec3(0.7, 0.8, 0.95);  // Lighter at horizon
+  vec3 ground_color = vec3(0.2, 0.15, 0.1); // Brown ground
+
+  // Sun direction
+  vec3 sun_dir = normalize(vec3(0.5, 0.7, 0.3));
+  vec3 sun_color = vec3(1.0, 0.95, 0.8);
+
+  // Hemisphere lighting from procedural sky
+  float sky_factor = N.y * 0.5 + 0.5;  // 0 = down, 1 = up
+  vec3 sky_light = mix(ground_color, mix(sky_horizon, sky_zenith, sky_factor), sky_factor);
+
+  // Diffuse sun lighting
+  float sun_diffuse = max(dot(N, sun_dir), 0.0);
+
+  // Fresnel effect (subtle, based on normal pointing away from up)
+  float fresnel = pow(1.0 - abs(N.y), 2.0) * 0.3;
+
+  // Water base color
+  vec3 deep_water = vec3(0.02, 0.1, 0.3);
+  vec3 shallow_water = vec3(0.1, 0.4, 0.6);
+  float depth_factor = clamp(frg_height * 10.0 + 0.5, 0.0, 1.0);
+  vec3 water_color = mix(deep_water, shallow_water, depth_factor);
+
+  // Combine lighting
+  vec3 ambient = sky_light * 0.4;
+  vec3 diffuse = sun_color * sun_diffuse * 0.6;
+  vec3 reflection = mix(sky_horizon, sky_zenith, N.y * 0.5 + 0.5) * fresnel * 0.5;
+
+  vec3 final_color = water_color * (ambient + diffuse) + reflection;
+
+  // Slight foam on peaks
+  float foam = clamp(abs(frg_height) * 15.0, 0.0, 0.3);
+  final_color = mix(final_color, vec3(0.95, 0.98, 1.0), foam);
+
+  out_clr = vec4(final_color, 1.0);
 }}
 ////////////////////////////////////////
-technique tek_points_fwd {{
+technique tek_water_fwd {{
   fxconfig = fxcfg_default;
   pass p0 {{
-    vertex_shader   = vs_points;
-    fragment_shader = ps_points;
+    vertex_shader   = vs_water;
+    fragment_shader = ps_water;
     state_block     = default;
   }}
 }}
 ////////////////////////////////////////
-// Compute interface referencing the storage
+// Compute interface for water simulation
 compute_interface iface_compute {{
-  storage {{ sif_points }}
+  storage {{ sif_water }}
   inputs {{
     layout(local_size_x = 64, local_size_y = 1, local_size_z = 1);
   }}
 }}
 ////////////////////////////////////////
-// Compute shader that initializes and animates points
-compute_shader cs_init_points : iface_compute {{
+// Initialize water surface to flat
+compute_shader cs_init_water : iface_compute {{
   int index = int(gl_GlobalInvocationID.x);
   if (index >= {NUMPOINTS}) return;
 
-  // Convert linear index to 2D grid coordinates
-  int x = index % {DIM};
-  int y = index / {DIM};
-
-  // Normalize to [-1, 1] range
-  float fx = (float(x) / float({DIM}) - 0.5) * 2.0;
-  float fy = (float(y) / float({DIM}) - 0.5) * 2.0;
-
-  // Set position in a flat grid pattern, scaled up
-  positions[index] = vec4(fx * 5.0, 0.0, fy * 5.0, 1.0);
-
-  // Set initial color based on position
-  colors[index] = vec4(fx * 0.5 + 0.5, 0.0, fy * 0.5 + 0.5, 1.0);
+  heights_A[index] = 0.0;
+  heights_B[index] = 0.0;
+  velocities[index] = 0.0;
 }}
 ////////////////////////////////////////
-// Compute shader that animates points over time
-compute_shader cs_animate_points : iface_compute {{
+// Damped 2D spring mesh simulation with rain drops
+// Reads from one height buffer, writes to the other (ping-pong)
+compute_shader cs_simulate_water : iface_compute : lib_math {{
   int index = int(gl_GlobalInvocationID.x);
   if (index >= {NUMPOINTS}) return;
 
-  // Get current position
-  vec4 pos = positions[index];
+  int xi = index % {GRID_DIM};
+  int yi = index / {GRID_DIM};
 
-  // Convert linear index to 2D grid coordinates
-  int x = index % {DIM};
-  int y = index / {DIM};
-  float fx = float(x) / float({DIM});
-  float fy = float(y) / float({DIM});
+  float time = sim_params.x;
+  float frame = sim_params.y;
+  float seed = sim_params.z;
+  int ping_pong = int(sim_params.w);
 
-  // Animate Y position with a wave pattern
-  float wave1 = sin(fx * PI2 * 2.0 + time * 2.0) * 0.5;
-  float wave2 = sin(fy * PI2 * 3.0 + time * 1.5) * 0.3;
-  pos.y = wave1 + wave2;
-  positions[index] = pos;
+  // Spring mesh parameters
+  float spring_k = 0.033;      // Spring stiffness (lower = slower propagation)
+  float damping = 0.997;       // Velocity damping (higher = waves travel further)
+  float dt = 1.0;
 
-  // Animate colors based on position and time
-  float r = sin(fx * PI2 + time) * 0.5 + 0.5;
-  float g = sin(fy * PI2 + time * 1.3) * 0.5 + 0.5;
-  float b = sin((fx + fy) * PI + time * 0.7) * 0.5 + 0.5;
-  colors[index] = vec4(r, g, b, 1.0);
+  // Read from current buffer (ping_pong: 0=read A, 1=read B)
+  float height = (ping_pong == 0) ? heights_A[index] : heights_B[index];
+  float vel = velocities[index];
+
+  // Sample neighbor heights (reflect at boundaries for wave bounce)
+  int left  = (xi > 0) ? index - 1 : index + 1;
+  int right = (xi < {GRID_DIM} - 1) ? index + 1 : index - 1;
+  int up    = (yi > 0) ? index - {GRID_DIM} : index + {GRID_DIM};
+  int down  = (yi < {GRID_DIM} - 1) ? index + {GRID_DIM} : index - {GRID_DIM};
+
+  float h_left  = (ping_pong == 0) ? heights_A[left]  : heights_B[left];
+  float h_right = (ping_pong == 0) ? heights_A[right] : heights_B[right];
+  float h_up    = (ping_pong == 0) ? heights_A[up]    : heights_B[up];
+  float h_down  = (ping_pong == 0) ? heights_A[down]  : heights_B[down];
+
+  // Spring force from 4 neighbors (each pulls toward neighbor height)
+  float force = (h_left - height) + (h_right - height) + (h_up - height) + (h_down - height);
+  force *= spring_k;
+
+  // Update velocity with spring force
+  vel += force * dt;
+
+  // Apply damping
+  vel *= damping;
+
+  // Rain drop spawning - deterministic based on frame
+  for (int drop = 0; drop < 3; drop++) {{
+    float drop_hash = hash1(frame * 7.0 + float(drop) * 13.0 + seed);
+
+    if (drop_hash < 0.015) {{
+      float dx = hash1(frame * 11.0 + float(drop) * 17.0 + seed);
+      float dy = hash1(frame * 23.0 + float(drop) * 31.0 + seed);
+
+      int drop_x = int(dx * float({GRID_DIM}));
+      int drop_y = int(dy * float({GRID_DIM}));
+
+      int dist_x = abs(xi - drop_x);
+      int dist_y = abs(yi - drop_y);
+      float dist = sqrt(float(dist_x * dist_x + dist_y * dist_y));
+
+      if (dist < 4.0) {{
+        float splash = (1.0 - dist / 4.0) * 0.3;
+        vel += splash;  // Push up (raindrop splash from above)
+      }}
+    }}
+  }}
+
+  // Update height
+  height += vel * dt;
+
+  // Write to opposite buffer
+  if (ping_pong == 0) {{
+    heights_B[index] = height;
+  }} else {{
+    heights_A[index] = height;
+  }}
+  velocities[index] = vel;
 }}
 """
 
 ################################################################################
 
-class ComputeShaderApp(object):
+class WaterSimApp(object):
 
   def __init__(self):
     super().__init__()
@@ -173,7 +304,7 @@ class ComputeShaderApp(object):
       height=1,
       margin=1,
       uiclass=lev2.ui.SceneGraphViewport,
-      args=["computeview", vec4(1, 0, 1, 1)]
+      args=["waterview", vec4(1, 0, 1, 1)]
     )
 
     self.materials = set()
@@ -184,6 +315,7 @@ class ComputeShaderApp(object):
 
     signal.signal(signal.SIGINT, onCtrlC)
     self.frame = 0
+    self.ping_pong = 0
     self.initialized = False
 
   ##############################################
@@ -204,12 +336,12 @@ class ComputeShaderApp(object):
     self.layer1 = self.scenegraph.createLayer("std_forward")
 
     ###################################
-    # Setup camera
+    # Setup camera - looking down at water surface
     ###################################
     self.camera, self.uicam = setupUiCameraX(
       cameralut=self.cameralut,
       camname="maincam",
-      eye=vec3(10, 10, 10),
+      eye=vec3(12, 15, 12),
       tgt=vec3(0, 0, 0),
       up=vec3(0, 1, 0),
       constrainZ=True
@@ -221,10 +353,11 @@ class ComputeShaderApp(object):
     self.griditems[0].widget.evhandler = lambda ev: self.onViewportUiEvent(ev)
 
     ###################################
-    # Create SSBO for compute shader data
+    # Create SSBO for water simulation data
     ###################################
     self.ssbo = ctx.FXI.createShaderStorageBufferWithLength(SSBO_SIZE)
     print(f"Created SSBO: {self.ssbo} with size {SSBO_SIZE} bytes")
+    print(f"Grid: {GRID_DIM}x{GRID_DIM} = {NUMPOINTS} points")
 
     ###################################
     # Create shader pipeline
@@ -235,7 +368,7 @@ class ComputeShaderApp(object):
       shadertext=SHADERTEXT,
       blending=tokens.OFF,
       depthtest=tokens.LEQUALS,
-      techname="tek_points_fwd",
+      techname="tek_water_fwd",
       rendermodel="Unlit"
     )
 
@@ -244,21 +377,29 @@ class ComputeShaderApp(object):
     param_pntsize = freestylemtl.param("pointsize")
     param_mvp = freestylemtl.param("mvp")
 
-    self.pipeline.bindParam(param_pntsize, float(3.0))
+    self.pipeline.bindParam(param_pntsize, float(POINT_SIZE))
     self.pipeline.bindParam(param_mvp, tokens.RCFD_Camera_MVP_Mono)
+
+    # Grid params for vertex shader
+    param_grid_scale = freestylemtl.param("grid_scale")
+    param_grid_dim = freestylemtl.param("grid_dim")
+    self.param_ping_pong = freestylemtl.param("ping_pong")
+
+    self.pipeline.bindParam(param_grid_scale, float(GRID_SCALE))
+    self.pipeline.bindParam(param_grid_dim, int(GRID_DIM))
 
     ###################################
     # Get compute shaders
     ###################################
-    self.cs_init = freestylemtl.computeShader("cs_init_points")
-    self.cs_animate = freestylemtl.computeShader("cs_animate_points")
+    self.cs_init = freestylemtl.computeShader("cs_init_water")
+    self.cs_simulate = freestylemtl.computeShader("cs_simulate_water")
     print(f"Init compute shader: {self.cs_init}")
-    print(f"Animate compute shader: {self.cs_animate}")
+    print(f"Simulate compute shader: {self.cs_simulate}")
 
     ###################################
     # Get storage block and bind SSBO for graphics shader
     ###################################
-    self.storage_block = freestylemtl.storage("sif_points")
+    self.storage_block = freestylemtl.storage("sif_water")
     print(f"Storage block: {self.storage_block}")
     ctx.FXI.bindStorageBuffer(self.storage_block, self.ssbo)
 
@@ -266,7 +407,7 @@ class ComputeShaderApp(object):
     # Create points primitive using SSBO
     ###################################
     self.points_prim = createPointsPrimSSBO(ctx=ctx, numpoints=NUMPOINTS, ssbo=self.ssbo)
-    self.points_node = self.points_prim.createNode("points", self.layer1, self.pipeline)
+    self.points_node = self.points_prim.createNode("water_points", self.layer1, self.pipeline)
     self.points_node.sortkey = 2
 
   ##############################################
@@ -292,28 +433,39 @@ class ComputeShaderApp(object):
     time_val = self.frame / 60.0
 
     CI = ctx.CI
+    FXI = ctx.FXI
     num_workgroups = (NUMPOINTS + 63) // 64  # Round up to cover all points
+
+    # Write sim_params to SSBO: [time, frame, seed, ping_pong]
+    sim_params = [time_val, float(self.frame), 12345.0, float(self.ping_pong)]
+    FXI.copyDataIntoShaderStorageBuffer(sim_params, self.ssbo, SIM_OFFSET)
+
+    # Update vertex shader ping_pong uniform (reads opposite buffer from compute)
+    self.pipeline.bindParam(self.param_ping_pong, int(self.ping_pong))
 
     # Begin dispatch phase (suspends render pass if active)
     CI.beginDispatchPhase()
 
-    # Initialize points on first frame
+    # Initialize water surface on first frame
     if not self.initialized:
       CI.bindStorageBuffer(self.cs_init, 0, self.ssbo)
       CI.dispatch(self.cs_init, num_workgroups, 1, 1)
       self.initialized = True
-      print("Initialized point positions and colors via compute shader")
+      print("Initialized water surface via compute shader")
 
-    # Animate points with compute shader
-    CI.bindStorageBuffer(self.cs_animate, 0, self.ssbo)
-    CI.dispatch(self.cs_animate, num_workgroups, 1, 1)
+    # Run water simulation
+    CI.bindStorageBuffer(self.cs_simulate, 0, self.ssbo)
+    CI.dispatch(self.cs_simulate, num_workgroups, 1, 1)
 
     # End dispatch phase (resumes render pass if suspended)
     CI.endDispatchPhase()
+
+    # Toggle ping-pong for next frame
+    self.ping_pong = 1 - self.ping_pong
 
 ###############################################################################
 
 def onRunLoopIteration():
   pass
 
-ComputeShaderApp().ezapp.mainThreadLoop(on_iter=onRunLoopIteration)
+WaterSimApp().ezapp.mainThreadLoop(on_iter=onRunLoopIteration)
