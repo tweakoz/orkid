@@ -372,8 +372,9 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
   if (not merged_resources) {
     return nullptr;
   }
-  if (vk_program->_merged_resource_bindings.empty()) {
-    return nullptr; 
+  // Need descriptor set if we have param bindings OR SSBO resources
+  if (vk_program->_merged_resource_bindings.empty() && !vk_program->_has_ssbo_resources) {
+    return nullptr;
   }
 
   /////////////////////////////////

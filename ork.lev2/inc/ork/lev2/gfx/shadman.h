@@ -192,6 +192,7 @@ struct FxShaderStorageBufferMapping {
   size_t _offset                 = 0;
   size_t _cursor                 = 0;
   size_t _length                 = 0;
+  BufferMapAccess _access        = BufferMapAccess::READ_WRITE;
   svarshp_t _impl;
 
   template <typename T> T& ref(size_t offset) {

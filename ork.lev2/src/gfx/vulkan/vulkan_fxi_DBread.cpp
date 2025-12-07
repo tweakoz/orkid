@@ -1201,11 +1201,15 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
                         vk_program->_merged_resource_bindings[fxparam] = DescBinding{uint32_t(set_id), binding->binding_id};
                         vk_program->_incr_crc64.accumulateItem(uint32_t(set_id));
                         vk_program->_incr_crc64.accumulateItem(binding->binding_id);
-                        //printf("AUTO-REGISTERED UBO<%s> at set<%d> binding<%d>\n", 
+                        //printf("AUTO-REGISTERED UBO<%s> at set<%d> binding<%d>\n",
                         //       binding->name.c_str(), set_id, binding->binding_id);
                       }
                     }
                   }
+                }
+                // Track SSBOs for program - mark that this program has SSBO resources
+                if (binding->type == VkMergedResourceBinding::Type::StorageBuffer) {
+                  vk_program->_has_ssbo_resources = true;
                 }
               }
             }

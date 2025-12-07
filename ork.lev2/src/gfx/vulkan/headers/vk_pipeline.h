@@ -210,6 +210,9 @@ struct VkFxShaderProgram {
 
   // Synthetic params for auto-registered UBO blocks (to maintain lifetime)
   std::vector<fxparam_ptr_t> _synthetic_ubo_params;
+
+  // Flag indicating this program has SSBO resources that need descriptor binding
+  bool _has_ssbo_resources = false;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VulkanDescriptorSet {

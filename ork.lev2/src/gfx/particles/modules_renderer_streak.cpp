@@ -184,7 +184,6 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
   // compute shader path
   //////////////////////////////////////////////////////////////////////////////
   if (RCID.rcfd()->isStereo()) {
-#if defined(ENABLE_COMPUTE_SHADERS)
     auto FXI = context->FXI();
     auto CI  = context->CI();
     ///////////////////////////////////////////////////////////////
@@ -199,7 +198,7 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     ///////////////////////////////////////////////////////////////
     auto storage        = material->_cu_vertex_io_buffer;
     size_t mapping_size = 1 << 20;
-    auto mapped_storage = CI->mapStorageBuffer(storage, 0, mapping_size);
+    auto mapped_storage = FXI->mapStorageBuffer(storage, 0, mapping_size, BufferMapAccess::WRITE_ONLY);
     mapped_storage->seek(0);
     mapped_storage->make<int32_t>(icnt);                        // 0
     mapped_storage->make<fmtx4>(stereocams->VL());              // 16
@@ -269,7 +268,7 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
         break;
     }
     ///////////////////////////////////////////////////////////////
-    CI->unmapStorageBuffer(mapped_storage.get());
+    FXI->unmapStorageBuffer(mapped_storage.get());
     render_time_1a = prender_timer.SecsSinceStart();
     ///////////////////////////////////////////////////////////////
     CI->bindStorageBuffer(material->_streakcu_shader, 0, storage);
@@ -293,7 +292,6 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
       FXI->reset();
     });
 ///////////////////////////////////////////////////////////////
-#endif
   }
   //////////////////////////////////////////////////////////////////////////////
   else { // geometry shader path

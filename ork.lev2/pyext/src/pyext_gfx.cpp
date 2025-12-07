@@ -202,13 +202,18 @@ void pyinit_gfx(py::module& module_lev2) {
           })
       .def(
           "mapStorageBuffer",
-          [](fxi_t& fxi, fxshaderstoragebuffer_ptr_t buffer, size_t base, size_t length) -> storagebuffermappingptr_t {
-            return fxi.get()->mapStorageBuffer(buffer.get(), base, length);
+          [](fxi_t& fxi, fxshaderstoragebuffer_ptr_t buffer, size_t base, size_t length, crcstring_ptr_t access) -> storagebuffermappingptr_t {
+            return fxi.get()->mapStorageBuffer(buffer.get(), base, length, BufferMapAccess(access->hashed()));
           })
       .def(
           "unmapStorageBuffer",
           [](fxi_t& fxi, storagebuffermappingptr_t mapping) {
             fxi.get()->unmapStorageBuffer(mapping.get());
+          })
+      .def(
+          "bindStorageBuffer",
+          [](fxi_t& fxi, pyfxstorage_ptr_t block, fxshaderstoragebuffer_ptr_t buffer) {
+            fxi.get()->bindStorageBuffer(block.get(), buffer.get());
           });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<gbi_t>(module_lev2, "GeometryBufferInterface")

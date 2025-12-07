@@ -11,7 +11,7 @@
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
-static logchannel_ptr_t logchan_vkcomp = logger()->configureChannel("VKCOMP", fvec3(0.2, 1, 0.8), true);
+static logchannel_ptr_t logchan_vkcomp = logger()->configureChannel("VKCOMP", fvec3(0.2, 1, 0.8), false);
 
 ///////////////////////////////////////////////////////////////////////////////
 // VkComputePipelineObject implementation

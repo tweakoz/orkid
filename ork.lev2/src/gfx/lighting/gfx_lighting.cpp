@@ -755,7 +755,7 @@ void LightManager::bindEnumeratedToStorageBuffer( Context* ctx,                 
   // build lighting UBO
   ///////////////////////////////////////////////////////////////////////////
 
-  auto pl_mapped = FXI->mapStorageBuffer(ssbo, 0, ssbo->_length);
+  auto pl_mapped = FXI->mapStorageBuffer(ssbo, 0, ssbo->_length, BufferMapAccess::WRITE_ONLY);
 
   size_t i32_stride  = sizeof(int32_t);
   size_t f32_stride  = sizeof(float);

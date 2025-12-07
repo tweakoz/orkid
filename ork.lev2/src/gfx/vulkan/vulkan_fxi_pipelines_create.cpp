@@ -195,6 +195,23 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_o
 
   auto resources = _currentVKPASS->_merged_resources;
 
+  printf("_createPipelineLayoutData: merged_resources=%p, num_descriptor_sets=%zu\n",
+         resources.get(), resources ? resources->descriptor_sets.size() : 0);
+  if (resources) {
+    for (const auto& [set_id, sources] : resources->descriptor_sets) {
+      printf("  descriptor_set[%d] has %zu sources\n", set_id, sources.size());
+      for (const auto& source : sources) {
+        printf("    source<%s> has %zu bindings\n", source->source_name.c_str(), source->bindings.size());
+        for (const auto& binding : source->bindings) {
+          const char* type_str = binding->type == VkMergedResourceBinding::Type::StorageBuffer ? "SSBO" :
+                                 binding->type == VkMergedResourceBinding::Type::UniformBlock ? "UBO" :
+                                 binding->type == VkMergedResourceBinding::Type::Sampler ? "SAMPLER" : "?";
+          printf("      binding[%u] = %s<%s>\n", binding->binding_id, type_str, binding->name.c_str());
+        }
+      }
+    }
+  }
+
   if (not resources->descriptor_sets.empty()) {
 
     ///////////////////////////////////////////////////////////
@@ -269,6 +286,29 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_o
                 pipeline->_ssbo_by_binding[binding->binding_id] = ssbo;
               }
 
+              //////////////////////////////////////////////////////
+              // Determine which shader stages use this SSBO
+              // MoltenVK requires accurate stage flags for argument buffer encoding
+              //////////////////////////////////////////////////////
+              VkShaderStageFlags ssbo_stages = 0;
+              if (vk_program->_vtxshader && vk_program->_vtxshader->_ssbo_refs) {
+                if (vk_program->_vtxshader->_ssbo_refs->_ssbo_blocks.count(binding->name) > 0) {
+                  ssbo_stages |= VK_SHADER_STAGE_VERTEX_BIT;
+                }
+              }
+              if (vk_program->_geoshader && vk_program->_geoshader->_ssbo_refs) {
+                if (vk_program->_geoshader->_ssbo_refs->_ssbo_blocks.count(binding->name) > 0) {
+                  ssbo_stages |= VK_SHADER_STAGE_GEOMETRY_BIT;
+                }
+              }
+              if (vk_program->_frgshader && vk_program->_frgshader->_ssbo_refs) {
+                if (vk_program->_frgshader->_ssbo_refs->_ssbo_blocks.count(binding->name) > 0) {
+                  ssbo_stages |= VK_SHADER_STAGE_FRAGMENT_BIT;
+                }
+              }
+              // Use the computed stages, or fall back to vertex if none found
+              binding->stage_flags = ssbo_stages ? ssbo_stages : VK_SHADER_STAGE_VERTEX_BIT;
+
               break;
             }
             default:
@@ -277,7 +317,12 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_o
           }
 
           vk_binding.descriptorCount    = 1;
-          vk_binding.stageFlags         = VK_SHADER_STAGE_ALL_GRAPHICS; // TODO: Make more specific per shader stage
+          // Use binding-specific stage flags for storage buffers, ALL_GRAPHICS for others
+          if (binding->type == VkMergedResourceBinding::Type::StorageBuffer && binding->stage_flags != 0) {
+            vk_binding.stageFlags = binding->stage_flags;
+          } else {
+            vk_binding.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
+          }
           vk_binding.pImmutableSamplers = nullptr;
 
           bindings.push_back(vk_binding);
@@ -373,6 +418,153 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_o
     PLCI.pSetLayouts    = nullptr;
   }
   return PLCI;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// SSBO-only pipeline creation (no vertex buffer)
+///////////////////////////////////////////////////////////////////////////////
+
+vkpipeline_obj_ptr_t VkFxInterface::_createPipelineSSBO(vkprimclass_ptr_t primclass,
+                                                         vkrasterstate_ptr_t vkrstate) {
+
+  OrkAssert(_currentVKPASS != nullptr);
+  vkpipeline_obj_ptr_t pipeline = std::make_shared<VkPipelineObject>(_contextVK);
+  auto shprog = _currentVKPASS->_vk_program;
+  pipeline->_vk_program  = shprog;
+  pipeline->_rasterstate = vkrstate;
+  auto fbi = _contextVK->_fbi;
+  auto rtg = fbi->_active_rtgroup;
+  auto rtg_impl = rtg->_impl.getShared<VkRtGroupImpl>();
+
+  ////////////////////////////////////////////////////
+  // create pipeline info
+  ////////////////////////////////////////////////////
+
+  auto& PIPE_CREATE_INFO = pipeline->_VKGFXPCI;
+  initializeVkStruct(PIPE_CREATE_INFO, VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
+
+  PIPE_CREATE_INFO.flags      = VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT;
+  PIPE_CREATE_INFO.renderPass = VK_NULL_HANDLE;
+  PIPE_CREATE_INFO.subpass    = 0;
+
+  ////////////////////////////////////////////////////
+  // Dynamic rendering info
+  ////////////////////////////////////////////////////
+
+  rtg_impl->_prinfo_retain = std::make_shared<VulkanPipelineRenderInfo>(rtg);
+  OrkAssert(rtg_impl->_prinfo_retain);
+  PIPE_CREATE_INFO.pNext = &rtg_impl->_prinfo_retain->_createInfo;
+
+  ////////////////////////////////////////////////////
+  // count/assign shader stages
+  ////////////////////////////////////////////////////
+
+  std::vector<VkPipelineShaderStageCreateInfo> stages;
+  if (shprog->_vtxshader)
+    stages.push_back(shprog->_vtxshader->_shaderstageinfo);
+  if (shprog->_geoshader)
+    stages.push_back(shprog->_geoshader->_shaderstageinfo);
+  if (shprog->_frgshader)
+    stages.push_back(shprog->_frgshader->_shaderstageinfo);
+
+  ////////////////////////////////////////////////////
+  // Empty vertex input state (SSBO-only rendering)
+  // Vertex shader reads from storage buffer via gl_VertexID
+  ////////////////////////////////////////////////////
+
+  VkPipelineVertexInputStateCreateInfo empty_vertex_input = {};
+  initializeVkStruct(empty_vertex_input, VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);
+  empty_vertex_input.vertexBindingDescriptionCount   = 0;
+  empty_vertex_input.pVertexBindingDescriptions      = nullptr;
+  empty_vertex_input.vertexAttributeDescriptionCount = 0;
+  empty_vertex_input.pVertexAttributeDescriptions    = nullptr;
+
+  PIPE_CREATE_INFO.stageCount          = stages.size();
+  PIPE_CREATE_INFO.pStages             = stages.data();
+  PIPE_CREATE_INFO.pVertexInputState   = &empty_vertex_input;
+  PIPE_CREATE_INFO.pInputAssemblyState = &primclass->_input_assembly_state;
+
+  ////////////////////////////////////////////////////
+  // dynamic states (viewport, scissor, blend constants)
+  ////////////////////////////////////////////////////
+
+  std::vector<VkDynamicState> dynamic_states = {
+    VK_DYNAMIC_STATE_VIEWPORT,
+    VK_DYNAMIC_STATE_SCISSOR,
+    VK_DYNAMIC_STATE_BLEND_CONSTANTS
+  };
+  VkPipelineDynamicStateCreateInfo dynamicState = {};
+  initializeVkStruct(dynamicState, VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);
+  dynamicState.dynamicStateCount = dynamic_states.size();
+  dynamicState.pDynamicStates    = dynamic_states.data();
+
+  PIPE_CREATE_INFO.pDynamicState = &dynamicState;
+
+  VkPipelineViewportStateCreateInfo VPSTATE = {};
+  VPSTATE.sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+  VPSTATE.viewportCount = 1;
+  VPSTATE.pViewports    = nullptr;
+  VPSTATE.scissorCount  = 1;
+  VPSTATE.pScissors     = nullptr;
+
+  PIPE_CREATE_INFO.pViewportState = &VPSTATE;
+
+  ////////////////////////////////////////////////////
+  // MSAA state
+  ////////////////////////////////////////////////////
+
+  VkPipelineMultisampleStateCreateInfo MSAA = {};
+  initializeVkStruct(MSAA, VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);
+  MSAA.sampleShadingEnable   = VK_FALSE;
+  MSAA.rasterizationSamples  = VK_SAMPLE_COUNT_1_BIT;
+  MSAA.minSampleShading      = 1.0f;
+  MSAA.pSampleMask           = nullptr;
+  MSAA.alphaToCoverageEnable = VK_FALSE;
+  MSAA.alphaToOneEnable      = VK_FALSE;
+
+  PIPE_CREATE_INFO.pMultisampleState = &MSAA;
+
+  ////////////////////////////////////////////////////
+  // raster states
+  ////////////////////////////////////////////////////
+
+  PIPE_CREATE_INFO.pRasterizationState = &pipeline->_rasterstate->_VKRSCI;
+  PIPE_CREATE_INFO.pDepthStencilState  = &pipeline->_rasterstate->_VKDSSCI;
+  PIPE_CREATE_INFO.pColorBlendState    = &pipeline->_rasterstate->_VKCBSI;
+
+  ///////////////////////////////////////////////////
+  // create pipeline layout
+  ////////////////////////////////////////////////////
+
+  auto PLCI = _createPipelineLayoutData(pipeline);
+
+  VkResult OK = vkCreatePipelineLayout(
+      _contextVK->_vkdevice,
+      &PLCI,
+      nullptr,
+      &pipeline->_pipelineLayout);
+  OrkAssert(VK_SUCCESS == OK);
+
+  PIPE_CREATE_INFO.layout = pipeline->_pipelineLayout;
+
+  ///////////////////////////////////////////////////
+  // create the graphics pipeline
+  ///////////////////////////////////////////////////
+
+  OK = vkCreateGraphicsPipelines(
+      _contextVK->_vkdevice,
+      VK_NULL_HANDLE,
+      1,
+      &PIPE_CREATE_INFO,
+      nullptr,
+      &pipeline->_pipeline);
+
+  if (OK != VK_SUCCESS) {
+    printf("_createPipelineSSBO: vkCreateGraphicsPipelines failed with VkResult=%d\n", OK);
+  }
+  OrkAssert(VK_SUCCESS == OK);
+
+  return pipeline;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

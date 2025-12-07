@@ -410,6 +410,9 @@ struct VkFxInterface final : public FxInterface {
   vkpipeline_obj_ptr_t _createPipeline( vkvtxbuf_ptr_t vb,             //
                                         vkprimclass_ptr_t primclas,    //
                                         vkrasterstate_ptr_t rstate );  //
+  // SSBO-only pipelines (no vertex buffer, vertex shader reads from SSBO via gl_VertexID)
+  vkpipeline_obj_ptr_t _fetchPipelineSSBO(vkprimclass_ptr_t primclas);
+  vkpipeline_obj_ptr_t _createPipelineSSBO(vkprimclass_ptr_t primclas, vkrasterstate_ptr_t rstate);
   void _createPipelineReport(vkpipeline_obj_ptr_t pipeline);           //
   VkPipelineLayoutCreateInfo _createPipelineLayoutData(vkpipeline_obj_ptr_t pipeline);
   // ubo
@@ -420,7 +423,11 @@ struct VkFxInterface final : public FxInterface {
 
   // ssbo
   FxShaderStorageBuffer* createStorageBuffer(size_t length) final;
-  storagebuffermappingptr_t mapStorageBuffer(FxShaderStorageBuffer* b, size_t base, size_t length) final;
+  storagebuffermappingptr_t mapStorageBuffer(
+      FxShaderStorageBuffer* b,
+      size_t base,
+      size_t length,
+      BufferMapAccess access) final;
   void unmapStorageBuffer(FxShaderStorageBufferMapping* mapping) final;
   void bindStorageBuffer(const FxShaderStorageBlock* block, FxShaderStorageBuffer* buffer);
   void copyBufferIntoStorageBuffer(FxShaderStorageBuffer* ssbo, std::vector<uint8_t> buffer, size_t dest_offset) final;

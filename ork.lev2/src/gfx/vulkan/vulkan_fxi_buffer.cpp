@@ -62,12 +62,14 @@ FxShaderStorageBuffer* VkFxInterface::createStorageBuffer(size_t length) {
 
 storagebuffermappingptr_t VkFxInterface::mapStorageBuffer(FxShaderStorageBuffer* b, //
                                                           size_t base, //
-                                                          size_t length) { //
+                                                          size_t length, //
+                                                          BufferMapAccess access) { //
   auto bufimpl = b->_impl.getShared<VulkanBuffer>();
   auto mapping = std::make_shared<FxShaderStorageBufferMapping>();
   mapping->_buffer = b;
   mapping->_fxi = this;
   mapping->_offset = base;
+  mapping->_access = access;
   if(length == 0) {
     mapping->_length = bufimpl->_length;
   } else {

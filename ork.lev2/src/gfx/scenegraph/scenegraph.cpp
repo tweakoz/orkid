@@ -194,14 +194,15 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
   if (auto try_bgtex = params->typedValueForKey<std::string>("SkyboxTexPathStr")) {
     _compositorData->_defaultBG = false;
   }
+  auto preset_upper = ork::toUpper(preset);
 
-  if (preset == "Unlit") {
+  if (preset_upper == "UNLIT") {
     _compositorPreset = _compositorData->presetUnlit(_renderPresetData);
     auto nodetek      = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outrnode     = nodetek->tryRenderNodeAs<compositor::UnlitNode>();
     _pbr_common       = nullptr;
   }
-  if (preset == "ForwardPBR" or preset == "FWDPBR") {
+  else if (preset == "FORWARDPBR" or preset == "FWDPBR") {
     _compositorPreset = _compositorData->presetForwardPBR(_renderPresetData);
     auto nodetek      = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outrnode     = nodetek->tryRenderNodeAs<pbr::ForwardNode>();

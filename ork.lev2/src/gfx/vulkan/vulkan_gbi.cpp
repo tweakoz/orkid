@@ -678,7 +678,41 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
     PrimitiveType eType,
     int ivbase,
     int ivcount) {
-  OrkAssert(false);
+
+  ///////////////////////
+  // get primclass (input to pipeline search)
+  ///////////////////////
+
+  auto it_pc = _primclasses.find(uint64_t(eType));
+  OrkAssert(it_pc != _primclasses.end());
+  auto primclass = it_pc->second;
+
+  ///////////////////////
+  // find pipeline using SSBO-only path
+  ///////////////////////
+
+  auto fxi      = _contextVK->_fxi;
+  auto pipeline = fxi->_fetchPipelineSSBO(primclass);
+  auto pass     = fxi->_currentVKPASS;
+
+  ///////////////////////
+  // bind pipeline (no vertex buffer binding needed)
+  ///////////////////////
+
+  auto& CB = _contextVK->primary_cb()->_vkcmdbuf;
+  fxi->_bindPipeline(CB, pipeline);
+
+  ///////////////////////
+  // draw
+  // vertex shader reads from SSBO via gl_VertexID
+  ///////////////////////
+
+  vkCmdDraw(
+      CB,       // command buffer
+      ivcount,  // vertex count
+      1,        // instance count
+      ivbase,   // first vertex
+      0);       // first instance
 }
 
 void VkGeometryBufferInterface::DrawInstancedIndexedPrimitiveEML(

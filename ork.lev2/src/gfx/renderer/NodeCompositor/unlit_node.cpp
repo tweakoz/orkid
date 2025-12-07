@@ -78,7 +78,6 @@ struct IMPL {
       _rtg->buffer(0)->_clearColor = node->_clearColor;
       _rtg->_autoclear  = true;
       targ->FBI()->PushRtGroup(_rtg);
-      targ->beginFrame();
       /////////////////////////////////////////////////////////////////////////////////////////
       auto DB  = RCFD->GetDB();
       auto CPD = CIMPL->topCPD();
@@ -110,7 +109,6 @@ struct IMPL {
       // float t4 = _profile_timer.SecsSinceStart();
       // printf( "unlitnode t4-t3 %g(mSec)\n", (t2-t1)*1000.0f);
       /////////////////////////////////////////////////////////////////////////////////////////
-      targ->endFrame();
       targ->FBI()->PopRtGroup();
     }
     targ->debugPopGroup();

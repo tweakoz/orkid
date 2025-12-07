@@ -17,17 +17,18 @@ namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VkMergedResourceBinding {
-    enum class Type : uint32_t { 
-        Sampler = 0, 
-        UniformBlock = 1, 
-        StorageBuffer = 2 
+    enum class Type : uint32_t {
+        Sampler = 0,
+        UniformBlock = 1,
+        StorageBuffer = 2
     };
-    
+
     Type type = Type::Sampler;
     std::string name;
     std::string datatype;
     uint32_t binding_id = 0;
     std::string original_source;
+    uint32_t stage_flags = 0; // VkShaderStageFlags for which stages use this binding
 };
 
 using vk_merged_resource_binding_ptr_t = std::shared_ptr<VkMergedResourceBinding>;

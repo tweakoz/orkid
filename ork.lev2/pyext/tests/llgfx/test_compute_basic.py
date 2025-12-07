@@ -93,7 +93,7 @@ def main():
 
     # Map SSBO and read back results
     print("Reading back SSBO data...", flush=True)
-    mapping = fxi.mapStorageBuffer(ssbo, 0, ssbo_size)
+    mapping = fxi.mapStorageBuffer(ssbo, 0, ssbo_size, tokens.READ_ONLY)
     print(f"  mapping: {mapping}", flush=True)
     print(f"  mapping.length: {mapping.length}", flush=True)
     print(f"  mapping.data length: {len(mapping.data)}", flush=True)

@@ -126,8 +126,6 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
   _tek_sprites        = _material->technique("tflatparticle_sprites");
   _tek_streaks        = _material->technique("tflatparticle_streaks");
 
-#if defined(ENABLE_COMPUTE_SHADERS)
-
   auto FXI = context->FXI();
   auto CI  = context->CI();
 
@@ -137,8 +135,6 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
 
   _tek_streaks_stereoCI = _material->technique("tflatparticle_streaks_stereoCI");
   _tek_sprites_stereoCI = _material->technique("tflatparticle_sprites_stereoCI");
-
-#endif
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FlatMaterial::update(const RenderContextInstData& RCID) {
@@ -286,8 +282,6 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   _tek_sprites = _material->technique("tgradparticle_sprites");
   _tek_streaks = _material->technique("tgradparticle_streaks");
 
-#if defined(ENABLE_COMPUTE_SHADERS)
-
   auto FXI = context->FXI();
   auto CI  = context->CI();
 
@@ -297,9 +291,6 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
 
   _tek_streaks_stereoCI = _material->technique("tgradparticle_streaks_stereoCI");
   _tek_sprites_stereoCI = _material->technique("tgradparticle_sprites_stereoCI");
-
-
-#endif
 }
 /////////////////////////////////////////////////////////////////////////////////////////////
 void GradientMaterial::update(const RenderContextInstData& RCID) {

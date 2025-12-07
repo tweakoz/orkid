@@ -401,5 +401,16 @@ enum struct EVtxStreamFormat : crc_enum_t {
 ///////////////////////////////////////////////////////////////////////////////
 std::string EBufferFormatToName(EBufferFormat fmt);
 std::string EVtxStreamFormatToName(EVtxStreamFormat fmt);
+
+///////////////////////////////////////////////////////////////////////////////
+// Buffer mapping access mode - hints for memory coherency optimization
+///////////////////////////////////////////////////////////////////////////////
+
+enum class BufferMapAccess : crc_enum_t {
+  CrcEnum(READ_ONLY),   // GPU writes, CPU reads - invalidate cache before read
+  CrcEnum(WRITE_ONLY),  // CPU writes, GPU reads - flush cache after write
+  CrcEnum(READ_WRITE)   // Both directions - flush and invalidate as needed
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

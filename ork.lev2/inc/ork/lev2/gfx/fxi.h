@@ -8,6 +8,7 @@
 #pragma once
 
 #include <ork/lev2/lev2_types.h>
+#include <ork/lev2/gfx/gfxenv_enum.h>
 
 namespace ork::lev2 {
 
@@ -63,7 +64,11 @@ public:
 
   virtual FxShaderStorageBuffer* createStorageBuffer(size_t length) { return nullptr; }
   virtual void copyBufferIntoStorageBuffer(FxShaderStorageBuffer* ssbo, std::vector<uint8_t> buffer, size_t dest_offset) { }
-  virtual storagebuffermappingptr_t mapStorageBuffer(FxShaderStorageBuffer*b,size_t base=0, size_t length=0) { return nullptr; }
+  virtual storagebuffermappingptr_t mapStorageBuffer(
+      FxShaderStorageBuffer* b,
+      size_t base,
+      size_t length,
+      BufferMapAccess access) { return nullptr; }
   virtual void unmapStorageBuffer(FxShaderStorageBufferMapping* mapping) {}
 
   //////////////////////////////////////////

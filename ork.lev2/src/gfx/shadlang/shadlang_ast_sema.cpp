@@ -1265,10 +1265,13 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
       // Collect direct inherited resources from the shader
       auto direct_sampler_sets   = AstNode::collectNodesOfType<SemaInheritSamplerSet>(shader);
       auto direct_uniform_blocks = AstNode::collectNodesOfType<SemaInheritUniformBlk>(shader);
+      auto direct_storage_interfaces = AstNode::collectNodesOfType<SemaInheritStorageInterface>(shader);
       // printf("      Direct SemaInheritSamplerSet nodes: %zu\n", direct_sampler_sets.size());
       // printf("      Direct SemaInheritUniformBlk nodes: %zu\n", direct_uniform_blocks.size());
+      // printf("      Direct SemaInheritStorageInterface nodes: %zu\n", direct_storage_interfaces.size());
       inherited_sampler_sets.insert(inherited_sampler_sets.end(), direct_sampler_sets.begin(), direct_sampler_sets.end());
       inherited_uniform_blocks.insert(inherited_uniform_blocks.end(), direct_uniform_blocks.begin(), direct_uniform_blocks.end());
+      inherited_storage_interfaces.insert(inherited_storage_interfaces.end(), direct_storage_interfaces.begin(), direct_storage_interfaces.end());
 
       // Also check interfaces that this shader inherits from
       auto inherited_interfaces          = AstNode::collectNodesOfType<SemaInheritVertexInterface>(shader);
@@ -1583,6 +1586,8 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
               source_type = "sampler_set";
             } else if (first_binding.type == MergedShaderResources::ResourceBinding::Type::UniformBlock) {
               source_type = "uniform_block";
+            } else if (first_binding.type == MergedShaderResources::ResourceBinding::Type::SSBO) {
+              source_type = "storage_interface";
             }
           }
           source_node->_name        = FormatString("From: %s (%s)", source_name.c_str(), source_type.c_str());

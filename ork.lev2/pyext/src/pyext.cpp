@@ -193,8 +193,8 @@ PYBIND11_MODULE(_lev2, module_lev2) {
   pyinit_gfx_compositor(module_lev2);
   pyinit_gfx_drawabledatas(module_lev2);
   pyinit_gfx_drawables(module_lev2);
+  pyinit_gfx_shader(module_lev2);  // shader before material (material uses shader types)
   pyinit_gfx_material(module_lev2);
-  pyinit_gfx_shader(module_lev2);
   pyinit_gfx_renderer(module_lev2);
   pyinit_gfx_lighting(module_lev2);
   pyinit_gfx_qtez(module_lev2);

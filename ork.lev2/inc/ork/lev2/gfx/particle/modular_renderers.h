@@ -51,12 +51,10 @@ public:
   EDepthTest _depthtest = EDepthTest::OFF;
   BlendingMacro _blending = BlendingMacro::OFF;
 
-#if defined(ENABLE_COMPUTE_SHADERS)
   FxShaderStorageBuffer* _cu_vertex_io_buffer    = nullptr;
   const FxShaderStorageBlock* _cu_storage_block  = nullptr;
   const FxComputeShader* _streakcu_shader              = nullptr;
   const FxComputeShader* _spritecu_shader              = nullptr;
-#endif
 
 
 };

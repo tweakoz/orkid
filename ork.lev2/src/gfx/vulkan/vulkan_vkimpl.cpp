@@ -15,6 +15,19 @@
 #include "headers/vulkan_ctx.h"
 #import <ork/lev2/glfw/ctx_glfw.h>
 
+// Static initializer to configure MoltenVK before library initialization
+#if defined(__APPLE__)
+namespace {
+struct MoltenVKConfigurator {
+  MoltenVKConfigurator() {
+    // Disable argument buffers - they require type metadata that SPIRV-Cross
+    // cannot always determine for storage buffers in graphics pipelines
+    setenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS", "0", 0);
+  }
+} g_moltenvk_configurator;
+}
+#endif
+
 namespace ork::lev2::vulkan {
 static logchannel_ptr_t logchan_vkierr = logger()->configureChannel("VKINSTERR", fvec3(1,0,0),true);
 
@@ -243,6 +256,13 @@ VulkanInstance::VulkanInstance() {
   printf("VK_LAYER_PATH: %s\n", getenv("VK_LAYER_PATH"));
   printf("DYLD_LIBRARY_PATH: %s\n", getenv("DYLD_LIBRARY_PATH"));
   printf("MVK_CONFIG_LOG_LEVEL: %s\n", getenv("MVK_CONFIG_LOG_LEVEL"));
+
+#if defined(__APPLE__)
+  // Disable MoltenVK argument buffers - they require additional type metadata
+  // that SPIRV-Cross cannot always determine for storage buffers in graphics pipelines
+  setenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS", "0", 0); // 0 = don't overwrite if set
+  printf("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS: %s\n", getenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS"));
+#endif
 
   VkResult res = vkCreateInstance(&_instancedata, nullptr, &_instance);
   OrkAssert(res == 0);
