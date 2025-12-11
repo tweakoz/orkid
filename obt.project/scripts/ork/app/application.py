@@ -480,6 +480,14 @@ class ComponentizedApplication(object):
     for component in self.components_sorted:
       component.onSynthLink(synth)
 
+    self._onSynthInit(synth)
+
+  ##################################################
+
+
+  def _onSynthInit(self,synth):
+    pass
+
   ##################################################
 
   def onAudioExit(self):
