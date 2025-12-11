@@ -151,9 +151,11 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   for (int i = 0; i < fftSize; i++) {
     float s = _samples[i >> DOWNSHIFT];
     // printf("s<%d:%g>\n", i, s);
-    float win_num        = pi2 * float(i);
-    float win_den        = fftSize - 1;
-    float win            = 0.5f * (1 - cosf(win_num / win_den));
+    float a0 = 0.42f;
+    float a1 = 0.5f;
+    float a2 = 0.08f;
+    float n  = float(i) / float(fftSize - 1);
+    float win = a0 - a1 * cosf(pi2 * n) + a2 * cosf(2.0f * pi2 * n);
     float s2             = _samples[i >> DOWNSHIFT];
     _fftcontext.input[i] = s2 * win;
   }
