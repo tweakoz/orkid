@@ -118,6 +118,23 @@ void pyinit_aud_singularity(py::module& module_lev2) {
     .def_property_readonly("energy", &NoiseGate::getEnergy);
   singmodule.def("noisegate", []() -> noisegate_ptr_t { return std::make_shared<NoiseGate>(); });
 
+  /////////////////////////////////////////////////////////////////////////////
+  // RNNoise Denoiser
+  /////////////////////////////////////////////////////////////////////////////
+  auto rnnoise_type = py::class_<RNNoiseDenoise, rnnoise_ptr_t>(singmodule, "RNNoiseDenoise")
+    .def(py::init<>())
+    .def("__repr__", [](rnnoise_ptr_t rn) -> std::string {
+      return FormatString("RNNoiseDenoise(%p)", rn.get());
+    })
+    .def("clear", &RNNoiseDenoise::clear)
+    .def("compute", &RNNoiseDenoise::compute)
+    .def("computeBlock", [](RNNoiseDenoise& rn, py::array_t<float> samples) {
+      auto buf = samples.mutable_unchecked<1>();
+      rn.computeBlock(buf.mutable_data(0), buf.shape(0));
+    })
+    .def_property_readonly("vad_probability", &RNNoiseDenoise::getVadProbability);
+  singmodule.def("rnnoise", []() -> rnnoise_ptr_t { return std::make_shared<RNNoiseDenoise>(); });
+
   pyinit_aud_singularity_synth(singmodule);
   pyinit_aud_singularity_datas(singmodule);
   pyinit_aud_singularity_ui(singmodule);

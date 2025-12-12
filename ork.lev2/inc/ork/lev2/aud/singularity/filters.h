@@ -283,4 +283,40 @@ private:
   float _energy = 0.0f;
 };
 
+///////////////////////////////////////////////////////////////////////////////
+// RNNoise Denoiser
+//  - Neural network based noise suppression (wraps xiph/rnnoise)
+//  - Fixed 480-sample frame size internally (10ms @ 48kHz)
+//  - Buffers input/output to handle arbitrary block sizes
+///////////////////////////////////////////////////////////////////////////////
+
+struct RNNoiseDenoise;
+using rnnoise_ptr_t = std::shared_ptr<RNNoiseDenoise>;
+
+struct RNNoiseDenoise {
+  static constexpr size_t FRAME_SIZE = 480;  // RNNoise fixed frame size
+
+  RNNoiseDenoise();
+  ~RNNoiseDenoise();
+
+  // Processing
+  float compute(float input);
+  void computeBlock(float* samples, size_t count);
+  void clear();
+
+  // Metering
+  float getVadProbability() const { return _vad_prob; }
+
+private:
+  void processFrame();
+
+  void* _state = nullptr;              // DenoiseState*
+  float _input_buffer[FRAME_SIZE];
+  float _output_buffer[FRAME_SIZE];
+  size_t _input_pos = 0;               // write position in input buffer
+  size_t _output_pos = 0;              // read position in output buffer
+  size_t _output_avail = 0;            // samples available in output buffer
+  float _vad_prob = 0.0f;
+};
+
 } // namespace ork::audio::singularity
