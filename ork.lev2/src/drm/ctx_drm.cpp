@@ -523,7 +523,7 @@ void CtxDRM::_processPointerMotionEvent(void* event_ptr) {
 
     // Update absolute mouse position (clamped to screen bounds)
     _mouseX += int(dx);
-    _mouseY += int(dy);
+    _mouseY -= int(dy);
 
     if (_mouseX < 0) _mouseX = 0;
     if (_mouseY < 0) _mouseY = 0;
