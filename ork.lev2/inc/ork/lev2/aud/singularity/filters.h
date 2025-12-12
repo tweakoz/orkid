@@ -91,6 +91,9 @@ struct ParaOne {
   float _spl0;
 };
 
+struct BiQuad;
+using biquad_ptr_t = std::shared_ptr<BiQuad>;
+
 struct BiQuad {
   BiQuad();
   void Clear();
@@ -165,6 +168,119 @@ struct OnePoleHighPass {
         _ym1 = output;
         return output;
     }
+};
+
+///////////////////////////////////////////////////////////////////////////////
+// Dynamics Compressor
+//  - Musician-friendly interface with threshold, ratio, attack, release, makeup
+//  - Feed-forward design with RMS envelope detection
+///////////////////////////////////////////////////////////////////////////////
+
+struct Compressor;
+using compressor_ptr_t = std::shared_ptr<Compressor>;
+
+struct Compressor {
+  Compressor();
+
+  // Configuration (musician-friendly)
+  void setThreshold(float dB);      // dB below 0 (e.g., -20)
+  void setRatio(float ratio);       // compression ratio (e.g., 4.0 = 4:1)
+  void setAttack(float ms);         // attack time in milliseconds
+  void setRelease(float ms);        // release time in milliseconds
+  void setMakeupGain(float dB);     // makeup gain in dB
+  void setKnee(float dB);           // soft knee width in dB (0 = hard knee)
+
+  // Preset configurations
+  void setupForVoice(float threshold_dB = -12.0f, float ratio = 3.0f);
+  void setupGentle();               // light compression for general use
+  void setupMedium();               // moderate compression
+  void setupHeavy();                // heavy limiting
+
+  // Processing
+  float compute(float input);
+  void computeBlock(float* samples, size_t count);
+  void clear();
+
+  // Read current gain reduction (for metering)
+  float getGainReduction() const { return _gain_reduction_dB; }
+
+  // Getters for property bindings
+  float getThreshold() const { return _threshold_dB; }
+  float getRatio() const { return _ratio; }
+  float getMakeupGain() const;  // returns dB
+  float getKnee() const { return _knee_dB; }
+
+private:
+  float computeGain(float input_dB);
+
+  // Parameters
+  float _threshold_dB = -20.0f;
+  float _ratio = 4.0f;
+  float _attack_coeff = 0.0f;
+  float _release_coeff = 0.0f;
+  float _makeup_linear = 1.0f;
+  float _knee_dB = 6.0f;
+
+  // State
+  float _envelope = 0.0f;
+  float _gain_reduction_dB = 0.0f;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+// Noise Gate
+//  - Standalone noise gate for sample-by-sample or block processing
+//  - Energy-based gating with configurable attack/release
+///////////////////////////////////////////////////////////////////////////////
+
+struct NoiseGate;
+using noisegate_ptr_t = std::shared_ptr<NoiseGate>;
+
+struct NoiseGate {
+  NoiseGate();
+
+  // Configuration
+  void setThreshold(float threshold_dB);  // threshold in dB (e.g., -40)
+  void setAttack(float ms);               // attack time in milliseconds
+  void setRelease(float ms);              // release time in milliseconds
+  void setMaxAttenuation(float dB);       // max attenuation when gate closed (e.g., -40dB, 0 = full mute)
+  void setInputGain(float gain);          // input gain (linear, default 1.0)
+  void setOutputGain(float gain);         // output gain (linear, default 1.0)
+
+  // Preset configurations
+  void setupForVoice();                   // tuned for voice input
+
+  // Processing
+  float compute(float input);
+  void computeBlock(float* samples, size_t count);
+  void clear();
+
+  // Read current state (for metering)
+  float getEnvelope() const { return _envelope; }
+  float getEnergy() const { return _energy; }
+
+  // Getters for property bindings
+  float getThreshold() const { return _threshold_dB; }
+  float getAttack() const { return _attack_ms; }
+  float getRelease() const { return _release_ms; }
+  float getMaxAttenuation() const { return _max_atten_dB; }
+  float getInputGain() const { return _input_gain; }
+  float getOutputGain() const { return _output_gain; }
+
+private:
+  float _threshold_dB = -40.0f;
+  float _threshold = 0.0001f;             // linear energy threshold
+  float _attack_ms = 5.0f;
+  float _release_ms = 200.0f;
+  float _attack_coeff = 0.0f;
+  float _release_coeff = 0.0f;
+  float _max_atten_dB = -80.0f;           // max attenuation in dB when closed
+  float _min_gain = 0.0001f;              // linear min gain (from max_atten)
+  float _input_gain = 1.0f;
+  float _output_gain = 1.0f;
+
+  // State
+  float _envelope = 0.0f;
+  float _energy = 0.0f;
 };
 
 } // namespace ork::audio::singularity

@@ -381,7 +381,7 @@ void FloatSlider::setValue(float val) {
   _value = val;
 
   char buf[64];
-  snprintf(buf, sizeof(buf), "%.4g", _value);
+  snprintf(buf, sizeof(buf), "%.5g", _value);
   _value_str = buf;
 
   _refresh();
