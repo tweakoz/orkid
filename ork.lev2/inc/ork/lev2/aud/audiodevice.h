@@ -60,14 +60,20 @@ struct StreamingAudioInputChunkSource : public AudioInputChunkSource {
 
 struct AudioDeviceInfo {
   std::string _name;
+  std::string _input_short_id;   // e.g., "G6PQ" - 4-char stable hash (empty if no inputs)
+  std::string _output_short_id;  // e.g., "H40R" - 4-char stable hash (empty if no outputs)
   int _max_input_channels = 0;
   int _max_output_channels = 0;
-  double _default_sample_rate = 0.0;
+  double _sample_rate = 0.0;                      // specific sample rate for this entry
+  std::vector<double> _supported_input_rates;     // all supported input sample rates
+  std::vector<double> _supported_output_rates;    // all supported output sample rates
+  int _device_index = 0;                          // original device index (for grouping)
 };
 using audiodeviceinfo_ptr_t = std::shared_ptr<AudioDeviceInfo>;
 using audiodeviceinfo_list_t = std::vector<audiodeviceinfo_ptr_t>;
 
 audiodeviceinfo_list_t enumerateAudioDevices();
+audiodeviceinfo_ptr_t findAudioDeviceByShortId(const std::string& short_id);
 
 struct AudioDevice {
 

@@ -20,6 +20,9 @@
 #include <ork/kernel/environment.h>
 #include <ork/math/audiomath.h>
 #include <ork/reflect/properties/register.h>
+#include <map>
+#include <functional>
+#include <algorithm>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -186,17 +189,82 @@ audiodeviceinfo_list_t enumerateAudioDevices_alsa();
 #endif
 
 audiodeviceinfo_list_t enumerateAudioDevices() {
+  audiodeviceinfo_list_t result;
 #if defined(ENABLE_CORE_AUDIO)
-  return enumerateAudioDevices_coreaudio();
+  result = enumerateAudioDevices_coreaudio();
 #elif defined(ENABLE_PORTAUDIO)
-  return enumerateAudioDevices_portaudio();
+  result = enumerateAudioDevices_portaudio();
 #elif defined(ENABLE_PIPEWIRE)
-  return enumerateAudioDevices_pipewire();
+  result = enumerateAudioDevices_pipewire();
 #elif defined(ENABLE_ALSA)
-  return enumerateAudioDevices_alsa();
-#else
-  return audiodeviceinfo_list_t();
+  result = enumerateAudioDevices_alsa();
 #endif
+
+  // Generate stable 4-char base36 hash from direction, name, sample rate, and channels
+  auto makeHash4 = [](const std::string& direction, const std::string& name, double sr, int channels) -> std::string {
+    std::string input = direction + ":" + name + ":" + std::to_string(int(sr)) + ":" + std::to_string(channels);
+    size_t h = std::hash<std::string>{}(input);
+
+    static const char base36[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    std::string hash;
+    for (int i = 0; i < 4; i++) {
+      hash += base36[h % 36];
+      h /= 36;
+    }
+    return hash;
+  };
+
+  // Filter: inputs must have 1 or 2 channels, outputs must have 2 channels, SR must be 48000
+  audiodeviceinfo_list_t filtered;
+  for (auto& dev : result) {
+    bool valid_input = (dev->_max_input_channels == 1 || dev->_max_input_channels == 2) &&
+                       (int(dev->_sample_rate) == 48000);
+    bool valid_output = (dev->_max_output_channels == 2) &&
+                        (int(dev->_sample_rate) == 48000);
+
+    if (valid_input || valid_output) {
+      // Only keep channels that match the filter
+      if (!valid_input) {
+        dev->_max_input_channels = 0;
+      }
+      if (!valid_output) {
+        dev->_max_output_channels = 0;
+      }
+      filtered.push_back(dev);
+    }
+  }
+  result = filtered;
+
+  // Assign short IDs based on stable hash (4-char only, no prefix)
+  for (auto& dev : result) {
+    if (dev->_max_input_channels > 0) {
+      dev->_input_short_id = makeHash4("I", dev->_name, dev->_sample_rate, dev->_max_input_channels);
+    }
+    if (dev->_max_output_channels > 0) {
+      dev->_output_short_id = makeHash4("O", dev->_name, dev->_sample_rate, dev->_max_output_channels);
+    }
+  }
+
+  // Sort by short ID for stable ordering
+  std::sort(result.begin(), result.end(), [](const auto& a, const auto& b) {
+    std::string id_a = a->_input_short_id.empty() ? a->_output_short_id : a->_input_short_id;
+    std::string id_b = b->_input_short_id.empty() ? b->_output_short_id : b->_input_short_id;
+    return id_a < id_b;
+  });
+
+  return result;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+audiodeviceinfo_ptr_t findAudioDeviceByShortId(const std::string& short_id) {
+  auto devices = enumerateAudioDevices();
+  for (const auto& dev : devices) {
+    if (dev->_input_short_id == short_id || dev->_output_short_id == short_id) {
+      return dev;
+    }
+  }
+  return nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

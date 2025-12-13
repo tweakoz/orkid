@@ -29,6 +29,8 @@
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/aud/singularity/krzobjects.h>
 #include <ork/util/multi_buffer.h>
+#include <set>
+#include <algorithm>
 
 using namespace ork::audio::singularity;
 
@@ -188,6 +190,149 @@ AudioDeviceAlsa::AudioDeviceAlsa(appinitdata_wkptr_t appinitd)
     : AudioDevice(appinitd) {
 
   _impl.makeShared<PrivateImplementation>(appinitd);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+// Helper to probe supported sample rates for an ALSA device
+static std::vector<double> probeAlsaSampleRates(const char* device_name, bool is_capture) {
+  std::vector<double> supported_rates;
+  static const unsigned int test_rates[] = {44100, 48000, 88200, 96000};
+  static const int num_test_rates = sizeof(test_rates) / sizeof(test_rates[0]);
+
+  snd_pcm_t* pcm = nullptr;
+  snd_pcm_hw_params_t* params = nullptr;
+
+  int err = snd_pcm_open(&pcm, device_name,
+                         is_capture ? SND_PCM_STREAM_CAPTURE : SND_PCM_STREAM_PLAYBACK,
+                         SND_PCM_NONBLOCK);
+  if (err < 0) {
+    return supported_rates;
+  }
+
+  snd_pcm_hw_params_alloca(&params);
+  if (snd_pcm_hw_params_any(pcm, params) >= 0) {
+    for (int i = 0; i < num_test_rates; i++) {
+      if (snd_pcm_hw_params_test_rate(pcm, params, test_rates[i], 0) == 0) {
+        supported_rates.push_back(static_cast<double>(test_rates[i]));
+      }
+    }
+  }
+
+  snd_pcm_close(pcm);
+  return supported_rates;
+}
+
+// Helper to get channel count for an ALSA device
+static int getAlsaChannelCount(const char* device_name, bool is_capture) {
+  snd_pcm_t* pcm = nullptr;
+  snd_pcm_hw_params_t* params = nullptr;
+  int channels = 0;
+
+  int err = snd_pcm_open(&pcm, device_name,
+                         is_capture ? SND_PCM_STREAM_CAPTURE : SND_PCM_STREAM_PLAYBACK,
+                         SND_PCM_NONBLOCK);
+  if (err < 0) {
+    return 0;
+  }
+
+  snd_pcm_hw_params_alloca(&params);
+  if (snd_pcm_hw_params_any(pcm, params) >= 0) {
+    unsigned int max_ch = 0;
+    snd_pcm_hw_params_get_channels_max(params, &max_ch);
+    channels = static_cast<int>(max_ch);
+  }
+
+  snd_pcm_close(pcm);
+  return channels;
+}
+
+audiodeviceinfo_list_t enumerateAudioDevices_alsa() {
+  audiodeviceinfo_list_t result;
+
+  // Enumerate ALSA PCM devices
+  void **hints;
+  if (snd_device_name_hint(-1, "pcm", &hints) < 0) {
+    return result;
+  }
+
+  int device_index = 0;
+  for (void **hint = hints; *hint; ++hint) {
+    char *name = snd_device_name_get_hint(*hint, "NAME");
+    char *desc = snd_device_name_get_hint(*hint, "DESC");
+    char *ioid = snd_device_name_get_hint(*hint, "IOID");
+
+    if (name) {
+      // Skip null entries
+      if (strncmp(name, "null", 4) != 0) {
+        // Determine if input, output, or both
+        bool is_input = true;
+        bool is_output = true;
+        if (ioid) {
+          if (strcmp(ioid, "Input") == 0) {
+            is_output = false;
+          } else if (strcmp(ioid, "Output") == 0) {
+            is_input = false;
+          }
+        }
+
+        // Get channel counts
+        int input_channels = is_input ? getAlsaChannelCount(name, true) : 0;
+        int output_channels = is_output ? getAlsaChannelCount(name, false) : 0;
+
+        // Probe sample rates
+        std::vector<double> input_rates;
+        std::vector<double> output_rates;
+        if (input_channels > 0) {
+          input_rates = probeAlsaSampleRates(name, true);
+        }
+        if (output_channels > 0) {
+          output_rates = probeAlsaSampleRates(name, false);
+        }
+
+        // Collect all unique rates
+        std::set<double> all_rates;
+        for (auto r : input_rates) all_rates.insert(r);
+        for (auto r : output_rates) all_rates.insert(r);
+
+        // If no rates probed, assume 48000
+        if (all_rates.empty()) {
+          all_rates.insert(48000.0);
+        }
+
+        // Create an entry for each supported sample rate
+        for (double rate : all_rates) {
+          auto info = std::make_shared<AudioDeviceInfo>();
+          info->_name = name;
+          info->_device_index = device_index;
+          info->_sample_rate = rate;
+          info->_supported_input_rates = input_rates;
+          info->_supported_output_rates = output_rates;
+
+          // Only set channels if this rate is supported for that direction
+          bool rate_supported_input = std::find(input_rates.begin(), input_rates.end(), rate) != input_rates.end();
+          bool rate_supported_output = std::find(output_rates.begin(), output_rates.end(), rate) != output_rates.end();
+
+          if (rate_supported_input || input_rates.empty()) {
+            info->_max_input_channels = input_channels;
+          }
+          if (rate_supported_output || output_rates.empty()) {
+            info->_max_output_channels = output_channels;
+          }
+
+          result.push_back(info);
+        }
+
+        device_index++;
+      }
+      free(name);
+    }
+    if (desc) free(desc);
+    if (ioid) free(ioid);
+  }
+
+  snd_device_name_free_hint(hints);
+  return result;
 }
 
 } // namespace ork::lev2

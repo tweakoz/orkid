@@ -117,8 +117,43 @@ CoreAudioDevice::CoreAudioDevice(appinitdata_wkptr_t appinitd)
 
   auto unlocked_appinitdata = _appinitdata.lock();
 
+  // Resolve short IDs (4-char hash) to full device names
+  std::string input_devname = unlocked_appinitdata->_audio_input_devname;
+  std::string output_devname = unlocked_appinitdata->_audio_output_devname;
+
+  auto isShortId = [](const std::string& name) -> bool {
+    if (name.length() != 4) return false;
+    for (char c : name) {
+      if (!std::isalnum(c)) return false;
+    }
+    return true;
+  };
+
+  if (isShortId(input_devname)) {
+    auto dev = findAudioDeviceByShortId(input_devname);
+    if (dev) {
+      logchan_coreaudio->log("resolved input short id '%s' to '%s' @ %gHz",
+                             input_devname.c_str(), dev->_name.c_str(), dev->_sample_rate);
+      input_devname = dev->_name;
+    } else {
+      logerrchannel()->log("unknown input short id '%s' - run ork.devicelist.audio.py to see available IDs",
+                           input_devname.c_str());
+    }
+  }
+  if (isShortId(output_devname)) {
+    auto dev = findAudioDeviceByShortId(output_devname);
+    if (dev) {
+      logchan_coreaudio->log("resolved output short id '%s' to '%s' @ %gHz",
+                             output_devname.c_str(), dev->_name.c_str(), dev->_sample_rate);
+      output_devname = dev->_name;
+    } else {
+      logerrchannel()->log("unknown output short id '%s' - run ork.devicelist.audio.py to see available IDs",
+                           output_devname.c_str());
+    }
+  }
+
   if( unlocked_appinitdata->_enable_audio_input ) {
-    logchan_coreaudio->log("looking for Input: <%s>", unlocked_appinitdata->_audio_input_devname.c_str());
+    logchan_coreaudio->log("looking for Input: <%s>", input_devname.c_str());
     for (const auto& input : _inputDevList.GetMap()) {
       auto info   = input.second;
       auto format = info->_format;
@@ -127,7 +162,7 @@ CoreAudioDevice::CoreAudioDevice(appinitdata_wkptr_t appinitd)
       logchan_coreaudio->log(
           "input id<%d> name<%s> numchan<%d> fmt<%s>", info->_ID, input.first.c_str(), info->countChannels(), fmtstr.c_str());
 
-      if (input.first == unlocked_appinitdata->_audio_input_devname) {
+      if (input.first == input_devname) {
         _actual_input_channels = info->countChannels();
         _num_input_channels = unlocked_appinitdata->_audio_input_numchannels;
         logchan_coreaudio->log("FOUND INPUT DEVICE !!!!! name<%s> device_ch<%d> requested_ch<%zu>",
@@ -137,13 +172,13 @@ CoreAudioDevice::CoreAudioDevice(appinitdata_wkptr_t appinitd)
     }
   }
   if( unlocked_appinitdata->_enable_audio_output ) {
-    logchan_coreaudio->log("looking for Output: <%s>", unlocked_appinitdata->_audio_output_devname.c_str());
+    logchan_coreaudio->log("looking for Output: <%s>", output_devname.c_str());
     for (const auto& output : _outputDevList.GetMap()) {
       auto info   = output.second;
       auto format = info->_format;
       logchan_coreaudio->log("output id<%d> name<%s> numch<%d>", info->_ID, output.first.c_str(), info->countChannels());
       CAStreamBasicDescription::Print(format);
-      if (output.first == unlocked_appinitdata->_audio_output_devname) {
+      if (output.first == output_devname) {
         //_inp_dev_name = input.first;
         //_num_input_channels = info->countChannels();
         logchan_coreaudio->log("FOUND OUTPUT DEVICE !!!!! name<%s> numch<%d>", output.first.c_str(), info->countChannels());
@@ -440,5 +475,113 @@ int CoreAudioDeviceInfo::countChannels() {
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::ca
 ///////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+// Enumeration function (in ork::lev2 namespace for linkage)
+///////////////////////////////////////////////////////////////////////////////
+
+namespace ork::lev2 {
+
+audiodeviceinfo_list_t enumerateAudioDevices_coreaudio() {
+  audiodeviceinfo_list_t result;
+
+  // Sample rates to probe
+  static const double test_rates[] = {44100.0, 48000.0, 88200.0, 96000.0};
+  static const int num_test_rates = sizeof(test_rates) / sizeof(test_rates[0]);
+
+  // Get all audio devices
+  UInt32 propsize;
+  AudioHardwareGetPropertyInfo(kAudioHardwarePropertyDevices, &propsize, NULL);
+  int nDevices = propsize / sizeof(AudioDeviceID);
+  AudioDeviceID* devids = new AudioDeviceID[nDevices];
+  AudioHardwareGetProperty(kAudioHardwarePropertyDevices, &propsize, devids);
+
+  for (int i = 0; i < nDevices; ++i) {
+    AudioDeviceID devid = devids[i];
+    char name[256] = {0};
+    UInt32 name_len = sizeof(name);
+
+    // Get input channel count
+    int input_channels = 0;
+    UInt32 inPropSize;
+    if (AudioDeviceGetPropertyInfo(devid, 0, true, kAudioDevicePropertyStreamConfiguration, &inPropSize, NULL) == noErr) {
+      AudioBufferList* buflist = (AudioBufferList*)malloc(inPropSize);
+      if (AudioDeviceGetProperty(devid, 0, true, kAudioDevicePropertyStreamConfiguration, &inPropSize, buflist) == noErr) {
+        for (UInt32 b = 0; b < buflist->mNumberBuffers; ++b) {
+          input_channels += buflist->mBuffers[b].mNumberChannels;
+        }
+      }
+      free(buflist);
+    }
+
+    // Get output channel count
+    int output_channels = 0;
+    UInt32 outPropSize;
+    if (AudioDeviceGetPropertyInfo(devid, 0, false, kAudioDevicePropertyStreamConfiguration, &outPropSize, NULL) == noErr) {
+      AudioBufferList* buflist = (AudioBufferList*)malloc(outPropSize);
+      if (AudioDeviceGetProperty(devid, 0, false, kAudioDevicePropertyStreamConfiguration, &outPropSize, buflist) == noErr) {
+        for (UInt32 b = 0; b < buflist->mNumberBuffers; ++b) {
+          output_channels += buflist->mBuffers[b].mNumberChannels;
+        }
+      }
+      free(buflist);
+    }
+
+    // Skip devices with no audio channels
+    if (input_channels == 0 && output_channels == 0) {
+      continue;
+    }
+
+    // Get device name
+    AudioDeviceGetProperty(devid, 0, false, kAudioDevicePropertyDeviceName, &name_len, name);
+
+    // Get available sample rates
+    std::vector<double> supported_rates;
+    UInt32 range_size;
+    if (AudioDeviceGetPropertyInfo(devid, 0, false, kAudioDevicePropertyAvailableNominalSampleRates, &range_size, NULL) == noErr) {
+      int num_ranges = range_size / sizeof(AudioValueRange);
+      AudioValueRange* ranges = (AudioValueRange*)malloc(range_size);
+      if (AudioDeviceGetProperty(devid, 0, false, kAudioDevicePropertyAvailableNominalSampleRates, &range_size, ranges) == noErr) {
+        for (int r = 0; r < num_test_rates; r++) {
+          double rate = test_rates[r];
+          for (int rng = 0; rng < num_ranges; rng++) {
+            if (rate >= ranges[rng].mMinimum && rate <= ranges[rng].mMaximum) {
+              supported_rates.push_back(rate);
+              break;
+            }
+          }
+        }
+      }
+      free(ranges);
+    }
+
+    // If no rates found, get current sample rate
+    if (supported_rates.empty()) {
+      AudioStreamBasicDescription format;
+      UInt32 fmt_size = sizeof(format);
+      if (AudioDeviceGetProperty(devid, 0, false, kAudioDevicePropertyStreamFormat, &fmt_size, &format) == noErr) {
+        supported_rates.push_back(format.mSampleRate);
+      }
+    }
+
+    // Create an entry for each supported sample rate
+    for (double rate : supported_rates) {
+      auto info = std::make_shared<AudioDeviceInfo>();
+      info->_name = name;
+      info->_device_index = i;
+      info->_sample_rate = rate;
+      info->_max_input_channels = input_channels;
+      info->_max_output_channels = output_channels;
+      info->_supported_input_rates = supported_rates;
+      info->_supported_output_rates = supported_rates;
+      result.push_back(info);
+    }
+  }
+
+  delete[] devids;
+  return result;
+}
+
+} // namespace ork::lev2
 
 #endif // #if defined(ENABLE_CORE_AUDIO)

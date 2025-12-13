@@ -22,15 +22,32 @@ namespace ork::lev2 {
     /////////////////////////////////////////////////////////////////////////////////
     auto auddevinfo_t = py::class_<AudioDeviceInfo, audiodeviceinfo_ptr_t>(lev2_module, "AudioDeviceInfo")
         .def_readonly("name", &AudioDeviceInfo::_name)
+        .def_readonly("input_short_id", &AudioDeviceInfo::_input_short_id)
+        .def_readonly("output_short_id", &AudioDeviceInfo::_output_short_id)
         .def_readonly("max_input_channels", &AudioDeviceInfo::_max_input_channels)
         .def_readonly("max_output_channels", &AudioDeviceInfo::_max_output_channels)
-        .def_readonly("default_sample_rate", &AudioDeviceInfo::_default_sample_rate)
+        .def_readonly("sample_rate", &AudioDeviceInfo::_sample_rate)
+        .def_readonly("device_index", &AudioDeviceInfo::_device_index)
+        .def_property_readonly("supported_input_rates", [](audiodeviceinfo_ptr_t info) -> py::list {
+          py::list result;
+          for (auto r : info->_supported_input_rates) {
+            result.append(r);
+          }
+          return result;
+        })
+        .def_property_readonly("supported_output_rates", [](audiodeviceinfo_ptr_t info) -> py::list {
+          py::list result;
+          for (auto r : info->_supported_output_rates) {
+            result.append(r);
+          }
+          return result;
+        })
         .def("__repr__", [](audiodeviceinfo_ptr_t info) -> std::string {
           return FormatString("AudioDeviceInfo(name='%s', in=%d, out=%d, sr=%g)",
                               info->_name.c_str(),
                               info->_max_input_channels,
                               info->_max_output_channels,
-                              info->_default_sample_rate);
+                              info->_sample_rate);
         });
     type_codec->registerStdCodec<audiodeviceinfo_ptr_t>(auddevinfo_t);
     /////////////////////////////////////////////////////////////////////////////////
@@ -44,6 +61,9 @@ namespace ork::lev2 {
       }
       return result;
     });
+    lev2_module.def("findAudioDeviceByShortId", [](const std::string& short_id) -> audiodeviceinfo_ptr_t {
+      return findAudioDeviceByShortId(short_id);
+    }, py::arg("short_id"));
     /////////////////////////////////////////////////////////////////////////////////
     auto auddev_t = py::class_<AudioDevice, audiodevice_ptr_t>(lev2_module, "AudioDevice"); //
     type_codec->registerStdCodec<audiodevice_ptr_t>(auddev_t);

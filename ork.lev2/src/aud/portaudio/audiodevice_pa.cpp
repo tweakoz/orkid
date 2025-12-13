@@ -25,6 +25,8 @@
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/aud/singularity/krzobjects.h>
 #include <ork/util/logger.h>
+#include <set>
+#include <algorithm>
 
 #if defined(ENABLE_PORTAUDIO)
 
@@ -164,7 +166,40 @@ static int patestCallback(
  static void _startupAudio(AudioDevicePa* padev) {
 
   logchan_portaudio->log("starting audio");
-  
+
+  // Resolve short IDs (4-char hash) to full device names
+  // Short IDs are 4 uppercase alphanumeric chars, e.g. "G6PQ"
+  auto isShortId = [](const std::string& name) -> bool {
+    if (name.length() != 4) return false;
+    for (char c : name) {
+      if (!std::isalnum(c)) return false;
+    }
+    return true;
+  };
+
+  if (isShortId(padev->_inp_dev_name)) {
+    auto dev = findAudioDeviceByShortId(padev->_inp_dev_name);
+    if (dev) {
+      logchan_portaudio->log("resolved input short id '%s' to '%s' @ %gHz",
+                             padev->_inp_dev_name.c_str(), dev->_name.c_str(), dev->_sample_rate);
+      padev->_inp_dev_name = dev->_name;
+    } else {
+      logerrchannel()->log("unknown input short id '%s' - run ork.devicelist.audio.py to see available IDs",
+                           padev->_inp_dev_name.c_str());
+    }
+  }
+  if (isShortId(padev->_out_dev_name)) {
+    auto dev = findAudioDeviceByShortId(padev->_out_dev_name);
+    if (dev) {
+      logchan_portaudio->log("resolved output short id '%s' to '%s' @ %gHz",
+                             padev->_out_dev_name.c_str(), dev->_name.c_str(), dev->_sample_rate);
+      padev->_out_dev_name = dev->_name;
+    } else {
+      logerrchannel()->log("unknown output short id '%s' - run ork.devicelist.audio.py to see available IDs",
+                           padev->_out_dev_name.c_str());
+    }
+  }
+
   float SR = getSampleRate();
 
   if(padev->_the_synth){
@@ -363,15 +398,82 @@ void AudioDevicePa::shutdown(){
 audiodeviceinfo_list_t enumerateAudioDevices_portaudio() {
   audiodeviceinfo_list_t result;
   Pa_Initialize();
+
+  // Sample rates to probe
+  static const double test_rates[] = {44100.0, 48000.0, 88200.0, 96000.0};
+  static const int num_test_rates = sizeof(test_rates) / sizeof(test_rates[0]);
+
   int num_devices = Pa_GetDeviceCount();
   for (int i = 0; i < num_devices; i++) {
     auto pa_info = Pa_GetDeviceInfo(i);
-    auto info = std::make_shared<AudioDeviceInfo>();
-    info->_name = pa_info->name;
-    info->_max_input_channels = pa_info->maxInputChannels;
-    info->_max_output_channels = pa_info->maxOutputChannels;
-    info->_default_sample_rate = pa_info->defaultSampleRate;
-    result.push_back(info);
+
+    // Probe supported sample rates for input
+    std::vector<double> supported_input_rates;
+    if (pa_info->maxInputChannels > 0) {
+      PaStreamParameters inp_params;
+      inp_params.device = i;
+      inp_params.channelCount = 1;
+      inp_params.sampleFormat = paInt16;
+      inp_params.suggestedLatency = pa_info->defaultLowInputLatency;
+      inp_params.hostApiSpecificStreamInfo = nullptr;
+
+      for (int r = 0; r < num_test_rates; r++) {
+        if (Pa_IsFormatSupported(&inp_params, nullptr, test_rates[r]) == paFormatIsSupported) {
+          supported_input_rates.push_back(test_rates[r]);
+        }
+      }
+    }
+
+    // Probe supported sample rates for output
+    std::vector<double> supported_output_rates;
+    if (pa_info->maxOutputChannels > 0) {
+      PaStreamParameters out_params;
+      out_params.device = i;
+      out_params.channelCount = std::min(2, pa_info->maxOutputChannels);
+      out_params.sampleFormat = paFloat32;
+      out_params.suggestedLatency = pa_info->defaultLowOutputLatency;
+      out_params.hostApiSpecificStreamInfo = nullptr;
+
+      for (int r = 0; r < num_test_rates; r++) {
+        if (Pa_IsFormatSupported(nullptr, &out_params, test_rates[r]) == paFormatIsSupported) {
+          supported_output_rates.push_back(test_rates[r]);
+        }
+      }
+    }
+
+    // Create an entry for each supported sample rate
+    std::set<double> all_rates;
+    for (auto r : supported_input_rates) all_rates.insert(r);
+    for (auto r : supported_output_rates) all_rates.insert(r);
+
+    // If no rates probed successfully, use default
+    if (all_rates.empty()) {
+      all_rates.insert(pa_info->defaultSampleRate);
+    }
+
+    for (double rate : all_rates) {
+      auto info = std::make_shared<AudioDeviceInfo>();
+      info->_name = pa_info->name;
+      info->_device_index = i;
+      info->_sample_rate = rate;
+      info->_supported_input_rates = supported_input_rates;
+      info->_supported_output_rates = supported_output_rates;
+
+      // Only set channels if this rate is supported for that direction
+      bool rate_supported_input = std::find(supported_input_rates.begin(),
+                                            supported_input_rates.end(), rate) != supported_input_rates.end();
+      bool rate_supported_output = std::find(supported_output_rates.begin(),
+                                             supported_output_rates.end(), rate) != supported_output_rates.end();
+
+      if (rate_supported_input || supported_input_rates.empty()) {
+        info->_max_input_channels = pa_info->maxInputChannels;
+      }
+      if (rate_supported_output || supported_output_rates.empty()) {
+        info->_max_output_channels = pa_info->maxOutputChannels;
+      }
+
+      result.push_back(info);
+    }
   }
   Pa_Terminate();
   return result;
