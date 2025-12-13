@@ -43,7 +43,7 @@ midiinputmap_t InputContext::enumerateMidiInputs() {
   return _portmap;
 }
 /////////////////////////////////////////////////////////////////////////////
-void InputContext::startMidiInputByName(std::string named, midi_callback_t input_callback) {
+void InputContext::startMidiInputByName(std::string named, midi_callback_t input_callback, void* userData) {
   logchan_midi->log("startMidiInputByName<%s>", named.c_str() );
 
   auto it   = _portmap.find(named);
@@ -51,10 +51,10 @@ void InputContext::startMidiInputByName(std::string named, midi_callback_t input
   if (it != _portmap.end()) {
     index = it->second;
   }
-  startMidiInputByIndex(index, input_callback);
+  startMidiInputByIndex(index, input_callback, userData);
 }
 /////////////////////////////////////////////////////////////////////////////
-void InputContext::startMidiInputByIndex(int inputid, midi_callback_t input_callback) {
+void InputContext::startMidiInputByIndex(int inputid, midi_callback_t input_callback, void* userData) {
   logchan_midi->log("startMidiInputByIndex<%d>", inputid );
   auto rtinpimpl = _impl.get<input_impl_t>();
   rtinpimpl->openPort(inputid);
@@ -62,7 +62,7 @@ void InputContext::startMidiInputByIndex(int inputid, midi_callback_t input_call
   // Set our callback function.  This should be done immediately after
   // opening the port to avoid having incoming messages written to the
   // queue.
-  rtinpimpl->setCallback(input_callback);
+  rtinpimpl->setCallback(input_callback, userData);
   // Don't ignore sysex, timing, or active sensing messages.
   rtinpimpl->ignoreTypes(true, true, true);
   // Clean up

@@ -39,8 +39,8 @@ struct InputContext {
   InputContext();
   ~InputContext();
   midiinputmap_t enumerateMidiInputs();
-  void startMidiInputByName(std::string named,midi_callback_t input_callback);
-  void startMidiInputByIndex(int inputid,midi_callback_t input_callback);
+  void startMidiInputByName(std::string named, midi_callback_t input_callback, void* userData = nullptr);
+  void startMidiInputByIndex(int inputid, midi_callback_t input_callback, void* userData = nullptr);
   int numPorts() const;
   std::string portName(int index) const;
   svar128_t _impl;
