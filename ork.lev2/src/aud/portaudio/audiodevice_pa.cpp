@@ -360,5 +360,24 @@ void AudioDevicePa::shutdown(){
 
 ///////////////////////////////////////////////////////////////////////////////
 
+audiodeviceinfo_list_t enumerateAudioDevices_portaudio() {
+  audiodeviceinfo_list_t result;
+  Pa_Initialize();
+  int num_devices = Pa_GetDeviceCount();
+  for (int i = 0; i < num_devices; i++) {
+    auto pa_info = Pa_GetDeviceInfo(i);
+    auto info = std::make_shared<AudioDeviceInfo>();
+    info->_name = pa_info->name;
+    info->_max_input_channels = pa_info->maxInputChannels;
+    info->_max_output_channels = pa_info->maxOutputChannels;
+    info->_default_sample_rate = pa_info->defaultSampleRate;
+    result.push_back(info);
+  }
+  Pa_Terminate();
+  return result;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 } // namespace ork::lev2
 #endif 

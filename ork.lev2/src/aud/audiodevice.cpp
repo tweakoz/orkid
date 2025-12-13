@@ -168,67 +168,35 @@ lev2::audioinputchunk_ptr_t StreamingAudioInputChunkSource::getChunk() {
 ///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
-
-audiodeviceinfo_list_t enumerateAudioDevices() {
-  audiodeviceinfo_list_t result;
+// Platform-specific enumeration functions are defined in their respective files
+// (coreaudio/, portaudio/, pipewire/, alsa/)
+///////////////////////////////////////////////////////////////////////////////
 
 #if defined(ENABLE_CORE_AUDIO)
-  // CoreAudio enumeration
-  ca::AudioDeviceList input_list(true);
-  ca::AudioDeviceList output_list(false);
-
-  std::map<std::string, audiodeviceinfo_ptr_t> device_map;
-
-  for (const auto& item : input_list.GetMap()) {
-    auto info = std::make_shared<AudioDeviceInfo>();
-    info->_name = item.first;
-    info->_max_input_channels = item.second->countChannels();
-    info->_default_sample_rate = item.second->_format.mSampleRate;
-    device_map[item.first] = info;
-  }
-
-  for (const auto& item : output_list.GetMap()) {
-    auto it = device_map.find(item.first);
-    if (it != device_map.end()) {
-      it->second->_max_output_channels = item.second->countChannels();
-    } else {
-      auto info = std::make_shared<AudioDeviceInfo>();
-      info->_name = item.first;
-      info->_max_output_channels = item.second->countChannels();
-      info->_default_sample_rate = item.second->_format.mSampleRate;
-      device_map[item.first] = info;
-    }
-  }
-
-  for (const auto& item : device_map) {
-    result.push_back(item.second);
-  }
-
-#elif defined(ENABLE_PORTAUDIO)
-  // PortAudio enumeration
-  Pa_Initialize();
-  int num_devices = Pa_GetDeviceCount();
-  for (int i = 0; i < num_devices; i++) {
-    auto pa_info = Pa_GetDeviceInfo(i);
-    auto info = std::make_shared<AudioDeviceInfo>();
-    info->_name = pa_info->name;
-    info->_max_input_channels = pa_info->maxInputChannels;
-    info->_max_output_channels = pa_info->maxOutputChannels;
-    info->_default_sample_rate = pa_info->defaultSampleRate;
-    result.push_back(info);
-  }
-  Pa_Terminate();
-
-#elif defined(ENABLE_PIPEWIRE)
-  // PipeWire - basic enumeration not easily available without running loop
-  // Return empty list for now - PipeWire uses node names dynamically
-
-#elif defined(ENABLE_ALSA)
-  // ALSA enumeration would go here
-
+audiodeviceinfo_list_t enumerateAudioDevices_coreaudio();
+#endif
+#if defined(ENABLE_PORTAUDIO)
+audiodeviceinfo_list_t enumerateAudioDevices_portaudio();
+#endif
+#if defined(ENABLE_PIPEWIRE)
+audiodeviceinfo_list_t enumerateAudioDevices_pipewire();
+#endif
+#if defined(ENABLE_ALSA)
+audiodeviceinfo_list_t enumerateAudioDevices_alsa();
 #endif
 
-  return result;
+audiodeviceinfo_list_t enumerateAudioDevices() {
+#if defined(ENABLE_CORE_AUDIO)
+  return enumerateAudioDevices_coreaudio();
+#elif defined(ENABLE_PORTAUDIO)
+  return enumerateAudioDevices_portaudio();
+#elif defined(ENABLE_PIPEWIRE)
+  return enumerateAudioDevices_pipewire();
+#elif defined(ENABLE_ALSA)
+  return enumerateAudioDevices_alsa();
+#else
+  return audiodeviceinfo_list_t();
+#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////

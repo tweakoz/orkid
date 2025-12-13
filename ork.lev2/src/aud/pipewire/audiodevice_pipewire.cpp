@@ -11,6 +11,7 @@
 #if defined(ENABLE_PIPEWIRE)
 ////////////////////////////////////////////
 #include <ork/application/application.h>
+#include <ork/lev2/aud/audiodevice.h>
 #include <ork/kernel/thread.h>
 #include <ork/kernel/timer.h>
 #include <ork/lev2/aud/singularity/synth.h>
@@ -243,5 +244,19 @@ AudioDevicePipeWire::AudioDevicePipeWire(appinitdata_wkptr_t appinitd)
 }
 
 } // namespace ork::lev2::pipewire
+
+///////////////////////////////////////////////////////////////////////////////
+// Enumeration function (in ork::lev2 namespace for linkage)
+///////////////////////////////////////////////////////////////////////////////
+
+namespace ork::lev2 {
+
+audiodeviceinfo_list_t enumerateAudioDevices_pipewire() {
+  // PipeWire doesn't have a simple enumeration API without running an event loop
+  // Return empty list for now - PipeWire uses node names dynamically
+  return audiodeviceinfo_list_t();
+}
+
+} // namespace ork::lev2
 
 #endif
