@@ -111,11 +111,6 @@ void VkFxInterface::_bindPipeline(VkCommandBuffer cmdbuf, vkpipeline_obj_ptr_t p
   ////////////////////////////////////////
   // bind descriptor set (if changed)
   ////////////////////////////////////////
-  static int counter = 0;
-    counter++;
-    if(counter==3){
-        printf("yo\n");
-    }
   auto prog = _currentVKPASS->_vk_program;
   auto desc_set = pipeline->_descriptorSetCache->fetchDescriptorSetForProgram(prog);
   if (desc_set) {

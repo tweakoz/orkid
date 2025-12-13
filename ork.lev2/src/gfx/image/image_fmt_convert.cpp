@@ -249,7 +249,7 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
   _debugName = inp._debugName+"_converted";
   /////////////////////////////
   if (fmt == inp._format) {
-    printf( "convert (same fmt, just copy)\n");
+    if(0)printf( "convert (same fmt, just copy)\n");
     init(inp._width, inp._height, inp._numcomponents, inp._bytesPerChannel);
     auto outptr = (uint8_t*)_data->data();
     auto inptr  = (const uint8_t*)inp._data->data();
@@ -412,7 +412,7 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
     } else {
       auto inp_fmt_str = EBufferFormatToName(inp._format);
       auto fmt_str     = EBufferFormatToName(fmt);
-      printf( "Image::convertFromImageToFormat unsupported combo : fmt<%s> inp_fmt<%s>\n", fmt_str.c_str(), inp_fmt_str.c_str());
+      fprintf( stderr, "Image::convertFromImageToFormat unsupported combo : fmt<%s> inp_fmt<%s>\n", fmt_str.c_str(), inp_fmt_str.c_str());
       OrkAssert(false);
     }
   }
