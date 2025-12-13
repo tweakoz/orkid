@@ -117,7 +117,7 @@ struct AudioDevFactory {
     if(nullptr == _device ){
       _device = std::make_shared<AudioDeviceNULL>(aid);
     }
-    printf("AudioDevFactory: audio ioclass<%s>\n",device_type.c_str());
+    //printf("AudioDevFactory: audio ioclass<%s>\n",device_type.c_str());
 
     g_audio_device = _device;
   }

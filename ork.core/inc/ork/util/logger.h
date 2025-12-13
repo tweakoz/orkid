@@ -5,6 +5,7 @@
 #include <ork/file/file.h>
 #include <thread>
 #include <functional>
+#include <vector>
 
 namespace ork {
 
@@ -102,6 +103,7 @@ namespace ork {
     logchannel_ptr_t _stderr_channel;
     stderr_redirector_ptr_t _stderr_redirector;
     logger_backend_ptr_t _backend;
+    bool _backend_set_by_code = false;
   };
 
   using logger_ptr_t = std::shared_ptr<Logger>;
@@ -114,6 +116,38 @@ namespace ork {
   void setGlobalLogFile(const std::string& path);
   void writeToGlobalLog(const std::string& channel, const std::string& message);
   bool isGlobalLogEnabled();
+
+  /////////////////////////////////////////////////////////////////////
+  // Backend factory functions
+  /////////////////////////////////////////////////////////////////////
+
+  // Create stdout backend (default behavior)
+  logger_backend_ptr_t createStdoutBackend();
+
+  // Create file backend with async writing
+  // - path: log file path
+  // - enable_ansi: include ANSI color codes (useful for `less -R`)
+  // - flush_interval_ms: how often to flush (default 100ms)
+  // - flush_on_error: immediate flush on warn/error (default true)
+  logger_backend_ptr_t createFileBackend(
+      const std::string& path,
+      bool enable_ansi = false,
+      float flush_interval_ms = 100.0f,
+      bool flush_on_error = true);
+
+  // Create fork backend that forwards to multiple child backends
+  logger_backend_ptr_t createForkBackend(std::vector<logger_backend_ptr_t> children);
+  logger_backend_ptr_t createForkBackend();  // empty, use forkBackendAddChild
+
+  // Add child to existing fork backend
+  void forkBackendAddChild(logger_backend_ptr_t fork_backend, logger_backend_ptr_t child);
+
+  // Create HTML backend with interactive channel toggles
+  // - path: output HTML file path
+  // - flush_interval_ms: how often to flush (default 100ms)
+  logger_backend_ptr_t createHtmlBackend(
+      const std::string& path,
+      float flush_interval_ms = 100.0f);
 
   /////////////////////////////////////////////////////////////////////
 }

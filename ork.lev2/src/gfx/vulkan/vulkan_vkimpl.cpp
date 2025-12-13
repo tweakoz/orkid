@@ -6,7 +6,6 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
-#include <ork/kernel/string/deco.inl>
 #include <ork/kernel/environment.h>
 #include <ork/lev2/lev2_asset.h>
 #include <ork/asset/Asset.inl>
@@ -29,6 +28,7 @@ struct MoltenVKConfigurator {
 #endif
 
 namespace ork::lev2::vulkan {
+static logchannel_ptr_t logchan_vkimpl = logger()->configureChannel("VKIMPL", fvec3(1,1,0));
 static logchannel_ptr_t logchan_vkierr = logger()->configureChannel("VKINSTERR", fvec3(1,0,0),true);
 
 vkinstance_ptr_t _GVI = nullptr;
@@ -56,7 +56,7 @@ static bool _hasLayer(layer_props_t& layer_props, std::string layerName) {
      has_layer = true;
     }
   }
-  printf("has_layer<%s> : %s\n", layerName.c_str(), has_layer ? "true": "false");
+  logchan_vkimpl->log("has_layer<%s> : %s", layerName.c_str(), has_layer ? "true": "false");
   return has_layer;
 }
 
@@ -155,19 +155,17 @@ VulkanInstance::VulkanInstance() {
     glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
   }
 
-  auto yel = fvec3::Yellow();
-
   std::vector<const char*> validation_layers;
 
   std::string ORKID_VULKAN_VALIDATE;
   if (genviron.get("ORKID_VULKAN_VALIDATE", ORKID_VULKAN_VALIDATE) && !ORKID_VULKAN_VALIDATE.empty()) {
     if (ORKID_VULKAN_VALIDATE == "1") {
-      deco::printf(yel, "VulkanInstance::VulkanInstance() ENABLE VALIDATION\n");
+      logchan_vkimpl->log("VulkanInstance::VulkanInstance() ENABLE VALIDATION");
       _enable_validate = true;
       _enable_debug = true;
     }
     if (ORKID_VULKAN_VALIDATE == "0") {
-      deco::printf(yel, "VulkanInstance::VulkanInstance() DISABLE VALIDATION\n");
+      logchan_vkimpl->log("VulkanInstance::VulkanInstance() DISABLE VALIDATION");
       _enable_validate = false;
       _enable_debug = false;
     }
@@ -182,16 +180,16 @@ VulkanInstance::VulkanInstance() {
   }
   auto layer_props = _layerProperties();
   for(size_t i=0; i<layer_props.size(); i++){
-   printf("layer<%d:%s>\n", i, layer_props[i].layerName);
+   logchan_vkimpl->log("layer<%zu:%s>", i, layer_props[i].layerName);
   }
 
   // Check if validation layer is available when debug is enabled
   if(_enable_debug && _enable_validate){
     _debugEnabled = _hasLayer(layer_props, "VK_LAYER_KHRONOS_validation");
     if(_debugEnabled){
-      deco::printf(yel, "VK_LAYER_KHRONOS_validation found and enabled\n");
+      logchan_vkimpl->log("VK_LAYER_KHRONOS_validation found and enabled");
     } else {
-      deco::printf(yel, "WARNING: VK_LAYER_KHRONOS_validation requested but not available\n");
+      logchan_vkimpl->log("WARNING: VK_LAYER_KHRONOS_validation requested but not available");
     }
   } else {
     _debugEnabled = false;
@@ -247,21 +245,19 @@ VulkanInstance::VulkanInstance() {
   _instancedata.enabledExtensionCount   = _instance_extensions.size();
   _instancedata.ppEnabledExtensionNames = _instance_extensions.data();
 
-  //printf("num vk instance extensions<%zu>\n", _instance_extensions.size());
-
   char cwd[PATH_MAX];
   getcwd(cwd, sizeof(cwd));
-  printf("Working dir: %s\n", cwd);
-  printf("VK_ICD_FILENAMES: %s\n", getenv("VK_ICD_FILENAMES"));
-  printf("VK_LAYER_PATH: %s\n", getenv("VK_LAYER_PATH"));
-  printf("DYLD_LIBRARY_PATH: %s\n", getenv("DYLD_LIBRARY_PATH"));
-  printf("MVK_CONFIG_LOG_LEVEL: %s\n", getenv("MVK_CONFIG_LOG_LEVEL"));
+  logchan_vkimpl->log("Working dir: %s", cwd);
+  logchan_vkimpl->log("VK_ICD_FILENAMES: %s", getenv("VK_ICD_FILENAMES"));
+  logchan_vkimpl->log("VK_LAYER_PATH: %s", getenv("VK_LAYER_PATH"));
+  logchan_vkimpl->log("DYLD_LIBRARY_PATH: %s", getenv("DYLD_LIBRARY_PATH"));
+  logchan_vkimpl->log("MVK_CONFIG_LOG_LEVEL: %s", getenv("MVK_CONFIG_LOG_LEVEL"));
 
 #if defined(__APPLE__)
   // Disable MoltenVK argument buffers - they require additional type metadata
   // that SPIRV-Cross cannot always determine for storage buffers in graphics pipelines
   setenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS", "0", 0); // 0 = don't overwrite if set
-  printf("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS: %s\n", getenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS"));
+  logchan_vkimpl->log("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS: %s", getenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS"));
 #endif
 
   VkResult res = vkCreateInstance(&_instancedata, nullptr, &_instance);
@@ -303,14 +299,14 @@ VulkanInstance::VulkanInstance() {
     group.pNext = nullptr;
   }
   vkEnumeratePhysicalDeviceGroups(_instance, &_numgroups, _phygroups.data());
-  deco::printf(yel, "vulkan::_init numgroups<%u>\n", _numgroups);
+  logchan_vkimpl->log("vulkan::_init numgroups<%u>", _numgroups);
   int igroup = 0;
   for (auto& group : _phygroups) {
     vkdevgrp_ptr_t dev_group_out = std::make_shared<VulkanDeviceGroup>();
     _devgroups.push_back(dev_group_out);
 
     dev_group_out->_deviceCount = group.physicalDeviceCount;
-    deco::printf(yel, "vulkan::_init grp<%d> numgpus<%zu>\n", igroup, dev_group_out->_deviceCount);
+    logchan_vkimpl->log("vulkan::_init grp<%d> numgpus<%zu>", igroup, dev_group_out->_deviceCount);
     for (int idev = 0; idev < dev_group_out->_deviceCount; idev++) {
       auto device_info = std::make_shared<VulkanDeviceInfo>();
       dev_group_out->_device_infos.push_back(device_info);
@@ -318,9 +314,8 @@ VulkanInstance::VulkanInstance() {
       device_info->_phydev = group.physicalDevices[idev];
       vkGetPhysicalDeviceProperties(device_info->_phydev, &device_info->_devprops);
       device_info->_is_discrete = (device_info->_devprops.deviceType == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU);
-      if(1)deco::printf(
-          yel,
-          "    gouup<%d> gpu<%d:%s> is_discrete<%d>\n",
+      logchan_vkimpl->log(
+          "    group<%d> gpu<%d:%s> is_discrete<%d>",
           igroup,
           device_info->_devprops.deviceID,
           device_info->_devprops.deviceName,
@@ -376,42 +371,39 @@ VulkanInstance::VulkanInstance() {
     device_info->_maxWkgCountY = dev_props.limits.maxComputeWorkGroupCount[1];
     device_info->_maxWkgCountZ = dev_props.limits.maxComputeWorkGroupCount[2];
 
-    deco::printf(yel, "vulkan::_init gpu<%d:%s> is_discrete<%d>\n", dev_props.deviceID, dev_props.deviceName, int(is_discrete));
-    deco::printf(yel, "         apiVersion<%u>\n", dev_props.apiVersion);
-    deco::printf(yel, "         maxImageDimension1D<%u>\n", dev_props.limits.maxImageDimension1D);
-    deco::printf(yel, "         maxImageDimension2D<%u>\n", dev_props.limits.maxImageDimension2D);
-    deco::printf(yel, "         maxImageDimension3D<%u>\n", dev_props.limits.maxImageDimension3D);
-    deco::printf(yel, "         maxImageDimensionCube<%u>\n", dev_props.limits.maxImageDimensionCube);
-    deco::printf(yel, "         maxImageArrayLayers<%u>\n", dev_props.limits.maxImageArrayLayers);
+    logchan_vkimpl->log("vulkan::_init gpu<%d:%s> is_discrete<%d>", dev_props.deviceID, dev_props.deviceName, int(is_discrete));
+    logchan_vkimpl->log("         apiVersion<%u>", dev_props.apiVersion);
+    logchan_vkimpl->log("         maxImageDimension1D<%u>", dev_props.limits.maxImageDimension1D);
+    logchan_vkimpl->log("         maxImageDimension2D<%u>", dev_props.limits.maxImageDimension2D);
+    logchan_vkimpl->log("         maxImageDimension3D<%u>", dev_props.limits.maxImageDimension3D);
+    logchan_vkimpl->log("         maxImageDimensionCube<%u>", dev_props.limits.maxImageDimensionCube);
+    logchan_vkimpl->log("         maxImageArrayLayers<%u>", dev_props.limits.maxImageArrayLayers);
 
-    deco::printf(yel, "         maxBoundDescriptorSets<%u>\n", dev_props.limits.maxBoundDescriptorSets);
-    deco::printf(yel, "         maxPerStageDescriptorSamplers<%u>\n", dev_props.limits.maxPerStageDescriptorSamplers);
-    deco::printf(yel, "         maxPerStageDescriptorUniformBuffers<%u>\n", dev_props.limits.maxPerStageDescriptorUniformBuffers);
-    deco::printf(yel, "         maxPerStageDescriptorStorageBuffers<%u>\n", dev_props.limits.maxPerStageDescriptorStorageBuffers);
-    deco::printf(yel, "         maxPerStageDescriptorSampledImages<%u>\n", dev_props.limits.maxPerStageDescriptorSampledImages);
-    deco::printf(yel, "         maxPerStageDescriptorStorageImages<%u>\n", dev_props.limits.maxPerStageDescriptorStorageImages);
-    deco::printf(yel, "         maxPerStageDescriptorInputAttachments<%u>\n", dev_props.limits.maxPerStageDescriptorInputAttachments);
+    logchan_vkimpl->log("         maxBoundDescriptorSets<%u>", dev_props.limits.maxBoundDescriptorSets);
+    logchan_vkimpl->log("         maxPerStageDescriptorSamplers<%u>", dev_props.limits.maxPerStageDescriptorSamplers);
+    logchan_vkimpl->log("         maxPerStageDescriptorUniformBuffers<%u>", dev_props.limits.maxPerStageDescriptorUniformBuffers);
+    logchan_vkimpl->log("         maxPerStageDescriptorStorageBuffers<%u>", dev_props.limits.maxPerStageDescriptorStorageBuffers);
+    logchan_vkimpl->log("         maxPerStageDescriptorSampledImages<%u>", dev_props.limits.maxPerStageDescriptorSampledImages);
+    logchan_vkimpl->log("         maxPerStageDescriptorStorageImages<%u>", dev_props.limits.maxPerStageDescriptorStorageImages);
+    logchan_vkimpl->log("         maxPerStageDescriptorInputAttachments<%u>", dev_props.limits.maxPerStageDescriptorInputAttachments);
 
-    deco::printf(yel, "         maxUniformBufferRange<%u>\n", dev_props.limits.maxUniformBufferRange);
-    deco::printf(yel, "         maxFramebufferWidth<%u>\n", dev_props.limits.maxFramebufferWidth);
-    deco::printf(yel, "         maxFramebufferLayers<%u>\n", dev_props.limits.maxFramebufferLayers);
-    deco::printf(yel, "         maxColorAttachments<%u>\n", dev_props.limits.maxColorAttachments);
-    deco::printf(yel, "         maxComputeSharedMemorySize<%u>\n", dev_props.limits.maxComputeSharedMemorySize);
-    deco::printf(yel, "         maxComputeWorkGroupSize<%u>\n", dev_props.limits.maxComputeWorkGroupSize);
-    deco::printf(yel, "         maxPushConstantsSize<%u>\n", dev_props.limits.maxPushConstantsSize);
+    logchan_vkimpl->log("         maxUniformBufferRange<%u>", dev_props.limits.maxUniformBufferRange);
+    logchan_vkimpl->log("         maxFramebufferWidth<%u>", dev_props.limits.maxFramebufferWidth);
+    logchan_vkimpl->log("         maxFramebufferLayers<%u>", dev_props.limits.maxFramebufferLayers);
+    logchan_vkimpl->log("         maxColorAttachments<%u>", dev_props.limits.maxColorAttachments);
+    logchan_vkimpl->log("         maxComputeSharedMemorySize<%u>", dev_props.limits.maxComputeSharedMemorySize);
+    logchan_vkimpl->log("         maxComputeWorkGroupSize<%u>", dev_props.limits.maxComputeWorkGroupSize);
+    logchan_vkimpl->log("         maxPushConstantsSize<%u>", dev_props.limits.maxPushConstantsSize);
 
-    deco::printf(yel, "         maxPushConstantsSize<%u>\n", dev_props.limits.maxPushConstantsSize);
-
-    deco::printf(
-        yel,
-        "         maxcomputewkgcount<%u,%u,%u>\n",
+    logchan_vkimpl->log(
+        "         maxcomputewkgcount<%u,%u,%u>",
         device_info->_maxWkgCountX,
         device_info->_maxWkgCountY,
         device_info->_maxWkgCountZ);
-    deco::printf(yel, "         feat.fragmentStoresAndAtomics<%u>\n", int(dev_feats.fragmentStoresAndAtomics));
-    deco::printf(yel, "         feat.shaderFloat64<%u>\n", int(dev_feats.shaderFloat64));
-    deco::printf(yel, "         feat.sparseBinding<%u>\n", int(dev_feats.sparseBinding));
-    deco::printf(yel, "         feat.multiDrawIndirect<%u>\n", int(dev_feats.multiDrawIndirect));
+    logchan_vkimpl->log("         feat.fragmentStoresAndAtomics<%u>", int(dev_feats.fragmentStoresAndAtomics));
+    logchan_vkimpl->log("         feat.shaderFloat64<%u>", int(dev_feats.shaderFloat64));
+    logchan_vkimpl->log("         feat.sparseBinding<%u>", int(dev_feats.sparseBinding));
+    logchan_vkimpl->log("         feat.multiDrawIndirect<%u>", int(dev_feats.multiDrawIndirect));
 
     vkGetPhysicalDeviceMemoryProperties(phy, &dev_memprops);
     auto heaps = dev_memprops.memoryHeaps;
@@ -549,7 +541,8 @@ VkFormat VkFormatConverter::convertBufferFormat(EBufferFormat fmt_in) {
   //printf("convertBufferFormat<%s>\n", fmtname.c_str());
   auto it = _instance._fmtmap.find(fmt_in);
   if( it == _instance._fmtmap.end() ){
-    printf("format<%s> conversion not present\n", fmtname.c_str());
+    fprintf(stderr, "format<%s> conversion not present", fmtname.c_str());
+    fflush(stderr);
     OrkAssert(false);
   }
   return it->second;

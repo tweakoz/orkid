@@ -20,7 +20,7 @@ static logchannel_ptr_t logchan_meshutil = logger()->configureChannel("meshutil"
 void planar_clip_init();
 
 void misc_init() {
-  printf("initialize meshutil....\n");
+  //printf("initialize meshutil....\n");
 
   // register var -> string encoders
 

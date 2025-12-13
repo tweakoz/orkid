@@ -1,0 +1,147 @@
+<svg width="1200" height="550" viewBox="0 0 1200 550" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1200" height="550" fill="#3a3a3a"/>
+
+  <!-- Title -->
+  <text x="600" y="30" font-family="Arial, sans-serif" font-size="18" fill="white" text-anchor="middle" font-weight="bold">Logger Backend Types</text>
+
+  <!-- Stdout Backend -->
+  <g id="stdout-backend">
+    <rect x="50" y="60" width="260" height="220" rx="8" fill="#2a2a2a" stroke="#4a7a4a" stroke-width="2"/>
+    <text x="180" y="85" font-family="Arial, sans-serif" font-size="14" fill="#8f8" text-anchor="middle" font-weight="bold">Stdout Backend</text>
+    <text x="180" y="105" font-family="Arial, sans-serif" font-size="10" fill="#aaa" text-anchor="middle">(Default)</text>
+
+    <rect x="70" y="120" width="220" height="140" rx="6" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
+    <text x="180" y="145" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">Features</text>
+    <text x="180" y="168" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">ANSI color codes</text>
+    <text x="180" y="185" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Channel name prefixes</text>
+    <text x="180" y="202" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Immediate synchronous output</text>
+    <text x="180" y="219" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Errors/warnings to stderr</text>
+    <text x="180" y="248" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">createStdoutBackend()</text>
+  </g>
+
+  <!-- File Backend -->
+  <g id="file-backend">
+    <rect x="340" y="60" width="260" height="220" rx="8" fill="#2a2a2a" stroke="#8a6a4a" stroke-width="2"/>
+    <text x="470" y="85" font-family="Arial, sans-serif" font-size="14" fill="#fa8" text-anchor="middle" font-weight="bold">File Backend</text>
+
+    <rect x="360" y="105" width="220" height="155" rx="6" fill="#4a3a2a" stroke="#6a5a4a" stroke-width="1"/>
+    <text x="470" y="125" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">Features</text>
+    <text x="470" y="148" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Async background writer thread</text>
+    <text x="470" y="165" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Configurable flush interval</text>
+    <text x="470" y="182" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Immediate flush on warn/error</text>
+    <text x="470" y="199" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Optional ANSI for `less -R`</text>
+    <text x="470" y="216" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Lock-free queue enqueue</text>
+    <text x="470" y="248" font-family="Arial, sans-serif" font-size="9" fill="#fa8" text-anchor="middle">createFileBackend(path, ansi, ms, flush)</text>
+  </g>
+
+  <!-- HTML Backend -->
+  <g id="html-backend">
+    <rect x="630" y="60" width="260" height="220" rx="8" fill="#2a2a2a" stroke="#7a5a8a" stroke-width="2"/>
+    <text x="760" y="85" font-family="Arial, sans-serif" font-size="14" fill="#c8f" text-anchor="middle" font-weight="bold">HTML Backend</text>
+
+    <rect x="650" y="105" width="220" height="155" rx="6" fill="#3a2a4a" stroke="#5a4a6a" stroke-width="1"/>
+    <text x="760" y="125" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">Features</text>
+    <text x="760" y="148" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Interactive channel toggles</text>
+    <text x="760" y="165" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Smart contrast colors</text>
+    <text x="760" y="182" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Entry count display</text>
+    <text x="760" y="199" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Crash-resilient inline scripts</text>
+    <text x="760" y="216" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Works with file:// protocol</text>
+    <text x="760" y="248" font-family="Arial, sans-serif" font-size="9" fill="#c8f" text-anchor="middle">createHtmlBackend(path, ms)</text>
+  </g>
+
+  <!-- Fork Backend -->
+  <g id="fork-backend">
+    <rect x="920" y="60" width="260" height="220" rx="8" fill="#2a2a2a" stroke="#5a7a7a" stroke-width="2"/>
+    <text x="1050" y="85" font-family="Arial, sans-serif" font-size="14" fill="#8ff" text-anchor="middle" font-weight="bold">Fork Backend</text>
+
+    <rect x="940" y="105" width="220" height="155" rx="6" fill="#2a3a4a" stroke="#4a5a6a" stroke-width="1"/>
+    <text x="1050" y="125" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">Features</text>
+    <text x="1050" y="148" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Multiplexes to N children</text>
+    <text x="1050" y="165" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Independent child config</text>
+    <text x="1050" y="182" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Env var syntax: [A,B,C]</text>
+    <text x="1050" y="199" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Dynamic child addition</text>
+    <text x="1050" y="216" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Preserves child thread safety</text>
+    <text x="1050" y="248" font-family="Arial, sans-serif" font-size="9" fill="#8ff" text-anchor="middle">createForkBackend(children)</text>
+  </g>
+
+  <!-- Data Flow Section -->
+  <g id="data-flow">
+    <rect x="50" y="300" width="1130" height="230" rx="8" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+    <text x="615" y="325" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">Backend Data Flow</text>
+
+    <!-- Log Source -->
+    <rect x="80" y="355" width="120" height="60" rx="6" fill="#4a4a5a" stroke="#6a6a7a" stroke-width="1"/>
+    <text x="140" y="380" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">Log Call</text>
+    <text x="140" y="400" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">chan->log(...)</text>
+
+    <!-- Format -->
+    <rect x="240" y="355" width="120" height="60" rx="6" fill="#5a4a4a" stroke="#7a6a6a" stroke-width="1"/>
+    <text x="300" y="380" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">Format</text>
+    <text x="300" y="400" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">vsnprintf</text>
+
+    <!-- Backend -->
+    <rect x="400" y="355" width="140" height="60" rx="6" fill="#3a5a4a" stroke="#5a7a6a" stroke-width="1"/>
+    <text x="470" y="380" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">Backend</text>
+    <text x="470" y="400" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">_add_log_line()</text>
+
+    <!-- Stdout path -->
+    <rect x="600" y="345" width="130" height="35" rx="4" fill="#3a4a3a" stroke="#5a6a5a" stroke-width="1"/>
+    <text x="665" y="367" font-family="Arial, sans-serif" font-size="10" fill="#8f8" text-anchor="middle">printf() sync</text>
+
+    <!-- File path -->
+    <rect x="600" y="390" width="130" height="35" rx="4" fill="#4a3a2a" stroke="#6a5a4a" stroke-width="1"/>
+    <text x="665" y="412" font-family="Arial, sans-serif" font-size="10" fill="#fa8" text-anchor="middle">enqueue() async</text>
+
+    <!-- HTML path -->
+    <rect x="600" y="435" width="130" height="35" rx="4" fill="#3a2a4a" stroke="#5a4a6a" stroke-width="1"/>
+    <text x="665" y="457" font-family="Arial, sans-serif" font-size="10" fill="#c8f" text-anchor="middle">enqueue() async</text>
+
+    <!-- Queue -->
+    <rect x="770" y="385" width="100" height="90" rx="6" fill="#4a4a3a" stroke="#6a6a5a" stroke-width="1"/>
+    <text x="820" y="410" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">Queue</text>
+    <text x="820" y="430" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">deque&lt;string&gt;</text>
+    <text x="820" y="450" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">lock-free</text>
+    <text x="820" y="465" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">atomic ops</text>
+
+    <!-- Writer Thread -->
+    <rect x="910" y="385" width="120" height="90" rx="6" fill="#3a4a4a" stroke="#5a6a6a" stroke-width="1"/>
+    <text x="970" y="410" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">Writer Thread</text>
+    <text x="970" y="430" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">flush interval</text>
+    <text x="970" y="445" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">or immediate</text>
+    <text x="970" y="460" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">on warn/error</text>
+
+    <!-- Output -->
+    <rect x="1070" y="395" width="90" height="70" rx="6" fill="#2a4a2a" stroke="#4a6a4a" stroke-width="1"/>
+    <text x="1115" y="420" font-family="Arial, sans-serif" font-size="10" fill="#8f8" text-anchor="middle">Output</text>
+    <text x="1115" y="440" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">file.write()</text>
+    <text x="1115" y="455" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">file.flush()</text>
+
+    <!-- Arrows -->
+    <path d="M 200 385 L 240 385" stroke="#888" stroke-width="2" marker-end="url(#arrowhead)"/>
+    <path d="M 360 385 L 400 385" stroke="#888" stroke-width="2" marker-end="url(#arrowhead)"/>
+    <path d="M 540 385 L 600 360" stroke="#8f8" stroke-width="1.5" marker-end="url(#arrowhead-green)"/>
+    <path d="M 540 385 L 600 407" stroke="#fa8" stroke-width="1.5" marker-end="url(#arrowhead-orange)"/>
+    <path d="M 540 385 L 600 452" stroke="#c8f" stroke-width="1.5" marker-end="url(#arrowhead-purple)"/>
+    <path d="M 730 407 L 770 420" stroke="#fa8" stroke-width="1.5" marker-end="url(#arrowhead-orange)"/>
+    <path d="M 730 452 L 770 450" stroke="#c8f" stroke-width="1.5" marker-end="url(#arrowhead-purple)"/>
+    <path d="M 870 430 L 910 430" stroke="#888" stroke-width="2" marker-end="url(#arrowhead)"/>
+    <path d="M 1030 430 L 1070 430" stroke="#888" stroke-width="2" marker-end="url(#arrowhead)"/>
+  </g>
+
+  <!-- Arrow markers -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#888"/>
+    </marker>
+    <marker id="arrowhead-green" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#8f8"/>
+    </marker>
+    <marker id="arrowhead-orange" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#fa8"/>
+    </marker>
+    <marker id="arrowhead-purple" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#c8f"/>
+    </marker>
+  </defs>
+</svg>

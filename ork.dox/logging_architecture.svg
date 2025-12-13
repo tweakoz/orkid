@@ -1,0 +1,166 @@
+<svg width="1200" height="600" viewBox="0 0 1200 600" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1200" height="600" fill="#3a3a3a"/>
+
+  <!-- Title -->
+  <text x="600" y="30" font-family="Arial, sans-serif" font-size="18" fill="white" text-anchor="middle" font-weight="bold">Orkid Logger Architecture</text>
+
+  <!-- Logger Singleton -->
+  <g id="logger-singleton">
+    <rect x="50" y="60" width="300" height="200" rx="8" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+    <text x="200" y="85" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">Logger (Singleton)</text>
+
+    <!-- Channel Registry -->
+    <rect x="70" y="105" width="260" height="70" rx="6" fill="#3a5a4a" stroke="#5a7a6a" stroke-width="1"/>
+    <text x="200" y="125" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">Channel Registry</text>
+    <text x="200" y="145" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">LockedResource&lt;map&lt;string, channel&gt;&gt;</text>
+    <text x="200" y="162" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">Thread-safe channel management</text>
+
+    <!-- Backend Reference -->
+    <rect x="70" y="185" width="260" height="55" rx="6" fill="#5a4a3a" stroke="#8a6a4a" stroke-width="1"/>
+    <text x="200" y="205" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">Active Backend</text>
+    <text x="200" y="225" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">logger_backend_ptr_t _backend</text>
+  </g>
+
+  <!-- Log Channels -->
+  <g id="log-channels">
+    <rect x="400" y="60" width="350" height="200" rx="8" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+    <text x="575" y="85" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">Log Channels</text>
+
+    <!-- Channel 1 -->
+    <rect x="420" y="105" width="150" height="60" rx="6" fill="#4a5a3a" stroke="#6a7a5a" stroke-width="1"/>
+    <text x="495" y="125" font-family="Arial, sans-serif" font-size="11" fill="#8f8" text-anchor="middle">[AUDIO]</text>
+    <text x="495" y="142" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">color: (0, 1, 0.5)</text>
+    <text x="495" y="155" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">enabled: true</text>
+
+    <!-- Channel 2 -->
+    <rect x="580" y="105" width="150" height="60" rx="6" fill="#5a4a4a" stroke="#7a6a6a" stroke-width="1"/>
+    <text x="655" y="125" font-family="Arial, sans-serif" font-size="11" fill="#f88" text-anchor="middle">[RENDER]</text>
+    <text x="655" y="142" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">color: (1, 0.5, 0.5)</text>
+    <text x="655" y="155" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">enabled: true</text>
+
+    <!-- Channel 3 -->
+    <rect x="420" y="175" width="150" height="60" rx="6" fill="#3a4a5a" stroke="#5a6a8a" stroke-width="1"/>
+    <text x="495" y="195" font-family="Arial, sans-serif" font-size="11" fill="#88f" text-anchor="middle">[NETWORK]</text>
+    <text x="495" y="212" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">color: (0.5, 0.5, 1)</text>
+    <text x="495" y="225" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">enabled: true</text>
+
+    <!-- Channel N -->
+    <rect x="580" y="175" width="150" height="60" rx="6" fill="#4a4a4a" stroke="#6a6a6a" stroke-width="1"/>
+    <text x="655" y="195" font-family="Arial, sans-serif" font-size="11" fill="#ccc" text-anchor="middle">[...]</text>
+    <text x="655" y="212" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">N channels</text>
+    <text x="655" y="225" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">per application</text>
+  </g>
+
+  <!-- Channel Methods -->
+  <g id="channel-methods">
+    <rect x="800" y="60" width="350" height="200" rx="8" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+    <text x="975" y="85" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">Channel Methods</text>
+
+    <rect x="820" y="105" width="150" height="35" rx="4" fill="#3a5a4a" stroke="#5a7a6a" stroke-width="1"/>
+    <text x="895" y="127" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">log(fmt, ...)</text>
+
+    <rect x="980" y="105" width="150" height="35" rx="4" fill="#5a5a3a" stroke="#7a7a5a" stroke-width="1"/>
+    <text x="1055" y="127" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">warn(fmt, ...)</text>
+
+    <rect x="820" y="150" width="150" height="35" rx="4" fill="#5a3a3a" stroke="#7a5a5a" stroke-width="1"/>
+    <text x="895" y="172" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">error(fmt, ...)</text>
+
+    <rect x="980" y="150" width="150" height="35" rx="4" fill="#3a4a5a" stroke="#5a6a8a" stroke-width="1"/>
+    <text x="1055" y="172" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">status(sub, fmt)</text>
+
+    <rect x="820" y="195" width="310" height="45" rx="4" fill="#4a3a5a" stroke="#6a5a7a" stroke-width="1"/>
+    <text x="975" y="215" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">log_begin() / log_continue()</text>
+    <text x="975" y="232" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Multi-part message construction</text>
+  </g>
+
+  <!-- Backend Layer -->
+  <g id="backend-layer">
+    <rect x="50" y="290" width="1100" height="280" rx="8" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+    <text x="600" y="315" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">LoggerBackend</text>
+
+    <!-- Backend Interface -->
+    <rect x="70" y="335" width="280" height="120" rx="6" fill="#3a3a4a" stroke="#5a5a6a" stroke-width="1"/>
+    <text x="210" y="355" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">Backend Interface</text>
+    <text x="210" y="375" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle" font-family="monospace">_add_log_line(chan, msg)</text>
+    <text x="210" y="392" font-family="Arial, sans-serif" font-size="9" fill="#ff8" text-anchor="middle" font-family="monospace">_warn(chan, msg)</text>
+    <text x="210" y="409" font-family="Arial, sans-serif" font-size="9" fill="#f88" text-anchor="middle" font-family="monospace">_error(chan, msg)</text>
+    <text x="210" y="426" font-family="Arial, sans-serif" font-size="9" fill="#8ff" text-anchor="middle" font-family="monospace">_status(chan, sub, msg)</text>
+    <text x="210" y="443" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle" font-family="monospace">_on_perf_item(chan, name, data)</text>
+
+    <!-- Stdout Backend -->
+    <rect x="380" y="335" width="160" height="100" rx="6" fill="#4a5a3a" stroke="#6a7a5a" stroke-width="1"/>
+    <text x="460" y="355" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">Stdout</text>
+    <text x="460" y="375" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">ANSI colors</text>
+    <text x="460" y="392" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Immediate output</text>
+    <text x="460" y="409" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">stderr for errors</text>
+    <text x="460" y="426" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">(Default)</text>
+
+    <!-- File Backend -->
+    <rect x="560" y="335" width="160" height="100" rx="6" fill="#5a4a3a" stroke="#8a6a4a" stroke-width="1"/>
+    <text x="640" y="355" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">File</text>
+    <text x="640" y="375" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Async writer thread</text>
+    <text x="640" y="392" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Configurable flush</text>
+    <text x="640" y="409" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Optional ANSI</text>
+    <text x="640" y="426" font-family="Arial, sans-serif" font-size="9" fill="#ff8" text-anchor="middle">Flush on error</text>
+
+    <!-- HTML Backend -->
+    <rect x="740" y="335" width="160" height="100" rx="6" fill="#5a3a5a" stroke="#7a5a7a" stroke-width="1"/>
+    <text x="820" y="355" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">HTML</text>
+    <text x="820" y="375" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Interactive viewer</text>
+    <text x="820" y="392" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Channel toggles</text>
+    <text x="820" y="409" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Crash resilient</text>
+    <text x="820" y="426" font-family="Arial, sans-serif" font-size="9" fill="#8ff" text-anchor="middle">file:// compatible</text>
+
+    <!-- Fork Backend -->
+    <rect x="920" y="335" width="210" height="100" rx="6" fill="#3a5a5a" stroke="#5a7a7a" stroke-width="1"/>
+    <text x="1025" y="355" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">Fork</text>
+    <text x="1025" y="375" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Multiplexer</text>
+    <text x="1025" y="392" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">N child backends</text>
+    <text x="1025" y="409" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">[STDOUT,FILE,HTML]</text>
+    <text x="1025" y="426" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">Env var configurable</text>
+
+    <!-- Output destinations -->
+    <rect x="70" y="465" width="160" height="40" rx="4" fill="#2a4a2a" stroke="#4a6a4a" stroke-width="1"/>
+    <text x="150" y="490" font-family="Arial, sans-serif" font-size="10" fill="#8f8" text-anchor="middle">Terminal (stdout/stderr)</text>
+
+    <rect x="250" y="465" width="160" height="40" rx="4" fill="#4a4a2a" stroke="#6a6a4a" stroke-width="1"/>
+    <text x="330" y="490" font-family="Arial, sans-serif" font-size="10" fill="#ff8" text-anchor="middle">Log File (.log)</text>
+
+    <rect x="430" y="465" width="180" height="40" rx="4" fill="#4a2a4a" stroke="#6a4a6a" stroke-width="1"/>
+    <text x="520" y="490" font-family="Arial, sans-serif" font-size="10" fill="#f8f" text-anchor="middle">HTML File (.html)</text>
+
+    <rect x="630" y="465" width="200" height="40" rx="4" fill="#2a4a4a" stroke="#4a6a6a" stroke-width="1"/>
+    <text x="730" y="490" font-family="Arial, sans-serif" font-size="10" fill="#8ff" text-anchor="middle">Multiple Destinations</text>
+
+    <!-- Arrows from backends to outputs -->
+    <path d="M 460 435 L 150 465" stroke="#8f8" stroke-width="1.5" marker-end="url(#arrowhead-green)"/>
+    <path d="M 640 435 L 330 465" stroke="#ff8" stroke-width="1.5" marker-end="url(#arrowhead-yellow)"/>
+    <path d="M 820 435 L 520 465" stroke="#f8f" stroke-width="1.5" marker-end="url(#arrowhead-magenta)"/>
+    <path d="M 1025 435 L 730 465" stroke="#8ff" stroke-width="1.5" marker-end="url(#arrowhead-cyan)"/>
+  </g>
+
+  <!-- Arrows between sections -->
+  <path d="M 350 160 L 400 160" stroke="#888" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <path d="M 750 160 L 800 160" stroke="#888" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <path d="M 575 260 L 575 290" stroke="#888" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+  <!-- Arrow markers -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#888"/>
+    </marker>
+    <marker id="arrowhead-green" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#8f8"/>
+    </marker>
+    <marker id="arrowhead-yellow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#ff8"/>
+    </marker>
+    <marker id="arrowhead-magenta" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#f8f"/>
+    </marker>
+    <marker id="arrowhead-cyan" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#8ff"/>
+    </marker>
+  </defs>
+</svg>

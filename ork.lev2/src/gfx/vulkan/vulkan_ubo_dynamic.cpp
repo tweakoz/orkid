@@ -26,7 +26,7 @@ void VkDynamicUBOSystem::init(vkcontext_rawptr_t ctx) {
   size_t chunk_size = align_up(2048, _actual_alignment);
   _buffer_size = MAX_CHUNKS * chunk_size;
   
-  printf("VkDynamicUBOSystem: Creating global buffer of %zu MB (alignment=%zu, chunk_size=%zu)\n",
+  if(0)printf("VkDynamicUBOSystem: Creating global buffer of %zu MB (alignment=%zu, chunk_size=%zu)\n",
          _buffer_size / (1024*1024), _actual_alignment, chunk_size);
   
   // Use VulkanBuffer constructor - it handles all the Vulkan setup

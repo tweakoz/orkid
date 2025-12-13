@@ -90,14 +90,14 @@ public:
         
         // Signal initialization complete (releases all waiters)
         control->init_complete.store(0xDEADBEEF);
-        printf("ShmObject: Created and initialized '%s' size=%zu\n", _name.c_str(), _size);
+        //printf("ShmObject: Created and initialized '%s' size=%zu\n", _name.c_str(), _size);
         
       } else {
         // Someone else won - wait for initialization to complete
         _is_creator = false;
         waitForInitialization(control);
         _image = static_cast<T*>(getDataPtr(control));
-        printf("ShmObject: Attached to initialized '%s' size=%zu\n", _name.c_str(), _size);
+        //printf("ShmObject: Attached to initialized '%s' size=%zu\n", _name.c_str(), _size);
       }
       
     } catch (const bip::interprocess_exception& e) {
@@ -404,7 +404,7 @@ inline bool removeShmObject(const std::string& name) {
 }
 
 // Clean up all Orkid shared memory segments
-inline int cleanupOrkidShmObjects(bool verbose = true) {
+inline int cleanupOrkidShmObjects(bool verbose = false) {
   int removed_count = 0;
   int failed_count = 0;
   
@@ -428,13 +428,13 @@ inline int cleanupOrkidShmObjects(bool verbose = true) {
   
   if (verbose) {
     if (orkid_segments.empty()) {
-      printf("No Orkid shared memory segments found.\n");
+      fprintf(stderr, "No Orkid shared memory segments found.\n");
     } else {
-      printf("Found %zu segment(s):\n", orkid_segments.size());
+      fprintf(stderr, "Found %zu segment(s):\n", orkid_segments.size());
       for (const auto& seg : orkid_segments) {
-        printf("  • %s\n", seg.c_str());
+        fprintf(stderr, "  • %s\n", seg.c_str());
       }
-      printf("\n");
+      fprintf(stderr, "\n");
     }
   }
   
@@ -442,19 +442,19 @@ inline int cleanupOrkidShmObjects(bool verbose = true) {
   for (const auto& name : orkid_segments) {
     bool removed = removeShmObject(name);
     if (removed) {
-      if (verbose) printf("  ✓ Removed: %s\n", name.c_str());
+      if (verbose) fprintf(stderr, "  ✓ Removed: %s\n", name.c_str());
       removed_count++;
     } else {
-      if (verbose) printf("  ✗ Failed to remove: %s\n", name.c_str());
+      if (verbose) fprintf(stderr, "  ✗ Failed to remove: %s\n", name.c_str());
       failed_count++;
     }
   }
   
   if (verbose && removed_count > 0) {
-    printf("\nSuccessfully removed %d segment(s)\n", removed_count);
+    fprintf(stderr, "\nSuccessfully removed %d segment(s)\n", removed_count);
   }
   if (verbose && failed_count > 0) {
-    printf("Failed to remove %d segment(s)\n", failed_count);
+    fprintf(stderr, "Failed to remove %d segment(s)\n", failed_count);
   }
   
   return removed_count;

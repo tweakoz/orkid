@@ -789,7 +789,7 @@ void OrkEzApp::_mainThreadLoopEnd() {
     ctx->_runloopEnd();
   }
   size_t num_prof_blocks = profiler::dumpBlocksToFile("test_profile.prof");
-  printf( "Dumped %zu profiler blocks to test_profile.prof\n", num_prof_blocks);
+  logchan_ezapp->log( "Dumped %zu profiler blocks to test_profile.prof\n", num_prof_blocks);
 }
 ///////////////////////////////////////////////////////////////////////////////
 int OrkEzApp::mainThreadLoop() {

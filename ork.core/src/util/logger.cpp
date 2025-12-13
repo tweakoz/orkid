@@ -9,6 +9,7 @@
 #include <ork/kernel/environment.h>
 #include <ork/kernel/timer.h>
 #include <cstdio>
+#include <cstdlib>
 #include <unordered_set>
 #include <ork/util/ncui.h>
 
@@ -285,6 +286,136 @@ static void nop_perfitem(const LogChannel*, std::string subchannel, svar64_t& dd
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Environment variable parsing for backend configuration
+// Syntax:
+//   ORKID_LOGGER_BACKEND=STDOUT
+//   ORKID_LOGGER_BACKEND=FILE               - logs to ${OBT_STAGE}/orkid.log
+//   ORKID_LOGGER_BACKEND=FILE</path/to/log>
+//   ORKID_LOGGER_BACKEND=HTML               - logs to ${OBT_STAGE}/orkid.log.html
+//   ORKID_LOGGER_BACKEND=HTML</path/to/log.html>
+//   ORKID_LOGGER_BACKEND=[STDOUT,FILE,HTML] - multiple backends
+// Additional options:
+//   ORKID_LOGGER_FILE_ANSI=1       - enable ANSI in file output
+//   ORKID_LOGGER_FILE_FLUSH_MS=100 - flush interval in ms (applies to FILE and HTML)
+///////////////////////////////////////////////////////////////////////////////
+
+static logger_backend_ptr_t parseBackendSpec(const std::string& spec) {
+  // Get file options from env (use getenv directly to avoid static init order issues)
+  bool file_ansi = false;
+  float file_flush_ms = 100.0f;
+
+  const char* ansi_str = getenv("ORKID_LOGGER_FILE_ANSI");
+  if (ansi_str) {
+    std::string s(ansi_str);
+    file_ansi = (s == "1" || s == "true" || s == "yes");
+  }
+
+  const char* flush_str = getenv("ORKID_LOGGER_FILE_FLUSH_MS");
+  if (flush_str) {
+    file_flush_ms = std::stof(flush_str);
+  }
+
+  // Parse single backend spec
+  if (spec == "STDOUT") {
+    return createStdoutBackend();
+  }
+
+  if (spec.rfind("FILE<", 0) == 0 && spec.back() == '>') {
+    // Extract path from FILE</path/to/log>
+    std::string path = spec.substr(5, spec.length() - 6);
+    return createFileBackend(path, file_ansi, file_flush_ms, true);
+  }
+
+  if (spec == "FILE") {
+    // FILE without path - use default ${OBT_STAGE}/orkid.log
+    const char* obt_stage = getenv("OBT_STAGE");
+    if (obt_stage) {
+      std::string path = std::string(obt_stage) + "/orkid.log";
+      return createFileBackend(path, file_ansi, file_flush_ms, true);
+    } else {
+      // OBT_STAGE not set, fall back to current directory
+      return createFileBackend("orkid.log", file_ansi, file_flush_ms, true);
+    }
+  }
+
+  if (spec.rfind("HTML<", 0) == 0 && spec.back() == '>') {
+    // Extract path from HTML</path/to/log.html>
+    std::string path = spec.substr(5, spec.length() - 6);
+    return createHtmlBackend(path, file_flush_ms);
+  }
+
+  if (spec == "HTML") {
+    // HTML without path - use default ${OBT_STAGE}/orkid.log.html
+    const char* obt_stage = getenv("OBT_STAGE");
+    if (obt_stage) {
+      std::string path = std::string(obt_stage) + "/orkid.log.html";
+      return createHtmlBackend(path, file_flush_ms);
+    } else {
+      // OBT_STAGE not set, fall back to current directory
+      return createHtmlBackend("orkid.log.html", file_flush_ms);
+    }
+  }
+
+  // Unknown spec, return nullptr
+  return nullptr;
+}
+
+static logger_backend_ptr_t parseBackendEnvVar() {
+  // Use getenv directly to avoid static init order issues with genviron
+  const char* backend_cstr = getenv("ORKID_LOGGER_BACKEND");
+  if (!backend_cstr) {
+    return nullptr;  // No env var set
+  }
+  std::string backend_str(backend_cstr);
+
+  // Check for fork syntax: [BACKEND1,BACKEND2,...]
+  if (backend_str.front() == '[' && backend_str.back() == ']') {
+    std::string inner = backend_str.substr(1, backend_str.length() - 2);
+    std::vector<logger_backend_ptr_t> children;
+
+    // Parse comma-separated backends (handle FILE<path> which may contain commas in path)
+    size_t pos = 0;
+    while (pos < inner.length()) {
+      // Find next comma, but skip if inside < >
+      size_t comma_pos = pos;
+      int bracket_depth = 0;
+      while (comma_pos < inner.length()) {
+        if (inner[comma_pos] == '<') bracket_depth++;
+        else if (inner[comma_pos] == '>') bracket_depth--;
+        else if (inner[comma_pos] == ',' && bracket_depth == 0) break;
+        comma_pos++;
+      }
+
+      std::string spec = inner.substr(pos, comma_pos - pos);
+      // Trim whitespace
+      size_t start = spec.find_first_not_of(" \t");
+      size_t end = spec.find_last_not_of(" \t");
+      if (start != std::string::npos) {
+        spec = spec.substr(start, end - start + 1);
+      }
+
+      auto backend = parseBackendSpec(spec);
+      if (backend) {
+        children.push_back(backend);
+      }
+
+      pos = comma_pos + 1;
+    }
+
+    if (children.empty()) {
+      return nullptr;
+    } else if (children.size() == 1) {
+      return children[0];
+    } else {
+      return createForkBackend(children);
+    }
+  }
+
+  // Single backend
+  return parseBackendSpec(backend_str);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 Logger::Logger() {
   _backend = std::make_shared<LoggerBackend>();
@@ -299,7 +430,9 @@ Logger::Logger() {
     _backend->_status            = default_status_fn;
     _backend->_on_perf_item      = default_perfitem;
   }
+
   auto ENV = ork::Environment();
+
   if (ENV.has("ORKID_LOG_DISABLE")) {
     std::lock_guard<std::mutex> lock(_backend->_mutex);
     _backend->_add_log_line      = nop_log_fn;
@@ -311,15 +444,18 @@ Logger::Logger() {
     _backend->_status            = nop_status_fn;
     _backend->_on_perf_item      = nop_perfitem;
   }
-  else{
+  else {
+    // Check for ORKID_LOGGER_BACKEND env var first
+    auto env_backend = parseBackendEnvVar();
+    if (env_backend) {
+      _backend = env_backend;
+    }
     #if defined(ENABLE_NOTCURSES_UI)
-    if (_ENABLE_NOTCURSES()) {
+    else if (_ENABLE_NOTCURSES()) {
       installNotCursesToBackend(_backend.get());
     }
     #endif
   }
-
-
 
   _default_channel = configureChannel("DEFAULT", fvec3(1, 1, 1), true);
   _stderr_channel  = configureChannel("STDERR", fvec3(1.0f, 0.25f, 0.0f), true); // Orange color
@@ -327,8 +463,6 @@ Logger::Logger() {
   // Start stderr redirection
   _stderr_redirector = std::make_shared<StderrRedirector>(_stderr_channel.get());
   _stderr_redirector->start();
-
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -351,6 +485,7 @@ logchannel_ptr_t Logger::defaultChannel() const {
 
 void Logger::setBackend(logger_backend_ptr_t backend) {
   _backend = backend;
+  _backend_set_by_code = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

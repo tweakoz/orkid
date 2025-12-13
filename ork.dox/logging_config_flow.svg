@@ -1,0 +1,166 @@
+<svg width="1000" height="650" viewBox="0 0 1000 650" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1000" height="650" fill="#3a3a3a"/>
+
+  <!-- Title -->
+  <text x="500" y="30" font-family="Arial, sans-serif" font-size="18" fill="white" text-anchor="middle" font-weight="bold">Logger Configuration Flow</text>
+
+  <!-- Priority Order -->
+  <g id="priority">
+    <rect x="50" y="55" width="900" height="40" rx="4" fill="#2a3a4a" stroke="#4a5a6a" stroke-width="1"/>
+    <text x="500" y="80" font-family="Arial, sans-serif" font-size="12" fill="#8ff" text-anchor="middle">Priority Order: Programmatic (highest) > Environment Variable > NotCurses > Default Stdout (lowest)</text>
+  </g>
+
+  <!-- Logger Constructor -->
+  <g id="constructor">
+    <rect x="400" y="110" width="200" height="50" rx="8" fill="#4a5a3a" stroke="#6a7a5a" stroke-width="2"/>
+    <text x="500" y="135" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">Logger::Logger()</text>
+    <text x="500" y="150" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Startup initialization</text>
+  </g>
+
+  <!-- Check ORKID_LOG_DISABLE -->
+  <g id="check-disable">
+    <polygon points="500,180 600,230 500,280 400,230" fill="#5a4a4a" stroke="#7a6a6a" stroke-width="1"/>
+    <text x="500" y="225" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">ORKID_LOG_DISABLE</text>
+    <text x="500" y="240" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">set?</text>
+  </g>
+
+  <!-- NOP Backend -->
+  <g id="nop-backend">
+    <rect x="650" y="205" width="150" height="50" rx="6" fill="#4a2a2a" stroke="#6a4a4a" stroke-width="1"/>
+    <text x="725" y="225" font-family="Arial, sans-serif" font-size="11" fill="#f88" text-anchor="middle">NOP Backend</text>
+    <text x="725" y="242" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">All logging disabled</text>
+  </g>
+
+  <!-- Check ORKID_LOGGER_BACKEND -->
+  <g id="check-backend-env">
+    <polygon points="500,300 620,360 500,420 380,360" fill="#3a4a5a" stroke="#5a6a8a" stroke-width="1"/>
+    <text x="500" y="350" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">ORKID_LOGGER_BACKEND</text>
+    <text x="500" y="368" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">set?</text>
+  </g>
+
+  <!-- Parse Backend Spec -->
+  <g id="parse-backend">
+    <rect x="650" y="335" width="180" height="50" rx="6" fill="#3a5a4a" stroke="#5a7a6a" stroke-width="1"/>
+    <text x="740" y="355" font-family="Arial, sans-serif" font-size="11" fill="#8f8" text-anchor="middle">parseBackendEnvVar()</text>
+    <text x="740" y="372" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Parse spec string</text>
+  </g>
+
+  <!-- Backend Types -->
+  <g id="backend-types">
+    <rect x="860" y="280" width="120" height="35" rx="4" fill="#4a5a3a" stroke="#6a7a5a" stroke-width="1"/>
+    <text x="920" y="302" font-family="Arial, sans-serif" font-size="10" fill="#8f8" text-anchor="middle">STDOUT</text>
+
+    <rect x="860" y="320" width="120" height="35" rx="4" fill="#5a4a3a" stroke="#8a6a4a" stroke-width="1"/>
+    <text x="920" y="342" font-family="Arial, sans-serif" font-size="10" fill="#fa8" text-anchor="middle">FILE&lt;path&gt;</text>
+
+    <rect x="860" y="360" width="120" height="35" rx="4" fill="#4a3a5a" stroke="#6a5a7a" stroke-width="1"/>
+    <text x="920" y="382" font-family="Arial, sans-serif" font-size="10" fill="#c8f" text-anchor="middle">HTML&lt;path&gt;</text>
+
+    <rect x="860" y="400" width="120" height="35" rx="4" fill="#3a4a4a" stroke="#5a6a6a" stroke-width="1"/>
+    <text x="920" y="422" font-family="Arial, sans-serif" font-size="10" fill="#8ff" text-anchor="middle">[A,B,C] Fork</text>
+  </g>
+
+  <!-- Check NotCurses -->
+  <g id="check-notcurses">
+    <polygon points="500,440 600,490 500,540 400,490" fill="#4a4a3a" stroke="#6a6a5a" stroke-width="1"/>
+    <text x="500" y="483" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">ORKID_LOG_NOTCURSES</text>
+    <text x="500" y="500" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">or --newlogger?</text>
+  </g>
+
+  <!-- NotCurses Backend -->
+  <g id="notcurses-backend">
+    <rect x="650" y="465" width="150" height="50" rx="6" fill="#5a5a3a" stroke="#7a7a5a" stroke-width="1"/>
+    <text x="725" y="485" font-family="Arial, sans-serif" font-size="11" fill="#ff8" text-anchor="middle">NotCurses UI</text>
+    <text x="725" y="502" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">TUI log viewer</text>
+  </g>
+
+  <!-- Default Stdout -->
+  <g id="default-stdout">
+    <rect x="400" y="560" width="200" height="50" rx="6" fill="#4a5a3a" stroke="#6a7a5a" stroke-width="2"/>
+    <text x="500" y="582" font-family="Arial, sans-serif" font-size="11" fill="#8f8" text-anchor="middle" font-weight="bold">Default Stdout Backend</text>
+    <text x="500" y="600" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Colored console output</text>
+  </g>
+
+  <!-- Runtime Override -->
+  <g id="runtime-override">
+    <rect x="100" y="400" width="200" height="80" rx="6" fill="#3a3a5a" stroke="#5a5a8a" stroke-width="2"/>
+    <text x="200" y="425" font-family="Arial, sans-serif" font-size="11" fill="#88f" text-anchor="middle" font-weight="bold">Programmatic Override</text>
+    <text x="200" y="445" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">logger()->setBackend()</text>
+    <text x="200" y="465" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">Highest priority</text>
+  </g>
+
+  <!-- Active Backend -->
+  <g id="active-backend">
+    <rect x="100" y="520" width="200" height="70" rx="6" fill="#2a4a2a" stroke="#4a6a4a" stroke-width="2"/>
+    <text x="200" y="545" font-family="Arial, sans-serif" font-size="12" fill="#8f8" text-anchor="middle" font-weight="bold">Active Backend</text>
+    <text x="200" y="565" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">logger()->_backend</text>
+    <text x="200" y="580" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Used for all log calls</text>
+  </g>
+
+  <!-- Arrows -->
+  <path d="M 500 160 L 500 180" stroke="#888" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+  <!-- Disable check arrows -->
+  <path d="M 600 230 L 650 230" stroke="#f88" stroke-width="1.5" marker-end="url(#arrowhead-red)"/>
+  <text x="620" y="220" font-family="Arial, sans-serif" font-size="9" fill="#f88">Yes</text>
+
+  <path d="M 500 280 L 500 300" stroke="#8f8" stroke-width="1.5" marker-end="url(#arrowhead-green)"/>
+  <text x="515" y="295" font-family="Arial, sans-serif" font-size="9" fill="#8f8">No</text>
+
+  <!-- Backend env check arrows -->
+  <path d="M 620 360 L 650 360" stroke="#8f8" stroke-width="1.5" marker-end="url(#arrowhead-green)"/>
+  <text x="630" y="350" font-family="Arial, sans-serif" font-size="9" fill="#8f8">Yes</text>
+
+  <path d="M 830 360 L 860 360" stroke="#888" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+  <path d="M 500 420 L 500 440" stroke="#888" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+  <text x="515" y="435" font-family="Arial, sans-serif" font-size="9" fill="#aaa">No</text>
+
+  <!-- NotCurses check arrows -->
+  <path d="M 600 490 L 650 490" stroke="#ff8" stroke-width="1.5" marker-end="url(#arrowhead-yellow)"/>
+  <text x="620" y="480" font-family="Arial, sans-serif" font-size="9" fill="#ff8">Yes</text>
+
+  <path d="M 500 540 L 500 560" stroke="#8f8" stroke-width="1.5" marker-end="url(#arrowhead-green)"/>
+  <text x="515" y="555" font-family="Arial, sans-serif" font-size="9" fill="#8f8">No</text>
+
+  <!-- Override arrow -->
+  <path d="M 200 480 L 200 520" stroke="#88f" stroke-width="2" marker-end="url(#arrowhead-blue)"/>
+  <text x="175" y="505" font-family="Arial, sans-serif" font-size="9" fill="#88f">Anytime</text>
+
+  <!-- Flow to active -->
+  <path d="M 400 585 L 300 555" stroke="#8f8" stroke-width="1.5" marker-end="url(#arrowhead-green)"/>
+
+  <!-- Env Var Examples Box -->
+  <g id="env-examples">
+    <rect x="50" y="110" width="280" height="180" rx="6" fill="#2a2a2a" stroke="#555" stroke-width="1"/>
+    <text x="190" y="135" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">Environment Variable Examples</text>
+
+    <text x="70" y="160" font-family="monospace" font-size="9" fill="#8f8">ORKID_LOGGER_BACKEND=STDOUT</text>
+    <text x="70" y="178" font-family="monospace" font-size="9" fill="#fa8">ORKID_LOGGER_BACKEND=FILE</text>
+    <text x="70" y="196" font-family="monospace" font-size="9" fill="#fa8">ORKID_LOGGER_BACKEND=FILE&lt;/tmp/log&gt;</text>
+    <text x="70" y="214" font-family="monospace" font-size="9" fill="#c8f">ORKID_LOGGER_BACKEND=HTML</text>
+    <text x="70" y="232" font-family="monospace" font-size="9" fill="#8ff">ORKID_LOGGER_BACKEND=[STDOUT,FILE]</text>
+    <text x="70" y="250" font-family="monospace" font-size="9" fill="#aaa">ORKID_LOGGER_FILE_ANSI=1</text>
+    <text x="70" y="268" font-family="monospace" font-size="9" fill="#aaa">ORKID_LOGGER_FILE_FLUSH_MS=50</text>
+  </g>
+
+  <!-- Arrow markers -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#888"/>
+    </marker>
+    <marker id="arrowhead-green" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#8f8"/>
+    </marker>
+    <marker id="arrowhead-red" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#f88"/>
+    </marker>
+    <marker id="arrowhead-yellow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#ff8"/>
+    </marker>
+    <marker id="arrowhead-blue" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#88f"/>
+    </marker>
+  </defs>
+</svg>

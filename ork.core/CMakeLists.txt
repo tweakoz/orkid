@@ -170,6 +170,9 @@ IF(BUILD_IOS_MINIMAL)
     ${SRCD}/util/xxhash.cpp
     ${SRCD}/util/logger.cpp
     ${SRCD}/util/logger_std.cpp
+    ${SRCD}/util/logger_file.cpp
+    ${SRCD}/util/logger_fork.cpp
+    ${SRCD}/util/logger_html.cpp
     ${SRCD}/util/logger_redirector.cpp
     ${SRCD}/util/logger_ios_ui.mm
     ${SRCD}/util/endian.cpp

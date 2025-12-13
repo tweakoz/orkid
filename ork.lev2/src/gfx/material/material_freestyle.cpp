@@ -43,7 +43,7 @@ fxpipeline_ptr_t FreestyleMaterial::_createFxPipeline(const FxPipelinePermutatio
        break;
     }
     default:
-      printf( "UNKNOWN VARIANT<%u>\n", mtl->_variant);
+      fprintf( stderr, "UNKNOWN VARIANT<%u>\n", mtl->_variant);
       OrkAssert(false);
       break;
   }
@@ -166,10 +166,10 @@ const FxShaderParam* FreestyleMaterial::param(std::string named) {
   if (par != nullptr)
     _params.insert(par);
   else{
-    printf("FreestyleMaterial<%s> no param named<%s>\n", //
+    fprintf(stderr,"FreestyleMaterial<%s> no param named<%s>\n", //
            _shader->mName.c_str(),                       //
            named.c_str());                               //
-    fflush(stdout);
+    fflush(stderr);
   }
   return par;
 }

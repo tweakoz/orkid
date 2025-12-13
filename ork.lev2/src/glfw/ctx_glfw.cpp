@@ -877,7 +877,7 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
 
     _gctx = new CtxGLFW(nullptr);
 
-    printf("<<<glfwInit>>> HERE!!!\n");
+    //printf("<<<glfwInit>>> HERE!!!\n");
 
 #if defined(LINUX) || defined(ORK_CONFIG_IX)
     // On Linux, if no display server is available, use GLFW NULL platform for headless operation

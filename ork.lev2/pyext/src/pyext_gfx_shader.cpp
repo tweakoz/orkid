@@ -53,8 +53,8 @@ void pyinit_gfx_shader(py::module& module_lev2) {
                 if (it != sh->_parameterByName.end())
                   rval = pyfxparam_ptr_t(it->second);
                 else{
-                  printf("FxShaderAsset::param() no param named<%s>\n",named.c_str());
-                  fflush(stdout);
+                  fprintf(stderr,"FxShaderAsset::param() no param named<%s>\n",named.c_str());
+                  fflush(stderr);
                 }
                 return rval;
               })

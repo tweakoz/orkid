@@ -195,18 +195,20 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_o
 
   auto resources = _currentVKPASS->_merged_resources;
 
-  printf("_createPipelineLayoutData: merged_resources=%p, num_descriptor_sets=%zu\n",
+  if(0){
+    printf("_createPipelineLayoutData: merged_resources=%p, num_descriptor_sets=%zu\n",
          resources.get(), resources ? resources->descriptor_sets.size() : 0);
-  if (resources) {
-    for (const auto& [set_id, sources] : resources->descriptor_sets) {
-      printf("  descriptor_set[%d] has %zu sources\n", set_id, sources.size());
-      for (const auto& source : sources) {
-        printf("    source<%s> has %zu bindings\n", source->source_name.c_str(), source->bindings.size());
-        for (const auto& binding : source->bindings) {
-          const char* type_str = binding->type == VkMergedResourceBinding::Type::StorageBuffer ? "SSBO" :
-                                 binding->type == VkMergedResourceBinding::Type::UniformBlock ? "UBO" :
-                                 binding->type == VkMergedResourceBinding::Type::Sampler ? "SAMPLER" : "?";
-          printf("      binding[%u] = %s<%s>\n", binding->binding_id, type_str, binding->name.c_str());
+    if (resources) {
+      for (const auto& [set_id, sources] : resources->descriptor_sets) {
+        printf("  descriptor_set[%d] has %zu sources\n", set_id, sources.size());
+        for (const auto& source : sources) {
+          printf("    source<%s> has %zu bindings\n", source->source_name.c_str(), source->bindings.size());
+          for (const auto& binding : source->bindings) {
+            const char* type_str = binding->type == VkMergedResourceBinding::Type::StorageBuffer ? "SSBO" :
+                                   binding->type == VkMergedResourceBinding::Type::UniformBlock ? "UBO" :
+                                   binding->type == VkMergedResourceBinding::Type::Sampler ? "SAMPLER" : "?";
+            printf("      binding[%u] = %s<%s>\n", binding->binding_id, type_str, binding->name.c_str());
+          }
         }
       }
     }

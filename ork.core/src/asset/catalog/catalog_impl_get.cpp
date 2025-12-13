@@ -575,7 +575,7 @@ bool CatalogImpl::_extractAssetPak(datablock_ptr_t _data, fetchrequest_ptr_t req
   // Extract all entries to memory
   util::TarExtractOptions extract_options;
   auto extracted_entries = archive->extractToMemory(extract_options);
-  printf("[DEBUG _extractAssetPak] extracted_entries.size()=%zu\n", extracted_entries.size());
+  if(0)printf("[DEBUG _extractAssetPak] extracted_entries.size()=%zu\n", extracted_entries.size());
   if (extracted_entries.empty()) {
     request->_status       = AssetStatus::DECOMPRESS_FAILED;
     request->_error_detail = "No entries found in tar archive";
@@ -585,7 +585,7 @@ bool CatalogImpl::_extractAssetPak(datablock_ptr_t _data, fetchrequest_ptr_t req
   // AUTO-UNWRAP: If single file, return it directly
   if (extracted_entries.size() == 1) {
     auto& [filename, entry] = *extracted_entries.begin();
-    printf("[DEBUG _extractAssetPak] single file: filename='%s', entry=%p, entry->data=%p, data_len=%zu\n",
+    if(0)printf("[DEBUG _extractAssetPak] single file: filename='%s', entry=%p, entry->data=%p, data_len=%zu\n",
            filename.c_str(), (void*)entry.get(), entry ? (void*)entry->data.get() : nullptr,
            (entry && entry->data) ? entry->data->length() : 0);
     if (entry && entry->data) {

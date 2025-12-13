@@ -23,7 +23,7 @@ namespace ork::lev2::ca {
 ///////////////////////////////////////////////////////////////////////////////
 using namespace ork::audio::singularity;
 
-static logchannel_ptr_t logchan_coreaudio = logger()->configureChannel("PERF", fvec3(1, 0.6, .8), true);
+static logchannel_ptr_t logchan_coreaudio = logger()->configureChannel("CoreAudio", fvec3(1, 0.6, .8), true);
 
 void EnumerateMidiDevices() {
   int n                = MIDIGetNumberOfExternalDevices();
