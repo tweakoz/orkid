@@ -18,6 +18,33 @@ namespace ork::lev2 {
     /////////////////////////////////////////////////////////////////////////////////
     auto type_codec = python::pb11_typecodec_t::instance();
     /////////////////////////////////////////////////////////////////////////////////
+    // AudioDeviceInfo
+    /////////////////////////////////////////////////////////////////////////////////
+    auto auddevinfo_t = py::class_<AudioDeviceInfo, audiodeviceinfo_ptr_t>(lev2_module, "AudioDeviceInfo")
+        .def_readonly("name", &AudioDeviceInfo::_name)
+        .def_readonly("max_input_channels", &AudioDeviceInfo::_max_input_channels)
+        .def_readonly("max_output_channels", &AudioDeviceInfo::_max_output_channels)
+        .def_readonly("default_sample_rate", &AudioDeviceInfo::_default_sample_rate)
+        .def("__repr__", [](audiodeviceinfo_ptr_t info) -> std::string {
+          return FormatString("AudioDeviceInfo(name='%s', in=%d, out=%d, sr=%g)",
+                              info->_name.c_str(),
+                              info->_max_input_channels,
+                              info->_max_output_channels,
+                              info->_default_sample_rate);
+        });
+    type_codec->registerStdCodec<audiodeviceinfo_ptr_t>(auddevinfo_t);
+    /////////////////////////////////////////////////////////////////////////////////
+    // enumerateAudioDevices
+    /////////////////////////////////////////////////////////////////////////////////
+    lev2_module.def("enumerateAudioDevices", []() -> py::list {
+      auto devices = enumerateAudioDevices();
+      py::list result;
+      for (const auto& dev : devices) {
+        result.append(dev);
+      }
+      return result;
+    });
+    /////////////////////////////////////////////////////////////////////////////////
     auto auddev_t = py::class_<AudioDevice, audiodevice_ptr_t>(lev2_module, "AudioDevice"); //
     type_codec->registerStdCodec<audiodevice_ptr_t>(auddev_t);
     /////////////////////////////////////////////////////////////////////////////////

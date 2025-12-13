@@ -6,12 +6,20 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################
 
-from orkengine import core
-from orkengine import lev2
+from obt import host
+import obt.deco
+
+deco = obt.deco.Deco()
 
 ################################################################
-# List available DRM display modes
+# List available DRM display modes (Linux only)
 ################################################################
 
 if __name__ == "__main__":
-    lev2.printDrmMonitors()
+    if not host.IsLinux:
+        print(deco.red("DRM display modes not supported on this platform (Linux only)"))
+    else:
+        from orkengine import core
+        from orkengine import lev2
+        print(deco.yellow("Available DRM Display Modes") + "\n")
+        lev2.printDrmMonitors()

@@ -58,6 +58,17 @@ struct StreamingAudioInputChunkSource : public AudioInputChunkSource {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct AudioDeviceInfo {
+  std::string _name;
+  int _max_input_channels = 0;
+  int _max_output_channels = 0;
+  double _default_sample_rate = 0.0;
+};
+using audiodeviceinfo_ptr_t = std::shared_ptr<AudioDeviceInfo>;
+using audiodeviceinfo_list_t = std::vector<audiodeviceinfo_ptr_t>;
+
+audiodeviceinfo_list_t enumerateAudioDevices();
+
 struct AudioDevice {
 
   static audiodevice_ptr_t createInstance(appinitdata_wkptr_t appinitd);
