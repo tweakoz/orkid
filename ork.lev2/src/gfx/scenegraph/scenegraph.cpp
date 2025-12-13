@@ -211,21 +211,6 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     auto nodetek      = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outrnode     = nodetek->tryRenderNodeAs<pbr::ForwardNode>();
     _pbr_common     = outrnode->_pbrcommon;
-
-    if( auto try_enable_skybox = params->typedValueForKey<bool>("enable_skybox") ) {
-      bool enable_skybox = try_enable_skybox.value();
-      _pbr_common->_enable_skybox = enable_skybox;
-    }
-    if( auto try_clearcolor = params->typedValueForKey<fvec3>("clearcolor") ) {
-      fvec4 clearcolor = try_clearcolor.value();
-      _pbr_common->_clearcolor = clearcolor;
-    }
-    else if( auto try_clearcolor2 = params->typedValueForKey<fvec4>("clearcolor") ) {
-      fvec4 clearcolor = try_clearcolor2.value();
-      _pbr_common->_clearcolor = clearcolor;
-    }
-
-
   } else if (preset_upper == "FWDPBRVR") {
     _compositorPreset = _compositorData->presetForwardPBRVR(_renderPresetData);
     auto nodetek      = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
@@ -252,6 +237,19 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
   //////////////////////////////////////////////
 
   if (_pbr_common) {
+
+    if( auto try_enable_skybox = params->typedValueForKey<bool>("enable_skybox") ) {
+      bool enable_skybox = try_enable_skybox.value();
+      _pbr_common->_enable_skybox = enable_skybox;
+    }
+    if( auto try_clearcolor = params->typedValueForKey<fvec3>("clearcolor") ) {
+      fvec4 clearcolor = try_clearcolor.value();
+      _pbr_common->_clearcolor = clearcolor;
+    }
+    else if( auto try_clearcolor2 = params->typedValueForKey<fvec4>("clearcolor") ) {
+      fvec4 clearcolor = try_clearcolor2.value();
+      _pbr_common->_clearcolor = clearcolor;
+    }
 
     if (auto try_bgtex = params->typedValueForKey<std::string>("SkyboxTexPathStr")) {
       auto texture_path = try_bgtex.value();

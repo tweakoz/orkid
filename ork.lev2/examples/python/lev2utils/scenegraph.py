@@ -26,11 +26,12 @@ def createParams( rendermodel : str = "ForwardPBR" ):
 def createSceneGraph( app : object = None, 
                       rendermodel : str = None,
                       params_dict : dict = None,
+                      vars : VarMap = VarMap(),
                       layer_name : str = None,
                       use_float_buffer : bool = False ):
 
 
-    sceneparams = VarMap()
+    sceneparams = vars
 
     if rendermodel == None:
       rendermodel = "ForwardPBR"      

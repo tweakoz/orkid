@@ -57,12 +57,14 @@ class StereoApp1(object):
     self.vrdev.height = 1280
     self.IVP = mtx4()
     
-    params_dict = {
-      "SkyboxIntensity" : float(1.5),
-      "DiffuseIntensity" : float(1),
-      "SkyboxTexPathStr": "nebula"
-    }     
-    createSceneGraph(app=self,rendermodel="FWDPBRVRDM",params_dict=params_dict)    
+    vars = VarMap()
+    vars.SkyboxIntensity = float(1.5)
+    vars.DiffuseIntensity = float(1)
+    vars.SkyboxTexPathStr = "nebula"
+    #vars.enable_skybox = False
+    #vars.clearcolor = vec3(1,1,1)
+    
+    createSceneGraph(app=self,rendermodel="FWDPBRVRDM",vars=vars)    
     onode = self.outputnode # created by createSceneGraph
     def onCameraChange(cdd):
       eyeindex = cdd.rendererProperty(tokens.eyeindex)
