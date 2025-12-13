@@ -168,17 +168,18 @@ OSStatus AuContext::setupInputBuffers() {
   propertySize = sizeof(streamdesc_input);
   err          = AudioUnitGetProperty(
       _inputUnit,
-     kAudioUnitScope_Input,  // Device side
-     1,                      // Input element
-      1,
+      kAudioUnitProperty_StreamFormat,  // Property ID
+      kAudioUnitScope_Input,            // Device side (scope)
+      1,                                // Input element
       &streamdesc_input,
       &propertySize);
- 
+
  if (err != noErr) {
+   logchan_auio->log("Failed to get stream format from input unit (err=%d), trying device property", (int)err);
    // If we can't get the format from the input scope, try getting it from the device
    propertySize = sizeof(AudioStreamBasicDescription);
-   err = AudioDeviceGetProperty(_inputDev->_info->_ID, 0, true, 
-                                kAudioDevicePropertyStreamFormat, 
+   err = AudioDeviceGetProperty(_inputDev->_info->_ID, 0, true,
+                                kAudioDevicePropertyStreamFormat,
                                 &propertySize, &streamdesc_input);
    AuCheckErr(err);
  }
@@ -192,15 +193,12 @@ OSStatus AuContext::setupInputBuffers() {
   // Get the actual device info
   if (_inputDev && _inputDev->_info) {
     streamdesc_appinp = _inputDev->_info->_format;
-    streamdesc_appinp.mChannelsPerFrame = _inputDev->_info->countChannels();
   }
   //////////////////////////////////////
   // Set the format of all the AUs to the input/output devices channel count
   // For a simple case, you want to set this to the lower of count of the channels
   // in the input device vs output device
   //////////////////////////////////////
-  // streamdesc_appinp.mChannelsPerFrame =streamdesc_input.mChannelsPerFrame; //((asbd_dev1_in.mChannelsPerFrame <
-  // asbd_dev2_out.mChannelsPerFrame) ?asbd_dev1_in.mChannelsPerFrame :asbd_dev2_out.mChannelsPerFrame) ;
 
   DumpStreamDesc("InputDevice", streamdesc_input);
   DumpStreamDesc("ApplicationInput", streamdesc_appinp);
@@ -221,42 +219,37 @@ OSStatus AuContext::setupInputBuffers() {
 
   streamdesc_appinp.mSampleRate = rate;
 
+  // Get total channel count from device stream configuration
+  _numInputChannels = _inputDev->_info->countChannels();
+
+  // Set up format for INTERLEAVED float audio (more compatible with virtual devices)
+  streamdesc_appinp.mFormatID = kAudioFormatLinearPCM;
+  streamdesc_appinp.mChannelsPerFrame = _numInputChannels;
+  streamdesc_appinp.mFormatFlags = kAudioFormatFlagIsFloat | kAudioFormatFlagIsPacked;  // interleaved (no NonInterleaved flag)
+  streamdesc_appinp.mBytesPerFrame = sizeof(Float32) * _numInputChannels;  // all channels in one frame
+  streamdesc_appinp.mBytesPerPacket = streamdesc_appinp.mBytesPerFrame;
+  streamdesc_appinp.mBitsPerChannel = 32;
+  streamdesc_appinp.mFramesPerPacket = 1;
+
   err = AudioUnitSetProperty(
       _inputUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Output, 1, &streamdesc_appinp, sizeof(streamdesc_appinp));
   AuCheckErr(err);
 
   //////////////////////////////////////
-  // calculate number of buffers from channels
+  // Allocate interleaved buffer (1 buffer with all channels)
   //////////////////////////////////////
 
-  _numInputChannels = streamdesc_appinp.mChannelsPerFrame;
-
-  auto memsize = offsetof(AudioBufferList, mBuffers[0]) // alignment ?
-                 + (sizeof(AudioBuffer) * _numInputChannels);
-
-  logchan_auio->log("memsize<%d>", int(memsize));
-
-  //////////////////////////////////////
-  // malloc buffer lists
-  //////////////////////////////////////
+  auto memsize = offsetof(AudioBufferList, mBuffers[0]) + sizeof(AudioBuffer);
 
   _inputBuffer                 = (AudioBufferList*)malloc(memsize);
-  _inputBuffer->mNumberBuffers = _numInputChannels; // streamdesc_appinp.mChannelsPerFrame;
-  logchan_auio->log("NUMCHANNELS<%d>", _numInputChannels);
+  _inputBuffer->mNumberBuffers = 1;  // interleaved: single buffer
 
-  //////////////////////////////////////
-  // pre-malloc buffers for AudioBufferLists
-  //////////////////////////////////////
+  UInt32 bufferSizeBytes = bufferFrameSize * sizeof(Float32) * _numInputChannels;
 
-  UInt32 bufferSizeBytes = bufferFrameSize * sizeof(Float32);
-  logchan_auio->log("BUFFERSIZEBYTES<%d>", int(bufferSizeBytes));
-
-  for (int i = 0; i < _numInputChannels; i++) {
-    auto& buffer           = _inputBuffer->mBuffers[i];
-    buffer.mNumberChannels = 1;
-    buffer.mDataByteSize   = bufferSizeBytes;
-    buffer.mData           = malloc(bufferSizeBytes);
-  }
+  auto& buffer           = _inputBuffer->mBuffers[0];
+  buffer.mNumberChannels = _numInputChannels;  // interleaved: all channels in one buffer
+  buffer.mDataByteSize   = bufferSizeBytes;
+  buffer.mData           = malloc(bufferSizeBytes);
   return err;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -372,8 +365,6 @@ OSStatus AuContext::_inputProc(
     AudioBufferList* ioData) {
 
 
-   //logchan_auio->log("_inputProc");
-
   OSStatus err = noErr;
 
   auto _this = (AuContext*)inRefCon;
@@ -403,30 +394,31 @@ OSStatus AuContext::_inputProc(
   int inumchans = (inumbuf > 0) ? int(source_buffers->mBuffers[0].mNumberChannels) : 0;
   // logchan_auio->log("inp numfr<%d> inumbuf<%d> inumchans<%d>", inNumberFrames, inumbuf, inumchans);
 
-  auto inpbufgroup = _this->AllocLayerFragment(inumbuf, inNumberFrames);
+  // For interleaved format: inumbuf=1, inumchans=actual channel count
+  auto inpbufgroup = _this->AllocLayerFragment(inumchans, inNumberFrames);
 
   static int framaccum = 0;
-  OrkAssert(inumbuf == 1);
-  OrkAssert(inumchans == 1);
+  OrkAssert(inumbuf == 1);  // interleaved: single buffer
+  OrkAssert(inumchans >= 1 && inumchans <= 2);  // support mono or stereo
 
   /////////////////////////////
-  // pull out input data
+  // pull out input data (de-interleave)
   /////////////////////////////
 
-  int id = 0;
-  for (int i = 0; i < inumbuf; i++) {
-    const auto& src_buffer = source_buffers->mBuffers[i];
+  const auto& src_buffer = source_buffers->mBuffers[0];
 
-    OrkAssert(src_buffer.mNumberChannels == 1);
-    OrkAssert(src_buffer.mDataByteSize == inNumberFrames * sizeof(float));
+  OrkAssert(src_buffer.mNumberChannels == inumchans);
+  OrkAssert(src_buffer.mDataByteSize == inNumberFrames * sizeof(float) * inumchans);
 
-    auto src_data = (const float*)src_buffer.mData;
+  auto src_data = (const float*)src_buffer.mData;
 
-    auto& dstbuf   = inpbufgroup->mChannels[i];
+  // De-interleave into separate channel buffers
+  for (int ch = 0; ch < inumchans; ch++) {
+    auto& dstbuf   = inpbufgroup->mChannels[ch];
     auto& dst_data = dstbuf.mSampleData;
 
     for (int j = 0; j < inNumberFrames; j++) {
-      dst_data[j] = src_data[j];
+      dst_data[j] = src_data[j * inumchans + ch];  // interleaved: ch0, ch1, ch0, ch1, ...
     }
   }
 
@@ -462,9 +454,6 @@ OSStatus AuContext::_inputProc(
 
   framaccum += inNumberFrames;
 
-  //logchan_auio->log("write to input queue framaccum<%d>", int(framaccum));
-
-  // _this->_inputCallback(inpbufgroup);
   _this->_inputQueue.push(inpbufgroup);
   ////////////////////////////////////////
   // write to passthru buffer

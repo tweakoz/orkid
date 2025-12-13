@@ -128,9 +128,10 @@ CoreAudioDevice::CoreAudioDevice(appinitdata_wkptr_t appinitd)
           "input id<%d> name<%s> numchan<%d> fmt<%s>", info->_ID, input.first.c_str(), info->countChannels(), fmtstr.c_str());
 
       if (input.first == unlocked_appinitdata->_audio_input_devname) {
-        //_inp_dev_name = input.first;
-        _num_input_channels = info->countChannels();
-        logchan_coreaudio->log("FOUND INPUT DEVICE !!!!! name<%s> numch<%d>", input.first.c_str(), info->countChannels());
+        _actual_input_channels = info->countChannels();
+        _num_input_channels = unlocked_appinitdata->_audio_input_numchannels;
+        logchan_coreaudio->log("FOUND INPUT DEVICE !!!!! name<%s> device_ch<%d> requested_ch<%zu>",
+                               input.first.c_str(), _actual_input_channels, _num_input_channels);
         _input_info = info;
       }
     }
@@ -251,20 +252,25 @@ void CoreAudioDevice::startup() {
             chunk->_chunk_index++;
             OrkAssert(_num_input_channels >= 1);
             auto& chan0 = chunk->_channels[0];
-            const float* in = (const float*) inpdata->mChannels[0].mSampleData;
             chan0.resize(inumfr);
-            for (size_t i = 0; i < inumfr; i++) {
-              chan0[i] = in[i];
+
+            if (_actual_input_channels == 2 && _num_input_channels == 1) {
+              // Mix stereo to mono
+              const float* inL = (const float*) inpdata->mChannels[0].mSampleData;
+              const float* inR = (const float*) inpdata->mChannels[1].mSampleData;
+              for (size_t i = 0; i < inumfr; i++) {
+                chan0[i] = (inL[i] + inR[i]) * 0.5f;
+              }
+            } else {
+              // Mono or fallback: just take first channel
+              const float* in = (const float*) inpdata->mChannels[0].mSampleData;
+              for (size_t i = 0; i < inumfr; i++) {
+                chan0[i] = in[i];
+              }
             }
+
             _input_handler(chunk.get());
           }
-
-          static int inp_counter = 0;
-            if((inp_counter%16)==0){
-              logchan_coreaudio->perfItem("INPCOUNTER<%d>", inp_counter);
-            }
-            inp_counter++;
-
         }
 
         /////////////////////////
@@ -289,8 +295,18 @@ void CoreAudioDevice::startup() {
           }
           else{
             if (inpdata) {
-              float* buffer = inpdata->mChannels[0].mSampleData;
-              _the_synth->compute(inumfr, buffer);
+              if (_actual_input_channels == 2 && _num_input_channels == 1) {
+                // Mix stereo to mono for synth input
+                float* inL = inpdata->mChannels[0].mSampleData;
+                float* inR = inpdata->mChannels[1].mSampleData;
+                for (size_t i = 0; i < inumfr; i++) {
+                  _noinputblock[i] = (inL[i] + inR[i]) * 0.5f;
+                }
+                _the_synth->compute(inumfr, _noinputblock.data());
+              } else {
+                float* buffer = inpdata->mChannels[0].mSampleData;
+                _the_synth->compute(inumfr, buffer);
+              }
             } else {
               _the_synth->compute(inumfr, _noinputblock.data());
             }

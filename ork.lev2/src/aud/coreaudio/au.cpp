@@ -313,6 +313,10 @@ OSStatus AuContext::setupGraphForInputOnly() {
   err = setupInputCallback();
   AuCheckErr(err);
 
+  // Setup input buffers (stream format and allocation)
+  err = setupInputBuffers();
+  AuCheckErr(err);
+
   // Initialize the input unit
   err = AudioUnitInitialize(_inputUnit);
   AuCheckErr(err);

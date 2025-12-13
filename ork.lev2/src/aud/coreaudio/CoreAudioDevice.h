@@ -100,6 +100,8 @@ struct CoreAudioDevice : public AudioDevice {
   AudioDeviceList _inputDevList;
   AudioDeviceList _outputDevList;
 
+  int _actual_input_channels = 0;  // actual device channel count (may differ from requested)
+
   aucontext_ptr_t _aucontext;
   thread_ptr_t _au_thread;
   audio::singularity::synth_ptr_t _the_synth;

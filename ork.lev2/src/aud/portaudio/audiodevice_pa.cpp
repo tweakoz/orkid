@@ -48,7 +48,8 @@ const int DESIRED_NUMFRAMES = 256;
 struct PaImpl {
   PaDeviceIndex _input_override = -1;
   PaDeviceIndex _output_override = -1;
-	PaStream* _stream = nullptr;
+  PaStream* _stream = nullptr;
+  int _actual_input_channels = 0;  // actual device channel count (may differ from requested)
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -67,21 +68,35 @@ static int patestCallback(
   auto the_synth = padev->_the_synth;
   auto aid = padev->_appinitdata.lock();
 
-  if(aid->_enable_audio_input){
-    OrkAssert(padev->_num_input_channels == 1);
-
-  }
-
   if(inputBuffer and padev->_input_handler){
     static auto chunk = std::make_shared<AudioInputChunk>(padev->_num_input_channels);
     chunk->_num_frames = framesPerBuffer;
     chunk->_chunk_index++;
     OrkAssert(padev->_num_input_channels >= 1);
     auto& chan0 = chunk->_channels[0];
-    const float* in = (const float*)inputBuffer;
+    const int16_t* in = (const int16_t*)inputBuffer;
     chan0.resize(framesPerBuffer);
-    for (size_t i = 0; i < framesPerBuffer; i++) {
-      chan0[i] = in[i];
+
+    constexpr float scale = 1.0f / 32768.0f;
+    int actual_channels = paimpl->_actual_input_channels;
+
+    if (actual_channels == 2 && padev->_num_input_channels == 1) {
+      // Mix stereo to mono (int16 -> float)
+      for (size_t i = 0; i < framesPerBuffer; i++) {
+        float L = float(in[i * 2]) * scale;
+        float R = float(in[i * 2 + 1]) * scale;
+        chan0[i] = (L + R) * 0.5f;
+      }
+    } else if (actual_channels == 1) {
+      // Mono input (int16 -> float)
+      for (size_t i = 0; i < framesPerBuffer; i++) {
+        chan0[i] = float(in[i]) * scale;
+      }
+    } else {
+      // Fallback: just take first channel (int16 -> float)
+      for (size_t i = 0; i < framesPerBuffer; i++) {
+        chan0[i] = float(in[i * actual_channels]) * scale;
+      }
     }
     padev->_input_handler(chunk.get());
   }
@@ -196,11 +211,13 @@ static int patestCallback(
     logchan_portaudio->log("device<%zu> name<%s> num_inp<%zu> num_out<%zu>", c, devinfo->name, num_inp, num_out);
 
 
-    if( (num_inputs>0) and (num_inp == num_inputs) and paimpl->_input_override == -1 ){
+    if( (num_inputs>0) and (num_inp >= num_inputs) and paimpl->_input_override == -1 ){
       bool substr_matched = (devname.find(padev->_inp_dev_name)==0);
       if(substr_matched or input_default){
-        logchan_portaudio->log("using device<%s> for input", devname.c_str());
+        logchan_portaudio->log("using device<%s> for input (device has %zu channels, requested %d)",
+                               devname.c_str(), num_inp, num_inputs);
         paimpl->_input_override = c;
+        paimpl->_actual_input_channels = num_inp;
         got_input = true;
       }
     }
@@ -221,10 +238,12 @@ static int patestCallback(
       OrkAssert(false);
     }
     inp_params.device = paimpl->_input_override;
-    inp_params.channelCount = num_inputs;
-    inp_params.sampleFormat = paInt16; // paFloat32;
+    inp_params.channelCount = paimpl->_actual_input_channels;  // use actual device channels
+    inp_params.sampleFormat = paInt16;
     inp_params.suggestedLatency = Pa_GetDeviceInfo(inp_params.device)->defaultLowInputLatency;
     inp_params.hostApiSpecificStreamInfo = nullptr;
+    logchan_portaudio->log("opening input with %d channels (will mix to %d)",
+                           paimpl->_actual_input_channels, num_inputs);
   }
 
   if(num_outputs>0){
