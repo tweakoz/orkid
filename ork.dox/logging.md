@@ -40,6 +40,31 @@ A named logging endpoint with associated color and enabled state:
 - Enable/disable toggle
 - Methods: `log()`, `warn()`, `error()`, `status()`
 
+### Channel Access Methods
+
+**`configureChannel(name, color, enabled)`** - Producer-side channel creation:
+- Creates a new channel if it doesn't exist
+- Updates color and enabled state if channel already exists
+- Use this when **defining** a channel (typically at module initialization)
+- Returns the configured channel
+
+**`getChannel(name)`** - Consumer-side channel lookup:
+- Returns existing channel if found
+- Creates a **disabled** default channel (white color) if not found
+- Use this when **referencing** a channel defined elsewhere
+- Safe to call even if the channel hasn't been configured yet
+
+```cpp
+// Module A defines the channel
+static auto logchan_audio = logger()->configureChannel("AUDIO", fvec3(0,1,0.5), true);
+
+// Module B references the same channel (doesn't need to know color/enabled)
+auto audio_chan = logger()->getChannel("AUDIO");
+audio_chan->log("Message from module B");
+```
+
+This separation allows modules to reference channels without knowing their configuration, while ensuring the defining module controls the channel's appearance and enabled state.
+
 ### LoggerBackend
 Output handler that receives formatted log messages:
 - **Stdout**: Default colored console output
