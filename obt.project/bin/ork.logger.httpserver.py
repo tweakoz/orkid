@@ -846,26 +846,34 @@ let gridColSizes = [];  // Track column sizes for resizing
 let gridRowSizes = [];  // Track row sizes for resizing
 
 function updatePanels() {
-  const count = selectedClients.size;
+  // Also update merged panel when panels change
+  updateAllPanels();
+}
 
-  if (count === 0) {
+function updateAllPanels() {
+  const individualCount = selectedClients.size;
+  const hasMerged = mergedClients.size > 0;
+  const totalPanels = individualCount + (hasMerged ? 1 : 0);
+
+  if (totalPanels === 0) {
     panelsContainer.innerHTML = '<div id="empty-state">Select clients to view their logs</div>';
     panelsContainer.style.gridTemplateColumns = '1fr';
     panelsContainer.style.gridTemplateRows = '1fr';
     gridColSizes = [];
     gridRowSizes = [];
+    mergedPanel = null;
     return;
   }
 
-  // Calculate grid dimensions
+  // Calculate grid dimensions based on total panel count
   let cols;
-  if (count === 1) cols = 1;
-  else if (count === 2) cols = 2;
-  else if (count <= 4) cols = 2;
-  else if (count <= 6) cols = 3;
-  else cols = Math.ceil(Math.sqrt(count));
+  if (totalPanels === 1) cols = 1;
+  else if (totalPanels === 2) cols = 2;
+  else if (totalPanels <= 4) cols = 2;
+  else if (totalPanels <= 6) cols = 3;
+  else cols = Math.ceil(Math.sqrt(totalPanels));
 
-  const rows = Math.ceil(count / cols);
+  const rows = Math.ceil(totalPanels / cols);
 
   // Initialize sizes (1fr each, with 4px gutters)
   gridColSizes = [];
@@ -882,6 +890,15 @@ function updatePanels() {
   panelsContainer.style.gridTemplateColumns = gridColSizes.join(' ');
   panelsContainer.style.gridTemplateRows = gridRowSizes.join(' ');
   panelsContainer.innerHTML = '';
+  mergedPanel = null;
+
+  // Build list of all panels to show: merged first (if any), then sorted individual clients
+  const allPanels = [];
+
+  // Add merged panel first (if active)
+  if (hasMerged) {
+    allPanels.push({ type: 'merged' });
+  }
 
   // Sort selected clients by app name (case insensitive alphanumeric)
   const sortedSelected = [...selectedClients].sort((a, b) => {
@@ -889,6 +906,11 @@ function updatePanels() {
     const clientB = clients.get(b);
     if (!clientA || !clientB) return 0;
     return clientA.app.toLowerCase().localeCompare(clientB.app.toLowerCase(), undefined, { numeric: true });
+  });
+
+  // Add individual client panels
+  sortedSelected.forEach(clientId => {
+    allPanels.push({ type: 'client', clientId });
   });
 
   // Create panels and gutters
@@ -899,19 +921,33 @@ function updatePanels() {
     for (let c = 0; c < cols; c++) {
       const gridCol = c * 2 + 1;  // 1-based, skip gutter cols
 
-      if (idx < sortedSelected.length) {
-        const clientId = sortedSelected[idx];
-        const client = clients.get(clientId);
-        if (client) {
-          const panel = createPanel(clientId, client);
-          panel.style.gridColumn = gridCol;
-          panel.style.gridRow = gridRow;
-          panelsContainer.appendChild(panel);
-          client.panel = panel;
-          updateChannelToggles(clientId);
-          renderStatus(clientId);
-          renderEntries(clientId);
-          startGraphLoop(clientId);
+      if (idx < allPanels.length) {
+        const panelInfo = allPanels[idx];
+
+        if (panelInfo.type === 'merged') {
+          // Create merged panel
+          rebuildMergedState();
+          mergedPanel = createMergedPanel();
+          mergedPanel.style.gridColumn = gridCol;
+          mergedPanel.style.gridRow = gridRow;
+          panelsContainer.appendChild(mergedPanel);
+          updateMergedChannelToggles();
+          renderMergedEntries();
+        } else {
+          // Create individual client panel
+          const clientId = panelInfo.clientId;
+          const client = clients.get(clientId);
+          if (client) {
+            const panel = createPanel(clientId, client);
+            panel.style.gridColumn = gridCol;
+            panel.style.gridRow = gridRow;
+            panelsContainer.appendChild(panel);
+            client.panel = panel;
+            updateChannelToggles(clientId);
+            renderStatus(clientId);
+            renderEntries(clientId);
+            startGraphLoop(clientId);
+          }
         }
       }
 
@@ -1209,37 +1245,8 @@ function compileRegex(pattern, inputEl) {
 // ===== MERGED PANEL FUNCTIONS =====
 
 function updateMergedPanel() {
-  // Remove existing merged panel if any
-  if (mergedPanel) {
-    mergedPanel.remove();
-    mergedPanel = null;
-  }
-
-  if (mergedClients.size === 0) {
-    return;
-  }
-
-  // Rebuild merged state
-  rebuildMergedState();
-
-  // Create merged panel
-  mergedPanel = createMergedPanel();
-
-  // Add to panels container (before other panels or as single panel)
-  const emptyState = panelsContainer.querySelector('#empty-state');
-  if (emptyState && selectedClients.size === 0) {
-    emptyState.remove();
-  }
-
-  // Insert merged panel at the top
-  panelsContainer.insertBefore(mergedPanel, panelsContainer.firstChild);
-
-  // Update layout if we have both merged and regular panels
-  updateMergedLayout();
-
-  // Render initial content
-  updateMergedChannelToggles();
-  renderMergedEntries();
+  // Merged panel is now handled by updateAllPanels() alongside individual panels
+  updateAllPanels();
 }
 
 function rebuildMergedState() {
@@ -1370,26 +1377,6 @@ function createMergedPanel() {
   };
 
   return panel;
-}
-
-function updateMergedLayout() {
-  // If we have both merged and regular panels, adjust grid
-  const regularCount = selectedClients.size;
-  const hasMerged = mergedClients.size > 0 && mergedPanel;
-
-  if (!hasMerged) return;
-
-  if (regularCount === 0) {
-    // Only merged panel
-    panelsContainer.style.gridTemplateColumns = '1fr';
-    panelsContainer.style.gridTemplateRows = '1fr';
-    if (mergedPanel) {
-      mergedPanel.style.gridColumn = '1';
-      mergedPanel.style.gridRow = '1';
-    }
-  }
-  // If there are regular panels, updatePanels() will handle layout
-  // and merged panel takes full width at top
 }
 
 function updateMergedChannelToggles() {
