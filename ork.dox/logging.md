@@ -4,7 +4,7 @@
 
 ## Overview
 
-The Orkid Logging System provides a flexible, multi-backend logging framework with colored output, channel-based filtering, and multiple output targets. It supports stdout, file, and interactive HTML backends, with the ability to fork logs to multiple destinations simultaneously.
+The Orkid Logging System provides a flexible, multi-backend logging framework with colored output, channel-based filtering, and multiple output targets. It supports stdout, file, interactive HTML, and real-time HTTP backends, with the ability to fork logs to multiple destinations simultaneously.
 
 ### What It Does
 
@@ -69,7 +69,8 @@ This separation allows modules to reference channels without knowing their confi
 Output handler that receives formatted log messages:
 - **Stdout**: Default colored console output
 - **File**: Async file writing with optional ANSI colors
-- **HTML**: Interactive browser-viewable logs
+- **HTML**: Interactive browser-viewable logs (static file)
+- **HTTP**: Real-time streaming to web dashboard via ZMQ
 - **Fork**: Multiplexes to multiple child backends
 
 ---
@@ -105,9 +106,16 @@ The architecture follows a producer-consumer pattern with channels feeding into 
 - Crash-resilient inline script architecture
 - Works with `file://` protocol (no server needed)
 
+### HTTP Backend
+- Real-time streaming to web-based dashboard
+- Uses ZMQ PUB socket for low-latency delivery
+- Supports multiple simultaneous client applications
+- Features: status dashboard, performance graphs, log filtering
+- Server runs separately: `ork.logger.httpserver.py`
+
 ### Fork Backend
 - Multiplexes to multiple child backends
-- Example: stdout + file + HTML simultaneously
+- Example: stdout + file + HTML + HTTP simultaneously
 - Independent configuration per child
 
 ---
@@ -183,6 +191,10 @@ auto fork = createForkBackend();
 forkBackendAddChild(fork, createStdoutBackend());
 forkBackendAddChild(fork, createHtmlBackend("/path/to/log.html"));
 logger()->setBackend(fork);
+
+// Set HTTP backend (connects to ork.logger.httpserver.py)
+auto http_backend = createHttpBackend(5556);  // ZMQ port
+logger()->setBackend(http_backend);
 ```
 
 ### Static Channel Declaration Pattern
@@ -289,11 +301,14 @@ export ORKID_LOGGER_BACKEND=FILE                # File at ${OBT_STAGE}/orkid.log
 export ORKID_LOGGER_BACKEND=FILE</path/to/log>  # File at custom path
 export ORKID_LOGGER_BACKEND=HTML                # HTML at ${OBT_STAGE}/orkid.log.html
 export ORKID_LOGGER_BACKEND=HTML</path/to.html> # HTML at custom path
+export ORKID_LOGGER_BACKEND=HTTP                # HTTP backend on default port 5556
+export ORKID_LOGGER_BACKEND=HTTP<5557>          # HTTP backend on custom ZMQ port
 
 # Multiple backends (fork syntax)
 export ORKID_LOGGER_BACKEND="[STDOUT,FILE]"
 export ORKID_LOGGER_BACKEND="[STDOUT,HTML]"
-export ORKID_LOGGER_BACKEND="[STDOUT,FILE</tmp/app.log>,HTML</tmp/app.html>]"
+export ORKID_LOGGER_BACKEND="[STDOUT,HTTP]"
+export ORKID_LOGGER_BACKEND="[STDOUT,FILE</tmp/app.log>,HTML</tmp/app.html>,HTTP]"
 ```
 
 ### Backend Options
@@ -377,6 +392,80 @@ xdg-open ~/.staging/orkid.log.html  # Linux
 
 ---
 
+## HTTP Backend Details
+
+The HTTP backend provides real-time log streaming to a web-based dashboard, supporting multiple simultaneous client applications.
+
+[![HTTP Logger Dashboard](httplogger.png)](httplogger.png)
+*HTTP Logger Dashboard showing multiple clients with status, performance graphs, and filtered logs*
+
+### Architecture
+
+![HTTP Logger Architecture](logging_http_architecture.svg)
+
+### Features
+
+- **Multi-Client Support**: View logs from multiple applications simultaneously
+- **Real-Time Streaming**: Low-latency log delivery via ZMQ + SSE
+- **Status Dashboard**: Collapsible status panels grouped by channel
+- **Performance Graphs**: Real-time graphing of `perfItem()` metrics
+  - Right-justified display (newest data on right)
+  - Auto-scaling min/max with smoothing
+  - Current/min/max value labels
+- **Channel Filtering**: Toggle channels on/off per client
+- **Regex Filtering**: Include/exclude patterns for log messages
+- **Resizable Panels**: Drag gutters between panels to resize
+- **Heartbeat Monitoring**: Visual indicator pulses with real heartbeats
+- **Client Lifecycle**: Dead clients shown with red indicator and remove button
+- **Remote Access**: Server binds to 0.0.0.0 for network access
+
+### Usage
+
+```bash
+# 1. Start the server (run once, handles multiple clients)
+ork.logger.httpserver.py [http_port] [zmq_port]
+# Default: HTTP on 8080, ZMQ on 5556
+
+# 2. Configure client applications to use HTTP backend
+export ORKID_LOGGER_BACKEND=HTTP        # or HTTP<port>
+export ORKID_LOGGER_BACKEND="[STDOUT,HTTP]"  # fork with stdout
+
+# 3. Open browser to view logs
+open http://localhost:8080
+```
+
+### Server Output
+
+```
+Orkid Log Server
+  ZMQ endpoints:
+    tcp://127.0.0.1:5556
+    tcp://192.168.1.100:5556
+  HTTP endpoints:
+    http://127.0.0.1:8080
+    http://192.168.1.100:8080
+```
+
+### Message Types
+
+The C++ client sends JSON messages over ZMQ:
+
+| Type | Description |
+|------|-------------|
+| `register` | Client registration (app name, PID, hostname) |
+| `heartbeat` | Keep-alive signal (every 1 second) |
+| `disconnect` | Clean shutdown notification |
+| `log` | Log entry (channel, message, color, timestamp) |
+| `status` | Status update (channel, subchannel, value) |
+| `perf` | Performance metric (channel, subchannel, numeric value) |
+
+### Client Timeout
+
+- Heartbeat interval: 1 second (C++ client)
+- Server timeout: 5 seconds (marks client as dead)
+
+---
+
 ## Performance Characteristics
 
 ### Stdout Backend
@@ -395,6 +484,13 @@ xdg-open ~/.staging/orkid.log.html  # Linux
 - **Throughput**: High (background thread)
 - **Memory**: Entries stored in browser DOM
 - **Thread Safety**: Lock-free enqueue, single writer thread
+
+### HTTP Backend
+- **Latency**: Low (ZMQ async send, ~1ms typical)
+- **Throughput**: High (background writer thread + ZMQ)
+- **Memory**: Server-side per-client entry buffers
+- **Thread Safety**: Lock-free enqueue, single writer thread
+- **Network**: ZMQ PUB to server, SSE to browsers
 
 ### Fork Backend
 - **Overhead**: Iterates children sequentially
@@ -480,10 +576,10 @@ logchan_err->error("Critical failure: %s", msg);
 
 ### Potential Improvements
 - **Log Rotation**: Automatic file rotation by size/time
-- **Remote Logging**: Network-based log aggregation
 - **Structured Logging**: JSON output format
 - **Log Levels**: Per-channel severity filtering
 - **Async Flush API**: Manual flush trigger
+- **Layout Persistence**: Save/restore HTTP dashboard panel layouts
 
 ### Compatibility
 - Current API designed for forward compatibility

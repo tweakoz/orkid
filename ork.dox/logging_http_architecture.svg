@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 280">
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#888"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="280" fill="#1a1a1a"/>
+
+  <!-- C++ Clients Box -->
+  <rect x="30" y="30" width="180" height="220" rx="8" fill="#2a2a2a" stroke="#444" stroke-width="2"/>
+  <text x="120" y="55" text-anchor="middle" fill="#8cf" font-family="monospace" font-size="14" font-weight="bold">C++ Clients</text>
+
+  <!-- Client 1 -->
+  <rect x="45" y="70" width="150" height="40" rx="4" fill="#333" stroke="#555" stroke-width="1"/>
+  <text x="120" y="87" text-anchor="middle" fill="#aaa" font-family="monospace" font-size="11">Client 1</text>
+  <text x="120" y="102" text-anchor="middle" fill="#666" font-family="monospace" font-size="9">(orkid_app)</text>
+
+  <!-- Client 2 -->
+  <rect x="45" y="120" width="150" height="40" rx="4" fill="#333" stroke="#555" stroke-width="1"/>
+  <text x="120" y="137" text-anchor="middle" fill="#aaa" font-family="monospace" font-size="11">Client 2</text>
+  <text x="120" y="152" text-anchor="middle" fill="#666" font-family="monospace" font-size="9">(another_app)</text>
+
+  <!-- Client N -->
+  <rect x="45" y="170" width="150" height="40" rx="4" fill="#333" stroke="#555" stroke-width="1"/>
+  <text x="120" y="187" text-anchor="middle" fill="#aaa" font-family="monospace" font-size="11">Client N</text>
+  <text x="120" y="202" text-anchor="middle" fill="#666" font-family="monospace" font-size="9">(...)</text>
+
+  <!-- Arrows from clients to server -->
+  <line x1="210" y1="90" x2="310" y2="130" stroke="#888" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="210" y1="140" x2="310" y2="140" stroke="#888" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="210" y1="190" x2="310" y2="150" stroke="#888" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+  <!-- ZMQ PUB label -->
+  <text x="260" y="100" text-anchor="middle" fill="#6a6" font-family="monospace" font-size="10">ZMQ PUB</text>
+
+  <!-- Server Box -->
+  <rect x="320" y="50" width="200" height="180" rx="8" fill="#2a2a2a" stroke="#6a6" stroke-width="2"/>
+  <text x="420" y="75" text-anchor="middle" fill="#6a6" font-family="monospace" font-size="13" font-weight="bold">ork.logger.</text>
+  <text x="420" y="92" text-anchor="middle" fill="#6a6" font-family="monospace" font-size="13" font-weight="bold">httpserver.py</text>
+
+  <!-- Server components -->
+  <rect x="335" y="105" width="170" height="25" rx="3" fill="#333" stroke="#555" stroke-width="1"/>
+  <text x="420" y="122" text-anchor="middle" fill="#888" font-family="monospace" font-size="10">ZMQ SUB (bind)</text>
+
+  <rect x="335" y="140" width="170" height="25" rx="3" fill="#333" stroke="#555" stroke-width="1"/>
+  <text x="420" y="157" text-anchor="middle" fill="#888" font-family="monospace" font-size="10">HTTP Server</text>
+
+  <rect x="335" y="175" width="170" height="25" rx="3" fill="#333" stroke="#555" stroke-width="1"/>
+  <text x="420" y="192" text-anchor="middle" fill="#888" font-family="monospace" font-size="10">SSE Broadcast</text>
+
+  <!-- Arrow from server to browser -->
+  <line x1="520" y1="140" x2="610" y2="140" stroke="#888" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+  <!-- SSE label -->
+  <text x="565" y="130" text-anchor="middle" fill="#68f" font-family="monospace" font-size="10">SSE</text>
+
+  <!-- Browser Box -->
+  <rect x="620" y="70" width="150" height="140" rx="8" fill="#2a2a2a" stroke="#68f" stroke-width="2"/>
+  <text x="695" y="100" text-anchor="middle" fill="#68f" font-family="monospace" font-size="14" font-weight="bold">Browser</text>
+  <text x="695" y="120" text-anchor="middle" fill="#666" font-family="monospace" font-size="11">(Web UI)</text>
+
+  <!-- Browser features -->
+  <text x="695" y="145" text-anchor="middle" fill="#555" font-family="monospace" font-size="9">Logs</text>
+  <text x="695" y="160" text-anchor="middle" fill="#555" font-family="monospace" font-size="9">Status</text>
+  <text x="695" y="175" text-anchor="middle" fill="#555" font-family="monospace" font-size="9">Perf Graphs</text>
+  <text x="695" y="190" text-anchor="middle" fill="#555" font-family="monospace" font-size="9">Filtering</text>
+</svg>
