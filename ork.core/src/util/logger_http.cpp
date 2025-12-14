@@ -59,8 +59,9 @@ struct HttpBackendImpl {
 
   // Get app name dynamically (EzApp sets it after backend creation)
   std::string getAppName() const {
-    if (gappinitdata && !gappinitdata->_application_name.empty()) {
-      return gappinitdata->_application_name;
+    auto appinit = appinitdata();
+    if (!appinit->_application_name.empty()) {
+      return appinit->_application_name;
     }
     return "orkid_app";
   }

@@ -34,8 +34,9 @@ struct AppInitData;
 using appinitdata_ptr_t = std::shared_ptr<AppInitData>;
 using appinitdata_wkptr_t = std::weak_ptr<AppInitData>;
 
-// Global app init data - set during module initialization
-extern appinitdata_ptr_t gappinitdata;
+// Global app init data - lazy singleton accessor (thread-safe)
+// Returns the process-wide AppInitData instance, creating it on first access
+appinitdata_ptr_t appinitdata();
 
 #if !defined(ORK_IOS)
 namespace po = ::boost::program_options;
@@ -79,6 +80,9 @@ struct AppInitData{
 
   AppInitData(int argc=0, char** argv=nullptr, char** envp = nullptr);
   ~AppInitData();
+
+  void setArgs(int argc, char** argv, char** envp);
+
 
   void executePreInitOps();
   void executePostInitOps();

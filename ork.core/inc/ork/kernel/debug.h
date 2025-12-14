@@ -9,6 +9,6 @@
 #include <string>
 
 namespace ork {
-std::string get_backtrace();
+std::string get_backtrace(bool with_color = false);
 };
 

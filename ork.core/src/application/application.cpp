@@ -20,39 +20,48 @@
 int desired_framesize = 1024; // audio framesize from environment or command line
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
-static logchannel_ptr_t logchan_APP = logger()->configureChannel("APPLICATION",fvec3(0.9,0.6,0.2),true);
+static logchannel_ptr_t logchan_APP = logger()->configureChannel("APPLICATION", fvec3(0.9, 0.6, 0.2), true);
 
-// Global application init data - used by various subsystems
-appinitdata_ptr_t gappinitdata = nullptr;
+// Global application init data - lazy singleton (thread-safe via C++11 static initialization)
+appinitdata_ptr_t appinitdata() {
+  static appinitdata_ptr_t _g_appinitdata = std::make_shared<AppInitData>();
+  return _g_appinitdata;
+}
 ///////////////////////////////////////////////////////////////////////////////
 AppInitData::AppInitData(int argc, char** argv, char** envp) {
+  setArgs(argc, argv, envp);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void AppInitData::setArgs(int argc, char** argv, char** envp) {
   _argc             = argc;
   _argv             = argv;
   _envp             = envp;
   _commandline_vars = std::make_shared<opts_var_map_t>();
   _fsinit           = std::make_shared<StdFileSystemInitalizer>(*this);
-  _audio_ioclass = "default";
-  _misc_varmap = std::make_shared<varmap::VarMap>();
+  _audio_ioclass    = "default";
+  _misc_varmap      = std::make_shared<varmap::VarMap>();
 
   if (genviron.has("ORKID_AUDIO_INPUT_DEVICE")) {
     std::string audioinputdev;
-    genviron.get("ORKID_AUDIO_INPUT_DEVICE",audioinputdev);
+    genviron.get("ORKID_AUDIO_INPUT_DEVICE", audioinputdev);
     _audio_input_devname = audioinputdev;
   }
   if (genviron.has("ORKID_AUDIO_OUTPUT_DEVICE")) {
     std::string audiooutputdev;
-    genviron.get("ORKID_AUDIO_OUTPUT_DEVICE",audiooutputdev);
+    genviron.get("ORKID_AUDIO_OUTPUT_DEVICE", audiooutputdev);
     _audio_output_devname = audiooutputdev;
   }
   if (genviron.has("ORKID_AUDIO_IOCLASS")) {
     std::string audioioclass;
-    genviron.get("ORKID_AUDIO_IOCLASS",audioioclass);
+    genviron.get("ORKID_AUDIO_IOCLASS", audioioclass);
     _audio_ioclass = audioioclass;
   }
-  if( genviron.has("ORKID_AUDIO_STREAM_SYNC") ) {
+  if (genviron.has("ORKID_AUDIO_STREAM_SYNC")) {
     std::string sync_enable_str;
-    genviron.get("ORKID_AUDIO_STREAM_SYNC",sync_enable_str);
-    _audio_stream_sync = (sync_enable_str == "1")||(sync_enable_str == "true");
+    genviron.get("ORKID_AUDIO_STREAM_SYNC", sync_enable_str);
+    _audio_stream_sync = (sync_enable_str == "1") || (sync_enable_str == "true");
   }
   if (genviron.has("ORKID_DISABLE_ALWAYS_ON_TOP")) {
     _canalwaysontop = false;
@@ -62,8 +71,6 @@ AppInitData::AppInitData(int argc, char** argv, char** envp) {
     genviron.get("ORKID_AUDIO_FRAMESIZE", framesize_str);
     desired_framesize = atoi(framesize_str.c_str());
   }
-
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -74,26 +81,26 @@ AppInitData::~AppInitData() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void AppInitData::enqueuePreInitOp(AppInitOrder order, void_lambda_t l) { //
-  _preinitoperations.insert(std::pair(uint64_t(order),l));
+  _preinitoperations.insert(std::pair(uint64_t(order), l));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void AppInitData::enqueuePostInitOp(AppInitOrder order, void_lambda_t l) { //
-  _postinitoperations.insert(std::pair(uint64_t(order),l));
+  _postinitoperations.insert(std::pair(uint64_t(order), l));
 }
 
-void AppInitData::executePreInitOps(){
+void AppInitData::executePreInitOps() {
   logchan_APP->log("AppInitData::executePreInitOps");
-  for (auto item : _preinitoperations){
+  for (auto item : _preinitoperations) {
     uint64_t order = item.first;
     auto operation = item.second;
     operation();
   }
 }
-void AppInitData::executePostInitOps(){
+void AppInitData::executePostInitOps() {
   logchan_APP->log("AppInitData::executePostInitOps");
-  for (auto item : _postinitoperations){
+  for (auto item : _postinitoperations) {
     uint64_t order = item.first;
     auto operation = item.second;
     operation();
@@ -102,13 +109,13 @@ void AppInitData::executePostInitOps(){
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void AppInitData::finalizeInitialization(){
+void AppInitData::finalizeInitialization() {
   executePreInitOps();
   executePostInitOps();
   _preinitoperations.clear();
   _postinitoperations.clear();
   logchan_APP->log("AppInitData init catalog");
-  if(_std_asset_catalog){
+  if (_std_asset_catalog) {
     using namespace asset::catalog;
     auto catalog = AssetCatalog::globalInstance();
   }
@@ -168,10 +175,10 @@ AppInitData::opts_var_map_ptr_t AppInitData::parse() {
     }
   }
   if (_commandline_vars->count("drm")) {
-    this->_use_drm = true;
-    this->_drm_mode = vars["drm"].as<std::string>();
+    this->_use_drm    = true;
+    this->_drm_mode   = vars["drm"].as<std::string>();
     this->_fullscreen = false;
-    this->_offscreen = false;
+    this->_offscreen  = false;
   }
 #endif
   if (_commandline_vars->count("enable_audio")) {
@@ -210,9 +217,9 @@ AppInitData::opts_var_map_ptr_t AppInitData::parse() {
     genviron.set("__GL_MaxFramesAllowed", FormatString("%d", vmfa));
   }
 
-  //genviron.dump();
+  // genviron.dump();
 
-  //printf("_msaa_samples<%d>\n", this->_msaa_samples);
+  // printf("_msaa_samples<%d>\n", this->_msaa_samples);
   return _commandline_vars;
 #else
   // iOS: no command line parsing

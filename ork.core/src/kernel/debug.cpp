@@ -28,7 +28,7 @@ std::atomic<int> Namespace::_nest_counter = 0;
 
 namespace ork {
 
-std::string get_backtrace() {
+std::string get_backtrace(bool with_color) {
   std::string rval;
   static const int kmaxdepth = 64;
   void* btbuffer[kmaxdepth];
@@ -82,14 +82,19 @@ std::string get_backtrace() {
   	else{
 			deco::asciic_rgb256_inplace(line_header,255,128,128);
 		}
-  	deco::asciic_reset_inplace(reset_footer);
-		tstr.format("%s %03d %s %s%s%s\n", 
-			          index_header.c_str(), 
-			          i, 
-			          reset_footer.c_str(), 
-			          line_header.c_str(), 
-			          demangled_name.c_str(),
-			          reset_footer.c_str());
+		if(with_color){
+	  	deco::asciic_reset_inplace(reset_footer);
+			tstr.format("%s %03d %s %s%s%s\n", 
+				          index_header.c_str(), 
+				          i, 
+				          reset_footer.c_str(), 
+				          line_header.c_str(), 
+				          demangled_name.c_str(),
+				          reset_footer.c_str());
+		}
+		else {
+			tstr.format(" %03d %s\n", i, demangled_name.c_str());
+		}
 #else
 		int status = -1;
 		std::string out_line = btstrings[i];

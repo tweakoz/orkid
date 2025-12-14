@@ -67,8 +67,10 @@ void _coreappinit(int argc, char** argv) {
   // Initialize environment from global env vars
   ork::genviron.init_from_global_env();
 
-  // Create app init data
-  gappinitdata = std::make_shared<AppInitData>(argc, argv);
+  // Get app init data singleton and configure it
+  auto appinit = appinitdata();
+  appinit->_argc = argc;
+  appinit->_argv = argv;
 
   // Create core application (manages StringPool)
   static CoreMacOSApplication the_app;
@@ -78,7 +80,7 @@ void _coreappinit(int argc, char** argv) {
   OldSchool::SetGlobalPathVariable("data://", file::Path::orkroot_dir());
 
   // Initialize Orkid core module
-  ork::initModule(gappinitdata);
+  ork::initModule(appinit);
 
   printf("Orkid core initialized for macOS Swift\n");
 }
@@ -93,8 +95,7 @@ void _coreappexit() {
   }
 
   // Shutdown Orkid core module
-  ork::exitModule(gappinitdata);
-  gappinitdata = nullptr;
+  ork::exitModule(appinitdata());
   _core_initialized = false;
 
   printf("Orkid core shutdown (macOS Swift)\n");

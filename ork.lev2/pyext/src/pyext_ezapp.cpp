@@ -100,9 +100,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
           "create",
           [type_codec](py::object appinstance,py::kwargs kwargs) { //
             ork::genviron.init_from_global_env();
-            auto appinitdata = std::make_shared<AppInitData>();
-            // Set global appinitdata so HTTP logger backend can read the app name
-            gappinitdata = appinitdata;
+            auto appinit = appinitdata(); // Use the singleton
             rcfd_ptr_t override_rcfd = nullptr;
 
             if (kwargs) {
@@ -110,82 +108,78 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 auto key = py::cast<std::string>(item.first);
                 if (key == "name") {
                   auto app_name = py::cast<std::string>(item.second);
-                  appinitdata->_application_name = app_name;
-                  // Also update global for HTTP logger backend
-                  if (gappinitdata) {
-                    gappinitdata->_application_name = app_name;
-                  }
+                  appinit->_application_name = app_name;
                 } else if (key == "left") {
-                  appinitdata->_left = py::cast<int>(item.second);
+                  appinit->_left = py::cast<int>(item.second);
                 } else if (key == "top") {
-                  appinitdata->_top = py::cast<int>(item.second);
+                  appinit->_top = py::cast<int>(item.second);
                 } else if (key == "width") {
-                  appinitdata->_width = py::cast<int>(item.second);
+                  appinit->_width = py::cast<int>(item.second);
                 } else if (key == "height") {
-                  appinitdata->_height = py::cast<int>(item.second);
+                  appinit->_height = py::cast<int>(item.second);
                 } else if (key == "fullscreen") {
-                  appinitdata->_fullscreen = py::cast<bool>(item.second);
+                  appinit->_fullscreen = py::cast<bool>(item.second);
                 } else if (key == "fullscreen_monitor") {
-                  appinitdata->_fullscreen_monitor = py::cast<std::string>(item.second);
+                  appinit->_fullscreen_monitor = py::cast<std::string>(item.second);
                 } else if (key == "enable_always_on_top") {
-                  appinitdata->_canalwaysontop =  py::cast<bool>(item.second);
+                  appinit->_canalwaysontop =  py::cast<bool>(item.second);
                 } else if (key == "enable_graphics") {
-                  appinitdata->_enable_graphics = py::cast<bool>(item.second);
-                  //printf("enable_graphics<%d>\n", appinitdata->_enable_graphics);
+                  appinit->_enable_graphics = py::cast<bool>(item.second);
+                  //printf("enable_graphics<%d>\n", appinit->_enable_graphics);
                 } else if (key == "enable_audio") {
-                  appinitdata->_enable_audio = py::cast<bool>(item.second);
+                  appinit->_enable_audio = py::cast<bool>(item.second);
                 } else if (key == "enable_audio_input") {
-                  appinitdata->_enable_audio_input = py::cast<bool>(item.second);
+                  appinit->_enable_audio_input = py::cast<bool>(item.second);
                 } else if (key == "enable_audio_output") {
-                  appinitdata->_enable_audio_output = py::cast<bool>(item.second);
+                  appinit->_enable_audio_output = py::cast<bool>(item.second);
                 } else if (key == "enable_audio_synth") {
-                  appinitdata->_enable_audio_synth = py::cast<bool>(item.second);
+                  appinit->_enable_audio_synth = py::cast<bool>(item.second);
                 } else if (key == "audio_input_devname") {
-                  appinitdata->_audio_input_devname = py::cast<std::string>(item.second);; // cant have synth without an audio dev output !
+                  appinit->_audio_input_devname = py::cast<std::string>(item.second);; // cant have synth without an audio dev output !
                 } else if (key == "audio_output_devname") {
-                  appinitdata->_audio_output_devname = py::cast<std::string>(item.second);; // cant have synth without an audio dev output !
+                  appinit->_audio_output_devname = py::cast<std::string>(item.second);; // cant have synth without an audio dev output !
                 } else if (key == "audio_input_numchannels") {
-                  appinitdata->_audio_input_numchannels = py::cast<int>(item.second);; // cant have synth without an audio dev output !
+                  appinit->_audio_input_numchannels = py::cast<int>(item.second);; // cant have synth without an audio dev output !
                 } else if (key == "audio_output_numchannels") {
-                  appinitdata->_audio_output_numchannels = py::cast<int>(item.second);; // cant have synth without an audio dev output !
+                  appinit->_audio_output_numchannels = py::cast<int>(item.second);; // cant have synth without an audio dev output !
                 } else if (key == "audio_stream_sync") {
-                  appinitdata->_audio_stream_sync = py::cast<bool>(item.second);; // cant have synth without an audio dev output !
+                  appinit->_audio_stream_sync = py::cast<bool>(item.second);; // cant have synth without an audio dev output !
                 } else if (key == "freerun") {
-                  appinitdata->_freerunning = py::cast<bool>(item.second);
+                  appinit->_freerunning = py::cast<bool>(item.second);
                 } else if (key == "target_ups") {
-                  appinitdata->_target_ups = py::cast<float>(item.second);
+                  appinit->_target_ups = py::cast<float>(item.second);
                 } else if (key == "target_fps") {
-                  appinitdata->_target_fps = py::cast<float>(item.second);
+                  appinit->_target_fps = py::cast<float>(item.second);
                 } else if (key == "offscreen") {
-                  appinitdata->_offscreen = py::cast<bool>(item.second);
+                  appinit->_offscreen = py::cast<bool>(item.second);
                 } else if (key == "ssaa") {
-                  appinitdata->_ssaa_samples = py::cast<int>(item.second);
+                  appinit->_ssaa_samples = py::cast<int>(item.second);
                 } else if (key == "disable_mouse_cursor") {
-                  appinitdata->_disableMouseCursor = py::cast<bool>(item.second);
+                  appinit->_disableMouseCursor = py::cast<bool>(item.second);
                 } else if (key == "fsmouse") {
-                  appinitdata->_fsMouseMode = py::cast<bool>(item.second);
+                  appinit->_fsMouseMode = py::cast<bool>(item.second);
                 } else if (key == "msaa") {
-                  appinitdata->_msaa_samples = py::cast<int>(item.second);
+                  appinit->_msaa_samples = py::cast<int>(item.second);
                 } else if( key == "rcfd" ) {
                   override_rcfd = py::cast<rcfd_ptr_t>(item.second);
                 } else if( key == "movie_output_path" ) {
                   if( py::isinstance<py::str>( item.second ) ) {
                     std::string mpath = py::cast<std::string>(item.second);
-                    appinitdata->_movie_output_path = file::Path(mpath);
+                    appinit->_movie_output_path = file::Path(mpath);
                   }
                 } else if (key == "enable_freerun_ups") {
-                  appinitdata->_log_freerun_ups = py::cast<bool>(item.second);
+                  appinit->_log_freerun_ups = py::cast<bool>(item.second);
                 } else if (key == "enable_freerun_fps") {
-                  appinitdata->_log_freerun_fps = py::cast<bool>(item.second);
+                  appinit->_log_freerun_fps = py::cast<bool>(item.second);
                 } else if (key == "enable_lockstep_ups") {
-                  appinitdata->_log_lockstep_ups = py::cast<bool>(item.second);
+                  appinit->_log_lockstep_ups = py::cast<bool>(item.second);
                 } else if (key == "enable_lockstep_fps") {
-                  appinitdata->_log_lockstep_fps = py::cast<bool>(item.second);
+                  appinit->_log_lockstep_fps = py::cast<bool>(item.second);
                 } else if (key == "drm_mode_id") {
                   if (py::isinstance<py::str>(item.second)) {
-                    appinitdata->_drm_mode = py::cast<std::string>(item.second);
-                    appinitdata->_use_drm = true;
-                    printf("USING DRM: mode=%s\n", appinitdata->_drm_mode.c_str());
+                    appinit->_drm_mode = py::cast<std::string>(item.second);
+                    appinit->_use_drm = true;
+                    printf("USING DRM: mode=%s\n", appinit->_drm_mode.c_str());
                   } else if (!item.second.is_none()) {
                     OrkAssert(false);
                   }
@@ -194,44 +188,44 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               //////////////////////////////////////
               // ensure flags make sense
               //////////////////////////////////////
-              if(not appinitdata->_freerunning){
-                if( not appinitdata->_offscreen ){
+              if(not appinit->_freerunning){
+                if( not appinit->_offscreen ){
                   // if we are lockstep, force offscreen mode
-                  appinitdata->_offscreen = true;
+                  appinit->_offscreen = true;
                   logchan_EZAPP->log("forcing offscreen mode for lockstep operation");
                 }
                 ork::genviron.set("ORKID_AUDIO_IOCLASS", "STREAM");
-                appinitdata->_audio_stream_sync = true;
+                appinit->_audio_stream_sync = true;
                 logchan_EZAPP->log("forcing ORKID_AUDIO_IOCLASS to STREAM for lockstep operation");
               }
-              if(appinitdata->_audio_stream_sync ){
+              if(appinit->_audio_stream_sync ){
                 ork::genviron.set("ORKID_AUDIO_IOCLASS", "STREAM");
-                appinitdata->_audio_ioclass = "STREAM";
+                appinit->_audio_ioclass = "STREAM";
               }
-              if(appinitdata->_enable_audio_synth){
+              if(appinit->_enable_audio_synth){
                 // if we have synth enabled, we need audio output
-                appinitdata->_enable_audio_output = true;
+                appinit->_enable_audio_output = true;
               }
-              if(appinitdata->_enable_audio_output){
+              if(appinit->_enable_audio_output){
                 // if we have audio output, we need audio enabled
-                appinitdata->_enable_audio = true;
+                appinit->_enable_audio = true;
               }
-              if(appinitdata->_enable_audio_input){
+              if(appinit->_enable_audio_input){
                 // if we have audio input, we need audio enabled
-                appinitdata->_enable_audio = true;
+                appinit->_enable_audio = true;
               }
               //////////////////////////////////////
 
             } // if (kwargs) {
             /////////////////////////////
-            ::ork::lev2::initModule(appinitdata);
+            ::ork::lev2::initModule(appinit);
             logchan_EZAPP->log("finalizeInitialization begin..");
             fflush(stdout);
-            appinitdata->finalizeInitialization();
+            appinit->finalizeInitialization();
             logchan_EZAPP->log("finalizeInitialization done..");
             fflush(stdout);
             /////////////////////////////
-            auto rval                                                 = OrkEzApp::create(appinitdata);
+            auto rval                                                 = OrkEzApp::create(appinit);
             auto d_ev                                                 = std::make_shared<ui::DrawEvent>(nullptr);
             logchan_EZAPP->log("ezapp<%p>",(void*) rval.get() );
             rval->_vars->makeValueForKey<uidrawevent_ptr_t>("drawev") = d_ev;
@@ -247,7 +241,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 logchan_EZAPP->log("EXE onAppInit");
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars->typedValueForKey<py::function>("appinitfn");
-                auto initdata = appinitdata;
+                auto initdata = appinitdata();
                 try {
                   pyfn.value()(initdata);
                 } catch (py::error_already_set& e) {

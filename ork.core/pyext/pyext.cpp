@@ -63,7 +63,6 @@ namespace util::crypt {
   void pyinit_crypt(py::module& module_core);
 }
 
-appinitdata_ptr_t gappinitdata = nullptr;
 static bool _core_initialized = false;
 
 static void _coreappinit() {
@@ -108,22 +107,23 @@ static void _coreappinit() {
     printf("dynarg<%d:%s>\n", i, argv[i]);
   }*/
 
-  gappinitdata = std::make_shared<AppInitData>(argc, argv);
+  auto appinit = appinitdata();
+  appinit->_argc = argc;
+  appinit->_argv = argv;
 
   static CorePythonApplication the_app;
 
   static auto WorkingDirContext = std::make_shared<FileDevContext>();
   OldSchool::SetGlobalPathVariable("data://", file::Path::orkroot_dir());
 
-  ork::initModule(gappinitdata);
+  ork::initModule(appinit);
 }
 static void _coreappexit() {
   if (!_core_initialized) {
     printf("WARNING: coreappexit() called without initialization - ignoring\n");
     return;
   }
-  ork::exitModule(gappinitdata);
-  gappinitdata = nullptr;
+  ork::exitModule(appinitdata());
   _core_initialized = false;
 }
 void _coreapppoll() {
