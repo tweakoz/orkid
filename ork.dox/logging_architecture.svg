@@ -1,166 +1,248 @@
-<svg width="1200" height="600" viewBox="0 0 1200 600" xmlns="http://www.w3.org/2000/svg">
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="880" viewBox="0 0 1200 880" xmlns="http://www.w3.org/2000/svg">
   <!-- Background -->
-  <rect width="1200" height="600" fill="#3a3a3a"/>
+  <rect width="1200" height="880" fill="#1a1a1a"/>
 
   <!-- Title -->
-  <text x="600" y="30" font-family="Arial, sans-serif" font-size="18" fill="white" text-anchor="middle" font-weight="bold">Orkid Logger Architecture</text>
+  <text x="600" y="30" font-family="monospace" font-size="18" fill="white" text-anchor="middle" font-weight="bold">Orkid Logger Architecture</text>
 
   <!-- Logger Singleton -->
   <g id="logger-singleton">
-    <rect x="50" y="60" width="300" height="200" rx="8" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
-    <text x="200" y="85" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">Logger (Singleton)</text>
+    <rect x="50" y="60" width="280" height="180" rx="8" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+    <text x="190" y="85" font-family="monospace" font-size="14" fill="#8cf" text-anchor="middle" font-weight="bold">Logger (Singleton)</text>
 
-    <!-- Channel Registry -->
-    <rect x="70" y="105" width="260" height="70" rx="6" fill="#3a5a4a" stroke="#5a7a6a" stroke-width="1"/>
-    <text x="200" y="125" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">Channel Registry</text>
-    <text x="200" y="145" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">LockedResource&lt;map&lt;string, channel&gt;&gt;</text>
-    <text x="200" y="162" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">Thread-safe channel management</text>
+    <rect x="70" y="100" width="240" height="60" rx="6" fill="#2a3a2a" stroke="#4a5a4a" stroke-width="1"/>
+    <text x="190" y="120" font-family="monospace" font-size="11" fill="white" text-anchor="middle">Channel Registry</text>
+    <text x="190" y="138" font-family="monospace" font-size="9" fill="#6a6" text-anchor="middle">map&lt;string, channel&gt;</text>
+    <text x="190" y="152" font-family="monospace" font-size="8" fill="#666" text-anchor="middle">Thread-safe</text>
 
-    <!-- Backend Reference -->
-    <rect x="70" y="185" width="260" height="55" rx="6" fill="#5a4a3a" stroke="#8a6a4a" stroke-width="1"/>
-    <text x="200" y="205" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">Active Backend</text>
-    <text x="200" y="225" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">logger_backend_ptr_t _backend</text>
+    <rect x="70" y="170" width="240" height="50" rx="6" fill="#3a2a2a" stroke="#5a4a4a" stroke-width="1"/>
+    <text x="190" y="190" font-family="monospace" font-size="11" fill="white" text-anchor="middle">Active Backend</text>
+    <text x="190" y="208" font-family="monospace" font-size="9" fill="#a66" text-anchor="middle">logger_backend_ptr_t</text>
   </g>
 
   <!-- Log Channels -->
   <g id="log-channels">
-    <rect x="400" y="60" width="350" height="200" rx="8" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
-    <text x="575" y="85" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">Log Channels</text>
+    <rect x="380" y="60" width="380" height="180" rx="8" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+    <text x="570" y="85" font-family="monospace" font-size="14" fill="#8cf" text-anchor="middle" font-weight="bold">Log Channels</text>
 
-    <!-- Channel 1 -->
-    <rect x="420" y="105" width="150" height="60" rx="6" fill="#4a5a3a" stroke="#6a7a5a" stroke-width="1"/>
-    <text x="495" y="125" font-family="Arial, sans-serif" font-size="11" fill="#8f8" text-anchor="middle">[AUDIO]</text>
-    <text x="495" y="142" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">color: (0, 1, 0.5)</text>
-    <text x="495" y="155" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">enabled: true</text>
+    <rect x="400" y="100" width="105" height="55" rx="4" fill="#2a3a2a" stroke="#4a5a4a" stroke-width="1"/>
+    <text x="452" y="120" font-family="monospace" font-size="10" fill="#8f8" text-anchor="middle">[AUDIO]</text>
+    <text x="452" y="135" font-family="monospace" font-size="8" fill="#666" text-anchor="middle">color: green</text>
+    <text x="452" y="147" font-family="monospace" font-size="8" fill="#666" text-anchor="middle">enabled: true</text>
 
-    <!-- Channel 2 -->
-    <rect x="580" y="105" width="150" height="60" rx="6" fill="#5a4a4a" stroke="#7a6a6a" stroke-width="1"/>
-    <text x="655" y="125" font-family="Arial, sans-serif" font-size="11" fill="#f88" text-anchor="middle">[RENDER]</text>
-    <text x="655" y="142" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">color: (1, 0.5, 0.5)</text>
-    <text x="655" y="155" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">enabled: true</text>
+    <rect x="515" y="100" width="105" height="55" rx="4" fill="#3a2a2a" stroke="#5a4a4a" stroke-width="1"/>
+    <text x="567" y="120" font-family="monospace" font-size="10" fill="#f88" text-anchor="middle">[RENDER]</text>
+    <text x="567" y="135" font-family="monospace" font-size="8" fill="#666" text-anchor="middle">color: red</text>
+    <text x="567" y="147" font-family="monospace" font-size="8" fill="#666" text-anchor="middle">enabled: true</text>
 
-    <!-- Channel 3 -->
-    <rect x="420" y="175" width="150" height="60" rx="6" fill="#3a4a5a" stroke="#5a6a8a" stroke-width="1"/>
-    <text x="495" y="195" font-family="Arial, sans-serif" font-size="11" fill="#88f" text-anchor="middle">[NETWORK]</text>
-    <text x="495" y="212" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">color: (0.5, 0.5, 1)</text>
-    <text x="495" y="225" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">enabled: true</text>
+    <rect x="630" y="100" width="105" height="55" rx="4" fill="#2a2a3a" stroke="#4a4a5a" stroke-width="1"/>
+    <text x="682" y="120" font-family="monospace" font-size="10" fill="#88f" text-anchor="middle">[NETWORK]</text>
+    <text x="682" y="135" font-family="monospace" font-size="8" fill="#666" text-anchor="middle">color: blue</text>
+    <text x="682" y="147" font-family="monospace" font-size="8" fill="#666" text-anchor="middle">enabled: true</text>
 
-    <!-- Channel N -->
-    <rect x="580" y="175" width="150" height="60" rx="6" fill="#4a4a4a" stroke="#6a6a6a" stroke-width="1"/>
-    <text x="655" y="195" font-family="Arial, sans-serif" font-size="11" fill="#ccc" text-anchor="middle">[...]</text>
-    <text x="655" y="212" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">N channels</text>
-    <text x="655" y="225" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">per application</text>
+    <rect x="400" y="165" width="335" height="55" rx="4" fill="#2a2a2a" stroke="#444" stroke-width="1"/>
+    <text x="567" y="185" font-family="monospace" font-size="10" fill="#888" text-anchor="middle">[...] N channels per application</text>
+    <text x="567" y="205" font-family="monospace" font-size="9" fill="#666" text-anchor="middle">log() warn() error() status() perfItem()</text>
   </g>
 
   <!-- Channel Methods -->
   <g id="channel-methods">
-    <rect x="800" y="60" width="350" height="200" rx="8" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
-    <text x="975" y="85" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">Channel Methods</text>
+    <rect x="810" y="60" width="340" height="180" rx="8" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+    <text x="980" y="85" font-family="monospace" font-size="14" fill="#8cf" text-anchor="middle" font-weight="bold">Channel Methods</text>
 
-    <rect x="820" y="105" width="150" height="35" rx="4" fill="#3a5a4a" stroke="#5a7a6a" stroke-width="1"/>
-    <text x="895" y="127" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">log(fmt, ...)</text>
+    <rect x="830" y="100" width="145" height="30" rx="4" fill="#2a3a2a" stroke="#4a5a4a" stroke-width="1"/>
+    <text x="902" y="120" font-family="monospace" font-size="10" fill="#8f8" text-anchor="middle">log(fmt, ...)</text>
 
-    <rect x="980" y="105" width="150" height="35" rx="4" fill="#5a5a3a" stroke="#7a7a5a" stroke-width="1"/>
-    <text x="1055" y="127" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">warn(fmt, ...)</text>
+    <rect x="985" y="100" width="145" height="30" rx="4" fill="#3a3a2a" stroke="#5a5a4a" stroke-width="1"/>
+    <text x="1057" y="120" font-family="monospace" font-size="10" fill="#ff8" text-anchor="middle">warn(fmt, ...)</text>
 
-    <rect x="820" y="150" width="150" height="35" rx="4" fill="#5a3a3a" stroke="#7a5a5a" stroke-width="1"/>
-    <text x="895" y="172" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">error(fmt, ...)</text>
+    <rect x="830" y="140" width="145" height="30" rx="4" fill="#3a2a2a" stroke="#5a4a4a" stroke-width="1"/>
+    <text x="902" y="160" font-family="monospace" font-size="10" fill="#f88" text-anchor="middle">error(fmt, ...)</text>
 
-    <rect x="980" y="150" width="150" height="35" rx="4" fill="#3a4a5a" stroke="#5a6a8a" stroke-width="1"/>
-    <text x="1055" y="172" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">status(sub, fmt)</text>
+    <rect x="985" y="140" width="145" height="30" rx="4" fill="#2a3a3a" stroke="#4a5a5a" stroke-width="1"/>
+    <text x="1057" y="160" font-family="monospace" font-size="10" fill="#8ff" text-anchor="middle">status(sub, msg)</text>
 
-    <rect x="820" y="195" width="310" height="45" rx="4" fill="#4a3a5a" stroke="#6a5a7a" stroke-width="1"/>
-    <text x="975" y="215" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle">log_begin() / log_continue()</text>
-    <text x="975" y="232" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Multi-part message construction</text>
+    <rect x="830" y="180" width="300" height="40" rx="4" fill="#2a2a3a" stroke="#4a4a5a" stroke-width="1"/>
+    <text x="980" y="198" font-family="monospace" font-size="10" fill="#c8f" text-anchor="middle">perfItem(name, value)</text>
+    <text x="980" y="212" font-family="monospace" font-size="8" fill="#666" text-anchor="middle">Performance metrics for graphs</text>
   </g>
 
   <!-- Backend Layer -->
   <g id="backend-layer">
-    <rect x="50" y="290" width="1100" height="280" rx="8" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
-    <text x="600" y="315" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">LoggerBackend</text>
+    <rect x="50" y="270" width="1100" height="390" rx="8" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+    <text x="600" y="295" font-family="monospace" font-size="14" fill="#8cf" text-anchor="middle" font-weight="bold">LoggerBackend Implementations</text>
 
     <!-- Backend Interface -->
-    <rect x="70" y="335" width="280" height="120" rx="6" fill="#3a3a4a" stroke="#5a5a6a" stroke-width="1"/>
-    <text x="210" y="355" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">Backend Interface</text>
-    <text x="210" y="375" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle" font-family="monospace">_add_log_line(chan, msg)</text>
-    <text x="210" y="392" font-family="Arial, sans-serif" font-size="9" fill="#ff8" text-anchor="middle" font-family="monospace">_warn(chan, msg)</text>
-    <text x="210" y="409" font-family="Arial, sans-serif" font-size="9" fill="#f88" text-anchor="middle" font-family="monospace">_error(chan, msg)</text>
-    <text x="210" y="426" font-family="Arial, sans-serif" font-size="9" fill="#8ff" text-anchor="middle" font-family="monospace">_status(chan, sub, msg)</text>
-    <text x="210" y="443" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle" font-family="monospace">_on_perf_item(chan, name, data)</text>
+    <rect x="70" y="315" width="140" height="130" rx="6" fill="#252530" stroke="#404050" stroke-width="1"/>
+    <text x="140" y="335" font-family="monospace" font-size="10" fill="white" text-anchor="middle" font-weight="bold">Interface</text>
+    <text x="140" y="355" font-family="monospace" font-size="8" fill="#8f8" text-anchor="middle">_add_log_line()</text>
+    <text x="140" y="370" font-family="monospace" font-size="8" fill="#ff8" text-anchor="middle">_warn()</text>
+    <text x="140" y="385" font-family="monospace" font-size="8" fill="#f88" text-anchor="middle">_error()</text>
+    <text x="140" y="400" font-family="monospace" font-size="8" fill="#8ff" text-anchor="middle">_status()</text>
+    <text x="140" y="415" font-family="monospace" font-size="8" fill="#c8f" text-anchor="middle">_on_perf_item()</text>
+    <text x="140" y="435" font-family="monospace" font-size="7" fill="#666" text-anchor="middle">svar64_t _impl</text>
 
-    <!-- Stdout Backend -->
-    <rect x="380" y="335" width="160" height="100" rx="6" fill="#4a5a3a" stroke="#6a7a5a" stroke-width="1"/>
-    <text x="460" y="355" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">Stdout</text>
-    <text x="460" y="375" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">ANSI colors</text>
-    <text x="460" y="392" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Immediate output</text>
-    <text x="460" y="409" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">stderr for errors</text>
-    <text x="460" y="426" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">(Default)</text>
+    <!-- 6 Backend columns -->
+    <!-- Col 1: Stdout -->
+    <rect x="230" y="315" width="140" height="90" rx="6" fill="#2a3a2a" stroke="#4a6a4a" stroke-width="1"/>
+    <text x="300" y="335" font-family="monospace" font-size="11" fill="#8f8" text-anchor="middle" font-weight="bold">Stdout</text>
+    <text x="300" y="353" font-family="monospace" font-size="8" fill="#888" text-anchor="middle">ANSI colors</text>
+    <text x="300" y="368" font-family="monospace" font-size="8" fill="#888" text-anchor="middle">Immediate output</text>
+    <text x="300" y="383" font-family="monospace" font-size="8" fill="#888" text-anchor="middle">stderr for errors</text>
+    <text x="300" y="398" font-family="monospace" font-size="8" fill="#6a6" text-anchor="middle">(Default)</text>
 
-    <!-- File Backend -->
-    <rect x="560" y="335" width="160" height="100" rx="6" fill="#5a4a3a" stroke="#8a6a4a" stroke-width="1"/>
-    <text x="640" y="355" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">File</text>
-    <text x="640" y="375" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Async writer thread</text>
-    <text x="640" y="392" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Configurable flush</text>
-    <text x="640" y="409" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Optional ANSI</text>
-    <text x="640" y="426" font-family="Arial, sans-serif" font-size="9" fill="#ff8" text-anchor="middle">Flush on error</text>
+    <!-- Col 2: File -->
+    <rect x="390" y="315" width="140" height="90" rx="6" fill="#3a2a2a" stroke="#6a4a4a" stroke-width="1"/>
+    <text x="460" y="335" font-family="monospace" font-size="11" fill="#fa8" text-anchor="middle" font-weight="bold">File</text>
+    <text x="460" y="353" font-family="monospace" font-size="8" fill="#888" text-anchor="middle">Async thread</text>
+    <text x="460" y="368" font-family="monospace" font-size="8" fill="#888" text-anchor="middle">Configurable flush</text>
+    <text x="460" y="383" font-family="monospace" font-size="8" fill="#888" text-anchor="middle">Optional ANSI</text>
+    <text x="460" y="398" font-family="monospace" font-size="8" fill="#a66" text-anchor="middle">Flush on error</text>
 
-    <!-- HTML Backend -->
-    <rect x="740" y="335" width="160" height="100" rx="6" fill="#5a3a5a" stroke="#7a5a7a" stroke-width="1"/>
-    <text x="820" y="355" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">HTML</text>
-    <text x="820" y="375" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Interactive viewer</text>
-    <text x="820" y="392" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Channel toggles</text>
-    <text x="820" y="409" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Crash resilient</text>
-    <text x="820" y="426" font-family="Arial, sans-serif" font-size="9" fill="#8ff" text-anchor="middle">file:// compatible</text>
+    <!-- Col 3: HTML -->
+    <rect x="550" y="315" width="140" height="90" rx="6" fill="#2a2a3a" stroke="#4a4a6a" stroke-width="1"/>
+    <text x="620" y="335" font-family="monospace" font-size="11" fill="#c8f" text-anchor="middle" font-weight="bold">HTML</text>
+    <text x="620" y="353" font-family="monospace" font-size="8" fill="#888" text-anchor="middle">Interactive viewer</text>
+    <text x="620" y="368" font-family="monospace" font-size="8" fill="#888" text-anchor="middle">Channel toggles</text>
+    <text x="620" y="383" font-family="monospace" font-size="8" fill="#888" text-anchor="middle">Crash resilient</text>
+    <text x="620" y="398" font-family="monospace" font-size="8" fill="#86c" text-anchor="middle">file:// compatible</text>
 
-    <!-- Fork Backend -->
-    <rect x="920" y="335" width="210" height="100" rx="6" fill="#3a5a5a" stroke="#5a7a7a" stroke-width="1"/>
-    <text x="1025" y="355" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">Fork</text>
-    <text x="1025" y="375" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">Multiplexer</text>
-    <text x="1025" y="392" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">N child backends</text>
-    <text x="1025" y="409" font-family="Arial, sans-serif" font-size="9" fill="#aaa" text-anchor="middle">[STDOUT,FILE,HTML]</text>
-    <text x="1025" y="426" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">Env var configurable</text>
+    <!-- Col 4: HTTP -->
+    <rect x="710" y="315" width="140" height="90" rx="6" fill="#2a3a3a" stroke="#4a6a6a" stroke-width="1"/>
+    <text x="780" y="335" font-family="monospace" font-size="11" fill="#6c8" text-anchor="middle" font-weight="bold">HTTP</text>
+    <text x="780" y="353" font-family="monospace" font-size="8" fill="#888" text-anchor="middle">ZMQ PUB socket</text>
+    <text x="780" y="368" font-family="monospace" font-size="8" fill="#888" text-anchor="middle">Web dashboard</text>
+    <text x="780" y="383" font-family="monospace" font-size="8" fill="#888" text-anchor="middle">Multi-client</text>
+    <text x="780" y="398" font-family="monospace" font-size="8" fill="#4a8" text-anchor="middle">Real-time SSE</text>
 
-    <!-- Output destinations -->
-    <rect x="70" y="465" width="160" height="40" rx="4" fill="#2a4a2a" stroke="#4a6a4a" stroke-width="1"/>
-    <text x="150" y="490" font-family="Arial, sans-serif" font-size="10" fill="#8f8" text-anchor="middle">Terminal (stdout/stderr)</text>
+    <!-- Col 5: UI -->
+    <rect x="870" y="315" width="140" height="90" rx="6" fill="#3a2a3a" stroke="#6a4a6a" stroke-width="1"/>
+    <text x="940" y="335" font-family="monospace" font-size="11" fill="#c6f" text-anchor="middle" font-weight="bold">UI (lev2)</text>
+    <text x="940" y="353" font-family="monospace" font-size="8" fill="#888" text-anchor="middle">In-engine widget</text>
+    <text x="940" y="368" font-family="monospace" font-size="8" fill="#888" text-anchor="middle">LoggerGroup</text>
+    <text x="940" y="383" font-family="monospace" font-size="8" fill="#888" text-anchor="middle">GraphView</text>
+    <text x="940" y="398" font-family="monospace" font-size="8" fill="#a4c" text-anchor="middle">GPU-accelerated</text>
 
-    <rect x="250" y="465" width="160" height="40" rx="4" fill="#4a4a2a" stroke="#6a6a4a" stroke-width="1"/>
-    <text x="330" y="490" font-family="Arial, sans-serif" font-size="10" fill="#ff8" text-anchor="middle">Log File (.log)</text>
+    <!-- Col 6: iOS UI -->
+    <rect x="1030" y="315" width="100" height="90" rx="6" fill="#2a3a3a" stroke="#4a5a5a" stroke-width="1"/>
+    <text x="1080" y="335" font-family="monospace" font-size="11" fill="#8cc" text-anchor="middle" font-weight="bold">iOS UI</text>
+    <text x="1080" y="353" font-family="monospace" font-size="8" fill="#888" text-anchor="middle">Native UIKit</text>
+    <text x="1080" y="368" font-family="monospace" font-size="8" fill="#888" text-anchor="middle">Per-channel</text>
+    <text x="1080" y="383" font-family="monospace" font-size="8" fill="#888" text-anchor="middle">Tab navigation</text>
+    <text x="1080" y="398" font-family="monospace" font-size="8" fill="#6aa" text-anchor="middle">dispatch_async</text>
 
-    <rect x="430" y="465" width="180" height="40" rx="4" fill="#4a2a4a" stroke="#6a4a6a" stroke-width="1"/>
-    <text x="520" y="490" font-family="Arial, sans-serif" font-size="10" fill="#f8f" text-anchor="middle">HTML File (.html)</text>
+    <!-- Vertical lines: backend to transport -->
+    <line x1="300" y1="405" x2="300" y2="435" stroke="#8f8" stroke-width="2"/>
+    <line x1="460" y1="405" x2="460" y2="435" stroke="#fa8" stroke-width="2"/>
+    <line x1="620" y1="405" x2="620" y2="435" stroke="#c8f" stroke-width="2"/>
+    <line x1="780" y1="405" x2="780" y2="435" stroke="#6c8" stroke-width="2"/>
+    <line x1="940" y1="405" x2="940" y2="435" stroke="#c6f" stroke-width="2"/>
+    <line x1="1080" y1="405" x2="1080" y2="435" stroke="#8cc" stroke-width="2"/>
 
-    <rect x="630" y="465" width="200" height="40" rx="4" fill="#2a4a4a" stroke="#4a6a6a" stroke-width="1"/>
-    <text x="730" y="490" font-family="Arial, sans-serif" font-size="10" fill="#8ff" text-anchor="middle">Multiple Destinations</text>
+    <!-- Transport layer -->
+    <rect x="250" y="435" width="100" height="30" rx="4" fill="#1a2a1a" stroke="#3a4a3a" stroke-width="1"/>
+    <text x="300" y="455" font-family="monospace" font-size="8" fill="#8f8" text-anchor="middle">printf()</text>
 
-    <!-- Arrows from backends to outputs -->
-    <path d="M 460 435 L 150 465" stroke="#8f8" stroke-width="1.5" marker-end="url(#arrowhead-green)"/>
-    <path d="M 640 435 L 330 465" stroke="#ff8" stroke-width="1.5" marker-end="url(#arrowhead-yellow)"/>
-    <path d="M 820 435 L 520 465" stroke="#f8f" stroke-width="1.5" marker-end="url(#arrowhead-magenta)"/>
-    <path d="M 1025 435 L 730 465" stroke="#8ff" stroke-width="1.5" marker-end="url(#arrowhead-cyan)"/>
+    <rect x="410" y="435" width="100" height="30" rx="4" fill="#2a1a1a" stroke="#4a3a3a" stroke-width="1"/>
+    <text x="460" y="455" font-family="monospace" font-size="8" fill="#fa8" text-anchor="middle">fwrite()</text>
+
+    <rect x="570" y="435" width="100" height="30" rx="4" fill="#1a1a2a" stroke="#3a3a4a" stroke-width="1"/>
+    <text x="620" y="455" font-family="monospace" font-size="8" fill="#c8f" text-anchor="middle">fwrite()</text>
+
+    <rect x="730" y="435" width="100" height="30" rx="4" fill="#1a2a2a" stroke="#3a4a4a" stroke-width="1"/>
+    <text x="780" y="455" font-family="monospace" font-size="8" fill="#6c8" text-anchor="middle">zmq_send()</text>
+
+    <rect x="890" y="435" width="100" height="30" rx="4" fill="#2a1a2a" stroke="#4a3a4a" stroke-width="1"/>
+    <text x="940" y="455" font-family="monospace" font-size="8" fill="#c6f" text-anchor="middle">queue+draw</text>
+
+    <rect x="1030" y="435" width="100" height="30" rx="4" fill="#1a2a2a" stroke="#3a4a4a" stroke-width="1"/>
+    <text x="1080" y="455" font-family="monospace" font-size="8" fill="#8cc" text-anchor="middle">dispatch()</text>
+
+    <!-- Vertical lines: transport to destination -->
+    <line x1="300" y1="465" x2="300" y2="495" stroke="#8f8" stroke-width="2"/>
+    <line x1="460" y1="465" x2="460" y2="495" stroke="#fa8" stroke-width="2"/>
+    <line x1="620" y1="465" x2="620" y2="495" stroke="#c8f" stroke-width="2"/>
+    <line x1="780" y1="465" x2="780" y2="495" stroke="#6c8" stroke-width="2"/>
+    <line x1="940" y1="465" x2="940" y2="495" stroke="#c6f" stroke-width="2"/>
+    <line x1="1080" y1="465" x2="1080" y2="495" stroke="#8cc" stroke-width="2"/>
+
+    <!-- Destinations -->
+    <rect x="230" y="495" width="140" height="50" rx="4" fill="#1a2a1a" stroke="#3a4a3a" stroke-width="1"/>
+    <text x="300" y="518" font-family="monospace" font-size="10" fill="#8f8" text-anchor="middle">Terminal</text>
+    <text x="300" y="535" font-family="monospace" font-size="7" fill="#666" text-anchor="middle">stdout/stderr</text>
+
+    <rect x="390" y="495" width="140" height="50" rx="4" fill="#2a1a1a" stroke="#4a3a3a" stroke-width="1"/>
+    <text x="460" y="518" font-family="monospace" font-size="10" fill="#fa8" text-anchor="middle">Log File</text>
+    <text x="460" y="535" font-family="monospace" font-size="7" fill="#666" text-anchor="middle">.log / .txt</text>
+
+    <rect x="550" y="495" width="140" height="50" rx="4" fill="#1a1a2a" stroke="#3a3a4a" stroke-width="1"/>
+    <text x="620" y="518" font-family="monospace" font-size="10" fill="#c8f" text-anchor="middle">HTML File</text>
+    <text x="620" y="535" font-family="monospace" font-size="7" fill="#666" text-anchor="middle">.html</text>
+
+    <rect x="710" y="495" width="140" height="50" rx="4" fill="#1a2a2a" stroke="#3a4a4a" stroke-width="1"/>
+    <text x="780" y="518" font-family="monospace" font-size="10" fill="#6c8" text-anchor="middle">Web Browser</text>
+    <text x="780" y="535" font-family="monospace" font-size="7" fill="#666" text-anchor="middle">SSE stream</text>
+
+    <rect x="870" y="495" width="140" height="50" rx="4" fill="#2a1a2a" stroke="#4a3a4a" stroke-width="1"/>
+    <text x="940" y="518" font-family="monospace" font-size="10" fill="#c6f" text-anchor="middle">App Window</text>
+    <text x="940" y="535" font-family="monospace" font-size="7" fill="#666" text-anchor="middle">GPU render</text>
+
+    <rect x="1030" y="495" width="100" height="50" rx="4" fill="#1a2a2a" stroke="#3a4a4a" stroke-width="1"/>
+    <text x="1080" y="518" font-family="monospace" font-size="10" fill="#8cc" text-anchor="middle">iOS Device</text>
+    <text x="1080" y="535" font-family="monospace" font-size="7" fill="#666" text-anchor="middle">UIKit</text>
+
+    <!-- Subtitle -->
+    <text x="600" y="635" font-family="monospace" font-size="9" fill="#666" text-anchor="middle">Each backend can be used standalone via logger()->setBackend()</text>
   </g>
 
-  <!-- Arrows between sections -->
-  <path d="M 350 160 L 400 160" stroke="#888" stroke-width="2" marker-end="url(#arrowhead)"/>
-  <path d="M 750 160 L 800 160" stroke="#888" stroke-width="2" marker-end="url(#arrowhead)"/>
-  <path d="M 575 260 L 575 290" stroke="#888" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <!-- Fork Backend Section (separate, below) -->
+  <g id="fork-section">
+    <rect x="50" y="690" width="1100" height="160" rx="8" fill="#2a2a2a" stroke="#6a6a4a" stroke-width="2"/>
+    <text x="600" y="715" font-family="monospace" font-size="14" fill="#8ff" text-anchor="middle" font-weight="bold">Fork Backend (Optional Multiplexer)</text>
+    <text x="600" y="732" font-family="monospace" font-size="9" fill="#666" text-anchor="middle">Wraps N child backends - env syntax: [STDOUT,FILE,HTML,HTTP]</text>
+
+    <!-- Fan-out lines drawn FIRST so boxes appear on top -->
+    <line x1="600" y1="770" x2="225" y2="834" stroke="#8ff" stroke-width="1.5"/>
+    <line x1="600" y1="770" x2="375" y2="834" stroke="#8ff" stroke-width="1.5"/>
+    <line x1="600" y1="770" x2="525" y2="834" stroke="#8ff" stroke-width="1.5"/>
+    <line x1="600" y1="770" x2="675" y2="834" stroke="#8ff" stroke-width="1.5"/>
+    <line x1="600" y1="770" x2="825" y2="834" stroke="#8ff" stroke-width="1.5"/>
+    <line x1="600" y1="770" x2="975" y2="834" stroke="#8ff" stroke-width="1.5"/>
+
+    <!-- Fork box drawn after lines so it covers line origins -->
+    <rect x="545" y="750" width="110" height="40" rx="6" fill="#3a3a2a" stroke="#6a6a4a" stroke-width="2"/>
+    <text x="600" y="775" font-family="monospace" font-size="11" fill="#8ff" text-anchor="middle" font-weight="bold">Fork</text>
+
+    <!-- Simplified backend boxes drawn last so they cover line endpoints -->
+    <rect x="175" y="820" width="100" height="28" rx="4" fill="#2a3a2a" stroke="#4a6a4a" stroke-width="1"/>
+    <text x="225" y="839" font-family="monospace" font-size="10" fill="#8f8" text-anchor="middle">Stdout</text>
+
+    <rect x="325" y="820" width="100" height="28" rx="4" fill="#3a2a2a" stroke="#6a4a4a" stroke-width="1"/>
+    <text x="375" y="839" font-family="monospace" font-size="10" fill="#fa8" text-anchor="middle">File</text>
+
+    <rect x="475" y="820" width="100" height="28" rx="4" fill="#2a2a3a" stroke="#4a4a6a" stroke-width="1"/>
+    <text x="525" y="839" font-family="monospace" font-size="10" fill="#c8f" text-anchor="middle">HTML</text>
+
+    <rect x="625" y="820" width="100" height="28" rx="4" fill="#2a3a3a" stroke="#4a6a6a" stroke-width="1"/>
+    <text x="675" y="839" font-family="monospace" font-size="10" fill="#6c8" text-anchor="middle">HTTP</text>
+
+    <rect x="775" y="820" width="100" height="28" rx="4" fill="#3a2a3a" stroke="#6a4a6a" stroke-width="1"/>
+    <text x="825" y="839" font-family="monospace" font-size="10" fill="#c6f" text-anchor="middle">UI</text>
+
+    <rect x="925" y="820" width="100" height="28" rx="4" fill="#2a3a3a" stroke="#4a5a5a" stroke-width="1"/>
+    <text x="975" y="839" font-family="monospace" font-size="10" fill="#8cc" text-anchor="middle">iOS UI</text>
+  </g>
+
+  <!-- Arrows between top sections -->
+  <line x1="330" y1="150" x2="380" y2="150" stroke="#888" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="760" y1="150" x2="810" y2="150" stroke="#888" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="570" y1="240" x2="570" y2="270" stroke="#888" stroke-width="2" marker-end="url(#arrow)"/>
 
   <!-- Arrow markers -->
   <defs>
-    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
       <polygon points="0 0, 10 3, 0 6" fill="#888"/>
-    </marker>
-    <marker id="arrowhead-green" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-      <polygon points="0 0, 10 3, 0 6" fill="#8f8"/>
-    </marker>
-    <marker id="arrowhead-yellow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-      <polygon points="0 0, 10 3, 0 6" fill="#ff8"/>
-    </marker>
-    <marker id="arrowhead-magenta" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-      <polygon points="0 0, 10 3, 0 6" fill="#f8f"/>
-    </marker>
-    <marker id="arrowhead-cyan" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-      <polygon points="0 0, 10 3, 0 6" fill="#8ff"/>
     </marker>
   </defs>
 </svg>

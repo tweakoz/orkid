@@ -71,6 +71,8 @@ Output handler that receives formatted log messages:
 - **File**: Async file writing with optional ANSI colors
 - **HTML**: Interactive browser-viewable logs (static file)
 - **HTTP**: Real-time streaming to web dashboard via ZMQ
+- **UI**: In-engine widget-based log viewer (ork.lev2)
+- **iOS UI**: Native iOS log viewer using UIKit
 - **Fork**: Multiplexes to multiple child backends
 
 ---
@@ -112,6 +114,22 @@ The architecture follows a producer-consumer pattern with channels feeding into 
 - Supports multiple simultaneous client applications
 - Features: status dashboard, performance graphs, log filtering
 - Server runs separately: `ork.logger.httpserver.py`
+
+### UI Backend (ork.lev2)
+- In-engine log viewer using Orkid's UI framework
+- Embedded directly in application window
+- Tabbed interface per log channel
+- Features: status area, scrolling log, performance graphs
+- Uses `LoggerGroup` widget with `GraphView` for metrics
+- Thread-safe message queuing for UI thread safety
+
+### iOS UI Backend
+- Native iOS log viewer using UIKit
+- Per-channel UIViewControllers with colored text
+- Tab-based navigation between channels
+- Monospace font (Menlo) with channel-tinted background
+- Auto-scroll to latest entries
+- Thread-safe via dispatch_async to main thread
 
 ### Fork Backend
 - Multiplexes to multiple child backends
@@ -193,8 +211,12 @@ forkBackendAddChild(fork, createHtmlBackend("/path/to/log.html"));
 logger()->setBackend(fork);
 
 // Set HTTP backend (connects to ork.logger.httpserver.py)
-auto http_backend = createHttpBackend(5556);  // ZMQ port
+auto http_backend = createHttpBackend("tcp://127.0.0.1:12288");  // ZMQ endpoint
 logger()->setBackend(http_backend);
+
+// Connect to remote log server
+auto remote_backend = createHttpBackend("tcp://logserver.local:12288");
+logger()->setBackend(remote_backend);
 ```
 
 ### Static Channel Declaration Pattern
@@ -301,14 +323,15 @@ export ORKID_LOGGER_BACKEND=FILE                # File at ${OBT_STAGE}/orkid.log
 export ORKID_LOGGER_BACKEND=FILE</path/to/log>  # File at custom path
 export ORKID_LOGGER_BACKEND=HTML                # HTML at ${OBT_STAGE}/orkid.log.html
 export ORKID_LOGGER_BACKEND=HTML</path/to.html> # HTML at custom path
-export ORKID_LOGGER_BACKEND=HTTP                # HTTP backend on default port 5556
-export ORKID_LOGGER_BACKEND=HTTP<5557>          # HTTP backend on custom ZMQ port
+export ORKID_LOGGER_BACKEND=HTTP                              # HTTP backend (localhost:12288)
+export ORKID_LOGGER_BACKEND=HTTP<tcp://hostname:12288>        # HTTP backend on remote host
+export ORKID_LOGGER_BACKEND=HTTP<tcp://192.168.1.100:5556>    # Custom host and port
 
 # Multiple backends (fork syntax)
 export ORKID_LOGGER_BACKEND="[STDOUT,FILE]"
 export ORKID_LOGGER_BACKEND="[STDOUT,HTML]"
 export ORKID_LOGGER_BACKEND="[STDOUT,HTTP]"
-export ORKID_LOGGER_BACKEND="[STDOUT,FILE</tmp/app.log>,HTML</tmp/app.html>,HTTP]"
+export ORKID_LOGGER_BACKEND="[STDOUT,FILE</tmp/app.log>,HTML</tmp/app.html>,HTTP<tcp://logserver:12288>]"
 ```
 
 ### Backend Options
@@ -423,27 +446,30 @@ The HTTP backend provides real-time log streaming to a web-based dashboard, supp
 
 ```bash
 # 1. Start the server (run once, handles multiple clients)
-ork.logger.httpserver.py [http_port] [zmq_port]
-# Default: HTTP on 8080, ZMQ on 5556
+ork.logger.httpserver.py [zmq_port]
+# Default: ZMQ on 12288, HTTP on 12289 (ZMQ + 1)
 
 # 2. Configure client applications to use HTTP backend
-export ORKID_LOGGER_BACKEND=HTTP        # or HTTP<port>
-export ORKID_LOGGER_BACKEND="[STDOUT,HTTP]"  # fork with stdout
+export ORKID_LOGGER_BACKEND=HTTP                              # localhost
+export ORKID_LOGGER_BACKEND=HTTP<tcp://192.168.1.100:12288>   # remote server
+export ORKID_LOGGER_BACKEND="[STDOUT,HTTP]"                   # fork with stdout
 
-# 3. Open browser to view logs
-open http://localhost:8080
+# 3. Open browser to view logs (HTTP port = ZMQ port + 1)
+open http://localhost:12289
 ```
 
 ### Server Output
 
 ```
 Orkid Log Server
-  ZMQ endpoints:
-    tcp://127.0.0.1:5556
-    tcp://192.168.1.100:5556
-  HTTP endpoints:
-    http://127.0.0.1:8080
-    http://192.168.1.100:8080
+  ZMQ endpoints (for C++ clients):
+    tcp://127.0.0.1:12288
+    tcp://192.168.1.100:12288
+  HTTP endpoints (for browsers):
+    http://127.0.0.1:12289
+    http://192.168.1.100:12289
+
+  C++ usage: ORKID_LOGGER_BACKEND=HTTP<tcp://hostname:12288>
 ```
 
 ### Message Types
@@ -463,6 +489,174 @@ The C++ client sends JSON messages over ZMQ:
 
 - Heartbeat interval: 1 second (C++ client)
 - Server timeout: 5 seconds (marks client as dead)
+
+---
+
+## UI Backend Details
+
+The UI backend provides an in-engine log viewer using Orkid's native UI framework. Unlike the HTTP backend which uses an external browser, the UI backend renders logs directly within the application window.
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Application Window                                              │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  LoggerGroup Widget                                        │  │
+│  │  ┌─────────────────────────────────────────────────────┐  │  │
+│  │  │  TabWidget (per-channel tabs)                        │  │  │
+│  │  │  ┌─────────┬─────────┬─────────┐                    │  │  │
+│  │  │  │ AUDIO   │ RENDER  │ NETWORK │ ...                │  │  │
+│  │  │  └─────────┴─────────┴─────────┘                    │  │  │
+│  │  │  ┌─────────────────────────────────────────────────┐│  │  │
+│  │  │  │ Status Area (key: value pairs)                  ││  │  │
+│  │  │  ├─────────────────────────────────────────────────┤│  │  │
+│  │  │  │ Log Area (scrolling messages)                   ││  │  │
+│  │  │  ├─────────────────────────────────────────────────┤│  │  │
+│  │  │  │ GraphView (performance metrics)                 ││  │  │
+│  │  │  └─────────────────────────────────────────────────┘│  │  │
+│  │  └─────────────────────────────────────────────────────┘  │  │
+│  └───────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Components
+
+- **LoggerGroup**: Main container widget that receives log messages
+- **TabWidget**: Organizes channels into selectable tabs
+- **TextBox**: Displays status lines and scrolling log messages
+- **GraphView**: Renders real-time performance graphs with auto-scaling
+
+### C++ Usage
+
+```cpp
+#include <ork/lev2/ui/logger_ui_backend.h>
+#include <ork/lev2/ui/logger_group.h>
+
+// Create the UI backend
+auto ui_backend = ork::ui::LoggerUIBackend::create();
+logger()->setBackend(ui_backend);
+
+// Create a LoggerGroup widget with allowed channels
+auto logger_widget = ork::ui::LoggerGroup::create(
+    "AppLogs",                          // Widget name
+    {"AUDIO", "RENDER", "NETWORK.*"}    // Allowed channels (supports regex)
+);
+
+// Register the widget with the backend
+ork::ui::LoggerGroup::registerOnBackend(logger_widget, ui_backend);
+
+// Add the widget to your UI hierarchy
+my_layout->addChild(logger_widget);
+
+// In your render loop, process queued messages
+void onDraw(lev2::Context* ctx) {
+    logger_widget->processQueuedMessages(ctx);
+    // ... draw UI
+}
+```
+
+### Channel Filtering
+
+LoggerGroup supports regex patterns for channel matching:
+
+```cpp
+// Exact match
+{"AUDIO", "RENDER"}
+
+// Wildcard patterns
+{"VK.*"}           // Matches VKIMPL, VKERR, VK_DEBUG, etc.
+{".*ERR"}          // Matches any channel ending in ERR
+{"AUDIO|RENDER"}   // Matches AUDIO or RENDER
+```
+
+### Thread Safety
+
+- Log messages are queued from any thread
+- `processQueuedMessages()` must be called from the UI thread
+- Backend broadcasts to all registered LoggerGroups
+- Uses mutex-protected message queue
+
+### Features
+
+- **Dynamic Channel Creation**: Tabs created as channels are encountered
+- **Status Updates**: Key-value pairs displayed in status area
+- **Performance Graphs**: `perfItem()` values rendered as time-series graphs
+- **Tab Selection**: `setActiveTabByName()` to switch active channel
+- **Normalized Mode**: `_normalize_series` flag for [0,1] normalization
+
+---
+
+## iOS UI Backend Details
+
+The iOS UI backend provides a native log viewer for iOS applications using UIKit. It creates a tabbed interface where each log channel has its own scrollable text view.
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  iOS Application                                             │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │  Main View Controller                                  │  │
+│  │  ┌─────────────────────────────────────────────────┐  │  │
+│  │  │  Channel Buttons (dynamic)                       │  │  │
+│  │  │  [AUDIO] [RENDER] [NETWORK] ...                 │  │  │
+│  │  └─────────────────────────────────────────────────┘  │  │
+│  │  ┌─────────────────────────────────────────────────┐  │  │
+│  │  │  OrkLogChannelViewController                     │  │  │
+│  │  │  ┌─────────────────────────────────────────────┐│  │  │
+│  │  │  │  UITextView (Menlo 12pt)                    ││  │  │
+│  │  │  │  - Channel-colored text                     ││  │  │
+│  │  │  │  - Darkened channel-color background        ││  │  │
+│  │  │  │  - Auto-scroll enabled                      ││  │  │
+│  │  │  └─────────────────────────────────────────────┘│  │  │
+│  │  └─────────────────────────────────────────────────┘  │  │
+│  └───────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Components
+
+- **OrkLogChannelViewController**: Per-channel view with UITextView
+- **OrkLogChannelManager**: Manages channel view controllers
+- **IOSLoggerUI**: C++ bridge to Objective-C logging
+
+### C++ Usage
+
+```cpp
+#include <ork/util/logger.h>
+
+// On iOS, install the iOS UI backend
+#if defined(ORK_IOS)
+extern void installIOSUIToBackend(LoggerBackend* backend);
+extern void setIOSUIMainViewController(void* mainVC);
+
+// Install to the default backend
+installIOSUIToBackend(logger()->backend().get());
+
+// Set main view controller (from your iOS app delegate)
+setIOSUIMainViewController((__bridge void*)myViewController);
+#endif
+```
+
+### Features
+
+- **Dynamic Channels**: Channel tabs created on first log message
+- **Channel Colors**: Text and background use channel's configured color
+- **Auto-scroll**: Automatically scrolls to newest log entry
+- **Emoji Indicators**: ⚠️ for warnings, ❌ for errors
+- **Thread Safety**: All UI updates marshaled to main thread via `dispatch_async`
+- **Channel Highlighting**: Active channel button highlighted on new messages
+
+### Message Formatting
+
+| Message Type | Format |
+|-------------|--------|
+| Log | Plain text |
+| Warning | `⚠️ WARNING: message` |
+| Error | `❌ ERROR: message` |
+| Status | `[subchannel] message` |
+| PerfItem | `[PERF:name] value` |
 
 ---
 
@@ -491,6 +685,20 @@ The C++ client sends JSON messages over ZMQ:
 - **Memory**: Server-side per-client entry buffers
 - **Thread Safety**: Lock-free enqueue, single writer thread
 - **Network**: ZMQ PUB to server, SSE to browsers
+
+### UI Backend
+- **Latency**: Frame-rate dependent (processed on UI thread)
+- **Throughput**: Limited by UI update rate
+- **Memory**: Per-channel log buffers in widgets
+- **Thread Safety**: Mutex-protected message queue
+- **Rendering**: GPU-accelerated via Orkid's lev2 renderer
+
+### iOS UI Backend
+- **Latency**: Frame-rate dependent (dispatch_async to main thread)
+- **Throughput**: Limited by UI update rate
+- **Memory**: Per-channel log buffers in UITextView
+- **Thread Safety**: dispatch_async to main thread
+- **Rendering**: Native UIKit text rendering
 
 ### Fork Backend
 - **Overhead**: Iterates children sequentially

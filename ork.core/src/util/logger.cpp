@@ -357,16 +357,14 @@ static logger_backend_ptr_t parseBackendSpec(const std::string& spec) {
   }
 
   if (spec.rfind("HTTP<", 0) == 0 && spec.back() == '>') {
-    // Extract port from HTTP<port>
-    std::string port_str = spec.substr(5, spec.length() - 6);
-    int http_port = std::stoi(port_str);
-    int zmq_port = http_port + 1;  // ZMQ port is HTTP port + 1
-    return createHttpBackend(http_port, zmq_port);
+    // Extract ZMQ endpoint URI from HTTP<tcp://hostname:port>
+    std::string zmq_uri = spec.substr(5, spec.length() - 6);
+    return createHttpBackend(zmq_uri);
   }
 
   if (spec == "HTTP") {
-    // HTTP without port - use defaults (12288 for HTTP, 12289 for ZMQ)
-    return createHttpBackend(12288, 12289);
+    // HTTP without URI - use default localhost ZMQ endpoint
+    return createHttpBackend("tcp://127.0.0.1:12288");
   }
 
   // Unknown spec, return nullptr

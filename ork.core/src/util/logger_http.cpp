@@ -38,7 +38,7 @@ struct HttpBackendImpl;
 using http_backend_impl_ptr_t = std::shared_ptr<HttpBackendImpl>;
 
 struct HttpBackendImpl {
-  int _zmq_port = 12289;
+  std::string _zmq_uri;
   pid_t _pid;
 
   zmq::context_t _zmq_ctx{1};
@@ -52,8 +52,8 @@ struct HttpBackendImpl {
   std::condition_variable _cv;
   std::atomic<bool> _immediate_flush{false};
 
-  HttpBackendImpl(int zmq_port)
-      : _zmq_port(zmq_port)
+  HttpBackendImpl(const std::string& zmq_uri)
+      : _zmq_uri(zmq_uri)
       , _pid(getpid()) {
   }
 
@@ -80,14 +80,13 @@ struct HttpBackendImpl {
 
   void start() {
     // Connect to server's ZMQ SUB socket (reverse pub/sub)
-    std::string zmq_addr = FormatString("tcp://127.0.0.1:%d", _zmq_port);
     try {
       _pub_socket.set(zmq::sockopt::sndhwm, 10000);  // High water mark
       _pub_socket.set(zmq::sockopt::linger, 100);    // Brief linger for disconnect msg
-      _pub_socket.connect(zmq_addr);
+      _pub_socket.connect(_zmq_uri);
     } catch (const zmq::error_t& e) {
       fprintf(stderr, "HttpBackend: Failed to connect to %s: %s\n",
-              zmq_addr.c_str(), e.what());
+              _zmq_uri.c_str(), e.what());
       fprintf(stderr, "HttpBackend: Start server with: ork.logger.httpserver.py\n");
       return;
     }
@@ -106,8 +105,8 @@ struct HttpBackendImpl {
     // Send registration message
     sendControl("register");
 
-    fprintf(stderr, "HttpBackend: Connected to server (ZMQ port %d) [%d]\n",
-            _zmq_port, _pid);
+    fprintf(stderr, "HttpBackend: Connected to server at %s [pid %d]\n",
+            _zmq_uri.c_str(), _pid);
   }
 
   void stop() {
@@ -357,9 +356,9 @@ static void httpPerfItemFn(const LogChannel* chan, std::string name, svar64_t& d
 // Factory function
 ////////////////////////////////////////////////////////////////
 
-logger_backend_ptr_t createHttpBackend(int http_port, int zmq_port) {
+logger_backend_ptr_t createHttpBackend(const std::string& zmq_uri) {
   auto backend = std::make_shared<LoggerBackend>();
-  auto impl = std::make_shared<HttpBackendImpl>(zmq_port);
+  auto impl = std::make_shared<HttpBackendImpl>(zmq_uri);
 
   impl->start();
 

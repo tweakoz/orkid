@@ -1,4 +1,4 @@
-#!/usr/bin/env ork.python
+#!/usr/bin/env python
 ################################################################
 # Orkid Media Engine
 # Copyright 1996-2023, Michael T. Mayers.
@@ -10,8 +10,11 @@ HTTP Log Server with ZMQ subscription and SSE streaming.
 Supports multiple orkid clients with split-panel UI.
 Features: Status dashboard, PerfItem graphs, Log stream.
 
-Usage: ork.logger.httpserver.py [http_port] [zmq_port]
-Default ports: 12288 (HTTP), 12289 (ZMQ)
+Usage: ork.logger.httpserver.py [zmq_port]
+Default ports: 12288 (ZMQ), 12289 (HTTP)
+HTTP port = ZMQ port + 1
+
+C++ clients connect to: ORKID_LOGGER_BACKEND=HTTP<tcp://hostname:zmq_port>
 """
 
 import sys
@@ -22,9 +25,9 @@ import time
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import zmq
 
-# Default ports
-DEFAULT_HTTP_PORT = 12288
-DEFAULT_ZMQ_PORT = 12289
+# Default ports (HTTP = ZMQ + 1)
+DEFAULT_ZMQ_PORT = 12288
+DEFAULT_HTTP_PORT = 12289  # ZMQ + 1
 
 # Client timeout (seconds) - remove client if no heartbeat
 CLIENT_TIMEOUT = 5.0
@@ -1787,13 +1790,13 @@ def cleanup_thread():
 
 
 def main():
-    http_port = DEFAULT_HTTP_PORT
     zmq_port = DEFAULT_ZMQ_PORT
 
     if len(sys.argv) >= 2:
-        http_port = int(sys.argv[1])
-    if len(sys.argv) >= 3:
-        zmq_port = int(sys.argv[2])
+        zmq_port = int(sys.argv[1])
+
+    # HTTP port = ZMQ port + 1
+    http_port = zmq_port + 1
 
     print(f"Orkid Log Server")
     # Get all network interface addresses
@@ -1806,12 +1809,13 @@ def main():
                 ips.append(ip)
     except:
         pass
-    print(f"  ZMQ endpoints:")
+    print(f"  ZMQ endpoints (for C++ clients):")
     for ip in ips:
         print(f"    tcp://{ip}:{zmq_port}")
-    print(f"  HTTP endpoints:")
+    print(f"  HTTP endpoints (for browsers):")
     for ip in ips:
         print(f"    http://{ip}:{http_port}")
+    print(f"\n  C++ usage: ORKID_LOGGER_BACKEND=HTTP<tcp://hostname:{zmq_port}>")
 
     # Start ZMQ subscriber thread
     zmq_thread = threading.Thread(target=zmq_subscriber, args=(zmq_port,), daemon=True)

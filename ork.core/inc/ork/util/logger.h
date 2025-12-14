@@ -150,13 +150,12 @@ namespace ork {
       float flush_interval_ms = 100.0f);
 
   // Create HTTP backend with live streaming via SSE
-  // - http_port: HTTP server port for browser access (default 12288)
-  // - zmq_port: ZMQ port for log data (default 12289)
-  // User must start server manually: ork.logger.httpserver.py
+  // - zmq_uri: ZMQ endpoint URI (e.g., "tcp://hostname:12288")
+  //            HTTP server port is ZMQ port + 1 (e.g., 12289)
+  // User must start server manually: ork.logger.httpserver.py [zmq_port]
   // Multiple orkid processes can connect to the same server (tabbed UI)
   logger_backend_ptr_t createHttpBackend(
-      int http_port = 12288,
-      int zmq_port = 12289);
+      const std::string& zmq_uri = "tcp://127.0.0.1:12288");
 
   /////////////////////////////////////////////////////////////////////
 }
