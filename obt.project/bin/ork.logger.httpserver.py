@@ -575,7 +575,7 @@ const noMergedEl = document.getElementById('no-merged-clients');
 const panelsContainer = document.getElementById('panels-container');
 
 // Graph constants
-const GRAPH_MAX_SAMPLES = 500;
+const GRAPH_MAX_SAMPLES = 150;
 const GRAPH_FPS = 30;
 
 // Utility functions
@@ -649,7 +649,8 @@ function registerClient(app, pid, host = 'localhost') {
       excludeRegex: null,
       autoScroll: true,
       statusCollapsed: true,
-      graphCollapsed: true
+      graphCollapsed: true,
+      graphMaxSamples: GRAPH_MAX_SAMPLES
     });
     updateClientList();
   } else {
@@ -1134,6 +1135,14 @@ function createPanel(clientId, client) {
         <div class="graph-header">
           <div class="graph-header-left">
             <span class="graph-title">Performance</span>
+            <select class="graph-history-size" style="margin-left: 8px; font-size: 10px; background: #222; color: #aaa; border: 1px solid #444; padding: 2px 4px; border-radius: 2px;">
+              <option value="100">100</option>
+              <option value="150" selected>150</option>
+              <option value="250">250</option>
+              <option value="500">500</option>
+              <option value="1000">1K</option>
+              <option value="2000">2K</option>
+            </select>
           </div>
           <span class="graph-toggle">${client.graphCollapsed ? '[+]' : '[-]'}</span>
         </div>
@@ -1214,13 +1223,71 @@ function createPanel(clientId, client) {
     panel.querySelector('.graph-toggle').textContent = client.graphCollapsed ? '[+]' : '[-]';
   };
 
-  // Initialize canvas size
+  // Setup graph history size selector
+  panel.querySelector('.graph-history-size').onchange = (e) => {
+    client.graphMaxSamples = parseInt(e.target.value);
+    // Trim all series to new size
+    client.perf.forEach((series) => {
+      while (series.samples.length > client.graphMaxSamples) {
+        series.samples.shift();
+      }
+    });
+  };
+
+  // Initialize canvas size and click handler
   requestAnimationFrame(() => {
     const canvas = panel.querySelector('.graph-canvas');
     const wrapper = panel.querySelector('.graph-canvas-wrapper');
     if (canvas && wrapper) {
       canvas.width = wrapper.clientWidth;
       canvas.height = wrapper.clientHeight;
+
+      // Add click handler for expand/collapse toggles
+      canvas.addEventListener('click', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        // Calculate which lane was clicked
+        const labelWidth = 140;
+        const graphWidth = canvas.width - labelWidth - 10;
+        const expandedLaneHeight = 80;
+        const collapsedLaneHeight = 20;
+
+        // Check if click is in label area (right side)
+        if (x >= graphWidth + 5) {
+          let currentY = 0;
+          let found = false;
+          for (const [key, series] of client.perf.entries()) {
+            if (found) break;  // Stop after finding the clicked lane
+
+            const channelInfo = client.channels.get(series.ch);
+            const channelVisible = channelInfo ? channelInfo.visible : true;
+            if (channelVisible && series.samples.length > 0) {
+              // Default to expanded if property doesn't exist
+              const isExpanded = series.expanded !== false;
+              const laneHeight = isExpanded ? expandedLaneHeight : collapsedLaneHeight;
+              if (y >= currentY && y < currentY + laneHeight) {
+                // Toggle this specific series only
+                series.expanded = !isExpanded;
+                drawGraph(clientId);
+                found = true;
+                break;
+              }
+              currentY += laneHeight;
+            }
+          }
+        }
+      });
+
+      // Pointer cursor when over label area
+      canvas.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const labelWidth = 140;
+        const graphWidth = canvas.width - labelWidth - 10;
+        canvas.style.cursor = (x >= graphWidth + 5) ? 'pointer' : 'default';
+      });
     }
   });
 
@@ -1595,6 +1662,7 @@ function updateChannelToggles(clientId) {
     cb.onchange = () => {
       info.visible = cb.checked;
       applyFilters(clientId);
+      drawGraph(clientId);  // Immediately redraw graph when channel visibility changes
     };
 
     label.appendChild(cb);
@@ -1685,19 +1753,27 @@ function addPerfSample(clientId, data) {
       max: data.value,
       smoothMin: data.value,
       smoothMax: data.value,
-      visible: true
+      expanded: true  // Track expanded/collapsed state per series
     };
     client.perf.set(key, series);
   }
 
+  // Ensure expanded property exists (for series created before this feature)
+  if (series.expanded === undefined) {
+    series.expanded = true;
+  }
+
   series.samples.push(data.value);
-  if (series.samples.length > GRAPH_MAX_SAMPLES) {
+  const maxSamples = client.graphMaxSamples || GRAPH_MAX_SAMPLES;
+  if (series.samples.length > maxSamples) {
     series.samples.shift();
   }
 
-  // Update min/max
-  series.min = Math.min(series.min, data.value);
-  series.max = Math.max(series.max, data.value);
+  // Calculate min/max from visible samples only (not cumulative)
+  if (series.samples.length > 0) {
+    series.min = Math.min(...series.samples);
+    series.max = Math.max(...series.samples);
+  }
 
   // Smooth min/max (like graphview.cpp)
   const blend = 0.03;
@@ -1713,17 +1789,26 @@ function drawGraph(clientId) {
   const wrapper = client.panel.querySelector('.graph-canvas-wrapper');
   if (!canvas || !wrapper) return;
 
-  // Count visible series for lane assignment
+  // Count visible series for lane assignment (filter by channel visibility)
   const visibleSeries = [];
   client.perf.forEach((series, key) => {
-    if (series.visible && series.samples.length > 0) {
+    const channelInfo = client.channels.get(series.ch);
+    const channelVisible = channelInfo ? channelInfo.visible : true;
+    if (channelVisible && series.samples.length > 0) {
       visibleSeries.push({ key, series });
     }
   });
 
-  // Set canvas height based on number of series (80px per lane)
-  const laneHeight = 80;
-  const totalHeight = Math.max(80, visibleSeries.length * laneHeight);
+  // Set canvas height based on number of series (80px expanded, 20px collapsed)
+  const expandedLaneHeight = 80;
+  const collapsedLaneHeight = 20;
+  let totalHeight = 0;
+  visibleSeries.forEach(({ series }) => {
+    // Default to expanded if property doesn't exist
+    const isExpanded = series.expanded !== false;
+    totalHeight += isExpanded ? expandedLaneHeight : collapsedLaneHeight;
+  });
+  totalHeight = Math.max(80, totalHeight);
   const w = wrapper.clientWidth;
 
   if (canvas.width !== w || canvas.height !== totalHeight) {
@@ -1760,14 +1845,19 @@ function drawGraph(clientId) {
   const labelWidth = 140;
   const graphWidth = w - labelWidth - 10;
 
+  let currentY = 0;
   visibleSeries.forEach(({ key, series }, laneIndex) => {
     const samples = series.samples;
     const count = samples.length;
+    // Default to expanded if property doesn't exist
+    const isExpanded = series.expanded !== false;
+    const laneHeight = isExpanded ? expandedLaneHeight : collapsedLaneHeight;
 
     // Calculate lane bounds
-    const laneTop = laneIndex * laneHeight;
+    const laneTop = currentY;
     const laneCenter = laneTop + laneHeight / 2;
     const laneAmplitude = laneHeight * 0.38;
+    currentY += laneHeight;
 
     // Draw lane separator
     if (laneIndex > 0) {
@@ -1779,89 +1869,107 @@ function drawGraph(clientId) {
       ctx.stroke();
     }
 
-    // Calculate value range with padding (like graphview.cpp)
-    let minVal = series.smoothMin;
-    let maxVal = series.smoothMax;
-    const range = maxVal - minVal;
-
-    // Ensure minimum range
-    if (range < 0.001) {
-      const center = (minVal + maxVal) / 2;
-      minVal = center - 0.5;
-      maxVal = center + 0.5;
-    }
-
-    const valueRange = maxVal - minVal;
-    const currentVal = count > 0 ? samples[count - 1] : 0;
-
-    // Draw center line for this lane
-    ctx.strokeStyle = '#262626';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([3, 3]);
-    ctx.beginPath();
-    ctx.moveTo(0, laneCenter + 0.5);
-    ctx.lineTo(graphWidth, laneCenter + 0.5);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Draw min/max reference lines
-    ctx.strokeStyle = '#1a1a1a';
-    ctx.lineWidth = 1;
-    const topLine = laneTop + laneHeight * 0.1;
-    const botLine = laneTop + laneHeight * 0.9;
-    ctx.beginPath();
-    ctx.moveTo(0, topLine + 0.5);
-    ctx.lineTo(graphWidth, topLine + 0.5);
-    ctx.moveTo(0, botLine + 0.5);
-    ctx.lineTo(graphWidth, botLine + 0.5);
-    ctx.stroke();
-
-    // Draw label area background (right side)
+    // Draw label area background (right side) - always visible
     ctx.fillStyle = 'rgba(10,10,10,0.9)';
     ctx.fillRect(graphWidth + 5, laneTop + 2, labelWidth, laneHeight - 4);
 
-    // Draw series name and current value on same line (right side, left-justified)
     const labelX = graphWidth + 10;
-    ctx.font = '11px monospace';
-    ctx.textAlign = 'left';
-    ctx.fillStyle = series.color;
-    ctx.fillText(series.sub, labelX, laneTop + 18);
+    const currentVal = count > 0 ? samples[count - 1] : 0;
 
-    ctx.font = 'bold 14px monospace';
-    ctx.fillStyle = '#fff';
-    ctx.fillText(formatValue(currentVal), labelX, laneTop + 36);
-
-    // Draw min/max on second row
+    // Draw toggle button (clickable area on left side of label)
+    const toggleX = graphWidth + 7;
+    const toggleY = laneTop + laneHeight / 2;
     ctx.font = '10px monospace';
-    ctx.fillStyle = '#6a6';
-    ctx.fillText('min: ' + formatValue(minVal), labelX, laneTop + 52);
-    ctx.fillStyle = '#a66';
-    ctx.fillText('max: ' + formatValue(maxVal), labelX, laneTop + 66);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#888';
+    ctx.fillText(isExpanded ? '[-]' : '[+]', toggleX, toggleY + 3);
 
-    if (count < 2) return;
+    // Draw series name
+    ctx.font = '11px monospace';
+    ctx.fillStyle = series.color;
+    ctx.fillText(series.sub, labelX + 20, isExpanded ? laneTop + 18 : laneTop + 14);
 
-    // Draw line - RIGHT JUSTIFIED (latest on right, grows to left)
-    ctx.strokeStyle = series.color;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
+    if (isExpanded) {
+      // EXPANDED MODE: Draw full graph
+      // Calculate value range with padding (like graphview.cpp)
+      let minVal = series.smoothMin;
+      let maxVal = series.smoothMax;
+      const range = maxVal - minVal;
 
-    const valueCenter = (minVal + maxVal) / 2;
-
-    for (let i = 0; i < count; i++) {
-      // Right-justify: offset so rightmost sample is at x = graphWidth
-      const xOffset = GRAPH_MAX_SAMPLES - count;
-      const x = ((i + xOffset) / (GRAPH_MAX_SAMPLES - 1)) * graphWidth;
-
-      const normalized = (samples[i] - valueCenter) / valueRange;  // -0.5 to 0.5
-      const y = laneCenter - normalized * laneAmplitude * 2;
-
-      if (i === 0) {
-        ctx.moveTo(x, y);
-      } else {
-        ctx.lineTo(x, y);
+      // Ensure minimum range
+      if (range < 0.001) {
+        const center = (minVal + maxVal) / 2;
+        minVal = center - 0.5;
+        maxVal = center + 0.5;
       }
+
+      const valueRange = maxVal - minVal;
+
+      // Draw center line for this lane
+      ctx.strokeStyle = '#262626';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(0, laneCenter + 0.5);
+      ctx.lineTo(graphWidth, laneCenter + 0.5);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Draw min/max reference lines
+      ctx.strokeStyle = '#1a1a1a';
+      ctx.lineWidth = 1;
+      const topLine = laneTop + laneHeight * 0.1;
+      const botLine = laneTop + laneHeight * 0.9;
+      ctx.beginPath();
+      ctx.moveTo(0, topLine + 0.5);
+      ctx.lineTo(graphWidth, topLine + 0.5);
+      ctx.moveTo(0, botLine + 0.5);
+      ctx.lineTo(graphWidth, botLine + 0.5);
+      ctx.stroke();
+
+      // Draw current value
+      ctx.font = 'bold 14px monospace';
+      ctx.fillStyle = '#fff';
+      ctx.fillText(formatValue(currentVal), labelX + 20, laneTop + 36);
+
+      // Draw min/max on second row
+      ctx.font = '10px monospace';
+      ctx.fillStyle = '#6a6';
+      ctx.fillText('min: ' + formatValue(minVal), labelX + 20, laneTop + 52);
+      ctx.fillStyle = '#a66';
+      ctx.fillText('max: ' + formatValue(maxVal), labelX + 20, laneTop + 66);
+
+      if (count >= 2) {
+        // Draw line - RIGHT JUSTIFIED (latest on right, grows to left)
+        ctx.strokeStyle = series.color;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+
+        const valueCenter = (minVal + maxVal) / 2;
+        const maxSamples = client.graphMaxSamples || GRAPH_MAX_SAMPLES;
+
+        for (let i = 0; i < count; i++) {
+          // Right-justify: offset so rightmost sample is at x = graphWidth
+          const xOffset = maxSamples - count;
+          const x = ((i + xOffset) / (maxSamples - 1)) * graphWidth;
+
+          const normalized = (samples[i] - valueCenter) / valueRange;  // -0.5 to 0.5
+          const y = laneCenter - normalized * laneAmplitude * 2;
+
+          if (i === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        }
+        ctx.stroke();
+      }
+    } else {
+      // COLLAPSED MODE: Just show name and current value
+      ctx.font = '10px monospace';
+      ctx.fillStyle = '#aaa';
+      ctx.fillText(formatValue(currentVal), labelX + 80, laneTop + 14);
     }
-    ctx.stroke();
   });
 }
 

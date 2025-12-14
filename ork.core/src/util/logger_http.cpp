@@ -113,7 +113,6 @@ struct HttpBackendImpl {
   void stop() {
     if (_running) {
       _running = false;
-      OrkAssert(false);
       // Send disconnect message before shutting down
       sendControl("disconnect");
 

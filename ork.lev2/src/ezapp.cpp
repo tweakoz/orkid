@@ -13,6 +13,7 @@
 #include <ork/lev2/aud/stream/audiodevice_stream.h>
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/profiling.inl>
+#include <unistd.h>
 #if defined(__linux__)
 #include <ork/lev2/drm/drm_types.h>
 #include <ork/lev2/drm/ctx_drm.h>
@@ -74,6 +75,12 @@ EzAppContext::EzAppContext(appinitdata_ptr_t initdata)
   ork::lev2::initModule(initdata);
   initdata->finalizeInitialization();
   /////////////////////////////////////////////
+  if(auto e = getenv("ORKID_LOGGER_BACKEND")) {
+    std::string backend_str = e;
+    if(backend_str.find("HTTP")!=std::string::npos) {
+      logchan_ezapp->_perf_interval = 0.1f;
+    }
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 EzAppContext::~EzAppContext() {
@@ -526,6 +533,9 @@ void OrkEzApp::_mainThreadLoopBegin() {
       // FREERUNNING MODE: Wall clock, existing behavior
       ////////////////////////////////////////
       double step = 1.0 / _initdata->_target_ups;
+      double max_update_time = 0.0;  // Track max update time in current window (seconds)
+      ork::Timer update_timer;
+
       while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
 
         EASY_BLOCK("UpdateIteration");
@@ -539,6 +549,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
           bool do_update = bool(_mainWindow->_onUpdate);
 
           if (do_update) {
+            update_timer.Start();  // Start timing this update
             _update_data->_dt = step;
             _update_data->_abstime += step;
             _update_data->_counter = _update_count.load();
@@ -557,15 +568,21 @@ void OrkEzApp::_mainThreadLoopBegin() {
             }
             /////////////////////////////
             /////////////////////////////
+            double update_duration = update_timer.SecsSinceStart();
+            if (update_duration > max_update_time) {
+              max_update_time = update_duration;
+            }
             state_numiters += 1.0;
           }
 
           _update_timeaccumulator -= step;
           stats_timeaccum += step;
-          if (_initdata->_log_freerun_ups && stats_timeaccum >= logchan_ezapp->_status_interval) {
-            logchan_ezapp->status("FREERUN_UPS", "<%g>", state_numiters / stats_timeaccum);
+          if (_initdata->_log_freerun_ups && stats_timeaccum >= logchan_ezapp->_perf_interval) {
+            logchan_ezapp->perfItem("FREERUN_UPS", float(state_numiters / stats_timeaccum));
+            logchan_ezapp->perfItem("FREERUN_MAXU", float(max_update_time * 1000.0));  // Convert to msec
             stats_timeaccum = 0.0;
             state_numiters  = 0.0;
+            max_update_time = 0.0;
           }
         }
         opq::updateSerialQueue()->Process();
@@ -799,21 +816,30 @@ int OrkEzApp::mainThreadLoop() {
   ork::Timer fps_timer;
   fps_timer.Start();
   double frame_count = 0.0;
+  double max_frame_time = 0.0;  // Track max frame time in current window (seconds)
+  ork::Timer frame_timer;
 
   if (_mainWindow) {
     auto ctx = _mainWindow->_ctqt;
     if (_initdata->_freerunning) {
       while (ctx->_runstate == 1) {
+        frame_timer.Start();  // Start timing this frame
         ctx->_runloopIter(true);
+        double frame_duration = frame_timer.SecsSinceStart();
+        if (frame_duration > max_frame_time) {
+          max_frame_time = frame_duration;
+        }
 
         // Track freerun FPS
         if (_initdata->_log_freerun_fps) {
           frame_count += 1.0;
           double elapsed = fps_timer.SecsSinceStart();
-          if (elapsed >= logchan_ezapp->_status_interval) {
+          if (elapsed >= logchan_ezapp->_perf_interval) {
             double real_fps = frame_count / elapsed;
-            logchan_ezapp->status("FREERUN_FPS", "<%g>", real_fps);
+            logchan_ezapp->perfItem("FREERUN_FPS", float(real_fps));
+            logchan_ezapp->perfItem("FREERUN_MAXF", float(max_frame_time * 1000.0));  // Convert to msec
             frame_count = 0.0;
+            max_frame_time = 0.0;
             fps_timer.Start();
           }
         }
