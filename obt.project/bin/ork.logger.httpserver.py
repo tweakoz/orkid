@@ -73,11 +73,23 @@ body {
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
-#client-bar {
+#client-bar, #merged-bar {
   display: flex;
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+}
+#merged-bar {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #333;
+}
+#merged-bar .section-title {
+  color: #8af;
+}
+#merged-bar .client-toggle.active {
+  background: #1a2a3a;
+  border-color: #4a8;
 }
 .section-title {
   font-weight: 600;
@@ -487,9 +499,12 @@ body {
 .entry .ts { color: #555; margin-right: 8px; font-variant-numeric: tabular-nums; }
 .entry .ch { font-weight: 600; margin-right: 8px; }
 .entry .sub { color: #777; margin-right: 6px; }
+.entry .client-src { color: #68a; margin-right: 8px; font-size: 10px; opacity: 0.8; }
 .entry.warn { background: #1a1500; border-left-color: #b58900 !important; }
 .entry.error { background: #1a0a0a; border-left-color: #dc322f !important; }
 .hidden { display: none !important; }
+.merged-panel .panel-title .app-name { color: #8af; }
+.merged-panel .panel-title::before { content: "MERGED: "; color: #68a; font-size: 10px; }
 .panel-footer {
   background: var(--controls-bg);
   padding: 4px 10px;
@@ -522,6 +537,13 @@ body {
     <button class="btn" id="btn-select-all">Select All</button>
     <button class="btn" id="btn-select-none">Select None</button>
   </div>
+  <div id="merged-bar">
+    <span class="section-title">Merged:</span>
+    <span id="merged-list"></span>
+    <span id="no-merged-clients" style="display:none">No clients connected</span>
+    <button class="btn" id="btn-merged-all">Select All</button>
+    <button class="btn" id="btn-merged-none">Select None</button>
+  </div>
 </div>
 <div id="panels-container">
   <div id="empty-state">Select clients to view their logs</div>
@@ -531,10 +553,25 @@ body {
 // State
 const clients = new Map();  // clientId -> {app, pid, alive, channels, entries, status, perf, panel}
 const selectedClients = new Set();
+const mergedClients = new Set();
+
+// Merged view state
+let mergedPanel = null;
+let mergedState = {
+  channels: new Map(),  // flyweighted channels across all merged clients
+  entries: [],          // time-sorted entries from all merged clients
+  includeRegex: null,
+  excludeRegex: null,
+  autoScroll: true,
+  statusCollapsed: true,
+  graphCollapsed: true
+};
 
 // DOM elements
 const clientListEl = document.getElementById('client-list');
 const noClientsEl = document.getElementById('no-clients');
+const mergedListEl = document.getElementById('merged-list');
+const noMergedEl = document.getElementById('no-merged-clients');
 const panelsContainer = document.getElementById('panels-container');
 
 // Graph constants
@@ -692,8 +729,10 @@ function pulseHeartbeat(clientId) {
 
 function updateClientList() {
   clientListEl.innerHTML = '';
+  mergedListEl.innerHTML = '';
   const hasClients = clients.size > 0;
   noClientsEl.style.display = hasClients ? 'none' : 'inline';
+  noMergedEl.style.display = hasClients ? 'none' : 'inline';
 
   // Sort clients by app name (case insensitive alphanumeric)
   const sortedClients = [...clients.entries()].sort((a, b) => {
@@ -701,6 +740,7 @@ function updateClientList() {
   });
 
   sortedClients.forEach(([clientId, client]) => {
+    // Client row toggle
     const label = document.createElement('label');
     label.className = 'client-toggle' + (selectedClients.has(clientId) ? ' active' : '') + (client.alive ? '' : ' dead');
 
@@ -726,6 +766,33 @@ function updateClientList() {
     label.appendChild(nameSpan);
     label.appendChild(pidSpan);
     clientListEl.appendChild(label);
+
+    // Merged row toggle
+    const mergedLabel = document.createElement('label');
+    mergedLabel.className = 'client-toggle' + (mergedClients.has(clientId) ? ' active' : '') + (client.alive ? '' : ' dead');
+
+    const mergedCb = document.createElement('input');
+    mergedCb.type = 'checkbox';
+    mergedCb.checked = mergedClients.has(clientId);
+    mergedCb.onchange = () => toggleMergedClient(clientId, mergedCb.checked);
+
+    const mergedDot = document.createElement('span');
+    mergedDot.className = 'live-dot' + (client.alive ? '' : ' dead');
+    mergedDot.dataset.clientId = clientId;
+
+    const mergedNameSpan = document.createElement('span');
+    mergedNameSpan.className = 'client-name';
+    mergedNameSpan.textContent = client.app;
+
+    const mergedPidSpan = document.createElement('span');
+    mergedPidSpan.className = 'client-pid';
+    mergedPidSpan.textContent = `[${client.pid}]`;
+
+    mergedLabel.appendChild(mergedCb);
+    mergedLabel.appendChild(mergedDot);
+    mergedLabel.appendChild(mergedNameSpan);
+    mergedLabel.appendChild(mergedPidSpan);
+    mergedListEl.appendChild(mergedLabel);
   });
 }
 
@@ -749,6 +816,29 @@ function selectNoClients() {
   selectedClients.clear();
   updateClientList();
   updatePanels();
+}
+
+// Merged client functions
+function toggleMergedClient(clientId, selected) {
+  if (selected) {
+    mergedClients.add(clientId);
+  } else {
+    mergedClients.delete(clientId);
+  }
+  updateClientList();
+  updateMergedPanel();
+}
+
+function selectAllMerged() {
+  clients.forEach((_, clientId) => mergedClients.add(clientId));
+  updateClientList();
+  updateMergedPanel();
+}
+
+function selectNoMerged() {
+  mergedClients.clear();
+  updateClientList();
+  updateMergedPanel();
 }
 
 // Panel management
@@ -1115,6 +1205,347 @@ function compileRegex(pattern, inputEl) {
     return null;
   }
 }
+
+// ===== MERGED PANEL FUNCTIONS =====
+
+function updateMergedPanel() {
+  // Remove existing merged panel if any
+  if (mergedPanel) {
+    mergedPanel.remove();
+    mergedPanel = null;
+  }
+
+  if (mergedClients.size === 0) {
+    return;
+  }
+
+  // Rebuild merged state
+  rebuildMergedState();
+
+  // Create merged panel
+  mergedPanel = createMergedPanel();
+
+  // Add to panels container (before other panels or as single panel)
+  const emptyState = panelsContainer.querySelector('#empty-state');
+  if (emptyState && selectedClients.size === 0) {
+    emptyState.remove();
+  }
+
+  // Insert merged panel at the top
+  panelsContainer.insertBefore(mergedPanel, panelsContainer.firstChild);
+
+  // Update layout if we have both merged and regular panels
+  updateMergedLayout();
+
+  // Render initial content
+  updateMergedChannelToggles();
+  renderMergedEntries();
+}
+
+function rebuildMergedState() {
+  // Rebuild flyweighted channels from all merged clients
+  mergedState.channels.clear();
+  mergedState.entries = [];
+
+  mergedClients.forEach(clientId => {
+    const client = clients.get(clientId);
+    if (!client) return;
+
+    // Merge channels (flyweight - same channel name shares visibility)
+    client.channels.forEach((info, ch) => {
+      if (!mergedState.channels.has(ch)) {
+        mergedState.channels.set(ch, { visible: true, color: info.color });
+      }
+    });
+
+    // Collect entries with client source info
+    client.entries.forEach(entry => {
+      mergedState.entries.push({
+        ...entry,
+        clientId: clientId,
+        clientApp: client.app,
+        clientPid: client.pid
+      });
+
+      // Also ensure channel exists
+      if (!mergedState.channels.has(entry.ch)) {
+        mergedState.channels.set(entry.ch, { visible: true, color: entry.color || '#888' });
+      }
+    });
+  });
+
+  // Sort entries by timestamp
+  mergedState.entries.sort((a, b) => {
+    return a.ts.localeCompare(b.ts);
+  });
+
+  // Limit total entries
+  if (mergedState.entries.length > 20000) {
+    mergedState.entries = mergedState.entries.slice(-20000);
+  }
+}
+
+function createMergedPanel() {
+  const panel = document.createElement('div');
+  panel.className = 'panel merged-panel';
+  panel.dataset.merged = 'true';
+
+  // Build client names list
+  const clientNames = [...mergedClients].map(id => {
+    const c = clients.get(id);
+    return c ? `${c.app}[${c.pid}]` : id;
+  }).join(', ');
+
+  panel.innerHTML = `
+    <div class="panel-header">
+      <div class="panel-title">
+        <span class="app-name">${esc(clientNames)}</span>
+      </div>
+      <div class="panel-controls">
+        <div class="channel-toggles" data-merged="true"></div>
+        <div class="controls-row">
+          <button class="btn btn-ch-all">All</button>
+          <button class="btn btn-ch-none">None</button>
+          <div class="filter-group">
+            <span class="filter-label">Inc:</span>
+            <input type="text" class="filter-input filter-include" placeholder="regex">
+          </div>
+          <div class="filter-group">
+            <span class="filter-label">Exc:</span>
+            <input type="text" class="filter-input filter-exclude" placeholder="regex">
+          </div>
+          <button class="btn btn-clear">Clear</button>
+        </div>
+      </div>
+    </div>
+    <div class="panel-content">
+      <div class="log-section">
+        <div class="panel-log"></div>
+      </div>
+    </div>
+    <div class="panel-footer">
+      <span class="entry-count">0 / 0</span>
+      <label style="cursor:pointer"><input type="checkbox" class="auto-scroll" checked> Auto-scroll</label>
+    </div>
+  `;
+
+  // Setup filter inputs
+  const includeInput = panel.querySelector('.filter-include');
+  const excludeInput = panel.querySelector('.filter-exclude');
+
+  let filterTimeout;
+  const onFilterChange = () => {
+    clearTimeout(filterTimeout);
+    filterTimeout = setTimeout(() => {
+      mergedState.includeRegex = compileRegex(includeInput.value, includeInput);
+      mergedState.excludeRegex = compileRegex(excludeInput.value, excludeInput);
+      applyMergedFilters();
+    }, 150);
+  };
+
+  includeInput.addEventListener('input', onFilterChange);
+  excludeInput.addEventListener('input', onFilterChange);
+
+  // Setup clear button
+  panel.querySelector('.btn-clear').onclick = () => {
+    mergedState.entries = [];
+    renderMergedEntries();
+  };
+
+  // Setup channel all/none buttons
+  panel.querySelector('.btn-ch-all').onclick = () => {
+    mergedState.channels.forEach(info => { info.visible = true; });
+    updateMergedChannelToggles();
+    applyMergedFilters();
+  };
+  panel.querySelector('.btn-ch-none').onclick = () => {
+    mergedState.channels.forEach(info => { info.visible = false; });
+    updateMergedChannelToggles();
+    applyMergedFilters();
+  };
+
+  // Setup auto-scroll checkbox
+  panel.querySelector('.auto-scroll').onchange = (e) => {
+    mergedState.autoScroll = e.target.checked;
+  };
+
+  return panel;
+}
+
+function updateMergedLayout() {
+  // If we have both merged and regular panels, adjust grid
+  const regularCount = selectedClients.size;
+  const hasMerged = mergedClients.size > 0 && mergedPanel;
+
+  if (!hasMerged) return;
+
+  if (regularCount === 0) {
+    // Only merged panel
+    panelsContainer.style.gridTemplateColumns = '1fr';
+    panelsContainer.style.gridTemplateRows = '1fr';
+    if (mergedPanel) {
+      mergedPanel.style.gridColumn = '1';
+      mergedPanel.style.gridRow = '1';
+    }
+  }
+  // If there are regular panels, updatePanels() will handle layout
+  // and merged panel takes full width at top
+}
+
+function updateMergedChannelToggles() {
+  if (!mergedPanel) return;
+
+  const container = mergedPanel.querySelector('.channel-toggles');
+  container.innerHTML = '';
+
+  // Sort channels alphabetically
+  const sortedChannels = Array.from(mergedState.channels.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+
+  sortedChannels.forEach(([ch, info]) => {
+    const colors = getContrastColors(info.color);
+
+    const label = document.createElement('label');
+    label.className = 'channel-toggle';
+    label.style.color = colors.text;
+    label.style.background = colors.bg;
+    label.style.borderColor = colors.border;
+
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = info.visible;
+    const chanColor = info.color || '#888';
+    cb.style.background = chanColor;
+    cb.style.border = '1px solid ' + colors.border;
+    const {r, g, b} = hexToRgb(chanColor);
+    const chanLum = getLuminance(r, g, b);
+    cb.style.color = chanLum > 0.4 ? '#000' : '#fff';
+    cb.onchange = () => {
+      info.visible = cb.checked;
+      applyMergedFilters();
+    };
+
+    label.appendChild(cb);
+    label.appendChild(document.createTextNode(ch));
+    container.appendChild(label);
+  });
+}
+
+function matchesMergedFilter(entry) {
+  const text = entry.ch + ' ' + (entry.sub || '') + ' ' + entry.msg + ' ' + entry.clientApp;
+  if (mergedState.includeRegex && !mergedState.includeRegex.test(text)) return false;
+  if (mergedState.excludeRegex && mergedState.excludeRegex.test(text)) return false;
+  return true;
+}
+
+function applyMergedFilters() {
+  if (!mergedPanel) return;
+
+  const logDiv = mergedPanel.querySelector('.panel-log');
+  const entries = logDiv.querySelectorAll('.entry');
+  let visible = 0;
+
+  entries.forEach((el, idx) => {
+    const entry = mergedState.entries[idx];
+    if (!entry) return;
+    const channelInfo = mergedState.channels.get(entry.ch);
+    const channelVisible = channelInfo ? channelInfo.visible : true;
+    const filterMatch = matchesMergedFilter(entry);
+    const hidden = !channelVisible || !filterMatch;
+    el.classList.toggle('hidden', hidden);
+    if (!hidden) visible++;
+  });
+
+  mergedPanel.querySelector('.entry-count').textContent = `${visible} / ${mergedState.entries.length}`;
+}
+
+function renderMergedEntries() {
+  if (!mergedPanel) return;
+
+  const logDiv = mergedPanel.querySelector('.panel-log');
+  logDiv.innerHTML = '';
+
+  let visible = 0;
+  mergedState.entries.forEach(entry => {
+    const div = createMergedEntryElement(entry);
+    logDiv.appendChild(div);
+    if (!div.classList.contains('hidden')) visible++;
+  });
+
+  mergedPanel.querySelector('.entry-count').textContent = `${visible} / ${mergedState.entries.length}`;
+}
+
+function createMergedEntryElement(entry) {
+  const div = document.createElement('div');
+  let cls = 'entry';
+  if (entry.level === 'warn') cls += ' warn';
+  if (entry.level === 'error') cls += ' error';
+  div.className = cls;
+  div.style.borderLeftColor = entry.color || '#888';
+
+  let html = `<span class="ts">${esc(entry.ts)}</span>`;
+  html += `<span class="client-src">${esc(entry.clientApp)}[${entry.clientPid}]</span>`;
+  html += `<span class="ch" style="color:${entry.color || '#888'}">[${esc(entry.ch)}]</span>`;
+  if (entry.sub) html += `<span class="sub">${esc(entry.sub)}:</span>`;
+  html += esc(entry.msg);
+  div.innerHTML = html;
+
+  const channelInfo = mergedState.channels.get(entry.ch);
+  const channelVisible = channelInfo ? channelInfo.visible : true;
+  const filterMatch = matchesMergedFilter(entry);
+  if (!channelVisible || !filterMatch) div.classList.add('hidden');
+
+  return div;
+}
+
+function addEntryToMerged(clientId, entry) {
+  if (!mergedClients.has(clientId) || !mergedPanel) return;
+
+  const client = clients.get(clientId);
+  if (!client) return;
+
+  // Create merged entry
+  const mergedEntry = {
+    ...entry,
+    clientId: clientId,
+    clientApp: client.app,
+    clientPid: client.pid
+  };
+
+  // Add to merged entries (already sorted since new entries are latest)
+  mergedState.entries.push(mergedEntry);
+
+  // Limit entries
+  if (mergedState.entries.length > 20000) {
+    mergedState.entries.shift();
+  }
+
+  // Ensure channel exists
+  if (!mergedState.channels.has(entry.ch)) {
+    mergedState.channels.set(entry.ch, { visible: true, color: entry.color || '#888' });
+    updateMergedChannelToggles();
+  }
+
+  // Add to DOM
+  const logDiv = mergedPanel.querySelector('.panel-log');
+  const div = createMergedEntryElement(mergedEntry);
+  logDiv.appendChild(div);
+
+  // Remove oldest if too many
+  if (logDiv.children.length > 20000) {
+    logDiv.removeChild(logDiv.firstChild);
+  }
+
+  const isVisible = !div.classList.contains('hidden');
+  const countSpan = mergedPanel.querySelector('.entry-count');
+  const [vis, tot] = countSpan.textContent.split(' / ').map(s => parseInt(s));
+  countSpan.textContent = `${isVisible ? vis + 1 : vis} / ${tot + 1}`;
+
+  if (mergedState.autoScroll && isVisible) {
+    logDiv.scrollTop = logDiv.scrollHeight;
+  }
+}
+
+// ===== END MERGED PANEL FUNCTIONS =====
 
 function rebuildChannelsFromData(clientId) {
   const client = clients.get(clientId);
@@ -1588,11 +2019,16 @@ function addEntry(clientId, entry) {
       logDiv.scrollTop = logDiv.scrollHeight;
     }
   }
+
+  // Also add to merged panel if client is in merged view
+  addEntryToMerged(clientId, entry);
 }
 
 // Event handlers
 document.getElementById('btn-select-all').onclick = selectAllClients;
 document.getElementById('btn-select-none').onclick = selectNoClients;
+document.getElementById('btn-merged-all').onclick = selectAllMerged;
+document.getElementById('btn-merged-none').onclick = selectNoMerged;
 
 // SSE connection
 const evtSource = new EventSource('/events');

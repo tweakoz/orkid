@@ -226,6 +226,11 @@ struct HttpBackendImpl {
     return std::string(buf);
   }
 
+  // TODO: Allow overriding this method at the HttpBackend level via a lambda
+  // (e.g., std::function<std::string()> _timestamp_fn) so users can provide
+  // a pre-synchronized timestamp source for distributed/multi-machine logging.
+  // This would enable proper time-sorted merged views when clients run on
+  // different machines with potentially unsynchronized clocks.
   static std::string getTimestamp() {
     auto now = std::chrono::system_clock::now();
     auto time = std::chrono::system_clock::to_time_t(now);
