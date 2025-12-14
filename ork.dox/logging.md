@@ -393,17 +393,8 @@ The HTML backend creates an interactive log viewer:
 - **Crash Resilient**: Uses inline `<script>` tags, tolerant of incomplete writes
 
 ### Architecture
-```
-┌─────────────────────────────────────────────────────────┐
-│ HTML Header (CSS + JS + E() function)                   │
-├─────────────────────────────────────────────────────────┤
-│ <script>E({"ts":"...","ch":"AUDIO","msg":"..."})</script>
-│ <script>E({"ts":"...","ch":"RENDER","msg":"..."})</script>
-│ <script>E({"ts":"...","ch":"AUDIO","msg":"..."})</script>
-│ ...                                                      │
-│ (incomplete tags at EOF are ignored by browsers)         │
-└─────────────────────────────────────────────────────────┘
-```
+
+![HTML Backend Structure](logging_html_structure.svg)
 
 ### Viewing Logs
 Simply open the HTML file in any browser:
@@ -573,27 +564,7 @@ The iOS UI backend provides a native log viewer for iOS applications using UIKit
 
 ### Architecture
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  iOS Application                                             │
-│  ┌───────────────────────────────────────────────────────┐  │
-│  │  Main View Controller                                  │  │
-│  │  ┌─────────────────────────────────────────────────┐  │  │
-│  │  │  Channel Buttons (dynamic)                       │  │  │
-│  │  │  [AUDIO] [RENDER] [NETWORK] ...                 │  │  │
-│  │  └─────────────────────────────────────────────────┘  │  │
-│  │  ┌─────────────────────────────────────────────────┐  │  │
-│  │  │  OrkLogChannelViewController                     │  │  │
-│  │  │  ┌─────────────────────────────────────────────┐│  │  │
-│  │  │  │  UITextView (Menlo 12pt)                    ││  │  │
-│  │  │  │  - Channel-colored text                     ││  │  │
-│  │  │  │  - Darkened channel-color background        ││  │  │
-│  │  │  │  - Auto-scroll enabled                      ││  │  │
-│  │  │  └─────────────────────────────────────────────┘│  │  │
-│  │  └─────────────────────────────────────────────────┘  │  │
-│  └───────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-```
+![iOS UI Backend Architecture](logging_ios_ui_architecture.svg)
 
 ### Components
 

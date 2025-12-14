@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="700" height="320" viewBox="0 0 700 320" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="700" height="320" fill="#1a1a1a"/>
+
+  <!-- Title -->
+  <text x="350" y="25" font-family="monospace" font-size="14" fill="white" text-anchor="middle" font-weight="bold">HTML Backend File Structure</text>
+
+  <!-- Main container -->
+  <rect x="50" y="45" width="600" height="250" rx="6" fill="#0d0d0d" stroke="#444" stroke-width="2"/>
+
+  <!-- Header section -->
+  <rect x="50" y="45" width="600" height="40" rx="6" fill="#1a2a3a" stroke="#3a5a7a" stroke-width="1"/>
+  <rect x="50" y="75" width="600" height="10" fill="#0d0d0d"/>
+  <text x="350" y="72" font-family="monospace" font-size="12" fill="#8cf" text-anchor="middle" font-weight="bold">HTML Header (CSS + JS + E() function)</text>
+
+  <!-- Divider line -->
+  <line x1="50" y1="85" x2="650" y2="85" stroke="#444" stroke-width="1"/>
+
+  <!-- Script entries -->
+  <g font-family="monospace" font-size="11">
+    <!-- Entry 1 -->
+    <text x="70" y="110" fill="#666">&lt;script&gt;</text>
+    <text x="140" y="110" fill="#8f8">E</text>
+    <text x="150" y="110" fill="#888">(</text>
+    <text x="158" y="110" fill="#fa8">{"ts":"12:34:56","ch":"</text>
+    <text x="350" y="110" fill="#4f8">AUDIO</text>
+    <text x="400" y="110" fill="#fa8">","msg":"..."}</text>
+    <text x="550" y="110" fill="#888">)</text>
+    <text x="558" y="110" fill="#666">&lt;/script&gt;</text>
+
+    <!-- Entry 2 -->
+    <text x="70" y="135" fill="#666">&lt;script&gt;</text>
+    <text x="140" y="135" fill="#8f8">E</text>
+    <text x="150" y="135" fill="#888">(</text>
+    <text x="158" y="135" fill="#fa8">{"ts":"12:34:57","ch":"</text>
+    <text x="350" y="135" fill="#f88">RENDER</text>
+    <text x="406" y="135" fill="#fa8">","msg":"..."}</text>
+    <text x="550" y="135" fill="#888">)</text>
+    <text x="558" y="135" fill="#666">&lt;/script&gt;</text>
+
+    <!-- Entry 3 -->
+    <text x="70" y="160" fill="#666">&lt;script&gt;</text>
+    <text x="140" y="160" fill="#8f8">E</text>
+    <text x="150" y="160" fill="#888">(</text>
+    <text x="158" y="160" fill="#fa8">{"ts":"12:34:58","ch":"</text>
+    <text x="350" y="160" fill="#88f">NETWORK</text>
+    <text x="416" y="160" fill="#fa8">","msg":"..."}</text>
+    <text x="550" y="160" fill="#888">)</text>
+    <text x="558" y="160" fill="#666">&lt;/script&gt;</text>
+
+    <!-- Entry 4 -->
+    <text x="70" y="185" fill="#666">&lt;script&gt;</text>
+    <text x="140" y="185" fill="#8f8">E</text>
+    <text x="150" y="185" fill="#888">(</text>
+    <text x="158" y="185" fill="#fa8">{"ts":"12:34:59","ch":"</text>
+    <text x="350" y="185" fill="#4f8">AUDIO</text>
+    <text x="400" y="185" fill="#fa8">","msg":"..."}</text>
+    <text x="550" y="185" fill="#888">)</text>
+    <text x="558" y="185" fill="#666">&lt;/script&gt;</text>
+
+    <!-- Ellipsis -->
+    <text x="350" y="215" fill="#555" text-anchor="middle">...</text>
+  </g>
+
+  <!-- Footer note -->
+  <rect x="50" y="235" width="600" height="60" rx="0" fill="#1a1a1a" stroke="none"/>
+  <rect x="50" y="235" width="600" height="1" fill="#333"/>
+  <text x="350" y="260" font-family="monospace" font-size="10" fill="#666" text-anchor="middle">(incomplete tags at EOF are ignored by browsers)</text>
+  <text x="350" y="280" font-family="monospace" font-size="10" fill="#555" text-anchor="middle">No closing tags required - crash resilient design</text>
+
+  <!-- Corner radius fix for bottom -->
+  <rect x="50" y="289" width="600" height="6" rx="0" ry="0" fill="#0d0d0d"/>
+  <rect x="50" y="289" width="600" height="6" rx="6" fill="#0d0d0d" stroke="#444" stroke-width="2" clip-path="url(#bottomClip)"/>
+</svg>
