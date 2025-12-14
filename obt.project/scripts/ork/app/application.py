@@ -306,7 +306,7 @@ from orkengine.core import CrcString
 
 class ComponentizedApplication(object):
 
-  def __init__(self):
+  def __init__(self,lui="none"):
     self.app_components = {}
     self.components_sorted = []
     self.absolutetime = 0.0
@@ -318,6 +318,12 @@ class ComponentizedApplication(object):
       self.ezapp.signalExit()
 
     signal.signal(signal.SIGINT, onCtrlC)
+    
+    if lui == "yes":
+      from ork.app.loggerui import LoggerUIComponent
+      # enable logger UI component by if not overridden off by env var
+      if os.environ.get("ORKID_LOGGER_BACKEND","") == "":
+        self.LUI = self.addComponent("loggerui", LoggerUIComponent, filter_regex=[".*"])
 
   ##############################################
   # add an application component

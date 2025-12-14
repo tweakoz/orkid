@@ -30,12 +30,11 @@ statedebug = args["stateDebugger"]
 class SpotlightApp(ComponentizedApplication):
 
   def __init__(self):
-    super().__init__()
+    super().__init__(lui="yes")
     self.SGC = self.addComponent("std_scenegraph", 
                                  StandardSceneGraphComponent, 
                                  grid_variant="_V4",
                                  eye=vec3(0,12,15))
-    self.LUI = self.addComponent("loggerui", LoggerUIComponent, filter_regex=[".*"]) 
     self.createEzApp(name="RenderTestSpotLightRigidModel", ssaa=0, fullscreen=True, fsmouse=True)
 
   ##############################################

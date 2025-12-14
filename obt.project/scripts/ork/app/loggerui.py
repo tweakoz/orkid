@@ -37,6 +37,7 @@ Usage:
             )
 """
 
+import os
 from orkengine.core import vec3, vec4, logger
 from orkengine import lev2
 from ork.app.application import ApplicationComponent
@@ -69,6 +70,7 @@ class LoggerUIComponent(ApplicationComponent):
         Note: Logger is always rendered as an overlay. Toggle visibility with ` key (handled by C++).
         """
         super().__init__()
+        
 
         # Normalize filter_regex to list
         if filter_regex is None:
@@ -90,6 +92,7 @@ class LoggerUIComponent(ApplicationComponent):
     ##############################################
 
     def _onEzAppCreated(self, app, ezapp):
+        
         """Early initialization - create backend, widget, and set overlay before enableUiDraw()"""
         # Create backend and set on global logger
         if not self.logger_backend:
