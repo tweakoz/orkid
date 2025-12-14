@@ -486,6 +486,11 @@ void CtxGLFW::Show() {
         global->_glfwWindow // sharegroup
     );
 
+    // Update global appinitdata for HTTP logger backend
+    if (gappinitdata && gappinitdata != _appinitdata) {
+      gappinitdata->_application_name = _appinitdata->_application_name;
+    }
+
     OrkAssert(_glfwWindow != nullptr);
 
     if (not _appinitdata->_offscreen) {

@@ -21,6 +21,9 @@ int desired_framesize = 1024; // audio framesize from environment or command lin
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 static logchannel_ptr_t logchan_APP = logger()->configureChannel("APPLICATION",fvec3(0.9,0.6,0.2),true);
+
+// Global application init data - used by various subsystems
+appinitdata_ptr_t gappinitdata = nullptr;
 ///////////////////////////////////////////////////////////////////////////////
 AppInitData::AppInitData(int argc, char** argv, char** envp) {
   _argc             = argc;

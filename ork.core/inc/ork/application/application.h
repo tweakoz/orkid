@@ -34,6 +34,9 @@ struct AppInitData;
 using appinitdata_ptr_t = std::shared_ptr<AppInitData>;
 using appinitdata_wkptr_t = std::weak_ptr<AppInitData>;
 
+// Global app init data - set during module initialization
+extern appinitdata_ptr_t gappinitdata;
+
 #if !defined(ORK_IOS)
 namespace po = ::boost::program_options;
 #else

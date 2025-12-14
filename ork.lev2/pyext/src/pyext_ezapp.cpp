@@ -101,13 +101,20 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
           [type_codec](py::object appinstance,py::kwargs kwargs) { //
             ork::genviron.init_from_global_env();
             auto appinitdata = std::make_shared<AppInitData>();
+            // Set global appinitdata so HTTP logger backend can read the app name
+            gappinitdata = appinitdata;
             rcfd_ptr_t override_rcfd = nullptr;
 
             if (kwargs) {
               for (auto item : kwargs) {
                 auto key = py::cast<std::string>(item.first);
                 if (key == "name") {
-                  appinitdata->_application_name = py::cast<std::string>(item.second);
+                  auto app_name = py::cast<std::string>(item.second);
+                  appinitdata->_application_name = app_name;
+                  // Also update global for HTTP logger backend
+                  if (gappinitdata) {
+                    gappinitdata->_application_name = app_name;
+                  }
                 } else if (key == "left") {
                   appinitdata->_left = py::cast<int>(item.second);
                 } else if (key == "top") {

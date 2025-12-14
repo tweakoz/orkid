@@ -149,5 +149,14 @@ namespace ork {
       const std::string& path,
       float flush_interval_ms = 100.0f);
 
+  // Create HTTP backend with live streaming via SSE
+  // - http_port: HTTP server port for browser access (default 12288)
+  // - zmq_port: ZMQ port for log data (default 12289)
+  // User must start server manually: ork.logger.httpserver.py
+  // Multiple orkid processes can connect to the same server (tabbed UI)
+  logger_backend_ptr_t createHttpBackend(
+      int http_port = 12288,
+      int zmq_port = 12289);
+
   /////////////////////////////////////////////////////////////////////
 }
