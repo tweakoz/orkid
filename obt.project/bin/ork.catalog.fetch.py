@@ -181,7 +181,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Initialize
-    core.coreappinit()
+    core.coreappinit(name="CatalogFetcher")
     catalog = core.AssetCatalog.instance
 
     # Resolve what to fetch

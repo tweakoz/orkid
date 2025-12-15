@@ -65,7 +65,7 @@ namespace util::crypt {
 
 static bool _core_initialized = false;
 
-static void _coreappinit() {
+static void _coreappinit(py::kwargs args) {
   // Check if already initialized
   if (_core_initialized) {
     printf("WARNING: coreappinit() called multiple times - ignoring\n");
@@ -106,17 +106,22 @@ static void _coreappinit() {
   for (int i = 0; i < argc; i++) {
     printf("dynarg<%d:%s>\n", i, argv[i]);
   }*/
-
-  auto appinit = appinitdata();
-  appinit->_argc = argc;
-  appinit->_argv = argv;
+  auto initdata = ::ork::appinitdata();
+  initdata->setArgs(argc, argv, ::environ);
+  for(auto item : args){
+    std::string key = py::cast<std::string>(item.first);
+    if(key=="name"){
+      std::string appname = py::cast<std::string>(item.second);
+      initdata->_application_name = appname;
+    }
+  }
 
   static CorePythonApplication the_app;
 
   static auto WorkingDirContext = std::make_shared<FileDevContext>();
   OldSchool::SetGlobalPathVariable("data://", file::Path::orkroot_dir());
 
-  ork::initModule(appinit);
+  ork::initModule(initdata);
 }
 static void _coreappexit() {
   if (!_core_initialized) {
