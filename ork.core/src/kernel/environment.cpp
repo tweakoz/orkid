@@ -172,6 +172,8 @@ std::unordered_set<std::string> get_args_set() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+namespace ork {
+
 char** get_environ() {
 #if defined(__APPLE__)
   return *_NSGetEnviron();
@@ -179,3 +181,5 @@ char** get_environ() {
   return environ;
 #endif
 }
+
+} // namespace ork
