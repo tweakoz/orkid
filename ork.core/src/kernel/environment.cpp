@@ -169,3 +169,13 @@ std::unordered_set<std::string> get_args_set() {
   auto args = get_args();
   return std::unordered_set<std::string>(args.begin(), args.end());
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+char** get_environ() {
+#if defined(__APPLE__)
+  return *_NSGetEnviron();
+#else
+  return environ;
+#endif
+}

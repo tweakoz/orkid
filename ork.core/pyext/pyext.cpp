@@ -107,7 +107,7 @@ static void _coreappinit(py::kwargs args) {
     printf("dynarg<%d:%s>\n", i, argv[i]);
   }*/
   auto initdata = ::ork::appinitdata();
-  initdata->setArgs(argc, argv, ::environ);
+  initdata->setArgs(argc, argv, ::ork::get_environ());
   for(auto item : args){
     std::string key = py::cast<std::string>(item.first);
     if(key=="name"){
