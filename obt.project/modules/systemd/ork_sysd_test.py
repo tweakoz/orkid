@@ -3,7 +3,7 @@ class serviceinfo:
     Systemd service module for Orkid System Test (spotlight rigid model).
     """
     def __init__(self):
-        self._name = "orksysdtest"
+        self._name = "ork_sysd_test"
         self._command = "${ORKID_WORKSPACE_DIR}/ork.lev2/pyext/tests/renderer/lighting/spotlight_rigid_model.py"
         self._description = "Orkid System Test Service (Spotlight Rigid Model)"
         self._requires = []  # Hard dependencies (fails if dependency fails)
