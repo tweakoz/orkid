@@ -21,9 +21,9 @@ def createLayer(program):
   ampenv.ampenv = True
   ampenv.bipolar = False
   ampenv.sustainSegment = 0
-  ampenv.addSegment("seg0", 0, 1,0.4)
-  ampenv.addSegment("seg1", 1, .5,4)
-  ampenv.addSegment("seg2", 1, 0,2.0)
+  ampenv.addSegment("seg0", 0, 1,0.1)
+  ampenv.addSegment("seg1", 1, .5,.4)
+  ampenv.addSegment("seg2", 1, 0,1.0)
   #
   #########################################
   # post amp

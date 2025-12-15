@@ -48,6 +48,13 @@ struct SampleData : public ork::Object {
   SampleData();
 
   void loadFromAudioFile(const std::string& filename, bool normalize=true);
+  void loadFromFloatWaveformBuffer(
+      const float* buffer,
+      size_t num_samples,
+      float sample_rate,
+      int num_channels,
+      float original_pitch,
+      bool normalize=false);
 
   std::string _name;
   const s16* _sampleBlock = nullptr;

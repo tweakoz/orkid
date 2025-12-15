@@ -12,7 +12,7 @@ import sys, random
 from orkengine.core import *
 from orkengine.lev2 import *
 from orkengine.lev2 import singularity as S
-from _sampler import createLayer, createSampleLayer
+from ork.singularity.sampler import createLayer, createSampleLayer
 
 ################################################################################
 sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
@@ -48,8 +48,8 @@ class WaveformsApp(SingulTestApp):
     # from wave file
     ############################
     
-    def createSampleLayer(filename,orig_pitch,lokey,hikey,lowpass):          
-        newlyr, SOSCIL = createLayer(newprog)
+    def createSampleLayer(filename,orig_pitch,lokey,hikey,lowpass):
+        newlyr, SOSCIL, dspstg, ampstg = createLayer(newprog)
         the_sample = S.SampleData(
           name = "MySample2",
           #format = tokens.F32_NPARRAY,

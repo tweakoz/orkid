@@ -275,6 +275,55 @@ void SampleData::loadFromAudioFile(const std::string& fname, bool normalize) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void SampleData::loadFromFloatWaveformBuffer(
+    const float* buffer,
+    size_t num_samples,
+    float sample_rate,
+    int num_channels,
+    float original_pitch,
+    bool normalize) {
+
+    // Initialize variables same as loadFromAudioFile
+    _blk_start = 0;
+    _blk_end = num_samples;
+    _numChannels = num_channels;
+    _sampleRate = sample_rate;
+    _originalPitch = original_pitch;
+    
+    // Calculate highestPitch same as loadFromAudioFile
+    float highestPitch = _originalPitch * 48000.0f / _sampleRate;
+    float highestPitchN = frequency_to_midi_note(highestPitch);
+    float highestPitchCents = static_cast<int>(highestPitchN * 100.0f) + 1.0f;
+    _highestPitch = static_cast<int>(highestPitchCents);
+
+    // Copy buffer data
+    std::vector<float> fbuf(num_samples);
+    std::copy(buffer, buffer + num_samples, fbuf.begin());
+
+    if (normalize) {
+        // Normalization and bias correction (same as loadFromAudioFile)
+        float _min = *std::min_element(fbuf.begin(), fbuf.end());
+        float _max = *std::max_element(fbuf.begin(), fbuf.end());
+
+        float frange = _max - _min;
+        float fbias = (_max + _min) * 0.5f;
+        for (auto& F : fbuf) {
+            F -= fbias;
+            F /= (frange * 0.5f);
+        }
+    }
+
+    // Convert to int16_t and store (same as loadFromAudioFile)
+    auto& waveformOUT = _user.make<WaveformData>();
+    waveformOUT._sampledata.resize(num_samples);
+    for (size_t i = 0; i < num_samples; i++) {
+        waveformOUT._sampledata[i] = static_cast<int16_t>(fbuf[i] * 32767.0f);
+    }
+    _sampleBlock = waveformOUT._sampledata.data();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 RegionSearch SAMPLER_DATA::findRegion(lyrdata_constptr_t ld, const KeyOnInfo& koi) const {
 
   auto KMP = ld->_kmpBlock;

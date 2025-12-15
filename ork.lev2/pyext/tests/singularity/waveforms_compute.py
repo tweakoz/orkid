@@ -43,8 +43,8 @@ class WaveformsApp(SingulTestApp):
     #newprog.portamentoRate = 60000 # cents per second
     ############################
 
-    if True:      
-      newlyr, SOSCIL = sampler.createLayer(newprog)
+    if True:
+      newlyr, SOSCIL, dspstg, ampstg = sampler.createLayer(newprog)
 
       #########################################
       # waveform data
