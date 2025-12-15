@@ -869,6 +869,13 @@ void CtxDRM::_initTerminalInput() {
 
     _stdin_fd = STDIN_FILENO;
 
+    // Don't try to use terminal input if stdin is not a TTY (e.g., systemd service)
+    if (!isatty(_stdin_fd)) {
+        logchan_ctxdrm->log("Stdin is not a TTY - skipping terminal input initialization");
+        _using_terminal_input = false;
+        return;
+    }
+
     // Save original terminal settings to global state (async-signal-safe access)
     if (tcgetattr(_stdin_fd, &g_terminal_state.original_termios) == 0) {
         _termios_saved = true;
