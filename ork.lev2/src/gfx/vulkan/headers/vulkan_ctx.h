@@ -637,6 +637,21 @@ public:
   vkpricmdbufimpl_ptr_t _cmdbufcurpri_gfx;
   vkpricmdbufimpl_ptr_t primary_cb();
 
+  // Synchronous transfer resources (for out-of-frame texture uploads)
+  struct SyncTransferResources {
+    primary_commandbuffer_ptr_t command_buffer;
+    vkpricmdbufimpl_ptr_t command_buffer_impl;
+    vkbuffer_ptr_t staging_buffer;
+    size_t staging_size = 0;
+    std::mutex mutex;
+  };
+  SyncTransferResources _syncTransfer;
+
+  void initSyncTransfer();
+  void ensureSyncStagingSize(size_t needed);
+  void beginSyncTransferCB();
+  void endAndSubmitSyncTransferCB();
+
   vksampler_obj_ptr_t _sampler_base;
   std::vector<vksampler_obj_ptr_t> _sampler_per_maxlod;
   VkDescriptorPool _vkDescriptorPool;

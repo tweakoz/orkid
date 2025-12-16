@@ -340,6 +340,9 @@ void VkContext::_initVulkanCommon() {
   // Initialize sampler cache
   _sampler_cache.clear();
 
+  // Initialize synchronous transfer resources
+  initSyncTransfer();
+
   // create descriptor pool
   std::vector<VkDescriptorPoolSize> poolSizes;
 
@@ -900,6 +903,78 @@ void VkContext::_doSubmitPrimaryCommandBuffer(){
 
 vkpricmdbufimpl_ptr_t VkContext::primary_cb() {
   return _cmdbufcurpri_gfx;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkContext::initSyncTransfer() {
+  // Allocate a primary command buffer for synchronous transfers
+  _syncTransfer.command_buffer = _pri_cmdbuf_pool.allocate();
+  _syncTransfer.command_buffer_impl = _syncTransfer.command_buffer->_impl.getShared<VkPrimaryCommandBufferImpl>();
+
+  // Start with 16MB staging buffer (reasonable default)
+  _syncTransfer.staging_size = 16 * 1024 * 1024;
+  _syncTransfer.staging_buffer = std::make_shared<VulkanBuffer>(
+    this,
+    _syncTransfer.staging_size,
+    VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+    "syncTransferStaging");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkContext::ensureSyncStagingSize(size_t needed) {
+  if (needed > _syncTransfer.staging_size) {
+    logchan_vkctx->log("Growing sync staging buffer: %zu -> %zu bytes",
+                       _syncTransfer.staging_size, needed);
+    _syncTransfer.staging_buffer = std::make_shared<VulkanBuffer>(
+      this,
+      needed,
+      VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+      "syncTransferStaging");
+    _syncTransfer.staging_size = needed;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkContext::beginSyncTransferCB() {
+  // Lock is acquired by caller
+
+  VkCommandBufferBeginInfo beginInfo{};
+  initializeVkStruct(beginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
+  beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;  // Implicit reset
+
+  vkBeginCommandBuffer(_syncTransfer.command_buffer_impl->_vkcmdbuf, &beginInfo);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkContext::endAndSubmitSyncTransferCB() {
+  vkEndCommandBuffer(_syncTransfer.command_buffer_impl->_vkcmdbuf);
+
+  // Create fence for precise waiting (better than vkQueueWaitIdle)
+  VkFenceCreateInfo fenceInfo{};
+  initializeVkStruct(fenceInfo, VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
+  VkFence fence;
+  vkCreateFence(_vkdevice, &fenceInfo, nullptr, &fence);
+
+  // Submit command buffer
+  VkSubmitInfo submitInfo{};
+  initializeVkStruct(submitInfo, VK_STRUCTURE_TYPE_SUBMIT_INFO);
+  submitInfo.commandBufferCount = 1;
+  submitInfo.pCommandBuffers = &_syncTransfer.command_buffer_impl->_vkcmdbuf;
+
+  vkQueueSubmit(_vkqueue_graphics, 1, &submitInfo, fence);
+
+  // Wait for this specific submit to complete
+  vkWaitForFences(_vkdevice, 1, &fence, VK_TRUE, UINT64_MAX);
+  vkDestroyFence(_vkdevice, fence, nullptr);
+
+  // Command buffer is now in INVALID state (ONE_TIME_SUBMIT)
+  // Next beginSyncTransferCB will implicitly reset it
+
+  // Lock is released by caller
 }
 
 ///////////////////////////////////////////////////////////////////////////////

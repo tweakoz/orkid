@@ -244,13 +244,13 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   /////////////////////////////////////////////////////////
   else { // synchronous path
   /////////////////////////////////////////////////////////
-    // Suspend render pass if active (so we can use barriers)
-    if (_contextVK->_renderPassActive) {
-      _contextVK->suspendRenderPass();
-      suspended_render_pass = true;
-    }
+    // ASSERT: Synchronous transfers must be outside frame boundaries
+    OrkAssert(!_contextVK->_renderPassActive);
+    //OrkAssert(_contextVK->primary_cb() == nullptr);
 
-    vk_cmdbuf = _contextVK->primary_cb()->_vkcmdbuf;
+    // Acquire lock for sync transfer resources
+    _contextVK->_syncTransfer.mutex.lock();
+
     // Don't clear _img_sampling - will be replaced after GPU completion
   }
 
@@ -447,6 +447,44 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       ptex->_num_mips = num_mips;
     };
   }
+  else {
+    // Synchronous setup: calculate total staging size needed
+    size_t total_staging_needed = 0;
+
+    for (int ilevel = 0; ilevel < num_mips; ilevel++) {
+      size_t level_data_size = 0;
+
+      if (tid._autogenmips && num_mips > 1) {
+        auto& mip = mip_levels[ilevel];
+        level_data_size = mip.data.size();
+      } else {
+        if (needs_conversion) {
+          size_t pixel_count = tid._w * tid._h * tid._d;
+          if (tid._dst_format == EBufferFormat::BGR8 || tid._dst_format == EBufferFormat::RGB8) {
+            level_data_size = pixel_count * 4;  // RGB->RGBA conversion
+          } else if (tid._dst_format == EBufferFormat::RGB32F) {
+            level_data_size = pixel_count * 4 * sizeof(float);
+          } else {
+            level_data_size = tid.computeSrcSize();
+          }
+        } else {
+          level_data_size = tid.computeSrcSize();
+        }
+      }
+
+      total_staging_needed += level_data_size;
+    }
+
+    // Ensure staging buffer is large enough
+    _contextVK->ensureSyncStagingSize(total_staging_needed);
+
+    // Begin recording sync transfer command buffer
+    _contextVK->beginSyncTransferCB();
+    vk_cmdbuf = _contextVK->_syncTransfer.command_buffer_impl->_vkcmdbuf;
+  }
+
+  // Track staging offset for sync path
+  size_t staging_offset = 0;
 
   for (int ilevel = 0; ilevel < num_mips; ilevel++) {
     int level_width = 0;
@@ -520,11 +558,29 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       }
     }
 
-    // Borrow staging buffer from pool for this mip level
-    auto poolForSize = stagingBufferPoolForSrcOfSize(level_data_size);
-    auto staging_buffer = poolForSize->borrowItem();
-    staging_buffer->copyFromHost(level_data, level_data_size);
-    staging_buffers.push_back(staging_buffer);
+    // Setup staging buffer (different for async vs sync)
+    vkbuffer_ptr_t staging_buffer;
+    size_t buffer_offset = 0;
+
+    if (async) {
+      // Async: borrow staging buffer from pool for this mip level
+      auto poolForSize = stagingBufferPoolForSrcOfSize(level_data_size);
+      staging_buffer = poolForSize->borrowItem();
+      staging_buffer->copyFromHost(level_data, level_data_size);
+      staging_buffers.push_back(staging_buffer);
+      buffer_offset = 0;
+    } else {
+      // Sync: use persistent staging buffer with offset
+      staging_buffer = _contextVK->_syncTransfer.staging_buffer;
+      buffer_offset = staging_offset;
+
+      // Copy to staging buffer at current offset
+      void* mapped = staging_buffer->map(staging_offset, level_data_size, 0);
+      memcpy(mapped, level_data, level_data_size);
+      staging_buffer->unmap();
+
+      staging_offset += level_data_size;  // Advance offset for next mip
+    }
 
     // Transition this mip level to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
     auto barrier = createImageBarrier(
@@ -550,7 +606,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     // Copy staging buffer to this mip level
     VkBufferImageCopy region{};
     initializeVkStruct(region);
-    region.bufferOffset = 0;
+    region.bufferOffset = buffer_offset;
     region.bufferRowLength = 0;
     region.bufferImageHeight = 0;
     region.imageSubresource = {
@@ -620,18 +676,30 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     _contextVK->enqueueDeferredOneShotCommand(transfer->_command_buffer);
   }
   else {
-    // synchronous path - wait for GPU completion
+    // Synchronous path - submit and wait for GPU completion
 
-    // Wait for all commands on the graphics queue to complete
-    vkQueueWaitIdle(_contextVK->_vkqueue_graphics);
+    // End recording, submit, and wait for completion
+    _contextVK->endAndSubmitSyncTransferCB();
 
-    // Resume render pass if we suspended it
-    if (suspended_render_pass) {
-      _contextVK->resumeRenderPass();
-    }
-
-    // Now texture is guaranteed to be ready for sampling
+    // GPU work is now complete - update texture state
     vktex->_img_sampling = target_imgobj;
+    vktex->_descset_sampling = vktex->_vkdescriptor_info[write_slot];
+
+    // Update hash to reflect which slot is active (for descriptor cache invalidation)
+    vktex->_imgview_hash.init();
+    vktex->_imgview_hash.accumulateItem(target_imgobj->_serial_number);
+    vktex->_imgview_hash.finish();
+
+    // Update texture properties
+    bool is_cube = tid._initCubeTexture;
+    ptex->_texFormat = actual_dst_format;
+    ptex->_width = tid._w;
+    ptex->_height = tid._h;
+    ptex->_depth = is_cube ? 6 : tid._d;
+    ptex->_num_mips = num_mips;
+
+    // Release sync transfer lock
+    _contextVK->_syncTransfer.mutex.unlock();
   }
 
   /////////////////////////////////////
