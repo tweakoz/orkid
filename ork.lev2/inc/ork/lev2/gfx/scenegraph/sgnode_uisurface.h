@@ -98,6 +98,7 @@ struct UISurfaceRenderImpl {
   const FxShaderParam* _param_colormap = nullptr;
   const FxShaderParam* _param_texdim = nullptr;
   const FxShaderParam* _param_maxsamples = nullptr;
+  const FxShaderParam* _param_uvxform = nullptr;
   const FxShaderParam* _param_uvxformL = nullptr;
   const FxShaderParam* _param_uvxformR = nullptr;
 

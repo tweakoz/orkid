@@ -24,6 +24,12 @@ uniform_set ublock {
   mat4 mvp;
   vec2 texDim;      // texture dimensions (width, height)
   float maxSamples; // max samples per axis (e.g., 4 = 4x4 grid, 8 = 8x8 grid)
+
+  float _pad0;      // IMPORTANT: keep following vec4 aligned
+  //vec4 uvXformL;    // (scale_u, scale_v, bias_u, bias_v)
+  //vec4 uvXformR;    // (scale_u, scale_v, bias_u, bias_v)
+  vec4 uvXform; // (scale_u, scale_v, bias_u, bias_v)
+
 }
 sampler_set sset (descriptor_set 0) {
   sampler2D ColorMap;
@@ -53,9 +59,26 @@ vertex_shader vs_uisurface : iface_vtx {
   frg_uv = uv;
   frg_clr = vtxcolor;
 }
-fragment_shader fs_uisurface : iface_frg {
+//fragment_shader fs_uisurface : iface_frg {
+fragment_shader fs_uisurface : iface_frg : extension(GL_EXT_multiview) {
+
+  //vec2 uv = frg_uv;
+  
+  //vec4 xform = vec4(0.5, 1.0, 0.0, 0.0); // left half
+  //vec2 uv = frg_uv * xform.xy + xform.zw;
+
+  //vec4 xformL = vec4(0.5, 1.0, 0.0, 0.0);
+  //vec4 xformR = vec4(0.5, 1.0, 0.5, 0.0);
+  //int eye = int(gl_ViewIndex); // 0 = left, 1 = right
+  //vec4 xform = (eye == 0) ? xformL : xformR;
+  //vec2 uv = frg_uv * xform.xy + xform.zw;
+
+  vec2 uv = frg_uv * uvXform.xy + uvXform.zw;
+
+  //vec2 uv = frg_uv;        // no xform
+
   // Compute screen-space derivatives of UV (in texel units)
-  vec2 uvTexels = frg_uv * texDim;
+  vec2 uvTexels = uv * texDim;
   vec2 duvdx = dFdx(uvTexels);
   vec2 duvdy = dFdy(uvTexels);
 
@@ -70,7 +93,7 @@ fragment_shader fs_uisurface : iface_frg {
 
   // Early out for 1:1 or magnification - single sample
   if (samplesPerAxis <= 1) {
-    out_color = texture(ColorMap, frg_uv) * frg_clr;
+    out_color = texture(ColorMap, uv) * frg_clr;
     return;
   }
 
@@ -85,7 +108,7 @@ fragment_shader fs_uisurface : iface_frg {
   for (int y = 0; y < samplesPerAxis; y++) {
     for (int x = 0; x < samplesPerAxis; x++) {
       vec2 offset = vec2(float(x) - halfSpan, float(y) - halfSpan) / fSamples;
-      vec2 sampleUV = frg_uv + offset * texelSize * footprint;
+      vec2 sampleUV = uv + offset * texelSize * footprint;
       accumColor += texture(ColorMap, sampleUV);
     }
   }
@@ -134,6 +157,9 @@ void UISurfaceRenderImpl::gpuInit(Context* ctx) {
   _param_colormap = _material->param("ColorMap");
   _param_texdim = _material->param("texDim");
   _param_maxsamples = _material->param("maxSamples");
+  //_param_uvxformL = _material->param("uvXformL");
+  //_param_uvxformR = _material->param("uvXformR");
+  _param_uvxform = _material->param("uvXform");
 
   _material->_rasterstate->setBlendingMacro(_data->_blendMode);
   _material->_rasterstate->setCullTest(
@@ -396,6 +422,18 @@ void UISurfaceRenderImpl::render(const RenderContextInstData& RCID) {
 
   // Get camera matrices
   auto RCFD = ctx->topRenderContextFrameData();
+
+  static const ork::lev2::RenderContextFrameData* s_last_rcfd = nullptr;
+  static int s_eye_toggle = 0;
+  if (RCFD.get() != s_last_rcfd) {
+    s_last_rcfd = RCFD.get();
+    s_eye_toggle = 0;
+  } else {
+    s_eye_toggle ^= 1;
+  }
+  fvec4 uvxf = (s_eye_toggle == 0) ? _data->_uvXformL : _data->_uvXformR;
+
+
   const auto& CPD = RCFD->topCPD();
   auto cmtcs = CPD.cameraMatrices();
 
@@ -463,7 +501,7 @@ void UISurfaceRenderImpl::render(const RenderContextInstData& RCID) {
     float radius = _data->_sphereRadius;
 
     auto dirFromUV = [&](float u, float v) -> fvec3 {
-      float theta = (u - 0.5f) * (2.0f * PI);
+      float theta = (u - 0.5f) * (PI);
       float phi = v * PI;
 
       float sinp = sinf(phi);
@@ -537,6 +575,11 @@ void UISurfaceRenderImpl::render(const RenderContextInstData& RCID) {
   _material->bindParamTexture(_param_colormap, texture);
   _material->bindParamVec2(_param_texdim, fvec2(_layoutSurface->width(), _layoutSurface->height()));
   _material->bindParamFloat(_param_maxsamples, _data->_maxSamplesPerAxis);
+  //_material->bindParamVec4(_param_uvxformL, _data->_uvXformL);
+  //_material->bindParamVec4(_param_uvxformR, _data->_uvXformR);
+  _material->bindParamVec4(_param_uvxform, uvxf);
+
+
   ctx->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
   _material->end(RCFD);
   fxi->popRasterState();
