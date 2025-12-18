@@ -14,6 +14,7 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/ui/context.h>
 #include <ork/math/plane.hpp>
+#include <cmath>
 
 static const char* UISURFACE_SHADER = R"(
 fxconfig fxcfg_default {
@@ -136,7 +137,7 @@ void UISurfaceRenderImpl::gpuInit(Context* ctx) {
 
   _material->_rasterstate->setBlendingMacro(_data->_blendMode);
   _material->_rasterstate->setCullTest(
-      _data->_doubleSided ? ECullTest::OFF : ECullTest::PASS_BACK);
+      (_data->_doubleSided || _data->_sphere) ? ECullTest::OFF : ECullTest::PASS_BACK);
   _material->_rasterstate->setDepthTest(EDepthTest::LEQUALS);
   _material->_rasterstate->setWriteMaskZ(true);
   _material->_rasterstate->_priority = 1<<10;
@@ -445,25 +446,83 @@ void UISurfaceRenderImpl::render(const RenderContextInstData& RCID) {
   using vtx_t = SVtxV16T16C16;
   auto& VB = GfxEnv::GetSharedDynamicV16T16C16();
   VtxWriter<vtx_t> vw;
-  vw.Lock(ctx, &VB, 6);
 
   fvec4 white(1, 1, 1, 1);
 
-  // UV coordinates (note Y-flip for texture orientation)
-  // corner00 = bottom-left in world, UV (0, 1)
-  // corner11 = top-right in world, UV (1, 0)
+  if (_data->_sphere) {
 
-  // Triangle 1: bottom-left, top-right, bottom-right (flipped winding)
-  vw.AddVertex(vtx_t(corner00, fvec4(0, 1, 0, 0), white));
-  vw.AddVertex(vtx_t(corner11, fvec4(1, 0, 0, 0), white));
-  vw.AddVertex(vtx_t(corner10, fvec4(1, 1, 0, 0), white));
+    int slices = _data->_sphereSlices;
+    int stacks = _data->_sphereStacks;
+    if (slices < 3) slices = 3;
+    if (stacks < 2) stacks = 2;
 
-  // Triangle 2: bottom-left, top-left, top-right (flipped winding)
-  vw.AddVertex(vtx_t(corner00, fvec4(0, 1, 0, 0), white));
-  vw.AddVertex(vtx_t(corner01, fvec4(0, 0, 0, 0), white));
-  vw.AddVertex(vtx_t(corner11, fvec4(1, 0, 0, 0), white));
+    int vcount = slices * stacks * 6;
+    vw.Lock(ctx, &VB, vcount);
 
-  vw.UnLock(ctx);
+    const float PI = 3.14159265358979323846f;
+    float radius = _data->_sphereRadius;
+
+    auto dirFromUV = [&](float u, float v) -> fvec3 {
+      float theta = (u - 0.5f) * (2.0f * PI);
+      float phi = v * PI;
+
+      float sinp = sinf(phi);
+      float cost = cosf(theta);
+      float sint = sinf(theta);
+      float cosp = cosf(phi);
+
+      // theta=0 points forward (-Z)
+      return fvec3(sint * sinp, cosp, -cost * sinp);
+    };
+
+    for (int t = 0; t < stacks; ++t) {
+      float v0 = float(t) / float(stacks);
+      float v1 = float(t + 1) / float(stacks);
+
+      for (int s = 0; s < slices; ++s) {
+        float u0 = float(s) / float(slices);
+        float u1 = float(s + 1) / float(slices);
+
+        fvec3 p00 = center + dirFromUV(u0, v0) * radius;
+        fvec3 p10 = center + dirFromUV(u1, v0) * radius;
+        fvec3 p11 = center + dirFromUV(u1, v1) * radius;
+        fvec3 p01 = center + dirFromUV(u0, v1) * radius;
+
+        // Two triangles. We rely on cull OFF for sphere mode.
+        vw.AddVertex(vtx_t(p00, fvec4(u0, v0, 0, 0), white));
+        vw.AddVertex(vtx_t(p11, fvec4(u1, v1, 0, 0), white));
+        vw.AddVertex(vtx_t(p10, fvec4(u1, v0, 0, 0), white));
+
+        vw.AddVertex(vtx_t(p00, fvec4(u0, v0, 0, 0), white));
+        vw.AddVertex(vtx_t(p01, fvec4(u0, v1, 0, 0), white));
+        vw.AddVertex(vtx_t(p11, fvec4(u1, v1, 0, 0), white));
+      }
+    }
+
+    vw.UnLock(ctx);
+
+  } else {
+
+    // Quad (billboarded panel) path
+
+    vw.Lock(ctx, &VB, 6);
+
+    // UV coordinates (note Y-flip for texture orientation)
+    // corner00 = bottom-left in world, UV (0, 1)
+    // corner11 = top-right in world, UV (1, 0)
+
+    // Triangle 1: bottom-left, top-right, bottom-right (flipped winding)
+    vw.AddVertex(vtx_t(corner00, fvec4(0, 1, 0, 0), white));
+    vw.AddVertex(vtx_t(corner11, fvec4(1, 0, 0, 0), white));
+    vw.AddVertex(vtx_t(corner10, fvec4(1, 1, 0, 0), white));
+
+    // Triangle 2: bottom-left, top-left, top-right (flipped winding)
+    vw.AddVertex(vtx_t(corner00, fvec4(0, 1, 0, 0), white));
+    vw.AddVertex(vtx_t(corner01, fvec4(0, 0, 0, 0), white));
+    vw.AddVertex(vtx_t(corner11, fvec4(1, 0, 0, 0), white));
+
+    vw.UnLock(ctx);
+  }
 
   // Compute MVP from camera
   const auto& V = cmtcs->_vmatrix;

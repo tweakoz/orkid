@@ -540,6 +540,31 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
               [](uisurfaceprimitivedata_ptr_t data) -> bool { return data->_doubleSided; },
               [](uisurfaceprimitivedata_ptr_t data, bool ds) { data->_doubleSided = ds; })
           .def_property(
+              "sphere",
+              [](uisurfaceprimitivedata_ptr_t data) -> bool { return data->_sphere; },
+              [](uisurfaceprimitivedata_ptr_t data, bool v) { data->_sphere = v; })
+          .def_property(
+              "sphere_radius",
+              [](uisurfaceprimitivedata_ptr_t data) -> float { return data->_sphereRadius; },
+              [](uisurfaceprimitivedata_ptr_t data, float v) { data->_sphereRadius = v; })
+          .def_property(
+              "sphere_slices",
+              [](uisurfaceprimitivedata_ptr_t data) -> int { return data->_sphereSlices; },
+              [](uisurfaceprimitivedata_ptr_t data, int v) { data->_sphereSlices = v; })
+          .def_property(
+              "sphere_stacks",
+              [](uisurfaceprimitivedata_ptr_t data) -> int { return data->_sphereStacks; },
+              [](uisurfaceprimitivedata_ptr_t data, int v) { data->_sphereStacks = v; })
+          .def_property(
+              "uv_xform_l",
+              [](uisurfaceprimitivedata_ptr_t data) -> fvec4 { return data->_uvXformL; },
+              [](uisurfaceprimitivedata_ptr_t data, const fvec4& v) { data->_uvXformL = v; })
+          .def_property(
+              "uv_xform_r",
+              [](uisurfaceprimitivedata_ptr_t data) -> fvec4 { return data->_uvXformR; },
+              [](uisurfaceprimitivedata_ptr_t data, const fvec4& v) { data->_uvXformR = v; })
+
+          .def_property(
               "max_samples_per_axis",
               [](uisurfaceprimitivedata_ptr_t data) -> float { return data->_maxSamplesPerAxis; },
               [](uisurfaceprimitivedata_ptr_t data, float s) { data->_maxSamplesPerAxis = s; });

@@ -98,6 +98,10 @@ struct UISurfaceRenderImpl {
   const FxShaderParam* _param_colormap = nullptr;
   const FxShaderParam* _param_texdim = nullptr;
   const FxShaderParam* _param_maxsamples = nullptr;
+  const FxShaderParam* _param_uvxformL = nullptr;
+  const FxShaderParam* _param_uvxformR = nullptr;
+
+
   ui::context_ptr_t _uiContext;
 
   // Mouse tracking for enter/leave events
@@ -134,6 +138,19 @@ public:
 
   BlendingMacro _blendMode = BlendingMacro::ALPHA;
   bool _doubleSided = false;
+
+  //////////////////////////////////////////////////////////////
+  // Optional spherical projection (hacky VR video / 360 playback)
+  // When _sphere is true, the UI texture is mapped onto the inside
+  // of a UV sphere centered at the node translation.
+  //////////////////////////////////////////////////////////////
+
+  bool _sphere = false;
+  float _sphereRadius = 10.0f;
+  int _sphereSlices = 96;
+  int _sphereStacks = 48;
+  fvec4 _uvXformL = fvec4(0.5f, 1.0f, 0.0f, 0.0f);
+  fvec4 _uvXformR = fvec4(0.5f, 1.0f, 0.5f, 0.0f);
 
   //////////////////////////////////////////////////////////////
   // Anti-aliasing for minification (no mipmaps)
