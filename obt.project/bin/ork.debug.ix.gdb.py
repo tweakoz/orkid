@@ -9,6 +9,8 @@ import _debug_helpers
 parser = argparse.ArgumentParser(description="GDB wrapper with orkid customizations")
 parser.add_argument("executable_name", help="Name of the executable (without path).")
 parser.add_argument("exec_args", nargs=argparse.REMAINDER, help="Arguments for the executable.")
+parser.add_argument("-x", "--breakonexit", action="store_true", help="Set a breakpoint on exit().")
+
 args = parser.parse_args()
 
 extensions_py = path.orkid()/"obt.project"/"scripts"/"ork"/"ix_gdb_extensions.py"
@@ -20,9 +22,17 @@ exe_path, exe_args, exe_name = _debug_helpers.get_exec_and_args(args)
 cmd_list = ["gdb",
             "--command=%s"%str(extensions_py),
             "--command=%s"%str(stdcxx_extensions_py),
-            "--args",
-            exe_path
-           ]
+            "-ex", "set fork-follow-mode child", # Follow the child process after a fork
+            "-ex", "set follow-exec-mode new"]
+      
+if args.breakonexit:
+    cmd_list += [ "-ex", "break exit" ]
+    cmd_list += [ "-ex", "break _exit" ]
+    cmd_list += [ "-ex", "break abort" ]
+            
+cmd_list += [ "--args",
+              exe_path
+            ]
 
 cmd_list += exe_args
 #print(cmd_list)
