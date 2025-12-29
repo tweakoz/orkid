@@ -636,8 +636,8 @@ texture_ptr_t VideoToolboxBackend::currentTexture() {
     return nullptr;
   }
 
-  // Frame duration for 24fps video: ~0.04167 seconds
-  const double FRAME_DURATION = 1.0 / 24.0;
+  // Use actual video frame duration
+  const double FRAME_DURATION = _frame_duration;
   const double PTS_TOLERANCE = FRAME_DURATION * 0.5;  // Allow 0.5 frame tolerance
 
   double frame_pts = it->pts;
