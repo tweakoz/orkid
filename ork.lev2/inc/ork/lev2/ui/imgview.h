@@ -36,6 +36,7 @@ public:
   void setImage(lev2::image_ptr_t img);
   void setImageProvider(lev2::image_provider_ptr_t imgprovider);
   void setTextureProvider(lev2::texture_provider_ptr_t texprovider);
+  void setTexture(lev2::texture_ptr_t tex);
   meshutil::rigidprim_V12N12B12T8C4_ptr_t _img_mesh;
   lev2::fxpipeline_ptr_t _pipeline_override;
   bool _invert_aspect = false;

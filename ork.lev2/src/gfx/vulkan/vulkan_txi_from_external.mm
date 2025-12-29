@@ -389,16 +389,16 @@ bool VkTextureInterface::externalTextureChanged(const Texture* ptex) {
   // Just check if _impl_2 has a frame - VideoToolbox updates this with stable read buffer
   auto frame_opt = ptex->_impl_2.tryAsShared<IoSurfaceTexImpl>();
   if (!frame_opt) {
-    return true;  // Not initialized yet
+    return false;  // No frame data yet, don't try to import
   }
 
   auto frame = frame_opt.value();
   if (!frame || !frame->surface) {
-    return true;  // No valid frame
+    return false;  // No valid frame yet
   }
   auto handle_opt = frame->surface->_impl.tryAs<NativeSurfaceHandle>();
   if (!handle_opt || !handle_opt.value().handle) {
-    return true;  // No valid IOSurface
+    return false;  // No valid IOSurface yet
   }
 
   // Check if already imported

@@ -239,6 +239,7 @@ struct Texture {
   std::string _debugName;
   bool _isDepthTexture = false;
   ETextureSource _source = ETextureSource::NONE;
+  texture_provider_ptr_t _update_provider;  // For MOVIE textures: poll to trigger frame updates
   varmap::varmap_ptr_t _vars;
   const TextureAsset* _asset    = nullptr;
   bool _formatSupportsFiltering = true;

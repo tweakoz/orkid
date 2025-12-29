@@ -143,6 +143,7 @@ struct MovieBackendImpl {
   // Video output
   virtual image_ptr_t currentImage() = 0;              // CPU path (FFmpeg)
   virtual texture_ptr_t currentTexture() = 0;          // GPU-direct path (native backends)
+  virtual texture_ptr_t texture() const { return nullptr; }  // Raw texture object (for assignment)
   virtual image_provider_ptr_t createImageProvider() = 0;
   virtual texture_provider_ptr_t createTextureProvider() = 0;
 

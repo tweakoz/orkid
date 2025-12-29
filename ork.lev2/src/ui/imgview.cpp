@@ -30,6 +30,12 @@ void ImageView::setTextureProvider(lev2::texture_provider_ptr_t texprovider) {
   _texprovider = texprovider;
 }
 ///////////////////////////////////////////////////////////////////////////////
+void ImageView::setTexture(lev2::texture_ptr_t tex) {
+  _texture = tex;
+  _texprovider = nullptr;  // Direct texture assignment, not from provider
+  _imgprovider = nullptr;  // Clear image provider too
+}
+///////////////////////////////////////////////////////////////////////////////
 void ImageView::DoDraw(drawevent_constptr_t drwev) {
 
   auto tgt    = drwev->GetTarget();
@@ -97,6 +103,11 @@ void ImageView::DoDraw(drawevent_constptr_t drwev) {
       _active_image = nullptr;  // Mark as having valid texture content
     }
   }
+  // Direct texture assignment with embedded update provider (MOVIE textures)
+  else if(_texture && _texture->_update_provider){
+    // Poll provider to trigger frame updates (updates _impl_2)
+    _texture->_update_provider->getTexture();
+  }
   // CPU path: image_provider
   else if(_imgprovider){
     _pending_image = _imgprovider->_func();
@@ -115,7 +126,9 @@ void ImageView::DoDraw(drawevent_constptr_t drwev) {
   //////////////////////////////////
 
   // For GPU-direct, we have a texture even without _active_image
-  bool has_content = _active_image || (_texprovider && _texture);
+  // Also handle direct texture assignment (no provider)
+  bool has_direct_texture = _texture && _texture->_width > 0 && !_texprovider && !_imgprovider;
+  bool has_content = _active_image || (_texprovider && _texture) || has_direct_texture;
   if(!has_content){
     mtxi->PopUIMatrix();
     return;

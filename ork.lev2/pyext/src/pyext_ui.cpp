@@ -1883,7 +1883,10 @@ void pyinit_ui(py::module& module_lev2) {
               [](ui::imgview_ptr_t imgview, image_provider_ptr_t imgprov) { //
                 imgview->setImageProvider(imgprov);
               })
-          .def_property_readonly("texture", [](ui::imgview_ptr_t imgview) -> lev2::texture_ptr_t { return imgview->_texture; })
+          .def_property(
+              "texture",
+              [](ui::imgview_ptr_t imgview) -> lev2::texture_ptr_t { return imgview->_texture; },
+              [](ui::imgview_ptr_t imgview, lev2::texture_ptr_t tex) { imgview->setTexture(tex); })
           .def_property(
               "primitive",
               [](ui::imgview_ptr_t imgview) -> meshutil::rigidprim_V12N12B12T8C4_ptr_t { return imgview->_img_mesh; },

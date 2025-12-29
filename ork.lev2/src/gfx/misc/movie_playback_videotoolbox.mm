@@ -49,6 +49,7 @@ public:
 
   image_ptr_t currentImage() override;
   texture_ptr_t currentTexture() override;
+  texture_ptr_t texture() const override { return _decode_texture; }
   image_provider_ptr_t createImageProvider() override;
   texture_provider_ptr_t createTextureProvider() override;
 
@@ -149,6 +150,9 @@ private:
 
 VideoToolboxBackend::VideoToolboxBackend(MoviePlaybackContext* ctx)
     : _context(ctx) {
+  // Create texture immediately so movie.texture is valid before init/play
+  _decode_texture = std::make_shared<Texture>();
+  _decode_texture->_source = ETextureSource::MOVIE;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -301,6 +305,18 @@ bool VideoToolboxBackend::init(const std::string& filename, MoviePixelFormat for
            format == MoviePixelFormat::YCBCR_P010 ? "P010" : "BGRA");
   }
 
+  // Set texture dimensions now that we know them
+  _decode_texture->_width = _video_width;
+  _decode_texture->_height = _video_height;
+  _decode_texture->_depth = 1;
+  _decode_texture->_num_mips = 1;
+
+  // Create texture provider and store on texture for direct assignment path
+  _texture_provider = std::make_shared<LambdaTextureProvider>([this]() -> texture_ptr_t {
+    return currentTexture();
+  });
+  _decode_texture->_update_provider = _texture_provider;
+
   return true;
 }
 
@@ -338,12 +354,6 @@ void VideoToolboxBackend::stop() {
   }
 
   _current_frame_index = 0;
-
-  // Create single decode texture on first stop/restart
-  if (!_decode_texture) {
-    _decode_texture = std::make_shared<Texture>();
-    _decode_texture->_source = ETextureSource::MOVIE;
-  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -673,12 +683,7 @@ image_ptr_t VideoToolboxBackend::currentImage() {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 texture_provider_ptr_t VideoToolboxBackend::createTextureProvider() {
-  if (!_texture_provider) {
-    _texture_provider = std::make_shared<LambdaTextureProvider>([this]() -> texture_ptr_t {
-      return currentTexture();
-    });
-  }
-  return _texture_provider;
+  return _texture_provider;  // Created in init()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////

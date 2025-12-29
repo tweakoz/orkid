@@ -78,8 +78,8 @@ class HardwareDecodeTest(application.ComponentizedApplication):
         format=lev2.MoviePixelFormat.AUTO  # BGRA (single-plane)
       )
 
-      # Use texture_provider for direct GPU textures
-      provider = self.movie.texture_provider
+      # Direct texture assignment - movie updates texture internally
+      self.imageview.texture = self.movie.texture
 
     else:
       # CPU Path: FFmpeg (for comparison)
@@ -89,10 +89,7 @@ class HardwareDecodeTest(application.ComponentizedApplication):
       self.movie.init(movie_path)
 
       # Use image_provider for CPU upload
-      provider = self.movie.image_provider
-
-    # Attach provider to ImageView
-    self.imageview.image = provider
+      self.imageview.image = self.movie.image_provider
 
     # Display movie info
     print("-" * 80)

@@ -70,6 +70,9 @@ void pyinit_movie(py::module& module_lev2) {
           .def_property_readonly("image_provider", [](movieplayback_ptr_t ctx) -> image_provider_ptr_t { return ctx->createImageProvider(); })
           .def("createTextureProvider", [](movieplayback_ptr_t ctx) -> texture_provider_ptr_t { return ctx->createTextureProvider(); })
           .def_property_readonly("texture_provider", [](movieplayback_ptr_t ctx) -> texture_provider_ptr_t { return ctx->createTextureProvider(); })
+          .def_property_readonly("texture", [](movieplayback_ptr_t ctx) -> texture_ptr_t {
+            return ctx->_backend_impl ? ctx->_backend_impl->texture() : nullptr;
+          })
           .def(
               "createAudioProgram",
               [](movieplayback_ptr_t ctx, audio::singularity::synth_ptr_t synth) -> audio::singularity::prgdata_ptr_t {
