@@ -102,7 +102,8 @@ class StandardSceneGraphComponent(ApplicationComponent):
                tgt=vec3(0),
                up=vec3(0,1,0),
                sg_params=None,
-               post_nodes=None):
+               post_nodes=None,
+               use_float_color_buffer=True):
     #print(eye)
     super().__init__()
     self.enable_ui_camera = enable_ui_camera
@@ -111,6 +112,7 @@ class StandardSceneGraphComponent(ApplicationComponent):
     self.initial_eye = eye
     self.initial_tgt = tgt
     self.initial_up = up
+    self.use_float_color_buffer = use_float_color_buffer
     sgparam_vm = VarMap()
     sgparam_vm.SkyboxIntensity = 1.0
     sgparam_vm.DiffuseIntensity = 1.0
@@ -177,6 +179,7 @@ class StandardSceneGraphComponent(ApplicationComponent):
     if self.using_pbr:
       self.pbr_common = SG.pbr_common
       self.pbr_common.useDepthPrepass = True
+      self.pbr_common.useFloatColorBuffer = self.use_float_color_buffer
 
     self.rendernode = SG.compositorrendernode
     self.outputnode = SG.compositoroutputnode

@@ -26,6 +26,10 @@ void ImageView::setImageProvider(lev2::image_provider_ptr_t imgprovider) {
   _imgprovider = imgprovider;
 }
 ///////////////////////////////////////////////////////////////////////////////
+void ImageView::setTextureProvider(lev2::texture_provider_ptr_t texprovider) {
+  _texprovider = texprovider;
+}
+///////////////////////////////////////////////////////////////////////////////
 void ImageView::DoDraw(drawevent_constptr_t drwev) {
 
   auto tgt    = drwev->GetTarget();
@@ -81,28 +85,38 @@ void ImageView::DoDraw(drawevent_constptr_t drwev) {
   tgt->PopModColor();
 
   //////////////////////////////////
-  // update image if applicable
+  // update texture (GPU-direct or image-based)
   //////////////////////////////////
 
-  if(_imgprovider){
+  // GPU-direct path: texture_provider (e.g., VideoToolbox → IOSurface → Vulkan)
+  if(_texprovider){
+    auto new_texture = _texprovider->getTexture();
+    if(new_texture){
+      _texture = new_texture;
+      // Texture dimensions might have changed
+      _active_image = nullptr;  // Mark as having valid texture content
+    }
+  }
+  // CPU path: image_provider
+  else if(_imgprovider){
     _pending_image = _imgprovider->_func();
   }
-  if(_active_image!=_pending_image){
+
+  // Upload image to texture if changed (CPU path only)
+  if(!_texprovider && _active_image!=_pending_image){
     _active_image = _pending_image;
     if(_active_image){
-      //int w = _active_image->_width;
-      //int h = _active_image->_height;
-      //int numbytes = _active_image->_data->length();
-      //printf("ImageView<%s> set active image<%p> <%dx%d> numb<%d>\n", _name.c_str(), (void*)_active_image.get(), w, h, numbytes);
       txi->initTextureFromImage(_texture.get(),_active_image,_generate_mipmaps);
     }
   }
 
   //////////////////////////////////
-  // if we have an image, draw it
+  // if we have content, draw it
   //////////////////////////////////
 
-  if(not _active_image){
+  // For GPU-direct, we have a texture even without _active_image
+  bool has_content = _active_image || (_texprovider && _texture);
+  if(!has_content){
     mtxi->PopUIMatrix();
     return;
   }
@@ -117,14 +131,12 @@ void ImageView::DoDraw(drawevent_constptr_t drwev) {
   //////////////////////////////////
 
   if(_maintain_aspect_ratio) {
-
-
-
     // letterbox (or pillarbox)
     float fw = float(_geometry._w);
     float fh = float(_geometry._h);
-    float iw = float(_active_image->_width);
-    float ih = float(_active_image->_height);
+    // Use texture dimensions (works for both GPU-direct and image-based)
+    float iw = _active_image ? float(_active_image->_width) : float(_texture->_width);
+    float ih = _active_image ? float(_active_image->_height) : float(_texture->_height);
 
     if(_invert_aspect){
       std::swap(iw,ih);

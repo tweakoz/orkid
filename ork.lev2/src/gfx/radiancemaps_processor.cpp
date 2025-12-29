@@ -647,6 +647,7 @@ xirprocessfuture_ptr_t EnvMapProcessor::processToXIRDataBlockAsync(const file::P
 
   // Load source texture
   auto load_req = std::make_shared<asset::LoadRequest>(input_path);
+  load_req->_gpu_load_async = false; // Load synchronously for now
   auto texasset = asset::AssetManager<TextureAsset>::load(load_req);
   if (!texasset || !texasset->GetTexture()) {
     future->setResult(nullptr);
@@ -664,6 +665,20 @@ xirprocessfuture_ptr_t EnvMapProcessor::processToXIRDataBlockAsync(const file::P
   std::transform(ext_str.begin(), ext_str.end(), ext_str.begin(), ::tolower);
   // getExtension returns without dot, so compare without dot
   bool is_equirectangular = (ext_str == "exr" || ext_str == "hdr");
+
+  // CRITICAL FIX: For equirectangular maps, U-axis must wrap to prevent seam at ±180°
+  if (is_equirectangular) {
+    rawenvmap->TexSamplingMode()._texAddrModeS = TextureAddressMode::WRAP;  // U-axis wraps
+    rawenvmap->TexSamplingMode()._texAddrModeT = TextureAddressMode::CLAMP; // V-axis clamps at poles
+    rawenvmap->TexSamplingMode()._texAddrModeR = TextureAddressMode::CLAMP;
+
+    // Apply the sampling mode to the GPU texture object
+    auto txi = gloadercontext->TXI();
+    txi->ApplySamplingMode(rawenvmap.get());
+
+    logchan_gen->log("EnvMapProcessor: Set WRAP mode on U-axis for equirectangular texture %s",
+                     texture_name.c_str());
+  }
 
   // Create the TaskGraph for filtering
 

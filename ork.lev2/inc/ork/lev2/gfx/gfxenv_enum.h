@@ -114,6 +114,7 @@ enum class ETextureSource : uint64_t {
   FROM_ASSET,     // loadTextureFromAsset
   FROM_ARRAY,     // initTextureArray
   FROM_DEFAULT,   // default textures (white, black, etc)
+  MOVIE,          // GPU-direct video decode (IOSurface, DMA-BUF, etc)
 };
 
 ///////////////////////////////////////////////////////////////////////////////

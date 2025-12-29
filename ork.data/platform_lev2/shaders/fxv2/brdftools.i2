@@ -25,15 +25,41 @@ libblock lib_brdf : lib_math {
                    + n*h.z;
     return normalize(result);
   }
-  float geometrySchlickGGX(vec3 normal, vec3 dir, float roughness) {
+  // Geometry term for Image-Based Lighting (IBL)
+  float geometrySchlickGGX_IBL(vec3 normal, vec3 dir, float roughness) {
     float k       = roughness * roughness * 0.5;
     float numer   = saturateF(dot(normal,dir));
     float divisor = numer * (1.0 - k) + k;
     return numer / divisor;
   }
 
+  // Geometry term for Direct Lighting (glTF 2.0 / UE4 compliant)
+  float geometrySchlickGGX_Direct(vec3 normal, vec3 dir, float roughness) {
+    float r       = roughness + 1.0;
+    float k       = (r * r) / 8.0;
+    float numer   = saturateF(dot(normal,dir));
+    float divisor = numer * (1.0 - k) + k;
+    return numer / divisor;
+  }
+
+  // Legacy function for backward compatibility (uses IBL version)
+  float geometrySchlickGGX(vec3 normal, vec3 dir, float roughness) {
+    return geometrySchlickGGX_IBL(normal, dir, roughness);
+  }
+
+  // Smith visibility term for Direct Lighting
+  float geometrySmith_Direct(vec3 normal, vec3 viewdir, vec3 lightdir, float roughness) {
+    return geometrySchlickGGX_Direct(normal, viewdir, roughness) * geometrySchlickGGX_Direct(normal, lightdir, roughness);
+  }
+
+  // Smith visibility term for IBL
+  float geometrySmith_IBL(vec3 normal, vec3 viewdir, vec3 lightdir, float roughness) {
+    return geometrySchlickGGX_IBL(normal, viewdir, roughness) * geometrySchlickGGX_IBL(normal, lightdir, roughness);
+  }
+
+  // Legacy function for backward compatibility (uses direct lighting version)
   float geometrySmith(vec3 normal, vec3 viewdir, vec3 lightdir, float roughness) {
-    return geometrySchlickGGX(normal, viewdir, roughness) * geometrySchlickGGX(normal, lightdir, roughness);
+    return geometrySmith_Direct(normal, viewdir, lightdir, roughness);
   }
 
   vec3 fresnelSchlick(vec3 normal, vec3 viewdir, vec3 F0) {
@@ -60,7 +86,7 @@ libblock lib_brdf : lib_math {
       float n_dot_h_sat = saturateF(h.z);
       float v_dot_h_sat = saturateF(v_dot_h);
       if (l.z > 0.0) {
-        float gsmith = geometrySmith(vec3(0, 0, 1), v, l, roughness);
+        float gsmith = geometrySmith_IBL(vec3(0, 0, 1), v, l, roughness);
         float gvis   = (gsmith * v_dot_h) / (n_dot_h_sat * n_dot_v);
         float fc     = pow(1.0 - v_dot_h_sat, 5.0);
         accum_scale += (1.0 - fc) * gvis;
@@ -76,7 +102,8 @@ float computeGGX(vec3 normal, vec3 halfdir, float roughness) {
     float ndoth = satdot(normal, halfdir);
     float ndothsq = ndoth*ndoth;
     float denominatorsqrt = (ndothsq * (a2 - 1.0) + 1.0);
-    return a*a*INV_PI / (denominatorsqrt*denominatorsqrt);
+    // FIXED: Use a2 instead of a*a for consistency (mathematically equivalent)
+    return a2*INV_PI / (denominatorsqrt*denominatorsqrt);
 }
 
 

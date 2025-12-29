@@ -19,6 +19,9 @@ namespace po = ::boost::program_options;
 int main(int argc, char** argv, char** envp) {
 
   auto init_data  = std::make_shared<AppInitData>(argc, argv, envp);
+  init_data->_enable_graphics = true;
+  init_data->_offscreen = true;
+  init_data->_std_asset_catalog = false;
   auto desc       = init_data->commandLineOptions("Orkid Shader Language Frontend");
   auto rval       = desc->add_options() //
       ("help", "produce help message") //

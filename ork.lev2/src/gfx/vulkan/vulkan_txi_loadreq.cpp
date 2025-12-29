@@ -16,14 +16,22 @@ static logchannel_ptr_t logchan_txi_loadreq = logger()->configureChannel("VKTXIL
 void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
   auto ptex = req->ptex;
   auto assreq = req->_assetloadreq;
-  
+
+  // Determine async vs sync mode
+  // Use async if we're inside a render pass (sync would assert), otherwise use sync for reliability
+  bool async = true;
+  if(assreq) {
+    async = assreq->_gpu_load_async;
+  }
   // Fire beginLoadMainThread event
   if (assreq and assreq->_on_event) {
     assreq->_on_event("beginLoadMainThread"_crcu, nullptr);
   }
-  
-  logchan_txi_loadreq->log("=== BEGIN _createFromLoadReq<%p:%s> ===", (void*)ptex.get(), ptex->_debugName.c_str());
-  //ptex->_debugName = "VkTextureInterface::_createFromLoadReq";
+
+  logchan_txi_loadreq->log("=== BEGIN _createFromLoadReq<%p:%s> assreq<%p> mode=%s ===",
+                           (void*)ptex.get(), ptex->_debugName.c_str(),
+                           (void*) assreq.get(),
+                           async ? "ASYNC" : "SYNC");
 
   auto vktex       = ptex->_impl.makeShared<VulkanTextureObject>(this);
   auto chain       = req->_cmipchain;
@@ -69,22 +77,45 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
   // Load request textures use slot [0] only (no double-buffering needed)
   vktex->_imgobj[0] = std::make_shared<VulkanImageObject>(_contextVK, imageInfo, debug_name);
 
-  vktex->_loadCB   = _contextVK->beginRecordCommandBuffer("VkTextureInterface::_createFromLoadReq");
-
-
-  auto cmdbuf_impl = vktex->_loadCB->_impl.getShared<VkSecondaryCommandBufferImpl>();
-  auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
-
   /////////////////////////////////////
-  // Set up async completion callback
+  // Setup command buffer (async vs sync)
   /////////////////////////////////////
 
-  auto tlsema         = std::make_shared<VulkanCompletionSemaphore>(this->_contextVK);
-  cmdbuf_impl->_completionSemaphore = tlsema;
-  tlsema->_onComplete = [=]() {
-    // Texture is now ready for sampling (async - after GPU upload completes)
-    vktex->_img_sampling = vktex->_imgobj[0];
-  };
+  VkCommandBuffer vk_cmdbuf = VK_NULL_HANDLE;
+  vkseccmdbufimpl_ptr_t cmdbuf_impl;
+  vkcompletionsemaphore_ptr_t tlsema;
+
+  if (async) {
+    /////////////////////////////////////
+    // Async path: secondary command buffer with completion callback
+    /////////////////////////////////////
+
+    vktex->_loadCB = _contextVK->beginRecordCommandBuffer("VkTextureInterface::_createFromLoadReq");
+    cmdbuf_impl = vktex->_loadCB->_impl.getShared<VkSecondaryCommandBufferImpl>();
+    vk_cmdbuf = cmdbuf_impl->_vkcmdbuf;
+
+    tlsema = std::make_shared<VulkanCompletionSemaphore>(this->_contextVK);
+    cmdbuf_impl->_completionSemaphore = tlsema;
+    tlsema->_onComplete = [=]() {
+      // Texture is now ready for sampling (async - after GPU upload completes)
+      vktex->_img_sampling = vktex->_imgobj[0];
+    };
+
+  } else {
+    /////////////////////////////////////
+    // Sync path: use sync transfer resources
+    /////////////////////////////////////
+
+    // ASSERT: Synchronous transfers must be outside frame boundaries
+    OrkAssert(!_contextVK->_renderPassActive);
+
+    // Acquire lock for sync transfer resources
+    _contextVK->_syncTransfer.mutex.lock();
+
+    // Begin recording sync transfer command buffer
+    _contextVK->beginSyncTransferCB();
+    vk_cmdbuf = _contextVK->_syncTransfer.command_buffer_impl->_vkcmdbuf;
+  }
 
   /////////////////////////////////////
 
@@ -247,12 +278,25 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
   vktex->_imgview_hash.finish();
 
   /////////////////////////////////////
-  // NOTE: Do NOT set _img_sampling here!
-  // Texture will be marked ready in completion callback after GPU upload completes
+  // Submit and complete (async vs sync)
   /////////////////////////////////////
 
-  _contextVK->endRecordCommandBuffer(vktex->_loadCB);
-  _contextVK->enqueueDeferredOneShotCommand(vktex->_loadCB);
+  if (async) {
+    // Async path: enqueue and return immediately
+    // NOTE: Do NOT set _img_sampling here - will be set in completion callback
+    _contextVK->endRecordCommandBuffer(vktex->_loadCB);
+    _contextVK->enqueueDeferredOneShotCommand(vktex->_loadCB);
+
+  } else {
+    // Sync path: submit and wait for GPU completion
+    _contextVK->endAndSubmitSyncTransferCB();
+
+    // GPU work is now complete - texture is ready for sampling
+    vktex->_img_sampling = vktex->_imgobj[0];
+
+    // Release sync transfer lock
+    _contextVK->_syncTransfer.mutex.unlock();
+  }
 
   /////////////////////////////////////
   // Update texture properties

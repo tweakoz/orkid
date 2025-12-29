@@ -384,7 +384,7 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
   if (it != _vkDescriptorSetByHash.end()) {
     descset_ptr = it->second;
   } else {
-    descset_ptr = _createNewDescriptorSetForProgram(vk_program);  
+    descset_ptr = _createNewDescriptorSetForProgram(vk_program);
     _vkDescriptorSetByHash[descset_bits] = descset_ptr;
 
     ////////////////////////

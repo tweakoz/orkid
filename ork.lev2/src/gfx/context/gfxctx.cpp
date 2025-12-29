@@ -66,13 +66,15 @@ loadingphase_ptr_t Context::newLoadingPhase() {
 }
 
 void LoadingPhase::enqueueOperation(gfxcontext_lambda_t l) {
-  _load_operations.atomicOp([l](gfxcontext_lambda_list_t& unlocked) { unlocked.push_back(l); });
+  _load_operations.atomicOp([l](gfxcontext_lambda_list_t& unlocked) {
+    unlocked.push_back(l);
+  });
 }
 
 void LoadingPhase::join() {
   // Ensure we're not on main thread to prevent deadlock
   ork::opq::assertNotOnQueue(opq::mainSerialQueue());
-  
+
   // Wait for all operations to complete
   // The operations are processed by the main thread elsewhere
   // This just waits until they're done
@@ -129,7 +131,6 @@ void Context::_processBeginFrameBlockers() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Context::_loadingPhaseOperations() {
-  if(0)printf("begin Context::_loadingPhaseOperations this<%p>\n", this);
   bool done = false;
   int counter = 0;
   float t0 = _ctxtimer.SecsSinceStart();
@@ -156,7 +157,6 @@ void Context::_loadingPhaseOperations() {
       float t1 = _ctxtimer.SecsSinceStart();
       float elapsed = t1 - t0;
       if(elapsed>0.03f) {
-        //logchan_ctx->log("Context: breaking out of loading phase operation loop after %f seconds", t1-t0);
         _ctxtimer.Start();
         done = true;
       }
@@ -166,7 +166,6 @@ void Context::_loadingPhaseOperations() {
     }
 
   }
-  if(0)printf("end Context::_loadingPhaseOperations this<%p> ops_done<%d>\n", this, counter);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -191,8 +190,7 @@ void Context::_doSubmitPrimaryCommandBuffer(){
 ///////////////////////////////////////////////////////////////////////////////
 
 void Context::beginFrame(bool visual) {
-  if(0)printf("enter Context::beginFrame this<%p>\n", this);
-  OrkAssert(_currentPhase == 0); 
+  OrkAssert(_currentPhase == 0);
   _currentPhase = "INFRAME"_crcu;
 
   _is_visual_frame = visual;
@@ -416,27 +414,27 @@ ContextExecutor::ContextExecutor(context_rawptr_t ctx)
 ///////////////////////////////////////////////////////////////////////////////
 
 void ContextExecutor::executePhase(taskphase_ptr_t phase) {
-  if(0)printf("ContextExecutor::executePhase phase<%s>\n", phase->_name.c_str());
   // Ensure we're not on main thread to prevent deadlock
   ork::opq::assertNotOnQueue(opq::mainSerialQueue());
 
   if (phase->_tasks.empty()) {
     return;
   }
-    
+
   // Create a loading phase for GPU operations
   auto loading_phase = _context->newLoadingPhase();
   auto graph = phase->_graph;
+
   // Enqueue all tasks to the loading phase
   for (auto task : phase->_tasks) {
     loading_phase->enqueueOperation([=](Context* ctx) {
-      task->_func(graph); 
+      task->_func(graph);
       TaskGraph::g_task_index += 1;
       size_t num_tasks = TaskGraph::g_tasks_pending.fetch_sub(1);
       logchan_tg->log("TaskGraph tasks pending: %zu", num_tasks);
     });
   }
-  
+
   // Wait for all GPU operations in this phase to complete
   loading_phase->join();
 }

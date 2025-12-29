@@ -274,6 +274,9 @@ VulkanImageObject::~VulkanImageObject() {
   if (_delete_image and (_vkimage != VK_NULL_HANDLE)) {
     vkDestroyImage(_ctx->_vkdevice, _vkimage, nullptr);
   }
+  if (_delete_devicemem and (_vkdevicemem != VK_NULL_HANDLE)) {
+    vkFreeMemory(_ctx->_vkdevice, _vkdevicemem, nullptr);
+  }
   _vkimage = VK_NULL_HANDLE;
   _imgmem = nullptr;
 }

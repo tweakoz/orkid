@@ -23,6 +23,7 @@ public:
   fvec4 _default_color;
 
   lev2::image_provider_ptr_t _imgprovider;
+  lev2::texture_provider_ptr_t _texprovider;  // GPU-direct textures
   lev2::image_ptr_t _pending_image;
   lev2::image_ptr_t _active_image;
   lev2::texture_ptr_t _texture;
@@ -34,6 +35,7 @@ public:
   bool _image_rot_180 = false;
   void setImage(lev2::image_ptr_t img);
   void setImageProvider(lev2::image_provider_ptr_t imgprovider);
+  void setTextureProvider(lev2::texture_provider_ptr_t texprovider);
   meshutil::rigidprim_V12N12B12T8C4_ptr_t _img_mesh;
   lev2::fxpipeline_ptr_t _pipeline_override;
   bool _invert_aspect = false;

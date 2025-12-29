@@ -17,6 +17,7 @@
 #include <ork/math/misc_math.h>
 #include <ork/kernel/opq.h>
 #include <ork/kernel/debug.h>
+#include <ork/lev2/lev2_asset.h>
 
 namespace ork::lev2 {
 
@@ -28,6 +29,12 @@ bool TextureInterface::_loadDDSTexture(texture_ptr_t ptex, datablock_ptr_t datab
   load_req->ptex                  = ptex;
   load_req->_inpstream._datablock = datablock;
   load_req->_inpstream.advance(sizeof(dds::DDS_HEADER));
+
+  // Transfer asset load request from texture's asset (if present)
+  if (ptex->_asset) {
+    load_req->_assetloadreq = ptex->_asset->_load_request;
+  }
+
   ////////////////////////////////////////////////////////////////////
   auto ddsh = (const dds::DDS_HEADER*)load_req->_inpstream.data(0);
   ////////////////////////////////////////////////////////////////////

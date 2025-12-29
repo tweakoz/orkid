@@ -311,6 +311,8 @@ struct VkTextureInterface final : public TextureInterface {
   bool destroyTexture(texture_ptr_t ptex) final;
   void ApplySamplingMode(Texture* ptex) final;
   void initTextureFromData(Texture* ptex, TextureInitData tid) final;
+  void initTextureFromGpuExternalSurface(Texture* ptex) final;
+  bool externalTextureChanged(const Texture* ptex);  // Check if external backing changed
   void generateMipMaps(Texture* ptex) final;
   Texture* createFromMipChain(MipChain* from_chain) final;
 
@@ -342,7 +344,9 @@ struct VkTextureInterface final : public TextureInterface {
   stagingbufferpool_ptr_t stagingBufferPoolForSrcOfSize(size_t size);
   LockedResource<sbpoolmap_t> _stagingSrcBuffers;
   std::unordered_set<vktexobj_ptr_t> _texobjs_pending_for_deletion;
+  std::unordered_set<vkimageobj_ptr_t> _imgobjs_pending_for_deletion;  // For swapping VkImages in external textures
   LockedResource<sseccmdbufpool_ptr_t> _seccmdbufpool_xfer;
+  size_t _current_frame = 0;  // Frame counter for deferred resource deletion
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VkFxInterface final : public FxInterface {

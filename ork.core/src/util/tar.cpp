@@ -23,7 +23,7 @@
 
 namespace ork::util {
 
-static logchannel_ptr_t logchan_tar = logger()->configureChannel("TAR", fvec3(0.0f, 1.0f, 1.0f), true);
+static logchannel_ptr_t logchan_tar = logger()->configureChannel("TAR", fvec3(0.0f, 1.0f, 1.0f), false);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Internal implementation using libarchive

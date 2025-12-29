@@ -794,6 +794,14 @@ void OrkEzApp::_mainThreadLoopIter() {
   if (_mainWindow) {
     auto ctx = _mainWindow->_ctqt;
     ctx->_runloopIter();
+
+    // CRITICAL FIX: Also process gloadercontext frames when window exists
+    // This is needed for command-line apps that create a hidden window for Vulkan
+    // The ContextExecutor uses gloadercontext, so we must pump frames on it
+    if (gloadercontext) {
+      gloadercontext->beginFrame(false);
+      gloadercontext->endFrame();
+    }
   } else {
     gloadercontext->beginFrame(false);
     gloadercontext->endFrame();
@@ -925,7 +933,7 @@ ork::lev2::orkezapp_ptr_t lev2appinit(ork::appinitdata_ptr_t init_data) {
 
   static auto _init_data = init_data;
   if (_init_data == nullptr) {
-    _init_data = std::make_shared<ork::AppInitData>();
+    _init_data = ::ork::appinitdata();
   }
 
   _init_data->_offscreen = true;
@@ -936,7 +944,11 @@ ork::lev2::orkezapp_ptr_t lev2appinit(ork::appinitdata_ptr_t init_data) {
   static std::shared_ptr<ork::lev2::ThreadGfxContext> _gthreadgfxctx;
   _gthreadgfxctx = std::make_shared<ork::lev2::ThreadGfxContext>(ork::lev2::gloadercontext.get());
 
-  ork::lev2::gloadercontext->makeCurrentContext();
+    if(_init_data->_enable_graphics ){
+        ork::lev2::gloadercontext->makeCurrentContext();
+
+    }
+    init_data->finalizeInitialization();
 
   return ezapp;
 }

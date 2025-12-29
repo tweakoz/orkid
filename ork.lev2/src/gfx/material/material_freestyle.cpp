@@ -208,6 +208,9 @@ void FreestyleMaterial::bindParam(const FxShaderParam* param, const varval_t& va
     } else if (auto as_texturearray = val.tryAs<texturearray_ptr_t>()) {
       auto texture = as_texturearray.value();
       FXI->bindParamTextureArray(param, texture.get());
+    } else if (auto as_tex_provider = val.tryAs<texture_provider_ptr_t>()) {
+      auto texture = as_tex_provider.value()->getTexture();
+      FXI->bindParamTexture(param, texture.get());
     } else if (auto as_bool_ = val.tryAs<bool>()) {
       FXI->bindParamBool(param, as_bool_.value());
     } else if (auto as_float_ = val.tryAs<float>()) {

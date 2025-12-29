@@ -37,14 +37,25 @@ struct IMPL {
   }
   ///////////////////////////////////////
   void init(lev2::Context* context) {
-    if (nullptr == _rtg_out) {
-      int w           = context->mainSurfaceWidth();
-      int h           = context->mainSurfaceHeight();
-      _rtg_out        = std::make_shared<RtGroup>(context, w, h, lev2::MsaaSamples::MSAA_1X);
-      auto buf        = _rtg_out->createRenderTarget(lev2::EBufferFormat::RGBA32F);
-      buf->_debugName = FormatString("PostFxNodeUser::_rtg_out");
-      //buf        = _rtg_out->createRenderTarget(lev2::EBufferFormat::RGBA32F);
-      
+    if (nullptr == _rtg_out[0]) {
+      int w = context->mainSurfaceWidth();
+      int h = context->mainSurfaceHeight();
+
+      // Create first RTG (always needed)
+      _rtg_out[0] = std::make_shared<RtGroup>(context, w, h, lev2::MsaaSamples::MSAA_1X, "user"_crcu);
+      auto buf0 = _rtg_out[0]->createRenderTarget(lev2::EBufferFormat::RGBA32F);
+      buf0->_debugName = FormatString("PostFxNodeUser::_rtg_out[0]");
+
+      // Create second RTG if double buffering enabled
+      if (_node->_double_buffer) {
+        _rtg_out[1] = std::make_shared<RtGroup>(context, w, h, lev2::MsaaSamples::MSAA_1X, "user"_crcu);
+        auto buf1 = _rtg_out[1]->createRenderTarget(lev2::EBufferFormat::RGBA32F);
+        buf1->_debugName = FormatString("PostFxNodeUser::_rtg_out[1]");
+      } else {
+        // Single buffer mode - both indices point to same RTG
+        _rtg_out[1] = _rtg_out[0];
+      }
+
       //_material.gpuInit(context);
       printf( "Loading shader<%s> for PostFxNodeUser\n", _node->_shader_path.c_str() );
       _freestyle_mtl = std::make_shared<FreestyleMaterial>();
@@ -54,7 +65,7 @@ struct IMPL {
       _technique = _freestyle_mtl->technique(_node->_technique_name);
       OrkAssert(_technique != nullptr);
       _fxpInputMap    = _freestyle_mtl->param("MrtMap0");
-      
+
     }
   }
   ///////////////////////////////////////
@@ -82,7 +93,7 @@ struct IMPL {
             ViewportRect extents(0, 0, w, h);
             FBI->pushViewport(extents);
             FBI->pushScissor(extents);
-            DWI->fullscreenQuad();
+            DWI->fullscreenQuad(_node->_flip_vertical ? fvec4(0, 1, 1, -1) : fvec4(0, 0, 1, 1));
             FBI->popViewport();
             FBI->popScissor();
           };
@@ -91,13 +102,12 @@ struct IMPL {
             auto input_rtg = try_input.value();
             int inputw = input_rtg->width();
             int inputh = input_rtg->height();
-            target->beginFrame();
             /////////////////////
-            // final blit
+            // Render to write buffer
             /////////////////////
             //printf( "inputw<%d> inputh<%d>\n", inputw, inputh );
-            _rtg_out->Resize(inputw,inputh);
-            FBI->PushRtGroup(_rtg_out.get());
+            _rtg_out[_write_index]->Resize(inputw,inputh);
+            FBI->PushRtGroup(_rtg_out[_write_index].get());
             _freestyle_mtl->begin(_technique,framedata);
             _freestyle_mtl->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
             for( auto item : _node->_bindings ) {
@@ -109,19 +119,25 @@ struct IMPL {
             _freestyle_mtl->end(framedata);
             FBI->PopRtGroup();
             /////////////////////
-            target->endFrame();
 
         }
       }
     }
     target->debugPopGroup();
     topcomp->topCPD()._single_pass_stereo = was_stereo;
+
+    // Swap read/write indices for next frame (double buffering)
+    if (_node->_double_buffer) {
+      std::swap(_read_index, _write_index);
+    }
   }
   ///////////////////////////////////////
   //CompositingMaterial _material;
   freestyle_mtl_ptr_t _freestyle_mtl;
   PostFxNodeUser* _node = nullptr;
-  rtgroup_ptr_t _rtg_out;
+  rtgroup_ptr_t _rtg_out[2];  // Double-buffered RTGs
+  int _read_index = 0;         // Buffer to read from (previous frame)
+  int _write_index = 1;        // Buffer to write to (current frame)
   const FxShaderTechnique* _technique = nullptr;
   const FxShaderParam* _fxpInputMap;
 
@@ -148,12 +164,22 @@ void PostFxNodeUser::DoRender(CompositorDrawData& drawdata) // virtual
 ///////////////////////////////////////////////////////////////////////////////
 rtbuffer_ptr_t PostFxNodeUser::GetOutput() const {
   auto impl = _impl.get<std::shared_ptr<posteffect_user::IMPL>>();
-  return (impl->_rtg_out) ? impl->_rtg_out->buffer(0) : nullptr;
+  // Return read buffer (previous frame for feedback, safe to sample from)
+  return (impl->_rtg_out[impl->_read_index]) ? impl->_rtg_out[impl->_read_index]->buffer(0) : nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
 rtgroup_ptr_t PostFxNodeUser::GetOutputGroup() const {
   auto impl = _impl.get<std::shared_ptr<posteffect_user::IMPL>>();
-  return (impl->_rtg_out) ? impl->_rtg_out : nullptr;
+  // Return read buffer (previous frame for feedback, safe to sample from)
+  return (impl->_rtg_out[impl->_read_index]) ? impl->_rtg_out[impl->_read_index] : nullptr;
+}
+///////////////////////////////////////////////////////////////////////////////
+texture_ptr_t PostFxNodeUser::getCurrentReadTexture() const {
+  auto impl = _impl.get<std::shared_ptr<posteffect_user::IMPL>>();
+  if (impl->_rtg_out[impl->_read_index]) {
+    return impl->_rtg_out[impl->_read_index]->buffer(0)->_texture;
+  }
+  return nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2

@@ -64,6 +64,7 @@ struct LoadRequest{
   void_lambda_t _on_load_failed;
   event_lambda_t _on_event;
   datablock_ptr_t _datablock;
+  bool _gpu_load_async = true;
   uint64_t _contentHash = 0;
   uint64_t _assetStatus = 0;
   catalog::fetchrequest_ptr_t _catalog_handle;

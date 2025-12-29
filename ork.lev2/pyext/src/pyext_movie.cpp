@@ -18,19 +18,58 @@ createStreamingOscillatorFromMoviePlayback(movieplayback_ptr_t movie_playback, a
 ///////////////////////////////////////////////////////////////////////////////
 void pyinit_movie(py::module& module_lev2) {
   auto type_codec         = python::pb11_typecodec_t::instance();
+
+  ///////////////////////////////////////////////////////////////////////////////
+  // MovieBackend enum - select video decode backend
+  ///////////////////////////////////////////////////////////////////////////////
+  py::enum_<MovieBackend>(module_lev2, "MovieBackend")
+      .value("FFMPEG", MovieBackend::FFMPEG, "CPU decode (cross-platform, default)")
+      .value("VIDEOTOOLBOX", MovieBackend::VIDEOTOOLBOX, "macOS: Hardware decode → IOSurface → Vulkan")
+      .value("VAAPI", MovieBackend::VAAPI, "Linux AMD: Hardware decode → DMA-BUF → Vulkan")
+      .value("NVDEC", MovieBackend::NVDEC, "Linux NVIDIA: Hardware decode → CUDA → Vulkan")
+      .export_values();
+
+  ///////////////////////////////////////////////////////////////////////////////
+  // MoviePixelFormat enum - select output pixel format
+  ///////////////////////////////////////////////////////////////////////////////
+  py::enum_<MoviePixelFormat>(module_lev2, "MoviePixelFormat")
+      .value("AUTO", MoviePixelFormat::AUTO, "Backend decides optimal format")
+      .value("YCBCR_NV12", MoviePixelFormat::YCBCR_NV12, "4:2:0 YCbCr 8-bit (hardware native)")
+      .value("YCBCR_P010", MoviePixelFormat::YCBCR_P010, "4:2:0 YCbCr 10-bit (HDR)")
+      .value("RGB_RGBA8", MoviePixelFormat::RGB_RGBA8, "RGB conversion at decode time")
+      .export_values();
+
+  ///////////////////////////////////////////////////////////////////////////////
+  // MoviePlaybackContext
+  ///////////////////////////////////////////////////////////////////////////////
   auto movieplayback_type = //
       py::class_<MoviePlaybackContext, movieplayback_ptr_t>(module_lev2, "MoviePlaybackContext")
           .def(py::init<>())
+          // Legacy init - defaults to FFMPEG backend
           .def("init", [](movieplayback_ptr_t ctx, py::object filename) { //
-            auto as_str    = py::cast<py::str>(filename);
+            auto as_str = py::cast<py::str>(filename);
             ctx->init(as_str.cast<std::string>());
-          }) 
+          })
+          // New init with backend selection
+          .def("init", [](movieplayback_ptr_t ctx,
+                         py::object filename,
+                         MovieBackend backend,
+                         MoviePixelFormat format) {
+            auto as_str = py::cast<py::str>(filename);
+            ctx->init(as_str.cast<std::string>(), backend, format);
+          },
+          py::arg("filename"),
+          py::arg("backend") = MovieBackend::FFMPEG,
+          py::arg("format") = MoviePixelFormat::AUTO,
+          "Initialize movie playback with backend selection") 
           .def("play", [](movieplayback_ptr_t ctx) { ctx->play(); })
           .def("pause", [](movieplayback_ptr_t ctx) { ctx->pause(); })
           .def("stop", [](movieplayback_ptr_t ctx) { ctx->stop(); })
           .def("restart", [](movieplayback_ptr_t ctx) { ctx->restart(); })
           .def("createImageProvider", [](movieplayback_ptr_t ctx) -> image_provider_ptr_t { return ctx->createImageProvider(); })
           .def_property_readonly("image_provider", [](movieplayback_ptr_t ctx) -> image_provider_ptr_t { return ctx->createImageProvider(); })
+          .def("createTextureProvider", [](movieplayback_ptr_t ctx) -> texture_provider_ptr_t { return ctx->createTextureProvider(); })
+          .def_property_readonly("texture_provider", [](movieplayback_ptr_t ctx) -> texture_provider_ptr_t { return ctx->createTextureProvider(); })
           .def(
               "createAudioProgram",
               [](movieplayback_ptr_t ctx, audio::singularity::synth_ptr_t synth) -> audio::singularity::prgdata_ptr_t {
@@ -59,9 +98,6 @@ void pyinit_movie(py::module& module_lev2) {
           .def_property_readonly(
               "current_frame_index", [](movieplayback_ptr_t ctx) -> int64_t { return ctx->_current_frame_index; })
           .def_property_readonly("max_queue_size", [](movieplayback_ptr_t ctx) -> size_t { return ctx->_max_queue_size; })
-          // Stream indices
-          .def_property_readonly("video_stream_index", [](movieplayback_ptr_t ctx) -> int { return ctx->_video_stream_idx; })
-          .def_property_readonly("audio_stream_index", [](movieplayback_ptr_t ctx) -> int { return ctx->_audio_stream_idx; })
           // Audio metadata
           .def_property_readonly(
               "audio_sample_rate",
@@ -94,49 +130,26 @@ void pyinit_movie(py::module& module_lev2) {
           .def_property_readonly(
               "bit_rate",
               [](movieplayback_ptr_t ctx) -> int64_t {
-                if (ctx->_format_ctx) {
-                  return ctx->_format_ctx->bit_rate;
-                }
-                return 0;
-              })
-          .def_property_readonly(
-              "nb_streams",
-              [](movieplayback_ptr_t ctx) -> unsigned int {
-                if (ctx->_format_ctx) {
-                  return ctx->_format_ctx->nb_streams;
-                }
-                return 0;
+                return ctx->_backend_impl ? ctx->_backend_impl->bitRate() : 0;
               })
           .def_property_readonly(
               "format_name",
               [](movieplayback_ptr_t ctx) -> std::string {
-                if (ctx->_format_ctx && ctx->_format_ctx->iformat && ctx->_format_ctx->iformat->name) {
-                  return ctx->_format_ctx->iformat->name;
-                }
-                return "";
+                return ctx->_backend_impl ? ctx->_backend_impl->formatName() : "";
               })
           .def_property_readonly(
               "format_long_name",
               [](movieplayback_ptr_t ctx) -> std::string {
-                if (ctx->_format_ctx && ctx->_format_ctx->iformat && ctx->_format_ctx->iformat->long_name) {
-                  return ctx->_format_ctx->iformat->long_name;
-                }
-                return "";
+                return ctx->_backend_impl ? ctx->_backend_impl->formatLongName() : "";
               })
           // Video codec metadata
           .def_property_readonly(
               "video_codec_name",
               [](movieplayback_ptr_t ctx) -> std::string {
-                if (ctx->_video_codec && ctx->_video_codec->name) {
-                  return ctx->_video_codec->name;
-                }
-                return "";
+                return ctx->_backend_impl ? ctx->_backend_impl->videoCodecName() : "";
               })
           .def_property_readonly("video_bit_rate", [](movieplayback_ptr_t ctx) -> int64_t {
-            if (ctx->_video_codec_ctx) {
-              return ctx->_video_codec_ctx->bit_rate;
-            }
-            return 0;
+            return ctx->_backend_impl ? ctx->_backend_impl->videoBitRate() : 0;
           });
   type_codec->registerStdCodec<movieplayback_ptr_t>(movieplayback_type);
   ///////////////////////////////////////////////////////////////////////////////

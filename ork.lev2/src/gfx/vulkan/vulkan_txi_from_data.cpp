@@ -47,17 +47,65 @@ InFlightTextureTransfer::~InFlightTextureTransfer(){
 
   ///////////////////////////////////////////////////////////////////////////////
   void VkTextureInterface::_beginFrame(){
-    // check for textures pending for deletion
-    //. to have all transfers completed,
-    //.  then they can be deleted
-    std::unordered_set<vktexobj_ptr_t> ok_to_delete;
+    // Increment frame counter for deferred deletion
+    _current_frame++;
+
+    constexpr size_t MAX_FRAMES_IN_FLIGHT = 5;  // Increased for triple buffering + GPU pipeline depth
+
+    ///////////////////////////////////////////////////////
+    // Clean up VulkanTextureObjects (for streaming textures)
+    ///////////////////////////////////////////////////////
+    std::unordered_set<vktexobj_ptr_t> texobjs_ok_to_delete;
+
     for (auto vktex : _texobjs_pending_for_deletion) {
-      if(vktex->_inflight_transfers.empty()){
-        ok_to_delete.insert(vktex);
+      bool transfers_done = vktex->_inflight_transfers.empty();
+      bool frames_elapsed = (_current_frame - vktex->_deletion_frame) > MAX_FRAMES_IN_FLIGHT;
+
+      if (transfers_done && (vktex->_deletion_frame == 0 || frames_elapsed)) {
+        texobjs_ok_to_delete.insert(vktex);
       }
     }
-    for (auto vktex : ok_to_delete) {
+
+    for (auto vktex : texobjs_ok_to_delete) {
       _texobjs_pending_for_deletion.erase(vktex);
+    }
+
+    ///////////////////////////////////////////////////////
+    // Clean up VkImageObjects (for external textures with swapped images)
+    // Use GPU fence synchronization to ensure safe deletion
+    ///////////////////////////////////////////////////////
+    std::unordered_set<vkimageobj_ptr_t> imgobjs_ok_to_delete;
+
+    for (auto imgobj : _imgobjs_pending_for_deletion) {
+      bool can_delete = false;
+
+      if (imgobj->_deletion_fence) {
+        // REAL SYNCHRONIZATION: Check if GPU fence has signaled
+        VkResult fence_status = vkGetFenceStatus(_contextVK->_vkdevice, imgobj->_deletion_fence->_vkfence);
+        if (fence_status == VK_SUCCESS) {
+          // Fence signaled - GPU is done with this image
+          can_delete = true;
+        } else if (fence_status == VK_ERROR_DEVICE_LOST) {
+          // Device lost - clean up anyway
+          can_delete = true;
+        }
+        // else VK_NOT_READY - GPU still using it, keep waiting
+      } else {
+        // No fence - fallback to conservative frame counting
+        size_t frames_since_deletion = _current_frame - imgobj->_deletion_frame;
+        if (frames_since_deletion > MAX_FRAMES_IN_FLIGHT) {
+          can_delete = true;
+        }
+      }
+
+      if (can_delete) {
+        imgobjs_ok_to_delete.insert(imgobj);
+      }
+    }
+
+    for (auto imgobj : imgobjs_ok_to_delete) {
+      _imgobjs_pending_for_deletion.erase(imgobj);
+      // VkImageObject destructor will release _external_handle_keepalive (IOSurfaceHandle)
     }
   }
 

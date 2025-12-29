@@ -1,0 +1,171 @@
+///////////////////////////////////////////////////////////////
+// User Post-Processing Shader Example
+//
+// This shader demonstrates custom post-processing effects in Orkid's
+// FXv2 shader format, including:
+// - Radial distortion effect with time animation
+// - Temporal feedback for motion trails
+// - Proper Vulkan descriptor set layout
+//
+// FXv2 Format Features:
+// - Unified GLSL syntax compiled to SPIR-V for Vulkan
+// - Automatic descriptor set management
+// - Uniform block and sampler organization
+///////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////
+// FxConfigs - Graphics Pipeline Configuration
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default {
+  // Uses default rasterizer/blend state (overridden by state blocks)
+}
+
+///////////////////////////////////////////////////////////////
+// Uniform Blocks - Shader Constants
+///////////////////////////////////////////////////////////////
+// Vertex shader uniforms (descriptor set 0, binding auto-assigned)
+uniform_block ub_vtx (descriptor_set 0) {
+  mat4 mvp;         // Model-View-Projection matrix (fullscreen quad)
+  vec4 modcolor;    // Modulation color (unused in this example)
+}
+
+// Fragment shader uniforms (descriptor set 0, binding auto-assigned)
+uniform_block ub_frg (descriptor_set 0) {
+  float frg_time;       // Animated time value for distortion
+  float EffectAmount;   // Effect intensity multiplier (unused)
+  int image_width;      // Input texture width (unused)
+  int image_height;     // Input texture height (unused)
+}
+
+///////////////////////////////////////////////////////////////
+// Samplers - Input Textures
+///////////////////////////////////////////////////////////////
+sampler_set ss_frg (descriptor_set 0) {
+  sampler2D MrtMap0;      // Primary input (scene render or previous node output)
+  sampler2D FeedbackMap;  // Feedback texture (previous frame from C1 node)
+  usampler2D GBufferMap;  // G-buffer (unused in this example)
+}
+///////////////////////////////////////////////////////////////
+// Shader Interfaces - Input/Output Definitions
+///////////////////////////////////////////////////////////////
+// Vertex shader interface: defines vertex attributes and varyings
+vertex_interface iface_vtx {
+  inputs {
+    vec4 position : POSITION;  // Vertex position (fullscreen quad: -1..1)
+    vec4 vtxcolor : COLOR0;    // Vertex color (unused)
+    vec2 uv0 : TEXCOORD0;      // Primary texture coordinates (0..1)
+    vec2 uv1 : TEXCOORD1;      // Secondary UVs (unused)
+  }
+  outputs {
+    vec4 frg_clr;  // Color passed to fragment shader
+    vec2 frg_uv;   // UV coordinates passed to fragment shader
+  }
+}
+
+// Fragment shader interface: inherits from vertex + defines output targets
+fragment_interface iface_frg
+  : iface_vtx {
+  outputs {
+    vec4 out_clr;  // Final RGBA color output (render target)
+  }
+}
+
+///////////////////////////////////////////////////////////////
+// State Blocks - Rasterizer/Blend State
+///////////////////////////////////////////////////////////////
+state_block sb_default : default {
+  BlendMode = OFF;   // No alpha blending (opaque post-process)
+  DepthTest = OFF;   // No depth testing (2D screen-space effect)
+  CullTest  = OFF;   // No backface culling (fullscreen quad)
+}
+///////////////////////////////////////////////////////////////
+// Shaders - Vertex and Fragment Programs
+///////////////////////////////////////////////////////////////
+
+// Simple passthrough vertex shader for fullscreen quad
+vertex_shader vs_usertest
+  : iface_vtx    // Uses vertex interface
+  : ub_vtx {     // Accesses vertex uniform block
+  gl_Position = mvp * position;  // Transform to clip space
+  frg_clr     = vtxcolor;        // Pass color through (unused)
+  frg_uv      = uv0;             // Pass UV coords to fragment shader
+}
+
+///////////////////////////////////////////////////////////////
+// RADIAL DISTORTION FRAGMENT SHADER
+//
+// Creates an animated radial ripple effect by:
+// 1. Converting UV coords to polar (radius, angle)
+// 2. Modulating radius with sin(radius + time) to create ripple waves
+// 3. Converting back to Cartesian and sampling input texture
+//
+// The sin(radius + frg_time*10) creates concentric ripple waves
+// that propagate outward from the center over time.
+///////////////////////////////////////////////////////////////
+fragment_shader ps_radial
+  : iface_frg    // Uses fragment interface
+  : ub_frg       // Accesses fragment uniforms (frg_time)
+  : ss_frg {     // Accesses samplers (MrtMap0)
+
+  // Convert UV to polar coordinates (centered at 0.5, 0.5)
+  vec2 disp_uv = frg_uv - vec2(0.5, 0.5);  // Offset to center
+  float radius = length(disp_uv);           // Distance from center
+  float angle = atan(disp_uv.y, disp_uv.x); // Angle in radians
+
+  // Apply time-animated radial ripple displacement
+  // sin(radius + time) creates traveling waves from center
+  float displacement_amount = 0.01;  // Max displacement magnitude
+  float new_radius = radius + sin(radius*100.0 + frg_time) * displacement_amount;
+
+  // Convert back to Cartesian coordinates
+  vec2 new_uv = vec2(cos(angle)*new_radius, sin(angle)*new_radius) + vec2(0.5, 0.5);
+
+  // Sample input texture with distorted UVs
+  vec3 inprgb = texture(MrtMap0, new_uv).xyz;
+  out_clr = vec4(inprgb, 1.0);
+}
+
+///////////////////////////////////////////////////////////////
+// TEMPORAL FEEDBACK FRAGMENT SHADER
+//
+// Creates motion trails by blending current frame with previous frame:
+// - 2.5% current frame (fresh input)
+// - 97.5% previous frame (accumulated history)
+//
+// This creates a "ghosting" effect where moving objects leave trails.
+// REQUIRES double buffering to avoid Vulkan layout conflicts!
+///////////////////////////////////////////////////////////////
+fragment_shader ps_feedback
+  : iface_frg    // Uses fragment interface
+  : ub_frg       // Accesses fragment uniforms (unused in this shader)
+  : ss_frg {     // Accesses samplers (MrtMap0, FeedbackMap)
+
+  // Sample current frame input
+  vec3 inprgb = texture(MrtMap0, frg_uv).xyz;
+
+  // Sample previous frame (via texture_provider with double buffering)
+  vec3 inpfb = texture(FeedbackMap, frg_uv).xyz;
+
+  // Blend: 97.5% previous + 2.5% current = long-lasting trails
+  out_clr = vec4(inprgb*0.025 + inpfb*0.975, 1.0);
+}
+///////////////////////////////////////////////////////////////
+// Techniques - Rendering Passes
+//
+// Techniques combine shaders and state blocks into complete
+// rendering passes that can be referenced by name from Python.
+///////////////////////////////////////////////////////////////
+
+// Radial distortion technique (referenced as "tek_radial_distort" in Python)
+// Used by C0 post-processing node
+technique tek_radial_distort {
+  fxconfig = fxcfg_default;                           // Use default pipeline config
+  vf_pass = { vs_usertest, ps_radial, sb_default }   // Vertex + Fragment + State
+}
+
+// Temporal feedback technique (referenced as "tek_feedback" in Python)
+// Used by C1 post-processing node (MUST have double_buffer = True!)
+technique tek_feedback {
+  fxconfig = fxcfg_default;                             // Use default pipeline config
+  vf_pass = { vs_usertest, ps_feedback, sb_default }   // Vertex + Fragment + State
+}

@@ -27,6 +27,12 @@ namespace ork::lev2 {
 std::atomic<size_t> Texture::_texture_count = 0;
 
 ///////////////////////////////////////////////////////////////////////////////
+// TextureProvider implementations
+///////////////////////////////////////////////////////////////////////////////
+
+TextureProvider::~TextureProvider() {}
+
+///////////////////////////////////////////////////////////////////////////////
 
 void TextureSamplingModeData::presetPointAndClamp() {
   _texAddrModeS   = TextureAddressMode::CLAMP;
@@ -101,14 +107,14 @@ Texture::Texture(ipctexture_ptr_t external_memory)
   _vars = std::make_shared<asset::vars_t>();
   _residenceState.store(0);
   int texcount = _texture_count.fetch_add(1);
-   //printf( "Texture::_texture_count: %zu\n", texcount+1 );
+  // printf( "Texture::_texture_count: %zu\n", texcount+1 );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 Texture::~Texture() {
   int texcount = _texture_count.fetch_add(-1);
-  //printf( "~Texture::_texture_count: %zu\n", texcount-1 );
+  // printf( "~Texture::_texture_count: %zu\n", texcount-1 );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -308,7 +314,7 @@ void TextureArray::resize(size_t w, size_t h, size_t maxslices, EBufferFormat ef
   _width     = w;
   _height    = h;
   _maxslices = maxslices;
-  _format = efmt;
+  _format    = efmt;
   _free_slices.clear();
   _dirty_slices.clear();
   for (size_t i = 0; i < maxslices; i++) {
@@ -328,8 +334,8 @@ void TextureArray::_conform(EBufferFormat fmt) {
   size_t index = 0;
   for (auto it_img : _images) {
     size_t map_index = it_img.first;
-    OrkAssert(map_index==index);
-    auto img     = it_img.second;
+    OrkAssert(map_index == index);
+    auto img = it_img.second;
     final_images.push_back(img);
     index++;
   }
@@ -363,8 +369,8 @@ void TextureArray::_conform(EBufferFormat fmt) {
   index = 0;
   for (auto it_img : _images) {
     size_t map_index = it_img.first;
-    OrkAssert(map_index==index);
-    auto img     = it_img.second;
+    OrkAssert(map_index == index);
+    auto img = it_img.second;
     if (img->_width != _width || img->_height != _height) {
       images_to_resize.insert(index);
     }
@@ -375,7 +381,7 @@ void TextureArray::_conform(EBufferFormat fmt) {
     auto prvimg         = final_images[index];
     auto newimg         = std::make_shared<Image>();
     final_images[index] = newimg;
-    auto OP = [=, &sync_resize]() {
+    auto OP             = [=, &sync_resize]() {
       newimg->resizedOf(*prvimg, _width, _height);
       sync_resize--;
     };
@@ -403,7 +409,7 @@ texturearraysliceref_ptr_t TextureArray::load(const std::string& path) {
   OrkAssert(it_first != _free_slices.end());
   size_t slice_index = *it_first;
   _free_slices.erase(it_first);
-  auto new_slice = std::make_shared<TextureArraySliceRef>(this, slice_index);
+  auto new_slice  = std::make_shared<TextureArraySliceRef>(this, slice_index);
   auto temp_image = std::make_shared<Image>();
   temp_image->readFromFile(path);
   auto formatted_image = std::make_shared<Image>();
@@ -413,7 +419,15 @@ texturearraysliceref_ptr_t TextureArray::load(const std::string& path) {
   _images[slice_index] = resized_image;
   _dirty_slices.insert(slice_index);
   //_slices_by_path[path] = slice_index;
-  if(0)printf("TextureArray<%p>::load slice_index<%zu> path<%s> dim<%d %d> new_slice<%p>\n", (void*) this, slice_index, path.c_str(), _width, _height, (void*) new_slice.get()); 
+  if (0)
+    printf(
+        "TextureArray<%p>::load slice_index<%zu> path<%s> dim<%d %d> new_slice<%p>\n",
+        (void*)this,
+        slice_index,
+        path.c_str(),
+        _width,
+        _height,
+        (void*)new_slice.get());
   return new_slice;
 }
 
@@ -421,7 +435,7 @@ texturearraysliceref_ptr_t TextureArray::load(const std::string& path) {
 
 texturearraysliceref_ptr_t TextureArray::slice(size_t index) const {
   auto mutable_this = const_cast<TextureArray*>(this);
-  auto slice = std::make_shared<TextureArraySliceRef>(mutable_this, index);
+  auto slice        = std::make_shared<TextureArraySliceRef>(mutable_this, index);
   return slice;
 }
 
@@ -435,11 +449,19 @@ TextureArraySliceRef::TextureArraySliceRef(TextureArray* ary, int slice)
 ///////////////////////////////////////////////////////////////////////////////
 
 rtgroup_ptr_t TextureArraySliceRef::createRenderTarget(Context* ctx) {
-  auto rtg = std::make_shared<RtGroup>(ctx, _array->_width, _array->_height);
+  auto rtg    = std::make_shared<RtGroup>(ctx, _array->_width, _array->_height);
   rtg->_usage = "arrayslice"_crcu;
   rtg->_slice = this;
   rtg->_name  = "TextureArray:" + _array->_debugName;
   return rtg;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+LambdaTextureProvider::LambdaTextureProvider(std::function<texture_ptr_t()> func)
+    : _func(func) {
+}
+texture_ptr_t LambdaTextureProvider::getTexture() {
+  return _func();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

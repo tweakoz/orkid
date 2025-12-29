@@ -135,15 +135,16 @@ fragment_shader ps_filterSpecularEnvMapEQUI
     float ndotl = satdot(n, l);
 
     if (ndotl > 0.0) {
-      // Add Fresnel factor for energy conservation
-      float cosTheta = ndotl;
-      float F        = 0.04 + 0.96 * pow(1.0 - cosTheta, 5.0);
+      // FIXED: Fresnel uses V·H angle, not N·L (glTF 2.0 compliant)
+      float VdotH = saturateF(dot(v, h));
+      float F     = 0.04 + 0.96 * pow(1.0 - VdotH, 5.0);
 
       // Adjust weight to account for multiple scattering
       float msWeight = mix(1.0, 1.0 / (1.0 - F), roughness * roughness);
 
       vec2 luv = env_equirectangularN2UVa(l);
-      luv      = clamp(luv, 0, 1);
+      // Allow U to wrap (for ±180° seam), clamp V only (for poles)
+      luv.y = clamp(luv.y, 0, 1);
       
       // Use bicubic sampling if input is lower resolution, otherwise use regular sampling
       vec3 sampleColor;
@@ -161,6 +162,7 @@ fragment_shader ps_filterSpecularEnvMapEQUI
   o        = o / w;
   vec2 luv = env_equirectangularN2UVa(n);
   // o = textureLod(prefiltmap, frg_uv0,0).rgb;
+
   out_clr = vec4(o, 1);
 }
 ///////////////////////////////////////////////////////////////
@@ -222,7 +224,9 @@ fragment_shader ps_filterDiffuseEnvMapEQUI : iface_fyo : lib_math : lib_envmappi
     w += 2;
   }
   //////////////////////////////////
-  out_clr = vec4(o / w, 1);
+  o = o / w;
+
+  out_clr = vec4(o, 1);
   //out_clr = textureLod(prefiltmap, frg_uv0,0);
   //out_clr = vec4(1,0,1,1);
 }

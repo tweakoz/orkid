@@ -1914,6 +1914,7 @@ void pyinit_ui(py::module& module_lev2) {
                 if (obj.is_none()) {
                   imgview->setImage(nullptr);
                   imgview->setImageProvider(nullptr);
+                  imgview->setTextureProvider(nullptr);
                 } else {
                   // Try image_ptr_t first
                   try {
@@ -1926,6 +1927,13 @@ void pyinit_ui(py::module& module_lev2) {
                   try {
                     auto prov = obj.cast<lev2::image_provider_ptr_t>();
                     imgview->setImageProvider(prov);
+                    return;
+                  } catch (...) {
+                  }
+                  // Try texture_provider_ptr_t (GPU-direct)
+                  try {
+                    auto texprov = obj.cast<lev2::texture_provider_ptr_t>();
+                    imgview->setTextureProvider(texprov);
                     return;
                   } catch (...) {
                   }

@@ -24,12 +24,15 @@ public:
 
   lev2::rtbuffer_ptr_t GetOutput() const final;
   lev2::rtgroup_ptr_t GetOutputGroup() const final;
+  texture_ptr_t getCurrentReadTexture() const;  // For double-buffered feedback
 
   svar256_t _impl;
   //fxpipeline_ptr_t _pipeline;
   std::unordered_map<std::string, FxPipeline::varval_t> _bindings;
   std::string _technique_name;
   std::string _shader_path;
+  bool _double_buffer = false;
+  bool _flip_vertical = false;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

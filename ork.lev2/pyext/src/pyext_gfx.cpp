@@ -481,6 +481,11 @@ void pyinit_gfx(py::module& module_lev2) {
                          return fxs.c_str();
                        })
                    .def_property_readonly("texture", [](rtbuffer_ptr_t rtb) -> texture_ptr_t { return rtb->_texture; })
+                   .def_property_readonly("texture_provider", [](rtbuffer_ptr_t rtb) -> texture_provider_ptr_t {
+                     return std::make_shared<LambdaTextureProvider>(
+                         [rtb]() -> texture_ptr_t { return rtb->_texture; }
+                     );
+                   })
                    .def_property(
                        "clearColor",
                        [](rtbuffer_ptr_t rtb) -> fvec4 { return rtb->_clearColor; },
@@ -596,6 +601,11 @@ void pyinit_gfx(py::module& module_lev2) {
       py::class_<TextureAsset, ::ork::asset::Asset, textureassetptr_t>(module_lev2, "TextureAsset")
           .def_property_readonly("texture", [](textureassetptr_t ta) -> texture_ptr_t { return ta->_texture; });
   type_codec->registerStdCodec<textureassetptr_t>(texture_asset_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto texture_provider_type = //
+      py::class_<TextureProvider, texture_provider_ptr_t>(module_lev2, "TextureProvider")
+          .def("getTexture", &TextureProvider::getTexture);
+  type_codec->registerStdCodec<texture_provider_ptr_t>(texture_provider_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto texture_type = //
       py::class_<Texture, texture_ptr_t>(module_lev2, "Texture")

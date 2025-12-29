@@ -4,20 +4,14 @@
 
 #include <ork/lev2/gfx/image.h>
 #include <ork/lev2/gfx/targetinterfaces.h>
+#include <ork/util/crc.h>
 #include <thread>
 #include <mutex>
 #include <condition_variable>
 #include <deque>
 #include <atomic>
 
-extern "C" {
-//#include <x264.h>
-#include <libswscale/swscale.h>
-#include <libavcodec/avcodec.h>
-#include <libavutil/mathematics.h>
-#include <libavformat/avformat.h>
-#include <libavutil/opt.h>
-}
+// FFmpeg headers removed - now only included in movie_playback_ffmpeg.cpp
 
 namespace ork::lev2 {
 
@@ -115,6 +109,90 @@ struct MovieAudioConfig {
 
 using movieaudioconfig_ptr_t = std::shared_ptr<MovieAudioConfig>;
 
+///////////////////////////////////////////////////////////////////////////////////////////////
+// Movie Backend Selection
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+enum class MovieBackend : uint64_t {
+  CrcEnum(FFMPEG),          // CPU decode, cross-platform (default)
+  CrcEnum(VIDEOTOOLBOX),    // macOS: Hardware decode → IOSurface → Vulkan
+  CrcEnum(VAAPI),           // Linux AMD: Hardware decode → DMA-BUF → Vulkan
+  CrcEnum(NVDEC)            // Linux NVIDIA: Hardware decode → CUDA → Vulkan
+};
+
+enum class MoviePixelFormat : uint64_t {
+  CrcEnum(AUTO),            // Backend decides optimal format
+  CrcEnum(YCBCR_NV12),      // 4:2:0 YCbCr (hardware native, most efficient)
+  CrcEnum(YCBCR_P010),      // 4:2:0 YCbCr 10-bit (HDR)
+  CrcEnum(RGB_RGBA8)        // RGB conversion at decode time
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+// Backend Implementation Interface
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+struct MovieBackendImpl {
+  virtual ~MovieBackendImpl() = default;
+
+  virtual bool init(const std::string& filename, MoviePixelFormat format) = 0;
+  virtual void play() = 0;
+  virtual void pause() = 0;
+  virtual void stop() = 0;
+  virtual void restart() = 0;
+
+  // Video output
+  virtual image_ptr_t currentImage() = 0;              // CPU path (FFmpeg)
+  virtual texture_ptr_t currentTexture() = 0;          // GPU-direct path (native backends)
+  virtual image_provider_ptr_t createImageProvider() = 0;
+  virtual texture_provider_ptr_t createTextureProvider() = 0;
+
+  // Audio
+  virtual bool hasAudio() const = 0;
+  virtual movieaudioconfig_ptr_t audioConfig() const = 0;
+  virtual void setAudioCallback(audio_callback_t cb) = 0;
+
+  // Playback info
+  virtual double fps() const = 0;
+  virtual double duration() const = 0;
+  virtual int width() const = 0;
+  virtual int height() const = 0;
+  virtual int64_t currentFrameIndex() const = 0;
+
+  // Diagnostic/metadata (optional - backends can return defaults)
+  virtual int64_t bitRate() const { return 0; }
+  virtual std::string formatName() const { return ""; }
+  virtual std::string formatLongName() const { return ""; }
+  virtual std::string videoCodecName() const { return ""; }
+  virtual int64_t videoBitRate() const { return 0; }
+};
+
+using moviebackendimpl_ptr_t = std::shared_ptr<MovieBackendImpl>;
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+// Forward Declarations
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+struct MoviePlaybackContext;
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+// Backend Factory Functions
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+moviebackendimpl_ptr_t createFFmpegBackend(MoviePlaybackContext* ctx);
+
+#if defined(__APPLE__)
+moviebackendimpl_ptr_t createVideoToolboxBackend(MoviePlaybackContext* ctx);
+#endif
+
+#if defined(__linux__)
+moviebackendimpl_ptr_t createVAAPIBackend(MoviePlaybackContext* ctx);
+moviebackendimpl_ptr_t createNVDECBackend(MoviePlaybackContext* ctx);
+#endif
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+// Movie Playback Context
+///////////////////////////////////////////////////////////////////////////////////////////////
+
 struct MoviePlaybackContext {
 
   enum class State : crc_enum_t {
@@ -126,30 +204,38 @@ struct MoviePlaybackContext {
   MoviePlaybackContext();
   ~MoviePlaybackContext();
 
+  // Legacy init (100% compatible with existing code)
   void init(const std::string& filename);
+
+  // New init with backend selection
+  void init(const std::string& filename,
+            MovieBackend backend,
+            MoviePixelFormat format = MoviePixelFormat::AUTO);
+
   void play();
   void pause();
   void stop();
   void restart();
+
+  // Legacy image provider (FFmpeg backend)
   image_provider_ptr_t createImageProvider();
+
+  // New texture provider (native backends, GPU-direct)
+  texture_provider_ptr_t createTextureProvider();
+
   void setAudioCallback(audio_callback_t cb);
 
   /////////////////////////////////////////////////////////////////////////////////////////
   // Playback state
   State _state = State::STOPPED;
   std::string _filename;
+  MovieBackend _backend = MovieBackend::FFMPEG;
+  MoviePixelFormat _pixel_format = MoviePixelFormat::AUTO;
 
-  // FFmpeg decoding pipeline
-  AVFormatContext* _format_ctx = nullptr;
-  AVCodecContext* _video_codec_ctx = nullptr;
-  AVCodecContext* _audio_codec_ctx = nullptr;
-  const AVCodec* _video_codec = nullptr;
-  const AVCodec* _audio_codec = nullptr;
-  int _video_stream_idx = -1;
-  int _audio_stream_idx = -1;
-  struct SwsContext* _sws_context = nullptr;
+  // Backend implementation (holds FFmpeg, VideoToolbox, VAAPI, or NVDEC backend)
+  moviebackendimpl_ptr_t _backend_impl;
 
-  // Threading
+  // Threading (legacy - may be used by old code paths)
   std::thread _decode_thread;
   std::atomic<bool> _running{false};
   std::mutex _queue_mutex;

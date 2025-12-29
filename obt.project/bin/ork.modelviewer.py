@@ -35,17 +35,115 @@ parser.add_argument("-o", "--overrideshader", type=str, default="", help='overri
 parser.add_argument("-c", "--overridecolor", type=str, default="", help='override color (vec3)')
 parser.add_argument("-z", "--disablezeroareapolycheck", action="store_true", help='disable zero area poly check')
 parser.add_argument("-x", "--encrypt", action="store_true", help='encrpyt model')
-parser.add_argument("-t", "--ssaa", type=int, default=0, help='ssaa')
+parser.add_argument("-t", "--ssaa", type=int, default=2, help='ssaa')
 parser.add_argument("-u", "--ssao", type=int, default=0, help='SSAO samples')
 parser.add_argument("-L", "--lightmap", type=str, default="", help='set active lightmap')
 parser.add_argument('-r', '--rendermodel', type=str, default='forward', help='rendering model (deferred,forward)')
 parser.add_argument('-S', '--stateDebugger', type=bool, default=False, help='Graphics state debugger')
+parser.add_argument('--list', action="store_true", help='list available model short names')
 
 ################################################################################
 
 args = vars(parser.parse_args())
+
+################################################################################
+# Build model shortname map from filesystem
+################################################################################
+
+def build_model_shortname_map():
+  """Scan misc_gltf_samples directory and build shortname -> path map"""
+  from pathlib import Path
+  shortname_to_path = {}
+
+  # Get the tests directory
+  workspace_dir = os.environ.get("ORKID_WORKSPACE_DIR", "")
+  if not workspace_dir:
+    return shortname_to_path
+
+  gltf_dir = Path(workspace_dir) / "ork.data" / "tests" / "misc_gltf_samples"
+  if not gltf_dir.exists():
+    return shortname_to_path
+
+  # Scan recursively for .glb files
+  for glb_file in gltf_dir.rglob("*.glb"):
+    shortname = glb_file.stem  # filename without extension
+    # Construct data:// path
+    relative_path = glb_file.relative_to(Path(workspace_dir) / "ork.data")
+    data_path = f"data://{relative_path}"
+    shortname_to_path[shortname] = data_path
+
+  return shortname_to_path
+
+shortname_map = build_model_shortname_map()
+
+# Handle --list option
+if args["list"]:
+  from pathlib import Path
+
+  # Group models by subdirectory
+  dir_groups = {}
+  for shortname, fullpath in shortname_map.items():
+    # Extract subdirectory from path like "data://tests/misc_gltf_samples/characters/goblin1.glb"
+    parts = fullpath.split("/")
+    if len(parts) >= 5:  # data://tests/misc_gltf_samples/SUBDIR/model.glb
+      subdir = parts[4]  # Get the subdirectory (characters, furnishings, etc.)
+    else:
+      subdir = "misc"
+
+    # Skip biped2 directory (has extremely long animation names)
+    if subdir == "biped2":
+      continue
+
+    if subdir not in dir_groups:
+      dir_groups[subdir] = []
+    dir_groups[subdir].append(shortname)
+
+  # Print grouped and formatted
+  print("\nAvailable models:")
+  print("=" * 80)
+
+  for subdir in sorted(dir_groups.keys()):
+    models = sorted(dir_groups[subdir])
+
+    # Truncate very long names and calculate dynamic column width
+    max_name_len = 30  # Hard cap for display
+    truncated_models = []
+    for m in models:
+      if len(m) > max_name_len:
+        truncated_models.append(m[:max_name_len-2] + "..")
+      else:
+        truncated_models.append(m)
+
+    # Calculate column width for this group (max name length + 2 for spacing)
+    col_width = min(max(len(m) for m in truncated_models) + 2, max_name_len + 2)
+
+    # Determine number of columns based on 80 char width
+    cols = max(1, (80 - 4) // col_width)  # 4 for indent
+
+    print(f"{subdir}:")
+
+    # Print models in grid
+    for i in range(0, len(truncated_models), cols):
+      row = truncated_models[i:i+cols]
+      line = "  " + "".join(f"{m:<{col_width}}" for m in row)
+      print(line)
+
+  print("=" * 80)
+  print(f"Total: {len(shortname_map)} models | Usage: ork.modelviewer.py -m <shortname>")
+  sys.exit(0)
+
+################################################################################
+# Parse arguments and resolve model shortnames
+################################################################################
+
 showgrid = args["showgrid"]
 modelpath = args["model"]
+
+# Resolve shortname to full path if it's a shortname
+if modelpath in shortname_map:
+  print(f"Resolved shortname '{modelpath}' -> {shortname_map[modelpath]}")
+  modelpath = shortname_map[modelpath]
+
 lightintens = args["lightintensity"]
 specuintens = args["specularintensity"]
 diffuintens = args["diffuseintensity"]
@@ -101,7 +199,7 @@ class SceneGraphApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=ssaa)
+    self.ezapp = OrkEzApp.create(self,ssaa=ssaa,fullscreen=True,name="OrkidModelViewer")
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
     setupUiCamera(app=self,eye=vec3(0,0.5,3))
@@ -115,6 +213,32 @@ class SceneGraphApp(object):
     self.brdfset = [("GGX",tokens.GGX),("VELVET",tokens.GGXVELVET),("GGXRIM",tokens.GGXRIM),("BLINN",tokens.BLINN),("PHONG",tokens.PHONG)]
     self.satset = [0.0,0.1,0.2,0.5,0.75,1.0]
     self.gamset = [0.8,1.0,1.2,1.4,1.6,1.8,2.0,2.4]
+
+    # Environment map switching
+    self.skybox_names = [
+      "ork_envmaps|pillars4k",        # pillars of creation (sharp)
+      "ork_envmaps|cold4k",           # ice planet (bright, soft)
+      "ork_envmaps|ocean4k",          # ocean planet (soft)
+      "ork_envmaps|arena4k",          # the grid  (dark)
+      "ork_envmaps|club4k",           # gothic club (dark)
+      "ork_envmaps|desert4k",         # desert planet (bright)
+      "ork_envmaps|canyon4k",         # big canyon (bright)
+      "ork_envmaps|crossroads4k",     # the crossroads (bright)
+      "ork_envmaps|futcity4k",        # futuristic city (moderately dark)
+      "ork_envmaps|ethereal4k",       # ethereal plane (medium)
+      "ork_envmaps|tozenv_nebula",    # (purple, soft)
+      "ork_envmaps|tozenv_hellscape", # (red, sharp)
+      "ork_envmaps|blender_studio",   # blender studio (hard shadows)
+      "ork_envmaps|blender_interior", # blender interior (soft)
+      "ork_envmaps|blender_courtyard",# blender courtyard (soft)
+      "ork_envmaps|blender_city",     # blender city (hard)
+      "ork_envmaps|blender_sunrise",  # sunrise (soft)
+      "ork_envmaps|blender_sunset",   # sunset (soft)
+      "ork_envmaps|blender_night",    # night (hard)
+      "ork_envmaps|blender_forest",   # forest (soft)
+    ]
+    self.skybox_cache = dict()
+    self.skybox_index = -1
     
   ##############################################
 
@@ -148,9 +272,9 @@ class SceneGraphApp(object):
     postNode.hue = 0.0
     postNode.saturation = 1.0
     postNode.value = 1.0
-    postNode.gamma = 2.2
+    postNode.gamma = 1.0
     postNode.gpuInit(ctx,8,8);
-    #postNode.addToSceneVars(sceneparams,"PostFxChain")
+    postNode.addToSceneVars(sceneparams,"PostFxChain")
     self.post_node = postNode
 
     self.scene = self.ezapp.createScene(sceneparams)
@@ -273,6 +397,20 @@ class SceneGraphApp(object):
         brdf = self.brdfset[self.curbrdfi]
         print("BRDF",brdf[0])
         self.pbr_common.setBRDF(brdf[1])
+      ######################
+      # Environment map switching (E key)
+      ######################
+      if uievent.keycode == ord("E"):
+        self.skybox_index = (self.skybox_index+1)%len(self.skybox_names)
+        skybox_name = self.skybox_names[self.skybox_index]
+        print("Loading envmap:",skybox_name)
+        if skybox_name in self.skybox_cache:
+          skybox = self.skybox_cache[skybox_name]
+        else:
+          skybox = PbrCommon.requestRadianceMapsAsync(skybox_name)
+          self.skybox_cache[skybox_name] = skybox
+        self.pbr_common.RadianceMaps = skybox
+        return res
       ######################
       if uievent.keycode == ord("S"):
         sati = self.cursati+1

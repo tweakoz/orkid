@@ -9,6 +9,7 @@
 
 #include <ork/lev2/gfx/gfxenv_enum.h>
 #include <ork/kernel/core/singleton.h>
+#include <ork/kernel/svariant.h>
 #include <ork/util/md5.h>
 #include <ork/math/cvector4.h>
 #include <ork/file/path.h>
@@ -35,6 +36,57 @@ struct IpcTexture {
   size_t _image_size    = 0;
   int _sema_complete_fd = 0;
   int _sema_ready_fd    = 0;
+};
+
+//////////////////////////////////////////////////////////////////////////////
+// GpuExternalSurface - Platform-agnostic GPU memory for cross-API/cross-process sharing
+//
+// Implementations:
+//   - IOSurface (macOS): VideoToolbox, Syphon, Core Image, AVFoundation
+//   - DMA-BUF (Linux): VA-API, V4L2, GBM, Wayland
+//////////////////////////////////////////////////////////////////////////////
+
+// Wrapper for platform-specific native handles (avoids typeid ODR issues)
+struct NativeSurfaceHandle {
+  void* handle = nullptr;
+};
+
+enum class GpuSurfaceFormat : uint32_t {
+  UNKNOWN = 0,
+  BGRA8,      // 32-bit BGRA (macOS native)
+  RGBA8,      // 32-bit RGBA
+  NV12,       // 4:2:0 8-bit, 2 planes (Y + interleaved UV)
+  P010,       // 4:2:0 10-bit, 2 planes
+  NATIVE,     // Platform-specific passthrough
+};
+
+enum class GpuSurfacePlatformType : uint8_t {
+  UNKNOWN = 0,
+  IOSURFACE,     // macOS IOSurface
+  DMABUF,        // Linux DMA-BUF
+};
+
+struct GpuExternalSurface {
+  virtual ~GpuExternalSurface() = default;
+
+  // Platform type (for Vulkan import path selection)
+  virtual GpuSurfacePlatformType platformType() const = 0;
+
+  // Unique identifier for this surface (for VkImage reuse tracking)
+  virtual uint64_t uniqueId() const = 0;
+
+  // Dimensions
+  virtual size_t width() const = 0;
+  virtual size_t height() const = 0;
+
+  // Format
+  virtual GpuSurfaceFormat format() const = 0;
+  virtual uint32_t nativeFormat() const = 0;
+  virtual size_t planeCount() const = 0;
+
+  // Platform-specific native handle (IOSurfaceRef, DMA-BUF fd, etc.)
+  // Use _impl.makeShared<T>() to set, _impl.getShared<T>() to get
+  svar16_t _impl;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -178,6 +230,11 @@ struct Texture {
   mutable bool _dirty         = true;
   const void* _data           = nullptr;
   mutable svarshp_t _impl     = nullptr;
+
+  // External memory backend implementation (e.g., Vulkan manages IOSurfaces internally)
+  // Backend-specific impl manages buffering/synchronization as needed
+  mutable svar16_t _impl_2;  // Backend implementation (e.g., VulkanExternalTextureImpl)
+
   Context* _creatingTarget    = nullptr;
   std::string _debugName;
   bool _isDepthTexture = false;
@@ -225,4 +282,14 @@ struct TextureArraySliceRef {
   int _slice = 0;
 };
 
+struct TextureProvider {
+  virtual texture_ptr_t getTexture() = 0;
+  virtual ~TextureProvider() = 0;
+};
+
+struct LambdaTextureProvider : public TextureProvider {
+  LambdaTextureProvider(std::function<texture_ptr_t()> func);
+  texture_ptr_t getTexture() final;
+  std::function<texture_ptr_t()> _func;
+};
 }} // namespace ork::lev2

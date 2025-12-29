@@ -532,6 +532,22 @@ void VkFxInterface::bindParamTexture(const FxShaderParam* hpar, const Texture* p
     return;
   }
 
+  // GPU-direct external memory import (IOSurface, Syphon, VA-API, etc.)
+  // If this is a MOVIE texture with external memory (_impl_2), import it from external memory
+  // This will replace any default _impl that may have been created
+  auto vk_txi = static_cast<VkTextureInterface*>(_contextVK->TXI());
+
+  if (pTex->_source == ETextureSource::MOVIE) {
+    // Check if there's newer data available from producer (decode thread)
+    bool needs_import = vk_txi->externalTextureChanged(pTex);
+
+    if (needs_import) {
+      // Import from current stable ring buffer slot
+      auto mutable_tex = const_cast<Texture*>(pTex);
+      _contextVK->TXI()->initTextureFromGpuExternalSurface(mutable_tex);
+    }
+  }
+
   vktexobj_ptr_t vk_tex;
   if (auto as_to = pTex->_impl.tryAsShared<VulkanTextureObject>()) {
     vk_tex = as_to.value();

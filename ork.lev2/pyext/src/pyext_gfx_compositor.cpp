@@ -257,6 +257,22 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
               "technique", //
               [](postnode_user_ptr_t dcnode) -> std::string { return dcnode->_technique_name; },
               [](postnode_user_ptr_t dcnode, std::string technique) { dcnode->_technique_name = technique; })
+          .def_property(
+              "double_buffer", //
+              [](postnode_user_ptr_t dcnode) -> bool { return dcnode->_double_buffer; },
+              [](postnode_user_ptr_t dcnode, bool double_buffer) { dcnode->_double_buffer = double_buffer; })
+          .def_property(
+              "flip_vertical", //
+              [](postnode_user_ptr_t dcnode) -> bool { return dcnode->_flip_vertical; },
+              [](postnode_user_ptr_t dcnode, bool flip_vertical) { dcnode->_flip_vertical = flip_vertical; })
+          .def_property_readonly("texture_provider", [](postnode_user_ptr_t dcnode) -> texture_provider_ptr_t {
+            // Return provider that dynamically gets current read buffer texture
+            return std::make_shared<LambdaTextureProvider>(
+                [dcnode]() -> texture_ptr_t {
+                  return dcnode->getCurrentReadTexture();
+                }
+            );
+          })
           .def_property_readonly(
               "params",                                                                //
               [type_codec](postnode_user_ptr_t dcnode) -> usernode_param_proxy_ptr_t { //

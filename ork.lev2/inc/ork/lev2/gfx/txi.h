@@ -114,6 +114,11 @@ public:
   }
 #endif
 
+  // GPU-direct external surface (IOSurface on macOS, DMA-BUF on Linux)
+  // Called when _source == MOVIE && _impl_2 contains IoSurfaceTexImpl
+  virtual void initTextureFromGpuExternalSurface(Texture* ptex) {
+  }
+
   context_rawptr_t _ctx;
 };
 

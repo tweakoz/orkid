@@ -114,6 +114,18 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
   // VK_KHR_portability_subset is macOS/MoltenVK specific
 #if defined(__APPLE__)
   _device_extensions.push_back("VK_KHR_portability_subset");
+
+  // GPU-direct video decode (VideoToolbox → IOSurface → Vulkan)
+  _device_extensions.push_back(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME);
+  _device_extensions.push_back(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
+
+  // Check if VK_EXT_metal_objects is available before enabling
+  if (vk_devinfo->_extension_set.count("VK_EXT_metal_objects") > 0) {
+    _device_extensions.push_back("VK_EXT_metal_objects");
+    logchan_vkctx->log("Added VK_EXT_metal_objects for GPU-direct video");
+  } else {
+    logchan_vkctx->log("WARNING: VK_EXT_metal_objects NOT available - GPU-direct video will not work!");
+  }
 #endif
 
   // DRM-specific extensions (Linux only)
@@ -131,6 +143,10 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
 
   _device_extensions.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
 
+  // YCbCr sampler support for GPU-direct video (NV12, P010 formats)
+  _device_extensions.push_back(VK_KHR_SAMPLER_YCBCR_CONVERSION_EXTENSION_NAME);
+  logchan_vkctx->log("Added YCbCr sampler conversion extension for video decode");
+
   VkDeviceCreateInfo DCI = {};
   initializeVkStruct(DCI, VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
   DCI.queueCreateInfoCount    = _DQCIs.size();
@@ -142,16 +158,20 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
 
   VkPhysicalDeviceTimelineSemaphoreFeatures timelineFeatures{};
   VkPhysicalDeviceDynamicRenderingFeatures dynrenderfeat{};
+  VkPhysicalDeviceSamplerYcbcrConversionFeatures ycbcrFeatures{};
 
   initializeVkStruct(timelineFeatures, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES);
   initializeVkStruct(dynrenderfeat, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES);
+  initializeVkStruct(ycbcrFeatures, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES);
 
   timelineFeatures.timelineSemaphore = VK_TRUE;
   dynrenderfeat.dynamicRendering = VK_TRUE;
+  ycbcrFeatures.samplerYcbcrConversion = VK_TRUE;
 
   DCI.pNext = (void*) & timelineFeatures;
   timelineFeatures.pNext = (void*) & dynrenderfeat;
-  dynrenderfeat.pNext = (void*) nullptr;
+  dynrenderfeat.pNext = (void*) & ycbcrFeatures;
+  ycbcrFeatures.pNext = (void*) nullptr;
 
 
   VkResult result = vkCreateDevice(_vkphysicaldevice, &DCI, nullptr, &_vkdevice);
