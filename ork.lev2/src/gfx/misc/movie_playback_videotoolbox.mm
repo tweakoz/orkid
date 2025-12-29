@@ -778,9 +778,11 @@ void VideoToolboxBackend::_audioDecodeThreadFunc() {
           audio_frame->_pts = pts;
 
           // PTS-based pacing: wait until this audio frame's time
+          // Apply timeshift: positive = audio lags video (wait longer)
+          double timeshift = _context->_audio_timeshift;
           auto now = std::chrono::high_resolution_clock::now();
           double elapsed = std::chrono::duration<double>(now - audio_start).count();
-          double wait_time = pts - elapsed;
+          double wait_time = (pts + timeshift) - elapsed;
           if (wait_time > 0.0 && wait_time < 1.0) {  // Sanity check: don't wait more than 1 second
             std::this_thread::sleep_for(std::chrono::duration<double>(wait_time));
           }

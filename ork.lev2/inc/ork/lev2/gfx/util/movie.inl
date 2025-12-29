@@ -271,6 +271,10 @@ struct MoviePlaybackContext {
   // Audio configuration (populated from first decoded frame)
   movieaudioconfig_ptr_t _audio_config;
 
+  // Audio/video sync adjustment (in seconds)
+  // Positive = audio lags video, Negative = audio leads video
+  double _audio_timeshift = 0.0;
+
   /////////////////////////////////////////////////////////////////////////////////////////
 private:
   void _decodeThreadFunc();

@@ -153,7 +153,17 @@ void pyinit_movie(py::module& module_lev2) {
               })
           .def_property_readonly("video_bit_rate", [](movieplayback_ptr_t ctx) -> int64_t {
             return ctx->_backend_impl ? ctx->_backend_impl->videoBitRate() : 0;
-          });
+          })
+          // Audio/video sync adjustment (in seconds)
+          // Positive = audio lags video, Negative = audio leads video
+          .def_property(
+              "audio_timeshift",
+              [](movieplayback_ptr_t ctx) -> double {
+                return ctx->_audio_timeshift;
+              },
+              [](movieplayback_ptr_t ctx, double timeshift) {
+                ctx->_audio_timeshift = timeshift;
+              });
   type_codec->registerStdCodec<movieplayback_ptr_t>(movieplayback_type);
   ///////////////////////////////////////////////////////////////////////////////
   auto moviecapcontext_type = //

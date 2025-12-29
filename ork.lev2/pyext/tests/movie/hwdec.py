@@ -17,7 +17,7 @@ from ork.app import application
 
 class HardwareDecodeTest(application.ComponentizedApplication):
 
-  def __init__(self, movie_file, use_videotoolbox=True, enable_audio=False):
+  def __init__(self, movie_file, use_videotoolbox=True, enable_audio=False, fullscreen=False):
     super().__init__()
     self.movie_file = movie_file
     self.use_videotoolbox = use_videotoolbox
@@ -31,7 +31,7 @@ class HardwareDecodeTest(application.ComponentizedApplication):
       name="HardwareVideoDecodeTest",
       width=1280,
       height=720,
-      fullscreen=False,
+      fullscreen=fullscreen,
       enable_audio=enable_audio,
       enable_audio_output=enable_audio,
       enable_audio_synth=enable_audio
@@ -75,7 +75,7 @@ class HardwareDecodeTest(application.ComponentizedApplication):
     print("=" * 80)
 
     self.movie = lev2.MoviePlaybackContext()
-
+    self.movie.audio_timeshift = -2.45  # No audio delay
     if self.use_videotoolbox:
       # GPU-Direct: VideoToolbox → IOSurface → Vulkan
       print("Backend: VideoToolbox (Hardware Decode)")
@@ -136,9 +136,11 @@ if __name__ == "__main__":
                       help='Use CPU FFmpeg backend instead of VideoToolbox')
   parser.add_argument('-a', '--audio', action='store_true',
                       help='Enable audio playback')
+  parser.add_argument('-f', '--fullscreen', action='store_true',
+                      help='Run in fullscreen mode')
   args = parser.parse_args()
 
   use_videotoolbox = not args.cpu
 
-  app = HardwareDecodeTest(args.movie, use_videotoolbox, enable_audio=args.audio)
+  app = HardwareDecodeTest(args.movie, use_videotoolbox, enable_audio=args.audio, fullscreen=args.fullscreen)
   app.ezapp.mainThreadLoop()
