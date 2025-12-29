@@ -17,11 +17,14 @@ from ork.app import application
 
 class HardwareDecodeTest(application.ComponentizedApplication):
 
-  def __init__(self, movie_file, use_videotoolbox=True):
+  def __init__(self, movie_file, use_videotoolbox=True, enable_audio=False):
     super().__init__()
     self.movie_file = movie_file
     self.use_videotoolbox = use_videotoolbox
+    self.enable_audio = enable_audio
     self.movie = None
+    self.synth = None
+    self.voice = None
 
     # Create EzApp
     self.createEzApp(
@@ -29,8 +32,16 @@ class HardwareDecodeTest(application.ComponentizedApplication):
       width=1280,
       height=720,
       fullscreen=False,
-      enable_audio=False
+      enable_audio=enable_audio,
+      enable_audio_output=enable_audio,
+      enable_audio_synth=enable_audio
     )
+
+  ##############################################
+
+  def _onSynthInit(self, synth):
+    """Store synth reference for audio playback"""
+    self.synth = synth
 
   ##############################################
 
@@ -102,6 +113,14 @@ class HardwareDecodeTest(application.ComponentizedApplication):
       print(f"Audio: {self.movie.audio_codec_name} @ {self.movie.audio_sample_rate}Hz")
     print("=" * 80)
 
+    # Set up audio if enabled
+    if self.enable_audio and self.synth and self.movie.has_audio:
+      print("Setting up audio playback...")
+      self.audio_program = self.movie.createAudioProgram(self.synth)
+      self.voice = self.synth.keyOn(0, 60, self.audio_program, None)
+      self.voice.gain = 0.0  # 0 dB
+      print("Audio playback enabled")
+
     # Start playback
     self.movie.play()
 
@@ -115,9 +134,11 @@ if __name__ == "__main__":
                       help='Movie file to play (default: bunny.mp4)')
   parser.add_argument('--cpu', action='store_true',
                       help='Use CPU FFmpeg backend instead of VideoToolbox')
+  parser.add_argument('-a', '--audio', action='store_true',
+                      help='Enable audio playback')
   args = parser.parse_args()
 
   use_videotoolbox = not args.cpu
 
-  app = HardwareDecodeTest(args.movie, use_videotoolbox)
+  app = HardwareDecodeTest(args.movie, use_videotoolbox, enable_audio=args.audio)
   app.ezapp.mainThreadLoop()

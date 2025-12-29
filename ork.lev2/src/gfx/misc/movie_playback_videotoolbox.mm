@@ -16,6 +16,20 @@
 #import <CoreVideo/CoreVideo.h>
 #import <IOSurface/IOSurface.h>
 
+// FFmpeg for audio decoding (hybrid approach: VideoToolbox for video, FFmpeg for audio)
+// Rename FFmpeg's AVMediaType to avoid conflict with AVFoundation's AVMediaType
+#define AVMediaType FFmpegAVMediaType
+extern "C" {
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libavutil/opt.h>
+#include <libavutil/samplefmt.h>
+#include <libswresample/swresample.h>
+}
+#undef AVMediaType
+// Use FFmpeg's media type enum via the renamed symbol
+#define AVMEDIA_TYPE_AUDIO FFmpegAVMediaType::AVMEDIA_TYPE_AUDIO
+
 // Include Vulkan headers for VulkanExternalTextureImpl
 #if defined(__APPLE__)
 #include "../vulkan/headers/vulkan_ctx.h"  // Full Vulkan context header
@@ -65,6 +79,7 @@ public:
 
 private:
   void _decodeThreadFunc();
+  void _audioDecodeThreadFunc();
   void _cleanup();
   static void _decompressionCallback(
     void* decompressionOutputRefCon,
@@ -127,6 +142,14 @@ private:
   audio_callback_t _audio_callback;
   std::mutex _audio_mutex;
   movieaudioconfig_ptr_t _audio_config;
+
+  // FFmpeg audio decoding (hybrid approach)
+  AVFormatContext* _ffmpeg_format_ctx = nullptr;
+  AVCodecContext* _ffmpeg_audio_codec_ctx = nullptr;
+  const AVCodec* _ffmpeg_audio_codec = nullptr;
+  int _ffmpeg_audio_stream_idx = -1;
+  std::thread _audio_decode_thread;
+  std::atomic<bool> _audio_running{false};
 
   // Current texture
   texture_ptr_t _current_texture;
@@ -246,8 +269,8 @@ bool VideoToolboxBackend::init(const std::string& filename, MoviePixelFormat for
       return false;
     }
 
-    // TODO: Set up audio track using FFmpeg audio decoder (hybrid approach)
-    // For now, skip audio
+    // Set up audio using FFmpeg (hybrid approach: VideoToolbox video, FFmpeg audio)
+    // This runs in a separate thread from video decode
 
     printf("VideoToolbox: Will create texture pool after VTDecompressionSession outputs first frames\n");
 
@@ -305,6 +328,87 @@ bool VideoToolboxBackend::init(const std::string& filename, MoviePixelFormat for
            format == MoviePixelFormat::YCBCR_P010 ? "P010" : "BGRA");
   }
 
+  // Initialize FFmpeg for audio decoding (hybrid approach)
+  if (avformat_open_input(&_ffmpeg_format_ctx, filename.c_str(), nullptr, nullptr) >= 0) {
+    if (avformat_find_stream_info(_ffmpeg_format_ctx, nullptr) >= 0) {
+      // Find audio stream
+      for (unsigned i = 0; i < _ffmpeg_format_ctx->nb_streams; i++) {
+        if (_ffmpeg_format_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+          _ffmpeg_audio_stream_idx = i;
+          break;
+        }
+      }
+
+      if (_ffmpeg_audio_stream_idx >= 0) {
+        AVStream* audio_stream = _ffmpeg_format_ctx->streams[_ffmpeg_audio_stream_idx];
+        AVCodecParameters* audio_codecpar = audio_stream->codecpar;
+
+        _ffmpeg_audio_codec = avcodec_find_decoder(audio_codecpar->codec_id);
+        if (_ffmpeg_audio_codec) {
+          _ffmpeg_audio_codec_ctx = avcodec_alloc_context3(_ffmpeg_audio_codec);
+          if (_ffmpeg_audio_codec_ctx) {
+            avcodec_parameters_to_context(_ffmpeg_audio_codec_ctx, audio_codecpar);
+            int ret = avcodec_open2(_ffmpeg_audio_codec_ctx, _ffmpeg_audio_codec, nullptr);
+
+            if (ret >= 0) {
+              _audio_config = std::make_shared<MovieAudioConfig>();
+
+              // Probe first audio frame to get actual parameters
+              AVPacket packet;
+              AVFrame* probe_frame = av_frame_alloc();
+              bool found_audio_params = false;
+
+              while (av_read_frame(_ffmpeg_format_ctx, &packet) >= 0) {
+                if (packet.stream_index == _ffmpeg_audio_stream_idx) {
+                  if (avcodec_send_packet(_ffmpeg_audio_codec_ctx, &packet) >= 0) {
+                    if (avcodec_receive_frame(_ffmpeg_audio_codec_ctx, probe_frame) >= 0) {
+                      _audio_config->_sample_rate = probe_frame->sample_rate;
+                      _audio_config->_num_channels = probe_frame->ch_layout.nb_channels;
+
+                      if (_audio_config->_sample_rate == 0) {
+                        _audio_config->_sample_rate = _ffmpeg_audio_codec_ctx->sample_rate;
+                      }
+                      if (_audio_config->_num_channels == 0) {
+                        _audio_config->_num_channels = _ffmpeg_audio_codec_ctx->ch_layout.nb_channels;
+                      }
+                      if (_audio_config->_sample_rate == 0) {
+                        _audio_config->_sample_rate = audio_stream->time_base.den;
+                        if (_audio_config->_sample_rate != 48000 && _audio_config->_sample_rate != 44100) {
+                          printf("VideoToolbox: WARNING - unusual audio sample rate %d, defaulting to 44100\n",
+                                 _audio_config->_sample_rate);
+                          _audio_config->_sample_rate = 44100;
+                        }
+                      }
+
+                      _audio_config->_codec_name = _ffmpeg_audio_codec->name;
+                      _audio_config->_valid = true;
+                      found_audio_params = true;
+                      av_packet_unref(&packet);
+                      break;
+                    }
+                  }
+                }
+                av_packet_unref(&packet);
+              }
+
+              av_frame_free(&probe_frame);
+
+              // Seek back to start and flush codec
+              av_seek_frame(_ffmpeg_format_ctx, _ffmpeg_audio_stream_idx, 0, AVSEEK_FLAG_BACKWARD);
+              avcodec_flush_buffers(_ffmpeg_audio_codec_ctx);
+
+              if (found_audio_params) {
+                printf("VideoToolbox: FFmpeg audio initialized: %d Hz, %d channels, codec=%s\n",
+                       _audio_config->_sample_rate, _audio_config->_num_channels,
+                       _audio_config->_codec_name.c_str());
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   // Set texture dimensions now that we know them
   _decode_texture->_width = _video_width;
   _decode_texture->_height = _video_height;
@@ -332,10 +436,18 @@ void VideoToolboxBackend::play() {
   _running = true;
   _playback_start = std::chrono::high_resolution_clock::now();
 
-  // Start decode thread
+  // Start video decode thread
   _decode_thread = std::thread([this]() {
     _decodeThreadFunc();
   });
+
+  // Start audio decode thread (FFmpeg)
+  if (_ffmpeg_audio_stream_idx >= 0 && _ffmpeg_audio_codec_ctx) {
+    _audio_running = true;
+    _audio_decode_thread = std::thread([this]() {
+      _audioDecodeThreadFunc();
+    });
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -348,9 +460,14 @@ void VideoToolboxBackend::pause() {
 
 void VideoToolboxBackend::stop() {
   _running = false;
+  _audio_running = false;
 
   if (_decode_thread.joinable()) {
     _decode_thread.join();
+  }
+
+  if (_audio_decode_thread.joinable()) {
+    _audio_decode_thread.join();
   }
 
   _current_frame_index = 0;
@@ -609,6 +726,121 @@ void VideoToolboxBackend::_decodeThreadFunc() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
+// Audio Decode Thread - FFmpeg audio decoding (hybrid approach)
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+void VideoToolboxBackend::_audioDecodeThreadFunc() {
+  printf("VideoToolbox audio decode thread started (FFmpeg)\n");
+
+  AVPacket packet;
+  AVFrame* frame = av_frame_alloc();
+
+  // Use playback start time for PTS-based pacing
+  auto audio_start = std::chrono::high_resolution_clock::now();
+
+  while (_audio_running) {
+    int ret = av_read_frame(_ffmpeg_format_ctx, &packet);
+    if (ret < 0) {
+      // End of file - loop back to start
+      av_seek_frame(_ffmpeg_format_ctx, _ffmpeg_audio_stream_idx, 0, AVSEEK_FLAG_BACKWARD);
+      avcodec_flush_buffers(_ffmpeg_audio_codec_ctx);
+      audio_start = std::chrono::high_resolution_clock::now();  // Reset timing
+      continue;
+    }
+
+    // Only process audio packets
+    if (packet.stream_index == _ffmpeg_audio_stream_idx) {
+      ret = avcodec_send_packet(_ffmpeg_audio_codec_ctx, &packet);
+      if (ret >= 0) {
+        while (ret >= 0) {
+          ret = avcodec_receive_frame(_ffmpeg_audio_codec_ctx, frame);
+          if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+            break;
+          }
+          if (ret < 0) {
+            break;
+          }
+
+          int channels = _ffmpeg_audio_codec_ctx->ch_layout.nb_channels;
+          if (channels == 0) {
+            AVCodecParameters* audio_codecpar = _ffmpeg_format_ctx->streams[_ffmpeg_audio_stream_idx]->codecpar;
+            channels = audio_codecpar->ch_layout.nb_channels;
+            if (channels == 0) {
+              printf("VideoToolbox: WARNING - Cannot determine channel count, skipping audio frame\n");
+              continue;
+            }
+          }
+
+          auto audio_frame = std::make_shared<MovieAudioFrame>();
+          audio_frame->_sample_rate = _audio_config->_sample_rate;
+          audio_frame->_channels = channels;
+          double pts = frame->pts * av_q2d(_ffmpeg_format_ctx->streams[_ffmpeg_audio_stream_idx]->time_base);
+          audio_frame->_pts = pts;
+
+          // PTS-based pacing: wait until this audio frame's time
+          auto now = std::chrono::high_resolution_clock::now();
+          double elapsed = std::chrono::duration<double>(now - audio_start).count();
+          double wait_time = pts - elapsed;
+          if (wait_time > 0.0 && wait_time < 1.0) {  // Sanity check: don't wait more than 1 second
+            std::this_thread::sleep_for(std::chrono::duration<double>(wait_time));
+          }
+
+          audio_frame->_samples.resize(frame->nb_samples * audio_frame->_channels);
+
+          if (frame->format == AV_SAMPLE_FMT_S16) {
+            int16_t* samples = (int16_t*)frame->data[0];
+            for (int i = 0; i < frame->nb_samples * audio_frame->_channels; i++) {
+              audio_frame->_samples[i] = samples[i] / 32768.0f;
+            }
+          } else if (frame->format == AV_SAMPLE_FMT_FLT) {
+            float* samples = (float*)frame->data[0];
+            memcpy(audio_frame->_samples.data(), samples, frame->nb_samples * audio_frame->_channels * sizeof(float));
+          } else if (frame->format == AV_SAMPLE_FMT_FLTP) {
+            for (int i = 0; i < frame->nb_samples; i++) {
+              for (int c = 0; c < audio_frame->_channels; c++) {
+                if (frame->data[c]) {
+                  float* channel_data = (float*)frame->data[c];
+                  audio_frame->_samples[i * audio_frame->_channels + c] = channel_data[i];
+                } else {
+                  audio_frame->_samples[i * audio_frame->_channels + c] = 0.0f;
+                }
+              }
+            }
+          } else if (frame->format == AV_SAMPLE_FMT_S16P) {
+            for (int i = 0; i < frame->nb_samples; i++) {
+              for (int c = 0; c < audio_frame->_channels; c++) {
+                if (frame->data[c]) {
+                  int16_t* channel_data = (int16_t*)frame->data[c];
+                  audio_frame->_samples[i * audio_frame->_channels + c] = channel_data[i] / 32768.0f;
+                } else {
+                  audio_frame->_samples[i * audio_frame->_channels + c] = 0.0f;
+                }
+              }
+            }
+          } else {
+            printf("VideoToolbox: WARNING - Unsupported audio format %d\n", frame->format);
+            continue;
+          }
+
+          // Call audio callback
+          {
+            std::lock_guard<std::mutex> lock(_audio_mutex);
+            if (_audio_callback) {
+              _audio_callback(audio_frame);
+            }
+          }
+        }
+      }
+    }
+
+    av_packet_unref(&packet);
+  }
+
+  av_frame_free(&frame);
+  printf("VideoToolbox audio decode thread stopped\n");
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////
 // Current Texture - Time-Based Playback
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -698,7 +930,7 @@ image_provider_ptr_t VideoToolboxBackend::createImageProvider() {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 bool VideoToolboxBackend::hasAudio() const {
-  return _audio_config && _audio_config->_valid;
+  return _ffmpeg_audio_stream_idx >= 0 && _audio_config && _audio_config->_valid;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -733,6 +965,16 @@ void VideoToolboxBackend::_cleanup() {
       CFRelease(_decompression_session);
       _decompression_session = nullptr;
     }
+  }
+
+  // Clean up FFmpeg audio
+  if (_ffmpeg_audio_codec_ctx) {
+    avcodec_free_context(&_ffmpeg_audio_codec_ctx);
+    _ffmpeg_audio_codec_ctx = nullptr;
+  }
+  if (_ffmpeg_format_ctx) {
+    avformat_close_input(&_ffmpeg_format_ctx);
+    _ffmpeg_format_ctx = nullptr;
   }
 
   // Release current pixel buffer
