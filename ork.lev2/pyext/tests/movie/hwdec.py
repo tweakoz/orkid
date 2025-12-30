@@ -11,7 +11,7 @@ import sys, time
 from obt import path
 from orkengine.core import vec4
 from orkengine import lev2
-from ork.app import application
+from ork.app import application, loggerui
 
 ################################################################################
 
@@ -27,7 +27,18 @@ class HardwareDecodeTest(application.ComponentizedApplication):
     self.synth = None
     self.voice = None
 
+    ############################################
+    # Setup logger UI component
+    ############################################
+
+    self.addComponent("logger", loggerui.LoggerUIComponent,
+                      filter_regex=[".*"],
+                      background_color=vec4(0.2, 0.2, 0.2, 0.8))
+
+    ############################################
     # Create EzApp
+    ############################################
+
     self.createEzApp(
       name="HardwareVideoDecodeTest",
       width=1280,
@@ -128,6 +139,10 @@ class HardwareDecodeTest(application.ComponentizedApplication):
 
     # Start playback
     self.movie.play()
+    LUI = self.findComponentByName("logger")
+    channel = LUI._logger.getChannel("vtb.decode")
+    channel.status_interval = 1.0
+    channel.perf_interval = 0.1
 
 ###############################################################################
 

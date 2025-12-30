@@ -9,6 +9,7 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/image.h>
 #include <ork/kernel/svariant.h>
+#include <ork/util/logger.h>
 
 #import <Foundation/Foundation.h>
 #import <AVFoundation/AVFoundation.h>
@@ -50,6 +51,90 @@ namespace ork::lev2 {
 // VideoToolbox Backend Implementation
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
+// Log channel for VideoToolbox metrics
+static logchannel_ptr_t logchan_vtb = logger()->configureChannel("vtb.decode", fvec3(0.4, 0.8, 1.0), true);
+
+// Decode metrics for performance analysis
+struct DecodeMetrics {
+  // Per-frame timing
+  std::atomic<double> last_decode_time_ms{0.0};
+  std::atomic<double> avg_decode_time_ms{0.0};
+  std::atomic<double> max_decode_time_ms{0.0};
+
+  // Bitrate tracking
+  std::atomic<size_t> total_bytes_decoded{0};
+  std::atomic<size_t> frames_decoded{0};
+
+  // Buffer health
+  std::atomic<size_t> buffer_underruns{0};
+  std::atomic<size_t> frames_dropped{0};
+  std::atomic<size_t> current_buffer_size{0};
+
+  // Timing
+  std::chrono::high_resolution_clock::time_point start_time;
+  std::chrono::high_resolution_clock::time_point last_status_time;
+  std::chrono::high_resolution_clock::time_point last_perf_time;
+
+  // Video info (for calculations)
+  int width = 0;
+  int height = 0;
+  double target_fps = 0.0;
+
+  void reset() {
+    last_decode_time_ms = 0.0;
+    avg_decode_time_ms = 0.0;
+    max_decode_time_ms = 0.0;
+    total_bytes_decoded = 0;
+    frames_decoded = 0;
+    buffer_underruns = 0;
+    frames_dropped = 0;
+    current_buffer_size = 0;
+    start_time = std::chrono::high_resolution_clock::now();
+    last_status_time = start_time;
+    last_perf_time = start_time;
+  }
+
+  void setVideoInfo(int w, int h, double fps) {
+    width = w;
+    height = h;
+    target_fps = fps;
+  }
+
+  void maybeReport() {
+    auto now = std::chrono::high_resolution_clock::now();
+    double elapsed = std::chrono::duration<double>(now - start_time).count();
+    if (elapsed < 0.001 || frames_decoded == 0) return;
+
+    double since_status = std::chrono::duration<double>(now - last_status_time).count();
+    double since_perf = std::chrono::duration<double>(now - last_perf_time).count();
+
+    // Status items (respect _status_interval)
+    if (since_status >= logchan_vtb->_status_interval) {
+      last_status_time = now;
+
+      double bitrate_mbps = (total_bytes_decoded * 8.0) / elapsed / 1000000.0;
+      double pixels_per_frame = width * height;
+      double bits_per_pixel = (total_bytes_decoded * 8.0) / (frames_decoded * pixels_per_frame);
+
+      logchan_vtb->status("Resolution", "%dx%d", width, height);
+      logchan_vtb->status("Frames", "%zu", frames_decoded.load());
+      logchan_vtb->status("Bitrate", "%.1f Mbps", bitrate_mbps);
+      logchan_vtb->status("Bits/px", "%.3f", bits_per_pixel);
+      logchan_vtb->status("Underruns", "%zu", buffer_underruns.load());
+      logchan_vtb->status("Dropped", "%zu", frames_dropped.load());
+    }
+
+    // Performance items (respect _perf_interval)
+    if (since_perf >= logchan_vtb->_perf_interval) {
+      last_perf_time = now;
+
+      double actual_fps = frames_decoded / elapsed;
+      logchan_vtb->perfItem("DecodeTime", avg_decode_time_ms.load());
+      logchan_vtb->perfItem("FPS", actual_fps);
+    }
+  }
+};
+
 class VideoToolboxBackend : public MovieBackendImpl {
 public:
   VideoToolboxBackend(MoviePlaybackContext* ctx);
@@ -77,8 +162,12 @@ public:
   int height() const override { return _video_height; }
   int64_t currentFrameIndex() const override { return _current_frame_index; }
 
+  // Metrics access
+  const DecodeMetrics& metrics() const { return _metrics; }
+
 private:
   void _decodeThreadFunc();
+  void _selectDisplayFrame();  // Called by decode thread to update display frame
   void _audioDecodeThreadFunc();
   void _cleanup();
   static void _decompressionCallback(
@@ -120,6 +209,11 @@ private:
   double _next_expected_pts = 0.0;  // Track next frame to display
   bool _buffer_ready = false;  // True once initial frames buffered
   CVPixelBufferRef _current_pixel_buffer = nullptr;  // Currently displayed frame's buffer (for deferred release)
+
+  // Display frame (written by decode thread, read by render thread)
+  std::mutex _display_mutex;
+  vulkan::iosurfaceteximpl_ptr_t _display_impl;  // Current frame to display
+  bool _display_ready = false;
 
   texture_ptr_t _decode_texture;  // Single texture shared between decode and render threads
 
@@ -169,6 +263,9 @@ private:
   // Looping support
   std::string _filename;  // Store for looping
   bool _looping = true;   // Enable looping by default
+
+  // Decode metrics
+  DecodeMetrics _metrics;
 
   // Helper to reset asset reader for looping (called from decode thread)
   bool _resetAssetReaderForLoop();
@@ -440,6 +537,8 @@ void VideoToolboxBackend::play() {
 
   _running = true;
   _playback_start = std::chrono::high_resolution_clock::now();
+  _metrics.reset();
+  _metrics.setVideoInfo(_video_width, _video_height, _fps);
 
   // Start video decode thread
   _decode_thread = std::thread([this]() {
@@ -652,21 +751,99 @@ void VideoToolboxBackend::_decompressionCallback(
 // Decode Thread - Feeds compressed samples to VTDecompressionSession
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
+// Frame selection - called by decode thread to update display frame
+void VideoToolboxBackend::_selectDisplayFrame() {
+  std::lock_guard<std::mutex> lock(_frame_buffer_mutex);
+
+  if (!_buffer_ready || _pending_frames.size() < 2) {
+    if (_buffer_ready) {
+      _metrics.buffer_underruns++;
+    }
+    return;  // Not enough frames yet
+  }
+
+  // Calculate current playback time
+  auto now = std::chrono::high_resolution_clock::now();
+  double elapsed = std::chrono::duration<double>(now - _playback_start).count();
+
+  // Find best frame: largest PTS <= elapsed time
+  vulkan::iosurfaceteximpl_ptr_t best_impl = nullptr;
+  CVPixelBufferRef best_pixel_buffer = nullptr;
+  double best_pts = -1.0;
+  std::vector<decltype(_pending_frames.begin())> frames_to_remove;
+
+  for (auto it = _pending_frames.begin(); it != _pending_frames.end(); ++it) {
+    if (it->pts <= elapsed) {
+      if (it->pts > best_pts) {
+        best_impl = it->iosurface_impl;
+        best_pixel_buffer = it->pixel_buffer;
+        best_pts = it->pts;
+      }
+      frames_to_remove.push_back(it);
+    }
+  }
+
+  if (!best_impl) {
+    return;  // No frame ready yet
+  }
+
+  // Count dropped frames (frames we're skipping)
+  _metrics.frames_dropped += frames_to_remove.size() - 1;
+
+  // Remove old frames and release their pixel buffers
+  for (auto it : frames_to_remove) {
+    if (it->pixel_buffer != best_pixel_buffer) {
+      CVPixelBufferRelease(it->pixel_buffer);
+    }
+    _pending_frames.erase(it);
+  }
+
+  // Release previous display frame's pixel buffer
+  if (_current_pixel_buffer && _current_pixel_buffer != best_pixel_buffer) {
+    CVPixelBufferRelease(_current_pixel_buffer);
+  }
+  _current_pixel_buffer = best_pixel_buffer;
+
+  // Update display frame (minimal lock for render thread)
+  {
+    std::lock_guard<std::mutex> display_lock(_display_mutex);
+
+    // Graveyard old impl
+    if (_display_impl) {
+      _impl_graveyard.push_back(_display_impl);
+      while (_impl_graveyard.size() > IMPL_GRAVEYARD_SIZE) {
+        _impl_graveyard.pop_front();
+      }
+    }
+
+    _display_impl = best_impl;
+    _display_ready = true;
+  }
+
+  _current_frame_index++;
+  _metrics.current_buffer_size = _pending_frames.size();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+
 void VideoToolboxBackend::_decodeThreadFunc() {
   printf("VideoToolbox decode thread started\n");
 
   // Decode ahead of playback by this amount (ensures frames ready before display)
-  constexpr double DECODE_AHEAD_SECONDS = 0.1;  // 100ms lookahead
-  constexpr size_t MAX_PENDING_FRAMES = 10;     // Don't decode too far ahead
+  constexpr double DECODE_AHEAD_SECONDS = 0.5;  // 500ms lookahead
+  constexpr size_t MAX_PENDING_FRAMES = 20;     // Don't decode too far ahead
 
   while (_running) {
     @autoreleasepool {
+      // Always update display frame selection first
+      _selectDisplayFrame();
+
       // Check if we have too many pending frames - wait if buffer is full
       {
         std::lock_guard<std::mutex> lock(_frame_buffer_mutex);
         if (_pending_frames.size() >= MAX_PENDING_FRAMES) {
           // Buffer full, wait a bit before checking again
-          std::this_thread::sleep_for(std::chrono::milliseconds(5));
+          std::this_thread::sleep_for(std::chrono::milliseconds(1));
           continue;
         }
       }
@@ -685,19 +862,19 @@ void VideoToolboxBackend::_decodeThreadFunc() {
         }
       }
 
-      // If we're already decoded ahead enough, sleep briefly
+      // If we're already decoded ahead enough, just do frame selection
       if (highest_decoded_pts > decode_target) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(2));
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
         continue;
       }
 
       // Read next compressed sample buffer
+      auto decode_start = std::chrono::high_resolution_clock::now();
       CMSampleBufferRef sampleBuffer = [_video_output copyNextSampleBuffer];
 
       if (!sampleBuffer) {
         // End of stream or error
         AVAssetReaderStatus status = [_asset_reader status];
-        printf("VideoToolbox: sampleBuffer is null, status=%ld\n", (long)status);
         if (status == AVAssetReaderStatusCompleted) {
           if (_looping) {
             // Reset for seamless loop
@@ -745,6 +922,26 @@ void VideoToolboxBackend::_decodeThreadFunc() {
 
       if (decode_status != noErr) {
         printf("VTB: VTDecompressionSessionDecodeFrame failed: %d\n", decode_status);
+      } else {
+        // Track metrics
+        auto decode_end = std::chrono::high_resolution_clock::now();
+        double decode_ms = std::chrono::duration<double, std::milli>(decode_end - decode_start).count();
+
+        // Get compressed sample size
+        size_t sample_size = CMSampleBufferGetTotalSampleSize(sampleBuffer);
+        _metrics.total_bytes_decoded += sample_size;
+        _metrics.frames_decoded++;
+
+        // Update timing stats
+        _metrics.last_decode_time_ms = decode_ms;
+        double old_avg = _metrics.avg_decode_time_ms.load();
+        _metrics.avg_decode_time_ms = old_avg + (decode_ms - old_avg) / _metrics.frames_decoded;
+        if (decode_ms > _metrics.max_decode_time_ms) {
+          _metrics.max_decode_time_ms = decode_ms;
+        }
+
+        // Report metrics every second
+        _metrics.maybeReport();
       }
 
       CFRelease(sampleBuffer);
@@ -876,84 +1073,22 @@ void VideoToolboxBackend::_audioDecodeThreadFunc() {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 texture_ptr_t VideoToolboxBackend::currentTexture() {
-  // Return the single decode texture (with triple-buffered ring)
+  // Render thread: just grab the pre-selected display frame
+  // All heavy work (frame selection, cleanup) done by decode thread
   auto tex = _decode_texture;
   if (!tex) {
-    return nullptr;  // Not initialized yet
+    return nullptr;
   }
 
-  // WALL-CLOCK BASED FRAME SELECTION
-  // Calculate current playback time and show the appropriate frame
-  auto backend = static_cast<VideoToolboxBackend*>(_context->_backend_impl.get());
+  // Quick lock to get current display impl
+  std::lock_guard<std::mutex> lock(_display_mutex);
 
-  std::lock_guard<std::mutex> lock(backend->_frame_buffer_mutex);
-
-  // Wait until buffer has at least 2 frames before starting display (allows for B-frame reordering)
-  if (!backend->_buffer_ready || backend->_pending_frames.size() < 2) {
-    // Hold current frame if we have one, otherwise return nullptr
+  if (!_display_ready || !_display_impl) {
     return tex->_impl_2.isSet() ? tex : nullptr;
   }
 
-  // Calculate current playback time from wall clock
-  auto now = std::chrono::high_resolution_clock::now();
-  double elapsed = std::chrono::duration<double>(now - backend->_playback_start).count();
-
-  // Find the best frame to display:
-  // - Frame with largest PTS that is <= current elapsed time
-  // - This ensures we never show frames ahead of time, but catch up if behind
-  vulkan::iosurfaceteximpl_ptr_t best_impl = nullptr;
-  CVPixelBufferRef best_pixel_buffer = nullptr;
-  double best_pts = -1.0;
-  std::vector<decltype(backend->_pending_frames.begin())> frames_to_remove;
-
-  for (auto it = backend->_pending_frames.begin(); it != backend->_pending_frames.end(); ++it) {
-    if (it->pts <= elapsed) {
-      // This frame's time has come (or passed)
-      if (it->pts > best_pts) {
-        // This is a better (more recent) frame to show
-        best_impl = it->iosurface_impl;
-        best_pixel_buffer = it->pixel_buffer;
-        best_pts = it->pts;
-      }
-      frames_to_remove.push_back(it);
-    }
-  }
-
-  if (!best_impl) {
-    // No frame ready yet - hold current frame if we have one
-    return tex->_impl_2.isSet() ? tex : nullptr;
-  }
-
-  // Remove all frames we've passed (including the one we're showing)
-  // Release pixel buffers for frames we're skipping
-  for (auto it : frames_to_remove) {
-    if (it->pixel_buffer != best_pixel_buffer) {
-      // This is a frame we're skipping - release its buffer
-      CVPixelBufferRelease(it->pixel_buffer);
-    }
-    backend->_pending_frames.erase(it);
-  }
-
-  // DEFERRED RELEASE: Release previous frame's pixel buffer (allows VideoToolbox to recycle IOSurface)
-  if (backend->_current_pixel_buffer && backend->_current_pixel_buffer != best_pixel_buffer) {
-    CVPixelBufferRelease(backend->_current_pixel_buffer);
-  }
-  backend->_current_pixel_buffer = best_pixel_buffer;  // Take ownership (already retained in callback)
-
-  // DEFERRED DESTRUCTION: Keep previous impl alive for N frames
-  // This prevents MoltenVK from accessing a destroyed VkImageView in pending commands
-  auto old_impl_opt = tex->_impl_2.tryAsShared<vulkan::IoSurfaceTexImpl>();
-  if (old_impl_opt) {
-    backend->_impl_graveyard.push_back(old_impl_opt.value());
-    // Trim graveyard to max size
-    while (backend->_impl_graveyard.size() > IMPL_GRAVEYARD_SIZE) {
-      backend->_impl_graveyard.pop_front();
-    }
-  }
-
-  // Update texture _impl_2
-  tex->_impl_2.set<vulkan::iosurfaceteximpl_ptr_t>(best_impl);
-  backend->_current_frame_index++;
+  // Update texture impl (fast pointer swap)
+  tex->_impl_2.set<vulkan::iosurfaceteximpl_ptr_t>(_display_impl);
 
   return tex;
 }
@@ -1059,6 +1194,13 @@ void VideoToolboxBackend::_cleanup() {
   // Clear impl graveyard
   _impl_graveyard.clear();
 
+  // Clear display impl
+  {
+    std::lock_guard<std::mutex> lock(_display_mutex);
+    _display_impl.reset();
+    _display_ready = false;
+  }
+
   // Clean up decode textures
   _decode_texture.reset();
   _current_texture.reset();
@@ -1139,6 +1281,8 @@ bool VideoToolboxBackend::_resetAssetReaderForLoop() {
       _pending_frames.clear();
       _buffer_ready = false;
     }
+
+    // Don't reset display - keep showing last frame during loop transition
 
     return true;
   }

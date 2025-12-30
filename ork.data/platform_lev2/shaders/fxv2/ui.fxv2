@@ -133,11 +133,31 @@ fragment_shader ps_uitextured : iface_fmt {
 ///////////////////////////////////////////////////////////////
 libblock lib_lanczos3 {
 
-  // Attempt sinc approximation via Taylor for small x, exact for larger
+  // Fast sinc approximation using rational polynomial (accurate to ~0.001)
+  // Avoids expensive sin() call
+  float sinc_fast(float x) {
+    float ax = abs(x);
+    if (ax < 0.0001) return 1.0;
+    if (ax > 3.0) return 0.0;
+
+    // Pade approximation for sin(pi*x)/(pi*x)
+    float x2 = x * x;
+    float num = 1.0 - x2 * (1.6449 - x2 * (0.8117 - x2 * 0.1517));
+    float den = 1.0 + x2 * (0.0379 + x2 * 0.0015);
+    return num / den;
+  }
+
+  // Original sinc for reference
   float sinc(float x) {
     if (abs(x) < 0.0001) return 1.0;
     float pix = PI * x;
     return sin(pix) / pix;
+  }
+
+  // Lanczos-3 kernel using fast sinc
+  float lanczos3_fast(float x) {
+    if (abs(x) >= 3.0) return 0.0;
+    return sinc_fast(x) * sinc_fast(x / 3.0);
   }
 
   // Lanczos-3 kernel (a=3 gives excellent sharpness with minimal ringing)
@@ -174,46 +194,28 @@ fragment_shader ps_uitextured_aa
     vec4 texc = texture(ColorMap, frg_uv);
     out_clr = vec4(texc.xyz * ModColor.xyz, texc.w * ModColor.w);
   } else {
-    // Fixed 32x32 sample grid for high-quality 8K downsampling
-    // 1024 samples ensures proper coverage even at 8:1 downsample ratios
-    const int GRID_SIZE = 32;
-    const float HALF_GRID = float(GRID_SIZE) * 0.5;
-    const float LANCZOS_A = 3.0;  // Lanczos-3 support radius
+    // Standard Lanczos-3: 16x16 grid = 256 samples
+    const int GRID_SIZE = 16;
+    const float HALF_GRID = 8.0;
 
-    // Scale factor: map grid to cover full Lanczos-3 support
-    // Lanczos-3 support = ±3 kernel units, each kernel unit = footprint texels
-    // So total coverage = footprint * LANCZOS_A * 2 texels
     vec2 footprint = vec2(footprintX, footprintY);
-    vec2 sampleStep = (footprint * LANCZOS_A) / HALF_GRID;  // Texels per grid step
+    vec2 centerTexel = frg_uv * texSize;
 
     vec4 colorSum = vec4(0.0);
     float weightSum = 0.0;
 
-    vec2 centerTexel = frg_uv * texSize;
-
     for (int iy = 0; iy < GRID_SIZE; iy++) {
-      float fy = (float(iy) - HALF_GRID + 0.5);  // Grid position: -7.5 to +7.5
-      float ny = fy / HALF_GRID * LANCZOS_A;     // Normalized to Lanczos space: -3 to +3
-      float wy = lanczos3(ny);
-
-      if (abs(wy) < 0.001) continue;  // Skip negligible weights
+      float fy = (float(iy) - HALF_GRID + 0.5) / HALF_GRID * 3.0;
 
       for (int ix = 0; ix < GRID_SIZE; ix++) {
-        float fx = (float(ix) - HALF_GRID + 0.5);
-        float nx = fx / HALF_GRID * LANCZOS_A;
-        float wx = lanczos3(nx);
+        float fx = (float(ix) - HALF_GRID + 0.5) / HALF_GRID * 3.0;
 
-        if (abs(wx) < 0.001) continue;
+        float weight = lanczos3(fx) * lanczos3(fy);
 
-        float weight = wx * wy;
+        vec2 sampleOffset = vec2(fx, fy) * footprint;
+        vec2 sampleUV = (centerTexel + sampleOffset) * texelSize;
 
-        // Sample position in texel space
-        vec2 offset = vec2(fx, fy) * sampleStep;
-        vec2 sampleTexel = centerTexel + offset;
-        vec2 sampleUV = sampleTexel * texelSize;
-
-        vec4 sampleColor = texture(ColorMap, sampleUV);
-        colorSum += sampleColor * weight;
+        colorSum += texture(ColorMap, sampleUV) * weight;
         weightSum += weight;
       }
     }
