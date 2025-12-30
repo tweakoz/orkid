@@ -22,18 +22,27 @@ tokens = CrcStringProxy()
 
 class VideoToolboxStressTest(application.ComponentizedApplication):
 
-  def __init__(self, griddim=3, use_videotoolbox=True):
+  def __init__(self, griddim=3, use_videotoolbox=True, enable_audio=False, fullscreen=False, antialias=False):
     super().__init__()
 
     # Grid configuration
     self.griddim = griddim
     self.total_cells = griddim * griddim
     self.use_videotoolbox = use_videotoolbox
+    self.enable_audio = enable_audio
+    self.fullscreen = fullscreen
+    self.antialias = antialias
 
     # Movie state tracking
     self.movies = []
     self.movie_start_times = []
     self.movie_started = []
+
+    # Audio state tracking (one voice per movie)
+    self.synth = None
+    self.audio_programs = []
+    self.voices = []
+    self.movie_gains = []
 
     ############################################
     # Setup logger UI component
@@ -50,14 +59,20 @@ class VideoToolboxStressTest(application.ComponentizedApplication):
     self.createEzApp(name="VideoToolboxGpuDirectTest",
                      width=1600,
                      height=900,
-                     fullscreen=False,
-                     enable_audio=False,
-                     enable_audio_output=False,
-                     enable_audio_synth=False,
+                     fullscreen=fullscreen,
+                     enable_audio=enable_audio,
+                     enable_audio_output=enable_audio,
+                     enable_audio_synth=enable_audio,
                      enable_freerun_ups=True,
                      enable_freerun_fps=True)
 
     self.ezapp.uicontext.debug_event_routing = False
+
+  ##############################################
+
+  def _onSynthInit(self, synth):
+    """Store synth reference for audio playback"""
+    self.synth = synth
 
   ##############################################
 
@@ -90,6 +105,7 @@ class VideoToolboxStressTest(application.ComponentizedApplication):
       imv_widget = imv.widget
       imv_widget.maintain_aspect_ratio = True
       imv_widget.generate_mipmaps = False  # Video frames don't need mipmaps
+      imv_widget.fs_antialias = self.antialias
       self.imageviews.append(imv_widget)
 
   ##############################################
@@ -137,6 +153,15 @@ class VideoToolboxStressTest(application.ComponentizedApplication):
 
     movies_to_use = ["bunny.mp4", "wipeout.mp4", "fr-098.mp4", "charge.mp4", "starstruck.mp4"]
 
+    # Per-movie gain table (dB) - adjust individual movie volumes here
+    movie_gains = {
+      "bunny.mp4": 0.0,
+      "wipeout.mp4": -12.0,
+      "fr-098.mp4": -12.0,
+      "charge.mp4": -12.0,
+      "starstruck.mp4": -12.0,
+    }
+
     for i in range(self.total_cells):
       movie_file = movies_to_use[i % len(movies_to_use)]
       start_delay = i * 2  # Stagger start times
@@ -162,7 +187,17 @@ class VideoToolboxStressTest(application.ComponentizedApplication):
 
       self.imageviews[i].image = provider
 
+      # Create audio program for this movie (if audio enabled and movie has audio)
+      audio_program = None
+      if self.enable_audio and self.synth and movie.has_audio:
+        audio_program = movie.createAudioProgram(self.synth)
+        self.movie_channel.log(f"[AUDIO {i}] Created audio program for {movie_file}")
+        movie.audio_timeshift = -2.45  # No audio delay
+
       self.movies.append(movie)
+      self.audio_programs.append(audio_program)
+      self.voices.append(None)  # Voice created when movie starts
+      self.movie_gains.append(movie_gains.get(movie_file, 0.0))
       self.movie_start_times.append(start_delay)
       self.movie_started.append(False)
 
@@ -191,6 +226,13 @@ class VideoToolboxStressTest(application.ComponentizedApplication):
         backend = "VTB" if self.use_videotoolbox else "CPU"
         self.movie_channel.log(f"[T={abstime:.2f}s] Started movie {i} [{backend}]")
 
+        # Start audio voice for this movie
+        if self.audio_programs[i] and self.synth:
+          voice = self.synth.keyOn(i, 60, self.audio_programs[i], None)
+          voice.gain = self.movie_gains[i]
+          self.voices[i] = voice
+          self.movie_channel.log(f"[T={abstime:.2f}s] Started audio voice {i} (gain={self.movie_gains[i]:.1f}dB)")
+
 ###############################################################################
 
 if __name__ == "__main__":
@@ -199,6 +241,12 @@ if __name__ == "__main__":
                       help='Grid dimension (NxN grid, default=4 for 16 decoders)')
   parser.add_argument('--cpu', action='store_true',
                       help='Use CPU FFmpeg backend instead of GPU VideoToolbox')
+  parser.add_argument('-a', '--audio', action='store_true',
+                      help='Enable audio playback (each movie gets its own voice)')
+  parser.add_argument('-f', '--fullscreen', action='store_true',
+                      help='Run in fullscreen mode')
+  parser.add_argument('-A', '--aa', action='store_true',
+                      help='Enable adaptive Lanczos antialiasing')
   args = parser.parse_args()
 
   # Validate grid dimension
@@ -209,5 +257,11 @@ if __name__ == "__main__":
   use_videotoolbox = not args.cpu
 
   # Create and run the ComponentizedApplication
-  app = VideoToolboxStressTest(griddim=args.griddim, use_videotoolbox=use_videotoolbox)
+  app = VideoToolboxStressTest(
+    griddim=args.griddim,
+    use_videotoolbox=use_videotoolbox,
+    enable_audio=args.audio,
+    fullscreen=args.fullscreen,
+    antialias=args.aa
+  )
   app.ezapp.mainThreadLoop()

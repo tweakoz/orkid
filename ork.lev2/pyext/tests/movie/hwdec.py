@@ -7,11 +7,33 @@
 # Distributed under the MIT License
 ################################################################################
 
-import sys, time
-from obt import path
+import sys, time, argparse
+from pathlib import Path
+from obt import path as obt_path
 from orkengine.core import vec4
 from orkengine import lev2
 from ork.app import application, loggerui
+
+################################################################################
+# Build movie shortname map from filesystem
+################################################################################
+
+def build_movie_shortname_map():
+  """Scan assetcache/movies directory and build shortname -> path map"""
+  shortname_to_path = {}
+
+  movies_dir = obt_path.stage() / "assetcache" / "movies"
+  if not movies_dir.exists():
+    return shortname_to_path
+
+  # Scan for video files
+  video_extensions = [".mp4", ".mov", ".mkv", ".avi", ".webm", ".m4v"]
+  for ext in video_extensions:
+    for video_file in movies_dir.glob(f"*{ext}"):
+      shortname = video_file.stem  # filename without extension
+      shortname_to_path[shortname] = video_file.name  # just the filename
+
+  return shortname_to_path
 
 ################################################################################
 
@@ -48,7 +70,7 @@ class HardwareDecodeTest(application.ComponentizedApplication):
       enable_audio_output=enable_audio,
       enable_audio_synth=enable_audio
     )
-    movie_path = str(path.stage() / "assetcache" / "movies" / self.movie_file)
+    movie_path = str(obt_path.stage() / "assetcache" / "movies" / self.movie_file)
 
     print("=" * 80)
     print(f"Hardware Video Decode Test")
@@ -147,11 +169,12 @@ class HardwareDecodeTest(application.ComponentizedApplication):
 ###############################################################################
 
 if __name__ == "__main__":
-  import argparse
+  # Build shortname map before parsing args
+  shortname_map = build_movie_shortname_map()
 
   parser = argparse.ArgumentParser(description='Hardware video decode test')
-  parser.add_argument('movie', nargs='?', default='bunny.mp4',
-                      help='Movie file to play (default: bunny.mp4)')
+  parser.add_argument('movie', nargs='?', default='bunny',
+                      help='Movie file or shortname to play (default: bunny)')
   parser.add_argument('--cpu', action='store_true',
                       help='Use CPU FFmpeg backend instead of VideoToolbox')
   parser.add_argument('-a', '--audio', action='store_true',
@@ -160,9 +183,44 @@ if __name__ == "__main__":
                       help='Run in fullscreen mode')
   parser.add_argument('-A', '--aa', action='store_true',
                       help='Enable adaptive Lanczos antialiasing')
+  parser.add_argument('-l', '--list', action='store_true',
+                      help='List available movie shortnames')
   args = parser.parse_args()
+
+  # Handle --list option
+  if args.list:
+    print("\nAvailable movies:")
+    print("=" * 60)
+
+    if not shortname_map:
+      print("  (no movies found in assetcache/movies)")
+    else:
+      # Sort by shortname and display in columns
+      sorted_names = sorted(shortname_map.keys())
+      col_width = max(len(n) for n in sorted_names) + 2
+      cols = max(1, 60 // col_width)
+
+      for i in range(0, len(sorted_names), cols):
+        row = sorted_names[i:i+cols]
+        line = "  " + "".join(f"{n:<{col_width}}" for n in row)
+        print(line)
+
+    print("=" * 60)
+    print(f"Total: {len(shortname_map)} movies")
+    print("Usage: hwdec.py <shortname> [-a] [-f] [-A]")
+    sys.exit(0)
+
+  # Resolve shortname to filename
+  movie_file = args.movie
+  if movie_file in shortname_map:
+    movie_file = shortname_map[movie_file]
+    print(f"Resolved shortname '{args.movie}' -> {movie_file}")
+  elif not any(movie_file.endswith(ext) for ext in [".mp4", ".mov", ".mkv", ".avi", ".webm", ".m4v"]):
+    # Try adding .mp4 extension
+    if args.movie + ".mp4" in [shortname_map.get(k, "") for k in shortname_map]:
+      movie_file = args.movie + ".mp4"
 
   use_videotoolbox = not args.cpu
 
-  app = HardwareDecodeTest(args.movie, use_videotoolbox, enable_audio=args.audio, fullscreen=args.fullscreen, antialias=args.aa)
+  app = HardwareDecodeTest(movie_file, use_videotoolbox, enable_audio=args.audio, fullscreen=args.fullscreen, antialias=args.aa)
   app.ezapp.mainThreadLoop()
