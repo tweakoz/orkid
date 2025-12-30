@@ -61,7 +61,8 @@ void ImageView::DoDraw(drawevent_constptr_t drwev) {
   //////////////////////////////////
 
   if(_tex_material==nullptr){
-    _tex_material = std::make_shared<lev2::GfxMaterialUITextured>(tgt);
+    std::string technique = _fs_antialias ? "uitextured_aa" : "uitextured";
+    _tex_material = std::make_shared<lev2::GfxMaterialUITextured>(tgt, technique);
   }
 
   mtxi->PushUIMatrix();

@@ -127,6 +127,102 @@ fragment_shader ps_uitextured : iface_fmt {
   out_clr   = vec4(texc.xyz, 1);
 }
 ///////////////////////////////////////////////////////////////
+// Adaptive Lanczos-3 downsampling for high-quality texture display
+// Optimized for extreme downsampling (8K → display resolution)
+// Uses fixed sample grid scaled to footprint for consistent performance
+///////////////////////////////////////////////////////////////
+libblock lib_lanczos3 {
+
+  // Attempt sinc approximation via Taylor for small x, exact for larger
+  float sinc(float x) {
+    if (abs(x) < 0.0001) return 1.0;
+    float pix = PI * x;
+    return sin(pix) / pix;
+  }
+
+  // Lanczos-3 kernel (a=3 gives excellent sharpness with minimal ringing)
+  float lanczos3(float x) {
+    if (abs(x) >= 3.0) return 0.0;
+    return sinc(x) * sinc(x / 3.0);
+  }
+
+  // 2D Lanczos-3 weight (separable)
+  float lanczos3_2D(vec2 offset) {
+    return lanczos3(offset.x) * lanczos3(offset.y);
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_uitextured_aa
+  : iface_fmt
+  : lib_lanczos3 {
+
+  // Get texture dimensions
+  vec2 texSize = vec2(textureSize(ColorMap, 0));
+  vec2 texelSize = 1.0 / texSize;
+
+  // Calculate anisotropic footprint using screen-space derivatives
+  vec2 duvdx = dFdx(frg_uv) * texSize;
+  vec2 duvdy = dFdy(frg_uv) * texSize;
+
+  // Anisotropic footprint: major and minor axes
+  float footprintX = max(abs(duvdx.x), abs(duvdy.x));
+  float footprintY = max(abs(duvdx.y), abs(duvdy.y));
+  float maxFootprint = max(footprintX, footprintY);
+
+  // If minimal downsampling, use hardware filtering
+  if (maxFootprint <= 1.5) {
+    vec4 texc = texture(ColorMap, frg_uv);
+    out_clr = vec4(texc.xyz * ModColor.xyz, texc.w * ModColor.w);
+  } else {
+    // Fixed 32x32 sample grid for high-quality 8K downsampling
+    // 1024 samples ensures proper coverage even at 8:1 downsample ratios
+    const int GRID_SIZE = 32;
+    const float HALF_GRID = float(GRID_SIZE) * 0.5;
+    const float LANCZOS_A = 3.0;  // Lanczos-3 support radius
+
+    // Scale factor: map grid to cover full Lanczos-3 support
+    // Lanczos-3 support = ±3 kernel units, each kernel unit = footprint texels
+    // So total coverage = footprint * LANCZOS_A * 2 texels
+    vec2 footprint = vec2(footprintX, footprintY);
+    vec2 sampleStep = (footprint * LANCZOS_A) / HALF_GRID;  // Texels per grid step
+
+    vec4 colorSum = vec4(0.0);
+    float weightSum = 0.0;
+
+    vec2 centerTexel = frg_uv * texSize;
+
+    for (int iy = 0; iy < GRID_SIZE; iy++) {
+      float fy = (float(iy) - HALF_GRID + 0.5);  // Grid position: -7.5 to +7.5
+      float ny = fy / HALF_GRID * LANCZOS_A;     // Normalized to Lanczos space: -3 to +3
+      float wy = lanczos3(ny);
+
+      if (abs(wy) < 0.001) continue;  // Skip negligible weights
+
+      for (int ix = 0; ix < GRID_SIZE; ix++) {
+        float fx = (float(ix) - HALF_GRID + 0.5);
+        float nx = fx / HALF_GRID * LANCZOS_A;
+        float wx = lanczos3(nx);
+
+        if (abs(wx) < 0.001) continue;
+
+        float weight = wx * wy;
+
+        // Sample position in texel space
+        vec2 offset = vec2(fx, fy) * sampleStep;
+        vec2 sampleTexel = centerTexel + offset;
+        vec2 sampleUV = sampleTexel * texelSize;
+
+        vec4 sampleColor = texture(ColorMap, sampleUV);
+        colorSum += sampleColor * weight;
+        weightSum += weight;
+      }
+    }
+
+    vec4 texc = colorSum / max(weightSum, 0.0001);
+    out_clr = vec4(texc.xyz * ModColor.xyz, texc.w * ModColor.w);
+  }
+}
+///////////////////////////////////////////////////////////////
 vertex_interface vif_VTXCOL : push_constants {
   inputs {
     vec4 position : POSITION;
@@ -170,6 +266,15 @@ technique uitextured {
   pass p0C {
     vertex_shader   = vs_uitext;
     fragment_shader = ps_uitextured;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique uitextured_aa {
+  fxconfig = fxcfg_default;
+  pass p0C {
+    vertex_shader   = vs_uitext;
+    fragment_shader = ps_uitextured_aa;
     state_block     = sb_default;
   }
 }

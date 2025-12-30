@@ -1873,6 +1873,14 @@ void pyinit_ui(py::module& module_lev2) {
               [](ui::imgview_ptr_t imgview, bool b) { //
                 imgview->_generate_mipmaps = b;
               })
+          .def_property(
+              "fs_antialias",
+              [](ui::imgview_ptr_t imgview) -> bool { //
+                return imgview->_fs_antialias;
+              },
+              [](ui::imgview_ptr_t imgview, bool b) { //
+                imgview->_fs_antialias = b;
+              })
           .def(
               "setImage",
               [](ui::imgview_ptr_t imgview, image_ptr_t img) { //

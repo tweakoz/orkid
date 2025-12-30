@@ -17,11 +17,12 @@ from ork.app import application
 
 class HardwareDecodeTest(application.ComponentizedApplication):
 
-  def __init__(self, movie_file, use_videotoolbox=True, enable_audio=False, fullscreen=False):
+  def __init__(self, movie_file, use_videotoolbox=True, enable_audio=False, fullscreen=False, antialias=False):
     super().__init__()
     self.movie_file = movie_file
     self.use_videotoolbox = use_videotoolbox
     self.enable_audio = enable_audio
+    self.antialias = antialias
     self.movie = None
     self.synth = None
     self.voice = None
@@ -90,6 +91,9 @@ class HardwareDecodeTest(application.ComponentizedApplication):
 
     self.imageview.maintain_aspect_ratio = True
     self.imageview.generate_mipmaps = False
+    self.imageview.fs_antialias = self.antialias
+    if self.antialias:
+      print("Antialiasing: Adaptive Lanczos enabled")
 
   ##############################################
 
@@ -139,9 +143,11 @@ if __name__ == "__main__":
                       help='Enable audio playback')
   parser.add_argument('-f', '--fullscreen', action='store_true',
                       help='Run in fullscreen mode')
+  parser.add_argument('-A', '--aa', action='store_true',
+                      help='Enable adaptive Lanczos antialiasing')
   args = parser.parse_args()
 
   use_videotoolbox = not args.cpu
 
-  app = HardwareDecodeTest(args.movie, use_videotoolbox, enable_audio=args.audio, fullscreen=args.fullscreen)
+  app = HardwareDecodeTest(args.movie, use_videotoolbox, enable_audio=args.audio, fullscreen=args.fullscreen, antialias=args.aa)
   app.ezapp.mainThreadLoop()

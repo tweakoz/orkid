@@ -655,19 +655,40 @@ void VideoToolboxBackend::_decompressionCallback(
 void VideoToolboxBackend::_decodeThreadFunc() {
   printf("VideoToolbox decode thread started\n");
 
-  auto decode_start = std::chrono::high_resolution_clock::now();
-  int64_t frames_decoded = 0;
+  // Decode ahead of playback by this amount (ensures frames ready before display)
+  constexpr double DECODE_AHEAD_SECONDS = 0.1;  // 100ms lookahead
+  constexpr size_t MAX_PENDING_FRAMES = 10;     // Don't decode too far ahead
 
   while (_running) {
     @autoreleasepool {
-      // FPS-based pacing: sleep until it's time to decode the next frame
-      auto now = std::chrono::high_resolution_clock::now();
-      double elapsed = std::chrono::duration<double>(now - decode_start).count();
-      double target_time = frames_decoded * _frame_duration;
-      double sleep_time = target_time - elapsed;
+      // Check if we have too many pending frames - wait if buffer is full
+      {
+        std::lock_guard<std::mutex> lock(_frame_buffer_mutex);
+        if (_pending_frames.size() >= MAX_PENDING_FRAMES) {
+          // Buffer full, wait a bit before checking again
+          std::this_thread::sleep_for(std::chrono::milliseconds(5));
+          continue;
+        }
+      }
 
-      if (sleep_time > 0.0) {
-        std::this_thread::sleep_for(std::chrono::duration<double>(sleep_time));
+      // Pace decoding: decode ahead of real-time playback position
+      auto now = std::chrono::high_resolution_clock::now();
+      double elapsed = std::chrono::duration<double>(now - _playback_start).count();
+      double decode_target = elapsed + DECODE_AHEAD_SECONDS;
+
+      // Check highest PTS in pending frames to know what we've decoded up to
+      double highest_decoded_pts = 0.0;
+      {
+        std::lock_guard<std::mutex> lock(_frame_buffer_mutex);
+        if (!_pending_frames.empty()) {
+          highest_decoded_pts = _pending_frames.rbegin()->pts;
+        }
+      }
+
+      // If we're already decoded ahead enough, sleep briefly
+      if (highest_decoded_pts > decode_target) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));
+        continue;
       }
 
       // Read next compressed sample buffer
@@ -680,9 +701,8 @@ void VideoToolboxBackend::_decodeThreadFunc() {
           if (_looping) {
             // Reset for seamless loop
             if (_resetAssetReaderForLoop()) {
-              // Reset decode timing for new loop iteration
-              decode_start = std::chrono::high_resolution_clock::now();
-              frames_decoded = 0;
+              // Reset playback timing for new loop iteration
+              _playback_start = std::chrono::high_resolution_clock::now();
               continue;  // Continue decode loop
             } else {
               printf("VideoToolbox: Loop reset failed, stopping\n");
@@ -718,12 +738,6 @@ void VideoToolboxBackend::_decodeThreadFunc() {
       }
 
       CFRelease(sampleBuffer);
-      frames_decoded++;
-
-      // TODO: Audio decode callback (hybrid FFmpeg audio)
-      if (_audio_callback) {
-        // Extract audio from separate track if present
-      }
     }
   }
 
@@ -858,8 +872,8 @@ texture_ptr_t VideoToolboxBackend::currentTexture() {
     return nullptr;  // Not initialized yet
   }
 
-  // PTS-BASED FRAME DRAINING
-  // Pop frames from sorted buffer in correct temporal order
+  // WALL-CLOCK BASED FRAME SELECTION
+  // Calculate current playback time and show the appropriate frame
   auto backend = static_cast<VideoToolboxBackend*>(_context->_backend_impl.get());
 
   std::lock_guard<std::mutex> lock(backend->_frame_buffer_mutex);
@@ -869,56 +883,68 @@ texture_ptr_t VideoToolboxBackend::currentTexture() {
     return nullptr;
   }
 
-  // Get frame with lowest PTS (first in sorted set)
-  auto it = backend->_pending_frames.begin();
-  if (it == backend->_pending_frames.end()) {
-    return nullptr;
-  }
+  // Calculate current playback time from wall clock
+  auto now = std::chrono::high_resolution_clock::now();
+  double elapsed = std::chrono::duration<double>(now - backend->_playback_start).count();
 
-  // Use actual video frame duration
-  const double FRAME_DURATION = _frame_duration;
-  const double PTS_TOLERANCE = FRAME_DURATION * 0.5;  // Allow 0.5 frame tolerance
+  // Find the best frame to display:
+  // - Frame with largest PTS that is <= current elapsed time
+  // - This ensures we never show frames ahead of time, but catch up if behind
+  vulkan::iosurfaceteximpl_ptr_t best_impl = nullptr;
+  CVPixelBufferRef best_pixel_buffer = nullptr;
+  double best_pts = -1.0;
+  std::vector<decltype(backend->_pending_frames.begin())> frames_to_remove;
 
-  double frame_pts = it->pts;
-  double expected_pts = backend->_next_expected_pts;
-
-  // Check if this frame's PTS is close to expected (within tolerance)
-  bool pts_matches = std::abs(frame_pts - expected_pts) < PTS_TOLERANCE;
-
-  if (pts_matches || backend->_next_expected_pts == 0.0) {
-    // Pop frame and display it
-    auto new_impl = it->iosurface_impl;
-    CVPixelBufferRef new_pixel_buffer = it->pixel_buffer;
-    backend->_pending_frames.erase(it);
-
-    // DEFERRED RELEASE: Release previous frame's pixel buffer (allows VideoToolbox to recycle IOSurface)
-    if (backend->_current_pixel_buffer) {
-      CVPixelBufferRelease(backend->_current_pixel_buffer);
-    }
-    backend->_current_pixel_buffer = new_pixel_buffer;  // Take ownership (already retained in callback)
-
-    // Update expected PTS for next frame
-    backend->_next_expected_pts = frame_pts + FRAME_DURATION;
-
-    // DEFERRED DESTRUCTION: Keep previous impl alive for N frames
-    // This prevents MoltenVK from accessing a destroyed VkImageView in pending commands
-    auto old_impl_opt = tex->_impl_2.tryAsShared<vulkan::IoSurfaceTexImpl>();
-    if (old_impl_opt) {
-      backend->_impl_graveyard.push_back(old_impl_opt.value());
-      // Trim graveyard to max size
-      while (backend->_impl_graveyard.size() > IMPL_GRAVEYARD_SIZE) {
-        backend->_impl_graveyard.pop_front();
+  for (auto it = backend->_pending_frames.begin(); it != backend->_pending_frames.end(); ++it) {
+    if (it->pts <= elapsed) {
+      // This frame's time has come (or passed)
+      if (it->pts > best_pts) {
+        // This is a better (more recent) frame to show
+        best_impl = it->iosurface_impl;
+        best_pixel_buffer = it->pixel_buffer;
+        best_pts = it->pts;
       }
+      frames_to_remove.push_back(it);
     }
+  }
 
-    // Update texture _impl_2
-    tex->_impl_2.set<vulkan::iosurfaceteximpl_ptr_t>(new_impl);
-
-    return tex;
-  } else {
-    // Frame PTS doesn't match - still waiting for correct frame
+  if (!best_impl) {
+    // No frame ready yet - current time is before first frame's PTS
     return nullptr;
   }
+
+  // Remove all frames we've passed (including the one we're showing)
+  // Release pixel buffers for frames we're skipping
+  for (auto it : frames_to_remove) {
+    if (it->pixel_buffer != best_pixel_buffer) {
+      // This is a frame we're skipping - release its buffer
+      CVPixelBufferRelease(it->pixel_buffer);
+    }
+    backend->_pending_frames.erase(it);
+  }
+
+  // DEFERRED RELEASE: Release previous frame's pixel buffer (allows VideoToolbox to recycle IOSurface)
+  if (backend->_current_pixel_buffer && backend->_current_pixel_buffer != best_pixel_buffer) {
+    CVPixelBufferRelease(backend->_current_pixel_buffer);
+  }
+  backend->_current_pixel_buffer = best_pixel_buffer;  // Take ownership (already retained in callback)
+
+  // DEFERRED DESTRUCTION: Keep previous impl alive for N frames
+  // This prevents MoltenVK from accessing a destroyed VkImageView in pending commands
+  auto old_impl_opt = tex->_impl_2.tryAsShared<vulkan::IoSurfaceTexImpl>();
+  if (old_impl_opt) {
+    backend->_impl_graveyard.push_back(old_impl_opt.value());
+    // Trim graveyard to max size
+    while (backend->_impl_graveyard.size() > IMPL_GRAVEYARD_SIZE) {
+      backend->_impl_graveyard.pop_front();
+    }
+  }
+
+  // Update texture _impl_2
+  tex->_impl_2.set<vulkan::iosurfaceteximpl_ptr_t>(best_impl);
+  backend->_current_frame_index++;
+
+  return tex;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////

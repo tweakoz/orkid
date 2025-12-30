@@ -33,6 +33,7 @@ public:
   bool _maintain_aspect_ratio = false;
   bool _generate_mipmaps = false;
   bool _image_rot_180 = false;
+  bool _fs_antialias = false;  // Enable adaptive Lanczos downsampling in fragment shader
   void setImage(lev2::image_ptr_t img);
   void setImageProvider(lev2::image_provider_ptr_t imgprovider);
   void setTextureProvider(lev2::texture_provider_ptr_t texprovider);
