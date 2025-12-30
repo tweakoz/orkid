@@ -9,7 +9,9 @@
 
 import math, sys
 import numpy as np
+from obt import path as obt_path
 from orkengine.core import vec2, vec3, vec4, CrcStringProxy, lev2_pyexdir
+from orkengine import lev2
 from orkengine.lev2 import RigidPrimitive, MicroMesh
 from ork.app.application import ComponentizedApplication, ApplicationComponent
 from ork.app.std_scenegraph import StandardSceneGraphComponent
@@ -20,8 +22,160 @@ from shaders import createPipeline
 tokens = CrcStringProxy()
 
 ################################################################################
+# Build movie shortname map from filesystem
+################################################################################
+
+def build_movie_shortname_map():
+  """Scan assetcache/movies directory and build shortname -> path map"""
+  shortname_to_path = {}
+
+  movies_dir = obt_path.stage() / "assetcache" / "movies"
+  if not movies_dir.exists():
+    return shortname_to_path
+
+  # Scan for video files
+  video_extensions = [".mp4", ".mov", ".mkv", ".avi", ".webm", ".m4v"]
+  for ext in video_extensions:
+    for video_file in movies_dir.glob(f"*{ext}"):
+      shortname = video_file.stem  # filename without extension
+      shortname_to_path[shortname] = video_file.name  # just the filename
+
+  return shortname_to_path
+
+################################################################################
 # UV Visualization Shader - shows UVs as colors (R=U, G=V)
 ################################################################################
+
+MOVIE_SHADER = """
+////////////////////////////////////////
+fxconfig fxcfg_default { glsl_version = "330"; }
+////////////////////////////////////////
+uniform_set ublock_vtx {
+  mat4 mvp;
+}
+////////////////////////////////////////
+sampler_set ublock_frg (descriptor_set 0) {
+  sampler2D ColorMap;
+}
+////////////////////////////////////////
+vertex_interface vif_movie : ublock_vtx {
+  inputs {
+    vec4 pos : POSITION;
+    vec4 nrm : NORMAL;
+    vec3 binormal : BINORMAL;
+    vec2 uv : TEXCOORD0;
+    vec4 clr : COLOR0;
+  }
+  outputs {
+    vec2 frg_uv;
+    vec3 frg_nrm;
+  }
+}
+////////////////////////////////////////
+fragment_interface fif_movie : vif_movie : ublock_frg {
+  outputs { layout(location = 0) vec4 out_clr; }
+}
+////////////////////////////////////////
+// Lanczos-3 filtering library
+////////////////////////////////////////
+libblock lib_lanczos3 {
+  // Original sinc function
+  float sinc(float x) {
+    if (abs(x) < 0.0001) return 1.0;
+    float pix = PI * x;
+    return sin(pix) / pix;
+  }
+
+  // Lanczos-3 kernel (a=3 gives excellent sharpness with minimal ringing)
+  float lanczos3(float x) {
+    if (abs(x) >= 3.0) return 0.0;
+    return sinc(x) * sinc(x / 3.0);
+  }
+}
+////////////////////////////////////////
+vertex_shader vs_movie : vif_movie {
+  frg_uv = uv;
+  frg_nrm = normalize(nrm.xyz);
+  gl_Position = mvp * vec4(pos.xyz, 1.0);
+}
+////////////////////////////////////////
+fragment_shader fs_movie : fif_movie {
+  vec4 tex_color = texture(ColorMap, frg_uv);
+  out_clr = tex_color;
+}
+////////////////////////////////////////
+// Adaptive Lanczos-3 downsampling fragment shader
+////////////////////////////////////////
+fragment_shader fs_movie_aa : fif_movie : lib_lanczos3 {
+  // Get texture dimensions
+  vec2 texSize = vec2(textureSize(ColorMap, 0));
+  vec2 texelSize = 1.0 / texSize;
+
+  // Calculate anisotropic footprint using screen-space derivatives
+  vec2 duvdx = dFdx(frg_uv) * texSize;
+  vec2 duvdy = dFdy(frg_uv) * texSize;
+
+  // Anisotropic footprint: major and minor axes
+  float footprintX = max(abs(duvdx.x), abs(duvdy.x));
+  float footprintY = max(abs(duvdx.y), abs(duvdy.y));
+  float maxFootprint = max(footprintX, footprintY);
+
+  // If minimal downsampling, use hardware filtering
+  if (maxFootprint <= 1.5) {
+    out_clr = texture(ColorMap, frg_uv);
+  } else {
+    // Lanczos-3: 16x16 grid = 256 samples
+    const int GRID_SIZE = 16;
+    const float HALF_GRID = 8.0;
+
+    vec2 footprint = vec2(footprintX, footprintY);
+    vec2 centerTexel = frg_uv * texSize;
+
+    vec4 colorSum = vec4(0.0);
+    float weightSum = 0.0;
+
+    for (int iy = 0; iy < GRID_SIZE; iy++) {
+      float fy = (float(iy) - HALF_GRID + 0.5) / HALF_GRID * 3.0;
+
+      for (int ix = 0; ix < GRID_SIZE; ix++) {
+        float fx = (float(ix) - HALF_GRID + 0.5) / HALF_GRID * 3.0;
+
+        float weight = lanczos3(fx) * lanczos3(fy);
+
+        vec2 sampleOffset = vec2(fx, fy) * footprint;
+        vec2 sampleUV = (centerTexel + sampleOffset) * texelSize;
+
+        colorSum += texture(ColorMap, sampleUV) * weight;
+        weightSum += weight;
+      }
+    }
+
+    out_clr = colorSum / max(weightSum, 0.0001);
+  }
+}
+////////////////////////////////////////
+state_block sb_movie : default {
+  CullTest = OFF;
+}
+////////////////////////////////////////
+technique tek_movie {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_movie;
+    fragment_shader = fs_movie;
+    state_block     = sb_movie;
+  }
+}
+////////////////////////////////////////
+technique tek_movie_aa {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_movie;
+    fragment_shader = fs_movie_aa;
+    state_block     = sb_movie;
+  }
+}
+"""
 
 UV_SHADER = """
 ////////////////////////////////////////
@@ -90,12 +244,16 @@ fragment_shader fs_uv_gradient : fif_uv {
   out_clr = vec4(uv_color * ndotl, 1.0);
 }
 ////////////////////////////////////////
+state_block sb_uvc : default {
+  CullTest = OFF;
+}
+////////////////////////////////////////
 technique tek_uv_color {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader   = vs_uv;
     fragment_shader = fs_uv_color;
-    state_block     = default;
+    state_block     = sb_uvc;
   }
 }
 ////////////////////////////////////////
@@ -108,12 +266,16 @@ technique tek_uv_checker {
   }
 }
 ////////////////////////////////////////
+state_block sb_uvg : default {
+  CullTest = OFF;
+}
+////////////////////////////////////////
 technique tek_uv_gradient {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader   = vs_uv;
     fragment_shader = fs_uv_gradient;
-    state_block     = default;
+    state_block     = sb_uvg;
   }
 }
 """
@@ -147,7 +309,7 @@ def create_quad_mesh():
 # Create a UV sphere mesh
 ################################################################################
 
-def create_uv_sphere(radius=1.0, slices=32, stacks=16):
+def create_uv_sphere(radius=10.0, slices=64, stacks=32):
   """Create a UV sphere with proper UV coordinates"""
   vertices = []
   uvs = []
@@ -230,36 +392,79 @@ def create_uv_torus(major_radius=1.0, minor_radius=0.3, major_segments=32, minor
 class UVTestComponent(ApplicationComponent):
   """Component that demonstrates UV coordinate support in MicroMesh"""
 
-  def __init__(self, mesh_type="sphere", shader_mode="color"):
+  def __init__(self, mesh_type="sphere", shader_mode="color", movie_file=None, antialias=False):
     super().__init__()
     self.mesh_type = mesh_type
     self.shader_mode = shader_mode
+    self.movie_file = movie_file
+    self.antialias = antialias
     self.mesh_prim = None
     self.mesh_pipe = None
     self.mesh_node = None
     self.micromesh = None
     self.base_uvs = None  # Store original UVs for animation
+    self.movie = None
+    self.movie_material = None
     self.phi = 0.0
 
   def _onGpuInit(self, ctx):
     """Initialize GPU resources"""
 
-    # Select technique based on shader mode
-    tech_map = {
-      "color": "tek_uv_color",
-      "checker": "tek_uv_checker",
-      "gradient": "tek_uv_gradient",
-    }
-    techname = tech_map.get(self.shader_mode, "tek_uv_checker")
+    # Check if we're in movie mode
+    if self.movie_file:
+      # Initialize movie playback
+      import time
+      movie_path = str(obt_path.stage() / "assetcache" / "movies" / self.movie_file)
+      print(f"Loading movie: {movie_path}")
 
-    # Create pipeline with UV shader
-    self.mesh_pipe = createPipeline(
-      app=self.app,
-      ctx=ctx,
-      rendermodel="ForwardPBR",
-      shadertext=UV_SHADER,
-      techname=techname,
-    )
+      self.movie = lev2.MoviePlaybackContext()
+      self.movie.init(
+        movie_path,
+        backend=lev2.MovieBackend.VIDEOTOOLBOX,
+        format=lev2.MoviePixelFormat.AUTO
+      )
+      time.sleep(0.5)  # Wait for initialization
+
+      print(f"Movie: {self.movie.width}x{self.movie.height} @ {self.movie.fps:.2f}fps")
+
+      # Create pipeline with movie shader
+      self.movie_material = lev2.FreestyleMaterial()
+      self.movie_material.gpuInitFromShaderText(ctx, "movie_shader", MOVIE_SHADER)
+      self.movie_material.rasterstate.culltest = tokens.PASS_FRONT
+      self.movie_material.rasterstate.depthtest = tokens.LEQUALS
+
+      # Select technique based on antialias setting
+      techname = "tek_movie_aa" if self.antialias else "tek_movie"
+      if self.antialias:
+        print("Antialiasing: Adaptive Lanczos-3 enabled")
+
+      permu = lev2.FxPipelinePermutation(rendermodel="ForwardPBR")
+      permu.technique = self.movie_material.shader.technique(techname)
+
+      self.mesh_pipe = self.movie_material.fxcache.findPipeline(permu)
+      self.mesh_pipe.bindParam(self.movie_material.param("mvp"), tokens.RCFD_Camera_MVP_Mono)
+      self.mesh_pipe.bindParam(self.movie_material.param("ColorMap"), self.movie.texture )
+      self.mesh_pipe.sharedMaterial = self.movie_material
+
+      # Start playback
+      self.movie.play()
+    else:
+      # Select technique based on shader mode
+      tech_map = {
+        "color": "tek_uv_color",
+        "checker": "tek_uv_checker",
+        "gradient": "tek_uv_gradient",
+      }
+      techname = tech_map.get(self.shader_mode, "tek_uv_checker")
+
+      # Create pipeline with UV shader
+      self.mesh_pipe = createPipeline(
+        app=self.app,
+        ctx=ctx,
+        rendermodel="ForwardPBR",
+        shadertext=UV_SHADER,
+        techname=techname,
+      )
 
     # Create mesh based on type
     if self.mesh_type == "quad":
@@ -302,7 +507,15 @@ class UVTestComponent(ApplicationComponent):
     self.phi = updinfo.absolutetime
 
   def _onGpuUpdate(self, ctx):
-    """Animate UVs each frame"""
+    """Animate UVs each frame (only when not in movie mode)"""
+    # In movie mode, poll the texture update provider to trigger frame updates
+    if self.movie_file:
+      if self.movie and self.movie.texture:
+        tex = self.movie.texture
+        if tex.update_provider:
+          tex.update_provider.getTexture()
+      return
+
     # Offset UVs based on time
     offset_u = self.phi * 0.2
     offset_v = self.phi * 0.1
@@ -322,7 +535,7 @@ class UVTestComponent(ApplicationComponent):
 
 class UVTestApp(ComponentizedApplication):
 
-  def __init__(self, mesh_type="sphere", shader_mode="checker"):
+  def __init__(self, mesh_type="sphere", shader_mode="checker", movie_file=None, fullscreen=False, antialias=False):
     super().__init__()
 
     # Add components
@@ -336,25 +549,77 @@ class UVTestApp(ComponentizedApplication):
     self.UVC = self.addComponent("uv_test",
                                  UVTestComponent,
                                  mesh_type=mesh_type,
-                                 shader_mode=shader_mode)
+                                 shader_mode=shader_mode,
+                                 movie_file=movie_file,
+                                 antialias=antialias)
 
     self.createEzApp(name="MicroMesh UV Test",
                      width=1280,
-                     height=720)
+                     height=720,
+                     fullscreen=fullscreen)
 
 ################################################################################
 
 if __name__ == "__main__":
   import argparse
 
+  # Build shortname map before parsing args
+  shortname_map = build_movie_shortname_map()
+
   parser = argparse.ArgumentParser(description='MicroMesh UV Test')
   parser.add_argument('-m', '--mesh', choices=['quad', 'sphere', 'torus'],
                       default='sphere', help='Mesh type to display')
   parser.add_argument('-s', '--shader', choices=['color', 'checker', 'gradient'],
                       default='color', help='UV visualization mode')
+  parser.add_argument('-M', '--movie', type=str, default=None,
+                      help='Movie file or shortname to use as texture')
+  parser.add_argument('-l', '--list', action='store_true',
+                      help='List available movie shortnames')
+  parser.add_argument('-f', '--fullscreen', action='store_true',
+                      help='Run in fullscreen mode')
+  parser.add_argument('-A', '--aa', action='store_true',
+                      help='Enable adaptive Lanczos antialiasing')
   args = parser.parse_args()
 
-  print(f"UV Test: mesh={args.mesh}, shader={args.shader}")
+  # Handle --list option
+  if args.list:
+    print("\nAvailable movies:")
+    print("=" * 60)
 
-  app = UVTestApp(mesh_type=args.mesh, shader_mode=args.shader)
+    if not shortname_map:
+      print("  (no movies found in assetcache/movies)")
+    else:
+      # Sort by shortname and display in columns
+      sorted_names = sorted(shortname_map.keys())
+      col_width = max(len(n) for n in sorted_names) + 2
+      cols = max(1, 60 // col_width)
+
+      for i in range(0, len(sorted_names), cols):
+        row = sorted_names[i:i+cols]
+        line = "  " + "".join(f"{n:<{col_width}}" for n in row)
+        print(line)
+
+    print("=" * 60)
+    print(f"Total: {len(shortname_map)} movies")
+    print("Usage: uvs.py -M <shortname> [-m mesh] [-s shader]")
+    sys.exit(0)
+
+  # Resolve movie shortname to filename
+  movie_file = args.movie
+  if movie_file:
+    if movie_file in shortname_map:
+      movie_file = shortname_map[movie_file]
+      print(f"Resolved shortname '{args.movie}' -> {movie_file}")
+    elif not any(movie_file.endswith(ext) for ext in [".mp4", ".mov", ".mkv", ".avi", ".webm", ".m4v"]):
+      # Try adding .mp4 extension
+      if args.movie + ".mp4" in [shortname_map.get(k, "") for k in shortname_map]:
+        movie_file = args.movie + ".mp4"
+
+  if movie_file:
+    print(f"UV Test: mesh={args.mesh}, movie={movie_file}")
+  else:
+    print(f"UV Test: mesh={args.mesh}, shader={args.shader}")
+
+  app = UVTestApp(mesh_type=args.mesh, shader_mode=args.shader, movie_file=movie_file,
+                  fullscreen=args.fullscreen, antialias=args.aa)
   app.ezapp.mainThreadLoop()

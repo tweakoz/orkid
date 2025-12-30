@@ -630,6 +630,7 @@ void pyinit_gfx(py::module& module_lev2) {
               })
           .def_property_readonly("width", [](texture_ptr_t self) -> int { return int(self->_width); })
           .def_property_readonly("height", [](texture_ptr_t self) -> int { return int(self->_height); })
+          .def_property_readonly("update_provider", [](texture_ptr_t self) -> texture_provider_ptr_t { return self->_update_provider; })
           .def_static("load", [](std::string path) -> texture_ptr_t { return Texture::LoadUnManaged(path); })
           .def_static("declare", [](std::string path) -> texture_ptr_t { return nullptr; })
           .def_property(
