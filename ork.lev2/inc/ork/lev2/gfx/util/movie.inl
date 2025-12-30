@@ -275,6 +275,10 @@ struct MoviePlaybackContext {
   // Positive = audio lags video, Negative = audio leads video
   double _audio_timeshift = 0.0;
 
+  // Audio mono mixdown (default false = stereo output)
+  // When true, stereo/surround audio is mixed down to mono
+  bool _mono_mixdown = false;
+
   /////////////////////////////////////////////////////////////////////////////////////////
 private:
   void _decodeThreadFunc();

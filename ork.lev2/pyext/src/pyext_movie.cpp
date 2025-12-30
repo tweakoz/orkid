@@ -163,6 +163,16 @@ void pyinit_movie(py::module& module_lev2) {
               },
               [](movieplayback_ptr_t ctx, double timeshift) {
                 ctx->_audio_timeshift = timeshift;
+              })
+          // Audio mono mixdown (default false = stereo output)
+          // When true, stereo/surround audio is mixed down to mono
+          .def_property(
+              "mono_mixdown",
+              [](movieplayback_ptr_t ctx) -> bool {
+                return ctx->_mono_mixdown;
+              },
+              [](movieplayback_ptr_t ctx, bool mono) {
+                ctx->_mono_mixdown = mono;
               });
   type_codec->registerStdCodec<movieplayback_ptr_t>(movieplayback_type);
   ///////////////////////////////////////////////////////////////////////////////

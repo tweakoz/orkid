@@ -19,7 +19,8 @@ struct SimpleImpl {
   StreamingOscillatorBlock* _oscil;
   bool _is_primed = false;
   size_t _exec_count = 0;
-  float _read_position = 0.0f;  // Fractional sample position for interpolation
+  float _read_position_L = 0.0f;  // Fractional sample position for L channel
+  float _read_position_R = 0.0f;  // Fractional sample position for R channel
 
   // Stored values for lambda-based perfItems
   float _deviation = 0.0f;
@@ -67,7 +68,8 @@ struct SimpleImpl {
 
   void reset() {
     _is_primed = false;
-    _read_position = 0.0f;
+    _read_position_L = 0.0f;
+    _read_position_R = 0.0f;
   }
 
   ////////////////////////////////////////////////////////////////
@@ -108,6 +110,11 @@ struct SimpleImpl {
       std::vector<float> temp_drain(to_drain);
       _oscil->_ringBuffer.pop_many(temp_drain.data(), to_drain);
 
+      // Also drain R channel if stereo
+      if (_oscil->_num_channels == 2) {
+        _oscil->_ringBuffer_R.pop_many(temp_drain.data(), to_drain);
+      }
+
       _ed_current_size = float(current_size);
       _ed_ts_1_5 = drain_threshold;
       _ed_excess = int(excess);
@@ -136,25 +143,32 @@ struct SimpleImpl {
     lev2::audioinputchunk_ptr_t chunk;
     bool was_reset = source->_was_reset;
     if(was_reset){
-      logchan_strsimpl->log("SimpleImpl: Detected source reset, clearing ring buffer");
+      logchan_strsimpl->log("SimpleImpl: Detected source reset, clearing ring buffers");
       _oscil->_ringBuffer.clear();
+      _oscil->_ringBuffer_R.clear();
       source->_was_reset = false;
       reset();
     }
     while (source->_inputqueue.try_pop(chunk)) {
       _chunkindex = source->_chunk_index;
-      auto& chan0        = chunk->_channels[0];
-      size_t num_samples = chan0.size();
-      const float* src   = chan0.data();
+      auto& chan_L       = chunk->_channels[0];
+      size_t num_samples = chan_L.size();
+      const float* src_L = chan_L.data();
 
-      // Push to ring buffer
+      // Push L channel to ring buffer
       size_t available_space = _oscil->_ringBuffer.capacity() - _oscil->_ringBuffer.size();
       size_t to_push         = std::min(available_space, num_samples);
 
       if (to_push > 0) {
-        //_push_count += int(to_push);
-        _push_count ++;
-        _oscil->_ringBuffer.push_many(src, to_push);
+        _push_count++;
+        _oscil->_ringBuffer.push_many(src_L, to_push);
+
+        // Push R channel if stereo
+        if (_oscil->_num_channels == 2 && chunk->_channels.size() >= 2) {
+          auto& chan_R       = chunk->_channels[1];
+          const float* src_R = chan_R.data();
+          _oscil->_ringBuffer_R.push_many(src_R, to_push);
+        }
       }
 
       if (to_push < num_samples) {
@@ -166,7 +180,13 @@ struct SimpleImpl {
   ////////////////////////////////////////////////////////////////
 
   void generateOutput(DspBuffer& dspbuf) {
-    auto outputchan            = _oscil->getOutBuf(dspbuf, 0) + _oscil->_layer->_dspwritebase;
+    auto outputchan_L          = _oscil->getOutBuf(dspbuf, 0) + _oscil->_layer->_dspwritebase;
+    float* outputchan_R        = nullptr;
+    bool is_stereo             = (_oscil->_num_channels == 2);
+    if (is_stereo) {
+      outputchan_R = _oscil->getOutBuf(dspbuf, 1) + _oscil->_layer->_dspwritebase;
+    }
+
     int frames                 = _oscil->_layer->_dspwritecount; // Always 64 - immutable
     size_t current_buffer_size = _oscil->_ringBuffer.size();
     int ecount = _exec_count++;
@@ -232,44 +252,80 @@ struct SimpleImpl {
       size_t samples_needed = size_t(frames * playback_rate) + 2;  // +2 for interpolation safety
 
       if (current_buffer_size >= samples_needed) {
-        // Pre-fetch buffer data for interpolation
-        std::vector<float> temp_buffer(samples_needed);
-        _oscil->_ringBuffer.peek_many(temp_buffer.data(), samples_needed);
+        // Pre-fetch L channel buffer data for interpolation
+        std::vector<float> temp_buffer_L(samples_needed);
+        _oscil->_ringBuffer.peek_many(temp_buffer_L.data(), samples_needed);
 
-        // Generate output with linear interpolation
+        // Pre-fetch R channel if stereo
+        std::vector<float> temp_buffer_R;
+        if (is_stereo) {
+          temp_buffer_R.resize(samples_needed);
+          _oscil->_ringBuffer_R.peek_many(temp_buffer_R.data(), samples_needed);
+        }
+
+        // Generate L channel output with linear interpolation
         for (int i = 0; i < frames; i++) {
-          float read_pos = _read_position + i * playback_rate;
+          float read_pos = _read_position_L + i * playback_rate;
 
           int index = int(read_pos);
           float frac = read_pos - float(index);
 
-          // Linear interpolation
-          float sample0 = temp_buffer[index];
-          float sample1 = temp_buffer[index + 1];
-          outputchan[i] = sample0 + frac * (sample1 - sample0);
+          // Linear interpolation for L channel
+          float sample0 = temp_buffer_L[index];
+          float sample1 = temp_buffer_L[index + 1];
+          outputchan_L[i] = sample0 + frac * (sample1 - sample0);
         }
 
-        // Advance read position
-        _read_position += frames * playback_rate;
+        // Generate R channel output if stereo
+        if (is_stereo) {
+          for (int i = 0; i < frames; i++) {
+            float read_pos = _read_position_R + i * playback_rate;
 
-        // Consume integer samples from ring buffer
-        int samples_consumed = int(_read_position);
+            int index = int(read_pos);
+            float frac = read_pos - float(index);
+
+            // Linear interpolation for R channel
+            float sample0 = temp_buffer_R[index];
+            float sample1 = temp_buffer_R[index + 1];
+            outputchan_R[i] = sample0 + frac * (sample1 - sample0);
+          }
+        }
+
+        // Advance read positions
+        _read_position_L += frames * playback_rate;
+        if (is_stereo) {
+          _read_position_R += frames * playback_rate;
+        }
+
+        // Consume integer samples from ring buffers
+        int samples_consumed = int(_read_position_L);
         if (samples_consumed > 0) {
           std::vector<float> discard(samples_consumed);
           popped = size_t(samples_consumed);
           _oscil->_ringBuffer.pop_many(discard.data(), samples_consumed);
-          _read_position -= float(samples_consumed);  // Keep fractional part
+          _read_position_L -= float(samples_consumed);  // Keep fractional part
+
+          if (is_stereo) {
+            _oscil->_ringBuffer_R.pop_many(discard.data(), samples_consumed);
+            _read_position_R -= float(samples_consumed);
+          }
         }
 
       } else {
-        // Underrun
-        memset(outputchan, 0, frames * sizeof(float));
+        // Underrun - output silence
+        memset(outputchan_L, 0, frames * sizeof(float));
+        if (is_stereo) {
+          memset(outputchan_R, 0, frames * sizeof(float));
+        }
         logchan_strsimpl->log("SimpleImpl: Underrun - buffer:%zu needed:%zu", current_buffer_size, samples_needed);
       }
-      _pop_count ++;// int(popped);
+      _pop_count++;
     } else {
       // Output silence (priming or no data)
-      memset(outputchan, 0, frames * sizeof(float));
+      memset(outputchan_L, 0, frames * sizeof(float));
+      if (is_stereo) {
+        memset(outputchan_R, 0, frames * sizeof(float));
+      }
     }
   }
   ////////////////////////////////////////////////////////////////

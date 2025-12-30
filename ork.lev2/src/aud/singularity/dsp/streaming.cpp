@@ -54,7 +54,8 @@ dspblk_ptr_t STREAMING_OSCILLATOR_DATA::createInstance() const {
 
 StreamingOscillatorBlock::StreamingOscillatorBlock(const DspBlockData* dbd)
     : DspBlock(dbd)
-    , _ringBuffer(96000) // 2 seconds at 48kHz
+    , _ringBuffer(96000)   // 2 seconds at 48kHz (L channel / mono)
+    , _ringBuffer_R(96000) // 2 seconds at 48kHz (R channel for stereo)
     , _dynamic_low_watermark(0)
     , _dynamic_high_watermark(0)
     , _dynamic_target_level(0)
@@ -70,6 +71,7 @@ StreamingOscillatorBlock::StreamingOscillatorBlock(const DspBlockData* dbd)
     , _last_chunk_time(0.0) {
 
   _streamingdata = dynamic_cast<const STREAMING_OSCILLATOR_DATA*>(dbd);
+  _num_channels = _streamingdata->_num_channels;
 
   //==================================================================
   // INITIALIZE SIMPLE IMPL FOR DEBUGGING
@@ -135,12 +137,14 @@ void StreamingOscillatorBlock::doKeyOn(const KeyOnInfo& koi) {
   _last_chunk_time = 0.0;
   _startup_time    = std::chrono::steady_clock::now();
 
-  // Clear ring buffer
+  // Clear ring buffers (L and R)
   float dummy;
   while (_ringBuffer.try_pop(dummy)) {
   }
+  while (_ringBuffer_R.try_pop(dummy)) {
+  }
 
-  logchan_streaming->log("SimpleImpl: KeyOn - starting priming phase");
+  logchan_streaming->log("SimpleImpl: KeyOn - starting priming phase (channels=%d)", _num_channels);
 }
 
 void StreamingOscillatorBlock::doKeyOff() {
@@ -149,7 +153,8 @@ void StreamingOscillatorBlock::doKeyOff() {
 }
 
 prgdata_ptr_t createStreamingOscillatorProgramFromSource(lev2::audiostreaminginputchunk_source_ptr_t src, //
-                                                         float target_latency_ms) { //
+                                                         float target_latency_ms,
+                                                         int num_channels) { //
   auto prgdata     = std::make_shared<ProgramData>();
   prgdata->_name   = "StreamingOscillatorProgram";
   auto layer       = prgdata->newLayer();
@@ -157,18 +162,33 @@ prgdata_ptr_t createStreamingOscillatorProgramFromSource(lev2::audiostreaminginp
   layer->_floatPan = 0.0f; // center pan
   auto dspstage    = layer->appendStage("DSP");
   auto ampstage    = layer->appendStage("AMP");
-  dspstage->setNumIos(1, 1);
-  ampstage->setNumIos(1, 2);
-  dspstage->_ioconfig->_inputs  = {0};
-  dspstage->_ioconfig->_outputs = {0};
-  ampstage->_ioconfig->_inputs  = {0};
-  ampstage->_ioconfig->_outputs = {0, 1};
+
+  // Configure IO for mono or stereo
+  if (num_channels == 2) {
+    // Stereo: 2 inputs, 2 outputs
+    dspstage->setNumIos(2, 2);
+    ampstage->setNumIos(2, 2);
+    dspstage->_ioconfig->_inputs  = {0, 1};
+    dspstage->_ioconfig->_outputs = {0, 1};
+    ampstage->_ioconfig->_inputs  = {0, 1};
+    ampstage->_ioconfig->_outputs = {0, 1};
+  } else {
+    // Mono: 1 input panned to stereo output
+    dspstage->setNumIos(1, 1);
+    ampstage->setNumIos(1, 2);
+    dspstage->_ioconfig->_inputs  = {0};
+    dspstage->_ioconfig->_outputs = {0};
+    ampstage->_ioconfig->_inputs  = {0};
+    ampstage->_ioconfig->_outputs = {0, 1};
+  }
+
   auto pchblock                 = dspstage->appendTypedBlock<PITCH>("Pitch");
   layer->_pchBlock              = pchblock;
   auto soscil                   = dspstage->appendTypedBlock<StreamingOscillatorBlock>("Oscil");
   soscil->_target_latency_ms    = target_latency_ms;
-  soscil->_low_watermark       = size_t((target_latency_ms * 48.0f)); // 1/2 target at 48kHz
+  soscil->_low_watermark        = size_t((target_latency_ms * 48.0f)); // 1/2 target at 48kHz
   soscil->_source               = src;
+  soscil->_num_channels         = num_channels;  // Store channel count
   auto ampblock                 = ampstage->appendTypedBlock<AMP_ADAPTIVE>("amp");
   return prgdata;
 }

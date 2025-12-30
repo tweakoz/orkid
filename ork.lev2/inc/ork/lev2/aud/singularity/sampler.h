@@ -304,17 +304,18 @@ struct SAMPLER final : public DspBlock {
 
 struct STREAMING_OSCILLATOR_DATA : public DspBlockData {
   DeclareConcreteX(STREAMING_OSCILLATOR_DATA, DspBlockData);
-  
+
   STREAMING_OSCILLATOR_DATA(std::string name = "StreamingOscillator");
   dspblk_ptr_t createInstance() const override;
-  
+
   // Configuration parameters
   size_t _low_watermark = 8192;      // Minimum samples before underrun
   size_t _high_watermark = 32768;    // Maximum buffer fill level
   float _target_latency_ms = 750.0f; // Target latency in milliseconds
   bool _interpolate_dropouts = true; // Smooth dropouts with interpolation
   bool _adaptive_buffering = true;   // Enable adaptive playback rate
-  
+  int _num_channels = 1;             // 1=mono, 2=stereo
+
   // Source for streaming audio
   lev2::audiostreaminginputchunk_source_ptr_t _source;
 };
@@ -331,9 +332,11 @@ public:
   void doKeyOff() override;
   
   const STREAMING_OSCILLATOR_DATA* _streamingdata = nullptr;
-  
-  // Ring buffer for audio data
-  ork::RingBuffer<float> _ringBuffer;
+
+  // Ring buffers for audio data (L=mono when _num_channels==1, L+R for stereo)
+  ork::RingBuffer<float> _ringBuffer;    // Left channel (or mono)
+  ork::RingBuffer<float> _ringBuffer_R;  // Right channel (stereo only)
+  int _num_channels = 1;                 // 1=mono, 2=stereo
   
   // Dynamic watermarks based on sample rate
   size_t _dynamic_low_watermark;
@@ -364,5 +367,5 @@ public:
 
 };
 
-prgdata_ptr_t createStreamingOscillatorProgramFromSource( lev2::audiostreaminginputchunk_source_ptr_t src, float tgt_latency_ms=250.0f );
+prgdata_ptr_t createStreamingOscillatorProgramFromSource( lev2::audiostreaminginputchunk_source_ptr_t src, float tgt_latency_ms=250.0f, int num_channels=1 );
 } // namespace ork::audio::singularity

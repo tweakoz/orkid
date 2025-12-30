@@ -23,86 +23,121 @@ struct AudioImpl {
 
   AudioImpl(MoviePlaybackContext* pb,
             audio::singularity::synth_ptr_t synth)
-      : _playback(pb) {
+      : _playback(pb)
+      , _mono_mixdown(pb->_mono_mixdown) {
 
   // Get audio config immediately - it's available after init()
   auto audio_config = _playback->_audio_config;
   if (audio_config and audio_config->_valid) {
     printf(
-        "Movie audio detected: rate=%d Hz, channels=%d, codec=%s\n",
+        "Movie audio detected: rate=%d Hz, channels=%d, codec=%s, output=%s\n",
         audio_config->_sample_rate,
         audio_config->_num_channels,
-        audio_config->_codec_name.c_str());
+        audio_config->_codec_name.c_str(),
+        _mono_mixdown ? "mono" : "stereo");
   }
 
-  _accumulator.atomicOp([](ringbuffer_ptr_t& unlocked){
-     unlocked = std::make_shared<ringbuffer_t>(96000); 
+  // Initialize stereo ring buffers (L and R channels)
+  _accumulator_L.atomicOp([](ringbuffer_ptr_t& unlocked){
+     unlocked = std::make_shared<ringbuffer_t>(96000);
   });
-  // 2 seconds @ 48kHz
-  _source       = std::make_shared<lev2::StreamingAudioInputChunkSource>();
-  _prgdata   = audio::singularity::createStreamingOscillatorProgramFromSource(_source,400.0);
+  _accumulator_R.atomicOp([](ringbuffer_ptr_t& unlocked){
+     unlocked = std::make_shared<ringbuffer_t>(96000);
+  });
+
+  // 2 seconds @ 48kHz per channel
+  _source = std::make_shared<lev2::StreamingAudioInputChunkSource>();
+
+  // Create stereo program (2 channels) unless mono mixdown requested
+  int num_channels = _mono_mixdown ? 1 : 2;
+  _prgdata = audio::singularity::createStreamingOscillatorProgramFromSource(_source, 400.0, num_channels);
   _prgdata->_name = "MoviePlaybackProgram";
+
   _playback->setAudioCallback([=](movieaudioframe_ptr_t audio_frame) {
     OrkAssert(audio_frame->_channels > 0);
     OrkAssert(audio_frame->_samples.size() > 0);
 
+    size_t num_frames = audio_frame->_samples.size() / audio_frame->_channels;
+
     switch (audio_frame->_channels) {
-      case 1: { // mono
-        auto chunk          = std::make_shared<lev2::AudioInputChunk>(audio_frame->_channels);
-        chunk->_num_frames  = audio_frame->_samples.size() / audio_frame->_channels;
-        chunk->_chunk_index = _source->_chunk_index++;
-        for (int c = 0; c < audio_frame->_channels; c++) {
-          auto& chan = chunk->_channels[c];
-          chan.resize(chunk->_num_frames);
-          for (int i = 0; i < chunk->_num_frames; i++) {
-            chan[i] = audio_frame->_samples[i * audio_frame->_channels + c];
-          }
+      case 1: { // mono source - duplicate to both channels
+        _buffer_L.resize(num_frames);
+        _buffer_R.resize(num_frames);
+        for (size_t i = 0; i < num_frames; i++) {
+          float sample = audio_frame->_samples[i];
+          _buffer_L[i] = sample;
+          _buffer_R[i] = sample;
         }
-        _source->_inputqueue.push(chunk);
+        _accumulator_L.atomicOp([&](ringbuffer_ptr_t& unlocked){
+          unlocked->push_many(_buffer_L.data(), num_frames);
+        });
+        if (!_mono_mixdown) {
+          _accumulator_R.atomicOp([&](ringbuffer_ptr_t& unlocked){
+            unlocked->push_many(_buffer_R.data(), num_frames);
+          });
+        }
         break;
       }
-      case 2: { // stereo
-        // Convert stereo to mono and push to accumulator
+      case 2: { // stereo source
         switch(audio_config->_sample_rate){
           case 48000: {
-            size_t num_frames = audio_frame->_samples.size() / audio_frame->_channels;
-            _mono_buffer.resize(num_frames);
+            _buffer_L.resize(num_frames);
+            _buffer_R.resize(num_frames);
             for (size_t i = 0; i < num_frames; i++) {
-              float L = audio_frame->_samples[i * audio_frame->_channels + 0]; // L
-              float R = audio_frame->_samples[i * audio_frame->_channels + 1]; // R
-              _mono_buffer[i] = 0.5f * (L + R);
+              float L = audio_frame->_samples[i * 2 + 0];
+              float R = audio_frame->_samples[i * 2 + 1];
+              if (_mono_mixdown) {
+                float mono = 0.5f * (L + R);
+                _buffer_L[i] = mono;
+              } else {
+                _buffer_L[i] = L;
+                _buffer_R[i] = R;
+              }
             }
-            _accumulator.atomicOp([&](ringbuffer_ptr_t& unlocked){
-              unlocked->push_many(_mono_buffer.data(), num_frames);
+            _accumulator_L.atomicOp([&](ringbuffer_ptr_t& unlocked){
+              unlocked->push_many(_buffer_L.data(), num_frames);
             });
+            if (!_mono_mixdown) {
+              _accumulator_R.atomicOp([&](ringbuffer_ptr_t& unlocked){
+                unlocked->push_many(_buffer_R.data(), num_frames);
+              });
+            }
             break;
           }
-          case 44100: { // simple linear resample from 44.1k to 48k 
-            size_t num_frames = audio_frame->_samples.size() / audio_frame->_channels;
+          case 44100: { // simple linear resample from 44.1k to 48k
             float ratio = 48000.0f / 44100.0f;
             auto s = audio_frame->_samples;
             for (size_t i = 0; i < num_frames; i++) {
-              int j = i * audio_frame->_channels;
-              float L = s[j + 0]; // L
-              float R = s[j + 1]; // R
-              float mono_sample = 0.5f * (L + R);
-              // Push multiple samples based on ratio
+              int j = i * 2;
+              float L = s[j + 0];
+              float R = s[j + 1];
+              float sample_L = _mono_mixdown ? 0.5f * (L + R) : L;
+              float sample_R = R;
+
               _phase_accum += ratio;
-              _mono_buffer.clear();
+              _buffer_L.clear();
+              _buffer_R.clear();
               while (_phase_accum >= 1.0f) {
-                // Simple linear interpolation
                 float fi = fmod(_phase_accum, 1.0f);
                 float interp = fi - 1.0f;
                 if(interp<0.0f) interp=0.0f;
                 if(interp>1.0f) interp=1.0f;
-                float sample_to_push = (1.0f - interp) * _prev_sample + interp * mono_sample;
-                _mono_buffer.push_back(sample_to_push);
+                float out_L = (1.0f - interp) * _prev_sample_L + interp * sample_L;
+                float out_R = (1.0f - interp) * _prev_sample_R + interp * sample_R;
+                _buffer_L.push_back(out_L);
+                if (!_mono_mixdown) _buffer_R.push_back(out_R);
                 _phase_accum -= 1.0f;
               }
-              _accumulator.atomicOp([&](ringbuffer_ptr_t& unlocked){
-                unlocked->push_many(_mono_buffer.data(), _mono_buffer.size());
+              _accumulator_L.atomicOp([&](ringbuffer_ptr_t& unlocked){
+                unlocked->push_many(_buffer_L.data(), _buffer_L.size());
               });
-              _prev_sample = mono_sample;
+              if (!_mono_mixdown) {
+                _accumulator_R.atomicOp([&](ringbuffer_ptr_t& unlocked){
+                  unlocked->push_many(_buffer_R.data(), _buffer_R.size());
+                });
+              }
+              _prev_sample_L = sample_L;
+              _prev_sample_R = sample_R;
             }
             break;
           }
@@ -112,21 +147,37 @@ struct AudioImpl {
         }
         break;
       }
-      case 6: { // 5.1
-
-        // Convert 5.1 to mono and push to accumulator
-        size_t num_frames = audio_frame->_samples.size() / audio_frame->_channels;
-        _mono_buffer.resize(num_frames);
+      case 6: { // 5.1 surround - downmix to stereo (or mono)
+        _buffer_L.resize(num_frames);
+        _buffer_R.resize(num_frames);
         for (size_t i = 0; i < num_frames; i++) {
-          // Extract L channel only
-          float L = audio_frame->_samples[i * audio_frame->_channels + 0]; // L
-          float R = audio_frame->_samples[i * audio_frame->_channels + 1]; // R
-          float C = audio_frame->_samples[i * audio_frame->_channels + 2]; //
-          _mono_buffer[i] = 0.3333f * (L + R + C);
+          // 5.1 channel order: L, R, C, LFE, Ls, Rs
+          float L   = audio_frame->_samples[i * 6 + 0];
+          float R   = audio_frame->_samples[i * 6 + 1];
+          float C   = audio_frame->_samples[i * 6 + 2];
+          float LFE = audio_frame->_samples[i * 6 + 3];
+          float Ls  = audio_frame->_samples[i * 6 + 4];
+          float Rs  = audio_frame->_samples[i * 6 + 5];
+
+          // Standard 5.1 to stereo downmix
+          float out_L = L + 0.707f * C + 0.707f * Ls;
+          float out_R = R + 0.707f * C + 0.707f * Rs;
+
+          if (_mono_mixdown) {
+            _buffer_L[i] = 0.5f * (out_L + out_R);
+          } else {
+            _buffer_L[i] = out_L;
+            _buffer_R[i] = out_R;
+          }
         }
-        _accumulator.atomicOp([&](ringbuffer_ptr_t& unlocked){
-          unlocked->push_many(_mono_buffer.data(), num_frames);
+        _accumulator_L.atomicOp([&](ringbuffer_ptr_t& unlocked){
+          unlocked->push_many(_buffer_L.data(), num_frames);
         });
+        if (!_mono_mixdown) {
+          _accumulator_R.atomicOp([&](ringbuffer_ptr_t& unlocked){
+            unlocked->push_many(_buffer_R.data(), num_frames);
+          });
+        }
         break;
       }
     }
@@ -135,11 +186,11 @@ struct AudioImpl {
   _timer = std::make_shared<Timer>();
   _timer->Start();
   _audio_thread = std::make_shared<ork::Thread>("MovieAudioThread");
-  std::vector<float> local_buffer(4096);
   _audio_thread->start([this](anyp thr_data) {
     size_t number_of_samples_sent = 0;
-    while (true) {
+    int num_out_channels = _mono_mixdown ? 1 : 2;
 
+    while (true) {
       double elapsed = _timer->SecsSinceStart();
       // LOCKED at 48kHz until resampler is added
       size_t target_samples = size_t(elapsed * 48000.0);
@@ -147,21 +198,37 @@ struct AudioImpl {
         size_t samples_to_send = target_samples - number_of_samples_sent;
         while (samples_to_send > 0) {
           size_t chunk_size = std::min(samples_to_send, size_t(1024));
-          auto chunk        = std::make_shared<lev2::AudioInputChunk>(1);
-          chunk->_num_frames  = chunk_size;
+          auto chunk = std::make_shared<lev2::AudioInputChunk>(num_out_channels);
+          chunk->_num_frames = chunk_size;
           chunk->_chunk_index = _source->_chunk_index++;
-          auto& chan          = chunk->_channels[0];
-          chan.resize(chunk_size);
-          _accumulator.atomicOp([&](ringbuffer_ptr_t& unlocked){
-            if(unlocked->size()<chunk_size){
-              if(0)printf("MOV UNDERFLOW!\n");
+
+          auto& chan_L = chunk->_channels[0];
+          chan_L.resize(chunk_size);
+
+          _accumulator_L.atomicOp([&](ringbuffer_ptr_t& unlocked){
+            if(unlocked->size() < chunk_size){
               for (size_t i = 0; i < chunk_size; i++) {
-                chan[i] = 0.0f;
+                chan_L[i] = 0.0f;
               }
             } else {
-                unlocked->pop_many(chan.data(), chunk_size);
+              unlocked->pop_many(chan_L.data(), chunk_size);
             }
           });
+
+          if (!_mono_mixdown) {
+            auto& chan_R = chunk->_channels[1];
+            chan_R.resize(chunk_size);
+            _accumulator_R.atomicOp([&](ringbuffer_ptr_t& unlocked){
+              if(unlocked->size() < chunk_size){
+                for (size_t i = 0; i < chunk_size; i++) {
+                  chan_R[i] = 0.0f;
+                }
+              } else {
+                unlocked->pop_many(chan_R.data(), chunk_size);
+              }
+            });
+          }
+
           number_of_samples_sent += chunk_size;
           samples_to_send -= chunk_size;
           _source->_inputqueue.push(chunk);
@@ -176,14 +243,18 @@ struct AudioImpl {
   }
 
   MoviePlaybackContext* _playback;
+  bool _mono_mixdown;
   audio::singularity::prgdata_ptr_t _prgdata;
-  LockedResource<ringbuffer_ptr_t> _accumulator;
+  LockedResource<ringbuffer_ptr_t> _accumulator_L;
+  LockedResource<ringbuffer_ptr_t> _accumulator_R;
   lev2::audiostreaminginputchunk_source_ptr_t _source;
-  std::vector<float> _mono_buffer;
+  std::vector<float> _buffer_L;
+  std::vector<float> _buffer_R;
   thread_ptr_t _audio_thread;
   timer_ptr_t _timer;
   producer_t _producer;
-  float _prev_sample = 0.0f;
+  float _prev_sample_L = 0.0f;
+  float _prev_sample_R = 0.0f;
   float _phase_accum = 0.0f;
 };
 
@@ -292,7 +363,10 @@ void MoviePlaybackContext::restart() {
   // Handle audio cleanup before backend restart
   auto impl = _audio_impl.getShared<AudioImpl>();
   if (impl) {
-    impl->_accumulator.atomicOp([](AudioImpl::ringbuffer_ptr_t& unlocked){
+    impl->_accumulator_L.atomicOp([](AudioImpl::ringbuffer_ptr_t& unlocked){
+      unlocked->clear();
+    });
+    impl->_accumulator_R.atomicOp([](AudioImpl::ringbuffer_ptr_t& unlocked){
       unlocked->clear();
     });
     impl->_source->_chunk_index = 0;
