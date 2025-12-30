@@ -148,6 +148,7 @@ struct DMVRIMPL {
     drawdata._properties["eyeindex"_crcu].set<int>(is_left_eye ? 0 : 1);
     using smat_ptr_t = const StereoCameraMatrices*;
     RCFD->setUserProperty("StereoMatrices"_crcu, (smat_ptr_t) _stereomatrices.get());
+    RCFD->setUserProperty("eyeindex"_crcu, int(is_left_eye ? 0 : 1));
     _CPD.defaultSetup(drawdata);
 
     _CPD._stereo_cam_matrices = _stereomatrices.get();
