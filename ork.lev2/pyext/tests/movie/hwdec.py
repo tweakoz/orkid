@@ -7,7 +7,7 @@
 # Distributed under the MIT License
 ################################################################################
 
-import sys
+import sys, time
 from obt import path
 from orkengine.core import vec4
 from orkengine import lev2
@@ -36,6 +36,34 @@ class HardwareDecodeTest(application.ComponentizedApplication):
       enable_audio_output=enable_audio,
       enable_audio_synth=enable_audio
     )
+    movie_path = str(path.stage() / "assetcache" / "movies" / self.movie_file)
+
+    print("=" * 80)
+    print(f"Hardware Video Decode Test")
+    print(f"File: {self.movie_file}")
+    print("=" * 80)
+
+    self.movie = lev2.MoviePlaybackContext()
+    self.movie.audio_timeshift = -2.45  # No audio delay
+    if self.use_videotoolbox:
+      # GPU-Direct: VideoToolbox → IOSurface → Vulkan
+      print("Backend: VideoToolbox (Hardware Decode)")
+      print("Pipeline: VideoToolbox → IOSurface → Metal → VkImage → Shader")
+      print("  ✓ Zero-copy GPU-direct")
+      print("  ✓ No CPU memory transfers")
+
+      self.movie.init(
+        movie_path,
+        backend=lev2.MovieBackend.VIDEOTOOLBOX,
+        format=lev2.MoviePixelFormat.AUTO  # BGRA (single-plane)
+      )
+    else:
+      # CPU Path: FFmpeg (for comparison)
+      print("Backend: FFmpeg (CPU Decode)")
+      print("Pipeline: FFmpeg → CPU buffer → GPU upload → Texture")
+
+      self.movie.init(movie_path)
+    time.sleep(2.0)
 
   ##############################################
 
@@ -67,38 +95,11 @@ class HardwareDecodeTest(application.ComponentizedApplication):
 
   def _onGpuInit(self, ctx):
     """Initialize video playback"""
-    movie_path = str(path.stage() / "assetcache" / "movies" / self.movie_file)
 
-    print("=" * 80)
-    print(f"Hardware Video Decode Test")
-    print(f"File: {self.movie_file}")
-    print("=" * 80)
-
-    self.movie = lev2.MoviePlaybackContext()
-    self.movie.audio_timeshift = -2.45  # No audio delay
     if self.use_videotoolbox:
-      # GPU-Direct: VideoToolbox → IOSurface → Vulkan
-      print("Backend: VideoToolbox (Hardware Decode)")
-      print("Pipeline: VideoToolbox → IOSurface → Metal → VkImage → Shader")
-      print("  ✓ Zero-copy GPU-direct")
-      print("  ✓ No CPU memory transfers")
-
-      self.movie.init(
-        movie_path,
-        backend=lev2.MovieBackend.VIDEOTOOLBOX,
-        format=lev2.MoviePixelFormat.AUTO  # BGRA (single-plane)
-      )
-
       # Direct texture assignment - movie updates texture internally
       self.imageview.texture = self.movie.texture
-
     else:
-      # CPU Path: FFmpeg (for comparison)
-      print("Backend: FFmpeg (CPU Decode)")
-      print("Pipeline: FFmpeg → CPU buffer → GPU upload → Texture")
-
-      self.movie.init(movie_path)
-
       # Use image_provider for CPU upload
       self.imageview.image = self.movie.image_provider
 

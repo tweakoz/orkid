@@ -123,6 +123,11 @@ private:
 
   texture_ptr_t _decode_texture;  // Single texture shared between decode and render threads
 
+  // Deferred destruction queue: keep previous impls alive for N frames
+  // Prevents race where MoltenVK still has pending commands referencing old VkImageView
+  std::deque<vulkan::iosurfaceteximpl_ptr_t> _impl_graveyard;
+  static constexpr size_t IMPL_GRAVEYARD_SIZE = 30;
+
   // IOSurface → VkImage mapping (VideoToolbox reuses IOSurfaces from pool)
   std::mutex _iosurface_map_mutex;
   std::unordered_map<IOSurfaceID, vulkan::iosurfaceteximpl_ptr_t> _iosurface_to_impl;  // Key: stable IOSurface ID, not pointer
@@ -593,11 +598,11 @@ void VideoToolboxBackend::_decompressionCallback(
     std::lock_guard<std::mutex> lock(backend->_iosurface_map_mutex);
     auto it = backend->_iosurface_to_impl.find(surface_id);
     if (it != backend->_iosurface_to_impl.end()) {
-      // REUSE: We've seen this IOSurface before, reuse the VkImage
+      // REUSE: Same IOSurface ID means VideoToolbox reused the same IOSurface from pool
+      // The existing IoSurfaceTexImpl.vkimage is still valid (same Metal texture backing)
+      // DON'T create a new surface - that would destroy the old one and invalidate the VkImage
       handle = it->second;
-      // Update surface reference (GpuExternalSurface manages the CVPixelBuffer)
-      // Per-frame lifetime is managed via PendingFrame.pixel_buffer
-      handle->surface = vulkan::createGpuSurfaceFromCVPixelBuffer(pixelBuffer);
+      // Just use existing impl as-is - IOSurface content changed but VkImage is still valid
     } else {
       // NEW: First time seeing this IOSurface, create wrapper
       handle = std::make_shared<vulkan::IoSurfaceTexImpl>();
@@ -895,6 +900,17 @@ texture_ptr_t VideoToolboxBackend::currentTexture() {
     // Update expected PTS for next frame
     backend->_next_expected_pts = frame_pts + FRAME_DURATION;
 
+    // DEFERRED DESTRUCTION: Keep previous impl alive for N frames
+    // This prevents MoltenVK from accessing a destroyed VkImageView in pending commands
+    auto old_impl_opt = tex->_impl_2.tryAsShared<vulkan::IoSurfaceTexImpl>();
+    if (old_impl_opt) {
+      backend->_impl_graveyard.push_back(old_impl_opt.value());
+      // Trim graveyard to max size
+      while (backend->_impl_graveyard.size() > IMPL_GRAVEYARD_SIZE) {
+        backend->_impl_graveyard.pop_front();
+      }
+    }
+
     // Update texture _impl_2
     tex->_impl_2.set<vulkan::iosurfaceteximpl_ptr_t>(new_impl);
 
@@ -1002,6 +1018,9 @@ void VideoToolboxBackend::_cleanup() {
     std::lock_guard<std::mutex> lock(_iosurface_map_mutex);
     _iosurface_to_impl.clear();
   }
+
+  // Clear impl graveyard
+  _impl_graveyard.clear();
 
   // Clean up decode textures
   _decode_texture.reset();
