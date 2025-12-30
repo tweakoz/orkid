@@ -697,27 +697,37 @@ void VideoToolboxBackend::_decodeThreadFunc() {
       if (!sampleBuffer) {
         // End of stream or error
         AVAssetReaderStatus status = [_asset_reader status];
+        printf("VideoToolbox: sampleBuffer is null, status=%ld\n", (long)status);
         if (status == AVAssetReaderStatusCompleted) {
           if (_looping) {
             // Reset for seamless loop
+            printf("VideoToolbox: Looping - waiting for pending frames...\n");
+            // Wait for all pending async decodes to complete before resetting
+            VTDecompressionSessionWaitForAsynchronousFrames(_decompression_session);
+            printf("VideoToolbox: Looping - resetting asset reader...\n");
             if (_resetAssetReaderForLoop()) {
               // Reset playback timing for new loop iteration
               _playback_start = std::chrono::high_resolution_clock::now();
-              continue;  // Continue decode loop
+              printf("VideoToolbox: Loop reset complete, continuing decode\n");
+              // Also signal audio thread to resync (it will detect loop via its own EOF)
+              continue;  // Continue decode loop with new asset reader
             } else {
               printf("VideoToolbox: Loop reset failed, stopping\n");
               _running = false;
+              break;
             }
           } else {
             printf("VideoToolbox: End of stream reached\n");
             _running = false;
+            break;
           }
         } else if (status == AVAssetReaderStatusFailed) {
           printf("VideoToolbox: Read error: %s\n",
                  [_asset_reader error].localizedDescription.UTF8String);
           _running = false;
+          break;
         }
-        break;
+        break;  // Any other null sampleBuffer case - stop decode loop
       }
 
       // Feed compressed sample to VTDecompressionSession
@@ -880,7 +890,8 @@ texture_ptr_t VideoToolboxBackend::currentTexture() {
 
   // Wait until buffer has at least 2 frames before starting display (allows for B-frame reordering)
   if (!backend->_buffer_ready || backend->_pending_frames.size() < 2) {
-    return nullptr;
+    // Hold current frame if we have one, otherwise return nullptr
+    return tex->_impl_2.isSet() ? tex : nullptr;
   }
 
   // Calculate current playback time from wall clock
@@ -909,8 +920,8 @@ texture_ptr_t VideoToolboxBackend::currentTexture() {
   }
 
   if (!best_impl) {
-    // No frame ready yet - current time is before first frame's PTS
-    return nullptr;
+    // No frame ready yet - hold current frame if we have one
+    return tex->_impl_2.isSet() ? tex : nullptr;
   }
 
   // Remove all frames we've passed (including the one we're showing)
