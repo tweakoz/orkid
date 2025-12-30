@@ -222,6 +222,12 @@ private:
   std::deque<vulkan::iosurfaceteximpl_ptr_t> _impl_graveyard;
   static constexpr size_t IMPL_GRAVEYARD_SIZE = 30;
 
+  // CVPixelBuffer graveyard: delay release to prevent IOSurface reuse while GPU reads
+  // This is CRITICAL - VkImage is backed by IOSurface memory, if VT reuses the
+  // IOSurface while GPU is still reading, we see wrong frame content
+  std::deque<CVPixelBufferRef> _pixelbuffer_graveyard;
+  static constexpr size_t PIXELBUFFER_GRAVEYARD_SIZE = 8;  // ~3-4 frames of GPU latency
+
   // IOSurface → VkImage mapping (VideoToolbox reuses IOSurfaces from pool)
   std::mutex _iosurface_map_mutex;
   std::unordered_map<IOSurfaceID, vulkan::iosurfaceteximpl_ptr_t> _iosurface_to_impl;  // Key: stable IOSurface ID, not pointer
@@ -790,17 +796,27 @@ void VideoToolboxBackend::_selectDisplayFrame() {
   // Count dropped frames (frames we're skipping)
   _metrics.frames_dropped += frames_to_remove.size() - 1;
 
-  // Remove old frames and release their pixel buffers
+  // Remove old frames - put pixel buffers in graveyard instead of immediate release
+  // This prevents IOSurface reuse while GPU might still be reading
   for (auto it : frames_to_remove) {
     if (it->pixel_buffer != best_pixel_buffer) {
-      CVPixelBufferRelease(it->pixel_buffer);
+      // Graveyard: delay release to let GPU finish reading
+      _pixelbuffer_graveyard.push_back(it->pixel_buffer);
+      while (_pixelbuffer_graveyard.size() > PIXELBUFFER_GRAVEYARD_SIZE) {
+        CVPixelBufferRelease(_pixelbuffer_graveyard.front());
+        _pixelbuffer_graveyard.pop_front();
+      }
     }
     _pending_frames.erase(it);
   }
 
-  // Release previous display frame's pixel buffer
+  // Previous display frame goes to graveyard too
   if (_current_pixel_buffer && _current_pixel_buffer != best_pixel_buffer) {
-    CVPixelBufferRelease(_current_pixel_buffer);
+    _pixelbuffer_graveyard.push_back(_current_pixel_buffer);
+    while (_pixelbuffer_graveyard.size() > PIXELBUFFER_GRAVEYARD_SIZE) {
+      CVPixelBufferRelease(_pixelbuffer_graveyard.front());
+      _pixelbuffer_graveyard.pop_front();
+    }
   }
   _current_pixel_buffer = best_pixel_buffer;
 
@@ -1173,6 +1189,12 @@ void VideoToolboxBackend::_cleanup() {
     _current_pixel_buffer = nullptr;
   }
 
+  // Drain pixel buffer graveyard
+  for (auto pb : _pixelbuffer_graveyard) {
+    CVPixelBufferRelease(pb);
+  }
+  _pixelbuffer_graveyard.clear();
+
   // Clean up PTS reordering buffer (release retained CVPixelBuffers and IoSurfaceTexImpl shared_ptrs)
   {
     std::lock_guard<std::mutex> lock(_frame_buffer_mutex);
@@ -1281,6 +1303,12 @@ bool VideoToolboxBackend::_resetAssetReaderForLoop() {
       _pending_frames.clear();
       _buffer_ready = false;
     }
+
+    // Drain pixel buffer graveyard on loop
+    for (auto pb : _pixelbuffer_graveyard) {
+      CVPixelBufferRelease(pb);
+    }
+    _pixelbuffer_graveyard.clear();
 
     // Don't reset display - keep showing last frame during loop transition
 
