@@ -93,6 +93,60 @@ inline void loadVec3Data(std::vector<fvec3>& out_verts, py::object input) {
 
 ///////////////////////////////////////
 
+inline void loadVec2Data(std::vector<fvec2>& out_uvs, py::object input) {
+  // Try buffer protocol first (numpy arrays, etc.)
+  if (py::isinstance<py::buffer>(input)) {
+    py::buffer_info info = input.cast<py::buffer>().request();
+
+    // Validate buffer format and shape
+    if (info.format != py::format_descriptor<float>::format()) {
+      throw std::runtime_error("Buffer must have float32 dtype");
+    }
+    if (info.ndim != 2 || info.shape[1] != 2) {
+      throw std::runtime_error("Buffer must have shape (N, 2)");
+    }
+
+    size_t num_uvs = info.shape[0];
+    out_uvs.reserve(num_uvs);
+
+    float* ptr = static_cast<float*>(info.ptr);
+
+    // Check if we can use fast memcpy path
+    bool is_c_contiguous = (info.strides[0] == 2 * sizeof(float)) &&
+                           (info.strides[1] == sizeof(float));
+
+    if (is_c_contiguous) {
+      // Fast path: direct memcpy
+      size_t num_bytes = num_uvs * 2 * sizeof(float);
+      out_uvs.resize(num_uvs);
+      std::memcpy(out_uvs.data(), ptr, num_bytes);
+    }
+    else {
+      // Slow path: handle non-contiguous arrays
+      size_t stride0 = info.strides[0] / sizeof(float);
+      size_t stride1 = info.strides[1] / sizeof(float);
+
+      for (size_t i = 0; i < num_uvs; i++) {
+        float u = ptr[i * stride0 + 0 * stride1];
+        float v = ptr[i * stride0 + 1 * stride1];
+        out_uvs.push_back(fvec2(u, v));
+      }
+    }
+  }
+  // Fall back to py::list
+  else if (py::isinstance<py::list>(input)) {
+    py::list uv_list = input.cast<py::list>();
+    for (const auto& uv : uv_list) {
+      out_uvs.push_back(uv.cast<fvec2>());
+    }
+  }
+  else {
+    throw std::runtime_error("Input must be a list of vec2 or numpy array with shape (N, 2)");
+  }
+}
+
+///////////////////////////////////////
+
 struct MicroMeshConnectivity {
   std::unordered_map<int,indexlist_t> _connectivity;
 
@@ -115,7 +169,10 @@ struct MicroMesh {
   void updateFromLists(py::object vert_data, py::list face_list);  // Update everything
   void updateConnectivity();  // Recompute internal connectivity
   void updateNormals(py::object normal_data);  // Set normals from list or numpy array
+  void updateUVs(py::object uv_data);  // Set UVs from list or numpy array (N,2) float32
+  void updateBinormals(py::object binormal_data);  // Set binormals from list or numpy array (N,3) float32
   void computeNormals();  // Compute normals using internal connectivity
+  void computeBinormals();  // Compute binormals from normals (uses up vector as reference)
 
   micromesh_connectivity_ptr_t getConnectivity();  // Get connectivity (compute if needed)
   micromesh_ptr_t smoothed(micromesh_connectivity_ptr_t conn) const;
@@ -127,6 +184,8 @@ struct MicroMesh {
   std::vector<fvec3> _vertices;
   std::vector<fvec3> _colors;
   std::vector<fvec3> _normals;
+  std::vector<fvec2> _uvs;        // Optional UV coordinates
+  std::vector<fvec3> _binormals;  // Optional binormals (tangent space)
   std::vector<indexlist_t> _tris;
   std::vector<indexlist_t> _quads;
 
@@ -441,6 +500,8 @@ void MicroMesh::updateRigidPrim(umesh_rprim_ptr_t prim,
   //////////////////////////////////////////////////////////////
   // Use cached normals (must call updateNormals() before this)
   const auto& normals = _normals;
+  bool has_uvs = (_uvs.size() == _vertices.size());
+  bool has_binormals = (_binormals.size() == _vertices.size());
   //////////////////////////////////////////////////////////////
   auto vtxptr            = GBI->LockVB(*vtxbuf.get(), 0, num_verts);
   auto typed_vertex_base = (SVtxV12N12B12T8C4*)vtxptr;
@@ -450,10 +511,23 @@ void MicroMesh::updateRigidPrim(umesh_rprim_ptr_t prim,
     auto& vertex_out     = typed_vertex_base[ivtx];
     vertex_out._position = _vertices[ivtx];
     vertex_out._normal   = normals[ivtx];
-    // compute binormal (towards up direction)
-    fvec3 binormal = vertex_out._normal.crossWith(updir);
-    fvec3 x2 = binormal.crossWith(vertex_out._normal);
-    vertex_out._binormal = x2;
+
+    // Use provided binormals or compute from normal + up direction
+    if (has_binormals) {
+      vertex_out._binormal = _binormals[ivtx];
+    } else {
+      fvec3 binormal = vertex_out._normal.crossWith(updir);
+      fvec3 x2 = binormal.crossWith(vertex_out._normal);
+      vertex_out._binormal = x2;
+    }
+
+    // Use provided UVs or default to (0,0)
+    if (has_uvs) {
+      vertex_out._uv = _uvs[ivtx];
+    } else {
+      vertex_out._uv = fvec2(0.0f, 0.0f);
+    }
+
     vertex_out._color = _colors[ivtx].ARGBU32();
   }
   if(colorgrid){
@@ -514,6 +588,51 @@ inline void MicroMesh::updateNormals(py::object normal_data) {
 
   // Load normals using helper (supports py::list or numpy)
   loadVec3Data(_normals, normal_data);
+}
+
+///////////////////////////////////////
+
+inline void MicroMesh::updateUVs(py::object uv_data) {
+  // Update UVs from pre-generated list or numpy array
+  _uvs.clear();
+
+  // Load UVs using helper (supports py::list or numpy)
+  loadVec2Data(_uvs, uv_data);
+}
+
+///////////////////////////////////////
+
+inline void MicroMesh::updateBinormals(py::object binormal_data) {
+  // Update binormals from pre-generated list or numpy array
+  _binormals.clear();
+
+  // Load binormals using helper (supports py::list or numpy)
+  loadVec3Data(_binormals, binormal_data);
+}
+
+///////////////////////////////////////
+
+inline void MicroMesh::computeBinormals() {
+  // Compute binormals from normals using up vector as reference
+  // Requires normals to be computed first
+  _binormals.clear();
+  _binormals.reserve(_vertices.size());
+
+  fvec3 updir(0.0f, 1.0f, 0.0f);
+
+  for (size_t iv = 0; iv < _normals.size(); iv++) {
+    const auto& normal = _normals[iv];
+    // Compute tangent perpendicular to normal and up
+    fvec3 tangent = normal.crossWith(updir);
+    // Handle case where normal is parallel to up
+    if (tangent.magnitudeSquared() < 1e-6f) {
+      tangent = normal.crossWith(fvec3(1.0f, 0.0f, 0.0f));
+    }
+    tangent.normalizeInPlace();
+    // Binormal is perpendicular to both normal and tangent
+    fvec3 binormal = tangent.crossWith(normal);
+    _binormals.push_back(binormal);
+  }
 }
 
 ///////////////////////////////////////

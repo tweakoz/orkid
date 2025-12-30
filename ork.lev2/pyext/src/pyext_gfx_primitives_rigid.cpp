@@ -145,11 +145,34 @@ void pyinit_gfx_primitives_rigid(py::module& module_lev2) {
                                 py::arg("normal_data"))
                             //////////////////////////////////////////////////
                             .def(
+                                "updateUVs",
+                                [](micromesh_ptr_t mesh, py::object uv_data) {
+                                  mesh->updateUVs(uv_data);
+                                },
+                                "Update UV coordinates. Accepts list of vec2 or numpy array (N,2) float32",
+                                py::arg("uv_data"))
+                            //////////////////////////////////////////////////
+                            .def(
+                                "updateBinormals",
+                                [](micromesh_ptr_t mesh, py::object binormal_data) {
+                                  mesh->updateBinormals(binormal_data);
+                                },
+                                "Update binormals from pre-generated data. Accepts list or numpy array (N,3) float32",
+                                py::arg("binormal_data"))
+                            //////////////////////////////////////////////////
+                            .def(
                                 "computeNormals",
                                 [](micromesh_ptr_t mesh) {
                                   mesh->computeNormals();
                                 },
                                 "Compute and cache normals using internal connectivity")
+                            //////////////////////////////////////////////////
+                            .def(
+                                "computeBinormals",
+                                [](micromesh_ptr_t mesh) {
+                                  mesh->computeBinormals();
+                                },
+                                "Compute binormals from normals using up vector as reference")
                             //////////////////////////////////////////////////
                             .def(
                                 "validate",
@@ -185,6 +208,28 @@ void pyinit_gfx_primitives_rigid(py::module& module_lev2) {
                                   }
                                   return normals;
                                 })
+                            //////////////////////////////////////////////////
+                            .def_property_readonly(
+                                "uvs",
+                                [](micromesh_ptr_t mesh) -> py::list {
+                                  auto uvs = py::list();
+                                  for (auto& uv : mesh->_uvs) {
+                                    uvs.append(fvec2(uv.x, uv.y));
+                                  }
+                                  return uvs;
+                                },
+                                "Get UV coordinates")
+                            //////////////////////////////////////////////////
+                            .def_property_readonly(
+                                "binormals",
+                                [](micromesh_ptr_t mesh) -> py::list {
+                                  auto binormals = py::list();
+                                  for (auto& bn : mesh->_binormals) {
+                                    binormals.append(fvec3(bn.x, bn.y, bn.z));
+                                  }
+                                  return binormals;
+                                },
+                                "Get binormals")
                             //////////////////////////////////////////////////
                             .def_property_readonly(
                                 "tris",
@@ -233,6 +278,20 @@ void pyinit_gfx_primitives_rigid(py::module& module_lev2) {
                                   return mesh->_quads.size();
                                 },
                                 "Get number of quad faces")
+                            //////////////////////////////////////////////////
+                            .def_property_readonly(
+                                "num_uvs",
+                                [](micromesh_ptr_t mesh) -> size_t {
+                                  return mesh->_uvs.size();
+                                },
+                                "Get number of UV coordinates")
+                            //////////////////////////////////////////////////
+                            .def_property_readonly(
+                                "num_binormals",
+                                [](micromesh_ptr_t mesh) -> size_t {
+                                  return mesh->_binormals.size();
+                                },
+                                "Get number of binormals")
                             //////////////////////////////////////////////////
                             .def_property_readonly(
                                 "faces",

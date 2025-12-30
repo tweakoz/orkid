@@ -276,6 +276,13 @@ FxPipelineNamedParamProviders::FxPipelineNamedParamProviders() {
     // OrkAssert(false);
   };
   /////////////////////////////////////////////////////////////////
+  _providers["RCFD_EYE_INDEX"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
+    auto RCFD      = ppc._rcfd;
+    int eye_index = RCFD->getUserProperty("eyeindex"_crc).get<int>();
+    ppc._fxi->bindParamInt(param, eye_index);
+    // OrkAssert(false);
+  };
+  /////////////////////////////////////////////////////////////////
   _providers["RCFD_EYE_POSITION"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
     auto monocams = ppc._topCPD._mono_cam_matrices;
     fmtx4 V;
