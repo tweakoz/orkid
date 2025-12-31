@@ -370,8 +370,11 @@ void XgmModel::RenderSkeleton(
   skeleton_mtl->_rasterstate->setDepthTest(EDepthTest::OFF);
   skeleton_mtl->_rasterstate->setCullTest(ECullTest::PASS_FRONT);
   skeleton_mtl->_rasterstate->setWriteMaskZ(false);
+  skeleton_mtl->_rasterstate->_priority = 1<<10;
   pipeline->wrappedDrawCall(RCIDCOPY, [&]() { //
+    context->FXI()->pushRasterState(skeleton_mtl->_rasterstate);
     context->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
+    context->FXI()->popRasterState();
   });
   context->MTXI()->PopMMatrix();
   ///////////////////////////
