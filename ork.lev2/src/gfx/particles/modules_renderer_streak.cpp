@@ -197,13 +197,14 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
       auto VL = stereocams->VL();
       auto VR = stereocams->VR();
       // Average left/right camera up vectors for stereo
-      fvec3 pyL = VL.column(1).xyz();
-      fvec3 pyR = VR.column(1).xyz();
+      // Use rows of view matrix (camera axes in world space)
+      fvec3 pyL = fvec3(VL.elemXY(0,1), VL.elemXY(1,1), VL.elemXY(2,1));
+      fvec3 pyR = fvec3(VR.elemXY(0,1), VR.elemXY(1,1), VR.elemXY(2,1));
       camUp = (pyL + pyR).normalized();
     } else {
-      // Extract camera up from view matrix
+      // Extract camera up from view matrix (row, not column)
       auto V = cmtcs->GetVMatrix();
-      camUp = V.column(1).xyz().normalized();
+      camUp = fvec3(V.elemXY(0,1), V.elemXY(1,1), V.elemXY(2,1)).normalized();
     }
 
     ///////////////////////////////////////////////////////////////
