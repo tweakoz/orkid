@@ -48,6 +48,9 @@ int VulkanVertexBuffer::pipelineBitsForFormat() const {
     case EVtxStreamFormat::V12N12B12T8I4W4:
       rval = 10;
       break;
+    case EVtxStreamFormat::V12N12T8DU12C4:
+      rval = 11;
+      break;
     default:
       OrkAssert(false);
       break;
@@ -129,6 +132,7 @@ VkGeometryBufferInterface::VkGeometryBufferInterface(vkcontext_rawptr_t ctx)
   _instantiateVertexStreamConfig(EVtxStreamFormat::V12N12B12T8C4);
   _instantiateVertexStreamConfig(EVtxStreamFormat::V12N12T8I4W4);
   _instantiateVertexStreamConfig(EVtxStreamFormat::V12N12B12T8I4W4);
+  _instantiateVertexStreamConfig(EVtxStreamFormat::V12N12T8DU12C4);
   ////////////////////////////////////////////////////////////////
   auto create_primclass = [&](PrimitiveType etype) -> vkprimclass_ptr_t {
     auto rval            = std::make_shared<VkPrimitiveClass>();
@@ -284,6 +288,17 @@ vertex_strconfig_ptr_t VkGeometryBufferInterface::_instantiateVertexStreamConfig
       config->addItem("BONEINDICES", "uvec4", sizeof(uint32_t), 44, VK_FORMAT_R8G8B8A8_UINT);
       config->addItem("BONEWEIGHTS", "vec4", sizeof(uint32_t), 48, VK_FORMAT_R8G8B8A8_UNORM);
       config->_stride = sizeof(SVtxV12N12B12T8I4W4);
+      break;
+    }
+    case EVtxStreamFormat::V12N12T8DU12C4: {
+      // Skeleton format: Position(12) + Normal(12) + UV0(8) + Data(12) + Color(4) = 48 bytes
+      config->addItem("POSITION", "vec3", sizeof(fvec3), 0, VK_FORMAT_R32G32B32_SFLOAT);
+      config->addItem("NORMAL", "vec3", sizeof(fvec3), 12, VK_FORMAT_R32G32B32_SFLOAT);
+      config->addItem("TEXCOORD0", "vec2", sizeof(fvec2), 24, VK_FORMAT_R32G32_SFLOAT);
+      // _data[3] at offset 32 - uvec3 for app-specific data (e.g., bone ID for picking)
+      config->addItem("USERDATA", "uvec3", sizeof(uint32_t) * 3, 32, VK_FORMAT_R32G32B32_UINT);
+      config->addItem("COLOR0", "vec4", sizeof(uint32_t), 44, VK_FORMAT_R8G8B8A8_UNORM);
+      config->_stride = sizeof(SVtxV12N12T8DU12C4);
       break;
     }
     default:

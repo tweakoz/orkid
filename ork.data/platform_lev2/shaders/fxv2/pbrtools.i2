@@ -67,6 +67,19 @@ vertex_interface vif_PNBC : ub_std_vtx {
   }
 }
 ///////////////////////////////////////////////////////////////
+// Skeleton vertex interface - Position, Normal, Color (no binormal)
+// Used with V12N12T8DU12C4 vertex format
+vertex_interface vif_PNC : ub_std_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec3 normal : NORMAL;
+    vec4 vtxcolor : COLOR0;
+  }
+  outputs {
+    vec4 frg_clr;
+  }
+}
+///////////////////////////////////////////////////////////////
 vertex_interface vif_PNBTI : vif_PNBT {
   outputs {
     vec4 frg_modcolor;
@@ -78,8 +91,8 @@ vertex_interface vif_PNBT_skinned : vif_PNBT : iface_skintools {
 ///////////////////////////////////////////////////////////////
 // Fragment Interfaces
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_forward 
-  : ub_frg_fwd 
+fragment_interface iface_forward
+  : ub_frg_fwd
   : ss_frg_fwd
   : storage_fwd_lighting {
   inputs {
@@ -90,6 +103,16 @@ fragment_interface iface_forward
     float frg_camdist;
     vec3 frg_camz;
     vec4 frg_modcolor;
+  }
+  outputs {
+    layout(location = 0) vec4 out_color;
+  }
+}
+///////////////////////////////////////////////////////////////
+// Simple fragment interface for skeleton rendering - only needs frg_clr
+fragment_interface fif_skeleton {
+  inputs {
+    vec4 frg_clr;
   }
   outputs {
     layout(location = 0) vec4 out_color;
@@ -195,6 +218,15 @@ vertex_shader vs_rigid_gbuffer_vtxcolor : vif_PNBC : lib_pbr_vtx : ublk_std_matr
 vertex_shader vs_forward_rigid_vtxcolor : vif_PNBC : ublk_std_matrices {
   frg_clr     = vec4(1,1,1,1);//vtxcolor;
   gl_Position = mvp * position;
+}
+///////////////////////////////////////////////////////////////
+// Skeleton vertex shader - uses vif_PNC (no binormal required)
+vertex_shader vs_forward_skeleton : vif_PNC : ublk_std_matrices {
+  frg_clr     = vtxcolor;
+  gl_Position = mvp * position;
+}
+fragment_shader ps_forward_skeleton : fif_skeleton {
+  out_color = frg_clr;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer_vtxcolor : iface_fgbuffer : lib_pbr_frg {

@@ -55,41 +55,35 @@ void XgmModel::RenderSkeleton(
   bool is_pick = CPD.isPicking();
 
   ////////////////////////////
-  // material selection
-  // pickmode: pbr.glfx::PIK_RI_NI (vs_pick_rigid_mono,ps_pick)
-  // defpbr: pbr.glfx::GBU_CV_EMI_RI_NI_MO (vs_rigid_gbuffer_vtxcolor,ps_gbuffer_vtxcolor)
-  // defpbr-outline: pbr.glfx::GBU_CV_EMI_RI_NI_MO (vs_rigid_gbuffer_vtxcolor,ps_gbuffer_vtxcolor)
-  // fwdpbr: pbr.glfx::??
+  // material selection - use FWD_SKELETON technique
+  // Uses vif_PNC vertex interface (Position, Normal, Color - no binormal)
   ////////////////////////////
 
-  static pbrmaterial_ptr_t material_sk      = std::make_shared<PBRMaterial>(context);
-  static pbrmaterial_ptr_t material_pick    = std::make_shared<PBRMaterial>(context);
-  static pbrmaterial_ptr_t material_outline = std::make_shared<PBRMaterial>(context);
-  material_outline->mMaterialName           = AddPooledString("mtl-outline");
-  material_outline->_variant                = "vertexcolor"_crcu;
-  material_sk->mMaterialName                = AddPooledString("mtl-sk");
-  material_sk->_variant                     = "vertexcolor"_crcu;
-  material_pick->mMaterialName              = AddPooledString("mtl-sk-pick");
-  material_pick->_variant                   = 0;
+  static freestyle_mtl_ptr_t skeleton_mtl = nullptr;
+  static fxpipeline_ptr_t skeleton_pipeline = nullptr;
+  static fxtechnique_constptr_t skeleton_tek = nullptr;
+  static fxparam_constptr_t skeleton_param_mvp = nullptr;
 
-  ////////////////////////////
+  if (skeleton_mtl == nullptr) {
+    skeleton_mtl = std::make_shared<FreestyleMaterial>();
+    skeleton_mtl->gpuInit(context, "orkshader://pbr");
+    skeleton_tek = skeleton_mtl->technique("FWD_SKELETON");
+    OrkAssert(skeleton_tek);
+    skeleton_param_mvp = skeleton_mtl->param("mvp");
+    OrkAssert(skeleton_param_mvp);
 
-  auto use_mtl = is_pick             //
-                     ? material_pick //
-                     : material_sk;
+    FxPipelinePermutation permu;
+    permu._forced_technique = skeleton_tek;
+    skeleton_pipeline = std::make_shared<FxPipeline>(permu);
+    skeleton_pipeline->_technique = skeleton_tek;
+    skeleton_pipeline->_rasterstate = skeleton_mtl->_rasterstate;
+    skeleton_pipeline->bindParam(skeleton_param_mvp, "RCFD_Camera_MVP_Mono"_crcsh);
+  }
 
-  //////////////
-  // pipeline selection
-  //////////////
-
-  auto fxcache = use_mtl->pipelineCache();
-  OrkAssert(fxcache);
+  auto pipeline = skeleton_pipeline;
   RenderContextInstData RCIDCOPY = RCID;
-  RCIDCOPY._isSkinned            = false;
-  RCIDCOPY._pipeline_cache       = fxcache;
-
-  auto pipeline = fxcache->findPipeline(RCIDCOPY);
-  OrkAssert(pipeline);
+  RCIDCOPY._isSkinned = false;
+  RCIDCOPY.forceTechnique(skeleton_tek);
 
   struct Triangle {
     uint32_t boneID;
@@ -372,13 +366,11 @@ void XgmModel::RenderSkeleton(
 
   vw.UnLock(context);
   context->MTXI()->PushMMatrix(fmtx4::Identity());
-  //RCIDCOPY._pickID = fvec4(1, 0, 0, 1);
   RCIDCOPY._pickID = fvec4(1, 1, 0, 1);
-  use_mtl->_rasterstate->setDepthTest(EDepthTest::OFF);
-  use_mtl->_rasterstate->setCullTest(ECullTest::PASS_FRONT);
-  use_mtl->_rasterstate->setWriteMaskZ(false);
+  skeleton_mtl->_rasterstate->setDepthTest(EDepthTest::OFF);
+  skeleton_mtl->_rasterstate->setCullTest(ECullTest::PASS_FRONT);
+  skeleton_mtl->_rasterstate->setWriteMaskZ(false);
   pipeline->wrappedDrawCall(RCIDCOPY, [&]() { //
-    //context->RSI()->BindRasterState(use_mtl->_rasterstate);
     context->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
   });
   context->MTXI()->PopMMatrix();
