@@ -6,7 +6,7 @@ uniform_block ub_vtx_boneblock(descriptor_set 0) {
 
 vertex_interface iface_skintools : ub_vtx_boneblock {
   inputs {
-    vec4 boneindices : BONEINDICES;
+    uvec4 boneindices : BONEINDICES;
     vec4 boneweights : BONEWEIGHTS;
   }
 }

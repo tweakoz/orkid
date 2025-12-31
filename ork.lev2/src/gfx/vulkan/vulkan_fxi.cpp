@@ -121,12 +121,29 @@ int VkFxInterface::_pipelineBitsForShader(vkfxsprg_ptr_t shprog){
            
     ////////////////////////////
     // compute VIF bits
+    // Combine inputs from ALL vertex interfaces in the inheritance chain
+    // (inheritance order: base interfaces first, derived interfaces last)
+    // Each interface may contribute inputs that need to be merged
     ////////////////////////////
 
-    auto vif_id = vtx_shader->_vk_interfaces[0];
-    auto it_vif = shprog->_shader_file->_vk_vtxinterfaces.find(vif_id);
-    OrkAssert(it_vif!=shprog->_shader_file->_vk_vtxinterfaces.end());
-    vkvertexinterface_ptr_t VIF = it_vif->second;
+    // Create a combined VIF with inputs from all interfaces in inheritance chain
+    auto VIF = std::make_shared<VulkanVertexInterface>();
+    std::string combined_name;
+    for (auto& iface_name : vtx_shader->_vk_interfaces) {
+      auto it_vif = shprog->_shader_file->_vk_vtxinterfaces.find(iface_name);
+      if (it_vif != shprog->_shader_file->_vk_vtxinterfaces.end()) {
+        auto src_vif = it_vif->second;
+        // Add all inputs from this interface
+        for (auto& input : src_vif->_inputs) {
+          VIF->_inputs.push_back(input);
+        }
+        // Build combined name
+        if (!combined_name.empty()) combined_name += "+";
+        combined_name += iface_name;
+      }
+    }
+    VIF->_name = combined_name;
+    OrkAssert(!VIF->_inputs.empty());
     shprog->_vertexinterface = VIF;
 
     boost::Crc64 crc;
@@ -153,29 +170,39 @@ int VkFxInterface::_pipelineBitsForShader(vkfxsprg_ptr_t shprog){
 
     ////////////////////////////
     // compute GIF bits
+    // Combine inputs from ALL geometry interfaces in the inheritance chain
     ////////////////////////////
 
     auto geo_shader = shprog->_geoshader;
     vkgeometryinterface_ptr_t GIF;
     if(geo_shader){
-      auto gif_id = geo_shader->_vk_interfaces[0];
-      auto it_gif = shprog->_shader_file->_vk_geointerfaces.find(gif_id);
-      if( it_gif == shprog->_shader_file->_vk_geointerfaces.end() ){
-        printf( "shader<%s> gif_id<%s> not found!!\n", //
-                geo_shader->_name.c_str(), //
-                gif_id.c_str() );
-
-
-
-        for( auto gif : geo_shader->_vk_interfaces){
-          printf( "  desired gif<%s>\n", gif.c_str() );
-        }                
-        for( auto gifitem : shprog->_shader_file->_vk_geointerfaces ){
-          printf( "  present gif<%s>\n", gifitem.first.c_str() );
+      // Create a combined GIF with inputs from all interfaces in inheritance chain
+      GIF = std::make_shared<VulkanGeometryInterface>();
+      std::string combined_name;
+      for (auto& iface_name : geo_shader->_vk_interfaces) {
+        auto it_gif = shprog->_shader_file->_vk_geointerfaces.find(iface_name);
+        if (it_gif != shprog->_shader_file->_vk_geointerfaces.end()) {
+          auto src_gif = it_gif->second;
+          // Add all inputs from this interface
+          for (auto& input : src_gif->_inputs) {
+            GIF->_inputs.push_back(input);
+          }
+          // Build combined name
+          if (!combined_name.empty()) combined_name += "+";
+          combined_name += iface_name;
+        }
+      }
+      GIF->_name = combined_name;
+      if (GIF->_inputs.empty()) {
+        printf("shader<%s> no geometry interface inputs found!!\n", geo_shader->_name.c_str());
+        for (auto& gif : geo_shader->_vk_interfaces) {
+          printf("  desired gif<%s>\n", gif.c_str());
+        }
+        for (auto& gifitem : shprog->_shader_file->_vk_geointerfaces) {
+          printf("  present gif<%s>\n", gifitem.first.c_str());
         }
         OrkAssert(false);
       }
-      GIF = it_gif->second;
       shprog->_geometryinterface = GIF;
 
       crc.init();
@@ -195,6 +222,7 @@ int VkFxInterface::_pipelineBitsForShader(vkfxsprg_ptr_t shprog){
         int new_index = _vk_geointerface_cache.size();
         _vk_geointerface_cache[hash] = new_index;
         GIF->_pipeline_bits = new_index;
+        GIF->_hash = hash;
       }
     }
 

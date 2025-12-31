@@ -546,7 +546,9 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
           HeaderStream->AddItem(ic);
           HeaderStream->AddItem(inumpg);
           HeaderStream->AddItem(inumjb);
-          HeaderStream->AddItem<lev2::EVtxStreamFormat>(VB->GetStreamFormat());
+          auto efmt = VB->GetStreamFormat();
+          printf("XGMWRITE: cluster<%d> efmt<%d> numverts<%d> vtxsize<%d>\n", ic, int(efmt), VB->GetNumVertices(), VB->GetVtxSize());
+          HeaderStream->AddItem<lev2::EVtxStreamFormat>(efmt);
           HeaderStream->AddItem(ivbufoffset);
           HeaderStream->AddItem(VB->GetNumVertices());
           HeaderStream->AddItem(VB->GetVtxSize());

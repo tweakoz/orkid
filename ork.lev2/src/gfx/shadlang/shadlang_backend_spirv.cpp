@@ -1408,65 +1408,33 @@ void SpirvCompiler::_compileShader(shaderc_shader_kind shader_type) {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 // Helper function to find binding ID from merged resources in the transunit
 int SpirvCompiler::_findBindingIdFromMergedResources(const std::string& resource_name, const std::string& source_name) {
-  // Find the current pass that contains this shader
+  // With global binding ID assignment, ALL passes that have a resource will have the SAME binding ID.
+  // So we can search ANY pass that has the resource, not just passes that contain this shader.
+  // This is important because shaders are compiled once but may be used by multiple techniques,
+  // and the technique we find first might not have all the resources the shader needs.
   auto passes = AstNode::collectNodesOfType<Pass>(_transu);
+  std::string shader_name = _shader->typedValueForKey<std::string>("object_name").value();
 
   for (auto pass : passes) {
-    // Check if this pass contains the current shader
-    auto vtx_refs = AstNode::collectNodesOfType<VertexShaderRef>(pass);
-    auto frg_refs = AstNode::collectNodesOfType<FragmentShaderRef>(pass);
-    auto geo_refs = AstNode::collectNodesOfType<GeometryShaderRef>(pass);
-    auto com_refs = AstNode::collectNodesOfType<ComputeShaderRef>(pass);
-
-    bool pass_contains_shader = false;
-    std::string shader_name   = _shader->typedValueForKey<std::string>("object_name").value();
-
-    for (auto vtx_ref : vtx_refs) {
-      auto ref_name = vtx_ref->typedValueForKey<std::string>("ref_id").value();
-      if (ref_name == shader_name) {
-        pass_contains_shader = true;
-        break;
-      }
-    }
-    for (auto frg_ref : frg_refs) {
-      auto ref_name = frg_ref->typedValueForKey<std::string>("ref_id").value();
-      if (ref_name == shader_name) {
-        pass_contains_shader = true;
-        break;
-      }
-    }
-    for (auto geo_ref : geo_refs) {
-      auto ref_name = geo_ref->typedValueForKey<std::string>("ref_id").value();
-      if (ref_name == shader_name) {
-        pass_contains_shader = true;
-        break;
-      }
-    }
-    for (auto com_ref : com_refs) {
-      auto ref_name = com_ref->typedValueForKey<std::string>("ref_id").value();
-      if (ref_name == shader_name) {
-        pass_contains_shader = true;
-        break;
-      }
-    }
-
-    if (pass_contains_shader) {
-      // Find the merged resources node for this pass
-      auto merged_resources = pass->findFirstChildOfType<MergedShaderResourcesNode>();
-      if (merged_resources) {
-        // Look through all descriptor sets
-        auto descriptor_sets = AstNode::collectNodesOfType<DescriptorSetNode>(merged_resources);
-        for (auto descriptor_set : descriptor_sets) {
-          auto source_nodes = AstNode::collectNodesOfType<DescriptorSetSourceNode>(descriptor_set);
-          for (auto source_node : source_nodes) {
-            auto source_node_name = source_node->_source_name;
-            if (source_node_name == source_name) {
-              // Found the source, now look for the resource
-              auto binding_nodes = AstNode::collectNodesOfType<ResourceBindingNode>(source_node);
-              for (auto binding_node : binding_nodes) {
-                if (binding_node->_binding_name == resource_name) {
-                  return binding_node->_binding_id;
-                }
+    // Find the merged resources node for this pass
+    auto merged_resources = pass->findFirstChildOfType<MergedShaderResourcesNode>();
+    if (merged_resources) {
+      // Look through all descriptor sets
+      auto descriptor_sets = AstNode::collectNodesOfType<DescriptorSetNode>(merged_resources);
+      for (auto descriptor_set : descriptor_sets) {
+        auto source_nodes = AstNode::collectNodesOfType<DescriptorSetSourceNode>(descriptor_set);
+        for (auto source_node : source_nodes) {
+          auto source_node_name = source_node->_source_name;
+          if (source_node_name == source_name) {
+            // Found the source, now look for the resource
+            auto binding_nodes = AstNode::collectNodesOfType<ResourceBindingNode>(source_node);
+            for (auto binding_node : binding_nodes) {
+              if (binding_node->_binding_name == resource_name) {
+                auto technique = pass->findAncestorOfType<Technique>();
+                std::string tech_name = technique ? technique->typedValueForKey<std::string>("object_name").value() : "unknown";
+                printf("  _findBindingIdFromMergedResources: FOUND resource<%s> source<%s> -> binding_id<%d> (from technique<%s>)\n",
+                       resource_name.c_str(), source_name.c_str(), binding_node->_binding_id, tech_name.c_str());
+                return binding_node->_binding_id;
               }
             }
           }
@@ -1476,6 +1444,8 @@ int SpirvCompiler::_findBindingIdFromMergedResources(const std::string& resource
   }
 
   // If not found in merged resources, return -1 to indicate fallback to original behavior
+  printf("  _findBindingIdFromMergedResources: NOT FOUND resource<%s> source<%s> for shader<%s>\n",
+         resource_name.c_str(), source_name.c_str(), shader_name.c_str());
   return -1;
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////

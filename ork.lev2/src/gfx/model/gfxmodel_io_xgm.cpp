@@ -330,6 +330,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
           HeaderStream->GetItem(ivboffset);
           HeaderStream->GetItem(ivbnum);
           HeaderStream->GetItem(ivbsize);
+          printf("XGMLOAD: cluster<%d> efmt<%d> ivbnum<%d> ivbsize<%d>\n", ic, int(efmt), ivbnum, ivbsize);
           HeaderStream->GetItem(boxmin);
           HeaderStream->GetItem(boxmax);
           ////////////////////////////////////////////////////////////////////////

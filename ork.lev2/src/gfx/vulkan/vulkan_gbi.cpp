@@ -42,6 +42,12 @@ int VulkanVertexBuffer::pipelineBitsForFormat() const {
     case EVtxStreamFormat::V12N12B12T8C4:
       rval = 8;
       break;
+    case EVtxStreamFormat::V12N12T8I4W4:
+      rval = 9;
+      break;
+    case EVtxStreamFormat::V12N12B12T8I4W4:
+      rval = 10;
+      break;
     default:
       OrkAssert(false);
       break;
@@ -121,6 +127,8 @@ VkGeometryBufferInterface::VkGeometryBufferInterface(vkcontext_rawptr_t ctx)
   _instantiateVertexStreamConfig(EVtxStreamFormat::V16T16C16);
   _instantiateVertexStreamConfig(EVtxStreamFormat::V12N12B12T16);
   _instantiateVertexStreamConfig(EVtxStreamFormat::V12N12B12T8C4);
+  _instantiateVertexStreamConfig(EVtxStreamFormat::V12N12T8I4W4);
+  _instantiateVertexStreamConfig(EVtxStreamFormat::V12N12B12T8I4W4);
   ////////////////////////////////////////////////////////////////
   auto create_primclass = [&](PrimitiveType etype) -> vkprimclass_ptr_t {
     auto rval            = std::make_shared<VkPrimitiveClass>();
@@ -257,6 +265,27 @@ vertex_strconfig_ptr_t VkGeometryBufferInterface::_instantiateVertexStreamConfig
       config->_stride = sizeof(SVtxVU32Inst);
       break;
     }
+    case EVtxStreamFormat::V12N12T8I4W4: {
+      // Skinned format: Position(12) + Normal(12) + UV0(8) + BoneIndices(4) + BoneWeights(4) = 40 bytes
+      config->addItem("POSITION", "vec3", sizeof(fvec3), 0, VK_FORMAT_R32G32B32_SFLOAT);
+      config->addItem("NORMAL", "vec3", sizeof(fvec3), 12, VK_FORMAT_R32G32B32_SFLOAT);
+      config->addItem("TEXCOORD0", "vec2", sizeof(fvec2), 24, VK_FORMAT_R32G32_SFLOAT);
+      config->addItem("BONEINDICES", "uvec4", sizeof(uint32_t), 32, VK_FORMAT_R8G8B8A8_UINT);
+      config->addItem("BONEWEIGHTS", "vec4", sizeof(uint32_t), 36, VK_FORMAT_R8G8B8A8_UNORM);
+      config->_stride = sizeof(SVtxV12N12T8I4W4);
+      break;
+    }
+    case EVtxStreamFormat::V12N12B12T8I4W4: {
+      // Skinned format with binormal: Position(12) + Normal(12) + Binormal(12) + UV0(8) + BoneIndices(4) + BoneWeights(4) = 52 bytes
+      config->addItem("POSITION", "vec3", sizeof(fvec3), 0, VK_FORMAT_R32G32B32_SFLOAT);
+      config->addItem("NORMAL", "vec3", sizeof(fvec3), 12, VK_FORMAT_R32G32B32_SFLOAT);
+      config->addItem("BINORMAL", "vec3", sizeof(fvec3), 24, VK_FORMAT_R32G32B32_SFLOAT);
+      config->addItem("TEXCOORD0", "vec2", sizeof(fvec2), 36, VK_FORMAT_R32G32_SFLOAT);
+      config->addItem("BONEINDICES", "uvec4", sizeof(uint32_t), 44, VK_FORMAT_R8G8B8A8_UINT);
+      config->addItem("BONEWEIGHTS", "vec4", sizeof(uint32_t), 48, VK_FORMAT_R8G8B8A8_UNORM);
+      config->_stride = sizeof(SVtxV12N12B12T8I4W4);
+      break;
+    }
     default:
       OrkAssert(false);
       break;
@@ -272,7 +301,7 @@ vkvertexinputconfig_ptr_t VkGeometryBufferInterface::vertexInputState(vkvtxbuf_p
   EVtxStreamFormat vb_format = vbuf->_ork_vtxbuf.GetStreamFormat();
   uint64_t vif_hash = vif->_hash; // hashed from shader input layout ordered(semantic, datatype)
 
- if(0)printf("vertexInputState: vif<%s> hash<%016llx> vb_format<%s>\n", 
+ printf("vertexInputState: vif<%s> hash<%016llx> vb_format<%s>\n",
          vif->_name.c_str(), vif_hash, EVtxStreamFormatToName(vb_format).c_str());
  
   auto it = vbuf->_vif_to_layout.find(vif_hash);
@@ -325,7 +354,7 @@ vkvertexinputconfig_ptr_t VkGeometryBufferInterface::vertexInputState(vkvtxbuf_p
     auto semantic = input->_semantic; // "POSITION", "NORMAL", "BINORMALn, "TANGENTn", "TEXCOORDn", "COLORn"
     auto shader_datatype = input->_datatype; // "vec4", "vec3", "vec2", "float", "half4", "half3", "half2", "half"
 
-        if(0)printf("  Looking for semantic<%s> shader_dt<%s>\n", semantic.c_str(), shader_datatype.c_str());
+        printf("  Looking for semantic<%s> shader_dt<%s>\n", semantic.c_str(), shader_datatype.c_str());
 
     auto it = vsc->_item_by_semantic.find(semantic);
     if( it == vsc->_item_by_semantic.end() ){
@@ -341,7 +370,7 @@ vkvertexinputconfig_ptr_t VkGeometryBufferInterface::vertexInputState(vkvtxbuf_p
 
     auto item = it->second;
 
-        if(0)printf("    Found: vbuf_dt<%s> offset<%zu> format<%d>\n", 
+        printf("    Found: vbuf_dt<%s> offset<%zu> format<%d>\n",
            item->_vbuf_datatype.c_str(), item->_dataoffset, item->_vkformat);
 
     auto& atdesc = rval->_attribute_descriptions.emplace_back();
@@ -350,7 +379,7 @@ vkvertexinputconfig_ptr_t VkGeometryBufferInterface::vertexInputState(vkvtxbuf_p
     atdesc.format   = item->_vkformat;
     atdesc.offset   = item->_dataoffset;
 
-       if(0)printf("    Final: location<%zu> offset<%u> format<%d>\n", 
+       printf("    Final: location<%zu> offset<%u> format<%d>\n",
            location-1, atdesc.offset, atdesc.format);
     if(item->_vbuf_datatype != shader_datatype){
 

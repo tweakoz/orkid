@@ -559,6 +559,16 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
             tecniq_stream->AddItem<size_t>(binding_nodes.size());
             
             for (auto binding_node : binding_nodes) {
+              const char* type_str = (binding_node->_resource_type == shadlang::MergedShaderResources::ResourceBinding::Type::UniformBlock) ? "UBO"
+                                     : (binding_node->_resource_type == shadlang::MergedShaderResources::ResourceBinding::Type::Sampler)    ? "SAMPLER"
+                                     : (binding_node->_resource_type == shadlang::MergedShaderResources::ResourceBinding::Type::SSBO)       ? "SSBO"
+                                                                                                                                            : "UNKNOWN";
+              printf("DBWRITE: BINDING[%u]: NAME<%s> TYPE<%s>(%u) DATATYPE<%s>\n",
+                     binding_node->_binding_id,
+                     binding_node->_binding_name.c_str(),
+                     type_str,
+                     static_cast<uint32_t>(binding_node->_resource_type),
+                     binding_node->_datatype.c_str());
               tecniq_stream->AddIndexedString("binding", chunkwriter);
               tecniq_stream->AddItem<uint32_t>(binding_node->_binding_id);
               tecniq_stream->AddIndexedString(binding_node->_binding_name, chunkwriter);
