@@ -42,7 +42,7 @@ class EllipticalParticleSystem(object):
 
     self.streaks       = self.graphdata.create("STRK",particles.StreakRenderer)
 
-    self.ptc_pool.pool_size = 25000 # max number of particles in pool
+    self.ptc_pool.pool_size = 50000 # max number of particles in pool
 
     # connect modules in a chain configuration
 
@@ -125,13 +125,13 @@ class EllipticalParticleSystem(object):
       EMI.P2 = P2
       EMI.EmissionVelocity = 1.0
       EMI.DispersionAngle = 180
-      EMI.LifeSpan = 1.5
+      EMI.LifeSpan = 2.0
       EMI.Scalar = 3
-      EMI.EmissionRate = 5000
+      EMI.EmissionRate = 10000
       EMI.MinU = 0
       EMI.MaxU = 1
-      EMI.MinV = 0.5+(math.sin(T*4)*0.1)
-      EMI.MaxV = 0.5-(math.sin(T*4)*0.1)
+      EMI.MinV = 0.6+(math.sin(T*4)*0.2)
+      EMI.MaxV = 0.4-(math.sin(T*4)*0.2)
 
       ELI = self.elliptical.inputs
       ELI.Scalar = 1
@@ -145,8 +145,8 @@ class EllipticalParticleSystem(object):
       GRV.MinDistance = 10
 
       RENDERER = self.streaks.inputs
-      RENDERER.Length = 0.25
-      RENDERER.Width = 0.025
+      RENDERER.Length = 0.15
+      RENDERER.Width = 0.015
       #RENDERER.Size = 0.05+self.lerp*0.1
 
       TRB = self.turbulence.inputs
