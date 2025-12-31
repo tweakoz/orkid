@@ -27,6 +27,9 @@ sampler_set samplers(descriptor_set 0) {
   // sampler2D ColorMap2;
   // sampler2D ColorMap3;
 }
+sampler_set samplers_pick(descriptor_set 0) {
+  usampler2D PickIdMap;
+}
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_vdefault {
   inputs {
@@ -194,6 +197,34 @@ fragment_shader ps_pick : iface_fpick {
   out_nrmd = frg_nrmd;
 }
 ///////////////////////////////////////////////////////////////
+// pick HUD display shaders
+///////////////////////////////////////////////////////////////
+fragment_interface iface_fpickhud : vif_PT : samplers_pick {
+  outputs {
+    layout(location = 0) vec4 out_clr;
+  }
+}
+fragment_shader ps_texcolorpik : iface_fpickhud {
+  // Display RGBA32UI pick ID texture - convert to visible colors
+  uvec4 pickdata = texture(PickIdMap, frg_uv0);
+  // Use lower bits of each channel for visualization
+  vec4 c = vec4(float(pickdata.x & 0xFFu) / 255.0,
+                float(pickdata.y & 0xFFu) / 255.0,
+                float(pickdata.z & 0xFFu) / 255.0,
+                1.0);
+  out_clr = c;
+}
+fragment_shader ps_texcolormod1 : fif_min_T : samplers {
+  // Display position texture with modulation for visibility
+  vec4 texc = texture(ColorMap, frg_uv0);
+  out_clr = vec4(fract(texc.xyz * 10.0), 1.0);
+}
+fragment_shader ps_texcolornrm : fif_min_T : samplers {
+  // Display normal texture - remap from [-1,1] to [0,1]
+  vec4 texc = texture(ColorMap, frg_uv0);
+  out_clr = vec4(texc.xyz * 0.5 + 0.5, 1.0);
+}
+///////////////////////////////////////////////////////////////
 state_block sb_xxx : default {
   DepthTest = OFF;
   CullTest  = OFF;
@@ -269,6 +300,30 @@ technique texcolor {
   pass p0 {
     vertex_shader   = vs_texcolor;
     fragment_shader = ps_texcolor;
+    state_block     = sb_xxx;
+  }
+}
+technique texcolorpik {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_texcolor;
+    fragment_shader = ps_texcolorpik;
+    state_block     = sb_xxx;
+  }
+}
+technique texcolormod1 {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_texcolor;
+    fragment_shader = ps_texcolormod1;
+    state_block     = sb_xxx;
+  }
+}
+technique texcolornrm {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_texcolor;
+    fragment_shader = ps_texcolornrm;
     state_block     = sb_xxx;
   }
 }

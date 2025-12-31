@@ -424,7 +424,11 @@ void OrkEzApp::onUiEvent(EzMainWin::onuieventcallback_t cb) {
   if (_eztopwidget) {
     _eztopwidget->_topLayoutGroup->_evhandler = cb;
   }
-  // OrkBreak();
+  // Wire to uicontext's fallback handler so events unhandled by widgets
+  // will still reach the application-level handler
+  if (_uicontext) {
+    _uicontext->_appFallbackHandler = cb;
+  }
   if (_mainWindow)
     _mainWindow->_onUiEvent = cb;
 }

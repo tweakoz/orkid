@@ -111,7 +111,22 @@ void Scene::_unregisterUISurface(drawable_ptr_t drawable) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Scene::gpuInit(Context* ctx) {
+  printf("Scene::gpuInit BEGIN\n");
   _sgpickbuffer = std::make_shared<SgPickBuffer>(ctx, *this);
+  _sgpickbuffer->gpuInit(ctx);  // Initialize pick buffer textures for HUD visibility
+  printf("Scene::gpuInit: pick buffer textures:\n");
+  printf("  ID: %p w=%d h=%d\n",
+         _sgpickbuffer->_pickIDtexture.get(),
+         _sgpickbuffer->_pickIDtexture ? _sgpickbuffer->_pickIDtexture->_width : -1,
+         _sgpickbuffer->_pickIDtexture ? _sgpickbuffer->_pickIDtexture->_height : -1);
+  printf("  POS: %p w=%d h=%d\n",
+         _sgpickbuffer->_pickPOStexture.get(),
+         _sgpickbuffer->_pickPOStexture ? _sgpickbuffer->_pickPOStexture->_width : -1,
+         _sgpickbuffer->_pickPOStexture ? _sgpickbuffer->_pickPOStexture->_height : -1);
+  printf("  NRM: %p w=%d h=%d\n",
+         _sgpickbuffer->_pickNRMtexture.get(),
+         _sgpickbuffer->_pickNRMtexture ? _sgpickbuffer->_pickNRMtexture->_width : -1,
+         _sgpickbuffer->_pickNRMtexture ? _sgpickbuffer->_pickNRMtexture->_height : -1);
   _dogpuinit    = false;
   _boundContext = ctx;
 
@@ -124,7 +139,7 @@ void Scene::gpuInit(Context* ctx) {
   };
   op();
   //ctx->_beginFrameBlockers.push_back(op);
-
+  printf("Scene::gpuInit END\n");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

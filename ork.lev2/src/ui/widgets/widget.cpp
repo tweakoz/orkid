@@ -360,6 +360,13 @@ void Widget::draw(ui::drawevent_constptr_t drwev) {
     _prevGeometry = _geometry;
   }
 
+  // Skip drawing if geometry not yet valid
+  if (_geometry._w <= 0 || _geometry._h <= 0) {
+    _target    = 0;
+    _drawEvent = nullptr;
+    return;
+  }
+
   DoDraw(drwev);
   _target    = 0;
   _drawEvent = nullptr;

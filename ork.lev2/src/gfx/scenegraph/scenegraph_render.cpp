@@ -258,57 +258,81 @@ void Scene::_renderIMPL(Context* context, rcfd_ptr_t RCFD) {
         par_mvp          = pickhudmat->param("MatMVP");
       }
 
-      auto uimatrix = mtxi->uiMatrix(TARGW, TARGH);
       context->debugPushGroup("pickhud");
-      size_t DIM = 200;
+      // Debug all the dimensions we can find
+      float screenW = context->mainSurfaceWidth();
+      float screenH = context->mainSurfaceHeight();
+      auto vprect = fbi->viewport();
+      auto activeRtg = fbi->_active_rtgroup;
+      int rtgW = 0, rtgH = 0;
+      if (activeRtg) {
+        rtgW = activeRtg->width();
+        rtgH = activeRtg->height();
+      }
+      printf("PICKHUD: screenW<%g> screenH<%g> TARGW<%g> TARGH<%g>\n",
+             screenW, screenH, TARGW, TARGH);
+      printf("PICKHUD: vprect<%d,%d,%d,%d> rtgW<%d> rtgH<%d>\n",
+             vprect._x, vprect._y, vprect._w, vprect._h, rtgW, rtgH);
+
+      // Use viewport rect dimensions (includes SSAA scaling)
+      float hudW = float(vprect._w);
+      float hudH = float(vprect._h);
+      float ssaaScale = hudW / screenW;
+      size_t DIM = size_t(100 * ssaaScale);  // scale for SSAA
+      printf("PICKHUD: hudW<%g> hudH<%g> ssaaScale<%g> DIM<%zu>\n", hudW, hudH, ssaaScale, DIM);
+
+      mtxi->PushUIMatrix(hudW, hudH);
+      auto uimatrix = mtxi->uiMatrix(hudW, hudH);
+      printf("PICKHUD: uimatrix: %s\n", uimatrix.dump4x4cn().c_str());
       if (_sgpickbuffer->_pickIDtexture) {
         pickhudmat->begin(tek_texcolorpik, RCFD);
-        fxi->bindParamTexture(par_pickidmap, _sgpickbuffer->_pickIDtexture);
+        fxi->bindParamTexture(par_pickidmap, _sgpickbuffer->_pickIDtexture.get());
         fxi->bindParamMatrix(par_mvp, uimatrix);
         dwi->quad2DEML(
             fvec4(0, 0, DIM, DIM), // quadrect
-            fvec4(1, 0, -1, 1),    // uvrect
-            fvec4(1, 0, -1, 1),    // uvrect2
+            fvec4(0, 0, 1, 1),     // uvrect (standard 0-1)
+            fvec4(0, 0, 1, 1),     // uvrect2
             0.0f);                 // depth
 
         pickhudmat->end(RCFD);
       }
       if (_sgpickbuffer->_pickPOStexture) {
         pickhudmat->begin(tek_texcolormod1, RCFD);
-        fxi->bindParamTexture(par_colormap, _sgpickbuffer->_pickPOStexture);
+        fxi->bindParamTexture(par_colormap, _sgpickbuffer->_pickPOStexture.get());
         fxi->bindParamMatrix(par_mvp, uimatrix);
         dwi->quad2DEML(
-            fvec4(0, DIM, DIM, DIM), // quadrect
-            fvec4(1, 0, -1, 1),      // uvrect
-            fvec4(1, 0, -1, 1),      // uvrect2
+            fvec4(DIM, 0, DIM, DIM), // quadrect - horizontal layout
+            fvec4(0, 0, 1, 1),       // uvrect
+            fvec4(0, 0, 1, 1),       // uvrect2
             0.0f);                   // depth
 
         pickhudmat->end(RCFD);
       }
       if (_sgpickbuffer->_pickNRMtexture) {
         pickhudmat->begin(tek_texcolornrm, RCFD);
-        fxi->bindParamTexture(par_colormap, _sgpickbuffer->_pickNRMtexture);
+        fxi->bindParamTexture(par_colormap, _sgpickbuffer->_pickNRMtexture.get());
         fxi->bindParamMatrix(par_mvp, uimatrix);
         dwi->quad2DEML(
-            fvec4(0, DIM * 2, DIM, DIM), // quadrect
-            fvec4(1, 0, -1, 1),          // uvrect
-            fvec4(1, 0, -1, 1),          // uvrect2
+            fvec4(DIM * 2, 0, DIM, DIM), // quadrect
+            fvec4(0, 0, 1, 1),           // uvrect
+            fvec4(0, 0, 1, 1),           // uvrect2
             0.0f);                       // depth
 
         pickhudmat->end(RCFD);
       }
       if (_sgpickbuffer->_pickUVtexture) {
         pickhudmat->begin(tek_texcolor, RCFD);
-        fxi->bindParamTexture(par_colormap, _sgpickbuffer->_pickUVtexture);
+        fxi->bindParamTexture(par_colormap, _sgpickbuffer->_pickUVtexture.get());
         fxi->bindParamMatrix(par_mvp, uimatrix);
         dwi->quad2DEML(
-            fvec4(0, DIM * 3, DIM, DIM), // quadrect
-            fvec4(1, 0, -1, 1),          // uvrect
-            fvec4(1, 0, -1, 1),          // uvrect2
+            fvec4(DIM * 3, 0, DIM, DIM), // quadrect
+            fvec4(0, 0, 1, 1),           // uvrect
+            fvec4(0, 0, 1, 1),           // uvrect2
             0.0f);                       // depth
 
         pickhudmat->end(RCFD);
       }
+      mtxi->PopUIMatrix();
       context->debugPopGroup();
 
     } // if (_enable_pick_hud) {

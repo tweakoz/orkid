@@ -26,10 +26,13 @@ struct Context {
     return rval;
   }
   //////////////////////////////////////
+  // Event handler types for application-level event interception
+  using event_handler_t = std::function<HandlerResult(event_constptr_t)>;
   using tick_lambda_t = std::function<void(updatedata_ptr_t)>;
   void tick(updatedata_ptr_t upd);
   //////////////////////////////////////
   HandlerResult handleEvent(event_constptr_t ev);
+  HandlerResult _dispatchToTarget(Widget* target, event_constptr_t ev);
   // void updateMouseFocus(const HandlerResult& r, event_constptr_t Ev);
   bool hasMouseFocus(const Widget* w) const;
   //////////////////////////////////////
@@ -78,6 +81,13 @@ struct Context {
   double _prev_dbl_click_time = 0.0;
   std::unordered_map<int,bool> _downkeys;
   bool _debug_event_routing = false;
+  bool _enable_event_bubbling = true;
+
+  // Application-level event handlers
+  // Preview: called BEFORE widget handling (for global shortcuts)
+  // Fallback: called AFTER widget handling if unhandled (for app-level handling)
+  event_handler_t _appPreviewHandler;
+  event_handler_t _appFallbackHandler;
 };
 
 } // namespace ork::ui

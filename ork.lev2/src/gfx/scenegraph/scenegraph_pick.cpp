@@ -7,9 +7,10 @@
 using namespace std::string_literals;
 using namespace ork;
 
-const int PICKBUFDIM = 127;
-
 namespace ork::lev2::scenegraph {
+
+// Use the constant from the header
+static constexpr int PICKBUFDIM = PICKBUFFER_DIM;
 
 SgPickBuffer::SgPickBuffer(ork::lev2::Context* ctx, Scene& scene)
     : _context(ctx)
@@ -28,6 +29,63 @@ SgPickBuffer::SgPickBuffer(ork::lev2::Context* ctx, Scene& scene)
   _pfc->_gfxContext = ctx;
 }
 ///////////////////////////////////////////////////////////////////////////
+void SgPickBuffer::gpuInit(ork::lev2::Context* ctx) {
+  if (_compdata != nullptr) {
+    return; // Already initialized
+  }
+
+  _compdata = new CompositingData;
+  _compdata->presetPicking();
+
+  auto csi     = _compdata->findScene("scene1");
+  auto itm     = csi->findItem("item1");
+  auto tek     = itm->tryTechniqueAs<NodeCompositingTechnique>();
+  auto piknode = tek->tryRenderNodeAs<PickingCompositingNode>();
+  auto rtgnode = tek->tryOutputNodeAs<RtGroupOutputCompositingNode>();
+  piknode->resize(PICKBUFDIM, PICKBUFDIM);
+  rtgnode->resize(PICKBUFDIM, PICKBUFDIM);
+  piknode->gpuInit(ctx, PICKBUFDIM, PICKBUFDIM);
+  _pfc->_rtgroup = piknode->GetOutputGroup();
+  _compimpl = _compdata->createImpl();
+
+  switch(_scene._pickFormat){
+    case 0:
+      _pickIDtexture = _pfc->_rtgroup->texture(0);
+      _pickPOStexture = _pfc->_rtgroup->texture(1);
+      _pickNRMtexture = _pfc->_rtgroup->texture(2);
+      _pickUVtexture = _pfc->_rtgroup->texture(3);
+      printf("SgPickBuffer::gpuInit pickFormat=0\n");
+      printf("  _pickIDtexture: %p w=%d h=%d\n",
+             _pickIDtexture.get(),
+             _pickIDtexture ? _pickIDtexture->_width : -1,
+             _pickIDtexture ? _pickIDtexture->_height : -1);
+      printf("  _pickPOStexture: %p w=%d h=%d\n",
+             _pickPOStexture.get(),
+             _pickPOStexture ? _pickPOStexture->_width : -1,
+             _pickPOStexture ? _pickPOStexture->_height : -1);
+      printf("  _pickNRMtexture: %p w=%d h=%d\n",
+             _pickNRMtexture.get(),
+             _pickNRMtexture ? _pickNRMtexture->_width : -1,
+             _pickNRMtexture ? _pickNRMtexture->_height : -1);
+      printf("  _pickUVtexture: %p w=%d h=%d\n",
+             _pickUVtexture.get(),
+             _pickUVtexture ? _pickUVtexture->_height : -1,
+             _pickUVtexture ? _pickUVtexture->_height : -1);
+      break;
+    case 1:
+      _pickIDtexture = _pfc->_rtgroup->texture(0);
+      printf("SgPickBuffer::gpuInit pickFormat=1\n");
+      printf("  _pickIDtexture: %p w=%d h=%d\n",
+             _pickIDtexture.get(),
+             _pickIDtexture ? _pickIDtexture->_width : -1,
+             _pickIDtexture ? _pickIDtexture->_height : -1);
+      break;
+    default:
+      OrkAssert(false);
+      break;
+  }
+}
+///////////////////////////////////////////////////////////////////////////
 void SgPickBuffer::pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord, callback_t callback) {
   auto FBI = _context->FBI();
   int W    = _context->mainSurfaceWidth();
@@ -44,44 +102,15 @@ void SgPickBuffer::pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord, 
 }
 ///////////////////////////////////////////////////////////////////////////
 void SgPickBuffer::pickWithRay(fray3_constptr_t ray, callback_t callback) {
-    mydraw(ray);
-    callback(_pfc);
+    mydraw(ray, callback);
 }
 ///////////////////////////////////////////////////////////////////////////
-void SgPickBuffer::mydraw(fray3_constptr_t ray) {
+void SgPickBuffer::mydraw(fray3_constptr_t ray, callback_t callback) {
   ork::opq::assertOnQueue2(opq::mainSerialQueue());
   _context->makeCurrentContext();
   auto FBI = _context->FBI();
   ///////////////////////////////////////////////////////////////////////////
-  if (nullptr == _compdata) {
-    _compdata = new CompositingData;
-    _compdata->presetPicking();
-
-    auto csi     = _compdata->findScene("scene1");
-    auto itm     = csi->findItem("item1");
-    auto tek     = itm->tryTechniqueAs<NodeCompositingTechnique>();
-    auto piknode = tek->tryRenderNodeAs<PickingCompositingNode>();
-    auto rtgnode = tek->tryOutputNodeAs<RtGroupOutputCompositingNode>();
-    piknode->resize(PICKBUFDIM, PICKBUFDIM);
-    rtgnode->resize(PICKBUFDIM, PICKBUFDIM);
-    piknode->gpuInit(_context, PICKBUFDIM, PICKBUFDIM);
-    _pfc->_rtgroup = piknode->GetOutputGroup();
-    _compimpl               = _compdata->createImpl();
-    switch(_scene._pickFormat){
-      case 0:
-        _pickIDtexture = _pfc->_rtgroup->buffer(0)->texture();
-        _pickPOStexture = _pfc->_rtgroup->buffer(1)->texture();
-        _pickNRMtexture = _pfc->_rtgroup->buffer(2)->texture();
-        _pickUVtexture = _pfc->_rtgroup->buffer(3)->texture();
-        break;
-      case 1:
-        _pickIDtexture = _pfc->_rtgroup->buffer(0)->texture();
-        break;
-      default:
-        OrkAssert(false);
-        break;
-    }
-  }
+  gpuInit(_context);  // Ensure initialized (no-op if already done)
   _compimpl->_compcontext->Resize(PICKBUFDIM, PICKBUFDIM);
   ///////////////////////////////////////////////////////////////////////////
   auto RCFD = std::make_shared<ork::lev2::RenderContextFrameData>(_context); //
@@ -110,12 +139,11 @@ void SgPickBuffer::mydraw(fray3_constptr_t ray) {
       ray->mOrigin, //
       ray->mOrigin + ray->mDirection,
       up);
-    
+
     auto mtcs                 = _camdat.computeMatrices(1.0);
     fmtx4 P                   = mtcs.GetPMatrix();
     fmtx4 V                   = mtcs.GetVMatrix();
     (*_pick_mvp_matrix.get()) = P*V;
-    auto screen_coordinate    = fvec4(0.5, 0.5, 0, 0);
     /////////////////////////////////////////////////////////////
 
     _pfc->beginPickRender();
@@ -145,25 +173,44 @@ void SgPickBuffer::mydraw(fray3_constptr_t ray) {
     ///////////////////////////////////////////////////////////////////////////
     _compimpl->pushCPD(CPD);
     FBI->EnterPickState(nullptr);
-    //OrkBreak();
     _compimpl->assemble(drawdata);
 
     _scene._dbufcontext_SG->releaseFromReadLocked(DB);
-    
+
     FBI->LeavePickState();
     _compimpl->popCPD();
-    ///////////////////////////////////////////??
-    // fetch the pixel, yo.
-    ///////////////////////////////////////////??
+    ///////////////////////////////////////////////////////////////////////////
+    // Async pixel fetch - capture the center pixel
+    // The pick camera points along the ray, so center pixel is the pick target
+    ///////////////////////////////////////////////////////////////////////////
     _pfc->endPickRender();
-    FBI->GetPixel(screen_coordinate, *_pfc);
-    ///////////////////////////////////////////??
+
+    // Capture center pixel asynchronously
+    int center_x = PICKBUFDIM / 2;
+    int center_y = PICKBUFDIM / 2;
+
+    // Create completion callback that invokes user callback
+    auto pfc = _pfc;
+    auto on_complete = [callback, pfc]() {
+      // Invoke user callback with the pixel fetch context
+      // This will be called when GPU readback completes
+      if (callback) {
+        callback(pfc);
+      }
+    };
+
+    _pendingCapture = FBI->capturePixelAsync(_pfc, center_x, center_y, on_complete);
+    ///////////////////////////////////////////////////////////////////////////
 
   } // if(DB)
   ///////////////////////////////////////////////////////////////////////////
   ///////////////////////////////////////////////////////////////////////////
   _context->popRenderContextFrameData();
   lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
-  ///////////////////////////////////////////////////////////////////////////}
+  ///////////////////////////////////////////////////////////////////////////
+  // Note: The callback will be invoked during the next endFrame() when
+  // _processPendingCaptures() runs. This makes picking asynchronous -
+  // the result arrives on the next frame.
+  ///////////////////////////////////////////////////////////////////////////
 }
 } // namespace ork::lev2::scenegraph

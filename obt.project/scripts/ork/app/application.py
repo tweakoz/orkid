@@ -627,9 +627,12 @@ class ComponentizedApplication(object):
   ##################################################
 
   def onUiEvent(self, uievent):
+    #print("onUiEvent:", self.components_sorted)
     for component in self.components_sorted:
       rv = component.onUiEvent(uievent)
+      #print("onUiEvent: trycomp", component, rv)
       if rv != None:
+        #print("ComponentizedApplication::onUiEvent handled by component:", component.__class__.__name__)
         return rv
     return self._onUiEvent(uievent)
 
@@ -833,6 +836,73 @@ class ApplicationComponent(object):
     return self._onUiEvent(uievent)
 
   def _onUiEvent(self, uievent):
+    return None
+
+  ##############################################
+
+################################################################################
+# UiLayoutComponent
+#  Base class for UI layout components
+#  Provides a slot-based system for other components to add widgets
+#  Apps can subclass to define custom layouts
+################################################################################
+
+class UiLayoutComponent(ApplicationComponent):
+  """Base class for UI layout components.
+
+  Provides a slot-based system where:
+  - Layout component defines named slots (widget parents)
+  - Other components request slots by name to add their widgets
+  - Default slots: "main" for primary content
+
+  Subclasses override _onBuildLayout() to define custom layout structure.
+  """
+
+  def __init__(self):
+    super().__init__()
+    self._slots = {}
+
+  def _onEzAppCreated(self, app, ezapp):
+    """Build the layout when ezapp is ready."""
+    lg_group = ezapp.topLayoutGroup
+    self._onBuildLayout(lg_group)
+
+  def _onBuildLayout(self, lg_group):
+    """Override in subclasses to define layout structure.
+
+    Should populate self._slots with named widget parents.
+    At minimum, should define a "main" slot for primary content.
+    """
+    pass
+
+  def getSlot(self, slot_name):
+    """Get parent widget for a named slot.
+
+    Other components call this to get the widget where they should
+    create their UI elements.
+
+    Args:
+      slot_name: Name of the slot (e.g., "main", "sidebar", "toolbar")
+
+    Returns:
+      Widget to use as parent, or None if slot doesn't exist
+    """
+    return self._slots.get(slot_name)
+
+  def createWidgetInSlot(self, slot_name, widget_class, args):
+    """Convenience method to create a widget directly in a slot.
+
+    Args:
+      slot_name: Name of the slot
+      widget_class: lev2.ui widget class (e.g., lev2.ui.SceneGraphViewport)
+      args: List of args to pass to widget factory
+
+    Returns:
+      Created widget, or None if slot doesn't exist
+    """
+    parent = self._slots.get(slot_name)
+    if parent:
+      return parent.makeChild(uiclass=widget_class, args=args)
     return None
 
   ##############################################

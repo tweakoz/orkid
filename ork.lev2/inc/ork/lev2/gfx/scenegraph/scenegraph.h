@@ -24,6 +24,8 @@
 namespace ork::lev2::scenegraph {
 ///////////////////////////////////////////////////////////////////////////////
 
+static constexpr int PICKBUFFER_DIM = 128;
+
 struct Layer;
 struct Node;
 struct DrawableNode;
@@ -172,7 +174,8 @@ struct SgPickBuffer {
   using callback_t = std::function<void(pixelfetchctx_ptr_t)>;
 
   SgPickBuffer(ork::lev2::Context* ctx, Scene& scene);
-  void mydraw(fray3_constptr_t ray);
+  void gpuInit(ork::lev2::Context* ctx);  // Initialize RTG and textures for pick HUD visibility
+  void mydraw(fray3_constptr_t ray, callback_t callback);
   void pickWithRay(fray3_constptr_t ray, callback_t callback);
   void pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord, callback_t callback);
   lev2::Context* _context    = nullptr;
@@ -183,10 +186,13 @@ struct SgPickBuffer {
   compositorimpl_ptr_t _compimpl;
   fmtx4_ptr_t _pick_mvp_matrix;
   CameraData _camdat;
-  const ork::lev2::Texture* _pickIDtexture = nullptr;
-  const ork::lev2::Texture* _pickPOStexture = nullptr;
-  const ork::lev2::Texture* _pickNRMtexture = nullptr;
-  const ork::lev2::Texture* _pickUVtexture = nullptr;
+  texture_ptr_t _pickIDtexture;
+  texture_ptr_t _pickPOStexture;
+  texture_ptr_t _pickNRMtexture;
+  texture_ptr_t _pickUVtexture;
+
+  // Async pick state
+  lev2::captureasync_ptr_t _pendingCapture;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

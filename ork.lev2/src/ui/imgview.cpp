@@ -31,6 +31,10 @@ void ImageView::setTextureProvider(lev2::texture_provider_ptr_t texprovider) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ImageView::setTexture(lev2::texture_ptr_t tex) {
+  printf("ImageView::setTexture: %p w=%d h=%d\n",
+         tex.get(),
+         tex ? tex->_width : -1,
+         tex ? tex->_height : -1);
   _texture = tex;
   _texprovider = nullptr;  // Direct texture assignment, not from provider
   _imgprovider = nullptr;  // Clear image provider too
@@ -118,6 +122,10 @@ void ImageView::DoDraw(drawevent_constptr_t drwev) {
   if(!_texprovider && _active_image!=_pending_image){
     _active_image = _pending_image;
     if(_active_image){
+      // Create texture on-demand if needed
+      if(!_texture){
+        _texture = std::make_shared<lev2::Texture>();
+      }
       txi->initTextureFromImage(_texture.get(),_active_image,_generate_mipmaps);
     }
   }
@@ -130,6 +138,19 @@ void ImageView::DoDraw(drawevent_constptr_t drwev) {
   // Also handle direct texture assignment (no provider)
   bool has_direct_texture = _texture && _texture->_width > 0 && !_texprovider && !_imgprovider;
   bool has_content = _active_image || (_texprovider && _texture) || has_direct_texture;
+
+  static int log_count = 0;
+  if (log_count < 10) {
+    printf("ImageView::DoDraw[%s]: _texture=%p w=%d h=%d has_direct=%d has_content=%d\n",
+           _name.c_str(),
+           _texture.get(),
+           _texture ? _texture->_width : -1,
+           _texture ? _texture->_height : -1,
+           has_direct_texture,
+           has_content);
+    log_count++;
+  }
+
   if(!has_content){
     mtxi->PopUIMatrix();
     return;

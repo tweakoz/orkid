@@ -252,6 +252,7 @@ HandlerResult SceneGraphViewport::DoOnUiEvent(event_constptr_t ev) {
   // 1. Try embedded UI surfaces first
   auto result = _routeToEmbeddedUiSurfaces(ev);
   if (result.wasHandled()) {
+    //printf("SceneGraphViewport::DoOnUiEvent 1\n");
     return result;
   }
 
@@ -259,11 +260,13 @@ HandlerResult SceneGraphViewport::DoOnUiEvent(event_constptr_t ev) {
   if (_camera_evhandler) {
     result = _camera_evhandler(ev);
     if (result.wasHandled()) {
+    printf("SceneGraphViewport::DoOnUiEvent 2\n");
       return result;
     }
   }
 
   // 3. Default: not handled
+    //printf("SceneGraphViewport::DoOnUiEvent 3\n");
   return HandlerResult();
 }
 

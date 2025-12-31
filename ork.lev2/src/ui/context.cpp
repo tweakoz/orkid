@@ -30,12 +30,46 @@ void Context::tick(updatedata_ptr_t updata){
   }
 }
 /////////////////////////////////////////////////////////////////////////
+// Helper: dispatch event to target widget with optional bubbling
+/////////////////////////////////////////////////////////////////////////
+HandlerResult Context::_dispatchToTarget(Widget* target, event_constptr_t ev) {
+  if (!target) return HandlerResult();
+
+  HandlerResult rval = target->OnUiEvent(ev);
+
+  // Bubble up to parent widgets if not handled and bubbling is enabled
+  if (_enable_event_bubbling && !rval.wasHandled()) {
+    Widget* parent = target->_parent;
+    while (parent && !rval.wasHandled()) {
+      rval = parent->OnUiEvent(ev);
+      parent = parent->_parent;
+    }
+  }
+
+  return rval;
+}
+/////////////////////////////////////////////////////////////////////////
 HandlerResult Context::handleEvent(event_constptr_t ev) {
   EASY_BLOCK("uictx::handleEvent", profiler::colors::Red);
   OrkAssert(_top);
   HandlerResult rval;
   double curtime = _uitimer.SecsSinceStart();
+
   /////////////////////////////////
+  // PHASE 1: Application Preview Handler
+  // (for global shortcuts, mode keys, etc.)
+  /////////////////////////////////
+  if (_appPreviewHandler) {
+    rval = _appPreviewHandler(ev);
+    if (rval.wasHandled()) {
+      _prevevent = *ev;
+      _prevtime = curtime;
+      return rval;
+    }
+  }
+
+  /////////////////////////////////
+  // PHASE 2: Widget-specific handling
   // drag operations always target
   //  the widget they started on..
   /////////////////////////////////
@@ -44,16 +78,14 @@ HandlerResult Context::handleEvent(event_constptr_t ev) {
       _downkeys[ev->miKeyCode] = true;
       _evdragtarget = nullptr;
       auto dest     = _top->routeUiEvent(ev);
-      if (dest)
-        rval = dest->OnUiEvent(ev);
+      rval = _dispatchToTarget(dest, ev);
       break;
     }
     case EventCode::KEY_UP: {
       _downkeys[ev->miKeyCode] = false;
       _evdragtarget = nullptr;
       auto dest     = _top->routeUiEvent(ev);
-      if (dest)
-        rval = dest->OnUiEvent(ev);
+      rval = _dispatchToTarget(dest, ev);
       break;
     }
     /////////////////////////////////
@@ -62,7 +94,7 @@ HandlerResult Context::handleEvent(event_constptr_t ev) {
         auto target   = _top->routeUiEvent(ev);
         _evdragtarget = target;
         //////////////////////////
-        // synthesize BEGIN_DRAGg event
+        // synthesize BEGIN_DRAG event
         //////////////////////////
         *_tempevent            = *ev;
         _tempevent->_eventcode = EventCode::BEGIN_DRAG;
@@ -71,7 +103,7 @@ HandlerResult Context::handleEvent(event_constptr_t ev) {
         //////////////////////////
       }
       rval = _evdragtarget //
-                 ? _evdragtarget->OnUiEvent(ev)
+                 ? _dispatchToTarget(_evdragtarget, ev)
                  : _top->handleUiEvent(ev);
       break;
     }
@@ -108,8 +140,7 @@ HandlerResult Context::handleEvent(event_constptr_t ev) {
         _mousefocuswidget = target;
       }
       EASY_BLOCK("uictx::evc::MOVEH4", profiler::colors::Red);
-      if (target)
-        rval = target->OnUiEvent(ev);
+      rval = _dispatchToTarget(target, ev);
       break;
     }
     /////////////////////////////////
@@ -125,7 +156,7 @@ HandlerResult Context::handleEvent(event_constptr_t ev) {
         _tempevent->_eventcode = EventCode::END_DRAG;
         _evdragtarget->OnUiEvent(_tempevent);
         //////////////////////////
-        rval          = _evdragtarget->OnUiEvent(ev);
+        rval          = _dispatchToTarget(_evdragtarget, ev);
         _evdragtarget = nullptr;
       } else
         rval = _top->handleUiEvent(ev);
@@ -162,7 +193,7 @@ HandlerResult Context::handleEvent(event_constptr_t ev) {
           _prev_dbl_click_time = curtime; // add delay for double-double click
         }
 
-         rval = dest->OnUiEvent(ev);
+        rval = _dispatchToTarget(dest, ev);
       }
       _prev_click_time = curtime;
 
@@ -172,12 +203,20 @@ HandlerResult Context::handleEvent(event_constptr_t ev) {
     default: {
       _evdragtarget = nullptr;
       auto dest     = _top->routeUiEvent(ev);
-      if (dest)
-        rval = dest->OnUiEvent(ev);
+      rval = _dispatchToTarget(dest, ev);
       break;
     }
       /////////////////////////////////
   }
+
+  /////////////////////////////////
+  // PHASE 3: Application Fallback Handler
+  // (if event was not handled by widgets)
+  /////////////////////////////////
+  if (!rval.wasHandled() && _appFallbackHandler) {
+    rval = _appFallbackHandler(ev);
+  }
+
   /////////////////////////////////
   _prevevent = *ev;
   _prevtime      = curtime;

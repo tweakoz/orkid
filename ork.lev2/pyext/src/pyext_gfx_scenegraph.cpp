@@ -441,6 +441,43 @@ void pyinit_scenegraph(py::module& module_lev2) {
               "pbr_common",
               [](scene_ptr_t SG) -> pbr::commonstuff_ptr_t { //
                 return SG->_pbr_common;
+              })
+          .def_property_readonly(
+              "pick_tex_id",
+              [](scene_ptr_t SG) -> texture_ptr_t { //
+                if (SG->_sgpickbuffer) {
+                  return SG->_sgpickbuffer->_pickIDtexture;
+                }
+                return nullptr;
+              })
+          .def_property_readonly(
+              "pick_tex_pos",
+              [](scene_ptr_t SG) -> texture_ptr_t { //
+                if (SG->_sgpickbuffer) {
+                  return SG->_sgpickbuffer->_pickPOStexture;
+                }
+                return nullptr;
+              })
+          .def_property_readonly(
+              "pick_tex_nrm",
+              [](scene_ptr_t SG) -> texture_ptr_t { //
+                if (SG->_sgpickbuffer) {
+                  return SG->_sgpickbuffer->_pickNRMtexture;
+                }
+                return nullptr;
+              })
+          .def_property_readonly(
+              "pick_tex_uv",
+              [](scene_ptr_t SG) -> texture_ptr_t { //
+                if (SG->_sgpickbuffer) {
+                  return SG->_sgpickbuffer->_pickUVtexture;
+                }
+                return nullptr;
+              })
+          .def_property_readonly(
+              "pick_buffer_dim",
+              [](scene_ptr_t SG) -> int { //
+                return PICKBUFFER_DIM;
               });
   ;
   type_codec->registerStdCodec<scene_ptr_t>(scenegraph_type);

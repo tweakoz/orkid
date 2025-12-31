@@ -94,7 +94,7 @@ class StandardSceneGraphComponent(ApplicationComponent):
 
   ###############################################
 
-  def __init__(self, 
+  def __init__(self,
                enable_ui_camera = True,
                grid_variant="_V4",
                grid_data=None,
@@ -103,7 +103,16 @@ class StandardSceneGraphComponent(ApplicationComponent):
                up=vec3(0,1,0),
                sg_params=None,
                post_nodes=None,
-               use_float_color_buffer=True):
+               use_float_color_buffer=True,
+               layout_component=None):
+    """Initialize StandardSceneGraphComponent.
+
+    Args:
+      layout_component: Optional UiLayoutComponent instance. If provided,
+        SGC will request viewport placement from this component instead
+        of creating its own grid layout. The layout component should
+        define a "main" slot where the SceneGraphViewport will be created.
+    """
     #print(eye)
     super().__init__()
     self.enable_ui_camera = enable_ui_camera
@@ -113,6 +122,7 @@ class StandardSceneGraphComponent(ApplicationComponent):
     self.initial_tgt = tgt
     self.initial_up = up
     self.use_float_color_buffer = use_float_color_buffer
+    self.layout_component = layout_component
     sgparam_vm = VarMap()
     sgparam_vm.SkyboxIntensity = 1.0
     sgparam_vm.DiffuseIntensity = 1.0
@@ -143,14 +153,23 @@ class StandardSceneGraphComponent(ApplicationComponent):
   def _onEzAppCreated(self,app,ezapp):
     self.dbufcontext = ezapp.vars.dbufcontext
     self.cameralut = ezapp.vars.cameras
-    lg_group = ezapp.topLayoutGroup
-    self.griditems = lg_group.makeGrid(
-      width=1,
-      height=1,
-      margin = 4,
-      uiclass = lev2.ui.SceneGraphViewport,
-      args = ["SGVP",vec4(0.1,0.1,0.3,1)],
-    )
+
+    # Defer viewport creation to _onGpuLink
+    # Store reference to layout component or create default grid
+    if self.layout_component is not None:
+      # Layout component handles UI structure
+      # Viewport will be created in _onGpuLink via layout_component
+      self.griditems = None
+    else:
+      # Default: create 1x1 grid with SceneGraphViewport
+      lg_group = ezapp.topLayoutGroup
+      self.griditems = lg_group.makeGrid(
+        width=1,
+        height=1,
+        margin = 4,
+        uiclass = lev2.ui.SceneGraphViewport,
+        args = ["SGVP",vec4(0.1,0.1,0.3,1)],
+      )
 
   ##################################################
 
@@ -211,14 +230,38 @@ class StandardSceneGraphComponent(ApplicationComponent):
   def _onGpuLink(self, ctx):
     ###########################
     SG = self.scenegraph
-    SGVP = self.griditems[0]
-    SGVPW = SGVP.widget
+
+    # Get viewport widget - either from layout component or default grid
+    if self.layout_component is not None:
+      # Create viewport in layout component's "main" slot
+      SGVPW = self.layout_component.createWidgetInSlot(
+        "main",
+        lev2.ui.SceneGraphViewport,
+        ["SGVP", vec4(0.1, 0.1, 0.3, 1)]
+      )
+      if SGVPW is None:
+        raise RuntimeError("Layout component does not have a 'main' slot for SceneGraphViewport")
+    else:
+      # Default: use grid item
+      SGVP = self.griditems[0]
+      SGVPW = SGVP.widget
+
     SGVPW.cameraName = self.camname
     SGVPW.scenegraph = SG
     if self.enable_ui_camera:
       SGVPW.camera_evhandler = lambda x: self._onCameraUiEvent(x)
     SGVPW.forkDB()
-    self.SGVP = SGVP
+    self.SGVPW = SGVPW  # Store widget reference
+
+    # For backwards compatibility, also store SGVP
+    if self.layout_component is not None:
+      # Create a simple wrapper for compatibility
+      class ViewportWrapper:
+        def __init__(self, widget):
+          self.widget = widget
+      self.SGVP = ViewportWrapper(SGVPW)
+    else:
+      self.SGVP = self.griditems[0]
 
   ##################################################
 
