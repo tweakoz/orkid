@@ -466,7 +466,7 @@ void VkFxInterface::bindUniformBuffer(const FxUniformBlock* block, FxUniformBuff
   if (!block || !buffer) {
     return;
   }
-  
+
   if (!_currentVKPASS) {
     static int counter = 0;
     counter++;
@@ -475,7 +475,7 @@ void VkFxInterface::bindUniformBuffer(const FxUniformBlock* block, FxUniformBuff
     }
     return;
   }
-  
+
   auto vk_program = _currentVKPASS->_vk_program;
   if (!vk_program) {
     static int counter = 0;
@@ -485,7 +485,7 @@ void VkFxInterface::bindUniformBuffer(const FxUniformBlock* block, FxUniformBuff
     }
     return;
   }
-  
+
   // Get the Vulkan buffer implementation
   auto vk_buffer = buffer->_impl.tryAsShared<VulkanBuffer>();
   if (!vk_buffer) {
@@ -496,10 +496,10 @@ void VkFxInterface::bindUniformBuffer(const FxUniformBlock* block, FxUniformBuff
     }
     return;
   }
-  
+
   // Get the Vulkan uniform block from the block's implementation
-  auto vk_block = block->_impl.tryAs<vkfxsuniblk_wkptr_t>();
-  if (!vk_block) {
+  auto vk_block_wk = block->_impl.tryAs<vkfxsuniblk_wkptr_t>();
+  if (!vk_block_wk) {
     static int counter = 0;
     counter++;
     if(counter<10) {
@@ -507,21 +507,25 @@ void VkFxInterface::bindUniformBuffer(const FxUniformBlock* block, FxUniformBuff
     }
     return;
   }
-    
-  // The FxUniformBlock should have a pseudo-parameter that represents the block binding
-  // Try to bind via merged resources using the block name as the parameter name
-  auto dummy_param = std::make_shared<FxShaderParam>();
-  dummy_param->_name = block->_name;
-  
-  // Store the buffer in the program's uniform buffer map
-  if (_tryBindMergedResource(dummy_param.get(), VkMergedResourceBinding::Type::UniformBlock, vk_buffer.value())) {
-    // Success
-  } else {
+
+  auto vk_block = vk_block_wk.value().lock();
+  if (!vk_block) {
     static int counter = 0;
     counter++;
     if(counter<10) {
-      printf("bindUniformBuffer: failed to bind block<%s> via merged resources\n", block->_name.c_str());
+      printf("bindUniformBuffer: block<%s> weak_ptr expired\n", block->_name.c_str());
     }
+    return;
+  }
+
+  // Copy the external buffer's data into the UBO's shadow buffer
+  // This allows the dynamic UBO system to upload it at draw time
+  auto src_buffer = vk_buffer.value();
+  size_t copy_size = std::min(src_buffer->_length, vk_block->_shadow_buffer.size());
+  if (copy_size > 0) {
+    src_buffer->copyToHost(vk_block->_shadow_buffer.data(), copy_size);
+    vk_block->addDirtyRange(0, copy_size);
+    _currentVKPASS->_dirty_uniform_blocks.insert(vk_block.get());
   }
 }
 

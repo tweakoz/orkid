@@ -475,8 +475,8 @@ void PbrMatrixBlockApplicator::ApplyToTarget(Context* context) // virtual
 
   for (int i = 0; i < inumbones; i++) {
     bones_mapped->ref<fmtx4>(fmtx4_stride * i) = Matrices[i];
-    // printf( "I<%d>: ", i );
-    // Matrices[i].dump("bonemtx");
+     //printf( "I<%d>: ", i );
+     //Matrices[i].dump("bonemtx");
   }
 
   bones_mapped->unmap();

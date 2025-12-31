@@ -21,6 +21,21 @@ uniform_set us_frg : us_std_pbr {
 ///////////////////////////////////////////////////////////////
 // Vertex Interfaces
 ///////////////////////////////////////////////////////////////
+
+// Shared VS->FS outputs for forward rendering
+// Fragment interfaces inherit from this to get their inputs
+vertex_interface vif_forward_outputs {
+  outputs {
+    vec4 frg_wpos;
+    vec4 frg_clr;
+    vec2 frg_uv0;
+    mat3 frg_tbn;
+    float frg_camdist;
+    vec3 frg_camz;
+    vec4 frg_modcolor;
+  }
+}
+
 vertex_interface vif_PNBT : ub_std_vtx {
   inputs {
     vec4 position : POSITION;
@@ -289,27 +304,32 @@ fragment_shader ps_forward_depthprepass_mono //
 // Forward pbr
 ///////////////////////////////////////////////////////////////
 
-vertex_interface vif_FWDTEST : ub_std_vtx {
+// Non-skinned forward vertex interface
+vertex_interface vif_FWDTEST : vif_forward_outputs : ub_std_vtx {
   inputs {
     vec4 position : POSITION;
     vec3 normal : NORMAL;
     vec3 binormal : BINORMAL;
     vec2 uv0 : TEXCOORD0;
   }
-  outputs {
-    vec4 frg_wpos;
-    vec4 frg_clr;
-    vec2 frg_uv0;
-    mat3 frg_tbn;
-    float frg_camdist;
-    vec3 frg_camz;
-    vec4 frg_modcolor;
+}
+// Skinned forward vertex interface - same outputs, adds bone inputs
+// Inputs are explicitly ordered: standard vertex attrs first, then bone attrs
+vertex_interface vif_FWDTEST_SKINNED : vif_forward_outputs : ub_vtx_boneblock : ub_std_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec3 normal : NORMAL;
+    vec3 binormal : BINORMAL;
+    vec2 uv0 : TEXCOORD0;
+    uvec4 boneindices : BONEINDICES;
+    vec4 boneweights : BONEWEIGHTS;
   }
 }
-fragment_interface fif_FWDTEST 
-  : vif_FWDTEST
-  : ub_frg_fwd 
-  : storage_fwd_lighting 
+// Fragment interface - inherits outputs from vif_forward_outputs
+fragment_interface fif_FWDTEST
+  : vif_forward_outputs
+  : ub_frg_fwd
+  : storage_fwd_lighting
   : ss_frg_fwd {
   outputs {
     layout(location = 0) vec4 out_color;
@@ -423,14 +443,16 @@ vertex_shader vs_forward_test_vtxcolor : vif_PNBC : lib_pbr_vtx : ublk_std_matri
   gl_Position = mvp * position;
   frg_clr = vtxcolor;
 }
-vertex_shader vs_forward_skinned_mono : vif_PNBT_skinned : lib_skin_tools : lib_pbr_vtx : ublk_std_matrices {
+vertex_shader vs_forward_skinned_mono : vif_FWDTEST_SKINNED : lib_skin_tools : lib_pbr_vtx : ublk_std_matrices {
   vec4 skn_pos = vec4(SkinPosition(position.xyz), 1);
   vec3 skn_nrm = SkinNormal(normal);
-  vec3 skn_bit = SkinNormal(binormal); // // technically binormal is a bitangent
+  vec3 skn_bit = SkinNormal(binormal); // technically binormal is a bitangent
   vs_common(skn_pos, skn_nrm, skn_bit);
   ////////////////////////////////
   gl_Position = mvp * skn_pos;
-    frg_uv0         = uv0 * vec2(1, -1);
+  frg_uv0 = uv0 * vec2(1, -1);
+  frg_clr = vec4(1,1,1,1);
+  frg_modcolor = vec4(1,1,1,1);
 }
 //////////////////////////////////////
 fragment_shader ps_forward_test_fragcolor //

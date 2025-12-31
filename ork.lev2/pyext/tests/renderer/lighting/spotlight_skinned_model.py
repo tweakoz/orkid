@@ -66,8 +66,8 @@ class StereoApp1(object):
     ###################################
 
     params_dict = {
-      "SkyboxTexPathStr": "src://envmaps/blender_studio.dds",
-      "SkyboxIntensity": 1.5,
+      "SkyboxTexPathStr": "ork_envmaps|blender_studio",
+      "SkyboxIntensity": 1.0,
       "DiffuseIntensity": 1.0,
       "SpecularIntensity": 1.0,
       "AmbientLevel": vec3(0),
@@ -84,17 +84,18 @@ class StereoApp1(object):
     self.anim_inst.bindToSkeleton(self.model.skeleton)
 
     ##################
-    for mesh in self.model.meshes:
-      for submesh in mesh.submeshes:
-        copy = submesh.material.clone()
-        copy.baseColor = vec4(1,.5,1,1)
-        copy.metallicFactor = 0.0
-        copy.roughnessFactor = 1.0
-        copy.assignImages(
-          ctx,
-          doConform=True
-        )
-        submesh.material = copy
+    if False:
+      for mesh in self.model.meshes:
+        for submesh in mesh.submeshes:
+          copy = submesh.material.clone()
+          copy.baseColor = vec4(1,.5,1,1)
+          copy.metallicFactor = 0.0
+          copy.roughnessFactor = 1.0
+          copy.assignImages(
+            ctx,
+            doConform=True
+          )
+          submesh.material = copy
 
     ##################
     # create model / sg node
@@ -144,14 +145,14 @@ class StereoApp1(object):
       cookie_paths.append("src://effect_textures/%s.png"%texset[index])
     ccooks = [color_cookies.load(path) for path in cookie_paths]
     dcooks = [depth_cookies.slice(i) for i in range(NUM_SPOTS)]
-    colors = [vec3.fromHsv(i/NUM_SPOTS,1.0,250.0) for i in range(NUM_SPOTS)] 
+    colors = [vec3.fromHsv(i/NUM_SPOTS,1.0,1550.0) for i in range(NUM_SPOTS)] 
     indices = [i for i in range(NUM_SPOTS)]
     frqs = [random.uniform(-0.4,0.4) for i in range(NUM_SPOTS)]
-    fovbases = [random.uniform(25,45) for i in range(NUM_SPOTS)]
-    fovamps = [random.uniform(0,10) for i in range(NUM_SPOTS)]
+    fovbases = [random.uniform(15,45) for i in range(NUM_SPOTS)]
+    fovamps = [random.uniform(0,5) for i in range(NUM_SPOTS)]
     voffsets = [random.uniform(30,40) for i in range(NUM_SPOTS)]
     vscales = [random.uniform(0,10) for i in range(NUM_SPOTS)]
-    radii = [random.uniform(10,25) for i in range(NUM_SPOTS)]
+    radii = [random.uniform(20,50) for i in range(NUM_SPOTS)]
     if True:
       shadow_size = 1024
       shadow_bias = 1e-3
@@ -176,6 +177,8 @@ class StereoApp1(object):
                          vscale=vscales[i],
                          radius=radii[i])
         self.spotlights.append(s)
+
+    self.scene.lightingmanager.gpuInit(ctx)
 
   ##############################################
 
