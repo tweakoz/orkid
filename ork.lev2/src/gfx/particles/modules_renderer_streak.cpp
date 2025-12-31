@@ -185,11 +185,12 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
   if (icnt) {
     auto FXI = context->FXI();
 
-    OrkAssert(icnt <= 16384);
+    OrkAssert(icnt <= 65536);
 
     ///////////////////////////////////////////////////////////////
-    // Get camera up vector for streak cross product
+    // Get camera position and up vector for streak rendering
     ///////////////////////////////////////////////////////////////
+    fvec3 camPos = cdata.GetEye();
     fvec3 camUp;
 
     if (RCID.rcfd()->isStereo()) {
@@ -209,7 +210,7 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
 
     ///////////////////////////////////////////////////////////////
     // Fill SSBO with new format for streaks:
-    // vec4 camRightSize;          // 0: xyz=unused (camRight not needed for streaks), w=unused
+    // vec4 camRightSize;          // 0: xyz=camPos (for view direction calculation), w=unused
     // vec4 camUpCount;            // 16: xyz=camUp, w=numParticles
     // vec4 particleData[16384];   // 32: pos.xyz, width
     // vec4 particleData2[16384];  // 262176: vel.xyz, length
@@ -220,8 +221,8 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     auto mapped_storage = FXI->mapStorageBuffer(storage, 0, mapping_size, BufferMapAccess::WRITE_ONLY);
 
     mapped_storage->seek(0);
-    // Header: camera vectors and count (camRight not used for streaks, but keep layout consistent)
-    mapped_storage->make<fvec4>(0.0f, 0.0f, 0.0f, 0.0f);               // offset 0: unused for streaks
+    // Header: camera position (for view direction) and up vector
+    mapped_storage->make<fvec4>(camPos.x, camPos.y, camPos.z, 0.0f);     // offset 0: camPos for streaks
     mapped_storage->make<fvec4>(camUp.x, camUp.y, camUp.z, float(icnt)); // offset 16
 
     // Fill particle data based on variant
@@ -259,8 +260,8 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
         break;
     }
 
-    // particleData2 array at offset 32 + 16384*16 = 262176: vel.xyz, length
-    constexpr size_t particleData2_offset = 32 + 16384 * 16;
+    // particleData2 array at offset 32 + 65536*16 = 1048608: vel.xyz, length
+    constexpr size_t particleData2_offset = 32 + 65536 * 16;
     mapped_storage->seek(particleData2_offset);
 
     switch(variant) {
@@ -294,8 +295,8 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
         break;
     }
 
-    // particleData3 array at offset 32 + 16384*16*2 = 524320: age, random, unused, unused
-    constexpr size_t particleData3_offset = 32 + 16384 * 16 * 2;
+    // particleData3 array at offset 32 + 65536*16*2 = 2097184: age, random, unused, unused
+    constexpr size_t particleData3_offset = 32 + 65536 * 16 * 2;
     mapped_storage->seek(particleData3_offset);
 
     for (int i = 0; i < icnt; i++) {

@@ -11,9 +11,9 @@ storage_interface storage_particles (descriptor_set 0) {
   buffer layout(std430) particles {
     vec4 camRightSize;          // 0: xyz=camRight, w=unused
     vec4 camUpCount;            // 16: xyz=camUp, w=numParticles (as float)
-    vec4 particleData[16384];   // 32: pos.xyz, size (per particle)
-    vec4 particleData2[16384];  // vel.xyz, length (per particle, for streaks)
-    vec4 particleData3[16384];  // age, random, unused, unused (per particle)
+    vec4 particleData[65536];   // 32: pos.xyz, size (per particle)
+    vec4 particleData2[65536];  // vel.xyz, length (per particle, for streaks)
+    vec4 particleData3[65536];  // age, random, unused, unused (per particle)
   };
 }
 
@@ -103,7 +103,8 @@ vertex_shader vs_streak_ssbo : vface_streak_ssbo {
   int particleIdx = gl_VertexIndex / 6;
   int cornerIdx = gl_VertexIndex % 6;
 
-  // Read camera up vector from SSBO (used for cross product)
+  // Read camera position and up from SSBO
+  vec3 camPos = camRightSize.xyz;  // For streaks: camPos stored here
   vec3 camUp = camUpCount.xyz;
 
   // Read particle data from SSBO
@@ -123,8 +124,14 @@ vertex_shader vs_streak_ssbo : vface_streak_ssbo {
   vec3 velDir = normalize(vel);
   vec3 tailPos = pos - velDir * len;
 
-  // Cross product with camera up to get width direction
-  vec3 side = normalize(cross(velDir, camUp)) * width;
+  // Cross product with view direction to get camera-facing side
+  vec3 viewDir = normalize(pos - camPos);
+  vec3 side = normalize(cross(velDir, viewDir)) * width;
+
+  // Fallback if velDir parallel to viewDir
+  if (length(side) < 0.001) {
+    side = normalize(cross(velDir, camUp)) * width;
+  }
 
   // 4 corners: head+side, head-side, tail-side, tail+side
   // Triangle 1: 0,1,2  Triangle 2: 0,2,3

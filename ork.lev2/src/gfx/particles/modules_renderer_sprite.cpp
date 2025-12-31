@@ -203,7 +203,7 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
   if (icnt) {
     auto FXI = context->FXI();
 
-    OrkAssert(icnt <= 16384);
+    OrkAssert(icnt <= 65536);
 
     ///////////////////////////////////////////////////////////////
     // Get camera vectors for billboarding
@@ -263,9 +263,9 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     }
 
     // Skip particleData2 (not used for sprites) - seek to particleData3
-    // particleData2 starts at offset 32 + 16384*16 = 262176
-    // particleData3 starts at offset 32 + 16384*16*2 = 524320
-    constexpr size_t particleData3_offset = 32 + 16384 * 16 * 2;
+    // particleData2 starts at offset 32 + 65536*16 = 1048608
+    // particleData3 starts at offset 32 + 65536*16*2 = 2097184
+    constexpr size_t particleData3_offset = 32 + 65536 * 16 * 2;
     mapped_storage->seek(particleData3_offset);
 
     // particleData3 array: age, random, unused, unused

@@ -268,7 +268,7 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   //////////////////////////////////////////
   FxPipeline::varval_generator_t colorfactor = [=]() -> FxPipeline::varval_t {
     FxPipeline::varval_t rval = _gradientColorIntensity;
-    printf("GradientMaterial::gpuInit colorfactor<%f>\n", rval.get<float>());
+    //printf("GradientMaterial::gpuInit colorfactor<%f>\n", rval.get<float>());
     return rval;
   };
   _pipeline->bindParam(fxparameterColorFactor, colorfactor);
