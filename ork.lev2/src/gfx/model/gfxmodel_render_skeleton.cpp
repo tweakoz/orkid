@@ -55,21 +55,31 @@ void XgmModel::RenderSkeleton(
   bool is_pick = CPD.isPicking();
 
   ////////////////////////////
-  // material selection - use FWD_SKELETON technique
+  // material selection - use FWD_SKELETON or PIK_SKELETON technique
   // Uses vif_PNC vertex interface (Position, Normal, Color - no binormal)
   ////////////////////////////
 
   static freestyle_mtl_ptr_t skeleton_mtl = nullptr;
   static fxpipeline_ptr_t skeleton_pipeline = nullptr;
+  static fxpipeline_ptr_t skeleton_pick_pipeline = nullptr;
   static fxtechnique_constptr_t skeleton_tek = nullptr;
+  static fxtechnique_constptr_t skeleton_pick_tek = nullptr;
   static fxparam_constptr_t skeleton_param_mvp = nullptr;
+  static fxparam_constptr_t skeleton_param_m = nullptr;
+  static fxparam_constptr_t skeleton_param_mrot = nullptr;
+  static fxparam_constptr_t skeleton_param_pickid = nullptr;
 
   if (skeleton_mtl == nullptr) {
     skeleton_mtl = std::make_shared<FreestyleMaterial>();
     skeleton_mtl->gpuInit(context, "orkshader://pbr");
     skeleton_tek = skeleton_mtl->technique("FWD_SKELETON");
+    skeleton_pick_tek = skeleton_mtl->technique("PIK_SKELETON");
     OrkAssert(skeleton_tek);
+    OrkAssert(skeleton_pick_tek);
     skeleton_param_mvp = skeleton_mtl->param("mvp");
+    skeleton_param_m = skeleton_mtl->param("m");
+    skeleton_param_mrot = skeleton_mtl->param("mrot");
+    skeleton_param_pickid = skeleton_mtl->param("obj_pickID");
     OrkAssert(skeleton_param_mvp);
 
     FxPipelinePermutation permu;
@@ -78,12 +88,23 @@ void XgmModel::RenderSkeleton(
     skeleton_pipeline->_technique = skeleton_tek;
     skeleton_pipeline->_rasterstate = skeleton_mtl->_rasterstate;
     skeleton_pipeline->bindParam(skeleton_param_mvp, "RCFD_Camera_MVP_Mono"_crcsh);
+
+    FxPipelinePermutation pick_permu;
+    pick_permu._forced_technique = skeleton_pick_tek;
+    skeleton_pick_pipeline = std::make_shared<FxPipeline>(pick_permu);
+    skeleton_pick_pipeline->_technique = skeleton_pick_tek;
+    skeleton_pick_pipeline->_rasterstate = skeleton_mtl->_rasterstate;
+    skeleton_pick_pipeline->bindParam(skeleton_param_mvp, "RCFD_Camera_Pick"_crcsh);
+    skeleton_pick_pipeline->bindParam(skeleton_param_m, "RCFD_M"_crcsh);
+    skeleton_pick_pipeline->bindParam(skeleton_param_mrot, "RCFD_Model_Rot"_crcsh);
+    skeleton_pick_pipeline->bindParam(skeleton_param_pickid, "RCID_PickID"_crcsh);
   }
 
-  auto pipeline = skeleton_pipeline;
+  auto active_tek = is_pick ? skeleton_pick_tek : skeleton_tek;
+  auto pipeline = is_pick ? skeleton_pick_pipeline : skeleton_pipeline;
   RenderContextInstData RCIDCOPY = RCID;
   RCIDCOPY._isSkinned = false;
-  RCIDCOPY.forceTechnique(skeleton_tek);
+  RCIDCOPY.forceTechnique(active_tek);
 
   struct Triangle {
     uint32_t boneID;

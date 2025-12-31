@@ -571,14 +571,14 @@ vertex_interface iface_vtx_pick_skinned //
   inputs {
     vec4 position : POSITION;
     vec3 normal : NORMAL;
+    vec3 binormal : BINORMAL;
     vec2 uv0 : TEXCOORD0;
-    uvec3 pickSUBID : TEXCOORD1;
   }
   outputs {
     vec3 frg_wpos;
     vec3 frg_wnrm;
     vec2 frg_uv;
-    uvec3 frg_pickSUBID;
+    flat uvec3 frg_pickSUBID;
   }
 }
 ///////////////////////////////////////////////////////////////
@@ -592,7 +592,7 @@ vertex_interface iface_vtx_pick_rigid {
     vec3 frg_wpos;
     vec3 frg_wnrm;
     vec2 frg_uv;
-    uvec3 frg_pickSUBID;
+    flat uvec3 frg_pickSUBID;
   }
 }
 ///////////////////////////////////////////////////////////////
@@ -601,7 +601,7 @@ fragment_interface iface_frg_pick : ub_frg_fwd {
     vec3 frg_wpos;
     vec3 frg_wnrm;
     vec2 frg_uv;
-    uvec3 frg_pickSUBID;
+    flat uvec3 frg_pickSUBID;
   }
   outputs {
     layout(location = 0) uvec4 out_pickID;
@@ -618,7 +618,8 @@ vertex_shader vs_pick_skinned_mono : iface_vtx_pick_skinned : lib_skin_tools : u
   frg_wpos     = (m * skn_pos).xyz;
   frg_wnrm     = normalize(mrot * skn_nrm);
   frg_uv      = uv0;
-  frg_pickSUBID  = pickSUBID;
+  // Use primary bone index as sub-ID for skinned picking
+  frg_pickSUBID  = uvec3(boneindices.x, 0, 0);
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_pick_rigid_mono : iface_vtx_pick_rigid : ub_std_vtx : ublk_std_matrices {
@@ -627,5 +628,36 @@ vertex_shader vs_pick_rigid_mono : iface_vtx_pick_rigid : ub_std_vtx : ublk_std_
   frg_wnrm    = normalize(mrot * normal);
   frg_uv      = vec2(0,0);
   frg_pickSUBID  = pickSUBID;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_pick : iface_frg_pick : uset_std_pick {
+  out_pickID = uvec4(obj_pickID, frg_pickSUBID.x, frg_pickSUBID.y, frg_pickSUBID.z);
+  out_wpos   = vec4(frg_wpos, 0);
+  out_wnrm   = vec4(normalize(frg_wnrm), 0);
+  out_uv     = vec4(frg_uv, 0, 0);
+}
+///////////////////////////////////////////////////////////////
+// Skeleton pick interface - Position, Normal, Color (no binormal, no UV)
+///////////////////////////////////////////////////////////////
+vertex_interface iface_vtx_pick_skeleton : ub_std_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec3 normal : NORMAL;
+    vec4 vtxcolor : COLOR0;
+  }
+  outputs {
+    vec3 frg_wpos;
+    vec3 frg_wnrm;
+    vec2 frg_uv;
+    flat uvec3 frg_pickSUBID;
+  }
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_pick_skeleton : iface_vtx_pick_skeleton : ublk_std_matrices {
+  gl_Position   = mvp * position;
+  frg_wpos      = (m * position).xyz;
+  frg_wnrm      = normalize(mrot * normal);
+  frg_uv        = vec2(0, 0);
+  frg_pickSUBID = uvec3(0, 0, 0);  // No sub-ID for skeleton
 }
 ///////////////////////////////////////////////////////////////

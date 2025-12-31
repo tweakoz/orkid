@@ -85,10 +85,12 @@ class PoserUi(UiLayoutComponent):
     vpack.uniform = True
     vpack.fill = True
 
+    imgbg = vec4(1,1,1,1)
+
     # Create 3 ImageViews for pick textures (ID, Position, Normal)
-    self.pick_img_id = vpack.makeChild(uiclass=lev2.ui.ImageView, args=["pick_id", vec4(0.1, 0.1, 0.1, 1)])
-    self.pick_img_pos = vpack.makeChild(uiclass=lev2.ui.ImageView, args=["pick_pos", vec4(0.1, 0.1, 0.1, 1)])
-    self.pick_img_nrm = vpack.makeChild(uiclass=lev2.ui.ImageView, args=["pick_nrm", vec4(0.1, 0.1, 0.1, 1)])
+    self.pick_img_id = vpack.makeChild(uiclass=lev2.ui.ImageView, args=["pick_id", imgbg])
+    self.pick_img_pos = vpack.makeChild(uiclass=lev2.ui.ImageView, args=["pick_pos", imgbg])
+    self.pick_img_nrm = vpack.makeChild(uiclass=lev2.ui.ImageView, args=["pick_nrm", imgbg])
 
     for imgview in [self.pick_img_id, self.pick_img_pos, self.pick_img_nrm]:
       imgview.maintain_aspect_ratio = True
@@ -221,6 +223,15 @@ class PoserUi(UiLayoutComponent):
             print(A, B)
 
         app.scenegraph.pickWithScreenCoord(camdat, scoord, pick_callback)
+        # Re-assign textures after pick (RtGroup now realized with valid dimensions)
+        SG = app.scenegraph
+        self.pick_img_id.texture = SG.pick_tex_id
+        self.pick_img_pos.texture = SG.pick_tex_pos
+        self.pick_img_nrm.texture = SG.pick_tex_nrm
+        # Mark ImageViews dirty so they redraw with updated pick textures
+        self.pick_img_id.setDirty()
+        self.pick_img_pos.setDirty()
+        self.pick_img_nrm.setDirty()
         handled = True
       ##############################
 
