@@ -33,7 +33,7 @@ class SkinningApp(object):
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()
     lg_group = self.ezapp.topLayoutGroup
-    self.griditems = lg_group.makeGrid( width = 2,
+    self.griditems = lg_group.makeGrid( width = 1,
                                         height = 1,
                                         margin = 1,
                                         uiclass = ui.SceneGraphViewport,
@@ -43,26 +43,16 @@ class SkinningApp(object):
     # set vertical proportional layout guide 
     ################################################
 
-    vguides = lg_group.vertical_guides
-    vguides[1].proportion = 0.5
-    vguides[2].proportion = 0.5
-
-    ################################################
-    # replace left viewport with particle editor
-    ################################################
-
-    #self.objmodel = ui.ObjModel()
-    #self.ged_item = lg_group.makeChild( uiclass = ui.GedSurface,
-    #                                    args = ["GEDSURF",self.objmodel] )
-    #lg_group.replaceChild(self.griditems[0].layout, self.ged_item)
-    #self.ged_surf = self.ged_item.widget
+    #vguides = lg_group.vertical_guides
+    #vguides[1].proportion = 0.5
+    #vguides[2].proportion = 0.5
 
     ################################################
     # camera / event handler
     ################################################
 
     setupUiCamera( app=self, eye = vec3(0,0,30), constrainZ=True, up=vec3(0,1,0))
-    self.griditems[1].widget.evhandler = lambda x: self.onSceneGraphUiEvent(x)
+    self.griditems[0].widget.evhandler = lambda x: self.onSceneGraphUiEvent(x)
 
   ################################################
   # scenegraph viewport UI event handler
@@ -92,7 +82,7 @@ class SkinningApp(object):
     sg_params.SpecularIntensity = 1.0
     sg_params.AmbientLevel = vec3(.125)
     sg_params.DepthFogDistance = 10000.0
-    sg_params.preset = "DeferredPBR"
+    sg_params.preset = "ForwardPBR"
 
     ###################################
     # create animation data
@@ -111,7 +101,7 @@ class SkinningApp(object):
     ##################
 
     self.scenegraph = scenegraph.Scene(sg_params)
-    self.layer = self.scenegraph.createLayer("std_deferred")
+    self.layer = self.scenegraph.createLayer("std_forward")
     self.sgnode = self.model.createNode("modelnode",self.layer)
     self.modelinst = self.sgnode.user.pyext_retain_modelinst
     self.modelinst.enableSkinning()
@@ -122,6 +112,8 @@ class SkinningApp(object):
     for i in range(0,1):
       self.griditems[i].widget.scenegraph = self.scenegraph
       self.griditems[i].widget.forkDB()
+
+    self.scenegraph.lightingmanager.gpuInit(ctx)
 
   ################################################
 

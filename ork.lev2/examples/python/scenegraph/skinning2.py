@@ -170,15 +170,15 @@ class SkinningApp(object):
     sg_params.SpecularIntensity = 0.0
     sg_params.AmbientLevel = vec3(0)
     sg_params.DepthFogDistance = 10000.0
-    sg_params.SkyboxTexPathStr = "src://envmaps/blender_forest.dds"
+    sg_params.SkyboxTexPathStr = "ork_envmaps|blender_forest"
     #sg_params.SkyboxTexPathStr = "src://envmaps/blender_studio.dds"
-    sg_params.preset = "DeferredPBR"
-    sg_params.SSAONumSamples = 32
-    sg_params.SSAONumSteps = 2
-    sg_params.SSAOBias = 1e-3
-    sg_params.SSAORadius = 25.0/1000
-    sg_params.SSAOWeight = 0.75
-    sg_params.SSAOPower = 0.75
+    sg_params.preset = "ForwardPBR"
+    #sg_params.SSAONumSamples = 32
+    #sg_params.SSAONumSteps = 2
+    #sg_params.SSAOBias = 1e-3
+    #sg_params.SSAORadius = 25.0/1000
+    #sg_params.SSAOWeight = 0.75
+    #sg_params.SSAOPower = 0.75
 
     ###################################
     # post fx node
@@ -196,7 +196,7 @@ class SkinningApp(object):
     ###################################
 
     self.scenegraph = self.ezapp.createScene(sg_params)
-    self.layer = self.scenegraph.createLayer("std_deferred")
+    self.layer = self.scenegraph.createLayer("std_forward")
     self.pbr_common = self.scenegraph.pbr_common
     self.pbr_common.useFloatColorBuffer = True
 
@@ -216,7 +216,7 @@ class SkinningApp(object):
         copy.baseColor = vec4(1,.75,.75,1)
         copy.roughnessFactor = 0.0
         copy.metallicFactor = 1.0
-        copy.shaderpath = str(this_dir/"skin_override_test.glfx")
+        copy.shaderpath = str(this_dir/"skin_override_test.fxv2")
         copy.gpuInit(ctx)
         submesh.material = copy
 
@@ -247,6 +247,8 @@ class SkinningApp(object):
 
     self.lposer = HandPoser(self,"Left")
     self.rposer = HandPoser(self,"Right")
+
+    self.scenegraph.lightingmanager.gpuInit(ctx)
 
   ################################################
 
@@ -281,10 +283,10 @@ class SkinningApp(object):
   def onUpdate(self,updinfo):
     self.time += updinfo.deltatime
     self.scenegraph.updateScene(self.cameralut) # update and enqueue all scenenodes
-    if self.ssaamode == True:
-      self.pbr_common.ssaoNumSamples = SSAO_NUM_SAMPLES
-    else:
-      self.pbr_common.ssaoNumSamples = 0
+    #if self.ssaamode == True:
+    #  self.pbr_common.ssaoNumSamples = SSAO_NUM_SAMPLES
+    #else:
+    #  self.pbr_common.ssaoNumSamples = 0
 
   ##############################################
 

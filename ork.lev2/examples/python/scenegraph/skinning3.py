@@ -164,9 +164,9 @@ class SkinningApp(object):
     sg_params.SpecularIntensity = 0.0
     sg_params.AmbientLevel = vec3(0)
     sg_params.DepthFogDistance = 10000.0
-    sg_params.SkyboxTexPathStr = "src://envmaps/blender_forest.dds"
+    sg_params.SkyboxTexPathStr = "ork_envmaps|blender_forest"
     #sg_params.SkyboxTexPathStr = "src://envmaps/blender_studio.dds"
-    sg_params.preset = "DeferredPBR"
+    sg_params.preset = "ForwardPBR"
 
     ###################################
     # post fx node
@@ -184,7 +184,7 @@ class SkinningApp(object):
     ###################################
 
     self.scenegraph = self.ezapp.createScene(sg_params)
-    self.layer = self.scenegraph.createLayer("layer")
+    self.layer = self.scenegraph.createLayer("std_forward")
     self.pbr_common = self.scenegraph.pbr_common
     self.pbr_common.useFloatColorBuffer = True
 
@@ -193,20 +193,18 @@ class SkinningApp(object):
     # create model data
     ###################################
 
-    tex_white = Texture.load("src://effect_textures/white.dds")
-    tex_normal = Texture.load("src://effect_textures/default_normal.dds")
-
     self.model = XgmModel("data://tests/chartest/char_mesh")
     for mesh in self.model.meshes:
       for submesh in mesh.submeshes:
         copy = submesh.material.clone()
-        copy.texColor = tex_white
-        copy.texNormal = tex_normal
-        copy.texMtlRuf = tex_white
+        copy.assignImages(
+          ctx,
+          doConform=True
+        )
         copy.baseColor = vec4(1,.75,.75,1)*1.4
         copy.roughnessFactor = 0.75
         copy.metallicFactor = 0.0
-        copy.shaderpath = str(this_dir/"skin_override_test.glfx")
+        copy.shaderpath = str(this_dir/"skin_override_test.fxv2")
         copy.gpuInit(ctx)
         submesh.material = copy
 
@@ -237,6 +235,8 @@ class SkinningApp(object):
 
     self.lposer = HandPoser(self,"Left")
     self.rposer = HandPoser(self,"Right")
+
+    self.scenegraph.lightingmanager.gpuInit(ctx)
 
   ################################################
 
