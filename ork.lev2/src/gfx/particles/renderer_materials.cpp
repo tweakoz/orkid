@@ -123,18 +123,17 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
   FxPipeline::varval_generator_t gen_color = [=]() -> FxPipeline::varval_t { return _color; };
   _pipeline->bindParam(fxparameterColor, gen_color);
 
-  _tek_sprites        = _material->technique("tflatparticle_sprites");
-  _tek_streaks        = _material->technique("tflatparticle_streaks");
+  _tek_sprites          = _material->technique("tflatparticle_sprites");
+  _tek_streaks          = _material->technique("tflatparticle_streaks");
+  // SSBO-based rendering uses same techniques for stereo (camera vectors differ, not shaders)
+  _tek_sprites_stereoCI = _tek_sprites;
+  _tek_streaks_stereoCI = _tek_streaks;
 
   auto FXI = context->FXI();
-  auto CI  = context->CI();
 
-  //_cu_vertex_io_buffer = CI->createStorageBuffer(8 << 20);
-  _streakcu_shader           = _material->computeShader("compute_streaks");
-  _spritecu_shader           = _material->computeShader("compute_sprites");
-
-  _tek_streaks_stereoCI = _material->technique("tflatparticle_streaks_stereoCI");
-  _tek_sprites_stereoCI = _material->technique("tflatparticle_sprites_stereoCI");
+  // Create SSBO for particle data (SSBO-based rendering, no compute shaders)
+  _cu_vertex_io_buffer = FXI->createStorageBuffer(8 << 20);
+  _cu_storage_block = _material->storageBlock("storage_particles");
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FlatMaterial::update(const RenderContextInstData& RCID) {
@@ -269,6 +268,7 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   //////////////////////////////////////////
   FxPipeline::varval_generator_t colorfactor = [=]() -> FxPipeline::varval_t {
     FxPipeline::varval_t rval = _gradientColorIntensity;
+    printf("GradientMaterial::gpuInit colorfactor<%f>\n", rval.get<float>());
     return rval;
   };
   _pipeline->bindParam(fxparameterColorFactor, colorfactor);
@@ -279,18 +279,17 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   };
   _pipeline->bindParam(fxparameterAlphaFactor, alphafactor);
   //////////////////////////////////////////
-  _tek_sprites = _material->technique("tgradparticle_sprites");
-  _tek_streaks = _material->technique("tgradparticle_streaks");
+  _tek_sprites          = _material->technique("tgradparticle_sprites");
+  _tek_streaks          = _material->technique("tgradparticle_streaks");
+  // SSBO-based rendering uses same techniques for stereo (camera vectors differ, not shaders)
+  _tek_sprites_stereoCI = _tek_sprites;
+  _tek_streaks_stereoCI = _tek_streaks;
 
   auto FXI = context->FXI();
-  auto CI  = context->CI();
 
-  //_cu_vertex_io_buffer = CI->createStorageBuffer(8 << 20);
-  _streakcu_shader           = _material->computeShader("compute_streaks");
-  _spritecu_shader           = _material->computeShader("compute_sprites");
-
-  _tek_streaks_stereoCI = _material->technique("tgradparticle_streaks_stereoCI");
-  _tek_sprites_stereoCI = _material->technique("tgradparticle_sprites_stereoCI");
+  // Create SSBO for particle data (SSBO-based rendering, no compute shaders)
+  _cu_vertex_io_buffer = FXI->createStorageBuffer(8 << 20);
+  _cu_storage_block = _material->storageBlock("storage_particles");
 }
 /////////////////////////////////////////////////////////////////////////////////////////////
 void GradientMaterial::update(const RenderContextInstData& RCID) {
@@ -388,8 +387,17 @@ void TextureMaterial::gpuInit(const RenderContextInstData& RCID) {
   _pipeline->bindParam(fxparameterIV, "RCFD_Camera_IV_Mono"_crcsh);
   _pipeline->bindParam(fxparameterM, "RCFD_M"_crcsh);
   _pipeline->bindParam(fxparameterInvDim, "CPD_Rtg_InvDim"_crcsh);
-  _tek_sprites = _material->technique("ttexparticle_sprites");
-  _tek_streaks = _material->technique("ttexparticle_streaks");
+  _tek_sprites          = _material->technique("ttexparticle_sprites");
+  _tek_streaks          = _material->technique("ttexparticle_streaks");
+  // SSBO-based rendering uses same techniques for stereo (camera vectors differ, not shaders)
+  _tek_sprites_stereoCI = _tek_sprites;
+  _tek_streaks_stereoCI = _tek_streaks;
+
+  auto FXI = context->FXI();
+
+  // Create SSBO for particle data (SSBO-based rendering, no compute shaders)
+  _cu_vertex_io_buffer = FXI->createStorageBuffer(8 << 20);
+  _cu_storage_block = _material->storageBlock("storage_particles");
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -443,10 +451,13 @@ void TexGridMaterial::gpuInit(const RenderContextInstData& RCID) {
   _pipeline->bindParam(fxparameterM, "RCFD_M"_crcsh);
   _pipeline->bindParam(fxparameterInvDim, "CPD_Rtg_InvDim"_crcsh);
 
-  _tek_sprites = _material->technique("ttexgridparticle_sprites");
-  _tek_streaks = _material->technique("ttexparticle_streaks");
-  
-    FxPipeline::varval_generator_t gen_tex = [=]() -> FxPipeline::varval_t {
+  _tek_sprites          = _material->technique("ttexgridparticle_sprites");
+  _tek_streaks          = _material->technique("ttexparticle_streaks");
+  // SSBO-based rendering uses same techniques for stereo (camera vectors differ, not shaders)
+  _tek_sprites_stereoCI = _tek_sprites;
+  _tek_streaks_stereoCI = _tek_streaks;
+
+  FxPipeline::varval_generator_t gen_tex = [=]() -> FxPipeline::varval_t {
     FxPipeline::varval_t rval = _texture;
     return rval;
   };
@@ -458,11 +469,17 @@ void TexGridMaterial::gpuInit(const RenderContextInstData& RCID) {
   };
   _pipeline->bindParam(_parammodcolor, gen_clr);
 
-    FxPipeline::varval_generator_t gen_dim = [=]() -> FxPipeline::varval_t {
+  FxPipeline::varval_generator_t gen_dim = [=]() -> FxPipeline::varval_t {
     FxPipeline::varval_t rval = _gridDim;
     return rval;
   };
   _pipeline->bindParam(_paramGridDim, gen_dim);
+
+  auto FXI = context->FXI();
+
+  // Create SSBO for particle data (SSBO-based rendering, no compute shaders)
+  _cu_vertex_io_buffer = FXI->createStorageBuffer(8 << 20);
+  _cu_storage_block = _material->storageBlock("storage_particles");
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

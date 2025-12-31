@@ -194,93 +194,99 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     };
   }
   //////////////////////////////////////////////////////////////////////////////
-  // float fwidth  = _input_width->value();
-  // float flength = _input_length->value();
   float fsize          = _input_size->value();
   auto LW              = ork::fvec2(fsize, fsize);
   bool size_is_varying = _input_size->connectedIsVarying();
-  // printf( "fsize<%f>\n", fsize );
   //////////////////////////////////////////////////////////////////////////////
-  // compute shader path
+  // SSBO-based vertex shader billboarding (unified path for stereo and non-stereo)
   //////////////////////////////////////////////////////////////////////////////
-  if (RCID.rcfd()->isStereo()) {
+  if (icnt) {
     auto FXI = context->FXI();
-    auto CI  = context->CI();
+
+    OrkAssert(icnt <= 16384);
+
     ///////////////////////////////////////////////////////////////
-    auto stereocams  = CPD._stereo_cam_matrices;
-    auto worldmatrix = RCID.worldMatrix();
-    auto SMM         = stereocams->_mono;
-    // obj_nrmz = fvec4(SMM->_camdat.zNormal(), 0.0f).transform(mtx_iw).normalized();
-    obj_nrmz = fvec4(0, 1, 0, 0);
-    // fmtx4 scale_matrix;
-    // scale_matrix.setScale(fsize,fsize,fsize);
-    // worldmatrix = scale_matrix * worldmatrix;
+    // Get camera vectors for billboarding
+    ///////////////////////////////////////////////////////////////
+    fvec3 camRight, camUp;
+
+    if (RCID.rcfd()->isStereo()) {
+      auto stereocams = CPD._stereo_cam_matrices;
+      auto VL = stereocams->VL();
+      auto VR = stereocams->VR();
+      // Average left/right camera vectors for stereo
+      fvec3 pxL = VL.column(0).xyz();
+      fvec3 pyL = VL.column(1).xyz();
+      fvec3 pxR = VR.column(0).xyz();
+      fvec3 pyR = VR.column(1).xyz();
+      camRight = (pxL + pxR).normalized();
+      camUp = (pyL + pyR).normalized();
+    } else {
+      // Extract camera vectors from inverse view matrix
+      auto V = cmtcs->GetVMatrix();
+      camRight = V.column(0).xyz().normalized();
+      camUp = V.column(1).xyz().normalized();
+    }
+
+    ///////////////////////////////////////////////////////////////
+    // Fill SSBO with new format:
+    // vec4 camRightSize;          // 0: xyz=camRight, w=unused
+    // vec4 camUpCount;            // 16: xyz=camUp, w=numParticles
+    // vec4 particleData[16384];   // 32: pos.xyz, size
+    // vec4 particleData2[16384];  // 262176: vel.xyz, length (unused for sprites)
+    // vec4 particleData3[16384];  // 524320: age, random, unused, unused
     ///////////////////////////////////////////////////////////////
     auto storage        = material->_cu_vertex_io_buffer;
-    size_t mapping_size = 1 << 20;
+    size_t mapping_size = 8 << 20; // 8MB
     auto mapped_storage = FXI->mapStorageBuffer(storage, 0, mapping_size, BufferMapAccess::WRITE_ONLY);
 
-    auto MVPL = stereocams->MVPL(worldmatrix);
-    auto MVPR = stereocams->MVPR(worldmatrix);
-    auto VL = stereocams->VL();
-    auto VR = stereocams->VR();
-    auto VLI = VL.inverse().transposed();
-    auto VRI = VR.inverse().transposed();
-    
-    fvec3 pxL = VL.column(0).xyz();
-    fvec3 pyL = VL.column(1).xyz();
-    fvec3 pxR = VR.column(0).xyz();
-    fvec3 pyR = VR.column(1).xyz();
-    fvec3 hori = (pxL + pxR).normalized();
-    fvec3 vert = (pyL + pyR).normalized();
-
-    OrkAssert(icnt<=16384);
-    
     mapped_storage->seek(0);
-    mapped_storage->make<int32_t>(icnt);    // 0
-    mapped_storage->make<fmtx4>(VL);        // 16
-    mapped_storage->make<fmtx4>(VR);        // 80
-    mapped_storage->make<fmtx4>(MVPL);      // 144
-    mapped_storage->make<fmtx4>(MVPR);      // 208
-    mapped_storage->make<fvec3>(hori);      // 272
-    mapped_storage->make<fvec3>(vert);      // 288
+    // Header: camera vectors and count
+    mapped_storage->make<fvec4>(camRight.x, camRight.y, camRight.z, 0.0f);      // offset 0
+    mapped_storage->make<fvec4>(camUp.x, camUp.y, camUp.z, float(icnt));        // offset 16
+
+    // particleData array at offset 32: pos.xyz, size
     if (size_is_varying) {
       for (int i = 0; i < icnt; i++) {
-        auto ptcl             = get_particle(i);
+        auto ptcl = get_particle(i);
         _output_uage->setValue(ptcl->_unit_age);
         fsize = _input_size->value(); // transformers applied here..
-        LW = ork::fvec2(fsize, fsize);
-        mapped_storage->make<fvec4>(ptcl->mPosition);
-        mapped_storage->make<fvec4>(LW.x, LW.y, 0, 0);              // 160
-        mapped_storage->make<fvec4>(ptcl->mVelocity);
-        mapped_storage->make<fvec4>(ptcl->_unit_age, ptcl->mfRandom, 0, 0);
+        mapped_storage->make<fvec4>(ptcl->mPosition.x, ptcl->mPosition.y, ptcl->mPosition.z, fsize);
       }
-    }
-    else{
+    } else {
       for (int i = 0; i < icnt; i++) {
-        auto ptcl             = get_particle(i);
-        mapped_storage->make<fvec4>(ptcl->mPosition);
-        mapped_storage->make<fvec4>(LW.x, LW.y, 0, 0);              // 160
-        mapped_storage->make<fvec4>(ptcl->mVelocity);
-        mapped_storage->make<fvec4>(ptcl->_unit_age, ptcl->mfRandom, 0, 0);
+        auto ptcl = get_particle(i);
+        mapped_storage->make<fvec4>(ptcl->mPosition.x, ptcl->mPosition.y, ptcl->mPosition.z, fsize);
       }
     }
+
+    // Skip particleData2 (not used for sprites) - seek to particleData3
+    // particleData2 starts at offset 32 + 16384*16 = 262176
+    // particleData3 starts at offset 32 + 16384*16*2 = 524320
+    constexpr size_t particleData3_offset = 32 + 16384 * 16 * 2;
+    mapped_storage->seek(particleData3_offset);
+
+    // particleData3 array: age, random, unused, unused
+    for (int i = 0; i < icnt; i++) {
+      auto ptcl = get_particle(i);
+      mapped_storage->make<fvec4>(ptcl->_unit_age, ptcl->mfRandom, 0.0f, 0.0f);
+    }
+
     FXI->unmapStorageBuffer(mapped_storage.get());
     render_time_1a = prender_timer.SecsSinceStart();
+
     ///////////////////////////////////////////////////////////////
-    CI->bindStorageBuffer(material->_spritecu_shader, 0, storage);
+    // Bind SSBO and draw
     ///////////////////////////////////////////////////////////////
-    int wu_width   = icnt;
-    int wu_height  = 1;
-    int wu_depth   = 1;
+    FXI->bindStorageBuffer(material->_cu_storage_block, storage);
     render_time_1b = prender_timer.SecsSinceStart();
-    CI->dispatchCompute(material->_spritecu_shader, wu_width, wu_height, wu_depth);
-    render_time_1c = prender_timer.SecsSinceStart();
-    ///////////////////////////////////////////////////////////////
+
     material->update(RCID);
     auto pipeline = material->pipeline(RCID, false);
+    auto rstate = material->_material->_rasterstate;
+    rstate->_priority = 1 << 10;
+    FXI->pushRasterState(rstate);
     pipeline->wrappedDrawCall(RCID, [&]() {
-      //context->RSI()->BindRasterState(material->_material->_rasterstate);
       context->GBI()->DrawPrimitiveEML(
           storage,                             //
           ork::lev2::PrimitiveType::TRIANGLES, //
@@ -288,56 +294,10 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
           icnt * 6);
       FXI->reset();
     });
-///////////////////////////////////////////////////////////////
+    FXI->popRasterState();
+    render_time_1c = prender_timer.SecsSinceStart();
   }
-  //////////////////////////////////////////////////////////////////////////////
-  else { // geometry shader path
-         //////////////////////////////////////////////////////////////////////////////
-    if (icnt) {
-      sprite_vertex_writer_t vw;
-      vw.Lock(context, _vertexBuffer.get(), icnt);
-      {
-        ////////////////////////////////////////////////
-        // uniform properties
-        ////////////////////////////////////////////////
-        if (size_is_varying) {
-          for (int i = 0; i < icnt; i++) {
-            auto ptcl = get_particle(i);
-            _output_uage->setValue(ptcl->_unit_age);
-            fsize = _input_size->value(); // transformers applied here..
-            LW = ork::fvec2(fsize, fsize);
-            material->_vertexSetterSprite(
-                vw,   //
-                ptcl, //
-                0.0f, // angle
-                LW.x, // size
-                0xffffffff);
-          }
-        }
-        else{
-          for (int i = 0; i < icnt; i++) {
-            auto ptcl = get_particle(i);
-            material->_vertexSetterSprite(
-                vw,   //
-                ptcl, //
-                0.0f, // angle
-                LW.x, // size
-                0xffffffff);
-          }
-        }
-      }
-      vw.UnLock(context);
 
-      auto pipeline = material->pipeline(RCID, false);
-        //pipeline->_debugBreak = true;
-        pipeline->_debugPrint = false;
-        material->update(RCID);
-      pipeline->wrappedDrawCall(RCID, [&]() {
-        //context->RSI()->BindRasterState(material->_material->_rasterstate);
-        context->GBI()->DrawPrimitiveEML(vw, ork::lev2::PrimitiveType::POINTS);
-      });
-    }
-  }
   double render_time_2 = prender_timer.SecsSinceStart();
   _triple_buf->end_pull(render_buffer);
 

@@ -651,8 +651,8 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
     FXI->bindParamInt(param, as_int_.value());
   } else if (auto as_float_ = val.tryAs<float>()) {
     float val = as_float_.value();
-    // auto parname = param->_name;
-    // printf("FxPipeline<%p:%s> bindParamFloat<%s> val<%f>\n", (void*)this, _debugName.c_str(), param->_name.c_str(), val );
+    auto parname = param->_name;
+    printf("FxPipeline<%p:%s> bindParamFloat<%s> val<%f>\n", (void*)this, _debugName.c_str(), parname.c_str(), val );
     FXI->bindParamFloat(param, val);
   } else if (auto as_fvec4_ = val.tryAs<fvec4>()) {
     FXI->bindParamVect4(param, as_fvec4_.value());

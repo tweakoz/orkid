@@ -2,7 +2,7 @@
 // Uniforms
 ///////////////////////////////////////////////////////////////
 
-uniform_set uset_vtx {
+uniform_block ublk_vtx (descriptor_set 0) {
   mat4 MatM;
   mat4 MatV;
   mat4 MatP;
@@ -24,19 +24,17 @@ uniform_set uset_vtx {
   vec2 Rtg_InvDim;
 }
 
-uniform_set uset_geo_stereo {
-  mat4 MatMVPL;
-  mat4 MatMVPR;
-}
-
-uniform_set uset_frg {
+uniform_block ublk_frg (descriptor_set 0) {
   vec4 modcolor;
   vec4 User0;
+  float ColorFactor;
+  float AlphaFactor;
+}
+
+sampler_set sset_frg (descriptor_set 0) {
   sampler2D ColorMap;
   sampler2D GradientMap;
   sampler3D VolumeMap;
-  float ColorFactor;
-  float AlphaFactor;
 }
 
 uniform_set compute_unis {
@@ -69,7 +67,7 @@ state_block sb_alpadd : sb_default {
 // Interfaces
 ///////////////////////////////////////////////////////////////
 
-fragment_interface fface_minimal : uset_frg {
+fragment_interface fface_minimal : ublk_frg : sset_frg {
   inputs {
     vec4 frg_clr;
     vec2 frg_uv0;
@@ -79,7 +77,7 @@ fragment_interface fface_minimal : uset_frg {
     vec4 out_clr;
   }
 }
-fragment_interface fface_psys : uset_frg {
+fragment_interface fface_psys : ublk_frg : sset_frg {
   inputs {
     vec4 frg_clr;
     vec2 frg_uv0;
@@ -93,7 +91,7 @@ fragment_interface fface_psys : uset_frg {
 }
 
 ///////////////////////////////////////////////////////////////
-vertex_interface vface_nogs : uset_vtx {
+vertex_interface vface_nogs : ublk_vtx {
   inputs {
     vec4 position : POSITION;
     vec4 vtxcolor : COLOR0;
@@ -107,7 +105,7 @@ vertex_interface vface_nogs : uset_vtx {
   }
 }
 ///////////////////////////////////////////////////////////////
-vertex_interface vface_bill : uset_vtx {
+vertex_interface vface_bill : ublk_vtx {
   inputs {
     vec4 position : POSITION;
     vec4 vtxcolor : COLOR0;
@@ -129,21 +127,15 @@ fragment_shader ps_flat : fface_psys {
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_modclr : fface_psys {
   out_clr        = modcolor;
-  out_rufmtl     = vec4(0, 1, 0, 0);
-  out_normal_mdl = vec4(0, 0, 0, 5.0);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_fragclr : fface_minimal {
   out_clr        = frg_clr;
-  out_rufmtl     = vec4(0, 1, 0, 0);
-  out_normal_mdl = vec4(0, 0, 0, 5.0);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_modtex : fface_psys {
   vec4 texc      = texture(ColorMap, frg_uv0.xy);
   out_clr        = texc * modcolor;
-  out_rufmtl     = vec4(0, 1, 0, 0);
-  out_normal_mdl = vec4(0, 0, 0, 5.0);
   if (out_clr.a == 0.0)
     discard;
 }
@@ -157,17 +149,46 @@ fragment_shader ps_grad : fface_psys {
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_modtexclr : fface_psys {
-
-  //float alp      = out_clr.r * User0.r + out_clr.g * User0.g + out_clr.b * User0.b + out_clr.a * User0.a;
   vec4 texc      = texture(ColorMap, frg_uv0.xy);
   float alp      = frg_clr.a*texc.a;
   if (alp == 0.0)
     discard;
   float unit_age = frg_uv1.x;
-  out_rufmtl     = vec4(0, 1, 0, 0);
-  out_normal_mdl = vec4(0, 0, 5, 0);
-  out_clr        = texc*modcolor*(1.0-unit_age); // *  * frg_clr;
+  out_clr        = texc*modcolor*(1.0-unit_age);
   out_clr.a      = alp;
+}
+///////////////////////////////////////////////////////////////
+uniform_set uset_frg_grid {
+  float GridDim;
+}
+///////////////////////////////////////////////////////////////
+fragment_interface fface_psys_grid : ublk_frg : uset_frg_grid : sset_frg {
+  inputs {
+    vec4 frg_clr;
+    vec2 frg_uv0;
+    vec2 frg_uv1;
+  }
+  outputs {
+    layout(location = 0) vec4 out_clr;
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_modtexclr_grid : fface_psys_grid {
+  float unit_age = frg_uv1.x;
+  // select grid cell (0..GridDim*GridDim-1) from unit age
+  int igridcell = int(unit_age*((GridDim*GridDim)-1.0));
+  float fgridcell = float(igridcell);
+  float fgridcellu = mod(fgridcell, GridDim);
+  float fgridcellv = floor(fgridcell/GridDim);
+  vec2 gridUV = vec2(fgridcellu/GridDim, fgridcellv/GridDim);
+  gridUV += frg_uv0.xy/GridDim;
+
+  vec4 texc = texture(ColorMap, gridUV);
+  float alpha = length(texc.rgb);
+  alpha *= pow(sin(unit_age*3.14159), 0.25);
+  texc.w = alpha;
+
+  out_clr = texc * modcolor;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_volume : fface_psys {
@@ -176,7 +197,5 @@ fragment_shader ps_volume : fface_psys {
   vec3 uvw       = vec3(uv, w);
   vec4 TexInp0   = texture(VolumeMap, uvw).xyzw;
   out_clr        = TexInp0.bgra * modcolor * frg_clr.bgra;
-  out_rufmtl     = vec4(0, 1, 0, 0);
-  out_normal_mdl = vec4(0, 0, 0, 5.0);
 }
 
