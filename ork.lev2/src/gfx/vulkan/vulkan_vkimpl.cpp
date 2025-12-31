@@ -490,10 +490,10 @@ VkFormatConverter::VkFormatConverter() {
   };
 
   // S3TC compression formats are widely supported on desktop GPUs
-  #if ! defined(__APPLE__)
+  // MoltenVK supports BC formats via software decompression
   do_format(EBufferFormat::S3TC_DXT1, VK_FORMAT_BC1_RGBA_UNORM_BLOCK);
   do_format(EBufferFormat::S3TC_DXT3, VK_FORMAT_BC2_UNORM_BLOCK);
-  #endif
+  do_format(EBufferFormat::S3TC_DXT5, VK_FORMAT_BC3_UNORM_BLOCK);
 
   do_format(EBufferFormat::SRGB_BGRA8, VK_FORMAT_B8G8R8A8_SRGB);
   do_format(EBufferFormat::RGBA8, VK_FORMAT_R8G8B8A8_UNORM);

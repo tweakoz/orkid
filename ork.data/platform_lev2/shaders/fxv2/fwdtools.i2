@@ -41,12 +41,10 @@ libblock lib_fwd_impl : lib_math //
     diffusel *= (1 - plc._metallic);
     vec3 diffuse_term = (diffusel * pbd._albedo * INV_PI) * DiffuseLevel;
 
-    // FIXED: Removed min(..., 16) clamp to preserve energy conservation (glTF 2.0 compliant)
-    vec3 numerator     = (ggx * geo) * fres * SpecularLevel;
-    float denominator  = 4 * satdot(plc._normal, plc._viewdir) * satdot(plc._normal, lightdir);
+    vec3 numerator     = min(ggx * geo * SpecularLevel, 16) * fres;
+    float denominator  = 4 * satdot(plc._normal, plc._viewdir) * satdot(plc._normal, lightdir) + EPSILON;
     float ndotl        = satdot(plc._normal, lightdir);
-    // FIXED: Use proper epsilon (0.001) instead of 0.0625 for division protection
-    vec3 specular_term = numerator / max(0.001, denominator);
+    vec3 specular_term = numerator / max(0.0625, denominator);
 
     return (diffuse_term + specular_term) * atten * ndotl;
     // return lightdir*(atten*ndotl);
@@ -176,6 +174,19 @@ libblock lib_fwd_impl : lib_math //
     vec3 viewdir = normalize(eyepos - pbd._wpos);
     vec3 refl = normalize(reflect(-viewdir, pbd._wnrm));
     /////////////////////////
+    // point lighting
+    /////////////////////////
+    LightCtx plc        = lcalc_forward(pbd._wpos, pbd, eyepos);
+    vec3 point_lighting = vec3(0, 0, 0);
+    for (int i = 0; i < point_light_count; i++) {
+      plc._lightdel = _lightpos[i].xyz - pbd._wpos;
+      vec3 LC       = _lightcolor[i].xyz * _lightcolor[i].w;
+      float LR      = _lightsizbias[i].x;
+      point_lighting += plcalc_forward(plc, pbd, LR) * LC;
+    }
+    /////////////////////////
+    // spot lighting
+    /////////////////////////
     vec3 spot_lighting = vec3(0, 0, 0);
     //
     for (int i = 0; i < spot_light_count; i++) {
@@ -254,7 +265,7 @@ libblock lib_fwd_impl : lib_math //
     //
     /////////////////////////
     //return env_lighting;
-    return (env_lighting + emission + spot_lighting + light_maps) * modcolor;
+    return (env_lighting + point_lighting + spot_lighting + emission + light_maps) * modcolor;
   }
   vec3 _forward_lightingZ(vec3 modcolor, vec3 albedo, vec3 ambrufmtl, vec3 emission, vec3 eyepos, vec3 normal, bool emissive) {
     PbrData pbr;
