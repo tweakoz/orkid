@@ -131,7 +131,158 @@ void VkFrameBufferInterface::blit(rtgroup_ptr_t src, rtgroup_ptr_t dst) {
 
 ///////////////////////////////////////////////////////
 void VkFrameBufferInterface::downsample2x2(rtgroup_ptr_t src, rtgroup_ptr_t dst) {
-  OrkAssert(false);
+  OrkAssert(src != nullptr);
+  OrkAssert(dst != nullptr);
+  OrkAssert(src->mNumMrts > 0);
+  OrkAssert(dst->mNumMrts > 0);
+
+  int src_w = src->width();
+  int src_h = src->height();
+  int dst_w = dst->width();
+  int dst_h = dst->height();
+
+  // Resize destination to half of source if needed
+  if (dst_w != src_w / 2 || dst_h != src_h / 2) {
+    dst->Resize(src_w / 2, src_h / 2);
+    dst_w = dst->width();
+    dst_h = dst->height();
+  }
+
+  // Ensure source rtgroup has its Vulkan impl initialized
+  if (!src->_impl.isShared<VkRtGroupImpl>()) {
+    _createRtGroupImpl(src.get());
+  }
+
+  // Ensure destination rtgroup has its Vulkan impl initialized
+  if (!dst->_impl.isShared<VkRtGroupImpl>()) {
+    _createRtGroupImpl(dst.get());
+  }
+
+  auto src_buf = src->buffer(0);
+  auto dst_buf = dst->buffer(0);
+  OrkAssert(src_buf != nullptr);
+  OrkAssert(dst_buf != nullptr);
+
+  auto src_impl = src_buf->_impl.getShared<VklRtBufferImpl>();
+  auto dst_impl = dst_buf->_impl.getShared<VklRtBufferImpl>();
+  OrkAssert(src_impl != nullptr);
+  OrkAssert(dst_impl != nullptr);
+  OrkAssert(src_impl->_imgobj != nullptr);
+  OrkAssert(dst_impl->_imgobj != nullptr);
+
+  VkImage src_image = src_impl->_imgobj->_vkimage;
+  VkImage dst_image = dst_impl->_imgobj->_vkimage;
+
+  // Suspend render pass if active
+  bool was_active = _contextVK->_renderPassActive;
+  if (was_active) {
+    _contextVK->suspendRenderPass();
+  }
+
+  auto cmdbuf = _contextVK->beginRecordCommandBuffer("VkFBI::downsample2x2");
+  auto cmdbuf_impl = cmdbuf->_impl.getShared<VkSecondaryCommandBufferImpl>();
+  auto vk_cmdbuf = cmdbuf_impl->_vkcmdbuf;
+
+  // Transition src to TRANSFER_SRC_OPTIMAL
+  auto src_barrier = createImageBarrier(
+      src_image,
+      src_impl->_currentLayout,
+      VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+      VK_ACCESS_TRANSFER_READ_BIT);
+  src_barrier->subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+
+  vkCmdPipelineBarrier(
+      vk_cmdbuf,
+      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+      VK_PIPELINE_STAGE_TRANSFER_BIT,
+      0, 0, nullptr, 0, nullptr, 1, src_barrier.get());
+
+  // Transition dst to TRANSFER_DST_OPTIMAL
+  auto dst_barrier = createImageBarrier(
+      dst_image,
+      dst_impl->_currentLayout,
+      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+      VkAccessFlagBits(0),
+      VK_ACCESS_TRANSFER_WRITE_BIT);
+  dst_barrier->subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+
+  vkCmdPipelineBarrier(
+      vk_cmdbuf,
+      VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+      VK_PIPELINE_STAGE_TRANSFER_BIT,
+      0, 0, nullptr, 0, nullptr, 1, dst_barrier.get());
+
+  // Blit from src to dst with linear filtering (downsampling)
+  VkImageBlit blit{};
+  blit.srcOffsets[0] = {0, 0, 0};
+  blit.srcOffsets[1] = {src_w, src_h, 1};
+  blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  blit.srcSubresource.mipLevel = 0;
+  blit.srcSubresource.baseArrayLayer = 0;
+  blit.srcSubresource.layerCount = 1;
+  blit.dstOffsets[0] = {0, 0, 0};
+  blit.dstOffsets[1] = {dst_w, dst_h, 1};
+  blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  blit.dstSubresource.mipLevel = 0;
+  blit.dstSubresource.baseArrayLayer = 0;
+  blit.dstSubresource.layerCount = 1;
+
+  vkCmdBlitImage(
+      vk_cmdbuf,
+      src_image,
+      VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+      dst_image,
+      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+      1,
+      &blit,
+      VK_FILTER_LINEAR);
+
+  // Transition src back to SHADER_READ_ONLY_OPTIMAL (for sampling)
+  auto src_barrier2 = createImageBarrier(
+      src_image,
+      VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+      VK_ACCESS_TRANSFER_READ_BIT,
+      VK_ACCESS_SHADER_READ_BIT);
+  src_barrier2->subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+
+  vkCmdPipelineBarrier(
+      vk_cmdbuf,
+      VK_PIPELINE_STAGE_TRANSFER_BIT,
+      VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+      0, 0, nullptr, 0, nullptr, 1, src_barrier2.get());
+  src_impl->_currentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  if (src_impl->_imgobj) {
+    src_impl->_imgobj->_currentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  }
+
+  // Transition dst to SHADER_READ_ONLY_OPTIMAL (ready for sampling)
+  auto dst_barrier2 = createImageBarrier(
+      dst_image,
+      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+      VK_ACCESS_TRANSFER_WRITE_BIT,
+      VK_ACCESS_SHADER_READ_BIT);
+  dst_barrier2->subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+
+  vkCmdPipelineBarrier(
+      vk_cmdbuf,
+      VK_PIPELINE_STAGE_TRANSFER_BIT,
+      VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+      0, 0, nullptr, 0, nullptr, 1, dst_barrier2.get());
+  dst_impl->_currentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  if (dst_impl->_imgobj) {
+    dst_impl->_imgobj->_currentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  }
+
+  _contextVK->endRecordCommandBuffer(cmdbuf);
+  _contextVK->enqueueSecondaryCommandBuffer(cmdbuf);
+
+  // Resume render pass if it was active
+  if (was_active) {
+    _contextVK->resumeRenderPass();
+  }
 }
 
 ///////////////////////////////////////////////////////

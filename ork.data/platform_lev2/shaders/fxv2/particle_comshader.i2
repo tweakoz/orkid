@@ -11,9 +11,9 @@ storage_interface storage_particles (descriptor_set 0) {
   buffer layout(std430) particles {
     vec4 camRightSize;          // 0: xyz=camRight, w=unused
     vec4 camUpCount;            // 16: xyz=camUp, w=numParticles (as float)
-    vec4 particleData[65536];   // 32: pos.xyz, size (per particle)
-    vec4 particleData2[65536];  // vel.xyz, length (per particle, for streaks)
-    vec4 particleData3[65536];  // age, random, unused, unused (per particle)
+    vec4 particleData[262144];   // 32: pos.xyz, size (per particle)
+    vec4 particleData2[262144];  // vel.xyz, length (per particle, for streaks)
+    vec4 particleData3[262144];  // age, random, unused, unused (per particle)
   };
 }
 
@@ -121,10 +121,12 @@ vertex_shader vs_streak_ssbo : vface_streak_ssbo {
 
   // Compute streak quad corners
   // Streak goes from pos (head) to pos - vel*length (tail)
-  vec3 velDir = normalize(vel);
-  vec3 tailPos = pos - velDir * len;
+  // Use raw velocity (not normalized) to match GL behavior where streak length
+  // depends on velocity magnitude: tailPos = pos - vel * len
+  vec3 tailPos = pos - vel * len;
 
   // Cross product with view direction to get camera-facing side
+  vec3 velDir = normalize(vel);
   vec3 viewDir = normalize(pos - camPos);
   vec3 side = normalize(cross(velDir, viewDir)) * width;
 

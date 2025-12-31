@@ -132,7 +132,7 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
   auto FXI = context->FXI();
 
   // Create SSBO for particle data (SSBO-based rendering, no compute shaders)
-  _cu_vertex_io_buffer = FXI->createStorageBuffer(8 << 20);
+  _cu_vertex_io_buffer = FXI->createStorageBuffer(16 << 20);
   _cu_storage_block = _material->storageBlock("storage_particles");
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -221,6 +221,9 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   _gradient_rtgroup = std::make_shared<RtGroup>(context, 256, 1);
   auto rtb0         = _gradient_rtgroup->createRenderTarget(EBufferFormat::RGBA8);
   _gradient_texture = rtb0->_texture;
+  _gradient_texture->TexSamplingMode()._texAddrModeS = TextureAddressMode::CLAMP;
+  _gradient_texture->TexSamplingMode()._texAddrModeT = TextureAddressMode::CLAMP;
+  context->TXI()->ApplySamplingMode(_gradient_texture.get());
   ////////////////////////////////////////////////////////////////////
   for( int i=0; i<256; i++ ){
     _gradientSamples[i] = _gradient->sample(float(i)/256.0f);
@@ -288,7 +291,7 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   auto FXI = context->FXI();
 
   // Create SSBO for particle data (SSBO-based rendering, no compute shaders)
-  _cu_vertex_io_buffer = FXI->createStorageBuffer(8 << 20);
+  _cu_vertex_io_buffer = FXI->createStorageBuffer(16 << 20);
   _cu_storage_block = _material->storageBlock("storage_particles");
 }
 /////////////////////////////////////////////////////////////////////////////////////////////
@@ -396,7 +399,7 @@ void TextureMaterial::gpuInit(const RenderContextInstData& RCID) {
   auto FXI = context->FXI();
 
   // Create SSBO for particle data (SSBO-based rendering, no compute shaders)
-  _cu_vertex_io_buffer = FXI->createStorageBuffer(8 << 20);
+  _cu_vertex_io_buffer = FXI->createStorageBuffer(16 << 20);
   _cu_storage_block = _material->storageBlock("storage_particles");
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -478,7 +481,7 @@ void TexGridMaterial::gpuInit(const RenderContextInstData& RCID) {
   auto FXI = context->FXI();
 
   // Create SSBO for particle data (SSBO-based rendering, no compute shaders)
-  _cu_vertex_io_buffer = FXI->createStorageBuffer(8 << 20);
+  _cu_vertex_io_buffer = FXI->createStorageBuffer(16 << 20);
   _cu_storage_block = _material->storageBlock("storage_particles");
 }
 ///////////////////////////////////////////////////////////////////////////////

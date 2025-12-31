@@ -203,7 +203,7 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
   if (icnt) {
     auto FXI = context->FXI();
 
-    OrkAssert(icnt <= 65536);
+    OrkAssert(icnt <= 262144);
 
     ///////////////////////////////////////////////////////////////
     // Get camera vectors for billboarding
@@ -234,12 +234,12 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     // Fill SSBO with new format:
     // vec4 camRightSize;          // 0: xyz=camRight, w=unused
     // vec4 camUpCount;            // 16: xyz=camUp, w=numParticles
-    // vec4 particleData[16384];   // 32: pos.xyz, size
-    // vec4 particleData2[16384];  // 262176: vel.xyz, length (unused for sprites)
-    // vec4 particleData3[16384];  // 524320: age, random, unused, unused
+    // vec4 particleData[262144];  // 32: pos.xyz, size
+    // vec4 particleData2[262144]; // 4194336: vel.xyz, length (unused for sprites)
+    // vec4 particleData3[262144]; // 8388640: age, random, unused, unused
     ///////////////////////////////////////////////////////////////
     auto storage        = material->_cu_vertex_io_buffer;
-    size_t mapping_size = 8 << 20; // 8MB
+    size_t mapping_size = 16 << 20; // 16MB (supports 262144 particles × 3 arrays × 16 bytes)
     auto mapped_storage = FXI->mapStorageBuffer(storage, 0, mapping_size, BufferMapAccess::WRITE_ONLY);
 
     mapped_storage->seek(0);
@@ -263,9 +263,9 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     }
 
     // Skip particleData2 (not used for sprites) - seek to particleData3
-    // particleData2 starts at offset 32 + 65536*16 = 1048608
-    // particleData3 starts at offset 32 + 65536*16*2 = 2097184
-    constexpr size_t particleData3_offset = 32 + 65536 * 16 * 2;
+    // particleData2 starts at offset 32 + 262144*16 = 4194336
+    // particleData3 starts at offset 32 + 262144*16*2 = 8388640
+    constexpr size_t particleData3_offset = 32 + 262144 * 16 * 2;
     mapped_storage->seek(particleData3_offset);
 
     // particleData3 array: age, random, unused, unused

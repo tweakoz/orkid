@@ -79,7 +79,7 @@ class ParticlesApp(object):
     postNode.threshold = 0.99
     postNode.blurwidth = 8
     postNode.blurfactor = 0.15
-    postNode.amount = 0.5
+    postNode.amount = 0.25
     postNode.gpuInit(ctx,8,8);
     postNode.addToSceneVars(sceneparams,"PostFxChain")
 
@@ -133,7 +133,7 @@ class ParticlesApp(object):
     presetEMITL1(self.EMITL)
     presetGRAV1(self.GRAV)
     presetTURB1(self.TURB)
-    self.EMITL.inputs.LifeSpan = 20
+    self.EMITL.inputs.LifeSpan = 10
     self.EMITL.inputs.EmissionRate = 3000
     self.EMITL.inputs.EmissionVelocity = 0.1
     self.GRAV.inputs.G = 1e-3
@@ -174,7 +174,7 @@ class ParticlesApp(object):
     cubeP7 = vec4(cubeP7,0).transform(R).xyz
     cubeP8 = vec4(cubeP8,0).transform(R).xyz
 
-    rand = (self.counter>>2) % 12
+    rand = int(updinfo.absolutetime / 0.1) % 12  # 0.1s per edge, time-based to avoid frame rate aliasing
     if rand==0: # top left back to top right back
       self.P1 = cubeP4
       self.P2 = cubeP1
@@ -214,6 +214,7 @@ class ParticlesApp(object):
 
     self.EMITL.inputs.P1 = self.P1*self.scale
     self.EMITL.inputs.P2 = self.P2*self.scale
+    #print(f"onUpdate: counter={self.counter} rand={rand} P1={self.P1*self.scale} P2={self.P2*self.scale}")
 
     if self.pending_timer<0.0:
       self.elev_cur = random.uniform(-math.pi,math.pi)

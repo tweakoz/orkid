@@ -185,7 +185,7 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
   if (icnt) {
     auto FXI = context->FXI();
 
-    OrkAssert(icnt <= 65536);
+    OrkAssert(icnt <= 262144);
 
     ///////////////////////////////////////////////////////////////
     // Get camera position and up vector for streak rendering
@@ -212,12 +212,12 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     // Fill SSBO with new format for streaks:
     // vec4 camRightSize;          // 0: xyz=camPos (for view direction calculation), w=unused
     // vec4 camUpCount;            // 16: xyz=camUp, w=numParticles
-    // vec4 particleData[16384];   // 32: pos.xyz, width
-    // vec4 particleData2[16384];  // 262176: vel.xyz, length
-    // vec4 particleData3[16384];  // 524320: age, random, unused, unused
+    // vec4 particleData[262144];  // 32: pos.xyz, width
+    // vec4 particleData2[262144]; // 4194336: vel.xyz, length
+    // vec4 particleData3[262144]; // 8388640: age, random, unused, unused
     ///////////////////////////////////////////////////////////////
     auto storage        = material->_cu_vertex_io_buffer;
-    size_t mapping_size = 8 << 20; // 8MB
+    size_t mapping_size = 16 << 20; // 16MB (supports 262144 particles × 3 arrays × 16 bytes)
     auto mapped_storage = FXI->mapStorageBuffer(storage, 0, mapping_size, BufferMapAccess::WRITE_ONLY);
 
     mapped_storage->seek(0);
@@ -260,8 +260,8 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
         break;
     }
 
-    // particleData2 array at offset 32 + 65536*16 = 1048608: vel.xyz, length
-    constexpr size_t particleData2_offset = 32 + 65536 * 16;
+    // particleData2 array at offset 32 + 262144*16 = 4194336: vel.xyz, length
+    constexpr size_t particleData2_offset = 32 + 262144 * 16;
     mapped_storage->seek(particleData2_offset);
 
     switch(variant) {
@@ -295,8 +295,8 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
         break;
     }
 
-    // particleData3 array at offset 32 + 65536*16*2 = 2097184: age, random, unused, unused
-    constexpr size_t particleData3_offset = 32 + 65536 * 16 * 2;
+    // particleData3 array at offset 32 + 262144*16*2 = 8388640: age, random, unused, unused
+    constexpr size_t particleData3_offset = 32 + 262144 * 16 * 2;
     mapped_storage->seek(particleData3_offset);
 
     for (int i = 0; i < icnt; i++) {

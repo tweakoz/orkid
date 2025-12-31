@@ -114,7 +114,7 @@ struct IMPL {
             auto final_rtg = try_final.value();
             int finalw = final_rtg->width();
             int finalh = final_rtg->height();
-            target->beginFrame();
+            //target->beginFrame();
             /////////////////////
             // downsample 2x2
             /////////////////////
@@ -186,7 +186,7 @@ struct IMPL {
             _freestyle_mtl->end(framedata);
             FBI->PopRtGroup();
             /////////////////////
-            target->endFrame();
+            //target->endFrame();
           }
           target->debugPopGroup();
         }

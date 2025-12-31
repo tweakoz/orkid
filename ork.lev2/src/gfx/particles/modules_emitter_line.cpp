@@ -147,6 +147,10 @@ void LineEmitterInst::_emit(float fdt) {
 
   auto P1 = _input_p1->value();
   auto P2 = _input_p2->value();
+
+  if(0)printf("_emit: P1(%g,%g,%g) P2(%g,%g,%g) rate=%g mark=%g\n",
+         P1.x, P1.y, P1.z, P2.x, P2.y, P2.z,
+         emissionrate, _emitter_context.mfEmitterMark);
   fmtx3 basis;
   fvec3 dirY = (P2 - P1).normalized();
   fvec3 dirX = dirY.crossWith(fvec3(0,1,1)).normalized();
@@ -161,6 +165,9 @@ void LineEmitterInst::_emit(float fdt) {
   }
   //printf("emitrate<%f> deltat<%f> deltap<%f> mark<%f>\n", _emitter_context.mfEmissionRate, _emitter_context.mfDeltaTime, fdeltap, _emitter_context.mfEmitterMark);
   int icount = int(_emitter_context.mfEmitterMark);
+  if(0)printf("_emit: dirY(%g,%g,%g) dirX(%g,%g,%g) icount=%d poolAlive=%d\n",
+         dirY.x, dirY.y, dirY.z, dirX.x, dirX.y, dirX.z,
+         icount, the_pool.GetNumAlive());
   fvec3 pos, disp, yo;
   for (int ic = 0; ic < icount; ic++) {
     float fi = float(rand()&0xffff) / float(1<<16);
@@ -201,6 +208,7 @@ void LineEmitterInst::_reap(float fdt) {
   auto pool = _emitter_context.mPool;
 
   int inumalive = pool->GetNumAlive();
+  if(0)printf("_reap: alive=%d\n", inumalive);
   // static const int kkillbufsize = 32<<10;
   // static BasicParticle* gpKillBuf = new int[kkillbufsize];
 

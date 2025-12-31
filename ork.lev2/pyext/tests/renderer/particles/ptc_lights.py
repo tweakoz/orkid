@@ -32,7 +32,7 @@ class ParticlesApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=0, fullscreen=False)
+    self.ezapp = OrkEzApp.create(self,ssaa=2, fullscreen=False)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
 
     #self.materials = set()
@@ -60,7 +60,7 @@ class ParticlesApp(object):
     sceneparams.DiffuseIntensity = float(1.0)
     sceneparams.AmbientLight = vec3(0.0)
     sceneparams.DepthFogDistance = float(1e6)
-    sceneparams.SkyboxTexPathStr = "src://envmaps/tozenv_caustic1.png"
+    sceneparams.SkyboxTexPathStr = "ork_envmaps|tozenv_caustic1"
 
     sceneparams.SSAONumSamples = SSAO_NUM_SAMPLES
     sceneparams.SSAONumSteps = 4
@@ -130,7 +130,7 @@ class ParticlesApp(object):
     self.modelnode.worldTransform.scale = 35
     self.modelnode.worldTransform.translation = vec3(0,28,0)
     #######################################
-
+    self.scene.lightingmanager.gpuInit(ctx)
 
   ################################################
 

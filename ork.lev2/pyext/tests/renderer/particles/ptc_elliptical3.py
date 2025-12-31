@@ -42,7 +42,7 @@ class EllipticalParticleSystem(object):
 
     self.streaks       = self.graphdata.create("STRK",particles.StreakRenderer)
 
-    self.ptc_pool.pool_size = 50000 # max number of particles in pool
+    self.ptc_pool.pool_size = 25000 # max number of particles in pool
 
     # connect modules in a chain configuration
 
@@ -53,13 +53,6 @@ class EllipticalParticleSystem(object):
     self.graphdata.connect( self.gravity.inputs.pool,    self.elliptical.outputs.pool )
     self.graphdata.connect( self.streaks.inputs.pool,    self.gravity.outputs.pool )
     
-    self.emitter.inputs.LifeSpan = 0.5
-    self.emitter.inputs.EmissionRate = 10000
-    self.emitter.inputs.EmissionVelocity = 0.1
-    self.emitter.inputs.MinU = 0
-    self.emitter.inputs.MaxU = 1
-    self.emitter.inputs.MinV = 0
-    self.emitter.inputs.MaxV = 1
 
     self.vortex.inputs.VortexStrength = -5
     self.vortex.inputs.OutwardStrength = -1
@@ -82,12 +75,12 @@ class EllipticalParticleSystem(object):
 
     self.material = particles.GradientMaterial.createShared();
     self.material.blending = tokens.ADDITIVE
-    self.material.depthtest = tokens.LEQUALS
+    self.material.depthtest = tokens.OFF
     self.material.colorIntensity = 1
     self.material.gradient.setColorStops({
       0.0:vec4(1,1,1,1),
       0.4:vec4(1,0,1,1),
-      0.7:vec4(.2,.4,1,1),
+      0.5:vec4(.2,.4,1,1),
       1.0:vec4(0,0,0,1)
     })
     self.material.modulation_texture = Texture.load("src://effect_textures/knob2");
@@ -130,13 +123,15 @@ class EllipticalParticleSystem(object):
       EMI = self.emitter.inputs
       EMI.P1 = P1
       EMI.P2 = P2
-      EMI.EmissionVelocity = 0.0
+      EMI.EmissionVelocity = 1.0
       EMI.DispersionAngle = 180
-      EMI.LifeSpan = 3
+      EMI.LifeSpan = 1.5
       EMI.Scalar = 3
-      EMI.EmissionRate = 15000
-      EMI.MinV = 0.3+(math.sin(T*4)*0.2)
-      EMI.MaxV = 0.7-(math.sin(T*4)*0.2)
+      EMI.EmissionRate = 5000
+      EMI.MinU = 0
+      EMI.MaxU = 1
+      EMI.MinV = 0.5+(math.sin(T*4)*0.1)
+      EMI.MaxV = 0.5-(math.sin(T*4)*0.1)
 
       ELI = self.elliptical.inputs
       ELI.Scalar = 1
@@ -150,8 +145,8 @@ class EllipticalParticleSystem(object):
       GRV.MinDistance = 10
 
       RENDERER = self.streaks.inputs
-      RENDERER.Length = 0.07
-      RENDERER.Width = 0.05
+      RENDERER.Length = 0.25
+      RENDERER.Width = 0.025
       #RENDERER.Size = 0.05+self.lerp*0.1
 
       TRB = self.turbulence.inputs
