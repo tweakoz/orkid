@@ -1160,7 +1160,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
                                      : (binding->type == VkMergedResourceBinding::Type::Sampler)       ? "SAMPLER"
                                      : (binding->type == VkMergedResourceBinding::Type::StorageBuffer) ? "SSBO"
                                                                                                        : "UNKNOWN";
-              if (1)
+              if (0)
                 printf(
                     "DBREAD: tekname<%s> BINDING[%u]: NAME<%s> TYPE<%s> DATATYPE<%s> ORIG_SOURCE<%s>\n",
                     str_tek_name.c_str(),

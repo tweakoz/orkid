@@ -199,7 +199,7 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_o
 
   auto resources = _currentVKPASS->_merged_resources;
 
-  if(1){
+  if(0){
     printf("_createPipelineLayoutData: TEK<%s> merged_resources=%p, num_descriptor_sets=%zu\n",
          vk_program->_tek_name.c_str(), resources.get(), resources ? resources->descriptor_sets.size() : 0);
     if (resources) {

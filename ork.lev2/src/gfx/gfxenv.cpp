@@ -234,6 +234,9 @@ std::string EVtxStreamFormatToName(EVtxStreamFormat fmt) {
     case EVtxStreamFormat::V12:
       rval = "V12";
       break;
+    case EVtxStreamFormat::V12C4:
+      rval = "V12C4";
+      break;
     case EVtxStreamFormat::V12C4T16:
       rval = "V12C4T16";
       break;
@@ -263,6 +266,9 @@ std::string EVtxStreamFormatToName(EVtxStreamFormat fmt) {
       break;
     case EVtxStreamFormat::MODELERRIGID:
       rval = "MODELERRIGID";
+      break;
+    case EVtxStreamFormat::V16T16C16:
+      rval = "V16T16C16";
       break;
     default:
       OrkAssert(false);

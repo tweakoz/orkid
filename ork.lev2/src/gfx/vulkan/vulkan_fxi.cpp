@@ -143,7 +143,8 @@ int VkFxInterface::_pipelineBitsForShader(vkfxsprg_ptr_t shprog){
       }
     }
     VIF->_name = combined_name;
-    OrkAssert(!VIF->_inputs.empty());
+    // Note: VIF->_inputs may be empty for SSBO-based shaders (e.g., particle streaks)
+    // where vertex data comes from storage buffers, not vertex attributes
     shprog->_vertexinterface = VIF;
 
     boost::Crc64 crc;
@@ -152,6 +153,10 @@ int VkFxInterface::_pipelineBitsForShader(vkfxsprg_ptr_t shprog){
       crc.accumulateString(input->_datatype);
       crc.accumulateString(input->_semantic);
       if(0)printf("dt<%s> sem<%s>\n", input->_datatype.c_str(), input->_semantic.c_str());
+    }
+    // For SSBO shaders with no inputs, use a sentinel value
+    if(VIF->_inputs.empty()){
+      crc.accumulateString("__SSBO_NO_VERTEX_INPUTS__");
     }
     crc.finish();
     uint64_t hash = crc.result();
