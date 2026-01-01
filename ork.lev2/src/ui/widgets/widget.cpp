@@ -40,6 +40,10 @@ Widget::Widget(const std::string& name, int x, int y, int w, int h)
 }
 ///////////////////////////////////////////////////////////
 Widget::~Widget() {
+  // Clear any Context pointers to this widget to prevent dangling references
+  if (_uicontext) {
+    _uicontext->clearWidgetPointers(this);
+  }
 }
 ///////////////////////////////////////////////////////////
 void Widget::onPreDestroy(){

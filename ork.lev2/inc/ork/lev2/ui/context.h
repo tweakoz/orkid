@@ -53,6 +53,9 @@ struct Context {
   //////////////////////////////////////
   void dumpWidgets(std::string label) const;
   //////////////////////////////////////
+  // Clear any pointers to a widget (called when widget is destroyed)
+  void clearWidgetPointers(Widget* w);
+  //////////////////////////////////////
   inline void subscribeToTicks(Widget* w, tick_lambda_t lambda){
     _tickSubscribers[w] = lambda;
   }
@@ -69,6 +72,7 @@ struct Context {
   group_ptr_t _top;
   themeengine_ptr_t _theme_engine;
   bool _hasKeyboardFocus             = false;
+  Widget* _evpushtarget              = nullptr;
   Widget* _evdragtarget              = nullptr;
   const Widget* _mousefocuswidget    = nullptr;
   const Widget* _keyboardFocusWidget = nullptr;

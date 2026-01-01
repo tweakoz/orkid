@@ -97,6 +97,14 @@ class PropertySheetTest:
     physics.is_static = False
     data.Physics = physics
 
+    # Settings group (integers)
+    settings = VarMap()
+    settings.lod_level = 2
+    settings.max_instances = 100
+    settings.update_rate = 60
+    settings.priority = 5
+    data.Settings = settings
+
     return data
 
   def onGpuInit(self, ctx):

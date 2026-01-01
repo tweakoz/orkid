@@ -9,6 +9,7 @@
 
 #include <ork/lev2/ui/group.h>
 #include <ork/lev2/ui/property_sheet_model.h>
+#include <ork/lev2/ui/style.h>
 #include <functional>
 
 namespace ork::ui {
@@ -30,6 +31,7 @@ struct PropertyRow : public Group {
   std::string _key;
   std::string _label;
   int _depth = 0;
+  int _row_index = 0;  // For alternating row colors
   bool _expanded = true;
   bool _has_children = false;
   widget_ptr_t _editor_widget;
@@ -37,11 +39,15 @@ struct PropertyRow : public Group {
   // Appearance
   fvec4 _label_color = fvec4(0.9f, 0.9f, 0.9f, 1.0f);
   fvec4 _bg_color = fvec4(0.15f, 0.15f, 0.15f, 1.0f);
+  fvec4 _alt_bg_color = fvec4(0.12f, 0.12f, 0.12f, 1.0f);  // Alternating row color
   int _label_width = 120;
   int _indent_width = 16;
 
   // Callbacks
   std::function<void()> _onExpandToggle;
+
+  // Track which widget is being dragged (for proper event routing)
+  Widget* _drag_capture = nullptr;
 
 protected:
   void DoDraw(drawevent_constptr_t drwev) override;
@@ -101,14 +107,16 @@ protected:
 private:
   void _subscribeToModel();
   void _rebuildRows();
-  void _addRowsRecursive(const std::string& parent_key, int depth, int& y_offset);
+  void _addRowsRecursive(const std::string& parent_key, int depth, int& y_offset, int& row_index);
   widget_ptr_t _createEditorWidget(const std::string& key, PropertyType type, svar128_t value);
+  void _clampScrollOffset();
 
   property_sheet_model_ptr_t _model;
   std::unordered_set<std::string> _expanded_keys;
   std::unordered_map<std::string, property_row_ptr_t> _rows;
   bool _needs_rebuild = true;
   int _scroll_offset = 0;
+  int _total_rows = 0;  // For scroll calculation
 };
 
 using property_sheet_ptr_t = std::shared_ptr<PropertySheet>;

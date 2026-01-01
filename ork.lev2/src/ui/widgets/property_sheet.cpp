@@ -11,8 +11,11 @@
 #include <ork/lev2/ui/checkbox.h>
 #include <ork/lev2/ui/lineedit.h>
 #include <ork/lev2/ui/event.h>
+#include <ork/lev2/ui/context.h>
 
 namespace ork::ui {
+
+static constexpr float PI = 3.14159265359f;
 
 /////////////////////////////////////////////////////////////////////////
 // PropertyRow
@@ -53,32 +56,32 @@ void PropertyRow::DoDraw(drawevent_constptr_t drwev) {
   int ix2 = ix1 + _geometry._w;
   int iy2 = iy1 + _geometry._h;
 
-  // Draw background
-  _drawColoredBox(drwev, _bg_color);
+  // Draw background with alternating colors
+  fvec4 bg = (_row_index % 2 == 1) ? _alt_bg_color : _bg_color;
+  _drawColoredBox(drwev, bg);
 
   mtxi->PushUIMatrix();
   {
-    // Draw expand/collapse arrow if has children
     int indent = _depth * _indent_width;
-    if (_has_children) {
-      auto rs = defmtl->_rasterstate;
-      auto omacro = rs->_blendingMacro;
-      auto omode = defmtl->meUIColorMode;
-      rs->setBlendingMacro(lev2::BlendingMacro::OFF);
-      rs->setDepthTest(lev2::EDepthTest::OFF);
-      fxi->pushRasterState(rs);
-      tgt->PushModColor(fvec4(0.7f, 0.7f, 0.7f, 1.0f));
-      defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
 
-      int arrow_x = ix1 + indent + 4;
-      int arrow_y = iy1 + _geometry._h / 2 - 4;
-      primi->RenderQuadAtZ(defmtl.get(), arrow_x, arrow_x + 8, arrow_y, arrow_y + 8,
-                           0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+    // Draw disclosure triangle if has children (using theme engine)
+    if (_has_children && _uicontext && _uicontext->_theme_engine) {
+      auto theme = _uicontext->_theme_engine;
 
-      tgt->PopModColor();
-      fxi->popRasterState();
-      rs->_blendingMacro = omacro;
-      defmtl->meUIColorMode = omode;
+      Style tri_style;
+      tri_style._bg_color = fvec4(0.7f, 0.7f, 0.7f, 1.0f);
+      tri_style._border_color = fvec4(0.7f, 0.7f, 0.7f, 0.0f);
+      tri_style._corner_radius = 0;
+      tri_style._border_width = 0;
+      tri_style._blend_mode = lev2::BlendingMacro::ALPHA;
+
+      const int tri_size = 10;
+      int tri_x = ix1 + indent + (_indent_width - tri_size) / 2;
+      int tri_y = iy1 + (_geometry._h - tri_size) / 2;
+
+      // Rotation: 0 = point down (expanded), PI/2 = point right (collapsed)
+      float rotation = _expanded ? 0.0f : PI / 2.0f;
+      theme->drawTriangle(tri_x, tri_y, tri_size, tri_size, drwev, &tri_style, rotation);
     }
 
     // Draw label
@@ -105,15 +108,40 @@ void PropertyRow::DoDraw(drawevent_constptr_t drwev) {
 
 Widget* PropertyRow::doRouteUiEvent(event_constptr_t ev) {
   if (!IsEventInside(ev)) {
+    // Clear drag capture if event is outside row
+    if (ev->_eventcode == EventCode::RELEASE || ev->_eventcode == EventCode::END_DRAG) {
+      _drag_capture = nullptr;
+    }
     return nullptr;
+  }
+
+  // If we have a captured widget (from PUSH), route drag events to it
+  if (_drag_capture) {
+    if (ev->_eventcode == EventCode::DRAG || ev->_eventcode == EventCode::BEGIN_DRAG) {
+      return _drag_capture;
+    }
+    if (ev->_eventcode == EventCode::RELEASE || ev->_eventcode == EventCode::END_DRAG) {
+      Widget* target = _drag_capture;
+      _drag_capture = nullptr;
+      return target;
+    }
   }
 
   // Route to editor widget if event is in its area
   if (_editor_widget && _editor_widget->IsEventInside(ev)) {
     auto routed = _editor_widget->doRouteUiEvent(ev);
     if (routed) {
+      // Capture the widget on PUSH for subsequent drag events
+      if (ev->_eventcode == EventCode::PUSH) {
+        _drag_capture = routed;
+      }
       return routed;
     }
+  }
+
+  // Clear drag capture on release/push outside editor
+  if (ev->_eventcode == EventCode::PUSH || ev->_eventcode == EventCode::RELEASE) {
+    _drag_capture = nullptr;
   }
 
   // If we have children (expandable), handle clicks on label/arrow area
@@ -165,7 +193,8 @@ PropertySheet::~PropertySheet() {
 void PropertySheet::_subscribeToModel() {
   if (_model) {
     _model->_onPropertyChanged = [this](const std::string& key) {
-      _needs_rebuild = true;
+      // Don't rebuild on value changes - the editor widget handles its own display.
+      // Rebuilding would destroy the widget being dragged and break event routing.
     };
     _model->_onStructureChanged = [this]() {
       _needs_rebuild = true;
@@ -341,7 +370,7 @@ widget_ptr_t PropertySheet::_createEditorWidget(const std::string& key, Property
   return editor;
 }
 
-void PropertySheet::_addRowsRecursive(const std::string& parent_key, int depth, int& y_offset) {
+void PropertySheet::_addRowsRecursive(const std::string& parent_key, int depth, int& y_offset, int& row_index) {
   if (!_model) return;
 
   auto children = _model->getChildren(parent_key);
@@ -360,7 +389,10 @@ void PropertySheet::_addRowsRecursive(const std::string& parent_key, int depth, 
     row->_indent_width = _indent_width;
     row->_label_width = _label_width;
     row->_label_color = _label_color;
+    row->_row_index = row_index++;
     row->_bg_color = has_children ? _group_color : _bgcolor;
+    row->_alt_bg_color = has_children ? (_group_color * 0.9f) : (_bgcolor * 0.85f);
+    row->_alt_bg_color.w = 1.0f;  // Keep full alpha
 
     // Create editor widget for non-group properties
     if (!has_children && type != PropertyType::Group) {
@@ -383,7 +415,7 @@ void PropertySheet::_addRowsRecursive(const std::string& parent_key, int depth, 
 
     // Recurse if expanded
     if (has_children && is_expanded) {
-      _addRowsRecursive(key, depth + 1, y_offset);
+      _addRowsRecursive(key, depth + 1, y_offset, row_index);
     }
   }
 }
@@ -400,7 +432,16 @@ void PropertySheet::_rebuildRows() {
 
   // Rebuild from model
   int y_offset = 0;
-  _addRowsRecursive("", 0, y_offset);
+  int row_index = 0;
+  _addRowsRecursive("", 0, y_offset, row_index);
+  _total_rows = row_index;
+  _clampScrollOffset();
+}
+
+void PropertySheet::_clampScrollOffset() {
+  int content_height = _total_rows * _row_height;
+  int max_scroll = std::max(0, content_height - _geometry._h);
+  _scroll_offset = std::clamp(_scroll_offset, 0, max_scroll);
 }
 
 void PropertySheet::_doOnResized() {
@@ -408,12 +449,21 @@ void PropertySheet::_doOnResized() {
 }
 
 void PropertySheet::DoLayout() {
-  if (_needs_rebuild) {
-    _rebuildRows();
+  // Don't layout if we don't have valid geometry yet
+  if (_geometry._w <= 0 || _geometry._h <= 0) {
+    return;
   }
 
-  // Layout children vertically like VerticalPack
-  int y = 0;
+  // Don't rebuild here - only in DoDraw to avoid destroying widgets during event handling
+  // which would invalidate _evpushtarget/_evdragtarget in Context
+  if (_needs_rebuild) {
+    return;  // Wait for DoDraw to rebuild
+  }
+
+  _clampScrollOffset();
+
+  // Layout children vertically with scroll offset
+  int y = -_scroll_offset;
   for (auto& child : _children) {
     child->SetRect(0, y, _geometry._w, _row_height);
 
@@ -465,10 +515,9 @@ HandlerResult PropertySheet::DoOnUiEvent(event_constptr_t ev) {
 
   switch (ev->_eventcode) {
     case EventCode::MOUSEWHEEL: {
-      _scroll_offset -= ev->miMWY * 3;
-      int content_height = _children.size() * _row_height;
-      int max_scroll = std::max(0, content_height - _geometry._h);
-      _scroll_offset = std::clamp(_scroll_offset, 0, max_scroll);
+      _scroll_offset -= ev->miMWY * _row_height;  // Scroll by row height
+      _clampScrollOffset();
+      DoLayout();  // Re-layout children with new scroll offset
       result.setHandled(this);
       break;
     }
@@ -481,6 +530,11 @@ HandlerResult PropertySheet::DoOnUiEvent(event_constptr_t ev) {
 }
 
 void PropertySheet::DoDraw(drawevent_constptr_t drwev) {
+  // Don't draw/rebuild if we don't have valid geometry yet
+  if (_geometry._w <= 0 || _geometry._h <= 0) {
+    return;
+  }
+
   if (_needs_rebuild) {
     _rebuildRows();
     DoLayout();

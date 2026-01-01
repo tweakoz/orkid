@@ -91,8 +91,8 @@ HandlerResult Context::handleEvent(event_constptr_t ev) {
     /////////////////////////////////
     case EventCode::DRAG: {
       if (_prevevent._eventcode != EventCode::DRAG) { // start drag
-        auto target   = _top->routeUiEvent(ev);
-        _evdragtarget = target;
+        // Use push target instead of routing again (mouse may have moved)
+        _evdragtarget = _evpushtarget;
         //////////////////////////
         // synthesize BEGIN_DRAG event
         //////////////////////////
@@ -160,6 +160,7 @@ HandlerResult Context::handleEvent(event_constptr_t ev) {
         _evdragtarget = nullptr;
       } else
         rval = _top->handleUiEvent(ev);
+      _evpushtarget = nullptr;  // Clear push target on release
       break;
     }
     /////////////////////////////////
@@ -184,6 +185,7 @@ HandlerResult Context::handleEvent(event_constptr_t ev) {
 
       _evdragtarget = nullptr;
       auto dest     = _top->routeUiEvent(ev);
+      _evpushtarget = dest;  // Store push target for drag promotion
       if (dest){
 
         // SYNTHESIZE DOUBLECLICK EVENT
@@ -236,6 +238,13 @@ void Context::draw(drawevent_constptr_t drwev) {
   }
 
   _top->draw(drwev);
+}
+/////////////////////////////////////////////////////////////////////////
+void Context::clearWidgetPointers(Widget* w) {
+  if (_evpushtarget == w) _evpushtarget = nullptr;
+  if (_evdragtarget == w) _evdragtarget = nullptr;
+  if (_mousefocuswidget == w) _mousefocuswidget = nullptr;
+  if (_keyboardFocusWidget == w) _keyboardFocusWidget = nullptr;
 }
 /////////////////////////////////////////////////////////////////////////
 void Context::dumpWidgets(std::string label) const{

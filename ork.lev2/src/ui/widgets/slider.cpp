@@ -90,9 +90,14 @@ void IntSlider::DoLayout() {
 
 void IntSlider::_refresh() {
   auto content = contentRect();
-  float unit = _valToUnit(_value);
+  int label_w = labelWidth();
 
-  _indicator_pos = (unit * (_slider_x1-_slider_x0));
+  // Calculate slider track bounds (must match DoDraw calculations)
+  _slider_x0 = label_w + 2;
+  _slider_x1 = content._w + label_w - 4;
+
+  float unit = _valToUnit(_value);
+  _indicator_pos = (unit * (_slider_x1 - _slider_x0));
 
   // Smart text positioning - avoid overlap with filled bar
   float text_unit = 0.0f;
@@ -123,17 +128,18 @@ HandlerResult IntSlider::DoOnUiEvent(event_constptr_t cev) {
 
     case EventCode::DRAG: {
       if (_dragging) {
-        auto r = contentRect();                 // local track rect
-        float L   = float(r._x);
-        float R   = float(r._x + r._w);
+        // Use track bounds that match rendering (LOCAL coordinates)
+        int label_w = labelWidth();
+        float L   = float(label_w + 2);           // Track start
+        float R   = float(_geometry._w - 4);      // Track end
         float den = R - L;
         if (den <= 0.0f) den = 1.0f;
 
-        float unit = (float(localX) - L) / den; // 0..1 across the bar
+        float unit = (float(localX) - L) / den;   // 0..1 across the track
         if (unit < 0.0f) unit = 0.0f;
         else if (unit > 1.0f) unit = 1.0f;
 
-        float new_val = _unitToVal(unit);       // respects linear/log modes
+        float new_val = _unitToVal(unit);
         setValue(new_val);
 
         if (_update_on_drag && _onValueChanged)
@@ -240,6 +246,10 @@ void IntSlider::DoDraw(drawevent_constptr_t drwev) {
     _slider_x0 = content_x1 + 2;
     _slider_x1 = content_x2 - 2;
 
+    // Calculate indicator position with current absolute coordinates
+    float unit = _valToUnit(_value);
+    _indicator_pos = unit * float(_slider_x1 - _slider_x0);
+
     defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::ALPHA);
     defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
 
@@ -262,7 +272,7 @@ void IntSlider::DoDraw(drawevent_constptr_t drwev) {
         1.0f // v0, v1
     );
     tgt->PopModColor();
-    
+
     ///////////////////////////////
     // draw content background
     ///////////////////////////////
@@ -450,9 +460,14 @@ float FloatSlider::_unitToVal(float unit) const {
 
 void FloatSlider::_refresh() {
   auto content = contentRect();
-  float unit = _valToUnit(_value);
+  int label_w = labelWidth();
 
-  _indicator_pos = (unit * (_slider_x1-_slider_x0));
+  // Calculate slider track bounds (must match DoDraw calculations)
+  _slider_x0 = label_w + 2;
+  _slider_x1 = content._w + label_w - 4;
+
+  float unit = _valToUnit(_value);
+  _indicator_pos = (unit * (_slider_x1 - _slider_x0));
 
   // Smart text positioning - avoid overlap with filled bar
   float text_unit = 0.0f;
@@ -481,17 +496,18 @@ HandlerResult FloatSlider::DoOnUiEvent(event_constptr_t cev) {
     }
     case EventCode::DRAG: {
       if (_dragging) {
-        auto r = contentRect();                 // local track rect
-        float L   = float(r._x);
-        float R   = float(r._x + r._w);
+        // Use track bounds that match rendering (LOCAL coordinates)
+        int label_w = labelWidth();
+        float L   = float(label_w + 2);           // Track start
+        float R   = float(_geometry._w - 4);      // Track end
         float den = R - L;
         if (den <= 0.0f) den = 1.0f;
 
-        float unit = (float(localX) - L) / den; // 0..1 across the bar
+        float unit = (float(localX) - L) / den;   // 0..1 across the track
         if (unit < 0.0f) unit = 0.0f;
         else if (unit > 1.0f) unit = 1.0f;
 
-        float new_val = _unitToVal(unit);       // respects linear/log modes
+        float new_val = _unitToVal(unit);
         setValue(new_val);
 
         if (_update_on_drag && _onValueChanged)
@@ -598,6 +614,10 @@ void FloatSlider::DoDraw(drawevent_constptr_t drwev) {
 
     _slider_x0 = content_x1 + 2;
     _slider_x1 = content_x2 - 2;
+
+    // Calculate indicator position with current absolute coordinates
+    float unit = _valToUnit(_value);
+    _indicator_pos = unit * float(_slider_x1 - _slider_x0);
 
     defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::ALPHA);
     defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
