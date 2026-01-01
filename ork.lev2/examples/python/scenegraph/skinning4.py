@@ -95,7 +95,7 @@ class PoserUi(UiLayoutComponent):
     vpack.uniform = True
     vpack.fill = True
 
-    imgbg = vec4(1,1,1,1)
+    imgbg = vec4(0.1,0.1,0.1,1)
 
     self.pick_img_id = vpack.makeChild(uiclass=lev2.ui.ImageView, args=["pick_id", imgbg])
     self.pick_img_pos = vpack.makeChild(uiclass=lev2.ui.ImageView, args=["pick_pos", imgbg])
@@ -103,6 +103,8 @@ class PoserUi(UiLayoutComponent):
 
     for imgview in [self.pick_img_id, self.pick_img_pos, self.pick_img_nrm]:
       imgview.maintain_aspect_ratio = True
+      imgview.flip_x = True
+      imgview.flip_y = True
 
     self._slots["main"] = hpack_widget
     self._slots["sidebar"] = vpack

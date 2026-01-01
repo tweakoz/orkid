@@ -203,6 +203,12 @@ void ImageView::DoDraw(drawevent_constptr_t drwev) {
   // draw textured quad
   //////////////////////////////////
 
+  // UV coordinates: flip if _image_flip_x/_image_flip_y is set
+  float u0 = _image_flip_x ? 1.0f : 0.0f;
+  float u1 = _image_flip_x ? 0.0f : 1.0f;
+  float v0 = _image_flip_y ? 1.0f : 0.0f;
+  float v1 = _image_flip_y ? 0.0f : 1.0f;
+
   if(_img_mesh){
     auto rcfd = std::make_shared<lev2::RenderContextFrameData>(tgt);
     auto rcid = std::make_shared<lev2::RenderContextInstData>(rcfd);
@@ -229,10 +235,8 @@ void ImageView::DoDraw(drawevent_constptr_t drwev) {
             iy2,  // y0
             iy1,  // y1
             0.0f, // z
-            0.0f,
-            1.0f, // u0, u1
-            0.0f,
-            1.0f // v0, v1
+            u0, u1, // u0, u1
+            v0, v1  // v0, v1
           );
         }
         else {
@@ -242,10 +246,8 @@ void ImageView::DoDraw(drawevent_constptr_t drwev) {
             iy1,  // y0
             iy2,  // y1
             0.0f, // z
-            0.0f,
-            1.0f, // u0, u1
-            0.0f,
-            1.0f // v0, v1
+            u0, u1, // u0, u1
+            v0, v1  // v0, v1
           );
         }
       });
@@ -259,10 +261,8 @@ void ImageView::DoDraw(drawevent_constptr_t drwev) {
           iy2,  // y0
           iy1,  // y1
           0.0f, // z
-          0.0f,
-          1.0f, // u0, u1
-          0.0f,
-          1.0f // v0, v1
+          u0, u1, // u0, u1
+          v0, v1  // v0, v1
         );
       }
       else {
@@ -273,10 +273,8 @@ void ImageView::DoDraw(drawevent_constptr_t drwev) {
             iy1,  // y0
             iy2,  // y1
             0.0f, // z
-            0.0f,
-            1.0f, // u0, u1
-            0.0f,
-            1.0f // v0, v1
+            u0, u1, // u0, u1
+            v0, v1  // v0, v1
         );
       }
     }

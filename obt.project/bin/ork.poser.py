@@ -17,7 +17,7 @@ sys.path.append(str(thisdir/".."/".."/"ork.lev2"/"examples"/"python"))
 
 parser = argparse.ArgumentParser(description='scenegraph example')
 parser.add_argument("-f", '--forceregen', action="store_true", help='force asset regeneration' )
-parser.add_argument("-m", "--model", type=str, required=False, default="data://tests/pbr1/pbr1", help='asset to load')
+parser.add_argument("-m", "--model", type=str, required=False, default="data://tests/chartest/char_mesh", help='asset to load')
 parser.add_argument("-i", "--lightintensity", type=float, default=1.0, help='light intensity')
 parser.add_argument("-d", "--camdist", type=float, default=0.0, help='camera distance')
 parser.add_argument("-e", "--envmap", type=str, default="", help='environment map')
@@ -83,8 +83,9 @@ class PoserUi(UiLayoutComponent):
     vpack = hpack_widget.makeChild(uiclass=lev2.ui.VerticalPack, args=["pick_vpack"])
     vpack.uniform = True
     vpack.fill = True
+    vpack.margin = 4
 
-    imgbg = vec4(1,1,1,1)
+    imgbg = vec4(0.1,0.1,0.1,1)
 
     # Create 3 ImageViews for pick textures (ID, Position, Normal)
     self.pick_img_id = vpack.makeChild(uiclass=lev2.ui.ImageView, args=["pick_id", imgbg])
@@ -93,6 +94,8 @@ class PoserUi(UiLayoutComponent):
 
     for imgview in [self.pick_img_id, self.pick_img_pos, self.pick_img_nrm]:
       imgview.maintain_aspect_ratio = True
+      imgview.flip_x = True
+      imgview.flip_y = True
 
     # Register slots - "main" is where SceneGraphViewport will go
     self._slots["main"] = hpack_widget
@@ -344,7 +347,8 @@ class SceneGraphApp(ComponentizedApplication):
     self.SGC = self.addComponent("std_scenegraph",
                                  StandardSceneGraphComponent,
                                  enable_ui_camera=True,
-                                 eye=vec3(0, 0.5, 1),
+                                 eye=vec3(0, 25, -20),
+                                 tgt=vec3(0, 0, 10),
                                  sg_params=params_dict,
                                  grid_variant="_V4" if showgrid else None)
 
@@ -432,23 +436,6 @@ class SceneGraphApp(ComponentizedApplication):
     self.ball_node = SG.createDrawableNodeOnLayers(SGC.fwd_layers, "ball-node", self.ball_drawable)
     self.ball_node.worldTransform.scale = 0.01
     self.ball_node.pickable = False
-
-    ######################
-    # Setup camera
-    ######################
-
-    center = self.model.boundingCenter
-    radius = self.model.boundingRadius * 1.5
-
-    print("center<%s> radius<%s>" % (center, radius))
-
-    if camdist != 0.0:
-      radius = camdist
-
-    SGC.uicam.lookAt(center - vec3(0, 0, radius),
-                     center,
-                     vec3(0, 1, 0))
-    SGC.camera.copyFrom(SGC.uicam.cameradata)
 
     # Store reference to scenegraph for picking
     self.scenegraph = SG
