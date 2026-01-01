@@ -454,13 +454,14 @@ void PropertySheet::DoLayout() {
     return;
   }
 
+  // Always clamp scroll offset on resize, even if rebuild is pending
+  _clampScrollOffset();
+
   // Don't rebuild here - only in DoDraw to avoid destroying widgets during event handling
   // which would invalidate _evpushtarget/_evdragtarget in Context
   if (_needs_rebuild) {
     return;  // Wait for DoDraw to rebuild
   }
-
-  _clampScrollOffset();
 
   // Layout children vertically with scroll offset
   int y = -_scroll_offset;
@@ -491,23 +492,32 @@ Widget* PropertySheet::doRouteUiEvent(event_constptr_t ev) {
   int localY = 0;
   RootToLocal(ev->miX, ev->miY, localX, localY);
 
-  // Find which child the event is inside
-  int y = 0;
+  // Find which child the event is inside (scroll-aware)
+  // Children are positioned at y = -_scroll_offset + row_index * _row_height
+  int y = -_scroll_offset;
   for (auto& child : _children) {
     int child_height = child->height();
-    if (localY >= y && localY < y + child_height) {
-      if (child->IsEventInside(ev)) {
+    // Skip children that are scrolled out of view
+    if (y + child_height > 0 && y < _geometry._h) {
+      if (localY >= y && localY < y + child_height) {
         auto routed = child->doRouteUiEvent(ev);
         if (routed) {
           return routed;
         }
+        // Return child itself if it has children (for disclosure triangle clicks)
+        if (auto row = std::dynamic_pointer_cast<PropertyRow>(child)) {
+          if (row->hasChildren()) {
+            return child.get();
+          }
+        }
+        break;
       }
-      break;
     }
     y += child_height;
   }
 
-  return nullptr;
+  // Return this for scroll wheel handling
+  return this;
 }
 
 HandlerResult PropertySheet::DoOnUiEvent(event_constptr_t ev) {
