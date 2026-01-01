@@ -51,20 +51,28 @@ void EzUiCam::lookAt(fvec3 eye, fvec3 tgt, fvec3 up) {
     fvec3 forward = (tgt - eye).normalized();
     fvec3 right = up.crossWith(forward).normalized();  // Note: up cross forward
     fvec3 camera_up = forward.crossWith(right).normalized();
-    
+
     // Build the WORLD orientation of the camera
     // The camera looks down its local +Z axis in your system
     // So forward maps to +Z, right to +X, up to +Y
     fmtx4 world_orientation;
     world_orientation.fromNormalVectors(right, camera_up, forward);
-    
+
     // QuatC represents camera's orientation in world space
     QuatC.fromMatrix(world_orientation);
-    
+
+    // Decompose into QuatHeading (yaw) and QuatElevation (pitch)
+    // This is needed for _constrainZ mode to work correctly after lookAt
+    float yaw = atan2(forward.x, forward.z);
+    float pitch = asin(std::clamp(forward.y, -1.0f, 1.0f));
+
+    QuatHeading.fromAxisAngle(fvec4(0, 1, 0, yaw));
+    QuatElevation.fromAxisAngle(fvec4(1, 0, 0, pitch));
+
     // Set camera parameters
     mfLoc = (tgt - eye).magnitude();
     mvCenter = tgt;  // Camera orbits around target
-    
+
     updateMatrices();
 }
 

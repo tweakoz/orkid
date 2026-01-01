@@ -161,7 +161,6 @@ class StandardSceneGraphComponent(ApplicationComponent):
       # Viewport will be created in _onGpuLink via layout_component
       self.griditems = None
     else:
-      assert(False)
       # Default: create 1x1 grid with SceneGraphViewport
       lg_group = ezapp.topLayoutGroup
       self.griditems = lg_group.makeGrid(
