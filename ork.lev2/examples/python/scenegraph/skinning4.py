@@ -120,10 +120,11 @@ class PoserUi(UiLayoutComponent):
     uictx = app.ezapp.uicontext
 
     if uievent.code == tokens.KEY_UP.hashed:
-      if uievent.keycode in [ord("A"), ord("S"), ord("1"), ord("2"), ord("3"), ord("D")]:
+      if uievent.keycode in [ord("A"), ord("S"), ord("1"), ord("2"), ord("3"), ord("D"), ord("F")]:
         app.skeleton.selectBone(-1)
         app.sel_joint = -1
         app.ik_chain = None  # Clear IK chain on key up
+        app.ik_mode = None
         handled = True
 
     if uievent.code == tokens.KEY_DOWN.hashed:
@@ -156,10 +157,11 @@ class PoserUi(UiLayoutComponent):
       elif uievent.keycode == ord("="):
         app.skeleton.visualBoneScale *= 1.1
       ##############################
-      elif uievent.keycode in [ord("A"), ord("S"), ord("1"), ord("2"), ord("3"), ord("D")]:
+      elif uievent.keycode in [ord("A"), ord("S"), ord("1"), ord("2"), ord("3"), ord("D"), ord("F")]:
         app.descendants = []
         app.push_screen_pos = local_coord
-        is_ik_mode = (uievent.keycode == ord("D"))
+        is_ik_mode = uievent.keycode in [ord("D"), ord("F")]
+        ik_plane_mode = "xz" if uievent.keycode == ord("D") else "xy" if uievent.keycode == ord("F") else None
 
         def pick_callback(pixel_fetch_context):
           obj = pixel_fetch_context.value(0)
@@ -191,7 +193,7 @@ class PoserUi(UiLayoutComponent):
             app.relmats = [app.pmat.inverse * ch for ch in app.chcmats]
             app.activate_rot = False
 
-            # Setup IK if D key
+            # Setup IK if D or F key
             if is_ik_mode:
               print(f"Setting up IK for joint {sel_child_index}: {app.skeleton.jointName(sel_child_index)}")
               # Store initial pose matrices BEFORE setupIkChain modifies them
@@ -201,10 +203,14 @@ class PoserUi(UiLayoutComponent):
               if app.ik_chain is not None:
                 # Store initial hand position from the ORIGINAL pose (before IK warp)
                 app.ik_initial_hand_pos = app.ik_initial_concats[app.ik_hand_joint].translation
-                # Store initial distance from eye to hand for ray projection
-                eye_pos = camdat.eye
-                app.ik_eye_to_hand_dist = (app.ik_initial_hand_pos - eye_pos).length
-                print(f"IK initial hand pos: {app.ik_initial_hand_pos}, eye dist: {app.ik_eye_to_hand_dist}")
+                # Store plane mode and fixed coordinate
+                app.ik_mode = ik_plane_mode
+                if ik_plane_mode == "xz":
+                  app.ik_plane_fixed = app.ik_initial_hand_pos.y  # Fixed Y for XZ plane
+                  print(f"IK mode: XZ plane, fixed Y: {app.ik_plane_fixed}")
+                else:  # xy
+                  app.ik_plane_fixed = app.ik_initial_hand_pos.z  # Fixed Z for XY plane
+                  print(f"IK mode: XY plane, fixed Z: {app.ik_plane_fixed}")
                 # Reset pose immediately to undo the warp from setupIkChain
                 for i in range(app.skeleton.numJoints):
                   app.localpose.localMatrices[i] = app.ik_initial_locals[i]
@@ -244,8 +250,8 @@ class PoserUi(UiLayoutComponent):
         if app.sel_joint > 0:
           app.rotateOnLocalZ(local_coord)
           handled = True
-    # IK handler
-    elif uictx.isKeyDown(ord("D")):
+    # IK handlers
+    elif uictx.isKeyDown(ord("D")) or uictx.isKeyDown(ord("F")):
       if uievent.code == tokens.MOVE.hashed:
         if app.ik_chain is not None:
           app.updateIk(local_coord, camdat)
@@ -281,7 +287,8 @@ class SceneGraphApp(ComponentizedApplication):
     self.ik_initial_hand_pos = None
     self.ik_initial_locals = None
     self.ik_initial_concats = None
-    self.ik_eye_to_hand_dist = 0.0
+    self.ik_mode = None  # "xz" or "xy"
+    self.ik_plane_fixed = 0.0  # Y for xz plane, Z for xy plane
     self.ik_index_joints = []
     self.ik_arm_side = None
 
@@ -305,11 +312,14 @@ class SceneGraphApp(ComponentizedApplication):
     self.SGC = self.addComponent("std_scenegraph",
                                  StandardSceneGraphComponent,
                                  enable_ui_camera=True,
-                                 eye=vec3(0, 0.5, 1),
+                                 eye=vec3(0, 25, -18),
+                                 tgt=vec3(0, 0, 10),
                                  sg_params=params_dict,
                                  grid_variant="_V4" if showgrid else None)
 
-    self.createEzApp(name="Skinning4-IK", ssaa=ssaa, fullscreen=True)
+    self.createEzApp(name="Skinning4-IK", 
+                     ssaa=ssaa, 
+                     fullscreen=True)
 
   ##############################################
 
@@ -380,11 +390,6 @@ class SceneGraphApp(ComponentizedApplication):
 
     if camdist != 0.0:
       radius = camdist
-
-    SGC.uicam.lookAt(center - vec3(0, 0, radius),
-                     center,
-                     vec3(0, 1, 0))
-    SGC.camera.copyFrom(SGC.uicam.cameradata)
 
     self.scenegraph = SG
     self.cameralut = SGC.cameralut
@@ -515,7 +520,7 @@ class SceneGraphApp(ComponentizedApplication):
 
   def updateIk(self, cur_screen_pos, camdat):
     """
-    Update IK - project target along eye-to-mouse ray at fixed distance.
+    Update IK - target follows ray intersection with fixed XZ plane at hand's Y height.
     """
     if self.ik_chain is None:
       return
@@ -534,24 +539,36 @@ class SceneGraphApp(ComponentizedApplication):
     # Compute extend length (like skinning2)
     extend_length = (mtx_forearm.translation - mtx_hand.translation).length
 
-    # Project target along eye-to-mouse ray
+    # Project ray through mouse position
     sgvpw = self.SGC.SGVPW
     vp_width = sgvpw.width
     vp_height = sgvpw.height
 
-    # Convert screen pos to normalized coordinates (0-1)
-    # Note: screen Y=0 is top, but camera Y=1 is top, so flip Y
     norm_x = cur_screen_pos.x / vp_width
     norm_y = 1.0 - (cur_screen_pos.y / vp_height)
 
-    # Compute camera matrices and project ray
     aspect = vp_width / vp_height
     cam_matrices = camdat.computeMatrices(aspect)
     ray = cam_matrices.projectDepthRay(vec2(norm_x, norm_y))
 
-    # Target = eye + ray_direction * distance
+    # Intersect ray with plane based on mode
     eye_pos = camdat.eye
-    target = eye_pos + ray.direction * self.ik_eye_to_hand_dist
+    target = self.ik_initial_hand_pos  # fallback
+
+    if self.ik_mode == "xz":
+      # XZ plane at fixed Y
+      # Solve: origin.y + direction.y * t = ik_plane_fixed
+      if abs(ray.direction.y) > 0.001:
+        t = (self.ik_plane_fixed - eye_pos.y) / ray.direction.y
+        if t > 0:
+          target = eye_pos + ray.direction * t
+    elif self.ik_mode == "xy":
+      # XY plane at fixed Z
+      # Solve: origin.z + direction.z * t = ik_plane_fixed
+      if abs(ray.direction.z) > 0.001:
+        t = (self.ik_plane_fixed - eye_pos.z) / ray.direction.z
+        if t > 0:
+          target = eye_pos + ray.direction * t
 
     # Update ball visualization
     self.ball_node.worldTransform.translation = target
