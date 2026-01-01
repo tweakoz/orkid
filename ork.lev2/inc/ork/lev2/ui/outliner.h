@@ -42,8 +42,15 @@ struct Outliner : public Widget {
   void expandAll();
   void collapseAll();
 
+  // Inline editing
+  void startEditing(const std::string& key);
+  void cancelEditing();
+  void commitEditing();
+  bool isEditing() const { return !_editing_key.empty(); }
+
   // Callbacks
   std::function<void(const std::string& key)> _onSelect;
+  std::function<void(const std::string& old_key, const std::string& new_name)> _onRename;
 
   // Appearance
   int _item_height = 20;
@@ -87,6 +94,12 @@ private:
   std::unordered_set<std::string> _expanded_keys;
   bool _needs_rebuild = true;
   int _scroll_offset = 0;
+
+  // Inline editing state
+  std::string _editing_key;       // key of item being edited (empty = not editing)
+  std::string _edit_value;        // current edit text
+  std::string _original_value;    // original name (to restore on cancel)
+  int _cursor_pos = 0;            // cursor position in edit text
 };
 
 using outliner_ptr_t = std::shared_ptr<Outliner>;

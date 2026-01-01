@@ -93,6 +93,15 @@ public:
     py::object py_value = type_codec->encode(value);
     py::cast(this).attr("updateItem")(key, py_value);
   }
+
+  std::string renameItem(const std::string& old_key, const std::string& new_name) override {
+    py::gil_scoped_acquire acquire;
+    PYBIND11_OVERRIDE(
+        std::string,
+        ui::OutlinerModel,
+        renameItem,
+        old_key, new_name);
+  }
 };
 
 void pyinit_ui_outliner(py::module& uimodule) {
@@ -143,6 +152,11 @@ void pyinit_ui_outliner(py::module& uimodule) {
           .def("notifyItemRemoved", &ui::OutlinerModel::notifyItemRemoved)
           .def("notifyItemChanged", &ui::OutlinerModel::notifyItemChanged)
           .def("notifyModelReset", &ui::OutlinerModel::notifyModelReset)
+          .def_property(
+              "allow_rename",
+              &ui::OutlinerModel::allowRename,
+              &ui::OutlinerModel::setAllowRename)
+          .def("renameItem", &ui::OutlinerModel::renameItem)
           .def("__repr__", [](ui::outliner_model_ptr_t model) {
             return FormatString("<OutlinerModel %p>", (void*)model.get());
           });
@@ -243,6 +257,18 @@ void pyinit_ui_outliner(py::module& uimodule) {
                   callback(key);
                 };
               })
+          .def(
+              "onRename",
+              [](ui::outliner_ptr_t outliner, py::object callback) { //
+                outliner->_onRename = [callback](const std::string& old_key, const std::string& new_name) {
+                  py::gil_scoped_acquire acquire;
+                  callback(old_key, new_name);
+                };
+              })
+          .def("startEditing", &ui::Outliner::startEditing)
+          .def("cancelEditing", &ui::Outliner::cancelEditing)
+          .def("commitEditing", &ui::Outliner::commitEditing)
+          .def("isEditing", &ui::Outliner::isEditing)
           .def_property(
               "item_height",
               [](ui::outliner_ptr_t outliner) -> int { //

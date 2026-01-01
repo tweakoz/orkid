@@ -43,6 +43,18 @@ struct OutlinerModel {
   virtual svar128_t getValue(const std::string& key) const { return svar128_t(); }
 
   //////////////////////////////////////////////////////////////
+  // Rename support
+  //////////////////////////////////////////////////////////////
+
+  // Whether this model allows renaming items
+  bool allowRename() const { return _allow_rename; }
+  void setAllowRename(bool allow) { _allow_rename = allow; }
+
+  // Rename an item - returns the new key, or empty string on failure
+  // Override this if your model supports renaming
+  virtual std::string renameItem(const std::string& old_key, const std::string& new_name);
+
+  //////////////////////////////////////////////////////////////
   // Data manipulation - override if your model supports editing
   //////////////////////////////////////////////////////////////
 
@@ -75,6 +87,9 @@ struct OutlinerModel {
   std::function<void(const std::string& key)> _onItemRemoved;
   std::function<void(const std::string& key)> _onItemChanged;
   std::function<void()> _onModelReset;
+
+protected:
+  bool _allow_rename = false;
 };
 
 using outliner_model_ptr_t = std::shared_ptr<OutlinerModel>;
@@ -103,6 +118,7 @@ struct VarMapModel : public OutlinerModel {
   void addItem(const std::string& parent_key, const std::string& name, svar128_t value = svar128_t()) override;
   void removeItem(const std::string& key) override;
   void updateItem(const std::string& key, svar128_t value) override;
+  std::string renameItem(const std::string& old_key, const std::string& new_name) override;
 
 private:
   // Navigate to a node by key path, returns nullptr if not found

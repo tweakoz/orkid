@@ -24,6 +24,11 @@ void OutlinerModel::updateItem(const std::string& key, svar128_t value) {
   // Default implementation does nothing - override in subclasses
 }
 
+std::string OutlinerModel::renameItem(const std::string& old_key, const std::string& new_name) {
+  // Default implementation does nothing - override in subclasses
+  return "";
+}
+
 void OutlinerModel::notifyItemAdded(const std::string& key) {
   if (_onItemAdded) {
     _onItemAdded(key);
@@ -213,6 +218,45 @@ void VarMapModel::updateItem(const std::string& key, svar128_t value) {
     it->second = value;
     notifyItemChanged(key);
   }
+}
+
+std::string VarMapModel::renameItem(const std::string& old_key, const std::string& new_name) {
+  if (!_allow_rename) {
+    return "";
+  }
+
+  auto [parent, old_name] = _getParentAndName(old_key);
+  if (!parent) {
+    return "";
+  }
+
+  auto it = parent->_themap.find(old_name);
+  if (it == parent->_themap.end()) {
+    return "";
+  }
+
+  // Check if new name already exists in parent
+  if (parent->_themap.find(new_name) != parent->_themap.end()) {
+    return "";  // Name collision
+  }
+
+  // Calculate new key
+  std::string new_key;
+  size_t last_slash = old_key.rfind('/');
+  if (last_slash != std::string::npos) {
+    new_key = old_key.substr(0, last_slash + 1) + new_name;
+  } else {
+    new_key = new_name;
+  }
+
+  // Move the value to the new name
+  svar128_t value = it->second;
+  parent->_themap.erase(it);
+  parent->_themap[new_name] = value;
+
+  // Note: We don't call notifyItemChanged here because the outliner
+  // handles the key updates and triggers a rebuild
+  return new_key;
 }
 
 /////////////////////////////////////////////////////////////////////////
