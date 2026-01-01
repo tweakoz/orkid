@@ -6,19 +6,12 @@
 # Uses the char_mesh model from ork.data/tests/chartest/
 ################################################################################
 
-import math, random, argparse, sys, os, time
+import math, random, sys, os, time
 from obt import path
 
 ################################################################################
 
-parser = argparse.ArgumentParser(description='skinning4 - poser with IK')
-parser.add_argument("-b", "--bonescale", type=float, default=4.0, help='bone scalar')
-
-################################################################################
-
-args = vars(parser.parse_args())
 modelpath = "data://tests/chartest/char_mesh" # Fixed model path for char_mesh
-bonescale = args["bonescale"]
 
 os.environ["ORKID_LEV2_SHOW_SKELETON"] = "1"
 
@@ -117,7 +110,7 @@ class PoserUi(UiLayoutComponent):
     ##################################
 
     help_box = tabs.makeChild(uiclass=lev2.ui.TextBox, args=["HELP", bg_color, "hello"])
-    help_box.setText("TODO: IK Help Info\n\n\n    S : Select Bone\n- / = : Scale Bone Display")
+    help_box.setText("TODO: IK Help Info\n\n\n  SPC : Reset Pose\n    S : Select Bone\n    A : ZRotate Bone\n- / = : Scale Bone Display")
     help_box.halign = tokens.CENTER_ALL
     help_box.valign = tokens.CENTER
     help_box.font = lev2.FontManager.fontForId("i22")
@@ -220,7 +213,7 @@ class SceneGraphApp(ComponentizedApplication):
     self.CHR = self.addComponent("character",
                                  CharacterComponent,
                                  modelpath=modelpath,
-                                 bonescale=bonescale)
+                                 bonescale=6.0)
 
     self.createEzApp(name="Skinning5-IK",
                      fullscreen=True)
