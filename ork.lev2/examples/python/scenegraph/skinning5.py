@@ -24,6 +24,7 @@ os.environ["ORKID_LEV2_SHOW_SKELETON"] = "1"
 
 ################################################################################
 
+KEY_A = ord("A")
 KEY_S = ord("S")
 KEY_SPC = ord(" ")
 KEY_MINUS = ord("-")
@@ -144,19 +145,14 @@ class PoserUi(UiLayoutComponent):
     uictx = app.ezapp.uicontext
 
     if uievent.code == tokens.KEY_UP.hashed:
-      if uievent.keycode in [KEY_S]:
-        CHR.skeleton.selectBone(-1)
-        app.sel_joint = -1
-        app.ik_chain = None  # Clear IK chain on key up
-        app.ik_mode = None
+      if uievent.keycode in [KEY_S, KEY_A]:
+        CHR.deselectBone()
         handled = True
 
     if uievent.code == tokens.KEY_DOWN.hashed:
       ##############################
       if uievent.keycode == KEY_SPC:
-        CHR.localpose.bindPose()
-        CHR.localpose.blendPoses()
-        CHR.localpose.concatenate()
+        CHR.resetPose()
         handled = True
       ##############################
       elif uievent.keycode == KEY_MINUS:
@@ -164,40 +160,17 @@ class PoserUi(UiLayoutComponent):
       elif uievent.keycode == KEY_EQUAL:
         CHR.skeleton.visualBoneScale *= 1.1
       ##############################
-      elif uievent.keycode in [KEY_S]:
-        app.descendants = []
-        app.push_screen_pos = local_coord
+      elif uievent.keycode in [KEY_S, KEY_A]:
+        CHR.push_screen_pos = local_coord
 
         def pick_callback(pixel_fetch_context):
           obj = pixel_fetch_context.value(0)
-          pos = pixel_fetch_context.value(1).xyz
-          nrm = pixel_fetch_context.value(2).xyz
-          uv = pixel_fetch_context.value(3).xyz.xy
-
           sel_bone_index = None
           if obj is not None and isinstance(obj, u32vec4):
             sel_bone_index = int(obj.y)
 
           if sel_bone_index is not None:
-            CHR.skeleton.selectBone(sel_bone_index)
-            sel_bone = CHR.skeleton.bone(sel_bone_index)
-            sel_parent_index = sel_bone.parentIndex
-            sel_child_index = sel_bone.childIndex
-            app.sel_joint = sel_parent_index
-            app.pivot_point = CHR.localpose.concatMatrices[sel_parent_index].translation
-
-            print(f"bone:{sel_bone_index} parent:{sel_parent_index} child:{sel_child_index} pivot:{app.pivot_point}")
-
-            # Setup for FK rotation
-            app.children = CHR.skeleton.childJointsOf(sel_parent_index)
-            app.descendants = CHR.skeleton.descendantJointsOf(sel_parent_index)
-            app.pmat = CHR.localpose.concatMatrices[sel_parent_index]
-            app.chcmats = [CHR.localpose.concatMatrices[i] for i in app.descendants]
-            app.concats_at_push = CHR.localpose.concatMatrices[0:]
-            app.locals_at_push = CHR.localpose.localMatrices[0:]
-            app.relmats = [app.pmat.inverse * ch for ch in app.chcmats]
-            app.activate_rot = False
-
+            CHR.selectBoneForFK(sel_bone_index)
             # Update pick texture views
             SG = app.scenegraph
             self.pick_img_id.texture = SG.pick_tex_id
@@ -211,12 +184,12 @@ class PoserUi(UiLayoutComponent):
         handled = True
       ##############################
 
-    if uievent.code == tokens.PUSH.hashed:
-      app.concats = CHR.localpose.concatMatrices[0:]
-      app.locals = CHR.localpose.localMatrices[0:]
-      app.bindrels = CHR.localpose.bindRelativeMatrices[0:]
-      print(len(app.concats))
-      handled = True
+    # FK rotation handler for A key
+    if uictx.isKeyDown(KEY_A):
+      if uievent.code == tokens.MOVE.hashed:
+        if CHR.sel_joint > 0:
+          CHR.rotateOnScreenZ(local_coord, camdat)
+          handled = True
 
     return lev2.ui.HandlerResult() if handled else None
 
@@ -232,15 +205,6 @@ class SceneGraphApp(ComponentizedApplication):
     self.activate_rot = False
     self.descendants = []
 
-    params_dict = {
-      "SkyboxIntensity": float(1.0),
-      "AmbientLight": vec3(0.05),
-      "DiffuseIntensity": 1,
-      "SpecularIntensity": 1,
-      "depthFogDistance": float(10000),
-      "preset": "ForwardPBR",
-    }
-
     self.UIL = self.addComponent("poser_ui", PoserUi)
 
     self.SGC = self.addComponent("std_scenegraph",
@@ -248,7 +212,6 @@ class SceneGraphApp(ComponentizedApplication):
                                  enable_ui_camera=True,
                                  eye=vec3(0, 25, -18),
                                  tgt=vec3(0, 0, 10),
-                                 sg_params=params_dict,
                                  layout_component=self.UIL,
                                  grid_variant="_V4")
 
