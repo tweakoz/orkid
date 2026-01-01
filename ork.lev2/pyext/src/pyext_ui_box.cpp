@@ -39,11 +39,11 @@ void pyinit_ui_box(py::module& uimodule) {
               })
           .def_static(
               "uigridfactory",
-              [type_codec](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
+              [type_codec](uilayoutgroup_ptr_t lg, ui::gridparams_ptr_t gp, py::list py_args) -> py::list { //
                 auto decoded_args = type_codec->decodeList(py_args);
                 auto name         = decoded_args[0].get<std::string>();
                 auto color        = decoded_args[1].get<fvec4>();
-                auto layoutitems  = lg->makeGridOfWidgets<ui::Box>(grid_w, grid_h, name, color);
+                auto layoutitems  = lg->makeGridOfWidgets<ui::Box>(gp, name, color);
                 py::list rval;
                 for (auto item : layoutitems) {
                   rval.append(item.as_shared());
@@ -119,11 +119,11 @@ void pyinit_ui_box(py::module& uimodule) {
               })
           .def_static(
               "uigridfactory",
-              [type_codec](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
+              [type_codec](uilayoutgroup_ptr_t lg, ui::gridparams_ptr_t gp, py::list py_args) -> py::list { //
                 auto decoded_args = type_codec->decodeList(py_args);
                 auto name         = decoded_args[0].get<std::string>();
                 auto color        = decoded_args[1].get<fvec4>();
-                auto layoutitems  = lg->makeGridOfWidgets<ui::LabelBox>(grid_w, grid_h, name, color, "");
+                auto layoutitems  = lg->makeGridOfWidgets<ui::LabelBox>(gp, name, color, "");
                 py::list rval;
                 for (auto item : layoutitems) {
                   rval.append(item.as_shared());
@@ -209,7 +209,7 @@ void pyinit_ui_box(py::module& uimodule) {
               })
           .def_static(
               "uigridfactory",
-              [type_codec](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
+              [type_codec](uilayoutgroup_ptr_t lg, ui::gridparams_ptr_t gp, py::list py_args) -> py::list { //
                 std::string text;
                 auto decoded_args = type_codec->decodeList(py_args);
                 auto name         = decoded_args[0].get<std::string>();
@@ -219,7 +219,7 @@ void pyinit_ui_box(py::module& uimodule) {
                     text = as_str.value();
                   }
                 }
-                auto layoutitems  = lg->makeGridOfWidgets<ui::TextBox>(grid_w, grid_h, name, color, text);
+                auto layoutitems  = lg->makeGridOfWidgets<ui::TextBox>(gp, name, color, text);
                 py::list rval;
                 for (auto item : layoutitems) {
                   rval.append(item.as_shared());
@@ -365,11 +365,11 @@ void pyinit_ui_box(py::module& uimodule) {
               })
           .def_static(
               "uigridfactory",
-              [type_codec](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
+              [type_codec](uilayoutgroup_ptr_t lg, ui::gridparams_ptr_t gp, py::list py_args) -> py::list { //
                 auto decoded_args = type_codec->decodeList(py_args);
                 auto name         = decoded_args[0].get<std::string>();
                 auto color        = decoded_args[1].get<fvec4>();
-                auto layoutitems  = lg->makeGridOfWidgets<ui::EvTestBox>(grid_w, grid_h, name, color);
+                auto layoutitems  = lg->makeGridOfWidgets<ui::EvTestBox>(gp, name, color);
                 py::list rval;
                 for (auto item : layoutitems) {
                   rval.append(item.as_shared());
@@ -463,11 +463,11 @@ void pyinit_ui_box(py::module& uimodule) {
               })
           .def_static(
               "uigridfactory",
-              [type_codec](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
+              [type_codec](uilayoutgroup_ptr_t lg, ui::gridparams_ptr_t gp, py::list py_args) -> py::list { //
                 auto decoded_args = type_codec->decodeList(py_args);
                 auto name         = decoded_args[0].get<std::string>();
                 auto color        = decoded_args[1].get<fvec4>();
-                auto layoutitems  = lg->makeGridOfWidgets<ui::LambdaBox>(grid_w, grid_h, name, color);
+                auto layoutitems  = lg->makeGridOfWidgets<ui::LambdaBox>(gp, name, color);
                 py::list rval;
                 for (auto item : layoutitems) {
                   rval.append(item.as_shared());

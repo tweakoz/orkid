@@ -161,6 +161,7 @@ class StandardSceneGraphComponent(ApplicationComponent):
       # Viewport will be created in _onGpuLink via layout_component
       self.griditems = None
     else:
+      assert(False)
       # Default: create 1x1 grid with SceneGraphViewport
       lg_group = ezapp.topLayoutGroup
       self.griditems = lg_group.makeGrid(
@@ -205,6 +206,10 @@ class StandardSceneGraphComponent(ApplicationComponent):
     if self.using_pbr:
       self.pbrcommon  = SG.pbr_common
 
+    self.uicam.lookAt( self.initial_eye,
+                       self.initial_tgt,
+                       self.initial_up )
+    
     ###################################
     # create grid
     ###################################
@@ -234,7 +239,7 @@ class StandardSceneGraphComponent(ApplicationComponent):
     # Get viewport widget - either from layout component or default grid
     if self.layout_component is not None:
       # Create viewport in layout component's "main" slot
-      SGVPW = self.layout_component.createWidgetInSlot(
+      SGVPW = self.layout_component.provideWidgetForSlot(
         "main",
         lev2.ui.SceneGraphViewport,
         ["SGVP", vec4(0.1, 0.1, 0.3, 1)]

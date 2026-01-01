@@ -889,7 +889,7 @@ class UiLayoutComponent(ApplicationComponent):
     """
     return self._slots.get(slot_name)
 
-  def createWidgetInSlot(self, slot_name, widget_class, args):
+  def provideWidgetForSlot(self, slot_name, widget_class, args):
     """Convenience method to create a widget directly in a slot.
 
     Args:

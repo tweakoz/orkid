@@ -48,6 +48,14 @@ template <typename T> struct LayoutItem : public LayoutItemBase {
 
 using layoutitem_ptr_t = std::shared_ptr<LayoutItemBase>;
 
+struct GridParams {
+  int _rows       = 1;
+  int _cols       = 1;
+  int _margin     = 4;
+  std::vector<float> _h_proportions;
+  std::vector<float> _v_proportions;
+};
+using gridparams_ptr_t = std::shared_ptr<GridParams>;
 struct LayoutGroup : public Group {
 
   LayoutGroup(const std::string& name, int x = 0, int y = 0, int w = 0, int h = 0, int margin = 0);
@@ -151,13 +159,31 @@ struct LayoutGroup : public Group {
   }
   //////////////////////////////////////
   template <typename T, typename... A> //
-  std::vector<LayoutItem<T>> makeGridOfWidgets(int w, int h, A&&... args) {
+  std::vector<LayoutItem<T>> makeGridOfWidgets(gridparams_ptr_t params, A&&... args) {
     std::vector<LayoutItem<T>> layout_items;
-
+    int w = params->_cols;
+    int h = params->_rows;
     // Create all vertical guides first (shared across all rows)
     std::vector<ui::anchor::guide_ptr_t> vguides;
+    size_t num_hprops = params->_h_proportions.size();
+    size_t num_vprops = params->_v_proportions.size();
+    printf("makeGridOfWidgets w<%d> h<%d> num_hprops<%zu> num_vprops<%zu>\n", w, h, num_hprops, num_vprops);
+    OrkAssert((num_hprops == 0) or (num_hprops == (size_t(w)-1)));
+    OrkAssert((num_vprops == 0) or (num_vprops == (size_t(h)-1)));
     for (int x = 0; x <= w; x++) {
       float fx = float(x) / float(w);
+      if(num_hprops){
+        if( x==0 ) {
+          fx = 0.0f;
+        }
+        else if( x<w ) {
+          fx = params->_h_proportions[x-1];
+        }
+        else if ( x==w ) {
+          fx = 1.0f;
+        }
+      }
+      printf("  vguide x<%d> fx<%f>\n", x, fx);
       auto guide = _layout->proportionalVerticalGuide(fx);
       // Margin inherited from layout
       vguides.push_back(guide);
@@ -173,6 +199,14 @@ struct LayoutGroup : public Group {
     std::vector<ui::anchor::guide_ptr_t> hguides;
     for (int y = 0; y <= h; y++) {
       float fy = float(y) / float(h);
+      if(num_vprops){
+        if( y==0 )
+          fy = 0.0f;
+        else if( y<h )
+          fy = params->_v_proportions[y-1];
+        else if ( y==h )
+          fy = 1.0f;
+      }
       auto guide = _layout->proportionalHorizontalGuide(fy);
       // Margin inherited from layout
       hguides.push_back(guide);

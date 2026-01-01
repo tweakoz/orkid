@@ -52,10 +52,17 @@ int main(int argc, char** argv, char** envp) {
   w_lbox->_virtualWidth = 0;
   w_lbox->_virtualHeight = 1024;
   auto wllg = w_lbox->layoutGroup();
-  wllg->makeGridOfWidgets<EvTestBox>(3,9,"yo",fvec4(0, .3, .3, 1));
+  auto gp = std::make_shared<ork::ui::GridParams>();
+  gp->_rows = 3;
+  gp->_cols = 9;
+  wllg->makeGridOfWidgets<EvTestBox>(gp,"yo",fvec4(0, .3, .3, 1));
   //////////////////////////////////////
-  w_4x4->makeGridOfWidgets<EvTestBox>(4,4,"yo",fvec4(0, 0, .3, 1));
-  w_8x8->makeGridOfWidgets<EvTestBox>(8,8,"yo",fvec4(0.25, 0, 0.4, 1));
+  gp->_rows = 4;
+  gp->_cols = 4;
+  w_4x4->makeGridOfWidgets<EvTestBox>(gp,"yo",fvec4(0, 0, .3, 1));
+  gp->_rows = 8;
+  gp->_cols = 8;
+  w_8x8->makeGridOfWidgets<EvTestBox>(gp,"yo",fvec4(0.25, 0, 0.4, 1));
   //////////////////////////////////////
   auto color = fvec4(0.4,0.4,0.5,1);
   vp->_clearColorGuide = color;

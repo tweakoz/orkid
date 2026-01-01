@@ -545,8 +545,8 @@ void pyinit_ui(py::module& module_lev2) {
               })
           .def_static(
               "uigridfactory",
-              [type_codec](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
-                auto layoutitems = lg->makeGridOfWidgets<ui::GraphView>(grid_w, grid_h);
+              [type_codec](uilayoutgroup_ptr_t lg, ui::gridparams_ptr_t gp, py::list py_args) -> py::list { //
+                auto layoutitems = lg->makeGridOfWidgets<ui::GraphView>(gp);
                 py::list rval;
                 for (auto item : layoutitems) {
                   rval.append(item.as_shared());
@@ -577,10 +577,10 @@ void pyinit_ui(py::module& module_lev2) {
               })
           .def_static(
               "uigridfactory",
-              [type_codec](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
+              [type_codec](uilayoutgroup_ptr_t lg, ui::gridparams_ptr_t gp, py::list py_args) -> py::list { //
                 auto decoded_args = type_codec->decodeList(py_args);
                 auto name         = decoded_args[0].get<std::string>();
-                auto layoutitems  = lg->makeGridOfWidgets<ui::SceneGraphViewport>(grid_w, grid_h, name);
+                auto layoutitems  = lg->makeGridOfWidgets<ui::SceneGraphViewport>(gp, name);
                 py::list rval;
                 for (auto item : layoutitems) {
                   rval.append(item.as_shared());
@@ -1834,14 +1834,14 @@ void pyinit_ui(py::module& module_lev2) {
               })
           .def_static(
               "uigridfactory",
-              [type_codec](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
+              [type_codec](uilayoutgroup_ptr_t lg, ui::gridparams_ptr_t gp, py::list py_args) -> py::list { //
                 auto decoded_args = type_codec->decodeList(py_args);
                 auto name         = decoded_args[0].get<std::string>();
                 fvec4 defcolor;
                 if (decoded_args.size() > 1) {
                   defcolor = decoded_args[1].get<fvec4>();
                 }
-                auto layoutitems = lg->makeGridOfWidgets<ui::ImageView>(grid_w, grid_h, name);
+                auto layoutitems = lg->makeGridOfWidgets<ui::ImageView>(gp, name);
                 py::list rval;
                 for (auto& item : layoutitems) {
                   item.typedWidget()->_default_color = defcolor;

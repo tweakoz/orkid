@@ -24,7 +24,16 @@ using namespace ged;
 
 void pyinit_ui_layout(py::module& uimodule) {
   auto type_codec = python::pb11_typecodec_t::instance();
-
+  /////////////////////////////////////////////////////////////////////////////////
+  auto gridparams_type = //
+      py::class_<ui::GridParams, ui::gridparams_ptr_t>(uimodule, "GridParams")
+          .def(py::init<>())
+          .def_readwrite("rows", &ui::GridParams::_rows)
+          .def_readwrite("cols", &ui::GridParams::_cols)
+          .def_readwrite("margin", &ui::GridParams::_margin)
+          .def_readwrite("h_proportions", &ui::GridParams::_h_proportions)
+          .def_readwrite("v_proportions", &ui::GridParams::_v_proportions);
+  type_codec->registerStdCodec<ui::gridparams_ptr_t>(gridparams_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto layout_type = //
       py::class_<ui::anchor::Layout, uilayout_ptr_t>(uimodule, "Layout")
@@ -555,6 +564,8 @@ void pyinit_ui_layout(py::module& uimodule) {
                   py::list args;
                   py::object uigrid_factory;
                   int args_parsed = 0;
+                  std::vector<float> h_proportions;
+                  std::vector<float> v_proportions;
                   for (auto item : kwargs) {
                     auto key = py::cast<std::string>(item.first);
                     if (key == "width") {
@@ -575,15 +586,35 @@ void pyinit_ui_layout(py::module& uimodule) {
                     } else if (key == "args") {
                       args = py::cast<py::list>(item.second);
                       args_parsed++;
+                    } else if (key == "h_proportions") {
+                      py::list py_hprops = py::cast<py::list>(item.second);
+                      for (auto py_val : py_hprops) {
+                        float fval = py::cast<float>(py_val);
+                        h_proportions.push_back(fval);
+                      }
+                      args_parsed++;
+                    } else if (key == "v_proportions") {
+                      py::list py_hprops = py::cast<py::list>(item.second);
+                      for (auto py_val : py_hprops) {
+                        float fval = py::cast<float>(py_val);
+                        v_proportions.push_back(fval);
+                      }
+                      args_parsed++;
                     }
                   }
-                  OrkAssert(args_parsed >= 4 && args_parsed <= 5);  // margin is optional
+                  OrkAssert(args_parsed >= 4 && args_parsed <= 6);  // margin is optional
 
                   // Inherit margin from LayoutGroup if not specified
                   if (margin == -1) {
                     margin = lgrp->_margin;
                   }
-                  rval = uigrid_factory(lgrp, width, height, margin, args);
+                  auto gp = std::make_shared<ork::ui::GridParams>();
+                  gp->_h_proportions = h_proportions;
+                  gp->_v_proportions = v_proportions;
+                  gp->_margin        = margin;
+                  gp->_cols         = width;
+                  gp->_rows        = height;
+                  rval = uigrid_factory(lgrp, gp, args);
 
                   // Apply margin to layout and all children
                   auto layout = lgrp->_layout;
@@ -591,6 +622,7 @@ void pyinit_ui_layout(py::module& uimodule) {
                   for (auto child : layout->_childlayouts) {
                     child->setMargin(margin);
                   }
+
                 }
                 return rval;
               })

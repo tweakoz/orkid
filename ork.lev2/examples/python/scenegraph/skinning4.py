@@ -50,7 +50,6 @@ from orkengine.core import vec2, vec3, vec4, quat, mtx4, CrcStringProxy, VarMap,
 from orkengine import lev2
 from ork.app.application import ComponentizedApplication, UiLayoutComponent
 from ork.app.std_scenegraph import StandardSceneGraphComponent
-from lev2utils.primitives import createGridData
 
 tokens = CrcStringProxy()
 
