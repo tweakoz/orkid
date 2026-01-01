@@ -500,7 +500,7 @@ class SceneGraphApp(ComponentizedApplication):
       self.localpose.concatenate()
       X = self.concats_at_push[self.sel_joint]
       OR = X.toRotMatrix4()
-      ZN = vec4(camdat.znormal, 0).transform(OR).xyz.normalized
+      ZN = vec4(camdat.znormal, 0).transform(OR.inverse).xyz.normalized
       IP = mtx4.transMatrix(self.pivot_point * -1.0)
       P = mtx4.transMatrix(self.pivot_point)
       Q = quat.createFromAxisAngle(ZN, angle)
