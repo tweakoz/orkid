@@ -15,6 +15,16 @@ modelpath = "data://tests/chartest/char_mesh" # Fixed model path for char_mesh
 
 os.environ["ORKID_LEV2_SHOW_SKELETON"] = "1"
 
+
+HELP_TEXT = """
+ Poser App Help
+
+  SPC : Reset Pose
+    S : Select Bone
+    A : ZRotate Bone
+- / = : Scale Bone Display
+"""
+
 ################################################################################
 
 class KEY:
@@ -31,6 +41,7 @@ from orkengine import lev2
 from ork.app.application import ComponentizedApplication, UiLayoutComponent
 from ork.app.std_scenegraph import StandardSceneGraphComponent
 from ork.app.testlib.chartest import CharacterComponent
+from ork.app.loggerui import LoggerUIComponent
 
 tokens = CrcStringProxy()
 
@@ -110,7 +121,7 @@ class PoserUi(UiLayoutComponent):
     ##################################
 
     help_box = tabs.makeChild(uiclass=lev2.ui.TextBox, args=["HELP", bg_color, "hello"])
-    help_box.setText("TODO: IK Help Info\n\n\n  SPC : Reset Pose\n    S : Select Bone\n    A : ZRotate Bone\n- / = : Scale Bone Display")
+    help_box.setText(HELP_TEXT)
     help_box.halign = tokens.CENTER_ALL
     help_box.valign = tokens.CENTER
     help_box.font = lev2.FontManager.fontForId("i22")
@@ -196,18 +207,17 @@ class SceneGraphApp(ComponentizedApplication):
 
   def __init__(self):
     super().__init__()
-    self.sel_joint = -1
-    self.activate_rot = False
-    self.descendants = []
 
-    self.UIL = self.addComponent("poser_ui", PoserUi)
+    #self.LUI = self.addComponent("logger", LoggerUIComponent)
+
+    self.PUI = self.addComponent("poser_ui", PoserUi)
 
     self.SGC = self.addComponent("std_scenegraph",
                                  StandardSceneGraphComponent,
                                  enable_ui_camera=True,
                                  eye=vec3(0, 25, -18),
                                  tgt=vec3(0, 0, 10),
-                                 layout_component=self.UIL,
+                                 layout_component=self.PUI,
                                  grid_variant="_V4")
 
     self.CHR = self.addComponent("character",
@@ -224,7 +234,7 @@ class SceneGraphApp(ComponentizedApplication):
 
   def _onUiInit(self):
     lg_group = self.ezapp.topLayoutGroup
-    self.UIL._onBuildLayout(lg_group)
+    self.PUI._onBuildLayout(lg_group)
 
   ##############################################
 
