@@ -116,6 +116,11 @@ Widget* PropertyRow::doRouteUiEvent(event_constptr_t ev) {
     }
   }
 
+  // If we have children (expandable), handle clicks on label/arrow area
+  if (_has_children) {
+    return this;
+  }
+
   return nullptr;
 }
 
@@ -238,6 +243,7 @@ widget_ptr_t PropertySheet::_createEditorWidget(const std::string& key, Property
   switch (type) {
     case PropertyType::Bool: {
       auto checkbox = std::make_shared<Checkbox>("cb_" + key, fvec4(0.2f, 0.2f, 0.2f, 1.0f));
+      checkbox->_draw_label = false;  // PropertyRow handles the label
       if (auto b = value.tryAs<bool>()) {
         checkbox->setToggled(b.value());
       }
@@ -272,6 +278,8 @@ widget_ptr_t PropertySheet::_createEditorWidget(const std::string& key, Property
       }
 
       auto slider = std::make_shared<IntSlider>("sl_" + key, fvec4(0.2f, 0.2f, 0.2f, 1.0f), min_val, max_val, cur_val);
+      slider->_draw_label = false;  // PropertyRow handles the label
+      slider->_update_on_drag = true;
       slider->_onValueChanged = [this, key, slider]() {
         if (_model) {
           _model->setValue(key, svar128_t(slider->value()));
@@ -281,7 +289,6 @@ widget_ptr_t PropertySheet::_createEditorWidget(const std::string& key, Property
         }
       };
       editor = slider;
-      slider->_update_on_drag = true;
       break;
     }
 
@@ -304,6 +311,8 @@ widget_ptr_t PropertySheet::_createEditorWidget(const std::string& key, Property
       }
 
       auto slider = std::make_shared<FloatSlider>("sl_" + key, fvec4(0.2f, 0.2f, 0.2f, 1.0f), min_val, max_val, cur_val);
+      slider->_draw_label = false;  // PropertyRow handles the label
+      slider->_update_on_drag = true;
       slider->_onValueChanged = [this, key, slider]() {
         if (_model) {
           _model->setValue(key, svar128_t(slider->value()));
@@ -313,7 +322,6 @@ widget_ptr_t PropertySheet::_createEditorWidget(const std::string& key, Property
         }
       };
       editor = slider;
-      slider->_update_on_drag = true;
       break;
     }
 

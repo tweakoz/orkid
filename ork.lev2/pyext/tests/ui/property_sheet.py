@@ -16,7 +16,7 @@ class PropertySheetTest:
   def __init__(self):
     super().__init__()
 
-    self.ezapp = lev2.OrkEzApp.create(self, fullscreen=False)
+    self.ezapp = lev2.OrkEzApp.create(self, width=480, fullscreen=False)
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()
 
