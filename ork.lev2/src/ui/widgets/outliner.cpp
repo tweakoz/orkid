@@ -414,10 +414,43 @@ HandlerResult Outliner::DoOnUiEvent(event_constptr_t ev) {
 
     case EventCode::KEY_DOWN: {
       int key = ev->miKeyCode;
+      printf("Outliner::DoOnUiEvent key<%d>\n", key);
       // F2 to start editing selected item
       if (key == 291 && !_selected_key.empty()) { // F2 = 291
         startEditing(_selected_key);
         result.setHandled(this);
+      }
+      // Shift+Delete to delete selected item
+      else if (key == 259 && ev->mbSHIFT && !_selected_key.empty()) { // Delete = 261
+        if (_model && _model->allowDelete()) {
+          std::string key_to_delete = _selected_key;
+
+          // Clear selection before delete
+          _selected_key = "";
+
+          // Remove from model
+          _model->removeItem(key_to_delete);
+
+          // Call callback
+          if (_onDelete) {
+            _onDelete(key_to_delete);
+          }
+
+          // Remove from expanded keys
+          _expanded_keys.erase(key_to_delete);
+          // Also remove any children from expanded keys
+          std::string prefix = key_to_delete + "/";
+          for (auto it = _expanded_keys.begin(); it != _expanded_keys.end(); ) {
+            if (it->find(prefix) == 0) {
+              it = _expanded_keys.erase(it);
+            } else {
+              ++it;
+            }
+          }
+
+          _needs_rebuild = true;
+          result.setHandled(this);
+        }
       }
       break;
     }

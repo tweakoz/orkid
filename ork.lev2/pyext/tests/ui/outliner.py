@@ -37,6 +37,7 @@ class OutlinerTest:
     # Use VarMap data (simple approach)
     self.outliner.data = self._buildTestData()
     self.outliner.model.allow_rename = True  # Enable rename support
+    self.outliner.model.allow_delete = True  # Enable delete support
     self.outliner.expandAll()
 
     # Set selection callback
@@ -47,6 +48,12 @@ class OutlinerTest:
         print(f"  Value: {value}")
 
     self.outliner.onSelect(on_select)
+
+    # Set delete callback
+    def on_delete(key):
+      print(f"Deleted: {key}")
+
+    self.outliner.onDelete(on_delete)
 
     # Style
     self.outliner.bgcolor = vec4(0.15, 0.15, 0.15, 1)

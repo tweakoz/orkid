@@ -22,6 +22,7 @@ class CustomModel(lev2.ui.OutlinerModel):
     self._items = {}
     self._root_children = []
     self.allow_rename = True  # Enable rename support
+    self.allow_delete = True  # Enable delete support
 
   def addRootItem(self, key, display_name, value=None):
     """Add an item at root level."""
@@ -61,6 +62,33 @@ class CustomModel(lev2.ui.OutlinerModel):
     if key in self._items:
       return self._items[key].get("value")
     return None
+
+  def removeItem(self, key):
+    """Remove an item by key."""
+    if key not in self._items:
+      return
+
+    # Remove from parent's children list
+    last_slash = key.rfind("/")
+    if last_slash >= 0:
+      parent_key = key[:last_slash]
+      if parent_key in self._items:
+        children = self._items[parent_key]["children"]
+        if key in children:
+          children.remove(key)
+    else:
+      # Root level item
+      if key in self._root_children:
+        self._root_children.remove(key)
+
+    # Recursively remove children
+    item_data = self._items.get(key)
+    if item_data:
+      for child_key in list(item_data["children"]):
+        self.removeItem(child_key)
+
+    # Remove the item itself
+    del self._items[key]
 
   def renameItem(self, old_key, new_name):
     """Rename an item - changes both key and display name."""
@@ -159,6 +187,12 @@ class OutlinerModelTest:
       self.custom_model.renameItem(old_key, new_name)
 
     self.outliner.onRename(on_rename)
+
+    # Set delete callback
+    def on_delete(key):
+      print(f"Deleted: {key}")
+
+    self.outliner.onDelete(on_delete)
 
     # Style
     self.outliner.bgcolor = vec4(0.15, 0.15, 0.15, 1)

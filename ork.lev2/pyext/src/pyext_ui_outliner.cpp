@@ -156,6 +156,10 @@ void pyinit_ui_outliner(py::module& uimodule) {
               "allow_rename",
               &ui::OutlinerModel::allowRename,
               &ui::OutlinerModel::setAllowRename)
+          .def_property(
+              "allow_delete",
+              &ui::OutlinerModel::allowDelete,
+              &ui::OutlinerModel::setAllowDelete)
           .def("renameItem", &ui::OutlinerModel::renameItem)
           .def("__repr__", [](ui::outliner_model_ptr_t model) {
             return FormatString("<OutlinerModel %p>", (void*)model.get());
@@ -263,6 +267,14 @@ void pyinit_ui_outliner(py::module& uimodule) {
                 outliner->_onRename = [callback](const std::string& old_key, const std::string& new_name) {
                   py::gil_scoped_acquire acquire;
                   callback(old_key, new_name);
+                };
+              })
+          .def(
+              "onDelete",
+              [](ui::outliner_ptr_t outliner, py::object callback) { //
+                outliner->_onDelete = [callback](const std::string& key) {
+                  py::gil_scoped_acquire acquire;
+                  callback(key);
                 };
               })
           .def("startEditing", &ui::Outliner::startEditing)

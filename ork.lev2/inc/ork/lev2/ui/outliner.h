@@ -51,6 +51,7 @@ struct Outliner : public Widget {
   // Callbacks
   std::function<void(const std::string& key)> _onSelect;
   std::function<void(const std::string& old_key, const std::string& new_name)> _onRename;
+  std::function<void(const std::string& key)> _onDelete;
 
   // Appearance
   int _item_height = 20;

@@ -50,6 +50,10 @@ struct OutlinerModel {
   bool allowRename() const { return _allow_rename; }
   void setAllowRename(bool allow) { _allow_rename = allow; }
 
+  // Whether this model allows deleting items
+  bool allowDelete() const { return _allow_delete; }
+  void setAllowDelete(bool allow) { _allow_delete = allow; }
+
   // Rename an item - returns the new key, or empty string on failure
   // Override this if your model supports renaming
   virtual std::string renameItem(const std::string& old_key, const std::string& new_name);
@@ -90,6 +94,7 @@ struct OutlinerModel {
 
 protected:
   bool _allow_rename = false;
+  bool _allow_delete = false;
 };
 
 using outliner_model_ptr_t = std::shared_ptr<OutlinerModel>;
