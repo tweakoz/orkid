@@ -494,8 +494,21 @@ widget_ptr_t PropertySheet::_createEditorWidget(const std::string& key, Property
       break;
     }
 
-    default:
+    default: {
+      // No built-in editor for this type and no registered factory
+      auto type_crc = propertyTypeToCrc(type);
+      auto color_crc = propertyTypeToCrc(PropertyType::Color);
+      auto vec4_crc = propertyTypeToCrc(PropertyType::Vec4);
+      printf("PropertySheet: No editor for key<%s> type_crc<0x%08x>\n", key.c_str(), type_crc);
+      printf("  For reference: Color<0x%08x> Vec4<0x%08x>\n", color_crc, vec4_crc);
+      printf("  Registered factories:\n");
+      for (const auto& [crc, factory] : _editor_factories) {
+        printf("    crc<0x%08x> has_inline<%d> has_detail<%d>\n",
+               crc, factory.inline_factory != nullptr, factory.detail_factory != nullptr);
+      }
+      OrkAssert(false); // No editor registered for property type
       break;
+    }
   }
 
   return editor;

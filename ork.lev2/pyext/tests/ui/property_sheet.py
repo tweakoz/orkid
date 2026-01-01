@@ -24,9 +24,9 @@ def create_color_inline_factory(propsheet):
     swatch.show_hex = True
 
     # When swatch is clicked, request detail editor
-    def on_click():
+    def on_click(sw):
       propsheet.requestDetailEditor(key)
-    swatch.onClick(on_click)
+    swatch.onClick = on_click  # onClick is a property, not a method
 
     return swatch
   return factory
@@ -34,19 +34,22 @@ def create_color_inline_factory(propsheet):
 
 def create_color_detail_factory(propsheet):
   """Factory function that creates ColorPicker widgets for color detail editing."""
+  # Import ColorPicker from the correct location
+  from ork.ui.color_picker import ColorPicker
+
   def factory(sheet, key, value, annotations, binding):
-    # Create a ColorPicker (Python composite widget)
-    picker = lev2.ui.ColorPicker.wfactory(["picker_" + key])
-    if value is not None:
-      picker.color = value
+    # ColorPicker.wfactory takes [name, bg_color, initial_color]
+    bg_color = vec3(0.15, 0.15, 0.18)
+    initial_color = value if value is not None else vec4(0.5, 0.5, 0.5, 1.0)
+    picker_widget = ColorPicker.wfactory(["picker_" + key, bg_color, initial_color])
 
-    # Connect picker to binding callbacks
-    def on_color_changed(color):
-      binding["onValueChanged"](color)
-      # Also update the inline swatch
-    picker.onColorChanged(on_color_changed)
+    # Get the picker instance from uservars
+    picker = picker_widget.uservars.color_picker
 
-    return picker
+    # TODO: Connect picker to binding callbacks when ColorPicker supports it
+    # For now, the detail editor just displays the color
+
+    return picker_widget
   return factory
 
 
@@ -86,14 +89,15 @@ class PropertySheetTest:
     self.propsheet.data = self._buildTestData()
 
     # Set annotations for color properties (use tokens for CrcEnum types)
+    # Note: key format uses "/" as separator internally
     model = self.propsheet.model
     diffuse_annot = VarMap()
     diffuse_annot.type = tokens.Color
-    model.setAnnotations("Material.diffuse_color", diffuse_annot)
+    model.setAnnotations("Material/diffuse_color", diffuse_annot)
 
     emissive_annot = VarMap()
     emissive_annot.type = tokens.Color
-    model.setAnnotations("Material.emissive_color", emissive_annot)
+    model.setAnnotations("Material/emissive_color", emissive_annot)
 
     self.propsheet.expandAll()
 
