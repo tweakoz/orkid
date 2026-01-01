@@ -174,8 +174,8 @@ class PoserUi(UiLayoutComponent):
             sel_parent_index = sel_bone.parentIndex
             sel_child_index = sel_bone.childIndex
             app.sel_joint = sel_parent_index
-            # Pivot at child joint (the base/origin of the selected bone)
-            app.pivot_point = app.localpose.concatMatrices[sel_child_index].translation
+            # Pivot at parent joint (the origin of the selected bone)
+            app.pivot_point = app.localpose.concatMatrices[sel_parent_index].translation
             print(f"bone:{sel_bone_index} parent:{sel_parent_index} child:{sel_child_index} pivot:{app.pivot_point}")
             pname = app.skeleton.jointName(sel_bone.parentIndex)
             cname = app.skeleton.jointName(sel_bone.childIndex)
@@ -518,7 +518,7 @@ class SceneGraphApp(ComponentizedApplication):
     R = quat.createFromAxisAngle(vec3(1, 0, 0), angle).toMatrix()
     IP = mtx4.transMatrix(self.pivot_point * -1.0)
     P = mtx4.transMatrix(self.pivot_point)
-    M = P * (R) * IP
+    M = P * R * IP
     self.propogateFromJoint(C, M)
 
   ##############################################
@@ -531,7 +531,7 @@ class SceneGraphApp(ComponentizedApplication):
     R = quat.createFromAxisAngle(vec3(0, 1, 0), angle).toMatrix()
     IP = mtx4.transMatrix(self.pivot_point * -1.0)
     P = mtx4.transMatrix(self.pivot_point)
-    M = P * (R) * IP
+    M = P * R * IP
     self.propogateFromJoint(C, M)
 
   ##############################################
@@ -544,17 +544,17 @@ class SceneGraphApp(ComponentizedApplication):
     R = quat.createFromAxisAngle(vec3(0, 0, 1), angle).toMatrix()
     IP = mtx4.transMatrix(self.pivot_point * -1.0)
     P = mtx4.transMatrix(self.pivot_point)
-    M = P * (R) * IP
+    M = P * R * IP
     self.propogateFromJoint(C, M)
 
   ##############################################
 
   def propogateFromJoint(self, C, M):
-    self.localpose.concatMatrices[self.sel_joint] = C * M
+    self.localpose.concatMatrices[self.sel_joint] = M * C
     for i in range(len(self.descendants)):
       ich = self.descendants[i]
       MCH = self.relmats[i]
-      self.localpose.concatMatrices[ich] = C * M * MCH
+      self.localpose.concatMatrices[ich] = M * C * MCH
     self.localpose.deconcatenate()
     self.localpose.concatenate()
 
