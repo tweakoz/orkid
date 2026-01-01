@@ -1,0 +1,140 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2023, Michael T. Mayers.
+// Distributed under the MIT License.
+// see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
+////////////////////////////////////////////////////////////////
+
+#pragma once
+
+#include <ork/kernel/varmap.inl>
+#include <functional>
+#include <vector>
+#include <string>
+#include <memory>
+
+namespace ork::ui {
+
+////////////////////////////////////////////////////////////////////
+// PropertyType: Enum for common property types
+////////////////////////////////////////////////////////////////////
+
+enum class PropertyType {
+  Unknown,
+  Bool,
+  Int,
+  Float,
+  String,
+  Vec2,
+  Vec3,
+  Vec4,
+  Color,
+  Group,  // Container for child properties
+};
+
+////////////////////////////////////////////////////////////////////
+// PropertySheetModel: Abstract base class for PropertySheet data models
+// - Can be subclassed in C++ or Python
+// - Provides data access and manipulation interface
+// - Notifies observers of changes
+////////////////////////////////////////////////////////////////////
+
+struct PropertySheetModel {
+  PropertySheetModel() = default;
+  virtual ~PropertySheetModel() = default;
+
+  //////////////////////////////////////////////////////////////
+  // Tree structure - override these in subclasses
+  //////////////////////////////////////////////////////////////
+
+  // Get child keys for a given parent (empty string = root)
+  virtual std::vector<std::string> getChildren(const std::string& parent_key) const = 0;
+
+  // Get display name for a property (typically the last component of the key)
+  virtual std::string getDisplayName(const std::string& key) const = 0;
+
+  // Check if a property has children (is a group)
+  virtual bool hasChildren(const std::string& key) const = 0;
+
+  //////////////////////////////////////////////////////////////
+  // Property access - override these in subclasses
+  //////////////////////////////////////////////////////////////
+
+  // Get the value of a property
+  virtual svar128_t getValue(const std::string& key) const = 0;
+
+  // Set the value of a property
+  virtual void setValue(const std::string& key, svar128_t value) = 0;
+
+  // Get the type of a property
+  virtual PropertyType getPropertyType(const std::string& key) const = 0;
+
+  // Get annotations (metadata) for a property
+  // Returns a VarMap with keys like "min", "max", "step", "readonly", etc.
+  virtual varmap::varmap_ptr_t getAnnotations(const std::string& key) const;
+
+  //////////////////////////////////////////////////////////////
+  // Read-only support
+  //////////////////////////////////////////////////////////////
+
+  bool isReadOnly() const { return _read_only; }
+  void setReadOnly(bool read_only) { _read_only = read_only; }
+
+  //////////////////////////////////////////////////////////////
+  // Change notifications - call these when data changes
+  //////////////////////////////////////////////////////////////
+
+  void notifyPropertyChanged(const std::string& key);
+  void notifyStructureChanged();  // When properties are added/removed
+
+  //////////////////////////////////////////////////////////////
+  // Callbacks for observers (PropertySheet subscribes to these)
+  //////////////////////////////////////////////////////////////
+
+  std::function<void(const std::string& key)> _onPropertyChanged;
+  std::function<void()> _onStructureChanged;
+
+protected:
+  bool _read_only = false;
+};
+
+using property_sheet_model_ptr_t = std::shared_ptr<PropertySheetModel>;
+
+////////////////////////////////////////////////////////////////////
+// VarMapPropertyModel: Built-in model implementation backed by VarMap
+////////////////////////////////////////////////////////////////////
+
+struct VarMapPropertyModel : public PropertySheetModel {
+  VarMapPropertyModel();
+  VarMapPropertyModel(varmap::varmap_ptr_t data);
+  ~VarMapPropertyModel() override = default;
+
+  // Set/get the backing VarMap
+  void setData(varmap::varmap_ptr_t data);
+  varmap::varmap_ptr_t getData() const { return _data; }
+
+  // Set annotations for a property
+  void setAnnotations(const std::string& key, varmap::varmap_ptr_t annotations);
+
+  // PropertySheetModel interface
+  std::vector<std::string> getChildren(const std::string& parent_key) const override;
+  std::string getDisplayName(const std::string& key) const override;
+  bool hasChildren(const std::string& key) const override;
+  svar128_t getValue(const std::string& key) const override;
+  void setValue(const std::string& key, svar128_t value) override;
+  PropertyType getPropertyType(const std::string& key) const override;
+  varmap::varmap_ptr_t getAnnotations(const std::string& key) const override;
+
+private:
+  // Navigate to a node by key path, returns nullptr if not found
+  varmap::varmap_ptr_t _getNode(const std::string& key) const;
+  // Get parent node and child name from a key
+  std::pair<varmap::varmap_ptr_t, std::string> _getParentAndName(const std::string& key) const;
+
+  varmap::varmap_ptr_t _data;
+  std::unordered_map<std::string, varmap::varmap_ptr_t> _annotations;
+};
+
+using varmap_property_model_ptr_t = std::shared_ptr<VarMapPropertyModel>;
+
+} // namespace ork::ui

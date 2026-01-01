@@ -1,0 +1,259 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2023, Michael T. Mayers.
+// Distributed under the MIT License.
+// see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
+////////////////////////////////////////////////////////////////
+
+#include "pyext.h"
+#include <ork/lev2/ui/widget.h>
+#include <ork/lev2/ui/group.h>
+#include <ork/lev2/ui/layoutgroup.inl>
+#include <ork/lev2/ui/property_sheet.h>
+
+///////////////////////////////////////////////////////////////////////////////
+namespace ork::lev2 {
+
+// Trampoline class for Python subclassing of PropertySheetModel
+class PyPropertySheetModel : public ui::PropertySheetModel {
+public:
+  using ui::PropertySheetModel::PropertySheetModel;
+
+  std::vector<std::string> getChildren(const std::string& parent_key) const override {
+    py::gil_scoped_acquire acquire;
+    PYBIND11_OVERRIDE_PURE(
+        std::vector<std::string>,
+        ui::PropertySheetModel,
+        getChildren,
+        parent_key);
+  }
+
+  std::string getDisplayName(const std::string& key) const override {
+    py::gil_scoped_acquire acquire;
+    PYBIND11_OVERRIDE_PURE(
+        std::string,
+        ui::PropertySheetModel,
+        getDisplayName,
+        key);
+  }
+
+  bool hasChildren(const std::string& key) const override {
+    py::gil_scoped_acquire acquire;
+    PYBIND11_OVERRIDE_PURE(
+        bool,
+        ui::PropertySheetModel,
+        hasChildren,
+        key);
+  }
+
+  svar128_t getValue(const std::string& key) const override {
+    py::gil_scoped_acquire acquire;
+    py::object py_result = py::cast(this).attr("getValue")(key);
+    if (py_result.is_none()) {
+      return svar128_t();
+    }
+    auto type_codec = python::pb11_typecodec_t::instance();
+    return type_codec->decode(py_result);
+  }
+
+  void setValue(const std::string& key, svar128_t value) override {
+    py::gil_scoped_acquire acquire;
+    auto type_codec = python::pb11_typecodec_t::instance();
+    py::object py_value = type_codec->encode(value);
+    py::cast(this).attr("setValue")(key, py_value);
+  }
+
+  ui::PropertyType getPropertyType(const std::string& key) const override {
+    py::gil_scoped_acquire acquire;
+    PYBIND11_OVERRIDE_PURE(
+        ui::PropertyType,
+        ui::PropertySheetModel,
+        getPropertyType,
+        key);
+  }
+
+  varmap::varmap_ptr_t getAnnotations(const std::string& key) const override {
+    py::gil_scoped_acquire acquire;
+    py::object py_result = py::cast(this).attr("getAnnotations")(key);
+    if (py_result.is_none()) {
+      return nullptr;
+    }
+    // Try to cast to varmap_ptr_t
+    try {
+      return py_result.cast<varmap::varmap_ptr_t>();
+    } catch (...) {
+      return nullptr;
+    }
+  }
+};
+
+void pyinit_ui_property_sheet(py::module& uimodule) {
+  auto type_codec = python::pb11_typecodec_t::instance();
+
+  /////////////////////////////////////////////////////////////////////////////////
+  // PropertyType enum
+  /////////////////////////////////////////////////////////////////////////////////
+  py::enum_<ui::PropertyType>(uimodule, "PropertyType")
+      .value("Unknown", ui::PropertyType::Unknown)
+      .value("Bool", ui::PropertyType::Bool)
+      .value("Int", ui::PropertyType::Int)
+      .value("Float", ui::PropertyType::Float)
+      .value("String", ui::PropertyType::String)
+      .value("Vec2", ui::PropertyType::Vec2)
+      .value("Vec3", ui::PropertyType::Vec3)
+      .value("Vec4", ui::PropertyType::Vec4)
+      .value("Color", ui::PropertyType::Color)
+      .value("Group", ui::PropertyType::Group);
+
+  /////////////////////////////////////////////////////////////////////////////////
+  // PropertySheetModel base class (can be subclassed in Python)
+  /////////////////////////////////////////////////////////////////////////////////
+  auto property_model_type = //
+      py::class_<ui::PropertySheetModel, PyPropertySheetModel, ui::property_sheet_model_ptr_t>(uimodule, "PropertySheetModel")
+          .def(py::init<>())
+          .def("getChildren", &ui::PropertySheetModel::getChildren)
+          .def("getDisplayName", &ui::PropertySheetModel::getDisplayName)
+          .def("hasChildren", &ui::PropertySheetModel::hasChildren)
+          .def(
+              "getValue",
+              [type_codec](ui::property_sheet_model_ptr_t model, const std::string& key) -> py::object {
+                auto value = model->getValue(key);
+                if (!value.isSet()) {
+                  return py::none();
+                }
+                return type_codec->encode(value);
+              })
+          .def(
+              "setValue",
+              [type_codec](ui::property_sheet_model_ptr_t model, const std::string& key, py::object py_value) {
+                svar128_t value;
+                if (!py_value.is_none()) {
+                  value = type_codec->decode(py_value);
+                }
+                model->setValue(key, value);
+              })
+          .def("getPropertyType", &ui::PropertySheetModel::getPropertyType)
+          .def(
+              "getAnnotations",
+              [](ui::property_sheet_model_ptr_t model, const std::string& key) -> varmap::varmap_ptr_t {
+                return model->getAnnotations(key);
+              })
+          .def("notifyPropertyChanged", &ui::PropertySheetModel::notifyPropertyChanged)
+          .def("notifyStructureChanged", &ui::PropertySheetModel::notifyStructureChanged)
+          .def_property(
+              "read_only",
+              &ui::PropertySheetModel::isReadOnly,
+              &ui::PropertySheetModel::setReadOnly)
+          .def("__repr__", [](ui::property_sheet_model_ptr_t model) {
+            return FormatString("<PropertySheetModel %p>", (void*)model.get());
+          });
+
+  type_codec->registerStdCodec<ui::property_sheet_model_ptr_t>(property_model_type);
+
+  /////////////////////////////////////////////////////////////////////////////////
+  // VarMapPropertyModel - built-in model backed by VarMap
+  /////////////////////////////////////////////////////////////////////////////////
+  auto varmap_property_model_type = //
+      py::class_<ui::VarMapPropertyModel, ui::PropertySheetModel, ui::varmap_property_model_ptr_t>(uimodule, "VarMapPropertyModel")
+          .def(py::init<>())
+          .def(py::init<varmap::varmap_ptr_t>())
+          .def_property(
+              "data",
+              [](ui::varmap_property_model_ptr_t model) -> varmap::varmap_ptr_t {
+                return model->getData();
+              },
+              [](ui::varmap_property_model_ptr_t model, varmap::varmap_ptr_t data) {
+                model->setData(data);
+              })
+          .def("setAnnotations", &ui::VarMapPropertyModel::setAnnotations)
+          .def("__repr__", [](ui::varmap_property_model_ptr_t model) {
+            return FormatString("<VarMapPropertyModel %p>", (void*)model.get());
+          });
+
+  type_codec->registerStdCodec<ui::varmap_property_model_ptr_t>(varmap_property_model_type);
+
+  /////////////////////////////////////////////////////////////////////////////////
+  // PropertySheet widget
+  /////////////////////////////////////////////////////////////////////////////////
+  auto property_sheet_type = //
+      py::class_<ui::PropertySheet, ui::Group, ui::property_sheet_ptr_t>(uimodule, "PropertySheet")
+          .def_static(
+              "wfactory",
+              [type_codec](py::list py_args) -> ui::property_sheet_ptr_t {
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name = decoded_args[0].get<std::string>();
+                auto sheet = std::make_shared<ui::PropertySheet>(name);
+                return sheet;
+              })
+          .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t {
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name = decoded_args[0].get<std::string>();
+                auto layoutitem = lg->makeChild<ui::PropertySheet>(name);
+                return layoutitem.as_shared();
+              })
+          .def_property(
+              "model",
+              [](ui::property_sheet_ptr_t sheet) -> ui::property_sheet_model_ptr_t {
+                return sheet->getModel();
+              },
+              [](ui::property_sheet_ptr_t sheet, ui::property_sheet_model_ptr_t model) {
+                sheet->setModel(model);
+              })
+          .def_property(
+              "data",
+              [](ui::property_sheet_ptr_t sheet) -> varmap::varmap_ptr_t {
+                return sheet->getData();
+              },
+              [](ui::property_sheet_ptr_t sheet, varmap::varmap_ptr_t data) {
+                sheet->setData(data);
+              })
+          .def("setExpanded", &ui::PropertySheet::setExpanded)
+          .def("isExpanded", &ui::PropertySheet::isExpanded)
+          .def("expandAll", &ui::PropertySheet::expandAll)
+          .def("collapseAll", &ui::PropertySheet::collapseAll)
+          .def("rebuild", &ui::PropertySheet::rebuild)
+          .def(
+              "onPropertyChanged",
+              [](ui::property_sheet_ptr_t sheet, py::object callback) {
+                sheet->_onPropertyChanged = [callback](const std::string& key, svar128_t value) {
+                  py::gil_scoped_acquire acquire;
+                  auto type_codec = python::pb11_typecodec_t::instance();
+                  py::object py_value = type_codec->encode(value);
+                  callback(key, py_value);
+                };
+              })
+          .def_property(
+              "row_height",
+              [](ui::property_sheet_ptr_t sheet) -> int { return sheet->_row_height; },
+              [](ui::property_sheet_ptr_t sheet, int h) { sheet->_row_height = h; })
+          .def_property(
+              "label_width",
+              [](ui::property_sheet_ptr_t sheet) -> int { return sheet->_label_width; },
+              [](ui::property_sheet_ptr_t sheet, int w) { sheet->_label_width = w; })
+          .def_property(
+              "indent_width",
+              [](ui::property_sheet_ptr_t sheet) -> int { return sheet->_indent_width; },
+              [](ui::property_sheet_ptr_t sheet, int w) { sheet->_indent_width = w; })
+          .def_property(
+              "bgcolor",
+              [](ui::property_sheet_ptr_t sheet) -> fvec4 { return sheet->_bgcolor; },
+              [](ui::property_sheet_ptr_t sheet, fvec4 c) { sheet->_bgcolor = c; })
+          .def_property(
+              "label_color",
+              [](ui::property_sheet_ptr_t sheet) -> fvec4 { return sheet->_label_color; },
+              [](ui::property_sheet_ptr_t sheet, fvec4 c) { sheet->_label_color = c; })
+          .def_property(
+              "group_color",
+              [](ui::property_sheet_ptr_t sheet) -> fvec4 { return sheet->_group_color; },
+              [](ui::property_sheet_ptr_t sheet, fvec4 c) { sheet->_group_color = c; })
+          .def("__repr__", [](ui::property_sheet_ptr_t sheet) {
+            return FormatString("<PropertySheet name<%s> widget<%p>>", sheet->GetName().c_str(), (void*)sheet.get());
+          });
+
+  type_codec->registerStdCodec<ui::property_sheet_ptr_t>(property_sheet_type);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+} // namespace ork::lev2
