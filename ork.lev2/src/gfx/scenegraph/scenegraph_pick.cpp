@@ -9,8 +9,7 @@ using namespace ork;
 
 namespace ork::lev2::scenegraph {
 
-// Use the constant from the header
-static constexpr int PICKBUFDIM = PICKBUFFER_DIM;
+const int PICKBUFFER_DIM = 511;
 
 SgPickBuffer::SgPickBuffer(ork::lev2::Context* ctx, Scene& scene)
     : _context(ctx)
@@ -43,9 +42,9 @@ void SgPickBuffer::gpuInit(ork::lev2::Context* ctx) {
   auto tek     = itm->tryTechniqueAs<NodeCompositingTechnique>();
   auto piknode = tek->tryRenderNodeAs<PickingCompositingNode>();
   auto rtgnode = tek->tryOutputNodeAs<RtGroupOutputCompositingNode>();
-  piknode->resize(PICKBUFDIM, PICKBUFDIM);
-  rtgnode->resize(PICKBUFDIM, PICKBUFDIM);
-  piknode->gpuInit(ctx, PICKBUFDIM, PICKBUFDIM);
+  piknode->resize(PICKBUFFER_DIM, PICKBUFFER_DIM);
+  rtgnode->resize(PICKBUFFER_DIM, PICKBUFFER_DIM);
+  piknode->gpuInit(ctx, PICKBUFFER_DIM, PICKBUFFER_DIM);
   _pfc->_rtgroup = piknode->GetOutputGroup();
   _compimpl = _compdata->createImpl();
 
@@ -111,7 +110,7 @@ void SgPickBuffer::mydraw(fray3_constptr_t ray, callback_t callback) {
   auto FBI = _context->FBI();
   ///////////////////////////////////////////////////////////////////////////
   gpuInit(_context);  // Ensure initialized (no-op if already done)
-  _compimpl->_compcontext->Resize(PICKBUFDIM, PICKBUFDIM);
+  _compimpl->_compcontext->Resize(PICKBUFFER_DIM, PICKBUFFER_DIM);
   ///////////////////////////////////////////////////////////////////////////
   auto RCFD = std::make_shared<ork::lev2::RenderContextFrameData>(_context); //
   RCFD->pushCompositor(_compimpl);
@@ -121,7 +120,7 @@ void SgPickBuffer::mydraw(fray3_constptr_t ray, callback_t callback) {
   ork::recursive_mutex& glock = lev2::GfxEnv::GetRef().GetGlobalLock();
   glock.Lock(0x777);
   _context->pushRenderContextFrameData(RCFD);
-  ViewportRect tgt_rect(0, 0, PICKBUFDIM, PICKBUFDIM);
+  ViewportRect tgt_rect(0, 0, PICKBUFFER_DIM, PICKBUFFER_DIM);
   ///////////////////////////////////////////////////////////////////////////
   auto DB = _scene._dbufcontext_SG->acquireForReadLocked();
   if (DB) {
@@ -189,8 +188,8 @@ void SgPickBuffer::mydraw(fray3_constptr_t ray, callback_t callback) {
     _pfc->endPickRender();
 
     // Capture center pixel asynchronously
-    int center_x = PICKBUFDIM / 2;
-    int center_y = PICKBUFDIM / 2;
+    int center_x = PICKBUFFER_DIM / 2;
+    int center_y = PICKBUFFER_DIM / 2;
 
     // Create completion callback that invokes user callback
     auto pfc = _pfc;
