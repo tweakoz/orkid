@@ -49,6 +49,7 @@ struct PixelFetchContext {
   enum class EPixelUsage : uint32_t{
     CrcEnum(FLOAT),
     CrcEnum(FVEC4),
+    CrcEnum(UVEC4),
     CrcEnum(PTR64),
     CrcEnum(SVARIANT)
   };

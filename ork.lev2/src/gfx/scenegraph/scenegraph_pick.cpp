@@ -27,6 +27,7 @@ SgPickBuffer::SgPickBuffer(ork::lev2::Context* ctx, Scene& scene)
   }
   _pfc->_usage[0]   = lev2::PixelFetchContext::EPixelUsage::SVARIANT;
   _pfc->_gfxContext = ctx;
+  gpuInit(ctx);
 }
 ///////////////////////////////////////////////////////////////////////////
 void SgPickBuffer::gpuInit(ork::lev2::Context* ctx) {
@@ -92,7 +93,9 @@ void SgPickBuffer::pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord, 
   int H    = _context->mainSurfaceHeight();
   float fx = float(screencoord.x) / W;
   float fy = float(screencoord.y) / H;
-  fvec2 unitpos(fx, fy);
+  // Flip Y for Vulkan coordinate system: screen Y=0 is top, but frustum Y=1 is top
+  // (due to Y-flip in projection matrix for Vulkan NDC)
+  fvec2 unitpos(fx, 1.0f - fy);
   auto mtcs = cam->computeMatrices(float(W) / float(H));
   auto ray  = std::make_shared<fray3>();
   mtcs.projectDepthRay(unitpos, *ray.get());
@@ -169,8 +172,10 @@ void SgPickBuffer::mydraw(fray3_constptr_t ray, callback_t callback) {
     drawdata._properties["simrunning"_crcu].set<bool>(true);
     drawdata._properties["DB"_crcu].set<const DrawQueue*>(DB);
     ///////////////////////////////////////////////////////////////////////////
-    // draw the pickbuffer
+    // FRAME 1: Render the pick buffer
+    // Must wrap rendering in beginFrame/endFrame to ensure valid command buffer
     ///////////////////////////////////////////////////////////////////////////
+    _context->beginFrame(false);  // non-visual frame for pick rendering
     _compimpl->pushCPD(CPD);
     FBI->EnterPickState(nullptr);
     _compimpl->assemble(drawdata);
@@ -179,9 +184,10 @@ void SgPickBuffer::mydraw(fray3_constptr_t ray, callback_t callback) {
 
     FBI->LeavePickState();
     _compimpl->popCPD();
+    _context->endFrame();
     ///////////////////////////////////////////////////////////////////////////
-    // Async pixel fetch - capture the center pixel
-    // The pick camera points along the ray, so center pixel is the pick target
+    // FRAME 2: Capture the pixel
+    // Separate frame for the async capture operation
     ///////////////////////////////////////////////////////////////////////////
     _pfc->endPickRender();
 
@@ -199,7 +205,9 @@ void SgPickBuffer::mydraw(fray3_constptr_t ray, callback_t callback) {
       }
     };
 
+    _context->beginFrame(false);  // non-visual frame for capture
     _pendingCapture = FBI->capturePixelAsync(_pfc, center_x, center_y, on_complete);
+    _context->endFrame();
     ///////////////////////////////////////////////////////////////////////////
 
   } // if(DB)
@@ -207,10 +215,6 @@ void SgPickBuffer::mydraw(fray3_constptr_t ray, callback_t callback) {
   ///////////////////////////////////////////////////////////////////////////
   _context->popRenderContextFrameData();
   lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
-  ///////////////////////////////////////////////////////////////////////////
-  // Note: The callback will be invoked during the next endFrame() when
-  // _processPendingCaptures() runs. This makes picking asynchronous -
-  // the result arrives on the next frame.
   ///////////////////////////////////////////////////////////////////////////
 }
 } // namespace ork::lev2::scenegraph

@@ -24,7 +24,7 @@
 namespace ork::lev2::scenegraph {
 ///////////////////////////////////////////////////////////////////////////////
 
-static constexpr int PICKBUFFER_DIM = 128;
+static constexpr int PICKBUFFER_DIM = 127;
 
 struct Layer;
 struct Node;

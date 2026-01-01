@@ -637,13 +637,14 @@ fragment_shader ps_pick : iface_frg_pick : uset_std_pick {
   out_uv     = vec4(frg_uv, 0, 0);
 }
 ///////////////////////////////////////////////////////////////
-// Skeleton pick interface - Position, Normal, Color (no binormal, no UV)
+// Skeleton pick interface - Position, Normal, Color, UserData (bone ID for picking)
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_vtx_pick_skeleton : ub_std_vtx {
   inputs {
     vec4 position : POSITION;
     vec3 normal : NORMAL;
     vec4 vtxcolor : COLOR0;
+    uvec3 pickSUBID : USERDATA;  // _data[0] = bone ID
   }
   outputs {
     vec3 frg_wpos;
@@ -658,6 +659,6 @@ vertex_shader vs_pick_skeleton : iface_vtx_pick_skeleton : ublk_std_matrices {
   frg_wpos      = (m * position).xyz;
   frg_wnrm      = normalize(mrot * normal);
   frg_uv        = vec2(0, 0);
-  frg_pickSUBID = uvec3(0, 0, 0);  // No sub-ID for skeleton
+  frg_pickSUBID = pickSUBID;  // Pass bone ID from vertex data
 }
 ///////////////////////////////////////////////////////////////

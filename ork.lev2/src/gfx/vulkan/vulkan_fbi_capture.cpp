@@ -181,15 +181,16 @@ void VkContext::_processPendingCaptures() {
       size_t bufsize = staging_buffer->_length;
       staging_buffer->copyToHost((void*)img->_data->data(), bufsize);
 
-      // Signal immediately
+      // Process pixel fetch BEFORE callback so values are available
+      if (capture_async->_pixelFetchContext && capture_async->_width == 1 && capture_async->_height == 1) {
+        _processPixelFetch(capture_async);
+      }
+
+      // Signal completion after pixel values are populated
       capture_async->_completed = true;
       if (capture_async->_on_capture_complete) {
         capture_async->_on_capture_complete();
       }
-    }
-
-    if (capture_async->_pixelFetchContext && capture_async->_width == 1 && capture_async->_height == 1) {
-      _processPixelFetch(capture_async);
     }
 
   } // for (auto capture_async : captures_to_process) {
@@ -784,6 +785,9 @@ VkFrameBufferInterface::capturePixelAsync(pixelfetchctx_ptr_t pfc, int x, int y,
       auto sub_pfc = std::make_shared<PixelFetchContext>();
       sub_pfc->_resize(1);
       sub_pfc->_usage[0]         = pfc->_usage[buf_idx];
+      // Share pick ID encoding tables from main PFC for decodePixel to work
+      sub_pfc->_pickIDvec        = pfc->_pickIDvec;
+      sub_pfc->_pickIDlut        = pfc->_pickIDlut;
       future->_pixelFetchContext = sub_pfc;
       future->_width             = 1;
       future->_height            = 1;

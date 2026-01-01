@@ -113,7 +113,6 @@ void Scene::_unregisterUISurface(drawable_ptr_t drawable) {
 void Scene::gpuInit(Context* ctx) {
   printf("Scene::gpuInit BEGIN\n");
   _sgpickbuffer = std::make_shared<SgPickBuffer>(ctx, *this);
-  _sgpickbuffer->gpuInit(ctx);  // Initialize pick buffer textures for HUD visibility
   printf("Scene::gpuInit: pick buffer textures:\n");
   printf("  ID: %p w=%d h=%d\n",
          _sgpickbuffer->_pickIDtexture.get(),

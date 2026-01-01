@@ -44,11 +44,11 @@ struct IMPL {
     pTARG->debugPushGroup("Picking::rendeinitr");
     if (nullptr == _rtg) {
       _material.gpuInit(pTARG);
-      _rtg                 = std::make_shared<RtGroup>(pTARG, _width, _height, MsaaSamples::MSAA_1X, "user"_crcu);
-      auto buf_id          = _rtg->createRenderTarget(EBufferFormat::RGBA32UI, "color"_crcu);
-      auto buf_wpos        = _rtg->createRenderTarget(EBufferFormat::RGBA32F, "color"_crcu);
-      auto buf_wnrm        = _rtg->createRenderTarget(EBufferFormat::RGBA32F, "color"_crcu);
-      auto buf_uv          = _rtg->createRenderTarget(EBufferFormat::RGBA32F, "color"_crcu);
+      _rtg                 = std::make_shared<RtGroup>(pTARG, _width, _height, MsaaSamples::MSAA_1X);
+      auto buf_id          = _rtg->createRenderTarget(EBufferFormat::RGBA32UI);
+      auto buf_wpos        = _rtg->createRenderTarget(EBufferFormat::RGBA32F);
+      auto buf_wnrm        = _rtg->createRenderTarget(EBufferFormat::RGBA32F);
+      auto buf_uv          = _rtg->createRenderTarget(EBufferFormat::RGBA32F);
       buf_id->_debugName   = "rt0-pickid";
       buf_wpos->_debugName = "rt0-wpos";
       buf_wnrm->_debugName = "rt0-wnrm";

@@ -209,16 +209,6 @@ FxPipelineNamedParamProviders::FxPipelineNamedParamProviders() {
     ppc._fxi->bindParamMatrix(param, MVP);
   };
   /////////////////////////////////////////////////////////////////
-  _providers["RCFD_Camera_Pick"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
-    const auto& RCFDPROPS = ppc._rcfd->userProperties();
-    auto it               = RCFDPROPS.find("pickbufferMvpMatrix"_crc);
-    OrkAssert(it != RCFDPROPS.end());
-    auto as_mtx4p    = it->second.get<fmtx4_ptr_t>();
-    const fmtx4& MVP = *(as_mtx4p.get());
-    // MVP.dump("pickbufferMvpMatrix");
-    ppc._fxi->bindParamMatrix(param, MVP);
-  };
-  /////////////////////////////////////////////////////////////////
   _providers["RCFD_TIME"_crcu] = [](const FxPipelineProviderContext& ppc, fxparam_constptr_t param) {
     auto RCFD  = ppc._rcfd;
     float time = RCFD->getUserProperty("time"_crc).get<float>();

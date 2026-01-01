@@ -51,7 +51,7 @@ os.environ["ORKID_LEV2_SHOW_SKELETON"] = "1"
 
 ################################################################################
 
-from orkengine.core import vec2, vec3, vec4, quat, mtx4, CrcStringProxy, VarMap
+from orkengine.core import vec2, vec3, vec4, quat, mtx4, CrcStringProxy, VarMap, u32vec4
 from orkengine import lev2
 from ork.app.application import ComponentizedApplication, UiLayoutComponent
 from ork.app.std_scenegraph import StandardSceneGraphComponent
@@ -152,14 +152,18 @@ class PoserUi(UiLayoutComponent):
         app.push_screen_pos = scoord
 
         def pick_callback(pixel_fetch_context):
+          #print(pixel_fetch_context)
           obj = pixel_fetch_context.value(0)
           pos = pixel_fetch_context.value(1).xyz
           nrm = pixel_fetch_context.value(2).xyz
           uv = pixel_fetch_context.value(3).xyz.xy
           eye = camdat.eye + camdat.znormal * 10
-          print(obj)
-          if obj is not None and (type(obj["x"]) == vec4):
-            sel_bone_index = obj["y"]
+          print(obj,pos,nrm,uv)
+          # decodePixel returns a u32vec4 with .y = bone ID
+          sel_bone_index = None
+          if obj is not None and isinstance(obj, u32vec4):
+            sel_bone_index = int(obj.y)
+          if sel_bone_index is not None:
             app.skeleton.selectBone(sel_bone_index)
             sel_bone = app.skeleton.bone(sel_bone_index)
             sel_parent_index = sel_bone.parentIndex
@@ -171,67 +175,69 @@ class PoserUi(UiLayoutComponent):
             cpath = app.skeleton.jointPath(sel_bone.childIndex)
             pID = app.skeleton.jointID(sel_bone.parentIndex)
             cID = app.skeleton.jointID(sel_bone.childIndex)
-            print("###########################################")
-            print("parent<name>: ", pname)
-            print("child<name>: ", cname)
-            print("parent<path>: ", ppath)
-            print("child<path>: ", cpath)
-            print("parent<id>: ", pID)
-            print("child<id>: ", cID)
-            print("bone index: ", sel_bone_index)
-            print("par index: ", sel_bone.parentIndex)
-            print("chi index: ", sel_bone.childIndex)
-            print("###########################################")
             app.children = app.skeleton.childJointsOf(sel_parent_index)
-            print("children of p: ", app.children)
             app.descendants = app.skeleton.descendantJointsOf(sel_parent_index)
-            print("descendants of p: ", app.descendants)
-
             app.childrenC = app.skeleton.childJointsOf(sel_bone.childIndex)
-            print("children of c: ", app.childrenC)
             app.descendantsC = app.skeleton.descendantJointsOf(sel_bone.childIndex)
-            print("descendants of c: ", app.descendantsC)
+ 
+            if False:
+              print("###########################################")
+              print("parent<name>: ", pname)
+              print("child<name>: ", cname)
+              print("parent<path>: ", ppath)
+              print("child<path>: ", cpath)
+              print("parent<id>: ", pID)
+              print("child<id>: ", cID)
+              print("bone index: ", sel_bone_index)
+              print("par index: ", sel_bone.parentIndex)
+              print("chi index: ", sel_bone.childIndex)
+              print("###########################################")
+              print("children of p: ", app.children)
+              print("descendants of p: ", app.descendants)
+              print("children of c: ", app.childrenC)
+              print("descendants of c: ", app.descendantsC)
+              print("###########################################")
 
-            print("###########################################")
             P = app.localpose.concatMatrices[sel_bone.parentIndex]
             C = app.localpose.concatMatrices[sel_bone.childIndex]
             PT = P.translation
             CT = C.translation
             length = (CT - PT).length
 
-            print("concat.pt<%g %g %g>" % (PT.x, PT.y, PT.z))
-            print("concat.ct<%g %g %g>" % (CT.x, CT.y, CT.z))
-            print("concat.length<%f>" % length)
+            if False:
+              print("concat.pt<%g %g %g>" % (PT.x, PT.y, PT.z))
+              print("concat.ct<%g %g %g>" % (CT.x, CT.y, CT.z))
+              print("concat.length<%f>" % length)
 
-            print("###########################################")
-            P = app.localpose.localMatrices[sel_bone.parentIndex]
-            C = app.localpose.localMatrices[sel_bone.childIndex]
-            PT = P.translation
-            CT = C.translation
+              print("###########################################")
+              P = app.localpose.localMatrices[sel_bone.parentIndex]
+              C = app.localpose.localMatrices[sel_bone.childIndex]
+              PT = P.translation
+              CT = C.translation
 
-            print("local.pt<%g %g %g>" % (PT.x, PT.y, PT.z))
-            print("local.ct<%g %g %g>" % (CT.x, CT.y, CT.z))
+              print("local.pt<%g %g %g>" % (PT.x, PT.y, PT.z))
+              print("local.ct<%g %g %g>" % (CT.x, CT.y, CT.z))
 
             app.pmat = app.localpose.concatMatrices[sel_parent_index]
             app.chcmats = [app.localpose.concatMatrices[i] for i in app.descendants]
             app.concats_at_push = app.localpose.concatMatrices[0:]
             app.locals_at_push = app.localpose.localMatrices[0:]
             app.relmats = [app.pmat.inverse * ch for ch in app.chcmats]
-            A = camdat.project(1280 / 720.0, pos).xy() * vec2(0.5, 0.5) + vec2(0.5, 0.5)
-            B = scoord * vec2(1.0 / 1280, -1.0 / 720) + vec2(0, 1)
+            #A = camdat.project(1280 / 720.0, pos).xy * vec2(0.5, 0.5) + vec2(0.5, 0.5)
+            #B = scoord * vec2(1.0 / 1280, -1.0 / 720) + vec2(0, 1)
             app.activate_rot = False
-            print(A, B)
+            #print(A, B)
 
         app.scenegraph.pickWithScreenCoord(camdat, scoord, pick_callback)
         # Re-assign textures after pick (RtGroup now realized with valid dimensions)
         SG = app.scenegraph
-        self.pick_img_id.texture = SG.pick_tex_id
-        self.pick_img_pos.texture = SG.pick_tex_pos
-        self.pick_img_nrm.texture = SG.pick_tex_nrm
+        #self.pick_img_id.texture = SG.pick_tex_id
+        #self.pick_img_pos.texture = SG.pick_tex_pos
+        #self.pick_img_nrm.texture = SG.pick_tex_nrm
         # Mark ImageViews dirty so they redraw with updated pick textures
-        self.pick_img_id.setDirty()
-        self.pick_img_pos.setDirty()
-        self.pick_img_nrm.setDirty()
+        #self.pick_img_id.setDirty()
+        #self.pick_img_pos.setDirty()
+        #self.pick_img_nrm.setDirty()
         handled = True
       ##############################
 
@@ -463,9 +469,9 @@ class SceneGraphApp(ComponentizedApplication):
           print(f"  WARNING: Invalid texture dimensions for {name}")
 
     # Get ImageViews from the layout component
-    assign_if_valid(UIL.pick_img_id, SG.pick_tex_id, "pick_tex_id")
-    assign_if_valid(UIL.pick_img_pos, SG.pick_tex_pos, "pick_tex_pos")
-    assign_if_valid(UIL.pick_img_nrm, SG.pick_tex_nrm, "pick_tex_nrm")
+    #assign_if_valid(UIL.pick_img_id, SG.pick_tex_id, "pick_tex_id")
+    #assign_if_valid(UIL.pick_img_pos, SG.pick_tex_pos, "pick_tex_pos")
+    #assign_if_valid(UIL.pick_img_nrm, SG.pick_tex_nrm, "pick_tex_nrm")
 
   ##############################################
 
