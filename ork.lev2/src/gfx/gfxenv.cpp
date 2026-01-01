@@ -550,6 +550,7 @@ void CaptureBuffer::setFormatAndSize(EBufferFormat fmt, int w, int h) {
       _buffersize = 8 * w * h;
       break;
     case EBufferFormat::RGBA32F:
+    case EBufferFormat::RGBA32UI:
       _buffersize = 16 * w * h;
       break;
     case EBufferFormat::NV12: {
@@ -559,7 +560,7 @@ void CaptureBuffer::setFormatAndSize(EBufferFormat fmt, int w, int h) {
       break;
     }
     default:
-      assert(false);
+      OrkAssert(false);
       break;
   }
 
