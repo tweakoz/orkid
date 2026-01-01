@@ -13,9 +13,165 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
+
+// Trampoline class for Python subclassing of OutlinerModel
+class PyOutlinerModel : public ui::OutlinerModel {
+public:
+  using ui::OutlinerModel::OutlinerModel;
+
+  std::vector<std::string> getChildren(const std::string& parent_key) const override {
+    py::gil_scoped_acquire acquire;
+    PYBIND11_OVERRIDE_PURE(
+        std::vector<std::string>,
+        ui::OutlinerModel,
+        getChildren,
+        parent_key);
+  }
+
+  std::string getDisplayName(const std::string& key) const override {
+    py::gil_scoped_acquire acquire;
+    PYBIND11_OVERRIDE_PURE(
+        std::string,
+        ui::OutlinerModel,
+        getDisplayName,
+        key);
+  }
+
+  bool hasChildren(const std::string& key) const override {
+    py::gil_scoped_acquire acquire;
+    PYBIND11_OVERRIDE_PURE(
+        bool,
+        ui::OutlinerModel,
+        hasChildren,
+        key);
+  }
+
+  // getValue returns py::object in Python, we convert via codec
+  svar128_t getValue(const std::string& key) const override {
+    py::gil_scoped_acquire acquire;
+    // Call Python method and get py::object result
+    py::object py_result = py::cast(this).attr("getValue")(key);
+    // For now, return empty if Python returns None
+    if (py_result.is_none()) {
+      return svar128_t();
+    }
+    // Convert via type codec
+    auto type_codec = python::pb11_typecodec_t::instance();
+    return type_codec->decode(py_result);
+  }
+
+  void addItem(const std::string& parent_key, const std::string& name, svar128_t value) override {
+    py::gil_scoped_acquire acquire;
+    // Convert value to py::object via codec
+    auto type_codec = python::pb11_typecodec_t::instance();
+    py::object py_value = type_codec->encode(value);
+    py::cast(this).attr("addItem")(parent_key, name, py_value);
+  }
+
+  void removeItem(const std::string& key) override {
+    py::gil_scoped_acquire acquire;
+    PYBIND11_OVERRIDE(
+        void,
+        ui::OutlinerModel,
+        removeItem,
+        key);
+  }
+
+  void moveItem(const std::string& key, const std::string& new_parent_key) override {
+    py::gil_scoped_acquire acquire;
+    PYBIND11_OVERRIDE(
+        void,
+        ui::OutlinerModel,
+        moveItem,
+        key, new_parent_key);
+  }
+
+  void updateItem(const std::string& key, svar128_t value) override {
+    py::gil_scoped_acquire acquire;
+    // Convert value to py::object via codec
+    auto type_codec = python::pb11_typecodec_t::instance();
+    py::object py_value = type_codec->encode(value);
+    py::cast(this).attr("updateItem")(key, py_value);
+  }
+};
+
 void pyinit_ui_outliner(py::module& uimodule) {
   auto type_codec = python::pb11_typecodec_t::instance();
 
+  /////////////////////////////////////////////////////////////////////////////////
+  // OutlinerModel base class (can be subclassed in Python)
+  /////////////////////////////////////////////////////////////////////////////////
+  auto outliner_model_type = //
+      py::class_<ui::OutlinerModel, PyOutlinerModel, ui::outliner_model_ptr_t>(uimodule, "OutlinerModel")
+          .def(py::init<>())
+          .def("getChildren", &ui::OutlinerModel::getChildren)
+          .def("getDisplayName", &ui::OutlinerModel::getDisplayName)
+          .def("hasChildren", &ui::OutlinerModel::hasChildren)
+          .def(
+              "getValue",
+              [type_codec](ui::outliner_model_ptr_t model, const std::string& key) -> py::object {
+                auto value = model->getValue(key);
+                if (!value.isSet()) {
+                  return py::none();
+                }
+                return type_codec->encode(value);
+              })
+          .def(
+              "addItem",
+              [type_codec](ui::outliner_model_ptr_t model, const std::string& parent_key, const std::string& name, py::object py_value) {
+                svar128_t value;
+                if (!py_value.is_none()) {
+                  value = type_codec->decode(py_value);
+                }
+                model->addItem(parent_key, name, value);
+              },
+              py::arg("parent_key"),
+              py::arg("name"),
+              py::arg("value") = py::none())
+          .def("removeItem", &ui::OutlinerModel::removeItem)
+          .def("moveItem", &ui::OutlinerModel::moveItem)
+          .def(
+              "updateItem",
+              [type_codec](ui::outliner_model_ptr_t model, const std::string& key, py::object py_value) {
+                svar128_t value;
+                if (!py_value.is_none()) {
+                  value = type_codec->decode(py_value);
+                }
+                model->updateItem(key, value);
+              })
+          .def("notifyItemAdded", &ui::OutlinerModel::notifyItemAdded)
+          .def("notifyItemRemoved", &ui::OutlinerModel::notifyItemRemoved)
+          .def("notifyItemChanged", &ui::OutlinerModel::notifyItemChanged)
+          .def("notifyModelReset", &ui::OutlinerModel::notifyModelReset)
+          .def("__repr__", [](ui::outliner_model_ptr_t model) {
+            return FormatString("<OutlinerModel %p>", (void*)model.get());
+          });
+
+  type_codec->registerStdCodec<ui::outliner_model_ptr_t>(outliner_model_type);
+
+  /////////////////////////////////////////////////////////////////////////////////
+  // VarMapModel - built-in model backed by VarMap
+  /////////////////////////////////////////////////////////////////////////////////
+  auto varmap_model_type = //
+      py::class_<ui::VarMapModel, ui::OutlinerModel, ui::varmap_model_ptr_t>(uimodule, "VarMapModel")
+          .def(py::init<>())
+          .def(py::init<varmap::varmap_ptr_t>())
+          .def_property(
+              "data",
+              [](ui::varmap_model_ptr_t model) -> varmap::varmap_ptr_t {
+                return model->getData();
+              },
+              [](ui::varmap_model_ptr_t model, varmap::varmap_ptr_t data) {
+                model->setData(data);
+              })
+          .def("__repr__", [](ui::varmap_model_ptr_t model) {
+            return FormatString("<VarMapModel %p>", (void*)model.get());
+          });
+
+  type_codec->registerStdCodec<ui::varmap_model_ptr_t>(varmap_model_type);
+
+  /////////////////////////////////////////////////////////////////////////////////
+  // Outliner widget
   /////////////////////////////////////////////////////////////////////////////////
   auto outliner_type = //
       py::class_<ui::Outliner, ui::Widget, ui::outliner_ptr_t>(uimodule, "Outliner")
@@ -34,6 +190,14 @@ void pyinit_ui_outliner(py::module& uimodule) {
                 auto name         = decoded_args[0].get<std::string>();
                 auto layoutitem   = lg->makeChild<ui::Outliner>(name);
                 return layoutitem.as_shared();
+              })
+          .def_property(
+              "model",
+              [](ui::outliner_ptr_t outliner) -> ui::outliner_model_ptr_t { //
+                return outliner->getModel();
+              },
+              [](ui::outliner_ptr_t outliner, ui::outliner_model_ptr_t model) { //
+                outliner->setModel(model);
               })
           .def_property(
               "data",

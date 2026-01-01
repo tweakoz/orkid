@@ -8,14 +8,14 @@
 #pragma once
 
 #include <ork/lev2/ui/widget.h>
-#include <ork/kernel/varmap.inl>
+#include <ork/lev2/ui/outliner_model.h>
 #include <functional>
 
 namespace ork::ui {
 
 ////////////////////////////////////////////////////////////////////
 // Outliner: A tree view widget for displaying hierarchical data
-// - Data stored in VarMap with nested VarMaps for tree structure
+// - Uses OutlinerModel for data (can be VarMapModel or custom)
 // - Supports selection with callback
 // - Collapsible tree nodes
 ////////////////////////////////////////////////////////////////////
@@ -24,9 +24,13 @@ struct Outliner : public Widget {
   Outliner(const std::string& name, int x = 0, int y = 0, int w = 0, int h = 0);
   ~Outliner();
 
-  // Data management
+  // Model-based data management
+  void setModel(outliner_model_ptr_t model);
+  outliner_model_ptr_t getModel() const { return _model; }
+
+  // VarMap convenience API (creates VarMapModel internally)
   void setData(varmap::varmap_ptr_t data);
-  varmap::varmap_ptr_t getData() const { return _data; }
+  varmap::varmap_ptr_t getData() const;
 
   // Selection
   void setSelectedKey(const std::string& key);
@@ -70,12 +74,13 @@ private:
   };
 
   void _rebuildVisibleItems();
-  void _addItemsRecursive(varmap::varmap_ptr_t node, const std::string& path_prefix, int depth);
+  void _addItemsRecursive(const std::string& parent_key, int depth);
   void _clampScrollOffset();
   int _getItemIndexAt(int local_y) const;
   std::string _getItemKeyAt(int local_y) const;
+  void _subscribeToModel();
 
-  varmap::varmap_ptr_t _data;
+  outliner_model_ptr_t _model;
   std::string _selected_key;
   std::string _hovered_key;
   std::vector<VisibleItem> _visible_items;

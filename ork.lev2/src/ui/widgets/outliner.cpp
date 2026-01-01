@@ -19,6 +19,9 @@ static constexpr float PI = 3.14159265359f;
 Outliner::Outliner(const std::string& name, int x, int y, int w, int h)
     : Widget(name, x, y, w, h) {
   _font = lev2::FontMan::fontForId("i14");
+  // Create default empty model
+  _model = std::make_shared<VarMapModel>();
+  _subscribeToModel();
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -26,9 +29,51 @@ Outliner::~Outliner() {
 }
 
 /////////////////////////////////////////////////////////////////////////
-void Outliner::setData(varmap::varmap_ptr_t data) {
-  _data = data;
+void Outliner::_subscribeToModel() {
+  if (_model) {
+    _model->_onItemAdded = [this](const std::string& key) {
+      _needs_rebuild = true;
+    };
+    _model->_onItemRemoved = [this](const std::string& key) {
+      _needs_rebuild = true;
+      // Clear selection if removed item was selected
+      if (_selected_key == key || _selected_key.find(key + "/") == 0) {
+        _selected_key = "";
+      }
+    };
+    _model->_onItemChanged = [this](const std::string& key) {
+      _needs_rebuild = true;
+    };
+    _model->_onModelReset = [this]() {
+      _needs_rebuild = true;
+      _expanded_keys.clear();
+      _selected_key = "";
+    };
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////
+void Outliner::setModel(outliner_model_ptr_t model) {
+  _model = model;
+  if (!_model) {
+    _model = std::make_shared<VarMapModel>();
+  }
+  _subscribeToModel();
   _needs_rebuild = true;
+}
+
+/////////////////////////////////////////////////////////////////////////
+void Outliner::setData(varmap::varmap_ptr_t data) {
+  auto varmap_model = std::make_shared<VarMapModel>(data);
+  setModel(varmap_model);
+}
+
+/////////////////////////////////////////////////////////////////////////
+varmap::varmap_ptr_t Outliner::getData() const {
+  if (auto varmap_model = std::dynamic_pointer_cast<VarMapModel>(_model)) {
+    return varmap_model->getData();
+  }
+  return nullptr;
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -59,18 +104,18 @@ bool Outliner::isExpanded(const std::string& key) const {
 /////////////////////////////////////////////////////////////////////////
 void Outliner::expandAll() {
   // Recursively add all keys that have children
-  if (_data) {
-    std::function<void(varmap::varmap_ptr_t, const std::string&)> expand_recursive;
-    expand_recursive = [&](varmap::varmap_ptr_t node, const std::string& prefix) {
-      for (auto& [key, val] : node->_themap) {
-        std::string full_key = prefix.empty() ? key : prefix + "/" + key;
-        if (auto child_map = val.tryAs<varmap::varmap_ptr_t>()) {
-          _expanded_keys.insert(full_key);
-          expand_recursive(child_map.value(), full_key);
+  if (_model) {
+    std::function<void(const std::string&)> expand_recursive;
+    expand_recursive = [&](const std::string& parent_key) {
+      auto children = _model->getChildren(parent_key);
+      for (const auto& child_key : children) {
+        if (_model->hasChildren(child_key)) {
+          _expanded_keys.insert(child_key);
+          expand_recursive(child_key);
         }
       }
     };
-    expand_recursive(_data, "");
+    expand_recursive("");
   }
   _needs_rebuild = true;
 }
@@ -94,8 +139,8 @@ void Outliner::DoLayout() {
 /////////////////////////////////////////////////////////////////////////
 void Outliner::_rebuildVisibleItems() {
   _visible_items.clear();
-  if (_data) {
-    _addItemsRecursive(_data, "", 0);
+  if (_model) {
+    _addItemsRecursive("", 0);
   }
   _needs_rebuild = false;
   _clampScrollOffset();
@@ -109,40 +154,24 @@ void Outliner::_clampScrollOffset() {
 }
 
 /////////////////////////////////////////////////////////////////////////
-void Outliner::_addItemsRecursive(varmap::varmap_ptr_t node, const std::string& path_prefix, int depth) {
-  if (!node) return;
+void Outliner::_addItemsRecursive(const std::string& parent_key, int depth) {
+  if (!_model) return;
 
-  // Get sorted keys for consistent ordering
-  std::vector<std::string> keys;
-  for (auto& [key, val] : node->_themap) {
-    keys.push_back(key);
-  }
-  std::sort(keys.begin(), keys.end());
+  auto children = _model->getChildren(parent_key);
 
-  for (const auto& key : keys) {
-    auto& val = node->_themap[key];
-    std::string full_key = path_prefix.empty() ? key : path_prefix + "/" + key;
-
+  for (const auto& child_key : children) {
     VisibleItem item;
-    item.key = full_key;
-    item.display_name = key;
+    item.key = child_key;
+    item.display_name = _model->getDisplayName(child_key);
     item.depth = depth;
-    item.has_children = false;
-    item.is_expanded = false;
+    item.has_children = _model->hasChildren(child_key);
+    item.is_expanded = isExpanded(child_key);
 
-    // Check if this is a nested VarMap (has children)
-    if (auto child_map = val.tryAs<varmap::varmap_ptr_t>()) {
-      item.has_children = !child_map.value()->_themap.empty();
-      item.is_expanded = isExpanded(full_key);
-      _visible_items.push_back(item);
+    _visible_items.push_back(item);
 
-      // Recurse if expanded
-      if (item.is_expanded) {
-        _addItemsRecursive(child_map.value(), full_key, depth + 1);
-      }
-    } else {
-      // Leaf node
-      _visible_items.push_back(item);
+    // Recurse if expanded
+    if (item.has_children && item.is_expanded) {
+      _addItemsRecursive(child_key, depth + 1);
     }
   }
 }

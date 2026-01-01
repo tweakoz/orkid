@@ -2,12 +2,65 @@
 
 ################################################################################
 # Outliner Widget Test
-# Demonstrates tree view with hierarchical data
+# Demonstrates tree view with hierarchical data using both VarMap and custom model
 ################################################################################
 
 import signal
 from orkengine.core import vec2, vec3, vec4, VarMap
 from orkengine import lev2
+
+################################################################################
+# Custom Python Model Example
+# Demonstrates subclassing OutlinerModel in Python
+################################################################################
+
+class CustomModel(lev2.ui.OutlinerModel):
+  """A custom model that stores data in a Python dictionary."""
+
+  def __init__(self):
+    super().__init__()
+    # Internal data structure: dict of key -> (display_name, children_keys, value)
+    self._items = {}
+    self._root_children = []
+
+  def addRootItem(self, key, display_name, value=None):
+    """Add an item at root level."""
+    self._items[key] = {"name": display_name, "children": [], "value": value}
+    self._root_children.append(key)
+    self.notifyItemAdded(key)
+
+  def addChildItem(self, parent_key, key, display_name, value=None):
+    """Add a child item under a parent."""
+    self._items[key] = {"name": display_name, "children": [], "value": value}
+    if parent_key in self._items:
+      self._items[parent_key]["children"].append(key)
+    self.notifyItemAdded(key)
+
+  def getChildren(self, parent_key):
+    """Return list of child keys for a parent (empty string = root)."""
+    if parent_key == "":
+      return self._root_children
+    if parent_key in self._items:
+      return self._items[parent_key]["children"]
+    return []
+
+  def getDisplayName(self, key):
+    """Return display name for a key."""
+    if key in self._items:
+      return self._items[key]["name"]
+    return key
+
+  def hasChildren(self, key):
+    """Check if item has children."""
+    if key in self._items:
+      return len(self._items[key]["children"]) > 0
+    return False
+
+  def getValue(self, key):
+    """Get optional value for a key."""
+    if key in self._items:
+      return self._items[key].get("value")
+    return None
 
 ################################################################################
 
@@ -34,16 +87,24 @@ class OutlinerTest:
     outliner_layout.layout.bottom.anchorTo(root_layout.bottom)
     outliner_layout.layout.right.anchorTo(root_layout.right)
 
-    # Build test data
-    self.outliner.data = self._buildTestData()
+    # Choose which model approach to use:
+    # Option 1: VarMap-based (backward compatible)
+    # self.outliner.data = self._buildTestData()
+
+    # Option 2: Custom Python model
+    self.custom_model = self._buildCustomModel()
+    self.outliner.model = self.custom_model
+
     self.outliner.expandAll()
 
     # Set selection callback
     def on_select(key):
       print(f"Selected: {key}")
-      # Get value from data
-      value = self._getValueByKey(key)
-      print(f"  Value: {value}")
+      # Get value from model
+      model = self.outliner.model
+      if model:
+        value = model.getValue(key)
+        print(f"  Value: {value}")
 
     self.outliner.onSelect(on_select)
 
@@ -60,8 +121,60 @@ class OutlinerTest:
 
     signal.signal(signal.SIGINT, onCtrlC)
 
+  def _buildCustomModel(self):
+    """Build hierarchical test data using custom Python model."""
+    model = CustomModel()
+
+    # Scene hierarchy
+    model.addRootItem("Scene", "Scene")
+
+    # Cameras
+    model.addChildItem("Scene", "Scene/Cameras", "Cameras")
+    model.addChildItem("Scene/Cameras", "Scene/Cameras/MainCamera", "MainCamera", "perspective")
+    model.addChildItem("Scene/Cameras", "Scene/Cameras/TopCamera", "TopCamera", "orthographic")
+    model.addChildItem("Scene/Cameras", "Scene/Cameras/SideCamera", "SideCamera", "orthographic")
+
+    # Lights
+    model.addChildItem("Scene", "Scene/Lights", "Lights")
+    model.addChildItem("Scene/Lights", "Scene/Lights/SunLight", "SunLight", "directional")
+    model.addChildItem("Scene/Lights", "Scene/Lights/PointLight1", "PointLight1", "point")
+    model.addChildItem("Scene/Lights", "Scene/Lights/SpotLight1", "SpotLight1", "spot")
+
+    # Objects
+    model.addChildItem("Scene", "Scene/Objects", "Objects")
+
+    # Character group
+    model.addChildItem("Scene/Objects", "Scene/Objects/Character", "Character")
+    model.addChildItem("Scene/Objects/Character", "Scene/Objects/Character/Body", "Body", "mesh")
+    model.addChildItem("Scene/Objects/Character", "Scene/Objects/Character/Head", "Head", "mesh")
+    model.addChildItem("Scene/Objects/Character", "Scene/Objects/Character/LeftArm", "LeftArm", "mesh")
+    model.addChildItem("Scene/Objects/Character", "Scene/Objects/Character/RightArm", "RightArm", "mesh")
+
+    # Environment group
+    model.addChildItem("Scene/Objects", "Scene/Objects/Environment", "Environment")
+    model.addChildItem("Scene/Objects/Environment", "Scene/Objects/Environment/Ground", "Ground", "mesh")
+    model.addChildItem("Scene/Objects/Environment", "Scene/Objects/Environment/Sky", "Sky", "dome")
+    model.addChildItem("Scene/Objects/Environment", "Scene/Objects/Environment/Tree1", "Tree1", "mesh")
+    model.addChildItem("Scene/Objects/Environment", "Scene/Objects/Environment/Tree2", "Tree2", "mesh")
+    model.addChildItem("Scene/Objects/Environment", "Scene/Objects/Environment/Rock1", "Rock1", "mesh")
+
+    # Materials
+    model.addRootItem("Materials", "Materials")
+    model.addChildItem("Materials", "Materials/CharacterSkin", "CharacterSkin", "pbr")
+    model.addChildItem("Materials", "Materials/GroundGrass", "GroundGrass", "pbr")
+    model.addChildItem("Materials", "Materials/TreeBark", "TreeBark", "pbr")
+    model.addChildItem("Materials", "Materials/SkyDome", "SkyDome", "unlit")
+
+    # Settings
+    model.addRootItem("Settings", "Settings")
+    model.addChildItem("Settings", "Settings/RenderQuality", "RenderQuality", "high")
+    model.addChildItem("Settings", "Settings/ShadowResolution", "ShadowResolution", 2048)
+    model.addChildItem("Settings", "Settings/AntiAliasing", "AntiAliasing", "MSAA4x")
+
+    return model
+
   def _buildTestData(self):
-    """Build hierarchical test data using VarMap."""
+    """Build hierarchical test data using VarMap (backward compatible approach)."""
     data = VarMap()
 
     # Scene hierarchy example
@@ -120,22 +233,6 @@ class OutlinerTest:
     data.Settings = settings
 
     return data
-
-  def _getValueByKey(self, key):
-    """Navigate to a value by slash-separated key path."""
-    parts = key.split("/")
-    current = self.outliner.data
-    for part in parts:
-      if part in current:
-        val = current[part]
-        # Check if it's a nested VarMap
-        if isinstance(val, VarMap):
-          current = val
-        else:
-          return val
-      else:
-        return None
-    return current
 
   def onGpuInit(self, ctx):
     # Set up theme engine for SDF rendering
