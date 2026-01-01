@@ -34,7 +34,12 @@ struct Outliner : public Widget {
 
   // Selection
   void setSelectedKey(const std::string& key);
-  std::string getSelectedKey() const { return _selected_key; }
+  std::string getSelectedKey() const;  // Returns first selected key (for single-select compatibility)
+  void addToSelection(const std::string& key);
+  void removeFromSelection(const std::string& key);
+  void clearSelection();
+  const std::unordered_set<std::string>& getSelectedKeys() const { return _selected_keys; }
+  bool isSelected(const std::string& key) const { return _selected_keys.count(key) > 0; }
 
   // Expand/collapse
   void setExpanded(const std::string& key, bool expanded);
@@ -42,16 +47,23 @@ struct Outliner : public Widget {
   void expandAll();
   void collapseAll();
 
-  // Inline editing
+  // Inline editing (rename)
   void startEditing(const std::string& key);
   void cancelEditing();
   void commitEditing();
   bool isEditing() const { return !_editing_key.empty(); }
 
+  // Add mode (create new item)
+  void startAdding(const std::string& parent_key);
+  void cancelAdding();
+  void commitAdding();
+  bool isAdding() const { return !_adding_parent_key.empty(); }
+
   // Callbacks
   std::function<void(const std::string& key)> _onSelect;
   std::function<void(const std::string& old_key, const std::string& new_name)> _onRename;
   std::function<void(const std::string& key)> _onDelete;
+  std::function<void(const std::string& key)> _onAdd;
 
   // Appearance
   int _item_height = 20;
@@ -89,7 +101,7 @@ private:
   void _subscribeToModel();
 
   outliner_model_ptr_t _model;
-  std::string _selected_key;
+  std::unordered_set<std::string> _selected_keys;
   std::string _hovered_key;
   std::vector<VisibleItem> _visible_items;
   std::unordered_set<std::string> _expanded_keys;
@@ -101,6 +113,13 @@ private:
   std::string _edit_value;        // current edit text
   std::string _original_value;    // original name (to restore on cancel)
   int _cursor_pos = 0;            // cursor position in edit text
+
+  // Add mode state
+  std::string _adding_parent_key;           // parent key we're adding to (empty = not adding)
+  std::string _add_name;                    // name being typed for new item
+  int _add_cursor_pos = 0;                  // cursor position in add name
+  int _add_factory_index = 0;               // which factory is selected
+  outliner_factory_list_t _add_factories;   // cached factories for current add operation
 };
 
 using outliner_ptr_t = std::shared_ptr<Outliner>;

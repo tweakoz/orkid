@@ -29,6 +29,16 @@ std::string OutlinerModel::renameItem(const std::string& old_key, const std::str
   return "";
 }
 
+outliner_factory_list_t OutlinerModel::getFactories(const std::string& parent_key) const {
+  // Default implementation returns empty list - override in subclasses
+  return {};
+}
+
+std::string OutlinerModel::createItem(const std::string& parent_key, const std::string& name, const std::string& factory_id) {
+  // Default implementation does nothing - override in subclasses
+  return "";
+}
+
 void OutlinerModel::notifyItemAdded(const std::string& key) {
   if (_onItemAdded) {
     _onItemAdded(key);
@@ -218,6 +228,48 @@ void VarMapModel::updateItem(const std::string& key, svar128_t value) {
     it->second = value;
     notifyItemChanged(key);
   }
+}
+
+outliner_factory_list_t VarMapModel::getFactories(const std::string& parent_key) const {
+  // VarMapModel provides two basic factories: group (VarMap) and item (string value)
+  outliner_factory_list_t factories;
+
+  // Only provide factories if the parent exists and is a container (VarMap)
+  varmap::varmap_ptr_t parent = _getNode(parent_key);
+  if (parent) {
+    factories.push_back({"group", "Group", svar128_t()});
+    factories.push_back({"item", "Item", svar128_t(std::string("value"))});
+  }
+
+  return factories;
+}
+
+std::string VarMapModel::createItem(const std::string& parent_key, const std::string& name, const std::string& factory_id) {
+  if (!_allow_add) {
+    return "";
+  }
+
+  varmap::varmap_ptr_t parent = _getNode(parent_key);
+  if (!parent) {
+    return "";
+  }
+
+  // Check if name already exists
+  if (parent->_themap.find(name) != parent->_themap.end()) {
+    return "";  // Name collision
+  }
+
+  // Create based on factory type
+  if (factory_id == "group") {
+    parent->_themap[name] = std::make_shared<varmap::VarMap>();
+  } else {
+    // Default to string value
+    parent->_themap[name] = svar128_t(std::string("value"));
+  }
+
+  std::string new_key = parent_key.empty() ? name : parent_key + "/" + name;
+  notifyItemAdded(new_key);
+  return new_key;
 }
 
 std::string VarMapModel::renameItem(const std::string& old_key, const std::string& new_name) {

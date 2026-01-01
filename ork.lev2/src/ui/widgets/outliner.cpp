@@ -37,8 +37,15 @@ void Outliner::_subscribeToModel() {
     _model->_onItemRemoved = [this](const std::string& key) {
       _needs_rebuild = true;
       // Clear selection if removed item was selected
-      if (_selected_key == key || _selected_key.find(key + "/") == 0) {
-        _selected_key = "";
+      _selected_keys.erase(key);
+      // Also remove any children from selection
+      std::string prefix = key + "/";
+      for (auto it = _selected_keys.begin(); it != _selected_keys.end(); ) {
+        if (it->find(prefix) == 0) {
+          it = _selected_keys.erase(it);
+        } else {
+          ++it;
+        }
       }
     };
     _model->_onItemChanged = [this](const std::string& key) {
@@ -47,7 +54,7 @@ void Outliner::_subscribeToModel() {
     _model->_onModelReset = [this]() {
       _needs_rebuild = true;
       _expanded_keys.clear();
-      _selected_key = "";
+      _selected_keys.clear();
     };
   }
 }
@@ -78,12 +85,41 @@ varmap::varmap_ptr_t Outliner::getData() const {
 
 /////////////////////////////////////////////////////////////////////////
 void Outliner::setSelectedKey(const std::string& key) {
-  if (_selected_key != key) {
-    _selected_key = key;
+  _selected_keys.clear();
+  if (!key.empty()) {
+    _selected_keys.insert(key);
+  }
+  if (_onSelect) {
+    _onSelect(key);
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////
+std::string Outliner::getSelectedKey() const {
+  if (_selected_keys.empty()) {
+    return "";
+  }
+  return *_selected_keys.begin();
+}
+
+/////////////////////////////////////////////////////////////////////////
+void Outliner::addToSelection(const std::string& key) {
+  if (!key.empty() && _model && _model->allowMultiSelect()) {
+    _selected_keys.insert(key);
     if (_onSelect) {
       _onSelect(key);
     }
   }
+}
+
+/////////////////////////////////////////////////////////////////////////
+void Outliner::removeFromSelection(const std::string& key) {
+  _selected_keys.erase(key);
+}
+
+/////////////////////////////////////////////////////////////////////////
+void Outliner::clearSelection() {
+  _selected_keys.clear();
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -196,11 +232,17 @@ void Outliner::commitEditing() {
     _expanded_keys = std::move(updated_expanded);
 
     // Update selection if needed
-    if (_selected_key == old_key) {
-      _selected_key = new_key;
-    } else if (_selected_key.find(old_key + "/") == 0) {
-      _selected_key = new_key + _selected_key.substr(old_key.length());
+    std::unordered_set<std::string> updated_selection;
+    for (const auto& sel_key : _selected_keys) {
+      if (sel_key == old_key) {
+        updated_selection.insert(new_key);
+      } else if (sel_key.find(old_key + "/") == 0) {
+        updated_selection.insert(new_key + sel_key.substr(old_key.length()));
+      } else {
+        updated_selection.insert(sel_key);
+      }
     }
+    _selected_keys = std::move(updated_selection);
 
     // Call the rename callback (for additional handling)
     if (_onRename) {
@@ -212,6 +254,72 @@ void Outliner::commitEditing() {
 
   // Rebuild to reflect any changes made
   _needs_rebuild = true;
+}
+
+/////////////////////////////////////////////////////////////////////////
+void Outliner::startAdding(const std::string& parent_key) {
+  if (parent_key.empty() && !_model) return;
+
+  // Check if the model allows adding
+  if (_model && !_model->allowAdd()) {
+    return;
+  }
+
+  // Get factories for this parent
+  _add_factories = _model->getFactories(parent_key);
+  if (_add_factories.empty()) {
+    return;  // No factories available for this parent
+  }
+
+  _adding_parent_key = parent_key;
+  _add_name = "NewItem";
+  _add_cursor_pos = _add_name.length();
+  _add_factory_index = 0;
+
+  // Make sure parent is expanded so we can see the new item row
+  if (!parent_key.empty()) {
+    _expanded_keys.insert(parent_key);
+  }
+  _needs_rebuild = true;
+}
+
+/////////////////////////////////////////////////////////////////////////
+void Outliner::cancelAdding() {
+  _adding_parent_key = "";
+  _add_name = "";
+  _add_cursor_pos = 0;
+  _add_factory_index = 0;
+  _add_factories.clear();
+  _needs_rebuild = true;
+}
+
+/////////////////////////////////////////////////////////////////////////
+void Outliner::commitAdding() {
+  if (_adding_parent_key.empty() && _add_factories.empty()) return;
+  if (_add_name.empty()) {
+    cancelAdding();
+    return;
+  }
+
+  // Get the selected factory
+  if (_add_factory_index >= 0 && _add_factory_index < (int)_add_factories.size()) {
+    const auto& factory = _add_factories[_add_factory_index];
+
+    // Create the item via model
+    std::string new_key = _model->createItem(_adding_parent_key, _add_name, factory.id);
+
+    if (!new_key.empty()) {
+      // Select the newly created item
+      setSelectedKey(new_key);
+
+      // Call the add callback
+      if (_onAdd) {
+        _onAdd(new_key);
+      }
+    }
+  }
+
+  cancelAdding();
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -368,6 +476,96 @@ HandlerResult Outliner::DoOnUiEvent(event_constptr_t ev) {
     }
   }
 
+  // Handle keyboard input when adding
+  if (isAdding()) {
+    switch (ev->_eventcode) {
+      case EventCode::KEY_DOWN:
+      case EventCode::KEY_REPEAT: {
+        int key = ev->miKeyCode;
+        switch (key) {
+          case 256: // ESC - cancel adding
+            cancelAdding();
+            break;
+          case 257: // Enter - commit adding
+            commitAdding();
+            result._widget_finished = true;
+            break;
+          case 259: // Backspace
+            if (_add_cursor_pos > 0) {
+              _add_name.erase(_add_cursor_pos - 1, 1);
+              _add_cursor_pos--;
+            }
+            break;
+          case 261: // Delete
+            if (_add_cursor_pos < (int)_add_name.length()) {
+              _add_name.erase(_add_cursor_pos, 1);
+            }
+            break;
+          case 263: // Left arrow
+            if (ev->mbSHIFT || ev->mbCTRL) {
+              // Shift+Left or Ctrl+Left cycles factory backward
+              if (_add_factories.size() > 1) {
+                _add_factory_index = (_add_factory_index - 1 + _add_factories.size()) % _add_factories.size();
+              }
+            } else {
+              if (_add_cursor_pos > 0) _add_cursor_pos--;
+            }
+            break;
+          case 262: // Right arrow
+            if (ev->mbSHIFT || ev->mbCTRL) {
+              // Shift+Right or Ctrl+Right cycles factory forward
+              if (_add_factories.size() > 1) {
+                _add_factory_index = (_add_factory_index + 1) % _add_factories.size();
+              }
+            } else {
+              if (_add_cursor_pos < (int)_add_name.length()) _add_cursor_pos++;
+            }
+            break;
+          case 268: // Home
+            _add_cursor_pos = 0;
+            break;
+          case 269: // End
+            _add_cursor_pos = _add_name.length();
+            break;
+          case 258: // Tab - cycle factory
+            if (_add_factories.size() > 1) {
+              if (ev->mbSHIFT) {
+                _add_factory_index = (_add_factory_index - 1 + _add_factories.size()) % _add_factories.size();
+              } else {
+                _add_factory_index = (_add_factory_index + 1) % _add_factories.size();
+              }
+            }
+            break;
+          default:
+            // Printable characters
+            if (key >= 32 && key <= 126) {
+              char ch = ev->mbSHIFT ? char(key) : std::tolower(key);
+              _add_name.insert(_add_cursor_pos, 1, ch);
+              _add_cursor_pos++;
+            }
+            break;
+        }
+        result.setHandled(this);
+        return result;
+      }
+      case EventCode::PASTE_TEXT: {
+        _add_name.insert(_add_cursor_pos, ev->_paste_text);
+        _add_cursor_pos += ev->_paste_text.length();
+        result.setHandled(this);
+        return result;
+      }
+      case EventCode::PUSH: {
+        // Click outside the add row cancels adding
+        // For now, any click cancels adding
+        cancelAdding();
+        result.setHandled(this);
+        return result;
+      }
+      default:
+        break;
+    }
+  }
+
   switch (ev->_eventcode) {
     case EventCode::PUSH: {
       std::string clicked_key = _getItemKeyAt(localY);
@@ -383,8 +581,23 @@ HandlerResult Outliner::DoOnUiEvent(event_constptr_t ev) {
             setExpanded(item.key, !item.is_expanded);
             _rebuildVisibleItems();
           } else {
-            // Select item
-            setSelectedKey(clicked_key);
+            // Handle selection
+            bool is_already_selected = isSelected(clicked_key);
+
+            if (ev->mbSHIFT && _model && _model->allowMultiSelect()) {
+              // Shift+click: toggle in multi-select mode
+              if (is_already_selected) {
+                removeFromSelection(clicked_key);
+              } else {
+                addToSelection(clicked_key);
+              }
+            } else if (is_already_selected) {
+              // Click on already selected item: unselect
+              removeFromSelection(clicked_key);
+            } else {
+              // Normal click: replace selection
+              setSelectedKey(clicked_key);
+            }
           }
           result.setHandled(this);
         }
@@ -415,42 +628,96 @@ HandlerResult Outliner::DoOnUiEvent(event_constptr_t ev) {
     case EventCode::KEY_DOWN: {
       int key = ev->miKeyCode;
       printf("Outliner::DoOnUiEvent key<%d>\n", key);
-      // F2 to start editing selected item
-      if (key == 291 && !_selected_key.empty()) { // F2 = 291
-        startEditing(_selected_key);
+      std::string selected_key = getSelectedKey();  // Get first selected key
+      bool single_selection = (_selected_keys.size() == 1);
+
+      // F2 to start editing selected item (only if exactly 1 selected)
+      if (key == 291 && single_selection) { // F2 = 291
+        startEditing(selected_key);
         result.setHandled(this);
       }
-      // Shift+Delete to delete selected item
-      else if (key == 259 && ev->mbSHIFT && !_selected_key.empty()) { // Delete = 261
+      // Shift+Delete to delete selected items
+      else if (key == 259 && ev->mbSHIFT && !_selected_keys.empty()) { // Backspace = 259
         if (_model && _model->allowDelete()) {
-          std::string key_to_delete = _selected_key;
+          // Copy keys to delete (since we'll be modifying _selected_keys)
+          std::vector<std::string> keys_to_delete(_selected_keys.begin(), _selected_keys.end());
 
           // Clear selection before delete
-          _selected_key = "";
+          clearSelection();
 
-          // Remove from model
-          _model->removeItem(key_to_delete);
+          // Delete all selected items
+          for (const auto& key_to_delete : keys_to_delete) {
+            // Remove from model
+            _model->removeItem(key_to_delete);
 
-          // Call callback
-          if (_onDelete) {
-            _onDelete(key_to_delete);
-          }
+            // Call callback
+            if (_onDelete) {
+              _onDelete(key_to_delete);
+            }
 
-          // Remove from expanded keys
-          _expanded_keys.erase(key_to_delete);
-          // Also remove any children from expanded keys
-          std::string prefix = key_to_delete + "/";
-          for (auto it = _expanded_keys.begin(); it != _expanded_keys.end(); ) {
-            if (it->find(prefix) == 0) {
-              it = _expanded_keys.erase(it);
-            } else {
-              ++it;
+            // Remove from expanded keys
+            _expanded_keys.erase(key_to_delete);
+            // Also remove any children from expanded keys
+            std::string prefix = key_to_delete + "/";
+            for (auto it = _expanded_keys.begin(); it != _expanded_keys.end(); ) {
+              if (it->find(prefix) == 0) {
+                it = _expanded_keys.erase(it);
+              } else {
+                ++it;
+              }
             }
           }
 
           _needs_rebuild = true;
           result.setHandled(this);
         }
+      }
+      // Shift+Enter to start adding a new item (only if exactly 1 selected)
+      else if (key == 257 && ev->mbSHIFT && single_selection) { // Enter = 257
+        // Model's getFactories() determines if item can have children
+        if (_model && _model->allowAdd()) {
+          auto factories = _model->getFactories(selected_key);
+          if (!factories.empty()) {
+            startAdding(selected_key);
+            result.setHandled(this);
+          }
+        }
+      }
+      // Up arrow - select previous item
+      else if (key == 265 && !_visible_items.empty()) { // Up = 265
+        if (_selected_keys.empty()) {
+          // Select last item if nothing selected
+          setSelectedKey(_visible_items.back().key);
+        } else {
+          // Find current index and move up (based on first selected)
+          for (size_t i = 0; i < _visible_items.size(); ++i) {
+            if (_visible_items[i].key == selected_key) {
+              if (i > 0) {
+                setSelectedKey(_visible_items[i - 1].key);
+              }
+              break;
+            }
+          }
+        }
+        result.setHandled(this);
+      }
+      // Down arrow - select next item
+      else if (key == 264 && !_visible_items.empty()) { // Down = 264
+        if (_selected_keys.empty()) {
+          // Select first item if nothing selected
+          setSelectedKey(_visible_items.front().key);
+        } else {
+          // Find current index and move down (based on first selected)
+          for (size_t i = 0; i < _visible_items.size(); ++i) {
+            if (_visible_items[i].key == selected_key) {
+              if (i + 1 < _visible_items.size()) {
+                setSelectedKey(_visible_items[i + 1].key);
+              }
+              break;
+            }
+          }
+        }
+        result.setHandled(this);
       }
       break;
     }
@@ -586,8 +853,9 @@ void Outliner::DoDraw(drawevent_constptr_t drwev) {
         }
 
         // Draw selection/hover background
-        if (item.key == _selected_key || item.key == _hovered_key) {
-          fvec4 bg_color = (item.key == _selected_key) ? _selected_color : _hover_color;
+        bool is_item_selected = isSelected(item.key);
+        if (is_item_selected || item.key == _hovered_key) {
+          fvec4 bg_color = is_item_selected ? _selected_color : _hover_color;
           auto rs = defmtl->_rasterstate;
           auto omacro = rs->_blendingMacro;
           auto omode = defmtl->meUIColorMode;
@@ -739,6 +1007,137 @@ void Outliner::DoDraw(drawevent_constptr_t drwev) {
           theme->drawTriangle(tri_x, tri_y, tri_size, tri_size, drwev, &tri_style, rotation);
         }
         y_pos += _item_height;
+      }
+    }
+
+    // Draw add row if in add mode
+    if (isAdding() && _font && !_add_factories.empty()) {
+      // Find the position for the add row (after parent's children)
+      int add_row_y = -_scroll_offset;
+      int add_row_depth = 0;
+
+      // Find where to insert the add row
+      bool found_parent = _adding_parent_key.empty(); // root level is always "found"
+      for (const auto& item : _visible_items) {
+        if (item.key == _adding_parent_key) {
+          found_parent = true;
+          add_row_depth = item.depth + 1;
+        } else if (found_parent) {
+          // Check if we're still under the parent
+          if (!_adding_parent_key.empty() &&
+              item.key.find(_adding_parent_key + "/") != 0) {
+            // We've moved past the parent's children
+            break;
+          }
+        }
+        add_row_y += _item_height;
+      }
+
+      // If parent wasn't found in visible items, don't render
+      if (found_parent && add_row_y >= 0 && add_row_y < _geometry._h) {
+        int add_abs_x, add_abs_y;
+        LocalToRoot(0, add_row_y, add_abs_x, add_abs_y);
+
+        // Draw add row background
+        auto rs = defmtl->_rasterstate;
+        auto omacro = rs->_blendingMacro;
+        auto omode = defmtl->meUIColorMode;
+        rs->setBlendingMacro(lev2::BlendingMacro::ALPHA);
+        rs->setDepthTest(lev2::EDepthTest::OFF);
+        fxi->pushRasterState(rs);
+        tgt->PushModColor(fvec4(0.2f, 0.3f, 0.2f, 0.8f)); // greenish tint for add
+        defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
+        primi->RenderQuadAtZ(defmtl.get(),
+                             add_abs_x, add_abs_x + _geometry._w,
+                             add_abs_y, add_abs_y + _item_height,
+                             0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+        tgt->PopModColor();
+        fxi->popRasterState();
+        rs->_blendingMacro = omacro;
+        defmtl->meUIColorMode = omode;
+
+        // Calculate text positions
+        int base_x = ix1 + (add_row_depth + 1) * _indent_width;
+        int text_y = add_abs_y + (_item_height - _font->description().miAdvanceHeight) / 2;
+
+        // Draw factory selector
+        const auto& factory = _add_factories[_add_factory_index];
+        std::string factory_text = "[" + factory.display_name + "]";
+        int factory_width = factory_text.length() * _font->description().miAdvanceWidth;
+
+        // Draw factory background
+        int factory_x1 = base_x - 2;
+        int factory_x2 = base_x + factory_width + 4;
+        int box_y1 = add_abs_y + 2;
+        int box_y2 = add_abs_y + _item_height - 2;
+
+        rs->setBlendingMacro(lev2::BlendingMacro::OFF);
+        fxi->pushRasterState(rs);
+        tgt->PushModColor(fvec4(0.3f, 0.4f, 0.5f, 1.0f));
+        defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
+        primi->RenderQuadAtZ(defmtl.get(), factory_x1, factory_x2, box_y1, box_y2,
+                             0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+        tgt->PopModColor();
+        fxi->popRasterState();
+        rs->_blendingMacro = omacro;
+
+        // Draw factory text
+        lev2::FontMan::PushFont(_font);
+        tgt->PushModColor(fvec4(0.8f, 0.9f, 1.0f, 1.0f));
+        lev2::FontMan::beginTextBlock(tgt, factory_text.length());
+        lev2::FontMan::DrawText(tgt, base_x, text_y, factory_text.c_str());
+        lev2::FontMan::endTextBlock(tgt);
+        tgt->PopModColor();
+
+        // Draw name input field
+        int name_x = factory_x2 + 8;
+        int name_x2 = ix2 - 4;
+
+        // Draw name background
+        rs->setBlendingMacro(lev2::BlendingMacro::OFF);
+        fxi->pushRasterState(rs);
+
+        // Draw highlight border
+        tgt->PushModColor(fvec4(0.4f, 0.8f, 0.4f, 1.0f));
+        defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
+        primi->RenderQuadAtZ(defmtl.get(), name_x - 1, name_x2 + 1, box_y1 - 1, box_y2 + 1,
+                             0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+        tgt->PopModColor();
+
+        // Draw inner background
+        tgt->PushModColor(fvec4(0.05f, 0.1f, 0.05f, 1.0f));
+        primi->RenderQuadAtZ(defmtl.get(), name_x, name_x2, box_y1, box_y2,
+                             0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+        tgt->PopModColor();
+        fxi->popRasterState();
+        rs->_blendingMacro = omacro;
+
+        // Draw name text
+        tgt->PushModColor(_text_color);
+        lev2::FontMan::beginTextBlock(tgt, _add_name.length() + 1);
+        lev2::FontMan::DrawText(tgt, name_x + 2, text_y, _add_name.c_str());
+        lev2::FontMan::endTextBlock(tgt);
+
+        // Draw cursor
+        int cursor_x = name_x + 2;
+        if (_add_cursor_pos > 0) {
+          auto& desc = _font->description();
+          for (int i = 0; i < _add_cursor_pos && i < (int)_add_name.length(); i++) {
+            cursor_x += desc.miAdvanceWidth;
+          }
+        }
+        rs->setBlendingMacro(lev2::BlendingMacro::ALPHA);
+        fxi->pushRasterState(rs);
+        tgt->PushModColor(fvec4(1.0f, 1.0f, 1.0f, 0.8f));
+        defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
+        primi->RenderQuadAtZ(defmtl.get(), cursor_x, cursor_x + 2, box_y1 + 2, box_y2 - 2,
+                             0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+        tgt->PopModColor();
+        fxi->popRasterState();
+        rs->_blendingMacro = omacro;
+
+        tgt->PopModColor();
+        lev2::FontMan::PopFont();
       }
     }
   }

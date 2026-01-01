@@ -38,6 +38,8 @@ class OutlinerTest:
     self.outliner.data = self._buildTestData()
     self.outliner.model.allow_rename = True  # Enable rename support
     self.outliner.model.allow_delete = True  # Enable delete support
+    self.outliner.model.allow_add = True     # Enable add support
+    self.outliner.model.allow_multiselect = True     # Enable add support
     self.outliner.expandAll()
 
     # Set selection callback
@@ -54,6 +56,12 @@ class OutlinerTest:
       print(f"Deleted: {key}")
 
     self.outliner.onDelete(on_delete)
+
+    # Set add callback
+    def on_add(key):
+      print(f"Added: {key}")
+
+    self.outliner.onAdd(on_add)
 
     # Style
     self.outliner.bgcolor = vec4(0.15, 0.15, 0.15, 1)

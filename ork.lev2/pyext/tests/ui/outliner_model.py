@@ -23,6 +23,7 @@ class CustomModel(lev2.ui.OutlinerModel):
     self._root_children = []
     self.allow_rename = True  # Enable rename support
     self.allow_delete = True  # Enable delete support
+    self.allow_add = True     # Enable add support
 
   def addRootItem(self, key, display_name, value=None):
     """Add an item at root level."""
@@ -48,7 +49,8 @@ class CustomModel(lev2.ui.OutlinerModel):
   def getDisplayName(self, key):
     """Return display name for a key."""
     if key in self._items:
-      return self._items[key]["name"]
+      name = self._items[key].get("name")
+      return name if name else key
     return key
 
   def hasChildren(self, key):
@@ -89,6 +91,49 @@ class CustomModel(lev2.ui.OutlinerModel):
 
     # Remove the item itself
     del self._items[key]
+
+  def getFactories(self, parent_key):
+    """Return list of factories for creating children under parent."""
+    # Only allow adding to items that have children (groups)
+    if parent_key == "" or (parent_key in self._items and len(self._items[parent_key]["children"]) >= 0):
+      return [
+        {"id": "group", "display_name": "Group"},
+        {"id": "mesh", "display_name": "Mesh"},
+        {"id": "light", "display_name": "Light"},
+        {"id": "camera", "display_name": "Camera"},
+      ]
+    return []
+
+  def createItem(self, parent_key, name, factory_id):
+    """Create a new item using a factory."""
+    # Build the full key
+    if parent_key:
+      new_key = parent_key + "/" + name
+    else:
+      new_key = name
+
+    # Check if key already exists
+    if new_key in self._items:
+      return ""
+
+    # Create the item with appropriate default value
+    if factory_id == "group":
+      value = None  # Groups have no value
+    else:
+      value = factory_id  # Use factory_id as the value (e.g., "mesh", "light")
+
+    # Add to items
+    self._items[new_key] = {"name": name, "children": [], "value": value}
+
+    # Add to parent's children
+    if parent_key:
+      if parent_key in self._items:
+        self._items[parent_key]["children"].append(new_key)
+    else:
+      self._root_children.append(new_key)
+
+    self.notifyItemAdded(new_key)
+    return new_key
 
   def renameItem(self, old_key, new_name):
     """Rename an item - changes both key and display name."""
@@ -193,6 +238,12 @@ class OutlinerModelTest:
       print(f"Deleted: {key}")
 
     self.outliner.onDelete(on_delete)
+
+    # Set add callback
+    def on_add(key):
+      print(f"Added: {key}")
+
+    self.outliner.onAdd(on_add)
 
     # Style
     self.outliner.bgcolor = vec4(0.15, 0.15, 0.15, 1)

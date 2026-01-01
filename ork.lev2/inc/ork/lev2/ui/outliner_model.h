@@ -16,6 +16,18 @@
 namespace ork::ui {
 
 ////////////////////////////////////////////////////////////////////
+// OutlinerFactory: Describes a type of item that can be created
+////////////////////////////////////////////////////////////////////
+
+struct OutlinerFactory {
+  std::string id;             // e.g. "mesh", "light", "camera"
+  std::string display_name;   // e.g. "Mesh", "Point Light", "Camera"
+  svar128_t default_value;    // optional default value for new items
+};
+
+using outliner_factory_list_t = std::vector<OutlinerFactory>;
+
+////////////////////////////////////////////////////////////////////
 // OutlinerModel: Abstract base class for Outliner data models
 // - Can be subclassed in C++ or Python
 // - Provides data access and manipulation interface
@@ -54,9 +66,24 @@ struct OutlinerModel {
   bool allowDelete() const { return _allow_delete; }
   void setAllowDelete(bool allow) { _allow_delete = allow; }
 
+  // Whether this model allows adding items
+  bool allowAdd() const { return _allow_add; }
+  void setAllowAdd(bool allow) { _allow_add = allow; }
+
+  // Whether this model allows multi-selection
+  bool allowMultiSelect() const { return _allow_multiselect; }
+  void setAllowMultiSelect(bool allow) { _allow_multiselect = allow; }
+
   // Rename an item - returns the new key, or empty string on failure
   // Override this if your model supports renaming
   virtual std::string renameItem(const std::string& old_key, const std::string& new_name);
+
+  // Get available factories for creating children under a parent
+  // Returns empty list if no factories available (item can't have children)
+  virtual outliner_factory_list_t getFactories(const std::string& parent_key) const;
+
+  // Create a new item using a factory - returns the new key, or empty string on failure
+  virtual std::string createItem(const std::string& parent_key, const std::string& name, const std::string& factory_id);
 
   //////////////////////////////////////////////////////////////
   // Data manipulation - override if your model supports editing
@@ -95,6 +122,8 @@ struct OutlinerModel {
 protected:
   bool _allow_rename = false;
   bool _allow_delete = false;
+  bool _allow_add = false;
+  bool _allow_multiselect = false;
 };
 
 using outliner_model_ptr_t = std::shared_ptr<OutlinerModel>;
@@ -124,6 +153,8 @@ struct VarMapModel : public OutlinerModel {
   void removeItem(const std::string& key) override;
   void updateItem(const std::string& key, svar128_t value) override;
   std::string renameItem(const std::string& old_key, const std::string& new_name) override;
+  outliner_factory_list_t getFactories(const std::string& parent_key) const override;
+  std::string createItem(const std::string& parent_key, const std::string& name, const std::string& factory_id) override;
 
 private:
   // Navigate to a node by key path, returns nullptr if not found

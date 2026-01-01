@@ -102,6 +102,38 @@ public:
         renameItem,
         old_key, new_name);
   }
+
+  ui::outliner_factory_list_t getFactories(const std::string& parent_key) const override {
+    py::gil_scoped_acquire acquire;
+    // Call Python method and get list of dicts
+    py::object py_result = py::cast(this).attr("getFactories")(parent_key);
+    ui::outliner_factory_list_t factories;
+    if (!py_result.is_none() && py::isinstance<py::list>(py_result)) {
+      auto type_codec = python::pb11_typecodec_t::instance();
+      for (auto item : py_result.cast<py::list>()) {
+        if (py::isinstance<py::dict>(item)) {
+          auto d = item.cast<py::dict>();
+          ui::OutlinerFactory factory;
+          if (d.contains("id")) factory.id = d["id"].cast<std::string>();
+          if (d.contains("display_name")) factory.display_name = d["display_name"].cast<std::string>();
+          if (d.contains("default_value") && !d["default_value"].is_none()) {
+            factory.default_value = type_codec->decode(d["default_value"]);
+          }
+          factories.push_back(factory);
+        }
+      }
+    }
+    return factories;
+  }
+
+  std::string createItem(const std::string& parent_key, const std::string& name, const std::string& factory_id) override {
+    py::gil_scoped_acquire acquire;
+    PYBIND11_OVERRIDE(
+        std::string,
+        ui::OutlinerModel,
+        createItem,
+        parent_key, name, factory_id);
+  }
 };
 
 void pyinit_ui_outliner(py::module& uimodule) {
@@ -160,7 +192,30 @@ void pyinit_ui_outliner(py::module& uimodule) {
               "allow_delete",
               &ui::OutlinerModel::allowDelete,
               &ui::OutlinerModel::setAllowDelete)
+          .def_property(
+              "allow_add",
+              &ui::OutlinerModel::allowAdd,
+              &ui::OutlinerModel::setAllowAdd)
+          .def_property(
+              "allow_multiselect",
+              &ui::OutlinerModel::allowMultiSelect,
+              &ui::OutlinerModel::setAllowMultiSelect)
           .def("renameItem", &ui::OutlinerModel::renameItem)
+          .def(
+              "getFactories",
+              [](ui::outliner_model_ptr_t model, const std::string& parent_key) -> py::list {
+                auto factories = model->getFactories(parent_key);
+                py::list result;
+                for (const auto& f : factories) {
+                  py::dict d;
+                  d["id"] = f.id;
+                  d["display_name"] = f.display_name;
+                  // Note: default_value conversion would need type_codec
+                  result.append(d);
+                }
+                return result;
+              })
+          .def("createItem", &ui::OutlinerModel::createItem)
           .def("__repr__", [](ui::outliner_model_ptr_t model) {
             return FormatString("<OutlinerModel %p>", (void*)model.get());
           });
@@ -233,6 +288,25 @@ void pyinit_ui_outliner(py::module& uimodule) {
               [](ui::outliner_ptr_t outliner, const std::string& key) { //
                 outliner->setSelectedKey(key);
               })
+          .def_property(
+              "selected_keys",
+              [](ui::outliner_ptr_t outliner) -> py::list { //
+                py::list result;
+                for (const auto& key : outliner->getSelectedKeys()) {
+                  result.append(key);
+                }
+                return result;
+              },
+              [](ui::outliner_ptr_t outliner, py::list keys) { //
+                outliner->clearSelection();
+                for (auto key : keys) {
+                  outliner->addToSelection(key.cast<std::string>());
+                }
+              })
+          .def("addToSelection", &ui::Outliner::addToSelection)
+          .def("removeFromSelection", &ui::Outliner::removeFromSelection)
+          .def("clearSelection", &ui::Outliner::clearSelection)
+          .def("isSelected", &ui::Outliner::isSelected)
           .def(
               "setExpanded",
               [](ui::outliner_ptr_t outliner, const std::string& key, bool expanded) { //
@@ -277,10 +351,22 @@ void pyinit_ui_outliner(py::module& uimodule) {
                   callback(key);
                 };
               })
+          .def(
+              "onAdd",
+              [](ui::outliner_ptr_t outliner, py::object callback) { //
+                outliner->_onAdd = [callback](const std::string& key) {
+                  py::gil_scoped_acquire acquire;
+                  callback(key);
+                };
+              })
           .def("startEditing", &ui::Outliner::startEditing)
           .def("cancelEditing", &ui::Outliner::cancelEditing)
           .def("commitEditing", &ui::Outliner::commitEditing)
           .def("isEditing", &ui::Outliner::isEditing)
+          .def("startAdding", &ui::Outliner::startAdding)
+          .def("cancelAdding", &ui::Outliner::cancelAdding)
+          .def("commitAdding", &ui::Outliner::commitAdding)
+          .def("isAdding", &ui::Outliner::isAdding)
           .def_property(
               "item_height",
               [](ui::outliner_ptr_t outliner) -> int { //
