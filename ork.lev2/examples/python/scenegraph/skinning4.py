@@ -72,6 +72,19 @@ ARM_IK_CHAINS = {
   }
 }
 
+LEG_IK_CHAINS = {
+  "Left": {
+    "upleg": "mixamorig.LeftUpLeg",
+    "leg": "mixamorig.LeftLeg",
+    "foot": "mixamorig.LeftFoot",
+  },
+  "Right": {
+    "upleg": "mixamorig.RightUpLeg",
+    "leg": "mixamorig.RightLeg",
+    "foot": "mixamorig.RightFoot",
+  }
+}
+
 ################################################################################
 # PoserUi with IK support
 ################################################################################
@@ -203,15 +216,15 @@ class PoserUi(UiLayoutComponent):
               app.ik_initial_concats = [app.localpose.concatMatrices[i] for i in range(app.skeleton.numJoints)]
               app.setupIkChain(sel_child_index)
               if app.ik_chain is not None:
-                # Store initial hand position from the ORIGINAL pose (before IK warp)
-                app.ik_initial_hand_pos = app.ik_initial_concats[app.ik_hand_joint].translation
+                # Store initial end effector position from the ORIGINAL pose (before IK warp)
+                app.ik_initial_end_pos = app.ik_initial_concats[app.ik_end_joint].translation
                 # Store plane mode and fixed coordinate
                 app.ik_mode = ik_plane_mode
                 if ik_plane_mode == "xz":
-                  app.ik_plane_fixed = app.ik_initial_hand_pos.y  # Fixed Y for XZ plane
+                  app.ik_plane_fixed = app.ik_initial_end_pos.y  # Fixed Y for XZ plane
                   print(f"IK mode: XZ plane, fixed Y: {app.ik_plane_fixed}")
                 else:  # xy
-                  app.ik_plane_fixed = app.ik_initial_hand_pos.z  # Fixed Z for XY plane
+                  app.ik_plane_fixed = app.ik_initial_end_pos.z  # Fixed Z for XY plane
                   print(f"IK mode: XY plane, fixed Z: {app.ik_plane_fixed}")
                 # Reset pose immediately to undo the warp from setupIkChain
                 for i in range(app.skeleton.numJoints):
@@ -279,20 +292,19 @@ class SceneGraphApp(ComponentizedApplication):
     self.activate_rot = False
     self.ik_chain = None
     self.ik_target = None
-    self.ik_end_joint = -1
-    self.ik_middle_joint = -1
-    self.ik_arm_joint = -1
-    self.ik_forearm_joint = -1
-    self.ik_hand_joint = -1
+    self.ik_upper_joint = -1   # arm or upleg
+    self.ik_lower_joint = -1   # forearm or leg
+    self.ik_end_joint = -1     # hand or foot
     self.ik_extend_length = 0.0
     self.ik_fixup_joints = []
-    self.ik_initial_hand_pos = None
+    self.ik_initial_end_pos = None
     self.ik_initial_locals = None
     self.ik_initial_concats = None
     self.ik_mode = None  # "xz" or "xy"
     self.ik_plane_fixed = 0.0  # Y for xz plane, Z for xy plane
     self.ik_index_joints = []
-    self.ik_arm_side = None
+    self.ik_limb_type = None  # "arm" or "leg"
+    self.ik_limb_side = None  # "Left" or "Right"
 
     params_dict = {
       "SkyboxIntensity": float(lightintens),
@@ -407,122 +419,168 @@ class SceneGraphApp(ComponentizedApplication):
   # IK Methods - Simplified, hardcoded arm chains like skinning2.py
   ##############################################
 
-  def detectArmFromJoint(self, joint_index):
+  def detectLimbFromJoint(self, joint_index):
     """
-    Detect if a joint belongs to left or right arm.
-    Returns "Left", "Right", or None.
+    Detect if a joint belongs to left or right arm or leg.
+    Returns ("arm", "Left"), ("arm", "Right"), ("leg", "Left"), ("leg", "Right"), or (None, None).
     """
     jname = self.skeleton.jointName(joint_index)
+
+    # Check for arm
     if "Left" in jname and ("Hand" in jname or "Arm" in jname):
-      return "Left"
+      return ("arm", "Left")
     elif "Right" in jname and ("Hand" in jname or "Arm" in jname):
-      return "Right"
-    return None
+      return ("arm", "Right")
+
+    # Check for leg
+    if "Left" in jname and ("Foot" in jname or "Leg" in jname or "Toe" in jname):
+      return ("leg", "Left")
+    elif "Right" in jname and ("Foot" in jname or "Leg" in jname or "Toe" in jname):
+      return ("leg", "Right")
+
+    return (None, None)
 
   def setupIkChain(self, clicked_joint_index):
     """
-    Setup IK chain for the arm that was clicked.
-    Uses hardcoded arm chains like skinning2.py.
+    Setup IK chain for the arm or leg that was clicked.
+    Uses hardcoded chains like skinning2.py.
     """
-    # Detect which arm was clicked
-    arm_side = self.detectArmFromJoint(clicked_joint_index)
-    if arm_side is None:
-      print(f"Joint {clicked_joint_index} is not part of an arm, IK disabled")
+    # Detect which limb was clicked
+    limb_type, limb_side = self.detectLimbFromJoint(clicked_joint_index)
+    if limb_type is None:
+      print(f"Joint {clicked_joint_index} is not part of an arm or leg, IK disabled")
       self.ik_chain = None
       return
 
-    print(f"Setting up {arm_side} arm IK")
-    chain_info = ARM_IK_CHAINS[arm_side]
+    self.ik_limb_type = limb_type
+    self.ik_limb_side = limb_side
 
-    # Get joint indices
-    self.ik_arm_joint = self.skeleton.jointIndex(chain_info["arm"])
-    self.ik_forearm_joint = self.skeleton.jointIndex(chain_info["forearm"])
-    self.ik_hand_joint = self.skeleton.jointIndex(chain_info["hand"])
+    if limb_type == "arm":
+      print(f"Setting up {limb_side} arm IK")
+      chain_info = ARM_IK_CHAINS[limb_side]
 
-    print(f"  Arm: {chain_info['arm']} ({self.ik_arm_joint})")
-    print(f"  ForeArm: {chain_info['forearm']} ({self.ik_forearm_joint})")
-    print(f"  Hand: {chain_info['hand']} ({self.ik_hand_joint})")
+      # Get joint indices
+      self.ik_upper_joint = self.skeleton.jointIndex(chain_info["arm"])
+      self.ik_lower_joint = self.skeleton.jointIndex(chain_info["forearm"])
+      self.ik_end_joint = self.skeleton.jointIndex(chain_info["hand"])
 
-    # Create IK chain exactly like skinning2.py
-    self.ik_chain = lev2.IkChain(self.skeleton)
-    self.ik_chain.bindToJointNamed(chain_info["arm"])
-    self.ik_chain.bindToJointNamed(chain_info["forearm"])
-    self.ik_chain.prepare()
-    self.ik_chain.compute(self.localpose, vec3(0,0,0))
-    # Use hardcoded values exactly like skinning2
-    self.ik_chain.C1 = 0.079
-    self.ik_chain.C2 = 0.029
+      print(f"  Arm: {chain_info['arm']} ({self.ik_upper_joint})")
+      print(f"  ForeArm: {chain_info['forearm']} ({self.ik_lower_joint})")
+      print(f"  Hand: {chain_info['hand']} ({self.ik_end_joint})")
 
-    # Store state
-    self.ik_end_joint = self.ik_hand_joint
-    self.ik_middle_joint = self.ik_forearm_joint
+      # Create IK chain
+      self.ik_chain = lev2.IkChain(self.skeleton)
+      self.ik_chain.bindToJointNamed(chain_info["arm"])
+      self.ik_chain.bindToJointNamed(chain_info["forearm"])
+      self.ik_chain.prepare()
+      self.ik_chain.compute(self.localpose, vec3(0,0,0))
+      # Use hardcoded values for arm
+      self.ik_chain.C1 = 0.079
+      self.ik_chain.C2 = 0.029
 
-    # Get index finger joints for hand rotation correction (like skinning2)
-    self.ik_index_joints = [self.skeleton.jointIndex(f"mixamorig.{arm_side}HandIndex{i+1}") for i in range(4)]
-    print(f"  Index joints: {self.ik_index_joints}")
+      # Get index finger joints for hand rotation correction
+      self.ik_index_joints = [self.skeleton.jointIndex(f"mixamorig.{limb_side}HandIndex{i+1}") for i in range(4)]
+      print(f"  Index joints: {self.ik_index_joints}")
 
-    # Store arm side for constraint direction
-    self.ik_arm_side = arm_side
+    else:  # leg
+      print(f"Setting up {limb_side} leg IK")
+      chain_info = LEG_IK_CHAINS[limb_side]
 
-    # Fixup joints exactly like skinning2: hand + thumb joints + index joints
-    self.ik_fixup_joints = [self.ik_hand_joint] + self.skeleton.descendantJointsOf(self.ik_hand_joint)
+      # Get joint indices
+      self.ik_upper_joint = self.skeleton.jointIndex(chain_info["upleg"])
+      self.ik_lower_joint = self.skeleton.jointIndex(chain_info["leg"])
+      self.ik_end_joint = self.skeleton.jointIndex(chain_info["foot"])
+
+      print(f"  UpLeg: {chain_info['upleg']} ({self.ik_upper_joint})")
+      print(f"  Leg: {chain_info['leg']} ({self.ik_lower_joint})")
+      print(f"  Foot: {chain_info['foot']} ({self.ik_end_joint})")
+
+      # Create IK chain
+      self.ik_chain = lev2.IkChain(self.skeleton)
+      self.ik_chain.bindToJointNamed(chain_info["upleg"])
+      self.ik_chain.bindToJointNamed(chain_info["leg"])
+      self.ik_chain.prepare()
+      self.ik_chain.compute(self.localpose, vec3(0,0,0))
+      # Leg bone lengths (will be computed, but set defaults)
+      # These will be overwritten by prepare/compute
+
+      # Get toe joints for foot rotation correction
+      self.ik_index_joints = [self.skeleton.jointIndex(f"mixamorig.{limb_side}ToeBase")]
+      print(f"  Toe joints: {self.ik_index_joints}")
+
+    # Fixup joints: end effector + all descendants
+    self.ik_fixup_joints = [self.ik_end_joint] + self.skeleton.descendantJointsOf(self.ik_end_joint)
     print(f"  Fixup joints: {len(self.ik_fixup_joints)}")
 
-  def constrainShoulder(self, concats):
+  def constrainLimb(self, concats):
     """
-    Constrain shoulder rotation to anatomically plausible limits.
-    - Left arm: naturally at +X, don't let it point toward -X (through torso)
-    - Right arm: naturally at -X, don't let it point toward +X (through torso)
-    Character faces +Z.
+    Constrain limb rotation to anatomically plausible limits.
+    Arms: prevent crossing through torso
+    Legs: prevent crossing through other leg
     """
-    curr_arm_mtx = concats[self.ik_arm_joint]
-    curr_forearm_mtx = concats[self.ik_forearm_joint]
+    curr_upper_mtx = concats[self.ik_upper_joint]
+    curr_lower_mtx = concats[self.ik_lower_joint]
 
-    # Compute current arm direction (shoulder to elbow)
-    curr_arm_dir = (curr_forearm_mtx.translation - curr_arm_mtx.translation).normalized
+    # Compute current limb direction (upper to lower)
+    curr_limb_dir = (curr_lower_mtx.translation - curr_upper_mtx.translation).normalized
 
-    # Get shoulder position (pivot point)
-    shoulder_pos = curr_arm_mtx.translation
+    # Get pivot position
+    pivot_pos = curr_upper_mtx.translation
 
-    # Directional constraint: prevent arm from crossing through torso
     needs_correction = False
-    if self.ik_arm_side == "Left":
-      # Left arm naturally points +X, stop it from going to -X
-      if curr_arm_dir.x < 0:
-        needs_correction = True
-        # Clamp X to 0 (arm points sideways, not into torso)
-        clamped_dir = vec3(0, curr_arm_dir.y, curr_arm_dir.z).normalized
-    else:  # Right
-      # Right arm naturally points -X, stop it from going to +X
-      if curr_arm_dir.x > 0:
-        needs_correction = True
-        clamped_dir = vec3(0, curr_arm_dir.y, curr_arm_dir.z).normalized
+    clamped_dir = None
 
-    if needs_correction and clamped_dir.length > 0.001:
+    if self.ik_limb_type == "arm":
+      # Arms: prevent crossing through torso (X constraint)
+      if self.ik_limb_side == "Left":
+        # Left arm naturally points +X, stop it from going to -X
+        if curr_limb_dir.x < 0:
+          needs_correction = True
+          clamped_dir = vec3(0, curr_limb_dir.y, curr_limb_dir.z).normalized
+      else:  # Right
+        # Right arm naturally points -X, stop it from going to +X
+        if curr_limb_dir.x > 0:
+          needs_correction = True
+          clamped_dir = vec3(0, curr_limb_dir.y, curr_limb_dir.z).normalized
+
+    else:  # leg
+      # Legs: prevent crossing through other leg (X constraint, opposite of arms)
+      if self.ik_limb_side == "Left":
+        # Left leg, stop it from going too far to +X (crossing right)
+        if curr_limb_dir.x > 0.3:
+          needs_correction = True
+          clamped_dir = vec3(0.3, curr_limb_dir.y, curr_limb_dir.z).normalized
+      else:  # Right
+        # Right leg, stop it from going too far to -X (crossing left)
+        if curr_limb_dir.x < -0.3:
+          needs_correction = True
+          clamped_dir = vec3(-0.3, curr_limb_dir.y, curr_limb_dir.z).normalized
+
+    if needs_correction and clamped_dir is not None and clamped_dir.length > 0.001:
       # Compute rotation to go from current to clamped direction
-      correction_axis = curr_arm_dir.cross(clamped_dir)
+      correction_axis = curr_limb_dir.cross(clamped_dir)
       if correction_axis.length > 0.001:
         correction_axis = correction_axis.normalized
-        correction_angle = curr_arm_dir.angle(clamped_dir)
+        correction_angle = curr_limb_dir.angle(clamped_dir)
 
-        # Build correction matrix around shoulder
+        # Build correction matrix around pivot
         Qc = quat()
         Qc.fromAxisAngle(vec4(correction_axis, correction_angle))
         Mc = Qc.toMatrix()
 
-        # Apply correction around shoulder pivot
-        IP = mtx4.transMatrix(shoulder_pos * -1.0)
-        P = mtx4.transMatrix(shoulder_pos)
+        # Apply correction around pivot
+        IP = mtx4.transMatrix(pivot_pos * -1.0)
+        P = mtx4.transMatrix(pivot_pos)
         correction = P * Mc * IP
 
-        # Apply to arm and all descendants
-        arm_descendants = [self.ik_arm_joint] + self.skeleton.descendantJointsOf(self.ik_arm_joint)
-        for ji in arm_descendants:
+        # Apply to upper joint and all descendants
+        limb_descendants = [self.ik_upper_joint] + self.skeleton.descendantJointsOf(self.ik_upper_joint)
+        for ji in limb_descendants:
           concats[ji] = correction * concats[ji]
 
   def updateIk(self, cur_screen_pos, camdat):
     """
-    Update IK - target follows ray intersection with fixed XZ plane at hand's Y height.
+    Update IK - target follows ray intersection with fixed plane.
     """
     if self.ik_chain is None:
       return
@@ -534,12 +592,12 @@ class SceneGraphApp(ComponentizedApplication):
 
     concats = self.localpose.concatMatrices
 
-    # Get forearm and hand matrices from reset pose
-    mtx_forearm = concats[self.ik_forearm_joint]
-    mtx_hand = concats[self.ik_hand_joint]
+    # Get lower and end joint matrices from reset pose
+    mtx_lower = concats[self.ik_lower_joint]
+    mtx_end = concats[self.ik_end_joint]
 
-    # Compute extend length (like skinning2)
-    extend_length = (mtx_forearm.translation - mtx_hand.translation).length
+    # Compute extend length (distance from lower joint to end effector)
+    extend_length = (mtx_lower.translation - mtx_end.translation).length
 
     # Project ray through mouse position
     sgvpw = self.SGC.SGVPW
@@ -555,18 +613,16 @@ class SceneGraphApp(ComponentizedApplication):
 
     # Intersect ray with plane based on mode
     eye_pos = camdat.eye
-    target = self.ik_initial_hand_pos  # fallback
+    target = self.ik_initial_end_pos  # fallback
 
     if self.ik_mode == "xz":
       # XZ plane at fixed Y
-      # Solve: origin.y + direction.y * t = ik_plane_fixed
       if abs(ray.direction.y) > 0.001:
         t = (self.ik_plane_fixed - eye_pos.y) / ray.direction.y
         if t > 0:
           target = eye_pos + ray.direction * t
     elif self.ik_mode == "xy":
       # XY plane at fixed Z
-      # Solve: origin.z + direction.z * t = ik_plane_fixed
       if abs(ray.direction.z) > 0.001:
         t = (self.ik_plane_fixed - eye_pos.z) / ray.direction.z
         if t > 0:
@@ -578,12 +634,12 @@ class SceneGraphApp(ComponentizedApplication):
     # Solve IK
     self.ik_chain.compute(self.localpose, target)
 
-    # Constrain shoulder rotation
-    self.constrainShoulder(concats)
+    # Constrain limb rotation
+    self.constrainLimb(concats)
 
-    # Fixup: reconnect hand to forearm (like skinning2.py)
-    fixup_base = concats[self.ik_forearm_joint]
-    fixup_old = concats[self.ik_hand_joint].translation
+    # Fixup: reconnect end effector to lower joint
+    fixup_base = concats[self.ik_lower_joint]
+    fixup_old = concats[self.ik_end_joint].translation
     fixup_new = vec3(0, extend_length, 0).transform(fixup_base)
     fixup_delta = fixup_new - fixup_old
 
@@ -594,28 +650,31 @@ class SceneGraphApp(ComponentizedApplication):
       O = concats[ji]
       concats[ji] = xf_delta * O
 
-    # Correct rotation of hand to point in elbow->wrist direction (like skinning2.py)
-    dir_forearm_to_hand = (concats[self.ik_hand_joint].translation
-                          - concats[self.ik_forearm_joint].translation).normalized
-    dir_hand_to_index = (concats[self.ik_index_joints[0]].translation
-                        - concats[self.ik_hand_joint].translation).normalized
-    dir_cross = dir_forearm_to_hand.cross(dir_hand_to_index).normalized
-    angle = dir_forearm_to_hand.angle(dir_hand_to_index)
+    # Correct rotation of end effector to point along limb direction
+    if len(self.ik_index_joints) > 0:
+      dir_lower_to_end = (concats[self.ik_end_joint].translation
+                          - concats[self.ik_lower_joint].translation).normalized
+      dir_end_to_index = (concats[self.ik_index_joints[0]].translation
+                          - concats[self.ik_end_joint].translation).normalized
+      dir_cross = dir_lower_to_end.cross(dir_end_to_index)
+      if dir_cross.length > 0.001:
+        dir_cross = dir_cross.normalized
+        angle = dir_lower_to_end.angle(dir_end_to_index)
 
-    Q = quat()
-    Q.fromAxisAngle(vec4(dir_cross, -angle))
-    MQ = Q.toMatrix()
+        Q = quat()
+        Q.fromAxisAngle(vec4(dir_cross, -angle))
+        MQ = Q.toMatrix()
 
-    # Apply rotation around hand position
-    h = concats[self.ik_hand_joint]
-    a = mtx4()
-    a.setColumn(3, h.getColumn(3))
-    ai = a.inverse
-    MQ = a * MQ * ai
+        # Apply rotation around end effector position
+        h = concats[self.ik_end_joint]
+        a = mtx4()
+        a.setColumn(3, h.getColumn(3))
+        ai = a.inverse
+        MQ = a * MQ * ai
 
-    for ji in self.ik_fixup_joints:
-      O = concats[ji]
-      concats[ji] = MQ * O
+        for ji in self.ik_fixup_joints:
+          O = concats[ji]
+          concats[ji] = MQ * O
 
   ##############################################
   # FK Rotation Methods (from ork.poser)
