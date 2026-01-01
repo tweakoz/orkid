@@ -201,7 +201,10 @@ class PoserUi(UiLayoutComponent):
               if app.ik_chain is not None:
                 # Store initial hand position from the ORIGINAL pose (before IK warp)
                 app.ik_initial_hand_pos = app.ik_initial_concats[app.ik_hand_joint].translation
-                print(f"IK initial hand pos: {app.ik_initial_hand_pos}")
+                # Store initial distance from eye to hand for ray projection
+                eye_pos = camdat.eye
+                app.ik_eye_to_hand_dist = (app.ik_initial_hand_pos - eye_pos).length
+                print(f"IK initial hand pos: {app.ik_initial_hand_pos}, eye dist: {app.ik_eye_to_hand_dist}")
                 # Reset pose immediately to undo the warp from setupIkChain
                 for i in range(app.skeleton.numJoints):
                   app.localpose.localMatrices[i] = app.ik_initial_locals[i]
@@ -278,6 +281,9 @@ class SceneGraphApp(ComponentizedApplication):
     self.ik_initial_hand_pos = None
     self.ik_initial_locals = None
     self.ik_initial_concats = None
+    self.ik_eye_to_hand_dist = 0.0
+    self.ik_index_joints = []
+    self.ik_arm_side = None
 
     params_dict = {
       "SkyboxIntensity": float(lightintens),
@@ -444,14 +450,72 @@ class SceneGraphApp(ComponentizedApplication):
     self.ik_end_joint = self.ik_hand_joint
     self.ik_middle_joint = self.ik_forearm_joint
 
+    # Get index finger joints for hand rotation correction (like skinning2)
+    self.ik_index_joints = [self.skeleton.jointIndex(f"mixamorig.{arm_side}HandIndex{i+1}") for i in range(4)]
+    print(f"  Index joints: {self.ik_index_joints}")
+
+    # Store arm side for constraint direction
+    self.ik_arm_side = arm_side
+
     # Fixup joints exactly like skinning2: hand + thumb joints + index joints
     self.ik_fixup_joints = [self.ik_hand_joint] + self.skeleton.descendantJointsOf(self.ik_hand_joint)
     print(f"  Fixup joints: {len(self.ik_fixup_joints)}")
 
+  def constrainShoulder(self, concats):
+    """
+    Constrain shoulder rotation to anatomically plausible limits.
+    - Left arm: naturally at +X, don't let it point toward -X (through torso)
+    - Right arm: naturally at -X, don't let it point toward +X (through torso)
+    Character faces +Z.
+    """
+    curr_arm_mtx = concats[self.ik_arm_joint]
+    curr_forearm_mtx = concats[self.ik_forearm_joint]
+
+    # Compute current arm direction (shoulder to elbow)
+    curr_arm_dir = (curr_forearm_mtx.translation - curr_arm_mtx.translation).normalized
+
+    # Get shoulder position (pivot point)
+    shoulder_pos = curr_arm_mtx.translation
+
+    # Directional constraint: prevent arm from crossing through torso
+    needs_correction = False
+    if self.ik_arm_side == "Left":
+      # Left arm naturally points +X, stop it from going to -X
+      if curr_arm_dir.x < 0:
+        needs_correction = True
+        # Clamp X to 0 (arm points sideways, not into torso)
+        clamped_dir = vec3(0, curr_arm_dir.y, curr_arm_dir.z).normalized
+    else:  # Right
+      # Right arm naturally points -X, stop it from going to +X
+      if curr_arm_dir.x > 0:
+        needs_correction = True
+        clamped_dir = vec3(0, curr_arm_dir.y, curr_arm_dir.z).normalized
+
+    if needs_correction and clamped_dir.length > 0.001:
+      # Compute rotation to go from current to clamped direction
+      correction_axis = curr_arm_dir.cross(clamped_dir)
+      if correction_axis.length > 0.001:
+        correction_axis = correction_axis.normalized
+        correction_angle = curr_arm_dir.angle(clamped_dir)
+
+        # Build correction matrix around shoulder
+        Qc = quat()
+        Qc.fromAxisAngle(vec4(correction_axis, correction_angle))
+        Mc = Qc.toMatrix()
+
+        # Apply correction around shoulder pivot
+        IP = mtx4.transMatrix(shoulder_pos * -1.0)
+        P = mtx4.transMatrix(shoulder_pos)
+        correction = P * Mc * IP
+
+        # Apply to arm and all descendants
+        arm_descendants = [self.ik_arm_joint] + self.skeleton.descendantJointsOf(self.ik_arm_joint)
+        for ji in arm_descendants:
+          concats[ji] = correction * concats[ji]
+
   def updateIk(self, cur_screen_pos, camdat):
     """
-    Update IK - matches skinning2.py approach.
-    Resets pose each frame, then applies IK with offset from initial position.
+    Update IK - project target along eye-to-mouse ray at fixed distance.
     """
     if self.ik_chain is None:
       return
@@ -470,18 +534,33 @@ class SceneGraphApp(ComponentizedApplication):
     # Compute extend length (like skinning2)
     extend_length = (mtx_forearm.translation - mtx_hand.translation).length
 
-    # Mouse X/Y -> world X/Z offset (simple, small amounts)
-    delta = cur_screen_pos - self.push_screen_pos
-    offset = vec3(delta.x * 0.001, 0, delta.y * 0.001)
+    # Project target along eye-to-mouse ray
+    sgvpw = self.SGC.SGVPW
+    vp_width = sgvpw.width
+    vp_height = sgvpw.height
 
-    # Target = initial hand position + offset (NOT current, to avoid accumulation)
-    target = self.ik_initial_hand_pos + offset
+    # Convert screen pos to normalized coordinates (0-1)
+    # Note: screen Y=0 is top, but camera Y=1 is top, so flip Y
+    norm_x = cur_screen_pos.x / vp_width
+    norm_y = 1.0 - (cur_screen_pos.y / vp_height)
+
+    # Compute camera matrices and project ray
+    aspect = vp_width / vp_height
+    cam_matrices = camdat.computeMatrices(aspect)
+    ray = cam_matrices.projectDepthRay(vec2(norm_x, norm_y))
+
+    # Target = eye + ray_direction * distance
+    eye_pos = camdat.eye
+    target = eye_pos + ray.direction * self.ik_eye_to_hand_dist
 
     # Update ball visualization
     self.ball_node.worldTransform.translation = target
 
     # Solve IK
     self.ik_chain.compute(self.localpose, target)
+
+    # Constrain shoulder rotation
+    self.constrainShoulder(concats)
 
     # Fixup: reconnect hand to forearm (like skinning2.py)
     fixup_base = concats[self.ik_forearm_joint]
@@ -495,6 +574,29 @@ class SceneGraphApp(ComponentizedApplication):
     for ji in self.ik_fixup_joints:
       O = concats[ji]
       concats[ji] = xf_delta * O
+
+    # Correct rotation of hand to point in elbow->wrist direction (like skinning2.py)
+    dir_forearm_to_hand = (concats[self.ik_hand_joint].translation
+                          - concats[self.ik_forearm_joint].translation).normalized
+    dir_hand_to_index = (concats[self.ik_index_joints[0]].translation
+                        - concats[self.ik_hand_joint].translation).normalized
+    dir_cross = dir_forearm_to_hand.cross(dir_hand_to_index).normalized
+    angle = dir_forearm_to_hand.angle(dir_hand_to_index)
+
+    Q = quat()
+    Q.fromAxisAngle(vec4(dir_cross, -angle))
+    MQ = Q.toMatrix()
+
+    # Apply rotation around hand position
+    h = concats[self.ik_hand_joint]
+    a = mtx4()
+    a.setColumn(3, h.getColumn(3))
+    ai = a.inverse
+    MQ = a * MQ * ai
+
+    for ji in self.ik_fixup_joints:
+      O = concats[ji]
+      concats[ji] = MQ * O
 
   ##############################################
   # FK Rotation Methods (from ork.poser)
