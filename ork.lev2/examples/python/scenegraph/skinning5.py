@@ -24,11 +24,12 @@ os.environ["ORKID_LEV2_SHOW_SKELETON"] = "1"
 
 ################################################################################
 
-KEY_A = ord("A")
-KEY_S = ord("S")
-KEY_SPC = ord(" ")
-KEY_MINUS = ord("-")
-KEY_EQUAL = ord("=")
+class KEY:
+  A = ord("A")
+  S = ord("S")
+  SPC = ord(" ")
+  MINUS = ord("-")
+  EQUAL = ord("=")
 
 ################################################################################
 
@@ -53,7 +54,6 @@ class PoserUi(UiLayoutComponent):
   def _onBuildLayout(self, lg_group):
 
     bg_color = vec4(0.1, 0.1, 0.1, 1)
-
     lg_group.clearColorGuide = vec4(0.8,0.6,0.2,1)
     lg_group.clearColorStd = bg_color
 
@@ -124,6 +124,7 @@ class PoserUi(UiLayoutComponent):
 
     tabs.setActiveTabByName("HELP")
 
+  ##############################################
 
   def provideWidgetForSlot(self, slot_name, widget_class, args):
     # Return existing viewport instead of creating new one
@@ -145,47 +146,48 @@ class PoserUi(UiLayoutComponent):
     uictx = app.ezapp.uicontext
 
     if uievent.code == tokens.KEY_UP.hashed:
-      if uievent.keycode in [KEY_S, KEY_A]:
+      if uievent.keycode in [KEY.S, KEY.A]:
         CHR.deselectBone()
         handled = True
 
     if uievent.code == tokens.KEY_DOWN.hashed:
       ##############################
-      if uievent.keycode == KEY_SPC:
-        CHR.resetPose()
-        handled = True
-      ##############################
-      elif uievent.keycode == KEY_MINUS:
-        CHR.skeleton.visualBoneScale *= 0.9
-      elif uievent.keycode == KEY_EQUAL:
-        CHR.skeleton.visualBoneScale *= 1.1
-      ##############################
-      elif uievent.keycode in [KEY_S, KEY_A]:
-        CHR.push_screen_pos = local_coord
+      match uievent.keycode:
+        case KEY.SPC:
+          CHR.resetPose()
+          handled = True
+        ##############################
+        case KEY.MINUS:
+          CHR.skeleton.visualBoneScale *= 0.9
+        case KEY.EQUAL:
+          CHR.skeleton.visualBoneScale *= 1.1
+        ##############################
+        case KEY.S | KEY.A:
+          CHR.push_screen_pos = local_coord
 
-        def pick_callback(pixel_fetch_context):
-          obj = pixel_fetch_context.value(0)
-          sel_bone_index = None
-          if obj is not None and isinstance(obj, u32vec4):
-            sel_bone_index = int(obj.y)
+          def pick_callback(pixel_fetch_context):
+            obj = pixel_fetch_context.value(0)
+            sel_bone_index = None
+            if obj is not None and isinstance(obj, u32vec4):
+              sel_bone_index = int(obj.y)
 
-          if sel_bone_index is not None:
-            CHR.selectBoneForFK(sel_bone_index)
-            # Update pick texture views
-            SG = app.scenegraph
-            self.pick_img_id.texture = SG.pick_tex_id
-            self.pick_img_pos.texture = SG.pick_tex_pos
-            self.pick_img_nrm.texture = SG.pick_tex_nrm
+            if sel_bone_index is not None:
+              CHR.selectBoneForFK(sel_bone_index)
+              # Update pick texture views
+              SG = app.scenegraph
+              self.pick_img_id.texture = SG.pick_tex_id
+              self.pick_img_pos.texture = SG.pick_tex_pos
+              self.pick_img_nrm.texture = SG.pick_tex_nrm
 
-        self.pick_img_id.setDirty()
-        self.pick_img_pos.setDirty()
-        self.pick_img_nrm.setDirty()
-        app.scenegraph.pickWithScreenCoord(camdat, local_coord, sgvpw.x, sgvpw.y, sgvpw.width, sgvpw.height, pick_callback)
-        handled = True
+          self.pick_img_id.setDirty()
+          self.pick_img_pos.setDirty()
+          self.pick_img_nrm.setDirty()
+          app.scenegraph.pickWithScreenCoord(camdat, local_coord, sgvpw.x, sgvpw.y, sgvpw.width, sgvpw.height, pick_callback)
+          handled = True
       ##############################
 
     # FK rotation handler for A key
-    if uictx.isKeyDown(KEY_A):
+    if uictx.isKeyDown(KEY.A):
       if uievent.code == tokens.MOVE.hashed:
         if CHR.sel_joint > 0:
           CHR.rotateOnScreenZ(local_coord, camdat)
