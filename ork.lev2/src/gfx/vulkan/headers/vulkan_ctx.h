@@ -254,6 +254,7 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
 
   void rtGroupClear(rtgroup_rawptr_t rtg) final;
   void rtGroupMipGen(rtgroup_rawptr_t rtg) final;
+  void rtGroupTransitionToTexture(rtgroup_rawptr_t rtg) final;
   void msaaBlit(rtgroup_ptr_t src, rtgroup_ptr_t dst) final;
   void blit(rtgroup_ptr_t src, rtgroup_ptr_t dst) final;
   void downsample2x2(rtgroup_ptr_t src, rtgroup_ptr_t dst) final;

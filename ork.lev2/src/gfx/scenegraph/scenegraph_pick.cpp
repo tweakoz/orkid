@@ -87,10 +87,9 @@ void SgPickBuffer::gpuInit(ork::lev2::Context* ctx) {
   }
 }
 ///////////////////////////////////////////////////////////////////////////
-void SgPickBuffer::pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord, callback_t callback) {
-  auto FBI = _context->FBI();
-  int W    = _context->mainSurfaceWidth();
-  int H    = _context->mainSurfaceHeight();
+void SgPickBuffer::pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord, const ViewportRect& vprect, callback_t callback) {
+  int W    = vprect._w;
+  int H    = vprect._h;
   float fx = float(screencoord.x) / W;
   float fy = float(screencoord.y) / H;
   // Flip Y for Vulkan coordinate system: screen Y=0 is top, but frustum Y=1 is top
@@ -99,8 +98,6 @@ void SgPickBuffer::pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord, 
   auto mtcs = cam->computeMatrices(float(W) / float(H));
   auto ray  = std::make_shared<fray3>();
   mtcs.projectDepthRay(unitpos, *ray.get());
-  auto o = ray->mOrigin;
-  auto d = ray->mDirection;
   pickWithRay(ray,callback);
 }
 ///////////////////////////////////////////////////////////////////////////
@@ -207,6 +204,8 @@ void SgPickBuffer::mydraw(fray3_constptr_t ray, callback_t callback) {
 
     _context->beginFrame(false);  // non-visual frame for capture
     _pendingCapture = FBI->capturePixelAsync(_pfc, center_x, center_y, on_complete);
+    // Transition pick RTG to texture mode for HUD sampling
+    FBI->rtGroupTransitionToTexture(_pfc->_rtgroup.get());
     _context->endFrame();
     ///////////////////////////////////////////////////////////////////////////
 

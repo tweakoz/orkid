@@ -23,7 +23,7 @@ parser.add_argument("-i", "--lightintensity", type=float, default=1.0, help='lig
 parser.add_argument("-d", "--camdist", type=float, default=0.0, help='camera distance')
 parser.add_argument("-e", "--envmap", type=str, default="", help='environment map')
 parser.add_argument("-b", "--bonescale", type=float, default=1.0, help='bone scalar')
-parser.add_argument("-t", "--ssaa", type=int, default=4, help='SSAA samples')
+parser.add_argument("-t", "--ssaa", type=int, default=0, help='SSAA samples')
 parser.add_argument("-u", "--ssao", type=int, default=0, help='SSAO samples')
 parser.add_argument('-r', '--rendermodel', type=str, default='forward', help='rendering model (deferred,forward)')
 
@@ -108,6 +108,9 @@ class PoserUi(UiLayoutComponent):
     res = lev2.ui.HandlerResult()
     camdat = app.SGC.uicam.cameradata
     scoord = uievent.pos
+    # Compute local viewport coordinates
+    sgvpw = app.SGC.SGVPW
+    local_coord = vec2(scoord.x - sgvpw.x, scoord.y - sgvpw.y)
     handled = False
     uictx = app.ezapp.uicontext
 
@@ -149,7 +152,8 @@ class PoserUi(UiLayoutComponent):
       ##############################
       elif uievent.keycode in [ord("A"), ord("S"), ord("1"), ord("2"), ord("3")]:
         app.descendants = []
-        app.push_screen_pos = scoord
+        # Store push position in local viewport coordinates
+        app.push_screen_pos = local_coord
 
         def pick_callback(pixel_fetch_context):
           #print(pixel_fetch_context)
@@ -158,7 +162,8 @@ class PoserUi(UiLayoutComponent):
           nrm = pixel_fetch_context.value(2).xyz
           uv = pixel_fetch_context.value(3).xyz.xy
           eye = camdat.eye + camdat.znormal * 10
-          print(obj,pos,nrm,uv)
+          #print(obj,pos,nrm,uv)
+          #print(f"obj type: {type(obj)}, is u32vec4: {isinstance(obj, u32vec4) if obj else 'N/A'}")
           # decodePixel returns a u32vec4 with .y = bone ID
           sel_bone_index = None
           if obj is not None and isinstance(obj, u32vec4):
@@ -167,8 +172,11 @@ class PoserUi(UiLayoutComponent):
             app.skeleton.selectBone(sel_bone_index)
             sel_bone = app.skeleton.bone(sel_bone_index)
             sel_parent_index = sel_bone.parentIndex
-            app.pivot_point = app.localpose.concatMatrices[app.sel_joint].translation
+            sel_child_index = sel_bone.childIndex
             app.sel_joint = sel_parent_index
+            # Pivot at child joint (the base/origin of the selected bone)
+            app.pivot_point = app.localpose.concatMatrices[sel_child_index].translation
+            print(f"bone:{sel_bone_index} parent:{sel_parent_index} child:{sel_child_index} pivot:{app.pivot_point}")
             pname = app.skeleton.jointName(sel_bone.parentIndex)
             cname = app.skeleton.jointName(sel_bone.childIndex)
             ppath = app.skeleton.jointPath(sel_bone.parentIndex)
@@ -227,52 +235,52 @@ class PoserUi(UiLayoutComponent):
             #B = scoord * vec2(1.0 / 1280, -1.0 / 720) + vec2(0, 1)
             app.activate_rot = False
             #print(A, B)
+            SG = app.scenegraph
+            self.pick_img_id.texture = SG.pick_tex_id
+            self.pick_img_pos.texture = SG.pick_tex_pos
+            self.pick_img_nrm.texture = SG.pick_tex_nrm
+            # Mark ImageViews dirty so they redraw with updated pick textures
 
-        app.scenegraph.pickWithScreenCoord(camdat, scoord, pick_callback)
+        self.pick_img_id.setDirty()
+        self.pick_img_pos.setDirty()
+        self.pick_img_nrm.setDirty()
+        app.scenegraph.pickWithScreenCoord(camdat, local_coord, sgvpw.x, sgvpw.y, sgvpw.width, sgvpw.height, pick_callback)
         # Re-assign textures after pick (RtGroup now realized with valid dimensions)
-        SG = app.scenegraph
-        #self.pick_img_id.texture = SG.pick_tex_id
-        #self.pick_img_pos.texture = SG.pick_tex_pos
-        #self.pick_img_nrm.texture = SG.pick_tex_nrm
-        # Mark ImageViews dirty so they redraw with updated pick textures
-        #self.pick_img_id.setDirty()
-        #self.pick_img_pos.setDirty()
-        #self.pick_img_nrm.setDirty()
         handled = True
       ##############################
 
     elif uictx.isKeyDown(ord("A")):
       if uievent.code == tokens.MOVE.hashed:
         if app.sel_joint > 0:
-          app.rotateOnScreenZ(scoord)
+          app.rotateOnScreenZ(local_coord)
           handled = True
     elif uictx.isKeyDown(ord("1")):
       if uievent.code == tokens.MOVE.hashed:
         if app.sel_joint > 0:
-          app.rotateOnLocalX(scoord)
+          app.rotateOnLocalX(local_coord)
           handled = True
     elif uictx.isKeyDown(ord("2")):
       if uievent.code == tokens.MOVE.hashed:
         if app.sel_joint > 0:
-          app.rotateOnLocalY(scoord)
+          app.rotateOnLocalY(local_coord)
           handled = True
     elif uictx.isKeyDown(ord("3")):
       if uievent.code == tokens.MOVE.hashed:
         if app.sel_joint > 0:
-          app.rotateOnLocalZ(scoord)
+          app.rotateOnLocalZ(local_coord)
           handled = True
     elif uictx.isKeyDown(ord("S")):
       if uievent.code == tokens.MOVE.hashed:
         if app.sel_joint == 2:
-          mag = (scoord - app.push_screen_pos).length
+          mag = (local_coord - app.push_screen_pos).length
           if app.activate_rot == False:
             if mag > 32:
               app.activate_rot = True
-              app.activated_pos = scoord
+              app.activated_pos = local_coord
 
           if app.activate_rot:
             deltaA = (app.activated_pos - app.push_screen_pos).normalized
-            deltaB = (scoord - app.push_screen_pos).normalized
+            deltaB = (local_coord - app.push_screen_pos).normalized
             angle = deltaB.orientedAngle(deltaA)
             app.localpose.concatenate()
             X = app.concats_at_push[app.sel_joint]

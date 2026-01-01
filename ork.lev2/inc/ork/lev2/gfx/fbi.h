@@ -74,6 +74,7 @@ public:
   virtual void rtGroupMipGen(RtGroup* rtg) {
   }
   virtual void validateRtGroup(RtGroup* rtg) {}
+  virtual void rtGroupTransitionToTexture(RtGroup* rtg) {} // Transition RTG buffers to SHADER_READ_ONLY_OPTIMAL
 
   ///////////////////////////////////////////////////////
   // viewport / scissor

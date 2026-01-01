@@ -79,6 +79,9 @@ void GridDrawableImpl::_render(const RenderContextInstData& RCID) {
   }
 
   bool isPickState = context->FBI()->isPickState();
+  if (isPickState) {
+    return;  // Don't render grid in pick mode
+  }
 
   auto RCFD = RCID.rcfd();
 

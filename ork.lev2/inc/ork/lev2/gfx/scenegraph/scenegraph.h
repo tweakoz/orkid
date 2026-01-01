@@ -177,7 +177,7 @@ struct SgPickBuffer {
   void gpuInit(ork::lev2::Context* ctx);  // Initialize RTG and textures for pick HUD visibility
   void mydraw(fray3_constptr_t ray, callback_t callback);
   void pickWithRay(fray3_constptr_t ray, callback_t callback);
-  void pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord, callback_t callback);
+  void pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord, const ViewportRect& vprect, callback_t callback);
   lev2::Context* _context    = nullptr;
   CompositingData* _compdata = nullptr;
 
@@ -252,7 +252,7 @@ struct Scene {
   void gpuExit(Context* ctx);
 
   void pickWithRay(fray3_constptr_t ray, SgPickBuffer::callback_t callback);
-  void pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord, SgPickBuffer::callback_t callback);
+  void pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord, const ViewportRect& vprect, SgPickBuffer::callback_t callback);
 
   template <typename T> std::shared_ptr<T> tryRenderNodeAs() {
     return std::dynamic_pointer_cast<T>(_renderNode);

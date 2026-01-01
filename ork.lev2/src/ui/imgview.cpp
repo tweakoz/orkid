@@ -31,7 +31,7 @@ void ImageView::setTextureProvider(lev2::texture_provider_ptr_t texprovider) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ImageView::setTexture(lev2::texture_ptr_t tex) {
-  printf("ImageView::setTexture: %p w=%d h=%d\n",
+  if(0)printf("ImageView::setTexture: %p w=%d h=%d\n",
          tex.get(),
          tex ? tex->_width : -1,
          tex ? tex->_height : -1);

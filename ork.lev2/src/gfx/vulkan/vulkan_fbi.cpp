@@ -119,6 +119,18 @@ void VkFrameBufferInterface::rtGroupMipGen(RtGroup* rtg) {
 
 ///////////////////////////////////////////////////////
 
+void VkFrameBufferInterface::rtGroupTransitionToTexture(RtGroup* rtg) {
+  if (!rtg) return;
+  if (!rtg->_impl.isShared<VkRtGroupImpl>()) return;
+
+  auto RTGIMPL = rtg->_impl.getShared<VkRtGroupImpl>();
+
+  // Transition all color buffers to SHADER_READ_ONLY_OPTIMAL for sampling
+  RTGIMPL->_transitionToTexture(_contextVK->primary_cb());
+}
+
+///////////////////////////////////////////////////////
+
 void VkFrameBufferInterface::msaaBlit(rtgroup_ptr_t src, rtgroup_ptr_t dst) {
   OrkAssert(false);
 }

@@ -168,9 +168,9 @@ void Scene::pickWithRay(fray3_constptr_t ray, SgPickBuffer::callback_t callback)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Scene::pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord, SgPickBuffer::callback_t callback) {
+void Scene::pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord, const ViewportRect& vprect, SgPickBuffer::callback_t callback) {
   if (_sgpickbuffer)
-    _sgpickbuffer->pickWithScreenCoord(cam, screencoord, callback);
+    _sgpickbuffer->pickWithScreenCoord(cam, screencoord, vprect, callback);
 }
 ///////////////////////////////////////////////////////////////////////////////
 

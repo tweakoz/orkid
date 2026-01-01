@@ -391,10 +391,12 @@ void pyinit_scenegraph(py::module& module_lev2) {
                   scene_ptr_t SG,
                   cameradata_ptr_t cam,
                   fvec2 scoord,
+                  int vp_x, int vp_y, int vp_w, int vp_h,
                   py::object callback) { //
                 OrkAssert(SG != nullptr);
                 SG->_userdata->set<py::object>("pickcallback", callback);
-                SG->pickWithScreenCoord(cam, scoord, [SG, type_codec](pixelfetchctx_ptr_t pfc) {
+                ViewportRect vprect(vp_x, vp_y, vp_w, vp_h);
+                SG->pickWithScreenCoord(cam, scoord, vprect, [SG, type_codec](pixelfetchctx_ptr_t pfc) {
                   py::gil_scoped_acquire acquire_gil;
                   auto try_callback = SG->_userdata->typedValueForKey<py::object>("pickcallback");
                   if (try_callback and try_callback.value()) {
