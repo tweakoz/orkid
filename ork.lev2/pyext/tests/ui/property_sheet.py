@@ -3,11 +3,52 @@
 ################################################################################
 # PropertySheet Widget Test
 # Demonstrates hierarchical property editor with VarMap-based data
+# including color properties with ColorSwatch inline and ColorPicker detail
 ################################################################################
 
 import signal
-from orkengine.core import vec2, vec3, vec4, VarMap
+from orkengine.core import vec2, vec3, vec4, VarMap, CrcStringProxy
 from orkengine import lev2
+
+tokens = CrcStringProxy()
+
+################################################################################
+
+def create_color_inline_factory(propsheet):
+  """Factory function that creates ColorSwatch widgets for color properties."""
+  def factory(sheet, key, value, annotations):
+    # Create a ColorSwatch widget
+    swatch = lev2.ui.ColorSwatch.wfactory(["swatch_" + key])
+    if value is not None:
+      swatch.color = value
+    swatch.show_hex = True
+
+    # When swatch is clicked, request detail editor
+    def on_click():
+      propsheet.requestDetailEditor(key)
+    swatch.onClick(on_click)
+
+    return swatch
+  return factory
+
+
+def create_color_detail_factory(propsheet):
+  """Factory function that creates ColorPicker widgets for color detail editing."""
+  def factory(sheet, key, value, annotations, binding):
+    # Create a ColorPicker (Python composite widget)
+    picker = lev2.ui.ColorPicker.wfactory(["picker_" + key])
+    if value is not None:
+      picker.color = value
+
+    # Connect picker to binding callbacks
+    def on_color_changed(color):
+      binding["onValueChanged"](color)
+      # Also update the inline swatch
+    picker.onColorChanged(on_color_changed)
+
+    return picker
+  return factory
+
 
 ################################################################################
 
@@ -34,8 +75,26 @@ class PropertySheetTest:
     sheet_layout.layout.bottom.anchorTo(root_layout.bottom)
     sheet_layout.layout.right.anchorTo(root_layout.right)
 
+    # Register color editor factory using token (preferred over enum for CrcEnum)
+    self.propsheet.registerEditorFactory(
+      tokens.Color,
+      create_color_inline_factory(self.propsheet),
+      create_color_detail_factory(self.propsheet)
+    )
+
     # Use VarMap data
     self.propsheet.data = self._buildTestData()
+
+    # Set annotations for color properties (use tokens for CrcEnum types)
+    model = self.propsheet.model
+    diffuse_annot = VarMap()
+    diffuse_annot.type = tokens.Color
+    model.setAnnotations("Material.diffuse_color", diffuse_annot)
+
+    emissive_annot = VarMap()
+    emissive_annot.type = tokens.Color
+    model.setAnnotations("Material.emissive_color", emissive_annot)
+
     self.propsheet.expandAll()
 
     # Set property change callback
@@ -72,14 +131,12 @@ class PropertySheetTest:
     transform.scale = 1.0
     data.Transform = transform
 
-    # Material group
+    # Material group - using color properties
     material = VarMap()
-    material.diffuse_r = 0.8
-    material.diffuse_g = 0.2
-    material.diffuse_b = 0.2
+    material.diffuse_color = vec4(0.8, 0.2, 0.2, 1.0)  # Color property
+    material.emissive_color = vec4(0.0, 0.0, 0.0, 1.0)  # Color property
     material.metallic = 0.0
     material.roughness = 0.5
-    material.emissive = 0.0
     data.Material = material
 
     # Rendering group

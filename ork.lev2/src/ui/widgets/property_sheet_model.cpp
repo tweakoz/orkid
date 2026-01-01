@@ -174,6 +174,24 @@ void VarMapPropertyModel::setValue(const std::string& key, svar128_t value) {
 }
 
 PropertyType VarMapPropertyModel::getPropertyType(const std::string& key) const {
+  // Check annotations first for type override
+  auto annotations = getAnnotations(key);
+  if (annotations) {
+    auto type_it = annotations->_themap.find("type");
+    if (type_it != annotations->_themap.end()) {
+      // Type can be specified as CrcString (from Python tokens), PropertyType enum, or CRC integer
+      if (auto crcstr = type_it->second.tryAs<crcstring_ptr_t>()) {
+        return propertyTypeFromCrc(crcstr.value()->hashed());
+      }
+      if (auto pt = type_it->second.tryAs<PropertyType>()) {
+        return pt.value();
+      }
+      if (auto crc = type_it->second.tryAs<uint32_t>()) {
+        return propertyTypeFromCrc(crc.value());
+      }
+    }
+  }
+
   auto [parent, name] = _getParentAndName(key);
   if (!parent) {
     return PropertyType::Unknown;

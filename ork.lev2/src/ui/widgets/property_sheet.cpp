@@ -263,12 +263,143 @@ void PropertySheet::rebuild() {
   _needs_rebuild = true;
 }
 
+/////////////////////////////////////////////////////////////////////////
+// Detail Editor Overlay
+/////////////////////////////////////////////////////////////////////////
+
+void PropertySheet::showDetailEditor(const std::string& key, widget_ptr_t editor) {
+  // Close any existing detail editor
+  closeDetailEditor();
+
+  if (!editor || !_model) return;
+
+  // Create binding for communication
+  _detail_binding = std::make_shared<DetailEditorBinding>();
+  _detail_binding->property_key = key;
+  _detail_binding->property_type = _model->getPropertyType(key);
+  _detail_binding->initial_value = _model->getValue(key);
+
+  // Set up binding callbacks
+  _detail_binding->onValueChanged = [this, key](svar128_t value) {
+    if (_model) {
+      _model->setValue(key, value);
+      if (_onPropertyChanged) {
+        _onPropertyChanged(key, value);
+      }
+    }
+  };
+
+  _detail_binding->onValueCommit = [this, key](svar128_t value) {
+    if (_model) {
+      _model->setValue(key, value);
+      if (_onPropertyChanged) {
+        _onPropertyChanged(key, value);
+      }
+    }
+    closeDetailEditor();
+  };
+
+  _detail_binding->onCancel = [this, key]() {
+    // Revert to initial value
+    if (_model && _detail_binding) {
+      _model->setValue(key, _detail_binding->initial_value);
+      if (_onPropertyChanged) {
+        _onPropertyChanged(key, _detail_binding->initial_value);
+      }
+    }
+    closeDetailEditor();
+  };
+
+  _detail_binding->onClose = [this]() {
+    closeDetailEditor();
+  };
+
+  // Set the detail editor
+  _detail_editor = editor;
+  _detail_editor->_uicontext = _uicontext;
+  _detail_editor->_parent = this;
+
+  // Trigger layout to position the detail editor
+  DoLayout();
+}
+
+void PropertySheet::closeDetailEditor() {
+  if (_detail_editor) {
+    // Clear context pointers before destroying
+    if (_uicontext) {
+      _uicontext->clearWidgetPointers(_detail_editor.get());
+    }
+    _detail_editor = nullptr;
+  }
+  _detail_binding = nullptr;
+}
+
+/////////////////////////////////////////////////////////////////////////
+// Editor Factory Registry
+/////////////////////////////////////////////////////////////////////////
+
+void PropertySheet::registerEditorFactory(
+    uint32_t type_crc,
+    inline_editor_factory_t inline_factory,
+    detail_editor_factory_t detail_factory) {
+  _editor_factories[type_crc] = EditorFactoryPair{inline_factory, detail_factory};
+}
+
+bool PropertySheet::hasEditorFactory(uint32_t type_crc) const {
+  return _editor_factories.count(type_crc) > 0;
+}
+
+void PropertySheet::requestDetailEditor(const std::string& key) {
+  if (!_model) return;
+
+  PropertyType type = _model->getPropertyType(key);
+  uint32_t type_crc = propertyTypeToCrc(type);
+  svar128_t value = _model->getValue(key);
+  varmap::varmap_ptr_t annotations = _model->getAnnotations(key);
+
+  // Check if we have a registered detail factory
+  // Note: We pass nullptr for sheet since Python factories capture their own sheet reference
+  auto it = _editor_factories.find(type_crc);
+  if (it != _editor_factories.end() && it->second.detail_factory) {
+    // Create binding first
+    auto binding = std::make_shared<DetailEditorBinding>();
+    binding->property_key = key;
+    binding->property_type = type;
+    binding->initial_value = value;
+
+    // Create detail editor using factory
+    widget_ptr_t editor = it->second.detail_factory(nullptr, key, value, annotations, binding);
+    if (editor) {
+      showDetailEditor(key, editor);
+      return;
+    }
+  }
+
+  // Fall back to Python callback if no factory or factory returned null
+  if (_onRequestDetailEditor) {
+    _onRequestDetailEditor(key, type, value);
+  }
+}
+
 widget_ptr_t PropertySheet::_createEditorWidget(const std::string& key, PropertyType type, svar128_t value) {
   widget_ptr_t editor;
 
   // Get annotations for this property
   varmap::varmap_ptr_t annotations = _model ? _model->getAnnotations(key) : nullptr;
 
+  // Check for registered inline factory first
+  // Note: We pass nullptr for sheet since Python factories capture their own sheet reference
+  // and C++ built-in types use the switch statement below instead of factories
+  uint32_t type_crc = propertyTypeToCrc(type);
+  auto factory_it = _editor_factories.find(type_crc);
+  if (factory_it != _editor_factories.end() && factory_it->second.inline_factory) {
+    editor = factory_it->second.inline_factory(nullptr, key, value, annotations);
+    if (editor) {
+      return editor;
+    }
+  }
+
+  // Fall back to built-in editors
   switch (type) {
     case PropertyType::Bool: {
       auto checkbox = std::make_shared<Checkbox>("cb_" + key, fvec4(0.2f, 0.2f, 0.2f, 1.0f));
@@ -439,8 +570,15 @@ void PropertySheet::_rebuildRows() {
 }
 
 void PropertySheet::_clampScrollOffset() {
+  // Calculate available height for rows (subtract detail editor if active)
+  int rows_area_height = _geometry._h;
+  if (_detail_editor) {
+    int detail_height = std::max(_detail_min_height, int(_geometry._h * _detail_height_ratio));
+    rows_area_height = _geometry._h - detail_height;
+  }
+
   int content_height = _total_rows * _row_height;
-  int max_scroll = std::max(0, content_height - _geometry._h);
+  int max_scroll = std::max(0, content_height - rows_area_height);
   _scroll_offset = std::clamp(_scroll_offset, 0, max_scroll);
 }
 
@@ -463,7 +601,18 @@ void PropertySheet::DoLayout() {
     return;  // Wait for DoDraw to rebuild
   }
 
-  // Layout children vertically with scroll offset
+  // Calculate detail editor area if active
+  int detail_height = 0;
+  int rows_area_height = _geometry._h;
+  if (_detail_editor) {
+    detail_height = std::max(_detail_min_height, int(_geometry._h * _detail_height_ratio));
+    rows_area_height = _geometry._h - detail_height;
+
+    // Position detail editor at bottom of property sheet
+    _detail_editor->SetRect(0, rows_area_height, _geometry._w, detail_height);
+  }
+
+  // Layout children vertically with scroll offset (in rows area)
   int y = -_scroll_offset;
   for (auto& child : _children) {
     child->SetRect(0, y, _geometry._w, _row_height);
@@ -492,14 +641,38 @@ Widget* PropertySheet::doRouteUiEvent(event_constptr_t ev) {
   int localY = 0;
   RootToLocal(ev->miX, ev->miY, localX, localY);
 
+  // PRIORITY: Route to detail editor first if active and event is inside it
+  if (_detail_editor) {
+    int detail_height = std::max(_detail_min_height, int(_geometry._h * _detail_height_ratio));
+    int detail_y = _geometry._h - detail_height;
+
+    if (localY >= detail_y) {
+      // Event is in detail editor area
+      if (_detail_editor->IsEventInside(ev)) {
+        auto routed = _detail_editor->doRouteUiEvent(ev);
+        if (routed) {
+          return routed;
+        }
+        return _detail_editor.get();
+      }
+    }
+  }
+
+  // Calculate rows area height
+  int rows_area_height = _geometry._h;
+  if (_detail_editor) {
+    int detail_height = std::max(_detail_min_height, int(_geometry._h * _detail_height_ratio));
+    rows_area_height = _geometry._h - detail_height;
+  }
+
   // Find which child the event is inside (scroll-aware)
   // Children are positioned at y = -_scroll_offset + row_index * _row_height
   int y = -_scroll_offset;
   for (auto& child : _children) {
     int child_height = child->height();
-    // Skip children that are scrolled out of view
-    if (y + child_height > 0 && y < _geometry._h) {
-      if (localY >= y && localY < y + child_height) {
+    // Skip children that are scrolled out of view (and outside rows area)
+    if (y + child_height > 0 && y < rows_area_height) {
+      if (localY >= y && localY < y + child_height && localY < rows_area_height) {
         auto routed = child->doRouteUiEvent(ev);
         if (routed) {
           return routed;
@@ -557,18 +730,56 @@ void PropertySheet::DoDraw(drawevent_constptr_t drwev) {
   int ix1, iy1;
   LocalToRoot(0, 0, ix1, iy1);
 
-  // Push scissor
-  fbi->pushScissor(ix1, iy1, _geometry._w, _geometry._h);
+  // Calculate rows area if detail editor is active
+  int rows_area_height = _geometry._h;
+  int detail_height = 0;
+  if (_detail_editor) {
+    detail_height = std::max(_detail_min_height, int(_geometry._h * _detail_height_ratio));
+    rows_area_height = _geometry._h - detail_height;
+  }
 
   // Draw background
   _drawColoredBox(drwev, _bgcolor);
 
-  // Draw children
+  // Push scissor for rows area only
+  fbi->pushScissor(ix1, iy1, _geometry._w, rows_area_height);
+
+  // Draw row children
   for (auto& child : _children) {
     child->draw(drwev);
   }
 
   fbi->popScissor();
+
+  // Draw detail editor on top (if active)
+  if (_detail_editor) {
+    // Push scissor for detail area
+    fbi->pushScissor(ix1, iy1 + rows_area_height, _geometry._w, detail_height);
+
+    // Draw detail editor background
+    auto mtxi = tgt->MTXI();
+    auto primi = tgt->PRI();
+    auto defmtl = lev2::defaultUIMaterial();
+
+    mtxi->PushUIMatrix();
+    {
+      int dx1 = ix1;
+      int dy1 = iy1 + rows_area_height;
+      int dx2 = ix1 + _geometry._w;
+      int dy2 = iy1 + _geometry._h;
+
+      tgt->PushModColor(_detail_bg_color);
+      defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
+      primi->RenderQuadAtZ(defmtl.get(), dx1, dx2, dy1, dy2, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+      tgt->PopModColor();
+    }
+    mtxi->PopUIMatrix();
+
+    // Draw the detail editor widget
+    _detail_editor->draw(drwev);
+
+    fbi->popScissor();
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////

@@ -248,6 +248,163 @@ void pyinit_ui_property_sheet(py::module& uimodule) {
               "group_color",
               [](ui::property_sheet_ptr_t sheet) -> fvec4 { return sheet->_group_color; },
               [](ui::property_sheet_ptr_t sheet, fvec4 c) { sheet->_group_color = c; })
+          // Detail editor overlay
+          .def(
+              "showDetailEditor",
+              [](ui::property_sheet_ptr_t sheet, const std::string& key, ui::widget_ptr_t editor) {
+                sheet->showDetailEditor(key, editor);
+              })
+          .def("closeDetailEditor", &ui::PropertySheet::closeDetailEditor)
+          .def("isDetailEditorActive", &ui::PropertySheet::isDetailEditorActive)
+          .def_property(
+              "detail_height_ratio",
+              [](ui::property_sheet_ptr_t sheet) -> float { return sheet->_detail_height_ratio; },
+              [](ui::property_sheet_ptr_t sheet, float r) { sheet->_detail_height_ratio = r; })
+          .def_property(
+              "detail_min_height",
+              [](ui::property_sheet_ptr_t sheet) -> int { return sheet->_detail_min_height; },
+              [](ui::property_sheet_ptr_t sheet, int h) { sheet->_detail_min_height = h; })
+          .def_property(
+              "detail_bg_color",
+              [](ui::property_sheet_ptr_t sheet) -> fvec4 { return sheet->_detail_bg_color; },
+              [](ui::property_sheet_ptr_t sheet, fvec4 c) { sheet->_detail_bg_color = c; })
+          .def(
+              "onRequestDetailEditor",
+              [type_codec](ui::property_sheet_ptr_t sheet, py::object callback) {
+                if (not callback.is_none()) {
+                  sheet->_onRequestDetailEditor = [callback, type_codec](
+                                                       const std::string& key,
+                                                       ui::PropertyType type,
+                                                       svar128_t value) {
+                    py::gil_scoped_acquire acquire;
+                    py::object py_value = type_codec->encode(value);
+                    callback(key, type, py_value);
+                  };
+                }
+              })
+          .def(
+              "getDetailBinding",
+              [type_codec](ui::property_sheet_ptr_t sheet) -> py::object {
+                auto binding = sheet->getDetailBinding();
+                if (!binding) {
+                  return py::none();
+                }
+                // Return a dict with binding info
+                py::dict result;
+                result["property_key"] = binding->property_key;
+                result["property_type"] = binding->property_type;
+                result["initial_value"] = type_codec->encode(binding->initial_value);
+                // Wrap callbacks
+                result["onValueChanged"] = py::cpp_function([binding, type_codec](py::object py_value) {
+                  if (binding->onValueChanged) {
+                    svar128_t value = type_codec->decode(py_value);
+                    binding->onValueChanged(value);
+                  }
+                });
+                result["onValueCommit"] = py::cpp_function([binding, type_codec](py::object py_value) {
+                  if (binding->onValueCommit) {
+                    svar128_t value = type_codec->decode(py_value);
+                    binding->onValueCommit(value);
+                  }
+                });
+                result["onCancel"] = py::cpp_function([binding]() {
+                  if (binding->onCancel) {
+                    binding->onCancel();
+                  }
+                });
+                result["onClose"] = py::cpp_function([binding]() {
+                  if (binding->onClose) {
+                    binding->onClose();
+                  }
+                });
+                return result;
+              })
+          // Factory registration
+          .def(
+              "registerEditorFactory",
+              [type_codec](
+                  ui::property_sheet_ptr_t sheet,
+                  py::object type_or_crc,
+                  py::object inline_factory,
+                  py::object detail_factory) {
+                // Get the CRC value from CrcString
+                auto crcstr = py::cast<crcstring_ptr_t>(type_or_crc);
+                uint32_t type_crc = crcstr->hashed();
+
+                // Create inline factory wrapper
+                ui::inline_editor_factory_t cpp_inline_factory = nullptr;
+                if (!inline_factory.is_none()) {
+                  cpp_inline_factory = [inline_factory, type_codec](
+                                           ui::property_sheet_ptr_t sheet,
+                                           const std::string& key,
+                                           svar128_t value,
+                                           varmap::varmap_ptr_t annotations) -> ui::widget_ptr_t {
+                    py::gil_scoped_acquire acquire;
+                    py::object py_value = type_codec->encode(value);
+                    py::object result = inline_factory(sheet, key, py_value, annotations);
+                    if (result.is_none()) {
+                      return nullptr;
+                    }
+                    return result.cast<ui::widget_ptr_t>();
+                  };
+                }
+
+                // Create detail factory wrapper
+                ui::detail_editor_factory_t cpp_detail_factory = nullptr;
+                if (!detail_factory.is_none()) {
+                  cpp_detail_factory = [detail_factory, type_codec](
+                                           ui::property_sheet_ptr_t sheet,
+                                           const std::string& key,
+                                           svar128_t value,
+                                           varmap::varmap_ptr_t annotations,
+                                           ui::detail_editor_binding_ptr_t binding) -> ui::widget_ptr_t {
+                    py::gil_scoped_acquire acquire;
+                    py::object py_value = type_codec->encode(value);
+                    // Create binding dict for Python
+                    py::dict py_binding;
+                    py_binding["property_key"] = binding->property_key;
+                    py_binding["property_type"] = binding->property_type;
+                    py_binding["initial_value"] = type_codec->encode(binding->initial_value);
+                    py_binding["onValueChanged"] = py::cpp_function([binding, type_codec](py::object py_val) {
+                      if (binding->onValueChanged) {
+                        binding->onValueChanged(type_codec->decode(py_val));
+                      }
+                    });
+                    py_binding["onValueCommit"] = py::cpp_function([binding, type_codec](py::object py_val) {
+                      if (binding->onValueCommit) {
+                        binding->onValueCommit(type_codec->decode(py_val));
+                      }
+                    });
+                    py_binding["onCancel"] = py::cpp_function([binding]() {
+                      if (binding->onCancel) {
+                        binding->onCancel();
+                      }
+                    });
+                    py_binding["onClose"] = py::cpp_function([binding]() {
+                      if (binding->onClose) {
+                        binding->onClose();
+                      }
+                    });
+
+                    py::object result = detail_factory(sheet, key, py_value, annotations, py_binding);
+                    if (result.is_none()) {
+                      return nullptr;
+                    }
+                    return result.cast<ui::widget_ptr_t>();
+                  };
+                }
+
+                sheet->registerEditorFactory(type_crc, cpp_inline_factory, cpp_detail_factory);
+              },
+              py::arg("type_or_crc"),
+              py::arg("inline_factory"),
+              py::arg("detail_factory") = py::none())
+          .def(
+              "hasEditorFactory",
+              [](ui::property_sheet_ptr_t sheet, crcstring_ptr_t type_crc) -> bool {
+                return sheet->hasEditorFactory(type_crc->hashed());
+              })
+          .def("requestDetailEditor", &ui::PropertySheet::requestDetailEditor)
           .def("__repr__", [](ui::property_sheet_ptr_t sheet) {
             return FormatString("<PropertySheet name<%s> widget<%p>>", sheet->GetName().c_str(), (void*)sheet.get());
           });

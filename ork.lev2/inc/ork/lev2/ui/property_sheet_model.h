@@ -8,6 +8,7 @@
 #pragma once
 
 #include <ork/kernel/varmap.inl>
+#include <ork/util/crc.h>
 #include <functional>
 #include <vector>
 #include <string>
@@ -16,21 +17,36 @@
 namespace ork::ui {
 
 ////////////////////////////////////////////////////////////////////
-// PropertyType: Enum for common property types
+// PropertyType: CrcEnum for extensible property types
+// - Built-in types defined here
+// - Custom types can be registered at runtime using CRC tokens
 ////////////////////////////////////////////////////////////////////
 
-enum class PropertyType {
-  Unknown,
-  Bool,
-  Int,
-  Float,
-  String,
-  Vec2,
-  Vec3,
-  Vec4,
-  Color,
-  Group,  // Container for child properties
+enum class PropertyType : uint32_t {
+  CrcEnum(Unknown),
+  CrcEnum(Bool),
+  CrcEnum(Int),
+  CrcEnum(Float),
+  CrcEnum(String),
+  CrcEnum(Vec2),
+  CrcEnum(Vec3),
+  CrcEnum(Vec4),
+  CrcEnum(Color),
+  CrcEnum(Gradient),
+  CrcEnum(Curve),
+  CrcEnum(Asset),
+  CrcEnum(Group),  // Container for child properties
 };
+
+// Helper to convert CRC token to PropertyType
+inline PropertyType propertyTypeFromCrc(uint32_t crc) {
+  return static_cast<PropertyType>(crc);
+}
+
+// Helper to get CRC value from PropertyType
+inline uint32_t propertyTypeToCrc(PropertyType type) {
+  return static_cast<uint32_t>(type);
+}
 
 ////////////////////////////////////////////////////////////////////
 // PropertySheetModel: Abstract base class for PropertySheet data models

@@ -58,10 +58,63 @@ protected:
 using property_row_ptr_t = std::shared_ptr<PropertyRow>;
 
 ////////////////////////////////////////////////////////////////////
+// DetailEditorBinding: Abstraction for PropertySheet <-> DetailEditor communication
+// Allows detail editors to work as overlays, popups, or docked panels
+////////////////////////////////////////////////////////////////////
+
+struct DetailEditorBinding {
+  std::string property_key;                          // Which property is being edited
+  PropertyType property_type = PropertyType::Unknown;
+  svar128_t initial_value;                           // Value when editor opened
+
+  // Callbacks from detail editor to property sheet
+  std::function<void(svar128_t)> onValueChanged;     // Live updates during editing
+  std::function<void(svar128_t)> onValueCommit;      // Final commit (e.g., on close)
+  std::function<void()> onCancel;                    // Revert to initial value
+  std::function<void()> onClose;                     // Close the detail editor
+};
+
+using detail_editor_binding_ptr_t = std::shared_ptr<DetailEditorBinding>;
+
+////////////////////////////////////////////////////////////////////
+// EditorFactory: Factory functions for creating property editors
+// - Inline factory: Creates compact editor widget for the row
+// - Detail factory: Creates full editor for the detail overlay
+////////////////////////////////////////////////////////////////////
+
+struct PropertySheet;  // Forward declaration for factory types
+using property_sheet_ptr_t = std::shared_ptr<PropertySheet>;
+
+// Inline editor factory: creates widget for property row
+// Args: property_sheet, property_key, current_value, annotations
+// Returns: widget for inline display (e.g., ColorSwatch, slider, checkbox)
+using inline_editor_factory_t = std::function<widget_ptr_t(
+    property_sheet_ptr_t sheet,
+    const std::string& key,
+    svar128_t value,
+    varmap::varmap_ptr_t annotations)>;
+
+// Detail editor factory: creates widget for detail overlay
+// Args: property_sheet, property_key, current_value, annotations, binding for communication
+// Returns: widget for detail editor (e.g., ColorPicker, CurveEditor)
+using detail_editor_factory_t = std::function<widget_ptr_t(
+    property_sheet_ptr_t sheet,
+    const std::string& key,
+    svar128_t value,
+    varmap::varmap_ptr_t annotations,
+    detail_editor_binding_ptr_t binding)>;
+
+struct EditorFactoryPair {
+  inline_editor_factory_t inline_factory;
+  detail_editor_factory_t detail_factory;
+};
+
+////////////////////////////////////////////////////////////////////
 // PropertySheet: A hierarchical property editor widget
 // - Uses PropertySheetModel for data
 // - Creates appropriate editor widgets for each property type
 // - Supports expand/collapse of groups
+// - Has detail overlay slot for complex editors (color picker, etc.)
 ////////////////////////////////////////////////////////////////////
 
 struct PropertySheet : public Group {
@@ -84,6 +137,55 @@ struct PropertySheet : public Group {
 
   // Rebuild the widget tree from model
   void rebuild();
+
+  //////////////////////////////////////////////////////////////
+  // Editor Factory Registry
+  //////////////////////////////////////////////////////////////
+
+  // Register editor factories for a property type (by CRC token)
+  // This allows both built-in and custom property types
+  void registerEditorFactory(
+      uint32_t type_crc,
+      inline_editor_factory_t inline_factory,
+      detail_editor_factory_t detail_factory = nullptr);
+
+  // Convenience overload using PropertyType enum
+  void registerEditorFactory(
+      PropertyType type,
+      inline_editor_factory_t inline_factory,
+      detail_editor_factory_t detail_factory = nullptr) {
+    registerEditorFactory(propertyTypeToCrc(type), inline_factory, detail_factory);
+  }
+
+  // Check if a factory is registered for a type
+  bool hasEditorFactory(uint32_t type_crc) const;
+  bool hasEditorFactory(PropertyType type) const {
+    return hasEditorFactory(propertyTypeToCrc(type));
+  }
+
+  //////////////////////////////////////////////////////////////
+  // Detail Editor Overlay
+  //////////////////////////////////////////////////////////////
+
+  // Show a detail editor for a property (overlay mode)
+  // The widget will be positioned in the detail area and receive event priority
+  void showDetailEditor(const std::string& key, widget_ptr_t editor);
+
+  // Close the active detail editor
+  void closeDetailEditor();
+
+  // Check if detail editor is active
+  bool isDetailEditorActive() const { return _detail_editor != nullptr; }
+
+  // Get the current binding (for detail editor to communicate back)
+  detail_editor_binding_ptr_t getDetailBinding() const { return _detail_binding; }
+
+  // Request detail editor for a property (triggers factory or callback)
+  void requestDetailEditor(const std::string& key);
+
+  // Callback when detail editor should be shown (for Python-side creation)
+  // Called if no detail factory is registered for the type
+  std::function<void(const std::string& key, PropertyType type, svar128_t value)> _onRequestDetailEditor;
 
   // Callbacks
   std::function<void(const std::string& key, svar128_t value)> _onPropertyChanged;
@@ -117,8 +219,19 @@ private:
   bool _needs_rebuild = true;
   int _scroll_offset = 0;
   int _total_rows = 0;  // For scroll calculation
-};
 
-using property_sheet_ptr_t = std::shared_ptr<PropertySheet>;
+  // Editor factory registry (keyed by property type CRC)
+  std::unordered_map<uint32_t, EditorFactoryPair> _editor_factories;
+
+public:
+  // Detail editor overlay (public for Python bindings)
+  widget_ptr_t _detail_editor;                       // Currently active detail editor
+  detail_editor_binding_ptr_t _detail_binding;       // Communication binding
+
+  // Detail overlay appearance/layout
+  float _detail_height_ratio = 0.5f;                 // Portion of height for detail editor (0.0-1.0)
+  int _detail_min_height = 100;                      // Minimum height for detail editor
+  fvec4 _detail_bg_color = fvec4(0.15f, 0.15f, 0.18f, 1.0f);
+};
 
 } // namespace ork::ui

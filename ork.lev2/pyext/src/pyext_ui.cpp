@@ -24,6 +24,7 @@
 #include <ork/lev2/ui/slider.h>
 #include <ork/lev2/ui/combobox.h>
 #include <ork/lev2/ui/coloredit.h>
+#include <ork/lev2/ui/colorswatch.h>
 #include <ork/lev2/ui/imgview.h>
 #include <ork/lev2/ui/graphview.h>
 #include <ork/lev2/ui/logger_group.h>
@@ -1808,6 +1809,84 @@ void pyinit_ui(py::module& module_lev2) {
                 }
               });
   type_codec->registerStdCodec<ui::coloredit_ptr_t>(coloredit_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // ColorSwatch - inline color preview widget
+  auto colorswatch_type = //
+      py::class_<ui::ColorSwatch, ui::Widget, ui::colorswatch_ptr_t>(uimodule, "ColorSwatch")
+          .def_static(
+              "wfactory",
+              [type_codec](py::list py_args) -> ui::colorswatch_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                fvec4 color       = fvec4(0.5f, 0.5f, 0.5f, 1.0f);
+                if (decoded_args.size() > 1) {
+                  color = decoded_args[1].get<fvec4>();
+                }
+                auto swatch = std::make_shared<ui::ColorSwatch>(name, color);
+                return swatch;
+              })
+          .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                fvec4 color       = fvec4(0.5f, 0.5f, 0.5f, 1.0f);
+                if (decoded_args.size() > 1) {
+                  color = decoded_args[1].get<fvec4>();
+                }
+                auto layoutitem = lg->makeChild<ui::ColorSwatch>(name, color);
+                return layoutitem.as_shared();
+              })
+          .def_property(
+              "color",
+              [](ui::colorswatch_ptr_t sw) -> fvec4 { return sw->color(); },
+              [](ui::colorswatch_ptr_t sw, fvec4 c) { sw->setColor(c); })
+          .def_property(
+              "border_color",
+              [](ui::colorswatch_ptr_t sw) -> fvec4 { return sw->_border_color; },
+              [](ui::colorswatch_ptr_t sw, fvec4 c) { sw->_border_color = c; })
+          .def_property(
+              "hover_border_color",
+              [](ui::colorswatch_ptr_t sw) -> fvec4 { return sw->_hover_border_color; },
+              [](ui::colorswatch_ptr_t sw, fvec4 c) { sw->_hover_border_color = c; })
+          .def_property(
+              "border_width",
+              [](ui::colorswatch_ptr_t sw) -> int { return sw->_border_width; },
+              [](ui::colorswatch_ptr_t sw, int w) { sw->_border_width = w; })
+          .def_property(
+              "corner_radius",
+              [](ui::colorswatch_ptr_t sw) -> int { return sw->_corner_radius; },
+              [](ui::colorswatch_ptr_t sw, int r) { sw->_corner_radius = r; })
+          .def_property(
+              "show_hex",
+              [](ui::colorswatch_ptr_t sw) -> bool { return sw->_show_hex; },
+              [](ui::colorswatch_ptr_t sw, bool b) { sw->_show_hex = b; })
+          .def_property(
+              "onClick",
+              [](ui::colorswatch_ptr_t sw) -> py::object { return py::none(); },
+              [](ui::colorswatch_ptr_t sw, py::object callback) {
+                if (not callback.is_none()) {
+                  auto pycb     = std::make_shared<py::object>(callback);
+                  sw->_onClick = [pycb, sw]() {
+                    py::gil_scoped_acquire acquire_gil;
+                    (*pycb)(sw);
+                  };
+                }
+              })
+          .def_property(
+              "onColorChanged",
+              [](ui::colorswatch_ptr_t sw) -> py::object { return py::none(); },
+              [type_codec](ui::colorswatch_ptr_t sw, py::object callback) {
+                if (not callback.is_none()) {
+                  auto pycb             = std::make_shared<py::object>(callback);
+                  sw->_onColorChanged = [pycb, type_codec](fvec4 newcolor) {
+                    py::gil_scoped_acquire acquire_gil;
+                    auto encoded = type_codec->encode(newcolor);
+                    (*pycb)(encoded);
+                  };
+                }
+              });
+  type_codec->registerStdCodec<ui::colorswatch_ptr_t>(colorswatch_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto imgview_type = //
       py::class_<ui::ImageView, ui::Widget, ui::imgview_ptr_t>(uimodule, "ImageView")
