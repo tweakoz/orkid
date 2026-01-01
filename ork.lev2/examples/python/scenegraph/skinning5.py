@@ -35,6 +35,7 @@ from orkengine.core import vec2, vec3, vec4, quat, mtx4, CrcStringProxy, VarMap,
 from orkengine import lev2
 from ork.app.application import ComponentizedApplication, UiLayoutComponent
 from ork.app.std_scenegraph import StandardSceneGraphComponent
+from ork.app.testlib.chartest import CharacterComponent
 
 tokens = CrcStringProxy()
 
@@ -54,7 +55,11 @@ class PoserUi(UiLayoutComponent):
 
     lg_group.clearColorGuide = vec4(0.8,0.6,0.2,1)
     lg_group.clearColorStd = bg_color
+
+    ##################################
     # Create 2x1 grid of Box placeholders
+    ##################################
+
     self._griditems = lg_group.makeGrid(
       width=2,
       height=1,
@@ -62,13 +67,10 @@ class PoserUi(UiLayoutComponent):
       h_proportions = [0.2],
       uiclass=lev2.ui.Box,
       args=["cell", bg_color]
-    )
-    #lg_group.margin = 4
-
-    # Set left column to 25% width
-  
+    ) 
+     
     ##################################
-    # Create SceneGraphViewport for right cell
+    # Create SGVP and TABS 
     ##################################
 
     sgvp_layout = lg_group.makeChild(uiclass=lev2.ui.SceneGraphViewport, args=["SGVP", bg_color])
@@ -77,17 +79,19 @@ class PoserUi(UiLayoutComponent):
     lg_group.replaceChild(self._griditems[1].layout, sgvp_layout)
     lg_group.replaceChild(self._griditems[0].layout, tabs_layout)
 
-    #guide = lg_group.findGuideBetween(sgvp_layout.layout, tabs_layout.layout)
-    #guide.proportion = 0.25
+    ##################################
+    # configure SGVP
+    ##################################
+
+    self._sgvp_widget = sgvp_layout.widget
 
     ##################################
-    # Create TabsWidget for left cell
+    # configure TABS
     ##################################
 
     tabs = tabs_layout.widget
     tabs.content_background = bg_color
     tabs.draw_background = True
-    self._sgvp_widget = sgvp_layout.widget
     
     ##################################
     # Tab 1: vpack with ImageViews
@@ -108,7 +112,7 @@ class PoserUi(UiLayoutComponent):
       imgview.flip_y = True
 
     ##################################
-    # Tab 2: TODO placeholder
+    # Tab 2: Help window
     ##################################
 
     help_box = tabs.makeChild(uiclass=lev2.ui.TextBox, args=["HELP", bg_color, "hello"])
@@ -130,6 +134,7 @@ class PoserUi(UiLayoutComponent):
 
   def _onUiEvent(self, uievent):
     app = self.app
+    CHR = app.CHR
     res = lev2.ui.HandlerResult()
     camdat = app.SGC.uicam.cameradata
     scoord = uievent.pos
@@ -140,7 +145,7 @@ class PoserUi(UiLayoutComponent):
 
     if uievent.code == tokens.KEY_UP.hashed:
       if uievent.keycode in [KEY_S]:
-        app.skeleton.selectBone(-1)
+        CHR.skeleton.selectBone(-1)
         app.sel_joint = -1
         app.ik_chain = None  # Clear IK chain on key up
         app.ik_mode = None
@@ -149,15 +154,15 @@ class PoserUi(UiLayoutComponent):
     if uievent.code == tokens.KEY_DOWN.hashed:
       ##############################
       if uievent.keycode == KEY_SPC:
-        app.localpose.bindPose()
-        app.localpose.blendPoses()
-        app.localpose.concatenate()
+        CHR.localpose.bindPose()
+        CHR.localpose.blendPoses()
+        CHR.localpose.concatenate()
         handled = True
       ##############################
       elif uievent.keycode == KEY_MINUS:
-        app.skeleton.visualBoneScale *= 0.9
+        CHR.skeleton.visualBoneScale *= 0.9
       elif uievent.keycode == KEY_EQUAL:
-        app.skeleton.visualBoneScale *= 1.1
+        CHR.skeleton.visualBoneScale *= 1.1
       ##############################
       elif uievent.keycode in [KEY_S]:
         app.descendants = []
@@ -174,22 +179,22 @@ class PoserUi(UiLayoutComponent):
             sel_bone_index = int(obj.y)
 
           if sel_bone_index is not None:
-            app.skeleton.selectBone(sel_bone_index)
-            sel_bone = app.skeleton.bone(sel_bone_index)
+            CHR.skeleton.selectBone(sel_bone_index)
+            sel_bone = CHR.skeleton.bone(sel_bone_index)
             sel_parent_index = sel_bone.parentIndex
             sel_child_index = sel_bone.childIndex
             app.sel_joint = sel_parent_index
-            app.pivot_point = app.localpose.concatMatrices[sel_parent_index].translation
+            app.pivot_point = CHR.localpose.concatMatrices[sel_parent_index].translation
 
             print(f"bone:{sel_bone_index} parent:{sel_parent_index} child:{sel_child_index} pivot:{app.pivot_point}")
 
             # Setup for FK rotation
-            app.children = app.skeleton.childJointsOf(sel_parent_index)
-            app.descendants = app.skeleton.descendantJointsOf(sel_parent_index)
-            app.pmat = app.localpose.concatMatrices[sel_parent_index]
-            app.chcmats = [app.localpose.concatMatrices[i] for i in app.descendants]
-            app.concats_at_push = app.localpose.concatMatrices[0:]
-            app.locals_at_push = app.localpose.localMatrices[0:]
+            app.children = CHR.skeleton.childJointsOf(sel_parent_index)
+            app.descendants = CHR.skeleton.descendantJointsOf(sel_parent_index)
+            app.pmat = CHR.localpose.concatMatrices[sel_parent_index]
+            app.chcmats = [CHR.localpose.concatMatrices[i] for i in app.descendants]
+            app.concats_at_push = CHR.localpose.concatMatrices[0:]
+            app.locals_at_push = CHR.localpose.localMatrices[0:]
             app.relmats = [app.pmat.inverse * ch for ch in app.chcmats]
             app.activate_rot = False
 
@@ -207,14 +212,16 @@ class PoserUi(UiLayoutComponent):
       ##############################
 
     if uievent.code == tokens.PUSH.hashed:
-      app.concats = app.localpose.concatMatrices[0:]
-      app.locals = app.localpose.localMatrices[0:]
-      app.bindrels = app.localpose.bindRelativeMatrices[0:]
+      app.concats = CHR.localpose.concatMatrices[0:]
+      app.locals = CHR.localpose.localMatrices[0:]
+      app.bindrels = CHR.localpose.bindRelativeMatrices[0:]
       print(len(app.concats))
       handled = True
 
     return lev2.ui.HandlerResult() if handled else None
 
+###############################################################################
+###############################################################################
 ################################################################################
 
 class SceneGraphApp(ComponentizedApplication):
@@ -223,6 +230,7 @@ class SceneGraphApp(ComponentizedApplication):
     super().__init__()
     self.sel_joint = -1
     self.activate_rot = False
+    self.descendants = []
 
     params_dict = {
       "SkyboxIntensity": float(1.0),
@@ -242,11 +250,16 @@ class SceneGraphApp(ComponentizedApplication):
                                  tgt=vec3(0, 0, 10),
                                  sg_params=params_dict,
                                  layout_component=self.UIL,
-                                 grid_variant="_V4")  # We create our own 2x1 grid
+                                 grid_variant="_V4")
 
-    self.createEzApp(name="Skinning5-IK", 
+    self.CHR = self.addComponent("character",
+                                 CharacterComponent,
+                                 modelpath=modelpath,
+                                 bonescale=bonescale)
+
+    self.createEzApp(name="Skinning5-IK",
                      fullscreen=True)
-    
+
     self.ezapp.uicontext.debug_event_routing = True
 
   ##############################################
@@ -258,54 +271,9 @@ class SceneGraphApp(ComponentizedApplication):
   ##############################################
 
   def _onGpuInit(self, ctx):
-    SGC = self.SGC
-    SG = SGC.scenegraph
-    layer = SGC.layer_fwd
-
-    #SG.enablePickHud()
-
-    # Load the char_mesh model
-    self.model = lev2.XgmModel(modelpath)
-    self.skeleton = self.model.skeleton
-
-    self.drawable_model = self.model.createDrawable()
-    self.modelinst = self.drawable_model.modelinst
-    self.modelinst.enableSkinning()
-    self.modelinst.enableAllMeshes()
-    self.sgnode = SG.createDrawableNodeOnLayers(SGC.fwd_layers, "modelnode", self.drawable_model)
-
-    self.localpose = self.modelinst.localpose
-    self.worldpose = self.modelinst.worldpose
-
-    # Print joint info
-    self.infcounts = self.skeleton.jointVertexInfluenceCounts
-    for i in range(0, len(self.infcounts)):
-      infcount = self.infcounts[i]
-      if infcount > 0:
-        jname = self.skeleton.jointName(i)
-        par = self.skeleton.jointParent(i)
-        pname = self.skeleton.jointName(par)
-        print("joint<%d:%s> par<%d:%s> infcount<%d>" % (i, jname, par, pname, infcount))
-
-    self.skeleton.visualBoneScale = bonescale
-
-    self.localpose.bindPose()
-    self.localpose.blendPoses()
-    self.localpose.concatenate()
-    self.concats = self.localpose.concatMatrices[0:]
-    self.locals = self.localpose.localMatrices[0:]
-    self.bindrels = self.localpose.bindRelativeMatrices[0:]
-    self.descendants = []
-
-    self.scenegraph = SG
-
-  ##############################################
-
-  def _onGpuLink(self, ctx):
-    SG = self.scenegraph
-    UIL = self.UIL
-    print(f"Pick buffer dimension from SG: {SG.pick_buffer_dim}")
+    self.scenegraph = self.SGC.scenegraph
 
 ###############################################################################
 
-SceneGraphApp().ezapp.mainThreadLoop()
+SGA = SceneGraphApp()
+SGA.ezapp.mainThreadLoop()
