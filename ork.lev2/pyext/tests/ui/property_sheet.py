@@ -46,8 +46,14 @@ def create_color_detail_factory(propsheet):
     # Get the picker instance from uservars
     picker = picker_widget.uservars.color_picker
 
-    # TODO: Connect picker to binding callbacks when ColorPicker supports it
-    # For now, the detail editor just displays the color
+    # Connect picker to binding callbacks
+    def on_commit(color):
+      binding["onValueCommit"](color)
+    picker.onCommit = on_commit
+
+    def on_cancel():
+      binding["onCancel"]()
+    picker.onCancel = on_cancel
 
     return picker_widget
   return factory

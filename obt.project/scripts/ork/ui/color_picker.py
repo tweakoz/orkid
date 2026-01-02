@@ -27,14 +27,6 @@ class ColorPicker:
         self.container = container
         self.name = name
         self.current_color = initial_color
-        self.presets = {
-            "Default": vec4(0.5, 0.5, 0.5, 1.0),
-            "Red": vec4(1.0, 0.0, 0.0, 1.0),
-            "Green": vec4(0.0, 1.0, 0.0, 1.0),
-            "Blue": vec4(0.0, 0.0, 1.0, 1.0),
-            "White": vec4(1.0, 1.0, 1.0, 1.0),
-            "Black": vec4(0.0, 0.0, 0.0, 1.0),
-        }
         self._updating = False  # Prevent feedback loops
 
         #################################################
@@ -83,36 +75,31 @@ class ColorPicker:
         self.b_slider.onValueChanged = lambda w: self._onSliderChanged()
 
         #################################################
-        # ComboBox for preset selection
+        # Commit/Cancel Buttons
         #################################################
 
-        self.preset_combo = self.vpack.makeChild(
-            uiclass=lev2.ui.ComboBox,
-            args=["Preset", vec3(0.4, 0.4, 0.5)]
-        )
-        self.preset_combo.setItems(list(self.presets.keys()))
+        self.action_hpack = self.vpack.makeChild(uiclass=lev2.ui.HorizontalPack, args=[f"{name}_actions"])
+        self.action_hpack.margin = 2
+        self.action_hpack.uniform = True
 
-        #################################################
-        # Preset Buttons
-        #################################################
-
-        self.preset_hpack = self.vpack.makeChild(uiclass=lev2.ui.HorizontalPack, args=[f"{name}_presets"])
-        self.preset_hpack.margin = 2
-        self.preset_hpack.uniform = True
-
-        # Save button
-        self.save_btn = self.preset_hpack.makeChild(
+        # Commit button
+        self.commit_btn = self.action_hpack.makeChild(
             uiclass=lev2.ui.Button,
-            args=["Save", vec3(0.3, 0.6, 0.3)]
+            args=["Commit", vec3(0.3, 0.5, 0.3)]
         )
-        self.save_btn.onPressed = lambda w: self._onSavePreset()
+        self.commit_btn.onPressed = lambda w: self._onCommit()
 
-        # Load button
-        self.load_btn = self.preset_hpack.makeChild(
+        # Cancel button
+        self.cancel_btn = self.action_hpack.makeChild(
             uiclass=lev2.ui.Button,
-            args=["Load", vec3(0.6, 0.6, 0.3)]
+            args=["Cancel", vec3(0.5, 0.3, 0.3)]
         )
-        self.load_btn.onPressed = lambda w: self._onLoadPreset()
+        self.cancel_btn.onPressed = lambda w: self._onCancel()
+
+        # Callbacks (set by user)
+        self.onCommit = None   # Called with final color when committed
+        self.onCancel = None   # Called when cancelled
+        self.onColorChanged = None  # Called during live editing
 
 
     ###########################################################################
@@ -151,30 +138,17 @@ class ColorPicker:
 
     ###########################################################################
 
-    def _onSavePreset(self):
-        """Save current color to selected preset"""
-        preset_name = self.preset_combo.selectedItem
-        if preset_name:
-            self.presets[preset_name] = vec4(self.current_color)
-            print(f"Saved preset '{preset_name}': {self.current_color}")
+    def _onCommit(self):
+        """Commit the current color and close"""
+        if self.onCommit:
+            self.onCommit(self.current_color)
 
     ###########################################################################
 
-    def _onLoadPreset(self):
-        """Load selected preset to current color"""
-        preset_name = self.preset_combo.selectedItem
-        if preset_name and preset_name in self.presets:
-            color = self.presets[preset_name]
-            self._updating = True
-            try:
-                self.current_color = vec4(color)
-                self.r_slider.value = color.x
-                self.g_slider.value = color.y
-                self.b_slider.value = color.z
-                self.coloredit.currentColor = color
-            finally:
-                self._updating = False
-            print(f"Loaded preset '{preset_name}': {color}")
+    def _onCancel(self):
+        """Cancel and close without saving"""
+        if self.onCancel:
+            self.onCancel()
 
     ###########################################################################
 

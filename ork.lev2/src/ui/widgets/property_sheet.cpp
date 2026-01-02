@@ -332,6 +332,9 @@ void PropertySheet::closeDetailEditor() {
     _detail_editor = nullptr;
   }
   _detail_binding = nullptr;
+
+  // Trigger rebuild to update inline editors with new values
+  _needs_rebuild = true;
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -358,19 +361,59 @@ void PropertySheet::requestDetailEditor(const std::string& key) {
   varmap::varmap_ptr_t annotations = _model->getAnnotations(key);
 
   // Check if we have a registered detail factory
-  // Note: We pass nullptr for sheet since Python factories capture their own sheet reference
   auto it = _editor_factories.find(type_crc);
   if (it != _editor_factories.end() && it->second.detail_factory) {
-    // Create binding first
+    // Create binding with callbacks already set up
     auto binding = std::make_shared<DetailEditorBinding>();
     binding->property_key = key;
     binding->property_type = type;
     binding->initial_value = value;
 
+    // Set up callbacks that will close the detail editor
+    binding->onValueChanged = [this, key](svar128_t val) {
+      if (_model) {
+        _model->setValue(key, val);
+        if (_onPropertyChanged) {
+          _onPropertyChanged(key, val);
+        }
+      }
+    };
+
+    binding->onValueCommit = [this, key](svar128_t val) {
+      if (_model) {
+        _model->setValue(key, val);
+        if (_onPropertyChanged) {
+          _onPropertyChanged(key, val);
+        }
+      }
+      closeDetailEditor();
+    };
+
+    binding->onCancel = [this, key]() {
+      // Revert to initial value
+      if (_model && _detail_binding) {
+        _model->setValue(key, _detail_binding->initial_value);
+        if (_onPropertyChanged) {
+          _onPropertyChanged(key, _detail_binding->initial_value);
+        }
+      }
+      closeDetailEditor();
+    };
+
+    binding->onClose = [this]() {
+      closeDetailEditor();
+    };
+
     // Create detail editor using factory
     widget_ptr_t editor = it->second.detail_factory(nullptr, key, value, annotations, binding);
     if (editor) {
-      showDetailEditor(key, editor);
+      // Store the binding and show the editor (don't create a new binding)
+      closeDetailEditor();
+      _detail_binding = binding;
+      _detail_editor = editor;
+      _detail_editor->_uicontext = _uicontext;
+      _detail_editor->_parent = this;
+      DoLayout();
       return;
     }
   }
