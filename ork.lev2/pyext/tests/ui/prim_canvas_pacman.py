@@ -3,7 +3,7 @@
 ################################################################################
 # PrimCanvas Pac-Man
 # Uses textured quads with numpy-generated sprites
-# Grid-based movement system
+# Grid-based movement system using gameutils library
 ################################################################################
 
 import signal
@@ -12,6 +12,12 @@ import random
 import numpy as np
 from orkengine.core import vec2, vec3, vec4, CrcStringProxy
 from orkengine import lev2
+
+# Import reusable grid utilities
+from ork.app.testlib.gameutils.grid2d import (
+  DIR_RIGHT, DIR_DOWN, DIR_LEFT, DIR_UP, DIR_NONE, DIR_DELTA,
+  opposite_dir, GridMaze, GridEntity
+)
 
 tokens = CrcStringProxy()
 
@@ -53,90 +59,47 @@ MAZE_DATA = [
   "############################",
 ]
 
-# Direction constants
-DIR_RIGHT = 0
-DIR_DOWN = 1
-DIR_LEFT = 2
-DIR_UP = 3
-DIR_NONE = -1
-
-# Direction deltas: [dx, dy] for each direction
-DIR_DELTA = {
-  DIR_RIGHT: (1, 0),
-  DIR_DOWN: (0, 1),
-  DIR_LEFT: (-1, 0),
-  DIR_UP: (0, -1),
-}
-
-def opposite_dir(d):
-  if d == DIR_RIGHT: return DIR_LEFT
-  if d == DIR_LEFT: return DIR_RIGHT
-  if d == DIR_UP: return DIR_DOWN
-  if d == DIR_DOWN: return DIR_UP
-  return DIR_NONE
-
 ################################################################################
-# Maze class
+# PacMan Maze - extends GridMaze with game-specific features
 ################################################################################
 
-class Maze:
+class PacManMaze(GridMaze):
+  """Pac-Man specific maze with dots, power pellets, and ghost door"""
+
   def __init__(self):
-    self.width = len(MAZE_DATA[0])
-    self.height = len(MAZE_DATA)
-    self.grid = []
+    # Parse dimensions
+    height = len(MAZE_DATA)
+    width = max(len(row) for row in MAZE_DATA)
+    super().__init__(width, height)
+
+    # Enable horizontal wrapping for tunnels
+    self.wrap_horizontal = True
+
+    # Set up passability rules
+    self.set_blocked_cells({'#'})
+    self.set_conditional_cell('-', {'ghost'})  # Only ghosts can pass through door
+
+    # Game-specific state
     self.dots = set()
     self.power_pellets = set()
-    self.pacman_start = (1, 1)
-    self.ghost_house_pos = (13, 14)  # Where ghosts spawn
+    self.pacman_start = (13, 23)
+    self.ghost_house_pos = (13, 14)
 
-    # Parse maze
+    # Parse maze data
     for y, row in enumerate(MAZE_DATA):
-      grid_row = []
       for x, cell in enumerate(row):
         if cell == '#':
-          grid_row.append('#')
+          self.set_cell(x, y, '#')
         elif cell == '-':
-          grid_row.append('-')  # Ghost door
+          self.set_cell(x, y, '-')  # Ghost door
         elif cell == '.':
-          grid_row.append(' ')
+          self.set_cell(x, y, ' ')
           self.dots.add((x, y))
         elif cell == 'o':
-          grid_row.append(' ')
+          self.set_cell(x, y, ' ')
           self.power_pellets.add((x, y))
         else:
-          grid_row.append(' ')  # Empty space
-
-        # Find pacman start (center bottom area)
-        if y == 23 and x == 13:
-          self.pacman_start = (x, y)
-
-      # Pad row to consistent width
-      while len(grid_row) < self.width:
-        grid_row.append(' ')
-      self.grid.append(grid_row)
-
-  def get_cell(self, x, y):
-    """Get cell type at position, returns '#' for out of bounds"""
-    if x < 0 or x >= self.width or y < 0 or y >= self.height:
-      return '#'
-    return self.grid[y][x]
-
-  def can_enter(self, x, y, is_ghost=False):
-    """Check if an entity can enter this cell"""
-    cell = self.get_cell(x, y)
-    if cell == '#':
-      return False
-    if cell == '-' and not is_ghost:
-      return False
-    return True
-
-  def wrap_x(self, x):
-    """Wrap x coordinate for tunnel"""
-    if x < 0:
-      return self.width - 1
-    if x >= self.width:
-      return 0
-    return x
+          self.set_cell(x, y, ' ')
 
   def collect_dot(self, x, y):
     """Try to collect dot at position, returns points"""
@@ -148,109 +111,9 @@ class Maze:
       return 50
     return 0
 
-  def is_power_pellet(self, x, y):
-    """Check if this position had a power pellet"""
+  def has_power_pellet(self, x, y):
+    """Check if position has a power pellet"""
     return (x, y) in self.power_pellets
-
-  def bfs_direction(self, start_x, start_y, target_x, target_y, is_ghost=True):
-    """
-    BFS to find the best first direction to reach target.
-    Returns the direction to take from start, or DIR_NONE if no path.
-    """
-    from collections import deque
-
-    if start_x == target_x and start_y == target_y:
-      return DIR_NONE
-
-    # BFS queue: (x, y, first_direction)
-    queue = deque()
-    visited = set()
-    visited.add((start_x, start_y))
-
-    # Add initial moves
-    for d in [DIR_UP, DIR_LEFT, DIR_DOWN, DIR_RIGHT]:
-      dx, dy = DIR_DELTA[d]
-      nx = self.wrap_x(start_x + dx)
-      ny = start_y + dy
-      if self.can_enter(nx, ny, is_ghost):
-        if nx == target_x and ny == target_y:
-          return d
-        queue.append((nx, ny, d))
-        visited.add((nx, ny))
-
-    # BFS
-    while queue:
-      x, y, first_dir = queue.popleft()
-
-      for d in [DIR_UP, DIR_LEFT, DIR_DOWN, DIR_RIGHT]:
-        dx, dy = DIR_DELTA[d]
-        nx = self.wrap_x(x + dx)
-        ny = y + dy
-
-        if (nx, ny) in visited:
-          continue
-        if not self.can_enter(nx, ny, is_ghost):
-          continue
-
-        if nx == target_x and ny == target_y:
-          return first_dir
-
-        visited.add((nx, ny))
-        queue.append((nx, ny, first_dir))
-
-    return DIR_NONE  # No path found
-
-################################################################################
-# Entity class for grid-based movement
-################################################################################
-
-class Entity:
-  def __init__(self, x, y):
-    self.grid_x = x
-    self.grid_y = y
-    self.prev_x = x
-    self.prev_y = y
-    self.move_progress = 1.0  # 1.0 = at grid position, 0.0 = just started moving
-    self.direction = DIR_NONE
-    self.next_direction = DIR_NONE
-    self.speed = 5.0  # Cells per second
-
-  def get_render_pos(self):
-    """Get interpolated position for rendering"""
-    t = self.move_progress
-    rx = self.prev_x + (self.grid_x - self.prev_x) * t
-    ry = self.prev_y + (self.grid_y - self.prev_y) * t
-    return rx, ry
-
-  def is_at_cell(self):
-    """Check if entity has reached its target cell"""
-    return self.move_progress >= 1.0
-
-  def try_move(self, maze, direction, is_ghost=False):
-    """Try to start moving in a direction. Returns True if successful."""
-    if direction == DIR_NONE:
-      return False
-
-    dx, dy = DIR_DELTA[direction]
-    new_x = maze.wrap_x(self.grid_x + dx)
-    new_y = self.grid_y + dy
-
-    if maze.can_enter(new_x, new_y, is_ghost):
-      self.prev_x = self.grid_x
-      self.prev_y = self.grid_y
-      self.grid_x = new_x
-      self.grid_y = new_y
-      self.direction = direction
-      self.move_progress = 0.0
-      return True
-    return False
-
-  def update(self, dt):
-    """Update movement animation"""
-    if self.move_progress < 1.0:
-      self.move_progress += self.speed * dt
-      if self.move_progress >= 1.0:
-        self.move_progress = 1.0
 
 ################################################################################
 # Sprite generation
@@ -356,12 +219,12 @@ def create_wall_texture(size):
   return img
 
 ################################################################################
-# Ghost AI
+# Ghost AI - extends GridEntity
 ################################################################################
 
-class Ghost(Entity):
+class Ghost(GridEntity):
   def __init__(self, x, y, color_idx):
-    super().__init__(x, y)
+    super().__init__(x, y, entity_type='ghost')
     self.color_idx = color_idx
     self.mode = 'scatter'  # scatter, chase, frightened
     self.speed = 4.0
@@ -380,8 +243,8 @@ class Ghost(Entity):
           continue
         dx, dy = DIR_DELTA[d]
         nx = maze.wrap_x(self.grid_x + dx)
-        ny = self.grid_y + dy
-        if maze.can_enter(nx, ny, is_ghost=True):
+        ny = maze.wrap_y(self.grid_y + dy)
+        if maze.can_enter(nx, ny, self.entity_type):
           possible.append(d)
       if not possible:
         rev = opposite_dir(self.direction)
@@ -394,7 +257,7 @@ class Ghost(Entity):
       bfs_dir = maze.bfs_direction(
         self.grid_x, self.grid_y,
         pacman.grid_x, pacman.grid_y,
-        is_ghost=True
+        entity_type=self.entity_type
       )
       if bfs_dir != DIR_NONE:
         self.next_direction = bfs_dir
@@ -405,14 +268,14 @@ class Ghost(Entity):
             continue
           dx, dy = DIR_DELTA[d]
           nx = maze.wrap_x(self.grid_x + dx)
-          ny = self.grid_y + dy
-          if maze.can_enter(nx, ny, is_ghost=True):
+          ny = maze.wrap_y(self.grid_y + dy)
+          if maze.can_enter(nx, ny, self.entity_type):
             self.next_direction = d
             break
 
   def update_movement(self, dt, maze, pacman):
     """Update ghost movement"""
-    # Update animation
+    # Update animation with mode-specific speed
     current_speed = self.frightened_speed if self.mode == 'frightened' else self.speed
     if self.move_progress < 1.0:
       self.move_progress += current_speed * dt
@@ -423,7 +286,7 @@ class Ghost(Entity):
     if self.is_at_cell():
       self.choose_direction(maze, pacman)
       if self.next_direction != DIR_NONE:
-        self.try_move(maze, self.next_direction, is_ghost=True)
+        self.try_move(maze, self.next_direction)
 
 ################################################################################
 # Main Game
@@ -454,16 +317,16 @@ class PacManGame:
     self.canvas.draw_background = True
 
     # Game state
-    self.maze = Maze()
+    self.maze = PacManMaze()
     self.time = 0.0
     self.score = 0
     self.lives = 3
     self.game_over = False
     self.you_win = False
 
-    # Pacman
+    # Pacman - uses GridEntity with 'pacman' type (can't pass through ghost door)
     px, py = self.maze.pacman_start
-    self.pacman = Entity(px, py)
+    self.pacman = GridEntity(px, py, entity_type='pacman')
     self.pacman.speed = 6.0
     self.pacman_anim = 0.0
 
@@ -695,22 +558,12 @@ class PacManGame:
   def _reset_positions(self):
     """Reset pacman and ghosts after death"""
     px, py = self.maze.pacman_start
-    self.pacman.grid_x = px
-    self.pacman.grid_y = py
-    self.pacman.prev_x = px
-    self.pacman.prev_y = py
-    self.pacman.move_progress = 1.0
-    self.pacman.direction = DIR_NONE
+    self.pacman.teleport(px, py)
 
     ghost_positions = [(12, 14), (13, 14), (14, 14), (15, 14)]
     for i, ghost in enumerate(self.ghosts):
       gx, gy = ghost_positions[i]
-      ghost.grid_x = gx
-      ghost.grid_y = gy
-      ghost.prev_x = gx
-      ghost.prev_y = gy
-      ghost.move_progress = 1.0
-      ghost.direction = DIR_NONE
+      ghost.teleport(gx, gy)
       ghost.mode = 'scatter'
 
   def _render(self):
@@ -833,7 +686,7 @@ class PacManGame:
     self.canvas.markDirty()
 
   def _restart(self):
-    self.maze = Maze()
+    self.maze = PacManMaze()
     self.score = 0
     self.lives = 3
     self.game_over = False
@@ -841,7 +694,7 @@ class PacManGame:
     self.frightened_time = 0
 
     px, py = self.maze.pacman_start
-    self.pacman = Entity(px, py)
+    self.pacman = GridEntity(px, py, entity_type='pacman')
     self.pacman.speed = 6.0
 
     self.ghosts = []
