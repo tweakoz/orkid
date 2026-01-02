@@ -194,7 +194,8 @@ uniform_block ublk_sprite (descriptor_set 0) {
   mat4 MatMVP;
   vec2 sprite_canvas_size;
   uint sprite_ssbo_base;
-  mat3 sprite_instance_transform;  // 2D homogeneous transform
+  uint _pad0;  // Align to 16 bytes for mat4
+  mat4 sprite_instance_transform;  // 2D homogeneous transform (embedded in 4x4)
   vec4 sprite_instance_tint;       // Color modulation
 }
 
@@ -240,10 +241,10 @@ vertex_shader vs_sprite_quad : vface_sprite_quad {
     offset.x * s + offset.y * c
   );
 
-  // Local position then apply instance transform
+  // Local position then apply instance transform (2D transform in 4x4 matrix)
   vec2 localPos = center + rotated;
-  vec3 worldPos3 = sprite_instance_transform * vec3(localPos, 1.0);
-  vec2 worldPos = worldPos3.xy;
+  vec4 worldPos4 = sprite_instance_transform * vec4(localPos, 0.0, 1.0);
+  vec2 worldPos = worldPos4.xy;
 
   vec2 ndc = vec2(
     (worldPos.x / sprite_canvas_size.x) * 2.0 - 1.0,

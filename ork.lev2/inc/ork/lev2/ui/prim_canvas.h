@@ -109,7 +109,7 @@ struct SpritePrimitive : Primitive {
 
   // Draw with instance transform (called by SpriteInstance)
   void drawInstanced(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd,
-                     const fmtx3& transform, const fvec4& tint);
+                     const fmtx4& transform, const fvec4& tint);
 };
 
 ////////////////////////////////////////////////////////////////////
@@ -121,7 +121,7 @@ struct SpriteInstance : Primitive {
   SpriteInstance(spriteprimitive_ptr_t sprite = nullptr);
 
   spriteprimitive_ptr_t _sprite;       // Template geometry
-  fmtx3 _transform;                    // 2D homogeneous transform
+  fmtx4 _transform;                    // 2D transform embedded in 4x4 matrix
   fvec4 _tint = fvec4(1, 1, 1, 1);     // Color modulation
   bool _visible = true;
 

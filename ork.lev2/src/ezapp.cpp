@@ -427,7 +427,7 @@ void OrkEzApp::onUiEvent(EzMainWin::onuieventcallback_t cb) {
   // Wire to uicontext's fallback handler so events unhandled by widgets
   // will still reach the application-level handler
   if (_uicontext) {
-    _uicontext->_appFallbackHandler = cb;
+    //_uicontext->_appFallbackHandler = cb;
   }
   if (_mainWindow)
     _mainWindow->_onUiEvent = cb;

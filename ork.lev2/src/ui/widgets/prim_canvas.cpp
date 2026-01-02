@@ -84,7 +84,7 @@ void SpritePrimitive::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_pt
 }
 
 void SpritePrimitive::drawInstanced(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd,
-                                     const fmtx3& transform, const fvec4& tint) {
+                                     const fmtx4& transform, const fvec4& tint) {
   if (_quads.empty()) {
     return;
   }
@@ -94,17 +94,6 @@ void SpritePrimitive::drawInstanced(PrimCanvas* canvas, lev2::Context* ctx, lev2
 
   // Use sprite-specific pipeline
   auto pipeline = _texture ? canvas->pipelineSpriteTextured() : canvas->pipelineSpriteSolid();
-
-  static int dbg_count = 0;
-  if (dbg_count++ < 5) {
-    printf("drawInstanced: pipeline=%p quads=%zu ssbo_offset=%zu\n",
-           pipeline.get(), _quads.size(), _ssbo_offset);
-    printf("  canvas_size: %d x %d\n", canvas->width(), canvas->height());
-    printf("  transform: [%f %f %f] [%f %f %f] [%f %f %f]\n",
-           transform.elemYX(0,0), transform.elemYX(0,1), transform.elemYX(0,2),
-           transform.elemYX(1,0), transform.elemYX(1,1), transform.elemYX(1,2),
-           transform.elemYX(2,0), transform.elemYX(2,1), transform.elemYX(2,2));
-  }
 
   // Bind SSBO
   FXI->bindStorageBuffer(canvas->ssboBlock(), canvas->ssboGpu());
@@ -145,43 +134,47 @@ SpriteInstance::SpriteInstance(spriteprimitive_ptr_t sprite)
 }
 
 void SpriteInstance::setPosition(float x, float y) {
-  // Set translation in the transform matrix
-  _transform.setElemYX(2, 0, x);
-  _transform.setElemYX(2, 1, y);
+  // Set translation in column 3 of the 4x4 matrix
+  // setElemXY(col, row, val)
+  _transform.setElemXY(3, 0, x);
+  _transform.setElemXY(3, 1, y);
 }
 
 void SpriteInstance::setRotation(float radians) {
   // Extract current scale and translation, apply rotation
-  float tx = _transform.elemYX(2, 0);
-  float ty = _transform.elemYX(2, 1);
-  float sx = fvec2(_transform.elemYX(0, 0), _transform.elemYX(0, 1)).length();
-  float sy = fvec2(_transform.elemYX(1, 0), _transform.elemYX(1, 1)).length();
+  // elemXY(col, row)
+  float tx = _transform.elemXY(3, 0);
+  float ty = _transform.elemXY(3, 1);
+  float sx = fvec2(_transform.elemXY(0, 0), _transform.elemXY(0, 1)).length();
+  float sy = fvec2(_transform.elemXY(1, 0), _transform.elemXY(1, 1)).length();
 
   float c = cosf(radians);
   float s = sinf(radians);
 
-  _transform.setElemYX(0, 0, c * sx);
-  _transform.setElemYX(0, 1, s * sx);
-  _transform.setElemYX(1, 0, -s * sy);
-  _transform.setElemYX(1, 1, c * sy);
-  _transform.setElemYX(2, 0, tx);
-  _transform.setElemYX(2, 1, ty);
+  // Column 0 is X axis, column 1 is Y axis
+  _transform.setElemXY(0, 0, c * sx);
+  _transform.setElemXY(0, 1, s * sx);
+  _transform.setElemXY(1, 0, -s * sy);
+  _transform.setElemXY(1, 1, c * sy);
+  _transform.setElemXY(3, 0, tx);
+  _transform.setElemXY(3, 1, ty);
 }
 
 void SpriteInstance::setScale(float sx, float sy) {
-  // Extract current rotation
-  float len0 = fvec2(_transform.elemYX(0, 0), _transform.elemYX(0, 1)).length();
-  float len1 = fvec2(_transform.elemYX(1, 0), _transform.elemYX(1, 1)).length();
+  // Extract current rotation from columns
+  // elemXY(col, row)
+  float len0 = fvec2(_transform.elemXY(0, 0), _transform.elemXY(0, 1)).length();
+  float len1 = fvec2(_transform.elemXY(1, 0), _transform.elemXY(1, 1)).length();
 
   if (len0 > 0.0001f) {
     float inv = sx / len0;
-    _transform.setElemYX(0, 0, _transform.elemYX(0, 0) * inv);
-    _transform.setElemYX(0, 1, _transform.elemYX(0, 1) * inv);
+    _transform.setElemXY(0, 0, _transform.elemXY(0, 0) * inv);
+    _transform.setElemXY(0, 1, _transform.elemXY(0, 1) * inv);
   }
   if (len1 > 0.0001f) {
     float inv = sy / len1;
-    _transform.setElemYX(1, 0, _transform.elemYX(1, 0) * inv);
-    _transform.setElemYX(1, 1, _transform.elemYX(1, 1) * inv);
+    _transform.setElemXY(1, 0, _transform.elemXY(1, 0) * inv);
+    _transform.setElemXY(1, 1, _transform.elemXY(1, 1) * inv);
   }
 }
 
@@ -193,15 +186,28 @@ void SpriteInstance::setTransform(float x, float y, float rotation, float scale)
   float c = cosf(rotation);
   float s = sinf(rotation);
 
-  _transform.setElemYX(0, 0, c * scale);
-  _transform.setElemYX(0, 1, s * scale);
-  _transform.setElemYX(1, 0, -s * scale);
-  _transform.setElemYX(1, 1, c * scale);
-  _transform.setElemYX(2, 0, x);
-  _transform.setElemYX(2, 1, y);
-  _transform.setElemYX(0, 2, 0.0f);
-  _transform.setElemYX(1, 2, 0.0f);
-  _transform.setElemYX(2, 2, 1.0f);
+  // Build a 2D transform embedded in 4x4 matrix
+  // setElemXY(col, row, val) - Orkid uses column-major indexing
+  // Column 0: scaled rotated X axis
+  _transform.setElemXY(0, 0, c * scale);
+  _transform.setElemXY(0, 1, s * scale);
+  _transform.setElemXY(0, 2, 0.0f);
+  _transform.setElemXY(0, 3, 0.0f);
+  // Column 1: scaled rotated Y axis
+  _transform.setElemXY(1, 0, -s * scale);
+  _transform.setElemXY(1, 1, c * scale);
+  _transform.setElemXY(1, 2, 0.0f);
+  _transform.setElemXY(1, 3, 0.0f);
+  // Column 2: Z axis (identity)
+  _transform.setElemXY(2, 0, 0.0f);
+  _transform.setElemXY(2, 1, 0.0f);
+  _transform.setElemXY(2, 2, 1.0f);
+  _transform.setElemXY(2, 3, 0.0f);
+  // Column 3: translation
+  _transform.setElemXY(3, 0, x);
+  _transform.setElemXY(3, 1, y);
+  _transform.setElemXY(3, 2, 0.0f);
+  _transform.setElemXY(3, 3, 1.0f);
 }
 
 void SpriteInstance::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd) {
@@ -417,7 +423,6 @@ void PrimCanvas::gpuInit(lev2::Context* ctx) {
   // Sprite-specific techniques and pipelines
   auto tek_sprite_solid = _material->technique("tek_sprite_solid");
   auto tek_sprite_tex = _material->technique("tek_sprite_tex");
-  printf("tek_sprite_solid: %p, tek_sprite_tex: %p\n", tek_sprite_solid, tek_sprite_tex);
 
   lev2::FxPipelinePermutation permu_sprite_solid;
   permu_sprite_solid._forced_technique = tek_sprite_solid;
@@ -426,8 +431,6 @@ void PrimCanvas::gpuInit(lev2::Context* ctx) {
   lev2::FxPipelinePermutation permu_sprite_tex;
   permu_sprite_tex._forced_technique = tek_sprite_tex;
   _pipeline_sprite_textured = pipeline_cache->findPipeline(permu_sprite_tex);
-  printf("pipeline_sprite_solid: %p, pipeline_sprite_textured: %p\n",
-         _pipeline_sprite_solid.get(), _pipeline_sprite_textured.get());
 
   // Sprite params (from the sprite uniform block - unique names to avoid conflicts)
   _param_sprite_canvas_size = _material->param("sprite_canvas_size");
@@ -435,9 +438,6 @@ void PrimCanvas::gpuInit(lev2::Context* ctx) {
   _param_sprite_colormap = _material->param("ColorMap");
   _param_sprite_instance_transform = _material->param("sprite_instance_transform");
   _param_sprite_instance_tint = _material->param("sprite_instance_tint");
-  printf("sprite params: canvas_size=%p ssbo_base=%p transform=%p tint=%p\n",
-         _param_sprite_canvas_size, _param_sprite_ssbo_base,
-         _param_sprite_instance_transform, _param_sprite_instance_tint);
 
   // Get storage block
   _ssbo_block = const_cast<lev2::FxShaderStorageBlock*>(_material->storageBlock("storage_quads"));
