@@ -13,11 +13,12 @@ import numpy as np
 from orkengine.core import vec2, vec3, vec4, CrcStringProxy
 from orkengine import lev2
 
-# Import reusable grid utilities
+# Import reusable game utilities
 from ork.app.testlib.gameutils.grid2d import (
   DIR_RIGHT, DIR_DOWN, DIR_LEFT, DIR_UP, DIR_NONE, DIR_DELTA,
   opposite_dir, GridMaze, GridEntity
 )
+from ork.app.testlib.gameutils import create_texture_from_numpy
 
 tokens = CrcStringProxy()
 
@@ -369,19 +370,6 @@ class PacManGame:
       self.ezapp.signalExit()
     signal.signal(signal.SIGINT, onCtrlC)
 
-  def _createTexture(self, ctx, np_img, name):
-    """Create texture from numpy array"""
-    txi = ctx.TXI
-    np_img = np.flipud(np_img).copy()
-    h, w = np_img.shape[:2]
-    rgba = np.zeros((h, w, 4), dtype=np.uint8)
-    rgba[:, :, :3] = np_img
-    rgba[:, :, 3] = np.where(np.any(np_img > 0, axis=2), 255, 0)
-    img = lev2.Image.createFromBuffer(w, h, tokens.RGBA8, rgba)
-    tex = lev2.Texture(name)
-    txi.updateTexture(tex, img)
-    return tex
-
   def onGpuInit(self, ctx):
     self.canvas.gpuInit(ctx)
     self.font = lev2.FontManager.fontForId("i18")
@@ -396,17 +384,17 @@ class PacManGame:
     for d in range(4):
       for m, angle in enumerate([5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60]):
         key = f"pacman_{d}_{m}"
-        self.textures[key] = self._createTexture(ctx, create_pacman_texture(ss, angle, d), key)
+        self.textures[key] = create_texture_from_numpy(ctx, create_pacman_texture(ss, angle, d), key)
 
     # Ghost textures
     for i, color in enumerate(self.ghost_colors):
-      self.textures[f"ghost_{i}"] = self._createTexture(ctx, create_ghost_texture(ss, color), f"ghost_{i}")
-    self.textures["ghost_frightened"] = self._createTexture(ctx, create_ghost_texture(ss, [0, 0, 200]), "ghost_frightened")
+      self.textures[f"ghost_{i}"] = create_texture_from_numpy(ctx, create_ghost_texture(ss, color), f"ghost_{i}")
+    self.textures["ghost_frightened"] = create_texture_from_numpy(ctx, create_ghost_texture(ss, [0, 0, 200]), "ghost_frightened")
 
     # Other textures
-    self.textures["dot"] = self._createTexture(ctx, create_dot_texture(ss), "dot")
-    self.textures["power"] = self._createTexture(ctx, create_power_pellet_texture(ss), "power")
-    self.textures["wall"] = self._createTexture(ctx, create_wall_texture(ss), "wall")
+    self.textures["dot"] = create_texture_from_numpy(ctx, create_dot_texture(ss), "dot")
+    self.textures["power"] = create_texture_from_numpy(ctx, create_power_pellet_texture(ss), "power")
+    self.textures["wall"] = create_texture_from_numpy(ctx, create_wall_texture(ss), "wall")
 
     # Create wall quads
     wall_count = sum(1 for row in self.maze.grid for cell in row if cell == '#')
