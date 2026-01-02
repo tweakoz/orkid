@@ -581,17 +581,34 @@ void PrimCanvas::_rebuildSsbo(lev2::Context* ctx) {
 
 void PrimCanvas::DoDraw(drawevent_constptr_t drwev) {
   auto ctx = drwev->GetTarget();
+  auto FBI = ctx->FBI();
 
   // Initialize GPU resources on first draw
   gpuInit(ctx);
 
-  // Rebuild SSBO if dirty
-  _rebuildSsbo(ctx);
-
-  // Draw background if enabled
+  // Draw background if enabled (before viewport change, uses root coords)
   if (_draw_background) {
     _drawColoredBox(drwev, _bg_color, lev2::BlendingMacro::ALPHA);
   }
+
+  // Call pre-render callback (for Python widgets to update primitives)
+  if (_onPreRender) {
+    _onPreRender();
+  }
+
+  // Rebuild SSBO if dirty
+  _rebuildSsbo(ctx);
+
+  // Get widget bounds in root coordinates
+  int rx1, ry1;
+  LocalToRoot(0, 0, rx1, ry1);
+  int w = width();
+  int h = height();
+
+  // Set viewport and scissor to widget bounds for primitive rendering
+  lev2::ViewportRect vprect(rx1, ry1, w, h);
+  FBI->pushViewport(vprect);
+  FBI->pushScissor(vprect);
 
   // Get RCFD for pipeline draws
   auto rcfd = ctx->topRenderContextFrameData();
@@ -605,6 +622,10 @@ void PrimCanvas::DoDraw(drawevent_constptr_t drwev) {
       prim->draw(this, ctx, rcfd);
     }
   }
+
+  // Restore viewport and scissor
+  FBI->popScissor();
+  FBI->popViewport();
 }
 
 ////////////////////////////////////////////////////////////////

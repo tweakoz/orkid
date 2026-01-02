@@ -2455,6 +2455,20 @@ void pyinit_ui(py::module& module_lev2) {
                     return ui::HandlerResult();
                   };
                 }
+              })
+          .def_property(
+              "onPreRender",
+              [](ui::prim_canvas_ptr_t canvas) -> py::object { return py::none(); },
+              [](ui::prim_canvas_ptr_t canvas, py::object callback) {
+                if (not callback.is_none()) {
+                  auto pycb = std::make_shared<py::object>(callback);
+                  canvas->_onPreRender = [pycb]() {
+                    py::gil_scoped_acquire acquire_gil;
+                    (*pycb)();
+                  };
+                } else {
+                  canvas->_onPreRender = nullptr;
+                }
               });
   type_codec->registerStdCodec<ui::prim_canvas_ptr_t>(primcanvas_type);
   /////////////////////////////////////////////////////////////////////////////////

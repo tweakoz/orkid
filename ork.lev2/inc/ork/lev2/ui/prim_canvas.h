@@ -251,10 +251,11 @@ struct PrimCanvas : public Widget {
   void markDirty() { _ssbo_dirty = true; }
 
   //////////////////////////////////////////////////////////////
-  // Event callbacks (set from Python)
+  // Callbacks (set from Python)
   //////////////////////////////////////////////////////////////
 
   std::function<HandlerResult(event_constptr_t)> _onUiEvent;
+  std::function<void()> _onPreRender;  // Called before each render
 
   //////////////////////////////////////////////////////////////
   // Appearance
