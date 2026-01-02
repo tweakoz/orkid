@@ -158,16 +158,20 @@ def create_rect_sprite(size, color, border=0):
   return img
 
 
-def parse_ascii_sprite(sprite_str, char='*'):
+def parse_ascii_sprite(sprite_str, char='*', color_map=None):
   """
   Parse an ASCII art sprite into pixel positions.
 
   Args:
     sprite_str: Multi-line string with char marking pixels
-    char: Character that represents a pixel (default '*')
+    char: Character that represents a pixel (default '*'), ignored if color_map provided
+    color_map: Optional dict mapping characters to colors (e.g., {'R': vec4(1,0,0,1)})
+               When provided, returns pixels with per-pixel colors
 
   Returns:
-    Tuple of (pixels, width, height) where pixels is list of (x, y) offsets from center
+    Tuple of (pixels, width, height) where pixels is list of:
+      - (x, y) offsets from center if no color_map
+      - (x, y, color) if color_map provided
   """
   pixels = []
   lines = sprite_str.lstrip('\n').rstrip().split('\n')
@@ -175,6 +179,9 @@ def parse_ascii_sprite(sprite_str, char='*'):
   width = max(len(line) for line in lines) if lines else 0
   for row, line in enumerate(lines):
     for col, c in enumerate(line):
-      if c == char:
+      if color_map:
+        if c in color_map:
+          pixels.append((col - width / 2, row - height / 2, color_map[c]))
+      elif c == char:
         pixels.append((col - width / 2, row - height / 2))
   return pixels, width, height

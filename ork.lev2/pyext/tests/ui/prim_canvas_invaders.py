@@ -11,84 +11,85 @@ from ork.app.testlib.gameutils import parse_ascii_sprite
 tokens = CrcStringProxy()
 
 ################################################################################
-# Sprites
+# Sprites - Galaxian style with 4 colors per invader
 ################################################################################
+
+# Color palette: R=Red, B=Blue, Y=Yellow, W=White
+COLORS = {
+  'R': vec4(1.0, 0.2, 0.2, 1.0),  # Red
+  'B': vec4(0.2, 0.4, 1.0, 1.0),  # Blue
+  'Y': vec4(1.0, 1.0, 0.2, 1.0),  # Yellow
+  'W': vec4(1.0, 1.0, 1.0, 1.0),  # White
+  'G': vec4(0.2, 0.9, 0.3, 1.0),  # Green (player)
+}
 
 SPRITES = {
   'inv1a': """
-  **
- ****
-******
-** ** *
-******
- *  *
-*    *
+  YY
+ RRRR
+RRRRRR
+BW BW B
+BBBBBB
+ B  B
+Y    Y
 """,
   'inv1b': """
-  **
- ****
-******
-** ** *
-*******
-* ** *
- *  *
+  YY
+ RRRR
+RRRRRR
+BW BW B
+BBBBBBB
+B BB B
+ Y  Y
 """,
   'inv2a': """
- *   *
-  * *
- *****
-** * **
-*******
-* *** *
-*     *
-  * *
+ Y   Y
+  R R
+ RRRRR
+BB R BB
+BBBBBBB
+B WWW B
+B     B
+  Y Y
 """,
   'inv2b': """
- *   *
-* * * *
- *****
-** * **
-*******
-  ***
- *   *
-*     *
+ Y   Y
+R R R R
+ RRRRR
+BB R BB
+BBBBBBB
+  WWW
+ B   B
+Y     Y
 """,
   'inv3a': """
-   **
-  ****
- ******
-** ** **
-********
-  *  *
- *    *
-*  **  *
+   RR
+  RRRR
+ YYYYYY
+BB YY BB
+BBBBBBBB
+  W  W
+ B    B
+Y  BB  Y
 """,
   'inv3b': """
-   **
-  ****
- ******
-** ** **
-********
- * ** *
-*      *
- *    *
+   RR
+  RRRR
+ YYYYYY
+BB YY BB
+BBBBBBBB
+ B YY B
+Y      Y
+ B    B
 """,
   'player': """
-    *
-   ***
-   ***
-*********
-*********
+    G
+   GGG
+   GGG
+GGGGGGGGG
+WWWWWWWWW
 """,
 }
-
-ROW_COLORS = [
-  vec4(1.0, 0.2, 0.2, 1.0),  # Red
-  vec4(1.0, 0.5, 0.2, 1.0),  # Orange
-  vec4(1.0, 1.0, 0.2, 1.0),  # Yellow
-  vec4(0.2, 1.0, 0.5, 1.0),  # Green
-  vec4(0.2, 0.5, 1.0, 1.0),  # Blue
-]
 
 ################################################################################
 # Game
@@ -115,13 +116,16 @@ class SpaceInvaders:
     self.canvas.bg_color = vec4(0, 0, 0.02, 1)
     self.canvas.draw_background = True
 
-    # Parse sprites
+    # Parse sprites with color map
     self.sprite_frames = [
-      (parse_ascii_sprite(SPRITES['inv1a']), parse_ascii_sprite(SPRITES['inv1b'])),
-      (parse_ascii_sprite(SPRITES['inv2a']), parse_ascii_sprite(SPRITES['inv2b'])),
-      (parse_ascii_sprite(SPRITES['inv3a']), parse_ascii_sprite(SPRITES['inv3b'])),
+      (parse_ascii_sprite(SPRITES['inv1a'], color_map=COLORS),
+       parse_ascii_sprite(SPRITES['inv1b'], color_map=COLORS)),
+      (parse_ascii_sprite(SPRITES['inv2a'], color_map=COLORS),
+       parse_ascii_sprite(SPRITES['inv2b'], color_map=COLORS)),
+      (parse_ascii_sprite(SPRITES['inv3a'], color_map=COLORS),
+       parse_ascii_sprite(SPRITES['inv3b'], color_map=COLORS)),
     ]
-    self.player_sprite = parse_ascii_sprite(SPRITES['player'])
+    self.player_sprite = parse_ascii_sprite(SPRITES['player'], color_map=COLORS)
 
     self._init_game()
     signal.signal(signal.SIGINT, lambda *_: self.ezapp.signalExit())
@@ -283,8 +287,7 @@ class SpaceInvaders:
                    len(self.sprite_frames[inv['type']][1][0]))
       if inv['alive']:
         sx, sy = inv['x'] * w, inv['y'] * h
-        color = ROW_COLORS[inv['row'] % len(ROW_COLORS)]
-        for px, py in pixels:
+        for px, py, color in pixels:
           self._set_quad(self.pixel_quads[qi], sx + px * ps, h - sy - py * ps, ps, ps, color)
           qi += 1
         for _ in range(max_px - len(pixels)):
@@ -298,9 +301,9 @@ class SpaceInvaders:
     # Player
     pixels, _, _ = self.player_sprite
     sx, sy = self.player_x * w, self.player_y * h
-    for px, py in pixels:
+    for px, py, color in pixels:
       if qi < len(self.pixel_quads):
-        self._set_quad(self.pixel_quads[qi], sx + px * ps, h - sy - py * ps, ps, ps, vec4(0.2, 0.9, 0.3, 1))
+        self._set_quad(self.pixel_quads[qi], sx + px * ps, h - sy - py * ps, ps, ps, color)
         qi += 1
 
     while qi < len(self.pixel_quads):
