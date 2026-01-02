@@ -1,19 +1,12 @@
 #!/usr/bin/env ork.python
-
 ################################################################################
-# PrimCanvas Pac-Man
-# Uses textured quads with numpy-generated sprites
-# Grid-based movement system using gameutils library
+# PrimCanvas Pac-Man - Grid-based movement using gameutils library
 ################################################################################
 
-import signal
-import math
-import random
+import signal, math, random
 import numpy as np
-from orkengine.core import vec2, vec3, vec4, CrcStringProxy
+from orkengine.core import vec2, vec4, CrcStringProxy
 from orkengine import lev2
-
-# Import reusable game utilities
 from ork.app.testlib.gameutils.grid2d import (
   DIR_RIGHT, DIR_DOWN, DIR_LEFT, DIR_UP, DIR_NONE, DIR_DELTA,
   opposite_dir, GridMaze, GridEntity
@@ -23,7 +16,7 @@ from ork.app.testlib.gameutils import create_texture_from_numpy
 tokens = CrcStringProxy()
 
 ################################################################################
-# Maze layout
+# Constants
 ################################################################################
 
 MAZE_DATA = [
@@ -60,50 +53,35 @@ MAZE_DATA = [
   "############################",
 ]
 
+GHOST_START_POS = [(12, 14), (13, 14), (14, 14), (15, 14)]
+GHOST_COLORS = [[255, 0, 0], [255, 184, 255], [0, 255, 255], [255, 184, 82]]
+PACMAN_START = (13, 23)
+MOUTH_ANGLES = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60]
+ANIM_CYCLE = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
+
 ################################################################################
-# PacMan Maze - extends GridMaze with game-specific features
+# PacMan Maze
 ################################################################################
 
 class PacManMaze(GridMaze):
-  """Pac-Man specific maze with dots, power pellets, and ghost door"""
-
   def __init__(self):
-    # Parse dimensions
-    height = len(MAZE_DATA)
-    width = max(len(row) for row in MAZE_DATA)
-    super().__init__(width, height)
-
-    # Enable horizontal wrapping for tunnels
+    super().__init__(len(MAZE_DATA[0]), len(MAZE_DATA))
     self.wrap_horizontal = True
-
-    # Set up passability rules
     self.set_blocked_cells({'#'})
-    self.set_conditional_cell('-', {'ghost'})  # Only ghosts can pass through door
+    self.set_conditional_cell('-', {'ghost'})
+    self.dots, self.power_pellets = set(), set()
 
-    # Game-specific state
-    self.dots = set()
-    self.power_pellets = set()
-    self.pacman_start = (13, 23)
-    self.ghost_house_pos = (13, 14)
-
-    # Parse maze data
     for y, row in enumerate(MAZE_DATA):
       for x, cell in enumerate(row):
-        if cell == '#':
-          self.set_cell(x, y, '#')
-        elif cell == '-':
-          self.set_cell(x, y, '-')  # Ghost door
-        elif cell == '.':
-          self.set_cell(x, y, ' ')
+        if cell == '.':
           self.dots.add((x, y))
+          cell = ' '
         elif cell == 'o':
-          self.set_cell(x, y, ' ')
           self.power_pellets.add((x, y))
-        else:
-          self.set_cell(x, y, ' ')
+          cell = ' '
+        self.set_cell(x, y, cell if cell in '#-' else ' ')
 
   def collect_dot(self, x, y):
-    """Try to collect dot at position, returns points"""
     if (x, y) in self.dots:
       self.dots.remove((x, y))
       return 10
@@ -112,180 +90,81 @@ class PacManMaze(GridMaze):
       return 50
     return 0
 
-  def has_power_pellet(self, x, y):
-    """Check if position has a power pellet"""
-    return (x, y) in self.power_pellets
-
 ################################################################################
-# Sprite generation
+# Sprite Generation
 ################################################################################
 
-def create_pacman_texture(size, mouth_angle, direction=0):
-  """Create pac-man sprite with given mouth opening and direction"""
+def create_circle(size, color, radius_frac=0.5):
   img = np.zeros((size, size, 3), dtype=np.uint8)
-  center = size // 2
-  radius = size // 2 - 2
-
+  center, radius = size // 2, int(size * radius_frac) - 2
   for y in range(size):
     for x in range(size):
-      dx = x - center
-      dy = y - center
-      dist = math.sqrt(dx*dx + dy*dy)
+      if (x - center)**2 + (y - center)**2 <= radius**2:
+        img[y, x] = color
+  return img
 
-      if dist <= radius:
-        angle = math.atan2(dy, dx)
-        angle = math.degrees(angle)
-        # Rotate based on direction
-        angle -= direction * 90
-        angle = (angle + 180) % 360 - 180
-
+def create_pacman_sprite(size, mouth_angle, direction=0):
+  img = np.zeros((size, size, 3), dtype=np.uint8)
+  center, radius = size // 2, size // 2 - 2
+  for y in range(size):
+    for x in range(size):
+      dx, dy = x - center, y - center
+      if dx*dx + dy*dy <= radius*radius:
+        angle = (math.degrees(math.atan2(dy, dx)) - direction * 90 + 180) % 360 - 180
         if abs(angle) > mouth_angle:
           img[y, x] = [255, 255, 0]
-
   return img
 
-def create_ghost_texture(size, color_rgb):
-  """Create ghost sprite"""
+def create_ghost_sprite(size, color):
   img = np.zeros((size, size, 3), dtype=np.uint8)
-  center = size // 2
-  radius = size // 2 - 2
-
+  center, radius = size // 2, size // 2 - 2
   for y in range(size):
     for x in range(size):
-      dx = x - center
-      dy = y - center
+      dx, dy = x - center, y - center
       dist = math.sqrt(dx*dx + dy*dy)
-
-      # Top half is rounded
-      if y <= center:
-        if dist <= radius:
-          img[y, x] = color_rgb
-      else:
-        # Bottom with wavy edge
-        if abs(dx) <= radius:
-          wave = int(2 * math.sin(x * math.pi / 4))
-          if y < size - 2 + wave:
-            img[y, x] = color_rgb
-
+      # Body
+      if (y <= center and dist <= radius) or (y > center and abs(dx) <= radius and y < size - 2 + int(2 * math.sin(x * math.pi / 4))):
+        img[y, x] = color
       # Eyes
-      eye_y = center - 2
-      for eye_x in [center - 4, center + 4]:
-        edx = x - eye_x
-        edy = y - eye_y
-        eye_dist = math.sqrt(edx*edx + edy*edy)
-        if eye_dist <= 3:
-          img[y, x] = [255, 255, 255]
-        if eye_dist <= 1.5:
-          img[y, x] = [0, 0, 255]
-
+      for ex in [center - 4, center + 4]:
+        ed = math.sqrt((x - ex)**2 + (y - center + 2)**2)
+        if ed <= 3: img[y, x] = [255, 255, 255]
+        if ed <= 1.5: img[y, x] = [0, 0, 255]
   return img
 
-def create_dot_texture(size):
-  """Create small dot"""
+def create_wall_sprite(size):
   img = np.zeros((size, size, 3), dtype=np.uint8)
-  center = size // 2
-  radius = size // 6
-
-  for y in range(size):
-    for x in range(size):
-      dx = x - center
-      dy = y - center
-      if dx*dx + dy*dy <= radius*radius:
-        img[y, x] = [255, 200, 150]
-  return img
-
-def create_power_pellet_texture(size):
-  """Create power pellet"""
-  img = np.zeros((size, size, 3), dtype=np.uint8)
-  center = size // 2
-  radius = size // 3
-
-  for y in range(size):
-    for x in range(size):
-      dx = x - center
-      dy = y - center
-      if dx*dx + dy*dy <= radius*radius:
-        img[y, x] = [255, 200, 150]
-  return img
-
-def create_wall_texture(size):
-  """Create wall tile"""
-  img = np.zeros((size, size, 3), dtype=np.uint8)
-  for y in range(size):
-    for x in range(size):
-      if x < 2 or x >= size-2 or y < 2 or y >= size-2:
-        img[y, x] = [0, 0, 100]
-      else:
-        img[y, x] = [0, 0, 180]
+  img[:, :] = [0, 0, 180]
+  img[:2, :] = img[-2:, :] = img[:, :2] = img[:, -2:] = [0, 0, 100]
   return img
 
 ################################################################################
-# Ghost AI - extends GridEntity
+# Ghost AI
 ################################################################################
 
 class Ghost(GridEntity):
   def __init__(self, x, y, color_idx):
     super().__init__(x, y, entity_type='ghost')
     self.color_idx = color_idx
-    self.mode = 'scatter'  # scatter, chase, frightened
+    self.mode = 'scatter'
     self.speed = 4.0
-    self.frightened_speed = 2.5
-
-  def choose_direction(self, maze, pacman):
-    """Choose next direction at intersection using BFS pathfinding"""
-    if not self.is_at_cell():
-      return
-
-    if self.mode == 'frightened':
-      # Random movement when frightened
-      possible = []
-      for d in [DIR_UP, DIR_LEFT, DIR_DOWN, DIR_RIGHT]:
-        if d == opposite_dir(self.direction):
-          continue
-        dx, dy = DIR_DELTA[d]
-        nx = maze.wrap_x(self.grid_x + dx)
-        ny = maze.wrap_y(self.grid_y + dy)
-        if maze.can_enter(nx, ny, self.entity_type):
-          possible.append(d)
-      if not possible:
-        rev = opposite_dir(self.direction)
-        if rev != DIR_NONE:
-          possible = [rev]
-      if possible:
-        self.next_direction = random.choice(possible)
-    else:
-      # Use BFS to find path to pacman
-      bfs_dir = maze.bfs_direction(
-        self.grid_x, self.grid_y,
-        pacman.grid_x, pacman.grid_y,
-        entity_type=self.entity_type
-      )
-      if bfs_dir != DIR_NONE:
-        self.next_direction = bfs_dir
-      else:
-        # Fallback: pick any valid direction
-        for d in [DIR_UP, DIR_LEFT, DIR_DOWN, DIR_RIGHT]:
-          if d == opposite_dir(self.direction):
-            continue
-          dx, dy = DIR_DELTA[d]
-          nx = maze.wrap_x(self.grid_x + dx)
-          ny = maze.wrap_y(self.grid_y + dy)
-          if maze.can_enter(nx, ny, self.entity_type):
-            self.next_direction = d
-            break
 
   def update_movement(self, dt, maze, pacman):
-    """Update ghost movement"""
-    # Update animation with mode-specific speed
-    current_speed = self.frightened_speed if self.mode == 'frightened' else self.speed
+    speed = 2.5 if self.mode == 'frightened' else self.speed
     if self.move_progress < 1.0:
-      self.move_progress += current_speed * dt
-      if self.move_progress >= 1.0:
-        self.move_progress = 1.0
+      self.move_progress = min(1.0, self.move_progress + speed * dt)
 
-    # At cell center, choose and execute next move
     if self.is_at_cell():
-      self.choose_direction(maze, pacman)
+      if self.mode == 'frightened':
+        # Random valid direction (not reverse)
+        dirs = [d for d in [DIR_UP, DIR_LEFT, DIR_DOWN, DIR_RIGHT]
+                if d != opposite_dir(self.direction) and
+                maze.can_enter(maze.wrap_x(self.grid_x + DIR_DELTA[d][0]),
+                               maze.wrap_y(self.grid_y + DIR_DELTA[d][1]), 'ghost')]
+        self.next_direction = random.choice(dirs) if dirs else opposite_dir(self.direction)
+      else:
+        self.next_direction = maze.bfs_direction(self.grid_x, self.grid_y,
+                                                  pacman.grid_x, pacman.grid_y, 'ghost')
       if self.next_direction != DIR_NONE:
         self.try_move(maze, self.next_direction)
 
@@ -294,424 +173,214 @@ class Ghost(GridEntity):
 ################################################################################
 
 class PacManGame:
-
   def __init__(self):
     super().__init__()
-
     self.ezapp = lev2.OrkEzApp.create(self, fullscreen=True, disable_mouse_cursor=True)
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()
 
-    lg_group = self.ezapp.topLayoutGroup
-    lg_group.clearColorStd = vec4(0.0, 0.0, 0.0, 1)
-
-    canvas_layout = lg_group.makeChild(uiclass=lev2.ui.PrimCanvas, args=["pacman_canvas"])
-    self.canvas = canvas_layout.widget
-
-    root_layout = lg_group.layout
-    canvas_layout.layout.top.anchorTo(root_layout.top)
-    canvas_layout.layout.left.anchorTo(root_layout.left)
-    canvas_layout.layout.bottom.anchorTo(root_layout.bottom)
-    canvas_layout.layout.right.anchorTo(root_layout.right)
-
-    self.canvas.bg_color = vec4(0.0, 0.0, 0.0, 1)
+    lg = self.ezapp.topLayoutGroup
+    lg.clearColorStd = vec4(0, 0, 0, 1)
+    cl = lg.makeChild(uiclass=lev2.ui.PrimCanvas, args=["pacman"])
+    self.canvas = cl.widget
+    for edge in ['top', 'left', 'bottom', 'right']:
+      getattr(cl.layout, edge).anchorTo(getattr(lg.layout, edge))
+    self.canvas.bg_color = vec4(0, 0, 0, 1)
     self.canvas.draw_background = True
 
-    # Game state
+    self._init_game()
+    signal.signal(signal.SIGINT, lambda *_: self.ezapp.signalExit())
+
+  def _init_game(self):
     self.maze = PacManMaze()
-    self.time = 0.0
-    self.score = 0
-    self.lives = 3
-    self.game_over = False
-    self.you_win = False
-
-    # Pacman - uses GridEntity with 'pacman' type (can't pass through ghost door)
-    px, py = self.maze.pacman_start
-    self.pacman = GridEntity(px, py, entity_type='pacman')
+    self.time = self.score = self.pacman_anim = 0.0
+    self.lives, self.frightened_time = 3, 0.0
+    self.game_over = self.you_win = False
+    self.pacman = GridEntity(*PACMAN_START, entity_type='pacman')
     self.pacman.speed = 6.0
-    self.pacman_anim = 0.0
-
-    # Ghosts - start in ghost house area
-    self.ghosts = []
-    ghost_colors = [
-      [255, 0, 0],      # Red
-      [255, 184, 255],  # Pink
-      [0, 255, 255],    # Cyan
-      [255, 184, 82],   # Orange
-    ]
-    self.ghost_colors = ghost_colors
-    ghost_start_positions = [(12, 14), (13, 14), (14, 14), (15, 14)]
-    for i, (gx, gy) in enumerate(ghost_start_positions):
-      self.ghosts.append(Ghost(gx, gy, i))
-
-    self.frightened_time = 0.0
-
-    # Input
+    self.ghosts = [Ghost(x, y, i) for i, (x, y) in enumerate(GHOST_START_POS)]
     self.input_direction = DIR_NONE
 
-    # Textures
-    self.textures = {}
-    self.sprite_size = 32
-
-    # Primitives
-    self.wall_prim = None
-    self.wall_quads = []
-    self.dot_prim = None
-    self.dot_quads = []
-    self.power_prim = None
-    self.power_quads = []
-    self.pacman_prim = None
-    self.pacman_quad = None
-    self.ghost_prims = []
-    self.score_prim = None
-    self.gameover_prim = None
-
-    def onCtrlC(signum, frame):
-      self.ezapp.signalExit()
-    signal.signal(signal.SIGINT, onCtrlC)
+  def _make_quad_prim(self, tex, count):
+    prim = lev2.ui.QuadPrimitive(pipeline=self.canvas.pipelineTextured, texture=tex)
+    quads = [lev2.ui.QuadData() for _ in range(count)]
+    for q in quads: prim.addQuad(q)
+    self.canvas.addPrimitive(prim)
+    return prim, quads
 
   def onGpuInit(self, ctx):
     self.canvas.gpuInit(ctx)
     self.font = lev2.FontManager.fontForId("i18")
     self.font_large = lev2.FontManager.fontForId("i32")
-
-    # Enable alpha blending
     self.canvas.pipelineTextured.rasterstate.setBlendingMacro(tokens.ALPHA)
 
-    ss = self.sprite_size
+    ss = 32
+    tex = lambda img, name: create_texture_from_numpy(ctx, img, name)
 
-    # Pacman textures (4 directions x 12 mouth states)
+    # Textures
+    self.tex = {
+      'wall': tex(create_wall_sprite(ss), 'wall'),
+      'dot': tex(create_circle(ss, [255, 200, 150], 0.17), 'dot'),
+      'power': tex(create_circle(ss, [255, 200, 150], 0.33), 'power'),
+    }
+    for i, c in enumerate(GHOST_COLORS):
+      self.tex[f'ghost_{i}'] = tex(create_ghost_sprite(ss, c), f'ghost_{i}')
+    self.tex['ghost_scared'] = tex(create_ghost_sprite(ss, [0, 0, 200]), 'ghost_scared')
     for d in range(4):
-      for m, angle in enumerate([5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60]):
-        key = f"pacman_{d}_{m}"
-        self.textures[key] = create_texture_from_numpy(ctx, create_pacman_texture(ss, angle, d), key)
+      for m, a in enumerate(MOUTH_ANGLES):
+        self.tex[f'pac_{d}_{m}'] = tex(create_pacman_sprite(ss, a, d), f'pac_{d}_{m}')
 
-    # Ghost textures
-    for i, color in enumerate(self.ghost_colors):
-      self.textures[f"ghost_{i}"] = create_texture_from_numpy(ctx, create_ghost_texture(ss, color), f"ghost_{i}")
-    self.textures["ghost_frightened"] = create_texture_from_numpy(ctx, create_ghost_texture(ss, [0, 0, 200]), "ghost_frightened")
+    # Primitives
+    wall_count = sum(row.count('#') for row in self.maze.grid)
+    self.wall_prim, self.wall_quads = self._make_quad_prim(self.tex['wall'], wall_count)
+    self.dot_prim, self.dot_quads = self._make_quad_prim(self.tex['dot'], len(self.maze.dots))
+    self.power_prim, self.power_quads = self._make_quad_prim(self.tex['power'], len(self.maze.power_pellets))
 
-    # Other textures
-    self.textures["dot"] = create_texture_from_numpy(ctx, create_dot_texture(ss), "dot")
-    self.textures["power"] = create_texture_from_numpy(ctx, create_power_pellet_texture(ss), "power")
-    self.textures["wall"] = create_texture_from_numpy(ctx, create_wall_texture(ss), "wall")
-
-    # Create wall quads
-    wall_count = sum(1 for row in self.maze.grid for cell in row if cell == '#')
-    self.wall_prim = lev2.ui.QuadPrimitive(
-      pipeline=self.canvas.pipelineTextured,
-      texture=self.textures["wall"]
-    )
-    for _ in range(wall_count):
-      qd = lev2.ui.QuadData()
-      self.wall_quads.append(qd)
-      self.wall_prim.addQuad(qd)
-    self.canvas.addPrimitive(self.wall_prim)
-
-    # Create dot quads
-    max_dots = len(self.maze.dots)
-    self.dot_prim = lev2.ui.QuadPrimitive(
-      pipeline=self.canvas.pipelineTextured,
-      texture=self.textures["dot"]
-    )
-    for _ in range(max_dots):
-      qd = lev2.ui.QuadData()
-      self.dot_quads.append(qd)
-      self.dot_prim.addQuad(qd)
-    self.canvas.addPrimitive(self.dot_prim)
-
-    # Create power pellet quads
-    max_power = len(self.maze.power_pellets)
-    self.power_prim = lev2.ui.QuadPrimitive(
-      pipeline=self.canvas.pipelineTextured,
-      texture=self.textures["power"]
-    )
-    for _ in range(max_power):
-      qd = lev2.ui.QuadData()
-      self.power_quads.append(qd)
-      self.power_prim.addQuad(qd)
-    self.canvas.addPrimitive(self.power_prim)
-
-    # Create pacman primitives - one for each direction/mouth combo
-    # We'll position the active one on-screen, others off-screen
-    self.pacman_prims = {}
-    self.pacman_quads = {}
+    self.pac_prims, self.pac_quads = {}, {}
     for d in range(4):
       for m in range(12):
-        key = f"pacman_{d}_{m}"
-        prim = lev2.ui.QuadPrimitive(
-          pipeline=self.canvas.pipelineTextured,
-          texture=self.textures[key]
-        )
-        qd = lev2.ui.QuadData()
-        prim.addQuad(qd)
-        self.pacman_prims[key] = prim
-        self.pacman_quads[key] = qd
-        self.canvas.addPrimitive(prim)
+        k = f'pac_{d}_{m}'
+        self.pac_prims[k], q = self._make_quad_prim(self.tex[k], 1)
+        self.pac_quads[k] = q[0]
 
-    # Create ghost quads
+    self.ghost_prims = []
     for i in range(4):
-      prim = lev2.ui.QuadPrimitive(
-        pipeline=self.canvas.pipelineTextured,
-        texture=self.textures[f"ghost_{i}"]
-      )
-      qd = lev2.ui.QuadData()
-      prim.addQuad(qd)
-      self.ghost_prims.append((prim, qd))
-      self.canvas.addPrimitive(prim)
+      _, q = self._make_quad_prim(self.tex[f'ghost_{i}'], 1)
+      self.ghost_prims.append(q[0])
 
-    # Text
     self.score_prim = lev2.ui.TextPrimitive(font=self.font, color=vec4(1, 1, 1, 1))
-    self.score_prim.addItem("SCORE: 0", vec2(10, 10))
     self.canvas.addPrimitive(self.score_prim)
-
-    self.gameover_prim = lev2.ui.TextPrimitive(font=self.font_large, color=vec4(1, 1, 0, 1))
-    self.canvas.addPrimitive(self.gameover_prim)
-
+    self.msg_prim = lev2.ui.TextPrimitive(font=self.font_large, color=vec4(1, 1, 0, 1))
+    self.canvas.addPrimitive(self.msg_prim)
     self._render()
 
   def _update(self, dt):
     if self.game_over:
-      self._render()
-      return
+      return self._render()
 
-    # Update frightened timer
     if self.frightened_time > 0:
       self.frightened_time -= dt
       if self.frightened_time <= 0:
-        for ghost in self.ghosts:
-          ghost.mode = 'chase'
+        for g in self.ghosts: g.mode = 'chase'
 
-    # Pacman animation (fast chomping)
     self.pacman_anim += dt * 80
-
-    # Update pacman movement
     self.pacman.update(dt)
 
-    # At cell center: collect dots FIRST, then move (try_move resets move_progress)
     if self.pacman.is_at_cell():
-      # Collect dots at current position
       px, py = self.pacman.grid_x, self.pacman.grid_y
       was_power = (px, py) in self.maze.power_pellets
-      points = self.maze.collect_dot(px, py)
-      self.score += points
-      if was_power and points > 0:
+      self.score += self.maze.collect_dot(px, py)
+      if was_power and self.score:
         self.frightened_time = 8.0
-        for ghost in self.ghosts:
-          ghost.mode = 'frightened'
+        for g in self.ghosts: g.mode = 'frightened'
 
-      # Try queued direction first
-      if self.input_direction != DIR_NONE:
-        if self.pacman.try_move(self.maze, self.input_direction):
-          pass  # Successfully changed direction
-        elif self.pacman.direction != DIR_NONE:
-          # Try to continue in current direction
-          self.pacman.try_move(self.maze, self.pacman.direction)
-      elif self.pacman.direction != DIR_NONE:
-        # Continue in current direction
+      moved = self.input_direction != DIR_NONE and self.pacman.try_move(self.maze, self.input_direction)
+      if not moved and self.pacman.direction != DIR_NONE:
         self.pacman.try_move(self.maze, self.pacman.direction)
 
-    # Update ghosts
-    for ghost in self.ghosts:
-      ghost.update_movement(dt, self.maze, self.pacman)
+    for g in self.ghosts:
+      g.update_movement(dt, self.maze, self.pacman)
 
-    # Check ghost collision
-    pac_rx, pac_ry = self.pacman.get_render_pos()
-    for ghost in self.ghosts:
-      gx, gy = ghost.get_render_pos()
-      dist = (gx - pac_rx)**2 + (gy - pac_ry)**2
-      if dist < 0.8:
-        if ghost.mode == 'frightened':
-          # Eat ghost
-          ghost.grid_x, ghost.grid_y = 13, 14
-          ghost.prev_x, ghost.prev_y = 13, 14
-          ghost.move_progress = 1.0
-          ghost.mode = 'chase'
+    # Collision check
+    prx, pry = self.pacman.get_render_pos()
+    for g in self.ghosts:
+      gx, gy = g.get_render_pos()
+      if (gx - prx)**2 + (gy - pry)**2 < 0.8:
+        if g.mode == 'frightened':
+          g.teleport(13, 14)
+          g.mode = 'chase'
           self.score += 200
         else:
-          # Die
           self.lives -= 1
           if self.lives <= 0:
             self.game_over = True
           else:
-            self._reset_positions()
+            self.pacman.teleport(*PACMAN_START)
+            for i, g2 in enumerate(self.ghosts):
+              g2.teleport(*GHOST_START_POS[i])
+              g2.mode = 'scatter'
 
-    # Check win
-    if len(self.maze.dots) == 0 and len(self.maze.power_pellets) == 0:
-      self.game_over = True
-      self.you_win = True
-
+    if not self.maze.dots and not self.maze.power_pellets:
+      self.game_over = self.you_win = True
     self._render()
 
-  def _reset_positions(self):
-    """Reset pacman and ghosts after death"""
-    px, py = self.maze.pacman_start
-    self.pacman.teleport(px, py)
+  def _set_quad(self, qd, x, y, size, color=None):
+    qd.setPosition(x, y)
+    qd.setSize(size, size)
+    qd.setUV(0, 0, 1, 1)
+    qd.setColor(color or vec4(1, 1, 1, 1))
 
-    ghost_positions = [(12, 14), (13, 14), (14, 14), (15, 14)]
-    for i, ghost in enumerate(self.ghosts):
-      gx, gy = ghost_positions[i]
-      ghost.teleport(gx, gy)
-      ghost.mode = 'scatter'
+  def _hide_quad(self, qd):
+    qd.setPosition(-100, -100)
+    qd.setSize(0, 0)
 
   def _render(self):
-    canvas_w = self.canvas.width
-    canvas_h = self.canvas.height
-    if canvas_w < 1 or canvas_h < 1:
-      return
+    w, h = self.canvas.width, self.canvas.height
+    if w < 1 or h < 1: return
 
-    # Calculate cell size
-    cell_w = canvas_w / self.maze.width
-    cell_h = canvas_h / self.maze.height
-    cell_size = min(cell_w, cell_h)
+    cell = min(w / self.maze.width, h / self.maze.height)
+    ox = (w - self.maze.width * cell) / 2
+    oy = (h - self.maze.height * cell) / 2
+    def screen_pos(gx, gy): return ox + gx * cell, h - (oy + gy * cell) - cell
 
-    offset_x = (canvas_w - self.maze.width * cell_size) / 2
-    offset_y = (canvas_h - self.maze.height * cell_size) / 2
-
-    # Render walls
-    quad_idx = 0
+    # Walls
+    qi = 0
     for y in range(self.maze.height):
       for x in range(self.maze.width):
         if self.maze.grid[y][x] == '#':
-          qd = self.wall_quads[quad_idx]
-          sx = offset_x + x * cell_size
-          sy = offset_y + y * cell_size
-          qd.setPosition(sx, canvas_h - sy - cell_size)
-          qd.setSize(cell_size, cell_size)
-          qd.setUV(0, 0, 1, 1)
-          qd.setColor(vec4(1, 1, 1, 1))
-          quad_idx += 1
+          self._set_quad(self.wall_quads[qi], *screen_pos(x, y), cell)
+          qi += 1
 
-    # Render dots
-    quad_idx = 0
-    for (x, y) in list(self.maze.dots):
-      if quad_idx < len(self.dot_quads):
-        qd = self.dot_quads[quad_idx]
-        sx = offset_x + x * cell_size
-        sy = offset_y + y * cell_size
-        qd.setPosition(sx, canvas_h - sy - cell_size)
-        qd.setSize(cell_size, cell_size)
-        qd.setUV(0, 0, 1, 1)
-        qd.setColor(vec4(1, 1, 1, 1))
-        quad_idx += 1
-    while quad_idx < len(self.dot_quads):
-      self.dot_quads[quad_idx].setPosition(-100, -100)
-      self.dot_quads[quad_idx].setSize(0, 0)
-      quad_idx += 1
+    # Dots & power pellets
+    for i, (x, y) in enumerate(self.maze.dots):
+      self._set_quad(self.dot_quads[i], *screen_pos(x, y), cell) if i < len(self.dot_quads) else None
+    for i in range(len(self.maze.dots), len(self.dot_quads)):
+      self._hide_quad(self.dot_quads[i])
 
-    # Render power pellets
-    quad_idx = 0
-    for (x, y) in list(self.maze.power_pellets):
-      if quad_idx < len(self.power_quads):
-        qd = self.power_quads[quad_idx]
-        sx = offset_x + x * cell_size
-        sy = offset_y + y * cell_size
-        pulse = 0.6 + 0.4 * math.sin(self.time * 6)
-        qd.setPosition(sx, canvas_h - sy - cell_size)
-        qd.setSize(cell_size, cell_size)
-        qd.setUV(0, 0, 1, 1)
-        qd.setColor(vec4(pulse, pulse, pulse, 1))
-        quad_idx += 1
-    while quad_idx < len(self.power_quads):
-      self.power_quads[quad_idx].setPosition(-100, -100)
-      self.power_quads[quad_idx].setSize(0, 0)
-      quad_idx += 1
+    pulse = vec4(0.6 + 0.4 * math.sin(self.time * 6), 0.6 + 0.4 * math.sin(self.time * 6), 0.6 + 0.4 * math.sin(self.time * 6), 1)
+    for i, (x, y) in enumerate(self.maze.power_pellets):
+      self._set_quad(self.power_quads[i], *screen_pos(x, y), cell, pulse) if i < len(self.power_quads) else None
+    for i in range(len(self.maze.power_pellets), len(self.power_quads)):
+      self._hide_quad(self.power_quads[i])
 
-    # Render pacman with animation and direction
-    pac_rx, pac_ry = self.pacman.get_render_pos()
-    sx = offset_x + pac_rx * cell_size
-    sy = offset_y + pac_ry * cell_size
-
-    # Select pacman texture based on direction and animation frame
-    pac_dir = self.pacman.direction if self.pacman.direction != DIR_NONE else DIR_RIGHT
-    # Mouth animation: cycle through 0-11-0 for smooth open/close (22 frames total)
-    anim_cycle = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
-    mouth_frame = anim_cycle[int(self.pacman_anim) % 22]
-    active_key = f"pacman_{pac_dir}_{mouth_frame}"
-
-    # Position active pacman on-screen, all others off-screen
-    for key, qd in self.pacman_quads.items():
-      if key == active_key:
-        qd.setPosition(sx, canvas_h - sy - cell_size)
-        qd.setSize(cell_size, cell_size)
-        qd.setUV(0, 0, 1, 1)
-        qd.setColor(vec4(1, 1, 1, 1))
+    # Pacman
+    d = self.pacman.direction if self.pacman.direction != DIR_NONE else DIR_RIGHT
+    active = f'pac_{d}_{ANIM_CYCLE[int(self.pacman_anim) % 22]}'
+    prx, pry = self.pacman.get_render_pos()
+    for k, qd in self.pac_quads.items():
+      if k == active:
+        self._set_quad(qd, *screen_pos(prx, pry), cell)
       else:
-        qd.setPosition(-100, -100)
-        qd.setSize(0, 0)
+        self._hide_quad(qd)
 
-    # Render ghosts
-    for i, ghost in enumerate(self.ghosts):
-      prim, qd = self.ghost_prims[i]
-      gx, gy = ghost.get_render_pos()
-      sx = offset_x + gx * cell_size
-      sy = offset_y + gy * cell_size
-      qd.setPosition(sx, canvas_h - sy - cell_size)
-      qd.setSize(cell_size, cell_size)
-      qd.setUV(0, 0, 1, 1)
+    # Ghosts
+    for i, g in enumerate(self.ghosts):
+      gx, gy = g.get_render_pos()
+      color = vec4(0.3, 0.3, 1, 1) if g.mode == 'frightened' and not (self.frightened_time < 2 and int(self.time * 5) % 2) else vec4(1, 1, 1, 1)
+      self._set_quad(self.ghost_prims[i], *screen_pos(gx, gy), cell, color)
 
-      if ghost.mode == 'frightened':
-        if self.frightened_time < 2 and int(self.time * 5) % 2 == 0:
-          qd.setColor(vec4(1, 1, 1, 1))
-        else:
-          qd.setColor(vec4(0.3, 0.3, 1, 1))
-      else:
-        qd.setColor(vec4(1, 1, 1, 1))
-
-    # Score
+    # UI
     self.score_prim.clearItems()
     self.score_prim.addItem(f"SCORE: {self.score}  LIVES: {self.lives}", vec2(10, 10))
-
-    # Game over
-    self.gameover_prim.clearItems()
+    self.msg_prim.clearItems()
     if self.game_over:
-      if self.you_win:
-        self.gameover_prim.addItem("YOU WIN!", vec2(canvas_w/2 - 80, canvas_h/2))
-      else:
-        self.gameover_prim.addItem("GAME OVER", vec2(canvas_w/2 - 100, canvas_h/2))
-      self.gameover_prim.addItem("PRESS SPACE TO RESTART", vec2(canvas_w/2 - 180, canvas_h/2 + 50))
+      msg = "YOU WIN!" if self.you_win else "GAME OVER"
+      self.msg_prim.addItem(msg, vec2(w/2 - 80, h/2))
+      self.msg_prim.addItem("PRESS SPACE TO RESTART", vec2(w/2 - 180, h/2 + 50))
 
     self.canvas.markDirty()
-
-  def _restart(self):
-    self.maze = PacManMaze()
-    self.score = 0
-    self.lives = 3
-    self.game_over = False
-    self.you_win = False
-    self.frightened_time = 0
-
-    px, py = self.maze.pacman_start
-    self.pacman = GridEntity(px, py, entity_type='pacman')
-    self.pacman.speed = 6.0
-
-    self.ghosts = []
-    ghost_positions = [(12, 14), (13, 14), (14, 14), (15, 14)]
-    for i, (gx, gy) in enumerate(ghost_positions):
-      self.ghosts.append(Ghost(gx, gy, i))
-
-    self.input_direction = DIR_NONE
 
   def onUpdate(self, updinfo):
     self.time += updinfo.deltatime
     self._update(updinfo.deltatime)
 
-  def onUiEvent(self, uievent):
-    if uievent.code == tokens.KEY_DOWN.hashed:
-      if uievent.keycode == 263:  # Left
-        self.input_direction = DIR_LEFT
-      elif uievent.keycode == 262:  # Right
-        self.input_direction = DIR_RIGHT
-      elif uievent.keycode == 265:  # Up
-        self.input_direction = DIR_UP
-      elif uievent.keycode == 264:  # Down
-        self.input_direction = DIR_DOWN
-      elif uievent.keycode == 32:  # Space
-        if self.game_over:
-          self._restart()
-      return lev2.ui.HandlerResult()
+  def onUiEvent(self, ev):
+    if ev.code == tokens.KEY_DOWN.hashed:
+      dirs = {263: DIR_LEFT, 262: DIR_RIGHT, 265: DIR_UP, 264: DIR_DOWN}
+      if ev.keycode in dirs:
+        self.input_direction = dirs[ev.keycode]
+      elif ev.keycode == 32 and self.game_over:
+        self._init_game()
     return lev2.ui.HandlerResult()
-
-###############################################################################
 
 PacManGame().ezapp.mainThreadLoop()
