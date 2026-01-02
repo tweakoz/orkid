@@ -2308,6 +2308,49 @@ void pyinit_ui(py::module& module_lev2) {
               });
   type_codec->registerStdCodec<ui::trilistprimitive_ptr_t>(trilistprimitive_type);
 
+  // SpritePrimitive - static sprite template with quads in local space
+  auto spriteprimitive_type = //
+      py::class_<ui::SpritePrimitive, ui::Primitive, ui::spriteprimitive_ptr_t>(uimodule, "SpritePrimitive")
+          .def(py::init<>([](fxpipeline_ptr_t pipeline, texture_ptr_t texture) {
+            return std::make_shared<ui::SpritePrimitive>(pipeline, texture);
+          }), py::arg("pipeline"), py::arg("texture") = nullptr)
+          .def_readonly("pipeline", &ui::SpritePrimitive::_pipeline)
+          .def_readonly("texture", &ui::SpritePrimitive::_texture)
+          .def_property_readonly("quadCount", [](ui::spriteprimitive_ptr_t prim) { return prim->_quads.size(); })
+          .def(
+              "addQuad",
+              [](ui::spriteprimitive_ptr_t prim, ui::quaddata_ptr_t qd) {
+                prim->_quads.push_back(qd);
+              })
+          .def(
+              "quad",
+              [](ui::spriteprimitive_ptr_t prim, size_t index) -> ui::quaddata_ptr_t {
+                return prim->_quads[index];
+              })
+          .def(
+              "clearQuads",
+              [](ui::spriteprimitive_ptr_t prim) {
+                prim->_quads.clear();
+              });
+  type_codec->registerStdCodec<ui::spriteprimitive_ptr_t>(spriteprimitive_type);
+
+  // SpriteInstance - lightweight instance referencing a SpritePrimitive
+  auto spriteinstance_type = //
+      py::class_<ui::SpriteInstance, ui::Primitive, ui::spriteinstance_ptr_t>(uimodule, "SpriteInstance")
+          .def(py::init<>([](ui::spriteprimitive_ptr_t sprite) {
+            return std::make_shared<ui::SpriteInstance>(sprite);
+          }), py::arg("sprite") = nullptr)
+          .def_readwrite("sprite", &ui::SpriteInstance::_sprite)
+          .def_readwrite("transform", &ui::SpriteInstance::_transform)
+          .def_readwrite("tint", &ui::SpriteInstance::_tint)
+          .def_readwrite("visible", &ui::SpriteInstance::_visible)
+          .def("setPosition", &ui::SpriteInstance::setPosition)
+          .def("setRotation", &ui::SpriteInstance::setRotation)
+          .def("setScale", py::overload_cast<float, float>(&ui::SpriteInstance::setScale))
+          .def("setUniformScale", py::overload_cast<float>(&ui::SpriteInstance::setScale))
+          .def("setTransform", &ui::SpriteInstance::setTransform);
+  type_codec->registerStdCodec<ui::spriteinstance_ptr_t>(spriteinstance_type);
+
   // TextItem - single text entry within a TextPrimitive
   auto textitem_type = //
       py::class_<ui::TextItem>(uimodule, "TextItem")
@@ -2370,6 +2413,8 @@ void pyinit_ui(py::module& module_lev2) {
           .def_property_readonly("pipelineTextured", &ui::PrimCanvas::pipelineTextured)
           .def_property_readonly("pipelineVtxSolid", &ui::PrimCanvas::pipelineVtxSolid)
           .def_property_readonly("pipelineVtxTextured", &ui::PrimCanvas::pipelineVtxTextured)
+          .def_property_readonly("pipelineSpriteSolid", &ui::PrimCanvas::pipelineSpriteSolid)
+          .def_property_readonly("pipelineSpriteTextured", &ui::PrimCanvas::pipelineSpriteTextured)
           .def_property(
               "bg_color",
               [](ui::prim_canvas_ptr_t canvas) -> fvec4 { return canvas->_bg_color; },

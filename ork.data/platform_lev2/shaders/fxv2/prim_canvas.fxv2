@@ -50,3 +50,25 @@ technique tek_canvas_vtx_tex {
     state_block     = sb_canvas_blend;
   }
 }
+
+///////////////////////////////////////////////////////////////
+// Sprite instancing techniques
+///////////////////////////////////////////////////////////////
+
+technique tek_sprite_solid {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_sprite_quad;
+    fragment_shader = fs_canvas_solid;
+    state_block     = sb_canvas_blend;
+  }
+}
+
+technique tek_sprite_tex {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_sprite_quad;
+    fragment_shader = fs_canvas_tex;
+    state_block     = sb_canvas_blend;
+  }
+}

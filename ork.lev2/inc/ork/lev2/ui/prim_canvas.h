@@ -87,6 +87,59 @@ struct QuadPrimitive : Primitive {
 using quadprimitive_ptr_t = std::shared_ptr<QuadPrimitive>;
 
 ////////////////////////////////////////////////////////////////////
+// SpritePrimitive: Static sprite template with quads in local space
+// Designed for instancing - geometry defined once, rendered many times
+////////////////////////////////////////////////////////////////////
+
+struct SpritePrimitive;
+struct SpriteInstance;
+using spriteprimitive_ptr_t = std::shared_ptr<SpritePrimitive>;
+using spriteinstance_ptr_t = std::shared_ptr<SpriteInstance>;
+
+struct SpritePrimitive : Primitive {
+  SpritePrimitive(lev2::fxpipeline_ptr_t pipeline, lev2::texture_ptr_t texture = nullptr);
+
+  lev2::fxpipeline_ptr_t _pipeline;
+  lev2::texture_ptr_t _texture;
+  std::vector<quaddata_ptr_t> _quads;  // Quads in local space (centered at origin)
+
+  void draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd) override;
+  size_t ssboQuadCount() const override { return _quads.size(); }
+  void gatherQuadData(std::vector<QuadData>& out) const override;
+
+  // Draw with instance transform (called by SpriteInstance)
+  void drawInstanced(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd,
+                     const fmtx3& transform, const fvec4& tint);
+};
+
+////////////////////////////////////////////////////////////////////
+// SpriteInstance: Lightweight instance referencing a SpritePrimitive
+// Contains transform and tint, no geometry data
+////////////////////////////////////////////////////////////////////
+
+struct SpriteInstance : Primitive {
+  SpriteInstance(spriteprimitive_ptr_t sprite = nullptr);
+
+  spriteprimitive_ptr_t _sprite;       // Template geometry
+  fmtx3 _transform;                    // 2D homogeneous transform
+  fvec4 _tint = fvec4(1, 1, 1, 1);     // Color modulation
+  bool _visible = true;
+
+  // Convenience transform setters
+  void setPosition(float x, float y);
+  void setRotation(float radians);
+  void setScale(float sx, float sy);
+  void setScale(float uniform_scale);
+  void setTransform(float x, float y, float rotation, float scale);
+
+  void draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd) override;
+
+  // Instances don't contribute to SSBO - they reuse sprite's data
+  size_t ssboQuadCount() const override { return 0; }
+  void gatherQuadData(std::vector<QuadData>& out) const override {}
+};
+
+////////////////////////////////////////////////////////////////////
 // TriStripPrimitive: Triangle strip sharing pipeline/texture state
 ////////////////////////////////////////////////////////////////////
 
@@ -195,6 +248,15 @@ struct PrimCanvas : public Widget {
   lev2::fxparam_constptr_t paramSsboBase() const { return _param_ssbo_base; }
   lev2::fxparam_constptr_t paramColorMap() const { return _param_colormap; }
 
+  // Sprite-specific pipelines and params
+  lev2::fxpipeline_ptr_t pipelineSpriteSolid() const { return _pipeline_sprite_solid; }
+  lev2::fxpipeline_ptr_t pipelineSpriteTextured() const { return _pipeline_sprite_textured; }
+  lev2::fxparam_constptr_t paramSpriteCanvasSize() const { return _param_sprite_canvas_size; }
+  lev2::fxparam_constptr_t paramSpriteSsboBase() const { return _param_sprite_ssbo_base; }
+  lev2::fxparam_constptr_t paramSpriteColorMap() const { return _param_sprite_colormap; }
+  lev2::fxparam_constptr_t paramSpriteInstanceTransform() const { return _param_sprite_instance_transform; }
+  lev2::fxparam_constptr_t paramSpriteInstanceTint() const { return _param_sprite_instance_tint; }
+
 protected:
   void DoDraw(drawevent_constptr_t drwev) override;
   HandlerResult DoOnUiEvent(event_constptr_t ev) override;
@@ -220,6 +282,15 @@ private:
   lev2::fxparam_constptr_t _param_canvas_size;
   lev2::fxparam_constptr_t _param_ssbo_base;
   lev2::fxparam_constptr_t _param_colormap;
+
+  // Sprite-specific
+  lev2::fxpipeline_ptr_t _pipeline_sprite_solid;
+  lev2::fxpipeline_ptr_t _pipeline_sprite_textured;
+  lev2::fxparam_constptr_t _param_sprite_canvas_size;
+  lev2::fxparam_constptr_t _param_sprite_ssbo_base;
+  lev2::fxparam_constptr_t _param_sprite_colormap;
+  lev2::fxparam_constptr_t _param_sprite_instance_transform;
+  lev2::fxparam_constptr_t _param_sprite_instance_tint;
 };
 
 using prim_canvas_ptr_t = std::shared_ptr<PrimCanvas>;
