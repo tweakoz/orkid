@@ -2163,40 +2163,183 @@ void pyinit_ui(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   // PrimCanvas - GPU-accelerated canvas with SSBO-based primitives
   /////////////////////////////////////////////////////////////////////////////////
+
+  // QuadData - per-quad instance data
   auto quaddata_type = //
-      py::class_<ui::QuadData>(uimodule, "QuadData")
-          .def(py::init<>())
+      py::class_<ui::QuadData, ui::quaddata_ptr_t>(uimodule, "QuadData")
+          .def(py::init<>([]() { return std::make_shared<ui::QuadData>(); }))
           .def_readwrite("pos_size", &ui::QuadData::pos_size)
           .def_readwrite("uv_rect", &ui::QuadData::uv_rect)
           .def_readwrite("color", &ui::QuadData::color)
           .def_readwrite("extra", &ui::QuadData::extra)
           .def(
               "setPosition",
-              [](ui::QuadData& qd, float x, float y) {
-                qd.pos_size.x = x;
-                qd.pos_size.y = y;
+              [](ui::quaddata_ptr_t qd, float x, float y) {
+                qd->pos_size.x = x;
+                qd->pos_size.y = y;
               })
           .def(
               "setSize",
-              [](ui::QuadData& qd, float w, float h) {
-                qd.pos_size.z = w;
-                qd.pos_size.w = h;
+              [](ui::quaddata_ptr_t qd, float w, float h) {
+                qd->pos_size.z = w;
+                qd->pos_size.w = h;
               })
           .def(
               "setColor",
-              [](ui::QuadData& qd, fvec4 c) { qd.color = c; })
+              [](ui::quaddata_ptr_t qd, fvec4 c) { qd->color = c; })
           .def(
               "setRotation",
-              [](ui::QuadData& qd, float radians) { qd.extra.x = radians; })
+              [](ui::quaddata_ptr_t qd, float radians) { qd->extra.x = radians; })
           .def(
               "setCornerRadius",
-              [](ui::QuadData& qd, float radius) { qd.extra.y = radius; })
+              [](ui::quaddata_ptr_t qd, float radius) { qd->extra.y = radius; })
           .def(
               "setUV",
-              [](ui::QuadData& qd, float u0, float v0, float u1, float v1) {
-                qd.uv_rect = fvec4(u0, v0, u1, v1);
+              [](ui::quaddata_ptr_t qd, float u0, float v0, float u1, float v1) {
+                qd->uv_rect = fvec4(u0, v0, u1, v1);
               });
+  type_codec->registerStdCodec<ui::quaddata_ptr_t>(quaddata_type);
 
+  // Primitive - base class for all canvas primitives
+  auto primitive_type = //
+      py::class_<ui::Primitive, ui::primitive_ptr_t>(uimodule, "Primitive");
+  type_codec->registerStdCodec<ui::primitive_ptr_t>(primitive_type);
+
+  // QuadPrimitive - batch of quads sharing pipeline/texture
+  auto quadprimitive_type = //
+      py::class_<ui::QuadPrimitive, ui::Primitive, ui::quadprimitive_ptr_t>(uimodule, "QuadPrimitive")
+          .def(py::init<>([](fxpipeline_ptr_t pipeline, texture_ptr_t texture) {
+            return std::make_shared<ui::QuadPrimitive>(pipeline, texture);
+          }), py::arg("pipeline"), py::arg("texture") = nullptr)
+          .def_readonly("pipeline", &ui::QuadPrimitive::_pipeline)
+          .def_readonly("texture", &ui::QuadPrimitive::_texture)
+          .def_property_readonly("quadCount", [](ui::quadprimitive_ptr_t prim) { return prim->_quads.size(); })
+          .def(
+              "addQuad",
+              [](ui::quadprimitive_ptr_t prim, ui::quaddata_ptr_t qd) {
+                prim->_quads.push_back(qd);
+              })
+          .def(
+              "quad",
+              [](ui::quadprimitive_ptr_t prim, size_t index) -> ui::quaddata_ptr_t {
+                return prim->_quads[index];
+              })
+          .def(
+              "clearQuads",
+              [](ui::quadprimitive_ptr_t prim) {
+                prim->_quads.clear();
+              });
+  type_codec->registerStdCodec<ui::quadprimitive_ptr_t>(quadprimitive_type);
+
+  // VertexData - per-vertex data for triangle primitives
+  auto vertexdata_type = //
+      py::class_<ui::VertexData, ui::vertexdata_ptr_t>(uimodule, "VertexData")
+          .def(py::init<>([]() { return std::make_shared<ui::VertexData>(); }))
+          .def_readwrite("position", &ui::VertexData::position)
+          .def_readwrite("uv", &ui::VertexData::uv)
+          .def_readwrite("color", &ui::VertexData::color)
+          .def_readwrite("extra", &ui::VertexData::extra)
+          .def(
+              "setPosition",
+              [](ui::vertexdata_ptr_t vd, float x, float y) {
+                vd->position.x = x;
+                vd->position.y = y;
+              })
+          .def(
+              "setUV",
+              [](ui::vertexdata_ptr_t vd, float u, float v) {
+                vd->uv.x = u;
+                vd->uv.y = v;
+              })
+          .def(
+              "setColor",
+              [](ui::vertexdata_ptr_t vd, fvec4 c) { vd->color = c; });
+  type_codec->registerStdCodec<ui::vertexdata_ptr_t>(vertexdata_type);
+
+  // TriStripPrimitive - triangle strip
+  auto tristripprimitive_type = //
+      py::class_<ui::TriStripPrimitive, ui::Primitive, ui::tristripprimitive_ptr_t>(uimodule, "TriStripPrimitive")
+          .def(py::init<>([](fxpipeline_ptr_t pipeline, texture_ptr_t texture) {
+            return std::make_shared<ui::TriStripPrimitive>(pipeline, texture);
+          }), py::arg("pipeline"), py::arg("texture") = nullptr)
+          .def_readonly("pipeline", &ui::TriStripPrimitive::_pipeline)
+          .def_readonly("texture", &ui::TriStripPrimitive::_texture)
+          .def_property_readonly("vertexCount", [](ui::tristripprimitive_ptr_t prim) { return prim->_vertices.size(); })
+          .def(
+              "addVertex",
+              [](ui::tristripprimitive_ptr_t prim, ui::vertexdata_ptr_t vd) {
+                prim->_vertices.push_back(vd);
+              })
+          .def(
+              "vertex",
+              [](ui::tristripprimitive_ptr_t prim, size_t index) -> ui::vertexdata_ptr_t {
+                return prim->_vertices[index];
+              })
+          .def(
+              "clearVertices",
+              [](ui::tristripprimitive_ptr_t prim) {
+                prim->_vertices.clear();
+              });
+  type_codec->registerStdCodec<ui::tristripprimitive_ptr_t>(tristripprimitive_type);
+
+  // TriListPrimitive - triangle list
+  auto trilistprimitive_type = //
+      py::class_<ui::TriListPrimitive, ui::Primitive, ui::trilistprimitive_ptr_t>(uimodule, "TriListPrimitive")
+          .def(py::init<>([](fxpipeline_ptr_t pipeline, texture_ptr_t texture) {
+            return std::make_shared<ui::TriListPrimitive>(pipeline, texture);
+          }), py::arg("pipeline"), py::arg("texture") = nullptr)
+          .def_readonly("pipeline", &ui::TriListPrimitive::_pipeline)
+          .def_readonly("texture", &ui::TriListPrimitive::_texture)
+          .def_property_readonly("vertexCount", [](ui::trilistprimitive_ptr_t prim) { return prim->_vertices.size(); })
+          .def(
+              "addVertex",
+              [](ui::trilistprimitive_ptr_t prim, ui::vertexdata_ptr_t vd) {
+                prim->_vertices.push_back(vd);
+              })
+          .def(
+              "vertex",
+              [](ui::trilistprimitive_ptr_t prim, size_t index) -> ui::vertexdata_ptr_t {
+                return prim->_vertices[index];
+              })
+          .def(
+              "clearVertices",
+              [](ui::trilistprimitive_ptr_t prim) {
+                prim->_vertices.clear();
+              });
+  type_codec->registerStdCodec<ui::trilistprimitive_ptr_t>(trilistprimitive_type);
+
+  // TextItem - single text entry within a TextPrimitive
+  auto textitem_type = //
+      py::class_<ui::TextItem>(uimodule, "TextItem")
+          .def(py::init<>())
+          .def_readwrite("text", &ui::TextItem::text)
+          .def_readwrite("position", &ui::TextItem::position);
+
+  // TextPrimitive - collection of text sharing font/color
+  auto textprimitive_type = //
+      py::class_<ui::TextPrimitive, ui::Primitive, ui::textprimitive_ptr_t>(uimodule, "TextPrimitive")
+          .def(py::init<>([](font_ptr_t font, fvec4 color) {
+            return std::make_shared<ui::TextPrimitive>(font, color);
+          }), py::arg("font"), py::arg("color") = fvec4(1, 1, 1, 1))
+          .def_readonly("font", &ui::TextPrimitive::_font)
+          .def_readonly("color", &ui::TextPrimitive::_color)
+          .def_property_readonly("itemCount", [](ui::textprimitive_ptr_t prim) { return prim->_items.size(); })
+          .def(
+              "addItem",
+              [](ui::textprimitive_ptr_t prim, std::string text, fvec2 position) {
+                ui::TextItem item;
+                item.text = text;
+                item.position = position;
+                prim->_items.push_back(item);
+              })
+          .def(
+              "clearItems",
+              [](ui::textprimitive_ptr_t prim) {
+                prim->_items.clear();
+              });
+  type_codec->registerStdCodec<ui::textprimitive_ptr_t>(textprimitive_type);
+
+  // PrimCanvas - the widget itself
   auto primcanvas_type = //
       py::class_<ui::PrimCanvas, ui::Widget, ui::prim_canvas_ptr_t>(uimodule, "PrimCanvas")
           .def_static(
@@ -2216,66 +2359,17 @@ void pyinit_ui(py::module& module_lev2) {
                 return layoutitem.as_shared();
               })
           .def("clear", &ui::PrimCanvas::clear)
-          .def(
-              "addQuadPrimitive",
-              [](ui::prim_canvas_ptr_t canvas) -> size_t {
-                return canvas->addQuadPrimitive();
-              })
-          .def(
-              "addQuadPrimitiveTextured",
-              [](ui::prim_canvas_ptr_t canvas, texture_ptr_t texture) -> size_t {
-                return canvas->addQuadPrimitive(texture);
-              })
-          .def(
-              "addQuadPrimitiveWithPipeline",
-              [](ui::prim_canvas_ptr_t canvas, fxpipeline_ptr_t pipeline) -> size_t {
-                return canvas->addQuadPrimitiveWithPipeline(pipeline);
-              })
-          .def(
-              "addTextPrimitive",
-              [type_codec](ui::prim_canvas_ptr_t canvas, font_ptr_t font, std::string text, fvec2 pos, fvec4 color) -> size_t {
-                return canvas->addTextPrimitive(font, text, pos, color);
-              })
+          .def("addPrimitive", &ui::PrimCanvas::addPrimitive)
+          .def("primitive", &ui::PrimCanvas::primitive)
           .def("primitiveCount", &ui::PrimCanvas::primitiveCount)
-          .def("reserveQuads", &ui::PrimCanvas::reserveQuads)
-          .def(
-              "setQuads",
-              [](ui::prim_canvas_ptr_t canvas, size_t prim_index, py::list quad_list) {
-                std::vector<ui::QuadData> quads;
-                for (auto item : quad_list) {
-                  quads.push_back(item.cast<ui::QuadData>());
-                }
-                canvas->setQuads(prim_index, quads.data(), quads.size());
-              })
-          .def(
-              "getQuad",
-              [](ui::prim_canvas_ptr_t canvas, size_t prim_index, size_t quad_index) -> ui::QuadData {
-                auto* data = canvas->getQuadData(prim_index);
-                if (!data) {
-                  throw std::runtime_error("Invalid primitive index or not a quad primitive");
-                }
-                size_t count = canvas->getQuadCount(prim_index);
-                if (quad_index >= count) {
-                  throw std::runtime_error("Quad index out of range");
-                }
-                return data[quad_index];
-              })
-          .def(
-              "setQuad",
-              [](ui::prim_canvas_ptr_t canvas, size_t prim_index, size_t quad_index, ui::QuadData qd) {
-                auto* data = canvas->getQuadData(prim_index);
-                if (!data) {
-                  throw std::runtime_error("Invalid primitive index or not a quad primitive");
-                }
-                size_t count = canvas->getQuadCount(prim_index);
-                if (quad_index >= count) {
-                  throw std::runtime_error("Quad index out of range");
-                }
-                data[quad_index] = qd;
-                canvas->markDirty();
-              })
-          .def("getQuadCount", &ui::PrimCanvas::getQuadCount)
           .def("markDirty", &ui::PrimCanvas::markDirty)
+          .def("gpuInit", [](ui::prim_canvas_ptr_t canvas, ctx_t ctx) {
+            canvas->gpuInit(ctx.get());
+          })
+          .def_property_readonly("pipelineSolid", &ui::PrimCanvas::pipelineSolid)
+          .def_property_readonly("pipelineTextured", &ui::PrimCanvas::pipelineTextured)
+          .def_property_readonly("pipelineVtxSolid", &ui::PrimCanvas::pipelineVtxSolid)
+          .def_property_readonly("pipelineVtxTextured", &ui::PrimCanvas::pipelineVtxTextured)
           .def_property(
               "bg_color",
               [](ui::prim_canvas_ptr_t canvas) -> fvec4 { return canvas->_bg_color; },

@@ -239,6 +239,13 @@ void pyinit_gfx_material(py::module& module_lev2) {
             [](fxpipeline_ptr_t pipeline, std::string name) { //
               pipeline->_debugName = name; //
             })
+            .def_property("rasterstate",                                    //
+              [](fxpipeline_ptr_t pipeline) -> rasterstate_ptr_t  { //
+                return pipeline->_rasterstate;
+              },
+              [](fxpipeline_ptr_t pipeline, rasterstate_ptr_t rstate) { //
+                pipeline->_rasterstate = rstate;
+              })
           .def(
               "bindUniBlock",                                                                    //
               [type_codec](fxpipeline_ptr_t pipeline, //

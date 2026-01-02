@@ -28,3 +28,25 @@ technique tek_canvas_tex {
     state_block     = sb_canvas_blend;
   }
 }
+
+///////////////////////////////////////////////////////////////
+// Vertex-based techniques (tristrip, trilist)
+///////////////////////////////////////////////////////////////
+
+technique tek_canvas_vtx_solid {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_canvas_vertex;
+    fragment_shader = fs_canvas_solid;
+    state_block     = sb_canvas_blend;
+  }
+}
+
+technique tek_canvas_vtx_tex {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_canvas_vertex;
+    fragment_shader = fs_canvas_tex;
+    state_block     = sb_canvas_blend;
+  }
+}

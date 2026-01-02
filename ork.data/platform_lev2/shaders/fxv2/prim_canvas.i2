@@ -146,6 +146,32 @@ vertex_shader vs_canvas_quad : vface_canvas_quad {
 }
 
 ///////////////////////////////////////////////////////////////
+// Vertex shader - reads vertex data directly from SSBO
+// Each vertex is 4 vec4s (same layout as QuadData):
+//   position: xy = position, zw = reserved
+//   uv:       xy = uv, zw = reserved
+//   color:    rgba
+//   extra:    reserved
+///////////////////////////////////////////////////////////////
+vertex_shader vs_canvas_vertex : vface_canvas_quad {
+  // Read vertex data from SSBO (4 vec4s per vertex)
+  int base = int(ssbo_base + uint(gl_VertexIndex)) * 4;
+  vec4 position = quad_data[base + 0];
+  vec4 uv       = quad_data[base + 1];
+  vec4 color    = quad_data[base + 2];
+
+  // Convert to NDC (canvas uses top-left origin)
+  vec2 ndc = vec2(
+    (position.x / canvas_size.x) * 2.0 - 1.0,
+    1.0 - (position.y / canvas_size.y) * 2.0
+  );
+
+  gl_Position = vec4(ndc, 0.0, 1.0);
+  frg_uv = uv.xy;
+  frg_color = color;
+}
+
+///////////////////////////////////////////////////////////////
 // Fragment shader - solid color (uses quad color)
 ///////////////////////////////////////////////////////////////
 fragment_shader fs_canvas_solid : fface_canvas_solid {

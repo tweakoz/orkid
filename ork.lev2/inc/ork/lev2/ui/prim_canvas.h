@@ -12,9 +12,10 @@
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/gfx/shadman.h>
 #include <vector>
-#include <variant>
 
 namespace ork::ui {
+
+struct PrimCanvas;
 
 ////////////////////////////////////////////////////////////////////
 // QuadData: Per-quad instance data stored in SSBO
@@ -33,34 +34,115 @@ struct QuadData {
       , color(1, 1, 1, 1)
       , extra(0, 0, 0, 0) {}
 };
+using quaddata_ptr_t = std::shared_ptr<QuadData>;
 
 ////////////////////////////////////////////////////////////////////
-// QuadPrimitive: A batch of quads sharing a pipeline
+// VertexData: Per-vertex data for triangle primitives
+// Must match GLSL layout (4 vec4s = 64 bytes per vertex)
 ////////////////////////////////////////////////////////////////////
 
-struct QuadPrimitive {
-  lev2::fxpipeline_ptr_t pipeline;  // optional custom pipeline (nullptr = use internal)
-  lev2::texture_ptr_t texture;      // optional texture
-  uint32_t ssbo_offset = 0;         // Offset into the SSBO (in QuadData units)
-  uint32_t quad_count = 0;          // Number of quads in this primitive
+struct VertexData {
+  fvec4 position;    // xy = position, zw = reserved
+  fvec4 uv;          // xy = uv, zw = reserved
+  fvec4 color;       // rgba
+  fvec4 extra;       // reserved
+
+  VertexData()
+      : position(0, 0, 0, 1)
+      , uv(0, 0, 0, 0)
+      , color(1, 1, 1, 1)
+      , extra(0, 0, 0, 0) {}
 };
+using vertexdata_ptr_t = std::shared_ptr<VertexData>;
 
 ////////////////////////////////////////////////////////////////////
-// TextPrimitive: Text rendered with FontMan
+// Primitive: Base class for renderable primitives
 ////////////////////////////////////////////////////////////////////
 
-struct TextPrimitive {
-  lev2::font_ptr_t font;
+struct Primitive {
+  virtual ~Primitive() = default;
+  virtual void draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd) = 0;
+  virtual size_t ssboQuadCount() const { return 0; }
+  virtual void gatherQuadData(std::vector<QuadData>& out) const {}
+
+  size_t _ssbo_offset = 0;  // Set by PrimCanvas during SSBO layout
+};
+using primitive_ptr_t = std::shared_ptr<Primitive>;
+
+////////////////////////////////////////////////////////////////////
+// QuadPrimitive: A batch of quads sharing pipeline/texture state
+////////////////////////////////////////////////////////////////////
+
+struct QuadPrimitive : Primitive {
+  QuadPrimitive(lev2::fxpipeline_ptr_t pipeline, lev2::texture_ptr_t texture = nullptr);
+
+  lev2::fxpipeline_ptr_t _pipeline;
+  lev2::texture_ptr_t _texture;
+  std::vector<quaddata_ptr_t> _quads;
+
+  void draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd) override;
+  size_t ssboQuadCount() const override { return _quads.size(); }
+  void gatherQuadData(std::vector<QuadData>& out) const override;
+};
+using quadprimitive_ptr_t = std::shared_ptr<QuadPrimitive>;
+
+////////////////////////////////////////////////////////////////////
+// TriStripPrimitive: Triangle strip sharing pipeline/texture state
+////////////////////////////////////////////////////////////////////
+
+struct TriStripPrimitive : Primitive {
+  TriStripPrimitive(lev2::fxpipeline_ptr_t pipeline, lev2::texture_ptr_t texture = nullptr);
+
+  lev2::fxpipeline_ptr_t _pipeline;
+  lev2::texture_ptr_t _texture;
+  std::vector<vertexdata_ptr_t> _vertices;
+
+  void draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd) override;
+  size_t ssboQuadCount() const override { return _vertices.size(); }
+  void gatherQuadData(std::vector<QuadData>& out) const override;
+};
+using tristripprimitive_ptr_t = std::shared_ptr<TriStripPrimitive>;
+
+////////////////////////////////////////////////////////////////////
+// TriListPrimitive: Triangle list sharing pipeline/texture state
+////////////////////////////////////////////////////////////////////
+
+struct TriListPrimitive : Primitive {
+  TriListPrimitive(lev2::fxpipeline_ptr_t pipeline, lev2::texture_ptr_t texture = nullptr);
+
+  lev2::fxpipeline_ptr_t _pipeline;
+  lev2::texture_ptr_t _texture;
+  std::vector<vertexdata_ptr_t> _vertices;
+
+  void draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd) override;
+  size_t ssboQuadCount() const override { return _vertices.size(); }
+  void gatherQuadData(std::vector<QuadData>& out) const override;
+};
+using trilistprimitive_ptr_t = std::shared_ptr<TriListPrimitive>;
+
+////////////////////////////////////////////////////////////////////
+// TextItem: Single text entry within a TextPrimitive
+////////////////////////////////////////////////////////////////////
+
+struct TextItem {
   std::string text;
   fvec2 position;
-  fvec4 color = fvec4(1, 1, 1, 1);
 };
 
 ////////////////////////////////////////////////////////////////////
-// Primitive: Either quads or text
+// TextPrimitive: Text rendered with FontMan (collection sharing state)
 ////////////////////////////////////////////////////////////////////
 
-using Primitive = std::variant<QuadPrimitive, TextPrimitive>;
+struct TextPrimitive : Primitive {
+  TextPrimitive(lev2::font_ptr_t font, fvec4 color = fvec4(1, 1, 1, 1));
+
+  lev2::font_ptr_t _font;
+  fvec4 _color;
+  std::vector<TextItem> _items;
+
+  void draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd) override;
+};
+using textprimitive_ptr_t = std::shared_ptr<TextPrimitive>;
 
 ////////////////////////////////////////////////////////////////////
 // PrimCanvas: GPU-accelerated canvas widget
@@ -78,56 +160,12 @@ struct PrimCanvas : public Widget {
   //////////////////////////////////////////////////////////////
 
   void clear();
-
-  // Add a quad primitive (uses internal pipeline), returns primitive index
-  size_t addQuadPrimitive();
-
-  // Add a quad primitive with optional texture, returns primitive index
-  size_t addQuadPrimitive(lev2::texture_ptr_t texture);
-
-  // Add a quad primitive with custom pipeline (advanced), returns primitive index
-  size_t addQuadPrimitiveWithPipeline(lev2::fxpipeline_ptr_t pipeline);
-
-  // Add a text primitive, returns primitive index
-  size_t addTextPrimitive(
-      lev2::font_ptr_t font,
-      const std::string& text,
-      fvec2 position,
-      fvec4 color = fvec4(1, 1, 1, 1));
-
-  // Get primitive count
+  void addPrimitive(primitive_ptr_t prim);
   size_t primitiveCount() const { return _primitives.size(); }
-
-  //////////////////////////////////////////////////////////////
-  // Quad data management
-  //////////////////////////////////////////////////////////////
-
-  // Reserve space for quads in a primitive (call before setQuads)
-  void reserveQuads(size_t prim_index, size_t count);
-
-  // Set quad data for a primitive (copies from provided array)
-  void setQuads(size_t prim_index, const QuadData* data, size_t count);
-
-  // Get pointer to quad data for direct manipulation
-  // Returns nullptr if not a quad primitive or index out of range
-  QuadData* getQuadData(size_t prim_index);
-  const QuadData* getQuadData(size_t prim_index) const;
-
-  // Get quad count for a primitive
-  size_t getQuadCount(size_t prim_index) const;
+  primitive_ptr_t primitive(size_t index) const;
 
   // Mark SSBO as dirty (needs upload to GPU)
   void markDirty() { _ssbo_dirty = true; }
-
-  //////////////////////////////////////////////////////////////
-  // Direct SSBO access for Python/numpy mapping
-  //////////////////////////////////////////////////////////////
-
-  // Get raw pointer to SSBO data (entire buffer)
-  void* ssboData() { return _ssbo_cpu_data.data(); }
-  const void* ssboData() const { return _ssbo_cpu_data.data(); }
-  size_t ssboSize() const { return _ssbo_cpu_data.size() * sizeof(QuadData); }
-  size_t ssboCapacity() const { return _ssbo_cpu_data.capacity(); }
 
   //////////////////////////////////////////////////////////////
   // Event callbacks (set from Python)
@@ -142,17 +180,29 @@ struct PrimCanvas : public Widget {
   fvec4 _bg_color = fvec4(0.1f, 0.1f, 0.1f, 1.0f);
   bool _draw_background = true;
 
+  //////////////////////////////////////////////////////////////
+  // GPU initialization and pipeline access
+  //////////////////////////////////////////////////////////////
+
+  void gpuInit(lev2::Context* ctx);
+  lev2::fxpipeline_ptr_t pipelineSolid() const { return _pipeline_solid; }
+  lev2::fxpipeline_ptr_t pipelineTextured() const { return _pipeline_textured; }
+  lev2::fxpipeline_ptr_t pipelineVtxSolid() const { return _pipeline_vtx_solid; }
+  lev2::fxpipeline_ptr_t pipelineVtxTextured() const { return _pipeline_vtx_textured; }
+  lev2::FxShaderStorageBuffer* ssboGpu() const { return _ssbo_gpu; }
+  lev2::FxShaderStorageBlock* ssboBlock() const { return _ssbo_block; }
+  lev2::fxparam_constptr_t paramCanvasSize() const { return _param_canvas_size; }
+  lev2::fxparam_constptr_t paramSsboBase() const { return _param_ssbo_base; }
+  lev2::fxparam_constptr_t paramColorMap() const { return _param_colormap; }
+
 protected:
   void DoDraw(drawevent_constptr_t drwev) override;
   HandlerResult DoOnUiEvent(event_constptr_t ev) override;
 
 private:
-  void _gpuInit(lev2::Context* ctx);
-  void _uploadSsbo(lev2::Context* ctx);
-  void _drawQuadPrimitive(lev2::Context* ctx, lev2::rcfd_ptr_t rcfd, const QuadPrimitive& prim);
-  void _drawTextPrimitive(lev2::Context* ctx, const TextPrimitive& prim);
+  void _rebuildSsbo(lev2::Context* ctx);
 
-  std::vector<Primitive> _primitives;
+  std::vector<primitive_ptr_t> _primitives;
   std::vector<QuadData> _ssbo_cpu_data;  // CPU-side SSBO data
 
   // GPU resources
@@ -165,6 +215,8 @@ private:
   lev2::freestyle_mtl_ptr_t _material;
   lev2::fxpipeline_ptr_t _pipeline_solid;
   lev2::fxpipeline_ptr_t _pipeline_textured;
+  lev2::fxpipeline_ptr_t _pipeline_vtx_solid;
+  lev2::fxpipeline_ptr_t _pipeline_vtx_textured;
   lev2::fxparam_constptr_t _param_canvas_size;
   lev2::fxparam_constptr_t _param_ssbo_base;
   lev2::fxparam_constptr_t _param_colormap;

@@ -46,8 +46,11 @@ class PrimCanvasTest:
 
     # Animation state
     self.time = 0.0
-    self.quad_count = 256
-    self.quad_prim_index = None
+    self.quad_count = 200
+
+    # Create primitives (will be populated in onGpuInit)
+    self.quad_prim = None
+    self.quad_data = []
 
     # Signal handling
     def onCtrlC(signum, frame):
@@ -57,25 +60,36 @@ class PrimCanvasTest:
     signal.signal(signal.SIGINT, onCtrlC)
 
   def onGpuInit(self, ctx):
-    # Add a quad primitive using internal shader (no pipeline needed!)
-    self.quad_prim_index = self.canvas.addQuadPrimitive()
-    self.canvas.reserveQuads(self.quad_prim_index, self.quad_count)
+    # Initialize canvas GPU resources (creates pipelines)
+    self.canvas.gpuInit(ctx)
 
-    # Initialize quads
+    # Create a QuadPrimitive with explicit pipeline
+    pipeline = self.canvas.pipelineSolid
+    pipeline.rasterstate.setBlendingMacro(tokens.ADDITIVE)
+    self.quad_prim = lev2.ui.QuadPrimitive(pipeline=pipeline)
+
+    # Pre-create all QuadData objects
+    for i in range(self.quad_count):
+      qd = lev2.ui.QuadData()
+      self.quad_data.append(qd)
+      self.quad_prim.addQuad(qd)
+
+    # Add primitive to canvas
+    self.canvas.addPrimitive(self.quad_prim)
+
+    # Initialize quad positions
     self._updateQuads(0.0)
 
   def _updateQuads(self, time):
     """Update quad positions with animation"""
-    if self.quad_prim_index is None:
+    if not self.quad_prim:
       return
-
-    quads = []
 
     canvas_w = self.canvas.width
     canvas_h = self.canvas.height
 
     for i in range(self.quad_count):
-      qd = lev2.ui.QuadData()
+      qd = self.quad_data[i]
 
       # Circular motion
       angle = (i / self.quad_count) * math.pi * 2 + time
@@ -97,9 +111,8 @@ class PrimCanvasTest:
       # Rotation
       qd.setRotation(time + i * 0.3)
 
-      quads.append(qd)
-
-    self.canvas.setQuads(self.quad_prim_index, quads)
+    # Mark canvas dirty so SSBO gets rebuilt
+    self.canvas.markDirty()
 
   def _hsv_to_rgb(self, h, s, v):
     """Simple HSV to RGB conversion"""
