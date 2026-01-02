@@ -31,6 +31,7 @@
 #include <ork/lev2/ui/logger_ui_backend.h>
 #include <ork/lev2/ui/ged/ged_surface.h>
 #include <ork/lev2/ui/popups.inl>
+#include <ork/lev2/ui/prim_canvas.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
 #include <ork/lev2/gfx/image.h>
 #include <ork/util/logger.h>
@@ -406,6 +407,16 @@ void pyinit_ui(py::module& module_lev2) {
               "uservars",
               [](uiwidget_ptr_t widget) -> varmap::varmap_ptr_t { //
                 return widget->_uservars;
+              })
+          .def_property_readonly(
+              "width",
+              [](uiwidget_ptr_t widget) -> int { //
+                return widget->width();
+              })
+          .def_property_readonly(
+              "height",
+              [](uiwidget_ptr_t widget) -> int { //
+                return widget->height();
               });
   type_codec->registerStdCodec<uiwidget_ptr_t>(widget_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -2149,6 +2160,147 @@ void pyinit_ui(py::module& module_lev2) {
                 group->_normalize_series = normalize;
               });
   type_codec->registerStdCodec<ui::loggergroup_ptr_t>(loggergroup_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // PrimCanvas - GPU-accelerated canvas with SSBO-based primitives
+  /////////////////////////////////////////////////////////////////////////////////
+  auto quaddata_type = //
+      py::class_<ui::QuadData>(uimodule, "QuadData")
+          .def(py::init<>())
+          .def_readwrite("pos_size", &ui::QuadData::pos_size)
+          .def_readwrite("uv_rect", &ui::QuadData::uv_rect)
+          .def_readwrite("color", &ui::QuadData::color)
+          .def_readwrite("extra", &ui::QuadData::extra)
+          .def(
+              "setPosition",
+              [](ui::QuadData& qd, float x, float y) {
+                qd.pos_size.x = x;
+                qd.pos_size.y = y;
+              })
+          .def(
+              "setSize",
+              [](ui::QuadData& qd, float w, float h) {
+                qd.pos_size.z = w;
+                qd.pos_size.w = h;
+              })
+          .def(
+              "setColor",
+              [](ui::QuadData& qd, fvec4 c) { qd.color = c; })
+          .def(
+              "setRotation",
+              [](ui::QuadData& qd, float radians) { qd.extra.x = radians; })
+          .def(
+              "setCornerRadius",
+              [](ui::QuadData& qd, float radius) { qd.extra.y = radius; })
+          .def(
+              "setUV",
+              [](ui::QuadData& qd, float u0, float v0, float u1, float v1) {
+                qd.uv_rect = fvec4(u0, v0, u1, v1);
+              });
+
+  auto primcanvas_type = //
+      py::class_<ui::PrimCanvas, ui::Widget, ui::prim_canvas_ptr_t>(uimodule, "PrimCanvas")
+          .def_static(
+              "wfactory",
+              [type_codec](py::list py_args) -> ui::prim_canvas_ptr_t {
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name = decoded_args[0].get<std::string>();
+                auto canvas = std::make_shared<ui::PrimCanvas>(name);
+                return canvas;
+              })
+          .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t {
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name = decoded_args[0].get<std::string>();
+                auto layoutitem = lg->makeChild<ui::PrimCanvas>(name);
+                return layoutitem.as_shared();
+              })
+          .def("clear", &ui::PrimCanvas::clear)
+          .def(
+              "addQuadPrimitive",
+              [](ui::prim_canvas_ptr_t canvas) -> size_t {
+                return canvas->addQuadPrimitive();
+              })
+          .def(
+              "addQuadPrimitiveTextured",
+              [](ui::prim_canvas_ptr_t canvas, texture_ptr_t texture) -> size_t {
+                return canvas->addQuadPrimitive(texture);
+              })
+          .def(
+              "addQuadPrimitiveWithPipeline",
+              [](ui::prim_canvas_ptr_t canvas, fxpipeline_ptr_t pipeline) -> size_t {
+                return canvas->addQuadPrimitiveWithPipeline(pipeline);
+              })
+          .def(
+              "addTextPrimitive",
+              [type_codec](ui::prim_canvas_ptr_t canvas, font_ptr_t font, std::string text, fvec2 pos, fvec4 color) -> size_t {
+                return canvas->addTextPrimitive(font, text, pos, color);
+              })
+          .def("primitiveCount", &ui::PrimCanvas::primitiveCount)
+          .def("reserveQuads", &ui::PrimCanvas::reserveQuads)
+          .def(
+              "setQuads",
+              [](ui::prim_canvas_ptr_t canvas, size_t prim_index, py::list quad_list) {
+                std::vector<ui::QuadData> quads;
+                for (auto item : quad_list) {
+                  quads.push_back(item.cast<ui::QuadData>());
+                }
+                canvas->setQuads(prim_index, quads.data(), quads.size());
+              })
+          .def(
+              "getQuad",
+              [](ui::prim_canvas_ptr_t canvas, size_t prim_index, size_t quad_index) -> ui::QuadData {
+                auto* data = canvas->getQuadData(prim_index);
+                if (!data) {
+                  throw std::runtime_error("Invalid primitive index or not a quad primitive");
+                }
+                size_t count = canvas->getQuadCount(prim_index);
+                if (quad_index >= count) {
+                  throw std::runtime_error("Quad index out of range");
+                }
+                return data[quad_index];
+              })
+          .def(
+              "setQuad",
+              [](ui::prim_canvas_ptr_t canvas, size_t prim_index, size_t quad_index, ui::QuadData qd) {
+                auto* data = canvas->getQuadData(prim_index);
+                if (!data) {
+                  throw std::runtime_error("Invalid primitive index or not a quad primitive");
+                }
+                size_t count = canvas->getQuadCount(prim_index);
+                if (quad_index >= count) {
+                  throw std::runtime_error("Quad index out of range");
+                }
+                data[quad_index] = qd;
+                canvas->markDirty();
+              })
+          .def("getQuadCount", &ui::PrimCanvas::getQuadCount)
+          .def("markDirty", &ui::PrimCanvas::markDirty)
+          .def_property(
+              "bg_color",
+              [](ui::prim_canvas_ptr_t canvas) -> fvec4 { return canvas->_bg_color; },
+              [](ui::prim_canvas_ptr_t canvas, fvec4 c) { canvas->_bg_color = c; })
+          .def_property(
+              "draw_background",
+              [](ui::prim_canvas_ptr_t canvas) -> bool { return canvas->_draw_background; },
+              [](ui::prim_canvas_ptr_t canvas, bool b) { canvas->_draw_background = b; })
+          .def_property(
+              "onUiEvent",
+              [](ui::prim_canvas_ptr_t canvas) -> py::object { return py::none(); },
+              [](ui::prim_canvas_ptr_t canvas, py::object callback) {
+                if (not callback.is_none()) {
+                  auto pycb = std::make_shared<py::object>(callback);
+                  canvas->_onUiEvent = [pycb](ui::event_constptr_t ev) -> ui::HandlerResult {
+                    py::gil_scoped_acquire acquire_gil;
+                    py::object result = (*pycb)(ev);
+                    if (py::isinstance<ui::HandlerResult>(result)) {
+                      return result.cast<ui::HandlerResult>();
+                    }
+                    return ui::HandlerResult();
+                  };
+                }
+              });
+  type_codec->registerStdCodec<ui::prim_canvas_ptr_t>(primcanvas_type);
   /////////////////////////////////////////////////////////////////////////////////
   pyinit_ui_layout(uimodule);
   pyinit_ui_ged(uimodule);

@@ -1,0 +1,30 @@
+///////////////////////////////////////////////////////////////
+// PrimCanvas shader - GPU-accelerated canvas widget
+///////////////////////////////////////////////////////////////
+
+fxconfig fxcfg_default {
+  glsl_version = "450";
+  import "prim_canvas.i2";
+}
+
+///////////////////////////////////////////////////////////////
+// Techniques
+///////////////////////////////////////////////////////////////
+
+technique tek_canvas_solid {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_canvas_quad;
+    fragment_shader = fs_canvas_solid;
+    state_block     = sb_canvas_blend;
+  }
+}
+
+technique tek_canvas_tex {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_canvas_quad;
+    fragment_shader = fs_canvas_tex;
+    state_block     = sb_canvas_blend;
+  }
+}

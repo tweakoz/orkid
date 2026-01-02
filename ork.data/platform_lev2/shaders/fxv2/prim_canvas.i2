@@ -1,0 +1,161 @@
+///////////////////////////////////////////////////////////////
+// PrimCanvas SSBO-based quad rendering
+// Vertex shader generates quads using gl_VertexIndex
+///////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////
+// QuadData structure in SSBO
+// Must match C++ QuadData struct layout exactly
+// Each quad is 4 vec4s (64 bytes):
+//   pos_size: xy = position (top-left), zw = size (width, height)
+//   uv_rect:  xy = uv_min, zw = uv_max
+//   color:    rgba
+//   extra:    x = rotation (radians), y = corner_radius, zw = reserved
+///////////////////////////////////////////////////////////////
+storage_interface storage_quads (descriptor_set 0) {
+  buffer layout(std430) QuadDataBlock {
+    vec4 quad_data[262144];  // Array of vec4s, 4 per quad (supports up to 65536 quads)
+  };
+}
+
+///////////////////////////////////////////////////////////////
+// Uniforms for canvas rendering
+///////////////////////////////////////////////////////////////
+uniform_block ublk_canvas (descriptor_set 0) {
+  mat4 MatMVP;
+  vec2 canvas_size;   // Canvas width, height in pixels
+  uint ssbo_base;     // Base offset into SSBO for this primitive (in quads)
+}
+
+///////////////////////////////////////////////////////////////
+// State block for alpha blending
+///////////////////////////////////////////////////////////////
+state_block sb_canvas_blend : default {
+  BlendMode = ALPHA;
+  DepthTest = OFF;
+  DepthMask = OFF;
+  CullTest = OFF;
+}
+
+state_block sb_canvas_solid : default {
+  BlendMode = OFF;
+  DepthTest = OFF;
+  DepthMask = OFF;
+  CullTest = OFF;
+}
+
+///////////////////////////////////////////////////////////////
+// Vertex interface for SSBO-based quad rendering
+///////////////////////////////////////////////////////////////
+vertex_interface vface_canvas_quad
+  : ublk_canvas
+  : storage_quads {
+  outputs {
+    vec4 frg_color;
+    vec2 frg_uv;
+  }
+}
+
+///////////////////////////////////////////////////////////////
+// Fragment interface - solid color
+///////////////////////////////////////////////////////////////
+fragment_interface fface_canvas_solid {
+  inputs {
+    vec4 frg_color;
+    vec2 frg_uv;
+  }
+  outputs {
+    layout(location = 0) vec4 out_color;
+  }
+}
+
+///////////////////////////////////////////////////////////////
+// Fragment interface - textured
+///////////////////////////////////////////////////////////////
+sampler_set sset_canvas_tex (descriptor_set 0) {
+  sampler2D ColorMap;
+}
+
+fragment_interface fface_canvas_tex : sset_canvas_tex {
+  inputs {
+    vec4 frg_color;
+    vec2 frg_uv;
+  }
+  outputs {
+    layout(location = 0) vec4 out_color;
+  }
+}
+
+///////////////////////////////////////////////////////////////
+// Vertex shader - generates screen-space quads from SSBO data
+///////////////////////////////////////////////////////////////
+vertex_shader vs_canvas_quad : vface_canvas_quad {
+  // 6 vertices per quad (2 triangles)
+  int quadIdx = gl_VertexIndex / 6;
+  int cornerIdx = gl_VertexIndex % 6;
+
+  // Read quad data from SSBO (4 vec4s per quad)
+  int base = int(ssbo_base + uint(quadIdx)) * 4;
+  vec4 pos_size = quad_data[base + 0];  // xy = position, zw = size
+  vec4 uv_rect  = quad_data[base + 1];  // xy = uv_min, zw = uv_max
+  vec4 color    = quad_data[base + 2];  // rgba
+  vec4 extra    = quad_data[base + 3];  // x = rotation, y = corner_radius
+
+  vec2 pos = pos_size.xy;
+  vec2 size = pos_size.zw;
+  float rotation = extra.x;
+
+  // Corner offsets for 2 triangles (6 vertices)
+  // Triangle 1: 0,1,2  Triangle 2: 3,4,5
+  const vec2 corners[6] = vec2[6](
+    vec2(0.0, 0.0),  // 0: top-left
+    vec2(1.0, 0.0),  // 1: top-right
+    vec2(1.0, 1.0),  // 2: bottom-right
+    vec2(0.0, 0.0),  // 3: top-left
+    vec2(1.0, 1.0),  // 4: bottom-right
+    vec2(0.0, 1.0)   // 5: bottom-left
+  );
+
+  vec2 corner = corners[cornerIdx];
+
+  // Apply rotation around center
+  vec2 center = pos + size * 0.5;
+  vec2 offset = (corner - 0.5) * size;
+
+  float c = cos(rotation);
+  float s = sin(rotation);
+  vec2 rotated = vec2(
+    offset.x * c - offset.y * s,
+    offset.x * s + offset.y * c
+  );
+
+  vec2 worldPos = center + rotated;
+
+  // Convert to NDC (assuming orthographic UI projection)
+  // Canvas uses top-left origin, OpenGL uses bottom-left
+  vec2 ndc = vec2(
+    (worldPos.x / canvas_size.x) * 2.0 - 1.0,
+    1.0 - (worldPos.y / canvas_size.y) * 2.0
+  );
+
+  gl_Position = vec4(ndc, 0.0, 1.0);
+
+  // Interpolate UVs
+  frg_uv = mix(uv_rect.xy, uv_rect.zw, corner);
+  frg_color = color;
+}
+
+///////////////////////////////////////////////////////////////
+// Fragment shader - solid color (uses quad color)
+///////////////////////////////////////////////////////////////
+fragment_shader fs_canvas_solid : fface_canvas_solid {
+  out_color = frg_color;
+}
+
+///////////////////////////////////////////////////////////////
+// Fragment shader - textured with modulation
+///////////////////////////////////////////////////////////////
+fragment_shader fs_canvas_tex : fface_canvas_tex {
+  vec4 texc = texture(ColorMap, frg_uv);
+  out_color = texc * frg_color;
+}
