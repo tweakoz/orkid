@@ -62,6 +62,9 @@ class FlowFieldVisualizer:
   def onGpuInit(self, ctx):
     self.canvas.gpuInit(ctx)
 
+    # Create layer for arrows
+    self.main_layer = self.canvas.createLayer("main")
+
     # Create triangle list for arrows
     # Each arrow is 1 triangle = 3 vertices
     arrow_count = self.grid_cols * self.grid_rows
@@ -72,7 +75,7 @@ class FlowFieldVisualizer:
       self.arrow_vertices.append(vd)
       self.arrow_prim.addVertex(vd)
 
-    self.canvas.addPrimitive(self.arrow_prim)
+    self.main_layer.addPrimitive(self.arrow_prim)
     self._updateArrows(0.0)
 
   def _flow_field(self, x, y, time):

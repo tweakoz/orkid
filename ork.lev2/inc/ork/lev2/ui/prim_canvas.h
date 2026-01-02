@@ -198,8 +198,35 @@ struct TextPrimitive : Primitive {
 using textprimitive_ptr_t = std::shared_ptr<TextPrimitive>;
 
 ////////////////////////////////////////////////////////////////////
+// PrimCanvasLayer: A layer containing primitives
+// Layers are rendered in order, and can be enabled/disabled
+////////////////////////////////////////////////////////////////////
+
+struct PrimCanvasLayer;
+using primcanvaslayer_ptr_t = std::shared_ptr<PrimCanvasLayer>;
+
+struct PrimCanvasLayer {
+  PrimCanvasLayer(const std::string& name = "layer");
+
+  std::string _name;
+  bool _enabled = true;
+  std::vector<primitive_ptr_t> _primitives;
+
+  void clear();
+  void addPrimitive(primitive_ptr_t prim);
+  void removePrimitive(primitive_ptr_t prim);
+  size_t primitiveCount() const { return _primitives.size(); }
+  primitive_ptr_t primitive(size_t index) const;
+
+  // SSBO helpers
+  size_t ssboQuadCount() const;
+  void gatherQuadData(std::vector<QuadData>& out) const;
+};
+
+////////////////////////////////////////////////////////////////////
 // PrimCanvas: GPU-accelerated canvas widget
-// - Ordered list of primitives rendered painter's algorithm
+// - Ordered list of layers, each containing primitives
+// - Rendered in layer order (painter's algorithm)
 // - Quad data in SSBO, mappable from Python
 // - All input events routed to Python callbacks
 ////////////////////////////////////////////////////////////////////
@@ -209,13 +236,16 @@ struct PrimCanvas : public Widget {
   ~PrimCanvas();
 
   //////////////////////////////////////////////////////////////
-  // Primitive management
+  // Layer management
   //////////////////////////////////////////////////////////////
 
-  void clear();
-  void addPrimitive(primitive_ptr_t prim);
-  size_t primitiveCount() const { return _primitives.size(); }
-  primitive_ptr_t primitive(size_t index) const;
+  primcanvaslayer_ptr_t createLayer(const std::string& name = "layer");
+  void addLayer(primcanvaslayer_ptr_t layer);
+  void removeLayer(primcanvaslayer_ptr_t layer);
+  void clearLayers();
+  size_t layerCount() const { return _layers.size(); }
+  primcanvaslayer_ptr_t layer(size_t index) const;
+  primcanvaslayer_ptr_t layerByName(const std::string& name) const;
 
   // Mark SSBO as dirty (needs upload to GPU)
   void markDirty() { _ssbo_dirty = true; }
@@ -264,7 +294,7 @@ protected:
 private:
   void _rebuildSsbo(lev2::Context* ctx);
 
-  std::vector<primitive_ptr_t> _primitives;
+  std::vector<primcanvaslayer_ptr_t> _layers;
   std::vector<QuadData> _ssbo_cpu_data;  // CPU-side SSBO data
 
   // GPU resources

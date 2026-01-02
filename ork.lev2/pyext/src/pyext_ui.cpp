@@ -2382,6 +2382,19 @@ void pyinit_ui(py::module& module_lev2) {
               });
   type_codec->registerStdCodec<ui::textprimitive_ptr_t>(textprimitive_type);
 
+  // PrimCanvasLayer - a layer containing primitives
+  auto primcanvaslayer_type = //
+      py::class_<ui::PrimCanvasLayer, ui::primcanvaslayer_ptr_t>(uimodule, "PrimCanvasLayer")
+          .def(py::init<const std::string&>(), py::arg("name") = "layer")
+          .def_readwrite("name", &ui::PrimCanvasLayer::_name)
+          .def_readwrite("enabled", &ui::PrimCanvasLayer::_enabled)
+          .def("clear", &ui::PrimCanvasLayer::clear)
+          .def("addPrimitive", &ui::PrimCanvasLayer::addPrimitive)
+          .def("removePrimitive", &ui::PrimCanvasLayer::removePrimitive)
+          .def("primitive", &ui::PrimCanvasLayer::primitive)
+          .def("primitiveCount", &ui::PrimCanvasLayer::primitiveCount);
+  type_codec->registerStdCodec<ui::primcanvaslayer_ptr_t>(primcanvaslayer_type);
+
   // PrimCanvas - the widget itself
   auto primcanvas_type = //
       py::class_<ui::PrimCanvas, ui::Widget, ui::prim_canvas_ptr_t>(uimodule, "PrimCanvas")
@@ -2401,10 +2414,14 @@ void pyinit_ui(py::module& module_lev2) {
                 auto layoutitem = lg->makeChild<ui::PrimCanvas>(name);
                 return layoutitem.as_shared();
               })
-          .def("clear", &ui::PrimCanvas::clear)
-          .def("addPrimitive", &ui::PrimCanvas::addPrimitive)
-          .def("primitive", &ui::PrimCanvas::primitive)
-          .def("primitiveCount", &ui::PrimCanvas::primitiveCount)
+          // Layer management
+          .def("createLayer", &ui::PrimCanvas::createLayer, py::arg("name") = "layer")
+          .def("addLayer", &ui::PrimCanvas::addLayer)
+          .def("removeLayer", &ui::PrimCanvas::removeLayer)
+          .def("clearLayers", &ui::PrimCanvas::clearLayers)
+          .def("layer", &ui::PrimCanvas::layer)
+          .def("layerByName", &ui::PrimCanvas::layerByName)
+          .def("layerCount", &ui::PrimCanvas::layerCount)
           .def("markDirty", &ui::PrimCanvas::markDirty)
           .def("gpuInit", [](ui::prim_canvas_ptr_t canvas, ctx_t ctx) {
             canvas->gpuInit(ctx.get());

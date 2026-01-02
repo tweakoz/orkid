@@ -153,11 +153,11 @@ class SpaceInvaders:
     self.bullets = [{'x': 0, 'y': 0, 'active': False} for _ in range(3)]
     self.missiles = [{'x': 0, 'y': 0, 'active': False} for _ in range(5)]
 
-  def _make_quad_prim(self, pipeline, count):
+  def _make_quad_prim(self, layer, pipeline, count):
     prim = lev2.ui.QuadPrimitive(pipeline=pipeline)
     quads = [lev2.ui.QuadData() for _ in range(count)]
     for q in quads: prim.addQuad(q)
-    self.canvas.addPrimitive(prim)
+    layer.addPrimitive(prim)
     return quads
 
   def onGpuInit(self, ctx):
@@ -165,18 +165,22 @@ class SpaceInvaders:
     self.font = lev2.FontManager.fontForId("i18")
     self.font_large = lev2.FontManager.fontForId("i32")
 
+    # Create layers
+    self.game_layer = self.canvas.createLayer("game")
+    self.ui_layer = self.canvas.createLayer("ui")
+
     # Calculate max pixels needed
     max_inv_px = max(max(len(f[0][0]), len(f[1][0])) for f in self.sprite_frames)
     total_px = self.COLS * self.ROWS * max_inv_px + len(self.player_sprite[0])
 
-    self.pixel_quads = self._make_quad_prim(self.canvas.pipelineSolid, total_px)
-    self.bullet_quads = self._make_quad_prim(self.canvas.pipelineSolid, 3)
-    self.missile_quads = self._make_quad_prim(self.canvas.pipelineSolid, 5)
+    self.pixel_quads = self._make_quad_prim(self.game_layer, self.canvas.pipelineSolid, total_px)
+    self.bullet_quads = self._make_quad_prim(self.game_layer, self.canvas.pipelineSolid, 3)
+    self.missile_quads = self._make_quad_prim(self.game_layer, self.canvas.pipelineSolid, 5)
 
     self.score_prim = lev2.ui.TextPrimitive(font=self.font, color=vec4(0.2, 1, 0.2, 1))
-    self.canvas.addPrimitive(self.score_prim)
+    self.ui_layer.addPrimitive(self.score_prim)
     self.msg_prim = lev2.ui.TextPrimitive(font=self.font_large, color=vec4(1, 0.2, 0.2, 1))
-    self.canvas.addPrimitive(self.msg_prim)
+    self.ui_layer.addPrimitive(self.msg_prim)
     self._render()
 
   def _fire(self):

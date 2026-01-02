@@ -63,6 +63,9 @@ class PrimCanvasTest:
     # Initialize canvas GPU resources (creates pipelines)
     self.canvas.gpuInit(ctx)
 
+    # Create layer for quads
+    self.main_layer = self.canvas.createLayer("main")
+
     # Create a QuadPrimitive with explicit pipeline
     pipeline = self.canvas.pipelineSolid
     pipeline.rasterstate.setBlendingMacro(tokens.ADDITIVE)
@@ -74,8 +77,8 @@ class PrimCanvasTest:
       self.quad_data.append(qd)
       self.quad_prim.addQuad(qd)
 
-    # Add primitive to canvas
-    self.canvas.addPrimitive(self.quad_prim)
+    # Add primitive to layer
+    self.main_layer.addPrimitive(self.quad_prim)
 
     # Initialize quad positions
     self._updateQuads(0.0)

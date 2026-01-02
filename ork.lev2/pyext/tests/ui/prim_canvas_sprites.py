@@ -177,6 +177,11 @@ class SpriteTortureTest:
     self.canvas.gpuInit(ctx)
     self.font = lev2.FontManager.fontForId("i14")
 
+    # Create layers
+    self.templates_layer = self.canvas.createLayer("templates")  # For SSBO allocation
+    self.sprites_layer = self.canvas.createLayer("sprites")
+    self.ui_layer = self.canvas.createLayer("ui")
+
     # Create sprite templates (2 frames each for animation)
     self.sprite_templates = {}
     for stype in self.SPRITE_TYPES:
@@ -185,10 +190,10 @@ class SpriteTortureTest:
         self._create_sprite(SPRITES[f'{stype}2']),
       ]
 
-    # Add all sprite templates to canvas for SSBO allocation
+    # Add all sprite templates to templates layer for SSBO allocation
     for stype, frames in self.sprite_templates.items():
       for sprite in frames:
-        self.canvas.addPrimitive(sprite)
+        self.templates_layer.addPrimitive(sprite)
 
     # Create sprite instances with random properties
     self.instances = []
@@ -220,11 +225,11 @@ class SpriteTortureTest:
       }
 
       self.instances.append(data)
-      self.canvas.addPrimitive(inst)
+      self.sprites_layer.addPrimitive(inst)
 
     # Text for stats
     self.stats_prim = lev2.ui.TextPrimitive(font=self.font, color=vec4(1, 1, 1, 1))
-    self.canvas.addPrimitive(self.stats_prim)
+    self.ui_layer.addPrimitive(self.stats_prim)
 
     self._update_sprites(0)
 

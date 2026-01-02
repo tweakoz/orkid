@@ -59,6 +59,9 @@ class WaveformVisualizer:
   def onGpuInit(self, ctx):
     self.canvas.gpuInit(ctx)
 
+    # Create layer for waveform
+    self.main_layer = self.canvas.createLayer("main")
+
     # Create triangle strip for waveform ribbon
     # Each sample point needs 2 vertices (top and bottom of ribbon)
     self.wave_prim = lev2.ui.TriStripPrimitive(pipeline=self.canvas.pipelineVtxSolid)
@@ -69,7 +72,7 @@ class WaveformVisualizer:
       self.wave_vertices.append(vd)
       self.wave_prim.addVertex(vd)
 
-    self.canvas.addPrimitive(self.wave_prim)
+    self.main_layer.addPrimitive(self.wave_prim)
     self._updateWaveform(0.0)
 
   def _updateWaveform(self, time):

@@ -359,6 +359,50 @@ void TextPrimitive::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_
 }
 
 ////////////////////////////////////////////////////////////////
+// PrimCanvasLayer implementation
+////////////////////////////////////////////////////////////////
+
+PrimCanvasLayer::PrimCanvasLayer(const std::string& name)
+    : _name(name) {
+}
+
+void PrimCanvasLayer::clear() {
+  _primitives.clear();
+}
+
+void PrimCanvasLayer::addPrimitive(primitive_ptr_t prim) {
+  _primitives.push_back(prim);
+}
+
+void PrimCanvasLayer::removePrimitive(primitive_ptr_t prim) {
+  auto it = std::find(_primitives.begin(), _primitives.end(), prim);
+  if (it != _primitives.end()) {
+    _primitives.erase(it);
+  }
+}
+
+primitive_ptr_t PrimCanvasLayer::primitive(size_t index) const {
+  if (index >= _primitives.size()) {
+    return nullptr;
+  }
+  return _primitives[index];
+}
+
+size_t PrimCanvasLayer::ssboQuadCount() const {
+  size_t count = 0;
+  for (const auto& prim : _primitives) {
+    count += prim->ssboQuadCount();
+  }
+  return count;
+}
+
+void PrimCanvasLayer::gatherQuadData(std::vector<QuadData>& out) const {
+  for (const auto& prim : _primitives) {
+    prim->gatherQuadData(out);
+  }
+}
+
+////////////////////////////////////////////////////////////////
 // PrimCanvas implementation
 ////////////////////////////////////////////////////////////////
 
@@ -449,27 +493,49 @@ void PrimCanvas::gpuInit(lev2::Context* ctx) {
 }
 
 ////////////////////////////////////////////////////////////////
+// Layer management
+////////////////////////////////////////////////////////////////
 
-void PrimCanvas::clear() {
-  _primitives.clear();
+primcanvaslayer_ptr_t PrimCanvas::createLayer(const std::string& name) {
+  auto layer = std::make_shared<PrimCanvasLayer>(name);
+  _layers.push_back(layer);
+  _ssbo_dirty = true;
+  return layer;
+}
+
+void PrimCanvas::addLayer(primcanvaslayer_ptr_t layer) {
+  _layers.push_back(layer);
+  _ssbo_dirty = true;
+}
+
+void PrimCanvas::removeLayer(primcanvaslayer_ptr_t layer) {
+  auto it = std::find(_layers.begin(), _layers.end(), layer);
+  if (it != _layers.end()) {
+    _layers.erase(it);
+    _ssbo_dirty = true;
+  }
+}
+
+void PrimCanvas::clearLayers() {
+  _layers.clear();
   _ssbo_cpu_data.clear();
   _ssbo_dirty = true;
 }
 
-////////////////////////////////////////////////////////////////
-
-void PrimCanvas::addPrimitive(primitive_ptr_t prim) {
-  _primitives.push_back(prim);
-  _ssbo_dirty = true;
-}
-
-////////////////////////////////////////////////////////////////
-
-primitive_ptr_t PrimCanvas::primitive(size_t index) const {
-  if (index >= _primitives.size()) {
+primcanvaslayer_ptr_t PrimCanvas::layer(size_t index) const {
+  if (index >= _layers.size()) {
     return nullptr;
   }
-  return _primitives[index];
+  return _layers[index];
+}
+
+primcanvaslayer_ptr_t PrimCanvas::layerByName(const std::string& name) const {
+  for (const auto& layer : _layers) {
+    if (layer->_name == name) {
+      return layer;
+    }
+  }
+  return nullptr;
 }
 
 ////////////////////////////////////////////////////////////////
@@ -479,12 +545,14 @@ void PrimCanvas::_rebuildSsbo(lev2::Context* ctx) {
     return;
   }
 
-  // Gather all quad data from primitives and assign offsets
+  // Gather all quad data from all layers and assign offsets
   _ssbo_cpu_data.clear();
 
-  for (auto& prim : _primitives) {
-    prim->_ssbo_offset = _ssbo_cpu_data.size();
-    prim->gatherQuadData(_ssbo_cpu_data);
+  for (auto& layer : _layers) {
+    for (auto& prim : layer->_primitives) {
+      prim->_ssbo_offset = _ssbo_cpu_data.size();
+      prim->gatherQuadData(_ssbo_cpu_data);
+    }
   }
 
   if (_ssbo_cpu_data.empty()) {
@@ -528,9 +596,14 @@ void PrimCanvas::DoDraw(drawevent_constptr_t drwev) {
   // Get RCFD for pipeline draws
   auto rcfd = ctx->topRenderContextFrameData();
 
-  // Draw all primitives in order (painter's algorithm)
-  for (auto& prim : _primitives) {
-    prim->draw(this, ctx, rcfd);
+  // Draw all layers in order (painter's algorithm), skipping disabled layers
+  for (auto& layer : _layers) {
+    if (!layer->_enabled) {
+      continue;
+    }
+    for (auto& prim : layer->_primitives) {
+      prim->draw(this, ctx, rcfd);
+    }
   }
 }
 

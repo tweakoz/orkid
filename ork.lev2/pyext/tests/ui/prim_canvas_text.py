@@ -64,6 +64,9 @@ class TextCanvasTest:
   def onGpuInit(self, ctx):
     self.canvas.gpuInit(ctx)
 
+    # Create layer for text
+    self.text_layer = self.canvas.createLayer("text")
+
     # Get default font
     self.font = lev2.FontManager.fontForId("i14")
 
@@ -94,7 +97,7 @@ class TextCanvasTest:
       text_prim = lev2.ui.TextPrimitive(font=self.font, color=color)
       text_prim.addItem(params['word'], vec2(params['base_x'], params['base_y']))
       self.text_prims.append(text_prim)
-      self.canvas.addPrimitive(text_prim)
+      self.text_layer.addPrimitive(text_prim)
 
     self._updateText(0.0)
 

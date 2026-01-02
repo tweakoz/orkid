@@ -201,11 +201,11 @@ class PacManGame:
     self.ghosts = [Ghost(x, y, i) for i, (x, y) in enumerate(GHOST_START_POS)]
     self.input_direction = DIR_NONE
 
-  def _make_quad_prim(self, tex, count):
+  def _make_quad_prim(self, layer, tex, count):
     prim = lev2.ui.QuadPrimitive(pipeline=self.canvas.pipelineTextured, texture=tex)
     quads = [lev2.ui.QuadData() for _ in range(count)]
     for q in quads: prim.addQuad(q)
-    self.canvas.addPrimitive(prim)
+    layer.addPrimitive(prim)
     return prim, quads
 
   def onGpuInit(self, ctx):
@@ -213,6 +213,10 @@ class PacManGame:
     self.font = lev2.FontManager.fontForId("i18")
     self.font_large = lev2.FontManager.fontForId("i32")
     self.canvas.pipelineTextured.rasterstate.setBlendingMacro(tokens.ALPHA)
+
+    # Create layers
+    self.game_layer = self.canvas.createLayer("game")
+    self.ui_layer = self.canvas.createLayer("ui")
 
     ss = 32
     tex = lambda img, name: create_texture_from_numpy(ctx, img, name)
@@ -232,26 +236,26 @@ class PacManGame:
 
     # Primitives
     wall_count = sum(row.count('#') for row in self.maze.grid)
-    self.wall_prim, self.wall_quads = self._make_quad_prim(self.tex['wall'], wall_count)
-    self.dot_prim, self.dot_quads = self._make_quad_prim(self.tex['dot'], len(self.maze.dots))
-    self.power_prim, self.power_quads = self._make_quad_prim(self.tex['power'], len(self.maze.power_pellets))
+    self.wall_prim, self.wall_quads = self._make_quad_prim(self.game_layer, self.tex['wall'], wall_count)
+    self.dot_prim, self.dot_quads = self._make_quad_prim(self.game_layer, self.tex['dot'], len(self.maze.dots))
+    self.power_prim, self.power_quads = self._make_quad_prim(self.game_layer, self.tex['power'], len(self.maze.power_pellets))
 
     self.pac_prims, self.pac_quads = {}, {}
     for d in range(4):
       for m in range(12):
         k = f'pac_{d}_{m}'
-        self.pac_prims[k], q = self._make_quad_prim(self.tex[k], 1)
+        self.pac_prims[k], q = self._make_quad_prim(self.game_layer, self.tex[k], 1)
         self.pac_quads[k] = q[0]
 
     self.ghost_prims = []
     for i in range(4):
-      _, q = self._make_quad_prim(self.tex[f'ghost_{i}'], 1)
+      _, q = self._make_quad_prim(self.game_layer, self.tex[f'ghost_{i}'], 1)
       self.ghost_prims.append(q[0])
 
     self.score_prim = lev2.ui.TextPrimitive(font=self.font, color=vec4(1, 1, 1, 1))
-    self.canvas.addPrimitive(self.score_prim)
+    self.ui_layer.addPrimitive(self.score_prim)
     self.msg_prim = lev2.ui.TextPrimitive(font=self.font_large, color=vec4(1, 1, 0, 1))
-    self.canvas.addPrimitive(self.msg_prim)
+    self.ui_layer.addPrimitive(self.msg_prim)
     self._render()
 
   def _update(self, dt):
