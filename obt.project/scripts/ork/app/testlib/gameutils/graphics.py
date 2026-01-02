@@ -156,3 +156,25 @@ def create_rect_sprite(size, color, border=0):
     img[:, -border:] = color
 
   return img
+
+
+def parse_ascii_sprite(sprite_str, char='*'):
+  """
+  Parse an ASCII art sprite into pixel positions.
+
+  Args:
+    sprite_str: Multi-line string with char marking pixels
+    char: Character that represents a pixel (default '*')
+
+  Returns:
+    Tuple of (pixels, width, height) where pixels is list of (x, y) offsets from center
+  """
+  pixels = []
+  lines = sprite_str.lstrip('\n').rstrip().split('\n')
+  height = len(lines)
+  width = max(len(line) for line in lines) if lines else 0
+  for row, line in enumerate(lines):
+    for col, c in enumerate(line):
+      if c == char:
+        pixels.append((col - width / 2, row - height / 2))
+  return pixels, width, height
