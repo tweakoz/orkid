@@ -1408,14 +1408,47 @@ void SpirvCompiler::_compileShader(shaderc_shader_kind shader_type) {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 // Helper function to find binding ID from merged resources in the transunit
 int SpirvCompiler::_findBindingIdFromMergedResources(const std::string& resource_name, const std::string& source_name) {
-  // With global binding ID assignment, ALL passes that have a resource will have the SAME binding ID.
-  // So we can search ANY pass that has the resource, not just passes that contain this shader.
-  // This is important because shaders are compiled once but may be used by multiple techniques,
-  // and the technique we find first might not have all the resources the shader needs.
+  // IMPORTANT: We must search ONLY passes that contain this shader!
+  // Different techniques may have different resource sets, resulting in different binding IDs.
+  // We collect ALL binding IDs from techniques that use this shader and verify they match.
+  // If there's a conflict (same resource has different binding IDs in different techniques),
+  // we assert to catch the problem at compile time.
+
   auto passes = AstNode::collectNodesOfType<Pass>(_transu);
   std::string shader_name = _shader->typedValueForKey<std::string>("object_name").value();
 
+  // Helper lambda to check if a pass contains this shader
+  auto passContainsShader = [&](astnode_ptr_t pass) -> bool {
+    auto vtx_refs = AstNode::collectNodesOfType<VertexShaderRef>(pass);
+    auto frg_refs = AstNode::collectNodesOfType<FragmentShaderRef>(pass);
+    auto geo_refs = AstNode::collectNodesOfType<GeometryShaderRef>(pass);
+    auto com_refs = AstNode::collectNodesOfType<ComputeShaderRef>(pass);
+
+    for (auto ref : vtx_refs) {
+      if (ref->typedValueForKey<std::string>("ref_id").value() == shader_name) return true;
+    }
+    for (auto ref : frg_refs) {
+      if (ref->typedValueForKey<std::string>("ref_id").value() == shader_name) return true;
+    }
+    for (auto ref : geo_refs) {
+      if (ref->typedValueForKey<std::string>("ref_id").value() == shader_name) return true;
+    }
+    for (auto ref : com_refs) {
+      if (ref->typedValueForKey<std::string>("ref_id").value() == shader_name) return true;
+    }
+    return false;
+  };
+
+  // Collect all binding IDs for this resource from techniques that use this shader
+  int found_binding_id = -1;
+  std::string found_in_technique;
+
   for (auto pass : passes) {
+    // Only search passes that actually use this shader
+    if (!passContainsShader(pass)) {
+      continue;
+    }
+
     // Find the merged resources node for this pass
     auto merged_resources = pass->findFirstChildOfType<MergedShaderResourcesNode>();
     if (merged_resources) {
@@ -1432,15 +1465,42 @@ int SpirvCompiler::_findBindingIdFromMergedResources(const std::string& resource
               if (binding_node->_binding_name == resource_name) {
                 auto technique = pass->findAncestorOfType<Technique>();
                 std::string tech_name = technique ? technique->typedValueForKey<std::string>("object_name").value() : "unknown";
-                printf("  _findBindingIdFromMergedResources: FOUND resource<%s> source<%s> -> binding_id<%d> (from technique<%s>)\n",
-                       resource_name.c_str(), source_name.c_str(), binding_node->_binding_id, tech_name.c_str());
-                return binding_node->_binding_id;
+
+                if (found_binding_id == -1) {
+                  // First occurrence - record it
+                  found_binding_id = binding_node->_binding_id;
+                  found_in_technique = tech_name;
+                  printf("  _findBindingIdFromMergedResources: FOUND resource<%s> source<%s> -> binding_id<%d> (from technique<%s> which uses shader<%s>)\n",
+                         resource_name.c_str(), source_name.c_str(), binding_node->_binding_id, tech_name.c_str(), shader_name.c_str());
+                } else if (found_binding_id != binding_node->_binding_id) {
+                  // CONFLICT DETECTED! Same resource has different binding IDs in different techniques
+                  printf("\n");
+                  printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+                  printf("BINDING CONFLICT DETECTED!\n");
+                  printf("  Shader: %s\n", shader_name.c_str());
+                  printf("  Resource: %s (source: %s)\n", resource_name.c_str(), source_name.c_str());
+                  printf("  Technique '%s' has binding_id = %d\n", found_in_technique.c_str(), found_binding_id);
+                  printf("  Technique '%s' has binding_id = %d\n", tech_name.c_str(), binding_node->_binding_id);
+                  printf("\n");
+                  printf("This shader is used by multiple techniques with incompatible resource layouts.\n");
+                  printf("Each technique has a different set of resources, causing different binding IDs.\n");
+                  printf("To fix: ensure all techniques using this shader have consistent resource sets,\n");
+                  printf("or split the shader into technique-specific versions.\n");
+                  printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+                  printf("\n");
+                  OrkAssert(false && "Binding ID conflict: shader used by techniques with incompatible layouts");
+                }
+                // If binding IDs match, continue checking other techniques
               }
             }
           }
         }
       }
     }
+  }
+
+  if (found_binding_id != -1) {
+    return found_binding_id;
   }
 
   // If not found in merged resources, return -1 to indicate fallback to original behavior
