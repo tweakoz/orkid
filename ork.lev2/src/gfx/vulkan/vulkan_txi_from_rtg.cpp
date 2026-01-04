@@ -26,19 +26,22 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   int iheight  = rtbuffer->_height;
   int num_mips = 1;
   auto fmt_str = EBufferFormatToName(format);
-  
-  // Check if this is a depth buffer
+
+  // Check if this is a depth buffer or cubemap
   bool is_depth = (rtbuffer->_usage == "depth"_crcu);
+  bool is_cube  = (ptex->_texType == ETEXTYPE_CUBE);
+  int num_layers = is_cube ? 6 : 1;
 
   if (0) {
     logchan_txirtg->log(
-        "_initTextureFromRtBuffer ptex<%p:%s> w<%d> h<%d> fmt<%s> is_depth<%d>",
+        "_initTextureFromRtBuffer ptex<%p:%s> w<%d> h<%d> fmt<%s> is_depth<%d> is_cube<%d>",
         (void*)ptex,
         ptex->_debugName.c_str(),
         iwidth,
         iheight,
         fmt_str.c_str(),
-        is_depth);
+        is_depth,
+        is_cube);
   }
 
   /////////////////////////////////////
@@ -46,6 +49,12 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   /////////////////////////////////////
 
   auto img_info   = makeVKICI(iwidth, iheight, 1, format, num_mips);
+  img_info->arrayLayers = num_layers;
+
+  if (is_cube) {
+    img_info->flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+  }
+
   if (is_depth) {
     img_info->usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
   } else {
@@ -53,6 +62,9 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   }
 
   std::string debug_name = rtbuffer->_debugName.empty() ? "rtbuffer_texture" : rtbuffer->_debugName;
+  if (is_cube) {
+    debug_name += "_cube";
+  }
   // RTG textures use slot [0] only (no double-buffering needed)
   vk_tex->_imgobj[0] = std::make_shared<VulkanImageObject>(_contextVK, img_info, debug_name);
   vk_tex->_vksampler = _contextVK->_sampler_base;
@@ -63,11 +75,26 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
 
   VkImageAspectFlagBits aspect_mask = is_depth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 
-  auto IVCI = createImageViewInfo2D(
-      vk_tex->_imgobj[0]->_vkimage,                     //
-      VkFormatConverter::convertBufferFormat(format), //
-      aspect_mask);
-  IVCI->subresourceRange.levelCount = num_mips;
+  vkivci_ptr_t IVCI;
+  if (is_cube) {
+    // Create cube image view for sampling
+    IVCI = std::make_shared<VkImageViewCreateInfo>();
+    initializeVkStruct(*IVCI, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
+    IVCI->image = vk_tex->_imgobj[0]->_vkimage;
+    IVCI->viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+    IVCI->format = VkFormatConverter::convertBufferFormat(format);
+    IVCI->subresourceRange.aspectMask = aspect_mask;
+    IVCI->subresourceRange.baseMipLevel = 0;
+    IVCI->subresourceRange.levelCount = num_mips;
+    IVCI->subresourceRange.baseArrayLayer = 0;
+    IVCI->subresourceRange.layerCount = 6;
+  } else {
+    IVCI = createImageViewInfo2D(
+        vk_tex->_imgobj[0]->_vkimage,
+        VkFormatConverter::convertBufferFormat(format),
+        aspect_mask);
+    IVCI->subresourceRange.levelCount = num_mips;
+  }
 
   initializeVkStruct(vk_tex->_imgobj[0]->_vkimageview);
   VkResult ok = vkCreateImageView(_contextVK->_vkdevice, IVCI.get(), nullptr, &vk_tex->_imgobj[0]->_vkimageview);
@@ -139,6 +166,7 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
       VkAccessFlagBits(0),
       VK_ACCESS_TRANSFER_WRITE_BIT);
   clear_barrier->subresourceRange.aspectMask = aspect_mask;
+  clear_barrier->subresourceRange.layerCount = num_layers;  // Handle all layers for cubemaps
 
   vkCmdPipelineBarrier(
       vk_cmdbuf,
@@ -146,15 +174,15 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
       VK_PIPELINE_STAGE_TRANSFER_BIT,
       0, 0, nullptr, 0, nullptr, 1, clear_barrier.get());
 
-  // Clear the image
+  // Clear the image (all layers)
   if (is_depth) {
     VkClearDepthStencilValue clear_value = {1.0f, 0};
-    VkImageSubresourceRange range = {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1};
+    VkImageSubresourceRange range = {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, (uint32_t)num_layers};
     vkCmdClearDepthStencilImage(vk_cmdbuf, vk_tex->_imgobj[0]->_vkimage,
                                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear_value, 1, &range);
   } else {
     VkClearColorValue clear_color = {{0.0f, 0.0f, 0.0f, 0.0f}};
-    VkImageSubresourceRange range = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+    VkImageSubresourceRange range = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, (uint32_t)num_layers};
     vkCmdClearColorImage(vk_cmdbuf, vk_tex->_imgobj[0]->_vkimage,
                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear_color, 1, &range);
   }
@@ -167,6 +195,7 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
       VK_ACCESS_TRANSFER_WRITE_BIT,
       access_flags);
   attach_barrier->subresourceRange.aspectMask = aspect_mask;
+  attach_barrier->subresourceRange.layerCount = num_layers;  // Handle all layers for cubemaps
 
   vkCmdPipelineBarrier(
       vk_cmdbuf,

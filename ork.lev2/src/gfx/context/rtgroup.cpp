@@ -40,7 +40,7 @@ RtBuffer::RtBuffer(const RtGroup* rtg, int slot, EBufferFormat efmt, int iW, int
   if(with_texture){
     _texture = std::make_shared<Texture>();
     _texture->_texFormat = efmt;
-    _texture->_texType   = ETEXTYPE_2D;
+    _texture->_texType   = rtg->_cubeMap ? ETEXTYPE_CUBE : ETEXTYPE_2D;
     _texture->_width     = iW;
     _texture->_height    = iH;
     _texture->_debugName = FormatString("rtg%d", slot);

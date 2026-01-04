@@ -190,6 +190,88 @@ void VkRtGroupImpl::_invalidateAttachments() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void VkRtGroupImpl::_setupCubeFaceRendering(int face_index) {
+  OrkAssert(face_index >= 0 && face_index < 6);
+
+  // Setup per-face views for color buffers
+  for (auto& bufimpl : _color_buffer_impls) {
+    if (!bufimpl->_imgobj) continue;
+
+    // Create per-face views if they don't exist
+    if (!bufimpl->_hasCubeFaceViews) {
+      for (int i = 0; i < 6; i++) {
+        VkImageViewCreateInfo viewInfo{};
+        viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        viewInfo.image = bufimpl->_imgobj->_vkimage;
+        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;  // 2D view of single layer
+        viewInfo.format = bufimpl->_vkfmt;
+        viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        viewInfo.subresourceRange.baseMipLevel = 0;
+        viewInfo.subresourceRange.levelCount = 1;
+        viewInfo.subresourceRange.baseArrayLayer = i;  // Face index
+        viewInfo.subresourceRange.layerCount = 1;
+        viewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+        viewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+        viewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+        viewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+        VkResult ok = vkCreateImageView(_contextVK->_vkdevice, &viewInfo, nullptr, &bufimpl->_cubeFaceViews[i]);
+        OrkAssert(VK_SUCCESS == ok);
+
+        // Set debug name for the face view
+        std::string name = FormatString("cubeFace%d_color", i);
+        _contextVK->_setObjectDebugName(bufimpl->_cubeFaceViews[i], VK_OBJECT_TYPE_IMAGE_VIEW, name.c_str());
+      }
+      bufimpl->_hasCubeFaceViews = true;
+    }
+
+    // Set the descriptor info to point to this face's view
+    bufimpl->_descriptorInfo.imageView = bufimpl->_cubeFaceViews[face_index];
+    bufimpl->_descriptorInfo.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+  }
+
+  // Setup per-face view for depth buffer if present
+  if (_depth_buffer_impl && _depth_buffer_impl->_imgobj) {
+    auto& dbuf = _depth_buffer_impl;
+
+    // Create per-face depth views if they don't exist
+    if (!dbuf->_hasCubeFaceViews) {
+      for (int i = 0; i < 6; i++) {
+        VkImageViewCreateInfo viewInfo{};
+        viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        viewInfo.image = dbuf->_imgobj->_vkimage;
+        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        viewInfo.format = dbuf->_vkfmt;
+        viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+        viewInfo.subresourceRange.baseMipLevel = 0;
+        viewInfo.subresourceRange.levelCount = 1;
+        viewInfo.subresourceRange.baseArrayLayer = i;
+        viewInfo.subresourceRange.layerCount = 1;
+        viewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+        viewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+        viewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+        viewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+        VkResult ok = vkCreateImageView(_contextVK->_vkdevice, &viewInfo, nullptr, &dbuf->_cubeFaceViews[i]);
+        OrkAssert(VK_SUCCESS == ok);
+
+        std::string name = FormatString("cubeFace%d_depth", i);
+        _contextVK->_setObjectDebugName(dbuf->_cubeFaceViews[i], VK_OBJECT_TYPE_IMAGE_VIEW, name.c_str());
+      }
+      dbuf->_hasCubeFaceViews = true;
+    }
+
+    // Set the descriptor info to point to this face's view
+    dbuf->_descriptorInfo.imageView = dbuf->_cubeFaceViews[face_index];
+    dbuf->_descriptorInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+  }
+
+  // Invalidate cached render info so it rebuilds with the new face views
+  _invalidateAttachments();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void VkRtGroupImpl::_transitionToTexture(vkpricmdbufimpl_ptr_t cb){
   int numrt     = _color_buffer_impls.size();
   for (int i = 0; i < numrt; i++) {

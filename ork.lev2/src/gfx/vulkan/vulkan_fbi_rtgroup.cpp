@@ -192,6 +192,11 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
           RTGIMPL = _createRtGroupImpl(rtgroup);
           rtgroup->SetSizeDirty(false);
         }
+
+        // Handle cubemap face rendering
+        if (rtgroup->_cubeMap) {
+          RTGIMPL->_setupCubeFaceRendering(rtgroup->_cubeRenderFace);
+        }
         break;
       }
       case "arrayslice"_crcu: {

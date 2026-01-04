@@ -27,12 +27,8 @@ from _ptc_harness import *
 
 ################################################################################
 parser = argparse.ArgumentParser(description='scenegraph example')
-parser.add_argument('--stereo', action='store_true', help='stereo mode')
 ################################################################################
 args = vars(parser.parse_args())
-################################################################################
-stereo = args["stereo"]
-mono = not stereo
 ################################################################################
 tokens = CrcStringProxy()
 
@@ -41,15 +37,7 @@ class LIGHTING_APP(ComponentizedApplication):
   def __init__(self):
     super().__init__(lui="yes")
 
-    self.stereo = stereo
-    self.mono = mono
     self.materials = set()
-
-    if self.stereo:
-      self.cameralut = lev2.CameraDataLut()
-      self.vrcamera = lev2.CameraData()
-      self.cameralut.addCamera("vrcam", self.vrcamera)
-
     self.createEzApp(ssaa=2, msaa=0, fullscreen=False)
 
 
@@ -58,12 +46,7 @@ class LIGHTING_APP(ComponentizedApplication):
   def _onGpuInit(self, ctx):
 
     # Setup camera for mono mode
-    if self.mono:
-      setupUiCamera(app=self, eye=vec3(0, 12, 15))
-
-    if self.stereo:
-      self.vrdev = orkidvr.novr_device()
-      self.vrdev.camera = "vrcam"
+    setupUiCamera(app=self, eye=vec3(0, 12, 15))
 
     sceneparams = VarMap() 
 
@@ -75,10 +58,7 @@ class LIGHTING_APP(ComponentizedApplication):
     sceneparams.DepthFogDistance = float(10000)
     sceneparams.supersample = 1
 
-    if self.mono:
-      sceneparams.preset = "ForwardPBR"
-    else:
-      sceneparams.preset = "FWDPBRVR"
+    sceneparams.preset = "ForwardPBR"
 
     ###################################
     postNode1 = lev2.PostFxNodeHSVG()
@@ -104,15 +84,6 @@ class LIGHTING_APP(ComponentizedApplication):
     FINAL_LAYERS = [self.layer_fwd,self.layer_donly]
     COLOR_LAYERS = [self.layer_fwd,self.layer_probe]
     ALL_LAYERS = [self.layer_fwd,self.layer_probe,self.layer_donly]
-
-    ###################################
-
-    if False:
-      createDefaultSpriteSystem(app=self)
-      self.particlenode.worldTransform.translation = vec3(0,4,10)
-      self.particlenode.worldTransform.scale = 1/10.0
-      self.layer_probe.addDrawableNode(self.particlenode)
-      self.SPRI.material.colorIntensity = 0.3
 
     ###################################
 
@@ -212,7 +183,7 @@ class LIGHTING_APP(ComponentizedApplication):
         "layers":COLOR_LAYERS,
       }
       self.spotlights = [] 
-      for i in range(5):
+      for i in range(2):
         s = MySpotLight( **kwargs, 
                          index=indices[i],
                          frq=frqs[i],
@@ -240,8 +211,7 @@ class LIGHTING_APP(ComponentizedApplication):
 
   def _onUiEvent(self, uievent):
     handled = False
-    if self.mono:
-      handled = self.uicam.uiEventHandler(uievent)
+    handled = self.uicam.uiEventHandler(uievent)
     if handled:
       self.camera.copyFrom(self.uicam.cameradata)
     return lev2.ui.HandlerResult()
@@ -250,16 +220,6 @@ class LIGHTING_APP(ComponentizedApplication):
 
   def _onUpdate(self, updinfo):
     self.lighttime = updinfo.absolutetime
-    if self.stereo:
-      self.vrdev.FOV = 90
-      self.vrdev.IPD = 0.065
-      self.vrdev.near = 0.1
-      self.vrdev.far = 1e5
-      xf = Transform()
-      xf.lookAt(vec3(0, 5, -10), vec3(0, 5, 0), vec3(0, 1, 0))
-      mtx_hmd = xf.composed
-      self.vrdev.setPoseMatrix("hmd", mtx_hmd)
-
     self.scene.updateScene(self.cameralut) 
     
 

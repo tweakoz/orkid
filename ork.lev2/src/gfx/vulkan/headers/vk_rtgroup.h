@@ -51,6 +51,10 @@ struct VklRtBufferImpl {
   svar64_t _teximpl;
   fvec4 _clear_color;
   float _clear_depth = 1.0f;
+
+  // Per-face image views for cubemap rendering (6 views, one per face)
+  std::array<VkImageView, 6> _cubeFaceViews = {VK_NULL_HANDLE};
+  bool _hasCubeFaceViews = false;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VkRtGroupImpl {
@@ -67,6 +71,7 @@ struct VkRtGroupImpl {
   void _transitionToHostRead(vkpricmdbufimpl_ptr_t cb);
   void _updateMainSurface(VkFrameBufferInterface* fbi);
   void _invalidateAttachments();
+  void _setupCubeFaceRendering(int face_index);
 
   static void assignToRtGroup(vkrtgrpimpl_ptr_t rtgimpl, rtgroup_rawptr_t rtgroup);
 

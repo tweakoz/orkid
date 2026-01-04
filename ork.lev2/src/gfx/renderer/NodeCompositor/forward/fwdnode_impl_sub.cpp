@@ -88,10 +88,10 @@ void ForwardPbrNodeImpl::_update_env_probes(CompositorDrawData& drawdata) {
         if (nullptr == probe->_cubeRenderRTG) {
           probe->_cubeRenderRTG           = std::make_shared<RtGroup>(_currentContext, 8, 8);
           probe->_cubeRenderRTG->_name    = "ReflectionProbeRTG";
+          probe->_cubeRenderRTG->_cubeMap = true;  // Must set before creating buffers
           auto colorbuf                   = probe->_cubeRenderRTG->createRenderTarget(EBufferFormat::RGBA8);
           colorbuf->_debugName            = "ReflectionProbeColorCubeMap";
           probe->_cubeRenderRTG->createDepthBuffer(EBufferFormat::Z32F, true);
-          probe->_cubeRenderRTG->_cubeMap = true;
         }
         if (probe->_dirty) {
           int prevW = probe->_cubeRenderRTG->width();
@@ -122,14 +122,13 @@ void ForwardPbrNodeImpl::_update_env_probes(CompositorDrawData& drawdata) {
 
             _currentContext->debugPushGroup(FormatString("ForwardPBR::cubemap pass<%d>", iface));
 
-            // compute view matrices from cubeface and CMATRIX
+            // compute view matrices from cubeface and CMATRIX (matching GL code exactly)
             //  face 0 = POSX
             //  face 1 = NEGX
             //  face 2 = POSY
             //  face 3 = NEGY
             //  face 4 = POSZ
             //  face 5 = NEGZ
-
             switch (iface) {
               case 1:
                 _CUBECAM->_vmatrix.lookAt(position, position + POSX, POSY);

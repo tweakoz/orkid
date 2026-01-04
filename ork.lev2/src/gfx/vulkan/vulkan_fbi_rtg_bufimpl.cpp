@@ -61,17 +61,33 @@ VklRtBufferImpl::~VklRtBufferImpl() {
   if (_teximpl.tryAsShared<VulkanTextureObject>()) {
     impl = _teximpl.getShared<VulkanTextureObject>();
   }
+
+  // Capture cube face views for cleanup
+  std::array<VkImageView, 6> faceViews = _cubeFaceViews;
+  bool hasFaceViews = _hasCubeFaceViews;
+  VkDevice device = _contextVK ? _contextVK->_vkdevice : VK_NULL_HANDLE;
+
   _imgobj = nullptr; // Clear the image object to avoid dangling pointers
   _teximpl.clear(); // Clear the texture implementation variant
+  _hasCubeFaceViews = false;
+  for (auto& v : _cubeFaceViews) v = VK_NULL_HANDLE;
 
-  if (imgobj or impl) {
+  if (imgobj or impl or hasFaceViews) {
     // Enqueue cleanup to main thread with proper Vulkan context
     GfxEnv::GetRef().enqueueDeferredContextOp(
       [=](Context* ctx) mutable {
+        // Destroy cube face views
+        if (hasFaceViews && device != VK_NULL_HANDLE) {
+          for (auto& view : faceViews) {
+            if (view != VK_NULL_HANDLE) {
+              vkDestroyImageView(device, view, nullptr);
+            }
+          }
+        }
         imgobj = nullptr;
         impl = nullptr;
       });
-  }  
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
