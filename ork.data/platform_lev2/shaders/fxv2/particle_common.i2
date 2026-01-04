@@ -91,20 +91,6 @@ fragment_interface fface_psys : ublk_frg : sset_frg {
 }
 
 ///////////////////////////////////////////////////////////////
-vertex_interface vface_nogs : ublk_vtx {
-  inputs {
-    vec4 position : POSITION;
-    vec4 vtxcolor : COLOR0;
-    vec2 uv0 : TEXCOORD0;
-    vec2 uv1 : TEXCOORD1;
-  }
-  outputs {
-    vec4 frg_clr;
-    vec2 frg_uv0;
-    vec2 frg_uv1;
-  }
-}
-///////////////////////////////////////////////////////////////
 vertex_interface vface_bill : ublk_vtx {
   inputs {
     vec4 position : POSITION;
