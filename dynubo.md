@@ -671,3 +671,124 @@ The `std_forward_all` libblock reordering was NOT applied, but it's irrelevant s
 - UBO-specific changes in `vulkan_fxi_pipelines_create.cpp`
 - Changes in `vulkan_ubo_dynamic.cpp/h`
 - Debug output in `vulkan_fxi_bindparam.cpp`
+
+---
+
+## CRITICAL ROOT CAUSE ANALYSIS (2026-01-04)
+
+### The Vulkan Spec Requirement
+
+From Vulkan 1.3 spec on `vkCmdBindDescriptorSets`:
+
+> "The order of the dynamic descriptor bindings within each descriptor set is the order in which they appear in the **pBindings array** passed to `vkCreateDescriptorSetLayout`."
+
+**This is the key insight!** The dynamic offset order is determined by the **order bindings appear in the array**, NOT the binding numbers themselves.
+
+### The Bug
+
+In `_createPipelineLayoutData` (`vulkan_fxi_pipelines_create.cpp:229-368`):
+
+```cpp
+// Step 1: Build bindings array in merged_resources iteration order (UNORDERED)
+for (const auto& [set_id, sources] : resources->descriptor_sets) {
+  bindings.clear();
+  for (const auto& source : sources) {
+    for (const auto& binding : source->bindings) {
+      // Bindings pushed in whatever order they appear in merged_resources
+      bindings.push_back(vk_binding);
+
+      // For UBOs, also track in _uniform_blocks (same unordered order)
+      pipeline->_uniform_blocks.push_back(ubo);
+    }
+  }
+  // Layout created from UNORDERED bindings array
+  vkCreateDescriptorSetLayout(..., bindings.data(), ...);
+}
+
+// Step 2: AFTER layout creation, sort _uniform_blocks by binding ID
+std::sort(pipeline->_uniform_blocks.begin(), pipeline->_uniform_blocks.end(),
+    [](a, b) { return binding_a < binding_b; });  // Now in sorted order
+```
+
+**The mismatch:**
+- `pBindings` array order: `[B=17, A=15, C=16, D=18]` (whatever order merged_resources had)
+- After sort, `_uniform_blocks`: `[A=15, B=16, C=17, D=18]` (ascending order)
+- Dynamic offsets built from sorted `_uniform_blocks`: `[offset_15, offset_16, offset_17, offset_18]`
+- **But Vulkan expects offsets in pBindings order:** `[offset_17, offset_15, offset_16, offset_18]`
+
+**Result:** Each UBO gets the wrong dynamic offset! The data IS in the buffer, but the shader reads from wrong offsets.
+
+### Evidence from Logs
+
+The previous logs showed:
+- DESCRIPTOR-WRITE confirms data written correctly to ring buffer
+- MARKER-CHECK shows valid matrix data (MVP[0]=1.0)
+- But Metal debugger showed all zeros in UBO view
+- Skybox works (different technique, different binding order that might accidentally match)
+- Terrain never worked since GL to Vulkan port
+
+### The Fix
+
+Sort the `bindings` array by binding_id **BEFORE** calling `vkCreateDescriptorSetLayout`:
+
+```cpp
+// In _createPipelineLayoutData, before creating layout:
+// Sort bindings by binding number for consistent dynamic offset ordering
+std::sort(bindings.begin(), bindings.end(),
+    [](const VkDescriptorSetLayoutBinding& a, const VkDescriptorSetLayoutBinding& b) {
+      return a.binding < b.binding;
+    });
+
+// Now bindings array is in same order as _uniform_blocks will be after its sort
+vkCreateDescriptorSetLayout(_contextVK->_vkdevice, &LCI, nullptr, &dset_layout);
+```
+
+This ensures both:
+1. Layout binding order = ascending binding_id
+2. `_uniform_blocks` order (after sort) = ascending binding_id
+3. Dynamic offsets built from `_uniform_blocks` = ascending binding_id ✓
+4. Vulkan consumes offsets in pBindings order = ascending binding_id ✓
+
+**MATCH!**
+
+### Why This Bug Was Hard to Find
+
+1. **CPU-side verification passed** - shadow buffer had correct data, memcpy worked
+2. **Same VkBuffer used everywhere** - no buffer pointer mismatch
+3. **Offsets were aligned correctly** - no alignment issues
+4. **Some shaders worked** - skybox works (maybe simpler UBO setup, or accidental order match)
+5. **Vulkan validation layers didn't catch it** - it's a semantic bug, not an API misuse
+
+### Why the Rejected Commit May Have Worked
+
+Looking back at the rejected commit's changes:
+```cpp
+// Rejected code had this sort:
+std::sort(bindings.begin(), bindings.end(),
+    [](const VkDescriptorSetLayoutBinding& a, const VkDescriptorSetLayoutBinding& b) {
+      return a.binding < b.binding;
+    });
+```
+
+**This was the fix!** But it was bundled with other changes that caused regressions elsewhere, so the whole commit was rejected.
+
+---
+
+## Action Required
+
+Apply this targeted fix to `vulkan_fxi_pipelines_create.cpp`:
+
+**Location:** Line ~346, just before the `if (!bindings.empty())` block
+
+**Add:**
+```cpp
+// Sort bindings by binding number to match the order that _uniform_blocks
+// will be sorted into. Vulkan spec requires dynamic offsets to be provided
+// in the order bindings appear in pBindings array.
+std::sort(bindings.begin(), bindings.end(),
+    [](const VkDescriptorSetLayoutBinding& a, const VkDescriptorSetLayoutBinding& b) {
+      return a.binding < b.binding;
+    });
+```
+
+This is a minimal, targeted fix that addresses the root cause without the other changes that caused regressions.

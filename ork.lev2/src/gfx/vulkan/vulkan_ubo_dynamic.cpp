@@ -39,6 +39,13 @@ void VkDynamicUBOSystem::init(vkcontext_rawptr_t ctx) {
   
   // Map the entire buffer persistently for CPU writes
   _mapped_base = _global_buffer->map(0, _buffer_size, 0);
+
+  if (_mapped_base == nullptr) {
+    printf("VkDynamicUBOSystem: FATAL - buffer mapping failed!\n");
+    OrkAssert(false);
+  }
+  printf("VkDynamicUBOSystem: buffer mapped at %p, size=%zu MB, alignment=%zu vkbuffer=%p\n",
+         _mapped_base, _buffer_size / (1024*1024), _actual_alignment, (void*)_global_buffer->_vkbuffer);
 }
 
 void VkDynamicUBOSystem::shutdown() {
@@ -55,7 +62,11 @@ void VkDynamicUBOSystem::shutdown() {
 
 VkDynamicUBOSystem::Allocation VkDynamicUBOSystem::allocate(size_t data_size, uint32_t frame_index) {
   std::lock_guard<std::mutex> lock(_allocation_mutex);
-  
+
+  // First, align the CURRENT OFFSET to ensure dynamic offset is properly aligned
+  // This is critical for Vulkan which requires aligned dynamic offsets
+  _current_offset = align_up(_current_offset, _actual_alignment);
+
   // Align size to device requirements
   size_t aligned_size = align_up(data_size, _actual_alignment);
   

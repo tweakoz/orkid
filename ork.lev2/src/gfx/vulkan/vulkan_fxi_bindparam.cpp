@@ -347,6 +347,10 @@ void VkFxInterface::bindParamFloat(const FxShaderParam* hpar, float fA) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::bindParamMatrix(const FxShaderParam* hpar, const fmtx4& Mat) {
+  if (!hpar) {
+    printf("bindParamMatrix: hpar is NULL!\n");
+    return;
+  }
   if (auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>()) {
     auto& param_set = _currentVKPASS->_vk_program->_pending_params.emplace_back();
     param_set._vk_param = as_uniset_item.value();
@@ -360,6 +364,27 @@ void VkFxInterface::bindParamMatrix(const FxShaderParam* hpar, const fmtx4& Mat)
     memcpy(block->_shadow_buffer.data() + offset, &Mat, 64);
     block->addDirtyRange(offset, 64);
     _currentVKPASS->_dirty_uniform_blocks.insert(block);
+
+    // Debug: verify write for mvp
+    static int mvp_log_count = 0;
+    if (hpar->_name == "mvp" && mvp_log_count < 5) {
+      mvp_log_count++;
+      float* written = (float*)(block->_shadow_buffer.data() + offset);
+      printf("WROTE-MVP[%d] to block<%s:%p> offset=%zu: [%.4f, %.4f, %.4f, %.4f]\n",
+             mvp_log_count,
+             block->_orkparamblock ? block->_orkparamblock->_name.c_str() : "?",
+             (void*)block,
+             offset, written[0], written[1], written[2], written[3]);
+    }
+  }
+  else {
+    // Debug: param not recognized as either push constant or UBO item
+    static std::set<std::string> logged_params;
+    if (logged_params.find(hpar->_name) == logged_params.end()) {
+      logged_params.insert(hpar->_name);
+      printf("bindParamMatrix: param<%s> not recognized as uniset or uniblk item! impl.isSet=%d\n",
+             hpar->_name.c_str(), hpar->_impl.isSet());
+    }
   }
 }
 

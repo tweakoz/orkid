@@ -248,6 +248,8 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_o
             case VkMergedResourceBinding::Type::UniformBlock: {
               // ALL uniform blocks are now dynamic
               vk_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+              printf("LAYOUT-BINDING: ubo<%s> binding=%u type=DYNAMIC\n",
+                     binding->name.c_str(), binding->binding_id);
               // Look up the UBO from the program's uniform blocks
               // These were loaded from the datablock
               auto ubo_it = vk_program->_vk_uniformblks.find(binding->name);
@@ -343,13 +345,23 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_o
 
       if (!bindings.empty()) {
 
-        //std::vector<VkDescriptorBindingFlags> bindingFlags;
-        //bindingFlags.resize(bindings.size(), VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT);
-
-        //VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo{};
-        //bindingFlagsInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
-        //bindingFlagsInfo.bindingCount = bindingFlags.size();
-        //bindingFlagsInfo.pBindingFlags = bindingFlags.data();
+        //////////////////////////////////////////////////////////
+        // CRITICAL: Sort bindings by binding number BEFORE layout creation!
+        //
+        // Per Vulkan spec (vkCmdBindDescriptorSets):
+        // "The order of the dynamic descriptor bindings within each descriptor set
+        //  is the order in which they appear in the pBindings array passed to
+        //  vkCreateDescriptorSetLayout."
+        //
+        // We later sort _uniform_blocks by binding_id and build dynamic offsets
+        // from that sorted order. If pBindings isn't also sorted, the dynamic
+        // offsets will be consumed in the wrong order, causing each UBO to
+        // read from the wrong memory location.
+        //////////////////////////////////////////////////////////
+        std::sort(bindings.begin(), bindings.end(),
+            [](const VkDescriptorSetLayoutBinding& a, const VkDescriptorSetLayoutBinding& b) {
+              return a.binding < b.binding;
+            });
 
         VkDescriptorSetLayoutCreateInfo LCI = {};
         initializeVkStruct(LCI, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO);
@@ -391,6 +403,16 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_o
           uint32_t binding_b = ubo_to_binding.at(const_cast<VkFxShaderUniformBlk*>(b));
           return binding_a < binding_b;
         });
+
+    // Diagnostic: print UBO configuration for this pipeline
+    printf("PIPELINE-CREATE tek<%s>: _uniform_blocks.size()=%zu\n",
+           vk_program->_tek_name.c_str(), pipeline->_uniform_blocks.size());
+    for (size_t i = 0; i < pipeline->_uniform_blocks.size(); i++) {
+      auto* ubo = pipeline->_uniform_blocks[i];
+      printf("  [%zu] UBO<%s> binding<%u> dset<%zu> shadow_size<%zu>\n",
+             i, ubo->_orkparamblock->_name.c_str(),
+             ubo_to_binding[ubo], ubo->_descriptor_set_id, ubo->_shadow_buffer.size());
+    }
 
     // Sort SSBOs by descriptor set and binding for consistent ordering
     std::map<VkFxShaderStorageBlock*, uint32_t> ssbo_to_binding;

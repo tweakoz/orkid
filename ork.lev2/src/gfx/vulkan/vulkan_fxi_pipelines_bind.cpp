@@ -11,6 +11,7 @@
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/util/hexdump.inl>
 #include <ctime>
+#include <set>
 #include <boost/filesystem.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -113,9 +114,22 @@ void VkFxInterface::_bindPipeline(VkCommandBuffer cmdbuf, vkpipeline_obj_ptr_t p
   ////////////////////////////////////////
   auto prog = _currentVKPASS->_vk_program;
   auto desc_set = pipeline->_descriptorSetCache->fetchDescriptorSetForProgram(prog);
+
+  // Diagnostic output
+  printf("BIND-PIPELINE tek<%s>: desc_set=%p dynamic_offsets.size()=%zu\n",
+         prog ? prog->_tek_name.c_str() : "?",
+         (void*)desc_set.get(), pipeline->_dynamic_offsets.size());
+
   if (desc_set) {
     // Bind descriptor set with dynamic offsets from applyPendingUboUpdates
     if (!pipeline->_dynamic_offsets.empty()) {
+      printf("  BIND-DSET: vkdescset=%p layout=%p offsets=[",
+             (void*)desc_set->_vkdescset, (void*)pipeline->_pipelineLayout);
+      for (size_t i = 0; i < pipeline->_dynamic_offsets.size(); i++) {
+        printf("%u%s", pipeline->_dynamic_offsets[i],
+               i + 1 < pipeline->_dynamic_offsets.size() ? "," : "");
+      }
+      printf("]\n");
       vkCmdBindDescriptorSets(
           cmdbuf,
           VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -127,8 +141,11 @@ void VkFxInterface::_bindPipeline(VkCommandBuffer cmdbuf, vkpipeline_obj_ptr_t p
           pipeline->_dynamic_offsets.data());
     } else {
       // Fallback to static binding if no dynamic offsets
+      printf("  WARNING: No dynamic offsets, using static binding!\n");
       _bindGfxDescriptorSetOnSlot(cmdbuf, desc_set, 0);
     }
+  } else {
+    printf("  WARNING: desc_set is NULL!\n");
   }
 
 }
@@ -242,6 +259,7 @@ void VkPipelineObject::applyPendingUboUpdates(VkCommandBuffer cmdbuf, uint32_t f
   extern VkDynamicUBOSystem* g_dynamic_ubo_system;
   if (!g_dynamic_ubo_system) {
     // Dynamic UBO system not initialized yet
+    printf("UBO-UPDATE: g_dynamic_ubo_system is NULL!\n");
     return;
   }
 
@@ -252,11 +270,79 @@ void VkPipelineObject::applyPendingUboUpdates(VkCommandBuffer cmdbuf, uint32_t f
     // Allocate dynamic memory for this draw
     auto allocation = g_dynamic_ubo_system->allocate(ubo->_shadow_buffer.size(), frame_index);
 
+    // Log UBO pointer for matching with WROTE-MVP
+    static int ubo_log_count = 0;
+    if (ubo->_orkparamblock->_name == "ublk_std_matrices" && ubo_log_count < 5) {
+      ubo_log_count++;
+      printf("UBO-COPY[%d] ubo=%p name=%s shadow_size=%zu\n",
+             ubo_log_count, (void*)ubo, ubo->_orkparamblock->_name.c_str(), ubo->_shadow_buffer.size());
+    }
+
     // Copy shadow buffer to dynamic allocation
     memcpy(allocation.cpu_ptr, ubo->_shadow_buffer.data(), ubo->_shadow_buffer.size());
 
+    // VERIFY: Read back immediately to confirm write succeeded
+    uint32_t* verify_ptr = (uint32_t*)allocation.cpu_ptr;
+    uint32_t* shadow_ptr = (uint32_t*)ubo->_shadow_buffer.data();
+    if (ubo->_shadow_buffer.size() >= 16) {
+      bool mismatch = (verify_ptr[0] != shadow_ptr[0]) ||
+                      (verify_ptr[1] != shadow_ptr[1]) ||
+                      (verify_ptr[2] != shadow_ptr[2]) ||
+                      (verify_ptr[3] != shadow_ptr[3]);
+      if (mismatch) {
+        printf("VERIFY-FAIL ubo<%s>: wrote[%08x,%08x,%08x,%08x] read[%08x,%08x,%08x,%08x]\n",
+               ubo->_orkparamblock->_name.c_str(),
+               shadow_ptr[0], shadow_ptr[1], shadow_ptr[2], shadow_ptr[3],
+               verify_ptr[0], verify_ptr[1], verify_ptr[2], verify_ptr[3]);
+      }
+    }
+
+    // Verify MVP was copied correctly for ublk_std_matrices
+    if (ubo->_orkparamblock->_name == "ublk_std_matrices" && allocation.size >= 384) {
+      float* ring_mvp = (float*)((uint8_t*)allocation.cpu_ptr + 320);
+      float* shadow_mvp = (float*)(ubo->_shadow_buffer.data() + 320);
+      static int mvp_verify_count = 0;
+      if (mvp_verify_count < 5) {
+        mvp_verify_count++;
+        printf("MVP-VERIFY[%d] ubo=%p ring[%.4f,%.4f,%.4f,%.4f] shadow[%.4f,%.4f,%.4f,%.4f]\n",
+               mvp_verify_count,
+               (void*)ubo,
+               ring_mvp[0], ring_mvp[1], ring_mvp[2], ring_mvp[3],
+               shadow_mvp[0], shadow_mvp[1], shadow_mvp[2], shadow_mvp[3]);
+      }
+    }
+
     // Track offset for descriptor binding
     _dynamic_offsets.push_back(allocation.dynamic_offset);
+  }
+
+  // Diagnostic output - check matrix data (only first draw per technique to reduce spam)
+  static std::set<std::string> _logged_teks;
+  std::string tek_name = _vk_program ? _vk_program->_tek_name : "?";
+  if (_logged_teks.find(tek_name) == _logged_teks.end()) {
+    _logged_teks.insert(tek_name);
+    printf("UBO-UPDATE tek<%s>: _uniform_blocks=%zu _dynamic_offsets=%zu offsets=[",
+           tek_name.c_str(), _uniform_blocks.size(), _dynamic_offsets.size());
+    for (size_t i = 0; i < _dynamic_offsets.size(); i++) {
+      printf("%u%s", _dynamic_offsets[i], i + 1 < _dynamic_offsets.size() ? "," : "");
+    }
+    printf("]\n");
+
+    // Check ublk_std_matrices shadow buffer content - print full MVP matrix
+    // MVP is at offset 320 (after m, v, p, mv, vp = 5 * 64 bytes)
+    for (auto* ubo : _uniform_blocks) {
+      if (ubo->_orkparamblock->_name == "ublk_std_matrices") {
+        auto& buf = ubo->_shadow_buffer;
+        if (buf.size() >= 384) {  // 320 + 64 = 384 bytes minimum for MVP
+          float* mvp = (float*)(buf.data() + 320);  // MVP is at offset 320
+          printf("  ublk_std_matrices: shadow_size=%zu MVP@offset320:\n", buf.size());
+          printf("    MVP row0: [%.4f, %.4f, %.4f, %.4f]\n", mvp[0], mvp[4], mvp[8], mvp[12]);
+          printf("    MVP row1: [%.4f, %.4f, %.4f, %.4f]\n", mvp[1], mvp[5], mvp[9], mvp[13]);
+          printf("    MVP row2: [%.4f, %.4f, %.4f, %.4f]\n", mvp[2], mvp[6], mvp[10], mvp[14]);
+          printf("    MVP row3: [%.4f, %.4f, %.4f, %.4f]\n", mvp[3], mvp[7], mvp[11], mvp[15]);
+        }
+      }
+    }
   }
 
   // Note: The actual descriptor set binding with dynamic offsets will happen
@@ -482,6 +568,11 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
                 buffer_info.offset                 = 0; // Dynamic offset will be provided at bind time
                 buffer_info.range                  = ubo_block->_buffer_size;
                 buffer_infos.push_back(buffer_info);
+
+                // Diagnostic: log which buffer we're binding
+                printf("DESCRIPTOR-WRITE: global_buffer=%p vkbuffer=%p ubo<%s> range=%zu\n",
+                       (void*)global_buffer.get(), (void*)global_buffer->_vkbuffer,
+                       binding->name.c_str(), ubo_block->_buffer_size);
 
                 VkWriteDescriptorSet DWRITE = {};
                 initializeVkStruct(DWRITE, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
