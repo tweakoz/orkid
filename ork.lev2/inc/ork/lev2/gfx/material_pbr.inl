@@ -126,6 +126,7 @@ public:
   fxparam_constptr_t _paramP             = nullptr;
   fxparam_constptr_t _paramIP            = nullptr;
   fxparam_constptr_t _paramVP            = nullptr;
+  fxparam_constptr_t _paramIV            = nullptr;  // inv_v
   fxparam_constptr_t _paramIVP           = nullptr;
   fxparam_constptr_t _paramVL            = nullptr;
   fxparam_constptr_t _paramVR            = nullptr;

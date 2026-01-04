@@ -570,9 +570,9 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
                 buffer_infos.push_back(buffer_info);
 
                 // Diagnostic: log which buffer we're binding
-                printf("DESCRIPTOR-WRITE: global_buffer=%p vkbuffer=%p ubo<%s> range=%zu\n",
+                printf("DESCRIPTOR-WRITE: global_buffer=%p vkbuffer=%p ubo<%s> binding=%u range=%zu\n",
                        (void*)global_buffer.get(), (void*)global_buffer->_vkbuffer,
-                       binding->name.c_str(), ubo_block->_buffer_size);
+                       binding->name.c_str(), binding->binding_id, ubo_block->_buffer_size);
 
                 VkWriteDescriptorSet DWRITE = {};
                 initializeVkStruct(DWRITE, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);

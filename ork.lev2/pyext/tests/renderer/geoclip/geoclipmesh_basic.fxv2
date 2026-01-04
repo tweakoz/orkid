@@ -131,11 +131,13 @@ fragment_shader ps_fwd_ground_mono
     : lib_brdf
     //: lib_def
     : lib_fwd
-    : std_forward_all 
+    : std_forward_all
     : ub_frg_fwd
-    : ss_frg_fwd 
+    : ss_frg_fwd
     : storage_fwd_lighting {
-  out_color = vec4(forward_lighting_mono(frg_clr.xyz * ModColor.xyz), 1);
+  // DEBUG: Output constant magenta to verify geometry renders
+  out_color = vec4(1.0, 0.0, 1.0, 1.0);
+  //out_color = vec4(forward_lighting_mono(frg_clr.xyz * ModColor.xyz), 1);
 }
 ///////////////////////////////////////////////////////////////
 technique FWD_DEPTHPREPASS_RI_NI_MO {

@@ -224,6 +224,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _paramP                 = fxi->parameter(_shader, "p");
   _paramIP                = fxi->parameter(_shader, "inv_p");
   _paramVP                = fxi->parameter(_shader, "vp");
+  _paramIV                = fxi->parameter(_shader, "inv_v");
   _paramVL                = fxi->parameter(_shader, "v_l");
   _paramVR                = fxi->parameter(_shader, "v_r");
   _paramVPL               = fxi->parameter(_shader, "vp_l");

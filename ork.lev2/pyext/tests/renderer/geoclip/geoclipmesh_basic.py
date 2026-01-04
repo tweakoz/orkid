@@ -39,8 +39,8 @@ class GeoClipMapApp(ComponentizedApplication):
       "std_scenegraph",
       StandardSceneGraphComponent,
       sg_params=sg_params,
-      eye=vec3(0, 1, -15),
-      tgt=vec3(0, 1, -14),
+      eye=vec3(0, 15, -15),
+      tgt=vec3(0, 0, 0),
       up=vec3(0, 1, 0),
       grid_variant=None
     )
