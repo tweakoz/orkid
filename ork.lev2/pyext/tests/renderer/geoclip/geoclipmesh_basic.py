@@ -7,43 +7,44 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import math, sys, os, random, numpy, argparse
-from obt import path
-from pathlib import Path
-from orkengine.core import *
-from orkengine.lev2 import *
-lev2_pyexdir.addToSysPath()
-from lev2utils.cameras import *
-from lev2utils.scenegraph import createSceneGraph
-from signal import signal, SIGINT
+import math, sys, os
+from orkengine.core import vec3, VarMap, thisdir, CrcStringProxy
+from orkengine.lev2 import PBRMaterial, Texture, GeoClipMapDrawable
+from ork.app.application import ComponentizedApplication
+from ork.app.std_scenegraph import StandardSceneGraphComponent
 
 tokens = CrcStringProxy()
 
-sys.path.append(str(thisdir()/".."/"particles"))
-from _ptc_harness import *
-
-################################################################################
-parser = argparse.ArgumentParser(description='scenegraph particles example')
-
-args = vars(parser.parse_args())
-
 ################################################################################
 
-class GeoClipMapApp(object):
+class GeoClipMapApp(ComponentizedApplication):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=0)
-    self.ezapp.setRefreshPolicy(RefreshFastest, 0)
-    self.curtime = 0.0
 
-    setupUiCamera( app=self, #
-                   near = 0.1, #
-                   far = 10000, #
-                   eye = vec3(0,1,-15), #
-                   tgt = vec3(0,1,--14), #
-                   constrainZ=True, #
-                   up=vec3(0,1,0))
+    # Configure scenegraph parameters
+    sg_params = {
+      "preset": "ForwardPBR",
+      "SkyboxIntensity": 1.0,
+      "SpecularIntensity": 1.0,
+      "DiffuseIntensity": 1.0,
+      "AmbientLight": vec3(1),
+      "DepthFogDistance": 10000.0,
+      "DepthFogPower": 2.0,
+      "SkyboxTexPathStr": "src://envmaps/tozenv_nebula.png"
+    }
+
+    # Add standard scenegraph component with camera
+    self.SGC = self.addComponent(
+      "std_scenegraph",
+      StandardSceneGraphComponent,
+      sg_params=sg_params,
+      eye=vec3(0, 1, -15),
+      tgt=vec3(0, 1, -14),
+      up=vec3(0, 1, 0)
+    )
+
+    self.createEzApp(ssaa=0)
 
   ################################################
   # gpu data init:
@@ -51,34 +52,17 @@ class GeoClipMapApp(object):
   #   made available
   ##############################################
 
-  def onGpuInit(self,ctx):
+  def _onGpuInit(self, ctx):
 
-    ###################################
-    # create scenegraph
-    ###################################
-    sceneparams = VarMap() 
-    sceneparams.preset = "ForwardPBR"
-    sceneparams.SkyboxIntensity = float(1.0)
-    sceneparams.SpecularIntensity = float(1.0)
-    sceneparams.DiffuseIntensity = float(1.0)
-    sceneparams.AmbientLight = vec3(1)
-    sceneparams.DepthFogDistance = float(10000)
-    sceneparams.DepthFogPower = float(2)
-    sceneparams.SkyboxTexPathStr = "src://envmaps/tozenv_nebula.png"
-
-    ###################################
-    # create scene
-    ###################################
-
-    self.scene = self.ezapp.createScene(sceneparams)
-    self.layer_fwd = self.scene.createLayer("std_forward")
-    self.fwd_layers = [self.layer_fwd]
+    # Get scenegraph and layer from StandardSceneGraphComponent
+    self.scene = self.SGC.scenegraph
+    self.layer_fwd = self.SGC.layer_fwd
 
     #######################################
     # ground material (water)
     #######################################
 
-    gmtl = PBRMaterial() 
+    gmtl = PBRMaterial()
     gmtl.texColor = Texture.load("src://effect_textures/white.dds")
     gmtl.texNormal = Texture.load("src://effect_textures/default_normal.dds")
     gmtl.texMtlRuf = Texture.load("src://effect_textures/white.dds")
@@ -105,37 +89,16 @@ class GeoClipMapApp(object):
     # level1: level0*2 = 256 meters radius
     # level2: level1*2 = 512 meters radius
     # level3 : level2*2 = 1024 meters radius
-    
+
     # total : 1920 meters radius
 
     self.gdata = gdata
     self.drawable_ground = gdata.createSGDrawable(self.scene)
-    self.groundnode = self.scene.createDrawableNodeOnLayers([self.layer_fwd],"geoclip-node",self.drawable_ground)
-    self.groundnode.worldTransform.translation = vec3(0,0,0)
+    self.groundnode = self.scene.createDrawableNodeOnLayers([self.layer_fwd], "geoclip-node", self.drawable_ground)
+    self.groundnode.worldTransform.translation = vec3(0, 0, 0)
     self.groundnode.worldTransform.scale = 1
 
-  ################################################
-
-  def onUpdate(self,updinfo):
-    self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
-    self.curtime = updinfo.absolutetime
-
-  ##############################################
-
-  def onUiEvent(self,uievent):
-    handled = self.uicam.uiEventHandler(uievent)
-    if handled:
-      self.camera.copyFrom( self.uicam.cameradata )
-    return ui.HandlerResult()
-
 ###############################################################################
 
-def sig_handler(signal_received, frame):
-  print('SIGINT or CTRL-C detected. Exiting gracefully')
-  sys.exit(0)
-
-###############################################################################
-
-signal(SIGINT, sig_handler)
-
-GeoClipMapApp().ezapp.mainThreadLoop()
+app = GeoClipMapApp()
+app.ezapp.mainThreadLoop()
