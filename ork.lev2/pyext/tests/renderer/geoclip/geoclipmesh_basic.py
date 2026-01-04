@@ -8,8 +8,8 @@
 ################################################################################
 
 import math, sys, os
-from orkengine.core import vec3, thisdir, CrcStringProxy
-from orkengine.lev2 import PBRMaterial, Image, GeoClipMapDrawable
+from orkengine.core import vec2, vec3, thisdir, CrcStringProxy
+from orkengine.lev2 import PBRMaterial, Image, GeoClipMapDrawable, ui
 from ork.app.application import ComponentizedApplication
 from ork.app.std_scenegraph import StandardSceneGraphComponent
 
@@ -39,11 +39,16 @@ class GeoClipMapApp(ComponentizedApplication):
       "std_scenegraph",
       StandardSceneGraphComponent,
       sg_params=sg_params,
-      eye=vec3(0, 15, -15),
-      tgt=vec3(0, 0, 0),
+      eye=vec3(0, 150, -15),
+      tgt=vec3(0, 150, 0),
       up=vec3(0, 1, 0),
       grid_variant=None
     )
+
+    # WASD movement state
+    self.move_vel = vec2(0, 0)
+    self.pos_offset = vec3(0, 0, 0)
+    self.move_speed = 150.0
 
     self.createEzApp(ssaa=0)
 
@@ -106,6 +111,65 @@ class GeoClipMapApp(ComponentizedApplication):
     self.groundnode = self.scene.createDrawableNodeOnLayers([self.layer_fwd], "geoclip-node", self.drawable_ground)
     self.groundnode.worldTransform.translation = vec3(0, 0, 0)
     self.groundnode.worldTransform.scale = 1
+
+  ################################################
+  # update callback
+  ################################################
+
+  def _onUpdate(self, updinfo):
+    DT = updinfo.deltatime
+
+    # Get camera direction (flattened to XZ plane)
+    uicam = self.SGC.uicam
+    zdir = uicam.zDir
+    zdir = vec3(zdir.x, 0, zdir.z)
+    zdir.normalize()
+
+    # Compute xdir (right vector)
+    UP = vec3(0, 1, 0)
+    xdir = zdir.cross(UP)
+
+    # Apply WASD movement in camera-relative direction
+    move_dir = zdir * self.move_vel.y + xdir * self.move_vel.x
+    self.pos_offset += move_dir * self.move_speed * DT
+
+    # Update camera position offset
+    uicam.positionOffset = self.pos_offset
+    uicam.updateMatrices()
+    self.SGC.camera.copyFrom(uicam.cameradata)
+
+  ################################################
+  # UI event handler for WASD
+  ################################################
+
+  def _onUiEvent(self, uievent):
+    code = uievent.code
+
+    if code == 2634741946:  # key down
+      keycode = uievent.keycode
+      if keycode == ord('W'):
+        self.move_vel = vec2(self.move_vel.x, 1)
+        return ui.HandlerResult()
+      elif keycode == ord('S'):
+        self.move_vel = vec2(self.move_vel.x, -1)
+        return ui.HandlerResult()
+      elif keycode == ord('A'):
+        self.move_vel = vec2(-1, self.move_vel.y)
+        return ui.HandlerResult()
+      elif keycode == ord('D'):
+        self.move_vel = vec2(1, self.move_vel.y)
+        return ui.HandlerResult()
+
+    elif code == 957111669:  # key up
+      keycode = uievent.keycode
+      if keycode == ord('W') or keycode == ord('S'):
+        self.move_vel = vec2(self.move_vel.x, 0)
+        return ui.HandlerResult()
+      elif keycode == ord('A') or keycode == ord('D'):
+        self.move_vel = vec2(0, self.move_vel.y)
+        return ui.HandlerResult()
+
+    return None  # Not handled, let parent process
 
 ###############################################################################
 

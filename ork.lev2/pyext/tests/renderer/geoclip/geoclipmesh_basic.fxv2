@@ -7,6 +7,10 @@ fxconfig fxcfg_default {
   import "orkshader://misctools.i2";
 }
 ///////////////////////////////////////////////////////////////
+state_block sb_geoclipmesh : sb_default {
+  CullTest = OFF;
+}
+///////////////////////////////////////////////////////////////
 // Vertex interface for geoclipmesh (V12N12T16 format)
 // No binormal in this format - UV is vec4
 ///////////////////////////////////////////////////////////////
@@ -64,16 +68,58 @@ libblock lib_ground_vtx_base
 
   x_pos vs_compute_position(vec3 pos) {
     x_pos _x;
-    mat4 matO2W  = inv_v * m;
-    _x.true_wpos = matO2W * vec4(pos, 1);
+    // m already contains v_offset translation (eye.x, 0, eye.z)
+    // so m * pos gives us the true world position
+    _x.true_wpos = m * vec4(pos, 1);
 
-    float speed   = 0.0 * 1.65;
-    float baseamp = 25;
     vec3 wave_pos = _x.true_wpos.xyz;
     float radius  = length(wave_pos.xz);
 
-    _x.signal  = vec3(0,0,0);
-    _x.new_pos = vec4(wave_pos, 1);
+    // Multi-scale displacement in world space (static) - mountainous terrain
+
+    // Mountain scale - large peaks
+    float mtn_freq = 0.005;
+    float mtn_amp = 80.0;
+    float mtn_wave = sin(wave_pos.x * mtn_freq + 0.3)
+                   * cos(wave_pos.z * mtn_freq * 0.8 + 0.7)
+                   + sin(wave_pos.x * mtn_freq * 1.3 - wave_pos.z * mtn_freq * 0.4) * 0.5;
+
+    // Large scale rolling hills
+    float large_freq = 0.015;
+    float large_amp = 30.0;
+    float large_wave = sin(wave_pos.x * large_freq)
+                     * cos(wave_pos.z * large_freq * 0.7)
+                     + cos(wave_pos.x * large_freq * 0.6 + wave_pos.z * large_freq) * 0.6;
+
+    // Medium scale ridges
+    float med_freq = 0.04;
+    float med_amp = 12.0;
+    float med_wave = sin(wave_pos.x * med_freq + wave_pos.z * med_freq * 0.5)
+                   * cos(wave_pos.z * med_freq * 1.3);
+
+    // Small scale detail
+    float small_freq = 0.12;
+    float small_amp = 4.0;
+    float small_wave = sin(wave_pos.x * small_freq * 1.1)
+                     * sin(wave_pos.z * small_freq * 0.9);
+
+    // Fine detail
+    float fine_freq = 0.3;
+    float fine_amp = 1.5;
+    float fine_wave = sin(wave_pos.x * fine_freq * 1.2 + wave_pos.z * fine_freq * 0.7)
+                    * cos(wave_pos.z * fine_freq * 1.1);
+
+    // Combine all scales
+    float displacement = mtn_wave * mtn_amp
+                       + large_wave * large_amp
+                       + med_wave * med_amp
+                       + small_wave * small_amp
+                       + fine_wave * fine_amp;
+
+    wave_pos.y += displacement;
+
+    _x.signal  = vec3(displacement, 0, 0);
+    _x.new_pos = vec4(wave_pos, 1);  // Now in WORLD space
     _x.radius  = radius;
     return _x;
   }
@@ -84,14 +130,16 @@ libblock lib_ground_vtx : lib_ground_vtx_base {
   vec4 vs_common_mono(vec4 pos, vec3 nrm) {
     x_pos _x = vs_compute_position(pos.xyz);
 
-    // Compute world position and TBN matrix
-    vec4 cpos       = mv * _x.new_pos;
+    // _x.new_pos is now in WORLD space
+    // Use v (view matrix) to go from world to view space
+    vec4 cpos       = v * _x.new_pos;
     vec3 wnormal    = normalize(mrot * nrm);
     // No binormal in V12N12T16 format - construct tangent from normal
     vec3 wtangent   = normalize(cross(wnormal, vec3(0, 1, 0)));
     vec3 wbitangent = cross(wnormal, wtangent);
 
-    frg_wpos    = m * _x.new_pos;
+    // _x.new_pos is already in world space
+    frg_wpos    = _x.new_pos;
     frg_tbn     = mat3(wtangent, wbitangent, wnormal);
     frg_camz    = wnormal.xyz;
     frg_camdist = -cpos.z;
@@ -110,7 +158,8 @@ vertex_shader vs_ground_mono
     : ublk_std_matrices
     : lib_ground_vtx {
   vec4 new_pos = vs_common_mono(position, normal);
-  gl_Position  = mvp * new_pos;
+  // new_pos is in WORLD space, so use vp (view-projection) not mvp
+  gl_Position  = vp * new_pos;
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_forward_depthprepass_mono
@@ -120,7 +169,8 @@ vertex_shader vs_forward_depthprepass_mono
   x_pos _x = vs_compute_position(position.xyz);
 
   vec4 new_pos = _x.new_pos;
-  vec4 hpos    = mvp * new_pos;
+  // new_pos is in WORLD space, so use vp (view-projection) not mvp
+  vec4 hpos    = vp * new_pos;
   gl_Position  = hpos;
   frg_depth    = (hpos.z) / (hpos.w);
 }
@@ -135,9 +185,30 @@ fragment_shader ps_fwd_ground_mono
     : ub_frg_fwd
     : ss_frg_fwd
     : storage_fwd_lighting {
-  // DEBUG: Output constant magenta to verify geometry renders
-  out_color = vec4(1.0, 0.0, 1.0, 1.0);
-  //out_color = vec4(forward_lighting_mono(frg_clr.xyz * ModColor.xyz), 1);
+
+  // World-space tile grid using fmod
+  float tile_size = 10.0;
+  vec2 tile_pos = mod(frg_wpos.xz, tile_size);
+
+  // Grid lines at tile edges
+  float line_width = 0.1;
+  float grid_x = step(tile_pos.x, line_width) + step(tile_size - line_width, tile_pos.x);
+  float grid_z = step(tile_pos.y, line_width) + step(tile_size - line_width, tile_pos.y);
+  float grid = clamp(grid_x + grid_z, 0.0, 1.0);
+
+  // Checkerboard pattern for tiles
+  vec2 tile_id = floor(frg_wpos.xz / tile_size);
+  float checker = mod(tile_id.x + tile_id.y, 2.0);
+
+  // Base color from lighting with checkerboard tint
+  vec3 lit_color = forward_lighting_mono(frg_clr.xyz * ModColor.xyz);
+  vec3 tile_color = mix(lit_color * 0.8, lit_color * 1.0, checker);
+
+  // Grid lines in dark color
+  vec3 grid_color = vec3(0.1, 0.1, 0.1);
+  vec3 final_color = mix(tile_color, grid_color, grid);
+
+  out_color = vec4(final_color, 1);
 }
 ///////////////////////////////////////////////////////////////
 technique FWD_DEPTHPREPASS_RI_NI_MO {
@@ -154,6 +225,6 @@ technique FWD_CT_NM_RI_NI_MO {
   pass p0 {
     vertex_shader = vs_ground_mono;
     fragment_shader = ps_fwd_ground_mono;
-    state_block = sb_default;
+    state_block = sb_geoclipmesh;
   }
 }
