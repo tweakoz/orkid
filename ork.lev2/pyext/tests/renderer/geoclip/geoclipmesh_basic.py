@@ -8,8 +8,8 @@
 ################################################################################
 
 import math, sys, os
-from orkengine.core import vec3, VarMap, thisdir, CrcStringProxy
-from orkengine.lev2 import PBRMaterial, Texture, GeoClipMapDrawable
+from orkengine.core import vec3, thisdir, CrcStringProxy
+from orkengine.lev2 import PBRMaterial, Image, GeoClipMapDrawable
 from ork.app.application import ComponentizedApplication
 from ork.app.std_scenegraph import StandardSceneGraphComponent
 
@@ -31,7 +31,7 @@ class GeoClipMapApp(ComponentizedApplication):
       "AmbientLight": vec3(1),
       "DepthFogDistance": 10000.0,
       "DepthFogPower": 2.0,
-      "SkyboxTexPathStr": "src://envmaps/tozenv_nebula.png"
+      "SkyboxTexPathStr": "nebula"
     }
 
     # Add standard scenegraph component with camera
@@ -41,7 +41,8 @@ class GeoClipMapApp(ComponentizedApplication):
       sg_params=sg_params,
       eye=vec3(0, 1, -15),
       tgt=vec3(0, 1, -14),
-      up=vec3(0, 1, 0)
+      up=vec3(0, 1, 0),
+      grid_variant=None
     )
 
     self.createEzApp(ssaa=0)
@@ -59,17 +60,25 @@ class GeoClipMapApp(ComponentizedApplication):
     self.layer_fwd = self.SGC.layer_fwd
 
     #######################################
-    # ground material (water)
+    # ground material
     #######################################
 
     gmtl = PBRMaterial()
-    gmtl.texColor = Texture.load("src://effect_textures/white.dds")
-    gmtl.texNormal = Texture.load("src://effect_textures/default_normal.dds")
-    gmtl.texMtlRuf = Texture.load("src://effect_textures/white.dds")
+    color = Image.createFromFile("src://effect_textures/white.dds")
+    normal = Image.createFromFile("src://effect_textures/default_normal.dds")
+    mtlruf = Image.createFromFile("src://effect_textures/white.dds")
+    gmtl.assignImages(
+      ctx,
+      color=color,
+      normal=normal,
+      mtlruf=mtlruf,
+      doConform=True
+    )
     gmtl.metallicFactor = 1
     gmtl.roughnessFactor = 1
     gmtl.doubleSided = True
-    gmtl.shaderpath = str(thisdir()/"geoclipmesh_basic.glfx")
+    gmtl.shaderpath = str(thisdir()/"geoclipmesh_basic.fxv2")
+    gmtl.addBasicStateLambda()
     gmtl.addLightingLambda()
     gmtl.gpuInit(ctx)
     gmtl.rasterstate.setBlendingMacro(tokens.OFF)

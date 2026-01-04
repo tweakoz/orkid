@@ -149,7 +149,7 @@ class TERRAINAPP(object):
     gmtl.metallicFactor = 1
     gmtl.roughnessFactor = 1
     gmtl.doubleSided = True
-    gmtl.shaderpath = str(thisdir()/"geoclipmesh_terrain.glfx")
+    gmtl.shaderpath = str(thisdir()/"geoclipmesh_terrain.fxv2")
     #gmtl.addLightingLambda()
     gmtl.gpuInit(ctx)
     gmtl.blending = tokens.ALPHA
@@ -174,10 +174,12 @@ class TERRAINAPP(object):
     self.groundnode.worldTransform.scale = 1
     #self.groundnode.viewRelative = True
 
+    self.scene.lightingmanager.gpuInit(ctx)
+
   ################################################
 
   def onUpdate(self,updinfo):
-    
+
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
     self.curtime = updinfo.absolutetime
     DT = updinfo.deltatime

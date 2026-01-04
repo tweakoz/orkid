@@ -1,0 +1,157 @@
+///////////////////////////////////////////////////////////////
+// FxConfigs
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default {
+  glsl_version = "450";
+  import "orkshader://pbrtools.i2";
+  import "orkshader://misctools.i2";
+}
+///////////////////////////////////////////////////////////////
+// Vertex interface for geoclipmesh (V12N12T16 format)
+// No binormal in this format - UV is vec4
+///////////////////////////////////////////////////////////////
+vertex_interface vif_geoclipmesh {
+  inputs {
+    vec4 position : POSITION;
+    vec3 normal : NORMAL;
+    vec4 uv0 : TEXCOORD0;
+  }
+  outputs {
+    vec4 frg_wpos;
+    vec4 frg_clr;
+    vec2 frg_uv0;
+    mat3 frg_tbn;
+    float frg_camdist;
+    vec3 frg_camz;
+    vec4 frg_modcolor;
+  }
+}
+///////////////////////////////////////////////////////////////
+// Depth prepass vertex interface (V12N12T16 format)
+///////////////////////////////////////////////////////////////
+vertex_interface vif_geoclipmesh_dpp {
+  inputs {
+    vec4 position : POSITION;
+    vec3 normal : NORMAL;
+    vec4 uv0 : TEXCOORD0;
+  }
+  outputs {
+    float frg_depth;
+  }
+}
+///////////////////////////////////////////////////////////////
+// Fragment interface - matches fif_FWDTEST pattern
+///////////////////////////////////////////////////////////////
+fragment_interface fif_geoclipmesh
+  : vif_geoclipmesh {
+  outputs {
+    layout(location = 0) vec4 out_color;
+  }
+}
+///////////////////////////////////////////////////////////////
+typeblock typ_geoclipmesh_basic {
+  struct x_pos {
+    vec4 true_wpos;
+    vec4 new_pos;
+    vec3 signal;
+    float radius;
+  };
+}
+///////////////////////////////////////////////////////////////
+libblock lib_ground_vtx_base 
+ : lib_mmnoise 
+ : typ_geoclipmesh_basic {
+
+  x_pos vs_compute_position(vec3 pos) {
+    x_pos _x;
+    mat4 matO2W  = inv_v * m;
+    _x.true_wpos = matO2W * vec4(pos, 1);
+
+    float speed   = 0.0 * 1.65;
+    float baseamp = 25;
+    vec3 wave_pos = _x.true_wpos.xyz;
+    float radius  = length(wave_pos.xz);
+
+    _x.signal  = vec3(0,0,0);
+    _x.new_pos = vec4(wave_pos, 1);
+    _x.radius  = radius;
+    return _x;
+  }
+}
+///////////////////////////////////////////////////////////////
+libblock lib_ground_vtx : lib_ground_vtx_base {
+
+  vec4 vs_common_mono(vec4 pos, vec3 nrm) {
+    x_pos _x = vs_compute_position(pos.xyz);
+
+    // Compute world position and TBN matrix
+    vec4 cpos       = mv * _x.new_pos;
+    vec3 wnormal    = normalize(mrot * nrm);
+    // No binormal in V12N12T16 format - construct tangent from normal
+    vec3 wtangent   = normalize(cross(wnormal, vec3(0, 1, 0)));
+    vec3 wbitangent = cross(wnormal, wtangent);
+
+    frg_wpos    = m * _x.new_pos;
+    frg_tbn     = mat3(wtangent, wbitangent, wnormal);
+    frg_camz    = wnormal.xyz;
+    frg_camdist = -cpos.z;
+
+    frg_uv0 = uv0.xy * vec2(1, -1);
+    frg_clr = vec4(1, 1, 1, 1);
+    frg_modcolor = vec4(1, 1, 1, 1);
+
+    return _x.new_pos;
+  }
+}
+
+///////////////////////////////////////////////////////////////
+vertex_shader vs_ground_mono
+    : vif_geoclipmesh
+    : ublk_std_matrices
+    : lib_ground_vtx {
+  vec4 new_pos = vs_common_mono(position, normal);
+  gl_Position  = mvp * new_pos;
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_forward_depthprepass_mono
+    : vif_geoclipmesh_dpp
+    : ublk_std_matrices
+    : lib_ground_vtx_base {
+  x_pos _x = vs_compute_position(position.xyz);
+
+  vec4 new_pos = _x.new_pos;
+  vec4 hpos    = mvp * new_pos;
+  gl_Position  = hpos;
+  frg_depth    = (hpos.z) / (hpos.w);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_fwd_ground_mono
+    : fif_geoclipmesh
+    : lib_math
+    : lib_brdf
+    //: lib_def
+    : lib_fwd
+    : std_forward_all 
+    : ub_frg_fwd
+    : ss_frg_fwd 
+    : storage_fwd_lighting {
+  out_color = vec4(forward_lighting_mono(frg_clr.xyz * ModColor.xyz), 1);
+}
+///////////////////////////////////////////////////////////////
+technique FWD_DEPTHPREPASS_RI_NI_MO {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader = vs_forward_depthprepass_mono;
+    fragment_shader = ps_forward_depthprepass_mono;
+    state_block = sb_dpp;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique FWD_CT_NM_RI_NI_MO {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader = vs_ground_mono;
+    fragment_shader = ps_fwd_ground_mono;
+    state_block = sb_default;
+  }
+}

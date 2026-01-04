@@ -96,7 +96,7 @@ class WaterApp(object):
     gmtl.metallicFactor = 1
     gmtl.roughnessFactor = 1
     gmtl.doubleSided = True
-    gmtl.shaderpath = str(thisdir()/"geoclipmesh_test.glfx")
+    gmtl.shaderpath = str(thisdir()/"geoclipmesh_test.fxv2")
     #gmtl.addLightingLambda()
     gmtl.gpuInit(ctx)
     gmtl.blending = tokens.ALPHA
@@ -120,6 +120,8 @@ class WaterApp(object):
     self.groundnode.worldTransform.translation = vec3(0,0,0)
     self.groundnode.worldTransform.scale = 1
     #self.groundnode.viewRelative = True
+
+    self.scene.lightingmanager.gpuInit(ctx)
 
   ################################################
 

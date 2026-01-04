@@ -165,7 +165,7 @@ class WaterApp(object):
     gmtl.metallicFactor = 1
     gmtl.roughnessFactor = 1
     gmtl.doubleSided = True
-    gmtl.shaderpath = str(thisdir()/"geoclipmesh_water.glfx")
+    gmtl.shaderpath = str(thisdir()/"geoclipmesh_water.fxv2")
     gmtl.addLightingLambda()
     gmtl.gpuInit(ctx)
     gmtl.rasterstate.setBlendingMacro(tokens.ALPHA)
@@ -229,6 +229,7 @@ class WaterApp(object):
     self.modelnode.worldTransform.scale = 35
     self.modelnode.worldTransform.translation = vec3(0,28,0)
 
+    self.scene.lightingmanager.gpuInit(ctx)
 
   def onGpuUpdate(self,ctx):
     self.spotlight1.update(self.lighttime)

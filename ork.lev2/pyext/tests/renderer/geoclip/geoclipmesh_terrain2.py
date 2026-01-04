@@ -183,7 +183,7 @@ class TERRAINAPP(object):
     gmtl.metallicFactor = 1
     gmtl.roughnessFactor = 1
     gmtl.doubleSided = True
-    gmtl.shaderpath = str(thisdir()/"geoclipmesh_terrain2.glfx")
+    gmtl.shaderpath = str(thisdir()/"geoclipmesh_terrain2.fxv2")
     #gmtl.addLightingLambda()
     gmtl.gpuInit(ctx)
     gmtl.blending = tokens.ALPHA
@@ -210,10 +210,12 @@ class TERRAINAPP(object):
     self.groundnode.worldTransform.scale = 1
     #self.groundnode.viewRelative = True
 
+    self.scene.lightingmanager.gpuInit(ctx)
+
   ################################################
 
   def onUpdate(self,updinfo):
-    
+
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
     self.curtime = updinfo.absolutetime
     DT = updinfo.deltatime
@@ -222,14 +224,14 @@ class TERRAINAPP(object):
     self.zdir.normalize()
     UP = vec3(0,1,0)
     xdir = self.zdir.cross(UP)
-       
-    
+
+
     wasd_dir = vec3(self.view_vel.x,0,self.view_vel.y)
     # rotate wasd_dir by self.move_dir (a scalar representing rotation on y)
     #wasd_dir.roty(self.move_dir)
-    view_vel = self.zdir*wasd_dir.z 
+    view_vel = self.zdir*wasd_dir.z
     view_vel += xdir*wasd_dir.x
-    
+
     scalar = clamp(self.uicam.loc.y,0.0001,1)
     view_vel *= 40.3 * math.pow(scalar,0.7)
     #print(scalar)

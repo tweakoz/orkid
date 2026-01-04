@@ -306,7 +306,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   //
 
-  OrkAssert(_parBoneBlock != nullptr);
+  // Note: _parBoneBlock is optional - only required for skinned meshes
+  // The binding code at line ~484 already checks for nullptr
 
   // printf( "_texColor<%p>\n", _texColor.get() );
   // printf( "_texNormal<%p>\n", _texNormal.get() );

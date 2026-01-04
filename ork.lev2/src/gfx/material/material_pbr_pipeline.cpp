@@ -159,12 +159,14 @@ FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl) {
     if (monocams) {
       auto eye_pos = monocams->_vmatrix.inverse().translation();
       FXI->bindParamVect3(mtl->_paramEyePostion, eye_pos);
-      FXI->bindParamMatrix(mtl->_paramMVP, monocams->MVPMONO(worldmatrix));
+      auto MVP = monocams->MVPMONO(worldmatrix);
+      auto MV = monocams->_vmatrix * worldmatrix;
+      FXI->bindParamMatrix(mtl->_paramMVP, MVP);
+      FXI->bindParamMatrix(mtl->_paramMV, MV);
 
       auto VP = monocams->VPMONO();
-      // FXI->bindParamMatrix(mtl->_paramP, monocams->_pmatrix);
+      FXI->bindParamMatrix(mtl->_paramP, monocams->_pmatrix);
       FXI->bindParamMatrix(mtl->_paramV, monocams->_vmatrix);
-      // FXI->bindParamMatrix(mtl->_paramIV, monocams->_ivmatrix);
       FXI->bindParamMatrix(mtl->_paramVP, VP);
       FXI->bindParamMatrix(mtl->_paramIVP, VP.inverse());
     }
