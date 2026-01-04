@@ -7,27 +7,26 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import math, random, argparse, sys, signal
-from ork import demoapp
-from orkengine.core import vec3, vec4, quat, mtx4, ncui
-from orkengine.core import dfrustum, dvec4, fmtx4_to_dmtx4 
+import math, random, argparse, sys
+from orkengine.core import vec3, vec4, quat, mtx4
+from orkengine.core import dfrustum, dvec4, fmtx4_to_dmtx4
 from orkengine.core import lev2_pyexdir, Transform
 from orkengine.core import CrcStringProxy, thisdir, VarMap
 from orkengine import lev2
+from ork.app.application import ComponentizedApplication
 
 ################################################################################
 
 lev2_pyexdir.addToSysPath()
 from lev2utils.cameras import setupUiCamera
 from lev2utils.primitives import createGridData
-from lev2utils.scenegraph import createSceneGraph
 from lev2utils.lighting import MySpotLight, MyCookie
 
 sys.path.append(str(thisdir()/".."/"particles"))
 from _ptc_harness import *
 
 ################################################################################
-parser = demoapp.parser(description='scenegraph example')
+parser = argparse.ArgumentParser(description='scenegraph example')
 parser.add_argument('--stereo', action='store_true', help='stereo mode')
 ################################################################################
 args = vars(parser.parse_args())
@@ -37,30 +36,32 @@ mono = not stereo
 ################################################################################
 tokens = CrcStringProxy()
 
-class LIGHTING_APP(object):
+class LIGHTING_APP(ComponentizedApplication):
 
   def __init__(self):
-    super().__init__()
-    self.ezapp = lev2.OrkEzApp.create(self,ssaa=2,msaa=0, fullscreen=False)
-    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
+    super().__init__(lui="yes")
 
-    demoapp.install_signal_handler(self.ezapp)
-
+    self.stereo = stereo
+    self.mono = mono
     self.materials = set()
 
-    if stereo:
+    if self.stereo:
       self.cameralut = lev2.CameraDataLut()
       self.vrcamera = lev2.CameraData()
-      self.cameralut.addCamera("vrcam",self.vrcamera)
-    else:
-      setupUiCamera(app=self,eye=vec3(0,12,15))
+      self.cameralut.addCamera("vrcam", self.vrcamera)
+
+    self.createEzApp(ssaa=2, msaa=0, fullscreen=False)
 
 
   ##############################################
 
-  def onGpuInit(self,ctx):
+  def _onGpuInit(self, ctx):
 
-    if stereo:
+    # Setup camera for mono mode
+    if self.mono:
+      setupUiCamera(app=self, eye=vec3(0, 12, 15))
+
+    if self.stereo:
       self.vrdev = orkidvr.novr_device()
       self.vrdev.camera = "vrcam"
 
@@ -74,7 +75,7 @@ class LIGHTING_APP(object):
     sceneparams.DepthFogDistance = float(10000)
     sceneparams.supersample = 1
 
-    if mono:
+    if self.mono:
       sceneparams.preset = "ForwardPBR"
     else:
       sceneparams.preset = "FWDPBRVR"
@@ -96,6 +97,7 @@ class LIGHTING_APP(object):
     self.layer_all = self.scene.createLayer("All")
     self.fwd_layers = [self.layer_fwd,self.layer_donly]
     self.pbr_common = self.scene.pbr_common
+    self.pbr_common.useDepthPrepass = True
     self.pbr_common.useFloatColorBuffer = True
 
     DEPTH_LAYERS = [self.layer_donly,self.layer_dprobe]
@@ -232,39 +234,39 @@ class LIGHTING_APP(object):
     self.probe.name = "probe1"
     self.probe_node = self.layer_all.createLightProbeNode("probe",self.probe)
 
+    lmgr.gpuInit(ctx)
+
   ##############################################
 
-  def onUiEvent(self,uievent):
+  def _onUiEvent(self, uievent):
     handled = False
-    if mono:
+    if self.mono:
       handled = self.uicam.uiEventHandler(uievent)
     if handled:
-      self.camera.copyFrom( self.uicam.cameradata )
+      self.camera.copyFrom(self.uicam.cameradata)
     return lev2.ui.HandlerResult()
 
   ################################################
 
-  def onUpdate(self,updinfo):
+  def _onUpdate(self, updinfo):
     self.lighttime = updinfo.absolutetime
-    if stereo:
+    if self.stereo:
       self.vrdev.FOV = 90
       self.vrdev.IPD = 0.065
       self.vrdev.near = 0.1
       self.vrdev.far = 1e5
       xf = Transform()
-      xf.lookAt(vec3(0,5,-10),vec3(0,5,0),vec3(0,1,0))
+      xf.lookAt(vec3(0, 5, -10), vec3(0, 5, 0), vec3(0, 1, 0))
       mtx_hmd = xf.composed
-      self.vrdev.setPoseMatrix("hmd",mtx_hmd)
-      
-    
-    
+      self.vrdev.setPoseMatrix("hmd", mtx_hmd)
+
     self.scene.updateScene(self.cameralut) 
     
 
   ################################################
 
-  def onGpuUpdate(self,ctx):
-    def genpos(node,frq,offset,radius=5,yscale=2):
+  def _onGpuUpdate(self, ctx):
+    def genpos(node, frq, offset, radius=5, yscale=2):
       phase = offset+self.lighttime*frq
       x = math.sin(phase)*radius
       z = math.cos(phase)*radius
@@ -288,33 +290,5 @@ class LIGHTING_APP(object):
 
 ###############################################################################
 
-if args["newlogger"]:
-  uictx = ncui.context()
-  packH = ncui.HorizontalPack()
-  splitV = ncui.VerticalSplit()
-  splitV.bottom = packH
-
-  for i in range(4):
-    button = ncui.Button()
-    button.normal_bg_color = vec3(0.1, 0.2, 0.1)
-    button.normal_fg_color = vec3(0.5)
-    button.pressed_bg_color = vec3(0.3, 0.2, 0.1)
-    button.pressed_fg_color = vec3(1)
-    button.text = "ClickMe"+str(i)
-    button.width = 50
-    button.height = 1
-    packH.addChild(button)
-
-  splitV.split_position = 0.95  # 60% for logger, 40% for debug
-  logger_tabs = uictx.swapContent(splitV)
-  splitV.top = logger_tabs
-  splitV.bottom = packH
-
-###############################################################################
-
 LIGHTING_APP().ezapp.mainThreadLoop()
 
-for name in list(locals().keys()):
-    if not name.startswith('_'):
-        del locals()[name]
-         
