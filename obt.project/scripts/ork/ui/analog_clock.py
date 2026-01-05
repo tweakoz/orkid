@@ -6,7 +6,7 @@
 
 import math
 import datetime
-from orkengine.core import vec2, vec4, CrcStringProxy
+from orkengine.core import vec2, vec4, CrcStringProxy, Rotor
 from orkengine import lev2
 
 tokens = CrcStringProxy()
@@ -69,6 +69,19 @@ class AnalogClock:
     self.oscillation_frequency = 12.0  # Hz
     self.oscillation_decay = 6.0  # Decay rate
 
+    # Minute hand dragging state (using Klein rotors for accumulation)
+    self.dragging_minute = False
+    self.cumulative_rotor = Rotor.fromAngle2D(0.0)  # Total accumulated rotation
+    self.rotor_windings = 0  # Track 2π crossings (where angle2D wraps from ±360° to ∓360°)
+    self.last_rotor_angle2D = 0.0  # For detecting angle wraps
+    self.last_drag_angle = 0.0  # Previous frame's mouse angle for incremental tracking
+
+    # Cached geometry for hit testing
+    self._cx = 0
+    self._cy = 0
+    self._radius = 0
+    self._minute_angle = 0
+
     # Primitive storage (initialized in gpuInit)
     self.tick_quads = []
     self.hand_vertices = []
@@ -94,10 +107,81 @@ class AnalogClock:
   def _onUiEvent(self, ev):
     """Handle input events."""
     if ev.code == tokens.PUSH.hashed:
-      # Click to cycle color schemes
-      self.current_scheme = (self.current_scheme + 1) % len(self.color_schemes)
-      self._applyColorScheme()
+      # Get click position in widget-local coordinates
+      x, y = self._toLocalCoords(ev.x, ev.y)
+
+      # Calculate distance from center
+      dx = x - self._cx
+      dy = y - self._cy
+      dist = math.sqrt(dx * dx + dy * dy)
+
+      if dist > self._radius:
+        # Click outside circle - cycle color schemes
+        self.current_scheme = (self.current_scheme + 1) % len(self.color_schemes)
+        self._applyColorScheme()
+      else:
+        # Check if near minute hand
+        # Use screen coords directly (Y increases downward)
+        click_angle = math.atan2(dy, dx)
+        # Match the stored minute_angle directly
+        rendered_hand_angle = self._minute_angle
+        angle_diff = self._normalize_angle(click_angle - rendered_hand_angle)
+
+        # If within ~30 degrees of minute hand and not too close to center
+        if abs(angle_diff) < 0.52 and dist > self._radius * 0.2:
+          self.dragging_minute = True
+          self.last_drag_angle = click_angle  # Initialize for incremental tracking (screen coords)
+
+    elif ev.code == tokens.DRAG.hashed and self.dragging_minute:
+      # Update rotation using rotor composition with incremental deltas
+      x, y = self._toLocalCoords(ev.x, ev.y)
+      dx = x - self._cx
+      dy = y - self._cy
+      current_angle = math.atan2(dy, dx)  # Screen coords (Y increases downward)
+
+      # Calculate small angle delta from previous frame (not from drag start)
+      # This delta will always be small since drag events are frequent
+      angle_delta = self._normalize_angle(current_angle - self.last_drag_angle)
+      self.last_drag_angle = current_angle  # Update for next frame
+
+      # Create delta rotor and compose with cumulative rotor
+      # In screen coords, clockwise = increasing angle = advancing time
+      delta_rotor = Rotor.fromAngle2D(angle_delta)
+      self.cumulative_rotor = self.cumulative_rotor * delta_rotor
+
+      # Track winding count by detecting large jumps in angle2D
+      # angle2D wraps from ±360° to ∓360° (jump of ~720° = 4π)
+      # So we need to adjust by 2 windings (2 * 360° = 720°) to compensate
+      curr_angle2D = self.cumulative_rotor.angle2D()
+      angle_jump = curr_angle2D - self.last_rotor_angle2D
+
+      # If angle jumped by more than 540° (3π), a wrap occurred
+      if angle_jump > math.pi * 3:
+        # Jumped from -360° to +360° = going negative direction
+        self.rotor_windings -= 2
+      elif angle_jump < -math.pi * 3:
+        # Jumped from +360° to -360° = going positive direction
+        self.rotor_windings += 2
+
+      self.last_rotor_angle2D = curr_angle2D
+
+    elif ev.code == tokens.RELEASE.hashed:
+      self.dragging_minute = False
+
     return lev2.ui.HandlerResult()
+
+  def _toLocalCoords(self, evx, evy):
+    """Convert event coordinates to widget-local coordinates."""
+    # Use the widget's rootToLocal method to properly convert coordinates
+    return self.canvas.rootToLocal(evx, evy)
+
+  def _normalize_angle(self, angle):
+    """Normalize angle to [-pi, pi]."""
+    while angle > math.pi:
+      angle -= 2 * math.pi
+    while angle < -math.pi:
+      angle += 2 * math.pi
+    return angle
 
   def _onPreRender(self):
     """Called by C++ before each render."""
@@ -150,9 +234,12 @@ class AnalogClock:
     if w < 1 or h < 1:
       return
 
-    # Clock geometry
+    # Clock geometry - cache for hit testing
     cx, cy = w / 2, h / 2
     radius = min(w, h) * 0.42
+    self._cx = cx
+    self._cy = cy
+    self._radius = radius
 
     # Get current time
     now = datetime.datetime.now()
@@ -170,8 +257,15 @@ class AnalogClock:
       osc_offset = self.oscillation_amplitude * decay * math.sin(self.oscillation_frequency * math.pi * 2 * self.tick_time)
 
     seconds = current_second + self.time_offset  # Discrete ticking
-    minutes = now.minute + seconds / 60.0
+    # Convert cumulative rotor angle to minutes offset
+    # angle2D() wraps at ±2π, so each winding = one 2π (360°) crossing = 60 minutes
+    rotor_angle = self.cumulative_rotor.angle2D() + self.rotor_windings * 2 * math.pi
+    minute_offset_from_rotor = rotor_angle / (2 * math.pi) * 60.0
+    minutes = now.minute + seconds / 60.0 + minute_offset_from_rotor
     hours = (now.hour % 12) + minutes / 60.0
+
+    # Cache minute angle for hit testing (before rendering)
+    self._minute_angle = (minutes / 60.0) * math.pi * 2 - math.pi / 2
 
     # Render tick marks
     self._render_ticks(cx, cy, radius)

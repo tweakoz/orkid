@@ -417,7 +417,27 @@ void pyinit_ui(py::module& module_lev2) {
               "height",
               [](uiwidget_ptr_t widget) -> int { //
                 return widget->height();
-              });
+              })
+          .def(
+              "localToRoot",
+              [](uiwidget_ptr_t widget, int lx, int ly) -> std::tuple<int, int> { //
+                int rx, ry;
+                widget->LocalToRoot(lx, ly, rx, ry);
+                return std::make_tuple(rx, ry);
+              },
+              py::arg("lx"),
+              py::arg("ly"),
+              "Convert local coordinates to root (window) coordinates")
+          .def(
+              "rootToLocal",
+              [](uiwidget_ptr_t widget, int rx, int ry) -> std::tuple<int, int> { //
+                int lx, ly;
+                widget->RootToLocal(rx, ry, lx, ly);
+                return std::make_tuple(lx, ly);
+              },
+              py::arg("rx"),
+              py::arg("ry"),
+              "Convert root (window) coordinates to local coordinates");
   type_codec->registerStdCodec<uiwidget_ptr_t>(widget_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto group_type = //

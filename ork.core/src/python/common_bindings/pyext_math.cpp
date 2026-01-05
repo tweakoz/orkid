@@ -14,6 +14,7 @@
 #include <ork/python/pycodec.inl>
 #include <ork/math/box.h>
 #include <ork/math/sphere.h>
+#include <ork/math/math_types.inl>
 
 namespace py = pybind11;
 using namespace pybind11::literals;
@@ -191,6 +192,75 @@ void init_math(py::module& module_core,python::pb11_typecodec_ptr_t type_codec) 
   module_core.def("smooth_step", [](float edge0, float edge1, float x) -> float { //
     return ::ork::audiomath::smoothstep(edge0, edge1, x);
   });
+  /////////////////////////////////////////////////////////////////////////////////
+  // Klein Geometric Algebra bindings
+  /////////////////////////////////////////////////////////////////////////////////
+  using kln_rotor_ptr_t = std::shared_ptr<kln::rotor>;
+  auto kln_rotor_type = py::class_<kln::rotor, kln_rotor_ptr_t>(module_core, "Rotor")
+    // Default constructor (identity rotor)
+    .def(py::init<>([]() -> kln_rotor_ptr_t {
+      return std::make_shared<kln::rotor>();
+    }))
+    // Construct from angle (radians) and axis (normalized)
+    .def(py::init<>([](float angle_radians, float ax, float ay, float az) -> kln_rotor_ptr_t {
+      return std::make_shared<kln::rotor>(angle_radians, ax, ay, az);
+    }), py::arg("angle"), py::arg("ax"), py::arg("ay"), py::arg("az"),
+    "Create rotor from angle (radians) and axis (ax, ay, az)")
+    // Convenience: create 2D rotor (rotation about Z axis)
+    .def_static("fromAngle2D", [](float angle_radians) -> kln_rotor_ptr_t {
+      return std::make_shared<kln::rotor>(angle_radians, 0.f, 0.f, 1.f);
+    }, py::arg("angle"), "Create 2D rotor (rotation about Z axis)")
+    // Multiply rotors (compose rotations)
+    .def("__mul__", [](kln_rotor_ptr_t self, kln_rotor_ptr_t other) -> kln_rotor_ptr_t {
+      return std::make_shared<kln::rotor>((*self) * (*other));
+    })
+    // In-place multiply
+    .def("__imul__", [](kln_rotor_ptr_t self, kln_rotor_ptr_t other) -> kln_rotor_ptr_t {
+      *self = (*self) * (*other);
+      return self;
+    })
+    // Reverse (conjugate) - inverse for unit rotors
+    .def("reverse", [](kln_rotor_ptr_t self) -> kln_rotor_ptr_t {
+      return std::make_shared<kln::rotor>(~(*self));
+    }, "Return the reverse (conjugate) of the rotor")
+    // Normalize
+    .def("normalize", [](kln_rotor_ptr_t self) -> kln_rotor_ptr_t {
+      self->normalize();
+      return self;
+    }, "Normalize the rotor in place")
+    .def("normalized", [](kln_rotor_ptr_t self) -> kln_rotor_ptr_t {
+      kln::rotor r = *self;
+      r.normalize();
+      return std::make_shared<kln::rotor>(r);
+    }, "Return a normalized copy of the rotor")
+    // Extract angle for 2D rotor (rotation about Z)
+    .def("angle2D", [](kln_rotor_ptr_t self) -> float {
+      // For a rotor r = cos(θ/2) + sin(θ/2)*e12
+      // The scalar part is cos(θ/2), stored in the first component
+      // We can extract the angle using atan2
+      float scalar = self->scalar();
+      float e12 = self->e12();
+      return 2.0f * std::atan2(e12, scalar);
+    }, "Extract the rotation angle (radians) for a 2D rotor about Z axis")
+    // Access components
+    .def_property_readonly("scalar", [](kln_rotor_ptr_t self) -> float {
+      return self->scalar();
+    })
+    .def_property_readonly("e12", [](kln_rotor_ptr_t self) -> float {
+      return self->e12();
+    })
+    .def_property_readonly("e31", [](kln_rotor_ptr_t self) -> float {
+      return self->e31();
+    })
+    .def_property_readonly("e23", [](kln_rotor_ptr_t self) -> float {
+      return self->e23();
+    })
+    .def("__repr__", [](kln_rotor_ptr_t self) -> std::string {
+      return FormatString("Rotor(scalar=%f, e23=%f, e31=%f, e12=%f)",
+                          self->scalar(), self->e23(), self->e31(), self->e12());
+    });
+  type_codec->registerStdCodec<kln_rotor_ptr_t>(kln_rotor_type);
+  /////////////////////////////////////////////////////////////////////////////////
   }
 
 } // namespace ork
