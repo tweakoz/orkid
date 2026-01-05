@@ -25,6 +25,8 @@ uniform_block ublk_canvas (descriptor_set 0) {
   mat4 MatMVP;
   vec2 canvas_size;   // Canvas width, height in pixels
   uint ssbo_base;     // Base offset into SSBO for this primitive (in quads)
+  uint _pad0;         // Align to 16 bytes for mat4
+  mat4 layer_transform; // Layer transform (identity by default)
 }
 
 ///////////////////////////////////////////////////////////////
@@ -129,7 +131,11 @@ vertex_shader vs_canvas_quad : vface_canvas_quad {
     offset.x * s + offset.y * c
   );
 
-  vec2 worldPos = center + rotated;
+  vec2 localPos = center + rotated;
+
+  // Apply layer transform
+  vec4 worldPos4 = layer_transform * vec4(localPos, 0.0, 1.0);
+  vec2 worldPos = worldPos4.xy;
 
   // Convert to NDC (assuming orthographic UI projection)
   // Canvas uses top-left origin, OpenGL uses bottom-left
@@ -160,10 +166,14 @@ vertex_shader vs_canvas_vertex : vface_canvas_quad {
   vec4 uv       = quad_data[base + 1];
   vec4 color    = quad_data[base + 2];
 
+  // Apply layer transform
+  vec4 worldPos4 = layer_transform * vec4(position.xy, 0.0, 1.0);
+  vec2 worldPos = worldPos4.xy;
+
   // Convert to NDC (canvas uses top-left origin)
   vec2 ndc = vec2(
-    (position.x / canvas_size.x) * 2.0 - 1.0,
-    1.0 - (position.y / canvas_size.y) * 2.0
+    (worldPos.x / canvas_size.x) * 2.0 - 1.0,
+    1.0 - (worldPos.y / canvas_size.y) * 2.0
   );
 
   gl_Position = vec4(ndc, 0.0, 1.0);

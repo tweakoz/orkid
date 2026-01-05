@@ -16,6 +16,8 @@
 namespace ork::ui {
 
 struct PrimCanvas;
+struct PrimCanvasLayer;
+using primcanvaslayer_ptr_t = std::shared_ptr<PrimCanvasLayer>;
 
 ////////////////////////////////////////////////////////////////////
 // QuadData: Per-quad instance data stored in SSBO
@@ -61,7 +63,8 @@ using vertexdata_ptr_t = std::shared_ptr<VertexData>;
 
 struct Primitive {
   virtual ~Primitive() = default;
-  virtual void draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd) = 0;
+  virtual void draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd,
+                    primcanvaslayer_ptr_t layer) = 0;
   virtual size_t ssboQuadCount() const { return 0; }
   virtual void gatherQuadData(std::vector<QuadData>& out) const {}
 
@@ -80,7 +83,8 @@ struct QuadPrimitive : Primitive {
   lev2::texture_ptr_t _texture;
   std::vector<quaddata_ptr_t> _quads;
 
-  void draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd) override;
+  void draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd,
+            primcanvaslayer_ptr_t layer) override;
   size_t ssboQuadCount() const override { return _quads.size(); }
   void gatherQuadData(std::vector<QuadData>& out) const override;
 };
@@ -103,13 +107,14 @@ struct SpritePrimitive : Primitive {
   lev2::texture_ptr_t _texture;
   std::vector<quaddata_ptr_t> _quads;  // Quads in local space (centered at origin)
 
-  void draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd) override;
+  void draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd,
+            primcanvaslayer_ptr_t layer) override;
   size_t ssboQuadCount() const override { return _quads.size(); }
   void gatherQuadData(std::vector<QuadData>& out) const override;
 
-  // Draw with instance transform (called by SpriteInstance)
+  // Draw with combined transform (called by SpriteInstance)
   void drawInstanced(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd,
-                     const fmtx4& transform, const fvec4& tint);
+                     const fmtx4& combined_transform, const fvec4& tint);
 };
 
 ////////////////////////////////////////////////////////////////////
@@ -132,7 +137,8 @@ struct SpriteInstance : Primitive {
   void setScale(float uniform_scale);
   void setTransform(float x, float y, float rotation, float scale);
 
-  void draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd) override;
+  void draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd,
+            primcanvaslayer_ptr_t layer) override;
 
   // Instances don't contribute to SSBO - they reuse sprite's data
   size_t ssboQuadCount() const override { return 0; }
@@ -150,7 +156,8 @@ struct TriStripPrimitive : Primitive {
   lev2::texture_ptr_t _texture;
   std::vector<vertexdata_ptr_t> _vertices;
 
-  void draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd) override;
+  void draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd,
+            primcanvaslayer_ptr_t layer) override;
   size_t ssboQuadCount() const override { return _vertices.size(); }
   void gatherQuadData(std::vector<QuadData>& out) const override;
 };
@@ -167,7 +174,8 @@ struct TriListPrimitive : Primitive {
   lev2::texture_ptr_t _texture;
   std::vector<vertexdata_ptr_t> _vertices;
 
-  void draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd) override;
+  void draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd,
+            primcanvaslayer_ptr_t layer) override;
   size_t ssboQuadCount() const override { return _vertices.size(); }
   void gatherQuadData(std::vector<QuadData>& out) const override;
 };
@@ -193,7 +201,9 @@ struct TextPrimitive : Primitive {
   fvec4 _color;
   std::vector<TextItem> _items;
 
-  void draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd) override;
+  // TextPrimitive ignores layer transform - text stays screen-fixed
+  void draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd,
+            primcanvaslayer_ptr_t layer) override;
 };
 using textprimitive_ptr_t = std::shared_ptr<TextPrimitive>;
 
@@ -202,21 +212,23 @@ using textprimitive_ptr_t = std::shared_ptr<TextPrimitive>;
 // Layers are rendered in order, and can be enabled/disabled
 ////////////////////////////////////////////////////////////////////
 
-struct PrimCanvasLayer;
-using primcanvaslayer_ptr_t = std::shared_ptr<PrimCanvasLayer>;
-
 struct PrimCanvasLayer {
   PrimCanvasLayer(const std::string& name = "layer");
 
   std::string _name;
   bool _enabled = true;
   std::vector<primitive_ptr_t> _primitives;
+  fmtx4 _transform;  // Layer transform (identity by default)
 
   void clear();
   void addPrimitive(primitive_ptr_t prim);
   void removePrimitive(primitive_ptr_t prim);
   size_t primitiveCount() const { return _primitives.size(); }
   primitive_ptr_t primitive(size_t index) const;
+
+  // Transform accessors
+  void setTransform(const fmtx4& mtx) { _transform = mtx; }
+  const fmtx4& transform() const { return _transform; }
 
   // SSBO helpers
   size_t ssboQuadCount() const;
@@ -278,6 +290,7 @@ struct PrimCanvas : public Widget {
   lev2::fxparam_constptr_t paramCanvasSize() const { return _param_canvas_size; }
   lev2::fxparam_constptr_t paramSsboBase() const { return _param_ssbo_base; }
   lev2::fxparam_constptr_t paramColorMap() const { return _param_colormap; }
+  lev2::fxparam_constptr_t paramLayerTransform() const { return _param_layer_transform; }
 
   // Sprite-specific pipelines and params
   lev2::fxpipeline_ptr_t pipelineSpriteSolid() const { return _pipeline_sprite_solid; }
@@ -313,6 +326,7 @@ private:
   lev2::fxparam_constptr_t _param_canvas_size;
   lev2::fxparam_constptr_t _param_ssbo_base;
   lev2::fxparam_constptr_t _param_colormap;
+  lev2::fxparam_constptr_t _param_layer_transform;
 
   // Sprite-specific
   lev2::fxpipeline_ptr_t _pipeline_sprite_solid;

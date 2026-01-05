@@ -2412,7 +2412,10 @@ void pyinit_ui(py::module& module_lev2) {
           .def("addPrimitive", &ui::PrimCanvasLayer::addPrimitive)
           .def("removePrimitive", &ui::PrimCanvasLayer::removePrimitive)
           .def("primitive", &ui::PrimCanvasLayer::primitive)
-          .def("primitiveCount", &ui::PrimCanvasLayer::primitiveCount);
+          .def("primitiveCount", &ui::PrimCanvasLayer::primitiveCount)
+          .def_property("transform",
+              &ui::PrimCanvasLayer::transform,
+              &ui::PrimCanvasLayer::setTransform);
   type_codec->registerStdCodec<ui::primcanvaslayer_ptr_t>(primcanvaslayer_type);
 
   // PrimCanvas - the widget itself

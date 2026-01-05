@@ -139,7 +139,7 @@ def parse_ascii_sprite(sprite_str, color_map):
 
 class SpriteTortureTest:
   # Configuration
-  NUM_SPRITES = 4096  # Number of sprite instances
+  NUM_SPRITES = 16384  # Number of sprite instances
   SPRITE_TYPES = ['cross', 'diamond', 'arrow', 'square', 'star', 'ship']
 
   def __init__(self):

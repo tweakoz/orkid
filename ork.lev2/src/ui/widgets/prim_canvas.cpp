@@ -28,7 +28,8 @@ void QuadPrimitive::gatherQuadData(std::vector<QuadData>& out) const {
   }
 }
 
-void QuadPrimitive::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd) {
+void QuadPrimitive::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd,
+                         primcanvaslayer_ptr_t layer) {
   if (_quads.empty()) {
     return;
   }
@@ -43,6 +44,7 @@ void QuadPrimitive::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_
   fvec2 canvas_size(canvas->width(), canvas->height());
   _pipeline->bindParam(canvas->paramCanvasSize(), canvas_size);
   _pipeline->bindParam(canvas->paramSsboBase(), (int)_ssbo_offset);
+  _pipeline->bindParam(canvas->paramLayerTransform(), layer->transform());
 
   if (_texture && canvas->paramColorMap()) {
     _pipeline->bindParam(canvas->paramColorMap(), _texture.get());
@@ -78,7 +80,8 @@ void SpritePrimitive::gatherQuadData(std::vector<QuadData>& out) const {
   }
 }
 
-void SpritePrimitive::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd) {
+void SpritePrimitive::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd,
+                           primcanvaslayer_ptr_t layer) {
   // Sprites are templates - they only contribute SSBO data
   // Rendering is done via SpriteInstance which calls drawInstanced()
 }
@@ -210,11 +213,14 @@ void SpriteInstance::setTransform(float x, float y, float rotation, float scale)
   _transform.setElemXY(3, 3, 1.0f);
 }
 
-void SpriteInstance::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd) {
+void SpriteInstance::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd,
+                          primcanvaslayer_ptr_t layer) {
   if (!_visible || !_sprite) {
     return;
   }
-  _sprite->drawInstanced(canvas, ctx, rcfd, _transform, _tint);
+  // Compose layer transform with instance transform
+  fmtx4 combined = layer->transform() * _transform;
+  _sprite->drawInstanced(canvas, ctx, rcfd, combined, _tint);
 }
 
 ////////////////////////////////////////////////////////////////
@@ -237,7 +243,8 @@ void TriStripPrimitive::gatherQuadData(std::vector<QuadData>& out) const {
   }
 }
 
-void TriStripPrimitive::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd) {
+void TriStripPrimitive::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd,
+                             primcanvaslayer_ptr_t layer) {
   if (_vertices.size() < 3) {
     return;
   }
@@ -250,6 +257,7 @@ void TriStripPrimitive::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_
   fvec2 canvas_size(canvas->width(), canvas->height());
   _pipeline->bindParam(canvas->paramCanvasSize(), canvas_size);
   _pipeline->bindParam(canvas->paramSsboBase(), (int)_ssbo_offset);
+  _pipeline->bindParam(canvas->paramLayerTransform(), layer->transform());
 
   if (_texture && canvas->paramColorMap()) {
     _pipeline->bindParam(canvas->paramColorMap(), _texture.get());
@@ -289,7 +297,8 @@ void TriListPrimitive::gatherQuadData(std::vector<QuadData>& out) const {
   }
 }
 
-void TriListPrimitive::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd) {
+void TriListPrimitive::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd,
+                            primcanvaslayer_ptr_t layer) {
   if (_vertices.size() < 3) {
     return;
   }
@@ -302,6 +311,7 @@ void TriListPrimitive::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_p
   fvec2 canvas_size(canvas->width(), canvas->height());
   _pipeline->bindParam(canvas->paramCanvasSize(), canvas_size);
   _pipeline->bindParam(canvas->paramSsboBase(), (int)_ssbo_offset);
+  _pipeline->bindParam(canvas->paramLayerTransform(), layer->transform());
 
   if (_texture && canvas->paramColorMap()) {
     _pipeline->bindParam(canvas->paramColorMap(), _texture.get());
@@ -330,7 +340,10 @@ TextPrimitive::TextPrimitive(lev2::font_ptr_t font, fvec4 color)
     , _color(color) {
 }
 
-void TextPrimitive::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd) {
+void TextPrimitive::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_t rcfd,
+                         primcanvaslayer_ptr_t layer) {
+  // TextPrimitive intentionally ignores layer transform
+  // Text stays screen-fixed for HUD/UI purposes
   if (_items.empty() || !_font) {
     return;
   }
@@ -364,6 +377,7 @@ void TextPrimitive::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_
 
 PrimCanvasLayer::PrimCanvasLayer(const std::string& name)
     : _name(name) {
+  _transform.setToIdentity();
 }
 
 void PrimCanvasLayer::clear() {
@@ -463,6 +477,7 @@ void PrimCanvas::gpuInit(lev2::Context* ctx) {
   _param_canvas_size = _material->param("canvas_size");
   _param_ssbo_base = _material->param("ssbo_base");
   _param_colormap = _material->param("ColorMap");
+  _param_layer_transform = _material->param("layer_transform");
 
   // Sprite-specific techniques and pipelines
   auto tek_sprite_solid = _material->technique("tek_sprite_solid");
@@ -619,7 +634,7 @@ void PrimCanvas::DoDraw(drawevent_constptr_t drwev) {
       continue;
     }
     for (auto& prim : layer->_primitives) {
-      prim->draw(this, ctx, rcfd);
+      prim->draw(this, ctx, rcfd, layer);
     }
   }
 
