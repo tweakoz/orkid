@@ -501,7 +501,10 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                 auto newobjclazz   = dynamic_cast<object::ObjectClass*>(newclazz);
                 auto oldclazz      = rtti::Class::FindClass("Dsp" + oldclassname);
                 auto oldobjclazz   = dynamic_cast<object::ObjectClass*>(oldclazz);
-                OrkAssert(newobjclazz);
+                if(newobjclazz==nullptr){
+                  printf("replaceDspBlock<%s> FAILED TO FIND CLASS\n", newclassname.c_str());
+                  OrkAssert(false);
+                }
                 if (newclazz->Parent() != base_objclazz) {
                   printf(
                       "appendDspBlock<%s> objclazz<%p> base_objclazz<%p> parent mismatch",

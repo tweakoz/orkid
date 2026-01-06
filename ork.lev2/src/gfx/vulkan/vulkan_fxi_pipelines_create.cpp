@@ -19,19 +19,20 @@ namespace ork::lev2::vulkan {
 static logchannel_ptr_t logchan_vkpipc = logger()->configureChannel("VKPIPC", fvec3(1, 1, .2), false);
 ///////////////////////////////////////////////////////////////////////////////
 
-vkpipeline_obj_ptr_t VkFxInterface::_createPipeline(vkvtxbuf_ptr_t vb,               //
-                                                    vkprimclass_ptr_t primclass,     //
-                                                    vkrasterstate_ptr_t vkrstate ) { //
+vkpipeline_obj_ptr_t VkFxInterface::_createPipeline(
+    vkvtxbuf_ptr_t vb,              //
+    vkprimclass_ptr_t primclass,    //
+    vkrasterstate_ptr_t vkrstate) { //
 
-  OrkAssert(_currentVKPASS!=nullptr);
+  OrkAssert(_currentVKPASS != nullptr);
   vkpipeline_obj_ptr_t pipeline = std::make_shared<VkPipelineObject>(_contextVK);
-  auto shprog = _currentVKPASS->_vk_program;
-  pipeline->_vk_program  = shprog;
-  pipeline->_rasterstate = vkrstate;
-  auto fbi = _contextVK->_fbi;
-  auto gbi = _contextVK->_gbi;
-  auto rtg       = fbi->_active_rtgroup;
-  auto rtg_impl  = rtg->_impl.getShared<VkRtGroupImpl>();
+  auto shprog                   = _currentVKPASS->_vk_program;
+  pipeline->_vk_program         = shprog;
+  pipeline->_rasterstate        = vkrstate;
+  auto fbi                      = _contextVK->_fbi;
+  auto gbi                      = _contextVK->_gbi;
+  auto rtg                      = fbi->_active_rtgroup;
+  auto rtg_impl                 = rtg->_impl.getShared<VkRtGroupImpl>();
 
   ////////////////////////////////////////////////////
   // create pipeline info
@@ -52,7 +53,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_createPipeline(vkvtxbuf_ptr_t vb,          
 
   OrkAssert(rtg_impl->_prinfo_retain);
   PIPE_CREATE_INFO.pNext = &rtg_impl->_prinfo_retain->_createInfo; // Set the dynamic rendering info
-  
+
   ////////////////////////////////////////////////////
   // count/assign shader stages
   ////////////////////////////////////////////////////
@@ -78,11 +79,8 @@ vkpipeline_obj_ptr_t VkFxInterface::_createPipeline(vkvtxbuf_ptr_t vb,          
   // dynamic states (viewport, scissor, blend constants)
   ////////////////////////////////////////////////////
 
-  std::vector<VkDynamicState> dynamic_states    = {
-    VK_DYNAMIC_STATE_VIEWPORT,
-    VK_DYNAMIC_STATE_SCISSOR,
-    VK_DYNAMIC_STATE_BLEND_CONSTANTS
-  };
+  std::vector<VkDynamicState> dynamic_states = {
+      VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_BLEND_CONSTANTS};
   VkPipelineDynamicStateCreateInfo dynamicState = {};
   initializeVkStruct(dynamicState, VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);
   dynamicState.dynamicStateCount = dynamic_states.size();
@@ -127,12 +125,12 @@ vkpipeline_obj_ptr_t VkFxInterface::_createPipeline(vkvtxbuf_ptr_t vb,          
   // (descriptor sets and push constants)
   ////////////////////////////////////////////////////
 
-  auto PLCI = _createPipelineLayoutData(pipeline);                                                      
+  auto PLCI = _createPipelineLayoutData(pipeline);
 
   VkResult OK = vkCreatePipelineLayout(
-      _contextVK->_vkdevice,   // device
-      &PLCI,                   // pipeline layout create info
-      nullptr,                 // allocator
+      _contextVK->_vkdevice,       // device
+      &PLCI,                       // pipeline layout create info
+      nullptr,                     // allocator
       &pipeline->_pipelineLayout); // pipeline layout
   OrkAssert(VK_SUCCESS == OK);
 
@@ -146,13 +144,12 @@ vkpipeline_obj_ptr_t VkFxInterface::_createPipeline(vkvtxbuf_ptr_t vb,          
       _contextVK->_vkdevice, // device
       VK_NULL_HANDLE,        // pipeline cache
       1,                     // count
-      &PIPE_CREATE_INFO,       // create info
+      &PIPE_CREATE_INFO,     // create info
       nullptr,               // allocator
       &pipeline->_pipeline);
 
   if (OK != VK_SUCCESS) {
-    printf("vkCreateGraphicsPipelines FAILED for TEK<%s>: VkResult=%d\n",
-           shprog->_tek_name.c_str(), (int)OK);
+    printf("vkCreateGraphicsPipelines FAILED for TEK<%s>: VkResult=%d\n", shprog->_tek_name.c_str(), (int)OK);
   }
   OrkAssert(VK_SUCCESS == OK);
 
@@ -160,7 +157,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_createPipeline(vkvtxbuf_ptr_t vb,          
   // pipeline report (generates report and stores filename in pipeline)
   ///////////////////////////////////////////////////
 
-  if(0) {
+  if (0) {
     _createPipelineReport(pipeline);
   }
 
@@ -186,7 +183,7 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_o
   // push constants
   ////////////////////////////////////////////////////
 
-  if (vk_program->_pushConstantBlock and (vk_program->_pushConstantBlock->_ranges.size()>0)) {
+  if (vk_program->_pushConstantBlock and (vk_program->_pushConstantBlock->_ranges.size() > 0)) {
     PLCI.pushConstantRangeCount = vk_program->_pushConstantBlock->_ranges.size();
     PLCI.pPushConstantRanges    = vk_program->_pushConstantBlock->_ranges.data();
   }
@@ -199,18 +196,22 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_o
 
   auto resources = _currentVKPASS->_merged_resources;
 
-  if(0){
-    printf("_createPipelineLayoutData: TEK<%s> merged_resources=%p, num_descriptor_sets=%zu\n",
-         vk_program->_tek_name.c_str(), resources.get(), resources ? resources->descriptor_sets.size() : 0);
+  if (0) {
+    printf(
+        "_createPipelineLayoutData: TEK<%s> merged_resources=%p, num_descriptor_sets=%zu\n",
+        vk_program->_tek_name.c_str(),
+        resources.get(),
+        resources ? resources->descriptor_sets.size() : 0);
     if (resources) {
       for (const auto& [set_id, sources] : resources->descriptor_sets) {
         printf("  descriptor_set[%d] has %zu sources\n", set_id, sources.size());
         for (const auto& source : sources) {
           printf("    source<%s> has %zu bindings\n", source->source_name.c_str(), source->bindings.size());
           for (const auto& binding : source->bindings) {
-            const char* type_str = binding->type == VkMergedResourceBinding::Type::StorageBuffer ? "SSBO" :
-                                   binding->type == VkMergedResourceBinding::Type::UniformBlock ? "UBO" :
-                                   binding->type == VkMergedResourceBinding::Type::Sampler ? "SAMPLER" : "?";
+            const char* type_str = binding->type == VkMergedResourceBinding::Type::StorageBuffer  ? "SSBO"
+                                   : binding->type == VkMergedResourceBinding::Type::UniformBlock ? "UBO"
+                                   : binding->type == VkMergedResourceBinding::Type::Sampler      ? "SAMPLER"
+                                                                                                  : "?";
             printf("      binding[%u] = %s<%s>\n", binding->binding_id, type_str, binding->name.c_str());
           }
         }
@@ -248,14 +249,15 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_o
             case VkMergedResourceBinding::Type::UniformBlock: {
               // ALL uniform blocks are now dynamic
               vk_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-              printf("LAYOUT-BINDING: ubo<%s> binding=%u type=DYNAMIC\n",
-                     binding->name.c_str(), binding->binding_id);
+              if (0)
+                printf("LAYOUT-BINDING: ubo<%s> binding=%u type=DYNAMIC\n", binding->name.c_str(), binding->binding_id);
               // Look up the UBO from the program's uniform blocks
               // These were loaded from the datablock
               auto ubo_it = vk_program->_vk_uniformblks.find(binding->name);
               if (ubo_it == vk_program->_vk_uniformblks.end()) {
                 // Fatal error: shader declares a UBO that wasn't in the datablock
-                logchan_vkpipc->log("FATAL: UBO '%s' declared in merged resources but not found in datablock", binding->name.c_str());
+                logchan_vkpipc->log(
+                    "FATAL: UBO '%s' declared in merged resources but not found in datablock", binding->name.c_str());
                 OrkAssert(false);
               }
 
@@ -280,7 +282,7 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_o
               //////////////////////////////////////////////////////
 
               VkFxShaderStorageBlock* ssbo = nullptr;
-              auto it = pipeline->_vk_program->_vk_ssbo_blocks.find(binding->name);
+              auto it                      = pipeline->_vk_program->_vk_ssbo_blocks.find(binding->name);
               if (it != pipeline->_vk_program->_vk_ssbo_blocks.end()) {
                 ssbo = it->second.get();
               }
@@ -324,7 +326,7 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_o
               break;
           }
 
-          vk_binding.descriptorCount    = 1;
+          vk_binding.descriptorCount = 1;
           // Use binding-specific stage flags for storage buffers, ALL_GRAPHICS for others
           if (binding->type == VkMergedResourceBinding::Type::StorageBuffer && binding->stage_flags != 0) {
             vk_binding.stageFlags = binding->stage_flags;
@@ -358,8 +360,8 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_o
         // offsets will be consumed in the wrong order, causing each UBO to
         // read from the wrong memory location.
         //////////////////////////////////////////////////////////
-        std::sort(bindings.begin(), bindings.end(),
-            [](const VkDescriptorSetLayoutBinding& a, const VkDescriptorSetLayoutBinding& b) {
+        std::sort(
+            bindings.begin(), bindings.end(), [](const VkDescriptorSetLayoutBinding& a, const VkDescriptorSetLayoutBinding& b) {
               return a.binding < b.binding;
             });
 
@@ -367,9 +369,9 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_o
         initializeVkStruct(LCI, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO);
         LCI.bindingCount = bindings.size();
         LCI.pBindings    = bindings.data();
-        //LCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        //LCI.pNext = &bindingFlagsInfo;
-        //LCI.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
+        // LCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        // LCI.pNext = &bindingFlagsInfo;
+        // LCI.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
 
         VkDescriptorSetLayout dset_layout;
         VkResult OK = vkCreateDescriptorSetLayout(_contextVK->_vkdevice, &LCI, nullptr, &dset_layout);
@@ -405,13 +407,19 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_o
         });
 
     // Diagnostic: print UBO configuration for this pipeline
-    printf("PIPELINE-CREATE tek<%s>: _uniform_blocks.size()=%zu\n",
-           vk_program->_tek_name.c_str(), pipeline->_uniform_blocks.size());
-    for (size_t i = 0; i < pipeline->_uniform_blocks.size(); i++) {
-      auto* ubo = pipeline->_uniform_blocks[i];
-      printf("  [%zu] UBO<%s> binding<%u> dset<%zu> shadow_size<%zu>\n",
-             i, ubo->_orkparamblock->_name.c_str(),
-             ubo_to_binding[ubo], ubo->_descriptor_set_id, ubo->_shadow_buffer.size());
+    if (0) {
+      printf(
+          "PIPELINE-CREATE tek<%s>: _uniform_blocks.size()=%zu\n", vk_program->_tek_name.c_str(), pipeline->_uniform_blocks.size());
+      for (size_t i = 0; i < pipeline->_uniform_blocks.size(); i++) {
+        auto* ubo = pipeline->_uniform_blocks[i];
+        printf(
+            "  [%zu] UBO<%s> binding<%u> dset<%zu> shadow_size<%zu>\n",
+            i,
+            ubo->_orkparamblock->_name.c_str(),
+            ubo_to_binding[ubo],
+            ubo->_descriptor_set_id,
+            ubo->_shadow_buffer.size());
+      }
     }
 
     // Sort SSBOs by descriptor set and binding for consistent ordering
@@ -452,17 +460,16 @@ VkPipelineLayoutCreateInfo VkFxInterface::_createPipelineLayoutData(vkpipeline_o
 // SSBO-only pipeline creation (no vertex buffer)
 ///////////////////////////////////////////////////////////////////////////////
 
-vkpipeline_obj_ptr_t VkFxInterface::_createPipelineSSBO(vkprimclass_ptr_t primclass,
-                                                         vkrasterstate_ptr_t vkrstate) {
+vkpipeline_obj_ptr_t VkFxInterface::_createPipelineSSBO(vkprimclass_ptr_t primclass, vkrasterstate_ptr_t vkrstate) {
 
   OrkAssert(_currentVKPASS != nullptr);
   vkpipeline_obj_ptr_t pipeline = std::make_shared<VkPipelineObject>(_contextVK);
-  auto shprog = _currentVKPASS->_vk_program;
-  pipeline->_vk_program  = shprog;
-  pipeline->_rasterstate = vkrstate;
-  auto fbi = _contextVK->_fbi;
-  auto rtg = fbi->_active_rtgroup;
-  auto rtg_impl = rtg->_impl.getShared<VkRtGroupImpl>();
+  auto shprog                   = _currentVKPASS->_vk_program;
+  pipeline->_vk_program         = shprog;
+  pipeline->_rasterstate        = vkrstate;
+  auto fbi                      = _contextVK->_fbi;
+  auto rtg                      = fbi->_active_rtgroup;
+  auto rtg_impl                 = rtg->_impl.getShared<VkRtGroupImpl>();
 
   ////////////////////////////////////////////////////
   // create pipeline info
@@ -517,10 +524,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_createPipelineSSBO(vkprimclass_ptr_t primcl
   ////////////////////////////////////////////////////
 
   std::vector<VkDynamicState> dynamic_states = {
-    VK_DYNAMIC_STATE_VIEWPORT,
-    VK_DYNAMIC_STATE_SCISSOR,
-    VK_DYNAMIC_STATE_BLEND_CONSTANTS
-  };
+      VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_BLEND_CONSTANTS};
   VkPipelineDynamicStateCreateInfo dynamicState = {};
   initializeVkStruct(dynamicState, VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);
   dynamicState.dynamicStateCount = dynamic_states.size();
@@ -529,11 +533,11 @@ vkpipeline_obj_ptr_t VkFxInterface::_createPipelineSSBO(vkprimclass_ptr_t primcl
   PIPE_CREATE_INFO.pDynamicState = &dynamicState;
 
   VkPipelineViewportStateCreateInfo VPSTATE = {};
-  VPSTATE.sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-  VPSTATE.viewportCount = 1;
-  VPSTATE.pViewports    = nullptr;
-  VPSTATE.scissorCount  = 1;
-  VPSTATE.pScissors     = nullptr;
+  VPSTATE.sType                             = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+  VPSTATE.viewportCount                     = 1;
+  VPSTATE.pViewports                        = nullptr;
+  VPSTATE.scissorCount                      = 1;
+  VPSTATE.pScissors                         = nullptr;
 
   PIPE_CREATE_INFO.pViewportState = &VPSTATE;
 
@@ -566,11 +570,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_createPipelineSSBO(vkprimclass_ptr_t primcl
 
   auto PLCI = _createPipelineLayoutData(pipeline);
 
-  VkResult OK = vkCreatePipelineLayout(
-      _contextVK->_vkdevice,
-      &PLCI,
-      nullptr,
-      &pipeline->_pipelineLayout);
+  VkResult OK = vkCreatePipelineLayout(_contextVK->_vkdevice, &PLCI, nullptr, &pipeline->_pipelineLayout);
   OrkAssert(VK_SUCCESS == OK);
 
   PIPE_CREATE_INFO.layout = pipeline->_pipelineLayout;
@@ -579,13 +579,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_createPipelineSSBO(vkprimclass_ptr_t primcl
   // create the graphics pipeline
   ///////////////////////////////////////////////////
 
-  OK = vkCreateGraphicsPipelines(
-      _contextVK->_vkdevice,
-      VK_NULL_HANDLE,
-      1,
-      &PIPE_CREATE_INFO,
-      nullptr,
-      &pipeline->_pipeline);
+  OK = vkCreateGraphicsPipelines(_contextVK->_vkdevice, VK_NULL_HANDLE, 1, &PIPE_CREATE_INFO, nullptr, &pipeline->_pipeline);
 
   if (OK != VK_SUCCESS) {
     printf("_createPipelineSSBO: vkCreateGraphicsPipelines failed with VkResult=%d\n", OK);
@@ -596,5 +590,5 @@ vkpipeline_obj_ptr_t VkFxInterface::_createPipelineSSBO(vkprimclass_ptr_t primcl
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} //namespace ork::lev2::vulkan {
+} // namespace ork::lev2::vulkan
 ///////////////////////////////////////////////////////////////////////////////
