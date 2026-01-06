@@ -162,24 +162,6 @@ FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl) {
       auto MVP = monocams->MVPMONO(worldmatrix);
       auto MV = monocams->_vmatrix * worldmatrix;
 
-      // Debug: check if MVP is proper and params are valid
-      static int log_count = 0;
-      if (log_count < 3) {
-        log_count++;
-        printf("PBR-MATRIX-BIND[%d]: mtl=%p shaderpath=%s\n", log_count, mtl, mtl->_shaderpath.c_str());
-        printf("  MVP=\n");
-        printf("    [%.4f, %.4f, %.4f, %.4f]\n", MVP.elemXY(0,0), MVP.elemXY(1,0), MVP.elemXY(2,0), MVP.elemXY(3,0));
-        printf("    [%.4f, %.4f, %.4f, %.4f]\n", MVP.elemXY(0,1), MVP.elemXY(1,1), MVP.elemXY(2,1), MVP.elemXY(3,1));
-        printf("    [%.4f, %.4f, %.4f, %.4f]\n", MVP.elemXY(0,2), MVP.elemXY(1,2), MVP.elemXY(2,2), MVP.elemXY(3,2));
-        printf("    [%.4f, %.4f, %.4f, %.4f]\n", MVP.elemXY(0,3), MVP.elemXY(1,3), MVP.elemXY(2,3), MVP.elemXY(3,3));
-        printf("  _paramMVP=%p _paramP=%p _paramV=%p _paramM=%p\n",
-               mtl->_paramMVP, mtl->_paramP, mtl->_paramV, mtl->_paramM);
-        if (mtl->_paramMVP) {
-          printf("  _paramMVP->_name=%s impl.isSet=%d\n",
-                 mtl->_paramMVP->_name.c_str(), mtl->_paramMVP->_impl.isSet());
-        }
-      }
-
       FXI->bindParamMatrix(mtl->_paramMVP, MVP);
       FXI->bindParamMatrix(mtl->_paramMV, MV);
 

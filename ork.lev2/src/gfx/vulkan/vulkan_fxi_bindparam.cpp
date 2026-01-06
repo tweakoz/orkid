@@ -365,17 +365,6 @@ void VkFxInterface::bindParamMatrix(const FxShaderParam* hpar, const fmtx4& Mat)
     block->addDirtyRange(offset, 64);
     _currentVKPASS->_dirty_uniform_blocks.insert(block);
 
-    // Debug: verify write for mvp
-    static int mvp_log_count = 0;
-    if (hpar->_name == "mvp" && mvp_log_count < 5) {
-      mvp_log_count++;
-      float* written = (float*)(block->_shadow_buffer.data() + offset);
-      printf("WROTE-MVP[%d] to block<%s:%p> offset=%zu: [%.4f, %.4f, %.4f, %.4f]\n",
-             mvp_log_count,
-             block->_orkparamblock ? block->_orkparamblock->_name.c_str() : "?",
-             (void*)block,
-             offset, written[0], written[1], written[2], written[3]);
-    }
   }
   else {
     // Debug: param not recognized as either push constant or UBO item
