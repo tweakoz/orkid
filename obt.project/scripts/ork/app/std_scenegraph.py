@@ -285,3 +285,70 @@ class StandardSceneGraphComponent(ApplicationComponent):
       self.camera.copyFrom( self.uicam.cameradata )
     return lev2.ui.HandlerResult()
 
+  ##################################################
+
+  def createBallNode(self,
+                     name,
+                     ctx=None,
+                     position=vec3(0),
+                     scale=0.3,
+                     color=vec4(1, 1, 1, 1),
+                     metallic=0.0,
+                     roughness=0.5):
+    """
+    Create a colored ball (sphere) node for visualization.
+
+    Uses pbr_calib.glb model with material overrides for color/metallic/roughness.
+    Overrides textures with white so baseColor controls the actual color.
+    Useful for visualizing emitters, markers, debug points, etc.
+
+    Args:
+      name: Node name (must be unique in scenegraph)
+      ctx: Graphics context (required for texture assignment)
+      position: Initial position (vec3)
+      scale: Uniform scale factor (default: 0.3)
+      color: Base color as vec4(r, g, b, a) (default: white)
+      metallic: Metallic factor 0.0-1.0 (default: 0.0)
+      roughness: Roughness factor 0.0-1.0 (default: 0.5)
+
+    Returns:
+      scenegraph.Node: The created scene node
+    """
+    # Load/cache the ball model and white textures
+    if not hasattr(self, '_ball_model'):
+      self._ball_model = lev2.XgmModel("data://tests/pbr_calib.glb")
+      self._ball_white_tex = lev2.Image.createFromFile("src://effect_textures/white_64.dds")
+      self._ball_normal_tex = lev2.Image.createFromFile("src://effect_textures/default_normal.dds")
+
+    # Create drawable instance
+    drawable = self._ball_model.createDrawable()
+    modelinst = drawable.modelinst
+
+    # Override material for all submeshes
+    for subinst in modelinst.submeshinsts:
+      mtl = subinst.material.clone()
+      # Override textures with white so baseColor controls color
+      if ctx is not None:
+        mtl.assignImages(
+          ctx,
+          color=self._ball_white_tex,
+          normal=self._ball_normal_tex,
+          mtlruf=self._ball_white_tex,
+          doConform=True
+        )
+      mtl.baseColor = color
+      mtl.metallicFactor = metallic
+      mtl.roughnessFactor = roughness
+      subinst.overrideMaterial(mtl)
+
+    # Create scene node
+    node = self.scenegraph.createDrawableNodeOnLayers(
+      self.fwd_layers,
+      name,
+      drawable
+    )
+    node.worldTransform.translation = position
+    node.worldTransform.scale = scale
+
+    return node
+
