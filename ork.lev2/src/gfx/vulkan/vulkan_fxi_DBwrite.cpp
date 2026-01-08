@@ -17,9 +17,10 @@ using namespace shadlang;
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-void writeInterfaces( chunkfile::OutputStream* out_stream,
-                      chunkfile::Writer& chunkwriter, 
-                      const std::vector<std::shared_ptr<T>>& interfaces) {
+void writeInterfaces(
+    chunkfile::OutputStream* out_stream,
+    chunkfile::Writer& chunkwriter,
+    const std::vector<std::shared_ptr<T>>& interfaces) {
   using namespace shadlang::SHAST;
   const auto& IO_DATASIZES = shadlang::spirv::SpirvCompilerGlobals::instance()->_io_data_sizes;
 
@@ -36,13 +37,13 @@ void writeInterfaces( chunkfile::OutputStream* out_stream,
       auto inputs = AstNode::collectNodesOfType<InterfaceInput>(input_group);
       out_stream->AddItem<size_t>(inputs.size());
       for (auto input : inputs) {
-        //dumpAstNode(input);
-        if( auto tid = input->template childAs<TypedIdentifier>(0) ){
+        // dumpAstNode(input);
+        if (auto tid = input->template childAs<TypedIdentifier>(0)) {
           out_stream->AddIndexedString("input", chunkwriter);
           auto dt = tid->template typedValueForKey<std::string>("data_type").value();
           auto id = tid->template typedValueForKey<std::string>("identifier_name").value();
           std::string semantic;
-          if( auto try_sema = input->template typedValueForKey<std::string>("semantic")) {
+          if (auto try_sema = input->template typedValueForKey<std::string>("semantic")) {
             semantic = try_sema.value();
             OrkAssert(semantic.length());
           }
@@ -52,11 +53,9 @@ void writeInterfaces( chunkfile::OutputStream* out_stream,
           auto it = IO_DATASIZES.find(dt);
           OrkAssert(it != IO_DATASIZES.end());
           out_stream->AddItem<size_t>(it->second);
-        }
-        else if( auto layout = input->template childAs<InterfaceLayout>(0) ){
+        } else if (auto layout = input->template childAs<InterfaceLayout>(0)) {
           out_stream->AddIndexedString("layout", chunkwriter);
-        }
-        else{
+        } else {
           OrkAssert(false);
         }
       }
@@ -69,7 +68,7 @@ void writeInterfaces( chunkfile::OutputStream* out_stream,
       out_stream->AddItem<size_t>(outputs.size());
       for (auto output : outputs) {
         //(output);
-        if( auto as_tid = output->template childAs<TypedIdentifier>(0) ){
+        if (auto as_tid = output->template childAs<TypedIdentifier>(0)) {
           out_stream->AddIndexedString("output", chunkwriter);
           auto dt = as_tid->template typedValueForKey<std::string>("data_type").value();
           auto id = as_tid->template typedValueForKey<std::string>("identifier_name").value();
@@ -78,11 +77,9 @@ void writeInterfaces( chunkfile::OutputStream* out_stream,
           auto it = IO_DATASIZES.find(dt);
           OrkAssert(it != IO_DATASIZES.end());
           out_stream->AddItem<size_t>(it->second);
-        }
-        else if( auto layout = output->template childAs<InterfaceLayout>(0) ){
+        } else if (auto layout = output->template childAs<InterfaceLayout>(0)) {
           out_stream->AddIndexedString("layout", chunkwriter);
-        }
-        else{
+        } else {
           OrkAssert(false);
         }
       }
@@ -96,23 +93,23 @@ void write_stateblocks(
     chunkfile::OutputStream* out_stream,
     chunkfile::Writer& chunkwriter,
     shadlang::SHAST::translationunit_ptr_t transu) {
-    
+
   using namespace shadlang::SHAST;
-  
+
   // Collect all StateBlock nodes from the AST
   auto stateblocks = AstNode::collectNodesOfType<StateBlock>(transu);
-  
+
   out_stream->AddIndexedString("stateblocks", chunkwriter);
   out_stream->AddItem<size_t>(stateblocks.size());
-  
+
   for (auto sb : stateblocks) {
     // Get state block name
     auto sb_name_str = sb->typedValueForKey<std::string>("object_name").value();
     out_stream->AddIndexedString(sb_name_str, chunkwriter);
-    
+
     // Get parent (if inheriting)
     std::string parent_name = "";
-    auto inherit_items = AstNode::collectNodesOfType<InheritListItem>(sb);
+    auto inherit_items      = AstNode::collectNodesOfType<InheritListItem>(sb);
     if (!inherit_items.empty()) {
       // First inheritance item is the parent state block
       auto parent_item = inherit_items[0];
@@ -121,16 +118,16 @@ void write_stateblocks(
       }
     }
     out_stream->AddIndexedString(parent_name, chunkwriter);
-    
+
     // Collect all StateBlockItems
     auto items = AstNode::collectNodesOfType<StateBlockItem>(sb);
     out_stream->AddItem<size_t>(items.size());
-    
+
     for (auto item : items) {
       // Get property name and value from StateBlockItem's varmap
-      auto prop_name = item->typedValueForKey<std::string>("property_name").value();
+      auto prop_name  = item->typedValueForKey<std::string>("property_name").value();
       auto prop_value = item->typedValueForKey<std::string>("property_value").value();
-      
+
       out_stream->AddIndexedString(prop_name, chunkwriter);
       out_stream->AddIndexedString(prop_value, chunkwriter);
     }
@@ -140,10 +137,11 @@ void write_stateblocks(
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-void writeInterfaceInheritances( chunkfile::OutputStream* out_stream,
-                                 chunkfile::Writer& chunkwriter, 
-                                 shadlang::SHAST::transunit_ptr_t transunit,
-                                 const std::vector<std::shared_ptr<T>>& interfaces) {
+void writeInterfaceInheritances(
+    chunkfile::OutputStream* out_stream,
+    chunkfile::Writer& chunkwriter,
+    shadlang::SHAST::transunit_ptr_t transunit,
+    const std::vector<std::shared_ptr<T>>& interfaces) {
 
   out_stream->AddIndexedString("interface_inheritances", chunkwriter);
   out_stream->AddItem<size_t>(interfaces.size());
@@ -155,10 +153,10 @@ void writeInterfaceInheritances( chunkfile::OutputStream* out_stream,
     if_tracker.fetchInheritances(TOP_IF);
     size_t if_count = if_tracker._inherited_ifaces.size();
     out_stream->AddItem<size_t>(if_count);
-    if(if_count>0){
+    if (if_count > 0) {
       auto last_inh = if_tracker._inherited_ifaces.back();
-      auto name = last_inh->template typedValueForKey<std::string>("object_name").value();
-     out_stream->AddIndexedString(name, chunkwriter);     
+      auto name     = last_inh->template typedValueForKey<std::string>("object_name").value();
+      out_stream->AddIndexedString(name, chunkwriter);
     }
   }
 }
@@ -170,11 +168,11 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
   using namespace shadlang::SHAST;
 
   chunkfile::Writer chunkwriter("xfx");
-  auto header_stream   = chunkwriter.AddStream("header");
-  auto shader_stream   = chunkwriter.AddStream("shaders");
-  auto uniforms_stream = chunkwriter.AddStream("uniforms");
+  auto header_stream     = chunkwriter.AddStream("header");
+  auto shader_stream     = chunkwriter.AddStream("shaders");
+  auto uniforms_stream   = chunkwriter.AddStream("uniforms");
   auto interfaces_stream = chunkwriter.AddStream("interfaces");
-  auto tecniq_stream   = chunkwriter.AddStream("techniques");
+  auto tecniq_stream     = chunkwriter.AddStream("techniques");
 
   /////////////////////////////////////////////////////////////////////////////
   // compile all shaders from translation unit
@@ -210,7 +208,7 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
 
   auto SPC = std::make_shared<spirv::SpirvCompiler>(transunit, true);
 
-  if(0){
+  if (0) {
     printf("num_vtx_shaders<%zu>\n", num_vtx_shaders);
     printf("num_vtx_interfaces<%zu>\n", num_vtx_ifaces);
     printf("num_geo_shaders<%zu>\n", num_geo_shaders);
@@ -266,7 +264,7 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
       // rebuild _samplers_by_name
       /////////////////////////////////////////////
       uniforms_stream->AddIndexedString("smpset", chunkwriter);
-      //printf( "WRITE SAMPLERSET<%s>\n", name.c_str() );
+      // printf( "WRITE SAMPLERSET<%s>\n", name.c_str() );
       uniforms_stream->AddIndexedString(name, chunkwriter);
       uniforms_stream->AddItem<size_t>(spirv_smpset->_descriptor_set_id);
       uniforms_stream->AddIndexedString("samplers", chunkwriter);
@@ -407,35 +405,35 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
     for (auto uset : tracker._inherited_ssets) {
       auto INHID = uset->typedValueForKey<std::string>("object_name").value();
       shader_stream->AddIndexedString(INHID, chunkwriter);
-      //printf("WRITE SAMPLERSET REF<%s>\n", INHID.c_str());
+      // printf("WRITE SAMPLERSET REF<%s>\n", INHID.c_str());
     }
     //////////////////////////////////////////////////////////////////
     shader_stream->AddItem<size_t>(tracker._inherited_usets.size());
     for (auto uset : tracker._inherited_usets) {
       auto INHID = uset->typedValueForKey<std::string>("object_name").value();
       shader_stream->AddIndexedString(INHID, chunkwriter);
-      //printf("WRITE UNIFORMSET REF<%s>\n", INHID.c_str());
+      // printf("WRITE UNIFORMSET REF<%s>\n", INHID.c_str());
     }
     //////////////////////////////////////////////////////////////////
     shader_stream->AddItem<size_t>(tracker._inherited_ublks.size());
     for (auto ublk : tracker._inherited_ublks) {
       auto INHID = ublk->typedValueForKey<std::string>("object_name").value();
       shader_stream->AddIndexedString(INHID, chunkwriter);
-      //printf("WRITE UNIFORMBLOCK REF<%s>\n", INHID.c_str());
+      // printf("WRITE UNIFORMBLOCK REF<%s>\n", INHID.c_str());
     }
     //////////////////////////////////////////////////////////////////
     shader_stream->AddItem<size_t>(tracker._inherited_storage.size());
     for (auto ssbo : tracker._inherited_storage) {
       auto INHID = ssbo->typedValueForKey<std::string>("object_name").value();
       shader_stream->AddIndexedString(INHID, chunkwriter);
-      //printf("WRITE SSBO REF<%s>\n", INHID.c_str());
+      // printf("WRITE SSBO REF<%s>\n", INHID.c_str());
     }
     //////////////////////////////////////////////////////////////////
     shader_stream->AddItem<size_t>(tracker._inherited_ifaces.size());
     for (auto uset : tracker._inherited_ifaces) {
       auto INHID = uset->typedValueForKey<std::string>("object_name").value();
       shader_stream->AddIndexedString(INHID, chunkwriter);
-      //printf("WRITE IFACE REF<%s>\n", INHID.c_str());
+      // printf("WRITE IFACE REF<%s>\n", INHID.c_str());
     }
     //////////////////////////////////////////////////////////////////
 
@@ -501,21 +499,21 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
       OrkAssert(vtx_shader_ref);
       OrkAssert(frg_shader_ref);
       OrkAssert(stateblock_ref);
-      auto vtx_sema_id = vtx_shader_ref->findFirstChildOfType<SemaIdentifier>();
-      auto frg_sema_id = frg_shader_ref->findFirstChildOfType<SemaIdentifier>();
+      auto vtx_sema_id  = vtx_shader_ref->findFirstChildOfType<SemaIdentifier>();
+      auto frg_sema_id  = frg_shader_ref->findFirstChildOfType<SemaIdentifier>();
       auto sblk_sema_id = stateblock_ref->findFirstChildOfType<SemaIdentifier>();
       OrkAssert(vtx_sema_id);
       OrkAssert(frg_sema_id);
       OrkAssert(sblk_sema_id);
-      auto vtx_name = vtx_sema_id->typedValueForKey<std::string>("identifier_name").value();
-      auto frg_name = frg_sema_id->typedValueForKey<std::string>("identifier_name").value();
+      auto vtx_name  = vtx_sema_id->typedValueForKey<std::string>("identifier_name").value();
+      auto frg_name  = frg_sema_id->typedValueForKey<std::string>("identifier_name").value();
       auto sblk_name = sblk_sema_id->typedValueForKey<std::string>("identifier_name").value();
       tecniq_stream->AddIndexedString("pass", chunkwriter);
       std::string stages;
       stages += "V";
       ////////////////////////////////////////////////////////////////
       auto geo_shader_ref = p->findFirstChildOfType<GeometryShaderRef>();
-      if(geo_shader_ref){
+      if (geo_shader_ref) {
         stages += "G";
       }
       stages += "F";
@@ -524,7 +522,7 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
       ////////////////////////////////////////////////////////////////
       tecniq_stream->AddIndexedString(vtx_name, chunkwriter);
       ////////////////////////////////////////////////////////////////
-      if(geo_shader_ref){
+      if (geo_shader_ref) {
         auto geo_sema_id = geo_shader_ref->findFirstChildOfType<SemaIdentifier>();
         OrkAssert(geo_sema_id);
         auto geo_name = geo_sema_id->typedValueForKey<std::string>("identifier_name").value();
@@ -542,33 +540,36 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
         tecniq_stream->AddIndexedString("merged_resources", chunkwriter);
         auto descriptor_sets = AstNode::collectNodesOfType<DescriptorSetNode>(merged_resources);
         tecniq_stream->AddItem<size_t>(descriptor_sets.size());
-        
+
         for (auto descriptor_set : descriptor_sets) {
           tecniq_stream->AddIndexedString("descriptor_set", chunkwriter);
           tecniq_stream->AddItem<int>(descriptor_set->_descriptor_set_id);
-          
+
           auto source_nodes = AstNode::collectNodesOfType<DescriptorSetSourceNode>(descriptor_set);
           tecniq_stream->AddItem<size_t>(source_nodes.size());
-          
+
           for (auto source_node : source_nodes) {
             tecniq_stream->AddIndexedString("source", chunkwriter);
             tecniq_stream->AddIndexedString(source_node->_source_name, chunkwriter);
             tecniq_stream->AddIndexedString(source_node->_source_type, chunkwriter);
-            
+
             auto binding_nodes = AstNode::collectNodesOfType<ResourceBindingNode>(source_node);
             tecniq_stream->AddItem<size_t>(binding_nodes.size());
-            
+
             for (auto binding_node : binding_nodes) {
-              const char* type_str = (binding_node->_resource_type == shadlang::MergedShaderResources::ResourceBinding::Type::UniformBlock) ? "UBO"
-                                     : (binding_node->_resource_type == shadlang::MergedShaderResources::ResourceBinding::Type::Sampler)    ? "SAMPLER"
-                                     : (binding_node->_resource_type == shadlang::MergedShaderResources::ResourceBinding::Type::SSBO)       ? "SSBO"
-                                                                                                                                            : "UNKNOWN";
-              printf("DBWRITE: BINDING[%u]: NAME<%s> TYPE<%s>(%u) DATATYPE<%s>\n",
-                     binding_node->_binding_id,
-                     binding_node->_binding_name.c_str(),
-                     type_str,
-                     static_cast<uint32_t>(binding_node->_resource_type),
-                     binding_node->_datatype.c_str());
+              const char* type_str =
+                  (binding_node->_resource_type == shadlang::MergedShaderResources::ResourceBinding::Type::UniformBlock) ? "UBO"
+                  : (binding_node->_resource_type == shadlang::MergedShaderResources::ResourceBinding::Type::Sampler)    ? "SAMPLER"
+                  : (binding_node->_resource_type == shadlang::MergedShaderResources::ResourceBinding::Type::SSBO)       ? "SSBO"
+                                                                                                                   : "UNKNOWN";
+              if (_enable_pipeline_debug)
+                printf(
+                    "DBWRITE: BINDING[%u]: NAME<%s> TYPE<%s>(%u) DATATYPE<%s>\n",
+                    binding_node->_binding_id,
+                    binding_node->_binding_name.c_str(),
+                    type_str,
+                    static_cast<uint32_t>(binding_node->_resource_type),
+                    binding_node->_datatype.c_str());
               tecniq_stream->AddIndexedString("binding", chunkwriter);
               tecniq_stream->AddItem<uint32_t>(binding_node->_binding_id);
               tecniq_stream->AddIndexedString(binding_node->_binding_name, chunkwriter);
@@ -582,7 +583,6 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
         tecniq_stream->AddIndexedString("no_merged_resources", chunkwriter);
       }
       ////////////////////////////////////////////////////////////////
-
     }
   } // for (auto tek : techniques) {
 
@@ -591,7 +591,6 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
   return out_datablock;
 }
 
-
 ///////////////////////////////////////////////////////////////////////////////
-} //namespace ork::lev2::vulkan {
+} // namespace ork::lev2::vulkan
 ///////////////////////////////////////////////////////////////////////////////

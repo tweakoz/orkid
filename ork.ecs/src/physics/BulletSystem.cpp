@@ -641,7 +641,7 @@ void BulletSystem::_onUpdate(Simulation* inst) {
           // printf("removing rbody<%p> \n", (void*)rbody);
           auto ent    = comp->GetEntity();
           auto sgcomp = ent->typedComponent<SceneGraphComponent>();
-          sgcomp->_onNotify(inst, "ChangeModColor"_crcu, fvec4(0, 0, 0, 1));
+          sgcomp->_onNotify(inst, "ChangeModColor"_crcu, fvec4(0.5, 0.5, 0.5, 1));
           // mDynamicsWorld->removeRigidBody(rbody);
         }
         /////////////////////////////////////////

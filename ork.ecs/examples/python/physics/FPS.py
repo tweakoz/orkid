@@ -13,28 +13,38 @@ from obt import path as obt_path
 from orkengine.core import vec3, vec4, quat
 from orkengine.core import CrcStringProxy, VarMap, Transform
 from orkengine import lev2, ecs
+from orkengine.lev2 import RigidPrimitive, RigidPrimitiveDrawableData, PBRMaterial, Image
+import trimesh
+
 this_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(str(obt_path.orkid()/"ork.lev2"/"examples"/"python")) # add parent dir to path
 from ork import path as ork_path
 from lev2utils.cameras import *
+from lev2utils.submeshes import trimeshToSubmesh
 
 ################################################################################
 parser = argparse.ArgumentParser(description='ECS FPS Example')
 parser.add_argument('--fullscreen', action="store_true")
-parser.add_argument("-e","--envmap", type=str, default="nebula")
+parser.add_argument("-e","--envmap", type=str, default="arena")
 args = parser.parse_args()
 
 ################################################################################
 tokens = CrcStringProxy()
+################################################################################
+
 GROUP_PLAYER = 1
 GROUP_BALL = 2
 GROUP_ENV = 4
 GROUP_ALL = GROUP_PLAYER | GROUP_BALL | GROUP_ENV
 NUM_BALLS = 1000
-OFFSET = vec3(0,0.5,0)
-SIMRATE = 120
+OFFSET = vec3(0,0.0,0)
+SIMRATE = 60
 BALLS_NODE_NAME = "balls-instancing-node"
 SSAO_NUM_SAMPLES = 8
+OBJ_PATH = ork_path.data/"tests"/"environ"/"envtest5.obj"
+WALK_FORCE = 5e2
+SCALE = vec3(5,-2,5)
+OFFSET = vec3(0,0,0)
 ################################################################################
 
 class ECS_FIRST_PERSON_SHOOTER(object):
@@ -94,9 +104,9 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     systemdata_SG.declareLayer("depth_prepass")
     systemdata_SG.declareParams({
       "SkyboxTexPathStr": args.envmap,
-      "SkyboxIntensity": float(2),
-      "SpecularIntensity": float(2),
-      "DiffuseIntensity": float(1),
+      "SkyboxIntensity": float(1),
+      "SpecularIntensity": float(0.5),
+      "DiffuseIntensity": float(2),
       "AmbientLight": vec3(0),
       "DepthFogDistance": float(10000),
       "preset": "ForwardPBR",
@@ -303,10 +313,8 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     c_physics.declareNodeInstance(nid)
     c_scenegraph.declareNodeInstance(nid)
 
-    ball_drawable = lev2.ModelDrawableData("data://tests/pbr_calib.glb")
-    c_scenegraph.declareNodeOnLayer( name="ballnode",
-                                     drawable=ball_drawable,
-                                     layers=self.fwd_layers)
+    # Note: No declareNodeOnLayer here - we use instancing only
+    # Adding both would cause double-spawn (one instanced, one individual)
 
     ball_spawner = self.ecsscene.declareSpawner("ball_spawner")
     ball_spawner.archetype = arch_ball
@@ -362,9 +370,9 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     #########################
 
     shape = ecs.BulletShapeMeshData()
-    shape.meshpath = "data://tests/environ/envtest2.obj"
-    shape.scale = vec3(5,8,5)
-    shape.translation = vec3(0,0.01,0) # offset to avoid z-fighting of physics debugger
+    shape.meshpath = str(OBJ_PATH)
+    shape.scale = SCALE
+    shape.translation = OFFSET # offset to avoid z-fighting of physics debugger
 
     c_physics.mass = 0.0
     c_physics.allowSleeping = True
@@ -376,19 +384,11 @@ class ECS_FIRST_PERSON_SHOOTER(object):
 
     #########################
     # visible mesh for room
+    # (deferred to onGpuInit - needs GPU context for custom shader)
     #########################
 
-    room_drawable = lev2.ModelDrawableData("data://tests/environ/roomtest.glb")
-    
-    room_mesh_transform = Transform()
-    room_mesh_transform.nonUniformScale = vec3(5,8,5)
-    room_mesh_transform.translation = vec3(0,-0.05,0)
+    self.room_SGCOMP = c_scenegraph
 
-    room_node = c_scenegraph.declareNodeOnLayer( name = "envnode",
-                                                 drawable = room_drawable,
-                                                 layers = self.fwd_layers,
-                                                 transform = room_mesh_transform)
-    
     env_spawner = self.ecsscene.declareSpawner("env_spawner")
     env_spawner.archetype = arch_room
     env_spawner.autospawn = True
@@ -398,6 +398,83 @@ class ECS_FIRST_PERSON_SHOOTER(object):
   ##############################################
 
   def onGpuInit(self,ctx):
+
+    #########################
+    # Load OBJ as submesh
+    #########################
+
+    tmesh = trimesh.load(str(OBJ_PATH))
+    submesh = trimeshToSubmesh(tmesh)
+    #submesh = submesh.withTextureUnwrap()
+    submesh = submesh.withSmoothedNormalsAndBinormals(0.125)
+    #submesh.writeWavefrontObj(str(obt_path.temp()/"envtest2_smoothed.obj"))
+    #submesh = submesh.withVertexColorsFromNormals()
+
+    #########################
+    # Create rigid primitive drawable
+    #########################
+
+    rprimdata = RigidPrimitiveDrawableData()
+    rprimdata.primitive = RigidPrimitive(submesh, ctx)
+
+    #########################
+    # Create PBRMaterial with concrete shader
+    #########################
+
+    material = PBRMaterial()
+    material.name = "ConcreteMaterial"
+    material.shaderpath = "orkshader://concrete"
+
+    # Assign placeholder images (required for PBRMaterial initialization)
+    color_img = Image.createFromFile("src://effect_textures/white.dds")
+    normal_img = Image.createFromFile("src://effect_textures/default_normal.dds")
+    mtlruf_img = Image.createFromFile("src://effect_textures/white.dds")
+    material.assignImages(
+      ctx,
+      color=color_img,
+      normal=normal_img,
+      mtlruf=mtlruf_img,
+      doConform=True
+    )
+
+    # Material properties (the shader uses procedural values, but these are needed)
+    material.metallicFactor = 0.0
+    material.roughnessFactor = 1.0
+    material.doubleSided = False
+
+    # Add PBR state lambdas for proper parameter binding
+    material.addBasicStateLambda()
+    material.addLightingLambda()
+
+    # Initialize material on GPU
+    material.gpuInit(ctx)
+
+    self.room_material = material
+
+    #########################
+    # Assign material to drawable (dynamic pipeline selection)
+    #########################
+
+    rprimdata.material = material
+
+    #########################
+    # Create room node (deferred from createEnvironmentData)
+    #########################
+
+    room_mesh_transform = Transform()
+    room_mesh_transform.nonUniformScale = SCALE
+    room_mesh_transform.translation = OFFSET
+
+    room_node = self.room_SGCOMP.declareNodeOnLayer(
+        name = "envnode",
+        drawable = rprimdata,
+        layers = self.fwd_layers,
+        transform = room_mesh_transform)
+
+    #########################
+    # Boot up the ECS
+    #########################
+
     self.ecsLaunch()
 
   ##############################################
@@ -415,14 +492,14 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     ##############################
 
     prob = random.randint(0,100)
-    if prob < 50 and self.spawncounter < NUM_BALLS:
-      i = random.randint(-5,5)
-      j = random.randint(-5,5)
+    if prob < 2 and self.spawncounter < NUM_BALLS:
+      i = random.randint(-175,175)
+      j = random.randint(-175,175)
       self.spawncounter += 1
       SAD = ecs.SpawnAnonDynamic("ball_spawner")
       SAD.overridexf.orientation = quat(vec3(0,1,0),0)
       SAD.overridexf.scale = 1.0
-      SAD.overridexf.translation = vec3(i,15,j)
+      SAD.overridexf.translation = vec3(i,25,j)
       self.controller.spawnEntity(SAD)
 
     ##############################
@@ -453,8 +530,8 @@ class ECS_FIRST_PERSON_SHOOTER(object):
                                         tokens.eye: EYE,
                                         tokens.tgt: TGT,
                                         tokens.up: UP,
-                                        tokens.near: UIC.near,
-                                        tokens.far: UIC.far,
+                                        tokens.near: 0.2,
+                                        tokens.far: 1000.0,
                                         tokens.fovy: UIC.fovy
                                       }
                                      )
@@ -509,8 +586,6 @@ class ECS_FIRST_PERSON_SHOOTER(object):
 
     ui = lev2.ui
 
-    walk_force = 3e2
-
     ##############################################
     # camera controls
     ##############################################
@@ -529,19 +604,19 @@ class ECS_FIRST_PERSON_SHOOTER(object):
         self.playerImpulse(vec3(0,500,0)) # JUMP
       #### FORWARD #####
       elif uievent.keycode == ord("W"):
-        self.playerforce.magnitude = walk_force
+        self.playerforce.magnitude = WALK_FORCE
         self.playerforce_rot = 0.0
       #### LEFT #####
       elif uievent.keycode == ord("A"):
-        self.playerforce.magnitude = walk_force
+        self.playerforce.magnitude = WALK_FORCE
         self.playerforce_rot = math.pi*1.5
       #### BACK #####
       elif uievent.keycode == ord("S"):
-        self.playerforce.magnitude = walk_force
+        self.playerforce.magnitude = WALK_FORCE
         self.playerforce_rot = math.pi
       #### RIGHT #####
       elif uievent.keycode == ord("D"):
-        self.playerforce.magnitude = walk_force
+        self.playerforce.magnitude = WALK_FORCE
         self.playerforce_rot = math.pi*0.5
       #### FIRE #####
       elif uievent.keycode == ord("F"):

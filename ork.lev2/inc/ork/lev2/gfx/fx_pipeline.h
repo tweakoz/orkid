@@ -110,9 +110,7 @@ struct FxPipeline {
   std::unordered_map<fxuniformblock_constptr_t, varval_t> _uniformbuffers;
   std::unordered_map<fxparamstorageblock_constptr_t, varval_t> _storages;
   std::vector<statelambda_t> _statelambdas;
-  fxparam_constptr_t _parInstanceMatrixMap = nullptr;
-  fxparam_constptr_t _parInstanceIdMap     = nullptr;
-  fxparam_constptr_t _parInstanceColorMap  = nullptr;
+  fxparamstorageblock_constptr_t _parInstanceBlock = nullptr;
   svar64_t _impl;
 
   bool _debugBreak = false;

@@ -197,10 +197,8 @@ public:
   fxparamstorageblock_constptr_t _parForwardLightBlock   = nullptr;
 
   ///////////////////////////////////////////
-  // instancing (via texture)
-  fxparam_constptr_t _paramInstanceMatrixMap = nullptr;
-  fxparam_constptr_t _paramInstanceIdMap = nullptr;
-  fxparam_constptr_t _paramInstanceColorMap = nullptr;
+  // instancing (via SSBO)
+  fxparamstorageblock_constptr_t _parInstanceBlock = nullptr;
   ///////////////////////////////////////////
   image_ptr_t _image_color;
   image_ptr_t _image_normal;

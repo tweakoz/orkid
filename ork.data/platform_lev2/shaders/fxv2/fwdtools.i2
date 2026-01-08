@@ -265,6 +265,7 @@ libblock lib_fwd_impl : lib_math //
     //
     /////////////////////////
     //return env_lighting;
+    //return env_lighting;
     return (env_lighting + point_lighting + spot_lighting + emission + light_maps) * modcolor;
   }
   vec3 _forward_lightingZ(vec3 modcolor, vec3 albedo, vec3 ambrufmtl, vec3 emission, vec3 eyepos, vec3 normal, bool emissive) {
@@ -297,6 +298,7 @@ libblock lib_fwd     //
     bool emissive  = length(TN) < 0.1;
     vec3 normal    = normalize(frg_tbn * N);
     return _forward_lightingZ(modcolor, albedo, ambrufmtl, emission, eyepos, normal, emissive) * modcolor;
+    //return vec3(uvinvy,0);
   }
 
   vec3 forward_lighting_mono(vec3 modcolor) {

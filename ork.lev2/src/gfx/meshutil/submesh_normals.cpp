@@ -71,33 +71,27 @@ void submeshWithFaceNormalsAndBinormals(const submesh& inpsubmesh, submesh& outs
 
 void submeshWithSmoothNormals(const submesh& inpsubmesh, submesh& outsubmesh, float threshold_radians) {
 
-  threshold_radians *= 0.5f;
-
   inpsubmesh.visitAllPolys([&](poly_const_ptr_t p) {
     dvec3 N = p->computeNormal();
-    printf( "N<%g %g %g>\n", N.x, N.y, N.z );
     std::vector<vertex_ptr_t> out_polygon;
     p->visitVertices([&](vertex_ptr_t inp_v0) {
       auto polys = inpsubmesh.polysConnectedToVertex(inp_v0);
       dvec3 Naccum;
       int ncount = 0;
       for (auto p_item : polys._the_map) {
-        auto p2      = p_item.second;
+        auto p2     = p_item.second;
         dvec3 ON    = p2->computeNormal();
         float angle = N.angle(ON);
-        // printf( "angle<%g> threshold<%g>\n", angle, threshold_radians);
-        // if (angle <= threshold_radians) {
-        Naccum += ON;
-        ncount++;
-        //}
+        if (angle <= threshold_radians) {
+          Naccum += ON;
+          ncount++;
+        }
       }
       if (ncount == 0) {
         Naccum = N;
       }
       auto copy_v0 = *inp_v0;
-      auto NN = Naccum.normalized();
-      printf( "NN<%g %g %g>\n", NN.x, NN.y, NN.z );
-      copy_v0.mNrm = NN;
+      copy_v0.mNrm = Naccum.normalized();
       auto out_v   = outsubmesh.mergeVertex(copy_v0);
       out_polygon.push_back(out_v);
     });
@@ -108,44 +102,48 @@ void submeshWithSmoothNormals(const submesh& inpsubmesh, submesh& outsubmesh, fl
 ///////////////////////////////////////////////////////////////////////////////
 
 void submeshWithSmoothNormalsAndBinormals(const submesh& inpsubmesh, submesh& outsubmesh, float threshold_radians) {
-
-
+  // First compute smooth normals
   submesh smoothed;
-  submeshWithSmoothNormals(inpsubmesh, outsubmesh, threshold_radians);
-  threshold_radians *= 0.5f;
-  return;
-  
+  submeshWithSmoothNormals(inpsubmesh, smoothed, threshold_radians);
+  // Then compute binormals from the smoothed normals
+  submeshWithBinormalsFromNormalsAndUvs(smoothed, outsubmesh);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void submeshWithBinormalsFromNormalsAndUvs(const submesh& inpsubmesh, submesh& outsubmesh) {
+  // This function computes tangent/binormal vectors from existing normals and UVs
+  // using the standard tangent space computation algorithm
+
   int index = 0;
 
   using tri_t = std::vector<int>;
   std::map<int, dvec3> pos;
   std::map<int, fvec2> uva;
   std::map<int, dvec3> nrm;
+  std::map<int, fvec4> col;
   std::map<int, fvec3> tanA;
   std::map<int, fvec3> tan1;
   std::map<int, fvec3> tan2;
   std::vector<tri_t> triangles;
 
-  smoothed.visitAllPolys([&](poly_const_ptr_t p) {
+  // Collect vertex data from input mesh (must be triangulated)
+  inpsubmesh.visitAllPolys([&](poly_const_ptr_t p) {
     OrkAssert(p->numVertices() == 3);
     tri_t tri;
     p->visitVertices([&](vertex_ptr_t inp_v0) {
       pos[index] = inp_v0->mPos;
       uva[index] = inp_v0->mUV[0].mMapTexCoord;
       nrm[index] = inp_v0->mNrm;
+      col[index] = inp_v0->mCol[0];
+      tan1[index] = fvec3(0, 0, 0);
+      tan2[index] = fvec3(0, 0, 0);
       tri.push_back(index++);
     });
     triangles.push_back(tri);
   });
 
-  for (const auto& tri : triangles) {
-    int i1   = tri[0];
-    int i2   = tri[1];
-    int i3   = tri[2];
-    tan1[i1] = fvec3(0, 0, 0);
-    tan2[i2] = fvec3(0, 0, 0);
-  }
-
+  // Accumulate tangent and bitangent vectors per vertex
   std::set<int> vertices;
   for (const auto& tri : triangles) {
     int i1 = tri[0];
@@ -175,7 +173,12 @@ void submeshWithSmoothNormalsAndBinormals(const submesh& inpsubmesh, submesh& ou
     float t1 = w2.y - w1.y;
     float t2 = w3.y - w1.y;
 
-    float r = 1.0F / (s1 * t2 - s2 * t1);
+    float denom = s1 * t2 - s2 * t1;
+    if (std::abs(denom) < 1e-6f) {
+      // Degenerate UV triangle, skip
+      continue;
+    }
+    float r = 1.0F / denom;
     fvec3 sdir((t2 * x1 - t1 * x2) * r, (t2 * y1 - t1 * y2) * r, (t2 * z1 - t1 * z2) * r);
     fvec3 tdir((s1 * x2 - s2 * x1) * r, (s1 * y2 - s2 * y1) * r, (s1 * z2 - s2 * z1) * r);
 
@@ -188,59 +191,63 @@ void submeshWithSmoothNormalsAndBinormals(const submesh& inpsubmesh, submesh& ou
     tan2[i3] += tdir;
   }
 
+  // Orthogonalize and compute final tangent (stored as binormal in shader convention)
   for (int ivertex : vertices) {
-
     auto n1 = dvec3_to_fvec3(nrm[ivertex]);
     auto t1 = tan1[ivertex];
 
-    // Gram-Schmidt orthogonalize
-    tanA[ivertex] = (t1 - n1 * n1.dotWith(t1)).normalized();
+    // Handle zero tangent case
+    if (t1.magnitudeSquared() < 1e-6f) {
+      // Generate arbitrary tangent perpendicular to normal
+      fvec3 up(0, 1, 0);
+      if (std::abs(n1.dotWith(up)) > 0.9f) {
+        up = fvec3(1, 0, 0);
+      }
+      tanA[ivertex] = n1.crossWith(up).normalized();
+    } else {
+      // Gram-Schmidt orthogonalize
+      tanA[ivertex] = (t1 - n1 * n1.dotWith(t1)).normalized();
 
-    // Calculate handedness
-    float sign = ((n1.crossWith(t1)).dotWith(tan2[ivertex]) < 0.0F) ? -1.0F : 1.0F;
-
-    tanA[ivertex] = tanA[ivertex] * sign;
+      // Calculate handedness
+      float sign = ((n1.crossWith(t1)).dotWith(tan2[ivertex]) < 0.0F) ? -1.0F : 1.0F;
+      tanA[ivertex] = tanA[ivertex] * sign;
+    }
   }
-  /////////
 
+  // Build output mesh with tangents stored in binormal slot
   for (const auto& tri : triangles) {
     int i1 = tri[0];
     int i2 = tri[1];
     int i3 = tri[2];
 
-    const auto& pos1 = pos[i1];
-    const auto& pos2 = pos[i2];
-    const auto& pos3 = pos[i3];
-
-    const auto& nrm1 = nrm[i1];
-    const auto& nrm2 = nrm[i2];
-    const auto& nrm3 = nrm[i3];
-
-    const auto& tanA1 = tanA[i1];
-    const auto& tanA2 = tanA[i2];
-    const auto& tanA3 = tanA[i3];
-
-    const auto& uv1 = uva[i1];
-    const auto& uv2 = uva[i2];
-    const auto& uv3 = uva[i3];
-
     vertex v1, v2, v3;
 
-    v1.mPos = pos1;
-    v2.mPos = pos2;
-    v3.mPos = pos3;
+    v1.mPos = pos[i1];
+    v2.mPos = pos[i2];
+    v3.mPos = pos[i3];
 
-    v1.mNrm = nrm1;
-    v2.mNrm = nrm2;
-    v3.mNrm = nrm3;
+    v1.mNrm = nrm[i1];
+    v2.mNrm = nrm[i2];
+    v3.mNrm = nrm[i3];
 
-    v1.mUV[0].mMapTexCoord = uv1;
-    v2.mUV[0].mMapTexCoord = uv2;
-    v3.mUV[0].mMapTexCoord = uv3;
+    v1.mCol[0] = col[i1];
+    v2.mCol[0] = col[i2];
+    v3.mCol[0] = col[i3];
+    v1.miNumColors = 1;
+    v2.miNumColors = 1;
+    v3.miNumColors = 1;
 
-    v1.mUV[0].mMapBiNormal = tanA1;
-    v2.mUV[0].mMapBiNormal = tanA2;
-    v3.mUV[0].mMapBiNormal = tanA3;
+    v1.mUV[0].mMapTexCoord = uva[i1];
+    v2.mUV[0].mMapTexCoord = uva[i2];
+    v3.mUV[0].mMapTexCoord = uva[i3];
+
+    v1.mUV[0].mMapBiNormal = tanA[i1];
+    v2.mUV[0].mMapBiNormal = tanA[i2];
+    v3.mUV[0].mMapBiNormal = tanA[i3];
+
+    v1.miNumUvs = 1;
+    v2.miNumUvs = 1;
+    v3.miNumUvs = 1;
 
     std::vector<vertex_ptr_t> merged_vertices;
     auto nv1 = outsubmesh.mergeVertex(v1);
@@ -252,8 +259,6 @@ void submeshWithSmoothNormalsAndBinormals(const submesh& inpsubmesh, submesh& ou
 
     outsubmesh.mergePoly(merged_vertices);
   }
-
-  // outsubmesh = smoothed;
 }
 
 void submeshWithVertexColorsFromNormals(const submesh& inpsubmesh, submesh& outsubmesh) {

@@ -30,16 +30,16 @@ namespace ork::ecs {
 static logchannel_ptr_t logchan_simfsm = logger()->configureChannel("ecs.simfsm", fvec3(1.0, 0.9, 0));
 
 struct RootState : public fsm::State {
-  RootState(fsm::StateMachine* machine)
-      : State(machine) {
+  RootState(fsm::FsmData* data)
+      : State(data) {
   }
-  void onEnter() {
+  void onEnter(fsm::fsminstance_ptr_t inst) override {
     // logchan_simfsm->log("ROOT.enter");
   }
-  void onExit() {
+  void onExit(fsm::fsminstance_ptr_t inst) override {
     // logchan_simfsm->log("ROOT.exit");
   }
-  void onUpdate() {
+  void onUpdate(fsm::fsminstance_ptr_t inst) override {
     // logchan_simfsm->log("ROOT.update");
   }
 };
@@ -50,54 +50,58 @@ void Simulation::_buildStateMachine() {
   ///////////////////////////////////////////////////////////
   // set up update thread state machine
   ///////////////////////////////////////////////////////////
-  _updateThreadSM           = std::make_shared<fsm::StateMachine>();
-  auto upd_root             = _updateThreadSM->newState<RootState>();
-  _updateReadySimState      = _updateThreadSM->newState<fsm::LambdaState>(upd_root);
-  _updateEditSimState       = _updateThreadSM->newState<fsm::LambdaState>(upd_root);
-  _updateActiveSimState     = _updateThreadSM->newState<fsm::LambdaState>(upd_root);
-  _updatePausedSimState     = _updateThreadSM->newState<fsm::LambdaState>(upd_root);
-  _updateTerminatedSimState = _updateThreadSM->newState<fsm::LambdaState>(upd_root);
+  _updateThreadSMData       = std::make_shared<fsm::FsmData>();
+  auto upd_root             = _updateThreadSMData->newState<RootState>();
+  _updateReadySimState      = _updateThreadSMData->newState<fsm::LambdaState>(upd_root);
+  _updateEditSimState       = _updateThreadSMData->newState<fsm::LambdaState>(upd_root);
+  _updateActiveSimState     = _updateThreadSMData->newState<fsm::LambdaState>(upd_root);
+  _updatePausedSimState     = _updateThreadSMData->newState<fsm::LambdaState>(upd_root);
+  _updateTerminatedSimState = _updateThreadSMData->newState<fsm::LambdaState>(upd_root);
+
+  // Create instance
+  _updateThreadSMInst = fsm::FsmInstance::create(_updateThreadSMData);
+
   ////////////////////////////////////////////////////////
   // READY STATE
   ////////////////////////////////////////////////////////
-  _updateReadySimState->_onenter = [this]() {
+  _updateReadySimState->_onenter = [this](fsm::fsminstance_ptr_t inst) {
     logchan_simfsm->log("entering readymode");
-    if (_updateThreadSM->currentState() == nullptr) {
+    if (inst->currentState() == nullptr) {
       _needsGpuInit = true;
       _needsGpuExit = true;
       _initialize();
       _compose();
       _link();
-    } else if (_updateThreadSM->currentState() == _updateEditSimState) {
+    } else if (inst->currentState() == _updateEditSimState) {
       _unstage();
-    } else if (_updateThreadSM->currentState() == _updateActiveSimState) {
+    } else if (inst->currentState() == _updateActiveSimState) {
       _deactivate();
       _unstage();
     }
   };
   //
-  _updateReadySimState->_onupdate = [this]() {
+  _updateReadySimState->_onupdate = [this](fsm::fsminstance_ptr_t inst) {
     auto DB = _dbufctxSIM->acquireForWriteLocked();
     DB->Reset();
     _dbufctxSIM->releaseFromWriteLocked(DB);
   };
   //
-  _updateReadySimState->_onexit = [this]() {};
+  _updateReadySimState->_onexit = [this](fsm::fsminstance_ptr_t inst) {};
   ////////////////////////////////////////////////////////
   // EDIT STATE
   ////////////////////////////////////////////////////////
-  _updateEditSimState->_onenter = [this]() {
+  _updateEditSimState->_onenter = [this](fsm::fsminstance_ptr_t inst) {
     _needsGpuInit = true;
     logchan_simfsm->log("entering editmode");
     //////////////////////////
     // did we come from ready or active state ?
     //////////////////////////
-    if (_updateThreadSM->currentState() == _updateReadySimState) {
+    if (inst->currentState() == _updateReadySimState) {
       logchan_simfsm->log(" .. from ready mode");
       lev2::DrawQueue::BeginClearAndSyncReaders();
       _stage();
       lev2::DrawQueue::EndClearAndSyncReaders();
-    } else if (_updateThreadSM->currentState() == _updateActiveSimState) {
+    } else if (inst->currentState() == _updateActiveSimState) {
       logchan_simfsm->log(" .. from active mode");
       lev2::DrawQueue::BeginClearAndSyncReaders();
       ork::opq::assertOnQueue2(opq::updateSerialQueue());
@@ -108,7 +112,7 @@ void Simulation::_buildStateMachine() {
     }
   };
   //
-  _updateEditSimState->_onupdate = [this]() {
+  _updateEditSimState->_onupdate = [this](fsm::fsminstance_ptr_t inst) {
     _serviceEventQueues();
     _systems.atomicOp([&](const SystemLut& syslut) { _updsyslutcopy = syslut; });
     for (auto sys : _updsyslutcopy)
@@ -117,14 +121,14 @@ void Simulation::_buildStateMachine() {
   ////////////////////////////////////////////////////////
   // ACTIVE STATE
   ////////////////////////////////////////////////////////
-  _updateActiveSimState->_onenter = [this]() {
+  _updateActiveSimState->_onenter = [this](fsm::fsminstance_ptr_t inst) {
     logchan_simfsm->log("entering activemode");
     //////////////////////////
     // did we come from ready or pause state ?
     //////////////////////////
-    if (_updateThreadSM->currentState() == _updateEditSimState) {
+    if (inst->currentState() == _updateEditSimState) {
 
-    } else if (_updateThreadSM->currentState() == _updatePausedSimState) {
+    } else if (inst->currentState() == _updatePausedSimState) {
 
     } else {
       OrkAssert(false);
@@ -132,26 +136,21 @@ void Simulation::_buildStateMachine() {
     _needsGpuInit = true;
     _needsGpuExit = true;
 
-    // auto str = FormatString("////////////////////////");
-    // str += FormatString("Simulation<%p> EnterRunState", (void*)this);
-    // str += FormatString("////////////////////////");
-    // logchan_simfsm->log("%s", deco::decorate(255, 0, 0, str).c_str());
-    // ork::opq::assertOnQueue2(opq::updateSerialQueue());
-    // AllocationLabel label("Simulation::EnterRunState::255");
-
     _activate();
 
     ///////////////////////////////////
   };
-  _updateActiveSimState->_onupdate = [this]() {
+  _updateActiveSimState->_onupdate = [this](fsm::fsminstance_ptr_t inst) {
     _serviceEventQueues();
     this->_update_SIMSTATE();
   };
   ////////////////////////////////////////////////////////
   // PAUSE STATE
   ////////////////////////////////////////////////////////
-  _updatePausedSimState->_onenter  = [this]() { OrkAssert(_updateThreadSM->currentState() == _updateActiveSimState); };
-  _updatePausedSimState->_onupdate = [this]() {
+  _updatePausedSimState->_onenter = [this](fsm::fsminstance_ptr_t inst) {
+    OrkAssert(inst->currentState() == _updateActiveSimState);
+  };
+  _updatePausedSimState->_onupdate = [this](fsm::fsminstance_ptr_t inst) {
     _serviceEventQueues();
     // todo actually render...
     auto DB = _dbufctxSIM->acquireForWriteLocked();
@@ -160,16 +159,16 @@ void Simulation::_buildStateMachine() {
   };
   ////////////////////////////////////////////////////////
 
-  _updateTerminatedSimState->_onenter = [this]() {
+  _updateTerminatedSimState->_onenter = [this](fsm::fsminstance_ptr_t inst) {
     _controller->_delopq.atomicOp([&](Controller::delayed_opq_t& unlocked) { unlocked.clear(); });
     // todo actually render...
     auto DB = _dbufctxSIM->acquireForWriteLocked();
     DB->Reset();
     _dbufctxSIM->releaseFromWriteLocked(DB);
 
-    if (_updateThreadSM->currentState() == _updateEditSimState) {
+    if (inst->currentState() == _updateEditSimState) {
       _unstage();
-    } else if (_updateThreadSM->currentState() == _updateActiveSimState) {
+    } else if (inst->currentState() == _updateActiveSimState) {
       _deactivate();
       _unstage();
     }
@@ -182,18 +181,21 @@ void Simulation::_buildStateMachine() {
   // set up render thread state machine
   ///////////////////////////////////////////////////////////
 
-  _renderThreadSM           = std::make_shared<fsm::StateMachine>();
-  auto ren_root             = _renderThreadSM->newState<RootState>();
-  auto ren_init_state       = _renderThreadSM->newState<fsm::LambdaState>(ren_root);
-  auto ren_sim_state        = _renderThreadSM->newState<fsm::LambdaState>(ren_root);
-  _renderTerminatedSimState = _renderThreadSM->newState<fsm::LambdaState>(ren_root);
+  _renderThreadSMData       = std::make_shared<fsm::FsmData>();
+  auto ren_root             = _renderThreadSMData->newState<RootState>();
+  auto ren_init_state       = _renderThreadSMData->newState<fsm::LambdaState>(ren_root);
+  auto ren_sim_state        = _renderThreadSMData->newState<fsm::LambdaState>(ren_root);
+  _renderTerminatedSimState = _renderThreadSMData->newState<fsm::LambdaState>(ren_root);
+
+  // Create instance
+  _renderThreadSMInst = fsm::FsmInstance::create(_renderThreadSMData);
 
   //////////////////
   // RENDER INIT
   //////////////////
-  ren_init_state->_onenter = [this]() { _needsGpuInit = true; };
+  ren_init_state->_onenter = [this](fsm::fsminstance_ptr_t inst) { _needsGpuInit = true; };
   //
-  ren_init_state->_onupdate = [=]() {
+  ren_init_state->_onupdate = [=](fsm::fsminstance_ptr_t inst) {
     OrkAssert(_currentdrwev);
     if (_needsGpuInit) {
 
@@ -207,13 +209,12 @@ void Simulation::_buildStateMachine() {
 
       auto LOCKS = lev2::GfxEnv::dumpLocks();
 
-      auto try_sframe = _renderThreadSM->getVar("sframe"_crc);
-      if (auto sframe = try_sframe.tryAs<lev2::standardcompositorframe_ptr_t>()) {
+      if (auto sframe = inst->vars()->typedValueForKey<lev2::standardcompositorframe_ptr_t>("sframe")) {
         sframe.value()->attachDrawQueueContext(_dbufctxSIM);
       }
 
-      lev2::GfxEnv::onLocksDone([=]() {                     //
-        _renderThreadSM->enqueueStateChange(ren_sim_state); //
+      lev2::GfxEnv::onLocksDone([=]() {
+        _renderThreadSMInst->changeState(ren_sim_state);
       });
 
       SystemLut render_systems;
@@ -237,13 +238,11 @@ void Simulation::_buildStateMachine() {
   //////////////////
   // RENDER SIMULATION
   //////////////////
-  ren_sim_state->_onenter = [this]() {};
+  ren_sim_state->_onenter = [this](fsm::fsminstance_ptr_t inst) {};
   //
-  ren_sim_state->_onupdate = [this]() {
+  ren_sim_state->_onupdate = [this](fsm::fsminstance_ptr_t inst) {
     EASY_BLOCK("ecs::sim::fsm_render", profiler::colors::Red);
-    auto try_sframe = _renderThreadSM->getVar("sframe"_crc);
-
-    if (auto as_sframe = try_sframe.tryAs<lev2::standardcompositorframe_ptr_t>()) {
+    if (auto as_sframe = inst->vars()->typedValueForKey<lev2::standardcompositorframe_ptr_t>("sframe")) {
       SystemLut render_systems;
       _systems.atomicOp([&](const SystemLut& syslut) { render_systems = syslut; });
       for (auto sys : render_systems) {
@@ -280,7 +279,7 @@ void Simulation::_buildStateMachine() {
     }
   };
 
-  _renderTerminatedSimState->_onenter = [this]() {
+  _renderTerminatedSimState->_onenter = [this](fsm::fsminstance_ptr_t inst) {
     //_unlink();
     //_decompose();
     //_uninitialize();
@@ -288,7 +287,7 @@ void Simulation::_buildStateMachine() {
 
   ///////////////////////////////////////////////////////////
 
-  _renderThreadSM->enqueueStateChange(ren_init_state);
+  _renderThreadSMInst->changeState(ren_init_state);
 }
 
 void Simulation::_resetClock() {
@@ -312,7 +311,7 @@ void Simulation::SetSimulationMode(ESimulationMode emode) {
       logchan_simfsm->log("SetMode: READY");
       switch (_currentSimulationMode) {
         case ork::ecs::ESimulationMode::NEW:
-          _updateThreadSM->enqueueStateChange(_updateReadySimState);
+          _updateThreadSMInst->changeState(_updateReadySimState);
           break;
         default:
           OrkAssert(false);
@@ -324,12 +323,12 @@ void Simulation::SetSimulationMode(ESimulationMode emode) {
       logchan_simfsm->log("SetMode: EDIT");
       switch (_currentSimulationMode) {
         case ork::ecs::ESimulationMode::NEW:
-          _updateThreadSM->enqueueStateChange(_updateReadySimState);
-          _updateThreadSM->enqueueStateChange(_updateEditSimState);
+          _updateThreadSMInst->changeState(_updateReadySimState);
+          _updateThreadSMInst->changeState(_updateEditSimState);
           break;
         case ork::ecs::ESimulationMode::READY:
         case ork::ecs::ESimulationMode::ACTIVE:
-          _updateThreadSM->enqueueStateChange(_updateEditSimState);
+          _updateThreadSMInst->changeState(_updateEditSimState);
           break;
         case ork::ecs::ESimulationMode::EDIT:
           break;
@@ -343,13 +342,13 @@ void Simulation::SetSimulationMode(ESimulationMode emode) {
       logchan_simfsm->log("SetMode: ACTIVE");
       switch (_currentSimulationMode) {
         case ork::ecs::ESimulationMode::NEW:
-          _updateThreadSM->enqueueStateChange(_updateReadySimState);
-          _updateThreadSM->enqueueStateChange(_updateEditSimState);
-          _updateThreadSM->enqueueStateChange(_updateActiveSimState);
+          _updateThreadSMInst->changeState(_updateReadySimState);
+          _updateThreadSMInst->changeState(_updateEditSimState);
+          _updateThreadSMInst->changeState(_updateActiveSimState);
           break;
         case ork::ecs::ESimulationMode::READY:
         case ork::ecs::ESimulationMode::EDIT:
-          _updateThreadSM->enqueueStateChange(_updateActiveSimState);
+          _updateThreadSMInst->changeState(_updateActiveSimState);
           break;
         case ork::ecs::ESimulationMode::ACTIVE:
           break;
@@ -362,7 +361,7 @@ void Simulation::SetSimulationMode(ESimulationMode emode) {
     case ESimulationMode::PAUSE:
       switch (_currentSimulationMode) {
         case ork::ecs::ESimulationMode::ACTIVE:
-          _updateThreadSM->enqueueStateChange(_updatePausedSimState);
+          _updateThreadSMInst->changeState(_updatePausedSimState);
           break;
         default:
           OrkAssert(false);
@@ -371,8 +370,8 @@ void Simulation::SetSimulationMode(ESimulationMode emode) {
       break;
     ///////////////////////////////////////
     case ESimulationMode::TERMINATED:
-      _updateThreadSM->enqueueStateChange(_updateTerminatedSimState);
-      _renderThreadSM->enqueueStateChange(_renderTerminatedSimState);
+      _updateThreadSMInst->changeState(_updateTerminatedSimState);
+      _renderThreadSMInst->changeState(_renderTerminatedSimState);
       break;
     ///////////////////////////////////////
     case ESimulationMode::NONE:

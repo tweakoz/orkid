@@ -32,7 +32,7 @@ BALLS_NODE_NAME = "balls"
 NUM_BALLS = 2500
 MAX_BALLS = 5000
 SPAWN_RATE = 0.1
-SSAO_NUM_SAMPLES = 96
+SSAO_NUM_SAMPLES = 0
 ################################################################################
 
 class MYCONTROLLER:

@@ -101,10 +101,11 @@ void Simulation::gpuExit(lev2::Context* ctx){
     for (auto sys : render_systems) {
       sys.second->_onGpuExit(this, ctx);
     }
-    _renderThreadSM->update();
-    _renderThreadSM->update();
-    _renderThreadSM->update();
-    _renderThreadSM = nullptr;
+    fsm::FsmInstance::update(_renderThreadSMInst);
+    fsm::FsmInstance::update(_renderThreadSMInst);
+    fsm::FsmInstance::update(_renderThreadSMInst);
+    _renderThreadSMInst = nullptr;
+    _renderThreadSMData = nullptr;
 
     // deferred renderthread destructable destruction
 
@@ -115,10 +116,11 @@ void Simulation::gpuExit(lev2::Context* ctx){
 }
 void Simulation::updateExit(){
   SetSimulationMode(ESimulationMode::TERMINATED);
-  _updateThreadSM->update();
-  _updateThreadSM->update();
-  _updateThreadSM->update();
-  _updateThreadSM = nullptr;
+  fsm::FsmInstance::update(_updateThreadSMInst);
+  fsm::FsmInstance::update(_updateThreadSMInst);
+  fsm::FsmInstance::update(_updateThreadSMInst);
+  _updateThreadSMInst = nullptr;
+  _updateThreadSMData = nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::_mutateControllerObject(std::function<void(Controller::id2obj_map_t&)> operation){
@@ -405,14 +407,14 @@ void Simulation::addSystem(systemkey_t key, System* system) {
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::render(ui::drawevent_constptr_t drwev) {
   _currentdrwev = drwev;
-  _renderThreadSM->update();
+  fsm::FsmInstance::update(_renderThreadSMInst);
   _currentdrwev = nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::renderWithStandardCompositorFrame(lev2::standardcompositorframe_ptr_t sframe){
   _currentdrwev = sframe->_drawEvent;
-  _renderThreadSM->setVar("sframe"_crc,sframe);
-  _renderThreadSM->update();
+  _renderThreadSMInst->vars()->makeValueForKey<lev2::standardcompositorframe_ptr_t>("sframe") = sframe;
+  fsm::FsmInstance::update(_renderThreadSMInst);
   _currentdrwev = nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////

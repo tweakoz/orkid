@@ -296,9 +296,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipeline(const FxPipelinePermutation& per
       pipeline->bindParam(mtl->_parRoughnessFactor, mtl->_roughnessFactor);
     }
 
-    pipeline->_parInstanceMatrixMap = mtl->_paramInstanceMatrixMap;
-    pipeline->_parInstanceIdMap     = mtl->_paramInstanceIdMap;
-    pipeline->_parInstanceColorMap  = mtl->_paramInstanceColorMap;
+    pipeline->_parInstanceBlock = mtl->_parInstanceBlock;
 
     for (auto l : mtl->_state_lambdas) {
       pipeline->addStateLambda(l);

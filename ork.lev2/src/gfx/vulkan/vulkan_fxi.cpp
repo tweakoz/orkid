@@ -10,6 +10,7 @@
 #include "vulkan_ubo_dynamic.h"
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/util/hexdump.inl>
+#include <ork/kernel/environment.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
@@ -28,6 +29,14 @@ VkFxInterface::VkFxInterface(vkcontext_rawptr_t ctx)
 
     _default_rasterstate->_name = "vkdefault";
     
+    _enable_pipeline_debug = false;
+    std::string ORKID_VULKAN_DEBUG_PIPELINE;
+    if (genviron.get("ORKID_VULKAN_DEBUG_PIPELINE", ORKID_VULKAN_DEBUG_PIPELINE) && !ORKID_VULKAN_DEBUG_PIPELINE.empty()) {
+      if (ORKID_VULKAN_DEBUG_PIPELINE == "1") {
+        _enable_pipeline_debug = true;
+      }
+    }
+
     // Dynamic UBO system will be initialized after Vulkan setup
 }
 

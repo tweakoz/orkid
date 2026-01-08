@@ -1,0 +1,225 @@
+///////////////////////////////////////////////////////////////
+// Procedural Concrete Shader with Forward PBR Lighting
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default {
+  import "mathtools.i2";
+  import "misctools.i2";
+  import "envtools.i2";
+  import "pbrtools.i2";
+  import "stdtools.i2";
+  import "ssaotools.i2";
+}
+///////////////////////////////////////////////////////////////
+state_block sb_concrete : default {
+  CullTest  = PASS_FRONT;
+  DepthTest = LEQUALS;
+  BlendMode = OFF;
+}
+///////////////////////////////////////////////////////////////
+vertex_interface vif_concrete : ub_std_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec3 normal : NORMAL;
+    vec3 binormal : BINORMAL;
+    vec2 uv0 : TEXCOORD0;
+    vec4 vtxcolor : COLOR0;
+  }
+  outputs {
+    vec4 frg_wpos;
+    vec4 frg_clr;
+    vec2 frg_uv0;
+    mat3 frg_tbn;
+    float frg_camdist;
+    vec3 frg_camz;
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_interface fif_concrete
+  : vif_concrete
+  : ub_frg_fwd
+  : storage_fwd_lighting
+  : ss_frg_fwd {
+  outputs {
+    layout(location = 0) vec4 out_clr;
+  }
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_concrete
+  : vif_concrete
+  : lib_pbr_vtx
+  : ublk_std_matrices {
+  gl_Position = mvp * position;
+  frg_uv0     = uv0;
+  frg_wpos    = m * position;
+  frg_clr     = vtxcolor;
+
+  // TBN matrix for potential normal mapping
+  vec3 wn = normalize(mat3(m) * normal);
+  vec3 wb = normalize(mat3(m) * binormal);
+  vec3 wt = cross(wn, wb);
+  frg_tbn = mat3(wt, wb, wn);
+
+  // Camera distance/direction computed in fragment shader if needed
+  frg_camdist = 0.0;
+  frg_camz    = vec3(0, 0, 0);
+}
+///////////////////////////////////////////////////////////////
+// Noise library for procedural concrete
+///////////////////////////////////////////////////////////////
+libblock lib_concrete_noise {
+  float hash(vec3 p) {
+    p = fract(p * 0.3183099 + 0.1);
+    p *= 17.0;
+    return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+  }
+
+  float noise3d(vec3 p) {
+    vec3 i = floor(p);
+    vec3 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+
+    return mix(
+      mix(mix(hash(i + vec3(0,0,0)), hash(i + vec3(1,0,0)), f.x),
+          mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),
+      mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x),
+          mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y),
+      f.z);
+  }
+
+  float fbm(vec3 p, int octaves) {
+    float value = 0.0;
+    float amplitude = 0.5;
+    float frequency = 1.0;
+    for (int i = 0; i < octaves; i++) {
+      value += amplitude * noise3d(p * frequency);
+      amplitude *= 0.5;
+      frequency *= 2.0;
+    }
+    return value;
+  }
+
+  vec3 concrete_albedo(vec3 world_pos, vec3 world_normal) {
+    // Base concrete color (warm gray)
+    vec3 concrete_base = vec3(0.55, 0.53, 0.50);
+
+    // Large-scale color variation (stains, weathering)
+    float large_noise = fbm(world_pos * 0.15, 4);
+    vec3 stain_color = mix(
+      vec3(0.45, 0.42, 0.38),
+      vec3(0.62, 0.60, 0.55),
+      large_noise
+    );
+
+    // Medium-scale surface variation
+    float med_noise = fbm(world_pos * 0.8, 5);
+
+    // Fine grain texture
+    float fine_noise = fbm(world_pos * 4.0, 3);
+
+    // Combine noise layers
+    float surface_var = med_noise * 0.3 + fine_noise * 0.15;
+
+    // Mix base with stains
+    vec3 concrete = mix(concrete_base, stain_color, 0.6);
+
+    // Apply surface variation
+    concrete += (surface_var - 0.25) * 0.2;
+
+    // Add subtle aggregate specks
+    float specks = noise3d(world_pos * 20.0);
+    if (specks > 0.85) {
+      concrete += 0.08;
+    } else if (specks < 0.15) {
+      concrete -= 0.06;
+    }
+
+    // Slight color shift based on facing (warm up, cool down)
+    float up_facing = world_normal.y * 0.5 + 0.5;
+    concrete = mix(
+      concrete * vec3(0.95, 0.97, 1.0),
+      concrete * vec3(1.0, 0.98, 0.95),
+      up_facing
+    );
+
+    return concrete;
+  }
+
+  float concrete_roughness(vec3 world_pos) {
+    // Roughness varies slightly across surface
+    float rough_var = fbm(world_pos * 2.0, 3);
+    return mix(0.75, 0.95, rough_var);
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_concrete_forward
+  : fif_concrete
+  : lib_math
+  : lib_brdf
+  : lib_def
+  : lib_fwd
+  : lib_concrete_noise
+  : std_forward_all {
+
+  vec3 wpos = frg_wpos.xyz;
+  vec3 wnrm = normalize(frg_tbn[2]); // world normal from TBN
+
+  // Generate procedural concrete
+  vec3 albedo = concrete_albedo(wpos, wnrm);
+  float roughness = concrete_roughness(wpos);
+
+  // ambrufmtl: x=ambient_occ, y=roughness, z=metallic
+  vec3 ambrufmtl = vec3(1.0, roughness, 0.0);
+
+  // Forward lighting with PBR
+  vec3 lit = _forward_lightingZ(
+    ModColor.xyz,    // modcolor
+    albedo,          // albedo
+    ambrufmtl,       // (ao, roughness, metallic)
+    vec3(0,0,0),     // emission
+    EyePostion,      // eye position
+    wnrm,            // world normal
+    false            // emissive toggle
+  );
+  out_clr = vec4(lit, 1.0);
+}
+///////////////////////////////////////////////////////////////
+// Depth prepass
+///////////////////////////////////////////////////////////////
+vertex_interface vif_concrete_dpp {
+  inputs {
+    vec4 position : POSITION;
+  }
+  outputs {
+    float frg_camz;
+  }
+}
+fragment_interface fif_concrete_dpp : vif_concrete_dpp {
+  outputs {
+    layout(location = 0) float out_z;
+  }
+}
+vertex_shader vs_concrete_dpp
+  : vif_concrete_dpp
+  : ublk_std_matrices {
+  vec4 hpos = mvp * position;
+  gl_Position = hpos;
+  frg_camz = hpos.z / hpos.w;
+}
+fragment_shader ps_concrete_dpp : fif_concrete_dpp {
+  out_z = frg_camz;
+}
+///////////////////////////////////////////////////////////////
+// Techniques
+///////////////////////////////////////////////////////////////
+technique FWD_CT_NM_RI_NI_MO {
+  fxconfig = fxcfg_default;
+  vf_pass = { vs_concrete, ps_concrete_forward, sb_concrete }
+}
+technique FWD_CV_NM_RI_NI_MO {
+  fxconfig = fxcfg_default;
+  vf_pass = { vs_concrete, ps_concrete_forward, sb_concrete }
+}
+technique FWD_DEPTHPREPASS_RI_NI_MO {
+  fxconfig = fxcfg_default;
+  vf_pass = { vs_concrete_dpp, ps_concrete_dpp, sb_concrete }
+}

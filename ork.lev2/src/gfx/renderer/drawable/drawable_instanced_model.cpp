@@ -12,6 +12,7 @@
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/fx_pipeline.h>
+#include <ork/lev2/gfx/shadman.h>
 
 #include <ork/kernel/orklut.hpp>
 #include <ork/reflect/properties/DirectTypedMap.hpp>
@@ -84,13 +85,8 @@ void InstancedModelDrawable::bindModel(xgmmodel_ptr_t model) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void InstancedModelDrawable::gpuInit(Context* ctx) const {
-  _instanceMatrixTex = Texture::createBlank(1024, 256, EBufferFormat::RGBA32F);
-  _instanceColorTex  = Texture::createBlank(1024, 256, EBufferFormat::RGBA32F);
-  _instanceIdTex     = Texture::createBlank(1024, 128, EBufferFormat::RGBA16UI);
-  
-  _instanceMatrixTex->_debugName = "_instanceMatrixTex";
-  _instanceColorTex->_debugName  = "_instanceColorTex";
-  _instanceIdTex->_debugName     = "_instanceIdTex";
+  auto FXI = ctx->FXI();
+  _instanceSSBO = FXI->createStorageBuffer(k_ssbo_total_size);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void InstancedModelDrawable::enqueueToRenderQueue(
@@ -111,7 +107,7 @@ void InstancedModelDrawable::enqueueToRenderQueue(
   ////////////////////////////////////////////////////////////////////
   bool isPick    = context->FBI()->isPickState();
   bool isSkinned = _model->isSkinned();
-  if (not _instanceMatrixTex) {
+  if (not _instanceSSBO) {
     gpuInit(context); // todo figure out better do-only-once method...
   }
   ////////////////////////////////////////////////////////////////////
@@ -129,7 +125,6 @@ void InstancedModelDrawable::enqueueToRenderQueue(
     EASY_BLOCK("gfxmodel::RINST1", profiler::colors::Red);
     auto context     = RCID.context();
     auto GBI         = context->GBI();
-    auto TXI         = context->TXI();
     auto FXI         = context->FXI();
     auto FBI         = context->FBI();
     auto impl        = _impl.getShared<IMDIMPL_MODEL>();
@@ -137,50 +132,21 @@ void InstancedModelDrawable::enqueueToRenderQueue(
     bool isStereo    = RCID.rcfd()->isStereo();
     int pipeline_index = isStereo ? 1 : (isPick ? 2 : 0);
     ////////////////////////////////////////////////////////
-    bool updatetex = true; //( (_drawcount++) < 5000);
-    ////////////////////////////////////////////////////////
-    // upload instance matrices to GPU
-    ////////////////////////////////////////////////////////
-    TextureInitData texdata;
-    texdata._w           = k_texture_dimension_x; // 64 bytes per instance
-    texdata._h           = ((_count+1023)>>10)&0x3ff;
-    texdata._src_format  = EBufferFormat::RGBA32F;
-    texdata._dst_format  = EBufferFormat::RGBA32F;
-    texdata._autogenmips = false;
-    //printf( "dbufitem->_usermap size<%zu>\n", dbufitem->_usermap.size() );
-    //auto it = dbufitem->_usermap.find("rtthread_instance_data"_crcu);
-    //OrkAssert(it!=dbufitem->_usermap.end());
-    auto instances_copy = _idbuf_pool.begin_pull();
-    texdata._data        = (const void*) instances_copy->_worldmatrices.data();
-    texdata._truncation_length = _count*64;
     OrkAssert(_count <= k_max_instances);
-    if(updatetex)
-      TXI->initTextureFromData(_instanceMatrixTex.get(), texdata);
+    auto instances_copy = _idbuf_pool.begin_pull();
     ////////////////////////////////////////////////////////
-  EASY_END_BLOCK;
-    EASY_BLOCK("gfxmodel::RINST2", profiler::colors::Red);
+    // upload instance data to SSBO
     ////////////////////////////////////////////////////////
-    texdata._w    = k_texture_dimension_x; // 16 bytes per instance
-    texdata._h    = ((_count+4095)>>12)&0xfff;
-    texdata._data = (const void*)instances_copy->_modcolors.data();
-    texdata._truncation_length = _count*16;
-    if(updatetex)
-      TXI->initTextureFromData(_instanceColorTex.get(), texdata);
-    ////////////////////////////////////////////////////////
-    texdata._w           = k_texture_dimension_x; // 8 bytes per instance
-    texdata._h           = ((_count+4095)>>12)&0xfff;
-    texdata._src_format  = EBufferFormat::RGBA16UI;
-    texdata._dst_format  = EBufferFormat::RGBA16UI;
-    texdata._autogenmips = false;
-    texdata._data        = (const void*)instances_copy->_pickids.data();
-    texdata._truncation_length = _count*8;
-    if(updatetex)
-      TXI->initTextureFromData(_instanceIdTex.get(), texdata);
-
-    _instanceIdTex->TexSamplingMode().presetPointAndClamp();
-    TXI->ApplySamplingMode(_instanceIdTex.get());
-  EASY_END_BLOCK;
-
+    auto ssbo_mapped = FXI->mapStorageBuffer(_instanceSSBO, 0, k_ssbo_total_size, BufferMapAccess::WRITE_ONLY);
+    char* base_ptr = (char*)ssbo_mapped->_mappedaddr;
+    // copy matrices
+    memcpy(base_ptr + k_ssbo_offset_matrices, instances_copy->_worldmatrices.data(), _count * 64);
+    // copy colors
+    memcpy(base_ptr + k_ssbo_offset_colors, instances_copy->_modcolors.data(), _count * 16);
+    // copy pickids (convert from uint64_t to uvec2 - same layout)
+    memcpy(base_ptr + k_ssbo_offset_pickids, instances_copy->_pickids.data(), _count * 8);
+    ssbo_mapped->unmap();
+    EASY_END_BLOCK;
     ////////////////////////////////////////////////////////
     // release pulled instance data
     ////////////////////////////////////////////////////////
@@ -188,7 +154,7 @@ void InstancedModelDrawable::enqueueToRenderQueue(
     ////////////////////////////////////////////////////////
     // instanced render
     ////////////////////////////////////////////////////////
-    EASY_BLOCK("gfxmodel::RINST3", profiler::colors::Red);
+    EASY_BLOCK("gfxmodel::RINST2", profiler::colors::Red);
     RCID._isInstanced = true;
     for (auto& sub : impl->_submeshes) {
       auto xgmsub = sub._xgmsubmesh;
@@ -198,11 +164,11 @@ void InstancedModelDrawable::enqueueToRenderQueue(
       OrkAssert(pipeline);
       pipeline->wrappedDrawCall(RCID, [&]() {
         ////////////////////////////////////
-        // bind instancetex to sampler
+        // bind instance SSBO
         ////////////////////////////////////
-        FXI->bindParamTexture(pipeline->_parInstanceMatrixMap, _instanceMatrixTex.get());
-        FXI->bindParamTexture(pipeline->_parInstanceIdMap, _instanceIdTex.get());
-        FXI->bindParamTexture(pipeline->_parInstanceColorMap, _instanceColorTex.get());
+        if (pipeline->_parInstanceBlock) {
+          FXI->bindStorageBuffer(pipeline->_parInstanceBlock, _instanceSSBO);
+        }
         ////////////////////////////////////
         int inumclus = xgmsub->_clusters.size();
         for (int ic = 0; ic < inumclus; ic++) {

@@ -464,9 +464,10 @@ struct VkFxInterface final : public FxInterface {
   std::unordered_map<uint64_t, int> _vk_geointerface_cache;
   std::array<vkdescriptorset_ptr_t, 4> _active_gfx_descriptorSets;
   std::array<vkvtxbuf_ptr_t, 4> _active_vbs;
-
+  bool _enable_pipeline_debug = false;
+  
   bool _tryBindMergedResource(const FxShaderParam* hpar,
-                              VkMergedResourceBinding::Type expected_type,
+                                VkMergedResourceBinding::Type expected_type,
                               svar64_t resource_data);
   
   void _ensureUBORegistered(VkFxShaderUniformBlk* block);

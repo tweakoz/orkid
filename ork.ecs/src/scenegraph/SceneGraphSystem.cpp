@@ -286,6 +286,13 @@ void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // fina
     unlocked.clear();
   });
 
+  auto ph = ctx->newLoadingPhase();
+  ph->enqueueOperation([=](Context* ctx) {
+    if (_scene->_lightManager) {
+      _scene->_lightManager->gpuInit(ctx);
+    }
+  });
+
   /////////////////////////////////////////
 }
 ///////////////////////////////////////////////////////////////////////////////

@@ -99,7 +99,7 @@ float Simulation::_computeDeltaTime() {
 
 void Simulation::_update() {
   ork::opq::assertOnQueue2(opq::updateSerialQueue());
-  _updateThreadSM->update();
+  fsm::FsmInstance::update(_updateThreadSMInst);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

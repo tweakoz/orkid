@@ -1,0 +1,165 @@
+<svg viewBox="0 0 1000 700" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+    </marker>
+    <marker id="arrow-inherit" markerWidth="12" markerHeight="12" refX="11" refY="6" orient="auto">
+      <polygon points="0 0, 12 6, 0 12" fill="none" stroke="#3b82f6" stroke-width="1.5"/>
+    </marker>
+    <marker id="arrow-compose" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+      <polygon points="0 5, 5 0, 10 5, 5 10" fill="#f59e0b"/>
+    </marker>
+    <filter id="shadow">
+      <feDropShadow dx="2" dy="2" stdDeviation="2" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1000" height="700" fill="#1a1a2e"/>
+
+  <!-- Title -->
+  <text x="500" y="35" text-anchor="middle" font-family="Arial" font-size="20" font-weight="bold" fill="white">HFSM Class Architecture (FsmData / FsmInstance)</text>
+
+  <!-- FsmData Class -->
+  <rect x="50" y="60" width="280" height="180" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="50" y="60" width="280" height="30" rx="8" fill="#2563eb"/>
+  <text x="190" y="82" text-anchor="middle" font-family="monospace" font-size="14" font-weight="bold" fill="white">FsmData</text>
+
+  <text x="65" y="110" font-family="monospace" font-size="11" fill="#93c5fd">- _stateset: set&lt;state_ptr_t&gt;</text>
+  <text x="65" y="126" font-family="monospace" font-size="11" fill="#93c5fd">- _statesByIndex: vector</text>
+  <line x1="60" y1="140" x2="320" y2="140" stroke="#4a5568"/>
+  <text x="65" y="158" font-family="monospace" font-size="11" fill="#a7f3d0">+ newState&lt;T&gt;(parent, name)</text>
+  <text x="65" y="174" font-family="monospace" font-size="11" fill="#a7f3d0">+ addTransition(from, event, to)</text>
+  <text x="65" y="190" font-family="monospace" font-size="11" fill="#a7f3d0">+ findState(name)</text>
+  <text x="65" y="206" font-family="monospace" font-size="11" fill="#a7f3d0">+ generateDot(config)</text>
+  <text x="65" y="222" font-family="monospace" font-size="10" fill="#6b7280">// Shared definition (immutable)</text>
+
+  <!-- FsmInstance Class -->
+  <rect x="380" y="60" width="280" height="220" rx="8" fill="#4c1d95" stroke="#a78bfa" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="380" y="60" width="280" height="30" rx="8" fill="#7c3aed"/>
+  <text x="520" y="82" text-anchor="middle" font-family="monospace" font-size="14" font-weight="bold" fill="white">FsmInstance</text>
+
+  <text x="395" y="110" font-family="monospace" font-size="11" fill="#c4b5fd">- _data: fsmdata_ptr_t</text>
+  <text x="395" y="126" font-family="monospace" font-size="11" fill="#c4b5fd">- _current: state_ptr_t</text>
+  <text x="395" y="142" font-family="monospace" font-size="11" fill="#c4b5fd">- _pendingEvents: MpMcQueue</text>
+  <text x="395" y="158" font-family="monospace" font-size="11" fill="#c4b5fd">- _vars: varmap_ptr_t</text>
+  <text x="395" y="174" font-family="monospace" font-size="11" fill="#c4b5fd">- _group: weak_ptr&lt;FsmGroup&gt;</text>
+  <text x="395" y="190" font-family="monospace" font-size="11" fill="#c4b5fd">+ _userdata: varmap::var_t</text>
+  <line x1="390" y1="200" x2="650" y2="200" stroke="#4a5568"/>
+  <text x="395" y="218" font-family="monospace" font-size="11" fill="#a7f3d0">+ create(data) static</text>
+  <text x="395" y="234" font-family="monospace" font-size="11" fill="#a7f3d0">+ changeState(target)</text>
+  <text x="395" y="250" font-family="monospace" font-size="11" fill="#a7f3d0">+ sendEvent(event)</text>
+  <text x="395" y="266" font-family="monospace" font-size="11" fill="#a7f3d0">+ update(inst) static</text>
+
+  <!-- FsmGroup Class -->
+  <rect x="710" y="60" width="260" height="200" rx="8" fill="#065f46" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="710" y="60" width="260" height="30" rx="8" fill="#059669"/>
+  <text x="840" y="82" text-anchor="middle" font-family="monospace" font-size="14" font-weight="bold" fill="white">FsmGroup</text>
+
+  <text x="725" y="110" font-family="monospace" font-size="11" fill="#a7f3d0">- _instances: set&lt;FsmInstance*&gt;</text>
+  <text x="725" y="126" font-family="monospace" font-size="11" fill="#a7f3d0">- _mutex: std::mutex</text>
+  <text x="725" y="142" font-family="monospace" font-size="11" fill="#a7f3d0">- _cv: condition_variable</text>
+  <line x1="720" y1="152" x2="960" y2="152" stroke="#4a5568"/>
+  <text x="725" y="170" font-family="monospace" font-size="11" fill="#a7f3d0">+ createInstance(grp, data) static</text>
+  <text x="725" y="186" font-family="monospace" font-size="11" fill="#a7f3d0">+ broadcastEvent(event)</text>
+  <text x="725" y="202" font-family="monospace" font-size="11" fill="#a7f3d0">+ allInState(state_name)</text>
+  <text x="725" y="218" font-family="monospace" font-size="11" fill="#a7f3d0">+ waitForAllInState(state)</text>
+  <text x="725" y="234" font-family="monospace" font-size="11" fill="#a7f3d0">+ count()</text>
+  <text x="725" y="250" font-family="monospace" font-size="10" fill="#6b7280">// Coordinates multiple instances</text>
+
+  <!-- State Class -->
+  <rect x="50" y="320" width="250" height="170" rx="8" fill="#7c2d12" stroke="#fb923c" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="50" y="320" width="250" height="30" rx="8" fill="#c2410c"/>
+  <text x="175" y="342" text-anchor="middle" font-family="monospace" font-size="14" font-weight="bold" fill="white">State</text>
+
+  <text x="65" y="370" font-family="monospace" font-size="11" fill="#fed7aa">- _parent: state_ptr_t</text>
+  <text x="65" y="386" font-family="monospace" font-size="11" fill="#fed7aa">- _name: string</text>
+  <text x="65" y="402" font-family="monospace" font-size="11" fill="#fed7aa">- _data: FsmData*</text>
+  <text x="65" y="418" font-family="monospace" font-size="11" fill="#fed7aa">- _transitions: token_trans_map_t</text>
+  <line x1="60" y1="428" x2="290" y2="428" stroke="#4a5568"/>
+  <text x="65" y="446" font-family="monospace" font-size="11" fill="#a7f3d0">+ onEnter(inst) virtual</text>
+  <text x="65" y="462" font-family="monospace" font-size="11" fill="#a7f3d0">+ onExit(inst) virtual</text>
+  <text x="65" y="478" font-family="monospace" font-size="11" fill="#a7f3d0">+ onUpdate(inst) virtual</text>
+
+  <!-- LambdaState Class -->
+  <rect x="50" y="520" width="250" height="80" rx="8" fill="#1f2937" stroke="#6b7280" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="50" y="520" width="250" height="30" rx="8" fill="#374151"/>
+  <text x="175" y="542" text-anchor="middle" font-family="monospace" font-size="14" font-weight="bold" fill="white">LambdaState</text>
+  <text x="65" y="568" font-family="monospace" font-size="11" fill="#d1d5db">_onenter: state_callback_t</text>
+  <text x="65" y="584" font-family="monospace" font-size="11" fill="#d1d5db">_onexit, _onupdate</text>
+
+  <!-- PredicatedTransition -->
+  <rect x="350" y="320" width="280" height="130" rx="8" fill="#581c87" stroke="#d946ef" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="350" y="320" width="280" height="30" rx="8" fill="#9333ea"/>
+  <text x="490" y="342" text-anchor="middle" font-family="monospace" font-size="14" font-weight="bold" fill="white">PredicatedTransition</text>
+
+  <text x="365" y="370" font-family="monospace" font-size="11" fill="#e9d5ff">- _predicate: predicate_callback_t</text>
+  <text x="365" y="386" font-family="monospace" font-size="11" fill="#e9d5ff">- _destination: state_ptr_t</text>
+  <text x="365" y="402" font-family="monospace" font-size="11" fill="#e9d5ff">- _event_token: fsm_event_t</text>
+  <text x="365" y="418" font-family="monospace" font-size="11" fill="#e9d5ff">- _event_name: string</text>
+  <text x="365" y="440" font-family="monospace" font-size="10" fill="#9ca3af">// predicate receives fsminstance_ptr_t</text>
+
+  <!-- Event Types -->
+  <rect x="680" y="320" width="280" height="100" rx="8" fill="#1e3a5f" stroke="#0ea5e9" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="680" y="320" width="280" height="30" rx="8" fill="#0284c7"/>
+  <text x="820" y="342" text-anchor="middle" font-family="monospace" font-size="14" font-weight="bold" fill="white">fsm_event_t</text>
+
+  <text x="695" y="370" font-family="monospace" font-size="11" fill="#7dd3fc">uint64_t (CRC64 hash)</text>
+  <text x="695" y="390" font-family="monospace" font-size="10" fill="#9ca3af">// "event_name"_crcu compile-time</text>
+  <text x="695" y="406" font-family="monospace" font-size="10" fill="#9ca3af">// CrcString("name").hashed() runtime</text>
+
+  <!-- Relationships -->
+  <!-- FsmInstance references FsmData -->
+  <line x1="380" y1="120" x2="335" y2="120" stroke="#60a5fa" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="340" y="110" font-family="Arial" font-size="10" fill="#60a5fa">_data</text>
+
+  <!-- FsmGroup has FsmInstances -->
+  <line x1="710" y1="130" x2="665" y2="130" stroke="#34d399" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrow)"/>
+  <text x="675" y="120" font-family="Arial" font-size="10" fill="#34d399">weak 0..*</text>
+
+  <!-- FsmInstance has group -->
+  <path d="M 660 170 Q 685 170 685 130 Q 685 90 710 90" fill="none" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrow)"/>
+  <text x="670" y="160" font-family="Arial" font-size="9" fill="#a78bfa">_group</text>
+
+  <!-- FsmData has States -->
+  <line x1="190" y1="245" x2="190" y2="315" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrow-compose)"/>
+  <text x="200" y="280" font-family="Arial" font-size="10" fill="#f59e0b">owns 1..*</text>
+
+  <!-- State has parent State -->
+  <path d="M 50 400 Q 20 400 20 360 Q 20 320 50 370" fill="none" stroke="#fb923c" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="5" y="350" font-family="Arial" font-size="9" fill="#fb923c">_parent</text>
+
+  <!-- LambdaState inherits State -->
+  <line x1="175" y1="520" x2="175" y2="495" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrow-inherit)"/>
+
+  <!-- State has transitions -->
+  <line x1="300" y1="418" x2="345" y2="380" stroke="#d946ef" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="310" y="395" font-family="Arial" font-size="10" fill="#d946ef">0..*</text>
+
+  <!-- FsmInstance has current state -->
+  <path d="M 380 200 Q 320 200 320 320" fill="none" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrow)"/>
+  <text x="325" y="260" font-family="Arial" font-size="9" fill="#a78bfa">_current</text>
+
+  <!-- Legend -->
+  <rect x="680" y="450" width="280" height="140" rx="6" fill="#252540" stroke="#4a4a6a"/>
+  <text x="820" y="475" text-anchor="middle" font-family="Arial" font-size="12" font-weight="bold" fill="white">Legend</text>
+
+  <line x1="695" y1="500" x2="735" y2="500" stroke="#f59e0b" stroke-width="2"/>
+  <polygon points="735,500 730,495 740,500 730,505" fill="#f59e0b"/>
+  <text x="745" y="504" font-family="Arial" font-size="10" fill="#d1d5db">Composition (owns)</text>
+
+  <line x1="695" y1="525" x2="735" y2="525" stroke="#3b82f6" stroke-width="2"/>
+  <polygon points="730,520 742,525 730,530" fill="none" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="745" y="529" font-family="Arial" font-size="10" fill="#d1d5db">Inheritance</text>
+
+  <line x1="695" y1="550" x2="735" y2="550" stroke="#60a5fa" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="745" y="554" font-family="Arial" font-size="10" fill="#d1d5db">Reference (shared_ptr)</text>
+
+  <line x1="695" y1="575" x2="735" y2="575" stroke="#34d399" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="745" y="579" font-family="Arial" font-size="10" fill="#d1d5db">Weak reference</text>
+
+  <!-- Key insight box -->
+  <rect x="50" y="620" width="600" height="60" rx="6" fill="#1e3a5f" stroke="#3b82f6"/>
+  <text x="70" y="645" font-family="Arial" font-size="11" fill="#93c5fd">Key Design: FsmData (shared definition) + FsmInstance (per-entity state) + FsmGroup (coordination)</text>
+  <text x="70" y="665" font-family="Arial" font-size="11" fill="#93c5fd">Member methods for queue ops; static update(inst) for callbacks. No shared_from_this. Factory: FsmInstance::create().</text>
+</svg>

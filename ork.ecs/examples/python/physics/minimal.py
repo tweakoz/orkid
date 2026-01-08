@@ -65,10 +65,10 @@ class ECS_MINIMAL(object):
       "SkyboxIntensity": float(1.0),
       "SpecularIntensity": float(1),
       "DiffuseIntensity": float(1),
-      "AmbientLight": vec3(0.1),
+      "AmbientLight": vec3(0.0),
       "DepthFogDistance": float(2000),
       "DepthFogPower": float(1.25),
-      "SkyboxTexPathStr": "pillars"
+      "SkyboxTexPathStr": "nebula"
     })
 
     ####################
@@ -177,7 +177,7 @@ class ECS_MINIMAL(object):
     # visible mesh for room
     #########################
 
-    drawable = lev2.ModelDrawableData("data://tests/environ/roomtest.glb")
+    drawable = lev2.ModelDrawableData("data://tests/environ/roomtest2.glb")
     
     mesh_transform = Transform()
     mesh_transform.nonUniformScale = vec3(5,8,5)

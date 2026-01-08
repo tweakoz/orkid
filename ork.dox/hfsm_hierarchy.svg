@@ -1,0 +1,65 @@
+<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+    </marker>
+    <filter id="shadow">
+      <feDropShadow dx="2" dy="2" stdDeviation="2" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="500" fill="#1a1a2e"/>
+
+  <!-- Title -->
+  <text x="400" y="30" text-anchor="middle" font-family="Arial" font-size="18" font-weight="bold" fill="white">Hierarchical State Structure Example</text>
+
+  <!-- ROOT State -->
+  <rect x="300" y="60" width="200" height="60" rx="10" fill="#7c2d12" stroke="#fb923c" stroke-width="3" filter="url(#shadow)"/>
+  <text x="400" y="85" text-anchor="middle" font-family="monospace" font-size="14" font-weight="bold" fill="white">ROOT</text>
+  <text x="400" y="105" text-anchor="middle" font-family="Arial" font-size="11" fill="#fed7aa">parent: nullptr</text>
+
+  <!-- SA State -->
+  <rect x="100" y="180" width="180" height="60" rx="10" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="190" y="205" text-anchor="middle" font-family="monospace" font-size="14" font-weight="bold" fill="white">SA</text>
+  <text x="190" y="225" text-anchor="middle" font-family="Arial" font-size="11" fill="#93c5fd">parent: ROOT</text>
+
+  <!-- SB State -->
+  <rect x="520" y="180" width="180" height="60" rx="10" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <text x="610" y="205" text-anchor="middle" font-family="monospace" font-size="14" font-weight="bold" fill="white">SB</text>
+  <text x="610" y="225" text-anchor="middle" font-family="Arial" font-size="11" fill="#93c5fd">parent: ROOT</text>
+
+  <!-- S1 State -->
+  <rect x="50" y="300" width="140" height="60" rx="10" fill="#4c1d95" stroke="#a78bfa" stroke-width="2" filter="url(#shadow)"/>
+  <text x="120" y="325" text-anchor="middle" font-family="monospace" font-size="14" font-weight="bold" fill="white">S1</text>
+  <text x="120" y="345" text-anchor="middle" font-family="Arial" font-size="11" fill="#c4b5fd">parent: SA</text>
+
+  <!-- S2 State -->
+  <rect x="220" y="300" width="140" height="60" rx="10" fill="#4c1d95" stroke="#a78bfa" stroke-width="2" filter="url(#shadow)"/>
+  <text x="290" y="325" text-anchor="middle" font-family="monospace" font-size="14" font-weight="bold" fill="white">S2</text>
+  <text x="290" y="345" text-anchor="middle" font-family="Arial" font-size="11" fill="#c4b5fd">parent: SA</text>
+
+  <!-- S3 State -->
+  <rect x="540" y="300" width="140" height="60" rx="10" fill="#4c1d95" stroke="#a78bfa" stroke-width="2" filter="url(#shadow)"/>
+  <text x="610" y="325" text-anchor="middle" font-family="monospace" font-size="14" font-weight="bold" fill="white">S3</text>
+  <text x="610" y="345" text-anchor="middle" font-family="Arial" font-size="11" fill="#c4b5fd">parent: SB</text>
+
+  <!-- Hierarchy lines -->
+  <line x1="400" y1="120" x2="190" y2="175" stroke="#6b7280" stroke-width="2"/>
+  <line x1="400" y1="120" x2="610" y2="175" stroke="#6b7280" stroke-width="2"/>
+  <line x1="190" y1="240" x2="120" y2="295" stroke="#6b7280" stroke-width="2"/>
+  <line x1="190" y1="240" x2="290" y2="295" stroke="#6b7280" stroke-width="2"/>
+  <line x1="610" y1="240" x2="610" y2="295" stroke="#6b7280" stroke-width="2"/>
+
+  <!-- Transitions -->
+  <path d="M 160 330 Q 205 380 250 330" fill="none" stroke="#22c55e" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrow)"/>
+  <text x="205" y="395" text-anchor="middle" font-family="monospace" font-size="11" fill="#22c55e">"s1_to_s2"</text>
+
+  <path d="M 360 330 Q 450 400 540 330" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrow)"/>
+  <text x="450" y="420" text-anchor="middle" font-family="monospace" font-size="11" fill="#f59e0b">"s2_to_s3"</text>
+
+  <!-- Legend -->
+  <rect x="50" y="420" width="700" height="65" rx="6" fill="#252540" stroke="#4a4a6a"/>
+  <text x="400" y="445" text-anchor="middle" font-family="Arial" font-size="12" font-weight="bold" fill="white">Transition: S1 → S2 (same parent) vs S2 → S3 (cross hierarchy)</text>
+  <text x="400" y="470" text-anchor="middle" font-family="Arial" font-size="11" fill="#9ca3af">S1→S2: exit(S1), enter(S2) | S2→S3: exit(S2), exit(SA), enter(SB), enter(S3)</text>
+</svg>

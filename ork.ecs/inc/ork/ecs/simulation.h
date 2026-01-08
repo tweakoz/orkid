@@ -244,8 +244,10 @@ private:
   float mfAvgDtAcc      = 0.0f;
   float mfAvgDtCtr      = 0.0f;
 
-  fsm::statemachine_ptr_t _updateThreadSM;
-  fsm::statemachine_ptr_t _renderThreadSM;
+  fsm::fsmdata_ptr_t _updateThreadSMData;
+  fsm::fsmdata_ptr_t _renderThreadSMData;
+  fsm::fsminstance_ptr_t _updateThreadSMInst;
+  fsm::fsminstance_ptr_t _renderThreadSMInst;
 
   fsm::lambdastate_ptr_t _updateReadySimState;
   fsm::lambdastate_ptr_t _updateEditSimState;

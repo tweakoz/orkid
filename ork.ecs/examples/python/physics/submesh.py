@@ -25,16 +25,81 @@ from lev2utils.shaders import createPipeline
 
 ################################################################################
 tokens = CrcStringProxy()
+
+################################################################################
+# Custom shader: renders world-space normals as colors
+################################################################################
+
+WORLDNORMAL_SHADERTEXT = """
+////////////////////////////////////////
+fxconfig fxcfg_default { glsl_version = "330"; }
+////////////////////////////////////////
+uniform_set ublock_vtx {
+  mat4 m;
+  mat4 mvp;
+}
+////////////////////////////////////////
+uniform_set ublock_frg {
+  vec4 modcolor;
+}
+////////////////////////////////////////
+vertex_interface VIF : ublock_vtx {
+  inputs {
+    vec4 pos : POSITION;
+    vec3 nrm : NORMAL;
+    vec4 clr : COLOR0;
+  }
+  outputs {
+    vec3 world_nrm;
+    vec3 frg_color;
+  }
+}
+////////////////////////////////////////
+fragment_interface FIF : VIF : ublock_frg {
+  outputs { layout(location = 0) vec4 out_clr; }
+}
+////////////////////////////////////////
+vertex_shader vs_worldnormal : VIF {
+  gl_Position = mvp * pos;
+  // Transform normal to world space (using upper 3x3 of model matrix)
+  world_nrm = normalize(mat3(m) * nrm);
+  frg_color = clr.rgb;
+}
+////////////////////////////////////////
+fragment_shader ps_worldnormal : FIF {
+  // Map normal from [-1,1] to [0,1] for color display
+  vec3 nrm_color = world_nrm * 0.5 + 0.5;
+  out_clr = vec4(frg_color, 1.0);
+}
+////////////////////////////////////////
+state_block sb_worldnormal : default {
+  CullTest = OFF;
+  DepthTest = LEQUALS;
+  BlendMode = OFF;
+}
+////////////////////////////////////////
+technique tek_worldnormal {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_worldnormal;
+    fragment_shader = ps_worldnormal;
+    state_block     = sb_worldnormal;
+  }
+}
+"""
+
+################################################################################
+
 LAYERNAME = "std_forward"
-NUM_BALLS = 8000
-RATE = 0.7
+NUM_BALLS = 2000
+RATE = 0.3
 SIMRATE = 60
 GROUP_STATIC = 1
 GROUP_BALL = 2
 GROUP_ENV = 4
 GROUP_ALL = GROUP_STATIC | GROUP_BALL | GROUP_ENV
 BALLS_NODE_NAME = "balls-instancing-node"
-SSAO_NUM_SAMPLES = 16
+SSAO_NUM_SAMPLES = 0
 SPAWN_HEIGHT = 25
 ################################################################################
 
@@ -271,7 +336,7 @@ class ECS_MINIMAL(object):
     
     self.room_SGCOMP = c_scenegraph
     self.room_submesh = submesh
-    
+
     #########################
     # spawner
     #########################
@@ -285,7 +350,7 @@ class ECS_MINIMAL(object):
   ##############################################
 
   def onGpuInit(self,ctx):
-    
+
     #########################
     # need a graphics context
     #  to create room visuals
@@ -293,35 +358,36 @@ class ECS_MINIMAL(object):
 
     rprimdata = RigidPrimitiveDrawableData()
     rprimdata.primitive = RigidPrimitive(self.room_submesh,ctx)
-    
-    white = lev2.Image.createFromFile("src://effect_textures/white_64.dds")
-    normal = lev2.Image.createFromFile("src://effect_textures/default_normal.dds")
-    material = PBRMaterial()
-    material.assignImages(
-      ctx,
-      color = white,
-      normal = normal,
-      mtlruf = white,
-      doConform=True
-    )
-    material.gpuInit(ctx)
+
+    #########################
+    # create custom world-normal shader material
+    #########################
+
+    material = lev2.FreestyleMaterial()
+    material.gpuInitFromShaderText(ctx, "worldnormal_shader", WORLDNORMAL_SHADERTEXT)
+    material.rasterstate.culltest = tokens.PASS_FRONT
+    material.rasterstate.depthtest = tokens.LEQUALS
+    material.rasterstate.setBlendingMacro(tokens.OFF)
     self.material = material
 
-    fstyle = material.freestyle
-    fxcache = material.fxcache
+    #########################
+    # create pipeline from custom shader
+    #########################
 
-    permu = FxPipelinePermutation(rendermodel = "FORWARD_PBR")
-    permu.instanced = False
-    permu.skinned = False
-    permu.is_picking = False
-    permu.stereo = False
-    permu.has_vtxcolors = False
+    permu = lev2.FxPipelinePermutation()
+    permu.technique = material.shader.technique("tek_worldnormal")
     self.permu = permu
-    #
-    #pipeline = material.fxcache.findPipeline(permu) 
+
+    pipeline = material.fxcache.findPipeline(permu)
+    pipeline.sharedMaterial = material
+
+    # Bind shader parameters
+    pipeline.bindParam(material.param("mvp"), tokens.RCFD_Camera_MVP_Mono)
+    pipeline.bindParam(material.param("m"), tokens.RCFD_M)
+    pipeline.bindParam(material.param("modcolor"), vec4(1,1,1,1))  # white tint 
     
-    #rprimdata.pipeline = pipeline
-    rprimdata.material = material
+    rprimdata.pipeline = pipeline
+    #rprimdata.material = material
     
     mesh_transform = Transform()
     mesh_transform.scale = 1.0

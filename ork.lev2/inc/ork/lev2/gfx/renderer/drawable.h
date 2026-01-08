@@ -457,13 +457,19 @@ struct InstancedDrawable : public Drawable {
   }
   drawqueueitem_ptr_t enqueueOnLayer(const DrawQueueTransferData& xfdata, DrawQueueLayer& buffer) const final;
 
-  static constexpr size_t k_texture_dimension_x = 4096;
-  static constexpr size_t k_texture_dimension_y = 256;
-  static constexpr size_t k_max_instances       = k_texture_dimension_x * k_texture_dimension_y / 4;
+  // SSBO-based instancing - must match storage_interface storage_instancing in stdtools.i2
+  static constexpr size_t k_max_instances = 65536;
+  // SSBO layout offsets (std430):
+  // - matrices: 0 (64 bytes each)
+  // - colors: 64 * k_max_instances = 4194304 (16 bytes each)
+  // - pickids: 4194304 + 16 * k_max_instances = 5242880 (8 bytes each)
+  // - total: 5242880 + 8 * k_max_instances = 5767168 bytes (~5.5MB)
+  static constexpr size_t k_ssbo_offset_matrices = 0;
+  static constexpr size_t k_ssbo_offset_colors   = 64 * k_max_instances;  // 4194304
+  static constexpr size_t k_ssbo_offset_pickids  = k_ssbo_offset_colors + 16 * k_max_instances;  // 5242880
+  static constexpr size_t k_ssbo_total_size      = k_ssbo_offset_pickids + 8 * k_max_instances;  // 5767168
 
-  mutable texture_ptr_t _instanceMatrixTex;
-  mutable texture_ptr_t _instanceIdTex;
-  mutable texture_ptr_t _instanceColorTex;
+  mutable FxShaderStorageBuffer* _instanceSSBO = nullptr;
 
   instanceddrawinstancedata_ptr_t _instancedata;
   //using idb_pool_t = ork::shared_pool::fixed_pool<svarshp_t,8>;

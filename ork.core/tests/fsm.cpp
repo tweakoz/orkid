@@ -19,22 +19,23 @@ static void logstate(const char* pstr) {
 }
 
 struct ROOT : public State {
-  ROOT(StateMachine* machine)
-      : State(machine) {
+  ROOT(FsmData* data)
+      : State(data) {
   }
-  void onEnter() {
+  void onEnter(fsminstance_ptr_t inst) override {
     logstate("ROOT.enter\n");
   }
-  void onExit() {
+  void onExit(fsminstance_ptr_t inst) override {
     logstate("ROOT.exit\n");
   }
-  void onUpdate() {
+  void onUpdate(fsminstance_ptr_t inst) override {
     logstate("ROOT.update\n");
   }
 };
 
-struct e1to2 {};
-struct e2to3 {};
+// Token-based events
+static constexpr fsm_event_t e1to2 = "e1to2"_crcu;
+static constexpr fsm_event_t e2to3 = "e2to3"_crcu;
 
 ///////////////////////////////////////////////////////////////////////
 // deterministic fsm unit test
@@ -43,39 +44,44 @@ struct e2to3 {};
 TEST(hfsm_1) {
   for (int i = 0; i < 3; i++) {
     logstate("//hfsm_1/////////////////////////\n");
-    StateMachine the_SM;
 
-    auto the_root     = the_SM.newState<ROOT>();
-    auto the_sa       = the_SM.newState<LambdaState>(the_root);
-    auto the_sb       = the_SM.newState<LambdaState>(the_root);
-    the_sa->_onenter  = [] { logstate("sa.enter\n"); };
-    the_sa->_onexit   = [] { logstate("sa.exit\n"); };
-    the_sa->_onupdate = [] { logstate("sa.update\n"); };
-    the_sb->_onenter  = [] { logstate("sb.enter\n"); };
-    the_sb->_onexit   = [] { logstate("sb.exit\n"); };
-    the_sb->_onupdate = [] { logstate("sb.update\n"); };
-    auto the_s1       = the_SM.newState<LambdaState>(the_sa);
-    auto the_s2       = the_SM.newState<LambdaState>(the_sa);
-    auto the_s3       = the_SM.newState<LambdaState>(the_sb);
-    the_s1->_onenter  = [] { logstate("s1.enter\n"); };
-    the_s1->_onexit   = [] { logstate("s1.exit\n"); };
-    the_s1->_onupdate = [] { logstate("s1.update\n"); };
-    the_s2->_onenter  = [] { logstate("s2.enter\n"); };
-    the_s2->_onexit   = [] { logstate("s2.exit\n"); };
-    the_s2->_onupdate = [] { logstate("s2.update\n"); };
-    the_s3->_onenter  = [] { logstate("s3.enter\n"); };
-    the_s3->_onexit   = [] { logstate("s3.exit\n"); };
-    the_s3->_onupdate = [] { logstate("s3.update\n"); };
+    // Create shared data
+    auto data = std::make_shared<FsmData>();
 
-    the_SM.addTransition(the_s1, trans_key<e1to2>(), the_s2);
-    the_SM.addTransition(the_s2, trans_key<e2to3>(), the_s3);
+    auto the_root     = data->newState<ROOT>();
+    auto the_sa       = data->newState<LambdaState>(the_root);
+    auto the_sb       = data->newState<LambdaState>(the_root);
+    the_sa->_onenter  = [](fsminstance_ptr_t) { logstate("sa.enter\n"); };
+    the_sa->_onexit   = [](fsminstance_ptr_t) { logstate("sa.exit\n"); };
+    the_sa->_onupdate = [](fsminstance_ptr_t) { logstate("sa.update\n"); };
+    the_sb->_onenter  = [](fsminstance_ptr_t) { logstate("sb.enter\n"); };
+    the_sb->_onexit   = [](fsminstance_ptr_t) { logstate("sb.exit\n"); };
+    the_sb->_onupdate = [](fsminstance_ptr_t) { logstate("sb.update\n"); };
+    auto the_s1       = data->newState<LambdaState>(the_sa);
+    auto the_s2       = data->newState<LambdaState>(the_sa);
+    auto the_s3       = data->newState<LambdaState>(the_sb);
+    the_s1->_onenter  = [](fsminstance_ptr_t) { logstate("s1.enter\n"); };
+    the_s1->_onexit   = [](fsminstance_ptr_t) { logstate("s1.exit\n"); };
+    the_s1->_onupdate = [](fsminstance_ptr_t) { logstate("s1.update\n"); };
+    the_s2->_onenter  = [](fsminstance_ptr_t) { logstate("s2.enter\n"); };
+    the_s2->_onexit   = [](fsminstance_ptr_t) { logstate("s2.exit\n"); };
+    the_s2->_onupdate = [](fsminstance_ptr_t) { logstate("s2.update\n"); };
+    the_s3->_onenter  = [](fsminstance_ptr_t) { logstate("s3.enter\n"); };
+    the_s3->_onexit   = [](fsminstance_ptr_t) { logstate("s3.exit\n"); };
+    the_s3->_onupdate = [](fsminstance_ptr_t) { logstate("s3.update\n"); };
 
-    the_SM.enqueueStateChange(the_s1);
-    the_SM.enqueueEvent(e1to2());
-    the_SM.enqueueEvent(e2to3());
+    data->addTransition(the_s1, e1to2, the_s2);
+    data->addTransition(the_s2, e2to3, the_s3);
 
-    while (the_SM.currentState() != the_s3) {
-      the_SM.update();
+    // Create instance
+    auto inst = FsmInstance::create(data);
+
+    inst->changeState(the_s1);
+    inst->sendEvent(e1to2);
+    inst->sendEvent(e2to3);
+
+    while (inst->currentState() != the_s3) {
+      FsmInstance::update(inst);
     }
   }
 }
@@ -87,31 +93,32 @@ TEST(hfsm_1) {
 TEST(hfsm_probalistic_1) {
   for (int i = 0; i < 10; i++) {
     logstate("//hfsm_probalistic_1/////////////////////////\n");
-    StateMachine the_SM;
 
-    auto the_root     = the_SM.newState<ROOT>();
-    auto the_sa       = the_SM.newState<LambdaState>(the_root);
-    auto the_sb       = the_SM.newState<LambdaState>(the_root);
-    the_sa->_onenter  = [] { logstate("sa.enter\n"); };
-    the_sa->_onexit   = [] { logstate("sa.exit\n"); };
-    the_sa->_onupdate = [] { logstate("sa.update\n"); };
-    the_sb->_onenter  = [] { logstate("sb.enter\n"); };
-    the_sb->_onexit   = [] { logstate("sb.exit\n"); };
-    the_sb->_onupdate = [] { logstate("sb.update\n"); };
-    auto the_s1       = the_SM.newState<LambdaState>(the_sa);
-    auto the_s2       = the_SM.newState<LambdaState>(the_sa);
-    auto the_s3       = the_SM.newState<LambdaState>(the_sb);
-    the_s1->_onenter  = [] { logstate("s1.enter\n"); };
-    the_s1->_onexit   = [] { logstate("s1.exit\n"); };
-    the_s1->_onupdate = [] { logstate("s1.update\n"); };
-    the_s2->_onenter  = [] { logstate("s2.enter\n"); };
-    the_s2->_onexit   = [] { logstate("s2.exit\n"); };
-    the_s2->_onupdate = [] { logstate("s2.update\n"); };
-    the_s3->_onenter  = [] { logstate("s3.enter\n"); };
-    the_s3->_onexit   = [] { logstate("s3.exit\n"); };
-    the_s3->_onupdate = [] { logstate("s3.update\n"); };
+    auto data = std::make_shared<FsmData>();
 
-    auto probability_lambda = []() -> bool {
+    auto the_root     = data->newState<ROOT>();
+    auto the_sa       = data->newState<LambdaState>(the_root);
+    auto the_sb       = data->newState<LambdaState>(the_root);
+    the_sa->_onenter  = [](fsminstance_ptr_t) { logstate("sa.enter\n"); };
+    the_sa->_onexit   = [](fsminstance_ptr_t) { logstate("sa.exit\n"); };
+    the_sa->_onupdate = [](fsminstance_ptr_t) { logstate("sa.update\n"); };
+    the_sb->_onenter  = [](fsminstance_ptr_t) { logstate("sb.enter\n"); };
+    the_sb->_onexit   = [](fsminstance_ptr_t) { logstate("sb.exit\n"); };
+    the_sb->_onupdate = [](fsminstance_ptr_t) { logstate("sb.update\n"); };
+    auto the_s1       = data->newState<LambdaState>(the_sa);
+    auto the_s2       = data->newState<LambdaState>(the_sa);
+    auto the_s3       = data->newState<LambdaState>(the_sb);
+    the_s1->_onenter  = [](fsminstance_ptr_t) { logstate("s1.enter\n"); };
+    the_s1->_onexit   = [](fsminstance_ptr_t) { logstate("s1.exit\n"); };
+    the_s1->_onupdate = [](fsminstance_ptr_t) { logstate("s1.update\n"); };
+    the_s2->_onenter  = [](fsminstance_ptr_t) { logstate("s2.enter\n"); };
+    the_s2->_onexit   = [](fsminstance_ptr_t) { logstate("s2.exit\n"); };
+    the_s2->_onupdate = [](fsminstance_ptr_t) { logstate("s2.update\n"); };
+    the_s3->_onenter  = [](fsminstance_ptr_t) { logstate("s3.enter\n"); };
+    the_s3->_onexit   = [](fsminstance_ptr_t) { logstate("s3.exit\n"); };
+    the_s3->_onupdate = [](fsminstance_ptr_t) { logstate("s3.update\n"); };
+
+    auto probability_lambda = [](fsminstance_ptr_t) -> bool {
       int i      = rand() & 0xff;
       bool bprob = i < 0x7f;
       printf("bprob<%d>\n", int(bprob));
@@ -121,28 +128,29 @@ TEST(hfsm_probalistic_1) {
     PredicatedTransition trans_2(the_s2, probability_lambda);
     PredicatedTransition trans_3(the_s3, probability_lambda);
 
-    the_SM.addTransition(the_s1, trans_key<e1to2>(), trans_2);
-    the_SM.addTransition(the_s2, trans_key<e2to3>(), trans_3);
+    data->addTransition(the_s1, e1to2, trans_2);
+    data->addTransition(the_s2, e2to3, trans_3);
 
-    the_SM.enqueueStateChange(the_s1);
+    // Create instance
+    auto inst = FsmInstance::create(data);
 
-    for (int i = 0; i < 3; i++) {
-      the_SM.enqueueEvent(e1to2());
-      the_SM.update();
+    inst->changeState(the_s1);
+
+    for (int j = 0; j < 3; j++) {
+      inst->sendEvent(e1to2);
+      FsmInstance::update(inst);
     }
-    for (int i = 0; i < 3; i++) {
-      the_SM.enqueueEvent(e2to3());
-      the_SM.update();
+    for (int j = 0; j < 3; j++) {
+      inst->sendEvent(e2to3);
+      FsmInstance::update(inst);
     }
 
     //////////////////////////////////////
-    // usually the StateMachine destructor will do this
-    //  but we want to test it explicitly right now
-    //  RAII compliance will be in a separate test
+    // Test explicit state change to nullptr
     //////////////////////////////////////
 
-    the_SM.enqueueStateChange(nullptr);
-    the_SM.update();
-    assert(the_SM.currentState() == nullptr);
+    inst->changeState(nullptr);
+    FsmInstance::update(inst);
+    assert(inst->currentState() == nullptr);
   }
 }

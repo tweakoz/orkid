@@ -50,6 +50,7 @@ void pyinit_logger(py::module& module_core);
 void pyinit_opq(py::module& module_core);
 void pyinit_download(py::module& module_core);
 void pyinit_upload(py::module& module_core);
+void pyinit_fsm(py::module& module_core);
 
 #if defined(ENABLE_NOTCURSES_UI)
 void pyinit_ncui(py::module& module_core);
@@ -494,6 +495,7 @@ PYBIND11_MODULE(_core, module_core) {
   ork::asset::catalog::pyinit_asset_config(module_core);
   ork::asset::catalog::pyinit_asset_catalog(module_core);
   ork::util::crypt::pyinit_crypt(module_core);
+  pyinit_fsm(module_core);
   
   #if defined(ENABLE_NOTCURSES_UI)
   // Create ncui submodule
