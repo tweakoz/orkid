@@ -14,6 +14,7 @@
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/ui/filesystem_view.h>
 #include <ork/lev2/ui/event.h>
+#include <algorithm>
 #include <ctime>
 #include <iomanip>
 #include <sstream>
@@ -42,6 +43,7 @@ void FilesystemView::_subscribeToModel() {
       _needs_rebuild = true;
       clearSelection();
       _scroll_offset = 0;
+      clearIconCache();  // Clear icon cache on directory change
       if (_onDirectoryChanged) {
         _onDirectoryChanged(path);
       }
@@ -58,6 +60,7 @@ void FilesystemView::setModel(filesystem_model_ptr_t model) {
   _needs_rebuild = true;
   clearSelection();
   _scroll_offset = 0;
+  clearIconCache();  // Clear icon cache when model changes
 }
 
 void FilesystemView::setViewMode(FilesystemViewMode mode) {
@@ -144,6 +147,59 @@ void FilesystemView::refresh() {
   _thumbnail_cache.clear();
 }
 
+void FilesystemView::setFolderIcon(lev2::image_ptr_t img) {
+  _folder_icon_image = img;
+  _folder_icon_texture = nullptr;  // Invalidate cached texture
+}
+
+void FilesystemView::setFileIcon(lev2::image_ptr_t img) {
+  _file_icon_image = img;
+  _file_icon_texture = nullptr;  // Invalidate cached texture
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Favorites management
+///////////////////////////////////////////////////////////////////////////////
+
+void FilesystemView::addCurrentAsFavorite(const std::string& display_name) {
+  if (!_model) return;
+
+  auto entry = FavoriteEntry::fromModel(_model.get(), display_name);
+  auto favorites = FavoritesManager::instance();
+  favorites->addFavoriteEntry(_model->modelIdentifier(), entry);
+}
+
+void FilesystemView::removeCurrentFromFavorites() {
+  if (!_model) return;
+
+  auto favorites = FavoritesManager::instance();
+  favorites->removeFavoriteEntry(_model->modelIdentifier(), _model->getCurrentPath());
+}
+
+bool FilesystemView::isCurrentFavorite() const {
+  if (!_model) return false;
+
+  auto favorites = FavoritesManager::instance();
+  return favorites->isFavorite(_model->modelIdentifier(), _model->getCurrentPath());
+}
+
+void FilesystemView::applyFavorite(favorite_entry_ptr_t entry) {
+  if (!_model || !entry) return;
+
+  entry->applyToModel(_model.get());
+  _needs_rebuild = true;
+  _scroll_offset = 0;
+  clearSelection();
+}
+
+favorite_entry_ptr_t FilesystemView::getCurrentAsFavoriteEntry(const std::string& display_name) const {
+  if (!_model) return nullptr;
+
+  return FavoriteEntry::fromModel(_model.get(), display_name);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void FilesystemView::startEditing(const std::string& path) {
   if (path.empty()) return;
   if (_model && _model->isReadOnly()) return;
@@ -192,6 +248,19 @@ void FilesystemView::commitEditing() {
 }
 
 void FilesystemView::_doOnResized() {
+  // Proportionally resize columns when widget is resized
+  int content_width = _geometry._w - _icon_column_width;
+
+  if (_last_content_width > 0 && content_width > 0 && content_width != _last_content_width) {
+    float scale = (float)content_width / (float)_last_content_width;
+
+    _name_column_width = std::max(60, (int)(_name_column_width * scale));
+    _size_column_width = std::max(50, (int)(_size_column_width * scale));
+    _type_column_width = std::max(50, (int)(_type_column_width * scale));
+    _date_column_width = std::max(80, (int)(_date_column_width * scale));
+  }
+
+  _last_content_width = content_width;
   DoLayout();
 }
 
@@ -293,6 +362,116 @@ std::string FilesystemView::_getItemPathAt(int local_x, int local_y) const {
   return "";
 }
 
+bool FilesystemView::_isInHeaderArea(int local_y) const {
+  if (!_draw_header || _view_mode != FilesystemViewMode::List) {
+    return false;
+  }
+  int header_start = _draw_path_bar ? _path_bar_height : 0;
+  int header_end = header_start + _header_height;
+  return local_y >= header_start && local_y < header_end;
+}
+
+FilesystemModel::SortField FilesystemView::_getSortFieldAtX(int local_x) const {
+  int x = _icon_column_width;
+
+  // Name column
+  if (local_x < x + _name_column_width) {
+    return FilesystemModel::SortField::Name;
+  }
+  x += _name_column_width;
+
+  // Size column
+  if (_show_size_column) {
+    if (local_x < x + _size_column_width) {
+      return FilesystemModel::SortField::Size;
+    }
+    x += _size_column_width;
+  }
+
+  // Type column
+  if (_show_type_column) {
+    if (local_x < x + _type_column_width) {
+      return FilesystemModel::SortField::Type;
+    }
+    x += _type_column_width;
+  }
+
+  // Date column
+  if (_show_date_column) {
+    return FilesystemModel::SortField::ModifiedTime;
+  }
+
+  return FilesystemModel::SortField::Name;
+}
+
+void FilesystemView::_handleHeaderClick(int local_x) {
+  if (!_model) return;
+
+  auto clicked_field = _getSortFieldAtX(local_x);
+  auto current_field = _model->getSortField();
+  auto current_order = _model->getSortOrder();
+
+  if (clicked_field == current_field) {
+    // Same column - toggle order
+    auto new_order = (current_order == FilesystemModel::SortOrder::Ascending)
+                       ? FilesystemModel::SortOrder::Descending
+                       : FilesystemModel::SortOrder::Ascending;
+    _model->setSortOrder(new_order);
+  } else {
+    // Different column - set field and default to ascending
+    _model->setSortField(clicked_field);
+    _model->setSortOrder(FilesystemModel::SortOrder::Ascending);
+  }
+
+  _needs_rebuild = true;
+}
+
+int FilesystemView::_getColumnSeparatorAt(int local_x, int local_y) const {
+  if (!_isInHeaderArea(local_y)) {
+    return -1;
+  }
+
+  int x = _icon_column_width;
+
+  // Check name column separator
+  int sep_x = x + _name_column_width;
+  if (local_x >= sep_x - _resize_grip_width && local_x <= sep_x + _resize_grip_width) {
+    return 0;  // Name column
+  }
+  x = sep_x;
+
+  // Check size column separator
+  if (_show_size_column) {
+    sep_x = x + _size_column_width;
+    if (local_x >= sep_x - _resize_grip_width && local_x <= sep_x + _resize_grip_width) {
+      return 1;  // Size column
+    }
+    x = sep_x;
+  }
+
+  // Check type column separator
+  if (_show_type_column) {
+    sep_x = x + _type_column_width;
+    if (local_x >= sep_x - _resize_grip_width && local_x <= sep_x + _resize_grip_width) {
+      return 2;  // Type column
+    }
+    x = sep_x;
+  }
+
+  // Date column doesn't have a separator on the right (it extends to edge)
+  return -1;
+}
+
+int* FilesystemView::_getColumnWidthPtr(int column_index) {
+  switch (column_index) {
+    case 0: return &_name_column_width;
+    case 1: return &_size_column_width;
+    case 2: return &_type_column_width;
+    case 3: return &_date_column_width;
+    default: return nullptr;
+  }
+}
+
 Widget* FilesystemView::doRouteUiEvent(event_constptr_t ev) {
   if (IsEventInside(ev)) {
     return this;
@@ -364,6 +543,24 @@ HandlerResult FilesystemView::DoOnUiEvent(event_constptr_t ev) {
 
   switch (ev->_eventcode) {
     case EventCode::PUSH: {
+      // Check if click is on column separator (for resizing)
+      int sep_col = _getColumnSeparatorAt(localX, localY);
+      if (sep_col >= 0) {
+        _resize_column = sep_col;
+        _resize_start_x = localX;
+        int* width_ptr = _getColumnWidthPtr(sep_col);
+        _resize_start_width = width_ptr ? *width_ptr : 0;
+        result.setHandled(this);
+        break;
+      }
+
+      // Check if click is on header (for sorting)
+      if (_isInHeaderArea(localY)) {
+        _handleHeaderClick(localX);
+        result.setHandled(this);
+        break;
+      }
+
       std::string clicked_path = _getItemPathAt(localX, localY);
       if (!clicked_path.empty()) {
         bool is_already_selected = isSelected(clicked_path);
@@ -466,6 +663,11 @@ HandlerResult FilesystemView::DoOnUiEvent(event_constptr_t ev) {
         selectAll();
         result.setHandled(this);
       }
+      // Escape to clear selection
+      else if (key == 256) {
+        clearSelection();
+        result.setHandled(this);
+      }
       break;
     }
 
@@ -473,6 +675,29 @@ HandlerResult FilesystemView::DoOnUiEvent(event_constptr_t ev) {
       std::string hovered_path = _getItemPathAt(localX, localY);
       if (_hovered_path != hovered_path) {
         _hovered_path = hovered_path;
+      }
+      break;
+    }
+
+    case EventCode::DRAG: {
+      // Handle column resize drag
+      if (_resize_column >= 0) {
+        int delta = localX - _resize_start_x;
+        int new_width = std::max(40, _resize_start_width + delta);  // Minimum 40px
+        int* width_ptr = _getColumnWidthPtr(_resize_column);
+        if (width_ptr) {
+          *width_ptr = new_width;
+        }
+        result.setHandled(this);
+      }
+      break;
+    }
+
+    case EventCode::RELEASE: {
+      // End column resize
+      if (_resize_column >= 0) {
+        _resize_column = -1;
+        result.setHandled(this);
       }
       break;
     }
@@ -571,7 +796,39 @@ void FilesystemView::_drawListMode(drawevent_constptr_t drwev) {
       bool selected = isSelected(_visible_items[i].entry.path);
       bool hovered = (_visible_items[i].entry.path == _hovered_path);
 
-      _drawListItem(drwev, _visible_items[i], item_y, selected, hovered);
+      _drawListItem(drwev, _visible_items[i], item_y, selected, hovered, i);
+    }
+
+    // Draw column separator lines (subtle for content area)
+    {
+      auto rs = defmtl->_rasterstate;
+      rs->setBlendingMacro(lev2::BlendingMacro::ALPHA);
+      rs->setDepthTest(lev2::EDepthTest::OFF);
+      fxi->pushRasterState(rs);
+      defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
+
+      fvec4 sep_color = fvec4(0.25f, 0.25f, 0.28f, 1.0f);  // Subtle for content
+      tgt->PushModColor(sep_color);
+
+      int content_top = iy1 + y_offset;
+      int sep_x = ix1 + _icon_column_width + _name_column_width;
+      primi->RenderQuadAtZ(defmtl.get(), sep_x, sep_x + 1, content_top, iy2,
+                           0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+
+      if (_show_size_column) {
+        sep_x += _size_column_width;
+        primi->RenderQuadAtZ(defmtl.get(), sep_x, sep_x + 1, content_top, iy2,
+                             0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+      }
+
+      if (_show_type_column) {
+        sep_x += _type_column_width;
+        primi->RenderQuadAtZ(defmtl.get(), sep_x, sep_x + 1, content_top, iy2,
+                             0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+      }
+
+      tgt->PopModColor();
+      fxi->popRasterState();
     }
   }
   mtxi->PopUIMatrix();
@@ -700,40 +957,115 @@ void FilesystemView::_drawHeader(drawevent_constptr_t drwev, int& y_offset) {
   tgt->PopModColor();
   fxi->popRasterState();
 
-  // Draw column headers
+  // Draw column headers with sort indicators
   if (_font) {
     lev2::FontMan::PushFont(_font);
-    tgt->PushModColor(_text_color * 0.8f);
 
+    // Get current sort state
+    auto sort_field = _model ? _model->getSortField() : FilesystemModel::SortField::Name;
+    auto sort_order = _model ? _model->getSortOrder() : FilesystemModel::SortOrder::Ascending;
+    const char* arrow_up = " ^";
+    const char* arrow_down = " v";
+
+    const int col_padding = 8;  // Padding after column divider
     int x = ix1 + _icon_column_width;
     int text_y = header_y1 + (_header_height - _font->description().miAdvanceHeight) / 2;
 
-    lev2::FontMan::beginTextBlock(tgt, 64);
-    lev2::FontMan::DrawText(tgt, x, text_y, "Name");
+    lev2::FontMan::beginTextBlock(tgt, 80);
+
+    // Name column
+    bool is_name_sorted = (sort_field == FilesystemModel::SortField::Name);
+    tgt->PushModColor(is_name_sorted ? _text_color : _text_color * 0.7f);
+    if (is_name_sorted) {
+      std::string label = std::string("Name") + (sort_order == FilesystemModel::SortOrder::Ascending ? arrow_up : arrow_down);
+      lev2::FontMan::DrawText(tgt, x, text_y, label.c_str());
+    } else {
+      lev2::FontMan::DrawText(tgt, x, text_y, "Name");
+    }
+    tgt->PopModColor();
     x += _name_column_width;
 
+    // Size column
     if (_show_size_column) {
-      lev2::FontMan::DrawText(tgt, x, text_y, "Size");
+      bool is_size_sorted = (sort_field == FilesystemModel::SortField::Size);
+      tgt->PushModColor(is_size_sorted ? _text_color : _text_color * 0.7f);
+      if (is_size_sorted) {
+        std::string label = std::string("Size") + (sort_order == FilesystemModel::SortOrder::Ascending ? arrow_up : arrow_down);
+        lev2::FontMan::DrawText(tgt, x + col_padding, text_y, label.c_str());
+      } else {
+        lev2::FontMan::DrawText(tgt, x + col_padding, text_y, "Size");
+      }
+      tgt->PopModColor();
       x += _size_column_width;
     }
+
+    // Type column
     if (_show_type_column) {
-      lev2::FontMan::DrawText(tgt, x, text_y, "Type");
+      bool is_type_sorted = (sort_field == FilesystemModel::SortField::Type);
+      tgt->PushModColor(is_type_sorted ? _text_color : _text_color * 0.7f);
+      if (is_type_sorted) {
+        std::string label = std::string("Type") + (sort_order == FilesystemModel::SortOrder::Ascending ? arrow_up : arrow_down);
+        lev2::FontMan::DrawText(tgt, x + col_padding, text_y, label.c_str());
+      } else {
+        lev2::FontMan::DrawText(tgt, x + col_padding, text_y, "Type");
+      }
+      tgt->PopModColor();
       x += _type_column_width;
     }
+
+    // Date column
     if (_show_date_column) {
-      lev2::FontMan::DrawText(tgt, x, text_y, "Modified");
+      bool is_date_sorted = (sort_field == FilesystemModel::SortField::ModifiedTime);
+      tgt->PushModColor(is_date_sorted ? _text_color : _text_color * 0.7f);
+      if (is_date_sorted) {
+        std::string label = std::string("Modified") + (sort_order == FilesystemModel::SortOrder::Ascending ? arrow_up : arrow_down);
+        lev2::FontMan::DrawText(tgt, x + col_padding, text_y, label.c_str());
+      } else {
+        lev2::FontMan::DrawText(tgt, x + col_padding, text_y, "Modified");
+      }
+      tgt->PopModColor();
     }
+
     lev2::FontMan::endTextBlock(tgt);
+    lev2::FontMan::PopFont();
+  }
+
+  // Draw column separator lines (brighter in header)
+  {
+    auto rs = defmtl->_rasterstate;
+    rs->setBlendingMacro(lev2::BlendingMacro::ALPHA);
+    rs->setDepthTest(lev2::EDepthTest::OFF);
+    fxi->pushRasterState(rs);
+    defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
+
+    fvec4 sep_color = fvec4(0.4f, 0.4f, 0.45f, 1.0f);  // Brighter for header
+    tgt->PushModColor(sep_color);
+
+    int sep_x = ix1 + _icon_column_width + _name_column_width;
+    primi->RenderQuadAtZ(defmtl.get(), sep_x - 1, sep_x + 1, header_y1 + 2, header_y2 - 2,
+                         0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+
+    if (_show_size_column) {
+      sep_x += _size_column_width;
+      primi->RenderQuadAtZ(defmtl.get(), sep_x - 1, sep_x + 1, header_y1 + 2, header_y2 - 2,
+                           0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+    }
+
+    if (_show_type_column) {
+      sep_x += _type_column_width;
+      primi->RenderQuadAtZ(defmtl.get(), sep_x - 1, sep_x + 1, header_y1 + 2, header_y2 - 2,
+                           0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+    }
 
     tgt->PopModColor();
-    lev2::FontMan::PopFont();
+    fxi->popRasterState();
   }
 
   y_offset += _header_height;
 }
 
 void FilesystemView::_drawListItem(drawevent_constptr_t drwev, const VisibleItem& item,
-                                    int y_pos, bool selected, bool hovered) {
+                                    int y_pos, bool selected, bool hovered, int row_index) {
   auto tgt = drwev->GetTarget();
   auto fxi = tgt->FXI();
   auto primi = tgt->PRI();
@@ -742,6 +1074,22 @@ void FilesystemView::_drawListItem(drawevent_constptr_t drwev, const VisibleItem
   int ix1, iy1;
   LocalToRoot(0, 0, ix1, iy1);
   int ix2 = ix1 + _geometry._w;
+
+  // Draw alternating row background
+  if (!selected && !hovered && (row_index % 2 == 1)) {
+    fvec4 alt_bg_color = _bgcolor * 1.15f;  // Slightly lighter for odd rows
+    alt_bg_color.w = 1.0f;
+    auto rs = defmtl->_rasterstate;
+    rs->setBlendingMacro(lev2::BlendingMacro::OFF);
+    rs->setDepthTest(lev2::EDepthTest::OFF);
+    fxi->pushRasterState(rs);
+    tgt->PushModColor(alt_bg_color);
+    defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
+    primi->RenderQuadAtZ(defmtl.get(), ix1, ix2, y_pos, y_pos + _item_height,
+                         0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+    tgt->PopModColor();
+    fxi->popRasterState();
+  }
 
   // Draw selection/hover background
   if (selected || hovered) {
@@ -758,21 +1106,47 @@ void FilesystemView::_drawListItem(drawevent_constptr_t drwev, const VisibleItem
     fxi->popRasterState();
   }
 
-  // Draw icon placeholder (colored rectangle)
+  // Draw icon
   {
-    fvec4 icon_color = (item.entry.type == FileType::Directory) ? _directory_color : fvec4(0.6f, 0.6f, 0.6f, 1.0f);
-    auto rs = defmtl->_rasterstate;
-    rs->setBlendingMacro(lev2::BlendingMacro::ALPHA);
-    fxi->pushRasterState(rs);
-    tgt->PushModColor(icon_color);
-    defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
     int icon_size = _item_height - 4;
-    primi->RenderQuadAtZ(defmtl.get(),
-                         ix1 + 2, ix1 + 2 + icon_size,
-                         y_pos + 2, y_pos + 2 + icon_size,
-                         0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
-    tgt->PopModColor();
-    fxi->popRasterState();
+    bool is_directory = (item.entry.type == FileType::Directory);
+    auto icon_texture = _getIconForPath(tgt, item.entry.path, item.entry.type, icon_size);
+
+    if (icon_texture) {
+      // Lazy init textured material
+      if (!_tex_material) {
+        _tex_material = std::make_shared<lev2::GfxMaterialUITextured>(tgt, "uitextured");
+      }
+
+      // Render texture icon with alpha blending
+      auto rs = _tex_material->_rasterstate;
+      rs->setBlendingMacro(lev2::BlendingMacro::ALPHA);
+      rs->setDepthTest(lev2::EDepthTest::OFF);
+      rs->_priority = 1;
+      fxi->pushRasterState(rs);
+      tgt->PushModColor(fvec4(1, 1, 1, 1));
+      _tex_material->SetTexture(lev2::ETEXDEST_DIFFUSE, icon_texture.get());
+      primi->RenderQuadAtZ(_tex_material.get(),
+                           ix1 + 2, ix1 + 2 + icon_size,
+                           y_pos + 2, y_pos + 2 + icon_size,
+                           0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+      tgt->PopModColor();
+      fxi->popRasterState();
+    } else {
+      // Fallback: colored rectangle
+      fvec4 icon_color = is_directory ? _directory_color : fvec4(0.6f, 0.6f, 0.6f, 1.0f);
+      auto rs = defmtl->_rasterstate;
+      rs->setBlendingMacro(lev2::BlendingMacro::ALPHA);
+      fxi->pushRasterState(rs);
+      tgt->PushModColor(icon_color);
+      defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
+      primi->RenderQuadAtZ(defmtl.get(),
+                           ix1 + 2, ix1 + 2 + icon_size,
+                           y_pos + 2, y_pos + 2 + icon_size,
+                           0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+      tgt->PopModColor();
+      fxi->popRasterState();
+    }
   }
 
   // Draw text
@@ -791,15 +1165,19 @@ void FilesystemView::_drawListItem(drawevent_constptr_t drwev, const VisibleItem
 
     lev2::FontMan::beginTextBlock(tgt, char_count);
 
-    // Name
-    lev2::FontMan::DrawText(tgt, x, text_y, item.entry.name.c_str());
+    const int col_padding = 8;  // Padding after column divider
+
+    // Name (truncate to column width)
+    std::string name_str = _truncateToWidth(item.entry.name, _name_column_width);
+    lev2::FontMan::DrawText(tgt, x, text_y, name_str.c_str());
     x += _name_column_width;
 
     // Size
     if (_show_size_column) {
       if (item.entry.type == FileType::File) {
         std::string size_str = _formatSize(item.entry.size);
-        lev2::FontMan::DrawText(tgt, x, text_y, size_str.c_str());
+        size_str = _truncateToWidth(size_str, _size_column_width - col_padding);
+        lev2::FontMan::DrawText(tgt, x + col_padding, text_y, size_str.c_str());
       }
       x += _size_column_width;
     }
@@ -807,14 +1185,16 @@ void FilesystemView::_drawListItem(drawevent_constptr_t drwev, const VisibleItem
     // Type
     if (_show_type_column) {
       std::string type_str = (item.entry.type == FileType::Directory) ? "Folder" : item.entry.extension;
-      lev2::FontMan::DrawText(tgt, x, text_y, type_str.c_str());
+      type_str = _truncateToWidth(type_str, _type_column_width - col_padding);
+      lev2::FontMan::DrawText(tgt, x + col_padding, text_y, type_str.c_str());
       x += _type_column_width;
     }
 
     // Date
     if (_show_date_column) {
       std::string date_str = _formatDate(item.entry.modified_time);
-      lev2::FontMan::DrawText(tgt, x, text_y, date_str.c_str());
+      date_str = _truncateToWidth(date_str, _date_column_width - col_padding);
+      lev2::FontMan::DrawText(tgt, x + col_padding, text_y, date_str.c_str());
     }
 
     lev2::FontMan::endTextBlock(tgt);
@@ -850,20 +1230,46 @@ void FilesystemView::_drawIconItem(drawevent_constptr_t drwev, const VisibleItem
     fxi->popRasterState();
   }
 
-  // Draw icon placeholder
+  // Draw icon
   {
-    fvec4 icon_color = (item.entry.type == FileType::Directory) ? _directory_color : fvec4(0.5f, 0.5f, 0.5f, 1.0f);
-    auto rs = defmtl->_rasterstate;
-    rs->setBlendingMacro(lev2::BlendingMacro::ALPHA);
-    fxi->pushRasterState(rs);
-    tgt->PushModColor(icon_color);
-    defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
-    primi->RenderQuadAtZ(defmtl.get(),
-                         x_pos + 4, x_pos + _icon_size - 4,
-                         y_pos + 4, y_pos + _icon_size - 4,
-                         0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
-    tgt->PopModColor();
-    fxi->popRasterState();
+    bool is_directory = (item.entry.type == FileType::Directory);
+    auto icon_texture = _getIconForPath(tgt, item.entry.path, item.entry.type, _icon_size);
+
+    if (icon_texture) {
+      // Lazy init textured material
+      if (!_tex_material) {
+        _tex_material = std::make_shared<lev2::GfxMaterialUITextured>(tgt, "uitextured");
+      }
+
+      // Render texture icon with alpha blending
+      auto rs = _tex_material->_rasterstate;
+      rs->setBlendingMacro(lev2::BlendingMacro::ALPHA);
+      rs->setDepthTest(lev2::EDepthTest::OFF);
+      rs->_priority = 1;
+      fxi->pushRasterState(rs);
+      tgt->PushModColor(fvec4(1, 1, 1, 1));
+      _tex_material->SetTexture(lev2::ETEXDEST_DIFFUSE, icon_texture.get());
+      primi->RenderQuadAtZ(_tex_material.get(),
+                           x_pos + 4, x_pos + _icon_size - 4,
+                           y_pos + 4, y_pos + _icon_size - 4,
+                           0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+      tgt->PopModColor();
+      fxi->popRasterState();
+    } else {
+      // Fallback: colored rectangle
+      fvec4 icon_color = is_directory ? _directory_color : fvec4(0.5f, 0.5f, 0.5f, 1.0f);
+      auto rs = defmtl->_rasterstate;
+      rs->setBlendingMacro(lev2::BlendingMacro::ALPHA);
+      fxi->pushRasterState(rs);
+      tgt->PushModColor(icon_color);
+      defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
+      primi->RenderQuadAtZ(defmtl.get(),
+                           x_pos + 4, x_pos + _icon_size - 4,
+                           y_pos + 4, y_pos + _icon_size - 4,
+                           0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+      tgt->PopModColor();
+      fxi->popRasterState();
+    }
   }
 
   // Draw label
@@ -921,6 +1327,20 @@ std::string FilesystemView::_formatDate(time_t time) {
   return ss.str();
 }
 
+std::string FilesystemView::_truncateToWidth(const std::string& text, int max_width) const {
+  if (!_font || text.empty()) return text;
+
+  int char_width = _font->description().miAdvanceWidth;
+  if (char_width <= 0) return text;
+
+  int max_chars = (max_width - 8) / char_width;  // 8px padding
+  if (max_chars <= 0) return "";
+  if ((int)text.length() <= max_chars) return text;
+  if (max_chars <= 3) return text.substr(0, max_chars);
+
+  return text.substr(0, max_chars - 3) + "...";
+}
+
 lev2::texture_ptr_t FilesystemView::_getDefaultIcon(FileType type, const std::string& extension) {
   // For now, return nullptr - icons rendered as colored rectangles
   return nullptr;
@@ -947,6 +1367,55 @@ void FilesystemView::_requestThumbnail(VisibleItem& item) {
   } else {
     item.thumbnail_failed = true;
   }
+}
+
+lev2::texture_ptr_t FilesystemView::_getIconForPath(lev2::Context* ctx, const std::string& path, FileType type, int size) {
+  auto txi = ctx->TXI();
+
+  // Lazily convert default icon images to textures
+  if (_folder_icon_image && !_folder_icon_texture) {
+    _folder_icon_texture = std::make_shared<lev2::Texture>();
+    txi->initTextureFromImage(_folder_icon_texture.get(), _folder_icon_image, true);
+  }
+  if (_file_icon_image && !_file_icon_texture) {
+    _file_icon_texture = std::make_shared<lev2::Texture>();
+    txi->initTextureFromImage(_file_icon_texture.get(), _file_icon_image, true);
+  }
+
+  if (!_model) {
+    return (type == FileType::Directory) ? _folder_icon_texture : _file_icon_texture;
+  }
+
+  // Check cache first
+  auto it = _icon_cache.find(path);
+  if (it != _icon_cache.end()) {
+    return it->second;
+  }
+
+  // Try to get icon from model
+  lev2::image_ptr_t image = nullptr;
+
+  // First try provider (lazy loading)
+  auto provider = _model->getIconProvider(path, size);
+  if (provider) {
+    image = provider->_func();
+  }
+
+  // Fall back to direct image
+  if (!image) {
+    image = _model->getIcon(path, size);
+  }
+
+  // If model provides an image, create texture and cache it
+  if (image) {
+    auto texture = std::make_shared<lev2::Texture>();
+    txi->initTextureFromImage(texture.get(), image, true);
+    _icon_cache[path] = texture;
+    return texture;
+  }
+
+  // Fall back to default icons (don't cache - use defaults directly)
+  return (type == FileType::Directory) ? _folder_icon_texture : _file_icon_texture;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

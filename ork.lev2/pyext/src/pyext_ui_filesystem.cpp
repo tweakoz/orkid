@@ -11,6 +11,7 @@
 #include <ork/lev2/ui/layoutgroup.inl>
 #include <ork/lev2/ui/filesystem_model.h>
 #include <ork/lev2/ui/filesystem_view.h>
+#include <ork/lev2/ui/favorites.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
@@ -184,6 +185,24 @@ public:
         src_path, dest_path);
   }
 
+  image_ptr_t getIcon(const std::string& path, int size) override {
+    py::gil_scoped_acquire acquire;
+    PYBIND11_OVERRIDE(
+        image_ptr_t,
+        ui::FilesystemModel,
+        getIcon,
+        path, size);
+  }
+
+  image_provider_ptr_t getIconProvider(const std::string& path, int size) override {
+    py::gil_scoped_acquire acquire;
+    PYBIND11_OVERRIDE(
+        image_provider_ptr_t,
+        ui::FilesystemModel,
+        getIconProvider,
+        path, size);
+  }
+
   image_provider_ptr_t getThumbnailProvider(const std::string& path, int size) override {
     py::gil_scoped_acquire acquire;
     py::object py_result = py::cast(this).attr("getThumbnailProvider")(path, size);
@@ -218,6 +237,14 @@ public:
         ui::FilesystemModel,
         hasThumbnail,
         path);
+  }
+
+  std::string modelIdentifier() const override {
+    py::gil_scoped_acquire acquire;
+    PYBIND11_OVERRIDE_PURE(
+        std::string,
+        ui::FilesystemModel,
+        modelIdentifier);
   }
 };
 
@@ -344,6 +371,10 @@ void pyinit_ui_filesystem(py::module& uimodule) {
               &ui::FilesystemModel::getFilter,
               &ui::FilesystemModel::setFilter)
           .def_property(
+              "name_filter",
+              &ui::FilesystemModel::getNameFilter,
+              &ui::FilesystemModel::setNameFilter)
+          .def_property(
               "show_hidden",
               &ui::FilesystemModel::getShowHidden,
               &ui::FilesystemModel::setShowHidden)
@@ -358,6 +389,22 @@ void pyinit_ui_filesystem(py::module& uimodule) {
           .def("copyItem", &ui::FilesystemModel::copyItem)
           .def("moveItem", &ui::FilesystemModel::moveItem)
           .def(
+              "getIcon",
+              [](ui::filesystem_model_ptr_t model, const std::string& path, int size) -> image_ptr_t {
+                return model->getIcon(path, size);
+              },
+              py::arg("path"),
+              py::arg("size") = 64,
+              "Get icon image for a path (returns None to use default)")
+          .def(
+              "getIconProvider",
+              [](ui::filesystem_model_ptr_t model, const std::string& path, int size) -> image_provider_ptr_t {
+                return model->getIconProvider(path, size);
+              },
+              py::arg("path"),
+              py::arg("size") = 64,
+              "Get icon provider for lazy loading (returns None to use getIcon or default)")
+          .def(
               "getThumbnailProvider",
               [](ui::filesystem_model_ptr_t model, const std::string& path, int size) -> image_provider_ptr_t {
                 return model->getThumbnailProvider(path, size);
@@ -365,6 +412,7 @@ void pyinit_ui_filesystem(py::module& uimodule) {
               py::arg("path"),
               py::arg("size") = 64)
           .def("hasThumbnail", &ui::FilesystemModel::hasThumbnail)
+          .def("modelIdentifier", &ui::FilesystemModel::modelIdentifier)
           .def_property(
               "sort_field",
               &ui::FilesystemModel::getSortField,
@@ -405,6 +453,128 @@ void pyinit_ui_filesystem(py::module& uimodule) {
           });
 
   type_codec->registerStdCodec<ui::local_filesystem_model_ptr_t>(local_filesystem_model_type);
+
+  /////////////////////////////////////////////////////////////////////////////////
+  // FavoriteEntry - a favorite location with associated view state
+  // NOTE: Must be registered before FilesystemView which uses it
+  /////////////////////////////////////////////////////////////////////////////////
+  auto favorite_entry_type = //
+      py::class_<ui::FavoriteEntry, ui::favorite_entry_ptr_t>(uimodule, "FavoriteEntry")
+          .def(py::init<>())
+          .def_readwrite("path", &ui::FavoriteEntry::path,
+              "Directory path")
+          .def_readwrite("name", &ui::FavoriteEntry::name,
+              "Display name (defaults to path basename)")
+          .def_readwrite("name_filter", &ui::FavoriteEntry::name_filter,
+              "Name filter pattern")
+          .def_readwrite("sort_field", &ui::FavoriteEntry::sort_field,
+              "Sort field")
+          .def_readwrite("sort_order", &ui::FavoriteEntry::sort_order,
+              "Sort order")
+          .def_readwrite("directories_first", &ui::FavoriteEntry::directories_first,
+              "Show directories first")
+          .def_readwrite("show_hidden", &ui::FavoriteEntry::show_hidden,
+              "Show hidden files")
+          .def_static("fromModel", &ui::FavoriteEntry::fromModel,
+              py::arg("model"), py::arg("display_name") = "",
+              "Create a FavoriteEntry from current model state")
+          .def("applyToModel", &ui::FavoriteEntry::applyToModel,
+              py::arg("model"),
+              "Apply this favorite's state to a model")
+          .def("displayName", &ui::FavoriteEntry::displayName,
+              "Get display name (returns name if set, otherwise path basename)")
+          .def("__repr__", [](ui::favorite_entry_ptr_t entry) {
+            return FormatString("<FavoriteEntry path<%s> name<%s>>",
+                entry->path.c_str(), entry->displayName().c_str());
+          });
+
+  type_codec->registerStdCodec<ui::favorite_entry_ptr_t>(favorite_entry_type);
+
+  /////////////////////////////////////////////////////////////////////////////////
+  // FavoritesManager - manages favorite paths for filesystem models
+  // NOTE: Must be registered before FilesystemView which uses it
+  /////////////////////////////////////////////////////////////////////////////////
+  auto favorites_manager_type = //
+      py::class_<ui::FavoritesManager, ui::favorites_manager_ptr_t>(uimodule, "FavoritesManager")
+          .def_static("instance", &ui::FavoritesManager::instance,
+              "Get the singleton FavoritesManager instance")
+          // Full-state favorites (with filter/sort)
+          .def("addFavoriteEntry", &ui::FavoritesManager::addFavoriteEntry,
+              py::arg("model_id"), py::arg("entry"),
+              "Add a favorite entry for a model")
+          .def("removeFavoriteEntry", &ui::FavoritesManager::removeFavoriteEntry,
+              py::arg("model_id"), py::arg("path"),
+              "Remove a favorite entry by path")
+          .def("getFavoriteEntry", &ui::FavoritesManager::getFavoriteEntry,
+              py::arg("model_id"), py::arg("path"),
+              "Get a favorite entry by path")
+          .def("updateFavoriteEntry", &ui::FavoritesManager::updateFavoriteEntry,
+              py::arg("model_id"), py::arg("entry"),
+              "Update an existing favorite entry")
+          .def("getFavoriteEntries", &ui::FavoritesManager::getFavoriteEntries,
+              py::arg("model_id"),
+              "Get all favorite entries for a model")
+          // Simple favorites (path only, backwards compatible)
+          .def("addFavorite", &ui::FavoritesManager::addFavorite,
+              py::arg("model_id"), py::arg("path"),
+              "Add a favorite path for a model")
+          .def("removeFavorite", &ui::FavoritesManager::removeFavorite,
+              py::arg("model_id"), py::arg("path"),
+              "Remove a favorite path for a model")
+          .def("isFavorite", &ui::FavoritesManager::isFavorite,
+              py::arg("model_id"), py::arg("path"),
+              "Check if a path is a favorite for a model")
+          .def("getFavorites", &ui::FavoritesManager::getFavorites,
+              py::arg("model_id"),
+              "Get all favorites for a model (paths only)")
+          .def("clearFavorites", &ui::FavoritesManager::clearFavorites,
+              py::arg("model_id"),
+              "Clear all favorites for a model")
+          .def("moveFavoriteUp", &ui::FavoritesManager::moveFavoriteUp,
+              py::arg("model_id"), py::arg("path"),
+              "Move a favorite up in the list")
+          .def("moveFavoriteDown", &ui::FavoritesManager::moveFavoriteDown,
+              py::arg("model_id"), py::arg("path"),
+              "Move a favorite down in the list")
+          // Recent paths
+          .def("addRecent", &ui::FavoritesManager::addRecent,
+              py::arg("model_id"), py::arg("path"),
+              "Add a path to recent paths for a model")
+          .def("getRecent", &ui::FavoritesManager::getRecent,
+              py::arg("model_id"),
+              "Get recent paths for a model")
+          .def("clearRecent", &ui::FavoritesManager::clearRecent,
+              py::arg("model_id"),
+              "Clear recent paths for a model")
+          .def_property("max_recent",
+              &ui::FavoritesManager::getMaxRecent,
+              &ui::FavoritesManager::setMaxRecent,
+              "Maximum number of recent paths to remember")
+          // Persistence
+          .def("save", &ui::FavoritesManager::save,
+              "Force save to disk")
+          // Callbacks
+          .def("onFavoritesChanged",
+              [](ui::favorites_manager_ptr_t mgr, py::object callback) {
+                mgr->_onFavoritesChanged = [callback](const std::string& model_id) {
+                  py::gil_scoped_acquire acquire;
+                  callback(model_id);
+                };
+              },
+              "Set callback for when favorites change")
+          .def("onRecentChanged",
+              [](ui::favorites_manager_ptr_t mgr, py::object callback) {
+                mgr->_onRecentChanged = [callback](const std::string& model_id) {
+                  py::gil_scoped_acquire acquire;
+                  callback(model_id);
+                };
+              },
+              "Set callback for when recent paths change")
+          .def("__repr__", [](ui::favorites_manager_ptr_t mgr) {
+            return FormatString("<FavoritesManager>");
+          });
+
+  type_codec->registerStdCodec<ui::favorites_manager_ptr_t>(favorites_manager_type);
 
   /////////////////////////////////////////////////////////////////////////////////
   // FilesystemView widget
@@ -471,6 +641,21 @@ void pyinit_ui_filesystem(py::module& uimodule) {
           .def("navigateUp", &ui::FilesystemView::navigateUp)
           .def("activateItem", &ui::FilesystemView::activateItem)
           .def("refresh", &ui::FilesystemView::refresh)
+          // Favorites management
+          .def("addCurrentAsFavorite", &ui::FilesystemView::addCurrentAsFavorite,
+              py::arg("display_name") = "",
+              "Add current location + view state as a favorite")
+          .def("removeCurrentFromFavorites", &ui::FilesystemView::removeCurrentFromFavorites,
+              "Remove current path from favorites")
+          .def("isCurrentFavorite", &ui::FilesystemView::isCurrentFavorite,
+              "Check if current path is a favorite")
+          .def("applyFavorite", &ui::FilesystemView::applyFavorite,
+              py::arg("entry"),
+              "Apply a favorite entry (navigate and restore view state)")
+          .def("getCurrentAsFavoriteEntry", &ui::FilesystemView::getCurrentAsFavoriteEntry,
+              py::arg("display_name") = "",
+              "Get current state as a FavoriteEntry (without adding to favorites)")
+          // Inline editing
           .def("startEditing", &ui::FilesystemView::startEditing)
           .def("cancelEditing", &ui::FilesystemView::cancelEditing)
           .def("commitEditing", &ui::FilesystemView::commitEditing)
@@ -598,6 +783,18 @@ void pyinit_ui_filesystem(py::module& uimodule) {
               [](ui::filesystem_view_ptr_t view, font_ptr_t font) { //
                 view->_small_font = font;
               })
+          .def_property(
+              "folder_icon",
+              &ui::FilesystemView::getFolderIcon,
+              &ui::FilesystemView::setFolderIcon,
+              "Default folder icon image (converted to texture lazily)")
+          .def_property(
+              "file_icon",
+              &ui::FilesystemView::getFileIcon,
+              &ui::FilesystemView::setFileIcon,
+              "Default file icon image (converted to texture lazily)")
+          .def("clearIconCache", &ui::FilesystemView::clearIconCache,
+              "Clear the icon cache (useful after directory change)")
           .def("__repr__", [](ui::filesystem_view_ptr_t view) {
             return FormatString("<FilesystemView name<%s> widget<%p>>", view->GetName().c_str(), (void*)view.get());
           });

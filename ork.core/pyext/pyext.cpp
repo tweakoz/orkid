@@ -196,6 +196,7 @@ static void _disableLogging() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void pyinit_reflection(py::module& module_core);
+void pyinit_json_config(py::module& module_core);
 
 PYBIND11_MODULE(_core, module_core) {
 
@@ -496,7 +497,8 @@ PYBIND11_MODULE(_core, module_core) {
   ork::asset::catalog::pyinit_asset_catalog(module_core);
   ork::util::crypt::pyinit_crypt(module_core);
   pyinit_fsm(module_core);
-  
+  pyinit_json_config(module_core);
+
   #if defined(ENABLE_NOTCURSES_UI)
   // Create ncui submodule
   auto ncui_module = module_core.def_submodule("ncui", "NotCurses UI Framework");

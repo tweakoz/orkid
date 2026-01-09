@@ -58,31 +58,45 @@ void VerticalPack::DoLayout() {
       y += h + _margin;
     }
   } else {
-      size_t Y = 0;
-    // Layout all children to fill the content area
-    size_t num_children = _children.size();
-    for( size_t i=0; i<num_children; i++ ){
+    // Original behavior: use _item_height and _margin
+    // First pass: calculate total fixed height to determine fill size
+    int total_fixed = 0;
+    int fill_index = -1;
+
+    for (size_t i = 0; i < num_children; i++) {
       auto child = _children[i];
+      bool is_fill_widget = (_fill_widget && child == _fill_widget) ||
+                            (!_fill_widget && _fill && (i == num_children - 1));
+      if (is_fill_widget) {
+        fill_index = i;
+      } else if (child->_fixed_height) {
+        total_fixed += child->_fixed_height + _margin;
+      } else {
+        total_fixed += _item_height + _margin;
+      }
+    }
+
+    // Calculate fill height
+    int fill_height = (fill_index >= 0) ? _geometry._h - total_fixed : 0;
+
+    // Second pass: layout children
+    size_t Y = 0;
+    for (size_t i = 0; i < num_children; i++) {
+      auto child = _children[i];
+      bool is_fill_widget = (int)i == fill_index;
 
       // Determine child height
       int child_height;
-      if (child->_fixed_height) {
-        // Use fixed height value
+      if (is_fill_widget) {
+        child_height = fill_height;
+      } else if (child->_fixed_height) {
         child_height = child->_fixed_height;
-      } else if (_fill && (i == num_children - 1)) {
-        // Last child fills remaining space
-        child_height = _geometry._h - Y;
       } else {
-        // Use item_height
         child_height = _item_height;
       }
 
       child->SetRect(0, Y, _geometry._w, child_height);
       Y += child_height + _margin;
-
-      if (_fill && (i == num_children - 1)) {
-        break;
-      }
     }
   }
 }

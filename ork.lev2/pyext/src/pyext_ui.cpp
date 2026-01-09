@@ -852,6 +852,14 @@ void pyinit_ui(py::module& module_lev2) {
                 vpack->_fill = b;
               })
           .def_property(
+              "fill_widget",
+              [](ui::vpack_ptr_t vpack) -> ui::widget_ptr_t { //
+                return vpack->_fill_widget;
+              },
+              [](ui::vpack_ptr_t vpack, ui::widget_ptr_t w) { //
+                vpack->_fill_widget = w;
+              })
+          .def_property(
               "bg_color",
               [](ui::vpack_ptr_t vpack) -> fvec4 { //
                 return vpack->_bgcolor;
@@ -925,6 +933,14 @@ void pyinit_ui(py::module& module_lev2) {
               },
               [](ui::hpack_ptr_t hpack, bool b) { //
                 hpack->_fill = b;
+              })
+          .def_property(
+              "fill_widget",
+              [](ui::hpack_ptr_t hpack) -> ui::widget_ptr_t { //
+                return hpack->_fill_widget;
+              },
+              [](ui::hpack_ptr_t hpack, ui::widget_ptr_t w) { //
+                hpack->_fill_widget = w;
               })
           .def_property(
               "uniform",
@@ -1202,6 +1218,39 @@ void pyinit_ui(py::module& module_lev2) {
               },
               [](ui::lineedit_ptr_t le, fvec3 c) { //
                 le->_bg_color = c;
+              })
+          .def_property(
+              "input_color",
+              [](ui::lineedit_ptr_t le) -> fvec4 { //
+                return le->_input_color;
+              },
+              [](ui::lineedit_ptr_t le, fvec4 c) { //
+                le->_input_color = c;
+                le->_input_color_set = true;
+              })
+          .def(
+              "onTextChanged",
+              [](ui::lineedit_ptr_t le, py::object callback) { //
+                if (callback.is_none()) {
+                  le->_onTextChanged = nullptr;
+                } else {
+                  le->_onTextChanged = [callback](const std::string& text) {
+                    py::gil_scoped_acquire acquire;
+                    callback(text);
+                  };
+                }
+              })
+          .def(
+              "onTextCommitted",
+              [](ui::lineedit_ptr_t le, py::object callback) { //
+                if (callback.is_none()) {
+                  le->_onTextCommitted = nullptr;
+                } else {
+                  le->_onTextCommitted = [callback](const std::string& text) {
+                    py::gil_scoped_acquire acquire;
+                    callback(text);
+                  };
+                }
               });
   type_codec->registerStdCodec<ui::lineedit_ptr_t>(lineedit_type);
   /////////////////////////////////////////////////////////////////////////////////

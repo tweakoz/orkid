@@ -9,6 +9,7 @@
 
 #include <ork/lev2/ui/widget.h>
 #include <ork/lev2/ui/filesystem_model.h>
+#include <ork/lev2/ui/favorites.h>
 #include <functional>
 #include <unordered_map>
 #include <unordered_set>
@@ -82,6 +83,25 @@ struct FilesystemView : public Widget {
   void refresh();
 
   //////////////////////////////////////////////////////////////
+  // Favorites management
+  //////////////////////////////////////////////////////////////
+
+  // Add current location + view state as a favorite
+  void addCurrentAsFavorite(const std::string& display_name = "");
+
+  // Remove current path from favorites
+  void removeCurrentFromFavorites();
+
+  // Check if current path is a favorite
+  bool isCurrentFavorite() const;
+
+  // Apply a favorite entry (navigate and restore view state)
+  void applyFavorite(favorite_entry_ptr_t entry);
+
+  // Get current state as a FavoriteEntry (without adding to favorites)
+  favorite_entry_ptr_t getCurrentAsFavoriteEntry(const std::string& display_name = "") const;
+
+  //////////////////////////////////////////////////////////////
   // Inline editing (rename)
   //////////////////////////////////////////////////////////////
 
@@ -110,6 +130,7 @@ struct FilesystemView : public Widget {
   int _size_column_width = 80;    // Width of size column
   int _type_column_width = 100;   // Width of type column
   int _date_column_width = 120;   // Width of date column
+  int _last_content_width = 0;    // For proportional column resizing
   bool _show_size_column = true;
   bool _show_type_column = true;
   bool _show_date_column = true;
@@ -138,6 +159,23 @@ struct FilesystemView : public Widget {
   lev2::font_ptr_t _font;
   lev2::font_ptr_t _small_font;   // For icon labels
 
+  // Default icons (as images - converted to textures lazily)
+  lev2::image_ptr_t _folder_icon_image;
+  lev2::image_ptr_t _file_icon_image;
+  lev2::texture_ptr_t _folder_icon_texture;  // Cached texture from image
+  lev2::texture_ptr_t _file_icon_texture;    // Cached texture from image
+
+  void setFolderIcon(lev2::image_ptr_t img);
+  void setFileIcon(lev2::image_ptr_t img);
+  lev2::image_ptr_t getFolderIcon() const { return _folder_icon_image; }
+  lev2::image_ptr_t getFileIcon() const { return _file_icon_image; }
+
+  // Icon cache: path -> texture (populated from model's getIcon/getIconProvider)
+  std::unordered_map<std::string, lev2::texture_ptr_t> _icon_cache;
+  void _updateIconCache(lev2::Context* ctx, const std::string& path, int size);
+  lev2::texture_ptr_t _getIconForPath(lev2::Context* ctx, const std::string& path, FileType type, int size);
+  void clearIconCache() { _icon_cache.clear(); _folder_icon_texture = nullptr; _file_icon_texture = nullptr; }
+
 protected:
   // Override from Widget
   void DoDraw(drawevent_constptr_t drwev) override;
@@ -161,6 +199,9 @@ private:
   void _clampScrollOffset();
   int _getItemIndexAt(int local_x, int local_y) const;
   std::string _getItemPathAt(int local_x, int local_y) const;
+  bool _isInHeaderArea(int local_y) const;
+  FilesystemModel::SortField _getSortFieldAtX(int local_x) const;
+  void _handleHeaderClick(int local_x);
   void _subscribeToModel();
   void _requestThumbnail(VisibleItem& item);
 
@@ -169,12 +210,13 @@ private:
   void _drawIconMode(drawevent_constptr_t drwev);
   void _drawPathBar(drawevent_constptr_t drwev, int& y_offset);
   void _drawHeader(drawevent_constptr_t drwev, int& y_offset);
-  void _drawListItem(drawevent_constptr_t drwev, const VisibleItem& item, int y_pos, bool selected, bool hovered);
+  void _drawListItem(drawevent_constptr_t drwev, const VisibleItem& item, int y_pos, bool selected, bool hovered, int row_index);
   void _drawIconItem(drawevent_constptr_t drwev, const VisibleItem& item, int x_pos, int y_pos, bool selected, bool hovered);
 
   // Formatting helpers
   static std::string _formatSize(size_t bytes);
   static std::string _formatDate(time_t time);
+  std::string _truncateToWidth(const std::string& text, int max_width) const;
 
   // Icon/thumbnail management
   lev2::texture_ptr_t _getDefaultIcon(FileType type, const std::string& extension);
@@ -199,6 +241,15 @@ private:
   int _header_height = 24;
   int _path_bar_height = 28;
 
+  // Column resize state
+  int _resize_column = -1;        // Which column is being resized (-1 = none)
+  int _resize_start_x = 0;        // Mouse X when resize started
+  int _resize_start_width = 0;    // Column width when resize started
+  static constexpr int _resize_grip_width = 6;  // Pixels on each side of separator
+
+  int _getColumnSeparatorAt(int local_x, int local_y) const;  // Returns column index or -1
+  int* _getColumnWidthPtr(int column_index);  // Get pointer to column width variable
+
   // Default icons
   lev2::texture_ptr_t _icon_file;
   lev2::texture_ptr_t _icon_directory;
@@ -208,6 +259,9 @@ private:
 
   // Thumbnail cache
   std::unordered_map<std::string, lev2::texture_ptr_t> _thumbnail_cache;
+
+  // Textured material for icon rendering
+  lev2::uitexmaterial_ptr_t _tex_material;
 };
 
 } // namespace ork::ui

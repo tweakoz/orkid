@@ -59,29 +59,44 @@ void HorizontalPack::DoLayout() {
     }
   } else {
     // Original behavior: use _item_width and _margin
+    // First pass: calculate total fixed width to determine fill size
+    int total_fixed = 0;
+    int fill_index = -1;
+
+    for (size_t i = 0; i < num_children; i++) {
+      auto child = _children[i];
+      bool is_fill_widget = (_fill_widget && child == _fill_widget) ||
+                            (!_fill_widget && _fill && (i == num_children - 1));
+      if (is_fill_widget) {
+        fill_index = i;
+      } else if (child->_fixed_width) {
+        total_fixed += child->_fixed_width + _margin;
+      } else {
+        total_fixed += _item_width + _margin;
+      }
+    }
+
+    // Calculate fill width
+    int fill_width = (fill_index >= 0) ? _geometry._w - total_fixed : 0;
+
+    // Second pass: layout children
     size_t X = 0;
     for (size_t i = 0; i < num_children; i++) {
       auto child = _children[i];
+      bool is_fill_widget = (int)i == fill_index;
 
       // Determine child width
       int child_width;
-      if (child->_fixed_width) {
-        // Use existing width if fixed
+      if (is_fill_widget) {
+        child_width = fill_width;
+      } else if (child->_fixed_width) {
         child_width = child->_fixed_width;
-      } else if (_fill && (i == num_children - 1)) {
-        // Last child fills remaining space
-        child_width = _geometry._w - X;
       } else {
-        // Use item_width
         child_width = _item_width;
       }
 
       child->SetRect(X, 0, child_width, _geometry._h);
       X += child_width + _margin;
-
-      if (_fill && (i == num_children - 1)) {
-        break;
-      }
     }
   }
 }

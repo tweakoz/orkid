@@ -24,10 +24,16 @@ public:
 
   fvec4 _bg_color;
   fvec4 _fg_color;
+  fvec4 _input_color;  // Color of the text input area (defaults to _bg_color * 0.5)
+  bool _input_color_set = false;  // Track if explicitly set
   std::string _value;
   std::string _original_value;
   bool _highlight = false;
-  
+
+  // Callbacks
+  std::function<void(const std::string&)> _onTextChanged;
+  std::function<void(const std::string&)> _onTextCommitted;  // Called on Enter
+
 private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;
 };

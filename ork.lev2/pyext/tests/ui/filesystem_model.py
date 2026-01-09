@@ -10,6 +10,7 @@ import signal
 import time
 from orkengine.core import vec2, vec3, vec4
 from orkengine import lev2
+from ork.ui import standard_icons, icon_library
 
 ################################################################################
 # Custom Python Filesystem Model - Virtual Filesystem
@@ -349,16 +350,72 @@ class FilesystemModelTest:
     lg_group = self.ezapp.topLayoutGroup
     lg_group.clearColorStd = vec4(0.1, 0.1, 0.1, 1)
 
-    # Create filesystem view widget
-    fs_layout = lg_group.makeChild(uiclass=lev2.ui.FilesystemView, args=["filesystem"])
-    self.fs_view = fs_layout.widget
+    icon_size = 20
 
-    # Set up layout - anchor to parent
-    root_layout = lg_group.layout
-    fs_layout.layout.top.anchorTo(root_layout.top)
-    fs_layout.layout.left.anchorTo(root_layout.left)
-    fs_layout.layout.bottom.anchorTo(root_layout.bottom)
-    fs_layout.layout.right.anchorTo(root_layout.right)
+    ############################################################################
+    # Main VPack - toolbar + filesystem view
+    ############################################################################
+
+    main_vpack_layout = lg_group.makeChild(uiclass=lev2.ui.VerticalPack, args=["main_vpack"])
+    main_vpack_layout.layout.fill(lg_group.layout)
+    self.main_vpack = main_vpack_layout.widget
+    self.main_vpack.margin = 4
+    self.main_vpack.item_height = 32
+    self.main_vpack.fill = True
+    self.main_vpack.bg_color = vec4(0, 0, 0, 1)
+
+    ############################################################################
+    # Toolbar
+    ############################################################################
+
+    self.toolbar = self.main_vpack.makeChild(uiclass=lev2.ui.Toolbar, args=["toolbar"])
+    self.toolbar.fixed_height = 32
+
+    # Style toolbar
+    self.toolbar.bgcolor = vec4(0.12, 0.12, 0.15, 1)
+    self.toolbar.button_hover_color = vec4(0.25, 0.25, 0.3, 1)
+    self.toolbar.button_pressed_color = vec4(0.2, 0.4, 0.6, 1)
+    self.toolbar.button_toggled_color = vec4(0.25, 0.45, 0.65, 1)
+    self.toolbar.separator_color = vec4(0.3, 0.3, 0.35, 1)
+    self.toolbar.icon_size = icon_size
+    self.toolbar.button_padding = 4
+    self.toolbar.item_spacing = 2
+    self.toolbar.edge_padding = 6
+
+    # Navigation buttons
+    btn_home = self.toolbar.addButton("home", standard_icons.get('home', icon_size, icon_size), "Home Directory")
+    btn_parent = self.toolbar.addButton("parent", standard_icons.get('parent', icon_size, icon_size), "Parent Directory")
+
+    self.toolbar.addSeparator()
+
+    # View mode buttons
+    btn_list = self.toolbar.addButton("list", standard_icons.get('file_text', icon_size, icon_size), "List View")
+    btn_list.toggle_mode = True
+    btn_list.toggled = True
+
+    btn_icons = self.toolbar.addButton("icons", standard_icons.get('folder', icon_size, icon_size), "Icon View")
+    btn_icons.toggle_mode = True
+
+    self.toolbar.addSeparator()
+
+    # Icon size +/- buttons (folder with +/- overlay)
+    def make_folder_size_icon(symbol):
+      return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" fill="#4D99CC"/>
+        <text x="12" y="14" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="18" font-weight="bold" fill="#FFFFFF" stroke="#000000" stroke-width="0.5">{symbol}</text>
+      </svg>'''
+
+    icon_plus = icon_library.from_svg_string(make_folder_size_icon("+"), icon_size, icon_size)
+    icon_minus = icon_library.from_svg_string(make_folder_size_icon("-"), icon_size, icon_size)
+
+    btn_size_up = self.toolbar.addButton("size_up", icon_plus, "Increase Icon Size")
+    btn_size_down = self.toolbar.addButton("size_down", icon_minus, "Decrease Icon Size")
+
+    ############################################################################
+    # Filesystem view (fills remaining space)
+    ############################################################################
+
+    self.fs_view = self.main_vpack.makeChild(uiclass=lev2.ui.FilesystemView, args=["filesystem"])
 
     # Create custom virtual filesystem model
     self.model = VirtualFilesystemModel()
@@ -370,8 +427,40 @@ class FilesystemModelTest:
     # Set view mode
     self.fs_view.view_mode = lev2.ui.FilesystemViewMode.List
 
+    # Disable size and date columns
+    self.fs_view.show_size_column = False
+    self.fs_view.show_date_column = False
+
     # Enable multi-select
     self.fs_view.allow_multiselect = True
+
+    # Wire up toolbar buttons
+    btn_home.onPressed(lambda: self.fs_view.navigateTo("/"))
+    btn_parent.onPressed(lambda: self.fs_view.navigateUp())
+
+    def set_list_view(toggled):
+      if toggled:
+        self.fs_view.view_mode = lev2.ui.FilesystemViewMode.List
+        btn_icons.toggled = False
+
+    def set_icon_view(toggled):
+      if toggled:
+        self.fs_view.view_mode = lev2.ui.FilesystemViewMode.Icon
+        btn_list.toggled = False
+
+    btn_list.onToggled(set_list_view)
+    btn_icons.onToggled(set_icon_view)
+
+    def increase_icon_size():
+      self.fs_view.icon_size = min(256, self.fs_view.icon_size + 16)
+      self.fs_view.refresh()
+
+    def decrease_icon_size():
+      self.fs_view.icon_size = max(32, self.fs_view.icon_size - 16)
+      self.fs_view.refresh()
+
+    btn_size_up.onPressed(increase_icon_size)
+    btn_size_down.onPressed(decrease_icon_size)
 
     # Set selection callback
     def on_select(path):
@@ -421,6 +510,19 @@ class FilesystemModelTest:
     self.custom_db = lev2.ui.StyleDatabase.createChild(self.base_db)
     custom_theme = lev2.ui.ThemeEngine(self.custom_db)
     self.uicontext.theme_engine = custom_theme
+
+    # Create folder icon for icon view (pass image, C++ converts to texture lazily)
+    folder_svg = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+      <path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" fill="#4D99CC"/>
+    </svg>'''
+    self.fs_view.folder_icon = icon_library.from_svg_string(folder_svg, 64, 64)
+
+    # Create file icon (simple page)
+    file_svg = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+      <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6z" fill="#808080"/>
+      <path d="M14 2v6h6" fill="#606060"/>
+    </svg>'''
+    self.fs_view.file_icon = icon_library.from_svg_string(file_svg, 64, 64)
 
   def onUpdate(self, updinfo):
     pass

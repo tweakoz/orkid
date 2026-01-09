@@ -63,6 +63,14 @@ struct FilesystemModel {
   virtual ~FilesystemModel() = default;
 
   //////////////////////////////////////////////////////////////
+  // Model identification (for favorites namespacing)
+  //////////////////////////////////////////////////////////////
+
+  // Returns a unique identifier for this model type (e.g., "local", "s3", "ftp")
+  // Used to namespace favorites and other persistent settings
+  virtual std::string modelIdentifier() const = 0;
+
+  //////////////////////////////////////////////////////////////
   // Navigation - override these in subclasses
   //////////////////////////////////////////////////////////////
 
@@ -98,13 +106,27 @@ struct FilesystemModel {
   // Filtering
   //////////////////////////////////////////////////////////////
 
-  // Set filename filter pattern (e.g., "*.png;*.jpg" or empty for all)
+  // Set filename filter pattern
+  // Supports:
+  //   *.ext        - match extension
+  //   name*        - match name prefix
+  //   *name        - match name suffix
+  //   *name*       - match name contains
+  //   name         - exact name match
+  //   *.ext1;*.ext2 - multiple patterns (OR)
   void setFilter(const std::string& pattern) {
     _filter_pattern = pattern;
     _parseFilterPattern();
     notifyModelChanged();
   }
   std::string getFilter() const { return _filter_pattern; }
+
+  // Set name filter (glob pattern for filename, separate from extension)
+  void setNameFilter(const std::string& pattern) {
+    _name_filter = pattern;
+    notifyModelChanged();
+  }
+  std::string getNameFilter() const { return _name_filter; }
 
   // Show/hide hidden files
   void setShowHidden(bool show) {
@@ -145,6 +167,17 @@ struct FilesystemModel {
   //////////////////////////////////////////////////////////////
   // Thumbnails
   //////////////////////////////////////////////////////////////
+
+  // Get icon for a path (returns nullptr to use view's default)
+  // Override to provide custom icons per file type or per item
+  virtual lev2::image_ptr_t getIcon(const std::string& path, int size) {
+    return nullptr;
+  }
+
+  // Get icon provider for lazy loading (returns nullptr to use getIcon or view's default)
+  virtual lev2::image_provider_ptr_t getIconProvider(const std::string& path, int size) {
+    return nullptr;
+  }
 
   // Get thumbnail provider for a path (returns nullptr if not available)
   virtual lev2::image_provider_ptr_t getThumbnailProvider(const std::string& path, int size) {
@@ -200,8 +233,13 @@ protected:
   void _parseFilterPattern();
   filesystem_entry_list_t _sortEntries(filesystem_entry_list_t entries) const;
 
+  // Glob-style pattern matching (supports * and ?)
+  static bool _globMatch(const std::string& pattern, const std::string& text);
+
   std::string _filter_pattern;
-  std::vector<std::string> _filter_extensions;  // Parsed from pattern
+  std::string _name_filter;                     // Name glob pattern
+  std::vector<std::string> _filter_extensions;  // Parsed extension filters
+  std::vector<std::string> _filter_patterns;    // Parsed glob patterns
   bool _show_hidden = false;
   bool _show_directories = true;
   SortField _sort_field = SortField::Name;
@@ -217,6 +255,9 @@ struct LocalFilesystemModel : public FilesystemModel {
   LocalFilesystemModel();
   LocalFilesystemModel(const std::string& initial_path);
   ~LocalFilesystemModel() override = default;
+
+  // Model identification
+  std::string modelIdentifier() const override { return "local"; }
 
   // FilesystemModel interface
   std::string getCurrentPath() const override;

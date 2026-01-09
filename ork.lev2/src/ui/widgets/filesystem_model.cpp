@@ -32,59 +32,130 @@ void FilesystemModel::notifyDirectoryChanged(const std::string& path) {
   }
 }
 
+bool FilesystemModel::_globMatch(const std::string& pattern, const std::string& text) {
+  // Simple glob matching supporting * and ?
+  size_t p = 0, t = 0;
+  size_t star_p = std::string::npos, star_t = 0;
+
+  while (t < text.length()) {
+    if (p < pattern.length() && (pattern[p] == '?' || ::tolower(pattern[p]) == ::tolower(text[t]))) {
+      // Character match or single wildcard
+      p++;
+      t++;
+    } else if (p < pattern.length() && pattern[p] == '*') {
+      // Star wildcard - remember position for backtracking
+      star_p = p++;
+      star_t = t;
+    } else if (star_p != std::string::npos) {
+      // Backtrack to last star
+      p = star_p + 1;
+      t = ++star_t;
+    } else {
+      return false;
+    }
+  }
+
+  // Skip trailing stars
+  while (p < pattern.length() && pattern[p] == '*') {
+    p++;
+  }
+
+  return p == pattern.length();
+}
+
 void FilesystemModel::_parseFilterPattern() {
   _filter_extensions.clear();
+  _filter_patterns.clear();
+
   if (_filter_pattern.empty()) {
     return;
   }
 
-  // Parse pattern like "*.png;*.jpg;*.gif"
+  // Parse pattern like "*.png;*.jpg;test*;*_backup*"
   std::string pattern = _filter_pattern;
+
+  // Split by semicolon
+  std::vector<std::string> parts;
   size_t pos = 0;
   while ((pos = pattern.find(';')) != std::string::npos) {
     std::string part = pattern.substr(0, pos);
     pattern.erase(0, pos + 1);
-
-    // Extract extension from "*.ext" pattern
-    if (part.length() > 2 && part[0] == '*' && part[1] == '.') {
-      std::string ext = part.substr(2);
-      // Convert to lowercase
-      std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-      _filter_extensions.push_back(ext);
+    // Trim whitespace
+    while (!part.empty() && std::isspace(part.front())) part.erase(0, 1);
+    while (!part.empty() && std::isspace(part.back())) part.pop_back();
+    if (!part.empty()) {
+      parts.push_back(part);
     }
   }
-
   // Handle last part
-  if (pattern.length() > 2 && pattern[0] == '*' && pattern[1] == '.') {
-    std::string ext = pattern.substr(2);
-    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-    _filter_extensions.push_back(ext);
+  while (!pattern.empty() && std::isspace(pattern.front())) pattern.erase(0, 1);
+  while (!pattern.empty() && std::isspace(pattern.back())) pattern.pop_back();
+  if (!pattern.empty()) {
+    parts.push_back(pattern);
+  }
+
+  for (const auto& part : parts) {
+    // Check if it's a pure extension filter "*.ext"
+    if (part.length() > 2 && part[0] == '*' && part[1] == '.' &&
+        part.find('*', 2) == std::string::npos && part.find('?', 2) == std::string::npos) {
+      std::string ext = part.substr(2);
+      std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+      _filter_extensions.push_back(ext);
+    } else {
+      // It's a glob pattern
+      _filter_patterns.push_back(part);
+    }
   }
 }
 
 bool FilesystemModel::_passesFilter(const FilesystemEntry& entry) const {
-  // Always show directories if enabled
-  if (entry.type == FileType::Directory) {
-    return _show_directories;
-  }
-
   // Check hidden
   if (entry.is_hidden && !_show_hidden) {
     return false;
   }
 
-  // Check extension filter
-  if (!_filter_extensions.empty()) {
-    std::string ext = entry.extension;
-    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-    bool found = false;
-    for (const auto& filter_ext : _filter_extensions) {
-      if (ext == filter_ext) {
-        found = true;
-        break;
+  // Check name filter (applies to both files and directories)
+  if (!_name_filter.empty()) {
+    if (!_globMatch(_name_filter, entry.name)) {
+      return false;
+    }
+  }
+
+  // Directories pass after name_filter check (extension filters don't apply)
+  if (entry.type == FileType::Directory) {
+    return _show_directories;
+  }
+
+  // If we have filters from setFilter(), apply them (OR logic between patterns)
+  bool has_extension_filters = !_filter_extensions.empty();
+  bool has_glob_patterns = !_filter_patterns.empty();
+
+  if (has_extension_filters || has_glob_patterns) {
+    bool match_found = false;
+
+    // Check extension filters
+    if (has_extension_filters) {
+      std::string ext = entry.extension;
+      std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+      for (const auto& filter_ext : _filter_extensions) {
+        if (ext == filter_ext) {
+          match_found = true;
+          break;
+        }
       }
     }
-    if (!found) {
+
+    // Check glob patterns against full filename
+    if (!match_found && has_glob_patterns) {
+      for (const auto& pattern : _filter_patterns) {
+        if (_globMatch(pattern, entry.name)) {
+          match_found = true;
+          break;
+        }
+      }
+    }
+
+    if (!match_found) {
       return false;
     }
   }
