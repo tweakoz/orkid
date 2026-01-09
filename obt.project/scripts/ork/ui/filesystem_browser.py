@@ -350,7 +350,7 @@ class FilesystemBrowser:
         fav_edit.onTextCommitted(on_commit)
 
         btn_del.onPressed = lambda btn, e=fav_entry, mid=model_id: (
-          self.favorites_mgr.removeFavoriteEntry(mid, e.path),
+          self.favorites_mgr.removeFavoriteEntry(mid, e.uuid),
           self._refresh_favorites_panel()
         )
         def apply_fav(btn, e=fav_entry):
@@ -388,7 +388,7 @@ class FilesystemBrowser:
         fav_edit.onTextCommitted(on_commit)
 
         btn_del.onPressed = lambda btn, e=fav_entry, mid=model_id: (
-          self.favorites_mgr.removeFavoriteEntry(mid, e.path),
+          self.favorites_mgr.removeFavoriteEntry(mid, e.uuid),
           self._refresh_favorites_panel()
         )
         def apply_fav_new(btn, e=fav_entry):

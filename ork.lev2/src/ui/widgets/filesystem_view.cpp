@@ -172,8 +172,9 @@ void FilesystemView::addCurrentAsFavorite(const std::string& display_name) {
 void FilesystemView::removeCurrentFromFavorites() {
   if (!_model) return;
 
+  // Use removeFavorite (path-based) which finds by path and removes by UUID
   auto favorites = FavoritesManager::instance();
-  favorites->removeFavoriteEntry(_model->modelIdentifier(), _model->getCurrentPath());
+  favorites->removeFavorite(_model->modelIdentifier(), _model->getCurrentPath());
 }
 
 bool FilesystemView::isCurrentFavorite() const {

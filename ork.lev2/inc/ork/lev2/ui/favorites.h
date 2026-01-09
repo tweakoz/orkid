@@ -24,6 +24,7 @@ struct FavoriteEntry;
 using favorite_entry_ptr_t = std::shared_ptr<FavoriteEntry>;
 
 struct FavoriteEntry {
+  std::string uuid;                                           // Unique identifier
   std::string path;                                           // Directory path
   std::string name;                                           // Display name (defaults to path basename)
   std::string name_filter;                                    // Name filter pattern
@@ -32,8 +33,11 @@ struct FavoriteEntry {
   bool directories_first = true;
   bool show_hidden = false;
 
-  // Create from current model state
+  // Create from current model state (generates new UUID)
   static favorite_entry_ptr_t fromModel(FilesystemModel* model, const std::string& display_name = "");
+
+  // Generate a new UUID
+  static std::string generateUUID();
 
   // Apply this favorite's state to a model
   void applyToModel(FilesystemModel* model) const;
@@ -70,16 +74,16 @@ struct FavoritesManager {
   // Full-state favorites (with filter/sort)
   //////////////////////////////////////////////////////////////
 
-  // Add a favorite entry for a specific model
+  // Add a favorite entry for a specific model (always creates new entry)
   void addFavoriteEntry(const std::string& model_id, favorite_entry_ptr_t entry);
 
-  // Remove a favorite by path
-  void removeFavoriteEntry(const std::string& model_id, const std::string& path);
+  // Remove a favorite by UUID
+  void removeFavoriteEntry(const std::string& model_id, const std::string& uuid);
 
-  // Get a favorite entry by path
-  favorite_entry_ptr_t getFavoriteEntry(const std::string& model_id, const std::string& path) const;
+  // Get a favorite entry by UUID
+  favorite_entry_ptr_t getFavoriteEntry(const std::string& model_id, const std::string& uuid) const;
 
-  // Update an existing favorite entry
+  // Update an existing favorite entry (matched by UUID)
   void updateFavoriteEntry(const std::string& model_id, favorite_entry_ptr_t entry);
 
   // Get all favorite entries for a model

@@ -9,6 +9,9 @@
 #include <ork/lev2/ui/favorites.h>
 #include <ork/file/path.h>
 #include <algorithm>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 
 namespace ork::ui {
 
@@ -16,8 +19,15 @@ namespace ork::ui {
 // FavoriteEntry implementation
 ///////////////////////////////////////////////////////////////////////////////
 
+std::string FavoriteEntry::generateUUID() {
+  static boost::uuids::random_generator generator;
+  boost::uuids::uuid uuid = generator();
+  return boost::uuids::to_string(uuid);
+}
+
 favorite_entry_ptr_t FavoriteEntry::fromModel(FilesystemModel* model, const std::string& display_name) {
   auto entry = std::make_shared<FavoriteEntry>();
+  entry->uuid = generateUUID();
   entry->path = model->getCurrentPath();
   entry->name = display_name;
   entry->name_filter = model->getNameFilter();
@@ -38,6 +48,7 @@ void FavoriteEntry::applyToModel(FilesystemModel* model) const {
 }
 
 void FavoriteEntry::toJson(json_config_ptr_t obj) const {
+  obj->setString("uuid", uuid);
   obj->setString("path", path);
   obj->setString("name", name);
   obj->setString("name_filter", name_filter);
@@ -49,6 +60,11 @@ void FavoriteEntry::toJson(json_config_ptr_t obj) const {
 
 favorite_entry_ptr_t FavoriteEntry::fromJson(json_config_ptr_t obj) {
   auto entry = std::make_shared<FavoriteEntry>();
+  // Read UUID or generate one for backwards compatibility
+  entry->uuid = obj->getString("uuid", "");
+  if (entry->uuid.empty()) {
+    entry->uuid = generateUUID();
+  }
   entry->path = obj->getString("path", "");
   entry->name = obj->getString("name", "");
   entry->name_filter = obj->getString("name_filter", "");
@@ -169,20 +185,11 @@ void FavoritesManager::addFavoriteEntry(const std::string& model_id, favorite_en
   _loadFavorites(model_id);
   auto& entries = _favorites_cache[model_id];
 
-  // Check if already exists (by path)
-  for (auto& e : entries) {
-    if (e->path == entry->path) {
-      // Update existing
-      *e = *entry;
-      _saveFavorites(model_id);
-      if (_onFavoritesChanged) {
-        _onFavoritesChanged(model_id);
-      }
-      return;
-    }
+  // Always add new entry (UUID ensures uniqueness)
+  // Generate UUID if not already set
+  if (entry->uuid.empty()) {
+    entry->uuid = FavoriteEntry::generateUUID();
   }
-
-  // Add new
   entries.push_back(entry);
   _saveFavorites(model_id);
   if (_onFavoritesChanged) {
@@ -190,13 +197,13 @@ void FavoritesManager::addFavoriteEntry(const std::string& model_id, favorite_en
   }
 }
 
-void FavoritesManager::removeFavoriteEntry(const std::string& model_id, const std::string& path) {
+void FavoritesManager::removeFavoriteEntry(const std::string& model_id, const std::string& uuid) {
   _loadFavorites(model_id);
   auto& entries = _favorites_cache[model_id];
 
   entries.erase(
       std::remove_if(entries.begin(), entries.end(),
-                     [&path](const favorite_entry_ptr_t& e) { return e->path == path; }),
+                     [&uuid](const favorite_entry_ptr_t& e) { return e->uuid == uuid; }),
       entries.end());
 
   _saveFavorites(model_id);
@@ -205,12 +212,12 @@ void FavoritesManager::removeFavoriteEntry(const std::string& model_id, const st
   }
 }
 
-favorite_entry_ptr_t FavoritesManager::getFavoriteEntry(const std::string& model_id, const std::string& path) const {
+favorite_entry_ptr_t FavoritesManager::getFavoriteEntry(const std::string& model_id, const std::string& uuid) const {
   _loadFavorites(model_id);
   auto it = _favorites_cache.find(model_id);
   if (it != _favorites_cache.end()) {
     for (const auto& e : it->second) {
-      if (e->path == path) {
+      if (e->uuid == uuid) {
         return e;
       }
     }
@@ -223,7 +230,7 @@ void FavoritesManager::updateFavoriteEntry(const std::string& model_id, favorite
   auto& entries = _favorites_cache[model_id];
 
   for (auto& e : entries) {
-    if (e->path == entry->path) {
+    if (e->uuid == entry->uuid) {
       *e = *entry;
       _saveFavorites(model_id);
       if (_onFavoritesChanged) {
@@ -254,11 +261,31 @@ void FavoritesManager::addFavorite(const std::string& model_id, const std::strin
 }
 
 void FavoritesManager::removeFavorite(const std::string& model_id, const std::string& path) {
-  removeFavoriteEntry(model_id, path);
+  // Find first entry with matching path and remove by UUID
+  _loadFavorites(model_id);
+  auto it = _favorites_cache.find(model_id);
+  if (it != _favorites_cache.end()) {
+    for (const auto& e : it->second) {
+      if (e->path == path) {
+        removeFavoriteEntry(model_id, e->uuid);
+        return;
+      }
+    }
+  }
 }
 
 bool FavoritesManager::isFavorite(const std::string& model_id, const std::string& path) const {
-  return getFavoriteEntry(model_id, path) != nullptr;
+  // Search by path
+  _loadFavorites(model_id);
+  auto it = _favorites_cache.find(model_id);
+  if (it != _favorites_cache.end()) {
+    for (const auto& e : it->second) {
+      if (e->path == path) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 std::vector<std::string> FavoritesManager::getFavorites(const std::string& model_id) const {

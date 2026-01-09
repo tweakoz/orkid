@@ -461,6 +461,8 @@ void pyinit_ui_filesystem(py::module& uimodule) {
   auto favorite_entry_type = //
       py::class_<ui::FavoriteEntry, ui::favorite_entry_ptr_t>(uimodule, "FavoriteEntry")
           .def(py::init<>())
+          .def_readwrite("uuid", &ui::FavoriteEntry::uuid,
+              "Unique identifier")
           .def_readwrite("path", &ui::FavoriteEntry::path,
               "Directory path")
           .def_readwrite("name", &ui::FavoriteEntry::name,
@@ -484,8 +486,8 @@ void pyinit_ui_filesystem(py::module& uimodule) {
           .def("displayName", &ui::FavoriteEntry::displayName,
               "Get display name (returns name if set, otherwise path basename)")
           .def("__repr__", [](ui::favorite_entry_ptr_t entry) {
-            return FormatString("<FavoriteEntry path<%s> name<%s>>",
-                entry->path.c_str(), entry->displayName().c_str());
+            return FormatString("<FavoriteEntry uuid<%s> path<%s> name<%s>>",
+                entry->uuid.c_str(), entry->path.c_str(), entry->displayName().c_str());
           });
 
   type_codec->registerStdCodec<ui::favorite_entry_ptr_t>(favorite_entry_type);
@@ -503,14 +505,14 @@ void pyinit_ui_filesystem(py::module& uimodule) {
               py::arg("model_id"), py::arg("entry"),
               "Add a favorite entry for a model")
           .def("removeFavoriteEntry", &ui::FavoritesManager::removeFavoriteEntry,
-              py::arg("model_id"), py::arg("path"),
-              "Remove a favorite entry by path")
+              py::arg("model_id"), py::arg("uuid"),
+              "Remove a favorite entry by UUID")
           .def("getFavoriteEntry", &ui::FavoritesManager::getFavoriteEntry,
-              py::arg("model_id"), py::arg("path"),
-              "Get a favorite entry by path")
+              py::arg("model_id"), py::arg("uuid"),
+              "Get a favorite entry by UUID")
           .def("updateFavoriteEntry", &ui::FavoritesManager::updateFavoriteEntry,
               py::arg("model_id"), py::arg("entry"),
-              "Update an existing favorite entry")
+              "Update an existing favorite entry (matched by UUID)")
           .def("getFavoriteEntries", &ui::FavoritesManager::getFavoriteEntries,
               py::arg("model_id"),
               "Get all favorite entries for a model")
