@@ -48,6 +48,8 @@ void pyinit_ui_dynagrid(py::module& module_ui);
 void pyinit_ui_sdfshape(py::module& module_ui);
 void pyinit_ui_outliner(py::module& module_ui);
 void pyinit_ui_property_sheet(py::module& module_ui);
+void pyinit_ui_filesystem(py::module& module_ui);
+void pyinit_ui_toolbar(py::module& module_ui);
 
 void pyinit_ui(py::module& module_lev2) {
   auto uimodule   = module_lev2.def_submodule("ui", "ui operations");
@@ -2503,6 +2505,8 @@ void pyinit_ui(py::module& module_lev2) {
   pyinit_ui_sdfshape(uimodule);
   pyinit_ui_outliner(uimodule);
   pyinit_ui_property_sheet(uimodule);
+  pyinit_ui_filesystem(uimodule);
+  pyinit_ui_toolbar(uimodule);
 }
 
 } // namespace ork::lev2
