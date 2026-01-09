@@ -1,0 +1,57 @@
+<svg viewBox="0 0 700 300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+    </marker>
+  </defs>
+
+  <!-- User -->
+  <ellipse cx="80" cy="50" rx="50" ry="25" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="80" y="55" text-anchor="middle" fill="#1e40af" font-family="Arial" font-size="12">User</text>
+
+  <!-- FilesystemBrowser -->
+  <rect x="200" y="25" width="140" height="50" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+  <text x="270" y="55" text-anchor="middle" fill="#92400e" font-family="Arial" font-size="11">FilesystemBrowser</text>
+
+  <!-- FilesystemView -->
+  <rect x="400" y="25" width="120" height="50" rx="6" fill="#d1fae5" stroke="#10b981" stroke-width="2"/>
+  <text x="460" y="55" text-anchor="middle" fill="#065f46" font-family="Arial" font-size="11">FilesystemView</text>
+
+  <!-- FilesystemModel -->
+  <rect x="400" y="125" width="120" height="50" rx="6" fill="#e0e7ff" stroke="#6366f1" stroke-width="2"/>
+  <text x="460" y="155" text-anchor="middle" fill="#3730a3" font-family="Arial" font-size="11">FilesystemModel</text>
+
+  <!-- File System -->
+  <ellipse cx="460" cy="250" rx="60" ry="30" fill="#f3f4f6" stroke="#6b7280" stroke-width="2"/>
+  <text x="460" y="255" text-anchor="middle" fill="#374151" font-family="Arial" font-size="11">Filesystem</text>
+
+  <!-- FavoritesManager -->
+  <rect x="200" y="125" width="140" height="50" rx="6" fill="#fce7f3" stroke="#ec4899" stroke-width="2"/>
+  <text x="270" y="155" text-anchor="middle" fill="#9d174d" font-family="Arial" font-size="11">FavoritesManager</text>
+
+  <!-- JSON Storage -->
+  <ellipse cx="270" cy="250" rx="60" ry="30" fill="#f3f4f6" stroke="#6b7280" stroke-width="2"/>
+  <text x="270" y="250" text-anchor="middle" fill="#374151" font-family="Arial" font-size="10">favorites.json</text>
+
+  <!-- Arrows -->
+  <line x1="130" y1="50" x2="195" y2="50" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="162" y="45" fill="#666" font-family="Arial" font-size="9">input</text>
+
+  <line x1="340" y1="50" x2="395" y2="50" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="367" y="45" fill="#666" font-family="Arial" font-size="9">display</text>
+
+  <line x1="460" y1="75" x2="460" y2="120" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="475" y="100" fill="#666" font-family="Arial" font-size="9">data</text>
+
+  <line x1="460" y1="175" x2="460" y2="215" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="475" y="198" fill="#666" font-family="Arial" font-size="9">read/write</text>
+
+  <line x1="270" y1="75" x2="270" y2="120" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="220" y="100" fill="#666" font-family="Arial" font-size="9">save/load</text>
+
+  <line x1="270" y1="175" x2="270" y2="215" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="220" y="198" fill="#666" font-family="Arial" font-size="9">persist</text>
+
+  <path d="M340 150 Q370 150 395 150" fill="none" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="367" y="145" fill="#666" font-family="Arial" font-size="9">apply</text>
+</svg>

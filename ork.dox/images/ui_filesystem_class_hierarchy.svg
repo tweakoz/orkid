@@ -1,0 +1,22 @@
+<svg viewBox="0 0 400 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="abstractGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#fef3c7"/>
+      <stop offset="100%" style="stop-color:#fde68a"/>
+    </linearGradient>
+    <linearGradient id="concreteGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#d1fae5"/>
+      <stop offset="100%" style="stop-color:#a7f3d0"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="100" y="10" width="200" height="40" rx="6" fill="url(#abstractGrad)" stroke="#d97706" stroke-width="2" stroke-dasharray="5,3"/>
+  <text x="200" y="35" text-anchor="middle" fill="#92400e" font-family="Arial" font-weight="bold" font-size="12">FilesystemModel</text>
+  <text x="310" y="35" fill="#b45309" font-family="Arial" font-style="italic" font-size="10">(abstract)</text>
+
+  <line x1="200" y1="50" x2="200" y2="70" stroke="#666" stroke-width="2"/>
+  <polygon points="190,65 200,80 210,65" fill="none" stroke="#666" stroke-width="2"/>
+
+  <rect x="100" y="80" width="200" height="40" rx="6" fill="url(#concreteGrad)" stroke="#059669" stroke-width="2"/>
+  <text x="200" y="105" text-anchor="middle" fill="#065f46" font-family="Arial" font-weight="bold" font-size="12">LocalFilesystemModel</text>
+</svg>

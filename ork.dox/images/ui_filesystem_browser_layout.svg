@@ -1,0 +1,146 @@
+<svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="browserGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#2d3748"/>
+      <stop offset="100%" style="stop-color:#1a202c"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Main container -->
+  <rect x="20" y="20" width="760" height="410" rx="10" fill="#0d1117" stroke="#30363d" stroke-width="2"/>
+  <text x="400" y="15" text-anchor="middle" fill="#8b949e" font-family="Arial" font-size="12">FilesystemBrowser</text>
+
+  <!-- Main VPack -->
+  <rect x="30" y="30" width="740" height="390" rx="6" fill="transparent" stroke="#238636" stroke-width="1" stroke-dasharray="4"/>
+  <text x="40" y="45" fill="#238636" font-family="Arial" font-size="10">VerticalPack (main_vpack)</text>
+
+  <!-- Top HPack -->
+  <rect x="40" y="55" width="720" height="55" rx="4" fill="transparent" stroke="#1f6feb" stroke-width="1" stroke-dasharray="4"/>
+  <text x="50" y="68" fill="#1f6feb" font-family="Arial" font-size="9">HorizontalPack (top_hpack)</text>
+
+  <!-- Toolbar -->
+  <rect x="50" y="75" width="320" height="30" rx="4" fill="#21262d" stroke="#30363d"/>
+  <text x="60" y="88" fill="#58a6ff" font-family="Arial" font-size="8">Toolbar</text>
+
+  <!-- Toolbar buttons -->
+  <rect x="100" y="80" width="20" height="20" rx="3" fill="#238636"/>
+  <text x="110" y="94" text-anchor="middle" fill="white" font-family="Arial" font-size="10">H</text>
+  <rect x="125" y="80" width="20" height="20" rx="3" fill="#238636"/>
+  <text x="135" y="94" text-anchor="middle" fill="white" font-family="Arial" font-size="10">P</text>
+  <rect x="150" y="80" width="20" height="20" rx="3" fill="#238636"/>
+  <text x="160" y="94" text-anchor="middle" fill="white" font-family="Arial" font-size="10">R</text>
+
+  <rect x="180" y="85" width="1" height="10" fill="#30363d"/>
+
+  <rect x="190" y="80" width="20" height="20" rx="3" fill="#1f6feb"/>
+  <text x="200" y="94" text-anchor="middle" fill="white" font-family="Arial" font-size="8">L</text>
+  <rect x="215" y="80" width="20" height="20" rx="3" fill="#30363d"/>
+  <text x="225" y="94" text-anchor="middle" fill="#8b949e" font-family="Arial" font-size="8">I</text>
+
+  <rect x="245" y="85" width="1" height="10" fill="#30363d"/>
+
+  <rect x="255" y="80" width="20" height="20" rx="3" fill="#1f6feb"/>
+  <text x="265" y="92" text-anchor="middle" fill="white" font-family="Arial" font-size="12">O</text>
+
+  <rect x="285" y="85" width="1" height="10" fill="#30363d"/>
+
+  <rect x="295" y="80" width="20" height="20" rx="3" fill="#ffa657"/>
+  <text x="305" y="94" text-anchor="middle" fill="white" font-family="Arial" font-size="10">*</text>
+
+  <rect x="325" y="85" width="1" height="10" fill="#30363d"/>
+
+  <rect x="335" y="80" width="15" height="20" rx="3" fill="#30363d"/>
+  <text x="342" y="94" text-anchor="middle" fill="#8b949e" font-family="Arial" font-size="10">+</text>
+  <rect x="352" y="80" width="15" height="20" rx="3" fill="#30363d"/>
+  <text x="359" y="94" text-anchor="middle" fill="#8b949e" font-family="Arial" font-size="10">-</text>
+
+  <!-- Filter -->
+  <rect x="380" y="75" width="300" height="30" rx="4" fill="#21262d" stroke="#30363d"/>
+  <text x="390" y="94" fill="#8b949e" font-family="Arial" font-size="10">Filter:</text>
+  <rect x="430" y="80" width="170" height="20" rx="3" fill="#0d1117" stroke="#30363d"/>
+
+  <!-- Hold/Clear -->
+  <rect x="610" y="80" width="35" height="20" rx="3" fill="#238636"/>
+  <text x="627" y="94" text-anchor="middle" fill="white" font-family="Arial" font-size="8">HOLD</text>
+  <rect x="650" y="80" width="25" height="20" rx="3" fill="#da3633"/>
+  <text x="662" y="94" text-anchor="middle" fill="white" font-family="Arial" font-size="8">CLR</text>
+
+  <!-- Content HPack -->
+  <rect x="40" y="115" width="720" height="295" rx="4" fill="transparent" stroke="#1f6feb" stroke-width="1" stroke-dasharray="4"/>
+  <text x="50" y="128" fill="#1f6feb" font-family="Arial" font-size="9">HorizontalPack (content_hpack)</text>
+
+  <!-- Favorites Panel -->
+  <rect x="50" y="135" width="150" height="265" rx="4" fill="#161b22" stroke="#30363d"/>
+  <text x="60" y="150" fill="#8b949e" font-family="Arial" font-size="9">Favorites Panel</text>
+  <text x="60" y="165" fill="#30363d" font-family="Arial" font-size="8">VerticalPack</text>
+
+  <!-- Favorite entries -->
+  <rect x="55" y="175" width="140" height="25" rx="3" fill="#21262d"/>
+  <rect x="60" y="180" width="80" height="15" rx="2" fill="#0d1117"/>
+  <text x="100" y="191" text-anchor="middle" fill="#c9d1d9" font-family="Arial" font-size="8">Projects</text>
+  <rect x="145" y="180" width="15" height="15" rx="2" fill="#da3633"/>
+  <text x="152" y="191" text-anchor="middle" fill="white" font-family="Arial" font-size="10">x</text>
+  <rect x="162" y="180" width="15" height="15" rx="2" fill="#238636"/>
+  <text x="169" y="191" text-anchor="middle" fill="white" font-family="Arial" font-size="10">&gt;</text>
+
+  <rect x="55" y="205" width="140" height="25" rx="3" fill="#21262d"/>
+  <rect x="60" y="210" width="80" height="15" rx="2" fill="#0d1117"/>
+  <text x="100" y="221" text-anchor="middle" fill="#c9d1d9" font-family="Arial" font-size="8">Downloads</text>
+  <rect x="145" y="210" width="15" height="15" rx="2" fill="#da3633"/>
+  <rect x="162" y="210" width="15" height="15" rx="2" fill="#238636"/>
+
+  <rect x="55" y="235" width="140" height="25" rx="3" fill="#21262d"/>
+  <rect x="60" y="240" width="80" height="15" rx="2" fill="#0d1117"/>
+  <text x="100" y="251" text-anchor="middle" fill="#c9d1d9" font-family="Arial" font-size="8">Source</text>
+  <rect x="145" y="240" width="15" height="15" rx="2" fill="#da3633"/>
+  <rect x="162" y="240" width="15" height="15" rx="2" fill="#238636"/>
+
+  <!-- FilesystemView -->
+  <rect x="210" y="135" width="540" height="265" rx="4" fill="#161b22" stroke="#30363d"/>
+  <text x="220" y="150" fill="#58a6ff" font-family="Arial" font-weight="bold" font-size="10">FilesystemView</text>
+
+  <!-- Path bar -->
+  <rect x="215" y="155" width="530" height="22" rx="3" fill="#21262d"/>
+  <text x="225" y="170" fill="#8b949e" font-family="monospace" font-size="10">/home/user/projects</text>
+
+  <!-- Header -->
+  <rect x="215" y="180" width="530" height="20" fill="#21262d"/>
+  <text x="225" y="194" fill="#8b949e" font-family="monospace" font-size="9">Name</text>
+  <text x="400" y="194" fill="#8b949e" font-family="monospace" font-size="9">Size</text>
+  <text x="500" y="194" fill="#8b949e" font-family="monospace" font-size="9">Type</text>
+  <text x="620" y="194" fill="#8b949e" font-family="monospace" font-size="9">Modified</text>
+
+  <!-- File entries -->
+  <rect x="215" y="202" width="530" height="20" fill="transparent"/>
+  <rect x="220" y="205" width="14" height="14" rx="2" fill="#58a6ff"/>
+  <text x="245" y="216" fill="#79c0ff" font-family="monospace" font-size="9">src/</text>
+  <text x="400" y="216" fill="#8b949e" font-family="monospace" font-size="9">-</text>
+  <text x="500" y="216" fill="#8b949e" font-family="monospace" font-size="9">Directory</text>
+  <text x="620" y="216" fill="#8b949e" font-family="monospace" font-size="9">2024-01-15</text>
+
+  <rect x="215" y="222" width="530" height="20" fill="transparent"/>
+  <rect x="220" y="225" width="14" height="14" rx="2" fill="#58a6ff"/>
+  <text x="245" y="236" fill="#79c0ff" font-family="monospace" font-size="9">docs/</text>
+  <text x="400" y="236" fill="#8b949e" font-family="monospace" font-size="9">-</text>
+  <text x="500" y="236" fill="#8b949e" font-family="monospace" font-size="9">Directory</text>
+  <text x="620" y="236" fill="#8b949e" font-family="monospace" font-size="9">2024-01-10</text>
+
+  <rect x="215" y="242" width="530" height="20" fill="#1f6feb33"/>
+  <rect x="220" y="245" width="14" height="14" rx="2" fill="#8b949e"/>
+  <text x="245" y="256" fill="#c9d1d9" font-family="monospace" font-size="9">main.py</text>
+  <text x="400" y="256" fill="#c9d1d9" font-family="monospace" font-size="9">4.2 KB</text>
+  <text x="500" y="256" fill="#c9d1d9" font-family="monospace" font-size="9">Python</text>
+  <text x="620" y="256" fill="#c9d1d9" font-family="monospace" font-size="9">2024-01-14</text>
+
+  <rect x="215" y="262" width="530" height="20" fill="transparent"/>
+  <rect x="220" y="265" width="14" height="14" rx="2" fill="#8b949e"/>
+  <text x="245" y="276" fill="#c9d1d9" font-family="monospace" font-size="9">README.md</text>
+  <text x="400" y="276" fill="#8b949e" font-family="monospace" font-size="9">2.4 KB</text>
+  <text x="500" y="276" fill="#8b949e" font-family="monospace" font-size="9">Markdown</text>
+  <text x="620" y="276" fill="#8b949e" font-family="monospace" font-size="9">2024-01-12</text>
+
+  <!-- Legend -->
+  <rect x="220" y="360" width="520" height="35" rx="4" fill="#21262d"/>
+  <text x="230" y="375" fill="#8b949e" font-family="Arial" font-size="9">H=Home  P=Parent  R=Refresh  L=List  I=Icon  O=Hidden  *=Add Favorite  +/-=Icon Size</text>
+  <text x="230" y="390" fill="#8b949e" font-family="Arial" font-size="9">HOLD=Keep filter on navigation  CLR=Clear filter  x=Delete  &gt;=Apply favorite</text>
+</svg>

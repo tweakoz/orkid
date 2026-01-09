@@ -1,0 +1,20 @@
+<svg viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="entryGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#e9d8fd"/>
+      <stop offset="100%" style="stop-color:#d6bcfa"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="20" y="20" width="460" height="160" rx="8" fill="url(#entryGrad)" stroke="#805ad5" stroke-width="2"/>
+  <rect x="20" y="20" width="460" height="30" rx="8" fill="#805ad5"/>
+  <rect x="20" y="42" width="460" height="8" fill="#805ad5"/>
+  <text x="250" y="42" text-anchor="middle" fill="white" font-family="Arial" font-weight="bold" font-size="14">FavoriteEntry</text>
+
+  <text x="40" y="75" fill="#553c9a" font-family="monospace" font-size="11">uuid: "550e8400-e29b-41d4-a716-446655440000"</text>
+  <text x="40" y="95" fill="#553c9a" font-family="monospace" font-size="11">path: "/home/user/projects"</text>
+  <text x="40" y="115" fill="#553c9a" font-family="monospace" font-size="11">name: "My Projects"</text>
+  <text x="40" y="135" fill="#553c9a" font-family="monospace" font-size="11">name_filter: "*.py"</text>
+  <text x="40" y="155" fill="#553c9a" font-family="monospace" font-size="11">sort_field: Name | sort_order: Ascending</text>
+  <text x="40" y="175" fill="#553c9a" font-family="monospace" font-size="11">directories_first: true | show_hidden: false</text>
+</svg>
