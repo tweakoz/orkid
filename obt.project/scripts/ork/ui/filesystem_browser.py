@@ -83,9 +83,15 @@ class FilesystemBrowser:
 
     self.toolbar.addSeparator()
 
-    # Hidden files button
-    self.btn_hidden = self.toolbar.addButton("hidden", standard_icons.get('search', icon_size, icon_size), "Show Hidden Files")
+    # Hidden files button (eye icon)
+    eye_svg = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+      <ellipse cx="12" cy="12" rx="10" ry="6" fill="none" stroke="#E6E6E6" stroke-width="2"/>
+      <circle cx="12" cy="12" r="3" fill="#E6E6E6"/>
+    </svg>'''
+    icon_eye = icon_library.from_svg_string(eye_svg, icon_size, icon_size)
+    self.btn_hidden = self.toolbar.addButton("hidden", icon_eye, "Show Hidden Files")
     self.btn_hidden.toggle_mode = True
+    self.btn_hidden.toggled = True
 
     self.toolbar.addSeparator()
 
@@ -163,7 +169,7 @@ class FilesystemBrowser:
     home_dir = os.path.expanduser("~")
     start_path = initial_path if initial_path else home_dir
     self.model = lev2.ui.LocalFilesystemModel(start_path)
-    self.model.show_hidden = False
+    self.model.show_hidden = True
     self.model.directories_first = True
     self.model.sort_field = lev2.ui.FilesystemSortField.Name
     self.model.sort_order = lev2.ui.FilesystemSortOrder.Ascending

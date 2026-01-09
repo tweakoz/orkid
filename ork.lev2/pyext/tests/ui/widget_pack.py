@@ -12,6 +12,7 @@ from obt import path
 from orkengine.core import vec2, vec3, vec4, mtx4, quat, VarMap, CrcStringProxy
 from orkengine import lev2
 from ork.ui.analog_clock import AnalogClock
+from ork.ui.filesystem_browser import FilesystemBrowser
 
 tokens = CrcStringProxy()
 
@@ -105,7 +106,7 @@ class PackWidgets(object):
     #  and refresh rate is always the native mode refresh rate
 
     self.ezapp = lev2.OrkEzApp.create(self,
-                                      fullscreen=False,
+                                      fullscreen=True,
                                       enable_audio=True,
                                       enable_audio_output=True,
                                       enable_audio_synth=True,
@@ -244,6 +245,12 @@ class PackWidgets(object):
     self.tx2 = self.tb1.makeChild( uiclass=lev2.ui.TextBox, args=["tex2",vec4(0.6,0,0.6,1),"nam"] )
     self.tx1.setText("This is a TextBox.\n It can hold multiple lines of text.\nThe quick brown fox jumps over the lazy dog.\n0123456789")
     self.tx2.setText("This is another TextBox.\n It can hold multiple lines of text.\nThe quick brown fox jumps over the lazy dog.\n0123456789")
+
+    ############################################
+    # add a filesystem browser to the tabbed widget
+    ############################################
+
+    self.fsbrowser = self.tb1.makeChild( uiclass=FilesystemBrowser, args=["x-files", os.path.expanduser("~")] )
 
     ############################################
     # create 2 imageview widgets

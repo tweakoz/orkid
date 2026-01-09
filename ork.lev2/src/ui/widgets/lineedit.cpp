@@ -39,6 +39,8 @@ HandlerResult LineEdit::DoOnUiEvent(event_constptr_t cev) {
         switch (key) {
           case 256: // esc
             _value = _original_value;
+            _highlight = false;
+            rval._widget_finished = true;
             if (_onTextChanged && _value != old_value) {
               _onTextChanged(_value);
             }
