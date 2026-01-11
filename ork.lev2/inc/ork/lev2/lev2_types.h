@@ -602,10 +602,13 @@ struct EzAppContext;
 struct OrkEzApp;
 struct EzMainWin;
 struct EzTopWidget;
+struct EzSecondaryWin;
+struct EzSecondaryWinConfig;
 using ezappctx_ptr_t   = std::shared_ptr<EzAppContext>;
 using orkezapp_ptr_t = std::shared_ptr<OrkEzApp>;
 using ezmainwin_ptr_t = std::shared_ptr<EzMainWin>;
 using eztopwidget_ptr_t = std::shared_ptr<EzTopWidget>;
+using ezsecondarywin_ptr_t = std::shared_ptr<EzSecondaryWin>;
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

@@ -152,7 +152,8 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
   }
 
   bool has_foc = hasMouseFocus();
-  tgt->PushModColor(has_foc ? fcolor4::Green() : fcolor4::Blue());
+  //tgt->PushModColor(has_foc ? fcolor4::Green() : fcolor4::Blue());
+  tgt->PushModColor(fcolor4::White());
   mtxi->PushUIMatrix();
 
   tgt->debugPushGroup("Surface::Draw");
@@ -172,7 +173,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
       float v0 = 1.0f;  // Flipped: start at 1
       float v1 = 0.0f;  // Flipped: end at 0
 
-      tgt->PushModColor(fcolor4::Black());
+      tgt->PushModColor(fcolor4::White());
 
       ui_material->BeginBlock(tgt);
       dwi->quad2D(
