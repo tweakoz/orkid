@@ -814,9 +814,17 @@ void OrkEzApp::_mainThreadLoopIter() {
     gloadercontext->beginFrame(false);
     gloadercontext->endFrame();
   }
+
+  // Phase 5: Render secondary windows and cleanup closed ones
+  _renderSecondaryWindows();
+  _cleanupClosedSecondaryWindows();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::_mainThreadLoopEnd() {
+  // Close all secondary windows before shutting down
+  closeAllSecondaryWindows();
+  _secondaryWindows.clear();
+
   if (_mainWindow) {
     auto ctx = _mainWindow->_ctqt;
     ctx->_runloopEnd();
