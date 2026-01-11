@@ -18,6 +18,10 @@
 #include <ork/lev2/drm/drm_types.h>
 #include <ork/lev2/drm/ctx_drm.h>
 #endif
+#if defined(ENABLE_GLFW)
+#include <ork/lev2/glfw/ctx_glfw.h>
+#include <GLFW/glfw3.h>
+#endif
 
 using namespace std::string_literals;
 
@@ -927,28 +931,54 @@ void OrkEzApp::setRefreshPolicy(RefreshPolicyItem policy) {
     _mainWindow->_ctqt->_setRefreshPolicy(policy);
 }
 ///////////////////////////////////////////////////////////////////////////////
-// Phase 3: Secondary window support stubs
+// Phase 4: Secondary window support
 ///////////////////////////////////////////////////////////////////////////////
 
 ezsecondarywin_ptr_t OrkEzApp::createSecondaryWindow(const EzSecondaryWinConfig& config) {
-  OrkAssert(false && "OrkEzApp::createSecondaryWindow not yet implemented");
-  return nullptr;
+  auto win = std::make_shared<EzSecondaryWin>(config);
+  _secondaryWindows.push_back(win);
+  return win;
 }
 
 void OrkEzApp::closeSecondaryWindow(ezsecondarywin_ptr_t win) {
-  OrkAssert(false && "OrkEzApp::closeSecondaryWindow not yet implemented");
+  if (win) {
+    win->requestClose();
+  }
 }
 
 void OrkEzApp::closeAllSecondaryWindows() {
-  OrkAssert(false && "OrkEzApp::closeAllSecondaryWindows not yet implemented");
+  for (auto& win : _secondaryWindows) {
+    win->requestClose();
+  }
 }
 
 void OrkEzApp::_renderSecondaryWindows() {
-  // Stub - will be called from render loop
+  for (auto& win : _secondaryWindows) {
+    if (!win->shouldClose()) {
+      win->_render();
+    }
+  }
 }
 
 void OrkEzApp::_cleanupClosedSecondaryWindows() {
-  // Stub - will be called to clean up closed windows
+  // Remove closed windows and return focus to main window if any were removed
+  size_t before = _secondaryWindows.size();
+
+  std::erase_if(_secondaryWindows, [](const auto& w) {
+    return w->shouldClose();
+  });
+
+  // Return focus to main window if any popups were closed
+  if (_secondaryWindows.size() < before) {
+#if defined(ENABLE_GLFW)
+    if (_mainWindow && _mainWindow->_ctqt) {
+      auto ctx = dynamic_cast<CtxGLFW*>(_mainWindow->_ctqt);
+      if (ctx && ctx->_glfwWindow) {
+        glfwFocusWindow(ctx->_glfwWindow);
+      }
+    }
+#endif
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 
