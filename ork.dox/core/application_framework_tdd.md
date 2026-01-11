@@ -118,7 +118,7 @@ Each subsystem follows a two-phase initialization pattern:
 
 ## High-Level Architecture
 
-![Application Framework Architecture](application_framework_architecture.svg)
+![Application Framework Architecture](images/application_framework_architecture.svg)
 
 The architecture provides clean separation between application code, framework orchestration, and C++ engine integration.
 
@@ -130,19 +130,19 @@ The application progresses through three distinct phases: initialization, execut
 
 ### Initialization Sequence
 
-![Initialization Sequence](application_lifecycle_init.svg)
+![Initialization Sequence](images/application_lifecycle_init.svg)
 
 Sequential initialization with specific ordering constraints (App → GPU (which contains Audio) → Update).
 
 ### Main Execution Loop
 
-![Main Execution Loop](application_lifecycle_loop.svg)
+![Main Execution Loop](images/application_lifecycle_loop.svg)
 
 Parallel execution of Main/GPU, Update, and Audio threads with minimal GIL contention.
 
 ### Shutdown Sequence
 
-![Shutdown Sequence](application_lifecycle_exit.svg)
+![Shutdown Sequence](images/application_lifecycle_exit.svg)
 
 Ordered shutdown ensuring Update thread exits before GPU cleanup, preventing resource corruption.
 

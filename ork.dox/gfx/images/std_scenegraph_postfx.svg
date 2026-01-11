@@ -1,0 +1,128 @@
+<svg width="1100" height="500" viewBox="0 0 1100 500" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1100" height="500" fill="#3a3a3a"/>
+
+  <!-- Title -->
+  <text x="550" y="30" font-family="Arial, sans-serif" font-size="18" fill="white" text-anchor="middle" font-weight="bold">PostFx Chain Architecture</text>
+
+  <!-- Arrow markers -->
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#888"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#4a8"/>
+    </marker>
+    <marker id="arrow-yellow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#aa8"/>
+    </marker>
+  </defs>
+
+  <!-- Scene Params Setup -->
+  <rect x="30" y="60" width="200" height="140" rx="6" fill="#3a4a5a" stroke="#5a6a8a" stroke-width="2"/>
+  <text x="130" y="85" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">Python Setup</text>
+  <text x="130" y="105" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">postNode = PostFxNodeHSVG()</text>
+  <text x="130" y="120" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">postNode.gpuInit(ctx,8,8)</text>
+  <text x="130" y="140" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">postNode.addToSceneVars(</text>
+  <text x="130" y="155" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">  sceneparams,"PostFxChain")</text>
+  <text x="130" y="180" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">or StandardSceneGraphComponent</text>
+  <text x="130" y="192" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">post_nodes=[node1,node2,...]</text>
+
+  <!-- Arrow to Scene -->
+  <path d="M 230 130 L 270 130" stroke="#888" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Scene Constructor -->
+  <rect x="280" y="60" width="200" height="140" rx="6" fill="#4a3a5a" stroke="#6a5a7a" stroke-width="2"/>
+  <text x="380" y="85" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">Scene Constructor</text>
+  <text x="380" y="110" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">params["PostFxChain"]</text>
+  <text x="380" y="130" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">↓</text>
+  <text x="380" y="148" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">_compositorTechnique</text>
+  <text x="380" y="165" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">._postEffectNodes = chain</text>
+  <text x="380" y="190" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">scenegraph.cpp:427-431</text>
+
+  <!-- Arrow to Compositor -->
+  <path d="M 480 130 L 520 130" stroke="#888" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Compositor Technique -->
+  <rect x="530" y="60" width="250" height="140" rx="6" fill="#5a4a3a" stroke="#8a6a5a" stroke-width="2"/>
+  <text x="655" y="85" font-family="Arial, sans-serif" font-size="11" fill="white" text-anchor="middle" font-weight="bold">NodeCompositingTechnique</text>
+  <text x="655" y="108" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">_assemblerFn = [this](drawdata) {</text>
+  <text x="655" y="123" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">  _renderNode->Render(drawdata);</text>
+  <text x="655" y="138" font-family="Arial, sans-serif" font-size="9" fill="#ff8" text-anchor="middle">  for(pfxnode : _postEffectNodes)</text>
+  <text x="655" y="153" font-family="Arial, sans-serif" font-size="9" fill="#ff8" text-anchor="middle">    pfxnode->Render(drawdata);</text>
+  <text x="655" y="168" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">}</text>
+  <text x="655" y="190" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">NodeCompositor.cpp:51-79</text>
+
+  <!-- PostFx Chain Flow -->
+  <rect x="30" y="230" width="1040" height="250" rx="8" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+  <text x="550" y="255" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">Runtime PostFx Chain Execution</text>
+
+  <!-- Render Output -->
+  <rect x="50" y="280" width="140" height="80" rx="6" fill="#5a3a3a" stroke="#8a5a5a" stroke-width="1"/>
+  <text x="120" y="305" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle" font-weight="bold">ForwardNode</text>
+  <text x="120" y="320" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Output</text>
+  <text x="120" y="340" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">_rtg_primary</text>
+  <text x="120" y="352" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">(RGBA8/RGBA32F)</text>
+
+  <!-- Arrow -->
+  <path d="M 190 320 L 230 320" stroke="#4a8" stroke-width="2" marker-end="url(#arrow-green)"/>
+  <text x="210" y="312" font-family="Arial, sans-serif" font-size="8" fill="#4a8">render_out</text>
+
+  <!-- PostFx Node 0 -->
+  <rect x="240" y="280" width="180" height="80" rx="6" fill="#3a5a3a" stroke="#5a7a5a" stroke-width="1"/>
+  <text x="330" y="300" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle" font-weight="bold">PostFxNode[0]</text>
+  <text x="330" y="318" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">e.g. PostFxNodeHSVG</text>
+  <text x="330" y="333" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">Input: postfx_in (render_out)</text>
+  <text x="330" y="350" font-family="Arial, sans-serif" font-size="8" fill="#8f8" text-anchor="middle">Output: _rtg_output[0]</text>
+
+  <!-- Arrow -->
+  <path d="M 420 320 L 460 320" stroke="#aa8" stroke-width="2" marker-end="url(#arrow-yellow)"/>
+
+  <!-- PostFx Node 1 -->
+  <rect x="470" y="280" width="180" height="80" rx="6" fill="#3a5a3a" stroke="#5a7a5a" stroke-width="1"/>
+  <text x="560" y="300" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle" font-weight="bold">PostFxNode[1]</text>
+  <text x="560" y="318" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">e.g. PostFxNodeUser</text>
+  <text x="560" y="333" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">Input: _rtg_output[0]</text>
+  <text x="560" y="350" font-family="Arial, sans-serif" font-size="8" fill="#8f8" text-anchor="middle">Output: _rtg_output[1]</text>
+
+  <!-- Arrow -->
+  <path d="M 650 320 L 690 320" stroke="#aa8" stroke-width="2" marker-end="url(#arrow-yellow)"/>
+
+  <!-- PostFx Node N -->
+  <rect x="700" y="280" width="180" height="80" rx="6" fill="#3a5a3a" stroke="#5a7a5a" stroke-width="1"/>
+  <text x="790" y="300" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle" font-weight="bold">PostFxNode[N]</text>
+  <text x="790" y="318" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">(any PostCompositingNode)</text>
+  <text x="790" y="333" font-family="Arial, sans-serif" font-size="8" fill="#aaa" text-anchor="middle">Input: _rtg_output[N-1]</text>
+  <text x="790" y="350" font-family="Arial, sans-serif" font-size="8" fill="#8f8" text-anchor="middle">Output: _rtg_output[N]</text>
+
+  <!-- Arrow -->
+  <path d="M 880 320 L 920 320" stroke="#4a8" stroke-width="2" marker-end="url(#arrow-green)"/>
+  <text x="900" y="312" font-family="Arial, sans-serif" font-size="8" fill="#4a8">final_out</text>
+
+  <!-- Final Output -->
+  <rect x="930" y="280" width="120" height="80" rx="6" fill="#5a4a3a" stroke="#8a6a5a" stroke-width="1"/>
+  <text x="990" y="305" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle" font-weight="bold">Output Node</text>
+  <text x="990" y="325" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">composite()</text>
+  <text x="990" y="345" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">→ Screen</text>
+
+  <!-- Chain Update Logic -->
+  <rect x="50" y="380" width="400" height="80" rx="4" fill="#4a4a3a" stroke="#6a6a5a" stroke-width="1"/>
+  <text x="250" y="400" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle" font-weight="bold">Chain Execution (NodeCompositor.cpp:66-77)</text>
+  <text x="250" y="420" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">for (auto pfxnode : _postEffectNodes) {</text>
+  <text x="250" y="435" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">  drawdata["postfx_in"] = render_outg;</text>
+  <text x="250" y="450" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">  pfxnode->Render(); render_outg = pfxnode->GetOutputGroup(); }</text>
+
+  <!-- Built-in PostFx Nodes -->
+  <rect x="480" y="380" width="250" height="80" rx="4" fill="#3a3a5a" stroke="#5a5a7a" stroke-width="1"/>
+  <text x="605" y="400" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle" font-weight="bold">Built-in PostFx Nodes</text>
+  <text x="605" y="420" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">PostFxNodeHSVG (Hue/Sat/Val/Gamma)</text>
+  <text x="605" y="435" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">PostFxNodeBloom</text>
+  <text x="605" y="450" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">PostFxNodeDoF (Depth of Field)</text>
+
+  <!-- User PostFx Nodes -->
+  <rect x="760" y="380" width="290" height="80" rx="4" fill="#3a5a5a" stroke="#5a7a7a" stroke-width="1"/>
+  <text x="905" y="400" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle" font-weight="bold">PostFxNodeUser (Custom)</text>
+  <text x="905" y="420" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">shader_path = "path/to/shader.fxv2"</text>
+  <text x="905" y="435" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">technique = "my_technique"</text>
+  <text x="905" y="450" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">double_buffer = True (for feedback)</text>
+</svg>

@@ -309,5 +309,5 @@ graphdata.properties: {
 
 ## ork.lev2 has example ImGui based editors for editing reflection based objects.
 
-![Reflection Editor:1](ReflectionEditor.png)
+![Reflection Editor:1](images/ReflectionEditor.png)
 

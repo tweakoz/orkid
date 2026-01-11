@@ -55,7 +55,7 @@ Orkid's synthesizer is loosely inspired by Kurzweil VAST, in that it supports fu
 
   ### Architecture
 
-  ![Singularity Architecture:1](Singul.png)
+  ![Singularity Architecture:1](images/Singul.png)
 
   ### Definitions of data objects (live performance mutable objects)
 

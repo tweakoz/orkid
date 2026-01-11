@@ -555,5 +555,5 @@ TranslationUnit()
 
 A more complex AST (From the shader language parser)
 
-![ParticleShaderAST:1](particle.dot.png)
+![ParticleShaderAST:1](images/particle.dot.png)
 

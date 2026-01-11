@@ -1,0 +1,128 @@
+<svg width="1000" height="600" viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1000" height="600" fill="#3a3a3a"/>
+
+  <!-- Title -->
+  <text x="500" y="30" font-family="Arial, sans-serif" font-size="18" fill="white" text-anchor="middle" font-weight="bold">RTGroup (Render Target) Data Flow</text>
+
+  <!-- Arrow markers -->
+  <defs>
+    <marker id="arr" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#888"/>
+    </marker>
+    <marker id="arr-blue" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#68c"/>
+    </marker>
+  </defs>
+
+  <!-- ForwardPBR RTGroups -->
+  <rect x="30" y="60" width="300" height="240" rx="8" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+  <text x="180" y="85" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">ForwardPBR Internal RTGroups</text>
+
+  <rect x="50" y="105" width="260" height="45" rx="4" fill="#5a3a3a" stroke="#8a5a5a" stroke-width="1"/>
+  <text x="180" y="125" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">_rtg_primary (main color output)</text>
+  <text x="180" y="142" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">RGBA8 or RGBA32F + Depth</text>
+
+  <rect x="50" y="160" width="260" height="35" rx="4" fill="#4a3a3a" stroke="#6a5a5a" stroke-width="1"/>
+  <text x="180" y="182" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">_rtg_ambocc_accum (SSAO)</text>
+
+  <rect x="50" y="205" width="260" height="35" rx="4" fill="#4a3a3a" stroke="#6a5a5a" stroke-width="1"/>
+  <text x="180" y="227" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">_rtg_primary_depth_copy</text>
+
+  <rect x="50" y="250" width="260" height="35" rx="4" fill="#4a3a3a" stroke="#6a5a5a" stroke-width="1"/>
+  <text x="180" y="272" font-family="Arial, sans-serif" font-size="10" fill="#ddd" text-anchor="middle">Shadow map RTGroups (per light)</text>
+
+  <!-- Arrow to PostFx -->
+  <path d="M 330 150 L 380 150" stroke="#68c" stroke-width="3" marker-end="url(#arr-blue)"/>
+  <text x="355" y="140" font-family="Arial, sans-serif" font-size="9" fill="#68c">render_out</text>
+
+  <!-- PostFx RTGroups -->
+  <rect x="390" y="60" width="280" height="240" rx="8" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+  <text x="530" y="85" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">PostFx Node RTGroups</text>
+
+  <rect x="410" y="105" width="240" height="55" rx="4" fill="#3a5a3a" stroke="#5a7a5a" stroke-width="1"/>
+  <text x="530" y="125" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">PostFxNode[0]._rtg_output</text>
+  <text x="530" y="142" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Input: render_out texture</text>
+  <text x="530" y="154" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">Output: processed RTG</text>
+
+  <rect x="410" y="170" width="240" height="55" rx="4" fill="#3a5a3a" stroke="#5a7a5a" stroke-width="1"/>
+  <text x="530" y="190" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">PostFxNode[1]._rtg_output</text>
+  <text x="530" y="207" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Input: PostFxNode[0] texture</text>
+  <text x="530" y="219" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">Output: processed RTG</text>
+
+  <rect x="410" y="235" width="240" height="50" rx="4" fill="#3a5a3a" stroke="#5a7a5a" stroke-width="1"/>
+  <text x="530" y="255" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">PostFxNode[N]._rtg_output</text>
+  <text x="530" y="275" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">= final_out</text>
+
+  <!-- Arrow to Output -->
+  <path d="M 670 150 L 720 150" stroke="#68c" stroke-width="3" marker-end="url(#arr-blue)"/>
+  <text x="695" y="140" font-family="Arial, sans-serif" font-size="9" fill="#68c">final_out</text>
+
+  <!-- Output RTGroups -->
+  <rect x="730" y="60" width="240" height="240" rx="8" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+  <text x="850" y="85" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">Output Node RTGroups</text>
+
+  <rect x="750" y="105" width="200" height="60" rx="4" fill="#5a4a3a" stroke="#8a6a5a" stroke-width="1"/>
+  <text x="850" y="125" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">RtGroupOutputNode</text>
+  <text x="850" y="142" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Writes to SceneGraphViewport</text>
+  <text x="850" y="158" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">._rtgroup (blit.fxv2)</text>
+
+  <rect x="750" y="175" width="200" height="60" rx="4" fill="#5a4a3a" stroke="#8a6a5a" stroke-width="1"/>
+  <text x="850" y="195" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">ScreenOutputNode</text>
+  <text x="850" y="212" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Direct to swapchain</text>
+  <text x="850" y="228" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">(blit.fxv2 downsample)</text>
+
+  <rect x="750" y="245" width="200" height="40" rx="4" fill="#4a4a4a" stroke="#6a6a6a" stroke-width="1"/>
+  <text x="850" y="268" font-family="Arial, sans-serif" font-size="10" fill="#aaa" text-anchor="middle">VrOutputNode, etc.</text>
+
+  <!-- UI Surface Section -->
+  <rect x="30" y="330" width="940" height="120" rx="8" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+  <text x="500" y="355" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">UI Surface RTGroup Flow (SceneGraphViewport inherits from Surface)</text>
+
+  <rect x="50" y="375" width="200" height="60" rx="4" fill="#3a4a5a" stroke="#5a6a8a" stroke-width="1"/>
+  <text x="150" y="395" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">SceneGraphViewport</text>
+  <text x="150" y="412" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">._rtgroup (from Surface)</text>
+  <text x="150" y="427" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">RGBA8 MRT0</text>
+
+  <path d="M 250 405 L 300 405" stroke="#888" stroke-width="2" marker-end="url(#arr)"/>
+  <text x="275" y="395" font-family="Arial, sans-serif" font-size="8" fill="#aaa">contains</text>
+
+  <rect x="310" y="375" width="200" height="60" rx="4" fill="#5a4a3a" stroke="#8a6a5a" stroke-width="1"/>
+  <text x="410" y="395" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">Compositor Output</text>
+  <text x="410" y="412" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">Writes final_out to</text>
+  <text x="410" y="427" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">viewport._rtgroup</text>
+
+  <path d="M 510 405 L 560 405" stroke="#888" stroke-width="2" marker-end="url(#arr)"/>
+  <text x="535" y="395" font-family="Arial, sans-serif" font-size="8" fill="#aaa">blit</text>
+
+  <rect x="570" y="375" width="180" height="60" rx="4" fill="#5a3a5a" stroke="#8a5a8a" stroke-width="1"/>
+  <text x="660" y="395" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">Surface::DoDraw()</text>
+  <text x="660" y="412" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">GfxMaterialUITextured</text>
+  <text x="660" y="427" font-family="Arial, sans-serif" font-size="9" fill="#ff8" text-anchor="middle">ui.fxv2 "uitextured"</text>
+
+  <path d="M 750 405 L 800 405" stroke="#888" stroke-width="2" marker-end="url(#arr)"/>
+
+  <rect x="810" y="375" width="140" height="60" rx="4" fill="#3a3a3a" stroke="#5a5a5a" stroke-width="1"/>
+  <text x="880" y="400" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">Swapchain</text>
+  <text x="880" y="420" font-family="Arial, sans-serif" font-size="9" fill="#8f8" text-anchor="middle">Final Display</text>
+
+  <!-- RTGroup Format Details -->
+  <rect x="30" y="470" width="940" height="110" rx="8" fill="#2a2a2a" stroke="#666" stroke-width="2"/>
+  <text x="500" y="495" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle" font-weight="bold">RTGroup Buffer Formats</text>
+
+  <rect x="50" y="515" width="200" height="50" rx="4" fill="#4a3a3a" stroke="#6a5a5a" stroke-width="1"/>
+  <text x="150" y="535" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">Color Buffers</text>
+  <text x="150" y="555" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">RGBA8, RGBA32F, R32F</text>
+
+  <rect x="280" y="515" width="200" height="50" rx="4" fill="#4a3a3a" stroke="#6a5a5a" stroke-width="1"/>
+  <text x="380" y="535" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">Depth Buffer</text>
+  <text x="380" y="555" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">D24S8 or D32F</text>
+
+  <rect x="510" y="515" width="200" height="50" rx="4" fill="#4a3a3a" stroke="#6a5a5a" stroke-width="1"/>
+  <text x="610" y="535" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">SSAA Modes</text>
+  <text x="610" y="555" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">1x-6x supersample</text>
+
+  <rect x="740" y="515" width="210" height="50" rx="4" fill="#4a3a3a" stroke="#6a5a5a" stroke-width="1"/>
+  <text x="845" y="535" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">Float Color Buffer</text>
+  <text x="845" y="555" font-family="Arial, sans-serif" font-size="9" fill="#ddd" text-anchor="middle">pbr_common.useFloatColorBuffer</text>
+</svg>

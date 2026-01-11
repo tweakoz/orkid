@@ -31,27 +31,27 @@ Installation via PyPi (in progress, not working yet...)
 
 [How to run](ork.dox/running.md)
 
-[GLSLFX shader format docs](ork.dox/glslfx.md)
+[GLSLFX shader format docs](ork.dox/gfx/glslfx.md)
 
 [EngineLibraryTopology](ork.dox/engine_layout.md)
-   * [Ork.Core.Reflection](ork.dox/reflection.md)
-   * [Ork.Core.Datablocks](ork.dox/datablocks.md)
-   * [Ork.Core.AssetCatalog](ork.dox/asset_catalog_tdd.md)
-   * [Ork.Core.ThreadingPolicy](ork.dox/threading-policy.md)
-   * [Ork.Core.TaskGraph](ork.dox/taskgraph_tdd.md)
-   * [Ork.Core.Parser](ork.dox/parser.md)
-   * [Ork.Core.Logging](ork.dox/logging.md)
-   * [Ork.Lev2.Graphics](ork.dox/lev2-graphics.md)
-   * [Ork.Lev2.Graphics.GlFx](ork.dox/glslfx.md)
-   * [Ork.Lev2.Audio](ork.dox/singularity.md)
-   * [Ork.ECS](ork.dox/ecs.md)
+   * [Ork.Core.Reflection](ork.dox/core/reflection.md)
+   * [Ork.Core.Datablocks](ork.dox/core/datablocks.md)
+   * [Ork.Core.AssetCatalog](ork.dox/core/asset_catalog_tdd.md)
+   * [Ork.Core.ThreadingPolicy](ork.dox/core/threading-policy.md)
+   * [Ork.Core.TaskGraph](ork.dox/core/taskgraph_tdd.md)
+   * [Ork.Core.Parser](ork.dox/core/parser.md)
+   * [Ork.Core.Logging](ork.dox/core/logging.md)
+   * [Ork.Lev2.Graphics](ork.dox/gfx/lev2-graphics.md)
+   * [Ork.Lev2.Graphics.GlFx](ork.dox/gfx/glslfx.md)
+   * [Ork.Lev2.Audio](ork.dox/aud/singularity.md)
+   * [Ork.ECS](ork.dox/ecs/ecs.md)
 
 [Doxygen - code documentation](https://www.orkid-engine.dev:4430/doxygen_html/index.html)
 
 Artist Information
 ========
 
-[Blender pipeline notes](ork.dox/blender.md)
+[Blender pipeline notes](ork.dox/gfx/blender.md)
 
 Example Content (most of it old, updates coming soon.)
 ========

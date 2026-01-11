@@ -89,7 +89,7 @@ Thread-safe key-value store for sharing data between phases:
 
 ## High-Level Architecture
 
-![TaskGraph Architecture](taskgraph_architecture.svg)
+![TaskGraph Architecture](images/taskgraph_architecture.svg)
 
 The architecture provides clean separation between graph definition and execution, with flexible executor strategies per phase.
 
@@ -99,7 +99,7 @@ The architecture provides clean separation between graph definition and executio
 
 The TaskGraph executes phases sequentially, with tasks within each phase running according to the phase's executor strategy.
 
-![TaskGraph Execution Flow](taskgraph_execution_flow.svg)
+![TaskGraph Execution Flow](images/taskgraph_execution_flow.svg)
 
 ---
 
@@ -163,7 +163,7 @@ phase->task("example", [=](taskgraph_ptr_t g) {
 
 The EnvMapProcessor demonstrates TaskGraph's capabilities for complex GPU workflows:
 
-![Environment Map Processing Pipeline](taskgraph_envmap_usecase.svg)
+![Environment Map Processing Pipeline](images/taskgraph_envmap_usecase.svg)
 
 ### Key Patterns Demonstrated
 

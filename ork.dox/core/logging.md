@@ -79,7 +79,7 @@ Output handler that receives formatted log messages:
 
 ## High-Level Architecture
 
-![Logger Architecture](logging_architecture.svg)
+![Logger Architecture](images/logging_architecture.svg)
 
 The architecture follows a producer-consumer pattern with channels feeding into a configurable backend system.
 
@@ -87,7 +87,7 @@ The architecture follows a producer-consumer pattern with channels feeding into 
 
 ## Backend Types
 
-![Backend Types](logging_backends.svg)
+![Backend Types](images/logging_backends.svg)
 
 ### Stdout Backend (Default)
 - Colored output to terminal
@@ -371,7 +371,7 @@ export ORKID_LOG_NOTCURSES=1
 
 ## Configuration Flow
 
-![Configuration Flow](logging_config_flow.svg)
+![Configuration Flow](images/logging_config_flow.svg)
 
 The configuration system follows this priority order:
 1. **Programmatic**: `logger()->setBackend()` overrides everything
@@ -394,7 +394,7 @@ The HTML backend creates an interactive log viewer:
 
 ### Architecture
 
-![HTML Backend Structure](logging_html_structure.svg)
+![HTML Backend Structure](images/logging_html_structure.svg)
 
 ### Viewing Logs
 Simply open the HTML file in any browser:
@@ -410,12 +410,12 @@ xdg-open ~/.staging/orkid.log.html  # Linux
 
 The HTTP backend provides real-time log streaming to a web-based dashboard, supporting multiple simultaneous client applications.
 
-[![HTTP Logger Dashboard](httplogger.png)](httplogger.png)
+[![HTTP Logger Dashboard](images/httplogger.png)](images/httplogger.png)
 *HTTP Logger Dashboard showing multiple clients with status, performance graphs, and filtered logs*
 
 ### Architecture
 
-![HTTP Logger Architecture](logging_http_architecture.svg)
+![HTTP Logger Architecture](images/logging_http_architecture.svg)
 
 ### Features
 
@@ -489,7 +489,7 @@ The UI backend provides an in-engine log viewer using Orkid's native UI framewor
 
 ### Architecture
 
-![UI Logger Backend](logger_ui_backend.png)
+![UI Logger Backend](images/logger_ui_backend.png)
 
 ### Components
 
@@ -564,7 +564,7 @@ The iOS UI backend provides a native log viewer for iOS applications using UIKit
 
 ### Architecture
 
-![iOS UI Backend Architecture](logging_ios_ui_architecture.svg)
+![iOS UI Backend Architecture](images/logging_ios_ui_architecture.svg)
 
 ### Components
 

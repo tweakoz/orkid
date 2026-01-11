@@ -61,7 +61,7 @@ B. The Simulation aspect. Mutable objects that evolve over time as part of a sim
 
 * Scripting Systems - Lua and the upcoming Python Scripting component/systems are able to interact with the simulation using direct pointers since they run only on the update thread and are therefore synchronized with the simulation. To help enforce determinism, all IO, threads and other sources of non-determinism are disabled or hidden in the internal scripting contexts. pseudo-random numbers should be retrieved from the simulation itself (since given the same controller stimulus, the results should be deterministic). 
 
-![ECS Architecture:1](EcsArchitectureDiagram.png)
+![ECS Architecture:1](images/EcsArchitectureDiagram.png)
 
 ---
 
@@ -77,7 +77,7 @@ The simulation and subobjects are subject to a strict lifecycle (states), these 
 
 There are obviously state transitions required to go from one state to the other, visible below.
 
-![ECS Lifecycle:2](ECSLifecycle.png)
+![ECS Lifecycle:2](images/ECSLifecycle.png)
 
 ---
 

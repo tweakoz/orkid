@@ -82,7 +82,7 @@ Assets stored using their hash as filename:
 
 ## High-Level Architecture
 
-![Asset Catalog Architecture](asset_catalog_architecture.svg)
+![Asset Catalog Architecture](images/asset_catalog_architecture.svg)
 
 The architecture consists of four main layers:
 1. **Configuration Layer**: Manages namespaces and locations
@@ -96,7 +96,7 @@ The architecture consists of four main layers:
 
 The Asset Catalog system manages the complete lifecycle of assets from development through delivery to runtime applications. This symmetric design ensures data integrity and optimal performance at every stage.
 
-![Asset Lifecycle](asset_lifecycle.svg)
+![Asset Lifecycle](images/asset_lifecycle.svg)
 
 ### Build Phase (Development Environment)
 
@@ -150,7 +150,7 @@ The Asset Catalog system manages the complete lifecycle of assets from developme
 
 The Orkid Build Tool (OBT) discovers and composes multiple projects into a unified build environment:
 
-![OBT Configuration Merging](config_merging_obt.svg)
+![OBT Configuration Merging](images/config_merging_obt.svg)
 
 ### Configuration Loading Process
 

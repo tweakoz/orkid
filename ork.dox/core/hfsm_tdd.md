@@ -23,7 +23,7 @@ This separation allows multiple entities to share a single state machine definit
 
 ### Class Diagram
 
-![HFSM Class Architecture](hfsm_architecture.svg)
+![HFSM Class Architecture](images/hfsm_architecture.svg)
 
 ## Core Components
 
@@ -190,7 +190,7 @@ struct FsmGroup {
 
 ## Event System
 
-![Event Processing Flow](hfsm_event_flow.svg)
+![Event Processing Flow](images/hfsm_event_flow.svg)
 
 Events are CRC64 hashed tokens for efficient dispatch.
 
@@ -223,7 +223,7 @@ FsmInstance::update(inst);
 
 ## State Hierarchy
 
-![Hierarchical State Structure](hfsm_hierarchy.svg)
+![Hierarchical State Structure](images/hfsm_hierarchy.svg)
 
 States form a tree structure via `_parent` pointers.
 
@@ -236,7 +236,7 @@ States form a tree structure via `_parent` pointers.
 
 ### Transition Algorithm
 
-![Transition Algorithm](hfsm_transition.svg)
+![Transition Algorithm](images/hfsm_transition.svg)
 
 The hierarchical transition algorithm ensures proper exit/enter ordering:
 
@@ -255,7 +255,7 @@ The hierarchical transition algorithm ensures proper exit/enter ordering:
 
 ## Usage Examples
 
-![Example State Machine](hfsm_example_machine.svg)
+![Example State Machine](images/hfsm_example_machine.svg)
 
 ### Basic State Machine (C++)
 

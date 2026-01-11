@@ -2,7 +2,7 @@
 
 ---
 
-![Lev2Gfx Architecture:1](Lev2GraphicsLayout.png)
+![Lev2Gfx Architecture:1](images/Lev2GraphicsLayout.png)
 
 ### Summary:
 

@@ -109,7 +109,7 @@ Different approaches to positioning child widgets:
 
 ## High-Level Architecture
 
-![UI Architecture](ui_architecture.svg)
+![UI Architecture](images/ui_architecture.svg)
 
 The architecture consists of two primary systems working together:
 
@@ -951,7 +951,7 @@ This pattern allows Python developers to create sophisticated composite widgets 
 
 ## Event Flow
 
-![Event Flow](ui_event_flow.svg)
+![Event Flow](images/ui_event_flow.svg)
 
 Events flow through the widget hierarchy from root to target:
 
@@ -1132,7 +1132,7 @@ divider.unlock()
 
 ### Theming System
 
-![Theming Architecture](ui_theming.svg)
+![Theming Architecture](images/ui_theming.svg)
 
 The Orkid UI system provides a comprehensive theming architecture based on **Style**, **StyleDatabase**, and **ThemeEngine**. This system enables consistent, dynamic, and hierarchical styling of UI widgets.
 
