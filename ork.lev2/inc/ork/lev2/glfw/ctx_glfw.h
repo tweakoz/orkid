@@ -91,6 +91,7 @@ struct CtxGLFW : public CTXBASE {
   void signalExit() final;
   void pollEvents();
   void _doEnqueueWindowResize( int w, int h ) final;
+  void queryFramebufferSize(int& w, int& h) const final;
 
   void _on_callback_refresh();
   void _on_callback_winresized(int w, int h);

@@ -57,6 +57,9 @@ struct CtxDRM : public CTXBASE {
     void hideMouseCursor() final;
     void showMouseCursor() final;
 
+    // Query framebuffer size
+    void queryFramebufferSize(int& w, int& h) const final;
+
     // UI event firing
     void _fire_ui_event();
 

@@ -9,6 +9,7 @@
 #include <ork/lev2/glfw/ctx_glfw.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/rtgroup.h>
+#include <ork/lev2/gfx/renderer/rendercontext.h>
 #include <ork/util/logger.h>
 #include <GLFW/glfw3.h>
 
@@ -20,7 +21,7 @@ void fillEventKeyboard(ui::event_ptr_t uiev, int key, int scancode, int action, 
 void fillEventCursor(ui::event_ptr_t uiev, GLFWwindow* window, GLFWmonitor* monitor,
                      double xoffset, double yoffset, double w, double h);
 
-static logchannel_ptr_t logchan_secwin = logger()->configureChannel("SECWIN", fvec3(0.4, 0.8, 0.4));
+static logchannel_ptr_t logchan_secwin = logger()->configureChannel("SECWIN", fvec3(0.4, 0.8, 0.4), true);
 
 ///////////////////////////////////////////////////////////////////////////////
 // GLFW callbacks for secondary windows
@@ -66,6 +67,9 @@ struct SecondaryWinImpl {
   int _buttonState = 0;
   int _mouseX = 0;
   int _mouseY = 0;
+
+  // Clean RCFD without compositor for UI rendering
+  lev2::rcfd_ptr_t _cleanRcfd;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -133,12 +137,29 @@ SecondaryWinImpl::SecondaryWinImpl(EzSecondaryWin* owner, const EzSecondaryWinCo
   glfwSetFramebufferSizeCallback(_glfwWindow, _secwin_callback_fbresized);
   glfwSetWindowCloseCallback(_glfwWindow, _secwin_callback_close);
 
+  // Show window first - on macOS, framebuffer size is 0 until window is shown
+  glfwShowWindow(_glfwWindow);
+
+  // Poll events to ensure window system processes the show request
+  // This is needed on macOS to properly initialize the Metal layer
+  glfwPollEvents();
+
   // Initialize graphics context
   // This creates a VkContext (or GLContext) that shares the device with the main window
   _orkWindow->initContext();
   _gfxContext = _orkWindow->context();
 
-  glfwShowWindow(_glfwWindow);
+  // CRITICAL: Initialize the context's main surface dimensions
+  // Without this, mainSurfaceWidth()/mainSurfaceHeight() return 0/garbage,
+  // which corrupts the MVP matrix in PushUIMatrix()
+  if (_gfxContext) {
+    _gfxContext->resizeMainSurface(_width, _height);
+    logchan_secwin->log("Initialized context main surface: %dx%d", _width, _height);
+
+    // Create clean RCFD without compositor for UI rendering
+    // (The default context RCFD has a shared static compositor with uninitialized CPD)
+    _cleanRcfd = std::make_shared<lev2::RenderContextFrameData>(_gfxContext);
+  }
 
   logchan_secwin->log("Secondary window created successfully");
 }
@@ -187,6 +208,10 @@ void SecondaryWinImpl::_fireEvent(ui::event_ptr_t uiev) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void SecondaryWinImpl::_render() {
+  static int render_count = 0;
+  if (render_count++ % 60 == 0) {
+    logchan_secwin->log("SecondaryWinImpl::_render frame %d", render_count);
+  }
   if (!_gfxContext || !_glfwWindow) return;
 
   // Check for window close
@@ -211,19 +236,75 @@ void SecondaryWinImpl::_render() {
 
   // Render
   if (_owner->_onDraw) {
+    logchan_secwin->log("_render: using custom onDraw");
     auto drwev = std::make_shared<ui::DrawEvent>(_gfxContext);
     _owner->_onDraw(drwev);
   } else if (_owner->_uicontext && _owner->_uicontext->_top) {
     // Default: draw UI context
+    int ctx_w = _gfxContext->mainSurfaceWidth();
+    int ctx_h = _gfxContext->mainSurfaceHeight();
+
+    auto fbi = _gfxContext->FBI();
+    auto mtxi = _gfxContext->MTXI();
+    auto tgtrect = _gfxContext->mainSurfaceRectAtOrigin();
+
+    if (render_count % 30 == 1) {
+      logchan_secwin->log("frame %d: ctx=%p FBI=%p MTXI=%p mainSurface=%dx%d _width/_height=%dx%d tgtrect=%dx%d",
+              render_count, (void*)_gfxContext, (void*)fbi, (void*)mtxi,
+              ctx_w, ctx_h, _width, _height, tgtrect._w, tgtrect._h);
+
+      // Log matrix stack state before PushUIMatrix
+      auto& pmat = mtxi->RefPMatrix();
+      logchan_secwin->log("  pre-push P diag: %g %g %g %g",
+              pmat.elemXY(0,0), pmat.elemXY(1,1), pmat.elemXY(2,2), pmat.elemXY(3,3));
+    }
+
     _gfxContext->beginFrame();
-    auto drwev = std::make_shared<ui::DrawEvent>(_gfxContext);
-    _owner->_uicontext->draw(drwev);
+
+    // Check if main_rtg exists (like primary does)
+    if (render_count % 30 == 1) {
+      logchan_secwin->log("  _main_rtg=%p", (void*)fbi->_main_rtg.get());
+    }
+
+    if (fbi->_main_rtg) {
+      fbi->pushViewport(tgtrect);
+      fbi->pushScissor(tgtrect);
+
+      // Push clean RCFD without compositor so PushUIMatrix() uses viewport dimensions
+      _gfxContext->pushRenderContextFrameData(_cleanRcfd);
+
+      mtxi->PushUIMatrix(tgtrect._w, tgtrect._h);
+
+      if (render_count % 30 == 1) {
+        auto& mvp = mtxi->RefMVPMatrix();
+        logchan_secwin->log("  post-push MVP diag: %g %g %g %g",
+                mvp.elemXY(0,0), mvp.elemXY(1,1), mvp.elemXY(2,2), mvp.elemXY(3,3));
+      }
+
+      auto drwev = std::make_shared<ui::DrawEvent>(_gfxContext);
+      _owner->_uicontext->draw(drwev);
+      mtxi->PopUIMatrix();
+
+      _gfxContext->popRenderContextFrameData();
+
+      fbi->popScissor();
+      fbi->popViewport();
+    } else {
+      logchan_secwin->log("  WARNING: _main_rtg is null, skipping draw");
+    }
+
     _gfxContext->endFrame();
   } else {
     // Default: just clear
+    logchan_secwin->log("_render: no ui, just clearing (uicontext=%p, top=%p)",
+                        _owner->_uicontext.get(),
+                        _owner->_uicontext ? _owner->_uicontext->_top.get() : nullptr);
     _gfxContext->beginFrame();
     _gfxContext->endFrame();
   }
+
+  // Swap buffers to display the rendered frame
+  _gfxContext->swapBuffers(_ctxglfw);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -412,6 +493,12 @@ int EzSecondaryWin::height() const {
 
 ui::Context* EzSecondaryWin::uiContext() {
   return _uicontext.get();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+ui::context_ptr_t EzSecondaryWin::uiContextPtr() {
+  return _uicontext;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -153,6 +153,12 @@ public:
 
   //////////////////////////////////////////////
 
+  // Query current swapchain dimensions (for debugging)
+  virtual void querySwapchainSize(int& w, int& h) const { w = 0; h = 0; }
+  virtual void* querySwapchainPtr() const { return nullptr; }
+
+  //////////////////////////////////////////////
+
   void EnterPickState(PickBuffer* pb);
   bool isPickState() const;
   void LeavePickState();

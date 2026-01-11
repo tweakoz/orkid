@@ -101,6 +101,7 @@ struct EzSecondaryWin {
   //////////////////////////////////////////////
 
   ui::Context* uiContext();
+  ui::context_ptr_t uiContextPtr();
   lev2::Context* gfxContext();
 
   //////////////////////////////////////////////

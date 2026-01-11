@@ -98,6 +98,39 @@ void VkFrameBufferInterface::_doEndFrame() {
 
 ///////////////////////////////////////////////////////
 
+void VkFrameBufferInterface::querySwapchainSize(int& w, int& h) const {
+  if (_swapchain) {
+    w = _swapchain->_width;
+    h = _swapchain->_height;
+  }
+#if defined(__linux__)
+  else if (_swapchain_drm) {
+    w = _swapchain_drm->_width;
+    h = _swapchain_drm->_height;
+  }
+#endif
+  else {
+    w = 0;
+    h = 0;
+  }
+}
+
+///////////////////////////////////////////////////////
+
+void* VkFrameBufferInterface::querySwapchainPtr() const {
+  if (_swapchain) {
+    return (void*)_swapchain.get();
+  }
+#if defined(__linux__)
+  if (_swapchain_drm) {
+    return (void*)_swapchain_drm.get();
+  }
+#endif
+  return nullptr;
+}
+
+///////////////////////////////////////////////////////
+
 void VkFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) {
   OrkAssert(false);
 }

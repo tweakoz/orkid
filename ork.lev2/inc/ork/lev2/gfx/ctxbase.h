@@ -99,6 +99,9 @@ public:
   }
   virtual void _doEnqueueWindowResize( int w, int h ) {}
 
+  // Query the backend's current framebuffer size
+  virtual void queryFramebufferSize(int& w, int& h) const { w = 0; h = 0; }
+
   // Platform-specific runloop methods
   virtual void initWithData(appinitdata_ptr_t aid) {}
   virtual void signalExit() {}

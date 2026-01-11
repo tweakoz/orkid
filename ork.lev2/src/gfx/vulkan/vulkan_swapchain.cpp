@@ -89,14 +89,20 @@ void VkSwapChain::_buildup() {
   auto window   = ctx_glfw->_glfwWindow;
   int width, height;
   glfwGetFramebufferSize(window, &width, &height);
+  logchan_swapchain->log("_buildup: glfwGetFramebufferSize returned %dx%d for window %p", width, height, window);
 
   auto& caps = pres_caps->_capabilities;
+  logchan_swapchain->log("_buildup: surface caps currentExtent=%ux%u min=%ux%u max=%ux%u",
+                         caps.currentExtent.width, caps.currentExtent.height,
+                         caps.minImageExtent.width, caps.minImageExtent.height,
+                         caps.maxImageExtent.width, caps.maxImageExtent.height);
 
   ////////////////////////////////////////////////////
   // Check if extent is defined by surface (required on some platforms)
   ////////////////////////////////////////////////////
 
   if (caps.currentExtent.width != 0xFFFFFFFF) {
+    logchan_swapchain->log("_buildup: using surface currentExtent %ux%u instead of fb size", caps.currentExtent.width, caps.currentExtent.height);
     width  = caps.currentExtent.width;
     height = caps.currentExtent.height;
   }
@@ -208,7 +214,11 @@ void VkSwapChain::_buildup() {
   // create new swapchain impl
   ///////////////////////////////////////////////////
 
+  logchan_swapchain->log("_buildup: creating swapchain with extent %ux%u surface=%p",
+                         SCINFO.imageExtent.width, SCINFO.imageExtent.height,
+                         (void*)SCINFO.surface);
   VkResult OK = vkCreateSwapchainKHR(vkdev, &SCINFO, nullptr, &_vkSwapChain);
+  logchan_swapchain->log("_buildup: vkCreateSwapchainKHR returned %d swapchain=%p", OK, (void*)_vkSwapChain);
   OrkAssert(OK == VK_SUCCESS);
 
   uint32_t imageCount = 0;

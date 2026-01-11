@@ -780,11 +780,20 @@ void CtxGLFW::onResize(int W, int H) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::_doEnqueueWindowResize(int w, int h) {
-  auto op = [=]() { 
+  auto op = [=]() {
     glfwSetWindowSize(_glfwWindow, w, h);
     glfwFocusWindow(_glfwWindow);
  };
   //opq::mainSerialQueue()->enqueue(op);
+}
+///////////////////////////////////////////////////////////////////////////////
+void CtxGLFW::queryFramebufferSize(int& w, int& h) const {
+  if (_glfwWindow) {
+    glfwGetFramebufferSize(_glfwWindow, &w, &h);
+  } else {
+    w = 0;
+    h = 0;
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::SlotRepaint() {

@@ -725,6 +725,16 @@ void CtxDRM::showMouseCursor() {
     // DRM has no system cursor to show
 }
 
+void CtxDRM::queryFramebufferSize(int& w, int& h) const {
+    if (_drmctx) {
+        w = _drmctx->_width;
+        h = _drmctx->_height;
+    } else {
+        w = 0;
+        h = 0;
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Linux evdev keycode to GLFW keycode mapping
 ///////////////////////////////////////////////////////////////////////////////

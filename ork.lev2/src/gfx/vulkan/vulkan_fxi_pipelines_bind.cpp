@@ -11,6 +11,7 @@
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/util/hexdump.inl>
 #include <ctime>
+#include <cmath>
 #include <set>
 #include <boost/filesystem.hpp>
 
@@ -249,10 +250,25 @@ void VkPipelineObject::applyPendingUboUpdates(VkCommandBuffer cmdbuf, uint32_t f
 
   _dynamic_offsets.clear();
 
+  static int log_count = 0;
+  bool do_log = (log_count++ < 100);
+
   // Process all UBOs in binding order (already sorted)
   for (auto* ubo : _uniform_blocks) {
     // Allocate dynamic memory for this draw
     auto allocation = g_dynamic_ubo_system->allocate(ubo->_shadow_buffer.size(), frame_index);
+
+    // Debug: check shadow buffer before copy
+    if (do_log && ubo->_shadow_buffer.size() >= 16) {
+      float* fdata = (float*)ubo->_shadow_buffer.data();
+      bool has_nan = std::isnan(fdata[0]) || std::isnan(fdata[1]) || std::isnan(fdata[2]) || std::isnan(fdata[3]);
+      if (has_nan) {
+        logchan_vkpipb->log("WARN: UBO<%s> shadow_buffer has NaN! [%g %g %g %g] size=%zu",
+                            ubo->_orkparamblock ? ubo->_orkparamblock->_name.c_str() : "?",
+                            fdata[0], fdata[1], fdata[2], fdata[3],
+                            ubo->_shadow_buffer.size());
+      }
+    }
 
     // Copy shadow buffer to dynamic allocation
     memcpy(allocation.cpu_ptr, ubo->_shadow_buffer.data(), ubo->_shadow_buffer.size());

@@ -125,7 +125,16 @@ void pyinit_ui(py::module& module_lev2) {
           .def_property(
               "theme_engine",
               [](ui::context_ptr_t uictx) -> ui::themeengine_ptr_t { return uictx->_theme_engine; },
-              [](ui::context_ptr_t uictx, ui::themeengine_ptr_t engine) { uictx->_theme_engine = engine; });
+              [](ui::context_ptr_t uictx, ui::themeengine_ptr_t engine) { uictx->_theme_engine = engine; })
+          .def_property(
+              "top",
+              [](ui::context_ptr_t uictx) -> ui::group_ptr_t { return uictx->_top; },
+              [](ui::context_ptr_t uictx, ui::group_ptr_t top) {
+                uictx->_top = top;
+                if (top) {
+                  top->_uicontext = uictx.get();
+                }
+              });
   ;
   type_codec->registerStdCodec<ui::context_ptr_t>(uicontext_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -439,7 +448,14 @@ void pyinit_ui(py::module& module_lev2) {
               },
               py::arg("rx"),
               py::arg("ry"),
-              "Convert root (window) coordinates to local coordinates");
+              "Convert root (window) coordinates to local coordinates")
+          .def(
+              "gpuInit",
+              [](uiwidget_ptr_t widget, ctx_t ctx) { //
+                widget->gpuInit(ctx.get());
+              },
+              py::arg("ctx"),
+              "Initialize GPU resources for this widget");
   type_codec->registerStdCodec<uiwidget_ptr_t>(widget_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto group_type = //

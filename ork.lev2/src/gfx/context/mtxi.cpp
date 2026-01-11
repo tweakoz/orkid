@@ -46,6 +46,23 @@ void MatrixStackInterface::PushUIMatrix() {
     //fw *= 0.5f;
     //fh *= 0.5f;
   }
+
+  // Debug: check for invalid dimensions that would cause NaN in Ortho
+  static int nan_log_count = 0;
+  if (nan_log_count < 20 && (fw <= 0 || fh <= 0)) {
+    auto fbi = _target.FBI();
+    int vpw_raw = fbi->GetVPW();
+    int vph_raw = fbi->GetVPH();
+    int vp_idx = fbi->miViewportStackIndex;
+    auto& vp_current = fbi->maViewportStack[vp_idx];
+    bool has_compositor = pfdata && pfdata->topCompositor();
+    printf("PushUIMatrix() WARN: fw=%g fh=%g ctx=%p FBI=%p pfdata=%p hasCompositor=%d\n",
+           fw, fh, (void*)&_target, (void*)fbi, (void*)pfdata.get(), has_compositor);
+    printf("  vpw_raw=%d vph_raw=%d vp_idx=%d vp_current=(%d,%d,%d,%d)\n",
+           vpw_raw, vph_raw, vp_idx, vp_current._x, vp_current._y, vp_current._w, vp_current._h);
+    nan_log_count++;
+  }
+
   ork::fmtx4 mtxP = _target.MTXI()->Ortho(0.0f, fw, 0.0f, fh, 0.0f, 1.0f);
   PushPMatrix(mtxP);
   PushVMatrix(ork::fmtx4::Identity());

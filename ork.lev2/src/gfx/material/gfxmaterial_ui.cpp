@@ -11,6 +11,7 @@
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/lev2_asset.h>
+#include <cmath>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::GfxMaterialUI, "MaterialUI")
 
@@ -150,6 +151,16 @@ int GfxMaterialUI::BeginBlock(Context* pTarg, const RenderContextInstData& MatCt
   ///////////////////////////////
 
   const fmtx4& MatMVP = pTarg->MTXI()->RefMVPMatrix();
+
+  // Debug: check for NaN in MVP and log context info
+  static int nan_log_count = 0;
+  const float* mvpdata = MatMVP.asArray();
+  if (nan_log_count < 20 && (std::isnan(mvpdata[0]) || std::isnan(mvpdata[1]))) {
+    printf("GfxMaterialUI::BeginBlock NaN! pTarg=%p MTXI=%p mvp=[%g %g %g %g]\n",
+           (void*)pTarg, (void*)pTarg->MTXI(),
+           mvpdata[0], mvpdata[1], mvpdata[2], mvpdata[3]);
+    nan_log_count++;
+  }
 
   ///////////////////////////////
 

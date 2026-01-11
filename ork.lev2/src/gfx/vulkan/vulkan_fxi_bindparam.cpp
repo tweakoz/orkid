@@ -9,10 +9,12 @@
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/util/logger.h>
 #include <glm/glm.hpp>
+#include <cmath>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
+static logchannel_ptr_t logchan_vkbpar = logger()->configureChannel("VKBPAR", fvec3(0.8, 0.6, 0.2), true);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Helper function to find a binding in merged resources by parameter name
@@ -351,6 +353,18 @@ void VkFxInterface::bindParamMatrix(const FxShaderParam* hpar, const fmtx4& Mat)
     printf("bindParamMatrix: hpar is NULL!\n");
     return;
   }
+
+  // Debug: check if incoming matrix has NaN
+  static int nan_check_count = 0;
+  if (nan_check_count < 100) {
+    const float* fdata = Mat.asArray();
+    if (std::isnan(fdata[0]) || std::isnan(fdata[1]) || std::isnan(fdata[4]) || std::isnan(fdata[5])) {
+      logchan_vkbpar->log("WARN: bindParamMatrix param<%s> has NaN! [%g %g %g %g ...]",
+                          hpar->_name.c_str(), fdata[0], fdata[1], fdata[2], fdata[3]);
+      nan_check_count++;
+    }
+  }
+
   if (auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>()) {
     auto& param_set = _currentVKPASS->_vk_program->_pending_params.emplace_back();
     param_set._vk_param = as_uniset_item.value();

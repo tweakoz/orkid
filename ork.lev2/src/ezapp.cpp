@@ -849,6 +849,11 @@ int OrkEzApp::mainThreadLoop() {
       while (ctx->_runstate == 1) {
         frame_timer.Start();  // Start timing this frame
         ctx->_runloopIter(true);
+
+        // Render secondary windows
+        _renderSecondaryWindows();
+        _cleanupClosedSecondaryWindows();
+
         double frame_duration = frame_timer.SecsSinceStart();
         if (frame_duration > max_frame_time) {
           max_frame_time = frame_duration;
@@ -872,6 +877,11 @@ int OrkEzApp::mainThreadLoop() {
       while (ctx->_runstate == 1) {
         while (_lockstep_frame_requests.load()) {
           ctx->_runloopIter(false);
+
+          // Render secondary windows
+          _renderSecondaryWindows();
+          _cleanupClosedSecondaryWindows();
+
           _lockstep_frame_requests.fetch_sub(1);
 
           // Track lockstep FPS
@@ -961,6 +971,10 @@ void OrkEzApp::closeAllSecondaryWindows() {
 }
 
 void OrkEzApp::_renderSecondaryWindows() {
+  static int call_count = 0;
+  if (call_count++ % 60 == 0) {
+    logchan_ezapp->log("_renderSecondaryWindows: %zu windows", _secondaryWindows.size());
+  }
   for (auto& win : _secondaryWindows) {
     if (!win->shouldClose()) {
       win->_render();

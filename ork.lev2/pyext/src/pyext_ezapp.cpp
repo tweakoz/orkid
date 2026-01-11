@@ -14,6 +14,7 @@
 #include <iostream>
 #include <ork/lev2/aud/audiodevice.h>
 #include <ork/lev2/aud/singularity/synth.h>
+#include <ork/lev2/ez_secondary_win.h>
 #include <pybind11/embed.h>  // if using embedded interpreter
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -853,6 +854,52 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
       .def("mainThreadIterCommandLine", [](orkezapp_ptr_t app) { //
             app->_mainThreadLoopIter();
             ork::opq::mainSerialQueue()->Process();
+          })
+      ///////////////////////////////////////////////////////
+      // Phase 6: Secondary window methods
+      ///////////////////////////////////////////////////////
+      .def("createSecondaryWindow",
+          [](orkezapp_ptr_t app, py::kwargs kwargs) -> ezsecondarywin_ptr_t {
+            EzSecondaryWinConfig config;
+            // Apply kwargs
+            if (kwargs) {
+              for (auto item : kwargs) {
+                auto key = py::cast<std::string>(item.first);
+                if (key == "width") config._width = py::cast<int>(item.second);
+                else if (key == "height") config._height = py::cast<int>(item.second);
+                else if (key == "x") config._x = py::cast<int>(item.second);
+                else if (key == "y") config._y = py::cast<int>(item.second);
+                else if (key == "title") config._title = py::cast<std::string>(item.second);
+                else if (key == "decorated") config._decorated = py::cast<bool>(item.second);
+                else if (key == "resizable") config._resizable = py::cast<bool>(item.second);
+                else if (key == "floating") config._floating = py::cast<bool>(item.second);
+                else if (key == "transparent") config._transparent = py::cast<bool>(item.second);
+                else if (key == "focus_on_show") config._focusOnShow = py::cast<bool>(item.second);
+              }
+            }
+            return app->createSecondaryWindow(config);
+          })
+      .def("createSecondaryWindowFromConfig",
+          [](orkezapp_ptr_t app, const EzSecondaryWinConfig& config) -> ezsecondarywin_ptr_t {
+            return app->createSecondaryWindow(config);
+          })
+      .def("createPopupWindow",
+          [](orkezapp_ptr_t app, int x, int y, int w, int h, bool transparent) -> ezsecondarywin_ptr_t {
+            auto config = EzSecondaryWinConfig::popup(x, y, w, h, transparent);
+            return app->createSecondaryWindow(config);
+          }, py::arg("x"), py::arg("y"), py::arg("w"), py::arg("h"), py::arg("transparent") = false)
+      .def("closeSecondaryWindow", [](orkezapp_ptr_t app, ezsecondarywin_ptr_t win) {
+            app->closeSecondaryWindow(win);
+          })
+      .def("closeAllSecondaryWindows", [](orkezapp_ptr_t app) {
+            app->closeAllSecondaryWindows();
+          })
+      .def_property_readonly("secondaryWindows", [](orkezapp_ptr_t app) -> py::list {
+            py::list result;
+            for (auto& win : app->_secondaryWindows) {
+              result.append(win);
+            }
+            return result;
           });
   /////////////////////////////////////////////////////////////////////////////////
   auto ezmainwin_type = //
@@ -872,6 +919,119 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               ezw->enableUiDraw();
           });
   type_codec->registerStdCodec<eztopwidget_ptr_t>(eztopwidget_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // Phase 6: Secondary Window Bindings
+  /////////////////////////////////////////////////////////////////////////////////
+  using ezsecwinconfig_ptr_t = std::shared_ptr<EzSecondaryWinConfig>;
+  auto ezsecwinconfig_type = //
+      py::class_<EzSecondaryWinConfig, ezsecwinconfig_ptr_t>(module_lev2, "EzSecondaryWinConfig")
+      .def(py::init<>())
+      .def_readwrite("width", &EzSecondaryWinConfig::_width)
+      .def_readwrite("height", &EzSecondaryWinConfig::_height)
+      .def_readwrite("x", &EzSecondaryWinConfig::_x)
+      .def_readwrite("y", &EzSecondaryWinConfig::_y)
+      .def_readwrite("title", &EzSecondaryWinConfig::_title)
+      .def_readwrite("decorated", &EzSecondaryWinConfig::_decorated)
+      .def_readwrite("resizable", &EzSecondaryWinConfig::_resizable)
+      .def_readwrite("floating", &EzSecondaryWinConfig::_floating)
+      .def_readwrite("transparent", &EzSecondaryWinConfig::_transparent)
+      .def_readwrite("focus_on_show", &EzSecondaryWinConfig::_focusOnShow)
+      .def_static("popup", [](int x, int y, int w, int h, bool transparent) {
+        return std::make_shared<EzSecondaryWinConfig>(
+            EzSecondaryWinConfig::popup(x, y, w, h, transparent));
+      }, py::arg("x"), py::arg("y"), py::arg("w"), py::arg("h"), py::arg("transparent") = false);
+  type_codec->registerStdCodec<ezsecwinconfig_ptr_t>(ezsecwinconfig_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto ezsecwin_type = //
+      py::class_<EzSecondaryWin, ezsecondarywin_ptr_t>(module_lev2, "EzSecondaryWin")
+      .def_property_readonly("width", &EzSecondaryWin::width)
+      .def_property_readonly("height", &EzSecondaryWin::height)
+      .def_property_readonly("should_close", &EzSecondaryWin::shouldClose)
+      .def_property_readonly("ui_context", [](ezsecondarywin_ptr_t win) -> ui::context_ptr_t {
+        return win->uiContextPtr();
+      })
+      .def_property_readonly("gfx_context", [](ezsecondarywin_ptr_t win) -> ctx_t {
+        return ctx_t(win->gfxContext());
+      })
+      .def("requestClose", &EzSecondaryWin::requestClose)
+      .def_property("onDraw",
+          [](ezsecondarywin_ptr_t win) -> py::object { return py::none(); },
+          [](ezsecondarywin_ptr_t win, py::object callback) {
+            if (callback.is_none()) {
+              win->_onDraw = nullptr;
+            } else {
+              auto pyfn = py::cast<py::function>(callback);
+              win->_onDraw = [pyfn](ui::drawevent_constptr_t drwev) {
+                py::gil_scoped_acquire acquire;
+                try {
+                  pyfn(drwev);
+                } catch (py::error_already_set& e) {
+                  ezapp_python_traceback(e);
+                  e.restore();
+                  PyErr_Print();
+                }
+              };
+            }
+          })
+      .def_property("onResize",
+          [](ezsecondarywin_ptr_t win) -> py::object { return py::none(); },
+          [](ezsecondarywin_ptr_t win, py::object callback) {
+            if (callback.is_none()) {
+              win->_onResize = nullptr;
+            } else {
+              auto pyfn = py::cast<py::function>(callback);
+              win->_onResize = [pyfn](int w, int h) {
+                py::gil_scoped_acquire acquire;
+                try {
+                  pyfn(w, h);
+                } catch (py::error_already_set& e) {
+                  ezapp_python_traceback(e);
+                  e.restore();
+                  PyErr_Print();
+                }
+              };
+            }
+          })
+      .def_property("onUiEvent",
+          [](ezsecondarywin_ptr_t win) -> py::object { return py::none(); },
+          [](ezsecondarywin_ptr_t win, py::object callback) {
+            if (callback.is_none()) {
+              win->_onUiEvent = nullptr;
+            } else {
+              auto pyfn = py::cast<py::function>(callback);
+              win->_onUiEvent = [pyfn](ui::event_constptr_t ev) -> ui::HandlerResult {
+                py::gil_scoped_acquire acquire;
+                try {
+                  return pyfn(ev).cast<ui::HandlerResult>();
+                } catch (py::error_already_set& e) {
+                  ezapp_python_traceback(e);
+                  e.restore();
+                  PyErr_Print();
+                  return ui::HandlerResult();
+                }
+              };
+            }
+          })
+      .def_property("onGpuInit",
+          [](ezsecondarywin_ptr_t win) -> py::object { return py::none(); },
+          [](ezsecondarywin_ptr_t win, py::object callback) {
+            if (callback.is_none()) {
+              win->_onGpuInit = nullptr;
+            } else {
+              auto pyfn = py::cast<py::function>(callback);
+              win->_onGpuInit = [pyfn](Context* ctx) {
+                py::gil_scoped_acquire acquire;
+                try {
+                  pyfn(ctx_t(ctx));
+                } catch (py::error_already_set& e) {
+                  ezapp_python_traceback(e);
+                  e.restore();
+                  PyErr_Print();
+                }
+              };
+            }
+          });
+  type_codec->registerStdCodec<ezsecondarywin_ptr_t>(ezsecwin_type);
   /////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
 

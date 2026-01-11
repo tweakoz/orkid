@@ -269,6 +269,8 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   void _doEndFrame(void) final;
   void _pushRtGroup(rtgroup_rawptr_t Base) final;
   void _popRtGroup() final;
+  void querySwapchainSize(int& w, int& h) const final;
+  void* querySwapchainPtr() const final;
 
   //////////////////////////////////////////////
 

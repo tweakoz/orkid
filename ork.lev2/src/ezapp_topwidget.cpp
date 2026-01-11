@@ -140,7 +140,13 @@ void EzTopWidget::DoDraw(ui::drawevent_constptr_t drwev) {
   if (_mainwin->_onDraw) {
     EASY_BLOCK("EzTopWidget drawcontent", profiler::colors::Red);
     auto ctx = drwev->GetTarget();
-    logchan_ezapp->log("[EzTopWidget::DoDraw] beginFrame frame %d", frame_counter);
+    int swap_w = 0, swap_h = 0;
+    ctx->FBI()->querySwapchainSize(swap_w, swap_h);
+    void* swap_ptr = ctx->FBI()->querySwapchainPtr();
+    if (frame_counter % 60 == 0) {
+      printf("[MAIN] ctx=%p fbi=%p swap=%p %dx%d frame %d\n",
+             (void*)ctx, (void*)ctx->FBI(), swap_ptr, swap_w, swap_h, frame_counter);
+    }
     ctx->beginFrame();
     if(ctx->FBI()->_main_rtg){
       _mainwin->_onDraw(drwev);
