@@ -36,6 +36,26 @@ struct EzSecondaryWinConfig {
   std::string _title = "Secondary Window";
   bool _decorated = true;
   bool _resizable = true;
+
+  // Popup-specific options
+  bool _floating = false;       // Always on top (for popups)
+  bool _transparent = false;    // Transparent framebuffer (for styled popups)
+  bool _focusOnShow = true;     // Auto-focus when shown
+
+  // Convenience factory for popup-style windows
+  static EzSecondaryWinConfig popup(int x, int y, int w, int h, bool transparent = false) {
+    EzSecondaryWinConfig cfg;
+    cfg._x = x;
+    cfg._y = y;
+    cfg._width = w;
+    cfg._height = h;
+    cfg._decorated = false;
+    cfg._resizable = false;
+    cfg._floating = true;
+    cfg._transparent = transparent;
+    cfg._focusOnShow = true;
+    return cfg;
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////

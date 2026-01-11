@@ -25,6 +25,7 @@
 
 #include <ork/lev2/ui/event.h>
 #include <ork/lev2/ui/context.h>
+#include <ork/lev2/ez_secondary_win.h>
 
 namespace ork::lev2 {
 ////////////////////////////////////////////////////////////////////////////////
@@ -262,6 +263,17 @@ public:
   onsynfn_t _onSynthExit                    = nullptr;
   audiodevice_ptr_t _audiodevice            = nullptr;
   audio::singularity::synth_ptr_t _synth    = nullptr;
+
+  // Secondary window support (Phase 3)
+  std::vector<ezsecondarywin_ptr_t> _secondaryWindows;
+
+  ezsecondarywin_ptr_t createSecondaryWindow(const EzSecondaryWinConfig& config);
+  void closeSecondaryWindow(ezsecondarywin_ptr_t win);
+  void closeAllSecondaryWindows();
+
+  // Internal
+  void _renderSecondaryWindows();
+  void _cleanupClosedSecondaryWindows();
 };
 
 } // namespace ork::lev2

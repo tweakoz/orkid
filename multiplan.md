@@ -84,6 +84,26 @@ struct EzSecondaryWinConfig {
   std::string _title = "Secondary Window";
   bool _decorated = true;
   bool _resizable = true;
+
+  // Popup-specific options
+  bool _floating = false;       // Always on top (for popups)
+  bool _transparent = false;    // Transparent framebuffer (for styled popups)
+  bool _focusOnShow = true;     // Auto-focus when shown
+
+  // Convenience factory for popup-style windows
+  static EzSecondaryWinConfig popup(int x, int y, int w, int h, bool transparent = false) {
+    EzSecondaryWinConfig cfg;
+    cfg._x = x;
+    cfg._y = y;
+    cfg._width = w;
+    cfg._height = h;
+    cfg._decorated = false;
+    cfg._resizable = false;
+    cfg._floating = true;
+    cfg._transparent = transparent;
+    cfg._focusOnShow = true;
+    return cfg;
+  }
 };
 
 struct EzSecondaryWin {
@@ -293,6 +313,13 @@ SecondaryWinImpl::SecondaryWinImpl(EzSecondaryWin* owner, const EzSecondaryWinCo
   // Configure window hints
   glfwWindowHint(GLFW_DECORATED, config._decorated ? GLFW_TRUE : GLFW_FALSE);
   glfwWindowHint(GLFW_RESIZABLE, config._resizable ? GLFW_TRUE : GLFW_FALSE);
+  glfwWindowHint(GLFW_FLOATING, config._floating ? GLFW_TRUE : GLFW_FALSE);
+  glfwWindowHint(GLFW_FOCUS_ON_SHOW, config._focusOnShow ? GLFW_TRUE : GLFW_FALSE);
+
+  // Transparent framebuffer (for popup styling)
+  if (config._transparent) {
+    glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
+  }
 
   // Vulkan: no client API
   extern uint64_t GRAPHICS_API;
@@ -763,3 +790,299 @@ After each phase, verify:
 5. All existing tests pass
 6. No memory leaks
 7. Clean shutdown (all windows close properly)
+
+---
+
+## Phase 9: Non-Blocking Popup Architecture
+
+### Background: The Blocking Problem
+
+The current `PopupWindow::mainThreadLoop()` (ctx_glfw.cpp:1236-1290) **blocks the main window** because:
+1. It runs its own `while (not _terminate)` loop on the main thread
+2. While this popup loop runs, the main window's `_runloopIter()` is never called
+3. Although `glfwPollEvents()` delivers events to ALL windows, the main window's rendering and update callbacks aren't invoked
+
+```
+Current (BLOCKING):
+MainLoop → popup.mainThreadLoop() → [BLOCKS HERE] → MainLoop resumes when popup closes
+                                         ↓
+                               Main window freezes
+```
+
+### Solution: Popup as EzSecondaryWin
+
+Leverage the EzSecondaryWin infrastructure for non-blocking popups:
+
+```
+Non-blocking flow:
+MainLoop iteration:
+  ├─ glfwPollEvents()          ← ALL windows receive events
+  ├─ Main window update/render
+  ├─ _renderSecondaryWindows() ← Iterate all secondary/popup windows
+  │     ├─ popup1._render()
+  │     └─ popup2._render()
+  └─ Present all
+```
+
+### 9.1 Vulkan Multi-Window Compatibility
+
+| Component | Sharing Strategy |
+|-----------|------------------|
+| VkInstance | Shared (one per app) |
+| VkDevice | Shared (all windows use same device) |
+| VkSurface | **Per-window** (each GLFW window → VkSurface) |
+| VkSwapchain | **Per-window** (each surface has its own swapchain) |
+| Command Buffers | Can share pools, submit per-swapchain |
+
+Vulkan was designed for multi-window/multi-surface rendering - this is fully supported.
+
+### 9.2 New Async Popup API
+
+**Option A: Callback-based (recommended)**
+```cpp
+// New function in popups.h or separate header
+void showLineEditPopupAsync(
+    Context* ctx,
+    int x, int y, int w, int h,
+    const std::string& initial_value,
+    std::function<void(std::string result)> onComplete,
+    std::function<void()> onCancel = nullptr
+);
+
+void showChoiceListPopupAsync(
+    Context* ctx,
+    int x, int y,
+    const std::vector<std::string>& choices,
+    fvec2 dimensions,
+    std::function<void(std::string choice)> onComplete,
+    std::function<void()> onCancel = nullptr
+);
+
+void showColorEditPopupAsync(
+    Context* ctx,
+    int x, int y, int w, int h,
+    const fvec4& initial_value,
+    std::function<void(fvec4 color)> onComplete,
+    std::function<void()> onCancel = nullptr
+);
+```
+
+### 9.3 Implementation Approach
+
+**File:** `ork.lev2/src/ui/async_popups.cpp`
+
+```cpp
+void showLineEditPopupAsync(
+    Context* ctx,
+    int x, int y, int w, int h,
+    const std::string& initial_value,
+    std::function<void(std::string result)> onComplete,
+    std::function<void()> onCancel) {
+
+  // Get app instance
+  auto app = OrkEzAppBase::get();
+  OrkAssert(app && "No EzApp running");
+  auto ezapp = dynamic_cast<OrkEzApp*>(app);
+
+  // Create popup-style window using convenience factory
+  auto config = EzSecondaryWinConfig::popup(x, y, w, h, false);
+  auto popup = ezapp->createSecondaryWindow(config);
+
+  // Set up UI
+  auto uic = popup->uiContext();
+  auto root = uic->makeTop<ui::LayoutGroup>("lg", 0, 0, w, h);
+  auto lineedit_item = root->makeChild<ui::LineEdit>("LineEdit", fvec4(1,1,0,1), 0, 0, 0, 0);
+  auto lineedit = std::dynamic_pointer_cast<ui::LineEdit>(lineedit_item._widget);
+  lineedit->setValue(initial_value);
+
+  // Layout
+  auto root_layout = root->_layout;
+  auto le_layout = lineedit_item._layout;
+  le_layout->top()->anchorTo(root_layout->top());
+  le_layout->left()->anchorTo(root_layout->left());
+  le_layout->right()->anchorTo(root_layout->right());
+  le_layout->bottom()->anchorTo(root_layout->bottom());
+  root_layout->updateAll();
+
+  // Store callbacks in popup's user data
+  popup->_onDraw = [uic, popup](ui::drawevent_constptr_t drwev) {
+    uic->draw(drwev);
+  };
+
+  // Handle completion
+  lineedit->_onAccept = [popup, lineedit, onComplete]() {
+    if (onComplete) {
+      onComplete(lineedit->_value);
+    }
+    popup->requestClose();
+  };
+
+  lineedit->_onCancel = [popup, onCancel]() {
+    if (onCancel) {
+      onCancel();
+    }
+    popup->requestClose();
+  };
+
+  popup->_onGpuInit = [root, uic](Context* ctx) {
+    root->gpuInit(ctx);
+  };
+}
+```
+
+### 9.4 Legacy Compatibility
+
+Keep existing blocking functions for scripts that don't need async:
+```cpp
+// Existing (blocking) - still works for simple scripts
+std::string result = popupLineEdit(ctx, x, y, w, h, initial_value);
+
+// New (non-blocking) - for apps that need main window to keep running
+showLineEditPopupAsync(ctx, x, y, w, h, initial_value, [](std::string result) {
+    // Handle result
+});
+```
+
+### 9.5 Python Bindings
+
+```python
+# Async popup with callback
+def on_edit_complete(text):
+    print(f"User entered: {text}")
+
+lev2.show_line_edit_popup_async(
+    ctx, 100, 100, 300, 40,
+    initial_value="",
+    on_complete=on_edit_complete
+)
+# Main window continues running!
+```
+
+### 9.6 Files to Modify/Create
+
+| File | Action |
+|------|--------|
+| `ork.lev2/inc/ork/lev2/ui/async_popups.h` | Create |
+| `ork.lev2/src/ui/async_popups.cpp` | Create |
+| `ork.lev2/pyext/src/pyext_ui.cpp` | Modify (add bindings) |
+| `ork.lev2/inc/ork/lev2/ui/lineedit.h` | Modify (add _onAccept, _onCancel) |
+| `ork.lev2/inc/ork/lev2/ui/choicelist.h` | Modify (add callbacks) |
+| `ork.lev2/inc/ork/lev2/ui/coloredit.h` | Modify (add callbacks) |
+
+### 9.7 Testing
+
+**File:** `ork.lev2/pyext/tests/ui/async_popup_test.py`
+
+```python
+#!/usr/bin/env python3
+"""Test non-blocking popups - main window should NOT freeze"""
+
+import ork.lev2 as lev2
+from ork import core
+
+app = lev2.EzApp.create()
+frame_count = 0
+popup_result = None
+
+def on_update(upd):
+    global frame_count
+    frame_count += 1
+    # Main window is still updating while popup is open!
+    if frame_count == 60:  # After 1 second at 60fps
+        print(f"Main window updated {frame_count} frames while popup open")
+        assert frame_count > 0, "Main window should keep updating"
+
+def on_popup_complete(text):
+    global popup_result
+    popup_result = text
+    print(f"Popup completed with: {text}")
+
+app.onUpdate(on_update)
+app.onGpuInit(lambda ctx:
+    lev2.show_line_edit_popup_async(
+        ctx, 100, 100, 300, 40, "test",
+        on_complete=on_popup_complete
+    )
+)
+
+app.mainThreadLoop()
+```
+
+**Checkpoint 9:** Non-blocking popups work. Main window updates while popup is open. Vulkan-compatible.
+
+---
+
+## Phase 10: Advanced Popup Behavior (Optional)
+
+**Note:** Basic floating and focus-on-show are now handled in Phase 4 via `EzSecondaryWinConfig` options (`_floating`, `_focusOnShow`).
+
+### 10.1 ESC Key to Close Popup
+Add default keyboard handler that closes popup on ESC:
+```cpp
+// In SecondaryWinImpl::_setupEventHandlers()
+sink->_on_callback_keyboard = [this](int key, int scancode, int action, int mods) {
+  // ESC closes popup
+  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+    _owner->requestClose();
+    return;
+  }
+  // ... rest of keyboard handling
+};
+```
+
+### 10.2 Click-Outside-to-Close (Optional)
+Use GLFW's focus lost callback:
+```cpp
+sink->_on_callback_enterleave = [this](int entered) {
+  // If popup loses focus and config says close-on-blur
+  if (!entered && _config._closeOnBlur) {
+    _owner->requestClose();
+  }
+};
+```
+
+Add to config:
+```cpp
+struct EzSecondaryWinConfig {
+  // ... existing ...
+  bool _closeOnBlur = false;    // Close when focus lost (optional for popups)
+};
+```
+
+### 10.3 Return Focus to Main Window
+When popup closes, return focus:
+```cpp
+// In OrkEzApp::_cleanupClosedSecondaryWindows()
+void OrkEzApp::_cleanupClosedSecondaryWindows() {
+  bool anyRemoved = false;
+  std::erase_if(_secondaryWindows, [&anyRemoved](const auto& w) {
+    if (w->shouldClose()) {
+      anyRemoved = true;
+      return true;
+    }
+    return false;
+  });
+
+  // Return focus to main window if any popups were closed
+  if (anyRemoved && _mainWindow && _mainWindow->_ctqt) {
+    auto ctx = dynamic_cast<CtxGLFW*>(_mainWindow->_ctqt);
+    if (ctx && ctx->_glfwWindow) {
+      glfwFocusWindow(ctx->_glfwWindow);
+    }
+  }
+}
+```
+
+---
+
+## Updated Success Criteria
+
+1. Can create N secondary windows from main app
+2. Each window has independent widget tree, events, drawing
+3. Main window behavior unchanged
+4. DRM mode unchanged
+5. All existing tests pass
+6. No memory leaks
+7. Clean shutdown
+8. **Non-blocking popups work - main window keeps updating while popup is open**
+9. **Vulkan multi-window/multi-surface rendering works correctly**

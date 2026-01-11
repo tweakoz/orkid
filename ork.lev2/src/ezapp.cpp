@@ -927,6 +927,30 @@ void OrkEzApp::setRefreshPolicy(RefreshPolicyItem policy) {
     _mainWindow->_ctqt->_setRefreshPolicy(policy);
 }
 ///////////////////////////////////////////////////////////////////////////////
+// Phase 3: Secondary window support stubs
+///////////////////////////////////////////////////////////////////////////////
+
+ezsecondarywin_ptr_t OrkEzApp::createSecondaryWindow(const EzSecondaryWinConfig& config) {
+  OrkAssert(false && "OrkEzApp::createSecondaryWindow not yet implemented");
+  return nullptr;
+}
+
+void OrkEzApp::closeSecondaryWindow(ezsecondarywin_ptr_t win) {
+  OrkAssert(false && "OrkEzApp::closeSecondaryWindow not yet implemented");
+}
+
+void OrkEzApp::closeAllSecondaryWindows() {
+  OrkAssert(false && "OrkEzApp::closeAllSecondaryWindows not yet implemented");
+}
+
+void OrkEzApp::_renderSecondaryWindows() {
+  // Stub - will be called from render loop
+}
+
+void OrkEzApp::_cleanupClosedSecondaryWindows() {
+  // Stub - will be called to clean up closed windows
+}
+///////////////////////////////////////////////////////////////////////////////
 
 } // namespace ork::lev2
 
