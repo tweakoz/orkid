@@ -155,7 +155,7 @@ ManipAxis ManipController::_hitTestRotation(const fvec2& mousePos) {
 
   fvec3 origin = _target->getWorldPosition();
   float scale = _computeWorldGizmoScale();
-  float ringRadius = scale * 0.8f;  // Match _ringRadius in ManipGizmoDrawableData
+  float ringRadius = scale * 1.2f;  // Match _ringRadius in ManipGizmoDrawableData
 
   // Get target's rotation to test in local space
   fquat targetRot = _target->getWorldRotation();
