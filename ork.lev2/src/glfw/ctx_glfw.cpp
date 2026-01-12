@@ -1016,6 +1016,9 @@ void CtxGLFW::_on_callback_fbresized(int w, int h) {
   this->onResize(w, h);
 }
 void CtxGLFW::_on_callback_keyboard(int key, int scancode, int action, int modifiers) {
+  const char* action_str = (action == GLFW_PRESS) ? "PRESS" : (action == GLFW_RELEASE) ? "RELEASE" : "REPEAT";
+  logchan_glfw->log("[PRIMARY-KEY] key=%d scancode=%d action=%s mods=%d", key, scancode, action_str, modifiers);
+
   auto uiev = this->uievent();
   if (action == GLFW_PRESS && key == GLFW_KEY_V && (modifiers & GLFW_MODIFIER_OSCTRL)) {
     const char* clipboardText = glfwGetClipboardString(_glfwWindow);

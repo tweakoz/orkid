@@ -70,6 +70,8 @@ struct SecondaryWinImpl {
   int _buttonState = 0;
   int _mouseX = 0;
   int _mouseY = 0;
+  float _mouseUnitX = 0.0f;
+  float _mouseUnitY = 0.0f;
 
   // Clean RCFD without compositor for UI rendering
   lev2::rcfd_ptr_t _cleanRcfd;
@@ -340,6 +342,15 @@ void SecondaryWinImpl::_onResize(int w, int h) {
                         geo_after._x, geo_after._y, geo_after._w, geo_after._h);
   }
 
+  // Fire RESIZED event (matches primary window behavior)
+  auto uiev = std::make_shared<ui::Event>();
+  uiev->_eventcode = ui::EventCode::RESIZED;
+  uiev->miScreenWidth = w;
+  uiev->miScreenHeight = h;
+  uiev->miX = _mouseX;
+  uiev->miY = _mouseY;
+  _fireEvent(uiev);
+
   if (_owner->_onResize) {
     _owner->_onResize(w, h);
   }
@@ -389,10 +400,18 @@ static void _secwin_callback_cursor(GLFWwindow* window, double x, double y) {
   if (!impl) return;
 
   auto uiev = std::make_shared<ui::Event>();
+  // Pre-set the current mouse position so fillEventCursor can copy it to miLastX/miLastY
+  // (fillEventCursor does: miLast* = mi*; mfLast* = mf*; then sets new values)
+  uiev->miX = impl->_mouseX;
+  uiev->miY = impl->_mouseY;
+  uiev->mfUnitX = impl->_mouseUnitX;
+  uiev->mfUnitY = impl->_mouseUnitY;
   fillEventCursor(uiev, window, nullptr, x, y, impl->_width, impl->_height);
 
   impl->_mouseX = uiev->miX;
   impl->_mouseY = uiev->miY;
+  impl->_mouseUnitX = uiev->mfUnitX;
+  impl->_mouseUnitY = uiev->mfUnitY;
 
   uiev->_eventcode = (impl->_buttonState == 0) ? ui::EventCode::MOVE : ui::EventCode::DRAG;
   impl->_fireEvent(uiev);
@@ -403,6 +422,9 @@ static void _secwin_callback_cursor(GLFWwindow* window, double x, double y) {
 static void _secwin_callback_keyboard(GLFWwindow* window, int key, int scancode, int action, int modifiers) {
   auto impl = static_cast<SecondaryWinImpl*>(glfwGetWindowUserPointer(window));
   if (!impl) return;
+
+  const char* action_str = (action == GLFW_PRESS) ? "PRESS" : (action == GLFW_RELEASE) ? "RELEASE" : "REPEAT";
+  logchan_secwin->log("[SECWIN-KEY] key=%d scancode=%d action=%s mods=%d", key, scancode, action_str, modifiers);
 
   auto uiev = std::make_shared<ui::Event>();
 
@@ -424,6 +446,9 @@ static void _secwin_callback_keyboard(GLFWwindow* window, int key, int scancode,
   }
 
   fillEventKeyboard(uiev, key, scancode, action, modifiers);
+  // Set mouse position so IsEventInside() can route to correct widget
+  uiev->miX = impl->_mouseX;
+  uiev->miY = impl->_mouseY;
   impl->_fireEvent(uiev);
 }
 
@@ -435,8 +460,9 @@ static void _secwin_callback_scroll(GLFWwindow* window, double xoff, double yoff
 
   auto uiev = std::make_shared<ui::Event>();
   uiev->_eventcode = ui::EventCode::MOUSEWHEEL;
-  uiev->miMWX = int(xoff);
-  uiev->miMWY = int(yoff);
+  // Scale by 10.0 to match primary window behavior
+  uiev->miMWX = int(xoff * 10.0);
+  uiev->miMWY = int(yoff * 10.0);
   uiev->miX = impl->_mouseX;
   uiev->miY = impl->_mouseY;
 
@@ -477,6 +503,17 @@ static void _secwin_callback_focus(GLFWwindow* window, int focused) {
   uiev->_eventcode = focused
       ? ui::EventCode::GOT_KEYFOCUS
       : ui::EventCode::LOST_KEYFOCUS;
+  uiev->miX = impl->_mouseX;
+  uiev->miY = impl->_mouseY;
+
+  // Notify Window object (matches primary window behavior)
+  if (impl->_orkWindow) {
+    if (focused) {
+      impl->_orkWindow->GotFocus();
+    } else {
+      impl->_orkWindow->LostFocus();
+    }
+  }
 
   logchan_secwin->log("Focus %s", focused ? "gained" : "lost");
   impl->_fireEvent(uiev);
