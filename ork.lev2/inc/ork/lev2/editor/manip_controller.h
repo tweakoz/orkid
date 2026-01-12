@@ -115,6 +115,12 @@ struct ManipController {
   // Compute ring dimming factor based on view angle
   float _computeRingDimFactor(const fvec3& ringNormal) const;
 
+  // Compute axis dimming factor (axis usable when perpendicular to camera)
+  float _computeAxisDimFactor(const fvec3& axisDir) const;
+
+  // Compute plane dimming factor (plane usable when not edge-on)
+  float _computePlaneDimFactor(const fvec3& planeNormal) const;
+
   // State
   ManipMode _mode = ManipMode::TRANSLATE;
   ManipSpace _space = ManipSpace::LOCAL;
@@ -143,10 +149,13 @@ struct ManipController {
   // ManipHandler for ray-plane intersection
   ManipHandler _handler;
 
-  // Cached ring dimming factors at drag start (for frozen visual state during drag)
+  // Cached dimming factors at drag start (for frozen visual state during drag)
   float _drag_start_dim_x = 1.0f;
   float _drag_start_dim_y = 1.0f;
   float _drag_start_dim_z = 1.0f;
+  float _drag_start_dim_xy = 1.0f;
+  float _drag_start_dim_xz = 1.0f;
+  float _drag_start_dim_yz = 1.0f;
 };
 
 using manipcontroller_ptr_t = std::shared_ptr<ManipController>;

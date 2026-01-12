@@ -54,7 +54,8 @@ struct ManipulatorInterface : public Object {
   // Capability queries
   virtual bool supportsTranslation() const { return true; }
   virtual bool supportsRotation() const { return true; }
-  virtual bool supportsScaling() const { return true; }
+  virtual bool supportsUniformScaling() const { return true; }
+  virtual bool supportsNonUniformScaling() const { return false; }
 
   // Get transform for gizmo rendering
   virtual fmtx4 getWorldMatrix() const = 0;
@@ -103,6 +104,8 @@ struct DecompTransformManipulator : public ManipulatorInterface {
   void onBeginManipulation(ManipMode mode) override;
   void onEndManipulation(ManipMode mode) override;
 
+  bool supportsNonUniformScaling() const override;
+
 private:
   decompxf_ptr_t _target;
 
@@ -126,7 +129,7 @@ struct JointManipulatorInterface : ManipulatorInterface {
 
   bool supportsTranslation() const final;
   bool supportsRotation() const final;
-  bool supportsScaling() const final;
+  bool supportsUniformScaling() const final;
 
   fmtx4 getWorldMatrix() const override { return fmtx4::Identity(); }
   fvec3 getWorldPosition() const override { return fvec3(); }

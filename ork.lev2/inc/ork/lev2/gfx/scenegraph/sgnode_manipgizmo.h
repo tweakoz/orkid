@@ -33,7 +33,7 @@ public:
   fvec4 _colorZ = fvec4(0.2f, 0.2f, 1.0f, 1.0f);
 
   // Highlight and active colors
-  fvec4 _colorHighlight = fvec4(1.0f, 1.0f, 0.0f, 1.0f);
+  fvec4 _colorHighlight = fvec4(1.0f, 1.0f, 0.5f, 1.0f);
   fvec4 _colorActive = fvec4(1.0f, 1.0f, 1.0f, 1.0f);
 };
 
@@ -61,13 +61,27 @@ struct ManipGizmoDrawableImpl {
                  const fvec4& color, float size);
   void _drawPlaneHandle(Context* ctx, rcfd_ptr_t RCFD, const fmtx4& VP, const fvec3& pos,
                         const fvec3& axis1, const fvec3& axis2,
-                        const fvec4& color, float offset, float size);
+                        const fvec4& color, float sign1, float sign2, float size);
 
   const ManipGizmoDrawableData* _data = nullptr;
   freestyle_mtl_ptr_t _material;
   const FxShaderTechnique* _technique = nullptr;
-  const FxShaderParam* _paramMVP = nullptr;
-  const FxShaderParam* _paramModColor = nullptr;
+  const FxShaderParam* _param_mvp = nullptr;
+  const FxShaderParam* _param_modcolor = nullptr;
+  const FxShaderParam* _param_lightdir = nullptr;
+  const FxShaderParam* _param_planesize = nullptr;
+  const FxShaderParam* _param_unlit = nullptr;
+
+  // Static geometry buffers (unit scale, at origin)
+  vtxbufferbase_ptr_t _unit_cylinder_vb;
+  vtxbufferbase_ptr_t _unit_cone_vb;
+  vtxbufferbase_ptr_t _unit_torus_vb;
+  int _cylinder_vert_count = 0;
+  int _cone_vert_count = 0;
+  int _torus_vert_count = 0;
+
+  void _generateStaticGeometry(Context* ctx);
+
   bool _initted = false;
 };
 

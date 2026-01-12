@@ -29,8 +29,11 @@ struct PyManipulatorInterface : public editor::ManipulatorInterface {
   bool supportsRotation() const override {
     PYBIND11_OVERRIDE(bool, editor::ManipulatorInterface, supportsRotation);
   }
-  bool supportsScaling() const override {
-    PYBIND11_OVERRIDE(bool, editor::ManipulatorInterface, supportsScaling);
+  bool supportsUniformScaling() const override {
+    PYBIND11_OVERRIDE(bool, editor::ManipulatorInterface, supportsUniformScaling);
+  }
+  bool supportsNonUniformScaling() const override {
+    PYBIND11_OVERRIDE(bool, editor::ManipulatorInterface, supportsNonUniformScaling);
   }
 
   fmtx4 getWorldMatrix() const override {
@@ -105,7 +108,8 @@ void pyinit_editor(py::module& module_lev2) {
       .def(py::init<>())
       .def("supportsTranslation", &ManipulatorInterface::supportsTranslation)
       .def("supportsRotation", &ManipulatorInterface::supportsRotation)
-      .def("supportsScaling", &ManipulatorInterface::supportsScaling)
+      .def("supportsUniformScaling", &ManipulatorInterface::supportsUniformScaling)
+      .def("supportsNonUniformScaling", &ManipulatorInterface::supportsNonUniformScaling)
       .def("getWorldMatrix", &ManipulatorInterface::getWorldMatrix)
       .def("getWorldPosition", &ManipulatorInterface::getWorldPosition)
       .def("getWorldRotation", &ManipulatorInterface::getWorldRotation)

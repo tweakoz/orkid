@@ -17,6 +17,7 @@ namespace ork::lev2::editor {
 
 ManipController::ManipController() {
   _ring_tube_radius_scale = 0.024f;  // 40% reduction from 0.04
+  _axis_thickness_scale = 0.032f;    // 20% reduction from 0.04
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -120,30 +121,100 @@ ManipAxis ManipController::_hitTestTranslation(const fvec2& mousePos) {
     axisZ = targetRot.transform(fvec3(0, 0, 1));
   }
 
+  // Check which axes and planes are selectable (not too edge-on)
+  bool xSelectable = _computeAxisDimFactor(axisX) > 0.9f;
+  bool ySelectable = _computeAxisDimFactor(axisY) > 0.9f;
+  bool zSelectable = _computeAxisDimFactor(axisZ) > 0.9f;
+  bool xySelectable = _computePlaneDimFactor(axisZ) > 0.9f;  // XY plane has Z normal
+  bool xzSelectable = _computePlaneDimFactor(axisY) > 0.9f;  // XZ plane has Y normal
+  bool yzSelectable = _computePlaneDimFactor(axisX) > 0.9f;  // YZ plane has X normal
+
+  // Match the visual axis dimensions (cylinder starts offset from origin)
+  float axisLen = scale * _axis_length_scale;
+  float coneH = axisLen * 0.15f;
+  float thickness = scale * _axis_thickness_scale;
+  float cylinderOffset = thickness * 2.0f;
+  float cylinderLen = (axisLen - coneH) - cylinderOffset;
+
+  // Project cylinder thickness to screen space for accurate hit testing
   fvec2 origin2D = _project(origin);
-  fvec2 xEnd = _project(origin + axisX * scale);
-  fvec2 yEnd = _project(origin + axisY * scale);
-  fvec2 zEnd = _project(origin + axisZ * scale);
+  fvec2 thicknessTest = _project(origin + axisX * thickness);
+  float screenThickness = (thicknessTest - origin2D).length();
+  float axisHitThreshold = _hit_threshold + screenThickness;
 
-  // Test single axes first (priority)
-  float distX = _distToSegment(mousePos, origin2D, xEnd);
-  float distY = _distToSegment(mousePos, origin2D, yEnd);
-  float distZ = _distToSegment(mousePos, origin2D, zEnd);
+  fvec2 xStart = _project(origin + axisX * cylinderOffset);
+  fvec2 xEnd = _project(origin + axisX * (cylinderOffset + cylinderLen));
+  fvec2 yStart = _project(origin + axisY * cylinderOffset);
+  fvec2 yEnd = _project(origin + axisY * (cylinderOffset + cylinderLen));
+  fvec2 zStart = _project(origin + axisZ * cylinderOffset);
+  fvec2 zEnd = _project(origin + axisZ * (cylinderOffset + cylinderLen));
 
-  if (distX < _hit_threshold) return ManipAxis::X;
-  if (distY < _hit_threshold) return ManipAxis::Y;
-  if (distZ < _hit_threshold) return ManipAxis::Z;
+  // Test single axes first (priority) - only if selectable
+  if (xSelectable) {
+    float distX = _distToSegment(mousePos, xStart, xEnd);
+    if (distX < axisHitThreshold) return ManipAxis::X;
+  }
+  if (ySelectable) {
+    float distY = _distToSegment(mousePos, yStart, yEnd);
+    if (distY < axisHitThreshold) return ManipAxis::Y;
+  }
+  if (zSelectable) {
+    float distZ = _distToSegment(mousePos, zStart, zEnd);
+    if (distZ < axisHitThreshold) return ManipAxis::Z;
+  }
 
-  // Test plane handles (small squares at half axis length)
-  float planeOffset = scale * 0.5f;
-  fvec2 xyPlane = _project(origin + (axisX + axisY) * planeOffset);
-  fvec2 xzPlane = _project(origin + (axisX + axisZ) * planeOffset);
-  fvec2 yzPlane = _project(origin + (axisY + axisZ) * planeOffset);
+  // Test plane handles (cornered at origin, forming hemi-cube) - only if selectable
+  float planeSize = scale * _plane_handle_scale;
 
-  float planeThreshold = _hit_threshold * 1.5f;
-  if ((mousePos - xyPlane).length() < planeThreshold) return ManipAxis::XY;
-  if ((mousePos - xzPlane).length() < planeThreshold) return ManipAxis::XZ;
-  if ((mousePos - yzPlane).length() < planeThreshold) return ManipAxis::YZ;
+  // Get camera position for view-dependent plane placement
+  fvec3 camPos = _getCameraEye();
+
+  // For each plane, test if mouse is within the cornered box bounds
+  auto testPlaneBox = [&](const fvec3& axis1, const fvec3& axis2, float sign1, float sign2) -> bool {
+    // Plane extends from origin to sign1*axis1*size + sign2*axis2*size
+    fvec2 corner0 = _project(origin);
+    fvec2 corner1 = _project(origin + axis1 * sign1 * planeSize);
+    fvec2 corner2 = _project(origin + axis2 * sign2 * planeSize);
+    fvec2 corner3 = _project(origin + axis1 * sign1 * planeSize + axis2 * sign2 * planeSize);
+
+    // Use 2D triangle containment test (two triangles forming the quad)
+    auto pointInTriangle = [](const fvec2& p, const fvec2& a, const fvec2& b, const fvec2& c) -> bool {
+      auto sign = [](const fvec2& p1, const fvec2& p2, const fvec2& p3) -> float {
+        return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
+      };
+      float d1 = sign(p, a, b);
+      float d2 = sign(p, b, c);
+      float d3 = sign(p, c, a);
+      bool hasNeg = (d1 < 0) || (d2 < 0) || (d3 < 0);
+      bool hasPos = (d1 > 0) || (d2 > 0) || (d3 > 0);
+      return !(hasNeg && hasPos);
+    };
+
+    return pointInTriangle(mousePos, corner0, corner1, corner3) ||
+           pointInTriangle(mousePos, corner0, corner3, corner2);
+  };
+
+  // Compute view-dependent signs (same logic as rendering)
+  fvec3 camToGizmo = camPos - origin;
+
+  // For LOCAL mode, transform camera direction to object's local space
+  if (_space == ManipSpace::LOCAL) {
+    fquat targetRot = _target->getWorldRotation();
+    fquat invRot = targetRot.inverse();
+    camToGizmo = invRot.transform(camToGizmo);
+  }
+
+  // Compute signs based on local-space (or world-space for WORLD mode) camera direction
+  float signXY_X = (camToGizmo.x > 0) ? +1.0f : -1.0f;
+  float signXY_Y = (camToGizmo.y > 0) ? +1.0f : -1.0f;
+  float signXZ_X = (camToGizmo.x > 0) ? +1.0f : -1.0f;
+  float signXZ_Z = (camToGizmo.z > 0) ? +1.0f : -1.0f;
+  float signYZ_Y = (camToGizmo.y > 0) ? +1.0f : -1.0f;
+  float signYZ_Z = (camToGizmo.z > 0) ? +1.0f : -1.0f;
+
+  if (xySelectable && testPlaneBox(axisX, axisY, signXY_X, signXY_Y)) return ManipAxis::XY;
+  if (xzSelectable && testPlaneBox(axisX, axisZ, signXZ_X, signXZ_Z)) return ManipAxis::XZ;
+  if (yzSelectable && testPlaneBox(axisY, axisZ, signYZ_Y, signYZ_Z)) return ManipAxis::YZ;
 
   // Test center (free movement)
   if ((mousePos - origin2D).length() < _hit_threshold) return ManipAxis::FREE;
@@ -215,7 +286,61 @@ ManipAxis ManipController::_hitTestRotation(const fvec2& mousePos) {
 }
 
 ManipAxis ManipController::_hitTestScale(const fvec2& mousePos) {
-  return _hitTestTranslation(mousePos);
+  if (!_target) return ManipAxis::NONE;
+
+  fvec3 origin = _target->getWorldPosition();
+  float scale = _computeWorldGizmoScale();
+
+  // Test center cube for uniform scale
+  fvec2 origin2D = _project(origin);
+  float cubeSize = scale * _axis_length_scale * 0.1f;
+  float cubeScreenSize = (_project(origin + fvec3(cubeSize, 0, 0)) - origin2D).length();
+  if ((mousePos - origin2D).length() < cubeScreenSize * 1.5f) {
+    return ManipAxis::FREE;
+  }
+
+  // Only test individual axes if target supports non-uniform scaling
+  if (_target->supportsNonUniformScaling()) {
+    // Get axes based on space mode
+    fvec3 axisX(1, 0, 0), axisY(0, 1, 0), axisZ(0, 0, 1);
+    if (_space == ManipSpace::LOCAL) {
+      fquat targetRot = _target->getWorldRotation();
+      axisX = targetRot.transform(fvec3(1, 0, 0));
+      axisY = targetRot.transform(fvec3(0, 1, 0));
+      axisZ = targetRot.transform(fvec3(0, 0, 1));
+    }
+
+    // Match the visual axis dimensions (cylinder starts offset from origin)
+    float axisLen = scale * _axis_length_scale;
+    float coneH = axisLen * 0.15f;
+    float thickness = scale * _axis_thickness_scale;
+    float cylinderOffset = thickness * 2.0f;
+    float cylinderLen = (axisLen - cubeSize) - cylinderOffset;
+
+    // Project cylinder thickness to screen space for accurate hit testing
+    fvec2 thicknessTest = _project(origin + axisX * thickness);
+    float screenThickness = (thicknessTest - origin2D).length();
+    float axisHitThreshold = _hit_threshold + screenThickness;
+
+    fvec2 xStart = _project(origin + axisX * cylinderOffset);
+    fvec2 xEnd = _project(origin + axisX * (cylinderOffset + cylinderLen));
+    fvec2 yStart = _project(origin + axisY * cylinderOffset);
+    fvec2 yEnd = _project(origin + axisY * (cylinderOffset + cylinderLen));
+    fvec2 zStart = _project(origin + axisZ * cylinderOffset);
+    fvec2 zEnd = _project(origin + axisZ * (cylinderOffset + cylinderLen));
+
+    // Test single axes - no selectability check for scale mode
+    float distX = _distToSegment(mousePos, xStart, xEnd);
+    if (distX < axisHitThreshold) return ManipAxis::X;
+
+    float distY = _distToSegment(mousePos, yStart, yEnd);
+    if (distY < axisHitThreshold) return ManipAxis::Y;
+
+    float distZ = _distToSegment(mousePos, zStart, zEnd);
+    if (distZ < axisHitThreshold) return ManipAxis::Z;
+  }
+
+  return ManipAxis::NONE;
 }
 
 ManipAxis ManipController::_hitTestGizmo(const fvec2& mousePos) {
@@ -432,6 +557,36 @@ float ManipController::_computeRingDimFactor(const fvec3& ringNormal) const {
   }
 }
 
+float ManipController::_computeAxisDimFactor(const fvec3& axisDir) const {
+  // Axis is usable when perpendicular to camera (dot product near 0)
+  // Axis is NOT usable when parallel to camera (dot product near 1)
+  fvec3 camDir = _getCameraDir();
+  float dotProduct = fabs(axisDir.dotWith(camDir));
+  float angleDegrees = acos(dotProduct) * 180.0f / PI;  // Angle from camera direction
+
+  float threshold = _min_ring_elevation_degrees;  // Reuse same threshold value
+  float transitionBand = 1.0f;
+
+  // Axis is bright when it's far from parallel (angle from camera > threshold)
+  // This is the inverse of rings: rings measure elevation from plane,
+  // axes measure angle from being parallel to camera
+  if (angleDegrees >= threshold) {
+    return 1.0f;  // Full brightness - not parallel to camera
+  } else if (angleDegrees >= threshold - transitionBand) {
+    float t = (angleDegrees - (threshold - transitionBand)) / transitionBand;
+    return 0.5f + 0.5f * t;
+  } else {
+    return 0.5f;  // Dimmed - too close to parallel to camera
+  }
+}
+
+float ManipController::_computePlaneDimFactor(const fvec3& planeNormal) const {
+  // Plane is usable when facing camera (normal aligned with camera direction)
+  // Plane is NOT usable when edge-on (normal perpendicular to camera)
+  // This is the same logic as rings
+  return _computeRingDimFactor(planeNormal);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Event Handling
 ////////////////////////////////////////////////////////////////////////////////
@@ -467,8 +622,31 @@ ui::HandlerResult ManipController::handleEvent(ui::event_constptr_t ev) {
         );
         _handler.Init(mouseNDC, _cam_matrices.GetIVPMatrix(), fquat());
 
-        // For rotation mode, set up the rotation plane in LOCAL space
-        if (_mode == ManipMode::ROTATE) {
+        // Cache dimming state based on mode (frozen during drag)
+        if (_mode == ManipMode::TRANSLATE) {
+          // Get axes based on space mode
+          fvec3 axisX(1, 0, 0), axisY(0, 1, 0), axisZ(0, 0, 1);
+          if (_space == ManipSpace::LOCAL) {
+            fquat targetRot = _target->getWorldRotation();
+            axisX = targetRot.transform(fvec3(1, 0, 0));
+            axisY = targetRot.transform(fvec3(0, 1, 0));
+            axisZ = targetRot.transform(fvec3(0, 0, 1));
+          }
+
+          // Cache dimming for axes
+          _drag_start_dim_x = _computeAxisDimFactor(axisX);
+          _drag_start_dim_y = _computeAxisDimFactor(axisY);
+          _drag_start_dim_z = _computeAxisDimFactor(axisZ);
+
+          // Cache dimming for planes (use plane normals)
+          fvec3 normalXY = axisZ;  // XY plane has Z normal
+          fvec3 normalXZ = axisY;  // XZ plane has Y normal
+          fvec3 normalYZ = axisX;  // YZ plane has X normal
+          _drag_start_dim_xy = _computePlaneDimFactor(normalXY);
+          _drag_start_dim_xz = _computePlaneDimFactor(normalXZ);
+          _drag_start_dim_yz = _computePlaneDimFactor(normalYZ);
+        } else if (_mode == ManipMode::ROTATE) {
+          // For rotation mode, set up the rotation plane in LOCAL space
           fquat targetRot = _target->getWorldRotation();
           fvec3 localX = targetRot.transform(fvec3(1, 0, 0));
           fvec3 localY = targetRot.transform(fvec3(0, 1, 0));

@@ -94,6 +94,13 @@ void DecompTransformManipulator::onEndManipulation(ManipMode mode) {
   // Could emit undo command here using _initial* snapshots
 }
 
+bool DecompTransformManipulator::supportsNonUniformScaling() const {
+  if (_target) {
+    return _target->_useNonUniformScale;
+  }
+  return false;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Legacy JointManipulatorInterface
 ////////////////////////////////////////////////////////////////////////////////
@@ -104,7 +111,7 @@ bool JointManipulatorInterface::supportsTranslation() const {
 bool JointManipulatorInterface::supportsRotation() const {
   return true;
 }
-bool JointManipulatorInterface::supportsScaling() const {
+bool JointManipulatorInterface::supportsUniformScaling() const {
   return true;
 }
 
