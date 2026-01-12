@@ -971,10 +971,6 @@ void OrkEzApp::closeAllSecondaryWindows() {
 }
 
 void OrkEzApp::_renderSecondaryWindows() {
-  static int call_count = 0;
-  if (call_count++ % 60 == 0) {
-    logchan_ezapp->log("_renderSecondaryWindows: %zu windows", _secondaryWindows.size());
-  }
   for (auto& win : _secondaryWindows) {
     if (!win->shouldClose()) {
       win->_render();

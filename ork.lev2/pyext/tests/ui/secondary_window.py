@@ -76,10 +76,15 @@ class MultiWindowTest:
     uic = self.secondary_win.ui_context
 
     # Create a LayoutGroup as the top widget
+    # Use logical window size (same as config dimensions)
+    win_w = self.secondary_win.width
+    win_h = self.secondary_win.height
+    print(f"[PY] Secondary window setup: win_w={win_w} win_h={win_h}", flush=True)
     root = lev2.ui.LayoutGroup.create("sec_lg")
-    root.setRect(0, 0, self.win_width, self.win_height)
+    root.setRect(0, 0, win_w, win_h)
     uic.top = root
     root.margin = 4
+    print(f"[PY] Root widget rect set to: 0,0,{win_w},{win_h}", flush=True)
 
     # 1x1 grid of EvTestBox for secondary window
     self.sec_griditems = root.makeGrid(
@@ -90,10 +95,11 @@ class MultiWindowTest:
       args=["sec_evtb", vec4(0.5, 0.3, 0.2, 1)]
     )
     self.sec_evtestbox = self.sec_griditems[0].widget
+    print(f"[PY] EvTestBox: x={self.sec_evtestbox.x} y={self.sec_evtestbox.y} w={self.sec_evtestbox.width} h={self.sec_evtestbox.height}", flush=True)
 
     # GPU init for secondary window
     def on_sec_gpu_init(sec_ctx):
-      print("Secondary window GPU init")
+      print(f"[PY] GPU init: EvTestBox: x={self.sec_evtestbox.x} y={self.sec_evtestbox.y} w={self.sec_evtestbox.width} h={self.sec_evtestbox.height}", flush=True)
       root.gpuInit(sec_ctx)
       self.sec_evtestbox.gpuInit(sec_ctx)
 
@@ -107,11 +113,6 @@ class MultiWindowTest:
 
   def onUpdate(self, updinfo):
     self.frame_count += 1
-
-    # Print status every 60 frames
-    if self.frame_count % 60 == 0:
-      num_secondary = len(self.ezapp.secondaryWindows)
-      print(f"Frame {self.frame_count}: {num_secondary} secondary window(s)")
 
     # Auto-close after 5 seconds (300 frames at 60fps) if --auto-close flag
     if AUTO_CLOSE and self.frame_count > 300:

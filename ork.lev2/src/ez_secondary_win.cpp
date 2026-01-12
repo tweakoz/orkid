@@ -33,6 +33,8 @@ static void _secwin_callback_keyboard(GLFWwindow* window, int key, int scancode,
 static void _secwin_callback_scroll(GLFWwindow* window, double xoff, double yoff);
 static void _secwin_callback_fbresized(GLFWwindow* window, int w, int h);
 static void _secwin_callback_close(GLFWwindow* window);
+static void _secwin_callback_focus(GLFWwindow* window, int focused);
+static void _secwin_callback_enterleave(GLFWwindow* window, int entered);
 
 ///////////////////////////////////////////////////////////////////////////////
 // SecondaryWinImpl - internal implementation
@@ -137,6 +139,8 @@ SecondaryWinImpl::SecondaryWinImpl(EzSecondaryWin* owner, const EzSecondaryWinCo
   glfwSetScrollCallback(_glfwWindow, _secwin_callback_scroll);
   glfwSetFramebufferSizeCallback(_glfwWindow, _secwin_callback_fbresized);
   glfwSetWindowCloseCallback(_glfwWindow, _secwin_callback_close);
+  glfwSetWindowFocusCallback(_glfwWindow, _secwin_callback_focus);
+  glfwSetCursorEnterCallback(_glfwWindow, _secwin_callback_enterleave);
 
   // Show window first - on macOS, framebuffer size is 0 until window is shown
   glfwShowWindow(_glfwWindow);
@@ -144,6 +148,16 @@ SecondaryWinImpl::SecondaryWinImpl(EzSecondaryWin* owner, const EzSecondaryWinCo
   // Poll events to ensure window system processes the show request
   // This is needed on macOS to properly initialize the Metal layer
   glfwPollEvents();
+
+  // Use logical window size (config dimensions)
+  // Note: glfwGetFramebufferSize() may return 2x on Retina, but when _allowHIDPI=false
+  // the actual Metal surface is the logical size. Trust config, not GLFW.
+  _width = config._width;
+  _height = config._height;
+  _ctxglfw->_width = config._width;
+  _ctxglfw->_height = config._height;
+
+  logchan_secwin->log("Secondary window init: %dx%d", _width, _height);
 
   // Initialize graphics context
   // This creates a VkContext (or GLContext) that shares the device with the main window
@@ -227,10 +241,6 @@ void SecondaryWinImpl::_fireEvent(ui::event_ptr_t uiev) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void SecondaryWinImpl::_render() {
-  static int render_count = 0;
-  if (render_count++ % 60 == 0) {
-    logchan_secwin->log("SecondaryWinImpl::_render frame %d", render_count);
-  }
   if (!_gfxContext || !_glfwWindow) return;
 
   // Check for window close
@@ -267,23 +277,7 @@ void SecondaryWinImpl::_render() {
     auto mtxi = _gfxContext->MTXI();
     auto tgtrect = _gfxContext->mainSurfaceRectAtOrigin();
 
-    if (render_count % 30 == 1) {
-      logchan_secwin->log("frame %d: ctx=%p FBI=%p MTXI=%p mainSurface=%dx%d _width/_height=%dx%d tgtrect=%dx%d",
-              render_count, (void*)_gfxContext, (void*)fbi, (void*)mtxi,
-              ctx_w, ctx_h, _width, _height, tgtrect._w, tgtrect._h);
-
-      // Log matrix stack state before PushUIMatrix
-      auto& pmat = mtxi->RefPMatrix();
-      logchan_secwin->log("  pre-push P diag: %g %g %g %g",
-              pmat.elemXY(0,0), pmat.elemXY(1,1), pmat.elemXY(2,2), pmat.elemXY(3,3));
-    }
-
     _gfxContext->beginFrame();
-
-    // Check if main_rtg exists (like primary does)
-    if (render_count % 30 == 1) {
-      logchan_secwin->log("  _main_rtg=%p", (void*)fbi->_main_rtg.get());
-    }
 
     if (fbi->_main_rtg) {
       fbi->pushViewport(tgtrect);
@@ -293,12 +287,6 @@ void SecondaryWinImpl::_render() {
       _gfxContext->pushRenderContextFrameData(_cleanRcfd);
 
       mtxi->PushUIMatrix(tgtrect._w, tgtrect._h);
-
-      if (render_count % 30 == 1) {
-        auto& mvp = mtxi->RefMVPMatrix();
-        logchan_secwin->log("  post-push MVP diag: %g %g %g %g",
-                mvp.elemXY(0,0), mvp.elemXY(1,1), mvp.elemXY(2,2), mvp.elemXY(3,3));
-      }
 
       auto drwev = std::make_shared<ui::DrawEvent>(_gfxContext);
       _owner->_uicontext->draw(drwev);
@@ -329,6 +317,7 @@ void SecondaryWinImpl::_render() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void SecondaryWinImpl::_onResize(int w, int h) {
+  logchan_secwin->log("_onResize: %dx%d (was %dx%d)", w, h, _width, _height);
   _width = w;
   _height = h;
   _ctxglfw->_width = w;
@@ -336,10 +325,19 @@ void SecondaryWinImpl::_onResize(int w, int h) {
 
   if (_gfxContext) {
     _gfxContext->resizeMainSurface(w, h);
+    logchan_secwin->log("  resizeMainSurface done, ctx w/h now: %d/%d",
+                        _gfxContext->mainSurfaceWidth(), _gfxContext->mainSurfaceHeight());
   }
 
   if (_owner->_uicontext && _owner->_uicontext->_top) {
-    _owner->_uicontext->_top->SetRect(0, 0, w, h);
+    auto top = _owner->_uicontext->_top;
+    auto geo_before = top->geometry();
+    logchan_secwin->log("  top widget geo BEFORE SetRect: %d,%d,%d,%d",
+                        geo_before._x, geo_before._y, geo_before._w, geo_before._h);
+    top->SetRect(0, 0, w, h);
+    auto geo_after = top->geometry();
+    logchan_secwin->log("  top widget geo AFTER SetRect: %d,%d,%d,%d",
+                        geo_after._x, geo_after._y, geo_after._w, geo_after._h);
   }
 
   if (_owner->_onResize) {
@@ -447,11 +445,17 @@ static void _secwin_callback_scroll(GLFWwindow* window, double xoff, double yoff
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static void _secwin_callback_fbresized(GLFWwindow* window, int w, int h) {
+static void _secwin_callback_fbresized(GLFWwindow* window, int fb_w, int fb_h) {
   auto impl = static_cast<SecondaryWinImpl*>(glfwGetWindowUserPointer(window));
   if (!impl) return;
 
-  impl->_onResize(w, h);
+  // GLFW reports framebuffer size which may be 2x on Retina even when _allowHIDPI=false.
+  // Get actual logical window size instead.
+  int win_w, win_h;
+  glfwGetWindowSize(window, &win_w, &win_h);
+  logchan_secwin->log("_secwin_callback_fbresized: fb=%dx%d win=%dx%d (using win)", fb_w, fb_h, win_w, win_h);
+
+  impl->_onResize(win_w, win_h);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -461,6 +465,37 @@ static void _secwin_callback_close(GLFWwindow* window) {
   if (!impl) return;
 
   impl->_owner->requestClose();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+static void _secwin_callback_focus(GLFWwindow* window, int focused) {
+  auto impl = static_cast<SecondaryWinImpl*>(glfwGetWindowUserPointer(window));
+  if (!impl) return;
+
+  auto uiev = std::make_shared<ui::Event>();
+  uiev->_eventcode = focused
+      ? ui::EventCode::GOT_KEYFOCUS
+      : ui::EventCode::LOST_KEYFOCUS;
+
+  logchan_secwin->log("Focus %s", focused ? "gained" : "lost");
+  impl->_fireEvent(uiev);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+static void _secwin_callback_enterleave(GLFWwindow* window, int entered) {
+  auto impl = static_cast<SecondaryWinImpl*>(glfwGetWindowUserPointer(window));
+  if (!impl) return;
+
+  auto uiev = std::make_shared<ui::Event>();
+  uiev->_eventcode = entered
+      ? ui::EventCode::MOUSE_ENTER
+      : ui::EventCode::MOUSE_LEAVE;
+  uiev->miX = impl->_mouseX;
+  uiev->miY = impl->_mouseY;
+
+  impl->_fireEvent(uiev);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

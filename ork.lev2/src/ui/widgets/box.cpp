@@ -274,6 +274,7 @@ void EvTestBox::DoDraw(drawevent_constptr_t drwev) {
     ork::lev2::FontMan::PushFont("i16");
     lev2::FontMan::beginTextBlock(tgt, 16);
     int sw = lev2::FontMan::stringWidth(statename.length());
+
     lev2::FontMan::DrawText(
         tgt, //
         ixc - (sw >> 1),
