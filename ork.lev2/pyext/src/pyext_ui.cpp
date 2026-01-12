@@ -669,6 +669,35 @@ void pyinit_ui(py::module& module_lev2) {
                 return sgview->_outputnode;
               })
           //////////////////////////////////
+          // Bind ManipController directly (C++ event routing)
+          .def(
+              "bindManipController",
+              [](uisgviewport_ptr_t sgview, lev2::editor::manipcontroller_ptr_t mc) { //
+                sgview->bindManipController(mc);
+              })
+          //////////////////////////////////
+          // Manipulation event handler - for ManipController
+          .def_property(
+              "manip_evhandler",
+              [](uisgviewport_ptr_t sgview) -> py::object { //
+                return py::none();
+              },
+              [](uisgviewport_ptr_t sgview, py::object callback) { //
+                sgview->_uservars->makeValueForKey<py::object>("_hold_manip_ev_callback", callback);
+                sgview->_manip_evhandler = [sgview](ui::event_constptr_t ev) -> ui::HandlerResult {
+                  ui::HandlerResult rval;
+                  py::gil_scoped_acquire acquire_gil;
+                  auto cb = sgview->_uservars->typedValueForKey<py::object>("_hold_manip_ev_callback").value();
+                  if (cb) {
+                    auto pyrval = cb(ev);
+                    if (pyrval) {
+                      rval = py::cast<ui::HandlerResult>(pyrval);
+                    }
+                  }
+                  return rval;
+                };
+              })
+          //////////////////////////////////
           // Camera event handler - for EzUiCam and similar
           .def_property(
               "camera_evhandler",

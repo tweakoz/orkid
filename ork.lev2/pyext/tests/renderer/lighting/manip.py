@@ -13,12 +13,11 @@ from orkengine.core import lev2_pyexdir, Transform
 from orkengine.core import CrcStringProxy, thisdir, VarMap
 from orkengine import lev2
 from ork.app.application import ComponentizedApplication
+from ork.app.std_scenegraph import StandardSceneGraphComponent
 
 ################################################################################
 
 lev2_pyexdir.addToSysPath()
-from lev2utils.cameras import setupUiCamera
-from lev2utils.primitives import createGridData
 
 ################################################################################
 parser = argparse.ArgumentParser(description='manipulation gizmo test')
@@ -33,25 +32,19 @@ class MANIP_APP(ComponentizedApplication):
     super().__init__(lui="yes")
 
     self.materials = set()
+
+    # Add standard scenegraph component
+    self.SGC = self.addComponent("scenegraph", StandardSceneGraphComponent,
+                                  eye=vec3(0, 5, 10),
+                                  tgt=vec3(0, 0, 0),
+                                  up=vec3(0, 1, 0))
+
     self.createEzApp(ssaa=2, msaa=0, fullscreen=False)
 
   ##############################################
 
   def _onGpuInit(self, ctx):
-
-    # Setup camera for mono mode
-    setupUiCamera(app=self, eye=vec3(0, 5, 10))
-
-    sceneparams = VarMap()
-    sceneparams.SkyboxIntensity = float(1)
-    sceneparams.SpecularIntensity = float(1)
-    sceneparams.DiffuseIntensity = float(1)
-    sceneparams.AmbientLight = vec3(0.1)
-    sceneparams.DepthFogDistance = float(10000)
-    sceneparams.preset = "ForwardPBR"
-
-    self.scene = self.ezapp.createScene(sceneparams)
-    self.layer_fwd = self.scene.createLayer("std_forward")
+    SGC = self.SGC
 
     ###################################
     # Create a simple model to manipulate
@@ -59,8 +52,8 @@ class MANIP_APP(ComponentizedApplication):
 
     model = lev2.XgmModel("data://tests/pbr_calib.glb")
     self.drawable_model = model.createDrawable()
-    self.model_node = self.scene.createDrawableNodeOnLayers(
-        [self.layer_fwd], "model-node", self.drawable_model)
+    self.model_node = SGC.scenegraph.createDrawableNodeOnLayers(
+        [SGC.layer_fwd], "model-node", self.drawable_model)
 
     # Create a Transform for manipulation
     self.target_transform = Transform()
@@ -87,24 +80,9 @@ class MANIP_APP(ComponentizedApplication):
     self.gizmo_data = lev2.ManipGizmoDrawableData()
     self.gizmo_data.controller = self.manip_controller
     self.gizmo_drawable = self.gizmo_data.createDrawable()
-    self.gizmo_node = self.scene.createDrawableNodeOnLayers(
-        [self.layer_fwd], "manip-gizmo", self.gizmo_drawable)
+    self.gizmo_node = SGC.scenegraph.createDrawableNodeOnLayers(
+        [SGC.layer_fwd], "manip-gizmo", self.gizmo_drawable)
     self.gizmo_node.sortkey = 999  # Render on top
-
-    ###################################
-    # Grid
-    ###################################
-
-    self.grid_data = createGridData()
-    self.grid_data.shader_suffix = "_V4"
-    self.grid_data.modcolor = vec3(1)
-    self.grid_data.intensityA = 1
-    self.grid_data.intensityB = .95
-    self.grid_data.lineWidth = 0.05
-    self.grid_drawable = self.grid_data.createDrawable()
-    self.grid_node = self.scene.createDrawableNodeOnLayers(
-        [self.layer_fwd], "grid-node", self.grid_drawable)
-    self.grid_node.sortkey = 1
 
     ###################################
 
@@ -113,13 +91,17 @@ class MANIP_APP(ComponentizedApplication):
     print("  R - Rotate mode")
     print("  S - Scale mode")
 
-    lmgr = self.scene.lightingmanager
-    lmgr.gpuInit(ctx)
+  ##############################################
+
+  def _onGpuLink(self, ctx):
+    SGC = self.SGC
+    # Bind ManipController to viewport for event handling (done in C++)
+    SGC.SGVPW.bindManipController(self.manip_controller)
 
   ##############################################
 
   def _onUiEvent(self, uievent):
-    # Check for mode switching keys
+    # Check for mode switching keys (global, not routed through viewport)
     if uievent.code == tokens.KEY_DOWN.hashed:
       if uievent.keycode == ord("T"):
         self.manip_controller.mode = lev2.ManipMode.TRANSLATE
@@ -134,23 +116,8 @@ class MANIP_APP(ComponentizedApplication):
         print("Mode: SCALE")
         return lev2.ui.HandlerResult()
 
-    # Camera handling
-    handled = self.uicam.uiEventHandler(uievent)
-    if handled:
-      self.camera.copyFrom(self.uicam.cameradata)
-
+    # Note: Camera and manip events are handled through the SceneGraphViewport
     return lev2.ui.HandlerResult()
-
-  ################################################
-
-  def _onUpdate(self, updinfo):
-    self.scene.updateScene(self.cameralut)
-
-  ################################################
-
-  def _onGpuUpdate(self, ctx):
-    # Sync node transform from the manipulated DecompTransform
-    pass
 
 ###############################################################################
 

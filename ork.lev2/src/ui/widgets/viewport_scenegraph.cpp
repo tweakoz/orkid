@@ -69,6 +69,19 @@ void SceneGraphViewport::bindSceneGraph(lev2::scenegraph::scene_ptr_t sg) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void SceneGraphViewport::bindManipController(lev2::editor::manipcontroller_ptr_t mc) {
+  _manipController = mc;
+  if (mc) {
+    _manip_evhandler = [mc](event_constptr_t ev) -> HandlerResult {
+      return mc->handleEvent(ev);
+    };
+  } else {
+    _manip_evhandler = nullptr;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
   if (_scenegraph) {
@@ -256,17 +269,35 @@ HandlerResult SceneGraphViewport::DoOnUiEvent(event_constptr_t ev) {
     return result;
   }
 
-  // 2. Camera handler (e.g., EzUiCam)
-  if (_camera_evhandler) {
-    result = _camera_evhandler(ev);
+  // 2. Manipulation handler (e.g., ManipController)
+  if (_manip_evhandler && _manipController) {
+    // Update ManipController with current camera before handling events
+    if (_scenegraph && _scenegraph->_cameralut) {
+      auto camera = _scenegraph->_cameralut->find(_cameraname);
+      if (camera) {
+        float aspect = (height() > 0) ? float(width()) / float(height()) : 1.0f;
+        auto camMtx = camera->computeMatrices(aspect);
+        _manipController->updateCamera(camMtx, fvec2(width(), height()));
+      }
+    }
+    result = _manip_evhandler(ev);
     if (result.wasHandled()) {
-    printf("SceneGraphViewport::DoOnUiEvent 2\n");
+      //printf("SceneGraphViewport::DoOnUiEvent manip\n");
       return result;
     }
   }
 
-  // 3. Default: not handled
-    //printf("SceneGraphViewport::DoOnUiEvent 3\n");
+  // 3. Camera handler (e.g., EzUiCam)
+  if (_camera_evhandler) {
+    result = _camera_evhandler(ev);
+    if (result.wasHandled()) {
+      //printf("SceneGraphViewport::DoOnUiEvent camera\n");
+      return result;
+    }
+  }
+
+  // 4. Default: not handled
+  //printf("SceneGraphViewport::DoOnUiEvent not handled\n");
   return HandlerResult();
 }
 

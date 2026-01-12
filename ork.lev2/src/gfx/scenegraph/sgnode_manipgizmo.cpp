@@ -506,8 +506,6 @@ void ManipGizmoDrawableImpl::_render(const RenderContextInstData& RCID) {
     printf("ManipGizmo: no target\n");
     return;
   }
-  printf("ManipGizmo: rendering mode=%d\n", (int)controller->mode());
-
   auto RCFD = RCID.rcfd();
   const auto& CPD = RCFD->topCPD();
   auto cmtcs = CPD.cameraMatrices();

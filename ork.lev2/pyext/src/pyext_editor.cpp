@@ -154,7 +154,9 @@ void pyinit_editor(py::module& module_lev2) {
           &ManipController::target,
           &ManipController::setTarget)
       .def("updateCamera", &ManipController::updateCamera)
-      .def("handleEvent", &ManipController::handleEvent)
+      .def("handleEvent", [](ManipController& mc, ui::event_constptr_t ev) -> bool {
+          return mc.handleEvent(ev).wasHandled();
+      })
       .def("draw", &ManipController::draw)
       .def_property_readonly("hoveredAxis", &ManipController::hoveredAxis)
       .def_property_readonly("activeAxis", &ManipController::activeAxis)
