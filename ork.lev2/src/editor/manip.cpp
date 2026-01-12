@@ -64,7 +64,7 @@ void DecompTransformManipulator::applyTranslationDelta(const fvec3& delta) {
 void DecompTransformManipulator::applyRotationDelta(const fquat& delta) {
   if (_target) {
     // Apply delta in LOCAL space: rotation * delta
-    // Delta is around pure local axis (0,1,0) etc., so this rotates in object's local frame
+    // Delta is around pure local axis (0,1,0 etc), applied in object's local frame
     _target->_rotation = _target->_rotation * delta;
     _target->_rotation.normalizeInPlace();
   }
@@ -73,6 +73,12 @@ void DecompTransformManipulator::applyRotationDelta(const fquat& delta) {
 void DecompTransformManipulator::applyScaleDelta(float uniformDelta) {
   if (_target) {
     _target->_uniformScale *= uniformDelta;
+  }
+}
+
+void DecompTransformManipulator::setWorldRotation(const fquat& rot) {
+  if (_target) {
+    _target->_rotation = rot;
   }
 }
 

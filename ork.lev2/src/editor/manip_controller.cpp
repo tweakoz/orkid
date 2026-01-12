@@ -338,36 +338,36 @@ bool ManipController::_computeRotationAngle(const fvec2& mousePos, float& outAng
   return true;
 }
 
-fquat ManipController::_computeRotationDelta(const fvec2& mousePos, ManipAxis axis) {
-  if (!_target) return fquat();
+fquat ManipController::_computeRotationAbsolute(const fvec2& mousePos, ManipAxis axis) {
+  if (!_target) return _dragStartRot;
 
   float currentAngle;
   if (!_computeRotationAngle(mousePos, currentAngle)) {
-    return fquat();  // No intersection
+    return _dragStartRot;  // No intersection, keep start rotation
   }
 
-  float deltaAngle = currentAngle - _rotationBaseAngle;
+  // Compute total angle from drag start (not delta from last frame)
+  float totalAngle = currentAngle - _rotationBaseAngle;
 
   // Wrap angle
-  while (deltaAngle > PI) deltaAngle -= 2.0f * PI;
-  while (deltaAngle < -PI) deltaAngle += 2.0f * PI;
+  while (totalAngle > PI) totalAngle -= 2.0f * PI;
+  while (totalAngle < -PI) totalAngle += 2.0f * PI;
 
-  // Update base angle for next frame
-  _rotationBaseAngle = currentAngle;
-
-  // Create rotation around pure LOCAL axis (not world-space transformed)
-  // This will be applied as rotation * delta for true local-space rotation
+  // Create rotation around pure LOCAL axis (identity space)
   fvec3 localAxis;
   switch (axis) {
     case ManipAxis::X: localAxis = fvec3(1, 0, 0); break;
     case ManipAxis::Y: localAxis = fvec3(0, 1, 0); break;
     case ManipAxis::Z: localAxis = fvec3(0, 0, 1); break;
-    default: localAxis = fvec3(0, 1, 0); break;  // Fallback
+    default: localAxis = fvec3(0, 1, 0); break;
   }
 
-  fquat delta;
-  delta.fromAxisAngle(fvec4(localAxis, deltaAngle));
-  return delta;
+  fquat localRot;
+  localRot.fromAxisAngle(fvec4(localAxis, totalAngle));
+
+  // Return absolute rotation: localRotation * startRotation
+  // (local rotation applied in world frame, then base orientation)
+  return localRot * _dragStartRot;
 }
 
 float ManipController::_computeScaleDelta(const fvec2& mouseDelta, ManipAxis axis) {
@@ -419,25 +419,19 @@ ui::HandlerResult ManipController::handleEvent(ui::event_constptr_t ev) {
 
           switch (hit) {
             case ManipAxis::X:
-              // Rotate around local X axis, plane is in local YZ
-              // perp1=Z, perp2=Y gives correct rotation direction
               _rotationPlaneNormal = localX;
-              _rotationPlanePerp1 = localZ;
-              _rotationPlanePerp2 = localY;
-              break;
-            case ManipAxis::Y:
-              // Rotate around local Y axis, plane is in local XZ
-              // perp1=X, perp2=Z gives correct rotation direction (counterclockwise when looking down +Y)
-              _rotationPlaneNormal = localY;
-              _rotationPlanePerp1 = localX;
+              _rotationPlanePerp1 = localY;
               _rotationPlanePerp2 = localZ;
               break;
-            case ManipAxis::Z:
-              // Rotate around local Z axis, plane is in local XY
-              // perp1=Y, perp2=X gives correct rotation direction
-              _rotationPlaneNormal = localZ;
-              _rotationPlanePerp1 = localY;
+            case ManipAxis::Y:
+              _rotationPlaneNormal = localY;
+              _rotationPlanePerp1 = localZ;
               _rotationPlanePerp2 = localX;
+              break;
+            case ManipAxis::Z:
+              _rotationPlaneNormal = localZ;
+              _rotationPlanePerp1 = localX;
+              _rotationPlanePerp2 = localY;
               break;
             case ManipAxis::FREE:
             case ManipAxis::VIEW:
@@ -447,6 +441,17 @@ ui::HandlerResult ManipController::handleEvent(ui::event_constptr_t ev) {
               _rotationPlanePerp1 = _getCameraRight();
               _rotationPlanePerp2 = _getCameraUp();
               break;
+          }
+
+          // Adjust perp vectors based on camera view to ensure consistent angle convention.
+          // We want "screen counterclockwise" to map to positive angle (right-hand rule).
+          // perp1 × perp2 should point AWAY from the camera for this to work.
+          fvec3 gizmoPos = _target->getWorldPosition();
+          fvec3 toCamera = (_getCameraEye() - gizmoPos).normalized();
+          fvec3 perpCross = _rotationPlanePerp1.crossWith(_rotationPlanePerp2);
+          if (perpCross.dotWith(toCamera) > 0) {
+            // Swap perp vectors to flip angle direction
+            std::swap(_rotationPlanePerp1, _rotationPlanePerp2);
           }
 
           // Compute and store base angle
@@ -470,8 +475,8 @@ ui::HandlerResult ManipController::handleEvent(ui::event_constptr_t ev) {
             break;
           }
           case ManipMode::ROTATE: {
-            fquat delta = _computeRotationDelta(mousePos, _activeAxis);
-            _target->applyRotationDelta(delta);
+            fquat newRot = _computeRotationAbsolute(mousePos, _activeAxis);
+            _target->setWorldRotation(newRot);
             break;
           }
           case ManipMode::SCALE: {

@@ -61,6 +61,9 @@ struct ManipulatorInterface : public Object {
   virtual void applyRotationDelta(const fquat& delta) = 0;
   virtual void applyScaleDelta(float uniformDelta) = 0;
 
+  // Set absolute values (for non-delta based manipulation)
+  virtual void setWorldRotation(const fquat& rot) = 0;
+
   // Begin/end callbacks (for undo/redo snapshots)
   virtual void onBeginManipulation(ManipMode mode) {}
   virtual void onEndManipulation(ManipMode mode) {}
@@ -90,6 +93,7 @@ struct DecompTransformManipulator : public ManipulatorInterface {
   void applyTranslationDelta(const fvec3& delta) override;
   void applyRotationDelta(const fquat& delta) override;
   void applyScaleDelta(float uniformDelta) override;
+  void setWorldRotation(const fquat& rot) override;
 
   void onBeginManipulation(ManipMode mode) override;
   void onEndManipulation(ManipMode mode) override;
@@ -126,6 +130,7 @@ struct JointManipulatorInterface : ManipulatorInterface {
   void applyTranslationDelta(const fvec3& delta) override {}
   void applyRotationDelta(const fquat& delta) override {}
   void applyScaleDelta(float uniformDelta) override {}
+  void setWorldRotation(const fquat& rot) override {}
 
   void _onBeginTranslation(ui::event_constptr_t EV);
   void _onUpdateTranslation(ui::event_constptr_t EV);

@@ -83,8 +83,8 @@ private:
   // Compute translation delta from mouse movement
   fvec3 _computeTranslationDelta(const fvec2& mouseDelta, ManipAxis axis);
 
-  // Compute rotation delta from mouse movement
-  fquat _computeRotationDelta(const fvec2& mousePos, ManipAxis axis);
+  // Compute absolute rotation from mouse position (not delta-based)
+  fquat _computeRotationAbsolute(const fvec2& mousePos, ManipAxis axis);
 
   // Compute rotation angle via ray-plane intersection
   // Returns angle in radians around the rotation axis

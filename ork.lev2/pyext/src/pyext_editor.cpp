@@ -52,6 +52,9 @@ struct PyManipulatorInterface : public editor::ManipulatorInterface {
   void applyScaleDelta(float uniformDelta) override {
     PYBIND11_OVERRIDE_PURE(void, editor::ManipulatorInterface, applyScaleDelta, uniformDelta);
   }
+  void setWorldRotation(const fquat& rot) override {
+    PYBIND11_OVERRIDE_PURE(void, editor::ManipulatorInterface, setWorldRotation, rot);
+  }
 
   void onBeginManipulation(editor::ManipMode mode) override {
     PYBIND11_OVERRIDE(void, editor::ManipulatorInterface, onBeginManipulation, mode);
@@ -104,6 +107,7 @@ void pyinit_editor(py::module& module_lev2) {
       .def("applyTranslationDelta", &ManipulatorInterface::applyTranslationDelta)
       .def("applyRotationDelta", &ManipulatorInterface::applyRotationDelta)
       .def("applyScaleDelta", &ManipulatorInterface::applyScaleDelta)
+      .def("setWorldRotation", &ManipulatorInterface::setWorldRotation)
       .def("onBeginManipulation", &ManipulatorInterface::onBeginManipulation)
       .def("onEndManipulation", &ManipulatorInterface::onEndManipulation);
   type_codec->registerStdCodec<manipinterface_ptr_t>(mif_type_t);
