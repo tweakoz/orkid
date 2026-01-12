@@ -369,6 +369,12 @@ FloatSlider::FloatSlider(
   _fill_color = fvec4(0.2, 0.6, 0.8, 1);
   _draw_label = true;
 
+  _min = -10.0f;
+  _max = +10.0f;
+  if(name=="angle"){
+  _min = -360.0f;
+  _max = +360.0f;
+  }
   if (_max == _min) {
     _max = _min + 1.0f;
   }

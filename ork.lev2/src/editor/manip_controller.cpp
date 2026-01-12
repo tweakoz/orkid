@@ -444,18 +444,18 @@ ui::HandlerResult ManipController::handleEvent(ui::event_constptr_t ev) {
           switch (hit) {
             case ManipAxis::X:
               _rotationPlaneNormal = localX;
-              _rotationPlanePerp1 = localY;
-              _rotationPlanePerp2 = localZ;
+              _rotationPlanePerp1 = localZ;
+              _rotationPlanePerp2 = localY;
               break;
             case ManipAxis::Y:
               _rotationPlaneNormal = localY;
-              _rotationPlanePerp1 = localZ;
-              _rotationPlanePerp2 = localX;
+              _rotationPlanePerp1 = localX;
+              _rotationPlanePerp2 = localZ;
               break;
             case ManipAxis::Z:
               _rotationPlaneNormal = localZ;
-              _rotationPlanePerp1 = localX;
-              _rotationPlanePerp2 = localY;
+              _rotationPlanePerp1 = localY;
+              _rotationPlanePerp2 = localX;
               break;
             case ManipAxis::FREE:
             case ManipAxis::VIEW:
@@ -465,17 +465,6 @@ ui::HandlerResult ManipController::handleEvent(ui::event_constptr_t ev) {
               _rotationPlanePerp1 = _getCameraRight();
               _rotationPlanePerp2 = _getCameraUp();
               break;
-          }
-
-          // Adjust perp vectors based on camera view to ensure consistent angle convention.
-          // We want "screen counterclockwise" to map to positive angle (right-hand rule).
-          // perp1 × perp2 should point AWAY from the camera for this to work.
-          fvec3 gizmoPos = _target->getWorldPosition();
-          fvec3 toCamera = (_getCameraEye() - gizmoPos).normalized();
-          fvec3 perpCross = _rotationPlanePerp1.crossWith(_rotationPlanePerp2);
-          if (perpCross.dotWith(toCamera) > 0) {
-            // Swap perp vectors to flip angle direction
-            std::swap(_rotationPlanePerp1, _rotationPlanePerp2);
           }
 
           // Compute and store base angle
