@@ -36,6 +36,7 @@ void setAlwaysOnTop(GLFWwindow* window);
 void recomputeHIDPI(GLFWwindow* window);
 void windowToFront(GLFWwindow* window);
 void activateWindow(GLFWwindow *window);
+void enableFocusFollowsMouse(GLFWwindow* window);
 
 ///////////////////////////////////////////////////////////////////////////////
 static CtxGLFW* _gctx = nullptr;
@@ -635,11 +636,12 @@ void CtxGLFW::Show() {
     setAlwaysOnTop(_glfwWindow);
   }
 
-  glfwPollEvents(); 
+  glfwPollEvents();
 #ifdef __APPLE__
   if (not _appinitdata->_offscreen) {
     windowToFront(_glfwWindow);
     activateWindow(_glfwWindow);
+    enableFocusFollowsMouse(_glfwWindow);
   }
 #endif
 
@@ -1017,7 +1019,7 @@ void CtxGLFW::_on_callback_fbresized(int w, int h) {
 }
 void CtxGLFW::_on_callback_keyboard(int key, int scancode, int action, int modifiers) {
   const char* action_str = (action == GLFW_PRESS) ? "PRESS" : (action == GLFW_RELEASE) ? "RELEASE" : "REPEAT";
-  logchan_glfw->log("[PRIMARY-KEY] key=%d scancode=%d action=%s mods=%d", key, scancode, action_str, modifiers);
+  //logchan_glfw->log("[PRIMARY-KEY] key=%d scancode=%d action=%s mods=%d", key, scancode, action_str, modifiers);
 
   auto uiev = this->uievent();
   if (action == GLFW_PRESS && key == GLFW_KEY_V && (modifiers & GLFW_MODIFIER_OSCTRL)) {
@@ -1046,9 +1048,15 @@ void CtxGLFW::_on_callback_cursor(double xoffset, double yoffset) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::_on_callback_enterleave(int entered) {
-  // printf("_glfw_callback_enterleave<%p> entered<%d>", window, entered);
-
   bool was_entered = bool(entered);
+
+  //logchan_glfw->log("[PRIMARY] enterleave: entered=%d window=%p", entered, _glfwWindow);
+
+  // Focus follows mouse: give this window keyboard focus when mouse enters
+  if (was_entered && _glfwWindow) {
+    //logchan_glfw->log("[PRIMARY] calling glfwFocusWindow(%p)", _glfwWindow);
+    glfwFocusWindow(_glfwWindow);
+  }
 
   auto uiev = this->uievent();
 
@@ -1200,8 +1208,14 @@ struct PopupImpl {
     };
     ///////////////////////////////////////////////////////////////////////////////
     eventSINK->_on_callback_enterleave = [=](int entered) {
-      auto uiev        = std::make_shared<ui::Event>();
       bool was_entered = bool(entered);
+
+      // Focus follows mouse: give this window keyboard focus when mouse enters
+      if (was_entered && _glfwPopupWindow) {
+        glfwFocusWindow(_glfwPopupWindow);
+      }
+
+      auto uiev        = std::make_shared<ui::Event>();
       uiev->_eventcode = was_entered                       //
                              ? ui::EventCode::GOT_KEYFOCUS //
                              : ui::EventCode::LOST_KEYFOCUS;

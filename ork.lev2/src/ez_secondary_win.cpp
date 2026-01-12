@@ -20,8 +20,9 @@ extern int GLFW_MODIFIER_OSCTRL;
 void fillEventKeyboard(ui::event_ptr_t uiev, int key, int scancode, int action, int modifiers);
 void fillEventCursor(ui::event_ptr_t uiev, GLFWwindow* window, GLFWmonitor* monitor,
                      double xoffset, double yoffset, double w, double h);
+void enableFocusFollowsMouse(GLFWwindow* window);
 
-static logchannel_ptr_t logchan_secwin = logger()->configureChannel("SECWIN", fvec3(0.4, 0.8, 0.4), true);
+static logchannel_ptr_t logchan_secwin = logger()->configureChannel("SECWIN", fvec3(0.4, 0.8, 0.4), false);
 
 ///////////////////////////////////////////////////////////////////////////////
 // GLFW callbacks for secondary windows
@@ -135,6 +136,7 @@ SecondaryWinImpl::SecondaryWinImpl(EzSecondaryWin* owner, const EzSecondaryWinCo
   glfwSetWindowUserPointer(_glfwWindow, this);
 
   // Set up GLFW callbacks
+  logchan_secwin->log("Registering GLFW callbacks for window %p", _glfwWindow);
   glfwSetMouseButtonCallback(_glfwWindow, _secwin_callback_mousebuttons);
   glfwSetCursorPosCallback(_glfwWindow, _secwin_callback_cursor);
   glfwSetKeyCallback(_glfwWindow, _secwin_callback_keyboard);
@@ -143,6 +145,7 @@ SecondaryWinImpl::SecondaryWinImpl(EzSecondaryWin* owner, const EzSecondaryWinCo
   glfwSetWindowCloseCallback(_glfwWindow, _secwin_callback_close);
   glfwSetWindowFocusCallback(_glfwWindow, _secwin_callback_focus);
   glfwSetCursorEnterCallback(_glfwWindow, _secwin_callback_enterleave);
+  logchan_secwin->log("CursorEnterCallback set to %p", (void*)_secwin_callback_enterleave);
 
   // Show window first - on macOS, framebuffer size is 0 until window is shown
   glfwShowWindow(_glfwWindow);
@@ -150,6 +153,11 @@ SecondaryWinImpl::SecondaryWinImpl(EzSecondaryWin* owner, const EzSecondaryWinCo
   // Poll events to ensure window system processes the show request
   // This is needed on macOS to properly initialize the Metal layer
   glfwPollEvents();
+
+#ifdef __APPLE__
+  // Enable focus-follows-mouse via NSTrackingArea
+  enableFocusFollowsMouse(_glfwWindow);
+#endif
 
   // Use logical window size (config dimensions)
   // Note: glfwGetFramebufferSize() may return 2x on Retina, but when _allowHIDPI=false
@@ -524,6 +532,14 @@ static void _secwin_callback_focus(GLFWwindow* window, int focused) {
 static void _secwin_callback_enterleave(GLFWwindow* window, int entered) {
   auto impl = static_cast<SecondaryWinImpl*>(glfwGetWindowUserPointer(window));
   if (!impl) return;
+
+  logchan_secwin->log("[SECWIN] enterleave: entered=%d window=%p", entered, window);
+
+  // Focus follows mouse: give this window keyboard focus when mouse enters
+  if (entered) {
+    logchan_secwin->log("[SECWIN] calling glfwFocusWindow(%p)", window);
+    glfwFocusWindow(window);
+  }
 
   auto uiev = std::make_shared<ui::Event>();
   uiev->_eventcode = entered
