@@ -990,6 +990,11 @@ void OrkEzApp::_cleanupClosedSecondaryWindows() {
     return w->shouldClose();
   });
 
+  size_t removed = before - _secondaryWindows.size();
+  if (removed > 0) {
+    logchan_ezapp->log("Removed %zu closed secondary window(s)", removed);
+  }
+
   // Return focus to main window if any popups were closed
   if (_secondaryWindows.size() < before) {
 #if defined(ENABLE_GLFW)

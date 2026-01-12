@@ -47,6 +47,7 @@ struct SecondaryWinImpl {
   void _render();
   void _onResize(int w, int h);
   void _fireEvent(ui::event_ptr_t uiev);
+  void _closeWindow();
 
   EzSecondaryWin* _owner = nullptr;
   EzSecondaryWinConfig _config;
@@ -170,6 +171,7 @@ SecondaryWinImpl::~SecondaryWinImpl() {
   logchan_secwin->log("Destroying secondary window: %s", _config._title.c_str());
 
   if (_glfwWindow) {
+    glfwHideWindow(_glfwWindow);
     glfwDestroyWindow(_glfwWindow);
     _glfwWindow = nullptr;
   }
@@ -177,6 +179,23 @@ SecondaryWinImpl::~SecondaryWinImpl() {
   delete _orkWindow;
   _orkWindow = nullptr;
   // Note: _ctxglfw is owned by _orkWindow->mpCTXBASE
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void SecondaryWinImpl::_closeWindow() {
+  if (_glfwWindow) {
+    logchan_secwin->log("Closing secondary window: %s", _config._title.c_str());
+    glfwHideWindow(_glfwWindow);
+    glfwDestroyWindow(_glfwWindow);
+    _glfwWindow = nullptr;
+
+    // Call callback only once (when window is actually closed)
+    if (_owner->_onClosed) {
+      _owner->_onClosed();
+    }
+  }
+  _owner->_shouldClose = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -216,7 +235,7 @@ void SecondaryWinImpl::_render() {
 
   // Check for window close
   if (glfwWindowShouldClose(_glfwWindow)) {
-    _owner->_shouldClose = true;
+    _closeWindow();
     return;
   }
 
@@ -468,6 +487,9 @@ bool EzSecondaryWin::shouldClose() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void EzSecondaryWin::requestClose() {
+  if (auto impl = _impl.tryAsShared<SecondaryWinImpl>()) {
+    impl.value()->_closeWindow();
+  }
   _shouldClose = true;
 }
 

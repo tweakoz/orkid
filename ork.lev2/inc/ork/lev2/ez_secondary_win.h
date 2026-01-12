@@ -77,6 +77,7 @@ struct EzSecondaryWin {
   using resize_cb_t = std::function<void(int w, int h)>;
   using uievent_cb_t = std::function<ui::HandlerResult(ui::event_constptr_t)>;
   using gpuinit_cb_t = std::function<void(Context* ctx)>;
+  using closed_cb_t = void_lambda_t;
 
   //////////////////////////////////////////////
   // User-assignable callbacks
@@ -86,6 +87,7 @@ struct EzSecondaryWin {
   resize_cb_t _onResize;
   uievent_cb_t _onUiEvent;
   gpuinit_cb_t _onGpuInit;
+  closed_cb_t _onClosed;  // Called when window is closed
 
   //////////////////////////////////////////////
   // State queries

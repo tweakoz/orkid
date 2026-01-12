@@ -1030,6 +1030,25 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 }
               };
             }
+          })
+      .def_property("onClosed",
+          [](ezsecondarywin_ptr_t win) -> py::object { return py::none(); },
+          [](ezsecondarywin_ptr_t win, py::object callback) {
+            if (callback.is_none()) {
+              win->_onClosed = nullptr;
+            } else {
+              auto pyfn = py::cast<py::function>(callback);
+              win->_onClosed = [pyfn]() {
+                py::gil_scoped_acquire acquire;
+                try {
+                  pyfn();
+                } catch (py::error_already_set& e) {
+                  ezapp_python_traceback(e);
+                  e.restore();
+                  PyErr_Print();
+                }
+              };
+            }
           });
   type_codec->registerStdCodec<ezsecondarywin_ptr_t>(ezsecwin_type);
   /////////////////////////////////////////////////////////////////////////////////
