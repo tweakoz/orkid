@@ -280,7 +280,13 @@ HandlerResult SceneGraphViewport::DoOnUiEvent(event_constptr_t ev) {
         _manipController->updateCamera(camMtx, fvec2(width(), height()));
       }
     }
-    result = _manip_evhandler(ev);
+    // Transform event coordinates to viewport-local space
+    auto localEv = std::make_shared<Event>(*ev);
+    int localX, localY;
+    RootToLocal(ev->miX, ev->miY, localX, localY);
+    localEv->miX = localX;
+    localEv->miY = localY;
+    result = _manip_evhandler(localEv);
     if (result.wasHandled()) {
       //printf("SceneGraphViewport::DoOnUiEvent manip\n");
       return result;

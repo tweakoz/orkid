@@ -10,7 +10,7 @@
 ################################################################################
 
 import math, sys, signal, random, os
-from orkengine.core import vec2, vec3, vec4, quat, VarMap, CrcStringProxy
+from orkengine.core import vec2, vec3, vec4, quat, VarMap, CrcStringProxy, Transform
 from orkengine import lev2
 from ork.ui import icon_library
 from ork.ui.filesystem_browser import FilesystemBrowser
@@ -290,6 +290,91 @@ class SceneEditorTest:
 
   ##############################################
 
+  def _syncPropertySheetFromTransform(self):
+    """Sync property sheet with cube transform values."""
+    if not hasattr(self, 'cube_transform'):
+      return
+
+    pos = self.cube_transform.translation
+    rot = self.cube_transform.orientation
+    scale = self.cube_transform.scale
+
+    # Check if changed
+    cur = (pos.x, pos.y, pos.z, rot.x, rot.y, rot.z, rot.w, scale)
+    if hasattr(self, '_last_transform') and self._last_transform == cur:
+      return
+    self._last_transform = cur
+
+    # Convert quaternion to angle-axis
+    import math
+    # Angle from quaternion: angle = 2 * acos(w)
+    # Clamp w to [-1, 1] to avoid numerical issues
+    w_clamped = max(-1.0, min(1.0, rot.w))
+    angle = 2.0 * math.acos(w_clamped)
+
+    # Axis from quaternion: axis = (x, y, z) / sin(angle/2)
+    sin_half = math.sin(angle / 2.0)
+    if abs(sin_half) > 1e-6:
+      axis_x = rot.x / sin_half
+      axis_y = rot.y / sin_half
+      axis_z = rot.z / sin_half
+    else:
+      # Near zero rotation, axis is arbitrary
+      axis_x = 1.0
+      axis_y = 0.0
+      axis_z = 0.0
+
+    data = VarMap()
+    transform = VarMap()
+    transform.position_x = pos.x
+    transform.position_y = pos.y
+    transform.position_z = pos.z
+    transform.angle = math.degrees(angle)
+    transform.axis_x = axis_x
+    transform.axis_y = axis_y
+    transform.axis_z = axis_z
+    transform.scale_x = scale
+    transform.scale_y = scale
+    transform.scale_z = scale
+    data.Transform = transform
+    data.Name = "Cube"
+    data.Visible = True
+    data.Layer = "Default"
+
+    # Set annotations for slider ranges (before setting data)
+    if not hasattr(self, '_propsheet_annotations_set'):
+      self._propsheet_annotations_set = True
+      model = self.propsheet.model
+      pos_annot = VarMap()
+      pos_annot.min = -10.0
+      pos_annot.max = 10.0
+      model.setAnnotations("Transform/position_x", pos_annot)
+      model.setAnnotations("Transform/position_y", pos_annot)
+      model.setAnnotations("Transform/position_z", pos_annot)
+
+      angle_annot = VarMap()
+      angle_annot.min = -360.0
+      angle_annot.max = 360.0
+      model.setAnnotations("Transform/angle", angle_annot)
+
+      axis_annot = VarMap()
+      axis_annot.min = -1.0
+      axis_annot.max = 1.0
+      model.setAnnotations("Transform/axis_x", axis_annot)
+      model.setAnnotations("Transform/axis_y", axis_annot)
+      model.setAnnotations("Transform/axis_z", axis_annot)
+
+      scale_annot = VarMap()
+      scale_annot.min = 0.1
+      scale_annot.max = 10.0
+      model.setAnnotations("Transform/scale_x", scale_annot)
+      model.setAnnotations("Transform/scale_y", scale_annot)
+      model.setAnnotations("Transform/scale_z", scale_annot)
+
+    self.propsheet.data = data
+
+  ##############################################
+
   def _openLoadPopup(self):
     """Open a file browser popup for loading a scene."""
     print("Opening Load popup...")
@@ -388,11 +473,34 @@ class SceneEditorTest:
     self.grid_node = self.layer.createDrawableNodeFromData("grid", self.grid_data)
     self.grid_node.sortkey = 1
 
-    # Cube
+    # Cube with Transform for manipulation
     cube_prim = createCubePrim(ctx=ctx, size=1.0)
     pipeline_cube = createPipeline(app=self, ctx=ctx, rendermodel="FORWARD_PBR", techname="std_mono_fwd")
     self.cube_node = cube_prim.createNode("cube", self.layer, pipeline_cube)
-    self.cube_node.worldTransform.translation = vec3(0, 0.5, 0)
+
+    # Create a Transform for manipulation
+    self.cube_transform = Transform()
+    self.cube_transform.translation = vec3(0, 0.5, 0)
+    self.cube_transform.orientation = quat()
+    self.cube_transform.scale = 1.0
+    self.cube_node.worldTransform = self.cube_transform
+
+    ############################################
+    # Setup ManipController and Gizmo
+    ############################################
+
+    self.manip_controller = lev2.ManipController()
+    self.manip_interface = lev2.DecompTransformManipulator(self.cube_transform)
+    self.manip_controller.target = self.manip_interface
+    self.manip_controller.mode = lev2.ManipMode.TRANSLATE
+
+    # Create ManipGizmo drawable (renders in scenegraph)
+    self.gizmo_data = lev2.ManipGizmoDrawableData()
+    self.gizmo_data.controller = self.manip_controller
+    self.gizmo_drawable = self.gizmo_data.createDrawable()
+    self.gizmo_node = self.scenegraph.createDrawableNodeOnLayers(
+        [self.layer], "manip-gizmo", self.gizmo_drawable)
+    self.gizmo_node.sortkey = 999  # Render on top
 
     ############################################
     # Setup camera
@@ -414,13 +522,44 @@ class SceneEditorTest:
     self.sgv.cameraName = self.camname
     self.sgv.scenegraph = self.scenegraph
     self.sgv.camera_evhandler = lambda ev: self._onCameraEvent(ev)
+    self.sgv.bindManipController(self.manip_controller)
     self.sgv.forkDB()
     self.scenegraph.lightingmanager.gpuInit(ctx)
+
+    print("Scene Editor Ready")
+    print("  T - Translate mode (press again to toggle LOCAL/WORLD)")
+    print("  R - Rotate mode")
+    print("  S - Scale mode")
 
   ##############################################
 
   def _onCameraEvent(self, uievent):
-    """Handle camera manipulation events (orbit, pan, zoom)."""
+    """Handle camera manipulation events (orbit, pan, zoom) and mode keys."""
+    # Check for mode switching keys first
+    if uievent.code == tokens.KEY_DOWN.hashed:
+      if uievent.keycode == ord("T"):
+        if self.manip_controller.mode == lev2.ManipMode.TRANSLATE:
+          if self.manip_controller.space == lev2.ManipSpace.LOCAL:
+            self.manip_controller.space = lev2.ManipSpace.WORLD
+            print("Mode: TRANSLATE (WORLD)")
+          else:
+            self.manip_controller.space = lev2.ManipSpace.LOCAL
+            print("Mode: TRANSLATE (LOCAL)")
+        else:
+          self.manip_controller.mode = lev2.ManipMode.TRANSLATE
+          space_name = "LOCAL" if self.manip_controller.space == lev2.ManipSpace.LOCAL else "WORLD"
+          print(f"Mode: TRANSLATE ({space_name})")
+        return lev2.ui.HandlerResult()
+      elif uievent.keycode == ord("R"):
+        self.manip_controller.mode = lev2.ManipMode.ROTATE
+        print("Mode: ROTATE")
+        return lev2.ui.HandlerResult()
+      elif uievent.keycode == ord("S"):
+        self.manip_controller.mode = lev2.ManipMode.SCALE
+        print("Mode: SCALE")
+        return lev2.ui.HandlerResult()
+
+    # Then handle camera events
     handled = self.uicam.uiEventHandler(uievent)
     if handled:
       self.uicam.updateMatrices()
@@ -435,6 +574,9 @@ class SceneEditorTest:
     # Update scenegraph
     self.scenegraph.updateScene(self.cameralut)
     self.sgv.setDirty()
+
+    # Sync property sheet with cube transform
+    self._syncPropertySheetFromTransform()
 
   ##############################################
 
