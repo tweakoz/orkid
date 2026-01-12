@@ -17,6 +17,7 @@
 #include <ork/lev2/gfx/scenegraph/sgnode_geoclipmap.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_uisurface.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_cursor.h>
+#include <ork/lev2/gfx/scenegraph/sgnode_manipgizmo.h>
 #include <ork/lev2/gfx/particle/drawable_data.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/meshutil/rigid_primitive.inl>
@@ -544,6 +545,53 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
               [](uisurfaceprimitivedata_ptr_t data) -> float { return data->_maxSamplesPerAxis; },
               [](uisurfaceprimitivedata_ptr_t data, float s) { data->_maxSamplesPerAxis = s; });
   type_codec->registerStdCodec<uisurfaceprimitivedata_ptr_t>(uisurface_primdata_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // ManipGizmoDrawableData - 3D manipulation gizmo for transform manipulation
+  /////////////////////////////////////////////////////////////////////////////////
+  auto manipgizmodrawdata_type = //
+      py::class_<ManipGizmoDrawableData, DrawableData, manipgizmodrawabledata_ptr_t>(module_lev2, "ManipGizmoDrawableData")
+          .def(py::init<>())
+          .def_property(
+              "controller",
+              [](manipgizmodrawabledata_ptr_t drw) -> editor::manipcontroller_ptr_t { return drw->_controller; },
+              [](manipgizmodrawabledata_ptr_t drw, editor::manipcontroller_ptr_t val) { drw->_controller = val; })
+          .def_property(
+              "axisLength",
+              [](manipgizmodrawabledata_ptr_t drw) -> float { return drw->_axisLength; },
+              [](manipgizmodrawabledata_ptr_t drw, float val) { drw->_axisLength = val; })
+          .def_property(
+              "axisThickness",
+              [](manipgizmodrawabledata_ptr_t drw) -> float { return drw->_axisThickness; },
+              [](manipgizmodrawabledata_ptr_t drw, float val) { drw->_axisThickness = val; })
+          .def_property(
+              "ringRadius",
+              [](manipgizmodrawabledata_ptr_t drw) -> float { return drw->_ringRadius; },
+              [](manipgizmodrawabledata_ptr_t drw, float val) { drw->_ringRadius = val; })
+          .def_property(
+              "planeSize",
+              [](manipgizmodrawabledata_ptr_t drw) -> float { return drw->_planeSize; },
+              [](manipgizmodrawabledata_ptr_t drw, float val) { drw->_planeSize = val; })
+          .def_property(
+              "colorX",
+              [](manipgizmodrawabledata_ptr_t drw) -> fvec4 { return drw->_colorX; },
+              [](manipgizmodrawabledata_ptr_t drw, fvec4 val) { drw->_colorX = val; })
+          .def_property(
+              "colorY",
+              [](manipgizmodrawabledata_ptr_t drw) -> fvec4 { return drw->_colorY; },
+              [](manipgizmodrawabledata_ptr_t drw, fvec4 val) { drw->_colorY = val; })
+          .def_property(
+              "colorZ",
+              [](manipgizmodrawabledata_ptr_t drw) -> fvec4 { return drw->_colorZ; },
+              [](manipgizmodrawabledata_ptr_t drw, fvec4 val) { drw->_colorZ = val; })
+          .def_property(
+              "colorHighlight",
+              [](manipgizmodrawabledata_ptr_t drw) -> fvec4 { return drw->_colorHighlight; },
+              [](manipgizmodrawabledata_ptr_t drw, fvec4 val) { drw->_colorHighlight = val; })
+          .def_property(
+              "colorActive",
+              [](manipgizmodrawabledata_ptr_t drw) -> fvec4 { return drw->_colorActive; },
+              [](manipgizmodrawabledata_ptr_t drw, fvec4 val) { drw->_colorActive = val; });
+  type_codec->registerStdCodec<manipgizmodrawabledata_ptr_t>(manipgizmodrawdata_type);
 }
 /////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
