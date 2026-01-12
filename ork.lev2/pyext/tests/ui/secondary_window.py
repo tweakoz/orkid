@@ -44,7 +44,7 @@ class MultiWindowTest:
     # Main window layout with EvTestBox (1x1 grid)
     lg = self.ezapp.topLayoutGroup
     lg.margin = 4
-    self.lg_outliner = lg.makeChild(
+    self.lg_primary = lg.makeChild(
       fill=True,
       uiclass=lev2.ui.Outliner,
       args=["outliner"]
@@ -52,7 +52,7 @@ class MultiWindowTest:
 
     self.secondary_win = None
     self.frame_count = 0
-    self.outliner = self.lg_outliner.widget
+    self.outliner = self.lg_primary.widget
 
     # Use VarMap data (simple approach)
     self.outliner.data = outliner_data.test_data()

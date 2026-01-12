@@ -911,10 +911,20 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
 Widget* LayoutGroup::doRouteUiEvent(event_constptr_t ev) {
   //printf("LayoutGroup<%s>::doRouteUiEvent _ignoreEvents<%d>\n", _name.c_str(), int(_ignoreEvents));
 
-  // Check if this widget should ignore events (e.g., split/grid row containers)
+  // If ignoreEvents, skip LayoutGroup-specific handling but still route to children
   if (_ignoreEvents) {
-    //printf("  -> returning nullptr (ignoreEvents)\n");
-    return nullptr;
+    // Route to children (same logic as below, but skip all LayoutGroup handling)
+    for (size_t i = 0; i < _children.size(); i++) {
+      size_t idx = _children.size() - 1 - i;
+      auto child = _children[idx];
+      if (child->IsEventInside(ev)) {
+        auto child_target = child->routeUiEvent(ev);
+        if (child_target && !child_target->_ignoreEvents) {
+          return child_target;
+        }
+      }
+    }
+    return nullptr;  // Don't return 'this' - we ignore events
   }
 
   ///////////////////////////
