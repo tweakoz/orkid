@@ -26,6 +26,11 @@ enum class ManipMode {
   SCALE
 };
 
+enum class ManipSpace {
+  LOCAL,
+  WORLD
+};
+
 enum class ManipAxis {
   NONE,
   X,

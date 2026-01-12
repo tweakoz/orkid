@@ -374,6 +374,15 @@ void ManipGizmoDrawableImpl::_drawTranslateGizmo(Context* ctx, rcfd_ptr_t RCFD, 
   auto active = controller->activeAxis();
   bool dragging = controller->isDragging();
 
+  // Get axes based on space mode
+  fvec3 axisX(1, 0, 0), axisY(0, 1, 0), axisZ(0, 0, 1);
+  if (controller->space() == editor::ManipSpace::LOCAL) {
+    fquat targetRot = controller->target()->getWorldRotation();
+    axisX = targetRot.transform(fvec3(1, 0, 0));
+    axisY = targetRot.transform(fvec3(0, 1, 0));
+    axisZ = targetRot.transform(fvec3(0, 0, 1));
+  }
+
   float axisLen = _data->_axisLength * scale;
   float thickness = _data->_axisThickness * scale;
   float coneH = axisLen * 0.15f;
@@ -389,27 +398,27 @@ void ManipGizmoDrawableImpl::_drawTranslateGizmo(Context* ctx, rcfd_ptr_t RCFD, 
 
   // X axis
   fvec4 colorX = getColor(editor::ManipAxis::X, _data->_colorX);
-  _drawAxis(ctx, RCFD, VP, pos, fvec3(1, 0, 0), colorX, axisLen - coneH, thickness);
-  _drawCone(ctx, RCFD, VP, pos + fvec3(axisLen - coneH, 0, 0), fvec3(1, 0, 0), colorX, coneR, coneH);
+  _drawAxis(ctx, RCFD, VP, pos, axisX, colorX, axisLen - coneH, thickness);
+  _drawCone(ctx, RCFD, VP, pos + axisX * (axisLen - coneH), axisX, colorX, coneR, coneH);
 
   // Y axis
   fvec4 colorY = getColor(editor::ManipAxis::Y, _data->_colorY);
-  _drawAxis(ctx, RCFD, VP, pos, fvec3(0, 1, 0), colorY, axisLen - coneH, thickness);
-  _drawCone(ctx, RCFD, VP, pos + fvec3(0, axisLen - coneH, 0), fvec3(0, 1, 0), colorY, coneR, coneH);
+  _drawAxis(ctx, RCFD, VP, pos, axisY, colorY, axisLen - coneH, thickness);
+  _drawCone(ctx, RCFD, VP, pos + axisY * (axisLen - coneH), axisY, colorY, coneR, coneH);
 
   // Z axis
   fvec4 colorZ = getColor(editor::ManipAxis::Z, _data->_colorZ);
-  _drawAxis(ctx, RCFD, VP, pos, fvec3(0, 0, 1), colorZ, axisLen - coneH, thickness);
-  _drawCone(ctx, RCFD, VP, pos + fvec3(0, 0, axisLen - coneH), fvec3(0, 0, 1), colorZ, coneR, coneH);
+  _drawAxis(ctx, RCFD, VP, pos, axisZ, colorZ, axisLen - coneH, thickness);
+  _drawCone(ctx, RCFD, VP, pos + axisZ * (axisLen - coneH), axisZ, colorZ, coneR, coneH);
 
   // Plane handles (XY, XZ, YZ)
   fvec4 colorXY = getColor(editor::ManipAxis::XY, fvec4(1, 1, 0.2f, 0.6f));
   fvec4 colorXZ = getColor(editor::ManipAxis::XZ, fvec4(1, 0.2f, 1, 0.6f));
   fvec4 colorYZ = getColor(editor::ManipAxis::YZ, fvec4(0.2f, 1, 1, 0.6f));
 
-  _drawPlaneHandle(ctx, RCFD, VP, pos, fvec3(1, 0, 0), fvec3(0, 1, 0), colorXY, planeOffset, planeSize);
-  _drawPlaneHandle(ctx, RCFD, VP, pos, fvec3(1, 0, 0), fvec3(0, 0, 1), colorXZ, planeOffset, planeSize);
-  _drawPlaneHandle(ctx, RCFD, VP, pos, fvec3(0, 1, 0), fvec3(0, 0, 1), colorYZ, planeOffset, planeSize);
+  _drawPlaneHandle(ctx, RCFD, VP, pos, axisX, axisY, colorXY, planeOffset, planeSize);
+  _drawPlaneHandle(ctx, RCFD, VP, pos, axisX, axisZ, colorXZ, planeOffset, planeSize);
+  _drawPlaneHandle(ctx, RCFD, VP, pos, axisY, axisZ, colorYZ, planeOffset, planeSize);
 }
 
 void ManipGizmoDrawableImpl::_drawRotateGizmo(Context* ctx, rcfd_ptr_t RCFD, const fmtx4& VP,

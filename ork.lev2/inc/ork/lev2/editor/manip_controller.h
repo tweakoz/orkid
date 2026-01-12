@@ -30,6 +30,10 @@ public:
   void setMode(ManipMode mode);
   ManipMode mode() const { return _mode; }
 
+  // Space control (local vs world)
+  void setSpace(ManipSpace space) { _space = space; }
+  ManipSpace space() const { return _space; }
+
   // Target object
   void setTarget(manipinterface_ptr_t target);
   manipinterface_ptr_t target() const { return _target; }
@@ -95,6 +99,7 @@ private:
 
   // State
   ManipMode _mode = ManipMode::TRANSLATE;
+  ManipSpace _space = ManipSpace::LOCAL;
   manipinterface_ptr_t _target;
   ManipAxis _hoveredAxis = ManipAxis::NONE;
   ManipAxis _activeAxis = ManipAxis::NONE;

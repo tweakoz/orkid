@@ -110,10 +110,19 @@ ManipAxis ManipController::_hitTestTranslation(const fvec2& mousePos) {
   fvec3 origin = _target->getWorldPosition();
   float scale = _computeWorldGizmoScale();
 
+  // Get axes based on space mode
+  fvec3 axisX(1, 0, 0), axisY(0, 1, 0), axisZ(0, 0, 1);
+  if (_space == ManipSpace::LOCAL) {
+    fquat targetRot = _target->getWorldRotation();
+    axisX = targetRot.transform(fvec3(1, 0, 0));
+    axisY = targetRot.transform(fvec3(0, 1, 0));
+    axisZ = targetRot.transform(fvec3(0, 0, 1));
+  }
+
   fvec2 origin2D = _project(origin);
-  fvec2 xEnd = _project(origin + fvec3(scale, 0, 0));
-  fvec2 yEnd = _project(origin + fvec3(0, scale, 0));
-  fvec2 zEnd = _project(origin + fvec3(0, 0, scale));
+  fvec2 xEnd = _project(origin + axisX * scale);
+  fvec2 yEnd = _project(origin + axisY * scale);
+  fvec2 zEnd = _project(origin + axisZ * scale);
 
   // Test single axes first (priority)
   float distX = _distToSegment(mousePos, origin2D, xEnd);
@@ -126,9 +135,9 @@ ManipAxis ManipController::_hitTestTranslation(const fvec2& mousePos) {
 
   // Test plane handles (small squares at half axis length)
   float planeOffset = scale * 0.5f;
-  fvec2 xyPlane = _project(origin + fvec3(planeOffset, planeOffset, 0));
-  fvec2 xzPlane = _project(origin + fvec3(planeOffset, 0, planeOffset));
-  fvec2 yzPlane = _project(origin + fvec3(0, planeOffset, planeOffset));
+  fvec2 xyPlane = _project(origin + (axisX + axisY) * planeOffset);
+  fvec2 xzPlane = _project(origin + (axisX + axisZ) * planeOffset);
+  fvec2 yzPlane = _project(origin + (axisY + axisZ) * planeOffset);
 
   float planeThreshold = _hitThreshold * 1.5f;
   if ((mousePos - xyPlane).length() < planeThreshold) return ManipAxis::XY;
@@ -214,11 +223,13 @@ fvec3 ManipController::_computeTranslationDelta(const fvec2& mouseDelta, ManipAx
   fvec3 gizmoPos = _target->getWorldPosition();
   float worldScale = _computeWorldGizmoScale();
 
-  // Use ManipHandler for ray-plane intersection
-  _handler.Origin = gizmoPos;
+  // Get local axes if in local space mode
+  fquat targetRot = _target->getWorldRotation();
+  fvec3 axisX = (_space == ManipSpace::LOCAL) ? targetRot.transform(fvec3(1, 0, 0)) : fvec3(1, 0, 0);
+  fvec3 axisY = (_space == ManipSpace::LOCAL) ? targetRot.transform(fvec3(0, 1, 0)) : fvec3(0, 1, 0);
+  fvec3 axisZ = (_space == ManipSpace::LOCAL) ? targetRot.transform(fvec3(0, 0, 1)) : fvec3(0, 0, 1);
 
   // Convert screen coordinates to NDC (-1 to +1 range)
-  // Vulkan convention: Y increases downward on screen
   fvec2 curMouseNDC(
       (_dragPrevMouse.x / _viewportDim.x) * 2.0f - 1.0f,
       (_dragPrevMouse.y / _viewportDim.y) * 2.0f - 1.0f
@@ -228,61 +239,74 @@ fvec3 ManipController::_computeTranslationDelta(const fvec2& mouseDelta, ManipAx
       ((_dragPrevMouse.y + mouseDelta.y) / _viewportDim.y) * 2.0f - 1.0f
   );
 
-  // Get intersection points
-  fvec3 prevIsect, curIsect;
-  float prevAngle, curAngle;
+  // Project mouse movement onto the constraint axis/plane
+  // Use ray-plane intersection for accurate world-space movement
+  fvec3 camEye = _getCameraEye();
+  fvec3 camDir = _getCameraDir();
 
-  fvec3 camDir = (_getCameraEye() - gizmoPos).normalized();
+  auto unprojectToRay = [&](const fvec2& ndc) -> fray3 {
+    fvec3 rayNear, rayFar;
+    fvec3 vWinN(ndc.x, ndc.y, 0.0f);
+    fvec3 vWinF(ndc.x, ndc.y, 1.0f);
+    fmtx4::unProject(_camMatrices.GetIVPMatrix(), vWinN, rayNear);
+    fmtx4::unProject(_camMatrices.GetIVPMatrix(), vWinF, rayFar);
+    return fray3(rayNear, (rayFar - rayNear).normalized());
+  };
+
+  fray3 prevRay = unprojectToRay(curMouseNDC);
+  fray3 curRay = unprojectToRay(newMouseNDC);
+
+  // For single-axis constraints, find the plane that contains the axis
+  // and is most perpendicular to the camera view
+  auto computeAxisDelta = [&](const fvec3& constraintAxis) -> fvec3 {
+    // Choose a plane containing the axis that's well-oriented to the camera
+    fvec3 toCamera = (camEye - gizmoPos).normalized();
+    fvec3 planeNormal = constraintAxis.crossWith(toCamera);
+    if (planeNormal.magnitudeSquared() < 0.001f) {
+      // Axis points at camera, use camera up as fallback
+      planeNormal = constraintAxis.crossWith(_getCameraUp());
+    }
+    planeNormal = planeNormal.crossWith(constraintAxis).normalized();
+
+    fplane3 plane;
+    plane.CalcFromNormalAndOrigin(planeNormal, gizmoPos);
+
+    float prevDist, curDist;
+    fvec3 prevIsect, curIsect;
+    if (plane.Intersect(prevRay, prevDist, prevIsect) && plane.Intersect(curRay, curDist, curIsect)) {
+      fvec3 delta = curIsect - prevIsect;
+      // Project onto constraint axis
+      return constraintAxis * delta.dotWith(constraintAxis);
+    }
+    return fvec3();
+  };
+
+  // For plane constraints, intersect with the plane
+  auto computePlaneDelta = [&](const fvec3& planeNormal) -> fvec3 {
+    fplane3 plane;
+    plane.CalcFromNormalAndOrigin(planeNormal, gizmoPos);
+
+    float prevDist, curDist;
+    fvec3 prevIsect, curIsect;
+    if (plane.Intersect(prevRay, prevDist, prevIsect) && plane.Intersect(curRay, curDist, curIsect)) {
+      return curIsect - prevIsect;
+    }
+    return fvec3();
+  };
 
   switch (axis) {
-    case ManipAxis::X: {
-      bool useXZ = fabs(camDir.y) > fabs(camDir.z);
-      if (useXZ) {
-        _handler.IntersectXZ(curMouseNDC, prevIsect, prevAngle);
-        _handler.IntersectXZ(newMouseNDC, curIsect, curAngle);
-      } else {
-        _handler.IntersectXY(curMouseNDC, prevIsect, prevAngle);
-        _handler.IntersectXY(newMouseNDC, curIsect, curAngle);
-      }
-      return fvec3((curIsect.x - prevIsect.x), 0, 0);
-    }
-    case ManipAxis::Y: {
-      bool useXY = fabs(camDir.z) > fabs(camDir.x);
-      if (useXY) {
-        _handler.IntersectXY(curMouseNDC, prevIsect, prevAngle);
-        _handler.IntersectXY(newMouseNDC, curIsect, curAngle);
-      } else {
-        _handler.IntersectYZ(curMouseNDC, prevIsect, prevAngle);
-        _handler.IntersectYZ(newMouseNDC, curIsect, curAngle);
-      }
-      return fvec3(0, (curIsect.y - prevIsect.y), 0);
-    }
-    case ManipAxis::Z: {
-      bool useXZ = fabs(camDir.y) > fabs(camDir.x);
-      if (useXZ) {
-        _handler.IntersectXZ(curMouseNDC, prevIsect, prevAngle);
-        _handler.IntersectXZ(newMouseNDC, curIsect, curAngle);
-      } else {
-        _handler.IntersectYZ(curMouseNDC, prevIsect, prevAngle);
-        _handler.IntersectYZ(newMouseNDC, curIsect, curAngle);
-      }
-      return fvec3(0, 0, (curIsect.z - prevIsect.z));
-    }
-    case ManipAxis::XY: {
-      _handler.IntersectXY(curMouseNDC, prevIsect, prevAngle);
-      _handler.IntersectXY(newMouseNDC, curIsect, curAngle);
-      return fvec3(curIsect.x - prevIsect.x, curIsect.y - prevIsect.y, 0);
-    }
-    case ManipAxis::XZ: {
-      _handler.IntersectXZ(curMouseNDC, prevIsect, prevAngle);
-      _handler.IntersectXZ(newMouseNDC, curIsect, curAngle);
-      return fvec3(curIsect.x - prevIsect.x, 0, curIsect.z - prevIsect.z);
-    }
-    case ManipAxis::YZ: {
-      _handler.IntersectYZ(curMouseNDC, prevIsect, prevAngle);
-      _handler.IntersectYZ(newMouseNDC, curIsect, curAngle);
-      return fvec3(0, curIsect.y - prevIsect.y, curIsect.z - prevIsect.z);
-    }
+    case ManipAxis::X:
+      return computeAxisDelta(axisX);
+    case ManipAxis::Y:
+      return computeAxisDelta(axisY);
+    case ManipAxis::Z:
+      return computeAxisDelta(axisZ);
+    case ManipAxis::XY:
+      return computePlaneDelta(axisZ);  // XY plane has Z normal
+    case ManipAxis::XZ:
+      return computePlaneDelta(axisY);  // XZ plane has Y normal
+    case ManipAxis::YZ:
+      return computePlaneDelta(axisX);  // YZ plane has X normal
     case ManipAxis::FREE:
     case ManipAxis::VIEW: {
       fvec3 camRight = _getCameraRight();

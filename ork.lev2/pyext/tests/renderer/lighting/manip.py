@@ -104,8 +104,17 @@ class MANIP_APP(ComponentizedApplication):
     # Check for mode switching keys (global, not routed through viewport)
     if uievent.code == tokens.KEY_DOWN.hashed:
       if uievent.keycode == ord("T"):
-        self.manip_controller.mode = lev2.ManipMode.TRANSLATE
-        print("Mode: TRANSLATE")
+        # If already in TRANSLATE mode, toggle between LOCAL and WORLD space
+        if self.manip_controller.mode == lev2.ManipMode.TRANSLATE:
+          if self.manip_controller.space == lev2.ManipSpace.LOCAL:
+            self.manip_controller.space = lev2.ManipSpace.WORLD
+            print("Mode: TRANSLATE (WORLD)")
+          else:
+            self.manip_controller.space = lev2.ManipSpace.LOCAL
+            print("Mode: TRANSLATE (LOCAL)")
+        else:
+          self.manip_controller.mode = lev2.ManipMode.TRANSLATE
+          print(f"Mode: TRANSLATE ({self.manip_controller.space.name})")
         return lev2.ui.HandlerResult()
       elif uievent.keycode == ord("R"):
         self.manip_controller.mode = lev2.ManipMode.ROTATE

@@ -80,6 +80,11 @@ void pyinit_editor(py::module& module_lev2) {
       .value("SCALE", ManipMode::SCALE)
       .export_values();
 
+  py::enum_<ManipSpace>(module_lev2, "ManipSpace")
+      .value("LOCAL", ManipSpace::LOCAL)
+      .value("WORLD", ManipSpace::WORLD)
+      .export_values();
+
   py::enum_<ManipAxis>(module_lev2, "ManipAxis")
       .value("NONE", ManipAxis::NONE)
       .value("X", ManipAxis::X)
@@ -154,6 +159,9 @@ void pyinit_editor(py::module& module_lev2) {
       .def_property("mode",
           &ManipController::mode,
           &ManipController::setMode)
+      .def_property("space",
+          &ManipController::space,
+          &ManipController::setSpace)
       .def_property("target",
           &ManipController::target,
           &ManipController::setTarget)
