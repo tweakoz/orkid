@@ -355,9 +355,18 @@ fquat ManipController::_computeRotationDelta(const fvec2& mousePos, ManipAxis ax
   // Update base angle for next frame
   _rotationBaseAngle = currentAngle;
 
-  // Rotation is around the LOCAL axis (stored in _rotationPlaneNormal)
+  // Create rotation around pure LOCAL axis (not world-space transformed)
+  // This will be applied as rotation * delta for true local-space rotation
+  fvec3 localAxis;
+  switch (axis) {
+    case ManipAxis::X: localAxis = fvec3(1, 0, 0); break;
+    case ManipAxis::Y: localAxis = fvec3(0, 1, 0); break;
+    case ManipAxis::Z: localAxis = fvec3(0, 0, 1); break;
+    default: localAxis = fvec3(0, 1, 0); break;  // Fallback
+  }
+
   fquat delta;
-  delta.fromAxisAngle(fvec4(_rotationPlaneNormal, deltaAngle));
+  delta.fromAxisAngle(fvec4(localAxis, deltaAngle));
   return delta;
 }
 
@@ -411,21 +420,24 @@ ui::HandlerResult ManipController::handleEvent(ui::event_constptr_t ev) {
           switch (hit) {
             case ManipAxis::X:
               // Rotate around local X axis, plane is in local YZ
+              // perp1=Z, perp2=Y gives correct rotation direction
               _rotationPlaneNormal = localX;
-              _rotationPlanePerp1 = localY;
-              _rotationPlanePerp2 = localZ;
+              _rotationPlanePerp1 = localZ;
+              _rotationPlanePerp2 = localY;
               break;
             case ManipAxis::Y:
               // Rotate around local Y axis, plane is in local XZ
+              // perp1=X, perp2=Z gives correct rotation direction (counterclockwise when looking down +Y)
               _rotationPlaneNormal = localY;
-              _rotationPlanePerp1 = localZ;
-              _rotationPlanePerp2 = localX;
+              _rotationPlanePerp1 = localX;
+              _rotationPlanePerp2 = localZ;
               break;
             case ManipAxis::Z:
               // Rotate around local Z axis, plane is in local XY
+              // perp1=Y, perp2=X gives correct rotation direction
               _rotationPlaneNormal = localZ;
-              _rotationPlanePerp1 = localX;
-              _rotationPlanePerp2 = localY;
+              _rotationPlanePerp1 = localY;
+              _rotationPlanePerp2 = localX;
               break;
             case ManipAxis::FREE:
             case ManipAxis::VIEW:
