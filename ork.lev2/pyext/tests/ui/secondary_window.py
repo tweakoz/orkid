@@ -8,13 +8,17 @@
 
 import signal
 import sys
+from ork import path as ork_path
 from orkengine.core import vec4
 from orkengine import lev2
+from ork.ui.filesystem_browser import FilesystemBrowser
+from ork.ui.test import outliner_data
 
 ################################################################################
 
 # Auto-close after 5 seconds for automated testing
 AUTO_CLOSE = "--auto-close" in sys.argv
+shader_path = ork_path.data / "platform_lev2" / "shaders" / "fxv2"
 
 ################################################################################
 
@@ -27,24 +31,38 @@ class MultiWindowTest:
     self.win_width = 640
     self.win_height = 720
 
-    self.ezapp = lev2.OrkEzApp.create(self, width=self.win_width, height=self.win_height, left=100, top=100)
+    self.ezapp = lev2.OrkEzApp.create(self,
+                                      name = "MultiWindowTest::Primary", 
+                                      width=self.win_width, 
+                                      height=self.win_height, 
+                                      left=100, 
+                                      top=100)
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()
+
 
     # Main window layout with EvTestBox (1x1 grid)
     lg = self.ezapp.topLayoutGroup
     lg.margin = 4
-    self.main_griditems = lg.makeGrid(
-      width=1,
-      height=1,
-      margin=4,
-      uiclass=lev2.ui.EvTestBox,
-      args=["main_evtb", vec4(0.2, 0.3, 0.5, 1)]
+    self.lg_outliner = lg.makeChild(
+      fill=True,
+      uiclass=lev2.ui.Outliner,
+      args=["outliner"]
     )
-    self.main_evtestbox = self.main_griditems[0].widget
 
     self.secondary_win = None
     self.frame_count = 0
+    self.outliner = self.lg_outliner.widget
+
+    # Use VarMap data (simple approach)
+    self.outliner.data = outliner_data.test_data()
+    self.outliner.model.allow_rename = True  # Enable rename support
+    self.outliner.model.allow_delete = True  # Enable delete support
+    self.outliner.model.allow_add = True     # Enable add support
+    self.outliner.model.allow_multiselect = True     # Enable add support
+    self.outliner.expandAll()
+
+
 
     def onCtrlC(signum, frame):
       print("signalling EXIT")
@@ -57,9 +75,6 @@ class MultiWindowTest:
   def onGpuInit(self, ctx):
     print("Main window GPU init")
 
-    # GPU init the main window EvTestBox
-    self.main_evtestbox.gpuInit(ctx)
-
     # Create secondary window - side by side with main
     sec_x = 100 + self.win_width + 20  # 20px gap between windows
     self.secondary_win = self.ezapp.createSecondaryWindow(
@@ -67,7 +82,7 @@ class MultiWindowTest:
       height=self.win_height,
       x=sec_x,
       y=100,
-      title="Secondary Window",
+      title="MultiWindowTest::Secondary",
       decorated=True,
       resizable=True
     )
@@ -87,26 +102,13 @@ class MultiWindowTest:
     print(f"[PY] Root widget rect set to: 0,0,{win_w},{win_h}", flush=True)
 
     # 1x1 grid of EvTestBox for secondary window
-    self.sec_griditems = root.makeGrid(
-      width=1,
-      height=1,
-      margin=4,
-      uiclass=lev2.ui.EvTestBox,
-      args=["sec_evtb", vec4(0.5, 0.3, 0.2, 1)]
+    self.lg_secondary = root.makeChild(
+      uiclass=FilesystemBrowser,
+      args=["browser", str(shader_path), "*.fxv2"],
+      fill=True,
     )
-    self.sec_evtestbox = self.sec_griditems[0].widget
+    self.sec_evtestbox = self.lg_secondary.widget
     print(f"[PY] EvTestBox: x={self.sec_evtestbox.x} y={self.sec_evtestbox.y} w={self.sec_evtestbox.width} h={self.sec_evtestbox.height}", flush=True)
-
-    # GPU init for secondary window
-    def on_sec_gpu_init(sec_ctx):
-      print(f"[PY] GPU init: EvTestBox: x={self.sec_evtestbox.x} y={self.sec_evtestbox.y} w={self.sec_evtestbox.width} h={self.sec_evtestbox.height}", flush=True)
-      root.gpuInit(sec_ctx)
-      self.sec_evtestbox.gpuInit(sec_ctx)
-
-    self.secondary_win.onGpuInit = on_sec_gpu_init
-
-    # No need to set onDraw - C++ handles drawing ui::Context automatically
-
     print("Secondary window created")
 
   ##############################################

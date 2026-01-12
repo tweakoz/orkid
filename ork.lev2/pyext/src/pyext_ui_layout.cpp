@@ -491,11 +491,10 @@ void pyinit_ui_layout(py::module& uimodule) {
               [](uilayoutgroup_ptr_t lgrp, py::kwargs kwargs) -> uilayoutitem_ptr_t { //
                 uilayoutitem_ptr_t rval;
                 if (kwargs) {
-                  int width  = 0;
-                  int height = 0;
-                  int margin = 0;
                   py::list args;
                   py::object uifactory;
+                  bool fill = false;
+                  int margin = -1;  // -1 means inherit from parent
                   int args_parsed = 0;
                   for (auto item : kwargs) {
                     auto key = py::cast<std::string>(item.first);
@@ -508,10 +507,33 @@ void pyinit_ui_layout(py::module& uimodule) {
                     } else if (key == "args") {
                       args = py::cast<py::list>(item.second);
                       args_parsed++;
+                    } else if (key == "fill") {
+                      fill = py::cast<bool>(item.second);
+                    } else if (key == "margin") {
+                      margin = py::cast<int>(item.second);
                     }
                   }
                   OrkAssert(args_parsed == 2);
                   rval = py::cast<uilayoutitem_ptr_t>(uifactory(lgrp, args));
+
+                  // If fill=True, anchor child to fill parent
+                  if (fill && rval && rval->_layout) {
+                    auto parent_layout = lgrp->_layout;
+                    rval->_layout->top()->anchorTo(parent_layout->top());
+                    rval->_layout->left()->anchorTo(parent_layout->left());
+                    rval->_layout->bottom()->anchorTo(parent_layout->bottom());
+                    rval->_layout->right()->anchorTo(parent_layout->right());
+
+                    // Apply margin if specified, otherwise inherit from parent
+                    if (margin >= 0) {
+                      rval->_layout->setMargin(margin);
+                    } else {
+                      rval->_layout->setMargin(lgrp->_margin);
+                    }
+
+                    // Update layout to compute geometry
+                    parent_layout->updateAll();
+                  }
                 }
                 return rval;
               })

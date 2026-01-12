@@ -17,13 +17,21 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::GfxMaterialUI, "MaterialUI")
 
 namespace ork { namespace lev2 {
 
+// Singleton UI materials - same instance works on all contexts that share VkDevice
+static uimaterial_ptr_t g_default_ui_material;
+static uitexmaterial_ptr_t g_default_uitex_material;
+
 uimaterial_ptr_t defaultUIMaterial() {
-  static auto _g_uimaterial = std::make_shared<GfxMaterialUI>(lev2::contextForCurrentThread());
-  return _g_uimaterial;
+  if (!g_default_ui_material) {
+    g_default_ui_material = std::make_shared<GfxMaterialUI>(contextForCurrentThread());
+  }
+  return g_default_ui_material;
 }
 uitexmaterial_ptr_t defaultUITextureMaterial() {
-  static auto _g_uitexmaterial = std::make_shared<GfxMaterialUITextured>(lev2::contextForCurrentThread());
-  return _g_uitexmaterial;
+  if (!g_default_uitex_material) {
+    g_default_uitex_material = std::make_shared<GfxMaterialUITextured>(contextForCurrentThread());
+  }
+  return g_default_uitex_material;
 }
 
 /////////////////////////////////////////////////////////////////////////

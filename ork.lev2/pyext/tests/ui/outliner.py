@@ -8,6 +8,7 @@
 import signal
 from orkengine.core import vec2, vec3, vec4, VarMap
 from orkengine import lev2
+from ork.ui.test import outliner_data
 
 ################################################################################
 
@@ -35,7 +36,7 @@ class OutlinerTest:
     outliner_layout.layout.right.anchorTo(root_layout.right)
 
     # Use VarMap data (simple approach)
-    self.outliner.data = self._buildTestData()
+    self.outliner.data = outliner_data.test_data()
     self.outliner.model.allow_rename = True  # Enable rename support
     self.outliner.model.allow_delete = True  # Enable delete support
     self.outliner.model.allow_add = True     # Enable add support
@@ -75,67 +76,6 @@ class OutlinerTest:
       self.ezapp.signalExit()
 
     signal.signal(signal.SIGINT, onCtrlC)
-
-  def _buildTestData(self):
-    """Build hierarchical test data using VarMap."""
-    data = VarMap()
-
-    # Scene hierarchy
-    scene = VarMap()
-
-    # Cameras
-    cameras = VarMap()
-    cameras.MainCamera = "perspective"
-    cameras.TopCamera = "orthographic"
-    cameras.SideCamera = "orthographic"
-    scene.Cameras = cameras
-
-    # Lights
-    lights = VarMap()
-    lights.SunLight = "directional"
-    lights.PointLight1 = "point"
-    lights.SpotLight1 = "spot"
-    scene.Lights = lights
-
-    # Objects
-    objects = VarMap()
-
-    # Character group
-    character = VarMap()
-    character.Body = "mesh"
-    character.Head = "mesh"
-    character.LeftArm = "mesh"
-    character.RightArm = "mesh"
-    objects.Character = character
-
-    # Environment group
-    environment = VarMap()
-    environment.Ground = "mesh"
-    environment.Sky = "dome"
-    environment.Tree1 = "mesh"
-    environment.Tree2 = "mesh"
-    environment.Rock1 = "mesh"
-    objects.Environment = environment
-
-    scene.Objects = objects
-    data.Scene = scene
-
-    # Materials
-    materials = VarMap()
-    materials.CharacterSkin = "pbr"
-    materials.GroundGrass = "pbr"
-    materials.TreeBark = "pbr"
-    materials.SkyDome = "unlit"
-    data.Materials = materials
-
-    # Settings
-    settings = VarMap()
-    settings.RenderQuality = "high"
-    settings.ShadowResolution = 2048
-    settings.AntiAliasing = "MSAA4x"
-    data.Settings = settings
-
-    return data
 
   def _getValueByKey(self, key):
     """Navigate to a value by slash-separated key path."""

@@ -259,6 +259,10 @@ void SecondaryWinImpl::_render() {
     return;
   }
 
+  // Set up TLS context tracker so contextForCurrentThread() returns our context
+  // This RAII object sets the TLS on construction and clears on destruction
+  lev2::ThreadGfxContext l2ctx_track(_gfxContext);
+
   // GPU init on first render
   if (!_owner->_gpuInitialized) {
     if (_owner->_onGpuInit) {
