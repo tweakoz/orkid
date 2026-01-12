@@ -22,8 +22,7 @@ namespace ork::lev2::editor {
 // ManipController - handles gizmo interaction and rendering
 ////////////////////////////////////////////////////////////////////////////////
 
-class ManipController {
-public:
+struct ManipController {
   ManipController();
 
   // Mode control
@@ -48,30 +47,37 @@ public:
   void draw(Context* ctx);
 
   // Gizmo scale (screen-space size factor)
-  float _gizmoScale = 100.0f;
+  float _gizmo_scale = 100.0f;
 
   // Hit threshold in pixels
-  float _hitThreshold = 12.0f;
+  float _hit_threshold = 12.0f;
 
   // Ring visibility threshold (degrees) - dim ring when viewed more edge-on than this
-  float _minRingElevationDegrees = 25.0f;
+  float _min_ring_elevation_degrees = 25.0f;
 
   // Ring radius scale factor (relative to gizmo scale)
-  float _ringRadiusScale = 1.2f;
+  float _ring_radius_scale = 1.2f;
 
   // Ring tube radius scale factor (for torus tube thickness)
-  float _ringTubeRadiusScale = 0.04f;
+  float _ring_tube_radius_scale = 0.04f;
+
+  // Ring color band size in degrees (alternating intensity pattern)
+  float _ring_band_degrees = 30.0f;
+
+  // Axis sizing
+  float _axis_length_scale = 1.0f;
+  float _axis_thickness_scale = 0.04f;
+  float _plane_handle_scale = 0.3f;
 
   // Hovered axis (for highlight, updated on MOVE)
-  ManipAxis hoveredAxis() const { return _hoveredAxis; }
+  ManipAxis hoveredAxis() const { return _hovered_axis; }
 
   // Active axis (during drag)
-  ManipAxis activeAxis() const { return _activeAxis; }
+  ManipAxis activeAxis() const { return _active_axis; }
 
   // Is currently dragging?
-  bool isDragging() const { return _isDragging; }
+  bool isDragging() const { return _is_dragging; }
 
-private:
   // Camera helpers
   fvec3 _getCameraEye() const;
   fvec3 _getCameraDir() const;
@@ -106,33 +112,41 @@ private:
   // Compute scale delta from mouse movement
   float _computeScaleDelta(const fvec2& mouseDelta, ManipAxis axis);
 
+  // Compute ring dimming factor based on view angle
+  float _computeRingDimFactor(const fvec3& ringNormal) const;
+
   // State
   ManipMode _mode = ManipMode::TRANSLATE;
   ManipSpace _space = ManipSpace::LOCAL;
   manipinterface_ptr_t _target;
-  ManipAxis _hoveredAxis = ManipAxis::NONE;
-  ManipAxis _activeAxis = ManipAxis::NONE;
-  bool _isDragging = false;
+  ManipAxis _hovered_axis = ManipAxis::NONE;
+  ManipAxis _active_axis = ManipAxis::NONE;
+  bool _is_dragging = false;
 
   // Camera data
-  CameraMatrices _camMatrices;
-  fvec2 _viewportDim;
+  CameraMatrices _cam_matrices;
+  fvec2 _viewport_dim;
 
   // Drag state
-  fvec2 _dragStartMouse;
-  fvec2 _dragPrevMouse;
-  fvec3 _dragStartPos;      // Object position at drag start
-  fquat _dragStartRot;      // Object rotation at drag start
-  float _dragStartScale;    // Object scale at drag start
+  fvec2 _drag_start_mouse;
+  fvec2 _drag_prev_mouse;
+  fvec3 _drag_start_pos;      // Object position at drag start
+  fquat _drag_start_rot;      // Object rotation at drag start
+  float _drag_start_scale;    // Object scale at drag start
 
   // Rotation drag state - ray-plane intersection
-  float _rotationBaseAngle = 0.0f;    // Angle at drag start
-  fvec3 _rotationPlaneNormal;         // Normal of rotation plane (local axis)
-  fvec3 _rotationPlanePerp1;          // First perpendicular axis in plane
-  fvec3 _rotationPlanePerp2;          // Second perpendicular axis in plane
+  float _rotation_base_angle = 0.0f;    // Angle at drag start
+  fvec3 _rotation_plane_normal;         // Normal of rotation plane (local axis)
+  fvec3 _rotation_plane_perp1;          // First perpendicular axis in plane
+  fvec3 _rotation_plane_perp2;          // Second perpendicular axis in plane
 
   // ManipHandler for ray-plane intersection
   ManipHandler _handler;
+
+  // Cached ring dimming factors at drag start (for frozen visual state during drag)
+  float _drag_start_dim_x = 1.0f;
+  float _drag_start_dim_y = 1.0f;
+  float _drag_start_dim_z = 1.0f;
 };
 
 using manipcontroller_ptr_t = std::shared_ptr<ManipController>;

@@ -27,13 +27,6 @@ public:
   // Controller reference
   editor::manipcontroller_ptr_t _controller;
 
-  // Gizmo sizing
-  float _axisLength = 1.0f;
-  float _axisThickness = 0.04f;
-  float _ringRadius = 0.8f;
-  float _ringTubeRadius = 0.04f;
-  float _planeSize = 0.3f;
-
   // Axis colors
   fvec4 _colorX = fvec4(1.0f, 0.2f, 0.2f, 1.0f);
   fvec4 _colorY = fvec4(0.2f, 1.0f, 0.2f, 1.0f);
@@ -61,8 +54,9 @@ struct ManipGizmoDrawableImpl {
                  const fvec4& color, float length, float thickness);
   void _drawCone(Context* ctx, rcfd_ptr_t RCFD, const fmtx4& VP, const fvec3& pos, const fvec3& dir,
                  const fvec4& color, float radius, float height);
-  void _drawRing(Context* ctx, rcfd_ptr_t RCFD, const fmtx4& VP, const fvec3& center, const fvec3& normal,
-                 const fvec4& color, float radius, float thickness);
+  void _drawRing(Context* ctx, rcfd_ptr_t RCFD, const fmtx4& VP, const fvec3& center,
+                 const fvec3& normal, const fvec3& perp1, const fvec3& perp2,
+                 const fvec4& color, float majorRadius, float minorRadius);
   void _drawCube(Context* ctx, rcfd_ptr_t RCFD, const fmtx4& VP, const fvec3& pos,
                  const fvec4& color, float size);
   void _drawPlaneHandle(Context* ctx, rcfd_ptr_t RCFD, const fmtx4& VP, const fvec3& pos,

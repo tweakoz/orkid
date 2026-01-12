@@ -556,22 +556,6 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
               [](manipgizmodrawabledata_ptr_t drw) -> editor::manipcontroller_ptr_t { return drw->_controller; },
               [](manipgizmodrawabledata_ptr_t drw, editor::manipcontroller_ptr_t val) { drw->_controller = val; })
           .def_property(
-              "axisLength",
-              [](manipgizmodrawabledata_ptr_t drw) -> float { return drw->_axisLength; },
-              [](manipgizmodrawabledata_ptr_t drw, float val) { drw->_axisLength = val; })
-          .def_property(
-              "axisThickness",
-              [](manipgizmodrawabledata_ptr_t drw) -> float { return drw->_axisThickness; },
-              [](manipgizmodrawabledata_ptr_t drw, float val) { drw->_axisThickness = val; })
-          .def_property(
-              "ringRadius",
-              [](manipgizmodrawabledata_ptr_t drw) -> float { return drw->_ringRadius; },
-              [](manipgizmodrawabledata_ptr_t drw, float val) { drw->_ringRadius = val; })
-          .def_property(
-              "planeSize",
-              [](manipgizmodrawabledata_ptr_t drw) -> float { return drw->_planeSize; },
-              [](manipgizmodrawabledata_ptr_t drw, float val) { drw->_planeSize = val; })
-          .def_property(
               "colorX",
               [](manipgizmodrawabledata_ptr_t drw) -> fvec4 { return drw->_colorX; },
               [](manipgizmodrawabledata_ptr_t drw, fvec4 val) { drw->_colorX = val; })

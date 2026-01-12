@@ -16,25 +16,26 @@ namespace ork::lev2::editor {
 ////////////////////////////////////////////////////////////////////////////////
 
 ManipController::ManipController() {
+  _ring_tube_radius_scale = 0.024f;  // 40% reduction from 0.04
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 void ManipController::setMode(ManipMode mode) {
   _mode = mode;
-  _hoveredAxis = ManipAxis::NONE;
+  _hovered_axis = ManipAxis::NONE;
 }
 
 void ManipController::setTarget(manipinterface_ptr_t target) {
   _target = target;
-  _hoveredAxis = ManipAxis::NONE;
-  _activeAxis = ManipAxis::NONE;
-  _isDragging = false;
+  _hovered_axis = ManipAxis::NONE;
+  _active_axis = ManipAxis::NONE;
+  _is_dragging = false;
 }
 
 void ManipController::updateCamera(const CameraMatrices& matrices, const fvec2& viewport_dim) {
-  _camMatrices = matrices;
-  _viewportDim = viewport_dim;
+  _cam_matrices = matrices;
+  _viewport_dim = viewport_dim;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -43,27 +44,27 @@ void ManipController::updateCamera(const CameraMatrices& matrices, const fvec2& 
 
 fvec3 ManipController::_getCameraEye() const {
   // Extract eye position from inverse view matrix
-  const fmtx4& ivmat = _camMatrices.GetIVMatrix();
+  const fmtx4& ivmat = _cam_matrices.GetIVMatrix();
   return fvec3(ivmat.elemXY(3, 0), ivmat.elemXY(3, 1), ivmat.elemXY(3, 2));
 }
 
 fvec3 ManipController::_getCameraDir() const {
-  const fmtx4& ivmat = _camMatrices.GetIVMatrix();
+  const fmtx4& ivmat = _cam_matrices.GetIVMatrix();
   return -fvec3(ivmat.elemXY(2, 0), ivmat.elemXY(2, 1), ivmat.elemXY(2, 2)).normalized();
 }
 
 fvec3 ManipController::_getCameraRight() const {
-  const fmtx4& ivmat = _camMatrices.GetIVMatrix();
+  const fmtx4& ivmat = _cam_matrices.GetIVMatrix();
   return fvec3(ivmat.elemXY(0, 0), ivmat.elemXY(0, 1), ivmat.elemXY(0, 2)).normalized();
 }
 
 fvec3 ManipController::_getCameraUp() const {
-  const fmtx4& ivmat = _camMatrices.GetIVMatrix();
+  const fmtx4& ivmat = _cam_matrices.GetIVMatrix();
   return fvec3(ivmat.elemXY(1, 0), ivmat.elemXY(1, 1), ivmat.elemXY(1, 2)).normalized();
 }
 
 fvec2 ManipController::_project(const fvec3& worldPos) const {
-  fvec4 clip = _camMatrices.GetVPMatrix() * fvec4(worldPos, 1.0f);
+  fvec4 clip = _cam_matrices.GetVPMatrix() * fvec4(worldPos, 1.0f);
   if (clip.w <= 0.0001f) {
     return fvec2(-10000, -10000); // Behind camera
   }
@@ -72,8 +73,8 @@ fvec2 ManipController::_project(const fvec3& worldPos) const {
   // Screen Y=0 at top, Y=height at bottom
   // So: screenY = (ndc.y * 0.5 + 0.5) * height (no flip needed)
   return fvec2(
-      (ndc.x * 0.5f + 0.5f) * _viewportDim.x,
-      (ndc.y * 0.5f + 0.5f) * _viewportDim.y
+      (ndc.x * 0.5f + 0.5f) * _viewport_dim.x,
+      (ndc.y * 0.5f + 0.5f) * _viewport_dim.y
   );
 }
 
@@ -129,9 +130,9 @@ ManipAxis ManipController::_hitTestTranslation(const fvec2& mousePos) {
   float distY = _distToSegment(mousePos, origin2D, yEnd);
   float distZ = _distToSegment(mousePos, origin2D, zEnd);
 
-  if (distX < _hitThreshold) return ManipAxis::X;
-  if (distY < _hitThreshold) return ManipAxis::Y;
-  if (distZ < _hitThreshold) return ManipAxis::Z;
+  if (distX < _hit_threshold) return ManipAxis::X;
+  if (distY < _hit_threshold) return ManipAxis::Y;
+  if (distZ < _hit_threshold) return ManipAxis::Z;
 
   // Test plane handles (small squares at half axis length)
   float planeOffset = scale * 0.5f;
@@ -139,13 +140,13 @@ ManipAxis ManipController::_hitTestTranslation(const fvec2& mousePos) {
   fvec2 xzPlane = _project(origin + (axisX + axisZ) * planeOffset);
   fvec2 yzPlane = _project(origin + (axisY + axisZ) * planeOffset);
 
-  float planeThreshold = _hitThreshold * 1.5f;
+  float planeThreshold = _hit_threshold * 1.5f;
   if ((mousePos - xyPlane).length() < planeThreshold) return ManipAxis::XY;
   if ((mousePos - xzPlane).length() < planeThreshold) return ManipAxis::XZ;
   if ((mousePos - yzPlane).length() < planeThreshold) return ManipAxis::YZ;
 
   // Test center (free movement)
-  if ((mousePos - origin2D).length() < _hitThreshold) return ManipAxis::FREE;
+  if ((mousePos - origin2D).length() < _hit_threshold) return ManipAxis::FREE;
 
   return ManipAxis::NONE;
 }
@@ -155,7 +156,7 @@ ManipAxis ManipController::_hitTestRotation(const fvec2& mousePos) {
 
   fvec3 origin = _target->getWorldPosition();
   float scale = _computeWorldGizmoScale();
-  float ringRadius = scale * _ringRadiusScale;
+  float ringRadius = scale * _ring_radius_scale;
 
   // Get target's rotation to test in local space
   fquat targetRot = _target->getWorldRotation();
@@ -169,7 +170,7 @@ ManipAxis ManipController::_hitTestRotation(const fvec2& mousePos) {
   auto isRingSelectable = [&](const fvec3& ringNormal) -> bool {
     float dotProduct = fabs(ringNormal.dotWith(camDir));
     float angleDegrees = 90.0f - (acos(dotProduct) * 180.0f / PI);
-    return angleDegrees >= _minRingElevationDegrees;
+    return angleDegrees >= _min_ring_elevation_degrees;
   };
 
   bool xSelectable = isRingSelectable(localX);
@@ -197,7 +198,7 @@ ManipAxis ManipController::_hitTestRotation(const fvec2& mousePos) {
   float distZ = zSelectable ? testRing(localX, localY) : FLT_MAX; // XY ring (rotate around Z)
 
   float minDist = std::min({distX, distY, distZ});
-  if (minDist < _hitThreshold) {
+  if (minDist < _hit_threshold) {
     if (minDist == distX) return ManipAxis::X;
     if (minDist == distY) return ManipAxis::Y;
     if (minDist == distZ) return ManipAxis::Z;
@@ -244,12 +245,12 @@ fvec3 ManipController::_computeTranslationDelta(const fvec2& mouseDelta, ManipAx
 
   // Convert screen coordinates to NDC (-1 to +1 range)
   fvec2 curMouseNDC(
-      (_dragPrevMouse.x / _viewportDim.x) * 2.0f - 1.0f,
-      (_dragPrevMouse.y / _viewportDim.y) * 2.0f - 1.0f
+      (_drag_prev_mouse.x / _viewport_dim.x) * 2.0f - 1.0f,
+      (_drag_prev_mouse.y / _viewport_dim.y) * 2.0f - 1.0f
   );
   fvec2 newMouseNDC(
-      ((_dragPrevMouse.x + mouseDelta.x) / _viewportDim.x) * 2.0f - 1.0f,
-      ((_dragPrevMouse.y + mouseDelta.y) / _viewportDim.y) * 2.0f - 1.0f
+      ((_drag_prev_mouse.x + mouseDelta.x) / _viewport_dim.x) * 2.0f - 1.0f,
+      ((_drag_prev_mouse.y + mouseDelta.y) / _viewport_dim.y) * 2.0f - 1.0f
   );
 
   // Project mouse movement onto the constraint axis/plane
@@ -261,8 +262,8 @@ fvec3 ManipController::_computeTranslationDelta(const fvec2& mouseDelta, ManipAx
     fvec3 rayNear, rayFar;
     fvec3 vWinN(ndc.x, ndc.y, 0.0f);
     fvec3 vWinF(ndc.x, ndc.y, 1.0f);
-    fmtx4::unProject(_camMatrices.GetIVPMatrix(), vWinN, rayNear);
-    fmtx4::unProject(_camMatrices.GetIVPMatrix(), vWinF, rayFar);
+    fmtx4::unProject(_cam_matrices.GetIVPMatrix(), vWinN, rayNear);
+    fmtx4::unProject(_cam_matrices.GetIVPMatrix(), vWinF, rayFar);
     return fray3(rayNear, (rayFar - rayNear).normalized());
   };
 
@@ -339,8 +340,8 @@ bool ManipController::_computeRotationAngle(const fvec2& mousePos, float& outAng
 
   // Convert screen coordinates to NDC
   fvec2 mouseNDC(
-      (mousePos.x / _viewportDim.x) * 2.0f - 1.0f,
-      (mousePos.y / _viewportDim.y) * 2.0f - 1.0f
+      (mousePos.x / _viewport_dim.x) * 2.0f - 1.0f,
+      (mousePos.y / _viewport_dim.y) * 2.0f - 1.0f
   );
 
   // Generate ray from camera through mouse position
@@ -348,13 +349,13 @@ bool ManipController::_computeRotationAngle(const fvec2& mousePos, float& outAng
   fvec3 vWinN(mouseNDC.x, mouseNDC.y, 0.0f);
   fvec3 vWinF(mouseNDC.x, mouseNDC.y, 1.0f);
   fvec3 rayFar;
-  fmtx4::unProject(_camMatrices.GetIVPMatrix(), vWinN, rayNear);
-  fmtx4::unProject(_camMatrices.GetIVPMatrix(), vWinF, rayFar);
+  fmtx4::unProject(_cam_matrices.GetIVPMatrix(), vWinN, rayNear);
+  fmtx4::unProject(_cam_matrices.GetIVPMatrix(), vWinF, rayFar);
   rayDir = (rayFar - rayNear).normalized();
 
   // Create plane from stored normal and gizmo origin
   fplane3 rotationPlane;
-  rotationPlane.CalcFromNormalAndOrigin(_rotationPlaneNormal, gizmoPos);
+  rotationPlane.CalcFromNormalAndOrigin(_rotation_plane_normal, gizmoPos);
 
   // Intersect ray with plane
   fray3 ray;
@@ -368,23 +369,23 @@ bool ManipController::_computeRotationAngle(const fvec2& mousePos, float& outAng
 
   // Compute angle in the plane's 2D coordinate system
   fvec3 toIsect = isectPoint - gizmoPos;
-  float coord1 = toIsect.dotWith(_rotationPlanePerp1);
-  float coord2 = toIsect.dotWith(_rotationPlanePerp2);
+  float coord1 = toIsect.dotWith(_rotation_plane_perp1);
+  float coord2 = toIsect.dotWith(_rotation_plane_perp2);
   outAngle = atan2(coord2, coord1);
 
   return true;
 }
 
 fquat ManipController::_computeRotationAbsolute(const fvec2& mousePos, ManipAxis axis) {
-  if (!_target) return _dragStartRot;
+  if (!_target) return _drag_start_rot;
 
   float currentAngle;
   if (!_computeRotationAngle(mousePos, currentAngle)) {
-    return _dragStartRot;  // No intersection, keep start rotation
+    return _drag_start_rot;  // No intersection, keep start rotation
   }
 
   // Compute total angle from drag start (not delta from last frame)
-  float totalAngle = currentAngle - _rotationBaseAngle;
+  float totalAngle = currentAngle - _rotation_base_angle;
 
   // Wrap angle
   while (totalAngle > PI) totalAngle -= 2.0f * PI;
@@ -404,12 +405,31 @@ fquat ManipController::_computeRotationAbsolute(const fvec2& mousePos, ManipAxis
 
   // Return absolute rotation: localRotation * startRotation
   // (local rotation applied in world frame, then base orientation)
-  return localRot * _dragStartRot;
+  return localRot * _drag_start_rot;
 }
 
 float ManipController::_computeScaleDelta(const fvec2& mouseDelta, ManipAxis axis) {
   float sensitivity = 0.01f;
   return 1.0f + mouseDelta.x * sensitivity;
+}
+
+float ManipController::_computeRingDimFactor(const fvec3& ringNormal) const {
+  fvec3 camDir = _getCameraDir();
+  float dotProduct = fabs(ringNormal.dotWith(camDir));
+  float angleDegrees = 90.0f - (acos(dotProduct) * 180.0f / PI);
+
+  float threshold = _min_ring_elevation_degrees;
+  float transitionBand = 1.0f;  // 1 degree transition band
+
+  if (angleDegrees >= threshold) {
+    return 1.0f;  // Full brightness - active
+  } else if (angleDegrees >= threshold - transitionBand) {
+    // Sharp linear transition over 1 degree
+    float t = (angleDegrees - (threshold - transitionBand)) / transitionBand;
+    return 0.5f + 0.5f * t;
+  } else {
+    return 0.5f;  // Dimmed - inactive
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -426,26 +446,26 @@ ui::HandlerResult ManipController::handleEvent(ui::event_constptr_t ev) {
 
   switch (ev->_eventcode) {
     case ui::EventCode::MOVE: {
-      _hoveredAxis = _hitTestGizmo(mousePos);
+      _hovered_axis = _hitTestGizmo(mousePos);
       break;
     }
 
     case ui::EventCode::PUSH: {
       ManipAxis hit = _hitTestGizmo(mousePos);
       if (hit != ManipAxis::NONE) {
-        _activeAxis = hit;
-        _isDragging = true;
-        _dragStartMouse = mousePos;
-        _dragPrevMouse = mousePos;
-        _dragStartPos = _target->getWorldPosition();
-        _dragStartRot = _target->getWorldRotation();
+        _active_axis = hit;
+        _is_dragging = true;
+        _drag_start_mouse = mousePos;
+        _drag_prev_mouse = mousePos;
+        _drag_start_pos = _target->getWorldPosition();
+        _drag_start_rot = _target->getWorldRotation();
 
         // Initialize ManipHandler with NDC coordinates
         fvec2 mouseNDC(
-            (mousePos.x / _viewportDim.x) * 2.0f - 1.0f,
-            (mousePos.y / _viewportDim.y) * 2.0f - 1.0f
+            (mousePos.x / _viewport_dim.x) * 2.0f - 1.0f,
+            (mousePos.y / _viewport_dim.y) * 2.0f - 1.0f
         );
-        _handler.Init(mouseNDC, _camMatrices.GetIVPMatrix(), fquat());
+        _handler.Init(mouseNDC, _cam_matrices.GetIVPMatrix(), fquat());
 
         // For rotation mode, set up the rotation plane in LOCAL space
         if (_mode == ManipMode::ROTATE) {
@@ -456,32 +476,37 @@ ui::HandlerResult ManipController::handleEvent(ui::event_constptr_t ev) {
 
           switch (hit) {
             case ManipAxis::X:
-              _rotationPlaneNormal = localX;
-              _rotationPlanePerp1 = localZ;
-              _rotationPlanePerp2 = localY;
+              _rotation_plane_normal = localX;
+              _rotation_plane_perp1 = localZ;
+              _rotation_plane_perp2 = localY;
               break;
             case ManipAxis::Y:
-              _rotationPlaneNormal = localY;
-              _rotationPlanePerp1 = localX;
-              _rotationPlanePerp2 = localZ;
+              _rotation_plane_normal = localY;
+              _rotation_plane_perp1 = localX;
+              _rotation_plane_perp2 = localZ;
               break;
             case ManipAxis::Z:
-              _rotationPlaneNormal = localZ;
-              _rotationPlanePerp1 = localY;
-              _rotationPlanePerp2 = localX;
+              _rotation_plane_normal = localZ;
+              _rotation_plane_perp1 = localY;
+              _rotation_plane_perp2 = localX;
               break;
             case ManipAxis::FREE:
             case ManipAxis::VIEW:
             default:
               // View-aligned rotation
-              _rotationPlaneNormal = _getCameraDir();
-              _rotationPlanePerp1 = _getCameraRight();
-              _rotationPlanePerp2 = _getCameraUp();
+              _rotation_plane_normal = _getCameraDir();
+              _rotation_plane_perp1 = _getCameraRight();
+              _rotation_plane_perp2 = _getCameraUp();
               break;
           }
 
           // Compute and store base angle
-          _computeRotationAngle(mousePos, _rotationBaseAngle);
+          _computeRotationAngle(mousePos, _rotation_base_angle);
+
+          // Cache the current dimming state for all rings (frozen during drag)
+          _drag_start_dim_x = _computeRingDimFactor(localX);
+          _drag_start_dim_y = _computeRingDimFactor(localY);
+          _drag_start_dim_z = _computeRingDimFactor(localZ);
         }
 
         _target->onBeginManipulation(_mode);
@@ -491,38 +516,38 @@ ui::HandlerResult ManipController::handleEvent(ui::event_constptr_t ev) {
     }
 
     case ui::EventCode::DRAG: {
-      if (_isDragging && _activeAxis != ManipAxis::NONE) {
-        fvec2 mouseDelta = mousePos - _dragPrevMouse;
+      if (_is_dragging && _active_axis != ManipAxis::NONE) {
+        fvec2 mouseDelta = mousePos - _drag_prev_mouse;
 
         switch (_mode) {
           case ManipMode::TRANSLATE: {
-            fvec3 delta = _computeTranslationDelta(mouseDelta, _activeAxis);
+            fvec3 delta = _computeTranslationDelta(mouseDelta, _active_axis);
             _target->applyTranslationDelta(delta);
             break;
           }
           case ManipMode::ROTATE: {
-            fquat newRot = _computeRotationAbsolute(mousePos, _activeAxis);
+            fquat newRot = _computeRotationAbsolute(mousePos, _active_axis);
             _target->setWorldRotation(newRot);
             break;
           }
           case ManipMode::SCALE: {
-            float delta = _computeScaleDelta(mouseDelta, _activeAxis);
+            float delta = _computeScaleDelta(mouseDelta, _active_axis);
             _target->applyScaleDelta(delta);
             break;
           }
         }
 
-        _dragPrevMouse = mousePos;
+        _drag_prev_mouse = mousePos;
         result.setHandled(reinterpret_cast<ui::Widget*>(this));  // non-null to mark handled
       }
       break;
     }
 
     case ui::EventCode::RELEASE: {
-      if (_isDragging) {
+      if (_is_dragging) {
         _target->onEndManipulation(_mode);
-        _isDragging = false;
-        _activeAxis = ManipAxis::NONE;
+        _is_dragging = false;
+        _active_axis = ManipAxis::NONE;
         result.setHandled(reinterpret_cast<ui::Widget*>(this));  // non-null to mark handled
       }
       break;

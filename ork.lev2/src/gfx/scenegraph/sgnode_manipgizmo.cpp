@@ -203,49 +203,77 @@ void ManipGizmoDrawableImpl::_drawCone(Context* ctx, rcfd_ptr_t RCFD, const fmtx
 }
 
 void ManipGizmoDrawableImpl::_drawRing(Context* ctx, rcfd_ptr_t RCFD, const fmtx4& VP, const fvec3& center,
-                                        const fvec3& normal, const fvec4& color,
-                                        float radius, float thickness) {
+                                        const fvec3& normal, const fvec3& perp1, const fvec3& perp2,
+                                        const fvec4& color,
+                                        float majorRadius, float minorRadius) {
   using vtx_t = SVtxV16T16C16;
   auto& VB = GfxEnv::GetSharedDynamicV16T16C16();
   VtxWriter<vtx_t> vw;
 
-  const int segments = 32;
-  const int numVerts = segments * 6;  // 2 triangles per segment
+  // Torus geometry parameters
+  const int majorSegments = 48;  // Around the main ring
+  const int minorSegments = 12;  // Around the tube
+  const int numVerts = majorSegments * minorSegments * 6;  // 2 triangles per quad
+
   vw.Lock(ctx, &VB, numVerts);
 
   fvec4 uv(0, 0, 0, 0);
 
-  // Get perpendicular vectors in the ring's plane
-  fvec3 perp1, perp2;
-  if (fabs(normal.y) < 0.9f) {
-    perp1 = normal.crossWith(fvec3(0, 1, 0)).normalized();
-  } else {
-    perp1 = normal.crossWith(fvec3(1, 0, 0)).normalized();
+  // Get band size from controller if available
+  float bandDegrees = 30.0f;  // Default
+  if (_data->_controller) {
+    bandDegrees = _data->_controller->_ring_band_degrees;
   }
-  perp2 = normal.crossWith(perp1).normalized();
+  float bandsPerRing = 360.0f / bandDegrees;
 
-  float innerRadius = radius - thickness * 0.5f;
-  float outerRadius = radius + thickness * 0.5f;
+  // Generate torus vertices
+  for (int i = 0; i < majorSegments; i++) {
+    float majorAngle0 = (float(i) / majorSegments) * 2.0f * PI;
+    float majorAngle1 = (float(i + 1) / majorSegments) * 2.0f * PI;
 
-  for (int i = 0; i < segments; i++) {
-    float a0 = (float(i) / segments) * 2.0f * PI;
-    float a1 = (float(i + 1) / segments) * 2.0f * PI;
+    // Determine intensity for this major segment (alternating bands)
+    float majorAngleDeg = majorAngle0 * 180.0f / PI;
+    int bandIndex = (int)(majorAngleDeg / bandDegrees);
+    float intensity = (bandIndex % 2 == 0) ? 1.0f : 0.75f;
 
-    fvec3 dir0 = perp1 * cos(a0) + perp2 * sin(a0);
-    fvec3 dir1 = perp1 * cos(a1) + perp2 * sin(a1);
+    fvec4 bandColor = color;
+    bandColor.x *= intensity;
+    bandColor.y *= intensity;
+    bandColor.z *= intensity;
 
-    fvec3 inner0 = center + dir0 * innerRadius;
-    fvec3 outer0 = center + dir0 * outerRadius;
-    fvec3 inner1 = center + dir1 * innerRadius;
-    fvec3 outer1 = center + dir1 * outerRadius;
+    // Tube center positions for this major segment
+    fvec3 dir0 = perp1 * cos(majorAngle0) + perp2 * sin(majorAngle0);
+    fvec3 dir1 = perp1 * cos(majorAngle1) + perp2 * sin(majorAngle1);
+    fvec3 tubeCenter0 = center + dir0 * majorRadius;
+    fvec3 tubeCenter1 = center + dir1 * majorRadius;
 
-    vw.AddVertex(vtx_t(inner0, uv, color));
-    vw.AddVertex(vtx_t(outer0, uv, color));
-    vw.AddVertex(vtx_t(inner1, uv, color));
+    for (int j = 0; j < minorSegments; j++) {
+      float minorAngle0 = (float(j) / minorSegments) * 2.0f * PI;
+      float minorAngle1 = (float(j + 1) / minorSegments) * 2.0f * PI;
 
-    vw.AddVertex(vtx_t(inner1, uv, color));
-    vw.AddVertex(vtx_t(outer0, uv, color));
-    vw.AddVertex(vtx_t(outer1, uv, color));
+      // Compute positions around the tube
+      // For a torus, the tube normal at angle θ around the tube is:
+      // radial_dir * cos(θ) + ring_normal * sin(θ)
+      fvec3 tubeOffset00 = (dir0 * cos(minorAngle0) + normal * sin(minorAngle0)) * minorRadius;
+      fvec3 tubeOffset01 = (dir0 * cos(minorAngle1) + normal * sin(minorAngle1)) * minorRadius;
+      fvec3 tubeOffset10 = (dir1 * cos(minorAngle0) + normal * sin(minorAngle0)) * minorRadius;
+      fvec3 tubeOffset11 = (dir1 * cos(minorAngle1) + normal * sin(minorAngle1)) * minorRadius;
+
+      fvec3 v00 = tubeCenter0 + tubeOffset00;
+      fvec3 v01 = tubeCenter0 + tubeOffset01;
+      fvec3 v10 = tubeCenter1 + tubeOffset10;
+      fvec3 v11 = tubeCenter1 + tubeOffset11;
+
+      // First triangle
+      vw.AddVertex(vtx_t(v00, uv, bandColor));
+      vw.AddVertex(vtx_t(v10, uv, bandColor));
+      vw.AddVertex(vtx_t(v01, uv, bandColor));
+
+      // Second triangle
+      vw.AddVertex(vtx_t(v01, uv, bandColor));
+      vw.AddVertex(vtx_t(v10, uv, bandColor));
+      vw.AddVertex(vtx_t(v11, uv, bandColor));
+    }
   }
 
   vw.UnLock(ctx);
@@ -383,8 +411,8 @@ void ManipGizmoDrawableImpl::_drawTranslateGizmo(Context* ctx, rcfd_ptr_t RCFD, 
     axisZ = targetRot.transform(fvec3(0, 0, 1));
   }
 
-  float axisLen = _data->_axisLength * scale;
-  float thickness = _data->_axisThickness * scale;
+  float axisLen = scale * controller->_axis_length_scale;
+  float thickness = scale * controller->_axis_thickness_scale;
   float coneH = axisLen * 0.15f;
   float coneR = coneH * 0.577f;  // tan(30 degrees) for sharper cone
   float planeOffset = axisLen * 0.5f;
@@ -430,8 +458,8 @@ void ManipGizmoDrawableImpl::_drawRotateGizmo(Context* ctx, rcfd_ptr_t RCFD, con
   auto active = controller->activeAxis();
   bool dragging = controller->isDragging();
 
-  float radius = _data->_ringRadius * scale;
-  float thick = _data->_ringTubeRadius * scale;
+  float radius = scale * controller->_ring_radius_scale;
+  float thick = scale * controller->_ring_tube_radius_scale;
 
   // Get target rotation for local-space rings
   fquat targetRot = controller->target()->getWorldRotation();
@@ -445,15 +473,32 @@ void ManipGizmoDrawableImpl::_drawRotateGizmo(Context* ctx, rcfd_ptr_t RCFD, con
   fvec3 camDir = cmtcs->_vmatrix.inverse().column(2).xyz().normalized() * -1.0f;
 
   // Compute dimming factor based on view angle (edge-on rings are dimmed)
-  auto getDimFactor = [&](const fvec3& ringNormal) -> float {
+  // When dragging, use cached values from drag start to keep brightness constant
+  auto getDimFactor = [&](const fvec3& ringNormal, editor::ManipAxis axis) -> float {
+    // Use cached dimming state during drag
+    if (dragging) {
+      switch (axis) {
+        case editor::ManipAxis::X: return controller->_drag_start_dim_x;
+        case editor::ManipAxis::Y: return controller->_drag_start_dim_y;
+        case editor::ManipAxis::Z: return controller->_drag_start_dim_z;
+        default: return 1.0f;
+      }
+    }
+
     float dotProduct = fabs(ringNormal.dotWith(camDir));
     float angleDegrees = 90.0f - (acos(dotProduct) * 180.0f / PI);
-    if (angleDegrees >= controller->_minRingElevationDegrees) {
-      return 1.0f;  // Full brightness
+
+    float threshold = controller->_min_ring_elevation_degrees;
+    float transitionBand = 1.0f;  // 1 degree transition band
+
+    if (angleDegrees >= threshold) {
+      return 1.0f;  // Full brightness - active
+    } else if (angleDegrees >= threshold - transitionBand) {
+      // Sharp linear transition over 1 degree
+      float t = (angleDegrees - (threshold - transitionBand)) / transitionBand;
+      return 0.5f + 0.5f * t;
     } else {
-      // Fade from 1.0 at threshold to 0.3 at 0 degrees (edge-on)
-      float t = angleDegrees / controller->_minRingElevationDegrees;
-      return 0.3f + 0.7f * t;
+      return 0.5f;  // Dimmed - inactive
     }
   };
 
@@ -474,20 +519,20 @@ void ManipGizmoDrawableImpl::_drawRotateGizmo(Context* ctx, rcfd_ptr_t RCFD, con
     return color;
   };
 
-  // X ring (rotates around local X axis)
-  float dimX = getDimFactor(localX);
+  // X ring (rotates around local X axis, pattern starts at localY)
+  float dimX = getDimFactor(localX, editor::ManipAxis::X);
   fvec4 colorX = getColor(editor::ManipAxis::X, _data->_colorX, dimX);
-  _drawRing(ctx, RCFD, VP, pos, localX, colorX, radius, thick);
+  _drawRing(ctx, RCFD, VP, pos, localX, localY, localZ, colorX, radius, thick);
 
-  // Y ring (rotates around local Y axis)
-  float dimY = getDimFactor(localY);
+  // Y ring (rotates around local Y axis, pattern starts at localZ)
+  float dimY = getDimFactor(localY, editor::ManipAxis::Y);
   fvec4 colorY = getColor(editor::ManipAxis::Y, _data->_colorY, dimY);
-  _drawRing(ctx, RCFD, VP, pos, localY, colorY, radius, thick);
+  _drawRing(ctx, RCFD, VP, pos, localY, localZ, localX, colorY, radius, thick);
 
-  // Z ring (rotates around local Z axis)
-  float dimZ = getDimFactor(localZ);
+  // Z ring (rotates around local Z axis, pattern starts at localX)
+  float dimZ = getDimFactor(localZ, editor::ManipAxis::Z);
   fvec4 colorZ = getColor(editor::ManipAxis::Z, _data->_colorZ, dimZ);
-  _drawRing(ctx, RCFD, VP, pos, localZ, colorZ, radius, thick);
+  _drawRing(ctx, RCFD, VP, pos, localZ, localX, localY, colorZ, radius, thick);
 }
 
 void ManipGizmoDrawableImpl::_drawScaleGizmo(Context* ctx, rcfd_ptr_t RCFD, const fmtx4& VP,
@@ -499,8 +544,8 @@ void ManipGizmoDrawableImpl::_drawScaleGizmo(Context* ctx, rcfd_ptr_t RCFD, cons
   auto active = controller->activeAxis();
   bool dragging = controller->isDragging();
 
-  float axisLen = _data->_axisLength * scale;
-  float thickness = _data->_axisThickness * scale;
+  float axisLen = scale * controller->_axis_length_scale;
+  float thickness = scale * controller->_axis_thickness_scale;
   float cubeSize = axisLen * 0.1f;
 
   auto getColor = [&](editor::ManipAxis axis, const fvec4& baseColor) -> fvec4 {
@@ -603,7 +648,6 @@ drawable_ptr_t ManipGizmoDrawableData::createDrawable() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 ManipGizmoDrawableData::ManipGizmoDrawableData() {
-  _ringRadius = 1.2f;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

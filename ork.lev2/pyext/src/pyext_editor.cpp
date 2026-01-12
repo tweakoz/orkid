@@ -173,8 +173,8 @@ void pyinit_editor(py::module& module_lev2) {
       .def_property_readonly("hoveredAxis", &ManipController::hoveredAxis)
       .def_property_readonly("activeAxis", &ManipController::activeAxis)
       .def_property_readonly("isDragging", &ManipController::isDragging)
-      .def_readwrite("gizmoScale", &ManipController::_gizmoScale)
-      .def_readwrite("hitThreshold", &ManipController::_hitThreshold);
+      .def_readwrite("gizmoScale", &ManipController::_gizmo_scale)
+      .def_readwrite("hitThreshold", &ManipController::_hit_threshold);
   type_codec->registerStdCodec<manipcontroller_ptr_t>(mc_type_t);
 
   /////////////////////////////////////////////////////////////////////////////////
