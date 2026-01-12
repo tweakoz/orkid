@@ -9,11 +9,14 @@
 # Distributed under the MIT License
 ################################################################################
 
-import math, sys, signal, random
+import math, sys, signal, random, os
 from orkengine.core import vec2, vec3, vec4, quat, VarMap, CrcStringProxy
 from orkengine import lev2
+from ork.ui import icon_library
+from ork.ui.filesystem_browser import FilesystemBrowser
 
 tokens = CrcStringProxy()
+home_dir = os.path.expanduser("~")
 
 ################################################################################
 
@@ -30,7 +33,7 @@ class SceneEditorTest:
   def __init__(self):
     super().__init__()
 
-    self.ezapp = lev2.OrkEzApp.create(self, width=1280, height=720, fullscreen=False)
+    self.ezapp = lev2.OrkEzApp.create(self, fullscreen=True, name="SceneEditorTest")
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()
 
@@ -40,46 +43,104 @@ class SceneEditorTest:
     lg.clearColorGuide = vec4(0.4, 0.4, 0.2, 1)  # Yellow-ish guides
 
     ############################################
-    # Start with viewport filling whole area
+    # Start with viewport DockablePanel filling whole area
     ############################################
 
-    viewport_items = lg.makeGrid(
-      width=1, height=1,
+    viewport_dock_item = lg.makeChild(
+      fill=True,
       margin=2,
-      uiclass=lev2.ui.SceneGraphViewport,
-      args=["viewport", vec4(0.1, 0.1, 0.12, 1)]
+      uiclass=lev2.ui.DockablePanel,
+      args=["viewport_dock"]
     )
-    self.sgv = viewport_items[0].widget
+    self.viewport_dock = viewport_dock_item.widget
+    self.viewport_dock.titlebar_color = vec4(0.15, 0.2, 0.25, 1)
+
+    # Create viewport as child of dock panel
+    self.sgv = self.viewport_dock.createChild(
+      uiclass=lev2.ui.SceneGraphViewport,
+      args=["Viewport", vec4(0.1, 0.1, 0.12, 1)]
+    )
 
     ############################################
-    # Split LEFT from viewport to create outliner
+    # Split LEFT from viewport to create outliner dock
     # (25% left for outliner, 75% right for viewport)
     ############################################
 
-    outliner_item = lg.split(
-      layout=viewport_items[0].layout,
+    left_dock_item = lg.split(
+      layout=viewport_dock_item.layout,
       proportion=0.25,
       placement=tokens.LEFT,
       margin=2,
-      uiclass=lev2.ui.Outliner,
-      args=["outliner"]
+      uiclass=lev2.ui.DockablePanel,
+      args=["left_dock"]
     )
-    self.outliner = outliner_item.widget
+    self.left_dock = left_dock_item.widget
+    self.left_dock.titlebar_color = vec4(0.2, 0.15, 0.2, 1)
+
+    # Create left panel (vpack with toolbar + outliner) as child
+    self.left_panel = self.left_dock.createChild(
+      uiclass=lev2.ui.VerticalPack,
+      args=["Scene"]
+    )
+    self.left_panel.margin = 2
+    self.left_panel.item_height = 36  # Height for toolbar row
+
+    # Add toolbar hpack to top of vpack
+    self.toolbar_hpack = self.left_panel.makeChild(uiclass=lev2.ui.HorizontalPack, args=["toolbar"])
+    self.toolbar_hpack.margin = 2
+    self.toolbar_hpack.item_width = 48
+    self.toolbar_hpack.bg_color = vec4(0.12, 0.12, 0.15, 1)
+
+    # Create text icons for LOAD and SAVE (like HOLD/CLR in FilesystemBrowser)
+    def make_text_icon(text, color="#E6E6E6"):
+      return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <text x="12" y="12" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="7" font-weight="bold" fill="{color}">{text}</text>
+      </svg>'''
+
+    icon_size = 32
+    icon_load = icon_library.from_svg_string(make_text_icon("LOAD"), icon_size, icon_size)
+    icon_save = icon_library.from_svg_string(make_text_icon("SAVE"), icon_size, icon_size)
+
+    # Add Load button
+    self.btn_load = self.toolbar_hpack.makeChild(uiclass=lev2.ui.ImageButton, args=["btn_load"])
+    self.btn_load.inactive_image = icon_load
+    self.btn_load.bgcolor = vec4(0.15, 0.25, 0.15, 1)
+    self.btn_load.inactive_blend_mode = tokens.ALPHA
+    self.btn_load.onPressed = lambda btn: self._openLoadPopup()
+
+    # Add Save button
+    self.btn_save = self.toolbar_hpack.makeChild(uiclass=lev2.ui.ImageButton, args=["btn_save"])
+    self.btn_save.inactive_image = icon_save
+    self.btn_save.bgcolor = vec4(0.15, 0.15, 0.25, 1)
+    self.btn_save.inactive_blend_mode = tokens.ALPHA
+    self.btn_save.onPressed = lambda btn: self._openSavePopup()
+
+    # Add outliner below toolbar (fills remaining space)
+    self.outliner_item = self.left_panel.makeChild(uiclass=lev2.ui.Outliner, args=["outliner"])
+    self.outliner = self.outliner_item
+    self.left_panel.fill_widget = self.outliner  # Outliner fills remaining space
 
     ############################################
-    # Split BOTTOM from outliner to create property sheet
-    # (60% bottom for propsheet, 40% top for outliner)
+    # Split BOTTOM from left dock to create property sheet dock
+    # (60% bottom for propsheet, 40% top for left panel)
     ############################################
 
-    propsheet_item = lg.split(
-      layout=outliner_item.layout,
+    propsheet_dock_item = lg.split(
+      layout=left_dock_item.layout,
       proportion=0.6,
       placement=tokens.BOTTOM,
       margin=2,
-      uiclass=lev2.ui.PropertySheet,
-      args=["propsheet"]
+      uiclass=lev2.ui.DockablePanel,
+      args=["propsheet_dock"]
     )
-    self.propsheet = propsheet_item.widget
+    self.propsheet_dock = propsheet_dock_item.widget
+    self.propsheet_dock.titlebar_color = vec4(0.2, 0.2, 0.15, 1)
+
+    # Create property sheet as child of dock panel
+    self.propsheet = self.propsheet_dock.createChild(
+      uiclass=lev2.ui.PropertySheet,
+      args=["Properties"]
+    )
 
     ############################################
     # Setup outliner data (mock scene hierarchy)
@@ -226,6 +287,74 @@ class SceneEditorTest:
 
     self.propsheet.data = data
     self.propsheet.expandAll()
+
+  ##############################################
+
+  def _openLoadPopup(self):
+    """Open a file browser popup for loading a scene."""
+    print("Opening Load popup...")
+    self._openFileBrowserPopup("Load Scene", self._onLoadFileSelected)
+
+  def _openSavePopup(self):
+    """Open a file browser popup for saving a scene."""
+    print("Opening Save popup...")
+    self._openFileBrowserPopup("Save Scene", self._onSaveFileSelected)
+
+  def _openFileBrowserPopup(self, title, on_file_selected):
+    """Create a secondary window with FilesystemBrowser."""
+    # Create secondary window for file browser
+    popup_win = self.ezapp.createSecondaryWindow(
+      width=800,
+      height=600,
+      x=200,
+      y=150,
+      title=title,
+      decorated=True,
+      resizable=True
+    )
+
+    # Set up UI on secondary window
+    uic = popup_win.ui_context
+    win_w = popup_win.width
+    win_h = popup_win.height
+
+    # Create root layout group
+    root = lev2.ui.LayoutGroup.create("popup_lg")
+    root.setRect(0, 0, win_w, win_h)
+    uic.top = root
+    root.margin = 4
+
+    # Create FilesystemBrowser filling the popup
+    browser_item = root.makeChild(
+      uiclass=FilesystemBrowser,
+      args=["browser", home_dir, ""],
+      fill=True
+    )
+    browser = browser_item.widget.uservars.filesystem_browser
+
+    # Wire up file activation callback
+    def on_activate(path):
+      print(f"File activated: {path}")
+      on_file_selected(path)
+      # Close the popup window
+      popup_win.requestClose()
+
+    browser.onActivate = on_activate
+
+    # Store reference to prevent garbage collection
+    if not hasattr(self, '_popup_windows'):
+      self._popup_windows = []
+    self._popup_windows.append(popup_win)
+
+  def _onLoadFileSelected(self, path):
+    """Handle file selection from Load popup."""
+    print(f"Loading scene from: {path}")
+    # TODO: Implement actual scene loading
+
+  def _onSaveFileSelected(self, path):
+    """Handle file selection from Save popup."""
+    print(f"Saving scene to: {path}")
+    # TODO: Implement actual scene saving
 
   ##############################################
 

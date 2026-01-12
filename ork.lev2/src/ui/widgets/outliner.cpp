@@ -733,6 +733,7 @@ HandlerResult Outliner::DoOnUiEvent(event_constptr_t ev) {
 
     case EventCode::MOUSE_LEAVE: {
       _hovered_key = "";
+      result.setHandled(this);
       break;
     }
 

@@ -120,12 +120,12 @@ HandlerResult Context::handleEvent(event_constptr_t ev) {
             rval = target->OnUiEvent(ev);
             EASY_END_BLOCK;
             //////////////////////////
-            // synthesize MOUSE_LEAVE event
+            // synthesize MOUSE_LEAVE event for OLD widget
             //////////////////////////
             EASY_BLOCK("uictx::evc::MOVEH2", profiler::colors::Red);
             *_tempevent            = *ev;
             _tempevent->_eventcode = EventCode::MOUSE_LEAVE;
-            target->OnUiEvent(_tempevent);
+            const_cast<Widget*>(_mousefocuswidget)->OnUiEvent(_tempevent);
             EASY_END_BLOCK;
             //////////////////////////
             // synthesize MOUSE_ENTER event

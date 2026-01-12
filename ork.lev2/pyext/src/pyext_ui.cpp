@@ -32,6 +32,7 @@
 #include <ork/lev2/ui/ged/ged_surface.h>
 #include <ork/lev2/ui/popups.inl>
 #include <ork/lev2/ui/prim_canvas.h>
+#include <ork/lev2/ui/dockable_panel.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
 #include <ork/lev2/gfx/image.h>
 #include <ork/util/logger.h>
@@ -2561,6 +2562,78 @@ void pyinit_ui(py::module& module_lev2) {
                 }
               });
   type_codec->registerStdCodec<ui::prim_canvas_ptr_t>(primcanvas_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // DockablePanel - container with titlebar showing child's name
+  auto dockablepanel_type = //
+      py::class_<ui::DockablePanel, ui::Group, ui::dockablepanel_ptr_t>(uimodule, "DockablePanel")
+          .def_static(
+              "wfactory",
+              [type_codec](py::list py_args) -> ui::dockablepanel_ptr_t {
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name = decoded_args[0].get<std::string>();
+                auto panel = std::make_shared<ui::DockablePanel>(name);
+                return panel;
+              })
+          .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t {
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name = decoded_args[0].get<std::string>();
+                auto layoutitem = lg->makeChild<ui::DockablePanel>(name);
+                return layoutitem.as_shared();
+              })
+          .def_property(
+              "child",
+              [](ui::dockablepanel_ptr_t panel) -> ui::widget_ptr_t {
+                return panel->child();
+              },
+              [](ui::dockablepanel_ptr_t panel, ui::widget_ptr_t child) {
+                panel->setChild(child);
+              })
+          .def_property(
+              "titlebar_height",
+              [](ui::dockablepanel_ptr_t panel) -> int { return panel->_titlebar_height; },
+              [](ui::dockablepanel_ptr_t panel, int h) { panel->_titlebar_height = h; })
+          .def_property(
+              "titlebar_color",
+              [](ui::dockablepanel_ptr_t panel) -> fvec4 { return panel->_titlebar_color; },
+              [](ui::dockablepanel_ptr_t panel, fvec4 c) { panel->_titlebar_color = c; })
+          .def_property(
+              "title_color",
+              [](ui::dockablepanel_ptr_t panel) -> fvec4 { return panel->_title_color; },
+              [](ui::dockablepanel_ptr_t panel, fvec4 c) { panel->_title_color = c; })
+          .def_property(
+              "border_color",
+              [](ui::dockablepanel_ptr_t panel) -> fvec4 { return panel->_border_color; },
+              [](ui::dockablepanel_ptr_t panel, fvec4 c) { panel->_border_color = c; })
+          .def(
+              "createChild",
+              [](ui::dockablepanel_ptr_t panel, py::kwargs kwargs) -> ui::widget_ptr_t {
+                ui::widget_ptr_t rval;
+                if (kwargs) {
+                  py::list args;
+                  py::object wfactory;
+                  int args_parsed = 0;
+                  for (auto item : kwargs) {
+                    auto key = py::cast<std::string>(item.first);
+                    if (key == "uiclass") {
+                      auto uiclass_obj = py::cast<py::object>(item.second);
+                      bool has_wfactory = py::hasattr(uiclass_obj, "wfactory");
+                      OrkAssert(has_wfactory);
+                      wfactory = uiclass_obj.attr("wfactory");
+                      args_parsed++;
+                    } else if (key == "args") {
+                      args = py::cast<py::list>(item.second);
+                      args_parsed++;
+                    }
+                  }
+                  OrkAssert(args_parsed == 2);
+                  rval = py::cast<ui::widget_ptr_t>(wfactory(args));
+                  panel->setChild(rval);
+                }
+                return rval;
+              });
+  type_codec->registerStdCodec<ui::dockablepanel_ptr_t>(dockablepanel_type);
   /////////////////////////////////////////////////////////////////////////////////
   pyinit_ui_layout(uimodule);
   pyinit_ui_ged(uimodule);
