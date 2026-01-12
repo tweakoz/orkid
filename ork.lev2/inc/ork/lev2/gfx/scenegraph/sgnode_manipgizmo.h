@@ -31,6 +31,7 @@ public:
   float _axisLength = 1.0f;
   float _axisThickness = 0.04f;
   float _ringRadius = 0.8f;
+  float _ringTubeRadius = 0.04f;
   float _planeSize = 0.3f;
 
   // Axis colors

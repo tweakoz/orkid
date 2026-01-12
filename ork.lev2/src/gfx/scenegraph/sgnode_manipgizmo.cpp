@@ -431,7 +431,7 @@ void ManipGizmoDrawableImpl::_drawRotateGizmo(Context* ctx, rcfd_ptr_t RCFD, con
   bool dragging = controller->isDragging();
 
   float radius = _data->_ringRadius * scale;
-  float thick = _data->_axisThickness * scale * 1.5f;
+  float thick = _data->_ringTubeRadius * scale;
 
   // Get target rotation for local-space rings
   fquat targetRot = controller->target()->getWorldRotation();
@@ -439,22 +439,54 @@ void ManipGizmoDrawableImpl::_drawRotateGizmo(Context* ctx, rcfd_ptr_t RCFD, con
   fvec3 localY = targetRot.transform(fvec3(0, 1, 0));
   fvec3 localZ = targetRot.transform(fvec3(0, 0, 1));
 
-  auto getColor = [&](editor::ManipAxis axis, const fvec4& baseColor) -> fvec4 {
-    if (dragging && active == axis) return _data->_colorActive;
-    if (hovered == axis) return _data->_colorHighlight;
-    return baseColor;
+  // Get camera direction from RCFD
+  const auto& CPD = RCFD->topCPD();
+  auto cmtcs = CPD.cameraMatrices();
+  fvec3 camDir = cmtcs->_vmatrix.inverse().column(2).xyz().normalized() * -1.0f;
+
+  // Compute dimming factor based on view angle (edge-on rings are dimmed)
+  auto getDimFactor = [&](const fvec3& ringNormal) -> float {
+    float dotProduct = fabs(ringNormal.dotWith(camDir));
+    float angleDegrees = 90.0f - (acos(dotProduct) * 180.0f / PI);
+    if (angleDegrees >= controller->_minRingElevationDegrees) {
+      return 1.0f;  // Full brightness
+    } else {
+      // Fade from 1.0 at threshold to 0.3 at 0 degrees (edge-on)
+      float t = angleDegrees / controller->_minRingElevationDegrees;
+      return 0.3f + 0.7f * t;
+    }
+  };
+
+  auto getColor = [&](editor::ManipAxis axis, const fvec4& baseColor, float dimFactor) -> fvec4 {
+    fvec4 color;
+    if (dragging && active == axis) {
+      color = _data->_colorActive;
+    } else if (hovered == axis) {
+      color = _data->_colorHighlight;
+    } else {
+      color = baseColor;
+    }
+    // Apply dimming to RGB, reduce alpha for edge-on rings
+    color.x *= dimFactor;
+    color.y *= dimFactor;
+    color.z *= dimFactor;
+    color.w *= (0.5f + 0.5f * dimFactor);  // 50% transparent when fully dimmed
+    return color;
   };
 
   // X ring (rotates around local X axis)
-  fvec4 colorX = getColor(editor::ManipAxis::X, _data->_colorX);
+  float dimX = getDimFactor(localX);
+  fvec4 colorX = getColor(editor::ManipAxis::X, _data->_colorX, dimX);
   _drawRing(ctx, RCFD, VP, pos, localX, colorX, radius, thick);
 
   // Y ring (rotates around local Y axis)
-  fvec4 colorY = getColor(editor::ManipAxis::Y, _data->_colorY);
+  float dimY = getDimFactor(localY);
+  fvec4 colorY = getColor(editor::ManipAxis::Y, _data->_colorY, dimY);
   _drawRing(ctx, RCFD, VP, pos, localY, colorY, radius, thick);
 
   // Z ring (rotates around local Z axis)
-  fvec4 colorZ = getColor(editor::ManipAxis::Z, _data->_colorZ);
+  float dimZ = getDimFactor(localZ);
+  fvec4 colorZ = getColor(editor::ManipAxis::Z, _data->_colorZ, dimZ);
   _drawRing(ctx, RCFD, VP, pos, localZ, colorZ, radius, thick);
 }
 

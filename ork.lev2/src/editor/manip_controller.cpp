@@ -155,13 +155,26 @@ ManipAxis ManipController::_hitTestRotation(const fvec2& mousePos) {
 
   fvec3 origin = _target->getWorldPosition();
   float scale = _computeWorldGizmoScale();
-  float ringRadius = scale * 1.2f;  // Match _ringRadius in ManipGizmoDrawableData
+  float ringRadius = scale * _ringRadiusScale;
 
   // Get target's rotation to test in local space
   fquat targetRot = _target->getWorldRotation();
   fvec3 localX = targetRot.transform(fvec3(1, 0, 0));
   fvec3 localY = targetRot.transform(fvec3(0, 1, 0));
   fvec3 localZ = targetRot.transform(fvec3(0, 0, 1));
+
+  // Check which rings are selectable (not too edge-on)
+  // We skip hit-testing for edge-on rings even though they're rendered dimmed
+  fvec3 camDir = _getCameraDir();
+  auto isRingSelectable = [&](const fvec3& ringNormal) -> bool {
+    float dotProduct = fabs(ringNormal.dotWith(camDir));
+    float angleDegrees = 90.0f - (acos(dotProduct) * 180.0f / PI);
+    return angleDegrees >= _minRingElevationDegrees;
+  };
+
+  bool xSelectable = isRingSelectable(localX);
+  bool ySelectable = isRingSelectable(localY);
+  bool zSelectable = isRingSelectable(localZ);
 
   // Test each rotation ring by sampling points
   auto testRing = [&](const fvec3& perp1, const fvec3& perp2) -> float {
@@ -179,9 +192,9 @@ ManipAxis ManipController::_hitTestRotation(const fvec2& mousePos) {
     return minDist;
   };
 
-  float distX = testRing(localY, localZ); // YZ ring in local space (rotate around local X)
-  float distY = testRing(localX, localZ); // XZ ring in local space (rotate around local Y)
-  float distZ = testRing(localX, localY); // XY ring in local space (rotate around local Z)
+  float distX = xSelectable ? testRing(localY, localZ) : FLT_MAX; // YZ ring (rotate around X)
+  float distY = ySelectable ? testRing(localX, localZ) : FLT_MAX; // XZ ring (rotate around Y)
+  float distZ = zSelectable ? testRing(localX, localY) : FLT_MAX; // XY ring (rotate around Z)
 
   float minDist = std::min({distX, distY, distZ});
   if (minDist < _hitThreshold) {

@@ -53,6 +53,15 @@ public:
   // Hit threshold in pixels
   float _hitThreshold = 12.0f;
 
+  // Ring visibility threshold (degrees) - dim ring when viewed more edge-on than this
+  float _minRingElevationDegrees = 25.0f;
+
+  // Ring radius scale factor (relative to gizmo scale)
+  float _ringRadiusScale = 1.2f;
+
+  // Ring tube radius scale factor (for torus tube thickness)
+  float _ringTubeRadiusScale = 0.04f;
+
   // Hovered axis (for highlight, updated on MOVE)
   ManipAxis hoveredAxis() const { return _hoveredAxis; }
 
