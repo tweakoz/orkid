@@ -75,6 +75,32 @@ CatalogImpl::CatalogImpl(AssetCatalog* catalog) //
 }
 
 ////////////////////////////////////////////////////////////////
+// Shutdown coordination
+////////////////////////////////////////////////////////////////
+
+void CatalogImpl::requestShutdown() {
+  logchan_catalog->log("CatalogImpl::requestShutdown() - signaling shutdown");
+  _shutdown_requested = true;
+
+  // Signal download manager to stop accepting new downloads
+  if (_download_manager) {
+    _download_manager->shutdown();
+  }
+}
+
+void CatalogImpl::drainPendingOperations() {
+  logchan_catalog->log("CatalogImpl::drainPendingOperations() - waiting for %d in-flight requests",
+                       _inflight_requests.load());
+
+  // Wait for all in-flight operations to complete
+  while (_inflight_requests.load() > 0) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+  }
+
+  logchan_catalog->log("CatalogImpl::drainPendingOperations() - all operations complete");
+}
+
+////////////////////////////////////////////////////////////////
 
 assetfqid_ptr_t CatalogImpl::locateAsset(const assetid_t& fq_asset_id) const {
   assetfqid_ptr_t result;

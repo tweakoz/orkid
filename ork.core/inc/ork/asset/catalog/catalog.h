@@ -296,9 +296,19 @@ struct AssetCatalog {
   
   // Implementation pointer
   svar64_t _impl;
-  
+
   // Cache directory for all asset operations
   file::Path _cache_dir;
+
+  ////////////////////////////////////////////////////////////////////////////////
+  // === Shutdown ===
+  ////////////////////////////////////////////////////////////////////////////////
+
+  // Signal shutdown to all in-flight operations
+  void requestShutdown();
+
+  // Wait for all in-flight operations to complete
+  void drainPendingOperations();
 };
 
 

@@ -88,8 +88,20 @@ AssetCatalog::AssetCatalog(assetconfigspace_ptr_t space) {
 }
 
 AssetCatalog::~AssetCatalog() {
-  auto impl       = _impl.getShared<CatalogImpl>();
-  impl->_shutdown = true;
+  auto impl = _impl.getShared<CatalogImpl>();
+  impl->_shutdown_requested = true;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+
+void AssetCatalog::requestShutdown() {
+  auto impl = _impl.getShared<CatalogImpl>();
+  impl->requestShutdown();
+}
+
+void AssetCatalog::drainPendingOperations() {
+  auto impl = _impl.getShared<CatalogImpl>();
+  impl->drainPendingOperations();
 }
 
 /////////////////////////////////////////////////////////////////////////////////

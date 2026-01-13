@@ -90,7 +90,7 @@ bool CatalogImpl::getAsset(fetchrequest_ptr_t request) {
   constexpr size_t MAX_RETRIES = 4;
 
   datablock_ptr_t enc_data;
-  while( (enc_data == nullptr) and (request->_retry_count < MAX_RETRIES) ) {
+  while( (enc_data == nullptr) and (request->_retry_count < MAX_RETRIES) and (not _shutdown_requested) ) {
     request->_retry_count++;
     enc_data = download_asset(request);
   }
@@ -331,8 +331,11 @@ datablock_ptr_t CatalogImpl::_downloadAssetData(fetchrequest_ptr_t request) {
   _download_manager->downloadGroup(download_group);
 
   // Wait for initial download attempt to complete
-  while (!download_group->isComplete()) {
+  while (!download_group->isComplete() && !_shutdown_requested) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
+  if (_shutdown_requested) {
+    return nullptr; // Abort on shutdown
   }
 
   /////////////////////////////////////////////////
@@ -419,8 +422,11 @@ datablock_ptr_t CatalogImpl::_downloadAssetData(fetchrequest_ptr_t request) {
     _download_manager->downloadGroup(retry_group);
 
     // Wait for retry batch to complete
-    while (!retry_group->isComplete()) {
+    while (!retry_group->isComplete() && !_shutdown_requested) {
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+    if (_shutdown_requested) {
+      return nullptr; // Abort on shutdown
     }
   }
 

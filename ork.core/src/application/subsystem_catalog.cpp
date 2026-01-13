@@ -43,8 +43,14 @@ subsystem_ptr_t createCatalogSubsystem() {
   subsystem->_state_shutting_down->_onenter = [subsystem](fsm::fsminstance_ptr_t instance) {
     logchan_CATALOG->log("Catalog subsystem shutting down...");
 
-    // The global catalog instance will be cleaned up at process exit
-    // No explicit cleanup needed here
+    using namespace asset::catalog;
+
+    // Signal shutdown to stop accepting new requests
+    auto catalog = AssetCatalog::globalInstance();
+    catalog->requestShutdown();
+
+    // Wait for all in-flight operations to complete
+    catalog->drainPendingOperations();
 
     logchan_CATALOG->log("Catalog subsystem shutdown complete");
 

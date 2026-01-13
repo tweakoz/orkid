@@ -127,18 +127,28 @@ fetchrequest_ptr_t AssetCatalog::fetchAsync(const assetid_t& fq_asset_id, //
   }
   
   ////////////////////////////////////////
-  // 5. Create fetch request with all parameters
+  // 5. Check for shutdown before enqueuing
   ////////////////////////////////////////
-  
+  if (impl->_shutdown_requested) {
+    request->_state = AssetState::FAILED;
+    return request;
+  }
+
+  ////////////////////////////////////////
   // 6. Enqueue the work to be done asynchronously
-  // Use the work queue from download manager or create one
+  ////////////////////////////////////////
+  impl->_inflight_requests.fetch_add(1);
   opq::concurrentQueue()->enqueue([impl, request]() {
-    // Do the actual work
-    // Handle result and update state
-    if (impl->getAsset(request)) { // synchronous call
-      request->_state = AssetState::SUCCEEDED;
-    } else {
+    // Check for shutdown before doing work
+    if (impl->_shutdown_requested) {
       request->_state = AssetState::FAILED;
+    } else {
+      // Do the actual work
+      if (impl->getAsset(request)) {
+        request->_state = AssetState::SUCCEEDED;
+      } else {
+        request->_state = AssetState::FAILED;
+      }
     }
     FetchRequest::invokeCompletionCallbacks(request);
     // Update statistics
@@ -149,7 +159,9 @@ fetchrequest_ptr_t AssetCatalog::fetchAsync(const assetid_t& fq_asset_id, //
         stats.total_download_time += request->_download_time;
         stats.total_processing_time += request->_processing_time;
       }
-    });    
+    });
+    // Decrement in-flight counter
+    impl->_inflight_requests.fetch_sub(1);
   });
 
   return request;
@@ -303,9 +315,12 @@ datablock_ptr_t CatalogImpl::_downloadFile(const URL& url, const locationinfo_pt
 
       // Wait for download to complete (blocking for sync version)
       int wait_count = 0;
-      while (!download_complete) {
+      while (!download_complete && !_shutdown_requested) {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
         wait_count++;
+      }
+      if (_shutdown_requested) {
+        return nullptr; // Abort on shutdown
       }
 
       if (!download_success) {
