@@ -63,7 +63,29 @@ void pyinit_application(py::module& module_core) {
   ///////////////////////////////////////////////////////////////
 
   auto app_t = py::class_<Application, application_ptr_t>(module_core, "Application")
-      .def_static("create", &Application::create, "Factory method to create Application instance")
+      .def_static(
+          "create",
+          [](py::kwargs kwargs) -> application_ptr_t {
+            auto appinit = appinitdata(); // Use the singleton
+
+            // Process kwargs to configure AppInitData before Application creation
+            if (kwargs) {
+              for (auto item : kwargs) {
+                auto key = py::cast<std::string>(item.first);
+                if (key == "std_asset_catalog") {
+                  appinit->_std_asset_catalog = py::cast<bool>(item.second);
+                }
+                // Future options can be added here:
+                // else if (key == "enable_audio") { ... }
+                // else if (key == "enable_graphics") { ... }
+              }
+            }
+
+            return Application::create();
+          },
+          "Factory method to create Application instance.\n"
+          "Accepts kwargs:\n"
+          "  std_asset_catalog (bool): Enable/disable asset catalog subsystem (default: True)")
 
       // Subsystem management
       .def("registerSubsystem",

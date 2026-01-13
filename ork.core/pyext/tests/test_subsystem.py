@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env ork.python
 ################################################################
 # Orkid Media Engine
 # Copyright 1996-2023, Michael T. Mayers.

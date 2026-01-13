@@ -8,7 +8,9 @@
 #include <iostream>
 #include <ork/pch.h>
 #include <ork/application/application.h>
-#include <ork/application/opq_subsystem.h>
+#include <ork/application/subsystem_opq.h>
+#include <ork/application/subsystem_catalog.h>
+#include <ork/application/subsystem_core.h>
 #include <ork/asset/catalog/catalog.h>
 #include <ork/rtti/Class.h>
 #include <ork/kernel/string/ResizableString.h>
@@ -123,12 +125,8 @@ void AppInitData::finalizeInitialization() {
   executePostInitOps();
   _preinitoperations.clear();
   _postinitoperations.clear();
-  logchan_APP->log("AppInitData init catalog");
-  if (_std_asset_catalog) {
-    using namespace asset::catalog;
-    auto catalog = AssetCatalog::globalInstance();
-  }
-  logchan_APP->log("AppInitData init catalog complete..");
+  // NOTE: Catalog initialization is now handled by the CATALOG subsystem
+  // in Application::Application() via _initSubsystemsInWaves()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -400,7 +398,7 @@ Application::Application() {
   auto opq_subsystem = createOpqSubsystem();
   registerSubsystem(opq_subsystem, true);  // Mark as static subsystem
 
-  // Initialize OPQ subsystem (calls opq::init() in FSM state)
+  // Initialize OPQ subsystem immediately (needed for queue references below)
   opq_subsystem->initialize();
   opq_subsystem->update();  // Process state transitions
 
@@ -408,6 +406,25 @@ Application::Application() {
   _mainq = opq::mainSerialQueue();
   _updq = opq::updateSerialQueue();
   _conq = opq::concurrentQueue();
+
+  // Create CATALOG subsystem (optional, depends on _std_asset_catalog)
+  subsystem_ptr_t catalog_subsystem = nullptr;
+  if (_initdata->_std_asset_catalog) {
+    catalog_subsystem = createCatalogSubsystem();
+    catalog_subsystem->addDependency(opq_subsystem);  // CATALOG depends on OPQ
+    registerSubsystem(catalog_subsystem, true);
+  }
+
+  // Create CORE subsystem (coordination point for core runtime)
+  auto core_subsystem = createCoreSubsystem();
+  core_subsystem->addDependency(opq_subsystem);  // CORE depends on OPQ
+  if (catalog_subsystem) {
+    core_subsystem->addDependency(catalog_subsystem);  // CORE depends on CATALOG (if enabled)
+  }
+  registerSubsystem(core_subsystem, true);
+
+  // Initialize remaining static subsystems in dependency order
+  _initSubsystemsInWaves();
 
   // Create string pool context
   _stringpoolctx = std::make_shared<StringPoolContext>();
