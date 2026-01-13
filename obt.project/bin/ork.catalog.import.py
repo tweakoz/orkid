@@ -12,9 +12,6 @@ import argparse
 from orkengine import core
 from ork import catalog_import
 
-# Initialize orkid core first
-core.coreappinit()
-
 def build_parser():
     parser = argparse.ArgumentParser(
         description='Import assets into Orkid asset catalog',
@@ -42,11 +39,9 @@ Examples:
 """
     )
 
-    # Config file (preferred)
     parser.add_argument('-c', '--config',
                         help='Import config JSON file')
 
-    # Direct specification (alternative to config file)
     parser.add_argument('-N', '--namespace',
                         help='Asset namespace')
     parser.add_argument('-s', '--source-dir',
@@ -60,14 +55,12 @@ Examples:
     parser.add_argument('-p', '--platforms', nargs='+', default=['mac', 'linux'],
                         help='Target platforms (default: mac linux)')
 
-    # Asset specification (for CLI mode)
     parser.add_argument('-a', '--asset', nargs=2, action='append',
                         metavar=('ID', 'PATTERN'),
                         help='Asset definition: -a casiocz "singularity/casioCZ/*"')
     parser.add_argument('-x', '--exclude', nargs='+',
                         help='Exclude patterns')
 
-    # Actions
     parser.add_argument('-u', '--upload', action='store_true',
                         help='Upload after packaging')
     parser.add_argument('-n', '--dry-run', action='store_true',
@@ -77,7 +70,6 @@ Examples:
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='Verbose output')
 
-    # Export
     parser.add_argument('-e', '--export-config', metavar='FILE',
                         help='Export args as config JSON (no import executed)')
 
@@ -87,16 +79,16 @@ def main():
     parser = build_parser()
     args = parser.parse_args()
 
-    # No args at all - show help
     if len(sys.argv) == 1:
         parser.print_help()
         return 0
 
-    # Load or build config
+    # Initialize Application
+    app = core.Application.create(std_asset_catalog=True)
+
     if args.config:
         config = catalog_import.load_config(args.config)
     else:
-        # Validate required args for CLI mode
         required_for_cli = [args.namespace, args.source_dir, args.local_loc, args.manifest]
 
         if not args.export_config:
@@ -107,13 +99,11 @@ def main():
 
         config = catalog_import.config_from_args(args)
 
-    # Export mode - write config and exit
     if args.export_config:
         catalog_import.export_config(config, args.export_config)
         print(f"Config exported to: {args.export_config}")
         return 0
 
-    # Run import
     result = catalog_import.run_import(
         config,
         upload=args.upload,
@@ -122,7 +112,6 @@ def main():
         verbose=args.verbose
     )
 
-    # Exit code
     return 0 if result.failed_count == 0 else 1
 
 if __name__ == "__main__":

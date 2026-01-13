@@ -72,12 +72,11 @@ void pyinit_application(py::module& module_core) {
             if (kwargs) {
               for (auto item : kwargs) {
                 auto key = py::cast<std::string>(item.first);
-                if (key == "std_asset_catalog") {
+                if (key == "name") {
+                  appinit->_application_name = py::cast<std::string>(item.second);
+                } else if (key == "std_asset_catalog") {
                   appinit->_std_asset_catalog = py::cast<bool>(item.second);
                 }
-                // Future options can be added here:
-                // else if (key == "enable_audio") { ... }
-                // else if (key == "enable_graphics") { ... }
               }
             }
 

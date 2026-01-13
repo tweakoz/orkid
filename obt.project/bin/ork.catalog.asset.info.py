@@ -1,4 +1,4 @@
-#!/usr/bin/env ork.python 
+#!/usr/bin/env ork.python
 
 import argparse
 import json
@@ -11,18 +11,17 @@ import obt.deco
 deco = obt.deco.Deco()
 
 def print_asset_info(cfgspc, catalog, fqid, verbose=False):
-    """Print detailed information about a single asset"""
     asset_info = catalog.findAssetEntry(fqid)
     merged_cfg = cfgspc.merged_config
     if not asset_info:
         print(deco.red(f"Asset not found: {fqid}"))
         return False
-    
+
     print(f"{deco.yellow('Asset:')} {deco.cyan(fqid)}")
     print(f"  {deco.key('Type:')} {deco.val(asset_info.type)}")
     print(f"  {deco.key('Priority:')} {deco.val(str(asset_info.priority))}")
     print(f"  {deco.key('Platforms:')} {deco.val(', '.join(asset_info.platforms))}")
-    
+
     if hasattr(asset_info, 'local_loc') and asset_info.local_loc:
         print(f"  {deco.key('Local location:')} {deco.val(asset_info.local_loc)}")
         resolved_path = merged_cfg.resolveLocalPath(asset_info.local_loc)
@@ -31,17 +30,16 @@ def print_asset_info(cfgspc, catalog, fqid, verbose=False):
         decorator = deco.cyan if is_present else deco.red
         print(f"  {deco.key('Exists locally:')} {decorator('Yes' if is_present else 'No')}")
         if is_present:
-          import hashlib
-          md5 = hashlib.md5()
-          is_pak = asset_info.type == 'asset_pak'
-          if not is_pak:
-            with open(resolved_path, 'rb') as f:
-              for chunk in iter(lambda: f.read(4096), b""):
-                  md5.update(chunk)
-            md5 = md5.hexdigest()
-            print(f"  {deco.key('MD5 checksum:')} {deco.val(md5)}")
-    
-    # Get remote location from namespace
+            import hashlib
+            md5 = hashlib.md5()
+            is_pak = asset_info.type == 'asset_pak'
+            if not is_pak:
+                with open(resolved_path, 'rb') as f:
+                    for chunk in iter(lambda: f.read(4096), b""):
+                        md5.update(chunk)
+                md5 = md5.hexdigest()
+                print(f"  {deco.key('MD5 checksum:')} {deco.val(md5)}")
+
     namespace_id = fqid.split('|')[0]
     remote_loc = cfgspc.getNamespaceRemoteLocation(namespace_id)
     if remote_loc:
@@ -52,20 +50,18 @@ def print_asset_info(cfgspc, catalog, fqid, verbose=False):
             print(f"  {deco.orange('Resolved Upload URL:')} {deco.val(resolved_location.upload_url)}")
     if hasattr(asset_info, 'filename') and asset_info.filename:
         print(f"  {deco.key('Filename:')} {deco.val(asset_info.filename)}")
-    
+
     print(f"  {deco.key('Archive Size:')} {deco.val(f'{asset_info.archive_size:,} bytes')}")
     print(f"  {deco.key('Compressed Size:')} {deco.val(f'{asset_info.compressed_size:,} bytes')}")
     print(f"  {deco.key('Encrypted Size:')} {deco.val(f'{asset_info.encrypted_size:,} bytes')}")
 
     compression_ratio = 100.0-(asset_info.compressed_size / asset_info.archive_size * 100.0) if asset_info.archive_size > 0 else 0.0
-
     print(f"  {deco.key('Compression ratio:')} {deco.val(f'{compression_ratio:.2f}%')}")
 
     if hasattr(asset_info, 'content_hash') and asset_info.content_hash:
         print(f"  {deco.key('Content hash:')} {deco.val(asset_info.content_hash)}")
     if hasattr(asset_info, 'storage_hash') and asset_info.storage_hash:
         print(f"  {deco.key('Storage hash:')} {deco.val(asset_info.storage_hash)}")
-        # Show encrypted file location
         cache_dir = catalog.cache_dir
         enc_path = os.path.join(cache_dir, 'enc', f"{asset_info.storage_hash}.enc")
         print(f"  {deco.magenta('Encrypted path:')} {deco.val(enc_path)}")
@@ -73,7 +69,6 @@ def print_asset_info(cfgspc, catalog, fqid, verbose=False):
         decorator = deco.cyan if enc_exists else deco.red
         print(f"  {deco.key('Encrypted exists:')} {decorator('Yes' if enc_exists else 'No')}")
         if enc_exists:
-            # Calculate MD5 of encrypted file
             import hashlib
             md5 = hashlib.md5()
             with open(enc_path, 'rb') as f:
@@ -84,19 +79,16 @@ def print_asset_info(cfgspc, catalog, fqid, verbose=False):
     if hasattr(asset_info, 'hash_algorithm') and asset_info.hash_algorithm:
         print(f"  {deco.key('Hash algorithm:')} {deco.val(asset_info.hash_algorithm)}")
 
-    # Check if asset has dependencies
     if hasattr(asset_info, 'dependencies') and asset_info.dependencies:
         print(f"  {deco.key('Dependencies:')}")
         for dep in asset_info.dependencies:
             print(f"    {deco.cyan('-')} {deco.val(dep)}")
 
-    # Check cache status
     if hasattr(asset_info, 'is_cached') and asset_info.is_cached:
         print(f"  {deco.key('Cached:')} {deco.val('Yes')}")
     else:
         print(f"  {deco.key('Cached:')} {deco.val('No')}")
 
-    # Check if asset is chunked
     if hasattr(asset_info, 'chunk_manifest') and asset_info.chunk_manifest:
         chunk_manifest = asset_info.chunk_manifest
         print(f"  {deco.key('Chunked:')} {deco.val('Yes')}")
@@ -111,7 +103,6 @@ def print_asset_info(cfgspc, catalog, fqid, verbose=False):
                 print(f"    {deco.key('File hash:')} {deco.val(str(chunk_manifest.file_hash))}")
             if hasattr(chunk_manifest, 'compression'):
                 compression = chunk_manifest.compression
-                # Handle CompressionType enum
                 if hasattr(compression, 'name'):
                     compression_str = compression.name
                 else:
@@ -119,20 +110,17 @@ def print_asset_info(cfgspc, catalog, fqid, verbose=False):
                 print(f"    {deco.key('Compression:')} {deco.val(compression_str)}")
             if hasattr(chunk_manifest, 'is_encrypted'):
                 print(f"    {deco.key('Encrypted:')} {deco.val('Yes' if chunk_manifest.is_encrypted else 'No')}")
-            
-            # Show compact chunk grid
+
             if num_chunks > 0:
                 print(f"    {deco.key('Chunk details:')}")
 
-                # Check which chunks exist and validate their hashes
                 cache_dir = catalog.cache_dir
                 chunks_dir = os.path.join(cache_dir, 'enc', 'chunks')
                 chunk_present = []
                 chunk_hash_ok = []
-                chunk_paths = []  # Store paths for verbose output
+                chunk_paths = []
 
                 for i, chunk in enumerate(chunk_manifest.chunks):
-                    # Build chunk filename: {storage_hash}.chunk.{index:04d}
                     chunk_filename = f"{asset_info.storage_hash}.chunk.{i:04d}"
                     chunk_path = os.path.join(chunks_dir, chunk_filename)
                     chunk_paths.append(chunk_path)
@@ -140,7 +128,6 @@ def print_asset_info(cfgspc, catalog, fqid, verbose=False):
                     exists = os.path.exists(chunk_path)
                     chunk_present.append(exists)
 
-                    # Verify hash if file exists
                     hash_ok = False
                     if exists:
                         try:
@@ -150,11 +137,9 @@ def print_asset_info(cfgspc, catalog, fqid, verbose=False):
                             computed_hash = xxhash64_chunk(chunk_data)
                             hash_ok = (computed_hash == chunk.hash)
                         except Exception as e:
-                            # Silently fail - hash verification optional for display
                             hash_ok = False
                     chunk_hash_ok.append(hash_ok)
 
-                # Check server-side status if asset has remote location
                 server_present = []
                 server_hash_ok = []
                 has_server_info = False
@@ -166,25 +151,20 @@ def print_asset_info(cfgspc, catalog, fqid, verbose=False):
                     merged = cfgspc.merged_config
                     resolved_location = merged.resolveRemoteLocation(remote_loc)
                     if resolved_location:
-                        # Build list of chunks with expected hashes
                         import re
                         chunk_requests = []
                         for i, chunk in enumerate(chunk_manifest.chunks):
                             chunk_filename = f"{asset_info.storage_hash}.chunk.{i:04d}"
                             chunk_requests.append({
                                 'file': chunk_filename,
-                                'expected_hash': f"{chunk.hash:016x}"  # Send as 16-char hex string to avoid JSON precision loss
+                                'expected_hash': f"{chunk.hash:016x}"
                             })
 
-                        # Construct API URL from download URL
-                        # Download URL: https://cdn.example.com/std/download
-                        # API URL:      https://cdn.example.com/api/std/verify
                         download_url = str(resolved_location.download_url)
-                        # Extract endpoint from download URL pattern: /endpoint/download
                         endpoint_match = re.search(r'/([^/]+)/download/?$', download_url)
                         if endpoint_match:
                             endpoint = endpoint_match.group(1)
-                            base_url = download_url.rsplit('/', 2)[0]  # Remove /endpoint/download
+                            base_url = download_url.rsplit('/', 2)[0]
                             verify_url = f"{base_url}/api/{endpoint}/verify"
 
                             headers = {'Content-Type': 'application/json'}
@@ -197,7 +177,7 @@ def print_asset_info(cfgspc, catalog, fqid, verbose=False):
                                     verify_url,
                                     headers=headers,
                                     json={'chunks': chunk_requests},
-                                    timeout=30,  # Longer timeout for batch verification
+                                    timeout=30,
                                     verify=not resolved_location.disable_cert_check
                                 )
 
@@ -205,7 +185,6 @@ def print_asset_info(cfgspc, catalog, fqid, verbose=False):
                                     verify_data = response.json()
                                     has_server_info = True
 
-                                    # Build arrays from results (order should match request)
                                     for result in verify_data['results']:
                                         server_present.append(result['present'])
                                         server_hash_ok.append(result['hash_ok'])
@@ -213,33 +192,25 @@ def print_asset_info(cfgspc, catalog, fqid, verbose=False):
                                     print(f"    {deco.key('Server verification:')} {deco.val('Success')} ({num_chunks} chunks)")
                                 else:
                                     print(f"    {deco.key('Server verification:')} {deco.red('Failed')} (HTTP {response.status_code})")
-                                    # Show CDN rows with all failures
                                     has_server_info = True
                                     server_error = True
                                     server_present = [False] * num_chunks
                                     server_hash_ok = [False] * num_chunks
                             except Exception as e:
                                 print(f"    {deco.key('Server verification:')} {deco.red('Error')} - {str(e)}")
-                                # Show CDN rows with all failures
                                 has_server_info = True
                                 server_error = True
                                 server_present = [False] * num_chunks
                                 server_hash_ok = [False] * num_chunks
 
-                # Format the grid - split into groups of 48 chunks vertically
-                # ROBUST SOLUTION: Every column is exactly 3 characters: " X "
-                # All labels are exactly 13 characters
-
                 label_width = 13
-                col_width = 3  # Each column: space + content + space
+                col_width = 3
                 chunks_per_row = 48
 
-                # Split chunks into groups of 48
                 for group_start in range(0, num_chunks, chunks_per_row):
                     group_end = min(group_start + chunks_per_row, num_chunks)
                     group_size = group_end - group_start
 
-                    # Print hundreds digit row if we have chunks >= 100 in this group
                     needs_hundreds = any(i >= 100 for i in range(group_start, group_end))
                     if needs_hundreds:
                         header_hundreds = " " * label_width
@@ -250,7 +221,6 @@ def print_asset_info(cfgspc, catalog, fqid, verbose=False):
                                 header_hundreds += " " * col_width
                         print(header_hundreds)
 
-                    # Print tens digit row if we have chunks >= 10 in this group
                     needs_tens = any(i >= 10 for i in range(group_start, group_end))
                     if needs_tens:
                         header_tens = " " * label_width
@@ -261,21 +231,18 @@ def print_asset_info(cfgspc, catalog, fqid, verbose=False):
                                 header_tens += " " * col_width
                         print(header_tens)
 
-                    # Print ones digit row (chunk numbers)
-                    header_ones = "chunk:       "  # Exactly 13 chars
+                    header_ones = "chunk:       "
                     for i in range(group_start, group_end):
                         header_ones += f" {i % 10} "
                     print(header_ones)
 
-                    # Print local present row
-                    present_row = "LOC Present :"  # Exactly 13 chars
+                    present_row = "LOC Present :"
                     for i in range(group_start, group_end):
                         symbol = deco.green('✓') if chunk_present[i] else deco.red('✗')
                         present_row += f" {symbol} "
                     print(present_row)
 
-                    # Print local hash validation row
-                    hashok_row = "LOC Hash    :"  # Exactly 13 chars
+                    hashok_row = "LOC Hash    :"
                     for i in range(group_start, group_end):
                         if not chunk_present[i]:
                             symbol = deco.grey3('-')
@@ -286,23 +253,20 @@ def print_asset_info(cfgspc, catalog, fqid, verbose=False):
                         hashok_row += f" {symbol} "
                     print(hashok_row)
 
-                    # Add server rows if we have server info
                     if has_server_info:
-                        # Server present row
                         label = "CDN Present :"
                         if server_error:
                             label = deco.red(label)
-                        srv_present_row = label  # Exactly 13 chars (before color codes)
+                        srv_present_row = label
                         for i in range(group_start, group_end):
                             symbol = deco.green('✓') if server_present[i] else deco.red('✗')
                             srv_present_row += f" {symbol} "
                         print(srv_present_row)
 
-                        # Server hash OK row
                         label = "CDN Hash    :"
                         if server_error:
                             label = deco.red(label)
-                        srv_hash_row = label  # Exactly 13 chars (before color codes)
+                        srv_hash_row = label
                         for i in range(group_start, group_end):
                             if not server_present[i]:
                                 symbol = deco.grey3('-')
@@ -313,12 +277,10 @@ def print_asset_info(cfgspc, catalog, fqid, verbose=False):
                             srv_hash_row += f" {symbol} "
                         print(srv_hash_row)
 
-                    # Add spacing between groups (but not after the last group)
                     if group_end < num_chunks:
                         print()
                         print()
 
-                # Verbose chunk details
                 if verbose:
                     print()
                     print(f"    {deco.key('Verbose chunk details:')}")
@@ -338,34 +300,30 @@ def print_asset_info(cfgspc, catalog, fqid, verbose=False):
 
                         print(f"        {deco.key('Cache path:')} {deco.val(chunk_paths[i])}")
 
-    # Get the parent manifest info if available
     namespace_id = fqid.split('|')[0]
-    
+
     return True
 
 def print_json_info(cfgspc, catalog, fqid):
-    """Print asset information as JSON"""
-    
     cfg_merged = cfgspc.merged_config
     asset_info = catalog.get_asset_info(fqid)
-    
+
     if not asset_info:
         print(json.dumps({"error": f"Asset not found: {fqid}"}, indent=2))
         return False
-    
+
     info_dict = {
         "asset_id": fqid,
         "type": asset_info.type,
         "priority": asset_info.priority,
         "platforms": asset_info.platforms
     }
-    
-    # Add optional fields if they exist
+
     optional_fields = [
-        'local_loc', 'remote_loc', 'filename', 'size', 
+        'local_loc', 'remote_loc', 'filename', 'size',
         'content_hash', 'storage_hash', 'hash_algorithm'
     ]
-    
+
     for field in optional_fields:
         if hasattr(asset_info, field):
             value = getattr(asset_info, field)
@@ -373,14 +331,13 @@ def print_json_info(cfgspc, catalog, fqid):
                 info_dict[field] = value
 
     info_dict['local(resolved)'] = cfg_merged.resolveLocalPath(asset_info.local_loc)
-    
+
     if hasattr(asset_info, 'dependencies') and asset_info.dependencies:
         info_dict['dependencies'] = list(asset_info.dependencies)
-    
+
     if hasattr(asset_info, 'is_cached'):
         info_dict['cached'] = asset_info.is_cached
-    
-    # Add manifest info
+
     namespace_id = fqid.split('|')[0]
     manifest = catalog.get_manifest(namespace_id)
     if manifest:
@@ -388,7 +345,7 @@ def print_json_info(cfgspc, catalog, fqid):
             'namespace': manifest.namespace,
             'version': manifest.version
         }
-    
+
     print(json.dumps(info_dict, indent=2))
     return True
 
@@ -399,19 +356,16 @@ def main():
     parser.add_argument('--verbose', '-v', action='store_true', help='Show detailed chunk information')
 
     args = parser.parse_args()
-    
-    core.coreappinit()
-    
-    # Create config space and catalog
+
+    app = core.Application.create(std_asset_catalog=True)
+
     cfgspc, catalog = ork_assets.default_cfg_and_catalog()
-        
-    # Print asset info
+
     if args.json:
         success = print_json_info(cfgspc, catalog, args.asset_id)
     else:
         success = print_asset_info(cfgspc, catalog, args.asset_id, verbose=args.verbose)
-    
-    core.coreappexit()
+
     return 0 if success else 1
 
 if __name__ == "__main__":
