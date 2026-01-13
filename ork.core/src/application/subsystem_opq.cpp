@@ -11,7 +11,7 @@
 
 namespace ork {
 
-static logchannel_ptr_t logchan_OPQ = logger()->configureChannel("OPQ_SUBSYSTEM", fvec3(0.3, 0.8, 0.9), true);
+static logchannel_ptr_t logchan_OPQ = logger()->configureChannel("OPQ_SUBSYSTEM", fvec3(0.3, 0.8, 0.9), false);
 
 ///////////////////////////////////////////////////////////////////////////////
 // OPQ Subsystem Implementation

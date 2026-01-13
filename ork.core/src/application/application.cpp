@@ -31,7 +31,7 @@ namespace ork {
 void initModule(ork::appinitdata_ptr_t init_data);
 void exitModule(ork::appinitdata_ptr_t init_data);
 
-static logchannel_ptr_t logchan_APP = logger()->configureChannel("APPLICATION", fvec3(0.9, 0.6, 0.2), true);
+static logchannel_ptr_t logchan_APP = logger()->configureChannel("APPLICATION", fvec3(0.9, 0.6, 0.2), false);
 
 // Global application init data - lazy singleton (thread-safe via C++11 static initialization)
 appinitdata_ptr_t appinitdata() {

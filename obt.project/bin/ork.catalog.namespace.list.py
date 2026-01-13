@@ -1,18 +1,16 @@
-#!/usr/bin/env ork.python 
+#!/usr/bin/env ork.python
 
 from orkengine import core
-import os
 import obt.deco
 
 deco = obt.deco.Deco()
 
-core.coreappinit()
+app = core.Application.create(std_asset_catalog=True)
 catalog = core.AssetCatalog.instance
 
-# Get all namespaces
 try:
     all_namespaces = catalog.list_namespaces("*")
-    
+
     if not all_namespaces:
         print(deco.red("No namespaces found in catalog."))
     else:
@@ -21,5 +19,3 @@ try:
             print(deco.cyan(ns))
 except Exception as e:
     print(deco.red(f"Error listing namespaces: {e}"))
-
-core.coreappexit()
