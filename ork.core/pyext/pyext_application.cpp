@@ -35,10 +35,14 @@ void pyinit_application(py::module& module_core) {
       .def_property_readonly("name", [](const SubsystemFsm& self) { return self._name; })
       .def_property_readonly("nameHash", [](const SubsystemFsm& self) { return self._name_hash; })
 
+      // Dependency management
+      .def("addDependency", &SubsystemFsm::addDependency, py::arg("dep"), "Add a dependency")
+      .def("removeDependency", &SubsystemFsm::removeDependency, py::arg("token"), "Remove a dependency by name/token")
+      .def("hasDependency", &SubsystemFsm::hasDependency, py::arg("token"), "Check if has dependency by name/token")
+
       // Public members for configuration
       .def_readwrite("impl", &SubsystemFsm::_impl, "Implementation storage (pimpl)")
       .def_readwrite("vars", &SubsystemFsm::_vars, "Variable map for properties")
-      .def_readwrite("dependencies", &SubsystemFsm::_dependencies, "Dependency map (hash → subsystem)")
 
       // FSM access
       .def_readwrite("instance", &SubsystemFsm::_instance, "FSM instance")

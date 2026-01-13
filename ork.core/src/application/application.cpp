@@ -8,6 +8,7 @@
 #include <iostream>
 #include <ork/pch.h>
 #include <ork/application/application.h>
+#include <ork/application/opq_subsystem.h>
 #include <ork/asset/catalog/catalog.h>
 #include <ork/rtti/Class.h>
 #include <ork/kernel/string/ResizableString.h>
@@ -16,7 +17,7 @@
 #include <ork/util/Context.hpp>
 #include <ork/kernel/environment.h>
 #include <ork/util/logger.h>
-#include <future>
+#include <ork/kernel/future.hpp>
 #include <thread>
 #include <chrono>
 
@@ -395,6 +396,14 @@ Application::Application() {
   // Initialize core module - registers reflection classes and creates global OPQs
   ork::initModule(_initdata);
 
+  // Create and register OPQ subsystem (wraps global OPQ lifecycle)
+  auto opq_subsystem = createOpqSubsystem();
+  registerSubsystem(opq_subsystem, true);  // Mark as static subsystem
+
+  // Initialize OPQ subsystem (calls opq::init() in FSM state)
+  opq_subsystem->initialize();
+  opq_subsystem->update();  // Process state transitions
+
   // Get references to global OPQs created by opq::init()
   _mainq = opq::mainSerialQueue();
   _updq = opq::updateSerialQueue();
@@ -407,8 +416,18 @@ Application::Application() {
 ///////////////////////////////////////////////////////////////////////////////
 
 Application::~Application() {
-  // Clean shutdown - call exitModule to cleanup reflection and OPQs
-  ork::exitModule(_initdata);
+  logchan_APP->log("Application destructor - shutting down subsystems");
+
+  // Shutdown all registered subsystems (in reverse dependency order)
+  // This includes OPQ subsystem which drains queues before cleanup
+  _shutdownSubsystemsInWaves();
+
+  // NOTE: We deliberately do NOT call exitModule() here
+  // The OPQ subsystem already drained the queues in its shutdown handler
+  // Global OPQs will be cleaned up at process exit (no regression from old behavior)
+  // This avoids the mutex crash in opq::exit()
+
+  logchan_APP->log("Application destructor complete");
 
   // Clear singleton
   _g_application = nullptr;
@@ -522,32 +541,54 @@ void Application::_initSubsystemsInWaves() {
 
     logchan_APP->log("Initializing %zu subsystems (wave)", ready_subsystems.size());
 
-    // Initialize this wave in parallel
-    std::vector<std::future<void>> futures;
+    // Initialize this wave in parallel using ork::Future
+    std::vector<std::shared_ptr<Future>> futures;
+    std::vector<std::thread> threads;
+
     for (auto& reg : ready_subsystems) {
       reg->is_initializing = true;
-      futures.push_back(std::async(std::launch::async, [reg]() {
+
+      auto fut = std::make_shared<Future>();
+      fut->_name = FormatString("init_%s", reg->subsystem->_name.c_str());
+      futures.push_back(fut);
+
+      threads.emplace_back([reg, fut]() {
         // Send START event to subsystem FSM
         reg->subsystem->_instance->sendEvent("START");
 
-        // Process until READY or ERROR
+        // Process until READY, ERROR, or forced shutdown (SHUTTING_DOWN/TERMINATED)
         while (true) {
           fsm::FsmInstance::update(reg->subsystem->_instance);
 
           auto state = reg->subsystem->currentState();
           if (state == reg->subsystem->_state_ready ||
-              state == reg->subsystem->_state_error) {
+              state == reg->subsystem->_state_error ||
+              state == reg->subsystem->_state_shutting_down ||
+              state == reg->subsystem->_state_terminated) {
             break;
           }
 
           std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
-      }));
+
+        // Signal completion
+        fut->signal<bool>(true);
+      });
     }
 
     // Wait for wave to complete
-    for (auto& future : futures) {
-      future.wait();
+    for (size_t i = 0; i < futures.size(); i++) {
+      auto& fut = futures[i];
+      logchan_APP->log("  waiting for future<%s>...", fut->_name.c_str());
+      fut->waitForSignal();
+      logchan_APP->log("  future<%s> signaled", fut->_name.c_str());
+    }
+
+    // Join all threads
+    for (auto& t : threads) {
+      if (t.joinable()) {
+        t.join();
+      }
     }
   }
 
@@ -595,13 +636,23 @@ void Application::_shutdownSubsystemsInWaves() {
   _buildShutdownWaves(shutdown_waves);
 
   // Process waves in order (each wave shuts down in parallel)
+  int wave_index = 0;
   for (auto& wave : shutdown_waves) {
-    logchan_APP->log("Shutting down %zu subsystems (wave)", wave.size());
+    logchan_APP->log("Shutting down %zu subsystems (wave %d)", wave.size(), wave_index);
 
-    std::vector<std::future<void>> futures;
+    std::vector<std::shared_ptr<Future>> futures;
+    std::vector<std::thread> threads;
+
     for (auto& reg : wave) {
       reg->is_shutting_down = true;
-      futures.push_back(std::async(std::launch::async, [reg]() {
+
+      auto fut = std::make_shared<Future>();
+      fut->_name = FormatString("shutdown_%s", reg->subsystem->_name.c_str());
+      futures.push_back(fut);
+
+      logchan_APP->log("  launching shutdown thread for subsystem<%s>", reg->subsystem->_name.c_str());
+
+      threads.emplace_back([reg, fut]() {
         // Send SHUTDOWN event to subsystem FSM
         reg->subsystem->_instance->sendEvent("SHUTDOWN");
 
@@ -616,13 +667,28 @@ void Application::_shutdownSubsystemsInWaves() {
 
           std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
-      }));
+
+        // Signal completion
+        fut->signal<bool>(true);
+      });
     }
 
     // Wait for wave to complete
-    for (auto& future : futures) {
-      future.wait();
+    for (size_t i = 0; i < futures.size(); i++) {
+      auto& fut = futures[i];
+      logchan_APP->log("  waiting for future<%s>...", fut->_name.c_str());
+      fut->waitForSignal();
+      logchan_APP->log("  future<%s> signaled", fut->_name.c_str());
     }
+
+    // Join all threads
+    for (auto& t : threads) {
+      if (t.joinable()) {
+        t.join();
+      }
+    }
+
+    wave_index++;
   }
 
   logchan_APP->log("All subsystems terminated");

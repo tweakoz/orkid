@@ -209,6 +209,9 @@ struct FsmInstance {
   void sendEvent(fsm_event_t event);
   void sendEvent(const std::string& event_name);
 
+  // Set initial state directly (no callbacks, no queue) - use only at construction
+  void setInitialState(state_ptr_t state);
+
   // Accessors
   state_ptr_t currentState() const;
   fsmdata_ptr_t data() const { return _data; }

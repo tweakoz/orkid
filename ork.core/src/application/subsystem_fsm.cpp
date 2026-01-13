@@ -28,8 +28,8 @@ SubsystemFsm::SubsystemFsm(const std::string& name)
   // Create FSM instance AFTER states are created
   _instance = FsmInstance::create(_data);
 
-  // Set initial state NOW that instance exists
-  _instance->changeState(_state_uninitialized);
+  // Set initial state directly (no callbacks, no queue - this is the birth state)
+  _instance->setInitialState(_state_uninitialized);
 }
 
 ////////////////////////////////////////////////////////////////
@@ -55,6 +55,23 @@ void SubsystemFsm::_createStandardStates() {
   _data->addTransition(_state_ready, "SHUTDOWN", _state_shutting_down);
   _data->addTransition(_state_error, "SHUTDOWN", _state_shutting_down);
   _data->addTransition(_state_shutting_down, "TERMINATED", _state_terminated);
+
+  // Allow shutdown from any non-terminal state
+  // This handles: subsystems never started, or fatal errors during init requiring abort
+  _data->addTransition(_state_uninitialized, "SHUTDOWN", _state_shutting_down);
+  _data->addTransition(_state_initializing, "SHUTDOWN", _state_shutting_down);
+
+  // Default initialization behavior: immediately transition to READY
+  // Subsystems with custom init logic should override this callback
+  _state_initializing->_onenter = [](fsm::fsminstance_ptr_t instance) {
+    instance->sendEvent("READY");
+  };
+
+  // Default shutdown behavior: immediately transition to TERMINATED
+  // Subsystems with custom shutdown logic should override this callback
+  _state_shutting_down->_onenter = [](fsm::fsminstance_ptr_t instance) {
+    instance->sendEvent("TERMINATED");
+  };
 }
 
 ////////////////////////////////////////////////////////////////
@@ -81,6 +98,26 @@ void SubsystemFsm::update() {
 
 fsm::state_ptr_t SubsystemFsm::currentState() const {
   return _instance->currentState();
+}
+
+////////////////////////////////////////////////////////////////
+
+void SubsystemFsm::addDependency(subsystemfsm_ptr_t dep) {
+  if (dep) {
+    _dependencies[dep->_name_hash] = dep;
+  }
+}
+
+////////////////////////////////////////////////////////////////
+
+void SubsystemFsm::removeDependency(crcstring_ptr_t token) {
+  _dependencies.erase(token->hashed());
+}
+
+////////////////////////////////////////////////////////////////
+
+bool SubsystemFsm::hasDependency(crcstring_ptr_t token) const {
+  return _dependencies.count(token->hashed()) > 0;
 }
 
 ////////////////////////////////////////////////////////////////

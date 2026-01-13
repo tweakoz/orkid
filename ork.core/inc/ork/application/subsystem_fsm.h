@@ -57,6 +57,11 @@ public:
   const std::string& name() const { return _name; }
   uint64_t nameHash() const { return _name_hash; }
 
+  // Dependency management (proper API instead of exposing map)
+  void addDependency(subsystemfsm_ptr_t dep);
+  void removeDependency(crcstring_ptr_t token);
+  bool hasDependency(crcstring_ptr_t token) const;
+
   // Orkid patterns - implementation storage
   svar64_t _impl;          // Pimpl - implementation-specific data
   varmap::varmap_ptr_t _vars;  // Variable map for properties

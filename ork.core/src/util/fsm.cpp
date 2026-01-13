@@ -158,6 +158,13 @@ void FsmInstance::sendEvent(const std::string& event_name) {
   _pendingEvents.push(te);
 }
 
+void FsmInstance::setInitialState(state_ptr_t state) {
+  // Directly set _current without queuing or firing callbacks
+  // This is the "birth state" - the FSM is created IN this state
+  std::lock_guard<std::mutex> lock(_currentMutex);
+  _current = state;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void FsmInstance::_performStateChange(fsminstance_ptr_t inst, state_ptr_t to) {

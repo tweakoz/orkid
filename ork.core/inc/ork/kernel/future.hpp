@@ -42,6 +42,7 @@ struct Future {
   ork::atomic<int> _state;
   var_t _result;
   var_t _callback;
+  std::string _name;
   // mutable std::condition_variable mWaitCV;
 };
 
