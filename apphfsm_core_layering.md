@@ -501,6 +501,31 @@ subsystem_ptr_t createAudioSubsystem();
 } // namespace ork::lev2
 ```
 
+### Catalog Subsystem (in core) - Graceful Drain Example
+
+The Catalog subsystem demonstrates the graceful drain pattern for subsystems with async operations:
+
+```cpp
+// ork.core/src/application/subsystem_catalog.cpp
+
+namespace ork {
+
+// Catalog subsystem factory function
+// Implements graceful shutdown with operation drain
+subsystem_ptr_t createCatalogSubsystem();
+
+} // namespace ork
+```
+
+**Graceful Drain Pattern:** Unlike GPU/Audio (simple RAII cleanup), the Catalog subsystem
+has in-flight async operations (downloads, fetches) that must complete before shutdown.
+It implements:
+- `requestShutdown()` - Signals all operations to stop, sets `_shutdown_requested` flag
+- `drainPendingOperations()` - Waits for `_inflight_requests` counter to reach zero
+- All blocking loops check `_shutdown_requested` for early exit
+
+See **[apphfsm.md](./apphfsm.md)** section "Subsystem Graceful Shutdown Pattern" for details.
+
 ---
 
 ## Usage Examples

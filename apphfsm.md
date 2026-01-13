@@ -1104,6 +1104,125 @@ Shutdown waves (reverse dependency order):
 
 ---
 
+## Subsystem Graceful Shutdown Pattern
+
+Some subsystems (such as AssetCatalog) have in-flight asynchronous operations that must complete or be cancelled before shutdown. The standard pattern for such subsystems is:
+
+1. **Signal Shutdown Phase** - Stop accepting new operations, set cancellation flag
+2. **Drain Pending Phase** - Wait for existing operations to complete or abort
+
+### Implementation Pattern
+
+```cpp
+// In subsystem implementation header
+struct MySubsystemImpl {
+    std::atomic<bool> _shutdown_requested{false};
+    std::atomic<int> _inflight_requests{0};
+
+    void requestShutdown();
+    void drainPendingOperations();
+};
+
+// Implementation
+void MySubsystemImpl::requestShutdown() {
+    _shutdown_requested = true;
+    // Signal any internal managers to stop accepting new work
+}
+
+void MySubsystemImpl::drainPendingOperations() {
+    // Wait for in-flight operations to complete
+    while (_inflight_requests.load() > 0) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+}
+```
+
+### Subsystem Shutdown Handler
+
+```cpp
+// In subsystem's SHUTTING_DOWN state entry
+subsystem->_state_shutting_down->_onenter = [impl](fsm::fsminstance_ptr_t inst) {
+    logchan->log("MySubsystem shutting down...");
+
+    // Phase 1: Signal shutdown to all operations
+    impl->requestShutdown();
+
+    // Phase 2: Wait for in-flight operations to complete
+    impl->drainPendingOperations();
+
+    logchan->log("MySubsystem shutdown complete");
+
+    // Phase 3: Signal framework we're done
+    inst->sendEvent("TERMINATED");
+};
+```
+
+### Async Operation Pattern
+
+Operations must check the shutdown flag and track in-flight count:
+
+```cpp
+void MySubsystemImpl::asyncOperation(Request* request) {
+    // Early exit if shutting down
+    if (_shutdown_requested) {
+        request->_state = RequestState::FAILED;
+        return;
+    }
+
+    // Track in-flight request
+    _inflight_requests.fetch_add(1);
+
+    opq::concurrentQueue()->enqueue([this, request]() {
+        // Check shutdown at start of work
+        if (_shutdown_requested) {
+            request->_state = RequestState::FAILED;
+        } else {
+            // Do actual work, checking _shutdown_requested in loops
+            while (!work_complete && !_shutdown_requested) {
+                // Process...
+            }
+            request->_state = _shutdown_requested
+                ? RequestState::FAILED
+                : RequestState::SUCCEEDED;
+        }
+
+        // Always decrement counter when done
+        _inflight_requests.fetch_sub(1);
+    });
+}
+```
+
+### Blocking Loop Cancellation
+
+All blocking loops should check the shutdown flag:
+
+```cpp
+// Download wait loop with cancellation
+while (!download_complete && !_shutdown_requested) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+}
+if (_shutdown_requested) {
+    return nullptr;  // Abort on shutdown
+}
+```
+
+### Shutdown Pattern Comparison
+
+| Pattern | Use Case | Example Subsystems |
+|---------|----------|-------------------|
+| **Simple cleanup** | RAII resources, no async work | GPU, Audio, Physics |
+| **Graceful drain** | Async operations, network I/O | Catalog, Network, Streaming |
+| **Ordered cascade** | Dependent child resources | ECS, GameLogic |
+
+**Benefits of Graceful Drain:**
+
+✅ **No hanging operations** - Shutdown doesn't deadlock waiting for work
+✅ **Clean resource release** - All operations complete before state transition
+✅ **Framework integration** - Works with HFSM subsystem shutdown ordering
+✅ **Reusable pattern** - Can be applied to any subsystem with async work
+
+---
+
 ## Event-Driven State Updates
 
 ### Processing Loop
@@ -1650,6 +1769,69 @@ subsystem_ptr_t createEcsSubsystem() {
 
 } // namespace ork::ecs
 ```
+
+**Catalog Subsystem Example (Graceful Drain Pattern):**
+
+The AssetCatalog subsystem demonstrates the graceful drain pattern for subsystems with in-flight async operations:
+
+```cpp
+// In ork.core/src/application/subsystem_catalog.cpp
+
+namespace ork {
+
+static logchannel_ptr_t logchan_CATALOG = logger()->configureChannel("SUB_CATALOG", fvec3(0.4, 0.6, 1.0), true);
+
+subsystem_ptr_t createCatalogSubsystem() {
+    auto subsystem = std::make_shared<Subsystem>("catalog");
+
+    // INITIALIZING state -> gets/creates global catalog instance
+    subsystem->_state_initializing->_onenter = [subsystem](fsm::fsminstance_ptr_t inst) {
+        logchan_CATALOG->log("Catalog subsystem initializing...");
+
+        using namespace asset::catalog;
+
+        // Lazy initialization - load manifests from $ORKID_ASSET_MANIFEST_DIRS
+        auto catalog = AssetCatalog::globalInstance();
+
+        logchan_CATALOG->log("Catalog subsystem initialized");
+        inst->sendEvent("READY");
+    };
+
+    // SHUTTING_DOWN state -> graceful shutdown with operation drain
+    subsystem->_state_shutting_down->_onenter = [subsystem](fsm::fsminstance_ptr_t inst) {
+        logchan_CATALOG->log("Catalog subsystem shutting down...");
+
+        using namespace asset::catalog;
+
+        auto catalog = AssetCatalog::globalInstance();
+
+        // Phase 1: Signal shutdown - stops accepting new requests
+        // Sets _shutdown_requested flag, signals download manager
+        catalog->requestShutdown();
+
+        // Phase 2: Drain pending operations - waits for in-flight requests
+        // Blocks until _inflight_requests counter reaches zero
+        catalog->drainPendingOperations();
+
+        logchan_CATALOG->log("Catalog subsystem shutdown complete");
+
+        // All operations complete, signal framework
+        inst->sendEvent("TERMINATED");
+    };
+
+    return subsystem;
+}
+
+} // namespace ork
+```
+
+**Key Implementation Details:**
+
+- `CatalogImpl::_shutdown_requested` - Atomic bool checked by all blocking loops
+- `CatalogImpl::_inflight_requests` - Atomic counter incremented in `fetchAsync()`, decremented when work completes
+- `requestShutdown()` - Sets flag and signals download manager to stop accepting new work
+- `drainPendingOperations()` - Spins waiting for counter to reach zero
+- Blocking loops in `catalog_impl_get.cpp` and `catalog_dl.cpp` check `_shutdown_requested` for early exit
 
 **User Registration (C++):**
 
