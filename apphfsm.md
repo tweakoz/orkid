@@ -15,11 +15,11 @@ The HFSM application lifecycle is layered across two modules:
 
 | Module | Responsibility | Usage |
 |--------|---------------|-------|
-| **ork.core** | Base Application class, FSM lifecycle, SubsystemFsm, queues, threads, dependency management | Server-side apps, daemons, CLI tools (no graphics) |
+| **ork.core** | Base Application class, FSM lifecycle, Subsystem, queues, threads, dependency management | Server-side apps, daemons, CLI tools (no graphics) |
 | **ork.lev2** | OrkEzApp extends Application, adds GPU/Audio/UI subsystems | GUI apps, games, editors (with graphics) |
 
 **Key Benefits:**
-- **Unified Subsystem Pattern**: All resources (GPU, Audio, Physics, Network) are SubsystemFsm instances with factory functions
+- **Unified Subsystem Pattern**: All resources (GPU, Audio, Physics, Network) are Subsystem instances with factory functions
 - **Dependency-Driven Ordering**: Init/shutdown order computed from dependency graph (no explicit phases)
 - **Thread-Safe Registration**: Subsystems can be registered dynamically during RUNNING
 - **Core-only Apps**: Servers and background services can use the HFSM lifecycle without graphics dependencies
@@ -302,7 +302,7 @@ AppLifecycle (Root)
 - Fixed lifecycle managed by `Application` FSM
 - All apps have these regardless of subsystems
 
-**Subsystem-Specific States (per SubsystemFsm instance):**
+**Subsystem-Specific States (per Subsystem instance):**
 - Each subsystem (GPU, Audio, Physics, Network, ECS, etc.) has its own FSM
 - Example: GPU subsystem states: `UNINITIALIZED`, `INITIALIZING`, `READY`, `TERMINATED`
 - Example: Audio subsystem states: `UNINITIALIZED`, `SYNTH_INIT`, `DEVICE_START`, `READY`, `TERMINATED`
@@ -443,19 +443,19 @@ public:
     // Subsystem management (thread-safe, dynamic)
     // Dependencies must be set in subsystem->_dependencies before calling
     void registerSubsystem(
-        subsystemfsm_ptr_t subsystem,
+        subsystem_ptr_t subsystem,
         bool is_static = false
     );
 
     // Convenience overload for string names (auto-hashes to uint64_t)
     void registerSubsystem(
         const std::string& name,
-        subsystemfsm_ptr_t subsystem,
+        subsystem_ptr_t subsystem,
         bool is_static = false
     );
 
     void unregisterSubsystem(const std::string& name);
-    subsystemfsm_ptr_t findSubsystem(const std::string& name) const;
+    subsystem_ptr_t findSubsystem(const std::string& name) const;
 
     // Shutdown
     virtual void signalExit();
@@ -538,12 +538,12 @@ protected:
 
 private:
     // GPU subsystem
-    std::shared_ptr<GpuSubsystemFsm> _gpu_subsystem;
+    std::shared_ptr<GpuSubsystem> _gpu_subsystem;
     ezmainwin_ptr_t _mainWindow;
     CTXBASE* _ctqt;
 
     // Audio subsystem
-    std::shared_ptr<AudioSubsystemFsm> _audio_subsystem;
+    std::shared_ptr<AudioSubsystem> _audio_subsystem;
     audiodevice_ptr_t _audiodevice;
     audio::singularity::synth_ptr_t _synth;
 
@@ -566,7 +566,7 @@ private:
 } // namespace ork::lev2
 ```
 
-### 2. SubsystemFsm - Base Class for Subsystems (ork.core)
+### 2. Subsystem - Base Class for Subsystems (ork.core)
 
 Located in `ork.core/inc/ork/application/subsystem.h`:
 
@@ -577,12 +577,12 @@ namespace ork {
 // No need for explicit init/shutdown phase enums - dependencies determine everything!
 
 // Base class for all subsystems (core, lev2, or user-defined)
-// GPU, Audio, Physics, Network, etc. are all SubsystemFsm instances
+// GPU, Audio, Physics, Network, etc. are all Subsystem instances
 // No subclassing needed - use factory functions with pimpl pattern
-class SubsystemFsm {
+class Subsystem {
 public:
-    SubsystemFsm(const std::string& name);
-    ~SubsystemFsm() = default;
+    Subsystem(const std::string& name);
+    ~Subsystem() = default;
 
     // Called by factory functions to set up FSM states
     void initialize();
@@ -601,7 +601,7 @@ public:
     std::string _name;       // "gpu", "audio", "physics" (for debugging)
 
     // Dependencies - pointer map keyed by hash
-    std::unordered_map<uint64_t, subsystemfsm_ptr_t> _dependencies;
+    std::unordered_map<uint64_t, subsystem_ptr_t> _dependencies;
 
     // FSM access (public for configuration)
     fsm::fsminstance_ptr_t _instance;
@@ -619,7 +619,7 @@ public:
 struct SubsystemRegistration {
     uint64_t name_hash;                     // CRC hash of subsystem name
     std::string name;                       // "gpu", "audio", "ecs" (for debugging)
-    subsystemfsm_ptr_t subsystem;
+    subsystem_ptr_t subsystem;
     bool is_static = false;                 // Static subsystems persist until app exit
     std::atomic<bool> is_initializing{false};
     std::atomic<bool> is_shutting_down{false};
@@ -633,9 +633,9 @@ struct SubsystemRegistration {
 } // namespace ork
 ```
 
-### 2a. Example Subsystems - Everything is SubsystemFsm
+### 2a. Example Subsystems - Everything is Subsystem
 
-**GPU, Audio, Physics, Network, etc. are all just SubsystemFsm instances.**
+**GPU, Audio, Physics, Network, etc. are all just Subsystem instances.**
 
 **Dependency Chain:**
 
@@ -679,8 +679,8 @@ struct GpuSubsystemImpl {
 };
 
 // GPU subsystem factory function (lev2-specific)
-subsystemfsm_ptr_t createGpuSubsystem() {
-    auto subsystem = std::make_shared<SubsystemFsm>("gpu");
+subsystem_ptr_t createGpuSubsystem() {
+    auto subsystem = std::make_shared<Subsystem>("gpu");
 
     // Store impl using svar64_t (pimpl pattern)
     auto impl = new GpuSubsystemImpl();
@@ -726,8 +726,8 @@ struct AudioSubsystemImpl {
 };
 
 // Audio subsystem factory function (lev2-specific)
-subsystemfsm_ptr_t createAudioSubsystem() {
-    auto subsystem = std::make_shared<SubsystemFsm>("audio");
+subsystem_ptr_t createAudioSubsystem() {
+    auto subsystem = std::make_shared<Subsystem>("audio");
 
     // Store impl using svar64_t (pimpl pattern)
     auto impl = new AudioSubsystemImpl();
@@ -787,8 +787,8 @@ struct PhysicsSubsystemImpl {
 };
 
 // Physics subsystem factory function (user-defined, could be in ork.core or user code)
-subsystemfsm_ptr_t createPhysicsSubsystem() {
-    auto subsystem = std::make_shared<SubsystemFsm>("physics");
+subsystem_ptr_t createPhysicsSubsystem() {
+    auto subsystem = std::make_shared<Subsystem>("physics");
 
     // Store impl using svar64_t (pimpl pattern)
     auto impl = new PhysicsSubsystemImpl();
@@ -843,8 +843,8 @@ struct NetworkSubsystemImpl {
 };
 
 // Network subsystem factory function (user-defined, thread-safe - ANY thread affinity)
-subsystemfsm_ptr_t createNetworkSubsystem() {
-    auto subsystem = std::make_shared<SubsystemFsm>("network");
+subsystem_ptr_t createNetworkSubsystem() {
+    auto subsystem = std::make_shared<Subsystem>("network");
 
     // Store impl using svar64_t (pimpl pattern)
     auto impl = new NetworkSubsystemImpl();
@@ -990,7 +990,7 @@ RUNNING (core + EzApp rendering)
 ```
 Subsystems registered:
   Network: no dependencies → inits during APP_INIT
-  GPU: (SubsystemFsm) → inits during GPU_INIT
+  GPU: (Subsystem) → inits during GPU_INIT
   Physics: no dependencies → inits during UPDATE_INIT (UPDATE thread ready)
   RenderSystem: depends on "gpu" → waits for GPU_READY, then inits
   ECS: depends on "gpu", "physics" → waits for both, then inits
@@ -1515,7 +1515,7 @@ Higher-level libraries (ork.ecs, custom game engines, networking libraries, etc.
 struct SubsystemRegistration {
     uint64_t name_hash;                     // CRC hash of subsystem name
     std::string name;                       // "gpu", "audio", "ecs" (for debugging)
-    subsystemfsm_ptr_t subsystem;
+    subsystem_ptr_t subsystem;
     bool is_static = false;                 // Static subsystems persist until app exit
     std::atomic<bool> is_initializing{false};
     std::atomic<bool> is_shutting_down{false};
@@ -1532,14 +1532,14 @@ struct OrkEzApp {
     // Subsystem registration (can be called anytime, even during RUNNING)
     // Dependencies must be set in subsystem->_dependencies before calling this
     void registerSubsystem(
-        subsystemfsm_ptr_t subsystem,
+        subsystem_ptr_t subsystem,
         bool is_static = false                       // Static subsystems persist until app exit
     );
 
     // Convenience overload for string name (auto-hashes to uint64_t)
     void registerSubsystem(
         const std::string& name,
-        subsystemfsm_ptr_t subsystem,
+        subsystem_ptr_t subsystem,
         bool is_static = false
     ) {
         // Set the subsystem name hash
@@ -1557,7 +1557,7 @@ struct OrkEzApp {
     // Stop subsystem but keep registered (can restart later)
     void stopSubsystem(const std::string& name);
 
-    subsystemfsm_ptr_t findSubsystem(const std::string& name);
+    subsystem_ptr_t findSubsystem(const std::string& name);
 
     // Query subsystems
     size_t subsystemCount() const;
@@ -1597,8 +1597,8 @@ struct EcsSubsystemImpl {
 };
 
 // ECS subsystem factory function
-subsystemfsm_ptr_t createEcsSubsystem() {
-    auto subsystem = std::make_shared<SubsystemFsm>("ecs");
+subsystem_ptr_t createEcsSubsystem() {
+    auto subsystem = std::make_shared<Subsystem>("ecs");
 
     // Store impl using svar64_t (pimpl pattern)
     auto impl = new EcsSubsystemImpl();
@@ -1751,7 +1751,7 @@ private:
 py::class_<lev2::OrkEzApp, lev2::ezapp_ptr_t>(module, "OrkEzApp")
     // ... existing bindings ...
     .def("registerSubsystem",
-         py::overload_cast<const std::string&, subsystemfsm_ptr_t, bool>(
+         py::overload_cast<const std::string&, subsystem_ptr_t, bool>(
              &lev2::OrkEzApp::registerSubsystem),
          py::arg("name"),
          py::arg("subsystem"),
@@ -1773,19 +1773,19 @@ py::class_<lev2::OrkEzApp, lev2::ezapp_ptr_t>(module, "OrkEzApp")
          &lev2::OrkEzApp::subsystemNames,
          "Get list of registered subsystem names");
 
-// Bind SubsystemFsm base class (in ork.core)
-py::class_<ork::SubsystemFsm, subsystemfsm_ptr_t>(module, "SubsystemFsm")
+// Bind Subsystem base class (in ork.core)
+py::class_<ork::Subsystem, subsystem_ptr_t>(module, "Subsystem")
     .def(py::init<const std::string&>())
-    .def("initialize", &ork::SubsystemFsm::initialize)
-    .def("shutdown", &ork::SubsystemFsm::shutdown)
-    .def("currentState", &ork::SubsystemFsm::currentState)
-    .def_readonly("name", &ork::SubsystemFsm::_name)
-    .def_readonly("name_hash", &ork::SubsystemFsm::_name_hash)
-    .def_readonly("instance", &ork::SubsystemFsm::_instance)
-    .def_readonly("data", &ork::SubsystemFsm::_data)
-    .def_readwrite("dependencies", &ork::SubsystemFsm::_dependencies)
-    .def_readwrite("impl", &ork::SubsystemFsm::_impl)
-    .def_readwrite("vars", &ork::SubsystemFsm::_vars);
+    .def("initialize", &ork::Subsystem::initialize)
+    .def("shutdown", &ork::Subsystem::shutdown)
+    .def("currentState", &ork::Subsystem::currentState)
+    .def_readonly("name", &ork::Subsystem::_name)
+    .def_readonly("name_hash", &ork::Subsystem::_name_hash)
+    .def_readonly("instance", &ork::Subsystem::_instance)
+    .def_readonly("data", &ork::Subsystem::_data)
+    .def_readwrite("dependencies", &ork::Subsystem::_dependencies)
+    .def_readwrite("impl", &ork::Subsystem::_impl)
+    .def_readwrite("vars", &ork::Subsystem::_vars);
 ```
 
 **Python Subsystem Definition:**
@@ -1804,7 +1804,7 @@ class EcsSubsystemImpl:
 def create_ecs_subsystem():
     """Create and configure ECS subsystem FSM."""
     # Create subsystem instance (no subclassing)
-    subsystem = core.SubsystemFsm("ecs")
+    subsystem = core.Subsystem("ecs")
 
     # Store impl using svar64_t (pimpl pattern)
     impl = EcsSubsystemImpl()
@@ -1955,7 +1955,7 @@ When subsystems are registered, the framework automatically:
 ```cpp
 void OrkEzApp::registerSubsystem(
     const std::string& name,
-    subsystemfsm_ptr_t subsystem,
+    subsystem_ptr_t subsystem,
     const std::vector<std::string>& dependencies,
     bool is_static
 ) {
@@ -2476,8 +2476,8 @@ void OrkEzApp::_shutdownSubsystems() {
 
 ```cpp
 // ECS subsystem factory function (uses pimpl pattern)
-subsystemfsm_ptr_t createEcsSubsystem() {
-    auto subsystem = std::make_shared<SubsystemFsm>("ecs");
+subsystem_ptr_t createEcsSubsystem() {
+    auto subsystem = std::make_shared<Subsystem>("ecs");
 
     // ECS-specific impl (pimpl)
     struct EcsSubsystemImpl {
@@ -2740,12 +2740,12 @@ This section provides a high-level overview. The full plan includes core/lev2 se
 - [ ] Test with server-only example app
 - [ ] Test that enqueue no-ops when queues disabled
 
-### Phase 2: Core SubsystemFsm Base (2-3 days)
+### Phase 2: Core Subsystem Base (2-3 days)
 - [ ] Create `ork.core/inc/ork/application/subsystem.h`
-- [ ] Implement `SubsystemFsm` base class
+- [ ] Implement `Subsystem` base class
 - [ ] Implement `SubsystemRegistration` struct with dependency tracking
 - [ ] Test with example network subsystem (core-only)
-- [ ] Add Python bindings for core Application and SubsystemFsm
+- [ ] Add Python bindings for core Application and Subsystem
 
 ### Phase 2a: Refactor EzApp to Extend Application (5-7 days)
 - [ ] Change `OrkEzApp` to inherit from `ork::Application`
@@ -2756,11 +2756,11 @@ This section provides a high-level overview. The full plan includes core/lev2 se
   - [ ] `onAppInitExtension()` - create window context
   - [ ] `onUpdateExtension()` - render frame, process UI
   - [ ] `onShutdownExtension()` - shutdown GPU/Audio
-- [ ] Create `GpuSubsystemFsm` (lev2)
+- [ ] Create `GpuSubsystem` (lev2)
   - [ ] Core GPU init (FSM-owned)
   - [ ] User GPU init callback (protected)
   - [ ] GPU state validation
-- [ ] Create `AudioSubsystemFsm` (lev2)
+- [ ] Create `AudioSubsystem` (lev2)
   - [ ] Core audio init (FSM-owned)
   - [ ] User audio callbacks (protected)
   - [ ] Audio device validation
@@ -2819,7 +2819,7 @@ This section provides a high-level overview. The full plan includes core/lev2 se
 
 - [x] Enhance `SubsystemRegistration` with dynamic lifecycle support
   - [x] Change `name` from string to uint64_t (CRC hash) - DONE
-  - [x] Dependencies stored in `subsystem->_dependencies` map (uint64_t → subsystemfsm_ptr_t) - DONE
+  - [x] Dependencies stored in `subsystem->_dependencies` map (uint64_t → subsystem_ptr_t) - DONE
   - [x] Add `is_static` flag - DONE
   - [x] Add `is_initializing`, `is_shutting_down` atomics - DONE
 - [ ] Enhance Application API for dynamic lifecycle
@@ -2856,7 +2856,7 @@ This section provides a high-level overview. The full plan includes core/lev2 se
 
 ### Phase 7: Python Integration (3-4 days)
 - [ ] Add Python bindings for core `Application` class
-- [ ] Add Python bindings for `SubsystemFsm` base class
+- [ ] Add Python bindings for `Subsystem` base class
 - [ ] Add Python bindings for lev2 `OrkEzApp` (extends core bindings)
 - [ ] Implement Python exception handling wrappers
   - [ ] Catch `py::error_already_set`

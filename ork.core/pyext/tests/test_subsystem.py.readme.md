@@ -10,14 +10,14 @@ The original `core.appinit()` / `core.appexit()` pattern had an OPQ destructor c
 
 ### Key Design Principles
 1. **No Regressions**: Old apps calling `opq::init()`/`exit()` still work
-2. **Overlay Functionality**: Wrap existing global OPQ with SubsystemFsm lifecycle
+2. **Overlay Functionality**: Wrap existing global OPQ with Subsystem lifecycle
 3. **Graceful Shutdown**: Drain queues before cleanup
 
 ### Implementation (`opq_subsystem.cpp`)
 
 ```cpp
-subsystemfsm_ptr_t createOpqSubsystem() {
-  auto subsystem = std::make_shared<SubsystemFsm>("opq");
+subsystem_ptr_t createOpqSubsystem() {
+  auto subsystem = std::make_shared<Subsystem>("opq");
 
   // INITIALIZING -> calls opq::init() (idempotent)
   subsystem->_state_initializing->_onenter = [...] {

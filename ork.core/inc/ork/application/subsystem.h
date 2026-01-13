@@ -22,11 +22,11 @@ namespace ork {
 // Forward declarations
 ////////////////////////////////////////////////////////////////
 
-struct SubsystemFsm;
-using subsystemfsm_ptr_t = std::shared_ptr<SubsystemFsm>;
+struct Subsystem;
+using subsystem_ptr_t = std::shared_ptr<Subsystem>;
 
 ////////////////////////////////////////////////////////////////
-// SubsystemFsm - Base class for all subsystems
+// Subsystem - Base class for all subsystems
 //
 // All subsystems (GPU, Audio, Physics, Network, ECS, etc.) are
 // instances of this class. No subclassing needed - use factory
@@ -34,16 +34,16 @@ using subsystemfsm_ptr_t = std::shared_ptr<SubsystemFsm>;
 //
 // Each subsystem has:
 // - Name (string + CRC hash)
-// - FSM for lifecycle management
+// - FSM for lifecycle management (implementation detail)
 // - Dependencies (pointer map keyed by hash)
 // - Implementation storage (svar64_t pimpl)
 // - Variable map for properties
 ////////////////////////////////////////////////////////////////
 
-struct SubsystemFsm {
+struct Subsystem {
 public:
-  SubsystemFsm(const std::string& name);
-  ~SubsystemFsm();
+  Subsystem(const std::string& name);
+  ~Subsystem();
 
   // Called by factory functions to set up FSM states
   void initialize();
@@ -58,7 +58,7 @@ public:
   uint64_t nameHash() const { return _name_hash; }
 
   // Dependency management (proper API instead of exposing map)
-  void addDependency(subsystemfsm_ptr_t dep);
+  void addDependency(subsystem_ptr_t dep);
   void removeDependency(crcstring_ptr_t token);
   bool hasDependency(crcstring_ptr_t token) const;
 
@@ -71,7 +71,7 @@ public:
   std::string _name;       // "gpu", "audio", "physics" (for debugging)
 
   // Dependencies - pointer map keyed by hash
-  std::unordered_map<uint64_t, subsystemfsm_ptr_t> _dependencies;
+  std::unordered_map<uint64_t, subsystem_ptr_t> _dependencies;
 
   // FSM access (public for configuration)
   fsm::fsminstance_ptr_t _instance;
@@ -95,7 +95,7 @@ private:
 ////////////////////////////////////////////////////////////////
 
 struct SubsystemRegistration {
-  subsystemfsm_ptr_t subsystem;
+  subsystem_ptr_t subsystem;
   uint64_t name_hash;
   bool is_static = false;  // Static subsystems init during APP_INIT
   std::atomic<bool> is_initializing{false};

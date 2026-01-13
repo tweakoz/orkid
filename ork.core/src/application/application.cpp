@@ -450,7 +450,7 @@ void Application::_shutdownApp() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Application::registerSubsystem(
-    subsystemfsm_ptr_t subsystem,
+    subsystem_ptr_t subsystem,
     bool is_static) {
 
   OrkAssert(subsystem);
@@ -481,7 +481,7 @@ void Application::registerSubsystem(
 
 void Application::registerSubsystem(
     const std::string& name,
-    subsystemfsm_ptr_t subsystem,
+    subsystem_ptr_t subsystem,
     bool is_static) {
 
   // Convenience overload - just calls the primary version
@@ -509,7 +509,7 @@ void Application::unregisterSubsystem(const std::string& name) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-subsystemfsm_ptr_t Application::getSubsystem(uint64_t name_hash) const {
+subsystem_ptr_t Application::getSubsystem(uint64_t name_hash) const {
   std::lock_guard<std::mutex> lock(_subsystem_mutex);
 
   auto it = _registered_subsystems.find(name_hash);
@@ -521,7 +521,7 @@ subsystemfsm_ptr_t Application::getSubsystem(uint64_t name_hash) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-subsystemfsm_ptr_t Application::getSubsystem(const std::string& name) const {
+subsystem_ptr_t Application::getSubsystem(const std::string& name) const {
   uint64_t hash = CrcString(name.c_str()).hashed();
   return getSubsystem(hash);
 }

@@ -5,7 +5,7 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-#include <ork/application/subsystem_fsm.h>
+#include <ork/application/subsystem.h>
 #include <ork/kernel/string/deco.inl>
 
 namespace ork {
@@ -14,7 +14,7 @@ using namespace ork::fsm;
 
 ////////////////////////////////////////////////////////////////
 
-SubsystemFsm::SubsystemFsm(const std::string& name)
+Subsystem::Subsystem(const std::string& name)
     : _name(name)
     , _name_hash(name.length() > 0 ? CrcString(name.c_str()).hashed() : 0)
     , _vars(std::make_shared<varmap::VarMap>()) {
@@ -34,12 +34,12 @@ SubsystemFsm::SubsystemFsm(const std::string& name)
 
 ////////////////////////////////////////////////////////////////
 
-SubsystemFsm::~SubsystemFsm() {
+Subsystem::~Subsystem() {
 }
 
 ////////////////////////////////////////////////////////////////
 
-void SubsystemFsm::_createStandardStates() {
+void Subsystem::_createStandardStates() {
   // Create standard subsystem states
   _state_uninitialized = _data->newState<LambdaState>(nullptr, "UNINITIALIZED");
   _state_initializing = _data->newState<LambdaState>(nullptr, "INITIALIZING");
@@ -76,33 +76,33 @@ void SubsystemFsm::_createStandardStates() {
 
 ////////////////////////////////////////////////////////////////
 
-void SubsystemFsm::initialize() {
+void Subsystem::initialize() {
   _instance->sendEvent("START");
   update();
 }
 
 ////////////////////////////////////////////////////////////////
 
-void SubsystemFsm::shutdown() {
+void Subsystem::shutdown() {
   _instance->sendEvent("SHUTDOWN");
   update();
 }
 
 ////////////////////////////////////////////////////////////////
 
-void SubsystemFsm::update() {
+void Subsystem::update() {
   FsmInstance::update(_instance);
 }
 
 ////////////////////////////////////////////////////////////////
 
-fsm::state_ptr_t SubsystemFsm::currentState() const {
+fsm::state_ptr_t Subsystem::currentState() const {
   return _instance->currentState();
 }
 
 ////////////////////////////////////////////////////////////////
 
-void SubsystemFsm::addDependency(subsystemfsm_ptr_t dep) {
+void Subsystem::addDependency(subsystem_ptr_t dep) {
   if (dep) {
     _dependencies[dep->_name_hash] = dep;
   }
@@ -110,13 +110,13 @@ void SubsystemFsm::addDependency(subsystemfsm_ptr_t dep) {
 
 ////////////////////////////////////////////////////////////////
 
-void SubsystemFsm::removeDependency(crcstring_ptr_t token) {
+void Subsystem::removeDependency(crcstring_ptr_t token) {
   _dependencies.erase(token->hashed());
 }
 
 ////////////////////////////////////////////////////////////////
 
-bool SubsystemFsm::hasDependency(crcstring_ptr_t token) const {
+bool Subsystem::hasDependency(crcstring_ptr_t token) const {
   return _dependencies.count(token->hashed()) > 0;
 }
 

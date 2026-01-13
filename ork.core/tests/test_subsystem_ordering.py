@@ -7,7 +7,7 @@
 ################################################################
 
 """
-Unit tests for SubsystemFsm init/shutdown ordering
+Unit tests for Subsystem init/shutdown ordering
 """
 
 import unittest
@@ -21,7 +21,7 @@ shutdown_order = []
 
 def create_tracked_subsystem(name, dependencies=None):
     """Create a subsystem that tracks when it initializes/shutdowns"""
-    subsystem = core.SubsystemFsm(name)
+    subsystem = core.Subsystem(name)
 
     # Set dependencies if provided
     if dependencies:

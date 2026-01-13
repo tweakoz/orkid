@@ -7,7 +7,7 @@
 ################################################################
 
 """
-Unit tests for SubsystemFsm and Application dependency resolution
+Unit tests for Subsystem and Application dependency resolution
 """
 
 import unittest
@@ -56,7 +56,7 @@ class TestApplication(unittest.TestCase):
 
     def test_register_single_subsystem(self):
         """Test registering a subsystem"""
-        sub = core.SubsystemFsm("test_network")
+        sub = core.Subsystem("test_network")
         self.app.registerSubsystem(sub)
 
         # Retrieve it
@@ -66,8 +66,8 @@ class TestApplication(unittest.TestCase):
 
     def test_register_multiple_subsystems(self):
         """Test registering multiple subsystems"""
-        sub1 = core.SubsystemFsm("test_db")
-        sub2 = core.SubsystemFsm("test_cache")
+        sub1 = core.Subsystem("test_db")
+        sub2 = core.Subsystem("test_cache")
 
         self.app.registerSubsystem(sub1)
         self.app.registerSubsystem(sub2)
@@ -78,7 +78,7 @@ class TestApplication(unittest.TestCase):
 
     def test_unregister_subsystem(self):
         """Test unregistering a subsystem"""
-        sub = core.SubsystemFsm("test_temp")
+        sub = core.Subsystem("test_temp")
         self.app.registerSubsystem(sub)
 
         # Verify it's registered
@@ -91,19 +91,19 @@ class TestApplication(unittest.TestCase):
         self.assertIsNone(self.app.getSubsystem("test_temp"))
 
 
-class TestSubsystemFsm(unittest.TestCase):
-    """Test SubsystemFsm basic functionality"""
+class TestSubsystem(unittest.TestCase):
+    """Test Subsystem basic functionality"""
 
     def test_subsystem_creation(self):
-        """Test creating a SubsystemFsm"""
-        sub = core.SubsystemFsm("test_subsystem")
+        """Test creating a Subsystem"""
+        sub = core.Subsystem("test_subsystem")
         self.assertIsNotNone(sub)
         self.assertEqual(sub.name, "test_subsystem")
         self.assertGreater(sub.nameHash, 0)
 
     def test_subsystem_states(self):
         """Test that subsystem has all required FSM states"""
-        sub = core.SubsystemFsm("test_states")
+        sub = core.Subsystem("test_states")
 
         # Check all standard states exist
         self.assertIsNotNone(sub.state_uninitialized)
@@ -119,8 +119,8 @@ class TestSubsystemFsm(unittest.TestCase):
 
     def test_subsystem_dependencies(self):
         """Test subsystem dependency management"""
-        sub1 = core.SubsystemFsm("dep_test_a")
-        sub2 = core.SubsystemFsm("dep_test_b")
+        sub1 = core.Subsystem("dep_test_a")
+        sub2 = core.Subsystem("dep_test_b")
 
         # sub2 depends on sub1
         sub2.addDependency(sub1)
@@ -134,7 +134,7 @@ class TestSubsystemFsm(unittest.TestCase):
 
     def test_subsystem_initialization(self):
         """Test subsystem initialization transition"""
-        sub = core.SubsystemFsm("init_test")
+        sub = core.Subsystem("init_test")
 
         # Should start UNINITIALIZED
         self.assertEqual(sub.currentState(), sub.state_uninitialized)

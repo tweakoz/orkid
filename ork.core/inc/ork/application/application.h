@@ -17,7 +17,7 @@
 
 #include <ork/rtti/RTTI.h>
 #include <ork/object/Object.h>
-#include <ork/application/subsystem_fsm.h>
+#include <ork/application/subsystem.h>
 #include <ork/kernel/opq.h>
 #include <ork/util/fsm.h>
 
@@ -200,21 +200,21 @@ public:
   // Subsystem management (thread-safe, dynamic)
   // Dependencies must be set in subsystem->_dependencies before calling
   void registerSubsystem(
-      subsystemfsm_ptr_t subsystem,
+      subsystem_ptr_t subsystem,
       bool is_static = false);
 
   // Convenience overload for string names (auto-hashes to uint64_t)
   void registerSubsystem(
       const std::string& name,
-      subsystemfsm_ptr_t subsystem,
+      subsystem_ptr_t subsystem,
       bool is_static = false);
 
   void unregisterSubsystem(uint64_t name_hash);
   void unregisterSubsystem(const std::string& name);
 
   // Subsystem lookup
-  subsystemfsm_ptr_t getSubsystem(uint64_t name_hash) const;
-  subsystemfsm_ptr_t getSubsystem(const std::string& name) const;
+  subsystem_ptr_t getSubsystem(uint64_t name_hash) const;
+  subsystem_ptr_t getSubsystem(const std::string& name) const;
 
   // Operation queues
   ork::opq::opq_ptr_t _mainq;  // Main/GPU thread queue

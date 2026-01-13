@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/application/subsystem_fsm.h>
+#include <ork/application/subsystem.h>
 
 namespace ork {
 
@@ -25,6 +25,6 @@ namespace ork {
 // New apps using Application get proper lifecycle management.
 ///////////////////////////////////////////////////////////////////////////////
 
-subsystemfsm_ptr_t createOpqSubsystem();
+subsystem_ptr_t createOpqSubsystem();
 
 } // namespace ork

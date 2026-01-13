@@ -7,7 +7,7 @@
 
 #include "pyext.h"
 #include <ork/application/application.h>
-#include <ork/application/subsystem_fsm.h>
+#include <ork/application/subsystem.h>
 #include <ork/util/logger.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -19,44 +19,44 @@ void pyinit_application(py::module& module_core) {
   auto type_codec = python::pb11_typecodec_t::instance();
 
   ///////////////////////////////////////////////////////////////
-  // SubsystemFsm - Base class for all subsystems
+  // Subsystem - Base class for all subsystems
   ///////////////////////////////////////////////////////////////
 
-  auto sub_t = py::class_<SubsystemFsm, subsystemfsm_ptr_t>(module_core, "SubsystemFsm")
+  auto sub_t = py::class_<Subsystem, subsystem_ptr_t>(module_core, "Subsystem")
       .def(py::init<const std::string&>(), py::arg("name"))
 
       // Methods
-      .def("initialize", &SubsystemFsm::initialize, "Initialize the subsystem")
-      .def("shutdown", &SubsystemFsm::shutdown, "Shutdown the subsystem")
-      .def("update", &SubsystemFsm::update, "Update the subsystem FSM")
+      .def("initialize", &Subsystem::initialize, "Initialize the subsystem")
+      .def("shutdown", &Subsystem::shutdown, "Shutdown the subsystem")
+      .def("update", &Subsystem::update, "Update the subsystem FSM")
 
       // Accessors
-      .def("currentState", &SubsystemFsm::currentState, "Get current FSM state")
-      .def_property_readonly("name", [](const SubsystemFsm& self) { return self._name; })
-      .def_property_readonly("nameHash", [](const SubsystemFsm& self) { return self._name_hash; })
+      .def("currentState", &Subsystem::currentState, "Get current FSM state")
+      .def_property_readonly("name", [](const Subsystem& self) { return self._name; })
+      .def_property_readonly("nameHash", [](const Subsystem& self) { return self._name_hash; })
 
       // Dependency management
-      .def("addDependency", &SubsystemFsm::addDependency, py::arg("dep"), "Add a dependency")
-      .def("removeDependency", &SubsystemFsm::removeDependency, py::arg("token"), "Remove a dependency by name/token")
-      .def("hasDependency", &SubsystemFsm::hasDependency, py::arg("token"), "Check if has dependency by name/token")
+      .def("addDependency", &Subsystem::addDependency, py::arg("dep"), "Add a dependency")
+      .def("removeDependency", &Subsystem::removeDependency, py::arg("token"), "Remove a dependency by name/token")
+      .def("hasDependency", &Subsystem::hasDependency, py::arg("token"), "Check if has dependency by name/token")
 
       // Public members for configuration
-      .def_readwrite("impl", &SubsystemFsm::_impl, "Implementation storage (pimpl)")
-      .def_readwrite("vars", &SubsystemFsm::_vars, "Variable map for properties")
+      .def_readwrite("impl", &Subsystem::_impl, "Implementation storage (pimpl)")
+      .def_readwrite("vars", &Subsystem::_vars, "Variable map for properties")
 
       // FSM access
-      .def_readwrite("instance", &SubsystemFsm::_instance, "FSM instance")
-      .def_readwrite("data", &SubsystemFsm::_data, "FSM data")
+      .def_readwrite("instance", &Subsystem::_instance, "FSM instance")
+      .def_readwrite("data", &Subsystem::_data, "FSM data")
 
       // FSM states (read-only)
-      .def_readonly("state_uninitialized", &SubsystemFsm::_state_uninitialized)
-      .def_readonly("state_initializing", &SubsystemFsm::_state_initializing)
-      .def_readonly("state_ready", &SubsystemFsm::_state_ready)
-      .def_readonly("state_error", &SubsystemFsm::_state_error)
-      .def_readonly("state_shutting_down", &SubsystemFsm::_state_shutting_down)
-      .def_readonly("state_terminated", &SubsystemFsm::_state_terminated);
+      .def_readonly("state_uninitialized", &Subsystem::_state_uninitialized)
+      .def_readonly("state_initializing", &Subsystem::_state_initializing)
+      .def_readonly("state_ready", &Subsystem::_state_ready)
+      .def_readonly("state_error", &Subsystem::_state_error)
+      .def_readonly("state_shutting_down", &Subsystem::_state_shutting_down)
+      .def_readonly("state_terminated", &Subsystem::_state_terminated);
 
-  type_codec->registerStdCodec<subsystemfsm_ptr_t>(sub_t);
+  type_codec->registerStdCodec<subsystem_ptr_t>(sub_t);
 
   ///////////////////////////////////////////////////////////////
   // Application - Base application class with HFSM lifecycle
@@ -67,13 +67,13 @@ void pyinit_application(py::module& module_core) {
 
       // Subsystem management
       .def("registerSubsystem",
-           static_cast<void (Application::*)(subsystemfsm_ptr_t, bool)>(&Application::registerSubsystem),
+           static_cast<void (Application::*)(subsystem_ptr_t, bool)>(&Application::registerSubsystem),
            py::arg("subsystem"),
            py::arg("is_static") = false,
            "Register a subsystem (dependencies must be set in subsystem._dependencies)")
 
       .def("registerSubsystem",
-           static_cast<void (Application::*)(const std::string&, subsystemfsm_ptr_t, bool)>(&Application::registerSubsystem),
+           static_cast<void (Application::*)(const std::string&, subsystem_ptr_t, bool)>(&Application::registerSubsystem),
            py::arg("name"),
            py::arg("subsystem"),
            py::arg("is_static") = false,
@@ -90,12 +90,12 @@ void pyinit_application(py::module& module_core) {
            "Unregister a subsystem by name")
 
       .def("getSubsystem",
-           static_cast<subsystemfsm_ptr_t (Application::*)(uint64_t) const>(&Application::getSubsystem),
+           static_cast<subsystem_ptr_t (Application::*)(uint64_t) const>(&Application::getSubsystem),
            py::arg("name_hash"),
            "Get subsystem by hash")
 
       .def("getSubsystem",
-           static_cast<subsystemfsm_ptr_t (Application::*)(const std::string&) const>(&Application::getSubsystem),
+           static_cast<subsystem_ptr_t (Application::*)(const std::string&) const>(&Application::getSubsystem),
            py::arg("name"),
            "Get subsystem by name")
 

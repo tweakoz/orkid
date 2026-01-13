@@ -48,7 +48,7 @@ This document describes how to properly layer the HFSM-based application lifecyc
 ork.core/inc/ork/application/
 ├── application.h        (NEW: Application base class with FSM lifecycle)
 ├── appfsm.h            (NEW: Core AppFsm without GPU/Audio states)
-├── subsystem.h         (NEW: SubsystemFsm base class)
+├── subsystem.h         (NEW: Subsystem base class)
 └── (existing files unchanged)
 
 ork.core/src/application/
@@ -67,11 +67,11 @@ namespace ork {
 
 // Forward declarations
 class Application;
-class SubsystemFsm;
+class Subsystem;
 struct SubsystemRegistration;
 
 using application_ptr_t = std::shared_ptr<Application>;
-using subsystemfsm_ptr_t = std::shared_ptr<SubsystemFsm>;
+using subsystem_ptr_t = std::shared_ptr<Subsystem>;
 using subsystem_reg_ptr_t = std::shared_ptr<SubsystemRegistration>;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -93,19 +93,19 @@ public:
     // Subsystem management (thread-safe, dynamic)
     // Dependencies must be set in subsystem->_dependencies before calling
     void registerSubsystem(
-        subsystemfsm_ptr_t subsystem,
+        subsystem_ptr_t subsystem,
         bool is_static = false
     );
 
     // Convenience overload for string names (auto-hashes to uint64_t)
     void registerSubsystem(
         const std::string& name,
-        subsystemfsm_ptr_t subsystem,
+        subsystem_ptr_t subsystem,
         bool is_static = false
     );
 
     void unregisterSubsystem(const std::string& name);
-    subsystemfsm_ptr_t findSubsystem(const std::string& name) const;
+    subsystem_ptr_t findSubsystem(const std::string& name) const;
     bool isSubsystemRunning(const std::string& name) const;
 
     // Query
@@ -268,12 +268,12 @@ private:
     // === EzApp-SPECIFIC MEMBERS ===
 
     // GPU subsystem
-    std::shared_ptr<GpuSubsystemFsm> _gpu_subsystem;
+    std::shared_ptr<GpuSubsystem> _gpu_subsystem;
     ezmainwin_ptr_t _mainWindow;
     CTXBASE* _ctqt;
 
     // Audio subsystem
-    std::shared_ptr<AudioSubsystemFsm> _audio_subsystem;
+    std::shared_ptr<AudioSubsystem> _audio_subsystem;
     audiodevice_ptr_t _audiodevice;
     audio::singularity::synth_ptr_t _synth;
 
@@ -408,7 +408,7 @@ AppLifecycle (Root)
 
 ---
 
-## SubsystemFsm Base Class (in core)
+## Subsystem Base Class (in core)
 
 ```cpp
 // ork.core/inc/ork/application/subsystem.h
@@ -416,14 +416,14 @@ AppLifecycle (Root)
 namespace ork {
 
 ///////////////////////////////////////////////////////////////////////////////
-// SubsystemFsm - Base class for application subsystems
+// Subsystem - Base class for application subsystems
 // Provides standard lifecycle states
 ///////////////////////////////////////////////////////////////////////////////
 
-class SubsystemFsm {
+class Subsystem {
 public:
-    SubsystemFsm(const std::string& name);
-    ~SubsystemFsm() = default;
+    Subsystem(const std::string& name);
+    ~Subsystem() = default;
 
     // Called by factory functions to set up FSM states
     void initialize();
@@ -461,7 +461,7 @@ public:
 struct SubsystemRegistration {
     uint64_t name_hash;                     // CRC hash of subsystem name
     std::string name;                       // "gpu", "audio", "ecs" (for debugging)
-    subsystemfsm_ptr_t subsystem;
+    subsystem_ptr_t subsystem;
     bool is_static = false;                 // Static = persists until app exit
     std::atomic<bool> is_initializing{false};
     std::atomic<bool> is_shutting_down{false};
@@ -487,7 +487,7 @@ struct GpuSubsystemImpl {
 };
 
 // GPU subsystem factory function
-subsystemfsm_ptr_t createGpuSubsystem();
+subsystem_ptr_t createGpuSubsystem();
 
 // Audio-specific implementation (pimpl)
 struct AudioSubsystemImpl {
@@ -496,7 +496,7 @@ struct AudioSubsystemImpl {
 };
 
 // Audio subsystem factory function
-subsystemfsm_ptr_t createAudioSubsystem();
+subsystem_ptr_t createAudioSubsystem();
 
 } // namespace ork::lev2
 ```
@@ -519,8 +519,8 @@ struct NetworkSubsystemImpl {
 };
 
 // Network subsystem factory function
-subsystemfsm_ptr_t createNetworkSubsystem() {
-    auto subsystem = std::make_shared<ork::SubsystemFsm>("network");
+subsystem_ptr_t createNetworkSubsystem() {
+    auto subsystem = std::make_shared<ork::Subsystem>("network");
 
     // Store impl using svar64_t (pimpl pattern)
     auto impl = new NetworkSubsystemImpl();
@@ -594,7 +594,7 @@ public:
         // ... GPU and Audio are built-in to EzApp ...
 
         // User can still add custom subsystems (no dependencies)
-        auto network = std::make_shared<NetworkSubsystemFsm>();
+        auto network = std::make_shared<NetworkSubsystem>();
         network->initialize();
         app->registerSubsystem("network", network, true);
 
@@ -645,9 +645,9 @@ void unloadLevel(ork::application_ptr_t app, const std::string& level_name) {
 - [ ] Add virtual hooks for extension
 - [ ] Write unit tests (server-only app)
 
-### Phase 2: Create SubsystemFsm Base (2-3 days)
+### Phase 2: Create Subsystem Base (2-3 days)
 - [ ] Create `ork.core/inc/ork/application/subsystem.h`
-- [ ] Implement `SubsystemFsm` base class
+- [ ] Implement `Subsystem` base class
 - [ ] Implement `SubsystemRegistration` struct
 - [ ] Test with example network subsystem
 - [ ] Add Python bindings for core Application
@@ -656,8 +656,8 @@ void unloadLevel(ork::application_ptr_t app, const std::string& level_name) {
 - [ ] Change `OrkEzApp` to inherit from `ork::Application`
 - [ ] Override `buildApplicationFsm()` to add GPU/Audio states
 - [ ] Override lifecycle hooks (onAppInitExtension, etc.)
-- [ ] Move GPU-specific code to GpuSubsystemFsm
-- [ ] Move Audio-specific code to AudioSubsystemFsm
+- [ ] Move GPU-specific code to GpuSubsystem
+- [ ] Move Audio-specific code to AudioSubsystem
 - [ ] Test that existing lev2 apps still work
 - [ ] Ensure backward compatibility with current callback API
 

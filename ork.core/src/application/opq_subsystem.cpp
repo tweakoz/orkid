@@ -20,8 +20,8 @@ static logchannel_ptr_t logchan_OPQ = logger()->configureChannel("OPQ_SUBSYSTEM"
 // Does NOT break existing code - opq::init()/exit() still work directly.
 ///////////////////////////////////////////////////////////////////////////////
 
-subsystemfsm_ptr_t createOpqSubsystem() {
-  auto subsystem = std::make_shared<SubsystemFsm>("opq");
+subsystem_ptr_t createOpqSubsystem() {
+  auto subsystem = std::make_shared<Subsystem>("opq");
 
   // INITIALIZING state -> START -> calls opq::init()
   subsystem->_state_initializing->_onenter = [subsystem](fsm::fsminstance_ptr_t instance) {
