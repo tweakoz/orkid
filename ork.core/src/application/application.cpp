@@ -429,12 +429,51 @@ Application::Application() {
 
   // Create string pool context
   _stringpoolctx = std::make_shared<StringPoolContext>();
+
+  // Call virtual hook for derived class initialization
+  onAppInit();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Constructor for derived classes (e.g., OrkEzApp) that handle their own initialization
+// This constructor skips core module init and subsystem creation since derived class does it
+///////////////////////////////////////////////////////////////////////////////
+
+Application::Application(appinitdata_ptr_t initdata, bool derived_class_init) {
+  // Singleton guard - allow derived class to be the singleton
+  OrkAssert(_g_application == nullptr && "Only one Application allowed per process");
+
+  // Store initdata from derived class
+  _initdata = initdata;
+
+  // Get references to global OPQs (assumed already initialized by derived class)
+  _mainq = opq::mainSerialQueue();
+  _updq = opq::updateSerialQueue();
+  _conq = opq::concurrentQueue();
+
+  // NOTE: Derived class is responsible for:
+  // - SetCurrentThreadName("main")
+  // - Environment initialization
+  // - Core/lev2 module initialization
+  // - String pool context creation (if needed)
+  // - Subsystem registration (if needed)
+
+  logchan_APP->log("Application(derived_class_init) constructed");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 Application::~Application() {
   logchan_APP->log("Application destructor - shutting down subsystems");
+
+  // Call virtual hook for derived class cleanup (before subsystem shutdown)
+  try {
+    onAppShutdown();
+  } catch (const std::exception& e) {
+    logchan_APP->log("Exception in onAppShutdown: %s", e.what());
+  } catch (...) {
+    logchan_APP->log("Unknown exception in onAppShutdown");
+  }
 
   // Shutdown all registered subsystems (in reverse dependency order)
   // This includes OPQ subsystem which drains queues before cleanup
@@ -513,7 +552,16 @@ void Application::mainThreadLoop(void_lambda_t on_iter) {
       }
     }
 
-    // 3. Call user callback (if provided)
+    // 3. Call virtual update hook (for derived classes)
+    try {
+      onAppUpdate();
+    } catch (const std::exception& e) {
+      logchan_APP->log("Exception in onAppUpdate: %s", e.what());
+    } catch (...) {
+      logchan_APP->log("Unknown exception in onAppUpdate");
+    }
+
+    // 4. Call user callback (if provided)
     if (on_iter) {
       try {
         on_iter();
@@ -524,7 +572,7 @@ void Application::mainThreadLoop(void_lambda_t on_iter) {
       }
     }
 
-    // 4. Small sleep to avoid spinning CPU
+    // 5. Small sleep to avoid spinning CPU
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
   }
 

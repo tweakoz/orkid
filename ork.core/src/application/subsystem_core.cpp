@@ -10,7 +10,7 @@
 
 namespace ork {
 
-static logchannel_ptr_t logchan_CORE = logger()->configureChannel("SUB_CORE", fvec3(0.9, 0.7, 0.3), false);
+static logchannel_ptr_t logchan_CORE = logger()->configureChannel("SUB_CORE", fvec3(0.9, 0.7, 0.3), true);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Core Subsystem Implementation

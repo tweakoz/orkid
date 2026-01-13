@@ -1,4 +1,9 @@
 #include <ork/lev2/ezapp.h>
+#include <ork/lev2/subsystem_gpu.h>
+#include <ork/lev2/subsystem_audio.h>
+#include <ork/application/subsystem_opq.h>
+#include <ork/application/subsystem_catalog.h>
+#include <ork/application/subsystem_core.h>
 #include <ork/lev2/ui/viewport.h>
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/ui/layoutgroup.inl>
@@ -159,7 +164,11 @@ OrkEzAppBase* OrkEzAppBase::get() {
   return _staticapp;
 }
 ///////////////////////////////////////////////////////////////////////////////
-OrkEzAppBase::OrkEzAppBase(ezappctx_ptr_t ezapp) {
+// OrkEzAppBase constructor - now calls Application's derived class constructor
+// This enables HFSM lifecycle support while preserving all existing behavior
+///////////////////////////////////////////////////////////////////////////////
+OrkEzAppBase::OrkEzAppBase(ezappctx_ptr_t ezapp, appinitdata_ptr_t initdata)
+    : Application(initdata, true) {  // Call derived-class constructor
   _staticapp    = this;
   _ezapp        = ezapp;
   _update_count = 0;
@@ -189,7 +198,7 @@ void atexit_app(void) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
-    : OrkEzAppBase(EzAppContext::get(initdata))
+    : OrkEzAppBase(EzAppContext::get(initdata), initdata)  // Pass initdata to OrkEzAppBase
     , _initdata(initdata)
     , _mainWindow(0)
     , _updateThread("updatethread") {
@@ -311,6 +320,68 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
       logchan_ezapp->log("initializing audio");
       _audioInit();
     }
+  }
+
+  /////////////////////////////////////////////
+  // Create and register GPU/Audio subsystems (Phase 2b)
+  // Only when use_subsystems=True is passed to create()
+  /////////////////////////////////////////////
+
+  if (_initdata->_use_subsystems) {
+    logchan_ezapp->log("Registering HFSM subsystems (use_subsystems=true)");
+
+    // First register core subsystems (OPQ, CATALOG, CORE)
+    // These are normally registered by Application() but we used the derived constructor
+    auto opq_subsystem = createOpqSubsystem();
+    registerSubsystem(opq_subsystem, true);
+    opq_subsystem->initialize();
+    opq_subsystem->update();
+
+    subsystem_ptr_t catalog_subsystem = nullptr;
+    if (_initdata->_std_asset_catalog) {
+      catalog_subsystem = createCatalogSubsystem();
+      catalog_subsystem->addDependency(opq_subsystem);
+      registerSubsystem(catalog_subsystem, true);
+    }
+
+    auto core_subsystem = createCoreSubsystem();
+    core_subsystem->addDependency(opq_subsystem);
+    if (catalog_subsystem) {
+      core_subsystem->addDependency(catalog_subsystem);
+    }
+    registerSubsystem(core_subsystem, true);
+
+    // Initialize remaining core subsystems
+    if (catalog_subsystem) {
+      catalog_subsystem->initialize();
+      catalog_subsystem->update();
+    }
+    core_subsystem->initialize();
+    core_subsystem->update();
+
+    // Now register GPU subsystem
+    if (_initdata->_enable_graphics) {
+      _gpu_subsystem = createGpuSubsystem();
+      _gpu_subsystem->addDependency(core_subsystem);
+      registerSubsystem(_gpu_subsystem, true);
+      _gpu_subsystem->initialize();
+      _gpu_subsystem->update();
+    }
+
+    // Now register Audio subsystem
+    if (_initdata->_enable_audio) {
+      _audio_subsystem = createAudioSubsystem();
+      if (_gpu_subsystem) {
+        _audio_subsystem->addDependency(_gpu_subsystem);
+      } else {
+        _audio_subsystem->addDependency(core_subsystem);
+      }
+      registerSubsystem(_audio_subsystem, true);
+      _audio_subsystem->initialize();
+      _audio_subsystem->update();
+    }
+
+    logchan_ezapp->log("HFSM subsystems registered and initialized");
   }
 }
 

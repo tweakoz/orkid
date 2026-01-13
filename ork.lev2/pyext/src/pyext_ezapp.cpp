@@ -96,7 +96,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
     app->_mainWindow->_execscene = scene;
   };
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<OrkEzApp, orkezapp_ptr_t>(module_lev2, "OrkEzApp") //
+  py::class_<OrkEzApp, ork::Application, orkezapp_ptr_t>(module_lev2, "OrkEzApp") //
       .def_static(
           "create",
           [type_codec](py::object appinstance,py::kwargs kwargs) { //
@@ -184,6 +184,8 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   } else if (!item.second.is_none()) {
                     OrkAssert(false);
                   }
+                } else if (key == "use_subsystems") {
+                  appinit->_use_subsystems = py::cast<bool>(item.second);
                 }
               } // for (auto item : kwargs) {
               //////////////////////////////////////

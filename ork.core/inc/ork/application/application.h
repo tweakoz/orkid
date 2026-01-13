@@ -141,6 +141,7 @@ struct AppInitData{
   bool _log_freerun_fps = false;   // Enable real-time FPS logging in freerun mode
   bool _log_lockstep_ups = false;  // Enable real-time UPS logging in lockstep mode
   bool _log_lockstep_fps = false;  // Enable real-time FPS logging in lockstep mode
+  bool _use_subsystems = false;    // Enable HFSM subsystem lifecycle (Phase 2b)
   std::string _monitor_id = "";
   std::string _application_name = "orkid_app";
   std::multimap<uint64_t,void_lambda_t> _preinitoperations;
@@ -229,6 +230,12 @@ public:
   subsystem_ptr_t getSubsystem(uint64_t name_hash) const;
   subsystem_ptr_t getSubsystem(const std::string& name) const;
 
+  // Virtual lifecycle hooks (override in derived classes like OrkEzApp)
+  // These are called at key points in the application lifecycle
+  virtual void onAppInit() {}       // Called after core subsystems ready
+  virtual void onAppUpdate() {}     // Called each main loop iteration
+  virtual void onAppShutdown() {}   // Called before subsystem shutdown
+
   // Operation queues
   ork::opq::opq_ptr_t _mainq;  // Main/GPU thread queue
   ork::opq::opq_ptr_t _updq;   // UPDATE thread queue
@@ -243,6 +250,10 @@ public:
 protected:
   // Constructor - protected, use create() factory method
   Application();
+
+  // Constructor for derived classes (e.g., OrkEzApp) that handle their own initialization
+  // This constructor skips core module init since derived class will do it
+  Application(appinitdata_ptr_t initdata, bool derived_class_init);
 
   // Singleton enforcement - only one Application per process
   static application_ptr_t _g_application;

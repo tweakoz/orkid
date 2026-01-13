@@ -26,6 +26,8 @@
 #include <ork/lev2/ui/event.h>
 #include <ork/lev2/ui/context.h>
 #include <ork/lev2/ez_secondary_win.h>
+#include <ork/lev2/subsystem_gpu.h>
+#include <ork/lev2/subsystem_audio.h>
 
 namespace ork::lev2 {
 ////////////////////////////////////////////////////////////////////////////////
@@ -140,9 +142,12 @@ struct StdDraw {
   const DrawQueue* DB;
 };
 ////////////////////////////////////////////////////////////////////////////////
-struct OrkEzAppBase {
+// OrkEzAppBase now inherits from Application to get HFSM lifecycle support
+// This is an "overlay" change - all existing OrkEzApp behavior is preserved
+////////////////////////////////////////////////////////////////////////////////
+struct OrkEzAppBase : public ork::Application {
 public:
-  OrkEzAppBase(ezappctx_ptr_t ezapp);
+  OrkEzAppBase(ezappctx_ptr_t ezapp, appinitdata_ptr_t initdata);
   virtual ~OrkEzAppBase() {}
   ezappctx_ptr_t _ezapp;
   static OrkEzAppBase* get();
@@ -263,6 +268,10 @@ public:
   onsynfn_t _onSynthExit                    = nullptr;
   audiodevice_ptr_t _audiodevice            = nullptr;
   audio::singularity::synth_ptr_t _synth    = nullptr;
+
+  // Subsystems (Phase 2b - HFSM lifecycle)
+  subsystem_ptr_t _gpu_subsystem;
+  subsystem_ptr_t _audio_subsystem;
 
   // Secondary window support (Phase 3)
   std::vector<ezsecondarywin_ptr_t> _secondaryWindows;
