@@ -16,10 +16,18 @@
 #include <ork/util/Context.hpp>
 #include <ork/kernel/environment.h>
 #include <ork/util/logger.h>
+#include <future>
+#include <thread>
+#include <chrono>
 
 int desired_framesize = 1024; // audio framesize from environment or command line
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
+
+// Forward declarations for core module init/exit
+void initModule(ork::appinitdata_ptr_t init_data);
+void exitModule(ork::appinitdata_ptr_t init_data);
+
 static logchannel_ptr_t logchan_APP = logger()->configureChannel("APPLICATION", fvec3(0.9, 0.6, 0.2), true);
 
 // Global application init data - lazy singleton (thread-safe via C++11 static initialization)
@@ -340,6 +348,340 @@ PoolString StringPoolContext::FindPooledString(const PieceString& string) {
 
 PoolString operator"" _pool(const char* s, size_t len) {
   return AddPooledString(s);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Application class implementation
+///////////////////////////////////////////////////////////////////////////////
+
+// Singleton enforcement
+application_ptr_t Application::_g_application = nullptr;
+
+///////////////////////////////////////////////////////////////////////////////
+
+application_ptr_t Application::create() {
+  OrkAssert(_g_application == nullptr && "Only one Application allowed per process");
+  auto app = application_ptr_t(new Application());
+  app->finalize();
+  _g_application = app;
+  return app;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Application::finalize() {
+  // Called after construction complete - execute post-init ops
+  _initdata->finalizeInitialization();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+Application::Application() {
+  // Singleton guard
+  OrkAssert(_g_application == nullptr && "Only one Application allowed per process");
+
+  // Set main thread name
+  SetCurrentThreadName("main");
+
+  // Initialize environment from global env vars
+  ork::genviron.init_from_global_env();
+
+  // Get global singleton AppInitData (required by rest of codebase)
+  _initdata = ::ork::appinitdata();
+
+  // Set data:// path to orkroot
+  OldSchool::SetGlobalPathVariable("data://", file::Path::orkroot_dir());
+
+  // Initialize core module - registers reflection classes and creates global OPQs
+  ork::initModule(_initdata);
+
+  // Get references to global OPQs created by opq::init()
+  _mainq = opq::mainSerialQueue();
+  _updq = opq::updateSerialQueue();
+  _conq = opq::concurrentQueue();
+
+  // Create string pool context
+  _stringpoolctx = std::make_shared<StringPoolContext>();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+Application::~Application() {
+  // Clean shutdown - call exitModule to cleanup reflection and OPQs
+  ork::exitModule(_initdata);
+
+  // Clear singleton
+  _g_application = nullptr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Application::_initApp() {
+  // Placeholder - will be filled in next tasks
+  logchan_APP->log("Application::_initApp()");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Application::_shutdownApp() {
+  // Placeholder - will be filled in next tasks
+  logchan_APP->log("Application::_shutdownApp()");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Application::registerSubsystem(
+    subsystemfsm_ptr_t subsystem,
+    bool is_static) {
+
+  OrkAssert(subsystem);
+
+  std::lock_guard<std::mutex> lock(_subsystem_mutex);
+
+  uint64_t hash = subsystem->_name_hash;
+
+  // Check if already registered
+  if (_registered_subsystems.count(hash)) {
+    logchan_APP->log("ERROR: Subsystem '%s' already registered", subsystem->_name.c_str());
+    return;
+  }
+
+  // Create registration record
+  auto reg = std::make_shared<SubsystemRegistration>();
+  reg->subsystem = subsystem;
+  reg->name_hash = hash;
+  reg->is_static = is_static;
+
+  _registered_subsystems[hash] = reg;
+
+  logchan_APP->log("Registered subsystem '%s' (hash: 0x%016llx, static: %d)",
+                   subsystem->_name.c_str(), hash, is_static);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Application::registerSubsystem(
+    const std::string& name,
+    subsystemfsm_ptr_t subsystem,
+    bool is_static) {
+
+  // Convenience overload - just calls the primary version
+  registerSubsystem(subsystem, is_static);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Application::unregisterSubsystem(uint64_t name_hash) {
+  std::lock_guard<std::mutex> lock(_subsystem_mutex);
+
+  auto it = _registered_subsystems.find(name_hash);
+  if (it != _registered_subsystems.end()) {
+    logchan_APP->log("Unregistered subsystem '%s'", it->second->subsystem->_name.c_str());
+    _registered_subsystems.erase(it);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Application::unregisterSubsystem(const std::string& name) {
+  uint64_t hash = CrcString(name.c_str()).hashed();
+  unregisterSubsystem(hash);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+subsystemfsm_ptr_t Application::getSubsystem(uint64_t name_hash) const {
+  std::lock_guard<std::mutex> lock(_subsystem_mutex);
+
+  auto it = _registered_subsystems.find(name_hash);
+  if (it != _registered_subsystems.end()) {
+    return it->second->subsystem;
+  }
+  return nullptr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+subsystemfsm_ptr_t Application::getSubsystem(const std::string& name) const {
+  uint64_t hash = CrcString(name.c_str()).hashed();
+  return getSubsystem(hash);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Application::_initSubsystemsInWaves() {
+  logchan_APP->log("Initializing subsystems (dependency-driven)");
+
+  // Keep processing waves until all subsystems are initialized
+  while (true) {
+    auto ready_subsystems = _getReadyToInitSubsystems();
+
+    if (ready_subsystems.empty()) {
+      break;  // All done
+    }
+
+    logchan_APP->log("Initializing %zu subsystems (wave)", ready_subsystems.size());
+
+    // Initialize this wave in parallel
+    std::vector<std::future<void>> futures;
+    for (auto& reg : ready_subsystems) {
+      reg->is_initializing = true;
+      futures.push_back(std::async(std::launch::async, [reg]() {
+        // Send START event to subsystem FSM
+        reg->subsystem->_instance->sendEvent("START");
+
+        // Process until READY or ERROR
+        while (true) {
+          fsm::FsmInstance::update(reg->subsystem->_instance);
+
+          auto state = reg->subsystem->currentState();
+          if (state == reg->subsystem->_state_ready ||
+              state == reg->subsystem->_state_error) {
+            break;
+          }
+
+          std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+      }));
+    }
+
+    // Wait for wave to complete
+    for (auto& future : futures) {
+      future.wait();
+    }
+  }
+
+  logchan_APP->log("All subsystems initialized");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+std::vector<subsystem_reg_ptr_t> Application::_getReadyToInitSubsystems() {
+  std::lock_guard<std::mutex> lock(_subsystem_mutex);
+
+  std::vector<subsystem_reg_ptr_t> ready;
+
+  for (auto& [name_hash, reg] : _registered_subsystems) {
+    // Skip if already initializing or initialized
+    if (reg->is_initializing) continue;
+    auto current_state = reg->subsystem->currentState();
+    if (current_state == reg->subsystem->_state_ready) continue;
+
+    // Check if all dependencies are ready
+    bool all_deps_ready = true;
+    for (auto& [dep_hash, dep_subsystem] : reg->subsystem->_dependencies) {
+      auto dep_state = dep_subsystem->currentState();
+      if (dep_state != dep_subsystem->_state_ready) {
+        all_deps_ready = false;
+        break;
+      }
+    }
+
+    if (all_deps_ready) {
+      ready.push_back(reg);
+    }
+  }
+
+  return ready;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Application::_shutdownSubsystemsInWaves() {
+  logchan_APP->log("Shutting down subsystems (dependency-driven reverse order)");
+
+  // Build shutdown waves (reverse of init order)
+  std::vector<std::vector<subsystem_reg_ptr_t>> shutdown_waves;
+  _buildShutdownWaves(shutdown_waves);
+
+  // Process waves in order (each wave shuts down in parallel)
+  for (auto& wave : shutdown_waves) {
+    logchan_APP->log("Shutting down %zu subsystems (wave)", wave.size());
+
+    std::vector<std::future<void>> futures;
+    for (auto& reg : wave) {
+      reg->is_shutting_down = true;
+      futures.push_back(std::async(std::launch::async, [reg]() {
+        // Send SHUTDOWN event to subsystem FSM
+        reg->subsystem->_instance->sendEvent("SHUTDOWN");
+
+        // Process until TERMINATED
+        while (true) {
+          fsm::FsmInstance::update(reg->subsystem->_instance);
+
+          auto state = reg->subsystem->currentState();
+          if (state == reg->subsystem->_state_terminated) {
+            break;
+          }
+
+          std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+      }));
+    }
+
+    // Wait for wave to complete
+    for (auto& future : futures) {
+      future.wait();
+    }
+  }
+
+  logchan_APP->log("All subsystems terminated");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Application::_buildShutdownWaves(std::vector<std::vector<subsystem_reg_ptr_t>>& waves) {
+  std::lock_guard<std::mutex> lock(_subsystem_mutex);
+
+  std::set<uint64_t> shutdown_scheduled;
+  std::map<uint64_t, subsystem_reg_ptr_t> subsystem_map;
+
+  for (auto& [hash, reg] : _registered_subsystems) {
+    subsystem_map[hash] = reg;
+  }
+
+  // Build waves by reverse topological sort (leaf nodes first)
+  while (shutdown_scheduled.size() < _registered_subsystems.size()) {
+    std::vector<subsystem_reg_ptr_t> wave;
+
+    // Find subsystems that no other (unscheduled) subsystem depends on (leaf nodes)
+    for (auto& [hash, reg] : subsystem_map) {
+      if (shutdown_scheduled.count(hash)) continue;  // Already scheduled
+
+      // Check if any non-scheduled subsystem depends on this one
+      bool has_dependents = false;
+      for (auto& [other_hash, other_reg] : subsystem_map) {
+        if (shutdown_scheduled.count(other_hash)) continue;
+        if (other_hash == hash) continue;
+
+        // Does other_reg depend on this one?
+        if (other_reg->subsystem->_dependencies.count(hash)) {
+          has_dependents = true;
+          break;
+        }
+      }
+
+      if (!has_dependents) {
+        wave.push_back(reg);
+      }
+    }
+
+    if (wave.empty() && shutdown_scheduled.size() < _registered_subsystems.size()) {
+      logchan_APP->log("ERROR: Circular dependency detected in subsystem graph during shutdown");
+      // Force shutdown remaining subsystems
+      for (auto& [hash, reg] : subsystem_map) {
+        if (!shutdown_scheduled.count(hash)) {
+          wave.push_back(reg);
+        }
+      }
+    }
+
+    waves.push_back(wave);
+
+    for (auto& reg : wave) {
+      shutdown_scheduled.insert(reg->name_hash);
+    }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

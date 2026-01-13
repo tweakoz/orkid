@@ -17,6 +17,9 @@
 
 #include <ork/rtti/RTTI.h>
 #include <ork/object/Object.h>
+#include <ork/application/subsystem_fsm.h>
+#include <ork/kernel/opq.h>
+#include <ork/util/fsm.h>
 
 #if !defined(ORK_IOS)
 #include <boost/program_options.hpp>
@@ -166,6 +169,87 @@ PoolString AddPooledLiteral(const ConstString &cs);
 PoolString FindPooledString(const PieceString &ps);
 
 PoolString operator"" _pool(const char* s, size_t len);
+
+////////////////////////////////////////////////////////////////
+// Application - Base application class with HFSM lifecycle
+//
+// Provides:
+// - Operation queues (mainq, updq, conq)
+// - UPDATE thread management
+// - Subsystem registry with dependency tracking
+// - Dependency-driven init/shutdown
+////////////////////////////////////////////////////////////////
+
+struct Application;
+using application_ptr_t = std::shared_ptr<Application>;
+
+struct Application {
+public:
+  // Factory method - ensures finalize() is called after construction
+  static application_ptr_t create();
+
+  virtual ~Application();
+
+  // Called by factory after construction to finalize initialization
+  virtual void finalize();
+
+  // Lifecycle (called by derived classes like OrkEzApp)
+  void _initApp();
+  void _shutdownApp();
+
+  // Subsystem management (thread-safe, dynamic)
+  // Dependencies must be set in subsystem->_dependencies before calling
+  void registerSubsystem(
+      subsystemfsm_ptr_t subsystem,
+      bool is_static = false);
+
+  // Convenience overload for string names (auto-hashes to uint64_t)
+  void registerSubsystem(
+      const std::string& name,
+      subsystemfsm_ptr_t subsystem,
+      bool is_static = false);
+
+  void unregisterSubsystem(uint64_t name_hash);
+  void unregisterSubsystem(const std::string& name);
+
+  // Subsystem lookup
+  subsystemfsm_ptr_t getSubsystem(uint64_t name_hash) const;
+  subsystemfsm_ptr_t getSubsystem(const std::string& name) const;
+
+  // Operation queues
+  ork::opq::opq_ptr_t _mainq;  // Main/GPU thread queue
+  ork::opq::opq_ptr_t _updq;   // UPDATE thread queue
+  ork::opq::opq_ptr_t _conq;   // AUDIO thread queue
+
+  // String pool for this application
+  stringpoolctx_ptr_t _stringpoolctx;
+
+  // App initialization data (global singleton)
+  appinitdata_ptr_t _initdata;
+
+protected:
+  // Constructor - protected, use create() factory method
+  Application();
+
+  // Singleton enforcement - only one Application per process
+  static application_ptr_t _g_application;
+
+  // Dependency-driven subsystem initialization
+  void _initSubsystemsInWaves();
+  std::vector<subsystem_reg_ptr_t> _getReadyToInitSubsystems();
+
+  // Dependency-driven subsystem shutdown (reverse order)
+  void _shutdownSubsystemsInWaves();
+  void _buildShutdownWaves(std::vector<std::vector<subsystem_reg_ptr_t>>& waves);
+
+  // Subsystem registry (thread-safe)
+  mutable std::mutex _subsystem_mutex;
+  std::unordered_map<uint64_t, subsystem_reg_ptr_t> _registered_subsystems;
+
+  // UPDATE thread
+  ork::Thread _update_thread;
+  std::atomic<bool> _update_thread_running{false};
+};
 
 }
 

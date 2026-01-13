@@ -51,6 +51,7 @@ void pyinit_opq(py::module& module_core);
 void pyinit_download(py::module& module_core);
 void pyinit_upload(py::module& module_core);
 void pyinit_fsm(py::module& module_core);
+void pyinit_application(py::module& module_core);
 
 #if defined(ENABLE_NOTCURSES_UI)
 void pyinit_ncui(py::module& module_core);
@@ -229,7 +230,7 @@ PYBIND11_MODULE(_core, module_core) {
   type_codec->registerStdCodec<appinitdata_ptr_t>(appinitdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   using coreapp_ptr_t   = std::shared_ptr<CorePythonApplication>;
-  auto application_type = py::class_<CorePythonApplication, coreapp_ptr_t>(module_core, "Application")
+  auto application_type = py::class_<CorePythonApplication, coreapp_ptr_t>(module_core, "CorePythonApplication")
                               .def("__repr__", [](coreapp_ptr_t app) -> std::string {
                                 fxstring<256> fxs;
                                 fxs.format("OrkPyCoreApp(%p)", (void*)app.get());
@@ -497,6 +498,7 @@ PYBIND11_MODULE(_core, module_core) {
   ork::asset::catalog::pyinit_asset_catalog(module_core);
   ork::util::crypt::pyinit_crypt(module_core);
   pyinit_fsm(module_core);
+  pyinit_application(module_core);
   pyinit_json_config(module_core);
 
   #if defined(ENABLE_NOTCURSES_UI)
