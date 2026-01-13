@@ -125,6 +125,44 @@ void pyinit_application(py::module& module_core) {
       .def_readonly("updq", &Application::_updq, "UPDATE thread operation queue")
       .def_readonly("conq", &Application::_conq, "AUDIO thread operation queue")
 
+      // Main thread loop
+      .def(
+          "mainThreadLoop",
+          [](Application& self, py::kwargs kwargs) {
+            void_lambda_t on_iter = nullptr;
+
+            if (kwargs && kwargs.contains("on_iter")) {
+              py::object py_callback = kwargs["on_iter"];
+              if (!py_callback.is_none()) {
+                // Wrap Python callback
+                on_iter = [py_callback]() {
+                  py::gil_scoped_acquire acquire;
+                  try {
+                    py_callback();
+                  } catch (py::error_already_set& e) {
+                    // Re-throw Python errors
+                    throw;
+                  }
+                };
+              }
+            }
+
+            // Release GIL while running the main loop
+            py::gil_scoped_release release;
+            self.mainThreadLoop(on_iter);
+          },
+          "Run the main thread loop.\n"
+          "Processes queues, updates subsystem FSMs, calls on_iter callback.\n"
+          "Blocks until requestExit() is called or SIGINT received.\n"
+          "Accepts kwargs:\n"
+          "  on_iter (callable): Optional callback called each iteration")
+
+      .def("requestExit", &Application::requestExit,
+           "Request clean shutdown (can be called from any thread)")
+
+      .def("exitRequested", &Application::exitRequested,
+           "Check if exit has been requested")
+
       // String pool
       .def_readonly("stringpoolctx", &Application::_stringpoolctx, "String pool context");
 

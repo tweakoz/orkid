@@ -22,6 +22,7 @@
 #include <ork/kernel/future.hpp>
 #include <thread>
 #include <chrono>
+#include <csignal>
 
 int desired_framesize = 1024; // audio framesize from environment or command line
 ///////////////////////////////////////////////////////////////////////////////
@@ -462,6 +463,75 @@ void Application::_initApp() {
 void Application::_shutdownApp() {
   // Placeholder - will be filled in next tasks
   logchan_APP->log("Application::_shutdownApp()");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Signal handler for SIGINT (Ctrl-C)
+// Uses the global singleton to request exit
+///////////////////////////////////////////////////////////////////////////////
+
+static void _signalHandler(int signum) {
+  if (signum == SIGINT) {
+    auto app = Application::instance();
+    if (app) {
+      app->requestExit();
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Application::requestExit() {
+  bool expected = false;
+  if (_exit_requested.compare_exchange_strong(expected, true)) {
+    logchan_APP->log("Exit requested");
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Application::mainThreadLoop(void_lambda_t on_iter) {
+  logchan_APP->log("Application::mainThreadLoop() starting");
+
+  // Install signal handler for clean shutdown on Ctrl-C
+  std::signal(SIGINT, _signalHandler);
+
+  // Main run loop
+  while (!_exit_requested.load()) {
+    // 1. Process main queue operations
+    while (_mainq->Process()) {
+      // Keep processing until queue is empty
+    }
+
+    // 2. Update all subsystem FSMs
+    {
+      std::lock_guard<std::mutex> lock(_subsystem_mutex);
+      for (auto& [hash, reg] : _registered_subsystems) {
+        if (reg->subsystem) {
+          reg->subsystem->update();
+        }
+      }
+    }
+
+    // 3. Call user callback (if provided)
+    if (on_iter) {
+      try {
+        on_iter();
+      } catch (const std::exception& e) {
+        logchan_APP->log("Exception in mainThreadLoop callback: %s", e.what());
+      } catch (...) {
+        logchan_APP->log("Unknown exception in mainThreadLoop callback");
+      }
+    }
+
+    // 4. Small sleep to avoid spinning CPU
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  }
+
+  logchan_APP->log("Application::mainThreadLoop() exiting - shutdown requested");
+
+  // Restore default signal handler
+  std::signal(SIGINT, SIG_DFL);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

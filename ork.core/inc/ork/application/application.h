@@ -193,6 +193,19 @@ public:
   // Called by factory after construction to finalize initialization
   virtual void finalize();
 
+  // Main run loop - processes queues, updates FSMs, calls user callback
+  // Blocks until requestExit() is called or SIGINT received
+  void mainThreadLoop(void_lambda_t on_iter = nullptr);
+
+  // Request clean shutdown (can be called from any thread or signal handler)
+  void requestExit();
+
+  // Check if exit has been requested
+  bool exitRequested() const { return _exit_requested.load(); }
+
+  // Static accessor for signal handler
+  static application_ptr_t instance() { return _g_application; }
+
   // Lifecycle (called by derived classes like OrkEzApp)
   void _initApp();
   void _shutdownApp();
@@ -249,6 +262,9 @@ protected:
   // UPDATE thread
   ork::Thread _update_thread;
   std::atomic<bool> _update_thread_running{false};
+
+  // Exit flag (set by requestExit() or signal handler)
+  std::atomic<bool> _exit_requested{false};
 };
 
 }

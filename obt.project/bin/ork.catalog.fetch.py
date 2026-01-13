@@ -1,6 +1,6 @@
 #!/usr/bin/env ork.python
 
-import sys, argparse, os, time
+import sys, argparse, os
 import concurrent.futures
 from threading import Lock
 from orkengine import core
@@ -81,49 +81,67 @@ def resolve_assets_to_fetch(catalog, patterns, namespaces):
 
     return sorted(list(assets_to_fetch))
 
-def fetch_assets_sequential(catalog, asset_ids):
+def fetch_assets_async(app, catalog, asset_ids):
+    """Fetch assets using mainThreadLoop for async processing"""
     total = len(asset_ids)
-    success_count = 0
-    failed_assets = []
 
-    print(f"\nFetching {total} assets concurrently...")
+    print(f"\nFetching {total} assets...")
     print("-" * 50)
 
-    futures = []
+    # State tracking
+    state = {
+        'pending': [],  # (asset_id, fetch_request) tuples
+        'success': [],
+        'failed': []
+    }
+
+    # Queue all async fetches
     for asset_id in asset_ids:
-        future = catalog.fetchAsync(asset_id)
-        futures.append((asset_id, future))
+        fetch_req = catalog.fetchAsync(asset_id)
+        state['pending'].append((asset_id, fetch_req))
 
-    print(f"Enqueued {total} assets for concurrent download")
+    print(f"Enqueued {total} assets for download")
     print("-" * 50)
 
-    for asset_id, future in futures:
-        try:
-            OK = future.wait()
-
-            if OK:
-                print(f"  ✓ {asset_id} OK")
-                success_count += 1
+    def on_iter():
+        # Check each pending fetch
+        still_pending = []
+        for asset_id, fetch_req in state['pending']:
+            if fetch_req.completed:
+                ok = fetch_req.succeeded  # Check success status
+                if ok:
+                    print(f"  ✓ {asset_id} OK")
+                    state['success'].append(asset_id)
+                else:
+                    print(f"  ✗ {asset_id}: ERROR")
+                    state['failed'].append(asset_id)
             else:
-                print(f"  ✗ {asset_id}: ERROR")
-                failed_assets.append(asset_id)
+                still_pending.append((asset_id, fetch_req))
 
-        except Exception as e:
-            print(f"  ✗ {asset_id}: {e}")
-            failed_assets.append(asset_id)
+        state['pending'] = still_pending
 
+        # Exit when all done
+        if not state['pending']:
+            app.requestExit()
+
+    # Run main loop until all complete or Ctrl-C
+    app.mainThreadLoop(on_iter=on_iter)
+
+    # Print results
+    success_count = len(state['success'])
     print("-" * 50)
     print(f"\nCompleted: {success_count}/{total} successful")
 
-    if failed_assets:
-        print(f"\nFailed assets ({len(failed_assets)}):")
-        for asset in failed_assets:
+    if state['failed']:
+        print(f"\nFailed assets ({len(state['failed'])}):")
+        for asset in state['failed']:
             print(f"  - {asset}")
         return False
 
     return True
 
 def fetch_assets_parallel(catalog, asset_ids, num_workers=4, disable_cache=False):
+    """Fetch assets using Python thread pool for parallel downloads"""
     fetcher = ParallelFetcher(catalog, max_workers=num_workers, disable_cache=disable_cache)
     results = fetcher.fetch_batch(asset_ids)
 
@@ -162,6 +180,6 @@ if __name__ == "__main__":
     if args.parallel > 1:
         success = fetch_assets_parallel(catalog, assets, args.parallel)
     else:
-        success = fetch_assets_sequential(catalog, assets)
+        success = fetch_assets_async(app, catalog, assets)
 
     sys.exit(0 if success else 1)
