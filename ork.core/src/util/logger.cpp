@@ -188,7 +188,46 @@ void LogChannel::status(const std::string& subchannel, const char* pMsgFormat, .
 
 ///////////////////////////////////////////////////////////////////////////////
 
+// Simple glob pattern match (uses '0' as wildcard since * is not shell-legal)
+static bool _matchPattern(const std::string& pattern, const std::string& text) {
+  size_t p = 0, t = 0;
+  size_t starP = std::string::npos, starT = 0;
+  while (t < text.size()) {
+    if (p < pattern.size() && (pattern[p] == text[t] || pattern[p] == '?')) {
+      p++; t++;
+    } else if (p < pattern.size() && pattern[p] == '0') {
+      starP = p++; starT = t;
+    } else if (starP != std::string::npos) {
+      p = starP + 1; t = ++starT;
+    } else {
+      return false;
+    }
+  }
+  while (p < pattern.size() && pattern[p] == '0') p++;
+  return p == pattern.size();
+}
+
 logchannel_ptr_t Logger::configureChannel(std::string named, ork::fvec3 color, bool enabled) {
+  // Check for pattern-based env vars: ORKID_LOGCHAN_<pattern>=0|1
+  // '0' is used as wildcard (since * is not shell-legal in var names)
+  // Example: ORKID_LOGCHAN_0=1           (enable all)
+  // Example: ORKID_LOGCHAN_0CAT0=1       (enable channels containing CAT)
+  // Example: ORKID_LOGCHAN_SUB_0=0       (disable SUB_* channels)
+  static const std::string prefix = "ORKID_LOGCHAN_";
+  for (char** env = ork::get_environ(); *env; ++env) {
+    std::string entry(*env);
+    if (entry.find(prefix) == 0) {
+      size_t eq = entry.find('=');
+      if (eq != std::string::npos) {
+        std::string pattern = entry.substr(prefix.size(), eq - prefix.size());
+        std::string val = entry.substr(eq + 1);
+        if (_matchPattern(pattern, named)) {
+          enabled = (val == "1" || val == "true" || val == "TRUE");
+        }
+      }
+    }
+  }
+
   logchannel_ptr_t channel;
   _channels.atomicOp([named, color, enabled, &channel, this](channel_map_t& unlocked) { //
     auto it = unlocked.find(named);

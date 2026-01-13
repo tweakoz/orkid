@@ -220,7 +220,7 @@ datablock_ptr_t LibsodiumCodec::decryptChunk(const DataBlock* inp, uint64_t chun
   
   OrkAssert(actual_len == plaintext_len);
   
-  logchan_crypt->log("Decrypted chunk %zu: %zu -> %zu bytes", 
+  if(0)logchan_crypt->log("Decrypted chunk %zu: %zu -> %zu bytes", 
                      chunk_index, inp->length(), output->length());
   
   return output;

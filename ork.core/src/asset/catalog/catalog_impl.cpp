@@ -26,7 +26,7 @@
 
 namespace ork::asset::catalog {
 
-static logchannel_ptr_t logchan_catalog = logger()->configureChannel("CATALOG", fvec3(0.5, 0.5, 0.8), true);
+static logchannel_ptr_t logchan_catalog = logger()->configureChannel("CATALOG", fvec3(0.5, 0.5, 0.8), false);
 
 ChunkDownloadCoordinator::ChunkDownloadCoordinator(assetfqid_ptr_t fqid, chunkmanifest_ptr_t manifest)
     : _fqid(fqid)

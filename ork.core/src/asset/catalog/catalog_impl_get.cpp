@@ -250,14 +250,15 @@ datablock_ptr_t CatalogImpl::_downloadAssetData(fetchrequest_ptr_t request) {
     }
   }
 
-  if (chunks_to_download.empty()) {
-    logchan_catalog->log("Asset %s: All %zu chunks cached ✓", fqid->_original_fqid.c_str(), NUM_CHUNKS);
-  } else {
-    logchan_catalog->log("Asset %s: %zu chunks total, %zu cached, %zu to download",
-                         fqid->_original_fqid.c_str(), NUM_CHUNKS,
-                         NUM_CHUNKS - chunks_to_download.size(), chunks_to_download.size());
+  if(0){
+    if (chunks_to_download.empty()) {
+      logchan_catalog->log("Asset %s: All %zu chunks cached ✓", fqid->_original_fqid.c_str(), NUM_CHUNKS);
+    } else {
+      logchan_catalog->log("Asset %s: %zu chunks total, %zu cached, %zu to download",
+                           fqid->_original_fqid.c_str(), NUM_CHUNKS,
+                           NUM_CHUNKS - chunks_to_download.size(), chunks_to_download.size());
+    }
   }
-
   /////////////////////////////////////////////////
   // Download all chunks with retry logic
   // Use SINGLE DownloadGroup to avoid counter confusion

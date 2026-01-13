@@ -11,7 +11,7 @@
 
 namespace ork {
 
-static logchannel_ptr_t logchan_CATALOG = logger()->configureChannel("CATALOG", fvec3(0.4, 0.6, 1.0), true);
+static logchannel_ptr_t logchan_CATALOG = logger()->configureChannel("SUB_CATALOG", fvec3(0.4, 0.6, 1.0), true);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Catalog Subsystem Implementation

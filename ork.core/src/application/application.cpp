@@ -408,7 +408,7 @@ Application::Application() {
   _updq = opq::updateSerialQueue();
   _conq = opq::concurrentQueue();
 
-  // Create CATALOG subsystem (optional, depends on _std_asset_catalog)
+  // Create CATALOG subsystem (optional, part of core layer)
   subsystem_ptr_t catalog_subsystem = nullptr;
   if (_initdata->_std_asset_catalog) {
     catalog_subsystem = createCatalogSubsystem();
@@ -416,11 +416,11 @@ Application::Application() {
     registerSubsystem(catalog_subsystem, true);
   }
 
-  // Create CORE subsystem (coordination point for core runtime)
+  // Create CORE subsystem (meta-service: signals "all core services ready/down")
   auto core_subsystem = createCoreSubsystem();
   core_subsystem->addDependency(opq_subsystem);  // CORE depends on OPQ
   if (catalog_subsystem) {
-    core_subsystem->addDependency(catalog_subsystem);  // CORE depends on CATALOG (if enabled)
+    core_subsystem->addDependency(catalog_subsystem);  // CORE depends on CATALOG
   }
   registerSubsystem(core_subsystem, true);
 
