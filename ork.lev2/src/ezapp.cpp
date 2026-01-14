@@ -1,4 +1,5 @@
 #include <ork/lev2/ezapp.h>
+#include <ork/lev2/init.h>
 #include <ork/lev2/subsystem_gpu.h>
 #include <ork/lev2/subsystem_audio.h>
 #include <ork/application/subsystem_opq.h>
@@ -226,6 +227,36 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
   _conq        = ork::opq::concurrentQueue();
   _mainq       = ork::opq::mainSerialQueue();
 
+  /////////////////////////////////////////////
+  // Fork initialization path based on use_subsystems flag
+  /////////////////////////////////////////////
+  if (_initdata->_use_subsystems) {
+    _initForSubsystems();
+  } else {
+    _initForAdHoc();
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+OrkEzApp::~OrkEzApp() {
+  // printf( "OrkEzApp<%p> destructor - joining update thread...\n", this );
+  // printf( "OrkEzApp<%p> destructor - joined update thread\n", this );
+  // printf( "OrkEzApp<%p> terminating drawable buffers..\n", this );
+  if (_mainWindow) {
+    DrawQueue::terminateAll();
+  }
+  __priv_gapp.store(nullptr);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Legacy ad-hoc initialization (use_subsystems=false)
+// Graphics and audio are initialized inline in constructor
+///////////////////////////////////////////////////////////////////////////////
+
+void OrkEzApp::_initForAdHoc() {
+  logchan_ezapp->log("initForAdHoc - legacy inline initialization");
+
   if (_initdata->_enable_graphics) {
 
 #if defined(__linux__)
@@ -249,7 +280,7 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
     _mainWindow = std::make_shared<EzMainWin>(*this);
 
     //////////////////////////////////////
-    // create leve gfxwindow
+    // create lev2 gfxwindow
     //////////////////////////////////////
     _mainWindow->_appwin           = std::make_shared<AppWindow>(nullptr);
     _mainWindow->_appwin->miWidth  = _initdata->_width;
@@ -258,7 +289,7 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
     //////////////////////////////////////
     //////////////////////////////////////
     _eztopwidget = std::make_shared<EzTopWidget>(_mainWindow.get());
-    if (initdata->_disableMouseCursor) {
+    if (_initdata->_disableMouseCursor) {
       _eztopwidget->_clipEvents = false;
     }
     _eztopwidget->_uicontext          = _uicontext.get();
@@ -266,7 +297,7 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
     _eztopwidget->_topLayoutGroup =
         _uicontext->makeTop<ui::LayoutGroup>("ezapp-top-layoutgroup", 0, 0, _initdata->_width, _initdata->_height);
     _topLayoutGroup = _eztopwidget->_topLayoutGroup;
-    if (initdata->_disableMouseCursor) {
+    if (_initdata->_disableMouseCursor) {
       _topLayoutGroup->_clipEvents = false;
     }
 
@@ -321,80 +352,198 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
       _audioInit();
     }
   }
-
-  /////////////////////////////////////////////
-  // Create and register GPU/Audio subsystems (Phase 2b)
-  // Only when use_subsystems=True is passed to create()
-  /////////////////////////////////////////////
-
-  if (_initdata->_use_subsystems) {
-    logchan_ezapp->log("Registering HFSM subsystems (use_subsystems=true)");
-
-    // First register core subsystems (OPQ, CATALOG, CORE)
-    // These are normally registered by Application() but we used the derived constructor
-    auto opq_subsystem = createOpqSubsystem();
-    registerSubsystem(opq_subsystem, true);
-    opq_subsystem->initialize();
-    opq_subsystem->update();
-
-    subsystem_ptr_t catalog_subsystem = nullptr;
-    if (_initdata->_std_asset_catalog) {
-      catalog_subsystem = createCatalogSubsystem();
-      catalog_subsystem->addDependency(opq_subsystem);
-      registerSubsystem(catalog_subsystem, true);
-    }
-
-    auto core_subsystem = createCoreSubsystem();
-    core_subsystem->addDependency(opq_subsystem);
-    if (catalog_subsystem) {
-      core_subsystem->addDependency(catalog_subsystem);
-    }
-    registerSubsystem(core_subsystem, true);
-
-    // Initialize remaining core subsystems
-    if (catalog_subsystem) {
-      catalog_subsystem->initialize();
-      catalog_subsystem->update();
-    }
-    core_subsystem->initialize();
-    core_subsystem->update();
-
-    // Now register GPU subsystem
-    if (_initdata->_enable_graphics) {
-      _gpu_subsystem = createGpuSubsystem();
-      _gpu_subsystem->addDependency(core_subsystem);
-      registerSubsystem(_gpu_subsystem, true);
-      _gpu_subsystem->initialize();
-      _gpu_subsystem->update();
-    }
-
-    // Now register Audio subsystem
-    if (_initdata->_enable_audio) {
-      _audio_subsystem = createAudioSubsystem();
-      if (_gpu_subsystem) {
-        _audio_subsystem->addDependency(_gpu_subsystem);
-      } else {
-        _audio_subsystem->addDependency(core_subsystem);
-      }
-      registerSubsystem(_audio_subsystem, true);
-      _audio_subsystem->initialize();
-      _audio_subsystem->update();
-    }
-
-    logchan_ezapp->log("HFSM subsystems registered and initialized");
-  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// HFSM subsystem-driven initialization (use_subsystems=true)
+// Graphics and audio init are triggered by subsystem state transitions
+///////////////////////////////////////////////////////////////////////////////
 
-OrkEzApp::~OrkEzApp() {
-  // printf( "OrkEzApp<%p> destructor - joining update thread...\n", this );
-  // printf( "OrkEzApp<%p> destructor - joined update thread\n", this );
-  // printf( "OrkEzApp<%p> terminating drawable buffers..\n", this );
-  if (_mainWindow) {
-    DrawQueue::terminateAll();
+void OrkEzApp::_initForSubsystems() {
+  logchan_ezapp->log("initForSubsystems - HFSM-driven initialization");
+
+  /////////////////////////////////////////////
+  // First register core subsystems (OPQ, CATALOG, CORE)
+  // These are normally registered by Application() but we used the derived constructor
+  /////////////////////////////////////////////
+
+  auto opq_subsystem = createOpqSubsystem();
+  registerSubsystem(opq_subsystem, true);
+  opq_subsystem->initialize();
+  opq_subsystem->update();
+
+  subsystem_ptr_t catalog_subsystem = nullptr;
+  if (_initdata->_std_asset_catalog) {
+    catalog_subsystem = createCatalogSubsystem();
+    catalog_subsystem->addDependency(opq_subsystem);
+    registerSubsystem(catalog_subsystem, true);
   }
-  __priv_gapp.store(nullptr);
+
+  auto core_subsystem = createCoreSubsystem();
+  core_subsystem->addDependency(opq_subsystem);
+  if (catalog_subsystem) {
+    core_subsystem->addDependency(catalog_subsystem);
+  }
+  registerSubsystem(core_subsystem, true);
+
+  // Initialize remaining core subsystems
+  if (catalog_subsystem) {
+    catalog_subsystem->initialize();
+    catalog_subsystem->update();
+  }
+  core_subsystem->initialize();
+  core_subsystem->update();
+
+  /////////////////////////////////////////////
+  // Register GPU subsystem with callback to do actual GPU init
+  /////////////////////////////////////////////
+
+  if (_initdata->_enable_graphics) {
+    _gpu_subsystem = createGpuSubsystem();
+    _gpu_subsystem->addDependency(core_subsystem);
+
+    // Wire up GPU init callback - this is where actual GPU context creation happens
+    auto gpu_impl = getGpuSubsystemImpl(_gpu_subsystem);
+    gpu_impl->_onGpuInit = [this]() {
+      logchan_ezapp->log("GPU subsystem triggering graphics init");
+      // Create loader context (deferred from lev2::initModule when use_subsystems=true)
+      auto loader_ctx = ensureLoaderContext();
+      logchan_ezapp->log("GPU subsystem loader context: %p", (void*)loader_ctx.get());
+      _initGraphicsContext();
+    };
+    gpu_impl->_onGpuExit = [this]() {
+      logchan_ezapp->log("GPU subsystem triggering graphics cleanup");
+      // Graphics cleanup will happen in destructor
+    };
+
+    registerSubsystem(_gpu_subsystem, true);
+    _gpu_subsystem->initialize();
+    _gpu_subsystem->update();
+  }
+
+  /////////////////////////////////////////////
+  // Register Audio subsystem with callback to do actual audio init
+  /////////////////////////////////////////////
+
+  if (_initdata->_enable_audio) {
+    _audio_subsystem = createAudioSubsystem();
+    if (_gpu_subsystem) {
+      _audio_subsystem->addDependency(_gpu_subsystem);
+    } else {
+      _audio_subsystem->addDependency(core_subsystem);
+    }
+
+    // Wire up Audio init callback - this is where actual audio init happens
+    auto audio_impl = getAudioSubsystemImpl(_audio_subsystem);
+    audio_impl->_onAudioInit = [this]() {
+      logchan_ezapp->log("Audio subsystem triggering audio init");
+      _audioInit();
+    };
+    audio_impl->_onAudioExit = [this]() {
+      logchan_ezapp->log("Audio subsystem triggering audio cleanup");
+      _audioExit();
+    };
+
+    registerSubsystem(_audio_subsystem, true);
+    _audio_subsystem->initialize();
+    _audio_subsystem->update();
+  }
+
+  logchan_ezapp->log("HFSM subsystems registered and initialized");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Initialize graphics context (called by GPU subsystem or directly in ad-hoc mode)
+///////////////////////////////////////////////////////////////////////////////
+
+void OrkEzApp::_initGraphicsContext() {
+#if defined(__linux__)
+  // Handle --drm-list option
+  if (_initdata->_miscvars.find("drm-list") != _initdata->_miscvars.end()) {
+    auto& drm_list_var = _initdata->_miscvars.at("drm-list");
+    if (drm_list_var.isA<bool>() && drm_list_var.get<bool>()) {
+      drm::DRMContext::listMonitorsAndExit();
+    }
+  }
+#endif
+
+  logchan_ezapp->log("initializing graphics context");
+  fflush(stdout);
+  _appstate = 0;
+
+  _uicontext = std::make_shared<ui::Context>();
+
+  //////////////////////////////////////////////
+
+  _mainWindow = std::make_shared<EzMainWin>(*this);
+
+  //////////////////////////////////////
+  // create lev2 gfxwindow
+  //////////////////////////////////////
+  _mainWindow->_appwin           = std::make_shared<AppWindow>(nullptr);
+  _mainWindow->_appwin->miWidth  = _initdata->_width;
+  _mainWindow->_appwin->miHeight = _initdata->_height;
+  GfxEnv::GetRef().RegisterWinContext(_mainWindow->_appwin.get());
+  //////////////////////////////////////
+  //////////////////////////////////////
+  _eztopwidget = std::make_shared<EzTopWidget>(_mainWindow.get());
+  if (_initdata->_disableMouseCursor) {
+    _eztopwidget->_clipEvents = false;
+  }
+  _eztopwidget->_uicontext          = _uicontext.get();
+  _mainWindow->_appwin->_rootWidget = _eztopwidget;
+  _eztopwidget->_topLayoutGroup =
+      _uicontext->makeTop<ui::LayoutGroup>("ezapp-top-layoutgroup", 0, 0, _initdata->_width, _initdata->_height);
+  _topLayoutGroup = _eztopwidget->_topLayoutGroup;
+  if (_initdata->_disableMouseCursor) {
+    _topLayoutGroup->_clipEvents = false;
+  }
+
+  // Create platform-specific context
+#if defined(__linux__)
+  if (_initdata->_use_drm) {
+    logchan_ezapp->log("Creating DRM context (mode: %s)", _initdata->_drm_mode.c_str());
+    _mainWindow->_ctqt = new CtxDRM(_mainWindow->_appwin.get());
+  } else
+#endif
+  {
+    _mainWindow->_ctqt = new CtxGLFW(_mainWindow->_appwin.get());
+  }
+  _mainWindow->_ctqt->initWithData(_initdata);
+
+  /////////////////////////////////////////////
+  // mainthread runloop callback
+  /////////////////////////////////////////////
+  _mainWindow->_ctqt->_onRunLoopIteration = [this]() {
+    //////////////////////////////
+    // handle main serialqueue
+    //////////////////////////////
+    opq::TrackCurrent opqtest(_mainq);
+    _mainq->Process();
+
+    if (this->_onRunLoopIteration) {
+      this->_onRunLoopIteration();
+    }
+    //////////////////////////////
+  };
+  //////////////////////////////////////////////
+  _mainWindow->_ctqt->pushRefreshPolicy(RefreshPolicyItem{EREFRESH_WHENDIRTY});
+  _mainWindow->_ctqt->Show();
+
+  /////////////////////////////////////////////
+  _rthreadq = std::make_shared<opq::OperationsQueue>(0, "renderSerialQueue");
+  /////////////////////////////////////////////
+  /////////////////////////////////////////////
+  if (not genviron.has("ORKID_DISABLE_DBLOCK_PROGRESS")) {
+    auto handler = [this](opq::progressdata_ptr_t data) { //
+      if (_eztopwidget->_initstate.load() == 1) {
+      } else {
+      }
+    };
+    opq::setProgressHandler(handler);
+  }
+
+  logchan_ezapp->log("graphics context initialized");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

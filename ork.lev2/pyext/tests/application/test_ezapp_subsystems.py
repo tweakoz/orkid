@@ -84,9 +84,9 @@ def main():
     test("GPU subsystem registered", gpu is not None)
     test("GPU in READY state", gpu and gpu.currentState() == gpu.state_ready)
 
-    # Audio is disabled by default in this test
     audio = ezapp.getSubsystem("audio")
-    test("AUDIO subsystem not registered (audio disabled)", audio is None)
+    test("AUDIO subsystem registered", audio is not None)
+    test("AUDIO in READY state", audio and audio.currentState() == audio.state_ready)
 
     # Run the main loop briefly (will exit after onGpuInit signals exit)
     print("\n[Running brief main loop]")
@@ -100,6 +100,11 @@ def main():
     passed, failed = results.count(True), results.count(False)
     print(f"\n{'='*50}")
     print(f"Results: {passed} passed, {failed} failed")
+
+    # Explicit shutdown to trigger subsystem teardown
+    print("\n[Calling ezapp.shutdown()]")
+    ezapp.shutdown()
+
     return 0 if failed == 0 else 1
 
 if __name__ == '__main__':

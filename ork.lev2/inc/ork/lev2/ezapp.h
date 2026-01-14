@@ -283,6 +283,11 @@ public:
   // Internal
   void _renderSecondaryWindows();
   void _cleanupClosedSecondaryWindows();
+
+  // Initialization paths (Phase 2b)
+  void _initForAdHoc();        // Legacy inline init (use_subsystems=false)
+  void _initForSubsystems();   // HFSM-driven init (use_subsystems=true)
+  void _initGraphicsContext(); // Graphics context creation (called by either path)
 };
 
 } // namespace ork::lev2

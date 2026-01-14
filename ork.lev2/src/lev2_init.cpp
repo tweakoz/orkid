@@ -125,26 +125,30 @@ struct ClassToucher {
       if( genviron.get("ORKID_GRAPHICS_API",gfx_api_str) ){
         if(gfx_api_str=="VULKAN"){
           GRAPHICS_API  = "VULKAN"_crcu;
-        }     
+        }
         else if(gfx_api_str=="DUMMY"){
           GRAPHICS_API  = "DUMMY"_crcu;
-        }     
+        }
       }
 
       ////////////////////////////////////////
+      // Create loader context now unless deferred for subsystem mode
+      ////////////////////////////////////////
 
-      switch(GRAPHICS_API){
-        case "DUMMY"_crcu:{
-          gloadercontext = dummy::createLoaderContext();
-          //GfxEnv::setContextClass(clazz);
-          OrkAssert(false);
-          break;
-        }
-        case "VULKAN"_crcu:
-        default: {
-          gloadercontext = vulkan::createLoaderContext();
-          if(0)printf("gloadercontext (VK) <%p>\n", (void*)gloadercontext.get());
-          break;
+      if (!aid->_defer_gpu_init) {
+        switch(GRAPHICS_API){
+          case "DUMMY"_crcu:{
+            gloadercontext = dummy::createLoaderContext();
+            //GfxEnv::setContextClass(clazz);
+            OrkAssert(false);
+            break;
+          }
+          case "VULKAN"_crcu:
+          default: {
+            gloadercontext = vulkan::createLoaderContext();
+            if(0)printf("gloadercontext (VK) <%p>\n", (void*)gloadercontext.get());
+            break;
+          }
         }
       }
     }
@@ -493,6 +497,35 @@ void exitModule(appinitdata_ptr_t init_data){
   ginit_mutex.UnLock();
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// ensureLoaderContext - creates loader context if not already created
+// Used for deferred GPU init in subsystem mode
+///////////////////////////////////////////////////////////////////////////////
+
+context_ptr_t ensureLoaderContext() {
+  if (gloadercontext) {
+    return gloadercontext;
+  }
+
+  if (!_ginitdata || !_ginitdata->_enable_graphics) {
+    return nullptr;
+  }
+
+  switch(GRAPHICS_API){
+    case "DUMMY"_crcu:{
+      gloadercontext = dummy::createLoaderContext();
+      OrkAssert(false);
+      break;
+    }
+    case "VULKAN"_crcu:
+    default: {
+      gloadercontext = vulkan::createLoaderContext();
+      break;
+    }
+  }
+
+  return gloadercontext;
+}
 
 } // namespace lev2
 } // namespace ork

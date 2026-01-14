@@ -160,6 +160,11 @@ void pyinit_application(py::module& module_core) {
       .def("requestExit", &Application::requestExit,
            "Request clean shutdown (can be called from any thread)")
 
+      .def("shutdown", &Application::shutdown,
+           "Explicit shutdown - triggers subsystem teardown in reverse dependency order.\n"
+           "Call this before destruction to ensure clean subsystem shutdown.\n"
+           "Idempotent - safe to call multiple times.")
+
       .def("exitRequested", &Application::exitRequested,
            "Check if exit has been requested")
 

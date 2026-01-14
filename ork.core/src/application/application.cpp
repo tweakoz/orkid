@@ -32,7 +32,7 @@ namespace ork {
 void initModule(ork::appinitdata_ptr_t init_data);
 void exitModule(ork::appinitdata_ptr_t init_data);
 
-static logchannel_ptr_t logchan_APP = logger()->configureChannel("APPLICATION", fvec3(0.9, 0.6, 0.2), false);
+static logchannel_ptr_t logchan_APP = logger()->configureChannel("APPLICATION", fvec3(0.9, 0.6, 0.2), true);
 
 // Global application init data - lazy singleton (thread-safe via C++11 static initialization)
 appinitdata_ptr_t appinitdata() {
@@ -464,7 +464,28 @@ Application::Application(appinitdata_ptr_t initdata, bool derived_class_init) {
 ///////////////////////////////////////////////////////////////////////////////
 
 Application::~Application() {
-  logchan_APP->log("Application destructor - shutting down subsystems");
+  logchan_APP->log("Application destructor");
+
+  // Call shutdown() if not already called (idempotent)
+  shutdown();
+
+  logchan_APP->log("Application destructor complete");
+
+  // Clear singleton
+  _g_application = nullptr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Application::shutdown() {
+  // Idempotent - only run once
+  bool expected = false;
+  if (!_shutdown_complete.compare_exchange_strong(expected, true)) {
+    logchan_APP->log("Application::shutdown() - already complete, skipping");
+    return;
+  }
+
+  logchan_APP->log("Application::shutdown() - beginning subsystem teardown");
 
   // Call virtual hook for derived class cleanup (before subsystem shutdown)
   try {
@@ -484,10 +505,7 @@ Application::~Application() {
   // Global OPQs will be cleaned up at process exit (no regression from old behavior)
   // This avoids the mutex crash in opq::exit()
 
-  logchan_APP->log("Application destructor complete");
-
-  // Clear singleton
-  _g_application = nullptr;
+  logchan_APP->log("Application::shutdown() complete");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -142,6 +142,7 @@ struct AppInitData{
   bool _log_lockstep_ups = false;  // Enable real-time UPS logging in lockstep mode
   bool _log_lockstep_fps = false;  // Enable real-time FPS logging in lockstep mode
   bool _use_subsystems = false;    // Enable HFSM subsystem lifecycle (Phase 2b)
+  bool _defer_gpu_init = false;    // Defer GPU context creation until GPU subsystem init
   std::string _monitor_id = "";
   std::string _application_name = "orkid_app";
   std::multimap<uint64_t,void_lambda_t> _preinitoperations;
@@ -200,6 +201,10 @@ public:
 
   // Request clean shutdown (can be called from any thread or signal handler)
   void requestExit();
+
+  // Explicit shutdown - triggers subsystem shutdown in reverse dependency order
+  // Call this before destruction to ensure clean subsystem teardown
+  void shutdown();
 
   // Check if exit has been requested
   bool exitRequested() const { return _exit_requested.load(); }
@@ -276,6 +281,9 @@ protected:
 
   // Exit flag (set by requestExit() or signal handler)
   std::atomic<bool> _exit_requested{false};
+
+  // Shutdown state (for idempotent shutdown())
+  std::atomic<bool> _shutdown_complete{false};
 };
 
 }

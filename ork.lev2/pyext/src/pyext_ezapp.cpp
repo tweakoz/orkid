@@ -186,6 +186,10 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   }
                 } else if (key == "use_subsystems") {
                   appinit->_use_subsystems = py::cast<bool>(item.second);
+                  // Defer GPU init when using subsystems - GPU subsystem will create loader context
+                  if (appinit->_use_subsystems) {
+                    appinit->_defer_gpu_init = true;
+                  }
                 }
               } // for (auto item : kwargs) {
               //////////////////////////////////////
