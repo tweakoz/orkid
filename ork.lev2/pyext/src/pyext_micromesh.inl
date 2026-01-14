@@ -188,6 +188,7 @@ struct MicroMesh {
   std::vector<fvec3> _normals;
   std::vector<fvec2> _uvs;        // Optional UV coordinates
   std::vector<fvec3> _binormals;  // Optional binormals (tangent space)
+  std::vector<indexlist_t> _lines;  // Line segments (2 indices each)
   std::vector<indexlist_t> _tris;
   std::vector<indexlist_t> _quads;
 
@@ -226,6 +227,7 @@ inline void MicroMesh::updateFromLists(py::object vert_data, py::list face_list)
   // Clear and reuse existing storage
   _vertices.clear();
   _colors.clear();
+  _lines.clear();
   _tris.clear();
   _quads.clear();
 
@@ -245,6 +247,14 @@ inline void MicroMesh::updateFromLists(py::object vert_data, py::list face_list)
       int face_size = face_list[iidx++].cast<int>();
       //printf("iidx<%d> fac<%d> max<%zu>\n",iidx, face_size, numface_values);
       switch (face_size) {
+        case 2: {
+          // Line segment (2 vertices)
+          auto& out_line = _lines.emplace_back();
+          out_line.push_back(face_list[iidx+0].cast<int>());
+          out_line.push_back(face_list[iidx+1].cast<int>());
+          iidx += 2;
+          break;
+        }
         case 3: {
           auto& out_tri = _tris.emplace_back();
           out_tri.push_back(face_list[iidx+2].cast<int>());
@@ -485,6 +495,7 @@ void MicroMesh::updateRigidPrim(umesh_rprim_ptr_t prim,
                                 lev2::PrimitiveType ptype) const {
   ////////////////////////////////////////////
   int num_verts = _vertices.size();
+  int num_lines = _lines.size();
   int num_tris = _tris.size();
   int num_quads = _quads.size();
 
@@ -495,9 +506,14 @@ void MicroMesh::updateRigidPrim(umesh_rprim_ptr_t prim,
       num_indices_required = num_verts;
       break;
     case lev2::PrimitiveType::LINES:
-      // Each triangle has 3 edges, each quad has 4 edges
-      // Each edge is 2 indices
-      num_indices_required = (num_tris * 3 + num_quads * 4) * 2;
+      if (num_lines > 0) {
+        // Use direct line data
+        num_indices_required = num_lines * 2;
+      } else {
+        // Fall back to converting tris/quads to edges
+        // Each triangle has 3 edges, each quad has 4 edges
+        num_indices_required = (num_tris * 3 + num_quads * 4) * 2;
+      }
       break;
     case lev2::PrimitiveType::TRIANGLESTRIP:
       // For strips, assume vertices are already in strip order
@@ -521,8 +537,8 @@ void MicroMesh::updateRigidPrim(umesh_rprim_ptr_t prim,
   PG->_idxbuffer = idxbuf;
   prim->_gpuClusters.push_back(cluster);
   //////////////////////////////////////////////////////////////
-  // Use cached normals (must call updateNormals() before this)
-  const auto& normals = _normals;
+  // Use cached normals if available
+  bool has_normals = (_normals.size() == _vertices.size());
   bool has_uvs = (_uvs.size() == _vertices.size());
   bool has_binormals = (_binormals.size() == _vertices.size());
   //////////////////////////////////////////////////////////////
@@ -530,10 +546,11 @@ void MicroMesh::updateRigidPrim(umesh_rprim_ptr_t prim,
   auto typed_vertex_base = (SVtxV12N12B12T8C4*)vtxptr;
   int ivtx = 0;
   fvec3 updir(0.0f, 1.0f, 0.0f);
+  fvec3 default_normal(0.0f, 1.0f, 0.0f);
   for (size_t ivtx = 0; ivtx < num_verts; ivtx++) {
     auto& vertex_out     = typed_vertex_base[ivtx];
     vertex_out._position = _vertices[ivtx];
-    vertex_out._normal   = normals[ivtx];
+    vertex_out._normal   = has_normals ? _normals[ivtx] : default_normal;
 
     // Use provided binormals or compute from normal + up direction
     if (has_binormals) {
@@ -591,25 +608,33 @@ void MicroMesh::updateRigidPrim(umesh_rprim_ptr_t prim,
       break;
 
     case lev2::PrimitiveType::LINES:
-      // Emit edges from triangles (3 edges per tri)
-      for (auto& t : _tris) {
-        typed_indices[oidx++] = t[0];
-        typed_indices[oidx++] = t[1];
-        typed_indices[oidx++] = t[1];
-        typed_indices[oidx++] = t[2];
-        typed_indices[oidx++] = t[2];
-        typed_indices[oidx++] = t[0];
-      }
-      // Emit edges from quads (4 edges per quad)
-      for (auto& q : _quads) {
-        typed_indices[oidx++] = q[0];
-        typed_indices[oidx++] = q[1];
-        typed_indices[oidx++] = q[1];
-        typed_indices[oidx++] = q[2];
-        typed_indices[oidx++] = q[2];
-        typed_indices[oidx++] = q[3];
-        typed_indices[oidx++] = q[3];
-        typed_indices[oidx++] = q[0];
+      if (num_lines > 0) {
+        // Use direct line data
+        for (auto& l : _lines) {
+          typed_indices[oidx++] = l[0];
+          typed_indices[oidx++] = l[1];
+        }
+      } else {
+        // Emit edges from triangles (3 edges per tri)
+        for (auto& t : _tris) {
+          typed_indices[oidx++] = t[0];
+          typed_indices[oidx++] = t[1];
+          typed_indices[oidx++] = t[1];
+          typed_indices[oidx++] = t[2];
+          typed_indices[oidx++] = t[2];
+          typed_indices[oidx++] = t[0];
+        }
+        // Emit edges from quads (4 edges per quad)
+        for (auto& q : _quads) {
+          typed_indices[oidx++] = q[0];
+          typed_indices[oidx++] = q[1];
+          typed_indices[oidx++] = q[1];
+          typed_indices[oidx++] = q[2];
+          typed_indices[oidx++] = q[2];
+          typed_indices[oidx++] = q[3];
+          typed_indices[oidx++] = q[3];
+          typed_indices[oidx++] = q[0];
+        }
       }
       break;
 

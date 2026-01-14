@@ -127,8 +127,10 @@ void CameraMatrices::_updateInternal(){
   if( _explicitViewMatrix ){
 
   }
+  _ivmatrix = _vmatrix.inverse();
   _vpmatrix = fmtx4::multiply_ltor(_vmatrix,_pmatrix);
-  fmtx4 ivmtx = _vmatrix.inverse();
+  _ivpmatrix.inverseOf(_vpmatrix);
+  fmtx4 ivmtx = _ivmatrix;
     float UpX    = ivmtx.elemXY(0, 0);
   float UpY    = ivmtx.elemXY(0, 1);
   float UpZ    = ivmtx.elemXY(0, 2);

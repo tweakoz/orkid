@@ -165,6 +165,26 @@ def create_cube_data(size=1.0):
     return vertices, faces
 
 ################################################################################
+
+def create_cube_edges(size=1.0):
+    """Create cube vertices and edges (12 edges, no diagonals)"""
+    s = size / 2.0
+
+    vertices = [
+        vec3(-s, -s, -s), vec3( s, -s, -s), vec3( s,  s, -s), vec3(-s,  s, -s),
+        vec3(-s, -s,  s), vec3( s, -s,  s), vec3( s,  s,  s), vec3(-s,  s,  s),
+    ]
+
+    # 12 edges of the cube (2 vertices per edge)
+    edges = [
+        2, 0, 1,  2, 1, 2,  2, 2, 3,  2, 3, 0,  # Front face
+        2, 4, 5,  2, 5, 6,  2, 6, 7,  2, 7, 4,  # Back face
+        2, 0, 4,  2, 1, 5,  2, 2, 6,  2, 3, 7,  # Connecting edges
+    ]
+
+    return vertices, edges
+
+################################################################################
 # Create cube with non-shared vertices and per-triangle colors
 ################################################################################
 
@@ -352,10 +372,10 @@ class PrimitiveTypesApp:
         self.tri_node.worldTransform.translation = vec3(-3, 1, -3)
         self.tri_node.modcolor = vec4(1.0, 1.0, 1.0, 1)  # White (use vertex colors)
 
-        # LINES - Bright green wireframe cube (right back)
+        # LINES - Bright green wireframe cube (right back, no diagonals)
+        line_verts, line_edges = create_cube_edges(size=1.5)
         self.line_prim = RigidPrimitive()
-        line_mesh = MicroMesh.fromVertAndFaceLists(verts, faces)
-        line_mesh.computeNormals()
+        line_mesh = MicroMesh.fromVertAndFaceLists(line_verts, line_edges)
         self.line_prim.updateWithMicroMesh(line_mesh, ctx, tokens.LINES)
         self.line_node = self.line_prim.createNode("lines", self.layer1, self.flat_pipeline)
         self.line_node.worldTransform.translation = vec3(3, 1, -3)

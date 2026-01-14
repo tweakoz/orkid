@@ -399,7 +399,14 @@ void UISurfaceRenderImpl::render(const RenderContextInstData& RCID) {
   auto cmtcs = CPD.cameraMatrices();
 
   if(_worldTransform->_view_relative) {
-    fmtx4 vmatrix = cmtcs->GetIVMatrix();
+    // For stereo: use center camera (no IPD offset) so surface doesn't shift between eyes
+    // For mono: use the current camera
+    fmtx4 vmatrix;
+    if (CPD._stereo_cam_matrices && CPD._stereo_cam_matrices->_mono) {
+      vmatrix = CPD._stereo_cam_matrices->_mono->GetIVMatrix();
+    } else {
+      vmatrix = cmtcs->GetIVMatrix();
+    }
     center = center.transform(vmatrix).xyz();
   }
 
