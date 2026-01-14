@@ -169,6 +169,7 @@ struct MicroMesh {
   void updateFromLists(py::object vert_data, py::list face_list);  // Update everything
   void updateConnectivity();  // Recompute internal connectivity
   void updateNormals(py::object normal_data);  // Set normals from list or numpy array
+  void updateColors(py::object color_data);    // Set colors from list or numpy array
   void updateUVs(py::object uv_data);  // Set UVs from list or numpy array (N,2) float32
   void updateBinormals(py::object binormal_data);  // Set binormals from list or numpy array (N,3) float32
   void computeNormals();  // Compute normals using internal connectivity
@@ -179,7 +180,8 @@ struct MicroMesh {
   bool validate() const;  // Validate mesh integrity, log issues, return false if invalid
   void updateRigidPrim(umesh_rprim_ptr_t prim,
                        vdb_vec3grid_ptr_t colorgrid,
-                       ctx_t context) const;
+                       ctx_t context,
+                       lev2::PrimitiveType primtype = lev2::PrimitiveType::TRIANGLES) const;
 
   std::vector<fvec3> _vertices;
   std::vector<fvec3> _colors;
@@ -479,12 +481,33 @@ inline micromesh_ptr_t MicroMesh::smoothed(micromesh_connectivity_ptr_t conn) co
 
 void MicroMesh::updateRigidPrim(umesh_rprim_ptr_t prim,
                                 vdb_vec3grid_ptr_t colorgrid,
-                                ctx_t context) const {
+                                ctx_t context,
+                                lev2::PrimitiveType ptype) const {
   ////////////////////////////////////////////
   int num_verts = _vertices.size();
   int num_tris = _tris.size();
   int num_quads = _quads.size();
-  int num_indices_required = num_tris * 3 + num_quads * 6;
+
+  // Calculate required indices based on primitive type
+  int num_indices_required = 0;
+  switch(ptype) {
+    case lev2::PrimitiveType::POINTS:
+      num_indices_required = num_verts;
+      break;
+    case lev2::PrimitiveType::LINES:
+      // Each triangle has 3 edges, each quad has 4 edges
+      // Each edge is 2 indices
+      num_indices_required = (num_tris * 3 + num_quads * 4) * 2;
+      break;
+    case lev2::PrimitiveType::TRIANGLESTRIP:
+      // For strips, assume vertices are already in strip order
+      num_indices_required = num_verts;
+      break;
+    case lev2::PrimitiveType::TRIANGLES:
+    default:
+      num_indices_required = num_tris * 3 + num_quads * 6;
+      break;
+  }
   ////////////////////////////////////////////
   auto GBI = context->GBI();
   prim->_gpuClusters.clear();
@@ -494,7 +517,7 @@ void MicroMesh::updateRigidPrim(umesh_rprim_ptr_t prim,
   cluster->_vtxbuffer = vtxbuf;
   auto PG             = std::make_shared<umesh_rprim_t::PrimitiveGroup>();
   cluster->_primgroups.push_back(PG);
-  PG->_primtype  = lev2::PrimitiveType::TRIANGLES;
+  PG->_primtype  = ptype;
   PG->_idxbuffer = idxbuf;
   prim->_gpuClusters.push_back(cluster);
   //////////////////////////////////////////////////////////////
@@ -559,18 +582,61 @@ void MicroMesh::updateRigidPrim(umesh_rprim_ptr_t prim,
   auto idxptr           = GBI->LockIB(*idxbuf.get(), 0, num_indices_required);
   auto typed_indices = (uint32_t*)idxptr;
 
-  for( auto t : _tris ){
-    typed_indices[oidx++] = t[0];
-    typed_indices[oidx++] = t[1];
-    typed_indices[oidx++] = t[2];
-  }
-  for( auto q : _quads ){
-    typed_indices[oidx++] = q[0];
-    typed_indices[oidx++] = q[1];
-    typed_indices[oidx++] = q[2];
-    typed_indices[oidx++] = q[0];
-    typed_indices[oidx++] = q[2];
-    typed_indices[oidx++] = q[3];
+  switch(ptype) {
+    case lev2::PrimitiveType::POINTS:
+      // Sequential indices for all vertices
+      for (int i = 0; i < num_verts; i++) {
+        typed_indices[oidx++] = i;
+      }
+      break;
+
+    case lev2::PrimitiveType::LINES:
+      // Emit edges from triangles (3 edges per tri)
+      for (auto& t : _tris) {
+        typed_indices[oidx++] = t[0];
+        typed_indices[oidx++] = t[1];
+        typed_indices[oidx++] = t[1];
+        typed_indices[oidx++] = t[2];
+        typed_indices[oidx++] = t[2];
+        typed_indices[oidx++] = t[0];
+      }
+      // Emit edges from quads (4 edges per quad)
+      for (auto& q : _quads) {
+        typed_indices[oidx++] = q[0];
+        typed_indices[oidx++] = q[1];
+        typed_indices[oidx++] = q[1];
+        typed_indices[oidx++] = q[2];
+        typed_indices[oidx++] = q[2];
+        typed_indices[oidx++] = q[3];
+        typed_indices[oidx++] = q[3];
+        typed_indices[oidx++] = q[0];
+      }
+      break;
+
+    case lev2::PrimitiveType::TRIANGLESTRIP:
+      // Sequential indices - vertices must be in strip order
+      for (int i = 0; i < num_verts; i++) {
+        typed_indices[oidx++] = i;
+      }
+      break;
+
+    case lev2::PrimitiveType::TRIANGLES:
+    default:
+      // Original triangle logic
+      for (auto& t : _tris) {
+        typed_indices[oidx++] = t[0];
+        typed_indices[oidx++] = t[1];
+        typed_indices[oidx++] = t[2];
+      }
+      for (auto& q : _quads) {
+        typed_indices[oidx++] = q[0];
+        typed_indices[oidx++] = q[1];
+        typed_indices[oidx++] = q[2];
+        typed_indices[oidx++] = q[0];
+        typed_indices[oidx++] = q[2];
+        typed_indices[oidx++] = q[3];
+      }
+      break;
   }
   OrkAssert(oidx == num_indices_required);
   // printf("oidx<%d> num_indices_required<%d>\n", oidx, num_indices_required);
@@ -588,6 +654,16 @@ inline void MicroMesh::updateNormals(py::object normal_data) {
 
   // Load normals using helper (supports py::list or numpy)
   loadVec3Data(_normals, normal_data);
+}
+
+///////////////////////////////////////
+
+inline void MicroMesh::updateColors(py::object color_data) {
+  // Update colors from pre-generated list or numpy array
+  _colors.clear();
+
+  // Load colors using helper (supports py::list or numpy)
+  loadVec3Data(_colors, color_data);
 }
 
 ///////////////////////////////////////
