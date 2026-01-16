@@ -392,12 +392,13 @@ def create_uv_torus(major_radius=1.0, minor_radius=0.3, major_segments=32, minor
 class UVTestComponent(ApplicationComponent):
   """Component that demonstrates UV coordinate support in MicroMesh"""
 
-  def __init__(self, mesh_type="sphere", shader_mode="color", movie_file=None, antialias=False):
+  def __init__(self, mesh_type="sphere", shader_mode="color", movie_file=None, antialias=False, shm_name=None):
     super().__init__()
     self.mesh_type = mesh_type
     self.shader_mode = shader_mode
     self.movie_file = movie_file
     self.antialias = antialias
+    self.shm_name = shm_name
     self.mesh_prim = None
     self.mesh_pipe = None
     self.mesh_node = None
@@ -405,13 +406,44 @@ class UVTestComponent(ApplicationComponent):
     self.base_uvs = None  # Store original UVs for animation
     self.movie = None
     self.movie_material = None
+    self.shm_consumer = None
+    self.shm_material = None
     self.phi = 0.0
 
   def _onGpuInit(self, ctx):
     """Initialize GPU resources"""
 
+    # Check if we're in SHM consumer mode
+    if self.shm_name:
+      print(f"Connecting to SHM producer: {self.shm_name}")
+      try:
+        self.shm_consumer = lev2.ShmTexConsumer.create(self.shm_name)
+        print(f"SHM Consumer connected: {self.shm_consumer.width}x{self.shm_consumer.height}")
+      except Exception as e:
+        print(f"Failed to connect to SHM producer '{self.shm_name}': {e}")
+        print("Make sure the producer is running first.")
+        sys.exit(1)
+
+      # Create pipeline with movie shader (reuse for SHM texture)
+      self.shm_material = lev2.FreestyleMaterial()
+      self.shm_material.gpuInitFromShaderText(ctx, "shm_shader", MOVIE_SHADER)
+      self.shm_material.rasterstate.culltest = tokens.PASS_FRONT
+      self.shm_material.rasterstate.depthtest = tokens.LEQUALS
+
+      techname = "tek_movie_aa" if self.antialias else "tek_movie"
+      if self.antialias:
+        print("Antialiasing: Adaptive Lanczos-3 enabled")
+
+      permu = lev2.FxPipelinePermutation(rendermodel="ForwardPBR")
+      permu.technique = self.shm_material.shader.technique(techname)
+
+      self.mesh_pipe = self.shm_material.fxcache.findPipeline(permu)
+      self.mesh_pipe.bindParam(self.shm_material.param("mvp"), tokens.RCFD_Camera_MVP_Mono)
+      # ColorMap will be bound dynamically in _onGpuUpdate when texture is available
+      self.mesh_pipe.sharedMaterial = self.shm_material
+
     # Check if we're in movie mode
-    if self.movie_file:
+    elif self.movie_file:
       # Initialize movie playback
       import time
       movie_path = str(obt_path.stage() / "assetcache" / "movies" / self.movie_file)
@@ -507,7 +539,17 @@ class UVTestComponent(ApplicationComponent):
     self.phi = updinfo.absolutetime
 
   def _onGpuUpdate(self, ctx):
-    """Animate UVs each frame (only when not in movie mode)"""
+    """Animate UVs each frame (only when not in movie/shm mode)"""
+    # In SHM consumer mode, update texture from shared memory
+    if self.shm_name:
+      if self.shm_consumer:
+        if self.shm_consumer.update(ctx):
+          tex = self.shm_consumer.texture
+          if tex and self.shm_material:
+            # Bind the texture to the pipeline
+            self.mesh_pipe.bindParam(self.shm_material.param("ColorMap"), tex)
+      return
+
     # In movie mode, poll the texture update provider to trigger frame updates
     if self.movie_file:
       if self.movie and self.movie.texture:
@@ -535,7 +577,7 @@ class UVTestComponent(ApplicationComponent):
 
 class UVTestApp(ComponentizedApplication):
 
-  def __init__(self, mesh_type="sphere", shader_mode="checker", movie_file=None, fullscreen=False, antialias=False):
+  def __init__(self, mesh_type="sphere", shader_mode="checker", movie_file=None, fullscreen=False, antialias=False, shm_name=None):
     super().__init__()
 
     # Add components
@@ -551,7 +593,8 @@ class UVTestApp(ComponentizedApplication):
                                  mesh_type=mesh_type,
                                  shader_mode=shader_mode,
                                  movie_file=movie_file,
-                                 antialias=antialias)
+                                 antialias=antialias,
+                                 shm_name=shm_name)
 
     self.createEzApp(name="MicroMesh UV Test",
                      width=1280,
@@ -579,6 +622,8 @@ if __name__ == "__main__":
                       help='Run in fullscreen mode')
   parser.add_argument('-A', '--aa', action='store_true',
                       help='Enable adaptive Lanczos antialiasing')
+  parser.add_argument('-S', '--shm', type=str, default=None,
+                      help='SHM texture name to consume (e.g., shmtex_demo)')
   args = parser.parse_args()
 
   # Handle --list option
@@ -615,11 +660,13 @@ if __name__ == "__main__":
       if args.movie + ".mp4" in [shortname_map.get(k, "") for k in shortname_map]:
         movie_file = args.movie + ".mp4"
 
-  if movie_file:
+  if args.shm:
+    print(f"UV Test: mesh={args.mesh}, shm={args.shm}")
+  elif movie_file:
     print(f"UV Test: mesh={args.mesh}, movie={movie_file}")
   else:
     print(f"UV Test: mesh={args.mesh}, shader={args.shader}")
 
   app = UVTestApp(mesh_type=args.mesh, shader_mode=args.shader, movie_file=movie_file,
-                  fullscreen=args.fullscreen, antialias=args.aa)
+                  fullscreen=args.fullscreen, antialias=args.aa, shm_name=args.shm)
   app.ezapp.mainThreadLoop()
