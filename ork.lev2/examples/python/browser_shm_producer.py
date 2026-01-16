@@ -8,6 +8,8 @@
 #
 # Browser SHM Producer - Renders web pages to shared memory texture
 #
+# To install deps: ork.python -m pip install playwright && playwright install chromium
+#
 # Usage:
 #   ./browser_shm_producer.py --url https://example.com
 #   ./browser_shm_producer.py --url https://example.com --name mybrowser --width 1920 --height 1080
