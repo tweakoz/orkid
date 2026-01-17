@@ -109,7 +109,31 @@ void RenderContextInstData::SetMaterialInst(const XgmMaterialStateInst* mi) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 fmtx4 RenderContextInstData::worldMatrix() const {
-  return _genMatrix();
+  fmtx4 baseMtx = _genMatrix();
+
+  // Apply view-relative transformation if the renderable has the flag set
+  if (_irenderable && _irenderable->_view_relative && _held_rcfd) {
+    auto cimpl = _held_rcfd->topCompositor();
+    if (cimpl && cimpl->hasCPD()) {
+      const auto& CPD = cimpl->topCPD();
+
+      // Get the appropriate inverse view matrix:
+      // - For stereo: use center camera (no IPD offset) so object doesn't shift between eyes
+      // - For mono: use the current camera's inverse view
+      fmtx4 ivMatrix;
+      if (CPD._stereo_cam_matrices && CPD._stereo_cam_matrices->_mono) {
+        ivMatrix = CPD._stereo_cam_matrices->_mono->GetIVMatrix();
+      } else if (CPD._mono_cam_matrices) {
+        ivMatrix = CPD._mono_cam_matrices->GetIVMatrix();
+      } else {
+        return baseMtx;
+      }
+
+      return ivMatrix*baseMtx;
+    }
+  }
+
+  return baseMtx;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

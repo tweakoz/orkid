@@ -139,17 +139,13 @@ void ImageView::DoDraw(drawevent_constptr_t drwev) {
   bool has_direct_texture = _texture && _texture->_width > 0 && !_texprovider && !_imgprovider;
   bool has_content = _active_image || (_texprovider && _texture) || has_direct_texture;
 
-  static int log_count = 0;
-  if (log_count < 10) {
-    printf("ImageView::DoDraw[%s]: _texture=%p w=%d h=%d has_direct=%d has_content=%d\n",
-           _name.c_str(),
-           _texture.get(),
-           _texture ? _texture->_width : -1,
-           _texture ? _texture->_height : -1,
-           has_direct_texture,
-           has_content);
-    log_count++;
-  }
+  if(0)printf("ImageView::DoDraw[%s]: _texture=%p w=%d h=%d has_direct=%d has_content=%d\n",
+         _name.c_str(),
+         _texture.get(),
+         _texture ? _texture->_width : -1,
+         _texture ? _texture->_height : -1,
+         has_direct_texture,
+         has_content);
 
   if(!has_content){
     mtxi->PopUIMatrix();

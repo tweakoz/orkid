@@ -19,6 +19,7 @@ namespace ork::lev2 {
 
 struct MipChainLevel;
 struct MipChain;
+class ShmTexConsumer;
 
 struct TextureArrayInitSubItem {
   uint32_t _usage = 0;
@@ -117,6 +118,12 @@ public:
   // GPU-direct external surface (IOSurface on macOS, DMA-BUF on Linux)
   // Called when _source == MOVIE && _impl_2 contains IoSurfaceTexImpl
   virtual void initTextureFromGpuExternalSurface(Texture* ptex) {
+  }
+
+  // Shared memory texture upload from ShmTexConsumer
+  // Returns true if a new frame was uploaded to the texture
+  virtual bool initFromShm(texture_ptr_t tex, std::shared_ptr<ShmTexConsumer> consumer) {
+    return false;  // Default: not supported
   }
 
   context_rawptr_t _ctx;

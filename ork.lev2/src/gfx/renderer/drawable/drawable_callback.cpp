@@ -90,8 +90,6 @@ void CallbackDrawable::enqueueToRenderQueue(drawqueueitem_constptr_t item, lev2:
   lev2::CallbackRenderable& renderable = renderer->enqueueCallback();
   auto matrix                          = DQDATA._worldTransform->composed();
 
-  // auto str                             = matrix.dump4x3cn();
-  // printf("XFX: %s\n", str.c_str());
   renderable._view_relative = DQDATA._worldTransform->_view_relative;
   renderable.SetMatrix(matrix);
   renderable._pickID = _pickID;

@@ -169,6 +169,7 @@ struct MicroMesh {
   void updateFromLists(py::object vert_data, py::list face_list);  // Update everything
   void updateConnectivity();  // Recompute internal connectivity
   void updateNormals(py::object normal_data);  // Set normals from list or numpy array
+  void updateColors(py::object color_data);    // Set colors from list or numpy array
   void updateUVs(py::object uv_data);  // Set UVs from list or numpy array (N,2) float32
   void updateBinormals(py::object binormal_data);  // Set binormals from list or numpy array (N,3) float32
   void computeNormals();  // Compute normals using internal connectivity
@@ -179,13 +180,15 @@ struct MicroMesh {
   bool validate() const;  // Validate mesh integrity, log issues, return false if invalid
   void updateRigidPrim(umesh_rprim_ptr_t prim,
                        vdb_vec3grid_ptr_t colorgrid,
-                       ctx_t context) const;
+                       ctx_t context,
+                       lev2::PrimitiveType primtype = lev2::PrimitiveType::TRIANGLES) const;
 
   std::vector<fvec3> _vertices;
   std::vector<fvec3> _colors;
   std::vector<fvec3> _normals;
   std::vector<fvec2> _uvs;        // Optional UV coordinates
   std::vector<fvec3> _binormals;  // Optional binormals (tangent space)
+  std::vector<indexlist_t> _lines;  // Line segments (2 indices each)
   std::vector<indexlist_t> _tris;
   std::vector<indexlist_t> _quads;
 
@@ -224,6 +227,7 @@ inline void MicroMesh::updateFromLists(py::object vert_data, py::list face_list)
   // Clear and reuse existing storage
   _vertices.clear();
   _colors.clear();
+  _lines.clear();
   _tris.clear();
   _quads.clear();
 
@@ -243,6 +247,14 @@ inline void MicroMesh::updateFromLists(py::object vert_data, py::list face_list)
       int face_size = face_list[iidx++].cast<int>();
       //printf("iidx<%d> fac<%d> max<%zu>\n",iidx, face_size, numface_values);
       switch (face_size) {
+        case 2: {
+          // Line segment (2 vertices)
+          auto& out_line = _lines.emplace_back();
+          out_line.push_back(face_list[iidx+0].cast<int>());
+          out_line.push_back(face_list[iidx+1].cast<int>());
+          iidx += 2;
+          break;
+        }
         case 3: {
           auto& out_tri = _tris.emplace_back();
           out_tri.push_back(face_list[iidx+2].cast<int>());
@@ -479,12 +491,39 @@ inline micromesh_ptr_t MicroMesh::smoothed(micromesh_connectivity_ptr_t conn) co
 
 void MicroMesh::updateRigidPrim(umesh_rprim_ptr_t prim,
                                 vdb_vec3grid_ptr_t colorgrid,
-                                ctx_t context) const {
+                                ctx_t context,
+                                lev2::PrimitiveType ptype) const {
   ////////////////////////////////////////////
   int num_verts = _vertices.size();
+  int num_lines = _lines.size();
   int num_tris = _tris.size();
   int num_quads = _quads.size();
-  int num_indices_required = num_tris * 3 + num_quads * 6;
+
+  // Calculate required indices based on primitive type
+  int num_indices_required = 0;
+  switch(ptype) {
+    case lev2::PrimitiveType::POINTS:
+      num_indices_required = num_verts;
+      break;
+    case lev2::PrimitiveType::LINES:
+      if (num_lines > 0) {
+        // Use direct line data
+        num_indices_required = num_lines * 2;
+      } else {
+        // Fall back to converting tris/quads to edges
+        // Each triangle has 3 edges, each quad has 4 edges
+        num_indices_required = (num_tris * 3 + num_quads * 4) * 2;
+      }
+      break;
+    case lev2::PrimitiveType::TRIANGLESTRIP:
+      // For strips, assume vertices are already in strip order
+      num_indices_required = num_verts;
+      break;
+    case lev2::PrimitiveType::TRIANGLES:
+    default:
+      num_indices_required = num_tris * 3 + num_quads * 6;
+      break;
+  }
   ////////////////////////////////////////////
   auto GBI = context->GBI();
   prim->_gpuClusters.clear();
@@ -494,12 +533,12 @@ void MicroMesh::updateRigidPrim(umesh_rprim_ptr_t prim,
   cluster->_vtxbuffer = vtxbuf;
   auto PG             = std::make_shared<umesh_rprim_t::PrimitiveGroup>();
   cluster->_primgroups.push_back(PG);
-  PG->_primtype  = lev2::PrimitiveType::TRIANGLES;
+  PG->_primtype  = ptype;
   PG->_idxbuffer = idxbuf;
   prim->_gpuClusters.push_back(cluster);
   //////////////////////////////////////////////////////////////
-  // Use cached normals (must call updateNormals() before this)
-  const auto& normals = _normals;
+  // Use cached normals if available
+  bool has_normals = (_normals.size() == _vertices.size());
   bool has_uvs = (_uvs.size() == _vertices.size());
   bool has_binormals = (_binormals.size() == _vertices.size());
   //////////////////////////////////////////////////////////////
@@ -507,10 +546,11 @@ void MicroMesh::updateRigidPrim(umesh_rprim_ptr_t prim,
   auto typed_vertex_base = (SVtxV12N12B12T8C4*)vtxptr;
   int ivtx = 0;
   fvec3 updir(0.0f, 1.0f, 0.0f);
+  fvec3 default_normal(0.0f, 1.0f, 0.0f);
   for (size_t ivtx = 0; ivtx < num_verts; ivtx++) {
     auto& vertex_out     = typed_vertex_base[ivtx];
     vertex_out._position = _vertices[ivtx];
-    vertex_out._normal   = normals[ivtx];
+    vertex_out._normal   = has_normals ? _normals[ivtx] : default_normal;
 
     // Use provided binormals or compute from normal + up direction
     if (has_binormals) {
@@ -559,18 +599,69 @@ void MicroMesh::updateRigidPrim(umesh_rprim_ptr_t prim,
   auto idxptr           = GBI->LockIB(*idxbuf.get(), 0, num_indices_required);
   auto typed_indices = (uint32_t*)idxptr;
 
-  for( auto t : _tris ){
-    typed_indices[oidx++] = t[0];
-    typed_indices[oidx++] = t[1];
-    typed_indices[oidx++] = t[2];
-  }
-  for( auto q : _quads ){
-    typed_indices[oidx++] = q[0];
-    typed_indices[oidx++] = q[1];
-    typed_indices[oidx++] = q[2];
-    typed_indices[oidx++] = q[0];
-    typed_indices[oidx++] = q[2];
-    typed_indices[oidx++] = q[3];
+  switch(ptype) {
+    case lev2::PrimitiveType::POINTS:
+      // Sequential indices for all vertices
+      for (int i = 0; i < num_verts; i++) {
+        typed_indices[oidx++] = i;
+      }
+      break;
+
+    case lev2::PrimitiveType::LINES:
+      if (num_lines > 0) {
+        // Use direct line data
+        for (auto& l : _lines) {
+          typed_indices[oidx++] = l[0];
+          typed_indices[oidx++] = l[1];
+        }
+      } else {
+        // Emit edges from triangles (3 edges per tri)
+        for (auto& t : _tris) {
+          typed_indices[oidx++] = t[0];
+          typed_indices[oidx++] = t[1];
+          typed_indices[oidx++] = t[1];
+          typed_indices[oidx++] = t[2];
+          typed_indices[oidx++] = t[2];
+          typed_indices[oidx++] = t[0];
+        }
+        // Emit edges from quads (4 edges per quad)
+        for (auto& q : _quads) {
+          typed_indices[oidx++] = q[0];
+          typed_indices[oidx++] = q[1];
+          typed_indices[oidx++] = q[1];
+          typed_indices[oidx++] = q[2];
+          typed_indices[oidx++] = q[2];
+          typed_indices[oidx++] = q[3];
+          typed_indices[oidx++] = q[3];
+          typed_indices[oidx++] = q[0];
+        }
+      }
+      break;
+
+    case lev2::PrimitiveType::TRIANGLESTRIP:
+      // Sequential indices - vertices must be in strip order
+      for (int i = 0; i < num_verts; i++) {
+        typed_indices[oidx++] = i;
+      }
+      break;
+
+    case lev2::PrimitiveType::TRIANGLES:
+    default:
+      // Original triangle logic
+      for (auto& t : _tris) {
+        typed_indices[oidx++] = t[0];
+        typed_indices[oidx++] = t[1];
+        typed_indices[oidx++] = t[2];
+      }
+      for (auto& q : _quads) {
+        typed_indices[oidx++] = q[0];
+        typed_indices[oidx++] = q[1];
+        typed_indices[oidx++] = q[2];
+        typed_indices[oidx++] = q[0];
+        typed_indices[oidx++] = q[2];
+        typed_indices[oidx++] = q[3];
+      }
+      break;
   }
   OrkAssert(oidx == num_indices_required);
   // printf("oidx<%d> num_indices_required<%d>\n", oidx, num_indices_required);
@@ -588,6 +679,16 @@ inline void MicroMesh::updateNormals(py::object normal_data) {
 
   // Load normals using helper (supports py::list or numpy)
   loadVec3Data(_normals, normal_data);
+}
+
+///////////////////////////////////////
+
+inline void MicroMesh::updateColors(py::object color_data) {
+  // Update colors from pre-generated list or numpy array
+  _colors.clear();
+
+  // Load colors using helper (supports py::list or numpy)
+  loadVec3Data(_colors, color_data);
 }
 
 ///////////////////////////////////////

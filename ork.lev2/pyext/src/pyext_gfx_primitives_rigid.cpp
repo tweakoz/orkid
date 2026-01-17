@@ -145,6 +145,14 @@ void pyinit_gfx_primitives_rigid(py::module& module_lev2) {
                                 py::arg("normal_data"))
                             //////////////////////////////////////////////////
                             .def(
+                                "updateColors",
+                                [](micromesh_ptr_t mesh, py::object color_data) {
+                                  mesh->updateColors(color_data);
+                                },
+                                "Update vertex colors. Accepts list of vec3 or numpy array (N,3) float32",
+                                py::arg("color_data"))
+                            //////////////////////////////////////////////////
+                            .def(
                                 "updateUVs",
                                 [](micromesh_ptr_t mesh, py::object uv_data) {
                                   mesh->updateUVs(uv_data);
@@ -508,21 +516,28 @@ void pyinit_gfx_primitives_rigid(py::module& module_lev2) {
           "updateWithMicroMesh",                                 //
           [](meshutil::rigidprim_V12N12B12T8C4_ptr_t prim, //
              micromesh_ptr_t micromesh,                    //
-             ctx_t context) {                              //
-             micromesh->updateRigidPrim(prim, nullptr, context);
-          })
+             ctx_t context,                                //
+             crcstring_ptr_t primtype) {                   //
+             auto ptype = primtype ? PrimitiveType(primtype->hashed()) : PrimitiveType::TRIANGLES;
+             micromesh->updateRigidPrim(prim, nullptr, context, ptype);
+          },
+          py::arg("micromesh"),
+          py::arg("context"),
+          py::arg("primitive_type") = nullptr)
       .def(
           "fromVertsAndFacesDict",                         //
           [](meshutil::rigidprim_V12N12B12T8C4_ptr_t prim, //
              py::object verts,                             //
              py::list faces,                               //
-             ctx_t context) {                              //
+             ctx_t context,                                //
+             crcstring_ptr_t primtype) {                   //
             ////////////////////////////////////////////
             auto micromesh = std::make_shared<MicroMesh>(verts, faces);
-            micromesh->updateRigidPrim(prim, nullptr, context);
+            auto ptype = primtype ? PrimitiveType(primtype->hashed()) : PrimitiveType::TRIANGLES;
+            micromesh->updateRigidPrim(prim, nullptr, context, ptype);
           },
           "Create rigid primitive from vertices (list or numpy array (N,3) float32) and faces",
-          py::arg("verts"), py::arg("faces"), py::arg("context"))
+          py::arg("verts"), py::arg("faces"), py::arg("context"), py::arg("primitive_type") = nullptr)
       .def("renderEML", [](meshutil::rigidprim_V12N12B12T8C4_ptr_t prim, ctx_t context) { //
         prim->renderEML(context.get());
       });

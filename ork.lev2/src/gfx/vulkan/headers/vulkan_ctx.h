@@ -17,6 +17,7 @@
 #include <memory>
 ///////////////////////////////////////////////////////////////////////////////
 struct GLFWwindow;
+namespace ork::lev2 { class ShmTexConsumer; }
 
 #if defined(__APPLE__)
 #define VK_USE_PLATFORM_MACOS_MVK
@@ -316,6 +317,7 @@ struct VkTextureInterface final : public TextureInterface {
   void ApplySamplingMode(Texture* ptex) final;
   void initTextureFromData(Texture* ptex, TextureInitData tid) final;
   void initTextureFromGpuExternalSurface(Texture* ptex) final;
+  bool initFromShm(texture_ptr_t tex, std::shared_ptr<ShmTexConsumer> consumer) final;
   bool externalTextureChanged(const Texture* ptex);  // Check if external backing changed
   void generateMipMaps(Texture* ptex) final;
   Texture* createFromMipChain(MipChain* from_chain) final;
