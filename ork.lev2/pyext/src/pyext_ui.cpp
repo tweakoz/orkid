@@ -2429,6 +2429,18 @@ void pyinit_ui(py::module& module_lev2) {
               [](ui::imgview_ptr_t imgview) -> bool { return imgview->_image_flip_y; },
               [](ui::imgview_ptr_t imgview, bool p) { imgview->_image_flip_y = p; })
           .def_property(
+              "crosshair_enabled",
+              [](ui::imgview_ptr_t imgview) -> bool { return imgview->_crosshair_enabled; },
+              [](ui::imgview_ptr_t imgview, bool p) { imgview->_crosshair_enabled = p; })
+          .def_property(
+              "crosshair_pos",
+              [](ui::imgview_ptr_t imgview) -> fvec2 { return imgview->_crosshair_pos; },
+              [](ui::imgview_ptr_t imgview, fvec2 p) { imgview->_crosshair_pos = p; })
+          .def_property(
+              "crosshair_color",
+              [](ui::imgview_ptr_t imgview) -> fvec4 { return imgview->_crosshair_color; },
+              [](ui::imgview_ptr_t imgview, fvec4 c) { imgview->_crosshair_color = c; })
+          .def_property(
               "image",
               [](ui::imgview_ptr_t imgview) -> py::object {
                 if (imgview->_imgprovider) {

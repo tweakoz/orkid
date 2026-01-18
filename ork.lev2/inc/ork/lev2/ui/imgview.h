@@ -45,6 +45,11 @@ public:
   lev2::fxpipeline_ptr_t _pipeline_override;
   bool _invert_aspect = false;
 
+  // Optional crosshair overlay
+  bool _crosshair_enabled = false;
+  fvec2 _crosshair_pos;      // NDC coords (-1 to +1)
+  fvec4 _crosshair_color = fvec4(1,1,1,1);  // white default
+
 private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;
 

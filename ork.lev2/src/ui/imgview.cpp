@@ -278,6 +278,51 @@ void ImageView::DoDraw(drawevent_constptr_t drwev) {
   }
 
   //////////////////////////////////
+  // Optional crosshair overlay
+  //////////////////////////////////
+
+  if(_crosshair_enabled) {
+    // Convert NDC (-1 to +1) to screen coords within widget
+    float ndc_x = _crosshair_pos.x;
+    float ndc_y = _crosshair_pos.y;
+
+    // Map NDC to pixel coords (ix1,iy1) to (ix2,iy2)
+    int cx = ix1 + int((ndc_x * 0.5f + 0.5f) * float(ix2 - ix1));
+    int cy = iy1 + int((ndc_y * 0.5f + 0.5f) * float(iy2 - iy1));
+
+    tgt->PopModColor();
+    tgt->PushModColor(_crosshair_color);
+
+    auto fxi = tgt->FXI();
+    defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
+    defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::DST_MINUS_SRC);
+    defmtl->_rasterstate->_priority = 1 << 20;
+    fxi->pushRasterState(defmtl->_rasterstate);
+
+    // Horizontal line (1px thick)
+    pri->RenderQuadAtZ(
+      defmtl.get(),
+      ix1, ix2,     // x0, x1 (full width)
+      cy, cy + 1,   // y0, y1 (1px)
+      0.0f,
+      0.0f, 1.0f,
+      0.0f, 1.0f
+    );
+
+    // Vertical line (1px thick)
+    pri->RenderQuadAtZ(
+      defmtl.get(),
+      cx, cx + 1,   // x0, x1 (1px)
+      iy1, iy2,     // y0, y1 (full height)
+      0.0f,
+      0.0f, 1.0f,
+      0.0f, 1.0f
+    );
+
+    fxi->popRasterState();
+  }
+
+  //////////////////////////////////
 
   tgt->PopModColor();
   mtxi->PopUIMatrix();

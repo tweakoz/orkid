@@ -171,7 +171,7 @@ class SceneEditorTest:
 
     self.pick_hpack = lev2.ui.HorizontalPack.wfactory(["pick_debug_hpack"])
     self.pick_hpack.margin = 2
-    self.pick_hpack.item_width = 128
+    self.pick_hpack.uniform = True
     self.pick_hpack.fixed_height = 192
     self.pick_hpack.bg_color = vec4(0.1, 0.1, 0.1, 1)
     self.pick_collapsable.setChild(self.pick_hpack)
@@ -185,6 +185,7 @@ class SceneEditorTest:
       imgview.maintain_aspect_ratio = True
       imgview.flip_x = True
       imgview.flip_y = True
+      imgview.crosshair_enabled = False  # Enable on first pick
 
     # Add outliner below pick debug (fills remaining space)
     self.outliner_item = self.left_panel.makeChild(uiclass=lev2.ui.Outliner, args=["outliner"])
@@ -736,9 +737,11 @@ class SceneEditorTest:
     # Bind textures to our visualization pipeline
     self.pickid_viz_pipeline.bindParam(self.p_colormap, SG.pick_tex_id)
     self.pickid_viz_pipeline.bindParam(self.p_nrmmap, SG.pick_tex_nrm)
-    self.pick_img_id.setDirty()
-    self.pick_img_pos.setDirty()
-    self.pick_img_nrm.setDirty()
+    # Enable crosshairs at center (pick buffer is centered on picked pixel)
+    for imgview in [self.pick_img_id, self.pick_img_pos, self.pick_img_nrm]:
+      imgview.crosshair_enabled = True
+      imgview.crosshair_pos = vec2(0, 0)
+      imgview.setDirty()
 
     if obj is not None and isinstance(obj, u32vec4):
       # obj is a u32vec4 with raw pick values:
