@@ -221,36 +221,20 @@ class TransformEdit:
   ###########################################################################
 
   @staticmethod
-  def uifactory(parent_layoutgroup, args):
+  def _build_ui(vpack, editor, transform):
     """
-    UI factory for use with layoutgroup.makeChild
+    Build the UI widgets inside the vpack.
 
     Args:
-      parent_layoutgroup: Parent LayoutGroup
-      args: [name] or [name, transform]
-
-    Returns:
-      uilayoutitem_ptr_t (the vpack's layout item)
+      vpack: The VerticalPack widget to populate
+      editor: The TransformEdit instance
+      transform: Optional Transform to bind to
     """
-    name = args[0]
-    transform = args[1] if len(args) > 1 else None
-
     MARGIN = 2
-    edit_color = vec3(0.25, 0.28, 0.35)
-    btn_color = vec3(0.3, 0.35, 0.4)
-
-    # Create main vertical pack
-    vpack_item = parent_layoutgroup.makeChild(uiclass=lev2.ui.VerticalPack, args=[name])
-    vpack = vpack_item.widget
-    vpack.margin = MARGIN
-    vpack.item_height = 24
-    vpack.fill = False
-    vpack.fixed_height = 108  # 4 rows * 24 + margins
-
-    # Create the editor instance
-    editor = TransformEdit(vpack, transform)
-
     LABEL_WIDTH = 32
+    btn_color = vec3(0.3, 0.35, 0.4)
+    action_color = vec3(0.35, 0.28, 0.32)
+    tokens = CrcStringProxy()
 
     # Row 1: Translation
     hpack_trans = vpack.makeChild(uiclass=lev2.ui.HorizontalPack, args=["trans_row"])
@@ -258,10 +242,8 @@ class TransformEdit:
     hpack_trans.item_width = LABEL_WIDTH
     hpack_trans.fill = True
 
-    # Label for row
     trans_label = hpack_trans.makeChild(uiclass=lev2.ui.Button, args=["Pos", btn_color])
 
-    # Inner hpack for edits (uniform distribution)
     hpack_trans_edits = hpack_trans.makeChild(uiclass=lev2.ui.HorizontalPack, args=["trans_edits"])
     hpack_trans_edits.margin = MARGIN
     hpack_trans_edits.uniform = True
@@ -280,15 +262,13 @@ class TransformEdit:
     hpack_orient.item_width = LABEL_WIDTH
     hpack_orient.fill = True
 
-    # Label for row
     orient_label = hpack_orient.makeChild(uiclass=lev2.ui.Button, args=["Rot", btn_color])
 
-    # Inner hpack containing axis and angle sections
     hpack_orient_inner = hpack_orient.makeChild(uiclass=lev2.ui.HorizontalPack, args=["orient_inner"])
     hpack_orient_inner.margin = 0
     hpack_orient_inner.uniform = True
 
-    # Axis section: Axis label + X/Y/Z
+    # Axis section
     hpack_axis = hpack_orient_inner.makeChild(uiclass=lev2.ui.HorizontalPack, args=["axis_section"])
     hpack_axis.margin = MARGIN
     hpack_axis.item_width = 48
@@ -304,7 +284,7 @@ class TransformEdit:
     editor.axis_y = hpack_axis_edits.makeChild(uiclass=lev2.ui.F32Edit, args=["ay", "Y", 1.0, -1.0, 1.0])
     editor.axis_z = hpack_axis_edits.makeChild(uiclass=lev2.ui.F32Edit, args=["az", "Z", 0.0, -1.0, 1.0])
 
-    # Angle section: Angle label + deg
+    # Angle section
     hpack_angle = hpack_orient_inner.makeChild(uiclass=lev2.ui.HorizontalPack, args=["angle_section"])
     hpack_angle.margin = MARGIN
     hpack_angle.item_width = 48
@@ -326,11 +306,8 @@ class TransformEdit:
     hpack_scale.fill = True
     editor.hpack_scale = hpack_scale
 
-    # Label for row
     scale_label = hpack_scale.makeChild(uiclass=lev2.ui.Button, args=["Sca", btn_color])
 
-    # Uniform toggle button (ImageButton with text icon)
-    tokens = CrcStringProxy()
     editor.uniform_btn = hpack_scale.makeChild(uiclass=lev2.ui.ImageButton, args=["uniform_btn"])
     editor.uniform_btn.inactive_image = icon_library.text_icon("U", 24, 24)
     editor.uniform_btn.bgcolor = vec4(btn_color.x, btn_color.y, btn_color.z, 1)
@@ -339,8 +316,7 @@ class TransformEdit:
     editor.uniform_btn.inactive_blend_mode = tokens.ALPHA
     editor.uniform_btn.onPressed = editor._onUniformToggle
 
-    # Inner hpack for uniform scale (single field, fills remaining space)
-    # Created with wfactory, not makeChild - we'll swap it in/out
+    # Uniform scale hpack (swappable)
     editor.hpack_scale_uniform = lev2.ui.HorizontalPack.wfactory(["scale_uniform_container"])
     editor.hpack_scale_uniform.margin = 0
     editor.hpack_scale_uniform.uniform = True
@@ -348,8 +324,7 @@ class TransformEdit:
     editor.scale_uniform = editor.hpack_scale_uniform.makeChild(uiclass=lev2.ui.F32Edit, args=["su", "Scale", 1.0, 0.001, 1000.0])
     editor.scale_uniform.onValueChanged(editor._onUniformScaleChanged)
 
-    # Inner hpack for non-uniform scale (X, Y, Z with uniform 33% each)
-    # Created with wfactory, not makeChild - we'll swap it in/out
+    # Non-uniform scale hpack (swappable)
     editor.hpack_scale_xyz = lev2.ui.HorizontalPack.wfactory(["scale_xyz_container"])
     editor.hpack_scale_xyz.margin = MARGIN
     editor.hpack_scale_xyz.uniform = True
@@ -362,22 +337,17 @@ class TransformEdit:
     editor.scale_y.onValueChanged(editor._onNonUniformScaleChanged)
     editor.scale_z.onValueChanged(editor._onNonUniformScaleChanged)
 
-    # Add the uniform hpack initially (since _uniform_scale starts True)
     hpack_scale.addChild(editor.hpack_scale_uniform)
 
-    # Row 4: Identity button row (HorizontalPack with label + icon button)
-    action_color = vec3(0.35, 0.28, 0.32)  # Slightly pinkish action color
-
+    # Row 4: Identity button
     hpack_identity = vpack.makeChild(uiclass=lev2.ui.HorizontalPack, args=["identity_row"])
     hpack_identity.margin = MARGIN
-    hpack_identity.item_width = 24  # Icon width on right
+    hpack_identity.item_width = 24
     hpack_identity.fill = True
 
-    # Label on left
     identity_label = hpack_identity.makeChild(uiclass=lev2.ui.TextBox, args=["identity_label", vec4(action_color.x, action_color.y, action_color.z, 1), "Reset to Identity"])
     identity_label.fixed_width = 168
 
-    # Crosshairs icon button on right
     editor.identity_btn = hpack_identity.makeChild(uiclass=lev2.ui.ImageButton, args=["identity_btn"])
     editor.identity_btn.inactive_image = icon_library.crosshairs_icon(20, 20)
     editor.identity_btn.bgcolor = vec4(action_color.x, action_color.y, action_color.z, 1)
@@ -392,6 +362,31 @@ class TransformEdit:
 
     # Store editor in vpack's uservars
     vpack.uservars.transform_edit = editor
+
+  @staticmethod
+  def uifactory(parent_layoutgroup, args):
+    """
+    UI factory for use with layoutgroup.makeChild
+
+    Args:
+      parent_layoutgroup: Parent LayoutGroup
+      args: [name] or [name, transform]
+
+    Returns:
+      uilayoutitem_ptr_t (the vpack's layout item)
+    """
+    name = args[0]
+    transform = args[1] if len(args) > 1 else None
+
+    vpack_item = parent_layoutgroup.makeChild(uiclass=lev2.ui.VerticalPack, args=[name])
+    vpack = vpack_item.widget
+    vpack.margin = 2
+    vpack.item_height = 24
+    vpack.fill = False
+    vpack.fixed_height = 108
+
+    editor = TransformEdit(vpack, transform)
+    TransformEdit._build_ui(vpack, editor, transform)
 
     return vpack_item
 
@@ -409,161 +404,13 @@ class TransformEdit:
     name = args[0]
     transform = args[1] if len(args) > 1 else None
 
-    MARGIN = 2
-    edit_color = vec3(0.25, 0.28, 0.35)
-    btn_color = vec3(0.3, 0.35, 0.4)
-
-    # Create main vertical pack
     vpack = lev2.ui.VerticalPack.wfactory([name])
-    vpack.margin = MARGIN
+    vpack.margin = 2
     vpack.item_height = 24
     vpack.fill = False
-    vpack.fixed_height = 108  # 4 rows * 24 + margins
+    vpack.fixed_height = 108
 
-    # Create the editor instance
     editor = TransformEdit(vpack, transform)
-
-    LABEL_WIDTH = 32
-
-    # Row 1: Translation
-    hpack_trans = vpack.makeChild(uiclass=lev2.ui.HorizontalPack, args=["trans_row"])
-    hpack_trans.margin = MARGIN
-    hpack_trans.item_width = LABEL_WIDTH
-    hpack_trans.fill = True
-
-    # Label for row
-    trans_label = hpack_trans.makeChild(uiclass=lev2.ui.Button, args=["Pos", btn_color])
-
-    # Inner hpack for edits (uniform distribution)
-    hpack_trans_edits = hpack_trans.makeChild(uiclass=lev2.ui.HorizontalPack, args=["trans_edits"])
-    hpack_trans_edits.margin = MARGIN
-    hpack_trans_edits.uniform = True
-
-    editor.trans_x = hpack_trans_edits.makeChild(uiclass=lev2.ui.F32Edit, args=["tx", "X", 0.0])
-    editor.trans_y = hpack_trans_edits.makeChild(uiclass=lev2.ui.F32Edit, args=["ty", "Y", 0.0])
-    editor.trans_z = hpack_trans_edits.makeChild(uiclass=lev2.ui.F32Edit, args=["tz", "Z", 0.0])
-
-    editor.trans_x.onValueChanged(editor._onTranslationChanged)
-    editor.trans_y.onValueChanged(editor._onTranslationChanged)
-    editor.trans_z.onValueChanged(editor._onTranslationChanged)
-
-    # Row 2: Orientation (axis-angle)
-    hpack_orient = vpack.makeChild(uiclass=lev2.ui.HorizontalPack, args=["orient_row"])
-    hpack_orient.margin = MARGIN
-    hpack_orient.item_width = LABEL_WIDTH
-    hpack_orient.fill = True
-
-    # Label for row
-    orient_label = hpack_orient.makeChild(uiclass=lev2.ui.Button, args=["Rot", btn_color])
-
-    # Inner hpack containing axis and angle sections
-    hpack_orient_inner = hpack_orient.makeChild(uiclass=lev2.ui.HorizontalPack, args=["orient_inner"])
-    hpack_orient_inner.margin = 0
-    hpack_orient_inner.uniform = True
-
-    # Axis section: Axis label + X/Y/Z
-    hpack_axis = hpack_orient_inner.makeChild(uiclass=lev2.ui.HorizontalPack, args=["axis_section"])
-    hpack_axis.margin = MARGIN
-    hpack_axis.item_width = 48
-    hpack_axis.fill = True
-
-    axis_label = hpack_axis.makeChild(uiclass=lev2.ui.TextBox, args=["axis_label", vec4(btn_color.x, btn_color.y, btn_color.z, 1), "Axis"])
-
-    hpack_axis_edits = hpack_axis.makeChild(uiclass=lev2.ui.HorizontalPack, args=["axis_edits"])
-    hpack_axis_edits.margin = MARGIN
-    hpack_axis_edits.uniform = True
-
-    editor.axis_x = hpack_axis_edits.makeChild(uiclass=lev2.ui.F32Edit, args=["ax", "X", 0.0, -1.0, 1.0])
-    editor.axis_y = hpack_axis_edits.makeChild(uiclass=lev2.ui.F32Edit, args=["ay", "Y", 1.0, -1.0, 1.0])
-    editor.axis_z = hpack_axis_edits.makeChild(uiclass=lev2.ui.F32Edit, args=["az", "Z", 0.0, -1.0, 1.0])
-
-    # Angle section: Angle label + deg
-    hpack_angle = hpack_orient_inner.makeChild(uiclass=lev2.ui.HorizontalPack, args=["angle_section"])
-    hpack_angle.margin = MARGIN
-    hpack_angle.item_width = 48
-    hpack_angle.fill = True
-
-    angle_label = hpack_angle.makeChild(uiclass=lev2.ui.TextBox, args=["angle_label", vec4(btn_color.x, btn_color.y, btn_color.z, 1), "Angle"])
-
-    editor.angle = hpack_angle.makeChild(uiclass=lev2.ui.F32Edit, args=["ang", "deg", 0.0, -360.0, 360.0])
-
-    editor.axis_x.onValueChanged(editor._onOrientationChanged)
-    editor.axis_y.onValueChanged(editor._onOrientationChanged)
-    editor.axis_z.onValueChanged(editor._onOrientationChanged)
-    editor.angle.onValueChanged(editor._onOrientationChanged)
-
-    # Row 3: Scale (with uniform toggle)
-    hpack_scale = vpack.makeChild(uiclass=lev2.ui.HorizontalPack, args=["scale_row"])
-    hpack_scale.margin = MARGIN
-    hpack_scale.item_width = LABEL_WIDTH
-    hpack_scale.fill = True
-    editor.hpack_scale = hpack_scale
-
-    # Label for row
-    scale_label = hpack_scale.makeChild(uiclass=lev2.ui.Button, args=["Sca", btn_color])
-
-    # Uniform toggle button (ImageButton with text icon)
-    tokens = CrcStringProxy()
-    editor.uniform_btn = hpack_scale.makeChild(uiclass=lev2.ui.ImageButton, args=["uniform_btn"])
-    editor.uniform_btn.inactive_image = icon_library.text_icon("U", 24, 24)
-    editor.uniform_btn.bgcolor = vec4(btn_color.x, btn_color.y, btn_color.z, 1)
-    editor.uniform_btn.hover_color = vec4(btn_color.x + 0.1, btn_color.y + 0.1, btn_color.z + 0.1, 1)
-    editor.uniform_btn.pressed_color = vec4(0.2, 0.4, 0.6, 1)
-    editor.uniform_btn.inactive_blend_mode = tokens.ALPHA
-    editor.uniform_btn.onPressed = editor._onUniformToggle
-
-    # Inner hpack for uniform scale (single field, fills remaining space)
-    # Created with wfactory, not makeChild - we'll swap it in/out
-    editor.hpack_scale_uniform = lev2.ui.HorizontalPack.wfactory(["scale_uniform_container"])
-    editor.hpack_scale_uniform.margin = 0
-    editor.hpack_scale_uniform.uniform = True
-
-    editor.scale_uniform = editor.hpack_scale_uniform.makeChild(uiclass=lev2.ui.F32Edit, args=["su", "Scale", 1.0, 0.001, 1000.0])
-    editor.scale_uniform.onValueChanged(editor._onUniformScaleChanged)
-
-    # Inner hpack for non-uniform scale (X, Y, Z with uniform 33% each)
-    # Created with wfactory, not makeChild - we'll swap it in/out
-    editor.hpack_scale_xyz = lev2.ui.HorizontalPack.wfactory(["scale_xyz_container"])
-    editor.hpack_scale_xyz.margin = MARGIN
-    editor.hpack_scale_xyz.uniform = True
-
-    editor.scale_x = editor.hpack_scale_xyz.makeChild(uiclass=lev2.ui.F32Edit, args=["sx", "X", 1.0, 0.001, 1000.0])
-    editor.scale_y = editor.hpack_scale_xyz.makeChild(uiclass=lev2.ui.F32Edit, args=["sy", "Y", 1.0, 0.001, 1000.0])
-    editor.scale_z = editor.hpack_scale_xyz.makeChild(uiclass=lev2.ui.F32Edit, args=["sz", "Z", 1.0, 0.001, 1000.0])
-
-    editor.scale_x.onValueChanged(editor._onNonUniformScaleChanged)
-    editor.scale_y.onValueChanged(editor._onNonUniformScaleChanged)
-    editor.scale_z.onValueChanged(editor._onNonUniformScaleChanged)
-
-    # Add the uniform hpack initially (since _uniform_scale starts True)
-    hpack_scale.addChild(editor.hpack_scale_uniform)
-
-    # Row 4: Identity button row (HorizontalPack with label + icon button)
-    action_color = vec3(0.35, 0.28, 0.32)  # Slightly pinkish action color
-
-    hpack_identity = vpack.makeChild(uiclass=lev2.ui.HorizontalPack, args=["identity_row"])
-    hpack_identity.margin = MARGIN
-    hpack_identity.item_width = 24  # Icon width on right
-    hpack_identity.fill = True
-
-    # Label on left
-    identity_label = hpack_identity.makeChild(uiclass=lev2.ui.TextBox, args=["identity_label", vec4(action_color.x, action_color.y, action_color.z, 1), "Reset to Identity"])
-    identity_label.fixed_width = 168
-
-    # Crosshairs icon button on right
-    editor.identity_btn = hpack_identity.makeChild(uiclass=lev2.ui.ImageButton, args=["identity_btn"])
-    editor.identity_btn.inactive_image = icon_library.crosshairs_icon(20, 20)
-    editor.identity_btn.bgcolor = vec4(action_color.x, action_color.y, action_color.z, 1)
-    editor.identity_btn.hover_color = vec4(action_color.x + 0.1, action_color.y + 0.1, action_color.z + 0.1, 1)
-    editor.identity_btn.pressed_color = vec4(0.5, 0.35, 0.4, 1)
-    editor.identity_btn.inactive_blend_mode = tokens.ALPHA
-    editor.identity_btn.onPressed = editor._onSetIdentity
-
-    # Refresh from data if provided
-    if transform:
-      editor._refreshFromData()
-
-    # Store editor in vpack's uservars
-    vpack.uservars.transform_edit = editor
+    TransformEdit._build_ui(vpack, editor, transform)
 
     return vpack
