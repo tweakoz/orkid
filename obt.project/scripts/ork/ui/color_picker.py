@@ -116,6 +116,8 @@ class ColorPicker:
             b = self.b_slider.value
             self.current_color = vec4(r, g, b, self.current_color.w)
             self.coloredit.currentColor = self.current_color
+            if self.onColorChanged:
+                self.onColorChanged()
         finally:
             self._updating = False
 
@@ -133,6 +135,8 @@ class ColorPicker:
             self.r_slider.value = color.x
             self.g_slider.value = color.y
             self.b_slider.value = color.z
+            if self.onColorChanged:
+                self.onColorChanged()
         finally:
             self._updating = False
 

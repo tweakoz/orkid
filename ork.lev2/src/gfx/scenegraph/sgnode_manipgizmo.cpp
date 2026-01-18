@@ -895,11 +895,11 @@ void ManipGizmoDrawableImpl::_render(const RenderContextInstData& RCID) {
 
   auto controller = _data->_controller;
   if (!controller) {
-    printf("ManipGizmo: no controller\n");
+    //printf("ManipGizmo: no controller\n");
     return;
   }
   if (!controller->target()) {
-    printf("ManipGizmo: no target\n");
+    //printf("ManipGizmo: no target\n");
     return;
   }
   auto RCFD = RCID.rcfd();
