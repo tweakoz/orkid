@@ -1,0 +1,122 @@
+///////////////////////////////////////////////////////////////
+// Pick ID Visualization Shader
+// Converts uint pick IDs to distinct colors using hash function
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default { glsl_version = "150"; }
+///////////////////////////////////////////////////////////////
+// Interfaces
+///////////////////////////////////////////////////////////////
+
+uniform_set push_constants {
+  mat4 mvp;
+  vec4 ModColor;
+}
+sampler_set samplers (descriptor_set 0) {
+  usampler2D ColorMap;  // uint texture for pick IDs
+  sampler2D NrmMap;     // normal texture
+}
+
+vertex_interface iface_vdefault : push_constants {
+  inputs {
+    vec4 position : POSITION;
+    vec4 vtxcolor : COLOR0;
+    vec2 uv0 : TEXCOORD0;
+  }
+  outputs {
+    vec2 frg_uv;
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_interface iface_fmt
+  : push_constants
+  : samplers {
+  inputs {
+    vec2 frg_uv;
+  }
+  outputs {
+    vec4 out_clr;
+  }
+}
+///////////////////////////////////////////////////////////////
+// StateBlocks
+///////////////////////////////////////////////////////////////
+state_block sb_default : default {
+  BlendMode = OFF;
+  CullTest  = OFF;
+  DepthTest = ALWAYS;
+  DepthMask = OFF;
+}
+///////////////////////////////////////////////////////////////
+// Hash function to convert uint ID to color
+///////////////////////////////////////////////////////////////
+libblock lib_hash {
+  // Hash function for visualization - ensures bright, distinct colors
+  vec3 hashIdToColor(uint id) {
+    // Handle background (id=0)
+    if (id == 0u) {
+      return vec3(0.0, 0.0, 0.0);
+    }
+
+    // Use golden ratio based hash for good distribution
+    uint h1 = id * 2654435761u;
+    uint h2 = id * 2246822519u;
+    uint h3 = id * 3266489917u;
+
+    float r = float((h1 >> 8) & 0xFFu) / 255.0;
+    float g = float((h2 >> 8) & 0xFFu) / 255.0;
+    float b = float((h3 >> 8) & 0xFFu) / 255.0;
+
+    // Ensure at least one channel is bright (max >= 0.7)
+    float maxVal = max(max(r, g), b);
+    if (maxVal < 0.7) {
+      float boost = 0.7 / max(maxVal, 0.01);
+      r *= boost;
+      g *= boost;
+      b *= boost;
+    }
+
+    // Clamp and ensure minimum per-channel brightness
+    r = clamp(r, 0.15, 1.0);
+    g = clamp(g, 0.15, 1.0);
+    b = clamp(b, 0.15, 1.0);
+
+    return vec3(r, g, b);
+  }
+}
+///////////////////////////////////////////////////////////////
+// shaders
+///////////////////////////////////////////////////////////////
+vertex_shader vs_pickid : iface_vdefault {
+  gl_Position = mvp * position;
+  frg_uv      = uv0;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_pickid_viz
+  : iface_fmt
+  : lib_hash {
+  // Sample the uint pick ID texture
+  uvec4 pick_data = texture(ColorMap, frg_uv);
+  uint pick_id = pick_data.x;
+
+  // Convert pick ID to visible color via hash
+  vec3 color = hashIdToColor(pick_id);
+
+  // Sample normal and bias to positive [0,1]
+  vec3 nrm = texture(NrmMap, frg_uv).xyz;
+  vec3 nrm_biased = nrm * 0.5 + 0.5;
+
+  // Blend 20% normal into color
+  color = mix(color, nrm_biased, 0.2);
+
+  out_clr = vec4(color, 1.0);
+}
+///////////////////////////////////////////////////////////////
+technique pickid_viz {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_pickid;
+    fragment_shader = ps_pickid_viz;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////

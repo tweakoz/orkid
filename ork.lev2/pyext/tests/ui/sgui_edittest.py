@@ -687,6 +687,23 @@ class SceneEditorTest:
     self.sgv.forkDB()
     self.scenegraph.lightingmanager.gpuInit(ctx)
 
+    ############################################
+    # Setup pick ID visualization pipeline
+    ############################################
+
+    self.pickid_viz_mtl = lev2.FreestyleMaterial()
+    self.pickid_viz_mtl.gpuInit(ctx, "orkshader://ui_pickid_viz")
+    permu = lev2.FxPipelinePermutation()
+    permu.technique = self.pickid_viz_mtl.shader.technique("pickid_viz")
+    self.pickid_viz_pipeline = self.pickid_viz_mtl.fxcache.findPipeline(permu)
+    self.pickid_viz_pipeline.sharedMaterial = self.pickid_viz_mtl
+    p_mvp = self.pickid_viz_mtl.param("mvp")
+    self.p_colormap = self.pickid_viz_mtl.param("ColorMap")
+    self.p_nrmmap = self.pickid_viz_mtl.param("NrmMap")
+    self.pickid_viz_pipeline.bindParam(p_mvp, tokens.RCFD_Camera_MVP_Mono)
+    # Textures will be bound when pick result comes in
+    self.pick_img_id.pipeline = self.pickid_viz_pipeline
+
     # Load scene from command line if provided
     if args.scene and os.path.exists(args.scene):
       self._onLoadFileSelected(args.scene)
@@ -716,6 +733,9 @@ class SceneEditorTest:
     self.pick_img_id.texture = SG.pick_tex_id
     self.pick_img_pos.texture = SG.pick_tex_pos
     self.pick_img_nrm.texture = SG.pick_tex_nrm
+    # Bind textures to our visualization pipeline
+    self.pickid_viz_pipeline.bindParam(self.p_colormap, SG.pick_tex_id)
+    self.pickid_viz_pipeline.bindParam(self.p_nrmmap, SG.pick_tex_nrm)
     self.pick_img_id.setDirty()
     self.pick_img_pos.setDirty()
     self.pick_img_nrm.setDirty()

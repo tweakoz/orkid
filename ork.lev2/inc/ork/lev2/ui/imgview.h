@@ -8,6 +8,7 @@
 #pragma once
 
 #include <ork/lev2/ui/widget.h>
+#include <ork/lev2/gfx/material_freestyle.h>
 
 namespace ork::ui {
 

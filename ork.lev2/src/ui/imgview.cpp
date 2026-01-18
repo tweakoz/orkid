@@ -2,6 +2,7 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
+#include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/util/hotkey.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/gfx/pri.h>
