@@ -13,6 +13,8 @@ from orkengine.core import vec2, vec3, vec4, mtx4, quat, VarMap, CrcStringProxy
 from orkengine import lev2
 from ork.ui.analog_clock import AnalogClock
 from ork.ui.filesystem_browser import FilesystemBrowser
+from ork.ui.transform_edit import TransformEdit
+from ork.ui import standard_icons
 
 tokens = CrcStringProxy()
 
@@ -141,50 +143,63 @@ class PackWidgets(object):
     lg_group.margin = LAYOUT_MARGIN
 
     ############################################
-    # create a vertical pack widget in the upper-left grid cell
+    # create a scroll container in the upper-left grid cell
+    # with a vertical pack as its child
+    ############################################
+
+    sc1 = lg_group.makeChild( uiclass=lev2.ui.ScrollContainer, args=["scroll1"])
+    self.lg_group.replaceChild( self.griditems[0].layout, sc1 )
+    self.scroll1 = sc1.widget
+    self.scroll1.scroll_mode = lev2.ui.ScrollMode.Y
+    self.scroll1.bg_color = vec4(0.15, 0.15, 0.2, 1.0)
+
+    ############################################
+    # create a vertical pack widget as child of scroll container
     #  a vertical pack lays out its children vertically,
-    #  filling available widdth, and using item_height property of vpack
+    #  filling available width, and using item_height property of vpack
     #  to determine height of each child
     #  if fill property is True, the last child will fill remaining space
     ############################################
 
-    pk1 = lg_group.makeChild( uiclass=lev2.ui.VerticalPack, args=["vpack1"])
-    self.lg_group.replaceChild( self.griditems[0].layout, pk1 )
-    self.vpack1 = pk1.widget
+    self.vpack1 = lev2.ui.VerticalPack.wfactory(["vpack1"])
     self.vpack1.margin = MARGIN
     self.vpack1.item_height = 28
-    self.vpack1.fill = True
+    self.vpack1.fill = False  # Don't fill - let content height determine scrolling
+    self.scroll1.setChild(self.vpack1)
 
     ############################################
-    # populate the vertical pack with 3 text boxes
+    # populate the vertical pack with 3 line edits in a collapsable
     ############################################
 
-    box1 = self.vpack1.makeChild( uiclass=lev2.ui.LineEdit, args=["box1  ","text",vec3(0.5,0.3,0.3)] )
-    box2 = self.vpack1.makeChild( uiclass=lev2.ui.LineEdit, args=["box2  ","text",vec3(0.3,0.5,0.3)] )
-    box3 = self.vpack1.makeChild( uiclass=lev2.ui.LineEdit, args=["box3  ","text",vec3(0.3,0.3,0.5)] )
+    self.col_lineedits = self.vpack1.makeChild( uiclass=lev2.ui.Collapsable, args=["Line Edits"] )
+    self.lineedits_vpack = lev2.ui.VerticalPack.wfactory(["lineedits_vpack"])
+    self.lineedits_vpack.margin = MARGIN
+    self.lineedits_vpack.item_height = 28
+    self.lineedits_vpack.fill = False
+    self.col_lineedits.setChild(self.lineedits_vpack)
 
-    ############################################
-    # populate the vertical pack with a horizontal pack
-    #  a horizontal pack lays out its children horizontally,
-    #  filling available height, and using item_width property of hpack
-    ############################################
+    box1 = self.lineedits_vpack.makeChild( uiclass=lev2.ui.LineEdit, args=["box1  ","text",vec3(0.5,0.3,0.3)] )
+    box2 = self.lineedits_vpack.makeChild( uiclass=lev2.ui.LineEdit, args=["box2  ","text",vec3(0.3,0.5,0.3)] )
+    box3 = self.lineedits_vpack.makeChild( uiclass=lev2.ui.LineEdit, args=["box3  ","text",vec3(0.3,0.3,0.5)] )
 
-    self.hpack1 = self.vpack1.makeChild( uiclass=lev2.ui.HorizontalPack, args=["hpack1"])
+    self.hpack1 = self.lineedits_vpack.makeChild( uiclass=lev2.ui.HorizontalPack, args=["hpack1"])
     self.hpack1.margin = MARGIN
-    self.hpack1.item_width = 192
-    self.hpack1.fill = True
-    
-    box4 = self.hpack1.makeChild( uiclass=lev2.ui.LineEdit, args=["box1  ","text",vec3(0.5,0.5,0.5)] )
-    box5 = self.hpack1.makeChild( uiclass=lev2.ui.LineEdit, args=["box2  ","text",vec3(0.5,0.0,0.5)] )
+    self.hpack1.uniform = True
+
+    box4 = self.hpack1.makeChild( uiclass=lev2.ui.LineEdit, args=["box4  ","text",vec3(0.5,0.5,0.5)] )
+    box5 = self.hpack1.makeChild( uiclass=lev2.ui.LineEdit, args=["box5  ","text",vec3(0.5,0.0,0.5)] )
 
     ############################################
-    # populate the vertical pack with another horizontal pack
-    #  this one has uniform=True, which makes all children the same width
+    # populate the vertical pack with checkboxes in a collapsable
     ############################################
 
-    self.hpack2 = self.vpack1.makeChild( uiclass=lev2.ui.HorizontalPack, args=["hpack2"])
+    self.col_checkboxes = self.vpack1.makeChild( uiclass=lev2.ui.Collapsable, args=["Checkboxes"] )
+    self.hpack2 = lev2.ui.HorizontalPack.wfactory(["hpack2"])
     self.hpack2.margin = MARGIN
     self.hpack2.uniform = True
+    self.hpack2.fixed_height = 28
+    self.col_checkboxes.setChild(self.hpack2)
+
     chk_col = vec3(0.25)
     self.chk1 = self.hpack2.makeChild( uiclass=lev2.ui.Checkbox, args=["chk1  ",chk_col] )
     self.chk2 = self.hpack2.makeChild( uiclass=lev2.ui.Checkbox, args=["chk2  ",chk_col] )
@@ -194,12 +209,16 @@ class PackWidgets(object):
     self.chk5.onToggled = lambda x: print("chk5 toggled to ",x.toggled)
 
     ############################################
-    # populate the vertical pack with another horizontal pack
+    # populate the vertical pack with buttons in a collapsable
     ############################################
 
-    self.hpack3 = self.vpack1.makeChild( uiclass=lev2.ui.HorizontalPack, args=["hpack3"])
+    self.col_buttons = self.vpack1.makeChild( uiclass=lev2.ui.Collapsable, args=["Buttons"] )
+    self.hpack3 = lev2.ui.HorizontalPack.wfactory(["hpack3"])
     self.hpack3.margin = MARGIN
     self.hpack3.uniform = True
+    self.hpack3.fixed_height = 28
+    self.col_buttons.setChild(self.hpack3)
+
     btn_col1 = vec3(0.3,0.5,0.3)
     btn_col2 = vec3(0.3,0.3,0.5)
     btn_col3 = vec3(0.3,0.5,0.5)
@@ -210,14 +229,62 @@ class PackWidgets(object):
     self.btn5 = self.hpack3.makeChild( uiclass=lev2.ui.Button, args=["Swap",btn_col3] )
 
     ############################################
-    # populate the vertical pack with some sliders
+    # populate the vertical pack with image buttons in a collapsable
+    ############################################
+
+    self.col_imgbuttons = self.vpack1.makeChild( uiclass=lev2.ui.Collapsable, args=["Image Buttons"] )
+    self.hpack_imgbtns = lev2.ui.HorizontalPack.wfactory(["hpack_imgbtns"])
+    self.hpack_imgbtns.margin = MARGIN
+    self.hpack_imgbtns.uniform = True
+    self.hpack_imgbtns.fixed_height = 32
+    self.col_imgbuttons.setChild(self.hpack_imgbtns)
+
+    icon_size = 24
+    imgbtn_col = vec4(0.25, 0.25, 0.3, 1)
+    imgbtn_hover = vec4(0.35, 0.35, 0.4, 1)
+    imgbtn_pressed = vec4(0.2, 0.4, 0.6, 1)
+
+    def setup_imgbtn(btn, icon_name):
+      btn.inactive_image = standard_icons.get(icon_name, icon_size, icon_size)
+      btn.bgcolor = imgbtn_col
+      btn.hover_color = imgbtn_hover
+      btn.pressed_color = imgbtn_pressed
+      btn.inactive_blend_mode = tokens.ALPHA
+
+    self.imgbtn_play = self.hpack_imgbtns.makeChild( uiclass=lev2.ui.ImageButton, args=["play_btn"] )
+    setup_imgbtn(self.imgbtn_play, 'play')
+
+    self.imgbtn_pause = self.hpack_imgbtns.makeChild( uiclass=lev2.ui.ImageButton, args=["pause_btn"] )
+    setup_imgbtn(self.imgbtn_pause, 'pause')
+
+    self.imgbtn_stop = self.hpack_imgbtns.makeChild( uiclass=lev2.ui.ImageButton, args=["stop_btn"] )
+    setup_imgbtn(self.imgbtn_stop, 'stop')
+
+    self.imgbtn_rewind = self.hpack_imgbtns.makeChild( uiclass=lev2.ui.ImageButton, args=["rewind_btn"] )
+    setup_imgbtn(self.imgbtn_rewind, 'rewind')
+
+    self.imgbtn_ff = self.hpack_imgbtns.makeChild( uiclass=lev2.ui.ImageButton, args=["ff_btn"] )
+    setup_imgbtn(self.imgbtn_ff, 'fast_forward')
+
+    self.imgbtn_record = self.hpack_imgbtns.makeChild( uiclass=lev2.ui.ImageButton, args=["record_btn"] )
+    setup_imgbtn(self.imgbtn_record, 'record')
+
+    ############################################
+    # populate the vertical pack with some sliders in a collapsable
     ############################################
 
     sli_col = vec3(0.3,0.3,0.5)
-    self.sli1 = self.vpack1.makeChild( uiclass=lev2.ui.IntSlider, args=["sli1  ",sli_col,0,100,50] )
-    self.sli2 = self.vpack1.makeChild( uiclass=lev2.ui.FloatSlider, args=["sli2  ",sli_col,-3.0,3.0,0.0] )
+    self.col_sliders = self.vpack1.makeChild( uiclass=lev2.ui.Collapsable, args=["Sliders"] )
+    self.sliders_vpack = lev2.ui.VerticalPack.wfactory(["sliders_vpack"])
+    self.sliders_vpack.margin = MARGIN
+    self.sliders_vpack.item_height = 28
+    self.sliders_vpack.fill = False
+    self.col_sliders.setChild(self.sliders_vpack)
 
-    def on_V(x): 
+    self.sli1 = self.sliders_vpack.makeChild( uiclass=lev2.ui.IntSlider, args=["sli1  ",sli_col,0,100,50] )
+    self.sli2 = self.sliders_vpack.makeChild( uiclass=lev2.ui.FloatSlider, args=["sli2  ",sli_col,-3.0,3.0,0.0] )
+
+    def on_V(x):
       self.box_height = x.value
     self.sli2.onValueChanged = on_V
     self.sli2.update_on_drag = True
@@ -231,11 +298,30 @@ class PackWidgets(object):
     self.cb1.setItems(["zero","one","two","three","four","five","six","seven","eight","nine"])
     
     ############################################
-    # create a tabbed widget
+    # add transform edit composite widgets wrapped in collapsables
+    ############################################
+
+    self.col1 = self.vpack1.makeChild( uiclass=lev2.ui.Collapsable, args=["Transform 1"] )
+    self.xfm1 = TransformEdit.wfactory(["xfm1"])
+    self.col1.setChild(self.xfm1)
+
+    self.col2 = self.vpack1.makeChild( uiclass=lev2.ui.Collapsable, args=["Transform 2"] )
+    self.xfm2 = TransformEdit.wfactory(["xfm2"])
+    self.col2.setChild(self.xfm2)
+
+    self.col3 = self.vpack1.makeChild( uiclass=lev2.ui.Collapsable, args=["Transform 3"] )
+    self.xfm3 = TransformEdit.wfactory(["xfm3"])
+    self.col3.setChild(self.xfm3)
+
+    ############################################
+    # create a tabbed widget in a collapsable
     # this displays one of several child widgets, with tabs to select the active child
     ############################################
 
-    self.tb1 = self.vpack1.makeChild( uiclass=lev2.ui.TabsWidget, args=["tab1  ",sli_col] )
+    self.col_tabs = self.vpack1.makeChild( uiclass=lev2.ui.Collapsable, args=["Tabs"] )
+    self.tb1 = lev2.ui.TabsWidget.wfactory(["tab1  ",sli_col])
+    self.tb1.fixed_height = 512
+    self.col_tabs.setChild(self.tb1)
 
     ############################################
     # add 2 text boxes to the tabbed widget

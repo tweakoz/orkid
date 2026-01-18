@@ -29,17 +29,18 @@ void VerticalPack::DoLayout() {
   if (num_children == 0) return;
 
   if (_uniform) {
-    // Distribute children uniformly across width, respecting fixed widths
+    // Distribute children uniformly across width, respecting desired heights
     int total_margin = _margin * (num_children - 1);
     int available_height = _geometry._h - total_margin;
 
-    // First pass: count non-fixed children and sum fixed widths
+    // First pass: count non-fixed children and sum desired heights
     int num_non_fixed = 0;
     int total_fixed_height = 0;
     for (size_t i = 0; i < num_children; i++) {
       auto child = _children[i];
-      if (child->_fixed_height) {
-        total_fixed_height += child->_fixed_height;
+      int desired_h = child->desiredHeight();
+      if (desired_h > 0) {
+        total_fixed_height += desired_h;
       } else {
         num_non_fixed++;
       }
@@ -53,7 +54,8 @@ void VerticalPack::DoLayout() {
     int y = 0;
     for (size_t i = 0; i < num_children; i++) {
       auto child = _children[i];
-      int h = child->_fixed_height ? child->_fixed_height : uniform_height;
+      int desired_h = child->desiredHeight();
+      int h = (desired_h > 0) ? desired_h : uniform_height;
       child->SetRect(0, y, _geometry._w, h);
       y += h + _margin;
     }
@@ -69,10 +71,13 @@ void VerticalPack::DoLayout() {
                             (!_fill_widget && _fill && (i == num_children - 1));
       if (is_fill_widget) {
         fill_index = i;
-      } else if (child->_fixed_height) {
-        total_fixed += child->_fixed_height + _margin;
       } else {
-        total_fixed += _item_height + _margin;
+        int desired_h = child->desiredHeight();
+        if (desired_h > 0) {
+          total_fixed += desired_h + _margin;
+        } else {
+          total_fixed += _item_height + _margin;
+        }
       }
     }
 
@@ -89,10 +94,13 @@ void VerticalPack::DoLayout() {
       int child_height;
       if (is_fill_widget) {
         child_height = fill_height;
-      } else if (child->_fixed_height) {
-        child_height = child->_fixed_height;
       } else {
-        child_height = _item_height;
+        int desired_h = child->desiredHeight();
+        if (desired_h > 0) {
+          child_height = desired_h;
+        } else {
+          child_height = _item_height;
+        }
       }
 
       child->SetRect(0, Y, _geometry._w, child_height);
@@ -185,6 +193,42 @@ void VerticalPack::DoDraw(drawevent_constptr_t drwev) {
   }
   fbi->popScissor();
   ///////////////////////////////////
+}
+
+/////////////////////////////////////////////////////////////////////////
+int VerticalPack::desiredHeight() const {
+  // If we have a fixed height set, use it
+  if (_fixed_height > 0) {
+    return _fixed_height;
+  }
+
+  size_t num_children = _children.size();
+  if (num_children == 0) return 0;
+
+  int total_height = 0;
+
+  if (_uniform) {
+    // In uniform mode, all children share available height
+    // Just return current height (no intrinsic size)
+    return 0;
+  } else {
+    // Sum up heights based on _item_height or child's desiredHeight
+    for (size_t i = 0; i < num_children; i++) {
+      auto child = _children[i];
+      int desired_h = child->desiredHeight();
+      if (desired_h > 0) {
+        total_height += desired_h;
+      } else {
+        total_height += _item_height;
+      }
+      // Add margin between items
+      if (i < num_children - 1) {
+        total_height += _margin;
+      }
+    }
+  }
+
+  return total_height;
 }
 
 /////////////////////////////////////////////////////////////////////////

@@ -141,7 +141,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   int num_mips = 1;
   if (tid._autogenmips && tid._w > 1 && tid._h > 1 && !tid._initCubeTexture) {
-    num_mips = 1 + int(floor(log2(std::max(tid._w, tid._h))));
+    num_mips = 1 + int(floor(log2(std::min(tid._w, tid._h))));
   }
 
   /////////////////////////////////////

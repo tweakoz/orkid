@@ -65,6 +65,8 @@ public:
   bool _pressed = false;
   bool _hovered = false;
   fvec4 _bgcolor = fvec4(0,0,0, 1.0f);
+  fvec4 _hover_color = fvec4(0.3f, 0.3f, 0.35f, 1.0f);
+  fvec4 _pressed_color = fvec4(0.2f, 0.4f, 0.6f, 1.0f);
 
   ///////////////////////////////////////////////
   // Image/Texture state for each button state

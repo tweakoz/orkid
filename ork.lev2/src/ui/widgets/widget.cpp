@@ -315,7 +315,7 @@ void Widget::LocalToRoot(int lx, int ly, int& rx, int& ry) const {
   }
 }
 ///////////////////////////////////////////////////////////
-void Widget::RootToLocal(int rx, int ry, int& lx, int& ly) const {
+void Widget::RootToLocal(int rx, int ry, int& lx, int& ly, bool apply_scroll) const {
   bool ishidpi    = _target ? _target->hiDPI() : false;
   lx              = rx;
   ly              = ry;
@@ -323,6 +323,10 @@ void Widget::RootToLocal(int rx, int ry, int& lx, int& ly) const {
   while (w) {
     lx -= w->x();
     ly -= w->y();
+    if (apply_scroll) {
+      lx += w->scrollAdjustX();
+      ly += w->scrollAdjustY();
+    }
     w = w->parent();
   }
 }

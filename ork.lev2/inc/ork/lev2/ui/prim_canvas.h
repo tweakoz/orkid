@@ -276,6 +276,12 @@ struct PrimCanvas : public Widget {
   fvec4 _bg_color = fvec4(0.1f, 0.1f, 0.1f, 1.0f);
   bool _draw_background = true;
 
+  // Desired size for scroll containers (0 = use actual size)
+  int _desired_width = 0;
+  int _desired_height = 0;
+  int desiredWidth() const override { return _desired_width; }
+  int desiredHeight() const override { return _desired_height; }
+
   //////////////////////////////////////////////////////////////
   // GPU initialization and pipeline access
   //////////////////////////////////////////////////////////////

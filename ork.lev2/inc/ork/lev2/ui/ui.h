@@ -35,6 +35,8 @@ struct TextBox;
 struct TabWidget;
 struct ImageView;
 struct LineEdit;
+struct F32Edit;
+struct IntEdit;
 struct Button;
 struct Checkbox;
 struct IntSlider;
@@ -54,6 +56,7 @@ struct GraphView;
 struct LoggerGroup;
 struct SdfShape;
 struct DockablePanel;
+struct ScrollContainer;
 
 using context_ptr_t     = std::shared_ptr<Context>;
 using widget_ptr_t      = std::shared_ptr<Widget>;
@@ -71,6 +74,8 @@ using labelbox_ptr_t    = std::shared_ptr<LabelBox>;
 using textbox_ptr_t     = std::shared_ptr<TextBox>;
 using imgview_ptr_t     = std::shared_ptr<ImageView>;
 using lineedit_ptr_t    = std::shared_ptr<LineEdit>;
+using f32edit_ptr_t     = std::shared_ptr<F32Edit>;
+using intedit_ptr_t     = std::shared_ptr<IntEdit>;
 using button_ptr_t      = std::shared_ptr<Button>;
 using checkbox_ptr_t    = std::shared_ptr<Checkbox>;
 using intslider_ptr_t   = std::shared_ptr<IntSlider>;
@@ -86,6 +91,7 @@ using loggergroup_ptr_t = std::shared_ptr<LoggerGroup>;
 using loggergroup_wkptr_t = std::weak_ptr<LoggerGroup>;
 using sdfshape_ptr_t    = std::shared_ptr<SdfShape>;
 using dockablepanel_ptr_t = std::shared_ptr<DockablePanel>;
+using scroll_container_ptr_t = std::shared_ptr<ScrollContainer>;
 ////////////////////////////////////////////////////////////////////////////////
 
 using evrouter_t  = std::function<Widget*(event_constptr_t ev)>;

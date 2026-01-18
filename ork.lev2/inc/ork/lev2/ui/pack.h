@@ -37,6 +37,9 @@ struct VerticalPack : public Group {
   fvec4 _bgcolor = fvec4(0.1f, 0.1f, 0.1f, 1.0f);
   bool _draw_background = true;
 
+  // Report desired height based on children
+  int desiredHeight() const override;
+
 protected:
   // Override from Widget
   void DoDraw(drawevent_constptr_t drwev) override;
@@ -73,6 +76,9 @@ struct HorizontalPack : public Group {
   bool _uniform = false;  // Distribute children uniformly across width
   fvec4 _bgcolor = fvec4(0.1f, 0.1f, 0.1f, 1.0f);
   bool _draw_background = true;
+
+  // Report desired width based on children
+  int desiredWidth() const override;
 
 protected:
   // Override from Widget

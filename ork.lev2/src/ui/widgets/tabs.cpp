@@ -201,7 +201,7 @@ Widget* TabWidget::doRouteUiEvent(event_constptr_t ev) {
   // Convert event coordinates to local space (properly!)
   int localX = 0;
   int localY = 0;
-  RootToLocal(ev->miX, ev->miY, localX, localY);
+  RootToLocal(ev->miX, ev->miY, localX, localY, true);
 
   // Effective tab bar height (0 when in page mode)
   int effectiveTabBarHeight = _showTabs ? _tabBarHeight : 0;
@@ -239,7 +239,7 @@ HandlerResult TabWidget::DoOnUiEvent(event_constptr_t ev) {
   // Convert to local coordinates (properly!)
   int localX = 0;
   int localY = 0;
-  RootToLocal(ev->miX, ev->miY, localX, localY);
+  RootToLocal(ev->miX, ev->miY, localX, localY, true);
 
   switch (ev->_eventcode) {
     case EventCode::PUSH: {

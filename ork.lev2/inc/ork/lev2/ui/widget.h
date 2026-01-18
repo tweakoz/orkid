@@ -128,7 +128,7 @@ public:
   }
 
   void LocalToRoot(int lx, int ly, int& rx, int& ry) const;
-  void RootToLocal(int rx, int ry, int& lx, int& ly) const;
+  void RootToLocal(int rx, int ry, int& lx, int& ly, bool apply_scroll = false) const;
 
   void pushScissor(lev2::FrameBufferInterface* fbi) const;
   void popScissor(lev2::FrameBufferInterface* fbi) const;
@@ -182,6 +182,18 @@ public:
   float logicalHeight() const;
   float logicalX() const;
   float logicalY() const;
+
+  // Desired/intrinsic size - 0 means "don't care, use allocated size"
+  // Override in subclasses to report natural content size
+  // By default returns _fixed_width/_fixed_height if set
+  virtual int desiredWidth() const { return _fixed_width; }
+  virtual int desiredHeight() const { return _fixed_height; }
+
+  // Scroll adjustment for coordinate transformations (RootToLocal/LocalToRoot)
+  // Override in scrolling containers to provide scroll offset
+  // RootToLocal adds these, LocalToRoot subtracts them
+  virtual int scrollAdjustX() const { return 0; }
+  virtual int scrollAdjustY() const { return 0; }
 
   Rect geometry() const {
     return _geometry;

@@ -267,7 +267,7 @@ HandlerResult Toolbar::DoOnUiEvent(event_constptr_t ev) {
 
   int localX = 0;
   int localY = 0;
-  RootToLocal(ev->miX, ev->miY, localX, localY);
+  RootToLocal(ev->miX, ev->miY, localX, localY, true);
 
   int item_index = _getItemAt(localX, localY);
 

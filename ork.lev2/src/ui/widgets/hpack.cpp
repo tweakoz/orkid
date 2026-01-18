@@ -192,4 +192,34 @@ void HorizontalPack::DoDraw(drawevent_constptr_t drwev) {
 }
 
 /////////////////////////////////////////////////////////////////////////
+int HorizontalPack::desiredWidth() const {
+  size_t num_children = _children.size();
+  if (num_children == 0) return 0;
+
+  int total_width = 0;
+
+  if (_uniform) {
+    // In uniform mode, all children share available width
+    // Just return current width (no intrinsic size)
+    return 0;
+  } else {
+    // Sum up widths based on _item_width or _fixed_width
+    for (size_t i = 0; i < num_children; i++) {
+      auto child = _children[i];
+      if (child->_fixed_width) {
+        total_width += child->_fixed_width;
+      } else {
+        total_width += _item_width;
+      }
+      // Add margin between items
+      if (i < num_children - 1) {
+        total_width += _margin;
+      }
+    }
+  }
+
+  return total_width;
+}
+
+/////////////////////////////////////////////////////////////////////////
 } // namespace ork::ui

@@ -131,7 +131,14 @@ void ImageButton::DoDraw(drawevent_constptr_t drwev) {
   auto fxi    = tgt->FXI();
   auto defmtl = lev2::defaultUITextureMaterial();
 
-  _drawColoredBox(drwev, _bgcolor);
+  // Select background color based on state
+  fvec4 bg_color = _bgcolor;
+  if (_pressed) {
+    bg_color = _pressed_color;
+  } else if (_hovered) {
+    bg_color = _hover_color;
+  }
+  _drawColoredBox(drwev, bg_color);
 
   // Update textures from images/providers
   _updateTextures(tgt);

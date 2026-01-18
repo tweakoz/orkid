@@ -18,6 +18,8 @@
 #include <ork/lev2/ui/alignmentgroup.h>
 #include <ork/lev2/ui/split.h>
 #include <ork/lev2/ui/lineedit.h>
+#include <ork/lev2/ui/f32edit.h>
+#include <ork/lev2/ui/intedit.h>
 #include <ork/lev2/ui/button.h>
 #include <ork/lev2/ui/imagebutton.h>
 #include <ork/lev2/ui/checkbox.h>
@@ -33,6 +35,8 @@
 #include <ork/lev2/ui/popups.inl>
 #include <ork/lev2/ui/prim_canvas.h>
 #include <ork/lev2/ui/dockable_panel.h>
+#include <ork/lev2/ui/scroll_container.h>
+#include <ork/lev2/ui/collapsable.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
 #include <ork/lev2/gfx/image.h>
 #include <ork/util/logger.h>
@@ -1007,7 +1011,21 @@ void pyinit_ui(py::module& module_lev2) {
           .def_property(
               "draw_background",
               [](ui::hpack_ptr_t hpack) -> bool { return hpack->_draw_background; },
-              [](ui::hpack_ptr_t hpack, bool val) { hpack->_draw_background = val; });
+              [](ui::hpack_ptr_t hpack, bool val) { hpack->_draw_background = val; })
+          .def(
+              "addChild",
+              [](ui::hpack_ptr_t hpack, ui::widget_ptr_t child, bool relayout) { //
+                hpack->addChild(child, relayout);
+              },
+              py::arg("child"),
+              py::arg("relayout") = true)
+          .def(
+              "removeChild",
+              [](ui::hpack_ptr_t hpack, ui::widget_ptr_t child, bool relayout) { //
+                hpack->removeChild(child, relayout);
+              },
+              py::arg("child"),
+              py::arg("relayout") = true);
   type_codec->registerStdCodec<ui::hpack_ptr_t>(hpack_type);
   /////////////////////////////////////////////////////////////////////////////////
   // AlignmentGroup
@@ -1300,6 +1318,234 @@ void pyinit_ui(py::module& module_lev2) {
               });
   type_codec->registerStdCodec<ui::lineedit_ptr_t>(lineedit_type);
   /////////////////////////////////////////////////////////////////////////////////
+  // F32Edit
+  auto f32edit_type = //
+      py::class_<ui::F32Edit, ui::Widget, ui::f32edit_ptr_t>(uimodule, "F32Edit")
+          .def_static(
+              "wfactory",
+              [type_codec](py::list py_args) -> ui::f32edit_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto label        = decoded_args[1].get<std::string>();
+                float value       = decoded_args.size() > 2 ? decoded_args[2].get<float>() : 0.0f;
+                float minval      = decoded_args.size() > 3 ? decoded_args[3].get<float>() : -1e30f;
+                float maxval      = decoded_args.size() > 4 ? decoded_args[4].get<float>() : 1e30f;
+                auto edit         = std::make_shared<ui::F32Edit>(name, label, value, minval, maxval);
+                return edit;
+              })
+          .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto label        = decoded_args[1].get<std::string>();
+                float value       = decoded_args.size() > 2 ? decoded_args[2].get<float>() : 0.0f;
+                float minval      = decoded_args.size() > 3 ? decoded_args[3].get<float>() : -1e30f;
+                float maxval      = decoded_args.size() > 4 ? decoded_args[4].get<float>() : 1e30f;
+                auto layoutitem   = lg->makeChild<ui::F32Edit>(name, label, value, minval, maxval);
+                return layoutitem.as_shared();
+              })
+          .def_property(
+              "value",
+              [](ui::f32edit_ptr_t edit) -> float { //
+                return edit->getValue();
+              },
+              [](ui::f32edit_ptr_t edit, float val) { //
+                edit->setValue(val);
+              })
+          .def_property(
+              "min",
+              [](ui::f32edit_ptr_t edit) -> float { //
+                return edit->getMin();
+              },
+              [](ui::f32edit_ptr_t edit, float val) { //
+                edit->setMin(val);
+              })
+          .def_property(
+              "max",
+              [](ui::f32edit_ptr_t edit) -> float { //
+                return edit->getMax();
+              },
+              [](ui::f32edit_ptr_t edit, float val) { //
+                edit->setMax(val);
+              })
+          .def_property(
+              "label",
+              [](ui::f32edit_ptr_t edit) -> std::string { //
+                return edit->getLabel();
+              },
+              [](ui::f32edit_ptr_t edit, std::string l) { //
+                edit->setLabel(l);
+              })
+          .def_property(
+              "precision",
+              [](ui::f32edit_ptr_t edit) -> int { //
+                return edit->_precision;
+              },
+              [](ui::f32edit_ptr_t edit, int p) { //
+                edit->_precision = p;
+              })
+          .def_property(
+              "fg_color",
+              [](ui::f32edit_ptr_t edit) -> fvec3 { //
+                return edit->_fg_color;
+              },
+              [](ui::f32edit_ptr_t edit, fvec3 c) { //
+                edit->_fg_color = c;
+              })
+          .def_property(
+              "bg_color",
+              [](ui::f32edit_ptr_t edit) -> fvec3 { //
+                return edit->_bg_color;
+              },
+              [](ui::f32edit_ptr_t edit, fvec3 c) { //
+                edit->_bg_color = c;
+              })
+          .def_property(
+              "input_color",
+              [](ui::f32edit_ptr_t edit) -> fvec4 { //
+                return edit->_input_color;
+              },
+              [](ui::f32edit_ptr_t edit, fvec4 c) { //
+                edit->_input_color = c;
+                edit->_input_color_set = true;
+              })
+          .def(
+              "onValueChanged",
+              [](ui::f32edit_ptr_t edit, py::object callback) { //
+                if (callback.is_none()) {
+                  edit->_onValueChanged = nullptr;
+                } else {
+                  edit->_onValueChanged = [callback](float val) {
+                    py::gil_scoped_acquire acquire;
+                    callback(val);
+                  };
+                }
+              })
+          .def(
+              "onValueCommitted",
+              [](ui::f32edit_ptr_t edit, py::object callback) { //
+                if (callback.is_none()) {
+                  edit->_onValueCommitted = nullptr;
+                } else {
+                  edit->_onValueCommitted = [callback](float val) {
+                    py::gil_scoped_acquire acquire;
+                    callback(val);
+                  };
+                }
+              });
+  type_codec->registerStdCodec<ui::f32edit_ptr_t>(f32edit_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // IntEdit
+  auto intedit_type = //
+      py::class_<ui::IntEdit, ui::Widget, ui::intedit_ptr_t>(uimodule, "IntEdit")
+          .def_static(
+              "wfactory",
+              [type_codec](py::list py_args) -> ui::intedit_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto label        = decoded_args[1].get<std::string>();
+                int value         = decoded_args.size() > 2 ? decoded_args[2].get<int>() : 0;
+                int minval        = decoded_args.size() > 3 ? decoded_args[3].get<int>() : INT_MIN;
+                int maxval        = decoded_args.size() > 4 ? decoded_args[4].get<int>() : INT_MAX;
+                auto edit         = std::make_shared<ui::IntEdit>(name, label, value, minval, maxval);
+                return edit;
+              })
+          .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto label        = decoded_args[1].get<std::string>();
+                int value         = decoded_args.size() > 2 ? decoded_args[2].get<int>() : 0;
+                int minval        = decoded_args.size() > 3 ? decoded_args[3].get<int>() : INT_MIN;
+                int maxval        = decoded_args.size() > 4 ? decoded_args[4].get<int>() : INT_MAX;
+                auto layoutitem   = lg->makeChild<ui::IntEdit>(name, label, value, minval, maxval);
+                return layoutitem.as_shared();
+              })
+          .def_property(
+              "value",
+              [](ui::intedit_ptr_t edit) -> int { //
+                return edit->getValue();
+              },
+              [](ui::intedit_ptr_t edit, int val) { //
+                edit->setValue(val);
+              })
+          .def_property(
+              "min",
+              [](ui::intedit_ptr_t edit) -> int { //
+                return edit->getMin();
+              },
+              [](ui::intedit_ptr_t edit, int val) { //
+                edit->setMin(val);
+              })
+          .def_property(
+              "max",
+              [](ui::intedit_ptr_t edit) -> int { //
+                return edit->getMax();
+              },
+              [](ui::intedit_ptr_t edit, int val) { //
+                edit->setMax(val);
+              })
+          .def_property(
+              "label",
+              [](ui::intedit_ptr_t edit) -> std::string { //
+                return edit->getLabel();
+              },
+              [](ui::intedit_ptr_t edit, std::string l) { //
+                edit->setLabel(l);
+              })
+          .def_property(
+              "fg_color",
+              [](ui::intedit_ptr_t edit) -> fvec3 { //
+                return edit->_fg_color;
+              },
+              [](ui::intedit_ptr_t edit, fvec3 c) { //
+                edit->_fg_color = c;
+              })
+          .def_property(
+              "bg_color",
+              [](ui::intedit_ptr_t edit) -> fvec3 { //
+                return edit->_bg_color;
+              },
+              [](ui::intedit_ptr_t edit, fvec3 c) { //
+                edit->_bg_color = c;
+              })
+          .def_property(
+              "input_color",
+              [](ui::intedit_ptr_t edit) -> fvec4 { //
+                return edit->_input_color;
+              },
+              [](ui::intedit_ptr_t edit, fvec4 c) { //
+                edit->_input_color = c;
+                edit->_input_color_set = true;
+              })
+          .def(
+              "onValueChanged",
+              [](ui::intedit_ptr_t edit, py::object callback) { //
+                if (callback.is_none()) {
+                  edit->_onValueChanged = nullptr;
+                } else {
+                  edit->_onValueChanged = [callback](int val) {
+                    py::gil_scoped_acquire acquire;
+                    callback(val);
+                  };
+                }
+              })
+          .def(
+              "onValueCommitted",
+              [](ui::intedit_ptr_t edit, py::object callback) { //
+                if (callback.is_none()) {
+                  edit->_onValueCommitted = nullptr;
+                } else {
+                  edit->_onValueCommitted = [callback](int val) {
+                    py::gil_scoped_acquire acquire;
+                    callback(val);
+                  };
+                }
+              });
+  type_codec->registerStdCodec<ui::intedit_ptr_t>(intedit_type);
+  /////////////////////////////////////////////////////////////////////////////////
   // Button
   auto button_type = //
       py::class_<ui::Button, ui::Widget, ui::button_ptr_t>(uimodule, "Button")
@@ -1527,6 +1773,22 @@ void pyinit_ui(py::module& module_lev2) {
               },
               [](ui::imagebutton_ptr_t btn, fvec4 c) { //
                 btn->_bgcolor = c;
+              })
+          .def_property(
+              "hover_color",
+              [](ui::imagebutton_ptr_t btn) -> fvec4 { //
+                return btn->_hover_color;
+              },
+              [](ui::imagebutton_ptr_t btn, fvec4 c) { //
+                btn->_hover_color = c;
+              })
+          .def_property(
+              "pressed_color",
+              [](ui::imagebutton_ptr_t btn) -> fvec4 { //
+                return btn->_pressed_color;
+              },
+              [](ui::imagebutton_ptr_t btn, fvec4 c) { //
+                btn->_pressed_color = c;
               })
           .def_property(
               "onPressed",
@@ -2561,6 +2823,14 @@ void pyinit_ui(py::module& module_lev2) {
               [](ui::prim_canvas_ptr_t canvas) -> bool { return canvas->_draw_background; },
               [](ui::prim_canvas_ptr_t canvas, bool b) { canvas->_draw_background = b; })
           .def_property(
+              "desiredWidth",
+              [](ui::prim_canvas_ptr_t canvas) -> int { return canvas->_desired_width; },
+              [](ui::prim_canvas_ptr_t canvas, int w) { canvas->_desired_width = w; })
+          .def_property(
+              "desiredHeight",
+              [](ui::prim_canvas_ptr_t canvas) -> int { return canvas->_desired_height; },
+              [](ui::prim_canvas_ptr_t canvas, int h) { canvas->_desired_height = h; })
+          .def_property(
               "onUiEvent",
               [](ui::prim_canvas_ptr_t canvas) -> py::object { return py::none(); },
               [](ui::prim_canvas_ptr_t canvas, py::object callback) {
@@ -2663,6 +2933,187 @@ void pyinit_ui(py::module& module_lev2) {
                 return rval;
               });
   type_codec->registerStdCodec<ui::dockablepanel_ptr_t>(dockablepanel_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // ScrollContainer
+  auto scrollcontainer_type = //
+      py::class_<ui::ScrollContainer, ui::Group, ui::scroll_container_ptr_t>(uimodule, "ScrollContainer")
+          .def_static(
+              "wfactory",
+              [type_codec](py::list py_args) -> ui::scroll_container_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto container    = std::make_shared<ui::ScrollContainer>(name);
+                return container;
+              })
+          .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto layoutitem   = lg->makeChild<ui::ScrollContainer>(name);
+                return layoutitem.as_shared();
+              })
+          .def(
+              "setChild",
+              [](ui::scroll_container_ptr_t sc, ui::widget_ptr_t child) { //
+                sc->setChild(child);
+              })
+          .def_property_readonly(
+              "child",
+              [](ui::scroll_container_ptr_t sc) -> ui::widget_ptr_t { //
+                return sc->getChild();
+              })
+          .def_property(
+              "scroll_mode",
+              [](ui::scroll_container_ptr_t sc) -> int { //
+                return static_cast<int>(sc->scrollMode());
+              },
+              [](ui::scroll_container_ptr_t sc, int mode) { //
+                sc->setScrollMode(static_cast<ui::ScrollMode>(mode));
+              })
+          .def_property(
+              "scroll_offset_x",
+              [](ui::scroll_container_ptr_t sc) -> int { return sc->scrollOffsetX(); },
+              [](ui::scroll_container_ptr_t sc, int v) { sc->setScrollOffsetX(v); })
+          .def_property(
+              "scroll_offset_y",
+              [](ui::scroll_container_ptr_t sc) -> int { return sc->scrollOffsetY(); },
+              [](ui::scroll_container_ptr_t sc, int v) { sc->setScrollOffsetY(v); })
+          .def_property(
+              "scroll_speed",
+              [](ui::scroll_container_ptr_t sc) -> int { return sc->_scroll_speed; },
+              [](ui::scroll_container_ptr_t sc, int v) { sc->_scroll_speed = v; })
+          .def_property(
+              "bg_color",
+              [](ui::scroll_container_ptr_t sc) -> fvec4 { return sc->_bg_color; },
+              [](ui::scroll_container_ptr_t sc, fvec4 c) { sc->_bg_color = c; })
+          .def_property(
+              "draw_background",
+              [](ui::scroll_container_ptr_t sc) -> bool { return sc->_draw_background; },
+              [](ui::scroll_container_ptr_t sc, bool v) { sc->_draw_background = v; })
+          .def_property(
+              "draw_scroll_indicator",
+              [](ui::scroll_container_ptr_t sc) -> bool { return sc->_draw_scroll_indicator; },
+              [](ui::scroll_container_ptr_t sc, bool v) { sc->_draw_scroll_indicator = v; })
+          .def_property(
+              "scroll_indicator_color",
+              [](ui::scroll_container_ptr_t sc) -> fvec4 { return sc->_scroll_indicator_color; },
+              [](ui::scroll_container_ptr_t sc, fvec4 c) { sc->_scroll_indicator_color = c; })
+          .def_property(
+              "scroll_indicator_width",
+              [](ui::scroll_container_ptr_t sc) -> int { return sc->_scroll_indicator_width; },
+              [](ui::scroll_container_ptr_t sc, int v) { sc->_scroll_indicator_width = v; })
+          .def_property(
+              "scroll_indicator_margin",
+              [](ui::scroll_container_ptr_t sc) -> int { return sc->_scroll_indicator_margin; },
+              [](ui::scroll_container_ptr_t sc, int v) { sc->_scroll_indicator_margin = v; })
+          .def_property_readonly(
+              "content_width",
+              [](ui::scroll_container_ptr_t sc) -> int { return sc->contentWidth(); })
+          .def_property_readonly(
+              "content_height",
+              [](ui::scroll_container_ptr_t sc) -> int { return sc->contentHeight(); })
+          .def_property_readonly(
+              "max_scroll_x",
+              [](ui::scroll_container_ptr_t sc) -> int { return sc->maxScrollX(); })
+          .def_property_readonly(
+              "max_scroll_y",
+              [](ui::scroll_container_ptr_t sc) -> int { return sc->maxScrollY(); })
+          .def("scrollToTop", [](ui::scroll_container_ptr_t sc) { sc->scrollToTop(); })
+          .def("scrollToBottom", [](ui::scroll_container_ptr_t sc) { sc->scrollToBottom(); })
+          .def("scrollToLeft", [](ui::scroll_container_ptr_t sc) { sc->scrollToLeft(); })
+          .def("scrollToRight", [](ui::scroll_container_ptr_t sc) { sc->scrollToRight(); });
+  type_codec->registerStdCodec<ui::scroll_container_ptr_t>(scrollcontainer_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // ScrollMode enum
+  py::enum_<ui::ScrollMode>(uimodule, "ScrollMode")
+      .value("Y", ui::ScrollMode::Y)
+      .value("X", ui::ScrollMode::X)
+      .value("XY", ui::ScrollMode::XY);
+  /////////////////////////////////////////////////////////////////////////////////
+  // Collapsable
+  auto collapsable_type = //
+      py::class_<ui::Collapsable, ui::Widget, ui::collapsable_ptr_t>(uimodule, "Collapsable")
+          .def_static(
+              "wfactory",
+              [type_codec](py::list py_args) -> ui::collapsable_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto collapsable  = std::make_shared<ui::Collapsable>(name);
+                return collapsable;
+              })
+          .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto layoutitem   = lg->makeChild<ui::Collapsable>(name);
+                return layoutitem.as_shared();
+              })
+          .def(
+              "setChild",
+              [](ui::collapsable_ptr_t col, ui::widget_ptr_t child) { //
+                col->setChild(child);
+              })
+          .def_property_readonly(
+              "child",
+              [](ui::collapsable_ptr_t col) -> ui::widget_ptr_t { //
+                return col->getChild();
+              })
+          .def_property(
+              "expanded",
+              [](ui::collapsable_ptr_t col) -> bool { return col->isExpanded(); },
+              [](ui::collapsable_ptr_t col, bool v) { col->setExpanded(v); })
+          .def("toggle", [](ui::collapsable_ptr_t col) { col->toggle(); })
+          .def_property(
+              "header_height",
+              [](ui::collapsable_ptr_t col) -> int { return col->_header_height; },
+              [](ui::collapsable_ptr_t col, int v) { col->_header_height = v; })
+          .def_property(
+              "header_bg_color",
+              [](ui::collapsable_ptr_t col) -> fvec4 { return col->_header_bg_color; },
+              [](ui::collapsable_ptr_t col, fvec4 c) { col->_header_bg_color = c; })
+          .def_property(
+              "header_fg_color",
+              [](ui::collapsable_ptr_t col) -> fvec4 { return col->_header_fg_color; },
+              [](ui::collapsable_ptr_t col, fvec4 c) { col->_header_fg_color = c; })
+          .def_property(
+              "triangle_color",
+              [](ui::collapsable_ptr_t col) -> fvec4 { return col->_triangle_color; },
+              [](ui::collapsable_ptr_t col, fvec4 c) { col->_triangle_color = c; })
+          .def_property(
+              "content_bg_color",
+              [](ui::collapsable_ptr_t col) -> fvec4 { return col->_content_bg_color; },
+              [](ui::collapsable_ptr_t col, fvec4 c) { col->_content_bg_color = c; })
+          .def_property(
+              "draw_content_background",
+              [](ui::collapsable_ptr_t col) -> bool { return col->_draw_content_background; },
+              [](ui::collapsable_ptr_t col, bool v) { col->_draw_content_background = v; })
+          .def_property(
+              "content_margin",
+              [](ui::collapsable_ptr_t col) -> int { return col->_content_margin; },
+              [](ui::collapsable_ptr_t col, int v) { col->_content_margin = v; })
+          .def_property(
+              "indent_width",
+              [](ui::collapsable_ptr_t col) -> int { return col->_indent_width; },
+              [](ui::collapsable_ptr_t col, int v) { col->_indent_width = v; })
+          .def_property(
+              "onToggle",
+              [](ui::collapsable_ptr_t col) -> py::object { //
+                return py::none();
+              },
+              [](ui::collapsable_ptr_t col, py::object callback) { //
+                if (callback.is_none()) {
+                  col->_onToggle = nullptr;
+                } else {
+                  auto pycb      = std::make_shared<py::object>(callback);
+                  col->_onToggle = [pycb, col](bool expanded) {
+                    py::gil_scoped_acquire acquire_gil;
+                    (*pycb)(col, expanded);
+                  };
+                }
+              });
+  type_codec->registerStdCodec<ui::collapsable_ptr_t>(collapsable_type);
   /////////////////////////////////////////////////////////////////////////////////
   pyinit_ui_layout(uimodule);
   pyinit_ui_ged(uimodule);
