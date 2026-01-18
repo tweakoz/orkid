@@ -41,7 +41,7 @@ void ScrollContainer::setChild(widget_ptr_t child) {
   }
 
   _scroll_offset_x = 0;
-  _scroll_offset_y = 0;
+  scrollToTop();
   _content_dirty = true;
 }
 
@@ -74,12 +74,12 @@ void ScrollContainer::setScrollOffset(int x, int y) {
 
 ///////////////////////////////////////////////////////////////////////////////
 void ScrollContainer::scrollToTop() {
-  _scroll_offset_y = 0;
+  _scroll_offset_y = maxScrollY();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 void ScrollContainer::scrollToBottom() {
-  _scroll_offset_y = maxScrollY();
+  _scroll_offset_y = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -193,7 +193,7 @@ void ScrollContainer::_checkChildSizeChanged() {
   // Only relayout if desired size changed
   if (desired_w != _cached_child_desired_w || desired_h != _cached_child_desired_h) {
     _layoutChild();
-    _clampScrollOffset();
+    scrollToTop();
   }
 }
 

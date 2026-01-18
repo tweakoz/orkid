@@ -20,16 +20,18 @@ class FilesystemBrowser:
   - Filesystem view (right)
   """
 
-  def __init__(self, container, name, initial_path=None, default_filter="", bg_color=vec3(0.1, 0.1, 0.1)):
+  def __init__(self, container, name, initial_path=None, default_filter="", bg_color=vec3(0.1, 0.1, 0.1), mode="load"):
     self.container = container
     self.name = name
     self.bg_color = bg_color
     self.default_filter = default_filter
+    self.mode = mode  # "load" or "save"
 
     # Callbacks (set by user)
     self.onSelect = None
     self.onActivate = None
     self.onDirectoryChanged = None
+    self.onCancel = None
 
     icon_size = 20
     tokens = CrcStringProxy()
@@ -210,6 +212,42 @@ class FilesystemBrowser:
     self.favorites_mgr = lev2.ui.FavoritesManager.instance()
     self.favorite_widgets = []
 
+    # Set content as the fill widget (takes remaining space)
+    self.main_vpack.fill_widget = self.content_hpack
+
+    ############################################################################
+    # Bottom bar - filename input (save only) + action buttons
+    ############################################################################
+
+    self.bottom_hpack = self.main_vpack.makeChild(uiclass=lev2.ui.HorizontalPack, args=[f"{name}_bottom"])
+    self.bottom_hpack.margin = 4
+    self.bottom_hpack.item_width = 80
+    self.bottom_hpack.bg_color = vec4(0.12, 0.12, 0.15, 1)
+    self.bottom_hpack.fixed_height = 36
+
+    # Filename input (save mode only)
+    if self.mode == "save":
+      self.filename_edit = self.bottom_hpack.makeChild(uiclass=lev2.ui.LineEdit, args=["Filename:", "", vec3(0.15, 0.15, 0.18)])
+      self.bottom_hpack.fill_widget = self.filename_edit
+    else:
+      self.filename_edit = None
+
+    # Action button (Save or Load)
+    action_text = "SAVE" if self.mode == "save" else "LOAD"
+    action_color = vec4(0.15, 0.25, 0.15, 1) if self.mode == "save" else vec4(0.15, 0.15, 0.25, 1)
+    icon_action = icon_library.from_svg_string(make_text_icon(action_text), icon_size*2, icon_size*2)
+    self.btn_action = self.bottom_hpack.makeChild(uiclass=lev2.ui.ImageButton, args=[f"{name}_action"])
+    self.btn_action.inactive_image = icon_action
+    self.btn_action.bgcolor = action_color
+    self.btn_action.inactive_blend_mode = tokens.ALPHA
+
+    # Cancel button
+    icon_cancel = icon_library.from_svg_string(make_text_icon("CANCEL", "#FF8888"), icon_size*2, icon_size*2)
+    self.btn_cancel = self.bottom_hpack.makeChild(uiclass=lev2.ui.ImageButton, args=[f"{name}_cancel"])
+    self.btn_cancel.inactive_image = icon_cancel
+    self.btn_cancel.bgcolor = vec4(0.25, 0.15, 0.15, 1)
+    self.btn_cancel.inactive_blend_mode = tokens.ALPHA
+
     # Wire up callbacks
     self._setupCallbacks(home_dir)
     self._refresh_favorites_panel()
@@ -297,6 +335,10 @@ class FilesystemBrowser:
 
     # Selection callback
     def on_select(path):
+      # In save mode, populate filename field with selected file's name
+      if self.mode == "save" and self.filename_edit and path:
+        if os.path.isfile(path):
+          self.filename_edit.text = os.path.basename(path)
       if self.onSelect:
         self.onSelect(path)
 
@@ -319,6 +361,37 @@ class FilesystemBrowser:
         self.onDirectoryChanged(path)
 
     self.fs_view.onDirectoryChanged(on_dir_changed)
+
+    # Action button (Save/Load)
+    def on_action(btn):
+      if self.mode == "save" and self.filename_edit:
+        filename = self.filename_edit.text.strip()
+        if filename:
+          path = os.path.join(self.model.getCurrentPath(), filename)
+          if self.onActivate:
+            self.onActivate(path)
+      else:
+        path = self.fs_view.selected_path
+        if path and self.onActivate:
+          self.onActivate(path)
+
+    self.btn_action.onPressed = on_action
+
+    # Cancel button
+    def on_cancel(btn):
+      if self.onCancel:
+        self.onCancel()
+
+    self.btn_cancel.onPressed = on_cancel
+
+    # Filename edit enter key (save mode)
+    if self.filename_edit:
+      def on_filename_committed(text):
+        if text.strip():
+          path = os.path.join(self.model.getCurrentPath(), text.strip())
+          if self.onActivate:
+            self.onActivate(path)
+      self.filename_edit.onTextCommitted(on_filename_committed)
 
   def _refresh_favorites_panel(self):
     """Refresh the favorites panel content."""
@@ -420,11 +493,11 @@ class FilesystemBrowser:
 
   def getSelectedPath(self):
     """Get the currently selected path."""
-    return self.fs_view.getSelectedPath()
+    return self.fs_view.selected_path
 
   def getSelectedPaths(self):
     """Get all selected paths."""
-    return self.fs_view.getSelectedPaths()
+    return self.fs_view.selected_paths
 
   ###########################################################################
   # Factory methods
@@ -437,26 +510,22 @@ class FilesystemBrowser:
 
     Args:
       parent_layoutgroup: Parent LayoutGroup
-      args: [name] or [name, initial_path] or [name, initial_path, default_filter]
-            or [name, initial_path, default_filter, bg_color]
-
-    Returns:
-      uilayoutitem_ptr_t (the container's layout item)
+      args: [name, initial_path, default_filter, bg_color, mode]
+            mode: "load" (default) or "save"
     """
     name = args[0]
     initial_path = args[1] if len(args) > 1 else None
     default_filter = args[2] if len(args) > 2 else ""
     bg_color = args[3] if len(args) > 3 else vec3(0.1, 0.1, 0.1)
+    mode = args[4] if len(args) > 4 else "load"
 
-    # Create container
     container_item = parent_layoutgroup.makeChild(uiclass=lev2.ui.VerticalPack, args=[name])
     container = container_item.widget
     container.margin = 0
     container.fill = True
     container.bg_color = vec4(bg_color.x, bg_color.y, bg_color.z, 1)
 
-    # Create browser
-    browser = FilesystemBrowser(container, name, initial_path, default_filter, bg_color)
+    browser = FilesystemBrowser(container, name, initial_path, default_filter, bg_color, mode)
     container.uservars.filesystem_browser = browser
 
     return container_item
@@ -464,26 +533,24 @@ class FilesystemBrowser:
   @staticmethod
   def wfactory(args):
     """
-    Widget factory for use with widget.makeChild (e.g., vpack.makeChild)
+    Widget factory for use with widget.makeChild
 
     Args:
-      args: [name] or [name, initial_path] or [name, initial_path, default_filter]
-            or [name, initial_path, default_filter, bg_color]
-
-    Returns:
-      VerticalPack widget containing the FilesystemBrowser
+      args: [name, initial_path, default_filter, bg_color, mode]
+            mode: "load" (default) or "save"
     """
     name = args[0]
     initial_path = args[1] if len(args) > 1 else None
     default_filter = args[2] if len(args) > 2 else ""
     bg_color = args[3] if len(args) > 3 else vec3(0.1, 0.1, 0.1)
+    mode = args[4] if len(args) > 4 else "load"
 
     container = lev2.ui.VerticalPack.wfactory([name])
     container.margin = 0
     container.fill = True
     container.bg_color = vec4(bg_color.x, bg_color.y, bg_color.z, 1)
 
-    browser = FilesystemBrowser(container, name, initial_path, default_filter, bg_color)
+    browser = FilesystemBrowser(container, name, initial_path, default_filter, bg_color, mode)
     container.uservars.filesystem_browser = browser
 
     return container

@@ -120,6 +120,10 @@ void pyinit_ui(py::module& module_lev2) {
       py::class_<ui::Context, ui::context_ptr_t>(uimodule, "Context")
           .def(py::init<>())
           .def_property_readonly("hasKeyboardFocus", [](ui::context_ptr_t uictx) -> bool { return uictx->hasKeyboardFocus(); })
+          .def_property_readonly("keyboard_focus_widget", [](ui::context_ptr_t uictx) -> uiwidget_ptr_t {
+            auto w = uictx->keyboardFocusWidget().lock();
+            return w ? std::const_pointer_cast<ui::Widget>(w) : nullptr;
+          })
           .def("hasMouseFocus", [](ui::context_ptr_t uictx, uiwidget_ptr_t w) -> bool { return uictx->hasMouseFocus(w.get()); })
           .def("dumpWidgets", [](ui::context_ptr_t uictx, std::string label) { uictx->dumpWidgets(label); })
           .def("isKeyDown", [](ui::context_ptr_t uictx, int keycode) -> bool { return uictx->isKeyDown(keycode); })
@@ -423,6 +427,15 @@ void pyinit_ui(py::module& module_lev2) {
               "uservars",
               [](uiwidget_ptr_t widget) -> varmap::varmap_ptr_t { //
                 return widget->_uservars;
+              })
+          .def_property_readonly(
+              "has_keyboard_focus",
+              [](uiwidget_ptr_t widget) -> bool { //
+                if (widget->_uicontext) {
+                  auto focus = widget->_uicontext->keyboardFocusWidget().lock();
+                  return focus && focus.get() == widget.get();
+                }
+                return false;
               })
           .def_property_readonly(
               "width",
@@ -920,7 +933,11 @@ void pyinit_ui(py::module& module_lev2) {
           .def_property(
               "draw_background",
               [](ui::vpack_ptr_t vpack) -> bool { return vpack->_draw_background; },
-              [](ui::vpack_ptr_t vpack, bool val) { vpack->_draw_background = val; });
+              [](ui::vpack_ptr_t vpack, bool val) { vpack->_draw_background = val; })
+          .def_property(
+              "propagate_on_parent_change",
+              [](ui::vpack_ptr_t vpack) -> bool { return vpack->_propagate_on_parent_change; },
+              [](ui::vpack_ptr_t vpack, bool val) { vpack->_propagate_on_parent_change = val; });
   type_codec->registerStdCodec<ui::vpack_ptr_t>(vpack_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto hpack_type = //
@@ -1433,6 +1450,27 @@ void pyinit_ui(py::module& module_lev2) {
                     callback(val);
                   };
                 }
+              })
+          .def_property(
+              "drag_rate",
+              [](ui::f32edit_ptr_t edit) -> float { //
+                return edit->_drag_rate;
+              },
+              [](ui::f32edit_ptr_t edit, float rate) { //
+                edit->_drag_rate = rate;
+              })
+          .def_property(
+              "drag_rate_scalar",
+              [](ui::f32edit_ptr_t edit) -> float { //
+                return edit->_drag_rate_scalar;
+              },
+              [](ui::f32edit_ptr_t edit, float scalar) { //
+                edit->_drag_rate_scalar = scalar;
+              })
+          .def_property_readonly(
+              "is_dragging",
+              [](ui::f32edit_ptr_t edit) -> bool { //
+                return edit->_dragging;
               });
   type_codec->registerStdCodec<ui::f32edit_ptr_t>(f32edit_type);
   /////////////////////////////////////////////////////////////////////////////////

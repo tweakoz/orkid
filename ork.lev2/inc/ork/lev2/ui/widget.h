@@ -59,6 +59,8 @@ struct Widget : public ork::Object {
 
   friend struct Group;
 
+  using widget_visit_fn_t = std::function<void(const Widget*)>;
+
 public:
   static const int keycode_shift = 16777248; // Qt::Key_Shift;
   static const int keycode_cmd   = 16777249;
@@ -163,6 +165,7 @@ public:
   }
 
   Group* root() const;
+  void visitToRoot(widget_visit_fn_t fn) const;
 
   // CWidgetFlags &GetFlagsRef( void ) { return mWidgetFlags; }
 

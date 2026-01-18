@@ -6,6 +6,8 @@
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/gfx/pri.h>
 #include <ork/lev2/ui/f32edit.h>
+#include <ork/lev2/ui/context.h>
+#include <ork/lev2/ui/group.h>
 #include <chrono>
 #include <cmath>
 #include <sstream>
@@ -88,6 +90,9 @@ HandlerResult F32Edit::DoOnUiEvent(event_constptr_t cev) {
             _editing = false;
             _highlight = false;
             rval._widget_finished = true;
+            if (_uicontext) {
+              _uicontext->_keyboard_focus_widget.reset();
+            }
             break;
           case 257: { // enter - commit
             float parsed;
@@ -106,6 +111,9 @@ HandlerResult F32Edit::DoOnUiEvent(event_constptr_t cev) {
             _editing = false;
             _highlight = false;
             rval._widget_finished = true;
+            if (_uicontext) {
+              _uicontext->_keyboard_focus_widget.reset();
+            }
             break;
           }
           case 259: // backspace
@@ -142,6 +150,16 @@ HandlerResult F32Edit::DoOnUiEvent(event_constptr_t cev) {
       _highlight = true;
       _editing = true;
       _edit_buffer = formatValue();
+      printf("F32Edit::PUSH name<%s> _uicontext<%p> _parent<%p>\n", _name.c_str(), (void*)_uicontext, (void*)_parent);
+      printf("  hierarchy to root:\n");
+      visitToRoot([](const Widget* w) {
+        printf("    widget<%p> name<%s> _uicontext<%p>\n", (void*)w, w->_name.c_str(), (void*)w->_uicontext);
+      });
+      if (_uicontext && _parent) {
+        auto found = _parent->findChildPtr(this);
+        printf("  findChildPtr returned <%p>\n", (void*)found.get());
+        _uicontext->_keyboard_focus_widget = found;
+      }
       break;
     }
     case EventCode::DOUBLECLICK: {
@@ -167,6 +185,10 @@ HandlerResult F32Edit::DoOnUiEvent(event_constptr_t cev) {
         _edit_buffer.clear();
         _editing = false;
       }
+      // Always clear keyboard focus on leave
+      if (_uicontext) {
+        _uicontext->_keyboard_focus_widget.reset();
+      }
       _highlight = false;
       break;
     }
@@ -180,6 +202,46 @@ HandlerResult F32Edit::DoOnUiEvent(event_constptr_t cev) {
           _onValueChanged(_value);
         }
       }
+      rval.setHandled(this);
+      break;
+    }
+    case EventCode::BEGIN_DRAG: {
+      // Cancel text editing, start drag mode
+      _editing = false;
+      _edit_buffer.clear();
+      _dragging = true;
+      _drag_start_value = _value;
+      _drag_start_x = cev->miX;
+      rval.setHandled(this);
+      break;
+    }
+    case EventCode::DRAG: {
+      if (_dragging) {
+        int delta_x = cev->miX - _drag_start_x;
+        float rate = _drag_rate;
+        if (cev->mbSHIFT) {
+          rate *= _drag_rate_scalar;
+        } else if (cev->mbCTRL) {
+          rate /= _drag_rate_scalar;
+        }
+        float old_value = _value;
+        _value = clampValue(_drag_start_value + delta_x * rate);
+        if (_onValueChanged && _value != old_value) {
+          _onValueChanged(_value);
+        }
+      }
+      rval.setHandled(this);
+      break;
+    }
+    case EventCode::END_DRAG: {
+      if (_dragging) {
+        _dragging = false;
+        _original_value = _value;
+        if (_onValueCommitted) {
+          _onValueCommitted(_value);
+        }
+      }
+      _highlight = false;
       rval.setHandled(this);
       break;
     }

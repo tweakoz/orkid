@@ -244,7 +244,7 @@ void Context::clearWidgetPointers(Widget* w) {
   if (_evpushtarget == w) _evpushtarget = nullptr;
   if (_evdragtarget == w) _evdragtarget = nullptr;
   if (_mousefocuswidget == w) _mousefocuswidget = nullptr;
-  if (_keyboardFocusWidget == w) _keyboardFocusWidget = nullptr;
+  if (auto sp = _keyboard_focus_widget.lock(); sp && sp.get() == w) _keyboard_focus_widget.reset();
 }
 /////////////////////////////////////////////////////////////////////////
 void Context::dumpWidgets(std::string label) const{

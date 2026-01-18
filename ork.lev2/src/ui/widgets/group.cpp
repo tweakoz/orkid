@@ -94,6 +94,29 @@ void Group::removeChild(Widget* w, bool relayout) {
   }
 }
 /////////////////////////////////////////////////////////////////////////
+widget_ptr_t Group::findChildPtr(const Widget* w) const {
+  for (const auto& child : _children) {
+    if (child.get() == w) {
+      return child;
+    }
+  }
+  return nullptr;
+}
+/////////////////////////////////////////////////////////////////////////
+void Group::_doOnParentChanged(Group* parent) {
+  if (_propagate_on_parent_change && _uicontext) {
+    std::function<void(Group*)> propagate = [&](Group* g) {
+      for (auto& child : g->_children) {
+        child->_uicontext = _uicontext;
+        if (auto child_group = dynamic_cast<Group*>(child.get())) {
+          propagate(child_group);
+        }
+      }
+    };
+    propagate(this);
+  }
+}
+/////////////////////////////////////////////////////////////////////////
 void Group::drawChildren(ui::drawevent_constptr_t drwev) {
   for (auto child : _children) {
     if(child->_enableDraw){

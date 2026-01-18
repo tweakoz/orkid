@@ -9,11 +9,12 @@
 # Distributed under the MIT License
 ################################################################################
 
-import math, sys, signal, random, os
+import math, sys, signal, random, os, json
 from orkengine.core import vec2, vec3, vec4, quat, VarMap, CrcStringProxy, Transform
 from orkengine import lev2
 from ork.ui import icon_library
 from ork.ui.filesystem_browser import FilesystemBrowser
+from ork.ui.transform_edit import TransformEdit
 
 tokens = CrcStringProxy()
 home_dir = os.path.expanduser("~")
@@ -136,11 +137,6 @@ class SceneEditorTest:
     self.propsheet_dock = propsheet_dock_item.widget
     self.propsheet_dock.titlebar_color = vec4(0.2, 0.2, 0.15, 1)
 
-    # Create property sheet as child of dock panel
-    self.propsheet = self.propsheet_dock.createChild(
-      uiclass=lev2.ui.PropertySheet,
-      args=["Properties"]
-    )
 
     ############################################
     # Setup outliner data (mock scene hierarchy)
@@ -160,286 +156,138 @@ class SceneEditorTest:
   ##############################################
 
   def _setupOutliner(self):
-    """Setup mock scene hierarchy in outliner."""
+    """Setup 16 cubes in outliner."""
+    self.cube_names = [f"Cube_{i:02d}" for i in range(16)]
+
     scene_data = VarMap()
-
-    # Scene root
-    root = VarMap()
-
-    # Cameras
-    cameras = VarMap()
-    cameras.MainCamera = "PerspectiveCamera"
-    cameras.TopCamera = "OrthographicCamera"
-    root.Cameras = cameras
-
-    # Lights
-    lights = VarMap()
-    lights.DirectionalLight = "Sun"
-    lights.PointLight1 = "Fill"
-    lights.PointLight2 = "Rim"
-    root.Lights = lights
-
-    # Objects
-    objects = VarMap()
-
-    player = VarMap()
-    player.Mesh = "player_mesh"
-    player.Material = "player_mat"
-    player.Collider = "capsule"
-    objects.Player = player
-
-    ground = VarMap()
-    ground.Mesh = "ground_mesh"
-    ground.Material = "ground_mat"
-    objects.Ground = ground
-
-    props = VarMap()
-    props.Tree1 = "tree_prefab"
-    props.Tree2 = "tree_prefab"
-    props.Rock1 = "rock_prefab"
-    objects.Props = props
-
-    root.Objects = objects
-
-    scene_data.Scene = root
+    cubes = VarMap()
+    for name in self.cube_names:
+      setattr(cubes, name, "cube")
+    scene_data.Cubes = cubes
 
     self.outliner.data = scene_data
-    self.outliner.model.allow_rename = True
-    self.outliner.model.allow_delete = True
-    self.outliner.model.allow_add = True
-    self.outliner.model.allow_multiselect = True
     self.outliner.expandAll()
 
-    # Selection callback - update property sheet when selection changes
     def on_select(key):
-      print(f"Selected: {key}")
-      self._updatePropertySheetForSelection(key)
+      name = key.split("/")[-1] if "/" in key else key
+      if name in self.cube_names:
+        self._selectCube(name)
 
     self.outliner.onSelect(on_select)
-
-    # Style
     self.outliner.bgcolor = vec4(0.12, 0.12, 0.14, 1)
-    self.outliner.text_color = vec4(0.9, 0.9, 0.9, 1)
-    self.outliner.selected_color = vec4(0.2, 0.4, 0.6, 1)
-    self.outliner.hover_color = vec4(0.2, 0.2, 0.25, 1)
     self.outliner.item_height = 22
 
   ##############################################
 
   def _setupPropertySheet(self):
-    """Setup property sheet with default data."""
-    data = VarMap()
+    """Setup property sheet with TransformEdit."""
+    self.propsheet_vpack = self.propsheet_dock.createChild(
+      uiclass=lev2.ui.VerticalPack,
+      args=["propsheet_content"]
+    )
+    self.propsheet_vpack.margin = 4
+    self.propsheet_vpack.item_height = 84
 
-    transform = VarMap()
-    transform.position_x = 0.0
-    transform.position_y = 0.0
-    transform.position_z = 0.0
-    transform.rotation_x = 0.0
-    transform.rotation_y = 0.0
-    transform.rotation_z = 0.0
-    transform.scale_x = 1.0
-    transform.scale_y = 1.0
-    transform.scale_z = 1.0
-    data.Transform = transform
-
-    data.Name = "Selected Object"
-    data.Visible = True
-    data.Layer = "Default"
-
-    self.propsheet.data = data
-    self.propsheet.expandAll()
-
-    def on_property_changed(key, value):
-      print(f"Property changed: {key} = {value}")
-
-    self.propsheet.onPropertyChanged(on_property_changed)
-
-    # Style
-    self.propsheet.bgcolor = vec4(0.12, 0.12, 0.14, 1)
-    self.propsheet.label_color = vec4(0.85, 0.85, 0.85, 1)
-    self.propsheet.group_color = vec4(0.16, 0.16, 0.2, 1)
-    self.propsheet.row_height = 26
-    self.propsheet.label_width = 100
+    self.xform_edit_vpack = self.propsheet_vpack.makeChild(
+      uiclass=TransformEdit,
+      args=["xform_edit"]
+    )
+    self.xform_editor = self.xform_edit_vpack.uservars.transform_edit
 
   ##############################################
 
-  def _updatePropertySheetForSelection(self, key):
-    """Update property sheet based on outliner selection."""
-    data = VarMap()
-
-    transform = VarMap()
-    transform.position_x = random.uniform(-10, 10)
-    transform.position_y = random.uniform(0, 5)
-    transform.position_z = random.uniform(-10, 10)
-    transform.rotation_x = 0.0
-    transform.rotation_y = random.uniform(0, 360)
-    transform.rotation_z = 0.0
-    transform.scale_x = 1.0
-    transform.scale_y = 1.0
-    transform.scale_z = 1.0
-    data.Transform = transform
-
-    # Extract name from key path
-    name = key.split("/")[-1] if "/" in key else key
-    data.Name = name
-    data.Visible = True
-    data.Layer = "Default"
-
-    self.propsheet.data = data
-    self.propsheet.expandAll()
-
-  ##############################################
-
-  def _syncPropertySheetFromTransform(self):
-    """Sync property sheet with cube transform values."""
-    if not hasattr(self, 'cube_transform'):
+  def _selectCube(self, name):
+    """Select a cube - bind manip and property sheet to its transform."""
+    if not hasattr(self, 'cube_transforms') or name not in self.cube_transforms:
       return
-
-    pos = self.cube_transform.translation
-    rot = self.cube_transform.orientation
-    scale = self.cube_transform.scale
-
-    # Check if changed
-    cur = (pos.x, pos.y, pos.z, rot.x, rot.y, rot.z, rot.w, scale)
-    if hasattr(self, '_last_transform') and self._last_transform == cur:
-      return
-    self._last_transform = cur
-
-    # Convert quaternion to angle-axis
-    import math
-    # Angle from quaternion: angle = 2 * acos(w)
-    # Clamp w to [-1, 1] to avoid numerical issues
-    w_clamped = max(-1.0, min(1.0, rot.w))
-    angle = 2.0 * math.acos(w_clamped)
-
-    # Axis from quaternion: axis = (x, y, z) / sin(angle/2)
-    sin_half = math.sin(angle / 2.0)
-    if abs(sin_half) > 1e-6:
-      axis_x = rot.x / sin_half
-      axis_y = rot.y / sin_half
-      axis_z = rot.z / sin_half
-    else:
-      # Near zero rotation, axis is arbitrary
-      axis_x = 1.0
-      axis_y = 0.0
-      axis_z = 0.0
-
-    data = VarMap()
-    transform = VarMap()
-    transform.position_x = pos.x
-    transform.position_y = pos.y
-    transform.position_z = pos.z
-    transform.angle = math.degrees(angle)
-    transform.axis_x = axis_x
-    transform.axis_y = axis_y
-    transform.axis_z = axis_z
-    transform.scale_x = scale
-    transform.scale_y = scale
-    transform.scale_z = scale
-    data.Transform = transform
-    data.Name = "Cube"
-    data.Visible = True
-    data.Layer = "Default"
-
-    # Set annotations for slider ranges (before setting data)
-    if not hasattr(self, '_propsheet_annotations_set'):
-      self._propsheet_annotations_set = True
-      model = self.propsheet.model
-      pos_annot = VarMap()
-      pos_annot.min = -10.0
-      pos_annot.max = 10.0
-      model.setAnnotations("Transform/position_x", pos_annot)
-      model.setAnnotations("Transform/position_y", pos_annot)
-      model.setAnnotations("Transform/position_z", pos_annot)
-
-      angle_annot = VarMap()
-      angle_annot.min = -360.0
-      angle_annot.max = 360.0
-      model.setAnnotations("Transform/angle", angle_annot)
-
-      axis_annot = VarMap()
-      axis_annot.min = -1.0
-      axis_annot.max = 1.0
-      model.setAnnotations("Transform/axis_x", axis_annot)
-      model.setAnnotations("Transform/axis_y", axis_annot)
-      model.setAnnotations("Transform/axis_z", axis_annot)
-
-      scale_annot = VarMap()
-      scale_annot.min = 0.1
-      scale_annot.max = 10.0
-      model.setAnnotations("Transform/scale_x", scale_annot)
-      model.setAnnotations("Transform/scale_y", scale_annot)
-      model.setAnnotations("Transform/scale_z", scale_annot)
-
-    self.propsheet.data = data
+    xform = self.cube_transforms[name]
+    self.manip_interface = lev2.DecompTransformManipulator(xform)
+    self.manip_controller.target = self.manip_interface
+    self.xform_editor.transform = xform
+    self.selected_cube = name
+    self._enableManip(True)
+    print(f"Selected: {name}")
 
   ##############################################
 
   def _openLoadPopup(self):
     """Open a file browser popup for loading a scene."""
-    print("Opening Load popup...")
-    self._openFileBrowserPopup("Load Scene", self._onLoadFileSelected)
+    self._openFileBrowserPopup("Load Scene", self._onLoadFileSelected, "load")
 
   def _openSavePopup(self):
     """Open a file browser popup for saving a scene."""
-    print("Opening Save popup...")
-    self._openFileBrowserPopup("Save Scene", self._onSaveFileSelected)
+    self._openFileBrowserPopup("Save Scene", self._onSaveFileSelected, "save")
 
-  def _openFileBrowserPopup(self, title, on_file_selected):
+  def _openFileBrowserPopup(self, title, on_file_selected, mode):
     """Create a secondary window with FilesystemBrowser."""
-    # Create secondary window for file browser
     popup_win = self.ezapp.createSecondaryWindow(
-      width=800,
-      height=600,
-      x=200,
-      y=150,
-      title=title,
-      decorated=True,
-      resizable=True
+      width=800, height=600, x=200, y=150,
+      title=title, decorated=True, resizable=True
     )
 
-    # Set up UI on secondary window
     uic = popup_win.ui_context
-    win_w = popup_win.width
-    win_h = popup_win.height
-
-    # Create root layout group
     root = lev2.ui.LayoutGroup.create("popup_lg")
-    root.setRect(0, 0, win_w, win_h)
+    root.setRect(0, 0, popup_win.width, popup_win.height)
     uic.top = root
     root.margin = 4
 
-    # Create FilesystemBrowser filling the popup
     browser_item = root.makeChild(
       uiclass=FilesystemBrowser,
-      args=["browser", home_dir, ""],
+      args=["browser", home_dir, ".json", vec3(0.1, 0.1, 0.1), mode],
       fill=True
     )
     browser = browser_item.widget.uservars.filesystem_browser
 
-    # Wire up file activation callback
     def on_activate(path):
-      print(f"File activated: {path}")
       on_file_selected(path)
-      # Close the popup window
+      popup_win.requestClose()
+
+    def on_cancel():
       popup_win.requestClose()
 
     browser.onActivate = on_activate
+    browser.onCancel = on_cancel
 
-    # Store reference to prevent garbage collection
     if not hasattr(self, '_popup_windows'):
       self._popup_windows = []
     self._popup_windows.append(popup_win)
 
   def _onLoadFileSelected(self, path):
-    """Handle file selection from Load popup."""
-    print(f"Loading scene from: {path}")
-    # TODO: Implement actual scene loading
+    """Load scene from JSON file."""
+    if not hasattr(self, 'cube_transforms'):
+      return
+    try:
+      with open(path, 'r') as f:
+        data = json.load(f)
+      for name, xd in data.get("cubes", {}).items():
+        if name in self.cube_transforms:
+          xform = self.cube_transforms[name]
+          t = xd.get("translation", [0, 0.5, 0])
+          xform.translation = vec3(t[0], t[1], t[2])
+          o = xd.get("orientation", [0, 0, 0, 1])
+          xform.orientation = quat(o[0], o[1], o[2], o[3])
+          xform.scale = xd.get("scale", 1.0)
+      print(f"Loaded scene from: {path}")
+    except Exception as e:
+      print(f"Failed to load: {e}")
 
   def _onSaveFileSelected(self, path):
-    """Handle file selection from Save popup."""
-    print(f"Saving scene to: {path}")
-    # TODO: Implement actual scene saving
+    """Save scene to JSON file."""
+    if not hasattr(self, 'cube_transforms'):
+      return
+    if not path.endswith('.json'):
+      path += '.json'
+    data = {"cubes": {}}
+    for name, xform in self.cube_transforms.items():
+      t, o = xform.translation, xform.orientation
+      data["cubes"][name] = {
+        "translation": [t.x, t.y, t.z],
+        "orientation": [o.x, o.y, o.z, o.w],
+        "scale": xform.scale
+      }
+    with open(path, 'w') as f:
+      json.dump(data, f, indent=2)
+    print(f"Saved scene to: {path}")
 
   ##############################################
 
@@ -473,26 +321,25 @@ class SceneEditorTest:
     self.grid_node = self.layer.createDrawableNodeFromData("grid", self.grid_data)
     self.grid_node.sortkey = 1
 
-    # Cube with Transform for manipulation
+    # Create 16 cubes in 4x4 grid, spaced 2m apart
     cube_prim = createCubePrim(ctx=ctx, size=1.0)
     pipeline_cube = createPipeline(app=self, ctx=ctx, rendermodel="FORWARD_PBR", techname="std_mono_fwd")
-    self.cube_node = cube_prim.createNode("cube", self.layer, pipeline_cube)
 
-    # Create a Transform for manipulation
-    self.cube_transform = Transform()
-    self.cube_transform.translation = vec3(0, 0.5, 0)
-    self.cube_transform.orientation = quat()
-    self.cube_transform.scale = 1.0
-    self.cube_node.worldTransform = self.cube_transform
+    self.cube_nodes = {}
+    self.cube_transforms = {}
+    for i, name in enumerate(self.cube_names):
+      node = cube_prim.createNode(name, self.layer, pipeline_cube)
+      xform = Transform()
+      xform.translation = vec3((i % 4) * 2 - 3, 0.5, (i // 4) * 2 - 3)
+      node.worldTransform = xform
+      self.cube_nodes[name] = node
+      self.cube_transforms[name] = xform
 
-    ############################################
-    # Setup ManipController and Gizmo
-    ############################################
-
+    # Setup ManipController (initially no target)
     self.manip_controller = lev2.ManipController()
-    self.manip_interface = lev2.DecompTransformManipulator(self.cube_transform)
-    self.manip_controller.target = self.manip_interface
+    self.manip_interface = None
     self.manip_controller.mode = lev2.ManipMode.TRANSLATE
+    self.selected_cube = None
 
     # Create ManipGizmo drawable (renders in scenegraph)
     self.gizmo_data = lev2.ManipGizmoDrawableData()
@@ -501,6 +348,10 @@ class SceneEditorTest:
     self.gizmo_node = self.scenegraph.createDrawableNodeOnLayers(
         [self.layer], "manip-gizmo", self.gizmo_drawable)
     self.gizmo_node.sortkey = 999  # Render on top
+
+    # Start with manipulator disabled (no selection yet)
+    self.manip_enabled = False
+    self.gizmo_node.enabled = False
 
     ############################################
     # Setup camera
@@ -511,7 +362,7 @@ class SceneEditorTest:
     self.camera, self.uicam = setupUiCameraX(cameralut=self.cameralut, camname=self.camname)
 
     self.uicam.distance = 1
-    self.uicam.lookAt(vec3(5, 4, 5), vec3(0, 0.5, 0), vec3(0, 1, 0))
+    self.uicam.lookAt(vec3(12, 10, 12), vec3(0, 0, 0), vec3(0, 1, 0))
     self.uicam.updateMatrices()
     self.camera.copyFrom(self.uicam.cameradata)
 
@@ -526,18 +377,31 @@ class SceneEditorTest:
     self.sgv.forkDB()
     self.scenegraph.lightingmanager.gpuInit(ctx)
 
-    print("Scene Editor Ready")
-    print("  T - Translate mode (press again to toggle LOCAL/WORLD)")
-    print("  R - Rotate mode")
-    print("  S - Scale mode")
+    print("Scene Editor Ready - Select a cube in the outliner")
 
   ##############################################
 
+  def _enableManip(self, enable):
+    """Enable or disable manipulator rendering and input."""
+    self.manip_enabled = enable
+    self.gizmo_node.enabled = enable
+    if enable:
+      if self.manip_interface:
+        self.manip_controller.target = self.manip_interface
+    else:
+      self.manip_controller.target = None
+
   def _onCameraEvent(self, uievent):
     """Handle camera manipulation events (orbit, pan, zoom) and mode keys."""
-    # Check for mode switching keys first
     if uievent.code == tokens.KEY_DOWN.hashed:
-      if uievent.keycode == ord("T"):
+      # Escape - disable manipulator
+      if uievent.keycode == 256:
+        self._enableManip(False)
+        print("Manipulator disabled (press T/R/S to enable)")
+        return lev2.ui.HandlerResult()
+      # T/R/S - enable and set mode
+      elif uievent.keycode == ord("T"):
+        self._enableManip(True)
         if self.manip_controller.mode == lev2.ManipMode.TRANSLATE:
           if self.manip_controller.space == lev2.ManipSpace.LOCAL:
             self.manip_controller.space = lev2.ManipSpace.WORLD
@@ -551,10 +415,12 @@ class SceneEditorTest:
           print(f"Mode: TRANSLATE ({space_name})")
         return lev2.ui.HandlerResult()
       elif uievent.keycode == ord("R"):
+        self._enableManip(True)
         self.manip_controller.mode = lev2.ManipMode.ROTATE
         print("Mode: ROTATE")
         return lev2.ui.HandlerResult()
       elif uievent.keycode == ord("S"):
+        self._enableManip(True)
         self.manip_controller.mode = lev2.ManipMode.SCALE
         print("Mode: SCALE")
         return lev2.ui.HandlerResult()
@@ -569,14 +435,10 @@ class SceneEditorTest:
   ##############################################
 
   def onUpdate(self, updinfo):
-    abstime = updinfo.absolutetime
-
-    # Update scenegraph
     self.scenegraph.updateScene(self.cameralut)
     self.sgv.setDirty()
-
-    # Sync property sheet with cube transform
-    self._syncPropertySheetFromTransform()
+    if self.selected_cube:
+      self.xform_editor.sync()
 
   ##############################################
 

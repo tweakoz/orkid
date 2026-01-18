@@ -541,6 +541,15 @@ Group* Widget::root() const {
   return nullptr;
 }
 /////////////////////////////////////////////////////////////////////////
+void Widget::visitToRoot(widget_visit_fn_t fn) const {
+  fn(this);
+  const Widget* node = _parent;
+  while (node) {
+    fn(node);
+    node = node->_parent;
+  }
+}
+/////////////////////////////////////////////////////////////////////////
 int Widget::labelWidth() const {
   if (!_draw_label)
     return 0;

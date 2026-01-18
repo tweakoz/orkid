@@ -44,8 +44,8 @@ struct Context {
     return _mousefocuswidget;
   }
   //////////////////////////////////////
-  const Widget* keyboardFocusWidget() const {
-    return _keyboardFocusWidget;
+  std::weak_ptr<const Widget> keyboardFocusWidget() const {
+    return _keyboard_focus_widget;
   }
   bool isKeyDown(int code) const;
   //////////////////////////////////////
@@ -75,7 +75,7 @@ struct Context {
   Widget* _evpushtarget              = nullptr;
   Widget* _evdragtarget              = nullptr;
   const Widget* _mousefocuswidget    = nullptr;
-  const Widget* _keyboardFocusWidget = nullptr;
+  std::weak_ptr<const Widget> _keyboard_focus_widget;
   std::unordered_map<Widget*,tick_lambda_t> _tickSubscribers;
   Event _prevevent;
   event_ptr_t _tempevent;

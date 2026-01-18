@@ -51,6 +51,13 @@ public:
   bool _editing = false;
   bool _highlight = false;
 
+  // Drag support
+  float _drag_rate = 0.01f;  // value change per pixel of drag
+  float _drag_rate_scalar = 10.0f;  // multiplier for shift, divisor for ctrl
+  bool _dragging = false;
+  float _drag_start_value = 0.0f;
+  int _drag_start_x = 0;
+
   // Callbacks
   std::function<void(float)> _onValueChanged;
   std::function<void(float)> _onValueCommitted;

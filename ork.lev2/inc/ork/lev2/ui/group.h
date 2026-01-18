@@ -27,6 +27,7 @@ struct Group : public Widget {
   void addChild(widget_ptr_t w, bool relayout = true);
   void removeChild(widget_ptr_t w, bool relayout = true);
   void removeChild(Widget* w, bool relayout = true);
+  widget_ptr_t findChildPtr(const Widget* w) const;
   void visitHeirarchy(visit_fn_t vfn);
   /////////////////////////////
   void dumpTopology(int depth = 0);
@@ -34,6 +35,7 @@ struct Group : public Widget {
   void _doOnResized() override;
   void DoLayout() override;
   void _doOnPreDestroy() override;
+  void _doOnParentChanged(Group* parent) override;
   /////////////////////////////
   Widget* doRouteUiEvent(event_constptr_t Ev) override;
   /////////////////////////////
@@ -48,6 +50,7 @@ public:
   std::vector<widget_ptr_t> _children;
   Widget* _eventstealer = nullptr;
   int _margin = 2;
+  bool _propagate_on_parent_change = false;
 };
 
 } // namespace ork::ui
