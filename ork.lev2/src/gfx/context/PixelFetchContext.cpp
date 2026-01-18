@@ -70,13 +70,14 @@ uint32_t PixelFetchContext::encodeVariant(pickvariant_t data){
 
   uint64_t hash = data.hash();
   size_t index = 0;
-  if(_pickIDlut.find(hash) == _pickIDlut.end()){
+  auto it = _pickIDlut.find(hash);
+  if(it == _pickIDlut.end()){
     index = _pickIDvec.size();
     _pickIDlut[hash] = index;
     _pickIDvec.push_back(data);
+  } else {
+    index = it->second;  // Use existing index for duplicate hash
   }
-  //index += _offset;
-  //index = 0;
   rval = uint32_t(index);
   _pickindex = _gpickcounter.fetch_add(4);
   return rval;
@@ -103,6 +104,14 @@ pickvariant_t PixelFetchContext::decodePixel(u32vec4 raw_pixel){
   as_out->y = raw_pixel.y;
   as_out->z = raw_pixel.z;
   as_out->w = raw_pixel.w;
+  return rval;
+}
+/////////////////////////////////////////////////////////////////////////
+pickvariant_t PixelFetchContext::decodePickID(uint32_t pick_id){
+  pickvariant_t rval;
+  if(pick_id < _pickIDvec.size()){
+    rval = _pickIDvec[pick_id];
+  }
   return rval;
 }
 /////////////////////////////////////////////////////////////////////////

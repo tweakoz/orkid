@@ -103,6 +103,9 @@ void HorizontalPack::DoLayout() {
 
 /////////////////////////////////////////////////////////////////////////
 Widget* HorizontalPack::doRouteUiEvent(event_constptr_t ev) {
+  // Don't route events if drawing is disabled
+  if (!_enableDraw) return nullptr;
+
   // Convert event coordinates to local space
   int localX = 0;
   int localY = 0;

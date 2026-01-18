@@ -345,6 +345,8 @@ struct static_variant_base {
   }
   //////////////////////////////////////////////////////////////
   uint64_t hash() const {
+    if( not isSet() )
+        return 0;
     auto desc = descriptorFactory()();
     boost::Crc64 crcgen;
     crcgen.init();

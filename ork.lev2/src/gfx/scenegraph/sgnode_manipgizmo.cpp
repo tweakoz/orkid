@@ -892,9 +892,6 @@ void ManipGizmoDrawableImpl::_drawScaleGizmo(Context* ctx, rcfd_ptr_t RCFD, cons
 void ManipGizmoDrawableImpl::_render(const RenderContextInstData& RCID) {
   auto context = RCID.context();
 
-  if (!_initted) {
-    gpuInit(context);
-  }
 
   auto controller = _data->_controller;
   if (!controller) {
@@ -907,6 +904,15 @@ void ManipGizmoDrawableImpl::_render(const RenderContextInstData& RCID) {
   }
   auto RCFD = RCID.rcfd();
   const auto& CPD = RCFD->topCPD();
+
+  if (CPD.isPicking()) {
+    return;  // Don't render gizmo during picking passes (yet)
+  }
+
+  if (!_initted) {
+    gpuInit(context);
+  }
+
   auto cmtcs = CPD.cameraMatrices();
   fmtx4 VP = cmtcs->_pmatrix * cmtcs->_vmatrix;  // P * V for correct MVP ordering
 

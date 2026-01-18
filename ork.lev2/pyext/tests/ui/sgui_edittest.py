@@ -10,7 +10,7 @@
 ################################################################################
 
 import math, sys, signal, random, os, json
-from orkengine.core import vec2, vec3, vec4, quat, VarMap, CrcStringProxy, Transform
+from orkengine.core import vec2, vec3, vec4, quat, mtx4, VarMap, CrcStringProxy, Transform, u32vec4
 from orkengine import lev2
 from ork.ui import icon_library
 from ork.ui.filesystem_browser import FilesystemBrowser
@@ -20,12 +20,50 @@ tokens = CrcStringProxy()
 home_dir = os.path.expanduser("~")
 
 ################################################################################
+# DrawablePool - manages reusable drawables for a model
+################################################################################
+
+class NodePool:
+  """Pool of nodes for a single model. Nodes are created on demand and retained forever."""
+
+  def __init__(self, model, scenegraph, layer):
+    self.model = model
+    self.scenegraph = scenegraph
+    self.layer = layer
+    self.available = []  # Disabled nodes ready for reuse
+    self.in_use = []     # Currently active nodes
+    self._counter = 0
+
+  def acquire(self, base_name):
+    """Get a node from pool or create new one. Returns enabled node."""
+    if self.available:
+      node = self.available.pop()
+      print(f"NodePool.acquire: REUSING node {node}")
+    else:
+      # Create new node
+      drawable = self.model.createDrawable()
+      node_name = f"{base_name}_m{id(self.model)}_{self._counter}"
+      self._counter += 1
+      node = self.scenegraph.createDrawableNodeOnLayers([self.layer], node_name, drawable)
+      print(f"NodePool.acquire: CREATED new node {node} with drawable {drawable}")
+    node.enabled = True
+    self.in_use.append(node)
+    return node
+
+  def release(self, node):
+    """Return node to pool (disable but don't delete)."""
+    if node in self.in_use:
+      self.in_use.remove(node)
+    node.enabled = False
+    if node not in self.available:
+      self.available.append(node)
+
+################################################################################
 
 l2exdir = (lev2.lev2exdir()/"python").normalized.as_string
 sys.path.append(l2exdir)
 from lev2utils.cameras import setupUiCameraX
-from lev2utils.shaders import createPipeline
-from lev2utils.primitives import createGridData, createCubePrim
+from lev2utils.primitives import createGridData
 
 ################################################################################
 
@@ -34,7 +72,7 @@ class SceneEditorTest:
   def __init__(self):
     super().__init__()
 
-    self.ezapp = lev2.OrkEzApp.create(self, fullscreen=True, name="SceneEditorTest")
+    self.ezapp = lev2.OrkEzApp.create(self, fullscreen=False, name="SceneEditorTest")
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()
 
@@ -116,7 +154,30 @@ class SceneEditorTest:
     self.btn_save.inactive_blend_mode = tokens.ALPHA
     self.btn_save.onPressed = lambda btn: self._openSavePopup()
 
-    # Add outliner below toolbar (fills remaining space)
+    # Add pick buffer debug views in a collapsable (small images showing what pick buffer sees)
+    self.pick_collapsable = self.left_panel.makeChild(uiclass=lev2.ui.Collapsable, args=["Pick Debug"])
+    self.pick_collapsable.header_height = 24
+    self.pick_collapsable.header_bg_color = vec4(0.2, 0.2, 0.25, 1)
+    self.pick_collapsable.expanded = False
+
+    self.pick_hpack = lev2.ui.HorizontalPack.wfactory(["pick_debug_hpack"])
+    self.pick_hpack.margin = 2
+    self.pick_hpack.item_width = 128
+    self.pick_hpack.fixed_height = 192
+    self.pick_hpack.bg_color = vec4(0.1, 0.1, 0.1, 1)
+    self.pick_collapsable.setChild(self.pick_hpack)
+
+    imgbg = vec4(0.15, 0.15, 0.15, 1)
+    self.pick_img_id = self.pick_hpack.makeChild(uiclass=lev2.ui.ImageView, args=["pick_id", imgbg])
+    self.pick_img_pos = self.pick_hpack.makeChild(uiclass=lev2.ui.ImageView, args=["pick_pos", imgbg])
+    self.pick_img_nrm = self.pick_hpack.makeChild(uiclass=lev2.ui.ImageView, args=["pick_nrm", imgbg])
+
+    for imgview in [self.pick_img_id, self.pick_img_pos, self.pick_img_nrm]:
+      imgview.maintain_aspect_ratio = True
+      imgview.flip_x = True
+      imgview.flip_y = True
+
+    # Add outliner below pick debug (fills remaining space)
     self.outliner_item = self.left_panel.makeChild(uiclass=lev2.ui.Outliner, args=["outliner"])
     self.outliner = self.outliner_item
     self.left_panel.fill_widget = self.outliner  # Outliner fills remaining space
@@ -156,14 +217,20 @@ class SceneEditorTest:
   ##############################################
 
   def _setupOutliner(self):
-    """Setup 16 cubes in outliner."""
+    """Setup 16 cubes and lights in outliner."""
     self.cube_names = [f"Cube_{i:02d}" for i in range(16)]
+    self.light_names = ["pointlight1"]
 
     scene_data = VarMap()
     cubes = VarMap()
     for name in self.cube_names:
       setattr(cubes, name, "cube")
     scene_data.Cubes = cubes
+
+    lights = VarMap()
+    for name in self.light_names:
+      setattr(lights, name, "pointlight")
+    scene_data.Lights = lights
 
     self.outliner.data = scene_data
     self.outliner.expandAll()
@@ -172,6 +239,16 @@ class SceneEditorTest:
       name = key.split("/")[-1] if "/" in key else key
       if name in self.cube_names:
         self._selectCube(name)
+      elif name in self.light_names:
+        self._selectLight(name)
+      else:
+        # Selected a category header - clear selection
+        if hasattr(self, 'selected_cube') and self.selected_cube and self.selected_cube in self.cube_nodes:
+          self.cube_nodes[self.selected_cube].modcolor = vec4(1, 1, 1, 1)
+        self.selected_cube = None
+        self.selected_light = None
+      # Disable manip on any outliner selection - only T/R/S keys enable it
+      self._enableManip(False)
 
     self.outliner.onSelect(on_select)
     self.outliner.bgcolor = vec4(0.12, 0.12, 0.14, 1)
@@ -180,19 +257,61 @@ class SceneEditorTest:
   ##############################################
 
   def _setupPropertySheet(self):
-    """Setup property sheet with TransformEdit."""
+    """Setup property sheet with TransformEdit and Light Color in Collapsables."""
     self.propsheet_vpack = self.propsheet_dock.createChild(
       uiclass=lev2.ui.VerticalPack,
       args=["propsheet_content"]
     )
     self.propsheet_vpack.margin = 4
-    self.propsheet_vpack.item_height = 84
+    self.propsheet_vpack.item_height = 100
 
-    self.xform_edit_vpack = self.propsheet_vpack.makeChild(
-      uiclass=TransformEdit,
-      args=["xform_edit"]
-    )
-    self.xform_editor = self.xform_edit_vpack.uservars.transform_edit
+    # Wrap TransformEdit in a Collapsable
+    self.xform_collapsable = self.propsheet_vpack.makeChild(uiclass=lev2.ui.Collapsable, args=["Transform"])
+    self.xform_collapsable.header_height = 24
+    self.xform_collapsable.header_bg_color = vec4(0.2, 0.2, 0.25, 1)
+    self.xform_collapsable.expanded = True
+
+    # Create TransformEdit as child of Collapsable
+    self.xform_edit_widget = TransformEdit.wfactory(["xform_edit"])
+    self.xform_edit_widget.fixed_height = 84
+    self.xform_collapsable.setChild(self.xform_edit_widget)
+    self.xform_editor = self.xform_edit_widget.uservars.transform_edit
+
+    # Light Color Collapsable (only visible when light selected)
+    self.color_collapsable = self.propsheet_vpack.makeChild(uiclass=lev2.ui.Collapsable, args=["Light Color"])
+    self.color_collapsable.header_height = 24
+    self.color_collapsable.header_bg_color = vec4(0.25, 0.2, 0.15, 1)
+    self.color_collapsable.expanded = True
+
+    # Create VPack for color editors
+    self.color_vpack = lev2.ui.VerticalPack.wfactory(["color_vpack"])
+    self.color_vpack.fixed_height = 72
+    self.color_vpack.margin = 2
+    self.color_vpack.item_height = 24
+    self.color_collapsable.setChild(self.color_vpack)
+
+    # R, G, B editors
+    self.color_r_edit = self.color_vpack.makeChild(uiclass=lev2.ui.F32Edit, args=["color_r", "R", 100.0, 0.0, 1000.0])
+    self.color_g_edit = self.color_vpack.makeChild(uiclass=lev2.ui.F32Edit, args=["color_g", "G", 100.0, 0.0, 1000.0])
+    self.color_b_edit = self.color_vpack.makeChild(uiclass=lev2.ui.F32Edit, args=["color_b", "B", 100.0, 0.0, 1000.0])
+
+    for edit in [self.color_r_edit, self.color_g_edit, self.color_b_edit]:
+      edit.drag_rate = 1.0
+      edit.precision = 1
+
+    def on_color_changed(val):
+      if hasattr(self, 'selected_light') and self.selected_light:
+        r = self.color_r_edit.value
+        g = self.color_g_edit.value
+        b = self.color_b_edit.value
+        self.light_data[self.selected_light].color = vec3(r, g, b)
+
+    self.color_r_edit.onValueChanged(on_color_changed)
+    self.color_g_edit.onValueChanged(on_color_changed)
+    self.color_b_edit.onValueChanged(on_color_changed)
+
+    # Start with color editor collapsed (no light selected)
+    self.color_collapsable.expanded = False
 
   ##############################################
 
@@ -200,13 +319,88 @@ class SceneEditorTest:
     """Select a cube - bind manip and property sheet to its transform."""
     if not hasattr(self, 'cube_transforms') or name not in self.cube_transforms:
       return
+    # Clear previous cube selection highlight
+    if hasattr(self, 'selected_cube') and self.selected_cube and self.selected_cube in self.cube_nodes:
+      self.cube_nodes[self.selected_cube].modcolor = vec4(1, 1, 1, 1)
+    # Clear light selection
+    self.selected_light = None
+    self.color_collapsable.expanded = False
+
+    # Highlight new selection in red
+    self.cube_nodes[name].modcolor = vec4(1, 0.3, 0.3, 1)
+
     xform = self.cube_transforms[name]
     self.manip_interface = lev2.DecompTransformManipulator(xform)
     self.manip_controller.target = self.manip_interface
     self.xform_editor.transform = xform
+    self.xform_editor.position_only = False  # Cubes support full transform
     self.selected_cube = name
-    self._enableManip(True)
-    print(f"Selected: {name}")
+    print(f"Selected cube: {name}")
+
+  ##############################################
+
+  def _cycleModel(self, name):
+    """Cycle to the next model for the given cube."""
+    if name not in self.cube_nodes or not self.node_pools:
+      return
+
+    old_node = self.cube_nodes[name]
+    current_idx = self.cube_model_index[name]
+    was_selected = (self.selected_cube == name)
+
+    # Get next model index (cycle through available models)
+    next_idx = (current_idx + 1) % len(self.node_pools)
+
+    # Release old node back to its pool (resets modcolor)
+    old_node.modcolor = vec4(1, 1, 1, 1)
+    self.node_pools[current_idx].release(old_node)
+
+    # Acquire new node from new model's pool
+    new_node = self.node_pools[next_idx].acquire(name)
+
+    # Copy transform to new node
+    xform = self.cube_transforms[name]
+    new_node.worldTransform = xform
+
+    # Preserve selection highlight
+    if was_selected:
+      new_node.modcolor = vec4(1, 0.3, 0.3, 1)
+
+    # Update tracking
+    self.cube_nodes[name] = new_node
+    self.cube_model_index[name] = next_idx
+
+    print(f"{name}: switched to model {next_idx} ({self.model_paths[next_idx]})")
+
+  ##############################################
+
+  def _selectLight(self, name):
+    """Select a light - bind manip and property sheet to its transform and color."""
+    if not hasattr(self, 'light_transforms') or name not in self.light_transforms:
+      return
+    # Clear previous cube selection highlight
+    if hasattr(self, 'selected_cube') and self.selected_cube and self.selected_cube in self.cube_nodes:
+      self.cube_nodes[self.selected_cube].modcolor = vec4(1, 1, 1, 1)
+    self.selected_cube = None
+
+    # Set light selection
+    self.selected_light = name
+    self.color_collapsable.expanded = True
+
+    # Update color editors with current light color
+    color = self.light_data[name].color
+    self.color_r_edit.value = color.x
+    self.color_g_edit.value = color.y
+    self.color_b_edit.value = color.z
+
+    # Bind transform (point lights only support translation)
+    xform = self.light_transforms[name]
+    self.manip_interface = lev2.DecompTransformManipulator(xform)
+    self.manip_controller.target = self.manip_interface
+    self.manip_controller.mode = lev2.ManipMode.TRANSLATE  # Force translate for point lights
+    self.xform_editor.transform = xform
+    self.xform_editor.position_only = True  # Point lights only support position
+    print(f"Selected light: {name}")
 
   ##############################################
 
@@ -222,7 +416,7 @@ class SceneEditorTest:
     """Create a secondary window with FilesystemBrowser."""
     popup_win = self.ezapp.createSecondaryWindow(
       width=800, height=600, x=200, y=150,
-      title=title, decorated=True, resizable=True
+      title=title, decorated=True, resizable=True, floating=True
     )
 
     uic = popup_win.ui_context
@@ -233,7 +427,7 @@ class SceneEditorTest:
 
     browser_item = root.makeChild(
       uiclass=FilesystemBrowser,
-      args=["browser", home_dir, ".json", vec3(0.1, 0.1, 0.1), mode],
+      args=["browser", home_dir, ".osgr", vec3(0.1, 0.1, 0.1), mode],
       fill=True
     )
     browser = browser_item.widget.uservars.filesystem_browser
@@ -259,6 +453,7 @@ class SceneEditorTest:
     try:
       with open(path, 'r') as f:
         data = json.load(f)
+      # Load cubes
       for name, xd in data.get("cubes", {}).items():
         if name in self.cube_transforms:
           xform = self.cube_transforms[name]
@@ -267,6 +462,17 @@ class SceneEditorTest:
           o = xd.get("orientation", [0, 0, 0, 1])
           xform.orientation = quat(o[0], o[1], o[2], o[3])
           xform.scale = xd.get("scale", 1.0)
+      # Load lights (point lights only have position and color)
+      for name, ld in data.get("lights", {}).items():
+        if name in self.light_transforms:
+          xform = self.light_transforms[name]
+          t = ld.get("translation", [0, 5, 0])
+          xform.translation = vec3(t[0], t[1], t[2])
+          # Update light node matrix
+          self.light_nodes[name].setMatrix(xform.composed)
+          # Update light color
+          c = ld.get("color", [100, 100, 100])
+          self.light_data[name].color = vec3(c[0], c[1], c[2])
       print(f"Loaded scene from: {path}")
     except Exception as e:
       print(f"Failed to load: {e}")
@@ -275,15 +481,24 @@ class SceneEditorTest:
     """Save scene to JSON file."""
     if not hasattr(self, 'cube_transforms'):
       return
-    if not path.endswith('.json'):
-      path += '.json'
-    data = {"cubes": {}}
+    if not path.endswith('.osgr'):
+      path += '.osgr'
+    data = {"cubes": {}, "lights": {}}
+    # Save cubes
     for name, xform in self.cube_transforms.items():
       t, o = xform.translation, xform.orientation
       data["cubes"][name] = {
         "translation": [t.x, t.y, t.z],
         "orientation": [o.x, o.y, o.z, o.w],
         "scale": xform.scale
+      }
+    # Save lights (point lights only have position and color)
+    for name, xform in self.light_transforms.items():
+      t = xform.translation
+      c = self.light_data[name].color
+      data["lights"][name] = {
+        "translation": [t.x, t.y, t.z],
+        "color": [c.x, c.y, c.z]
       }
     with open(path, 'w') as f:
       json.dump(data, f, indent=2)
@@ -316,30 +531,63 @@ class SceneEditorTest:
     self.scenegraph = lev2.scenegraph.Scene(sg_params)
     self.layer = self.scenegraph.createLayer("std_forward")
 
-    # Grid
+    # Enable pick buffer
+    self.scenegraph.enablePickHud()
+
+    # Grid (not pickable)
     self.grid_data = createGridData()
     self.grid_node = self.layer.createDrawableNodeFromData("grid", self.grid_data)
     self.grid_node.sortkey = 1
+    self.grid_node.pickable = False
 
-    # Create 16 cubes in 4x4 grid, spaced 2m apart
-    cube_prim = createCubePrim(ctx=ctx, size=1.0)
-    pipeline_cube = createPipeline(app=self, ctx=ctx, rendermodel="FORWARD_PBR", techname="std_mono_fwd")
+    ############################################
+    # Load 4 models and create node pools
+    ############################################
 
-    self.cube_nodes = {}
-    self.cube_transforms = {}
+    self.model_paths = [
+      "data://tests/pbr_calib",
+      "data://tests/misc_gltf_samples/plants/plant1.glb",
+      "data://tests/misc_gltf_samples/art_and_sculpture/lion.glb",
+      "data://tests/misc_gltf_samples/art_and_sculpture/fracvase.glb",
+    ]
+    self.models = []
+    self.node_pools = []  # One pool per model
+    for path in self.model_paths:
+      try:
+        model = lev2.XgmModel(path)
+        self.models.append(model)
+        self.node_pools.append(NodePool(model, self.scenegraph, self.layer))
+        print(f"Loaded model: {path}")
+      except Exception as e:
+        print(f"Failed to load model {path}: {e}")
+        # Use first model as fallback
+        if self.models:
+          self.models.append(self.models[0])
+          self.node_pools.append(NodePool(self.models[0], self.scenegraph, self.layer))
+
+    ############################################
+    # Create 16 objects in 4x4 grid, spaced 2m apart
+    ############################################
+
+    self.cube_nodes = {}       # name -> current active node
+    self.cube_transforms = {}  # name -> transform (shared across node swaps)
+    self.cube_model_index = {} # name -> which model index is active
     for i, name in enumerate(self.cube_names):
-      node = cube_prim.createNode(name, self.layer, pipeline_cube)
+      model_idx = 0  # Start with first model
+      node = self.node_pools[model_idx].acquire(name)
       xform = Transform()
       xform.translation = vec3((i % 4) * 2 - 3, 0.5, (i // 4) * 2 - 3)
       node.worldTransform = xform
       self.cube_nodes[name] = node
       self.cube_transforms[name] = xform
+      self.cube_model_index[name] = model_idx
 
     # Setup ManipController (initially no target)
     self.manip_controller = lev2.ManipController()
     self.manip_interface = None
     self.manip_controller.mode = lev2.ManipMode.TRANSLATE
     self.selected_cube = None
+    self.selected_light = None
 
     # Create ManipGizmo drawable (renders in scenegraph)
     self.gizmo_data = lev2.ManipGizmoDrawableData()
@@ -348,10 +596,31 @@ class SceneEditorTest:
     self.gizmo_node = self.scenegraph.createDrawableNodeOnLayers(
         [self.layer], "manip-gizmo", self.gizmo_drawable)
     self.gizmo_node.sortkey = 999  # Render on top
+    self.gizmo_node.pickable = False
 
     # Start with manipulator disabled (no selection yet)
     self.manip_enabled = False
     self.gizmo_node.enabled = False
+
+    ############################################
+    # Setup point light at (0, 5, 0)
+    ############################################
+
+    self.light_data = {}
+    self.light_nodes = {}
+    self.light_transforms = {}
+
+    # Create pointlight1
+    light_data = lev2.PointLightData()
+    light_data.color = vec3(100, 100, 100)  # Bright white light
+    light_node = light_data.createNode("pointlight1", self.layer)
+    light_xform = Transform()
+    light_xform.translation = vec3(0, 5, 0)
+    light_node.setMatrix(light_xform.composed)
+
+    self.light_data["pointlight1"] = light_data
+    self.light_nodes["pointlight1"] = light_node
+    self.light_transforms["pointlight1"] = light_xform
 
     ############################################
     # Setup camera
@@ -391,8 +660,84 @@ class SceneEditorTest:
     else:
       self.manip_controller.target = None
 
+  def _onPickResult(self, pfc):
+    """Handle pick buffer result."""
+    print(f"Pick dump: {pfc.dump()}")
+    obj = pfc.value(0)
+    print(f"Pick result: obj={obj}, type={type(obj)}")
+
+    # Update pick buffer debug images
+    SG = self.scenegraph
+    self.pick_img_id.texture = SG.pick_tex_id
+    self.pick_img_pos.texture = SG.pick_tex_pos
+    self.pick_img_nrm.texture = SG.pick_tex_nrm
+    self.pick_img_id.setDirty()
+    self.pick_img_pos.setDirty()
+    self.pick_img_nrm.setDirty()
+
+    if obj is not None and isinstance(obj, u32vec4):
+      # obj is a u32vec4 with raw pick values:
+      #   .x = pick ID (index into drawable encoding table)
+      pick_id = int(obj.x)
+      # Background clear typically has .w = 0x3f800000 (1.0 as float bits)
+      is_valid_hit = (pick_id > 0) or (pick_id == 0 and int(obj.w) == 0)
+      print(f"  pick_id={pick_id}, is_valid_hit={is_valid_hit}")
+
+      if is_valid_hit:
+        # Decode pick_id to get the actual node
+        decoded_node = pfc.decodePickID(pick_id)
+        print(f"  decoded_node={decoded_node}, type={type(decoded_node)}")
+
+        # Find which cube slot owns this node
+        cube_name = None
+        for name, node in self.cube_nodes.items():
+          if node is decoded_node:
+            cube_name = name
+            break
+
+        if cube_name:
+          print(f"  mapped to cube: {cube_name}")
+          self._selectCube(cube_name)
+          self.outliner.selected_key = f"Cubes/{cube_name}"
+          self._enableManip(False)  # Only T/R/S keys enable manip
+        else:
+          print(f"  no cube found for decoded node")
+
   def _onCameraEvent(self, uievent):
     """Handle camera manipulation events (orbit, pan, zoom) and mode keys."""
+    # Handle click-to-select (left click without modifiers)
+    if uievent.code == tokens.PUSH.hashed:
+      if not uievent.shift and not uievent.ctrl and not uievent.alt:
+        # Check if manip is handling this (don't pick if mouse is over gizmo)
+        if self.manip_enabled and self.manip_controller.hoveredAxis != lev2.ManipAxis.NONE:
+          pass  # Let manip handle it
+        else:
+          # Use pick buffer - need viewport-local coords
+          # The sgv widget's x,y are relative to its parent (viewport_dock)
+          # uievent.x,y are in root coordinates
+          # We need coordinates relative to the viewport's content area
+          vp_root_x = self.viewport_dock.x + self.sgv.x
+          vp_root_y = self.viewport_dock.y + self.sgv.y
+          local_x = uievent.x - vp_root_x
+          local_y = uievent.y - vp_root_y
+          print(f"Pick coords: event({uievent.x},{uievent.y}) vp_root({vp_root_x},{vp_root_y}) local({local_x},{local_y}) vp_size({self.sgv.width}x{self.sgv.height})")
+          print(f"  dock.x={self.viewport_dock.x} dock.y={self.viewport_dock.y} sgv.x={self.sgv.x} sgv.y={self.sgv.y}")
+          print(f"  camera eye={self.camera.eye} target={self.camera.target}")
+          # Clamp to viewport bounds
+          if local_x >= 0 and local_x < self.sgv.width and local_y >= 0 and local_y < self.sgv.height:
+            # Disable gizmo during pick (not safe for pick buffer yet)
+            gizmo_was_enabled = self.gizmo_node.enabled
+            self.gizmo_node.enabled = False
+            self.scenegraph.pickWithScreenCoord(
+              self.camera,
+              vec2(local_x, local_y),
+              0, 0, self.sgv.width, self.sgv.height,
+              self._onPickResult
+            )
+            self.gizmo_node.enabled = gizmo_was_enabled
+          else:
+            print(f"  Click outside viewport bounds")
+
     if uievent.code == tokens.KEY_DOWN.hashed:
       # Escape - disable manipulator
       if uievent.keycode == 256:
@@ -415,14 +760,27 @@ class SceneEditorTest:
           print(f"Mode: TRANSLATE ({space_name})")
         return lev2.ui.HandlerResult()
       elif uievent.keycode == ord("R"):
+        if self.selected_light:
+          print("Rotate not supported for point lights")
+          return lev2.ui.HandlerResult()
         self._enableManip(True)
         self.manip_controller.mode = lev2.ManipMode.ROTATE
         print("Mode: ROTATE")
         return lev2.ui.HandlerResult()
       elif uievent.keycode == ord("S"):
+        if self.selected_light:
+          print("Scale not supported for point lights")
+          return lev2.ui.HandlerResult()
         self._enableManip(True)
         self.manip_controller.mode = lev2.ManipMode.SCALE
         print("Mode: SCALE")
+        return lev2.ui.HandlerResult()
+      # M - cycle model on selected cube
+      elif uievent.keycode == ord("M"):
+        if self.selected_cube:
+          self._cycleModel(self.selected_cube)
+        else:
+          print("No cube selected (M cycles models on cubes)")
         return lev2.ui.HandlerResult()
 
     # Then handle camera events
@@ -439,6 +797,17 @@ class SceneEditorTest:
     self.sgv.setDirty()
     if self.selected_cube:
       self.xform_editor.sync()
+      # Animate selection highlight (pulse between red and white)
+      t = math.sin(updinfo.absolutetime * 8.0) * 0.5 + 0.5  # 0 to 1 pulsing
+      r = 1.0
+      g = t  # 0.3 to 1.0
+      b = t  # 0.3 to 1.0
+      self.cube_nodes[self.selected_cube].modcolor = vec4(r, g, b, 1)
+    elif self.selected_light:
+      self.xform_editor.sync()
+      # Update light node matrix from transform
+      xform = self.light_transforms[self.selected_light]
+      self.light_nodes[self.selected_light].setMatrix(xform.composed)
 
   ##############################################
 

@@ -108,6 +108,10 @@ class TransformEdit:
     self.hpack_scale_uniform = None
     self.hpack_scale_xyz = None
 
+    # Row references for position-only mode
+    self.hpack_orient = None
+    self._position_only = False
+
   @property
   def transform(self):
     return self._transform
@@ -116,6 +120,23 @@ class TransformEdit:
   def transform(self, value):
     self._transform = value
     self._refreshFromData()
+
+  @property
+  def position_only(self):
+    """When True, only show position editing (hide rotation and scale)."""
+    return self._position_only
+
+  @position_only.setter
+  def position_only(self, value):
+    self._position_only = value
+    self._updatePositionOnlyMode()
+
+  def _updatePositionOnlyMode(self):
+    """Show/hide rotation and scale rows based on position_only mode."""
+    if self.hpack_orient:
+      self.hpack_orient.enableDraw = not self._position_only
+    if self.hpack_scale:
+      self.hpack_scale.enableDraw = not self._position_only
 
   def sync(self):
     """Call each frame to sync UI from bound transform (for external changes like manipulators)."""
@@ -331,6 +352,7 @@ class TransformEdit:
     hpack_orient.margin = MARGIN
     hpack_orient.item_width = LABEL_WIDTH
     hpack_orient.fill = True
+    editor.hpack_orient = hpack_orient
 
     orient_label = hpack_orient.makeChild(uiclass=lev2.ui.Button, args=["Rot", btn_color])
 

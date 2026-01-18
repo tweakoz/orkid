@@ -563,6 +563,23 @@ vertex_interface iface_vtx_pick_skinned //
   }
 }
 ///////////////////////////////////////////////////////////////
+// Simple rigid pick interface - standard vertex format (no sub-ID input)
+///////////////////////////////////////////////////////////////
+vertex_interface iface_vtx_pick_rigid_simple {
+  inputs {
+    vec4 position : POSITION;
+    vec3 normal : NORMAL;
+  }
+  outputs {
+    vec3 frg_wpos;
+    vec3 frg_wnrm;
+    vec2 frg_uv;
+    flat uvec3 frg_pickSUBID;
+  }
+}
+///////////////////////////////////////////////////////////////
+// Original rigid pick interface (requires uvec3 pickSUBID in vertex data)
+///////////////////////////////////////////////////////////////
 vertex_interface iface_vtx_pick_rigid {
   inputs {
     vec4 position : POSITION;
@@ -602,6 +619,18 @@ vertex_shader vs_pick_skinned_mono : iface_vtx_pick_skinned : lib_skin_tools : u
   // Use primary bone index as sub-ID for skinned picking
   frg_pickSUBID  = uvec3(boneindices.x, 0, 0);
 }
+///////////////////////////////////////////////////////////////
+// Simple rigid pick shader - works with standard vertex formats
+///////////////////////////////////////////////////////////////
+vertex_shader vs_pick_rigid_simple_mono : iface_vtx_pick_rigid_simple : ub_std_vtx : ublk_std_matrices {
+  gl_Position    = mvp * position;
+  frg_wpos       = (m * position).xyz;
+  frg_wnrm       = normalize(mrot * normal);
+  frg_uv         = vec2(0,0);
+  frg_pickSUBID  = uvec3(0,0,0);  // No sub-ID for simple rigid picking
+}
+///////////////////////////////////////////////////////////////
+// Original rigid pick shader (requires uvec3 pickSUBID in vertex data)
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_pick_rigid_mono : iface_vtx_pick_rigid : ub_std_vtx : ublk_std_matrices {
   gl_Position = mvp * position;

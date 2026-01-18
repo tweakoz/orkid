@@ -43,6 +43,7 @@ struct PixelFetchContext {
   uint32_t encodeVariant(pickvariant_t data);
   pickvariant_t decodePixel(fvec4 fv4_pixel);
   pickvariant_t decodePixel(u32vec4 u32v4_pixel);
+  pickvariant_t decodePickID(uint32_t pick_id);
 
   //////////////////////
 

@@ -123,6 +123,9 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineVTX(const FxPipelinePermutation& 
           pipeline             = std::make_shared<FxPipeline>(permu);
           pipeline->_technique = this->_tek_PIK_RI_NI;
           pipeline->bindParam(this->_paramMVP, "RCFD_Camera_Pick"_crcsh);
+          pipeline->bindParam(this->_paramM, "RCFD_M"_crcsh);
+          pipeline->bindParam(this->_paramMROT, "RCFD_Model_Rot"_crcsh);
+          pipeline->bindParam(this->_parPickID, "RCID_PickID"_crcsh);
           OrkAssert(pipeline->_technique != nullptr);
         }
       }

@@ -111,10 +111,15 @@ void pyinit_scenegraph(py::module& module_lev2) {
               [](drawable_node_ptr_t node, int key) { //
                 node->_drawable->_sortkey = key;
               })
-          .def_property_readonly(
+          .def_property(
               "drawable",
               [](drawable_node_ptr_t node) -> drawable_ptr_t { //
                 return node->_drawable;
+              },
+              [](drawable_node_ptr_t node, drawable_ptr_t drawable) { //
+                node->_drawable = drawable;
+                drawable->_sgnode = node;
+                drawable->_pickID.set<object_ptr_t>(node);
               })
           .def_property_readonly(
               "instanceData",

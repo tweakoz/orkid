@@ -678,6 +678,12 @@ void pyinit_gfx(py::module& module_lev2) {
                             return encoded;
                           })
                       .def(
+                          "decodePickID",
+                          [type_codec](pixelfetchctx_ptr_t pfc, uint32_t pick_id) -> py::object {
+                            auto decoded = pfc->decodePickID(pick_id);
+                            return type_codec->encode(decoded);
+                          })
+                      .def(
                           "dump",
                           [](pixelfetchctx_ptr_t pfc) -> std::string {
                             std::string rval;

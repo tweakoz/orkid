@@ -204,8 +204,9 @@ FxPipelineNamedParamProviders::FxPipelineNamedParamProviders() {
     auto it               = RCFDPROPS.find("pickbufferMvpMatrix"_crc);
     OrkAssert(it != RCFDPROPS.end());
     auto as_mtx4p    = it->second.get<fmtx4_ptr_t>();
-    const fmtx4& MVP = *(as_mtx4p.get());
-    // MVP.dump("pickbufferMvpMatrix");
+    const fmtx4& VP = *(as_mtx4p.get());  // This is VP (View*Projection) from pick camera
+    auto worldmatrix = ppc._rcid.worldMatrix();
+    fmtx4 MVP = VP * worldmatrix;  // Compute full MVP = VP * M
     ppc._fxi->bindParamMatrix(param, MVP);
   };
   /////////////////////////////////////////////////////////////////
