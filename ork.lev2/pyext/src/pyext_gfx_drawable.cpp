@@ -34,7 +34,15 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
                            .def_property(
                                "scenegraph",
                                [](drawable_ptr_t drw) -> scenegraph::scene_ptr_t { return drw->_sg; },
-                               [](drawable_ptr_t drw, scenegraph::scene_ptr_t sg) { drw->_sg = sg; });
+                               [](drawable_ptr_t drw, scenegraph::scene_ptr_t sg) { drw->_sg = sg; })
+                           .def_property(
+                               "drawable_type",
+                               [](drawable_ptr_t drw) -> uint64_t { return drw->_drawable_type; },
+                               [](drawable_ptr_t drw, uint64_t t) { drw->_drawable_type = t; })
+                           .def_property(
+                               "tag",
+                               [](drawable_ptr_t drw) -> uint64_t { return drw->_tag; },
+                               [](drawable_ptr_t drw, uint64_t t) { drw->_tag = t; });
   type_codec->registerStdCodec<drawable_ptr_t>(drawable_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto cbdrawable_type = //

@@ -133,6 +133,7 @@ pointlightdata_ptr_t PointLightData::instantiate() {
 PointLight::PointLight(xform_generator_t mtx, const PointLightData* pld)
     : Light(mtx, pld)
     , _pldata(pld) {
+  _drawable_type = "pointlight"_crcu;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -140,6 +141,7 @@ PointLight::PointLight(xform_generator_t mtx, const PointLightData* pld)
 PointLight::PointLight(const PointLightData* pld)
     : Light(pld)
     , _pldata(pld) {
+  _drawable_type = "pointlight"_crcu;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -205,6 +207,7 @@ DynamicSpotLight::DynamicSpotLight()
 
 DirectionalLight::DirectionalLight(xform_generator_t mtx, const DirectionalLightData* dld)
     : Light(mtx, dld) {
+  _drawable_type = "directional"_crcu;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -212,6 +215,7 @@ DirectionalLight::DirectionalLight(xform_generator_t mtx, const DirectionalLight
 DirectionalLight::DirectionalLight(const DirectionalLightData* dld)
     : Light(dld)
     , _dldata(dld) {
+  _drawable_type = "directional"_crcu;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -236,6 +240,7 @@ bool DirectionalLight::IsInFrustum(const Frustum& frustum) {
 AmbientLight::AmbientLight(xform_generator_t mtx, const AmbientLightData* ald)
     : Light(mtx, ald)
     , mAld(ald) {
+  _drawable_type = "ambient"_crcu;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -243,6 +248,7 @@ AmbientLight::AmbientLight(xform_generator_t mtx, const AmbientLightData* ald)
 AmbientLight::AmbientLight(const AmbientLightData* ald)
     : Light(ald)
     , mAld(ald) {
+  _drawable_type = "ambient"_crcu;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -289,12 +295,14 @@ SpotLight::SpotLight(const SpotLightData* sld)
     : Light(sld)
     , _spdata(sld)
     , _shadowmapDim(0) {
+  _drawable_type = "spotlight"_crcu;
 }
 
 SpotLight::SpotLight(xform_generator_t mtx, const SpotLightData* sld)
     : Light(mtx, sld)
     , _spdata(sld)
     , _shadowmapDim(0) {
+  _drawable_type = "spotlight"_crcu;
 }
 
 float SpotLight::getFovy() const {

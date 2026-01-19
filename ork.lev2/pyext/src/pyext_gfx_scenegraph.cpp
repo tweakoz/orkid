@@ -47,10 +47,13 @@ void pyinit_scenegraph(py::module& module_lev2) {
               [](node_ptr_t node, decompxf_ptr_t mtx) { //
                 node->_dqxfdata._worldTransform = mtx;
               })
-          .def_property_readonly(
+          .def_property(
               "name",
               [](node_ptr_t node) -> std::string { //
                 return node->_name;
+              },
+              [](node_ptr_t node, std::string name) { //
+                node->_name = name;
               })
           .def_property(
               "modcolor",                    //
@@ -173,7 +176,7 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 auto light             = lnode->_light;
                 light->_xformgenerator = [=]() -> fmtx4 { return mtx; };
               })
-          .def("__repr__", [](drawable_node_ptr_t node) { return "lightnode<" + node->_name + ">"; });
+          .def("__repr__", [](lightnode_ptr_t node) { return "lightnode<" + node->_name + ">"; });
   type_codec->registerStdCodec<lightnode_ptr_t>(lightnode_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto probenode_type = //
@@ -485,6 +488,56 @@ void pyinit_scenegraph(py::module& module_lev2) {
               "pick_buffer_dim",
               [](scene_ptr_t SG) -> int { //
                 return PICKBUFFER_DIM;
+              })
+          .def(
+              "drawableNodesWithType",
+              [](scene_ptr_t SG, crcstring_ptr_t drawable_type) -> py::list { //
+                py::list result;
+                auto nodes = SG->drawableNodesWithType(drawable_type->hashed());
+                for (const auto& node : nodes) {
+                  result.append(node);
+                }
+                return result;
+              })
+          .def(
+              "drawableNodesWithTag",
+              [](scene_ptr_t SG, crcstring_ptr_t tag) -> py::list { //
+                py::list result;
+                auto nodes = SG->drawableNodesWithTag(tag->hashed());
+                for (const auto& node : nodes) {
+                  result.append(node);
+                }
+                return result;
+              })
+          .def(
+              "lightNodes",
+              [](scene_ptr_t SG) -> py::list { //
+                py::list result;
+                auto nodes = SG->lightNodes();
+                for (const auto& node : nodes) {
+                  result.append(node);
+                }
+                return result;
+              })
+          .def(
+              "lightNodesWithType",
+              [](scene_ptr_t SG, crcstring_ptr_t light_type) -> py::list {
+                py::list result;
+                auto nodes = SG->lightNodesWithType(light_type->hashed());
+                for (const auto& node : nodes) {
+                  result.append(node);
+                }
+                return result;
+              })
+          .def(
+              "lightNodesWithTag",
+              [](scene_ptr_t SG, crcstring_ptr_t tag) -> py::list {
+                py::list result;
+                auto nodes = SG->lightNodesWithTag(tag->hashed());
+                for (const auto& node : nodes) {
+                  result.append(node);
+                }
+                return result;
               });
   ;
   type_codec->registerStdCodec<scene_ptr_t>(scenegraph_type);

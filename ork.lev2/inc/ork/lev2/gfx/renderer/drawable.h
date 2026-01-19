@@ -350,6 +350,8 @@ struct Drawable {
   scenegraph::scene_ptr_t _sg;
   scenegraph::node_ptr_t _sgnode;
   uint32_t _sortkey = 0;
+  uint64_t _drawable_type = 0;  // type identifier for enumeration (e.g. "model"_crcu)
+  uint64_t _tag = 0;            // user-defined tag for custom filtering
 };
 
 ///////////////////////////////////////////////////////////////////////////////

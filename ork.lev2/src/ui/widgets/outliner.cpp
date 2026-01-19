@@ -271,10 +271,23 @@ void Outliner::startAdding(const std::string& parent_key) {
     return;  // No factories available for this parent
   }
 
+  // Build ordered key list for cycling
+  _add_factory_keys.clear();
+  for (const auto& [key, factory] : _add_factories) {
+    _add_factory_keys.push_back(key);
+  }
+
   _adding_parent_key = parent_key;
-  _add_name = "NewItem";
+  _add_factory_id = _add_factory_keys[0];
+
+  // Use factory's default_name_generator if provided, otherwise "NewItem"
+  auto& factory = _add_factories[_add_factory_id];
+  if (factory->default_name_generator) {
+    _add_name = factory->default_name_generator(_model);
+  } else {
+    _add_name = "NewItem";
+  }
   _add_cursor_pos = _add_name.length();
-  _add_factory_index = 0;
 
   // Make sure parent is expanded so we can see the new item row
   if (!parent_key.empty()) {
@@ -288,7 +301,8 @@ void Outliner::cancelAdding() {
   _adding_parent_key = "";
   _add_name = "";
   _add_cursor_pos = 0;
-  _add_factory_index = 0;
+  _add_factory_id = "";
+  _add_factory_keys.clear();
   _add_factories.clear();
   _needs_rebuild = true;
 }
@@ -302,11 +316,12 @@ void Outliner::commitAdding() {
   }
 
   // Get the selected factory
-  if (_add_factory_index >= 0 && _add_factory_index < (int)_add_factories.size()) {
-    const auto& factory = _add_factories[_add_factory_index];
+  auto it = _add_factories.find(_add_factory_id);
+  if (it != _add_factories.end()) {
+    const auto& factory = it->second;
 
     // Create the item via model
-    std::string new_key = _model->createItem(_adding_parent_key, _add_name, factory.id);
+    std::string new_key = _model->createItem(_adding_parent_key, _add_name, factory->id);
 
     if (!new_key.empty()) {
       // Select the newly created item
@@ -504,8 +519,19 @@ HandlerResult Outliner::DoOnUiEvent(event_constptr_t ev) {
           case 263: // Left arrow
             if (ev->mbSHIFT || ev->mbCTRL) {
               // Shift+Left or Ctrl+Left cycles factory backward
-              if (_add_factories.size() > 1) {
-                _add_factory_index = (_add_factory_index - 1 + _add_factories.size()) % _add_factories.size();
+              if (_add_factory_keys.size() > 1) {
+                auto it = std::find(_add_factory_keys.begin(), _add_factory_keys.end(), _add_factory_id);
+                if (it != _add_factory_keys.end()) {
+                  size_t idx = std::distance(_add_factory_keys.begin(), it);
+                  idx = (idx + _add_factory_keys.size() - 1) % _add_factory_keys.size();
+                  _add_factory_id = _add_factory_keys[idx];
+                  // Regenerate name from new factory's generator
+                  auto& factory = _add_factories[_add_factory_id];
+                  if (factory->default_name_generator) {
+                    _add_name = factory->default_name_generator(_model);
+                    _add_cursor_pos = _add_name.length();
+                  }
+                }
               }
             } else {
               if (_add_cursor_pos > 0) _add_cursor_pos--;
@@ -514,8 +540,19 @@ HandlerResult Outliner::DoOnUiEvent(event_constptr_t ev) {
           case 262: // Right arrow
             if (ev->mbSHIFT || ev->mbCTRL) {
               // Shift+Right or Ctrl+Right cycles factory forward
-              if (_add_factories.size() > 1) {
-                _add_factory_index = (_add_factory_index + 1) % _add_factories.size();
+              if (_add_factory_keys.size() > 1) {
+                auto it = std::find(_add_factory_keys.begin(), _add_factory_keys.end(), _add_factory_id);
+                if (it != _add_factory_keys.end()) {
+                  size_t idx = std::distance(_add_factory_keys.begin(), it);
+                  idx = (idx + 1) % _add_factory_keys.size();
+                  _add_factory_id = _add_factory_keys[idx];
+                  // Regenerate name from new factory's generator
+                  auto& factory = _add_factories[_add_factory_id];
+                  if (factory->default_name_generator) {
+                    _add_name = factory->default_name_generator(_model);
+                    _add_cursor_pos = _add_name.length();
+                  }
+                }
               }
             } else {
               if (_add_cursor_pos < (int)_add_name.length()) _add_cursor_pos++;
@@ -528,11 +565,22 @@ HandlerResult Outliner::DoOnUiEvent(event_constptr_t ev) {
             _add_cursor_pos = _add_name.length();
             break;
           case 258: // Tab - cycle factory
-            if (_add_factories.size() > 1) {
-              if (ev->mbSHIFT) {
-                _add_factory_index = (_add_factory_index - 1 + _add_factories.size()) % _add_factories.size();
-              } else {
-                _add_factory_index = (_add_factory_index + 1) % _add_factories.size();
+            if (_add_factory_keys.size() > 1) {
+              auto it = std::find(_add_factory_keys.begin(), _add_factory_keys.end(), _add_factory_id);
+              if (it != _add_factory_keys.end()) {
+                size_t idx = std::distance(_add_factory_keys.begin(), it);
+                if (ev->mbSHIFT) {
+                  idx = (idx + _add_factory_keys.size() - 1) % _add_factory_keys.size();
+                } else {
+                  idx = (idx + 1) % _add_factory_keys.size();
+                }
+                _add_factory_id = _add_factory_keys[idx];
+                // Regenerate name from new factory's generator
+                auto& factory = _add_factories[_add_factory_id];
+                if (factory->default_name_generator) {
+                  _add_name = factory->default_name_generator(_model);
+                  _add_cursor_pos = _add_name.length();
+                }
               }
             }
             break;
@@ -1062,8 +1110,10 @@ void Outliner::DoDraw(drawevent_constptr_t drwev) {
         int text_y = add_abs_y + (_item_height - _font->description().miAdvanceHeight) / 2;
 
         // Draw factory selector
-        const auto& factory = _add_factories[_add_factory_index];
-        std::string factory_text = "[" + factory.display_name + "]";
+        auto factory_it = _add_factories.find(_add_factory_id);
+        if (factory_it == _add_factories.end()) return;
+        const auto& factory = factory_it->second;
+        std::string factory_text = "[" + factory->display_name + "]";
         int factory_width = factory_text.length() * _font->description().miAdvanceWidth;
 
         // Draw factory background

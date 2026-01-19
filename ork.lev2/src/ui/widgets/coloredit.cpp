@@ -30,6 +30,7 @@ ColorEdit::ColorEdit(
 ///////////////////////////////////////////////////////////////////////////////
 HandlerResult ColorEdit::DoOnUiEvent(event_constptr_t cev) {
   HandlerResult rval;
+  bool color_changed = false;
 
   // Convert event coordinates to local widget space
   int localX = 0;
@@ -47,6 +48,7 @@ HandlerResult ColorEdit::DoOnUiEvent(event_constptr_t cev) {
       switch (key) {
         case 256: // esc
           _currentColor         = _originalColor;
+          color_changed         = true;
           rval._widget_finished = true;
           break;
         case 257: // enter
@@ -69,6 +71,7 @@ HandlerResult ColorEdit::DoOnUiEvent(event_constptr_t cev) {
       }
       else if( radius > _radiusWheelOuter ) {
         _currentColor         = _originalColor;
+        color_changed         = true;
         rval._widget_finished = true;
         rval.setHandled(this);
       }
@@ -93,7 +96,7 @@ HandlerResult ColorEdit::DoOnUiEvent(event_constptr_t cev) {
       auto cur_pos    = fvec2(fx, fy);
       float cur_angle = atan2f(cur_pos.y, cur_pos.x);
       float radius    = cur_pos.length();
-      
+
       if (_push_radius > _radiusIntensRingI) {
         _intensity = fmod(0.0 + (PI + cur_angle) / PI2, 1.0);
         _currentColor.setHSV(_hue, _saturation, _intensity);
@@ -108,13 +111,14 @@ HandlerResult ColorEdit::DoOnUiEvent(event_constptr_t cev) {
         _currentColor.setHSV(_hue, _saturation, _intensity);
         _currentColorFullBright.setHSV(_hue, _saturation, 1.0);
       }
+      color_changed = true;
       rval.setHandled(this);
       break;
     }
     default:
       break;
   }
-  if(_onColorChanged){
+  if(color_changed && _onColorChanged){
     _onColorChanged(_currentColor);
   }
   return rval;

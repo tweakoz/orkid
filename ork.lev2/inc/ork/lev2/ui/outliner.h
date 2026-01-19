@@ -118,8 +118,9 @@ private:
   std::string _adding_parent_key;           // parent key we're adding to (empty = not adding)
   std::string _add_name;                    // name being typed for new item
   int _add_cursor_pos = 0;                  // cursor position in add name
-  int _add_factory_index = 0;               // which factory is selected
-  outliner_factory_list_t _add_factories;   // cached factories for current add operation
+  std::string _add_factory_id;              // which factory is selected (by id)
+  std::vector<std::string> _add_factory_keys;  // ordered keys for cycling
+  outliner_factory_map_t _add_factories;   // cached factories for current add operation
 };
 
 using outliner_ptr_t = std::shared_ptr<Outliner>;

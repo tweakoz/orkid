@@ -103,23 +103,36 @@ public:
         old_key, new_name);
   }
 
-  ui::outliner_factory_list_t getFactories(const std::string& parent_key) const override {
+  ui::outliner_factory_map_t getFactories(const std::string& parent_key) const override {
     py::gil_scoped_acquire acquire;
     // Call Python method and get list of dicts
     py::object py_result = py::cast(this).attr("getFactories")(parent_key);
-    ui::outliner_factory_list_t factories;
+    ui::outliner_factory_map_t factories;
     if (!py_result.is_none() && py::isinstance<py::list>(py_result)) {
       auto type_codec = python::pb11_typecodec_t::instance();
       for (auto item : py_result.cast<py::list>()) {
         if (py::isinstance<py::dict>(item)) {
           auto d = item.cast<py::dict>();
-          ui::OutlinerFactory factory;
-          if (d.contains("id")) factory.id = d["id"].cast<std::string>();
-          if (d.contains("display_name")) factory.display_name = d["display_name"].cast<std::string>();
-          if (d.contains("default_value") && !d["default_value"].is_none()) {
-            factory.default_value = type_codec->decode(d["default_value"]);
+          auto factory = std::make_shared<ui::OutlinerFactory>();
+          if (d.contains("id")) factory->id = d["id"].cast<std::string>();
+          if (d.contains("display_name")) factory->display_name = d["display_name"].cast<std::string>();
+          if (d.contains("default_name_generator") && py::isinstance<py::function>(d["default_name_generator"])) {
+            auto py_gen = std::shared_ptr<py::function>(
+                new py::function(d["default_name_generator"].cast<py::function>()),
+                [](py::function* p) {
+                  py::gil_scoped_acquire acq;
+                  delete p;
+                });
+            factory->default_name_generator = [py_gen](ui::outliner_model_ptr_t model) -> std::string {
+              py::gil_scoped_acquire acq;
+              py::object result = (*py_gen)(model);
+              return result.cast<std::string>();
+            };
           }
-          factories.push_back(factory);
+          if (d.contains("default_value") && !d["default_value"].is_none()) {
+            factory->default_value = type_codec->decode(d["default_value"]);
+          }
+          factories[factory->id] = factory;
         }
       }
     }
@@ -206,10 +219,10 @@ void pyinit_ui_outliner(py::module& uimodule) {
               [](ui::outliner_model_ptr_t model, const std::string& parent_key) -> py::list {
                 auto factories = model->getFactories(parent_key);
                 py::list result;
-                for (const auto& f : factories) {
+                for (const auto& [key, factory] : factories) {
                   py::dict d;
-                  d["id"] = f.id;
-                  d["display_name"] = f.display_name;
+                  d["id"] = factory->id;
+                  d["display_name"] = factory->display_name;
                   // Note: default_value conversion would need type_codec
                   result.append(d);
                 }

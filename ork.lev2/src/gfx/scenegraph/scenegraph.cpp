@@ -501,6 +501,94 @@ size_t Scene::getPostNodeCount() const {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+std::vector<drawable_node_ptr_t> Scene::drawableNodesWithType(uint64_t drawable_type) const {
+  std::vector<drawable_node_ptr_t> result;
+  _layers.atomicOp([&](const layer_map_t& unlocked) {
+    for (const auto& [name, layer] : unlocked) {
+      layer->_drawable_nodes.atomicOp([&](const Layer::drawablenodevect_t& nodes) {
+        for (const auto& node : nodes) {
+          if (node->_drawable && node->_drawable->_drawable_type == drawable_type) {
+            result.push_back(node);
+          }
+        }
+      });
+    }
+  });
+  return result;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+std::vector<drawable_node_ptr_t> Scene::drawableNodesWithTag(uint64_t tag) const {
+  std::vector<drawable_node_ptr_t> result;
+  _layers.atomicOp([&](const layer_map_t& unlocked) {
+    for (const auto& [name, layer] : unlocked) {
+      layer->_drawable_nodes.atomicOp([&](const Layer::drawablenodevect_t& nodes) {
+        for (const auto& node : nodes) {
+          if (node->_drawable && node->_drawable->_tag == tag) {
+            result.push_back(node);
+          }
+        }
+      });
+    }
+  });
+  return result;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+std::vector<lightnode_ptr_t> Scene::lightNodes() const {
+  std::vector<lightnode_ptr_t> result;
+  _layers.atomicOp([&](const layer_map_t& unlocked) {
+    for (const auto& [name, layer] : unlocked) {
+      layer->_lightnodes.atomicOp([&](const Layer::lightnodevect_t& nodes) {
+        for (const auto& node : nodes) {
+          result.push_back(node);
+        }
+      });
+    }
+  });
+  return result;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+std::vector<lightnode_ptr_t> Scene::lightNodesWithType(uint64_t light_type) const {
+  std::vector<lightnode_ptr_t> result;
+  _layers.atomicOp([&](const layer_map_t& unlocked) {
+    for (const auto& [name, layer] : unlocked) {
+      layer->_lightnodes.atomicOp([&](const Layer::lightnodevect_t& nodes) {
+        for (const auto& node : nodes) {
+          if (node->_light && node->_light->_drawable_type == light_type) {
+            result.push_back(node);
+          }
+        }
+      });
+    }
+  });
+  return result;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+std::vector<lightnode_ptr_t> Scene::lightNodesWithTag(uint64_t tag) const {
+  std::vector<lightnode_ptr_t> result;
+  _layers.atomicOp([&](const layer_map_t& unlocked) {
+    for (const auto& [name, layer] : unlocked) {
+      layer->_lightnodes.atomicOp([&](const Layer::lightnodevect_t& nodes) {
+        for (const auto& node : nodes) {
+          if (node->_light && node->_light->_tag == tag) {
+            result.push_back(node);
+          }
+        }
+      });
+    }
+  });
+  return result;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::scenegraph
 
 ImplementReflectionX(ork::lev2::scenegraph::Node, "scenegraph::Node");

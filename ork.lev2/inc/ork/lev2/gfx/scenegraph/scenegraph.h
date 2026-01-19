@@ -308,6 +308,13 @@ struct Scene {
   // Camera lookup table (updated each frame via enqueueToRenderer)
   cameradatalut_ptr_t _cameralut;
 
+  // Node enumeration methods
+  std::vector<drawable_node_ptr_t> drawableNodesWithType(uint64_t drawable_type) const;
+  std::vector<drawable_node_ptr_t> drawableNodesWithTag(uint64_t tag) const;
+  std::vector<lightnode_ptr_t> lightNodes() const;
+  std::vector<lightnode_ptr_t> lightNodesWithType(uint64_t light_type) const;
+  std::vector<lightnode_ptr_t> lightNodesWithTag(uint64_t tag) const;
+
   struct DrawItem{
     ork::lev2::DrawQueueLayer * _layer;
     drawable_node_ptr_t _drwnode;

@@ -19,15 +19,12 @@ class ColorPicker:
 
     ###########################################################################
 
-    def __init__(self, container, name, initial_color,bg_color):
-        #print("container:", container)
-        #print("name:", name)
-        #print("initial_color:", initial_color)
-
+    def __init__(self, container, name, initial_color, bg_color, show_buttons=False):
         self.container = container
         self.name = name
-        self.current_color = initial_color
+        self._current_color = initial_color
         self._updating = False  # Prevent feedback loops
+        self._show_buttons = show_buttons
 
         #################################################
         # Left side: VPack with sliders and preset controls
@@ -75,32 +72,52 @@ class ColorPicker:
         self.b_slider.onValueChanged = lambda w: self._onSliderChanged()
 
         #################################################
-        # Commit/Cancel Buttons
+        # Commit/Cancel Buttons (optional)
         #################################################
 
-        self.action_hpack = self.vpack.makeChild(uiclass=lev2.ui.HorizontalPack, args=[f"{name}_actions"])
-        self.action_hpack.margin = 2
-        self.action_hpack.uniform = True
+        if self._show_buttons:
+            self.action_hpack = self.vpack.makeChild(uiclass=lev2.ui.HorizontalPack, args=[f"{name}_actions"])
+            self.action_hpack.margin = 2
+            self.action_hpack.uniform = True
 
-        # Commit button
-        self.commit_btn = self.action_hpack.makeChild(
-            uiclass=lev2.ui.Button,
-            args=["Commit", vec3(0.3, 0.5, 0.3)]
-        )
-        self.commit_btn.onPressed = lambda w: self._onCommit()
+            # Commit button
+            self.commit_btn = self.action_hpack.makeChild(
+                uiclass=lev2.ui.Button,
+                args=["Commit", vec3(0.3, 0.5, 0.3)]
+            )
+            self.commit_btn.onPressed = lambda w: self._onCommit()
 
-        # Cancel button
-        self.cancel_btn = self.action_hpack.makeChild(
-            uiclass=lev2.ui.Button,
-            args=["Cancel", vec3(0.5, 0.3, 0.3)]
-        )
-        self.cancel_btn.onPressed = lambda w: self._onCancel()
+            # Cancel button
+            self.cancel_btn = self.action_hpack.makeChild(
+                uiclass=lev2.ui.Button,
+                args=["Cancel", vec3(0.5, 0.3, 0.3)]
+            )
+            self.cancel_btn.onPressed = lambda w: self._onCancel()
 
         # Callbacks (set by user)
         self.onCommit = None   # Called with final color when committed
         self.onCancel = None   # Called when cancelled
         self.onColorChanged = None  # Called during live editing
 
+    ###########################################################################
+
+    @property
+    def current_color(self):
+        """Get the current color."""
+        return self._current_color
+
+    @current_color.setter
+    def current_color(self, value):
+        """Set the current color and update all widgets (no callback)."""
+        self._current_color = value
+        self._updating = True
+        try:
+            self.coloredit.currentColor = value
+            self.r_slider.value = value.x
+            self.g_slider.value = value.y
+            self.b_slider.value = value.z
+        finally:
+            self._updating = False
 
     ###########################################################################
 
@@ -114,7 +131,7 @@ class ColorPicker:
             r = self.r_slider.value
             g = self.g_slider.value
             b = self.b_slider.value
-            self.current_color = vec4(r, g, b, self.current_color.w)
+            self._current_color = vec4(r, g, b, self._current_color.w)
             self.coloredit.currentColor = self.current_color
             if self.onColorChanged:
                 self.onColorChanged()
@@ -131,7 +148,7 @@ class ColorPicker:
         self._updating = True
         try:
             color = self.coloredit.currentColor
-            self.current_color = color
+            self._current_color = color
             self.r_slider.value = color.x
             self.g_slider.value = color.y
             self.b_slider.value = color.z

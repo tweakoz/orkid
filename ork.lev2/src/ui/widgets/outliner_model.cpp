@@ -29,7 +29,7 @@ std::string OutlinerModel::renameItem(const std::string& old_key, const std::str
   return "";
 }
 
-outliner_factory_list_t OutlinerModel::getFactories(const std::string& parent_key) const {
+outliner_factory_map_t OutlinerModel::getFactories(const std::string& parent_key) const {
   // Default implementation returns empty list - override in subclasses
   return {};
 }
@@ -230,15 +230,23 @@ void VarMapModel::updateItem(const std::string& key, svar128_t value) {
   }
 }
 
-outliner_factory_list_t VarMapModel::getFactories(const std::string& parent_key) const {
+outliner_factory_map_t VarMapModel::getFactories(const std::string& parent_key) const {
   // VarMapModel provides two basic factories: group (VarMap) and item (string value)
-  outliner_factory_list_t factories;
+  outliner_factory_map_t factories;
 
   // Only provide factories if the parent exists and is a container (VarMap)
   varmap::varmap_ptr_t parent = _getNode(parent_key);
   if (parent) {
-    factories.push_back({"group", "Group", svar128_t()});
-    factories.push_back({"item", "Item", svar128_t(std::string("value"))});
+    auto group_factory = std::make_shared<OutlinerFactory>();
+    group_factory->id = "group";
+    group_factory->display_name = "Group";
+    factories["group"] = group_factory;
+
+    auto item_factory = std::make_shared<OutlinerFactory>();
+    item_factory->id = "item";
+    item_factory->display_name = "Item";
+    item_factory->default_value = svar128_t(std::string("value"));
+    factories["item"] = item_factory;
   }
 
   return factories;

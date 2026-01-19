@@ -128,6 +128,9 @@ void Layer::removeLightNode(lightnode_ptr_t node) {
       unlocked.erase(it);
     }
   });
+  // Also remove from light manager
+  auto lmgr = _scene->_lightManager;
+  lmgr->mGlobalMovingLights.RemoveLight(node->_light.get());
 }
 
 ///////////////////////////////////////////////////////////////////////////////

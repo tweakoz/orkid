@@ -10,6 +10,7 @@
 #include <ork/kernel/varmap.inl>
 #include <functional>
 #include <vector>
+#include <map>
 #include <string>
 #include <memory>
 
@@ -19,13 +20,19 @@ namespace ork::ui {
 // OutlinerFactory: Describes a type of item that can be created
 ////////////////////////////////////////////////////////////////////
 
+struct OutlinerModel;  // forward decl
+using outliner_model_ptr_t = std::shared_ptr<OutlinerModel>;
+using outliner_name_generator_t = std::function<std::string(outliner_model_ptr_t)>;
+
 struct OutlinerFactory {
   std::string id;             // e.g. "mesh", "light", "camera"
   std::string display_name;   // e.g. "Mesh", "Point Light", "Camera"
+  outliner_name_generator_t default_name_generator;  // lambda to generate default name
   svar128_t default_value;    // optional default value for new items
 };
 
-using outliner_factory_list_t = std::vector<OutlinerFactory>;
+using outliner_factory_ptr_t = std::shared_ptr<OutlinerFactory>;
+using outliner_factory_map_t = std::map<std::string, outliner_factory_ptr_t>;
 
 ////////////////////////////////////////////////////////////////////
 // OutlinerModel: Abstract base class for Outliner data models
@@ -80,7 +87,7 @@ struct OutlinerModel {
 
   // Get available factories for creating children under a parent
   // Returns empty list if no factories available (item can't have children)
-  virtual outliner_factory_list_t getFactories(const std::string& parent_key) const;
+  virtual outliner_factory_map_t getFactories(const std::string& parent_key) const;
 
   // Create a new item using a factory - returns the new key, or empty string on failure
   virtual std::string createItem(const std::string& parent_key, const std::string& name, const std::string& factory_id);
@@ -126,8 +133,6 @@ protected:
   bool _allow_multiselect = false;
 };
 
-using outliner_model_ptr_t = std::shared_ptr<OutlinerModel>;
-
 ////////////////////////////////////////////////////////////////////
 // VarMapModel: Built-in model implementation backed by VarMap
 // - Provides backward compatibility with existing setData() API
@@ -153,7 +158,7 @@ struct VarMapModel : public OutlinerModel {
   void removeItem(const std::string& key) override;
   void updateItem(const std::string& key, svar128_t value) override;
   std::string renameItem(const std::string& old_key, const std::string& new_name) override;
-  outliner_factory_list_t getFactories(const std::string& parent_key) const override;
+  outliner_factory_map_t getFactories(const std::string& parent_key) const override;
   std::string createItem(const std::string& parent_key, const std::string& name, const std::string& factory_id) override;
 
 private:
