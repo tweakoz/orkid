@@ -9,7 +9,7 @@
 import signal, os, argparse
 from orkengine.core import vec3, vec4, quat, VarMap, CrcStringProxy, Transform
 from orkengine import lev2
-from ork.editor import SceneEditorBase, SceneLoader
+from ork.editor import SceneEditorBase, SceneLoader, PARTICLE_PRESETS
 
 tokens = CrcStringProxy()
 
@@ -55,6 +55,13 @@ class SceneEditor(SceneEditorBase):
         "default_name": lambda model: f"node{len(model._getScenegraph().drawableNodesWithType(tokens.model))}"
       },
       {
+        "key": "Particles",
+        "item_type": "particle",
+        "display_name": "Particle System",
+        "drawable_type": tokens.particles,
+        "default_name": lambda model: f"ptc{len(model._getScenegraph().drawableNodesWithType(tokens.particles))}"
+      },
+      {
         "key": "PointLights",
         "item_type": "pointlight",
         "display_name": "Point Light",
@@ -62,6 +69,10 @@ class SceneEditor(SceneEditorBase):
         "default_name": lambda model: f"pl{len(model._getScenegraph().lightNodesWithType(tokens.pointlight))}"
       }
     ]
+
+  def getParticlePresets(self):
+    """Return particle preset factories for save/load."""
+    return PARTICLE_PRESETS
 
   ##############################################
   # Node CRUD operations
@@ -71,6 +82,10 @@ class SceneEditor(SceneEditorBase):
     """Find a node by name and type."""
     if item_type == "node":
       for node in self.scenegraph.drawableNodesWithType(tokens.model):
+        if node.name == name:
+          return node
+    elif item_type == "particle":
+      for node in self.scenegraph.drawableNodesWithType(tokens.particles):
         if node.name == name:
           return node
     elif item_type == "pointlight":
@@ -83,6 +98,8 @@ class SceneEditor(SceneEditorBase):
     """Create a node of given type."""
     if item_type == "node":
       self._createDrawableNode(name)
+    elif item_type == "particle":
+      self._createParticleNode(name)
     elif item_type == "pointlight":
       self._createPointLight(name)
 
@@ -90,6 +107,14 @@ class SceneEditor(SceneEditorBase):
     """Delete a node."""
     if item_type == "node":
       node = self.findNode(name, "node")
+      if node:
+        self._purgatory.add(node)
+        self.layer.removeDrawableNode(node)
+        if self.selected_node is node:
+          self.selected_node = None
+          self._enableManip(False)
+    elif item_type == "particle":
+      node = self.findNode(name, "particle")
       if node:
         self._purgatory.add(node)
         self.layer.removeDrawableNode(node)
@@ -157,6 +182,61 @@ class SceneEditor(SceneEditorBase):
     light_node.worldTransform = xform
     light_node.setMatrix(xform.composed)
     light_node.user.lightdata = light_data
+
+  def _createParticleNode(self, name, preset_name="sprite"):
+    """Create a new particle system node."""
+    if self.findNode(name, "particle") is not None:
+      return
+    if preset_name not in PARTICLE_PRESETS:
+      preset_name = "sprite"
+    factory = PARTICLE_PRESETS[preset_name]
+    factory(self.scenegraph, self.layer, name)
+
+  ##############################################
+  # Particle preset cycling
+  ##############################################
+
+  def onCycleParticlePreset(self, node):
+    """Cycle to the next particle preset for the given node."""
+    current_preset = getattr(node.user, 'particle_preset', None)
+    if current_preset is None:
+      return
+
+    preset_names = list(PARTICLE_PRESETS.keys())
+    if current_preset not in preset_names:
+      current_preset = preset_names[0]
+
+    current_idx = preset_names.index(current_preset)
+    next_idx = (current_idx + 1) % len(preset_names)
+    next_preset = preset_names[next_idx]
+
+    self._setParticlePreset(node, next_preset)
+
+  def _setParticlePreset(self, node, preset_name):
+    """Set a specific preset for the given particle node."""
+    if node is None or preset_name not in PARTICLE_PRESETS:
+      return
+    current_preset = getattr(node.user, 'particle_preset', None)
+    if current_preset == preset_name:
+      return
+
+    name = node.name
+    xform = node.worldTransform
+
+    # Create new node with new preset
+    factory = PARTICLE_PRESETS[preset_name]
+    new_node = factory(self.scenegraph, self.layer, name)
+    new_node.worldTransform = xform
+
+    # Transfer selection highlight if this node was selected
+    if self.selected_node is node:
+      new_node.modcolor = vec4(1, 0.3, 0.3, 1)
+      self.selected_node = new_node
+
+    # Move old node to purgatory
+    self._purgatory.add(node)
+    self.layer.removeDrawableNode(node)
+    print(f"Changed {name} to preset: {preset_name}")
 
   ##############################################
   # Model cycling (application-specific feature)

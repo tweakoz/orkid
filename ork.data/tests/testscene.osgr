@@ -57,13 +57,17 @@
         0.026982983574271202,
         0.9404999613761902
       ],
-      "scale": 1.0,
+      "nonUniformScale": [
+        1.0,
+        1.0,
+        1.5399999618530273
+      ],
       "model_path": "data://tests/misc_gltf_samples/vehicles/car.glb"
     },
     "node4": {
       "translation": [
         0.0,
-        0.1519603729248047,
+        0.48196035623550415,
         0.9985642433166504
       ],
       "orientation": [
@@ -72,7 +76,11 @@
         0.0,
         0.7071067690849304
       ],
-      "scale": 1.0,
+      "nonUniformScale": [
+        1.0,
+        1.0,
+        4.179999828338623
+      ],
       "model_path": "data://tests/misc_gltf_samples/weapons/shield.glb"
     },
     "node5": {
@@ -181,6 +189,46 @@
         34.0,
         3.161633014678955
       ]
+    }
+  },
+  "particles": {
+    "ptc0": {
+      "translation": [
+        0.0,
+        4.009999752044678,
+        0.0
+      ],
+      "orientation": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "nonUniformScale": [
+        1.0,
+        5.150000095367432,
+        1.0
+      ],
+      "preset": "streak"
+    },
+    "ptc1": {
+      "translation": [
+        0.0,
+        0.022769302129745483,
+        0.0
+      ],
+      "orientation": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "nonUniformScale": [
+        0.8399999141693115,
+        0.0010000000474974513,
+        0.8700001239776611
+      ],
+      "preset": "sprite"
     }
   }
 }

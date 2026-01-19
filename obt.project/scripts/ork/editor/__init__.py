@@ -8,3 +8,4 @@ from .scene_io import SceneLoader, SceneSaver
 from .light_editor import LightPropertyEditor
 from .outliner_model import SceneOutlinerModel
 from .scene_editor_base import SceneEditorBase
+from .ptc_factories import PARTICLE_PRESETS

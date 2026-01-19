@@ -241,8 +241,11 @@ class SceneEditorBase:
       # Clear existing scene
       self._clearScene()
 
+      # Get particle presets if available
+      particle_presets = self.getParticlePresets()
+
       # Use standalone loader
-      result = SceneLoader.load(path, self.scenegraph, self.layer)
+      result = SceneLoader.load(path, self.scenegraph, self.layer, particle_presets=particle_presets)
 
       # Post-process loaded nodes (subclass hook)
       self._onSceneLoaded(result)
@@ -260,13 +263,16 @@ class SceneEditorBase:
       node_types = self.getNodeTypes()
       drawable_type = None
       light_type = None
+      particle_type = None
       for nt in node_types:
-        if "drawable_type" in nt:
+        if nt.get("item_type") == "particle":
+          particle_type = nt.get("drawable_type")
+        elif "drawable_type" in nt:
           drawable_type = nt["drawable_type"]
         elif "light_type" in nt:
           light_type = nt["light_type"]
 
-      path = SceneSaver.save(path, self.scenegraph, drawable_type, light_type)
+      path = SceneSaver.save(path, self.scenegraph, drawable_type, light_type, particle_type)
       print(f"Saved: {path}")
     except Exception as e:
       print(f"Save failed: {e}")
@@ -373,6 +379,19 @@ class SceneEditorBase:
   def getNodeTypes(self):
     """Return list of node type definitions. Must override."""
     raise NotImplementedError("Subclass must implement getNodeTypes()")
+
+  def getParticlePresets(self):
+    """Return dict of particle preset factories. Override if using particles.
+
+    Returns:
+      dict of preset_name -> factory function, or None if no particles
+      Factory signature: factory(scenegraph, layer, name) -> node
+    """
+    return None
+
+  def onCycleParticlePreset(self, node):
+    """Called when Option-P is pressed on a particle node. Override to implement preset cycling."""
+    pass
 
   def findNode(self, name, item_type):
     """Find a node by name and type. Must override."""
@@ -714,6 +733,35 @@ class SceneEditorBase:
               self._selectLightNode(node)
               self.outliner.selected_key = f"{nt['key']}/{name}"
             break
+        return lev2.ui.HandlerResult()
+
+      elif kc == ord("P") and uievent.shift:
+        # Shift-P: Create new particle system with unique name
+        node_types = self.getNodeTypes()
+        for nt in node_types:
+          if nt.get("item_type") == "particle":
+            # Generate unique name
+            idx = len(self.scenegraph.drawableNodesWithType(nt["drawable_type"]))
+            name = f"ptc{idx}"
+            while self.findNode(name, nt["item_type"]) is not None:
+              idx += 1
+              name = f"ptc{idx}"
+            self.createNode(name, nt["item_type"])
+            self.scene_model.notifyItemAdded(f"{nt['key']}/{name}")
+            # Select the new particle node
+            node = self.findNode(name, nt["item_type"])
+            if node:
+              self._selectDrawableNode(node)
+              self.outliner.selected_key = f"{nt['key']}/{name}"
+            break
+        return lev2.ui.HandlerResult()
+
+      elif kc == ord("P") and uievent.alt:
+        # Option-P: Cycle particle preset on selected particle node
+        if self.selected_node is not None:
+          preset = getattr(self.selected_node.user, 'particle_preset', None)
+          if preset is not None:
+            self.onCycleParticlePreset(self.selected_node)
         return lev2.ui.HandlerResult()
 
       # Check extra shortcuts from subclass

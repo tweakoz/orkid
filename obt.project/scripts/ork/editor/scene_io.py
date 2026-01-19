@@ -18,7 +18,7 @@ class SceneLoader:
   """
 
   @staticmethod
-  def load(path, scenegraph, layer, model_cache=None):
+  def load(path, scenegraph, layer, model_cache=None, particle_presets=None):
     """Load .osgr scene into existing scenegraph/layer.
 
     Args:
@@ -27,9 +27,11 @@ class SceneLoader:
       layer: Target layer for nodes
       model_cache: Optional dict to cache loaded models (model_path -> XgmModel)
                    If provided, models are cached for reuse.
+      particle_presets: Optional dict of preset_name -> factory function
+                        Factory signature: factory(scenegraph, layer, name) -> node
 
     Returns:
-      dict with 'nodes' and 'lights' lists
+      dict with 'nodes', 'lights', and 'particles' lists
     """
     if not os.path.exists(path):
       raise FileNotFoundError(f"Scene file not found: {path}")
@@ -40,7 +42,7 @@ class SceneLoader:
     if model_cache is None:
       model_cache = {}
 
-    result = {'nodes': [], 'lights': []}
+    result = {'nodes': [], 'lights': [], 'particles': []}
 
     # Load drawable nodes
     for name, nd in data.get("nodes", {}).items():
@@ -68,12 +70,43 @@ class SceneLoader:
       o = nd.get("orientation", [0, 0, 0, 1])
       xform.orientation = quat(o[0], o[1], o[2], o[3])
       xform.scale = nd.get("scale", 1.0)
+      nus = nd.get("nonUniformScale", None)
+      if nus:
+        xform.nonUniformScale = vec3(nus[0], nus[1], nus[2])
       node.worldTransform = xform
 
       # Store metadata in userdata
       node.user.model_path = model_path
 
       result['nodes'].append(node)
+
+    # Load particles
+    if particle_presets:
+      for name, pd in data.get("particles", {}).items():
+        preset_name = pd.get("preset", "sprite")
+        if preset_name not in particle_presets:
+          print(f"Warning: Unknown particle preset '{preset_name}' for '{name}', using 'sprite'")
+          preset_name = "sprite"
+          if preset_name not in particle_presets:
+            print(f"Warning: No 'sprite' preset available, skipping particle '{name}'")
+            continue
+
+        factory = particle_presets[preset_name]
+        node = factory(scenegraph, layer, name)
+
+        # Apply transform
+        xform = Transform()
+        t = pd.get("translation", [0, 2, 0])
+        xform.translation = vec3(t[0], t[1], t[2])
+        o = pd.get("orientation", [0, 0, 0, 1])
+        xform.orientation = quat(o[0], o[1], o[2], o[3])
+        xform.scale = pd.get("scale", 1.0)
+        nus = pd.get("nonUniformScale", None)
+        if nus:
+          xform.nonUniformScale = vec3(nus[0], nus[1], nus[2])
+        node.worldTransform = xform
+
+        result['particles'].append(node)
 
     # Load point lights
     for name, ld in data.get("lights", {}).items():
@@ -103,7 +136,7 @@ class SceneSaver:
   """Scene saver for .osgr files."""
 
   @staticmethod
-  def save(path, scenegraph, node_type_token, light_type_token):
+  def save(path, scenegraph, node_type_token, light_type_token, particle_type_token=None):
     """Save scenegraph to .osgr file.
 
     Args:
@@ -111,6 +144,7 @@ class SceneSaver:
       scenegraph: Source scenegraph instance
       node_type_token: CrcString token for drawable node type (e.g., tokens.model)
       light_type_token: CrcString token for light node type (e.g., tokens.pointlight)
+      particle_type_token: CrcString token for particle node type (e.g., tokens.particles)
 
     Returns:
       Path to saved file
@@ -118,24 +152,52 @@ class SceneSaver:
     if not path.endswith('.osgr'):
       path += '.osgr'
 
-    data = {"nodes": {}, "lights": {}}
+    data = {"nodes": {}, "lights": {}, "particles": {}}
 
     # Save drawable nodes
     for node in scenegraph.drawableNodesWithType(node_type_token):
       xform = node.worldTransform
-      t, o = xform.translation, xform.orientation
+      t, o, s, nus = xform.translation, xform.orientation, xform.scale, xform.nonUniformScale
 
       node_data = {
         "translation": [t.x, t.y, t.z],
         "orientation": [o.x, o.y, o.z, o.w],
-        "scale": xform.scale,
       }
+
+      # Save scale - use nonUniformScale only if non-uniform
+      if nus.x == nus.y == nus.z:
+        node_data["scale"] = s
+      else:
+        node_data["nonUniformScale"] = [nus.x, nus.y, nus.z]
 
       # Include model_path if available
       if hasattr(node.user, 'model_path'):
         node_data["model_path"] = node.user.model_path
 
       data["nodes"][node.name] = node_data
+
+    # Save particles
+    if particle_type_token:
+      for node in scenegraph.drawableNodesWithType(particle_type_token):
+        xform = node.worldTransform
+        t, o, s, nus = xform.translation, xform.orientation, xform.scale, xform.nonUniformScale
+
+        particle_data = {
+          "translation": [t.x, t.y, t.z],
+          "orientation": [o.x, o.y, o.z, o.w],
+        }
+
+        # Save scale - use nonUniformScale only if non-uniform
+        if nus.x == nus.y == nus.z:
+          particle_data["scale"] = s
+        else:
+          particle_data["nonUniformScale"] = [nus.x, nus.y, nus.z]
+
+        # Include preset name if available
+        if hasattr(node.user, 'particle_preset'):
+          particle_data["preset"] = node.user.particle_preset
+
+        data["particles"][node.name] = particle_data
 
     # Save point lights
     for node in scenegraph.lightNodesWithType(light_type_token):

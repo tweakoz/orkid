@@ -100,6 +100,10 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
   auto M                      = cmtcs->MVPMONO(fmtx4());
   auto MVP                    = VP * M;
 
+  if (CPD.isPicking()) {
+    return;  // Don't render during picking passes (yet)
+  }
+
   auto material = _srd->_material;
 
   if (nullptr == material->_pipeline) {
