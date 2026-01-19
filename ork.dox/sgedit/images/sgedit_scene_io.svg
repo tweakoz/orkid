@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500">
+  <defs>
+    <marker id="ar" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#4a90d9"/>
+    </marker>
+    <marker id="ar-grn" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#6ab04c"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="500" fill="#1a1a2e"/>
+
+  <!-- Title -->
+  <text x="400" y="30" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="16" font-weight="bold">Scene I/O Flow</text>
+
+  <!-- SAVE Section -->
+  <rect x="30" y="55" width="360" height="420" rx="8" fill="#2d3d2d" stroke="#4a6a4a" stroke-width="2"/>
+  <text x="210" y="80" text-anchor="middle" fill="#b8d8b0" font-family="sans-serif" font-size="14" font-weight="bold">SAVE</text>
+
+  <!-- Save: Scenegraph -->
+  <rect x="50" y="100" width="140" height="50" rx="4" fill="#6a4a80" stroke="#8a6aa0"/>
+  <text x="120" y="130" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="11">Scenegraph</text>
+
+  <!-- Save: Query nodes -->
+  <rect x="50" y="170" width="140" height="40" rx="4" fill="#3d5a80" stroke="#5d8ab0"/>
+  <text x="120" y="185" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="9">drawableNodesWithType()</text>
+  <text x="120" y="200" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="9">lightNodesWithType()</text>
+
+  <!-- Save: Extract transforms -->
+  <rect x="50" y="230" width="140" height="50" rx="4" fill="#3d5a80" stroke="#5d8ab0"/>
+  <text x="120" y="250" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="9">Extract transforms</text>
+  <text x="120" y="265" text-anchor="middle" fill="#a8a8c0" font-family="sans-serif" font-size="8">pos, rot, scale/nus</text>
+
+  <!-- Save: Scale decision -->
+  <rect x="50" y="300" width="140" height="60" rx="4" fill="#4a4a6a" stroke="#6a6a8a"/>
+  <text x="120" y="320" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="9">if nus.x==nus.y==nus.z:</text>
+  <text x="120" y="335" text-anchor="middle" fill="#b8d8b0" font-family="sans-serif" font-size="8">save "scale"</text>
+  <text x="120" y="350" text-anchor="middle" fill="#d8b8b0" font-family="sans-serif" font-size="8">else "nonUniformScale"</text>
+
+  <!-- Save: Build JSON -->
+  <rect x="210" y="230" width="140" height="50" rx="4" fill="#3d5a80" stroke="#5d8ab0"/>
+  <text x="280" y="250" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="9">Build JSON dict</text>
+  <text x="280" y="265" text-anchor="middle" fill="#a8a8c0" font-family="sans-serif" font-size="8">nodes, lights, particles</text>
+
+  <!-- Save: model_path -->
+  <rect x="210" y="300" width="140" height="40" rx="4" fill="#3d5a80" stroke="#5d8ab0"/>
+  <text x="280" y="320" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="9">node.user.model_path</text>
+  <text x="280" y="335" text-anchor="middle" fill="#a8a8c0" font-family="sans-serif" font-size="8">particle_preset</text>
+
+  <!-- Save: Write file -->
+  <rect x="130" y="380" width="140" height="40" rx="4" fill="#4a6741" stroke="#6a8761"/>
+  <text x="200" y="400" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="10">json.dump()</text>
+  <text x="200" y="415" text-anchor="middle" fill="#b8d8b0" font-family="sans-serif" font-size="9">.osgr file</text>
+
+  <!-- Save arrows -->
+  <line x1="120" y1="150" x2="120" y2="165" stroke="#4a90d9" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="120" y1="210" x2="120" y2="225" stroke="#4a90d9" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="190" y1="255" x2="205" y2="255" stroke="#4a90d9" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="120" y1="360" x2="170" y2="375" stroke="#4a90d9" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="280" y1="340" x2="230" y2="375" stroke="#4a90d9" stroke-width="2" marker-end="url(#ar)"/>
+
+  <!-- LOAD Section -->
+  <rect x="410" y="55" width="360" height="420" rx="8" fill="#2d2d3d" stroke="#4a4a6a" stroke-width="2"/>
+  <text x="590" y="80" text-anchor="middle" fill="#a8a8d8" font-family="sans-serif" font-size="14" font-weight="bold">LOAD</text>
+
+  <!-- Load: File -->
+  <rect x="510" y="100" width="140" height="40" rx="4" fill="#4a6741" stroke="#6a8761"/>
+  <text x="580" y="120" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="10">json.load()</text>
+  <text x="580" y="135" text-anchor="middle" fill="#b8d8b0" font-family="sans-serif" font-size="9">.osgr file</text>
+
+  <!-- Load: Parse nodes -->
+  <rect x="430" y="160" width="140" height="40" rx="4" fill="#3d5a80" stroke="#5d8ab0"/>
+  <text x="500" y="180" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="9">Parse "nodes"</text>
+  <text x="500" y="195" text-anchor="middle" fill="#a8a8c0" font-family="sans-serif" font-size="8">XgmModel.load()</text>
+
+  <!-- Load: Parse lights -->
+  <rect x="590" y="160" width="140" height="40" rx="4" fill="#3d5a80" stroke="#5d8ab0"/>
+  <text x="660" y="180" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="9">Parse "lights"</text>
+  <text x="660" y="195" text-anchor="middle" fill="#a8a8c0" font-family="sans-serif" font-size="8">PointLightData()</text>
+
+  <!-- Load: Parse particles -->
+  <rect x="510" y="220" width="140" height="40" rx="4" fill="#3d5a80" stroke="#5d8ab0"/>
+  <text x="580" y="240" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="9">Parse "particles"</text>
+  <text x="580" y="255" text-anchor="middle" fill="#a8a8c0" font-family="sans-serif" font-size="8">preset factory()</text>
+
+  <!-- Load: Apply transforms -->
+  <rect x="430" y="280" width="300" height="60" rx="4" fill="#3d5a80" stroke="#5d8ab0"/>
+  <text x="580" y="300" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="10">Apply transforms</text>
+  <text x="580" y="318" text-anchor="middle" fill="#a8a8c0" font-family="sans-serif" font-size="9">xform.translation = vec3(t[0], t[1], t[2])</text>
+  <text x="580" y="333" text-anchor="middle" fill="#a8a8c0" font-family="sans-serif" font-size="9">xform.scale / xform.nonUniformScale</text>
+
+  <!-- Load: Create nodes -->
+  <rect x="510" y="360" width="140" height="50" rx="4" fill="#6a4a80" stroke="#8a6aa0"/>
+  <text x="580" y="385" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="10">Create SG nodes</text>
+  <text x="580" y="400" text-anchor="middle" fill="#d4a8ff" font-family="sans-serif" font-size="9">Scenegraph</text>
+
+  <!-- Load: Store userdata -->
+  <rect x="510" y="425" width="140" height="35" rx="4" fill="#4a4a6a" stroke="#6a6a8a"/>
+  <text x="580" y="445" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="9">node.user.model_path</text>
+
+  <!-- Load arrows -->
+  <line x1="580" y1="140" x2="530" y2="155" stroke="#6ab04c" stroke-width="2" marker-end="url(#ar-grn)"/>
+  <line x1="580" y1="140" x2="630" y2="155" stroke="#6ab04c" stroke-width="2" marker-end="url(#ar-grn)"/>
+  <line x1="500" y1="200" x2="500" y2="275" stroke="#6ab04c" stroke-width="2" marker-end="url(#ar-grn)"/>
+  <line x1="660" y1="200" x2="660" y2="275" stroke="#6ab04c" stroke-width="2" marker-end="url(#ar-grn)"/>
+  <line x1="580" y1="260" x2="580" y2="275" stroke="#6ab04c" stroke-width="2" marker-end="url(#ar-grn)"/>
+  <line x1="580" y1="340" x2="580" y2="355" stroke="#6ab04c" stroke-width="2" marker-end="url(#ar-grn)"/>
+  <line x1="580" y1="410" x2="580" y2="420" stroke="#6ab04c" stroke-width="2" marker-end="url(#ar-grn)"/>
+
+</svg>

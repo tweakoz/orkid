@@ -147,7 +147,7 @@ def createSpriteSystem(scenegraph, layer, name):
 
   # Material
   material = particles.GradientMaterial.createShared()
-  material.blending = tokens.ADDITIVE
+  material.blending = tokens.OFF
   material.depthtest = tokens.LEQUALS
   material.gradient.setColorStops({
     0.0: vec4(1, 0.8, 0.2, 1),
@@ -156,7 +156,7 @@ def createSpriteSystem(scenegraph, layer, name):
   })
 
   sprites.material = material
-  sprites.inputs.Size = 0.15
+  sprites.inputs.Size = 0.015
   sprites.inputs.GradientIntensity = 1
 
   # Create drawable and node
@@ -221,7 +221,7 @@ def createStreakSystem(scenegraph, layer, name):
 
   # Material
   material = particles.GradientMaterial.createShared()
-  material.blending = tokens.ADDITIVE
+  material.blending = tokens.OFF
   material.depthtest = tokens.LEQUALS
   material.gradient.setColorStops({
     0.0: vec4(0.5, 0.8, 1, 1),

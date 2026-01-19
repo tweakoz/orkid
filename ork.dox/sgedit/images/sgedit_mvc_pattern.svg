@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 400">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#4a90d9"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#6ab04c"/>
+    </marker>
+    <marker id="arrow-orange" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#f0932b"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="700" height="400" fill="#1a1a2e"/>
+
+  <!-- Title -->
+  <text x="350" y="30" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="16" font-weight="bold">MVC Pattern - Scenegraph as Model</text>
+
+  <!-- Model Box -->
+  <rect x="250" y="60" width="200" height="100" rx="8" fill="#3d2d44" stroke="#8a6aa0" stroke-width="3"/>
+  <text x="350" y="90" text-anchor="middle" fill="#d4a8ff" font-family="sans-serif" font-size="14" font-weight="bold">MODEL</text>
+  <text x="350" y="115" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="12">Scenegraph</text>
+  <text x="350" y="135" text-anchor="middle" fill="#b8b8d0" font-family="sans-serif" font-size="10">(Single Source of Truth)</text>
+  <text x="350" y="150" text-anchor="middle" fill="#b8b8d0" font-family="sans-serif" font-size="10">nodes, lights, transforms</text>
+
+  <!-- View Boxes -->
+  <rect x="50" y="220" width="140" height="80" rx="8" fill="#4a6741" stroke="#8ab071" stroke-width="2"/>
+  <text x="120" y="250" text-anchor="middle" fill="#b8d8b0" font-family="sans-serif" font-size="12" font-weight="bold">VIEW</text>
+  <text x="120" y="270" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="11">Outliner</text>
+  <text x="120" y="285" text-anchor="middle" fill="#a8a8c0" font-family="sans-serif" font-size="9">Tree hierarchy</text>
+
+  <rect x="210" y="220" width="140" height="80" rx="8" fill="#4a6741" stroke="#8ab071" stroke-width="2"/>
+  <text x="280" y="250" text-anchor="middle" fill="#b8d8b0" font-family="sans-serif" font-size="12" font-weight="bold">VIEW</text>
+  <text x="280" y="270" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="11">Viewport</text>
+  <text x="280" y="285" text-anchor="middle" fill="#a8a8c0" font-family="sans-serif" font-size="9">3D rendering</text>
+
+  <rect x="370" y="220" width="140" height="80" rx="8" fill="#4a6741" stroke="#8ab071" stroke-width="2"/>
+  <text x="440" y="250" text-anchor="middle" fill="#b8d8b0" font-family="sans-serif" font-size="12" font-weight="bold">VIEW</text>
+  <text x="440" y="270" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="11">PropSheet</text>
+  <text x="440" y="285" text-anchor="middle" fill="#a8a8c0" font-family="sans-serif" font-size="9">Transform, Color</text>
+
+  <!-- Controller Box -->
+  <rect x="250" y="330" width="200" height="60" rx="8" fill="#3d5a80" stroke="#5d8ab0" stroke-width="2"/>
+  <text x="350" y="355" text-anchor="middle" fill="#a8d4ff" font-family="sans-serif" font-size="12" font-weight="bold">CONTROLLER</text>
+  <text x="350" y="375" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="11">SceneEditorBase</text>
+
+  <!-- Input Box -->
+  <rect x="530" y="220" width="140" height="80" rx="8" fill="#6a5a41" stroke="#9a8a61" stroke-width="2"/>
+  <text x="600" y="250" text-anchor="middle" fill="#d8c890" font-family="sans-serif" font-size="12" font-weight="bold">INPUT</text>
+  <text x="600" y="270" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="11">User Events</text>
+  <text x="600" y="285" text-anchor="middle" fill="#a8a8c0" font-family="sans-serif" font-size="9">keys, mouse, pick</text>
+
+  <!-- Arrows: Model to Views (Query) -->
+  <path d="M 280 160 L 140 220" fill="none" stroke="#4a90d9" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M 350 160 L 280 220" fill="none" stroke="#4a90d9" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M 420 160 L 440 220" fill="none" stroke="#4a90d9" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Arrows: Views to Controller (Events) -->
+  <path d="M 120 300 L 280 330" fill="none" stroke="#f0932b" stroke-width="2" marker-end="url(#arrow-orange)"/>
+  <path d="M 280 300 L 320 330" fill="none" stroke="#f0932b" stroke-width="2" marker-end="url(#arrow-orange)"/>
+  <path d="M 440 300 L 380 330" fill="none" stroke="#f0932b" stroke-width="2" marker-end="url(#arrow-orange)"/>
+
+  <!-- Arrow: Input to Controller -->
+  <path d="M 530 260 L 450 340" fill="none" stroke="#f0932b" stroke-width="2" marker-end="url(#arrow-orange)"/>
+
+  <!-- Arrow: Controller to Model (Update) -->
+  <path d="M 350 330 L 350 165" fill="none" stroke="#6ab04c" stroke-width="2" marker-end="url(#arrow-green)"/>
+
+  <!-- Legend -->
+  <rect x="520" y="60" width="160" height="90" rx="4" fill="#2d2d44" stroke="#4a4a6a"/>
+  <text x="540" y="80" fill="#e6e6e6" font-family="sans-serif" font-size="10" font-weight="bold">Legend</text>
+
+  <line x1="540" y1="95" x2="570" y2="95" stroke="#4a90d9" stroke-width="2"/>
+  <text x="580" y="99" fill="#b8b8d0" font-family="sans-serif" font-size="9">Query (read)</text>
+
+  <line x1="540" y1="115" x2="570" y2="115" stroke="#6ab04c" stroke-width="2"/>
+  <text x="580" y="119" fill="#b8b8d0" font-family="sans-serif" font-size="9">Update (write)</text>
+
+  <line x1="540" y1="135" x2="570" y2="135" stroke="#f0932b" stroke-width="2"/>
+  <text x="580" y="139" fill="#b8b8d0" font-family="sans-serif" font-size="9">Events</text>
+
+</svg>

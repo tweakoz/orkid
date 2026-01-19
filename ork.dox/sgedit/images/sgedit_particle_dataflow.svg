@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400">
+  <defs>
+    <marker id="adf" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#f0932b"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="400" fill="#1a1a2e"/>
+
+  <!-- Title -->
+  <text x="400" y="30" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="16" font-weight="bold">Particle System Dataflow Graph</text>
+
+  <!-- Pool -->
+  <rect x="50" y="120" width="100" height="60" rx="8" fill="#6a4a80" stroke="#9a7ab0" stroke-width="2"/>
+  <text x="100" y="145" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="12" font-weight="bold">Pool</text>
+  <text x="100" y="165" text-anchor="middle" fill="#d4a8ff" font-family="sans-serif" font-size="9">pool_size: 4096</text>
+  <!-- Pool output -->
+  <circle cx="150" cy="150" r="8" fill="#f0932b" stroke="#fff" stroke-width="1"/>
+
+  <!-- Emitter -->
+  <rect x="200" y="80" width="120" height="90" rx="8" fill="#4a6741" stroke="#7a9771" stroke-width="2"/>
+  <text x="260" y="105" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="11" font-weight="bold">Emitter</text>
+  <text x="260" y="125" text-anchor="middle" fill="#b8d8b0" font-family="sans-serif" font-size="8">NozzleEmitter</text>
+  <text x="260" y="140" text-anchor="middle" fill="#b8d8b0" font-family="sans-serif" font-size="8">RingEmitter</text>
+  <text x="260" y="155" text-anchor="middle" fill="#a8a8c0" font-family="sans-serif" font-size="8">rate, velocity</text>
+  <!-- Emitter input/output -->
+  <circle cx="200" cy="125" r="8" fill="#4a90d9" stroke="#fff" stroke-width="1"/>
+  <circle cx="320" cy="125" r="8" fill="#f0932b" stroke="#fff" stroke-width="1"/>
+
+  <!-- Forces container -->
+  <rect x="360" y="60" width="240" height="130" rx="8" fill="#2d2d44" stroke="#5d5d7a" stroke-width="1" stroke-dasharray="4,4"/>
+  <text x="480" y="80" text-anchor="middle" fill="#8888aa" font-family="sans-serif" font-size="10">Forces (chained)</text>
+
+  <!-- Gravity -->
+  <rect x="380" y="95" width="80" height="50" rx="4" fill="#3d5a80" stroke="#5d8ab0"/>
+  <text x="420" y="115" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="10">Gravity</text>
+  <text x="420" y="135" text-anchor="middle" fill="#a8d4ff" font-family="sans-serif" font-size="8">G, Mass</text>
+  <circle cx="380" cy="120" r="6" fill="#4a90d9" stroke="#fff" stroke-width="1"/>
+  <circle cx="460" cy="120" r="6" fill="#f0932b" stroke="#fff" stroke-width="1"/>
+
+  <!-- Turbulence -->
+  <rect x="500" y="95" width="80" height="50" rx="4" fill="#3d5a80" stroke="#5d8ab0"/>
+  <text x="540" y="115" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="10">Turbulence</text>
+  <text x="540" y="135" text-anchor="middle" fill="#a8d4ff" font-family="sans-serif" font-size="8">Amount</text>
+  <circle cx="500" cy="120" r="6" fill="#4a90d9" stroke="#fff" stroke-width="1"/>
+  <circle cx="580" cy="120" r="6" fill="#f0932b" stroke="#fff" stroke-width="1"/>
+
+  <!-- Vortex (below) -->
+  <rect x="440" y="155" width="80" height="30" rx="4" fill="#3d5a80" stroke="#5d8ab0"/>
+  <text x="480" y="175" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="9">Vortex</text>
+
+  <!-- Attractor (below) -->
+  <rect x="530" y="155" width="80" height="30" rx="4" fill="#3d5a80" stroke="#5d8ab0"/>
+  <text x="570" y="175" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="9">Attractor</text>
+
+  <!-- Renderer -->
+  <rect x="640" y="80" width="120" height="90" rx="8" fill="#6a5a41" stroke="#9a8a61" stroke-width="2"/>
+  <text x="700" y="105" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="11" font-weight="bold">Renderer</text>
+  <text x="700" y="125" text-anchor="middle" fill="#d8c890" font-family="sans-serif" font-size="8">SpriteRenderer</text>
+  <text x="700" y="140" text-anchor="middle" fill="#d8c890" font-family="sans-serif" font-size="8">StreakRenderer</text>
+  <text x="700" y="155" text-anchor="middle" fill="#a8a8c0" font-family="sans-serif" font-size="8">material, size</text>
+  <!-- Renderer input -->
+  <circle cx="640" cy="125" r="8" fill="#4a90d9" stroke="#fff" stroke-width="1"/>
+
+  <!-- Connections -->
+  <line x1="158" y1="150" x2="192" y2="128" stroke="#f0932b" stroke-width="2" marker-end="url(#adf)"/>
+  <line x1="328" y1="125" x2="372" y2="120" stroke="#f0932b" stroke-width="2" marker-end="url(#adf)"/>
+  <line x1="466" y1="120" x2="492" y2="120" stroke="#f0932b" stroke-width="2" marker-end="url(#adf)"/>
+  <line x1="586" y1="120" x2="632" y2="125" stroke="#f0932b" stroke-width="2" marker-end="url(#adf)"/>
+
+  <!-- Material -->
+  <rect x="640" y="200" width="120" height="70" rx="8" fill="#4a4a6a" stroke="#6a6a8a"/>
+  <text x="700" y="220" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="10" font-weight="bold">Material</text>
+  <text x="700" y="240" text-anchor="middle" fill="#a8a8c0" font-family="sans-serif" font-size="8">GradientMaterial</text>
+  <text x="700" y="255" text-anchor="middle" fill="#a8a8c0" font-family="sans-serif" font-size="8">blending: ADDITIVE</text>
+
+  <line x1="700" y1="170" x2="700" y2="195" stroke="#888" stroke-width="1" stroke-dasharray="3,3"/>
+
+  <!-- Legend -->
+  <rect x="50" y="280" width="300" height="100" rx="4" fill="#2d2d44" stroke="#4a4a6a"/>
+  <text x="70" y="300" fill="#e6e6e6" font-family="sans-serif" font-size="10" font-weight="bold">Legend</text>
+
+  <circle cx="70" cy="320" r="8" fill="#4a90d9" stroke="#fff" stroke-width="1"/>
+  <text x="90" y="324" fill="#b8b8d0" font-family="sans-serif" font-size="9">Input port (pool)</text>
+
+  <circle cx="70" cy="345" r="8" fill="#f0932b" stroke="#fff" stroke-width="1"/>
+  <text x="90" y="349" fill="#b8b8d0" font-family="sans-serif" font-size="9">Output port (pool)</text>
+
+  <line x1="170" y1="320" x2="210" y2="320" stroke="#f0932b" stroke-width="2" marker-end="url(#adf)"/>
+  <text x="220" y="324" fill="#b8b8d0" font-family="sans-serif" font-size="9">Data flow</text>
+
+  <!-- Preset info -->
+  <rect x="400" y="280" width="200" height="100" rx="4" fill="#2d2d44" stroke="#4a4a6a"/>
+  <text x="420" y="300" fill="#e6e6e6" font-family="sans-serif" font-size="10" font-weight="bold">Presets</text>
+  <text x="420" y="320" fill="#b8d8b0" font-family="sans-serif" font-size="9">elliptical - Orbital attractor</text>
+  <text x="420" y="340" fill="#d8c890" font-family="sans-serif" font-size="9">sprite - Nozzle + Ring + Vortex</text>
+  <text x="420" y="360" fill="#a8d4ff" font-family="sans-serif" font-size="9">streak - Velocity-aligned lines</text>
+
+</svg>

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 750 450">
+  <defs>
+    <marker id="arr" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#4a90d9"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="750" height="450" fill="#1a1a2e"/>
+
+  <!-- Title -->
+  <text x="375" y="30" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="16" font-weight="bold">Selection Flow</text>
+
+  <!-- User Input -->
+  <rect x="50" y="60" width="120" height="50" rx="25" fill="#6a5a41" stroke="#9a8a61" stroke-width="2"/>
+  <text x="110" y="90" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="12">User Click</text>
+
+  <!-- Branch: Outliner vs Viewport -->
+  <circle cx="300" cy="85" r="25" fill="#3d5a80" stroke="#5d8ab0" stroke-width="2"/>
+  <text x="300" y="90" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="10">?</text>
+
+  <!-- Outliner Path -->
+  <rect x="200" y="150" width="100" height="40" rx="4" fill="#4a6741" stroke="#6a8761" stroke-width="2"/>
+  <text x="250" y="175" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="11">Outliner</text>
+
+  <!-- Viewport Path -->
+  <rect x="400" y="150" width="100" height="40" rx="4" fill="#4a6741" stroke="#6a8761" stroke-width="2"/>
+  <text x="450" y="175" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="11">Viewport</text>
+
+  <!-- Outliner onSelect -->
+  <rect x="180" y="220" width="140" height="40" rx="4" fill="#3d5a80" stroke="#5d8ab0"/>
+  <text x="250" y="245" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="10">onSelect(key)</text>
+
+  <!-- Viewport Pick -->
+  <rect x="380" y="220" width="140" height="40" rx="4" fill="#3d5a80" stroke="#5d8ab0"/>
+  <text x="450" y="245" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="10">pickWithScreenCoord()</text>
+
+  <!-- Parse Key -->
+  <rect x="180" y="280" width="140" height="40" rx="4" fill="#3d5a80" stroke="#5d8ab0"/>
+  <text x="250" y="305" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="10">findNode(name, type)</text>
+
+  <!-- Decode Pick -->
+  <rect x="380" y="280" width="140" height="40" rx="4" fill="#3d5a80" stroke="#5d8ab0"/>
+  <text x="450" y="305" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="10">decodePickID()</text>
+
+  <!-- Converge -->
+  <circle cx="350" cy="360" r="20" fill="#6a4a80" stroke="#8a6aa0" stroke-width="2"/>
+  <text x="350" y="365" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="16">+</text>
+
+  <!-- Select Method -->
+  <rect x="270" y="400" width="160" height="40" rx="4" fill="#4a6741" stroke="#8ab071" stroke-width="2"/>
+  <text x="350" y="425" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="11">_selectDrawableNode()</text>
+
+  <!-- Side effects -->
+  <rect x="550" y="340" width="160" height="100" rx="4" fill="#2d2d44" stroke="#4a4a6a"/>
+  <text x="630" y="360" text-anchor="middle" fill="#a8d4ff" font-family="sans-serif" font-size="10" font-weight="bold">Side Effects</text>
+  <text x="560" y="380" fill="#b8b8d0" font-family="sans-serif" font-size="9">1. Set modcolor (highlight)</text>
+  <text x="560" y="395" fill="#b8b8d0" font-family="sans-serif" font-size="9">2. Bind manipulator</text>
+  <text x="560" y="410" fill="#b8b8d0" font-family="sans-serif" font-size="9">3. Bind transform editor</text>
+  <text x="560" y="425" fill="#b8b8d0" font-family="sans-serif" font-size="9">4. Update outliner key</text>
+
+  <!-- Arrows -->
+  <line x1="170" y1="85" x2="270" y2="85" stroke="#4a90d9" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="300" y1="110" x2="250" y2="145" stroke="#4a90d9" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="300" y1="110" x2="450" y2="145" stroke="#4a90d9" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="250" y1="190" x2="250" y2="215" stroke="#4a90d9" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="450" y1="190" x2="450" y2="215" stroke="#4a90d9" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="250" y1="260" x2="250" y2="275" stroke="#4a90d9" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="450" y1="260" x2="450" y2="275" stroke="#4a90d9" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="250" y1="320" x2="330" y2="350" stroke="#4a90d9" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="450" y1="320" x2="370" y2="350" stroke="#4a90d9" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="350" y1="380" x2="350" y2="395" stroke="#4a90d9" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="430" y1="420" x2="545" y2="390" stroke="#4a90d9" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- Labels -->
+  <text x="215" y="130" fill="#a8a8c0" font-family="sans-serif" font-size="9">tree click</text>
+  <text x="400" y="130" fill="#a8a8c0" font-family="sans-serif" font-size="9">3D click</text>
+
+</svg>

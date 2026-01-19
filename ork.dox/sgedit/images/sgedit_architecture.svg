@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500">
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+    </marker>
+    <marker id="arrowhead-blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#4a90d9"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="500" fill="#1a1a2e"/>
+
+  <!-- Title -->
+  <text x="400" y="30" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="18" font-weight="bold">Scene Graph Editor Architecture</text>
+
+  <!-- Application Layer -->
+  <rect x="30" y="60" width="740" height="80" rx="8" fill="#2d2d44" stroke="#4a4a6a" stroke-width="2"/>
+  <text x="50" y="85" fill="#a8d4ff" font-family="sans-serif" font-size="12" font-weight="bold">APPLICATION LAYER</text>
+
+  <rect x="50" y="100" width="140" height="30" rx="4" fill="#3d5a80" stroke="#5d7aa0"/>
+  <text x="120" y="120" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="11">ork.sgedit.py</text>
+
+  <rect x="210" y="100" width="140" height="30" rx="4" fill="#3d5a80" stroke="#5d7aa0"/>
+  <text x="280" y="120" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="11">SceneEditorBase</text>
+
+  <rect x="370" y="100" width="140" height="30" rx="4" fill="#3d5a80" stroke="#5d7aa0"/>
+  <text x="440" y="120" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="11">EzApp</text>
+
+  <!-- Editor Components -->
+  <rect x="30" y="160" width="740" height="130" rx="8" fill="#2d2d44" stroke="#4a4a6a" stroke-width="2"/>
+  <text x="50" y="185" fill="#a8d4ff" font-family="sans-serif" font-size="12" font-weight="bold">EDITOR COMPONENTS</text>
+
+  <rect x="50" y="200" width="100" height="70" rx="4" fill="#4a6741" stroke="#6a8761"/>
+  <text x="100" y="225" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="10">Outliner</text>
+  <text x="100" y="240" text-anchor="middle" fill="#b8d8b0" font-family="sans-serif" font-size="9">Model</text>
+  <text x="100" y="255" text-anchor="middle" fill="#b8d8b0" font-family="sans-serif" font-size="9">View</text>
+
+  <rect x="170" y="200" width="100" height="70" rx="4" fill="#4a6741" stroke="#6a8761"/>
+  <text x="220" y="225" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="10">Transform</text>
+  <text x="220" y="240" text-anchor="middle" fill="#b8d8b0" font-family="sans-serif" font-size="9">Edit</text>
+  <text x="220" y="255" text-anchor="middle" fill="#b8d8b0" font-family="sans-serif" font-size="9">Widget</text>
+
+  <rect x="290" y="200" width="100" height="70" rx="4" fill="#4a6741" stroke="#6a8761"/>
+  <text x="340" y="225" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="10">Light</text>
+  <text x="340" y="240" text-anchor="middle" fill="#b8d8b0" font-family="sans-serif" font-size="9">Property</text>
+  <text x="340" y="255" text-anchor="middle" fill="#b8d8b0" font-family="sans-serif" font-size="9">Editor</text>
+
+  <rect x="410" y="200" width="100" height="70" rx="4" fill="#4a6741" stroke="#6a8761"/>
+  <text x="460" y="225" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="10">Particle</text>
+  <text x="460" y="240" text-anchor="middle" fill="#b8d8b0" font-family="sans-serif" font-size="9">Factories</text>
+  <text x="460" y="255" text-anchor="middle" fill="#b8d8b0" font-family="sans-serif" font-size="9">(Presets)</text>
+
+  <rect x="530" y="200" width="100" height="70" rx="4" fill="#4a6741" stroke="#6a8761"/>
+  <text x="580" y="225" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="10">Scene I/O</text>
+  <text x="580" y="240" text-anchor="middle" fill="#b8d8b0" font-family="sans-serif" font-size="9">Loader</text>
+  <text x="580" y="255" text-anchor="middle" fill="#b8d8b0" font-family="sans-serif" font-size="9">Saver</text>
+
+  <rect x="650" y="200" width="100" height="70" rx="4" fill="#4a6741" stroke="#6a8761"/>
+  <text x="700" y="225" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="10">Manipulator</text>
+  <text x="700" y="240" text-anchor="middle" fill="#b8d8b0" font-family="sans-serif" font-size="9">Controller</text>
+  <text x="700" y="255" text-anchor="middle" fill="#b8d8b0" font-family="sans-serif" font-size="9">Gizmo</text>
+
+  <!-- Model Layer (Scenegraph) -->
+  <rect x="30" y="310" width="740" height="80" rx="8" fill="#3d2d44" stroke="#5d4a6a" stroke-width="2"/>
+  <text x="50" y="335" fill="#d4a8ff" font-family="sans-serif" font-size="12" font-weight="bold">MODEL LAYER (Scenegraph)</text>
+
+  <rect x="50" y="350" width="120" height="30" rx="4" fill="#6a4a80" stroke="#8a6aa0"/>
+  <text x="110" y="370" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="10">DrawableNodes</text>
+
+  <rect x="190" y="350" width="120" height="30" rx="4" fill="#6a4a80" stroke="#8a6aa0"/>
+  <text x="250" y="370" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="10">LightNodes</text>
+
+  <rect x="330" y="350" width="120" height="30" rx="4" fill="#6a4a80" stroke="#8a6aa0"/>
+  <text x="390" y="370" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="10">ParticleNodes</text>
+
+  <rect x="470" y="350" width="120" height="30" rx="4" fill="#6a4a80" stroke="#8a6aa0"/>
+  <text x="530" y="370" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="10">Transforms</text>
+
+  <rect x="610" y="350" width="140" height="30" rx="4" fill="#6a4a80" stroke="#8a6aa0"/>
+  <text x="680" y="370" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="10">LightingManager</text>
+
+  <!-- Persistence Layer -->
+  <rect x="30" y="410" width="740" height="70" rx="8" fill="#2d3d44" stroke="#4a5d6a" stroke-width="2"/>
+  <text x="50" y="435" fill="#a8d4d4" font-family="sans-serif" font-size="12" font-weight="bold">PERSISTENCE</text>
+
+  <rect x="50" y="450" width="150" height="25" rx="4" fill="#3d5a6a" stroke="#5d7a8a"/>
+  <text x="125" y="467" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="10">.osgr (JSON)</text>
+
+  <rect x="220" y="450" width="150" height="25" rx="4" fill="#3d5a6a" stroke="#5d7a8a"/>
+  <text x="295" y="467" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="10">.gltf / .glb Models</text>
+
+  <rect x="390" y="450" width="150" height="25" rx="4" fill="#3d5a6a" stroke="#5d7a8a"/>
+  <text x="465" y="467" text-anchor="middle" fill="#e6e6e6" font-family="sans-serif" font-size="10">Textures</text>
+
+  <!-- Arrows -->
+  <line x1="100" y1="270" x2="100" y2="345" stroke="#4a90d9" stroke-width="2" marker-end="url(#arrowhead-blue)"/>
+  <line x1="220" y1="270" x2="220" y2="345" stroke="#4a90d9" stroke-width="2" marker-end="url(#arrowhead-blue)"/>
+  <line x1="340" y1="270" x2="250" y2="345" stroke="#4a90d9" stroke-width="2" marker-end="url(#arrowhead-blue)"/>
+  <line x1="460" y1="270" x2="390" y2="345" stroke="#4a90d9" stroke-width="2" marker-end="url(#arrowhead-blue)"/>
+  <line x1="580" y1="270" x2="390" y2="345" stroke="#4a90d9" stroke-width="2" marker-end="url(#arrowhead-blue)"/>
+  <line x1="700" y1="270" x2="530" y2="345" stroke="#4a90d9" stroke-width="2" marker-end="url(#arrowhead-blue)"/>
+
+  <!-- Legend -->
+  <rect x="560" y="100" width="190" height="30" rx="4" fill="#2d2d44" stroke="#4a4a6a"/>
+  <text x="580" y="120" fill="#a8d4ff" font-family="sans-serif" font-size="10">MVC: Scenegraph = Model</text>
+
+</svg>
