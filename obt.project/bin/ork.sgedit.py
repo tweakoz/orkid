@@ -230,6 +230,15 @@ class SceneEditor(SceneEditorBase):
         node.user.model_name = short_name
 
   ##############################################
+  # Initial scene
+  ##############################################
+
+  def _createInitialScene(self):
+    """Create default initial scene content."""
+    self._createDrawableNode("node0")
+    self._createPointLight("pl0")
+
+  ##############################################
   # GPU initialization
   ##############################################
 
@@ -260,15 +269,11 @@ class SceneEditor(SceneEditorBase):
       except Exception as e:
         print(f"Failed to load model {path}: {e}")
 
-    # Create initial node
-    self._createDrawableNode("node0")
-
-    # Create initial light
-    self._createPointLight("pl0")
-
-    # Load scene from command line if specified
+    # Create initial scene or load from command line
     if args.scene and os.path.exists(args.scene):
       self._loadScene(args.scene)
+    else:
+      self._createInitialScene()
 
     print("Scene Editor Ready")
 

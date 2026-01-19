@@ -282,6 +282,18 @@ class SceneEditorBase:
     """Called after scene is loaded. Override to post-process nodes."""
     pass
 
+  def _newScene(self):
+    """Create a new empty scene. Clears existing and creates initial content."""
+    self._clearSelection(clear_outliner=True)
+    self._clearScene()
+    self._createInitialScene()
+    self.scene_model.notifyModelReset()
+    print("New scene created")
+
+  def _createInitialScene(self):
+    """Create initial scene content. Override in subclass for custom setup."""
+    pass
+
   ##############################################
   # Selection management
   ##############################################
@@ -509,7 +521,6 @@ class SceneEditorBase:
               self._selectDrawableNode(node)
             elif "light_type" in nt:
               self._selectLightNode(node)
-          self._enableManip(False)
           return
 
       # Deselect if clicking on group or empty
@@ -563,7 +574,6 @@ class SceneEditorBase:
               if node is decoded:
                 self._selectDrawableNode(node)
                 self.outliner.selected_key = f"{nt['key']}/{node.name}"
-                self._enableManip(False)
                 return
 
   def _onCameraEvent(self, uievent):
@@ -625,6 +635,53 @@ class SceneEditorBase:
           self.uicam.lookAt(target + direction * dist, target, vec3(0, 1, 0))
           self.uicam.updateMatrices()
           self.camera.copyFrom(self.uicam.cameradata)
+        return lev2.ui.HandlerResult()
+
+      elif kc == ord("N") and uievent.super:
+        # Command-N: New scene
+        self._newScene()
+        return lev2.ui.HandlerResult()
+
+      elif kc == ord("N") and uievent.shift:
+        # Shift-N: Create new node with unique name
+        node_types = self.getNodeTypes()
+        for nt in node_types:
+          if "drawable_type" in nt:
+            # Generate unique name
+            idx = len(self.scenegraph.drawableNodesWithType(nt["drawable_type"]))
+            name = f"node{idx}"
+            while self.findNode(name, nt["item_type"]) is not None:
+              idx += 1
+              name = f"node{idx}"
+            self.createNode(name, nt["item_type"])
+            self.scene_model.notifyItemAdded(f"{nt['key']}/{name}")
+            # Select the new node
+            node = self.findNode(name, nt["item_type"])
+            if node:
+              self._selectDrawableNode(node)
+              self.outliner.selected_key = f"{nt['key']}/{name}"
+            break
+        return lev2.ui.HandlerResult()
+
+      elif kc == ord("L") and uievent.shift:
+        # Create new light with unique name
+        node_types = self.getNodeTypes()
+        for nt in node_types:
+          if "light_type" in nt:
+            # Generate unique name
+            idx = len(self.scenegraph.lightNodesWithType(nt["light_type"]))
+            name = f"pl{idx}"
+            while self.findNode(name, nt["item_type"]) is not None:
+              idx += 1
+              name = f"pl{idx}"
+            self.createNode(name, nt["item_type"])
+            self.scene_model.notifyItemAdded(f"{nt['key']}/{name}")
+            # Select the new light
+            node = self.findNode(name, nt["item_type"])
+            if node:
+              self._selectLightNode(node)
+              self.outliner.selected_key = f"{nt['key']}/{name}"
+            break
         return lev2.ui.HandlerResult()
 
       # Check extra shortcuts from subclass
