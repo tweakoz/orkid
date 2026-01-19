@@ -73,6 +73,10 @@ class SceneEditorBase:
     self.selected_light = None  # LightNode or None
     self._purgatory = set()     # Holds removed nodes until true deletion
 
+    # Mouse position tracking for focus-pick
+    self._last_mouse_x = 0
+    self._last_mouse_y = 0
+
     # Will be set during GPU init
     self.scenegraph = None
     self.layer = None
@@ -545,11 +549,8 @@ class SceneEditorBase:
   # Event handling
   ##############################################
 
-  def _onPickResult(self, pfc):
-    """Handle pick result from 3D viewport."""
-    from orkengine.core import u32vec4
-
-    obj = pfc.value(0)
+  def _updatePickDebugViews(self):
+    """Update pick debug visualization."""
     SG = self.scenegraph
     self.pick_views[0].texture = SG.pick_tex_id
     self.pick_views[1].texture = SG.pick_tex_pos
@@ -561,24 +562,58 @@ class SceneEditorBase:
       iv.crosshair_pos = vec2(0, 0)
       iv.setDirty()
 
+  def _decodePickedNode(self, pfc):
+    """Decode pick result and return the picked node, or None."""
+    from orkengine.core import u32vec4
+    obj = pfc.value(0)
     if obj is not None and isinstance(obj, u32vec4):
       pick_id = int(obj.x)
       is_valid = (pick_id > 0) or (pick_id == 0 and int(obj.w) == 0)
       if is_valid:
         decoded = pfc.decodePickID(pick_id)
-        # Check node types for match
         node_types = self.getNodeTypes()
         for nt in node_types:
           if "drawable_type" in nt:
             for node in self.scenegraph.drawableNodesWithType(nt["drawable_type"]):
               if node is decoded:
-                self._selectDrawableNode(node)
-                self.outliner.selected_key = f"{nt['key']}/{node.name}"
-                return
+                return node, nt
+    return None, None
+
+  def _onPickResult(self, pfc):
+    """Handle pick result from 3D viewport."""
+    self._updatePickDebugViews()
+    node, nt = self._decodePickedNode(pfc)
+    if node:
+      self._selectDrawableNode(node)
+      self.outliner.selected_key = f"{nt['key']}/{node.name}"
+
+  def _onFocusPickResult(self, pfc):
+    """Handle pick result for focus-only (no selection change)."""
+    self._updatePickDebugViews()
+    node, nt = self._decodePickedNode(pfc)
+    if node:
+      self._focusOnTarget(node.worldTransform.translation)
+
+  def _focusOnTarget(self, target):
+    """Focus camera on a target position."""
+    eye = self.camera.eye
+    offset = eye - self.camera.target
+    dist = offset.length
+    direction = offset.normalized if dist > 0.001 else vec3(0, 0, 1)
+    self.uicam.lookAt(target + direction * dist, target, vec3(0, 1, 0))
+    self.uicam.updateMatrices()
+    self.camera.copyFrom(self.uicam.cameradata)
 
   def _onCameraEvent(self, uievent):
     """Handle camera/viewport events."""
+    # Track mouse position for focus-pick
+    if uievent.code == tokens.MOVE.hashed:
+      self._last_mouse_x = uievent.x
+      self._last_mouse_y = uievent.y
+
     if uievent.code == tokens.PUSH.hashed:
+      self._last_mouse_x = uievent.x
+      self._last_mouse_y = uievent.y
       if not uievent.shift and not uievent.ctrl and not uievent.alt:
         if not (self.manip_enabled and self.manip_controller.hoveredAxis != lev2.ManipAxis.NONE):
           vp_x = self.viewport_dock.x + self.sgv.x
@@ -622,19 +657,16 @@ class SceneEditorBase:
         return lev2.ui.HandlerResult()
 
       elif kc == ord("F"):
-        target = None
-        if self.selected_node is not None:
-          target = self.selected_node.worldTransform.translation
-        elif self.selected_light is not None:
-          target = self.selected_light.worldTransform.translation
-        if target:
-          eye = self.camera.eye
-          offset = eye - self.camera.target
-          dist = offset.length
-          direction = offset.normalized if dist > 0.001 else vec3(0, 0, 1)
-          self.uicam.lookAt(target + direction * dist, target, vec3(0, 1, 0))
-          self.uicam.updateMatrices()
-          self.camera.copyFrom(self.uicam.cameradata)
+        # Focus on object under cursor (pick without changing selection)
+        vp_x = self.viewport_dock.x + self.sgv.x
+        vp_y = self.viewport_dock.y + self.sgv.y
+        local_x = self._last_mouse_x - vp_x
+        local_y = self._last_mouse_y - vp_y
+        if 0 <= local_x < self.sgv.width and 0 <= local_y < self.sgv.height:
+          gizmo_was = self.gizmo_node.enabled
+          self.gizmo_node.enabled = False
+          self.scenegraph.pickWithScreenCoord(self.camera, vec2(local_x, local_y), 0, 0, self.sgv.width, self.sgv.height, self._onFocusPickResult)
+          self.gizmo_node.enabled = gizmo_was
         return lev2.ui.HandlerResult()
 
       elif kc == ord("N") and uievent.super:
