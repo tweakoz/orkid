@@ -727,8 +727,8 @@ void CtxDRM::showMouseCursor() {
 
 void CtxDRM::queryFramebufferSize(int& w, int& h) const {
     if (_drmctx) {
-        w = _drmctx->_width;
-        h = _drmctx->_height;
+        w = _drmctx->imageExtent.width;
+        h = _drmctx->imageExtent.height;
     } else {
         w = 0;
         h = 0;
