@@ -28,9 +28,16 @@ void HorizontalPack::DoLayout() {
   size_t num_children = _children.size();
   if (num_children == 0) return;
 
+  // Count enabled children for margin calculation
+  size_t num_enabled = 0;
+  for (size_t i = 0; i < num_children; i++) {
+    if (_children[i]->_enable) num_enabled++;
+  }
+  if (num_enabled == 0) return;
+
   if (_uniform) {
     // Distribute children uniformly across width, respecting fixed widths
-    int total_margin = _margin * (num_children - 1);
+    int total_margin = _margin * (num_enabled - 1);
     int available_width = _geometry._w - total_margin;
 
     // First pass: count non-fixed children and sum fixed widths
@@ -38,6 +45,7 @@ void HorizontalPack::DoLayout() {
     int total_fixed_width = 0;
     for (size_t i = 0; i < num_children; i++) {
       auto child = _children[i];
+      if (!child->_enable) continue;  // skip disabled
       if (child->_fixed_width) {
         total_fixed_width += child->_fixed_width;
       } else {
@@ -53,6 +61,7 @@ void HorizontalPack::DoLayout() {
     int x = 0;
     for (size_t i = 0; i < num_children; i++) {
       auto child = _children[i];
+      if (!child->_enable) continue;  // skip disabled
       int w = child->_fixed_width ? child->_fixed_width : uniform_width;
       child->SetRect(x, 0, w, _geometry._h);
       x += w + _margin;
@@ -65,6 +74,7 @@ void HorizontalPack::DoLayout() {
 
     for (size_t i = 0; i < num_children; i++) {
       auto child = _children[i];
+      if (!child->_enable) continue;  // skip disabled
       bool is_fill_widget = (_fill_widget && child == _fill_widget) ||
                             (!_fill_widget && _fill && (i == num_children - 1));
       if (is_fill_widget) {
@@ -83,6 +93,7 @@ void HorizontalPack::DoLayout() {
     size_t X = 0;
     for (size_t i = 0; i < num_children; i++) {
       auto child = _children[i];
+      if (!child->_enable) continue;  // skip disabled
       bool is_fill_widget = (int)i == fill_index;
 
       // Determine child width
@@ -116,6 +127,7 @@ Widget* HorizontalPack::doRouteUiEvent(event_constptr_t ev) {
   int x = 0;
   for (size_t i = 0; i < num_children; i++) {
     auto child = _children[i];
+    if (!child->_enable) continue;  // skip disabled
     int child_width = child->width();
 
     // Check if event is within this child's bounds

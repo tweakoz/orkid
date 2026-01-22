@@ -28,9 +28,16 @@ void VerticalPack::DoLayout() {
   size_t num_children = _children.size();
   if (num_children == 0) return;
 
+  // Count enabled children for margin calculation
+  size_t num_enabled = 0;
+  for (size_t i = 0; i < num_children; i++) {
+    if (_children[i]->_enable) num_enabled++;
+  }
+  if (num_enabled == 0) return;
+
   if (_uniform) {
     // Distribute children uniformly across width, respecting fixed widths
-    int total_margin = _margin * (num_children - 1);
+    int total_margin = _margin * (num_enabled - 1);
     int available_height = _geometry._h - total_margin;
 
     // First pass: count non-fixed children and sum fixed widths
@@ -38,6 +45,7 @@ void VerticalPack::DoLayout() {
     int total_fixed_height = 0;
     for (size_t i = 0; i < num_children; i++) {
       auto child = _children[i];
+      if (!child->_enable) continue;  // skip disabled
       if (child->_fixed_height) {
         total_fixed_height += child->_fixed_height;
       } else {
@@ -53,6 +61,7 @@ void VerticalPack::DoLayout() {
     int y = 0;
     for (size_t i = 0; i < num_children; i++) {
       auto child = _children[i];
+      if (!child->_enable) continue;  // skip disabled
       int h = child->_fixed_height ? child->_fixed_height : uniform_height;
       child->SetRect(0, y, _geometry._w, h);
       y += h + _margin;
@@ -65,6 +74,7 @@ void VerticalPack::DoLayout() {
 
     for (size_t i = 0; i < num_children; i++) {
       auto child = _children[i];
+      if (!child->_enable) continue;  // skip disabled
       bool is_fill_widget = (_fill_widget && child == _fill_widget) ||
                             (!_fill_widget && _fill && (i == num_children - 1));
       if (is_fill_widget) {
@@ -83,6 +93,7 @@ void VerticalPack::DoLayout() {
     size_t Y = 0;
     for (size_t i = 0; i < num_children; i++) {
       auto child = _children[i];
+      if (!child->_enable) continue;  // skip disabled
       bool is_fill_widget = (int)i == fill_index;
 
       // Determine child height
@@ -113,6 +124,7 @@ Widget* VerticalPack::doRouteUiEvent(event_constptr_t ev) {
   int y = 0;
   for (size_t i = 0; i < _children.size(); i++) {
     auto child = _children[i];
+    if (!child->_enable) continue;  // skip disabled
     int child_height = child->height();
 
     // Check if event is within this child's bounds

@@ -45,7 +45,7 @@ static logchannel_ptr_t logchan_ezapp = logger()->configureChannel("EZAPP", fvec
 ////////////////////////////////////////////////////////////////////////////////
 EzUiEventInterceptor::EzUiEventInterceptor()
     : Widget("UiEventInterceptor", 0, 0, 0, 0) {
-  _enableDraw = false;
+  _enable = false;
   _vars       = std::make_shared<varmap::VarMap>();
 }
 ui::HandlerResult EzUiEventInterceptor::DoOnUiEvent(ui::event_constptr_t ev) {

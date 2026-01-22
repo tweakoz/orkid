@@ -390,12 +390,12 @@ void pyinit_ui(py::module& module_lev2) {
                 widget->_ignoreEvents = x;
               })
           .def_property(
-              "enableDraw",
+              "enable",
               [](uiwidget_ptr_t widget) -> bool { //
-                return widget->_enableDraw;
+                return widget->_enable;
               },
               [](uiwidget_ptr_t widget, bool x) { //
-                widget->_enableDraw = x;
+                widget->_enable = x;
               })
           .def(
               "getUserVar",

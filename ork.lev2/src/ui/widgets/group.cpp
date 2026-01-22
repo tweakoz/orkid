@@ -96,7 +96,7 @@ void Group::removeChild(Widget* w, bool relayout) {
 /////////////////////////////////////////////////////////////////////////
 void Group::drawChildren(ui::drawevent_constptr_t drwev) {
   for (auto child : _children) {
-    if(child->_enableDraw){
+    if(child->_enable){
       child->draw(drwev);
     }
   }
@@ -279,7 +279,7 @@ void LayoutGroup::DoDraw(drawevent_constptr_t drwev) {
   drawChildren(drwev);
 
   if(_overlay_widget){
-    _overlay_widget->_enableDraw = _overlay_enabled;
+    _overlay_widget->_enable = _overlay_enabled;
   }
   if (_overlay_widget && _overlay_enabled) {
     _overlay_widget->draw(drwev);

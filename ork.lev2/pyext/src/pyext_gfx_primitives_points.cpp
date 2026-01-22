@@ -38,6 +38,17 @@ void pyinit_gfx_primitives_points(py::module& primitives) {
             return std::make_shared<primitives::PointsData>(db, num_points, typed_fmt);
           }))
           .def(
+              "dump",
+              [](primitives::pointsdata_ptr_t prim) { //
+                auto db = prim->_datablock;
+                auto pvtx = (const VtxV12C4*) db->data();
+                printf("PointsData: num_points<%d>\n", prim->_num_points);
+                fflush(stdout);
+                for( size_t i=0; i<prim->_num_points; i++ ){
+                  printf( "pt<%zu> pos<%f %f %f>\n", i, pvtx[i].x, pvtx[i].y, pvtx[i].z );
+                }
+              })
+          .def(
               "transformInPlace",
               [](primitives::pointsdata_ptr_t prim, const fmtx4& mtx) { //
                 prim->transformInPlace(mtx);
