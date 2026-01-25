@@ -386,7 +386,7 @@ void ScrollContainer::DoDraw(drawevent_constptr_t drwev) {
     mtxi->PopUIMatrix();
   }
 
-  if (!_child || !_child->_enableDraw || !_rtgroup) {
+  if (!_child || !_child->_enable || !_rtgroup) {
     return;
   }
 

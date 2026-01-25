@@ -134,9 +134,9 @@ class TransformEdit:
   def _updatePositionOnlyMode(self):
     """Show/hide rotation and scale rows based on position_only mode."""
     if self.hpack_orient:
-      self.hpack_orient.enableDraw = not self._position_only
+      self.hpack_orient.enable = not self._position_only
     if self.hpack_scale:
-      self.hpack_scale.enableDraw = not self._position_only
+      self.hpack_scale.enable = not self._position_only
 
   def sync(self):
     """Call each frame to sync UI from bound transform (for external changes like manipulators)."""

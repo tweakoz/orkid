@@ -229,7 +229,7 @@ public:
   std::stack<eventfilter_ptr_t> _eventfilterstack;
   Rect _prevGeometry;
   varmap::varmap_ptr_t _uservars;
-  bool _enableDraw = true;
+  bool _enable = true;
   bool _draw_label = false;
   lev2::font_ptr_t _label_font = nullptr;
 

@@ -349,7 +349,7 @@ void Widget::SetDirty() {
 /////////////////////////////////////////////////////////////////////////
 void Widget::draw(ui::drawevent_constptr_t drwev) {
 
-  if(_enableDraw == false)
+  if(_enable == false)
     return;
 
   _drawEvent = drwev;

@@ -9,6 +9,7 @@
 
 #include <ork/lev2/ui/widget.h>
 #include <ork/lev2/gfx/material_freestyle.h>
+#include <ork/lev2/gfx/meshutil/rigid_primitive.inl>
 
 namespace ork::ui {
 

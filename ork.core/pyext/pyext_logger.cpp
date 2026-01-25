@@ -7,7 +7,6 @@
 
 #include "pyext.h"
 #include <ork/util/logger.h>
-#include <ork/util/ncui.h>
 // Forward declaration for NotCurses installation
 
 namespace ork {
@@ -175,12 +174,6 @@ void pyinit_logger(py::module& module_core) {
       [](logger_ptr_t logger, const std::string& name) -> logchannel_ptr_t {
         return logger->getChannel(name);
       })
-    #if defined(ENABLE_NOTCURSES_UI)
-    .def("enableNotCurses", 
-      [](logger_ptr_t logger) {
-        installNotCursesToBackend(logger->_backend.get());
-      })
-    #endif
     .def("__repr__", [](logger_ptr_t logger) -> std::string {
       return FormatString("Logger(%p)", (void*)logger.get());
     });

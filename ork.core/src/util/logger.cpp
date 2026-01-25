@@ -11,7 +11,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <unordered_set>
-#include <ork/util/ncui.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -22,26 +21,6 @@ namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool _ENABLE_LOGGING = true;
-
-bool _ENABLE_NOTCURSES() {
-  #if defined(ENABLE_NOTCURSES_UI)
-  static auto arg_set = get_args_set();
-  std::string envvar;
-  if (genviron.get("ORKID_LOG_NOTCURSES", envvar)) {
-    if (envvar == "1" || envvar == "true" || envvar == "yes") {
-      return true;
-    }
-  }
-  if (arg_set.find("--newlogger") != arg_set.end()) {
-    return true;
-  }
-  #endif
-  return false;
-};
-
-#if defined(ENABLE_NOTCURSES_UI)
-void installNotCursesToBackend(LoggerBackend* backend);
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -235,7 +214,7 @@ logchannel_ptr_t Logger::configureChannel(std::string named, ork::fvec3 color, b
       channel         = std::make_shared<LogChannel>(this, named, color, enabled);
       unlocked[named] = channel;
 
-      channel->_status_interval = _ENABLE_NOTCURSES() ? 1.0f : 8.0f;
+      channel->_status_interval = 8.0f;
 
     } else {
       channel             = it->second;
@@ -500,11 +479,6 @@ Logger::Logger() {
     if (env_backend) {
       _backend = env_backend;
     }
-    #if defined(ENABLE_NOTCURSES_UI)
-    else if (_ENABLE_NOTCURSES()) {
-      installNotCursesToBackend(_backend.get());
-    }
-    #endif
   }
 
   _default_channel = configureChannel("DEFAULT", fvec3(1, 1, 1), true);

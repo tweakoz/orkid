@@ -14,7 +14,6 @@
 #include <ork/kernel/datacache.h>
 #include <ork/util/logger.h>
 #include <ork/util/shmobject.h>
-#include <ork/util/ncui.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 struct CorePythonApplication {
@@ -52,10 +51,6 @@ void pyinit_download(py::module& module_core);
 void pyinit_upload(py::module& module_core);
 void pyinit_fsm(py::module& module_core);
 void pyinit_application(py::module& module_core);
-
-#if defined(ENABLE_NOTCURSES_UI)
-void pyinit_ncui(py::module& module_core);
-#endif
 
 namespace asset::catalog {
   void pyinit_asset_catalog(py::module& module_core);
@@ -500,12 +495,6 @@ PYBIND11_MODULE(_core, module_core) {
   pyinit_fsm(module_core);
   pyinit_application(module_core);
   pyinit_json_config(module_core);
-
-  #if defined(ENABLE_NOTCURSES_UI)
-  // Create ncui submodule
-  auto ncui_module = module_core.def_submodule("ncui", "NotCurses UI Framework");
-  pyinit_ncui(ncui_module);
-  #endif
 
   /////////////////////////////////////////////////////////////////////////////////
   auto l2pedir = py::cast(_lev2pyexdir());
