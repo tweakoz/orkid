@@ -362,14 +362,13 @@ void OrkEzApp::_initForAdHoc() {
 void OrkEzApp::_initForSubsystems() {
   logchan_ezapp->log("initForSubsystems - HFSM-driven initialization");
 
-  /////////////////////////////////////////////
-  // Helper to check if a subsystem is enabled
-  // If _enabled_subsystems is empty (legacy boolean mode), use existing flags
-  // Otherwise, check if the subsystem name is in the set
-  /////////////////////////////////////////////
-
   auto& enabled = _initdata->_enabled_subsystems;
+  auto& custom_subsystems = _initdata->_custom_subsystems;
   bool list_mode = !enabled.empty();
+
+  /////////////////////////////////////////////
+  // Helper to check if a subsystem is wanted
+  /////////////////////////////////////////////
 
   auto want = [&](const std::string& name) -> bool {
     if (list_mode) {
@@ -381,7 +380,6 @@ void OrkEzApp::_initForSubsystems() {
       return _initdata->_enable_audio;
     }
     if (name == "catalog") return _initdata->_std_asset_catalog;
-    // Core subsystems always enabled in legacy mode
     return (name == "opq" || name == "core");
   };
 
@@ -398,96 +396,73 @@ void OrkEzApp::_initForSubsystems() {
       _initdata->_enable_audio = true;
       _initdata->_enable_audio_input  = want_audioI || want_audioIO;
       _initdata->_enable_audio_output = want_audioO || want_audioIO;
-      _initdata->_enable_audio_synth  = want_audioO || want_audioIO;  // synth implicit with output
+      _initdata->_enable_audio_synth  = want_audioO || want_audioIO;
     }
 
-    // Handle gpu flag
     if (enabled.count("gpu") > 0) {
       _initdata->_enable_graphics = true;
     }
 
-    // Handle catalog flag
     if (enabled.count("catalog") > 0) {
       _initdata->_std_asset_catalog = true;
-    } else if (list_mode) {
-      // In list mode, only enable catalog if explicitly requested
+    } else {
       _initdata->_std_asset_catalog = false;
     }
   }
 
   /////////////////////////////////////////////
-  // First register core subsystems (OPQ, CATALOG, CORE)
-  // These are normally registered by Application() but we used the derived constructor
+  // Build subsystem map - all subsystems keyed by name
   /////////////////////////////////////////////
 
-  auto opq_subsystem = createOpqSubsystem();
-  registerSubsystem(opq_subsystem, true);
-  opq_subsystem->initialize();
-  opq_subsystem->update();
+  std::map<std::string, subsystem_ptr_t> subsystem_map;
 
-  subsystem_ptr_t catalog_subsystem = nullptr;
-  if (want("catalog")) {
-    catalog_subsystem = createCatalogSubsystem();
-    catalog_subsystem->addDependency(opq_subsystem);
-    registerSubsystem(catalog_subsystem, true);
-  }
+  // Always create opq and core
+  auto opq_subsystem = createOpqSubsystem();
+  subsystem_map["opq"] = opq_subsystem;
 
   auto core_subsystem = createCoreSubsystem();
-  core_subsystem->addDependency(opq_subsystem);
-  if (catalog_subsystem) {
-    core_subsystem->addDependency(catalog_subsystem);
+  core_subsystem->_pending_children.push_back("opq");
+  subsystem_map["core"] = core_subsystem;
+
+  // Catalog (optional)
+  if (want("catalog")) {
+    auto catalog_subsystem = createCatalogSubsystem();
+    catalog_subsystem->_pending_dependencies.push_back("opq");
+    core_subsystem->_pending_children.push_back("catalog");
+    subsystem_map["catalog"] = catalog_subsystem;
   }
-  registerSubsystem(core_subsystem, true);
 
-  // Initialize remaining core subsystems
-  if (catalog_subsystem) {
-    catalog_subsystem->initialize();
-    catalog_subsystem->update();
-  }
-  core_subsystem->initialize();
-  core_subsystem->update();
-
-  /////////////////////////////////////////////
-  // Register GPU subsystem with callback to do actual GPU init
-  /////////////////////////////////////////////
-
+  // GPU (optional)
   if (want("gpu")) {
     _gpu_subsystem = createGpuSubsystem();
-    _gpu_subsystem->addDependency(core_subsystem);
+    _gpu_subsystem->_pending_dependencies.push_back("core");
+    _gpu_subsystem->_requires_thread = "main";  // GPU/GLFW requires main thread
 
-    // Wire up GPU init callback - this is where actual GPU context creation happens
+    // Wire up GPU callbacks
     auto gpu_impl = getGpuSubsystemImpl(_gpu_subsystem);
     gpu_impl->_onGpuInit = [this]() {
       logchan_ezapp->log("GPU subsystem triggering graphics init");
-      // Create loader context (deferred from lev2::initModule when use_subsystems=true)
       auto loader_ctx = ensureLoaderContext();
       logchan_ezapp->log("GPU subsystem loader context: %p", (void*)loader_ctx.get());
       _initGraphicsContext();
     };
     gpu_impl->_onGpuExit = [this]() {
       logchan_ezapp->log("GPU subsystem triggering graphics cleanup");
-      // Graphics cleanup will happen in destructor
     };
 
-    registerSubsystem(_gpu_subsystem, true);
-    _gpu_subsystem->initialize();
-    _gpu_subsystem->update();
+    subsystem_map["gpu"] = _gpu_subsystem;
   }
 
-  /////////////////////////////////////////////
-  // Register Audio subsystem with callback to do actual audio init
-  // Handles audioI, audioO, audioIO aliases - all create "audio" subsystem
-  /////////////////////////////////////////////
-
+  // Audio (optional)
   if (_initdata->_enable_audio) {
     _audio_subsystem = createAudioSubsystem();
-    if (_gpu_subsystem) {
-      _audio_subsystem->addDependency(_gpu_subsystem);
+    if (want("gpu")) {
+      _audio_subsystem->_pending_dependencies.push_back("gpu");
     } else {
-      _audio_subsystem->addDependency(core_subsystem);
+      _audio_subsystem->_pending_dependencies.push_back("core");
     }
 
-    // Wire up Audio init callback - this is where actual audio init happens
+    // Wire up Audio callbacks
     auto audio_impl = getAudioSubsystemImpl(_audio_subsystem);
     audio_impl->_onAudioInit = [this]() {
       logchan_ezapp->log("Audio subsystem triggering audio init");
@@ -498,30 +473,128 @@ void OrkEzApp::_initForSubsystems() {
       _audioExit();
     };
 
-    registerSubsystem(_audio_subsystem, true);
-    _audio_subsystem->initialize();
-    _audio_subsystem->update();
+    subsystem_map["audio"] = _audio_subsystem;
+  }
+
+  // Lev2 meta-service (optional)
+  if (want("lev2")) {
+    auto lev2_subsystem = createLev2Subsystem();
+    if (want("gpu")) {
+      lev2_subsystem->_pending_children.push_back("gpu");
+    }
+    if (_initdata->_enable_audio) {
+      lev2_subsystem->_pending_children.push_back("audio");
+    }
+    if (!want("gpu") && !_initdata->_enable_audio) {
+      lev2_subsystem->_pending_dependencies.push_back("core");
+    }
+    subsystem_map["lev2"] = lev2_subsystem;
+  }
+
+  // Add custom subsystems from Python
+  for (auto& custom_sub : custom_subsystems) {
+    subsystem_map[custom_sub->_name] = custom_sub;
+    logchan_ezapp->log("Added custom subsystem: %s", custom_sub->_name.c_str());
   }
 
   /////////////////////////////////////////////
-  // Register lev2 meta-service subsystem
+  // Resolve pending dependencies and children to actual pointers
   /////////////////////////////////////////////
 
-  if (list_mode && enabled.count("lev2") > 0) {
-    auto lev2_subsystem = createLev2Subsystem();
-    // lev2 depends on gpu and audio if they exist
-    if (_gpu_subsystem) {
-      lev2_subsystem->addDependency(_gpu_subsystem);
+  for (auto& [name, subsystem] : subsystem_map) {
+    // Resolve dependencies
+    for (auto& dep_name : subsystem->_pending_dependencies) {
+      auto it = subsystem_map.find(dep_name);
+      if (it != subsystem_map.end()) {
+        subsystem->addDependency(it->second);
+        logchan_ezapp->log("  %s depends on %s", name.c_str(), dep_name.c_str());
+      } else {
+        logchan_ezapp->log("WARNING: %s has unresolved dependency: %s", name.c_str(), dep_name.c_str());
+      }
     }
-    if (_audio_subsystem) {
-      lev2_subsystem->addDependency(_audio_subsystem);
+
+    // Resolve children and set parent pointers
+    for (auto& child_name : subsystem->_pending_children) {
+      auto it = subsystem_map.find(child_name);
+      if (it != subsystem_map.end()) {
+        auto& child = it->second;
+        subsystem->addChild(child);
+        child->_parent = subsystem;  // Set parent pointer
+        logchan_ezapp->log("  %s has child %s", name.c_str(), child_name.c_str());
+      } else {
+        logchan_ezapp->log("WARNING: %s has unresolved child: %s", name.c_str(), child_name.c_str());
+      }
     }
-    if (!_gpu_subsystem && !_audio_subsystem) {
-      lev2_subsystem->addDependency(core_subsystem);
+  }
+
+  /////////////////////////////////////////////
+  // Register all subsystems
+  /////////////////////////////////////////////
+
+  for (auto& [name, subsystem] : subsystem_map) {
+    registerSubsystem(subsystem, true);
+  }
+
+  /////////////////////////////////////////////
+  // Initialize ROOT subsystems only (those with no parent)
+  // Non-root subsystems (children) are initialized by their parent's initChildren()
+  //
+  // Thread affinity:
+  //   "" = don't care (can run in parallel on any thread)
+  //   "main" = must run on main thread (GPU, GLFW, UI)
+  //   "audio" = must run on audio thread (not available at init time)
+  //   "update" = must run on update thread (not available at init time)
+  //
+  // Current implementation: Sequential init on main thread
+  // Subsystems with _requires_thread="main" MUST init on main thread
+  // Subsystems with _requires_thread="" CAN be parallelized (future optimization)
+  /////////////////////////////////////////////
+
+  // Build list of root subsystems (those with no parent)
+  std::vector<std::pair<std::string, subsystem_ptr_t>> root_subsystems;
+  for (auto& [name, subsystem] : subsystem_map) {
+    if (!subsystem->hasParent()) {
+      root_subsystems.push_back({name, subsystem});
+    } else {
+      logchan_ezapp->log("  %s is a child (parent: %s), will be initialized by parent",
+                         name.c_str(), subsystem->parent()->_name.c_str());
     }
-    registerSubsystem(lev2_subsystem, true);
-    lev2_subsystem->initialize();
-    lev2_subsystem->update();
+  }
+
+  // Initialize root subsystems in dependency order
+  std::set<std::string> initialized;
+  auto can_init = [&](const std::string& name, subsystem_ptr_t sub) -> bool {
+    // Check all dependencies (that are also roots) are initialized
+    for (auto& [dep_hash, dep_ptr] : sub->_dependencies) {
+      // Only check dependencies that are roots (non-roots are handled by their parent)
+      if (!dep_ptr->hasParent()) {
+        if (initialized.find(dep_ptr->_name) == initialized.end()) {
+          return false;
+        }
+      }
+    }
+    return true;
+  };
+
+  while (initialized.size() < root_subsystems.size()) {
+    bool progress = false;
+    for (auto& [name, subsystem] : root_subsystems) {
+      if (initialized.count(name)) continue;
+      if (!can_init(name, subsystem)) continue;
+
+      const char* thread_info = subsystem->_requires_thread.empty()
+                                    ? "any"
+                                    : subsystem->_requires_thread.c_str();
+      logchan_ezapp->log("Initializing subsystem: %s (thread: %s)", name.c_str(), thread_info);
+      subsystem->initialize();
+      subsystem->update();
+      initialized.insert(name);
+      progress = true;
+    }
+    if (!progress) {
+      logchan_ezapp->log("ERROR: Circular dependency in subsystem init");
+      break;
+    }
   }
 
   logchan_ezapp->log("HFSM subsystems registered and initialized");

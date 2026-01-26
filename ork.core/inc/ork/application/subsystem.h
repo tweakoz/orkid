@@ -14,6 +14,7 @@
 #include <unordered_map>
 #include <memory>
 #include <string>
+#include <vector>
 #include <atomic>
 
 namespace ork {
@@ -42,7 +43,10 @@ using subsystem_ptr_t = std::shared_ptr<Subsystem>;
 
 struct Subsystem {
 public:
-  Subsystem(const std::string& name);
+  Subsystem(const std::string& name,
+            const std::vector<std::string>& dependencies = {},
+            const std::vector<std::string>& children = {},
+            const std::string& requires_thread = "");
   ~Subsystem();
 
   // Called by factory functions to set up FSM states
@@ -56,11 +60,27 @@ public:
   fsm::state_ptr_t currentState() const;
   const std::string& name() const { return _name; }
   uint64_t nameHash() const { return _name_hash; }
+  bool hasParent() const { return !_parent.expired(); }
+  subsystem_ptr_t parent() const { return _parent.lock(); }
 
   // Dependency management (proper API instead of exposing map)
+  // Dependencies affect init ordering: deps init first, this inits after
+  // Dependencies affect shutdown ordering: this shuts down first, deps shut down after
   void addDependency(subsystem_ptr_t dep);
   void removeDependency(crcstring_ptr_t token);
   bool hasDependency(crcstring_ptr_t token) const;
+
+  // Child management - for meta-services that coordinate other subsystems
+  // Children affect init ordering: children init first, this inits after (same as dependency)
+  // Children affect shutdown ordering: children shut down first, this shuts down after (opposite of dependency)
+  void addChild(subsystem_ptr_t child);
+  void removeChild(crcstring_ptr_t token);
+  bool hasChild(crcstring_ptr_t token) const;
+
+  // Nested initialization/shutdown - called by parent's FSM callbacks
+  // These sort children by inter-dependencies and init/shutdown in correct order
+  void initChildren();
+  void shutdownChildren();
 
   // Orkid patterns - implementation storage
   svar64_t _impl;          // Pimpl - implementation-specific data
@@ -71,7 +91,28 @@ public:
   std::string _name;       // "gpu", "audio", "physics" (for debugging)
 
   // Dependencies - pointer map keyed by hash
+  // For regular dependencies: dep inits first, dep shuts down after
   std::unordered_map<uint64_t, subsystem_ptr_t> _dependencies;
+
+  // Children - for meta-services
+  // Children init first (like dependencies), but children shut down first (opposite of dependencies)
+  std::unordered_map<uint64_t, subsystem_ptr_t> _children;
+
+  // Parent - set automatically when added as a child
+  // Used by framework to identify root subsystems (those with no parent)
+  std::weak_ptr<Subsystem> _parent;
+
+  // Pending names (resolved when graph is built)
+  // These are set at construction time and resolved to actual pointers during registration
+  std::vector<std::string> _pending_dependencies;
+  std::vector<std::string> _pending_children;
+
+  // Thread affinity - which thread this subsystem must init/shutdown on
+  // "" = don't care (can run in parallel)
+  // "main" = must run on main thread (GPU, GLFW, UI)
+  // "audio" = must run on audio thread
+  // "update" = must run on update thread
+  std::string _requires_thread;
 
   // FSM access (public for configuration)
   fsm::fsminstance_ptr_t _instance;

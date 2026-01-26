@@ -23,7 +23,18 @@ void pyinit_application(py::module& module_core) {
   ///////////////////////////////////////////////////////////////
 
   auto sub_t = py::class_<Subsystem, subsystem_ptr_t>(module_core, "Subsystem")
-      .def(py::init<const std::string&>(), py::arg("name"))
+      .def(py::init<const std::string&,
+                    const std::vector<std::string>&,
+                    const std::vector<std::string>&,
+                    const std::string&>(),
+           py::arg("name"),
+           py::arg("dependencies") = std::vector<std::string>{},
+           py::arg("children") = std::vector<std::string>{},
+           py::arg("requires_thread") = std::string{},
+           "Create a subsystem with optional dependencies, children, and thread affinity.\n"
+           "Dependencies: subsystems that must init before this one (and shutdown after)\n"
+           "Children: subsystems that must init before this one (and shutdown before)\n"
+           "requires_thread: thread affinity - '', 'main', 'audio', or 'update'")
 
       // Methods
       .def("initialize", &Subsystem::initialize, "Initialize the subsystem")
@@ -36,9 +47,16 @@ void pyinit_application(py::module& module_core) {
       .def_property_readonly("nameHash", [](const Subsystem& self) { return self._name_hash; })
 
       // Dependency management
-      .def("addDependency", &Subsystem::addDependency, py::arg("dep"), "Add a dependency")
+      // Dependencies: dep inits first, dep shuts down after (inverse shutdown order)
+      .def("addDependency", &Subsystem::addDependency, py::arg("dep"), "Add a dependency (dep inits first, shuts down after)")
       .def("removeDependency", &Subsystem::removeDependency, py::arg("token"), "Remove a dependency by name/token")
       .def("hasDependency", &Subsystem::hasDependency, py::arg("token"), "Check if has dependency by name/token")
+
+      // Child management (for meta-services)
+      // Children: child inits first, child shuts down first (same shutdown order as init)
+      .def("addChild", &Subsystem::addChild, py::arg("child"), "Add a child (child inits first, shuts down first)")
+      .def("removeChild", &Subsystem::removeChild, py::arg("token"), "Remove a child by name/token")
+      .def("hasChild", &Subsystem::hasChild, py::arg("token"), "Check if has child by name/token")
 
       // Public members for configuration
       .def_readwrite("impl", &Subsystem::_impl, "Implementation storage (pimpl)")
@@ -54,7 +72,25 @@ void pyinit_application(py::module& module_core) {
       .def_readonly("state_ready", &Subsystem::_state_ready)
       .def_readonly("state_error", &Subsystem::_state_error)
       .def_readonly("state_shutting_down", &Subsystem::_state_shutting_down)
-      .def_readonly("state_terminated", &Subsystem::_state_terminated);
+      .def_readonly("state_terminated", &Subsystem::_state_terminated)
+
+      // Pending relationships (for inspection)
+      .def_readonly("_pending_dependencies", &Subsystem::_pending_dependencies)
+      .def_readonly("_pending_children", &Subsystem::_pending_children)
+
+      // Thread affinity
+      .def_readwrite("requires_thread", &Subsystem::_requires_thread,
+                     "Thread affinity: '', 'main', 'audio', or 'update'")
+
+      // Parent relationship (set automatically when added as child)
+      .def("hasParent", &Subsystem::hasParent, "Check if this subsystem has a parent")
+      .def("parent", &Subsystem::parent, "Get parent subsystem (or None if no parent)")
+
+      // Nested init/shutdown helpers (for meta-services)
+      .def("initChildren", &Subsystem::initChildren,
+           "Initialize all children in dependency order (called by parent's INITIALIZING callback)")
+      .def("shutdownChildren", &Subsystem::shutdownChildren,
+           "Shutdown all children in reverse dependency order (called by parent's SHUTTING_DOWN callback)");
 
   type_codec->registerStdCodec<subsystem_ptr_t>(sub_t);
 

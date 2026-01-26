@@ -146,6 +146,7 @@ struct AppInitData{
   bool _use_subsystems = false;    // Enable HFSM subsystem lifecycle (Phase 2b)
   bool _defer_gpu_init = false;    // Defer GPU context creation until GPU subsystem init
   std::set<std::string> _enabled_subsystems;  // List-based subsystem selection (e.g., "gpu", "audioO")
+  std::vector<subsystem_ptr_t> _custom_subsystems;  // Custom subsystems from Python
   std::string _monitor_id = "";
   std::string _application_name = "orkid_app";
   std::multimap<uint64_t,void_lambda_t> _preinitoperations;

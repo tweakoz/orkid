@@ -187,12 +187,21 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 } else if (key == "use_subsystems") {
                   // Support both list-based API and legacy boolean API
                   if (py::isinstance<py::list>(item.second)) {
-                    // New list-based API: use_subsystems=['gpu', 'audioO', 'lev2']
+                    // New list-based API: use_subsystems=['gpu', 'audioO', 'lev2', pyworker_subsystem]
                     auto subsystem_list = py::cast<py::list>(item.second);
                     appinit->_use_subsystems = true;
                     appinit->_defer_gpu_init = true;
-                    for (auto name : subsystem_list) {
-                      appinit->_enabled_subsystems.insert(py::cast<std::string>(name));
+                    for (auto entry : subsystem_list) {
+                      if (py::isinstance<py::str>(entry)) {
+                        // String name of built-in subsystem
+                        appinit->_enabled_subsystems.insert(py::cast<std::string>(entry));
+                      } else {
+                        // Custom subsystem object from Python
+                        auto subsystem = py::cast<subsystem_ptr_t>(entry);
+                        appinit->_custom_subsystems.push_back(subsystem);
+                        // Also add to enabled set by name for dependency resolution
+                        appinit->_enabled_subsystems.insert(subsystem->_name);
+                      }
                     }
                   } else {
                     // Legacy boolean API: use_subsystems=True

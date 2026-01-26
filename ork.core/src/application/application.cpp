@@ -771,7 +771,21 @@ std::vector<subsystem_reg_ptr_t> Application::_getReadyToInitSubsystems() {
       }
     }
 
-    if (all_deps_ready) {
+    if (!all_deps_ready) {
+      continue;
+    }
+
+    // Check if all children are ready (children must init before parent)
+    bool all_children_ready = true;
+    for (auto& [child_hash, child_subsystem] : reg->subsystem->_children) {
+      auto child_state = child_subsystem->currentState();
+      if (child_state != child_subsystem->_state_ready) {
+        all_children_ready = false;
+        break;
+      }
+    }
+
+    if (all_children_ready) {
       ready.push_back(reg);
     }
   }
@@ -860,14 +874,16 @@ void Application::_buildShutdownWaves(std::vector<std::vector<subsystem_reg_ptr_
   }
 
   // Build waves by reverse topological sort (leaf nodes first)
+  // A subsystem can be scheduled when:
+  // 1. No other (unscheduled) subsystem depends on it
+  // 2. All of its supervised children are already scheduled
   while (shutdown_scheduled.size() < _registered_subsystems.size()) {
     std::vector<subsystem_reg_ptr_t> wave;
 
-    // Find subsystems that no other (unscheduled) subsystem depends on (leaf nodes)
     for (auto& [hash, reg] : subsystem_map) {
       if (shutdown_scheduled.count(hash)) continue;  // Already scheduled
 
-      // Check if any non-scheduled subsystem depends on this one
+      // Check 1: No other non-scheduled subsystem depends on this one
       bool has_dependents = false;
       for (auto& [other_hash, other_reg] : subsystem_map) {
         if (shutdown_scheduled.count(other_hash)) continue;
@@ -880,9 +896,25 @@ void Application::_buildShutdownWaves(std::vector<std::vector<subsystem_reg_ptr_
         }
       }
 
-      if (!has_dependents) {
-        wave.push_back(reg);
+      if (has_dependents) {
+        continue;  // Can't schedule yet - something still depends on us
       }
+
+      // Check 2: All children must be already scheduled (for meta-services)
+      bool children_pending = false;
+      for (auto& [child_hash, child_ptr] : reg->subsystem->_children) {
+        if (!shutdown_scheduled.count(child_hash)) {
+          children_pending = true;
+          break;
+        }
+      }
+
+      if (children_pending) {
+        continue;  // Can't schedule yet - children haven't terminated
+      }
+
+      // Both checks passed - this subsystem can be scheduled
+      wave.push_back(reg);
     }
 
     if (wave.empty() && shutdown_scheduled.size() < _registered_subsystems.size()) {

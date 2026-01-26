@@ -27,14 +27,13 @@ static logchannel_ptr_t logchan_CORE = logger()->configureChannel("SUB_CORE", fv
 subsystem_ptr_t createCoreSubsystem() {
   auto subsystem = std::make_shared<Subsystem>("core");
 
-  // INITIALIZING state -> validates dependencies and transitions to READY
+  // INITIALIZING state -> init children, then transition to READY
   subsystem->_state_initializing->_onenter = [subsystem](fsm::fsminstance_ptr_t instance) {
     logchan_CORE->log("Core subsystem initializing...");
 
-    // Dependencies (OPQ, optionally CATALOG) are already READY at this point
-    // (dependency-driven init ensures this)
-
-    // Any core validation or additional setup can go here
+    // Initialize children (opq, optionally catalog) in dependency order
+    // Children are nested under core and initialized here, not by the framework
+    subsystem->initChildren();
 
     logchan_CORE->log("Core subsystem initialized - orkid runtime ready");
 
@@ -42,11 +41,13 @@ subsystem_ptr_t createCoreSubsystem() {
     instance->sendEvent("READY");
   };
 
-  // SHUTTING_DOWN state -> cleanup coordination
+  // SHUTTING_DOWN state -> shutdown children, then transition to TERMINATED
   subsystem->_state_shutting_down->_onenter = [subsystem](fsm::fsminstance_ptr_t instance) {
     logchan_CORE->log("Core subsystem shutting down...");
 
-    // Dependencies will be shut down after CORE (reverse order)
+    // Shutdown children in reverse dependency order
+    // Children must shutdown before core
+    subsystem->shutdownChildren();
 
     logchan_CORE->log("Core subsystem shutdown complete");
 
