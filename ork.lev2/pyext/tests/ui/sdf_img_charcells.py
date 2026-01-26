@@ -101,12 +101,12 @@ def renderCharCellsImage(img_width=2048, img_height=2048):
 class CharCellsImageApp(ComponentizedApplication):
   def __init__(self, w, h):
     super().__init__()
-    self.ezapp = lev2.OrkEzApp.create(self)
+    self.img_width = w
+    self.img_height = h
+    self.createEzApp(use_subsystems=['opq', 'core', 'gpu', 'lev2'])
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()
     self.root = self.ezapp.topLayoutGroup
-    self.img_width = w
-    self.img_height = h
 
   def onGpuInit(self, ctx):
     super().onGpuInit(ctx)
@@ -144,7 +144,9 @@ def main():
     coreappexit()
   else:
     # Interactive mode - show UI
-    CharCellsImageApp(args.dim, args.dim).ezapp.mainThreadLoop()
+    app = CharCellsImageApp(args.dim, args.dim)
+    app.ezapp.mainThreadLoop()
+    app.ezapp.shutdown()
 
 if __name__ == "__main__":
   main()

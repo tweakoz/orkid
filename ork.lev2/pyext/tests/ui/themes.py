@@ -113,7 +113,8 @@ class ThemesTestApp(ComponentizedApplication):
       'width': 1600,
       'height': 900,
       'enable_freerun_ups': True,
-      'enable_freerun_fps': True
+      'enable_freerun_fps': True,
+      'use_subsystems': ['opq', 'core', 'gpu', 'lev2']
     }
 
     ############################################
@@ -463,4 +464,6 @@ class ThemesTestApp(ComponentizedApplication):
 
 ###############################################################################
 
-ThemesTestApp().ezapp.mainThreadLoop()
+app = ThemesTestApp()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()

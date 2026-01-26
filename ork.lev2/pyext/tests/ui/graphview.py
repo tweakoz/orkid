@@ -82,7 +82,8 @@ class GraphViewTest(application.ComponentizedApplication):
       'width': 1200,
       'height': 900,
       'enable_freerun_ups': True,
-      'enable_freerun_fps': True
+      'enable_freerun_fps': True,
+      'use_subsystems': ['opq', 'core', 'gpu', 'lev2']
     }
 
     ############################################
@@ -214,4 +215,6 @@ class GraphViewTest(application.ComponentizedApplication):
 
 ###############################################################################
 
-GraphViewTest().ezapp.mainThreadLoop()
+app = GraphViewTest()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()

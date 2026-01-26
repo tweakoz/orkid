@@ -18,7 +18,7 @@ class SdfImageTestApp(ComponentizedApplication):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = lev2.OrkEzApp.create(self)
+    self.createEzApp(use_subsystems=['opq', 'core', 'gpu', 'lev2'])
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()
     self.root = self.ezapp.topLayoutGroup
@@ -80,7 +80,9 @@ class SdfImageTestApp(ComponentizedApplication):
 ################################################################################
 
 def main():
-  SdfImageTestApp().ezapp.mainThreadLoop()
+  app = SdfImageTestApp()
+  app.ezapp.mainThreadLoop()
+  app.ezapp.shutdown()
 
 if __name__ == "__main__":
   main()

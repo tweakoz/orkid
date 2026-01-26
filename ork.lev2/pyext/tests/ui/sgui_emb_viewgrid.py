@@ -30,7 +30,8 @@ class Fullscreen3DMouseApp(ComponentizedApplication):
                                  grid_variant="_V4",
                                  eye=vec3(0, 3, 8))
     # Run in fullscreen mode with fsmouse enabled (hide HW cursor, render virtual)
-    self.createEzApp(name="Fullscreen3DMouse", ssaa=1, fullscreen=True, fsmouse=True)
+    self.createEzApp(name="Fullscreen3DMouse", ssaa=1, fullscreen=True, fsmouse=True,
+                      use_subsystems=['opq', 'core', 'gpu', 'lev2'])
 
   ##############################################
 
@@ -76,4 +77,6 @@ class Fullscreen3DMouseApp(ComponentizedApplication):
 
 ###############################################################################
 
-Fullscreen3DMouseApp().ezapp.mainThreadLoop()
+app = Fullscreen3DMouseApp()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()

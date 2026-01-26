@@ -307,14 +307,14 @@ def renderTexturedImage(img_width=512, img_height=512, time=0.0):
 class SdfImageTestApp(ComponentizedApplication):
   def __init__(self,w,h,animate=False):
     super().__init__()
-    self.ezapp = lev2.OrkEzApp.create(self)
-    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
-    self.ezapp.topWidget.enableUiDraw()
-    self.root = self.ezapp.topLayoutGroup
     self.img_width = w
     self.img_height = h
     self.animate = animate
     self.rotation_angle = 0.0
+    self.createEzApp(use_subsystems=['opq', 'core', 'gpu', 'lev2'])
+    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
+    self.ezapp.topWidget.enableUiDraw()
+    self.root = self.ezapp.topLayoutGroup
 
   def onGpuInit(self, ctx):
     super().onGpuInit(ctx)
@@ -364,7 +364,9 @@ def main():
     coreappexit()
   else:
     # Interactive mode - show UI
-    SdfImageTestApp(args.dim, args.dim, args.animate).ezapp.mainThreadLoop()
+    app = SdfImageTestApp(args.dim, args.dim, args.animate)
+    app.ezapp.mainThreadLoop()
+    app.ezapp.shutdown()
 
 if __name__ == "__main__":
   main()

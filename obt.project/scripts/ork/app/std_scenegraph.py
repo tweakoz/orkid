@@ -270,8 +270,14 @@ class StandardSceneGraphComponent(ApplicationComponent):
   ##################################################
 
   def _onUpdate(self,updinfo):
-   self.scenegraph.updateScene(self.cameralut)  # update and enqueue all scenenodes
-   self.SGVP.widget.setDirty()
+   if self.app._shutting_down:
+     return
+   try:
+     self.scenegraph.updateScene(self.cameralut)  # update and enqueue all scenenodes
+     self.SGVP.widget.setDirty()
+   except RuntimeError:
+     # Scenegraph may be destroyed during shutdown
+     self.app._shutting_down = True
  
   def _onGpuUpdate(self,ctx):
     pass 

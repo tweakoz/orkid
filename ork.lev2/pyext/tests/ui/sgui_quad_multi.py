@@ -20,9 +20,11 @@ class UiSgQuadViewTestApp(ComponentizedApplication):
   def __init__(self):
     super().__init__()
 
-    self.ezapp = OrkEzApp.create(self)
-    self.multiscene = self.addComponent("multiscene1", MultiScene1Component )
+    self.multiscene = self.addComponent("multiscene1", MultiScene1Component)
+    self.createEzApp(use_subsystems=['opq', 'core', 'gpu', 'lev2'])
     
 ###############################################################################
 
-UiSgQuadViewTestApp().ezapp.mainThreadLoop(on_iter=lambda: False)
+app = UiSgQuadViewTestApp()
+app.ezapp.mainThreadLoop(on_iter=lambda: False)
+app.ezapp.shutdown()

@@ -39,7 +39,8 @@ class MANIP_APP(ComponentizedApplication):
                                   tgt=vec3(0, 0, 0),
                                   up=vec3(0, 1, 0))
 
-    self.createEzApp(ssaa=2, msaa=0, fullscreen=False)
+    self.createEzApp(ssaa=2, msaa=0, fullscreen=False,
+                      use_subsystems=['opq', 'core', 'gpu', 'lev2'])
 
   ##############################################
 
@@ -130,4 +131,6 @@ class MANIP_APP(ComponentizedApplication):
 
 ###############################################################################
 
-MANIP_APP().ezapp.mainThreadLoop()
+app = MANIP_APP()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()

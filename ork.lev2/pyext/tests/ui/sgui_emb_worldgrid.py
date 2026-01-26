@@ -28,7 +28,8 @@ class UISurface3DApp(ComponentizedApplication):
                                  StandardSceneGraphComponent,
                                  grid_variant="_V4",
                                  eye=vec3(0, 4, 12))
-    self.createEzApp(name="UISurface3DTest", ssaa=1, fullscreen=False)
+    self.createEzApp(name="UISurface3DTest", ssaa=1, fullscreen=False,
+                      use_subsystems=['opq', 'core', 'gpu', 'lev2'])
 
   ##############################################
 
@@ -74,4 +75,6 @@ class UISurface3DApp(ComponentizedApplication):
     
 ###############################################################################
 
-UISurface3DApp().ezapp.mainThreadLoop()
+app = UISurface3DApp()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()

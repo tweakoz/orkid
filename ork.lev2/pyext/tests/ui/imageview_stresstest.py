@@ -62,14 +62,15 @@ class ImageViewStressTest(application.ComponentizedApplication):
     ############################################
 
     self.createEzApp(name="UiTestImageViewStress",
-                     width=1600, 
+                     width=1600,
                      height=900,
                      fullscreen=False,
                      enable_audio=False,
                      enable_audio_output=False,
                      enable_audio_synth=False,
                      enable_freerun_ups=True,
-                     enable_freerun_fps=True)
+                     enable_freerun_fps=True,
+                     use_subsystems=['opq', 'core', 'gpu', 'lev2'])
     
     self.ezapp.uicontext.debug_event_routing = False
 
@@ -349,3 +350,4 @@ if __name__ == "__main__":
   # Create and run the ComponentizedApplication
   app = ImageViewStressTest(griddim=args.griddim)
   app.ezapp.mainThreadLoop()
+  app.ezapp.shutdown()

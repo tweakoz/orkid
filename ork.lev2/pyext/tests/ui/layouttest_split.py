@@ -27,7 +27,8 @@ class SplitLayoutApp(application.ComponentizedApplication):
     #                  background_color=vec4(0.2, 0.2, 0.2, 0.8))
 
 
-    self.createEzApp(name="UiTestLayoutSplit",fullscreen=False)
+    self.createEzApp(name="UiTestLayoutSplit", fullscreen=False,
+                      use_subsystems=['opq', 'core', 'gpu', 'lev2'])
 
     
   #################################################################
@@ -169,4 +170,6 @@ class SplitLayoutApp(application.ComponentizedApplication):
 
 ################################################################################
 
-SplitLayoutApp().ezapp.mainThreadLoop()
+app = SplitLayoutApp()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()

@@ -313,6 +313,7 @@ class ComponentizedApplication(object):
     self.ezapp = None # will be set later
     self.initdata = None # will be set in onAppInit
     self.ezapp_args = {} # kwargs for OrkEzApp.create()
+    self._shutting_down = False # set True during shutdown to guard resource access
     def onCtrlC(signum, frame):
       print("signalling EXIT to ezapp")
       self.ezapp.signalExit()
@@ -613,6 +614,7 @@ class ComponentizedApplication(object):
   def onUpdateExit(self):
     # invoked on update thread when the update loop is exiting
     # immediately after the update loop ends
+    self._shutting_down = True
     for component in self.components_sorted:
       component.onUpdateExit()
 
