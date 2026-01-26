@@ -59,6 +59,7 @@ class VideoToolboxStressTest(application.ComponentizedApplication):
     self.createEzApp(name="VideoToolboxGpuDirectTest",
                      width=1600,
                      height=900,
+                     use_subsystems=True,
                      fullscreen=fullscreen,
                      enable_audio=enable_audio,
                      enable_audio_output=enable_audio,

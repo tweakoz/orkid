@@ -237,9 +237,9 @@ public:
 
   // Virtual lifecycle hooks (override in derived classes like OrkEzApp)
   // These are called at key points in the application lifecycle
-  virtual void onAppInit() {}       // Called after core subsystems ready
-  virtual void onAppUpdate() {}     // Called each main loop iteration
-  virtual void onAppShutdown() {}   // Called before subsystem shutdown
+  virtual void onAppInit() {}      // Called after core subsystems ready
+  virtual void onAppUpdate() {}    // Called each main loop iteration
+  virtual void onAppShutdown() {}  // Called before subsystem shutdown
 
   // Operation queues
   ork::opq::opq_ptr_t _mainq;  // Main/GPU thread queue

@@ -200,7 +200,6 @@ void atexit_app(void) {
 ///////////////////////////////////////////////////////////////////////////////
 OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
     : OrkEzAppBase(EzAppContext::get(initdata), initdata)  // Pass initdata to OrkEzAppBase
-    , _initdata(initdata)
     , _mainWindow(0)
     , _updateThread("updatethread") {
 
@@ -608,12 +607,12 @@ void OrkEzApp::onSynthExit(onsynfn_t callback) {
   _onSynthExit = callback;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OrkEzApp::onAppInit(void_lambda_t callback) {
-  _onAppInit = callback;
+void OrkEzApp::onEzAppInit(void_lambda_t callback) {
+  _onEzAppInit = callback;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OrkEzApp::onAppExit(void_lambda_t callback) {
-  _onAppExit = callback;
+void OrkEzApp::onEzAppExit(void_lambda_t callback) {
+  _onEzAppExit = callback;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onGpuInit(EzMainWin::ongpuinit_t cb) {

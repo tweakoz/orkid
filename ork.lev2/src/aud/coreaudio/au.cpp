@@ -21,31 +21,6 @@ AuContext::AuContext() //
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/*
-OSStatus AuContext::SetInputDevice(cadevice_impl_ptr_t dev) {
-  _inputDev = dev;
-  logchan_audunit->log("SetInputDevice<%d>", dev->_info->_ID);
-  auto err = AudioUnitSetProperty(
-      _inputUnit, kAudioOutputUnitProperty_CurrentDevice, kAudioUnitScope_Global, 0, &dev->_info->_ID, sizeof(dev->_info->_ID));
-  AuCheckErr(err);
-
-  return err;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-OSStatus AuContext::SetOutputDevice(cadevice_impl_ptr_t dev) {
-  _outputDev = dev;
-  logchan_audunit->log("SetOutputDevice<%d>", dev->_info->_ID);
-  auto err = AudioUnitSetProperty(
-      _outputUnit, kAudioOutputUnitProperty_CurrentDevice, kAudioUnitScope_Global, 0, &dev->_info->_ID, sizeof(dev->_info->_ID));
-
-  // AuCheckErr(err);
-
-  return err;
-}
-*/
-///////////////////////////////////////////////////////////////////////////////
 
 OSStatus AuContext::Init(cadevice_impl_ptr_t indev, cadevice_impl_ptr_t outdev) {
 

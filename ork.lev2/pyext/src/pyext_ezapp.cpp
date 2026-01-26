@@ -244,7 +244,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               auto appinitfn //
                   = py::cast<py::function>(appinstance.attr("onAppInit"));
               rval->_vars->makeValueForKey<py::function>("appinitfn") = appinitfn;
-              rval->onAppInit([=]() { //
+              rval->onEzAppInit([=]() { //
                 logchan_EZAPP->log("EXE onAppInit");
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars->typedValueForKey<py::function>("appinitfn");
@@ -272,7 +272,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               auto appexitfn //
                   = py::cast<py::function>(appinstance.attr("onAppExit"));
               rval->_vars->makeValueForKey<py::function>("appexitfn") = appexitfn;
-              rval->onAppExit([=]() { //
+              rval->onEzAppExit([=]() { //
                 logchan_EZAPP->log("EXE onAppExit");
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars->typedValueForKey<py::function>("appexitfn");
@@ -831,12 +831,12 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               // The main thread is now owned by C++
               //  therefore the main thread has to let go of the GIL
               // it will be reacquired post-runloop()
-              if( app->_onAppInit ){
-                app->_onAppInit();
+              if( app->_onEzAppInit ){
+                app->_onEzAppInit();
               }
               auto RES = app->mainThreadLoop();
-              if( app->_onAppExit ){
-                app->_onAppExit();
+              if( app->_onEzAppExit ){
+                app->_onEzAppExit();
               }
               return RES;
             };
