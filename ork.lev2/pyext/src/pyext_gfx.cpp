@@ -58,6 +58,15 @@ void pyinit_gfx(py::module& module_lev2) {
           .def_property_readonly("TXI", [](ctx_t& c) -> txi_t { return txi_t(c.get()->TXI()); })
           .def_property_readonly("CI", [](ctx_t& c) -> ci_t { return ci_t(c.get()->CI()); })
           .def("setPostSwapWaitTime", [](ctx_t& c, int wt) { _g_post_swap_wait_time = wt; })
+          .def("scheduleBeforeDoEndFrameOneShot", [](ctx_t& c, py::function callback) {
+            pyfn_ptr_t f_ptr = std::make_shared<py::function>(callback);
+            c.get()->_pyimpl_beforeEndFrame.set<pyfn_ptr_t>(f_ptr);
+            c.get()->scheduleBeforeDoEndFrameOneShot([c]() {
+                py::gil_scoped_acquire gil;
+                auto f_ptr = c.get()->_pyimpl_beforeEndFrame.get<pyfn_ptr_t>();
+                (*f_ptr)();
+            });
+          })
           //////////////////////
           // todo move to mtxi when we add it
           //////////////////////

@@ -464,6 +464,7 @@ public:
   secondary_commandbuffer_ptr_t _recordCommandBuffer;
   
   Timer _ctxtimer;
+  svar64_t _pyimpl_beforeEndFrame;
 protected:
   RenderingConventions _renderingConventions;
 
