@@ -732,9 +732,9 @@ void Application::_initSubsystemsInWaves() {
     // Wait for wave to complete
     for (size_t i = 0; i < futures.size(); i++) {
       auto& fut = futures[i];
-      logchan_APP->log("  waiting for future<%s>...", fut->_name.c_str());
+      //logchan_APP->log("  waiting for future<%s>...", fut->_name.c_str());
       fut->waitForSignal();
-      logchan_APP->log("  future<%s> signaled", fut->_name.c_str());
+      //logchan_APP->log("  future<%s> signaled", fut->_name.c_str());
     }
 
     // Join all threads
@@ -843,9 +843,9 @@ void Application::_shutdownSubsystemsInWaves() {
     // Wait for wave to complete
     for (size_t i = 0; i < futures.size(); i++) {
       auto& fut = futures[i];
-      logchan_APP->log("  waiting for future<%s>...", fut->_name.c_str());
+      //logchan_APP->log("  waiting for future<%s>...", fut->_name.c_str());
       fut->waitForSignal();
-      logchan_APP->log("  future<%s> signaled", fut->_name.c_str());
+      //logchan_APP->log("  future<%s> signaled", fut->_name.c_str());
     }
 
     // Join all threads
@@ -867,25 +867,34 @@ void Application::_buildShutdownWaves(std::vector<std::vector<subsystem_reg_ptr_
   std::lock_guard<std::mutex> lock(_subsystem_mutex);
 
   std::set<uint64_t> shutdown_scheduled;
-  std::map<uint64_t, subsystem_reg_ptr_t> subsystem_map;
+  std::map<uint64_t, subsystem_reg_ptr_t> root_subsystems;
 
+  // Only include ROOT subsystems (those with no parent)
+  // Children are shutdown by their parent's shutdownChildren() call
   for (auto& [hash, reg] : _registered_subsystems) {
-    subsystem_map[hash] = reg;
+    if (!reg->subsystem->hasParent()) {
+      root_subsystems[hash] = reg;
+    } else {
+      logchan_APP->log("  %s is a child (parent: %s), will be shutdown by parent",
+                       reg->subsystem->_name.c_str(),
+                       reg->subsystem->parent()->_name.c_str());
+    }
   }
 
-  // Build waves by reverse topological sort (leaf nodes first)
-  // A subsystem can be scheduled when:
-  // 1. No other (unscheduled) subsystem depends on it
-  // 2. All of its supervised children are already scheduled
-  while (shutdown_scheduled.size() < _registered_subsystems.size()) {
+  logchan_APP->log("Building shutdown waves for %zu root subsystems", root_subsystems.size());
+
+  // Build waves by reverse topological sort (dependents first, dependencies last)
+  // A root subsystem can be scheduled when:
+  // 1. No other (unscheduled) ROOT subsystem depends on it
+  while (shutdown_scheduled.size() < root_subsystems.size()) {
     std::vector<subsystem_reg_ptr_t> wave;
 
-    for (auto& [hash, reg] : subsystem_map) {
+    for (auto& [hash, reg] : root_subsystems) {
       if (shutdown_scheduled.count(hash)) continue;  // Already scheduled
 
-      // Check 1: No other non-scheduled subsystem depends on this one
+      // Check: No other non-scheduled ROOT subsystem depends on this one
       bool has_dependents = false;
-      for (auto& [other_hash, other_reg] : subsystem_map) {
+      for (auto& [other_hash, other_reg] : root_subsystems) {
         if (shutdown_scheduled.count(other_hash)) continue;
         if (other_hash == hash) continue;
 
@@ -897,30 +906,17 @@ void Application::_buildShutdownWaves(std::vector<std::vector<subsystem_reg_ptr_
       }
 
       if (has_dependents) {
-        continue;  // Can't schedule yet - something still depends on us
+        continue;  // Can't schedule yet - another root still depends on us
       }
 
-      // Check 2: All children must be already scheduled (for meta-services)
-      bool children_pending = false;
-      for (auto& [child_hash, child_ptr] : reg->subsystem->_children) {
-        if (!shutdown_scheduled.count(child_hash)) {
-          children_pending = true;
-          break;
-        }
-      }
-
-      if (children_pending) {
-        continue;  // Can't schedule yet - children haven't terminated
-      }
-
-      // Both checks passed - this subsystem can be scheduled
+      // Check passed - this root subsystem can be scheduled
       wave.push_back(reg);
     }
 
-    if (wave.empty() && shutdown_scheduled.size() < _registered_subsystems.size()) {
-      logchan_APP->log("ERROR: Circular dependency detected in subsystem graph during shutdown");
-      // Force shutdown remaining subsystems
-      for (auto& [hash, reg] : subsystem_map) {
+    if (wave.empty() && shutdown_scheduled.size() < root_subsystems.size()) {
+      logchan_APP->log("ERROR: Circular dependency detected in root subsystems during shutdown");
+      // Force shutdown remaining root subsystems
+      for (auto& [hash, reg] : root_subsystems) {
         if (!shutdown_scheduled.count(hash)) {
           wave.push_back(reg);
         }
