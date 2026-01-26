@@ -207,7 +207,8 @@ class WaterSimApp(ComponentizedApplication):
     #self.LUI = self.addComponent("loggerui", LoggerUIComponent, filter_regex=[".*"]) 
     self.WSC = self.addComponent("water_sim", 
                                  WaterSimComponent)
-    self.createEzApp(name="WaterSimApp", ssaa=0, fullscreen=True, fsmouse=True)
+    self.createEzApp(name="WaterSimApp", ssaa=0, fullscreen=True, fsmouse=True,
+                      use_subsystems=['opq', 'core', 'gpu', 'lev2'])
 
 
 ###############################################################################
@@ -216,3 +217,4 @@ class WaterSimApp(ComponentizedApplication):
 
 WSA = WaterSimApp()
 WSA.ezapp.mainThreadLoop()
+WSA.ezapp.shutdown()

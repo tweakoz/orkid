@@ -108,7 +108,8 @@ class USERPOSTNODEAPP(ComponentizedApplication):
                                  grid_variant=None,
                                  eye = vec3(5,1,5),
                                  post_nodes = [radial,feedback])  # Order matters!
-    self.createEzApp(name="UserPostFxNode",fullscreen=False)
+    self.createEzApp(name="UserPostFxNode", fullscreen=False,
+                      use_subsystems=['opq', 'core', 'gpu', 'lev2'])
 
   ############################################################################
   # GPU Initialization
@@ -167,4 +168,6 @@ class USERPOSTNODEAPP(ComponentizedApplication):
     
 ###############################################################################
 
-USERPOSTNODEAPP().ezapp.mainThreadLoop()
+app = USERPOSTNODEAPP()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()

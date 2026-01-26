@@ -26,7 +26,8 @@ class SceneGraphApp(ComponentizedApplication):
                                  eye=vec3(0,20,20),
                                  grid_variant=None)
     #self.LUI = self.addComponent("loggerui", LoggerUIComponent, filter_regex=[".*"]) 
-    self.createEzApp(name="RenderTestLightMap1", ssaa=1)
+    self.createEzApp(name="RenderTestLightMap1", ssaa=1,
+                      use_subsystems=['opq', 'core', 'gpu', 'lev2'])
 
   ##############################################
 
@@ -87,4 +88,6 @@ class SceneGraphApp(ComponentizedApplication):
 
 ###############################################################################
 
-SceneGraphApp().ezapp.mainThreadLoop()
+app = SceneGraphApp()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()

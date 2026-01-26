@@ -599,7 +599,8 @@ class UVTestApp(ComponentizedApplication):
     self.createEzApp(name="MicroMesh UV Test",
                      width=1280,
                      height=720,
-                     fullscreen=fullscreen)
+                     fullscreen=fullscreen,
+                     use_subsystems=['opq', 'core', 'gpu', 'lev2'])
 
 ################################################################################
 
@@ -670,3 +671,4 @@ if __name__ == "__main__":
   app = UVTestApp(mesh_type=args.mesh, shader_mode=args.shader, movie_file=movie_file,
                   fullscreen=args.fullscreen, antialias=args.aa, shm_name=args.shm)
   app.ezapp.mainThreadLoop()
+  app.ezapp.shutdown()

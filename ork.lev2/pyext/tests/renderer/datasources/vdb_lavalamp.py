@@ -20,9 +20,10 @@ class LavaLampApp(ComponentizedApplication):
     self.LUI = self.addComponent("loggerui", LoggerUIComponent, filter_regex=[".*"]) 
     self.LLA = self.addComponent("lavalamp", LavalampComponent)
     ############################################
-    self.createEzApp()
+    self.createEzApp(use_subsystems=['opq', 'core', 'gpu', 'lev2'])
   
   ###############################################################################
 
 llapp = LavaLampApp()
 llapp.ezapp.mainThreadLoop(on_iter=lambda: None)
+llapp.ezapp.shutdown()

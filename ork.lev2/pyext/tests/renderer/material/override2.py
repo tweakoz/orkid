@@ -77,7 +77,8 @@ class SceneGraphApp(ComponentizedApplication):
                                  enable_ui_camera=False,
                                  eye=vec3(0,20,20),
                                  sg_params=sg_params )
-    self.createEzApp(ssaa=1,name="MaterialOverride2")
+    self.createEzApp(ssaa=1, name="MaterialOverride2",
+                      use_subsystems=['opq', 'core', 'gpu', 'lev2'])
 
   ##############################################
 
@@ -198,4 +199,6 @@ class SceneGraphApp(ComponentizedApplication):
 
 ###############################################################################
 
-SceneGraphApp().ezapp.mainThreadLoop()
+app = SceneGraphApp()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()

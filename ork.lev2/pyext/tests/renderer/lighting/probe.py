@@ -38,7 +38,8 @@ class LIGHTING_APP(ComponentizedApplication):
     super().__init__(lui="yes")
 
     self.materials = set()
-    self.createEzApp(ssaa=2, msaa=0, fullscreen=False)
+    self.createEzApp(ssaa=2, msaa=0, fullscreen=False,
+                      use_subsystems=['opq', 'core', 'gpu', 'lev2'])
 
 
   ##############################################
@@ -250,5 +251,7 @@ class LIGHTING_APP(ComponentizedApplication):
 
 ###############################################################################
 
-LIGHTING_APP().ezapp.mainThreadLoop()
+app = LIGHTING_APP()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()
 

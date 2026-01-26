@@ -35,7 +35,8 @@ class SpotlightApp(ComponentizedApplication):
                                  StandardSceneGraphComponent, 
                                  grid_variant="_V4",
                                  eye=vec3(0,12,15))
-    self.createEzApp(name="RenderTestSpotLightRigidModel", ssaa=0, fullscreen=True, fsmouse=True)
+    self.createEzApp(name="RenderTestSpotLightRigidModel", ssaa=0, fullscreen=True, fsmouse=True,
+                      use_subsystems=['opq', 'core', 'gpu', 'lev2'])
 
   ##############################################
 
@@ -127,4 +128,6 @@ class SpotlightApp(ComponentizedApplication):
 
 ###############################################################################
 
-SpotlightApp().ezapp.mainThreadLoop()
+app = SpotlightApp()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()
