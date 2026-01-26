@@ -82,9 +82,9 @@ class SceneEditorBase:
     self.layer = None
     self.scene_model = None
 
-  def _createApp(self, name="SceneEditor", fullscreen=True, ssaa=1):
+  def _createApp(self, name="SceneEditor", fullscreen=True, ssaa=1, use_subsystems=None):
     """Create the EzApp and set up UI layout. Call from subclass __init__."""
-    self.ezapp = lev2.OrkEzApp.create(self, fullscreen=fullscreen, ssaa=ssaa, name=name)
+    self.ezapp = lev2.OrkEzApp.create(self, fullscreen=fullscreen, ssaa=ssaa, name=name, use_subsystems=use_subsystems)
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()
 

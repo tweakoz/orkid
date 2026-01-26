@@ -37,7 +37,8 @@ class SceneEditor(SceneEditorBase):
     self.model_names = []  # ordered list for cycling
     self.model_paths = {}  # short_name -> full_path
 
-    self._createApp(name="SceneEditor", fullscreen=True, ssaa=1)
+    self._createApp(name="SceneEditor", fullscreen=True, ssaa=1,
+                     use_subsystems=['opq', 'core', 'gpu', 'lev2'])
     signal.signal(signal.SIGINT, lambda s, f: self.ezapp.signalExit())
 
   ##############################################
@@ -359,4 +360,6 @@ class SceneEditor(SceneEditorBase):
 
 ################################################################################
 
-SceneEditor().ezapp.mainThreadLoop()
+app = SceneEditor()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()

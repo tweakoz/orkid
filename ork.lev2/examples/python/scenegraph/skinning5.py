@@ -226,7 +226,8 @@ class SceneGraphApp(ComponentizedApplication):
                                  bonescale=6.0)
 
     self.createEzApp(name="Skinning5-IK",
-                     fullscreen=True)
+                     fullscreen=True,
+                     use_subsystems=['opq', 'core', 'gpu', 'lev2'])
 
     self.ezapp.uicontext.debug_event_routing = True
 
@@ -245,3 +246,4 @@ class SceneGraphApp(ComponentizedApplication):
 
 SGA = SceneGraphApp()
 SGA.ezapp.mainThreadLoop()
+SGA.ezapp.shutdown()

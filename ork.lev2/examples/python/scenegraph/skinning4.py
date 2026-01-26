@@ -330,9 +330,10 @@ class SceneGraphApp(ComponentizedApplication):
                                  sg_params=params_dict,
                                  grid_variant="_V4" if showgrid else None)
 
-    self.createEzApp(name="Skinning4-IK", 
-                     ssaa=ssaa, 
-                     fullscreen=True)
+    self.createEzApp(name="Skinning4-IK",
+                     ssaa=ssaa,
+                     fullscreen=True,
+                     use_subsystems=['opq', 'core', 'gpu', 'lev2'])
 
   ##############################################
 
@@ -744,4 +745,6 @@ class SceneGraphApp(ComponentizedApplication):
 
 ###############################################################################
 
-SceneGraphApp().ezapp.mainThreadLoop()
+app = SceneGraphApp()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()

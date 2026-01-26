@@ -89,7 +89,8 @@ class SceneGraphApp(ComponentizedApplication):
                                  enable_ui_camera=True,
                                  eye=vec3(0,20,20),
                                  sg_params=params_dict )
-    self.createEzApp(name="ShaderBalls", ssaa=1)
+    self.createEzApp(name="ShaderBalls", ssaa=1,
+                      use_subsystems=['opq', 'core', 'gpu', 'lev2'])
 
   ##############################################
 
@@ -234,4 +235,6 @@ class SceneGraphApp(ComponentizedApplication):
 
 ###############################################################################
 
-SceneGraphApp().ezapp.mainThreadLoop()
+app = SceneGraphApp()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()
