@@ -86,8 +86,7 @@ class ComplexMovieApp(ComponentizedApplication):
     W = 1600 if self.freerun else (3840 if args.hires else 1920)
     H = 900  if self.freerun else (2160 if args.hires else 1080)
 
-    self.ezapp = lev2.OrkEzApp.create(
-        self,
+    self.createEzApp(
         enable_lockstep_ups = True,
         enable_lockstep_fps = True,
         enable_freerun_ups = True,
@@ -99,7 +98,8 @@ class ComplexMovieApp(ComponentizedApplication):
         target_ups = self.UPS,
         target_fps = self.FPS,
         width=W,
-        height=H
+        height=H,
+        use_subsystems=['opq', 'core', 'gpu', 'lev2']
     )
     
   #########################################################
@@ -207,6 +207,7 @@ class ComplexMovieApp(ComponentizedApplication):
 
 app = ComplexMovieApp()
 app.ezapp.mainThreadLoop(on_iter=lambda : False)
+app.ezapp.shutdown()
 
 if host.IsOsx and not app.freerun:
   time.sleep(1)

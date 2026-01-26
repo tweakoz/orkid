@@ -68,7 +68,8 @@ class HardwareDecodeTest(application.ComponentizedApplication):
       fullscreen=fullscreen,
       enable_audio=enable_audio,
       enable_audio_output=enable_audio,
-      enable_audio_synth=enable_audio
+      enable_audio_synth=enable_audio,
+      use_subsystems=['opq', 'core', 'gpu', 'lev2']
     )
     movie_path = str(obt_path.stage() / "assetcache" / "movies" / self.movie_file)
 
@@ -224,3 +225,4 @@ if __name__ == "__main__":
 
   app = HardwareDecodeTest(movie_file, use_videotoolbox, enable_audio=args.audio, fullscreen=args.fullscreen, antialias=args.aa)
   app.ezapp.mainThreadLoop()
+  app.ezapp.shutdown()
