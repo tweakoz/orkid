@@ -454,12 +454,11 @@ void OrkEzApp::_initForSubsystems() {
   }
 
   // Audio (optional)
+  // Audio is a child of lev2, depends on gpu (sibling dependency)
   if (_initdata->_enable_audio) {
     _audio_subsystem = createAudioSubsystem();
     if (want("gpu")) {
       _audio_subsystem->_pending_dependencies.push_back("gpu");
-    } else {
-      _audio_subsystem->_pending_dependencies.push_back("core");
     }
 
     // Wire up Audio callbacks

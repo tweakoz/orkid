@@ -7,10 +7,14 @@
 
 #include <ork/application/subsystem.h>
 #include <ork/kernel/string/deco.inl>
+#include <ork/util/logger.h>
+#include <thread>
 
 namespace ork {
 
 using namespace ork::fsm;
+
+static logchannel_ptr_t logchan_SUB = logger()->configureChannel("SUBSYS", fvec3(0.5, 0.8, 0.5), true);
 
 ////////////////////////////////////////////////////////////////
 
@@ -163,8 +167,11 @@ void Subsystem::initChildren() {
     children_list.push_back(child);
   }
 
-  // Sort children by inter-dependencies (topological sort)
-  // A child can only depend on siblings (other children of same parent)
+  // Wave-based parallel initialization
+  // Each wave contains children that can init in parallel (no inter-dependencies)
+  // Within a wave:
+  //   - Children with _requires_thread="main" init on main thread
+  //   - Children with _requires_thread="" can init in parallel threads
   std::set<uint64_t> initialized;
 
   auto can_init = [&](subsystem_ptr_t child) -> bool {
@@ -180,23 +187,65 @@ void Subsystem::initChildren() {
     return true;
   };
 
+  int wave_num = 0;
   while (initialized.size() < children_list.size()) {
-    bool progress = false;
+    // Build this wave - all children that can init now
+    std::vector<subsystem_ptr_t> wave_main;    // requires main thread
+    std::vector<subsystem_ptr_t> wave_parallel; // can run in parallel
+
     for (auto& child : children_list) {
       if (initialized.count(child->_name_hash)) continue;
       if (!can_init(child)) continue;
 
-      // Initialize this child
-      child->initialize();
-      child->update();
-      initialized.insert(child->_name_hash);
-      progress = true;
+      if (child->_requires_thread == "main") {
+        wave_main.push_back(child);
+      } else {
+        wave_parallel.push_back(child);
+      }
     }
-    if (!progress) {
-      // Circular dependency among children - this is a bug
+
+    if (wave_main.empty() && wave_parallel.empty()) {
+      // No progress - circular dependency
       OrkAssert(false && "Circular dependency among child subsystems");
       break;
     }
+
+    logchan_SUB->log("  init wave %d: %zu main-thread, %zu parallel",
+                     wave_num, wave_main.size(), wave_parallel.size());
+
+    // Start parallel threads for non-main-thread children
+    std::vector<std::thread> threads;
+    for (auto& child : wave_parallel) {
+      threads.emplace_back([child]() {
+        logchan_SUB->log("    [parallel] initializing: %s", child->_name.c_str());
+        child->initialize();
+        child->update();
+        logchan_SUB->log("    [parallel] initialized: %s", child->_name.c_str());
+      });
+    }
+
+    // Init main-thread children on current thread
+    for (auto& child : wave_main) {
+      logchan_SUB->log("    [main] initializing: %s", child->_name.c_str());
+      child->initialize();
+      child->update();
+      logchan_SUB->log("    [main] initialized: %s", child->_name.c_str());
+    }
+
+    // Wait for parallel threads to complete
+    for (auto& t : threads) {
+      t.join();
+    }
+
+    // Mark all wave children as initialized
+    for (auto& child : wave_main) {
+      initialized.insert(child->_name_hash);
+    }
+    for (auto& child : wave_parallel) {
+      initialized.insert(child->_name_hash);
+    }
+
+    wave_num++;
   }
 }
 
@@ -213,8 +262,11 @@ void Subsystem::shutdownChildren() {
     children_list.push_back(child);
   }
 
-  // Shutdown in reverse dependency order
-  // Children that depend on others shutdown first
+  // Wave-based parallel shutdown
+  // Shutdown in reverse dependency order - children that depend on others shutdown first
+  // Within a wave:
+  //   - Children with _requires_thread="main" shutdown on main thread
+  //   - Children with _requires_thread="" can shutdown in parallel threads
   std::set<uint64_t> shutdown_set;
 
   auto can_shutdown = [&](subsystem_ptr_t child) -> bool {
@@ -231,23 +283,65 @@ void Subsystem::shutdownChildren() {
     return true;
   };
 
+  int wave_num = 0;
   while (shutdown_set.size() < children_list.size()) {
-    bool progress = false;
+    // Build this wave - all children that can shutdown now
+    std::vector<subsystem_ptr_t> wave_main;    // requires main thread
+    std::vector<subsystem_ptr_t> wave_parallel; // can run in parallel
+
     for (auto& child : children_list) {
       if (shutdown_set.count(child->_name_hash)) continue;
       if (!can_shutdown(child)) continue;
 
-      // Shutdown this child
-      child->shutdown();
-      child->update();
-      shutdown_set.insert(child->_name_hash);
-      progress = true;
+      if (child->_requires_thread == "main") {
+        wave_main.push_back(child);
+      } else {
+        wave_parallel.push_back(child);
+      }
     }
-    if (!progress) {
-      // Circular dependency - shouldn't happen if init worked
+
+    if (wave_main.empty() && wave_parallel.empty()) {
+      // No progress - circular dependency
       OrkAssert(false && "Circular dependency during child shutdown");
       break;
     }
+
+    logchan_SUB->log("  shutdown wave %d: %zu main-thread, %zu parallel",
+                     wave_num, wave_main.size(), wave_parallel.size());
+
+    // Start parallel threads for non-main-thread children
+    std::vector<std::thread> threads;
+    for (auto& child : wave_parallel) {
+      threads.emplace_back([child]() {
+        logchan_SUB->log("    [parallel] shutting down: %s", child->_name.c_str());
+        child->shutdown();
+        child->update();
+        logchan_SUB->log("    [parallel] shutdown: %s", child->_name.c_str());
+      });
+    }
+
+    // Shutdown main-thread children on current thread
+    for (auto& child : wave_main) {
+      logchan_SUB->log("    [main] shutting down: %s", child->_name.c_str());
+      child->shutdown();
+      child->update();
+      logchan_SUB->log("    [main] shutdown: %s", child->_name.c_str());
+    }
+
+    // Wait for parallel threads to complete
+    for (auto& t : threads) {
+      t.join();
+    }
+
+    // Mark all wave children as shutdown
+    for (auto& child : wave_main) {
+      shutdown_set.insert(child->_name_hash);
+    }
+    for (auto& child : wave_parallel) {
+      shutdown_set.insert(child->_name_hash);
+    }
+
+    wave_num++;
   }
 }
 
