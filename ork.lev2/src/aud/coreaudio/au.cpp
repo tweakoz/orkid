@@ -101,28 +101,45 @@ OSStatus AuContext::Start() {
 OSStatus AuContext::Stop() {
 
   logchan_audunit->log("AuContext::Stop");
+
+  // FIRST: Signal threads to stop - this must happen before any CoreAudio calls
+  // so that audio threads can exit their loops and release resources
+  _keep_going = false;
+
+  // Signal buffer pools to release waiting threads
+  _outputPool.signalShutdown();
+  _inputPool.signalShutdown();
+
+  // Give audio thread time to notice shutdown and exit
+  usleep(50000);  // 50ms
+
   if (false == IsRunning())
     return noErr;
 
   OSStatus err = noErr;
   if (_inputDev) {
     err = AudioOutputUnitStop(_inputUnit);
-    AuCheckErr(err);
+    if (err != noErr) {
+      logchan_audunit->log("AudioOutputUnitStop(input) error: %d", (int)err);
+    }
   }
   if (_outputDev) {
     err = AudioOutputUnitStop(_outputUnit);
-    AuCheckErr(err);
-      abort();
-      OrkAssertI(false, "TODO: force quit till we can get graceful shutdown working");
+    if (err != noErr) {
+      logchan_audunit->log("AudioOutputUnitStop(output) error: %d", (int)err);
+    }
   }
 
-  err = AUGraphStop(_graph);
-  AuCheckErr(err);
+  if (_graph) {
+    err = AUGraphStop(_graph);
+    if (err != noErr) {
+      logchan_audunit->log("AUGraphStop error: %d", (int)err);
+    }
+  }
 
   _firstInputTime  = -1;
   _firstOutputTime = -1;
 
-  _keep_going = false;
   return err;
 }
 
@@ -410,6 +427,9 @@ OSStatus AuContext::setupGraph(cadevice_impl_ptr_t indev, cadevice_impl_ptr_t ou
 
 StereoFragment* AuContext::AllocOutBuffer(int numfr) {
   auto buf = _outputPool.AllocObject();
+  if (buf == nullptr) {
+    return nullptr;  // Shutdown in progress
+  }
   buf->Init(numfr);
   return buf;
 }
@@ -424,6 +444,9 @@ void AuContext::ReturnOutBuffer(StereoFragment* data) {
 
 LayerFragment* AuContext::AllocLayerFragment(int inumch, int numfr) {
   auto buf = _inputPool.AllocObject();
+  if (buf == nullptr) {
+    return nullptr;  // Shutdown in progress
+  }
   buf->Init(inumch, numfr);
   return buf;
 }

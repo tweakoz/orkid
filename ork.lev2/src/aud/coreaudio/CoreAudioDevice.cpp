@@ -260,6 +260,11 @@ void CoreAudioDevice::startup() {
         StereoFragment* mix_group = nullptr;
         if(_output_impl){
           mix_group = _aucontext->AllocOutBuffer(inumfr);
+          // Check for shutdown - AllocOutBuffer returns nullptr during shutdown
+          if (mix_group == nullptr) {
+            logchan_coreaudio->log("CoreAudioThread: got nullptr from AllocOutBuffer, exiting...");
+            break;
+          }
           //printf("got outbuf<%p>\n", (void*) mix_group);
           mix_group->Clear();
 
@@ -390,7 +395,7 @@ void CoreAudioDevice::startup() {
 
         /////////////////////////
       }
-      OrkAssert(false);
+      logchan_coreaudio->log("CoreAudioThread exiting gracefully.");
     });
   }
 }
@@ -398,13 +403,29 @@ void CoreAudioDevice::startup() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void CoreAudioDevice::shutdown() {
+  logchan_coreaudio->log("CoreAudioDevice::shutdown() starting...");
+
   if (_the_synth) {
+    logchan_coreaudio->log("Tearing down synth...");
     synth::tearDown();
   }
+
   if (_aucontext) {
-    _aucontext->Stop();
+    logchan_coreaudio->log("Stopping audio context...");
+    _aucontext->Stop();  // This signals shutdown and stops CoreAudio
+
+    // Wait for audio thread to exit
+    if (_au_thread) {
+      logchan_coreaudio->log("Joining audio thread...");
+      _au_thread->join();
+      logchan_coreaudio->log("Audio thread joined.");
+      _au_thread = nullptr;
+    }
+
     _aucontext.reset();
   }
+
+  logchan_coreaudio->log("CoreAudioDevice::shutdown() complete.");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -195,7 +195,8 @@ struct OrkEzApp : public OrkEzAppBase {
 
   void _audioInit();
   void _audioExit();
-  
+  void _fireDeferredAudioCallbacks();  // Fire audio callbacks after registration in subsystem mode
+
   void _mainThreadLoopBegin();
   void _mainThreadLoopEnd();
   void _mainThreadLoopIter();

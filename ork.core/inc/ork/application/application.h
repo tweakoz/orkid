@@ -21,6 +21,8 @@
 #include <ork/kernel/opq.h>
 #include <ork/util/fsm.h>
 
+#include <set>
+
 #if !defined(ORK_IOS)
 #include <boost/program_options.hpp>
 #endif
@@ -143,6 +145,7 @@ struct AppInitData{
   bool _log_lockstep_fps = false;  // Enable real-time FPS logging in lockstep mode
   bool _use_subsystems = false;    // Enable HFSM subsystem lifecycle (Phase 2b)
   bool _defer_gpu_init = false;    // Defer GPU context creation until GPU subsystem init
+  std::set<std::string> _enabled_subsystems;  // List-based subsystem selection (e.g., "gpu", "audioO")
   std::string _monitor_id = "";
   std::string _application_name = "orkid_app";
   std::multimap<uint64_t,void_lambda_t> _preinitoperations;

@@ -31,30 +31,50 @@ ObjectPool<T>::ObjectPool(int max)
 template <typename T>
 ObjectPool<T>::~ObjectPool()
 {
-	mGoingDown = true;
+	mGoingDown.store(true);
 
+	// Delete all objects we can get from the pool
+	// Don't wait forever - some objects may be in transit queues
 	int numdeleted = 0;
-	while( numdeleted < mNumObjectsAllocated )
+	int max_attempts = 100;  // Don't spin forever
+	int attempts = 0;
+
+	while( numdeleted < mNumObjectsAllocated && attempts < max_attempts )
 	{
 		T* data = nullptr;
-		while( data == nullptr )
+		if( mObjectPool.try_pop(data) )
 		{
-			if( mObjectPool.try_pop(data) )
-			{
-				delete data;
-				numdeleted++;
-			}
-		}		
+			delete data;
+			numdeleted++;
+			attempts = 0;  // Reset attempts on success
+		}
+		else
+		{
+			attempts++;
+			usleep(1000);
+		}
 	}
+
+	// Note: Some objects may be leaked if they're stuck in queues
+	// This is acceptable during shutdown
+}
+///////////////////////////////////////////////////////////////////////////////
+template <typename T>
+void ObjectPool<T>::signalShutdown()
+{
+	mGoingDown.store(true);
 }
 ///////////////////////////////////////////////////////////////////////////////
 template <typename T>
 T* ObjectPool<T>::AllocObject()
-{	
-	assert(mGoingDown==false);
+{
+	// Check shutdown flag - return nullptr if shutting down
+	if (mGoingDown.load()) {
+		return nullptr;
+	}
 
 	T* data = nullptr;
-	while( data == nullptr )
+	while( data == nullptr && !mGoingDown.load() )
 	{
 		if( mObjectPool.try_pop(data) )
 		{
@@ -69,6 +89,16 @@ T* ObjectPool<T>::AllocObject()
 		else
 			usleep(10);
 	}
+
+	// If we exited due to shutdown, return nullptr
+	if (mGoingDown.load()) {
+		if (data) {
+			// Return the object we got back to pool
+			mObjectPool.push(data);
+		}
+		return nullptr;
+	}
+
 	int inumout = mNumObjectsOut.fetch_add(1);
 	if(inumout>0 && inumout%100==0)
 	{

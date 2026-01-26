@@ -197,14 +197,15 @@ struct ObjectPool
 	~ObjectPool();
 
 	MpMcBoundedQueue<T*,4096> mObjectPool;
-	T* AllocObject();
+	T* AllocObject();        // Returns nullptr during shutdown
 	void ReturnObject(T*);
+	void signalShutdown();   // Signal pool to release waiting threads
 
 	ork::atomic<int> mNumObjectsAllocated;
 	const int mMaxObjects;
 	ork::atomic<int> mNumObjectsProcessed;
 	ork::atomic<int> mNumObjectsOut;
-	bool mGoingDown = false;
+	std::atomic<bool> mGoingDown{false};  // Use atomic for thread safety
 
 	typedef std::function<void(int)> usage_cb_t;
 	usage_cb_t mUsageCb = nullptr;

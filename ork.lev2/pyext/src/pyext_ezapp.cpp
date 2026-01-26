@@ -185,10 +185,21 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                     OrkAssert(false);
                   }
                 } else if (key == "use_subsystems") {
-                  appinit->_use_subsystems = py::cast<bool>(item.second);
-                  // Defer GPU init when using subsystems - GPU subsystem will create loader context
-                  if (appinit->_use_subsystems) {
+                  // Support both list-based API and legacy boolean API
+                  if (py::isinstance<py::list>(item.second)) {
+                    // New list-based API: use_subsystems=['gpu', 'audioO', 'lev2']
+                    auto subsystem_list = py::cast<py::list>(item.second);
+                    appinit->_use_subsystems = true;
                     appinit->_defer_gpu_init = true;
+                    for (auto name : subsystem_list) {
+                      appinit->_enabled_subsystems.insert(py::cast<std::string>(name));
+                    }
+                  } else {
+                    // Legacy boolean API: use_subsystems=True
+                    appinit->_use_subsystems = py::cast<bool>(item.second);
+                    if (appinit->_use_subsystems) {
+                      appinit->_defer_gpu_init = true;
+                    }
                   }
                 }
               } // for (auto item : kwargs) {
@@ -805,6 +816,15 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
           [](orkezapp_ptr_t app) { //
               app->signalExit();
               app->_onRunLoopIteration = nullptr;
+          })
+      .def(
+          "shutdown",
+          [](orkezapp_ptr_t app) { //
+              // Trigger HFSM-driven subsystem shutdown in reverse dependency order
+              // This ensures audio/GPU cleanup happens on the correct threads
+              // IMPORTANT: Release GIL because shutdown threads may call Python callbacks
+              py::gil_scoped_release release_gil;
+              app->shutdown();
           })
       .def(
           "mainThreadLoop",

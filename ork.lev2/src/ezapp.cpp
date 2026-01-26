@@ -2,6 +2,7 @@
 #include <ork/lev2/init.h>
 #include <ork/lev2/subsystem_gpu.h>
 #include <ork/lev2/subsystem_audio.h>
+#include <ork/lev2/subsystem_lev2.h>
 #include <ork/application/subsystem_opq.h>
 #include <ork/application/subsystem_catalog.h>
 #include <ork/application/subsystem_core.h>
@@ -362,6 +363,59 @@ void OrkEzApp::_initForSubsystems() {
   logchan_ezapp->log("initForSubsystems - HFSM-driven initialization");
 
   /////////////////////////////////////////////
+  // Helper to check if a subsystem is enabled
+  // If _enabled_subsystems is empty (legacy boolean mode), use existing flags
+  // Otherwise, check if the subsystem name is in the set
+  /////////////////////////////////////////////
+
+  auto& enabled = _initdata->_enabled_subsystems;
+  bool list_mode = !enabled.empty();
+
+  auto want = [&](const std::string& name) -> bool {
+    if (list_mode) {
+      return enabled.count(name) > 0;
+    }
+    // Legacy mode - use existing boolean flags
+    if (name == "gpu") return _initdata->_enable_graphics;
+    if (name == "audio" || name == "audioI" || name == "audioO" || name == "audioIO") {
+      return _initdata->_enable_audio;
+    }
+    if (name == "catalog") return _initdata->_std_asset_catalog;
+    // Core subsystems always enabled in legacy mode
+    return (name == "opq" || name == "core");
+  };
+
+  /////////////////////////////////////////////
+  // Handle audio aliases - set flags based on selection
+  /////////////////////////////////////////////
+
+  if (list_mode) {
+    bool want_audioI  = enabled.count("audioI") > 0;
+    bool want_audioO  = enabled.count("audioO") > 0;
+    bool want_audioIO = enabled.count("audioIO") > 0;
+
+    if (want_audioI || want_audioO || want_audioIO) {
+      _initdata->_enable_audio = true;
+      _initdata->_enable_audio_input  = want_audioI || want_audioIO;
+      _initdata->_enable_audio_output = want_audioO || want_audioIO;
+      _initdata->_enable_audio_synth  = want_audioO || want_audioIO;  // synth implicit with output
+    }
+
+    // Handle gpu flag
+    if (enabled.count("gpu") > 0) {
+      _initdata->_enable_graphics = true;
+    }
+
+    // Handle catalog flag
+    if (enabled.count("catalog") > 0) {
+      _initdata->_std_asset_catalog = true;
+    } else if (list_mode) {
+      // In list mode, only enable catalog if explicitly requested
+      _initdata->_std_asset_catalog = false;
+    }
+  }
+
+  /////////////////////////////////////////////
   // First register core subsystems (OPQ, CATALOG, CORE)
   // These are normally registered by Application() but we used the derived constructor
   /////////////////////////////////////////////
@@ -372,7 +426,7 @@ void OrkEzApp::_initForSubsystems() {
   opq_subsystem->update();
 
   subsystem_ptr_t catalog_subsystem = nullptr;
-  if (_initdata->_std_asset_catalog) {
+  if (want("catalog")) {
     catalog_subsystem = createCatalogSubsystem();
     catalog_subsystem->addDependency(opq_subsystem);
     registerSubsystem(catalog_subsystem, true);
@@ -397,7 +451,7 @@ void OrkEzApp::_initForSubsystems() {
   // Register GPU subsystem with callback to do actual GPU init
   /////////////////////////////////////////////
 
-  if (_initdata->_enable_graphics) {
+  if (want("gpu")) {
     _gpu_subsystem = createGpuSubsystem();
     _gpu_subsystem->addDependency(core_subsystem);
 
@@ -422,6 +476,7 @@ void OrkEzApp::_initForSubsystems() {
 
   /////////////////////////////////////////////
   // Register Audio subsystem with callback to do actual audio init
+  // Handles audioI, audioO, audioIO aliases - all create "audio" subsystem
   /////////////////////////////////////////////
 
   if (_initdata->_enable_audio) {
@@ -446,6 +501,27 @@ void OrkEzApp::_initForSubsystems() {
     registerSubsystem(_audio_subsystem, true);
     _audio_subsystem->initialize();
     _audio_subsystem->update();
+  }
+
+  /////////////////////////////////////////////
+  // Register lev2 meta-service subsystem
+  /////////////////////////////////////////////
+
+  if (list_mode && enabled.count("lev2") > 0) {
+    auto lev2_subsystem = createLev2Subsystem();
+    // lev2 depends on gpu and audio if they exist
+    if (_gpu_subsystem) {
+      lev2_subsystem->addDependency(_gpu_subsystem);
+    }
+    if (_audio_subsystem) {
+      lev2_subsystem->addDependency(_audio_subsystem);
+    }
+    if (!_gpu_subsystem && !_audio_subsystem) {
+      lev2_subsystem->addDependency(core_subsystem);
+    }
+    registerSubsystem(lev2_subsystem, true);
+    lev2_subsystem->initialize();
+    lev2_subsystem->update();
   }
 
   logchan_ezapp->log("HFSM subsystems registered and initialized");
@@ -692,15 +768,32 @@ void OrkEzApp::_audioInit() {
     _initdata->_miscvars["synth"].set<audio::singularity::synth_ptr_t>(_synth);
     if (_synth) {
       _synth->mainThreadHandler();
-      if (_onSynthInit) {
-        _onSynthInit(_synth);
-      }
     }
   }
-  if (_onAudioInit) {
-    _onAudioInit(_audiodevice);
+  // When using subsystems, callbacks are registered AFTER _audioInit() runs,
+  // so we defer callback invocation to _fireDeferredAudioCallbacks()
+  if (!_initdata->_use_subsystems) {
+    if (_synth && _onSynthInit) {
+      _onSynthInit(_synth);
+    }
+    if (_onAudioInit) {
+      _onAudioInit(_audiodevice);
+    }
   }
   _audiodevice->startup();
+}
+///////////////////////////////////////////////////////////////////////////////
+void OrkEzApp::_fireDeferredAudioCallbacks() {
+  // Called after callbacks are registered when using subsystems
+  if (_initdata->_use_subsystems) {
+    logchan_ezapp->log("Firing deferred audio callbacks");
+    if (_synth && _onSynthInit) {
+      _onSynthInit(_synth);
+    }
+    if (_audiodevice && _onAudioInit) {
+      _onAudioInit(_audiodevice);
+    }
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::_audioExit() {
@@ -915,7 +1008,12 @@ void OrkEzApp::_mainThreadLoopBegin() {
       _mainWindow->_onUpdateExit();
     }
 
-    _audioExit();
+    // Only call _audioExit() directly in legacy mode
+    // In subsystem mode, audio shutdown is handled by the audio subsystem's HFSM
+    // which ensures proper thread coordination (shutdown on main thread)
+    if (!_initdata->_use_subsystems) {
+      _audioExit();
+    }
     // printf( "update_thread exited.....\n");
   };
   EASY_PROFILER_ENABLE;
@@ -960,7 +1058,8 @@ void OrkEzApp::_mainThreadLoopBegin() {
       ctxbase->disableMouseCursor();
     }
 
-    if (_initdata->_enable_audio) {
+    // Only init audio here in legacy mode - subsystem mode already initialized it
+    if (_initdata->_enable_audio && !_initdata->_use_subsystems) {
       _audioInit();
     }
 
@@ -1053,6 +1152,9 @@ void OrkEzApp::_mainThreadLoopEnd() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 int OrkEzApp::mainThreadLoop() {
+  // Fire deferred audio callbacks now that all callbacks are registered
+  _fireDeferredAudioCallbacks();
+
   _mainThreadLoopBegin();
 
   // Wall-clock FPS tracking
