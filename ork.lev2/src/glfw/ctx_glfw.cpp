@@ -138,7 +138,7 @@ static void _glfw_callback_winresized(GLFWwindow* window, int w, int h) {
   w = int(w * ctxbase->_contentScaleX);
   h = int(h * ctxbase->_contentScaleY);
 
-  logchan_glfw->status("WIN RESIZED", "w<%d> h<%d>", w, h);
+  if(0)logchan_glfw->status("WIN RESIZED", "w<%d> h<%d>", w, h);
   sink->_on_callback_winresized(w, h);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -149,7 +149,7 @@ static void _glfw_callback_fbresized(GLFWwindow* window, int w, int h) {
   auto sink = ctxbase->_eventSINK;
   if (nullptr == sink)
     return;
-  logchan_glfw->status("FB RESIZED", "w<%d> h<%d> cs<%g %g>", w, h, ctxbase->_contentScaleX, ctxbase->_contentScaleY);
+  if(0)logchan_glfw->status("FB RESIZED", "w<%d> h<%d> cs<%g %g>", w, h, ctxbase->_contentScaleX, ctxbase->_contentScaleY);
   sink->_on_callback_fbresized(w, h);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -334,7 +334,7 @@ void CtxGLFW::initWithData(appinitdata_ptr_t aid) {
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::Show() {
 
-  logchan_glfw->log("CtxGLFW::Show");
+  //logchan_glfw->log("CtxGLFW::Show");
   fflush(stdout);
   GLFWmonitor* fullscreen_monitor = nullptr;
   GLFWmonitor* selected_monitor   = nullptr;
@@ -544,7 +544,7 @@ void CtxGLFW::Show() {
     }
 
   } else if( not _appinitdata->_offscreen ) {
-    logchan_glfw->log(
+    if(0)logchan_glfw->log(
         "WINDOWEDMODE T<%d> L<%d> W<%d> H<%d>", //
         _appinitdata->_top,                     //
         _appinitdata->_left,                    //

@@ -9,12 +9,13 @@
 #include <ork/kernel/string/deco.inl>
 #include <ork/util/logger.h>
 #include <thread>
+#include <set>
 
 namespace ork {
 
 using namespace ork::fsm;
 
-static logchannel_ptr_t logchan_SUB = logger()->configureChannel("SUBSYS", fvec3(0.5, 0.8, 0.5), true);
+static logchannel_ptr_t logchan_SUB = logger()->configureChannel("SUBSYS", fvec3(0.5, 0.5, 0.5), true);
 
 ////////////////////////////////////////////////////////////////
 
@@ -210,26 +211,26 @@ void Subsystem::initChildren() {
       break;
     }
 
-    logchan_SUB->log("  init wave %d: %zu main-thread, %zu parallel",
+    if(0)logchan_SUB->log("  init wave %d: %zu main-thread, %zu parallel",
                      wave_num, wave_main.size(), wave_parallel.size());
 
     // Start parallel threads for non-main-thread children
     std::vector<std::thread> threads;
     for (auto& child : wave_parallel) {
       threads.emplace_back([child]() {
-        logchan_SUB->log("    [parallel] initializing: %s", child->_name.c_str());
+        //logchan_SUB->log("    [parallel] initializing: %s", child->_name.c_str());
         child->initialize();
         child->update();
-        logchan_SUB->log("    [parallel] initialized: %s", child->_name.c_str());
+        //logchan_SUB->log("    [parallel] initialized: %s", child->_name.c_str());
       });
     }
 
     // Init main-thread children on current thread
     for (auto& child : wave_main) {
-      logchan_SUB->log("    [main] initializing: %s", child->_name.c_str());
+      //logchan_SUB->log("    [main] initializing: %s", child->_name.c_str());
       child->initialize();
       child->update();
-      logchan_SUB->log("    [main] initialized: %s", child->_name.c_str());
+      //logchan_SUB->log("    [main] initialized: %s", child->_name.c_str());
     }
 
     // Wait for parallel threads to complete
@@ -313,19 +314,19 @@ void Subsystem::shutdownChildren() {
     std::vector<std::thread> threads;
     for (auto& child : wave_parallel) {
       threads.emplace_back([child]() {
-        logchan_SUB->log("    [parallel] shutting down: %s", child->_name.c_str());
+        if(0)logchan_SUB->log("    [parallel] shutting down: %s", child->_name.c_str());
         child->shutdown();
         child->update();
-        logchan_SUB->log("    [parallel] shutdown: %s", child->_name.c_str());
+        logchan_SUB->log("    [parallel] shut down: %s", child->_name.c_str());
       });
     }
 
     // Shutdown main-thread children on current thread
     for (auto& child : wave_main) {
-      logchan_SUB->log("    [main] shutting down: %s", child->_name.c_str());
+      if(0)logchan_SUB->log("    [main] shutting down: %s", child->_name.c_str());
       child->shutdown();
       child->update();
-      logchan_SUB->log("    [main] shutdown: %s", child->_name.c_str());
+      logchan_SUB->log("    [main] shut down: %s", child->_name.c_str());
     }
 
     // Wait for parallel threads to complete
@@ -339,6 +340,174 @@ void Subsystem::shutdownChildren() {
     }
     for (auto& child : wave_parallel) {
       shutdown_set.insert(child->_name_hash);
+    }
+
+    wave_num++;
+  }
+}
+
+////////////////////////////////////////////////////////////////
+// Utility: Initialize subsystems in dependency order
+////////////////////////////////////////////////////////////////
+
+void initSubsystemsInOrder(std::vector<subsystem_ptr_t>& subsystems) {
+  if (subsystems.empty()) return;
+
+  std::set<uint64_t> initialized;
+
+  // Check if a subsystem can be initialized (all dependencies satisfied)
+  auto can_init = [&](subsystem_ptr_t sub) -> bool {
+    for (auto& [dep_hash, dep_ptr] : sub->_dependencies) {
+      // Check if this dependency is in our list and not yet initialized
+      bool dep_in_list = false;
+      for (auto& s : subsystems) {
+        if (s->_name_hash == dep_hash) {
+          dep_in_list = true;
+          break;
+        }
+      }
+      if (dep_in_list && initialized.find(dep_hash) == initialized.end()) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // Wave-based initialization
+  int wave_num = 0;
+  while (initialized.size() < subsystems.size()) {
+    std::vector<subsystem_ptr_t> wave_main;     // requires main thread
+    std::vector<subsystem_ptr_t> wave_parallel; // can run in parallel
+
+    for (auto& sub : subsystems) {
+      if (initialized.count(sub->_name_hash)) continue;
+      if (!can_init(sub)) continue;
+
+      if (sub->_requires_thread == "main") {
+        wave_main.push_back(sub);
+      } else {
+        wave_parallel.push_back(sub);
+      }
+    }
+
+    if (wave_main.empty() && wave_parallel.empty()) {
+      logchan_SUB->log("ERROR: Circular dependency in subsystem init");
+      break;
+    }
+
+    if(0)logchan_SUB->log("init wave %d: %zu main-thread, %zu parallel",
+                     wave_num, wave_main.size(), wave_parallel.size());
+
+    // Start parallel threads for non-main-thread subsystems
+    std::vector<std::thread> threads;
+    for (auto& sub : wave_parallel) {
+      threads.emplace_back([sub]() {
+        logchan_SUB->log("  [parallel] initializing: %s", sub->_name.c_str());
+        sub->initialize();
+        sub->update();
+      });
+    }
+
+    // Init main-thread subsystems on current thread
+    for (auto& sub : wave_main) {
+      logchan_SUB->log("  [main] initializing: %s", sub->_name.c_str());
+      sub->initialize();
+      sub->update();
+    }
+
+    // Wait for parallel threads
+    for (auto& t : threads) {
+      t.join();
+    }
+
+    // Mark all as initialized
+    for (auto& sub : wave_main) {
+      initialized.insert(sub->_name_hash);
+    }
+    for (auto& sub : wave_parallel) {
+      initialized.insert(sub->_name_hash);
+    }
+
+    wave_num++;
+  }
+}
+
+////////////////////////////////////////////////////////////////
+// Utility: Shutdown subsystems in reverse dependency order
+////////////////////////////////////////////////////////////////
+
+void shutdownSubsystemsInOrder(std::vector<subsystem_ptr_t>& subsystems) {
+  if (subsystems.empty()) return;
+
+  std::set<uint64_t> shutdown_set;
+
+  // Check if a subsystem can be shut down (nothing depends on it that isn't already shut down)
+  auto can_shutdown = [&](subsystem_ptr_t sub) -> bool {
+    for (auto& other : subsystems) {
+      if (other->_name_hash == sub->_name_hash) continue;
+      if (shutdown_set.count(other->_name_hash)) continue;
+
+      // Does other depend on sub?
+      if (other->_dependencies.count(sub->_name_hash) > 0) {
+        return false;  // other depends on sub, must shutdown other first
+      }
+    }
+    return true;
+  };
+
+  // Wave-based shutdown
+  int wave_num = 0;
+  while (shutdown_set.size() < subsystems.size()) {
+    std::vector<subsystem_ptr_t> wave_main;
+    std::vector<subsystem_ptr_t> wave_parallel;
+
+    for (auto& sub : subsystems) {
+      if (shutdown_set.count(sub->_name_hash)) continue;
+      if (!can_shutdown(sub)) continue;
+
+      if (sub->_requires_thread == "main") {
+        wave_main.push_back(sub);
+      } else {
+        wave_parallel.push_back(sub);
+      }
+    }
+
+    if (wave_main.empty() && wave_parallel.empty()) {
+      logchan_SUB->log("ERROR: Circular dependency in subsystem shutdown");
+      break;
+    }
+
+    logchan_SUB->log("shutdown wave %d: %zu main-thread, %zu parallel",
+                     wave_num, wave_main.size(), wave_parallel.size());
+
+    // Start parallel threads
+    std::vector<std::thread> threads;
+    for (auto& sub : wave_parallel) {
+      threads.emplace_back([sub]() {
+        logchan_SUB->log("  [parallel] shutting down: %s", sub->_name.c_str());
+        sub->shutdown();
+        sub->update();
+      });
+    }
+
+    // Shutdown main-thread subsystems
+    for (auto& sub : wave_main) {
+      logchan_SUB->log("  [main] shutting down: %s", sub->_name.c_str());
+      sub->shutdown();
+      sub->update();
+    }
+
+    // Wait for parallel threads
+    for (auto& t : threads) {
+      t.join();
+    }
+
+    // Mark as shut down
+    for (auto& sub : wave_main) {
+      shutdown_set.insert(sub->_name_hash);
+    }
+    for (auto& sub : wave_parallel) {
+      shutdown_set.insert(sub->_name_hash);
     }
 
     wave_num++;

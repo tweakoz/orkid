@@ -167,7 +167,7 @@ struct LayoutGroup : public Group {
     std::vector<ui::anchor::guide_ptr_t> vguides;
     size_t num_hprops = params->_h_proportions.size();
     size_t num_vprops = params->_v_proportions.size();
-    printf("makeGridOfWidgets w<%d> h<%d> num_hprops<%zu> num_vprops<%zu>\n", w, h, num_hprops, num_vprops);
+    //printf("makeGridOfWidgets w<%d> h<%d> num_hprops<%zu> num_vprops<%zu>\n", w, h, num_hprops, num_vprops);
     OrkAssert((num_hprops == 0) or (num_hprops == (size_t(w)-1)));
     OrkAssert((num_vprops == 0) or (num_vprops == (size_t(h)-1)));
     for (int x = 0; x <= w; x++) {
@@ -183,7 +183,7 @@ struct LayoutGroup : public Group {
           fx = 1.0f;
         }
       }
-      printf("  vguide x<%d> fx<%f>\n", x, fx);
+      //printf("  vguide x<%d> fx<%f>\n", x, fx);
       auto guide = _layout->proportionalVerticalGuide(fx);
       // Margin inherited from layout
       vguides.push_back(guide);

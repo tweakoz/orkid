@@ -10,7 +10,7 @@
 
 namespace ork::lev2 {
 
-static logchannel_ptr_t logchan_AUDIO = logger()->configureChannel("SUB_AUDIO", fvec3(0.3, 0.4, 0.9), true);
+static logchannel_ptr_t logchan_AUDIO = logger()->configureChannel("SUB_AUDIO", fvec3(0.3, 0.4, 0.9), false);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Audio Subsystem Implementation

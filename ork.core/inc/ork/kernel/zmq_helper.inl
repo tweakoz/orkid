@@ -2,6 +2,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <zmq.hpp>
 #include <zmq_addon.hpp>
+#include <unordered_set>
 #include <ork/kernel/netpacket_dyn.inl>
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::zeromq {
@@ -26,6 +27,7 @@ struct Context {
   Context(int numiothread = 4);
   ~Context();
   void close();
+  void shutdown(); // Causes all blocking operations to return ETERM immediately
   socket_ptr_t createSocket(zmq::socket_type type,std::string name="none");
   void removeSocket(socket_ptr_t skt);
 
@@ -75,6 +77,12 @@ inline Context::~Context() {
 
 inline void Context::close() {
   _impl->close();
+}
+
+inline void Context::shutdown() {
+  // Causes all blocking ZMQ operations to return with ETERM
+  // This is the safe way to interrupt blocked recv() calls from another thread
+  _impl->shutdown();
 }
 
 inline socket_ptr_t Context::createSocket(zmq::socket_type type,std::string name) {

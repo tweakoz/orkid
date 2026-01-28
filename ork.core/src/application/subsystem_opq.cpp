@@ -11,7 +11,7 @@
 
 namespace ork {
 
-static logchannel_ptr_t logchan_OPQ = logger()->configureChannel("SUB_OPQ", fvec3(0.3, 0.8, 0.9), true);
+static logchannel_ptr_t logchan_OPQ = logger()->configureChannel("SUB_OPQ", fvec3(0.3, 0.8, 0.9), false);
 
 ///////////////////////////////////////////////////////////////////////////////
 // OPQ Subsystem Implementation
@@ -48,21 +48,21 @@ subsystem_ptr_t createOpqSubsystem() {
     auto concq = opq::concurrentQueue();
 
     if (mainq) {
-      logchan_OPQ->log("Draining mainSerialQueue...");
+      //logchan_OPQ->log("Draining mainSerialQueue...");
       mainq->drain();
     }
 
     if (updq) {
-      logchan_OPQ->log("Draining updateSerialQueue...");
+      //logchan_OPQ->log("Draining updateSerialQueue...");
       updq->drain();
     }
 
     if (concq) {
-      logchan_OPQ->log("Draining concurrentQueue...");
+      //logchan_OPQ->log("Draining concurrentQueue...");
       concq->drain();
     }
 
-    logchan_OPQ->log("OPQ queues drained");
+    //logchan_OPQ->log("OPQ queues drained");
 
     // NOW call opq::exit() - threads should join quickly since queues are empty
     // NOTE: We deliberately do NOT call opq::exit() here to avoid the destructor crash

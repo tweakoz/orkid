@@ -21,7 +21,7 @@ const int getframesize() {
 ///////////////////////////////////////////////////////////////////////////////
 
 OSStatus AuContext::setupInputCallback() {
-  logchan_auio->log("setupInputCallback");
+  //logchan_auio->log("setupInputCallback");
   OSStatus err = noErr;
   AURenderCallbackStruct input, output;
 
@@ -59,7 +59,7 @@ void DumpStreamDesc(const char* name, const CAStreamBasicDescription& strd) {
 ///////////////////////////////////////////////////////////////////////////////
 
 OSStatus AuContext::setupOutputBuffers() {
-  logchan_auio->log("SetupOutputBuffers");
+  //logchan_auio->log("SetupOutputBuffers");
 
   if (!_outputDev) {
     OrkAssert(false);
@@ -100,7 +100,7 @@ OSStatus AuContext::setupOutputBuffers() {
       &propertySize);
   AuCheckErr(err);
 
-  DumpStreamDesc("OutputDevice", streamdesc_output);
+  //DumpStreamDesc("OutputDevice", streamdesc_output);
 
   //////////////////////////////////////
   // Set the correct sample rate for the output device, but keep the channel count the same
@@ -707,7 +707,7 @@ bool AuContext::waitForOutputReady(int timeout_ms) {
    return true; // No output device, nothing to wait for
  }
  
- logchan_auio->log("Waiting for output to be ready...");
+ //logchan_auio->log("Waiting for output to be ready...");
  
  auto start_time = std::chrono::steady_clock::now();
  while (!_output_ready.load()) {

@@ -103,7 +103,7 @@ void AppInitData::enqueuePostInitOp(AppInitOrder order, void_lambda_t l) { //
 }
 
 void AppInitData::executePreInitOps() {
-  logchan_APP->log("AppInitData::executePreInitOps");
+  if(0)logchan_APP->log("AppInitData::executePreInitOps");
   for (auto item : _preinitoperations) {
     uint64_t order = item.first;
     auto operation = item.second;
@@ -111,7 +111,7 @@ void AppInitData::executePreInitOps() {
   }
 }
 void AppInitData::executePostInitOps() {
-  logchan_APP->log("AppInitData::executePostInitOps");
+  if(0)logchan_APP->log("AppInitData::executePostInitOps");
   for (auto item : _postinitoperations) {
     uint64_t order = item.first;
     auto operation = item.second;
@@ -626,7 +626,7 @@ void Application::registerSubsystem(
 
   _registered_subsystems[hash] = reg;
 
-  logchan_APP->log("Registered subsystem '%s' (hash: 0x%016llx, static: %d)",
+  if(0)logchan_APP->log("Registered subsystem '%s' (hash: 0x%016llx, static: %d)",
                    subsystem->_name.c_str(), hash, is_static);
 }
 
@@ -648,7 +648,7 @@ void Application::unregisterSubsystem(uint64_t name_hash) {
 
   auto it = _registered_subsystems.find(name_hash);
   if (it != _registered_subsystems.end()) {
-    logchan_APP->log("Unregistered subsystem '%s'", it->second->subsystem->_name.c_str());
+    if(0)logchan_APP->log("Unregistered subsystem '%s'", it->second->subsystem->_name.c_str());
     _registered_subsystems.erase(it);
   }
 }
@@ -817,7 +817,7 @@ void Application::_shutdownSubsystemsInWaves() {
       fut->_name = FormatString("shutdown_%s", reg->subsystem->_name.c_str());
       futures.push_back(fut);
 
-      logchan_APP->log("  launching shutdown thread for subsystem<%s>", reg->subsystem->_name.c_str());
+      if(0)logchan_APP->log("  launching shutdown thread for subsystem<%s>", reg->subsystem->_name.c_str());
 
       threads.emplace_back([reg, fut]() {
         // Send SHUTDOWN event to subsystem FSM
@@ -875,13 +875,13 @@ void Application::_buildShutdownWaves(std::vector<std::vector<subsystem_reg_ptr_
     if (!reg->subsystem->hasParent()) {
       root_subsystems[hash] = reg;
     } else {
-      logchan_APP->log("  %s is a child (parent: %s), will be shutdown by parent",
+      if(0)logchan_APP->log("  %s is a child (parent: %s), will be shutdown by parent",
                        reg->subsystem->_name.c_str(),
                        reg->subsystem->parent()->_name.c_str());
     }
   }
 
-  logchan_APP->log("Building shutdown waves for %zu root subsystems", root_subsystems.size());
+  if(0)logchan_APP->log("Building shutdown waves for %zu root subsystems", root_subsystems.size());
 
   // Build waves by reverse topological sort (dependents first, dependencies last)
   // A root subsystem can be scheduled when:

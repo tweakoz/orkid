@@ -10,7 +10,7 @@
 
 namespace ork::lev2 {
 
-static logchannel_ptr_t logchan_GPU = logger()->configureChannel("SUB_GPU", fvec3(0.3, 0.8, 0.4), true);
+static logchannel_ptr_t logchan_GPU = logger()->configureChannel("SUB_GPU", fvec3(0.3, 0.8, 0.4), false);
 
 ///////////////////////////////////////////////////////////////////////////////
 // GPU Subsystem Implementation

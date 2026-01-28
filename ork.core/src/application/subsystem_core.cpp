@@ -10,7 +10,7 @@
 
 namespace ork {
 
-static logchannel_ptr_t logchan_CORE = logger()->configureChannel("SUB_CORE", fvec3(0.9, 0.7, 0.3), true);
+static logchannel_ptr_t logchan_CORE = logger()->configureChannel("SUB_CORE", fvec3(0.9, 0.7, 0.3), false);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Core Subsystem Implementation
@@ -26,6 +26,7 @@ static logchannel_ptr_t logchan_CORE = logger()->configureChannel("SUB_CORE", fv
 
 subsystem_ptr_t createCoreSubsystem() {
   auto subsystem = std::make_shared<Subsystem>("core");
+  subsystem->_requires_thread = "main";
 
   // INITIALIZING state -> init children, then transition to READY
   subsystem->_state_initializing->_onenter = [subsystem](fsm::fsminstance_ptr_t instance) {

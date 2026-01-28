@@ -132,7 +132,7 @@ CoreAudioDevice::CoreAudioDevice(appinitdata_wkptr_t appinitd)
   if (isShortId(input_devname)) {
     auto dev = findAudioDeviceByShortId(input_devname);
     if (dev) {
-      logchan_coreaudio->log("resolved input short id '%s' to '%s' @ %gHz",
+      if(0)logchan_coreaudio->log("resolved input short id '%s' to '%s' @ %gHz",
                              input_devname.c_str(), dev->_name.c_str(), dev->_sample_rate);
       input_devname = dev->_name;
     } else {
@@ -143,7 +143,7 @@ CoreAudioDevice::CoreAudioDevice(appinitdata_wkptr_t appinitd)
   if (isShortId(output_devname)) {
     auto dev = findAudioDeviceByShortId(output_devname);
     if (dev) {
-      logchan_coreaudio->log("resolved output short id '%s' to '%s' @ %gHz",
+      if(0)logchan_coreaudio->log("resolved output short id '%s' to '%s' @ %gHz",
                              output_devname.c_str(), dev->_name.c_str(), dev->_sample_rate);
       output_devname = dev->_name;
     } else {
@@ -153,13 +153,13 @@ CoreAudioDevice::CoreAudioDevice(appinitdata_wkptr_t appinitd)
   }
 
   if( unlocked_appinitdata->_enable_audio_input ) {
-    logchan_coreaudio->log("looking for Input: <%s>", input_devname.c_str());
+    if(0)logchan_coreaudio->log("looking for Input: <%s>", input_devname.c_str());
     for (const auto& input : _inputDevList.GetMap()) {
       auto info   = input.second;
       auto format = info->_format;
 
       auto fmtstr = CAStreamBasicDescription::Print(format);
-      logchan_coreaudio->log(
+      if(0)logchan_coreaudio->log(
           "input id<%d> name<%s> numchan<%d> fmt<%s>", info->_ID, input.first.c_str(), info->countChannels(), fmtstr.c_str());
 
       if (input.first == input_devname) {
@@ -172,11 +172,11 @@ CoreAudioDevice::CoreAudioDevice(appinitdata_wkptr_t appinitd)
     }
   }
   if( unlocked_appinitdata->_enable_audio_output ) {
-    logchan_coreaudio->log("looking for Output: <%s>", output_devname.c_str());
+    //logchan_coreaudio->log("looking for Output: <%s>", output_devname.c_str());
     for (const auto& output : _outputDevList.GetMap()) {
       auto info   = output.second;
       auto format = info->_format;
-      logchan_coreaudio->log("output id<%d> name<%s> numch<%d>", info->_ID, output.first.c_str(), info->countChannels());
+      //logchan_coreaudio->log("output id<%d> name<%s> numch<%d>", info->_ID, output.first.c_str(), info->countChannels());
       CAStreamBasicDescription::Print(format);
       if (output.first == output_devname) {
         //_inp_dev_name = input.first;
@@ -192,7 +192,7 @@ CoreAudioDevice::CoreAudioDevice(appinitdata_wkptr_t appinitd)
 
 void CoreAudioDevice::startup() {
 
-  logchan_coreaudio->log("CoreAudioDevice::startup");
+  //logchan_coreaudio->log("CoreAudioDevice::startup");
 
     auto unlocked_appinitdata = _appinitdata.lock();
 
@@ -227,7 +227,7 @@ void CoreAudioDevice::startup() {
   }
 
   _aucontext = std::make_shared<AuContext>();
-  logchan_coreaudio->log("CoreAudioThread _input_impl<%p> _output_impl<%p>", (void*)_input_impl.get(), (void*)_output_impl.get());
+  //logchan_coreaudio->log("CoreAudioThread _input_impl<%p> _output_impl<%p>", (void*)_input_impl.get(), (void*)_output_impl.get());
 
   if (_input_impl or _output_impl) {
     _aucontext->Init(_input_impl, _output_impl);
@@ -262,7 +262,7 @@ void CoreAudioDevice::startup() {
           mix_group = _aucontext->AllocOutBuffer(inumfr);
           // Check for shutdown - AllocOutBuffer returns nullptr during shutdown
           if (mix_group == nullptr) {
-            logchan_coreaudio->log("CoreAudioThread: got nullptr from AllocOutBuffer, exiting...");
+            //logchan_coreaudio->log("CoreAudioThread: got nullptr from AllocOutBuffer, exiting...");
             break;
           }
           //printf("got outbuf<%p>\n", (void*) mix_group);
@@ -395,7 +395,7 @@ void CoreAudioDevice::startup() {
 
         /////////////////////////
       }
-      logchan_coreaudio->log("CoreAudioThread exiting gracefully.");
+      logchan_coreaudio->log("CoreAudioThread exiting");
     });
   }
 }
@@ -403,22 +403,22 @@ void CoreAudioDevice::startup() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void CoreAudioDevice::shutdown() {
-  logchan_coreaudio->log("CoreAudioDevice::shutdown() starting...");
+  //logchan_coreaudio->log("CoreAudioDevice::shutdown() starting...");
 
   if (_the_synth) {
-    logchan_coreaudio->log("Tearing down synth...");
+    //logchan_coreaudio->log("Tearing down synth...");
     synth::tearDown();
   }
 
   if (_aucontext) {
-    logchan_coreaudio->log("Stopping audio context...");
+    //logchan_coreaudio->log("Stopping audio context...");
     _aucontext->Stop();  // This signals shutdown and stops CoreAudio
 
     // Wait for audio thread to exit
     if (_au_thread) {
-      logchan_coreaudio->log("Joining audio thread...");
+      //logchan_coreaudio->log("Joining audio thread...");
       _au_thread->join();
-      logchan_coreaudio->log("Audio thread joined.");
+      //logchan_coreaudio->log("Audio thread joined.");
       _au_thread = nullptr;
     }
 

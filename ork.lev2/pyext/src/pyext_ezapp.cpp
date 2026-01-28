@@ -246,26 +246,26 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             } // if (kwargs) {
             /////////////////////////////
             ::ork::lev2::initModule(appinit);
-            logchan_EZAPP->log("finalizeInitialization begin..");
-            fflush(stdout);
+            //logchan_EZAPP->log("finalizeInitialization begin..");
+            //fflush(stdout);
             appinit->finalizeInitialization();
-            logchan_EZAPP->log("finalizeInitialization done..");
+            //logchan_EZAPP->log("finalizeInitialization done..");
             fflush(stdout);
             /////////////////////////////
             auto rval                                                 = OrkEzApp::create(appinit);
             auto d_ev                                                 = std::make_shared<ui::DrawEvent>(nullptr);
-            logchan_EZAPP->log("ezapp<%p>",(void*) rval.get() );
+            //logchan_EZAPP->log("ezapp<%p>",(void*) rval.get() );
             rval->_vars->makeValueForKey<uidrawevent_ptr_t>("drawev") = d_ev;
             rval->_vars->makeValueForKey<py::object>("appinstance")   = appinstance;
             rval->_overrideRCFD = override_rcfd;
             ////////////////////////////////////////////////////////////////////
             if (py::hasattr(appinstance, "onAppInit")) {
-              logchan_EZAPP->log("REG onAppInit");
+              //logchan_EZAPP->log("REG onAppInit");
               auto appinitfn //
                   = py::cast<py::function>(appinstance.attr("onAppInit"));
               rval->_vars->makeValueForKey<py::function>("appinitfn") = appinitfn;
               rval->onEzAppInit([=]() { //
-                logchan_EZAPP->log("EXE onAppInit");
+                //logchan_EZAPP->log("EXE onAppInit");
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars->typedValueForKey<py::function>("appinitfn");
                 auto initdata = appinitdata();
@@ -284,16 +284,16 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               });
             }
             else{
-              logchan_EZAPP->log("NO onAppInit");
+              //logchan_EZAPP->log("NO onAppInit");
             }
             ////////////////////////////////////////////////////////////////////
             if (py::hasattr(appinstance, "onAppExit")) {
-              logchan_EZAPP->log("REG onAppExit");
+              //logchan_EZAPP->log("REG onAppExit");
               auto appexitfn //
                   = py::cast<py::function>(appinstance.attr("onAppExit"));
               rval->_vars->makeValueForKey<py::function>("appexitfn") = appexitfn;
               rval->onEzAppExit([=]() { //
-                logchan_EZAPP->log("EXE onAppExit");
+                //logchan_EZAPP->log("EXE onAppExit");
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars->typedValueForKey<py::function>("appexitfn");
                 try {
@@ -311,16 +311,16 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               });
             }
             else{
-              logchan_EZAPP->log("NO onAppExit");
+              //logchan_EZAPP->log("NO onAppExit");
             }
             ////////////////////////////////////////////////////////////////////
             if (py::hasattr(appinstance, "onAudioInit")) {
-              logchan_EZAPP->log("REG onAudioInit");
+              //logchan_EZAPP->log("REG onAudioInit");
               auto audinitfn //
                   = py::cast<py::function>(appinstance.attr("onAudioInit"));
               rval->_vars->makeValueForKey<py::function>("audinitfn") = audinitfn;
               rval->onAudioInit([=](audiodevice_ptr_t adev) { //
-                logchan_EZAPP->log("EXE onAudioInit");
+                //logchan_EZAPP->log("EXE onAudioInit");
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars->typedValueForKey<py::function>("audinitfn");
                 try {
@@ -338,7 +338,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               });
             }
             else{
-              logchan_EZAPP->log("NO onAudioInit");
+              //logchan_EZAPP->log("NO onAudioInit");
             }
             ////////////////////////////////////////////////////////////////////
             if (py::hasattr(appinstance, "onAudioExit")) {
@@ -364,7 +364,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             }
             ////////////////////////////////////////////////////////////////////
             if (py::hasattr(appinstance, "onSynthInit")) {
-              logchan_EZAPP->log("REG onSynthInit");
+              //logchan_EZAPP->log("REG onSynthInit");
               auto syninitfn //
                   = py::cast<py::function>(appinstance.attr("onSynthInit"));
               rval->_vars->makeValueForKey<py::function>("syninitfn") = syninitfn;

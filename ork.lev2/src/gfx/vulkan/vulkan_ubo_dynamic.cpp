@@ -44,7 +44,7 @@ void VkDynamicUBOSystem::init(vkcontext_rawptr_t ctx) {
     printf("VkDynamicUBOSystem: FATAL - buffer mapping failed!\n");
     OrkAssert(false);
   }
-  printf("VkDynamicUBOSystem: buffer mapped at %p, size=%zu MB, alignment=%zu vkbuffer=%p\n",
+  if(0)printf("VkDynamicUBOSystem: buffer mapped at %p, size=%zu MB, alignment=%zu vkbuffer=%p\n",
          _mapped_base, _buffer_size / (1024*1024), _actual_alignment, (void*)_global_buffer->_vkbuffer);
 }
 

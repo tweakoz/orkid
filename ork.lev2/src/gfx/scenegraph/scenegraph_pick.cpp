@@ -54,7 +54,7 @@ void SgPickBuffer::gpuInit(ork::lev2::Context* ctx) {
       _pickPOStexture = _pfc->_rtgroup->texture(1);
       _pickNRMtexture = _pfc->_rtgroup->texture(2);
       _pickUVtexture = _pfc->_rtgroup->texture(3);
-      printf("SgPickBuffer::gpuInit pickFormat=0\n");
+      /*printf("SgPickBuffer::gpuInit pickFormat=0\n");
       printf("  _pickIDtexture: %p w=%d h=%d\n",
              _pickIDtexture.get(),
              _pickIDtexture ? _pickIDtexture->_width : -1,
@@ -70,15 +70,15 @@ void SgPickBuffer::gpuInit(ork::lev2::Context* ctx) {
       printf("  _pickUVtexture: %p w=%d h=%d\n",
              _pickUVtexture.get(),
              _pickUVtexture ? _pickUVtexture->_height : -1,
-             _pickUVtexture ? _pickUVtexture->_height : -1);
+             _pickUVtexture ? _pickUVtexture->_height : -1);*/
       break;
     case 1:
       _pickIDtexture = _pfc->_rtgroup->texture(0);
-      printf("SgPickBuffer::gpuInit pickFormat=1\n");
-      printf("  _pickIDtexture: %p w=%d h=%d\n",
+      //printf("SgPickBuffer::gpuInit pickFormat=1\n");
+      /*printf("  _pickIDtexture: %p w=%d h=%d\n",
              _pickIDtexture.get(),
              _pickIDtexture ? _pickIDtexture->_width : -1,
-             _pickIDtexture ? _pickIDtexture->_height : -1);
+             _pickIDtexture ? _pickIDtexture->_height : -1);*/
       break;
     default:
       OrkAssert(false);

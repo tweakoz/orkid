@@ -116,23 +116,23 @@ static texture_ptr_t _getbrdfintmap(Context* targ, std::string typname, uint64_t
   if (dblock) {
     switch(type) {
       case "BLINN"_crcu: {
-        logchan_pbrgen->log("brdfIntegrationMap BLINN loaded from cache");
+        //logchan_pbrgen->log("brdfIntegrationMap BLINN loaded from cache");
         break;
       }
       case "GGX"_crcu: {
-        logchan_pbrgen->log("brdfIntegrationMap GGX loaded from cache");
+        //logchan_pbrgen->log("brdfIntegrationMap GGX loaded from cache");
         break;
       }
       case "GGXVELVET"_crcu: {
-        logchan_pbrgen->log("brdfIntegrationMap GGXVELVET loaded from cache");
+        //logchan_pbrgen->log("brdfIntegrationMap GGXVELVET loaded from cache");
         break;
       }
       case "GGXRIM"_crcu: {
-        logchan_pbrgen->log("brdfIntegrationMap GGXRIM loaded from cache");
+        //logchan_pbrgen->log("brdfIntegrationMap GGXRIM loaded from cache");
         break;
       }
       case "PHONG"_crcu: {
-        logchan_pbrgen->log("brdfIntegrationMap PHONG loaded from cache");
+        //logchan_pbrgen->log("brdfIntegrationMap PHONG loaded from cache");
         break;
       }
     }

@@ -35,7 +35,7 @@ tokens = CrcStringProxy()
 class LIGHTING_APP(ComponentizedApplication):
 
   def __init__(self):
-    super().__init__(lui="yes")
+    super().__init__()
 
     self.materials = set()
     self.createEzApp(ssaa=2, msaa=0, fullscreen=False,

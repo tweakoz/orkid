@@ -145,4 +145,18 @@ struct SubsystemRegistration {
 
 using subsystem_reg_ptr_t = std::shared_ptr<SubsystemRegistration>;
 
+////////////////////////////////////////////////////////////////
+// Utility functions for subsystem initialization/shutdown
+// These resolve dependency order automatically
+////////////////////////////////////////////////////////////////
+
+// Initialize subsystems in dependency order
+// Subsystems with satisfied dependencies are initialized first
+// Thread affinity is respected: "main" thread subsystems run on caller thread
+void initSubsystemsInOrder(std::vector<subsystem_ptr_t>& subsystems);
+
+// Shutdown subsystems in reverse dependency order
+// Subsystems that others depend on are shut down last
+void shutdownSubsystemsInOrder(std::vector<subsystem_ptr_t>& subsystems);
+
 } // namespace ork

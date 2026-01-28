@@ -63,7 +63,7 @@ OSStatus AuContext::Init(cadevice_impl_ptr_t indev, cadevice_impl_ptr_t outdev) 
 
 OSStatus AuContext::Start() {
 
-  logchan_audunit->log("AuContext::Start");
+  //logchan_audunit->log("AuContext::Start");
   if (IsRunning())
     return noErr;
 
@@ -87,7 +87,7 @@ OSStatus AuContext::Start() {
       AuCheckErr(err);
     } else {
       // Output-only mode - start the HAL output unit directly
-      logchan_audunit->log("Starting HAL output unit directly");
+      //logchan_audunit->log("Starting HAL output unit directly");
       err = AudioOutputUnitStart(_outputUnit);
       AuCheckErr(err);
     }
@@ -100,7 +100,7 @@ OSStatus AuContext::Start() {
 
 OSStatus AuContext::Stop() {
 
-  logchan_audunit->log("AuContext::Stop");
+  //logchan_audunit->log("AuContext::Stop");
 
   // FIRST: Signal threads to stop - this must happen before any CoreAudio calls
   // so that audio threads can exit their loops and release resources
@@ -191,7 +191,7 @@ bool AuContext::IsRunning() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void AuContext::Cleanup() {
-  logchan_audunit->log("AuContext::Cleanup");
+  //logchan_audunit->log("AuContext::Cleanup");
   Stop();
 
   // delete mBuffer;
@@ -290,7 +290,7 @@ OSStatus AuContext::configureHALUnit(AudioUnit unit, AudioDeviceID deviceID, boo
 }
 ///////////////////////////////////////////////////////////////////////////////
 OSStatus AuContext::setupGraphForInputOnly() {
-  logchan_audunit->log("setupGraphForInputOnly");
+  //logchan_audunit->log("setupGraphForInputOnly");
   OSStatus err = noErr;
 
   // Create HAL unit for input
@@ -317,7 +317,7 @@ OSStatus AuContext::setupGraphForInputOnly() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 OSStatus AuContext::setupGraphForOutputOnly() {
-  logchan_audunit->log("setupGraphForOutputOnly");
+  //logchan_audunit->log("setupGraphForOutputOnly");
   OSStatus err = noErr;
 
   // Create HAL unit for output
@@ -350,7 +350,7 @@ OSStatus AuContext::setupGraphForOutputOnly() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 OSStatus AuContext::setupGraphForIO() {
-  logchan_audunit->log("setupGraphForIO");
+  //logchan_audunit->log("setupGraphForIO");
   OSStatus err = noErr;
 
   // Setup input HAL unit
@@ -406,7 +406,7 @@ OSStatus AuContext::setupGraphForIO() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 OSStatus AuContext::setupGraph(cadevice_impl_ptr_t indev, cadevice_impl_ptr_t outdev) {
-  logchan_audunit->log("setupGraph() indev<%d> outdev<%d>", indev ? indev->_info->_ID : -1, outdev ? outdev->_info->_ID : -1);
+  //logchan_audunit->log("setupGraph() indev<%d> outdev<%d>", indev ? indev->_info->_ID : -1, outdev ? outdev->_info->_ID : -1);
   OSStatus err = noErr;
 
   if (indev && outdev) {

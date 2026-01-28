@@ -464,11 +464,11 @@ void OrkEzApp::_initForSubsystems() {
     // Wire up Audio callbacks
     auto audio_impl = getAudioSubsystemImpl(_audio_subsystem);
     audio_impl->_onAudioInit = [this]() {
-      logchan_ezapp->log("Audio subsystem triggering audio init");
+      //logchan_ezapp->log("Audio subsystem triggering audio init");
       _audioInit();
     };
     audio_impl->_onAudioExit = [this]() {
-      logchan_ezapp->log("Audio subsystem triggering audio cleanup");
+      //logchan_ezapp->log("Audio subsystem triggering audio cleanup");
       _audioExit();
     };
 
@@ -484,9 +484,9 @@ void OrkEzApp::_initForSubsystems() {
     if (_initdata->_enable_audio) {
       lev2_subsystem->_pending_children.push_back("audio");
     }
-    if (!want("gpu") && !_initdata->_enable_audio) {
-      lev2_subsystem->_pending_dependencies.push_back("core");
-    }
+    // lev2 always depends on core - must wait for core to finish before starting
+    lev2_subsystem->_pending_dependencies.push_back("core");
+    // lev2 must run on main thread because its children (gpu) require main thread
     subsystem_map["lev2"] = lev2_subsystem;
   }
 
@@ -506,7 +506,7 @@ void OrkEzApp::_initForSubsystems() {
       auto it = subsystem_map.find(dep_name);
       if (it != subsystem_map.end()) {
         subsystem->addDependency(it->second);
-        logchan_ezapp->log("  %s depends on %s", name.c_str(), dep_name.c_str());
+        //logchan_ezapp->log("  %s depends on %s", name.c_str(), dep_name.c_str());
       } else {
         logchan_ezapp->log("WARNING: %s has unresolved dependency: %s", name.c_str(), dep_name.c_str());
       }
@@ -519,7 +519,7 @@ void OrkEzApp::_initForSubsystems() {
         auto& child = it->second;
         subsystem->addChild(child);
         child->_parent = subsystem;  // Set parent pointer
-        logchan_ezapp->log("  %s has child %s", name.c_str(), child_name.c_str());
+        //logchan_ezapp->log("  %s has child %s", name.c_str(), child_name.c_str());
       } else {
         logchan_ezapp->log("WARNING: %s has unresolved child: %s", name.c_str(), child_name.c_str());
       }
@@ -550,51 +550,18 @@ void OrkEzApp::_initForSubsystems() {
   /////////////////////////////////////////////
 
   // Build list of root subsystems (those with no parent)
-  std::vector<std::pair<std::string, subsystem_ptr_t>> root_subsystems;
+  std::vector<subsystem_ptr_t> root_subsystems;
   for (auto& [name, subsystem] : subsystem_map) {
     if (!subsystem->hasParent()) {
-      root_subsystems.push_back({name, subsystem});
+      root_subsystems.push_back(subsystem);
     } else {
       logchan_ezapp->log("  %s is a child (parent: %s), will be initialized by parent",
                          name.c_str(), subsystem->parent()->_name.c_str());
     }
   }
 
-  // Initialize root subsystems in dependency order
-  std::set<std::string> initialized;
-  auto can_init = [&](const std::string& name, subsystem_ptr_t sub) -> bool {
-    // Check all dependencies (that are also roots) are initialized
-    for (auto& [dep_hash, dep_ptr] : sub->_dependencies) {
-      // Only check dependencies that are roots (non-roots are handled by their parent)
-      if (!dep_ptr->hasParent()) {
-        if (initialized.find(dep_ptr->_name) == initialized.end()) {
-          return false;
-        }
-      }
-    }
-    return true;
-  };
-
-  while (initialized.size() < root_subsystems.size()) {
-    bool progress = false;
-    for (auto& [name, subsystem] : root_subsystems) {
-      if (initialized.count(name)) continue;
-      if (!can_init(name, subsystem)) continue;
-
-      const char* thread_info = subsystem->_requires_thread.empty()
-                                    ? "any"
-                                    : subsystem->_requires_thread.c_str();
-      logchan_ezapp->log("Initializing subsystem: %s (thread: %s)", name.c_str(), thread_info);
-      subsystem->initialize();
-      subsystem->update();
-      initialized.insert(name);
-      progress = true;
-    }
-    if (!progress) {
-      logchan_ezapp->log("ERROR: Circular dependency in subsystem init");
-      break;
-    }
-  }
+  // Initialize root subsystems in dependency order using shared utility
+  initSubsystemsInOrder(root_subsystems);
 
   logchan_ezapp->log("HFSM subsystems registered and initialized");
 }
@@ -614,8 +581,8 @@ void OrkEzApp::_initGraphicsContext() {
   }
 #endif
 
-  logchan_ezapp->log("initializing graphics context");
-  fflush(stdout);
+  //logchan_ezapp->log("initializing graphics context");
+  //fflush(stdout);
   _appstate = 0;
 
   _uicontext = std::make_shared<ui::Context>();
@@ -690,7 +657,7 @@ void OrkEzApp::_initGraphicsContext() {
     opq::setProgressHandler(handler);
   }
 
-  logchan_ezapp->log("graphics context initialized");
+  //logchan_ezapp->log("graphics context initialized");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -701,18 +668,18 @@ void OrkEzApp::joinUpdate() {
   bool has_joined_already = bool(prevappsate & KAPPSTATEFLAG_JOINING);
   ////////////////////////////////////////////////
   if (not has_joined_already) {
-    logger()->defaultChannel()->log("OrkEzApp<%p> joinUpdate:1", this);
+    //logger()->defaultChannel()->log("OrkEzApp<%p> joinUpdate:1", this);
     for( int i=0; i<100; i++ ) {
       //checkAppState(KAPPSTATEFLAG_UPDRUNNING)) {
       opq::TrackCurrent opqtest(_mainq);
       _mainq->Process();
     }
-    logger()->defaultChannel()->log("OrkEzApp<%p> joinUpdate:2", this);
+    //logger()->defaultChannel()->log("OrkEzApp<%p> joinUpdate:2", this);
     _updq->drain();
     _updateThread.join();
-    logger()->defaultChannel()->log("OrkEzApp<%p> joinUpdate:3", this);
+    //logger()->defaultChannel()->log("OrkEzApp<%p> joinUpdate:3", this);
     DrawQueue::ClearAndSyncWriters();
-    logger()->defaultChannel()->log("OrkEzApp<%p> joinUpdate:4", this);
+    //logger()->defaultChannel()->log("OrkEzApp<%p> joinUpdate:4", this);
   }
   ////////////////////////////////////////////////
 }
@@ -831,7 +798,7 @@ bool OrkEzApp::shouldUpdateThrottleOnGPU() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::_audioInit() {
-  logchan_ezapp->log("OrkEzApp::_audioInit");
+  //logchan_ezapp->log("OrkEzApp::_audioInit");
   _audiodevice = AudioDevice::createInstance(_initdata);
   _initdata->_miscvars["audiodevice"].set<audiodevice_ptr_t>(_audiodevice);
   if (_initdata->_enable_audio_synth) {
@@ -858,7 +825,7 @@ void OrkEzApp::_audioInit() {
 void OrkEzApp::_fireDeferredAudioCallbacks() {
   // Called after callbacks are registered when using subsystems
   if (_initdata->_use_subsystems) {
-    logchan_ezapp->log("Firing deferred audio callbacks");
+    //logchan_ezapp->log("Firing deferred audio callbacks");
     if (_synth && _onSynthInit) {
       _onSynthInit(_synth);
     }
@@ -1121,9 +1088,9 @@ void OrkEzApp::_mainThreadLoopBegin() {
   }
 
   ctx->_onGpuInit = [this](lev2::Context* context) {
-    logchan_ezapp->log("BEGIN OrkEzApp::_onGpuInit");
+    //logchan_ezapp->log("BEGIN OrkEzApp::_onGpuInit");
     context->beginPrimaryCommandBuffer();
-    logchan_ezapp->log("_initdata->_enable_audio<%d>", (int)_initdata->_enable_audio);
+    //logchan_ezapp->log("_initdata->_enable_audio<%d>", (int)_initdata->_enable_audio);
 
     if (_ginitdata->_disableMouseCursor) {
       auto ctxbase = context->GetCtxBase();
@@ -1140,7 +1107,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
     }
     context->endPrimaryCommandBuffer();
 
-    logchan_ezapp->log("END OrkEzApp::_onGpuInit");
+    //logchan_ezapp->log("END OrkEzApp::_onGpuInit");
     logchan_ezapp->log("starting update thread...");
     _updateThread.start(_update_thread_impl);
     // Note: gpuPostInit() will be called by the framework (CtxGLFW::_runloopBegin)

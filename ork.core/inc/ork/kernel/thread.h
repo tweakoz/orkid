@@ -35,6 +35,7 @@ namespace ork
 		void start();
 		void start( const thread_lambda_t& l );
 		bool join();
+		bool joinable() const { return _threadh && _threadh->joinable(); }
 
 		anyp& userdata() { return _userdata; }
 

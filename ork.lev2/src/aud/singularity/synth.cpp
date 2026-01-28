@@ -153,7 +153,7 @@ synth::synth()
 
   _hudEventRouter = std::make_shared<HudEventRouter>();
 
-  logchan_synth->log("clearing delay lines...");
+  //logchan_synth->log("clearing delay lines...");
   std::atomic<int> delayopcounter = 0;
   for (int i = 0; i < 1024; i++) {
     auto op = [this, &delayopcounter]() {
@@ -170,7 +170,7 @@ synth::synth()
   while (delayopcounter.load() > 0) {
     usleep(1000);
   }
-  logchan_synth->log("delay lines cleared.");
+  //logchan_synth->log("delay lines cleared.");
 
   _sequencer  = std::make_shared<Sequencer>(this);
   _prgchannel = std::make_shared<ProgramChannel>();

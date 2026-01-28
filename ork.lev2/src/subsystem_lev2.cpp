@@ -10,7 +10,7 @@
 
 namespace ork::lev2 {
 
-static logchannel_ptr_t logchan_LEV2 = logger()->configureChannel("SUB_LEV2", fvec3(0.4, 0.6, 0.8), true);
+static logchannel_ptr_t logchan_LEV2 = logger()->configureChannel("SUB_LEV2", fvec3(0.4, 0.6, 0.8), false);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Lev2 Meta-Service Subsystem
@@ -22,6 +22,7 @@ static logchannel_ptr_t logchan_LEV2 = logger()->configureChannel("SUB_LEV2", fv
 
 subsystem_ptr_t createLev2Subsystem() {
   auto subsystem = std::make_shared<Subsystem>("lev2");
+  subsystem->_requires_thread = "main";
 
   // INITIALIZING state -> init children, then transition to READY
   subsystem->_state_initializing->_onenter = [subsystem](fsm::fsminstance_ptr_t instance) {
