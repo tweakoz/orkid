@@ -31,9 +31,9 @@ asset_ptr_t HybridAssetLoader::load(loadrequest_ptr_t loadreq) {
       auto catalog = asset::catalog::AssetCatalog::globalInstance();
       auto catalog_path = components._namespace + "|" + components._asset;
       auto result = catalog->fetch(catalog_path); // synchronous 
-      logchan_hyb->log("result %p", (void*) result.get());
+      //logchan_hyb->log("result %p", (void*) result.get());
       dblock = result ? result->_data : nullptr;
-      logchan_hyb->log("dblock %p", (void*) dblock.get());
+      //logchan_hyb->log("dblock %p", (void*) dblock.get());
     }
   } else if (path.isFilePath()) {
     logchan_hyb->log("Loading from filesystem: %s", path.c_str());
