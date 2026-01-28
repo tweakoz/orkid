@@ -796,7 +796,7 @@ std::vector<subsystem_reg_ptr_t> Application::_getReadyToInitSubsystems() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Application::_shutdownSubsystemsInWaves() {
-  logchan_APP->log("Shutting down subsystems (dependency-driven reverse order)");
+  //logchan_APP->log("Shutting down subsystems (dependency-driven reverse order)");
 
   // Build shutdown waves (reverse of init order)
   std::vector<std::vector<subsystem_reg_ptr_t>> shutdown_waves;
