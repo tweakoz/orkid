@@ -203,12 +203,6 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                         appinit->_enabled_subsystems.insert(subsystem->_name);
                       }
                     }
-                  } else {
-                    // Legacy boolean API: use_subsystems=True
-                    appinit->_use_subsystems = py::cast<bool>(item.second);
-                    if (appinit->_use_subsystems) {
-                      appinit->_defer_gpu_init = true;
-                    }
                   }
                 }
               } // for (auto item : kwargs) {

@@ -19,9 +19,10 @@ int main(int argc, char** argv,char**envp) {
   ////////////////////////////////////////////////
   // main bus effect
   ////////////////////////////////////////////////
-  auto mainbus   = synth::instance()->outputBus("main");
+  auto the_synth = synth::instance();
+  auto mainbus   = the_synth->outputBus("main");
   auto bussource = mainbus->createScopeSource();
-  auto fxlayer = fxpreset_fdn4reverb();
+  auto fxlayer = fxpreset_fdn4reverb(the_synth.get());
   mainbus->setBusDSP(fxlayer);
   ////////////////////////////////////////////////
   // UI layout

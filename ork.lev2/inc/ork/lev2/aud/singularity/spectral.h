@@ -83,28 +83,34 @@ struct SpectralImpulseResponse {
   void loadAudioFileX(const std::string& path, size_t truncate = 0);
 
   void combFilter(
-      float frequency, //
+      float sample_rate, //
+      float frequency,   //
       float top);
   void lowShelf(
-      float frequency, //
+      float sample_rate, //
+      float frequency,   //
       float gain);
   void highShelf(
-      float frequency, //
+      float sample_rate, //
+      float frequency,   //
       float gain);
   void lowRolloff(
-      float frequency, //
+      float sample_rate, //
+      float frequency,   //
       float slope);
   void highRolloff(
-      float frequency, //
+      float sample_rate, //
+      float frequency,   //
       float slope);
 
   void parametricEQ4(
+      float sample_rate, //
       fvec4 frequencies, //
       fvec4 gains,       //
       fvec4 qvals);
 
-  void vowelFormant(char vowel, float strength);
-  void violinFormant(float strength);
+  void vowelFormant(float sample_rate, char vowel, float strength);
+  void violinFormant(float samplerate, float strength);
 
   void
   set(floatvect_t& impulseL, //

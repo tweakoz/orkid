@@ -17,8 +17,9 @@ int main(int argc, char** argv,char**envp) {
   ////////////////////////////////////////////////
   // main bus effect
   ////////////////////////////////////////////////
-  synth::instance()->_masterGain = decibel_to_linear_amp_ratio(0.0f);
-  auto mainbus      = synth::instance()->outputBus("main");
+  auto the_synth = synth::instance();
+  the_synth->_masterGain = decibel_to_linear_amp_ratio(0.0f);
+  auto mainbus      = the_synth->outputBus("main");
   auto bussource    = mainbus->createScopeSource();
   //auto fxprog       = std::make_shared<ProgramData>();
   //auto fxlayer      = fxprog->newLayer();
@@ -29,7 +30,7 @@ int main(int argc, char** argv,char**envp) {
   // output effect
   /////////////////
   if (1) { // create mixbus effect ?
-     auto fxlayer = fxpreset_fdn4reverb();
+     auto fxlayer = fxpreset_fdn4reverb(the_synth.get());
     mainbus->setBusDSP(fxlayer);
   }
   ////////////////////////////////////////////////

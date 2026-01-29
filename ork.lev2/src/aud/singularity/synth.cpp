@@ -94,15 +94,12 @@ void synth::setEffect(outbus_ptr_t bus, std::string name) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-synth_ptr_t synth::_instance;
-void synth::bringUp() {
-  _instance = std::make_shared<synth>();
-}
 void synth::tearDown() {
-  _instance = nullptr;
+  instance()->deinit();
 }
 synth_ptr_t synth::instance() {
-  return _instance;
+  static synth_ptr_t ginstance = std::make_shared<synth>();
+  return ginstance;
 }
 ///////////////////////////////////////////////////////////////////////////////
 outbus_ptr_t synth::createOutputBus(std::string named) {
@@ -150,6 +147,8 @@ synth::synth()
     , _soloLayer(-1)
     , _hudpage(0)
     , _masterGain(1.0f) { //
+
+  _lifecycle_state = 0;
 
   _hudEventRouter = std::make_shared<HudEventRouter>();
 
@@ -212,6 +211,13 @@ void synth::setSampleRate(float sr) {
 ///////////////////////////////////////////////////////////////////////////////
 
 synth::~synth() {
+  deinit();
+}
+
+void synth::deinit() {
+
+  if(_lifecycle_state.exchange(2)==2)
+    return;
 
   opq::concurrentQueue()->drain();
     
@@ -230,6 +236,7 @@ synth::~synth() {
   for (auto pi : _allProgInsts)
     delete pi;
 }
+
 
 ///////////////////////////////////////////////////////////////////////////////
 void synth::addEvent(float time, void_lambda_t ev) {

@@ -143,7 +143,6 @@ PrivateImplementation::PrivateImplementation() {
 
   _execstate.store(0);
   float SR = getSampleRate();
-  synth::bringUp();
   _synth = synth::instance();
   _synth->setSampleRate(SR);
   _synth->resetFenables();

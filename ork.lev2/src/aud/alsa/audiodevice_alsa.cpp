@@ -75,7 +75,6 @@ using impl_ptr_t = std::shared_ptr<PrivateImplementation>;
 
 PrivateImplementation::PrivateImplementation(appinitdata_wkptr_t appinitd) {
   _execstate.store(0);
-  synth::bringUp();
   _synth = synth::instance();
 
   _alsaThread.start([=](anyp data) {

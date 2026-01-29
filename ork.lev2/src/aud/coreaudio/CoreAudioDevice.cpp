@@ -220,11 +220,8 @@ void CoreAudioDevice::startup() {
     OrkAssert(int(output_sample_rate) == int(desired_sample_rate));
   }
 
-  if (unlocked_appinitdata->_enable_audio_synth) {
-  logchan_coreaudio->log("synth is enabled, initializing...");
-    _the_synth = synth::instance();
-    _the_synth->setSampleRate(desired_sample_rate);
-  }
+  _the_synth = synth::instance();
+  _the_synth->setSampleRate(desired_sample_rate);
 
   _aucontext = std::make_shared<AuContext>();
   //logchan_coreaudio->log("CoreAudioThread _input_impl<%p> _output_impl<%p>", (void*)_input_impl.get(), (void*)_output_impl.get());

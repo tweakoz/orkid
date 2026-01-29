@@ -115,18 +115,18 @@ void appendWackiVerb(
 ///////////////////////////////////////////////////////////////////////////////
 // fx presets
 ///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_stereochorus();
-lyrdata_ptr_t fxpreset_fdn4reverb();
-lyrdata_ptr_t fxpreset_multitest();
-lyrdata_ptr_t fxpreset_niceverb();
-lyrdata_ptr_t fxpreset_echoverb();
-lyrdata_ptr_t fxpreset_wackiverb();
-lyrdata_ptr_t fxpreset_pitchoctup();
-lyrdata_ptr_t fxpreset_pitchwave();
-lyrdata_ptr_t fxpreset_pitchchorus();
-lyrdata_ptr_t fxpreset_vowels();
-lyrdata_ptr_t fxpreset_violins();
-lyrdata_ptr_t fxpreset_none();
+lyrdata_ptr_t fxpreset_stereochorus(synth* s);
+lyrdata_ptr_t fxpreset_fdn4reverb(synth* s);
+lyrdata_ptr_t fxpreset_multitest(synth* s);
+lyrdata_ptr_t fxpreset_niceverb(synth* s);
+lyrdata_ptr_t fxpreset_echoverb(synth* s);
+lyrdata_ptr_t fxpreset_wackiverb(synth* s);
+lyrdata_ptr_t fxpreset_pitchoctup(synth* s);
+lyrdata_ptr_t fxpreset_pitchwave(synth* s);
+lyrdata_ptr_t fxpreset_pitchchorus(synth* s);
+lyrdata_ptr_t fxpreset_vowels(synth* s);
+lyrdata_ptr_t fxpreset_violins(synth* s);
+lyrdata_ptr_t fxpreset_none(synth* s);
 void loadAllFxPresets(synth* s);
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

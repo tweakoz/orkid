@@ -347,10 +347,10 @@ void OrkEzApp::_initForAdHoc() {
   } else { // no graphics
     printf("NO GRAPHICS ENABLED\n");
     _mainWindow = nullptr;
-    if (_initdata->_enable_audio) {
-      logchan_ezapp->log("initializing audio");
-      _audioInit();
-    }
+  }
+  if (_initdata->_enable_audio) {
+    logchan_ezapp->log("initializing audio");
+    _audioInit();
   }
 }
 
@@ -798,11 +798,14 @@ bool OrkEzApp::shouldUpdateThrottleOnGPU() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::_audioInit() {
+  static std::atomic<int> audiodevice_instance_count = 0;
   //logchan_ezapp->log("OrkEzApp::_audioInit");
+  if( audiodevice_instance_count.fetch_add(1) > 0 ) {
+    return;
+  }
   _audiodevice = AudioDevice::createInstance(_initdata);
   _initdata->_miscvars["audiodevice"].set<audiodevice_ptr_t>(_audiodevice);
   if (_initdata->_enable_audio_synth) {
-    audio::singularity::synth::bringUp();
     _synth = audio::singularity::synth::instance();
     _initdata->_miscvars["synth"].set<audio::singularity::synth_ptr_t>(_synth);
     if (_synth) {

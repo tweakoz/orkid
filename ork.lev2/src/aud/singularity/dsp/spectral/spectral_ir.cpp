@@ -5,7 +5,7 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-#include <ork/lev2/aud/singularity/synth.h>
+#include <ork/orktypes.h>
 #include <assert.h>
 #include <vector>
 #include <cmath>
@@ -343,19 +343,15 @@ static floatvect_t _createCombFilterIR(int sampleRate, int notchSpacing, int max
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SpectralImpulseResponse::combFilter(float frequency, float top) {
-  auto syn        = synth::instance();
-  auto sampleRate = syn->sampleRate();
-  auto impulseL   = _createCombFilterIR(sampleRate, frequency, top);
-  auto impulseR   = _createCombFilterIR(sampleRate, frequency, top);
+void SpectralImpulseResponse::combFilter(float sample_rate, float frequency, float top) {
+  auto impulseL   = _createCombFilterIR(sample_rate, frequency, top);
+  auto impulseR   = _createCombFilterIR(sample_rate, frequency, top);
   set(impulseL, impulseR);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SpectralImpulseResponse::lowShelf(float frequency, float gain) {
-  auto syn            = synth::instance();
-  auto sampleRate     = syn->sampleRate();
+void SpectralImpulseResponse::lowShelf(float sample_rate, float frequency, float gain) {
   size_t complex_size = audiofft::AudioFFT::ComplexSize(_length);
 
   // Initialize complex spectrum data
@@ -365,7 +361,7 @@ void SpectralImpulseResponse::lowShelf(float frequency, float gain) {
   _imagR.assign(complex_size, 0.0f);
 
   // Calculate the cutoff index in the frequency domain
-  int cutoffIndex = static_cast<int>((frequency / sampleRate) * _length);
+  int cutoffIndex = static_cast<int>((frequency / sample_rate) * _length);
 
   float linearGain = decibel_to_linear_amp_ratio(gain);
 
@@ -379,9 +375,7 @@ void SpectralImpulseResponse::lowShelf(float frequency, float gain) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SpectralImpulseResponse::highShelf(float frequency, float gain) {
-  auto syn            = synth::instance();
-  auto sampleRate     = syn->sampleRate();
+void SpectralImpulseResponse::highShelf(float sample_rate, float frequency, float gain) {
   size_t complex_size = audiofft::AudioFFT::ComplexSize(_length);
 
   // Initialize complex spectrum data with zeros
@@ -391,7 +385,7 @@ void SpectralImpulseResponse::highShelf(float frequency, float gain) {
   _imagR.assign(complex_size, 0.0f);
 
   // Calculate the cutoff index in the frequency domain
-  int cutoffIndex = static_cast<int>((frequency / sampleRate) * _length);
+  int cutoffIndex = static_cast<int>((frequency / sample_rate) * _length);
 
   float linearGain = decibel_to_linear_amp_ratio(gain);
 
@@ -406,16 +400,14 @@ void SpectralImpulseResponse::highShelf(float frequency, float gain) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SpectralImpulseResponse::lowRolloff(float frequency, float slope) {
+void SpectralImpulseResponse::lowRolloff(float sample_rate, float frequency, float slope) {
   // roll off the high frequencies at a given slope (dB per octave)
-  auto syn            = synth::instance();
-  auto sampleRate     = syn->sampleRate();
   size_t complex_size = audiofft::AudioFFT::ComplexSize(_length);
   _realL.assign(complex_size, 1.0f);
   _imagL.assign(complex_size, 0.0f);
-  size_t cutoffBin = static_cast<size_t>((frequency / sampleRate) * complex_size);
+  size_t cutoffBin = static_cast<size_t>((frequency / sample_rate) * complex_size);
   for (size_t bin = 0; bin < complex_size; ++bin) {
-    float binFrequency = static_cast<float>(bin) / complex_size * sampleRate;
+    float binFrequency = static_cast<float>(bin) / complex_size * sample_rate;
     if (binFrequency > frequency) {
       float octavesAboveCutoff = log2(binFrequency / frequency);
       float gainDB             = -abs(slope) * octavesAboveCutoff;
@@ -428,16 +420,14 @@ void SpectralImpulseResponse::lowRolloff(float frequency, float slope) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SpectralImpulseResponse::highRolloff(float frequency, float slope) {
+void SpectralImpulseResponse::highRolloff(float sample_rate, float frequency, float slope) {
   // roll off the low frequencies at a given slope (dB per octave)
-  auto syn            = synth::instance();
-  auto sampleRate     = syn->sampleRate();
   size_t complex_size = audiofft::AudioFFT::ComplexSize(_length);
   _realL.assign(complex_size, 1.0f);
   _imagL.assign(complex_size, 0.0f);
-  size_t cutoffBin = static_cast<size_t>((frequency / sampleRate) * complex_size);
+  size_t cutoffBin = static_cast<size_t>((frequency / sample_rate) * complex_size);
   for (size_t bin = 0; bin < complex_size; ++bin) {
-    float binFrequency = static_cast<float>(bin) / complex_size * sampleRate;
+    float binFrequency = static_cast<float>(bin) / complex_size * sample_rate;
     if (binFrequency < frequency) {
       float octavesBelowCutoff = log2(frequency / binFrequency);
       float gainDB             = -abs(slope) * octavesBelowCutoff;
@@ -518,11 +508,10 @@ float _calculateParametricEQResponse(
 ///////////////////////////////////////////////////////////////////////////////
 
 void SpectralImpulseResponse::parametricEQ4(
+    float sample_rate, //
     fvec4 frequencies, //
     fvec4 gains,       //
     fvec4 qvals) {
-  auto syn            = synth::instance();
-  auto sampleRate     = syn->sampleRate();
   size_t complex_size = audiofft::AudioFFT::ComplexSize(_length);
 
   // Initialize or ensure spectral data is ready for processing
@@ -540,7 +529,7 @@ void SpectralImpulseResponse::parametricEQ4(
 
     // Loop through the spectrum and apply the EQ adjustments
     for (size_t bin = 0; bin < complex_size; ++bin) {
-      float binFrequency = float(bin) / float(_length) * sampleRate;
+      float binFrequency = float(bin) / float(_length) * sample_rate;
 
       // Calculate the frequency response of the parametric EQ for this bin
       float response = _calculateParametricEQResponse(
@@ -548,7 +537,7 @@ void SpectralImpulseResponse::parametricEQ4(
           frequency,    //
           linearGain,   //
           qval,         //
-          sampleRate);
+          sample_rate);
 
       // printf( "binF<%g> ctrF<%g> Q<%g> response<%g>\n", binFrequency, frequency, qval, response);
       //  Apply the response to the spectral data
@@ -578,10 +567,7 @@ static std::map<char, formants_list> _vowelFormantsMap = {
     {'U', {{350, 110}, {600, 110}, {2700, 110}}}   // Example formants for 'U'
 };
 
-void SpectralImpulseResponse::vowelFormant(char vowel, float strength) {
-  // auto syn = synth::instance();
-  auto sampleRate = 48000.0f; // syn->sampleRate();
-  // auto sampleRate = syn->sampleRate();
+void SpectralImpulseResponse::vowelFormant(float sample_rate, char vowel, float strength) {
   _realL.assign(_length, 1.0f / strength); // Initialize to unity gain
   _imagL.assign(_length, 0.0f);            // No initial phase change
   _realR.assign(_length, 1.0f / strength); // Initialize to unity gain
@@ -592,8 +578,8 @@ void SpectralImpulseResponse::vowelFormant(char vowel, float strength) {
     // Here, you would calculate and apply the band-pass filter for each formant.
     // This requires DSP knowledge to implement correctly.
     // For demonstration, we'll simply boost frequencies around the formant frequency.
-    int centerBin     = static_cast<int>((formant.frequency / sampleRate) * _length);
-    int bandwidthBins = static_cast<int>((formant.bandwidth / sampleRate) * _length);
+    int centerBin     = static_cast<int>((formant.frequency / sample_rate) * _length);
+    int bandwidthBins = static_cast<int>((formant.bandwidth / sample_rate) * _length);
 
     for (int bin = centerBin - bandwidthBins; bin <= centerBin + bandwidthBins; ++bin) {
       if (bin >= 0 && bin < _length) {
@@ -607,9 +593,7 @@ void SpectralImpulseResponse::vowelFormant(char vowel, float strength) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SpectralImpulseResponse::violinFormant(float strength) {
-  auto syn        = synth::instance();
-  auto sampleRate = 48000.0f; // syn->sampleRate();
+void SpectralImpulseResponse::violinFormant(float samplerate, float strength) {
 
   _realL.assign(_length, 1.0f / strength); // Initialize to unity gain
   _imagL.assign(_length, 0.0f);            // No initial phase change
@@ -630,8 +614,8 @@ void SpectralImpulseResponse::violinFormant(float strength) {
   };
 
   for (auto f : formants) {
-    int centerBin     = static_cast<int>((f.frequency / sampleRate) * _length);
-    int bandwidthBins = static_cast<int>((f.bandwidth / sampleRate) * _length);
+    int centerBin     = static_cast<int>((f.frequency / samplerate) * _length);
+    int bandwidthBins = static_cast<int>((f.bandwidth / samplerate) * _length);
     for (int bin = centerBin - bandwidthBins; bin <= centerBin + bandwidthBins; ++bin) {
       if (bin >= 0 && bin < _length) {
         _realL[bin] = 1.0f; // Simplified example of boosting the magnitude

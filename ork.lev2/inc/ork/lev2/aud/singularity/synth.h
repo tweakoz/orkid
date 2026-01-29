@@ -112,6 +112,7 @@ using programchannel_ptr_t = std::shared_ptr<ProgramChannel>;
 struct synth {
   synth();
   ~synth();
+  void deinit();
 
   void disableMasterEq();
   void enableMasterEq();
@@ -119,10 +120,8 @@ struct synth {
 
   using eventmap_t = std::multimap<float, void_lambda_t>;
 
-  static synth_ptr_t _instance;
   static synth_ptr_t instance();
   static void tearDown();
-  static void bringUp();
 
   typedef std::vector<hudsample> hudsamples_t;
 
@@ -242,6 +241,7 @@ struct synth {
   float _velcurvepower          = 0.5f;
   fmtx4 _listener_matrix;
   fmtx4 _inv_listener_matrix;
+  std::atomic<int> _lifecycle_state;
 
   outbus_ptr_t _curprogrambus;
 

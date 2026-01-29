@@ -1309,16 +1309,16 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
           .def(py::init<>())
           .def("loadAudioFile", [](spectralimpulseresponse_ptr_t ir, std::string path) { ir->loadAudioFile(path); })
           .def("loadAudioFileX", [](spectralimpulseresponse_ptr_t ir, std::string path) { ir->loadAudioFileX(path); })
-          .def("combFilter", [](spectralimpulseresponse_ptr_t ir, float frq, float top) { ir->combFilter(frq, top); })
-          .def("lowShelf", [](spectralimpulseresponse_ptr_t ir, float frq, float gain) { ir->lowShelf(frq, gain); })
-          .def("highShelf", [](spectralimpulseresponse_ptr_t ir, float frq, float gain) { ir->highShelf(frq, gain); })
-          .def("lowRolloff", [](spectralimpulseresponse_ptr_t ir, float frq, float slope) { ir->lowRolloff(frq, slope); })
-          .def("highRolloff", [](spectralimpulseresponse_ptr_t ir, float frq, float slope) { ir->highRolloff(frq, slope); })
+          .def("combFilter", [](spectralimpulseresponse_ptr_t ir, float sr, float frq, float top) { ir->combFilter(sr, frq, top); })
+          .def("lowShelf", [](spectralimpulseresponse_ptr_t ir, float sr, float frq, float gain) { ir->lowShelf(sr, frq, gain); })
+          .def("highShelf", [](spectralimpulseresponse_ptr_t ir, float sr, float frq, float gain) { ir->highShelf(sr, frq, gain); })
+          .def("lowRolloff", [](spectralimpulseresponse_ptr_t ir, float sr, float frq, float slope) { ir->lowRolloff(sr, frq, slope); })
+          .def("highRolloff", [](spectralimpulseresponse_ptr_t ir, float sr, float frq, float slope) { ir->highRolloff(sr, frq, slope); })
           .def(
               "parametricEQ4",
-              [](spectralimpulseresponse_ptr_t ir, fvec4 frqs, fvec4 gains, fvec4 qvals) { ir->parametricEQ4(frqs, gains, qvals); })
-          .def("vowelFormant", [](spectralimpulseresponse_ptr_t ir, char ch, float strength) { ir->vowelFormant(ch, strength); })
-          .def("violinFormant", [](spectralimpulseresponse_ptr_t ir, float strength) { ir->violinFormant(strength); })
+              [](spectralimpulseresponse_ptr_t ir, float sr, fvec4 frqs, fvec4 gains, fvec4 qvals) { ir->parametricEQ4(sr, frqs, gains, qvals); })
+          .def("vowelFormant", [](spectralimpulseresponse_ptr_t ir, float sr, char ch, float strength) { ir->vowelFormant(sr, ch, strength); })
+          .def("violinFormant", [](spectralimpulseresponse_ptr_t ir, float sr, float strength) { ir->violinFormant(sr, strength); })
           .def("mirror", [](spectralimpulseresponse_ptr_t ir) { ir->mirror(); })
           .def_property(
               "realL",

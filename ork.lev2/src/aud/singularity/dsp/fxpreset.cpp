@@ -10,7 +10,7 @@
 
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_distortionpluschorus() {
+lyrdata_ptr_t fxpreset_distortionpluschorus(synth* s) {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
   auto fxalg        = std::make_shared<AlgData>();
@@ -42,7 +42,7 @@ lyrdata_ptr_t fxpreset_distortionpluschorus() {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_distortionplusecho() {
+lyrdata_ptr_t fxpreset_distortionplusecho(synth* s) {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
   auto fxalg        = std::make_shared<AlgData>();
@@ -73,7 +73,7 @@ lyrdata_ptr_t fxpreset_distortionplusecho() {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_stereochorus() {
+lyrdata_ptr_t fxpreset_stereochorus(synth* s) {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
   auto fxalg        = std::make_shared<AlgData>();
@@ -94,7 +94,7 @@ lyrdata_ptr_t fxpreset_stereochorus() {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_fdn4reverb() {
+lyrdata_ptr_t fxpreset_fdn4reverb(synth* s) {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
   auto fxalg        = std::make_shared<AlgData>();
@@ -179,7 +179,7 @@ lyrdata_ptr_t fxpreset_fdn4reverb() {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_fdnxreverb() {
+lyrdata_ptr_t fxpreset_fdnxreverb(synth* s) {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
   auto fxalg        = std::make_shared<AlgData>();
@@ -263,7 +263,7 @@ lyrdata_ptr_t fxpreset_fdnxreverb() {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_fdn8reverb() {
+lyrdata_ptr_t fxpreset_fdn8reverb(synth* s) {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
   auto fxalg        = std::make_shared<AlgData>();
@@ -298,7 +298,7 @@ lyrdata_ptr_t fxpreset_fdn8reverb() {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_oiltankreverb() {
+lyrdata_ptr_t fxpreset_oiltankreverb(synth* s) {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
   auto fxalg        = std::make_shared<AlgData>();
@@ -316,7 +316,7 @@ lyrdata_ptr_t fxpreset_oiltankreverb() {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_guywireeverb() {
+lyrdata_ptr_t fxpreset_guywireeverb(synth* s) {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
   auto fxalg        = std::make_shared<AlgData>();
@@ -334,7 +334,7 @@ lyrdata_ptr_t fxpreset_guywireeverb() {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_niceverb() {
+lyrdata_ptr_t fxpreset_niceverb(synth* s) {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
   auto fxalg        = std::make_shared<AlgData>();
@@ -356,7 +356,7 @@ lyrdata_ptr_t fxpreset_niceverb() {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_testverb() {
+lyrdata_ptr_t fxpreset_testverb(synth* s) {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
   auto fxalg        = std::make_shared<AlgData>();
@@ -376,7 +376,7 @@ lyrdata_ptr_t fxpreset_testverb() {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_echoverb() {
+lyrdata_ptr_t fxpreset_echoverb(synth* s) {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
   auto fxalg        = std::make_shared<AlgData>();
@@ -407,7 +407,7 @@ lyrdata_ptr_t fxpreset_echoverb() {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_wackiverb() {
+lyrdata_ptr_t fxpreset_wackiverb(synth* s) {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
   auto fxalg        = std::make_shared<AlgData>();
@@ -434,7 +434,7 @@ lyrdata_ptr_t fxpreset_wackiverb() {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_pitchoctup() {
+lyrdata_ptr_t fxpreset_pitchoctup(synth* s) {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
   auto fxalg        = std::make_shared<AlgData>();
@@ -452,7 +452,7 @@ lyrdata_ptr_t fxpreset_pitchoctup() {
   /////////////////
   return fxlayer;
 }
-lyrdata_ptr_t fxpreset_pitchoctdn() {
+lyrdata_ptr_t fxpreset_pitchoctdn(synth* s) {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
   auto fxalg        = std::make_shared<AlgData>();
@@ -470,7 +470,7 @@ lyrdata_ptr_t fxpreset_pitchoctdn() {
   /////////////////
   return fxlayer;
 }
-lyrdata_ptr_t fxpreset_pitchfifthup() {
+lyrdata_ptr_t fxpreset_pitchfifthup(synth* s) {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
   auto fxalg        = std::make_shared<AlgData>();
@@ -488,7 +488,7 @@ lyrdata_ptr_t fxpreset_pitchfifthup() {
   /////////////////
   return fxlayer;
 }
-lyrdata_ptr_t fxpreset_pitchfifthdn() {
+lyrdata_ptr_t fxpreset_pitchfifthdn(synth* s) {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
   auto fxalg        = std::make_shared<AlgData>();
@@ -507,7 +507,7 @@ lyrdata_ptr_t fxpreset_pitchfifthdn() {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_pitchwave() {
+lyrdata_ptr_t fxpreset_pitchwave(synth* s) {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
   auto fxalg        = std::make_shared<AlgData>();
@@ -535,7 +535,7 @@ lyrdata_ptr_t fxpreset_pitchwave() {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_pitchchorus() {
+lyrdata_ptr_t fxpreset_pitchchorus(synth* s) {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
   auto fxalg        = std::make_shared<AlgData>();
@@ -551,7 +551,7 @@ lyrdata_ptr_t fxpreset_pitchchorus() {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_pitchrec() {
+lyrdata_ptr_t fxpreset_pitchrec(synth* s) {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
   auto fxalg        = std::make_shared<AlgData>();
@@ -567,7 +567,7 @@ lyrdata_ptr_t fxpreset_pitchrec() {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_pitchrecdn() {
+lyrdata_ptr_t fxpreset_pitchrecdn(synth* s) {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
   auto fxalg        = std::make_shared<AlgData>();
@@ -583,7 +583,7 @@ lyrdata_ptr_t fxpreset_pitchrecdn() {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_stereodelay() {
+lyrdata_ptr_t fxpreset_stereodelay(synth* s) {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
   auto fxalg        = std::make_shared<AlgData>();
@@ -604,7 +604,7 @@ lyrdata_ptr_t fxpreset_stereodelay() {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_multitest() {
+lyrdata_ptr_t fxpreset_multitest(synth* s) {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
   auto fxalg        = std::make_shared<AlgData>();
@@ -639,7 +639,7 @@ lyrdata_ptr_t fxpreset_multitest() {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_vowels() {
+lyrdata_ptr_t fxpreset_vowels(synth* s) {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
   auto fxalg        = std::make_shared<AlgData>();
@@ -657,16 +657,17 @@ lyrdata_ptr_t fxpreset_vowels() {
   vowels->_impulse_dataset = dataset;
   /////////////////
   float strength = 32.0f;
+  float sr = s->sampleRate();
   auto A = std::make_shared<SpectralImpulseResponse>();
   auto E = std::make_shared<SpectralImpulseResponse>();
   auto I = std::make_shared<SpectralImpulseResponse>();
   auto O = std::make_shared<SpectralImpulseResponse>();
   auto U = std::make_shared<SpectralImpulseResponse>();
-  A->vowelFormant('A',strength);
-  E->vowelFormant('E',strength);
-  I->vowelFormant('I',strength);
-  O->vowelFormant('O',strength);
-  U->vowelFormant('U',strength);
+  A->vowelFormant(sr, 'A', strength);
+  E->vowelFormant(sr, 'E', strength);
+  I->vowelFormant(sr, 'I', strength);
+  O->vowelFormant(sr, 'O', strength);
+  U->vowelFormant(sr, 'U', strength);
   /////////////////
   for( int i=0; i<256; i++ ){
     float fi = float(i)/256.0f;
@@ -699,7 +700,7 @@ lyrdata_ptr_t fxpreset_vowels() {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_violins() {
+lyrdata_ptr_t fxpreset_violins(synth* s) {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
   auto fxalg        = std::make_shared<AlgData>();
@@ -718,7 +719,7 @@ lyrdata_ptr_t fxpreset_violins() {
   for( int i=0; i<256; i++ ){
     float fi = float(i)/256.0f;
     auto IR = std::make_shared<SpectralImpulseResponse>();
-    IR->violinFormant(16.0f);
+    IR->violinFormant(s->sampleRate(), 16.0f);
     dataset->_impulses[i] = IR;
   }
 
@@ -735,7 +736,7 @@ lyrdata_ptr_t fxpreset_violins() {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_testamp() {
+lyrdata_ptr_t fxpreset_testamp(synth* s) {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
   auto fxalg        = std::make_shared<AlgData>();
@@ -776,7 +777,7 @@ lyrdata_ptr_t fxpreset_testamp() {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_IR(std::string ampname, float mix, float postgain) {
+lyrdata_ptr_t fxpreset_IR(synth* s, std::string ampname, float mix, float postgain) {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
   auto fxalg        = std::make_shared<AlgData>();
@@ -817,7 +818,7 @@ lyrdata_ptr_t fxpreset_IR(std::string ampname, float mix, float postgain) {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_none() {
+lyrdata_ptr_t fxpreset_none(synth* s) {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
   auto fxalg        = std::make_shared<AlgData>();
@@ -840,55 +841,55 @@ void loadAllFxPresets(synth* s) {
     lyr->_name = named;
   };
 
-  addpreset("none", fxpreset_none());
-  addpreset("Reverb:FDN4", fxpreset_fdn4reverb());
-  addpreset("Reverb:FDN8", fxpreset_fdn8reverb());
-  addpreset("Reverb:FDNX", fxpreset_fdnxreverb());
-  addpreset("Reverb:OilTank", fxpreset_oiltankreverb());
-  //addpreset("Reverb:TEST", fxpreset_testverb());
-  addpreset("Reverb:GuyWire", fxpreset_guywireeverb());
-  addpreset("Reverb:NiceVerb", fxpreset_niceverb());
-  addpreset("Reverb:EchoVerb", fxpreset_echoverb());
-  addpreset("Reverb:WackiVerb", fxpreset_wackiverb());
-  addpreset("Distortion+Chorus", fxpreset_distortionpluschorus());
-  addpreset("Distortion+Echo", fxpreset_distortionplusecho());
-  addpreset("StereoChorus", fxpreset_stereochorus());
-  addpreset("ShifterFifthUp", fxpreset_pitchfifthup());
-  addpreset("ShifterFifthDn", fxpreset_pitchfifthdn());
-  addpreset("ShifterOctUp", fxpreset_pitchoctup());
-  addpreset("ShifterOctDn", fxpreset_pitchoctdn());
-  addpreset("ShifterWave", fxpreset_pitchwave());
-  addpreset("ShifterChorus", fxpreset_pitchchorus());
-  addpreset("ShifterRecUp", fxpreset_pitchrec());
-  addpreset("ShifterRecDn", fxpreset_pitchrecdn());
-  addpreset("MultiTest", fxpreset_multitest());
-  addpreset("StereoDelay", fxpreset_stereodelay());
-  addpreset("Vowels", fxpreset_vowels());
-  addpreset("Violins", fxpreset_violins());
-  addpreset("Amp-Test", fxpreset_testamp());
-  addpreset("Amp-AT4050A", fxpreset_IR("Fender SuperChamp AT4050.wav",1.0,-12));
-  addpreset("Amp-AT4050B", fxpreset_IR("Fender Bassman AT4050.wav",1.0,-12));
-  addpreset("Amp-AT4050C", fxpreset_IR("Fender 68-Vibrolux AT4050.wav",1.0,-6));
-  addpreset("Amp-JCM2KA", fxpreset_IR("Marshall JCM2000 SM57.wav",1.0,-15));
-  addpreset("Amp-JCM2KB", fxpreset_IR("Marshall JCM2000 SM57 off Axis.wav",1.0,-21));
-  addpreset("Amp-JMKSC2", fxpreset_IR("JoeMeek SC2 Impulse Hard.wav",1.0,-18));
-  addpreset("Amp-SVTB52", fxpreset_IR("Ampeg SVT Beta52.wav",1.0,-18));
-  addpreset("IR-RadioAnn1", fxpreset_IR("Sound 2.wav",0.05,-6));
-  addpreset("IR-RadioAnn2", fxpreset_IR("Sound 2.wav",0.20,-6));
-  addpreset("IR-Mic1", fxpreset_IR("Neumann U-87 AI - 15cm.wav",0.50,-16));
-  addpreset("IR-Forest", fxpreset_IR("forest.wav",0.0015,-6));
-  addpreset("IR-RMX16b", fxpreset_IR("rmx16-nonlin.wav",0.03,-6));
-  addpreset("IR-RMX16", fxpreset_IR("rmx16-nonlin.wav",0.01,-6));
-  addpreset("IR-Spring1", fxpreset_IR("spring1.wav",0.004,-6));
-  addpreset("IR-Shower", fxpreset_IR("shower.wav",0.0006,-6));
-  addpreset("IR-Attic", fxpreset_IR("attic1.wav",0.0003,-6));
-  addpreset("IR-Rollo", fxpreset_IR("rolloplate.wav",0.0015,-3));
-  addpreset("IR-KnHall1", fxpreset_IR("knightshall.wav",0.01,-3));
-  addpreset("IR-KnHall2", fxpreset_IR("knightshall.wav",0.003,-3));
-  addpreset("IR-Cath5m1", fxpreset_IR("cathedral5m.wav",0.01,-3));
-  addpreset("IR-Cath5m2", fxpreset_IR("cathedral5m.wav",0.003,-3));
-  addpreset("IR-BH1", fxpreset_IR("5012 Black Hole.SDIR",0.25,0));
-  addpreset("IR-BH2", fxpreset_IR("5012 Black Hole.SDIR",0.05,0));
+  addpreset("none", fxpreset_none(s));
+  addpreset("Reverb:FDN4", fxpreset_fdn4reverb(s));
+  addpreset("Reverb:FDN8", fxpreset_fdn8reverb(s));
+  addpreset("Reverb:FDNX", fxpreset_fdnxreverb(s));
+  addpreset("Reverb:OilTank", fxpreset_oiltankreverb(s));
+  //addpreset("Reverb:TEST", fxpreset_testverb(s));
+  addpreset("Reverb:GuyWire", fxpreset_guywireeverb(s));
+  addpreset("Reverb:NiceVerb", fxpreset_niceverb(s));
+  addpreset("Reverb:EchoVerb", fxpreset_echoverb(s));
+  addpreset("Reverb:WackiVerb", fxpreset_wackiverb(s));
+  addpreset("Distortion+Chorus", fxpreset_distortionpluschorus(s));
+  addpreset("Distortion+Echo", fxpreset_distortionplusecho(s));
+  addpreset("StereoChorus", fxpreset_stereochorus(s));
+  addpreset("ShifterFifthUp", fxpreset_pitchfifthup(s));
+  addpreset("ShifterFifthDn", fxpreset_pitchfifthdn(s));
+  addpreset("ShifterOctUp", fxpreset_pitchoctup(s));
+  addpreset("ShifterOctDn", fxpreset_pitchoctdn(s));
+  addpreset("ShifterWave", fxpreset_pitchwave(s));
+  addpreset("ShifterChorus", fxpreset_pitchchorus(s));
+  addpreset("ShifterRecUp", fxpreset_pitchrec(s));
+  addpreset("ShifterRecDn", fxpreset_pitchrecdn(s));
+  addpreset("MultiTest", fxpreset_multitest(s));
+  addpreset("StereoDelay", fxpreset_stereodelay(s));
+  addpreset("Vowels", fxpreset_vowels(s));
+  addpreset("Violins", fxpreset_violins(s));
+  addpreset("Amp-Test", fxpreset_testamp(s));
+  addpreset("Amp-AT4050A", fxpreset_IR(s,"Fender SuperChamp AT4050.wav",1.0,-12));
+  addpreset("Amp-AT4050B", fxpreset_IR(s,"Fender Bassman AT4050.wav",1.0,-12));
+  addpreset("Amp-AT4050C", fxpreset_IR(s,"Fender 68-Vibrolux AT4050.wav",1.0,-6));
+  addpreset("Amp-JCM2KA", fxpreset_IR(s,"Marshall JCM2000 SM57.wav",1.0,-15));
+  addpreset("Amp-JCM2KB", fxpreset_IR(s,"Marshall JCM2000 SM57 off Axis.wav",1.0,-21));
+  addpreset("Amp-JMKSC2", fxpreset_IR(s,"JoeMeek SC2 Impulse Hard.wav",1.0,-18));
+  addpreset("Amp-SVTB52", fxpreset_IR(s,"Ampeg SVT Beta52.wav",1.0,-18));
+  addpreset("IR-RadioAnn1", fxpreset_IR(s,"Sound 2.wav",0.05,-6));
+  addpreset("IR-RadioAnn2", fxpreset_IR(s,"Sound 2.wav",0.20,-6));
+  addpreset("IR-Mic1", fxpreset_IR(s,"Neumann U-87 AI - 15cm.wav",0.50,-16));
+  addpreset("IR-Forest", fxpreset_IR(s,"forest.wav",0.0015,-6));
+  addpreset("IR-RMX16b", fxpreset_IR(s,"rmx16-nonlin.wav",0.03,-6));
+  addpreset("IR-RMX16", fxpreset_IR(s,"rmx16-nonlin.wav",0.01,-6));
+  addpreset("IR-Spring1", fxpreset_IR(s,"spring1.wav",0.004,-6));
+  addpreset("IR-Shower", fxpreset_IR(s,"shower.wav",0.0006,-6));
+  addpreset("IR-Attic", fxpreset_IR(s,"attic1.wav",0.0003,-6));
+  addpreset("IR-Rollo", fxpreset_IR(s,"rolloplate.wav",0.0015,-3));
+  addpreset("IR-KnHall1", fxpreset_IR(s,"knightshall.wav",0.01,-3));
+  addpreset("IR-KnHall2", fxpreset_IR(s,"knightshall.wav",0.003,-3));
+  addpreset("IR-Cath5m1", fxpreset_IR(s,"cathedral5m.wav",0.01,-3));
+  addpreset("IR-Cath5m2", fxpreset_IR(s,"cathedral5m.wav",0.003,-3));
+  addpreset("IR-BH1", fxpreset_IR(s,"5012 Black Hole.SDIR",0.25,0));
+  addpreset("IR-BH2", fxpreset_IR(s,"5012 Black Hole.SDIR",0.05,0));
   
 }
 } // namespace ork::audio::singularity
