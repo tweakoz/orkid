@@ -10,6 +10,7 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/renderer/rendercontext.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/util/logger.h>
 #include <GLFW/glfw3.h>
 
@@ -265,12 +266,14 @@ void SecondaryWinImpl::_render() {
 
   // GPU init on first render
   if (!_owner->_gpuInitialized) {
+    _gfxContext->beginPrimaryCommandBuffer();
     if (_owner->_onGpuInit) {
       _owner->_onGpuInit(_gfxContext);
     }
     if (_owner->_uicontext && _owner->_uicontext->_top) {
       _owner->_uicontext->_top->gpuInit(_gfxContext);
     }
+    _gfxContext->endPrimaryCommandBuffer();
     _owner->_gpuInitialized = true;
   }
 
@@ -281,6 +284,12 @@ void SecondaryWinImpl::_render() {
   if (_owner->_onDraw) {
     logchan_secwin->log("_render: using custom onDraw");
     auto drwev = std::make_shared<ui::DrawEvent>(_gfxContext);
+    
+    // Stuff to make secondary window with scenegraph work
+    auto acqdbuf = std::make_shared<lev2::AcquiredDrawQueueForRendering>();
+    acqdbuf->_RCFD = _cleanRcfd;
+    drwev->_acqdbuf = acqdbuf;
+
     _owner->_onDraw(drwev);
   } else if (_owner->_uicontext && _owner->_uicontext->_top) {
     // Default: draw UI context
@@ -303,6 +312,12 @@ void SecondaryWinImpl::_render() {
       mtxi->PushUIMatrix(tgtrect._w, tgtrect._h);
 
       auto drwev = std::make_shared<ui::DrawEvent>(_gfxContext);
+
+      // Stuff to make secondary window with scene graph work
+      auto acqdbuf = std::make_shared<lev2::AcquiredDrawQueueForRendering>();
+      acqdbuf->_RCFD = _cleanRcfd;
+      drwev->_acqdbuf = acqdbuf;
+
       _owner->_uicontext->draw(drwev);
       mtxi->PopUIMatrix();
 
