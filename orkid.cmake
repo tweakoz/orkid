@@ -102,7 +102,7 @@ endfunction()
 # Global sanitizer support (set via -DSANITIZER=ADDRESS|THREAD|UNDEFINED)
 #############################################################################################################
 
-IF(DEFINED SANITIZER)
+IF(DEFINED SANITIZER AND NOT SANITIZER STREQUAL "")
   #message(STATUS "Sanitizer enabled: ${SANITIZER}")
 
   # Common flags for all sanitizers

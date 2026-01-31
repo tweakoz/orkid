@@ -153,16 +153,16 @@ synth::synth()
   _hudEventRouter = std::make_shared<HudEventRouter>();
 
   //logchan_synth->log("clearing delay lines...");
-  std::atomic<int> delayopcounter = 0;
-  for (int i = 0; i < 1024; i++) {
+  constexpr int kNumDelayContexts = 1024;
+  std::atomic<int> delayopcounter{kNumDelayContexts};
+  for (int i = 0; i < kNumDelayContexts; i++) {
     auto op = [this, &delayopcounter]() {
-      delayopcounter.fetch_add(1);
       auto delay = std::make_shared<DelayContext>();
       delay->clear();
       _delayspool.atomicOp([&](delaydequeue_t& unlocked) {
         unlocked.push_back(delay);
-        delayopcounter.fetch_sub(1);
       });
+      delayopcounter.fetch_sub(1);
     };
     opq::concurrentQueue()->enqueue(op);
   }

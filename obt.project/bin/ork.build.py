@@ -124,6 +124,8 @@ with buildtrace.NestedBuildTrace({ "op": "obt.build.py"}) as nested:
 
   if _args["sanitize"]:
     cmd += ["-DSANITIZER=%s" % _args["sanitize"].upper()]
+  else:
+    cmd += ["-USANITIZER"]  # Unset cached sanitizer from previous builds
 
   ###################################################
   # inject relevant state from deppers into cmake
