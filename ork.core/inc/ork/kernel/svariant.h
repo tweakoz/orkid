@@ -31,6 +31,7 @@
 #include <assert.h>
 #include <memory>
 #include <new>
+#include <optional>
 #include <string.h>
 #include <type_traits>
 #include <typeinfo>
@@ -608,6 +609,22 @@ public:
     auto mtinfo  = _mtinfo();
     bool type_ok = (mtinfo != nullptr) ? (typeid(T) == *mtinfo) : false;
     return attempt_cast_const<T>((const T*)(type_ok ? &_buffer[0] : nullptr));
+  }
+  //////////////////////////////////////////////////////////////
+  // Safe value extraction - returns std::optional<T> by copying the value.
+  // Unlike tryAs<T>(), this is safe to use on temporaries since the value
+  // is copied into the optional before the variant is destroyed.
+  // Example: config->getValueForKey("key").tryGet<bool>()  // SAFE
+  //////////////////////////////////////////////////////////////
+  template <typename T> std::optional<T> tryGet() {
+    if (auto result = tryAs<T>())
+      return result.value();
+    return std::nullopt;
+  }
+  template <typename T> std::optional<T> tryGet() const {
+    if (auto result = tryAs<T>())
+      return result.value();
+    return std::nullopt;
   }
   //////////////////////////////////////////////////////////////
   // return true if the variant is capable of containing an object of type T
