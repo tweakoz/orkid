@@ -22,6 +22,8 @@ parser.add_argument('--profiler',action="store_true", help=" profiled build")
 parser.add_argument('--trace',action="store_true", help=" cmake trace")
 parser.add_argument('--obttrace',action="store_true",help='enable OBT buildtrace logging')
 parser.add_argument('--xcode',action="store_true", help=" xcode debug build")
+parser.add_argument('--sanitize', choices=['address', 'thread', 'undefined'],
+                    help="enable sanitizer (address=ASan+UBSan+Leak, thread=TSan+UBSan, undefined=UBSan only)")
 parser.add_argument("--builddir")
 
 _args = vars(parser.parse_args())
@@ -119,6 +121,9 @@ with buildtrace.NestedBuildTrace({ "op": "obt.build.py"}) as nested:
     cmd += ["-DPROFILER=ON"]
   else:
     cmd += ["-DPROFILER=OFF"]
+
+  if _args["sanitize"]:
+    cmd += ["-DSANITIZER=%s" % _args["sanitize"].upper()]
 
   ###################################################
   # inject relevant state from deppers into cmake

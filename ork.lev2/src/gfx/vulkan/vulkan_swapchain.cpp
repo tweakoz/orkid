@@ -29,9 +29,7 @@ VkSwapChain::~VkSwapChain() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkSwapChain::_buildup() {
-  auto& vkdev    = _contextVK->_vkdevice;
-  auto& cmdbuf   = _contextVK->primary_cb()->_vkcmdbuf;
-  
+  auto& vkdev = _contextVK->_vkdevice;
   _contextVK->_vkpresentation_caps = _contextVK->_swapChainCapsForSurface(_contextVK->_vkpresentationsurface);
   
   auto pres_caps = _contextVK->_vkpresentation_caps;

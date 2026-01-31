@@ -19,10 +19,10 @@ void DrawingInterface::line2DEML(const fvec2& v0, const fvec2& v1, const fvec4& 
 
   auto GBI = _context.GBI();
 
-  DynamicVertexBuffer<SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
+  auto vb = GfxEnv::GetSharedDynamicVB();
   U32 uc                                = vertex_color.ABGRU32();
   ork::lev2::VtxWriter<SVtxV12C4T16> vw;
-  vw.Lock(GBI, &vb, 6);
+  vw.Lock(GBI, vb.get(), 6);
   vw.AddVertex(SVtxV12C4T16(v0.x, v0.y, depth, 0,0,0,0, uc));
   vw.AddVertex(SVtxV12C4T16(v1.x, v1.y, depth, 0,0,0,0, uc));
   vw.UnLock(GBI);
@@ -41,10 +41,10 @@ void DrawingInterface::quad2DEML(const fvec2& v0, const fvec2& v1, const fvec2& 
 
   auto GBI = _context.GBI();
 
-  DynamicVertexBuffer<SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
+  auto vb = GfxEnv::GetSharedDynamicVB();
   U32 uc                                = vertex_color.ABGRU32();
   ork::lev2::VtxWriter<SVtxV12C4T16> vw;
-  vw.Lock(GBI, &vb, 6);
+  vw.Lock(GBI, vb.get(), 6);
   vw.AddVertex(SVtxV12C4T16(v0.x, v0.y, depth, uva0.x, uva0.y, uva0.x, uva0.y, uc));
   vw.AddVertex(SVtxV12C4T16(v2.x, v2.y, depth, uva2.x, uva2.y, uvb2.x, uvb2.y, uc));
   vw.AddVertex(SVtxV12C4T16(v1.x, v1.y, depth, uva1.x, uva1.y, uvb1.x, uvb1.y, uc));
@@ -69,9 +69,9 @@ void DrawingInterface::quad3DEML(
                  const fvec2& Uv3,
                  uint32_t color ) { //
   auto GBI = _context.GBI();
-  DynamicVertexBuffer<SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
+  auto vb = GfxEnv::GetSharedDynamicVB();
   ork::lev2::VtxWriter<SVtxV12C4T16> vw;
-  vw.Lock(GBI, &vb, 6);
+  vw.Lock(GBI, vb.get(), 6);
   vw.AddVertex(SVtxV12C4T16(V0.x, V0.y, V0.z, Uv0.x, Uv0.y, Uv0.x, Uv0.y, color));
   vw.AddVertex(SVtxV12C4T16(V1.x, V1.y, V1.z, Uv1.x, Uv1.y, Uv1.x, Uv1.y, color));
   vw.AddVertex(SVtxV12C4T16(V2.x, V2.y, V2.z, Uv2.x, Uv2.y, Uv2.x, Uv2.y, color));
@@ -106,10 +106,10 @@ void DrawingInterface::quad2DEML(const fvec4& QuadRect, //
   float fub1 = UvRect2.x + UvRect2.z;
   float fvb1 = UvRect2.y + UvRect2.w;
 
-  DynamicVertexBuffer<SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
+  auto vb = GfxEnv::GetSharedDynamicVB();
   U32 uc                                = 0xffffffff;
   ork::lev2::VtxWriter<SVtxV12C4T16> vw;
-  vw.Lock(GBI, &vb, 6);
+  vw.Lock(GBI, vb.get(), 6);
   vw.AddVertex(SVtxV12C4T16(fx0, fy0, depth, fua0, fva0, fub0, fvb0, uc));
   vw.AddVertex(SVtxV12C4T16(fx1, fy1, depth, fua1, fva1, fub1, fvb1, uc));
   vw.AddVertex(SVtxV12C4T16(fx1, fy0, depth, fua1, fva0, fub1, fvb0, uc));
@@ -142,10 +142,10 @@ void DrawingInterface::quad2DEML2(const fvec4& QuadRect, //
   float fub1 = UvRect2.x + UvRect2.z;
   float fvb1 = UvRect2.y + UvRect2.w;
 
-  DynamicVertexBuffer<SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
+  auto vb = GfxEnv::GetSharedDynamicVB();
   U32 uc                                = 0xffffffff;
   ork::lev2::VtxWriter<SVtxV12C4T16> vw;
-  vw.Lock(GBI, &vb, 6);
+  vw.Lock(GBI, vb.get(), 6);
   vw.AddVertex(SVtxV12C4T16(fx0, fy0, depth, fua0, fva0, fub0, fvb0, uc));
   vw.AddVertex(SVtxV12C4T16(fx1, fy0, depth, fua1, fva0, fub1, fvb0, uc));
   vw.AddVertex(SVtxV12C4T16(fx1, fy1, depth, fua1, fva1, fub1, fvb1, uc));
@@ -180,10 +180,10 @@ void DrawingInterface::quad2DEMLCCL(const fvec4& QuadRect, //
   float fub1 = UvRect2.x + UvRect2.z;
   float fvb1 = UvRect2.y + UvRect2.w;
 
-  DynamicVertexBuffer<SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
+  auto vb = GfxEnv::GetSharedDynamicVB();
   U32 uc                                = 0xffffffff;
   ork::lev2::VtxWriter<SVtxV12C4T16> vw;
-  vw.Lock(GBI, &vb, 6);
+  vw.Lock(GBI, vb.get(), 6);
   vw.AddVertex(SVtxV12C4T16(fx0, fy0, depth, fua0, fva0, fub0, fvb0, uc));
   vw.AddVertex(SVtxV12C4T16(fx1, fy0, depth, fua1, fva0, fub1, fvb0, uc));
   vw.AddVertex(SVtxV12C4T16(fx1, fy1, depth, fua1, fva1, fub1, fvb1, uc));
@@ -219,10 +219,10 @@ void DrawingInterface::quad2DEMLTiled(const fvec4& QuadRect,
 
   int num2lock = 6 * numtileseachdim * numtileseachdim;
 
-  DynamicVertexBuffer<SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
+  auto vb = GfxEnv::GetSharedDynamicVB();
   U32 uc                                = 0xffffffff;
   ork::lev2::VtxWriter<SVtxV12C4T16> vw;
-  vw.Lock(GBI, &vb, num2lock);
+  vw.Lock(GBI, vb.get(), num2lock);
 
   for (int iu = 0; iu < numtileseachdim; iu++) {
     for (int iv = 0; iv < numtileseachdim; iv++) {

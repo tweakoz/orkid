@@ -181,3 +181,14 @@ template <typename T> struct DynamicVertexBuffer : public CVtxBuffer<T> {
 } // namespace ork::lev2
 
 #include <ork/lev2/gfx/gfxvtxbuf_structs.h>
+
+namespace ork::lev2 {
+
+using dvb_V12C4T16 = DynamicVertexBuffer<SVtxV12C4T16>;
+using dvb_V12N12B12T8C4 = DynamicVertexBuffer<SVtxV12N12B12T8C4>;
+using dvb_V16T16C16 = DynamicVertexBuffer<SVtxV16T16C16>;
+using dvb_V12C4T16_ptr_t = std::shared_ptr<dvb_V12C4T16>;
+using dvb_V12N12B12T8C4_ptr_t = std::shared_ptr<dvb_V12N12B12T8C4>;
+using dvb_V16T16C16_ptr_t = std::shared_ptr<dvb_V16T16C16>;
+
+} // namespace ork::lev2

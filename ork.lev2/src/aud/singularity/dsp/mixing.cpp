@@ -95,7 +95,7 @@ void MonoInStereoOut::doKeyOn(const KeyOnInfo& koi) // final
   _filt    = 0.0f;
   auto LD  = koi._layer->_layerdata;
   int chan = _dspchannel[0];
-  _panbase = LD->_channelPans[chan];
+  _panbase = LD->_channelPans[chan].load(std::memory_order_relaxed);
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -207,8 +207,13 @@ mtx8f mtx8f::generateHadamard() {
   mtx8f result;
 
   float scale = 1.0f;
-  // Initialize H(1)
-  int H[1][1] = {{1}};
+  // H(4) Hadamard matrix (Sylvester construction from H(2))
+  int H[4][4] = {
+    { 1,  1,  1,  1},
+    { 1, -1,  1, -1},
+    { 1,  1, -1, -1},
+    { 1, -1, -1,  1}
+  };
 
   // Generate H(8) using Sylvester's construction
   for (int i = 0; i < 8; i++) {

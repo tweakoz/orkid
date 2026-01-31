@@ -107,9 +107,9 @@ void GridDrawableImpl::_render(const RenderContextInstData& RCID) {
   auto v2 = SVtxV12N12B12T8C4(botr, normal, binormal, uv_botr, 0xffffffff);
   auto v3 = SVtxV12N12B12T8C4(botl, normal, binormal, uv_botl, 0xffffffff);
 
-  auto& VB = GfxEnv::GetSharedDynamicVB2();
+  auto VB = GfxEnv::GetSharedDynamicVB2();
   VtxWriter<SVtxV12N12B12T8C4> vw;
-  vw.Lock(context, &VB, 6);
+  vw.Lock(context, VB.get(), 6);
 
   vw.AddVertex(v0);
   vw.AddVertex(v2);

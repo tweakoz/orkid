@@ -767,9 +767,9 @@ public:
     return mCreationParams.top();
   }
 
-  static DynamicVertexBuffer<SVtxV12C4T16>& GetSharedDynamicVB();
-  static DynamicVertexBuffer<SVtxV12N12B12T8C4>& GetSharedDynamicVB2();
-  static DynamicVertexBuffer<SVtxV16T16C16>& GetSharedDynamicV16T16C16();
+  static dvb_V12C4T16_ptr_t GetSharedDynamicVB();
+  static dvb_V12N12B12T8C4_ptr_t GetSharedDynamicVB2();
+  static dvb_V16T16C16_ptr_t GetSharedDynamicV16T16C16();
 
   static bool initialized();
   static void initializeWithContext(context_ptr_t ctx);
@@ -797,9 +797,10 @@ protected:
   orkvector<DisplayBuffer*> mvActiveWindows;
   orkvector<DisplayBuffer*> mvInactiveWindows;
 
-  DynamicVertexBuffer<SVtxV12C4T16> mVtxBufSharedVect;
-  DynamicVertexBuffer<SVtxV12N12B12T8C4> mVtxBufSharedVect2;
-  DynamicVertexBuffer<SVtxV16T16C16> _vtxBufSharedV16T16C16;
+  
+  dvb_V12C4T16_ptr_t _vtxbuf_shared_V12C4T16;
+  dvb_V12N12B12T8C4_ptr_t _vtxbuf_shared_V12N12B12T8C4;
+  dvb_V16T16C16_ptr_t _vtxbuf_shared_V16T16C16;
   orkmap<std::string, std::string> mRuntimeEnvironment;
   orkstack<ContextCreationParams> mCreationParams;
   recursive_mutex mGfxEnvMutex;

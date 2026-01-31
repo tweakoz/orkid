@@ -146,6 +146,7 @@ PrivateImplementation::PrivateImplementation() {
   _synth = synth::instance();
   _synth->setSampleRate(SR);
   _synth->resetFenables();
+  _synth->waitUntilReady();
 
   ///////////////////////////
   // pipewire setup

@@ -243,6 +243,8 @@ struct synth {
   fmtx4 _inv_listener_matrix;
   std::atomic<int> _lifecycle_state;
 
+  void waitUntilReady() const;
+
   outbus_ptr_t _curprogrambus;
 
   layer_ptr_t _hudLayer   = nullptr;

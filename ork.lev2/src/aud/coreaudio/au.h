@@ -119,16 +119,16 @@ struct AuContext {
   int _numOutputBuffersProcessed  = 0;
   int _inputFrameSize             = 0;
   int _outputFrameSize            = 0;
-  bool output_started             = false;
-  bool _keep_going                = true;
-  std::atomic<bool> _output_ready = false;
+  bool output_started                    = false;
+  std::atomic<bool> _keep_going          = true;
+  std::atomic<bool> _output_ready        = false;
   StereoFragment* _curMixOutGroup = nullptr;
   AudioBufferList* _inputBuffer   = nullptr;
 
-  // Buffer sample info
-  Float64 _firstInputTime      = -1.0;
-  Float64 _firstOutputTime     = -1.0;
-  Float64 _inToOutSampleOffset = 0.0;
+  // Buffer sample info (atomic for thread-safe access from audio callbacks)
+  std::atomic<Float64> _firstInputTime{-1.0};
+  std::atomic<Float64> _firstOutputTime{-1.0};
+  std::atomic<Float64> _inToOutSampleOffset{0.0};
 
   input_channel_callback_t _inputCallback;
 

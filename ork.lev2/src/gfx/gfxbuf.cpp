@@ -154,10 +154,10 @@ void DisplayBuffer::Render2dQuadsEML(size_t count, const fvec4* QuadRects, const
 
   auto ctx = context();
 
-  DynamicVertexBuffer<SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
+  auto vb = GfxEnv::GetSharedDynamicVB();
   U32 uc                                = 0xffffffff;
   ork::lev2::VtxWriter<SVtxV12C4T16> vw;
-  vw.Lock(context(), &vb, 6 * count);
+  vw.Lock(context(), vb.get(), 6 * count);
 
   for (size_t i = 0; i < count; i++) {
 
@@ -235,12 +235,12 @@ void DisplayBuffer::RenderMatOrthoQuad(
   { // Draw Full Screen Quad with specified material
     ctx->PushModColor(clr);
     {
-      DynamicVertexBuffer<SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
+      auto vb = GfxEnv::GetSharedDynamicVB();
 
       // U32 uc = clr.GetBGRAU32();
       U32 uc = clr.vertexColorU32();
       ork::lev2::VtxWriter<SVtxV12C4T16> vw;
-      vw.Lock(context(), &vb, 6);
+      vw.Lock(context(), vb.get(), 6);
       vw.AddVertex(SVtxV12C4T16(fx0, fy0, 0.0f, fu0, fv0, uv2[0], uv2[1], uc));
       vw.AddVertex(SVtxV12C4T16(fx1, fy1, 0.0f, fu1, fv1, uv2[4], uv2[5], uc));
       vw.AddVertex(SVtxV12C4T16(fx1, fy0, 0.0f, fu1, fv0, uv2[2], uv2[3], uc));
@@ -300,12 +300,12 @@ void DisplayBuffer::RenderMatOrthoQuad(
   { // Draw Full Screen Quad with specified material
     ctx->PushModColor(clr);
     {
-      DynamicVertexBuffer<SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
+      auto vb = GfxEnv::GetSharedDynamicVB();
 
       // U32 uc = clr.GetBGRAU32();
       U32 uc = clr.vertexColorU32();
       ork::lev2::VtxWriter<SVtxV12C4T16> vw;
-      vw.Lock(context(), &vb, 6);
+      vw.Lock(context(), vb.get(), 6);
       vw.AddVertex(SVtxV12C4T16(fx0, fy0, 0.0f, uv0.x, uv0.y, 0.0f, 0.0f, uc));
       vw.AddVertex(SVtxV12C4T16(fx1, fy0, 0.0f, uv1.x, uv1.y, 0.0f, 0.0f, uc));
       vw.AddVertex(SVtxV12C4T16(fx1, fy1, 0.0f, uv2.x, uv2.y, 0.0f, 0.0f, uc));

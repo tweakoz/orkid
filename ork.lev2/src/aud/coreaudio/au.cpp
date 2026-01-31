@@ -104,19 +104,46 @@ OSStatus AuContext::Stop() {
 
   // FIRST: Signal threads to stop - this must happen before any CoreAudio calls
   // so that audio threads can exit their loops and release resources
-  _keep_going = false;
+  _keep_going.store(false);
 
   // Signal buffer pools to release waiting threads
   _outputPool.signalShutdown();
   _inputPool.signalShutdown();
 
-  // Give audio thread time to notice shutdown and exit
+  // Give audio callbacks time to notice shutdown flag and exit cleanly
   usleep(50000);  // 50ms
 
   if (false == IsRunning())
     return noErr;
 
   OSStatus err = noErr;
+
+  // Clear callbacks BEFORE stopping units to prevent any final callback invocations
+  // from accessing resources after they're stopped
+  if (_inputUnit) {
+    AURenderCallbackStruct nullCallback = {nullptr, nullptr};
+    AudioUnitSetProperty(
+        _inputUnit,
+        kAudioOutputUnitProperty_SetInputCallback,
+        kAudioUnitScope_Global,
+        0,
+        &nullCallback,
+        sizeof(nullCallback));
+  }
+  if (_outputUnit) {
+    AURenderCallbackStruct nullCallback = {nullptr, nullptr};
+    AudioUnitSetProperty(
+        _outputUnit,
+        kAudioUnitProperty_SetRenderCallback,
+        kAudioUnitScope_Input,
+        0,
+        &nullCallback,
+        sizeof(nullCallback));
+  }
+
+  // Brief pause to let any in-flight callbacks complete
+  usleep(10000);  // 10ms
+
   if (_inputDev) {
     err = AudioOutputUnitStop(_inputUnit);
     if (err != noErr) {

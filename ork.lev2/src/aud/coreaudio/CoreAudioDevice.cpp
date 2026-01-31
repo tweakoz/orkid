@@ -194,7 +194,10 @@ void CoreAudioDevice::startup() {
 
   //logchan_coreaudio->log("CoreAudioDevice::startup");
 
-    auto unlocked_appinitdata = _appinitdata.lock();
+  // Assert if called twice - audio should only be started once
+  OrkAssert(_aucontext == nullptr && "CoreAudioDevice::startup() called twice!");
+
+  auto unlocked_appinitdata = _appinitdata.lock();
 
   constexpr double desired_sample_rate = 48000.0;
   int inumfr                = desired_framesize;
@@ -222,7 +225,7 @@ void CoreAudioDevice::startup() {
 
   _the_synth = synth::instance();
   _the_synth->setSampleRate(desired_sample_rate);
-
+  _the_synth->waitUntilReady();
   _aucontext = std::make_shared<AuContext>();
   //logchan_coreaudio->log("CoreAudioThread _input_impl<%p> _output_impl<%p>", (void*)_input_impl.get(), (void*)_output_impl.get());
 

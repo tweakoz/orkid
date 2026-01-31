@@ -573,20 +573,30 @@ void SpectralImpulseResponse::vowelFormant(float sample_rate, char vowel, float 
   _realR.assign(_length, 1.0f / strength); // Initialize to unity gain
   _imagR.assign(_length, 0.0f);            // No initial phase change
 
+  // Guard against invalid sample_rate
+  if (sample_rate <= 0.0f) {
+    return;
+  }
+
   auto formants = _vowelFormantsMap[toupper(vowel)];
   for (const auto& formant : formants) {
     // Here, you would calculate and apply the band-pass filter for each formant.
     // This requires DSP knowledge to implement correctly.
     // For demonstration, we'll simply boost frequencies around the formant frequency.
-    int centerBin     = static_cast<int>((formant.frequency / sample_rate) * _length);
-    int bandwidthBins = static_cast<int>((formant.bandwidth / sample_rate) * _length);
+    float centerBinF     = (formant.frequency / sample_rate) * _length;
+    float bandwidthBinsF = (formant.bandwidth / sample_rate) * _length;
 
-    for (int bin = centerBin - bandwidthBins; bin <= centerBin + bandwidthBins; ++bin) {
-      if (bin >= 0 && bin < _length) {
-        _realL[bin] = 1.0f; // Simplified example of boosting the magnitude
-        _realR[bin] = 1.0f; // Simplified example of boosting the magnitude
-                            // No change to _imagL[bin] to keep the example simple
-      }
+    // Clamp to valid range before converting to int
+    int centerBin     = static_cast<int>(std::clamp(centerBinF, 0.0f, float(_length - 1)));
+    int bandwidthBins = static_cast<int>(std::clamp(bandwidthBinsF, 0.0f, float(_length)));
+
+    int binStart = std::max(0, centerBin - bandwidthBins);
+    int binEnd   = std::min(int(_length) - 1, centerBin + bandwidthBins);
+
+    for (int bin = binStart; bin <= binEnd; ++bin) {
+      _realL[bin] = 1.0f; // Simplified example of boosting the magnitude
+      _realR[bin] = 1.0f; // Simplified example of boosting the magnitude
+                          // No change to _imagL[bin] to keep the example simple
     }
   }
 }
@@ -594,6 +604,11 @@ void SpectralImpulseResponse::vowelFormant(float sample_rate, char vowel, float 
 ///////////////////////////////////////////////////////////////////////////////
 
 void SpectralImpulseResponse::violinFormant(float samplerate, float strength) {
+
+  // Guard against invalid samplerate
+  if (samplerate <= 0.0f) {
+    return;
+  }
 
   _realL.assign(_length, 1.0f / strength); // Initialize to unity gain
   _imagL.assign(_length, 0.0f);            // No initial phase change
@@ -614,14 +629,20 @@ void SpectralImpulseResponse::violinFormant(float samplerate, float strength) {
   };
 
   for (auto f : formants) {
-    int centerBin     = static_cast<int>((f.frequency / samplerate) * _length);
-    int bandwidthBins = static_cast<int>((f.bandwidth / samplerate) * _length);
-    for (int bin = centerBin - bandwidthBins; bin <= centerBin + bandwidthBins; ++bin) {
-      if (bin >= 0 && bin < _length) {
-        _realL[bin] = 1.0f; // Simplified example of boosting the magnitude
-        _realR[bin] = 1.0f; // Simplified example of boosting the magnitude
-                            // No change to _imagL[bin] to keep the example simple
-      }
+    float centerBinF     = (f.frequency / samplerate) * _length;
+    float bandwidthBinsF = (f.bandwidth / samplerate) * _length;
+
+    // Clamp to valid range before converting to int
+    int centerBin     = static_cast<int>(std::clamp(centerBinF, 0.0f, float(_length - 1)));
+    int bandwidthBins = static_cast<int>(std::clamp(bandwidthBinsF, 0.0f, float(_length)));
+
+    int binStart = std::max(0, centerBin - bandwidthBins);
+    int binEnd   = std::min(int(_length) - 1, centerBin + bandwidthBins);
+
+    for (int bin = binStart; bin <= binEnd; ++bin) {
+      _realL[bin] = 1.0f; // Simplified example of boosting the magnitude
+      _realR[bin] = 1.0f; // Simplified example of boosting the magnitude
+                          // No change to _imagL[bin] to keep the example simple
     }
   }
 }

@@ -336,16 +336,16 @@ const std::string& GfxEnv::GetRuntimeEnvironmentVariable(const std::string& key)
   return (it == mRuntimeEnvironment.end()) ? EmptyString : it->second;
 }
 
-DynamicVertexBuffer<SVtxV12C4T16>& GfxEnv::GetSharedDynamicVB() {
-  return GetRef().mVtxBufSharedVect;
+dvb_V12C4T16_ptr_t GfxEnv::GetSharedDynamicVB() {
+  return GetRef()._vtxbuf_shared_V12C4T16;
 }
 
-DynamicVertexBuffer<SVtxV12N12B12T8C4>& GfxEnv::GetSharedDynamicVB2() {
-  return GetRef().mVtxBufSharedVect2;
+dvb_V12N12B12T8C4_ptr_t GfxEnv::GetSharedDynamicVB2() {
+  return GetRef()._vtxbuf_shared_V12N12B12T8C4;
 }
 
-DynamicVertexBuffer<SVtxV16T16C16>& GfxEnv::GetSharedDynamicV16T16C16() {
-  return GetRef()._vtxBufSharedV16T16C16;
+dvb_V16T16C16_ptr_t GfxEnv::GetSharedDynamicV16T16C16() {
+  return GetRef()._vtxbuf_shared_V16T16C16;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -373,15 +373,15 @@ void GfxEnv::processDeferredContextOps(context_rawptr_t ctx) {
 GfxEnv::GfxEnv()
     : NoRttiSingleton<GfxEnv>()
     , mpMainWindow(nullptr)
-    , mVtxBufSharedVect(16 << 20, 0)     // SVtxV12C4T16==32bytes
-    , mVtxBufSharedVect2(256 << 10, 0)   // SvtxV12N12B12T8C4==48bytes
-    , _vtxBufSharedV16T16C16(1 << 20, 0) // SvtxV12N12B12T8C4==48bytes
+    , _vtxbuf_shared_V12C4T16(std::make_shared<dvb_V12C4T16>(16 << 20, 0))       // SVtxV12C4T16==32bytes
+    , _vtxbuf_shared_V12N12B12T8C4(std::make_shared<dvb_V12N12B12T8C4>(256 << 10, 0)) // SVtxV12N12B12T8C4==48bytes
+    , _vtxbuf_shared_V16T16C16(std::make_shared<dvb_V16T16C16>(1 << 20, 0))       // SVtxV16T16C16==48bytes
     , mGfxEnvMutex("GfxEnvGlobalMutex") {
   _lockCounter.store(0);
 
-  mVtxBufSharedVect.SetRingLock(true);
-  mVtxBufSharedVect2.SetRingLock(true);
-  _vtxBufSharedV16T16C16.SetRingLock(true);
+  _vtxbuf_shared_V12C4T16->SetRingLock(true);
+  _vtxbuf_shared_V12N12B12T8C4->SetRingLock(true);
+  _vtxbuf_shared_V16T16C16->SetRingLock(true);
   ContextCreationParams params;
   params.miNumSharedVerts = 8 << 10;
 

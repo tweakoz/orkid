@@ -24,8 +24,9 @@ template class ork::util::ContextTLS<ork::opq::TrackCurrent>;
 namespace ork::opq {
 static logchannel_ptr_t logchan_opq = logger()->configureChannel("OPQ", fvec3(0.4, 0.7, 0.7), true);
 ////////////////////////////////////////////////////////////////////////
-static int MAX_THREADS = 0;
-static int MIN_THREADS = 0;
+static std::atomic<int> MAX_THREADS{0};
+static std::atomic<int> MIN_THREADS{0};
+static std::once_flag gThreadLimitsOnce;
 ////////////////////////////////////////////////////////////////////////
 static std::shared_ptr<Thread> gthread_coordinator;
 static std::atomic<bool> gthread_coordinator_should_exit{false};
@@ -58,7 +59,7 @@ static void _coordinatorThreadStartup() {
       // thread creation (if stalled and no idle threads)
       ///////////////////////////////////////////////////////////
       if ((np > 0) and (idle_threads == 0) and (num_completed == nc) and (nc != last_thread_add_completed)) {
-        if (nt >= MAX_THREADS) {
+        if (nt >= MAX_THREADS.load()) {
           logchan_opq->log( "concurrentQueue stalled, max threads reached" );
           continue;
         }
@@ -73,11 +74,11 @@ static void _coordinatorThreadStartup() {
       ///////////////////////////////////////////////////////////
       // thread deletion (if idle)
       ///////////////////////////////////////////////////////////
-      else if (np == 0 and (nt > MIN_THREADS)) {
+      else if (np == 0 and (nt > MIN_THREADS.load())) {
         logchan_opq->log( "concurrentQueue too many idle threads, removing one" );
         OpqThread* thread = nullptr;
         cq->_threads.atomicOp([=, &thread](OperationsQueue::threadset_t& thset) {
-          if (thset.size() > MIN_THREADS) {
+          if (thset.size() > size_t(MIN_THREADS.load())) {
             thread = *thset.begin();
             thset.erase(thread);
           }
@@ -320,7 +321,7 @@ void OpqThread::run() // virtual
 
   q->_numThreadsRunning++;
 
-  static int icounter = 0;
+  static std::atomic<int> icounter{0};
   int thid            = opqthreaddata->_threadID + 4;
   std::string channam = CreateFormattedString("opqth%d", int(thid));
 
@@ -785,17 +786,22 @@ opq_ptr_t mainSerialQueue() {
 ///////////////////////////////////////////////////////////////////////
 opq_ptr_t concurrentQueue() {
   /////////////////////////////////////////////////////////
-  int numcores = OldSchool::GetNumCores();
-  MIN_THREADS  = (numcores / 2);
-  MAX_THREADS  = (numcores * 2);
-  if (MIN_THREADS < 4) {
-    MIN_THREADS = 4;
-  }
-  if (MAX_THREADS < 12) {
-    MAX_THREADS = 12;
-  }
+  // Thread-safe one-time initialization of thread limits
+  std::call_once(gThreadLimitsOnce, []() {
+    int numcores = OldSchool::GetNumCores();
+    int minT = (numcores / 2);
+    int maxT = (numcores * 2);
+    if (minT < 4) {
+      minT = 4;
+    }
+    if (maxT < 12) {
+      maxT = 12;
+    }
+    MIN_THREADS.store(minT);
+    MAX_THREADS.store(maxT);
+  });
   /////////////////////////////////////////////////////////
-  static opq_ptr_t gconcurrentq = std::make_shared<OperationsQueue>(MIN_THREADS, "concurrentQueue", EPerformaceProfile::BALANCED);
+  static opq_ptr_t gconcurrentq = std::make_shared<OperationsQueue>(MIN_THREADS.load(), "concurrentQueue", EPerformaceProfile::BALANCED);
   return gconcurrentq;
 }
 ///////////////////////////////////////////////////////////////////////

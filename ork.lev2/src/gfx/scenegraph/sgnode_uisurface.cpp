@@ -450,9 +450,9 @@ void UISurfaceRenderImpl::render(const RenderContextInstData& RCID) {
 
   // Build vertex data using SVtxV16T16C16 (position, texcoord, color)
   using vtx_t = SVtxV16T16C16;
-  auto& VB = GfxEnv::GetSharedDynamicV16T16C16();
+  auto vb = GfxEnv::GetSharedDynamicV16T16C16();
   VtxWriter<vtx_t> vw;
-  vw.Lock(ctx, &VB, 6);
+  vw.Lock(ctx, vb.get(), 6);
 
   fvec4 white(1, 1, 1, 1);
 

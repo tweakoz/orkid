@@ -76,6 +76,7 @@ using impl_ptr_t = std::shared_ptr<PrivateImplementation>;
 PrivateImplementation::PrivateImplementation(appinitdata_wkptr_t appinitd) {
   _execstate.store(0);
   _synth = synth::instance();
+  _synth->waitUntilReady();
 
   _alsaThread.start([=](anyp data) {
     float SR = getSampleRate();

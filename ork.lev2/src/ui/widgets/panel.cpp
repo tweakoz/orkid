@@ -63,9 +63,9 @@ void Panel::DoDraw(ui::drawevent_constptr_t drwev) {
     );
   };
   auto ren_line = [&](int x, int y, int x2, int y2) {
-    auto vb = &lev2::GfxEnv::GetSharedDynamicVB();
+    auto vb = lev2::GfxEnv::GetSharedDynamicVB();
     lev2::VtxWriter<lev2::SVtxV12C4T16> vw;
-    vw.Lock(tgt, vb, 2);
+    vw.Lock(tgt, vb.get(), 2);
     vw.AddVertex(lev2::SVtxV12C4T16(x, y, 0.0f, 0.0f, 0.0f, 0xffffffff));
     vw.AddVertex(lev2::SVtxV12C4T16(x2, y2, 0.0f, 0.0f, 0.0f, 0xffffffff));
     vw.UnLock(tgt);

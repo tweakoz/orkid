@@ -353,7 +353,7 @@ void Grid2d::popMatrix(Context* pTARG) {
 void Grid2d::Render(Context* pTARG, int iw, int ih) {
   auto mtxi = pTARG->MTXI();
 
-  lev2::DynamicVertexBuffer<lev2::SVtxV12C4T16>& VB = lev2::GfxEnv::GetSharedDynamicVB();
+  auto VB = lev2::GfxEnv::GetSharedDynamicVB();
 
   this->pushMatrix(pTARG);
   {
@@ -388,7 +388,7 @@ void Grid2d::Render(Context* pTARG, int iw, int ih) {
         bool origin_axis_only = _drawmode == EGrid2DDrawMode::ORIGIN_AXIS_ONLY;
 
         lev2::VtxWriter<lev2::SVtxV12C4T16> vw;
-        vw.Lock(pTARG, &VB, count);
+        vw.Lock(pTARG, VB.get(), count);
 
         fvec2 uv0(0.0f, 0.0f);
 

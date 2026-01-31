@@ -10,6 +10,7 @@
 #include <ork/util/fsm.h>
 #include <ork/lev2/ui/event.h>
 #include <functional>
+#include <atomic>
 
 namespace ork::ui {
 
@@ -208,8 +209,8 @@ public:
   Rect contentRect() const;
   void _drawLabel(ui::drawevent_constptr_t drwev);
 
-  bool _needsinit        = true;
-  bool _dirty            = true;
+  bool _needsinit                = true;
+  std::atomic<bool> _dirty{true};
   bool mSizeDirty        = true;
   bool mPosDirty         = true;
   Group* _parent         = nullptr;

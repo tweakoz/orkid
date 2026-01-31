@@ -369,9 +369,9 @@ singularitybenchapp_ptr_t createBenchmarkApp(appinitdata_ptr_t initdata, prgdata
       //////////////////////////////////////////////
       app->_material->bindParamVec4(app->_fxparameterMODC, fvec4(0, 1, 0, 1));
       size_t numlines                      = histosize;
-      lev2::DynamicVertexBuffer<vtx_t>& VB = lev2::GfxEnv::GetSharedDynamicV16T16C16();
+      auto vb = lev2::GfxEnv::GetSharedDynamicV16T16C16();
       lev2::VtxWriter<vtx_t> vw;
-      vw.Lock(context, &VB, numlines * 2);
+      vw.Lock(context, vb.get(), numlines * 2);
       for (size_t index_r = 1; index_r < histosize; index_r++) {
         size_t index_l = index_r - 1;
         int item_l     = app->_time_histogram[index_l];
@@ -401,7 +401,7 @@ singularitybenchapp_ptr_t createBenchmarkApp(appinitdata_ptr_t initdata, prgdata
       double desi = desired_blockperiod / 20.0;
       double desx = 8.0 + double(tgtrect._w - 16.0) * desi;
       lev2::VtxWriter<vtx_t> vw2;
-      vw2.Lock(context, &VB, 2);
+      vw2.Lock(context, vb.get(), 2);
       vw2.AddVertex(vtx_t(fvec4(desx, 0, 0.0), fvec4(), fvec4(1, 1, 0, 0)));
       vw2.AddVertex(vtx_t(fvec4(desx, tgtrect._h, 0.0), fvec4(), fvec4(1, 1, 0, 0)));
       vw2.UnLock(context);

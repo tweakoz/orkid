@@ -180,13 +180,13 @@ void PhysicsDebugger::render(const RenderContextInstData& _RCID, lineqptr_t line
 
   fvec3 szn = fvec3(0);
 
-  DynamicVertexBuffer<vtx_t>& vb = GfxEnv::GetSharedDynamicVB();
+  auto vb = GfxEnv::GetSharedDynamicVB();
 
   int icount = inumlines * 2;
 
   if (icount) {
     VtxWriter<vtx_t> vwriter;
-    vwriter.Lock(context, &vb, icount);
+    vwriter.Lock(context, vb.get(), icount);
     for (const auto& line : (*lines)) {
 
       fvec3 vf = line.mFrom + szn;

@@ -364,10 +364,15 @@ OSStatus AuContext::_inputProc(
     UInt32 inNumberFrames,
     AudioBufferList* ioData) {
 
+  auto _this = (AuContext*)inRefCon;
+
+  // Early exit if shutdown is in progress - prevents accessing destroyed resources
+  if (!_this->_keep_going) {
+    return noErr;
+  }
 
   OSStatus err = noErr;
 
-  auto _this = (AuContext*)inRefCon;
   if (_this->_firstInputTime < 0.)
     _this->_firstInputTime = inTimeStamp->mSampleTime;
 
@@ -481,10 +486,20 @@ OSStatus AuContext::_outputProc(
     UInt32 inNumberFrames,
     AudioBufferList* ioData) {
 
-  //printf("outputproc: begin\n");
+  auto _this = (AuContext*)inRefCon;
+
+  // Early exit if shutdown is in progress - prevents accessing destroyed resources
+  if (!_this->_keep_going) {
+    // Zero output to prevent noise during shutdown
+    if (ioData) {
+      for (UInt32 i = 0; i < ioData->mNumberBuffers; i++) {
+        memset(ioData->mBuffers[i].mData, 0, ioData->mBuffers[i].mDataByteSize);
+      }
+    }
+    return noErr;
+  }
 
   OSStatus err          = noErr;
-  auto _this            = (AuContext*)inRefCon;
   _this->output_started = true;
   Float64 rate          = 0.0;
   AudioTimeStamp inTS, outTS;

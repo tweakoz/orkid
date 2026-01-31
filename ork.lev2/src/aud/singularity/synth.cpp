@@ -201,11 +201,18 @@ synth::synth()
   resize(1);
 
   _lock_compute = false;
+  _lifecycle_state = 1;
 }
 
 void synth::setSampleRate(float sr) {
   _sampleRate = sr;
   _dt         = 1.0f / sr;
+}
+
+void synth::waitUntilReady() const {
+  while (_lifecycle_state.load() != 1) {
+    usleep(1000);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -59,7 +59,7 @@ struct BillboardRenderImpl {
     //rsi->SetDepthTest(lev2::EDepthTest::OFF);
     //rsi->SetCullTest(lev2::ECullTest::OFF);
 
-    auto& VB = GfxEnv::GetSharedDynamicVB2();
+    auto VB = GfxEnv::GetSharedDynamicVB2();
 
     //////////////////////////////////////////
     float Z = 0.0f;
@@ -84,7 +84,7 @@ struct BillboardRenderImpl {
     auto v3 = SVtxV12N12B12T8C4(botl, normal, binormal, uv_botl, color);
 
     VtxWriter<SVtxV12N12B12T8C4> vw;
-    vw.Lock(context, &VB, 6);
+    vw.Lock(context, VB.get(), 6);
     vw.AddVertex(v0);
     vw.AddVertex(v1);
     vw.AddVertex(v2);

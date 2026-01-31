@@ -223,7 +223,7 @@ void GedSkin1::End(Context* pTARG) {
   int ih                               = _gedVP->height();
   miRejected                           = 0;
   miAccepted                           = 0;
-  lev2::DynamicVertexBuffer<vtx_t>& VB = lev2::GfxEnv::GetSharedDynamicV16T16C16();
+  auto vb = lev2::GfxEnv::GetSharedDynamicV16T16C16();
   ////////////////////////
   _mMatrix.setTranslation(0.0f, float(_scrollY), 0.0f);
   //_mMatrix.setTranslation(0.0f, 0.0f, 0.0f);
@@ -255,7 +255,7 @@ void GedSkin1::End(Context* pTARG) {
 
     int icount = 0;
     lev2::VtxWriter<vtx_t> vw;
-    vw.Lock(pTARG, &VB, inumquads * 6);
+    vw.Lock(pTARG, vb.get(), inumquads * 6);
     {
       for (int i = 0; i < inumquads; i++) {
         const GedPrim* prim = primcontainer->mQuadPrims[i];
@@ -302,7 +302,7 @@ void GedSkin1::End(Context* pTARG) {
         float fv1 = texh;
         int icount = 0;
         lev2::VtxWriter<vtx_t> vw;
-        vw.Lock(pTARG, &VB, inumtexquads * 6);
+        vw.Lock(pTARG, vb.get(), inumtexquads * 6);
         {
           for (int i = 0; i < inumtexquads; i++) {
             const GedPrim* prim = prim_vect[i];
@@ -375,7 +375,7 @@ void GedSkin1::End(Context* pTARG) {
     if (not _is_pickmode) {
       if (inumlines) {
         icount = 0;
-        vw.Lock(pTARG, &VB, inumlines * 2);
+        vw.Lock(pTARG, vb.get(), inumlines * 2);
         {
           for (int i = 0; i < inumlines; i++) {
             const GedPrim* prim = primcontainer->mLinePrims[i];

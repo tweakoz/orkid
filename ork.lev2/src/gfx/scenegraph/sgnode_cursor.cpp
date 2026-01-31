@@ -158,9 +158,9 @@ void CursorDrawableImpl::_render(const RenderContextInstData& RCID) {
   //printf("Cursor World Pos: (%f, %f, %f)\n", cursorWorldPos.x, cursorWorldPos.y, cursorWorldPos.z);
   // Build vertex data in world space (billboard facing camera)
   using vtx_t = SVtxV16T16C16;
-  auto& VB = GfxEnv::GetSharedDynamicV16T16C16();
+  auto vb = GfxEnv::GetSharedDynamicV16T16C16();
   VtxWriter<vtx_t> vw;
-  vw.Lock(context, &VB, 12);  // 2 quads * 6 verts each
+  vw.Lock(context, vb.get(), 12);  // 2 quads * 6 verts each
 
   fvec4 white(1, 1, 1, 1);
   fvec4 uv(0, 0, 0, 0);  // unused

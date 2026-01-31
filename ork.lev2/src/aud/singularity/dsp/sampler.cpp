@@ -226,10 +226,12 @@ void SampleData::loadFromAudioFile(const std::string& fname, bool normalize) {
     int channelCount = sfinfo.channels;
     _sampleRate = sfinfo.samplerate;
 
-    float highestPitch = _originalPitch * 48000.0f / _sampleRate;
+    float highestPitch = (_sampleRate > 0.0f) ? (_originalPitch * 48000.0f / _sampleRate) : _originalPitch;
     float highestPitchN = frequency_to_midi_note(highestPitch); // Assuming this function is defined elsewhere
-    float highestPitchCents = static_cast<int>(highestPitchN * 100.0f) + 1.0f;
-    _highestPitch = static_cast<int>(highestPitchCents);
+    // Clamp to reasonable MIDI note range before converting to int (avoid inf/-inf)
+    highestPitchN = std::clamp(highestPitchN, -128.0f, 255.0f);
+    float highestPitchCents = highestPitchN * 100.0f + 1.0f;
+    _highestPitch = static_cast<int>(std::clamp(highestPitchCents, -12800.0f, 25500.0f));
 
     // Calculate the number of samples to read (frames * channels)
     int numSamples = static_cast<int>(_blk_end * channelCount);

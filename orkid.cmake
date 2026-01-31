@@ -99,6 +99,45 @@ function(enable_memdebug_on_target the_target)
 endfunction()
 
 #############################################################################################################
+# Global sanitizer support (set via -DSANITIZER=ADDRESS|THREAD|UNDEFINED)
+#############################################################################################################
+
+IF(DEFINED SANITIZER)
+  #message(STATUS "Sanitizer enabled: ${SANITIZER}")
+
+  # Common flags for all sanitizers
+  add_compile_options(-fno-omit-frame-pointer)
+  add_compile_options(-fno-optimize-sibling-calls)
+
+  IF(SANITIZER STREQUAL "ADDRESS")
+    # AddressSanitizer + UndefinedBehaviorSanitizer + LeakSanitizer
+    add_compile_options(-fsanitize=address)
+    add_compile_options(-fsanitize=undefined)
+    add_link_options(-fsanitize=address)
+    add_link_options(-fsanitize=undefined)
+    #message(STATUS "  -> ASan + UBSan + LeakSan enabled")
+
+  ELSEIF(SANITIZER STREQUAL "THREAD")
+    # ThreadSanitizer + UndefinedBehaviorSanitizer
+    # Note: TSan cannot be combined with ASan or LeakSan
+    add_compile_options(-fsanitize=thread)
+    add_compile_options(-fsanitize=undefined)
+    add_link_options(-fsanitize=thread)
+    add_link_options(-fsanitize=undefined)
+    #message(STATUS "  -> TSan + UBSan enabled")
+
+  ELSEIF(SANITIZER STREQUAL "UNDEFINED")
+    # UndefinedBehaviorSanitizer only
+    add_compile_options(-fsanitize=undefined)
+    add_link_options(-fsanitize=undefined)
+    #message(STATUS "  -> UBSan enabled")
+
+  ELSE()
+    message(FATAL_ERROR "Unknown SANITIZER value: ${SANITIZER}. Use ADDRESS, THREAD, or UNDEFINED.")
+  ENDIF()
+ENDIF()
+
+#############################################################################################################
 
 SET(BUILD_SHARED_LIBS ON)
 

@@ -268,11 +268,11 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 drawable->SetRenderCallback([a, b, pipeline](lev2::RenderContextInstData& RCID) { //
                   auto context = RCID.context();
                   pipeline->wrappedDrawCall(RCID, [a, b, context]() {
-                    auto& VB = GfxEnv::GetSharedDynamicVB2();
+                    auto vb = GfxEnv::GetSharedDynamicVB2();
                     VtxWriter<SVtxV12N12B12T8C4> vw;
                     auto v0 = SVtxV12N12B12T8C4(a, fvec3(), fvec3(), fvec2(), 0xffffffff);
                     auto v1 = SVtxV12N12B12T8C4(b, fvec3(), fvec3(), fvec2(), 0xffffffff);
-                    vw.Lock(context, &VB, 6);
+                    vw.Lock(context, vb.get(), 6);
                     vw.AddVertex(v0);
                     vw.AddVertex(v1);
                     vw.UnLock(context);

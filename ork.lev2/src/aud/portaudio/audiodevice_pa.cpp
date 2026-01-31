@@ -376,6 +376,7 @@ void AudioDevicePa::startup(){
   if(_appinitdata.lock()->_enable_audio_synth){
     _the_synth = synth::instance();
   }
+  _the_synth->waitUntilReady();
   _startupAudio(this);
 
 }

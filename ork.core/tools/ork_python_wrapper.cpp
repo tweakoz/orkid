@@ -40,7 +40,8 @@ int main(int argc, char* argv[]) {
     
     // Set the environment variable
     setenv("DYLD_LIBRARY_PATH", dyld_path.c_str(), 1);
-    
+    setenv("DYLD_INSERT_LIBRARIES", "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/lib/darwin/libclang_rt.tsan_osx_dynamic.dylib", 1 );
+
     // Build path to orkids custom python executable
     std::string python_path = std::string(obt_stage) + "/pyvenv/bin/python3";
     

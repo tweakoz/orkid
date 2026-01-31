@@ -3,6 +3,7 @@
 #include <zmq.hpp>
 #include <zmq_addon.hpp>
 #include <unordered_set>
+#include <mutex>
 #include <ork/kernel/netpacket_dyn.inl>
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::zeromq {
@@ -35,6 +36,7 @@ struct Context {
 
   impl_context_ptr_t _impl;
   std::unordered_set<socket_ptr_t> _socket_tracker;
+  mutable std::mutex _socket_tracker_mutex;
   std::atomic<int> _socket_count;
 };
 
@@ -68,6 +70,7 @@ inline Context::Context(int numiothread) {
   _socket_count = 0;
 }
 inline Context::~Context() {
+  std::lock_guard<std::mutex> lock(_socket_tracker_mutex);
   for (auto item : _socket_tracker) {
     item->close();
   }
@@ -87,17 +90,24 @@ inline void Context::shutdown() {
 
 inline socket_ptr_t Context::createSocket(zmq::socket_type type,std::string name) {
   auto socket = std::make_shared<Socket>(this, type);
-  _socket_tracker.insert(socket);
+  {
+    std::lock_guard<std::mutex> lock(_socket_tracker_mutex);
+    _socket_tracker.insert(socket);
+  }
   socket->_name = name;
   return socket;
 }
 inline void Context::removeSocket(socket_ptr_t skt) {
-  auto it = _socket_tracker.find(skt);
-  OrkAssert(it != _socket_tracker.end());
-  _socket_tracker.erase(it);
+  {
+    std::lock_guard<std::mutex> lock(_socket_tracker_mutex);
+    auto it = _socket_tracker.find(skt);
+    OrkAssert(it != _socket_tracker.end());
+    _socket_tracker.erase(it);
+  }
   skt->close();
 }
 inline void Context::dumpOpenSockets() const{
+    std::lock_guard<std::mutex> lock(_socket_tracker_mutex);
     printf( "DUMP OPEN SOCKETS<%p>\n", this );
     for( auto item : _socket_tracker ){
         if( item->_closed == false){

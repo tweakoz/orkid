@@ -133,7 +133,7 @@ void ColorEdit::DoDraw(drawevent_constptr_t drwev) {
   auto primi  = context->PRI();
   auto defmtl  = lev2::defaultUIMaterial();
   using vtx_t  = lev2::SVtxV16T16C16;
-  auto& VB     = lev2::GfxEnv::GetSharedDynamicV16T16C16();
+  auto vb      = lev2::GfxEnv::GetSharedDynamicV16T16C16();
   auto RCFD = std::make_shared<lev2::RenderContextFrameData>(context);
   if (nullptr == _material) {
     _material = std::make_shared<lev2::FreestyleMaterial>();
@@ -182,7 +182,7 @@ void ColorEdit::DoDraw(drawevent_constptr_t drwev) {
   /////////////////////////////////////////////////////////////////
 
   lev2::VtxWriter<vtx_t> vw0;
-  vw0.Lock(context, &VB, 6 * numquads);
+  vw0.Lock(context, vb.get(), 6 * numquads);
 
   for (int i = 0; i < numquads; i++) {
     float A = DTOR * 360.0 * float(i) / float(numquads);
@@ -229,7 +229,7 @@ void ColorEdit::DoDraw(drawevent_constptr_t drwev) {
   /////////////////////////////////////////////////////////////////
 
   lev2::VtxWriter<vtx_t> vw1;
-  vw1.Lock(context, &VB, 6 * numquads);
+  vw1.Lock(context, vb.get(), 6 * numquads);
 
   for (int i = 0; i < numquads; i++) {
     float A = DTOR * 360.0 * float(i) / float(numquads);
@@ -271,7 +271,7 @@ void ColorEdit::DoDraw(drawevent_constptr_t drwev) {
   /////////////////////////////////////////////////////////////////
 
   lev2::VtxWriter<vtx_t> vw2;
-  vw2.Lock(context, &VB, 6 * numquads);
+  vw2.Lock(context, vb.get(), 6 * numquads);
 
   for (int i = 0; i < numquads; i++) {
     float A = DTOR * 360.0 * float(i) / float(numquads);

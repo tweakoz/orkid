@@ -29,9 +29,9 @@ void gradientGeometry(
   const int knumpoints = (int)data.size();
   const int ksegs      = knumpoints - 1;
   if(ksegs){
-    DynamicVertexBuffer<SVtxV16T16C16>& VB = GfxEnv::GetSharedDynamicV16T16C16();
+    auto vb = GfxEnv::GetSharedDynamicV16T16C16();
 
-    vw.Lock(pTARG, &VB, 6 * ksegs);
+    vw.Lock(pTARG, vb.get(), 6 * ksegs);
 
     fvec4 uv;
 

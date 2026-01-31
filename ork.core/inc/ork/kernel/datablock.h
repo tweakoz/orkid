@@ -9,6 +9,7 @@
 
 #include <vector>
 #include <cstdint>
+#include <cstring>
 #include <ork/util/crc64.h>
 #include <ork/util/xxhash.inl>
 #include <ork/kernel/varmap.inl>
@@ -190,9 +191,10 @@ struct DataBlockInputStream {
 template <typename T> T DataBlockInputStream::getItem() {
   size_t isize = sizeof(T);
   OrkAssert((_cursor + isize) <= length());
-  auto pt = (T*)_datablock->data(_cursor);
+  T result;
+  std::memcpy(&result, _datablock->data(_cursor), sizeof(T));
   _cursor += isize;
-  return *pt;
+  return result;
 }
 
 } // namespace ork

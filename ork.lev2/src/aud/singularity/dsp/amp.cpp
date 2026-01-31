@@ -60,7 +60,7 @@ void AMP_ADAPTIVE::compute(DspBuffer& dspbuf) { // final
   int numout = _ioconfig->numOutputs();
   // printf( "numinp<%d> numout<%d>\n", numinp, numout );
   //////////////////////////////////
-  float laychgain = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
+  float laychgain = decibel_to_linear_amp_ratio(LD->_channelGains[0].load(std::memory_order_relaxed));
   // printf("paramgain<%g> laychgain<%g> _dbd->_inputPad<%g>\n", paramgain, laychgain, _dbd->_inputPad);
   float baseG = laychgain;
   baseG *= decibel_to_linear_amp_ratio(paramgain) * _dbd->_inputPad;
@@ -149,7 +149,7 @@ void AMP_MONOIO::compute(DspBuffer& dspbuf) { // final
   //////////////////////////////////
   auto inputchan  = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
   auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
-  float laychgain = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
+  float laychgain = decibel_to_linear_amp_ratio(LD->_channelGains[0].load(std::memory_order_relaxed));
   float ampenv    = _layer->_ampenvgain;
   //////////////////////////////////
   for (int i = 0; i < inumframes; i++) {
@@ -204,7 +204,7 @@ void PLUSAMP::compute(DspBuffer& dspbuf) // final
 
   auto LD = _layer->_layerdata;
 
-  float laychgain = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
+  float laychgain = decibel_to_linear_amp_ratio(LD->_channelGains[0].load(std::memory_order_relaxed));
   float baseG     = laychgain;
   baseG *= decibel_to_linear_amp_ratio(paramgain) * _dbd->_inputPad;
   bool use_natenv = LD->_usenatenv;
@@ -264,7 +264,7 @@ void XAMP::compute(DspBuffer& dspbuf) // final
   float* lbuf    = getOutBuf(dspbuf, 1) + _layer->_dspwritebase;
 
   auto LD    = _layer->_layerdata;
-  float LinG = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
+  float LinG = decibel_to_linear_amp_ratio(LD->_channelGains[0].load(std::memory_order_relaxed));
 
   if (1)
     for (int i = 0; i < inumframes; i++) {
@@ -484,8 +484,8 @@ void AMPU_AMPL::compute(DspBuffer& dspbuf) // final
   auto l_lrmix = panBlend(_lpan);
 
   const auto& layd = _layer->_layerdata;
-  float LowerLinG  = decibel_to_linear_amp_ratio(layd->_channelGains[0]);
-  float UpperLinG  = decibel_to_linear_amp_ratio(layd->_channelGains[1]);
+  float LowerLinG  = decibel_to_linear_amp_ratio(layd->_channelGains[0].load(std::memory_order_relaxed));
+  float UpperLinG  = decibel_to_linear_amp_ratio(layd->_channelGains[1].load(std::memory_order_relaxed));
   float baseLG     = LowerLinG;
   baseLG *= decibel_to_linear_amp_ratio(gainL) * _dbd->_inputPad;
   float baseUG = UpperLinG;
@@ -516,8 +516,8 @@ void AMPU_AMPL::doKeyOn(const KeyOnInfo& koi) // final
   _filtU      = 0.0f;
   _filtL      = 0.0f;
   auto LD     = koi._layer->_layerdata;
-  float fpanu = float(LD->_channelPans[0]) / 7.0f;
-  float fpanl = float(LD->_channelPans[1]) / 7.0f;
+  float fpanu = LD->_channelPans[0].load(std::memory_order_relaxed) / 7.0f;
+  float fpanl = LD->_channelPans[1].load(std::memory_order_relaxed) / 7.0f;
   _upan       = fpanu;
   _lpan       = fpanl;
 }
@@ -629,7 +629,7 @@ void BANGAMP::compute(DspBuffer& dspbuf) // final
   float* lbuf    = getOutBuf(dspbuf, 1) + _layer->_dspwritebase;
 
   auto LD    = _layer->_layerdata;
-  float LinG = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
+  float LinG = decibel_to_linear_amp_ratio(LD->_channelGains[0].load(std::memory_order_relaxed));
 
   // printf( "frq<%f> _phaseInc<%lld>\n", frq, _phaseInc );
   if (1)
@@ -683,7 +683,7 @@ void NOISEGATE::compute(DspBuffer& dspbuf) // final
   float* lbuf    = getOutBuf(dspbuf, 1) + _layer->_dspwritebase;
 
   auto LD    = _layer->_layerdata;
-  float LinG = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
+  float LinG = decibel_to_linear_amp_ratio(LD->_channelGains[0].load(std::memory_order_relaxed));
 
   // printf( "frq<%f> _phaseInc<%lld>\n", frq, _phaseInc );
 

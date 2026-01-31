@@ -724,11 +724,11 @@ dspblkdata_ptr_t KrzBankDataParser::parseDspBlock(const Value& dseg, dspstagedat
 
     switch (rval->_blockIndex) {
       case 3: // upper
-        layd->_channelPans[1]     = ((pan / 7.0f) - 3.5f) / 3.5f;
+        layd->_channelPans[1].store(((pan / 7.0f) - 3.5f) / 3.5f, std::memory_order_relaxed);
         layd->_channelPanModes[1] = panMode;
         break;
       case 4: // lower
-        layd->_channelPans[0]     = ((pan / 7.0f) - 3.5f) / 3.5f;
+        layd->_channelPans[0].store(((pan / 7.0f) - 3.5f) / 3.5f, std::memory_order_relaxed);
         layd->_channelPanModes[0] = panMode;
         break;
       default:
@@ -742,10 +742,10 @@ dspblkdata_ptr_t KrzBankDataParser::parseDspBlock(const Value& dseg, dspstagedat
     int gain = 30 - (ggg * 6);
     switch (rval->_blockIndex) {
       case 3: // upper
-        layd->_channelGains[1] = gain;
+        layd->_channelGains[1].store(float(gain), std::memory_order_relaxed);
         break;
       case 4: // lower
-        layd->_channelGains[0] = gain;
+        layd->_channelGains[0].store(float(gain), std::memory_order_relaxed);
         break;
       default:
         break;

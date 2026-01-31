@@ -8,6 +8,7 @@
 #pragma once
 
 #include <mutex>
+#include <atomic>
 #include "reflection.h"
 #include "envelope.h"
 #include "konoff.h"
@@ -46,8 +47,8 @@ struct LayerData : public ork::Object {
   int _hiKey                      = 127;
   int _loVel                      = 0;
   int _hiVel                      = 127;
-  float _channelGains[4]          = {0, 0, 0, 0};
-  float _channelPans[4]           = {0, 0, 0, 0};
+  std::atomic<float> _channelGains[4] = {0, 0, 0, 0};
+  std::atomic<float> _channelPans[4]  = {0, 0, 0, 0};
   int _channelPanModes[4]         = {0, 0, 0, 0};
   bool _ignRels                   = false;
   bool _atk1Hold                  = false; // ThrAtt

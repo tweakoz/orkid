@@ -1391,13 +1391,13 @@ void PrimitivesInterface::RenderOrthoQuad(
     f32 imaxU,
     f32 iminV,
     f32 imaxV) {
-  auto vb = &GfxEnv::GetSharedDynamicVB();
+  auto vb = GfxEnv::GetSharedDynamicVB();
 
   ///////////////////////////////////////////
   // SET VERTICES (range 0..1)
 
   lev2::VtxWriter<SVtxV12C4T16> vw;
-  vw.Lock(_context, vb, 6);
+  vw.Lock(_context, vb.get(), 6);
 
   vw.AddVertex(SVtxV12C4T16(fX1, fY1, 0.0f, iminU, iminV, 0xffffffff));
   vw.AddVertex(SVtxV12C4T16(fX2, fY1, 0.0f, imaxU, iminV, 0xffffffff));
@@ -1436,13 +1436,13 @@ void PrimitivesInterface::RenderOrthoQuad(
 
 void PrimitivesInterface::
     RenderQuadAtX(f32 fY1, f32 fY2, f32 fZ1, f32 fZ2, f32 fX, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV) {
-  auto vb = &GfxEnv::GetSharedDynamicVB();
+  auto vb = GfxEnv::GetSharedDynamicVB();
 
   ///////////////////////////////////////////
   // SET VERTICES (range 0..1)
 
   lev2::VtxWriter<SVtxV12C4T16> vw;
-  vw.Lock(_context, vb, 6);
+  vw.Lock(_context, vb.get(), 6);
 
   vw.AddVertex(SVtxV12C4T16(fX, fY1, fZ1, iminU, iminV, 0xffffffff));
   vw.AddVertex(SVtxV12C4T16(fX, fY2, fZ1, imaxU, iminV, 0xffffffff));
@@ -1465,13 +1465,13 @@ void PrimitivesInterface::
 
 void PrimitivesInterface::
     RenderQuadAtY(f32 fX1, f32 fX2, f32 fZ1, f32 fZ2, f32 fY, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV) {
-  auto vb = &GfxEnv::GetSharedDynamicVB();
+  auto vb = GfxEnv::GetSharedDynamicVB();
 
   ///////////////////////////////////////////
   // SET VERTICES (range 0..1)
 
   lev2::VtxWriter<SVtxV12C4T16> vw;
-  vw.Lock(_context, vb, 6);
+  vw.Lock(_context, vb.get(), 6);
 
   vw.AddVertex(SVtxV12C4T16(fX2, fY, fZ2, imaxU, imaxV, 0xffffffff));
   vw.AddVertex(SVtxV12C4T16(fX2, fY, fZ1, imaxU, iminV, 0xffffffff));
@@ -1504,13 +1504,13 @@ void PrimitivesInterface::RenderQuadAtZ(
     f32 iminV,
     f32 imaxV,
     bool debug) {
-  auto vb = &GfxEnv::GetSharedDynamicVB();
+  auto vb = GfxEnv::GetSharedDynamicVB();
 
   ///////////////////////////////////////////
   // SET VERTICES (range 0..1)
 
   lev2::VtxWriter<SVtxV12C4T16> vw;
-  vw.Lock(_context, vb, 6);
+  vw.Lock(_context, vb.get(), 6);
 
   vw.AddVertex(SVtxV12C4T16(fX1, fY1, fZ, iminU, iminV, 0xffffffff));
   vw.AddVertex(SVtxV12C4T16(fX2, fY1, fZ, imaxU, iminV, 0xffffffff));
@@ -1545,13 +1545,13 @@ void PrimitivesInterface::RenderQuadAtZV16T16C16(
     f32 imaxU,
     f32 iminV,
     f32 imaxV) {
-  auto vb = &GfxEnv::GetSharedDynamicV16T16C16();
+  auto vb = GfxEnv::GetSharedDynamicV16T16C16();
 
   ///////////////////////////////////////////
   // SET VERTICES (range 0..1)
 
   lev2::VtxWriter<SVtxV16T16C16> vw;
-  vw.Lock(_context, vb, 6);
+  vw.Lock(_context, vb.get(), 6);
 
   vw.AddVertex(SVtxV16T16C16(fvec4(fX1, fY1, fZ), fvec4(1, 1, 1, 1), fvec4(iminU, iminV, 0, 0)));
   vw.AddVertex(SVtxV16T16C16(fvec4(fX2, fY1, fZ), fvec4(1, 1, 1, 1), fvec4(imaxU, iminV, 0, 0)));
@@ -1579,13 +1579,13 @@ void PrimitivesInterface::RenderEMLQuadAtZV16T16C16(
     f32 imaxU,
     f32 iminV,
     f32 imaxV) {
-  auto vb = &GfxEnv::GetSharedDynamicV16T16C16();
+  auto vb = GfxEnv::GetSharedDynamicV16T16C16();
 
   ///////////////////////////////////////////
   // SET VERTICES (range 0..1)
 
   lev2::VtxWriter<SVtxV16T16C16> vw;
-  vw.Lock(_context, vb, 6);
+  vw.Lock(_context, vb.get(), 6);
 
   vw.AddVertex(SVtxV16T16C16(fvec4(fX1, fY1, fZ), fvec4(iminU, iminV, 0, 0), fvec4(iminU, iminV, 0, 0)));
   vw.AddVertex(SVtxV16T16C16(fvec4(fX2, fY1, fZ), fvec4(imaxU, iminV, 0, 0), fvec4(imaxU, iminV, 0, 0)));
@@ -1607,13 +1607,13 @@ void PrimitivesInterface::RenderEMLQuadAtZV16T16C16(
 ///////////////////////////////////////////////////////////////////////////////
 
 void PrimitivesInterface::RenderQuad(fvec4& V0, fvec4& V1, fvec4& V2, fvec4& V3) {
-  auto vb = &GfxEnv::GetSharedDynamicVB();
+  auto vb = GfxEnv::GetSharedDynamicVB();
 
   ///////////////////////////////////////////
   // SET VERTICES (range 0..1)
 
   lev2::VtxWriter<SVtxV12C4T16> vw;
-  vw.Lock(_context, vb, 6);
+  vw.Lock(_context, vb.get(), 6);
 
   f32 iminU = 0.0f;
   f32 iminV = 0.0f;

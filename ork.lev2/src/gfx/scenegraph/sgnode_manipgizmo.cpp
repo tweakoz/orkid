@@ -165,13 +165,13 @@ void ManipGizmoDrawableImpl::_drawAxis(Context* ctx, rcfd_ptr_t RCFD, const fmtx
                                         const fvec3& dir, const fvec4& color,
                                         float length, float thickness) {
   using vtx_t = SVtxV12N12B12T8C4;
-  auto& VB = GfxEnv::GetSharedDynamicVB2();
+  auto VB = GfxEnv::GetSharedDynamicVB2();
   VtxWriter<vtx_t> vw;
 
   // Build cylinder around the axis
   const int segments = 8;
   const int numVerts = segments * 6;  // 2 triangles per segment
-  vw.Lock(ctx, &VB, numVerts);
+  vw.Lock(ctx, VB.get(), numVerts);
 
   fvec2 uv(0, 0);
   U32 clr = ((U32)(color.w * 255) << 24) | ((U32)(color.z * 255) << 16) |
@@ -251,12 +251,12 @@ void ManipGizmoDrawableImpl::_drawCone(Context* ctx, rcfd_ptr_t RCFD, const fmtx
                                         const fvec3& dir, const fvec4& color,
                                         float radius, float height) {
   using vtx_t = SVtxV12N12B12T8C4;
-  auto& VB = GfxEnv::GetSharedDynamicVB2();
+  auto VB = GfxEnv::GetSharedDynamicVB2();
   VtxWriter<vtx_t> vw;
 
   const int segments = 12;
   const int numVerts = segments * 3 + segments * 3;  // cone side + base
-  vw.Lock(ctx, &VB, numVerts);
+  vw.Lock(ctx, VB.get(), numVerts);
 
   fvec2 uv(0, 0);
   U32 clr = ((U32)(color.w * 255) << 24) | ((U32)(color.z * 255) << 16) |
@@ -342,7 +342,7 @@ void ManipGizmoDrawableImpl::_drawRing(Context* ctx, rcfd_ptr_t RCFD, const fmtx
                                         const fvec4& color,
                                         float majorRadius, float minorRadius) {
   using vtx_t = SVtxV12N12B12T8C4;
-  auto& VB = GfxEnv::GetSharedDynamicVB2();
+  auto VB = GfxEnv::GetSharedDynamicVB2();
   VtxWriter<vtx_t> vw;
 
   // Torus geometry parameters
@@ -350,7 +350,7 @@ void ManipGizmoDrawableImpl::_drawRing(Context* ctx, rcfd_ptr_t RCFD, const fmtx
   const int minorSegments = 12;  // Around the tube
   const int numVerts = majorSegments * minorSegments * 6;  // 2 triangles per quad
 
-  vw.Lock(ctx, &VB, numVerts);
+  vw.Lock(ctx, VB.get(), numVerts);
 
   fvec2 uv(0, 0);
 
@@ -456,11 +456,11 @@ void ManipGizmoDrawableImpl::_drawRing(Context* ctx, rcfd_ptr_t RCFD, const fmtx
 void ManipGizmoDrawableImpl::_drawCube(Context* ctx, rcfd_ptr_t RCFD, const fmtx4& VP, const fvec3& pos,
                                         const fvec4& color, float size) {
   using vtx_t = SVtxV12N12B12T8C4;
-  auto& VB = GfxEnv::GetSharedDynamicVB2();
+  auto VB = GfxEnv::GetSharedDynamicVB2();
   VtxWriter<vtx_t> vw;
 
   const int numVerts = 36;  // 6 faces * 2 triangles * 3 verts
-  vw.Lock(ctx, &VB, numVerts);
+  vw.Lock(ctx, VB.get(), numVerts);
 
   fvec2 uv(0, 0);
   float h = size * 0.5f;
@@ -553,10 +553,10 @@ void ManipGizmoDrawableImpl::_drawPlaneHandle(Context* ctx, rcfd_ptr_t RCFD, con
                                                const fvec3& axis1, const fvec3& axis2,
                                                const fvec4& color, float sign1, float sign2, float size) {
   using vtx_t = SVtxV12N12B12T8C4;
-  auto& VB = GfxEnv::GetSharedDynamicVB2();
+  auto VB = GfxEnv::GetSharedDynamicVB2();
   VtxWriter<vtx_t> vw;
 
-  vw.Lock(ctx, &VB, 12);  // 6 verts per side, 2 sides for two-pass rendering
+  vw.Lock(ctx, VB.get(), 12);  // 6 verts per side, 2 sides for two-pass rendering
 
   // Plane is cornered at origin, extends in sign1*axis1 and sign2*axis2 directions
   fvec3 v0 = pos;                                    // Origin corner

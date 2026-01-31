@@ -133,26 +133,24 @@ const char* OldSchool::ExpandString(char* outbuf, size_t outsize, const char* pf
 
 int OldSchool::GetNumCores()
 {
+  // Thread-safe static initialization (C++11 guarantees)
+  static int numCPUs = []() {
+    int n;
 #if defined(ORK_CONFIG_IX)
-  int numCPUs = sysconf(_SC_NPROCESSORS_ONLN);
+    n = sysconf(_SC_NPROCESSORS_ONLN);
 #else
-  static int numCPUs = -1;
-  if(-1 == numCPUs ){
-    size_t count_len = sizeof(numCPUs);
-   sysctlbyname("hw.logicalcpu", &numCPUs, &count_len, NULL, 0);
-
-  //fprintf(stderr,"you have %i cpu cores\n", numCPUs);
-  fflush(stdout);
-}
+    size_t count_len = sizeof(n);
+    sysctlbyname("hw.logicalcpu", &n, &count_len, NULL, 0);
 #endif
-
-  const char* numcores_env = getenv("OBT_NUM_CORES");
-  if(numcores_env){
-    numCPUs = atoi(numcores_env);
-  }
+    // Allow environment override
+    const char* numcores_env = getenv("OBT_NUM_CORES");
+    if (numcores_env) {
+      n = atoi(numcores_env);
+    }
+    return n;
+  }();
 
   return numCPUs;
-
 }
 
 //////////////////////////////////////////////////////////////////////////////

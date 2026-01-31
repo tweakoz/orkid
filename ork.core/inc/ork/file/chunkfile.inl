@@ -10,6 +10,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include <ork/file/chunkfile.h>
+#include <cstring>
 
 ///
 namespace ork {
@@ -29,8 +30,7 @@ template <typename T> void InputStream::GetItem(T& item) {
   size_t isize = sizeof(T);
   OrkAssert((midx + isize) <= milength);
   const char* pchbase = (const char*)mpbase;
-  T* pt               = (T*)&pchbase[midx];
-  item                = *pt;
+  std::memcpy(&item, &pchbase[midx], sizeof(T));
   midx += isize;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -48,10 +48,10 @@ template <typename T> T InputStream::ReadItem() {
   size_t ileft = milength - midx;
   OrkAssert((midx + isize) <= milength);
   const char* pchbase = (const char*)mpbase;
-  size_t out_index = midx;
+  T result;
+  std::memcpy(&result, &pchbase[midx], sizeof(T));
   midx += isize;
-  auto ptr_to_data = (T*)&pchbase[out_index];
-  return *ptr_to_data;
+  return result;
 }
 ///
 } // namespace chunkfile
