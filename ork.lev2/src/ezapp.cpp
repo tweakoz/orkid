@@ -204,7 +204,7 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
     , _mainWindow(0)
     , _updateThread("updatethread") {
 
-  logchan_ezapp->_status_interval = 5.0f;
+  logchan_ezapp->_status_interval = 8.0f;
 
   __priv_gapp.store(this);
   /////////////////////////////////////////////

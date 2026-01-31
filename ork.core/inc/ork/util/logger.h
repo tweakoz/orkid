@@ -52,7 +52,7 @@ namespace ork {
     std::string _reset;
     bool _enabled;
     file_ptr_t _file; // if not null, log to file
-    float _status_interval = 5.0f;
+    float _status_interval = 8.0f;
     float _perf_interval = 1.0f;  // Sampling rate for pull-based perfItems (in seconds)
     Logger* _logger = nullptr; // Backpointer to logger for this channel
 

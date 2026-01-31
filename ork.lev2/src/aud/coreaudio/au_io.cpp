@@ -46,14 +46,10 @@ OSStatus AuContext::setupInputCallback() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void DumpStreamDesc(const char* name, const CAStreamBasicDescription& strd) {
-  logchan_auio->log("StreamDesc<%s>", name);
-  strd.Print();
-  bool isinterl = strd.mFormatFlags & kAudioFormatFlagIsNonInterleaved;
-  logchan_auio->log("StreamDesc<%s> mSampleRate:%d", name, (int)strd.mSampleRate);
-  logchan_auio->log("StreamDesc<%s> interleaved<%d>", name, (int)isinterl);
-  logchan_auio->log("StreamDesc<%s> mChannelsPerFrame:%d", name, (int)strd.mChannelsPerFrame);
-  logchan_auio->log("StreamDesc<%s> mBytesPerFrame:%d", name, (int)strd.mBytesPerFrame);
-  logchan_auio->log("StreamDesc<%s> mFramesPerPacket:%d", name, (int)strd.mFramesPerPacket);
+  bool isinterl = !(strd.mFormatFlags & kAudioFormatFlagIsNonInterleaved);
+  logchan_auio->log("StreamDesc<%s> rate:%d ch:%d bpf:%d fpp:%d interl:%d",
+                    name, (int)strd.mSampleRate, (int)strd.mChannelsPerFrame,
+                    (int)strd.mBytesPerFrame, (int)strd.mFramesPerPacket, (int)isinterl);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -132,8 +128,6 @@ OSStatus AuContext::setupOutputBuffers() {
 ///////////////////////////////////////////////////////////////////////////////
 
 OSStatus AuContext::setupInputBuffers() {
-  logchan_auio->log("SetupInputBuffers");
-
   if (!_inputDev) {
     OrkAssert(false);
     return kAudioUnitErr_InvalidParameter; // no input device set
@@ -154,7 +148,7 @@ OSStatus AuContext::setupInputBuffers() {
  // Note: Buffer frame size should be set AFTER the device is configured
  // We'll get the actual frame size from the device later
 
-  logchan_auio->log("INPBUFFERFRAMESIZE<%d>", int(bufferFrameSize));
+  logchan_auio->log("SetupInputBuffers framesize:%d", int(bufferFrameSize));
 
   _inputFrameSize = bufferFrameSize;
   setframesize(_inputFrameSize);

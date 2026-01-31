@@ -332,9 +332,7 @@ OSStatus AuContext::setupGraphForInputOnly() {
   err = setupInputCallback();
   AuCheckErr(err);
 
-  // Setup input buffers (stream format and allocation)
-  err = setupInputBuffers();
-  AuCheckErr(err);
+  // Note: setupInputBuffers() is called by Init() after graph setup
 
   // Initialize the input unit
   err = AudioUnitInitialize(_inputUnit);
