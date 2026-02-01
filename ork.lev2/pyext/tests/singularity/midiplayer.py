@@ -7,69 +7,30 @@
 ################################################################
 
 """
-Tests for ComponentizedApplication with HFSM Subsystem integration + Audio.
+MIDI Player with Piano Keyboard Visualization
 
-Plays Moonlight Sonata from MIDI file using Python-based sequencing
-with synth.keyOn/keyOff, displays a piano keyboard visualization
-showing active notes in red.
+Plays Moonlight Sonata from MIDI file using C++ sequencer,
+displays a piano keyboard visualization showing active notes in red.
 
 Usage:
-  ./test_componentized_subsystems2.py
+  ./midiplayer.py
 """
 
 import sys
-import os
 import time
 from orkengine.core import *
 from orkengine.lev2 import *
 from ork.app.application import ComponentizedApplication
 from mido import MidiFile
 
+# Import midiToSingularitySequence from local _seq module
+sys.path.append((thisdir()).normalized.as_string)
+from _seq import midiToSingularitySequence
+
 tokens = CrcStringProxy()
+timestamp = singularity.TimeStamp
 
-################################################################
-# MIDI Parser
-################################################################
-
-def parseMidiFile(midi_path, tempo_scale=1.0):
-    """Parse MIDI file and return list of (note, start_time, duration, velocity) tuples."""
-    midifile = MidiFile(midi_path)
-
-    tempo_usec = 500000
-    for track in midifile.tracks:
-        for msg in track:
-            if msg.type == 'set_tempo':
-                tempo_usec = msg.tempo
-                break
-
-    ticks_per_beat = midifile.ticks_per_beat
-    seconds_per_tick = (tempo_usec / 1_000_000.0) / ticks_per_beat * tempo_scale
-
-    note_ons = {}
-    events = []
-
-    for track in midifile.tracks:
-        current_time = 0.0
-        for msg in track:
-            current_time += msg.time * seconds_per_tick
-            if msg.type == 'note_on' and msg.velocity > 0:
-                note_ons[msg.note] = (current_time, msg.velocity)
-            elif msg.type == 'note_off' or (msg.type == 'note_on' and msg.velocity == 0):
-                if msg.note in note_ons:
-                    start_time, velocity = note_ons[msg.note]
-                    duration = current_time - start_time
-                    events.append((msg.note, start_time, duration, velocity))
-                    del note_ons[msg.note]
-
-    events.sort(key=lambda e: e[1])
-
-    if events:
-        last_event = max(events, key=lambda e: e[1] + e[2])
-        total_duration = last_event[1] + last_event[2]
-    else:
-        total_duration = 0.0
-
-    return events, total_duration
+TEMPO = 120
 
 ################################################################
 # Piano Keyboard Layout Helper
@@ -101,15 +62,15 @@ class PianoKeyboard:
     def __init__(self, canvas):
         self.canvas = canvas
         self.key_quads = {}
-        self.active_notes = set()
+        self.active_notes = {}  # note -> count
         self._gpu_initialized = False
 
         # Set up pre-render callback
         self.canvas.onPreRender = self._onPreRender
 
-    def setActiveNotes(self, notes):
-        """Update the set of currently active notes."""
-        self.active_notes = set(notes)
+    def setActiveNotes(self, notes_dict):
+        """Update the dict of currently active notes (note -> count)."""
+        self.active_notes = dict(notes_dict)
 
     def _onPreRender(self):
         """Called before each render."""
@@ -160,6 +121,9 @@ class PianoKeyboard:
             wk_idx = whiteKeyIndex(midi_note)
             rel_idx = wk_idx - first_wk_idx
 
+            # Get note count (0 if not active)
+            note_count = self.active_notes.get(midi_note, 0)
+
             if isBlackKey(midi_note):
                 # Black key - centered on the boundary between white keys
                 # Bottom-aligned, shorter than white keys
@@ -168,11 +132,15 @@ class PianoKeyboard:
                 qd.setPosition(x, y)
                 qd.setSize(black_key_w, black_key_h)
 
-                # Color: red if active, dark gray if not
-                if midi_note in self.active_notes:
-                    qd.setColor(vec4(1.0, 0.2, 0.2, 1))
+                # Color based on count: red=1, magenta=2, yellow=3+
+                if note_count >= 3:
+                    qd.setColor(vec4(1.0, 1.0, 0.2, 1))  # yellow
+                elif note_count == 2:
+                    qd.setColor(vec4(1.0, 0.2, 1.0, 1))  # magenta
+                elif note_count == 1:
+                    qd.setColor(vec4(1.0, 0.2, 0.2, 1))  # red
                 else:
-                    qd.setColor(vec4(0.15, 0.15, 0.15, 1))
+                    qd.setColor(vec4(0.15, 0.15, 0.15, 1))  # dark gray
             else:
                 # White key - bottom-aligned, full height
                 x = rel_idx * white_key_w
@@ -180,11 +148,15 @@ class PianoKeyboard:
                 qd.setPosition(x + 1, y)  # +1 for gap
                 qd.setSize(white_key_w - 2, white_key_h)
 
-                # Color: red if active, white if not
-                if midi_note in self.active_notes:
-                    qd.setColor(vec4(1.0, 0.3, 0.3, 1))
+                # Color based on count: red=1, magenta=2, yellow=3+
+                if note_count >= 3:
+                    qd.setColor(vec4(1.0, 1.0, 0.3, 1))  # yellow
+                elif note_count == 2:
+                    qd.setColor(vec4(1.0, 0.3, 1.0, 1))  # magenta
+                elif note_count == 1:
+                    qd.setColor(vec4(1.0, 0.3, 0.3, 1))  # red
                 else:
-                    qd.setColor(vec4(0.95, 0.95, 0.95, 1))
+                    qd.setColor(vec4(0.95, 0.95, 0.95, 1))  # white
 
         self.canvas.markDirty()
 
@@ -193,20 +165,19 @@ class PianoKeyboard:
 ################################################################
 
 class MoonlightApp(ComponentizedApplication):
-    """Test app that plays Moonlight Sonata with piano keyboard visualization."""
+    """App that plays Moonlight Sonata with piano keyboard visualization."""
 
     def __init__(self):
         super().__init__()
         self.frame_count = 0
         self.start_time = None
         self.synth = None
-        self.program = None
+        self.sequencer = None
+        self.playback = None
+        self.song_duration = 0.0
 
-        # Sequencing state
-        self.note_events = []
-        self.next_event_idx = 0
-        self.active_voices = {}
-        self.total_duration = 0.0
+        # Active notes tracked via sequencer callback (note -> count)
+        self.active_notes = {}
 
         # Piano keyboard
         self.keyboard = None
@@ -242,83 +213,97 @@ class MoonlightApp(ComponentizedApplication):
     ##############################################
 
     def _onSynthInit(self, synth):
-        """Initialize the synth and load the MIDI file."""
+        """Initialize the synth and set up C++ sequencer playback."""
         self.synth = synth
-        self.synth.masterGain = singularity.decibelsToLinear(6.0)
-
-        mainbus = synth.outputBus("main")
-        mainbus.gain = 0
-        synth.setEffect(mainbus, "Reverb:NiceVerb")
-
-        krzdata = singularity.KrzSynthData()
-        self.program = krzdata.bankData.programByName("Stereo_Grand")
+        self.sequencer = synth.sequencer
+        synth.system_tempo = TEMPO
+        synth.masterGain = singularity.decibelsToLinear(6.0)
         synth.velCurvePower = 1.25
 
-        midi_path = os.path.join(
-            os.environ.get("OBT_STAGE", ""),
-            "share", "singularity", "midifiles", "moonlight.mid"
-        )
+        # Set up buses
+        mainbus = synth.outputBus("main")
+        mainbus.gain = 0
+        synth.setEffect(mainbus, "IR-BH1")
+
+        # Load sound data
+        krzdata = singularity.KrzSynthData()
+
+        # Create sequence
+        sequence = singularity.Sequence("moonlight")
+        timebase = sequence.timebase
+        timebase.numerator = 4
+        timebase.denominator = 4
+        timebase.tempo = TEMPO
+        timebase.ppq = 100
+
+        ts0 = timestamp(0, 0, 0)
+        dur64m = timestamp(64, 0, 0)
+
+        # Create piano track
+        program = krzdata.bankData.programByName("Stereo_Grand")
+        track = sequence.createTrack("piano")
+        track.program = program
+        clip = track.createEventClipAtTimeStamp("piano", ts0, dur64m)
+
+        # Load MIDI file into sequence
+        midi_path = singularity.baseDataPath() / "midifiles" / "moonlight.mid"
         print(f"Loading MIDI file: {midi_path}")
+        midiToSingularitySequence(
+            midifile=MidiFile(str(midi_path)),
+            sequence=sequence,
+            CLIP=clip,
+            temposcale=1.9,
+            feel=1
+        )
 
-        if not os.path.exists(midi_path):
-            print(f"ERROR: MIDI file not found: {midi_path}")
-            return
+        # Set up sequencer event callback for keyboard visualization
+        def on_sequencer_event(note, velocity, duration, track_name):
+            if velocity > 0:
+                # Note on - increment count
+                self.active_notes[note] = self.active_notes.get(note, 0) + 1
+            else:
+                # Note off - decrement count
+                if note in self.active_notes:
+                    self.active_notes[note] -= 1
+                    if self.active_notes[note] <= 0:
+                        del self.active_notes[note]
 
-        self.note_events, self.total_duration = parseMidiFile(midi_path, tempo_scale=1.2)
-        print(f"Loaded {len(self.note_events)} note events, duration: {self.total_duration:.1f}s")
+        self.sequencer.on_event = on_sequencer_event
 
-    ##############################################
+        # Calculate song duration
+        measures = 64
+        beats_per_measure = timebase.numerator
+        seconds_per_beat = 60.0 / TEMPO
+        self.song_duration = measures * beats_per_measure * seconds_per_beat
+        print(f"Song duration: {self.song_duration:.1f} seconds")
 
-    def _onUpdateInit(self):
-        """Initialize the start time."""
+        # Start playback
+        self.playback = self.sequencer.playSequence(sequence, 0.0)
         self.start_time = time.time()
+        print(f"Playback started: {self.playback}")
 
     ##############################################
 
     def _onUpdate(self, updinfo):
-        """Update - process note events based on elapsed time."""
+        """Update - sync keyboard visualization with active notes."""
         self.frame_count += 1
-        if self.start_time is None or self.synth is None or self.program is None:
+        if self.start_time is None or self.synth is None:
             return
 
-        elapsed = time.time() - self.start_time
-
-        # Process note-offs
-        notes_to_remove = []
-        for note, (voice, end_time) in self.active_voices.items():
-            if elapsed >= end_time:
-                self.synth.keyOff(voice, note, 0)
-                notes_to_remove.append(note)
-        for note in notes_to_remove:
-            del self.active_voices[note]
-
-        # Process note-ons
-        while self.next_event_idx < len(self.note_events):
-            note, start_time, duration, velocity = self.note_events[self.next_event_idx]
-            if elapsed >= start_time:
-                voice = self.synth.keyOn(note, velocity, self.program, None)
-                end_time = start_time + duration
-                self.active_voices[note] = (voice, end_time)
-                self.next_event_idx += 1
-            else:
-                break
-
-        # Update keyboard visualization
+        # Update keyboard visualization from callback-tracked active notes
         if self.keyboard:
-            self.keyboard.setActiveNotes(self.active_voices.keys())
+            self.keyboard.setActiveNotes(self.active_notes)
 
         # Auto-exit after piece completes
-        if elapsed >= self.total_duration + 2.0:
-            for note, (voice, _) in self.active_voices.items():
-                self.synth.keyOff(voice, note, 0)
-            self.active_voices.clear()
+        elapsed = time.time() - self.start_time
+        if elapsed >= self.song_duration + 2.0:
             print(f"  Playback complete after {self.frame_count} frames")
             self.ezapp.signalExit()
 
 ################################################################
 
 def main():
-    print("Testing ComponentizedApplication with MIDI Playback")
+    print("MIDI Player with C++ Sequencer")
     print("=" * 60)
     print("Playing: Moonlight Sonata (with piano keyboard visualization)")
     print()

@@ -20,7 +20,7 @@ def midiToSingularitySequence(
     for msg in midifile.tracks[0]:
       if msg.type == 'set_tempo':
         micros_per_quarter = msg.tempo
-        print("micros_per_quarter<%s>" % micros_per_quarter)
+        #print("micros_per_quarter<%s>" % micros_per_quarter)
         TEMPO = temposcale*(60000000.0/micros_per_quarter)
         timebase_seq.tempo = TEMPO
       if msg.type == 'time_signature':
@@ -63,7 +63,7 @@ def midiToSingularitySequence(
         tbnext.parent = timebase_mut
         tbnext.basetime = clocks
         tbnext.duration = 0.0
-        print("tr<%d> mpq<%d> tempo<%s>" % (tr, micros_per_quarter,tbnext.tempo))
+        #print("tr<%d> mpq<%d> tempo<%s>" % (tr, micros_per_quarter,tbnext.tempo))
         #sequence.setTimeBaseForTime(time,tbnext)
     tr += 1
 

@@ -1,26 +1,24 @@
 #!/usr/bin/env ork.python
 
 ################################################################################
-# singularity test for timestamps
+# singularity sequencer test
 # Copyright 1996-2023, Michael T. Mayers.
 # Distributed under the MIT License
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import sys, time, signal, argparse
-from obt import path
+import sys, signal, argparse, time
 from orkengine.core import *
 from orkengine.lev2 import *
+
 sys.path.append((thisdir()).normalized.as_string)
 from _seq import midiToSingularitySequence
-from mido import MidiFile 
+from mido import MidiFile
 
 timestamp = singularity.TimeStamp
 
 ################################################################################
 # arguments
-# -s seqid {0..3} : default 0
-# -c : enable click track
 ################################################################################
 
 parser = argparse.ArgumentParser(description='singularity sequencer test')
@@ -28,144 +26,141 @@ parser.add_argument('-s', '--seqid', type=int, default=0, help='sequence id')
 parser.add_argument('-c', '--click', action='store_true', help='enable click track')
 parser.add_argument("-g", "--gain", type=float, default=-48, help="gain(dB)")
 args = parser.parse_args()
-seqid = args.seqid
-add_click = args.click
 
 ################################################################################
 
 TEMPO = 120
 
-class CLAPP(object):
+################################################################################
+
+class SequencerApp(object):
+
   def __init__(self):
-    self.ezapp = OrkEzApp.create(self,
-                                 enable_graphics=False,
-                                 enable_audio_synth=True)
+    self.synth = None
+    self.sequencer = None
+    self.playback = None
+    self.start_time = None
+    self.song_duration = None  # Will be set when sequence is created
 
-    #audiodevice = singularity.device.instance()
-    synth = singularity.synth.instance()
-    mainbus = synth.outputBus("main")
+    self.ezapp = OrkEzApp.create(
+      self,
+      name="SequencerTest",
+      use_subsystems=['opq', 'core', 'audioO']
+    )
+
+    def onCtrlC(signum, frame):
+      print("Ctrl+C received, exiting...")
+      self.ezapp.signalExit()
+
+    signal.signal(signal.SIGINT, onCtrlC)
+
+  ##############################################
+
+  def onSynthInit(self, synth):
+    """Called when synth is ready."""
+    self.synth = synth
+    self.sequencer = synth.sequencer
     synth.system_tempo = TEMPO
-    sequencer = synth.sequencer
 
-
-    #synth.setEffect(mainbus,"Reverb:FDN4")
-    #synth.setEffect(mainbus,"Reverb:FDN8")
-    #synth.setEffect(mainbus,"Reverb:FDNX")
-    synth.setEffect(mainbus,"Reverb:NiceVerb")
-    #synth.setEffect(mainbus,"StereoChorus")
-    #synth.setEffect(mainbus,"none")
+    # Set up buses
+    mainbus = synth.outputBus("main")
+    mainbus.gain = 0
+    synth.setEffect(mainbus, "IR-BH1")
 
     auxbus = synth.createOutputBus("aux")
-    synth.setEffect(auxbus,"none")
-    auxbus.gain = 0.0 #args.gain
-    mainbus.gain = 0
-    self.synth = synth
-    ################################################################################
+    auxbus.gain = 0.0
+    synth.setEffect(auxbus, "none")
 
-    syn_data_base = singularity.baseDataPath()/"kurzweil"
+    # Load sound data
     krzdata = singularity.KrzSynthData()
 
-    ################################################################################
-
+    # Create sequence
     sequence = singularity.Sequence("seq1")
     timebase = sequence.timebase
     timebase.numerator = 4
     timebase.denominator = 4
     timebase.tempo = TEMPO
-    timebase.ppq = 100 # pulses per beat
+    timebase.ppq = 100
 
-    ts0 = timestamp(0,0,0)
-    dur1b = timestamp(0,1,0)
-    dur2b = timestamp(0,2,0)
-    dur3b = timestamp(0,3,0)
-    dur1m = timestamp(1,0,0)
-    dur2m = timestamp(2,0,0)
-    dur4m = timestamp(4,0,0)
-    dur16m = timestamp(16,0,0)
-    dur32m = timestamp(32,0,0)
-    dur64m = timestamp(64,0,0)
+    ts0 = timestamp(0, 0, 0)
+    dur64m = timestamp(64, 0, 0)
 
-    ######################################################
-    # create programs/tracks/clips
-    ######################################################
-
+    # Helper to create tracks
     def createTrack(name):
       program = krzdata.bankData.programByName(name)
       track = sequence.createTrack(name)
       track.program = program
-      clip = track.createEventClipAtTimeStamp(name,ts0,dur64m)
-      return (program,track,clip)
+      clip = track.createEventClipAtTimeStamp(name, ts0, dur64m)
+      return (program, track, clip)
 
-    DOOM = createTrack("Doomsday")
-    CLICK = createTrack("Click")
-    BASS = createTrack("WonderSynth_Bass")
-    MUTES = createTrack("Guitar_Mutes_1")
+    # Create tracks
     PIANO = createTrack("Stereo_Grand")
-    STAPS = createTrack("Syncro_Taps")
-    PIZZO = createTrack("Wet_Pizz_")
 
-    ######################################################
-
-    def genSingularitySequence(
-      name="",      # midi file name
-      clip=None,    # clip to which add the events
-      temposcale=1, # tempo scale factor
-      feel=0,       # clock ticks to randomly add to each note
-      gain=0):      # master synth gain in dB
-
+    # Generate sequence from MIDI
+    def genSingularitySequence(name, clip, temposcale=1, feel=0, gain=0):
       synth.masterGain = singularity.decibelsToLinear(gain)
-      midi_path = singularity.baseDataPath()/"midifiles"
+      midi_path = singularity.baseDataPath() / "midifiles"
       midiToSingularitySequence(
-        midifile=MidiFile(str(midi_path/name)),
+        midifile=MidiFile(str(midi_path / name)),
         sequence=sequence,
         CLIP=clip,
         temposcale=temposcale,
-        feel=feel)
+        feel=feel
+      )
 
-    ######################################################
-    if seqid==0:
-      genSingularitySequence(name="moonlight.mid",temposcale=1.9,feel=1,clip=PIANO[2],gain=6)
+    # Select sequence based on args
+    seqid = args.seqid
+    if seqid == 0:
+      genSingularitySequence("moonlight.mid", PIANO[2], temposcale=1.9, feel=1, gain=6)
       synth.velCurvePower = 1.25
       auxbus.gain = +6
-    elif seqid==1:
-      genSingularitySequence(name="castle1.mid",temposcale=1.0,feel=30,clip=PIANO[2],gain=-6)
+    elif seqid == 1:
+      genSingularitySequence("castle1.mid", PIANO[2], temposcale=1.0, feel=30, gain=-6)
       synth.velCurvePower = 1.25
       auxbus.gain = -36
-    elif seqid==2:
-      genSingularitySequence(name="castle2.mid",temposcale=1.0,feel=10,clip=PIANO[2],gain=-6)
+    elif seqid == 2:
+      genSingularitySequence("castle2.mid", PIANO[2], temposcale=1.0, feel=10, gain=-6)
       synth.velCurvePower = 1.25
       auxbus.gain = -24
-    elif seqid==3:
-      genSingularitySequence(name="castle3.mid",temposcale=1.0,feel=30,clip=PIANO[2],gain=-6)
+    elif seqid == 3:
+      genSingularitySequence("castle3.mid", PIANO[2], temposcale=1.0, feel=30, gain=-6)
       synth.velCurvePower = 1.25
       auxbus.gain = -96
 
-    if add_click:
+    # Add click track if requested
+    if args.click:
       program = krzdata.bankData.programByName("Click")
       track = sequence.createTrack("click")
       track.program = program
-      clip = track.createFourOnFloorClipAtTimeStamp("click",ts0,dur64m)
+      clip = track.createFourOnFloorClipAtTimeStamp("click", ts0, dur64m)
       track.outputbus = auxbus
-      
-    ######################################################
 
-    playback = sequencer.playSequence(sequence,0.0)
+    # Calculate song duration: measures * beats_per_measure * seconds_per_beat
+    # At 120 BPM, one beat = 0.5 seconds. 64 measures * 4 beats = 256 beats = 128 seconds
+    measures = 64
+    beats_per_measure = timebase.numerator
+    seconds_per_beat = 60.0 / TEMPO
+    self.song_duration = measures * beats_per_measure * seconds_per_beat
+    print(f"Song duration: {self.song_duration:.1f} seconds")
 
-    print(playback)
-    
-    while(True):
-      self.synth.update()
-      time.sleep(0.01)
+    # Start playback
+    self.playback = self.sequencer.playSequence(sequence, 0.0)
+    self.start_time = time.time()
+    print(f"Playback started: {self.playback}")
 
-    ######################################################
-    # main loop
-    ######################################################
+  ##############################################
 
-    def onCtrlC(signum, frame):
-      sys.exit(0)
+  def onRunLoopIteration(self):
+    """Called each main loop iteration. Exit when song is done."""
+    if self.start_time is None or self.song_duration is None:
+      return  # Not yet initialized
 
-    signal.signal(signal.SIGINT, onCtrlC)
+    elapsed = time.time() - self.start_time
+    if elapsed >= self.song_duration:
+      print(f"\nSong complete ({elapsed:.1f}s)")
+      self.ezapp.signalExit()
 
-app = CLAPP()
-app.ezapp.mainThreadLoop()
-        
+################################################################################
+
+app = SequencerApp()
+app.ezapp.mainThreadLoop(on_iter=app.onRunLoopIteration)

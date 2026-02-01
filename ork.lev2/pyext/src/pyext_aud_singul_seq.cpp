@@ -347,6 +347,23 @@ void pyinit_aud_singularity_sequencer(py::module& singmodule) {
               "recording_clip",
               [](sequencer_ptr_t sequencer) { return sequencer->_recording_clip; },
               [](sequencer_ptr_t sequencer, clip_ptr_t clip) { sequencer->_recording_clip = clip; })
+          .def_property(
+              "on_event",
+              [](sequencer_ptr_t sequencer) -> py::object { return py::none(); },
+              [](sequencer_ptr_t sequencer, py::object callback) {
+                if (callback.is_none()) {
+                  sequencer->_on_event = nullptr;
+                } else {
+                  sequencer->_on_event = [callback](
+                      int note,
+                      int velocity,
+                      float duration,
+                      const std::string& track_name) {
+                    py::gil_scoped_acquire gil;
+                    callback(note, velocity, duration, track_name);
+                  };
+                }
+              })
           .def("__repr__", [](sequencer_ptr_t sequencer) -> std::string {
             std::ostringstream oss;
             oss << "Sequencer( sequence_count: " << sequencer->_sequences.size() << " )";

@@ -559,7 +559,6 @@ template <typename T> void _remove_items(std::vector<T>& vec, const std::vector<
 }
 
 void synth::mainThreadHandler() {
-
   /////////////////////////////////
   // execute external audio thread handlers
   /////////////////////////////////
@@ -638,7 +637,7 @@ programInst* synth::keyOn(int note, int velocity, prgdata_constptr_t pdata, keyo
     piset.erase(it);
   });
   pi->_progdata = pdata;
-  printf("syn KEYON<%d>\n", note);
+  //printf("syn KEYON<%d>\n", note);
 
   int clampn = std::clamp(note, 0, 127);
   int clampv = std::clamp(velocity, 0, 127);
@@ -663,7 +662,7 @@ programInst* synth::keyOn(int note, int velocity, prgdata_constptr_t pdata, keyo
 ///////////////////////////////////////////////////////////////////////////////
 
 void synth::keyOff(programInst* pinst) {
-  printf("syn keyOff pinst<%p>\n", pinst);
+  //printf("syn keyOff pinst<%p>\n", pinst);
   pinst->keyOff();
   _activeProgInst.atomicOp([pinst](proginstset_t& piset) { //
     auto it = piset.find(pinst);

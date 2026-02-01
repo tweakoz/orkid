@@ -812,29 +812,19 @@ void OrkEzApp::_audioInit() {
       _synth->mainThreadHandler();
     }
   }
-  // When using subsystems, callbacks are registered AFTER _audioInit() runs,
-  // so we defer callback invocation to _fireDeferredAudioCallbacks()
-  if (!_initdata->_use_subsystems) {
-    if (_synth && _onSynthInit) {
-      _onSynthInit(_synth);
-    }
-    if (_onAudioInit) {
-      _onAudioInit(_audiodevice);
-    }
-  }
+  // Callbacks are always deferred to _fireDeferredAudioCallbacks() which is called
+  // at the start of mainThreadLoop(), after Python has registered its callbacks.
   _audiodevice->startup();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::_fireDeferredAudioCallbacks() {
-  // Called after callbacks are registered when using subsystems
-  if (_initdata->_use_subsystems) {
-    //logchan_ezapp->log("Firing deferred audio callbacks");
-    if (_synth && _onSynthInit) {
-      _onSynthInit(_synth);
-    }
-    if (_audiodevice && _onAudioInit) {
-      _onAudioInit(_audiodevice);
-    }
+  // Called at the start of mainThreadLoop(), after callbacks are registered.
+  // This works for both ad-hoc and subsystem modes.
+  if (_synth && _onSynthInit) {
+    _onSynthInit(_synth);
+  }
+  if (_audiodevice && _onAudioInit) {
+    _onAudioInit(_audiodevice);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -874,7 +864,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
     // first time init ?
     ////////////////////////////////////////
 
-    if (_mainWindow->_onUpdateInit) {
+    if (_mainWindow && _mainWindow->_onUpdateInit) {
       _mainWindow->_onUpdateInit();
     }
 
@@ -908,7 +898,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
 
         if (_update_timeaccumulator >= step) {
 
-          bool do_update = bool(_mainWindow->_onUpdate);
+          bool do_update = _mainWindow && bool(_mainWindow->_onUpdate);
 
           if (do_update) {
             update_timer.Start();  // Start timing this update
@@ -980,7 +970,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
         _render_timeaccumulator += update_delta;
 
         // Run update
-        bool do_update = bool(_mainWindow->_onUpdate);
+        bool do_update = _mainWindow && bool(_mainWindow->_onUpdate);
         if (do_update) {
           _update_data->_dt      = update_delta;
           _update_data->_abstime = virtual_time;
@@ -1045,7 +1035,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
     _appstate.fetch_or(KAPPSTATEFLAG_JOINED);
     _appstate.fetch_and(~KAPPSTATEFLAG_UPDRUNNING);
 
-    if (_mainWindow->_onUpdateExit) {
+    if (_mainWindow && _mainWindow->_onUpdateExit) {
       // printf( "running _onUpdateExit\n");
       _mainWindow->_onUpdateExit();
     }
@@ -1066,6 +1056,10 @@ void OrkEzApp::_mainThreadLoopBegin() {
     while (this->_onRunLoopIteration) {
       opq::TrackCurrent opqtest(_mainq);
       _mainq->Process();
+      // Process synth main thread tasks (sequencer, HUD events, etc.)
+      if (_synth) {
+        _synth->mainThreadHandler();
+      }
       this->_onRunLoopIteration();
     }
     return;
@@ -1211,6 +1205,12 @@ int OrkEzApp::mainThreadLoop() {
     if (_initdata->_freerunning) {
       while (ctx->_runstate == 1) {
         frame_timer.Start();  // Start timing this frame
+
+        // Process synth main thread tasks (sequencer, HUD events, etc.)
+        if (_synth) {
+          _synth->mainThreadHandler();
+        }
+
         ctx->_runloopIter(true);
 
         // Render secondary windows
@@ -1239,6 +1239,11 @@ int OrkEzApp::mainThreadLoop() {
     } else {
       while (ctx->_runstate == 1) {
         while (_lockstep_frame_requests.load()) {
+          // Process synth main thread tasks (sequencer, HUD events, etc.)
+          if (_synth) {
+            _synth->mainThreadHandler();
+          }
+
           ctx->_runloopIter(false);
 
           // Render secondary windows
@@ -1263,6 +1268,9 @@ int OrkEzApp::mainThreadLoop() {
         sched_yield();
       }
     }
+  }
+  else{
+    OrkAssert(false);
   }
   _mainThreadLoopEnd();
   return 0;

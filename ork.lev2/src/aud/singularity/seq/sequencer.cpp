@@ -104,6 +104,11 @@ void enqueue_audio_event(
     // NOTE OFF
     s->addEvent(time + duration, [=]() { //
       s->keyOff(noteinstance);
+      // Invoke sequencer event callback for NOTE OFF (velocity=0)
+      auto sequencer = s->_sequencer;
+      if (sequencer && sequencer->_on_event) {
+        sequencer->_on_event(midinote, 0, 0.0f, track->_name);
+      }
     });
   });
 }

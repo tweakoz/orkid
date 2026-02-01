@@ -328,6 +328,14 @@ struct SequencePlayback {
 
 ////////////////////////////////////////////////////////////////
 
+// Sequencer event callback: (note, velocity, duration, track_name)
+// velocity > 0 = note on, velocity = 0 = note off
+using sequencer_event_callback_t = std::function<void(
+    int note,
+    int velocity,
+    float duration,
+    const std::string& track_name)>;
+
 struct Sequencer {
   using seqmap_t = std::unordered_map<std::string, sequence_ptr_t>;
   Sequencer(synth* the_synth);
@@ -339,6 +347,7 @@ struct Sequencer {
   synth* _the_synth = nullptr;
   track_ptr_t _recording_track;
   clip_ptr_t _recording_clip;
+  sequencer_event_callback_t _on_event;
 };
 
 } // namespace ork::audio::singularity

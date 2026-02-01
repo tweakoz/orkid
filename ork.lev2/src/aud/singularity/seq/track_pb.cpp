@@ -185,6 +185,11 @@ void TrackPlayback::_postDueEvents(const SequencePlayback* seqpb){
           //auto program = _track->_program;
           int note     = next_event->_note;
           int vel      = next_event->_vel;
+          // Invoke sequencer event callback for NOTE ON
+          auto sequencer = synth::instance()->_sequencer;
+          if (sequencer && sequencer->_on_event) {
+            sequencer->_on_event(note, vel, duration, _track->_name);
+          }
           enqueue_audio_event(_track, 0.0f, duration, note, vel);
           /////////////////
           // find next event
