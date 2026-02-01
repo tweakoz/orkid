@@ -201,6 +201,11 @@ SecondaryWinImpl::~SecondaryWinImpl() {
     _glfwWindow = nullptr;
   }
 
+  // Fire closed callback if set
+  if (_owner && _owner->_onClosed) {
+    _owner->_onClosed();
+  }
+
   delete _orkWindow;
   _orkWindow = nullptr;
   // Note: _ctxglfw is owned by _orkWindow->mpCTXBASE
@@ -254,9 +259,9 @@ void SecondaryWinImpl::_fireEvent(ui::event_ptr_t uiev) {
 void SecondaryWinImpl::_render() {
   if (!_gfxContext || !_glfwWindow) return;
 
-  // Check for window close
+  // Check for window close - just set flag, let cleanup handle destruction
   if (glfwWindowShouldClose(_glfwWindow)) {
-    _closeWindow();
+    _owner->_shouldClose = true;
     return;
   }
 
@@ -594,9 +599,11 @@ bool EzSecondaryWin::shouldClose() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void EzSecondaryWin::requestClose() {
-  if (auto impl = _impl.tryAsShared<SecondaryWinImpl>()) {
-    impl.value()->_closeWindow();
-  }
+  // Only set the flag - do NOT destroy window here.
+  // Destroying a GLFW window from within a callback (like the close callback)
+  // causes undefined behavior and crashes. The actual destruction happens
+  // in the destructor when _cleanupClosedSecondaryWindows() removes this
+  // window from the vector after glfwPollEvents() completes.
   _shouldClose = true;
 }
 

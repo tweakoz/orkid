@@ -183,7 +183,8 @@ class DualSceneGraphWindow:
       height=self.win_height,
       left=100,
       top=100,
-      fullscreen=True
+      fullscreen=True,
+      use_subsystems=['opq', 'core', 'gpu', 'lev2']
     )
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()
@@ -458,5 +459,7 @@ class DualSceneGraphWindow:
 
 ################################################################################
 
-DualSceneGraphWindow().ezapp.mainThreadLoop()
+app = DualSceneGraphWindow()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()
 print("Dual scenegraph window test passed!")
