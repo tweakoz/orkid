@@ -44,7 +44,8 @@ class DualSceneGraphWindow:
       width=self.win_width,
       height=self.win_height,
       left=100,
-      top=100
+      top=100,
+      fullscreen=True
     )
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()
@@ -149,7 +150,8 @@ class DualSceneGraphWindow:
       y=100,
       title="DualSceneGraph::Secondary",
       decorated=True,
-      resizable=True
+      resizable=True,
+      floating=True
     )
 
     # Set up layout for secondary window
@@ -250,13 +252,15 @@ class DualSceneGraphWindow:
     if hasattr(self, 'cube1_node'):
       rot = quat(vec3(0, 1, 0), self.rotation_angle)
       pos = vec3(0, 0.5, 0)
-      self.cube1_node.updateTransformTRS(pos, rot, vec3(1))
+      self.cube1_node.worldTransform.translation = pos
+      self.cube1_node.worldTransform.orientation = rot
 
     # Update cube transform in secondary scene (different rotation axis)
     if hasattr(self, 'cube2_node'):
       rot = quat(vec3(1, 0, 0), self.rotation_angle * 1.3)
       pos = vec3(0, 0.75, 0)
-      self.cube2_node.updateTransformTRS(pos, rot, vec3(1))
+      self.cube2_node.worldTransform.translation = pos
+      self.cube2_node.worldTransform.orientation = rot
 
     # Update both scenes
     if self.scene1:
