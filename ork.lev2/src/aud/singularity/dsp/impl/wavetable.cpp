@@ -46,155 +46,98 @@ float Wavetable::sampleLerp(float fi) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void initWavetablesTX81Z() { /////////////////////
-  // wave 2(1)
-  /////////////////////
+void initWavetablesTX81Z() {
   {
     auto wave = new Wavetable(ksize);
     for (int i = 0; i < ksize; i++) {
       int quadrant = i / ksized4;
-      float fph    = float(i) / ksize;
-      switch (quadrant) {
-        case 0:
-        case 1:
-        case 2:
-        case 3:
-          wave->_wavedata[i] = fabs(sin(fph * pi2)) * sin(fph * pi2);
-          break;
+      float x      = float(i) / ksize;
+      float v = 0.5f * (sinf(2.0f * pi2 * (x - 0.125f)) + 1.0f);
+      if (quadrant >= 2) {
+        v = -v;  // negate for second half
       }
+      wave->_wavedata[i] = v;
     }
     _wavemap["tx81z.2"] = wave;
-  } // namespace ork::audio::singularity
-  /////////////////////
-  // wave 3(2)
-  /////////////////////
+  }
   {
     auto wave = new Wavetable(ksize);
     for (int i = 0; i < ksize; i++) {
-      int quadrant    = i / ksized4;
-      float fph       = float(i) / ksize;
-      auto& out_float = wave->_wavedata[i];
-      switch (quadrant) {
-        case 0:
-        case 1:
-          wave->_wavedata[i] = sin(fph * pi2);
-          break;
-        case 2:
-        case 3:
-          out_float = 0.0f;
-          break;
+      int quadrant = i / ksized4;
+      float x      = float(i) / ksize;
+      if (quadrant < 2) {
+        wave->_wavedata[i] = sinf(x * pi2);
+      } else {
+        wave->_wavedata[i] = 0.0f;
       }
     }
     _wavemap["tx81z.3"] = wave;
   }
-  /////////////////////
-  // wave 4(3)
-  /////////////////////
   {
     auto wave = new Wavetable(ksize);
     for (int i = 0; i < ksize; i++) {
-      int quadrant    = i / ksized4;
-      float fph       = float(i) / ksize;
-      auto& out_float = wave->_wavedata[i];
-      switch (quadrant) {
-        case 0:
-        case 1:
-          wave->_wavedata[i] = fabs(sin(fph * pi2)) * sin(fph * pi2);
-          break;
-        case 2:
-        case 3:
-          out_float = 0.0f;
-          break;
+      int quadrant = i / ksized4;
+      float x      = float(i) / ksize;
+      if (quadrant < 2) {
+        wave->_wavedata[i] = 0.5f * (sinf(2.0f * pi2 * (x - 0.125f)) + 1.0f);
+      } else {
+        wave->_wavedata[i] = 0.0f;
       }
     }
     _wavemap["tx81z.4"] = wave;
   }
-  /////////////////////
-  // wave 5
-  /////////////////////
   {
     auto wave = new Wavetable(ksize);
     for (int i = 0; i < ksize; i++) {
-      int quadrant    = i / ksized4;
-      float fph       = float(i) / ksize;
-      auto& out_float = wave->_wavedata[i];
-      switch (quadrant) {
-        case 0:
-        case 1:
-          wave->_wavedata[i] = sin(fph * pi2 * 2.0);
-        case 2:
-        case 3:
-          wave->_wavedata[i] = 0.0f;
-          break;
+      int quadrant = i / ksized4;
+      float x      = float(i) / ksize;
+      if (quadrant < 2) {
+        wave->_wavedata[i] = sinf(x * pi2 * 2.0f);
+      } else {
+        wave->_wavedata[i] = 0.0f;
       }
     }
     _wavemap["tx81z.5"] = wave;
   }
-  /////////////////////
-  // wave 6
-  /////////////////////
   {
     auto wave = new Wavetable(ksize);
     for (int i = 0; i < ksize; i++) {
-      int quadrant    = i / ksized4;
-      float fph       = float(i) / ksize;
-      auto& out_float = wave->_wavedata[i];
-      switch (quadrant) {
-        case 0:
-        case 1:
-          wave->_wavedata[i] = fabs(sin(fph * pi2 * 2.0)) * sin(fph * pi2 * 2.0);
-          break;
-        case 2:
-        case 3:
-          out_float = 0.0f;
-          break;
+      int quadrant = i / ksized4;
+      float x      = float(i) / ksize;
+      if (quadrant == 0) {
+        wave->_wavedata[i] = 0.5f * (sinf(4.0f * pi2 * (x - 0.0625f)) + 1.0f);
+      } else if (quadrant == 1) {
+        wave->_wavedata[i] = -0.5f * (sinf(4.0f * pi2 * (x - 0.0625f)) + 1.0f);
+      } else {
+        wave->_wavedata[i] = 0.0f;
       }
     }
     _wavemap["tx81z.6"] = wave;
   }
-  /////////////////////
-  // wave 7
-  /////////////////////
   {
     auto wave = new Wavetable(ksize);
     for (int i = 0; i < ksize; i++) {
-      int quadrant    = i / ksized4;
-      float fph       = float(i) / ksize;
-      auto& out_float = wave->_wavedata[i];
-      switch (quadrant) {
-        case 0:
-        case 1:
-          wave->_wavedata[i] = sin(fph * pi2 * 4.0);
-          break;
-        case 2:
-        case 3:
-          out_float = 0.0f;
-          break;
+      int quadrant = i / ksized4;
+      float x      = float(i) / ksize;
+      if (quadrant == 0) {
+        wave->_wavedata[i] = sinf(x * pi2 * 2.0f);
+      } else if (quadrant == 1) {
+        wave->_wavedata[i] = -sinf(x * pi2 * 2.0f);
+      } else {
+        wave->_wavedata[i] = 0.0f;
       }
     }
     _wavemap["tx81z.7"] = wave;
   }
-  /////////////////////
-  // wave 8
-  /////////////////////
   {
     auto wave = new Wavetable(ksize);
     for (int i = 0; i < ksize; i++) {
-      int quadrant    = i / (ksized4);
-      int iph         = i;
-      float fph       = float(iph) / float(ksize);
-      auto& out_float = wave->_wavedata[i];
-      switch (quadrant) {
-        case 0:
-        case 1: {
-          float phase        = fph * pi2 * 2.0f; // * 4.0;
-          wave->_wavedata[i] = fabs(sin(phase)) * sin(phase);
-          break;
-        }
-        case 2:
-        case 3:
-          out_float = 0.0f;
-          break;
+      int quadrant = i / ksized4;
+      float x      = float(i) / ksize;
+      if (quadrant < 2) {
+        wave->_wavedata[i] = 0.5f * (sinf(4.0f * pi2 * (x - 0.0625f)) + 1.0f);
+      } else {
+        wave->_wavedata[i] = 0.0f;
       }
     }
     _wavemap["tx81z.8"] = wave;

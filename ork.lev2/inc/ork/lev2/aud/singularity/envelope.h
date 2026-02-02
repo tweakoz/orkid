@@ -250,16 +250,22 @@ struct TX81ZEnvInst : public ControllerInst {
   void keyOn(const KeyOnInfo& KOI) final;
   void keyOff() final;
 
+  // Rate scaling helper: compute effective rate based on key
+  void computeScaledRates(int midiKey);
+  static float rateToTime(int effectiveRate, bool isRelease);
+
   const TX81ZEnvData* _envdata;
-  int state;
-  double time_since_state;
+  int state = 0;
+  double time_since_state = 0.0;
   KeyOnInfo _koi;
   layer_ptr_t _layer         = nullptr;
-  float _attackRate = 0.0f;
-  float _decay1Rate  = 0.0f;
-  float _decay1Level = 0.0f;
-  float _decay2Rate  = 0.0f;
-  float _releaseRate = 0.0f;
+  float _attackTime  = 0.0f;   // time constant for attack
+  float _decay1Time  = 0.0f;   // time constant for decay1
+  float _decay1Level = 0.0f;   // sustain level (0-1)
+  float _decay2Time  = 0.0f;   // time constant for decay2
+  float _releaseTime = 0.0f;   // time constant for release
+  float _releaseStartLevel = 0.0f;  // captured at keyOff
+  float _decay2StartLevel = 0.0f;   // captured at decay1->decay2 transition
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -32,6 +32,8 @@ class Tx81zApp(SingulTestApp):
     self.txdata = singularity.Tx81zSynthData()
     self.txdata.loadBank("bank1",self.syn_data_base/"tx81z_1.syx")
     self.txdata.loadBank("bank2",self.syn_data_base/"tx81z_2.syx")
+    self.txdata.loadBank("bank3",self.syn_data_base/"tx81z_3.syx")
+    self.txdata.loadBank("bank4",self.syn_data_base/"tx81z_4.syx")
     self.soundbank = self.txdata.bankData
     self.txprogs = self.soundbank.programsByName
     self.sorted_progs = sorted(self.txprogs.keys())

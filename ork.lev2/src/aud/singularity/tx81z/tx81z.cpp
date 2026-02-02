@@ -232,30 +232,26 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
     configureTx81zAlgorithm(layerdata, fm4pd);
     auto ops_stage = layerdata->stageByName("OPS");
+
+    // PITCH block handles global pitch: transpose only
+    // Keyboard tracking is already in _layerBasePitch, so keyTrack = 0
+    // Each PMX operator then applies its own ratio offset
     auto pitch_block = ops_stage->appendTypedBlock<PITCH>("PITCH");
     auto pitch_param = pitch_block->paramByName("pitch");
-    pitch_param->_debug = true;
+    pitch_param->_coarse   = middleC - 24;  // transpose offset in semitones (24 = no transpose)
+    pitch_param->_keyTrack = 0.0;           // don't double-track keyboard
+    pitch_param->_debug    = false;
+
     for (int opindex = 0; opindex < 4; opindex++) {
       const int src_op[]  = {3, 1, 2, 0};
       int op_base         = src_op[opindex] * 10;
       auto ops_block      = ops_stage->_blockdatas[3 - opindex];
       auto as_pmx         = dynamic_cast<PMXData*>(ops_block.get());
       auto& opd           = fm4pd->_ops[opindex];
-      auto amp_param      = ops_block->param(1);  // amp is param index 1 (after pitch)
-      auto feedback_param = ops_block->param(2);  // feedback is param index 2
-      // feedback_param->_coarse = (FBL == 0) ? 0 : powf(2.0, FBL - 7);
-      feedback_param->_coarse = 0.0f; // 0.3 * exp(log(2) * (double)(FBL - 7));
-      ///////////////////////////////
-      // 2.0 == 4PI (7)
-      // 1.0 == 2PI (6)
-      // 1/2 == PI (5)
-      // 1/4 == PI/2 (4)
-      // 1/8 == PI/4 (3)
-      // 1/16 == PI/8 (2)
-      // 1/32 == PI/16 (1)
-      ///////////////////////////////
-
-      // ratio 0.5 .. 27.57
+      auto pmx_pitch_param = ops_block->param(0);  // PMX's own pitch param for ratio
+      auto amp_param       = ops_block->param(1);  // amp is param index 1
+      auto feedback_param  = ops_block->param(2);  // feedback is param index 2
+      feedback_param->_coarse = 0.0f;
 
       int atkRate      = bytes[op_base + 0]; // EG 0..31
       int dec1Rate     = bytes[op_base + 1]; // EG 0..31
@@ -282,15 +278,9 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
       bool fixdfrqmode = (_EFF & 0x08) >> 3;        // fixed mode ? bool
       int fixedRange   = (_EFF & 0x7);              // fixed range: 255,510,1k,2k,4k,8k,16k,32k
                                                     // fixed step:  1,  2,  4, 8, 16,32,64, 128
-      int _OWF     = bytes[op_additional_base + 1]; //&0x7f;
+      int _OWF     = bytes[op_additional_base + 1];
       int waveform = (_OWF & 0x70) >> 4;            // waveform 0..7
-      int fineFrq  = (_OWF & 0xf);                  // - 7;              // fine frequency 0..15
-
-      // float fol = powf(float(outLevel) / 99.0f, 3.5);
-      // outLevel  = std::clamp(int(fol * 99.0), 0, 99);
-
-      // printf("prog<%s> op<%d> waveform<%d> level<%d> ame<%d> ebs<%d>\n", name.c_str(), opindex, waveform, outLevel, int(AME),
-      // EBS);
+      int fineFrq  = (_OWF & 0xf);                  // fine frequency 0..15
 
       opd._waveform = waveform;
 
@@ -298,75 +288,59 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
       // map base operator level
       //////////////////////////////////
 
-      //float a       = logf(2.0f) * 0.08f;
-      //float b       = 90.0f * a;
-      //float baselev = expf(a * float(outLevel) - b); // / 1.86607;
-      //baselev       = powf(baselev, 1.0f);
       if(outLevel>99)
         outLevel = 99;
       float baselev = amp_table[outLevel];
-      /*printf(
-          "prog<%s> op<%d> outLevel<%d> a<%g> b<%g> baselev<%g>\n", //
-          name.c_str(),
-          opindex,
-          outLevel,
-          a,
-          b,
-          baselev);*/
 
       ////////////////////////////
-      // translate tx operator frequency params
-      //  to singularity style params
-      //  so we can use singularity modulation
+      // Configure PMX pitch param with operator ratio
+      // PITCH block handles keyboard + transpose
+      // PMX pitch param handles per-operator ratio offset
       ////////////////////////////
 
       using keyprod_t = std::function<float(float inkey)>;
-
       keyprod_t keyprod = [](float inpkey) -> float { return 0.0f; };
 
       float detcents = float(detune) * 5.6 / 3.0;
       float det_rat  = cents_to_linear_freq_ratio(detcents);
+
       if (fixdfrqmode) {
+        // Fixed frequency mode: operator plays at absolute frequency, ignores keyboard
         int frqindex   = (coarseFrq << 2) | fineFrq;
         float fixedfrq = float(frqindex << (fixedRange)) * det_rat;
 
-        // fixedfrq += fineFrq * finestep;
-        // fixedfrq *= det_rat;
-        float coarse           = frequency_to_midi_note(fixedfrq);
-        pitch_param->_coarse   = coarse;
-        pitch_param->_keyTrack = 0.0; // 0 cents/key
-        keyprod                = [coarse](float inpkey) { return coarse; };
+        // Guard against zero/invalid frequency
+        if (fixedfrq < 1.0f) fixedfrq = 1.0f;
+        float fixednote = frequency_to_midi_note(fixedfrq);
+
+        // PMX pitch param: cancel keyboard (_keyOff * -100) and set absolute pitch
+        // Total = _layerBasePitch + PITCH_eval + PMX_eval
+        //       = note*100 + (middleC-24)*100 + (coarse*100 - (note-60)*100)
+        //       = (middleC-24)*100 + coarse*100 + 6000
+        // For total = fixednote*100: coarse = fixednote - (middleC-24) - 60
+        pmx_pitch_param->_coarse   = fixednote - (middleC - 24) - 60;
+        pmx_pitch_param->_keyTrack = -100.0;  // cancel keyboard from _layerBasePitch
+        keyprod = [fixednote](float inpkey) { return fixednote; };
 
         zpmprg->addHudInfo(FormatString(
-            "OP%d waveform<%d> fixed-frequency<%g> outlev<%d> baselev<%g>", //
-            opindex,
-            waveform,
-            fixedfrq,
-            outLevel,
-            baselev));
+            "OP%d waveform<%d> fixed-frequency<%g> outlev<%d> baselev<%g>",
+            opindex, waveform, fixedfrq, outLevel, baselev));
 
       } else {
+        // Ratio mode: operator frequency = base frequency * ratio
         OrkAssert(coarseFrq < 64);
+        float ratio = compute_ratio(coarseFrq, fineFrq) * det_rat;
+        float cents = linear_freq_ratio_to_cents(ratio);
 
-        int keybase = 60 + (middleC - 24);
-        //int keybase = (middleC - 24);
-
-        float ratio            = compute_ratio(coarseFrq, fineFrq) * det_rat;
-        float cents            = linear_freq_ratio_to_cents(ratio);
-        pitch_param->_coarse   = keybase + cents * 0.01; // middlec*ratio
-        pitch_param->_fine     = float(detune) * 5.6 / 3.0;
-        pitch_param->_keyTrack = 100.0;                           // 100 cents/key
-        keyprod                = [cents, middleC](float inpkey) { //
-          return inpkey + (cents * 0.01);
-        };
+        // PMX pitch param: ratio offset in semitones, no additional keyboard tracking
+        pmx_pitch_param->_coarse   = cents * 0.01;  // ratio offset in semitones
+        pmx_pitch_param->_fine     = detcents;
+        pmx_pitch_param->_keyTrack = 0.0;           // PITCH block handles keyboard
+        keyprod = [cents](float inpkey) { return inpkey + (cents * 0.01); };
 
         zpmprg->addHudInfo(FormatString(
-            "OP%d waveform<%d> ratio<%g> outlev<%d> baselev<%g>", //
-            opindex,
-            waveform,
-            ratio,
-            outLevel,
-            baselev));
+            "OP%d waveform<%d> ratio<%g> outlev<%d> baselev<%g>",
+            opindex, waveform, ratio, outLevel, baselev));
       }
 
       ////////////////////////////////////////////////////////////////////////
@@ -436,17 +410,31 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
           // printf("velamp<%g>\n", velamp);
 
           //////////////////////////////////
-          // key scaling
+          // key scaling (level scaling)
+          // TX81Z: LS=0 means no scaling
+          // LS=99 means level drops to 0 by G6 (note 91) from C1 (note 24)
+          // That's 67 semitones (~5.6 octaves) for full attenuation (~-72dB)
+          // So at max scaling: -72dB / 5.6 octaves ≈ -12.9 dB/octave
           //////////////////////////////////
 
           float unit_levscale = float(levScaling / 99.0f);
           unit_levscale       = std::clamp(unit_levscale, 0.0f, 1.0f);
 
-          float op_key         = keyprod(koi._key - 24);
-          float number_octaves = float(op_key) / 12.0f;
+          // Reference point is C1 (MIDI 24)
+          float op_key             = keyprod(koi._key);
+          float semitones_from_c1  = op_key - 24.0f;
 
-          float dbfalloff_per_octave = -4.5f * (0.15 + unit_levscale);
+          // Only apply scaling above C1, not below
+          if (semitones_from_c1 < 0) semitones_from_c1 = 0;
+
+          float number_octaves = semitones_from_c1 / 12.0f;
+
+          // At LS=99: -12.9 dB/octave, at LS=0: 0 dB/octave
+          float dbfalloff_per_octave = -12.9f * unit_levscale;
           float db_falloff           = number_octaves * dbfalloff_per_octave;
+
+          // Clamp to reasonable range (don't go below -72dB)
+          db_falloff = std::max(db_falloff, -72.0f);
 
           float keyamp = decibel_to_linear_amp_ratio(db_falloff);
 
