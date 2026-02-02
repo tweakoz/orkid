@@ -256,16 +256,15 @@ struct TX81ZEnvInst : public ControllerInst {
 
   const TX81ZEnvData* _envdata;
   int state = 0;
-  double time_since_state = 0.0;
   KeyOnInfo _koi;
   layer_ptr_t _layer         = nullptr;
-  float _attackTime  = 0.0f;   // time constant for attack
-  float _decay1Time  = 0.0f;   // time constant for decay1
-  float _decay1Level = 0.0f;   // sustain level (0-1)
-  float _decay2Time  = 0.0f;   // time constant for decay2
-  float _releaseTime = 0.0f;   // time constant for release
-  float _releaseStartLevel = 0.0f;  // captured at keyOff
-  float _decay2StartLevel = 0.0f;   // captured at decay1->decay2 transition
+  float _attackInc    = 0.0f;   // per-control-period increment for attack
+  float _decay1Factor = 0.0f;   // per-control-period multiplier for decay1
+  float _decay1Level  = 0.0f;   // sustain level (0-1)
+  float _decay2Factor = 0.0f;   // per-control-period multiplier for decay2
+  float _releaseFactor = 0.0f;  // per-control-period multiplier for release
+  float _releaseStartLevel = 0.0f;  // captured at keyOff (raw, before EG shift)
+  float _rawValue = 0.0f;           // raw envelope value before EG shift
 };
 
 ///////////////////////////////////////////////////////////////////////////////
