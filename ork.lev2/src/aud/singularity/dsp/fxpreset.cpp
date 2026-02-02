@@ -239,6 +239,35 @@ lyrdata_ptr_t fxpreset_prodist_chorus_echo(synth* s) {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
+// Pro combo: Echo → Distortion → Chorus (echo before distortion for ambient crunch)
+///////////////////////////////////////////////////////////////////////////////
+lyrdata_ptr_t fxpreset_proecho_dist_chorus(synth* s) {
+  auto fxprog       = std::make_shared<ProgramData>();
+  auto fxlayer      = fxprog->newLayer();
+  auto fxalg        = std::make_shared<AlgData>();
+  fxlayer->_algdata = fxalg;
+  fxalg->_name      = ork::FormatString("FxAlg");
+  /////////////////
+  auto fxstage = fxalg->appendStage("FX");
+  fxstage->setNumIos(2, 2);
+  /////////////////
+  // 1. Echo first - echoes go into distortion for ambient crunch
+  appendStereoStereoDynamicEcho(fxlayer, fxstage, 0.35f, 0.4f, 0.4f, 0.355f); // wetness: -9dB
+  /////////////////
+  // 2. Distortion second - crunches the echoed signal
+  appendProDistortion(fxlayer, fxstage,
+    0.5f,   // drive: moderate
+    0.0f,   // bass: neutral
+    1.0f,   // mid: slight boost
+    0.0f,   // treble: neutral
+    2.0f);  // presence: some bite
+  /////////////////
+  // 3. Chorus third - adds width to distorted+echoed signal
+  appendProChorus(fxlayer, fxstage, 0.3f);
+  /////////////////
+  return fxlayer;
+}
+///////////////////////////////////////////////////////////////////////////////
 lyrdata_ptr_t fxpreset_fdn4reverb(synth* s) {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
@@ -1006,6 +1035,7 @@ void loadAllFxPresets(synth* s) {
   addpreset("ProDist:Crunch", fxpreset_prodistortion_crunch(s));
   addpreset("ProDist:Heavy", fxpreset_prodistortion_heavy(s));
   addpreset("ProDist+Chorus+Echo", fxpreset_prodist_chorus_echo(s));
+  addpreset("ProEcho+Dist+Chorus", fxpreset_proecho_dist_chorus(s));
   addpreset("ShifterFifthUp", fxpreset_pitchfifthup(s));
   addpreset("ShifterFifthDn", fxpreset_pitchfifthdn(s));
   addpreset("ShifterOctUp", fxpreset_pitchoctup(s));
