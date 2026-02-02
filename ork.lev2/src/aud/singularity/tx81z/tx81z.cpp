@@ -241,8 +241,8 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
       auto ops_block      = ops_stage->_blockdatas[3 - opindex];
       auto as_pmx         = dynamic_cast<PMXData*>(ops_block.get());
       auto& opd           = fm4pd->_ops[opindex];
-      auto amp_param      = ops_block->param(0);
-      auto feedback_param = ops_block->param(1);
+      auto amp_param      = ops_block->param(1);  // amp is param index 1 (after pitch)
+      auto feedback_param = ops_block->param(2);  // feedback is param index 2
       // feedback_param->_coarse = (FBL == 0) ? 0 : powf(2.0, FBL - 7);
       feedback_param->_coarse = 0.0f; // 0.3 * exp(log(2) * (double)(FBL - 7));
       ///////////////////////////////
