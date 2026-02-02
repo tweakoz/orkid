@@ -1270,7 +1270,6 @@ int OrkEzApp::mainThreadLoop() {
     }
   }
   else{
-    OrkAssert(false);
   }
   _mainThreadLoopEnd();
   return 0;

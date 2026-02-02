@@ -59,18 +59,74 @@ class PianoKeyboard:
     LAST_NOTE = 108  # C8
     NUM_WHITE_KEYS = 52  # 88-key piano has 52 white keys
 
-    def __init__(self, canvas):
+    # Gradient colors (additive to base): 0=black, 1=red, 2=magenta, 3=yellow
+    GRADIENT = [
+        vec3(0.0, 0.0, 0.0),  # 0 = black
+        vec3(1.0, 0.0, 0.0),  # 1 = red
+        vec3(1.0, 0.0, 1.0),  # 2 = magenta
+        vec3(1.0, 1.0, 0.0),  # 3 = yellow
+    ]
+
+    # Base colors
+    WHITE_KEY_BASE = vec3(0.25, 0.25, 0.25)
+    BLACK_KEY_BASE = vec3(0.10, 0.10, 0.10)
+
+    def __init__(self, canvas, tempo=120.0):
         self.canvas = canvas
         self.key_quads = {}
-        self.active_notes = {}  # note -> count
+        self.key_decay = {}  # note -> decay value (float, can exceed 1.0)
         self._gpu_initialized = False
+        self.tempo = tempo
+        self.last_update_time = None
 
         # Set up pre-render callback
         self.canvas.onPreRender = self._onPreRender
 
-    def setActiveNotes(self, notes_dict):
-        """Update the dict of currently active notes (note -> count)."""
-        self.active_notes = dict(notes_dict)
+    def triggerNote(self, note):
+        """Trigger a note - adds 1.0 to decay value."""
+        self.key_decay[note] = self.key_decay.get(note, 0.0) + 1.0
+
+    def updateDecay(self, dt):
+        """Update decay values based on elapsed time."""
+        # Decay rate: 0.5 per quarter note
+        quarter_note_seconds = 60.0 / self.tempo
+        decay_per_second = 0.5 / quarter_note_seconds
+        decay_amount = decay_per_second * dt
+
+        for note in list(self.key_decay.keys()):
+            self.key_decay[note] -= decay_amount
+            if self.key_decay[note] <= 0.0:
+                del self.key_decay[note]
+
+    def _gradientColor(self, decay_value):
+        """Get interpolated gradient color for a decay value (0 to 3+)."""
+        # Clamp to gradient range
+        t = max(0.0, min(decay_value, 3.0))
+
+        # Find which segment we're in
+        if t <= 1.0:
+            # 0 to 1: black to red
+            return vec3(
+                self.GRADIENT[0].x + (self.GRADIENT[1].x - self.GRADIENT[0].x) * t,
+                self.GRADIENT[0].y + (self.GRADIENT[1].y - self.GRADIENT[0].y) * t,
+                self.GRADIENT[0].z + (self.GRADIENT[1].z - self.GRADIENT[0].z) * t,
+            )
+        elif t <= 2.0:
+            # 1 to 2: red to magenta
+            t2 = t - 1.0
+            return vec3(
+                self.GRADIENT[1].x + (self.GRADIENT[2].x - self.GRADIENT[1].x) * t2,
+                self.GRADIENT[1].y + (self.GRADIENT[2].y - self.GRADIENT[1].y) * t2,
+                self.GRADIENT[1].z + (self.GRADIENT[2].z - self.GRADIENT[1].z) * t2,
+            )
+        else:
+            # 2 to 3: magenta to yellow
+            t3 = t - 2.0
+            return vec3(
+                self.GRADIENT[2].x + (self.GRADIENT[3].x - self.GRADIENT[2].x) * t3,
+                self.GRADIENT[2].y + (self.GRADIENT[3].y - self.GRADIENT[2].y) * t3,
+                self.GRADIENT[2].z + (self.GRADIENT[3].z - self.GRADIENT[2].z) * t3,
+            )
 
     def _onPreRender(self):
         """Called before each render."""
@@ -121,26 +177,27 @@ class PianoKeyboard:
             wk_idx = whiteKeyIndex(midi_note)
             rel_idx = wk_idx - first_wk_idx
 
-            # Get note count (0 if not active)
-            note_count = self.active_notes.get(midi_note, 0)
+            # Get decay value (0 if not active)
+            decay = self.key_decay.get(midi_note, 0.0)
+
+            # Get gradient color for this decay value
+            grad = self._gradientColor(decay)
 
             if isBlackKey(midi_note):
                 # Black key - centered on the boundary between white keys
-                # Bottom-aligned, shorter than white keys
                 x = (rel_idx + 1) * white_key_w - black_key_w / 2
                 y = h - black_key_h
                 qd.setPosition(x, y)
                 qd.setSize(black_key_w, black_key_h)
 
-                # Color based on count: red=1, magenta=2, yellow=3+
-                if note_count >= 3:
-                    qd.setColor(vec4(1.0, 1.0, 0.2, 1))  # yellow
-                elif note_count == 2:
-                    qd.setColor(vec4(1.0, 0.2, 1.0, 1))  # magenta
-                elif note_count == 1:
-                    qd.setColor(vec4(1.0, 0.2, 0.2, 1))  # red
-                else:
-                    qd.setColor(vec4(0.15, 0.15, 0.15, 1))  # dark gray
+                # Color = base + gradient (additive)
+                color = vec4(
+                    min(1.0, self.BLACK_KEY_BASE.x + grad.x),
+                    min(1.0, self.BLACK_KEY_BASE.y + grad.y),
+                    min(1.0, self.BLACK_KEY_BASE.z + grad.z),
+                    1.0
+                )
+                qd.setColor(color)
             else:
                 # White key - bottom-aligned, full height
                 x = rel_idx * white_key_w
@@ -148,15 +205,14 @@ class PianoKeyboard:
                 qd.setPosition(x + 1, y)  # +1 for gap
                 qd.setSize(white_key_w - 2, white_key_h)
 
-                # Color based on count: red=1, magenta=2, yellow=3+
-                if note_count >= 3:
-                    qd.setColor(vec4(1.0, 1.0, 0.3, 1))  # yellow
-                elif note_count == 2:
-                    qd.setColor(vec4(1.0, 0.3, 1.0, 1))  # magenta
-                elif note_count == 1:
-                    qd.setColor(vec4(1.0, 0.3, 0.3, 1))  # red
-                else:
-                    qd.setColor(vec4(0.95, 0.95, 0.95, 1))  # white
+                # Color = base + gradient (additive)
+                color = vec4(
+                    min(1.0, self.WHITE_KEY_BASE.x + grad.x),
+                    min(1.0, self.WHITE_KEY_BASE.y + grad.y),
+                    min(1.0, self.WHITE_KEY_BASE.z + grad.z),
+                    1.0
+                )
+                qd.setColor(color)
 
         self.canvas.markDirty()
 
@@ -171,13 +227,11 @@ class MoonlightApp(ComponentizedApplication):
         super().__init__()
         self.frame_count = 0
         self.start_time = None
+        self.last_update_time = None
         self.synth = None
         self.sequencer = None
         self.playback = None
         self.song_duration = 0.0
-
-        # Active notes tracked via sequencer callback (note -> count)
-        self.active_notes = {}
 
         # Piano keyboard
         self.keyboard = None
@@ -207,8 +261,8 @@ class MoonlightApp(ComponentizedApplication):
         canvas.bg_color = vec4(0.2, 0.2, 0.25, 1)
         canvas.draw_background = True
 
-        # Create keyboard widget
-        self.keyboard = PianoKeyboard(canvas)
+        # Create keyboard widget (tempo set later in _onSynthInit)
+        self.keyboard = PianoKeyboard(canvas, tempo=TEMPO)
 
     ##############################################
 
@@ -258,15 +312,10 @@ class MoonlightApp(ComponentizedApplication):
 
         # Set up sequencer event callback for keyboard visualization
         def on_sequencer_event(note, velocity, duration, track_name):
-            if velocity > 0:
-                # Note on - increment count
-                self.active_notes[note] = self.active_notes.get(note, 0) + 1
-            else:
-                # Note off - decrement count
-                if note in self.active_notes:
-                    self.active_notes[note] -= 1
-                    if self.active_notes[note] <= 0:
-                        del self.active_notes[note]
+            if velocity > 0 and self.keyboard:
+                # Note on - trigger decay (adds 1.0)
+                self.keyboard.triggerNote(note)
+            # Note off is ignored - decay handles the fade out
 
         self.sequencer.on_event = on_sequencer_event
 
@@ -285,17 +334,26 @@ class MoonlightApp(ComponentizedApplication):
     ##############################################
 
     def _onUpdate(self, updinfo):
-        """Update - sync keyboard visualization with active notes."""
+        """Update - decay keyboard visualization."""
         self.frame_count += 1
         if self.start_time is None or self.synth is None:
             return
 
-        # Update keyboard visualization from callback-tracked active notes
-        if self.keyboard:
-            self.keyboard.setActiveNotes(self.active_notes)
+        # Calculate delta time
+        current_time = time.time()
+        if self.last_update_time is None:
+            self.last_update_time = current_time
+            dt = 0.0
+        else:
+            dt = current_time - self.last_update_time
+            self.last_update_time = current_time
+
+        # Update keyboard decay
+        if self.keyboard and dt > 0:
+            self.keyboard.updateDecay(dt)
 
         # Auto-exit after piece completes
-        elapsed = time.time() - self.start_time
+        elapsed = current_time - self.start_time
         if elapsed >= self.song_duration + 2.0:
             print(f"  Playback complete after {self.frame_count} frames")
             self.ezapp.signalExit()
