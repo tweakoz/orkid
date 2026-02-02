@@ -156,11 +156,10 @@ struct DspStageData final : public ork::Object {
   appendTypedBlock(
       std::string named, //
       A&&... args) {
-    OrkAssert(_numblocks < kmaxdspblocksperstage);
     auto blkdata              = std::make_shared<typename T::dataclass_t>(named, std::forward<A>(args)...);
     blkdata->_name            = named;
-    blkdata->_blockIndex      = _numblocks;
-    _blockdatas[_numblocks++] = blkdata;
+    blkdata->_blockIndex      = _numblocks++;
+    _blockdatas.push_back(blkdata);
     _namedblockdatas[named]   = blkdata;
     return blkdata;
   }
@@ -168,7 +167,7 @@ struct DspStageData final : public ork::Object {
 
   std::string _name;
   int _stageIndex = -1;
-  dspblkdata_ptr_t _blockdatas[kmaxdspblocksperstage];
+  std::vector<dspblkdata_ptr_t> _blockdatas;
   std::map<std::string, dspblkdata_ptr_t> _namedblockdatas;
   ioconfig_ptr_t _ioconfig;
   int _numblocks = 0;

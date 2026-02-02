@@ -126,7 +126,7 @@ lyrdata_ptr_t fxpreset_proflanger(synth* s) {
   /////////////////
   // Pro flanger with multiple voices, high feedback, slow sweep
   /////////////////
-  appendProFlanger(fxlayer, fxstage, 0.5f, 0.65f);
+  appendProFlanger(fxlayer, fxstage, 0.5f, 0.78f);
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////

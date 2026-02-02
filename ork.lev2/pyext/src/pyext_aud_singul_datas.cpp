@@ -484,8 +484,9 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                 auto instance           = objclazz->createShared();
                 auto rval               = std::dynamic_pointer_cast<DspBlockData>(instance);
                 rval->_name             = blockname;
+                rval->_blockIndex       = stgdata->_numblocks++;
                 OrkAssert(rval != nullptr);
-                stgdata->_blockdatas[stgdata->_numblocks++] = rval;
+                stgdata->_blockdatas.push_back(rval);
                 auto it                                     = stgdata->_namedblockdatas.find(blockname);
                 OrkAssert(it == stgdata->_namedblockdatas.end());
                 stgdata->_namedblockdatas[blockname] = rval;

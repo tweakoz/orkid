@@ -141,7 +141,8 @@ void Alg::keyOn(KeyOnInfo& koi) {
       auto stage      = std::make_shared<DspStage>();
       out_stages[istage] = stage;
       numstages++;
-      for (int iblock = 0; iblock < kmaxdspblocksperstage; iblock++) {
+      int numblocks = stagedata->_blockdatas.size();
+      for (int iblock = 0; iblock < numblocks; iblock++) {
         auto blockdata = stagedata->_blockdatas[iblock];
         if (blockdata) {
           auto block             = blockdata->createInstance();

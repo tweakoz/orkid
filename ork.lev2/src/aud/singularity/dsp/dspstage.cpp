@@ -74,17 +74,18 @@ dspstagedata_ptr_t DspStageData::clone() const{
   rval->_stageIndex = _stageIndex;
   rval->_numblocks = _numblocks;
   rval->_ioconfig = _ioconfig->clone();
+  rval->_blockdatas.resize(_numblocks);
   for (size_t i=0; i<_numblocks; i++) {
     auto block = _blockdatas[i];
       if(block){
-        auto clone = block->clone(); // null for now...
-        if(clone){
-          rval->_blockdatas[i] = clone;
-          rval->_namedblockdatas[block->_name] = clone;
+        auto cloned = block->clone(); // null for now...
+        if(cloned){
+          rval->_blockdatas[i] = cloned;
+          rval->_namedblockdatas[block->_name] = cloned;
         }
         else{
-          rval->_blockdatas[i] = block; 
-          rval->_namedblockdatas[block->_name] = block; 
+          rval->_blockdatas[i] = block;
+          rval->_namedblockdatas[block->_name] = block;
         }
       }
   }
@@ -95,9 +96,7 @@ dspstagedata_ptr_t DspStageData::clone() const{
 
 void DspStageData::clear(){
   _numblocks = 0;
-  for( int i=0; i<kmaxdspblocksperstage; i++ ){
-    _blockdatas[i] = nullptr;
-  }
+  _blockdatas.clear();
   _namedblockdatas.clear();
 }
 
@@ -118,7 +117,7 @@ void DspStageData::dump() const {
   printf("]\n");
   printf(" BLOCKS[\n");
   int index = 0;
-  for (int ib = 0; ib < _numblocks; ib++) {
+  for (size_t ib = 0; ib < _blockdatas.size(); ib++) {
     auto blockdata = _blockdatas[ib];
     if (blockdata) {
       printf("   %d: %s<%s> (bypass: %d)\n", index, blockdata->_name.c_str(), blockdata->_blocktype.c_str(), int(blockdata->_bypass) );
@@ -141,12 +140,13 @@ void DspStageData::dump() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool DspStageData::postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) { // override
+  _numblocks = _namedblockdatas.size();
+  _blockdatas.resize(_numblocks);
   for (auto item : _namedblockdatas) {
     auto blockdata     = item.second;
     int index          = blockdata->_blockIndex;
     _blockdatas[index] = blockdata;
   }
-  _numblocks = _namedblockdatas.size();
   return true;
 }
 
@@ -159,9 +159,9 @@ DspStageData::DspStageData() {
 ///////////////////////////////////////////////////////////////////////////////
 
 dspblkdata_ptr_t DspStageData::appendBlock() {
-  OrkAssert(_numblocks < kmaxdspblocksperstage);
-  auto blk                  = std::make_shared<DspBlockData>();
-  _blockdatas[_numblocks++] = blk;
+  auto blk = std::make_shared<DspBlockData>();
+  blk->_blockIndex = _numblocks++;
+  _blockdatas.push_back(blk);
   return blk;
 }
 
