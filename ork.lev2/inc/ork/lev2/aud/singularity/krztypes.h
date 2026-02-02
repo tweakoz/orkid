@@ -30,7 +30,7 @@ namespace ork::audio::singularity {
 using namespace ork::audiomath;
 ///////////////////////////////////////////////////////////////////////////////
 static constexpr int kmaxenvperlayer       = 8;
-static constexpr int kmaxdspblocksperstage = 16; // vertical dimension of layer's dsp grid
+static constexpr int kmaxdspblocksperstage = 32; // vertical dimension of layer's dsp grid
 static constexpr int kmaxdspstagesperlayer = 16; // horizontal dimension of layer's dsp grid
 static constexpr int kmaxctrlperblock      = 32;
 static constexpr int kmaxparmperblock      = 32;

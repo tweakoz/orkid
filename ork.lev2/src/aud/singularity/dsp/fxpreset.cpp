@@ -94,6 +94,122 @@ lyrdata_ptr_t fxpreset_stereochorus(synth* s) {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
+lyrdata_ptr_t fxpreset_prochorus(synth* s) {
+  auto fxprog       = std::make_shared<ProgramData>();
+  auto fxlayer      = fxprog->newLayer();
+  auto fxalg        = std::make_shared<AlgData>();
+  fxlayer->_algdata = fxalg;
+  fxalg->_name      = ork::FormatString("FxAlg");
+  /////////////////
+  // output effect
+  /////////////////
+  auto fxstage = fxalg->appendStage("FX");
+  fxstage->setNumIos(2, 2); // stereo in, stereo out
+  /////////////////
+  // Pro chorus with multiple voices, filtering, and LFO phase offsets
+  /////////////////
+  appendProChorus(fxlayer, fxstage, 0.5f);
+  return fxlayer;
+}
+///////////////////////////////////////////////////////////////////////////////
+lyrdata_ptr_t fxpreset_proflanger(synth* s) {
+  auto fxprog       = std::make_shared<ProgramData>();
+  auto fxlayer      = fxprog->newLayer();
+  auto fxalg        = std::make_shared<AlgData>();
+  fxlayer->_algdata = fxalg;
+  fxalg->_name      = ork::FormatString("FxAlg");
+  /////////////////
+  // output effect
+  /////////////////
+  auto fxstage = fxalg->appendStage("FX");
+  fxstage->setNumIos(2, 2); // stereo in, stereo out
+  /////////////////
+  // Pro flanger with multiple voices, high feedback, slow sweep
+  /////////////////
+  appendProFlanger(fxlayer, fxstage, 0.5f, 0.65f);
+  return fxlayer;
+}
+///////////////////////////////////////////////////////////////////////////////
+lyrdata_ptr_t fxpreset_prodistortion(synth* s) {
+  auto fxprog       = std::make_shared<ProgramData>();
+  auto fxlayer      = fxprog->newLayer();
+  auto fxalg        = std::make_shared<AlgData>();
+  fxlayer->_algdata = fxalg;
+  fxalg->_name      = ork::FormatString("FxAlg");
+  /////////////////
+  auto fxstage = fxalg->appendStage("FX");
+  fxstage->setNumIos(2, 2); // stereo in, stereo out
+  /////////////////
+  // Medium crunch with balanced EQ
+  appendProDistortion(fxlayer, fxstage,
+    0.5f,   // drive: medium
+    0.0f,   // bass: neutral
+    0.0f,   // mid: neutral
+    0.0f,   // treble: neutral
+    2.0f);  // presence: slight boost for clarity
+  return fxlayer;
+}
+///////////////////////////////////////////////////////////////////////////////
+lyrdata_ptr_t fxpreset_prodistortion_clean(synth* s) {
+  auto fxprog       = std::make_shared<ProgramData>();
+  auto fxlayer      = fxprog->newLayer();
+  auto fxalg        = std::make_shared<AlgData>();
+  fxlayer->_algdata = fxalg;
+  fxalg->_name      = ork::FormatString("FxAlg");
+  /////////////////
+  auto fxstage = fxalg->appendStage("FX");
+  fxstage->setNumIos(2, 2);
+  /////////////////
+  // Clean with warmth - Fender-ish
+  appendProDistortion(fxlayer, fxstage,
+    0.15f,  // drive: light - just tube warmth
+    2.0f,   // bass: slight boost for fullness
+    -1.0f,  // mid: slight scoop for clarity
+    1.0f,   // treble: slight boost for sparkle
+    1.0f);  // presence: subtle
+  return fxlayer;
+}
+///////////////////////////////////////////////////////////////////////////////
+lyrdata_ptr_t fxpreset_prodistortion_crunch(synth* s) {
+  auto fxprog       = std::make_shared<ProgramData>();
+  auto fxlayer      = fxprog->newLayer();
+  auto fxalg        = std::make_shared<AlgData>();
+  fxlayer->_algdata = fxalg;
+  fxalg->_name      = ork::FormatString("FxAlg");
+  /////////////////
+  auto fxstage = fxalg->appendStage("FX");
+  fxstage->setNumIos(2, 2);
+  /////////////////
+  // Classic rock crunch - Marshall-ish
+  appendProDistortion(fxlayer, fxstage,
+    0.6f,   // drive: medium-high
+    1.0f,   // bass: slight boost
+    2.0f,   // mid: boosted for rock cut
+    1.0f,   // treble: slight boost
+    3.0f);  // presence: more attack
+  return fxlayer;
+}
+///////////////////////////////////////////////////////////////////////////////
+lyrdata_ptr_t fxpreset_prodistortion_heavy(synth* s) {
+  auto fxprog       = std::make_shared<ProgramData>();
+  auto fxlayer      = fxprog->newLayer();
+  auto fxalg        = std::make_shared<AlgData>();
+  fxlayer->_algdata = fxalg;
+  fxalg->_name      = ork::FormatString("FxAlg");
+  /////////////////
+  auto fxstage = fxalg->appendStage("FX");
+  fxstage->setNumIos(2, 2);
+  /////////////////
+  // High gain - Mesa/5150-ish
+  appendProDistortion(fxlayer, fxstage,
+    0.85f,  // drive: high
+    -1.0f,  // bass: slight cut for tightness
+    -2.0f,  // mid: scooped for modern metal
+    2.0f,   // treble: boosted for bite
+    4.0f);  // presence: aggressive attack
+  return fxlayer;
+}
+///////////////////////////////////////////////////////////////////////////////
 lyrdata_ptr_t fxpreset_fdn4reverb(synth* s) {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
@@ -854,6 +970,12 @@ void loadAllFxPresets(synth* s) {
   addpreset("Distortion+Chorus", fxpreset_distortionpluschorus(s));
   addpreset("Distortion+Echo", fxpreset_distortionplusecho(s));
   addpreset("StereoChorus", fxpreset_stereochorus(s));
+  addpreset("ProChorus", fxpreset_prochorus(s));
+  addpreset("ProFlanger", fxpreset_proflanger(s));
+  addpreset("ProDistortion", fxpreset_prodistortion(s));
+  addpreset("ProDist:Clean", fxpreset_prodistortion_clean(s));
+  addpreset("ProDist:Crunch", fxpreset_prodistortion_crunch(s));
+  addpreset("ProDist:Heavy", fxpreset_prodistortion_heavy(s));
   addpreset("ShifterFifthUp", fxpreset_pitchfifthup(s));
   addpreset("ShifterFifthDn", fxpreset_pitchfifthdn(s));
   addpreset("ShifterOctUp", fxpreset_pitchoctup(s));

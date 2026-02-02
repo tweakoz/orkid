@@ -53,6 +53,31 @@ void appendStereoHighPass(
     dspstagedata_ptr_t stage,
     float fc);
 ///////////////////////////////////////////////////////////////////////////////
+void appendStereoLowPass(
+    lyrdata_ptr_t layer, //
+    dspstagedata_ptr_t stage,
+    float fc);
+///////////////////////////////////////////////////////////////////////////////
+void appendProChorus(
+    lyrdata_ptr_t layer, //
+    dspstagedata_ptr_t stage,
+    float wetness);
+///////////////////////////////////////////////////////////////////////////////
+void appendProFlanger(
+    lyrdata_ptr_t layer, //
+    dspstagedata_ptr_t stage,
+    float wetness,
+    float feedback);
+///////////////////////////////////////////////////////////////////////////////
+void appendProDistortion(
+    lyrdata_ptr_t layer, //
+    dspstagedata_ptr_t stage,
+    float drive,      // 0-1: clean to heavy distortion
+    float bass,       // dB: bass shelf adjustment
+    float mid,        // dB: mid parametric adjustment
+    float treble,     // dB: treble shelf adjustment
+    float presence);  // dB: presence/attack control
+///////////////////////////////////////////////////////////////////////////////
 void appendStereoHighFreqStimulator(
     lyrdata_ptr_t layer, //
     dspstagedata_ptr_t stage,
@@ -116,6 +141,12 @@ void appendWackiVerb(
 // fx presets
 ///////////////////////////////////////////////////////////////////////////////
 lyrdata_ptr_t fxpreset_stereochorus(synth* s);
+lyrdata_ptr_t fxpreset_prochorus(synth* s);
+lyrdata_ptr_t fxpreset_proflanger(synth* s);
+lyrdata_ptr_t fxpreset_prodistortion(synth* s);
+lyrdata_ptr_t fxpreset_prodistortion_clean(synth* s);
+lyrdata_ptr_t fxpreset_prodistortion_crunch(synth* s);
+lyrdata_ptr_t fxpreset_prodistortion_heavy(synth* s);
 lyrdata_ptr_t fxpreset_fdn4reverb(synth* s);
 lyrdata_ptr_t fxpreset_multitest(synth* s);
 lyrdata_ptr_t fxpreset_niceverb(synth* s);
