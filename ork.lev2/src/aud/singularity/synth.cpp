@@ -958,8 +958,19 @@ void synth::compute(int inumframes, const void* inputBuffer) {
       //////////////////////////////////////////
       // accumulate busses to master
       //////////////////////////////////////////
+      bool any_soloed = _num_soloed.load() > 0;
       for (auto busitem : _outputBusses) {
         auto bus         = busitem.second;
+        //////////////////////////////////////////
+        // mute/solo logic
+        //////////////////////////////////////////
+        if (any_soloed && !bus->_solo) {
+          continue;  // skip non-soloed buses when solo is active
+        }
+        if (!any_soloed && bus->_mute) {
+          continue;  // skip muted buses when no solo active
+        }
+        //////////////////////////////////////////
         auto& bus_buf    = bus->_buffer;
         float* bus_left  = bus_buf._leftBuffer;
         float* bus_right = bus_buf._rightBuffer;

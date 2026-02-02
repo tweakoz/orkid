@@ -122,7 +122,34 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
               "listener_matrix", //
               [](synth_ptr_t synth) -> fmtx4 { return synth->_listener_matrix; },
               [](synth_ptr_t synth, fmtx4 pos) { synth->_listener_matrix = pos; //
-                                                 synth->_inv_listener_matrix = pos.inverse(); });
+                                                 synth->_inv_listener_matrix = pos.inverse(); })
+          /////////////////////////////////////////////////////////////////////////////////
+          // DAW channel strip support
+          /////////////////////////////////////////////////////////////////////////////////
+          .def_property_readonly(
+              "effectPresetNames", //
+              [](synth_ptr_t synth) -> py::list {
+                py::list rval;
+                for (auto& preset : synth->_fxpresets) {
+                  rval.append(preset->_name);
+                }
+                return rval;
+              })
+          .def_property_readonly(
+              "outputBusNames", //
+              [](synth_ptr_t synth) -> py::list {
+                py::list rval;
+                for (auto& item : synth->_outputBusses) {
+                  rval.append(item.first);
+                }
+                return rval;
+              })
+          .def_property_readonly(
+              "globalBank", //
+              [](synth_ptr_t synth) -> bankdata_ptr_t { return synth->_globalbank; })
+          .def_property_readonly(
+              "numSoloed", //
+              [](synth_ptr_t synth) -> int { return synth->_num_soloed.load(); });
   type_codec->registerStdCodec<synth_ptr_t>(synth_type_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto prgi_type = py::class_<prginst_rawptr_t>(singmodule, "ProgramInst")
@@ -169,7 +196,41 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
                        .def_property(
                            "gain", //
                            [](outbus_ptr_t bus) -> float { return bus->_prog_gain; },
-                           [](outbus_ptr_t bus, float g) { bus->_prog_gain = g; });
+                           [](outbus_ptr_t bus, float g) { bus->_prog_gain = g; })
+                       /////////////////////////////////////////////////////////////////////////////////
+                       // DAW channel strip controls
+                       /////////////////////////////////////////////////////////////////////////////////
+                       .def_property(
+                           "mute", //
+                           [](outbus_ptr_t bus) -> bool { return bus->_mute; },
+                           [](outbus_ptr_t bus, bool m) {
+                             auto syn = synth::instance();
+                             syn->addEvent(0, [bus, m]() { bus->_mute = m; });
+                           })
+                       .def_property(
+                           "solo", //
+                           [](outbus_ptr_t bus) -> bool { return bus->_solo; },
+                           [](outbus_ptr_t bus, bool s) {
+                             auto syn = synth::instance();
+                             syn->addEvent(0, [bus, s, syn]() {
+                               if (s && !bus->_solo) {
+                                 syn->_num_soloed++;
+                               } else if (!s && bus->_solo) {
+                                 syn->_num_soloed--;
+                               }
+                               bus->_solo = s;
+                             });
+                           })
+                       .def_property(
+                           "pan", //
+                           [](outbus_ptr_t bus) -> float { return bus->_pan; },
+                           [](outbus_ptr_t bus, float p) {
+                             auto syn = synth::instance();
+                             syn->addEvent(0, [bus, p]() { bus->_pan = p; });
+                           })
+                       .def_property_readonly(
+                           "effectName", //
+                           [](outbus_ptr_t bus) -> std::string { return bus->_fxname; });
   type_codec->registerStdCodec<outbus_ptr_t>(obus_type);
 }
 ///////////////////////////////////////////////////////////////////////////////

@@ -1028,6 +1028,15 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                                  return out_bank;
                                })
                            .def(
+                               "programNames",                                //
+                               [](bankdata_ptr_t bdata) -> py::list {         //
+                                 py::list rval;
+                                 for (auto& item : bdata->_programsByName) {
+                                   rval.append(item.first);
+                                 }
+                                 return rval;
+                               })
+                           .def(
                                "programByName",                                               //
                                [](bankdata_ptr_t bdata, std::string named) -> prgdata_ptr_t { //
                                  auto program = bdata->findProgramByName(named);

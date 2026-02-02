@@ -238,6 +238,7 @@ struct Track {
   prgdata_constptr_t _program;
   outbus_ptr_t _outbus;
   Sequence* _sequence = nullptr;
+  bool _armed = false;  // Recording arm state
 };
 
 ////////////////////////////////////////////////////////////////

@@ -79,7 +79,7 @@ struct OutputBus {
   /////////////////////////
 
   void setBusDSP(lyrdata_ptr_t ld);
-  
+
   lyrdata_ptr_t _dsplayerdata;
   layer_ptr_t _dsplayer = nullptr;
   scopesource_ptr_t _scopesource;
@@ -89,6 +89,14 @@ struct OutputBus {
   std::vector<outbus_ptr_t> _children;
   fxpresetmap_t::iterator _fxcurpreset;
   layer_vect_t _exec_layers;
+
+  /////////////////////////
+  // DAW channel strip controls
+  /////////////////////////
+
+  bool _mute = false;
+  bool _solo = false;
+  float _pan = 0.0f;  // -1.0 (left) to +1.0 (right)
   /////////////////////////
 };
 
@@ -242,6 +250,7 @@ struct synth {
   fmtx4 _listener_matrix;
   fmtx4 _inv_listener_matrix;
   std::atomic<int> _lifecycle_state;
+  std::atomic<int> _num_soloed{0};  // Count of soloed buses for O(1) check
 
   void waitUntilReady() const;
 
