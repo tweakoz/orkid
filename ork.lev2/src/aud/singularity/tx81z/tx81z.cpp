@@ -152,6 +152,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
     auto fm4pd     = std::make_shared<Tx81zProgData>();
     auto layerdata = zpmprg->newLayer();
+    layerdata->_pan = 7; // center pan (0-14 range, 7 = center)
 
     //printf("////////////////////////////\n");
     //printf("V<%d:%s>\n", progid, name.c_str());

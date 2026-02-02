@@ -343,16 +343,18 @@ void STEREO_GAIN::compute(DspBuffer& dspbuf) // final
   float gain = _param[0].eval(); //,0.01f,100.0f);
   _fval[0]   = gain;
 
-  if (1) {
-    float linG      = decibel_to_linear_amp_ratio(gain);
-    int inumframes  = _layer->_dspwritecount;
-    auto inpbuf     = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
-    auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
-    for (int i = 0; i < inumframes; i++) {
-      float inp     = inpbuf[i] * _dbd->_inputPad;
-      float outp    = softsat(inp * linG, 1);
-      outputchan[i] = outp;
-    }
+  float linG      = decibel_to_linear_amp_ratio(gain);
+  int inumframes  = _layer->_dspwritecount;
+  int ibase       = _layer->_dspwritebase;
+  auto inpbufL    = getInpBuf(dspbuf, 0) + ibase;
+  auto inpbufR    = getInpBuf(dspbuf, 1) + ibase;
+  auto outbufL    = getOutBuf(dspbuf, 0) + ibase;
+  auto outbufR    = getOutBuf(dspbuf, 1) + ibase;
+  for (int i = 0; i < inumframes; i++) {
+    float inpL  = inpbufL[i] * _dbd->_inputPad;
+    float inpR  = inpbufR[i] * _dbd->_inputPad;
+    outbufL[i]  = softsat(inpL * linG, 1);
+    outbufR[i]  = softsat(inpR * linG, 1);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////

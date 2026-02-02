@@ -142,6 +142,7 @@ void Alg::keyOn(KeyOnInfo& koi) {
       out_stages[istage] = stage;
       numstages++;
       int numblocks = stagedata->_blockdatas.size();
+      stage->_blocks.resize(numblocks);
       for (int iblock = 0; iblock < numblocks; iblock++) {
         auto blockdata = stagedata->_blockdatas[iblock];
         if (blockdata) {
@@ -182,7 +183,8 @@ void Alg::forEachStage(stagefn_t fn) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void DspStage::forEachBlock(blockfn_t fn) {
-  for (int iblock = 0; iblock < kmaxdspblocksperstage; iblock++) {
+  int numblocks = _blocks.size();
+  for (int iblock = 0; iblock < numblocks; iblock++) {
     auto b = _blocks[iblock];
     if (b) {
       fn(b);

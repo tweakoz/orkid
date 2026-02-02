@@ -174,7 +174,7 @@ struct DspStageData final : public ork::Object {
   void dump() const;
 };
 struct DspStage final {
-  dspblk_ptr_t _blocks[kmaxdspblocksperstage];
+  std::vector<dspblk_ptr_t> _blocks;
   using blockfn_t = std::function<void(dspblk_ptr_t)>;
   void forEachBlock(blockfn_t fn);
 };
