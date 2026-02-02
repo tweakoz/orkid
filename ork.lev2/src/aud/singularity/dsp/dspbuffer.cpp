@@ -51,4 +51,39 @@ float* DspBuffer::channel(int ich) {
   return _channels[ich].data();
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+void DspBuffer::clear(int base, int count) {
+  for (int ch = 0; ch < kmaxdspblocksperstage; ch++) {
+    float* data = _channels[ch].data() + base;
+    for (int i = 0; i < count; i++) {
+      data[i] = 0.0f;
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void DspBuffer::copyFrom(const DspBuffer& src, int base, int count) {
+  for (int ch = 0; ch < kmaxdspblocksperstage; ch++) {
+    const float* srcdata = src._channels[ch].data() + base;
+    float* dstdata = _channels[ch].data() + base;
+    for (int i = 0; i < count; i++) {
+      dstdata[i] = srcdata[i];
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void DspBuffer::mixIn(const DspBuffer& src, int base, int count, float gain) {
+  for (int ch = 0; ch < kmaxdspblocksperstage; ch++) {
+    const float* srcdata = src._channels[ch].data() + base;
+    float* dstdata = _channels[ch].data() + base;
+    for (int i = 0; i < count; i++) {
+      dstdata[i] += srcdata[i] * gain;
+    }
+  }
+}
+
 } //namespace ork::audio::singularity {

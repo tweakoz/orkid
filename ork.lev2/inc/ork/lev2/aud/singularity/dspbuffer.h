@@ -17,6 +17,11 @@ struct DspBuffer final {
 
   float* channel(int ich);
 
+  // Helper methods for insert processing
+  void clear(int base, int count);                              // Zero specified range
+  void copyFrom(const DspBuffer& src, int base, int count);     // Copy from source
+  void mixIn(const DspBuffer& src, int base, int count, float gain); // Accumulate with gain
+
   int _maxframes;
   int _numframes;
 

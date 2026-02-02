@@ -67,6 +67,22 @@ struct hudsample {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+// InsertGroup: group of layers that run in parallel (fork/join)
+//  - Single layer = serial insert
+//  - Multiple layers = parallel insert (fork input, join outputs)
+///////////////////////////////////////////////////////////////////////////////
+
+struct InsertGroup {
+  std::vector<lyrdata_ptr_t> _layerdatas;   // layer data (config)
+  std::vector<layer_ptr_t> _layers;          // runtime layer instances
+  float _mixGain = 1.0f;                     // gain when joining parallel outputs
+
+  bool isParallel() const { return _layerdatas.size() > 1; }
+  size_t numLayers() const { return _layerdatas.size(); }
+};
+using insertgroup_ptr_t = std::shared_ptr<InsertGroup>;
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct OutputBus {
   void resize(int numframes);
@@ -97,6 +113,14 @@ struct OutputBus {
   bool _mute = false;
   bool _solo = false;
   float _pan = 0.0f;  // -1.0 (left) to +1.0 (right)
+
+  /////////////////////////
+  // Insert effects chain
+  // Signal flow: Voices → _insertGroups[0..n] → _dsplayerdata → Output
+  /////////////////////////
+
+  std::vector<InsertGroup> _insertGroups;
+  void computeInserts(int inumframes, int base, int count);
   /////////////////////////
 };
 

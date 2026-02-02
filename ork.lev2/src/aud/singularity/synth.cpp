@@ -22,6 +22,111 @@
 namespace ork::audio::singularity {
 static logchannel_ptr_t logchan_synth = logger()->configureChannel("SingulSynth", fvec3(1, 0.6, .8), true);
 ///////////////////////////////////////////////////////////////////////////////
+// OutputBus::computeInserts - process insert effect chain
+// Signal flow: input (bus buffer) → insert groups → output (bus buffer)
+// Groups run in serial; layers within a group run in parallel (fork/join)
+///////////////////////////////////////////////////////////////////////////////
+void OutputBus::computeInserts(int inumframes, int base, int count) {
+  // Skip if no insert groups - this is the common case for existing code
+  if (_insertGroups.empty()) {
+    return;
+  }
+
+  auto& bus_buf = _buffer;
+  float* bus_left = bus_buf._leftBuffer + base;
+  float* bus_right = bus_buf._rightBuffer + base;
+
+  // Process each insert group in serial order
+  for (auto& group : _insertGroups) {
+    if (group._layerdatas.empty()) {
+      continue;
+    }
+
+    // Ensure runtime layers exist and match layerdatas
+    while (group._layers.size() < group._layerdatas.size()) {
+      group._layers.push_back(std::make_shared<Layer>());
+    }
+
+    if (group.isParallel()) {
+      //////////////////////////////////////////
+      // Parallel insert (fork/join)
+      //////////////////////////////////////////
+      // TODO: implement parallel fork/join when needed
+      // For now, just process first layer as serial
+      auto& lyrdata = group._layerdatas[0];
+      auto& layer = group._layers[0];
+
+      if (lyrdata && lyrdata->_algdata) {
+        auto dsp_buf = layer->_dspbuffer;
+        dsp_buf->resize(inumframes);
+        float* dsp_left = dsp_buf->channel(0);
+        float* dsp_right = dsp_buf->channel(1);
+
+        // Copy bus → dsp input
+        for (int i = 0; i < count; i++) {
+          dsp_left[i] = bus_left[i];
+          dsp_right[i] = bus_right[i];
+        }
+
+        // Process layer
+        layer->_layerdata = lyrdata;
+        layer->_is_bus_processor = true;
+        layer->_outbus = nullptr;
+        layer->beginCompute(count);
+        layer->updateControllers();
+        layer->compute(0, count);
+        layer->endCompute();
+
+        // Copy dsp output → bus (apply mix gain)
+        const float* out_left = dsp_buf->channel(0);
+        const float* out_right = dsp_buf->channel(1);
+        float gain = group._mixGain;
+        for (int i = 0; i < count; i++) {
+          bus_left[i] = out_left[i] * gain;
+          bus_right[i] = out_right[i] * gain;
+        }
+      }
+    } else {
+      //////////////////////////////////////////
+      // Serial insert (single layer)
+      //////////////////////////////////////////
+      auto& lyrdata = group._layerdatas[0];
+      auto& layer = group._layers[0];
+
+      if (lyrdata && lyrdata->_algdata) {
+        auto dsp_buf = layer->_dspbuffer;
+        dsp_buf->resize(inumframes);
+        float* dsp_left = dsp_buf->channel(0);
+        float* dsp_right = dsp_buf->channel(1);
+
+        // Copy bus → dsp input
+        for (int i = 0; i < count; i++) {
+          dsp_left[i] = bus_left[i];
+          dsp_right[i] = bus_right[i];
+        }
+
+        // Process layer
+        layer->_layerdata = lyrdata;
+        layer->_is_bus_processor = true;
+        layer->_outbus = nullptr;
+        layer->beginCompute(count);
+        layer->updateControllers();
+        layer->compute(0, count);
+        layer->endCompute();
+
+        // Copy dsp output → bus
+        const float* out_left = dsp_buf->channel(0);
+        const float* out_right = dsp_buf->channel(1);
+        for (int i = 0; i < count; i++) {
+          bus_left[i] = out_left[i];
+          bus_right[i] = out_right[i];
+        }
+      }
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
 void synth::nextEffect(outbus_ptr_t bus) {
   _eventmap.atomicOp([=](eventmap_t& emap) { //
     emap.insert(std::make_pair(0.0f, [=]() {
@@ -909,7 +1014,12 @@ void synth::compute(int inumframes, const void* inputBuffer) {
           float* bus_left  = bus_buf._leftBuffer;
           float* bus_right = bus_buf._rightBuffer;
           //////////////////////////////////////////
-          // bus DSP fx
+          // Insert effects chain (runs BEFORE _dsplayer)
+          // Signal flow: Voices → _insertGroups → _dsplayer → Output
+          //////////////////////////////////////////
+          bus->computeInserts(inumframes, _dspwritebase, _dspwritecount);
+          //////////////////////////////////////////
+          // bus DSP fx (main bus effect via setEffect)
           //////////////////////////////////////////
           auto busdsplayer = bus->_dsplayer;
           if (busdsplayer) {

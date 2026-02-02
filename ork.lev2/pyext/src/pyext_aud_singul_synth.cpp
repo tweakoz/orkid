@@ -230,8 +230,108 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
                            })
                        .def_property_readonly(
                            "effectName", //
-                           [](outbus_ptr_t bus) -> std::string { return bus->_fxname; });
+                           [](outbus_ptr_t bus) -> std::string { return bus->_fxname; })
+                       /////////////////////////////////////////////////////////////////////////////////
+                       // Insert effects chain
+                       /////////////////////////////////////////////////////////////////////////////////
+                       .def_property_readonly(
+                           "numInsertGroups", //
+                           [](outbus_ptr_t bus) -> int { return bus->_insertGroups.size(); })
+                       .def(
+                           "insertGroup", //
+                           [](outbus_ptr_t bus, int index) -> InsertGroup* {
+                             if (index < 0 || index >= bus->_insertGroups.size()) {
+                               return nullptr;
+                             }
+                             return &bus->_insertGroups[index];
+                           },
+                           py::return_value_policy::reference)
+                       .def(
+                           "addSerialInsert", //
+                           [](outbus_ptr_t bus, lyrdata_ptr_t layer) {
+                             auto syn = synth::instance();
+                             syn->addEvent(0, [bus, layer]() {
+                               InsertGroup group;
+                               group._layerdatas.push_back(layer);
+                               group._mixGain = 1.0f;
+                               bus->_insertGroups.push_back(group);
+                             });
+                           })
+                       .def(
+                           "addParallelInsert", //
+                           [](outbus_ptr_t bus, py::list layers, float gain) {
+                             auto syn = synth::instance();
+                             std::vector<lyrdata_ptr_t> layer_vec;
+                             for (auto item : layers) {
+                               layer_vec.push_back(item.cast<lyrdata_ptr_t>());
+                             }
+                             syn->addEvent(0, [bus, layer_vec, gain]() {
+                               InsertGroup group;
+                               for (auto& ld : layer_vec) {
+                                 group._layerdatas.push_back(ld);
+                               }
+                               group._mixGain = gain;
+                               bus->_insertGroups.push_back(group);
+                             });
+                           },
+                           py::arg("layers"),
+                           py::arg("gain") = 1.0f)
+                       .def(
+                           "removeInsertGroup", //
+                           [](outbus_ptr_t bus, int index) {
+                             auto syn = synth::instance();
+                             syn->addEvent(0, [bus, index]() {
+                               if (index >= 0 && index < bus->_insertGroups.size()) {
+                                 bus->_insertGroups.erase(bus->_insertGroups.begin() + index);
+                               }
+                             });
+                           })
+                       .def(
+                           "clearInserts", //
+                           [](outbus_ptr_t bus) {
+                             auto syn = synth::instance();
+                             syn->addEvent(0, [bus]() { bus->_insertGroups.clear(); });
+                           });
   type_codec->registerStdCodec<outbus_ptr_t>(obus_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // InsertGroup binding
+  /////////////////////////////////////////////////////////////////////////////////
+  auto insertgroup_type =
+      py::class_<InsertGroup>(singmodule, "InsertGroup")
+          .def_property(
+              "mixGain", //
+              [](InsertGroup& grp) -> float { return grp._mixGain; },
+              [](InsertGroup& grp, float gain) { grp._mixGain = gain; })
+          .def_property_readonly(
+              "numLayers", //
+              [](InsertGroup& grp) -> int { return grp.numLayers(); })
+          .def_property_readonly(
+              "isParallel", //
+              [](InsertGroup& grp) -> bool { return grp.isParallel(); })
+          .def(
+              "layer", //
+              [](InsertGroup& grp, int index) -> lyrdata_ptr_t {
+                if (index < 0 || index >= grp._layerdatas.size()) {
+                  return nullptr;
+                }
+                return grp._layerdatas[index];
+              })
+          .def(
+              "addLayer", //
+              [](InsertGroup& grp, lyrdata_ptr_t layer) {
+                auto syn = synth::instance();
+                syn->addEvent(0, [&grp, layer]() { grp._layerdatas.push_back(layer); });
+              })
+          .def(
+              "removeLayer", //
+              [](InsertGroup& grp, int index) {
+                auto syn = synth::instance();
+                syn->addEvent(0, [&grp, index]() {
+                  if (index >= 0 && index < grp._layerdatas.size()) {
+                    grp._layerdatas.erase(grp._layerdatas.begin() + index);
+                  }
+                });
+              });
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity
