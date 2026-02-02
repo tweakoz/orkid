@@ -509,7 +509,7 @@ void SampleOscillator::keyOn(const KeyOnInfo& koi) {
   auto sample = _regionsearch._sample;
 
   if (nullptr == sample) {
-    printf("SampleOscillator no sample!\n");
+    //printf("SampleOscillator no sample!\n");
     return;
   }
   OrkAssert(sample);
