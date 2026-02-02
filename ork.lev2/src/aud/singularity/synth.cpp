@@ -433,7 +433,7 @@ programInst* synth::liveKeyOn(int note, int velocity, prgdata_constptr_t pdata, 
       _prgchannel->_mononotes.push_back(note);
     }
     addEvent(0.0f, [note, velocity, pdata, this, pi, kmods]() {
-      logchan_synth->log("liveKeyOn note<%d>", note);
+      if(0)logchan_synth->log("liveKeyOn note<%d>", note);
 
       int clampn = std::clamp(note, 0, 127);
       int clampv = std::clamp(velocity, 0, 127);

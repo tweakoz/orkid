@@ -83,13 +83,13 @@ Widget* Widget::routeUiEvent(event_constptr_t ev) {
   if (_uicontext->_debug_event_routing){
     wrstack++;
     auto indent = std::string(wrstack * 2, ' ');
-    printf("%srouteUiEvent self<%s>\n", indent.c_str(), _name.c_str());
+    //printf("%srouteUiEvent self<%s>\n", indent.c_str(), _name.c_str());
   }
   auto ret = _evrouter ? _evrouter(ev) // lambda takes preference
                        : doRouteUiEvent(ev);
   if (_uicontext->_debug_event_routing){
     auto indent = std::string(wrstack * 2, ' ');
-    printf("%srouteUiEvent target<%s>\n", indent.c_str(), ret ? ret->_name.c_str() : "null");
+    //printf("%srouteUiEvent target<%s>\n", indent.c_str(), ret ? ret->_name.c_str() : "null");
     wrstack--;
   }
   return ret;

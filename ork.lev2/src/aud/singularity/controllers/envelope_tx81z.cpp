@@ -133,7 +133,9 @@ static float generateDecayFactor(float time) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void TX81ZEnvInst::computeScaledRates(int midiKey) {
-  int keycode = std::max(0, midiKey - 36);
+  // TX81Z rate scaling uses keycode derived from note
+  // Breakpoint at C1 (MIDI 24) to match level scaling behavior
+  int keycode = std::max(0, midiKey - 24);
   int ks = std::clamp(_envdata->_rateScale, 0, 3);
   int shift = 5 - ks;
   int ksr = keycode >> shift;
