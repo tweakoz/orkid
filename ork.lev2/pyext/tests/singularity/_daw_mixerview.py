@@ -10,11 +10,14 @@
 """
 DAW-style channel strip UI for Singularity synth.
 
-Provides horizontal row-based channel strips (2 rows per channel) with:
-  - Program selector
-  - Insert effect slot
-  - Gain/Pan controls
-  - Mute/Solo buttons
+Provides horizontal row-based channel strips with actual widgets:
+  - Label (bus name)
+  - ComboBox (program selector)
+  - FloatSlider (gain)
+  - FloatSlider (pan)
+  - Button (mute)
+  - Button (solo)
+  - Label (fx name)
 
 Usage:
   from _daw_mixerview import SingulTestAppNewUI
@@ -108,82 +111,150 @@ class KeyActions:
 
 
 ################################################################################
-# ChannelStripRow - 2-row widget for one bus
+# ChannelStripWidget - HPack containing channel controls
 ################################################################################
 
-class ChannelStripRow:
+class ChannelStripWidget:
     """
-    A channel strip displayed as 2 horizontal rows.
+    A channel strip as an HPack with child widgets.
 
-    Row 1: [BusName] [Program: dropdown] [Insert: dropdown] [Gain] [Pan]
-    Row 2: [M] [S] [FX: effect_name]
+    Layout: [Name] [Program ComboBox] [Gain Slider] [Pan Slider] [M] [S] [FX]
     """
 
-    def __init__(self, mixer_view, bus, bus_index, source=None):
+    # Class-level colors for selection state
+    LABEL_COLOR_NORMAL = vec4(0.2, 0.2, 0.3, 1)
+    LABEL_COLOR_SELECTED = vec4(0.4, 0.4, 0.6, 1)
+
+    def __init__(self, mixer_view, hpack, bus, bus_index, source=None):
         self.mixer_view = mixer_view
+        self.hpack = hpack
         self.bus = bus
         self.bus_index = bus_index
         self.source = source
         self.is_selected = False
 
-    def get_display_text(self):
-        """Generate display text for this channel strip."""
-        bus = self.bus
-        name = bus.name
+        # Colors (vec4 for TextBox, vec3 for ComboBox/Button)
+        label_col = self.LABEL_COLOR_NORMAL
+        combo_col = vec3(0.15, 0.15, 0.25)
+        btn_col = vec3(0.2, 0.2, 0.2)
 
-        # Get current program name
-        prog_name = "---"
-        if bus.uiprogram:
-            prog_name = getattr(bus.uiprogram, 'name', '???')
-            if len(prog_name) > 16:
-                prog_name = prog_name[:14] + ".."
+        # Configure hpack
+        hpack.margin = 2
+        hpack.uniform = False
+        hpack.fill = True
 
-        # Get effect name
-        fx_name = bus.effectName if bus.effectName else "none"
-        if len(fx_name) > 20:
-            fx_name = fx_name[:18] + ".."
+        # Bus name label (fixed width)
+        self.name_label = hpack.makeChild(uiclass=ui.TextBox, args=["name", label_col, bus.name])
+        self.name_label.fixed_width = 60
 
-        # Get gain/pan
-        gain_db = bus.gain
-        pan = bus.pan
+        # Program combo box
+        self.prog_combo = hpack.makeChild(uiclass=ui.ComboBox, args=["Prog", combo_col])
+        self.prog_combo.fixed_width = 256
+        self.prog_combo.onSelectionChanged = self._on_program_changed
 
-        # Mute/Solo state
-        mute_str = "[M]" if bus.mute else "[ ]"
-        solo_str = "[S]" if bus.solo else "[ ]"
+        # Gain edit (-60 to +12 dB)
+        self.gain_edit = hpack.makeChild(uiclass=ui.F32Edit, args=["gain", "Gain", 0.0, -60.0, 12.0])
+        self.gain_edit.fixed_width = 100
 
-        # Selection indicator
-        sel = ">" if self.is_selected else " "
+        # Pan edit (-1 to +1)
+        self.pan_edit = hpack.makeChild(uiclass=ui.F32Edit, args=["pan", "Pan", 0.0, -1.0, 1.0])
+        self.pan_edit.fixed_width = 80
 
-        # Format as 2 lines
-        line1 = f"{sel}{name:6} | Prg:{prog_name:16} | Ins:[none] | G:{gain_db:+.0f}dB P:{pan:+.1f}"
-        line2 = f"       | {mute_str} {solo_str} | FX: {fx_name}"
+        # Mute button
+        self.mute_btn = hpack.makeChild(uiclass=ui.Button, args=["M", btn_col])
+        self.mute_btn.fixed_width = 30
+        self.mute_btn.onPressed = self._on_mute_pressed
 
-        return line1 + "\n" + line2
+        # Solo button
+        self.solo_btn = hpack.makeChild(uiclass=ui.Button, args=["S", btn_col])
+        self.solo_btn.fixed_width = 30
+        self.solo_btn.onPressed = self._on_solo_pressed
+
+        # FX label
+        self.fx_label = hpack.makeChild(uiclass=ui.TextBox, args=["fx", label_col, "FX: none"])
+        self.fx_label.fixed_width = 120
+
+    def _on_program_changed(self, combo):
+        """Called when program combo selection changes."""
+        index = combo.selected_index
+        name = combo.selectedItem()
+        if self.mixer_view.app.soundbank and name:
+            prog = self.mixer_view.app.soundbank.programByName(name)
+            if prog:
+                self.bus.uiprogram = prog
+                self.mixer_view.app.prog = prog
+                self.mixer_view.app.prog_index = index
+                if self.mixer_view.app.pgmview:
+                    self.mixer_view.app.pgmview.setProgram(prog)
+
+    def _on_mute_pressed(self, btn):
+        """Called when mute button pressed."""
+        self.bus.mute = not self.bus.mute
+
+    def _on_solo_pressed(self, btn):
+        """Called when solo button pressed."""
+        self.bus.solo = not self.bus.solo
 
     def set_selected(self, selected):
+        """Update selection state and highlight name label."""
         self.is_selected = selected
+        if selected:
+            self.name_label.color = self.LABEL_COLOR_SELECTED
+        else:
+            self.name_label.color = self.LABEL_COLOR_NORMAL
+
+    def set_programs(self, program_names):
+        """Set the list of available programs in the combo box."""
+        self.prog_combo.setItems(program_names)
+
+    def refresh(self):
+        """Update widget states from bus state."""
+        # Sync gain: widget -> bus (user edited) or bus -> widget (external change)
+        widget_gain = self.gain_edit.value
+        if abs(widget_gain - self.bus.gain) > 0.01:
+            # Widget changed, update bus
+            self.bus.gain = widget_gain
+
+        # Sync pan: widget -> bus
+        widget_pan = self.pan_edit.value
+        if abs(widget_pan - self.bus.pan) > 0.01:
+            self.bus.pan = widget_pan
+
+        # Update FX label
+        fx_name = self.bus.effectName if self.bus.effectName else "none"
+        if len(fx_name) > 15:
+            fx_name = fx_name[:13] + ".."
+        self.fx_label.setText(f"FX: {fx_name}")
 
 
 ################################################################################
-# DAWMixerView - container of channel strips
+# DAWMixerView - VPack container of channel strips
 ################################################################################
 
 class DAWMixerView:
     """
-    Container holding multiple ChannelStripRows.
-    Displays as vertical list of 2-row channel strips.
+    Container holding multiple ChannelStripWidgets in a VPack.
     """
 
-    def __init__(self, app, text_widget):
+    def __init__(self, app, vpack):
         self.app = app
-        self.text_widget = text_widget
+        self.vpack = vpack
         self.channel_strips = []
         self.selected_index = 0
+
+        # Configure vpack
+        vpack.margin = 4
+        vpack.item_height = 32
 
     def add_channel(self, bus, source=None):
         """Add a channel strip for a bus."""
         idx = len(self.channel_strips)
-        strip = ChannelStripRow(self, bus, idx, source)
+
+        # Create HPack for this channel
+        hpack = self.vpack.makeChild(uiclass=ui.HorizontalPack, args=[f"ch_{bus.name}"])
+
+        # Create the strip widget
+        strip = ChannelStripWidget(self, hpack, bus, idx, source)
         self.channel_strips.append(strip)
         return strip
 
@@ -205,22 +276,15 @@ class DAWMixerView:
             return self.channel_strips[self.selected_index]
         return None
 
-    def refresh(self):
-        """Update the text display with current channel state."""
-        lines = []
-        lines.append("=" * 70)
-        lines.append(" DAW Mixer View")
-        lines.append("  Keys: 0-9=select channel, m=mute, s=solo, ,/.=prev/next program")
-        lines.append("        -/==prev/next effect, [/]=gain, AWSED..=play notes")
-        lines.append("=" * 70)
-
+    def set_programs(self, program_names):
+        """Set the program list for all channels."""
         for strip in self.channel_strips:
-            lines.append("-" * 70)
-            lines.append(strip.get_display_text())
+            strip.set_programs(program_names)
 
-        lines.append("-" * 70)
-
-        self.text_widget.setText("\n".join(lines))
+    def refresh(self):
+        """Update all channel strip displays."""
+        for strip in self.channel_strips:
+            strip.refresh()
 
 
 ################################################################################
@@ -239,6 +303,7 @@ class SingulTestAppNewUI(KeyActions):
         self.add_daw_bindings()  # Add M/S/number key bindings
 
         self.ezapp = OrkEzApp.create(self,
+                                     fullscreen=True,
                                      enable_audio_synth=True,
                                      enable_audio=True,
                                      enable_audio_output=True,
@@ -259,27 +324,6 @@ class SingulTestAppNewUI(KeyActions):
         self.prog = None
         self.soundbank = None
 
-        # Create grid: [mixer_text | profiler]
-        #              [program    | oscope  ]
-        #              [spectrum   |         ]
-        rccounts = [3, 2]
-        self.griditems = lg_group.makeRowsColumns(
-            rccounts=rccounts,
-            margin=4,
-            uiclass=ui.TextBox,
-            args=["label", vec4(0.1, 0.1, 0.3, 1)],
-        )
-
-        # Set up mixer text widget (item 0)
-        self.mixer_text = self.griditems[0].widget
-        self.mixer_text.halign = tokens.LEFT
-        self.mixer_text.valign = tokens.TOP
-
-        # Key handling
-        self.ezapp.uicontext.debug_event_routing = True
-        self.mixer_text.onKeyDown(lambda x: self._onKeyEvent(self.mixer_text, x))
-        self.mixer_text.onKeyUp(lambda x: self._onKeyEvent(self.mixer_text, x))
-
         # Note mapping (same as old harness)
         self.base_notes = {
             ord("A"): 0, ord("W"): 1, ord("S"): 2, ord("E"): 3,
@@ -293,6 +337,7 @@ class SingulTestAppNewUI(KeyActions):
         self.click_prog = None
         self.click_noteL = 60
         self.click_noteH = 60
+        self.pgmview = None
 
         import signal
         def onCtrlC(signum, frame):
@@ -341,38 +386,79 @@ class SingulTestAppNewUI(KeyActions):
         lg_group = self.ezapp.topLayoutGroup
         self.rec_trackclips = {}
 
-        # Create mixer view
-        self.mixer_view = DAWMixerView(self, self.mixer_text)
+        # Create grid layout: [text    | mixer   | program ]
+        #                     [oscope            | spectrum]
+        rccounts = [3, 2]
+        # h_splits: row 0 splits at 25% and 75% -> [25% | 50% | 25%]
+        #           row 1 splits at 50% (default) -> [50% | 50%]
+        h_splits = [[0.25, 0.75], []]
+        self.griditems = lg_group.makeRowsColumns(
+            rccounts=rccounts,
+            margin=4,
+            uiclass=ui.Box,
+            args=["label", vec4(0.1, 0.1, 0.3, 1)],
+            h_splits=h_splits,
+        )
 
-        # Add main bus
-        self.mixer_view.add_channel(self.mainbus, self.mainbus_source)
+        # === TextBox with key handlers in grid cell 0 ===
+        text = "NEW UI MODE\n"
+        text += "  Keys: AWSEDFTGYHUJKOLP = play notes\n"
+        text += "  , . : prev/next program\n"
+        text += "  - = : prev/next effect\n"
+        text += "  [ ] : adjust gain\n"
+        text += "  Z X : octave down/up\n"
+        text += "  SPACE : hold drones\n"
+        text += "  C : release drones\n"
+        text += "  0-9 : select channel\n"
+        text += "  m : toggle mute\n"
+        text += "  s : toggle solo\n"
+        info_item = lg_group.makeChild(uiclass=ui.TextBox, args=["info", vec4(0.1, 0.1, 0.3, 1), text])
+        self.info_text = info_item.widget
+        lg_group.replaceChild(self.griditems[0].layout, info_item)
+        self.info_text.halign = tokens.LEFT
+        self.info_text.valign = tokens.TOP
+
+        # Key handling on text widget
+        self.ezapp.uicontext.debug_event_routing = True
+        self.info_text.onKeyDown(lambda x: self._onKeyEvent(self.info_text, x))
+        self.info_text.onKeyUp(lambda x: self._onKeyEvent(self.info_text, x))
+
+        # === Mixer VPack in grid cell 1 (replaces profiler) ===
+        mixer_vpack_item = lg_group.makeChild(uiclass=ui.VerticalPack, args=["mixer_vpack"])
+        self.mixer_vpack = mixer_vpack_item.widget
+        self.mixer_vpack.margin = 2
+        self.mixer_vpack.item_height = 36
+        lg_group.replaceChild(self.griditems[1].layout, mixer_vpack_item)
+
+        # Create mixer view
+        self.mixer_view = DAWMixerView(self, self.mixer_vpack)
+
+        # Add spacer at top (for Mac camera notch)
+        spacer = self.mixer_vpack.makeChild(uiclass=ui.Box, args=["spacer", vec4(0, 0, 0, 1)])
 
         # Add aux buses
         for i in range(self.numaux):
             self.mixer_view.add_channel(self.auxbusses[i], self.auxbus_sources[i])
 
-        # Select main bus
-        self.mixer_view.select_channel(0)
+        # Add main bus at bottom
+        self.mixer_view.add_channel(self.mainbus, self.mainbus_source)
 
-        # Create profiler view (item 1)
-        item = lg_group.makeChild(uiclass=singularity.ProfilerView, args=["YO"])
-        self.profview = lg_group.getUserVar("profilerviews.YO")
-        lg_group.replaceChild(self.griditems[1].layout, item)
-        item.widget.ignoreEvents = True
+        # Select main bus (now at index 9)
+        self.mixer_view.select_channel(self.numaux)
 
-        # Create program view (item 2)
+        # === Program view in grid cell 2 ===
         item = lg_group.makeChild(uiclass=singularity.ProgramView, args=["PROGRAM"])
         self.pgmview = lg_group.getUserVar("programviews.PROGRAM")
         lg_group.replaceChild(self.griditems[2].layout, item)
         item.widget.ignoreEvents = True
 
-        # Create oscilloscope (item 3)
+        # === Oscilloscope in grid cell 3 ===
         item = lg_group.makeChild(uiclass=singularity.Oscilloscope, args=["MAINBUS"])
         self.oscope = lg_group.getUserVar("oscilloscopes.MAINBUS")
         self.oscope_sink = self.oscope.sink
         lg_group.replaceChild(self.griditems[3].layout, item)
 
-        # Create spectrum analyzer (item 4)
+        # === Spectrum analyzer in grid cell 4 ===
         item = lg_group.makeChild(uiclass=singularity.SpectrumAnalyzer, args=["MAINBUS"])
         self.spectra = lg_group.getUserVar("analyzers.MAINBUS")
         self.spectra_sink = self.spectra.sink
@@ -382,9 +468,6 @@ class SingulTestAppNewUI(KeyActions):
         # Connect scope sources
         self.mainbus_source.connect(self.oscope_sink)
         self.mainbus_source.connect(self.spectra_sink)
-
-        # Initial refresh
-        self.mixer_view.refresh()
 
     ##############################################
     # Update
@@ -439,10 +522,15 @@ class SingulTestAppNewUI(KeyActions):
 
     def action_select_channel(self, index, shift):
         """Select a channel (0=main, 1-9=aux)."""
-        strip = self.mixer_view.select_channel(index)
+        # Remap: key 0 -> main (channel 9), keys 1-9 -> aux (channels 0-8)
+        if index == 0:
+            channel_index = self.numaux  # main is last
+        else:
+            channel_index = index - 1  # aux1-9 are channels 0-8
+        strip = self.mixer_view.select_channel(channel_index)
         if strip:
             if shift:
-                self.synth.soloLayer = index - 1 if index > 0 else -1
+                self.synth.soloLayer = channel_index - 1 if channel_index > 0 else -1
             else:
                 self._setSource(strip.bus, strip.source)
         return True
@@ -483,6 +571,10 @@ class SingulTestAppNewUI(KeyActions):
         self.synth.programbus.uiprogram = self.prog
         if self.pgmview:
             self.pgmview.setProgram(self.prog)
+        # Update the combo box for the selected channel
+        strip = self.mixer_view.get_selected_strip()
+        if strip:
+            strip.prog_combo.selected_index = self.prog_index
 
     def action_prev_effect(self, shift):
         if shift and self.curseq:

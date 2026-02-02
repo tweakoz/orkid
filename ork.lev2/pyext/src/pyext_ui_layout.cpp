@@ -546,6 +546,7 @@ void pyinit_ui_layout(py::module& uimodule) {
                   int margin = 0;
                   py::list args;
                   py::object uirc_factory;
+                  py::object h_splits = py::none();  // Optional h_splits
                   int args_parsed = 0;
                   for (auto item : kwargs) {
                     auto key = py::cast<std::string>(item.first);
@@ -564,10 +565,13 @@ void pyinit_ui_layout(py::module& uimodule) {
                     } else if (key == "args") {
                       args = py::cast<py::list>(item.second);
                       args_parsed++;
+                    } else if (key == "h_splits") {
+                      h_splits = py::cast<py::object>(item.second);
+                      // h_splits is optional, don't increment args_parsed
                     }
                   }
                   OrkAssert(args_parsed == 4);
-                  rval = uirc_factory(lgrp, rccounts, margin, args);
+                  rval = uirc_factory(lgrp, rccounts, margin, args, h_splits);
                   for (auto item : rval) {
                     auto litem = py::cast<uilayoutitem_ptr_t>(item);
                     printf("layoutgroup_type makeRowsColumns item<%p> w<%p>\n", (void*)litem.get(), (void*)litem->_widget.get());

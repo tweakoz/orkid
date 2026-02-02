@@ -135,6 +135,9 @@ if args.newui:
             for item in self.krzprogs:
                 self.sorted_progs.append(item)
 
+            # Set program list in mixer view
+            self.mixer_view.set_programs(self.sorted_progs)
+
             # Set initial program
             self.prog_index = 0
             self.prog = self.soundbank.programByName(DRUM_PRG)

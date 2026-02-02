@@ -87,6 +87,7 @@ struct Layout {
 
   guide_ptr_t proportionalHorizontalGuide(float proportion);
   guide_ptr_t proportionalVerticalGuide(float proportion);
+  guide_ptr_t newProportionalVerticalGuide(float proportion);  // Always creates fresh guide (no cache lookup)
   guide_ptr_t fixedHorizontalGuide(int fixed);
   guide_ptr_t fixedVerticalGuide(int fixed);
   guide_ptr_t offsetHorizontalGuide(guide_ptr_t base, int offset);

@@ -52,7 +52,7 @@ void pyinit_ui_box(py::module& uimodule) {
               })
           .def_static(
               "uircfactory",
-              [type_codec](uilayoutgroup_ptr_t lg, py::list rowcols, int m, py::list py_args) -> py::list { //
+              [type_codec](uilayoutgroup_ptr_t lg, py::list rowcols, int m, py::list py_args, py::object py_h_splits) -> py::list { //
                 auto decoded_args = type_codec->decodeList(py_args);
                 auto name         = decoded_args[0].get<std::string>();
                 auto color        = decoded_args[1].get<fvec4>();
@@ -65,12 +65,36 @@ void pyinit_ui_box(py::module& uimodule) {
                 // Set margin before calling makeWidgetsRC so it uses the correct value
                 lg->_margin = m;
                 lg->_layout->setMargin(m);
-                auto layoutitems = lg->makeWidgetsRC<ui::Box>(rccounts, name, color);
+
+                // Parse h_splits if provided
+                std::vector<std::vector<float>> h_splits;
+                if (!py_h_splits.is_none()) {
+                  py::list splits_list = py::cast<py::list>(py_h_splits);
+                  for (auto row_splits : splits_list) {
+                    std::vector<float> row_vec;
+                    py::list row_list = py::cast<py::list>(row_splits);
+                    for (auto val : row_list) {
+                      row_vec.push_back(py::cast<float>(val));
+                    }
+                    h_splits.push_back(row_vec);
+                  }
+                }
+
                 py::list rval;
-                for (auto item : layoutitems) {
-                  auto shitem = item.as_shared();
-                  printf("box_type uircfactory item<%p>\n", (void*)shitem->_widget.get());
-                  rval.append(shitem);
+                if (h_splits.empty()) {
+                  auto layoutitems = lg->makeWidgetsRC<ui::Box>(rccounts, name, color);
+                  for (auto item : layoutitems) {
+                    auto shitem = item.as_shared();
+                    printf("box_type uircfactory item<%p>\n", (void*)shitem->_widget.get());
+                    rval.append(shitem);
+                  }
+                } else {
+                  auto layoutitems = lg->makeWidgetsRCWithSplits<ui::Box>(rccounts, h_splits, name, color);
+                  for (auto item : layoutitems) {
+                    auto shitem = item.as_shared();
+                    printf("box_type uircfactory item<%p>\n", (void*)shitem->_widget.get());
+                    rval.append(shitem);
+                  }
                 }
                 return rval;
               })
@@ -132,7 +156,7 @@ void pyinit_ui_box(py::module& uimodule) {
               })
           .def_static(
               "uircfactory",
-              [type_codec](uilayoutgroup_ptr_t lg, py::list rowcols, int m, py::list py_args) -> py::list { //
+              [type_codec](uilayoutgroup_ptr_t lg, py::list rowcols, int m, py::list py_args, py::object py_h_splits) -> py::list { //
                 auto decoded_args = type_codec->decodeList(py_args);
                 auto name         = decoded_args[0].get<std::string>();
                 auto color        = decoded_args[1].get<fvec4>();
@@ -145,12 +169,36 @@ void pyinit_ui_box(py::module& uimodule) {
                 // Set margin before calling makeWidgetsRC so it uses the correct value
                 lg->_margin = m;
                 lg->_layout->setMargin(m);
-                auto layoutitems = lg->makeWidgetsRC<ui::LabelBox>(rccounts, name, color, "");
+
+                // Parse h_splits if provided
+                std::vector<std::vector<float>> h_splits;
+                if (!py_h_splits.is_none()) {
+                  py::list splits_list = py::cast<py::list>(py_h_splits);
+                  for (auto row_splits : splits_list) {
+                    std::vector<float> row_vec;
+                    py::list row_list = py::cast<py::list>(row_splits);
+                    for (auto val : row_list) {
+                      row_vec.push_back(py::cast<float>(val));
+                    }
+                    h_splits.push_back(row_vec);
+                  }
+                }
+
                 py::list rval;
-                for (auto item : layoutitems) {
-                  auto shitem = item.as_shared();
-                  printf("box_type uircfactory item<%p>\n", (void*)shitem->_widget.get());
-                  rval.append(shitem);
+                if (h_splits.empty()) {
+                  auto layoutitems = lg->makeWidgetsRC<ui::LabelBox>(rccounts, name, color, "");
+                  for (auto item : layoutitems) {
+                    auto shitem = item.as_shared();
+                    printf("box_type uircfactory item<%p>\n", (void*)shitem->_widget.get());
+                    rval.append(shitem);
+                  }
+                } else {
+                  auto layoutitems = lg->makeWidgetsRCWithSplits<ui::LabelBox>(rccounts, h_splits, name, color, "");
+                  for (auto item : layoutitems) {
+                    auto shitem = item.as_shared();
+                    printf("box_type uircfactory item<%p>\n", (void*)shitem->_widget.get());
+                    rval.append(shitem);
+                  }
                 }
                 return rval;
               })
@@ -228,7 +276,7 @@ void pyinit_ui_box(py::module& uimodule) {
               })
           .def_static(
               "uircfactory",
-              [type_codec](uilayoutgroup_ptr_t lg, py::list rowcols, int m, py::list py_args) -> py::list { //
+              [type_codec](uilayoutgroup_ptr_t lg, py::list rowcols, int m, py::list py_args, py::object py_h_splits) -> py::list { //
                 auto decoded_args = type_codec->decodeList(py_args);
                 auto name         = decoded_args[0].get<std::string>();
                 auto color        = decoded_args[1].get<fvec4>();
@@ -241,12 +289,36 @@ void pyinit_ui_box(py::module& uimodule) {
                 // Set margin before calling makeWidgetsRC so it uses the correct value
                 lg->_margin = m;
                 lg->_layout->setMargin(m);
-                auto layoutitems = lg->makeWidgetsRC<ui::TextBox>(rccounts, name, color, "");
+
+                // Parse h_splits if provided
+                std::vector<std::vector<float>> h_splits;
+                if (!py_h_splits.is_none()) {
+                  py::list splits_list = py::cast<py::list>(py_h_splits);
+                  for (auto row_splits : splits_list) {
+                    std::vector<float> row_vec;
+                    py::list row_list = py::cast<py::list>(row_splits);
+                    for (auto val : row_list) {
+                      row_vec.push_back(py::cast<float>(val));
+                    }
+                    h_splits.push_back(row_vec);
+                  }
+                }
+
                 py::list rval;
-                for (auto item : layoutitems) {
-                  auto shitem = item.as_shared();
-                  printf("box_type uircfactory item<%p>\n", (void*)shitem->_widget.get());
-                  rval.append(shitem);
+                if (h_splits.empty()) {
+                  auto layoutitems = lg->makeWidgetsRC<ui::TextBox>(rccounts, name, color, "");
+                  for (auto item : layoutitems) {
+                    auto shitem = item.as_shared();
+                    printf("box_type uircfactory item<%p>\n", (void*)shitem->_widget.get());
+                    rval.append(shitem);
+                  }
+                } else {
+                  auto layoutitems = lg->makeWidgetsRCWithSplits<ui::TextBox>(rccounts, h_splits, name, color, "");
+                  for (auto item : layoutitems) {
+                    auto shitem = item.as_shared();
+                    printf("box_type uircfactory item<%p>\n", (void*)shitem->_widget.get());
+                    rval.append(shitem);
+                  }
                 }
                 return rval;
               })
@@ -338,6 +410,7 @@ void pyinit_ui_box(py::module& uimodule) {
                 };
               })
           .def_readwrite("draw_background", &ui::TextBox::_draw_background)
+          .def_readwrite("color", &ui::TextBox::_color)
           .def("__repr__", [](ui::textbox_ptr_t box) {
             return FormatString("<TextBox name<%s> widget<%p>>", box->GetName().c_str(), (void*)box.get());
           });

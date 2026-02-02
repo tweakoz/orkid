@@ -121,8 +121,9 @@ struct LayoutGroup : public Group {
           guide = _layout->right();
         } else {
           // Create interior vertical guide on root layout
+          // Use newProportionalVerticalGuide to ensure unique per-row guides
           float fx = float(x) / float(w);
-          guide = _layout->proportionalVerticalGuide(fx);
+          guide = _layout->newProportionalVerticalGuide(fx);
           guide->_margin = _margin;
           // Set extent guides so vertical guide only spans this row
           guide->_extentMin = hguides[y];      // top of row
@@ -153,6 +154,89 @@ struct LayoutGroup : public Group {
     }
 
     // Update layout geometry
+    _layout->updateAll();
+
+    return layout_items;
+  }
+  //////////////////////////////////////
+  // Overload with h_splits for custom column proportions per row
+  // h_splits[row] contains split points for that row (w-1 values for w columns)
+  template <typename T, typename... A>
+  std::vector<LayoutItem<T>> makeWidgetsRCWithSplits(
+      std::vector<int> rccounts,
+      const std::vector<std::vector<float>>& h_splits,
+      A&&... args) {
+    std::vector<LayoutItem<T>> layout_items;
+    int h = rccounts.size();
+
+    // Step 1: Create horizontal guides for row boundaries (on root layout)
+    std::vector<ui::anchor::guide_ptr_t> hguides;
+    for (int y = 0; y <= h; y++) {
+      float fy = float(y) / float(h);
+      auto guide = _layout->proportionalHorizontalGuide(fy);
+      hguides.push_back(guide);
+      _hguides.insert(guide);
+
+      bool is_edge = (y == 0) || (y == h);
+      if (is_edge) {
+        guide->_locked = true;
+      }
+    }
+
+    // Step 2: For each row, create vertical guides and cells directly on root layout
+    for (int y = 0; y < h; y++) {
+      int w = rccounts[y];
+
+      // Get splits for this row (if provided)
+      const std::vector<float>* row_splits = nullptr;
+      if (y < (int)h_splits.size() && !h_splits[y].empty()) {
+        row_splits = &h_splits[y];
+      }
+
+      // Create vertical guides for this row on the root layout
+      std::vector<ui::anchor::guide_ptr_t> row_vguides;
+
+      for (int x = 0; x <= w; x++) {
+        ui::anchor::guide_ptr_t guide;
+
+        if (x == 0) {
+          guide = _layout->left();
+        } else if (x == w) {
+          guide = _layout->right();
+        } else {
+          // Use h_splits if provided, otherwise divide evenly
+          // Use newProportionalVerticalGuide to ensure unique per-row guides
+          float fx;
+          if (row_splits && (x - 1) < (int)row_splits->size()) {
+            fx = (*row_splits)[x - 1];
+          } else {
+            fx = float(x) / float(w);
+          }
+          guide = _layout->newProportionalVerticalGuide(fx);
+          guide->_margin = _margin;
+          guide->_extentMin = hguides[y];
+          guide->_extentMax = hguides[y + 1];
+          guide->_constraintGroup = uint64_t(1) << y;
+          _vguides.insert(guide);
+        }
+
+        row_vguides.push_back(guide);
+      }
+
+      // Create cells directly as children of this LayoutGroup
+      for (int x = 0; x < w; x++) {
+        auto name = _name + FormatString("-ch-%d", layout_items.size());
+        auto chitem = this->makeChild<T>(std::forward<A>(args)...);
+        layout_items.push_back(chitem);
+
+        chitem._layout->setMargin(_margin);
+        chitem._layout->top()->anchorTo(hguides[y]);
+        chitem._layout->bottom()->anchorTo(hguides[y + 1]);
+        chitem._layout->left()->anchorTo(row_vguides[x]);
+        chitem._layout->right()->anchorTo(row_vguides[x + 1]);
+      }
+    }
+
     _layout->updateAll();
 
     return layout_items;

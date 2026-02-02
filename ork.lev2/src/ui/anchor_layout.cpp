@@ -370,6 +370,18 @@ guide_ptr_t Layout::proportionalVerticalGuide(float proportion) {
   return guide;
 }
 /////////////////////////////////////////////////////////////////////////
+guide_ptr_t Layout::newProportionalVerticalGuide(float proportion) {
+  // Always create a new guide (no cache lookup) - used for per-row guides
+  // that need independent settings even at the same proportion
+  auto guide         = std::make_shared<Guide>(this, Edge::CustomVertical);
+  guide->_proportion = proportion;
+  guide->_type = GuideType::PROPORTIONAL;
+  guide->_locked = _locked;
+  guide->_margin = _margin;
+  _customguides.insert(guide);
+  return guide;
+}
+/////////////////////////////////////////////////////////////////////////
 guide_ptr_t Layout::fixedHorizontalGuide(int fixed) {
   // Check if a guide with this fixed position already exists
   for (auto& existing : _customguides) {

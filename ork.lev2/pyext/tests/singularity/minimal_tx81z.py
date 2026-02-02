@@ -55,6 +55,9 @@ if args.newui:
             print("txprogs<%s>" % self.txprogs)
             self.prog_index = 0
 
+            # Set program list in mixer view
+            self.mixer_view.set_programs(self.sorted_progs)
+
             # Set initial program if available
             if self.sorted_progs:
                 self.prog = self.soundbank.programByName(self.sorted_progs[0])

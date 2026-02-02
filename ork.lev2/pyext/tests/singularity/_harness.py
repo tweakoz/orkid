@@ -39,6 +39,7 @@ class SingulTestApp(object):
   def __init__(self,enable_input=False):
     super().__init__()
     self.ezapp = OrkEzApp.create(self,
+                                 fullscreen = True,
                                  enable_audio_synth=True,
                                  enable_audio = True,
                                  enable_audio_output = True,
