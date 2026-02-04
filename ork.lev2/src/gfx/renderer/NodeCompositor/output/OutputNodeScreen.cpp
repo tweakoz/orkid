@@ -103,6 +103,8 @@ struct SCRIMPL {
     drawdata._properties["OutputWidth"_crcu].set<int>(_width);
     drawdata._properties["OutputHeight"_crcu].set<int>(_height);
     drawdata._properties["SinglePassStereo"_crcu].set<bool>(false);
+    drawdata._properties["eyeindex"_crcu].set<int>(0);
+    RCFD->setUserProperty("eyeindex"_crcu, 0);
     _CPD.defaultSetup(drawdata);
     CIMPL->pushCPD(_CPD);
   }

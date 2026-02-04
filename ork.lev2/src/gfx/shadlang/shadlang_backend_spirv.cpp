@@ -1395,6 +1395,8 @@ void SpirvCompiler::_compileShader(shaderc_shader_kind shader_type) {
   printf("// shader<%s>:\n%s\n", _shader_name.c_str(), as_glsl.c_str());
   if (result.GetCompilationStatus() != shaderc_compilation_status_success) {
     std::cerr << result.GetErrorMessage();
+      fflush(stdout);
+      fflush(stderr);
     OrkAssert(false);
   }
   auto output_path = file::Path::temp_dir() / FormatString("%s.glsl", _shader_name.c_str());

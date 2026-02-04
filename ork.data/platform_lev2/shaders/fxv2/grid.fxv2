@@ -18,6 +18,13 @@ state_block sb_forward : default {
   CullTest  = OFF;
 }
 ///////////////////////////////////////////////////////////////
+state_block sb_forward_blend : default {
+  BlendMode = ALPHA;
+  // DepthTest = LEQUALS;
+  // DepthMask = true;
+  CullTest  = OFF;
+}
+///////////////////////////////////////////////////////////////
 vertex_interface vif_FWDLIT : ub_std_vtx {
   inputs {
     vec4 position : POSITION;
@@ -93,6 +100,33 @@ libblock lib_frg_grid {
     return clamp(1.0 - f, 0.0, 1.0);
   }
 
+  // Box filter (single line in 1D, returns coverage)
+  float gridLine1D(float coord, float lineWidth, float filterWidth) {
+    // Distance to nearest integer (grid line at integers)
+    float dist = abs(fract(coord + 0.5) - 0.5);
+
+    // Box filter: integral of line over pixel footprint
+    // Line covers [-lineWidth/2, lineWidth/2] around grid line
+    // Pixel covers [dist - filterWidth/2, dist + filterWidth/2]
+    float halfLine = lineWidth * 0.5;
+    float halfFilter = max(filterWidth * 0.5, 0.001);
+
+    // Clamp-based box filter integration
+    float lo = max(dist - halfFilter, 0.0);
+    float hi = min(dist + halfFilter, halfLine);
+    float overlap = max(hi - lo, 0.0);
+    float coverage = overlap / (halfFilter * 2.0);
+
+    // Boost close-up coverage with contrast curve
+    coverage = smoothstep(0.0, 0.7, coverage);
+
+    // When filter is very wide (beyond Nyquist), blend to boosted average
+    float nyquistFade = smoothstep(0.4, 0.6, filterWidth);
+    float boostedAvg = min(lineWidth * 4.0, 0.5);
+    coverage = mix(coverage, boostedAvg, nyquistFade);
+
+    return coverage;
+  }
   float filteredGrid(vec2 coord, vec2 dx, vec2 dy, float lineWidth) {
     // Calculate the filter width based on screen-space derivatives
     vec2 fw = abs(dx) + abs(dy);
@@ -108,6 +142,18 @@ libblock lib_frg_grid {
 
     // Combine X and Y grid lines
     return 1.0 - min(line.x, line.y);
+  }
+  float filteredGridV2(vec2 coord, vec2 dx, vec2 dy, float lineWidth) {
+    // Filter width per axis (length of gradient = pixels per unit)
+    float fwX = length(vec2(dx.x, dy.x));
+    float fwY = length(vec2(dx.y, dy.y));
+
+    // Get line coverage for each axis
+    float lineX = gridLine1D(coord.x, lineWidth, fwX);
+    float lineY = gridLine1D(coord.y, lineWidth, fwY);
+
+    // Union of X and Y grid lines
+    return max(lineX, lineY);
   }
   float checkerboard_fixed(vec3 pos, float intensA, float intensB) {
     vec2 check_pos = pos.xz;
@@ -145,6 +191,72 @@ libblock lib_frg_grid {
     vec4 oc    = vec4(mix(majorcolor, color, gMajor), 1.0 - gMajor);
 
     return vec4(oc.xyz, 1);
+  }
+  vec4 grid_output_V3(vec3 pos) {
+
+    float dXdx = dFdx(pos.x);
+    float dXdy = dFdy(pos.x);
+    float dZdx = dFdx(pos.z);
+    float dZdy = dFdy(pos.z);
+
+    // Major grid at integer world coordinates (0, 1, 2...) to align with checkerboard
+    vec2 paramMajor = pos.xz;
+    // Minor grid at 0.1 spacing
+    vec2 paramMinor = pos.xz * 10.0;
+
+    vec2 dpdxMajor = dFdx(paramMajor);
+    vec2 dpdyMajor = dFdy(paramMajor);
+    vec2 dpdxMinor = dFdx(paramMinor);
+    vec2 dpdyMinor = dFdy(paramMinor);
+
+    float widthMajor = 0.05;
+    float widthMinor = 0.025;
+
+    float gMajor = filteredGridV2(paramMajor, dpdxMajor, dpdyMajor, widthMajor);
+    float gMinor = filteredGridV2(paramMinor, dpdxMinor, dpdyMinor, widthMinor);
+
+    // X, Z axis lines with analytical AA
+    float widthAxis = 0.04;
+    float edgeWidthX = length(vec2(dXdx, dXdy));
+    float edgeWidthZ = length(vec2(dZdx, dZdy));
+
+    // Compute AA filter width: half-pixel in world space
+    float filterX = edgeWidthX * 0.5;
+    float filterZ = edgeWidthZ * 0.5;
+
+    // Distance to axis lines
+    float distX = abs(pos.x);
+    float distZ = abs(pos.z);
+
+    // Analytically antialiased axis coverage using smoothstep
+    // smoothstep from (width - filter) to (width + filter) gives smooth falloff
+    float axisX = 1.0 - smoothstep(widthAxis - filterX, widthAxis + filterX, distX);
+    float axisZ = 1.0 - smoothstep(widthAxis - filterZ, widthAxis + filterZ, distZ);
+
+    // Combine axis contributions (union)
+    float axisCoverage = max(axisX, axisZ);
+
+    // Axis colors with smooth AA
+    vec3 tgt_x = mix(vec3(.5, 0, 0), vec3(1.5, 0, 0), float(pos.x > 0.0));
+    vec3 tgt_z = mix(vec3(0, 0, .5), vec3(0, 0, 1.5), float(pos.z > 0.0));
+
+    vec3 axisColor = tgt_x * axisZ + tgt_z * axisX;
+
+    // Combine all elements into alpha with proper AA
+    // Use screen-door style combination: 1 - (1-a)(1-b)(1-c)
+    // This gives proper coverage for overlapping elements
+    float alphaMajor = gMajor;
+    // float alphaMinor = gMinor * 0.5;  // Minor grid is more subtle
+
+    // Composite alpha: union of all grid elements
+    // float alphaGrid = 1.0 - (1.0 - alphaMajor) * (1.0 - alphaMinor);
+    float alphaGrid = alphaMajor;
+    float alphaTotal = 1.0 - (1.0 - alphaGrid) * (1.0 - axisCoverage);
+
+    // Clamp to valid range
+    float m = clamp(alphaTotal, 0.0, 1.0);
+
+    return vec4(axisColor, m);
   }
   vec4 grid_output_V4(vec3 pos) {
 
@@ -248,6 +360,18 @@ fragment_shader ps_grid_forward_lit_mono_V4                         //
   out_clr = vec4(oc, 1);
 }
 ///////////////////////////////////////////////////////////////
+fragment_shader ps_grid_forward_lit_mono_V3                        //
+    : fif_FWDLIT                                                    //
+    : lib_math                                                      //
+    : lib_brdf                                                      //
+    : lib_def                                                       //
+    : lib_fwd                                                       //
+    : lib_frg_grid                                                  //
+    : storage_fwd_lighting                                          //
+    : std_forward_all {                                             //
+  out_clr = grid_output_V3(frg_wpos.xyz);
+}
+///////////////////////////////////////////////////////////////
 technique FWD_CT_NM_RI_NI_MO {
   fxconfig = fxcfg_default;
   vf_pass = { vs_grid_forward_lit, ps_grid_forward_lit_mono_V4, sb_forward }
@@ -258,7 +382,7 @@ technique FWD_CT_NM_RI_NI_MO_V2 {
 }
 technique FWD_CT_NM_RI_NI_MO_V3 {
   fxconfig = fxcfg_default;
-  vf_pass = { vs_grid_forward_lit, ps_grid_forward_lit_mono_V4, sb_forward }
+  vf_pass = { vs_grid_forward_lit, ps_grid_forward_lit_mono_V3, sb_forward_blend }
 }
 technique FWD_CT_NM_RI_NI_MO_V4 {
   fxconfig = fxcfg_default;

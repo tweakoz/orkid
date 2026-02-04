@@ -210,18 +210,21 @@ void _semaNameTypedIdentifers(impl::ShadLangParser* slp, astnode_ptr_t top) {
     std::string type_name;
     if (auto as_cm = sel->tryAsShared<ClassMatch>()) {
       type_name = as_cm.value()->_token->text;
-    } else { // its a DataTypeNode
+    } else { // its a DataTypeNode or SamplerType
       auto seq  = sel->asShared<Sequence>();
       auto sel0 = seq->tryItemAsShared<OneOf>(0);
-      auto sel2 = seq->tryItemAsShared<OneOf>(2);
-      if (sel0) { // SamplerType ?
+      if (sel0) { // SamplerType - has OneOf at index 0
         auto cm   = sel0.value()->_selected->asShared<ClassMatch>();
         type_name = cm->_token->text;
-      } else if (sel2) { // DataType ?
-        auto cm   = sel2.value()->_selected->asShared<ClassMatch>();
-        type_name = cm->_token->text;
       } else {
-        OrkAssert(false);
+        // DataType - has OneOf at index 2 (after two Optionals)
+        auto sel2 = seq->tryItemAsShared<OneOf>(2);
+        if (sel2) {
+          auto cm   = sel2.value()->_selected->asShared<ClassMatch>();
+          type_name = cm->_token->text;
+        } else {
+          OrkAssert(false);
+        }
       }
     }
 

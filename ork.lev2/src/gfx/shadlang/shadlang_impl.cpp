@@ -75,6 +75,7 @@ SHAST::translationunit_ptr_t parseFromString(
 SHAST::translationunit_ptr_t parseFromFile(
     slpcache_ptr_t slpcache,  //
     file::Path shader_path) { //
+  if(1)printf("parseFromFile<%s>\n", shader_path.c_str());
   auto it_imp = slpcache->_import_cache.find(shader_path.c_str());
   // CACHED ?
   if (it_imp != slpcache->_import_cache.end()) {

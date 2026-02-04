@@ -102,17 +102,21 @@ template <typename impl_t> std::shared_ptr<impl_t> ProxyAttempt::asShared() {
 //////////////////////////////////////////////////////////////
 
 template <typename impl_t> std::shared_ptr<impl_t> Sequence::itemAsShared(int index) {
+  OrkAssert(index >= 0 and index < int(_items.size()));
   return _items[index]->asShared<impl_t>();
 }
 template <typename impl_t> attempt_cast_const<std::shared_ptr<impl_t>> Sequence::tryItemAsShared(int index) const {
+  OrkAssert(index >= 0 and index < int(_items.size()));
   return _items[index]->tryAsShared<impl_t>();
 }
 
 template <typename impl_t> std::shared_ptr<impl_t> Group::itemAsShared(int index) {
+  OrkAssert(index >= 0 and index < int(_items.size()));
   return _items[index]->asShared<impl_t>();
 }
 
 template <typename impl_t> std::shared_ptr<impl_t> NOrMore::itemAsShared(int index) {
+  OrkAssert(index >= 0 and index < int(_items.size()));
   return _items[index]->asShared<impl_t>();
 }
 

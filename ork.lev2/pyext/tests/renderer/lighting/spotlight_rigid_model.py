@@ -20,23 +20,19 @@ tokens = CrcStringProxy()
 
 ################################################################################
 
-parser = argparse.ArgumentParser(description='scenegraph example')
-parser.add_argument('-S', '--stateDebugger', action="store_true", help='Graphics state debugger')
-################################################################################
-args = vars(parser.parse_args())
-statedebug = args["stateDebugger"]
-################################################################################
-
 class SpotlightApp(ComponentizedApplication):
 
   def __init__(self):
-    super().__init__(lui="yes")
+    super().__init__()
     self.SGC = self.addComponent("std_scenegraph", 
                                  StandardSceneGraphComponent, 
-                                 grid_variant="_V4",
+                                 grid_variant="_V3",
                                  eye=vec3(0,12,15))
-    self.createEzApp(name="RenderTestSpotLightRigidModel", ssaa=0, fullscreen=True, fsmouse=True,
-                      use_subsystems=['opq', 'core', 'gpu', 'lev2'])
+    self.createEzApp(name="RenderTestSpotLightRigidModel", 
+                     ssaa=0, 
+                     fullscreen=True, 
+                     fsmouse=True,
+                     use_subsystems=['opq', 'core', 'gpu', 'lev2'])
 
   ##############################################
 
@@ -59,9 +55,6 @@ class SpotlightApp(ComponentizedApplication):
     ###################################
 
     model = lev2.XgmModel("data://tests/pbr_calib.glb")
-    model.debugRenderingModel = tokens.ALL if statedebug else tokens.NONE
-    model.debugPassID = tokens.PRIMARY if statedebug else tokens.NONE
-    model.debugSubPassID = tokens.ALL if statedebug else tokens.NONE
     self.drawable_model = model.createDrawable()
     self.modelnode = SG.createDrawableNodeOnLayers(SGC.fwd_layers,"model-node",self.drawable_model)
     self.modelnode.worldTransform.scale = 1
