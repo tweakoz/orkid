@@ -2734,6 +2734,11 @@ void pyinit_ui(py::module& module_lev2) {
               "clearVertices",
               [](ui::trilistprimitive_ptr_t prim) {
                 prim->_vertices.clear();
+              })
+          .def(
+              "debugAddress",
+              [](ui::trilistprimitive_ptr_t prim) {
+                return reinterpret_cast<uintptr_t>(prim.get());
               });
   type_codec->registerStdCodec<ui::trilistprimitive_ptr_t>(trilistprimitive_type);
 

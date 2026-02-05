@@ -37,17 +37,31 @@ void QuadPrimitive::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_
   auto FXI = ctx->FXI();
   auto GBI = ctx->GBI();
 
-  // Bind SSBO
-  FXI->bindStorageBuffer(canvas->ssboBlock(), canvas->ssboGpu());
+  // Get material from pipeline, fall back to canvas's default
+  auto material = _pipeline->sharedMaterialAs<lev2::FreestyleMaterial>();
+  if (!material) {
+    material = canvas->material();
+  }
+  OrkAssert(material);
+
+  // Bind SSBO using the material's storage block
+  auto ssbo_block = material->storageBlock("storage_quads");
+  FXI->bindStorageBuffer(ssbo_block, canvas->ssboGpu());
+
+  // Get params from material
+  auto param_canvas_size = material->param("canvas_size");
+  auto param_ssbo_base = material->param("ssbo_base");
+  auto param_layer_transform = material->param("layer_transform");
+  auto param_colormap = material->param("ColorMap");
 
   // Set uniforms
   fvec2 canvas_size(canvas->width(), canvas->height());
-  _pipeline->bindParam(canvas->paramCanvasSize(), canvas_size);
-  _pipeline->bindParam(canvas->paramSsboBase(), (int)_ssbo_offset);
-  _pipeline->bindParam(canvas->paramLayerTransform(), layer->transform());
+  _pipeline->bindParam(param_canvas_size, canvas_size);
+  _pipeline->bindParam(param_ssbo_base, (int)_ssbo_offset);
+  _pipeline->bindParam(param_layer_transform, layer->transform());
 
-  if (_texture && canvas->paramColorMap()) {
-    _pipeline->bindParam(canvas->paramColorMap(), _texture.get());
+  if (_texture && param_colormap) {
+    _pipeline->bindParam(param_colormap, _texture.get());
   }
 
   // Draw using SSBO (6 vertices per quad = 2 triangles)
@@ -252,15 +266,29 @@ void TriStripPrimitive::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_
   auto FXI = ctx->FXI();
   auto GBI = ctx->GBI();
 
-  FXI->bindStorageBuffer(canvas->ssboBlock(), canvas->ssboGpu());
+  // Get params from pipeline's material if set, otherwise use canvas's material
+  auto material = _pipeline->sharedMaterialAs<lev2::FreestyleMaterial>();
+  if (!material) {
+    material = canvas->material();  // Fall back to canvas's default material
+  }
+  OrkAssert(material);
+
+  // Bind SSBO using the material's storage block (not canvas's default)
+  auto ssbo_block = material->storageBlock("storage_quads");
+  FXI->bindStorageBuffer(ssbo_block, canvas->ssboGpu());
+
+  auto param_canvas_size = material->param("canvas_size");
+  auto param_ssbo_base = material->param("ssbo_base");
+  auto param_layer_transform = material->param("layer_transform");
+  auto param_colormap = material->param("ColorMap");
 
   fvec2 canvas_size(canvas->width(), canvas->height());
-  _pipeline->bindParam(canvas->paramCanvasSize(), canvas_size);
-  _pipeline->bindParam(canvas->paramSsboBase(), (int)_ssbo_offset);
-  _pipeline->bindParam(canvas->paramLayerTransform(), layer->transform());
+  _pipeline->bindParam(param_canvas_size, canvas_size);
+  _pipeline->bindParam(param_ssbo_base, (int)_ssbo_offset);
+  _pipeline->bindParam(param_layer_transform, layer->transform());
 
-  if (_texture && canvas->paramColorMap()) {
-    _pipeline->bindParam(canvas->paramColorMap(), _texture.get());
+  if (_texture && param_colormap) {
+    _pipeline->bindParam(param_colormap, _texture.get());
   }
 
   lev2::RenderContextInstData rcid(rcfd);
@@ -306,15 +334,29 @@ void TriListPrimitive::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_p
   auto FXI = ctx->FXI();
   auto GBI = ctx->GBI();
 
-  FXI->bindStorageBuffer(canvas->ssboBlock(), canvas->ssboGpu());
+  // Get params from pipeline's material if set, otherwise use canvas's material
+  auto material = _pipeline->sharedMaterialAs<lev2::FreestyleMaterial>();
+  if (!material) {
+    material = canvas->material();  // Fall back to canvas's default material
+  }
+  OrkAssert(material);
+
+  // Bind SSBO using the material's storage block (not canvas's default)
+  auto ssbo_block = material->storageBlock("storage_quads");
+  FXI->bindStorageBuffer(ssbo_block, canvas->ssboGpu());
+
+  auto param_canvas_size = material->param("canvas_size");
+  auto param_ssbo_base = material->param("ssbo_base");
+  auto param_layer_transform = material->param("layer_transform");
+  auto param_colormap = material->param("ColorMap");
 
   fvec2 canvas_size(canvas->width(), canvas->height());
-  _pipeline->bindParam(canvas->paramCanvasSize(), canvas_size);
-  _pipeline->bindParam(canvas->paramSsboBase(), (int)_ssbo_offset);
-  _pipeline->bindParam(canvas->paramLayerTransform(), layer->transform());
+  _pipeline->bindParam(param_canvas_size, canvas_size);
+  _pipeline->bindParam(param_ssbo_base, (int)_ssbo_offset);
+  _pipeline->bindParam(param_layer_transform, layer->transform());
 
-  if (_texture && canvas->paramColorMap()) {
-    _pipeline->bindParam(canvas->paramColorMap(), _texture.get());
+  if (_texture && param_colormap) {
+    _pipeline->bindParam(param_colormap, _texture.get());
   }
 
   lev2::RenderContextInstData rcid(rcfd);
@@ -565,7 +607,8 @@ void PrimCanvas::_rebuildSsbo(lev2::Context* ctx) {
 
   for (auto& layer : _layers) {
     for (auto& prim : layer->_primitives) {
-      prim->_ssbo_offset = _ssbo_cpu_data.size();
+      size_t offset = _ssbo_cpu_data.size();
+      prim->_ssbo_offset = offset;
       prim->gatherQuadData(_ssbo_cpu_data);
     }
   }

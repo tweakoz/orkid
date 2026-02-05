@@ -307,6 +307,9 @@ struct PrimCanvas : public Widget {
   lev2::fxparam_constptr_t paramSpriteInstanceTransform() const { return _param_sprite_instance_transform; }
   lev2::fxparam_constptr_t paramSpriteInstanceTint() const { return _param_sprite_instance_tint; }
 
+  // Material accessor for custom shader support
+  lev2::freestyle_mtl_ptr_t material() const { return _material; }
+
 protected:
   void DoDraw(drawevent_constptr_t drwev) override;
   HandlerResult DoOnUiEvent(event_constptr_t ev) override;

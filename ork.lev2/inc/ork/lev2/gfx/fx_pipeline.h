@@ -101,6 +101,11 @@ struct FxPipeline {
   void _set_storage(const RenderContextInstData& RCID, fxparamstorageblock_constptr_t p, varval_t val);
   void addStateLambda(statelambda_t sl){_statelambdas.push_back(sl);}
 
+  template <typename T>
+  std::shared_ptr<T> sharedMaterialAs() const {
+    return std::dynamic_pointer_cast<T>(_sharedMaterial);
+  }
+
   GfxMaterial* _material_ptr = nullptr;
   rasterstate_ptr_t _rasterstate = nullptr;
   material_ptr_t _sharedMaterial = nullptr;
