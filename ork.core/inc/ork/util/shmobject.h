@@ -113,9 +113,9 @@ public:
       
       // Remove shared memory
       boost::interprocess::shared_memory_object::remove(_name.c_str());
-      printf("ShmObject: Removed '%s'\n", _name.c_str());
+      //printf("ShmObject: Removed '%s'\n", _name.c_str());
     } else {
-      printf("ShmObject: Detached from '%s'\n", _name.c_str());
+      //printf("ShmObject: Detached from '%s'\n", _name.c_str());
     }
   }
 

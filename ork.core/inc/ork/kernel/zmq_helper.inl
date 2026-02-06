@@ -128,7 +128,7 @@ inline Socket::~Socket() {
 inline void Socket::close() {
   if (not _closed) {
     _context->_socket_count--;
-    printf( "CLOSE SOCKET<%p:%s> num open<%d>\n", this, _name.c_str(), _context->_socket_count.load() );
+    //printf( "CLOSE SOCKET<%p:%s> num open<%d>\n", this, _name.c_str(), _context->_socket_count.load() );
     _impl->close();
     _closed = true;
   }
