@@ -1355,6 +1355,33 @@ void SpirvCompiler::_compileShader(shaderc_shader_kind shader_type) {
   _emitMergedPushConstants();
 
   ///////////////////////////////////////////////////////
+  // Hoist shared declarations outside main() (GLSL requirement)
+  ///////////////////////////////////////////////////////
+
+  auto shared_decls = AstNode::collectNodesOfType<SHAST::SharedDeclaration>(_shader);
+  auto _shared_group = std::make_shared<MiscGroupNode>();
+  for (auto shd : shared_decls) {
+    // Get the components: DataType, Identifier, Size
+    if (shd->_children.size() >= 3) {
+      auto datatype_node = shd->_children[0];
+      auto ident_node = shd->_children[1];
+      auto size_node = shd->_children[2];
+
+      std::string dtype_str;
+      if (auto dt = std::dynamic_pointer_cast<DataType>(datatype_node)) {
+        dtype_str = dt->typedValueForKey<std::string>("data_type").value();
+      }
+      auto ident_str = ident_node->typedValueForKey<std::string>("identifier_name").value();
+      auto size_str = size_node->typedValueForKey<std::string>("literal_value").value();
+
+      auto shared_line = FormatString("shared %s %s[%s];", dtype_str.c_str(), ident_str.c_str(), size_str.c_str());
+      _shared_group->appendTypedChild<InsertLine>(shared_line);
+    }
+    // Mark to not emit in main body
+    shd->_should_emit = false;
+  }
+
+  ///////////////////////////////////////////////////////
   // final prep for shaderc
   // build final ast
   ///////////////////////////////////////////////////////
@@ -1369,6 +1396,7 @@ void SpirvCompiler::_compileShader(shaderc_shader_kind shader_type) {
   _shader_group->appendChild(_uniforms_group);
   _shader_group->appendChild(_interface_group);
   _shader_group->appendChild(_libraries_group);
+  _shader_group->appendChild(_shared_group);  // shared declarations before main()
   _shader_group->appendTypedChild<InsertLine>(fn_sig);
   _shader_group->appendChildrenFrom(_shader); // compound statement
   //_shader_group->appendTypedChild<InsertLine>(fn_inv);

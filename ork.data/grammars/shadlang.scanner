@@ -150,6 +150,8 @@ KW_RETURN           <| "return" |>
 KW_WHILE            <| "while" |>
 KW_STRUCT           <| "struct" |>
 KW_DISCARD          <| "discard" |>
+KW_SHARED           <| "shared" |>
+KW_BARRIER          <| "barrier" |>
 
 IDENTIFIER          <| "[a-zA-Z_][a-zA-Z0-9_]*" |>
 QUOTED_STRING       <| "" |> // rule replaced by pegimpl
