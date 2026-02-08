@@ -144,6 +144,8 @@ void ShadLangParser::declareAstNodes() {
   DECLARE_STD_AST_NODE(Statement);
   DECLARE_STD_AST_NODE(DiscardStatement);
   DECLARE_STD_AST_NODE(DeclarationStatement);
+  DECLARE_STD_AST_NODE(SharedDeclaration);
+  DECLARE_STD_AST_NODE(BarrierStatement);
   DECLARE_STD_AST_NODE(ExpressionStatement);
   DECLARE_STD_AST_NODE(CompoundStatement);
   DECLARE_STD_AST_NODE(IfStatement);

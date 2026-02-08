@@ -1,7 +1,7 @@
 #!/usr/bin/env ork.python
 """
-Basic test for Vulkan compute shaders.
-Creates an SSBO, runs a compute shader to fill it, and verifies the results.
+Test for shared memory and barrier() in Vulkan compute shaders.
+Verifies cross-thread communication via shared memory after barrier synchronization.
 """
 
 import sys
@@ -11,29 +11,28 @@ from orkengine import lev2
 
 tokens = core.CrcStringProxy()
 
-# Simple compute shader that writes sequential values to an SSBO
 COMPUTE_SHADER_TEXT = """
-////////////////////////////////////////
-fxconfig fxcfg_default {}
-////////////////////////////////////////
 storage_interface sif_output (descriptor_set 0) {
   buffer layout(std430) output_data {
-    float values[256];
+    uint values[256];
   };
 }
-////////////////////////////////////////
 compute_interface iface_compute {
   storage { sif_output }
   inputs {
-    layout(local_size_x = 1, local_size_y = 1, local_size_z = 1);
+    layout(local_size_x = 256, local_size_y = 1, local_size_z = 1);
   }
 }
-////////////////////////////////////////
-compute_shader cs_fill_values : iface_compute {
-  // Each work group writes one value
-  int index = int(gl_WorkGroupID.x);
-  // Write index * 2.0 + 1.0 to verify computation
-  values[index] = float(index) * 2.0 + 1.0;
+compute_shader cs_shared_test : iface_compute {
+  shared uint shared_data[256];
+  
+  uint lID = gl_LocalInvocationID.x;
+  shared_data[lID] = lID;
+  barrier();
+  
+  // Read neighbor's value (with wrap)
+  uint neighbor = shared_data[(lID + 1u) % 256u];
+  values[lID] = neighbor;
 }
 """
 
@@ -68,7 +67,7 @@ def main():
     print(f"Loaded shader: {shader}")
 
     # Get the compute shader object
-    compute_shader = fxi.computeShader(shader, "cs_fill_values")
+    compute_shader = fxi.computeShader(shader, "cs_shared_test")
     print(f"Got compute shader: {compute_shader}")
 
     # Begin frame (required for command buffer)
@@ -76,10 +75,10 @@ def main():
     ctx.beginFrame()
 
     # Bind the SSBO and dispatch compute shader
-    print(f"Dispatching compute shader with {num_values} work groups...")
+    print("Dispatching compute shader with 1 work group...")
     ci.beginDispatchPhase()
     ci.bindStorageBuffer(compute_shader, 0, ssbo)
-    ci.dispatch(compute_shader, num_values, 1, 1)
+    ci.dispatch(compute_shader, 1, 1, 1)
     ci.endDispatchPhase()
 
     # End frame to submit command buffer
@@ -97,24 +96,24 @@ def main():
     print(f"  mapping.length: {mapping.length}", flush=True)
     print(f"  mapping.data length: {len(mapping.data)}", flush=True)
 
-    # Read the float values
+    # Read the uint values
     results = []
     for i in range(num_values):
         offset = i * 4
-        value = struct.unpack('f', mapping.data[offset:offset+4])[0]
+        value = struct.unpack('I', mapping.data[offset:offset+4])[0]
         results.append(value)
 
     print(f"  First 10 values: {results[:10]}", flush=True)
 
     fxi.unmapStorageBuffer(mapping)
 
-    # Verify results: each value should be index * 2.0 + 1.0
+    # Verify results: each value should be neighbor's ID = (i+1) % 256
     print("Verifying results...")
     errors = 0
     for i in range(num_values):
-        expected = float(i) * 2.0 + 1.0
+        expected = (i + 1) % 256
         actual = results[i]
-        if abs(actual - expected) > 0.001:
+        if actual != expected:
             print(f"  ERROR at index {i}: expected {expected}, got {actual}")
             errors += 1
         elif i < 5 or i >= num_values - 5:
