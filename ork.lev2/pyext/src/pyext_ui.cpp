@@ -2860,6 +2860,12 @@ void pyinit_ui(py::module& module_lev2) {
           .def("layerByName", &ui::PrimCanvas::layerByName)
           .def("layerCount", &ui::PrimCanvas::layerCount)
           .def("markDirty", &ui::PrimCanvas::markDirty)
+          // Metrics
+          .def_property_readonly("total_primitive_count", &ui::PrimCanvas::totalPrimitiveCount)
+          .def_property_readonly("total_quad_count", &ui::PrimCanvas::totalQuadCount)
+          .def_property_readonly("ssbo_cpu_size", &ui::PrimCanvas::ssboCpuSize)
+          .def_property_readonly("ssbo_gpu_capacity", &ui::PrimCanvas::ssboGpuCapacity)
+          .def_property_readonly("ssbo_rebuild_count", &ui::PrimCanvas::ssboRebuildCount)
           .def("gpuInit", [](ui::prim_canvas_ptr_t canvas, ctx_t ctx) {
             canvas->gpuInit(ctx.get());
           })

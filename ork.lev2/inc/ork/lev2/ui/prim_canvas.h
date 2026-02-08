@@ -263,6 +263,16 @@ struct PrimCanvas : public Widget {
   void markDirty() { _ssbo_dirty = true; }
 
   //////////////////////////////////////////////////////////////
+  // Metrics (for leak detection / debugging)
+  //////////////////////////////////////////////////////////////
+
+  size_t totalPrimitiveCount() const;
+  size_t totalQuadCount() const;
+  size_t ssboCpuSize() const { return _ssbo_cpu_data.size(); }
+  size_t ssboGpuCapacity() const { return _ssbo_gpu ? _ssbo_gpu->_length : 0; }
+  size_t ssboRebuildCount() const { return _ssbo_rebuild_count; }
+
+  //////////////////////////////////////////////////////////////
   // Callbacks (set from Python)
   //////////////////////////////////////////////////////////////
 
@@ -325,6 +335,7 @@ private:
   lev2::FxShaderStorageBlock* _ssbo_block = nullptr;
   bool _ssbo_dirty = false;
   bool _gpu_initialized = false;
+  size_t _ssbo_rebuild_count = 0;
 
   // Internal shader/pipeline
   lev2::freestyle_mtl_ptr_t _material;

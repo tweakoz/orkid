@@ -597,6 +597,24 @@ primcanvaslayer_ptr_t PrimCanvas::layerByName(const std::string& name) const {
 
 ////////////////////////////////////////////////////////////////
 
+size_t PrimCanvas::totalPrimitiveCount() const {
+  size_t count = 0;
+  for (const auto& layer : _layers) {
+    count += layer->primitiveCount();
+  }
+  return count;
+}
+
+size_t PrimCanvas::totalQuadCount() const {
+  size_t count = 0;
+  for (const auto& layer : _layers) {
+    count += layer->ssboQuadCount();
+  }
+  return count;
+}
+
+////////////////////////////////////////////////////////////////
+
 void PrimCanvas::_rebuildSsbo(lev2::Context* ctx) {
   if (!_ssbo_dirty) {
     return;
@@ -633,6 +651,7 @@ void PrimCanvas::_rebuildSsbo(lev2::Context* ctx) {
   FXI->unmapStorageBuffer(mapped.get());
 
   _ssbo_dirty = false;
+  _ssbo_rebuild_count++;
 }
 
 ////////////////////////////////////////////////////////////////
