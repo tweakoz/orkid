@@ -355,6 +355,8 @@ DECLARE_STD_AST_CLASS(Statement,CompoundStatement);
 DECLARE_STD_AST_CLASS(Statement,ExpressionStatement);
 DECLARE_STD_AST_CLASS(Statement,DeclarationStatement);
 DECLARE_STD_AST_CLASS(Statement,DiscardStatement);
+DECLARE_STD_AST_CLASS(Statement,SharedDeclaration);
+DECLARE_STD_AST_CLASS(Statement,BarrierStatement);
 DECLARE_STD_AST_CLASS(Statement,EmptyStatement);
 //
 DECLARE_STD_AST_CLASS_WPTR(Translatable,LibraryBlock, libblock_ptr_t);

@@ -160,6 +160,14 @@ void GLFX1Backend::_visit(astnode_ptr_t node) {
   }
 
   ///////////////////////////////////////////////
+  // Skip children if node should not emit
+  ///////////////////////////////////////////////
+
+  if (!node->_should_emit) {
+    return;
+  }
+
+  ///////////////////////////////////////////////
   _node_stack.push(node);
 
   for (auto c : node->_children) {
@@ -586,7 +594,9 @@ GLFX1Backend::GLFX1Backend() {
   registerAstPostCB<ReturnStatement>([=](auto retstmt) { emitContinueLine(";"); });
   registerAstPreCB<DiscardStatement>([=](auto disc) { emitContinueLine("discard "); });
   registerAstPostCB<DiscardStatement>([=](auto disc) { emitContinueLine(";"); });
-  registerAstPreCB<DeclarationStatement>([=](auto decl) { 
+  registerAstPreCB<BarrierStatement>([=](auto bar) { emitBeginLine("barrier()"); });
+  registerAstPostCB<BarrierStatement>([=](auto bar) { emitEndLine(";"); });
+  registerAstPreCB<DeclarationStatement>([=](auto decl) {
     emitBeginLine("");
   });
   registerAstPostChildCB<DeclarationStatement>([=](auto decl, astnode_ptr_t child) {
