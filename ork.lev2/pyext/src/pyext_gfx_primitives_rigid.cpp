@@ -501,6 +501,7 @@ void pyinit_gfx_primitives_rigid(py::module& module_lev2) {
       module_lev2, "RigidPrimitive")
       .def(py::init<>())
       .def(py::init([](meshutil::submesh_ptr_t submesh, ctx_t context) {
+        py::gil_scoped_release release;
         auto prim = std::make_shared<meshutil::rigidprim_V12N12B12T8C4_t>();
         prim->fromSubMesh(*submesh, context.get());
         return prim;
@@ -510,6 +511,7 @@ void pyinit_gfx_primitives_rigid(py::module& module_lev2) {
           [](meshutil::rigidprim_V12N12B12T8C4_ptr_t prim, //
              meshutil::submesh_ptr_t submesh,              //
              ctx_t context) {                              //
+            py::gil_scoped_release release;
             prim->fromSubMesh(*submesh, context.get());
           })
       .def(
@@ -517,7 +519,8 @@ void pyinit_gfx_primitives_rigid(py::module& module_lev2) {
           [](meshutil::rigidprim_V12N12B12T8C4_ptr_t prim, //
              micromesh_ptr_t micromesh,                    //
              ctx_t context,                                //
-             crcstring_ptr_t primtype) {                   //
+             crcstring_ptr_t primtype) {
+             py::gil_scoped_release release;
              auto ptype = primtype ? PrimitiveType(primtype->hashed()) : PrimitiveType::TRIANGLES;
              micromesh->updateRigidPrim(prim, nullptr, context, ptype);
           },
@@ -530,8 +533,9 @@ void pyinit_gfx_primitives_rigid(py::module& module_lev2) {
              py::object verts,                             //
              py::list faces,                               //
              ctx_t context,                                //
-             crcstring_ptr_t primtype) {                   //
+             crcstring_ptr_t primtype) {
             ////////////////////////////////////////////
+            py::gil_scoped_release release;
             auto micromesh = std::make_shared<MicroMesh>(verts, faces);
             auto ptype = primtype ? PrimitiveType(primtype->hashed()) : PrimitiveType::TRIANGLES;
             micromesh->updateRigidPrim(prim, nullptr, context, ptype);

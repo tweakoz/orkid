@@ -367,6 +367,7 @@ void pyinit_scenegraph(py::module& module_lev2) {
           .def(
               "updateScene",
               [](scene_ptr_t SG, cameradatalut_ptr_t cameralut) { //
+                py::gil_scoped_release release;
                 SG->enqueueToRenderer(cameralut);
               })
           .def(

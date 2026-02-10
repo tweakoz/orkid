@@ -184,6 +184,7 @@ class DualSceneGraphWindow:
       left=100,
       top=100,
       fullscreen=True,
+      #fullscreen_monitor="W2361",
       use_subsystems=['opq', 'core', 'gpu', 'lev2']
     )
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
