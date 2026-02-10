@@ -552,8 +552,8 @@ void LoggerGroup::_updatePerfGraphUI(const std::string& channel, const std::stri
   // Add sample to series
   series->addSample(float_value);
 
-  // Mark GraphView surface as needing repaint
-  view._shared_graph->MarkSurfaceDirty();
+  // Mark GraphView as needing repaint
+  view._shared_graph->SetDirty();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

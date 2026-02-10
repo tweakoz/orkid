@@ -611,10 +611,16 @@ void pyinit_ui(py::module& module_lev2) {
           .def_readwrite("lane_outline_color", &ui::GraphChannel::_lane_outline_color);
   type_codec->registerStdCodec<ui::graphchannel_ptr_t>(graphchannel_type);
   /////////////////////////////////////////////////////////////////////////////////
+  // PrimCanvas - forward declaration (methods added later)
+  /////////////////////////////////////////////////////////////////////////////////
+  auto primcanvas_type = //
+      py::class_<ui::PrimCanvas, ui::Widget, ui::prim_canvas_ptr_t>(uimodule, "PrimCanvas");
+  type_codec->registerStdCodec<ui::prim_canvas_ptr_t>(primcanvas_type);
+  /////////////////////////////////////////////////////////////////////////////////
   // GraphView - widget for plotting time-series data
   /////////////////////////////////////////////////////////////////////////////////
   auto graphview_type = //
-      py::class_<ui::GraphView, ui::Surface, ui::graphview_ptr_t>(uimodule, "GraphView")
+      py::class_<ui::GraphView, ui::PrimCanvas, ui::graphview_ptr_t>(uimodule, "GraphView")
           .def_static(
               "wfactory",
               [type_codec](py::list py_args) -> ui::graphview_ptr_t { //
@@ -638,7 +644,7 @@ void pyinit_ui(py::module& module_lev2) {
                 return rval;
               })
           .def("channel", &ui::GraphView::channel)
-          .def_readwrite("clear_color", &ui::GraphView::_clearColor)
+          .def_readwrite("clear_color", &ui::GraphView::_bg_color)
           .def_readwrite("show_stats", &ui::GraphView::_show_stats);
   type_codec->registerStdCodec<ui::graphview_ptr_t>(graphview_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -2847,9 +2853,8 @@ void pyinit_ui(py::module& module_lev2) {
               &ui::PrimCanvasLayer::setTransform);
   type_codec->registerStdCodec<ui::primcanvaslayer_ptr_t>(primcanvaslayer_type);
 
-  // PrimCanvas - the widget itself
-  auto primcanvas_type = //
-      py::class_<ui::PrimCanvas, ui::Widget, ui::prim_canvas_ptr_t>(uimodule, "PrimCanvas")
+  // PrimCanvas - methods (type registered earlier for GraphView base class)
+  primcanvas_type
           .def_static(
               "wfactory",
               [type_codec](py::list py_args) -> ui::prim_canvas_ptr_t {
@@ -2936,7 +2941,6 @@ void pyinit_ui(py::module& module_lev2) {
                   canvas->_onPreRender = nullptr;
                 }
               });
-  type_codec->registerStdCodec<ui::prim_canvas_ptr_t>(primcanvas_type);
   /////////////////////////////////////////////////////////////////////////////////
   // DockablePanel - container with titlebar showing child's name
   auto dockablepanel_type = //

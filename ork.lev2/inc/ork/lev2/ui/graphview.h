@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/lev2/ui/widget.h>
+#include <ork/lev2/ui/prim_canvas.h>
 #include <ork/lev2/gfx/util/grid.h>
 #include <deque>
 
@@ -97,10 +97,9 @@ struct GraphChannel {
 };
 using graphchannel_ptr_t = std::shared_ptr<GraphChannel>;
 ///////////////////////////////////////////////////////////////////////////////
-struct GraphView : public ui::Surface {
+struct GraphView : public ui::PrimCanvas {
   GraphView();
-  void DoRePaintSurface(ui::drawevent_constptr_t drwev) override;
-  void _doGpuInit(lev2::Context* pt) override;
+  void DoDraw(ui::drawevent_constptr_t drwev) override;
   ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
 
   graphchannel_ptr_t channel(std::string named);

@@ -104,11 +104,13 @@ void GraphChannel::setSeriesOrder(const std::vector<std::string>& names) {
 // GraphView Implementation
 /////////////////////////////////////////////////////////////////////////
 GraphView::GraphView()
-    : Surface("GraphView", 0, 0, 32, 32, fvec4(0, 0, 0, 1), 1.0)
+    : PrimCanvas("GraphView", 0, 0, 32, 32)
     , _lockX(false)
     , _lockY(false)
     , _lockYZOOM(false)
     , _dragging(false) {
+
+  _bg_color = fvec4(0, 0, 0, 1);
 
   _grid._baseColor   = fvec3(0.2, 0, 0.2);
   _grid._hiliteColor = fvec3(0.3, 0, 0.3);
@@ -118,15 +120,9 @@ GraphView::GraphView()
   _grid._zoomY = 0.1f;
 
   // Position horizontal pan so x=0 (current sample) is on RIGHT side of viewport
-  // hrange = [center - extent/zoom/2, center + extent/zoom/2]
-  // To have right edge at 0: center + extent/zoom/2 = 0 → center = -extent/zoom/2
   float hextent = _grid._extent / _grid._zoomX;
-  _grid._center.x = -hextent / 2.0f;  // Negative center puts x=0 on right edge
+  _grid._center.x = -hextent / 2.0f;
   _grid._center.y = 0.0f;
-}
-/////////////////////////////////////////////////////////////////////////
-void GraphView::_doGpuInit(lev2::Context* pTARG) {
-  Surface::_doGpuInit(pTARG);
 }
 /////////////////////////////////////////////////////////////////////////
 HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
@@ -155,7 +151,7 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
                  _selected_series->_name.c_str(), _selected_series->_vertical_scale);
         }
       }
-      mNeedsSurfaceRepaint = true;
+      SetDirty();
       break;
     }
     case ui::EventCode::MOVE: {
@@ -171,7 +167,7 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
         _adjustGlobalZoom(wheel_delta);
       }
 
-      mNeedsSurfaceRepaint = true;
+      SetDirty();
       return HandlerResult(this);
     }
     case ui::EventCode::KEY_DOWN: {
@@ -187,7 +183,7 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
             _hovered_series->_visible = !_hovered_series->_visible;
             printf("series<%s> visible<%d>\n", _hovered_series->_name.c_str(),
                    _hovered_series->_visible);
-            mNeedsSurfaceRepaint = true;
+            SetDirty();
             return HandlerResult(this);
           }
           break;
@@ -196,7 +192,7 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
           if (_selected_series) {
             _selected_series->_vertical_scale = 1.0f;
             printf("series<%s> RESET scale\n", _selected_series->_name.c_str());
-            mNeedsSurfaceRepaint = true;
+            SetDirty();
             return HandlerResult(this);
           }
           break;
@@ -206,7 +202,7 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
             _selected_series->_normalize_for_display = !_selected_series->_normalize_for_display;
             printf("series<%s> normalize=%d\n", _selected_series->_name.c_str(),
                    _selected_series->_normalize_for_display);
-            mNeedsSurfaceRepaint = true;
+            SetDirty();
             return HandlerResult(this);
           }
           break;
@@ -217,7 +213,7 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
               series->setMaxSamples(series->sampleCount() / 2);
             }
           }
-          mNeedsSurfaceRepaint = true;
+          SetDirty();
           return HandlerResult(this);
 
         case '.':
@@ -226,7 +222,7 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
               series->setMaxSamples(series->sampleCount() * 2);
             }
           }
-          mNeedsSurfaceRepaint = true;
+          SetDirty();
           return HandlerResult(this);
       }
       break;
@@ -282,7 +278,7 @@ static lev2::freestyle_mtl_ptr_t hud_material(lev2::Context* context) {
   return mtl;
 }
 /////////////////////////////////////////////////////////////////////////
-void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
+void GraphView::DoDraw(drawevent_constptr_t drwev) {
   auto tgt    = drwev->GetTarget();
   auto fbi    = tgt->FBI();
   auto gbi    = tgt->GBI();
@@ -291,28 +287,19 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
   auto defmtl = lev2::defaultUIMaterial();
   auto vbuf   = get_vertexbuffer(tgt);
 
+  // Draw background
+  if (_draw_background) {
+    _drawColoredBox(drwev, _bg_color, lev2::BlendingMacro::ALPHA);
+  }
+
   _grid.updateMatrices(tgt, _geometry._w, _geometry._h);
 
-  int ix1, iy1, ix2, iy2, ixc, iyc;
+  // Push viewport/scissor to widget bounds
+  int ix1, iy1;
   LocalToRoot(0, 0, ix1, iy1);
-  ix2 = ix1 + _geometry._w;
-  iy2 = iy1 + _geometry._h;
-  ixc = ix1 + (_geometry._w >> 1);
-  iyc = iy1 + (_geometry._h >> 1);
-
-  if (0)
-    printf(
-        "drawbox<%s> xy1<%d,%d> xy2<%d,%d>\n", //
-        _name.c_str(),
-        ix1,
-        iy1,
-        ix2,
-        iy2);
-
-  fvec4 color(0.2, 0, 0.2, 1);
-
-  if (not hasMouseFocus())
-    color *= 0.9f;
+  lev2::ViewportRect vprect(ix1, iy1, width(), height());
+  fbi->pushViewport(vprect);
+  fbi->pushScissor(vprect);
 
   ork::lev2::FontMan::PushFont("i14");
   {
@@ -514,7 +501,7 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
             float time = _uicontext->_uitimer.SecsSinceStart();
             float pulse = 0.875f + 0.125f * sinf(time * 2.0f * 3.14159f * 2.0f);
             label_color = label_color * pulse;
-            mNeedsSurfaceRepaint = true;
+            SetDirty();
           }
 
           if (!series->_visible) {
@@ -921,6 +908,9 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
     mtxi->PopUIMatrix(); // Pop UI matrix for text rendering
   }
   ork::lev2::FontMan::PopFont();
+
+  fbi->popScissor();
+  fbi->popViewport();
 }
 ///////////////////////////////////////////////////////////////////////////////
 // GraphView Helper Functions
