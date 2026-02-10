@@ -16,6 +16,17 @@
 ///////////////////////////////////////////////////////////
 namespace ork::ui {
 static constexpr int _kbasechanlaby = 16;
+// SSBO layout constants for stacked chart
+static constexpr int SSBO_MAX_CHANNELS = 4;
+static constexpr int SSBO_MAX_SERIES = 16;
+static constexpr int SSBO_MAX_SAMPLES = 4096;
+// Header: sample_stride(4) + 3 pad(12) + 4 arrays of 4 ints/floats (64) = 80 bytes
+// But std430: int(4) + 3*int(12) + int[4](16)*2 + float[4](16)*2 = 16 + 64 = 80
+// Round to 16-byte alignment for vec4 array: 80 bytes (already 16-byte aligned? 80/16 = 5, yes)
+static constexpr size_t SSBO_HEADER_SIZE = 80;
+static constexpr size_t SSBO_COLORS_SIZE = SSBO_MAX_CHANNELS * SSBO_MAX_SERIES * 16;       // vec4s
+static constexpr size_t SSBO_SAMPLES_SIZE = SSBO_MAX_CHANNELS * SSBO_MAX_SERIES * SSBO_MAX_SAMPLES * 4;
+static constexpr size_t SSBO_TOTAL_SIZE = SSBO_HEADER_SIZE + SSBO_COLORS_SIZE + SSBO_SAMPLES_SIZE;
 /////////////////////////////////////////////////////////////////////////
 // GraphSeries Implementation
 /////////////////////////////////////////////////////////////////////////
@@ -306,10 +317,12 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
     ///////////////////////////////
     // render channels
     ///////////////////////////////
-    auto mtl     = hud_material(tgt);
-    auto tek     = mtl->technique("vtxcolor");
-    auto RCFD    = std::make_shared<lev2::RenderContextFrameData>(tgt);
-    auto par_mvp = mtl->param("MatMVP");
+    auto mtl      = hud_material(tgt);
+    auto tek         = mtl->technique("vtxcolor");
+    auto tek_stacked = mtl->technique("stacked_chart");
+    auto RCFD        = std::make_shared<lev2::RenderContextFrameData>(tgt);
+    auto par_mvp  = mtl->param("MatMVP");
+
 
     // Calculate maximum label width for alignment
     int max_label_width = 0;
@@ -337,6 +350,140 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
     }
     float global_lane_height = global_total_series > 0 ? float(height()) / float(global_total_series) : float(height());
     size_t global_lane_index = 0;
+
+    ///////////////////////////////
+    // SSBO pre-pass: upload all stacked channel data into single SSBO
+    ///////////////////////////////
+    {
+      auto fxi = tgt->FXI();
+      if (!_stacked_ssbo) {
+        _stacked_ssbo = fxi->createStorageBuffer(SSBO_TOTAL_SIZE);
+      }
+      if (!_stacked_ssbo_block) {
+        _stacked_ssbo_block = mtl->storageBlock("storage_stacked_chart");
+      }
+
+      // Assign channel indices and compute max sample stride
+      _stacked_channel_indices.clear();
+      int stacked_ch = 0;
+      int max_sample_stride = 1;
+      for (auto& channel : _channelmap) {
+        if (channel->_stacked && !channel->_series.empty()) {
+          _stacked_channel_indices[channel.get()] = stacked_ch;
+          auto& fs = channel->_series[0];
+          size_t sc = fs->sampleCount();
+          size_t dc = sc;
+          if (fs->_window_size > 0 && fs->_window_size < sc)
+            dc = fs->_window_size;
+          max_sample_stride = std::max(max_sample_stride, std::min(int(dc), SSBO_MAX_SAMPLES));
+          stacked_ch++;
+        }
+      }
+
+      if (stacked_ch > 0) {
+        auto mapping = fxi->mapStorageBuffer(_stacked_ssbo, 0, SSBO_TOTAL_SIZE, lev2::BufferMapAccess::WRITE_ONLY);
+        mapping->seek(0);
+
+        // sample_stride + 3 pads
+        mapping->make<int32_t>(max_sample_stride);
+        mapping->make<int32_t>(0);
+        mapping->make<int32_t>(0);
+        mapping->make<int32_t>(0);
+
+        // num_series[4]
+        for (int ch = 0; ch < SSBO_MAX_CHANNELS; ch++) mapping->make<int32_t>(0);
+        // num_samples[4]
+        for (int ch = 0; ch < SSBO_MAX_CHANNELS; ch++) mapping->make<int32_t>(0);
+        // stack_min[4]
+        for (int ch = 0; ch < SSBO_MAX_CHANNELS; ch++) mapping->make<float>(0.0f);
+        // stack_max[4]
+        for (int ch = 0; ch < SSBO_MAX_CHANNELS; ch++) mapping->make<float>(1.0f);
+
+        // Now seek back and write actual header values per channel
+        for (auto& channel : _channelmap) {
+          if (!channel->_stacked || channel->_series.empty()) continue;
+          int ch = _stacked_channel_indices[channel.get()];
+          auto& first_series = channel->_series[0];
+
+          float s_min = 0.0f, s_max = 1.0f;
+          if (first_series->_use_fixed_range) {
+            s_min = first_series->_fixed_min;
+            s_max = first_series->_fixed_max;
+          } else {
+            size_t sc = first_series->sampleCount();
+            float max_sum = 0.0f;
+            for (size_t i = 0; i < sc; i++) {
+              float sum = 0.0f;
+              for (auto& s : channel->_series) {
+                if (s->_visible && i < s->sampleCount())
+                  sum += s->getSample(i);
+              }
+              max_sum = std::max(max_sum, sum);
+            }
+            s_max = max_sum > 0.0f ? max_sum * 1.1f : 1.0f;
+          }
+
+          size_t sc = first_series->sampleCount();
+          size_t dc = sc;
+          size_t si_start = 0;
+          if (first_series->_window_size > 0 && first_series->_window_size < sc) {
+            dc = first_series->_window_size;
+            si_start = sc - dc;
+          }
+          int ns = std::min(int(dc), SSBO_MAX_SAMPLES);
+          int n_series = std::min(int(channel->_series.size()), SSBO_MAX_SERIES);
+
+          // Write header arrays at correct offsets
+          // num_series[ch] at offset 16 + ch*4
+          mapping->seek(16 + ch * 4);
+          mapping->make<int32_t>(n_series);
+          // num_samples[ch] at offset 32 + ch*4
+          mapping->seek(32 + ch * 4);
+          mapping->make<int32_t>(ns);
+          // stack_min[ch] at offset 48 + ch*4
+          mapping->seek(48 + ch * 4);
+          mapping->make<float>(s_min);
+          // stack_max[ch] at offset 64 + ch*4
+          mapping->seek(64 + ch * 4);
+          mapping->make<float>(s_max);
+
+          // Colors at offset 80 + (ch * 16 + si) * 16
+          for (int si = 0; si < SSBO_MAX_SERIES; si++) {
+            mapping->seek(80 + (ch * SSBO_MAX_SERIES + si) * 16);
+            if (si < n_series) {
+              auto& series = channel->_series[si];
+              float vis = series->_visible ? 1.0f : 0.0f;
+              mapping->make<fvec4>(series->_color.x, series->_color.y, series->_color.z, vis);
+            } else {
+              mapping->make<fvec4>(0.0f, 0.0f, 0.0f, 0.0f);
+            }
+          }
+
+          // Samples at offset 80 + SSBO_COLORS_SIZE + ((ch*16+si)*stride + idx)*4
+          size_t samples_base = 80 + SSBO_COLORS_SIZE;
+          float data_range = s_max - s_min;
+          float min_data_val = (global_lane_height > 0.0f)
+            ? channel->_min_series_height * data_range / global_lane_height
+            : 0.0f;
+
+          for (int si = 0; si < n_series; si++) {
+            auto& series = channel->_series[si];
+            size_t s_sc = series->sampleCount();
+            bool vis = series->_visible;
+            size_t row_offset = samples_base + size_t(ch * SSBO_MAX_SERIES + si) * max_sample_stride * 4;
+            mapping->seek(row_offset);
+            for (int i = 0; i < ns; i++) {
+              size_t idx = si_start + i;
+              float val = (idx < s_sc) ? series->getSample(idx) : 0.0f;
+              if (vis) val = std::max(val, min_data_val);
+              mapping->make<float>(val);
+            }
+          }
+        }
+
+        fxi->unmapStorageBuffer(mapping.get());
+      }
+    }
 
     int ichanlaby = _kbasechanlaby;
     for (auto channel : _channelmap) {
@@ -432,9 +579,12 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
         int legend_y = int(lane_y_top) + 4;  // 4px padding from top of lane
         int legend_x = width() - (max_label_width + 80);  // leave room for value
 
-        for (auto& series : channel->_series) {
+        // Iterate in reverse so label order matches visual stack (series 0 at bottom)
+        for (int si = int(channel->_series.size()) - 1; si >= 0; si--) {
+          auto& series = channel->_series[si];
           // Color swatch (small filled square)
-          fvec3 label_color = series->_visible ? series->_color : series->_color * 0.3f;
+          fvec3 bright = (series->_color * 1.25f).clamped(0.0f, 1.0f);
+          fvec3 label_color = series->_visible ? bright : series->_color * 0.3f;
           int swatch_x1 = legend_x - 14;
           int swatch_x2 = legend_x - 2;
           int swatch_y1 = legend_y;
@@ -601,20 +751,22 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
       if (numpoints && has_visible_series) {
         if (has_series && channel->_stacked) {
           ///////////////////////////////////////////////////
-          // Render stacked area chart
+          // Render stacked area chart via single-quad SSBO
+          // (data already uploaded in pre-pass)
           ///////////////////////////////////////////////////
+          int ch_idx = _stacked_channel_indices[channel.get()];
+          float ch_idx_f = float(ch_idx);
+
           float lane_y_top = float(channel_lane_start) * global_lane_height;
           float lane_y_bottom = lane_y_top + global_lane_height;
 
-          // Determine Y range from first series' fixed range (or auto-range)
-          float stack_min = 0.0f;
-          float stack_max = 1.0f;
+          // Get stack range from first series
           auto& first_series = channel->_series[0];
+          float stack_min = 0.0f, stack_max = 1.0f;
           if (first_series->_use_fixed_range) {
             stack_min = first_series->_fixed_min;
             stack_max = first_series->_fixed_max;
           } else {
-            // Auto-range from max cumulative sum across all samples
             size_t sc = first_series->sampleCount();
             float max_sum = 0.0f;
             for (size_t i = 0; i < sc; i++) {
@@ -628,112 +780,50 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
             stack_max = max_sum > 0.0f ? max_sum * 1.1f : 1.0f;
           }
 
-          float x_scale = float(w) / (hrange.y - hrange.x);
-          float y_range = stack_max - stack_min;
-          if (y_range < 0.001f) y_range = 1.0f;
+          // Build quad — channel index passed via vertex color .x
+          mtxi->PushUIMatrix(w, h);
 
-          size_t sample_count = first_series->sampleCount();
+          lev2::VtxWriter<vtx_t> vw;
+          vw.Lock(tgt, vbuf.get(), 6);
 
-          // For each series, draw filled area between cumulative bottom and top
-          // Render bottom-to-top so later series stack visually on top
-          for (size_t si = 0; si < channel->_series.size(); si++) {
-            auto& series = channel->_series[si];
-            if (!series->_visible) continue;
+          constexpr float kChartMargin = 3.0f;
+          float x0 = kChartMargin;
+          float x1 = float(width() - (max_label_width + 80)) - kChartMargin;
+          float y0 = lane_y_top + kChartMargin;
+          float y1 = lane_y_bottom - kChartMargin;
 
-            size_t sc = series->sampleCount();
-            if (sc < 2) continue;
+          vw.AddVertex(vtx_t(fvec3(x0, y0, 0), fvec4(0.0f, stack_max, 0, 0), fvec3(ch_idx_f)));
+          vw.AddVertex(vtx_t(fvec3(x1, y0, 0), fvec4(1.0f, stack_max, 0, 0), fvec3(ch_idx_f)));
+          vw.AddVertex(vtx_t(fvec3(x1, y1, 0), fvec4(1.0f, stack_min, 0, 0), fvec3(ch_idx_f)));
 
-            // Calculate display window
-            size_t display_count = sc;
-            size_t start_index = 0;
-            if (series->_window_size > 0 && series->_window_size < sc) {
-              display_count = series->_window_size;
-              start_index = sc - display_count;
-            }
+          vw.AddVertex(vtx_t(fvec3(x0, y0, 0), fvec4(0.0f, stack_max, 0, 0), fvec3(ch_idx_f)));
+          vw.AddVertex(vtx_t(fvec3(x1, y1, 0), fvec4(1.0f, stack_min, 0, 0), fvec3(ch_idx_f)));
+          vw.AddVertex(vtx_t(fvec3(x0, y1, 0), fvec4(0.0f, stack_min, 0, 0), fvec3(ch_idx_f)));
+          vw.UnLock(tgt);
 
-            // Each pair of adjacent samples produces 2 triangles (6 vertices)
-            size_t num_quads = display_count > 1 ? display_count - 1 : 0;
-            if (num_quads == 0) continue;
+          // Draw
+          auto fxi = tgt->FXI();
+          auto rs = mtl->_rasterstate;
+          auto omacro = rs->_blendingMacro;
+          int prev_pri = rs->_priority;
+          rs->setBlendingMacro(lev2::BlendingMacro::ALPHA);
+          rs->setDepthTest(lev2::EDepthTest::OFF);
+          rs->setCullTest(lev2::ECullTest::OFF);
+          rs->setWriteMaskZ(false);
+          rs->_priority = 1 << 20;
+          fxi->pushRasterState(rs);
 
-            mtxi->PushUIMatrix(w, h);
+          fxi->bindStorageBuffer(_stacked_ssbo_block, _stacked_ssbo);
+          mtl->begin(tek_stacked, RCFD);
+          mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
+          gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::TRIANGLES);
+          mtl->end(RCFD);
 
-            lev2::VtxWriter<vtx_t> vw;
-            vw.Lock(tgt, vbuf.get(), num_quads * 6);
+          fxi->popRasterState();
+          rs->_priority = prev_pri;
+          rs->_blendingMacro = omacro;
 
-            for (size_t i = 1; i < display_count; i++) {
-              size_t idx_prev = start_index + i - 1;
-              size_t idx_curr = start_index + i;
-
-              // Calculate cumulative bottom (sum of all series below this one)
-              float bottom_prev = 0.0f, bottom_curr = 0.0f;
-              for (size_t sj = 0; sj < si; sj++) {
-                auto& s_below = channel->_series[sj];
-                if (!s_below->_visible) continue;
-                if (idx_prev < s_below->sampleCount()) bottom_prev += s_below->getSample(idx_prev);
-                if (idx_curr < s_below->sampleCount()) bottom_curr += s_below->getSample(idx_curr);
-              }
-
-              // Top = bottom + this series' value
-              float top_prev = bottom_prev + (idx_prev < sc ? series->getSample(idx_prev) : 0.0f);
-              float top_curr = bottom_curr + (idx_curr < sc ? series->getSample(idx_curr) : 0.0f);
-
-              // Map data X to screen X
-              float data_x_prev = float(idx_prev) - float(sample_count - 1);
-              float data_x_curr = float(idx_curr) - float(sample_count - 1);
-              float sx_prev = (data_x_prev - hrange.x) * x_scale;
-              float sx_curr = (data_x_curr - hrange.x) * x_scale;
-
-              // Map data Y to screen Y (bottom of lane = stack_min, top of lane = stack_max)
-              // Screen Y is inverted (top=0), so higher values go UP (smaller screen Y)
-              auto mapY = [&](float val) -> float {
-                float normalized = (val - stack_min) / y_range;
-                return lane_y_bottom - normalized * global_lane_height;
-              };
-
-              float sy_top_prev = mapY(top_prev);
-              float sy_bot_prev = mapY(bottom_prev);
-              float sy_top_curr = mapY(top_curr);
-              float sy_bot_curr = mapY(bottom_curr);
-
-              // Clamp minimum band height (screen Y inverted: bot > top)
-              float min_h = channel->_min_series_height;
-              if (sy_bot_prev - sy_top_prev < min_h)
-                sy_top_prev = sy_bot_prev - min_h;
-              if (sy_bot_curr - sy_top_curr < min_h)
-                sy_top_curr = sy_bot_curr - min_h;
-
-              // Two triangles forming a quad: (bot_prev, bot_curr, top_curr), (bot_prev, top_curr, top_prev)
-              vw.AddVertex(vtx_t(fvec3(sx_prev, sy_bot_prev, 0), fvec4(), series->_color));
-              vw.AddVertex(vtx_t(fvec3(sx_curr, sy_bot_curr, 0), fvec4(), series->_color));
-              vw.AddVertex(vtx_t(fvec3(sx_curr, sy_top_curr, 0), fvec4(), series->_color));
-
-              vw.AddVertex(vtx_t(fvec3(sx_prev, sy_bot_prev, 0), fvec4(), series->_color));
-              vw.AddVertex(vtx_t(fvec3(sx_curr, sy_top_curr, 0), fvec4(), series->_color));
-              vw.AddVertex(vtx_t(fvec3(sx_prev, sy_top_prev, 0), fvec4(), series->_color));
-            }
-            vw.UnLock(tgt);
-
-            auto rs = mtl->_rasterstate;
-            auto omacro = rs->_blendingMacro;
-            int prev_pri = rs->_priority;
-            rs->setBlendingMacro(lev2::BlendingMacro::OFF);
-            rs->setDepthTest(lev2::EDepthTest::OFF);
-            rs->setWriteMaskZ(false);
-            rs->_priority = 1 << 16;
-            auto fxi = tgt->FXI();
-            fxi->pushRasterState(rs);
-
-            mtl->begin(tek, RCFD);
-            mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
-            gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::TRIANGLES);
-            mtl->end(RCFD);
-
-            fxi->popRasterState();
-            rs->_priority = prev_pri;
-            rs->_blendingMacro = omacro;
-
-            mtxi->PopUIMatrix();
-          }
+          mtxi->PopUIMatrix();
 
         } else if (has_series) {
           ///////////////////////////////////////////////////
@@ -793,25 +883,27 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
               lev2::VtxWriter<vtx_t> vw;
               vw.Lock(tgt, vbuf.get(), display_count * 2);
 
-              float x_scale = float(w) / (hrange.y - hrange.x);
+              // Match stacked chart horizontal mapping: spread samples evenly across chart area
+              float chart_x0 = 0.0f;
+              float chart_x1 = float(width() - (max_label_width + 80));
+              float x_step = (display_count > 1) ? (chart_x1 - chart_x0) / float(display_count - 1) : 0.0f;
+
               float y_scale = global_lane_height / (series_max - series_min) * series->_vertical_scale;
               float data_center_y = (series_min + series_max) / 2.0f;
               float lane_center_y = lane_y_top_pixel + global_lane_height / 2.0f;
 
               for (size_t i = 0; i < display_count; i++) {
                 size_t sample_index = start_index + i;
-                float data_x = float(sample_index) - float(series_count - 1);
                 float data_y = series->getSample(sample_index);
 
-                float screen_x = (data_x - hrange.x) * x_scale;
+                float screen_x = chart_x0 + float(i) * x_step;
                 float screen_y = lane_center_y - (data_y - data_center_y) * y_scale;
 
                 if (i > 0) {
                   size_t prev_sample_index = start_index + i - 1;
-                  float prev_data_x = float(prev_sample_index) - float(series_count - 1);
                   float prev_data_y = series->getSample(prev_sample_index);
 
-                  float prev_screen_x = (prev_data_x - hrange.x) * x_scale;
+                  float prev_screen_x = chart_x0 + float(i - 1) * x_step;
                   float prev_screen_y = lane_center_y - (prev_data_y - data_center_y) * y_scale;
 
                   vw.AddVertex(vtx_t(fvec3(prev_screen_x, prev_screen_y, 0), fvec4(), series->_color));

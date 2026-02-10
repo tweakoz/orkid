@@ -128,6 +128,11 @@ private:
   graphseries_ptr_t _findSeriesAtPoint(int x, int y);
   void _adjustSeriesScale(int wheel_delta);
   void _adjustGlobalZoom(int wheel_delta);
+
+  // Single SSBO for all stacked chart channels
+  lev2::FxShaderStorageBuffer* _stacked_ssbo = nullptr;
+  const lev2::FxShaderStorageBlock* _stacked_ssbo_block = nullptr;
+  std::map<GraphChannel*, int> _stacked_channel_indices;
 };
 using graphview_ptr_t = std::shared_ptr<GraphView>;
 

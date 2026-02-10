@@ -14,11 +14,12 @@ from orkengine.core import lev2_pyexdir, Transform
 from orkengine.core import CrcStringProxy, thisdir, VarMap
 from orkengine import lev2
 from ork.app.application import ComponentizedApplication
+from ork.app.frame_profiler import FrameProfilerComponent
 
 ################################################################################
 
 lev2_pyexdir.addToSysPath()
-from lev2utils.cameras import setupUiCamera
+from lev2utils.cameras import setupUiCameraX
 from lev2utils.primitives import createGridData
 from lev2utils.lighting import MySpotLight, MyCookie
 
@@ -38,20 +39,36 @@ class LIGHTING_APP(ComponentizedApplication):
     super().__init__()
 
     self.materials = set()
+    self.profiler = self.addComponent("profiler", FrameProfilerComponent)
     self.createEzApp(ssaa=2, msaa=0, fullscreen=False,
                       use_subsystems=['opq', 'core', 'gpu', 'lev2'])
 
 
   ##############################################
 
+  def _onUiInit(self):
+    lg = self.ezapp.topLayoutGroup
+    self.sgviewport_item = lg.makeChild(
+      uiclass=lev2.ui.SceneGraphViewport,
+      args=["PrimarySG"],
+      fill=True
+    )
+
+  ##############################################
+
   def _onGpuInit(self, ctx):
 
-    # Setup camera for mono mode
-    setupUiCamera(app=self, eye=vec3(0, 12, 15))
+    # Setup camera
+    self.cameralut = lev2.CameraDataLut()
+    self.camera, self.uicam = setupUiCameraX(
+      cameralut=self.cameralut,
+      camname="Camera0",
+      eye=vec3(0, 12, 15)
+    )
 
-    sceneparams = VarMap() 
+    sceneparams = VarMap()
 
-    
+
     sceneparams.SkyboxIntensity = float(1)
     sceneparams.SpecularIntensity = float(1)
     sceneparams.DiffuseIntensity = float(1)
@@ -70,7 +87,7 @@ class LIGHTING_APP(ComponentizedApplication):
     self.post_node1 = postNode1
     ###################################
 
-    self.scene = self.ezapp.createScene(sceneparams)
+    self.scene = lev2.scenegraph.Scene(sceneparams)
     self.layer_donly = self.scene.createLayer("depth_prepass")
     self.layer_dprobe = self.scene.createLayer("depth_probe")
     self.layer_probe = self.scene.createLayer("probe")
@@ -80,6 +97,14 @@ class LIGHTING_APP(ComponentizedApplication):
     self.pbr_common = self.scene.pbr_common
     self.pbr_common.useDepthPrepass = True
     self.pbr_common.useFloatColorBuffer = True
+
+    # Attach to viewport
+    sgviewport = self.sgviewport_item.widget
+    sgviewport.cameraName = "Camera0"
+    sgviewport.scenegraph = self.scene
+    sgviewport.forkDB()
+    sgviewport.evhandler = lambda e: self._onViewportEvent(e)
+    sgviewport.ignoreEvents = False
 
     DEPTH_LAYERS = [self.layer_donly,self.layer_dprobe]
     FINAL_LAYERS = [self.layer_fwd,self.layer_donly]
@@ -161,10 +186,10 @@ class LIGHTING_APP(ComponentizedApplication):
     ]
     ccooks = [color_cookies.load(path) for path in cookie_paths]
     dcooks = [depth_cookies.slice(i) for i in range(5)]
-    colors = [vec3(0,100,1000), 
-              vec3(100,0,0), 
-              vec3(0,100,0), 
-              vec3(-100,-100,-100), 
+    colors = [vec3(0,100,1000),
+              vec3(100,0,0),
+              vec3(0,100,0),
+              vec3(-100,-100,-100),
               vec3(100,100,100)]
     indices = [i for i in range(5)]
     frqs = [0.17, 0.37, -0.27, 0.07, -0.08]
@@ -183,9 +208,9 @@ class LIGHTING_APP(ComponentizedApplication):
         "dim":shadow_size,
         "layers":COLOR_LAYERS,
       }
-      self.spotlights = [] 
+      self.spotlights = []
       for i in range(2):
-        s = MySpotLight( **kwargs, 
+        s = MySpotLight( **kwargs,
                          index=indices[i],
                          frq=frqs[i],
                          color=colors[i],
@@ -210,10 +235,10 @@ class LIGHTING_APP(ComponentizedApplication):
 
   ##############################################
 
-  def _onUiEvent(self, uievent):
-    handled = False
+  def _onViewportEvent(self, uievent):
     handled = self.uicam.uiEventHandler(uievent)
     if handled:
+      self.uicam.updateMatrices()
       self.camera.copyFrom(self.uicam.cameradata)
     return lev2.ui.HandlerResult()
 
@@ -221,8 +246,8 @@ class LIGHTING_APP(ComponentizedApplication):
 
   def _onUpdate(self, updinfo):
     self.lighttime = updinfo.absolutetime
-    self.scene.updateScene(self.cameralut) 
-    
+    self.scene.updateScene(self.cameralut)
+    self.sgviewport_item.widget.setDirty()
 
   ################################################
 
@@ -233,7 +258,7 @@ class LIGHTING_APP(ComponentizedApplication):
       z = math.cos(phase)*radius
       y = 4 + math.cos(phase*2.7)*1
       node.modelnode.worldTransform.translation = vec3(x,y,z)
-    
+
     self.probe.invalidate()
     frq = 0.1
     genpos(self.node_px,frq,0)
@@ -254,4 +279,3 @@ class LIGHTING_APP(ComponentizedApplication):
 app = LIGHTING_APP()
 app.ezapp.mainThreadLoop()
 app.ezapp.shutdown()
-

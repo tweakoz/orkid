@@ -31,16 +31,17 @@ from ork.app.application import ApplicationComponent
 
 class FrameProfilerComponent(ApplicationComponent):
 
-  MAX_SAMPLES = 1000  # ~16 seconds at 60fps
+  MAX_SAMPLES = 250  # ~4 seconds at 60fps
 
   # Series colors (SteamVR-inspired)
   COLOR_FRAME_TIME = vec3(1.0, 1.0, 1.0)       # white
   COLOR_GPU_UPDATE = vec3(0.3, 1.0, 0.3)       # green
   COLOR_UPDATE = vec3(0.3, 1.0, 1.0)           # cyan
   COLOR_IDLE = vec3(0.2, 0.2, 0.2)              # dark grey
-  COLOR_ENQUEUE = vec3(0.4, 0.4, 0.15)           # dark yellow
-  COLOR_PRESENT = vec3(0.4, 0.25, 0.1)           # dark orange
-  COLOR_SECONDARY_RENDER = vec3(0.3, 0.15, 0.3)  # dark purple
+  COLOR_ENQUEUE = vec3(0.0, 0.502, 0.753)         # blue
+  COLOR_PRESENT = vec3(1.0, 1.0, 0.0)             # yellow
+  COLOR_SECONDARY_RENDER = vec3(0.375, 0.1875, 0.375)  # purple
+  COLOR_SECONDARY_PRESENT = vec3(1.0, 0.5, 0.0)       # orange
 
   def __init__(self):
     super().__init__()
@@ -51,7 +52,8 @@ class FrameProfilerComponent(ApplicationComponent):
     self.series_enqueue = None
     self.series_present = None
     self.series_update_idle = None
-    self.series_secondary = []
+    self.series_sec_enqueue = []
+    self.series_sec_present = []
 
   ##############################################
 
@@ -103,15 +105,15 @@ class FrameProfilerComponent(ApplicationComponent):
 
     self.series_gpu_update = budget_channel.addSeries("gpu_update", self.COLOR_GPU_UPDATE)
     self.series_gpu_update.setMaxSamples(self.MAX_SAMPLES)
-    self.series_gpu_update.setFixedRange(0.0, 33.0)
+    self.series_gpu_update.setFixedRange(0.0, 24.0)
 
-    self.series_enqueue = budget_channel.addSeries("enqueue", self.COLOR_ENQUEUE)
+    self.series_enqueue = budget_channel.addSeries("pri_enqueue", self.COLOR_ENQUEUE)
     self.series_enqueue.setMaxSamples(self.MAX_SAMPLES)
-    self.series_enqueue.setFixedRange(0.0, 33.0)
+    self.series_enqueue.setFixedRange(0.0, 24.0)
 
-    self.series_present = budget_channel.addSeries("present", self.COLOR_PRESENT)
+    self.series_present = budget_channel.addSeries("pri_present", self.COLOR_PRESENT)
     self.series_present.setMaxSamples(self.MAX_SAMPLES)
-    self.series_present.setFixedRange(0.0, 33.0)
+    self.series_present.setFixedRange(0.0, 24.0)
 
     # Secondary render series added dynamically to same channel
     self._budget_channel = budget_channel
@@ -125,12 +127,16 @@ class FrameProfilerComponent(ApplicationComponent):
     ezapp = self.app.ezapp
     sec_wins = ezapp.secondaryWindows
     added = False
-    while len(self.series_secondary) < len(sec_wins):
-      idx = len(self.series_secondary)
-      series = self._budget_channel.addSeries(f"sec{idx}_render", self.COLOR_SECONDARY_RENDER)
-      series.setMaxSamples(self.MAX_SAMPLES)
-      series.setFixedRange(0.0, 33.0)
-      self.series_secondary.append(series)
+    while len(self.series_sec_enqueue) < len(sec_wins):
+      idx = len(self.series_sec_enqueue)
+      s_enq = self._budget_channel.addSeries(f"sec{idx}_enqueue", self.COLOR_SECONDARY_RENDER)
+      s_enq.setMaxSamples(self.MAX_SAMPLES)
+      s_enq.setFixedRange(0.0, 20.0)
+      self.series_sec_enqueue.append(s_enq)
+      s_prs = self._budget_channel.addSeries(f"sec{idx}_present", self.COLOR_SECONDARY_PRESENT)
+      s_prs.setMaxSamples(self.MAX_SAMPLES)
+      s_prs.setFixedRange(0.0, 20.0)
+      self.series_sec_present.append(s_prs)
       added = True
     if added:
       self._reorderBudgetSeries()
@@ -138,11 +144,11 @@ class FrameProfilerComponent(ApplicationComponent):
   ##############################################
 
   def _reorderBudgetSeries(self):
-    """Ensure gpu_update is always on top (last in series order)."""
-    order = ["enqueue", "present"]
-    for i in range(len(self.series_secondary)):
-      order.append(f"sec{i}_render")
-    order.append("gpu_update")
+    """Ensure present is always on top (last in series order)."""
+    order = ["gpu_update", "pri_enqueue", "pri_present"]
+    for i in range(len(self.series_sec_enqueue)):
+      order.append(f"sec{i}_enqueue")
+      order.append(f"sec{i}_present")
     self._budget_channel.setSeriesOrder(order)
 
   ##############################################
@@ -166,11 +172,12 @@ class FrameProfilerComponent(ApplicationComponent):
       self.series_enqueue.addSample(mainwin.perf_enqueue_duration * 1000.0)
       self.series_present.addSample(mainwin.perf_present_duration * 1000.0)
 
-    # Secondary windows
+    # Secondary windows (split into enqueue + present)
     self._updateSecondaryChannels()
     sec_wins = ezapp.secondaryWindows
-    for i, series in enumerate(self.series_secondary):
+    for i in range(len(self.series_sec_enqueue)):
       if i < len(sec_wins):
-        series.addSample(sec_wins[i].perf_render_duration * 1000.0)
+        self.series_sec_enqueue[i].addSample(sec_wins[i].perf_enqueue_duration * 1000.0)
+        self.series_sec_present[i].addSample(sec_wins[i].perf_present_duration * 1000.0)
 
     self.graphview.setDirty()
