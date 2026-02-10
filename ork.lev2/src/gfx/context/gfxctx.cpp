@@ -190,6 +190,10 @@ void Context::_doSubmitPrimaryCommandBuffer(){
 ///////////////////////////////////////////////////////////////////////////////
 
 void Context::beginFrame(bool visual) {
+  _perf_ctx_timer.Start();
+  _perf_acquire_duration = 0.0;
+  _perf_fence_wait_duration = 0.0;
+
   OrkAssert(_currentPhase == 0);
   _currentPhase = "INFRAME"_crcu;
 
@@ -253,12 +257,15 @@ void Context::beginFrame(bool visual) {
       _gpuEventQueue.pop();
     }
   });
+
+  _perf_beginFrame_duration = _perf_ctx_timer.SecsSinceStart();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void Context::endFrame(void) {
-
+  Timer endframe_timer;
+  endframe_timer.Start();
 
   FBI()->PopRtGroup(); // pop main rtg
 
@@ -285,10 +292,11 @@ void Context::endFrame(void) {
   miTargetFrame++;
   _isFrameDebugCapture = false;
 
-  OrkAssert(_currentPhase == "INFRAME"_crcu); 
+  OrkAssert(_currentPhase == "INFRAME"_crcu);
   _currentPhase = 0;
   if(0)printf("exit Context::endFrame this<%p>\n", this);
 
+  _perf_endFrame_duration = endframe_timer.SecsSinceStart();
 }
 
 /////////////////////////////////////////////////////////////////////////

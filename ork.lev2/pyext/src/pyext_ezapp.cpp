@@ -954,6 +954,18 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
       })
       .def_property_readonly("perf_present_duration", [](ezmainwin_ptr_t mwin) -> double {
         return mwin->_perf_present_duration;
+      })
+      .def_property_readonly("perf_acquire_duration", [](ezmainwin_ptr_t mwin) -> double {
+        return mwin->_perf_acquire_duration;
+      })
+      .def_property_readonly("perf_fence_wait_duration", [](ezmainwin_ptr_t mwin) -> double {
+        return mwin->_perf_fence_wait_duration;
+      })
+      .def_property_readonly("perf_beginFrame_duration", [](ezmainwin_ptr_t mwin) -> double {
+        return mwin->_perf_beginFrame_duration;
+      })
+      .def_property_readonly("perf_endFrame_duration", [](ezmainwin_ptr_t mwin) -> double {
+        return mwin->_perf_endFrame_duration;
       });
   type_codec->registerStdCodec<ezmainwin_ptr_t>(ezmainwin_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -1002,6 +1014,18 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
       })
       .def_property_readonly("perf_present_duration", [](ezsecondarywin_ptr_t win) -> double {
         return win->_perf_present_duration;
+      })
+      .def_property_readonly("perf_acquire_duration", [](ezsecondarywin_ptr_t win) -> double {
+        return win->_perf_acquire_duration;
+      })
+      .def_property_readonly("perf_fence_wait_duration", [](ezsecondarywin_ptr_t win) -> double {
+        return win->_perf_fence_wait_duration;
+      })
+      .def_property_readonly("perf_beginFrame_duration", [](ezsecondarywin_ptr_t win) -> double {
+        return win->_perf_beginFrame_duration;
+      })
+      .def_property_readonly("perf_endFrame_duration", [](ezsecondarywin_ptr_t win) -> double {
+        return win->_perf_endFrame_duration;
       })
       .def_property_readonly("should_close", &EzSecondaryWin::shouldClose)
       .def_property_readonly("ui_context", [](ezsecondarywin_ptr_t win) -> ui::context_ptr_t {

@@ -151,6 +151,10 @@ void EzTopWidget::DoDraw(ui::drawevent_constptr_t drwev) {
     logchan_ezapp->log("[EzTopWidget::DoDraw] endFrame frame %d", frame_counter);
     ctx->endFrame();
     _mainwin->_perf_enqueue_duration = _mainwin->_perf_render_timer.SecsSinceStart();
+    _mainwin->_perf_acquire_duration = ctx->_perf_acquire_duration;
+    _mainwin->_perf_fence_wait_duration = ctx->_perf_fence_wait_duration;
+    _mainwin->_perf_beginFrame_duration = ctx->_perf_beginFrame_duration;
+    _mainwin->_perf_endFrame_duration = ctx->_perf_endFrame_duration;
     EASY_END_BLOCK;
     EASY_BLOCK("EzTopWidget swap", 0xffc04000);
     ctx->swapBuffers(ctx->mCtxBase);

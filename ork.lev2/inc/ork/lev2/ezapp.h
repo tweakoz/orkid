@@ -116,6 +116,10 @@ public:
   double _perf_render_duration   = 0.0;  // primary window render+swap time
   double _perf_enqueue_duration  = 0.0;  // beginFrame+draw+endFrame time
   double _perf_present_duration  = 0.0;  // swapBuffers time (includes vsync wait)
+  double _perf_acquire_duration  = 0.0;  // swapchain acquire wait
+  double _perf_fence_wait_duration = 0.0; // fence wait
+  double _perf_beginFrame_duration = 0.0; // total beginFrame() time
+  double _perf_endFrame_duration = 0.0;   // total endFrame() time
   ork::Timer _perf_render_timer;         // reusable timer for render measurement
 
 

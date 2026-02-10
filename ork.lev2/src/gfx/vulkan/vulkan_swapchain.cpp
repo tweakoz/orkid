@@ -431,6 +431,8 @@ size_t VkSwapChain::subIndex() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 VkResult VkSwapChain::acquireImage(vkcontext_rawptr_t ctxVK) {
+  Timer acquire_timer;
+  acquire_timer.Start();
 
   // Ensure we have a valid swapchain
   size_t sub_index = subIndex();
@@ -488,6 +490,7 @@ VkResult VkSwapChain::acquireImage(vkcontext_rawptr_t ctxVK) {
       case VK_ERROR_OUT_OF_DATE_KHR: {
         logchan_swapchain->log("acquireImage: SWAPCHAIN OUT OF DATE - status %d", status);
         vkDeviceWaitIdle(ctxVK->_vkdevice);
+        ctxVK->_perf_acquire_duration = acquire_timer.SecsSinceStart();
         return status;
         break;
       }
@@ -512,6 +515,7 @@ VkResult VkSwapChain::acquireImage(vkcontext_rawptr_t ctxVK) {
   rtb_impl->_replaceImage(_swapChainImages[_curSwapWriteImage]);
 
   if(0)logchan_swapchain->log("acquireImage: COMPLETE - image %u ready for rendering", _curSwapWriteImage);
+  ctxVK->_perf_acquire_duration = acquire_timer.SecsSinceStart();
   return VK_SUCCESS;
 }
 
@@ -767,6 +771,7 @@ void VkSwapChain::waitPresentFrame(vkcontext_rawptr_t ctxVK) {
   float pos_time   = ctxVK->_present_timer.SecsSinceStart();
   float delta_time = pos_time - pre_time;
   ctxVK->_present_wait_time += delta_time;
+  ctxVK->_perf_fence_wait_duration = delta_time;
   ctxVK->_total_wait_time = ctxVK->_present_timer.SecsSinceStart();
 
   if ((_currentFrame & 0x1ff) == 0) {

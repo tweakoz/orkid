@@ -347,6 +347,10 @@ void SecondaryWinImpl::_render() {
 
   // Record enqueue duration (everything before swap)
   _owner->_perf_enqueue_duration = _owner->_perf_render_timer.SecsSinceStart();
+  _owner->_perf_acquire_duration = _gfxContext->_perf_acquire_duration;
+  _owner->_perf_fence_wait_duration = _gfxContext->_perf_fence_wait_duration;
+  _owner->_perf_beginFrame_duration = _gfxContext->_perf_beginFrame_duration;
+  _owner->_perf_endFrame_duration = _gfxContext->_perf_endFrame_duration;
 
   // Swap buffers to display the rendered frame
   _gfxContext->swapBuffers(_ctxglfw);
