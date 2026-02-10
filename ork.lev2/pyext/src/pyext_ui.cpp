@@ -582,7 +582,15 @@ void pyinit_ui(py::module& module_lev2) {
           .def_readwrite("min_value", &ui::GraphSeries::_min_value)
           .def_readwrite("max_value", &ui::GraphSeries::_max_value)
           .def_readwrite("window_size", &ui::GraphSeries::_window_size)
-          .def_readwrite("vertical_scale", &ui::GraphSeries::_vertical_scale);
+          .def_readwrite("vertical_scale", &ui::GraphSeries::_vertical_scale)
+          .def_readwrite("use_fixed_range", &ui::GraphSeries::_use_fixed_range)
+          .def_readwrite("fixed_min", &ui::GraphSeries::_fixed_min)
+          .def_readwrite("fixed_max", &ui::GraphSeries::_fixed_max)
+          .def("setFixedRange", [](ui::graphseries_ptr_t s, float min_val, float max_val) {
+            s->_use_fixed_range = true;
+            s->_fixed_min = min_val;
+            s->_fixed_max = max_val;
+          });
   type_codec->registerStdCodec<ui::graphseries_ptr_t>(graphseries_type);
   /////////////////////////////////////////////////////////////////////////////////
   // GraphChannel - contains multiple series
@@ -592,9 +600,15 @@ void pyinit_ui(py::module& module_lev2) {
           .def("addSeries", &ui::GraphChannel::addSeries)
           .def("removeSeries", &ui::GraphChannel::removeSeries)
           .def("getSeries", &ui::GraphChannel::getSeries)
+          .def("setSeriesOrder", &ui::GraphChannel::setSeriesOrder)
           .def_readwrite("name", &ui::GraphChannel::_name)
           .def_readwrite("color", &ui::GraphChannel::_color)
-          .def_readwrite("visible", &ui::GraphChannel::_visible);
+          .def_readwrite("visible", &ui::GraphChannel::_visible)
+          .def_readwrite("stacked", &ui::GraphChannel::_stacked)
+          .def_readwrite("min_series_height", &ui::GraphChannel::_min_series_height)
+          .def_readwrite("lane_bgcolor", &ui::GraphChannel::_lane_bgcolor)
+          .def_readwrite("lane_outline", &ui::GraphChannel::_lane_outline)
+          .def_readwrite("lane_outline_color", &ui::GraphChannel::_lane_outline_color);
   type_codec->registerStdCodec<ui::graphchannel_ptr_t>(graphchannel_type);
   /////////////////////////////////////////////////////////////////////////////////
   // GraphView - widget for plotting time-series data
@@ -624,7 +638,8 @@ void pyinit_ui(py::module& module_lev2) {
                 return rval;
               })
           .def("channel", &ui::GraphView::channel)
-          .def_readwrite("clear_color", &ui::GraphView::_clearColor);
+          .def_readwrite("clear_color", &ui::GraphView::_clearColor)
+          .def_readwrite("show_stats", &ui::GraphView::_show_stats);
   type_codec->registerStdCodec<ui::graphview_ptr_t>(graphview_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto sgviewport_type = //

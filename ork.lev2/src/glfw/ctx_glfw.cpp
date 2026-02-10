@@ -24,6 +24,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 #if defined(ENABLE_GLFW)
 #include <ork/lev2/glfw/ctx_glfw.h>
+#include <ork/lev2/ezapp.h>
 #include <GLFW/glfw3native.h>
 namespace ork::lev2 {
 int _g_post_swap_wait_time = 0;
@@ -714,7 +715,10 @@ void CtxGLFW::_runloopIter(bool pollevents) {
   //////////////////////////////
 
   if (_onGpuUpdate) {
+    auto ezapp = (OrkEzApp*)OrkEzAppBase::get();
+    if(ezapp) ezapp->_perf_gpu_update_timer.Start();
     _onGpuUpdate(_target);
+    if(ezapp) ezapp->_perf_gpu_update_duration = ezapp->_perf_gpu_update_timer.SecsSinceStart();
   }
 
   SlotRepaint();

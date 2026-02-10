@@ -143,15 +143,19 @@ void EzTopWidget::DoDraw(ui::drawevent_constptr_t drwev) {
     int swap_w = 0, swap_h = 0;
     ctx->FBI()->querySwapchainSize(swap_w, swap_h);
     void* swap_ptr = ctx->FBI()->querySwapchainPtr();
+    _mainwin->_perf_render_timer.Start();
     ctx->beginFrame();
     if(ctx->FBI()->_main_rtg){
       _mainwin->_onDraw(drwev);
     }
     logchan_ezapp->log("[EzTopWidget::DoDraw] endFrame frame %d", frame_counter);
     ctx->endFrame();
+    _mainwin->_perf_enqueue_duration = _mainwin->_perf_render_timer.SecsSinceStart();
     EASY_END_BLOCK;
     EASY_BLOCK("EzTopWidget swap", 0xffc04000);
     ctx->swapBuffers(ctx->mCtxBase);
+    _mainwin->_perf_render_duration = _mainwin->_perf_render_timer.SecsSinceStart();
+    _mainwin->_perf_present_duration = _mainwin->_perf_render_duration - _mainwin->_perf_enqueue_duration;
     EASY_END_BLOCK;
     ezapp->_render_count.fetch_add(1);
   }

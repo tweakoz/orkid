@@ -113,6 +113,10 @@ public:
   double _render_prevtime        = 0;
   double _render_stats_timeaccum = 0;
   double _render_state_numiters  = 0.0;
+  double _perf_render_duration   = 0.0;  // primary window render+swap time
+  double _perf_enqueue_duration  = 0.0;  // beginFrame+draw+endFrame time
+  double _perf_present_duration  = 0.0;  // swapBuffers time (includes vsync wait)
+  ork::Timer _perf_render_timer;         // reusable timer for render measurement
 
 
 };
@@ -261,6 +265,12 @@ public:
   int _gpuFrameCounter = 0;
   int _gpuFrameCounterUP = 0;
   size_t _total_samples_rendered = 0; // lockstep audio sync
+
+  // Frame profiling fields (written each frame on main thread, except _perf_update_duration)
+  double _perf_frame_duration = 0.0;       // total frame time (main thread)
+  double _perf_gpu_update_duration = 0.0;  // onGpuUpdate callback time (main thread)
+  double _perf_update_duration = 0.0;      // update callback time (update thread - benign race for display)
+  ork::Timer _perf_gpu_update_timer;       // reusable timer for gpu update measurement
   Thread::thread_lambda_t _update_thread_impl = nullptr;
   onsynfn_t _onSynthInit                    = nullptr;
   onauddevfn_t _onAudioInit                 = nullptr;

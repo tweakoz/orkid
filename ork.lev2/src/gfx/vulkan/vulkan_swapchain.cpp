@@ -80,8 +80,7 @@ void VkSwapChain::_buildup() {
   VkSwapchainCreateInfoKHR SCINFO{};
   initializeVkStruct(SCINFO, VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
   SCINFO.surface = _contextVK->_vkpresentationsurface;
-  // SCINFO.presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR; // No vsync
-  SCINFO.presentMode = VK_PRESENT_MODE_FIFO_KHR; // No vsync
+  SCINFO.presentMode = VK_PRESENT_MODE_FIFO_KHR; // default, overridden below if MAILBOX available
 
   auto ctx_glfw = _contextVK->_impl.getShared<VkPlatformObject>()->_ctxbase;
   auto window   = ctx_glfw->_glfwWindow;
@@ -198,14 +197,22 @@ void VkSwapChain::_buildup() {
   // Choose a supported present mode
   ///////////////////////////////////////////////////
 
-  SCINFO.presentMode = VK_PRESENT_MODE_FIFO_KHR; // Always supported
+  SCINFO.presentMode = VK_PRESENT_MODE_FIFO_KHR; // Always supported (fallback)
   for (const auto& mode : pres_caps->_presentModes) {
     if (mode == VK_PRESENT_MODE_MAILBOX_KHR) {
-      // SCINFO.presentMode = mode;
+      SCINFO.presentMode = mode;
       break;
     }
   }
-  // SCINFO.presentMode    = VK_PRESENT_MODE_FIFO_KHR;
+  const char* mode_name = "UNKNOWN";
+  switch(SCINFO.presentMode) {
+    case VK_PRESENT_MODE_IMMEDIATE_KHR: mode_name = "IMMEDIATE"; break;
+    case VK_PRESENT_MODE_MAILBOX_KHR: mode_name = "MAILBOX"; break;
+    case VK_PRESENT_MODE_FIFO_KHR: mode_name = "FIFO"; break;
+    case VK_PRESENT_MODE_FIFO_RELAXED_KHR: mode_name = "FIFO_RELAXED"; break;
+    default: break;
+  }
+  logchan_swapchain->log("_buildup: selected present mode: %s", mode_name);
   SCINFO.clipped = VK_TRUE;
 
   ///////////////////////////////////////////////////

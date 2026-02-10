@@ -120,6 +120,11 @@ struct EzSecondaryWin {
   void _render();
   void _handleResize(int w, int h);
 
+  double _perf_render_duration = 0.0;  // secondary window render+swap time
+  double _perf_enqueue_duration = 0.0; // beginFrame+draw+endFrame time
+  double _perf_present_duration = 0.0; // swapBuffers time (includes vsync wait)
+  ork::Timer _perf_render_timer;       // reusable timer for render measurement
+
 private:
   friend struct OrkEzApp;
   friend struct SecondaryWinImpl;

@@ -1668,6 +1668,15 @@ vkswapchaincaps_ptr_t VkContext::_swapChainCapsForSurface(VkSurfaceKHR surface) 
         presentModes.data());
     for (auto item : presentModes) {
       rval->_presentModes.insert(item);
+      const char* pname = "UNKNOWN";
+      switch(item) {
+        case VK_PRESENT_MODE_IMMEDIATE_KHR: pname = "IMMEDIATE"; break;
+        case VK_PRESENT_MODE_MAILBOX_KHR: pname = "MAILBOX"; break;
+        case VK_PRESENT_MODE_FIFO_KHR: pname = "FIFO"; break;
+        case VK_PRESENT_MODE_FIFO_RELAXED_KHR: pname = "FIFO_RELAXED"; break;
+        default: break;
+      }
+      logchan_vkctx->log("  presentMode available: %s (%d)", pname, int(item));
     }
   }
   VkBool32 presentSupport = false;

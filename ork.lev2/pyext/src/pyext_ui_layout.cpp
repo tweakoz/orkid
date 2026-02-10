@@ -666,7 +666,16 @@ void pyinit_ui_layout(py::module& uimodule) {
               },
               [](uilayoutgroup_ptr_t lgrp, uiwidget_ptr_t w) { //
                 lgrp->_overlay_widget = w;
-                w->_uicontext = lgrp->_uicontext;
+                // Propagate _uicontext to overlay and all its children
+                std::function<void(ui::Widget*)> propagate = [&](ui::Widget* widget) {
+                  widget->_uicontext = lgrp->_uicontext;
+                  if (auto group = dynamic_cast<ui::Group*>(widget)) {
+                    for (auto& child : group->_children) {
+                      propagate(child.get());
+                    }
+                  }
+                };
+                propagate(w.get());
               })
           .def_property(
               "overlay_enabled",

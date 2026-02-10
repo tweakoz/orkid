@@ -45,6 +45,11 @@ struct GraphSeries {
   float _max_value = 1.0f;
   float _blend_rate = 0.5f;
 
+  // Optional fixed range (overrides auto-range when enabled)
+  bool _use_fixed_range = false;
+  float _fixed_min = 0.0f;
+  float _fixed_max = 1.0f;
+
   // Moving window display (0 = show all samples, >0 = show only most recent N)
   size_t _window_size = 0;
 
@@ -75,10 +80,20 @@ struct GraphChannel {
   graphseries_ptr_t addSeries(const std::string& name, fvec3 color);
   void removeSeries(const std::string& name);
   graphseries_ptr_t getSeries(const std::string& name);
+  void setSeriesOrder(const std::vector<std::string>& names);
 
   std::string _name;
   fvec3 _color;
   bool _visible = true;
+
+  // Stacked bar mode: all series rendered as stacked bars in one lane
+  bool _stacked = false;
+  float _min_series_height = 2.0f;  // minimum pixel height per series band
+
+  // Per-lane styling
+  fvec4 _lane_bgcolor = fvec4(0, 0, 0, 0);  // transparent by default
+  bool _lane_outline = false;
+  fvec3 _lane_outline_color = fvec3(0.4f, 0.4f, 0.4f);
 };
 using graphchannel_ptr_t = std::shared_ptr<GraphChannel>;
 ///////////////////////////////////////////////////////////////////////////////

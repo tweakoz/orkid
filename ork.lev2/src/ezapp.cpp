@@ -921,6 +921,7 @@ void OrkEzApp::_mainThreadLoopBegin() {
             /////////////////////////////
             /////////////////////////////
             double update_duration = update_timer.SecsSinceStart();
+            _perf_update_duration = update_duration;
             if (update_duration > max_update_time) {
               max_update_time = update_duration;
             }
@@ -1218,6 +1219,7 @@ int OrkEzApp::mainThreadLoop() {
         _cleanupClosedSecondaryWindows();
 
         double frame_duration = frame_timer.SecsSinceStart();
+        _perf_frame_duration = frame_duration;
         if (frame_duration > max_frame_time) {
           max_frame_time = frame_duration;
         }
