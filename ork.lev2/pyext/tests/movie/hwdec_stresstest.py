@@ -14,7 +14,8 @@ import numpy as np
 from obt import path
 from orkengine.core import vec2, vec3, vec4, mtx4, quat, VarMap, CrcStringProxy
 from orkengine import lev2
-from ork.app import application, loggerui
+from ork.app import application
+from ork.app.frame_profiler import FrameProfilerComponent
 
 tokens = CrcStringProxy()
 
@@ -45,12 +46,10 @@ class VideoToolboxStressTest(application.ComponentizedApplication):
     self.movie_gains = []
 
     ############################################
-    # Setup logger UI component
+    # Setup profiler UI component
     ############################################
 
-    self.addComponent("logger", loggerui.LoggerUIComponent,
-                      filter_regex=[".*"],
-                      background_color=vec4(0.2, 0.2, 0.2, 0.8))
+    self.profiler = self.addComponent("profiler", FrameProfilerComponent)
 
     ############################################
     # Create EzApp and initialize
@@ -111,42 +110,15 @@ class VideoToolboxStressTest(application.ComponentizedApplication):
 
   ##############################################
 
-  def _onAppLink(self):
-    """Configure logger channels after component initialization"""
-    logger_comp = self.findComponentByName("logger")
-
-    # Configure GPU channel for GPU-direct events
-    self.gpu_channel = logger_comp.configureChannel(
-        "GPU",
-        vec3(0.0, 1.0, 0.5),  # Green
-        enable_channel=True
-    )
-
-    # Configure MOVIE channel for movie playback events
-    self.movie_channel = logger_comp.configureChannel(
-        "MOVIE",
-        vec3(0.3, 0.8, 1.0),  # Cyan
-        enable_channel=True
-    )
-
-    # Configure VTB channel for VideoToolbox backend events
-    self.vtb_channel = logger_comp.configureChannel(
-        "VTB",
-        vec3(1.0, 0.5, 0.0),  # Orange
-        enable_channel=True
-    )
-
-  ##############################################
-
   def _onGpuInit(self, ctx):
     """Initialize GPU resources - GPU-direct video playback"""
     backend_name = "VideoToolbox (GPU-Direct)" if self.use_videotoolbox else "FFmpeg (CPU)"
 
-    self.gpu_channel.log("=" * 80)
-    self.gpu_channel.log(f"GPU-Direct Video Test - {self.griddim}x{self.griddim} Grid")
-    self.gpu_channel.log(f"Backend: {backend_name}")
-    self.gpu_channel.log(f"Total Video Players: {self.total_cells}")
-    self.gpu_channel.log("=" * 80)
+    print("=" * 80)
+    print(f"GPU-Direct Video Test - {self.griddim}x{self.griddim} Grid")
+    print(f"Backend: {backend_name}")
+    print(f"Total Video Players: {self.total_cells}")
+    print("=" * 80)
 
     ############################################
     # Setup Movie Players
@@ -179,12 +151,12 @@ class VideoToolboxStressTest(application.ComponentizedApplication):
           format=lev2.MoviePixelFormat.AUTO  # BGRA for now
         )
         provider = movie.texture_provider  # Direct GPU texture
-        self.vtb_channel.log(f"[VTB {i}] Slot {i:2d}: {movie_file:15s} → IOSurface → Vulkan")
+        print(f"[VTB {i}] Slot {i:2d}: {movie_file:15s} → IOSurface → Vulkan")
       else:
         # CPU path: FFmpeg (for comparison)
         movie.init(movie_path)  # Defaults to FFMPEG backend
         provider = movie.image_provider  # CPU image upload
-        self.movie_channel.log(f"[CPU {i}] Slot {i:2d}: {movie_file:15s} → CPU upload")
+        print(f"[CPU {i}] Slot {i:2d}: {movie_file:15s} → CPU upload")
 
       self.imageviews[i].image = provider
 
@@ -192,7 +164,7 @@ class VideoToolboxStressTest(application.ComponentizedApplication):
       audio_program = None
       if self.enable_audio and self.synth and movie.has_audio:
         audio_program = movie.createAudioProgram(self.synth)
-        self.movie_channel.log(f"[AUDIO {i}] Created audio program for {movie_file}")
+        print(f"[AUDIO {i}] Created audio program for {movie_file}")
         movie.audio_timeshift = -2.45  # No audio delay
 
       self.movies.append(movie)
@@ -202,17 +174,17 @@ class VideoToolboxStressTest(application.ComponentizedApplication):
       self.movie_start_times.append(start_delay)
       self.movie_started.append(False)
 
-    self.gpu_channel.log("=" * 80)
+    print("=" * 80)
     if self.use_videotoolbox:
-      self.gpu_channel.log("Zero-copy GPU pipeline:")
-      self.gpu_channel.log("  VideoToolbox decode → IOSurface → Metal → VkImage → Shader")
-      self.gpu_channel.log("  ✓ No CPU involvement")
-      self.gpu_channel.log("  ✓ No memory copies")
-      self.gpu_channel.log("  ✓ Hardware YCbCr conversion (when NV12 enabled)")
+      print("Zero-copy GPU pipeline:")
+      print("  VideoToolbox decode → IOSurface → Metal → VkImage → Shader")
+      print("  ✓ No CPU involvement")
+      print("  ✓ No memory copies")
+      print("  ✓ Hardware YCbCr conversion (when NV12 enabled)")
     else:
-      self.gpu_channel.log("CPU pipeline:")
-      self.gpu_channel.log("  FFmpeg decode → CPU buffer → GPU upload → Texture")
-    self.gpu_channel.log("=" * 80)
+      print("CPU pipeline:")
+      print("  FFmpeg decode → CPU buffer → GPU upload → Texture")
+    print("=" * 80)
 
   ##############################################
 
@@ -225,14 +197,14 @@ class VideoToolboxStressTest(application.ComponentizedApplication):
         movie.play()
         self.movie_started[i] = True
         backend = "VTB" if self.use_videotoolbox else "CPU"
-        self.movie_channel.log(f"[T={abstime:.2f}s] Started movie {i} [{backend}]")
+        print(f"[T={abstime:.2f}s] Started movie {i} [{backend}]")
 
         # Start audio voice for this movie
         if self.audio_programs[i] and self.synth:
           voice = self.synth.keyOn(i, 60, self.audio_programs[i], None)
           voice.gain = self.movie_gains[i]
           self.voices[i] = voice
-          self.movie_channel.log(f"[T={abstime:.2f}s] Started audio voice {i} (gain={self.movie_gains[i]:.1f}dB)")
+          print(f"[T={abstime:.2f}s] Started audio voice {i} (gain={self.movie_gains[i]:.1f}dB)")
 
 ###############################################################################
 
