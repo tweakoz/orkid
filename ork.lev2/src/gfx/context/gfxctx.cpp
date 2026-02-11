@@ -190,7 +190,7 @@ void Context::_doSubmitPrimaryCommandBuffer(){
 ///////////////////////////////////////////////////////////////////////////////
 
 void Context::beginFrame(bool visual) {
-  _perf_ctx_timer.Start();
+  _perf_frame_t0 = _ctxtimer.SecsSinceStart();
   _perf_acquire_duration = 0.0;
   _perf_fence_wait_duration = 0.0;
   _perf_submit_duration = 0.0;
@@ -260,14 +260,13 @@ void Context::beginFrame(bool visual) {
     }
   });
 
-  _perf_beginFrame_duration = _perf_ctx_timer.SecsSinceStart();
+  _perf_beginFrame_duration = _ctxtimer.SecsSinceStart() - _perf_frame_t0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void Context::endFrame(void) {
-  Timer endframe_timer;
-  endframe_timer.Start();
+  float ef_t0 = _ctxtimer.SecsSinceStart();
 
   FBI()->PopRtGroup(); // pop main rtg
 
@@ -298,7 +297,7 @@ void Context::endFrame(void) {
   _currentPhase = 0;
   if(0)printf("exit Context::endFrame this<%p>\n", this);
 
-  _perf_endFrame_duration = endframe_timer.SecsSinceStart();
+  _perf_endFrame_duration = _ctxtimer.SecsSinceStart() - ef_t0;
 }
 
 /////////////////////////////////////////////////////////////////////////

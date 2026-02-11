@@ -856,9 +856,10 @@ void synth::compute(int inumframes, const void* inputBuffer) {
 
     ////////////////////////////
 
-    double _perf_voices_accum = 0.0;
+    double _perf_voices_accum  = 0.0;
+    double _perf_events_accum  = 0.0;
     double _perf_effects_accum = 0.0;
-    double _perf_mixing_accum = 0.0;
+    double _perf_mixing_accum  = 0.0;
 
     /////////////////////////////
     // clear output buffer
@@ -909,7 +910,7 @@ void synth::compute(int inumframes, const void* inputBuffer) {
       ////////////////////////////////
       // update controllers
       ////////////////////////////////
-      _perf_compute_timer.Start();
+      float t0 = Timer::get_sync_time();
       for (auto l : _activeVoices)
         l->updateControllers();
       ////////////////////////////////
@@ -917,22 +918,6 @@ void synth::compute(int inumframes, const void* inputBuffer) {
       ////////////////////////////////
       for (auto l : _activeVoices) {
         l->compute(_dspwritebase, _dspwritecount);
-      }
-      /////////////////////////////
-      // synth update tick
-      /////////////////////////////
-      _samplesuntilnexttick -= frames_per_controlpass;
-      if (_samplesuntilnexttick < 0) {
-        float elapsed_this_tick = float(k_samples_per_tick) * getInverseSampleRate();
-        _lnoteframe++;
-        _lnotetime += elapsed_this_tick;
-        auto& eventmap = _eventmap.LockForWrite();
-        this->_tick(eventmap, elapsed_this_tick);
-        _eventmap.UnLock();
-        _samplesuntilnexttick += k_samples_per_tick;
-        ////////////////////////////////////////////
-        activateVoices(ifrpending);
-        deactivateVoices();
       }
       /////////////////////////////
       // clear synth main output mix buffer
@@ -983,12 +968,30 @@ void synth::compute(int inumframes, const void* inputBuffer) {
         }
         //////
       }
-      _perf_voices_accum += _perf_compute_timer.SecsSinceStart();
+      float t1 = Timer::get_sync_time();
+      _perf_voices_accum += (t1 - t0);
+      /////////////////////////////
+      // synth update tick (events)
+      /////////////////////////////
+      _samplesuntilnexttick -= frames_per_controlpass;
+      if (_samplesuntilnexttick < 0) {
+        float elapsed_this_tick = float(k_samples_per_tick) * getInverseSampleRate();
+        _lnoteframe++;
+        _lnotetime += elapsed_this_tick;
+        auto& eventmap = _eventmap.LockForWrite();
+        this->_tick(eventmap, elapsed_this_tick);
+        _eventmap.UnLock();
+        _samplesuntilnexttick += k_samples_per_tick;
+        ////////////////////////////////////////////
+        activateVoices(ifrpending);
+        deactivateVoices();
+      }
+      float t2 = Timer::get_sync_time();
+      _perf_events_accum += (t2 - t1);
       /////////////////////////////
       // compute/accumulate output busses
       //  (into main output)
       /////////////////////////////
-      _perf_compute_timer.Start();
       std::atomic<int> pending = 0;
       bool serial              = false;
       for (auto busitem : _outputBusses) {
@@ -1051,11 +1054,11 @@ void synth::compute(int inumframes, const void* inputBuffer) {
       }
       while (pending.load() > 0) {
       }
-      _perf_effects_accum += _perf_compute_timer.SecsSinceStart();
+      float t3 = Timer::get_sync_time();
+      _perf_effects_accum += (t3 - t2);
       //////////////////////////////////////////
       // accumulate busses to master
       //////////////////////////////////////////
-      _perf_compute_timer.Start();
       bool any_soloed = _num_soloed.load() > 0;
       for (auto busitem : _outputBusses) {
         auto bus         = busitem.second;
@@ -1109,7 +1112,8 @@ void synth::compute(int inumframes, const void* inputBuffer) {
           master_right[j] = R;
         }
       }
-      _perf_mixing_accum += _perf_compute_timer.SecsSinceStart();
+      float t4 = Timer::get_sync_time();
+      _perf_mixing_accum += (t4 - t3);
       ////////////////////////////////
       // update indices
       ////////////////////////////////
@@ -1124,6 +1128,7 @@ void synth::compute(int inumframes, const void* inputBuffer) {
     // store timing breakdown
     //////////////////////////////////
     _perf_voices_duration  = _perf_voices_accum;
+    _perf_events_duration  = _perf_events_accum;
     _perf_effects_duration = _perf_effects_accum;
     _perf_mixing_duration  = _perf_mixing_accum;
     //////////////////////////////////
@@ -1134,6 +1139,7 @@ void synth::compute(int inumframes, const void* inputBuffer) {
       frame._cpuload          = _cpuload;
       frame._numlayers        = _activeVoices.size();
       frame._voices_duration  = _perf_voices_duration;
+      frame._events_duration  = _perf_events_duration;
       frame._effects_duration = _perf_effects_duration;
       frame._mixing_duration  = _perf_mixing_duration;
 

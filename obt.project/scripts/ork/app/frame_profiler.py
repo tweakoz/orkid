@@ -72,6 +72,7 @@ class FrameProfilerComponent(ApplicationComponent):
   COLOR_SEC_FENCE_WAIT = hsv(0.21, 0.45, 0.75)          # olive
   # Audio bands
   COLOR_VOICES = hsv(0.60, 0.60, 0.90)                  # blue
+  COLOR_EVENTS = hsv(0.45, 0.55, 0.80)                  # teal
   COLOR_EFFECTS = hsv(0.83, 0.55, 0.85)                 # magenta
   COLOR_MIXING = hsv(0.12, 0.60, 0.90)                  # gold
   # Event marker colors
@@ -79,7 +80,7 @@ class FrameProfilerComponent(ApplicationComponent):
   COLOR_NOTE_OFF = vec4(0.95, 0.2, 0.2, 1.0)            # bright red
   COLOR_GENERIC = vec4(0.3, 0.6, 0.95, 1.0)             # bright blue
 
-  def __init__(self, update=True, gpu=True, audio=True, overlay=True, events=None):
+  def __init__(self, update=True, gpu=True, audio=False, overlay=True, events=None):
     super().__init__()
     self._enable_update = update
     self._enable_gpu = gpu
@@ -107,6 +108,7 @@ class FrameProfilerComponent(ApplicationComponent):
     self.series_sec_fence_wait = []
     # Audio breakdown
     self.series_voices = None
+    self.series_events = None
     self.series_effects = None
     self.series_mixing = None
     # Per-channel event pending buffers (thread-safe via GIL)
@@ -186,11 +188,11 @@ class FrameProfilerComponent(ApplicationComponent):
 
     self.series_update = update_channel.addSeries("update", self.COLOR_UPDATE)
     self.series_update.setMaxSamples(self.MAX_SAMPLES)
-    self.series_update.setFixedRange(0.0, 2.5)
+    self.series_update.setFixedRange(0.0, 3.0)
 
     self.series_update_idle = update_channel.addSeries("idle", self.COLOR_IDLE)
     self.series_update_idle.setMaxSamples(self.MAX_SAMPLES)
-    self.series_update_idle.setFixedRange(0.0, 2.5)
+    self.series_update_idle.setFixedRange(0.0, 3.0)
 
     self._setupChannelEvents("UPDATE", update_channel)
 
@@ -249,6 +251,10 @@ class FrameProfilerComponent(ApplicationComponent):
     self.series_voices.setMaxSamples(self.MAX_SAMPLES)
     self.series_voices.setFixedRange(0.0, 16.0)
 
+    self.series_events = audio_channel.addSeries("events", self.COLOR_EVENTS)
+    self.series_events.setMaxSamples(self.MAX_SAMPLES)
+    self.series_events.setFixedRange(0.0, 16.0)
+
     self.series_effects = audio_channel.addSeries("effects", self.COLOR_EFFECTS)
     self.series_effects.setMaxSamples(self.MAX_SAMPLES)
     self.series_effects.setFixedRange(0.0, 16.0)
@@ -301,14 +307,14 @@ class FrameProfilerComponent(ApplicationComponent):
 
   def _reorderBudgetSeries(self):
     """Ensure series are stacked in correct order."""
-    order = ["gpu_update", "frame_setup", "acquire_wait", "draw", "submit", "present", "fence_wait"]
+    order = ["gpu_update", "frame_setup", "acquire_wait", "draw", "fence_wait", "submit", "present"]
     for i in range(len(self.series_sec_draw)):
       order.append(f"sec{i}_frame_setup")
       order.append(f"sec{i}_acquire_wait")
       order.append(f"sec{i}_draw")
+      order.append(f"sec{i}_fence_wait")
       order.append(f"sec{i}_submit")
       order.append(f"sec{i}_present")
-      order.append(f"sec{i}_fence_wait")
     self._budget_channel.setSeriesOrder(order)
 
   ##############################################
@@ -399,6 +405,7 @@ class FrameProfilerComponent(ApplicationComponent):
       synth = ezapp.audio_synth
       if synth:
         self.series_voices.addSample(synth.perf_voices_duration * 1000.0)
+        self.series_events.addSample(synth.perf_events_duration * 1000.0)
         self.series_effects.addSample(synth.perf_effects_duration * 1000.0)
         self.series_mixing.addSample(synth.perf_mixing_duration * 1000.0)
 

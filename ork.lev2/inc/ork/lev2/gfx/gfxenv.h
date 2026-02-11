@@ -465,8 +465,8 @@ public:
   
   Timer _ctxtimer;
 
-  // Per-frame timing breakdown (set during beginFrame/endFrame)
-  Timer _perf_ctx_timer;
+  // Per-frame timing breakdown (uses _ctxtimer for timestamps)
+  float _perf_frame_t0 = 0.0f;             // timestamp at start of beginFrame
   double _perf_beginFrame_duration = 0.0;   // total beginFrame() time
   double _perf_endFrame_duration = 0.0;     // total endFrame() time
   double _perf_acquire_duration = 0.0;      // swapchain acquire (set by backend)

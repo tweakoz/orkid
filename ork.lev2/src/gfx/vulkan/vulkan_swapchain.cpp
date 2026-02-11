@@ -431,8 +431,7 @@ size_t VkSwapChain::subIndex() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 VkResult VkSwapChain::acquireImage(vkcontext_rawptr_t ctxVK) {
-  Timer acquire_timer;
-  acquire_timer.Start();
+  float acquire_t0 = ctxVK->_ctxtimer.SecsSinceStart();
 
   // Ensure we have a valid swapchain
   size_t sub_index = subIndex();
@@ -490,7 +489,7 @@ VkResult VkSwapChain::acquireImage(vkcontext_rawptr_t ctxVK) {
       case VK_ERROR_OUT_OF_DATE_KHR: {
         logchan_swapchain->log("acquireImage: SWAPCHAIN OUT OF DATE - status %d", status);
         vkDeviceWaitIdle(ctxVK->_vkdevice);
-        ctxVK->_perf_acquire_duration = acquire_timer.SecsSinceStart();
+        ctxVK->_perf_acquire_duration = ctxVK->_ctxtimer.SecsSinceStart() - acquire_t0;
         return status;
         break;
       }
@@ -515,7 +514,7 @@ VkResult VkSwapChain::acquireImage(vkcontext_rawptr_t ctxVK) {
   rtb_impl->_replaceImage(_swapChainImages[_curSwapWriteImage]);
 
   if(0)logchan_swapchain->log("acquireImage: COMPLETE - image %u ready for rendering", _curSwapWriteImage);
-  ctxVK->_perf_acquire_duration = acquire_timer.SecsSinceStart();
+  ctxVK->_perf_acquire_duration = ctxVK->_ctxtimer.SecsSinceStart() - acquire_t0;
   return VK_SUCCESS;
 }
 
@@ -725,7 +724,7 @@ void VkSwapChain::waitPresentFrame(vkcontext_rawptr_t ctxVK) {
   // Wait for the current frame's fence to ensure rendering is complete
   auto& fence = _frameFences[sub_index];
 
-  float pre_time                = ctxVK->_present_timer.SecsSinceStart();
+  float pre_time                = ctxVK->_ctxtimer.SecsSinceStart();
   float time_since_last_present = pre_time - ctxVK->_prev_time;
   ctxVK->_prev_time             = pre_time;
 
@@ -768,11 +767,11 @@ void VkSwapChain::waitPresentFrame(vkcontext_rawptr_t ctxVK) {
 
   ctxVK->_total_frame_time += time_since_last_present;
 
-  float pos_time   = ctxVK->_present_timer.SecsSinceStart();
+  float pos_time   = ctxVK->_ctxtimer.SecsSinceStart();
   float delta_time = pos_time - pre_time;
   ctxVK->_present_wait_time += delta_time;
   ctxVK->_perf_fence_wait_duration = delta_time;
-  ctxVK->_total_wait_time = ctxVK->_present_timer.SecsSinceStart();
+  ctxVK->_total_wait_time = ctxVK->_ctxtimer.SecsSinceStart();
 
   if ((_currentFrame & 0x1ff) == 0) {
     float average_frame_time = ctxVK->_total_frame_time / (_currentFrame + 1);

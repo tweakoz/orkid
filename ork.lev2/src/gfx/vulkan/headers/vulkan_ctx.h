@@ -715,7 +715,6 @@ public:
   bool mTargetDrawableSizeDirty;
   bool _first_frame = true;
   shared_pool::fixed_pool<PrimaryCommandBuffer, 16> _pri_cmdbuf_pool;
-  Timer _present_timer;
   float _prev_time = 0.0f;
   float _total_wait_time = 0.0f;
   float _total_frame_time = 0.0f;

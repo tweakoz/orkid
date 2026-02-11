@@ -118,6 +118,9 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
               "perf_voices_duration", //
               [](synth_ptr_t synth) -> double { return synth->_perf_voices_duration; })
           .def_property_readonly(
+              "perf_events_duration", //
+              [](synth_ptr_t synth) -> double { return synth->_perf_events_duration; })
+          .def_property_readonly(
               "perf_effects_duration", //
               [](synth_ptr_t synth) -> double { return synth->_perf_effects_duration; })
           .def_property_readonly(

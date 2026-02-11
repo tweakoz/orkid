@@ -573,7 +573,6 @@ void VkContext::_initDefaultTextures() {
 ///////////////////////////////////////////////////////////////////////////////
 
 VkContext::VkContext() {
-  _present_timer.Start();
   _prev_time = 0.0f;
   _GVI->_contexts.push_back(this);
 
@@ -803,8 +802,7 @@ void VkContext::_doSubmitPrimaryCommandBuffer(){
     }
 
     {
-      Timer submit_timer;
-      submit_timer.Start();
+      float t0 = _ctxtimer.SecsSinceStart();
       if ( not semas_empty) {
         // Submit with timeline semaphores
         swapchain->_submitFrameWithSemaphores(this);
@@ -812,18 +810,16 @@ void VkContext::_doSubmitPrimaryCommandBuffer(){
         // Normal submission
         swapchain->enqueueFrame(this);
       }
-      _perf_submit_duration = submit_timer.SecsSinceStart();
-    }
+      float t1 = _ctxtimer.SecsSinceStart();
+      _perf_submit_duration = t1 - t0;
 
-    ///////////////////////////////////////////////////////
-    // Present !
-    ///////////////////////////////////////////////////////
+      ///////////////////////////////////////////////////////
+      // Present !
+      ///////////////////////////////////////////////////////
 
-    {
-      Timer present_timer;
-      present_timer.Start();
       swapchain->enqueuePresentFrame(this);
-      _perf_present_duration = present_timer.SecsSinceStart();
+      float t2 = _ctxtimer.SecsSinceStart();
+      _perf_present_duration = t2 - t1;
     }
     swapchain->waitPresentFrame(this);
 
