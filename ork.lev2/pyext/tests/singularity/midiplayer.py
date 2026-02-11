@@ -18,6 +18,7 @@ Usage:
 
 import sys
 import time
+import argparse
 from orkengine.core import *
 from orkengine.lev2 import *
 from ork.app.application import ComponentizedApplication
@@ -375,13 +376,17 @@ class MoonlightApp(ComponentizedApplication):
 ################################################################
 
 def main():
+    parser = argparse.ArgumentParser(description="MIDI Player with Piano Keyboard Visualization")
+    parser.add_argument("-f", "--fullscreen", action="store_true", help="Run in fullscreen mode")
+    args = parser.parse_args()
+
     print("MIDI Player with C++ Sequencer")
     print("=" * 60)
     print("Playing: Moonlight Sonata (with piano keyboard visualization)")
     print()
 
     app = MoonlightApp()
-    ezapp = app.createEzApp(name="MidiPlayer", fullscreen=True)
+    ezapp = app.createEzApp(name="MidiPlayer", fullscreen=args.fullscreen)
 
     print("[Subsystem Status]")
     gpu = ezapp.getSubsystem("gpu")

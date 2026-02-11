@@ -36,7 +36,7 @@ sampler_set samplers_pick(descriptor_set 0) {
 storage_interface storage_stacked_chart (descriptor_set 0) {
   buffer layout(std430) ChartData {
     int sample_stride;
-    int _pad0;
+    float min_band_pixels;
     int _pad1;
     int _pad2;
     int num_series[4];
@@ -473,7 +473,7 @@ fragment_shader ps_stacked_chart : iface_frag_stacked {
   float t = fract(sample_f);
 
   float dy_per_pixel = abs(dFdy(frag_data_y));
-  float min_band = 5.0 * dy_per_pixel;
+  float min_band = min_band_pixels * dy_per_pixel;
 
   // Contiguous bands — no gaps, hard edges (AA via SSAA later)
   vec3 color = vec3(0);

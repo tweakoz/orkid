@@ -72,9 +72,9 @@ class FrameProfilerComponent(ApplicationComponent):
   COLOR_SEC_FENCE_WAIT = hsv(0.21, 0.45, 0.75)          # olive
   # Audio bands
   COLOR_VOICES = hsv(0.60, 0.60, 0.90)                  # blue
-  COLOR_EVENTS = hsv(0.45, 0.55, 0.80)                  # teal
+  COLOR_EVENTS = hsv(0.12, 0.60, 0.90)                  # gold
   COLOR_EFFECTS = hsv(0.83, 0.55, 0.85)                 # magenta
-  COLOR_MIXING = hsv(0.12, 0.60, 0.90)                  # gold
+  COLOR_MIXING = hsv(0.45, 0.55, 0.80)                  # teal
   # Event marker colors
   COLOR_NOTE_ON = vec4(0.2, 0.95, 0.3, 1.0)             # bright green
   COLOR_NOTE_OFF = vec4(0.95, 0.2, 0.2, 1.0)            # bright red
@@ -247,6 +247,10 @@ class FrameProfilerComponent(ApplicationComponent):
     audio_channel.lane_bgcolor = vec4(0.05, 0.05, 0.1, 0.8)
     audio_channel.lane_outline = True
 
+    self.series_mixing = audio_channel.addSeries("mixing", self.COLOR_MIXING)
+    self.series_mixing.setMaxSamples(self.MAX_SAMPLES)
+    self.series_mixing.setFixedRange(0.0, 16.0)
+
     self.series_voices = audio_channel.addSeries("voices", self.COLOR_VOICES)
     self.series_voices.setMaxSamples(self.MAX_SAMPLES)
     self.series_voices.setFixedRange(0.0, 16.0)
@@ -258,10 +262,6 @@ class FrameProfilerComponent(ApplicationComponent):
     self.series_effects = audio_channel.addSeries("effects", self.COLOR_EFFECTS)
     self.series_effects.setMaxSamples(self.MAX_SAMPLES)
     self.series_effects.setFixedRange(0.0, 16.0)
-
-    self.series_mixing = audio_channel.addSeries("mixing", self.COLOR_MIXING)
-    self.series_mixing.setMaxSamples(self.MAX_SAMPLES)
-    self.series_mixing.setFixedRange(0.0, 16.0)
 
     audio_channel.addHLine(10.0, vec3(1, 1, 1), "10ms")
     self._setupChannelEvents("AUDIO", audio_channel)

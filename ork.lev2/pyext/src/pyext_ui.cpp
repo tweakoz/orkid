@@ -653,7 +653,8 @@ void pyinit_ui(py::module& module_lev2) {
               })
           .def("channel", &ui::GraphView::channel)
           .def_readwrite("clear_color", &ui::GraphView::_bg_color)
-          .def_readwrite("show_stats", &ui::GraphView::_show_stats);
+          .def_readwrite("show_stats", &ui::GraphView::_show_stats)
+          .def_readwrite("min_band_pixels", &ui::GraphView::_min_band_pixels);
   type_codec->registerStdCodec<ui::graphview_ptr_t>(graphview_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto sgviewport_type = //

@@ -432,9 +432,9 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
         auto mapping = fxi->mapStorageBuffer(_stacked_ssbo, 0, SSBO_TOTAL_SIZE, lev2::BufferMapAccess::WRITE_ONLY);
         mapping->seek(0);
 
-        // sample_stride + 3 pads
+        // sample_stride + min_band_pixels + 2 pads
         mapping->make<int32_t>(max_sample_stride);
-        mapping->make<int32_t>(0);
+        mapping->make<float>(_min_band_pixels);
         mapping->make<int32_t>(0);
         mapping->make<int32_t>(0);
 
@@ -509,15 +509,9 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
 
           // Samples at offset 80 + SSBO_COLORS_SIZE + ((ch*16+si)*stride + idx)*4
           size_t samples_base = 80 + SSBO_COLORS_SIZE;
-          float data_range = s_max - s_min;
-          float min_data_val = (global_lane_height > 0.0f)
-            ? channel->_min_series_height * data_range / global_lane_height
-            : 0.0f;
-
           for (int si = 0; si < n_series; si++) {
             auto& series = channel->_series[si];
             size_t s_sc = series->sampleCount();
-            bool vis = series->_visible;
             size_t row_offset = samples_base + size_t(ch * SSBO_MAX_SERIES + si) * max_sample_stride * 4;
             mapping->seek(row_offset);
             for (int i = 0; i < ns; i++) {
@@ -527,7 +521,6 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
               float vm = (idx > 0 && (idx - 1) < s_sc) ? series->getSample(idx - 1) : v0;
               float vp = ((idx + 1) < s_sc) ? series->getSample(idx + 1) : v0;
               float val = 0.25f * vm + 0.5f * v0 + 0.25f * vp;
-              if (vis) val = std::max(val, min_data_val);
               mapping->make<float>(val);
             }
           }

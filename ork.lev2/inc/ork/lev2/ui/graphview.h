@@ -94,7 +94,7 @@ struct GraphChannel {
 
   // Stacked bar mode: all series rendered as stacked bars in one lane
   bool _stacked = false;
-  float _min_series_height = 1.0f;  // minimum pixel height per series band
+  float _min_series_height = 0.0f;  // minimum pixel height per series band
 
   // Per-lane styling
   fvec4 _lane_bgcolor = fvec4(0, 0, 0, 0);  // transparent by default
@@ -144,6 +144,7 @@ struct GraphView : public ui::PrimCanvas {
   bool _show_stats = true;
 
   int _label_spacing = 2;  // Margin between series label boxes
+  float _min_band_pixels = 2.0f;  // Minimum band height in pixels for stacked charts
 
   // Selected series for per-series scale control
   graphseries_ptr_t _selected_series = nullptr;
