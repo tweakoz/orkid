@@ -10,6 +10,7 @@
 #include <ork/lev2/ui/prim_canvas.h>
 #include <ork/lev2/gfx/util/grid.h>
 #include <deque>
+#include <map>
 
 namespace ork::ui {
 
@@ -93,12 +94,18 @@ struct GraphChannel {
 
   // Stacked bar mode: all series rendered as stacked bars in one lane
   bool _stacked = false;
-  float _min_series_height = 2.0f;  // minimum pixel height per series band
+  float _min_series_height = 1.0f;  // minimum pixel height per series band
 
   // Per-lane styling
   fvec4 _lane_bgcolor = fvec4(0, 0, 0, 0);  // transparent by default
   bool _lane_outline = false;
   fvec3 _lane_outline_color = fvec3(0.4f, 0.4f, 0.4f);
+
+  // Horizontal reference lines (value in data units, color, optional label)
+  struct HLine { float _value; fvec3 _color; std::string _label; };
+  std::vector<HLine> _hlines;
+  void addHLine(float value, fvec3 color, const std::string& label = "");
+  void clearHLines();
 
   // Reserved pixels at bottom of this channel's lane group (e.g. for event markers)
   int _bottom_margin = 0;
@@ -110,6 +117,12 @@ struct GraphChannel {
 
   void addEvent(int type, fvec4 color);
   void commitEventFrame();
+
+  // Event marker textures (white arrows modulated by vertex color)
+  std::map<int, lev2::texture_ptr_t> _event_textures;
+  std::map<int, lev2::image_ptr_t> _event_images;  // source images, lazily converted to textures
+  void setEventTexture(int event_type, lev2::texture_ptr_t texture);
+  void setEventImage(int event_type, lev2::image_ptr_t image);
 };
 using graphchannel_ptr_t = std::shared_ptr<GraphChannel>;
 ///////////////////////////////////////////////////////////////////////////////

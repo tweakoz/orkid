@@ -265,15 +265,16 @@ class MoonlightApp(ComponentizedApplication):
         vpack = vpack_item.widget
         vpack.uniform = True
 
-        # PrimCanvas for keyboard (top, 50%)
+        # GraphView for profiler (top, fills remaining space)
+        graphview = vpack.makeChild(uiclass=ui.GraphView, args=[])
+        self.profiler.graphview = graphview
+
+        # PrimCanvas for keyboard (bottom, fixed height)
         canvas = vpack.makeChild(uiclass=ui.PrimCanvas, args=["piano_canvas"])
         canvas.bg_color = vec4(0.2, 0.2, 0.25, 1)
         canvas.draw_background = True
+        canvas.fixed_height = 300
         self.keyboard = PianoKeyboard(canvas, tempo=TEMPO)
-
-        # GraphView for profiler (bottom, 50%)
-        graphview = vpack.makeChild(uiclass=ui.GraphView, args=[])
-        self.profiler.graphview = graphview
 
     ##############################################
 
@@ -380,7 +381,7 @@ def main():
     print()
 
     app = MoonlightApp()
-    ezapp = app.createEzApp(name="MidiPlayer", width=1280, height=540)
+    ezapp = app.createEzApp(name="MidiPlayer", fullscreen=True)
 
     print("[Subsystem Status]")
     gpu = ezapp.getSubsystem("gpu")

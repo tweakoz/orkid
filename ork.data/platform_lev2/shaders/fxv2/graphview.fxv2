@@ -1,0 +1,60 @@
+///////////////////////////////////////////////////////////////
+// GraphView shader — textured quads with vertex color modulation
+// Vertex format: V16T16C16 (position, texcoord, color — no normal)
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default {
+  glsl_version = "330";
+}
+///////////////////////////////////////////////////////////////
+uniform_set ublock_vtx {
+  mat4 MatMVP;
+}
+///////////////////////////////////////////////////////////////
+sampler_set samplers(descriptor_set 0) {
+  sampler2D ColorMap;
+}
+///////////////////////////////////////////////////////////////
+// Vertex interface matching SVtxV16T16C16 (no NORMAL)
+///////////////////////////////////////////////////////////////
+vertex_interface vif_PTC {
+  inputs {
+    vec4 position : POSITION;
+    vec2 uv0 : TEXCOORD0;
+    vec4 vtxcolor : COLOR0;
+  }
+  outputs {
+    vec4 frg_clr;
+    vec2 frg_uv0;
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_interface fif_PTC : vif_PTC : samplers {
+  outputs {
+    layout(location = 0) vec4 out_clr;
+  }
+}
+///////////////////////////////////////////////////////////////
+state_block sb_default : default {
+  DepthTest = LEQUALS;
+  DepthMask = ON;
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_texvtxcolor : vif_PTC : ublock_vtx {
+  gl_Position = MatMVP * position;
+  frg_clr     = vtxcolor;
+  frg_uv0     = uv0;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_texvtxcolor : fif_PTC {
+  vec4 texc = texture(ColorMap, frg_uv0);
+  out_clr   = vec4(texc.xyz * frg_clr.xyz, texc.r * frg_clr.a);
+}
+///////////////////////////////////////////////////////////////
+technique texvtxcolor {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_texvtxcolor;
+    fragment_shader = ps_texvtxcolor;
+    state_block     = sb_default;
+  }
+}

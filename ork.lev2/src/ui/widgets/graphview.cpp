@@ -13,6 +13,7 @@
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/math/misc_math.h>
 #include <ork/lev2/gfx/gfxvtxbuf.inl>
+#include <ork/lev2/gfx/image.h>
 ///////////////////////////////////////////////////////////
 namespace ork::ui {
 static constexpr int _kbasechanlaby = 16;
@@ -112,6 +113,23 @@ void GraphChannel::setSeriesOrder(const std::vector<std::string>& names) {
   _series = reordered;
 }
 /////////////////////////////////////////////////////////////////////////
+void GraphChannel::setEventTexture(int event_type, lev2::texture_ptr_t texture) {
+  _event_textures[event_type] = texture;
+}
+/////////////////////////////////////////////////////////////////////////
+void GraphChannel::setEventImage(int event_type, lev2::image_ptr_t image) {
+  _event_images[event_type] = image;
+  // Clear any existing texture so it gets recreated from the new image
+  _event_textures.erase(event_type);
+}
+/////////////////////////////////////////////////////////////////////////
+void GraphChannel::addHLine(float value, fvec3 color, const std::string& label) {
+  _hlines.push_back({value, color, label});
+}
+void GraphChannel::clearHLines() {
+  _hlines.clear();
+}
+/////////////////////////////////////////////////////////////////////////
 void GraphChannel::addEvent(int type, fvec4 color) {
   _pending_events.push_back({type, color});
 }
@@ -121,6 +139,7 @@ void GraphChannel::commitEventFrame() {
   while (_max_event_samples > 0 && _event_buffer.size() > _max_event_samples) {
     _event_buffer.pop_front();
   }
+
 }
 /////////////////////////////////////////////////////////////////////////
 // GraphView Implementation
@@ -299,6 +318,16 @@ static lev2::freestyle_mtl_ptr_t hud_material(lev2::Context* context) {
   static auto mtl = create_hud_material(context);
   return mtl;
 }
+///////////////////////////////////////////////////////////////////////////////
+static lev2::freestyle_mtl_ptr_t create_graphview_material(lev2::Context* context) {
+  auto mtl = std::make_shared<lev2::FreestyleMaterial>();
+  mtl->gpuInit(context, "orkshader://graphview");
+  return mtl;
+}
+static lev2::freestyle_mtl_ptr_t graphview_material(lev2::Context* context) {
+  static auto mtl = create_graphview_material(context);
+  return mtl;
+}
 /////////////////////////////////////////////////////////////////////////
 void GraphView::DoDraw(drawevent_constptr_t drwev) {
   auto tgt    = drwev->GetTarget();
@@ -308,6 +337,9 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
   auto primi  = tgt->PRI();
   auto defmtl = lev2::defaultUIMaterial();
   auto vbuf   = get_vertexbuffer(tgt);
+
+  // Init PrimCanvas GPU resources (needed before event layer lazy-init)
+  gpuInit(tgt);
 
   // Draw background
   if (_draw_background) {
@@ -997,6 +1029,97 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
       }
 
       ///////////////////////////////////////////////////
+      // Draw horizontal reference lines
+      ///////////////////////////////////////////////////
+      if (!channel->_hlines.empty() && has_series) {
+        size_t num_lanes = channel->_stacked ? 1 : channel->_series.size();
+        float lane_y_top = float(channel_lane_start) * global_lane_height + accumulated_margin;
+        float lane_y_bottom = lane_y_top + float(num_lanes) * global_lane_height;
+
+        // Get data range for Y mapping
+        float data_min = 0.0f, data_max = 1.0f;
+        if (channel->_stacked) {
+          auto& fs = channel->_series[0];
+          if (fs->_use_fixed_range) {
+            data_min = fs->_fixed_min;
+            data_max = fs->_fixed_max;
+          }
+        } else {
+          auto& fs = channel->_series[0];
+          if (fs->_use_fixed_range) {
+            data_min = fs->_fixed_min;
+            data_max = fs->_fixed_max;
+          }
+        }
+
+        constexpr float kChartMargin = 3.0f;
+        float hl_x0 = kChartMargin;
+        float hl_x1 = float(width() - (max_label_width + 80)) - kChartMargin;
+        float hl_y0 = lane_y_top + kChartMargin;
+        float hl_y1 = lane_y_bottom - kChartMargin;
+
+        // Account for min_series_height: each visible series reserves pixels at bottom
+        if (channel->_stacked) {
+          size_t n_visible = 0;
+          for (auto& s : channel->_series) if (s->_visible) n_visible++;
+          hl_y1 -= float(n_visible) * channel->_min_series_height;
+        }
+
+        float hl_range = data_max - data_min;
+
+        size_t hline_verts = channel->_hlines.size() * 2;
+        lev2::VtxWriter<vtx_t> vw_hl;
+        vw_hl.Lock(tgt, vbuf.get(), hline_verts);
+
+        for (auto& hl : channel->_hlines) {
+          float t = (hl_range > 0.0f) ? (hl._value - data_min) / hl_range : 0.0f;
+          float py = hl_y1 - t * (hl_y1 - hl_y0);  // y1=bottom (min), y0=top (max)
+          if (py >= hl_y0 && py <= hl_y1) {
+            vw_hl.AddVertex(vtx_t(fvec4(hl_x0, py, 0, 1), fvec4(), fvec4(hl._color, 1.0f)));
+            vw_hl.AddVertex(vtx_t(fvec4(hl_x1, py, 0, 1), fvec4(), fvec4(hl._color, 1.0f)));
+          }
+        }
+
+        vw_hl.UnLock(tgt);
+
+        mtxi->PushUIMatrix(width(), height());
+        auto rs = mtl->_rasterstate;
+        auto omacro = rs->_blendingMacro;
+        rs->setBlendingMacro(lev2::BlendingMacro::ALPHA);
+        rs->setDepthTest(lev2::EDepthTest::OFF);
+        rs->setCullTest(lev2::ECullTest::OFF);
+        rs->setWriteMaskZ(false);
+        auto fxi = tgt->FXI();
+        fxi->pushRasterState(rs);
+        mtl->begin(tek, RCFD);
+        mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
+        gbi->DrawPrimitiveEML(vw_hl, lev2::PrimitiveType::LINES);
+        mtl->end(RCFD);
+        fxi->popRasterState();
+        rs->_blendingMacro = omacro;
+        mtxi->PopUIMatrix();
+
+        // Draw hline labels
+        for (auto& hl : channel->_hlines) {
+          if (hl._label.empty()) continue;
+          float t = (hl_range > 0.0f) ? (hl._value - data_min) / hl_range : 0.0f;
+          float py = hl_y1 - t * (hl_y1 - hl_y0);
+          if (py >= hl_y0 && py <= hl_y1) {
+            int label_len = lev2::FontMan::stringWidth(hl._label.length());
+            int label_x = int(hl_x1) - label_len;
+            int label_y = int(py) - 14;  // place label above the line
+            tgt->PushModColor(fvec4(hl._color, 1.0f));
+            mtxi->PushUIMatrix(width(), height());
+            lev2::FontMan::beginTextBlock(tgt, 64);
+            lev2::FontMan::DrawText(tgt, label_x, label_y, hl._label.c_str());
+            lev2::FontMan::endTextBlock(tgt);
+            mtxi->PopUIMatrix();
+            tgt->PopModColor();
+          }
+        }
+      }
+
+      ///////////////////////////////////////////////////
       // Draw event markers in the bottom margin area
       ///////////////////////////////////////////////////
       if (channel->_bottom_margin > 0 && !channel->_event_buffer.empty()) {
@@ -1004,91 +1127,164 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
         float margin_y_top = float(channel_lane_start + ch_num_lanes) * global_lane_height + accumulated_margin;
         float margin_y_bottom = margin_y_top + float(channel->_bottom_margin);
         float margin_y_center = (margin_y_top + margin_y_bottom) * 0.5f;
-        float marker_half_h = float(channel->_bottom_margin) * 0.35f;
+        float marker_height = float(channel->_bottom_margin) * 0.7f;
 
         constexpr float kEventChartMargin = 3.0f;
         float ev_x0 = kEventChartMargin;
         float ev_x1 = float(width() - (max_label_width + 80)) - kEventChartMargin;
 
-        size_t event_count = channel->_event_buffer.size();
-        size_t ev_display_count = event_count;
-        size_t ev_start_index = 0;
+        {
+          ///////////////////////////////////////////////////
+          // VtxWriter quad rendering (solid.fxv2)
+          // Textured arrows when event textures set from Python,
+          // otherwise solid colored rectangles as fallback
+          ///////////////////////////////////////////////////
+          float marker_half_h = marker_height * 0.5f;
 
-        // Match first series' window for consistent X mapping
-        if (!channel->_series.empty()) {
-          auto& fs = channel->_series[0];
-          size_t sc = fs->sampleCount();
-          if (fs->_window_size > 0 && fs->_window_size < sc) {
-            // Series is windowed — show same count
-            ev_display_count = std::min(event_count, fs->_window_size);
-            ev_start_index = event_count > ev_display_count ? event_count - ev_display_count : 0;
+          size_t event_count = channel->_event_buffer.size();
+          size_t ev_display_count = event_count;
+          size_t ev_start_index = 0;
+
+          // Match first series' window for consistent X mapping
+          if (!channel->_series.empty()) {
+            auto& fs = channel->_series[0];
+            size_t sc = fs->sampleCount();
+            if (fs->_window_size > 0 && fs->_window_size < sc) {
+              ev_display_count = std::min(event_count, fs->_window_size);
+              ev_start_index = event_count > ev_display_count ? event_count - ev_display_count : 0;
+            }
           }
-        }
 
-        float ev_x_step = (ev_display_count > 1) ? (ev_x1 - ev_x0) / float(ev_display_count - 1) : 0.0f;
+          float ev_x_step = (ev_display_count > 1) ? (ev_x1 - ev_x0) / float(ev_display_count - 1) : 0.0f;
 
-        // Count marker vertices
-        size_t marker_vert_count = 0;
-        for (size_t i = 0; i < ev_display_count; i++) {
-          marker_vert_count += channel->_event_buffer[ev_start_index + i].size() * 3;
-        }
+          // Lazy-init: convert event images to textures (requires GPU context)
+          for (auto& [etype, img] : channel->_event_images) {
+            if (img && channel->_event_textures.find(etype) == channel->_event_textures.end()) {
+              auto tex = std::make_shared<lev2::Texture>();
+              tgt->TXI()->initTextureFromImage(tex.get(), img, false);
+              channel->_event_textures[etype] = tex;
+            }
+          }
 
-        if (marker_vert_count > 0) {
-          lev2::VtxWriter<vtx_t> vw_ev;
-          vw_ev.Lock(tgt, vbuf.get(), marker_vert_count);
+          bool use_textures = !channel->_event_textures.empty();
+
+          // Collect events grouped by type for textured batching
+          // key = event_type, value = list of (cx, color)
+          std::map<int, std::vector<std::pair<float, fvec4>>> events_by_type;
+          size_t total_marker_count = 0;
 
           for (size_t i = 0; i < ev_display_count; i++) {
             auto& events = channel->_event_buffer[ev_start_index + i];
             float cx = ev_x0 + float(i) * ev_x_step;
-
             for (auto& ev : events) {
-              fvec3 ec(ev._color.x, ev._color.y, ev._color.z);
-              float hw = 3.0f;  // half-width in pixels
-              float hh = marker_half_h;
-
-              if (ev._type == 0) {
-                // Note on: upward triangle
-                vw_ev.AddVertex(vtx_t(fvec3(cx, margin_y_center - hh, 0), fvec4(), ec));
-                vw_ev.AddVertex(vtx_t(fvec3(cx + hw, margin_y_center + hh, 0), fvec4(), ec));
-                vw_ev.AddVertex(vtx_t(fvec3(cx - hw, margin_y_center + hh, 0), fvec4(), ec));
-              } else if (ev._type == 1) {
-                // Note off: downward triangle
-                vw_ev.AddVertex(vtx_t(fvec3(cx - hw, margin_y_center - hh, 0), fvec4(), ec));
-                vw_ev.AddVertex(vtx_t(fvec3(cx + hw, margin_y_center - hh, 0), fvec4(), ec));
-                vw_ev.AddVertex(vtx_t(fvec3(cx, margin_y_center + hh, 0), fvec4(), ec));
-              } else {
-                // Generic: right-pointing triangle
-                vw_ev.AddVertex(vtx_t(fvec3(cx - hw, margin_y_center - hh, 0), fvec4(), ec));
-                vw_ev.AddVertex(vtx_t(fvec3(cx + hw, margin_y_center, 0), fvec4(), ec));
-                vw_ev.AddVertex(vtx_t(fvec3(cx - hw, margin_y_center + hh, 0), fvec4(), ec));
-              }
+              events_by_type[ev._type].emplace_back(cx, ev._color);
+              total_marker_count++;
             }
           }
 
-          vw_ev.UnLock(tgt);
+          if (total_marker_count > 0) {
+            mtxi->PushUIMatrix(width(), height());
+            auto rs = mtl->_rasterstate;
+            auto omacro = rs->_blendingMacro;
+            rs->setBlendingMacro(lev2::BlendingMacro::ALPHA);
+            rs->setDepthTest(lev2::EDepthTest::OFF);
+            rs->setCullTest(lev2::ECullTest::OFF);
+            rs->setWriteMaskZ(false);
+            rs->_priority = 1 << 20;
+            auto fxi = tgt->FXI();
+            fxi->pushRasterState(rs);
 
-          mtxi->PushUIMatrix(width(), height());
-          auto rs = mtl->_rasterstate;
-          auto omacro = rs->_blendingMacro;
-          rs->setBlendingMacro(lev2::BlendingMacro::ALPHA);
-          rs->setDepthTest(lev2::EDepthTest::OFF);
-          rs->setCullTest(lev2::ECullTest::OFF);
-          rs->setWriteMaskZ(true);
-          rs->_priority = 1 << 20;
-          auto fxi = tgt->FXI();
-          fxi->pushRasterState(rs);
-          mtl->begin(tek, RCFD);
-          mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
-          gbi->DrawPrimitiveEML(vw_ev, lev2::PrimitiveType::TRIANGLES);
-          mtl->end(RCFD);
-          fxi->popRasterState();
-          rs->_blendingMacro = omacro;
-          mtxi->PopUIMatrix();
+            if (use_textures) {
+              // Textured path: render one batch per event type using graphview.fxv2
+              auto gv_mtl = graphview_material(tgt);
+              auto tek_tex = gv_mtl->technique("texvtxcolor");
+              auto par_gv_mvp = gv_mtl->param("MatMVP");
+              auto par_colormap = gv_mtl->param("ColorMap");
+
+              for (auto& [etype, markers] : events_by_type) {
+                // Find texture for this event type
+                auto tex_it = channel->_event_textures.find(etype);
+                lev2::Texture* bound_tex = nullptr;
+                if (tex_it != channel->_event_textures.end() && tex_it->second) {
+                  bound_tex = tex_it->second.get();
+                }
+                if (!bound_tex) continue; // skip types with no texture
+
+                size_t batch_verts = markers.size() * 6;
+                lev2::VtxWriter<vtx_t> vw_ev;
+                vw_ev.Lock(tgt, vbuf.get(), batch_verts);
+
+                for (auto& [cx, color] : markers) {
+                  fvec4 ec = color;
+                  float hw = 3.0f;
+                  float hh = marker_half_h;
+                  float x0 = cx - hw;
+                  float x1 = cx + hw;
+                  float y0 = margin_y_center - hh;
+                  float y1 = margin_y_center + hh;
+
+                  // Two triangles with UVs for texture mapping
+                  vw_ev.AddVertex(vtx_t(fvec4(x0, y0, 0, 1), fvec4(0, 0, 0, 0), ec));
+                  vw_ev.AddVertex(vtx_t(fvec4(x1, y0, 0, 1), fvec4(1, 0, 0, 0), ec));
+                  vw_ev.AddVertex(vtx_t(fvec4(x1, y1, 0, 1), fvec4(1, 1, 0, 0), ec));
+                  vw_ev.AddVertex(vtx_t(fvec4(x0, y0, 0, 1), fvec4(0, 0, 0, 0), ec));
+                  vw_ev.AddVertex(vtx_t(fvec4(x1, y1, 0, 1), fvec4(1, 1, 0, 0), ec));
+                  vw_ev.AddVertex(vtx_t(fvec4(x0, y1, 0, 1), fvec4(0, 1, 0, 0), ec));
+                }
+
+                vw_ev.UnLock(tgt);
+
+                gv_mtl->begin(tek_tex, RCFD);
+                gv_mtl->bindParamMatrix(par_gv_mvp, mtxi->RefMVPMatrix());
+                gv_mtl->bindParamTexture(par_colormap, bound_tex);
+                gbi->DrawPrimitiveEML(vw_ev, lev2::PrimitiveType::TRIANGLES);
+                gv_mtl->end(RCFD);
+              }
+            } else {
+              // Fallback: solid colored rectangles (no texture)
+              size_t marker_vert_count = total_marker_count * 6;
+              lev2::VtxWriter<vtx_t> vw_ev;
+              vw_ev.Lock(tgt, vbuf.get(), marker_vert_count);
+
+              for (auto& [etype, markers] : events_by_type) {
+                for (auto& [cx, color] : markers) {
+                  fvec4 ec = color;
+                  float hw = 3.0f;
+                  float hh = marker_half_h;
+                  float x0 = cx - hw;
+                  float x1 = cx + hw;
+                  float y0 = margin_y_center - hh;
+                  float y1 = margin_y_center + hh;
+
+                  vw_ev.AddVertex(vtx_t(fvec4(x0, y0, 0, 1), fvec4(), ec));
+                  vw_ev.AddVertex(vtx_t(fvec4(x1, y0, 0, 1), fvec4(), ec));
+                  vw_ev.AddVertex(vtx_t(fvec4(x1, y1, 0, 1), fvec4(), ec));
+                  vw_ev.AddVertex(vtx_t(fvec4(x0, y0, 0, 1), fvec4(), ec));
+                  vw_ev.AddVertex(vtx_t(fvec4(x1, y1, 0, 1), fvec4(), ec));
+                  vw_ev.AddVertex(vtx_t(fvec4(x0, y1, 0, 1), fvec4(), ec));
+                }
+              }
+
+              vw_ev.UnLock(tgt);
+
+              mtl->begin(tek, RCFD);
+              mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
+              gbi->DrawPrimitiveEML(vw_ev, lev2::PrimitiveType::TRIANGLES);
+              mtl->end(RCFD);
+            }
+
+            fxi->popRasterState();
+            rs->_blendingMacro = omacro;
+            mtxi->PopUIMatrix();
+          }
         }
       }
 
       accumulated_margin += float(channel->_bottom_margin);
     }
+
+    ///////////////////////////////
+
     ///////////////////////////////
     // draw misc labels in UI pixel space
     ///////////////////////////////

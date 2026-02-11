@@ -44,17 +44,14 @@ void QuadPrimitive::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_
   }
   OrkAssert(material);
 
-  // Bind SSBO using the material's storage block
+  // Get storage block and params from material
   auto ssbo_block = material->storageBlock("storage_quads");
-  FXI->bindStorageBuffer(ssbo_block, canvas->ssboGpu());
-
-  // Get params from material
   auto param_canvas_size = material->param("canvas_size");
   auto param_ssbo_base = material->param("ssbo_base");
   auto param_layer_transform = material->param("layer_transform");
   auto param_colormap = material->param("ColorMap");
 
-  // Set uniforms
+  // Set uniforms (stored in pipeline, applied during beginBlock)
   fvec2 canvas_size(canvas->width(), canvas->height());
   _pipeline->bindParam(param_canvas_size, canvas_size);
   _pipeline->bindParam(param_ssbo_base, (int)_ssbo_offset);
@@ -69,6 +66,9 @@ void QuadPrimitive::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_ptr_
   _pipeline->_rasterstate->_priority = 1 << 20;
   FXI->pushRasterState(_pipeline->_rasterstate);
   _pipeline->wrappedDrawCall(rcid, [&]() {
+    // Bind SSBO inside draw call — after technique/shader binding —
+    // to ensure this canvas's SSBO is active (not a stale binding from another PrimCanvas)
+    FXI->bindStorageBuffer(ssbo_block, canvas->ssboGpu());
     GBI->DrawPrimitiveEML(
         canvas->ssboGpu(),
         lev2::PrimitiveType::TRIANGLES,
@@ -112,8 +112,7 @@ void SpritePrimitive::drawInstanced(PrimCanvas* canvas, lev2::Context* ctx, lev2
   // Use sprite-specific pipeline
   auto pipeline = _texture ? canvas->pipelineSpriteTextured() : canvas->pipelineSpriteSolid();
 
-  // Bind SSBO
-  FXI->bindStorageBuffer(canvas->ssboBlock(), canvas->ssboGpu());
+  auto ssbo_block = canvas->ssboBlock();
 
   // Set uniforms using sprite-specific params
   fvec2 canvas_size(canvas->width(), canvas->height());
@@ -131,6 +130,7 @@ void SpritePrimitive::drawInstanced(PrimCanvas* canvas, lev2::Context* ctx, lev2
   pipeline->_rasterstate->_priority = 1 << 20;
   FXI->pushRasterState(pipeline->_rasterstate);
   pipeline->wrappedDrawCall(rcid, [&]() {
+    FXI->bindStorageBuffer(ssbo_block, canvas->ssboGpu());
     GBI->DrawPrimitiveEML(
         canvas->ssboGpu(),
         lev2::PrimitiveType::TRIANGLES,
@@ -273,10 +273,7 @@ void TriStripPrimitive::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_
   }
   OrkAssert(material);
 
-  // Bind SSBO using the material's storage block (not canvas's default)
   auto ssbo_block = material->storageBlock("storage_quads");
-  FXI->bindStorageBuffer(ssbo_block, canvas->ssboGpu());
-
   auto param_canvas_size = material->param("canvas_size");
   auto param_ssbo_base = material->param("ssbo_base");
   auto param_layer_transform = material->param("layer_transform");
@@ -295,6 +292,7 @@ void TriStripPrimitive::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_
   _pipeline->_rasterstate->_priority = 1 << 20;
   FXI->pushRasterState(_pipeline->_rasterstate);
   _pipeline->wrappedDrawCall(rcid, [&]() {
+    FXI->bindStorageBuffer(ssbo_block, canvas->ssboGpu());
     GBI->DrawPrimitiveEML(
         canvas->ssboGpu(),
         lev2::PrimitiveType::TRIANGLESTRIP,
@@ -341,10 +339,7 @@ void TriListPrimitive::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_p
   }
   OrkAssert(material);
 
-  // Bind SSBO using the material's storage block (not canvas's default)
   auto ssbo_block = material->storageBlock("storage_quads");
-  FXI->bindStorageBuffer(ssbo_block, canvas->ssboGpu());
-
   auto param_canvas_size = material->param("canvas_size");
   auto param_ssbo_base = material->param("ssbo_base");
   auto param_layer_transform = material->param("layer_transform");
@@ -363,6 +358,7 @@ void TriListPrimitive::draw(PrimCanvas* canvas, lev2::Context* ctx, lev2::rcfd_p
   _pipeline->_rasterstate->_priority = 1 << 20;
   FXI->pushRasterState(_pipeline->_rasterstate);
   _pipeline->wrappedDrawCall(rcid, [&]() {
+    FXI->bindStorageBuffer(ssbo_block, canvas->ssboGpu());
     GBI->DrawPrimitiveEML(
         canvas->ssboGpu(),
         lev2::PrimitiveType::TRIANGLES,
@@ -656,6 +652,28 @@ void PrimCanvas::_rebuildSsbo(lev2::Context* ctx) {
 
 ////////////////////////////////////////////////////////////////
 
+void PrimCanvas::renderLayers(lev2::Context* ctx) {
+  gpuInit(ctx);
+  _rebuildSsbo(ctx);
+
+  if (_ssbo_cpu_data.empty()) {
+    return;
+  }
+
+  auto rcfd = ctx->topRenderContextFrameData();
+
+  for (auto& layer : _layers) {
+    if (!layer->_enabled) {
+      continue;
+    }
+    for (auto& prim : layer->_primitives) {
+      prim->draw(this, ctx, rcfd, layer);
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////
+
 void PrimCanvas::DoDraw(drawevent_constptr_t drwev) {
   auto ctx = drwev->GetTarget();
   auto FBI = ctx->FBI();
@@ -673,9 +691,6 @@ void PrimCanvas::DoDraw(drawevent_constptr_t drwev) {
     _onPreRender();
   }
 
-  // Rebuild SSBO if dirty
-  _rebuildSsbo(ctx);
-
   // Get widget bounds in root coordinates
   int rx1, ry1;
   LocalToRoot(0, 0, rx1, ry1);
@@ -687,18 +702,7 @@ void PrimCanvas::DoDraw(drawevent_constptr_t drwev) {
   FBI->pushViewport(vprect);
   FBI->pushScissor(vprect);
 
-  // Get RCFD for pipeline draws
-  auto rcfd = ctx->topRenderContextFrameData();
-
-  // Draw all layers in order (painter's algorithm), skipping disabled layers
-  for (auto& layer : _layers) {
-    if (!layer->_enabled) {
-      continue;
-    }
-    for (auto& prim : layer->_primitives) {
-      prim->draw(this, ctx, rcfd, layer);
-    }
-  }
+  renderLayers(ctx);
 
   // Restore viewport and scissor
   FBI->popScissor();

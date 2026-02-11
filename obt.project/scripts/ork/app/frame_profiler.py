@@ -46,7 +46,7 @@ EVENT_GENERIC = 2
 
 class FrameProfilerComponent(ApplicationComponent):
 
-  MAX_SAMPLES = 250       # ~4 seconds at 60fps
+  MAX_SAMPLES = 490       # ~8 seconds at 60fps
   EVENT_STRIP_HEIGHT = 16  # pixels reserved below channel for event markers
 
   # Series colors — defined in HSV for easy hue spacing
@@ -148,8 +148,33 @@ class FrameProfilerComponent(ApplicationComponent):
     if name in self._event_channels:
       channel.bottom_margin = self.EVENT_STRIP_HEIGHT
       channel.max_event_samples = self.MAX_SAMPLES
+      # Set white arrow images for event types (modulated by vertex color at render time)
+      channel.setEventImage(EVENT_NOTE_ON, self._makeArrowImage(direction="down"))
+      channel.setEventImage(EVENT_NOTE_OFF, self._makeArrowImage(direction="up"))
+      channel.setEventImage(EVENT_GENERIC, self._makeArrowImage(direction="up"))
       self._pending_events[name] = []
       self._event_channel_objs[name] = channel
+
+  ##############################################
+
+  @staticmethod
+  def _makeArrowImage(direction="up", size=16):
+    """Create a white arrow image (RGBA8) for event marker textures.
+    The white pixels get modulated by vertex color at render time."""
+    import numpy as np
+    S = size
+    pixels = np.zeros((S, S, 4), dtype=np.uint8)
+    for y in range(S):
+      row = y if direction == "up" else (S - 1 - y)
+      if row < (S * 10 // 16):
+        half_w = (row * 7) // 9
+      else:
+        half_w = 2
+      cx = S // 2
+      for x in range(max(0, cx - half_w), min(S, cx + half_w + 1)):
+        pixels[y, x] = [255, 255, 255, 255]
+    buf = pixels.tobytes()
+    return lev2.Image.createFromBuffer(S, S, tokens.RGBA8, buf)
 
   ##############################################
 
@@ -209,6 +234,7 @@ class FrameProfilerComponent(ApplicationComponent):
     self._updateSecondaryChannels()
     self._reorderBudgetSeries()
 
+    budget_channel.addHLine(8.3, vec3(1, 1, 1), "8.3ms")
     self._setupChannelEvents("GPU", budget_channel)
 
   ##############################################
@@ -221,16 +247,17 @@ class FrameProfilerComponent(ApplicationComponent):
 
     self.series_voices = audio_channel.addSeries("voices", self.COLOR_VOICES)
     self.series_voices.setMaxSamples(self.MAX_SAMPLES)
-    self.series_voices.setFixedRange(0.0, 5.0)
+    self.series_voices.setFixedRange(0.0, 16.0)
 
     self.series_effects = audio_channel.addSeries("effects", self.COLOR_EFFECTS)
     self.series_effects.setMaxSamples(self.MAX_SAMPLES)
-    self.series_effects.setFixedRange(0.0, 5.0)
+    self.series_effects.setFixedRange(0.0, 16.0)
 
     self.series_mixing = audio_channel.addSeries("mixing", self.COLOR_MIXING)
     self.series_mixing.setMaxSamples(self.MAX_SAMPLES)
-    self.series_mixing.setFixedRange(0.0, 5.0)
+    self.series_mixing.setFixedRange(0.0, 16.0)
 
+    audio_channel.addHLine(10.0, vec3(1, 1, 1), "10ms")
     self._setupChannelEvents("AUDIO", audio_channel)
 
   ##############################################

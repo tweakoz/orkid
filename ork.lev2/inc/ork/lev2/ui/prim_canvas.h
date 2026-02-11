@@ -262,6 +262,10 @@ struct PrimCanvas : public Widget {
   // Mark SSBO as dirty (needs upload to GPU)
   void markDirty() { _ssbo_dirty = true; }
 
+  // Render all layers (gpuInit + SSBO rebuild + draw)
+  // Caller must have already pushed viewport/scissor
+  void renderLayers(lev2::Context* ctx);
+
   //////////////////////////////////////////////////////////////
   // Metrics (for leak detection / debugging)
   //////////////////////////////////////////////////////////////
