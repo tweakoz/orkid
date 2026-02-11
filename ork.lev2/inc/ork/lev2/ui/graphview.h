@@ -61,6 +61,11 @@ struct GraphSeries {
 };
 using graphseries_ptr_t = std::shared_ptr<GraphSeries>;
 ///////////////////////////////////////////////////////////////////////////////
+struct GraphEvent {
+  int _type = 0;      // 0=note_on, 1=note_off, 2=generic
+  fvec4 _color;
+};
+///////////////////////////////////////////////////////////////////////////////
 // GraphChannel: Can use either lambda-based or series-based data
 // Lambda mode: backward compatible with existing code
 // Series mode: new simplified API with internal data storage
@@ -94,6 +99,17 @@ struct GraphChannel {
   fvec4 _lane_bgcolor = fvec4(0, 0, 0, 0);  // transparent by default
   bool _lane_outline = false;
   fvec3 _lane_outline_color = fvec3(0.4f, 0.4f, 0.4f);
+
+  // Reserved pixels at bottom of this channel's lane group (e.g. for event markers)
+  int _bottom_margin = 0;
+
+  // Event markers rendered in the bottom margin area
+  std::deque<std::vector<GraphEvent>> _event_buffer;
+  std::vector<GraphEvent> _pending_events;
+  size_t _max_event_samples = 0;  // ring buffer size (0 = disabled)
+
+  void addEvent(int type, fvec4 color);
+  void commitEventFrame();
 };
 using graphchannel_ptr_t = std::shared_ptr<GraphChannel>;
 ///////////////////////////////////////////////////////////////////////////////

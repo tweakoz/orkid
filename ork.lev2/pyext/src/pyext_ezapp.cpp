@@ -966,6 +966,12 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
       })
       .def_property_readonly("perf_endFrame_duration", [](ezmainwin_ptr_t mwin) -> double {
         return mwin->_perf_endFrame_duration;
+      })
+      .def_property_readonly("perf_submit_duration", [](ezmainwin_ptr_t mwin) -> double {
+        return mwin->_perf_submit_duration;
+      })
+      .def_property_readonly("perf_present_vk_duration", [](ezmainwin_ptr_t mwin) -> double {
+        return mwin->_perf_present_vk_duration;
       });
   type_codec->registerStdCodec<ezmainwin_ptr_t>(ezmainwin_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -1026,6 +1032,12 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
       })
       .def_property_readonly("perf_endFrame_duration", [](ezsecondarywin_ptr_t win) -> double {
         return win->_perf_endFrame_duration;
+      })
+      .def_property_readonly("perf_submit_duration", [](ezsecondarywin_ptr_t win) -> double {
+        return win->_perf_submit_duration;
+      })
+      .def_property_readonly("perf_present_vk_duration", [](ezsecondarywin_ptr_t win) -> double {
+        return win->_perf_present_vk_duration;
       })
       .def_property_readonly("should_close", &EzSecondaryWin::shouldClose)
       .def_property_readonly("ui_context", [](ezsecondarywin_ptr_t win) -> ui::context_ptr_t {

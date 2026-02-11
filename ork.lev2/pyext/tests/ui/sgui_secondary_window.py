@@ -380,7 +380,7 @@ class DualSceneGraphWindow(ComponentizedApplication):
     self.win_height = 600
 
     self.scene = self.addComponent("scene", _DualSceneComponent)
-    self.profiler = self.addComponent("profiler", FrameProfilerComponent)
+    self.profiler = self.addComponent("profiler", FrameProfilerComponent, audio=False)
 
     self.ezapp_args = {
       'name': 'DualSceneGraph::Primary',

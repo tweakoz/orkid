@@ -112,6 +112,17 @@ void GraphChannel::setSeriesOrder(const std::vector<std::string>& names) {
   _series = reordered;
 }
 /////////////////////////////////////////////////////////////////////////
+void GraphChannel::addEvent(int type, fvec4 color) {
+  _pending_events.push_back({type, color});
+}
+void GraphChannel::commitEventFrame() {
+  _event_buffer.push_back(std::move(_pending_events));
+  _pending_events.clear();
+  while (_max_event_samples > 0 && _event_buffer.size() > _max_event_samples) {
+    _event_buffer.pop_front();
+  }
+}
+/////////////////////////////////////////////////////////////////////////
 // GraphView Implementation
 /////////////////////////////////////////////////////////////////////////
 GraphView::GraphView()
@@ -348,7 +359,12 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
         global_total_series += channel->_series.size();
       }
     }
-    float global_lane_height = global_total_series > 0 ? float(height()) / float(global_total_series) : float(height());
+    int total_bottom_margins = 0;
+    for (auto& channel : _channelmap) {
+      total_bottom_margins += channel->_bottom_margin;
+    }
+    float usable_height = float(height() - total_bottom_margins);
+    float global_lane_height = global_total_series > 0 ? usable_height / float(global_total_series) : usable_height;
     size_t global_lane_index = 0;
 
     ///////////////////////////////
@@ -474,7 +490,11 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
             mapping->seek(row_offset);
             for (int i = 0; i < ns; i++) {
               size_t idx = si_start + i;
-              float val = (idx < s_sc) ? series->getSample(idx) : 0.0f;
+              // 3-tap low-pass filter [1/4, 1/2, 1/4] to smooth sharp slopes
+              float v0 = (idx < s_sc) ? series->getSample(idx) : 0.0f;
+              float vm = (idx > 0 && (idx - 1) < s_sc) ? series->getSample(idx - 1) : v0;
+              float vp = ((idx + 1) < s_sc) ? series->getSample(idx + 1) : v0;
+              float val = 0.25f * vm + 0.5f * v0 + 0.25f * vp;
               if (vis) val = std::max(val, min_data_val);
               mapping->make<float>(val);
             }
@@ -486,6 +506,7 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
     }
 
     int ichanlaby = _kbasechanlaby;
+    float accumulated_margin = 0.0f;
     for (auto channel : _channelmap) {
       const std::string& name = channel->_name;
 
@@ -508,8 +529,8 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
       ///////////////////////////////////////////////////
       if (has_series && channel->_lane_bgcolor.w > 0.0f) {
         size_t num_lanes = channel->_stacked ? 1 : channel->_series.size();
-        float bg_y_top = float(channel_lane_start) * global_lane_height;
-        float bg_y_bottom = bg_y_top + float(num_lanes) * global_lane_height;
+        float bg_y_top = float(channel_lane_start) * global_lane_height + accumulated_margin;
+        float bg_y_bottom = bg_y_top + float(num_lanes) * global_lane_height + float(channel->_bottom_margin);
 
         fvec3 bg_rgb(channel->_lane_bgcolor.x, channel->_lane_bgcolor.y, channel->_lane_bgcolor.z);
 
@@ -542,8 +563,8 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
 
       if (has_series && channel->_lane_outline) {
         size_t num_lanes = channel->_stacked ? 1 : channel->_series.size();
-        float ol_y_top = float(channel_lane_start) * global_lane_height;
-        float ol_y_bottom = ol_y_top + float(num_lanes) * global_lane_height;
+        float ol_y_top = float(channel_lane_start) * global_lane_height + accumulated_margin;
+        float ol_y_bottom = ol_y_top + float(num_lanes) * global_lane_height + float(channel->_bottom_margin);
         fvec3 ol_color = channel->_lane_outline_color;
 
         lev2::VtxWriter<vtx_t> vw_ol;
@@ -575,9 +596,27 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
         //////////////////////////////////////////////////////////
         // Stacked channel: compact legend within 1 lane
         //////////////////////////////////////////////////////////
-        float lane_y_top = float(global_lane_index) * global_lane_height;
-        int legend_y = int(lane_y_top) + 4;  // 4px padding from top of lane
+        float lane_y_top = float(global_lane_index) * global_lane_height + accumulated_margin;
+        float lane_y_bottom = lane_y_top + global_lane_height;
+        int n_legend_rows = int(channel->_series.size());
+        int legend_total_h = n_legend_rows * 16;
+        int legend_y = int(lane_y_bottom) - legend_total_h - 4;  // 4px padding from bottom
         int legend_x = width() - (max_label_width + 80);  // leave room for value
+
+        // Channel name header (top/center of lane)
+        {
+          int header_w = lev2::FontMan::stringWidth(channel->_name.length());
+          int legend_left = width() - (max_label_width + 80);
+          int header_x = legend_left + (width() - legend_left - header_w) / 2;
+          int header_y = int(lane_y_top) + 4;
+          fvec3 header_color(0.7f, 0.7f, 0.7f);
+          tgt->RefModColor() = header_color;
+          mtxi->PushUIMatrix(width(), height());
+          lev2::FontMan::beginTextBlock(tgt, 128);
+          lev2::FontMan::DrawText(tgt, header_x, header_y, channel->_name.c_str());
+          lev2::FontMan::endTextBlock(tgt);
+          mtxi->PopUIMatrix();
+        }
 
         // Iterate in reverse so label order matches visual stack (series 0 at bottom)
         for (int si = int(channel->_series.size()) - 1; si >= 0; si--) {
@@ -621,7 +660,7 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
           // Current value
           if (series->_visible && series->sampleCount() > 0) {
             float value = series->getSample(series->sampleCount() - 1);
-            auto valstr = FormatString("%0.5g", value);
+            auto valstr = FormatString("%0.2f", value);
             tgt->RefModColor() = series->_color;
             mtxi->PushUIMatrix(width(), height());
             lev2::FontMan::beginTextBlock(tgt, 128);
@@ -638,9 +677,25 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
         //////////////////////////////////////////////////////////
         // Non-stacked: original per-series label rendering
         //////////////////////////////////////////////////////////
+
+        // Channel name header (top/center of lane group)
+        {
+          float header_y = float(global_lane_index) * global_lane_height + accumulated_margin + 4.0f;
+          int header_w = lev2::FontMan::stringWidth(channel->_name.length());
+          int legend_left = width() - (max_label_width + 80);
+          int header_x = legend_left + (width() - legend_left - header_w) / 2;
+          fvec3 header_color(0.7f, 0.7f, 0.7f);
+          tgt->RefModColor() = header_color;
+          mtxi->PushUIMatrix(width(), height());
+          lev2::FontMan::beginTextBlock(tgt, 128);
+          lev2::FontMan::DrawText(tgt, header_x, int(header_y), channel->_name.c_str());
+          lev2::FontMan::endTextBlock(tgt);
+          mtxi->PopUIMatrix();
+        }
+
         for (auto& series : channel->_series) {
           // Calculate vertical center using global lane index
-          float label_center_y = (float(global_lane_index) + 0.5f) * global_lane_height;
+          float label_center_y = (float(global_lane_index) + 0.5f) * global_lane_height + accumulated_margin;
           int label_y = int(label_center_y) - 8;  // Center the 16-pixel label box
 
           int sw = lev2::FontMan::stringWidth(series->_name.length());
@@ -669,7 +724,7 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
             size_t series_count = series->sampleCount();
             if (series_count > 0) {
               float value        = series->getSample(series_count - 1);
-              auto valstr        = FormatString("%0.5g", value);
+              auto valstr        = FormatString("%0.2f", value);
               int sw2            = lev2::FontMan::stringWidth(valstr.length());
               tgt->RefModColor() = series->_color;
               mtxi->PushUIMatrix(width(), height());
@@ -757,7 +812,7 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
           int ch_idx = _stacked_channel_indices[channel.get()];
           float ch_idx_f = float(ch_idx);
 
-          float lane_y_top = float(channel_lane_start) * global_lane_height;
+          float lane_y_top = float(channel_lane_start) * global_lane_height + accumulated_margin;
           float lane_y_bottom = lane_y_top + global_lane_height;
 
           // Get stack range from first series
@@ -876,7 +931,7 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
                 series_range = min_range;
               }
 
-              float lane_y_top_pixel = float(lane_index) * global_lane_height;
+              float lane_y_top_pixel = float(lane_index) * global_lane_height + accumulated_margin;
 
               mtxi->PushUIMatrix(w, h);
 
@@ -917,6 +972,7 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
               int prev_pri = rs->_priority;
               rs->setBlendingMacro(lev2::BlendingMacro::ADDITIVE);
               rs->setDepthTest(lev2::EDepthTest::OFF);
+              rs->setCullTest(lev2::ECullTest::OFF);
               rs->setWriteMaskZ(false);
               rs->_priority = 1<<16;
               auto fxi = tgt->FXI();
@@ -939,6 +995,99 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
         }
         ///////////////////////////////////////////////////
       }
+
+      ///////////////////////////////////////////////////
+      // Draw event markers in the bottom margin area
+      ///////////////////////////////////////////////////
+      if (channel->_bottom_margin > 0 && !channel->_event_buffer.empty()) {
+        size_t ch_num_lanes = channel->_stacked ? 1 : channel->_series.size();
+        float margin_y_top = float(channel_lane_start + ch_num_lanes) * global_lane_height + accumulated_margin;
+        float margin_y_bottom = margin_y_top + float(channel->_bottom_margin);
+        float margin_y_center = (margin_y_top + margin_y_bottom) * 0.5f;
+        float marker_half_h = float(channel->_bottom_margin) * 0.35f;
+
+        constexpr float kEventChartMargin = 3.0f;
+        float ev_x0 = kEventChartMargin;
+        float ev_x1 = float(width() - (max_label_width + 80)) - kEventChartMargin;
+
+        size_t event_count = channel->_event_buffer.size();
+        size_t ev_display_count = event_count;
+        size_t ev_start_index = 0;
+
+        // Match first series' window for consistent X mapping
+        if (!channel->_series.empty()) {
+          auto& fs = channel->_series[0];
+          size_t sc = fs->sampleCount();
+          if (fs->_window_size > 0 && fs->_window_size < sc) {
+            // Series is windowed — show same count
+            ev_display_count = std::min(event_count, fs->_window_size);
+            ev_start_index = event_count > ev_display_count ? event_count - ev_display_count : 0;
+          }
+        }
+
+        float ev_x_step = (ev_display_count > 1) ? (ev_x1 - ev_x0) / float(ev_display_count - 1) : 0.0f;
+
+        // Count marker vertices
+        size_t marker_vert_count = 0;
+        for (size_t i = 0; i < ev_display_count; i++) {
+          marker_vert_count += channel->_event_buffer[ev_start_index + i].size() * 3;
+        }
+
+        if (marker_vert_count > 0) {
+          lev2::VtxWriter<vtx_t> vw_ev;
+          vw_ev.Lock(tgt, vbuf.get(), marker_vert_count);
+
+          for (size_t i = 0; i < ev_display_count; i++) {
+            auto& events = channel->_event_buffer[ev_start_index + i];
+            float cx = ev_x0 + float(i) * ev_x_step;
+
+            for (auto& ev : events) {
+              fvec3 ec(ev._color.x, ev._color.y, ev._color.z);
+              float hw = 3.0f;  // half-width in pixels
+              float hh = marker_half_h;
+
+              if (ev._type == 0) {
+                // Note on: upward triangle
+                vw_ev.AddVertex(vtx_t(fvec3(cx, margin_y_center - hh, 0), fvec4(), ec));
+                vw_ev.AddVertex(vtx_t(fvec3(cx + hw, margin_y_center + hh, 0), fvec4(), ec));
+                vw_ev.AddVertex(vtx_t(fvec3(cx - hw, margin_y_center + hh, 0), fvec4(), ec));
+              } else if (ev._type == 1) {
+                // Note off: downward triangle
+                vw_ev.AddVertex(vtx_t(fvec3(cx - hw, margin_y_center - hh, 0), fvec4(), ec));
+                vw_ev.AddVertex(vtx_t(fvec3(cx + hw, margin_y_center - hh, 0), fvec4(), ec));
+                vw_ev.AddVertex(vtx_t(fvec3(cx, margin_y_center + hh, 0), fvec4(), ec));
+              } else {
+                // Generic: right-pointing triangle
+                vw_ev.AddVertex(vtx_t(fvec3(cx - hw, margin_y_center - hh, 0), fvec4(), ec));
+                vw_ev.AddVertex(vtx_t(fvec3(cx + hw, margin_y_center, 0), fvec4(), ec));
+                vw_ev.AddVertex(vtx_t(fvec3(cx - hw, margin_y_center + hh, 0), fvec4(), ec));
+              }
+            }
+          }
+
+          vw_ev.UnLock(tgt);
+
+          mtxi->PushUIMatrix(width(), height());
+          auto rs = mtl->_rasterstate;
+          auto omacro = rs->_blendingMacro;
+          rs->setBlendingMacro(lev2::BlendingMacro::ALPHA);
+          rs->setDepthTest(lev2::EDepthTest::OFF);
+          rs->setCullTest(lev2::ECullTest::OFF);
+          rs->setWriteMaskZ(true);
+          rs->_priority = 1 << 20;
+          auto fxi = tgt->FXI();
+          fxi->pushRasterState(rs);
+          mtl->begin(tek, RCFD);
+          mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
+          gbi->DrawPrimitiveEML(vw_ev, lev2::PrimitiveType::TRIANGLES);
+          mtl->end(RCFD);
+          fxi->popRasterState();
+          rs->_blendingMacro = omacro;
+          mtxi->PopUIMatrix();
+        }
+      }
+
+      accumulated_margin += float(channel->_bottom_margin);
     }
     ///////////////////////////////
     // draw misc labels in UI pixel space
@@ -1011,43 +1160,45 @@ graphseries_ptr_t GraphView::_findSeriesAtPoint(int x, int y) {
   // Check if click is in label/toggle region (right side of screen)
   if (x <= (width() - 150)) return nullptr;
 
-  // Count total lanes (stacked channels = 1 lane)
+  // Count total lanes and margins (stacked channels = 1 lane)
   size_t total_lanes = 0;
-  for (auto channel : _channelmap) {
-    if (channel->_stacked) {
-      total_lanes += 1;
-    } else {
-      total_lanes += channel->_series.size();
-    }
+  int total_margins = 0;
+  for (auto& channel : _channelmap) {
+    total_lanes += channel->_stacked ? 1 : channel->_series.size();
+    total_margins += channel->_bottom_margin;
   }
 
   if (total_lanes == 0) return nullptr;
 
-  float lane_height = float(height()) / float(total_lanes);
-  int lane_index = int(float(y) / lane_height);
+  float lane_height = float(height() - total_margins) / float(total_lanes);
+  float fy = float(y);
+  float cursor = 0.0f;
 
-  if (lane_index < 0 || lane_index >= int(total_lanes)) return nullptr;
+  for (auto& channel : _channelmap) {
+    size_t num_lanes = channel->_stacked ? 1 : channel->_series.size();
+    float ch_chart_end = cursor + float(num_lanes) * lane_height;
+    float ch_total_end = ch_chart_end + float(channel->_bottom_margin);
 
-  // Find the series at this lane index
-  int current_lane = 0;
-  for (auto channel : _channelmap) {
-    if (channel->_stacked) {
-      if (current_lane == lane_index) {
-        // For stacked channels, find which legend row was clicked
-        float lane_top = float(current_lane) * lane_height;
-        int legend_row = int(float(y - lane_top - 4) / 16.0f);
-        if (legend_row >= 0 && legend_row < int(channel->_series.size())) {
-          return channel->_series[legend_row];
+    if (fy < ch_total_end) {
+      if (fy >= ch_chart_end) return nullptr; // in margin area
+
+      if (channel->_stacked) {
+        int n_rows = int(channel->_series.size());
+        int legend_start_y = int(ch_chart_end) - n_rows * 16 - 4;
+        int legend_row = int(float(y - legend_start_y) / 16.0f);
+        if (legend_row >= 0 && legend_row < n_rows) {
+          return channel->_series[n_rows - 1 - legend_row];
         }
         return nullptr;
-      }
-      current_lane++;
-    } else {
-      for (auto& series : channel->_series) {
-        if (current_lane == lane_index) return series;
-        current_lane++;
+      } else {
+        int lane_in_ch = int((fy - cursor) / lane_height);
+        lane_in_ch = std::min(lane_in_ch, int(channel->_series.size()) - 1);
+        if (lane_in_ch >= 0) return channel->_series[lane_in_ch];
+        return nullptr;
       }
     }
+
+    cursor = ch_total_end;
   }
 
   return nullptr;

@@ -471,6 +471,8 @@ public:
   double _perf_endFrame_duration = 0.0;     // total endFrame() time
   double _perf_acquire_duration = 0.0;      // swapchain acquire (set by backend)
   double _perf_fence_wait_duration = 0.0;   // fence wait (set by backend)
+  double _perf_submit_duration = 0.0;       // vkQueueSubmit (set by backend)
+  double _perf_present_duration = 0.0;      // vkQueuePresentKHR (set by backend)
 
   svar64_t _pyimpl_beforeEndFrame;
 protected:

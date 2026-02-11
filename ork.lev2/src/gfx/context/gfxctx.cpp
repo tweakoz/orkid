@@ -193,6 +193,8 @@ void Context::beginFrame(bool visual) {
   _perf_ctx_timer.Start();
   _perf_acquire_duration = 0.0;
   _perf_fence_wait_duration = 0.0;
+  _perf_submit_duration = 0.0;
+  _perf_present_duration = 0.0;
 
   OrkAssert(_currentPhase == 0);
   _currentPhase = "INFRAME"_crcu;

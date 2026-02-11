@@ -351,6 +351,8 @@ void SecondaryWinImpl::_render() {
   _owner->_perf_fence_wait_duration = _gfxContext->_perf_fence_wait_duration;
   _owner->_perf_beginFrame_duration = _gfxContext->_perf_beginFrame_duration;
   _owner->_perf_endFrame_duration = _gfxContext->_perf_endFrame_duration;
+  _owner->_perf_submit_duration = _gfxContext->_perf_submit_duration;
+  _owner->_perf_present_vk_duration = _gfxContext->_perf_present_duration;
 
   // Swap buffers to display the rendered frame
   _gfxContext->swapBuffers(_ctxglfw);

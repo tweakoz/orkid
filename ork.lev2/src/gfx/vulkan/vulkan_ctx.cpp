@@ -802,19 +802,29 @@ void VkContext::_doSubmitPrimaryCommandBuffer(){
       }
     }
 
-    if ( not semas_empty) {
-      // Submit with timeline semaphores
-      swapchain->_submitFrameWithSemaphores(this);
-    } else {
-      // Normal submission
-      swapchain->enqueueFrame(this);
+    {
+      Timer submit_timer;
+      submit_timer.Start();
+      if ( not semas_empty) {
+        // Submit with timeline semaphores
+        swapchain->_submitFrameWithSemaphores(this);
+      } else {
+        // Normal submission
+        swapchain->enqueueFrame(this);
+      }
+      _perf_submit_duration = submit_timer.SecsSinceStart();
     }
 
     ///////////////////////////////////////////////////////
     // Present !
     ///////////////////////////////////////////////////////
 
-    swapchain->enqueuePresentFrame(this);
+    {
+      Timer present_timer;
+      present_timer.Start();
+      swapchain->enqueuePresentFrame(this);
+      _perf_present_duration = present_timer.SecsSinceStart();
+    }
     swapchain->waitPresentFrame(this);
 
     // Process pending captures after swapchain frame completion

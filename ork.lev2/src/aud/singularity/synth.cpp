@@ -856,26 +856,9 @@ void synth::compute(int inumframes, const void* inputBuffer) {
 
     ////////////////////////////
 
-    if (_onprofilerframe) {
-      SynthProfilerFrame frame;
-      frame._samplerate  = getSampleRate();
-      frame._controlrate = controlRate();
-      frame._cpuload     = _cpuload;
-      frame._numlayers   = _activeVoices.size();
-
-      int numdspblocks = 0;
-      int numdspstages = 0;
-      for (auto v : _activeVoices) {
-        auto ld = v->_layerdata;
-        numdspblocks += ld->numDspBlocks();
-        numdspstages += ld->numDspStages();
-      }
-
-      frame._numdspblocks = numdspblocks;
-      _numActiveDspBlocks = numdspblocks;
-      _numActiveDspStages = numdspstages;
-      _onprofilerframe(frame);
-    }
+    double _perf_voices_accum = 0.0;
+    double _perf_effects_accum = 0.0;
+    double _perf_mixing_accum = 0.0;
 
     /////////////////////////////
     // clear output buffer
@@ -926,6 +909,7 @@ void synth::compute(int inumframes, const void* inputBuffer) {
       ////////////////////////////////
       // update controllers
       ////////////////////////////////
+      _perf_compute_timer.Start();
       for (auto l : _activeVoices)
         l->updateControllers();
       ////////////////////////////////
@@ -999,10 +983,12 @@ void synth::compute(int inumframes, const void* inputBuffer) {
         }
         //////
       }
+      _perf_voices_accum += _perf_compute_timer.SecsSinceStart();
       /////////////////////////////
       // compute/accumulate output busses
       //  (into main output)
       /////////////////////////////
+      _perf_compute_timer.Start();
       std::atomic<int> pending = 0;
       bool serial              = false;
       for (auto busitem : _outputBusses) {
@@ -1065,9 +1051,11 @@ void synth::compute(int inumframes, const void* inputBuffer) {
       }
       while (pending.load() > 0) {
       }
+      _perf_effects_accum += _perf_compute_timer.SecsSinceStart();
       //////////////////////////////////////////
       // accumulate busses to master
       //////////////////////////////////////////
+      _perf_compute_timer.Start();
       bool any_soloed = _num_soloed.load() > 0;
       for (auto busitem : _outputBusses) {
         auto bus         = busitem.second;
@@ -1121,6 +1109,7 @@ void synth::compute(int inumframes, const void* inputBuffer) {
           master_right[j] = R;
         }
       }
+      _perf_mixing_accum += _perf_compute_timer.SecsSinceStart();
       ////////////////////////////////
       // update indices
       ////////////////////////////////
@@ -1131,6 +1120,36 @@ void synth::compute(int inumframes, const void* inputBuffer) {
     //////////////////////////////////
     for (auto l : _activeVoices)
       l->endCompute();
+    //////////////////////////////////
+    // store timing breakdown
+    //////////////////////////////////
+    _perf_voices_duration  = _perf_voices_accum;
+    _perf_effects_duration = _perf_effects_accum;
+    _perf_mixing_duration  = _perf_mixing_accum;
+    //////////////////////////////////
+    if (_onprofilerframe) {
+      SynthProfilerFrame frame;
+      frame._samplerate       = getSampleRate();
+      frame._controlrate      = controlRate();
+      frame._cpuload          = _cpuload;
+      frame._numlayers        = _activeVoices.size();
+      frame._voices_duration  = _perf_voices_duration;
+      frame._effects_duration = _perf_effects_duration;
+      frame._mixing_duration  = _perf_mixing_duration;
+
+      int numdspblocks = 0;
+      int numdspstages = 0;
+      for (auto v : _activeVoices) {
+        auto ld = v->_layerdata;
+        numdspblocks += ld->numDspBlocks();
+        numdspstages += ld->numDspStages();
+      }
+
+      frame._numdspblocks = numdspblocks;
+      _numActiveDspBlocks = numdspblocks;
+      _numActiveDspStages = numdspstages;
+      _onprofilerframe(frame);
+    }
   }
   /////////////////////////////
   // final clamping

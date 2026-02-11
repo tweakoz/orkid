@@ -608,7 +608,11 @@ void pyinit_ui(py::module& module_lev2) {
           .def_readwrite("min_series_height", &ui::GraphChannel::_min_series_height)
           .def_readwrite("lane_bgcolor", &ui::GraphChannel::_lane_bgcolor)
           .def_readwrite("lane_outline", &ui::GraphChannel::_lane_outline)
-          .def_readwrite("lane_outline_color", &ui::GraphChannel::_lane_outline_color);
+          .def_readwrite("lane_outline_color", &ui::GraphChannel::_lane_outline_color)
+          .def_readwrite("bottom_margin", &ui::GraphChannel::_bottom_margin)
+          .def_readwrite("max_event_samples", &ui::GraphChannel::_max_event_samples)
+          .def("addEvent", &ui::GraphChannel::addEvent)
+          .def("commitEventFrame", &ui::GraphChannel::commitEventFrame);
   type_codec->registerStdCodec<ui::graphchannel_ptr_t>(graphchannel_type);
   /////////////////////////////////////////////////////////////////////////////////
   // PrimCanvas - forward declaration (methods added later)

@@ -155,6 +155,8 @@ void EzTopWidget::DoDraw(ui::drawevent_constptr_t drwev) {
     _mainwin->_perf_fence_wait_duration = ctx->_perf_fence_wait_duration;
     _mainwin->_perf_beginFrame_duration = ctx->_perf_beginFrame_duration;
     _mainwin->_perf_endFrame_duration = ctx->_perf_endFrame_duration;
+    _mainwin->_perf_submit_duration = ctx->_perf_submit_duration;
+    _mainwin->_perf_present_vk_duration = ctx->_perf_present_duration;
     EASY_END_BLOCK;
     EASY_BLOCK("EzTopWidget swap", 0xffc04000);
     ctx->swapBuffers(ctx->mCtxBase);

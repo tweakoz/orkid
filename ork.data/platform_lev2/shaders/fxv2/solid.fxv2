@@ -466,60 +466,41 @@ fragment_shader ps_stacked_chart : iface_frag_stacked {
   int color_base = ch * MAX_SERIES;
   int sample_base = ch * MAX_SERIES * sample_stride;
 
-  // Map U to fractional sample index
+  // Map U to fractional sample index (linear interpolation — data is pre-smoothed)
   float sample_f = u * float(ch_num_samples - 1);
   int idx0 = int(floor(sample_f));
   int idx1 = min(idx0 + 1, ch_num_samples - 1);
-  int idx_m1 = max(idx0 - 1, 0);
-  int idx_p2 = min(idx0 + 2, ch_num_samples - 1);
   float t = fract(sample_f);
 
   float dy_per_pixel = abs(dFdy(frag_data_y));
   float min_band = 5.0 * dy_per_pixel;
 
-  // Composite bands with transparent gaps between them
+  // Contiguous bands — no gaps, hard edges (AA via SSAA later)
   vec3 color = vec3(0);
   float total_alpha = 0.0;
   float cumulative = 0.0;
-  float gap_size = 4.0 * dy_per_pixel;
 
   for (int si = 0; si < ch_num_series; si++) {
     if (series_colors[color_base + si].a < 0.5) continue;  // hidden
 
     int row = sample_base + si * sample_stride;
 
-    // Catmull-Rom cubic interpolation for smooth band boundaries
-    float vm1 = samples[row + idx_m1];
+    // Linear interpolation (data already low-pass filtered on CPU)
     float v0  = samples[row + idx0];
     float v1  = samples[row + idx1];
-    float vp2 = samples[row + idx_p2];
-    float val = v0 + 0.5 * t * (
-      v1 - vm1 + t * (
-        2.0 * vm1 - 5.0 * v0 + 4.0 * v1 - vp2 + t * (
-          3.0 * (v0 - v1) + vp2 - vm1
-        )
-      )
-    );
+    float val = mix(v0, v1, t);
     val = max(val, min_band);
 
     float band_bottom = cumulative;
     float band_top = cumulative + val;
 
-    // AA coverage using fwidth for proper filtering on steep slopes
-    float d_bot = frag_data_y - band_bottom;
-    float fw_bot = max(fwidth(d_bot), dy_per_pixel * 0.5);
-    float cov_bot = smoothstep(-fw_bot * 0.5, fw_bot * 0.5, d_bot);
-
-    float d_top = band_top - frag_data_y;
-    float fw_top = max(fwidth(d_top), dy_per_pixel * 0.5);
-    float cov_top = smoothstep(-fw_top * 0.5, fw_top * 0.5, d_top);
-
-    float band_cov = cov_bot * cov_top;
+    // Hard coverage test — no per-fragment AA
+    float band_cov = (frag_data_y >= band_bottom && frag_data_y < band_top) ? 1.0 : 0.0;
 
     color = mix(color, series_colors[color_base + si].rgb, band_cov);
     total_alpha = max(total_alpha, band_cov);
 
-    cumulative = band_top + gap_size;
+    cumulative = band_top;
   }
 
   out_clr = vec4(color, total_alpha);

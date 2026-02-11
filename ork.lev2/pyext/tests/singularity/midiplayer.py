@@ -21,6 +21,7 @@ import time
 from orkengine.core import *
 from orkengine.lev2 import *
 from ork.app.application import ComponentizedApplication
+from ork.app.frame_profiler import FrameProfilerComponent, EVENT_NOTE_ON, EVENT_NOTE_OFF
 from mido import MidiFile
 
 # Import midiToSingularitySequence from local _seq module
@@ -221,7 +222,7 @@ class PianoKeyboard:
 ################################################################
 
 class MoonlightApp(ComponentizedApplication):
-    """App that plays Moonlight Sonata with piano keyboard visualization."""
+    """App that plays Moonlight Sonata with piano keyboard + frame profiler."""
 
     def __init__(self):
         super().__init__()
@@ -236,9 +237,14 @@ class MoonlightApp(ComponentizedApplication):
         # Piano keyboard
         self.keyboard = None
 
+        # Profiler component (non-overlay, side-by-side with keyboard)
+        self.profiler = self.addComponent("profiler", FrameProfilerComponent,
+                                          overlay=False, update=False, gpu=True, audio=True,
+                                          events=["AUDIO"])
+
         self.ezapp_args = {
             'width': 1024,
-            'height': 300,
+            'height': 540,
             'offscreen': False,
             'use_subsystems': ['gpu', 'audioO', 'lev2'],
         }
@@ -246,23 +252,28 @@ class MoonlightApp(ComponentizedApplication):
     ##############################################
 
     def _onUiInit(self):
-        """Set up UI with PrimCanvas for piano keyboard."""
+        """Set up UI with profiler (top) and piano keyboard (bottom)."""
         lg_group = self.ezapp.topLayoutGroup
         lg_group.clearColorStd = vec4(0.1, 0.1, 0.15, 1)
 
-        # Create PrimCanvas widget
-        canvas_item = lg_group.makeChild(uiclass=ui.PrimCanvas, args=["piano_canvas"])
+        # Vertical pack: profiler on top, keyboard on bottom
+        vpack_item = lg_group.makeChild(
+            uiclass=ui.VerticalPack,
+            args=["main_vpack"],
+            fill=True
+        )
+        vpack = vpack_item.widget
+        vpack.uniform = True
 
-        # Anchor to fill parent
-        for edge in ['top', 'left', 'bottom', 'right']:
-            getattr(canvas_item.layout, edge).anchorTo(getattr(lg_group.layout, edge))
-
-        canvas = canvas_item.widget
+        # PrimCanvas for keyboard (top, 50%)
+        canvas = vpack.makeChild(uiclass=ui.PrimCanvas, args=["piano_canvas"])
         canvas.bg_color = vec4(0.2, 0.2, 0.25, 1)
         canvas.draw_background = True
-
-        # Create keyboard widget (tempo set later in _onSynthInit)
         self.keyboard = PianoKeyboard(canvas, tempo=TEMPO)
+
+        # GraphView for profiler (bottom, 50%)
+        graphview = vpack.makeChild(uiclass=ui.GraphView, args=[])
+        self.profiler.graphview = graphview
 
     ##############################################
 
@@ -310,12 +321,14 @@ class MoonlightApp(ComponentizedApplication):
             feel=1
         )
 
-        # Set up sequencer event callback for keyboard visualization
+        # Set up sequencer event callback for keyboard visualization + profiler events
         def on_sequencer_event(note, velocity, duration, track_name):
-            if velocity > 0 and self.keyboard:
-                # Note on - trigger decay (adds 1.0)
-                self.keyboard.triggerNote(note)
-            # Note off is ignored - decay handles the fade out
+            if velocity > 0:
+                if self.keyboard:
+                    self.keyboard.triggerNote(note)
+                self.profiler.addEvent(EVENT_NOTE_ON, "AUDIO")
+            else:
+                self.profiler.addEvent(EVENT_NOTE_OFF, "AUDIO")
 
         self.sequencer.on_event = on_sequencer_event
 
@@ -367,7 +380,7 @@ def main():
     print()
 
     app = MoonlightApp()
-    ezapp = app.createEzApp(name="MidiPlayer", width=1280, height=240)
+    ezapp = app.createEzApp(name="MidiPlayer", width=1280, height=540)
 
     print("[Subsystem Status]")
     gpu = ezapp.getSubsystem("gpu")
