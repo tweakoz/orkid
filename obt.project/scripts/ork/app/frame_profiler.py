@@ -24,11 +24,11 @@ Usage:
         # Or enable specific sections + per-channel event markers
         self.profiler = self.addComponent("profiler", FrameProfilerComponent,
                                           update=True, gpu=True, audio=True,
-                                          events=["AUDIO"])
+                                          events=["AudioThread"])
 
     # Add event markers from any thread (specify channel name):
-    self.profiler.addEvent(EVENT_NOTE_ON, "AUDIO")
-    self.profiler.addEvent(EVENT_NOTE_OFF, "AUDIO", color=vec4(1,0.5,0,1))
+    self.profiler.addEvent(EVENT_NOTE_ON, "AudioThread")
+    self.profiler.addEvent(EVENT_NOTE_OFF, "AudioThread", color=vec4(1,0.5,0,1))
 """
 
 from orkengine.core import vec3, vec4, CrcStringProxy
@@ -60,7 +60,7 @@ class FrameProfilerComponent(ApplicationComponent):
   COLOR_FRAME_SETUP = hsv(0.0, 0.0, 0.92)            # white
   COLOR_ACQUIRE_WAIT = hsv(0.0, 0.70, 0.90)             # red
   COLOR_DRAW = hsv(0.58, 0.55, 0.95)                    # light blue
-  COLOR_SUBMIT = hsv(0.14, 0.75, 0.95)                   # yellow
+  COLOR_SUBMIT = hsv(0.14, 0.75, 0.665)                  # yellow (darker)
   COLOR_PRESENT = hsv(0.78, 0.60, 0.85)                  # purple
   COLOR_FENCE_WAIT = hsv(0.0, 0.0, 0.50)                # grey
   # Secondary window bands — offset hues, no repeats
@@ -80,14 +80,17 @@ class FrameProfilerComponent(ApplicationComponent):
   COLOR_NOTE_OFF = vec4(0.95, 0.2, 0.2, 1.0)            # bright red
   COLOR_GENERIC = vec4(0.3, 0.6, 0.95, 1.0)             # bright blue
 
-  def __init__(self, update=True, gpu=True, audio=False, overlay=True, events=None):
+  # Default GPU filter: show everything except fwd:total, ui:top, frame:all
+  DEFAULT_GPU_FILTER = ["*", "-fwd:total", "-ui:top", "-frame:all"]
+
+  def __init__(self, update=True, gpu=True, audio=False, overlay=True, events=None, gpu_filter=None):
     super().__init__()
     self._enable_update = update
     self._enable_gpu = gpu
     self._enable_audio = audio
     self._overlay = overlay
+    self._gpu_filter = gpu_filter if gpu_filter is not None else self.DEFAULT_GPU_FILTER
     self._event_channels = set(events) if events else set()
-    self._paused = False
     self.graphview = None
     self.series_gpu_update = None
     self.series_update = None
@@ -106,6 +109,8 @@ class FrameProfilerComponent(ApplicationComponent):
     self.series_sec_submit = []
     self.series_sec_present = []
     self.series_sec_fence_wait = []
+    # GPU timestamp series (keyed by perf block name)
+    self._gpu_timing_series = {}
     # Audio breakdown
     self.series_voices = None
     self.series_events = None
@@ -138,7 +143,8 @@ class FrameProfilerComponent(ApplicationComponent):
       self._initUpdateChannel()
 
     if self._enable_gpu:
-      self._initGpuChannel()
+      self._initMainThreadChannel()
+      self._initGpuTimingChannel()
 
     if self._enable_audio:
       self._initAudioChannel()
@@ -181,7 +187,7 @@ class FrameProfilerComponent(ApplicationComponent):
   ##############################################
 
   def _initUpdateChannel(self):
-    update_channel = self.graphview.channel("UPDATE")
+    update_channel = self.graphview.channel("UpdateThread")
     update_channel.stacked = True
     update_channel.lane_bgcolor = vec4(0.05, 0.05, 0.1, 0.8)
     update_channel.lane_outline = True
@@ -194,12 +200,12 @@ class FrameProfilerComponent(ApplicationComponent):
     self.series_update_idle.setMaxSamples(self.MAX_SAMPLES)
     self.series_update_idle.setFixedRange(0.0, 3.0)
 
-    self._setupChannelEvents("UPDATE", update_channel)
+    self._setupChannelEvents("UpdateThread", update_channel)
 
   ##############################################
 
-  def _initGpuChannel(self):
-    budget_channel = self.graphview.channel("GPU")
+  def _initMainThreadChannel(self):
+    budget_channel = self.graphview.channel("MainThread")
     budget_channel.stacked = True
     budget_channel.lane_bgcolor = vec4(0.05, 0.05, 0.1, 0.8)
     budget_channel.lane_outline = True
@@ -237,12 +243,81 @@ class FrameProfilerComponent(ApplicationComponent):
     self._reorderBudgetSeries()
 
     budget_channel.addHLine(8.3, vec3(1, 1, 1), "8.3ms")
-    self._setupChannelEvents("GPU", budget_channel)
+    self._setupChannelEvents("MainThread", budget_channel)
+
+  ##############################################
+
+  def _initGpuTimingChannel(self):
+    self._gpu_channel = self.graphview.channel("GPU")
+    self._gpu_channel.stacked = True
+    self._gpu_channel.lane_bgcolor = vec4(0.05, 0.1, 0.05, 0.8)
+    self._gpu_channel.lane_outline = True
+    self._gpu_channel.addHLine(8.3, vec3(1, 1, 1), "8.3ms")
+    self._gpu_hue_index = 0
+    # Placeholder so the channel is visible even before any GPU blocks fire
+    s = self._gpu_channel.addSeries("(idle)", vec3(0.2, 0.2, 0.2))
+    s.setMaxSamples(self.MAX_SAMPLES)
+    s.setFixedRange(0.0, 10.0)
+    self._gpu_timing_series["(idle)"] = s
+
+  @staticmethod
+  def _matchGpuFilter(name, filters):
+    """Evaluate a composite filter list against a block name.
+
+    Filter rules are evaluated in order:
+      "*"          — include all
+      "fwd:*"      — include names starting with "fwd:"
+      "-fwd:total" — exclude exact match
+      "-fwd:*"     — exclude names starting with "fwd:"
+      "fwd:color"  — include exact match
+
+    Last matching rule wins. If no rule matches, the name is excluded.
+    """
+    from fnmatch import fnmatch
+    matched = False
+    for rule in filters:
+      if rule.startswith("-"):
+        if fnmatch(name, rule[1:]):
+          matched = False
+      else:
+        if fnmatch(name, rule):
+          matched = True
+    return matched
+
+  # Preferred GPU series order (bottom to top in stacked chart)
+  GPU_SERIES_ORDER = ["ui:top", "frame:all"]
+
+  def _discoverGpuSeries(self, results):
+    """Auto-create series for newly discovered GPU perf blocks."""
+    added = False
+    for name in results:
+      if name in self._gpu_timing_series:
+        continue
+      if not self._matchGpuFilter(name, self._gpu_filter):
+        continue
+      hue = (self._gpu_hue_index * 0.618034) % 1.0  # golden ratio spacing
+      self._gpu_hue_index += 1
+      color = vec3.fromHsv(hue, 0.65, 0.8)
+      s = self._gpu_channel.addSeries(name, color)
+      s.setMaxSamples(self.MAX_SAMPLES)
+      s.setFixedRange(0.0, 10.0)
+      self._gpu_timing_series[name] = s
+      added = True
+    if added:
+      self._reorderGpuSeries()
+
+  def _reorderGpuSeries(self):
+    """Reorder GPU series: known series first (bottom), then auto-discovered."""
+    order = [n for n in self.GPU_SERIES_ORDER if n in self._gpu_timing_series]
+    for name in self._gpu_timing_series:
+      if name not in order:
+        order.append(name)
+    self._gpu_channel.setSeriesOrder(order)
 
   ##############################################
 
   def _initAudioChannel(self):
-    audio_channel = self.graphview.channel("AUDIO")
+    audio_channel = self.graphview.channel("AudioThread")
     audio_channel.stacked = True
     audio_channel.lane_bgcolor = vec4(0.05, 0.05, 0.1, 0.8)
     audio_channel.lane_outline = True
@@ -264,7 +339,7 @@ class FrameProfilerComponent(ApplicationComponent):
     self.series_effects.setFixedRange(0.0, 16.0)
 
     audio_channel.addHLine(10.0, vec3(1, 1, 1), "10ms")
-    self._setupChannelEvents("AUDIO", audio_channel)
+    self._setupChannelEvents("AudioThread", audio_channel)
 
   ##############################################
 
@@ -307,14 +382,14 @@ class FrameProfilerComponent(ApplicationComponent):
 
   def _reorderBudgetSeries(self):
     """Ensure series are stacked in correct order."""
-    order = ["gpu_update", "frame_setup", "acquire_wait", "draw", "fence_wait", "submit", "present"]
+    order = ["gpu_update", "frame_setup", "acquire_wait", "draw", "fence_wait", "present", "submit"]
     for i in range(len(self.series_sec_draw)):
       order.append(f"sec{i}_frame_setup")
       order.append(f"sec{i}_acquire_wait")
       order.append(f"sec{i}_draw")
       order.append(f"sec{i}_fence_wait")
-      order.append(f"sec{i}_submit")
       order.append(f"sec{i}_present")
+      order.append(f"sec{i}_submit")
     self._budget_channel.setSeriesOrder(order)
 
   ##############################################
@@ -326,7 +401,7 @@ class FrameProfilerComponent(ApplicationComponent):
 
     Args:
       event_type: EVENT_NOTE_ON, EVENT_NOTE_OFF, or EVENT_GENERIC
-      channel: channel name (e.g. "AUDIO", "UPDATE", "GPU")
+      channel: channel name (e.g. "AudioThread", "UpdateThread", "GPU")
       color: optional vec4 tint (uses default color for event type if None)
     """
     pending = self._pending_events.get(channel)
@@ -342,16 +417,8 @@ class FrameProfilerComponent(ApplicationComponent):
 
   ##############################################
 
-  def _onUiEvent(self, uievent):
-    if uievent.code == tokens.KEY_DOWN.hashed and uievent.keycode == 32:
-      self._paused = not self._paused
-      return lev2.ui.HandlerResult()
-    return None
-
-  ##############################################
-
   def _onGpuUpdate(self, ctx):
-    if not self.graphview or self._paused:
+    if not self.graphview or self.graphview.paused:
       return
 
     ezapp = self.app.ezapp
@@ -363,6 +430,7 @@ class FrameProfilerComponent(ApplicationComponent):
 
     if self._enable_gpu:
       self.series_gpu_update.addSample(ezapp.perf_gpu_update_duration * 1000.0)
+      results = ctx.gpu_profiler_results
 
       mainwin = ezapp.mainwin
       if mainwin:
@@ -400,6 +468,14 @@ class FrameProfilerComponent(ApplicationComponent):
           self.series_sec_submit[i].addSample(submit)
           self.series_sec_present[i].addSample(present)
           self.series_sec_fence_wait[i].addSample(fence)
+
+      # GPU timestamp results from C++ instrumentation (dynamic discovery)
+      if results:
+        self._discoverGpuSeries(results)
+      for name, series in self._gpu_timing_series.items():
+        if name in results:
+          series.currentValue = results[name] * 1000.0  # seconds -> ms
+        series.addSample(series.currentValue, False)
 
     if self._enable_audio:
       synth = ezapp.audio_synth

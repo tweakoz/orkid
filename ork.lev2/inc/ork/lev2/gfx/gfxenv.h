@@ -49,6 +49,21 @@ struct GpuEvent {
 
 using gpuevent_queue_t = std::queue<gpuevent_ptr_t>;
 using gpuevent_cb_t    = std::function<void(gpuevent_ptr_t)>;
+
+/// ////////////////////////////////////////////////////////////////////////////
+/// GpuPerfBlock: GPU timestamp query block for measuring GPU execution time
+/// ////////////////////////////////////////////////////////////////////////////
+
+struct GpuPerfBlock {
+  std::string _name;
+  double _duration = -1.0;  // seconds, populated on readback
+  size_t _sample_index = 0; // reserved slot index for backfilling
+  std::function<void(gpuperfblock_ptr_t)> _on_result;  // callback when result ready
+  // Internal (set by VkContext):
+  uint32_t _begin_query = 0;
+  uint32_t _end_query = 0;
+  int _pool_index = -1;     // which double-buffered pool
+};
 struct GpuEventSink {
   std::string _eventID;
   gpuevent_cb_t _onEvent;
@@ -417,6 +432,15 @@ public:
 
   void enqueueGpuEvent(gpuevent_ptr_t evt);
   void registerGpuEventSink(gpueventsink_ptr_t sink);
+
+  ///////////////////////////////////////////////////////////////////////
+  /// GPU performance timing (timestamp queries)
+  ///////////////////////////////////////////////////////////////////////
+  virtual gpuperfblock_ptr_t gpuPerfBlockBegin(const std::string& name) { return nullptr; }
+  virtual void gpuPerfBlockEnd(gpuperfblock_ptr_t block) {}
+  double gpuPerfResult(const std::string& name) const;  // last-frame duration in seconds (-1 if not found)
+  std::map<std::string, double> _gpuPerfResults;  // populated during readback
+  gpuperfblock_ptr_t _frameAllPerfBlock;  // spans beginFrame→endFrame
 
   loadingphase_ptr_t newLoadingPhase();
   

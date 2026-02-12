@@ -38,8 +38,11 @@ GraphSeries::GraphSeries(const std::string& name, fvec3 color)
 
 }
 /////////////////////////////////////////////////////////////////////////
-void GraphSeries::addSample(float value) {
+void GraphSeries::addSample(float value, bool update_label) {
   _samples.push_back(value);
+  if (update_label) {
+    _currentValue = value;
+  }
 
   // Maintain ring buffer size
   while (_samples.size() > _max_samples) {
@@ -67,6 +70,12 @@ float GraphSeries::getSample(size_t index) const {
     return _samples[index];
   }
   return 0.0f;
+}
+/////////////////////////////////////////////////////////////////////////
+void GraphSeries::setSample(size_t index, float value) {
+  if (index < _samples.size()) {
+    _samples[index] = value;
+  }
 }
 /////////////////////////////////////////////////////////////////////////
 // GraphChannel Implementation
@@ -124,7 +133,14 @@ void GraphChannel::setEventImage(int event_type, lev2::image_ptr_t image) {
 }
 /////////////////////////////////////////////////////////////////////////
 void GraphChannel::addHLine(float value, fvec3 color, const std::string& label) {
-  _hlines.push_back({value, color, label});
+  // Extract unit suffix from label (e.g. "8.3ms" → suffix="ms")
+  std::string suffix;
+  size_t i = 0;
+  while (i < label.size() && (std::isdigit(label[i]) || label[i] == '.' || label[i] == '-' || label[i] == ' '))
+    i++;
+  if (i < label.size())
+    suffix = label.substr(i);
+  _hlines.push_back({value, color, label, suffix});
 }
 void GraphChannel::clearHLines() {
   _hlines.clear();
@@ -179,6 +195,24 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
   switch (filtev._eventcode) {
     case ui::EventCode::PUSH:
     case ui::EventCode::DOUBLECLICK: {
+      // Check hline hit first (5-pixel tolerance)
+      for (auto& region : _hline_regions) {
+        float hl_range = region._data_max - region._data_min;
+        if (hl_range <= 0.0f) continue;
+        for (auto& hl : region._channel->_hlines) {
+          float t = (hl._value - region._data_min) / hl_range;
+          float py = region._hl_y1 - t * (region._hl_y1 - region._hl_y0);
+          if (std::abs(float(ilocy) - py) < 5.0f &&
+              float(ilocx) >= region._hl_y0 && // within chart x-range (approx)
+              float(ilocx) < float(width() - 80)) {
+            _dragged_hline = &hl;
+            _drag_region = region;
+            SetDirty();
+            return HandlerResult(this);
+          }
+        }
+      }
+
       auto clicked_series = _findSeriesAtPoint(ilocx, ilocy);
 
       if (clicked_series) {
@@ -193,6 +227,26 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
         }
       }
       SetDirty();
+      break;
+    }
+    case ui::EventCode::DRAG: {
+      if (_dragged_hline) {
+        float hl_range = _drag_region._data_max - _drag_region._data_min;
+        float t = (_drag_region._hl_y1 - float(ilocy)) / (_drag_region._hl_y1 - _drag_region._hl_y0);
+        t = clamp(t, 0.0f, 1.0f);
+        _dragged_hline->_value = _drag_region._data_min + t * hl_range;
+        _dragged_hline->_label = FormatString("%.1f%s", _dragged_hline->_value, _dragged_hline->_suffix.c_str());
+        SetDirty();
+        return HandlerResult(this);
+      }
+      break;
+    }
+    case ui::EventCode::RELEASE: {
+      if (_dragged_hline) {
+        _dragged_hline = nullptr;
+        SetDirty();
+        return HandlerResult(this);
+      }
       break;
     }
     case ui::EventCode::MOVE: {
@@ -224,10 +278,12 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
             _hovered_series->_visible = !_hovered_series->_visible;
             printf("series<%s> visible<%d>\n", _hovered_series->_name.c_str(),
                    _hovered_series->_visible);
-            SetDirty();
-            return HandlerResult(this);
+          } else {
+            _paused = !_paused;
+            printf("GraphView paused<%d>\n", _paused);
           }
-          break;
+          SetDirty();
+          return HandlerResult(this);
 
         case 'R':
           if (_selected_series) {
@@ -532,6 +588,7 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
 
     int ichanlaby = _kbasechanlaby;
     float accumulated_margin = 0.0f;
+    _hline_regions.clear();
     for (auto channel : _channelmap) {
       const std::string& name = channel->_name;
 
@@ -684,8 +741,7 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
 
           // Current value
           if (series->_visible && series->sampleCount() > 0) {
-            float value = series->getSample(series->sampleCount() - 1);
-            auto valstr = FormatString("%0.2f", value);
+            auto valstr = FormatString("%0.2f", series->_currentValue);
             tgt->RefModColor() = series->_color;
             mtxi->PushUIMatrix(width(), height());
             lev2::FontMan::beginTextBlock(tgt, 128);
@@ -748,8 +804,7 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
           if (series->_visible) {
             size_t series_count = series->sampleCount();
             if (series_count > 0) {
-              float value        = series->getSample(series_count - 1);
-              auto valstr        = FormatString("%0.2f", value);
+              auto valstr        = FormatString("%0.2f", series->_currentValue);
               int sw2            = lev2::FontMan::stringWidth(valstr.length());
               tgt->RefModColor() = series->_color;
               mtxi->PushUIMatrix(width(), height());
@@ -1059,6 +1114,9 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
         }
 
         float hl_range = data_max - data_min;
+
+        // Cache layout for hline drag hit-testing
+        _hline_regions.push_back({channel.get(), hl_y0, hl_y1, data_min, data_max});
 
         size_t hline_verts = channel->_hlines.size() * 2;
         lev2::VtxWriter<vtx_t> vw_hl;

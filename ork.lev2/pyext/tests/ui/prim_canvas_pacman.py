@@ -3,10 +3,12 @@
 # PrimCanvas Pac-Man - Grid-based movement using gameutils library
 ################################################################################
 
-import signal, math, random
+import math, random
 import numpy as np
 from orkengine.core import vec2, vec4, CrcStringProxy
 from orkengine import lev2
+from ork.app.application import ComponentizedApplication
+from ork.app.frame_profiler import FrameProfilerComponent
 from ork.app.testlib.gameutils.grid2d import (
   DIR_RIGHT, DIR_DOWN, DIR_LEFT, DIR_UP, DIR_NONE, DIR_DELTA,
   opposite_dir, GridMaze, GridEntity
@@ -172,12 +174,14 @@ class Ghost(GridEntity):
 # Main Game
 ################################################################################
 
-class PacManGame:
+class PacManGame(ComponentizedApplication):
   def __init__(self):
     super().__init__()
-    self.ezapp = lev2.OrkEzApp.create(self, fullscreen=True, disable_mouse_cursor=True)
-    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
-    self.ezapp.topWidget.enableUiDraw()
+
+    self.profiler = self.addComponent("profiler", FrameProfilerComponent,
+                                      gpu_filter=["*", "-fwd:total"])
+
+    self.createEzApp(fullscreen=True, disable_mouse_cursor=True)
 
     lg = self.ezapp.topLayoutGroup
     lg.clearColorStd = vec4(0, 0, 0, 1)
@@ -189,7 +193,6 @@ class PacManGame:
     self.canvas.draw_background = True
 
     self._init_game()
-    signal.signal(signal.SIGINT, lambda *_: self.ezapp.signalExit())
 
   def _init_game(self):
     self.maze = PacManMaze()
@@ -208,7 +211,7 @@ class PacManGame:
     layer.addPrimitive(prim)
     return prim, quads
 
-  def onGpuInit(self, ctx):
+  def _onGpuInit(self, ctx):
     self.canvas.gpuInit(ctx)
     self.font = lev2.FontManager.fontForId("i18")
     self.font_large = lev2.FontManager.fontForId("i32")
@@ -374,11 +377,11 @@ class PacManGame:
 
     self.canvas.markDirty()
 
-  def onUpdate(self, updinfo):
+  def _onUpdate(self, updinfo):
     self.time += updinfo.deltatime
     self._update(updinfo.deltatime)
 
-  def onUiEvent(self, ev):
+  def _onUiEvent(self, ev):
     if ev.code == tokens.KEY_DOWN.hashed:
       dirs = {263: DIR_LEFT, 262: DIR_RIGHT, 265: DIR_UP, 264: DIR_DOWN}
       if ev.keycode in dirs:
@@ -387,4 +390,8 @@ class PacManGame:
         self._init_game()
     return lev2.ui.HandlerResult()
 
-PacManGame().ezapp.mainThreadLoop()
+###############################################################################
+
+app = PacManGame()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()

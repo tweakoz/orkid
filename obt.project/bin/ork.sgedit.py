@@ -6,10 +6,11 @@
 # Distributed under the MIT License
 ################################################################################
 
-import signal, os, argparse
+import os, argparse
 from orkengine.core import vec3, vec4, quat, VarMap, CrcStringProxy, Transform
 from orkengine import lev2
 from ork.editor import SceneEditorBase, SceneLoader, PARTICLE_PRESETS
+from ork.app.frame_profiler import FrameProfilerComponent
 
 tokens = CrcStringProxy()
 
@@ -32,14 +33,14 @@ class SceneEditor(SceneEditorBase):
       home_dir=os.path.expanduser("~")
     )
 
-    # Model registry (populated in onGpuInit)
+    self.profiler = self.addComponent("profiler", FrameProfilerComponent)
+
+    # Model registry (populated in _onGpuInit)
     self.models = {}       # short_name -> XgmModel
     self.model_names = []  # ordered list for cycling
     self.model_paths = {}  # short_name -> full_path
 
-    self._createApp(name="SceneEditor", fullscreen=True, ssaa=1,
-                     use_subsystems=['opq', 'core', 'gpu', 'lev2'])
-    signal.signal(signal.SIGINT, lambda s, f: self.ezapp.signalExit())
+    self.createEzApp(fullscreen=True, ssaa=1)
 
   ##############################################
   # Node type definitions
@@ -323,9 +324,9 @@ class SceneEditor(SceneEditorBase):
   # GPU initialization
   ##############################################
 
-  def onGpuInit(self, ctx):
+  def _onGpuInit(self, ctx):
     # Call base class initialization
-    super().onGpuInit(ctx)
+    super()._onGpuInit(ctx)
 
     # Load models
     model_paths = [

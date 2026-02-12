@@ -3,9 +3,11 @@
 # PrimCanvas Space Invaders - Pixel art sprites with keyboard input
 ################################################################################
 
-import signal, random
+import random
 from orkengine.core import vec2, vec4, CrcStringProxy
 from orkengine import lev2
+from ork.app.application import ComponentizedApplication
+from ork.app.frame_profiler import FrameProfilerComponent
 from ork.app.testlib.gameutils import parse_ascii_sprite
 
 tokens = CrcStringProxy()
@@ -95,7 +97,7 @@ WWWWWWWWW
 # Game
 ################################################################################
 
-class SpaceInvaders:
+class SpaceInvaders(ComponentizedApplication):
   # Grid config
   COLS, ROWS = 11, 5
   SPACING = (0.07, 0.075)
@@ -103,9 +105,11 @@ class SpaceInvaders:
 
   def __init__(self):
     super().__init__()
-    self.ezapp = lev2.OrkEzApp.create(self, fullscreen=True, disable_mouse_cursor=True)
-    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
-    self.ezapp.topWidget.enableUiDraw()
+
+    self.profiler = self.addComponent("profiler", FrameProfilerComponent,
+                                      gpu_filter=["*", "-fwd:total"])
+
+    self.createEzApp(fullscreen=True, disable_mouse_cursor=True)
 
     lg = self.ezapp.topLayoutGroup
     lg.clearColorStd = vec4(0, 0, 0.02, 1)
@@ -128,7 +132,6 @@ class SpaceInvaders:
     self.player_sprite = parse_ascii_sprite(SPRITES['player'], color_map=COLORS)
 
     self._init_game()
-    signal.signal(signal.SIGINT, lambda *_: self.ezapp.signalExit())
 
   def _init_game(self):
     self.time = self.anim_time = self.score = 0
@@ -160,7 +163,7 @@ class SpaceInvaders:
     layer.addPrimitive(prim)
     return quads
 
-  def onGpuInit(self, ctx):
+  def _onGpuInit(self, ctx):
     self.canvas.gpuInit(ctx)
     self.font = lev2.FontManager.fontForId("i18")
     self.font_large = lev2.FontManager.fontForId("i32")
@@ -338,11 +341,11 @@ class SpaceInvaders:
 
     self.canvas.markDirty()
 
-  def onUpdate(self, updinfo):
+  def _onUpdate(self, updinfo):
     self.time += updinfo.deltatime
     self._update(updinfo.deltatime)
 
-  def onUiEvent(self, ev):
+  def _onUiEvent(self, ev):
     if ev.code == tokens.KEY_DOWN.hashed:
       if ev.keycode == 263: self.move_left = True
       elif ev.keycode == 262: self.move_right = True
@@ -354,4 +357,8 @@ class SpaceInvaders:
       elif ev.keycode == 262: self.move_right = False
     return lev2.ui.HandlerResult()
 
-SpaceInvaders().ezapp.mainThreadLoop()
+###############################################################################
+
+app = SpaceInvaders()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()

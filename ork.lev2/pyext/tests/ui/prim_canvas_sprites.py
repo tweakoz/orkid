@@ -5,9 +5,11 @@
 # transforms, rotations, scales, tints, visibility, and animation.
 ################################################################################
 
-import signal, math, random
+import math, random
 from orkengine.core import vec2, vec4, CrcStringProxy
 from orkengine import lev2
+from ork.app.application import ComponentizedApplication
+from ork.app.frame_profiler import FrameProfilerComponent
 
 tokens = CrcStringProxy()
 
@@ -137,15 +139,18 @@ def parse_ascii_sprite(sprite_str, color_map):
 # Sprite Torture Test
 ################################################################################
 
-class SpriteTortureTest:
+class SpriteTortureTest(ComponentizedApplication):
   # Configuration
   NUM_SPRITES = 16384  # Number of sprite instances
   SPRITE_TYPES = ['cross', 'diamond', 'arrow', 'square', 'star', 'ship']
 
   def __init__(self):
-    self.ezapp = lev2.OrkEzApp.create(self, fullscreen=True)
-    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
-    self.ezapp.topWidget.enableUiDraw()
+    super().__init__()
+
+    self.profiler = self.addComponent("profiler", FrameProfilerComponent,
+                                      gpu_filter=["*", "-fwd:total"])
+
+    self.createEzApp(fullscreen=True)
 
     lg = self.ezapp.topLayoutGroup
     lg.clearColorStd = vec4(0.05, 0.05, 0.1, 1)
@@ -158,8 +163,6 @@ class SpriteTortureTest:
 
     self.time = 0
     self.paused = False
-    self.space_down = False  # Track key state to avoid double events
-    signal.signal(signal.SIGINT, lambda *_: self.ezapp.signalExit())
 
   def _create_sprite(self, sprite_str):
     """Create a SpritePrimitive from ASCII art."""
@@ -173,7 +176,7 @@ class SpriteTortureTest:
       sprite.addQuad(qd)
     return sprite
 
-  def onGpuInit(self, ctx):
+  def _onGpuInit(self, ctx):
     self.canvas.gpuInit(ctx)
     self.font = lev2.FontManager.fontForId("i14")
 
@@ -289,13 +292,13 @@ class SpriteTortureTest:
 
     self.canvas.markDirty()
 
-  def onUpdate(self, updinfo):
+  def _onUpdate(self, updinfo):
     # Visual feedback for pause state
     if not self.paused:
       self.time += updinfo.deltatime
       self._update_sprites(updinfo.deltatime)
 
-  def onUiEvent(self, ev):
+  def _onUiEvent(self, ev):
     # Only react to KEY_DOWN, not KEY_REPEAT
     if ev.code == tokens.KEY_DOWN.hashed:
       if ev.keycode == 32:  # Space
@@ -304,4 +307,8 @@ class SpriteTortureTest:
         self.ezapp.signalExit()
     return lev2.ui.HandlerResult()
 
-SpriteTortureTest().ezapp.mainThreadLoop()
+###############################################################################
+
+app = SpriteTortureTest()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()

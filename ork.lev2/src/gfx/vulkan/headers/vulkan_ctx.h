@@ -720,6 +720,21 @@ public:
   float _total_frame_time = 0.0f;
   float _present_wait_time = 0.0f;
   //////////////////////////////////////////////
+  // GPU timestamp query pools (double-buffered)
+  //////////////////////////////////////////////
+  static constexpr size_t MAX_GPU_PERF_QUERIES = 64;  // 64 begin/end pairs per frame
+  VkQueryPool _perfQueryPools[2] = {VK_NULL_HANDLE, VK_NULL_HANDLE};
+  int _perfQueryPoolIndex = 0;           // current write pool (0 or 1)
+  uint32_t _perfQueryNextSlot = 0;       // next available query index in current pool
+  std::vector<gpuperfblock_ptr_t> _perfPendingBlocks[2];  // blocks per pool awaiting readback
+  bool _perfQueryPoolsCreated = false;
+  float _timestampPeriod = 1.0f;         // nanoseconds per timestamp tick
+
+  gpuperfblock_ptr_t gpuPerfBlockBegin(const std::string& name) override;
+  void gpuPerfBlockEnd(gpuperfblock_ptr_t block) override;
+  void _readbackPerfQueries();
+  void _createPerfQueryPools();
+  //////////////////////////////////////////////
   vkpricmdbufimpl_ptr_t _createPrimaryVkCommandBuffer(PrimaryCommandBuffer* par);
   vkseccmdbufimpl_ptr_t _createSecondaryVkCommandBuffer(SecondaryCommandBuffer* par);
   void enqueueDeferredOneShotCommand(secondary_commandbuffer_ptr_t cmdbuf);

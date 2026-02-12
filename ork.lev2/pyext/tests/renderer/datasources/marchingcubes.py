@@ -127,8 +127,8 @@ class MoleculeApp(BasicUiCamSgApp):
 
   ##############################################
 
-  def onGpuInit(self,ctx):
-    super().onGpuInit(ctx)
+  def _onGpuInit(self,ctx):
+    super()._onGpuInit(ctx)
     v,f = genMesh()
     self.node = self.createBaryDrawableFromVertsAndFaces(ctx,v,f,0.5)
     #self.node = self.createPbrDrawableFromVertsAndFaces(ctx,v,f,0.5)
@@ -136,5 +136,7 @@ class MoleculeApp(BasicUiCamSgApp):
 
 ###############################################################################
 
-MoleculeApp().ezapp.mainThreadLoop()
+app = MoleculeApp()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()
 

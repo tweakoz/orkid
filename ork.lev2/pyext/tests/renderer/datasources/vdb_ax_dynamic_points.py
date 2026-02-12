@@ -1,16 +1,18 @@
 #!/usr/bin/env ork.python
 
-import math, sys, random, threading, time, signal
+import math, sys, random, threading, time
 #import openvdb as vdb
-from obt import path as obt_path 
+from obt import path as obt_path
 from ork import path as ork_path
-from orkengine.core import vec2,vec3,CrcStringProxy
-from orkengine.lev2 import vdb as ork_vdb, OrkEzApp, RefreshFastest, ui, primitives
+from orkengine.core import *
+from orkengine.lev2 import *
+from orkengine.lev2 import vdb as ork_vdb
+from ork.app.application import ComponentizedApplication
+from ork.app.frame_profiler import FrameProfilerComponent
 sys.path.append(str(ork_path.py_lev2utils)) # add parent dir to path
 from cameras import *
 from shaders import POINTCLOUD_SHADERTEXT, createPipeline
 from primitives import createPointsPrimV12C4, createGridData
-from scenegraph import createSceneGraph
 
 tokens = CrcStringProxy()
 
@@ -18,7 +20,7 @@ tokens = CrcStringProxy()
 # create levelset sphere
 #############################
 
-radius = 10.0 
+radius = 10.0
 desired_num_points = 10000000
 voxel_size = 0.05 #radius / math.cbrt(desired_num_points);
 sphere = ork_vdb.FloatGrid.createLevelSetSphere( "a", radius, vec3(0,0,0), voxel_size, 1.01)
@@ -104,20 +106,19 @@ for i in range(1000):
 
 ################################################################################
 
-class PointsPrimApp(object):
+class PointsPrimApp(ComponentizedApplication):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self)
-    self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
     setupUiCamera( app=self, eye = vec3(6,6,6), constrainZ=True, up=vec3(0,1,0))
+    self.addComponent("profiler", FrameProfilerComponent, gpu_filter=["*", "-fwd:total"])
     self.phi = 0.0
-    self.sphere = sphere 
-    self.next_sphere = None 
+    self.sphere = sphere
+    self.next_sphere = None
     self.this_sphere = None
     self.ok_to_exit = False
-    
+
     def upd_sphere_fn():
       counter = 0
       while not self.ok_to_exit:
@@ -133,32 +134,60 @@ class PointsPrimApp(object):
     self.thr = threading.Thread(target=upd_sphere_fn)
     self.thr.start()
 
-    def onCtrlC(signum, frame):
-      print("signaling EXIT to ezapp")
-      self.ezapp.signalExit()
-      self.ok_to_exit = True
+    self.createEzApp(height=640,width=1280)
 
-    signal.signal(signal.SIGINT, onCtrlC)
+  ################################################
 
-    
+  def _onUiInit(self):
+    lg = self.ezapp.topLayoutGroup
+    self._sgviewport_item = lg.makeChild(
+        uiclass=ui.SceneGraphViewport,
+        args=["PrimarySG"],
+        fill=True
+    )
+
   ################################################
   # gpu data init:
   #  called on main thread when graphics context is
   #   made available
   ##############################################
 
-  def onGpuInit(self,ctx):
+  def _onGpuInit(self,ctx):
+
+    self.context = ctx
 
     ###################################
-    # create scenegraph
+    # create scene directly
     ###################################
 
-    sg_params = {
-      "SkyboxIntensity": 1.0, 
-      "DiffuseIntensity": 6.0, 
-    }
-    
-    createSceneGraph(app=self,rendermodel="ForwardPBR",params_dict=sg_params)
+    sceneparams = VarMap()
+    sceneparams.preset = "ForwardPBR"
+    sceneparams.SkyboxIntensity = float(1.0)
+    sceneparams.DiffuseIntensity = float(6.0)
+    sceneparams.SpecularIntensity = float(1)
+    sceneparams.AmbientLight = vec3(0.0)
+    sceneparams.DepthFogDistance = float(1e6)
+    sceneparams.SkyboxTexPathStr = "nebula"
+
+    self.scene = scenegraph.Scene(sceneparams)
+    self.layer1 = self.scene.createLayer("std_forward")
+    self.layer_std = self.layer1
+    self.layer_dpp = self.scene.createLayer("depth_prepass")
+    self.std_layers = [self.layer_std, self.layer_dpp]
+    self.rendernode = self.scene.compositorrendernode
+    self.outputnode = self.scene.compositoroutputnode
+
+    # Connect SceneGraphViewport to scene
+    sgviewport = self._sgviewport_item.widget
+    sgviewport.cameraName = "spawncam"
+    sgviewport.scenegraph = self.scene
+    sgviewport.forkDB()
+    sgviewport.evhandler = lambda ev: self._onUiEvent(ev)
+    sgviewport.ignoreEvents = False
+    self.scene.lightingmanager.gpuInit(ctx)
+
+    self.cam_overlay = self.layer1.createDrawableNode(
+        "camoverlay", self.uicam.createDrawable())
 
     ###################################
     # create grid
@@ -169,9 +198,9 @@ class PointsPrimApp(object):
     self.grid_node.sortkey = 1
 
     ###################################
-    # create points primitive 
+    # create points primitive
     ###################################
-    
+
     self.points_prim = primitives.PointsPrimitiveV12C4.create(40<<20)
     self.points_prim.updateWithVdbFloatGrid(self.sphere,ctx)
 
@@ -201,54 +230,45 @@ class PointsPrimApp(object):
     self.primnode = self.points_prim.createNode("node1",self.layer1,pipeline)
     self.primnode.sortkey = 2;
 
-    self.scene.lightingmanager.gpuInit(ctx)
-
   ################################################
 
-  def onUpdate(self,updinfo):
+  def _onUpdate(self,updinfo):
     self.abstime = updinfo.absolutetime
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
+    self._sgviewport_item.widget.setDirty()
     self.phi = self.abstime
-    
+
   ################################################
 
-  def onDraw(self,drawevent):
-    context = drawevent.context
-    self.ezapp.processMainSerialQueue()
-    
+  def _onGpuUpdate(self,ctx):
     if self.this_sphere != self.next_sphere:
-      self.points_prim.updateWithVdbFloatGrid(self.next_sphere,context)
+      self.points_prim.updateWithVdbFloatGrid(self.next_sphere,ctx)
       self.this_sphere = self.next_sphere
-
-    self.scene.renderOnContext(context);
 
   ##############################################
 
-  def onUiEvent(self,uievent):
+  def _onUiEvent(self,uievent):
     handled = self.uicam.uiEventHandler(uievent)
     if handled:
       self.camera.copyFrom( self.uicam.cameradata )
     return ui.HandlerResult()
-    
+
   ##############################################
 
-  def onGpuExit(self,ctx):
+  def _onGpuExit(self,ctx):
     print("onGpuExit")
     self.ok_to_exit = True
     self.thr.join()
 
   ##############################################
 
-  def onUpdateExit(self):
+  def _onUpdateExit(self):
     print("onUpdateExit")
     self.ok_to_exit = True
     self.thr.join()
 
 ###############################################################################
 
-def onRunLoopIteration():
-  pass
-
-###############################################################################
-
-PointsPrimApp().ezapp.mainThreadLoop(on_iter=onRunLoopIteration)
+app = PointsPrimApp()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()

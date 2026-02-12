@@ -34,8 +34,8 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.numsteps_clip = 0
     self.free_update = False
   ##############################################
-  def onGpuInit(self,ctx):
-    super().onGpuInit(ctx,add_grid=False)
+  def _onGpuInit(self,ctx):
+    super()._onGpuInit(ctx,add_grid=False)
     ##############################
     self.pseudowire_pipe = self.createPseudoWirePipeline()
     solid_wire_pipeline = self.createBaryWirePipeline()
@@ -149,8 +149,8 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.upd_2c.lat_max = 0
     ################################################################################
   ##############################################
-  def onUpdate(self,updevent):
-    super().onUpdate(updevent)
+  def _onUpdate(self,updevent):
+    super()._onUpdate(updevent)
 
     if self.free_update:
       self.maxsteps_sim += 1
@@ -212,8 +212,8 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.barysub_isect = self.hull.withBarycentricUVs()
 
   ##############################################
-  def onGpuIter(self):
-    super().onGpuIter()
+  def _onGpuUpdate(self,ctx):
+    super()._onGpuUpdate(ctx)
 
     if self.hull!=None:
       self.pts_drawabledata.pointsmesh = self.hull
@@ -227,9 +227,9 @@ class SceneGraphApp(BasicUiCamSgApp):
     # convex hull mesh
     self.prim3.fromSubMesh(self.barysub_isect,self.context)
 
-  def onUiEvent(self,uievent):
+  def _onUiEvent(self,uievent):
     res = ui.HandlerResult()
-    super().onUiEvent(uievent)
+    super()._onUiEvent(uievent)
     if uievent.code == tokens.KEY_DOWN.hashed:
       if uievent.keycode == 32: # spacebar
         self.numsteps_clip = (self.numsteps_clip + 1) % 4
@@ -241,7 +241,7 @@ class SceneGraphApp(BasicUiCamSgApp):
 
 ###############################################################################
 
-sgapp = SceneGraphApp()
-
-sgapp.ezapp.mainThreadLoop(on_iter=lambda: sgapp.onGpuIter() )
+app = SceneGraphApp()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()
 

@@ -417,6 +417,11 @@ void VkContext::_initVulkanCommon() {
     g_dynamic_ubo_system->init(this);
     if(0)printf("VkContext: Initialized dynamic UBO system\n");
   }
+
+  ////////////////////////////
+  // create GPU perf query pools
+  ////////////////////////////
+  _createPerfQueryPools();
 }
 
   void VkContext::_beginAssetProcessing() {
@@ -1034,6 +1039,14 @@ void VkContext::_doBeginFrame() {
     miW = main_rtg->miW;
     miH = main_rtg->miH;
   }
+
+  // Readback GPU perf queries from previous frame, then swap pools
+  if (_perfQueryPoolsCreated) {
+    _readbackPerfQueries();
+    _perfQueryPoolIndex = 1 - _perfQueryPoolIndex;
+    _perfQueryNextSlot = 0;
+  }
+
   // Poll timeline semaphores
   _pendingOneShotSemas.atomicOp([&](vkcompsema_set_t& unlocked) {
     for (auto semaphore : unlocked) {
@@ -1122,6 +1135,12 @@ void VkContext::_doEndFrame() {
     // This allows the rendered image to be read back or used as a texture
     main_rtbi->_transitionToTexture(primary_cb());
   }
+
+  ////////////////////////
+  // end frame:all GPU perf block (covers all command buffer content)
+  ////////////////////////
+  gpuPerfBlockEnd(_frameAllPerfBlock);
+  _frameAllPerfBlock = nullptr;
 
   ////////////////////////
   // done with primary command buffer for this frame
@@ -1890,6 +1909,102 @@ void VkContext::resumeRenderPass() {
   
   // Mark render pass as active again
   _renderPassActive = true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// GPU Performance Query Implementation
+///////////////////////////////////////////////////////////////////////////////
+
+void VkContext::_createPerfQueryPools() {
+  if (_perfQueryPoolsCreated) return;
+
+  // Store timestamp period for conversion
+  _timestampPeriod = _vkdeviceinfo->_devprops.limits.timestampPeriod; // nanoseconds per tick
+
+  VkQueryPoolCreateInfo qpci = {};
+  initializeVkStruct(qpci, VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO);
+  qpci.queryType = VK_QUERY_TYPE_TIMESTAMP;
+  qpci.queryCount = MAX_GPU_PERF_QUERIES * 2; // 2 timestamps per block (begin + end)
+
+  for (int i = 0; i < 2; i++) {
+    VkResult ok = vkCreateQueryPool(_vkdevice, &qpci, nullptr, &_perfQueryPools[i]);
+    OrkAssert(ok == VK_SUCCESS);
+  }
+
+  _perfQueryPoolsCreated = true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+gpuperfblock_ptr_t VkContext::gpuPerfBlockBegin(const std::string& name) {
+  if (!_perfQueryPoolsCreated) return nullptr;
+  if (_currentPhase != "INFRAME"_crcu) return nullptr; // must be called in-frame
+  if (_perfQueryNextSlot >= MAX_GPU_PERF_QUERIES) return nullptr; // pool exhausted
+
+  auto block = std::make_shared<GpuPerfBlock>();
+  block->_name = name;
+  block->_pool_index = _perfQueryPoolIndex;
+  block->_begin_query = _perfQueryNextSlot * 2;
+  block->_end_query = _perfQueryNextSlot * 2 + 1;
+  _perfQueryNextSlot++;
+
+  auto pool = _perfQueryPools[_perfQueryPoolIndex];
+  auto cmdbuf = primary_cb()->_vkcmdbuf;
+  vkCmdResetQueryPool(cmdbuf, pool, block->_begin_query, 2);
+  vkCmdWriteTimestamp(cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, pool, block->_begin_query);
+
+  _perfPendingBlocks[_perfQueryPoolIndex].push_back(block);
+  return block;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkContext::gpuPerfBlockEnd(gpuperfblock_ptr_t block) {
+  if (!block) return;
+  if (!_perfQueryPoolsCreated) return;
+  if (_currentPhase != "INFRAME"_crcu) return; // must be called in-frame
+
+  auto pool = _perfQueryPools[block->_pool_index];
+  vkCmdWriteTimestamp(primary_cb()->_vkcmdbuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, pool, block->_end_query);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkContext::_readbackPerfQueries() {
+  // Read from the OTHER pool (not the current write pool)
+  int readIndex = 1 - _perfQueryPoolIndex;
+  auto& pending = _perfPendingBlocks[readIndex];
+  if (pending.empty()) return;
+
+  auto pool = _perfQueryPools[readIndex];
+  uint32_t queryCount = pending.size() * 2;
+
+  // Read all timestamps at once
+  std::vector<uint64_t> timestamps(queryCount);
+  VkResult result = vkGetQueryPoolResults(
+      _vkdevice, pool,
+      0, queryCount,
+      queryCount * sizeof(uint64_t),
+      timestamps.data(),
+      sizeof(uint64_t),
+      VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+
+  if (result == VK_SUCCESS) {
+    _gpuPerfResults.clear();
+    for (auto& block : pending) {
+      uint64_t begin_ts = timestamps[block->_begin_query];
+      uint64_t end_ts = timestamps[block->_end_query];
+      // Convert ticks to seconds: ticks * timestampPeriod(ns) * 1e-9
+      block->_duration = double(end_ts - begin_ts) * double(_timestampPeriod) * 1e-9;
+      _gpuPerfResults[block->_name] = block->_duration;
+
+      if (block->_on_result) {
+        block->_on_result(block);
+      }
+    }
+  }
+
+  pending.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -36,8 +36,8 @@ class SceneGraphApp(BasicUiCamSgApp):
   def __init__(self):
     super().__init__()
   ##############################################
-  def onGpuInit(self,ctx):
-    super().onGpuInit(ctx)
+  def _onGpuInit(self,ctx):
+    super()._onGpuInit(ctx)
     ##################################
     # solid wire pipeline
     ##################################
@@ -139,5 +139,6 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.union_sgnode.enabled = True
     
 ###############################################################################
-sgapp = SceneGraphApp()
-sgapp.ezapp.mainThreadLoop(on_iter=lambda: sgapp.onGpuIter() )
+app = SceneGraphApp()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()

@@ -16,6 +16,7 @@ from obt import path
 from orkengine.core import vec2, vec3, vec4, mtx4, quat, VarMap, CrcStringProxy
 from orkengine import lev2
 from ork.app import application, loggerui
+from ork.app.frame_profiler import FrameProfilerComponent
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 
@@ -25,12 +26,13 @@ tokens = CrcStringProxy()
 
 class ImageViewStressTest(application.ComponentizedApplication):
 
-  def __init__(self, griddim=4):
+  def __init__(self, griddim=4, use_profiler=False):
     super().__init__()
 
     # Grid configuration
     self.griddim = griddim
     self.total_cells = griddim * griddim
+    self.use_profiler = use_profiler
 
     # Movie state tracking
     self.movies = []
@@ -50,12 +52,16 @@ class ImageViewStressTest(application.ComponentizedApplication):
     plt.style.use('dark_background')
 
     ############################################
-    # Setup logger UI component
+    # Setup overlay component (profiler or logger)
     ############################################
 
-    self.addComponent("logger", loggerui.LoggerUIComponent,
-                      filter_regex=[".*"],
-                      background_color=vec4(0.2, 0.2, 0.2, 0.8))
+    if use_profiler:
+      self.addComponent("profiler", FrameProfilerComponent,
+                        gpu_filter=["*", "-fwd:total"])
+    else:
+      self.addComponent("logger", loggerui.LoggerUIComponent,
+                        filter_regex=[".*"],
+                        background_color=vec4(0.2, 0.2, 0.2, 0.8))
 
     ############################################
     # Create EzApp and initialize
@@ -188,6 +194,14 @@ class ImageViewStressTest(application.ComponentizedApplication):
   def _onAppLink(self):
     """Configure logger channels after component initialization"""
     logger_comp = self.findComponentByName("logger")
+    if logger_comp is None:
+      # Using profiler instead of logger - create stub channels
+      class _StubChannel:
+        def log(self, msg): pass
+      self.stress_channel = _StubChannel()
+      self.movie_channel = _StubChannel()
+      self.plot_channel = _StubChannel()
+      return
 
     # Configure STRESS channel for stress test events
     self.stress_channel = logger_comp.configureChannel(
@@ -338,6 +352,7 @@ class ImageViewStressTest(application.ComponentizedApplication):
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description='ImageView Stress Test - Variable grid with mixed movie players and matplotlib plots')
   parser.add_argument('-g', '--griddim', type=int, default=4, help='Grid dimension (NxN grid of ImageViews, default=4)')
+  parser.add_argument('-p', '--profiler', action='store_true', default=False, help='Use frame profiler instead of logger UI')
   args = parser.parse_args()
 
   # Validate grid dimension
@@ -348,6 +363,6 @@ if __name__ == "__main__":
     print(f"Warning: Grid dimension {args.griddim} is very large, may impact performance")
 
   # Create and run the ComponentizedApplication
-  app = ImageViewStressTest(griddim=args.griddim)
+  app = ImageViewStressTest(griddim=args.griddim, use_profiler=args.profiler)
   app.ezapp.mainThreadLoop()
   app.ezapp.shutdown()

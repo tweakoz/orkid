@@ -30,8 +30,8 @@ class SceneGraphApp(BasicUiCamSgApp):
     new_plane = dplane(nn,d)
     return clipMeshWithPlane(inpsubmesh,new_plane,debug=False).prune()
   ##############################################
-  def onGpuInit(self,ctx):
-    super().onGpuInit(ctx)
+  def _onGpuInit(self,ctx):
+    super()._onGpuInit(ctx)
     ##################################
     # solid wire pipeline
     ##################################
@@ -62,11 +62,11 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.bary_prim.debugState = False
 
   ##############################################
-  def onUpdate(self,updevent):
-    super().onUpdate(updevent)
+  def _onUpdate(self,updevent):
+    super()._onUpdate(updevent)
   ##############################################
-  def onGpuIter(self):
-    super().onGpuIter()
+  def _onGpuUpdate(self,ctx):
+    super()._onGpuUpdate(ctx)
     phi = 0.5+math.sin(self.abstime*3.0)*0.5
     beveld = 1.5+phi*0.5
     cub_submesh = stripSubmesh(self.cube_submesh)
@@ -104,11 +104,12 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.bary_prim.fromSubMesh(self.barysubmesh,self.context)
 
   ##############################################
-  def onUiEvent(self,uievent):
-    super().onUiEvent(uievent)
+  def _onUiEvent(self,uievent):
+    super()._onUiEvent(uievent)
     return ui.HandlerResult()
 
 
 ###############################################################################
-sgapp = SceneGraphApp()
-sgapp.ezapp.mainThreadLoop(on_iter=lambda: sgapp.onGpuIter() )
+app = SceneGraphApp()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()

@@ -43,8 +43,8 @@ class SceneGraphApp(BasicUiCamSgApp):
         self.pnt[i] = dvec3(x,y,z)*4
 
   ##############################################
-  def onGpuInit(self,ctx):
-    super().onGpuInit(ctx,add_grid=False)
+  def _onGpuInit(self,ctx):
+    super()._onGpuInit(ctx,add_grid=False)
     ##############################
     self.pseudowire_pipe = self.createPseudoWirePipeline()
     solid_wire_pipeline = self.createBaryWirePipeline()
@@ -67,8 +67,8 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.hull = None
     ################################################################################
   ##############################################
-  def onUpdate(self,updevent):
-    super().onUpdate(updevent)
+  def _onUpdate(self,updevent):
+    super()._onUpdate(updevent)
     if self.incr_time:
       self.time += updevent.deltatime
     self.updatePoints(self.time*1.25)
@@ -84,17 +84,17 @@ class SceneGraphApp(BasicUiCamSgApp):
 
     #time.sleep(0.25)
   ##############################################
-  def onGpuIter(self):
-    super().onGpuIter()
+  def _onGpuUpdate(self,ctx):
+    super()._onGpuUpdate(ctx)
 
     # intersection mesh
     if self.hull!=None:
       self.pts_drawabledata.pointsmesh = self.hull
       self.prim3.fromSubMesh(self.barysub_isect,self.context)
 
-  def onUiEvent(self,uievent):
+  def _onUiEvent(self,uievent):
     res = ui.HandlerResult()
-    super().onUiEvent(uievent)
+    super()._onUiEvent(uievent)
     if uievent.code == tokens.KEY_DOWN.hashed:
       if uievent.keycode == 32: # spacebar
         self.numsteps = (self.numsteps + 1) % 4
@@ -105,7 +105,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     return res
 ###############################################################################
 
-sgapp = SceneGraphApp()
-
-sgapp.ezapp.mainThreadLoop(on_iter=lambda: sgapp.onGpuIter() )
+app = SceneGraphApp()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()
 

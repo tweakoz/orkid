@@ -49,7 +49,8 @@ class VideoToolboxStressTest(application.ComponentizedApplication):
     # Setup profiler UI component
     ############################################
 
-    self.profiler = self.addComponent("profiler", FrameProfilerComponent)
+    self.profiler = self.addComponent("profiler", FrameProfilerComponent,
+                                      gpu_filter=["*", "-fwd:total"])
 
     ############################################
     # Create EzApp and initialize

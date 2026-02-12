@@ -6,26 +6,26 @@
 
 import os
 import sys
-from orkengine.core import vec2, vec3, vec4, quat, VarMap, CrcStringProxy, Transform
+from orkengine.core import vec2, vec3, vec4, quat, VarMap, CrcStringProxy, Transform, lev2_pyexdir
 from orkengine import lev2
 from ork.ui import icon_library
 from ork.ui.filesystem_browser import FilesystemBrowser
 from ork.ui.transform_edit import TransformEdit
 from ork.ui.color_picker import ColorPicker
+from ork.app.application import ComponentizedApplication
 
 from .light_editor import LightPropertyEditor
 from .scene_io import SceneLoader, SceneSaver
 
 tokens = CrcStringProxy()
 
-l2exdir = (lev2.lev2exdir()/"python").normalized.as_string
-sys.path.append(l2exdir)
+lev2_pyexdir.addToSysPath()
 from lev2utils.cameras import setupUiCameraX
 from lev2utils.primitives import createGridData
 
 ################################################################################
 
-class SceneEditorBase:
+class SceneEditorBase(ComponentizedApplication):
   """Base class for scene graph editors.
 
   Provides:
@@ -60,7 +60,7 @@ class SceneEditorBase:
                sg_params=None,
                file_extension=".osgr",
                home_dir=None):
-    super().__init__()
+    super().__init__()  # ComponentizedApplication.__init__
 
     self._left_dock_proportion = left_dock_proportion
     self._propsheet_proportion = propsheet_proportion
@@ -82,12 +82,8 @@ class SceneEditorBase:
     self.layer = None
     self.scene_model = None
 
-  def _createApp(self, name="SceneEditor", fullscreen=True, ssaa=1, use_subsystems=None):
-    """Create the EzApp and set up UI layout. Call from subclass __init__."""
-    self.ezapp = lev2.OrkEzApp.create(self, fullscreen=fullscreen, ssaa=ssaa, name=name, use_subsystems=use_subsystems)
-    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
-    self.ezapp.topWidget.enableUiDraw()
-
+  def _onUiInit(self):
+    """Set up the editor UI layout."""
     lg = self.ezapp.topLayoutGroup
     lg.margin = 4
     lg.clearColorStd = vec4(0.15, 0.15, 0.15, 1)
@@ -126,8 +122,6 @@ class SceneEditorBase:
     self.propsheet_dock = propsheet_dock_item.widget
     self.propsheet_dock.titlebar_color = vec4(0.2, 0.2, 0.15, 1)
     self._setupPropertySheet()
-
-    return self.ezapp
 
   def _setupToolbar(self):
     """Set up the toolbar with LOAD/SAVE buttons."""
@@ -424,7 +418,7 @@ class SceneEditorBase:
   # GPU initialization
   ##############################################
 
-  def onGpuInit(self, ctx):
+  def _onGpuInit(self, ctx):
     """Initialize GPU resources. Call super() then add custom setup."""
     # Theme
     self.uicontext = self.ezapp.uicontext
@@ -787,7 +781,7 @@ class SceneEditorBase:
   # Update loop
   ##############################################
 
-  def onUpdate(self, updinfo):
+  def _onUpdate(self, updinfo):
     """Update loop. Call super() then add custom update logic."""
     import math
     self.scenegraph.updateScene(self.cameralut)
@@ -802,6 +796,6 @@ class SceneEditorBase:
       xform = self.selected_light.worldTransform
       self.selected_light.setMatrix(xform.composed)
 
-  def onUiEvent(self, uievent):
+  def _onUiEvent(self, uievent):
     """UI event handler. Override for custom behavior."""
-    return lev2.ui.HandlerResult()
+    return None

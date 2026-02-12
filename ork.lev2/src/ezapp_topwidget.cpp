@@ -102,7 +102,9 @@ void EzTopWidget::enableUiDraw() {
     compositorimpl->pushCPD(*CPD);
     //context->beginFrame();
     mtxi->PushUIMatrix();
+    auto ui_perf = context->gpuPerfBlockBegin("ui:top");
     ezapp->_uicontext->draw(drwev);
+    context->gpuPerfBlockEnd(ui_perf);
     mtxi->PopUIMatrix();
     compositorimpl->popCPD();
 

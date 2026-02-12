@@ -29,11 +29,12 @@ struct GraphPanel {
 struct GraphSeries {
   GraphSeries(const std::string& name, fvec3 color);
 
-  void addSample(float value);
+  void addSample(float value, bool update_label = true);
   void clearSamples();
   void setMaxSamples(size_t count);
   size_t sampleCount() const { return _samples.size(); }
   float getSample(size_t index) const;
+  void setSample(size_t index, float value);
 
   std::string _name;
   std::deque<float> _samples;
@@ -59,6 +60,9 @@ struct GraphSeries {
 
   // Per-series vertical scale (visual only)
   float _vertical_scale = 1.0f;   // Multiplier for Y values (zoom)
+
+  // Current value for label display (set automatically by addSample, or manually for GPU-timed series)
+  float _currentValue = 0.0f;
 };
 using graphseries_ptr_t = std::shared_ptr<GraphSeries>;
 ///////////////////////////////////////////////////////////////////////////////
@@ -102,7 +106,7 @@ struct GraphChannel {
   fvec3 _lane_outline_color = fvec3(0.4f, 0.4f, 0.4f);
 
   // Horizontal reference lines (value in data units, color, optional label)
-  struct HLine { float _value; fvec3 _color; std::string _label; };
+  struct HLine { float _value; fvec3 _color; std::string _label; std::string _suffix; };
   std::vector<HLine> _hlines;
   void addHLine(float value, fvec3 color, const std::string& label = "");
   void clearHLines();
@@ -152,6 +156,21 @@ struct GraphView : public ui::PrimCanvas {
 
   // Key state tracking
   bool _v_key_down = false;  // True when 'v' key is held down
+
+  // Pause state — when true, external code should stop feeding samples
+  bool _paused = false;
+
+  // HLine drag state (cached from DoDraw for event hit-testing)
+  struct HLineRegion {
+    GraphChannel* _channel = nullptr;
+    float _hl_y0 = 0.0f;   // pixel Y for data_max (top of chart area)
+    float _hl_y1 = 0.0f;   // pixel Y for data_min (bottom of chart area)
+    float _data_min = 0.0f;
+    float _data_max = 0.0f;
+  };
+  std::vector<HLineRegion> _hline_regions;
+  GraphChannel::HLine* _dragged_hline = nullptr;
+  HLineRegion _drag_region;
 
 private:
   // Helper functions for event handling

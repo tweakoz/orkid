@@ -571,11 +571,12 @@ void pyinit_ui(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto graphseries_type = //
       py::class_<ui::GraphSeries, ui::graphseries_ptr_t>(uimodule, "GraphSeries")
-          .def("addSample", &ui::GraphSeries::addSample)
+          .def("addSample", &ui::GraphSeries::addSample, py::arg("value"), py::arg("update_label") = true)
           .def("clearSamples", &ui::GraphSeries::clearSamples)
           .def("setMaxSamples", &ui::GraphSeries::setMaxSamples)
           .def("sampleCount", &ui::GraphSeries::sampleCount)
           .def("getSample", &ui::GraphSeries::getSample)
+          .def("setSample", &ui::GraphSeries::setSample)
           .def_readwrite("name", &ui::GraphSeries::_name)
           .def_readwrite("color", &ui::GraphSeries::_color)
           .def_readwrite("visible", &ui::GraphSeries::_visible)
@@ -583,6 +584,7 @@ void pyinit_ui(py::module& module_lev2) {
           .def_readwrite("max_value", &ui::GraphSeries::_max_value)
           .def_readwrite("window_size", &ui::GraphSeries::_window_size)
           .def_readwrite("vertical_scale", &ui::GraphSeries::_vertical_scale)
+          .def_readwrite("currentValue", &ui::GraphSeries::_currentValue)
           .def_readwrite("use_fixed_range", &ui::GraphSeries::_use_fixed_range)
           .def_readwrite("fixed_min", &ui::GraphSeries::_fixed_min)
           .def_readwrite("fixed_max", &ui::GraphSeries::_fixed_max)
@@ -654,7 +656,8 @@ void pyinit_ui(py::module& module_lev2) {
           .def("channel", &ui::GraphView::channel)
           .def_readwrite("clear_color", &ui::GraphView::_bg_color)
           .def_readwrite("show_stats", &ui::GraphView::_show_stats)
-          .def_readwrite("min_band_pixels", &ui::GraphView::_min_band_pixels);
+          .def_readwrite("min_band_pixels", &ui::GraphView::_min_band_pixels)
+          .def_readwrite("paused", &ui::GraphView::_paused);
   type_codec->registerStdCodec<ui::graphview_ptr_t>(graphview_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto sgviewport_type = //

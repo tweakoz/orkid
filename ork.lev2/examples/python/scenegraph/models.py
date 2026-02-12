@@ -4,19 +4,25 @@
 # lev2 sample which renders a scenegraph, optionally in VR mode
 ################################################################################
 
-import math, random, argparse, sys, threading
+import math, random, argparse, sys, time
 from ork import path as ork_path
-from orkengine.core import vec2, vec3, vec4, quat, mtx4, CrcStringProxy, Path as asset_path
+from orkengine.core import vec2, vec3, vec4, quat, mtx4, VarMap, CrcStringProxy, Path as asset_path, lev2_pyexdir
 from orkengine import lev2
+from orkengine.lev2 import PostFxNodeHSVG
+from ork.app.application import ComponentizedApplication
+from ork.app.frame_profiler import FrameProfilerComponent
+
+lev2_pyexdir.addToSysPath()
+from lev2utils.cameras import setupUiCameraX
 
 tokens = CrcStringProxy()
+
 ################################################################################
 # tweak sys path
 ################################################################################
 
 sys.path.append(str(ork_path.py_examples)) # add parent dir to path
-from scenegraph._sg_boilerplate import SpinningModelInst, TurntableModelInst, BoilerplateSgApp
-from lev2utils.primitives import createGridData
+from scenegraph._sg_boilerplate import SpinningModelInst, TurntableModelInst
 
 ################################################################################
 # command line args
@@ -31,49 +37,106 @@ random.seed(seed)
 
 ################################################################################
 
-class SceneGraphApp(BoilerplateSgApp):
+class SceneGraphApp(ComponentizedApplication):
 
   def __init__(self):
-    super().__init__(fullscreen=True,ssaa=3)
-
-    ####################################
-    # builtin skybox list
-    ####################################
+    super().__init__()
+    self.profiler = self.addComponent("profiler", FrameProfilerComponent)
+    self.materials = set()
+    self.modelinsts = []
 
     self.skybox_names = [
-      "ork_envmaps|pillars4k",        # pillars of creation (sharp)
-      "ork_envmaps|cold4k",           # ice planet (bright, soft)
-      "ork_envmaps|ocean4k",          # ocean planet (soft)     
-      "ork_envmaps|arena4k",          # the grid  (dark)
-      "ork_envmaps|club4k",           # gothic club (dark)
-      "ork_envmaps|desert4k",         # desert planet (bright)
-      "ork_envmaps|canyon4k",         # big canyon (bright)
-      "ork_envmaps|crossroads4k",     # the crossroads (bright)
-      "ork_envmaps|futcity4k",        # futuristic city (moderately dark)
-      "ork_envmaps|ethereal4k",       # ethereal plane (medium)
-      "ork_envmaps|tozenv_nebula",    # (purple, soft)
-      "ork_envmaps|tozenv_hellscape", # (red, sharp)
-      "ork_envmaps|blender_studio",   # blender studio (hard shadows)
-      "ork_envmaps|blender_interior", # blender interior (soft)
-      "ork_envmaps|blender_courtyard",# blender courtyard (soft)
-      "ork_envmaps|blender_city",     # blender city (hard)
-      "ork_envmaps|blender_sunrise",  # sunrise (soft)
-      "ork_envmaps|blender_sunset",   # sunset (soft)
-      "ork_envmaps|blender_night",    # night (hard)
-      "ork_envmaps|blender_forest",   # forest (soft)
+      "ork_envmaps|pillars4k",
+      "ork_envmaps|cold4k",
+      "ork_envmaps|ocean4k",
+      "ork_envmaps|arena4k",
+      "ork_envmaps|club4k",
+      "ork_envmaps|desert4k",
+      "ork_envmaps|canyon4k",
+      "ork_envmaps|crossroads4k",
+      "ork_envmaps|futcity4k",
+      "ork_envmaps|ethereal4k",
+      "ork_envmaps|tozenv_nebula",
+      "ork_envmaps|tozenv_hellscape",
+      "ork_envmaps|blender_studio",
+      "ork_envmaps|blender_interior",
+      "ork_envmaps|blender_courtyard",
+      "ork_envmaps|blender_city",
+      "ork_envmaps|blender_sunrise",
+      "ork_envmaps|blender_sunset",
+      "ork_envmaps|blender_night",
+      "ork_envmaps|blender_forest",
     ]
     self.skybox_cache = dict()
-    self.skybox = "cold"     # gothic club (dark)
-    self.skybox_intensity = 1.0 # skybox intensity multiplier
     self.skybox_index = -1
+
+    self.createEzApp(fullscreen=True, ssaa=0)
+
   ##############################################
 
-  def onGpuInit(self,ctx):
+  def _onUiInit(self):
+    lg = self.ezapp.topLayoutGroup
+    self.sgviewport_item = lg.makeChild(
+      uiclass=lev2.ui.SceneGraphViewport,
+      args=["PrimarySG"],
+      fill=True
+    )
 
-    super().onGpuInit(ctx)
+  ##############################################
+
+  def _onGpuInit(self, ctx):
 
     ####################################
-    # folders which contain models
+    # scene
+    ####################################
+
+    sceneparams = VarMap()
+    sceneparams.preset = "ForwardPBR"
+    sceneparams.SkyboxIntensity = 1.0
+    sceneparams.SpecularIntensity = 1.0
+    sceneparams.DiffuseIntensity = 1.0
+    sceneparams.AmbientLight = vec3(0.0)
+    sceneparams.DepthFogDistance = float(1e6)
+    sceneparams.UseFloatBuffer = True
+    sceneparams.SkyboxTexPathStr = "nebula"
+
+    postNode = PostFxNodeHSVG()
+    postNode.hue = 0.0
+    postNode.saturation = 0.85
+    postNode.value = 1.0
+    postNode.gamma = 1.2
+    postNode.gpuInit(ctx, 8, 8)
+    postNode.addToSceneVars(sceneparams, "PostFxChain")
+    self.post_node = postNode
+
+    self.scene = lev2.scenegraph.Scene(sceneparams)
+    self.layer_fwd = self.scene.createLayer("std_forward")
+    self.pbr_common = self.scene.pbr_common
+
+    ####################################
+    # camera
+    ####################################
+
+    self.cameralut = lev2.CameraDataLut()
+    self.camera, self.uicam = setupUiCameraX(
+      cameralut=self.cameralut,
+      camname="Camera0"
+    )
+    self.uicam.lookAt(vec3(0, 3.5, -3.5), vec3(0, 0, 0), vec3(0, 1, 0))
+
+    ####################################
+    # attach to viewport
+    ####################################
+
+    sgviewport = self.sgviewport_item.widget
+    sgviewport.cameraName = "Camera0"
+    sgviewport.scenegraph = self.scene
+    sgviewport.forkDB()
+    sgviewport.evhandler = lambda e: self._onViewportEvent(e)
+    sgviewport.ignoreEvents = False
+
+    ####################################
+    # model assets
     ####################################
 
     TESTS = asset_path("data://tests")
@@ -83,143 +146,101 @@ class SceneGraphApp(BoilerplateSgApp):
     CHARS = MISC_GLTF/"characters"
     VEHI = MISC_GLTF/"vehicles"
     PLANTS = MISC_GLTF/"plants"
-    
-    ####################################
-    # model assets
-    ####################################
 
-    SPIKEE = TESTS/"pbr1"/"pbr1"               # coronavirus looking thing
-    PBRCALIB = TESTS/"pbr_calib.glb"           # pbr calibration ball
-    TORUS = BASEOBJS/"misc"/"ref"/"torus.glb"  # generic torus
-    SCARLETT = CHARS/"scarlett.glb"            # anime girl
-    KNIGHT = CHARS/"knight1.glb"               # anime girl
-    TITAN = CHARS/"titan.glb"                  # anime girl
-    ENCH = CHARS/"enchantress1.glb"            # anime girl
-    GOBL = CHARS/"goblin1.glb"            # anime girl
-    SITTER = ART/"sitter.glb"            # sitting figure
-    ORCHID = ART/"orchid1.glb"           # fractal vase
-    OMASK = ART/"omask.glb"              # oni mask
-    OBOX = ART/"obox.glb"                # ancient box
-    LION = ART/"lion.glb"                # lion statue
-    BEAR = ART/"bear.glb"                 # war horn
-    DHELM = ART/"dragon_helm.glb"        # dragon helm
-    FRACVASE = ART/"fracvase.glb"        # fractal vase
-    TEAPOT = ART/"gothic_teapot.glb"     # gothic teapot
-    WARHORN = ART/"warhorn.glb"          # war horn
-    CAR = VEHI/"car.glb"          # war horn
-    PLANT1 = PLANTS/"plant1.glb"          # plant
-    PLANT2 = PLANTS/"plant2.glb"          # plant
-    PLANT3 = PLANTS/"plant3.glb"          # plant
-    PLANT4 = PLANTS/"plant4.glb"          # plant
-    PLANT5 = PLANTS/"plant5.glb"          # plant
-    
-    HELMET = MISC_GLTF/"DamagedHelmet.glb"    # knight helmet
-
-    models = []
-    models += [WARHORN]
-    models += [LION]
-    models += [BEAR]
-    models += [OMASK]
-    models += [OBOX]
-    models += [SITTER]
-    models += [FRACVASE]
-    models += [DHELM]
-    models += [SCARLETT]
-    models += [KNIGHT]
-    models += [ENCH]
-    models += [TITAN]
-    models += [GOBL]
-    models += [ORCHID]
-    models += [TEAPOT]
-    models += [CAR]
-
-    models2  = [PLANT1]
-    models2 += [PLANT2]
-    models2 += [PLANT3]
-    models2 += [PLANT4]
-    models2 += [PLANT5]
-
-    models3  = [HELMET]
+    models = [
+      CHARS/"scarlett.glb",
+      CHARS/"knight1.glb",
+      CHARS/"titan.glb",
+      CHARS/"enchantress1.glb",
+      CHARS/"goblin1.glb",
+      ART/"warhorn.glb",
+      ART/"lion.glb",
+      ART/"bear.glb",
+      ART/"omask.glb",
+      ART/"obox.glb",
+      ART/"sitter.glb",
+      ART/"fracvase.glb",
+      ART/"dragon_helm.glb",
+      ART/"orchid1.glb",
+      ART/"gothic_teapot.glb",
+      VEHI/"car.glb",
+    ]
+    models2 = [
+      PLANTS/"plant1.glb",
+      PLANTS/"plant2.glb",
+      PLANTS/"plant3.glb",
+      PLANTS/"plant4.glb",
+      PLANTS/"plant5.glb",
+    ]
+    models3 = [MISC_GLTF/"DamagedHelmet.glb"]
 
     ####################################
     # load models
     ####################################
 
-    numinstances = len(models)
-    numinstances2 = len(models2)
-    numinstances3 = len(models3)
     models = [lev2.XgmModel(str(m)) for m in models]
     models2 = [lev2.XgmModel(str(m)) for m in models2]
     models3 = [lev2.XgmModel(str(m)) for m in models3]
 
-    ###################################
+    ####################################
     # create scenegraph nodes
-    ###################################
+    ####################################
 
     fi = 0.0
-    for i in range(numinstances):
-      model = models[i%len(models)]
-      minst = TurntableModelInst(model,self.layer_fwd,i,fi,range=3.5)
-      self.modelinsts += [minst]
-      fi += (1.0/numinstances)*math.pi*2.0
+    for i in range(len(models)):
+      model = models[i % len(models)]
+      minst = TurntableModelInst(model, self.layer_fwd, i, fi, range=3.5)
+      self.modelinsts.append(minst)
+      fi += (1.0 / len(models)) * math.pi * 2.0
 
     fi = 0.0
-    for i in range(numinstances2):
-      model = models2[i%len(models2)]
-      minst = TurntableModelInst(model,self.layer_fwd,i,fi,range=1.5)
-      self.modelinsts += [minst]
-      fi += (1.0/numinstances2)*math.pi*2.0
+    for i in range(len(models2)):
+      model = models2[i % len(models2)]
+      minst = TurntableModelInst(model, self.layer_fwd, i, fi, range=1.5)
+      self.modelinsts.append(minst)
+      fi += (1.0 / len(models2)) * math.pi * 2.0
 
     fi = 0.0
-    for i in range(numinstances3):
-      model = models3[i%len(models3)]
-      minst = TurntableModelInst(model,self.layer_fwd,i,fi,range=0)
-      self.modelinsts += [minst]
-      fi += (1.0/numinstances3)*math.pi*2.0
-
-    ###################################
-
-    #self.grid_data = createGridData()
-    #self.grid_node = self.layer_fwd.createDrawableNodeFromData("grid",self.grid_data)
-    #self.grid_node.sortkey = 1
+    for i in range(len(models3)):
+      model = models3[i % len(models3)]
+      minst = TurntableModelInst(model, self.layer_fwd, i, fi, range=0)
+      self.modelinsts.append(minst)
+      fi += (1.0 / len(models3)) * math.pi * 2.0
 
     self.scene.lightingmanager.gpuInit(ctx)
-    
-  ################################################
-
-  def onUpdate(self,updinfo):
-    for minst in self.modelinsts:
-      minst.update(updinfo.deltatime)
-    super().onUpdate(updinfo)
 
   ##############################################
 
-  def onUiEvent(self,uievent):
+  def _onViewportEvent(self, uievent):
     res = lev2.ui.HandlerResult()
     if uievent.code == tokens.KEY_DOWN.hashed:
-      #######################
-      # load a new skybox
-      #######################
       if uievent.keycode == ord("S"):
-        self.skybox_index = (self.skybox_index+1)%len(self.skybox_names)
+        self.skybox_index = (self.skybox_index + 1) % len(self.skybox_names)
         skybox_name = self.skybox_names[self.skybox_index]
-        #####################################
         if skybox_name in self.skybox_cache:
-          self.skybox = self.skybox_cache[skybox_name]
+          skybox = self.skybox_cache[skybox_name]
         else:
-          self.skybox = lev2.PbrCommon.requestRadianceMapsAsync(skybox_name)
-          self.skybox_cache[skybox_name] = self.skybox
-        #####################################
-        self.pbr_common.RadianceMaps = self.skybox
+          skybox = lev2.PbrCommon.requestRadianceMapsAsync(skybox_name)
+          self.skybox_cache[skybox_name] = skybox
+        self.pbr_common.RadianceMaps = skybox
         return res
-      #######################
     handled = self.uicam.uiEventHandler(uievent)
     if handled:
-      self.camera.copyFrom( self.uicam.cameradata )
-    else:
-      handled = lev2.ui.HandlerResult()
+      self.uicam.updateMatrices()
+      self.camera.copyFrom(self.uicam.cameradata)
     return res
+
+  ##############################################
+
+  def _onUpdate(self, updinfo):
+    for minst in self.modelinsts:
+      minst.update(updinfo.deltatime)
+    self.camera.copyFrom(self.uicam.cameradata)
+    self.scene.updateScene(self.cameralut)
+    self.sgviewport_item.widget.setDirty()
 
 ###############################################################################
 
-SceneGraphApp().ezapp.mainThreadLoop()
+app = SceneGraphApp()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()

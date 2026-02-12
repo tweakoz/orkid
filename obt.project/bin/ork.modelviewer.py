@@ -178,6 +178,8 @@ if args["encrypt"]:
 
 from orkengine.core import *
 from orkengine.lev2 import *
+from ork.app.application import ComponentizedApplication
+from ork.app.frame_profiler import FrameProfilerComponent
 
 def trace_imports(frame, event, arg):
     if event == "import":
@@ -185,24 +187,21 @@ def trace_imports(frame, event, arg):
         print(f"Importing module: {module_name}")
     return trace_imports
 
-sys.settrace(trace_imports) 
-from lev2utils.cameras import *
+sys.settrace(trace_imports)
+from lev2utils.cameras import setupUiCameraX
 from lev2utils.shaders import *
 from lev2utils.primitives import createGridData
-from lev2utils.scenegraph import createSceneGraph
 
 ################################################################################
 
 #assert(False)
 
-class SceneGraphApp(object):
+class SceneGraphApp(ComponentizedApplication):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=ssaa,fullscreen=True,name="OrkidModelViewer")
-    self.ezapp.setRefreshPolicy(RefreshFastest, 0)
+    self.profiler = self.addComponent("profiler", FrameProfilerComponent)
     self.materials = set()
-    setupUiCamera(app=self,eye=vec3(0,0.5,3))
     self.modelinsts=[]
     self.ssaamode = False
     if ssao>0:
@@ -239,12 +238,24 @@ class SceneGraphApp(object):
     ]
     self.skybox_cache = dict()
     self.skybox_index = -1
-    
+
+    self.createEzApp(ssaa=ssaa, fullscreen=True)
+
   ##############################################
 
-  def onGpuInit(self,ctx):
+  def _onUiInit(self):
+    lg = self.ezapp.topLayoutGroup
+    self.sgviewport_item = lg.makeChild(
+      uiclass=ui.SceneGraphViewport,
+      args=["PrimarySG"],
+      fill=True
+    )
 
-    sceneparams = VarMap() 
+  ##############################################
+
+  def _onGpuInit(self,ctx):
+
+    sceneparams = VarMap()
     sceneparams.preset = "ForwardPBR"
     sceneparams.SkyboxIntensity = float(lightintens)
     sceneparams.SpecularIntensity = float(specuintens)
@@ -277,7 +288,7 @@ class SceneGraphApp(object):
     postNode.addToSceneVars(sceneparams,"PostFxChain")
     self.post_node = postNode
 
-    self.scene = self.ezapp.createScene(sceneparams)
+    self.scene = scenegraph.Scene(sceneparams)
     self.layer_donly = self.scene.createLayer("depth_prepass")
     self.layer_fwd = self.scene.createLayer("std_forward")
     self.fwd_layers = [self.layer_fwd,self.layer_donly]
@@ -349,6 +360,14 @@ class SceneGraphApp(object):
       subinst.overrideMaterial(mtl_cloned)
 
     ######################
+    # camera
+    ######################
+
+    self.cameralut = CameraDataLut()
+    self.camera, self.uicam = setupUiCameraX(
+      cameralut=self.cameralut,
+      camname="Camera0"
+    )
 
     center = self.model.boundingCenter
     radius = self.model.boundingRadius*2.5
@@ -356,13 +375,24 @@ class SceneGraphApp(object):
     if camdist!=0.0:
       radius = camdist
 
-    self.uicam.lookAt( center-vec3(0,0,radius), 
-                       center, 
+    self.uicam.lookAt( center-vec3(0,0,radius),
+                       center,
                        vec3(0,1,0) )
 
-    #self.uicam.base_zmoveamt = radius*0.01 
+    #self.uicam.base_zmoveamt = radius*0.01
 
     self.camera.copyFrom( self.uicam.cameradata )
+
+    ######################
+    # viewport setup
+    ######################
+
+    sgviewport = self.sgviewport_item.widget
+    sgviewport.cameraName = "Camera0"
+    sgviewport.scenegraph = self.scene
+    sgviewport.forkDB()
+    sgviewport.evhandler = lambda e: self._onViewportEvent(e)
+    sgviewport.ignoreEvents = False
 
     ###################################
 
@@ -377,7 +407,7 @@ class SceneGraphApp(object):
 
   ##############################################
 
-  def onUiEvent(self,uievent):
+  def _onViewportEvent(self,uievent):
     res = ui.HandlerResult()
     if uievent.code == tokens.KEY_DOWN.hashed:
       ######################
@@ -430,22 +460,25 @@ class SceneGraphApp(object):
       ######################
     handled = self.uicam.uiEventHandler(uievent)
     if handled:
+      self.uicam.updateMatrices()
       self.camera.copyFrom( self.uicam.cameradata )
-    else:
-      handled = ui.HandlerResult()
     return res
 
   ################################################
 
-  def onUpdate(self,updinfo):
+  def _onUpdate(self,updinfo):
 
     if self.ssaamode:
-      self.pbr_common.ssaoNumSamples = ssao 
+      self.pbr_common.ssaoNumSamples = ssao
     else:
-      self.pbr_common.ssaoNumSamples = 0 
-    self.scene.updateScene(self.cameralut) 
+      self.pbr_common.ssaoNumSamples = 0
+    self.camera.copyFrom(self.uicam.cameradata)
+    self.scene.updateScene(self.cameralut)
+    self.sgviewport_item.widget.setDirty()
 
 ###############################################################################
 
 print("XXXX")
-SceneGraphApp().ezapp.mainThreadLoop()
+app = SceneGraphApp()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()

@@ -43,6 +43,7 @@ struct PixelFetchContext;
 struct PickBuffer;
 struct GpuEvent;
 struct GpuEventSink;
+struct GpuPerfBlock;
 struct CompressedImage;
 struct RasterState;
 
@@ -66,6 +67,7 @@ using fontman_ptr_t = std::shared_ptr<FontMan>;
 using pixelfetchctx_ptr_t = std::shared_ptr<PixelFetchContext>;
 using gpuevent_ptr_t = std::shared_ptr<GpuEvent>;
 using gpueventsink_ptr_t = std::shared_ptr<GpuEventSink>;
+using gpuperfblock_ptr_t = std::shared_ptr<GpuPerfBlock>;
 using compressedimg_ptr_t = std::shared_ptr<CompressedImage>;
 using cimg_array_t = std::vector<compressedimg_ptr_t>;
 

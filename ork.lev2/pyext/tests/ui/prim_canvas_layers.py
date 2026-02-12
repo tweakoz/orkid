@@ -8,9 +8,11 @@
 #   4. Sprites layer - foreground animated objects
 ################################################################################
 
-import signal, math, random
+import math, random
 from orkengine.core import vec2, vec3, vec4, mtx4, quat, CrcStringProxy
 from orkengine import lev2
+from ork.app.application import ComponentizedApplication
+from ork.app.frame_profiler import FrameProfilerComponent
 
 tokens = CrcStringProxy()
 
@@ -188,7 +190,7 @@ def parse_ascii(ascii_str, color_map):
 # Shadow of the Beast Parallax Demo
 ################################################################################
 
-class ParallaxDemo:
+class ParallaxDemo(ComponentizedApplication):
   TILE_SIZE = 32
 
   # Parallax scroll speeds (pixels per second)
@@ -197,9 +199,12 @@ class ParallaxDemo:
   GROUND_SPEED = 60
 
   def __init__(self):
-    self.ezapp = lev2.OrkEzApp.create(self, fullscreen=True)
-    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
-    self.ezapp.topWidget.enableUiDraw()
+    super().__init__()
+
+    self.profiler = self.addComponent("profiler", FrameProfilerComponent,
+                                      gpu_filter=["*", "-fwd:total"])
+
+    self.createEzApp(fullscreen=True)
 
     lg = self.ezapp.topLayoutGroup
     lg.clearColorStd = vec4(0.05, 0.05, 0.1, 1)
@@ -216,7 +221,6 @@ class ParallaxDemo:
     self.scroll_input = 0  # -1 = left, 0 = none, 1 = right
     self.key_left = False
     self.key_right = False
-    signal.signal(signal.SIGINT, lambda *_: self.ezapp.signalExit())
 
   def _create_tile_sprite(self, tile_str):
     """Create a SpritePrimitive from ASCII tile art."""
@@ -331,7 +335,7 @@ class ParallaxDemo:
           instances.append(inst)
     return instances
 
-  def onGpuInit(self, ctx):
+  def _onGpuInit(self, ctx):
     self.canvas.gpuInit(ctx)
     self.font = lev2.FontManager.fontForId("i14")
 
@@ -610,12 +614,12 @@ class ParallaxDemo:
 
     self.canvas.markDirty()
 
-  def onUpdate(self, updinfo):
+  def _onUpdate(self, updinfo):
     if not self.paused:
       self.time += updinfo.deltatime
       self._update(updinfo.deltatime)
 
-  def onUiEvent(self, ev):
+  def _onUiEvent(self, ev):
     if ev.code == tokens.KEY_DOWN.hashed:
       if ev.keycode == 32:  # Space
         self.paused = not self.paused
@@ -632,4 +636,8 @@ class ParallaxDemo:
         self.key_left = False
     return lev2.ui.HandlerResult()
 
-ParallaxDemo().ezapp.mainThreadLoop()
+###############################################################################
+
+app = ParallaxDemo()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()

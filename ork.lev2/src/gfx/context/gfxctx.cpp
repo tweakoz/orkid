@@ -85,6 +85,11 @@ void LoadingPhase::join() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+double Context::gpuPerfResult(const std::string& name) const {
+  auto it = _gpuPerfResults.find(name);
+  return (it != _gpuPerfResults.end()) ? it->second : -1.0;
+}
+
 void Context::enqueueGpuEvent(gpuevent_ptr_t evt) {
   _gpuEventQueue.push(evt);
 }
@@ -226,6 +231,7 @@ void Context::beginFrame(bool visual) {
 
   mRenderContextInstData = 0;
   _doBeginFrame();
+  _frameAllPerfBlock = gpuPerfBlockBegin("frame:all");
   FBI()->PushRtGroup(FBI()->_ensureMainRtg().get()); // implicit renderpass api
 
   /////////////////////////////////////

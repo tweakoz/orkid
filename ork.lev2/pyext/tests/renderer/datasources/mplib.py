@@ -7,11 +7,14 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import math, sys, os, signal, random, threading, time
+import math, sys, os, random, threading, time
 import numpy as np
 from obt import path
-from orkengine.core import vec2, vec3, vec4, mtx4, quat, VarMap, CrcStringProxy
+from orkengine.core import *
 from orkengine import lev2
+from orkengine.lev2 import *
+from ork.app.application import ComponentizedApplication
+from ork.app.frame_profiler import FrameProfilerComponent
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 
@@ -24,30 +27,28 @@ sys.path.append(l2exdir) # add parent dir to path
 from lev2utils.cameras import *
 from lev2utils.shaders import *
 from lev2utils.primitives import createGridData, createCubePrim
-from lev2utils.scenegraph import createSceneGraph
 
 ################################################################################
 
-class PackWidgets(object):
+class PackWidgets(ComponentizedApplication):
 
   def __init__(self):
     super().__init__()
-    self.done = False
+    self.materials = set()
     self.abstime = 0.0
-
     self.box_height = 0.0
+    self.latest_image = None
+    self.addComponent("profiler", FrameProfilerComponent, gpu_filter=["*", "-fwd:total"])
+    self.createEzApp(enable_audio=False,
+                     enable_audio_output=False,
+                     enable_audio_synth=False)
 
-    self.ezapp = lev2.OrkEzApp.create(self,
-                                      fullscreen=False,
-                                      enable_audio=False,
-                                      enable_audio_output=False,
-                                      enable_audio_synth=False)
+  ##############################################
 
-    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
-    self.ezapp.topWidget.enableUiDraw()
-
+  def _onUiInit(self):
     lg_group = self.ezapp.topLayoutGroup
     lg_group.clearColorGuide = vec4(0.8,0.6,0.2,1)
+    lg_group.margin = 4
 
     ############################################
     # start out with a 2x2 grid of boxes
@@ -60,11 +61,8 @@ class PackWidgets(object):
       uiclass = lev2.ui.Box,
       args = ["label",vec4(0.1,0.1,0.3,1)],
     )
-    
-    ############################################
 
     self.lg_group = lg_group
-    lg_group.margin = 4
 
     ############################################
     # replace box 0 with an imageview
@@ -85,16 +83,6 @@ class PackWidgets(object):
     # Plot something
     self.ax = self.fig.add_subplot(111)
     self.ax.plot([1, 2, 3, 4], [1, 4, 2, 3])
-
-    self.latest_image = None
-    
-    ############################################
-    
-    def onCtrlC(signum, frame):
-      print("signalling EXIT to ezapp")
-      self.ezapp.signalExit()
-
-    signal.signal(signal.SIGINT, onCtrlC)
 
   ##############################################
 
@@ -135,9 +123,9 @@ class PackWidgets(object):
     rgba_buf = np.asarray(self.canvas.buffer_rgba())
     rgb = rgba_buf[:, :, :3].astype(np.float32)
     magnitude = np.sqrt(np.sum(rgb**2, axis=2))
-    magnitude = np.clip(magnitude / (255 * np.sqrt(3)), 0, 1)  
+    magnitude = np.clip(magnitude / (255 * np.sqrt(3)), 0, 1)
     rgba_buf[:, :, 3] = (magnitude * 255).astype(np.uint8)
-    
+
     ############################
     # create an ork image from the RGBA buffer
     ############################
@@ -150,12 +138,14 @@ class PackWidgets(object):
 
   ##############################################
 
-  def onGpuInit(self,ctx):         
+  def _onGpuInit(self,ctx):
+
+    self.context = ctx
 
     ########################################################
     # shared geometry (for scenegraph viewport)
     ########################################################
-    
+
     self.grid_data = createGridData()
     cube_prim = createCubePrim(ctx=ctx,size=2.0)
     pipeline_cube = createPipeline( app = self, ctx = ctx, rendermodel="FORWARD_PBR", techname="std_mono_fwd" )
@@ -183,7 +173,7 @@ class PackWidgets(object):
     self.cube_node = cube_prim.createNode("cube",self.layer,pipeline_cube)
 
     ########################################################
-    # setup a camera for the scenegraph 
+    # setup a camera for the scenegraph
     ########################################################
 
     self.camname = "Camera0"
@@ -197,10 +187,10 @@ class PackWidgets(object):
     self.counter = 0
 
     ########################################################
-    # finally, add a scenegraph viewport to the tabbed widget
+    # add a scenegraph viewport to the grid
     ########################################################
 
-    self.sgvl = self.lg_group.makeChild( uiclass=lev2.ui.SceneGraphViewport, args=["sg",vec4(0,0,0,1)] )   
+    self.sgvl = self.lg_group.makeChild( uiclass=lev2.ui.SceneGraphViewport, args=["sg",vec4(0,0,0,1)] )
     self.sgvw = self.sgvl.widget
     self.sgvw.cameraName = self.camname
     self.sgvw.scenegraph = self.scenegraph
@@ -209,24 +199,24 @@ class PackWidgets(object):
     self.lg_group.replaceChild( self.griditems[1].layout, self.sgvl )
 
     ############################
-    # imgview1 widget gets its image 
+    # imgview1 widget gets its image
     #   from the matplotlib provider
     ############################
-    
+
     def mpl_thread_func(xxx):
       while True:
         xxx.latest_image = self.imageProviderMatPlotLib()
         time.sleep(1.0/60.0)
 
-    self.mpthr = threading.Thread(target=mpl_thread_func, args=(self,))
+    self.mpthr = threading.Thread(target=mpl_thread_func, args=(self,), daemon=True)
     self.mpthr.start()
-    
+
     prov = lev2.ImageProvider.createFromLambda( lambda: self.latest_image )
     self.imv1w.setImageProvider( prov )
 
   ################################################
 
-  def onUpdate(self,updinfo):
+  def _onUpdate(self,updinfo):
 
     abstime = updinfo.absolutetime
     self.abstime = abstime
@@ -237,8 +227,8 @@ class PackWidgets(object):
       r.x = random.uniform(-20,20)
       r.z = random.uniform(-20,20)
       r.y = random.uniform(10,30)
-      return r 
-  
+      return r
+
     if self.counter<=0:
       self.counter = int(random.uniform(1,1000))
       self.dst_eye = genpos()
@@ -256,16 +246,8 @@ class PackWidgets(object):
     self.camera.copyFrom( self.uicam.cameradata )
     self.scenegraph.updateScene(self.cameralut)
 
-    
-  ##############################################
-
-  def onUiEvent(self,uievent):
-    return lev2.ui.HandlerResult()
-
 ###############################################################################
 
-w = PackWidgets()
-rval = w.ezapp.mainThreadLoop()
-sys.exit(-1)
-
-
+app = PackWidgets()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()

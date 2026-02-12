@@ -30,8 +30,8 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.step_incr = 0
     random.seed(10)
   ##############################################
-  def onGpuInit(self,ctx):
-    super().onGpuInit(ctx,add_grid=False)
+  def _onGpuInit(self,ctx):
+    super()._onGpuInit(ctx,add_grid=False)
     ##############################
     self.pseudowire_pipe = self.createPseudoWirePipeline()
     solid_wire_pipeline = self.createBaryWirePipeline()
@@ -146,8 +146,8 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.dice = 2
     self.counter = 20
   ##############################################
-  def onUpdate(self,updevent):
-    super().onUpdate(updevent)
+  def _onUpdate(self,updevent):
+    super()._onUpdate(updevent)
     self.maxsteps_sim += self.step_incr
     print(self.maxsteps_sim)
     while self.numsteps_sim < self.maxsteps_sim:
@@ -192,8 +192,8 @@ class SceneGraphApp(BasicUiCamSgApp):
 
       #time.sleep(0.25)
   ##############################################
-  def onGpuIter(self):
-    super().onGpuIter()
+  def _onGpuUpdate(self,ctx):
+    super()._onGpuUpdate(ctx)
 
     #
     if self.dirty:
@@ -217,9 +217,9 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.prim1.fromSubMesh(self.frusmesh1,self.context)
     self.prim2.fromSubMesh(self.frusmesh2,self.context)
 
-  def onUiEvent(self,uievent):
+  def _onUiEvent(self,uievent):
     res = ui.HandlerResult()
-    super().onUiEvent(uievent)
+    super()._onUiEvent(uievent)
     if uievent.code == tokens.KEY_DOWN.hashed or uievent.code == tokens.KEY_REPEAT.hashed:
       if uievent.keycode == 32:
         self.dirty = True
@@ -245,7 +245,7 @@ class SceneGraphApp(BasicUiCamSgApp):
 
 ###############################################################################
 
-sgapp = SceneGraphApp()
-
-sgapp.ezapp.mainThreadLoop(on_iter=lambda: sgapp.onGpuIter() )
+app = SceneGraphApp()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()
 

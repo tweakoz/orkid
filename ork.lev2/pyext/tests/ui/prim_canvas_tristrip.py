@@ -5,23 +5,25 @@
 # Real-world use case: Audio waveform / oscilloscope visualization
 ################################################################################
 
-import signal
 import math
 from orkengine.core import vec2, vec3, vec4, CrcStringProxy
 from orkengine import lev2
+from ork.app.application import ComponentizedApplication
+from ork.app.frame_profiler import FrameProfilerComponent
 
 tokens = CrcStringProxy()
 
 ################################################################################
 
-class WaveformVisualizer:
+class WaveformVisualizer(ComponentizedApplication):
 
   def __init__(self):
     super().__init__()
 
-    self.ezapp = lev2.OrkEzApp.create(self, width=1024, height=400, fullscreen=False)
-    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
-    self.ezapp.topWidget.enableUiDraw()
+    self.profiler = self.addComponent("profiler", FrameProfilerComponent,
+                                      gpu_filter=["*", "-fwd:total"])
+
+    self.createEzApp(width=1024, height=400, fullscreen=False)
 
     lg_group = self.ezapp.topLayoutGroup
     lg_group.clearColorStd = vec4(0.05, 0.05, 0.08, 1)
@@ -49,14 +51,7 @@ class WaveformVisualizer:
     self.wave_prim = None
     self.wave_vertices = []
 
-    # Signal handling
-    def onCtrlC(signum, frame):
-      print("signalling EXIT")
-      self.ezapp.signalExit()
-
-    signal.signal(signal.SIGINT, onCtrlC)
-
-  def onGpuInit(self, ctx):
+  def _onGpuInit(self, ctx):
     self.canvas.gpuInit(ctx)
 
     # Create layer for waveform
@@ -137,13 +132,15 @@ class WaveformVisualizer:
     if i == 4: return t, p, v
     if i == 5: return v, p, q
 
-  def onUpdate(self, updinfo):
+  def _onUpdate(self, updinfo):
     self.time += updinfo.deltatime
     self._updateWaveform(self.time)
 
-  def onUiEvent(self, uievent):
-    return lev2.ui.HandlerResult()
+  def _onUiEvent(self, uievent):
+    return None
 
 ###############################################################################
 
-WaveformVisualizer().ezapp.mainThreadLoop()
+app = WaveformVisualizer()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()

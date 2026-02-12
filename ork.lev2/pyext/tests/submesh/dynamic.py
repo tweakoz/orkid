@@ -29,8 +29,8 @@ class SceneGraphApp(BasicUiCamSgApp):
     super().__init__()
     self.mutex = Lock()
   ##############################################
-  def onGpuInit(self,ctx):
-    super().onGpuInit(ctx,add_grid=False)
+  def _onGpuInit(self,ctx):
+    super()._onGpuInit(ctx,add_grid=False)
     ##############################
     self.pseudowire_pipe = self.createPseudoWirePipeline()
     solid_wire_pipeline = self.createBaryWirePipeline()
@@ -56,8 +56,8 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.sgnode3 = self.prim3.createNode("m3",self.layer1,solid_wire_pipeline)
     self.sgnode3.enabled = True
   ##############################################
-  def onUpdate(self,updevent):
-    super().onUpdate(updevent)
+  def _onUpdate(self,updevent):
+    super()._onUpdate(updevent)
     θ = self.abstime * math.pi * 2.0 * 0.01
     #
     self.fvmtx1 = dmtx4.lookAt(dvec3(0,0,1),dvec3(math.sin(θ*1.3)*0.5,0,0),dvec3(0,1,0))
@@ -79,8 +79,8 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.submesh_dynamic = stripSubMesh(submesh2) #.withWindingOrderFixed(True)
     #time.sleep(0.25)
   ##############################################
-  def onGpuIter(self):
-    super().onGpuIter()
+  def _onGpuUpdate(self,ctx):
+    super()._onGpuUpdate(ctx)
 
     # two wireframe frustums
     self.prim1.fromSubMesh(self.submesh_wire_frustum,self.context)
@@ -89,13 +89,13 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.prim3.fromSubMesh(self.barysub_isect,self.context)
     #print("intersection convexVolume: %s" % submesh_dynamic.convexVolume)
   ##############################################
-  def onUiEvent(self,ev):
+  def _onUiEvent(self,ev):
     return ui.HandlerResult()
 
 
 ###############################################################################
 
-sgapp = SceneGraphApp()
-
-sgapp.ezapp.mainThreadLoop(on_iter=lambda: sgapp.onGpuIter() )
+app = SceneGraphApp()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()
 

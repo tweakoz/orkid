@@ -166,8 +166,9 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
   ///////////////////////////////////////////////////////////////////////////
 
   if (pbrcommon->_useDepthPrepass) {
-    // depth prepass
+    auto blk = _currentContext->gpuPerfBlockBegin("fwd:depth_prepass");
     _render_dpp(fpass);
+    _currentContext->gpuPerfBlockEnd(blk);
     _currentRCFD->setUserProperty("DEPTH_MAP"_crcu, rtg_out->_depthBuffer->_texture);
   }
   else{
@@ -190,7 +191,9 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
   ///////////////////////////////////////////////////////////////////////////
 
   if ( is_ssao_active) {
+    auto blk = _currentContext->gpuPerfBlockBegin("fwd:ssao");
     _render_ssao_prepass(fpass);
+    _currentContext->gpuPerfBlockEnd(blk);
   } else {
     // set SSAO to white..
     _currentRCFD->setUserProperty("SSAO_MAP"_crcu, _whiteTexture->GetTexture());
@@ -207,9 +210,13 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
   //FBI->rtGroupClear(rtg_out.get()); // TODO: vulkan 
   FBI->PushRtGroup(rtg_out.get());
   if(_node->_pbrcommon->_enable_skybox){
+    auto blk = _currentContext->gpuPerfBlockBegin("fwd:skybox");
     _render_skybox(fpass);
+    _currentContext->gpuPerfBlockEnd(blk);
   }
-  _render_colorpass(fpass);
+  { auto blk = _currentContext->gpuPerfBlockBegin("fwd:color_pass");
+    _render_colorpass(fpass);
+    _currentContext->gpuPerfBlockEnd(blk); }
   FBI->PopRtGroup();
 
   ///////////////////////////////////////////////////////////////////////////
@@ -269,9 +276,11 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
   // get draw queue (otherwise we cant draw anything)
   //////////////////////////////////////////////////////
 
+  auto perf_frame = context->gpuPerfBlockBegin("fwd:total");
   auto autorelease_fpbr_rgroup = context->debugPushGroupAutoRelease("ForwardPBR::render");
   _currentDrawQueue = RCFD->GetDB();
   if(nullptr == _currentDrawQueue) {
+    context->gpuPerfBlockEnd(perf_frame);
     return;
   }
 
@@ -324,8 +333,13 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
   // update enviroment probes
   ////////////////////////////
 
-  _update_shadow_maps();
-  _update_env_probes(drawdata);
+  { auto blk = context->gpuPerfBlockBegin("fwd:shadow_maps");
+    _update_shadow_maps();
+    context->gpuPerfBlockEnd(blk); }
+
+  { auto blk = context->gpuPerfBlockBegin("fwd:env_probes");
+    _update_env_probes(drawdata);
+    context->gpuPerfBlockEnd(blk); }
 
   ////////////////////////////
   // primary pass
@@ -353,6 +367,7 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
   RCFD->exchangeDebugPassID(prev_dbg_passid);
   RCFD->exchangeDebugSubPassID(prev_dbg_subpid);
 
+  context->gpuPerfBlockEnd(perf_frame);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////

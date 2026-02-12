@@ -3,10 +3,12 @@
 # Distributed under the MIT License
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
-import math, random, argparse, sys, signal
+import math, random, argparse, sys
 
 from orkengine.core import *
 from orkengine.lev2 import *
+from ork.app.application import ComponentizedApplication
+from ork.app.frame_profiler import FrameProfilerComponent
 
 print(FxShaderTechnique)
 
@@ -166,33 +168,78 @@ technique tek_points_fwd {
 ################################################################################
 
 
-class BasicUiCamSgApp(object):
+class BasicUiCamSgApp(ComponentizedApplication):
 
     def __init__(self,ssaa=0):
         super().__init__()
-        self.ezapp = OrkEzApp.create(self,height=640,width=1280,ssaa=ssaa)
-        self.ezapp.setRefreshPolicy(RefreshFastest, 0)
         self.materials = set()
         setupUiCamera(app=self, eye=vec3(5, 5, 5), tgt=vec3(0, 0, 0))
-        ##################################
-        def onCtrlC(signum, frame):
-          print("signalling EXIT to ezapp")
-          self.onExitSignal()
-          self.ezapp.signalExit()
-        ##################################
-        signal.signal(signal.SIGINT, onCtrlC)
-        ##################################
+        self.addComponent("profiler", FrameProfilerComponent, gpu_filter=["*", "-fwd:total"])
+        self.createEzApp(height=640,width=1280,ssaa=ssaa)
 
     ##############################################
 
-    def onGpuInit(self, ctx, 
-                  add_grid=False, 
-                  cam_overlay=True, 
+    def _onUiInit(self):
+        lg = self.ezapp.topLayoutGroup
+        self._sgviewport_item = lg.makeChild(
+            uiclass=ui.SceneGraphViewport,
+            args=["PrimarySG"],
+            fill=True
+        )
+
+    ##############################################
+
+    def _onGpuInit(self, ctx,
+                  add_grid=False,
+                  cam_overlay=True,
                   params_dict = None):
 
-        
         self.context = ctx
-        createSceneGraph(app=self, params_dict=params_dict)
+
+        # Create scene directly (NOT through ezapp.createScene/createSceneGraph
+        # which overwrites enableUiDraw's onDraw callback, preventing UI overlay rendering)
+        sceneparams = VarMap()
+        sceneparams.preset = "ForwardPBR"
+        sceneparams.SkyboxIntensity = float(1)
+        sceneparams.SpecularIntensity = float(1)
+        sceneparams.DiffuseIntensity = float(1)
+        sceneparams.AmbientLight = vec3(0.0)
+        sceneparams.DepthFogDistance = float(1e6)
+        sceneparams.SkyboxTexPathStr = "nebula"
+
+        rendermodel = "ForwardPBR"
+        if params_dict:
+            for k, v in params_dict.items():
+                if k == "preset":
+                    rendermodel = v
+                setattr(sceneparams, k, v)
+        sceneparams.preset = rendermodel
+
+        self.scene = scenegraph.Scene(sceneparams)
+
+        if rendermodel in ["ForwardPBR", "FWDPBRVR", "FWDPBRVRDM"]:
+            layer_name = "std_forward"
+        elif rendermodel in ["DeferredPBR", "PBRVR"]:
+            layer_name = "std_deferred"
+        else:
+            layer_name = "std_forward"
+
+        self.layer1 = self.scene.createLayer(layer_name)
+        self.layer_std = self.layer1
+        self.layer_dpp = self.scene.createLayer("depth_prepass")
+        self.std_layers = [self.layer_std, self.layer_dpp]
+        self.rendernode = self.scene.compositorrendernode
+        self.outputnode = self.scene.compositoroutputnode
+
+        # Connect SceneGraphViewport to scene
+        sgviewport = self._sgviewport_item.widget
+        sgviewport.cameraName = "spawncam"
+        sgviewport.scenegraph = self.scene
+        sgviewport.forkDB()
+        sgviewport.evhandler = lambda ev: self._onUiEvent(ev)
+        sgviewport.ignoreEvents = False
+        self.scene.lightingmanager.gpuInit(ctx)
+
         if cam_overlay:
             self.cam_overlay = self.layer1.createDrawableNode(
                 "camoverlay", self.uicam.createDrawable())
@@ -203,12 +250,12 @@ class BasicUiCamSgApp(object):
 
     ##############################################
 
-    def onGpuIter(self):
+    def _onGpuUpdate(self, ctx):
         pass
 
     ##############################################
 
-    def onUiEvent(self, uievent):
+    def _onUiEvent(self, uievent):
       handled = self.uicam.uiEventHandler(uievent)
       if handled:
         self.camera.copyFrom(self.uicam.cameradata)
@@ -216,14 +263,10 @@ class BasicUiCamSgApp(object):
 
     ################################################
 
-    def onUpdate(self, updinfo):
+    def _onUpdate(self, updinfo):
         self.abstime = updinfo.absolutetime
         self.scene.updateScene(self.cameralut)
-
-    ################################################
-
-    def onExitSignal(self):
-        pass
+        self._sgviewport_item.widget.setDirty()
 
     ################################################
 
@@ -361,11 +404,6 @@ class BasicUiCamSgApp(object):
 
     ################################################
     
-    def onGpuUpdate(self,ctx):
-      pass
-
-    ################################################
-
 ################################################################################
 
 def stripSubmesh(inpsubmesh):

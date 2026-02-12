@@ -135,7 +135,7 @@ class PixelArtApp(BasicUiCamSgApp):
 
   ##############################################
 
-  def onUpdate(self,updevent):
+  def _onUpdate(self,updevent):
     self.time = updevent.absolutetime
     itime = int(self.time*8)
     frame = itime&3
@@ -160,12 +160,12 @@ class PixelArtApp(BasicUiCamSgApp):
       self.node3[2].enabled = False
       self.node4[2].enabled = True
       
-    super().onUpdate(updevent)
+    super()._onUpdate(updevent)
 
   ##############################################
 
-  def onGpuInit(self,ctx):
-    super().onGpuInit(ctx)
+  def _onGpuInit(self,ctx):
+    super()._onGpuInit(ctx)
     v1,f1 = genPolys(galaxian1)
     v2,f2 = genPolys(galaxian2)
     v3,f3 = genPolys(galaxian3)
@@ -177,5 +177,7 @@ class PixelArtApp(BasicUiCamSgApp):
 
 ###############################################################################
 
-PixelArtApp().ezapp.mainThreadLoop()
+app = PixelArtApp()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()
 

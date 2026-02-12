@@ -7,10 +7,12 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import math, sys, os, signal, random, argparse
+import math, sys, os, random, argparse
 from obt import path
 from orkengine.core import vec2, vec3, vec4, mtx4, quat, VarMap, CrcStringProxy
 from orkengine import lev2
+from ork.app.application import ComponentizedApplication
+from ork.app.frame_profiler import FrameProfilerComponent
 from ork.ui.analog_clock import AnalogClock
 from ork.ui.filesystem_browser import FilesystemBrowser
 from ork.ui.transform_edit import TransformEdit
@@ -53,7 +55,7 @@ vertex_interface iface_vui : ub_ui {
   	vec4 frg_uv0;
   }
 }
-fragment_interface iface_fui 
+fragment_interface iface_fui
   : iface_vui
   : ub_ui
 	: ss_ui {
@@ -77,7 +79,7 @@ fragment_shader fs_x
   float radius = oradius + sin(20.0*oradius)*0.03;
   angle += timex*0.1;
   uvr.x = sin(angle)*radius;
-  uvr.y = cos(angle)*(radius*-1.0);   
+  uvr.y = cos(angle)*(radius*-1.0);
   uvr += vec2(0.5,0.5);
   float mask = 1.0-smoothstep(0.45,0.5,oradius);
 
@@ -95,28 +97,33 @@ technique uix {
 
 ################################################################################
 
-class PackWidgets(object):
+class PackWidgets(ComponentizedApplication):
 
   def __init__(self):
     super().__init__()
 
     self.box_height = 0.0
 
-    # DRM mode will override windowing system (left/top/width/height)
-    #  the left and top are irrelevant in DRM mode (its full screen)
-    #  and width and height will be set to the DRM mode resolution
-    #  and refresh rate is always the native mode refresh rate
+    self.profiler = self.addComponent("profiler", FrameProfilerComponent,
+                                      gpu_filter=["*", "-fwd:total"])
 
-    self.ezapp = lev2.OrkEzApp.create(self,
-                                      fullscreen=True,
-                                      enable_audio=True,
-                                      enable_audio_output=True,
-                                      enable_audio_synth=True,
-                                      drm_mode_id=args.drm_mode)
+    self.createEzApp(fullscreen=True,
+                     enable_audio=True,
+                     enable_audio_output=True,
+                     enable_audio_synth=True,
+                     drm_mode_id=args.drm_mode)
 
-    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
-    self.ezapp.topWidget.enableUiDraw()
+    self.ezapp.uicontext.debug_event_routing = False
 
+  ##############################################
+
+  def _onSynthInit(self, synth):
+    self.synth = synth
+    assert(self.synth!=None)
+
+  ##############################################
+
+  def _onUiInit(self):
     lg_group = self.ezapp.topLayoutGroup
     lg_group.clearColorGuide = vec4(0.8,0.6,0.2,1)
     self.lg_group1 = lg_group
@@ -124,7 +131,7 @@ class PackWidgets(object):
 
     MARGIN = 2
     LAYOUT_MARGIN = 2
-    
+
     ############################################
     # start out with a 2x2 grid of boxes
     ############################################
@@ -136,7 +143,7 @@ class PackWidgets(object):
       uiclass = lev2.ui.Box,
       args = ["label",vec4(0.1,0.1,0.3,1)],
     )
-    
+
     ############################################
 
     self.lg_group = lg_group
@@ -155,16 +162,12 @@ class PackWidgets(object):
 
     ############################################
     # create a vertical pack widget as child of scroll container
-    #  a vertical pack lays out its children vertically,
-    #  filling available width, and using item_height property of vpack
-    #  to determine height of each child
-    #  if fill property is True, the last child will fill remaining space
     ############################################
 
     self.vpack1 = lev2.ui.VerticalPack.wfactory(["vpack1"])
     self.vpack1.margin = MARGIN
     self.vpack1.item_height = 28
-    self.vpack1.fill = False  # Don't fill - let content height determine scrolling
+    self.vpack1.fill = False
     self.scroll1.setChild(self.vpack1)
 
     ############################################
@@ -291,12 +294,11 @@ class PackWidgets(object):
 
     ############################################
     # create a combo box
-    # this displays a text item from a list of items
     ############################################
 
     self.cb1 = self.vpack1.makeChild( uiclass=lev2.ui.ComboBox, args=["cbx1  ",sli_col,0,100,50] )
     self.cb1.setItems(["zero","one","two","three","four","five","six","seven","eight","nine"])
-    
+
     ############################################
     # add transform edit composite widgets wrapped in collapsables
     ############################################
@@ -315,7 +317,6 @@ class PackWidgets(object):
 
     ############################################
     # create a tabbed widget in a collapsable
-    # this displays one of several child widgets, with tabs to select the active child
     ############################################
 
     self.col_tabs = self.vpack1.makeChild( uiclass=lev2.ui.Collapsable, args=["Tabs"] )
@@ -358,8 +359,6 @@ class PackWidgets(object):
 
     ############################################
     # create a horizontal split widget in the lower-left grid cell
-    #  a split widget lays out its children horizontally or vertically,
-    #  with fixed split ratio (0.0-1.0)
     ############################################
 
     sp2 = lg_group.makeChild( uiclass=lev2.ui.HorizontalSplit, args=["spl1"])
@@ -370,29 +369,12 @@ class PackWidgets(object):
 
     self.abstime = 0.0
 
-    ############################################
-    
-    def onCtrlC(signum, frame):
-      print("signalling EXIT to ezapp")
-      self.ezapp.signalExit()
-
-    signal.signal(signal.SIGINT, onCtrlC)
-
   ##############################################
 
-  def onSynthInit(self,synth):
-    #self.audiodevice = singularity.device.instance()
-    self.synth = synth
-    assert(self.synth!=None)
-    #self.synth.system_tempo = 120.0
+  def _onGpuInit(self,ctx):
 
-  ##############################################
-
-  def onGpuInit(self,ctx):
-        
     ############################################
     # Setup movie playback for bunny.mp4
-    #  assign the image provider to 1st imageview widget
     ############################################
 
     self.movie1 = lev2.MoviePlaybackContext()
@@ -401,7 +383,6 @@ class PackWidgets(object):
     provider1 = self.movie1.createImageProvider()
     self.imgview1.image = provider1
     self.movie1.play()
-    #self.imgview1.invert_aspect = True
     self.prg1 = self.movie1.createAudioProgram(self.synth)
     self.voice1 = self.synth.keyOn(0, 60, self.prg1, None)
     self.voice1.gain = 0.0
@@ -429,7 +410,6 @@ class PackWidgets(object):
     imp_pipeline.bindParam(p_tim, lambda: self.abstime )
     ############################################
     # Setup movie playback for wipeout.mp4
-    #  assign the image provider to 2nd imageview widget
     ############################################
 
     self.movie2 = lev2.MoviePlaybackContext()
@@ -438,7 +418,7 @@ class PackWidgets(object):
     provider2 = self.movie2.createImageProvider()
     self.imgview2.image = provider2
     self.movie2.play()
-   
+
     self.prg2 = self.movie2.createAudioProgram(self.synth)
     self.voice2 = self.synth.keyOn(0, 60, self.prg2, None)
     self.voice2.gain = -36.0
@@ -492,7 +472,7 @@ class PackWidgets(object):
     ########################################################
     # shared geometry (for scenegraph viewport)
     ########################################################
-    
+
     self.grid_data = createGridData()
     cube_prim = createCubePrim(ctx=ctx,size=2.0)
     pipeline_cube = createPipeline( app = self, ctx = ctx, rendermodel="FORWARD_PBR", techname="std_mono_fwd" )
@@ -523,7 +503,7 @@ class PackWidgets(object):
     self.cube_node = cube_prim.createNode("cube",self.layer,pipeline_cube)
 
     ########################################################
-    # setup a camera for the scenegraph 
+    # setup a camera for the scenegraph
     ########################################################
 
     self.camname = "Camera0"
@@ -541,7 +521,7 @@ class PackWidgets(object):
     # finally, add a scenegraph viewport to the tabbed widget
     ########################################################
 
-    self.sgv = self.tb1.makeChild( uiclass=lev2.ui.SceneGraphViewport, args=["sg",vec4(0,0,0,1)] )   
+    self.sgv = self.tb1.makeChild( uiclass=lev2.ui.SceneGraphViewport, args=["sg",vec4(0,0,0,1)] )
     self.sgv.cameraName = self.camname
     self.sgv.scenegraph = self.scenegraph
     self.sgv.forkDB()
@@ -549,7 +529,7 @@ class PackWidgets(object):
 
   ################################################
 
-  def onUpdate(self,updinfo):
+  def _onUpdate(self,updinfo):
 
     ##################################
     # update the scenegraph
@@ -558,7 +538,7 @@ class PackWidgets(object):
     abstime = updinfo.absolutetime
     self.sgv.setDirty()
     self.abstime = abstime
-    
+
     self.cube_node.worldTransform.translation = vec3(0,-self.box_height,0)
 
     def genpos():
@@ -566,8 +546,8 @@ class PackWidgets(object):
       r.x = random.uniform(-20,20)
       r.z = random.uniform(-20,20)
       r.y = random.uniform(10,20)
-      return r 
-  
+      return r
+
     if self.counter<=0:
       self.counter = int(random.uniform(1,1000))
       self.dst_eye = genpos()
@@ -592,10 +572,11 @@ class PackWidgets(object):
 
   ##############################################
 
-  def onUiEvent(self,uievent):
-    #print("onUiEvent: ",uievent)
-    return lev2.ui.HandlerResult()
+  def _onUiEvent(self,uievent):
+    return None
 
 ###############################################################################
 
-PackWidgets().ezapp.mainThreadLoop()
+app = PackWidgets()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()

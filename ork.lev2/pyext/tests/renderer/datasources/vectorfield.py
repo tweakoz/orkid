@@ -69,12 +69,14 @@ class MoleculeApp(BasicUiCamSgApp):
 
   ##############################################
 
-  def onGpuInit(self,ctx):
-    super().onGpuInit(ctx)
+  def _onGpuInit(self,ctx):
+    super()._onGpuInit(ctx)
     v,f = genVectorField()
     self.node = self.createBaryDrawableFromVertsAndFaces(ctx,v,f,0.5)
 
 ###############################################################################
 
-MoleculeApp().ezapp.mainThreadLoop()
+app = MoleculeApp()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()
 

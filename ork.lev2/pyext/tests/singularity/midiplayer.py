@@ -241,7 +241,8 @@ class MoonlightApp(ComponentizedApplication):
         # Profiler component (non-overlay, side-by-side with keyboard)
         self.profiler = self.addComponent("profiler", FrameProfilerComponent,
                                           overlay=False, update=False, gpu=True, audio=True,
-                                          events=["AUDIO"])
+                                          events=["AUDIO"],
+                                          gpu_filter=["*", "-fwd:total"])
 
         self.ezapp_args = {
             'width': 1024,
