@@ -452,7 +452,7 @@ rtgroup_ptr_t TextureArraySliceRef::createRenderTarget(Context* ctx) {
   auto rtg    = std::make_shared<RtGroup>(ctx, _array->_width, _array->_height);
   rtg->_usage = "arrayslice"_crcu;
   rtg->_slice = this;
-  rtg->_name  = "TextureArray:" + _array->_debugName;
+  rtg->_name  = _array->_debugName + FormatString("[%d]", _slice);
   return rtg;
 }
 

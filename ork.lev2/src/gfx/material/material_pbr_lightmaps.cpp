@@ -159,6 +159,7 @@ void PBRMaterial::assignLightmaps(Context* ctx){
     ////////////////////////////////
     _texLightMapArray = std::make_shared<TextureArray>();
     _texLightMapArray->_tex->_debugName = "pbrLMtexarray";
+    _texLightMapArray->_debugName = "pbrLMtexarray";
     ctx->TXI()->initTextureArray2DFromData(_texLightMapArray.get(), TID);
     ////////////////////////////////
   }

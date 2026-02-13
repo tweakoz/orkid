@@ -438,6 +438,7 @@ public:
   ///////////////////////////////////////////////////////////////////////
   virtual gpuperfblock_ptr_t gpuPerfBlockBegin(const std::string& name) { return nullptr; }
   virtual void gpuPerfBlockEnd(gpuperfblock_ptr_t block) {}
+  virtual void gpuPipelineDrain() {} // full pipeline barrier — drain all prior GPU work before continuing
   double gpuPerfResult(const std::string& name) const;  // last-frame duration in seconds (-1 if not found)
   std::map<std::string, double> _gpuPerfResults;  // populated during readback
   gpuperfblock_ptr_t _frameAllPerfBlock;  // spans beginFrame→endFrame

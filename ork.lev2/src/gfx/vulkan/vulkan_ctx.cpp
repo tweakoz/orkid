@@ -1951,7 +1951,7 @@ gpuperfblock_ptr_t VkContext::gpuPerfBlockBegin(const std::string& name) {
   auto pool = _perfQueryPools[_perfQueryPoolIndex];
   auto cmdbuf = primary_cb()->_vkcmdbuf;
   vkCmdResetQueryPool(cmdbuf, pool, block->_begin_query, 2);
-  vkCmdWriteTimestamp(cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, pool, block->_begin_query);
+  vkCmdWriteTimestamp(cmdbuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, pool, block->_begin_query);
 
   _perfPendingBlocks[_perfQueryPoolIndex].push_back(block);
   return block;
@@ -1966,6 +1966,24 @@ void VkContext::gpuPerfBlockEnd(gpuperfblock_ptr_t block) {
 
   auto pool = _perfQueryPools[block->_pool_index];
   vkCmdWriteTimestamp(primary_cb()->_vkcmdbuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, pool, block->_end_query);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkContext::gpuPipelineDrain() {
+  if (_currentPhase != "INFRAME"_crcu) return;
+  VkMemoryBarrier memBarrier = {};
+  memBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+  memBarrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
+  memBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+  vkCmdPipelineBarrier(
+      primary_cb()->_vkcmdbuf,
+      VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+      VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+      0,
+      1, &memBarrier,
+      0, nullptr,
+      0, nullptr);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

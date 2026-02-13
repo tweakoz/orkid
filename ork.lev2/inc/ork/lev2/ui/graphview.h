@@ -99,6 +99,7 @@ struct GraphChannel {
   // Stacked bar mode: all series rendered as stacked bars in one lane
   bool _stacked = false;
   float _min_series_height = 0.0f;  // minimum pixel height per series band
+  float _vertical_scale = 1.0f;     // Y-axis zoom (shift+scroll to adjust)
 
   // Per-lane styling
   fvec4 _lane_bgcolor = fvec4(0, 0, 0, 0);  // transparent by default
@@ -172,9 +173,21 @@ struct GraphView : public ui::PrimCanvas {
   GraphChannel::HLine* _dragged_hline = nullptr;
   HLineRegion _drag_region;
 
+  // Cached from DoDraw for event hit-testing
+  int _max_label_width = 0;
+
+  // Legend drag-reorder state
+  graphseries_ptr_t _dragged_legend_series = nullptr;
+  graphchannel_ptr_t _drag_source_channel = nullptr;
+  int _drag_current_y = 0;
+
 private:
   // Helper functions for event handling
   graphseries_ptr_t _findSeriesAtPoint(int x, int y);
+  graphseries_ptr_t _findToggleAtPoint(int x, int y);
+  graphchannel_ptr_t _findChannelForSeries(graphseries_ptr_t series);
+  graphchannel_ptr_t _findChannelAtChartPoint(int x, int y);
+  int _legendDropIndex(graphchannel_ptr_t channel, int y);
   void _adjustSeriesScale(int wheel_delta);
   void _adjustGlobalZoom(int wheel_delta);
 

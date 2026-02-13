@@ -41,7 +41,8 @@ void SceneGraphViewport::_doGpuInit(lev2::Context* context) {
   Viewport::_doGpuInit(context);
   _outputnode = std::make_shared<lev2::RtGroupOutputCompositingNode>(_rtgroup);
   //_outputnode->_flipY = true;
-  _rtgroup->_name = FormatString("ui::SceneGraphViewport<%p>", (void*)this);
+  static int vpcount = 0;
+  _rtgroup->_name = FormatString("ui.sgvp.%d", vpcount++);
   _outputnode->setSuperSample(_supersample);
   if( _scenegraph ) {
     _scenegraph->gpuInit(context);

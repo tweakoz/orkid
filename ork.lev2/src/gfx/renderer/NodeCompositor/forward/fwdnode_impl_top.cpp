@@ -54,18 +54,13 @@ void ForwardPbrNodeImpl::init(lev2::Context* context, int iw, int ih) {
     auto e_msaa = intToMsaaEnum(_ginitdata->_msaa_samples);
     _rtgs_primary  = std::make_shared<RtgSet>(context, iw, ih, e_msaa, "rtgs-main", "color"_crcu);
     _rtgs_primary->addBuffer("ForwardRt0", efmt);
+    static int buffer_index = 0;
+    //_rtgs_primary->_debugName = FormatString("FwdNodePri%d", buffer_index++);
 
     auto rtb1 = _rtg_ambocc_accum->createRenderTarget(EBufferFormat::R32F);
     auto rtb2 = _rtg_ambocc_accum2->createRenderTarget(EBufferFormat::R32F);
-    //_rtg_primary_depth_copy_linear = std::make_shared<RtGroup>(context, 8, 8);
-    //auto rtb3 = _rtg_primary_depth_copy_linear->createRenderTarget(EBufferFormat::R32F);
     rtb1->_debugName = "SSAO-Accum1";
     rtb2->_debugName = "SSAO-Accum2";
-    //rtb3->_debugName = "SSAO-LinDepth";
-    //printf("PBRFWD_MSAA<%d>\n", int(_ginitdata->_msaa_samples));
-    //_rtg             = std::make_shared<RtGroup>(context, 8, 8, intToMsaaEnum(_ginitdata->_msaa_samples));
-    // auto buf1        = _rtg->createRenderTarget(EBufferFormat::RGBA8);
-    // buf1->_debugName = "ForwardRt0";
     _skybox_material           = std::make_shared<PBRMaterial>(context);
     _skybox_material->_variant = "skybox.forward"_crcu;
     _skybox_fxcache            = _skybox_material->pipelineCache();
@@ -166,9 +161,9 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
   ///////////////////////////////////////////////////////////////////////////
 
   if (pbrcommon->_useDepthPrepass) {
-    auto blk = _currentContext->gpuPerfBlockBegin("fwd:depth_prepass");
+    //auto blk = _currentContext->gpuPerfBlockBegin("fwd:depth_prepass");
     _render_dpp(fpass);
-    _currentContext->gpuPerfBlockEnd(blk);
+    //_currentContext->gpuPerfBlockEnd(blk);
     _currentRCFD->setUserProperty("DEPTH_MAP"_crcu, rtg_out->_depthBuffer->_texture);
   }
   else{
@@ -191,9 +186,9 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
   ///////////////////////////////////////////////////////////////////////////
 
   if ( is_ssao_active) {
-    auto blk = _currentContext->gpuPerfBlockBegin("fwd:ssao");
+    //auto blk = _currentContext->gpuPerfBlockBegin("fwd:ssao");
     _render_ssao_prepass(fpass);
-    _currentContext->gpuPerfBlockEnd(blk);
+    //_currentContext->gpuPerfBlockEnd(blk);
   } else {
     // set SSAO to white..
     _currentRCFD->setUserProperty("SSAO_MAP"_crcu, _whiteTexture->GetTexture());
@@ -210,13 +205,14 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
   //FBI->rtGroupClear(rtg_out.get()); // TODO: vulkan 
   FBI->PushRtGroup(rtg_out.get());
   if(_node->_pbrcommon->_enable_skybox){
-    auto blk = _currentContext->gpuPerfBlockBegin("fwd:skybox");
+    //auto blk = _currentContext->gpuPerfBlockBegin("fwd:skybox");
     _render_skybox(fpass);
-    _currentContext->gpuPerfBlockEnd(blk);
+    //_currentContext->gpuPerfBlockEnd(blk);
   }
-  { auto blk = _currentContext->gpuPerfBlockBegin("fwd:color_pass");
+  { //auto blk = _currentContext->gpuPerfBlockBegin("fwd:color_pass");
     _render_colorpass(fpass);
-    _currentContext->gpuPerfBlockEnd(blk); }
+    //_currentContext->gpuPerfBlockEnd(blk);
+     }
   FBI->PopRtGroup();
 
   ///////////////////////////////////////////////////////////////////////////
@@ -276,11 +272,11 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
   // get draw queue (otherwise we cant draw anything)
   //////////////////////////////////////////////////////
 
-  auto perf_frame = context->gpuPerfBlockBegin("fwd:total");
+  //auto perf_frame = context->gpuPerfBlockBegin("fwd:total");
   auto autorelease_fpbr_rgroup = context->debugPushGroupAutoRelease("ForwardPBR::render");
   _currentDrawQueue = RCFD->GetDB();
   if(nullptr == _currentDrawQueue) {
-    context->gpuPerfBlockEnd(perf_frame);
+    //context->gpuPerfBlockEnd(perf_frame);
     return;
   }
 
@@ -333,13 +329,15 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
   // update enviroment probes
   ////////////////////////////
 
-  { auto blk = context->gpuPerfBlockBegin("fwd:shadow_maps");
+  { //auto blk = context->gpuPerfBlockBegin("fwd:shadow_maps");
     _update_shadow_maps();
-    context->gpuPerfBlockEnd(blk); }
+    //context->gpuPerfBlockEnd(blk); 
+    }
 
-  { auto blk = context->gpuPerfBlockBegin("fwd:env_probes");
+  { //auto blk = context->gpuPerfBlockBegin("fwd:env_probes");
     _update_env_probes(drawdata);
-    context->gpuPerfBlockEnd(blk); }
+    //context->gpuPerfBlockEnd(blk); 
+    }
 
   ////////////////////////////
   // primary pass
@@ -367,7 +365,7 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
   RCFD->exchangeDebugPassID(prev_dbg_passid);
   RCFD->exchangeDebugSubPassID(prev_dbg_subpid);
 
-  context->gpuPerfBlockEnd(perf_frame);
+  //context->gpuPerfBlockEnd(perf_frame);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////

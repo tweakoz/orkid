@@ -470,11 +470,21 @@ class FrameProfilerComponent(ApplicationComponent):
           self.series_sec_fence_wait[i].addSample(fence)
 
       # GPU timestamp results from C++ instrumentation (dynamic discovery)
-      if results:
-        self._discoverGpuSeries(results)
+      # Merge secondary window GPU results with "secN:" prefix
+      merged_results = dict(results) if results else {}
+      for i, sw in enumerate(sec_wins):
+        sec_ctx = sw.gfx_context
+        if sec_ctx:
+          sec_results = sec_ctx.gpu_profiler_results
+          if sec_results:
+            for name, val in sec_results.items():
+              merged_results[f"sec{i}:{name}"] = val
+
+      if merged_results:
+        self._discoverGpuSeries(merged_results)
       for name, series in self._gpu_timing_series.items():
-        if name in results:
-          series.currentValue = results[name] * 1000.0  # seconds -> ms
+        if name in merged_results:
+          series.currentValue = merged_results[name] * 1000.0  # seconds -> ms
         series.addSample(series.currentValue, False)
 
     if self._enable_audio:

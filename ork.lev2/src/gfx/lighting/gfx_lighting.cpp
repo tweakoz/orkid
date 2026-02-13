@@ -709,7 +709,8 @@ LightManager::LightManager(lightmanagerdata_constptr_t lmd)
   _cookies_spot_depth_default                   = std::make_shared<TextureArray>();
   _cookies_spot_color_default->_tex->_debugName = "cookies_spot_color";
   _cookies_spot_depth_default->_tex->_debugName = "cookies_spot_depth";
-
+  _cookies_spot_color_default->_debugName = "lmgr.cookie_color";
+  _cookies_spot_depth_default->_debugName = "lmgr.cookie_depth"; 
   _cookies_spot_color_default->resize(256, 256, 1, EBufferFormat::RGBA8);
   _cookies_spot_depth_default->resize(256, 256, 1, EBufferFormat::Z32F);
 

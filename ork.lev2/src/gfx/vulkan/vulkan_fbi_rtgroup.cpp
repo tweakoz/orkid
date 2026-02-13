@@ -212,13 +212,21 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
         break;
     } // switch (rtgroup->_usage) {
 
-    // STEP 3: Now begin the new render pass
+    // STEP 3: Start per-RTG GPU perf block (before render pass begins)
+    {
+      std::string rtg_name = rtgroup->_name.empty()
+        ? FormatString("rtg:%p", (void*)rtgroup)
+        : std::string("rtg:") + rtgroup->_name;
+      stack_impl->_rtg_perf_block = _contextVK->gpuPerfBlockBegin(rtg_name);
+    }
+
+    // STEP 4: Now begin the new render pass
     RTGIMPL->_transitionToRenderTarget(_contextVK->primary_cb());
     auto rinfo = RTGIMPL->renderinfo();
     rinfo->_renderinfo.flags &= (~VK_RENDERING_RESUMING_BIT);
     _contextVK->_vkCmdBeginRenderingKHR(CB, &rinfo->_renderinfo);
 
-    // STEP 4: Update tracking state
+    // STEP 5: Update tracking state
     _active_rtgroup                  = rtgroup;
     _contextVK->_renderPassActive    = true;
     _contextVK->_activeRenderPassRTG = RTGIMPL;
@@ -268,6 +276,12 @@ void VkFrameBufferInterface::_popRtGroup() {
     // Track that render pass has ended
     _contextVK->_renderPassActive    = false;
     _contextVK->_activeRenderPassRTG = nullptr;
+  }
+
+  // End per-RTG GPU perf block (after render pass ends)
+  if (stack_impl && stack_impl->_rtg_perf_block) {
+    _contextVK->gpuPerfBlockEnd(stack_impl->_rtg_perf_block);
+    stack_impl->_rtg_perf_block = nullptr;
   }
 
   /////////////////////////////////////////////

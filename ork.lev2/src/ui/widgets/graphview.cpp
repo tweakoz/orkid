@@ -213,10 +213,28 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
         }
       }
 
-      auto clicked_series = _findSeriesAtPoint(ilocx, ilocy);
+      // Check toggle button hit first (stacked legend visibility toggles)
+      auto toggled_series = _findToggleAtPoint(ilocx, ilocy);
+      if (toggled_series) {
+        toggled_series->_visible = !toggled_series->_visible;
+        printf("series<%s> visible<%d>\n", toggled_series->_name.c_str(), toggled_series->_visible);
+        SetDirty();
+        break;
+      }
 
+      auto clicked_series = _findSeriesAtPoint(ilocx, ilocy);
       if (clicked_series) {
-        // Toggle selection
+        // Check if click is in text area of a stacked legend (start drag-reorder)
+        int legend_x = width() - (_max_label_width + 80);
+        auto channel = _findChannelForSeries(clicked_series);
+        if (channel && channel->_stacked && ilocx >= (legend_x + 14) && ilocx <= (width() - 72)) {
+          _dragged_legend_series = clicked_series;
+          _drag_source_channel = channel;
+          _drag_current_y = ilocy;
+          SetDirty();
+          return HandlerResult(this);
+        }
+        // Non-stacked: toggle selection
         if (_selected_series == clicked_series) {
           _selected_series = nullptr;
           printf("series<%s> deselected\n", clicked_series->_name.c_str());
@@ -230,6 +248,11 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
       break;
     }
     case ui::EventCode::DRAG: {
+      if (_dragged_legend_series) {
+        _drag_current_y = ilocy;
+        SetDirty();
+        return HandlerResult(this);
+      }
       if (_dragged_hline) {
         float hl_range = _drag_region._data_max - _drag_region._data_min;
         float t = (_drag_region._hl_y1 - float(ilocy)) / (_drag_region._hl_y1 - _drag_region._hl_y0);
@@ -242,6 +265,28 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
       break;
     }
     case ui::EventCode::RELEASE: {
+      if (_dragged_legend_series) {
+        auto& series_vec = _drag_source_channel->_series;
+        int n = int(series_vec.size());
+        int visual_row = _legendDropIndex(_drag_source_channel, ilocy);
+        // Visual row r corresponds to series[n-1-r]
+        int target_idx = (n - 1) - visual_row;
+        // Find current index
+        int src_idx = -1;
+        for (int i = 0; i < n; i++) {
+          if (series_vec[i] == _dragged_legend_series) { src_idx = i; break; }
+        }
+        if (src_idx >= 0 && target_idx != src_idx) {
+          auto moved = series_vec[src_idx];
+          series_vec.erase(series_vec.begin() + src_idx);
+          target_idx = clamp(target_idx, 0, int(series_vec.size()));
+          series_vec.insert(series_vec.begin() + target_idx, moved);
+        }
+        _dragged_legend_series = nullptr;
+        _drag_source_channel = nullptr;
+        SetDirty();
+        return HandlerResult(this);
+      }
       if (_dragged_hline) {
         _dragged_hline = nullptr;
         SetDirty();
@@ -255,6 +300,22 @@ HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {
     }
     case EventCode::MOUSEWHEEL: {
       int wheel_delta = ev->miMWY;
+
+      if (ev->mbSHIFT) {
+        // Shift+scroll: adjust vertical scale of the channel under cursor
+        auto channel = _findChannelAtChartPoint(ilocx, ilocy);
+        if (channel) {
+          const float zoom_rate = 1.02f;
+          if (wheel_delta > 0) {
+            channel->_vertical_scale *= zoom_rate;
+          } else {
+            channel->_vertical_scale /= zoom_rate;
+          }
+          channel->_vertical_scale = clamp(channel->_vertical_scale, 0.01f, 100.0f);
+          SetDirty();
+          return HandlerResult(this);
+        }
+      }
 
       if (_selected_series) {
         _adjustSeriesScale(wheel_delta);
@@ -436,6 +497,8 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
         max_label_width = std::max(max_label_width, sw);
       }
     }
+
+    _max_label_width = max_label_width;
 
     // Count total series across ALL channels for global lane layout
     // Stacked channels count as 1 lane (all series share it)
@@ -700,17 +763,71 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
           mtxi->PopUIMatrix();
         }
 
+        bool is_dragging = _dragged_legend_series && _drag_source_channel == channel;
+
         // Iterate in reverse so label order matches visual stack (series 0 at bottom)
         for (int si = int(channel->_series.size()) - 1; si >= 0; si--) {
           auto& series = channel->_series[si];
-          // Color swatch (small filled square)
           fvec3 bright = (series->_color * 1.25f).clamped(0.0f, 1.0f);
-          fvec3 label_color = series->_visible ? bright : series->_color * 0.3f;
+          fvec3 label_color = bright; // always full brightness
+          bool is_dragged_item = (is_dragging && series == _dragged_legend_series);
+
+          // Toggle button
+          int toggle_x1 = legend_x;
+          int toggle_x2 = legend_x + 12;
+          int toggle_y1 = legend_y;
+          int toggle_y2 = legend_y + 12;
+          {
+            fvec4 tc = fvec4(bright, 1.0f);
+            lev2::VtxWriter<vtx_t> vw_tb;
+            if (series->_visible) {
+              // Filled quad
+              vw_tb.Lock(tgt, vbuf.get(), 6);
+              vw_tb.AddVertex(vtx_t(fvec4(toggle_x1, toggle_y1, 0, 1), fvec4(), tc));
+              vw_tb.AddVertex(vtx_t(fvec4(toggle_x2, toggle_y1, 0, 1), fvec4(), tc));
+              vw_tb.AddVertex(vtx_t(fvec4(toggle_x2, toggle_y2, 0, 1), fvec4(), tc));
+              vw_tb.AddVertex(vtx_t(fvec4(toggle_x1, toggle_y1, 0, 1), fvec4(), tc));
+              vw_tb.AddVertex(vtx_t(fvec4(toggle_x2, toggle_y2, 0, 1), fvec4(), tc));
+              vw_tb.AddVertex(vtx_t(fvec4(toggle_x1, toggle_y2, 0, 1), fvec4(), tc));
+            } else {
+              // Outline only (4 edges as line pairs)
+              vw_tb.Lock(tgt, vbuf.get(), 8);
+              vw_tb.AddVertex(vtx_t(fvec4(toggle_x1, toggle_y1, 0, 1), fvec4(), tc));
+              vw_tb.AddVertex(vtx_t(fvec4(toggle_x2, toggle_y1, 0, 1), fvec4(), tc));
+              vw_tb.AddVertex(vtx_t(fvec4(toggle_x2, toggle_y1, 0, 1), fvec4(), tc));
+              vw_tb.AddVertex(vtx_t(fvec4(toggle_x2, toggle_y2, 0, 1), fvec4(), tc));
+              vw_tb.AddVertex(vtx_t(fvec4(toggle_x2, toggle_y2, 0, 1), fvec4(), tc));
+              vw_tb.AddVertex(vtx_t(fvec4(toggle_x1, toggle_y2, 0, 1), fvec4(), tc));
+              vw_tb.AddVertex(vtx_t(fvec4(toggle_x1, toggle_y2, 0, 1), fvec4(), tc));
+              vw_tb.AddVertex(vtx_t(fvec4(toggle_x1, toggle_y1, 0, 1), fvec4(), tc));
+            }
+            vw_tb.UnLock(tgt);
+
+            mtxi->PushUIMatrix(width(), height());
+            auto rs = mtl->_rasterstate;
+            rs->setBlendingMacro(lev2::BlendingMacro::ALPHA);
+            rs->setDepthTest(lev2::EDepthTest::OFF);
+            rs->setCullTest(lev2::ECullTest::OFF);
+            rs->setWriteMaskZ(false);
+            rs->_priority = 1 << 20;
+            tgt->FXI()->pushRasterState(rs);
+            mtl->begin(tek, RCFD);
+            mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
+            gbi->DrawPrimitiveEML(vw_tb, series->_visible
+              ? lev2::PrimitiveType::TRIANGLES
+              : lev2::PrimitiveType::LINES);
+            mtl->end(RCFD);
+            tgt->FXI()->popRasterState();
+            rs->_priority = 0;
+            rs->setBlendingMacro(lev2::BlendingMacro::OFF);
+            mtxi->PopUIMatrix();
+          }
+
+          // Color swatch (small filled square)
           int swatch_x1 = legend_x - 14;
           int swatch_x2 = legend_x - 2;
           int swatch_y1 = legend_y;
           int swatch_y2 = legend_y + 12;
-
           {
             lev2::VtxWriter<vtx_t> vw_sw;
             vw_sw.Lock(tgt, vbuf.get(), 6);
@@ -731,11 +848,12 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
             mtxi->PopUIMatrix();
           }
 
-          // Series name
+          // Series name — if being dragged, draw at drag Y instead
+          int text_y = is_dragged_item ? (_drag_current_y - 6) : legend_y;
           tgt->RefModColor() = label_color;
           mtxi->PushUIMatrix(width(), height());
           lev2::FontMan::beginTextBlock(tgt, 128);
-          lev2::FontMan::DrawText(tgt, legend_x, legend_y, series->_name.c_str());
+          lev2::FontMan::DrawText(tgt, legend_x + 16, text_y, series->_name.c_str());
           lev2::FontMan::endTextBlock(tgt);
           mtxi->PopUIMatrix();
 
@@ -751,6 +869,47 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
           }
 
           legend_y += 16;  // advance to next legend row
+        }
+
+        // Draw outline rectangle at drop slot during drag-reorder
+        if (is_dragging) {
+          int visual_row = _legendDropIndex(channel, _drag_current_y);
+          int n_rows = int(channel->_series.size());
+          int legend_start_y = int(lane_y_bottom) - n_rows * 16 - 4;
+          int slot_y1 = legend_start_y + visual_row * 16;
+          int slot_y2 = slot_y1 + 14;
+          int slot_x1 = legend_x + 14;
+          int slot_x2 = width() - 72;
+
+          lev2::VtxWriter<vtx_t> vw_ind;
+          vw_ind.Lock(tgt, vbuf.get(), 8);
+          fvec4 ind_color(1.0f, 1.0f, 1.0f, 1.0f);
+          vw_ind.AddVertex(vtx_t(fvec4(slot_x1, slot_y1, 0, 1), fvec4(), ind_color));
+          vw_ind.AddVertex(vtx_t(fvec4(slot_x2, slot_y1, 0, 1), fvec4(), ind_color));
+          vw_ind.AddVertex(vtx_t(fvec4(slot_x2, slot_y1, 0, 1), fvec4(), ind_color));
+          vw_ind.AddVertex(vtx_t(fvec4(slot_x2, slot_y2, 0, 1), fvec4(), ind_color));
+          vw_ind.AddVertex(vtx_t(fvec4(slot_x2, slot_y2, 0, 1), fvec4(), ind_color));
+          vw_ind.AddVertex(vtx_t(fvec4(slot_x1, slot_y2, 0, 1), fvec4(), ind_color));
+          vw_ind.AddVertex(vtx_t(fvec4(slot_x1, slot_y2, 0, 1), fvec4(), ind_color));
+          vw_ind.AddVertex(vtx_t(fvec4(slot_x1, slot_y1, 0, 1), fvec4(), ind_color));
+          vw_ind.UnLock(tgt);
+
+          mtxi->PushUIMatrix(width(), height());
+          auto rs = mtl->_rasterstate;
+          rs->setBlendingMacro(lev2::BlendingMacro::ALPHA);
+          rs->setDepthTest(lev2::EDepthTest::OFF);
+          rs->setCullTest(lev2::ECullTest::OFF);
+          rs->setWriteMaskZ(false);
+          rs->_priority = 1 << 20;
+          tgt->FXI()->pushRasterState(rs);
+          mtl->begin(tek, RCFD);
+          mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
+          gbi->DrawPrimitiveEML(vw_ind, lev2::PrimitiveType::LINES);
+          mtl->end(RCFD);
+          tgt->FXI()->popRasterState();
+          rs->_priority = 0;
+          rs->setBlendingMacro(lev2::BlendingMacro::OFF);
+          mtxi->PopUIMatrix();
         }
 
         global_lane_index += 1;  // stacked channel = 1 lane
@@ -914,6 +1073,9 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
             }
             stack_max = max_sum > 0.0f ? max_sum * 1.1f : 1.0f;
           }
+
+          // Apply channel vertical scale
+          stack_max /= channel->_vertical_scale;
 
           // Build quad — channel index passed via vertex color .x
           mtxi->PushUIMatrix(w, h);
@@ -1084,14 +1246,27 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
         float lane_y_top = float(channel_lane_start) * global_lane_height + accumulated_margin;
         float lane_y_bottom = lane_y_top + float(num_lanes) * global_lane_height;
 
-        // Get data range for Y mapping
+        // Get data range for Y mapping (must match chart rendering)
         float data_min = 0.0f, data_max = 1.0f;
         if (channel->_stacked) {
           auto& fs = channel->_series[0];
           if (fs->_use_fixed_range) {
             data_min = fs->_fixed_min;
             data_max = fs->_fixed_max;
+          } else {
+            size_t sc = fs->sampleCount();
+            float max_sum = 0.0f;
+            for (size_t i = 0; i < sc; i++) {
+              float sum = 0.0f;
+              for (auto& s : channel->_series) {
+                if (s->_visible && i < s->sampleCount())
+                  sum += s->getSample(i);
+              }
+              max_sum = std::max(max_sum, sum);
+            }
+            data_max = max_sum > 0.0f ? max_sum * 1.1f : 1.0f;
           }
+          data_max /= channel->_vertical_scale;
         } else {
           auto& fs = channel->_series[0];
           if (fs->_use_fixed_range) {
@@ -1405,7 +1580,8 @@ void GraphView::DoDraw(drawevent_constptr_t drwev) {
 ///////////////////////////////////////////////////////////////////////////////
 graphseries_ptr_t GraphView::_findSeriesAtPoint(int x, int y) {
   // Check if click is in label/toggle region (right side of screen)
-  if (x <= (width() - 150)) return nullptr;
+  int legend_x = width() - (_max_label_width + 80);
+  if (x <= (legend_x - 16)) return nullptr;
 
   // Count total lanes and margins (stacked channels = 1 lane)
   size_t total_lanes = 0;
@@ -1449,6 +1625,120 @@ graphseries_ptr_t GraphView::_findSeriesAtPoint(int x, int y) {
   }
 
   return nullptr;
+}
+/////////////////////////////////////////////////////////////////////////
+graphseries_ptr_t GraphView::_findToggleAtPoint(int x, int y) {
+  // Check if x is in the toggle button x-range (at legend_x position)
+  int legend_x = width() - (_max_label_width + 80);
+  int toggle_x1 = legend_x;
+  int toggle_x2 = legend_x + 12;
+  if (x < toggle_x1 || x > toggle_x2) return nullptr;
+
+  // Reuse lane geometry calculation from _findSeriesAtPoint
+  size_t total_lanes = 0;
+  int total_margins = 0;
+  for (auto& channel : _channelmap) {
+    total_lanes += channel->_stacked ? 1 : channel->_series.size();
+    total_margins += channel->_bottom_margin;
+  }
+  if (total_lanes == 0) return nullptr;
+
+  float lane_height = float(height() - total_margins) / float(total_lanes);
+  float fy = float(y);
+  float cursor = 0.0f;
+
+  for (auto& channel : _channelmap) {
+    size_t num_lanes = channel->_stacked ? 1 : channel->_series.size();
+    float ch_chart_end = cursor + float(num_lanes) * lane_height;
+    float ch_total_end = ch_chart_end + float(channel->_bottom_margin);
+
+    if (fy < ch_total_end) {
+      if (!channel->_stacked) return nullptr; // toggle buttons only on stacked legends
+      if (fy >= ch_chart_end) return nullptr;
+
+      int n_rows = int(channel->_series.size());
+      int legend_start_y = int(ch_chart_end) - n_rows * 16 - 4;
+      int legend_row = int(float(y - legend_start_y) / 16.0f);
+      if (legend_row >= 0 && legend_row < n_rows) {
+        return channel->_series[n_rows - 1 - legend_row];
+      }
+      return nullptr;
+    }
+
+    cursor = ch_total_end;
+  }
+  return nullptr;
+}
+/////////////////////////////////////////////////////////////////////////
+graphchannel_ptr_t GraphView::_findChannelAtChartPoint(int x, int y) {
+  // Only match clicks in the chart area (left of legend)
+  int legend_x = width() - (_max_label_width + 80);
+  if (x >= legend_x) return nullptr;
+
+  size_t total_lanes = 0;
+  int total_margins = 0;
+  for (auto& channel : _channelmap) {
+    total_lanes += channel->_stacked ? 1 : channel->_series.size();
+    total_margins += channel->_bottom_margin;
+  }
+  if (total_lanes == 0) return nullptr;
+
+  float lane_height = float(height() - total_margins) / float(total_lanes);
+  float fy = float(y);
+  float cursor = 0.0f;
+
+  for (auto& channel : _channelmap) {
+    size_t num_lanes = channel->_stacked ? 1 : channel->_series.size();
+    float ch_chart_end = cursor + float(num_lanes) * lane_height;
+    float ch_total_end = ch_chart_end + float(channel->_bottom_margin);
+
+    if (fy < ch_total_end) {
+      if (fy >= ch_chart_end) return nullptr; // in margin area
+      return channel;
+    }
+
+    cursor = ch_total_end;
+  }
+  return nullptr;
+}
+/////////////////////////////////////////////////////////////////////////
+graphchannel_ptr_t GraphView::_findChannelForSeries(graphseries_ptr_t series) {
+  for (auto& channel : _channelmap) {
+    for (auto& s : channel->_series) {
+      if (s == series) return channel;
+    }
+  }
+  return nullptr;
+}
+/////////////////////////////////////////////////////////////////////////
+int GraphView::_legendDropIndex(graphchannel_ptr_t channel, int y) {
+  // Returns the visual row (0=top of legend) that the mouse is hovering over.
+  // Visual row r corresponds to series[n-1-r].
+  size_t total_lanes = 0;
+  int total_margins = 0;
+  for (auto& ch : _channelmap) {
+    total_lanes += ch->_stacked ? 1 : ch->_series.size();
+    total_margins += ch->_bottom_margin;
+  }
+  if (total_lanes == 0) return 0;
+
+  float lane_height = float(height() - total_margins) / float(total_lanes);
+  float cursor = 0.0f;
+
+  for (auto& ch : _channelmap) {
+    size_t num_lanes = ch->_stacked ? 1 : ch->_series.size();
+    float ch_chart_end = cursor + float(num_lanes) * lane_height;
+
+    if (ch == channel) {
+      int n_rows = int(ch->_series.size());
+      int legend_start_y = int(ch_chart_end) - n_rows * 16 - 4;
+      float row_f = float(y - legend_start_y) / 16.0f;
+      return clamp(int(row_f), 0, n_rows - 1);
+    }
+
+    cursor = ch_chart_end + float(ch->_bottom_margin);
+  }
+  return 0;
 }
 /////////////////////////////////////////////////////////////////////////
 void GraphView::_adjustSeriesScale(int wheel_delta) {

@@ -237,6 +237,7 @@ struct VkRtgStackItemImpl {
   bool _did_begin_rendering = false;  // Whether this push actually called vkCmdBeginRenderingKHR
   bool _was_redundant = false;        // Whether this push was a no-op (same rtgroup already active)
   RtGroup* _previous_rtgroup = nullptr; // The RTGroup that was active before this push
+  gpuperfblock_ptr_t _rtg_perf_block;   // GPU perf block for per-RTG timing
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VkFrameBufferInterface final : public FrameBufferInterface {
@@ -732,6 +733,7 @@ public:
 
   gpuperfblock_ptr_t gpuPerfBlockBegin(const std::string& name) override;
   void gpuPerfBlockEnd(gpuperfblock_ptr_t block) override;
+  void gpuPipelineDrain() override;
   void _readbackPerfQueries();
   void _createPerfQueryPools();
   //////////////////////////////////////////////

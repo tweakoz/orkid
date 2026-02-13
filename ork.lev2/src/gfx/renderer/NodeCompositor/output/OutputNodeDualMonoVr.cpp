@@ -51,15 +51,12 @@ struct DMVRIMPL {
       _fxpColorMap               = _blit2screenmtl.param("ColorMap");
       _ssaadownsamplebufferL     = std::make_shared<RtGroup>(context, 8, 8, MsaaSamples::MSAA_1X);
       _ssaadownsamplebufferR     = std::make_shared<RtGroup>(context, 8, 8, MsaaSamples::MSAA_1X);
+      _ssaadownsamplebufferL->_name = "dmvr.downsampleL";
+      _ssaadownsamplebufferR->_name = "dmvr.downsampleR";
       auto dsbufL                = _ssaadownsamplebufferL->createRenderTarget(_vrnode->_format);
       dsbufL->_debugName         = "MsaaDownsampleBufferL";
       auto dsbufR                = _ssaadownsamplebufferR->createRenderTarget(_vrnode->_format);
       dsbufR->_debugName         = "MsaaDownsampleBufferR";
-
-      // printf("A: vr width<%d> height<%d>\n", width, height);
-      _rtg            = new RtGroup(context, width, height, MsaaSamples::MSAA_1X);
-      auto buf        = _rtg->createRenderTarget(EBufferFormat::RGBA8);
-      buf->_debugName = "WtfVrRt";
 
       context->debugPopGroup();
 
@@ -226,7 +223,6 @@ struct DMVRIMPL {
   DualMonoVrOutputNode* _vrnode = nullptr;
   CompositingPassData _CPD;
   fmtx4 _viewOffsetMatrix;
-  RtGroup* _rtg = nullptr;
   bool _doinit  = true;
   FreestyleMaterial _blit2screenmtl;
   const FxShaderTechnique* _fxtechnique_downsample[4];
@@ -323,6 +319,7 @@ compdrawdata_fn_t DualMonoVrOutputNode::createAssembler(nodecompositortechnique_
     context->debugPushGroup("DualMonoVrOutputNode::assembleL");
     do_for_eye("left"_crcu);
     context->debugPopGroup();
+
     context->debugPushGroup("DualMonoVrOutputNode::assembleR");
     do_for_eye("right"_crcu);
     context->debugPopGroup();
