@@ -46,7 +46,8 @@ void SceneGraphNodeItemData::describeX(object::ObjectClass* clazz) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void SceneGraphComponentData::describeX(ComponentDataClass* clazz) {
-  clazz->directObjectMapProperty("NodeDatas", &SceneGraphComponentData::_nodedatas);
+  clazz->directObjectMapProperty("NodeDatas", &SceneGraphComponentData::_nodedatas)
+      ->annotate<ConstString>("editor.factorylistbase", "SceneGraphNodeItemData");
 }
 ///////////////////////////////////////////////////////////////////////////////
 

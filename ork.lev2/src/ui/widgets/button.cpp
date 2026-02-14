@@ -6,6 +6,7 @@
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/gfx/pri.h>
 #include <ork/lev2/ui/button.h>
+#include <ork/lev2/ui/context.h>
 
 namespace ork::ui {
 ///////////////////////////////////////////////////////////////////////////////
@@ -19,8 +20,9 @@ Button::Button(
     : Widget(name, x, y, w, h)
     , _bg_color(color) {
       _fg_color = fvec4(1,1,1,1);
-      _down_color = fvec4(color.xyz() * 0.5f, 1);
-      _draw_label = true;
+      _down_color = fvec4(color.xyz() * 0.6f, 1);
+      _hover_color = fvec4(color.xyz() * 1.3f, 1);
+      _draw_label = false; // we render text ourselves via ThemeEngine
 }
 ///////////////////////////////////////////////////////////////////////////////
 HandlerResult Button::DoOnUiEvent(event_constptr_t cev) {
@@ -44,7 +46,13 @@ HandlerResult Button::DoOnUiEvent(event_constptr_t cev) {
       break;
     }
 
+    case EventCode::MOUSE_ENTER: {
+      _hovering = true;
+      break;
+    }
+
     case EventCode::MOUSE_LEAVE: {
+      _hovering = false;
       _pressed = false;
       break;
     }
@@ -58,109 +66,70 @@ HandlerResult Button::DoOnUiEvent(event_constptr_t cev) {
 ///////////////////////////////////////////////////////////////////////////////
 void Button::DoDraw(drawevent_constptr_t drwev) {
 
+  // Determine fill color based on state
+  fvec4 fill_color = _bg_color;
+  if (_pressed) {
+    fill_color = _down_color;
+  } else if (_hovering) {
+    fill_color = _hover_color;
+  }
+
+  // Brighten border slightly relative to fill
+  fvec4 border_color = fvec4(fill_color.xyz() * 1.4f, 1.0f);
+
+  // Use ThemeEngine if available
+  if (_uicontext && _uicontext->_theme_engine) {
+    Style style;
+    style._bg_color = fill_color;
+    style._border_color = border_color;
+    style._text_color = _fg_color;
+    style._corner_radius = 4;
+    style._border_width = 1;
+    style._blend_mode = lev2::BlendingMacro::ALPHA;
+
+    _uicontext->_theme_engine->drawBox(this, drwev, &style);
+    _uicontext->_theme_engine->drawText(this, drwev, &style, _name);
+    return;
+  }
+
+  // Fallback: simple flat quad + label (legacy path)
   auto tgt    = drwev->GetTarget();
-  auto fbi    = tgt->FBI();
   auto mtxi   = tgt->MTXI();
   auto primi  = tgt->PRI();
   auto defmtl = lev2::defaultUIMaterial();
 
-  int label_w = labelWidth();
-  auto content = contentRect();
-
   mtxi->PushUIMatrix();
   {
-    int ix1, iy1, ix2, iy2, ixc, iyc;
+    int ix1, iy1;
     LocalToRoot(0, 0, ix1, iy1);
-    ix2 = ix1 + _geometry._w;
-    iy2 = iy1 + _geometry._h;
-    ixc = ix1 + (_geometry._w >> 1);
-    iyc = iy1 + (_geometry._h >> 1);
-
-    // Compute content area position
-    int content_x1 = ix1 + label_w;
-    int content_x2 = ix2 - 2;
-    int content_y1 = iy1 + 2;
-    int content_y2 = iy2 - 2;
+    int ix2 = ix1 + _geometry._w;
+    int iy2 = iy1 + _geometry._h;
 
     defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::ALPHA);
     defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
-
-    ///////////////////////////////
-    // draw background
-    ///////////////////////////////
-
-    tgt->PushModColor(_bg_color);
     defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
+
+    tgt->PushModColor(fill_color);
     primi->RenderQuadAtZ(
         defmtl.get(),
-        ix1,  // x0
-        ix2,  // x1
-        iy1,  // y0
-        iy2,  // y1
-        0.0f, // z
+        ix1, ix2, iy1, iy2,
         0.0f,
-        1.0f, // u0, u1
-        0.0f,
-        1.0f // v0, v1
+        0.0f, 1.0f,
+        0.0f, 1.0f
     );
     tgt->PopModColor();
 
-    ///////////////////////////////
-    // draw button area (texture or color)
-    ///////////////////////////////
-
-    // Choose texture based on pressed state
-    lev2::texture_ptr_t active_texture = _pressed ? _down_texture : _up_texture;
-
-    if (active_texture) {
-      // Draw with texture
-      defmtl->SetUIColorMode(lev2::UiColorMode::VTX);
-      //defmtl->setTexture(lev2::ETEXDEST_DIFFUSE, active_texture.get());
-      defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::ALPHA);
-
-      tgt->PushModColor(fvec4(1, 1, 1, 1));
-      primi->RenderQuadAtZ(
-          defmtl.get(),
-          content_x1,   // x0
-          content_x2,   // x1
-          content_y1,   // y0
-          content_y2,   // y1
-          0.0f,         // z
-          0.0f,
-          1.0f, // u0, u1
-          0.0f,
-          1.0f // v0, v1
-      );
-      tgt->PopModColor();
-
-      //defmtl->setTexture(lev2::ETEXDEST_DIFFUSE, nullptr);
-    } else {
-      // Draw with color
-      defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
-
-      fvec4 button_color = _pressed ? _down_color : fvec4(_bg_color.xyz() * 0.7f, 1);
-
-      tgt->PushModColor(button_color);
-      primi->RenderQuadAtZ(
-          defmtl.get(),
-          content_x1,   // x0
-          content_x2,   // x1
-          content_y1,   // y0
-          content_y2,   // y1
-          0.0f,         // z
-          0.0f,
-          1.0f, // u0, u1
-          0.0f,
-          1.0f // v0, v1
-      );
-      tgt->PopModColor();
-    }
-
-    ///////////////////////////////
-    // draw label (using Widget base class)
-    ///////////////////////////////
-
-    _drawLabel(drwev);
+    // Draw centered label text
+    tgt->PushModColor(_fg_color);
+    lev2::FontMan::PushFont("i14");
+    lev2::FontMan::beginTextBlock(tgt, 16);
+    int sw = lev2::FontMan::stringWidth(_name.length());
+    int ixc = ix1 + (_geometry._w >> 1);
+    int iyc = iy1 + (_geometry._h >> 1);
+    lev2::FontMan::DrawText(tgt, ixc - (sw >> 1), iyc - 6, _name.c_str());
+    lev2::FontMan::endTextBlock(tgt);
+    lev2::FontMan::PopFont();
+    tgt->PopModColor();
   }
   mtxi->PopUIMatrix();
 }

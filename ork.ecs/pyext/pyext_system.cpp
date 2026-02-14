@@ -13,7 +13,7 @@ namespace ork::ecs {
 void pyinit_system(py::module& module_ecs) {
   auto type_codec = python::pb11_typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
-  auto sysd_type = py::class_<SystemData,systemdata_ptr_t>(module_ecs, "SystemData")
+  auto sysd_type = py::class_<SystemData, Object, systemdata_ptr_t>(module_ecs, "SystemData")
       .def(
           "__repr__",
           [](const systemdata_ptr_t& sysdata) -> std::string {
@@ -21,7 +21,10 @@ void pyinit_system(py::module& module_ecs) {
             auto clazz = sysdata->objectClass();
             fxs.format("ecs::SystemData(%p) class<%s>", sysdata.get(), clazz->Name().c_str());
             return fxs.c_str();
-          });
+          })
+      .def_property_readonly("className", [](const systemdata_ptr_t& sysdata) -> std::string {
+        return sysdata->objectClass()->Name().c_str();
+      });
   type_codec->registerStdCodec<systemdata_ptr_t>(sysd_type);
 } // void pyinit_system(py::module& module_ecs) {
 /////////////////////////////////////////////////////////////////////////////////

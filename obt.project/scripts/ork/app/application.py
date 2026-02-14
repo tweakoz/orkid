@@ -396,10 +396,14 @@ class ComponentizedApplication(object):
     args = {**default_args, **self.ezapp_args}
     args = {**args, **kwargs}
 
-
+    # Extract pre_init_fns if provided (used by ecs editor etc.)
+    pre_init_fns = args.pop('pre_init_fns', None)
 
     # Create ezapp
-    self.ezapp = lev2.OrkEzApp.create(self, **args)
+    if pre_init_fns:
+      self.ezapp = lev2.OrkEzApp.createEx(self, pre_init_fns, **args)
+    else:
+      self.ezapp = lev2.OrkEzApp.create(self, **args)
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 30)
     # Standard setup (refresh policy and UI draw)
     self.ezapp.topWidget.enableUiDraw()

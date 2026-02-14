@@ -1,0 +1,708 @@
+#!/usr/bin/env ork.python
+
+################################################################################
+# ECS Scene Editor
+# Copyright 1996-2023, Michael T. Mayers.
+# Distributed under the MIT License
+################################################################################
+
+import os, sys, argparse
+from orkengine.core import vec2, vec3, vec4, quat, VarMap, CrcStringProxy, Transform, lev2_pyexdir
+from orkengine import lev2
+from orkengine import ecs
+from ork.app.application import ComponentizedApplication
+from ork.app.frame_profiler import FrameProfilerComponent
+from ork.ui import standard_icons
+from ork.editor.ecs_outliner_model import EcsOutlinerModel
+
+tokens = CrcStringProxy()
+
+lev2_pyexdir.addToSysPath()
+from lev2utils.cameras import setupUiCameraX
+from lev2utils.primitives import createGridData
+
+################################################################################
+
+parser = argparse.ArgumentParser(description="ECS Scene Editor")
+parser.add_argument("--scene", "-s", type=str, help="Scene file to load on startup (.json)")
+args = parser.parse_args()
+
+################################################################################
+
+class EcsEditor(ComponentizedApplication):
+
+  EDIT = 0
+  PLAYING = 1
+  PAUSED = 2
+
+  def __init__(self):
+    super().__init__()
+
+    self.profiler = self.addComponent("profiler", FrameProfilerComponent)
+
+    # ECS data model
+    self.scene_data = ecs.SceneData()
+
+    # Editor state
+    self._mode = self.EDIT
+    self._selected_key = ""
+    self._selected_object = None  # archetype, spawner, or system
+
+    # ECS runtime (created on Play)
+    self.controller = None
+
+    # Will be set during init
+    self.scenegraph = None
+    self.layer = None
+    self.outliner_model = None
+
+    # Create app with ECS module init injected before finalization
+    self.createEzApp(width=1440, height=900, pre_init_fns=[ecs.ecsInitCallback])
+
+  ##############################################################################
+  # UI Setup
+  ##############################################################################
+
+  def _onUiInit(self):
+    lg = self.ezapp.topLayoutGroup
+    lg.margin = 4
+    lg.clearColorStd = vec4(0.15, 0.15, 0.15, 1)
+    lg.clearColorGuide = vec4(0.4, 0.4, 0.2, 1)
+
+    # Viewport dock (fills remaining area)
+    viewport_dock_item = lg.makeChild(
+      fill=True, margin=2,
+      uiclass=lev2.ui.DockablePanel, args=["viewport_dock"])
+    self.viewport_dock = viewport_dock_item.widget
+    self.viewport_dock.titlebar_color = vec4(0.15, 0.2, 0.25, 1)
+    self.sgv = self.viewport_dock.createChild(
+      uiclass=lev2.ui.SceneGraphViewport,
+      args=["Viewport", vec4(0.1, 0.1, 0.12, 1)])
+
+    # Left dock (split from viewport)
+    left_dock_item = lg.split(
+      layout=viewport_dock_item.layout,
+      proportion=0.22, placement=tokens.LEFT, margin=2,
+      uiclass=lev2.ui.DockablePanel, args=["left_dock"])
+    self.left_dock = left_dock_item.widget
+    self.left_dock.titlebar_color = vec4(0.2, 0.15, 0.2, 1)
+
+    # Left panel contents
+    self.left_panel = self.left_dock.createChild(
+      uiclass=lev2.ui.VerticalPack, args=["ECS Editor"])
+    self.left_panel.margin = 2
+    self.left_panel.item_height = 36
+
+    # Toolbar
+    self._setupToolbar()
+
+    # Outliner
+    self.outliner = self.left_panel.makeChild(
+      uiclass=lev2.ui.Outliner, args=["outliner"])
+    self.left_panel.fill_widget = self.outliner
+    self.outliner.bgcolor = vec4(0.12, 0.12, 0.14, 1)
+    self.outliner.item_height = 22
+
+    # Property sheet dock (split from left dock, bottom portion)
+    propsheet_dock_item = lg.split(
+      layout=left_dock_item.layout,
+      proportion=0.55, placement=tokens.BOTTOM, margin=2,
+      uiclass=lev2.ui.DockablePanel, args=["propsheet_dock"])
+    self.propsheet_dock = propsheet_dock_item.widget
+    self.propsheet_dock.titlebar_color = vec4(0.2, 0.2, 0.15, 1)
+
+    self._setupPropertySheet()
+
+  ##############################################################################
+  # Toolbar
+  ##############################################################################
+
+  def _setupToolbar(self):
+    self.toolbar = self.left_panel.makeChild(
+      uiclass=lev2.ui.Toolbar, args=["toolbar"])
+    self.toolbar.bgcolor = vec4(0.18, 0.18, 0.18, 1)
+    self.toolbar.button_hover_color = vec4(0.3, 0.3, 0.35, 1)
+    self.toolbar.button_pressed_color = vec4(0.25, 0.45, 0.65, 1)
+    self.toolbar.button_toggled_color = vec4(0.35, 0.55, 0.75, 1)
+    self.toolbar.separator_color = vec4(0.35, 0.35, 0.35, 1)
+    self.toolbar.icon_size = 20
+    self.toolbar.button_padding = 4
+    self.toolbar.item_spacing = 3
+    self.toolbar.edge_padding = 4
+    self.toolbar.show_tooltips = True
+    self.toolbar.tooltip_delay_ms = 400
+
+    icon_size = 20
+
+    # File operations
+    self.btn_new = self.toolbar.addButton(
+      "new", standard_icons.get('new', icon_size, icon_size), "New Scene")
+    self.btn_load = self.toolbar.addButton(
+      "open", standard_icons.get('open', icon_size, icon_size), "Load Scene")
+    self.btn_save = self.toolbar.addButton(
+      "save", standard_icons.get('save', icon_size, icon_size), "Save Scene")
+
+    self.toolbar.addSeparator()
+
+    # Transport controls
+    self.btn_play = self.toolbar.addButton(
+      "play", standard_icons.get('play', icon_size, icon_size), "Play")
+    self.btn_play.toggle_mode = True
+
+    self.btn_pause = self.toolbar.addButton(
+      "pause", standard_icons.get('pause', icon_size, icon_size), "Pause")
+    self.btn_pause.toggle_mode = True
+    self.btn_pause.enabled = False
+
+    self.btn_stop = self.toolbar.addButton(
+      "stop", standard_icons.get('stop', icon_size, icon_size), "Stop")
+    self.btn_stop.enabled = False
+
+    self.toolbar.addSeparator()
+
+    # Manip mode buttons
+    self.btn_translate = self.toolbar.addButton(
+      "translate", standard_icons.get('translate', icon_size, icon_size), "Translate (T)")
+    self.btn_translate.toggle_mode = True
+    self.btn_rotate = self.toolbar.addButton(
+      "rotate", standard_icons.get('rotate', icon_size, icon_size), "Rotate (R)")
+    self.btn_rotate.toggle_mode = True
+    self.btn_scale = self.toolbar.addButton(
+      "scale", standard_icons.get('scale', icon_size, icon_size), "Scale (S)")
+    self.btn_scale.toggle_mode = True
+
+  ##############################################################################
+  # Property Sheet
+  ##############################################################################
+
+  def _setupPropertySheet(self):
+    self.propsheet = self.propsheet_dock.createChild(
+      uiclass=lev2.ui.PropertySheet, args=["propsheet"])
+    self.propsheet.row_height = 24
+    self.propsheet.label_width = 120
+    self.refl_model = lev2.ui.ReflectionPropertySheetModel()
+    self.propsheet.model = self.refl_model
+
+  ##############################################################################
+  # GPU Init
+  ##############################################################################
+
+  def _onGpuInit(self, ctx):
+    # Theme
+    self.uicontext = self.ezapp.uicontext
+    self.base_db = lev2.ui.createDefaultStyleDatabase()
+    self.custom_db = lev2.ui.StyleDatabase.createChild(self.base_db)
+    self.uicontext.theme_engine = lev2.ui.ThemeEngine(self.custom_db)
+
+    # Edit-mode scenegraph
+    sg_params = VarMap()
+    sg_params.SkyboxIntensity = 2.0
+    sg_params.DiffuseIntensity = 1.0
+    sg_params.SpecularIntensity = 1.0
+    sg_params.AmbientLevel = vec3(0.15)
+    sg_params.preset = "ForwardPBR"
+    sg_params.ssaa = 4
+    sg_params.enable_skybox = False
+    sg_params.clearcolor = vec3(0.08, 0.08, 0.1)
+
+    self.scenegraph = lev2.scenegraph.Scene(sg_params)
+    self.layer = self.scenegraph.createLayer("std_forward")
+
+    # Grid
+    self.grid_data = createGridData()
+    self.grid_node = self.layer.createDrawableNodeFromData("grid", self.grid_data)
+    self.grid_node.sortkey = 1
+    self.grid_node.pickable = False
+
+    # Manipulator
+    self.manip_controller = lev2.ManipController()
+    self.manip_interface = None
+    self.manip_controller.mode = lev2.ManipMode.TRANSLATE
+    self.manip_enabled = False
+
+    self.gizmo_data = lev2.ManipGizmoDrawableData()
+    self.gizmo_data.controller = self.manip_controller
+    self.gizmo_drawable = self.gizmo_data.createDrawable()
+    self.gizmo_node = self.scenegraph.createDrawableNodeOnLayers(
+        [self.layer], "manip-gizmo", self.gizmo_drawable)
+    self.gizmo_node.sortkey = 999
+    self.gizmo_node.pickable = False
+    self.gizmo_node.enabled = False
+
+    # Camera
+    self.camname = "EditorCamera"
+    self.cameralut = lev2.CameraDataLut()
+    self.camera, self.uicam = setupUiCameraX(
+      cameralut=self.cameralut, camname=self.camname)
+    self.uicam.distance = 1
+    self.uicam.lookAt(vec3(8, 6, 8), vec3(0, 0, 0), vec3(0, 1, 0))
+    self.uicam.updateMatrices()
+    self.camera.copyFrom(self.uicam.cameradata)
+
+    # Viewport setup
+    self.sgv.cameraName = self.camname
+    self.sgv.scenegraph = self.scenegraph
+    self.sgv.camera_evhandler = lambda ev: self._onCameraEvent(ev)
+    self.sgv.bindManipController(self.manip_controller)
+    self.sgv.forkDB()
+    self.scenegraph.lightingmanager.gpuInit(ctx)
+
+    # Outliner model
+    self.outliner_model = EcsOutlinerModel(self)
+    self.outliner.model = self.outliner_model
+    self.outliner.expandAll()
+
+    # Wire outliner callbacks
+    self.outliner.onSelect(self._onOutlinerSelect)
+    self.outliner.onRename(self._onOutlinerRename)
+    self.outliner.onDelete(self._onOutlinerDelete)
+    self.outliner.onAdd(self._onOutlinerAdd)
+    self.outliner.onShiftEnter(self._onOutlinerShiftEnter)
+
+    # Wire toolbar callbacks
+    self.btn_new.onPressed(self._onNew)
+    self.btn_load.onPressed(self._onLoad)
+    self.btn_save.onPressed(self._onSave)
+    self.btn_play.onToggled(self._onPlayToggled)
+    self.btn_pause.onToggled(self._onPauseToggled)
+    self.btn_stop.onPressed(self._onStop)
+    self.btn_translate.onToggled(lambda t: self._onManipButton("translate", t))
+    self.btn_rotate.onToggled(lambda t: self._onManipButton("rotate", t))
+    self.btn_scale.onToggled(lambda t: self._onManipButton("scale", t))
+
+    # Load initial scene if provided
+    if args.scene and os.path.exists(args.scene):
+      self._loadScene(args.scene)
+
+    print("ECS Editor Ready")
+
+  ##############################################################################
+  # Outliner callbacks
+  ##############################################################################
+
+  def _onOutlinerSelect(self, key):
+    self._selected_key = key
+    parts = key.split("/") if key else []
+    self._selected_object = None
+
+    # Disable manipulator when selection changes
+    self._enableManip(False)
+    self.manip_interface = None
+
+    if len(parts) < 2:
+      self.refl_model.clearKeyOverrides()
+      self.refl_model.object = None
+      self.propsheet.rebuild()
+      return
+
+    category = parts[0]
+    name = parts[1]
+
+    # Clear key overrides for non-spawner selections
+    if category != "Spawners":
+      self.refl_model.clearKeyOverrides()
+
+    if category == "Archetypes":
+      arch = self.outliner_model._findArchetype(name)
+      if arch:
+        if len(parts) == 3:
+          comp_name = parts[2]
+          for c in arch.components:
+            if c.className == comp_name:
+              self._selected_object = c
+              break
+        else:
+          self._selected_object = arch
+    elif category == "Spawners":
+      sp = self.outliner_model._findSpawner(name)
+      if sp:
+        self._selected_object = sp
+        # Register archetype dropdown override
+        self.refl_model.clearKeyOverrides()
+        self.refl_model.addKeyOverride(
+            "Archetype",
+            lev2.ui.PropertyType.String,
+            lambda: sp.archetype.name if sp.archetype else "(none)",
+            lambda val: self._setSpawnerArchetype(sp, val),
+            lambda: [a.name for a in self.scene_data.archetypes])
+        # Enable manipulator on spawner's transform
+        xform = sp.transform
+        self.manip_interface = lev2.DecompTransformManipulator(xform)
+        self._enableManip(True)
+    elif category == "Systems":
+      for s in self.scene_data.systemDatas:
+        if s.className == name:
+          self._selected_object = s
+          break
+
+    self.refl_model.object = self._selected_object
+    self.propsheet.rebuild()
+    self.propsheet.expandAll()
+
+  def _setSpawnerArchetype(self, sp, name):
+    for arch in self.scene_data.archetypes:
+      if arch.name == name:
+        sp.archetype = arch
+        return
+
+  def _onOutlinerRename(self, old_key, new_name):
+    self.outliner_model.renameItem(old_key, new_name)
+
+  def _onOutlinerDelete(self, key):
+    self.outliner_model.removeItem(key)
+    self.refl_model.object = None
+    self.propsheet.rebuild()
+
+  def _onOutlinerAdd(self, key):
+    pass  # Model handles creation via factories
+
+  def _onOutlinerShiftEnter(self, key):
+    """Shift+Enter on an archetype opens the add-component dropdown."""
+    parts = key.split("/") if key else []
+    if len(parts) >= 2 and parts[0] == "Archetypes":
+      arch = self.outliner_model._findArchetype(parts[1])
+      if arch:
+        self._showAddComponentDropdown(arch)
+        return
+    # For other items, fall through to default add behavior
+    if self.outliner_model.allow_add:
+      factories = self.outliner_model.getFactories(key)
+      if factories:
+        self.outliner.startAdding(key)
+
+  def _showAddComponentDropdown(self, arch):
+    """Show dropdown to add a component to this archetype."""
+    from ork.editor.ecs_outliner_model import COMPONENT_TYPES
+    existing = {c.className for c in arch.components}
+    available = [ct for ct in COMPONENT_TYPES if ct not in existing]
+    if not available:
+      return
+
+    paths = [f"/{ct}" for ct in available]
+    rx, ry = self.outliner.localToRoot(0, 0)
+    lev2.ui.DropdownMenu.show(
+      context=self.uicontext,
+      paths=paths,
+      x=rx, y=ry,
+      on_selected=lambda val: self._onComponentSelected(arch, val))
+
+  def _onComponentSelected(self, arch, value):
+    comp_name = value.lstrip("/")
+    arch.declareComponent(comp_name)
+    self.outliner_model.notifyModelReset()
+    self.outliner.expandAll()
+    print(f"Added component: {comp_name}")
+
+  ##############################################################################
+  # File I/O
+  ##############################################################################
+
+  def _onNew(self):
+    if self._mode != self.EDIT:
+      return
+    self.scene_data = ecs.SceneData()
+    self.refl_model.object = None
+    self.propsheet.rebuild()
+    self.outliner_model.notifyModelReset()
+    self.outliner.expandAll()
+    print("New scene created")
+
+  def _onLoad(self):
+    if self._mode != self.EDIT:
+      return
+    from ork.ui.filesystem_browser import FilesystemBrowser
+    home = os.path.expanduser("~")
+    popup = self.ezapp.createSecondaryWindow(
+      width=800, height=600, x=200, y=150,
+      title="Load ECS Scene", decorated=True, resizable=True, floating=True)
+    uic = popup.ui_context
+    root = lev2.ui.LayoutGroup.create("popup_lg")
+    root.setRect(0, 0, popup.width, popup.height)
+    uic.top = root
+    root.margin = 4
+
+    browser_item = root.makeChild(
+      uiclass=FilesystemBrowser,
+      args=["browser", home, ".json", vec3(0.1, 0.1, 0.1), "load"],
+      fill=True)
+    browser = browser_item.widget.uservars.filesystem_browser
+    browser.onActivate = lambda p: (self._loadScene(p), popup.requestClose())
+    browser.onCancel = lambda: popup.requestClose()
+
+  def _onSave(self):
+    if self._mode != self.EDIT:
+      return
+    from ork.ui.filesystem_browser import FilesystemBrowser
+    home = os.path.expanduser("~")
+    popup = self.ezapp.createSecondaryWindow(
+      width=800, height=600, x=200, y=150,
+      title="Save ECS Scene", decorated=True, resizable=True, floating=True)
+    uic = popup.ui_context
+    root = lev2.ui.LayoutGroup.create("popup_lg")
+    root.setRect(0, 0, popup.width, popup.height)
+    uic.top = root
+    root.margin = 4
+
+    browser_item = root.makeChild(
+      uiclass=FilesystemBrowser,
+      args=["browser", home, ".json", vec3(0.1, 0.1, 0.1), "save"],
+      fill=True)
+    browser = browser_item.widget.uservars.filesystem_browser
+    browser.onActivate = lambda p: (self._saveScene(p), popup.requestClose())
+    browser.onCancel = lambda: popup.requestClose()
+
+  def _loadScene(self, path):
+    if not os.path.exists(path):
+      print(f"File not found: {path}")
+      return
+    try:
+      from orkengine.core import Object
+      json_str = open(path).read()
+      obj = Object.deserializeJson(json_str)
+      if obj is not None:
+        self.scene_data = obj
+        self.refl_model.object = None
+        self.propsheet.rebuild()
+        self.outliner_model.notifyModelReset()
+        self.outliner.expandAll()
+        print(f"Loaded: {path}")
+      else:
+        print(f"Failed to deserialize: {path}")
+    except Exception as e:
+      print(f"Load failed: {e}")
+
+  def _saveScene(self, path):
+    try:
+      if not path.endswith(".json"):
+        path += ".json"
+      json_str = self.scene_data.serializeJson()
+      with open(path, "w") as f:
+        f.write(json_str)
+      print(f"Saved: {path}")
+    except Exception as e:
+      print(f"Save failed: {e}")
+
+  ##############################################################################
+  # Transport controls
+  ##############################################################################
+
+  def _onPlayToggled(self, toggled):
+    if toggled:
+      self._startPlay()
+    else:
+      self._stopPlay()
+
+  def _onPauseToggled(self, toggled):
+    if toggled:
+      self._pausePlay()
+    else:
+      self._resumePlay()
+
+  def _onStop(self):
+    self._stopPlay()
+
+  def _startPlay(self):
+    if self._mode != self.EDIT:
+      return
+    self._enableManip(False)
+    self._syncManipButtons()
+    try:
+      self.controller = ecs.Controller()
+      self.controller.bindScene(self.scene_data)
+      self.ezapp.vars.controller = self.controller
+
+      # Install ECS rendering/update callbacks
+      self.controller.installRenderCallbackOnEzApp(self.ezapp)
+      self.controller.installUpdateCallbackOnEzApp(self.ezapp)
+
+      # Create and start simulation
+      self.controller.createSimulation()
+      self.controller.startSimulation()
+
+      # Notify SceneGraphSystem to resize from main surface
+      sys_sg = self.controller.findSystem("SceneGraphSystem")
+      if sys_sg:
+        self.controller.systemNotify(sys_sg, tokens.ResizeFromMainSurface, True)
+
+      self._mode = self.PLAYING
+      self._updateTransportUI()
+      print("Simulation started")
+    except Exception as e:
+      print(f"Play failed: {e}")
+      self._mode = self.EDIT
+      self._updateTransportUI()
+
+  def _pausePlay(self):
+    if self._mode != self.PLAYING:
+      return
+    self.controller.stopSimulation()
+    self._mode = self.PAUSED
+    self._updateTransportUI()
+    print("Simulation paused")
+
+  def _resumePlay(self):
+    if self._mode != self.PAUSED:
+      return
+    self.controller.startSimulation()
+    self._mode = self.PLAYING
+    self._updateTransportUI()
+    print("Simulation resumed")
+
+  def _stopPlay(self):
+    if self._mode == self.EDIT:
+      return
+    try:
+      self.controller.stopSimulation()
+      self.controller.uninstallUpdateCallbackOnEzApp(self.ezapp)
+      self.controller.terminateSimulation()
+      self.controller.uninstallRenderCallbackOnEzApp(self.ezapp)
+      self.controller = None
+
+      # Restore edit scenegraph
+      self.sgv.scenegraph = self.scenegraph
+      self.sgv.cameraName = self.camname
+
+      # Re-enable manip if a spawner was selected
+      if self._selected_object is not None and hasattr(self._selected_object, 'transform'):
+        xform = self._selected_object.transform
+        self.manip_interface = lev2.DecompTransformManipulator(xform)
+        self._enableManip(True)
+        self._syncManipButtons()
+
+      self._mode = self.EDIT
+      self._updateTransportUI()
+      print("Simulation stopped")
+    except Exception as e:
+      print(f"Stop failed: {e}")
+      self._mode = self.EDIT
+      self._updateTransportUI()
+
+  def _updateTransportUI(self):
+    if self._mode == self.EDIT:
+      self.btn_play.toggled = False
+      self.btn_play.enabled = True
+      self.btn_pause.toggled = False
+      self.btn_pause.enabled = False
+      self.btn_stop.enabled = False
+    elif self._mode == self.PLAYING:
+      self.btn_play.toggled = True
+      self.btn_play.enabled = False
+      self.btn_pause.enabled = True
+      self.btn_pause.toggled = False
+      self.btn_stop.enabled = True
+    elif self._mode == self.PAUSED:
+      self.btn_play.enabled = False
+      self.btn_pause.toggled = True
+      self.btn_stop.enabled = True
+
+  ##############################################################################
+  # Manipulator
+  ##############################################################################
+
+  def _enableManip(self, enable):
+    self.manip_enabled = enable
+    self.gizmo_node.enabled = enable
+    if enable and self.manip_interface:
+      self.manip_controller.target = self.manip_interface
+    else:
+      self.manip_controller.target = None
+
+  def _syncManipButtons(self):
+    """Sync toolbar toggle buttons to current manip state."""
+    if self.manip_enabled:
+      mode = self.manip_controller.mode
+      self.btn_translate.toggled = (mode == lev2.ManipMode.TRANSLATE)
+      self.btn_rotate.toggled = (mode == lev2.ManipMode.ROTATE)
+      self.btn_scale.toggled = (mode == lev2.ManipMode.SCALE)
+    else:
+      self.btn_translate.toggled = False
+      self.btn_rotate.toggled = False
+      self.btn_scale.toggled = False
+
+  def _onManipButton(self, mode_name, toggled):
+    modes = {"translate": lev2.ManipMode.TRANSLATE,
+             "rotate": lev2.ManipMode.ROTATE,
+             "scale": lev2.ManipMode.SCALE}
+    buttons = {"translate": self.btn_translate,
+               "rotate": self.btn_rotate,
+               "scale": self.btn_scale}
+    if toggled and self.manip_interface:
+      self.manip_controller.mode = modes[mode_name]
+      self._enableManip(True)
+      for name, btn in buttons.items():
+        if name != mode_name:
+          btn.toggled = False
+    elif not toggled:
+      any_on = any(b.toggled for b in buttons.values())
+      if not any_on:
+        self._enableManip(False)
+
+  ##############################################################################
+  # Camera event handling
+  ##############################################################################
+
+  def _onCameraEvent(self, uievent):
+    if uievent.code == tokens.KEY_DOWN.hashed:
+      kc = uievent.keycode
+      if kc == 256:  # ESC
+        if self.manip_enabled:
+          self._enableManip(False)
+          self._syncManipButtons()
+        return lev2.ui.HandlerResult()
+      elif kc == ord("T"):
+        if self.manip_interface:
+          self._enableManip(True)
+          if self.manip_controller.mode == lev2.ManipMode.TRANSLATE:
+            self.manip_controller.space = (
+              lev2.ManipSpace.WORLD
+              if self.manip_controller.space == lev2.ManipSpace.LOCAL
+              else lev2.ManipSpace.LOCAL)
+          else:
+            self.manip_controller.mode = lev2.ManipMode.TRANSLATE
+          self._syncManipButtons()
+        return lev2.ui.HandlerResult()
+      elif kc == ord("R"):
+        if self.manip_interface:
+          self._enableManip(True)
+          self.manip_controller.mode = lev2.ManipMode.ROTATE
+          self._syncManipButtons()
+        return lev2.ui.HandlerResult()
+      elif kc == ord("S"):
+        if self.manip_interface:
+          self._enableManip(True)
+          self.manip_controller.mode = lev2.ManipMode.SCALE
+          self._syncManipButtons()
+        return lev2.ui.HandlerResult()
+
+    handled = self.uicam.uiEventHandler(uievent)
+    if handled:
+      self.uicam.updateMatrices()
+      self.camera.copyFrom(self.uicam.cameradata)
+    return lev2.ui.HandlerResult()
+
+  ##############################################################################
+  # Update loop
+  ##############################################################################
+
+  def _onUpdate(self, updinfo):
+    if self._mode == self.EDIT:
+      self.scenegraph.updateScene(self.cameralut)
+      # Live sync property sheet when manipulating
+      if self.manip_enabled and self.manip_interface and self._selected_object is not None:
+        self.refl_model.notifyExternalValueChanged("")
+    self.sgv.setDirty()
+
+  ##############################################################################
+  # GPU exit
+  ##############################################################################
+
+  def _onGpuExit(self, ctx):
+    if self.controller:
+      self.controller.gpuExit(ctx)
+      self.controller.uninstallRenderCallbackOnEzApp(self.ezapp)
+
+################################################################################
+
+app = EcsEditor()
+app.ezapp.mainThreadLoop()
+app.ezapp.shutdown()

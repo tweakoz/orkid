@@ -69,6 +69,91 @@ HandlerResult Context::handleEvent(event_constptr_t ev) {
   }
 
   /////////////////////////////////
+  // PHASE 1.5: Overlay event handling
+  // Overlays receive events before the widget tree
+  /////////////////////////////////
+  if (not _overlay_stack.empty()) {
+    int mx = ev->miX;
+    int my = ev->miY;
+    bool event_in_overlay = false;
+
+    // Check overlays from top to bottom for hit
+    for (int i = int(_overlay_stack.size()) - 1; i >= 0; i--) {
+      auto& entry = _overlay_stack[i];
+      // Hold a local shared_ptr copy so the widget survives
+      // even if the event handler pops/dismisses the overlay
+      auto w_shared = entry._widget;
+      auto w = w_shared.get();
+      if (w) {
+        int lx = mx - w->x();
+        int ly = my - w->y();
+        bool inside = (lx >= 0 && lx < w->width() && ly >= 0 && ly < w->height());
+        if (inside) {
+          event_in_overlay = true;
+          // Route to this overlay widget
+          rval = w->OnUiEvent(ev);
+          break;
+        }
+      }
+    }
+
+    // Handle KEY events: route to topmost overlay
+    if (ev->_eventcode == EventCode::KEY_DOWN || ev->_eventcode == EventCode::KEY_UP
+        || ev->_eventcode == EventCode::KEY_REPEAT) {
+      _downkeys[ev->miKeyCode] = (ev->_eventcode != EventCode::KEY_UP);
+      // The hit-test loop above may have already handled this event
+      // and popped overlays (e.g. OverlayLineEdit ENTER). Guard against empty stack.
+      if (!_overlay_stack.empty()) {
+        // Hold a local copy of the widget shared_ptr so it survives
+        // even if the event handler pops/dismisses the overlay
+        auto top_widget = _overlay_stack.back()._widget;
+        if (top_widget) {
+          rval = top_widget->OnUiEvent(ev);
+          if (rval.wasHandled()) {
+            _prevevent = *ev;
+            _prevtime = curtime;
+            return rval;
+          }
+        }
+      }
+    }
+
+    // MOVE events: route to overlays first, then fall through to widget tree
+    if (ev->_eventcode == EventCode::MOVE) {
+      if (event_in_overlay) {
+        _prevevent = *ev;
+        _prevtime = curtime;
+        return rval;
+      }
+      // fall through to normal MOVE handling below
+    }
+
+    // PUSH/DOUBLECLICK: if click was inside an overlay, consume it
+    if (ev->_eventcode == EventCode::PUSH || ev->_eventcode == EventCode::DOUBLECLICK) {
+      if (event_in_overlay) {
+        _prev_click_time = curtime;
+        _prevevent = *ev;
+        _prevtime = curtime;
+        return rval;
+      }
+      // Click outside all overlays: dismiss
+      dismissAllOverlays();
+      rval.setHandled(nullptr);
+      _prev_click_time = curtime;
+      _prevevent = *ev;
+      _prevtime = curtime;
+      return rval;
+    }
+
+    // MOUSEWHEEL inside overlay
+    if (ev->_eventcode == EventCode::MOUSEWHEEL && event_in_overlay) {
+      _prevevent = *ev;
+      _prevtime = curtime;
+      return rval;
+    }
+  }
+
+  /////////////////////////////////
   // PHASE 2: Widget-specific handling
   // drag operations always target
   //  the widget they started on..
@@ -238,6 +323,13 @@ void Context::draw(drawevent_constptr_t drwev) {
   }
 
   _top->draw(drwev);
+
+  // Draw overlays on top of widget tree (bottom to top)
+  for (auto& entry : _overlay_stack) {
+    if (entry._widget) {
+      entry._widget->draw(drwev);
+    }
+  }
 }
 /////////////////////////////////////////////////////////////////////////
 void Context::clearWidgetPointers(Widget* w) {
@@ -273,6 +365,41 @@ void Context::dumpWidgets(std::string label) const{
     }
   }
   printf( "///////////////////////////////////////////////////////\n");
+}
+/////////////////////////////////////////////////////////////////////////
+void Context::pushOverlay(widget_ptr_t widget, int x, int y, int w, int h,
+                          bool dismiss_on_click_outside,
+                          std::function<void()> on_dismissed) {
+  OverlayEntry entry;
+  entry._widget = widget;
+  entry._dismiss_on_click_outside = dismiss_on_click_outside;
+  entry._onDismissed = on_dismissed;
+  widget->SetRect(x, y, w, h);
+  widget->_uicontext = this;
+  _overlay_stack.push_back(entry);
+}
+/////////////////////////////////////////////////////////////////////////
+void Context::popOverlay() {
+  if (_overlay_stack.empty()) return;
+  auto entry = _overlay_stack.back();
+  _overlay_stack.pop_back();
+  if (entry._widget) {
+    clearWidgetPointers(entry._widget.get());
+    entry._widget->onPreDestroy();
+  }
+  if (entry._onDismissed) {
+    entry._onDismissed();
+  }
+}
+/////////////////////////////////////////////////////////////////////////
+void Context::dismissAllOverlays() {
+  while (not _overlay_stack.empty()) {
+    popOverlay();
+  }
+}
+/////////////////////////////////////////////////////////////////////////
+bool Context::hasOverlays() const {
+  return not _overlay_stack.empty();
 }
 /////////////////////////////////////////////////////////////////////////
 } // namespace ork::ui

@@ -14,12 +14,19 @@ namespace ork::ecs {
 void pyinit_scene(py::module& module_ecs) {
   auto type_codec = python::pb11_typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
-  auto so_type = py::class_<SceneObject, sceneobject_ptr_t>(module_ecs, "SceneObject")
+  auto so_type = py::class_<SceneObject, Object, sceneobject_ptr_t>(module_ecs, "SceneObject")
                      .def("__repr__", [](const sceneobject_ptr_t& sobj) -> std::string {
                        fxstring<256> fxs;
                        fxs.format("ecs::SceneObject(%p)", sobj.get());
                        return fxs.c_str();
-                     });
+                     })
+                     .def_property("name",
+                         [](const sceneobject_ptr_t& sobj) -> std::string {
+                           return sobj->GetName().c_str();
+                         },
+                         [](sceneobject_ptr_t& sobj, std::string name) {
+                           sobj->SetName(name.c_str());
+                         });
   type_codec->registerStdCodec<sceneobject_ptr_t>(so_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto sdo_type = py::class_<SceneDagObject, SceneObject, scenedagobject_ptr_t>(module_ecs, "SceneDagObject")
@@ -68,10 +75,10 @@ void pyinit_scene(py::module& module_ecs) {
                           [](spawndata_ptr_t spawndata, bool val) { 
                             spawndata->_autospawn = val; 
                           })
-                          .def_property_readonly("transform", [](spawndata_constptr_t spawndata) -> decompxf_const_ptr_t { return spawndata->transform(); });
+                          .def_property_readonly("transform", [](spawndata_ptr_t spawndata) -> decompxf_ptr_t { return spawndata->transform(); });
   type_codec->registerStdCodec<spawndata_ptr_t>(sd_type);
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<SceneData, scenedata_ptr_t>(module_ecs, "SceneData")
+  py::class_<SceneData, Object, scenedata_ptr_t>(module_ecs, "SceneData")
       .def(py::init<>())
       .def(
           "__repr__",
@@ -93,7 +100,50 @@ void pyinit_scene(py::module& module_ecs) {
             return scenedata->createSceneObject<Archetype>(psname);
           })
       //
-      .def("declareSystem", [](scenedata_ptr_t scenedata, std::string name) { return scenedata->addSystemWithClassName(name); });
+      .def("declareSystem", [](scenedata_ptr_t scenedata, std::string name) { return scenedata->addSystemWithClassName(name); })
+      //
+      .def_property_readonly("archetypes", [](scenedata_ptr_t scenedata) -> py::list {
+        py::list result;
+        for (auto& item : scenedata->_sceneObjects) {
+          if (auto as_arch = std::dynamic_pointer_cast<Archetype>(item.second)) {
+            result.append(as_arch);
+          }
+        }
+        return result;
+      })
+      .def_property_readonly("spawners", [](scenedata_ptr_t scenedata) -> py::list {
+        py::list result;
+        for (auto& item : scenedata->_sceneObjects) {
+          if (auto as_sp = std::dynamic_pointer_cast<SpawnData>(item.second)) {
+            result.append(as_sp);
+          }
+        }
+        return result;
+      })
+      .def_property_readonly("systemDatas", [](scenedata_ptr_t scenedata) -> py::list {
+        py::list result;
+        for (auto& item : scenedata->getSystemDatas()) {
+          result.append(item.second);
+        }
+        return result;
+      })
+      .def("removeSceneObject", [](scenedata_ptr_t scenedata, sceneobject_ptr_t sobj) {
+        scenedata->RemoveSceneObject(sobj);
+      })
+      .def("renameSceneObject", [](scenedata_ptr_t scenedata, sceneobject_ptr_t sobj, std::string newname) -> bool {
+        return scenedata->RenameSceneObject(sobj, newname.c_str());
+      })
+      .def("removeSystem", [](scenedata_ptr_t scenedata, std::string name) {
+        auto& lut = scenedata->_systemDatas;
+        auto it = lut.find(name);
+        if (it != lut.end()) {
+          lut.erase(it);
+        }
+      })
+      .def("findSceneObject", [](scenedata_ptr_t scenedata, std::string name) -> sceneobject_ptr_t {
+        auto psname = AddPooledString(name.c_str());
+        return scenedata->findSceneObjectByName(psname);
+      });
 
   /////////////////////////////////////////////////////////////////////////////////
 

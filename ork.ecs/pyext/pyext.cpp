@@ -241,4 +241,10 @@ PYBIND11_MODULE(_ecs, module_ecs) {
   pyinit_pysys(module_ecs);
   //////////////////////////////////////////////////////////////////////////////
   module_ecs.def("createApp", &ecsappcreate);
+  //////////////////////////////////////////////////////////////////////////////
+  module_ecs.def("ecsInitCallback", [](ork::appinitdata_ptr_t appinit) {
+    auto stringpoolctx = std::make_shared<StringPoolContext>();
+    StringPoolStack::push(stringpoolctx);
+    ecs::initModule(appinit);
+  });
 }

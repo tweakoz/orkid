@@ -38,6 +38,7 @@ struct AppInitData;
 
 using appinitdata_ptr_t = std::shared_ptr<AppInitData>;
 using appinitdata_wkptr_t = std::weak_ptr<AppInitData>;
+using appinitfn_t = std::function<void(appinitdata_ptr_t)>;
 
 // Global app init data - lazy singleton accessor (thread-safe)
 // Returns the process-wide AppInitData instance, creating it on first access

@@ -103,11 +103,20 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             ork::genviron.init_from_global_env();
             auto appinit = appinitdata(); // Use the singleton
             rcfd_ptr_t override_rcfd = nullptr;
+            std::vector<appinitfn_t> pre_finalize_fns;
 
             if (kwargs) {
               for (auto item : kwargs) {
                 auto key = py::cast<std::string>(item.first);
-                if (key == "name") {
+                if (key == "_pre_init_fns") {
+                  auto fns_list = py::cast<py::list>(item.second);
+                  for (auto fn_item : fns_list) {
+                    auto callable = py::cast<py::function>(fn_item);
+                    pre_finalize_fns.push_back([callable](appinitdata_ptr_t appinit) {
+                      callable(appinit);
+                    });
+                  }
+                } else if (key == "name") {
                   auto app_name = py::cast<std::string>(item.second);
                   appinit->_application_name = app_name;
                 } else if (key == "left") {
@@ -240,8 +249,9 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             } // if (kwargs) {
             /////////////////////////////
             ::ork::lev2::initModule(appinit);
-            //logchan_EZAPP->log("finalizeInitialization begin..");
-            //fflush(stdout);
+            for (auto& fn : pre_finalize_fns) {
+              fn(appinit);
+            }
             appinit->finalizeInitialization();
             //logchan_EZAPP->log("finalizeInitialization done..");
             fflush(stdout);
@@ -648,6 +658,21 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             ////////////////////////////////////////////////////////////////////
             logchan_EZAPP->log("app creation complete app: %p", (void*) rval.get());
             return rval;
+          })
+      ///////////////////////////////////////////////////////
+      .def_static(
+          "createEx",
+          [](py::object appinstance, py::list init_fns, py::kwargs kwargs) -> orkezapp_ptr_t { //
+            // Inject _pre_init_fns into kwargs and delegate to create
+            py::dict kw_dict;
+            for (auto item : kwargs) {
+              kw_dict[item.first] = item.second;
+            }
+            kw_dict[py::str("_pre_init_fns")] = init_fns;
+            auto lev2_mod = py::module::import("orkengine.lev2");
+            auto create_fn = lev2_mod.attr("OrkEzApp").attr("create");
+            auto result = create_fn(*py::make_tuple(appinstance), **kw_dict);
+            return result.cast<orkezapp_ptr_t>();
           })
       ///////////////////////////////////////////////////////
       .def_property(

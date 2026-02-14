@@ -1,14 +1,15 @@
 #pragma once
 
 #include <ork/lev2/ui/widget.h>
+#include <ork/lev2/ui/style.h>
 #include <ork/lev2/gfx/texman.h>
 
 namespace ork::ui {
 
 ////////////////////////////////////////////////////////////////////
 // Button Widget
-//  Simple push button with optional textures for up/down states
-//  Falls back to color rendering if textures not set
+//  Pretty push button with SDF-rendered rounded box background
+//  and centered text label. Uses ThemeEngine for rendering.
 ////////////////////////////////////////////////////////////////////
 
 struct Button final : public Widget {
@@ -22,18 +23,15 @@ public:
 
   HandlerResult DoOnUiEvent(event_constptr_t Ev) final;
 
-  void setUpTexture(lev2::texture_ptr_t tex) { _up_texture = tex; }
-  void setDownTexture(lev2::texture_ptr_t tex) { _down_texture = tex; }
-
   // Callback for button press
   void_lambda_t _onPressed;
 
   fvec4 _bg_color;
   fvec4 _fg_color;
   fvec4 _down_color;
-  lev2::texture_ptr_t _up_texture;
-  lev2::texture_ptr_t _down_texture;
+  fvec4 _hover_color;
   bool _pressed = false;
+  bool _hovering = false;
 
 private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;

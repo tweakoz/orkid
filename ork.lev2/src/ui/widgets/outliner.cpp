@@ -722,8 +722,12 @@ HandlerResult Outliner::DoOnUiEvent(event_constptr_t ev) {
       }
       // Shift+Enter to start adding a new item (only if exactly 1 selected)
       else if (key == 257 && ev->mbSHIFT && single_selection) { // Enter = 257
-        // Model's getFactories() determines if item can have children
-        if (_model && _model->allowAdd()) {
+        if (_onShiftEnter) {
+          // Custom handler overrides default add behavior
+          _onShiftEnter(selected_key);
+          result.setHandled(this);
+        } else if (_model && _model->allowAdd()) {
+          // Default: Model's getFactories() determines if item can have children
           auto factories = _model->getFactories(selected_key);
           if (!factories.empty()) {
             startAdding(selected_key);

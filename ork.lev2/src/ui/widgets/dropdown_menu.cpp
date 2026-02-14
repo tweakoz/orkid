@@ -1,0 +1,337 @@
+#include <ork/pch.h>
+#include <ork/lev2/gfx/gfxenv.h>
+#include <ork/lev2/gfx/rtgroup.h>
+#include <ork/lev2/gfx/gfxmaterial_ui.h>
+#include <ork/lev2/gfx/dbgfontman.h>
+#include <ork/lev2/gfx/pri.h>
+#include <ork/lev2/ui/dropdown_menu.h>
+#include <ork/lev2/ui/context.h>
+
+namespace ork::ui {
+///////////////////////////////////////////////////////////////////////////////
+static constexpr const char* FONTNAME = "i14";
+///////////////////////////////////////////////////////////////////////////////
+DropdownMenu::DropdownMenu(const std::string& name, slashnode_constptr_t node)
+    : Widget(name, 0, 0, 0, 0)
+    , _node(node) {
+
+  // Build menu items from SlashNode children
+  if (_node) {
+    for (auto& [child_name, child_node] : _node->children()) {
+      MenuItem item;
+      item._label = child_name;
+      item._node = child_node;
+      item._is_leaf = child_node->isLeaf();
+      if (item._is_leaf) {
+        item._value = child_node->pathAsString();
+      }
+      _items.push_back(item);
+    }
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+void DropdownMenu::_doOnPreDestroy() {
+  if (_uicontext) {
+    _uicontext->unsubscribeFromTicks(this);
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+fvec2 DropdownMenu::computeSize() const {
+  int max_label_w = 0;
+  for (auto& item : _items) {
+    int sw = lev2::FontMan::stringWidth(item._label.length());
+    max_label_w = std::max(max_label_w, sw);
+  }
+  int w = max_label_w + PADDING_X * 2 + ARROW_WIDTH;
+  w = std::max(w, 160); // minimum width
+  int num_visible = std::min(int(_items.size()), MAX_VISIBLE);
+  int h = num_visible * ITEM_HEIGHT;
+  return fvec2(w, h);
+}
+///////////////////////////////////////////////////////////////////////////////
+slashtree_ptr_t DropdownMenu::buildTreeFromPaths(const std::vector<std::string>& paths) {
+  auto tree = std::make_shared<SlashTree>();
+  for (auto& path : paths) {
+    tree->addNode(path.c_str(), nullptr);
+  }
+  return tree;
+}
+///////////////////////////////////////////////////////////////////////////////
+void DropdownMenu::_openSubmenu(int index) {
+  if (index < 0 || index >= int(_items.size())) return;
+  if (!_uicontext) return;
+  auto& item = _items[index];
+  if (item._is_leaf) return;
+
+  // Close existing submenu if different
+  if (_submenu_open_index == index) return;
+  _closeSubmenu();
+
+  // Create child dropdown menu
+  auto child_menu = std::make_shared<DropdownMenu>(_name + "/" + item._label, item._node);
+  child_menu->_onSelected = _onSelected; // pass through selection callback
+
+  // Position: to the right of this menu, aligned with the hovered row
+  int rx, ry;
+  LocalToRoot(0, 0, rx, ry);
+  int sub_x = rx + width();
+  int sub_y = ry + index * ITEM_HEIGHT - _scroll_offset;
+
+  auto sz = child_menu->computeSize();
+
+  // Subscribe to ticks for animation
+  _uicontext->subscribeToTicks(child_menu.get(), [child_menu](updatedata_ptr_t updata) {
+    float abstime = updata->_abstime;
+    child_menu->_hl_color.x = 0.4f + (0.3f * sinf(abstime * 3.0f));
+    child_menu->_hl_color.y = 0.4f + (0.3f * sinf(abstime * 3.1f));
+    child_menu->_hl_color.z = 0.6f + (0.3f * sinf(abstime * 3.2f));
+  });
+
+  _uicontext->pushOverlay(child_menu, sub_x, sub_y, int(sz.x), int(sz.y),
+                           false, // don't auto-dismiss submenu on click outside
+                           nullptr);
+  _submenu_open_index = index;
+}
+///////////////////////////////////////////////////////////////////////////////
+void DropdownMenu::_closeSubmenu() {
+  if (_submenu_open_index < 0) return;
+  if (!_uicontext) return;
+
+  // Pop the topmost overlay (which should be our submenu)
+  // Note: we only pop if overlays exist and the top is likely our submenu
+  if (_uicontext->hasOverlays()) {
+    _uicontext->popOverlay();
+  }
+  _submenu_open_index = -1;
+}
+///////////////////////////////////////////////////////////////////////////////
+void DropdownMenu::_selectItem(int index) {
+  if (index < 0 || index >= int(_items.size())) return;
+  auto& item = _items[index];
+  if (item._is_leaf) {
+    if (_onSelected) {
+      _onSelected(item._value);
+    }
+    if (_uicontext) {
+      _uicontext->dismissAllOverlays();
+    }
+  } else {
+    _openSubmenu(index);
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+HandlerResult DropdownMenu::DoOnUiEvent(event_constptr_t cev) {
+  HandlerResult rval;
+
+  switch (cev->_eventcode) {
+    case EventCode::MOVE: {
+      int ly = cev->miY - y();
+      int new_hover = (ly + _scroll_offset) / ITEM_HEIGHT;
+      new_hover = std::clamp(new_hover, 0, int(_items.size()) - 1);
+
+      if (new_hover != _hover_index) {
+        _hover_index = new_hover;
+        _hover_start_time = 0.0;
+
+        // Close submenu if hovering a different item
+        if (_submenu_open_index >= 0 && _submenu_open_index != _hover_index) {
+          _closeSubmenu();
+        }
+      } else {
+        // Track hover time for delayed submenu open
+        _hover_start_time += 0.016; // approximate frame time
+        if (_hover_start_time >= SUBMENU_DELAY && _hover_index >= 0) {
+          auto& item = _items[_hover_index];
+          if (!item._is_leaf && _submenu_open_index != _hover_index) {
+            _openSubmenu(_hover_index);
+          }
+        }
+      }
+      rval.setHandled(this);
+      break;
+    }
+    case EventCode::PUSH:
+    case EventCode::DOUBLECLICK: {
+      int ly = cev->miY - y();
+      int click_index = (ly + _scroll_offset) / ITEM_HEIGHT;
+      click_index = std::clamp(click_index, 0, int(_items.size()) - 1);
+      _selectItem(click_index);
+      rval.setHandled(this);
+      break;
+    }
+    case EventCode::KEY_DOWN: {
+      int key = cev->miKeyCode;
+      switch (key) {
+        case 256: // ESC
+          if (_uicontext) {
+            _uicontext->dismissAllOverlays();
+          }
+          rval.setHandled(this);
+          break;
+        case 257: // ENTER
+          _selectItem(_hover_index);
+          rval.setHandled(this);
+          break;
+        case 264: // UP
+          if (_hover_index > 0) {
+            _hover_index--;
+            if (_submenu_open_index >= 0) _closeSubmenu();
+          }
+          rval.setHandled(this);
+          break;
+        case 265: // DOWN
+          if (_hover_index < int(_items.size()) - 1) {
+            _hover_index++;
+            if (_submenu_open_index >= 0) _closeSubmenu();
+          }
+          rval.setHandled(this);
+          break;
+        case 262: // RIGHT - open submenu
+          if (_hover_index >= 0 && _hover_index < int(_items.size())) {
+            auto& item = _items[_hover_index];
+            if (!item._is_leaf) {
+              _openSubmenu(_hover_index);
+            }
+          }
+          rval.setHandled(this);
+          break;
+        case 263: // LEFT - close this level
+          if (_uicontext && _uicontext->hasOverlays()) {
+            _uicontext->popOverlay();
+          }
+          rval.setHandled(this);
+          break;
+        default:
+          break;
+      }
+      break;
+    }
+    case EventCode::MOUSEWHEEL: {
+      #if defined(__APPLE__)
+      _scroll_offset -= cev->miMWY;
+      #else
+      _scroll_offset -= cev->miMWY * 16;
+      #endif
+      int max_scroll = std::max(0, int(_items.size()) * ITEM_HEIGHT - height());
+      _scroll_offset = std::clamp(_scroll_offset, 0, max_scroll);
+      rval.setHandled(this);
+      break;
+    }
+    default:
+      break;
+  }
+  return rval;
+}
+///////////////////////////////////////////////////////////////////////////////
+void DropdownMenu::DoDraw(drawevent_constptr_t drwev) {
+  int num_items = _items.size();
+  if (num_items == 0) return;
+
+  auto tgt = drwev->GetTarget();
+  auto fbi = tgt->FBI();
+  auto mtxi = tgt->MTXI();
+  auto primi = tgt->PRI();
+  auto defmtl = lev2::defaultUIMaterial();
+
+  mtxi->PushUIMatrix();
+  {
+    int ix1, iy1, ix2, iy2;
+    LocalToRoot(0, 0, ix1, iy1);
+    ix2 = ix1 + _geometry._w;
+    iy2 = iy1 + _geometry._h;
+
+    ///////////////////////////////////////////////////////////////////////
+    // draw background
+    ///////////////////////////////////////////////////////////////////////
+
+    defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::ALPHA);
+    defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
+
+    fvec4 bg_color(0.12f, 0.12f, 0.16f, 0.95f);
+    tgt->PushModColor(bg_color);
+    defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
+    primi->RenderQuadAtZ(
+        defmtl.get(),
+        ix1, ix2, iy1, iy2,
+        0.0f,
+        0.0f, 1.0f, 0.0f, 1.0f);
+    tgt->PopModColor();
+
+    ///////////////////////////////////////////////////////////////////////
+    // draw border
+    ///////////////////////////////////////////////////////////////////////
+
+    fvec4 border_color(0.3f, 0.3f, 0.4f, 0.8f);
+    tgt->PushModColor(border_color);
+    primi->RenderQuadAtZ(defmtl.get(), ix1, ix2, iy1, iy1 + 1, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f); // top
+    primi->RenderQuadAtZ(defmtl.get(), ix1, ix2, iy2 - 1, iy2, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f); // bottom
+    primi->RenderQuadAtZ(defmtl.get(), ix1, ix1 + 1, iy1, iy2, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f); // left
+    primi->RenderQuadAtZ(defmtl.get(), ix2 - 1, ix2, iy1, iy2, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f); // right
+    tgt->PopModColor();
+
+    ///////////////////////////////////////////////////////////////////////
+    // draw highlight for hovered item
+    ///////////////////////////////////////////////////////////////////////
+
+    if (_hover_index >= 0 && _hover_index < num_items) {
+      int hy1 = iy1 + _hover_index * ITEM_HEIGHT - _scroll_offset;
+      int hy2 = hy1 + ITEM_HEIGHT;
+      if (hy2 > iy1 && hy1 < iy2) {
+        hy1 = std::max(hy1, iy1);
+        hy2 = std::min(hy2, iy2);
+        tgt->PushModColor(_hl_color);
+        primi->RenderQuadAtZ(
+            defmtl.get(),
+            ix1 + 1, ix2 - 1, hy1, hy2,
+            0.0f,
+            0.0f, 1.0f, 0.0f, 1.0f);
+        tgt->PopModColor();
+      }
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+    // draw item labels and arrows
+    ///////////////////////////////////////////////////////////////////////
+
+    fvec4 fg_color(0.85f, 0.85f, 0.9f, 1.0f);
+    tgt->PushModColor(fg_color);
+    auto font = ork::lev2::FontMan::PushFont(FONTNAME);
+    auto& fontdesc = font->description();
+    int font_h = fontdesc.miCharHeight;
+
+    int max_chars = 0;
+    for (auto& item : _items) {
+      max_chars = std::max(max_chars, int(item._label.length()));
+    }
+    // Add space for arrow characters
+    max_chars += 4;
+
+    int num_visible = std::min(num_items, MAX_VISIBLE);
+    lev2::FontMan::beginTextBlock(tgt, num_visible * (max_chars + 4));
+
+    for (int i = 0; i < num_visible; i++) {
+      int item_idx = i + (_scroll_offset / ITEM_HEIGHT);
+      if (item_idx >= num_items) break;
+
+      auto& item = _items[item_idx];
+      int item_y = iy1 + i * ITEM_HEIGHT;
+      int text_y = item_y + (ITEM_HEIGHT - font_h) / 2;
+
+      // Draw label (left-aligned with padding)
+      lev2::FontMan::DrawText(tgt, ix1 + PADDING_X, text_y, item._label.c_str());
+
+      // Draw arrow indicator for non-leaf items
+      if (!item._is_leaf) {
+        int arrow_x = ix2 - ARROW_WIDTH;
+        lev2::FontMan::DrawText(tgt, arrow_x, text_y, ">");
+      }
+    }
+
+    lev2::FontMan::endTextBlock(tgt);
+    ork::lev2::FontMan::PopFont();
+    tgt->PopModColor();
+  }
+  mtxi->PopUIMatrix();
+}
+///////////////////////////////////////////////////////////////////////////////
+} // namespace ork::ui
