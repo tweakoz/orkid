@@ -42,7 +42,8 @@ NodeDef::NodeDef(){
 void SceneGraphNodeItemData::describeX(object::ObjectClass* clazz) {
   clazz->directProperty("NodeName", &SceneGraphNodeItemData::_nodename);
   clazz->directProperty("LayerName", &SceneGraphNodeItemData::_layername);
-  clazz->directObjectProperty("DrawableData", &SceneGraphNodeItemData::_drawabledata);
+  clazz->directObjectProperty("DrawableData", &SceneGraphNodeItemData::_drawabledata)
+      ->annotate<ConstString>("editor.factorylistbase", "DrawableData");
 }
 ///////////////////////////////////////////////////////////////////////////////
 void SceneGraphComponentData::describeX(ComponentDataClass* clazz) {

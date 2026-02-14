@@ -122,6 +122,9 @@ void ReflectionPropertySheetModel::_addPropertiesFromDescription(
     auto* direct_obj = dynamic_cast<const reflect::DirectObjectBase*>(prop);
     if (direct_obj) {
       entry.sub_object = direct_obj->getObject(obj);
+      if (!entry.sub_object) {
+        entry.is_null_direct_object = true;
+      }
       size_t idx       = _entries.size();
       _entries.push_back(entry);
       _by_key[full_key] = idx;
@@ -717,6 +720,121 @@ void ReflectionPropertySheetModel::setMapElementFromFactory(
 
   // Set the element in the map
   entry.map_property->setElement(entry.map_owner, entry.map_key, svar128_t(instance));
+
+  // Rebuild the property list
+  setObject(_object);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+bool ReflectionPropertySheetModel::isNullDirectObjectEntry(const std::string& key) const {
+  auto it = _by_key.find(key);
+  if (it == _by_key.end())
+    return false;
+  return _entries[it->second].is_null_direct_object;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+std::vector<std::string> ReflectionPropertySheetModel::getDirectObjectFactoryClasses(const std::string& key) const {
+  std::vector<std::string> result;
+
+  auto it = _by_key.find(key);
+  if (it == _by_key.end())
+    return result;
+
+  const auto& entry = _entries[it->second];
+  if (!entry.is_null_direct_object || !entry.property)
+    return result;
+
+  // Get editor.factorylistbase annotation from the DirectObjectBase property
+  auto anno = entry.property->typedAnnotation<ConstString>("editor.factorylistbase");
+  if (!anno || anno.value().length() == 0)
+    return result;
+
+  // Parse space-separated base class names
+  std::vector<std::string> base_classes;
+  SplitString(std::string(anno.value().c_str()), " ", base_classes);
+
+  // Enumerate factory classes from each base class
+  for (const auto& base_name : base_classes) {
+    auto base_clazz = rtti::Class::FindClass(base_name.c_str());
+    auto as_obj_clazz = dynamic_cast<object::ObjectClass*>(base_clazz);
+    if (!as_obj_clazz)
+      continue;
+
+    // Walk subclass hierarchy
+    orkstack<object::ObjectClass*> stack;
+    stack.push(as_obj_clazz);
+
+    while (!stack.empty()) {
+      auto pclass = stack.top();
+      stack.pop();
+
+      if (pclass->hasFactory()) {
+        auto instanno = pclass->Description().classAnnotation("editor.instantiable");
+        bool ok = instanno.isA<bool>() ? instanno.get<bool>() : true;
+        if (ok) {
+          result.push_back(pclass->Name());
+        }
+      }
+
+      // Push children
+      rtti::Class* const first_child = pclass->FirstChild();
+      rtti::Class* child = first_child;
+      while (child) {
+        auto obj_child = rtti::downcast<object::ObjectClass*>(child);
+        if (obj_child)
+          stack.push(obj_child);
+        child = (child->NextSibling() == first_child) ? nullptr : child->NextSibling();
+      }
+    }
+  }
+
+  return result;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void ReflectionPropertySheetModel::setDirectObjectFromFactory(
+    const std::string& key,
+    const std::string& class_name) {
+  auto it = _by_key.find(key);
+  if (it == _by_key.end())
+    return;
+
+  const auto& entry = _entries[it->second];
+  if (!entry.is_null_direct_object || !entry.property)
+    return;
+
+  auto* direct_obj = dynamic_cast<const reflect::DirectObjectBase*>(entry.property);
+  if (!direct_obj)
+    return;
+
+  // Find the owning object
+  object_ptr_t owner = _object;
+  if (!entry.parent_key.empty()) {
+    auto parent_it = _by_key.find(entry.parent_key);
+    if (parent_it != _by_key.end()) {
+      const auto& parent_entry = _entries[parent_it->second];
+      if (parent_entry.sub_object) {
+        owner = parent_entry.sub_object;
+      }
+    }
+  }
+
+  // Find and instantiate the class
+  auto clazz = rtti::Class::FindClass(class_name.c_str());
+  auto obj_clazz = dynamic_cast<object::ObjectClass*>(clazz);
+  if (!obj_clazz)
+    return;
+
+  auto instance = obj_clazz->createShared();
+  if (!instance)
+    return;
+
+  // Set the object on the direct property
+  direct_obj->setObject(owner, instance);
 
   // Rebuild the property list
   setObject(_object);

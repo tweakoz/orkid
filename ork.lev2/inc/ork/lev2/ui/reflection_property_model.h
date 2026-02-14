@@ -39,6 +39,11 @@ struct ReflectionPropertySheetModel : public PropertySheetModel {
   std::vector<std::string> getFactoryClasses(const std::string& key) const override;
   void setMapElementFromFactory(const std::string& key, const std::string& class_name) override;
 
+  // Null direct object property / factory support
+  bool isNullDirectObjectEntry(const std::string& key) const override;
+  std::vector<std::string> getDirectObjectFactoryClasses(const std::string& key) const override;
+  void setDirectObjectFromFactory(const std::string& key, const std::string& class_name) override;
+
   // Per-key override support (for properties like object pointers
   // that need custom get/set/choices from Python)
   struct KeyOverride {
@@ -82,6 +87,8 @@ private:
     bool is_map_property = false;
     // For map entries whose object value is null (needs factory)
     bool is_null_object_entry = false;
+    // For DirectObjectBase properties whose sub_object is null (needs factory)
+    bool is_null_direct_object = false;
   };
 
   std::vector<PropertyEntry> _entries;

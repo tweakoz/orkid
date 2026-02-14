@@ -115,6 +115,13 @@ struct PropertySheetModel {
   // Create an object from factory class name and set it in the map
   virtual void setMapElementFromFactory(const std::string& key, const std::string& class_name) {}
 
+  // Is this entry a DirectObjectBase property whose sub-object is null?
+  virtual bool isNullDirectObjectEntry(const std::string& key) const { return false; }
+  // Get available factory class names for a null direct object property
+  virtual std::vector<std::string> getDirectObjectFactoryClasses(const std::string& key) const { return {}; }
+  // Create an object from factory class name and set it on the direct object property
+  virtual void setDirectObjectFromFactory(const std::string& key, const std::string& class_name) {}
+
   //////////////////////////////////////////////////////////////
   // Read-only support
   //////////////////////////////////////////////////////////////

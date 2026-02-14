@@ -16,6 +16,8 @@
 #include <ork/lev2/ui/dropdown_menu.h>
 #include <ork/lev2/ui/event.h>
 #include <ork/lev2/ui/context.h>
+#include <ork/lev2/ui/colorswatch.h>
+#include <ork/lev2/ui/coloredit.h>
 #include <ork/math/quaternion.h>
 
 namespace ork::ui {
@@ -100,6 +102,10 @@ struct MapItemObjectFactoryWidget : public Widget {
         auto tree = DropdownMenu::buildTreeFromPaths(_factory_classes);
         auto menu = std::make_shared<DropdownMenu>("factory_" + _name, tree->root());
         menu->_onSelected = [this](std::string selected) {
+          // Strip leading / from DropdownMenu's SlashTree path
+          if (!selected.empty() && selected[0] == '/') {
+            selected = selected.substr(1);
+          }
           if (_onFactorySelected) {
             _onFactorySelected(selected);
           }
@@ -207,6 +213,10 @@ struct ChoicelistWidget : public Widget {
           auto tree = DropdownMenu::buildTreeFromPaths(paths);
           auto menu = std::make_shared<DropdownMenu>("choicelist_" + _name, tree->root());
           menu->_onSelected = [this](std::string selected) {
+            // Strip leading / that was prepended for the slash tree
+            if (!selected.empty() && selected[0] == '/') {
+              selected = selected.substr(1);
+            }
             if (_onChoiceSelected) {
               _onChoiceSelected(selected);
             }
@@ -1011,6 +1021,149 @@ widget_ptr_t PropertySheet::_createEditorWidget(const std::string& key, Property
       break;
     }
 
+    case PropertyType::Vec4: {
+      fvec4 v(0, 0, 0, 1);
+      if (auto vec = value.tryAs<fvec4>()) {
+        v = vec.value();
+      }
+
+      // Check for color semantic
+      bool is_color = false;
+      if (annotations) {
+        auto sem_it = annotations->_themap.find("editor.semantic");
+        if (sem_it != annotations->_themap.end()) {
+          if (auto s = sem_it->second.tryAs<std::string>()) {
+            is_color = (s.value() == "color");
+          }
+        }
+      }
+
+      if (is_color) {
+        auto hpack = std::make_shared<HorizontalPack>("hp_" + key);
+        hpack->_draw_background = false;
+        hpack->_margin = 2;
+        hpack->_item_width = 24;
+        hpack->_fill = true;
+
+        auto swatch = std::make_shared<ColorSwatch>("sw_" + key, v);
+
+        auto hfields = std::make_shared<HorizontalPack>("hf_" + key);
+        hfields->_draw_background = false;
+        hfields->_uniform = true;
+        hfields->_margin = 2;
+
+        auto fr = std::make_shared<F32Edit>("fr_" + key, "R", v.x, 0.0f, 1.0f);
+        auto fg = std::make_shared<F32Edit>("fg_" + key, "G", v.y, 0.0f, 1.0f);
+        auto fb = std::make_shared<F32Edit>("fb_" + key, "B", v.z, 0.0f, 1.0f);
+        auto fa = std::make_shared<F32Edit>("fa_" + key, "A", v.w, 0.0f, 1.0f);
+        fr->_drag_rate = 0.005f;
+        fg->_drag_rate = 0.005f;
+        fb->_drag_rate = 0.005f;
+        fa->_drag_rate = 0.005f;
+        fr->_precision = 3;
+        fg->_precision = 3;
+        fb->_precision = 3;
+        fa->_precision = 3;
+
+        auto writeColor = [this, key, fr, fg, fb, fa, swatch](float) {
+          if (_model) {
+            fvec4 nv(fr->getValue(), fg->getValue(), fb->getValue(), fa->getValue());
+            swatch->setColor(nv);
+            svar128_t val;
+            val.set<fvec4>(nv);
+            _model->setValue(key, val);
+            if (_onPropertyChanged) {
+              _onPropertyChanged(key, val);
+            }
+          }
+        };
+        fr->_onValueChanged = writeColor;
+        fg->_onValueChanged = writeColor;
+        fb->_onValueChanged = writeColor;
+        fa->_onValueChanged = writeColor;
+
+        // Click swatch → open ColorEdit as detail editor
+        std::weak_ptr<ColorSwatch> swatch_weak = swatch;
+        std::weak_ptr<F32Edit> fr_weak = fr;
+        std::weak_ptr<F32Edit> fg_weak = fg;
+        std::weak_ptr<F32Edit> fb_weak = fb;
+        std::weak_ptr<F32Edit> fa_weak = fa;
+        swatch->_onClick = [this, key, swatch_weak, fr_weak, fg_weak, fb_weak, fa_weak]() {
+          auto sw = swatch_weak.lock();
+          if (!sw) return;
+          auto coloredit = std::make_shared<ColorEdit>("ce_" + key, sw->color());
+          coloredit->_originalColor = sw->color();
+          coloredit->_onColorChanged = [this, key, swatch_weak, fr_weak, fg_weak, fb_weak, fa_weak](fvec4 newcolor) {
+            if (auto sw2 = swatch_weak.lock()) sw2->setColor(newcolor);
+            if (auto r = fr_weak.lock()) r->setValue(newcolor.x);
+            if (auto g = fg_weak.lock()) g->setValue(newcolor.y);
+            if (auto b = fb_weak.lock()) b->setValue(newcolor.z);
+            if (auto a = fa_weak.lock()) a->setValue(newcolor.w);
+            if (_model) {
+              svar128_t val;
+              val.set<fvec4>(newcolor);
+              _model->setValue(key, val);
+              if (_onPropertyChanged) {
+                _onPropertyChanged(key, val);
+              }
+            }
+          };
+          coloredit->_onFinished = [this](bool accepted) {
+            closeDetailEditor();
+          };
+          showDetailEditor(key, coloredit);
+        };
+
+        hfields->addChild(fr);
+        hfields->addChild(fg);
+        hfields->addChild(fb);
+        hfields->addChild(fa);
+
+        hpack->addChild(swatch);
+        hpack->addChild(hfields);
+        hpack->_fill_widget = hfields;
+        editor = hpack;
+      } else {
+        // Regular Vec4: XYZW fields
+        auto hpack = std::make_shared<HorizontalPack>("hp_" + key);
+        hpack->_draw_background = false;
+        hpack->_uniform = true;
+        hpack->_margin = 2;
+
+        auto fx = std::make_shared<F32Edit>("fx_" + key, "X", v.x);
+        auto fy = std::make_shared<F32Edit>("fy_" + key, "Y", v.y);
+        auto fz = std::make_shared<F32Edit>("fz_" + key, "Z", v.z);
+        auto fw = std::make_shared<F32Edit>("fw_" + key, "W", v.w);
+        fx->_drag_rate = 0.01f;
+        fy->_drag_rate = 0.01f;
+        fz->_drag_rate = 0.01f;
+        fw->_drag_rate = 0.01f;
+
+        auto writeVec4 = [this, key, fx, fy, fz, fw](float) {
+          if (_model) {
+            fvec4 nv(fx->getValue(), fy->getValue(), fz->getValue(), fw->getValue());
+            svar128_t val;
+            val.set<fvec4>(nv);
+            _model->setValue(key, val);
+            if (_onPropertyChanged) {
+              _onPropertyChanged(key, val);
+            }
+          }
+        };
+        fx->_onValueChanged = writeVec4;
+        fy->_onValueChanged = writeVec4;
+        fz->_onValueChanged = writeVec4;
+        fw->_onValueChanged = writeVec4;
+
+        hpack->addChild(fx);
+        hpack->addChild(fy);
+        hpack->addChild(fz);
+        hpack->addChild(fw);
+        editor = hpack;
+      }
+      break;
+    }
+
     case PropertyType::String: {
       auto lineedit = std::make_shared<LineEdit>("le_" + key, fvec4(0.2f, 0.2f, 0.2f, 1.0f));
       if (auto s = value.tryAs<std::string>()) {
@@ -1093,6 +1246,54 @@ std::function<void(svar128_t)> PropertySheet::_makeRefreshCallback(widget_ptr_t 
               fay->setValue(aa.y);
               faz->setValue(aa.z);
               fang->setValue(aa.w * (180.0f / 3.14159265359f));
+            }
+          };
+        }
+      }
+    }
+  } else if (type == PropertyType::Vec4) {
+    // Color: HorizontalPack [swatch, hfields_pack(fr, fg, fb, fa)]
+    // Regular: HorizontalPack [fx, fy, fz, fw]
+    auto hpack = std::dynamic_pointer_cast<HorizontalPack>(editor);
+    if (hpack && hpack->_children.size() >= 2) {
+      // Check if first child is a ColorSwatch (color mode)
+      auto swatch = std::dynamic_pointer_cast<ColorSwatch>(hpack->_children[0]);
+      auto hfields = std::dynamic_pointer_cast<HorizontalPack>(hpack->_children[1]);
+      if (swatch && hfields && hfields->_children.size() >= 4) {
+        auto fr = std::dynamic_pointer_cast<F32Edit>(hfields->_children[0]);
+        auto fg = std::dynamic_pointer_cast<F32Edit>(hfields->_children[1]);
+        auto fb = std::dynamic_pointer_cast<F32Edit>(hfields->_children[2]);
+        auto fa = std::dynamic_pointer_cast<F32Edit>(hfields->_children[3]);
+        if (fr && fg && fb && fa) {
+          return [swatch, fr, fg, fb, fa](svar128_t new_value) {
+            bool any_busy = fr->_editing || fr->_dragging
+                         || fg->_editing || fg->_dragging
+                         || fb->_editing || fb->_dragging
+                         || fa->_editing || fa->_dragging;
+            if (any_busy) return;
+            if (auto v = new_value.tryAs<fvec4>()) {
+              fr->setValue(v.value().x);
+              fg->setValue(v.value().y);
+              fb->setValue(v.value().z);
+              fa->setValue(v.value().w);
+              swatch->setColor(v.value());
+            }
+          };
+        }
+      }
+      // Regular Vec4: 4 F32Edit children
+      if (hpack->_children.size() >= 4) {
+        auto fx = std::dynamic_pointer_cast<F32Edit>(hpack->_children[0]);
+        auto fy = std::dynamic_pointer_cast<F32Edit>(hpack->_children[1]);
+        auto fz = std::dynamic_pointer_cast<F32Edit>(hpack->_children[2]);
+        auto fw = std::dynamic_pointer_cast<F32Edit>(hpack->_children[3]);
+        if (fx && fy && fz && fw) {
+          return [fx, fy, fz, fw](svar128_t new_value) {
+            if (auto v = new_value.tryAs<fvec4>()) {
+              if (!fx->_editing && !fx->_dragging) fx->setValue(v.value().x);
+              if (!fy->_editing && !fy->_dragging) fy->setValue(v.value().y);
+              if (!fz->_editing && !fz->_dragging) fz->setValue(v.value().z);
+              if (!fw->_editing && !fw->_dragging) fw->setValue(v.value().w);
             }
           };
         }
@@ -1241,7 +1442,7 @@ void PropertySheet::_addRowsRecursive(const std::string& parent_key, int depth, 
 
     // Create editor widget for non-group, non-compound properties
     // Vec3 and Quat get inline compound editors (they look like leaf rows, not expandable groups)
-    if (type == PropertyType::Vec3 || type == PropertyType::Quat) {
+    if (type == PropertyType::Vec3 || type == PropertyType::Vec4 || type == PropertyType::Quat) {
       svar128_t value = _model->getValue(key);
       auto editor = _createEditorWidget(key, type, value);
       if (editor) {
@@ -1265,6 +1466,20 @@ void PropertySheet::_addRowsRecursive(const std::string& parent_key, int depth, 
         auto factory_widget = std::make_shared<MapItemObjectFactoryWidget>("factory_" + key, factory_classes);
         factory_widget->_onFactorySelected = [this, key](const std::string& class_name) {
           _model->setMapElementFromFactory(key, class_name);
+          rebuild();
+          expandAll();
+        };
+        row->setEditorWidget(factory_widget);
+      }
+    }
+
+    // For null direct object properties, show a factory widget
+    if (_model->isNullDirectObjectEntry(key)) {
+      auto factory_classes = _model->getDirectObjectFactoryClasses(key);
+      if (!factory_classes.empty()) {
+        auto factory_widget = std::make_shared<MapItemObjectFactoryWidget>("dfactory_" + key, factory_classes);
+        factory_widget->_onFactorySelected = [this, key](const std::string& class_name) {
+          _model->setDirectObjectFromFactory(key, class_name);
           rebuild();
           expandAll();
         };
@@ -1320,7 +1535,7 @@ void PropertySheet::_addSingleChildRecursive(const std::string& child_key, int d
   row->_alt_bg_color.w = 1.0f;
 
   // Create editor widget for non-group, non-compound properties
-  if (type == PropertyType::Vec3 || type == PropertyType::Quat) {
+  if (type == PropertyType::Vec3 || type == PropertyType::Vec4 || type == PropertyType::Quat) {
     svar128_t value = _model->getValue(child_key);
     auto editor = _createEditorWidget(child_key, type, value);
     if (editor) {
@@ -1344,6 +1559,20 @@ void PropertySheet::_addSingleChildRecursive(const std::string& child_key, int d
       auto factory_widget = std::make_shared<MapItemObjectFactoryWidget>("factory_" + child_key, factory_classes);
       factory_widget->_onFactorySelected = [this, child_key](const std::string& class_name) {
         _model->setMapElementFromFactory(child_key, class_name);
+        rebuild();
+        expandAll();
+      };
+      row->setEditorWidget(factory_widget);
+    }
+  }
+
+  // For null direct object properties, show a factory widget
+  if (_model->isNullDirectObjectEntry(child_key)) {
+    auto factory_classes = _model->getDirectObjectFactoryClasses(child_key);
+    if (!factory_classes.empty()) {
+      auto factory_widget = std::make_shared<MapItemObjectFactoryWidget>("dfactory_" + child_key, factory_classes);
+      factory_widget->_onFactorySelected = [this, child_key](const std::string& class_name) {
+        _model->setDirectObjectFromFactory(child_key, class_name);
         rebuild();
         expandAll();
       };
