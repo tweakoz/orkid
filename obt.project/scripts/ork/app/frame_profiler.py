@@ -344,11 +344,37 @@ class FrameProfilerComponent(ApplicationComponent):
   ##############################################
 
   def _updateSecondaryChannels(self):
-    """Create series for any secondary windows that don't have one yet."""
+    """Create/remove series to match the current secondary window count."""
     ezapp = self.app.ezapp
     sec_wins = ezapp.secondaryWindows
-    added = False
-    while len(self.series_sec_draw) < len(sec_wins):
+    num_sec = len(sec_wins)
+    changed = False
+
+    # Remove series for closed secondary windows
+    while len(self.series_sec_draw) > num_sec:
+      idx = len(self.series_sec_draw) - 1
+      self._budget_channel.removeSeries(f"sec{idx}_frame_setup")
+      self._budget_channel.removeSeries(f"sec{idx}_acquire_wait")
+      self._budget_channel.removeSeries(f"sec{idx}_draw")
+      self._budget_channel.removeSeries(f"sec{idx}_submit")
+      self._budget_channel.removeSeries(f"sec{idx}_present")
+      self._budget_channel.removeSeries(f"sec{idx}_fence_wait")
+      self.series_sec_frame_setup.pop()
+      self.series_sec_acquire_wait.pop()
+      self.series_sec_draw.pop()
+      self.series_sec_submit.pop()
+      self.series_sec_present.pop()
+      self.series_sec_fence_wait.pop()
+      # Remove GPU timing series for this secondary window
+      prefix = f"sec{idx}:"
+      to_remove = [n for n in self._gpu_timing_series if n.startswith(prefix)]
+      for name in to_remove:
+        self._gpu_channel.removeSeries(name)
+        del self._gpu_timing_series[name]
+      changed = True
+
+    # Add series for new secondary windows
+    while len(self.series_sec_draw) < num_sec:
       idx = len(self.series_sec_draw)
       s_bo = self._budget_channel.addSeries(f"sec{idx}_frame_setup", self.COLOR_SEC_FRAME_SETUP)
       s_bo.setMaxSamples(self.MAX_SAMPLES)
@@ -374,8 +400,9 @@ class FrameProfilerComponent(ApplicationComponent):
       s_fw.setMaxSamples(self.MAX_SAMPLES)
       s_fw.setFixedRange(0.0, 20.0)
       self.series_sec_fence_wait.append(s_fw)
-      added = True
-    if added:
+      changed = True
+
+    if changed:
       self._reorderBudgetSeries()
 
   ##############################################

@@ -660,6 +660,14 @@ lev2::Context* EzSecondaryWin::gfxContext() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void EzSecondaryWin::_forceClose() {
+  if (auto impl = _impl.tryAsShared<SecondaryWinImpl>()) {
+    impl.value()->_closeWindow();
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void EzSecondaryWin::_render() {
   if (auto impl = _impl.tryAsShared<SecondaryWinImpl>()) {
     impl.value()->_render();

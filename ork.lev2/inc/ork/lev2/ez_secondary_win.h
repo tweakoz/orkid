@@ -119,6 +119,7 @@ struct EzSecondaryWin {
 
   void _render();
   void _handleResize(int w, int h);
+  void _forceClose();  // Explicitly destroy GLFW window (for cleanup when Python holds refs)
 
   double _perf_render_duration = 0.0;  // secondary window render+swap time
   double _perf_enqueue_duration = 0.0; // beginFrame+draw+endFrame time

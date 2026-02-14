@@ -1354,6 +1354,16 @@ void OrkEzApp::_cleanupClosedSecondaryWindows() {
   // Remove closed windows and return focus to main window if any were removed
   size_t before = _secondaryWindows.size();
 
+  // Force-close GLFW windows before erasing shared_ptrs.
+  // Python callbacks may hold circular references to the window object,
+  // preventing the destructor from running. Explicit close ensures the
+  // GLFW window is destroyed regardless of reference counting.
+  for (auto& w : _secondaryWindows) {
+    if (w->shouldClose()) {
+      w->_forceClose();
+    }
+  }
+
   std::erase_if(_secondaryWindows, [](const auto& w) {
     return w->shouldClose();
   });
