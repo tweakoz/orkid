@@ -113,6 +113,8 @@ void pyinit_ui_property_sheet(py::module& uimodule) {
       .value("Vec3", ui::PropertyType::Vec3)
       .value("Vec4", ui::PropertyType::Vec4)
       .value("Color", ui::PropertyType::Color)
+      .value("Asset", ui::PropertyType::Asset)
+      .value("Quat", ui::PropertyType::Quat)
       .value("Group", ui::PropertyType::Group);
 
   /////////////////////////////////////////////////////////////////////////////////

@@ -234,6 +234,7 @@ struct Scene {
 
 
   void initWithParams(varmap::varmap_ptr_t _initialdata);
+  void applyRuntimeParams(varmap::varmap_ptr_t params);
 
   layer_ptr_t createLayer(std::string named);
   layer_ptr_t findLayer(std::string named);

@@ -189,6 +189,18 @@ class EcsEditor(ComponentizedApplication):
     self.propsheet.label_width = 120
     self.refl_model = lev2.ui.ReflectionPropertySheetModel()
     self.propsheet.model = self.refl_model
+    self.propsheet.onPropertyChanged(self._onPropertyChanged)
+
+  def _onPropertyChanged(self, key, value):
+    """Called when any property is edited in the property sheet."""
+    if "/assetpath" in key:
+      # Asset path changed — recreate simulation to reload drawables
+      self._createEditSimulation()
+    elif "userparams/" in key:
+      # SceneGraphSystemData userparam changed — apply live to scenegraph
+      param_name = key.split("/")[-1]
+      if self.scenegraph:
+        self.scenegraph.applyRuntimeParams({param_name: value})
 
   ##############################################################################
   # GPU Init — create scenegraph synchronously (like sgedit)
@@ -208,15 +220,10 @@ class EcsEditor(ComponentizedApplication):
     self.manip_enabled = False
 
     # Create scenegraph synchronously on GPU thread
+    # Only construction-time params here; runtime params come from SceneGraphSystemData
     sg_params = VarMap()
-    sg_params.SkyboxIntensity = 2.0
-    sg_params.DiffuseIntensity = 1.0
-    sg_params.SpecularIntensity = 1.0
-    sg_params.AmbientLevel = vec3(0.15)
     sg_params.preset = "ForwardPBR"
     sg_params.ssaa = 4
-    sg_params.enable_skybox = False
-    sg_params.clearcolor = vec3(0.08, 0.08, 0.1)
 
     self.scenegraph = lev2.scenegraph.Scene(sg_params)
     self.layer = self.scenegraph.createLayer("std_forward")
@@ -299,14 +306,15 @@ class EcsEditor(ComponentizedApplication):
     if sgsys_data is None:
       sgsys_data = self.scene_data.addSceneGraphSystem()
       sgsys_data.declareLayer("std_forward")
-    # Always apply editor rendering defaults (internal params aren't serialized)
+    # Always set defaults in internalParams (not serialized).
+    # User-saved values in userparams override these in _onStage.
     sgsys_data.declareParams({
+      "preset": "ForwardPBR",
+      "ssaa": 4,
       "SkyboxIntensity": 2.0,
       "DiffuseIntensity": 1.0,
       "SpecularIntensity": 1.0,
-      "AmbientLevel": vec3(0.15),
-      "preset": "ForwardPBR",
-      "ssaa": 4,
+      "AmbientLight": vec3(0.15),
       "enable_skybox": False,
       "clearcolor": vec3(0.08, 0.08, 0.1),
     })
@@ -322,11 +330,14 @@ class EcsEditor(ComponentizedApplication):
     self.edit_controller.stageSimulation()
 
     self._edit_sys_ref = self.edit_controller.findSystem("SceneGraphSystem")
+    self.sgv.onPreRender = lambda ctx: self.edit_controller.gpuRender(ctx)
 
   def _destroyEditSimulation(self):
     """Tear down the edit-mode simulation."""
     self._edit_sys_ref = None
     self.edit_controller = None
+    if hasattr(self, 'sgv') and self.sgv:
+      self.sgv.onPreRender = None
 
   ##############################################################################
   # Outliner callbacks
@@ -573,6 +584,7 @@ class EcsEditor(ComponentizedApplication):
       self.play_controller.startSimulation()
 
       self._play_sys_ref = self.play_controller.findSystem("SceneGraphSystem")
+      self.sgv.onPreRender = lambda ctx: self.play_controller.gpuRender(ctx)
 
       self._mode = self.PLAYING
       self._updateTransportUI()
@@ -609,6 +621,7 @@ class EcsEditor(ComponentizedApplication):
       # Clear play state
       self._play_sys_ref = None
       self.play_controller = None
+      self.sgv.onPreRender = None
 
       # Recreate edit simulation
       self._createEditSimulation()

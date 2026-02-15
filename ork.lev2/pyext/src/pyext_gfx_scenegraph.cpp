@@ -376,6 +376,18 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 SG->renderOnContext(context.get());
               })
           .def(
+              "applyRuntimeParams",
+              [type_codec](scene_ptr_t SG, py::dict param_dict) {
+                auto params = std::make_shared<varmap::VarMap>();
+                for (auto& [key, value] : param_dict) {
+                  auto key_str     = key.cast<std::string>();
+                  auto val_obj     = py::reinterpret_borrow<py::object>(value);
+                  auto val_decoded = type_codec->decode(val_obj);
+                  params->setValueForKey(key_str, val_decoded);
+                }
+                SG->applyRuntimeParams(params);
+              })
+          .def(
               "enablePickHud",
               [](scene_ptr_t SG) { //
                 SG->enablePickHud();

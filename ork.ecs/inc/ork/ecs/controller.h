@@ -117,6 +117,7 @@ struct Controller {
 	void gpuExit(lev2::Context* ctx);
 	void updateExit();
 	void render(ui::drawevent_constptr_t drwev);
+	void gpuRender(lev2::Context* ctx);
 	void renderWithStandardCompositorFrame(lev2::standardcompositorframe_ptr_t sframe);
 	void installRenderCallbackOnEzApp(lev2::orkezapp_ptr_t ezapp);
 	void installUpdateCallbackOnEzApp(lev2::orkezapp_ptr_t ezapp);

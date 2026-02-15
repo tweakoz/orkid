@@ -21,6 +21,7 @@
 #include <ork/math/quaternion.h>
 #include <ork/kernel/string/PoolString.h>
 #include <ork/kernel/string/string.h>
+#include <ork/file/path.h>
 
 namespace ork::ui {
 
@@ -370,6 +371,9 @@ PropertyType ReflectionPropertySheetModel::_mapPropertyType(
   // PoolString maps to String
   if (dynamic_cast<const reflect::ITyped<PoolString>*>(prop))
     return PropertyType::String;
+  // file::Path maps to Asset
+  if (dynamic_cast<const reflect::ITyped<file::Path>*>(prop))
+    return PropertyType::Asset;
 
   // AccessorVariant and unknown types
   return PropertyType::Unknown;
@@ -501,6 +505,10 @@ svar128_t ReflectionPropertySheetModel::getValue(
     fquat val;
     typed_fquat->get(val, owner);
     result.set<fquat>(val);
+  } else if (auto* typed_path = dynamic_cast<const reflect::ITyped<file::Path>*>(entry.property)) {
+    file::Path val;
+    typed_path->get(val, owner);
+    result.set<std::string>(val.toStdString());
   }
 
   return result;
@@ -577,6 +585,10 @@ void ReflectionPropertySheetModel::setValue(
   } else if (auto* typed_fquat = dynamic_cast<const reflect::ITyped<fquat>*>(entry.property)) {
     if (value.isA<fquat>()) {
       typed_fquat->set(value.get<fquat>(), owner);
+    }
+  } else if (auto* typed_path = dynamic_cast<const reflect::ITyped<file::Path>*>(entry.property)) {
+    if (value.isA<std::string>()) {
+      typed_path->set(file::Path(value.get<std::string>().c_str()), owner);
     }
   }
 

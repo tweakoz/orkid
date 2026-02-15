@@ -124,6 +124,20 @@ void Controller::render(ui::drawevent_constptr_t drwev) {
 
 ///////////////////////////////////////////////////////////////////////////
 
+void Controller::gpuRender(lev2::Context* ctx) {
+  if (_needsGpuInit) {
+    gpuInit(ctx);
+    _needsGpuInit = false;
+  }
+  auto sim = _simulation._unprotected_ref();
+  if (sim) {
+    auto drwev = std::make_shared<ui::DrawEvent>(ctx);
+    sim->render(drwev);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////
+
 void Controller::renderWithStandardCompositorFrame(lev2::standardcompositorframe_ptr_t sframe) {
   _simulation._unprotected_ref()->renderWithStandardCompositorFrame(sframe);
 }

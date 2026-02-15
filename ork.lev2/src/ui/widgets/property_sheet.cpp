@@ -1166,15 +1166,47 @@ widget_ptr_t PropertySheet::_createEditorWidget(const std::string& key, Property
 
     case PropertyType::String: {
       auto lineedit = std::make_shared<LineEdit>("le_" + key, fvec4(0.2f, 0.2f, 0.2f, 1.0f));
+      lineedit->_draw_label = false;
       if (auto s = value.tryAs<std::string>()) {
         lineedit->setValue(s.value());
       }
+      lineedit->_onTextCommitted = [this, key](const std::string& text) {
+        if (_model) {
+          svar128_t val;
+          val.set<std::string>(text);
+          _model->setValue(key, val);
+          if (_onPropertyChanged) {
+            _onPropertyChanged(key, val);
+          }
+        }
+      };
+      editor = lineedit;
+      break;
+    }
+
+    case PropertyType::Asset: {
+      auto lineedit = std::make_shared<LineEdit>("le_" + key, fvec4(0.2f, 0.2f, 0.25f, 1.0f));
+      lineedit->_draw_label = false;
+      if (auto s = value.tryAs<std::string>()) {
+        lineedit->setValue(s.value());
+      }
+      lineedit->_onTextCommitted = [this, key](const std::string& text) {
+        if (_model) {
+          svar128_t val;
+          val.set<std::string>(text);
+          _model->setValue(key, val);
+          if (_onPropertyChanged) {
+            _onPropertyChanged(key, val);
+          }
+        }
+      };
       editor = lineedit;
       break;
     }
 
     default: {
       auto lineedit = std::make_shared<LineEdit>("le_" + key, fvec4(0.2f, 0.2f, 0.2f, 1.0f));
+      lineedit->_draw_label = false;
       lineedit->setValue("(no editor)");
       editor = lineedit;
       break;
@@ -1305,6 +1337,15 @@ std::function<void(svar128_t)> PropertySheet::_makeRefreshCallback(widget_ptr_t 
       return [islider](svar128_t new_value) {
         if (auto i = new_value.tryAs<int>()) {
           islider->setValue(i.value());
+        }
+      };
+    }
+  } else if (type == PropertyType::Asset || type == PropertyType::String) {
+    auto le = std::dynamic_pointer_cast<LineEdit>(editor);
+    if (le) {
+      return [le](svar128_t new_value) {
+        if (auto s = new_value.tryAs<std::string>()) {
+          le->setValue(s.value());
         }
       };
     }

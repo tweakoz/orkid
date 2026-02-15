@@ -36,6 +36,7 @@ using nodedef_ptr_t = std::shared_ptr<NodeDef>;
 struct SceneGraphNodeItemData : public ork::Object {
   DeclareConcreteX(SceneGraphNodeItemData, ork::Object);
 public:
+  SceneGraphNodeItemData() : _modcolor(1,1,1,1) {}
   lev2::drawabledata_ptr_t _drawabledata;
   std::string _layername;
   std::vector<std::string> _multilayers;
@@ -215,6 +216,7 @@ struct SceneGraphSystem final : public System {
   int _numComponents = 0;
   const SceneGraphSystemData& _SGSD;
   MpMcBoundedQueue<void_lambda_t,65536> _renderops;
+  bool _sceneInjected = false;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -380,6 +380,7 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
           nitem->_drawable                      = l;
           nitem->_sgnode                        = layer->createLightNode(NID->_nodename, l);
           nitem->_nodename                      = NID->_nodename;
+          nitem->_data                          = NID;
           component->_nodeitems[NID->_nodename] = nitem;
 
           auto ent = component->GetEntity();
@@ -604,12 +605,15 @@ bool SceneGraphSystem::_onStage(Simulation* psi) {
     auto injected = sim_varmap->typedValueForKey<scenegraph::scene_ptr_t>("scenegraph");
     if (injected) {
       _scene = injected.value();
+      _sceneInjected = true;
     }
   }
 
   if (!_scene) {
     _scene = std::make_shared<scenegraph::Scene>(_mergedParams);
   }
+
+  _scene->applyRuntimeParams(_mergedParams);
 
   _default_layer = _scene->createLayer("sg_default");
   for (auto item : _SGSD._declaredLayers) {
@@ -660,7 +664,7 @@ void SceneGraphSystem::_rt_process() {
 ///////////////////////////////////////////////////////////////////////////////
 void SceneGraphSystem::_onRenderWithStandardCompositorFrame(Simulation* psi, lev2::standardcompositorframe_ptr_t sframe) {
   _rt_process();
-  if (_scene) {
+  if (_scene && !_sceneInjected) {
     _scene->renderWithStandardCompositorFrame(sframe);
   }
 }
@@ -669,7 +673,7 @@ void SceneGraphSystem::_onRender(Simulation* psi, ui::drawevent_constptr_t drwev
 {
   _rt_process();
 
-  if (_scene) {
+  if (_scene && !_sceneInjected) {
     _scene->renderOnContext(drwev->GetTarget());
   }
 }
