@@ -384,6 +384,7 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
           component->_nodeitems[NID->_nodename] = nitem;
 
           auto ent = component->GetEntity();
+          nitem->_sgnode->_userdata->makeValueForKey<uint64_t>("entref") = ent->_entref;
           if (NID->_xfoverride) {
             auto static_matrix = NID->_xfoverride->composed();
             l->_xformgenerator = [=]() -> fmtx4 {
@@ -436,6 +437,10 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
                     auto node       = layer->createDrawableNode(NID->_nodename, nitem->_drawable);
                     node->_modcolor = NID->_modcolor;
                     nitem->_sgnode  = node;
+                    auto _ent = component->GetEntity();
+                    if (_ent) {
+                      node->_userdata->makeValueForKey<uint64_t>("entref") = _ent->_entref;
+                    }
                 }
                 return nitem;
             };

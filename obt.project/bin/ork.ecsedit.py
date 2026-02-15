@@ -106,6 +106,9 @@ class EcsEditor(ComponentizedApplication):
     # Toolbar
     self._setupToolbar()
 
+    # Pick debug
+    self._setupPickDebug()
+
     # Outliner
     self.outliner = self.left_panel.makeChild(
       uiclass=lev2.ui.Outliner, args=["outliner"])
@@ -182,6 +185,34 @@ class EcsEditor(ComponentizedApplication):
     self.btn_scale.toggle_mode = True
 
   ##############################################################################
+  # Pick Debug
+  ##############################################################################
+
+  def _setupPickDebug(self):
+    self.pick_collapsable = self.left_panel.makeChild(
+      uiclass=lev2.ui.Collapsable, args=["Pick Debug"])
+    self.pick_collapsable.header_height = 24
+    self.pick_collapsable.header_bg_color = vec4(0.2, 0.2, 0.25, 1)
+    self.pick_collapsable.expanded = False
+
+    self.pick_hpack = lev2.ui.HorizontalPack.wfactory(["pick_hpack"])
+    self.pick_hpack.margin = 2
+    self.pick_hpack.uniform = True
+    self.pick_hpack.fixed_height = 192
+    self.pick_hpack.bg_color = vec4(0.1, 0.1, 0.1, 1)
+    self.pick_collapsable.setChild(self.pick_hpack)
+
+    imgbg = vec4(0.15, 0.15, 0.15, 1)
+    self.pick_views = []
+    for name in ["pick_id", "pick_pos", "pick_nrm"]:
+      iv = self.pick_hpack.makeChild(uiclass=lev2.ui.ImageView, args=[name, imgbg])
+      iv.maintain_aspect_ratio = True
+      iv.flip_x = True
+      iv.flip_y = True
+      iv.crosshair_enabled = False
+      self.pick_views.append(iv)
+
+  ##############################################################################
   # Property Sheet
   ##############################################################################
 
@@ -246,6 +277,19 @@ class EcsEditor(ComponentizedApplication):
     # App-level key shortcuts (Phase 1 — before widget routing)
     self.uicontext.app_preview_handler = lambda ev: self._onAppKeyShortcut(ev)
 
+    # Pick debug visualization material
+    self.pickid_viz_mtl = lev2.FreestyleMaterial()
+    self.pickid_viz_mtl.gpuInit(ctx, "orkshader://ui_pickid_viz")
+    permu = lev2.FxPipelinePermutation()
+    permu.technique = self.pickid_viz_mtl.shader.technique("pickid_viz")
+    self.pickid_viz_pipeline = self.pickid_viz_mtl.fxcache.findPipeline(permu)
+    self.pickid_viz_pipeline.sharedMaterial = self.pickid_viz_mtl
+    self.pickid_viz_pipeline.bindParam(
+      self.pickid_viz_mtl.param("mvp"), tokens.RCFD_Camera_MVP_Mono)
+    self.p_colormap = self.pickid_viz_mtl.param("ColorMap")
+    self.p_nrmmap = self.pickid_viz_mtl.param("NrmMap")
+    self.pick_views[0].pipeline = self.pickid_viz_pipeline
+
     # Outliner model
     self.outliner_model = EcsOutlinerModel(self)
     self.outliner.model = self.outliner_model
@@ -292,6 +336,7 @@ class EcsEditor(ComponentizedApplication):
     sg_params.preset = "ForwardPBR"
     sg_params.ssaa = 4
     sg = lev2.scenegraph.Scene(sg_params)
+    sg.enablePickHud()
     layer = sg.createLayer("std_forward")
 
     grid_node = layer.createDrawableNodeFromData("grid", self.grid_data)
@@ -761,6 +806,28 @@ class EcsEditor(ComponentizedApplication):
   ##############################################################################
 
   def _onCameraEvent(self, uievent):
+    # Picking on mouse click
+    if uievent.code == tokens.PUSH.hashed:
+      print(f"PUSH event: shift={uievent.shift} ctrl={uievent.ctrl} alt={uievent.alt}")
+      if not uievent.shift and not uievent.ctrl and not uievent.alt:
+        hovering_gizmo = self.manip_enabled and self.manip_controller.hoveredAxis != lev2.ManipAxis.NONE
+        print(f"  manip_enabled={self.manip_enabled} hovering_gizmo={hovering_gizmo}")
+        if not hovering_gizmo:
+          vp_x = self.viewport_dock.x + self.sgv.x
+          vp_y = self.viewport_dock.y + self.sgv.y
+          local_x, local_y = uievent.x - vp_x, uievent.y - vp_y
+          in_bounds = 0 <= local_x < self.sgv.width and 0 <= local_y < self.sgv.height
+          print(f"  local=({local_x},{local_y}) sgv_size=({self.sgv.width},{self.sgv.height}) in_bounds={in_bounds}")
+          if in_bounds:
+            gizmo_was = self.gizmo_node.enabled
+            self.gizmo_node.enabled = False
+            print(f"  calling pickWithScreenCoord...")
+            self.scenegraph.pickWithScreenCoord(
+              self.camera, vec2(local_x, local_y),
+              0, 0, self.sgv.width, self.sgv.height,
+              self._onPickResult)
+            self.gizmo_node.enabled = gizmo_was
+
     if uievent.code == tokens.KEY_DOWN.hashed:
       kc = uievent.keycode
       if kc == 256:  # ESC
@@ -797,6 +864,70 @@ class EcsEditor(ComponentizedApplication):
     if handled:
       self.uicam.updateMatrices()
     return lev2.ui.HandlerResult()
+
+  ##############################################################################
+  # Picking
+  ##############################################################################
+
+  def _updatePickDebugViews(self):
+    """Update pick debug visualization textures."""
+    SG = self.scenegraph
+    if SG is None:
+      return
+    self.pick_views[0].texture = SG.pick_tex_id
+    self.pick_views[1].texture = SG.pick_tex_pos
+    self.pick_views[2].texture = SG.pick_tex_nrm
+    self.pickid_viz_pipeline.bindParam(self.p_colormap, SG.pick_tex_id)
+    self.pickid_viz_pipeline.bindParam(self.p_nrmmap, SG.pick_tex_nrm)
+    for iv in self.pick_views:
+      iv.crosshair_enabled = True
+      iv.crosshair_pos = vec2(0, 0)
+      iv.setDirty()
+
+  def _decodePickedNode(self, pfc):
+    """Decode pick result → DrawableNode or None."""
+    from orkengine.core import u32vec4
+    obj = pfc.value(0)
+    if obj is not None and isinstance(obj, u32vec4):
+      pick_id = int(obj.x)
+      if pick_id > 0 or (pick_id == 0 and int(obj.w) == 0):
+        return pfc.decodePickID(pick_id)
+    return None
+
+  def _onPickResult(self, pfc):
+    """Handle pick result — map drawable node → spawner → select."""
+    print(f"_onPickResult called: pfc={pfc}")
+    self._updatePickDebugViews()
+    node = self._decodePickedNode(pfc)
+    print(f"  decoded node: {node}")
+    if node is None:
+      return
+
+    # Read entity ref from node userdata (stored by SceneGraphSystem)
+    try:
+      entref = node.user.entref
+    except Exception:
+      return
+
+    # Look up entity → spawner via simulation
+    controller = self.edit_controller if self._mode == self.EDIT else self.play_controller
+    if controller is None:
+      return
+    sim = controller.simulation
+    if sim is None:
+      return
+    entity = sim.findEntityByRef(entref)
+    if entity is None:
+      return
+    spawner = entity.spawner
+    if spawner is None:
+      return
+
+    # Select the spawner in outliner + property sheet
+    spawner_name = spawner.name
+    key = f"Spawners/{spawner_name}"
+    self.outliner.selected_key = key
+    self._onOutlinerSelect(key)
 
   ##############################################################################
   # App-level key shortcuts

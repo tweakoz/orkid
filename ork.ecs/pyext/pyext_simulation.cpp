@@ -73,6 +73,15 @@ void pyinit_simulation(py::module& module_ecs) {
       // rval->_vars.makeValueForKey<py::function>("uievfn") = uievfn;
       // rval->onUiEvent([=](ork::ui::event_constptr_t ev) -> ui::HandlerResult { //
       // return sim->findSystem<SceneGraphSystem>();
+      .def("findEntityByRef", [](simulation_ptr_t sim, uint64_t ref_id) -> py::object {
+        EntityRef eref;
+        eref._entID = ref_id;
+        auto ent = sim->_findEntityFromRef(eref);
+        if (ent) {
+          return py::cast(pyentity_ptr_t(ent));
+        }
+        return py::none();
+      })
       .def("__repr__", [](const simulation_ptr_t& sdata) -> std::string {
         fxstring<256> fxs;
         fxs.format("ecs::Simulation(%p)", sdata.get());
