@@ -222,6 +222,8 @@ class EcsEditor(ComponentizedApplication):
     self.refl_model = lev2.ui.ReflectionPropertySheetModel()
     self.propsheet.model = self.refl_model
     self.propsheet.onPropertyChanged(self._onPropertyChanged)
+    self.propsheet.onRequestCustomEditor(self._onRequestCustomEditor)
+    self._curve_editor = None
 
   def _onPropertyChanged(self, key, value):
     """Called when any property is edited in the property sheet."""
@@ -233,6 +235,36 @@ class EcsEditor(ComponentizedApplication):
     elif "/assetpath" in key:
       # Asset path changed — recreate simulation to reload drawables
       self._requestRebuild()
+
+  def _onRequestCustomEditor(self, key, editor_id):
+    if editor_id == "transformcurveeditor":
+      self._openTransformCurveEditor()
+
+  def _openTransformCurveEditor(self):
+    if self._selected_object is None:
+      return
+    curve = getattr(self._selected_object, 'curve', None)
+    if curve is None:
+      return
+
+    # Close existing editor if open
+    if self._curve_editor is not None:
+      self._closeTransformCurveEditor()
+
+    top = self.ezapp.topLayoutGroup
+    h = int(top.height * 0.25)
+    y = top.height - h
+
+    editor = lev2.ui.TransformCurveEditor.wfactory(["curve_editor", curve])
+    editor.onClose = lambda: self._closeTransformCurveEditor()
+    editor.onCurveChanged = lambda: self._requestRebuild()
+    self._curve_editor = editor
+
+    self.uicontext.pushOverlay(editor, 0, y, top.width, h, dismiss_on_click_outside=False)
+
+  def _closeTransformCurveEditor(self):
+    self.uicontext.popOverlay()
+    self._curve_editor = None
 
   ##############################################################################
   # GPU Init — one-time setup (reusable objects + viewport bindings)

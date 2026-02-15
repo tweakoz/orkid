@@ -92,6 +92,10 @@ HandlerResult Context::handleEvent(event_constptr_t ev) {
           event_in_overlay = true;
           // Route to this overlay widget
           rval = w->OnUiEvent(ev);
+          // Set push target so DRAG events in Phase 2 route to this overlay widget
+          if (ev->_eventcode == EventCode::PUSH || ev->_eventcode == EventCode::DOUBLECLICK) {
+            _evpushtarget = w;
+          }
           break;
         }
       }
@@ -136,8 +140,10 @@ HandlerResult Context::handleEvent(event_constptr_t ev) {
         _prevtime = curtime;
         return rval;
       }
-      // Click outside all overlays: dismiss
-      dismissAllOverlays();
+      // Click outside all overlays: check dismiss policy
+      if (!_overlay_stack.empty() && _overlay_stack.back()._dismiss_on_click_outside) {
+        dismissAllOverlays();
+      }
       rval.setHandled(nullptr);
       _prev_click_time = curtime;
       _prevevent = *ev;

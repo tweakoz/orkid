@@ -29,6 +29,7 @@
 #include <ork/lev2/ui/colorswatch.h>
 #include <ork/lev2/ui/imgview.h>
 #include <ork/lev2/ui/graphview.h>
+#include <ork/lev2/ui/transformcurveeditor.h>
 #include <ork/lev2/ui/logger_group.h>
 #include <ork/lev2/ui/logger_ui_backend.h>
 #include <ork/lev2/ui/ged/ged_surface.h>
@@ -149,10 +150,12 @@ void pyinit_ui(py::module& module_lev2) {
               })
           .def(
               "pushOverlay",
-              [](ui::context_ptr_t uictx, ui::widget_ptr_t widget, int x, int y, int w, int h) {
-                uictx->pushOverlay(widget, x, y, w, h);
+              [](ui::context_ptr_t uictx, ui::widget_ptr_t widget, int x, int y, int w, int h,
+                 bool dismiss_on_click_outside) {
+                uictx->pushOverlay(widget, x, y, w, h, dismiss_on_click_outside);
               },
-              py::arg("widget"), py::arg("x"), py::arg("y"), py::arg("w"), py::arg("h"))
+              py::arg("widget"), py::arg("x"), py::arg("y"), py::arg("w"), py::arg("h"),
+              py::arg("dismiss_on_click_outside") = true)
           .def("popOverlay", [](ui::context_ptr_t uictx) { uictx->popOverlay(); })
           .def("dismissAllOverlays", [](ui::context_ptr_t uictx) { uictx->dismissAllOverlays(); })
           .def("hasOverlays", [](ui::context_ptr_t uictx) -> bool { return uictx->hasOverlays(); })
@@ -3364,6 +3367,54 @@ void pyinit_ui(py::module& module_lev2) {
               py::arg("y"),
               py::arg("on_selected") = py::none());
   type_codec->registerStdCodec<ui::dropdown_menu_ptr_t>(dropdown_menu_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // TransformCurveEditor
+  auto transformcurveeditor_type = //
+      py::class_<ui::TransformCurveEditor, ui::Widget, ui::transformcurveeditor_ptr_t>(uimodule, "TransformCurveEditor")
+          .def_static(
+              "wfactory",
+              [type_codec](py::list py_args) -> ui::transformcurveeditor_ptr_t { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name = decoded_args[0].get<std::string>();
+                auto curve = decoded_args[1].get<math::transformcurve_ptr_t>();
+                return std::make_shared<ui::TransformCurveEditor>(name, curve);
+              })
+          .def_property(
+              "onClose",
+              [](ui::transformcurveeditor_ptr_t ed) -> py::object { return py::none(); },
+              [](ui::transformcurveeditor_ptr_t ed, py::object callback) {
+                if (callback.is_none()) {
+                  ed->_onClose = nullptr;
+                } else {
+                  auto safe = python::gil_safe_pyobj(callback);
+                  ed->_onClose = [safe]() {
+                    py::gil_scoped_acquire acquire_gil;
+                    auto fn = safe.valueAs<py::object>();
+                    (*fn)();
+                  };
+                }
+              })
+          .def_property(
+              "onCurveChanged",
+              [](ui::transformcurveeditor_ptr_t ed) -> py::object { return py::none(); },
+              [](ui::transformcurveeditor_ptr_t ed, py::object callback) {
+                if (callback.is_none()) {
+                  ed->_onCurveChanged = nullptr;
+                } else {
+                  auto safe = python::gil_safe_pyobj(callback);
+                  ed->_onCurveChanged = [safe]() {
+                    py::gil_scoped_acquire acquire_gil;
+                    auto fn = safe.valueAs<py::object>();
+                    (*fn)();
+                  };
+                }
+              })
+          .def("autoFitRanges", [](ui::transformcurveeditor_ptr_t ed) { ed->autoFitRanges(); })
+          .def_property(
+              "selectedPointIndex",
+              [](ui::transformcurveeditor_ptr_t ed) -> int { return ed->_selectedPointIndex; },
+              [](ui::transformcurveeditor_ptr_t ed, int idx) { ed->_selectedPointIndex = idx; });
+  type_codec->registerStdCodec<ui::transformcurveeditor_ptr_t>(transformcurveeditor_type);
   /////////////////////////////////////////////////////////////////////////////////
   pyinit_ui_layout(uimodule);
   pyinit_ui_ged(uimodule);
