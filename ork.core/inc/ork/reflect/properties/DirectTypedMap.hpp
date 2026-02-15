@@ -35,20 +35,45 @@ template <typename MapType> const MapType& DirectTypedMap<MapType>::GetMap(objec
 template <typename MapType> //
 void DirectTypedMap<MapType>::insertDefaultElement(object_ptr_t obj,
                                                     map_abstract_item_t key) const {
-
+  SvarDecoder<key.ksize> decoder;
+  auto typed_key_attempt = decoder.template decode<KeyType>(key);
+  OrkAssert(typed_key_attempt);
+  MapType& the_map = obj.get()->*mProperty;
+  the_map.insert(std::make_pair(typed_key_attempt.value(), ValueType()));
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
 void DirectTypedMap<MapType>::removeElement(object_ptr_t obj,
                                             map_abstract_item_t key) const {
-
+  SvarDecoder<key.ksize> decoder;
+  auto typed_key_attempt = decoder.template decode<KeyType>(key);
+  OrkAssert(typed_key_attempt);
+  MapType& the_map = obj.get()->*mProperty;
+  auto it = the_map.find(typed_key_attempt.value());
+  if (it != the_map.end()) {
+    the_map.erase(it);
+  }
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
 void DirectTypedMap<MapType>::setElement(object_ptr_t obj, //
                                          map_abstract_item_t key, //
                                          map_abstract_item_t val) const { //
-
+  SvarDecoder<key.ksize> key_decoder;
+  auto typed_key_attempt = key_decoder.template decode<KeyType>(key);
+  OrkAssert(typed_key_attempt);
+  MapType& the_map = obj.get()->*mProperty;
+  if constexpr (sizeof(ValueType) <= val.ksize) {
+    SvarDecoder<val.ksize> val_decoder;
+    auto typed_val_attempt = val_decoder.template decode<ValueType>(val);
+    OrkAssert(typed_val_attempt);
+    auto it = the_map.find(typed_key_attempt.value());
+    if (it != the_map.end())
+      the_map.erase(it);
+    the_map.insert(std::make_pair(typed_key_attempt.value(), typed_val_attempt.value()));
+  } else {
+    OrkAssert(false); // ValueType too large for abstract map interface
+  }
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType>

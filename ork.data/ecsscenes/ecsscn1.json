@@ -19,27 +19,12 @@
             "AllowSleeping": false,
             "AngularDamping": 0.5,
             "Disable": false,
-            "ForceControllers": {
-             "item-0": {
-              "object": {
-               "class": "DirectionalForceData",
-               "uuid": "1116da28-d144-49fd-8f1b-3ac1981e713e",
-               "properties": {
-                "Direction": [
-                 0.0,
-                 0.9999999403953552,
-                 0.0
-                ],
-                "Force": 0.040000032633543015
-               }
-              }
-             }
-            },
+            "ForceControllers": {},
             "Friction": 0.10000000894069672,
             "IsKinematic": false,
             "LinearDamping": 0.5,
             "Mass": 0.6000000238418579,
-            "Restitution": 1.1799999475479126,
+            "Restitution": 0.5099999904632568,
             "Shape": {
              "object": {
               "class": "EcsBulletShapeSphereData",
@@ -106,22 +91,7 @@
             "AllowSleeping": false,
             "AngularDamping": 1.1175870895385742e-8,
             "Disable": false,
-            "ForceControllers": {
-             "item-0": {
-              "object": {
-               "class": "DirectionalForceData",
-               "uuid": "3e9e3c8c-16c4-47a4-91b7-81b67c8d8cd2",
-               "properties": {
-                "Direction": [
-                 0.0,
-                 -1.0,
-                 0.0
-                ],
-                "Force": 0.5699999928474426
-               }
-              }
-             }
-            },
+            "ForceControllers": {},
             "Friction": 0.6000000238418579,
             "IsKinematic": false,
             "LinearDamping": 0.09000001102685928,
@@ -168,6 +138,44 @@
                 },
                 "LayerName": "std_forward",
                 "NodeName": "N2"
+               }
+              }
+             },
+             "item-1": {
+              "object": {
+               "class": "SceneGraphNodeItemData",
+               "uuid": "984ffdd5-16d3-4acb-bc11-0c8654ea1acd",
+               "properties": {
+                "DrawableData": {
+                 "object": {
+                  "class": "PointLightData",
+                  "uuid": "5dc2ba0e-607c-4b44-a211-ddaf572120ea",
+                  "properties": {
+                   "Falloff": 1.0,
+                   "Radius": 1.0,
+                   "Color": [
+                    -3.6999998092651367,
+                    7.6999993324279785,
+                    0.0
+                   ],
+                   "Decal": false,
+                   "Intensity": 4.360002040863037,
+                   "ShadowBias": 0.0020000000949949026,
+                   "ShadowBlur": 0.0,
+                   "ShadowCaster": false,
+                   "ShadowMapSize": 1024,
+                   "ShadowSamples": 1,
+                   "ModColor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                   ]
+                  }
+                 }
+                },
+                "LayerName": "",
+                "NodeName": ""
                }
               }
              }
@@ -238,12 +246,12 @@
                    "Falloff": 1.0,
                    "Radius": 1.0,
                    "Color": [
-                    2.5999999046325684,
-                    2.239999771118164,
-                    0.0
+                    1.0,
+                    1.0,
+                    1.0
                    ],
                    "Decal": false,
-                   "Intensity": 25.889997482299805,
+                   "Intensity": 136.2899932861328,
                    "ShadowBias": 0.0020000000949949026,
                    "ShadowBlur": 0.0,
                    "ShadowCaster": false,
@@ -356,8 +364,8 @@
                  ],
                  "translation": [
                   1.0018281936645508,
-                  3.7433645725250244,
-                  -1.1251561641693115
+                  9.794923782348633,
+                  2.1079719066619873
                  ],
                  "uniformScale": 1.0
                 }
@@ -407,7 +415,7 @@
                  ],
                  "translation": [
                   2.692990303039551,
-                  1.0,
+                  3.7268564701080322,
                   4.369039535522461
                  ],
                  "uniformScale": 1.0
@@ -458,7 +466,7 @@
                  ],
                  "translation": [
                   2.78144907951355,
-                  3.5571236610412598,
+                  7.078341960906982,
                   3.443563938140869
                  ],
                  "uniformScale": 1.0
@@ -486,15 +494,15 @@
         "Debug": false,
         "ExpGravity": [
          0.0,
-         -9.800000190734863,
+         0.0,
          0.0
         ],
         "LinGravity": [
          0.0,
-         0.0,
+         -2.3399999141693115,
          0.0
         ],
-        "SimulationRate": 240.0,
+        "SimulationRate": 400.0,
         "TimeScale": 1.0
        }
       }

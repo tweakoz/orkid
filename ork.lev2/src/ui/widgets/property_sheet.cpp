@@ -306,12 +306,15 @@ void PropertyRow::DoDraw(drawevent_constptr_t drwev) {
       theme->drawTriangle(tri_x, tri_y, tri_size, tri_size, drwev, &tri_style, rotation);
     }
 
-    // Draw [+][-] buttons for mutable map properties (even if empty)
+    // Draw [+][-] buttons for mutable map properties (right-aligned)
     if (_is_map_property && !_is_map_const) {
-      const int btn_size = 9;
+      const int btn_size = 12;
       const int btn_spacing = 4;
+      const int btn_margin = 8;
       int btn_y = iy1 + (_geometry._h - btn_size) / 2;
-      int btn_x = ix1 + indent + _indent_width + btn_spacing;
+      int btn2_right = ix1 + _geometry._w - btn_margin;
+      int btn2_x_draw = btn2_right - btn_size;
+      int btn_x = btn2_x_draw - btn_spacing - btn_size;
 
       defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::ALPHA);
       defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
@@ -337,7 +340,7 @@ void PropertyRow::DoDraw(drawevent_constptr_t drwev) {
       tgt->PopModColor();
 
       // [-] button - outline box with horizontal line
-      int btn2_x = btn_x + btn_size + btn_spacing;
+      int btn2_x = btn2_x_draw;
       fvec4 btn2_color(0.8f, 0.5f, 0.5f, 1.0f);
       tgt->PushModColor(btn2_color);
       defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
@@ -362,12 +365,6 @@ void PropertyRow::DoDraw(drawevent_constptr_t drwev) {
       tgt->PushModColor(_label_color);
       lev2::FontMan::beginTextBlock(tgt, _label.length());
       int label_x = ix1 + indent + (_has_children ? _indent_width : 4);
-      // Shift label right if map buttons are present
-      if (_is_map_property && !_is_map_const) {
-        const int btn_size = 9;
-        const int btn_spacing = 4;
-        label_x += (btn_size + btn_spacing) * 2 + btn_spacing;
-      }
       int text_y = iy1 + (_geometry._h - font->description().miAdvanceHeight) / 2;
       lev2::FontMan::DrawText(tgt, label_x, text_y, _label.c_str());
       lev2::FontMan::endTextBlock(tgt);
@@ -439,14 +436,15 @@ HandlerResult PropertyRow::DoOnUiEvent(event_constptr_t ev) {
 
     int indent = _depth * _indent_width;
 
-    // Check if click is on map buttons [+] or [-]
+    // Check if click is on map buttons [+] or [-] (right-aligned)
     if (_is_map_property && !_is_map_const) {
-      const int btn_size = 9;
+      const int btn_size = 12;
       const int btn_spacing = 4;
+      const int btn_margin = 8;
       int btn_y_top = (_geometry._h - btn_size) / 2;
       int btn_y_bot = btn_y_top + btn_size;
-      int btn1_x = indent + _indent_width + btn_spacing;
-      int btn2_x = btn1_x + btn_size + btn_spacing;
+      int btn2_x = _geometry._w - btn_margin - btn_size;
+      int btn1_x = btn2_x - btn_spacing - btn_size;
 
       if (localY >= btn_y_top && localY <= btn_y_bot) {
         // [+] button
@@ -1422,6 +1420,8 @@ void PropertySheet::_addRowsRecursive(const std::string& parent_key, int depth, 
         auto tree = DropdownMenu::buildTreeFromPaths(names);
         auto menu = std::make_shared<DropdownMenu>("remove_" + key, tree->root());
         menu->_onSelected = [this, key](std::string selected) {
+          if (!selected.empty() && selected[0] == '/')
+            selected = selected.substr(1);
           _model->removeMapElement(key, selected);
           rebuild();
           expandAll();
@@ -1537,14 +1537,15 @@ void PropertySheet::_addRowsRecursive(const std::string& parent_key, int depth, 
     if (has_children) {
       if (is_map) {
         // Map properties: always show children (single or all mode)
-        auto& mvs = _map_view_states[key];
+        // Use is_expanded (from _expanded_keys) as source of truth
         auto map_children = _model->getChildren(key);
-        if (mvs.single_mode && !map_children.empty()) {
-          // Single mode: show only selected child
+        if (!is_expanded && !map_children.empty()) {
+          // Single mode (triangle right): show only selected child
+          auto& mvs = _map_view_states[key];
           int idx = std::clamp(mvs.selected_index, 0, int(map_children.size()) - 1);
           _addSingleChildRecursive(map_children[idx], depth + 1, y_offset, row_index);
         } else {
-          // All mode
+          // All mode (triangle down): show all children
           _addRowsRecursive(key, depth + 1, y_offset, row_index);
         }
       } else if (is_expanded) {
