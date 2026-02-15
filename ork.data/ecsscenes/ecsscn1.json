@@ -103,8 +103,8 @@
            "class": "EcsBulletObjectComponentData",
            "uuid": "8317c929-b347-4605-8112-74f0beb29f71",
            "properties": {
-            "AllowSleeping": true,
-            "AngularDamping": 0.5,
+            "AllowSleeping": false,
+            "AngularDamping": 1.1175870895385742e-8,
             "Disable": false,
             "ForceControllers": {
              "item-0": {
@@ -117,14 +117,14 @@
                  -1.0,
                  0.0
                 ],
-                "Force": 0.14000003039836884
+                "Force": 0.5699999928474426
                }
               }
              }
             },
-            "Friction": 0.5,
+            "Friction": 0.6000000238418579,
             "IsKinematic": false,
-            "LinearDamping": 0.5,
+            "LinearDamping": 0.09000001102685928,
             "Mass": 0.09000001847743988,
             "Restitution": 0.5,
             "Shape": {
@@ -197,12 +197,12 @@
             "Friction": 0.5,
             "IsKinematic": false,
             "LinearDamping": 0.5,
-            "Mass": 2.2351741790771484e-8,
+            "Mass": 0.0,
             "Restitution": 0.5,
             "Shape": {
              "object": {
               "class": "EcsBulletShapePlaneData",
-              "uuid": "7a4deb34-0efa-4f26-b533-dde78d4b7934",
+              "uuid": "b5637f76-5dbb-49bb-8e8e-de54c901a0bf",
               "properties": {}
              }
             }
@@ -213,7 +213,7 @@
        }
       }
      },
-     "ArchRedLight": {
+     "ArchLight": {
       "object": {
        "class": "EcsArchetype",
        "uuid": "6dec691a-c8a6-4888-b5f4-ed15c3f84501",
@@ -268,6 +268,57 @@
           }
          }
         }
+       }
+      }
+     },
+     "spawner-ground": {
+      "object": {
+       "class": "EcsSpawnData",
+       "uuid": "02748a14-833c-42e7-af08-a982329721eb",
+       "properties": {
+        "Archetype": {
+         "object-ref": {
+          "uuid-ref": "73bda066-8ba3-45c6-b813-7aca8de18e61"
+         }
+        },
+        "UserProperties": {},
+        "DagNodeData": {
+         "object": {
+          "class": "EcsDagNodeData",
+          "uuid": "0fd332a6-0890-4d8a-9e93-822408a0ce49",
+          "properties": {
+           "TransformNode": {
+            "object": {
+             "class": "TransformNode",
+             "uuid": "e418b15f-621e-495e-85fe-e71de643db1e",
+             "properties": {
+              "transform": {
+               "object": {
+                "class": "DecompTransform",
+                "uuid": "23de7df6-0735-4a6e-b1ac-d602287d0b04",
+                "properties": {
+                 "rotation": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  1.0
+                 ],
+                 "translation": [
+                  0.0,
+                  0.0,
+                  0.0
+                 ],
+                 "uniformScale": 1.0
+                }
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        },
+        "Parent": "scene"
        }
       }
      },
