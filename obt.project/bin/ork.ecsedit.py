@@ -92,7 +92,7 @@ class EcsEditor(ComponentizedApplication):
     # Left dock (split from viewport)
     left_dock_item = lg.split(
       layout=viewport_dock_item.layout,
-      proportion=0.22, placement=tokens.LEFT, margin=2,
+      proportion=0.35, placement=tokens.LEFT, margin=2,
       uiclass=lev2.ui.DockablePanel, args=["left_dock"])
     self.left_dock = left_dock_item.widget
     self.left_dock.titlebar_color = vec4(0.2, 0.15, 0.2, 1)
@@ -119,7 +119,7 @@ class EcsEditor(ComponentizedApplication):
     # Property sheet dock (split from left dock, bottom portion)
     propsheet_dock_item = lg.split(
       layout=left_dock_item.layout,
-      proportion=0.55, placement=tokens.BOTTOM, margin=2,
+      proportion=0.4, placement=tokens.BOTTOM, margin=2,
       uiclass=lev2.ui.DockablePanel, args=["propsheet_dock"])
     self.propsheet_dock = propsheet_dock_item.widget
     self.propsheet_dock.titlebar_color = vec4(0.2, 0.2, 0.15, 1)
@@ -395,16 +395,8 @@ class EcsEditor(ComponentizedApplication):
 
     self._edit_sys_ref = self.edit_controller.findSystem("SceneGraphSystem")
 
-    # gpuInit the lighting manager on the first render frame
-    sg = self.scenegraph
     controller = self.edit_controller
-    lm_inited = [False]
-    def _editPreRender(ctx):
-      if not lm_inited[0]:
-        sg.lightingmanager.gpuInit(ctx)
-        lm_inited[0] = True
-      controller.gpuRender(ctx)
-    self.sgv.onPreRender = _editPreRender
+    self.sgv.onPreRender = lambda ctx: controller.gpuRender(ctx)
 
   def _requestRebuild(self):
     """Request a deferred edit-simulation rebuild (consumed in _onUpdate)."""
@@ -671,16 +663,8 @@ class EcsEditor(ComponentizedApplication):
 
       self._play_sys_ref = self.play_controller.findSystem("SceneGraphSystem")
 
-      # gpuInit the lighting manager on the first render frame
-      sg = self.scenegraph
       controller = self.play_controller
-      lm_inited = [False]
-      def _playPreRender(ctx):
-        if not lm_inited[0]:
-          sg.lightingmanager.gpuInit(ctx)
-          lm_inited[0] = True
-        controller.gpuRender(ctx)
-      self.sgv.onPreRender = _playPreRender
+      self.sgv.onPreRender = lambda ctx: controller.gpuRender(ctx)
 
       self._mode = self.PLAYING
       self._updateTransportUI()

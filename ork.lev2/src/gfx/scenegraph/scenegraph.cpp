@@ -148,6 +148,14 @@ void Scene::gpuInit(Context* ctx) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void Scene::gpuUpdate(Context* ctx) {
+  if (_lightManager && _lightManager->_needs_gpu_init) {
+    _lightManager->gpuInit(ctx);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void Scene::gpuExit(Context* ctx) {
   _sgpickbuffer     = nullptr;
   _compositorImpl   = nullptr;

@@ -12,10 +12,15 @@
 #include <ork/lev2/ui/event.h>
 #include <ork/lev2/ui/group.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
+#include <set>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::ui::SceneGraphViewport, "ui::SceneGraphViewport");
 
 namespace ork { namespace ui {
+
+///////////////////////////////////////////////////////////////////////////////
+
+static std::set<SceneGraphViewport*> _active_sgviewports;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -33,6 +38,24 @@ SceneGraphViewport::SceneGraphViewport(const std::string& name, int x, int y, in
   _embeddedUiContext->_id = "sgvp_embedded";
   // The context needs a top group to route events through
   _embeddedUiContext->makeTop<Group>("embedded_root", 0, 0, 1, 1);
+
+  _active_sgviewports.insert(this);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+SceneGraphViewport::~SceneGraphViewport() {
+  _active_sgviewports.erase(this);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void SceneGraphViewport::gpuUpdateAll(lev2::Context* ctx) {
+  for (auto* vp : _active_sgviewports) {
+    if (vp->_scenegraph) {
+      vp->_scenegraph->gpuUpdate(ctx);
+    }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -250,6 +250,7 @@ struct Scene {
   void _renderWithAcquiredDrawQueueForRendering(acqdrawbuffer_constptr_t acqbuf);
 
   void gpuInit(Context* ctx);
+  void gpuUpdate(Context* ctx);
   void gpuExit(Context* ctx);
 
   void pickWithRay(fray3_constptr_t ray, SgPickBuffer::callback_t callback);

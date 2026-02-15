@@ -20,11 +20,16 @@ struct SceneGraphViewport : public Viewport {
   RttiDeclareAbstract(SceneGraphViewport, Viewport);
 public:
   SceneGraphViewport(const std::string& name, int x=0, int y=0, int w=0, int h=0);
+  ~SceneGraphViewport();
   void DoRePaintSurface(ui::drawevent_constptr_t drwev) final;
   void _doGpuInit(lev2::Context* pTARG) final;
   void forkDB();
   void bindSceneGraph(lev2::scenegraph::scene_ptr_t sg);
   void bindManipController(lev2::editor::manipcontroller_ptr_t mc);
+
+  /// Call gpuUpdate on all active SceneGraphViewport scenegraphs.
+  /// Must be called from outside any render pass (e.g., onGpuUpdate phase).
+  static void gpuUpdateAll(lev2::Context* ctx);
 
   lev2::scenegraph::scene_ptr_t _scenegraph;
   lev2::editor::manipcontroller_ptr_t _manipController;

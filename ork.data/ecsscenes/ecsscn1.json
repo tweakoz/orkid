@@ -20,10 +20,10 @@
             "AngularDamping": 0.5,
             "Disable": false,
             "ForceControllers": {},
-            "Friction": 0.10000000894069672,
+            "Friction": 0.5,
             "IsKinematic": false,
             "LinearDamping": 0.5,
-            "Mass": 0.6000000238418579,
+            "Mass": 1.0,
             "Restitution": 0.5099999904632568,
             "Shape": {
              "object": {
@@ -68,6 +68,44 @@
                 "NodeName": "X1"
                }
               }
+             },
+             "item-1": {
+              "object": {
+               "class": "SceneGraphNodeItemData",
+               "uuid": "3971b4a1-3368-41be-a56b-6f0f394239ca",
+               "properties": {
+                "DrawableData": {
+                 "object": {
+                  "class": "PointLightData",
+                  "uuid": "87465569-60c7-48c9-936e-51763608c143",
+                  "properties": {
+                   "Falloff": 1.0,
+                   "Radius": 1.0,
+                   "Color": [
+                    0.0,
+                    0.0,
+                    1.0
+                   ],
+                   "Decal": false,
+                   "Intensity": 33.97999954223633,
+                   "ShadowBias": 0.0020000000949949026,
+                   "ShadowBlur": 0.0,
+                   "ShadowCaster": false,
+                   "ShadowMapSize": 1024,
+                   "ShadowSamples": 1,
+                   "ModColor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                   ]
+                  }
+                 }
+                },
+                "LayerName": "std_forward",
+                "NodeName": "L3"
+               }
+              }
              }
             }
            }
@@ -89,13 +127,13 @@
            "uuid": "8317c929-b347-4605-8112-74f0beb29f71",
            "properties": {
             "AllowSleeping": false,
-            "AngularDamping": 1.1175870895385742e-8,
+            "AngularDamping": 0.5,
             "Disable": false,
             "ForceControllers": {},
-            "Friction": 0.6000000238418579,
+            "Friction": 0.5,
             "IsKinematic": false,
             "LinearDamping": 0.09000001102685928,
-            "Mass": 0.09000001847743988,
+            "Mass": 1.0,
             "Restitution": 0.5,
             "Shape": {
              "object": {
@@ -247,8 +285,8 @@
                    "Radius": 1.0,
                    "Color": [
                     1.0,
-                    1.0,
-                    1.0
+                    -0.15999996662139893,
+                    -0.26999998092651367
                    ],
                    "Decal": false,
                    "Intensity": 136.2899932861328,
@@ -363,9 +401,9 @@
                   1.0
                  ],
                  "translation": [
-                  1.0018281936645508,
-                  9.794923782348633,
-                  2.1079719066619873
+                  0.0,
+                  5.840345859527588,
+                  0.0
                  ],
                  "uniformScale": 1.0
                 }
@@ -416,7 +454,7 @@
                  "translation": [
                   2.692990303039551,
                   3.7268564701080322,
-                  4.369039535522461
+                  1.54718017578125
                  ],
                  "uniformScale": 1.0
                 }
@@ -466,8 +504,8 @@
                  ],
                  "translation": [
                   2.78144907951355,
-                  7.078341960906982,
-                  3.443563938140869
+                  11.277647018432617,
+                  0.34155142307281494
                  ],
                  "uniformScale": 1.0
                 }
@@ -499,7 +537,7 @@
         ],
         "LinGravity": [
          0.0,
-         -2.3399999141693115,
+         -6.769999980926514,
          0.0
         ],
         "SimulationRate": 400.0,

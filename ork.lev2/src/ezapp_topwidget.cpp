@@ -1,5 +1,6 @@
 #include <ork/lev2/ezapp.h>
 #include <ork/lev2/ui/viewport.h>
+#include <ork/lev2/ui/viewport_scenegraph.h>
 #include <ork/lev2/ui/layoutgroup.inl>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/renderer/irendertarget.h>
@@ -90,6 +91,9 @@ void EzTopWidget::enableUiDraw() {
     draw_buffer->_RCFD      = rcfd;
     auto mutable_drwev      = std::const_pointer_cast<ui::DrawEvent>(drwev);
     mutable_drwev->_acqdbuf = draw_buffer;
+    ////////////////////////////////////////////////////
+    // GPU update for scenegraph viewports (needs command buffer, but no render pass)
+    ui::SceneGraphViewport::gpuUpdateAll(context);
     ////////////////////////////////////////////////////
     if(ezapp->_mainWindow->_onGpuPreFrame){
       ezapp->_mainWindow->_onGpuPreFrame(context);
