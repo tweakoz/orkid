@@ -243,6 +243,9 @@ class EcsEditor(ComponentizedApplication):
     self.sgv.bindManipController(self.manip_controller)
     self.sgv.forkDB()
 
+    # App-level key shortcuts (Phase 1 — before widget routing)
+    self.uicontext.app_preview_handler = lambda ev: self._onAppKeyShortcut(ev)
+
     # Outliner model
     self.outliner_model = EcsOutlinerModel(self)
     self.outliner.model = self.outliner_model
@@ -793,6 +796,29 @@ class EcsEditor(ComponentizedApplication):
     handled = self.uicam.uiEventHandler(uievent)
     if handled:
       self.uicam.updateMatrices()
+    return lev2.ui.HandlerResult()
+
+  ##############################################################################
+  # App-level key shortcuts
+  ##############################################################################
+
+  def _onAppKeyShortcut(self, uievent):
+    """App-level key shortcuts (Phase 1 — runs before widget routing)."""
+    if uievent.code == tokens.KEY_DOWN.hashed and uievent.super:
+      kc = uievent.keycode
+      if kc == 262:  # Command+Right Arrow → Play
+        if self._mode == self.EDIT:
+          self.btn_play.toggled = True
+          self._startPlay()
+        result = lev2.ui.HandlerResult()
+        result.setHandler(self.sgv)
+        return result
+      elif kc == 264:  # Command+Down Arrow → Stop
+        if self._mode != self.EDIT:
+          self._stopPlay()
+        result = lev2.ui.HandlerResult()
+        result.setHandler(self.sgv)
+        return result
     return lev2.ui.HandlerResult()
 
   ##############################################################################

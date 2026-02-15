@@ -155,7 +155,29 @@ void pyinit_ui(py::module& module_lev2) {
               py::arg("widget"), py::arg("x"), py::arg("y"), py::arg("w"), py::arg("h"))
           .def("popOverlay", [](ui::context_ptr_t uictx) { uictx->popOverlay(); })
           .def("dismissAllOverlays", [](ui::context_ptr_t uictx) { uictx->dismissAllOverlays(); })
-          .def("hasOverlays", [](ui::context_ptr_t uictx) -> bool { return uictx->hasOverlays(); });
+          .def("hasOverlays", [](ui::context_ptr_t uictx) -> bool { return uictx->hasOverlays(); })
+          .def_property(
+              "app_preview_handler",
+              [](ui::context_ptr_t uictx) -> py::object { return py::none(); },
+              [](ui::context_ptr_t uictx, py::object callback) {
+                if (callback.is_none()) {
+                  uictx->_appPreviewHandler = nullptr;
+                } else {
+                  uictx->_appPreviewHandler = [callback](ui::event_constptr_t ev) -> ui::HandlerResult {
+                    ui::HandlerResult rval;
+                    py::gil_scoped_acquire acquire;
+                    try {
+                      auto pyrval = callback(ev);
+                      if (py::isinstance<ui::HandlerResult>(pyrval)) {
+                        rval = py::cast<ui::HandlerResult>(pyrval);
+                      }
+                    } catch (const py::error_already_set& e) {
+                      printf("app_preview_handler error: %s\n", e.what());
+                    }
+                    return rval;
+                  };
+                }
+              });
   ;
   type_codec->registerStdCodec<ui::context_ptr_t>(uicontext_type);
   /////////////////////////////////////////////////////////////////////////////////
