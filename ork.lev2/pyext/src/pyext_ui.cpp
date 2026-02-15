@@ -783,6 +783,23 @@ void pyinit_ui(py::module& module_lev2) {
                   }
                   return rval;
                 };
+              })
+          //////////////////////////////////
+          .def_property(
+              "onPreRender",
+              [](uisgviewport_ptr_t sgview) -> py::object { //
+                return py::none();
+              },
+              [](uisgviewport_ptr_t sgview, py::object callback) { //
+                sgview->_uservars->makeValueForKey<py::object>("_hold_prerender_callback", callback);
+                sgview->_preRenderCallback = [sgview](lev2::Context* ctx) {
+                  py::gil_scoped_acquire acquire_gil;
+                  auto cb = sgview->_uservars->typedValueForKey<py::object>("_hold_prerender_callback").value();
+                  if (cb) {
+                    auto pyctx = python::unmanaged_ptr<lev2::Context>(ctx);
+                    cb(pyctx);
+                  }
+                };
               });
   type_codec->registerStdCodec<uisgviewport_ptr_t>(sgviewport_type);
   /////////////////////////////////////////////////////////////////////////////////

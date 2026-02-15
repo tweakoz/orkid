@@ -382,6 +382,16 @@ struct DrawableData : public ork::Object { // todo subclass reflection Object
     _doAttachSGDrawable(drw, SG);
   }
   virtual void _doAttachSGDrawable(drawable_ptr_t drw, scenegraph::scene_ptr_t SG) const {};
+
+  // Whether a single Drawable should be shared across all entities.
+  // True for instanced drawables (one SSBO, N instances).
+  // False for regular drawables (each entity gets its own Drawable).
+  virtual bool isSharedDrawable() const { return false; }
+
+  // Called to reload an existing drawable when this data object's properties change.
+  // Subclasses override to rebind assets, textures, etc. on the existing drawable.
+  virtual void reloadDrawable(drawable_ptr_t drw) const {}
+
   fvec4 _modcolor;
   rendervar_strmap_t _assetvars;
   varmap::varmap_ptr_t _vars;
@@ -397,6 +407,7 @@ struct ModelDrawableData : public DrawableData {
   }
   ModelDrawableData(AssetPath path);
   drawable_ptr_t createDrawable() const final;
+  void reloadDrawable(drawable_ptr_t drw) const override;
   AssetPath _assetpath;
   asset::vars_t _asset_vars;
 };
@@ -442,6 +453,8 @@ struct InstancedModelDrawableData : public DrawableData {
   }
   InstancedModelDrawableData(AssetPath path);
   drawable_ptr_t createDrawable() const final;
+  bool isSharedDrawable() const override { return true; }
+  void reloadDrawable(drawable_ptr_t drw) const override;
   void resize(size_t count) { _maxinstances=count; }
   AssetPath _assetpath;
   size_t _maxinstances = 0;
@@ -589,6 +602,7 @@ struct InstancedBillboardStringDrawableData : public DrawableData {
 
   InstancedBillboardStringDrawableData();
   drawable_ptr_t createDrawable() const final;
+  bool isSharedDrawable() const override { return true; }
   std::string _initialString;
   fvec3 _offset;
   fvec3 _upvec;

@@ -10,6 +10,8 @@
 #include <ork/ecs/datatable.h>
 
 ///////////////////////////////////////////////////////////////////////////////
+using ctx_t = ork::python::unmanaged_ptr<::ork::lev2::Context>;
+///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::ecs {
 void pyinit_simulation(py::module& module_ecs) {
@@ -28,6 +30,30 @@ void pyinit_simulation(py::module& module_ecs) {
           })
       .def("render", [](simulation_ptr_t sim, ui::drawevent_constptr_t drwev) { sim->render(drwev); })
       .def("sceneGraphSystem", [](simulation_ptr_t sim) -> pysgsystem_ptr_t { return pysgsystem_ptr_t(sim->findSystem<SceneGraphSystem>()); })
+      /////////////////////////////////////////////////////////////////////////////////
+      // SceneGraphSystem convenience accessors (avoid returning unmanaged_ptr to Python)
+      /////////////////////////////////////////////////////////////////////////////////
+      .def_property_readonly("sceneGraphScene", [](simulation_ptr_t sim) -> lev2::scenegraph::scene_ptr_t {
+        auto sg_sys = sim->findSystem<SceneGraphSystem>();
+        return sg_sys ? sg_sys->_scene : nullptr;
+      })
+      .def_property_readonly("sceneGraphDefaultLayer", [](simulation_ptr_t sim) -> lev2::scenegraph::layer_ptr_t {
+        auto sg_sys = sim->findSystem<SceneGraphSystem>();
+        return sg_sys ? sg_sys->_default_layer : nullptr;
+      })
+      .def("sceneGraphInitForEditMode", [](simulation_ptr_t sim, ctx_t ctx) {
+        auto sg_sys = sim->findSystem<SceneGraphSystem>();
+        if (sg_sys) sg_sys->initializeForEditMode(ctx.get());
+      })
+      .def("sceneGraphProcessRenderOps", [](simulation_ptr_t sim) {
+        auto sg_sys = sim->findSystem<SceneGraphSystem>();
+        if (sg_sys) sg_sys->processRenderOps();
+      })
+      .def("sceneGraphReloadDrawableData", [](simulation_ptr_t sim, lev2::drawabledata_ptr_t data) {
+        auto sg_sys = sim->findSystem<SceneGraphSystem>();
+        if (sg_sys) sg_sys->reloadDrawableData(data);
+      })
+      /////////////////////////////////////////////////////////////////////////////////
       .def(
           "start",
           [](simulation_ptr_t sim) {

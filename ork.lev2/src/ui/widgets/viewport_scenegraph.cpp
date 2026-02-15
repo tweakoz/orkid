@@ -60,7 +60,7 @@ void SceneGraphViewport::forkDB() {
 
 void SceneGraphViewport::bindSceneGraph(lev2::scenegraph::scene_ptr_t sg) {
   _scenegraph = sg;
-  if (sg->_params->hasKey("ssaa")) {
+  if (sg && sg->_params->hasKey("ssaa")) {
     auto& ssaa = sg->_params->valueForKey("ssaa");
     if (auto as_ssaa = ssaa.tryAs<int>()) {
       _supersample = as_ssaa.value();
@@ -84,6 +84,11 @@ void SceneGraphViewport::bindManipController(lev2::editor::manipcontroller_ptr_t
 ///////////////////////////////////////////////////////////////////////////////
 
 void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
+
+  // Pre-render callback (runs inside frame context)
+  if (_preRenderCallback) {
+    _preRenderCallback(drwev->GetTarget());
+  }
 
   if (_scenegraph) {
 
@@ -110,7 +115,8 @@ void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
       acqbuf                   = _override_acqdbuf;
     }
 
-    auto cimpl          = _scenegraph->_compositorImpl;
+    auto cimpl = _scenegraph->_compositorImpl;
+    if (!cimpl) return;
     cimpl->_camera_name = _cameraname;
     if (_decouple_from_ui_size) {
       cimpl->_compcontext->Resize(_decoupled_width, _decoupled_height);

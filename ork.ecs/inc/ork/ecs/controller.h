@@ -105,10 +105,13 @@ struct Controller {
 	///////////////////////////////////////////////////////////////////////////////
 
 	token_t declareToken(std::string name);
-	void createSimulation();
+	void createSimulation(varmap::varmap_ptr_t injected_varmap = nullptr);
+	void stageSimulation();
 	void startSimulation();
 	void stopSimulation();
 	void endSimulation();
+
+	simulation_ptr_t simulation() const;
 	void bindScene(scenedata_ptr_t scene);
 	void gpuInit(lev2::Context* ctx);
 	void gpuExit(lev2::Context* ctx);

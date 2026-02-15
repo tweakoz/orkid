@@ -168,6 +168,9 @@ struct SceneGraphSystem final : public System {
   ~SceneGraphSystem();
   ///////////////////////////////
   void _addStaticDrawable(std::string layername, lev2::drawable_ptr_t drw);
+  void reloadDrawableData(lev2::drawabledata_ptr_t data);
+  void processRenderOps();
+  void initializeForEditMode(lev2::Context* ctx);
   ///////////////////////////////
   void _onStageComponent(SceneGraphComponent* component);
   void _onUnstageComponent(SceneGraphComponent* component);

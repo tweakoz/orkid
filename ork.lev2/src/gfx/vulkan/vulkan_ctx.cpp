@@ -1045,6 +1045,11 @@ void VkContext::_doBeginFrame() {
     _readbackPerfQueries();
     _perfQueryPoolIndex = 1 - _perfQueryPoolIndex;
     _perfQueryNextSlot = 0;
+    // Batch-reset the entire write pool here (outside any render pass)
+    // so gpuPerfBlockBegin doesn't need to call vkCmdResetQueryPool
+    // (which is not allowed inside a render pass).
+    auto cmdbuf = primary_cb()->_vkcmdbuf;
+    vkCmdResetQueryPool(cmdbuf, _perfQueryPools[_perfQueryPoolIndex], 0, MAX_GPU_PERF_QUERIES * 2);
   }
 
   // Poll timeline semaphores
@@ -1950,7 +1955,7 @@ gpuperfblock_ptr_t VkContext::gpuPerfBlockBegin(const std::string& name) {
 
   auto pool = _perfQueryPools[_perfQueryPoolIndex];
   auto cmdbuf = primary_cb()->_vkcmdbuf;
-  vkCmdResetQueryPool(cmdbuf, pool, block->_begin_query, 2);
+  // Pool was batch-reset in _doBeginFrame — no per-query reset needed here.
   vkCmdWriteTimestamp(cmdbuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, pool, block->_begin_query);
 
   _perfPendingBlocks[_perfQueryPoolIndex].push_back(block);

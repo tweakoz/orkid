@@ -8,6 +8,8 @@
 #include "pyext.h"
 
 ///////////////////////////////////////////////////////////////////////////////
+using ctx_t = ork::python::unmanaged_ptr<::ork::lev2::Context>;
+///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::ecs {
 void pyinit_scenegraph(py::module& module_ecs) {
@@ -172,7 +174,27 @@ void pyinit_scenegraph(py::module& module_ecs) {
               })
           .def_property_readonly(
               "defaultLayer", [](pysgsystem_ptr_t sgsys) -> lev2::scenegraph::layer_ptr_t { return sgsys->_default_layer; })
-          .def_property_readonly("defaultCamera", [](pysgsystem_ptr_t sgsys) -> lev2::cameradata_ptr_t { return sgsys->_camera; });
+          .def_property_readonly("defaultCamera", [](pysgsystem_ptr_t sgsys) -> lev2::cameradata_ptr_t { return sgsys->_camera; })
+          .def_property_readonly(
+              "scene",
+              [](pysgsystem_ptr_t sgsys) -> lev2::scenegraph::scene_ptr_t {
+                return sgsys->_scene;
+              })
+          .def(
+              "reloadDrawableData",
+              [](pysgsystem_ptr_t sgsys, lev2::drawabledata_ptr_t data) {
+                sgsys->reloadDrawableData(data);
+              })
+          .def(
+              "processRenderOps",
+              [](pysgsystem_ptr_t sgsys) {
+                sgsys->processRenderOps();
+              })
+          .def(
+              "initializeForEditMode",
+              [](pysgsystem_ptr_t sgsys, ctx_t ctx) {
+                sgsys->initializeForEditMode(ctx.get());
+              });
   type_codec->registerStdCodec<pysgsystem_ptr_t>(sgsys_type);
   /////////////////////////////////////////////////////////////////////////////////
 } // void pyinit_scenegraph(py::module& module_ecs) {

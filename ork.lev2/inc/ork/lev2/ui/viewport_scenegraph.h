@@ -39,6 +39,10 @@ public:
   // Camera event handler (set by user, e.g., for EzUiCam)
   evhandler_t _camera_evhandler = nullptr;
 
+  // Pre-render callback (called at start of DoRePaintSurface, inside frame context)
+  using prerender_callback_t = std::function<void(lev2::Context*)>;
+  prerender_callback_t _preRenderCallback = nullptr;
+
   // Track when mouse is over an embedded UI surface
   bool _overUiSurface = false;
 

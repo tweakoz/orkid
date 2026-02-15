@@ -52,7 +52,7 @@ struct Simulation {
   typedef orklist<Component*> ComponentList;
   typedef orkset<Entity*> EntitySet;
 
-  Simulation(Controller* controller);
+  Simulation(Controller* controller, varmap::varmap_ptr_t injected_varmap = nullptr);
 
   ~Simulation();
 

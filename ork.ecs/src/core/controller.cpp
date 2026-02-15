@@ -484,10 +484,39 @@ void Controller::bindScene(scenedata_ptr_t scene) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Controller::createSimulation() {
+void Controller::createSimulation(varmap::varmap_ptr_t injected_varmap) {
   OrkAssert(_scenedata);
   logchan_controller->log("INSTANTIATING SIMULATION");
-  _simulation.atomicOp([this](simulation_ptr_t& unlocked) { unlocked = std::make_shared<Simulation>(this); });
+  _simulation.atomicOp([this, injected_varmap](simulation_ptr_t& unlocked) { unlocked = std::make_shared<Simulation>(this, injected_varmap); });
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+simulation_ptr_t Controller::simulation() const {
+  simulation_ptr_t rval;
+  const_cast<LockedResource<simulation_ptr_t>&>(_simulation)
+      .atomicOp([&](simulation_ptr_t& unlocked) { rval = unlocked; });
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Controller::stageSimulation() {
+  ork::opq::assertOnQueue2(opq::mainSerialQueue());
+  auto op = [this]() {
+    logchan_controller->log("STAGING SIMULATION (EDIT MODE)");
+    _simulation.atomicOp([](simulation_ptr_t& unlocked) {
+      unlocked->SetSimulationMode(ESimulationMode::EDIT);
+      unlocked->_serviceEventQueues();
+    });
+  };
+  opq::updateSerialQueue()->enqueue(op);
+  auto simevent      = std::make_shared<Event>();
+  simevent->_eventID = EventID::TRANSPORT_BARRIER;
+  auto TEV           = std::make_shared<impl::_TransportBarrier>();
+  TEV->_waitForState = ESimulationTransport::STAGED;
+  simevent->_payload.make<impl::transportbarrier_ptr_t>(TEV);
+  _enqueueEvent(simevent);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

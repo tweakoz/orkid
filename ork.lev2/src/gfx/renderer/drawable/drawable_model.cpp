@@ -46,6 +46,13 @@ drawable_ptr_t ModelDrawableData::createDrawable() const {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+void ModelDrawableData::reloadDrawable(drawable_ptr_t drw) const {
+  auto model_drw = std::dynamic_pointer_cast<ModelDrawable>(drw);
+  if (model_drw) {
+    model_drw->bindModelAsset(_assetpath);
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
 ModelDrawable::ModelDrawable(DrawableContainer* pent) {
   _drawable_type = "model"_crcu;
 }
@@ -117,12 +124,16 @@ void ModelDrawable::bindModelAsset( asset::loadrequest_ptr_t load_req){
 
   
   _asset = asset::AssetManager<XgmModelAsset>::load(load_req);
-  bindModel(_asset->_model.atomicCopy());
+  if (_asset) {
+    bindModel(_asset->_model.atomicCopy());
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ModelDrawable::bindModelAsset(xgmmodelassetptr_t asset) {
   _asset = asset;
-  bindModel(_asset->_model.atomicCopy());
+  if (_asset) {
+    bindModel(_asset->_model.atomicCopy());
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ModelDrawable::bindModel(xgmmodel_ptr_t model) {

@@ -172,6 +172,45 @@ void SceneGraphSystem::_addStaticDrawable(std::string layername, lev2::drawable_
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void SceneGraphSystem::reloadDrawableData(lev2::drawabledata_ptr_t data) {
+  _renderops.push([this, data]() {
+    std::unordered_set<lev2::Drawable*> already_reloaded;
+    _components.atomicOp([&](component_set_t& comps) {
+      for (auto* comp : comps) {
+        for (auto& [name, nitem] : comp->_nodeitems) {
+          if (nitem->_data && nitem->_data->_drawabledata == data) {
+            if (already_reloaded.insert(nitem->_drawable.get()).second) {
+              data->reloadDrawable(nitem->_drawable);
+            }
+          }
+        }
+      }
+    });
+    // Also check system-level node items
+    for (auto& [name, nitem] : _nodeitems) {
+      if (nitem->_data && nitem->_data->_drawabledata == data) {
+        if (already_reloaded.insert(nitem->_drawable.get()).second) {
+          data->reloadDrawable(nitem->_drawable);
+        }
+      }
+    }
+  });
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void SceneGraphSystem::processRenderOps() {
+  _rt_process();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void SceneGraphSystem::initializeForEditMode(lev2::Context* ctx) {
+  _onGpuInit(_simulation, ctx);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void SceneGraphSystem::_instantiateDeclaredNodes() {
   for (auto NID_item : _SGSD._nodedatas) {
     auto NID = NID_item.second;
@@ -183,7 +222,12 @@ void SceneGraphSystem::_instantiateDeclaredNodes() {
       _nodeitems[NID->_nodename] = nitem;
 
       auto on_gpu_init = [=]() {
-        nitem->_drawable = _drwcache->fetch(drwdata);
+        if (drwdata->isSharedDrawable()) {
+          nitem->_drawable = _drwcache->fetch(drwdata);
+        } else {
+          nitem->_drawable = drwdata->createDrawable();
+          nitem->_drawable->_modcolor = drwdata->_modcolor;
+        }
   
         if (auto as_instanced = dynamic_pointer_cast<InstancedDrawable>(nitem->_drawable)) {
           auto NODE_ON_LAYER = [=](lev2::scenegraph::layer_ptr_t layer){
@@ -212,7 +256,9 @@ void SceneGraphSystem::_instantiateDeclaredNodes() {
             }
           }
           else{
-            auto layer                 = _scene->findLayer(NID->_layername);
+            auto layer = NID->_layername.empty()
+                ? _default_layer
+                : _scene->findLayer(NID->_layername);
                 NODE_ON_LAYER(layer);
           }
         } else {
@@ -227,7 +273,9 @@ void SceneGraphSystem::_instantiateDeclaredNodes() {
                 NODE_ON_LAYER(layer);
             }
           } else {
-              auto layer = _scene->findLayer(NID->_layername);
+              auto layer = NID->_layername.empty()
+                  ? _default_layer
+                  : _scene->findLayer(NID->_layername);
               NODE_ON_LAYER(layer);
           }
         }
@@ -323,7 +371,9 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
         /////////////////////////////////////////////////
         auto as_light = dynamic_pointer_cast<LightData>(drwdata);
         if (as_light) {
-          auto layer = _scene->findLayer(NID->_layername);
+          auto layer = NID->_layername.empty()
+              ? _default_layer
+              : _scene->findLayer(NID->_layername);
           auto l = dynamic_pointer_cast<Light>(as_light->createDrawable());
 
           auto nitem                            = std::make_shared<SceneGraphNodeItem>();
@@ -365,17 +415,22 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
             
             auto DO_ITEM = [=](scenegraph::layer_ptr_t layer) -> sgnodeitem_ptr_t {
                 auto nitem                            = std::make_shared<SceneGraphNodeItem>();
-                nitem->_drawable                      = _drwcache->fetch(drwdata);
+                if (drwdata->isSharedDrawable()) {
+                  nitem->_drawable = _drwcache->fetch(drwdata);
+                } else {
+                  nitem->_drawable = drwdata->createDrawable();
+                  nitem->_drawable->_modcolor = drwdata->_modcolor;
+                }
                 nitem->_nodename                      = NID->_nodename;
                 nitem->_data                          = NID;
                 component->_nodeitems[NID->_nodename] = nitem;
-                
+
                 if (auto as_instanced = dynamic_pointer_cast<InstancedDrawable>(nitem->_drawable)) {
                     nitem->_sgnode = layer->createDrawableNode(NID->_nodename, as_instanced);
                     OrkAssert(false);
                     // we should not hit this, because the instanced drawable
                     //  should be @ system scope, not component scope
-                    
+
                 } else {
                     auto node       = layer->createDrawableNode(NID->_nodename, nitem->_drawable);
                     node->_modcolor = NID->_modcolor;
@@ -392,7 +447,9 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
                     layer->addDrawableNode(drw_node);
                 }
             } else {
-                auto layer = _scene->findLayer(NID->_layername);
+                auto layer = NID->_layername.empty()
+                    ? _default_layer
+                    : _scene->findLayer(NID->_layername);
                 auto item = DO_ITEM(layer);
             }
         }
@@ -539,8 +596,20 @@ bool SceneGraphSystem::_onStage(Simulation* psi) {
   }
 
   /////////////////////////////////////////
+  // check simulation varmap for an injected scenegraph
+  /////////////////////////////////////////
 
-  _scene = std::make_shared<scenegraph::Scene>(_mergedParams);
+  auto sim_varmap = psi->varmap();
+  if (sim_varmap->hasKey("scenegraph")) {
+    auto injected = sim_varmap->typedValueForKey<scenegraph::scene_ptr_t>("scenegraph");
+    if (injected) {
+      _scene = injected.value();
+    }
+  }
+
+  if (!_scene) {
+    _scene = std::make_shared<scenegraph::Scene>(_mergedParams);
+  }
 
   _default_layer = _scene->createLayer("sg_default");
   for (auto item : _SGSD._declaredLayers) {
@@ -693,7 +762,13 @@ void SceneGraphSystem::_onRequest(impl::sys_response_ptr_t response, token_t req
       ///////////////////////////////
 
       auto add_operation = [response, mdata, this]() {
-        auto drawable = _drwcache->fetch(mdata);
+        drawable_ptr_t drawable;
+        if (mdata->isSharedDrawable()) {
+          drawable = _drwcache->fetch(mdata);
+        } else {
+          drawable = mdata->createDrawable();
+          drawable->_modcolor = mdata->_modcolor;
+        }
 
         std::string nodename = "???";
         auto sgnode          = _default_layer->createDrawableNode(nodename, drawable);

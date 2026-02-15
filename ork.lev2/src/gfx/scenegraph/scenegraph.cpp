@@ -112,7 +112,7 @@ void Scene::_unregisterUISurface(drawable_ptr_t drawable) {
 
 void Scene::gpuInit(Context* ctx) {
   //printf("Scene::gpuInit BEGIN\n");
-  _sgpickbuffer = std::make_shared<SgPickBuffer>(ctx, *this);
+  //_sgpickbuffer = std::make_shared<SgPickBuffer>(ctx, *this);
   if(0){
     printf("Scene::gpuInit: pick buffer textures:\n");
     printf("  ID: %p w=%d h=%d\n",
@@ -131,14 +131,15 @@ void Scene::gpuInit(Context* ctx) {
   _dogpuinit    = false;
   _boundContext = ctx;
 
-  auto op = [=]() -> bool {
-    if( _compositorImpl ){
-      _compositorImpl->gpuInit(ctx);
-      return true;
-    }
-    return false;
-  };
-  op();
+  // If the Scene was constructed off the main thread, initWithParams
+  // was deferred.  Now we are on the main/GPU thread, so complete it.
+  if (!_compositorImpl && _params) {
+    initWithParams(_params);
+  }
+
+  if (_compositorImpl) {
+    _compositorImpl->gpuInit(ctx);
+  }
   //ctx->_beginFrameBlockers.push_back(op);
   //printf("Scene::gpuInit END\n");
 }

@@ -48,13 +48,20 @@ class EcsEditor(ComponentizedApplication):
     self._selected_key = ""
     self._selected_object = None  # archetype, spawner, or system
 
-    # ECS runtime (created on Play)
-    self.controller = None
+    # Edit-mode ECS simulation
+    self.edit_controller = None
+    self._edit_sys_ref = None
+
+    # Play-mode ECS simulation
+    self.play_controller = None
+    self._play_sys_ref = None
 
     # Will be set during init
+    self.outliner_model = None
+    self.grid_node = None
+    self.gizmo_node = None
     self.scenegraph = None
     self.layer = None
-    self.outliner_model = None
 
     # Create app with ECS module init injected before finalization
     self.createEzApp(width=1440, height=900, pre_init_fns=[ecs.ecsInitCallback])
@@ -184,7 +191,7 @@ class EcsEditor(ComponentizedApplication):
     self.propsheet.model = self.refl_model
 
   ##############################################################################
-  # GPU Init
+  # GPU Init — create scenegraph synchronously (like sgedit)
   ##############################################################################
 
   def _onGpuInit(self, ctx):
@@ -194,7 +201,13 @@ class EcsEditor(ComponentizedApplication):
     self.custom_db = lev2.ui.StyleDatabase.createChild(self.base_db)
     self.uicontext.theme_engine = lev2.ui.ThemeEngine(self.custom_db)
 
-    # Edit-mode scenegraph
+    # Manipulator
+    self.manip_controller = lev2.ManipController()
+    self.manip_interface = None
+    self.manip_controller.mode = lev2.ManipMode.TRANSLATE
+    self.manip_enabled = False
+
+    # Create scenegraph synchronously on GPU thread
     sg_params = VarMap()
     sg_params.SkyboxIntensity = 2.0
     sg_params.DiffuseIntensity = 1.0
@@ -208,39 +221,32 @@ class EcsEditor(ComponentizedApplication):
     self.scenegraph = lev2.scenegraph.Scene(sg_params)
     self.layer = self.scenegraph.createLayer("std_forward")
 
-    # Grid
+    # Grid + gizmo nodes (immediate, like sgedit)
     self.grid_data = createGridData()
     self.grid_node = self.layer.createDrawableNodeFromData("grid", self.grid_data)
     self.grid_node.sortkey = 1
     self.grid_node.pickable = False
 
-    # Manipulator
-    self.manip_controller = lev2.ManipController()
-    self.manip_interface = None
-    self.manip_controller.mode = lev2.ManipMode.TRANSLATE
-    self.manip_enabled = False
-
     self.gizmo_data = lev2.ManipGizmoDrawableData()
     self.gizmo_data.controller = self.manip_controller
     self.gizmo_drawable = self.gizmo_data.createDrawable()
     self.gizmo_node = self.scenegraph.createDrawableNodeOnLayers(
-        [self.layer], "manip-gizmo", self.gizmo_drawable)
+      [self.layer], "manip-gizmo", self.gizmo_drawable)
     self.gizmo_node.sortkey = 999
     self.gizmo_node.pickable = False
     self.gizmo_node.enabled = False
 
     # Camera
-    self.camname = "EditorCamera"
     self.cameralut = lev2.CameraDataLut()
     self.camera, self.uicam = setupUiCameraX(
-      cameralut=self.cameralut, camname=self.camname)
+      cameralut=self.cameralut, camname="spawncam")
     self.uicam.distance = 1
     self.uicam.lookAt(vec3(8, 6, 8), vec3(0, 0, 0), vec3(0, 1, 0))
     self.uicam.updateMatrices()
     self.camera.copyFrom(self.uicam.cameradata)
 
-    # Viewport setup
-    self.sgv.cameraName = self.camname
+    # Viewport — bind scenegraph immediately (like sgedit)
+    self.sgv.cameraName = "spawncam"
     self.sgv.scenegraph = self.scenegraph
     self.sgv.camera_evhandler = lambda ev: self._onCameraEvent(ev)
     self.sgv.bindManipController(self.manip_controller)
@@ -270,11 +276,57 @@ class EcsEditor(ComponentizedApplication):
     self.btn_rotate.onToggled(lambda t: self._onManipButton("rotate", t))
     self.btn_scale.onToggled(lambda t: self._onManipButton("scale", t))
 
+    # Create initial edit simulation (scenegraph injected via varmap)
+    self._createEditSimulation()
+
     # Load initial scene if provided
     if args.scene and os.path.exists(args.scene):
       self._loadScene(args.scene)
 
     print("ECS Editor Ready")
+
+  ##############################################################################
+  # Edit Simulation Lifecycle
+  ##############################################################################
+
+  def _ensureSceneGraphSystem(self):
+    """Ensure scene_data has a SceneGraphSystemData with editor defaults."""
+    sgsys_data = None
+    for s in self.scene_data.systemDatas:
+      if s.className == "SceneGraphSystemData":
+        sgsys_data = s
+        break
+    if sgsys_data is None:
+      sgsys_data = self.scene_data.addSceneGraphSystem()
+      sgsys_data.declareLayer("std_forward")
+    # Always apply editor rendering defaults (internal params aren't serialized)
+    sgsys_data.declareParams({
+      "SkyboxIntensity": 2.0,
+      "DiffuseIntensity": 1.0,
+      "SpecularIntensity": 1.0,
+      "AmbientLevel": vec3(0.15),
+      "preset": "ForwardPBR",
+      "ssaa": 4,
+      "enable_skybox": False,
+      "clearcolor": vec3(0.08, 0.08, 0.1),
+    })
+
+  def _createEditSimulation(self):
+    """Create (or recreate) the edit-mode ECS simulation."""
+    self._destroyEditSimulation()
+    self._ensureSceneGraphSystem()
+
+    self.edit_controller = ecs.Controller()
+    self.edit_controller.bindScene(self.scene_data)
+    self.edit_controller.createSimulation(scenegraph=self.scenegraph)
+    self.edit_controller.stageSimulation()
+
+    self._edit_sys_ref = self.edit_controller.findSystem("SceneGraphSystem")
+
+  def _destroyEditSimulation(self):
+    """Tear down the edit-mode simulation."""
+    self._edit_sys_ref = None
+    self.edit_controller = None
 
   ##############################################################################
   # Outliner callbacks
@@ -401,8 +453,10 @@ class EcsEditor(ComponentizedApplication):
     if self._mode != self.EDIT:
       return
     self.scene_data = ecs.SceneData()
+    self._selected_object = None
     self.refl_model.object = None
     self.propsheet.rebuild()
+    self._createEditSimulation()
     self.outliner_model.notifyModelReset()
     self.outliner.expandAll()
     print("New scene created")
@@ -461,8 +515,10 @@ class EcsEditor(ComponentizedApplication):
       obj = Object.deserializeJson(json_str)
       if obj is not None:
         self.scene_data = obj
+        self._selected_object = None
         self.refl_model.object = None
         self.propsheet.rebuild()
+        self._createEditSimulation()
         self.outliner_model.notifyModelReset()
         self.outliner.expandAll()
         print(f"Loaded: {path}")
@@ -507,22 +563,16 @@ class EcsEditor(ComponentizedApplication):
     self._enableManip(False)
     self._syncManipButtons()
     try:
-      self.controller = ecs.Controller()
-      self.controller.bindScene(self.scene_data)
-      self.ezapp.vars.controller = self.controller
+      # Tear down edit simulation
+      self._destroyEditSimulation()
 
-      # Install ECS rendering/update callbacks
-      self.controller.installRenderCallbackOnEzApp(self.ezapp)
-      self.controller.installUpdateCallbackOnEzApp(self.ezapp)
+      # Create play simulation with injected scenegraph
+      self.play_controller = ecs.Controller()
+      self.play_controller.bindScene(self.scene_data)
+      self.play_controller.createSimulation(scenegraph=self.scenegraph)
+      self.play_controller.startSimulation()
 
-      # Create and start simulation
-      self.controller.createSimulation()
-      self.controller.startSimulation()
-
-      # Notify SceneGraphSystem to resize from main surface
-      sys_sg = self.controller.findSystem("SceneGraphSystem")
-      if sys_sg:
-        self.controller.systemNotify(sys_sg, tokens.ResizeFromMainSurface, True)
+      self._play_sys_ref = self.play_controller.findSystem("SceneGraphSystem")
 
       self._mode = self.PLAYING
       self._updateTransportUI()
@@ -530,12 +580,13 @@ class EcsEditor(ComponentizedApplication):
     except Exception as e:
       print(f"Play failed: {e}")
       self._mode = self.EDIT
+      self._createEditSimulation()
       self._updateTransportUI()
 
   def _pausePlay(self):
     if self._mode != self.PLAYING:
       return
-    self.controller.stopSimulation()
+    self.play_controller.stopSimulation()
     self._mode = self.PAUSED
     self._updateTransportUI()
     print("Simulation paused")
@@ -543,7 +594,7 @@ class EcsEditor(ComponentizedApplication):
   def _resumePlay(self):
     if self._mode != self.PAUSED:
       return
-    self.controller.startSimulation()
+    self.play_controller.startSimulation()
     self._mode = self.PLAYING
     self._updateTransportUI()
     print("Simulation resumed")
@@ -552,15 +603,15 @@ class EcsEditor(ComponentizedApplication):
     if self._mode == self.EDIT:
       return
     try:
-      self.controller.stopSimulation()
-      self.controller.uninstallUpdateCallbackOnEzApp(self.ezapp)
-      self.controller.terminateSimulation()
-      self.controller.uninstallRenderCallbackOnEzApp(self.ezapp)
-      self.controller = None
+      self.play_controller.stopSimulation()
+      self.play_controller.terminateSimulation()
 
-      # Restore edit scenegraph
-      self.sgv.scenegraph = self.scenegraph
-      self.sgv.cameraName = self.camname
+      # Clear play state
+      self._play_sys_ref = None
+      self.play_controller = None
+
+      # Recreate edit simulation
+      self._createEditSimulation()
 
       # Re-enable manip if a spawner was selected
       if self._selected_object is not None and hasattr(self._selected_object, 'transform'):
@@ -575,6 +626,9 @@ class EcsEditor(ComponentizedApplication):
     except Exception as e:
       print(f"Stop failed: {e}")
       self._mode = self.EDIT
+      self._play_sys_ref = None
+      self.play_controller = None
+      self._createEditSimulation()
       self._updateTransportUI()
 
   def _updateTransportUI(self):
@@ -601,7 +655,8 @@ class EcsEditor(ComponentizedApplication):
 
   def _enableManip(self, enable):
     self.manip_enabled = enable
-    self.gizmo_node.enabled = enable
+    if self.gizmo_node:
+      self.gizmo_node.enabled = enable
     if enable and self.manip_interface:
       self.manip_controller.target = self.manip_interface
     else:
@@ -677,7 +732,6 @@ class EcsEditor(ComponentizedApplication):
     handled = self.uicam.uiEventHandler(uievent)
     if handled:
       self.uicam.updateMatrices()
-      self.camera.copyFrom(self.uicam.cameradata)
     return lev2.ui.HandlerResult()
 
   ##############################################################################
@@ -685,11 +739,34 @@ class EcsEditor(ComponentizedApplication):
   ##############################################################################
 
   def _onUpdate(self, updinfo):
-    if self._mode == self.EDIT:
-      self.scenegraph.updateScene(self.cameralut)
+    if self._mode == self.EDIT and self.edit_controller:
+      if self._edit_sys_ref:
+        UIC = self.uicam.cameradata
+        self.edit_controller.systemNotify(self._edit_sys_ref, tokens.UpdateCamera, {
+          tokens.eye: UIC.eye,
+          tokens.tgt: UIC.target,
+          tokens.up: UIC.up,
+          tokens.near: UIC.near,
+          tokens.far: UIC.far,
+          tokens.fovy: UIC.fovy
+        })
+      self.edit_controller.updateSimulation()
       # Live sync property sheet when manipulating
       if self.manip_enabled and self.manip_interface and self._selected_object is not None:
         self.refl_model.notifyExternalValueChanged("")
+    elif self._mode == self.PLAYING and self.play_controller:
+      if self._play_sys_ref:
+        UIC = self.uicam.cameradata
+        self.play_controller.systemNotify(self._play_sys_ref, tokens.UpdateCamera, {
+          tokens.eye: UIC.eye,
+          tokens.tgt: UIC.target,
+          tokens.up: UIC.up,
+          tokens.near: UIC.near,
+          tokens.far: UIC.far,
+          tokens.fovy: UIC.fovy
+        })
+      self.play_controller.updateSimulation()
+
     self.sgv.setDirty()
 
   ##############################################################################
@@ -697,9 +774,10 @@ class EcsEditor(ComponentizedApplication):
   ##############################################################################
 
   def _onGpuExit(self, ctx):
-    if self.controller:
-      self.controller.gpuExit(ctx)
-      self.controller.uninstallRenderCallbackOnEzApp(self.ezapp)
+    # The editor owns the scenegraph GPU lifecycle directly.
+    # ECS simulations use an injected scene and never did their own GPU init,
+    # so calling controller.gpuExit() would crash the uninitialized render FSM.
+    pass
 
 ################################################################################
 
