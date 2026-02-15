@@ -863,6 +863,7 @@ class EcsEditor(ComponentizedApplication):
     handled = self.uicam.uiEventHandler(uievent)
     if handled:
       self.uicam.updateMatrices()
+      self.camera.copyFrom(self.uicam.cameradata)
     return lev2.ui.HandlerResult()
 
   ##############################################################################
