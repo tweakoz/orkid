@@ -6,7 +6,7 @@
 # Distributed under the MIT License
 ################################################################################
 
-import os, sys, argparse
+import os, sys, argparse, time
 from orkengine.core import vec2, vec3, vec4, quat, CrcStringProxy, Transform, lev2_pyexdir
 from orkengine import lev2
 from orkengine import ecs
@@ -50,6 +50,9 @@ class EcsEditor(ComponentizedApplication):
 
     # Deferred rebuild flag — set by callbacks, consumed in _onUpdate
     self._needs_rebuild = False
+
+    # Deferred operations queue — (execute_at_time, callback) pairs
+    self._deferred_ops = []
 
     # Will be set during init
     self.outliner_model = None
@@ -341,9 +344,10 @@ class EcsEditor(ComponentizedApplication):
     # Create initial edit simulation (creates fresh scenegraph + binds to viewport)
     self._createEditSimulation()
 
-    # Load initial scene if provided
+    # Load initial scene if provided (deferred to let GPU init settle)
     if args.scene and os.path.exists(args.scene):
-      self._loadScene(args.scene)
+      scene_path = args.scene
+      self.defer(lambda: self._loadScene(scene_path), delay=2.0)
 
     print("ECS Editor Ready")
 
@@ -390,6 +394,10 @@ class EcsEditor(ComponentizedApplication):
     """Request a deferred edit-simulation rebuild (consumed in _onUpdate)."""
     if self._mode == self.EDIT:
       self._needs_rebuild = True
+
+  def defer(self, callback, delay=0.0):
+    """Schedule a callback to run on the main thread after delay seconds."""
+    self._deferred_ops.append((time.monotonic() + delay, callback))
 
   def _destroyEditSimulation(self):
     """Tear down the edit-mode simulation."""
@@ -896,6 +904,14 @@ class EcsEditor(ComponentizedApplication):
   ##############################################################################
   # Update loop
   ##############################################################################
+
+  def _onGpuUpdate(self, ctx):
+    # Process deferred operations (main thread)
+    now = time.monotonic()
+    ready = [op for op in self._deferred_ops if now >= op[0]]
+    self._deferred_ops = [op for op in self._deferred_ops if now < op[0]]
+    for _, callback in ready:
+      callback()
 
   def _onUpdate(self, updinfo):
     # Deferred rebuild — safe point between frames
