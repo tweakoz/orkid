@@ -165,6 +165,7 @@ class EcsOutlinerModel(lev2.ui.OutlinerModel):
       self.scene_data.declareArchetype(name)
       new_key = f"Archetypes/{name}"
       self.notifyItemAdded(new_key)
+
       return new_key
 
     if category == "Spawners" and len(parts) == 1 and factory_id == "spawner":
@@ -173,6 +174,7 @@ class EcsOutlinerModel(lev2.ui.OutlinerModel):
       self.scene_data.declareSpawner(name)
       new_key = f"Spawners/{name}"
       self.notifyItemAdded(new_key)
+
       return new_key
 
     if category == "Systems" and len(parts) == 1:
@@ -182,6 +184,7 @@ class EcsOutlinerModel(lev2.ui.OutlinerModel):
       self.scene_data.declareSystem(factory_id)
       new_key = f"Systems/{factory_id}"
       self.notifyItemAdded(new_key)
+
       return new_key
 
     # Adding component to archetype
@@ -194,6 +197,7 @@ class EcsOutlinerModel(lev2.ui.OutlinerModel):
         arch.declareComponent(factory_id)
         new_key = f"{parent_key}/{factory_id}"
         self.notifyItemAdded(new_key)
+  
         return new_key
 
     return ""
@@ -216,12 +220,14 @@ class EcsOutlinerModel(lev2.ui.OutlinerModel):
       arch = self._findArchetype(old_name)
       if arch and not self._findArchetype(new_name):
         self.scene_data.renameSceneObject(arch, new_name)
+  
         return f"Archetypes/{new_name}"
 
     if category == "Spawners" and len(parts) == 2:
       sp = self._findSpawner(old_name)
       if sp and not self._findSpawner(new_name):
         self.scene_data.renameSceneObject(sp, new_name)
+  
         return f"Spawners/{new_name}"
 
     return None

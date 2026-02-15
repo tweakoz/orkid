@@ -56,6 +56,9 @@ class EcsEditor(ComponentizedApplication):
     self.play_controller = None
     self._play_sys_ref = None
 
+    # Deferred rebuild flag — set by callbacks, consumed in _onUpdate
+    self._needs_rebuild = False
+
     # Will be set during init
     self.outliner_model = None
     self.grid_node = None
@@ -64,7 +67,7 @@ class EcsEditor(ComponentizedApplication):
     self.layer = None
 
     # Create app with ECS module init injected before finalization
-    self.createEzApp(width=1440, height=900, pre_init_fns=[ecs.ecsInitCallback])
+    self.createEzApp( name="OrkidEcsEditor", width=1440, height=900, pre_init_fns=[ecs.ecsInitCallback])
 
   ##############################################################################
   # UI Setup
@@ -193,17 +196,17 @@ class EcsEditor(ComponentizedApplication):
 
   def _onPropertyChanged(self, key, value):
     """Called when any property is edited in the property sheet."""
-    if "/assetpath" in key:
-      # Asset path changed — recreate simulation to reload drawables
-      self._createEditSimulation()
-    elif "userparams/" in key:
-      # SceneGraphSystemData userparam changed — apply live to scenegraph
+    if "userparams/" in key:
+      # SceneGraphSystemData userparam changed — apply live (no rebuild needed)
       param_name = key.split("/")[-1]
       if self.scenegraph:
         self.scenegraph.applyRuntimeParams({param_name: value})
+    elif "/assetpath" in key:
+      # Asset path changed — recreate simulation to reload drawables
+      self._requestRebuild()
 
   ##############################################################################
-  # GPU Init — create scenegraph synchronously (like sgedit)
+  # GPU Init — one-time setup (reusable objects + viewport bindings)
   ##############################################################################
 
   def _onGpuInit(self, ctx):
@@ -213,37 +216,19 @@ class EcsEditor(ComponentizedApplication):
     self.custom_db = lev2.ui.StyleDatabase.createChild(self.base_db)
     self.uicontext.theme_engine = lev2.ui.ThemeEngine(self.custom_db)
 
-    # Manipulator
+    # Manipulator (reusable across scenegraphs)
     self.manip_controller = lev2.ManipController()
     self.manip_interface = None
     self.manip_controller.mode = lev2.ManipMode.TRANSLATE
     self.manip_enabled = False
 
-    # Create scenegraph synchronously on GPU thread
-    # Only construction-time params here; runtime params come from SceneGraphSystemData
-    sg_params = VarMap()
-    sg_params.preset = "ForwardPBR"
-    sg_params.ssaa = 4
-
-    self.scenegraph = lev2.scenegraph.Scene(sg_params)
-    self.layer = self.scenegraph.createLayer("std_forward")
-
-    # Grid + gizmo nodes (immediate, like sgedit)
+    # Reusable drawable data (nodes are per-scenegraph, data is shared)
     self.grid_data = createGridData()
-    self.grid_node = self.layer.createDrawableNodeFromData("grid", self.grid_data)
-    self.grid_node.sortkey = 1
-    self.grid_node.pickable = False
-
     self.gizmo_data = lev2.ManipGizmoDrawableData()
     self.gizmo_data.controller = self.manip_controller
     self.gizmo_drawable = self.gizmo_data.createDrawable()
-    self.gizmo_node = self.scenegraph.createDrawableNodeOnLayers(
-      [self.layer], "manip-gizmo", self.gizmo_drawable)
-    self.gizmo_node.sortkey = 999
-    self.gizmo_node.pickable = False
-    self.gizmo_node.enabled = False
 
-    # Camera
+    # Camera (reusable — persists across scenegraph rebuilds)
     self.cameralut = lev2.CameraDataLut()
     self.camera, self.uicam = setupUiCameraX(
       cameralut=self.cameralut, camname="spawncam")
@@ -252,13 +237,11 @@ class EcsEditor(ComponentizedApplication):
     self.uicam.updateMatrices()
     self.camera.copyFrom(self.uicam.cameradata)
 
-    # Viewport — bind scenegraph immediately (like sgedit)
+    # Viewport one-time bindings
     self.sgv.cameraName = "spawncam"
-    self.sgv.scenegraph = self.scenegraph
     self.sgv.camera_evhandler = lambda ev: self._onCameraEvent(ev)
     self.sgv.bindManipController(self.manip_controller)
     self.sgv.forkDB()
-    self.scenegraph.lightingmanager.gpuInit(ctx)
 
     # Outliner model
     self.outliner_model = EcsOutlinerModel(self)
@@ -283,7 +266,7 @@ class EcsEditor(ComponentizedApplication):
     self.btn_rotate.onToggled(lambda t: self._onManipButton("rotate", t))
     self.btn_scale.onToggled(lambda t: self._onManipButton("scale", t))
 
-    # Create initial edit simulation (scenegraph injected via varmap)
+    # Create initial edit simulation (creates fresh scenegraph + binds to viewport)
     self._createEditSimulation()
 
     # Load initial scene if provided
@@ -291,6 +274,34 @@ class EcsEditor(ComponentizedApplication):
       self._loadScene(args.scene)
 
     print("ECS Editor Ready")
+
+  ##############################################################################
+  # Scenegraph factory — fresh scenegraph with editor overlays
+  ##############################################################################
+
+  def _createScenegraphWithOverlays(self):
+    """Create a fresh scenegraph with grid and gizmo overlay nodes.
+
+    Reuses grid_data and gizmo_drawable (created once in _onGpuInit).
+    Returns (scenegraph, layer, grid_node, gizmo_node).
+    """
+    sg_params = VarMap()
+    sg_params.preset = "ForwardPBR"
+    sg_params.ssaa = 4
+    sg = lev2.scenegraph.Scene(sg_params)
+    layer = sg.createLayer("std_forward")
+
+    grid_node = layer.createDrawableNodeFromData("grid", self.grid_data)
+    grid_node.sortkey = 1
+    grid_node.pickable = False
+
+    gizmo_node = sg.createDrawableNodeOnLayers(
+      [layer], "manip-gizmo", self.gizmo_drawable)
+    gizmo_node.sortkey = 999
+    gizmo_node.pickable = False
+    gizmo_node.enabled = self.manip_enabled
+
+    return sg, layer, grid_node, gizmo_node
 
   ##############################################################################
   # Edit Simulation Lifecycle
@@ -320,9 +331,14 @@ class EcsEditor(ComponentizedApplication):
     })
 
   def _createEditSimulation(self):
-    """Create (or recreate) the edit-mode ECS simulation."""
+    """Create (or recreate) the edit-mode ECS simulation with a fresh scenegraph."""
     self._destroyEditSimulation()
     self._ensureSceneGraphSystem()
+
+    # Fresh scenegraph with editor overlays
+    self.scenegraph, self.layer, self.grid_node, self.gizmo_node = \
+      self._createScenegraphWithOverlays()
+    self.sgv.scenegraph = self.scenegraph
 
     self.edit_controller = ecs.Controller()
     self.edit_controller.bindScene(self.scene_data)
@@ -330,7 +346,22 @@ class EcsEditor(ComponentizedApplication):
     self.edit_controller.stageSimulation()
 
     self._edit_sys_ref = self.edit_controller.findSystem("SceneGraphSystem")
-    self.sgv.onPreRender = lambda ctx: self.edit_controller.gpuRender(ctx)
+
+    # gpuInit the lighting manager on the first render frame
+    sg = self.scenegraph
+    controller = self.edit_controller
+    lm_inited = [False]
+    def _editPreRender(ctx):
+      if not lm_inited[0]:
+        sg.lightingmanager.gpuInit(ctx)
+        lm_inited[0] = True
+      controller.gpuRender(ctx)
+    self.sgv.onPreRender = _editPreRender
+
+  def _requestRebuild(self):
+    """Request a deferred edit-simulation rebuild (consumed in _onUpdate)."""
+    if self._mode == self.EDIT:
+      self._needs_rebuild = True
 
   def _destroyEditSimulation(self):
     """Tear down the edit-mode simulation."""
@@ -406,6 +437,7 @@ class EcsEditor(ComponentizedApplication):
     for arch in self.scene_data.archetypes:
       if arch.name == name:
         sp.archetype = arch
+        self._requestRebuild()
         return
 
   def _onOutlinerRename(self, old_key, new_name):
@@ -415,6 +447,7 @@ class EcsEditor(ComponentizedApplication):
     self.outliner_model.removeItem(key)
     self.refl_model.object = None
     self.propsheet.rebuild()
+    self._requestRebuild()
 
   def _onOutlinerAdd(self, key):
     pass  # Model handles creation via factories
@@ -577,14 +610,29 @@ class EcsEditor(ComponentizedApplication):
       # Tear down edit simulation
       self._destroyEditSimulation()
 
-      # Create play simulation with injected scenegraph
+      # Fresh scenegraph for play mode
+      self.scenegraph, self.layer, self.grid_node, self.gizmo_node = \
+        self._createScenegraphWithOverlays()
+      self.sgv.scenegraph = self.scenegraph
+
+      # Create play simulation on the fresh scenegraph
       self.play_controller = ecs.Controller()
       self.play_controller.bindScene(self.scene_data)
       self.play_controller.createSimulation(scenegraph=self.scenegraph)
       self.play_controller.startSimulation()
 
       self._play_sys_ref = self.play_controller.findSystem("SceneGraphSystem")
-      self.sgv.onPreRender = lambda ctx: self.play_controller.gpuRender(ctx)
+
+      # gpuInit the lighting manager on the first render frame
+      sg = self.scenegraph
+      controller = self.play_controller
+      lm_inited = [False]
+      def _playPreRender(ctx):
+        if not lm_inited[0]:
+          sg.lightingmanager.gpuInit(ctx)
+          lm_inited[0] = True
+        controller.gpuRender(ctx)
+      self.sgv.onPreRender = _playPreRender
 
       self._mode = self.PLAYING
       self._updateTransportUI()
@@ -752,6 +800,11 @@ class EcsEditor(ComponentizedApplication):
   ##############################################################################
 
   def _onUpdate(self, updinfo):
+    # Deferred rebuild — safe point between frames
+    if self._needs_rebuild:
+      self._needs_rebuild = False
+      self._createEditSimulation()
+
     if self._mode == self.EDIT and self.edit_controller:
       if self._edit_sys_ref:
         UIC = self.uicam.cameradata
