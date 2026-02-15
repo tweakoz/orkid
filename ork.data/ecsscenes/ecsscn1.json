@@ -54,13 +54,7 @@
                   "uuid": "13477281-f777-4132-9ded-e7cf0d95e01f",
                   "properties": {
                    "assetpath": "data://tests/pbr_calib.glb",
-                   "assetvars": {},
-                   "ModColor": [
-                    1.0,
-                    0.4399999976158142,
-                    1.0,
-                    1.0
-                   ]
+                   "assetvars": {}
                   }
                  }
                 },
@@ -92,13 +86,7 @@
                    "ShadowBlur": 0.0,
                    "ShadowCaster": false,
                    "ShadowMapSize": 1024,
-                   "ShadowSamples": 1,
-                   "ModColor": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                   ]
+                   "ShadowSamples": 1
                   }
                  }
                 },
@@ -164,13 +152,7 @@
                   "uuid": "33525f31-ff98-459a-8b13-6a798b9535e6",
                   "properties": {
                    "assetpath": "data://tests/pbr_calib.glb",
-                   "assetvars": {},
-                   "ModColor": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                   ]
+                   "assetvars": {}
                   }
                  }
                 },
@@ -202,13 +184,7 @@
                    "ShadowBlur": 0.0,
                    "ShadowCaster": false,
                    "ShadowMapSize": 1024,
-                   "ShadowSamples": 1,
-                   "ModColor": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                   ]
+                   "ShadowSamples": 1
                   }
                  }
                 },
@@ -294,13 +270,7 @@
                    "ShadowBlur": 0.0,
                    "ShadowCaster": false,
                    "ShadowMapSize": 1024,
-                   "ShadowSamples": 1,
-                   "ModColor": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                   ]
+                   "ShadowSamples": 1
                   }
                  }
                 },

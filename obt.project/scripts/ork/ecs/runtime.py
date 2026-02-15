@@ -18,6 +18,53 @@ class EcsRuntime:
 
   Manages: scene_data, scenegraph, controller, camera, sys_ref.
   Designed for embedding into any app with a SceneGraphViewport.
+
+  Minimal example (~40 lines)::
+
+    #!/usr/bin/env ork.python
+    import os, argparse
+    from orkengine.core import vec4, CrcStringProxy, lev2_pyexdir
+    from orkengine import lev2, ecs
+    from ork.app.application import ComponentizedApplication
+    from ork.ecs import EcsRuntime
+
+    lev2_pyexdir.addToSysPath()
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-s", type=str, required=True)
+    args = parser.parse_args()
+
+    class App(ComponentizedApplication):
+      def __init__(self):
+        super().__init__()
+        self.runtime = EcsRuntime()
+        self.createEzApp(name="ecsplay", fullscreen=True,
+                         pre_init_fns=[ecs.ecsInitCallback])
+
+      def _onUiInit(self):
+        lg = self.ezapp.topLayoutGroup
+        lg.margin = 0
+        lg.clearColorStd = vec4(0.08, 0.08, 0.1, 1)
+        self.sgv = lg.makeChild(fill=True, margin=0,
+          uiclass=lev2.ui.SceneGraphViewport,
+          args=["vp", vec4(0.08, 0.08, 0.1, 1)]).widget
+
+      def _onGpuInit(self, ctx):
+        self.runtime.setup_camera()
+        self.sgv.camera_evhandler = lambda ev: self.runtime.handle_camera_event(ev)
+        self.sgv.forkDB()
+        self.runtime.load_scene(args.s)
+        self.runtime.create_scenegraph()
+        self.runtime.start_simulation()
+        self.runtime.bind_to_viewport(self.sgv)
+
+      def _onUpdate(self, updinfo):
+        self.runtime.update()
+        self.sgv.setDirty()
+
+    app = App()
+    app.ezapp.mainThreadLoop()
+    app.ezapp.shutdown()
   """
 
   def __init__(self):
