@@ -3372,13 +3372,11 @@ void pyinit_ui(py::module& module_lev2) {
   auto transformcurveeditor_type = //
       py::class_<ui::TransformCurveEditor, ui::Widget, ui::transformcurveeditor_ptr_t>(uimodule, "TransformCurveEditor")
           .def_static(
-              "wfactory",
-              [type_codec](py::list py_args) -> ui::transformcurveeditor_ptr_t { //
-                auto decoded_args = type_codec->decodeList(py_args);
-                auto name = decoded_args[0].get<std::string>();
-                auto curve = decoded_args[1].get<math::transformcurve_ptr_t>();
+              "create",
+              [](const std::string& name, math::transformcurve_ptr_t curve) -> ui::transformcurveeditor_ptr_t {
                 return std::make_shared<ui::TransformCurveEditor>(name, curve);
-              })
+              },
+              py::arg("name"), py::arg("curve"))
           .def_property(
               "onClose",
               [](ui::transformcurveeditor_ptr_t ed) -> py::object { return py::none(); },

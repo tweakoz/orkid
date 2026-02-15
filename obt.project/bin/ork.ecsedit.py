@@ -255,7 +255,7 @@ class EcsEditor(ComponentizedApplication):
     h = int(top.height * 0.25)
     y = top.height - h
 
-    editor = lev2.ui.TransformCurveEditor.wfactory(["curve_editor", curve])
+    editor = lev2.ui.TransformCurveEditor.create("curve_editor", curve)
     editor.onClose = lambda: self._closeTransformCurveEditor()
     editor.onCurveChanged = lambda: self.sgv.setDirty()
     self._curve_editor = editor
