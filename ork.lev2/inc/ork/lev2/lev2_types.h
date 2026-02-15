@@ -366,6 +366,7 @@ struct OverlayStringDrawable;
 struct LabeledPointDrawableData;
 struct LabeledPointDrawable;
 struct CallbackDrawableData;
+struct CurvePathDrawableData;
 //
 using labeled_point_drawabledata_ptr_t = std::shared_ptr<LabeledPointDrawableData>;
 using labeled_point_drawable_ptr_t = std::shared_ptr<LabeledPointDrawable>;
@@ -377,6 +378,7 @@ using overlay_string_drawabledata_ptr_t = std::shared_ptr<OverlayStringDrawableD
 using callback_drawable_ptr_t       = std::shared_ptr<CallbackDrawable>;
 using callback_drawable_wkptr_t     = std::weak_ptr<CallbackDrawable>;
 using callback_drawabledata_ptr_t   = std::shared_ptr<CallbackDrawableData>;
+using curvepath_drawabledata_ptr_t = std::shared_ptr<CurvePathDrawableData>;
 using drawable_ptr_t                = std::shared_ptr<Drawable>;
 using drawablecache_ptr_t           = std::shared_ptr<DrawableCache>;
 using drawabledata_ptr_t            = std::shared_ptr<DrawableData>;

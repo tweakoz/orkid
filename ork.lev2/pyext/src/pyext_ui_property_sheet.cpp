@@ -346,6 +346,16 @@ void pyinit_ui_property_sheet(py::module& uimodule) {
               [](ui::property_sheet_ptr_t sheet) -> fvec4 { return sheet->_detail_bg_color; },
               [](ui::property_sheet_ptr_t sheet, fvec4 c) { sheet->_detail_bg_color = c; })
           .def(
+              "onRequestCustomEditor",
+              [](ui::property_sheet_ptr_t sheet, py::object callback) {
+                if (not callback.is_none()) {
+                  sheet->_onRequestCustomEditor = [callback](const std::string& key, const std::string& editor_id) {
+                    py::gil_scoped_acquire acquire;
+                    callback(key, editor_id);
+                  };
+                }
+              })
+          .def(
               "onRequestDetailEditor",
               [type_codec](ui::property_sheet_ptr_t sheet, py::object callback) {
                 if (not callback.is_none()) {

@@ -237,6 +237,83 @@ struct ChoicelistWidget : public Widget {
 };
 
 /////////////////////////////////////////////////////////////////////////
+// PropSheetEditorPropWidget
+/////////////////////////////////////////////////////////////////////////
+
+PropSheetEditorPropWidget::PropSheetEditorPropWidget(const std::string& name, const std::string& label)
+    : Widget(name, 0, 0, 0, 0)
+    , _label(label) {
+}
+
+void PropSheetEditorPropWidget::DoDraw(drawevent_constptr_t drwev) {
+  auto tgt = drwev->GetTarget();
+  auto mtxi = tgt->MTXI();
+  auto primi = tgt->PRI();
+  auto defmtl = lev2::defaultUIMaterial();
+
+  int ix1, iy1;
+  LocalToRoot(0, 0, ix1, iy1);
+  int ix2 = ix1 + _geometry._w;
+  int iy2 = iy1 + _geometry._h;
+
+  // Choose background color based on state
+  fvec4 bg = _pressed ? _down_color : (_hovering ? _hover_color : _bg_color);
+
+  mtxi->PushUIMatrix();
+  {
+    defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::ALPHA);
+    defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
+    tgt->PushModColor(bg);
+    defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
+    primi->RenderQuadAtZ(defmtl.get(), ix1 + 1, ix2 - 1, iy1 + 1, iy2 - 1, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+    tgt->PopModColor();
+
+    // Draw label centered
+    auto font = lev2::FontMan::fontForId("i14");
+    if (font) {
+      lev2::FontMan::PushFont(font);
+      tgt->PushModColor(_fg_color);
+      int text_w = font->description().miAdvanceWidth * _label.length();
+      int text_x = ix1 + (_geometry._w - text_w) / 2;
+      int text_y = iy1 + (_geometry._h - font->description().miAdvanceHeight) / 2;
+      lev2::FontMan::beginTextBlock(tgt, _label.length());
+      lev2::FontMan::DrawText(tgt, text_x, text_y, _label.c_str());
+      lev2::FontMan::endTextBlock(tgt);
+      tgt->PopModColor();
+      lev2::FontMan::PopFont();
+    }
+  }
+  mtxi->PopUIMatrix();
+}
+
+HandlerResult PropSheetEditorPropWidget::DoOnUiEvent(event_constptr_t ev) {
+  HandlerResult result;
+
+  switch (ev->_eventcode) {
+    case EventCode::PUSH:
+      _pressed = true;
+      result.setHandled(this);
+      break;
+    case EventCode::RELEASE:
+      if (_pressed) {
+        _pressed = false;
+        if (_onEditRequested) {
+          _onEditRequested();
+        }
+      }
+      result.setHandled(this);
+      break;
+    case EventCode::MOVE:
+      _hovering = IsEventInside(ev);
+      break;
+    default:
+      break;
+  }
+
+  return result;
+}
+
+/////////////////////////////////////////////////////////////////////////
 // PropertyRow
 /////////////////////////////////////////////////////////////////////////
 
@@ -1528,6 +1605,28 @@ void PropertySheet::_addRowsRecursive(const std::string& parent_key, int depth, 
       }
     }
 
+    // Check for editor.custom annotation → show Edit button instead of default editor
+    {
+      auto annotations = _model ? _model->getAnnotations(key) : nullptr;
+      if (annotations) {
+        auto custom_it = annotations->_themap.find("editor.custom");
+        if (custom_it != annotations->_themap.end()) {
+          std::string editor_id;
+          if (auto s = custom_it->second.tryAs<std::string>()) {
+            editor_id = s.value();
+          }
+          auto edit_btn = std::make_shared<PropSheetEditorPropWidget>("customedit_" + key);
+          edit_btn->_onEditRequested = [this, key, editor_id]() {
+            if (_onRequestCustomEditor) {
+              _onRequestCustomEditor(key, editor_id);
+            }
+          };
+          row->setEditorWidget(edit_btn);
+          row->setHasChildren(false);
+        }
+      }
+    }
+
     addChild(row);
     _rows[key] = row;
 
@@ -1619,6 +1718,28 @@ void PropertySheet::_addSingleChildRecursive(const std::string& child_key, int d
         expandAll();
       };
       row->setEditorWidget(factory_widget);
+    }
+  }
+
+  // Check for editor.custom annotation → show Edit button instead of default editor
+  {
+    auto annotations = _model ? _model->getAnnotations(child_key) : nullptr;
+    if (annotations) {
+      auto custom_it = annotations->_themap.find("editor.custom");
+      if (custom_it != annotations->_themap.end()) {
+        std::string editor_id;
+        if (auto s = custom_it->second.tryAs<std::string>()) {
+          editor_id = s.value();
+        }
+        auto edit_btn = std::make_shared<PropSheetEditorPropWidget>("customedit_" + child_key);
+        edit_btn->_onEditRequested = [this, child_key, editor_id]() {
+          if (_onRequestCustomEditor) {
+            _onRequestCustomEditor(child_key, editor_id);
+          }
+        };
+        row->setEditorWidget(edit_btn);
+        row->setHasChildren(false);
+      }
     }
   }
 

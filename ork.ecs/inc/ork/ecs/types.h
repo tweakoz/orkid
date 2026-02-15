@@ -82,6 +82,9 @@ struct PythonSystemData;
 struct PythonComponent;
 struct PythonSystem;
 
+struct TransformCurveComponentData;
+struct TransformCurveSystemData;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 using datatable_ptr_t = std::shared_ptr<DataTable>;
@@ -228,6 +231,9 @@ using controller_ptr_t = std::shared_ptr<Controller>;
 using simulation_ptr_t = std::shared_ptr<Simulation>;
 
 using sgsystemdata_ptr_t = std::shared_ptr<SceneGraphSystemData>;
+
+using transformcurvecompdata_ptr_t = std::shared_ptr<TransformCurveComponentData>;
+using transformcurvesysdata_ptr_t = std::shared_ptr<TransformCurveSystemData>;
 
 struct SpawnNamedDynamic {
   PoolString _edataname;

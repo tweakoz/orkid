@@ -121,6 +121,26 @@ struct EditorFactoryPair {
 };
 
 ////////////////////////////////////////////////////////////////////
+// PropSheetEditorPropWidget: Shows an "Edit" button for properties
+// with custom editor workflows (e.g. curve editors)
+////////////////////////////////////////////////////////////////////
+
+struct PropSheetEditorPropWidget final : public Widget {
+  PropSheetEditorPropWidget(const std::string& name, const std::string& label = "Edit");
+  HandlerResult DoOnUiEvent(event_constptr_t ev) final;
+  void DoDraw(drawevent_constptr_t drwev) override;
+
+  std::function<void()> _onEditRequested;
+  std::string _label = "Edit";
+  fvec4 _bg_color = fvec4(0.25f, 0.25f, 0.3f, 1.0f);
+  fvec4 _hover_color = fvec4(0.35f, 0.35f, 0.4f, 1.0f);
+  fvec4 _down_color = fvec4(0.15f, 0.15f, 0.2f, 1.0f);
+  fvec4 _fg_color = fvec4(0.9f, 0.9f, 0.9f, 1.0f);
+  bool _pressed = false;
+  bool _hovering = false;
+};
+
+////////////////////////////////////////////////////////////////////
 // PropertySheet: A hierarchical property editor widget
 // - Uses PropertySheetModel for data
 // - Creates appropriate editor widgets for each property type
@@ -200,6 +220,11 @@ struct PropertySheet : public Group {
   // Callback when detail editor should be shown (for Python-side creation)
   // Called if no detail factory is registered for the type
   std::function<void(const std::string& key, PropertyType type, svar128_t value)> _onRequestDetailEditor;
+
+  // Callback when a property with editor.custom annotation is clicked
+  // Args: property key, editor identifier (annotation value)
+  // Python side hooks this to open custom editors
+  std::function<void(const std::string& key, const std::string& editor_id)> _onRequestCustomEditor;
 
   // Callbacks
   std::function<void(const std::string& key, svar128_t value)> _onPropertyChanged;

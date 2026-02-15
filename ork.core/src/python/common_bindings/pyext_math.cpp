@@ -9,6 +9,7 @@
 #include <ork/math/cmatrix4.h>
 #include <ork/math/gradient.h>
 #include <ork/math/multicurve.h>
+#include <ork/math/transform_curve.h>
 #include <ork/math/noiselib.inl>
 #include <ork/math/audiomath.h>
 #include <ork/python/pycodec.inl>
@@ -131,6 +132,98 @@ void init_math(py::module& module_core,python::pb11_typecodec_ptr_t type_codec) 
         return self->GetNumVertices();
       });
   type_codec->registerStdCodec<multicurve1d_ptr_t>(curve_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  using namespace ork::math;
+  /////////////////////////////////////////////////////////////////////////////////
+  auto tcpoint_type = //
+      py::class_<TransformCurvePoint, std::shared_ptr<TransformCurvePoint>>(module_core, "TransformCurvePoint")
+          .def(py::init<>())
+          .def_readwrite("time", &TransformCurvePoint::_time)
+          .def_readwrite("position", &TransformCurvePoint::_position)
+          .def_readwrite("rotation", &TransformCurvePoint::_rotation)
+          .def_readwrite("scale", &TransformCurvePoint::_scale)
+          .def_readwrite("tangent_out", &TransformCurvePoint::_tangent_out)
+          .def_readwrite("tangent_in", &TransformCurvePoint::_tangent_in);
+  type_codec->registerStdCodec<std::shared_ptr<TransformCurvePoint>>(tcpoint_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto tcsample_type = //
+      py::class_<TransformCurveSample, std::shared_ptr<TransformCurveSample>>(module_core, "TransformCurveSample")
+          .def(py::init<>())
+          .def_readonly("position", &TransformCurveSample::_position)
+          .def_readonly("rotation", &TransformCurveSample::_rotation)
+          .def_readonly("scale", &TransformCurveSample::_scale)
+          .def_readonly("tangent", &TransformCurveSample::_tangent);
+  type_codec->registerStdCodec<std::shared_ptr<TransformCurveSample>>(tcsample_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto tcurve_type = //
+      py::class_<TransformCurve, Object, transformcurve_ptr_t>(module_core, "TransformCurve")
+          .def(py::init<>())
+          .def(
+              "addPoint",
+              [](transformcurve_ptr_t self, const TransformCurvePoint& pt) -> int { //
+                return self->addPoint(pt);
+              })
+          .def(
+              "removePoint",
+              [](transformcurve_ptr_t self, int index) { //
+                self->removePoint(index);
+              })
+          .def(
+              "setPoint",
+              [](transformcurve_ptr_t self, int index, const TransformCurvePoint& pt) { //
+                self->setPoint(index, pt);
+              })
+          .def(
+              "getPoint",
+              [](transformcurve_ptr_t self, int index) -> TransformCurvePoint { //
+                return self->getPoint(index);
+              })
+          .def_property_readonly(
+              "numPoints",
+              [](transformcurve_ptr_t self) -> int { //
+                return self->numPoints();
+              })
+          .def(
+              "setSegmentType",
+              [](transformcurve_ptr_t self, int seg_index, std::string type_str) { //
+                CurveSegmentType t = CurveSegmentType::LINEAR;
+                if (type_str == "BEZIER")
+                  t = CurveSegmentType::BEZIER;
+                else if (type_str == "CATMULL_ROM")
+                  t = CurveSegmentType::CATMULL_ROM;
+                self->setSegmentType(seg_index, t);
+              })
+          .def(
+              "getSegmentType",
+              [](transformcurve_ptr_t self, int seg_index) -> std::string { //
+                auto t = self->getSegmentType(seg_index);
+                switch (t) {
+                  case CurveSegmentType::LINEAR:
+                    return "LINEAR";
+                  case CurveSegmentType::BEZIER:
+                    return "BEZIER";
+                  case CurveSegmentType::CATMULL_ROM:
+                    return "CATMULL_ROM";
+                  default:
+                    return "LINEAR";
+                }
+              })
+          .def(
+              "sample",
+              [](transformcurve_ptr_t self, float t) -> TransformCurveSample { //
+                return self->sample(t);
+              })
+          .def(
+              "samplePosition",
+              [](transformcurve_ptr_t self, float t) -> fvec3 { //
+                return self->samplePosition(t);
+              })
+          .def(
+              "sampleMatrix",
+              [](transformcurve_ptr_t self, float t) -> fmtx4 { //
+                return self->sampleMatrix(t);
+              });
+  type_codec->registerStdCodec<transformcurve_ptr_t>(tcurve_type);
   /////////////////////////////////////////////////////////////////////////////////
     auto gradient_type = //
       py::class_<gradient_fvec4_t,Object,gradient_fvec4_ptr_t>(module_core, "GradientV4")

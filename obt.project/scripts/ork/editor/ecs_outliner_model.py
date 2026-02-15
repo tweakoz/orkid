@@ -17,6 +17,7 @@ COMPONENT_TYPES = [
   "SceneGraphComponent",
   "BulletObjectComponent",
   "PythonComponent",
+  "TransformCurveComponent",
 ]
 
 # Available system types for the "Add System" factory
@@ -24,6 +25,7 @@ SYSTEM_TYPES = [
   "SceneGraphSystem",
   "BulletSystem",
   "PythonSystem",
+  "TransformCurveSystem",
 ]
 
 ################################################################################

@@ -34,6 +34,10 @@
 #include <ork/ecs/physics/bullet.h>
 #include "../physics/bullet_impl.h"
 
+#include <ork/lev2/gfx/scenegraph/sgnode_curvepath.h>
+#include <ork/ecs/TransformCurveComponent.h>
+#include "TransformCurveComponent_impl.h"
+
 #include "InterpComponent_impl.h"
 #include "../scripting/Lua/LuaImpl.h"
 
@@ -163,7 +167,14 @@ struct EcsAppInit {
     RegisterClassX(BulletObjectComponent);
     RegisterClassX(BulletSystem);
 
+    RegisterClassX(lev2::CurvePathDrawableData);
+
+    RegisterClassX(TransformCurveComponentData);
+    RegisterClassX(TransformCurveComponent);
+    RegisterClassX(TransformCurveSystemData);
+
     RegisterFamily<LuaComponentData>(ork::AddPooledLiteral("control"));
+    RegisterFamily<TransformCurveComponentData>(ork::AddPooledLiteral("control"));
     RegisterFamily<PythonComponentData>(ork::AddPooledLiteral("control"));
     RegisterFamily<InterpComponentData>(ork::AddPooledLiteral("control"));
     RegisterFamily<SceneGraphComponentData>(ork::AddPooledLiteral("render"));

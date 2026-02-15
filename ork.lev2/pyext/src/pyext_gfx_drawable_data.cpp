@@ -17,6 +17,7 @@
 #include <ork/lev2/gfx/scenegraph/sgnode_geoclipmap.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_uisurface.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_cursor.h>
+#include <ork/lev2/gfx/scenegraph/sgnode_curvepath.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_manipgizmo.h>
 #include <ork/lev2/gfx/particle/drawable_data.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
@@ -576,6 +577,54 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
               [](manipgizmodrawabledata_ptr_t drw) -> fvec4 { return drw->_colorActive; },
               [](manipgizmodrawabledata_ptr_t drw, fvec4 val) { drw->_colorActive = val; });
   type_codec->registerStdCodec<manipgizmodrawabledata_ptr_t>(manipgizmodrawdata_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto curvepathdrawdata_type = //
+      py::class_<CurvePathDrawableData, DrawableData, curvepath_drawabledata_ptr_t>(module_lev2, "CurvePathDrawableData")
+          .def(py::init<>())
+          .def(
+              "createDrawable",
+              [](curvepath_drawabledata_ptr_t data) -> drawable_ptr_t { //
+                return data->createDrawable();
+              })
+          .def(
+              "createControlPointDrawable",
+              [](curvepath_drawabledata_ptr_t data) -> drawable_ptr_t { //
+                return data->createControlPointDrawable();
+              })
+          .def(
+              "updateControlPoints",
+              [](curvepath_drawabledata_ptr_t data) { //
+                data->updateControlPoints();
+              })
+          .def_property(
+              "curve",
+              [](curvepath_drawabledata_ptr_t drw) -> math::transformcurve_ptr_t { return drw->_curve; },
+              [](curvepath_drawabledata_ptr_t drw, math::transformcurve_ptr_t val) { drw->_curve = val; })
+          .def_property(
+              "lineColor",
+              [](curvepath_drawabledata_ptr_t drw) -> fvec4 { return drw->_lineColor; },
+              [](curvepath_drawabledata_ptr_t drw, fvec4 val) { drw->_lineColor = val; })
+          .def_property(
+              "cpColor",
+              [](curvepath_drawabledata_ptr_t drw) -> fvec4 { return drw->_cpColor; },
+              [](curvepath_drawabledata_ptr_t drw, fvec4 val) { drw->_cpColor = val; })
+          .def_property(
+              "cpSelectedColor",
+              [](curvepath_drawabledata_ptr_t drw) -> fvec4 { return drw->_cpSelectedColor; },
+              [](curvepath_drawabledata_ptr_t drw, fvec4 val) { drw->_cpSelectedColor = val; })
+          .def_property(
+              "controlPointScale",
+              [](curvepath_drawabledata_ptr_t drw) -> float { return drw->_controlPointScale; },
+              [](curvepath_drawabledata_ptr_t drw, float val) { drw->_controlPointScale = val; })
+          .def_property(
+              "selectedPointIndex",
+              [](curvepath_drawabledata_ptr_t drw) -> int { return drw->_selectedPointIndex; },
+              [](curvepath_drawabledata_ptr_t drw, int val) { drw->_selectedPointIndex = val; })
+          .def_property(
+              "lineSubdivisions",
+              [](curvepath_drawabledata_ptr_t drw) -> int { return drw->_lineSubdivisions; },
+              [](curvepath_drawabledata_ptr_t drw, int val) { drw->_lineSubdivisions = val; });
+  type_codec->registerStdCodec<curvepath_drawabledata_ptr_t>(curvepathdrawdata_type);
 }
 /////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
