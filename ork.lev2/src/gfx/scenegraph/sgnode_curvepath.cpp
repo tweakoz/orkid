@@ -127,8 +127,8 @@ void CurvePathDrawableImpl::_render(const RenderContextInstData& RCID) {
 
   for (int seg = 0; seg < numSegs; seg++) {
     for (int sub = 0; sub < subdivs; sub++) {
-      float t_base = curve->getPoint(seg)._time;
-      float t_next = curve->getPoint(seg + 1)._time;
+      float t_base = curve->getPoint(seg)->_time;
+      float t_next = curve->getPoint(seg + 1)->_time;
       float frac = float(sub) / float(subdivs);
       float t = t_base + (t_next - t_base) * frac;
       fvec3 pos = curve->samplePosition(t);
@@ -137,7 +137,7 @@ void CurvePathDrawableImpl::_render(const RenderContextInstData& RCID) {
   }
   // last point
   {
-    fvec3 pos = curve->samplePosition(curve->getPoint(numSegs)._time);
+    fvec3 pos = curve->samplePosition(curve->getPoint(numSegs)->_time);
     vw.AddVertex(vtx_t(fvec4(pos, 1.0f), fvec4(0, 0, 0, 0), lineColor));
   }
 
@@ -208,9 +208,9 @@ void CurvePathDrawableData::updateControlPoints() const {
   }
   int n = _curve->numPoints();
   for (int i = 0; i < n && i < 256; i++) {
-    const auto& pt = _curve->getPoint(i);
+    auto pt = _curve->getPoint(i);
     fmtx4 mtx;
-    mtx.compose(pt._position, fquat(), _controlPointScale);
+    mtx.compose(pt->_position, fquat(), _controlPointScale);
     _cpInstanceData->_worldmatrices[i] = mtx;
     _cpInstanceData->_modcolors[i] = (i == _selectedPointIndex) ? _cpSelectedColor : _cpColor;
   }

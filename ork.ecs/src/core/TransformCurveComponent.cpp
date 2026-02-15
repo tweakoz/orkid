@@ -169,8 +169,8 @@ void TransformCurveSystem::_onUpdate(Simulation* inst) {
 
     c->_curveTime += dt * c->_CD._playbackSpeed;
 
-    float maxTime = curve->getPoint(curve->numPoints() - 1)._time;
-    float minTime = curve->getPoint(0)._time;
+    float maxTime = curve->getPoint(curve->numPoints() - 1)->_time;
+    float minTime = curve->getPoint(0)->_time;
 
     if (c->_CD._looping) {
       float range = maxTime - minTime;

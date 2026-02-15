@@ -257,7 +257,7 @@ class EcsEditor(ComponentizedApplication):
 
     editor = lev2.ui.TransformCurveEditor.wfactory(["curve_editor", curve])
     editor.onClose = lambda: self._closeTransformCurveEditor()
-    editor.onCurveChanged = lambda: self._requestRebuild()
+    editor.onCurveChanged = lambda: self.sgv.setDirty()
     self._curve_editor = editor
 
     self.uicontext.pushOverlay(editor, 0, y, top.width, h, dismiss_on_click_outside=False)

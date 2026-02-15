@@ -26,7 +26,12 @@ enum struct CurveSegmentType : uint32_t {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct TransformCurvePoint {
+struct TransformCurvePoint : public ork::Object {
+  DeclareConcreteX(TransformCurvePoint, ork::Object);
+
+public:
+  TransformCurvePoint() = default;
+
   float _time = 0.0f;
   fvec3 _position;
   fquat _rotation;
@@ -34,6 +39,8 @@ struct TransformCurvePoint {
   fvec3 _tangent_out;
   fvec3 _tangent_in;
 };
+
+using transformcurvepoint_ptr_t = std::shared_ptr<TransformCurvePoint>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -52,10 +59,10 @@ struct TransformCurve : public ork::Object {
 public:
   TransformCurve();
 
-  int addPoint(const TransformCurvePoint& pt);
+  int addPoint(transformcurvepoint_ptr_t pt);
   void removePoint(int index);
-  void setPoint(int index, const TransformCurvePoint& pt);
-  const TransformCurvePoint& getPoint(int index) const;
+  void setPoint(int index, transformcurvepoint_ptr_t pt);
+  transformcurvepoint_ptr_t getPoint(int index) const;
   int numPoints() const;
 
   void setSegmentType(int seg_index, CurveSegmentType type);
@@ -65,7 +72,7 @@ public:
   fvec3 samplePosition(float t) const;
   fmtx4 sampleMatrix(float t) const;
 
-  std::vector<TransformCurvePoint> _points;
+  std::vector<transformcurvepoint_ptr_t> _points;
   std::vector<CurveSegmentType> _segmentTypes;
 
 private:

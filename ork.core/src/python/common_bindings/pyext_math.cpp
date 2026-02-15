@@ -136,7 +136,7 @@ void init_math(py::module& module_core,python::pb11_typecodec_ptr_t type_codec) 
   using namespace ork::math;
   /////////////////////////////////////////////////////////////////////////////////
   auto tcpoint_type = //
-      py::class_<TransformCurvePoint, std::shared_ptr<TransformCurvePoint>>(module_core, "TransformCurvePoint")
+      py::class_<TransformCurvePoint, Object, transformcurvepoint_ptr_t>(module_core, "TransformCurvePoint")
           .def(py::init<>())
           .def_readwrite("time", &TransformCurvePoint::_time)
           .def_readwrite("position", &TransformCurvePoint::_position)
@@ -144,7 +144,7 @@ void init_math(py::module& module_core,python::pb11_typecodec_ptr_t type_codec) 
           .def_readwrite("scale", &TransformCurvePoint::_scale)
           .def_readwrite("tangent_out", &TransformCurvePoint::_tangent_out)
           .def_readwrite("tangent_in", &TransformCurvePoint::_tangent_in);
-  type_codec->registerStdCodec<std::shared_ptr<TransformCurvePoint>>(tcpoint_type);
+  type_codec->registerStdCodec<transformcurvepoint_ptr_t>(tcpoint_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto tcsample_type = //
       py::class_<TransformCurveSample, std::shared_ptr<TransformCurveSample>>(module_core, "TransformCurveSample")
@@ -160,7 +160,7 @@ void init_math(py::module& module_core,python::pb11_typecodec_ptr_t type_codec) 
           .def(py::init<>())
           .def(
               "addPoint",
-              [](transformcurve_ptr_t self, const TransformCurvePoint& pt) -> int { //
+              [](transformcurve_ptr_t self, transformcurvepoint_ptr_t pt) -> int { //
                 return self->addPoint(pt);
               })
           .def(
@@ -170,12 +170,12 @@ void init_math(py::module& module_core,python::pb11_typecodec_ptr_t type_codec) 
               })
           .def(
               "setPoint",
-              [](transformcurve_ptr_t self, int index, const TransformCurvePoint& pt) { //
+              [](transformcurve_ptr_t self, int index, transformcurvepoint_ptr_t pt) { //
                 self->setPoint(index, pt);
               })
           .def(
               "getPoint",
-              [](transformcurve_ptr_t self, int index) -> TransformCurvePoint { //
+              [](transformcurve_ptr_t self, int index) -> transformcurvepoint_ptr_t { //
                 return self->getPoint(index);
               })
           .def_property_readonly(

@@ -9,15 +9,48 @@
 #include <ork/math/transform_curve.h>
 #include <ork/reflect/properties/registerX.inl>
 #include <ork/reflect/properties/DirectTypedVector.hpp>
+#include <ork/reflect/properties/DirectObjectVector.inl>
+#include <ork/reflect/properties/DirectTyped.hpp>
+#include <ork/math/cvector3.hpp>
+#include <ork/math/quaternion.hpp>
+#include <ork/reflect/enum_serializer.inl>
 #include <algorithm>
 
+ImplementReflectionX(ork::math::TransformCurvePoint, "TransformCurvePoint");
 ImplementReflectionX(ork::math::TransformCurve, "TransformCurve");
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork::math {
+namespace ork {
+namespace math {
+
+BeginEnumRegistration(CurveSegmentType);
+RegisterEnum(CurveSegmentType, LINEAR);
+RegisterEnum(CurveSegmentType, BEZIER);
+RegisterEnum(CurveSegmentType, CATMULL_ROM);
+EndEnumRegistration();
+
+} // namespace math
+
+ImplementEnumSerializer(math::CurveSegmentType);
+
+namespace math {
+
+void TransformCurvePoint::describeX(object::ObjectClass* clazz) {
+  clazz->directProperty("time", &TransformCurvePoint::_time);
+  clazz->directProperty("position", &TransformCurvePoint::_position);
+  clazz->directProperty("rotation", &TransformCurvePoint::_rotation);
+  clazz->directProperty("scale", &TransformCurvePoint::_scale);
+  clazz->directProperty("tangent_out", &TransformCurvePoint::_tangent_out);
+  clazz->directProperty("tangent_in", &TransformCurvePoint::_tangent_in);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void TransformCurve::describeX(object::ObjectClass* clazz) {
+  InvokeEnumRegistration(CurveSegmentType);
+
+  clazz->directObjectVectorProperty("points", &TransformCurve::_points);
+  clazz->directVectorProperty("segmentTypes", &TransformCurve::_segmentTypes);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -27,13 +60,13 @@ TransformCurve::TransformCurve() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-int TransformCurve::addPoint(const TransformCurvePoint& pt) {
+int TransformCurve::addPoint(transformcurvepoint_ptr_t pt) {
   _points.push_back(pt);
   _sortByTime();
   _syncSegmentTypes();
   // find the inserted index
   for (int i = 0; i < (int)_points.size(); i++) {
-    if (_points[i]._time == pt._time && _points[i]._position == pt._position) {
+    if (_points[i]->_time == pt->_time && _points[i]->_position == pt->_position) {
       return i;
     }
   }
@@ -50,7 +83,7 @@ void TransformCurve::removePoint(int index) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void TransformCurve::setPoint(int index, const TransformCurvePoint& pt) {
+void TransformCurve::setPoint(int index, transformcurvepoint_ptr_t pt) {
   OrkAssert(index >= 0 && index < (int)_points.size());
   _points[index] = pt;
   _sortByTime();
@@ -59,7 +92,7 @@ void TransformCurve::setPoint(int index, const TransformCurvePoint& pt) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const TransformCurvePoint& TransformCurve::getPoint(int index) const {
+transformcurvepoint_ptr_t TransformCurve::getPoint(int index) const {
   OrkAssert(index >= 0 && index < (int)_points.size());
   return _points[index];
 }
@@ -94,12 +127,12 @@ TransformCurve::SegmentResult TransformCurve::_findSegment(float t) const {
   }
 
   // clamp t
-  if (t <= _points[0]._time) {
+  if (t <= _points[0]->_time) {
     result._segIndex = 0;
     result._localT = 0.0f;
     return result;
   }
-  if (t >= _points[n - 1]._time) {
+  if (t >= _points[n - 1]->_time) {
     result._segIndex = n - 2;
     result._localT = 1.0f;
     return result;
@@ -109,7 +142,7 @@ TransformCurve::SegmentResult TransformCurve::_findSegment(float t) const {
   int lo = 0, hi = n - 2;
   while (lo < hi) {
     int mid = (lo + hi) / 2;
-    if (_points[mid + 1]._time < t) {
+    if (_points[mid + 1]->_time < t) {
       lo = mid + 1;
     } else {
       hi = mid;
@@ -117,8 +150,8 @@ TransformCurve::SegmentResult TransformCurve::_findSegment(float t) const {
   }
 
   result._segIndex = lo;
-  float t0 = _points[lo]._time;
-  float t1 = _points[lo + 1]._time;
+  float t0 = _points[lo]->_time;
+  float t1 = _points[lo + 1]->_time;
   float dt = t1 - t0;
   result._localT = (dt > 1e-9f) ? (t - t0) / dt : 0.0f;
   return result;
@@ -127,8 +160,8 @@ TransformCurve::SegmentResult TransformCurve::_findSegment(float t) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void TransformCurve::_sortByTime() {
-  std::sort(_points.begin(), _points.end(), [](const TransformCurvePoint& a, const TransformCurvePoint& b) {
-    return a._time < b._time;
+  std::sort(_points.begin(), _points.end(), [](const transformcurvepoint_ptr_t& a, const transformcurvepoint_ptr_t& b) {
+    return a->_time < b->_time;
   });
 }
 
@@ -174,9 +207,9 @@ TransformCurveSample TransformCurve::sample(float t) const {
     return result;
   }
   if (n == 1) {
-    result._position = _points[0]._position;
-    result._rotation = _points[0]._rotation;
-    result._scale = _points[0]._scale;
+    result._position = _points[0]->_position;
+    result._rotation = _points[0]->_rotation;
+    result._scale = _points[0]->_scale;
     return result;
   }
 
@@ -184,8 +217,8 @@ TransformCurveSample TransformCurve::sample(float t) const {
   int i = seg._segIndex;
   float lt = seg._localT;
 
-  const auto& A = _points[i];
-  const auto& B = _points[i + 1];
+  const auto& A = *_points[i];
+  const auto& B = *_points[i + 1];
 
   CurveSegmentType segType = (i < (int)_segmentTypes.size()) ? _segmentTypes[i] : CurveSegmentType::LINEAR;
 
@@ -221,13 +254,13 @@ TransformCurveSample TransformCurve::sample(float t) const {
     case CurveSegmentType::CATMULL_ROM: {
       int im1 = std::max(0, i - 1);
       int ip2 = std::min(n - 1, i + 2);
-      result._position = _evalCatmullRom(_points[im1]._position, A._position, B._position, _points[ip2]._position, lt);
+      result._position = _evalCatmullRom(_points[im1]->_position, A._position, B._position, _points[ip2]->_position, lt);
       // tangent from Catmull-Rom derivative
       float eps = 0.001f;
       fvec3 p_prev = _evalCatmullRom(
-          _points[im1]._position, A._position, B._position, _points[ip2]._position, std::max(0.0f, lt - eps));
+          _points[im1]->_position, A._position, B._position, _points[ip2]->_position, std::max(0.0f, lt - eps));
       fvec3 p_next = _evalCatmullRom(
-          _points[im1]._position, A._position, B._position, _points[ip2]._position, std::min(1.0f, lt + eps));
+          _points[im1]->_position, A._position, B._position, _points[ip2]->_position, std::min(1.0f, lt + eps));
       result._tangent = (p_next - p_prev);
       float len = result._tangent.length();
       if (len > 1e-9f) {
@@ -278,5 +311,6 @@ bool TransformCurve::postDeserialize(reflect::serdes::IDeserializer&, object_ptr
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} // namespace ork::math
+} // namespace math
+} // namespace ork
 ///////////////////////////////////////////////////////////////////////////////

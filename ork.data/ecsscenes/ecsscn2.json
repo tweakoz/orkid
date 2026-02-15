@@ -301,8 +301,76 @@
             "Curve": {
              "object": {
               "class": "TransformCurve",
-              "uuid": "7962fd93-c780-48d4-ab33-4d12aad2a0f0",
-              "properties": {}
+              "uuid": "83b46087-7b8a-49b3-96c4-2bffd50f594f",
+              "properties": {
+               "points": [
+                {
+                 "object": {
+                  "class": "TransformCurvePoint",
+                  "uuid": "f037559b-a525-421f-adce-84ed04a33ffb",
+                  "properties": {
+                   "position": [
+                    0.0,
+                    0.0,
+                    0.0
+                   ],
+                   "rotation": [
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0
+                   ],
+                   "scale": 1.0,
+                   "tangent_in": [
+                    0.0,
+                    0.0,
+                    0.0
+                   ],
+                   "tangent_out": [
+                    0.0,
+                    0.0,
+                    0.0
+                   ],
+                   "time": 0.0
+                  }
+                 }
+                },
+                {
+                 "object": {
+                  "class": "TransformCurvePoint",
+                  "uuid": "66020f7a-cca5-478e-9690-25fe75800a2a",
+                  "properties": {
+                   "position": [
+                    1.4179103374481201,
+                    -0.7761194109916687,
+                    0.0
+                   ],
+                   "rotation": [
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0
+                   ],
+                   "scale": 1.0,
+                   "tangent_in": [
+                    0.0,
+                    0.0,
+                    0.0
+                   ],
+                   "tangent_out": [
+                    0.0,
+                    0.0,
+                    0.0
+                   ],
+                   "time": 3.579166889190674
+                  }
+                 }
+                }
+               ],
+               "segmentTypes": [
+                "LINEAR"
+               ]
+              }
              }
             },
             "Looping": false,

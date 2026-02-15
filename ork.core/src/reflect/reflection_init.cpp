@@ -31,6 +31,7 @@ struct CoreAppInit {
     HotKeyConfiguration::GetClassStatic();
     HotKey::GetClassStatic();
     MultiCurve1D::GetClassStatic();
+    math::TransformCurvePoint::GetClassStatic();
     math::TransformCurve::GetClassStatic();
     GradientBase::GetClassStatic();
     gradient_fvec4_t::GetClassStatic();

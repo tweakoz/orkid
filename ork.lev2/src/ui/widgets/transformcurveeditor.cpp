@@ -28,9 +28,9 @@ static const fvec3 kChannelColors[3] = {
 };
 
 static const fvec4 kBgColors[3] = {
-    fvec4(0.12f, 0.08f, 0.08f, 1.0f),
-    fvec4(0.08f, 0.12f, 0.08f, 1.0f),
-    fvec4(0.08f, 0.08f, 0.12f, 1.0f),
+    fvec4(0.18f, 0.10f, 0.10f, 1.0f),
+    fvec4(0.10f, 0.18f, 0.10f, 1.0f),
+    fvec4(0.10f, 0.10f, 0.18f, 1.0f),
 };
 
 static const char* kChannelNames[3] = {"X", "Y", "Z"};
@@ -42,6 +42,17 @@ TransformCurveEditor::TransformCurveEditor(
     math::transformcurve_ptr_t curve)
     : Widget(name, 0, 0, 0, 0)
     , _curve(curve) {
+  // Seed empty curves with two default points so there's something to see
+  if (_curve && _curve->numPoints() == 0) {
+    auto p0 = std::make_shared<math::TransformCurvePoint>();
+    p0->_time = 0.0f;
+    p0->_position = fvec3(0, 0, 0);
+    _curve->addPoint(p0);
+    auto p1 = std::make_shared<math::TransformCurvePoint>();
+    p1->_time = 5.0f;
+    p1->_position = fvec3(1, 0, 0);
+    _curve->addPoint(p1);
+  }
   autoFitRanges();
 }
 
@@ -60,11 +71,11 @@ void TransformCurveEditor::autoFitRanges() {
   float vMin = 1e9f, vMax = -1e9f;
 
   for (int i = 0; i < _curve->numPoints(); i++) {
-    auto& pt = _curve->getPoint(i);
-    tMin = std::min(tMin, pt._time);
-    tMax = std::max(tMax, pt._time);
-    vMin = std::min(vMin, std::min({pt._position.x, pt._position.y, pt._position.z}));
-    vMax = std::max(vMax, std::max({pt._position.x, pt._position.y, pt._position.z}));
+    auto pt = _curve->getPoint(i);
+    tMin = std::min(tMin, pt->_time);
+    tMax = std::max(tMax, pt->_time);
+    vMin = std::min(vMin, std::min({pt->_position.x, pt->_position.y, pt->_position.z}));
+    vMax = std::max(vMax, std::max({pt->_position.x, pt->_position.y, pt->_position.z}));
   }
 
   // Time: 10% margin
@@ -140,9 +151,9 @@ int TransformCurveEditor::_hitTestPoint(int localX, int localY, int& outChannel)
   for (int ch = 0; ch < NUM_CHANNELS; ch++) {
     auto sr = _subplotRect(ch);
     for (int i = 0; i < _curve->numPoints(); i++) {
-      auto& pt = _curve->getPoint(i);
-      float px = _timeToScreenX(pt._time, sr);
-      float vals[3] = {pt._position.x, pt._position.y, pt._position.z};
+      auto pt = _curve->getPoint(i);
+      float px = _timeToScreenX(pt->_time, sr);
+      float vals[3] = {pt->_position.x, pt->_position.y, pt->_position.z};
       float py = _valueToScreenY(vals[ch], sr);
 
       float dx = float(localX + rx) - px;
@@ -206,17 +217,17 @@ HandlerResult TransformCurveEditor::DoOnUiEvent(event_constptr_t ev) {
         newTime = std::clamp(newTime, _timeMin, _timeMax);
 
         auto pt = _curve->getPoint(_selectedPointIndex);
-        pt._time = newTime;
+        pt->_time = newTime;
         switch (_dragChannel) {
-          case 0: pt._position.x = newValue; break;
-          case 1: pt._position.y = newValue; break;
-          case 2: pt._position.z = newValue; break;
+          case 0: pt->_position.x = newValue; break;
+          case 1: pt->_position.y = newValue; break;
+          case 2: pt->_position.z = newValue; break;
         }
         _curve->setPoint(_selectedPointIndex, pt);
 
         // After setPoint (which re-sorts by time), re-locate point
         for (int i = 0; i < _curve->numPoints(); i++) {
-          if (std::abs(_curve->getPoint(i)._time - newTime) < 1e-6f) {
+          if (std::abs(_curve->getPoint(i)->_time - newTime) < 1e-6f) {
             _selectedPointIndex = i;
             break;
           }
@@ -240,13 +251,13 @@ HandlerResult TransformCurveEditor::DoOnUiEvent(event_constptr_t ev) {
         float v = _screenYToValue(float(ev->miY), sr);
 
         auto sample = _curve->samplePosition(t);
-        math::TransformCurvePoint newPt;
-        newPt._time = t;
-        newPt._position = sample;
+        auto newPt = std::make_shared<math::TransformCurvePoint>();
+        newPt->_time = t;
+        newPt->_position = sample;
         switch (ch) {
-          case 0: newPt._position.x = v; break;
-          case 1: newPt._position.y = v; break;
-          case 2: newPt._position.z = v; break;
+          case 0: newPt->_position.x = v; break;
+          case 1: newPt->_position.y = v; break;
+          case 2: newPt->_position.z = v; break;
         }
         int idx = _curve->addPoint(newPt);
         _selectedPointIndex = idx;
@@ -464,9 +475,9 @@ void TransformCurveEditor::_drawSubplot(
       vw.Lock(context, vb.get(), 6 * numPts);
 
       for (int i = 0; i < numPts; i++) {
-        auto& pt = _curve->getPoint(i);
-        float vals[3] = {pt._position.x, pt._position.y, pt._position.z};
-        float sx = _timeToScreenX(pt._time, sr);
+        auto pt = _curve->getPoint(i);
+        float vals[3] = {pt->_position.x, pt->_position.y, pt->_position.z};
+        float sx = _timeToScreenX(pt->_time, sr);
         float sy = _valueToScreenY(vals[channel], sr);
 
         fvec3 ptColor = (i == _selectedPointIndex)
@@ -488,6 +499,24 @@ void TransformCurveEditor::_drawSubplot(
       gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::TRIANGLES);
       _material->end(RCFD);
     }
+  }
+
+  // Subplot border (top separator line)
+  {
+    lev2::VtxWriter<vtx_t> vw;
+    vw.Lock(context, vb.get(), 6);
+    fvec3 sepColor(0.35f, 0.35f, 0.4f);
+    vtx_t v0(fvec3(float(sr.x), float(sr.y), 0), fvec4(), sepColor);
+    vtx_t v1(fvec3(float(sr.x + sr.w), float(sr.y), 0), fvec4(), sepColor);
+    vtx_t v2(fvec3(float(sr.x), float(sr.y) + 1.0f, 0), fvec4(), sepColor);
+    vtx_t v3(fvec3(float(sr.x + sr.w), float(sr.y) + 1.0f, 0), fvec4(), sepColor);
+    vw.AddVertex(v0); vw.AddVertex(v1); vw.AddVertex(v2);
+    vw.AddVertex(v1); vw.AddVertex(v3); vw.AddVertex(v2);
+    vw.UnLock(context);
+    _material->begin(_tekvtxcolor, RCFD);
+    _material->bindParamMatrix(_parmvp, uiMatrix);
+    gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::TRIANGLES);
+    _material->end(RCFD);
   }
 
   // Channel label
